@@ -59,7 +59,6 @@ struct PCIXHCIPort {
 
 struct PCIXHCIRootHub {
     struct List                  port_list;
-    ULONG                        port_count;
 
     UWORD                        addr;
 

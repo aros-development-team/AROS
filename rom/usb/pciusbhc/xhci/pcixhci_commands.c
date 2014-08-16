@@ -132,6 +132,7 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     mybug(0, ("[PCIXHCI] cmdUsbReset: Entering function\n"));
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+    struct PCIXHCIPort *port = NULL;
 
     /* (Re)build descriptors */
     /* This is our root hub device descriptor */
@@ -180,7 +181,10 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     /* This is our root hub hub descriptor */
     unit->roothub.hubdesc.bLength                       = sizeof(struct UsbSSHubDesc);
     unit->roothub.hubdesc.bDescriptorType               = UDT_SSHUB;
-    unit->roothub.hubdesc.bNbrPorts                     = (UBYTE) unit->roothub.port_count;;
+    unit->roothub.hubdesc.bNbrPorts                     = 0;
+    ForeachNode(&unit->roothub.port_list, port) {
+        unit->roothub.hubdesc.bNbrPorts++;
+    }
     unit->roothub.hubdesc.wHubCharacteristics           = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
     unit->roothub.hubdesc.bPwrOn2PwrGood                = 0;
     unit->roothub.hubdesc.bHubContrCurrent              = 10;
