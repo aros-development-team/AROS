@@ -65,7 +65,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_ProductName:
-                *((STRPTR *) tag->ti_Data) = "PCI XHCI";
+                *((STRPTR *) tag->ti_Data) = "PCI XHCI USB 3.0 Host Controller Driver";
                 count++;
                 break;
             case UHA_Description:
@@ -329,7 +329,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                                 case 2: {
                                                     char roothubname[100];
-                                                    sprintf(roothubname, "PCIXHCI root hub (USB%x.%x)", AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>8)&0xf, AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>4)&0xf);
+                                                    snprintf(roothubname, 99, "PCI Root Hub Unit %d", unit->number) ;
                                                     return cmdGetString(ioreq, roothubname);
                                                     break;
                                                     }
