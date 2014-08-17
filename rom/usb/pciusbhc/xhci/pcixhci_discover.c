@@ -48,6 +48,7 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
     mybug(-1, ("\n[PCIXHCI] Enumerator: Found PCI XHCI host controller\n"));
 
     struct PCIXHCIUnit *unit;
+    static ULONG unitnum = 0;
 
     unit = AllocVec(sizeof(struct PCIXHCIUnit), MEMF_ANY|MEMF_CLEAR);
     if(unit != NULL) {
@@ -63,6 +64,7 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
 
                 unit->hc.pcidevice = pciDevice;
                 unit->pcixhcibase = LIBBASE;
+                unit->number = unitnum++;
 
                 AddTail(&LIBBASE->unit_list, (struct Node *)unit);
                 mybug(-1, ("[PCIXHCI] Enumerator: Host controller obtained\n"));
