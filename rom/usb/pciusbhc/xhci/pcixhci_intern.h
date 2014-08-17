@@ -23,6 +23,7 @@
 #include <devices/usb_hub.h>
 #include <devices/newstyle.h>
 #include <devices/usbhardware.h>
+#include <devices/timer.h>
 
 #include <asm/io.h>
 #include <inttypes.h>
@@ -98,6 +99,9 @@ struct PCIXHCIUnit {
     struct PCIXHCIBase          *pcixhcibase;
     struct PCIXHCIRootHub        roothub;
     struct PCIXHCIHostController hc;
+
+    struct timerequest          *tr;
+
 };
 
 struct PCIXHCIBase {
@@ -121,6 +125,9 @@ BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
 BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit);
 IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap);
+void PCIXHCI_Delay(struct PCIXHCIUnit *unit, ULONG msec);
+BOOL PCIXHCI_CreateTimer(struct PCIXHCIUnit *unit);
+void PCIXHCI_DeleteTimer(struct PCIXHCIUnit *unit);
 
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
 WORD cmdReset(struct IOUsbHWReq *ioreq);

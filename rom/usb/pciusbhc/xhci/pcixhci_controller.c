@@ -26,6 +26,7 @@
 #include <devices/usb_hub.h>
 #include <devices/newstyle.h>
 #include <devices/usbhardware.h>
+#include <devices/timer.h>
 
 #include <asm/io.h>
 #include <inttypes.h>
@@ -42,7 +43,7 @@
 #define PCIXHCIBase unit->pcixhcibase
 
 /*
-    We get called only once when the driver inits
+    We get called only once (per controller) when the driver inits
     We own the controller until our driver expunges so we assume that nobody messes with our stuff...
 */
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
@@ -78,7 +79,7 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 
     /* Get the host controller from BIOS if possible */
     IPTR extcap;
-    ULONG temp;
+    ULONG temp, i;
 
     extcap = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, 0);
     if(extcap) {
@@ -88,6 +89,7 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 
             WRITEMEM32(extcap, (temp | XHCF_OSOWNED) );
             temp = READMEM32(extcap);
+
             if(!(temp & XHCF_BIOSOWNED)) {
                 mybug_unit(-1, ("BIOS gave up on XHCI. Pwned!\n"));
             } else {
@@ -104,7 +106,6 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 
     return TRUE;
 }
-
 
 /*
     We get called everytime the driver is trying to get online
@@ -151,7 +152,7 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
 IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap) {
     IPTR extcapoff = (IPTR) NULL;
 
-    mybug_unit(-1,("search for extended capabilitie id(%ld)\n", id));
+    mybug_unit(-1,("searching for extended capability id(%ld)\n", id));
 
     if(extcap) {
         mybug_unit(-1, ("continue search from %p\n", extcap));
@@ -164,11 +165,11 @@ IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap) 
     do {
         extcap += extcapoff;
         if((XHCV_EXT_CAPS_ID(READMEM32(extcap)) == id)) {
-            mybug_unit(-1, ("found matching extended capabilitie id at %lx\n", extcap));
+            mybug_unit(-1, ("found matching extended capability id at %lx\n", extcap));
             return (IPTR) extcap;
         }
         if(extcap)
-            mybug_unit(-1, ("skipping extended capabilitie id(%ld)\n", XHCV_EXT_CAPS_ID(READMEM32(extcap))));
+            mybug_unit(-1, ("skipping extended capability id(%ld)\n", XHCV_EXT_CAPS_ID(READMEM32(extcap))));
         extcapoff = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32(extcap));
     } while(extcapoff);
 

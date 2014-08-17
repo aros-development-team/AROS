@@ -26,6 +26,7 @@
 #include <devices/usb_hub.h>
 #include <devices/newstyle.h>
 #include <devices/usbhardware.h>
+#include <devices/timer.h>
 
 #include <asm/io.h>
 #include <inttypes.h>
@@ -110,6 +111,7 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE) {
             REMOVE(port);
             FreeVec(port);
         }
+        PCIXHCI_DeleteTimer(unit);
         HIDD_PCIDevice_Release(unit->hc.pcidevice);
         REMOVE(unit);
         FreeVec(unit);
