@@ -117,8 +117,10 @@ struct PCIXHCIBase {
 #define HiddPCIDeviceAttrBase (LIBBASE->HiddPCIDeviceAB)
 
 BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
+
 BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit);
+IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap);
 
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
 WORD cmdReset(struct IOUsbHWReq *ioreq);
