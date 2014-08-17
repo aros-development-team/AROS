@@ -77,6 +77,27 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     OOP_SetAttrs(unit->hc.pcidevice, (struct TagItem *)pciActivateMemAndBusmaster);
 
     /* Get the host controller from BIOS if possible */
+    IPTR extcap;
+    ULONG temp;
+
+    extcap = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, 0);
+    if(extcap) {
+        temp = READMEM32(extcap);
+        if( (temp & XHCF_BIOSOWNED) ){
+            mybug_unit(-1, ("controller owned by BIOS\n"));
+
+            WRITEMEM32(extcap, (temp | XHCF_OSOWNED) );
+            temp = READMEM32(extcap);
+            if(!(temp & XHCF_BIOSOWNED)) {
+                mybug_unit(-1, ("BIOS gave up on XHCI. Pwned!\n"));
+            } else {
+                mybug_unit(-1, ("BIOS didn't release XHCI. Forcing and praying...\n"));
+                WRITEMEM32(extcap, (temp & ~XHCF_BIOSOWNED) );
+            }
+        } else {
+            mybug_unit(-1, ("controller was not owned by BIOS\n"));
+        }
+    }
 
     /* Init the port list but do not fill it */
     NEWLIST(&unit->roothub.port_list);
@@ -105,7 +126,7 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
 
     /* (Re)build the port list of our unit */
     ForeachNode(&unit->roothub.port_list, port) {
-        mybug_unit(-1, ("Deleting port %d named %s\n", port->number, port->name));
+        mybug_unit(-1, ("Deleting port %d named %s at %p\n", port->number, port->name, port));
         REMOVE(port);
         FreeVec(port);
     }
@@ -121,14 +142,39 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
         port->number = portnum;
         AddTail(&unit->roothub.port_list,(struct Node *)port);
 
-        mybug_unit(-1, ("Created new port numbered %d at %p\n",port->number, port));
-        mybug_unit(-1, ("Port node name %s\n", port->node.ln_Name));
+        mybug_unit(-1, ("Created new port %d named %s at %p\n", port->number, port->name, port));
     }
 
     return TRUE;
 }
 
+IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap) {
+    IPTR extcapoff = (IPTR) NULL;
 
+    mybug_unit(-1,("search for extended capabilitie id(%ld)\n", id));
+
+    if(extcap) {
+        mybug_unit(-1, ("continue search from %p\n", extcap));
+        extcap = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32(extcap));
+    } else {  
+        extcap = (IPTR) unit->hc.capregbase + XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
+        mybug_unit(-1, ("searching from beginning %p\n", extcap));
+    }
+
+    do {
+        extcap += extcapoff;
+        if((XHCV_EXT_CAPS_ID(READMEM32(extcap)) == id)) {
+            mybug_unit(-1, ("found matching extended capabilitie id at %lx\n", extcap));
+            return (IPTR) extcap;
+        }
+        if(extcap)
+            mybug_unit(-1, ("skipping extended capabilitie id(%ld)\n", XHCV_EXT_CAPS_ID(READMEM32(extcap))));
+        extcapoff = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32(extcap));
+    } while(extcapoff);
+
+    mybug_unit(-1, ("not found!\n"));
+    return (IPTR) NULL;
+}
 
 
 
