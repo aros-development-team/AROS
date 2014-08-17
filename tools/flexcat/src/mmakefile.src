@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- tools-flexcat : tools-flexcat-bin tools-flexcat-sd
+#MM- tools-flexcat : tools-flexcat-bin tools-flexcat-sd tools-flexcat-locale
 #MM tools-flexcat-bin : includes linklibs
 
 FILES := \
@@ -32,5 +32,18 @@ USER_CFLAGS := -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
     progname=flexcat targetdir=$(EXEDIR)
 
 %copy_dir_recursive mmake=tools-flexcat-sd src=sd dst=$(EXEDIR)/Lib
+
+
+TARGETDIR := $(EXEDIR)/Catalogs
+LANGUAGES := $(basename $(notdir $(call WILDCARD,$(SRCDIR)/$(CURDIR)/locale/*.po)))
+CATALOGS := $(addprefix $(TARGETDIR)/,$(addsuffix /FlexCat.catalog,$(LANGUAGES)))
+
+#MM
+tools-flexcat-locale : $(CATALOGS)
+
+$(TARGETDIR)/%/FlexCat.catalog: $(SRCDIR)/$(CURDIR)/locale/%.po
+	$(ECHO) "Building catalog $@"
+	$(MKDIR) $(dir $@)
+	$(FLEXCAT) POFILE $< CATALOG $@
 
 %common
