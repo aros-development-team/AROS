@@ -107,8 +107,9 @@ BOOL PCIXHCI_Discover(LIBBASETYPEPTR LIBBASE) {
     struct PCIXHCIUnit *unit;
 
     ForeachNode(&LIBBASE->unit_list, unit) {
-        if(PCIXHCI_CreateTimer(unit)) {
-            PCIXHCI_HCInit(unit);
+        if(!PCIXHCI_HCInit(unit)) {
+            REMOVE(unit);
+            FreeVec(unit);
         }
     }
 

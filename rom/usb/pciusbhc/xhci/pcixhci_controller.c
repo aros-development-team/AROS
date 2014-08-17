@@ -45,12 +45,20 @@
 /*
     We get called only once (per controller) when the driver inits
     We own the controller until our driver expunges so we assume that nobody messes with our stuff...
+    Driver NEVER expunges, it messes Poseidon.
 */
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     //mybug(0, ("[PCIXHCI] PCIXHCI_HCInit: Entering function\n"));
 
     /* Our unit is in suspended state until it is reset */
     unit->state = UHSF_SUSPENDED;
+
+    /* Init the port list but do not fill it */
+    NEWLIST(&unit->roothub.port_list);
+
+    if(!PCIXHCI_CreateTimer(unit)) {
+        return FALSE;
+    }
 
     snprintf(unit->name, 255, "PCIXHCI[%02x:%02x.%01x]", (UBYTE)unit->hc.bus, (UBYTE)unit->hc.dev, (UBYTE)unit->hc.sub);
     unit->node.ln_Name = (STRPTR)&unit->name;
@@ -79,7 +87,7 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 
     /* Get the host controller from BIOS if possible */
     IPTR extcap;
-    ULONG temp, i;
+    ULONG temp, timeout;
 
     extcap = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, 0);
     if(extcap) {
@@ -87,22 +95,28 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         if( (temp & XHCF_BIOSOWNED) ){
             mybug_unit(-1, ("controller owned by BIOS\n"));
 
-            WRITEMEM32(extcap, (temp | XHCF_OSOWNED) );
-            temp = READMEM32(extcap);
+            /* Spec says "no more than a second", we give it a little more */
+            timeout = 250;
 
-            if(!(temp & XHCF_BIOSOWNED)) {
-                mybug_unit(-1, ("BIOS gave up on XHCI. Pwned!\n"));
-            } else {
+            WRITEMEM32(extcap, (temp | XHCF_OSOWNED) );
+            do {
+                temp = READMEM32(extcap);
+                if(!(temp & XHCF_BIOSOWNED)) {
+                    mybug_unit(-1, ("BIOS gave up on XHCI. Pwned!\n"));
+                }
+                /* Wait 10ms and check again */
+                PCIXHCI_Delay(unit, 10);
+            } while(--timeout);
+
+            if(!timeout) {
                 mybug_unit(-1, ("BIOS didn't release XHCI. Forcing and praying...\n"));
                 WRITEMEM32(extcap, (temp & ~XHCF_BIOSOWNED) );
             }
+
         } else {
             mybug_unit(-1, ("controller was not owned by BIOS\n"));
         }
     }
-
-    /* Init the port list but do not fill it */
-    NEWLIST(&unit->roothub.port_list);
 
     return TRUE;
 }
@@ -121,6 +135,7 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
 
     /* our unit is in reset state until the higher level usb reset is called */
     unit->state = UHSF_RESET;
+
 
 
 
