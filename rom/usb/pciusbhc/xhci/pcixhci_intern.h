@@ -121,9 +121,10 @@ struct PCIXHCIBase {
 #define HiddPCIDeviceAttrBase (LIBBASE->HiddPCIDeviceAB)
 
 BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
-
 BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit);
+BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit);
+BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit);
 IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap);
 void PCIXHCI_Delay(struct PCIXHCIUnit *unit, ULONG msec);
 BOOL PCIXHCI_CreateTimer(struct PCIXHCIUnit *unit);
