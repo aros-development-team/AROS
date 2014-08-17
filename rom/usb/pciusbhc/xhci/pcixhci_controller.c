@@ -76,6 +76,7 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     mybug_unit(-1, ("capregbase = %p\n",   unit->hc.capregbase));
     mybug_unit(-1, ("opregbase  = %p\n",   unit->hc.opregbase));
 
+    /* We use pointers and stuff... */
     struct TagItem pciActivateMemAndBusmaster[] = {
             { aHidd_PCIDevice_isIO,     FALSE },
             { aHidd_PCIDevice_isMEM,    TRUE },
@@ -103,6 +104,7 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
                 temp = READMEM32(extcap);
                 if(!(temp & XHCF_BIOSOWNED)) {
                     mybug_unit(-1, ("BIOS gave up on XHCI. Pwned!\n"));
+                    break;
                 }
                 /* Wait 10ms and check again */
                 PCIXHCI_Delay(unit, 10);
@@ -129,36 +131,43 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
     mybug_unit(0, ("Entering function\n"));
 
-    struct PCIXHCIPort *port = NULL;
+    ULONG timeout;
 
-    ULONG portnum = 0;
+    if(!PCIXHCI_HCHalt(unit)) {
+        return FALSE;
+    }
 
     /* our unit is in reset state until the higher level usb reset is called */
     unit->state = UHSF_RESET;
 
+    /* Reset controller by setting HCRST-bit */
+    opreg_writel(XHCI_USBCMD, (opreg_readl(XHCI_USBCMD) | XHCF_CMD_HCRST));
 
-
-
-
-    /* (Re)build the port list of our unit */
-    ForeachNode(&unit->roothub.port_list, port) {
-        mybug_unit(-1, ("Deleting port %d named %s at %p\n", port->number, port->name, port));
-        REMOVE(port);
-        FreeVec(port);
+    /*
+        Controller clears HCRST bit when reset is done, wait for it and the CNR-bit to be cleared
+    */
+    timeout = 250;  //FIXME: arbitrary value of 2500ms
+    while ((opreg_readl(XHCI_USBCMD) & XHCF_CMD_HCRST) && (timeout-- != 0)) {
+        if(!timeout) {
+            mybug_unit(-1, ("Time is up for XHCF_CMD_HCRST bit!\n"));
+            return FALSE;
+        }
+        /* Wait 10ms and check again */
+        PCIXHCI_Delay(unit, 10);
     }
 
-    port = AllocVec(sizeof(struct PCIXHCIPort), MEMF_ANY|MEMF_CLEAR);
-    if(port == NULL) {
-        mybug_unit(-1, ("Failed to create new port structure\n"));
-        return FALSE;
-    } else {
-        port->node.ln_Type = NT_USER;
-        snprintf(port->name, 255, "PCIXHCI[%02x:%02x.%01x] port %d", (UBYTE)unit->hc.bus, (UBYTE)unit->hc.dev, (UBYTE)unit->hc.sub, ++portnum);
-        port->node.ln_Name = (STRPTR)&port->name;
-        port->number = portnum;
-        AddTail(&unit->roothub.port_list,(struct Node *)port);
+    timeout = 250;  //FIXME: arbitrary value of 2500ms
+    while ((opreg_readl(XHCI_USBSTS) & XHCF_STS_CNR) && (timeout-- != 0)) {
+        if(!timeout) {
+            mybug_unit(-1, ("Time is up for XHCF_STS_CNR bit!\n"));
+            return FALSE;
+        }
+        /* Wait 10ms and check again */
+        PCIXHCI_Delay(unit, 10);
+    }
 
-        mybug_unit(-1, ("Created new port %d named %s at %p\n", port->number, port->name, port));
+    if(!PCIXHCI_FindPorts(unit)) {
+        return FALSE;
     }
 
     return TRUE;
@@ -190,6 +199,68 @@ IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap) 
 
     mybug_unit(-1, ("not found!\n"));
     return (IPTR) NULL;
+}
+
+BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit) {
+    mybug_unit(-1, ("Entering function\n"));
+
+    ULONG timeout, temp;
+
+    /* Halt the controller by clearing Run/Stop bit */
+    temp = opreg_readl(XHCI_USBCMD);
+    opreg_writel(XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
+
+    /* Our unit advertises that it is in suspended state */
+    unit->state = UHSF_SUSPENDED;
+
+    /*
+        The xHC shall halt within 16 ms. after software clears the Run/Stop bit if certain conditions have been met.
+        The HCHalted (HCH) bit in the USBSTS register indicates when the xHC has finished its
+        pending pipelined transactions and has entered the stopped state. 
+    */
+    timeout = 250;  //FIXME: arbitrary value of 2500ms
+    do {
+        temp = opreg_readl(XHCI_USBSTS);
+        if( (temp & XHCF_STS_HCH) ) {
+            mybug_unit(-1, ("controller halted!\n"));
+            return TRUE;
+        }
+        /* Wait 10ms and check again */
+        PCIXHCI_Delay(unit, 10);
+    } while(--timeout);
+
+    mybug_unit(-1, ("halt failed!\n"));
+    return FALSE;
+}
+
+BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
+
+    struct PCIXHCIPort *port = NULL;
+
+    ULONG portnum = 0;
+
+    /* (Re)build the port list of our unit */
+    ForeachNode(&unit->roothub.port_list, port) {
+        mybug_unit(-1, ("Deleting port %d named %s at %p\n", port->number, port->name, port));
+        REMOVE(port);
+        FreeVec(port);
+    }
+
+    port = AllocVec(sizeof(struct PCIXHCIPort), MEMF_ANY|MEMF_CLEAR);
+    if(port == NULL) {
+        mybug_unit(-1, ("Failed to create new port structure\n"));
+        return FALSE;
+    } else {
+        port->node.ln_Type = NT_USER;
+        snprintf(port->name, 255, "%s port %d", unit->node.ln_Name, ++portnum);
+        port->node.ln_Name = (STRPTR)&port->name;
+        port->number = portnum;
+        AddTail(&unit->roothub.port_list,(struct Node *)port);
+
+        mybug_unit(-1, ("Created new port %d named %s at %p\n", port->number, port->name, port));
+    }
+
+    return TRUE;
 }
 
 
