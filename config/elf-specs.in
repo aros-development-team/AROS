@@ -33,8 +33,5 @@
 *cross_compile:
 1
 
-.cd:
-@AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/gcccatcomp.sh %i @AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools %g.c %{S:-S} %{!S:-c} %{o: %{o*}} %{!o:-o %{S: %b.s} %{!S:%{c: %b%O} %{!c:%w%g%O}}} %{pipe} %(aros_include) 
-
 *linker:
 @AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/@aros_target_cpu@-@aros_target_arch@@aros_target_suffix@-elf-ld
