@@ -237,7 +237,7 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
     struct PCIXHCIPort *port = NULL;
 
-    ULONG portnum = 0;
+    ULONG portnum = 0, portcount = 0;
 
     /* (Re)build the port list of our unit */
     ForeachNode(&unit->roothub.port_list, port) {
@@ -246,19 +246,29 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
         FreeVec(port);
     }
 
-    port = AllocVec(sizeof(struct PCIXHCIPort), MEMF_ANY|MEMF_CLEAR);
-    if(port == NULL) {
-        mybug_unit(-1, ("Failed to create new port structure\n"));
-        return FALSE;
-    } else {
-        port->node.ln_Type = NT_USER;
-        snprintf(port->name, 255, "%s port %d", unit->node.ln_Name, ++portnum);
-        port->node.ln_Name = (STRPTR)&port->name;
-        port->number = portnum;
-        AddTail(&unit->roothub.port_list,(struct Node *)port);
+    portcount = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
+    mybug_unit(-1, ("Controller advertises port count to be %d\n", portcount));
 
-        mybug_unit(-1, ("Created new port %d named %s at %p\n", port->number, port->name, port));
-    }
+    do {
+        port = AllocVec(sizeof(struct PCIXHCIPort), MEMF_ANY|MEMF_CLEAR);
+        if(port == NULL) {
+            mybug_unit(-1, ("Failed to create new port structure\n"));
+            ForeachNode(&unit->roothub.port_list, port) {
+                mybug_unit(-1, ("Deleting port %d named %s at %p\n", port->number, port->name, port));
+                REMOVE(port);
+                FreeVec(port);
+            }
+            return FALSE;
+        } else {
+            port->node.ln_Type = NT_USER;
+            snprintf(port->name, 255, "%s port %d", unit->node.ln_Name, ++portnum);
+            port->node.ln_Name = (STRPTR)&port->name;
+            port->number = portnum;
+            AddTail(&unit->roothub.port_list,(struct Node *)port);
+
+            mybug_unit(-1, ("Created new port %d named %s at %p\n", port->number, port->name, port));
+        }
+    } while(--portcount);
 
     return TRUE;
 }
