@@ -10,9 +10,6 @@ SRC	= error filesup hash lineparser mystream \
 # set, and build in the current directory.
 -include $(TOP)/config/make.cfg
 
-# Values relating to stuff.
-PURIFY	= /home/digulla/AROS/compiler/purify/purify
-
 # If the include above doesn't work, we need some defaults.
 HOST_CC	?= $(CC)
 HOST_AR ?= $(AR) cru 
@@ -47,10 +44,6 @@ $(OBJDIR)/%.d : %.c
 
 $(OBJDIR) : 
 	@$(MKDIR) $(OBJDIR)
-
-pure :
-	-@rm *.o
-	@$(MAKE) "CC=$(PURIFY) $(CC)"
 
 clean :
 	-@$(RM) -r $(OBJDIR) $(TOOLLIB)
