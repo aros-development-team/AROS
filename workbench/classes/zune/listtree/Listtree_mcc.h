@@ -20,6 +20,11 @@
 #define MUIA_Listtree_DragDropSort         (MUIB_MUI|0x00020031) /* [I..]  BOOL          */
 #define MUIA_Listtree_SortHook             (MUIB_MUI|0x00020010) /* [I..]  struct Hook * */
 
+#define MUIV_Listtree_FindName_ListNode_Root         0
+
+#define MUIV_Listtree_FindName_Flags_SameLevel      (1<<15)
+
+
 #define MUIV_Listtree_GetEntry_Position_Tail        -1
 #define MUIV_Listtree_GetEntry_Position_Active      -2
 #define MUIV_Listtree_GetEntry_Position_Next        -3
@@ -60,6 +65,7 @@
 #define TNF_LIST   (1<<01)
 
 /*** Methods ****************************************************************/
+#define MUIM_Listtree_FindName             (MUIB_MUI|0x0002003c)
 #define MUIM_Listtree_GetEntry             (MUIB_MUI|0x0002002b)
 #define MUIM_Listtree_GetNr                (MUIB_MUI|0x0002000e)
 #define MUIM_Listtree_Remove               (MUIB_MUI|0x00020012)
@@ -96,5 +102,6 @@ struct MUIP_Listtree_Open {STACKED ULONG MethodID;STACKED APTR ListNode;STACKED 
 struct MUIP_Listtree_Close {STACKED ULONG MethodID;STACKED APTR ListNode;STACKED APTR TreeNode;STACKED ULONG Flags;};
 struct MUIP_Listtree_TestPos {STACKED ULONG MethodID;STACKED LONG X;STACKED LONG Y;STACKED APTR Result;};
 struct MUIP_Listtree_SetDropMark {STACKED ULONG MethodID;STACKED LONG Entry;STACKED ULONG Values;};
+struct MUIP_Listtree_FindName {STACKED ULONG MethodID;STACKED APTR  ListNode;STACKED STRPTR Name;STACKED ULONG Flags;};
 
 #endif /* ZUNE_LISTTREE_MCC_H */

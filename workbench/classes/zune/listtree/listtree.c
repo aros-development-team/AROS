@@ -35,7 +35,7 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Listtree_DATA *data = NULL;
     struct TagItem *tag;
-    const struct TagItem *tags;
+    struct TagItem *tags;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
@@ -88,8 +88,8 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
 IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    const struct TagItem       *tstate = msg->ops_AttrList;
-    struct TagItem             *tag;
+    struct TagItem      *tstate = msg->ops_AttrList;
+    struct TagItem      *tag;
 
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
@@ -309,5 +309,11 @@ IPTR Listtree__MUIM_Listtree_TestPos(struct IClass *cl, Object *obj, struct MUIP
 IPTR Listtree__MUIM_Listtree_SetDropMark(struct IClass *cl, Object *obj, struct MUIP_Listtree_SetDropMark *msg)
 {
     bug("[Listtree] MUIM_Listtree_SetDropMark unsupported code path Entry: %d, Values: %d\n", msg->Entry, msg->Values);
+    return (IPTR)FALSE;
+}
+
+IPTR Listtree__MUIM_Listtree_FindName(struct IClass *cl, Object *obj, struct MUIP_Listtree_FindName *msg)
+{
+    bug("[Listtree] MUIM_Listtree_FindName unsupported code path Listnode: %x, Name: %s, Flags: %d\n", msg->ListNode, msg->Name, msg->Flags);
     return (IPTR)FALSE;
 }
