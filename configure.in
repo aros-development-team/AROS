@@ -1620,6 +1620,7 @@ arm)
 i386)
     aros_isa_flags="-m32 -march=i486"
     aros_kernel_cflags="$aros_kernel_cflags $aros_isa_flags"
+    aros_kernel_ldflags="$aros_kernel_ldflags -m32" 
     ;;
 esac
 
