@@ -22,20 +22,23 @@
     XHCV_xxx(p)'s return shifted values from p
 */
 
-#define WRITEREG16_LE(rb, offset, value)      *((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_WORD2LE(value)
-#define WRITEREG32_LE(rb, offset, value)      *((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_LONG2LE(value)
-#define WRITEREG64_LE(rb, offset, value)      *((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_QUAD2LE(value)
+#define READMEM32(rb) AROS_LE2LONG(*((volatile ULONG *) (rb)))
+#define	WRITEMEM32(adr, value)	   *((volatile ULONG *) (adr)) = AROS_LONG2LE(value)
 
-#define READREG16_LE(rb, offset) AROS_WORD2LE(*((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
-#define READREG32_LE(rb, offset) AROS_LONG2LE(*((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
-#define READREG64_LE(rb, offset) AROS_QUAD2LE(*((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
+#define WRITEREG16(rb, offset, value)      *((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_WORD2LE(value)
+#define WRITEREG32(rb, offset, value)      *((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_LONG2LE(value)
+#define WRITEREG64(rb, offset, value)      *((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_QUAD2LE(value)
 
-#define opreg_readl(opreg) READREG32_LE(unit->hc.opregbase, opreg)
-#define opreg_writel(opreg, value) WRITEREG32_LE(unit->hc.opregbase, opreg, value)
-#define opreg_writeq(opreg, value) WRITEREG64_LE(unit->hc.opregbase, opreg, value)
+#define READREG16(rb, offset) AROS_LE2WORD(*((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
+#define READREG32(rb, offset) AROS_LE2LONG(*((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
+#define READREG64(rb, offset) AROS_LE2QUAD(*((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 
-#define capreg_readl(capreg) READREG32_LE(unit->hc.capregbase, capreg)
-#define capreg_readw(capreg) READREG16_LE(unit->hc.capregbase, capreg)
+#define opreg_readl(opreg) READREG32(unit->hc.opregbase, opreg)
+#define opreg_writel(opreg, value) WRITEREG32(unit->hc.opregbase, opreg, value)
+#define opreg_writeq(opreg, value) WRITEREG64(unit->hc.opregbase, opreg, value)
+
+#define capreg_readl(capreg) READREG32(unit->hc.capregbase, capreg)
+#define capreg_readw(capreg) READREG16(unit->hc.capregbase, capreg)
 #define capreg_readb(capreg) (*((volatile UBYTE *) (((UBYTE *) (unit->hc.capregbase)) + ((ULONG) (capreg))))) 
 
 
