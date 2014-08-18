@@ -1262,8 +1262,9 @@ case "$target_os" in
         aros_arch_libs="-laeabi"
         gcc_default_cpu="armv7-a"
         gcc_default_fpu="vfpv3"
-        aros_config_cflags="$aros_config_cflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables -Os"
-        aros_config_aflags="$aros_config_aflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables -Os"
+        aros_config_cflags="$aros_config_cflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables"
+        aros_config_aflags="$aros_config_aflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables"
+        aros_optimization_cflags="$aros_optimization_cflags -Os"
         case "$target_cpu" in
             *armhf*)
                 gcc_default_float_abi="hard"
@@ -1364,7 +1365,8 @@ case "$target_os" in
                 aros_object_format="m68kelf"
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
-                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -Wno-volatile-register-var -Os -DNOLIBINLINE"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -Wno-volatile-register-var -DNOLIBINLINE"
+                aros_optimization_cflags="$aros_optimization_cflags -Os"
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
                 aros_default_wbwidth=640
