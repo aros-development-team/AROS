@@ -108,6 +108,7 @@ BOOL PCIXHCI_Discover(LIBBASETYPEPTR LIBBASE) {
 
     struct PCIXHCIUnit *unit;
 
+    /* If the controller fails to init then remove it from our unit list */
     ForeachNode(&LIBBASE->unit_list, unit) {
         if(!PCIXHCI_HCInit(unit)) {
             REMOVE(unit);
