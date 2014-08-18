@@ -87,21 +87,21 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     OOP_SetAttrs(unit->hc.pcidevice, (struct TagItem *)pciActivateMemAndBusmaster);
 
     /* Get the host controller from BIOS if possible */
-    IPTR extcap;
+    IPTR cap_legacy;
     ULONG temp, timeout;
 
-    extcap = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, 0);
-    if(extcap) {
-        temp = READMEM32(extcap);
+    cap_legacy = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, 0);
+    if(cap_legacy) {
+        temp = READMEM32(cap_legacy);
         if( (temp & XHCF_BIOSOWNED) ){
             mybug_unit(-1, ("controller owned by BIOS\n"));
 
             /* Spec says "no more than a second", we give it a little more */
             timeout = 250;
 
-            WRITEMEM32(extcap, (temp | XHCF_OSOWNED) );
+            WRITEMEM32(cap_legacy, (temp | XHCF_OSOWNED) );
             do {
-                temp = READMEM32(extcap);
+                temp = READMEM32(cap_legacy);
                 if(!(temp & XHCF_BIOSOWNED)) {
                     mybug_unit(-1, ("BIOS gave up on XHCI. Pwned!\n"));
                     break;
@@ -112,13 +112,15 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 
             if(!timeout) {
                 mybug_unit(-1, ("BIOS didn't release XHCI. Forcing and praying...\n"));
-                WRITEMEM32(extcap, (temp & ~XHCF_BIOSOWNED) );
+                WRITEMEM32(cap_legacy, (temp & ~XHCF_BIOSOWNED) );
             }
 
         } else {
             mybug_unit(-1, ("controller was not owned by BIOS\n"));
         }
     }
+
+    //unit->roothub.devdesc.bcdDevice = capreg_readw(XHCI_HCIVERSION);
 
     return TRUE;
 }
@@ -237,7 +239,8 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
     struct PCIXHCIPort *port = NULL;
 
-    ULONG portnum = 0, portcount = 0;
+    IPTR cap_protocol = (IPTR) NULL;
+    ULONG portnum = 0, portcount = 0, temp;
 
     /* (Re)build the port list of our unit */
     ForeachNode(&unit->roothub.port_list, port) {
@@ -248,6 +251,11 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
     portcount = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
     mybug_unit(-1, ("Controller advertises port count to be %d\n", portcount));
+
+    while((cap_protocol = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_PROTOCOL, cap_protocol))) {
+        temp = READMEM32(cap_protocol);
+        mybug_unit(-1, ("Version %ld.%ld\n", XHCV_SPFD_RMAJOR(temp), XHCV_SPFD_RMINOR(temp) ));
+    }
 
     do {
         port = AllocVec(sizeof(struct PCIXHCIPort), MEMF_ANY|MEMF_CLEAR);
