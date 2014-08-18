@@ -44,8 +44,29 @@
 
 static AROS_INTH1(PCIXHCI_IntCode, struct PCIXHCIUnit *, unit) {
     AROS_INTFUNC_INIT
-    mybug_unit(-1, ("Excuse me...\n"));
 
+    struct PCIXHCIPort *port = NULL;
+
+    ULONG usbsts;
+
+    if((opreg_readl(XHCI_USBCMD) & XHCF_CMD_INTE)) {
+
+        usbsts = opreg_readl(XHCI_USBSTS);
+        if((usbsts & XHCF_STS_PCD)) {
+            mybug_unit(-1, ("Excuse me... Port status change has occured\n"));
+            opreg_writel(XHCI_USBSTS, XHCF_STS_PCD);
+
+            if(unit->state == UHSF_OPERATIONAL) {
+                mybug_unit(-1,("Interrupt occured while controller is operational\n"));
+            } else {
+                mybug_unit(-1,("Interrupt occured while controller is not operational\n"));
+            }
+
+            ForeachNode(&unit->roothub.port_list, port) {
+                mybug_unit(-1,("port %d XHCI_PORTSC(%08x)\n", port->number, opreg_readl(XHCI_PORTSC(port->number))));
+            }
+        }
+    }
     return 0;
     AROS_INTFUNC_EXIT
 }
@@ -137,7 +158,6 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     unit->hc.inthandler.is_Node.ln_Type = NT_INTERRUPT;
     unit->hc.inthandler.is_Code = (VOID_FUNC)PCIXHCI_IntCode;
     unit->hc.inthandler.is_Data = unit;
-
     HIDD_PCIDevice_AddInterrupt(unit->hc.pcidevice, &unit->hc.inthandler);
 
     return TRUE;
@@ -197,6 +217,9 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
         mybug_unit(-1, ("     port %d at %p %s\n", port->number, port, port->name));
     }
     mybug(-1,("\n"));
+
+    /* Enable host controller to issue interrupts */
+    opreg_writel(XHCI_USBCMD, (opreg_readl(XHCI_USBCMD) | XHCF_CMD_INTE));
 
     return TRUE;
 }
