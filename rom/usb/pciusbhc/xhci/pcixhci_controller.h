@@ -55,10 +55,12 @@
 
 /* XHCI_HCSPARAMS1 defines */
 #define XHCB_MaxSlots   0
+#define XHCB_PPC        3
 #define XHCB_MaxIntrs   8
 #define XHCB_MaxPorts   24
 
 #define XHCM_MaxSlots (((1UL<<8)-1)<<XHCB_MaxSlots)
+#define XHCM_PPC      (((1UL<<8)-1)<<XHCB_PPC)
 #define XHCM_MaxIntrs (((1UL<<11)-1)<<XHCB_MaxIntrs)
 #define XHCM_MaxPorts (((1UL<<8)-1)<<XHCB_MaxPorts)
 
