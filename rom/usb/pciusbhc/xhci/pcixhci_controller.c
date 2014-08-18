@@ -253,8 +253,11 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
     mybug_unit(-1, ("Controller advertises port count to be %d\n", portcount));
 
     while((cap_protocol = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_PROTOCOL, cap_protocol))) {
-        temp = READMEM32(cap_protocol);
+        temp = READREG32(cap_protocol, XHCI_SPFD);
         mybug_unit(-1, ("Version %ld.%ld\n", XHCV_SPFD_RMAJOR(temp), XHCV_SPFD_RMINOR(temp) ));
+
+        temp = READREG32(cap_protocol, XHCI_SPPORT);
+        mybug_unit(-1, ("Offset %d Count %d\n", XHCV_SPPORT_CPO(temp), XHCV_SPPORT_CPCNT(temp) ));
     }
 
     do {
