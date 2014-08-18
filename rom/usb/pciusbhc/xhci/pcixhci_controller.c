@@ -56,12 +56,12 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     /* Init the port list but do not fill it */
     NEWLIST(&unit->roothub.port_list);
 
+    snprintf(unit->name, 255, "PCIXHCI[%02x:%02x.%01x]", (UBYTE)unit->hc.bus, (UBYTE)unit->hc.dev, (UBYTE)unit->hc.sub);
+    unit->node.ln_Name = (STRPTR)&unit->name;
+
     if(!PCIXHCI_CreateTimer(unit)) {
         return FALSE;
     }
-
-    snprintf(unit->name, 255, "PCIXHCI[%02x:%02x.%01x]", (UBYTE)unit->hc.bus, (UBYTE)unit->hc.dev, (UBYTE)unit->hc.sub);
-    unit->node.ln_Name = (STRPTR)&unit->name;
 
     /* Store opregbase */
     unit->hc.opregbase = (APTR) ((ULONG) (unit->hc.capregbase) + capreg_readb(XHCI_CAPLENGTH));
@@ -172,6 +172,14 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
         return FALSE;
     }
 
+    struct PCIXHCIPort *port = NULL;
+
+    mybug_unit(-1, ("Unit %d at %p %s\n", unit->number, unit, unit->name));
+    ForeachNode(&unit->roothub.port_list, port) {
+        mybug_unit(-1, ("     port %d at %p %s\n", port->number, port, port->name));
+    }
+    mybug(-1,("\n"));
+
     return TRUE;
 }
 
@@ -240,7 +248,7 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
     struct PCIXHCIPort *port = NULL;
 
     IPTR cap_protocol = (IPTR) NULL;
-    ULONG portnum = 0, portcount = 0, temp;
+    ULONG portnum = 0, portcount = 0, temp, major, minor, po, pc;
 
     /* (Re)build the port list of our unit */
     ForeachNode(&unit->roothub.port_list, port) {
@@ -251,14 +259,6 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
     portcount = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
     mybug_unit(-1, ("Controller advertises port count to be %d\n", portcount));
-
-    while((cap_protocol = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_PROTOCOL, cap_protocol))) {
-        temp = READREG32(cap_protocol, XHCI_SPFD);
-        mybug_unit(-1, ("Version %ld.%ld\n", XHCV_SPFD_RMAJOR(temp), XHCV_SPFD_RMINOR(temp) ));
-
-        temp = READREG32(cap_protocol, XHCI_SPPORT);
-        mybug_unit(-1, ("Offset %d Count %d\n", XHCV_SPPORT_CPO(temp), XHCV_SPPORT_CPCNT(temp) ));
-    }
 
     do {
         port = AllocVec(sizeof(struct PCIXHCIPort), MEMF_ANY|MEMF_CLEAR);
@@ -272,14 +272,44 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
             return FALSE;
         } else {
             port->node.ln_Type = NT_USER;
-            snprintf(port->name, 255, "%s port %d", unit->node.ln_Name, ++portnum);
-            port->node.ln_Name = (STRPTR)&port->name;
-            port->number = portnum;
-            AddTail(&unit->roothub.port_list,(struct Node *)port);
+            port->number = ++portnum;
+            AddTail(&unit->roothub.port_list, (struct Node *)port);
 
-            mybug_unit(-1, ("Created new port %d named %s at %p\n", port->number, port->name, port));
+            mybug_unit(-1, ("Created new port %d at %p\n", port->number, port));
         }
     } while(--portcount);
+
+
+    /*
+        We may get more than one capability protocol header or just one (Which is case OnMyHardware(TM))
+    */
+    while((cap_protocol = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_PROTOCOL, cap_protocol))) {
+        temp = READREG32(cap_protocol, XHCI_SPFD);
+        major = XHCV_SPFD_RMAJOR(temp);
+        minor = XHCV_SPFD_RMINOR(temp);
+
+        temp = READREG32(cap_protocol, XHCI_SPPORT);
+        po = XHCV_SPPORT_CPO(temp);
+        pc = XHCV_SPPORT_CPCNT(temp);
+
+        mybug_unit(-1, ("Version %ld.%ld port offset %d port count %d\n", major, minor, po, pc));
+
+        /* Iterate through port list and place the name for one that fits inside the offset and count */
+        ForeachNode(&unit->roothub.port_list, port) {
+            if( (port->number>=po) && (port->number<(po+pc)) ){
+                snprintf(port->name, 255, "%s USB %d.%d port %d", unit->node.ln_Name, major, minor, port->number);
+                port->node.ln_Name = (STRPTR)&port->name;
+            }
+        }
+    }
+
+    /* Check if any port is left unnamed */
+    ForeachNode(&unit->roothub.port_list, port) {
+        if(port->node.ln_Name == NULL){
+            snprintf(port->name, 255, "%s USB 2.0 port %d (guessed)", unit->node.ln_Name, port->number);
+            port->node.ln_Name = (STRPTR)&port->name;
+        }
+    }
 
     return TRUE;
 }
