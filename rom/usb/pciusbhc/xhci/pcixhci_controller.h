@@ -48,19 +48,17 @@
 #define XHCI_HCSPARAMS1 0x04
 #define XHCI_HCSPARAMS2 0x08
 #define XHCI_HCSPARAMS3 0x0C
-#define XHCI_HCCPARAMS  0x10
+#define XHCI_HCCPARAMS1 0x10
 #define XHCI_DBOFF      0x14
 #define XHCI_RTSOFF     0x18
 
 
 /* XHCI_HCSPARAMS1 defines */
 #define XHCB_MaxSlots   0
-#define XHCB_PPC        3
 #define XHCB_MaxIntrs   8
 #define XHCB_MaxPorts   24
 
 #define XHCM_MaxSlots (((1UL<<8)-1)<<XHCB_MaxSlots)
-#define XHCM_PPC      (((1UL<<8)-1)<<XHCB_PPC)
 #define XHCM_MaxIntrs (((1UL<<11)-1)<<XHCB_MaxIntrs)
 #define XHCM_MaxPorts (((1UL<<8)-1)<<XHCB_MaxPorts)
 
