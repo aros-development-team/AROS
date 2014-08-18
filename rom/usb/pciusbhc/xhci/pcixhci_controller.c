@@ -42,6 +42,14 @@
 
 #define PCIXHCIBase unit->pcixhcibase
 
+static AROS_INTH1(PCIXHCI_IntCode, struct PCIXHCIUnit *, unit) {
+    AROS_INTFUNC_INIT
+    mybug_unit(-1, ("Excuse me...\n"));
+
+    return 0;
+    AROS_INTFUNC_EXIT
+}
+
 /*
     We get called only once (per controller) when the driver inits
     We own the controller until our driver expunges so we assume that nobody messes with our stuff...
@@ -121,6 +129,16 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     }
 
     //unit->roothub.devdesc.bcdDevice = capreg_readw(XHCI_HCIVERSION);
+
+    /* Add interrupt handler */
+    snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
+    unit->hc.inthandler.is_Node.ln_Name = (STRPTR)&unit->hc.intname;
+    unit->hc.inthandler.is_Node.ln_Pri = 5;
+    unit->hc.inthandler.is_Node.ln_Type = NT_INTERRUPT;
+    unit->hc.inthandler.is_Code = (VOID_FUNC)PCIXHCI_IntCode;
+    unit->hc.inthandler.is_Data = unit;
+
+    HIDD_PCIDevice_AddInterrupt(unit->hc.pcidevice, &unit->hc.inthandler);
 
     return TRUE;
 }
@@ -313,9 +331,6 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
     return TRUE;
 }
-
-
-
 
 
 
