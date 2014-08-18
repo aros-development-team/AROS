@@ -88,6 +88,9 @@ struct PCIXHCIHostController {
     IPTR dev;
     IPTR sub;
     IPTR intline;
+
+    char                         intname[256];
+    struct Interrupt             inthandler;
 };                                
 
 struct PCIXHCIUnit {
