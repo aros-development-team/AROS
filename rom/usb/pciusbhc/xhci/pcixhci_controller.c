@@ -123,7 +123,7 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     if(cap_legacy) {
         temp = READMEM32(cap_legacy);
         if( (temp & XHCF_BIOSOWNED) ){
-            mybug_unit(-1, ("controller owned by BIOS\n"));
+            mybug_unit(-1, ("Controller owned by BIOS\n"));
 
             /* Spec says "no more than a second", we give it a little more */
             timeout = 250;
@@ -145,11 +145,20 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
             }
 
         } else {
-            mybug_unit(-1, ("controller was not owned by BIOS\n"));
+            mybug_unit(-1, ("Controller was not owned by BIOS\n"));
         }
     }
 
     //unit->roothub.devdesc.bcdDevice = capreg_readw(XHCI_HCIVERSION);
+
+    /*
+        Check for port power control
+    */
+    if(capreg_readl(XHCI_HCCPARAMS1) & XHCF_PPC) {
+        mybug_unit(-1, ("Ports have power switches\n"));
+    } else {
+        mybug_unit(-1, ("Ports do not have power switches\n"));
+    }
 
     /* Add interrupt handler */
     snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
@@ -219,7 +228,7 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
     mybug(-1,("\n"));
 
     /* Enable host controller to issue interrupts */
-    opreg_writel(XHCI_USBCMD, (opreg_readl(XHCI_USBCMD) | XHCF_CMD_INTE));
+    opreg_writel(XHCI_USBCMD, (opreg_readl(XHCI_USBCMD) | XHCF_CMD_RS | XHCF_CMD_INTE));
 
     return TRUE;
 }
@@ -233,7 +242,7 @@ IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap) 
         mybug_unit(-1, ("continue search from %p\n", extcap));
         extcap = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32(extcap));
     } else {  
-        extcap = (IPTR) unit->hc.capregbase + XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
+        extcap = (IPTR) unit->hc.capregbase + XHCV_xECP(capreg_readl(XHCI_HCCPARAMS1));
         mybug_unit(-1, ("searching from beginning %p\n", extcap));
     }
 
