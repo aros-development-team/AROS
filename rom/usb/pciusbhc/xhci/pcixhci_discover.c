@@ -61,7 +61,7 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev,          &unit->hc.dev);
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub,          &unit->hc.sub);
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&unit->hc.pcidriver);
-                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,  (APTR)&unit->hc.capregbase);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,  (APTR)&unit->hc.capability_base);
 
                 unit->hc.pcidevice = pciDevice;
                 unit->pcixhcibase = LIBBASE;
@@ -143,7 +143,7 @@ void PCIXHCI_Delay(struct PCIXHCIUnit *unit, ULONG msec) {
 }
 
 BOOL PCIXHCI_CreateTimer(struct PCIXHCIUnit *unit) {
-    mybug_unit(-1, ("Entering function\n"));
+    mybug_unit(0, ("Entering function\n"));
 
     struct MsgPort *mp = NULL;
 
@@ -165,7 +165,7 @@ BOOL PCIXHCI_CreateTimer(struct PCIXHCIUnit *unit) {
 }
 
 void PCIXHCI_DeleteTimer(struct PCIXHCIUnit *unit) {
-    mybug_unit(-1, ("Entering function\n"));
+    mybug_unit(0, ("Entering function\n"));
 
     if (unit->tr) {
         unit->tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = AllocSignal(-1);

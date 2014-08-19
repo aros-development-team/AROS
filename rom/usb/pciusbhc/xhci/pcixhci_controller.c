@@ -45,25 +45,51 @@
 static AROS_INTH1(PCIXHCI_IntCode, struct PCIXHCIUnit *, unit) {
     AROS_INTFUNC_INIT
 
-    struct PCIXHCIPort *port = NULL;
+    ULONG usbsts, portsc;
 
-    ULONG usbsts;
+    usbsts = operational_readl(XHCI_USBSTS);
 
-    if((opreg_readl(XHCI_USBCMD) & XHCF_CMD_INTE)) {
+    if(usbsts & XHCF_STS_PCD) {
+        operational_writel(XHCI_USBSTS, XHCF_STS_PCD);
+        mybug_unit(-1, ("cleared usbsts = %08x\n", operational_readl(XHCI_USBSTS)));
+        struct PCIXHCIPort *port = NULL;
 
-        usbsts = opreg_readl(XHCI_USBSTS);
-        if((usbsts & XHCF_STS_PCD)) {
-            mybug_unit(-1, ("Excuse me... Port status change has occured\n"));
-            opreg_writel(XHCI_USBSTS, XHCF_STS_PCD);
+        ForeachNode(&unit->roothub.port_list, port) {
+            portsc = operational_readl(XHCI_PORTSC(port->number));
 
-            if(unit->state == UHSF_OPERATIONAL) {
-                mybug_unit(-1,("Interrupt occured while controller is operational\n"));
-            } else {
-                mybug_unit(-1,("Interrupt occured while controller is not operational\n"));
+            if(portsc & XHCF_PS_CSC) {
+                operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_CSC));
+                mybug_unit(-1,("port %d XHCF_PS_CSC\n", port->number));
             }
 
-            ForeachNode(&unit->roothub.port_list, port) {
-                mybug_unit(-1,("port %d XHCI_PORTSC(%08x)\n", port->number, opreg_readl(XHCI_PORTSC(port->number))));
+            if(portsc & XHCF_PS_PEC) {
+                operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_PEC));
+                mybug_unit(-1,("port %d XHCF_PS_PEC\n", port->number));
+            }
+
+            if(portsc & XHCF_PS_OCC) {
+                operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_OCC));
+                mybug_unit(-1,("port %d XHCF_PS_OCC\n", port->number));
+            }
+
+            if(portsc & XHCF_PS_WRC) {
+                operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_WRC));
+                mybug_unit(-1,("port %d XHCF_PS_WRC\n", port->number));
+            }
+
+            if(portsc & XHCF_PS_PRC) {
+                operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_PRC));
+                mybug_unit(-1,("port %d XHCF_PS_PRC\n", port->number));
+            }
+
+            if(portsc & XHCF_PS_PLC) {
+                operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_PLC));
+                mybug_unit(-1,("port %d XHCF_PS_PLC\n", port->number));
+            }
+
+            if(portsc & XHCF_PS_CEC) {
+                operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_CEC));
+                mybug_unit(-1,("port %d XHCF_PS_CEC\n", port->number));
             }
         }
     }
@@ -92,18 +118,41 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         return FALSE;
     }
 
-    /* Store opregbase */
-    unit->hc.opregbase = (APTR) ((ULONG) (unit->hc.capregbase) + capreg_readb(XHCI_CAPLENGTH));
+    /* capability base(=base0) has been stored in the enumerator */
+
+    /* Store operational base */
+    unit->hc.operational_base = (APTR) ((IPTR) (unit->hc.capability_base) + capability_readb(XHCI_CAPLENGTH));
+
+    /* Store doorbell base */
+    unit->hc.doorbell_base = (APTR) ((IPTR) (unit->hc.capability_base) + XHCV_DBOFF(capability_readl(XHCI_DBOFF)));
+
+    /* Store runtime base */
+    unit->hc.runtime_base = (APTR) ((IPTR) (unit->hc.capability_base) + XHCV_RTSOFF(capability_readl(XHCI_RTSOFF)));
 
     mybug_unit(-1, ("unit node name %s\n", unit->node.ln_Name));
-    mybug_unit(-1, ("pcidevice  = %p\n",   unit->hc.pcidevice));
-    mybug_unit(-1, ("pcidriver  = %p\n",   unit->hc.pcidriver));
-    mybug_unit(-1, ("bus        = %x\n",   unit->hc.bus));
-    mybug_unit(-1, ("dev        = %x\n",   unit->hc.dev));
-    mybug_unit(-1, ("sub        = %x\n",   unit->hc.sub));
-    mybug_unit(-1, ("intline    = %d\n",   unit->hc.intline));
-    mybug_unit(-1, ("capregbase = %p\n",   unit->hc.capregbase));
-    mybug_unit(-1, ("opregbase  = %p\n",   unit->hc.opregbase));
+    mybug_unit(-1, ("pcidevice    = %p\n", unit->hc.pcidevice));
+    mybug_unit(-1, ("pcidriver    = %p\n", unit->hc.pcidriver));
+    mybug_unit(-1, ("bus          = %x\n", unit->hc.bus));
+    mybug_unit(-1, ("dev          = %x\n", unit->hc.dev));
+    mybug_unit(-1, ("sub          = %x\n", unit->hc.sub));
+    mybug_unit(-1, ("intline      = %d\n", unit->hc.intline));
+
+    mybug_unit(-1, ("capability  = %p\n", unit->hc.capability_base));
+    mybug_unit(-1, ("operational = %p\n", unit->hc.operational_base));
+    mybug_unit(-1, ("doorbell    = %p\n", unit->hc.doorbell_base));
+    mybug_unit(-1, ("runtime     = %p\n", unit->hc.runtime_base));
+
+/*
+    PCIXHCI[03:00.0] PCIXHCI_HCInit: capability  = f3dfe000
+    PCIXHCI[03:00.0] PCIXHCI_HCInit: operational = f3dfe020
+    PCIXHCI[03:00.0] PCIXHCI_HCInit: doorbell    = f3dfe800 up to 256 32 bit doorbell registers (4*256 = 0x400)
+    PCIXHCI[03:00.0] PCIXHCI_HCInit: runtime     = f3dfe600
+
+    PCIXHCI[04:00.0] PCIXHCI_HCInit: capability  = f3efe000
+    PCIXHCI[04:00.0] PCIXHCI_HCInit: operational = f3efe020
+    PCIXHCI[04:00.0] PCIXHCI_HCInit: doorbell    = f3efe800 up to 256 32 bit doorbell registers (4*256 = 0x400)
+    PCIXHCI[04:00.0] PCIXHCI_HCInit: runtime     = f3efe600
+*/
 
     /* We use pointers and stuff... */
     struct TagItem pciActivateMemAndBusmaster[] = {
@@ -116,22 +165,23 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     OOP_SetAttrs(unit->hc.pcidevice, (struct TagItem *)pciActivateMemAndBusmaster);
 
     /* Get the host controller from BIOS if possible */
-    IPTR cap_legacy;
-    ULONG temp, timeout;
+    IPTR cap_legacy = 0;
+    ULONG usblegsup, timeout;
 
-    cap_legacy = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, 0);
+    cap_legacy = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, (IPTR) NULL);
     if(cap_legacy) {
-        temp = READMEM32(cap_legacy);
-        if( (temp & XHCF_BIOSOWNED) ){
+        usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
+        mybug_unit(-1, ("usblegsup = %08x\n", usblegsup));
+        if( (usblegsup & XHCF_BIOSOWNED) ){
             mybug_unit(-1, ("Controller owned by BIOS\n"));
 
             /* Spec says "no more than a second", we give it a little more */
             timeout = 250;
 
-            WRITEMEM32(cap_legacy, (temp | XHCF_OSOWNED) );
+            WRITEREG32(cap_legacy, XHCI_USBLEGSUP, (usblegsup | XHCF_OSOWNED) );
             do {
-                temp = READMEM32(cap_legacy);
-                if(!(temp & XHCF_BIOSOWNED)) {
+                usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
+                if(!(usblegsup & XHCF_BIOSOWNED)) {
                     mybug_unit(-1, ("BIOS gave up on XHCI. Pwned!\n"));
                     break;
                 }
@@ -141,7 +191,7 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 
             if(!timeout) {
                 mybug_unit(-1, ("BIOS didn't release XHCI. Forcing and praying...\n"));
-                WRITEMEM32(cap_legacy, (temp & ~XHCF_BIOSOWNED) );
+                WRITEREG32(cap_legacy, XHCI_USBLEGSUP, (usblegsup & ~XHCF_BIOSOWNED) );
             }
 
         } else {
@@ -149,25 +199,19 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         }
     }
 
-    //unit->roothub.devdesc.bcdDevice = capreg_readw(XHCI_HCIVERSION);
-
-    /*
-        Check for port power control
-    */
-    if(capreg_readl(XHCI_HCCPARAMS1) & XHCF_PPC) {
-        mybug_unit(-1, ("Ports have power switches\n"));
-    } else {
-        mybug_unit(-1, ("Ports do not have power switches\n"));
-    }
+    mybug(-1,("XHCV_MaxIntrs = %d\n",XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1))));
 
     /* Add interrupt handler */
     snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
     unit->hc.inthandler.is_Node.ln_Name = (STRPTR)&unit->hc.intname;
-    unit->hc.inthandler.is_Node.ln_Pri = 5;
+    unit->hc.inthandler.is_Node.ln_Pri = 15;
     unit->hc.inthandler.is_Node.ln_Type = NT_INTERRUPT;
     unit->hc.inthandler.is_Code = (VOID_FUNC)PCIXHCI_IntCode;
     unit->hc.inthandler.is_Data = unit;
-    HIDD_PCIDevice_AddInterrupt(unit->hc.pcidevice, &unit->hc.inthandler);
+    if(!HIDD_PCIDevice_AddInterrupt(unit->hc.pcidevice, &unit->hc.inthandler)) {
+        mybug_unit(-1, ("Failed setting up interrupt handler!\n"));
+        return FALSE;
+    }
 
     return TRUE;
 }
@@ -190,13 +234,13 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
     unit->state = UHSF_RESET;
 
     /* Reset controller by setting HCRST-bit */
-    opreg_writel(XHCI_USBCMD, (opreg_readl(XHCI_USBCMD) | XHCF_CMD_HCRST));
+    operational_writel(XHCI_USBCMD, (operational_readl(XHCI_USBCMD) | XHCF_CMD_HCRST));
 
     /*
         Controller clears HCRST bit when reset is done, wait for it and the CNR-bit to be cleared
     */
     timeout = 250;  //FIXME: arbitrary value of 2500ms
-    while ((opreg_readl(XHCI_USBCMD) & XHCF_CMD_HCRST) && (timeout-- != 0)) {
+    while ((operational_readl(XHCI_USBCMD) & XHCF_CMD_HCRST) && (timeout-- != 0)) {
         if(!timeout) {
             mybug_unit(-1, ("Time is up for XHCF_CMD_HCRST bit!\n"));
             return FALSE;
@@ -206,7 +250,7 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
     }
 
     timeout = 250;  //FIXME: arbitrary value of 2500ms
-    while ((opreg_readl(XHCI_USBSTS) & XHCF_STS_CNR) && (timeout-- != 0)) {
+    while ((operational_readl(XHCI_USBSTS) & XHCF_STS_CNR) && (timeout-- != 0)) {
         if(!timeout) {
             mybug_unit(-1, ("Time is up for XHCF_STS_CNR bit!\n"));
             return FALSE;
@@ -228,37 +272,12 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
     mybug(-1,("\n"));
 
     /* Enable host controller to issue interrupts */
-    opreg_writel(XHCI_USBCMD, (opreg_readl(XHCI_USBCMD) | XHCF_CMD_RS | XHCF_CMD_INTE));
-
+    mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
+    mybug_unit(-1, ("usbsts = %08x\n", operational_readl(XHCI_USBSTS)));
+    operational_writel(XHCI_USBCMD, (operational_readl(XHCI_USBCMD) | (XHCF_CMD_RS | XHCF_CMD_INTE | XHCF_CMD_HSEE) ));
+    mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
+    mybug_unit(-1, ("usbsts = %08x\n", operational_readl(XHCI_USBSTS)));
     return TRUE;
-}
-
-IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap) {
-    IPTR extcapoff = (IPTR) NULL;
-
-    mybug_unit(-1,("searching for extended capability id(%ld)\n", id));
-
-    if(extcap) {
-        mybug_unit(-1, ("continue search from %p\n", extcap));
-        extcap = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32(extcap));
-    } else {  
-        extcap = (IPTR) unit->hc.capregbase + XHCV_xECP(capreg_readl(XHCI_HCCPARAMS1));
-        mybug_unit(-1, ("searching from beginning %p\n", extcap));
-    }
-
-    do {
-        extcap += extcapoff;
-        if((XHCV_EXT_CAPS_ID(READMEM32(extcap)) == id)) {
-            mybug_unit(-1, ("found matching extended capability id at %lx\n", extcap));
-            return (IPTR) extcap;
-        }
-        if(extcap)
-            mybug_unit(-1, ("skipping extended capability id(%ld)\n", XHCV_EXT_CAPS_ID(READMEM32(extcap))));
-        extcapoff = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32(extcap));
-    } while(extcapoff);
-
-    mybug_unit(-1, ("not found!\n"));
-    return (IPTR) NULL;
 }
 
 BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit) {
@@ -267,8 +286,8 @@ BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit) {
     ULONG timeout, temp;
 
     /* Halt the controller by clearing Run/Stop bit */
-    temp = opreg_readl(XHCI_USBCMD);
-    opreg_writel(XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
+    temp = operational_readl(XHCI_USBCMD);
+    operational_writel(XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
 
     /* Our unit advertises that it is in suspended state */
     unit->state = UHSF_SUSPENDED;
@@ -280,7 +299,7 @@ BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit) {
     */
     timeout = 250;  //FIXME: arbitrary value of 2500ms
     do {
-        temp = opreg_readl(XHCI_USBSTS);
+        temp = operational_readl(XHCI_USBSTS);
         if( (temp & XHCF_STS_HCH) ) {
             mybug_unit(-1, ("controller halted!\n"));
             return TRUE;
@@ -293,11 +312,49 @@ BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit) {
     return FALSE;
 }
 
+IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcapoff) {
+
+    IPTR extcap = (IPTR) NULL;
+
+    mybug_unit(-1,("searching for extended capability id(%ld)\n", id));
+
+    if(extcapoff) {
+        /* Last known good */
+        if(XHCV_EXT_CAPS_NEXT(READMEM32(extcapoff))) {
+            extcap = extcapoff + XHCV_EXT_CAPS_NEXT(READMEM32(extcapoff));
+        } else {
+            extcap = (IPTR) NULL;
+        }
+    } else {
+        extcap = XHCV_xECP(capability_readl(XHCI_HCCPARAMS1)) + (IPTR) unit->hc.capability_base;
+        mybug_unit(-1, ("searching from beginning %p\n", extcap));
+    }
+
+    /* Either the first (if exist) or the next from last known (if exist) else (IPTR) NULL */
+    while(extcap != (IPTR) NULL) {
+        if((XHCV_EXT_CAPS_ID(READMEM32(extcap)) == id)) {
+            mybug_unit(-1, ("found matching extended capability id at %lx\n", extcap));
+            break;
+        } else {
+            if(XHCV_EXT_CAPS_NEXT(READMEM32(extcap))) {
+                mybug_unit(-1, ("skipping extended capability id at %lx\n", extcap));
+                extcap += XHCV_EXT_CAPS_NEXT(READMEM32(extcap));
+            } else {
+                extcap = (IPTR) NULL;
+                break;
+            }
+        }
+    }
+
+    return (IPTR) extcap;
+}
+
 BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
     struct PCIXHCIPort *port = NULL;
 
     IPTR cap_protocol = (IPTR) NULL;
+
     ULONG portnum = 0, portcount = 0, temp, major, minor, po, pc;
 
     /* (Re)build the port list of our unit */
@@ -307,7 +364,7 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
         FreeVec(port);
     }
 
-    portcount = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
+    portcount = XHCV_MaxPorts(capability_readl(XHCI_HCSPARAMS1));
     mybug_unit(-1, ("Controller advertises port count to be %d\n", portcount));
 
     do {
@@ -364,6 +421,40 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
     return TRUE;
 }
 
+BOOL PCIXHCI_PortPower(struct PCIXHCIUnit *unit, ULONG portnum, BOOL poweron) {
+    /*
+        Check for port power control
+    */
+    if(capability_readl(XHCI_HCCPARAMS1) & XHCF_PPC) {
+        mybug_unit(-1, ("Port has power switch\n"));
+    } else {
+        mybug_unit(-1, ("Port does not have power switch\n"));
+    }
 
+    /* We have power on by default, skip this for now */
+/*
+    ULONG portsc;
+
+    portsc = operational_readl(XHCI_PORTSC(portnum));
+
+    mybug_unit(-1, ("portsc = %08x\n", portsc));
+    portsc = portsc & 0x7F00FF08;
+    mybug_unit(-1, ("portsc = %08x\n", portsc));
+
+    if(poweron) {
+        portsc = (portsc | XHCF_PS_PP);
+        mybug_unit(-1, ("Port powering up\n"));
+    } else {
+        mybug_unit(-1, ("Port powering down\n"));
+        portsc = (portsc & ~XHCF_PS_PP);
+    }
+
+    operational_writel(XHCI_PORTSC(portnum), portsc);
+
+    portsc = operational_readl(XHCI_PORTSC(portnum));
+    mybug_unit(-1, ("portsc = %08x\n", portsc));
+*/
+    return TRUE;
+}
 
 

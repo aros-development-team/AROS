@@ -599,15 +599,16 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                         switch(bRequest) {
                             case USR_CLEAR_FEATURE:
-                                mybug_unit(0, ("USR_CLEAR_FEATURE\n"));
+                                mybug_unit(-1, ("USR_CLEAR_FEATURE\n"));
 
                                 switch(wValue) {
                                     case UFS_PORT_POWER:
-                                        mybug_unit(0, ("UFS_PORT_POWER\n"));
+                                        mybug_unit(-1, ("UFS_PORT_POWER\n"));
 
                                         ForeachNode(&unit->roothub.port_list, port) {
                                             if(port->number == wIndex) {
                                                 mybug_unit(0, ("Found port %d named %s\n", port->number, port->name));
+                                                PCIXHCI_PortPower(unit, port->number, FALSE);
                                                 mybug_unit(0, ("Done\n\n"));
                                                 return UHIOERR_NO_ERROR;
                                             }
@@ -632,15 +633,16 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 break;
 
                             case USR_SET_FEATURE:
-                                mybug_unit(0, ("USR_SET_FEATURE\n"));
+                                mybug_unit(-1, ("USR_SET_FEATURE\n"));
 
                                 switch(wValue) {
                                     case UFS_PORT_POWER:
-                                        mybug_unit(0, ("UFS_PORT_POWER\n"));
+                                        mybug_unit(-1, ("UFS_PORT_POWER\n"));
 
                                         ForeachNode(&unit->roothub.port_list, port) {
                                             if(port->number == wIndex) {
                                                 mybug_unit(0, ("Found port %d named %s\n", port->number, port->name));
+                                                PCIXHCI_PortPower(unit, port->number, TRUE);
                                                 mybug_unit(0, ("Done\n\n"));
                                                 return UHIOERR_NO_ERROR;
                                             }

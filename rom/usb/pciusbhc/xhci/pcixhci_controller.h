@@ -15,7 +15,7 @@
  */
 
 /*
-    XHCI_xxx's are offsets to something
+    XHCI_xxx's are register indexes
     XHCB_xxx's are bitnumbers
     XHCF_xxx's are flags
     XHCM_xxx's are bitmasks
@@ -25,24 +25,33 @@
 #define READMEM32(rb) AROS_LE2LONG(*((volatile ULONG *) (rb)))
 #define	WRITEMEM32(adr, value)	   *((volatile ULONG *) (adr)) = AROS_LONG2LE(value)
 
-#define WRITEREG16(rb, offset, value)      *((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_WORD2LE(value)
-#define WRITEREG32(rb, offset, value)      *((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_LONG2LE(value)
-#define WRITEREG64(rb, offset, value)      *((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_QUAD2LE(value)
+#define WRITEREG16(rb, offset, value) *((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_WORD2LE(value)
+#define WRITEREG32(rb, offset, value) *((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_LONG2LE(value)
+#define WRITEREG64(rb, offset, value) *((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_QUAD2LE(value)
 
+#define  READREG8(rb, offset)             (*((volatile UBYTE *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 #define READREG16(rb, offset) AROS_LE2WORD(*((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 #define READREG32(rb, offset) AROS_LE2LONG(*((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 #define READREG64(rb, offset) AROS_LE2QUAD(*((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 
-#define opreg_readl(opreg) READREG32(unit->hc.opregbase, opreg)
-#define opreg_writel(opreg, value) WRITEREG32(unit->hc.opregbase, opreg, value)
-#define opreg_writeq(opreg, value) WRITEREG64(unit->hc.opregbase, opreg, value)
+#define operational_readl(reg)          READREG32(unit->hc.operational_base, reg)
+#define operational_writel(reg, value) WRITEREG32(unit->hc.operational_base, reg, value)
+#define operational_writeq(reg, value) WRITEREG64(unit->hc.operational_base, reg, value)
 
-#define capreg_readl(capreg) READREG32(unit->hc.capregbase, capreg)
-#define capreg_readw(capreg) READREG16(unit->hc.capregbase, capreg)
-#define capreg_readb(capreg) (*((volatile UBYTE *) (((UBYTE *) (unit->hc.capregbase)) + ((ULONG) (capreg))))) 
+#define capability_readl(reg) READREG32(unit->hc.capability_base, reg)
+#define capability_readw(reg) READREG16(unit->hc.capability_base, reg)
+#define capability_readb(reg)  READREG8(unit->hc.capability_base, reg) 
 
+#define doorbell_readl(reg) READREG32(unit->hc.doorbell_base, reg)
 
-/* XHCI capability register defines */
+#define runtime_readl(reg) READREG32(unit->hc.runtime_base, reg)
+
+/*
+    XHCI capability register defines
+
+    All Capability Registers are Read-Only (RO).
+    The offsets for these registers are all relative to the beginning of the host controller’s MMIO address space.
+*/
 #define XHCI_CAPLENGTH  0x00
 #define XHCI_HCIVERSION 0x02 
 #define XHCI_HCSPARAMS1 0x04
@@ -50,7 +59,9 @@
 #define XHCI_HCSPARAMS3 0x0C
 #define XHCI_HCCPARAMS1 0x10
 #define XHCI_DBOFF      0x14
+#define XHCV_DBOFF(p)   (p&~0x3)
 #define XHCI_RTSOFF     0x18
+#define XHCV_RTSOFF(p)  (p&~0xf)
 
 
 /* XHCI_HCSPARAMS1 defines */
@@ -89,7 +100,7 @@
 #define	XHCM_U2DEV_LAT  (((1UL<<16)-1)<<XHCB_U2DEV_LAT)
 
 
-/* XHCI_HCCPARAMS defines */
+/* XHCI_HCCPARAMS1 defines */
 #define XHCB_AC64       0
 #define XHCB_BNC        1
 #define XHCB_CSZ        2
@@ -112,6 +123,18 @@
 #define XHCM_MaxPSASize (((1UL<<4)-1)<<XHCB_MaxPSASize)
 #define XHCM_xECP       (((1UL<<16)-1)<<XHCB_xECP)
 #define XHCV_xECP(p)    ((((p)&XHCM_xECP)>>XHCB_xECP)<<2)
+
+
+/*
+    XHCI runtime register defines
+*/
+#define XHCI_MFINDEX    0    
+#define XHCI_IMAN       0x20+(32 * n)+0x0
+#define XHCI_IMOD       0x20+(32 * n)+0x4
+#define XHCI_ERSTSZ     0x20+(32 * n)+0x8
+#define XHCI_ERSTBA     0x20+(32 * n)+0x10
+#define XHCI_ERDP       0x20+(32 * n)+0x18 
+
 
 
 /* Extended capability IDs */

@@ -33,17 +33,10 @@
 
 #include LC_LIBDEFS_FILE
 
-/* Number of host controllers */
-#define PCIXHCI_NUMCONTROLLERS 1
-
-/* Number of ports per host controller (USB2.0/USB3.0) */
-//#define PCIXHCI_NUMPORTS20 2
-#define PCIXHCI_NUMPORTS30 4
-
 #define RC_OK         0
 #define RC_DONTREPLY -1
 
-#define MYBUG_LEVEL 0
+#define MYBUG_LEVEL 1
 #define mybug(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
 #define mybug_unit(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug("%s %s: ", unit->name, __FUNCTION__); bug x; } } while (0); } )
 
@@ -81,8 +74,10 @@ struct PCIXHCIHostController {
     OOP_Object                  *pcidevice;
     OOP_Object                  *pcidriver;
 
-    volatile APTR                capregbase;
-    volatile APTR                opregbase;
+    volatile APTR                capability_base;
+    volatile APTR                operational_base;
+    volatile APTR                doorbell_base;
+    volatile APTR                runtime_base;
 
     IPTR bus;
     IPTR dev;
@@ -128,10 +123,14 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit);
-IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcap);
+BOOL PCIXHCI_PortPower(struct PCIXHCIUnit *unit, ULONG portnum, BOOL poweron);
+IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcapoff);
 void PCIXHCI_Delay(struct PCIXHCIUnit *unit, ULONG msec);
 BOOL PCIXHCI_CreateTimer(struct PCIXHCIUnit *unit);
 void PCIXHCI_DeleteTimer(struct PCIXHCIUnit *unit);
+
+VOID PCIXHCI_AllocaterInit(struct PCIXHCIUnit *unit);
+struct PCIXHCIAlloc *PCIXHCI_AllocateMemory(struct PCIXHCIUnit *unit, IPTR bytesize, ULONG alignmentmin, IPTR boundary, STRPTR allocname);
 
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
 WORD cmdReset(struct IOUsbHWReq *ioreq);
