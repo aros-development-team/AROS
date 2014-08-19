@@ -14,6 +14,7 @@ EXEDIR := $(AROS_CONTRIB)/Development/Build
 tools-ilbmtoicon-docs : $(EXEDIR)/Docs/ilbmtoicon.readme
 
 $(EXEDIR)/Docs/ilbmtoicon.readme : $(SRCDIR)/$(CURDIR)/README
+	$(MKDIR) $(dir $@)
 	$(CP) $< $@
 
 %common
