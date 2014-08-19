@@ -166,14 +166,14 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 
     /* Get the host controller from BIOS if possible */
     IPTR cap_legacy;
-    ULONG usblegsup, timeout;
+    ULONG usblegsup, usblegctlsts, timeout;
 
     cap_legacy = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, (IPTR) NULL);
     if(cap_legacy) {
         usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
         mybug_unit(-1, ("usblegsup1 = %08x\n", usblegsup));
 
-        /* Check if not OS owned */
+        /* Check if not OS owned or BIOS owned*/
         if( ((!(usblegsup & XHCF_OSOWNED)) || (usblegsup & XHCF_BIOSOWNED)) ){
             WRITEMEM32(cap_legacy, (usblegsup|XHCF_OSOWNED));
 
@@ -190,18 +190,33 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
                     break;
                 }
 
-                /* Wait 10ms and check again */
-                PCIXHCI_Delay(unit, 10);
-
-                if(--timeout) {
+                if(timeout--) {
                     mybug_unit(-1, ("BIOS didn't release XHCI. Forcing and praying...\n"));
                     WRITEMEM32(cap_legacy, ((usblegsup|XHCF_OSOWNED)&~XHCF_BIOSOWNED));
                     break;
                 }
+
+                /* Wait 10ms and check again */
+                PCIXHCI_Delay(unit, 10);
             }
         } else {
             mybug_unit(-1, ("Controller is already owned by the OS\n"));
         }
+
+        usblegctlsts = READREG32(cap_legacy, XHCI_USBLEGCTLSTS);
+        mybug_unit(-1, ("usblegctlsts1 = %08x\n", usblegctlsts));
+        /* Disable all legacy SMI's */
+        usblegctlsts &= ~(XHCF_SMI_USBE|XHCF_SMI_HSEE|XHCF_SMI_OSOE|XHCF_SMI_PCICE|XHCF_SMI_BARE);
+        WRITEREG32(cap_legacy, XHCI_USBLEGCTLSTS, usblegctlsts);
+        usblegctlsts = READREG32(cap_legacy, XHCI_USBLEGCTLSTS);
+        mybug_unit(-1, ("usblegctlsts2 = %08x\n", usblegctlsts));
+/*
+    PCIXHCI[03:00.0] PCIXHCI_HCInit: usblegctlsts1 = e0000001 had 'USB SMI Enable' bit set (PCIXHCI[03:00.0] just happens to be the rev 3 board)
+    PCIXHCI[03:00.0] PCIXHCI_HCInit: usblegctlsts2 = 00000000
+
+    PCIXHCI[04:00.0] PCIXHCI_HCInit: usblegctlsts1 = e0000000 rev 4 board
+    PCIXHCI[04:00.0] PCIXHCI_HCInit: usblegctlsts2 = 00000000
+*/
     }
 
     mybug(-1,("XHCV_MaxIntrs = %d\n",XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1))));
