@@ -165,37 +165,42 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     OOP_SetAttrs(unit->hc.pcidevice, (struct TagItem *)pciActivateMemAndBusmaster);
 
     /* Get the host controller from BIOS if possible */
-    IPTR cap_legacy = 0;
+    IPTR cap_legacy;
     ULONG usblegsup, timeout;
 
     cap_legacy = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, (IPTR) NULL);
     if(cap_legacy) {
         usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
-        mybug_unit(-1, ("usblegsup = %08x\n", usblegsup));
-        if( (usblegsup & XHCF_BIOSOWNED) ){
-            mybug_unit(-1, ("Controller owned by BIOS\n"));
+        mybug_unit(-1, ("usblegsup1 = %08x\n", usblegsup));
+
+        /* Check if not OS owned */
+        if( ((!(usblegsup & XHCF_OSOWNED)) || (usblegsup & XHCF_BIOSOWNED)) ){
+            WRITEMEM32(cap_legacy, (usblegsup|XHCF_OSOWNED));
+
+            usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
+            mybug_unit(-1, ("usblegsup2 = %08x\n", usblegsup));
 
             /* Spec says "no more than a second", we give it a little more */
             timeout = 250;
 
-            WRITEREG32(cap_legacy, XHCI_USBLEGSUP, (usblegsup | XHCF_OSOWNED) );
-            do {
+            while(1) {
                 usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
-                if(!(usblegsup & XHCF_BIOSOWNED)) {
-                    mybug_unit(-1, ("BIOS gave up on XHCI. Pwned!\n"));
+                mybug_unit(-1, ("usblegsup3 = %08x\n", usblegsup));
+                if( (usblegsup & XHCF_OSOWNED) && (!(usblegsup & XHCF_BIOSOWNED)) ){
                     break;
                 }
+
                 /* Wait 10ms and check again */
                 PCIXHCI_Delay(unit, 10);
-            } while(--timeout);
 
-            if(!timeout) {
-                mybug_unit(-1, ("BIOS didn't release XHCI. Forcing and praying...\n"));
-                WRITEREG32(cap_legacy, XHCI_USBLEGSUP, (usblegsup & ~XHCF_BIOSOWNED) );
+                if(--timeout) {
+                    mybug_unit(-1, ("BIOS didn't release XHCI. Forcing and praying...\n"));
+                    WRITEMEM32(cap_legacy, ((usblegsup|XHCF_OSOWNED)&~XHCF_BIOSOWNED));
+                    break;
+                }
             }
-
         } else {
-            mybug_unit(-1, ("Controller was not owned by BIOS\n"));
+            mybug_unit(-1, ("Controller is already owned by the OS\n"));
         }
     }
 
