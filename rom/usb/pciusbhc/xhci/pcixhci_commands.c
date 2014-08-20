@@ -810,7 +810,7 @@ WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(-1, ("Entering function\n"));
+    mybug_unit(0, ("Entering function\n"));
 
     UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
