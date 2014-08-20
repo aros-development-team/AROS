@@ -772,11 +772,13 @@ static void dispatch_extendedcapability(OOP_Class *cl, OOP_Object *o, struct pRo
 {
     ULONG idx;
     UWORD capability = 0;
-    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    IPTR isPCIE = 0;
 
-    OOP_GetAttr(dev->driver, aHidd_PCIDevice_CapabilityPCIE, &isPCIE);
-    if(!isPCIE) { *msg->storage = 0; return; }
+    if(!findCapabilityOffset(cl, o, PCICAP_PCIE))
+    {
+        D(bug("[PCIDevice] not pcie device!\n"));
+        *msg->storage = 0;
+        return;
+    }
 
     idx = msg->attrID - HiddPCIDeviceAttrBase;
 
@@ -789,6 +791,10 @@ static void dispatch_extendedcapability(OOP_Class *cl, OOP_Object *o, struct pRo
     }
 
     *msg->storage = findExpressExtendedCapabilityOffset(cl, o, capability);
+
+	/* Needs ECAM access mechanism, return 0 */
+    *msg->storage = 0;
+    return;
 }
 
 typedef void (*dispatcher_t)(OOP_Class *, OOP_Object *, struct pRoot_Get *);
