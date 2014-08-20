@@ -42,24 +42,33 @@
 VOID PCIXHCI_PCIE(struct PCIXHCIUnit *unit) {
 
     IPTR PCIE_CapO, MSI_CapO, MSIX_CapO, PCIECap_SerialO;
-    IPTR PCIE_Cap , MSI_Cap , MSIX_Cap , PCIECap_SerialL, PCIECap_SerialU;
+    IPTR PCIE_Cap=0 , MSI_Cap=0 , MSIX_Cap=0 , PCIECap_SerialL=-1, PCIECap_SerialU=-1;
 
     OOP_GetAttr(unit->hc.pcidevice, aHidd_PCIDevice_CapabilityPCIE, (APTR)&PCIE_CapO);
     OOP_GetAttr(unit->hc.pcidevice, aHidd_PCIDevice_CapabilityMSIX, (APTR)&MSIX_CapO);
-    OOP_GetAttr(unit->hc.pcidevice, aHidd_PCIDevice_CapabilityMSIX, (APTR)&MSI_CapO);
+    OOP_GetAttr(unit->hc.pcidevice, aHidd_PCIDevice_CapabilityMSI,  (APTR)&MSI_CapO);
     OOP_GetAttr(unit->hc.pcidevice, aHidd_PCIDevice_ExtendedCapabilitySerialNumber, (APTR)&PCIECap_SerialO);
 
-    PCIE_Cap = HIDD_PCIDevice_ReadConfigWord(unit->hc.pcidevice, PCIE_CapO+2);
-    MSIX_Cap = HIDD_PCIDevice_ReadConfigWord(unit->hc.pcidevice, MSIX_CapO+2);
-    MSI_Cap  = HIDD_PCIDevice_ReadConfigWord(unit->hc.pcidevice, MSI_CapO+2);
-    PCIECap_SerialL = HIDD_PCIDevice_ReadConfigLong(unit->hc.pcidevice, PCIECap_SerialO+4);
-    PCIECap_SerialU = HIDD_PCIDevice_ReadConfigLong(unit->hc.pcidevice, PCIECap_SerialO+8);
+    if(PCIE_CapO)
+        PCIE_Cap = HIDD_PCIDevice_ReadConfigWord(unit->hc.pcidevice, PCIE_CapO+2);
+
+    if(MSIX_CapO)
+        MSIX_Cap = HIDD_PCIDevice_ReadConfigWord(unit->hc.pcidevice, MSIX_CapO+2);
+
+    if(MSI_CapO)
+        MSI_Cap  = HIDD_PCIDevice_ReadConfigWord(unit->hc.pcidevice, MSI_CapO+2);
+
+    if(PCIECap_SerialO) {
+        PCIECap_SerialL = HIDD_PCIDevice_ReadConfigLong(unit->hc.pcidevice, PCIECap_SerialO+4);
+        PCIECap_SerialU = HIDD_PCIDevice_ReadConfigLong(unit->hc.pcidevice, PCIECap_SerialO+8);
+    }
 
     mybug_unit(-1, ("\n"));
     mybug_unit(-1, ("PCIECap_Serial %08x:%08x\n", PCIECap_SerialU, PCIECap_SerialL));
     mybug_unit(-1, ("PCIE_Cap %08x\n", PCIE_Cap));
     mybug_unit(-1, ("MSIX_Cap %08x\n", MSIX_Cap));
     mybug_unit(-1, ("MSI_Cap  %08x\n", MSI_Cap));
+
     mybug_unit(-1, ("\n"));
 
 
