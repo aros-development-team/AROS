@@ -15,6 +15,7 @@
 #include <proto/oop.h>
 
 #include "pci.h"
+#include "pcie.h"
 #include "pciutil.h"
 
 #include <aros/debug.h>
@@ -92,7 +93,7 @@ static UBYTE getByte(OOP_Class *cl, OOP_Object *o, ULONG reg)
     return HIDD_PCIDriver_ReadConfigByte(dev->driver, dev->bus, dev->dev, dev->sub, reg);
 }
 
-/* Returns offset of capability area in config area or 0 of capability is not present */
+/* Returns offset of capability area in config area or 0 if capability is not present */
 static UBYTE findCapabilityOffset(OOP_Class * cl, OOP_Object *o, UBYTE capability)
 {
     UWORD where = 0x34; /*  First cap list entry */
@@ -121,6 +122,24 @@ static UBYTE findCapabilityOffset(OOP_Class * cl, OOP_Object *o, UBYTE capabilit
         where += 1; /* next cap */
     }
     
+    return 0;
+}
+
+/* Returns offset of PCI Express extended capability area in config area or 0 if capability is not present */
+static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, UWORD capability)
+{
+    UWORD where = 0x100; /*  First PCI Express extended cap list entry */
+    ULONG caphdr;
+
+    while(where > 0xff)
+    {
+        caphdr = getLong(cl, o, where);
+
+        if ((caphdr & 0xffff) == capability) return (UWORD)where;
+
+        where = (caphdr>>20)&~3;
+    }
+
     return 0;
 }
 
@@ -749,6 +768,29 @@ static void dispatch_capability(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *
     *msg->storage = findCapabilityOffset(cl, o, capability);
 }
 
+static void dispatch_extendedcapability(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+    UWORD capability = 0;
+    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
+    IPTR isPCIE = 0;
+
+    OOP_GetAttr(dev->driver, aHidd_PCIDevice_CapabilityPCIE, &isPCIE);
+    if(!isPCIE) { *msg->storage = 0; return; }
+
+    idx = msg->attrID - HiddPCIDeviceAttrBase;
+
+    switch(idx)
+    {
+    case aoHidd_PCIDevice_ExtendedCapabilityAER:            capability = PCIEECAP_AER;break;
+    case aoHidd_PCIDevice_ExtendedCapabilityVC:             capability = PCIEECAP_VC ;break;
+    case aoHidd_PCIDevice_ExtendedCapabilitySerialNumber:   capability = PCIEECAP_SER;break;
+    case aoHidd_PCIDevice_ExtendedCapabilityPowerBudgeting: capability = PCIEECAP_PWR_BUDGET;break;
+    }
+
+    *msg->storage = findExpressExtendedCapabilityOffset(cl, o, capability);
+}
+
 typedef void (*dispatcher_t)(OOP_Class *, OOP_Object *, struct pRoot_Get *);
 
 static const dispatcher_t Dispatcher[num_Hidd_PCIDevice_Attrs] =
@@ -818,6 +860,12 @@ static const dispatcher_t Dispatcher[num_Hidd_PCIDevice_Attrs] =
     [aoHidd_PCIDevice_CapabilityPCIE]               = dispatch_capability,
     [aoHidd_PCIDevice_CapabilityMSIX]               = dispatch_capability,
     [aoHidd_PCIDevice_CapabilityAdvancedFeatures]   = dispatch_capability,
+
+    /* Extended capabilities */
+    [aoHidd_PCIDevice_ExtendedCapabilityAER]            = dispatch_extendedcapability,
+    [aoHidd_PCIDevice_ExtendedCapabilityVC]             = dispatch_extendedcapability,
+    [aoHidd_PCIDevice_ExtendedCapabilitySerialNumber]   = dispatch_extendedcapability,
+    [aoHidd_PCIDevice_ExtendedCapabilityPowerBudgeting] = dispatch_extendedcapability,
 };
 
 void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
