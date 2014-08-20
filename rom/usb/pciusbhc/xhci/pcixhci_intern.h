@@ -118,6 +118,8 @@ struct PCIXHCIBase {
 #define HiddAttrBase (LIBBASE->HiddAB)
 #define HiddPCIDeviceAttrBase (LIBBASE->HiddPCIDeviceAB)
 
+VOID PCIXHCI_PCIE(struct PCIXHCIUnit *unit);
+
 BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
 BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit);

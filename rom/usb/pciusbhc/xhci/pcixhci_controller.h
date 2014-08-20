@@ -44,7 +44,8 @@
 
 #define doorbell_readl(reg) READREG32(unit->hc.doorbell_base, reg)
 
-#define runtime_readl(reg) READREG32(unit->hc.runtime_base, reg)
+#define runtime_readl(reg)          READREG32(unit->hc.runtime_base, reg)
+#define runtime_writel(reg, value) WRITEREG32(unit->hc.runtime_base, reg, value)
 
 /*
     XHCI capability register defines
@@ -129,12 +130,14 @@
     XHCI runtime register defines
 */
 #define XHCI_MFINDEX    0    
-#define XHCI_IMAN       0x20+(32 * n)+0x0
-#define XHCI_IMOD       0x20+(32 * n)+0x4
-#define XHCI_ERSTSZ     0x20+(32 * n)+0x8
-#define XHCI_ERSTBA     0x20+(32 * n)+0x10
-#define XHCI_ERDP       0x20+(32 * n)+0x18 
+#define XHCI_IMAN(n)    0x20+(32*n)+0x0
+#define XHCI_IMOD(n)    0x20+(32*n)+0x4
+#define XHCI_ERSTSZ(n)  0x20+(32*n)+0x8
+#define XHCI_ERSTBA(n)  0x20+(32*n)+0x10
+#define XHCI_ERDP(n)    0x20+(32*n)+0x18 
 
+#define XHCB_IMANIE     1
+#define XHCF_IMANIE     (1UL<<XHCB_IMANIE)
 
 
 /* Extended capability IDs */

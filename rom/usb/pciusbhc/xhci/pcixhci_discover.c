@@ -67,7 +67,11 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
                 unit->pcixhcibase = LIBBASE;
                 unit->number = unitnum++;
 
-                /* Get the serial number from PCIe Extended Capability when and if AROS gets the support for it */
+                /*
+                    Get the serial number from PCIe Extended Capability
+                    Disable MSI/MSIX ?
+                */
+                PCIXHCI_PCIE(unit);
 
                 AddTail(&LIBBASE->unit_list, (struct Node *)unit);
                 mybug(-1, ("[PCIXHCI] Enumerator: Host controller obtained\n"));

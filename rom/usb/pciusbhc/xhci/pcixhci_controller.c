@@ -219,7 +219,12 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 */
     }
 
-    mybug(-1,("XHCV_MaxIntrs = %d\n",XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1))));
+    mybug(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
+    mybug(-1,("XHCV_MaxSlots = %d\n", XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))));
+    mybug(-1,("XHCV_MaxIntrs = %d\n", XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1))));
+    mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
+    operational_writel(XHCI_CONFIG, (operational_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn)|XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1)));
+    mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
 
     /* Add interrupt handler */
     snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
@@ -232,6 +237,8 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         mybug_unit(-1, ("Failed setting up interrupt handler!\n"));
         return FALSE;
     }
+
+
 
     return TRUE;
 }
@@ -290,6 +297,9 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
         mybug_unit(-1, ("     port %d at %p %s\n", port->number, port, port->name));
     }
     mybug(-1,("\n"));
+
+    runtime_writel(XHCI_IMOD(0), 0x01f4);
+    runtime_writel(XHCI_IMAN(0), (runtime_readl(XHCI_IMAN(0))|XHCF_IMANIE));
 
     /* Enable host controller to issue interrupts */
     mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
