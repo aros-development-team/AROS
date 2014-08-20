@@ -131,7 +131,7 @@ static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, 
     UWORD where = 0x100; /*  First PCI Express extended cap list entry */
     ULONG caphdr;
 
-    while(where > 0xff)
+    while((where > 0xff) && (where < 0xfff))
     {
         caphdr = getLong(cl, o, where);
 
