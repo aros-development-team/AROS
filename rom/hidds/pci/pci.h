@@ -295,52 +295,5 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define PCICAP_MSIX                 0x11
 #define PCICAP_ADVANCED_FEATURES    0x13
 
-/* PCI Express Configspace offsets */
-#define PCIECS_VENDOR       PCICS_VENDOR
-#define PCIECS_PRODUCT      PCICS_PRODUCT
-#define PCIECS_COMMAND      PCICS_COMMAND
-#define PCIECS_STATUS       PCICS_STATUS
-#define PCIECS_REVISION     PCICS_REVISION
-#define PCIECS_PROGIF       PCICS_PROGIF
-#define PCIECS_SUBCLASS     PCICS_SUBCLASS
-#define PCIECS_CLASS        PCICS_CLASS
-#define PCIECS_CACHELS      PCICS_CACHELS
-#define PCIECS_LATENCY      PCICS_LATENCY
-#define PCIECS_HEADERTYPE   PCICS_HEADERTYPE
-#define PCIECS_BIST         PCICS_BIST
-#define PCIECS_CAP_PTR      PCICS_CAP_PTR
-#define PCIECS_INT_LINE     PCICS_INT_LINE
-#define PCIECS_INT_PIN      PCICS_INT_PIN
-
-/* PCI Express capability structure */
-#define PCIECS_CAPID        0x00
-#define PCIECS_NEXTCAP      0x01
-#define PCIECS_PCIECAP      0x02
-#define PCIECS_DEVCAP       0x04
-#define PCIECS_DEVCTL       0x08
-#define PCIECS_DEVSTS       0x0A
-#define PCIECS_LINKCAP      0x0C
-#define PCIECS_LINKCTL      0x10
-#define PCIECS_LINKSTS      0x12
-#define PCIECS_SLOTCAP      0x14
-#define PCIECS_SLOTCTL      0x18
-#define PCIECS_SLOTSTS      0x1A
-#define PCIECS_ROOTCTL      0x1C
-#define PCIECS_ROOTSTS      0x20
-#define PCIECS_DEVCAP2      0x24
-#define PCIECS_DEVCTL2      0x28
-#define PCIECS_DEVSTS2      0x2A
-#define PCIECS_LINKCAP2     0x2C
-#define PCIECS_LINKCTL2     0x30
-#define PCIECS_LINKSTS2     0x32
-#define PCIECS_SLOTCAP2     0x34
-#define PCIECS_SLOTCTL2     0x38
-#define PCIECS_SLOTSTS2     0x3A
-
-/* PCI Express capabilities */
-#define PCIECAP_VER_MASK    0xF
-#define PCIECAP_VER_10      0x1 /* PCIe spec 1.0 */
-#define PCIECAP_VER_20      0x2 /* PCIe spec 2.0 */
-
 #endif /* _PCI_H */
 
