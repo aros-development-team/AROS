@@ -591,15 +591,69 @@ static void ecdt_parser(const ACPI_TABLE_HEADER *header, void (*cb)(const char *
     MakeString(cb, "%s: %s", _(MSG_NAMESPACE_ID), ecdt->Id);
 }
 
+AROS_UFH3(static void, mcfg_entry_parser,
+	  AROS_UFHA(struct Hook *, table_hook, A0),
+	  AROS_UFHA(ACPI_MCFG_ALLOCATION *, entry, A2),
+	  AROS_UFHA(out_func, cb, A1))
+{
+    AROS_USERFUNC_INIT
+
+    cb("");
+
+	const ACPI_MCFG_ALLOCATION *mcfg_tbl = (ACPI_MCFG_ALLOCATION *)entry;
+    MakeString(cb, "%s: 0x%08llX", _(MSG_MCFG_BASE_ADDRESS), mcfg_tbl->Address);
+    MakeString(cb, "%s: 0x%04X", _(MSG_MCFG_SEGMENT), mcfg_tbl->PciSegment);
+    MakeString(cb, "%s: 0x%02X", _(MSG_MCFG_START_BUS_NUMBER), mcfg_tbl->StartBusNumber);
+    MakeString(cb, "%s: 0x%02X", _(MSG_MCFG_END_BUS_NUMBER), mcfg_tbl->EndBusNumber);
+
+    AROS_USERFUNC_EXIT
+}
+
+static const struct Hook mcfgHook =
+{
+    .h_Entry = (APTR)mcfg_entry_parser
+};
+
+static int MMCONFIG_ScanEntries(const ACPI_TABLE_MCFG *mcfg_tbl, const struct Hook *hook, APTR userdata)
+{
+    const UINT8 *mcfg_alloc_entry = (const UINT8 *)mcfg_tbl + sizeof(ACPI_TABLE_MCFG);
+    const UINT8 *mcfg_alloc_end  = (const UINT8 *)mcfg_tbl + mcfg_tbl->Header.Length;
+    int count;
+
+    for (count = 0; mcfg_alloc_entry < mcfg_alloc_end; mcfg_alloc_entry += sizeof(ACPI_MCFG_ALLOCATION)) {
+        const ACPI_MCFG_ALLOCATION *sh = (const ACPI_MCFG_ALLOCATION *)mcfg_alloc_entry;
+        BOOL res;
+        if (hook == NULL)
+            res = TRUE;
+        else
+            res = CALLHOOKPKT((struct Hook *)hook, (APTR)sh, userdata);
+        if (res)
+            count++;
+    }
+
+    return count;
+
+}
+
+static void mcfg_parser(const ACPI_TABLE_HEADER *header, void (*cb)(const char *))
+{
+    const ACPI_TABLE_MCFG *mcfg_tbl = (const ACPI_TABLE_MCFG *)header;
+
+    header_parser(&mcfg_tbl->Header, cb);
+
+    MMCONFIG_ScanEntries(mcfg_tbl, &mcfgHook, cb);
+}
+
 const struct Parser ParserTable[] =
 {
     {"RSDT", "System"    , rsdt_parser},
     {"XSDT", "System"    , rsdt_parser},
     {"FACP", "Hardware"  , fadt_parser},
     {"APIC", "Interrupts", madt_parser},
-    {"HPET", "Timer"	, hpet_parser},
+    {"HPET", "Timer"     , hpet_parser},
     {"SBST", "Battery"   , sbst_parser},
     {"ECDT", "Controller", ecdt_parser},
+    {"MCFG", "PCI"       , mcfg_parser},
     {NULL, NULL, NULL}
 };
 
