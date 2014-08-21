@@ -314,3 +314,15 @@ SCI GPE bit
 MSG_NAMESPACE_ID (//)
 Namespace ID
 ;
+MSG_MCFG_BASE_ADDRESS (//)
+Base address
+;
+MSG_MCFG_SEGMENT (//)
+PCI segment group number
+;
+MSG_MCFG_START_BUS_NUMBER (//)
+Starting PCI Bus number
+;
+MSG_MCFG_END_BUS_NUMBER (//)
+Final PCI Bus number
+;
