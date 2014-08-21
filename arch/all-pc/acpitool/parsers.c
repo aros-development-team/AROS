@@ -161,7 +161,7 @@ static void dumpData(const unsigned char *data, int length, void (*cb)(const cha
 	char *p = buf;
 	int buflen = sizeof(buf);
 
-        len = snprintf(p, buflen, "%p:", data + length - left);
+        len = snprintf(p, buflen, "%p:", data);
         p += len;
         buflen -= len;
 
