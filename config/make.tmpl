@@ -357,7 +357,7 @@ endif
 
 # Adjust compiler flags to suit C++
 TMP_CXXFLAGS := %(cflags)
-TMP_CXXFLAGS := $(TMP_CXXFLAGS) -fno-rtti -fno-exceptions -fno-check-new -isystem $(AROS_DEVELOPMENT)/include
+TMP_CXXFLAGS := -fno-rtti -fno-exceptions -fno-check-new $(TMP_CXXFLAGS) -isystem $(AROS_DEVELOPMENT)/include 
 TMP_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_CXXFLAGS)))
 
 ifeq ($(findstring %(compiler),host kernel target),)
@@ -508,7 +508,7 @@ $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
 # Adjust compiler flags to suit C++
 TMP_CXXFLAGS := %(cflags)
 TMP_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_CXXFLAGS)))
-TMP_CXXFLAGS := $(TMP_CXXFLAGS) -fno-rtti -fno-exceptions -fno-check-new -isystem $(AROS_DEVELOPMENT)/include
+TMP_CXXFLAGS := -fno-rtti -fno-exceptions -fno-check-new $(TMP_CXXFLAGS) -isystem $(AROS_DEVELOPMENT)/include
 
 TMP_CXXABSBASENAMES := $(foreach TMP_CXXBASE,%(basenames),$(if $(filter /%,$(TMP_CXXBASE)),$(TMP_CXXBASE),$(abspath $(SRCDIR)/$(CURDIR)/$(TMP_CXXBASE))))
 ifneq ($(TMP_CXXABSBASENAMES),)
