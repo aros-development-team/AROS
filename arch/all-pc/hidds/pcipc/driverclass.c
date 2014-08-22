@@ -21,10 +21,13 @@
 
 #include "pci.h"
 
+#undef ACPICABase
 #undef HiddPCIDriverAttrBase
 #undef HiddAttrBase
-#define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
-#define HiddAttrBase		(PSD(cl)->hiddAB)
+
+#define ACPICABase            (LIBBASE->psd.acpicaBase)
+#define	HiddPCIDriverAttrBase (PSD(cl)->hiddPCIDriverAB)
+#define HiddAttrBase          (PSD(cl)->hiddAB)
 
 /*
     We overload the New method in order to introduce the Hidd Name and
@@ -52,16 +55,11 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
 }
 
-BOOL isExtendedConfig(UBYTE bus, UBYTE dev, UBYTE sub)
+BOOL PCPCI__Hidd_PCIDriver__hasExtendedConfig(OOP_Class *cl, OOP_Object *o, 
+					    struct pHidd_PCIDriver_hasExtendedConfig *msg)
 {
     /* Give false positive for testing purposes */
     return TRUE;
-}
-
-ULONG PCPCI__Hidd_PCIDriver__isExtendedConfig(OOP_Class *cl, OOP_Object *o, 
-					    struct pHidd_PCIDriver_isExtendedConfig *msg)
-{
-    return PSD(cl)->isExtendedConfig(msg->bus, msg->dev, msg->sub);
 }
 
 ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
@@ -101,11 +99,9 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
     struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
 
-    LIBBASE->psd.ACPICABase = OpenLibrary("acpica.library",0);
-    if(LIBBASE->psd.ACPICABase) {
+    ACPICABase = OpenLibrary("acpica.library", 0);
+    if(ACPICABase) {
     }
-    LIBBASE->psd.isExtendedConfig  = isExtendedConfig;
-
 
     LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
@@ -137,7 +133,11 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[PCI.PC] Class destruction\n"));
-    
+
+    if(ACPICABase) {
+        CloseLibrary(ACPICABase);
+    }
+
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
     OOP_ReleaseAttrBase(IID_Hidd);
     

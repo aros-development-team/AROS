@@ -38,9 +38,7 @@ struct pci_staticdata
     ULONG	 (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
     void	 (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
 
-    BOOL     (*isExtendedConfig)(UBYTE bus, UBYTE dev, UBYTE sub);
-
-    struct Library *ACPICABase;
+    struct Library *acpicaBase;
 
 };
 

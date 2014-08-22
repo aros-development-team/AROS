@@ -50,11 +50,11 @@
     INTERNALS
 
 *****************************************************************************************/
-static BOOL isExtendedConfig(OOP_Class *cl, OOP_Object *o)
+static BOOL hasExtendedConfig(OOP_Class *cl, OOP_Object *o)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_isExtendedConfig(dev->driver, dev->bus, dev->dev, dev->sub);
+    return HIDD_PCIDriver_hasExtendedConfig(dev->driver, dev->bus, dev->dev, dev->sub);
 }
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
@@ -149,9 +149,9 @@ static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, 
     return 0;
 }
 
-BOOL PCIDev__Hidd_PCIDevice__isExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_isExtendedConfig *msg)
+BOOL PCIDev__Hidd_PCIDevice__hasExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_hasExtendedConfig *msg)
 {
-    return isExtendedConfig(cl, o);
+    return hasExtendedConfig(cl, o);
 }
 
 UBYTE PCIDev__Hidd_PCIDevice__ReadConfigByte(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigByte *msg)
@@ -784,12 +784,14 @@ static void dispatch_extendedcapability(OOP_Class *cl, OOP_Object *o, struct pRo
     ULONG idx;
     UWORD capability = 0;
 
-    if(!findCapabilityOffset(cl, o, PCICAP_PCIE))
+    if(!hasExtendedConfig(cl, o))
     {
-        D(bug("[PCIDevice] not pcie device!\n"));
+        D(bug("[PCIDevice] hasExtendedConfig = FALSE!\n"));
         *msg->storage = 0;
         return;
     }
+
+    D(bug("[PCIDevice] hasExtendedConfig = TRUE!\n"));
 
     idx = msg->attrID - HiddPCIDeviceAttrBase;
 
