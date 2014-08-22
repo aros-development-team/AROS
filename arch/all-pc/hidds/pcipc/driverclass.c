@@ -55,7 +55,7 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
 }
 
-BOOL PCPCI__Hidd_PCIDriver__hasExtendedConfig(OOP_Class *cl, OOP_Object *o, 
+BOOL PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_PCIDriver_hasExtendedConfig *msg)
 {
     /* Give false positive for testing purposes */

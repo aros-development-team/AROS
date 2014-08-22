@@ -31,10 +31,10 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
     /*
         Ask the driver if the (possible) device has extended configuration space
     */
-    if(HIDD_PCIDriver_hasExtendedConfig(o, bus, dev, sub)) {
-         D(bug("HIDD_PCIDriver_hasExtendedConfig = TRUE\n"));
+    if(HIDD_PCIDriver_HasExtendedConfig(o, bus, dev, sub)) {
+         D(bug("HIDD_PCIDriver_HasExtendedConfig = TRUE\n"));
     }else{
-         D(bug("HIDD_PCIDriver_hasExtendedConfig = FALSE\n"));
+         D(bug("HIDD_PCIDriver_HasExtendedConfig = FALSE\n"));
     }
 
     Vend = HIDD_PCIDriver_ReadConfigWord(o, bus, dev, sub, PCICS_VENDOR);
