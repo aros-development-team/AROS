@@ -55,6 +55,11 @@ static BOOL hasExtendedConfig(OOP_Class *cl, OOP_Object *o)
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
     return HIDD_PCIDriver_hasExtendedConfig(dev->driver, dev->bus, dev->dev, dev->sub);
+
+    /*
+        FIXME: instead of asking the driver, check a boolean flag that is set when the bus is enumerated
+               Incase the hasExtendedConfig driver method is unimplemented, set the flag to FALSE in the unimplemented function
+    */
 }
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
