@@ -50,15 +50,15 @@
     INTERNALS
 
 *****************************************************************************************/
-static BOOL hasExtendedConfig(OOP_Class *cl, OOP_Object *o)
+static BOOL HasExtendedConfig(OOP_Class *cl, OOP_Object *o)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_hasExtendedConfig(dev->driver, dev->bus, dev->dev, dev->sub);
+    return HIDD_PCIDriver_HasExtendedConfig(dev->driver, dev->bus, dev->dev, dev->sub);
 
     /*
         FIXME: instead of asking the driver, check a boolean flag that is set when the bus is enumerated
-               Incase the hasExtendedConfig driver method is unimplemented, set the flag to FALSE in the unimplemented function
+               Incase the HasExtendedConfig driver method is unimplemented, set the flag to FALSE in the unimplemented function
     */
 }
 
@@ -154,9 +154,9 @@ static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, 
     return 0;
 }
 
-BOOL PCIDev__Hidd_PCIDevice__hasExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_hasExtendedConfig *msg)
+BOOL PCIDev__Hidd_PCIDevice__HasExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_HasExtendedConfig *msg)
 {
-    return hasExtendedConfig(cl, o);
+    return HasExtendedConfig(cl, o);
 }
 
 UBYTE PCIDev__Hidd_PCIDevice__ReadConfigByte(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigByte *msg)
@@ -789,14 +789,14 @@ static void dispatch_extendedcapability(OOP_Class *cl, OOP_Object *o, struct pRo
     ULONG idx;
     UWORD capability = 0;
 
-    if(!hasExtendedConfig(cl, o))
+    if(!HasExtendedConfig(cl, o))
     {
-        D(bug("[PCIDevice] hasExtendedConfig = FALSE!\n"));
+        D(bug("[PCIDevice] HasExtendedConfig = FALSE!\n"));
         *msg->storage = 0;
         return;
     }
 
-    D(bug("[PCIDevice] hasExtendedConfig = TRUE!\n"));
+    D(bug("[PCIDevice] HasExtendedConfig = TRUE!\n"));
 
     idx = msg->attrID - HiddPCIDeviceAttrBase;
 
