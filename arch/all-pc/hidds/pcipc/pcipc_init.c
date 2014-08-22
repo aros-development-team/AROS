@@ -46,9 +46,6 @@ static int PCPCI_Expunge(LIBBASETYPEPTR LIBBASE)
     {
         ok = FALSE;
     }
-    if(LIBBASE->psd.ACPICABase) {
-        CloseLibrary(LIBBASE->psd.ACPICABase);
-    }
 
     return ok;
 }

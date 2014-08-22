@@ -61,11 +61,11 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     bug("[PCIDriver] Alert! PCIDriver::WriteConfigLong() unimplemented!!!\n");
 }
 
-BOOL PCIDrv__Hidd_PCIDriver__isExtendedConfig(OOP_Class *cl, OOP_Object *o,
-    struct pHidd_PCIDriver_isExtendedConfig *msg)
+BOOL PCIDrv__Hidd_PCIDriver__hasExtendedConfig(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDriver_hasExtendedConfig *msg)
 {
-    /* Wheeeee! Someone has forgotten to reimplement the isExtendedConfig!! */
-    bug("[PCIDriver] Alert! PCIDriver::isExtendedConfig() unimplemented!!!\n");
+    /* Wheeeee! Someone has forgotten to reimplement the hasExtendedConfig!! */
+    bug("[PCIDriver] Alert! PCIDriver::hasExtendedConfig() unimplemented!!!\n");
     return FALSE;
 }
 
