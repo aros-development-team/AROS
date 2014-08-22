@@ -33,17 +33,22 @@ static int PCPCI_Expunge(LIBBASETYPEPTR LIBBASE)
     OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     if (pci)
     {
-	struct pHidd_PCI_RemHardwareDriver msg, *pmsg=&msg;
+        struct pHidd_PCI_RemHardwareDriver msg, *pmsg=&msg;
 	
-	msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_RemHardwareDriver);
-	msg.driverClass = LIBBASE->psd.driverClass;
+        msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_RemHardwareDriver);
+        msg.driverClass = LIBBASE->psd.driverClass;
 
-	ok = OOP_DoMethod(pci, (OOP_Msg)pmsg);
+        ok = OOP_DoMethod(pci, (OOP_Msg)pmsg);
 
-	OOP_DisposeObject(pci);
+        OOP_DisposeObject(pci);
     }
     else
-	ok = FALSE;
+    {
+        ok = FALSE;
+    }
+    if(LIBBASE->psd.ACPICABase) {
+        CloseLibrary(LIBBASE->psd.ACPICABase);
+    }
 
     return ok;
 }

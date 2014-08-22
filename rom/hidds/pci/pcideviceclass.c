@@ -50,6 +50,12 @@
     INTERNALS
 
 *****************************************************************************************/
+static BOOL isExtendedConfig(OOP_Class *cl, OOP_Object *o)
+{
+    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
+
+    return HIDD_PCIDriver_isExtendedConfig(dev->driver, dev->bus, dev->dev, dev->sub);
+}
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
 {
@@ -141,6 +147,11 @@ static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, 
     }
 
     return 0;
+}
+
+BOOL PCIDev__Hidd_PCIDevice__isExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_isExtendedConfig *msg)
+{
+    return isExtendedConfig(cl, o);
 }
 
 UBYTE PCIDev__Hidd_PCIDevice__ReadConfigByte(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigByte *msg)

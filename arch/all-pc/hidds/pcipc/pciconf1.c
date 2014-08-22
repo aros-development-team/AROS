@@ -13,9 +13,9 @@
 
 #define CFGADD(bus,dev,func,reg)    \
     ( 0x80000000 | ((bus)<<16) |    \
-    ((dev)<<11) | ((func)<<8) | ((reg)&~3))
+    ((dev)<<11) | ((func)<<8) | ((reg&0xff)&~3))
 
-ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
 {
     ULONG temp;
     
@@ -27,7 +27,7 @@ ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
     return temp;
 }
 
-void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
+void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val)
 {
     Disable();
 

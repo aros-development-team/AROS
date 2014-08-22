@@ -14,6 +14,8 @@
 #include <aros/arossupportbase.h>
 #include <exec/execbase.h>
 
+#include <libraries/acpica.h>
+
 #include LC_LIBDEFS_FILE
 
 #ifdef __i386__
@@ -33,8 +35,13 @@ struct pci_staticdata
     OOP_Class	  *driverClass;
 
     /* Low-level sub-methods */
-    ULONG	 (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg);
-    void	 (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val);
+    ULONG	 (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
+    void	 (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
+
+    BOOL     (*isExtendedConfig)(UBYTE bus, UBYTE dev, UBYTE sub);
+
+    struct Library *ACPICABase;
+
 };
 
 struct pcibase
@@ -82,7 +89,7 @@ typedef union _pcicfg
     UBYTE   ub[4];
 } pcicfg;
 
-static inline UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+static inline UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
 {
     pcicfg temp;
 
@@ -90,8 +97,8 @@ static inline UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE 
     return temp.uw[(reg&2)>>1];
 }
 
-ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg);
-void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val);
+ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
+void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
 
 #ifdef LEGACY_SUPPORT
 
