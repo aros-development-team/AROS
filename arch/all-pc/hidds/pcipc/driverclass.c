@@ -17,6 +17,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
+#include <proto/acpica.h>
 
 #include "pci.h"
 
@@ -49,6 +50,18 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     }
  
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
+}
+
+BOOL isExtendedConfig(UBYTE bus, UBYTE dev, UBYTE sub)
+{
+    /* Give false positive for testing purposes */
+    return TRUE;
+}
+
+ULONG PCPCI__Hidd_PCIDriver__isExtendedConfig(OOP_Class *cl, OOP_Object *o, 
+					    struct pHidd_PCIDriver_isExtendedConfig *msg)
+{
+    return PSD(cl)->isExtendedConfig(msg->bus, msg->dev, msg->sub);
 }
 
 ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
@@ -87,7 +100,13 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     D(bug("[PCI.PC] Driver initialization\n"));
 
     struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
-    
+
+    LIBBASE->psd.ACPICABase = OpenLibrary("acpica.library",0);
+    if(LIBBASE->psd.ACPICABase) {
+    }
+    LIBBASE->psd.isExtendedConfig  = isExtendedConfig;
+
+
     LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
     if (LIBBASE->psd.hiddPCIDriverAB == 0 || LIBBASE->psd.hiddAB == 0)
