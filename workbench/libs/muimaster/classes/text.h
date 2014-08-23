@@ -31,11 +31,6 @@
 #define MUIA_Text_SetVMax \
     (MUIB_MUI | 0x00420d8b)       /* MUI: V11 i.. BOOL   */
 
-#define MUIA_Text_Editable \
-    (MUIB_Text | 0x00000000)  /* DEPRECATED */
-#define MUIA_Text_Multiline \
-    (MUIB_Text | 0x00000001)  /* DEPRECATED */
-
 /* Codes which can be used in text strings */
 #define MUIX_L "\033l"          /* justify left */
 #define MUIX_C "\033c"          /* justify centered */
