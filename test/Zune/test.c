@@ -693,7 +693,6 @@ int main(void)
                     Child, VGroup,
                         Child, editor_text = StringObject,
                             StringFrame,
-                            MUIA_Text_Multiline, TRUE,
                             End,
                         Child, PopaslObject,
                             ASLFR_DoSaveMode, TRUE,
