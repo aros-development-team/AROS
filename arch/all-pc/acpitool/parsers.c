@@ -600,11 +600,11 @@ AROS_UFH3(static void, mcfg_entry_parser,
 
     cb("");
 
-	const ACPI_MCFG_ALLOCATION *mcfg_tbl = (ACPI_MCFG_ALLOCATION *)entry;
-    MakeString(cb, "%s: 0x%08llX", _(MSG_MCFG_BASE_ADDRESS), mcfg_tbl->Address);
-    MakeString(cb, "%s: 0x%04X", _(MSG_MCFG_SEGMENT), mcfg_tbl->PciSegment);
-    MakeString(cb, "%s: 0x%02X", _(MSG_MCFG_START_BUS_NUMBER), mcfg_tbl->StartBusNumber);
-    MakeString(cb, "%s: 0x%02X", _(MSG_MCFG_END_BUS_NUMBER), mcfg_tbl->EndBusNumber);
+	const ACPI_MCFG_ALLOCATION *mcfg_alloc = (ACPI_MCFG_ALLOCATION *)entry;
+    MakeString(cb, "%s: 0x%08llX", _(MSG_MCFG_BASE_ADDRESS), mcfg_alloc->Address);
+    MakeString(cb, "%s: 0x%04X", _(MSG_MCFG_SEGMENT), mcfg_alloc->PciSegment);
+    MakeString(cb, "%s: 0x%02X", _(MSG_MCFG_START_BUS_NUMBER), mcfg_alloc->StartBusNumber);
+    MakeString(cb, "%s: 0x%02X", _(MSG_MCFG_END_BUS_NUMBER), mcfg_alloc->EndBusNumber);
 
     AROS_USERFUNC_EXIT
 }
