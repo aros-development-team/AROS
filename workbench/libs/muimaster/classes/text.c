@@ -38,14 +38,10 @@ struct MUI_TextData
     TEXT hichar;
     ZText *ztext;
     LONG xpixel;        /* needed for cursor up/down movements, can be -1 */
-    LONG xpos;
-    LONG ypos;
     struct MUI_EventHandlerNode ehn;
 
     LONG update;        /* type of update: 1 - everything,
                          * 2 - insert char, no scroll */
-    LONG update_arg1;
-    LONG update_arg2;
 };
 
 #define MTDF_SETMIN    (1<<0)
@@ -53,11 +49,7 @@ struct MUI_TextData
 #define MTDF_SETVMAX   (1<<2)
 #define MTDF_HICHAR    (1<<3)
 #define MTDF_HICHARIDX (1<<4)
-#if 0
-#define MTDF_EDITABLE  (1<<5)
-#define MTDF_MULTILINE (1<<6)
-#endif
-#define MTDF_ADVANCEONCR (1<<7)
+
 
 static const int __version = 1;
 static const int __revision = 1;
@@ -116,15 +108,6 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETVMAX);
             break;
 
-#if 0
-        case MUIA_Text_Editable:
-            _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
-            break;
-
-        case MUIA_Text_Multiline:
-            _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_MULTILINE);
-            break;
-#endif
         }
     }
 
@@ -363,42 +346,18 @@ IPTR Text__MUIM_AskMinMax(struct IClass *cl, Object *obj,
         height = _font(obj)->tf_YSize;
 /*      D(bug("YSize=%ld\n", _font(obj)->tf_YSize)); */
 
-#if 0
-    if (!(data->mtd_Flags & MTDF_EDITABLE))
-#endif
-    {
-        msg->MinMaxInfo->MinWidth += data->ztext->width;
-        msg->MinMaxInfo->DefWidth += data->ztext->width;
-        msg->MinMaxInfo->MaxWidth += data->ztext->width;
-    }
-#if 0
-    else
-    {
-        msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize * 4;
-        msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize * 12;
-        msg->MinMaxInfo->MaxWidth += MUI_MAXMAX;
-    }
-#endif
 
-#if 0
-    if (!(data->mtd_Flags & MTDF_MULTILINE))
-#endif
-    {
-        msg->MinMaxInfo->MinHeight += height;
-        msg->MinMaxInfo->DefHeight += height;
-        if (!(data->mtd_Flags & MTDF_SETVMAX))
-            msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
-        else
-            msg->MinMaxInfo->MaxHeight += height;
-    }
-#if 0
-    else
-    {
-        msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
-        msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize * 10;
+    msg->MinMaxInfo->MinWidth += data->ztext->width;
+    msg->MinMaxInfo->DefWidth += data->ztext->width;
+    msg->MinMaxInfo->MaxWidth += data->ztext->width;
+
+    msg->MinMaxInfo->MinHeight += height;
+    msg->MinMaxInfo->DefHeight += height;
+
+    if (!(data->mtd_Flags & MTDF_SETVMAX))
         msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
-    }
-#endif
+    else
+        msg->MinMaxInfo->MaxHeight += height;
 
     if (!(data->mtd_Flags & MTDF_SETMAX))
         msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
