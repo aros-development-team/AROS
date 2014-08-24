@@ -1736,7 +1736,44 @@ static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj,
     Signal(data->app_Task,
         1L << data->app_GlobalInfo.mgi_WindowsPort->mp_SigBit);
 
-    return TRUE;
+    return (IPTR)mq;
+}
+
+/**************************************************************************
+ MUIM_Application_UnpushMethod: Removes a method which was added by
+ MUIM_Application_PushMethod.
+**************************************************************************/
+static IPTR Application__MUIM_UnpushMethod(struct IClass *cl, Object *obj,
+    struct MUIP_Application_UnpushMethod *msg)
+{
+    D(bug("[Application__MUIM_UnpushMethod] dest %p id %p method %u\n", msg->dest, msg->methodid, msg->method));
+
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+
+    struct MQNode *current, *next;
+    ULONG removed = 0;
+
+    ObtainSemaphore(&data->app_MethodSemaphore);
+    ForeachNodeSafe(&data->app_MethodQueue, current, next)
+    {
+        D(bug("[Application__MUIM_UnpushMethod] examine dest %p id %p method %u\n",
+                current->mq_Dest, current, current->mq_Msg[0]));
+        if (
+               ((msg->dest == NULL) || (msg->dest == current->mq_Dest))
+            && ((msg->methodid == 0) || (msg->methodid == (IPTR)current))   // Method identifier returned by
+                                                                            // MUIM_Application_PushMethod.
+            && ((msg->method == 0) || (msg->method == current->mq_Msg[0]))
+        )
+        {
+            Remove((struct Node*)current);
+            DeleteMQNode(current);
+            removed++;
+            D(bug("[Application__MUIM_UnpushMethod] current %p removed\n", current));
+        }
+    }
+    ReleaseSemaphore(&data->app_MethodSemaphore);
+
+    return removed;
 }
 
 
@@ -2187,6 +2224,8 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
         return Application__MUIM_NewInput(cl, obj, (APTR) msg);
     case MUIM_Application_PushMethod:
         return Application__MUIM_PushMethod(cl, obj, (APTR) msg);
+    case MUIM_Application_UnpushMethod:
+        return Application__MUIM_UnpushMethod(cl, obj, (APTR) msg);
     case MUIM_Application_ReturnID:
         return Application__MUIM_ReturnID(cl, obj, (APTR) msg);
     case MUIM_FindUData:
