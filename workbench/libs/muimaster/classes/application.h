@@ -38,6 +38,7 @@
 #define MUIM_Application_SetMenuCheck     (MUIB_MUI|0x0042a707) /* MUI: V4  */
 #define MUIM_Application_SetMenuState     (MUIB_MUI|0x00428bef) /* MUI: V4  */
 #define MUIM_Application_ShowHelp         (MUIB_MUI|0x00426479) /* MUI: V4  */
+#define MUIM_Application_UnpushMethod     (MUIB_MUI|0x004211dd) /* MUI: V20 */
 
 #define MUIM_Application_SetConfigdata    (MUIB_Application | 0x00000000) /* Zune 20030407 */
 #define MUIM_Application_OpenWindows      (MUIB_Application | 0x00000001) /* Zune 20030407 */
@@ -109,6 +110,14 @@ struct MUIP_Application_PushMethod
     STACKED ULONG MethodID;
     STACKED Object *dest;
     STACKED LONG count;         /* more elements may follow */
+};
+
+struct MUIP_Application_UnpushMethod
+{
+    STACKED ULONG MethodID;
+    STACKED Object *dest;
+    STACKED IPTR methodid;
+    STACKED ULONG method;
 };
 
 struct MUIP_Application_RemInputHandler
