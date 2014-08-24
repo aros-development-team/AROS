@@ -78,7 +78,7 @@ ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
     IPTR extendedconfig;
 
     OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &extendedconfig);
-    bug("PCPCI__Hidd_PCIDriver__ReadConfigLong dev->extendedconfig = %x\n", extendedconfig);
+    D(bug("PCPCI__Hidd_PCIDriver__ReadConfigLong dev->extendedconfig = %x\n", extendedconfig));
 
     return PSD(cl)->ReadConfigLong(msg->bus, msg->dev, msg->sub, msg->reg);
 }
