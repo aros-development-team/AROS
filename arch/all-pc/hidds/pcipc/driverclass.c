@@ -21,12 +21,10 @@
 
 #include "pci.h"
 
-#undef ACPICABase
 #undef HiddPCIDriverAttrBase
 #undef HiddAttrBase
 #undef HiddPCIDeviceAttrBase
 
-#define ACPICABase            (LIBBASE->psd.acpicaBase)
 #define	HiddPCIDriverAttrBase (PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase          (PSD(cl)->hiddAB)
 #define HiddPCIDeviceAttrBase (PSD(cl)->hidd_PCIDeviceAB)
@@ -116,8 +114,14 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
     struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
 
+    struct Library *ACPICABase;
+
+    /*
+        We only (try to) fetch the mcfg_table, no need to keep ACPI library open.
+    */
     ACPICABase = OpenLibrary("acpica.library", 0);
     if(ACPICABase) {
+        CloseLibrary(ACPICABase);
     }
 
     LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
@@ -151,10 +155,6 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[PCI.PC] Class destruction\n"));
-
-    if(ACPICABase) {
-        CloseLibrary(ACPICABase);
-    }
 
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
