@@ -2,7 +2,7 @@
     Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
-
+#define DEBUG 1
 #include <aros/debug.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
@@ -28,16 +28,7 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
     UWORD Vend;
     UBYTE Type;
 
-    /*
-        Ask the driver if the (possible) device has extended configuration space
-    */
-    if(HIDD_PCIDriver_HasExtendedConfig(o, bus, dev, sub)) {
-         D(bug("HIDD_PCIDriver_HasExtendedConfig = TRUE\n"));
-    }else{
-         D(bug("HIDD_PCIDriver_HasExtendedConfig = FALSE\n"));
-    }
-
-    Vend = HIDD_PCIDriver_ReadConfigWord(o, bus, dev, sub, PCICS_VENDOR);
+    Vend = HIDD_PCIDriver_ReadConfigWord(o, NULL, bus, dev, sub, PCICS_VENDOR);
 
     if ((Vend == 0xffff) || (Vend == 0x0000))
     {
@@ -50,7 +41,7 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
         return 0;
     }
 
-    Type = HIDD_PCIDriver_ReadConfigByte(o, bus, dev, sub, PCICS_HEADERTYPE);
+    Type = HIDD_PCIDriver_ReadConfigByte(o, NULL, bus, dev, sub, PCICS_HEADERTYPE);
 
     if ((Type & PCIHT_MULTIFUNC) == PCIHT_MULTIFUNC)
         return 2;
@@ -101,11 +92,12 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
 
     struct TagItem devtags[] =
     {
-        { aHidd_PCIDevice_Bus   , 0         },
-        { aHidd_PCIDevice_Dev   , 0         },
-        { aHidd_PCIDevice_Sub   , 0         },
-        { aHidd_PCIDevice_Driver, (IPTR)drv },
-        { TAG_DONE              , 0         }
+        { aHidd_PCIDevice_Bus           , 0         },
+        { aHidd_PCIDevice_Dev           , 0         },
+        { aHidd_PCIDevice_Sub           , 0         },
+        { aHidd_PCIDevice_Driver        , (IPTR)drv },
+        { aHidd_PCIDevice_ExtendedConfig, 0         },
+        { TAG_DONE                      , 0         }
     };
 
     D(bug("[PCI] Adding Driver 0x%p class 0x%p\n", drv, OOP_OCLASS(drv)));
@@ -126,8 +118,15 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
             devtags[1].ti_Data = dev;
             devtags[2].ti_Data = 0;
 
+            devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, sub);
+
             /* Knock knock! Is any device here? */
-            type = isPCIDeviceAvailable(cl, drv, bus,dev,0);
+            type = isPCIDeviceAvailable(cl, drv, bus, dev, 0);
+
+            /* Testing... will be removed */
+            if(type) {
+                bug("[PCI__HW__SetUpDriver] Driver returns extendedconfig as %x\n", devtags[4].ti_Data);
+            }
 
             switch(type)
             {

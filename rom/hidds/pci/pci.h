@@ -59,6 +59,8 @@ typedef struct DeviceData {
     STRPTR              strInterface;
 
     struct SignalSemaphore ownerLock;
+
+    IPTR                extendedconfig; /* Stores the mmio base as returned by mcfg_allocation (ACPI) */
 } tDeviceData;
 
 struct pci_staticdata {

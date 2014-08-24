@@ -65,14 +65,14 @@ void getPCIClassDesc( UBYTE class, UBYTE sub, UBYTE prgif, STRPTR *cdesc, STRPTR
  * Size a base register
  * Return size of the base register area
  */
-ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE func, UBYTE basenum )
+ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct DeviceData *device, UBYTE bus, UBYTE dev, UBYTE func, UBYTE basenum )
 {
     ULONG bak,sz;
 
-    bak = HIDD_PCIDriver_ReadConfigLong(driver, bus, dev, func, PCICS_BAR0 + (basenum << 2));
-    HIDD_PCIDriver_WriteConfigLong(driver, bus, dev, func, PCICS_BAR0 + (basenum << 2), ~0);
-    sz = HIDD_PCIDriver_ReadConfigLong(driver, bus, dev, func, PCICS_BAR0 + (basenum << 2));
-    HIDD_PCIDriver_WriteConfigLong(driver, bus, dev, func, PCICS_BAR0 + (basenum << 2), bak);
+    bak = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2));
+    HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2), ~0);
+    sz = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2));
+    HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2), bak);
 
     if ((sz & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
     {

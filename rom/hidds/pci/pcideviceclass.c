@@ -5,7 +5,7 @@
     Desc: PCI device class
     Lang: English
 */
-
+#define DEBUG 1
 #include <exec/types.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
@@ -50,58 +50,53 @@
     INTERNALS
 
 *****************************************************************************************/
-static BOOL HasExtendedConfig(OOP_Class *cl, OOP_Object *o)
+static IPTR hasExtendedConfig(OOP_Class *cl, OOP_Object *o)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_HasExtendedConfig(dev->driver, dev->bus, dev->dev, dev->sub);
-
-    /*
-        FIXME: instead of asking the driver, check a boolean flag that is set when the bus is enumerated
-               Incase the HasExtendedConfig driver method is unimplemented, set the flag to FALSE in the unimplemented function
-    */
+    return dev->extendedconfig;
 }
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
     
-    HIDD_PCIDriver_WriteConfigLong(dev->driver, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigLong(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static void setWord(OOP_Class *cl, OOP_Object *o, ULONG reg, UWORD value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    HIDD_PCIDriver_WriteConfigWord(dev->driver, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static void setByte(OOP_Class *cl, OOP_Object *o, ULONG reg, UBYTE value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    HIDD_PCIDriver_WriteConfigByte(dev->driver, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigByte(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static ULONG getLong(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigLong(dev->driver, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigLong(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
 }
 
 static UWORD getWord(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigWord(dev->driver, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
 }
 
 static UBYTE getByte(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigByte(dev->driver, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigByte(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
 }
 
 /* Returns offset of capability area in config area or 0 if capability is not present */
@@ -156,7 +151,7 @@ static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, 
 
 BOOL PCIDev__Hidd_PCIDevice__HasExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_HasExtendedConfig *msg)
 {
-    return HasExtendedConfig(cl, o);
+    return hasExtendedConfig(cl, o);
 }
 
 UBYTE PCIDev__Hidd_PCIDevice__ReadConfigByte(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigByte *msg)
@@ -432,6 +427,11 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                     case aoHidd_PCIDevice_Sub:
                         dev->sub = tag->ti_Data;
                         break;
+
+                    case aoHidd_PCIDevice_ExtendedConfig:
+                        bug("[PCIDev__Root__New] Setting dev->extendedconfig = %x\n", tag->ti_Data);
+                        dev->extendedconfig = tag->ti_Data;
+                        break;
                 }
             }
         }
@@ -496,13 +496,13 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             for (i = 0; i < 2; i++)
             {
                 dev->BaseReg[i].addr = getLong(cl, o, PCICS_BAR0 + (i << 2));
-                dev->BaseReg[i].size = sizePCIBaseReg(driver, PSD(cl), dev->bus,
+                dev->BaseReg[i].size = sizePCIBaseReg(driver, PSD(cl), dev, dev->bus,
                         dev->dev, dev->sub, i);
             }
 
             /* Address and size of ROM */
             dev->RomBase = getLong(cl, o, PCICS_EXPROM_BASE);
-            dev->RomSize = sizePCIBaseReg(driver, PSD(cl), dev->bus,
+            dev->RomSize = sizePCIBaseReg(driver, PSD(cl), dev, dev->bus,
                         dev->dev, dev->sub, (PCICS_EXPROM_BASE - PCICS_BAR0) >> 2);
             
             /*
@@ -514,7 +514,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 for (i = 2; i < 6; i++)
                 {
                     dev->BaseReg[i].addr = getLong(cl, o, PCICS_BAR0 + (i << 2));
-                    dev->BaseReg[i].size = sizePCIBaseReg(driver, PSD(cl), dev->bus,
+                    dev->BaseReg[i].size = sizePCIBaseReg(driver, PSD(cl), dev, dev->bus,
                         dev->dev, dev->sub, i);
                 }
             }
@@ -600,6 +600,11 @@ static void dispatch_generic(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
             case aoHidd_PCIDevice_RomSize:
                 *msg->storage = (IPTR)dev->RomSize;
                 break;
+
+            case aoHidd_PCIDevice_ExtendedConfig:
+                *msg->storage = (IPTR)dev->extendedconfig;
+                break;
+
         }
 }
 
@@ -789,14 +794,14 @@ static void dispatch_extendedcapability(OOP_Class *cl, OOP_Object *o, struct pRo
     ULONG idx;
     UWORD capability = 0;
 
-    if(!HasExtendedConfig(cl, o))
+    if(!hasExtendedConfig(cl, o))
     {
-        D(bug("[PCIDevice] HasExtendedConfig = FALSE!\n"));
+        D(bug("[PCIDevice] HasExtendedConfig = NULL\n"));
         *msg->storage = 0;
         return;
     }
 
-    D(bug("[PCIDevice] HasExtendedConfig = TRUE!\n"));
+    D(bug("[PCIDevice] HasExtendedConfig != NULL!\n"));
 
     idx = msg->attrID - HiddPCIDeviceAttrBase;
 
@@ -819,22 +824,23 @@ typedef void (*dispatcher_t)(OOP_Class *, OOP_Object *, struct pRoot_Get *);
 
 static const dispatcher_t Dispatcher[num_Hidd_PCIDevice_Attrs] =
 {
-    [aoHidd_PCIDevice_Driver]       = dispatch_generic,
-    [aoHidd_PCIDevice_Bus]          = dispatch_generic,
-    [aoHidd_PCIDevice_Dev]          = dispatch_generic,
-    [aoHidd_PCIDevice_Sub]          = dispatch_generic,
-    [aoHidd_PCIDevice_VendorID]     = dispatch_generic,
-    [aoHidd_PCIDevice_ProductID]    = dispatch_generic,
-    [aoHidd_PCIDevice_RevisionID]   = dispatch_generic,
-    [aoHidd_PCIDevice_Interface]    = dispatch_generic,
-    [aoHidd_PCIDevice_Class]        = dispatch_generic,
-    [aoHidd_PCIDevice_SubClass]     = dispatch_generic,
+    [aoHidd_PCIDevice_Driver]            = dispatch_generic,
+    [aoHidd_PCIDevice_Bus]               = dispatch_generic,
+    [aoHidd_PCIDevice_Dev]               = dispatch_generic,
+    [aoHidd_PCIDevice_Sub]               = dispatch_generic,
+    [aoHidd_PCIDevice_VendorID]          = dispatch_generic,
+    [aoHidd_PCIDevice_ProductID]         = dispatch_generic,
+    [aoHidd_PCIDevice_RevisionID]        = dispatch_generic,
+    [aoHidd_PCIDevice_Interface]         = dispatch_generic,
+    [aoHidd_PCIDevice_Class]             = dispatch_generic,
+    [aoHidd_PCIDevice_SubClass]          = dispatch_generic,
     [aoHidd_PCIDevice_SubsystemVendorID] = dispatch_generic,
-    [aoHidd_PCIDevice_SubsystemID]  = dispatch_generic,
-    [aoHidd_PCIDevice_INTLine]      = dispatch_generic,
-    [aoHidd_PCIDevice_IRQLine]      = dispatch_generic,
-    [aoHidd_PCIDevice_RomBase]      = dispatch_generic,
-    [aoHidd_PCIDevice_RomSize]      = dispatch_generic,
+    [aoHidd_PCIDevice_SubsystemID]       = dispatch_generic,
+    [aoHidd_PCIDevice_INTLine]           = dispatch_generic,
+    [aoHidd_PCIDevice_IRQLine]           = dispatch_generic,
+    [aoHidd_PCIDevice_RomBase]           = dispatch_generic,
+    [aoHidd_PCIDevice_RomSize]           = dispatch_generic,
+    [aoHidd_PCIDevice_ExtendedConfig]    = dispatch_generic,
     [aoHidd_PCIDevice_Base0]        = dispatch_base,
     [aoHidd_PCIDevice_Base1]        = dispatch_base,
     [aoHidd_PCIDevice_Base2]        = dispatch_base,
@@ -949,22 +955,24 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_PCIDevice_InterfaceDesc:
                 *msg->storage = (IPTR)dev->strInterface;
                 break;
-        case aoHidd_PCIDevice_IRQStatus:
+
+            case aoHidd_PCIDevice_IRQStatus:
                 *msg->storage = (
                     (getWord(cl, o, PCICS_STATUS) &
                         PCISTF_INTERRUPT_STATUS)
                     == PCISTF_INTERRUPT_STATUS);
                 break;
-        case aoHidd_PCIDevice_CapabilitiesPresent:
+
+            case aoHidd_PCIDevice_CapabilitiesPresent:
                 *msg->storage = (
                     (getWord(cl, o, PCICS_STATUS) &
                         PCISTF_CAPABILITIES)
                     == PCISTF_CAPABILITIES);
                 break;
 
-        case aoHidd_PCIDevice_Owner:
-            *msg->storage = (IPTR)dev->ownerLock.ss_Link.ln_Name;
-            break;
+            case aoHidd_PCIDevice_Owner:
+                *msg->storage = (IPTR)dev->ownerLock.ss_Link.ln_Name;
+                break;
 
             default:
                 OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
