@@ -5,6 +5,6 @@ FILES := pcipc_init driverclass pciconf1 pciconf2
 
 %build_module mmake=kernel-hidd-pci-pcipc \
     modname=pcipc modtype=hidd \
-    files=$(FILES)
+    files=$(FILES) uselibs="acpica"
 
 %common
