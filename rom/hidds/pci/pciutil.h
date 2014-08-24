@@ -187,7 +187,7 @@ static const PCI_ClassCodes PCI_ClassTable[] =
 };
 
 void getPCIClassDesc( UBYTE class, UBYTE sub, UBYTE prgif, STRPTR *cdesc, STRPTR *sdesc, STRPTR *pdesc );
-ULONG sizePCIBaseReg( OOP_Object *driver, struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE func, UBYTE basenum );
+ULONG sizePCIBaseReg( OOP_Object *driver, struct pci_staticdata *psd, struct DeviceData *device, UBYTE bus, UBYTE dev, UBYTE func, UBYTE basenum );
 
 /* Use this for walking the PCI_ClassTable */
 #define PCI_CLASSTABLE_LEN (sizeof(PCI_ClassTable)/sizeof(PCI_ClassCodes))

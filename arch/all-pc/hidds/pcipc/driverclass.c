@@ -24,10 +24,12 @@
 #undef ACPICABase
 #undef HiddPCIDriverAttrBase
 #undef HiddAttrBase
+#undef HiddPCIDeviceAttrBase
 
 #define ACPICABase            (LIBBASE->psd.acpicaBase)
 #define	HiddPCIDriverAttrBase (PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase          (PSD(cl)->hiddAB)
+#define HiddPCIDeviceAttrBase (PSD(cl)->hidd_PCIDeviceAB)
 
 /*
     We overload the New method in order to introduce the Hidd Name and
@@ -55,16 +57,31 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
 }
 
-BOOL PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
-					    struct pHidd_PCIDriver_hasExtendedConfig *msg)
+IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
+					    struct pHidd_PCIDriver_HasExtendedConfig *msg)
 {
-    /* Give false positive for testing purposes */
-    return TRUE;
+    /*
+        Give false positive for testing purposes
+        This should check if the device has mmio space declared with mcfg_table and mcfg_allocation, in
+        which case we should return the right mmio base addressable in ECAM functions.
+    */
+    return 0x280177;
 }
 
 ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
 					    struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
+    /*
+        We NEED the device object as it houses the ExtededConfig attribute per device.
+        We know that the value stored in ExtendedConfig is the mmio base as returned by PCPCI__Hidd_PCIDriver__HasExtendedConfig.
+        If we get ExtendedConfig we will use ECAM method.
+    */
+
+    IPTR extendedconfig;
+
+    OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &extendedconfig);
+    bug("PCPCI__Hidd_PCIDriver__ReadConfigLong dev->extendedconfig = %x\n", extendedconfig);
+
     return PSD(cl)->ReadConfigLong(msg->bus, msg->dev, msg->sub, msg->reg);
 }
 
@@ -105,7 +122,8 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
-    if (LIBBASE->psd.hiddPCIDriverAB == 0 || LIBBASE->psd.hiddAB == 0)
+    LIBBASE->psd.hidd_PCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    if (LIBBASE->psd.hiddPCIDriverAB == 0 || LIBBASE->psd.hiddAB == 0 || LIBBASE->psd.hidd_PCIDeviceAB == 0)
     {
 	D(bug("[PCI.PC] ObtainAttrBases failed\n"));
 	return FALSE;
@@ -138,6 +156,7 @@ static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
         CloseLibrary(ACPICABase);
     }
 
+    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
     OOP_ReleaseAttrBase(IID_Hidd);
     

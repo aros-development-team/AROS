@@ -61,12 +61,18 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     bug("[PCIDriver] Alert! PCIDriver::WriteConfigLong() unimplemented!!!\n");
 }
 
-BOOL PCIDrv__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
+/*
+    IPTR PCIDriver::HasExtendedConfiguration(bus, dev, sub)
+
+    This does not need to be implemented in the driver, in that case
+    ECAM access method is not used and extended configuration is unavailable.
+*/
+IPTR PCIDrv__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_HasExtendedConfig *msg)
 {
     /* Wheeeee! Someone has forgotten to reimplement the HasExtendedConfig!! */
     bug("[PCIDriver] Alert! PCIDriver::HasExtendedConfig() unimplemented!!!\n");
-    return FALSE;
+    return (IPTR)NULL;
 }
 
 /*
@@ -89,7 +95,7 @@ UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
      * First, read whole ConfigWord from PCI config space, using defined 
      * method
      */
-    ULONG temp = HIDD_PCIDriver_ReadConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
+    ULONG temp = HIDD_PCIDriver_ReadConfigLong(o, msg->device, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
 
     // Then, return only this part of the Long which is requested
     return (temp >> ((msg->reg & 3) * 8)) & 0xff;
@@ -98,7 +104,7 @@ UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
 UWORD PCIDrv__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
     struct pHidd_PCIDriver_ReadConfigWord *msg)
 {
-    ULONG temp = HIDD_PCIDriver_ReadConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
+    ULONG temp = HIDD_PCIDriver_ReadConfigLong(o, msg->device, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
 
     return (temp >> ((msg->reg & 2) * 8)) & 0xffff;
 }
@@ -110,13 +116,13 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
     const int shift = (msg->reg & 3) * 8;
 
     // Read whole Long from PCI config space.
-    temp = HIDD_PCIDriver_ReadConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
+    temp = HIDD_PCIDriver_ReadConfigLong(o, msg->device, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
 
     // Modify proper part of it according to request.
     temp = (temp & ~(0xff << shift)) | ((ULONG)msg->val << shift);
 
     // And put whole Long again into PCI config space.
-    HIDD_PCIDriver_WriteConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3, temp);
+    HIDD_PCIDriver_WriteConfigLong(o, msg->device, msg->bus, msg->dev, msg->sub, msg->reg & ~3, temp);
 }
 
 void PCIDrv__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
@@ -126,13 +132,13 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
     const int shift = (msg->reg & 2) * 8;
 
     // Read whole Long from PCI config space.
-    temp = HIDD_PCIDriver_ReadConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
+    temp = HIDD_PCIDriver_ReadConfigLong(o, msg->device, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
 
     // Modify proper part of it according to request.
     temp = (temp & ~(0xffff << shift)) | ((ULONG)msg->val << shift);
 
     // And put whole Long again into PCI config space.
-    HIDD_PCIDriver_WriteConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3, temp);
+    HIDD_PCIDriver_WriteConfigLong(o, msg->device, msg->bus, msg->dev, msg->sub, msg->reg & ~3, temp);
 }
 
 /*

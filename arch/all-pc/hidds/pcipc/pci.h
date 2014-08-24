@@ -32,6 +32,8 @@ struct pci_staticdata
     OOP_AttrBase   hiddPCIDriverAB;
     OOP_AttrBase   hiddAB;
 
+    OOP_AttrBase   hidd_PCIDeviceAB;
+
     OOP_Class	  *driverClass;
 
     /* Low-level sub-methods */
