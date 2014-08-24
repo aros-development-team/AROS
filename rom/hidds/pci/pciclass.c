@@ -2,7 +2,7 @@
     Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
@@ -118,7 +118,7 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
             devtags[1].ti_Data = dev;
             devtags[2].ti_Data = 0;
 
-            devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, sub);
+            devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, 0);
 
             /* Knock knock! Is any device here? */
             type = isPCIDeviceAvailable(cl, drv, bus, dev, 0);
@@ -142,7 +142,7 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
                 for (sub=1; sub < 8; sub++)
                 {
                     devtags[2].ti_Data = sub;
-
+                    devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, sub);
                     if (isPCIDeviceAvailable(cl, drv, bus, dev, sub))
                         InsertDevice(cl, &highBus, devtags);
                 }

@@ -5,7 +5,7 @@
     Desc: PCI device class
     Lang: English
 */
-#define DEBUG 1
+//#define DEBUG 1
 #include <exec/types.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
@@ -140,6 +140,7 @@ static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, 
     while((where > 0xff) && (where < 0xfff))
     {
         caphdr = getLong(cl, o, where);
+        if( (caphdr == -1) || (caphdr == 0)) return 0;
 
         if ((caphdr & 0xffff) == capability) return (UWORD)where;
 
@@ -815,8 +816,6 @@ static void dispatch_extendedcapability(OOP_Class *cl, OOP_Object *o, struct pRo
 
     *msg->storage = findExpressExtendedCapabilityOffset(cl, o, capability);
 
-	/* Needs ECAM access mechanism, return 0 */
-    *msg->storage = 0;
     return;
 }
 
