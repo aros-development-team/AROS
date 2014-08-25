@@ -1,0 +1,18 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := example_varargs
+EXEDIR          := $(AROS_TESTS)/sdi
+USER_INCLUDES   := -I$(SRCDIR)/$(CURDIR)/../..
+#USER_CFLAGS     := -D__UTILITY_STDLIBBASE__
+
+#MM- test : test-sdi-varargs
+#MM- test-quick : test-sdi-varargs-quick
+
+#MM test-sdi-varargs : includes linklibs
+
+%build_progs mmake=test-sdi-varargs \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

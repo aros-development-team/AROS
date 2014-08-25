@@ -1,0 +1,40 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+#DISABLED #MM- test : test-sdi-libraries
+
+#MM test-sdi-libraries-test : includes linklibs
+
+#MM test-sdi-libraries-library : includes
+
+#MM test-sdi-libraries-linklib : includes
+
+EXEDIR        := $(AROS_TESTS)/sdi
+
+FILES         := example_lib
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../..
+USER_CFLAGS   := -DAROS_ABI_V1
+
+%build_module_simple mmake=test-sdi-libraries-library \
+    modname=example modtype=library \
+    files=$(FILES) moduledir=$(EXEDIR)
+
+
+FILES         := example_linklib
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/include
+USER_CFLAGS   :=
+
+%build_linklib mmake=test-sdi-libraries-linklib libname=example \
+  files=$(FILES) libdir=$(EXEDIR)
+
+
+FILES         := example_libtest
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+USER_CFLAGS   :=
+USER_LDFLAGS  := -L$(EXEDIR)
+
+%build_progs mmake=test-sdi-libraries-test \
+    files=$(FILES) targetdir=$(EXEDIR) uselibs="example"
+
+%common
