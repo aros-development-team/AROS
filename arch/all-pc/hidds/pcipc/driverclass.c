@@ -72,15 +72,30 @@ IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
                     FIXME: Check the validity of the extended configuration space
                 */
 
-                ULONG *val, *val2;
+                ULONG *extcap;
 
                 mmio = ((IPTR)mcfg_alloc->Address) + (((msg->bus&255)<<20) | ((msg->dev&31)<<15) | ((msg->sub&7)<<12));
 
-                val = (APTR) (mmio + 0x100);
-                val2 = (APTR) (mmio);
+                /*
+                    Absence of any Extended Capabilities is required to be indicated
+                    by an Extended Capability header with a Capability ID of 0000h,
+                    a Capability Version of 0h, and a Next Capability Offset of 0h.
 
-                D(bug("%p %08x\n", val2, *val2));
-                D(bug("bus %d dev %d sub %d %p MMIO + 0x100 = %08x\n", msg->bus, msg->dev, msg->sub, val, *val));
+                    For PCI devices OnMyHardware(TM) extended capability header at 0x100 reads 0xffffffff.
+
+                    0xffffffff is non valid extended capability header as it would point
+                    the next capability outside configuration space.
+
+                    If we get extended capability header set with all ones then we won't use ECAM.
+                    (PCI device in mmio space, not PCIe)
+                */
+
+                extcap = (APTR) (mmio + 0x100);
+                D(bug("HasExtendedConfig: bus %d dev %d sub %d extcap %08x\n", msg->bus, msg->dev, msg->sub, *extcap));
+                if(*extcap == 0xffffffff) {
+                    D(bug("    Device is PCI not PCIe\n"));
+                    mmio = 0;
+                }
 
                 break;
             }else{
