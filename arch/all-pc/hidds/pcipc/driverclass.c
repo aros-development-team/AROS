@@ -7,7 +7,7 @@
 */
 
 #define __OOP_NOATTRBASES__
-
+//#define DEBUG 1
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <hidd/pci.h>
@@ -58,33 +58,40 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_PCIDriver_HasExtendedConfig *msg)
 {
+    IPTR mmio = 0;
+
     if(PSD(cl)->mcfg_tbl) {
 
         const ACPI_TABLE_MCFG      *mcfg_tbl   = (APTR)PSD(cl)->mcfg_tbl;
         const ACPI_MCFG_ALLOCATION *mcfg_alloc = (APTR)mcfg_tbl +  sizeof(ACPI_TABLE_MCFG);
-        //bug("mcfg_tbl %p\n",   mcfg_tbl);
 
         do {
-            //bug("mcfg_alloc %p\n", mcfg_alloc);
-
-            //bug("  Address        0x%08X\n", mcfg_alloc->Address);
-            //bug("  PciSegment     0x%04X\n", mcfg_alloc->PciSegment);       /* What is this? I don't even... */
-            //bug("  StartBusNumber 0x%02X\n", mcfg_alloc->StartBusNumber);
-            //bug("  EndBusNumber   0x%02X\n", mcfg_alloc->EndBusNumber);
-
             if( (msg->bus <= mcfg_alloc->EndBusNumber) && (msg->bus >= mcfg_alloc->StartBusNumber) ) {
-                //bug("mcfg_alloc has the bus number\n");
-                /* FIXME: Check the validity of the extended configuration space */
-                /* Address is actually QUAD, hope this will work on both 32-bit and 64-bit */
-                //bug("bus %d, dev %d, func %d\n at %x\n", msg->bus, msg->dev, msg->sub, ((IPTR)mcfg_alloc->Address) + ((msg->bus<<20) | (msg->dev<<15) | (msg->sub<<12)));
-                return ((IPTR)mcfg_alloc->Address) + (((msg->bus&255)<<20) | ((msg->dev&31)<<15) | ((msg->sub&7)<<12)) ; 
+
+                /*
+                    FIXME: Check the validity of the extended configuration space
+                */
+
+                ULONG *val, *val2;
+
+                mmio = ((IPTR)mcfg_alloc->Address) + (((msg->bus&255)<<20) | ((msg->dev&31)<<15) | ((msg->sub&7)<<12));
+
+                val = (APTR) (mmio + 0x100);
+                val2 = (APTR) (mmio);
+
+                D(bug("%p %08x\n", val2, *val2));
+                D(bug("bus %d dev %d sub %d %p MMIO + 0x100 = %08x\n", msg->bus, msg->dev, msg->sub, val, *val));
+
+                break;
+            }else{
+                D(bug("HasExtendedConfig: Device not found! bus %d dev %d sub %d \n", msg->bus, msg->dev, msg->sub));
             }
 
             mcfg_alloc++;
         }while((APTR)mcfg_alloc < ((APTR)mcfg_tbl + mcfg_tbl->Header.Length));
 
     }
-    return (IPTR)NULL;
+    return mmio;
 }
 
 ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
@@ -98,15 +105,17 @@ ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
         While the bus is being enumerated we automagically skip ECAM until ExtendedConfig attribute is set and we have a valid device object.
     */
 
-    IPTR extendedconfig;
+    IPTR mmio = 0;
 
-    OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &extendedconfig);
-
-    if(extendedconfig) {
-        //bug("PCPCI__Hidd_PCIDriver__ReadConfigLong dev->extendedconfig = %x\n", extendedconfig);
+    OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &mmio);
+    if(mmio) {
         /* This is the ECAM access method for long read others yeat unimplemented */
-        ULONG *retlong = (APTR) (extendedconfig | (msg->reg & 0xffc));
-        bug("ECAM retlong(%p) %x\n", retlong, *retlong);
+        ULONG *retlong, *val;
+
+        val = (APTR) (mmio);
+        retlong = (APTR) (mmio + (msg->reg & 0xffc));
+
+        D(bug("ECAM retlong %08x %p %08x\n", *val, retlong, *retlong));
         return *retlong;
     }
     return PSD(cl)->ReadConfigLong(msg->bus, msg->dev, msg->sub, msg->reg);

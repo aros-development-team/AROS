@@ -118,33 +118,29 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
             devtags[1].ti_Data = dev;
             devtags[2].ti_Data = 0;
 
-            devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, 0);
-
             /* Knock knock! Is any device here? */
             type = isPCIDeviceAvailable(cl, drv, bus, dev, 0);
-
-            /* Testing... will be removed */
-            if(type) {
-                bug("[PCI__HW__SetUpDriver] Driver returns extendedconfig as %x\n", devtags[4].ti_Data);
-            }
 
             switch(type)
             {
             /* Regular device */
             case 1:
+                devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, 0);
                 InsertDevice(cl, &highBus, devtags);
                 break;
 
             /* Cool! Multifunction device, search subfunctions then */
             case 2:
+                devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, 0);
                 InsertDevice(cl, &highBus, devtags);
                     
                 for (sub=1; sub < 8; sub++)
                 {
                     devtags[2].ti_Data = sub;
-                    devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, sub);
-                    if (isPCIDeviceAvailable(cl, drv, bus, dev, sub))
+                    if (isPCIDeviceAvailable(cl, drv, bus, dev, sub)) {
+                        devtags[4].ti_Data =HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, sub);
                         InsertDevice(cl, &highBus, devtags);
+                    }
                 }
                 break;
             }
