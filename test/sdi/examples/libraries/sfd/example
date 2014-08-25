@@ -1,0 +1,16 @@
+==id $Id: example_lib.sfd 30792 2009-03-07 22:40:04Z neil $
+==copyright Public Domain
+==base _ExampleBase
+==basetype struct Library *
+==libname example.library
+==bias 30
+==public
+==include <exec/types.h>
+char * SayHelloOS4() ()
+char * SayHelloOS3() ()
+char * SayHelloMOS() ()
+char * Uppercase(char *txt) (a0)
+char * SPrintfA(char *buf, char *format, APTR args) (a0,a1,a2)
+==varargs
+char * SPrintf(char *buf, char *format, APTR args, ...) (a0,a1,a2)
+==end
