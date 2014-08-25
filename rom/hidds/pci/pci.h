@@ -60,7 +60,8 @@ typedef struct DeviceData {
 
     struct SignalSemaphore ownerLock;
 
-    IPTR                extendedconfig; /* Stores the mmio base as returned by mcfg_allocation (ACPI) */
+    IPTR                extendedconfig; /* If Extended Configuration exist the HW driver fills this with non NULL value */
+
 } tDeviceData;
 
 struct pci_staticdata {

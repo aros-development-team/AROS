@@ -131,7 +131,7 @@ static UBYTE findCapabilityOffset(OOP_Class * cl, OOP_Object *o, UBYTE capabilit
     return 0;
 }
 
-/* Returns offset of PCI Express extended capability area in config area or 0 if capability is not present */
+/* Returns offset of PCI Express extended capability or 0 if capability is not present */
 static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, UWORD capability)
 {
     UWORD where = 0x100; /*  First PCI Express extended cap list entry */
@@ -430,7 +430,6 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                         break;
 
                     case aoHidd_PCIDevice_ExtendedConfig:
-                        bug("[PCIDev__Root__New] Setting dev->extendedconfig = %x\n", tag->ti_Data);
                         dev->extendedconfig = tag->ti_Data;
                         break;
                 }
@@ -604,6 +603,14 @@ static void dispatch_generic(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
             case aoHidd_PCIDevice_ExtendedConfig:
                 *msg->storage = (IPTR)dev->extendedconfig;
+                break;
+
+            case aoHidd_PCIDevice_ConfigSize:
+                if(dev->extendedconfig) {
+                    *msg->storage = 4096;
+                } else {
+                    *msg->storage = 256;
+                }
                 break;
 
         }
@@ -840,6 +847,7 @@ static const dispatcher_t Dispatcher[num_Hidd_PCIDevice_Attrs] =
     [aoHidd_PCIDevice_RomBase]           = dispatch_generic,
     [aoHidd_PCIDevice_RomSize]           = dispatch_generic,
     [aoHidd_PCIDevice_ExtendedConfig]    = dispatch_generic,
+    [aoHidd_PCIDevice_ConfigSize]        = dispatch_generic,
     [aoHidd_PCIDevice_Base0]        = dispatch_base,
     [aoHidd_PCIDevice_Base1]        = dispatch_base,
     [aoHidd_PCIDevice_Base2]        = dispatch_base,
