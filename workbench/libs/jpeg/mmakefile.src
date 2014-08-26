@@ -22,7 +22,7 @@ USER_CFLAGS += -Wno-main
 #MM- core-linklibs : linklibs-jpeg
 
 %build_module mmake=workbench-libs-jpeg \
-  modname=jpeg_au modtype=library \
+  modname=jfif modtype=library \
   files="$(FILES)" linklibname=jpeg
 
 
