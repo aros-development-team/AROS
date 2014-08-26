@@ -180,7 +180,7 @@
     (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
     #define LIBPROTO(name, ret, ...)                                  \
       LIBFUNC ret LIB_##name(__VA_ARGS__)
-    #define LIBPROTOVA(name, ret, base, ...)
+    #define LIBPROTOVA(name, ret, ...)
     #define LIBSTUB(name, ret, ...)                                   \
       LIBFUNC ret LIBSTUB_0_##name(void)
     #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
