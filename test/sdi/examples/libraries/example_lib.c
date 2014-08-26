@@ -192,28 +192,28 @@ LIBSTUB(SPrintfA, char *)
   return CALL_LFUNC(SprintfA, (char)REG_A0, (char *)REG_A1, (APTR)REG_A2);
 }
 #elif defined(__AROS__)
-AROS_LH0(char *, SayHelloOS4, struct Library *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
+AROS_LH0(char *, SayHelloOS4, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
 {
   AROS_LIBFUNC_INIT
   return CALL_LFUNC_NP(SayHelloOS4);
   AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(char *, SayHelloOS3, struct Library *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
+AROS_LH0(char *, SayHelloOS3, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
 {
   AROS_LIBFUNC_INIT
   return CALL_LFUNC_NP(SayHelloOS3);
   AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(char *, SayHelloMOS, struct Library *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
+AROS_LH0(char *, SayHelloMOS, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
 {
   AROS_LIBFUNC_INIT
   return CALL_LFUNC_NP(SayHelloMOS);
   AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(char *, Uppercase, AROS_LHA(char *, txt, A0), struct Library *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
+AROS_LH1(char *, Uppercase, AROS_LHA(char *, txt, A0), struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
 {
   AROS_LIBFUNC_INIT
   return  CALL_LFUNC(Uppercase, txt);
@@ -224,7 +224,7 @@ AROS_LH3(char *, SPrintfA,
     AROS_LHA(char *, buf, A0),
     AROS_LHA(char *, format, A1),
     AROS_LHA(APTR, args, A1),
-    struct Library *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
 )
 {
   AROS_LIBFUNC_INIT
@@ -258,10 +258,6 @@ LIBFUNC static LONG                   LibNull   (void);
 #elif defined(__AROS__)
 
 #include <aros/libcall.h>
-
-//#define example_LibOpen LibOpen
-//#define example_LibClose LibClose
-#define example_3_LibExpunge LibExpunge
 
 static AROS_UFP3 (struct LibraryHeader *, LibInit,
                   AROS_UFPA(struct LibraryHeader *, base, D0),
