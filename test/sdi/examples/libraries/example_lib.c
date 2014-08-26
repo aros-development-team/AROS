@@ -56,7 +56,7 @@
 static const char UserLibName[] = "example.library";
 static const char UserLibID[]   = "\0$VER: example.library 1.4 25.08.2014)";
 
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 struct ExecBase *SysBase;
 #endif
 
