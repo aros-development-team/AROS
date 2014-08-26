@@ -124,16 +124,25 @@ ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
 
     OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &mmio);
     if(mmio) {
-        /* This is the ECAM access method for long read others yeat unimplemented */
-        ULONG *retlong, *val;
+        /* This is the ECAM access method for long read */
+        volatile ULONG *longreg;
 
-        val = (APTR) (mmio);
-        retlong = (APTR) (mmio + (msg->reg & 0xffc));
+        longreg = (APTR) (mmio + (msg->reg & 0xffc));
 
-        D(bug("ECAM retlong %08x %p %08x\n", *val, retlong, *retlong));
-        return *retlong;
+        D(bug("ECAM.read longreg %p %08x\n", longreg, *longreg));
+        return *longreg;
     }
-    return PSD(cl)->ReadConfigLong(msg->bus, msg->dev, msg->sub, msg->reg);
+
+    /*
+        Last good long register without ECAM,
+        macros in CAM methods take care of the alignement.
+        we don't want to return some random value.
+    */
+    if(msg->reg < 0x100) {
+        return PSD(cl)->ReadConfigLong(msg->bus, msg->dev, msg->sub, msg->reg);
+    } else {
+        return 0xffffffff;
+    }
 }
 
 UWORD PCPCI__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
@@ -154,7 +163,26 @@ UBYTE PCPCI__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
 void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_PCIDriver_WriteConfigLong *msg)
 {
-    PSD(cl)->WriteConfigLong(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
+    IPTR mmio = 0;
+
+    OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &mmio);
+    if(mmio) {
+        /* This is the ECAM access method for long write */
+        volatile ULONG *longreg;
+        longreg = (APTR) (mmio + (msg->reg & 0xffc));
+        D(bug("ECAM.write.old longreg %p %08x  = %08x\n", longreg, *longreg, msg->val));
+        *longreg = msg->val;
+        D(bug("ECAM.write.new longreg %p %08x == %08x?\n", longreg, *longreg, msg->val));
+    } else {
+        /*
+            Last good long register without ECAM,
+            macros in CAM methods take care of the alignement.
+            we don't want to store the value in some random address.
+        */
+        if(msg->reg < 0x100) {
+            PSD(cl)->WriteConfigLong(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
+        }
+    }
 }
 
 /* Class initialization and destruction */

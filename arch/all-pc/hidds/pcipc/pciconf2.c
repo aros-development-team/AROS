@@ -15,7 +15,7 @@
 #ifdef LEGACY_SUPPORT
 
 #define CFG2ADD(dev,reg)    \
-    (0xc000 | ((dev)<<8) | (reg&0xff))
+    (0xc000 | ((dev)<<8) | ((reg)&~3))
 
 static ULONG ReadConfig2Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
 {

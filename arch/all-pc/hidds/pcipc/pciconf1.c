@@ -13,7 +13,7 @@
 
 #define CFGADD(bus,dev,func,reg)    \
     ( 0x80000000 | ((bus)<<16) |    \
-    ((dev)<<11) | ((func)<<8) | ((reg&0xff)&~3))
+    ((dev)<<11) | ((func)<<8) | ((reg)&~3))
 
 ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
 {
