@@ -113,7 +113,7 @@ BEGIN {
 	print "    AROS_LIBFUNC_INIT\n";
 
 	if ($prototype->{numargs} > 0) {
-	    print "    return CALL_LFUNC($libprefix$prototype->{funcname}";
+	    print "    return CALL_LFUNC($libprefix$prototype->{funcname}, ";
 	    print join (', ', @{$prototype->{___argnames}});
 	}
 	else {
