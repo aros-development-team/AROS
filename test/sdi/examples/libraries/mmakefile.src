@@ -15,7 +15,7 @@ include $(TOP)/config/make.cfg
 
 EXEDIR        := $(AROS_TESTS)/sdi
 
-FILES         := example_lib
+FILES         := example_lib stubs-aros
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../..
 USER_CFLAGS   := -DAROS_ABI_V1
 
