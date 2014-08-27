@@ -2,9 +2,10 @@
 
 include $(TOP)/config/make.cfg
 
-#DISABLED #MM- test : test-sdi-libraries
+#MM- test : test-sdi-libraries-test
 
-#MM test-sdi-libraries-test : includes linklibs
+#MM test-sdi-libraries-test : includes linklibs \
+#MM test-sdi-libraries-library test-sdi-libraries-linklib
 
 #MM test-sdi-libraries-library : includes
 

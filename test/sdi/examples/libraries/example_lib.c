@@ -292,6 +292,8 @@ LIBFUNC static LONG                   LibNull    (void);
 
 #if defined(__amigaos4__)
 int _start(void)
+#elif defined(__AROS__)
+__startup int Main(void)
 #else
 int Main(void)
 #endif
