@@ -73,9 +73,9 @@ struct ExecBase *SysBase;
 
 struct LibraryHeader
 {
-  struct Library	libBase;
+  struct Library  libBase;
   struct Library *sysBase;
-  ULONG           segList;
+  BPTR            segList;
 };
 
 #if defined(__amigaos4__)
@@ -515,12 +515,12 @@ STATIC CONST APTR LibVectors[] =
   (APTR)-1
 };
 
-STATIC CONST ULONG LibInitTab[] =
+STATIC CONST IPTR LibInitTab[] =
 {
   sizeof(struct LibraryHeader),
-  (ULONG)LibVectors,
-  (ULONG)NULL,
-  (ULONG)LibInit
+  (IPTR)LibVectors,
+  (IPTR)NULL,
+  (IPTR)LibInit
 };
 
 #endif
