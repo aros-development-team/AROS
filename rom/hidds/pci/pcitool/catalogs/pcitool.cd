@@ -128,3 +128,9 @@ I/O base:
 MSG_OWNER (//)
 Used by:
 ;
+MSG_PCIE_DEVICE_INFO (//)
+PCIe device info
+;
+MSG_PCIE_SERIAL_NUMBER (//)
+PCIe Serial Number
+;

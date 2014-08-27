@@ -130,6 +130,8 @@ Object *RangeList;
 Object *Status;
 Object *SaveInfo, *SaveAllInfo;
 
+Object *PCIeSerialNumber;
+
 struct Hook pci_hook;
 struct Hook display_hook;
 struct Hook select_hook;
@@ -371,6 +373,16 @@ AROS_UFH3(void, select_function,
             set(ROMSize, MUIA_Text_Contents, _(MSG_NA));
             strcpy(SaveDeviceInfo.ROM_Size, _(MSG_NA));
         }
+
+        OOP_GetAttr(obj, aHidd_PCIDevice_ExtendedCapabilitySerialNumber, (APTR)&val);
+        if(val)
+        {
+            val2 = HIDD_PCIDevice_ReadConfigLong(obj, val+4);
+            val3 = HIDD_PCIDevice_ReadConfigLong(obj, val+8);
+            snprintf(buf, MAX_STRING_LENGTH, "%08lx:%08lx", val3, val2);
+            set(PCIeSerialNumber, MUIA_Text_Contents, buf);
+        }
+        else set(PCIeSerialNumber, MUIA_Text_Contents, _(MSG_NA));
 
         DoMethod(RangeList, MUIM_List_Clear);
 
@@ -664,6 +676,17 @@ BOOL GUIinit()
                                     MUIA_Background, MUII_TextBack,
                                     MUIA_Text_SetMax, FALSE,
                                     MUIA_Text_Contents, "15",
+                                End,
+                            End,
+                            Child, VGroup, GroupFrameT(_(MSG_PCIE_DEVICE_INFO)),
+                                Child, ColGroup(2),
+                                    Child, Label(_(MSG_PCIE_SERIAL_NUMBER)),
+                                    Child, PCIeSerialNumber = TextObject,
+                                        TextFrame,
+                                        MUIA_Background, MUII_TextBack,
+                                        MUIA_Text_SetMax, FALSE,
+                                        MUIA_Text_Contents, "00000000:00000000",
+                                    End,
                                 End,
                             End,
                             Child, HGroup,
