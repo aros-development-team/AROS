@@ -126,7 +126,7 @@ LIBPROTO(Uppercase, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *txt))
 {
   char *p = txt;
 
-  while(p)
+  while(*p)
   {
     *p = toupper(*p);
     p++;
