@@ -123,7 +123,8 @@ my %targets = (
 		 vectors   => { 'library' => @lf, 'device' => @df, 'boopsi' => @bf },
 		 macros    => 'MacroAROS',
 		 stubs     => 'StubAROS',
-		 gatestubs => 'GateAROS'
+		 gatestubs => 'GateAROS',
+		 sdistubs  => 'SDIAROS'
 	       },
 	       
 	      'i.86be(-pc)?-amithlon' =>
@@ -219,7 +220,7 @@ if ($#ARGV < 0) {
 
 $mode = lc $mode;
 
-if (!($mode =~ /^(clib|dump|fd|libproto|lvo|functable|macros|proto|pragmas|stubs|gateproto|gatestubs|verify)$/)) {
+if (!($mode =~ /^(clib|dump|fd|libproto|lvo|functable|macros|proto|pragmas|stubs|gateproto|gatestubs|sdistubs|verify)$/)) {
     pod2usage (-message => "Unknown mode specified. Use --help for a list.",
 	       -verbose => 0,
 	       -exitval => 10);
@@ -339,6 +340,12 @@ for my $i ( 0 .. $#ARGV ) {
 	    $obj = $$classes{'gatestubs'}->new( sfd => $sfd,
 						proto => 0,
 						libproto => 0);
+						
+	    last;
+	};
+	
+	/^sdistubs$/ && do {
+	    $obj = $$classes{'sdistubs'}->new( sfd => $sfd );
 						
 	    last;
 	};
