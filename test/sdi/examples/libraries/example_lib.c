@@ -46,6 +46,8 @@
 #include <SDI_lib.h>
 #include <SDI_stdarg.h>
 
+#include "libproto.h"
+
 #define VERSION		1
 #define REVISION	4
 #define DATE        "25.08.2014"
@@ -71,29 +73,6 @@ struct ExecBase *SysBase;
 /* Local Structures & Prototypes                                              */
 /******************************************************************************/
 
-struct LibraryHeader
-{
-  struct Library  libBase;
-  struct Library *sysBase;
-  BPTR            segList;
-};
-
-#if defined(__amigaos4__)
-#define __BASE_OR_IFACE_TYPE	struct ExampleIFace *
-#define __BASE_OR_IFACE_VAR		IExample
-#else
-#define __BASE_OR_IFACE_TYPE	struct LibraryHeader *
-#define __BASE_OR_IFACE_VAR		ExampleBase
-#endif
-#define __BASE_OR_IFACE			__BASE_OR_IFACE_TYPE __BASE_OR_IFACE_VAR
-
-// first the prototypes of all our public library functions
-LIBPROTO(SayHelloOS4, char *, REG(a6, UNUSED __BASE_OR_IFACE));
-LIBPROTO(SayHelloOS3, char *, REG(a6, UNUSED __BASE_OR_IFACE));
-LIBPROTO(SayHelloMOS, char *, REG(a6, UNUSED __BASE_OR_IFACE));
-LIBPROTO(Uppercase, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *txt));
-LIBPROTO(SPrintfA, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *buf), REG(a1, char *format), REG(a2, APTR args));
-LIBPROTOVA(SPrintf, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *buf), REG(a1, char *format), ...);
 
 // let us now create the libvector.
 // Please note that the start of the vectors has to be always the "LFUNC_FAS"
@@ -192,45 +171,7 @@ LIBSTUB(SPrintfA, char *)
   return CALL_LFUNC(SprintfA, (char)REG_A0, (char *)REG_A1, (APTR)REG_A2);
 }
 #elif defined(__AROS__)
-AROS_LH0(char *, SayHelloOS4, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
-{
-  AROS_LIBFUNC_INIT
-  return CALL_LFUNC_NP(SayHelloOS4);
-  AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(char *, SayHelloOS3, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
-{
-  AROS_LIBFUNC_INIT
-  return CALL_LFUNC_NP(SayHelloOS3);
-  AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(char *, SayHelloMOS, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
-{
-  AROS_LIBFUNC_INIT
-  return CALL_LFUNC_NP(SayHelloMOS);
-  AROS_LIBFUNC_EXIT
-}
-
-AROS_LH1(char *, Uppercase, AROS_LHA(char *, txt, A0), struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
-{
-  AROS_LIBFUNC_INIT
-  return  CALL_LFUNC(Uppercase, txt);
-  AROS_LIBFUNC_EXIT
-}
-
-AROS_LH3(char *, SPrintfA,
-    AROS_LHA(char *, buf, A0),
-    AROS_LHA(char *, format, A1),
-    AROS_LHA(APTR, args, A1),
-    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
-)
-{
-  AROS_LIBFUNC_INIT
-  return CALL_LFUNC(SPrintfA, buf, format, args);
-  AROS_LIBFUNC_EXIT
-}
+// we use external file
 #endif
 
 /******************************************************************************/
