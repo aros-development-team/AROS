@@ -34,7 +34,7 @@ LIBPROTOVA(SPrintf, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *buf),
 #if defined(__AROS__)
 AROS_LD0(char *, SayHelloOS4, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
 AROS_LD0(char *, SayHelloOS3, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
-AROS_LD0(char *, SayHelloMOS, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB)
+AROS_LD0(char *, SayHelloMOS, struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
 AROS_LD1(char *, Uppercase, AROS_LDA(char *, txt, A0), struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
 AROS_LD3(char *, SPrintfA,
     AROS_LDA(char *, buf, A0),
