@@ -1,7 +1,12 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/gfxmacros.h>
 
-#include <proto/png.h>
+#include <proto/pngdt.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>

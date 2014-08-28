@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,7 +12,7 @@
 
 #include <proto/dos.h>
 #include <proto/alib.h>
-#include <proto/png.h>
+#include <proto/pngdt.h>
 #include <proto/datatypes.h>
 
 #include <aros/bigendianio.h>
