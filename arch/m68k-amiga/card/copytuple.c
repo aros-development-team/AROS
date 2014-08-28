@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CopyTuple() function.
@@ -84,7 +84,7 @@ AROS_LH4(ULONG, CopyTuple,
 	AROS_LHA(UBYTE*, buffer, A0),
 	AROS_LHA(ULONG, tuplecode, D1),
 	AROS_LHA(ULONG, size, D0),
-	struct CardResource*, CardResource, 12, Cardres)
+	struct CardResource*, CardResource, 12, Card)
 {
     AROS_LIBFUNC_INIT
 

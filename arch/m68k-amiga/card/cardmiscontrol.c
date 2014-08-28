@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CardMiscControl() function.
@@ -16,7 +16,7 @@
 AROS_LH2(UBYTE, CardMiscControl,
 	AROS_LHA(struct CardHandle*, handle, A1),
 	AROS_LHA(UBYTE, control_bits, D1),
-	struct CardResource*, CardResource, 8, Cardres)
+	struct CardResource*, CardResource, 8, Card)
 {
     AROS_LIBFUNC_INIT
 

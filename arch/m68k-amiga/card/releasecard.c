@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReleaseCard() function.
@@ -13,7 +13,7 @@
 AROS_LH2(void, ReleaseCard,
 	 AROS_LHA(struct CardHandle*, handle, A1),
 	 AROS_LHA(ULONG, flags, D0),
-	 struct CardResource*, CardResource, 2, Cardres)
+	 struct CardResource*, CardResource, 2, Card)
 {
     AROS_LIBFUNC_INIT
 

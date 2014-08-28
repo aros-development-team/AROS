@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReadCardStatus() function.
@@ -9,7 +9,7 @@
 #include "card_intern.h"
 
 AROS_LH0(UBYTE, ReadCardStatus,
-	 struct CardResource*, CardResource, 6, Cardres)
+	 struct CardResource*, CardResource, 6, Card)
 {
     AROS_LIBFUNC_INIT
 

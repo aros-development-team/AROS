@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetCardMap() function.
@@ -19,7 +19,7 @@ const struct CardMemoryMap cmm =
 };
 
 AROS_LH0(struct CardMemoryMap*, GetCardMap,
-	struct CardResource*, CardResource, 3, Cardres)
+	struct CardResource*, CardResource, 3, Card)
 {
     AROS_LIBFUNC_INIT
 
