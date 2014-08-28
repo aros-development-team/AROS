@@ -49,6 +49,11 @@ asm(".text\n\
     _start:\n\
      moveq #20,d0\n\
      rts");
+#elif defined(__AROS__)
+__startup int Main(void)
+{
+  return RETURN_FAIL;
+}
 #else
 LONG _start(void)
 {

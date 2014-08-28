@@ -12,7 +12,8 @@ FILES := \
     convertUTF \
     codesets \
     codepages \
-    debug
+    debug \
+    stubs-aros
 
 # We need to use -idirafter, so that we
 # *don't* pick up the project's local MUI headers.

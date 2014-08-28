@@ -173,4 +173,144 @@ LIBPROTOVA(CodesetsListRemove, BOOL, REG(a6, UNUSED __BASE_OR_IFACE), ...);
 LIBPROTOVA(CodesetsListRemove, BOOL, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, Tag tag1), ...);
 #endif
 
+#if defined(__AROS__)
+AROS_LD5(ULONG, CodesetsConvertUTF32toUTF16,
+    AROS_LDA(const UTF32 **, ___sourceStart, A0),
+    AROS_LDA(const UTF32 *, ___sourceEnd, A1),
+    AROS_LDA(UTF16 **, ___targetStart, A2),
+    AROS_LDA(UTF16 *, ___targetEnd, A3),
+    AROS_LDA(ULONG, ___flags, D0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD5(ULONG, CodesetsConvertUTF16toUTF32,
+    AROS_LDA(const  UTF16 **, ___sourceStart, A0),
+    AROS_LDA(const UTF16 *, ___sourceEnd, A1),
+    AROS_LDA(UTF32 **, ___targetStart, A2),
+    AROS_LDA(UTF32 *, ___targetEnd, A3),
+    AROS_LDA(ULONG, ___flags, D0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD5(ULONG, CodesetsConvertUTF16toUTF8,
+    AROS_LDA(const UTF16 **, ___sourceStart, A0),
+    AROS_LDA(const UTF16 *, ___sourceEnd, A1),
+    AROS_LDA(UTF8 **, ___targetStart, A2),
+    AROS_LDA(UTF8 *, ___targetEnd, A3),
+    AROS_LDA(ULONG, ___flags, D0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD2(BOOL, CodesetsIsLegalUTF8,
+    AROS_LDA(const UTF8 *, ___source, A0),
+    AROS_LDA(ULONG, ___length, D0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD2(BOOL, CodesetsIsLegalUTF8Sequence,
+    AROS_LDA(const UTF8 *, ___source, A0),
+    AROS_LDA(const UTF8 *, ___sourceEnd, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD5(ULONG, CodesetsConvertUTF8toUTF16,
+    AROS_LDA(const UTF8 **, ___sourceStart, A0),
+    AROS_LDA(const UTF8 *, ___sourceEnd, A1),
+    AROS_LDA(UTF16 **, ___targetStart, A2),
+    AROS_LDA(UTF16 *, ___targetEnd, A3),
+    AROS_LDA(ULONG, ___flags, D0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD5(ULONG, CodesetsConvertUTF32toUTF8,
+    AROS_LDA(const UTF32 **, ___sourceStart, A0),
+    AROS_LDA(const UTF32 *, ___sourceEnd, A1),
+    AROS_LDA(UTF8 **, ___targetStart, A2),
+    AROS_LDA(UTF8 *, ___targetEnd, A3),
+    AROS_LDA(ULONG, ___flags, D0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD5(ULONG, CodesetsConvertUTF8toUTF32,
+    AROS_LDA(const UTF8 **, ___sourceStart, A0),
+    AROS_LDA(const UTF8 *, ___sourceEnd, A1),
+    AROS_LDA(UTF32 **, ___targetStart, A2),
+    AROS_LDA(UTF32 *, ___targetEnd, A3),
+    AROS_LDA(ULONG, ___flags, D0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD2(struct codeset *, CodesetsSetDefaultA,
+    AROS_LDA(STRPTR, ___name, A0),
+    AROS_LDA(struct TagItem *, ___attrs, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD2(void, CodesetsFreeA,
+    AROS_LDA(APTR, ___obj, A0),
+    AROS_LDA(struct TagItem *, ___attrs, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(STRPTR *, CodesetsSupportedA,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD2(struct codeset *, CodesetsFindA,
+    AROS_LDA(STRPTR, ___name, A0),
+    AROS_LDA(struct TagItem *, ___attrs, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(struct codeset *, CodesetsFindBestA,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(ULONG, CodesetsUTF8Len,
+    AROS_LDA(const UTF8 *, ___str, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(STRPTR, CodesetsUTF8ToStrA,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(UTF8 *, CodesetsUTF8CreateA,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(ULONG, CodesetsEncodeB64A,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(ULONG, CodesetsDecodeB64A,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD2(ULONG, CodesetsStrLenA,
+    AROS_LDA(STRPTR, ___str, A0),
+    AROS_LDA(struct TagItem *, ___attrs, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(BOOL, CodesetsIsValidUTF8,
+    AROS_LDA(STRPTR, ___str, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD3(void, CodesetsFreeVecPooledA,
+    AROS_LDA(APTR, ___pool, A0),
+    AROS_LDA(APTR, ___mem, A1),
+    AROS_LDA(struct TagItem *, ___attrs, A2),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(STRPTR, CodesetsConvertStrA,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(struct codesetList *, CodesetsListCreateA,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(BOOL, CodesetsListDeleteA,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD2(BOOL, CodesetsListAddA,
+    AROS_LDA(struct codesetList *, ___codesetsList, A0),
+    AROS_LDA(struct TagItem *, ___attrs, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+AROS_LD1(BOOL, CodesetsListRemoveA,
+    AROS_LDA(struct TagItem *, ___attrs, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
+
+#endif
+
 #endif /* _LIB_PROTOS_H */
