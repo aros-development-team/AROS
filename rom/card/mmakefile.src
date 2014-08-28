@@ -16,7 +16,7 @@ FUNCTIONS := card_init
 #	cardchangecount cardinterface
 
 %build_module mmake=kernel-cardres \
-    modname=cardres modtype=resource \
+    modname=card modtype=resource \
     files="$(FUNCTIONS)"
 
 %common

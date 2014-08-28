@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CardResetRemove() function.
@@ -11,7 +11,7 @@
 AROS_LH2(ULONG, CardResetRemove,
 	AROS_LHA(struct CardHandle*, handle, A1),
 	AROS_LHA(ULONG, flag, D0),
-	struct CardResource*, CardResource, 7, Cardres)
+	struct CardResource*, CardResource, 7, Card)
 {
     AROS_LIBFUNC_INIT
 

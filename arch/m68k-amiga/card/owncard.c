@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OwnCard() function.
@@ -12,7 +12,7 @@
 
 AROS_LH1(struct CardHandle*, OwnCard,
 	 AROS_LHA(struct CardHandle*, handle, A1),
-	 struct CardResource*, CardResource, 1, Cardres)
+	 struct CardResource*, CardResource, 1, Card)
 {
     AROS_LIBFUNC_INIT
     

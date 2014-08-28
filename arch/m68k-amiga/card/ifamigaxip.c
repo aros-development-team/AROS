@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IfAmigaXIP() function.
@@ -10,7 +10,7 @@
 
 AROS_LH1(struct Resident*, IfAmigaXIP,
 	AROS_LHA(struct CardHandle*, handle, A2),
-	struct CardResource*, CardResource, 14, Cardres)
+	struct CardResource*, CardResource, 14, Card)
 {
     AROS_LIBFUNC_INIT
 

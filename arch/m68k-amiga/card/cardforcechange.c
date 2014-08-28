@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CardForceChange() function.
@@ -11,7 +11,7 @@
 #include "card_intern.h"
 
 AROS_LH0(ULONG, CardForceChange,
-	struct CardResource*, CardResource, 15, Cardres)
+	struct CardResource*, CardResource, 15, Card)
 {
     AROS_LIBFUNC_INIT
 
