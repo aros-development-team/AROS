@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to parse the command line options and the module config file for
@@ -724,7 +724,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                 "classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
                 "initpri", "type", "addromtag", "oopbase_field",
                 "rellib", "interfaceid", "interfacename",
-                "methodstub", "methodbase", "attributebase", "handler_func"
+                "methodstub", "methodbase", "attributebase", "handler_func",
+                "includename"
             };
             const unsigned int namenums = sizeof(names)/sizeof(char *);
             unsigned int namenum;
@@ -761,7 +762,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                 if (cl != NULL)
                     cl->basename = strdup(s);
                 if (in != NULL)
-                    exitfileerror(20, "basename not valid config option when in a interface section\n");
+                    exitfileerror(20, "basename not valid config option when in an interface section\n");
                 break;
 
             case 2: /* libbase */
@@ -1142,7 +1143,13 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                     exitfileerror(20, "handler specified when not a handler\n");
                 cfg->handlerfunc = strdup(s);
                 break;
-                    }
+            case 35: /* includename */
+                if (inclass)
+                    exitfileerror(20, "includename not valid config option"
+                        " when in a class section\n");
+                cfg->includename = strdup(s);
+                break;
+            }
         }
         else /* Line starts with ## */
         {
@@ -1248,6 +1255,12 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
             strcat(cfg->libbasetypeptrextern, " *");
             free(libbasetypeextern);
         }
+
+        if (cfg->includename == NULL)
+            cfg->includename = cfg->modulename;
+        cfg->includenameupper = strdup(cfg->includename);
+        for (s=cfg->includenameupper; *s!='\0'; *s = toupper(*s), s++)
+            if (!isalnum(*s)) *s = '_';
     }
 
     /* When class was given too fill in some defaults when not specified */

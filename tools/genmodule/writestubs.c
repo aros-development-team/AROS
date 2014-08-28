@@ -100,7 +100,7 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
             "/* Do not include the libbase */\n"
             "#define __%s_NOLIBBASE__\n"
             "#endif\n",
-            banner, cfg->modulenameupper, cfg->modulenameupper
+            banner, cfg->includenameupper, cfg->includenameupper
         );
     } else {
         fprintf
@@ -114,7 +114,7 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
             "/* Be sure that the libbases are included in the stubs file */\n"
             "#undef __NOLIBBASE__\n"
             "#undef __%s_NOLIBBASE__\n",
-            banner, cfg->modulenameupper
+            banner, cfg->includenameupper
         );
     }
     freeBanner(banner);
@@ -122,8 +122,8 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
     if (!(cfg->options & OPTION_NOINCLUDES))
     {
         if (is_rel)
-            fprintf(out, "#define __%s_RELLIBBASE__\n", cfg->modulenameupper);
-        fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
+            fprintf(out, "#define __%s_RELLIBBASE__\n", cfg->includenameupper);
+        fprintf(out, "#include <proto/%s.h>\n", cfg->includename);
     }
     else
     {

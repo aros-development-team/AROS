@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     The code for storing information of functions present in the module
@@ -257,9 +257,9 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
                 "\n"
                 "#if !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__)"
                 "\n",
-                cfg->modulenameupper,
+                cfg->includenameupper,
                 funclistit->version,
-                cfg->modulenameupper
+                cfg->includenameupper
         );
 
         switch (funclistit->libcall)
@@ -373,9 +373,9 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
                 "\n"
                 "#endif /* !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__) */"
                 "\n",
-                cfg->modulenameupper,
+                cfg->includenameupper,
                 funclistit->version,
-                cfg->modulenameupper
+                cfg->includenameupper
         );
     }
 }

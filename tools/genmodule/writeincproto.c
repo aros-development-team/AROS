@@ -1,8 +1,9 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
 
     Desc: Function to write proto/modulename(_rel).h. Part of genmodule.
 */
+
 #include "genmodule.h"
 
 void writeincproto(struct config *cfg)
@@ -12,7 +13,7 @@ void writeincproto(struct config *cfg)
     struct linelist *linelistit;
 
     snprintf(line, 255, "%s/proto/%s.h",
-             cfg->gendir, cfg->modulename
+             cfg->gendir, cfg->includename
     );
     out = fopen(line, "w");
 
@@ -29,8 +30,8 @@ void writeincproto(struct config *cfg)
             "\n"
             "%s"
             "\n"
-            , cfg->modulenameupper
-            , cfg->modulenameupper
+            , cfg->includenameupper
+            , cfg->includenameupper
             , banner
     );
     fprintf(out,
@@ -41,14 +42,14 @@ void writeincproto(struct config *cfg)
             "#include <clib/%s_protos.h>\n"
             "\n",
             (cfg->modtype == DEVICE) ? "#include <exec/devices.h>\n" : "",
-            cfg->modulename
+            cfg->includename
     );
     freeBanner(banner);
     if (!(cfg->options & OPTION_DUPBASE))
     {
         /* If single libbase store libbase in global variable.
            This is here to be legacy compliant for code that expects this
-           global libbase. If that would not needed we could always use
+           global libbase. If that would not be needed we could always use
            __aros_getbase_ModName() to access libbase
          */
         fprintf(out,
@@ -77,18 +78,18 @@ void writeincproto(struct config *cfg)
                 " #endif\n"
                 "#endif\n"
                 "\n",
-                cfg->modulenameupper,
-                cfg->modulenameupper,
+                cfg->includenameupper,
+                cfg->includenameupper,
                 cfg->libbase,
-                cfg->modulenameupper,
+                cfg->includenameupper,
                 cfg->libbase,
                 cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbase,
                 cfg->libbase, cfg->libbase,
-                cfg->modulenameupper,
+                cfg->includenameupper,
                 cfg->libbase,
-                cfg->modulenameupper, cfg->libbase,
-                cfg->modulenameupper, cfg->libbase,
+                cfg->includenameupper, cfg->libbase,
+                cfg->includenameupper, cfg->libbase,
                 cfg->libbase,
                 cfg->libbase, cfg->libbasetypeptrextern, cfg->libbase
         );
@@ -104,20 +105,20 @@ void writeincproto(struct config *cfg)
                 "\n",
                 cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbase,
-                cfg->modulenameupper, cfg->libbase,
-                cfg->modulenameupper, cfg->libbase
+                cfg->includenameupper, cfg->libbase,
+                cfg->includenameupper, cfg->libbase
         );
     }
 
     // define name must not start with a digit
     // this solves a problem with proto/8svx.h
-    if (isdigit(cfg->modulenameupper[0]))
+    if (isdigit(cfg->includenameupper[0]))
     {
-        snprintf(define, sizeof define, "X%s", cfg->modulenameupper);
+        snprintf(define, sizeof define, "X%s", cfg->includenameupper);
     }
     else
     {
-        strncpy(define, cfg->modulenameupper, sizeof define);
+        strncpy(define, cfg->includenameupper, sizeof define);
     }
 
     fprintf(out,
@@ -128,11 +129,11 @@ void writeincproto(struct config *cfg)
             "#endif\n"
             "\n"
             "#endif /* PROTO_%s_H */\n",
-            define, cfg->modulenameupper,
-            cfg->modulename,
+            define, cfg->includenameupper,
+            cfg->includename,
             define,
-            cfg->modulename,
-            cfg->modulenameupper
+            cfg->includename,
+            cfg->includenameupper
     );
 
     fclose(out);

@@ -16,7 +16,7 @@ void writeincinline(struct config *cfg)
     char line[256], *banner;
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/inline/%s.h", cfg->gendir, cfg->modulename);
+    snprintf(line, 255, "%s/inline/%s.h", cfg->gendir, cfg->includename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -41,7 +41,7 @@ void writeincinline(struct config *cfg)
             "#include <aros/symbolsets.h>\n"
             "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
             "\n",
-            cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
+            cfg->includenameupper, cfg->includenameupper, banner, cfg->modulename
     );
     freeBanner(banner);
 
@@ -53,9 +53,9 @@ void writeincinline(struct config *cfg)
                     "\n"
                     "#if !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__)"
                     "\n",
-                    cfg->modulenameupper,
+                    cfg->includenameupper,
                     funclistit->version,
-                    cfg->modulenameupper
+                    cfg->includenameupper
             );
 
             writeinlineregister(out, funclistit, cfg);
@@ -68,9 +68,9 @@ void writeincinline(struct config *cfg)
                     "\n"
                     "#endif /* !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__) */"
                     "\n",
-                    cfg->modulenameupper,
+                    cfg->includenameupper,
                     funclistit->version,
-                    cfg->modulenameupper
+                    cfg->includenameupper
             );
         }
     }
@@ -78,7 +78,7 @@ void writeincinline(struct config *cfg)
     fprintf(out,
             "\n"
             "#endif /* INLINE_%s_H*/\n",
-            cfg->modulenameupper
+            cfg->includenameupper
     );
     fclose(out);
 }
@@ -296,7 +296,7 @@ writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         fprintf(out,
                 "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
                 "#define %s(",
-                cfg->modulenameupper, varargname
+                cfg->includenameupper, varargname
         );
         for (arglistit = funclistit->arguments, count = 1;
              arglistit != NULL && arglistit->next != NULL;
@@ -344,7 +344,7 @@ writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         fprintf(out,
                 "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
                 "static inline %s __inline_%s_%s(%s __%s",
-                cfg->modulenameupper,
+                cfg->includenameupper,
                 funclistit->type, cfg->basename, varargname, cfg->libbasetypeptrextern, cfg->libbase
         );
         for (arglistit = funclistit->arguments, count = 0;

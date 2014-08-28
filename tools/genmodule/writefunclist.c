@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Write the functionlist to a file that can be includes the .conf file.
+    Write the functionlist to a file that can be included in the .conf file.
 */
 #include "genmodule.h"
 
