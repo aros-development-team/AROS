@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Write the functionlist to a FD file for identify.library.
+    Write the functionlist to an FD file for identify.library.
 */
 
 #include "genmodule.h"
@@ -65,7 +65,7 @@ void writefd(struct config *cfg)
         }
     }
 
-    snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->modulename);
+    snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->includename);
 
     out = fopen(line, "w");
 

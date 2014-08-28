@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write defines/modulename.h. Part of genmodule.
@@ -16,7 +16,7 @@ void writeincdefines(struct config *cfg)
     char line[256], *banner;
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/defines/%s.h", cfg->gendir, cfg->modulename);
+    snprintf(line, 255, "%s/defines/%s.h", cfg->gendir, cfg->includename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -43,7 +43,7 @@ void writeincdefines(struct config *cfg)
             "\n"
             "__BEGIN_DECLS\n"
             "\n",
-            cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
+            cfg->includenameupper, cfg->includenameupper, banner, cfg->modulename
     );
     freeBanner(banner);
 
@@ -55,9 +55,9 @@ void writeincdefines(struct config *cfg)
                     "\n"
                     "#if !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__)"
                     "\n",
-                    cfg->modulenameupper,
+                    cfg->includenameupper,
                     funclistit->version,
-                    cfg->modulenameupper
+                    cfg->includenameupper
             );
 
             writedefineregister(out, funclistit, cfg);
@@ -70,9 +70,9 @@ void writeincdefines(struct config *cfg)
                     "\n"
                     "#endif /* !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__) */"
                     "\n",
-                    cfg->modulenameupper,
+                    cfg->includenameupper,
                     funclistit->version,
-                    cfg->modulenameupper
+                    cfg->includenameupper
             );
 
         }
@@ -82,7 +82,7 @@ void writeincdefines(struct config *cfg)
             "__END_DECLS\n"
             "\n"
             "#endif /* DEFINES_%s_H*/\n",
-            cfg->modulenameupper
+            cfg->includenameupper
     );
     fclose(out);
 }
@@ -294,7 +294,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         fprintf(out,
                 "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
                 "#define %s(",
-                cfg->modulenameupper, varargname
+                cfg->includenameupper, varargname
         );
         for (arglistit = funclistit->arguments, count = 1;
              arglistit != NULL && arglistit->next != NULL;
@@ -343,7 +343,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         fprintf(out,
                 "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
                 "static inline %s __%s_WB(%s __%s",
-                cfg->modulenameupper,
+                cfg->includenameupper,
                 funclistit->type, varargname, cfg->libbasetypeptrextern, cfg->libbase
         );
         for (arglistit = funclistit->arguments;

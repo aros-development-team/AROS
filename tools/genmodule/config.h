@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
 
     Desc: Define the C structure for storing the command line options and the
           module config data
@@ -127,6 +127,7 @@ struct config
     enum modtype modtype;
     char *modtypestr;
     char *suffix;
+    char *includename, *includenameupper;
 
     /* Extra string to include in version */
     char *versionextra;

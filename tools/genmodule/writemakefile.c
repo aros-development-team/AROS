@@ -93,7 +93,7 @@ void writemakefile(struct config *cfg)
     {
         fprintf(out,
                 "clib/%s_protos.h inline/%s.h defines/%s.h proto/%s.h",
-                cfg->modulename, cfg->modulename, cfg->modulename, cfg->modulename
+                cfg->includename, cfg->includename, cfg->includename, cfg->includename
         );
     }
     if (cfg->interfacelist)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write module_autoinit.c. Part of genmodule.
@@ -35,13 +35,13 @@ void writeautoinit(struct config *cfg, int is_rel)
     freeBanner(banner);
 
     if (!(cfg->options & OPTION_NOINCLUDES))
-        fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
+        fprintf(out, "#include <proto/%s.h>\n", cfg->includename);
     fprintf(out,
             "#include <aros/symbolsets.h>\n"
             "\n"
             "AROS_%sLIBSET(\"%s.%s\", %s, %s)\n",
             is_rel ? "REL" : "",
-            cfg->modulename, cfg->suffix,
+            cfg->includename, cfg->suffix,
             cfg->libbasetypeptrextern, cfg->libbase
     );
 
