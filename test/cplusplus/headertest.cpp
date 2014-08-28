@@ -811,7 +811,7 @@
 #include <proto/Palette.h>
 #include <proto/partition.h>
 #include <proto/picture.h>
-#include <proto/png.h>
+#include <proto/pngdt.h>
 #include <proto/pnm.h>
 #include <proto/Popasl.h>
 #include <proto/Popframe.h>

@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <dos/dos.h>
 #include <proto/dos.h>
-#include <proto/png.h>
+#include <proto/pngdt.h>
 #include <datatypes/pictureclass.h>
 
 #include <png.h>
