@@ -119,7 +119,7 @@ KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs ram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
-KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell cardres bootloader
+KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
 KHOOKS  := diag romboot
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
@@ -305,7 +305,7 @@ KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
 KHNDLRS := cdfs con afs ram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
 KRSRCS  := battclock processor lddemon dosboot cia potgo disk \
-           misc shell shellcommands workbook wbtag cardres FileSystem
+           misc shell shellcommands workbook wbtag card FileSystem
 KHOOKS  := alert romboot
 
 KOBJS_any := \
