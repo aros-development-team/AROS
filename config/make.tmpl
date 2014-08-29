@@ -284,6 +284,10 @@ else
   TMP_TARGETBASE := %(targetdir)/$(notdir %(basename))
 endif
 
+# Adjust compiler flags to suit C
+TMP_CFLAGS := %(cflags)
+TMP_CFLAGS := $(subst -fpermissive,, $(TMP_CFLAGS))
+
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
@@ -312,7 +316,7 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
-$(TMP_TARGETBASE).o : CFLAGS := %(cflags)
+$(TMP_TARGETBASE).o : CFLAGS := %(TMP_CFLAGS)
 $(TMP_TARGETBASE).o : %(basename).c
 	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
