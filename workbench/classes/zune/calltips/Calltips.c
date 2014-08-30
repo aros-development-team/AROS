@@ -226,7 +226,7 @@ IPTR Calltips__MUIM_Calltips_ParentShow(struct IClass *cl, Object *obj, Msg msg)
     {
         set(obj, MUIA_Window_Open, TRUE);
         // check again if we opened successfully
-        if(XGET(obj, MUIA_Window_Open) == FALSE)
+        if(XGET(obj, MUIA_Window_Open) == TRUE)
         {
             // make sure we are in front of our parent window
             MoveWindowInFrontOf(_window(data->rootGroup), _window(data->source));
