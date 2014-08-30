@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := $(PARANOIA_CFLAGS)
 
-FILES         := 
+FILES         := Calltips
 INCLUDE_FILES := Calltips_mcc.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-calltips
