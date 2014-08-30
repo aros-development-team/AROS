@@ -1,0 +1,21 @@
+# Copyright © 2014, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+
+FILES         := 
+INCLUDE_FILES := Calltips_mcc.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-calltips
+
+#MM workbench-classes-zune-calltips : includes
+
+%build_module \
+    mmake=workbench-classes-zune-calltips \
+    modname=Calltips modtype=mcc \
+
+%copy_includes path=mui
+
+%common
