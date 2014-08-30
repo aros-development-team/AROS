@@ -1654,9 +1654,6 @@ BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
 
     case IDCMP_NEWSIZE:
     case IDCMP_CHANGEWINDOW:
-        ReplyMsg((struct Message *)imsg);
-        replied = TRUE;
-
         {
             int hborders = iWin->BorderLeft + iWin->BorderRight;
             int vborders = iWin->BorderTop + iWin->BorderBottom;
@@ -1680,6 +1677,7 @@ BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
             data->wd_Flags |= MUIWF_RESIZING;
             RefreshWindow(oWin, data);
         }
+        is_handled = FALSE;     /* forwardable to area event handlers */
         break;
 
     case IDCMP_REFRESHWINDOW:
