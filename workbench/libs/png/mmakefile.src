@@ -12,7 +12,7 @@ USER_CFLAGS := -Wno-deprecated-declarations
 #MM- core-linklibs : linklibs-png
 
 %build_module mmake=workbench-libs-png \
-    modname=png_au modtype=library \
+    modname=png modtype=library \
     files="$(FILES)" linklibname="png"
 
 

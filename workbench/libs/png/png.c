@@ -67,6 +67,20 @@ png_sig_cmp(png_const_bytep sig, png_size_t start, png_size_t num_to_check)
 
 #endif /* PNG_READ_SUPPORTED */
 
+#ifdef __AROS__
+#ifdef PNG_READ_SUPPORTED
+/* (Obsolete) function to check signature bytes.  It does not allow one
+ * to check a partial signature.  This function might be removed in the
+ * future - use png_sig_cmp().  Returns true (nonzero) if the file is PNG.
+ */
+int PNGAPI
+png_check_sig_(png_bytep sig, int num)
+{
+  return ((int)!png_sig_cmp(sig, (png_size_t)0, (png_size_t)num));
+}
+#endif /* PNG_READ_SUPPORTED */
+#endif /* __AROS__ */
+
 #if defined(PNG_READ_SUPPORTED) || defined(PNG_WRITE_SUPPORTED)
 /* Function to allocate memory for zlib */
 PNG_FUNCTION(voidpf /* PRIVATE */,
@@ -888,7 +902,15 @@ png_access_version_number(void)
    return((png_uint_32)PNG_LIBPNG_VER);
 }
 
-
+#ifdef __AROS__
+/* This function was added to libpng 1.2.0 */
+int PNGAPI
+png_mmx_support(void)
+{
+   /* Obsolete, to be removed from libpng-1.4.0 */
+    return -1;
+}
+#endif /* __AROS__ */
 
 #if defined(PNG_READ_SUPPORTED) || defined(PNG_WRITE_SUPPORTED)
 /* Ensure that png_ptr->zstream.msg holds some appropriate error message string.

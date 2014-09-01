@@ -903,6 +903,21 @@ png_set_expand_gray_1_2_4_to_8(png_structrp png_ptr)
    png_ptr->transformations |= PNG_EXPAND;
 }
 
+#ifdef __AROS__
+/* Expand grayscale images of less than 8-bit depth to 8 bits. */
+/* Deprecated as of libpng-1.2.9 */
+void PNGAPI
+png_set_gray_1_2_4_to_8(png_structp png_ptr)
+{
+   png_debug(1, "in png_set_gray_1_2_4_to_8");
+
+   if (png_ptr == NULL)
+      return;
+
+   png_ptr->transformations |= (PNG_EXPAND | PNG_EXPAND_tRNS);
+}
+#endif /* __AROS__ */
+
 /* Expand tRNS chunks to alpha channels. */
 void PNGAPI
 png_set_tRNS_to_alpha(png_structrp png_ptr)

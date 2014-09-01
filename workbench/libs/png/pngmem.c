@@ -245,6 +245,35 @@ png_free_default,(png_const_structrp png_ptr, png_voidp ptr),PNG_DEPRECATED)
    free(ptr);
 }
 
+#ifdef __AROS__
+png_voidp PNGAPI
+png_memcpy_check (png_structp png_ptr, png_voidp s1, png_voidp s2,
+   png_uint_32 length)
+{
+   png_size_t size;
+
+   size = (png_size_t)length;
+   if ((png_uint_32)size != length)
+      png_error(png_ptr, "Overflow in png_memcpy_check.");
+
+   return(memcpy (s1, s2, size));
+}
+
+png_voidp PNGAPI
+png_memset_check (png_structp png_ptr, png_voidp s1, int value,
+   png_uint_32 length)
+{
+   png_size_t size;
+
+   size = (png_size_t)length;
+   if ((png_uint_32)size != length)
+      png_error(png_ptr, "Overflow in png_memset_check.");
+
+   return (memset (s1, value, size));
+
+}
+#endif /* __AROS__ */
+
 #ifdef PNG_USER_MEM_SUPPORTED
 /* This function is called when the application wants to use another method
  * of allocating and freeing memory.
