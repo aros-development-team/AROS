@@ -22,7 +22,7 @@ include $(TOP)/config/make.cfg
 
 CFILES := xmlparse xmlrole xmltok
 
-%build_module mmake=workbench-libs-expat-lib modname=expat_au modtype=library \
+%build_module mmake=workbench-libs-expat-lib modname=expat modtype=library \
     files="$(CFILES)"  linklibname=expat
 
 
