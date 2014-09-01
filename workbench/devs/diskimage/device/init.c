@@ -29,12 +29,7 @@
 #include "progress.h"
 #include <exec/exec.h>
 #include <proto/exec.h>
-
-#ifdef __AROS__
-#  include <proto/expat_au.h>
-#else
-#  include <proto/expat.h>
-#endif
+#include <proto/expat.h>
 
 #include "rev/diskimage.device_rev.h"
 

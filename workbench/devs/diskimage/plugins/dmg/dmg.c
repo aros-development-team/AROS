@@ -308,11 +308,7 @@ APTR DMG_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 			goto error;
 		}
 
-#ifdef __AROS__
-		image->expatbase = OpenLibrary("expat_au.library", 1);
-#else
 		image->expatbase = OpenLibrary("expat.library", 4);
-#endif
 		if (!image->expatbase) {
 			error = ERROR_OBJECT_NOT_FOUND;
 			error_string = MSG_REQVER;
