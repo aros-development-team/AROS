@@ -147,7 +147,7 @@ $(MMAKE): $(TOP)/tools/MetaMake/Makefile $(wildcard $(SRCDIR)/tools/MetaMake/*.[
 clean:
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean SRCDIR=$(SRCDIR) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/flexcat -f Makefile.aros clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/flexcat/src -f Makefile.aros clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/archtools clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genmf clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/toollib clean SRCDIR=$(SRCDIR) TOP=$(TOP)
