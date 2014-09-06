@@ -1230,8 +1230,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                     MUIA_Group_SameSize, TRUE,
                 End;
 
-    _WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert");
-    _WP_Toolbar_PreviewSearchObj = ImageButton("", "THEME:Images/Gadgets/Prefs/Test");
+    _WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/Revert");
+    _WP_Toolbar_PreviewSearchObj = ImageButton("", "THEME:Images/Gadgets/Search");
 /*END _WP_Toolbar_GroupObj---------------------------------------------------*/
 
 /*Add main objects to main window (self?)------------------------------------*/
@@ -1512,8 +1512,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
     /*Button Group-------------------------------------------------------*/
     _WP_AdvancedView_ButtonGrpObj = (Object *)HGroup,
-                    Child, (IPTR)(_WP_AdvancedView_ButtonObj_Use = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Prefs/Use")),
-                    Child, (IPTR)(_WP_AdvancedView_ButtonObj_Cancel = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Prefs/Cancel")),
+                    Child, (IPTR)(_WP_AdvancedView_ButtonObj_Use = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Use")),
+                    Child, (IPTR)(_WP_AdvancedView_ButtonObj_Cancel = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Cancel")),
                 End;
     /*END Button Group--------------------------------------------------*/
 

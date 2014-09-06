@@ -84,8 +84,8 @@ Object *PrefsWindow__OM_NEW
                     MUIA_Group_SameWidth, TRUE,
                     MUIA_Weight,             0,
                     
-                    Child, (IPTR) (testButton   = ImageButton(_(MSG_TEST), "THEME:Images/Gadgets/Prefs/Test")),
-                    Child, (IPTR) (revertButton = ImageButton(_(MSG_REVERT), "THEME:Images/Gadgets/Prefs/Revert")),
+                    Child, (IPTR) (testButton   = ImageButton(_(MSG_TEST), "THEME:Images/Gadgets/Test")),
+                    Child, (IPTR) (revertButton = ImageButton(_(MSG_REVERT), "THEME:Images/Gadgets/Revert")),
                 End,
                 Child, (IPTR) RectangleObject,
                     MUIA_Weight, 50,
@@ -100,9 +100,9 @@ Object *PrefsWindow__OM_NEW
                     MUIA_Group_SameWidth, TRUE,
                     MUIA_Weight,             0,
                     
-                    Child, (IPTR) (saveButton   = ImageButton(_(MSG_SAVE), "THEME:Images/Gadgets/Prefs/Save")),
-                    Child, (IPTR) (useButton    = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Prefs/Use")),
-                    Child, (IPTR) (cancelButton = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Prefs/Cancel")),
+                    Child, (IPTR) (saveButton   = ImageButton(_(MSG_SAVE), "THEME:Images/Gadgets/Save")),
+                    Child, (IPTR) (useButton    = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Use")),
+                    Child, (IPTR) (cancelButton = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Cancel")),
                 End,
             End,
         End,

@@ -33,7 +33,6 @@ FILES :=  pm \
 #MM     workbench-libs-iffparse-includes \
 #MM     workbench-libs-diskfont-includes \
 #MM     workbench-libs-gadtools-includes \
-#MM     workbench-libs-coolimages-includes \
 #MM     includes-copy
 
 #MM workbench-libs-popupmenu : \

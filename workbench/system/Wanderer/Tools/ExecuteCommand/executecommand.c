@@ -136,8 +136,8 @@ Object *ExecuteCommand__OM_NEW
                         MUIA_Group_SameSize, TRUE,
                         MUIA_Weight,         0,
                         
-                        Child, (IPTR)(executeButton = ImageButton(_(MSG_BUTTON_EXECUTE),"THEME:Images/Gadgets/Prefs/Save")),
-                        Child, (IPTR)(cancelButton  = ImageButton(_(MSG_BUTTON_CANCEL),"THEME:Images/Gadgets/Prefs/Cancel")),
+                        Child, (IPTR)(executeButton = ImageButton(_(MSG_BUTTON_EXECUTE),"THEME:Images/Gadgets/OK")),
+                        Child, (IPTR)(cancelButton  = ImageButton(_(MSG_BUTTON_CANCEL),"THEME:Images/Gadgets/Cancel")),
                     End,
                 End,
             End,

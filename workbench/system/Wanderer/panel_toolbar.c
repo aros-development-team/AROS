@@ -297,7 +297,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
         return (IPTR)NULL;
 
 #if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
-    panelToolBar_ButtonSearch = ImageButton("", "THEME:Images/Gadgets/Prefs/Test");
+    panelToolBar_ButtonSearch = ImageButton("", "THEME:Images/Gadgets/Search");
 #endif
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
@@ -343,7 +343,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_InnerBottom,(0),
                     MUIA_HorizWeight,   0,
                     MUIA_VertWeight,    100,
-                    Child, (IPTR) (panelToolBar_ButtonDirUp = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
+                    Child, (IPTR) (panelToolBar_ButtonDirUp = ImageButton("", "THEME:Images/Gadgets/DirUp")),
                     (panelToolBar_ButtonSearch ? Child : TAG_IGNORE), (IPTR) (panelToolBar_ButtonSearch),
                 TAG_DONE),
             TAG_DONE),

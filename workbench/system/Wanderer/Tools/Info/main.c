@@ -1072,9 +1072,9 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameSize, TRUE,
                     Child, (IPTR) (savebutton = 
-                     ImageButton(_(MSG_SAVE),"THEME:Images/Gadgets/Prefs/Save")),
+                     ImageButton(_(MSG_SAVE),"THEME:Images/Gadgets/OK")),
                     Child, (IPTR) (cancelbutton = 
-                     ImageButton(_(MSG_CANCEL),"THEME:Images/Gadgets/Prefs/Cancel")),
+                     ImageButton(_(MSG_CANCEL),"THEME:Images/Gadgets/Cancel")),
                 End,
             End,
         End),

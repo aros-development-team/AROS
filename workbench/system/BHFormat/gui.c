@@ -638,9 +638,9 @@ int rcGuiMain(void)
 			MUIA_FixHeight,      2,
 		    End),
 		    Child, (IPTR)(HGroup,
-			Child, (IPTR)(btn_format  = ImageButton( _(MSG_BTN_FORMAT) , "THEME:Images/Gadgets/Prefs/Save")),
-			Child, (IPTR)(btn_qformat = ImageButton( _(MSG_BTN_QFORMAT), "THEME:Images/Gadgets/Prefs/Save")),
-			Child, (IPTR)(btn_cancel  = ImageButton( _(MSG_BTN_CANCEL) , "THEME:Images/Gadgets/Prefs/Cancel")),
+			Child, (IPTR)(btn_format  = ImageButton( _(MSG_BTN_FORMAT) , "THEME:Images/Gadgets/OK")),
+			Child, (IPTR)(btn_qformat = ImageButton( _(MSG_BTN_QFORMAT), "THEME:Images/Gadgets/OK")),
+			Child, (IPTR)(btn_cancel  = ImageButton( _(MSG_BTN_CANCEL) , "THEME:Images/Gadgets/Cancel")),
 		    End), /* HGroup */
 		End), /* VGroup */
 	    End), /* Window */
