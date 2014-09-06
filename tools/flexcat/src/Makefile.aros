@@ -8,40 +8,48 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -Wall -Werror -Wunused -O2
 
-SRC	:=  main.c \
-        asprintf.c \
-       strptime.c \
-       createcat.c \
-       createcatsrc.c \
-       createct.c \
-       globals.c \
-       readprefs.c \
-       scancd.c \
-       scanct.c \
-       scanpo.c \
-       showfuncs.c \
-       swapfuncs.c \
-       utils.c \
-       locale_other.c
+OBJS := main.o \
+        asprintf.o \
+        strptime.o \
+        createcat.o \
+        createcatsrc.o \
+        createct.o \
+        globals.o \
+        readprefs.o \
+        scancd.o \
+        scanct.o \
+        scanpo.o \
+        showfuncs.o \
+        swapfuncs.o \
+        utils.o \
+        locale_other.o
+
+OBJDIR := $(HOSTGENDIR)/tools/flexcat
 
 SDFILES	:=  C_h_aros.sd C_c_orig.sd C_h_orig.sd gcccatcomp.sd
-
 SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
 
-all : $(FLEXCAT) $(SD_OUT)
+.PHONY: all
+all: $(OBJDIR) $(FLEXCAT) $(SD_OUT)
 
-$(FLEXCAT) : $(SRC)
-	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) -DNOERRORONWARN $(HOST_CFLAGS) $(HOST_LDFLAGS) $(SRC) -o $@
+$(FLEXCAT) : $(addprefix $(OBJDIR)/,$(OBJS))
+	@$(ECHO) "Linking $(notdir $@)..."
+	@$(HOST_CC)  $(HOST_LDFLAGS) $^ -o $@
 #	@$(HOST_STRIP) $@
+
+$(OBJDIR)/%.o : %.c
+	@$(ECHO) "Compiling flexcat/src/$(notdir $@)..."
+	@$(HOST_CC) -MM -MP -MT '$@' -MF $(OBJDIR)/$(subst .c,.d,$<) $(HOST_CFLAGS) $<
+	@$(HOST_CC) -DNOERRORONWARN $(HOST_CFLAGS) -o $@ -c $<
 
 $(TOOLDIR)/%.sd : sd/%.sd
 	@$(CP) $< $@
 
-
-
 $(OBJDIR) :
 	@$(MKDIR) -p $(OBJDIR)
 
+.PHONY: clean
 clean:
-	@$(RM) -f $(FLEXCAT)
+	@$(RM) -rf $(OBJDIR) $(FLEXCAT)
+
+-include $(OBJS:%.o=$(OBJDIR)/%.d)
