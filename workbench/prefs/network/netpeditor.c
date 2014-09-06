@@ -1076,8 +1076,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End),
             End,
             Child, (IPTR)HGroup,
-                Child, (IPTR)(hostApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
-                Child, (IPTR)(hostCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+                Child, (IPTR)(hostApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Save")),
+                Child, (IPTR)(hostCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Cancel")),
             End,
         End,
     End;
@@ -1132,8 +1132,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
             End,
             Child, (IPTR)HGroup,
-                Child, (IPTR)(netApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
-                Child, (IPTR)(netCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+                Child, (IPTR)(netApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Save")),
+                Child, (IPTR)(netCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Cancel")),
             End,
         End,
     End;
@@ -1199,8 +1199,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End),
             End,
             Child, (IPTR)HGroup,
-                Child, (IPTR)(serverApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
-                Child, (IPTR)(serverCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+                Child, (IPTR)(serverApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Save")),
+                Child, (IPTR)(serverCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Cancel")),
             End,
         End,
     End;

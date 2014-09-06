@@ -10,7 +10,6 @@
 
 #include <stdlib.h>
 
-#include <libraries/coolimages.h>
 #include <aros/debug.h>
 
 #include <zune/clock.h>
@@ -612,9 +611,9 @@ static void MakeGUI(void)
                     MUIA_FixHeight, 1,
                     MUIA_Group_SameWidth, TRUE,
 #endif
-                    Child, saveobj = ImageButton(MSG(MSG_GAD_SAVE), "THEME:Images/Gadgets/Prefs/Save"),
-                    Child, useobj = ImageButton(MSG(MSG_GAD_USE), "THEME:Images/Gadgets/Prefs/Use"),
-                    Child, cancelobj = ImageButton(MSG(MSG_GAD_CANCEL), "THEME:Images/Gadgets/Prefs/Cancel"),
+                    Child, saveobj = ImageButton(MSG(MSG_GAD_SAVE), "THEME:Images/Gadgets/Save"),
+                    Child, useobj = ImageButton(MSG(MSG_GAD_USE), "THEME:Images/Gadgets/Use"),
+                    Child, cancelobj = ImageButton(MSG(MSG_GAD_CANCEL), "THEME:Images/Gadgets/Cancel"),
                 End,
             End,
 	    End,

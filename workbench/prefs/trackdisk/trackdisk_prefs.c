@@ -60,11 +60,11 @@ int main(void)
     MainGrp.TagChild = MUIA_Group_Child;
     MainGrp.ButtonsGroup = MUI_NewObject("Group.mui", MUIA_Group_Horiz, TRUE,
 	    MUIA_Group_Child,
-        SaveButton = ImageButton(_(MSG_SAVE), "THEME:Images/Gadgets/Prefs/Save"),
+        SaveButton = ImageButton(_(MSG_SAVE), "THEME:Images/Gadgets/Save"),
 	    MUIA_Group_Child,
-        UseButton = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Prefs/Use"),
+        UseButton = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Use"),
 	    MUIA_Group_Child,
-	    CancelButton = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Prefs/Cancel"),
+	    CancelButton = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Cancel"),
     TAG_DONE);
     MainGrp.TagDone = TAG_DONE;
     App = MUI_NewObject("Application.mui", MUIA_Application_Author, "Pavel Fedin and Team AROS",

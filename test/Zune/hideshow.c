@@ -31,7 +31,7 @@ int main(void)
     	    WindowContents, (IPTR) VGroup,
                 Child, (IPTR) HGroup,
                     Child, (IPTR) SimpleButton("Visible all the time"),
-                    Child, (IPTR) (b1 = ImageButton("Click Hide or Show", "THEME:Images/Gadgets/Prefs/Test")),
+                    Child, (IPTR) (b1 = ImageButton("Click Hide or Show", "THEME:Images/Gadgets/Test")),
                     Child, (IPTR) SimpleButton("Visible all the time too"),
                 End,
                 Child, (IPTR) HGroup,
