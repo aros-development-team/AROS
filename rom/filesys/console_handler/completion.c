@@ -130,6 +130,8 @@ static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
             break;
 
         case ' ':
+        case '>':
+        case '<':
             if (!in_quotes)
                 ci->wordstart = i;
             break;
