@@ -2280,6 +2280,7 @@ const struct PsdUWStringMap usbvendorids[] =
     { 0x1697, "VTec Test, Inc." },
     { 0x1894, "Topseed" },
     { 0x1ebb, "NuCORE Technology, Inc." },
+    { 0x1f3a, "Allwinner Technology"},
     { 0x2001, "D-Link Corp." },
     { 0x2162, "Creative (?)" },
     { 0x2222, "MacAlly" },
