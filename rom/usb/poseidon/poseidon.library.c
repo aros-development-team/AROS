@@ -2865,7 +2865,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     struct PsdDevice *itpd = pp->pp_Device;
     struct PsdConfig *pc;
     struct PsdInterface *pif;
-    struct UsbStdDevDesc usdd;
+    struct UsbStdDevDesc *usdd;
 
     UWORD oldflags;
     ULONG oldnaktimeout;
@@ -2885,7 +2885,6 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     struct PsdIFFContext *pic;
 
     ULONG *chnk;
-    UBYTE dummybuf[8];
 
 #ifdef AROS_USB30_CODE
     struct UsbStdBOSDesc usbosd;
@@ -2893,22 +2892,6 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
 #endif
 
     KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
-
-#ifdef AROS_USB2OTG_CODE
-    struct PsdHardware *phw = pp->pp_Device->pd_Hardware;
-
-    if( !(phw->phw_Capabilities & UHCF_USB2OTG) ) {
-        /*
-            Driver informs us that it is not USB2OTG device
-            - Follow regular code path
-        */
-    } else {
-        /*
-            Driver informs us that it is USB2OTG device
-            - Follow USB2OTG code path
-        */
-    }
-#endif
 
     psdLockWriteDevice(pd);
     if(pAllocDevAddr(pd)) {
@@ -2919,80 +2902,96 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
         pp->pp_IOReq.iouh_NakTimeout = 1000;
         pp->pp_IOReq.iouh_DevAddr = 0;
 
-        psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
-        ioerr = psdDoPipe(pp, dummybuf, 8);
-        if(ioerr && (ioerr != UHIOERR_RUNTPACKET)) {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "GET_DESCRIPTOR (len %ld) failed: %s (%ld)", 8, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-            KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
-        }
-
-        KPRINTF(1, ("Setting DevAddr %ld...\n", pd->pd_DevAddr));
-        psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE, USR_SET_ADDRESS, pd->pd_DevAddr, 0);
-        ioerr = psdDoPipe(pp, NULL, 0);
         /*
-            This is tricky: Maybe the device has accepted the command,
-            but failed to send an ACK. Now, every resend trial will
-            go to the wrong address!
+            64 bytes is the maximum packet size for control transfers in fullspeed and highspeed devices
+            Prepare us for the worst case scenario where device babbles and try to prevent buffer overflows from happening
         */
-        if((ioerr == UHIOERR_TIMEOUT) || (ioerr == UHIOERR_STALL)) {
-            KPRINTF(1, ("First attempt failed, retrying new address\n"));
-            /*pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;*/
-            psdDelayMS(250);
-            ioerr = psdDoPipe(pp, NULL, 0);
-            /*pp->pp_IOReq.iouh_DevAddr = 0;*/
-        }
+        usdd = (struct UsbStdDevDesc *) psdAllocVec(64);
+        if(usdd != NULL) {
 
-        if(!ioerr) {
-            pd->pd_Flags |= PDFF_HASDEVADDR|PDFF_CONNECTED;
-            pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;
-
-            psdDelayMS(50); /* Allowed time to settle */
-
-            KPRINTF(1, ("Getting MaxPktSize0...\n"));
             psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
-            ioerr = psdDoPipe(pp, &usdd, 8);
+            ioerr = psdDoPipe(pp, usdd, 8);
+            if(ioerr && (ioerr != UHIOERR_RUNTPACKET)) {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "GET_DESCRIPTOR (8) failed: %s (%ld)", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
+            }
+
+            KPRINTF(1, ("Setting DevAddr %ld...\n", pd->pd_DevAddr));
+            psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE, USR_SET_ADDRESS, pd->pd_DevAddr, 0);
+            ioerr = psdDoPipe(pp, NULL, 0);
+            /*
+                This is tricky: Maybe the device has accepted the command,
+                but failed to send an ACK. Now, every resend trial will
+                go to the wrong address!
+            */
+            if((ioerr == UHIOERR_TIMEOUT) || (ioerr == UHIOERR_STALL)) {
+                KPRINTF(1, ("First attempt failed, retrying new address\n"));
+                /*pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;*/
+                psdDelayMS(250);
+                ioerr = psdDoPipe(pp, NULL, 0);
+                /*pp->pp_IOReq.iouh_DevAddr = 0;*/
+            }
+
             if(!ioerr) {
-                switch(usdd.bMaxPacketSize0)
+                pd->pd_Flags |= PDFF_HASDEVADDR|PDFF_CONNECTED;
+                pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;
+
+                psdDelayMS(50); /* Allowed time to settle */
+
+                /*
+                    We have already received atleast the first 8 bytes from the descriptor, asking again may confuse some devices
+                    This is somewhat similar to how Windows enumerates USB devices
+                */
+                KPRINTF(1, ("Getting MaxPktSize0...\n"));
+//                psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
+//                ioerr = psdDoPipe(pp, usdd, 8);
+//                if(!ioerr) {
+                switch(usdd->bMaxPacketSize0)
                 {
                     case 8:
                     case 16:
                     case 32:
                     case 64:
-                        pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
+                        pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd->bMaxPacketSize0;
                         break;
 #ifdef AROS_USB30_CODE
                     case 9:
-                        if((AROS_LE2WORD(usdd.bcdUSB) >= 0x0300)) {
+                        if((AROS_LE2WORD(usdd->bcdUSB) >= 0x0300)) {
                             /* 9 is the only valid value for superspeed mode and it is the exponent of 2 =512 bytes */
                             pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = (1<<9);
                             break;
                         }
 #endif
                     default:
-                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Illegal MaxPktSize0=%ld for endpoint 0", (ULONG) usdd.bMaxPacketSize0);
-                        KPRINTF(2, ("Illegal MaxPktSize0=%ld!\n", usdd.bMaxPacketSize0));
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Illegal MaxPktSize0=%ld for endpoint 0", (ULONG) usdd->bMaxPacketSize0);
+                        KPRINTF(2, ("Illegal MaxPktSize0=%ld!\n", usdd->bMaxPacketSize0));
                         //pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = 8;
                         ioerr = UHIOERR_CRCERROR;
                         break;
                 }
-            }
+//                }
 
-            if(!ioerr)
-            {
+//                if(!ioerr)
+//                {
                 KPRINTF(1, ("  MaxPktSize0 = %ld\n", pd->pd_MaxPktSize0));
+
                 KPRINTF(1, ("Getting full descriptor...\n"));
-                ioerr = psdDoPipe(pp, &usdd, sizeof(struct UsbStdDevDesc));
+                /*
+                    We have set a new address for the device so we need to setup the pipe again
+                */
+                psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
+                ioerr = psdDoPipe(pp, usdd, sizeof(struct UsbStdDevDesc));
                 if(!ioerr)
                 {
-                    pAllocDescriptor(pd, (UBYTE *) &usdd);
+                    pAllocDescriptor(pd, (UBYTE *) usdd);
                     pd->pd_Flags |= PDFF_HASDEVDESC;
-                    pd->pd_USBVers = AROS_WORD2LE(usdd.bcdUSB);
-                    pd->pd_DevClass = usdd.bDeviceClass;
-                    pd->pd_DevSubClass = usdd.bDeviceSubClass;
-                    pd->pd_DevProto = usdd.bDeviceProtocol;
-                    pd->pd_VendorID = AROS_WORD2LE(usdd.idVendor);
-                    pd->pd_ProductID = AROS_WORD2LE(usdd.idProduct);
-                    pd->pd_DevVers = AROS_WORD2LE(usdd.bcdDevice);
+                    pd->pd_USBVers = AROS_WORD2LE(usdd->bcdUSB);
+                    pd->pd_DevClass = usdd->bDeviceClass;
+                    pd->pd_DevSubClass = usdd->bDeviceSubClass;
+                    pd->pd_DevProto = usdd->bDeviceProtocol;
+                    pd->pd_VendorID = AROS_WORD2LE(usdd->idVendor);
+                    pd->pd_ProductID = AROS_WORD2LE(usdd->idProduct);
+                    pd->pd_DevVers = AROS_WORD2LE(usdd->bcdDevice);
                     vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
                     // patch to early determine highspeed roothubs
@@ -3000,7 +2999,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                         pd->pd_Flags |= PDFF_HIGHSPEED;
                     }
 
-                    #ifdef AROS_USB30_CODE
+#ifdef AROS_USB30_CODE
                     if(((!pd->pd_Hub) && pd->pd_USBVers >= 0x300)) {
                         pd->pd_Flags |= PDFF_SUPERSPEED;
                     }
@@ -3034,18 +3033,18 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                             XPRINTF(1, ("GET_DESCRIPTOR (5) failed %ld!\n", ioerr_bos));
                         }
                     }
-                    #endif
+#endif
 
-                    if(usdd.iManufacturer) {
-                        pd->pd_MnfctrStr = psdGetStringDescriptor(pp, usdd.iManufacturer);
+                    if(usdd->iManufacturer) {
+                        pd->pd_MnfctrStr = psdGetStringDescriptor(pp, usdd->iManufacturer);
                     }
 
-                    if(usdd.iProduct) {
-                        pd->pd_ProductStr = psdGetStringDescriptor(pp, usdd.iProduct);
+                    if(usdd->iProduct) {
+                        pd->pd_ProductStr = psdGetStringDescriptor(pp, usdd->iProduct);
                     }
 
-                    if(usdd.iSerialNumber) {
-                        pd->pd_SerNumStr = psdGetStringDescriptor(pp, usdd.iSerialNumber);
+                    if(usdd->iSerialNumber) {
+                        pd->pd_SerNumStr = psdGetStringDescriptor(pp, usdd->iSerialNumber);
                     }
 
                     if(!pd->pd_MnfctrStr) {
@@ -3141,7 +3140,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     }
                     pUnlockSem(ps, &ps->ps_ConfigLock);
 
-                    pd->pd_NumCfgs = usdd.bNumConfigurations;
+                    pd->pd_NumCfgs = usdd->bNumConfigurations;
                     KPRINTF(10, ("Device has %ld different configurations\n", pd->pd_NumCfgs));
 
                     if(pGetDevConfig(pp))
@@ -3199,6 +3198,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                             pFixBrokenConfig(pp);
                             pp->pp_IOReq.iouh_Flags = oldflags;
                             pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
+                            psdFreeVec(usdd);
                             psdUnlockDevice(pd);
                             psdCalculatePower(pd->pd_Hardware);
                             return(pd);
@@ -3215,7 +3215,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                        some firmware will able to use this device anyway? */
                     pp->pp_IOReq.iouh_Flags = oldflags;
                     pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
-
+                    psdFreeVec(usdd);
                     psdUnlockDevice(pd);
                     return(pd);
                 } else {
@@ -3224,25 +3224,31 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                                    18, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                     KPRINTF(15, ("GET_DESCRIPTOR (18) failed %ld!\n", ioerr));
                 }
+//                } else {
+//                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+//                                   "GET_DESCRIPTOR (8) failed: %s (%ld)",
+//                                   psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+//                    KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
+//                }
             } else {
-                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                               "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
-                               8, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
-            }
-        } else {
-            psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
-                           "SET_ADDRESS failed: %s (%ld)",
-                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-            KPRINTF(15, ("SET_ADDRESS failed %ld!\n", ioerr));
+                psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                               "SET_ADDRESS failed: %s (%ld)",
+                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                KPRINTF(15, ("SET_ADDRESS failed %ld!\n", ioerr));
 
+            }
+            pp->pp_IOReq.iouh_Flags = oldflags;
+            pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
+            psdFreeVec(usdd);
+        } else {
+            psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Out of memory while fetching device descriptor!");
+            KPRINTF(20, ("Out of memory while fetching device descriptor!!\n"));
         }
-        pp->pp_IOReq.iouh_Flags = oldflags;
-        pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
     } else {
         psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "This cannot happen! More than 127 devices on the bus???");
         KPRINTF(20, ("out of addresses???\n"));
     }
+
     psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Device enumeration failed, sorry.");
     psdUnlockDevice(pd);
     return(NULL);
