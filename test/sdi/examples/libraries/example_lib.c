@@ -650,7 +650,9 @@ LIBFUNC static BPTR LibClose(REG(a6, struct LibraryHeader *base))
       #elif defined(__MORPHOS__)
       return LibExpunge();
       #elif defined(__AROS__)
-      return example_3_LibExpunge(base, base);
+      return AROS_LC1(BPTR, GM_UNIQUENAME(LibExpunge),
+                   AROS_LCA(struct LibraryHeader *, base, D0),
+                   struct LibraryHeader *, base, 3, example);
       #else
       return LibExpunge(base);
       #endif
