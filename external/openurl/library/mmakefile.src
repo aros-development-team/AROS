@@ -10,6 +10,7 @@ FILES:= libinit \
         api     \
         handler \
         prefs   \
+        stubs-aros \
         debug
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include

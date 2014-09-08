@@ -4,34 +4,16 @@
 
 include $(TOP)/config/make.cfg
 
+TARGETDIR := $(AROS_CATALOGS)
+LANGUAGES := $(basename $(notdir $(call WILDCARD,$(SRCDIR)/$(CURDIR)/*.po)))
+CATALOGS  := $(addprefix $(TARGETDIR)/,$(addsuffix /OpenURL.catalog,$(LANGUAGES)))
+
 #MM
-external-openurl-catalogs : \
-    $(AROS_CATALOGS)/german/OpenURL.catalog \
-    $(AROS_CATALOGS)/french/OpenURL.catalog \
-    $(AROS_CATALOGS)/polish/OpenURL.catalog
+external-openurl-catalogs : $(CATALOGS)
 
-# Catalogs which aren't uptodate:
-#$(AROS_CATALOGS)/swedish/OpenURL.catalog
-#$(AROS_CATALOGS)/italian/OpenURL.catalog
-
-$(AROS_CATALOGS)/german/OpenURL.catalog  : german.ct
-	@$(MKDIR) $(AROS_CATALOGS)/german
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
-
-$(AROS_CATALOGS)/italian/OpenURL.catalog : italian.ct
-	@$(MKDIR) $(AROS_CATALOGS)/italian
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
-
-$(AROS_CATALOGS)/swedish/OpenURL.catalog  : swedish.ct
-	@$(MKDIR) $(AROS_CATALOGS)/swedish
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
-
-$(AROS_CATALOGS)/french/OpenURL.catalog  : french.ct
-	@$(MKDIR) $(AROS_CATALOGS)/french
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
-
-$(AROS_CATALOGS)/polish/OpenURL.catalog  : polish.ct
-	@$(MKDIR) $(AROS_CATALOGS)/polish
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
+$(TARGETDIR)/%/OpenURL.catalog: $(SRCDIR)/$(CURDIR)/%.po
+	$(ECHO) "Building catalog $@"
+	$(MKDIR) $(dir $@)
+	$(FLEXCAT) POFILE $< CATALOG $@
 
 %common

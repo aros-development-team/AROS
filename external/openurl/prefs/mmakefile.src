@@ -40,7 +40,7 @@ FILES := \
     progname=$(EXE) files=$(FILES) \
     targetdir=$(EXEDIR)
 
-locale.h: $(SRCDIR)/$(CURDIR)/../locale/OpenURL.cd $(SRCDIR)/$(CURDIR)/locale_h.sd
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/../locale/OpenURL.cd locale.h=$(SRCDIR)/$(CURDIR)/locale_h.sd
+locale.h: $(SRCDIR)/$(CURDIR)/../locale/OpenURL.pot $(SRCDIR)/$(CURDIR)/locale_h.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/../locale/OpenURL.pot locale.h=$(SRCDIR)/$(CURDIR)/locale_h.sd
 
 %common
