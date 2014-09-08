@@ -3,7 +3,7 @@
 #
 # openurl.library - universal URL display and browser launcher library
 # Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
-# Copyright (C) 2005-2009 by openurl.library Open Source Team
+# Copyright (C) 2005-2013 by openurl.library Open Source Team
 #
 # This library is free software; it has been placed in the public domain
 # and you can freely redistribute it and/or modify it. Please note, however,
@@ -73,12 +73,14 @@ cp -a -R developer/C/include/* "release/OpenURL/Developer/C/include/"
 cp -a developer/sfd/* "release/OpenURL/Developer/sfd/"
 cp -a developer/xml/* "release/OpenURL/Developer/xml/"
 
-cp -a locale/OpenURL.cd "release/OpenURL/Catalogs/"
+cp -a locale/OpenURL.pot "release/OpenURL/Catalogs/"
 rm -f locale/*.catalog
 make -C prefs catalogs
-for language in french german italian polish swedish; do
-  mkdir -p "release/OpenURL/Catalogs/$language"
-  cp locale/$language.catalog "release/OpenURL/Catalogs/$language/OpenURL.catalog"
+for language in `ls locale/*.catalog`; do
+  catalog=$(basename "$language")
+  lang="${catalog%.*}"
+  mkdir -p "release/OpenURL/Catalogs/${lang}"
+  cp -a ${language} "release/OpenURL/Catalogs/${lang}/OpenURL.catalog"
 done
 
 releasever=`grep "#define LIB_VERSION" library/version.h | awk '{ print $3 }'`

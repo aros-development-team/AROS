@@ -29,6 +29,34 @@
 
 /****************************************************************************/
 
+/*
+ * The system (and compiler) rely on a symbol named _start which marks
+ * the beginning of execution of an ELF file. To prevent others from
+ * executing this library, and to keep the compiler/linker happy, we
+ * define an empty _start symbol here.
+ *
+ * On the classic system (pre-AmigaOS4) this was usually done by
+ * moveq #0,d0
+ * rts
+ *
+ */
+
+#if defined(__amigaos3__)
+asm(".text\n\
+     .even\n\
+     .globl _start\n\
+    _start:\n\
+     moveq #20,d0\n\
+     rts");
+#else
+LONG _start(void)
+{
+  return RETURN_FAIL;
+}
+#endif
+
+/****************************************************************************/
+
 #if defined(__amigaos4__)
 // stack cookie for shell v45+
 static const char USED_VAR stack_size[] = "$STACK:" STR(MIN_STACKSIZE) "\n";
@@ -48,6 +76,9 @@ struct ExecBase *SysBase = NULL;
 #endif
 
 struct LibraryHeader *OpenURLBase = NULL;
+#if defined(__amigaos4__)
+struct OpenURLIFace *IOpenURL = NULL;
+#endif
 
 static const char UserLibName[] = "openurl.library";
 static const char UserLibID[]   = "$VER: openurl.library " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT;
@@ -126,34 +157,6 @@ static LONG                   LIBFUNC LibNull    (void);
 #endif
 
 /****************************************************************************/
-
-/*
- * The system (and compiler) rely on a symbol named _start which marks
- * the beginning of execution of an ELF file. To prevent others from
- * executing this library, and to keep the compiler/linker happy, we
- * define an empty _start symbol here.
- *
- * On the classic system (pre-AmigaOS4) this was usually done by
- * moveq #0,d0
- * rts
- *
- */
-
-#if defined(__amigaos4__) && !defined(__AROS__) && !defined(__MORPHOS__)
-#if !defined(__mc68000__)
-int32 _start(void)
-{
-  return RETURN_FAIL;
-}
-#else
-asm(".text                    \n\
-     .even                    \n\
-     .globl _start            \n\
-   _start:                    \n\
-     moveq #0,d0              \n\
-     rts");
-#endif
-#endif
 
 #if !defined(__amigaos4__)
 static LONG LIBFUNC LibNull(VOID)
@@ -533,6 +536,9 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
 
     // set the OpenURLBase
     OpenURLBase = base;
+    #if defined(__amigaos4__)
+    GETINTERFACE(IOpenURL, OpenURLBase);
+    #endif
 
     // If we are not running on AmigaOS4 (no stackswap required) we go and
     // do an explicit StackSwap() in case the user wants to make sure we
@@ -557,6 +563,7 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
     {
       callLibFunction(freeBase, base);
       OpenURLBase = NULL;
+      DROPINTERFACE(IOpenURL);
     }
 
     #if defined(__amigaos4__) && defined(__NEWLIB__)
@@ -603,6 +610,12 @@ STATIC BPTR LibDelete(struct LibraryHeader *base)
 
   // unprotect
   ReleaseSemaphore(&base->libSem);
+
+  #if defined(__amigaos4__)
+  DROPINTERFACE(IOpenURL);
+  IOpenURL = NULL;
+  #endif
+  OpenURLBase = NULL;
 
   #if defined(__amigaos4__) && defined(__NEWLIB__)
   if(NewlibBase)

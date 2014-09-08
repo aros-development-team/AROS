@@ -5,10 +5,12 @@
 
         Name:           SDI_compiler.h
         Versionstring:  $VER: SDI_compiler.h 1.35 (03.03.2011)
-        Author:         Dirk Stoecker & Jens Langner
+        Authors:        Dirk Stoecker, Jens Maus
         Distribution:   PD
-        Project page:   http://www.sf.net/projects/sditools/
+        Project page:   http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
         Description:    defines to hide compiler stuff
+        Id:             $Id$
+        URL:            $URL: https://svn.code.sf.net/p/adtools/code/trunk/sdi/SDI_compiler.h $
 
  1.1   25.06.98 : created from data made by Gunter Nikl
  1.2   17.11.99 : added VBCC
@@ -72,9 +74,9 @@
 ** (e.g. add your name or nick name).
 **
 ** Find the latest version of this file at:
-** http://cvs.sourceforge.net/viewcvs.py/sditools/sditools/headers/
+** http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
 **
-** Jens Langner <Jens.Langner@light-speed.de> and
+** Jens Maus <mail@jens-maus.de>
 ** Dirk Stoecker <soft@dstoecker.de>
 */
 

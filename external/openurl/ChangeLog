@@ -2,8 +2,71 @@
 openurl.library - ChangeLog
 ---------------------------
 
-$Id: ChangeLog 191 2012-12-20 15:52:10Z damato $
-$URL: svn://svn.code.sf.net/p/openurllib/code/releases/7.12/ChangeLog $
+$Id: ChangeLog 209 2014-04-05 10:50:34Z damato $
+$URL: svn://svn.code.sf.net/p/openurllib/code/releases/7.15/ChangeLog $
+
+#### v7.15 RELEASE #############################################################
+
+2014-04-05  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 7.15 release preparations
+
+2014-04-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/misc: updated to the most recent SDI header files. This makes it
+    possible to remove the stub functions for AmigaOS4.
+  * locale: added a new header line to the .po files to specify a correct name
+    for the generated .catalog file.
+
+2014-03-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * cmd/SmartReadArgs.c: fixed the broken AmigaOS4 build due to recent SDK
+    changes by including dos/obsolete.h.
+
+2014-01-23  Jens Maus <mail@jens-maus.de>
+
+  * locale: all catalog translations have now been moved to use the free
+    services of transifex (http://www.transifex.com/projects/p/openurllib/)
+
+#### v7.14 RELEASE #############################################################
+
+2013-12-13  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 7.14 release preparations
+
+2013-10-15 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/lib.h: updated the AmigaOS4 build for the latest SDK.
+
+2013-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/greek.ct: updated greek translation kindly provided by Antonis
+    Iliakis.
+
+#### v7.13 RELEASE #############################################################
+
+2013-04-25  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.13 release preparations
+
+2013-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/greek.ct: updated greek translation kindly provided by Antonis
+    Iliakis.
+
+2013-03-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/libinit.c: rearranged the code to ensure that trying to start the final
+    library from a shell does not crash.
+
+2013-01-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/prefs.c: simplified the default configuration setup and added some
+    default settings for MUIOWB.
+
+2013-01-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/utils.c: return immediate failure for empty ARexx port names.
 
 #### v7.12 RELEASE #############################################################
 

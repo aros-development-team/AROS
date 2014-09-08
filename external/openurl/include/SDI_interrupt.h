@@ -7,9 +7,11 @@
         Versionstring:  $VER: SDI_interrupt.h 1.1 (25.04.2006)
         Author:         Guido Mersmann
         Distribution:   PD
-        Project page:   http://www.sf.net/projects/sditools/
+        Project page:   http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
         Description:    defines to hide compiler specific interrupt and
                         handler stuff
+        Id:             $Id$
+        URL:            $URL: https://svn.code.sf.net/p/adtools/code/trunk/sdi/SDI_interrupt.h $
 
  1.0   17.05.05 : inspired by the SDI_#?.h files made by Jens Langner
                   and Dirk Stöcker I created files to handle interrupt
@@ -28,7 +30,7 @@
 ** (e.g. add your name or nick name).
 **
 ** Find the latest version of this file at:
-** http://cvs.sourceforge.net/viewcvs.py/sditools/sditools/headers/
+** http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
 **
 ** Guido Mersmann <geit@gmx.de>
 **

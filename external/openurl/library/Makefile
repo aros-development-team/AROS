@@ -157,12 +157,20 @@ TARGET   = $(BINDIR)/openurl.library
 
 # Common compiler/linker flags
 WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
-OPTFLAGS = -O3 -fomit-frame-pointer 
+OPTFLAGS = -O3 -fomit-frame-pointer
 DEBUG    = -DDEBUG -O0
 DEBUGSYM = -g -gstabs
 CFLAGS   = -I. -I../include $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG) $(DEBUGSYM) $(USER_CFLAGS)
 LDFLAGS  = $(CPU) $(DEBUGSYM) -nostartfiles
 LDLIBS   =
+
+OBJS  = libinit.o \
+        init.o    \
+        utils.o   \
+        api.o     \
+        handler.o \
+        prefs.o   \
+        debug.o
 
 # different options per target OS
 ifeq ($(OS), os4)
@@ -187,8 +195,7 @@ ifeq ($(OS), os4)
   LDFLAGS  += -mcrt=$(CRT)
 
   # additional object files required
-  OBJS = stubs-amigaos4.o
-  M68KSTUBS = $(OBJDIR)/openurl_68k.o
+  OBJS     += openurl_68k.o
 
 else
 ifeq ($(OS), os3)
@@ -204,7 +211,7 @@ ifeq ($(OS), os3)
   endif
 
   # Compiler/Linker flags
-  CPU	    = -m68020-60 -msoft-float
+  CPU	    = -m68020-60 -msoft-float -D__amigaos3__
   CFLAGS  += -noixemul
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
@@ -228,7 +235,8 @@ ifeq ($(OS), mos)
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
-  OBJS = stubs-morphos.o
+  # additional object files required
+  OBJS    += stubs-morphos.o
 
 else
 ifeq ($(OS), aros-i386)
@@ -243,7 +251,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer 
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -larossupport -lrom
 
@@ -260,7 +268,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer 
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -larossupport -lrom
 
@@ -277,7 +285,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer 
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -larossupport -lrom
 
@@ -292,19 +300,11 @@ endif
 # Here starts all stuff that is common for all target platforms and
 # hosts.
 
-OBJS += libinit.o \
-        init.o    \
-        utils.o   \
-        api.o     \
-        handler.o \
-        prefs.o   \
-        debug.o
-
 # main target
 .PHONY: all
 ifeq ($(wildcard $(DEPFILE)),$(DEPFILE))
 # great, we have a dependecies file, let's make our target
-all: $(BINDIR) $(OBJDIR) $(M68KSTUBS) $(TARGET)
+all: $(BINDIR) $(OBJDIR) $(TARGET)
 else
 # no dependecies, create it and then call make again
 all: depend
@@ -327,9 +327,9 @@ $(OBJDIR)/%.o: %.c
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 # for linking the target
-$(TARGET): $(M68KSTUBS) $(addprefix $(OBJDIR)/,$(OBJS))
+$(TARGET): $(addprefix $(OBJDIR)/,$(OBJS))
 	@echo "  LD $@.debug"
-	@$(CC) $(LDFLAGS) -o $@.debug $(addprefix $(OBJDIR)/,$(OBJS)) $(M68KSTUBS) $(LDLIBS) -Wl,--cref,-M,-Map=$@.map
+	@$(CC) $(LDFLAGS) -o $@.debug $(addprefix $(OBJDIR)/,$(OBJS)) $(LDLIBS) -Wl,--cref,-M,-Map=$@.map
 	@echo "  LD $@"
 	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
 	@$(CHMOD) $@
@@ -342,7 +342,7 @@ dump:
 # cleanup target
 .PHONY: clean
 clean:
-	-$(RM) $(TARGET) $(TARGET).debug $(TARGET).map $(addprefix $(OBJDIR)/,$(OBJS)) $(M68KSTUBS)
+	-$(RM) $(TARGET) $(TARGET).debug $(TARGET).map $(addprefix $(OBJDIR)/,$(OBJS))
 
 # clean all including .obj directory
 .PHONY: cleanall
@@ -358,12 +358,6 @@ distclean: cleanall
 .PHONY: install
 install: all
 	-$(CP) $(TARGET) LIBS:
-
-## SPECIAL COMPILE RULES ##############
-
-$(OBJDIR)/openurl_68k.o: ../include/openurl_68k.c
-	@echo "  CC $<"
-	@$(CC) $(CFLAGS) -c $< -o $@
 
 ## DEPENDENCY GENERATION ##############
 
