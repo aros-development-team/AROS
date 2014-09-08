@@ -2877,6 +2877,8 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
 
     ULONG devclass;
 
+    IPTR islowspeed;
+
     BOOL hasprodname;
     BOOL haspopupinhibit;
 
@@ -2906,8 +2908,15 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
             64 bytes is the maximum packet size for control transfers in fullspeed and highspeed devices
             Prepare us for the worst case scenario where device babbles and try to prevent buffer overflows from happening
         */
-        usdd = (struct UsbStdDevDesc *) psdAllocVec(64);
-        if(usdd != NULL) {
+        psdGetAttrs(PGA_DEVICE, pd, DA_IsLowspeed, &islowspeed, TAG_END);
+        if(islowspeed)
+        {
+            pp->pp_IOReq.iouh_MaxPktSize = 8;
+        } else {
+            pp->pp_IOReq.iouh_MaxPktSize = 64;
+        }
+
+        if((usdd = psdAllocVec(AROS_ROUNDUP2(sizeof(struct UsbStdDevDesc), pp->pp_IOReq.iouh_MaxPktSize)))) {
 
             psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
             ioerr = psdDoPipe(pp, usdd, 8);
