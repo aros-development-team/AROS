@@ -18,6 +18,11 @@
 
 ***************************************************************************/
 
+#include <exec/lists.h>
+#include <rexx/storage.h>
+
+#include "base.h"
+
 #include "SDI_lib.h"
 
 /* init.c */
@@ -97,3 +102,70 @@ void setDefaultPrefs(struct URL_Prefs *up);
 BOOL savePrefs(CONST_STRPTR filename, struct URL_Prefs *up);
 BOOL loadPrefs(struct URL_Prefs *p, ULONG mode);
 struct URL_Prefs *loadPrefsNotFail(void);
+
+#if defined(__AROS__)
+AROS_LD2(ULONG, URL_OpenA,
+    AROS_LDA(STRPTR, ___url, A0),
+    AROS_LDA(struct TagItem *, ___tags, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD0(struct URL_Prefs *, URL_OldGetPrefs,
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD1(void, URL_OldFreePrefs,
+    AROS_LDA(struct URL_Prefs *, ___up, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD2(ULONG, URL_OldSetPrefs,
+    AROS_LDA(struct URL_Prefs *, ___up, A0),
+    AROS_LDA(BOOL, ___permanent, D0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD0(struct URL_Prefs *, URL_OldGetDefaultPrefs,
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD0(ULONG, URL_OldLaunchPrefsApp,
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD1(struct URL_Prefs *, URL_GetPrefsA,
+    AROS_LDA(struct TagItem *, ___tags, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD2(void, URL_FreePrefsA,
+    AROS_LDA(struct URL_Prefs *, ___prefs, A0),
+    AROS_LDA(struct TagItem *, ___tags, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD2(ULONG, URL_SetPrefsA,
+    AROS_LDA(struct URL_Prefs *, ___up, A0),
+    AROS_LDA(struct TagItem *, ___tags, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD1(ULONG, URL_LaunchPrefsAppA,
+    AROS_LDA(struct TagItem *, ___tags, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+AROS_LD2(ULONG, URL_GetAttr,
+    AROS_LDA(ULONG, ___attr, D0),
+    AROS_LDA(ULONG *, ___storage, A0),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+
+AROS_LD2(LONG, dispatch,
+    AROS_LDA(struct RexxMsg *, ___msg, A0),
+    AROS_LDA(STRPTR *, ___resPtr, A1),
+    struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
+);
+
+#endif
