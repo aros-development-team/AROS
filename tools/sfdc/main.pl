@@ -220,7 +220,7 @@ if ($#ARGV < 0) {
 
 $mode = lc $mode;
 
-if (!($mode =~ /^(clib|dump|fd|libproto|lvo|functable|macros|proto|pragmas|stubs|gateproto|gatestubs|sdistubs|verify)$/)) {
+if (!($mode =~ /^(clib|dump|fd|libproto|lvo|functable|macros|proto|pragmas|stubs|gateproto|gatestubs|sdiproto|sdistubs|verify)$/)) {
     pod2usage (-message => "Unknown mode specified. Use --help for a list.",
 	       -verbose => 0,
 	       -exitval => 10);
@@ -344,8 +344,16 @@ for my $i ( 0 .. $#ARGV ) {
 	    last;
 	};
 	
+	/^sdiproto$/ && do {
+	    $obj = $$classes{'sdistubs'}->new( sfd => $sfd,
+						proto => 1);
+						
+	    last;
+	};
+
 	/^sdistubs$/ && do {
-	    $obj = $$classes{'sdistubs'}->new( sfd => $sfd );
+	    $obj = $$classes{'sdistubs'}->new( sfd => $sfd,
+						proto => 0 );
 						
 	    last;
 	};

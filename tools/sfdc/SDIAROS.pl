@@ -4,7 +4,7 @@
 BEGIN {
     package SDIAROS;
     use vars qw(@ISA);
-    @ISA = qw( Gate );
+    @ISA = qw( SDI );
 
     sub new {
 	my $proto  = shift;
@@ -60,8 +60,12 @@ BEGIN {
 		print "typedef $typedef;\n";
 	    }
 	}
-
-	printf "AROS_LH%d(", $prototype->{numargs};
+	if ($self->{PROTO}) {
+	    printf "AROS_LD%d(", $prototype->{numargs};
+	}
+	else {
+	    printf "AROS_LH%d(", $prototype->{numargs};
+	}
 
 	print "$prototype->{return}, $gateprefix$prototype->{funcname},\n";
     }
@@ -79,8 +83,12 @@ BEGIN {
 	if ($argtype =~ /\(\*\)/) {
 	    $argtype = "_$sfd->{Basename}_$prototype->{funcname}_fp$argnum";
 	}
-
-	print "    AROS_LHA($argtype, $argname, " . (uc $argreg) . "),\n";
+	if ($self->{PROTO}) {
+	    print "    AROS_LDA($argtype, $argname, " . (uc $argreg) . "),\n";
+	}
+	else {
+	    print "    AROS_LHA($argtype, $argname, " . (uc $argreg) . "),\n";
+	}
     }
 
     sub function_end {
@@ -108,20 +116,25 @@ BEGIN {
 
 	print "    $bt, $bn, 0, LIBSTUB\n)";
 
-	print "\n";
-	print "{\n";
-	print "    AROS_LIBFUNC_INIT\n";
-
-	if ($prototype->{numargs} > 0) {
-	    print "    return CALL_LFUNC($libprefix$prototype->{funcname}, ";
-	    print join (', ', @{$prototype->{___argnames}});
+	if ($self->{PROTO}) {
+	    print ";\n";
 	}
 	else {
-	    print "    return CALL_LFUNC_NP($libprefix$prototype->{funcname}";
+	    print "\n";
+	    print "{\n";
+	    print "    AROS_LIBFUNC_INIT\n";
+
+	    if ($prototype->{numargs} > 0) {
+		print "    return CALL_LFUNC($libprefix$prototype->{funcname}, ";
+		print join (', ', @{$prototype->{___argnames}});
+	    }
+	    else {
+		print "    return CALL_LFUNC_NP($libprefix$prototype->{funcname}";
+	    }
+	
+	    print ");\n";
+	    print "    AROS_LIBFUNC_EXIT\n";
+	    print "}\n";
 	}
-    
-	print ");\n";
-	print "    AROS_LIBFUNC_EXIT\n";
-	print "}\n";
     }
 }
