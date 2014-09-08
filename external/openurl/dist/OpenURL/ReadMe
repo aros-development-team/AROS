@@ -1,16 +1,16 @@
 Short:    OpenURL - Get that URL!
 Author:   openurl.library Open Source Team
-Uploader: Jens Langner <Jens.Langner@light-speed.de>
-Version:  7.12
+Uploader: Jens Maus <mail@jens-maus.de>
+Version:  7.15
 Type:     comm/www
 Requires: AmigaOS 3.0+, MorphOS or AROS
-Replaces: comm/www/OpenURL-7.11.lha
+Replaces: comm/www/OpenURL-7.14.lha
 Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
 
 Introduction
 ~~~~~~~~~~~~
 Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
-Copyright (C) 2005-2012 by openurl.library Open Source Team
+Copyright (C) 2005-2014 by openurl.library Open Source Team
 
 This library was created to make it easier for application programmers to
 include clickable URLs in their applications, about windows, etc.
@@ -33,7 +33,7 @@ The OpenURL project is hosted on SourceForge. Its project name is "openurllib".
 
 To report bugs use the bug tracker at
 
-http://www.sf.net/projects/openurllib/
+http://sf.net/p/openurllib/
 
 Manual Installation
 ~~~~~~~~~~~~~~~~~~~

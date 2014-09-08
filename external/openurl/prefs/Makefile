@@ -306,11 +306,7 @@ ifeq ($(OS), os3)
   OBJS += vastubs.o
 endif
 
-CATALOGS = $(LOCALE)/german.catalog \
-           $(LOCALE)/french.catalog \
-           $(LOCALE)/italian.catalog \
-           $(LOCALE)/polish.catalog \
-           $(LOCALE)/swedish.catalog
+CATALOGS = $(patsubst %.po,%.catalog,$(wildcard $(LOCALE)/*.po))
 
 # main target
 .PHONY: all
@@ -373,13 +369,13 @@ install: all
 
 ## CATALOG GENERATION #################
 
-$(LOCALE)/%.catalog: $(LOCALE)/%.ct $(LOCALE)/OpenURL.cd
+$(LOCALE)/%.catalog: $(LOCALE)/%.po $(LOCALE)/OpenURL.pot
 	@echo "  MK $@"
-	@$(FC) $(LOCALE)/OpenURL.cd $< CATALOG $@
+	@$(FC) POFILE $< CATALOG $@
 
-locale.h: $(LOCALE)/OpenURL.cd locale_h.sd
+locale.h: $(LOCALE)/OpenURL.pot locale_h.sd
 	@echo "  MK $@"
-	@$(FC) $(LOCALE)/OpenURL.cd locale.h=locale_h.sd
+	@$(FC) $(LOCALE)/OpenURL.pot locale.h=locale_h.sd
 
 .IGNORE: $(CATALOGS)
 

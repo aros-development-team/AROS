@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2009 by openurl.library Open Source Team
+ Copyright (C) 2005-2013 by openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -60,31 +60,32 @@ BOOL isdigits(STRPTR str);
 #define SENDTOF_LAUNCH                 (1<<SENDTOB_LAUNCH)
 
 /* api.c */
-LIBPROTO(URL_OpenA, ULONG, REG(a0, STRPTR url), REG(a1, struct TagItem *attrs));
-LIBPROTOVA(URL_Open, ULONG, REG(a0, STRPTR url), ...);
-LIBPROTO(URL_OldGetPrefs, struct URL_Prefs *);
-LIBPROTO(URL_OldFreePrefs, void, REG(a0, struct URL_Prefs *up));
-LIBPROTO(URL_OldSetPrefs, ULONG, REG(a0, struct URL_Prefs *p), REG(d0, ULONG permanent));
-LIBPROTO(URL_OldGetDefaultPrefs, struct URL_Prefs *);
-LIBPROTO(URL_OldLaunchPrefsApp, ULONG);
-LIBPROTO(dispatch, LONG, REG(a0, struct RexxMsg *msg), REG(a1, STRPTR *resPtr));
-LIBPROTO(URL_GetPrefsA, struct URL_Prefs *, REG(a0, struct TagItem *attrs));
+#include "base.h"
+LIBPROTO(URL_OpenA, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, STRPTR url), REG(a1, struct TagItem *attrs));
+LIBPROTOVA(URL_Open, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, STRPTR url), ...);
+LIBPROTO(URL_OldGetPrefs, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE));
+LIBPROTO(URL_OldFreePrefs, void, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *up));
+LIBPROTO(URL_OldSetPrefs, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *p), REG(d0, ULONG permanent));
+LIBPROTO(URL_OldGetDefaultPrefs, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE));
+LIBPROTO(URL_OldLaunchPrefsApp, ULONG, REG(a6, UNUSED __BASE_OR_IFACE));
+LIBPROTO(dispatch, LONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct RexxMsg *msg), REG(a1, STRPTR *resPtr));
+LIBPROTO(URL_GetPrefsA, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct TagItem *attrs));
 #if defined(__amigaos4__)
-LIBPROTOVA(URL_GetPrefs, struct URL_Prefs *, ...);
+LIBPROTOVA(URL_GetPrefs, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE), ...);
 #else
-LIBPROTOVA(URL_GetPrefs, struct URL_Prefs *, REG(a0, Tag tag1), ...);
+LIBPROTOVA(URL_GetPrefs, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, Tag tag1), ...);
 #endif
-LIBPROTO(URL_FreePrefsA, void, REG(a0, struct URL_Prefs *up), REG(a1, struct TagItem *attrs));
-LIBPROTOVA(URL_FreePrefs, void, REG(a0, struct URL_Prefs *up), ...);
-LIBPROTO(URL_SetPrefsA, ULONG, REG(a0, struct URL_Prefs *p), REG(a1, struct TagItem *attrs));
-LIBPROTOVA(URL_SetPrefs, ULONG, REG(a0, struct URL_Prefs *p), ...);
-LIBPROTO(URL_LaunchPrefsAppA, ULONG, REG(a0, struct TagItem *attrs));
+LIBPROTO(URL_FreePrefsA, void, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *up), REG(a1, struct TagItem *attrs));
+LIBPROTOVA(URL_FreePrefs, void, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *up), ...);
+LIBPROTO(URL_SetPrefsA, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *p), REG(a1, struct TagItem *attrs));
+LIBPROTOVA(URL_SetPrefs, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *p), ...);
+LIBPROTO(URL_LaunchPrefsAppA, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct TagItem *attrs));
 #if defined(__amigaos4__)
-LIBPROTOVA(URL_LaunchPrefsApp, ULONG, ...);
+LIBPROTOVA(URL_LaunchPrefsApp, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), ...);
 #else
-LIBPROTOVA(URL_LaunchPrefsApp, ULONG, REG(a0, Tag tag1), ...);
+LIBPROTOVA(URL_LaunchPrefsApp, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, Tag tag1), ...);
 #endif
-LIBPROTO(URL_GetAttr, ULONG, REG(d0, ULONG attr), REG(a0, IPTR *storage));
+LIBPROTO(URL_GetAttr, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(d0, ULONG attr), REG(a0, IPTR *storage));
 
 /* handler.c */
 void SAVEDS handler(void);

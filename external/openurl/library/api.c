@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2009 by openurl.library Open Source Team
+ Copyright (C) 2005-2013 by openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -28,9 +28,14 @@
 
 #include <stdio.h>
 
+#include <SDI_stdarg.h>
+
+#define __NOLIBBASE__
+#include <proto/openurl.h>
+
 /**************************************************************************/
 
-ULONG LIBFUNC URL_OpenA(REG(a0,STRPTR URL), REG(a1,struct TagItem *attrs))
+LIBPROTO(URL_OpenA, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, STRPTR url), REG(a1, struct TagItem *attrs))
 {
   struct List portList;
   TEXT buf[256];
@@ -70,14 +75,14 @@ ULONG LIBFUNC URL_OpenA(REG(a0,STRPTR URL), REG(a1,struct TagItem *attrs))
     {
       STRPTR colon;
 
-      colon = strchr((STRPTR)URL,':');
+      colon = strchr((STRPTR)url,':');
       if(colon == NULL)
         httpPrepend = TRUE;
       else
       {
         STRPTR p;
 
-        for(p = URL; p<colon; p++)
+        for(p = url; p<colon; p++)
         {
           if(!isalnum(*p) && *p != '+' && *p != '-')
           {
@@ -90,25 +95,25 @@ ULONG LIBFUNC URL_OpenA(REG(a0,STRPTR URL), REG(a1,struct TagItem *attrs))
 
     if(httpPrepend == TRUE)
     {
-      ULONG len = strlen(URL) + 8;
+      ULONG len = strlen(url) + 8;
 
       if(len > sizeof(buf))
-        fullURL = allocArbitrateVecPooled(strlen(URL)+8);
+        fullURL = allocArbitrateVecPooled(strlen(url)+8);
       else
         fullURL = buf;
 
       if(fullURL != NULL)
-        snprintf(fullURL, len, "http://%s", URL);
+        snprintf(fullURL, len, "http://%s", url);
     }
     else
-      fullURL = URL;
+      fullURL = url;
 
     if(fullURL != NULL)
     {
       /* Be case insensitive - Piru */
-      if(isFlagSet(OpenURLBase->prefs->up_Flags, UPF_DOMAILTO) && Strnicmp((STRPTR)URL,"mailto:", 7) == 0)
+      if(isFlagSet(OpenURLBase->prefs->up_Flags, UPF_DOMAILTO) && Strnicmp((STRPTR)url,"mailto:", 7) == 0)
         res = sendToMailer(fullURL, &portList, flags, pubScreenName);
-      else if(isFlagSet(OpenURLBase->prefs->up_Flags, UPF_DOFTP) && Strnicmp((STRPTR)URL,"ftp://", 6) == 0)
+      else if(isFlagSet(OpenURLBase->prefs->up_Flags, UPF_DOFTP) && Strnicmp((STRPTR)url,"ftp://", 6) == 0)
         res = sendToFTP(fullURL, &portList, flags, pubScreenName);
       else
         res = sendToBrowser(fullURL, &portList, flags, pubScreenName);
@@ -124,9 +129,23 @@ ULONG LIBFUNC URL_OpenA(REG(a0,STRPTR URL), REG(a1,struct TagItem *attrs))
   return res;
 }
 
+#if defined(__amigaos4__)
+LIBPROTOVA(URL_Open, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, STRPTR url), ...)
+{
+  ULONG res;
+  VA_LIST args;
+
+  VA_START(args, url);
+  res = URL_OpenA(url, VA_ARG(args, struct TagItem *));
+  VA_END(args);
+
+  return res;
+}
+#endif
+
 /**************************************************************************/
 
-struct URL_Prefs * LIBFUNC URL_GetPrefsA(REG(a0,struct TagItem *attrs))
+LIBPROTO(URL_GetPrefsA, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct TagItem *attrs))
 {
   struct URL_Prefs *p = NULL;
   ULONG mode;
@@ -192,40 +211,65 @@ struct URL_Prefs * LIBFUNC URL_GetPrefsA(REG(a0,struct TagItem *attrs))
   return p;
 }
 
+#if defined(__amigaos4__)
+LIBPROTOVA(URL_GetPrefs, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE), ...)
+{
+  struct URL_Prefs *res;
+  VA_LIST args;
+
+  VA_START(args, IOpenURL);
+  res = URL_GetPrefsA(VA_ARG(args, struct TagItem *));
+  VA_END(args);
+
+  return res;
+}
+#endif
+
 /**************************************************************************/
 
-struct URL_Prefs * LIBFUNC URL_OldGetPrefs(void)
+LIBPROTO(URL_OldGetPrefs, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE))
 {
   return URL_GetPrefsA(NULL);
 }
 
 /**************************************************************************/
 
-void LIBFUNC URL_FreePrefsA(REG(a0,struct URL_Prefs *p),UNUSED REG(a1,struct TagItem *attrs))
+LIBPROTO(URL_FreePrefsA, void, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *up), REG(a1, UNUSED struct TagItem *attrs))
 {
   ENTER();
 
-  if(p != NULL)
+  if(up != NULL)
   {
-    freeList((struct List *)&p->up_BrowserList);
-    freeList((struct List *)&p->up_MailerList);
-    freeList((struct List *)&p->up_FTPList);
-    freeArbitrateVecPooled(p);
+    freeList((struct List *)&up->up_BrowserList);
+    freeList((struct List *)&up->up_MailerList);
+    freeList((struct List *)&up->up_FTPList);
+    freeArbitrateVecPooled(up);
   }
 
   LEAVE();
 }
 
+#if defined(__amigaos4__)
+LIBPROTOVA(URL_FreePrefs, void, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *up), ...)
+{
+  VA_LIST args;
+
+  VA_START(args, up);
+  URL_FreePrefsA(up, VA_ARG(args, struct TagItem *));
+  VA_END(args);
+}
+#endif
+
 /**************************************************************************/
 
-void LIBFUNC URL_OldFreePrefs(REG(a0,struct URL_Prefs *p))
+LIBPROTO(URL_OldFreePrefs, void, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *up))
 {
-  URL_FreePrefsA(p,NULL);
+  URL_FreePrefsA(up,NULL);
 }
 
 /**************************************************************************/
 
-ULONG LIBFUNC URL_SetPrefsA(REG(a0,struct URL_Prefs *p),REG(a1,struct TagItem *attrs))
+LIBPROTO(URL_SetPrefsA, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *p), REG(a1, struct TagItem *attrs))
 {
   ULONG res = FALSE;
 
@@ -264,21 +308,35 @@ ULONG LIBFUNC URL_SetPrefsA(REG(a0,struct URL_Prefs *p),REG(a1,struct TagItem *a
   return res;
 }
 
+#if defined(__amigaos4__)
+LIBPROTOVA(URL_SetPrefs, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *p), ...)
+{
+  ULONG res;
+  VA_LIST args;
+
+  VA_START(args, p);
+  res = URL_SetPrefsA(p, VA_ARG(args, struct TagItem *));
+  VA_END(args);
+
+  return res;
+}
+#endif
+
 /**************************************************************************/
 
-ULONG LIBFUNC URL_OldSetPrefs(REG(a0,struct URL_Prefs *p),REG(d0,ULONG save))
+LIBPROTO(URL_OldSetPrefs, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct URL_Prefs *p), REG(d0, ULONG permanent))
 {
   struct TagItem stags[] = { { URL_SetPrefs_Save, 0         },
                              { TAG_DONE,          TAG_DONE  } };
 
-  stags[0].ti_Data = save;
+  stags[0].ti_Data = permanent;
 
   return URL_SetPrefsA(p,stags);
 }
 
 /**************************************************************************/
 
-struct URL_Prefs * LIBFUNC URL_OldGetDefaultPrefs(void)
+LIBPROTO(URL_OldGetDefaultPrefs, struct URL_Prefs *, REG(a6, UNUSED __BASE_OR_IFACE))
 {
   struct TagItem gtags[] = { { URL_GetPrefs_Mode, URL_GetPrefs_Mode_Default },
                              { TAG_DONE,          TAG_DONE                  } };
@@ -288,7 +346,7 @@ struct URL_Prefs * LIBFUNC URL_OldGetDefaultPrefs(void)
 
 /**************************************************************************/
 
-ULONG LIBFUNC URL_LaunchPrefsAppA(REG(a0,UNUSED struct TagItem *attrs))
+LIBPROTO(URL_LaunchPrefsAppA, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, UNUSED struct TagItem *attrs))
 {
   ULONG result = FALSE;
   BPTR in;
@@ -347,16 +405,30 @@ ULONG LIBFUNC URL_LaunchPrefsAppA(REG(a0,UNUSED struct TagItem *attrs))
   return result;
 }
 
+#if defined(__amigaos4__)
+LIBPROTOVA(URL_LaunchPrefsApp, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), ...)
+{
+  ULONG res;
+  VA_LIST args;
+
+  VA_START(args, IOpenURL);
+  res = URL_LaunchPrefsAppA(VA_ARG(args, struct TagItem *));
+  VA_END(args);
+
+  return res;
+}
+#endif
+
 /**************************************************************************/
 
-ULONG LIBFUNC URL_OldLaunchPrefsApp(void)
+LIBPROTO(URL_OldLaunchPrefsApp, ULONG, REG(a6, UNUSED __BASE_OR_IFACE))
 {
   return URL_LaunchPrefsAppA(NULL);
 }
 
 /**************************************************************************/
 
-ULONG LIBFUNC URL_GetAttr(REG(d0,ULONG attr),REG(a0,IPTR *storage))
+LIBPROTO(URL_GetAttr, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(d0, ULONG attr), REG(a0, IPTR *storage))
 {
   switch (attr)
   {
@@ -376,7 +448,7 @@ ULONG LIBFUNC URL_GetAttr(REG(d0,ULONG attr),REG(a0,IPTR *storage))
 
 /**************************************************************************/
 
-LONG LIBFUNC dispatch(REG(a0, struct RexxMsg *msg), REG(a1, STRPTR *resPtr))
+LIBPROTO(dispatch, LONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct RexxMsg *msg), REG(a1, STRPTR *resPtr))
 {
     ULONG result = 17;
     STRPTR fun = (STRPTR)msg->rm_Args[0];
@@ -445,4 +517,3 @@ LONG LIBFUNC dispatch(REG(a0, struct RexxMsg *msg), REG(a1, STRPTR *resPtr))
 }
 
 /**************************************************************************/
-

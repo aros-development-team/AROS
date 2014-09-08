@@ -77,6 +77,10 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
+#if defined(__amigaos4__)
+#include <dos/obsolete.h>
+#endif
+
 /* ---------------------------- local defines ----------------------------- */
 
 #define TEMPSIZE                     512

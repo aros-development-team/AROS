@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2009 by openurl.library Open Source Team
+ Copyright (C) 2005-2013 by openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -123,22 +123,27 @@ static BOOL writeToFile(STRPTR fileName, STRPTR str)
 static STRPTR findRexxPort(struct List *list,STRPTR name)
 {
     STRPTR portName = NULL;
-    struct Node *n;
-    ULONG len;
 
     ENTER();
 
     /* find a rexx port, allowing a .<number> extension */
 
-    len = strlen(name);
-
-    for(n = list->lh_Head; n->ln_Succ; n = n->ln_Succ)
+    // avoid empty port names
+    if(name != NULL && name[0] != '\0')
     {
-        if(n->ln_Name != NULL && strncmp(n->ln_Name, name, len) == 0 &&
-            (n->ln_Name[len] == '\0' || (n->ln_Name[len] == '.' && isdigits(&n->ln_Name[len+1]))))
+        ULONG len;
+        struct Node *n;
+
+        len = strlen(name);
+
+        for(n = list->lh_Head; n->ln_Succ; n = n->ln_Succ)
         {
-            portName = n->ln_Name;
-            break;
+            if(n->ln_Name != NULL && strncmp(n->ln_Name, name, len) == 0 &&
+                (n->ln_Name[len] == '\0' || (n->ln_Name[len] == '.' && isdigits(&n->ln_Name[len+1]))))
+            {
+                portName = n->ln_Name;
+                break;
+            }
         }
     }
 
@@ -157,27 +162,31 @@ static STRPTR waitForRexxPort(STRPTR port)
 
     /* (busy) wait for the port to appear */
 
-    for(i = 0; i<FINDPORT_NUM; i++)
+    // avoid empty port names
+    if(port != NULL && port[0] != '\0')
     {
-        STRPTR rxport;
-
-        Forbid();
-        rxport = findRexxPort(&((struct ExecBase *)SysBase)->PortList, port);
-        Permit();
-
-        if(rxport != NULL)
+        for(i = 0; i<FINDPORT_NUM; i++)
         {
-          name = rxport;
-          break;
-        }
+            STRPTR rxport;
 
-        if(SetSignal(0, 0) & SIGBREAKF_CTRL_C)
-        {
-          name = NULL;
-          break;
-        }
+            Forbid();
+            rxport = findRexxPort(&((struct ExecBase *)SysBase)->PortList, port);
+            Permit();
 
-        Delay(FINDPORT_DTIME);
+            if(rxport != NULL)
+            {
+              name = rxport;
+              break;
+            }
+
+            if(SetSignal(0, 0) & SIGBREAKF_CTRL_C)
+            {
+              name = NULL;
+              break;
+            }
+
+            Delay(FINDPORT_DTIME);
+        }
     }
 
     RETURN(name);

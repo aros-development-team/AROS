@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2009 by openurl.library Open Source Team
+ Copyright (C) 2005-2013 by openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -23,6 +23,9 @@
 #include <prefs/prefhdr.h>
 
 #include "debug.h"
+
+#define __NOLIBBASE__
+#include <proto/openurl.h>
 
 /**************************************************************************/
 
@@ -101,12 +104,61 @@ void initPrefs(struct URL_Prefs *p)
 
 /**************************************************************************/
 
-void setDefaultPrefs(struct URL_Prefs *p)
+static void addBrowser(struct URL_Prefs *p, const char *name, const char *path, const char *port, const char *show, const char *toFront, const char *open, const char *openWin)
 {
   struct URL_BrowserNode *bn;
-  struct URL_MailerNode  *mn;
-  struct URL_FTPNode     *fn;
 
+  if((bn = allocArbitrateVecPooled(sizeof(*bn))) != NULL)
+  {
+    bn->ubn_Flags = UNF_DISABLED;
+    strlcpy(bn->ubn_Name, name, sizeof(bn->ubn_Name));
+    strlcpy(bn->ubn_Path, path, sizeof(bn->ubn_Path));
+    strlcpy(bn->ubn_Port, port, sizeof(bn->ubn_Port));
+    strlcpy(bn->ubn_ShowCmd, show, sizeof(bn->ubn_ShowCmd));
+    strlcpy(bn->ubn_ToFrontCmd, toFront, sizeof(bn->ubn_ToFrontCmd));
+    strlcpy(bn->ubn_OpenURLCmd, open, sizeof(bn->ubn_OpenURLCmd));
+    strlcpy(bn->ubn_OpenURLWCmd, openWin, sizeof(bn->ubn_OpenURLWCmd));
+    AddTail((struct List *)&p->up_BrowserList, (struct Node *)bn);
+  }
+}
+
+static void addMailer(struct URL_Prefs *p, const char *name, const char *path, const char *port, const char *show, const char *toFront, const char *write)
+{
+  struct URL_MailerNode *mn;
+
+  if((mn = allocArbitrateVecPooled(sizeof(*mn))) != NULL)
+  {
+    mn->umn_Flags = UNF_DISABLED;
+    strlcpy(mn->umn_Name, name, sizeof(mn->umn_Name));
+    strlcpy(mn->umn_Path, path, sizeof(mn->umn_Path));
+    strlcpy(mn->umn_Port, port, sizeof(mn->umn_Port));
+    strlcpy(mn->umn_ShowCmd, show, sizeof(mn->umn_ShowCmd));
+    strlcpy(mn->umn_ToFrontCmd, toFront, sizeof(mn->umn_ToFrontCmd));
+    strlcpy(mn->umn_WriteMailCmd, write, sizeof(mn->umn_WriteMailCmd));
+    AddTail((struct List *)&p->up_MailerList, (struct Node *)mn);
+  }
+}
+
+static void addFTP(struct URL_Prefs *p, const char *name, const char *path, const char *port, const char *show, const char *toFront, const char *open, const char *openWin)
+{
+  struct URL_FTPNode *fn;
+
+  if((fn = allocArbitrateVecPooled(sizeof(*fn))) != NULL)
+  {
+    fn->ufn_Flags = UNF_DISABLED;
+    strlcpy(fn->ufn_Name, name, sizeof(fn->ufn_Name));
+    strlcpy(fn->ufn_Path, path, sizeof(fn->ufn_Path));
+    strlcpy(fn->ufn_Port, port, sizeof(fn->ufn_Port));
+    strlcpy(fn->ufn_ShowCmd, show, sizeof(fn->ufn_ShowCmd));
+    strlcpy(fn->ufn_ToFrontCmd, toFront, sizeof(fn->ufn_ToFrontCmd));
+    strlcpy(fn->ufn_OpenURLCmd, open, sizeof(fn->ufn_OpenURLCmd));
+    strlcpy(fn->ufn_OpenURLWCmd, openWin, sizeof(fn->ufn_OpenURLWCmd));
+    AddTail((struct List *)&p->up_FTPList, (struct Node *)fn);
+  }
+}
+
+void setDefaultPrefs(struct URL_Prefs *p)
+{
   ENTER();
 
   initPrefs(p);
@@ -118,208 +170,44 @@ void setDefaultPrefs(struct URL_Prefs *p)
   p->up_DefNewWindow    = DEF_DefNewWindow;
   p->up_DefLaunch       = DEF_DefLaunch;
 
-  /* Browsers: OWB */
-  if(!(bn = allocArbitrateVecPooled(sizeof(struct URL_BrowserNode))))
-  {
-    LEAVE();
-    return;
-  }
+  // Browsers: OWB
+  addBrowser(p, "OWB", "OWB \"%u\"", "OWB", "", "SCREENTOFRONT", "OPENURL \"%u\"", "OPENURL \"%u\"");
 
-  bn->ubn_Flags = UNF_DISABLED;
-  strlcpy(bn->ubn_Name,"OWB", sizeof(bn->ubn_Name));
-  strlcpy(bn->ubn_Path,"OWB \"%u\"", sizeof(bn->ubn_Path));
-  strlcpy(bn->ubn_Port,"OWB", sizeof(bn->ubn_Port));
-  strlcpy(bn->ubn_ShowCmd,"", sizeof(bn->ubn_ShowCmd));
-  strlcpy(bn->ubn_ToFrontCmd,"SCREENTOFRONT", sizeof(bn->ubn_ToFrontCmd));
-  strlcpy(bn->ubn_OpenURLCmd,"OPENURL \"%u\"", sizeof(bn->ubn_OpenURLCmd));
-  strlcpy(bn->ubn_OpenURLWCmd,"OPENURL \"%u\"", sizeof(bn->ubn_OpenURLWCmd));
-  AddTail((struct List *)(&p->up_BrowserList), (struct Node *)(bn));
+  // Browsers: MUIOWB
+  addBrowser(p, "MUIOWB", "MUIOWB \"%u\"", "MUIOWB", "SHOW", "SCREENTOFRONT", "OPEN NAME=\"%u\"", "OPEN NAME=\"%u\" NEWPAGE");
 
-  /* Browsers: NetSurf */
-  if(!(bn = allocArbitrateVecPooled(sizeof(struct URL_BrowserNode))))
-  {
-    LEAVE();
-    return;
-  }
+  // Browsers: NetSurf
+  addBrowser(p, "NetSurf", "NetSurf \"%u\"", "NETSURF", "", "TOFRONT", "OPEN \"%u\"", "OPEN \"%u\" NEW");
 
-  bn->ubn_Flags = UNF_DISABLED;
-  strlcpy(bn->ubn_Name, "NetSurf", sizeof(bn->ubn_Name));
-  strlcpy(bn->ubn_Path, "NetSurf \"%u\"", sizeof(bn->ubn_Path));
-  strlcpy(bn->ubn_Port, "NETSURF", sizeof(bn->ubn_Port));
-  strlcpy(bn->ubn_ShowCmd, "", sizeof(bn->ubn_ShowCmd));
-  strlcpy(bn->ubn_ToFrontCmd, "TOFRONT", sizeof(bn->ubn_ToFrontCmd));
-  strlcpy(bn->ubn_OpenURLCmd, "OPEN \"%u\"", sizeof(bn->ubn_OpenURLCmd));
-  strlcpy(bn->ubn_OpenURLWCmd, "OPEN \"%u\" NEW", sizeof(bn->ubn_OpenURLWCmd));
-  AddTail((struct List *)(&p->up_BrowserList), (struct Node *)(bn));
+  // Browsers: IBrowse
+  addBrowser(p, "IBrowse", "IBrowse \"%u\"", "IBROWSE", "SHOW", "SCREENTOFRONT", "GOTOURL \"%u\"", "NEWWINDOW \"%u\"");
 
-  /* Browsers: IBrowse */
-  if(!(bn = allocArbitrateVecPooled(sizeof(struct URL_BrowserNode))))
-  {
-    LEAVE();
-    return;
-  }
+  // Browsers: AWeb
+  addBrowser(p, "AWeb", "AWeb \"%u\"", "AWEB", "ICONIFY SHOW", "SCREENTOFRONT", "OPEN \"%u\"", "NEW \"%u\"");
 
-  bn->ubn_Flags = UNF_DISABLED;
-  strlcpy(bn->ubn_Name,"IBrowse", sizeof(bn->ubn_Name));
-  strlcpy(bn->ubn_Path,"IBrowse \"%u\"", sizeof(bn->ubn_Path));
-  strlcpy(bn->ubn_Port,"IBROWSE", sizeof(bn->ubn_Port));
-  strlcpy(bn->ubn_ShowCmd,"SHOW", sizeof(bn->ubn_ShowCmd));
-  strlcpy(bn->ubn_ToFrontCmd,"SCREENTOFRONT", sizeof(bn->ubn_ToFrontCmd));
-  strlcpy(bn->ubn_OpenURLCmd,"GOTOURL \"%u\"", sizeof(bn->ubn_OpenURLCmd));
-  strlcpy(bn->ubn_OpenURLWCmd,"NEWWINDOW \"%u\"", sizeof(bn->ubn_OpenURLWCmd));
-  AddTail((struct List *)(&p->up_BrowserList), (struct Node *)(bn));
+  // Browsers: Voyager
+  addBrowser(p, "Voyager", "V \"%u\"", "VOYAGER", "SHOW", "SCREENTOFRONT", "OPENURL \"%u\"", "OPENURL \"%u\" NEWWIN");
 
-  /* Browsers: AWeb */
-  if(!(bn = allocArbitrateVecPooled(sizeof(struct URL_BrowserNode))))
-  {
-    LEAVE();
-    return;
-  }
+  // Mailers: YAM
+  addMailer(p, "YAM", "YAM MAILTO=\"%a\" SUBJECT=\"%s\" LETTER=\"%f\"", "YAM", "SHOW", "SCREENTOFRONT", "MAILWRITE;WRITETO \"%a\";WRITESUBJECT \"%s\";WRITEEDITOR \"CLEAR\";WRITEEDITOR \"TEXT %b\"");
 
-  bn->ubn_Flags = UNF_DISABLED;
-  strlcpy(bn->ubn_Name,"AWeb", sizeof(bn->ubn_Name));
-  strlcpy(bn->ubn_Path,"AWeb \"%u\"", sizeof(bn->ubn_Path));
-  strlcpy(bn->ubn_Port,"AWEB", sizeof(bn->ubn_Port));
-  strlcpy(bn->ubn_ShowCmd,"ICONIFY SHOW", sizeof(bn->ubn_ShowCmd));
-  strlcpy(bn->ubn_ToFrontCmd,"SCREENTOFRONT", sizeof(bn->ubn_ToFrontCmd));
-  strlcpy(bn->ubn_OpenURLCmd,"OPEN \"%u\"", sizeof(bn->ubn_OpenURLCmd));
-  strlcpy(bn->ubn_OpenURLWCmd,"NEW \"%u\"", sizeof(bn->ubn_OpenURLWCmd));
-  AddTail((struct List *)(&p->up_BrowserList),(struct Node *)(bn));
+  // Mailers: SimpleMail
+  addMailer(p, "SimpleMail", "SimpleMail MAILTO=\"%a\" SUBJECT=\"%s\"", "SIMPLEMAIL", "SHOW", "SCREENTOFRONT", "MAILWRITE MAILTO=\"%a\" SUBJECT=\"%s\"");
 
-  /* Browsers: Voyager */
-  if(!(bn = allocArbitrateVecPooled(sizeof(struct URL_BrowserNode))))
-  {
-    LEAVE();
-    return;
-  }
+  // Mailers: MicroDot II
+  addMailer(p, "MicroDot II", "MicroDot TO=\"%a\" SUBJECT=\"%s\" CONTENTS=\"%f\"", "MD", "SHOW", "SCREENTOFRONT", "NEWMSGWINDOW TO=\"%a\" SUBJECT=\"%s\" CONTENTS=\"%f\"");
 
-  bn->ubn_Flags = UNF_DISABLED;
-  strcpy(bn->ubn_Name,"Voyager");
-  if(GetVar("Vapor/Voyager_LASTUSEDDIR",bn->ubn_Path,sizeof(bn->ubn_Path),GVF_GLOBAL_ONLY)>0)
-    AddPart(bn->ubn_Path,"V \"%u\"", sizeof(bn->ubn_Path));
-  else
-    strlcpy(bn->ubn_Path,"V \"%u\"", sizeof(bn->ubn_Path));
-  strlcpy(bn->ubn_Port,"VOYAGER", sizeof(bn->ubn_Port));
-  strlcpy(bn->ubn_ShowCmd,"SHOW", sizeof(bn->ubn_ShowCmd));
-  strlcpy(bn->ubn_ToFrontCmd,"SCREENTOFRONT", sizeof(bn->ubn_ToFrontCmd));
-  strlcpy(bn->ubn_OpenURLCmd,"OPENURL \"%u\"", sizeof(bn->ubn_OpenURLCmd));
-  strlcpy(bn->ubn_OpenURLWCmd,"OPENURL \"%u\" NEWWIN", sizeof(bn->ubn_OpenURLWCmd));
-  AddTail((struct List *)(&p->up_BrowserList),(struct Node *)(bn));
+  // Mailers: lola
+  addMailer(p, "lola", "lola TO=\"%a\" SUBJECT=\"%s\" TEXT=\"%b\" CX_POPUP CX_POPKEY=\"control alt l\"", "LOLA", "SHOW", "", "FILL TO=\"%a\" SUBJECT=\"%s\" TEXT=\"%b\"");
 
-  /* Mailers: YAM */
-  if(!(mn = allocArbitrateVecPooled(sizeof(struct URL_MailerNode))))
-  {
-    LEAVE();
-    return;
-  }
+  // FTP: AmiFTP
+  addFTP(p, "AmiFTP", "AmiFTP \"%a\"", "AMIFTP", "", "", "", "");
 
-  mn->umn_Flags = UNF_DISABLED;
-  strlcpy(mn->umn_Name,"YAM", sizeof(mn->umn_Name));
-  strlcpy(mn->umn_Path,"YAM MAILTO=\"%a\" SUBJECT=\"%s\" LETTER=\"%f\"", sizeof(mn->umn_Path));
-  strlcpy(mn->umn_Port,"YAM", sizeof(mn->umn_Port));
-  strlcpy(mn->umn_ShowCmd,"SHOW", sizeof(mn->umn_ShowCmd));
-  strlcpy(mn->umn_ToFrontCmd,"SCREENTOFRONT", sizeof(mn->umn_ToFrontCmd));
-  strlcpy(mn->umn_WriteMailCmd,"MAILWRITE;WRITETO \"%a\";WRITESUBJECT \"%s\";WRITEEDITOR \"CLEAR\";WRITEEDITOR \"TEXT %b\"", sizeof(mn->umn_WriteMailCmd));
-  AddTail((struct List *)(&p->up_MailerList),(struct Node *)(mn));
+  // FTP: Pete's FTP
+  addFTP(p, "Pete's FTP", "pftp \"%a\"", "", "", "", "", "");
 
-  /* Mailers: SimpleMail */
-  if(!(mn = allocArbitrateVecPooled(sizeof(struct URL_MailerNode))))
-  {
-    LEAVE();
-    return;
-  }
-
-  mn->umn_Flags = UNF_DISABLED;
-  strlcpy(mn->umn_Name,"SimpleMail", sizeof(mn->umn_Name));
-  strlcpy(mn->umn_Path,"SimpleMail MAILTO=\"%a\" SUBJECT=\"%s\"", sizeof(mn->umn_Path));
-  strlcpy(mn->umn_Port,"SIMPLEMAIL", sizeof(mn->umn_Port));
-  strlcpy(mn->umn_ShowCmd,"SHOW", sizeof(mn->umn_ShowCmd));
-  strlcpy(mn->umn_ToFrontCmd,"SCREENTOFRONT", sizeof(mn->umn_ToFrontCmd));
-  strlcpy(mn->umn_WriteMailCmd,"MAILWRITE MAILTO=\"%a\" SUBJECT=\"%s\"", sizeof(mn->umn_WriteMailCmd));
-  AddTail((struct List *)(&p->up_MailerList),(struct Node *)(mn));
-
-  /* Mailers: MicroDot II */
-  if(!(mn = allocArbitrateVecPooled(sizeof(struct URL_MailerNode))))
-  {
-    LEAVE();
-    return;
-  }
-
-  mn->umn_Flags = UNF_DISABLED;
-  strlcpy(mn->umn_Name,"MicroDot II", sizeof(mn->umn_Name));
-  if(GetVar("Vapor/MD2_LASTUSEDDIR",mn->umn_Path, sizeof(mn->umn_Path),GVF_GLOBAL_ONLY)<0)
-    *mn->umn_Path = 0;
-  AddPart(mn->umn_Path,"MicroDot TO=\"%a\" SUBJECT=\"%s\" CONTENTS=\"%f\"", sizeof(mn->umn_Path));
-  strlcpy(mn->umn_Port,"MD", sizeof(mn->umn_Port));
-  strlcpy(mn->umn_ShowCmd,"SHOW", sizeof(mn->umn_ShowCmd));
-  strlcpy(mn->umn_WriteMailCmd,"NEWMSGWINDOW TO=\"%a\" SUBJECT=\"%s\" CONTENTS=\"%f\"", sizeof(mn->umn_WriteMailCmd));
-  AddTail((struct List *)(&p->up_MailerList),(struct Node *)(mn));
-
-  /* Mailers: lola */
-  if(!(mn = allocArbitrateVecPooled(sizeof(struct URL_MailerNode))))
-  {
-    LEAVE();
-    return;
-  }
-
-  mn->umn_Flags = UNF_DISABLED;
-  strlcpy(mn->umn_Name,"lola", sizeof(mn->umn_Name));
-  strlcpy(mn->umn_Path,"lola TO=\"%a\" SUBJECT=\"%s\" TEXT=\"%b\" CX_POPUP CX_POPKEY=\"control alt l\"", sizeof(mn->umn_Path));
-  strlcpy(mn->umn_Port,"LOLA", sizeof(mn->umn_Port));
-  strlcpy(mn->umn_ShowCmd,"SHOW", sizeof(mn->umn_ShowCmd));
-  strlcpy(mn->umn_WriteMailCmd,"FILL TO=\"%a\" SUBJECT=\"%s\" TEXT=\"%b\"", sizeof(mn->umn_WriteMailCmd));
-  AddTail((struct List *)(&p->up_MailerList),(struct Node *)(mn));
-
-  /* FTP: AmiFTP */
-  if(!(fn = allocArbitrateVecPooled(sizeof(struct URL_FTPNode))))
-  {
-    LEAVE();
-    return;
-  }
-
-  fn->ufn_Flags = UNF_DISABLED;
-  strlcpy(fn->ufn_Name,"AmiFTP", sizeof(fn->ufn_Name));
-  strlcpy(fn->ufn_Path,"AmiFTP \"%a\"", sizeof(fn->ufn_Path));
-  strlcpy(fn->ufn_Port,"AMIFTP", sizeof(fn->ufn_Port));
-  strlcpy(fn->ufn_ShowCmd,"", sizeof(fn->ufn_ShowCmd));
-  strlcpy(fn->ufn_ToFrontCmd,"", sizeof(fn->ufn_ToFrontCmd));
-  strlcpy(fn->ufn_OpenURLCmd,"", sizeof(fn->ufn_OpenURLCmd));
-  strlcpy(fn->ufn_OpenURLWCmd,"", sizeof(fn->ufn_OpenURLWCmd));
-  AddTail((struct List *)(&p->up_FTPList),(struct Node *)(fn));
-
-  /* FTP: Pete's FTP */
-  if(!(fn = allocArbitrateVecPooled(sizeof(struct URL_FTPNode))))
-  {
-    LEAVE();
-    return;
-  }
-
-  fn->ufn_Flags = UNF_DISABLED;
-  strlcpy(fn->ufn_Name,"Pete's FTP", sizeof(fn->ufn_Name));
-  strlcpy(fn->ufn_Path,"pftp \"%a\"", sizeof(fn->ufn_Path));
-  strlcpy(fn->ufn_Port,"", sizeof(fn->ufn_Port));
-  strlcpy(fn->ufn_ShowCmd,"", sizeof(fn->ufn_ShowCmd));
-  strlcpy(fn->ufn_ToFrontCmd,"", sizeof(fn->ufn_ToFrontCmd));
-  strlcpy(fn->ufn_OpenURLCmd,"", sizeof(fn->ufn_OpenURLCmd));
-  strlcpy(fn->ufn_OpenURLWCmd,"", sizeof(fn->ufn_OpenURLWCmd));
-  AddTail((struct List *)(&p->up_FTPList),(struct Node *)(fn));
-
-  /* FTP: AmiTradeCenter */
-  if(!(fn = allocArbitrateVecPooled(sizeof(struct URL_FTPNode))))
-  {
-    LEAVE();
-    return;
-  }
-
-  fn->ufn_Flags = UNF_DISABLED;
-  strlcpy(fn->ufn_Name,"AmiTradeCenter", sizeof(fn->ufn_Name));
-  strlcpy(fn->ufn_Path,"AmiTradeCenter \"%a\"", sizeof(fn->ufn_Path));
-  strlcpy(fn->ufn_Port,"ATC_MAIN", sizeof(fn->ufn_Port));
-  strlcpy(fn->ufn_ShowCmd,"", sizeof(fn->ufn_ShowCmd));
-  strlcpy(fn->ufn_ToFrontCmd,"", sizeof(fn->ufn_ToFrontCmd));
-  strlcpy(fn->ufn_OpenURLCmd,"", sizeof(fn->ufn_OpenURLCmd));
-  strlcpy(fn->ufn_OpenURLWCmd,"", sizeof(fn->ufn_OpenURLWCmd));
-  AddTail((struct List *)(&p->up_FTPList),(struct Node *)(fn));
+  // FTP: AmiTradeCenter
+  addFTP(p, "AmiTradeCenter", "AmiTradeCenter \"%a\"", "ATC_MAIN", "", "", "", "");
 
   LEAVE();
 }
