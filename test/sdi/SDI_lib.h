@@ -43,6 +43,7 @@
                   version (Thore Böckelmann)
  1.12  01.04.14 : removed the necessity of stub functions for AmigaOS4 (Thore
                   Böckelmann)
+ 1.13  07.09.14 : adapted to AROS (AROS Development Team)
 */
 
 /*
@@ -174,23 +175,43 @@
   #define LFUNC_VA_(name)
   #define LFUNC(name)     LIBSTUB_##name
 #elif defined(__AROS__)
-  #define LIBFUNC
-  #if !defined(__cplusplus) &&                                        \
-    (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 ||                  \
-    (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
-    #define LIBPROTO(name, ret, ...)                                  \
-      LIBFUNC ret LIB_##name(__VA_ARGS__)
-    #define LIBPROTOVA(name, ret, ...)
-    #define LIBSTUB(name, ret, ...)                                   \
-      LIBFUNC ret LIBSTUB_0_##name(void)
-    #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
-    #define CALL_LFUNC(name, ...) LIB_##name(__BASE_OR_IFACE_VAR, __VA_ARGS__)
+  #if defined(AROS_ABI_V1)
+    #define LIBFUNC
+    #if !defined(__cplusplus) &&                                        \
+      (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 ||                  \
+      (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
+      #define LIBPROTO(name, ret, ...)                                  \
+        LIBFUNC ret LIB_##name(__VA_ARGS__)
+      #define LIBPROTOVA(name, ret, ...)
+      #define LIBSTUB(name, ret, ...)                                   \
+        LIBFUNC ret LIBSTUB_0_##name(void)
+      #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
+      #define CALL_LFUNC(name, ...) LIB_##name(__BASE_OR_IFACE_VAR, __VA_ARGS__)
+    #endif
+    #define LFUNC_FAS(name) LIBSTUB_0_##name
+    #define LFUNC_VAS(name)
+    #define LFUNC_FA_(name) ,LIBSTUB_0_##name
+    #define LFUNC_VA_(name)
+    #define LFUNC(name)     LIBSTUB_0_##name
+  #else
+    #define LIBFUNC
+    #if !defined(__cplusplus) &&                                        \
+      (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 ||                  \
+      (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
+      #define LIBPROTO(name, ret, ...)                                  \
+        LIBFUNC ret LIB_##name(__VA_ARGS__)
+      #define LIBPROTOVA(name, ret, ...)
+      #define LIBSTUB(name, ret, ...)                                   \
+        LIBFUNC ret LIBSTUB_##name(void)
+      #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
+      #define CALL_LFUNC(name, ...) LIB_##name(__BASE_OR_IFACE_VAR, __VA_ARGS__)
+    #endif
+    #define LFUNC_FAS(name) LIBSTUB_##name
+    #define LFUNC_VAS(name)
+    #define LFUNC_FA_(name) ,LIBSTUB_##name
+    #define LFUNC_VA_(name)
+    #define LFUNC(name)     LIBSTUB_##name
   #endif
-  #define LFUNC_FAS(name) LIBSTUB_0_##name
-  #define LFUNC_VAS(name)
-  #define LFUNC_FA_(name) ,LIBSTUB_0_##name
-  #define LFUNC_VA_(name)
-  #define LFUNC(name)     LIBSTUB_0_##name
 #else
   #define LIBFUNC SAVEDS ASM
   #if !defined(__cplusplus) &&                                        \
