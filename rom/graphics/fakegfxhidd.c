@@ -684,6 +684,12 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
     return ret;
 }
 
+static ULONG gfx_showviewports(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    /* Composition is not supported here */
+    return FALSE;
+}
+
 static BOOL gfx_getmaxspritesize(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMaxSpriteSize *msg)
 {
     if (msg->Type & (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor)) {
@@ -1527,7 +1533,7 @@ static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
 	{(IPTR (*)())gfx_show	    	   , moHidd_Gfx_Show		},
 	{(IPTR (*)())gfx_copybox    	   , moHidd_Gfx_CopyBox	    	},
 	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_ModeProperties	},
-	{(IPTR (*)())gfx_fwd               , moHidd_Gfx_ShowViewPorts	},
+	{(IPTR (*)())gfx_showviewports	   , moHidd_Gfx_ShowViewPorts	},
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetSync	    	},
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetGamma	},
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_SetGamma	},
