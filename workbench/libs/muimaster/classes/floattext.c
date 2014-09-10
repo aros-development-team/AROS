@@ -552,6 +552,39 @@ IPTR Floattext__MUIM_Draw(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/**************************************************************************
+ MUIM_Floattext_Append
+**************************************************************************/
+IPTR Floattext__MUIM_Floattext_Append(struct IClass *cl, Object *obj,
+    struct MUIP_Floattext_Append *msg)
+{
+    struct Floattext_DATA *data = INST_DATA(cl, obj);
+
+    if (msg->Text)
+    {
+        ULONG newlen = strlen(msg->Text) + 1;
+        if (data->text)
+        {
+            newlen += strlen(data->text);
+        }
+        TEXT *newtext = AllocVec(newlen, MEMF_ANY);
+        if (newtext)
+        {
+            newtext[0] = '\0';
+            if (data->text)
+            {
+                strcpy(newtext, data->text);
+            }
+            strcat(newtext, msg->Text);
+            FreeVec(data->text);
+            data->text = newtext;
+            SetText(obj, data);
+        }
+    }
+
+    return 0;
+}
+
 #if ZUNE_BUILTIN_FLOATTEXT
 BOOPSI_DISPATCHER(IPTR, Floattext_Dispatcher, cl, obj, msg)
 {
@@ -567,6 +600,8 @@ BOOPSI_DISPATCHER(IPTR, Floattext_Dispatcher, cl, obj, msg)
         return Floattext__OM_SET(cl, obj, msg);
     case MUIM_Draw:
         return Floattext__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
+    case MUIM_Floattext_Append:
+        return Floattext__MUIM_Floattext_Append(cl, obj, (struct MUIP_Floattext_Append *)msg);
 
     default:
         return DoSuperMethodA(cl, obj, msg);
