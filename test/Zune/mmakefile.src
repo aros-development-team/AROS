@@ -25,7 +25,8 @@ FILES  := test             \
           hideshow         \
           settings         \
           dynlist          \
-          listinsertactive
+          listinsertactive \
+          mui4test
 
 USER_CFLAGS := -I $(SRCDIR)/workbench/system/Wanderer/Classes
 
