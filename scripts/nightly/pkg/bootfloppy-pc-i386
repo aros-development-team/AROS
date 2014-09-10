@@ -16,7 +16,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 cd      $BUILD_BASE/AROS
 execute ./configure --target=$BUILDTARGET --enable-build-type=nightly --enable-target-variant=tiny --with-optimization="-Os -fno-defer-pop -mpreferred-stack-boundary=4" --with-theme=AmigaOS3.x --with-iconset=Mason --with-bootloader=grub
 make    -j $MAKE_JOBS
-make    -j $MAKE_JOBS bootdisk systemdisk
+make    -j bootdisk systemdisk
 
 PACKAGE=$BASENAME-$BUILDTARGET-boot-floppy
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
