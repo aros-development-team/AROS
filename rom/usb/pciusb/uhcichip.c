@@ -173,6 +173,17 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
                        If not done, check the next TD too. */
                     if(ctrlstatus & (UTSF_BABBLE|UTSF_STALLED|UTSF_CRCTIMEOUT|UTSF_DATABUFFERERR|UTSF_BITSTUFFERR))
                     {
+                        /*
+                            Babble condition can only occur on the last data packet (or on the first if only one data packet is in the queue)
+                            When UHCI encounters a babble condition it will halt immediately,
+                            we can therefore just accept the data that has come through and resume as if we got interrupt on completition (IOC).
+
+                            THEORETICAL: Possible fix for VIA babble bug
+                            VIA chipset also halt the entire controller and sets the controller on stopped state.
+                            We can resume the controller by changing the status bits in the queue so that the queue looks like it has ended with a completition or
+                            remove the entire queue and act like it succeeded.
+                            As VIA stops the controller we can then write a new frame list current index to point to the next item and then set the run bit back on.
+                        */
                         nextutd = 0;
                     }
                     else
@@ -239,16 +250,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
                             if(ctrlstatus & UTSF_BABBLE)
                             {
                                 KPRINTF(20, ("Babble error %08lx/%08lx\n", ctrlstatus, token));
-                                ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
-#if 0
-                                // VIA chipset seems to die on babble!?!
-                                KPRINTF(10, ("HW Regs USBCMD=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_USBCMD)));
-                                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
-                                SYNC;
-#endif
-                                //retry
-                                //ctrlstatus &= ~(UTSF_BABBLE|UTSF_STALLED|UTSF_CRCTIMEOUT|UTSF_DATABUFFERERR|UTSF_BITSTUFFERR|UTSF_NAK);
-                                ctrlstatus |= UTCF_ACTIVE;
+                                ctrlstatus &= ~(UTSF_BABBLE);
                                 WRITEMEM32_LE(&utd->utd_CtrlStatus, ctrlstatus);
                                 SYNC;
                                 inspect = 3;
@@ -311,9 +313,8 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
                     } while((utd = (struct UhciTD *) utd->utd_Succ));
                     if(inspect == 3)
                     {
-                        // bail out from babble
-                        ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
-                        continue;
+                        /* bail out from babble */
+                        actual = uqh->uqh_Actual;
                     }
                     if((actual < uqh->uqh_Actual) && (!ioreq->iouh_Req.io_Error) && (!(ioreq->iouh_Flags & UHFF_ALLOWRUNTPKTS)))
                     {
@@ -521,17 +522,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc) {
                     len = ioreq->iouh_MaxPktSize;
                 }
                 WRITEMEM32_LE(&datautd->utd_CtrlStatus, ctrlstatus);
-#if 1
-/* FIXME: This workaround for a VIA babble bug will potentially overwrite innocent memory (very rarely), but will avoid the host controller dropping dead completely. */
-                if((len < ioreq->iouh_MaxPktSize) && (ioreq->iouh_SetupData.bmRequestType & URTF_IN))
-                {
-                    WRITEMEM32_LE(&datautd->utd_Token, token|((ioreq->iouh_MaxPktSize-1)<<UTTS_TRANSLENGTH)); // no masking need here as len is always >= 1
-                } else {
-                    WRITEMEM32_LE(&datautd->utd_Token, token|((len-1)<<UTTS_TRANSLENGTH)); // no masking need here as len is always >= 1
-                }
-#else
                 WRITEMEM32_LE(&datautd->utd_Token, token|((len-1)<<UTTS_TRANSLENGTH)); // no masking need here as len is always >= 1
-#endif
                 WRITEMEM32_LE(&datautd->utd_BufferPtr, phyaddr);
                 phyaddr += len;
                 actual += len;
