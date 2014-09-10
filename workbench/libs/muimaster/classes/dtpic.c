@@ -81,9 +81,7 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             switch (tag->ti_Tag)
             {
             case MUIA_Dtpic_Name:
-                data->name =
-                    AllocVec(strlen((char *)tag->ti_Data) + 1, MEMF_ANY);
-                strcpy((char *)data->name, (char *)tag->ti_Data);
+                data->name = StrDup((char *)tag->ti_Data);
                 break;
             }
         }
