@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_FLOATTEXT_H
 
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,16 @@
 
 /*** Identifier base (for Zune extensions) **********************************/
 #define MUIB_Floattext           (MUIB_ZUNE | 0x00001500)
+
+/*** Methods ****************************************************************/
+#define MUIM_Floattext_Append \
+    (MUIB_MUI | 0x0042a221)  /* MUI: V20 */
+
+struct MUIP_Floattext_Append
+{
+    STACKED ULONG MethodID;
+    STACKED CONST_STRPTR Text;
+};
 
 /*** Attributes *************************************************************/
 #define MUIA_Floattext_Justify \
