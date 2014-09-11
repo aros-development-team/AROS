@@ -83,6 +83,18 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             case MUIA_Dtpic_Name:
                 data->name = StrDup((char *)tag->ti_Data);
                 break;
+            case MUIA_Dtpic_Alpha:
+                data->alpha = tag->ti_Data;
+                break;
+            case MUIA_Dtpic_DarkenSelState:
+                data->darkenselstate = tag->ti_Data ? TRUE : FALSE;
+                break;
+            case MUIA_Dtpic_Fade:
+                data->fade = tag->ti_Data;
+                break;
+            case MUIA_Dtpic_LightenOnMouse:
+                data->lightenonmouse = tag->ti_Data ? TRUE : FALSE;
+                break;
             }
         }
     }
@@ -297,6 +309,12 @@ IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 needs_redraw = 1;
             }
             break;
+        case MUIA_Dtpic_Alpha:
+            data->alpha = tag->ti_Data;
+            break;
+        case MUIA_Dtpic_Fade:
+            data->fade = tag->ti_Data;
+            break;
         }
     }
 
@@ -316,6 +334,18 @@ IPTR Dtpic__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     {
     case MUIA_Dtpic_Name:
         *(msg->opg_Storage) = (IPTR) data->name;
+        return TRUE;
+    case MUIA_Dtpic_Alpha:
+        *(msg->opg_Storage) = data->alpha;
+        return TRUE;
+    case MUIA_Dtpic_DarkenSelState:
+        *(msg->opg_Storage) = data->darkenselstate;
+        return TRUE;
+    case MUIA_Dtpic_Fade:
+        *(msg->opg_Storage) = data->fade;
+        return TRUE;
+    case MUIA_Dtpic_LightenOnMouse:
+        *(msg->opg_Storage) = data->lightenonmouse;
         return TRUE;
     }
 
