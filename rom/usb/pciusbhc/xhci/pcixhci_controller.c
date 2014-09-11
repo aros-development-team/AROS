@@ -59,37 +59,37 @@ static AROS_INTH1(PCIXHCI_IntCode, struct PCIXHCIUnit *, unit) {
 
             if(portsc & XHCF_PS_CSC) {
                 operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_CSC));
-                mybug_unit(-1,("port %d XHCF_PS_CSC\n", port->number));
+                mybug_unit(-1,("%s XHCF_PS_CSC\n",port->node.ln_Name));
             }
 
             if(portsc & XHCF_PS_PEC) {
                 operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_PEC));
-                mybug_unit(-1,("port %d XHCF_PS_PEC\n", port->number));
+                mybug_unit(-1,("%s XHCF_PS_PEC\n",port->node.ln_Name));
             }
 
             if(portsc & XHCF_PS_OCC) {
                 operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_OCC));
-                mybug_unit(-1,("port %d XHCF_PS_OCC\n", port->number));
+                mybug_unit(-1,("%s XHCF_PS_OCC\n",port->node.ln_Name));
             }
 
             if(portsc & XHCF_PS_WRC) {
                 operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_WRC));
-                mybug_unit(-1,("port %d XHCF_PS_WRC\n", port->number));
+                mybug_unit(-1,("%s XHCF_PS_WRC\n",port->node.ln_Name));
             }
 
             if(portsc & XHCF_PS_PRC) {
                 operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_PRC));
-                mybug_unit(-1,("port %d XHCF_PS_PRC\n", port->number));
+                mybug_unit(-1,("%s XHCF_PS_PRC\n",port->node.ln_Name));
             }
 
             if(portsc & XHCF_PS_PLC) {
                 operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_PLC));
-                mybug_unit(-1,("port %d XHCF_PS_PLC\n", port->number));
+                mybug_unit(-1,("%s XHCF_PS_PLC\n",port->node.ln_Name));
             }
 
             if(portsc & XHCF_PS_CEC) {
                 operational_writel(XHCI_PORTSC(port->number), (portsc | ~XHCF_PS_CEC));
-                mybug_unit(-1,("port %d XHCF_PS_CEC\n", port->number));
+                mybug_unit(-1,("%s XHCF_PS_CEC\n",port->node.ln_Name));
             }
         }
     }
@@ -219,12 +219,25 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
 */
     }
 
+    unit->hc.pagesize = 1<<(AROS_LEAST_BIT_POS(operational_readl(XHCI_PAGESIZE) & 0xffff) + 12);
+    operational_writel(XHCI_DNCTRL, 0);
+
+    mybug(-1,("XHCI_PAGESIZE = %08x\n", unit->hc.pagesize));
     mybug(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
     mybug(-1,("XHCV_MaxSlots = %d\n", XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))));
     mybug(-1,("XHCV_MaxIntrs = %d\n", XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1))));
     mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
     operational_writel(XHCI_CONFIG, (operational_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn)|XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1)));
     mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
+
+    /* 64 byte aligned, pagesize boundary */
+    unit->hc.dcbaa = AllocVec( ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * 8) + unit->hc.pagesize, (MEMF_ANY|MEMF_CLEAR));
+    mybug(-1,("dcpaa alloc %p, size %d\n",unit->hc.dcbaa, ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * 8) + unit->hc.pagesize));
+    unit->hc.dcbaa = (APTR)(((IPTR)unit->hc.dcbaa + unit->hc.pagesize) & ~(unit->hc.pagesize-1));
+    operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)unit->hc.dcbaa));
+    mybug(-1,("dcpaa %p\n",unit->hc.dcbaa));
+    mybug(-1,("lo %08x\n", operational_readl(XHCI_DCBAAP+0)));
+    mybug(-1,("hi %08x\n", operational_readl(XHCI_DCBAAP+4)));
 
     /* Add interrupt handler */
     snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
@@ -237,8 +250,6 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         mybug_unit(-1, ("Failed setting up interrupt handler!\n"));
         return FALSE;
     }
-
-
 
     return TRUE;
 }
@@ -418,7 +429,7 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
 
     /*
-        We may get more than one capability protocol header or just one (Which is case OnMyHardware(TM))
+        We may get more than one capability protocol header or just one
     */
     while((cap_protocol = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_PROTOCOL, cap_protocol))) {
         temp = READREG32(cap_protocol, XHCI_SPFD);
@@ -486,5 +497,6 @@ BOOL PCIXHCI_PortPower(struct PCIXHCIUnit *unit, ULONG portnum, BOOL poweron) {
 */
     return TRUE;
 }
+
 
 

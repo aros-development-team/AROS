@@ -9,7 +9,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-#define DEBUG 1
+//#define DEBUG 1
 
 #include <aros/io.h>
 #include <aros/debug.h>
@@ -66,12 +66,6 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
                 unit->hc.pcidevice = pciDevice;
                 unit->pcixhcibase = LIBBASE;
                 unit->number = unitnum++;
-
-                /*
-                    Get the serial number from PCIe Extended Capability
-                    Disable MSI/MSIX ?
-                */
-                PCIXHCI_PCIE(unit);
 
                 AddTail(&LIBBASE->unit_list, (struct Node *)unit);
                 mybug(-1, ("[PCIXHCI] Enumerator: Host controller obtained\n"));
@@ -130,51 +124,3 @@ BOOL PCIXHCI_Discover(LIBBASETYPEPTR LIBBASE) {
     return TRUE;
 }
 
-void PCIXHCI_Delay(struct PCIXHCIUnit *unit, ULONG msec) {
-    /* Allocate a signal within this task context */
-    unit->tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
-    unit->tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
-
-    /* Specify the request */
-    unit->tr->tr_node.io_Command = TR_ADDREQUEST;
-    unit->tr->tr_time.tv_secs = msec / 1000;
-    unit->tr->tr_time.tv_micro = 1000 * (msec % 1000);
-
-    /* Wait */
-    DoIO((struct IORequest *)unit->tr);
-
-    unit->tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
-}
-
-BOOL PCIXHCI_CreateTimer(struct PCIXHCIUnit *unit) {
-    mybug_unit(0, ("Entering function\n"));
-
-    struct MsgPort *mp = NULL;
-
-    mp = CreateMsgPort();
-    if (mp) {
-        unit->tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
-        if (unit->tr) {
-            FreeSignal(mp->mp_SigBit);
-            if (!OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)unit->tr, 0)) {
-                return TRUE;
-            }
-            DeleteIORequest((struct IORequest *)unit->tr);
-            mp->mp_SigBit = AllocSignal(-1);
-        }
-        DeleteMsgPort(mp);
-    }
-
-    return FALSE;
-}
-
-void PCIXHCI_DeleteTimer(struct PCIXHCIUnit *unit) {
-    mybug_unit(0, ("Entering function\n"));
-
-    if (unit->tr) {
-        unit->tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = AllocSignal(-1);
-        CloseDevice((struct IORequest *)unit->tr);
-        DeleteMsgPort(unit->tr->tr_node.io_Message.mn_ReplyPort);
-        DeleteIORequest((struct IORequest *)unit->tr);
-    }
-}
