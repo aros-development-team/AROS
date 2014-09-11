@@ -79,10 +79,14 @@ struct PCIXHCIHostController {
     volatile APTR                doorbell_base;
     volatile APTR                runtime_base;
 
-    IPTR bus;
-    IPTR dev;
-    IPTR sub;
-    IPTR intline;
+    IPTR                         bus;
+    IPTR                         dev;
+    IPTR                         sub;
+    IPTR                         intline;
+
+    ULONG                        pagesize;
+
+    APTR                         dcbaa;
 
     char                         intname[256];
     struct Interrupt             inthandler;
