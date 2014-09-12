@@ -9,7 +9,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-//#define DEBUG 1
+#define DEBUG 1
 
 #include <aros/io.h>
 #include <aros/debug.h>
@@ -85,4 +85,43 @@ void PCIXHCI_DeleteTimer(struct PCIXHCIUnit *unit) {
         DeleteMsgPort(unit->tr->tr_node.io_Message.mn_ReplyPort);
         DeleteIORequest((struct IORequest *)unit->tr);
     }
+}
+
+void FreeVecOnBoundary(APTR onboundary) {
+
+    IPTR *allocation;
+
+    if(onboundary) {
+        allocation = onboundary;
+        FreeVec((APTR)*--allocation);
+    }
+}
+
+APTR AllocVecOnBoundary(ULONG size, ULONG boundary) {
+
+    IPTR *allocation;
+    IPTR *onboundary;
+
+    /* Sanity check, size can never exceed boundary by definition */
+    if((size<=boundary) || (boundary == 0)) {
+
+        /* If no boundary defined, allocate with 64 byte alignement */
+        if(boundary == 0) {
+            boundary = 64;
+        }
+        /*
+            Worst case scenario is that we allocate 64kb more, I can live with that... I think...
+            - transfer ring, command ring and event ring all have 64kb boundary requirement
+        */
+        allocation = AllocVec(AROS_ROUNDUP2((size + sizeof(IPTR)), boundary), (MEMF_ANY|MEMF_CLEAR));
+
+        if(allocation) {
+            onboundary = ++allocation;
+            onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, boundary);
+            *--onboundary = (IPTR)--allocation;
+            return ++onboundary;
+        }
+    }
+
+    return NULL;
 }
