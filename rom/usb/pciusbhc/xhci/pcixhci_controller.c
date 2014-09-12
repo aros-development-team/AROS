@@ -100,7 +100,8 @@ static AROS_INTH1(PCIXHCI_IntCode, struct PCIXHCIUnit *, unit) {
 /*
     We get called only once (per controller) when the driver inits
     We own the controller until our driver expunges so we assume that nobody messes with our stuff...
-    Driver NEVER expunges, it messes Poseidon.
+    Driver NEVER expunges, it messes Poseidon,
+        Trident actually, as controller hardware is not removed from hw list and Trident will not reopen our driver but calls on expunged code.
 */
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     //mybug(0, ("[PCIXHCI] PCIXHCI_HCInit: Entering function\n"));
@@ -231,11 +232,10 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
 
     /* 64 byte aligned, pagesize boundary */
-    unit->hc.dcbaa = AllocVec( ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * 8) + unit->hc.pagesize, (MEMF_ANY|MEMF_CLEAR));
-    mybug(-1,("dcpaa alloc %p, size %d\n",unit->hc.dcbaa, ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * 8) + unit->hc.pagesize));
-    unit->hc.dcbaa = (APTR)(((IPTR)unit->hc.dcbaa + unit->hc.pagesize) & ~(unit->hc.pagesize-1));
+    unit->hc.dcbaa = AllocVecOnBoundary( ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * 8), unit->hc.pagesize);
+    mybug(-1,("dcbaa alloc %p, size %d\n",unit->hc.dcbaa, ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * 8) + unit->hc.pagesize));
     operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)unit->hc.dcbaa));
-    mybug(-1,("dcpaa %p\n",unit->hc.dcbaa));
+    mybug(-1,("dcbaa %p\n",unit->hc.dcbaa));
     mybug(-1,("lo %08x\n", operational_readl(XHCI_DCBAAP+0)));
     mybug(-1,("hi %08x\n", operational_readl(XHCI_DCBAAP+4)));
 
