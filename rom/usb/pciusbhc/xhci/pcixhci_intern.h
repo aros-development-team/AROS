@@ -132,6 +132,9 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_PortPower(struct PCIXHCIUnit *unit, ULONG portnum, BOOL poweron);
 IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcapoff);
 void PCIXHCI_Delay(struct PCIXHCIUnit *unit, ULONG msec);
+
+void FreeVecOnBoundary(APTR onboundary);
+APTR AllocVecOnBoundary(ULONG size, ULONG boundary);
 BOOL PCIXHCI_CreateTimer(struct PCIXHCIUnit *unit);
 void PCIXHCI_DeleteTimer(struct PCIXHCIUnit *unit);
 
