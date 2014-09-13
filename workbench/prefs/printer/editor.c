@@ -239,7 +239,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         }
 
     #if SHOWPIC
-        icon = MUI_NewObject("Dtpic.mui", MUIA_Dtpic_Name, "PROGDIR:Printer.info", TAG_DONE);
+        icon = DtpicObject, MUIA_Dtpic_Name, "PROGDIR:Printer.info", End;
 
         if (!icon) icon = HVSpace;
     #endif
