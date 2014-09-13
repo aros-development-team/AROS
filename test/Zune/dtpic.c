@@ -30,7 +30,7 @@ int main(void)
 	    MUIA_Window_Activate, TRUE,
 
     	    WindowContents, VGroup,
-    	    	Child, MUI_NewObject("Dtpic.mui",MUIA_Dtpic_Name,"SYS:System/Images/AROS.png",TAG_DONE),
+    	    	Child, DtpicObject, MUIA_Dtpic_Name, "SYS:System/Images/AROS.png", End,
 		End,
 	    End,
 	End;

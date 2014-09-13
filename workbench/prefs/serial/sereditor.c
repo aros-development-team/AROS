@@ -128,7 +128,7 @@ Object *SerEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->ParityLabels[5] = NULL;
 
     #if SHOWPIC
-        icon = MUI_NewObject("Dtpic.mui", MUIA_Dtpic_Name, "PROGDIR:Serial.info", TAG_DONE);
+        icon = DtpicObject, MUIA_Dtpic_Name, "PROGDIR:Serial.info", End;
 
         if (!icon) icon = HVSpace;
     #endif
