@@ -71,25 +71,32 @@ struct PCIXHCIRootHub {
 };
 
 struct PCIXHCIHostController {
-    OOP_Object                  *pcidevice;
-    OOP_Object                  *pcidriver;
+    OOP_Object                   *pcidevice;
+    OOP_Object                   *pcidriver;
 
-    volatile APTR                capability_base;
-    volatile APTR                operational_base;
-    volatile APTR                doorbell_base;
-    volatile APTR                runtime_base;
+    volatile APTR                 capability_base;
+    volatile APTR                 operational_base;
+    volatile APTR                 doorbell_base;
+    volatile APTR                 runtime_base;
 
-    IPTR                         bus;
-    IPTR                         dev;
-    IPTR                         sub;
-    IPTR                         intline;
+    IPTR                          bus;
+    IPTR                          dev;
+    IPTR                          sub;
+    IPTR                          intline;
 
-    ULONG                        pagesize;
+    ULONG                         pagesize;
+    ULONG                         maxslots;
+    ULONG                         maxintrs;
+    ULONG                         maxscratchpads;
+    ULONG                         maxeventringsegments;
 
-    APTR                         dcbaa;
+    UQUAD                        *dcbaa;     /* Device Context Base Address Array */
+    UQUAD                        *spbaba;    /* Scratch Pad Buffer Address Base Array */
 
-    char                         intname[256];
-    struct Interrupt             inthandler;
+    struct PCIXHCIEventRingTable *eventringsegmenttbl;
+
+    char                          intname[256];
+    struct Interrupt              inthandler;
 };                                
 
 struct PCIXHCIUnit {

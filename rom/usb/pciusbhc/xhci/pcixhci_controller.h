@@ -8,6 +8,14 @@
 #ifndef PCIXHCICONTROLLER_H
 #define PCIXHCICONTROLLER_H
 
+#ifndef __packed
+#ifdef __GNUC__
+#define __packed __attribute__((__packed__))
+#else
+#define __packed
+#endif
+#endif
+
 /*
  *----------------------------------------------------------------------------
  *             Includes for XHCI USB Controller
@@ -46,6 +54,7 @@
 
 #define runtime_readl(reg)          READREG32(unit->hc.runtime_base, reg)
 #define runtime_writel(reg, value) WRITEREG32(unit->hc.runtime_base, reg, value)
+#define runtime_writeq(reg, value) WRITEREG64(unit->hc.runtime_base, reg, value)
 
 /*
     XHCI capability register defines
@@ -85,11 +94,12 @@
 #define	XHCB_SPR        26
 #define	XHCB_SPB_Max    27
 
-#define	XHCM_IST        (((1UL<<4)-1)<<XHCB_IST)
-#define	XHCM_ERST_Max   ((1UL<<4)-1)<<XHCB_ERST_Max)
-#define	XHCF_SPR        (1UL<<XHCB_SPR)
-#define	XHCM_SPB_Max    (((1UL<<5)-1)<<XHCB_SPB_Max)
-#define	XHCV_SPB_Max(p) (((p)&XHCM_SPB_Max)>>XHCB_SPB_Max)
+#define	XHCM_IST         (((1UL<<4)-1)<<XHCB_IST)
+#define	XHCM_ERST_Max    (((1UL<<4)-1)<<XHCB_ERST_Max)
+#define XHCV_ERST_Max(p) (((p)&XHCM_ERST_Max)>>XHCB_ERST_Max)
+#define	XHCF_SPR         (1UL<<XHCB_SPR)
+#define	XHCM_SPB_Max     (((1UL<<5)-1)<<XHCB_SPB_Max)
+#define	XHCV_SPB_Max(p)  (((p)&XHCM_SPB_Max)>>XHCB_SPB_Max)
 
 #define XHCI_MAX_SCRATCHPADS    31
 
@@ -346,5 +356,19 @@
 #define	XHCF_PS_DR      (1UL<<XHCB_PS_DR)
 #define	XHCF_PS_WPR     (1UL<<XHCB_PS_WPR)
 #define XHCV_PS_SPEED(p)    (((p)&XHCM_PS_SPEED)>>XHCB_PS_SPEED)
+
+struct PCIXHCIEventRingTable {
+    UQUAD address;
+    UWORD size;
+    UWORD reserved1;
+    ULONG reserved2;
+} __packed;
+
+/* TODO: define these */
+struct PCIXHCITransferRequestBlock {
+	UQUAD	a;
+	ULONG	b;
+	ULONG	c;
+} __packed;
 
 #endif /* PCIXHCICONTROLLER_H */
