@@ -89,8 +89,8 @@
     struct Rectangle    opRect;
     
     opRect.MinX = destX;
-    opRect.MaxX = destY;
-    opRect.MinY = opRect.MinX + sizeX - 1;
+    opRect.MinY = destY;
+    opRect.MaxX = opRect.MinX + sizeX - 1;
     opRect.MaxY = opRect.MinY + sizeY - 1;
 
     switch (operation)
