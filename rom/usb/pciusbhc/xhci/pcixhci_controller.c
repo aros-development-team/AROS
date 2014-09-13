@@ -106,6 +106,9 @@ static AROS_INTH1(PCIXHCI_IntCode, struct PCIXHCIUnit *, unit) {
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     //mybug(0, ("[PCIXHCI] PCIXHCI_HCInit: Entering function\n"));
 
+    ULONG i;
+    UQUAD *quadptr;
+
     /* Our unit is in suspended state until it is reset */
     unit->state = UHSF_SUSPENDED;
 
@@ -116,6 +119,10 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     unit->node.ln_Name = (STRPTR)&unit->name;
 
     if(!PCIXHCI_CreateTimer(unit)) {
+        return FALSE;
+    }
+
+    if(!PCIXHCI_HCHalt(unit)) {
         return FALSE;
     }
 
@@ -221,23 +228,106 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     }
 
     unit->hc.pagesize = 1<<(AROS_LEAST_BIT_POS(operational_readl(XHCI_PAGESIZE) & 0xffff) + 12);
+    unit->hc.maxslots = XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1));
+    unit->hc.maxintrs = XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1));
+    unit->hc.maxscratchpads = XHCV_SPB_Max(capability_readl(XHCI_HCSPARAMS2));
+    unit->hc.maxeventringsegments = XHCV_ERST_Max(capability_readl(XHCI_HCSPARAMS2));
+
+    mybug(-1,("Page size = %d\n", unit->hc.pagesize));
+    mybug(-1,("Number of Device Slots = %d\n", unit->hc.maxslots));
+    mybug(-1,("Number of Interrupters = %d\n", unit->hc.maxintrs));
+    mybug(-1,("Max Scratchpad Buffers = %d\n", unit->hc.maxscratchpads));
+    mybug(-1,("Event Ring Segment Table Max = %d\n", unit->hc.maxeventringsegments));
+
+    mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
+    mybug(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
+
+    /* Enable all the slots */
+    operational_writel(XHCI_CONFIG, (operational_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | unit->hc.maxslots);
+
+    /* Already zeroed on my hardware */
     operational_writel(XHCI_DNCTRL, 0);
 
-    mybug(-1,("XHCI_PAGESIZE = %08x\n", unit->hc.pagesize));
-    mybug(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
-    mybug(-1,("XHCV_MaxSlots = %d\n", XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))));
-    mybug(-1,("XHCV_MaxIntrs = %d\n", XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1))));
-    mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
-    operational_writel(XHCI_CONFIG, (operational_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn)|XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1)));
-    mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
-
-    /* 64 byte aligned, pagesize boundary */
-    unit->hc.dcbaa = AllocVecOnBoundary( ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * 8), unit->hc.pagesize);
-    mybug(-1,("dcbaa alloc %p, size %d\n",unit->hc.dcbaa, ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * 8) + unit->hc.pagesize));
+    /* Allocate DCBAA, 64 byte aligned, pagesize boundary, size = (maxslot+1)* sizeof(UQUAD) or 64-bit pointer array... */
+    unit->hc.dcbaa = AllocVecOnBoundary( ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * sizeof(UQUAD)), unit->hc.pagesize);
+    mybug(-1,("dcbaa alloc %p, size %d\n",unit->hc.dcbaa, ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * sizeof(UQUAD))));
     operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)unit->hc.dcbaa));
     mybug(-1,("dcbaa %p\n",unit->hc.dcbaa));
     mybug(-1,("lo %08x\n", operational_readl(XHCI_DCBAAP+0)));
     mybug(-1,("hi %08x\n", operational_readl(XHCI_DCBAAP+4)));
+    if(!unit->hc.dcbaa) {
+        return FALSE;
+    }
+
+    /*
+        XHCI controller may or may not need a number of scratchpad buffers
+        We could append this to DCBAA and allocate both of them in one go but I don't bother right now, we just use excess amount of memory
+    */
+    if(unit->hc.maxscratchpads) {
+        /* Allocate SPBABA, 64 byte aligned, pagesize boundary, size = (maxscrathpad)* sizeof(UQUAD) or 64-bit pointer array... */
+        unit->hc.spbaba = AllocVecOnBoundary((unit->hc.maxscratchpads * sizeof(UQUAD)), unit->hc.pagesize);
+        mybug(-1,("spbaba alloc %p, size %d\n",unit->hc.dcbaa, (unit->hc.maxscratchpads * sizeof(UQUAD))));
+        if(!unit->hc.spbaba) {
+            return FALSE;
+        }
+
+        /*
+            If unit->hc.maxscratchpads > 0 then the first pointer in DCBAA points to SPBABA else it is all 0
+        */
+        *unit->hc.dcbaa = (UQUAD)((IPTR)unit->hc.spbaba); /* Cast the pointer first to IPTR to avoid compiler warnings */
+        quadptr = unit->hc.spbaba;
+
+        for(i=0;i<unit->hc.maxscratchpads;i++) {
+            mybug(-1, ("Allocating scratchpad buffer %d\n",i));
+            *quadptr = (UQUAD)((IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize)) & ~(unit->hc.pagesize-1);
+            mybug(-1,("quadptr %p %llx\n", quadptr, *quadptr));
+            if(!*quadptr) {
+                return FALSE;
+            } else {
+                quadptr++;
+            }
+        }
+    }
+
+    /*
+        We can only use interrupter number 0 (PCI pin int)
+        Note: The Primary Event Ring (0) shall receive all Port Status Change Events.
+    */
+
+    for(i = 0; i<=unit->hc.maxintrs; i++) {
+        if(i==0) {
+
+            unit->hc.eventringsegmenttbl = AllocVecOnBoundary((unit->hc.maxeventringsegments* sizeof(struct PCIXHCIEventRingTable)), 0);
+            if(!unit->hc.eventringsegmenttbl) {
+                return FALSE;
+            }
+
+            unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 0));
+            if(!unit->hc.eventringsegmenttbl->address) {
+                return FALSE;
+            }
+            unit->hc.eventringsegmenttbl->size = 100;
+
+            mybug(-1, ("Enable interrupter %d\n", i));
+            runtime_writel(XHCI_IMOD(0), 500);
+            runtime_writel(XHCI_IMAN(0), 3);
+            bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(0))); //Flush
+            runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
+            runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl));
+            runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl->address));
+        } else {
+            mybug(-1, ("Disable interrupter %d\n", i));
+            runtime_writel(XHCI_IMOD(i), 0);
+            runtime_writel(XHCI_IMAN(i), 1);
+            bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(i))); //Flush
+            runtime_writel(XHCI_ERSTSZ(i), 0);
+            runtime_writeq(XHCI_ERSTBA(i), 0);
+            runtime_writel(XHCI_ERDP(i), 0);
+        }
+    }
+
+
+
 
     /* Add interrupt handler */
     snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
@@ -308,9 +398,6 @@ BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
         mybug_unit(-1, ("     port %d at %p %s\n", port->number, port, port->name));
     }
     mybug(-1,("\n"));
-
-    runtime_writel(XHCI_IMOD(0), 0x01f4);
-    runtime_writel(XHCI_IMAN(0), (runtime_readl(XHCI_IMAN(0))|XHCF_IMANIE));
 
     /* Enable host controller to issue interrupts */
     mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
