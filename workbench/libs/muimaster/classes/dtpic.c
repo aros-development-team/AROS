@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -60,7 +60,79 @@ static void killdto(struct Dtpic_DATA *data)
     {
         CloseLibrary(data->datatypesbase);
     }
-};
+}
+
+static void change_event_handler(Object *obj, struct Dtpic_DATA *data)
+{
+    // enable only events which we really need
+    ULONG events = 0;
+
+    if (data->darkenselstate)
+    {
+        events |= IDCMP_MOUSEBUTTONS;
+    }
+    else
+    {
+        // disable pending selected state
+        data->selected = FALSE;
+    }
+
+    if (data->lightenonmouse)
+    {
+        // FIXME: change to IDCMP_MOUSEOBJECT if available
+        events |= IDCMP_MOUSEMOVE;
+    }
+    else
+    {
+        // disable highlighting mode
+        data->highlighted = FALSE;
+    }
+
+    if (data->deltaalpha)
+    {
+        events |= IDCMP_INTUITICKS;
+    }
+
+    if (events != data->ehn.ehn_Events)
+    {
+        // remove event handler if it was installed
+        if (data->eh_active)
+        {
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+        }
+        // enable event handler for changed events
+        data->ehn.ehn_Events = events;
+        DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+        data->eh_active = TRUE;
+    }
+}
+
+static void update_alpha(struct Dtpic_DATA *data)
+{
+    if (data->fade < 0)
+    {
+        // immediately set alpha to end value
+        data->currentalpha = data->alpha;
+        data->deltaalpha = 0;
+    }
+    else
+    {
+        // calculate delta
+        if (data->alpha > data->currentalpha)
+        {
+            data->deltaalpha = data->fade;
+        }
+        else if (data->alpha < data->currentalpha)
+        {
+            data->deltaalpha = -data->fade;
+        }
+        else
+        {
+            data->deltaalpha = 0;
+        }
+    }
+    bug("[Dtpic/update_alpha] alpha %d delta %d current %d\n", data->alpha, data->deltaalpha, data->currentalpha);
+}
 
 /*
  * We copy the filename, as the file is opened later in setup and
@@ -76,12 +148,16 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         struct TagItem *tags = msg->ops_AttrList;
         struct TagItem *tag;
 
+        // initial values
+        data->currentalpha = data->alpha = 0xff;
+
         while ((tag = NextTagItem(&tags)) != NULL)
         {
             switch (tag->ti_Tag)
             {
             case MUIA_Dtpic_Name:
-                data->name = StrDup((char *)tag->ti_Data);
+                // acc. to AOS4-MUI4 autodoc the string isn't copied
+                data->name = (STRPTR)tag->ti_Data;
                 break;
             case MUIA_Dtpic_Alpha:
                 data->alpha = tag->ti_Data;
@@ -97,6 +173,14 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 break;
             }
         }
+
+        data->ehn.ehn_Events = 0;
+        data->ehn.ehn_Priority = 0;
+        data->ehn.ehn_Flags = 0;
+        data->ehn.ehn_Object = obj;
+        data->ehn.ehn_Class = cl;
+
+        update_alpha(data);
     }
 
     return (IPTR) obj;
@@ -183,6 +267,11 @@ IPTR Dtpic__MUIM_Cleanup(struct IClass *cl, Object *obj,
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
 
+    if (data->eh_active)
+    {
+        DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+    }
+
     killdto(data);
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -213,6 +302,11 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
+
+    // TODO: rendering of different states
+
+    bug("[Dtpic/MUIM_Draw] selected %d highlighted %d alpha %d\n",
+        data->selected, data->highlighted, data->currentalpha);
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -274,10 +368,7 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
 
 IPTR Dtpic__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct Dtpic_DATA *data = INST_DATA(cl, obj);
-
-    if (data->name)
-        FreeVec(data->name);
+    //struct Dtpic_DATA *data = INST_DATA(cl, obj);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -297,11 +388,7 @@ IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             /* If no filename or different filenames */
             if (!data->name || strcmp(data->name, (char *)tag->ti_Data))
             {
-                if (data->name)
-                    FreeVec(data->name);
-                data->name =
-                    AllocVec(strlen((char *)tag->ti_Data) + 1, MEMF_ANY);
-                strcpy((char *)data->name, (char *)tag->ti_Data);
+                data->name = (STRPTR)tag->ti_Data;
 
                 /* Run immediate setup only if base class is setup up */
                 if (_flags(obj) & MADF_SETUP)
@@ -317,6 +404,9 @@ IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
         }
     }
+
+    update_alpha(data);
+    change_event_handler(obj, data);
 
     if (needs_redraw)
     {
@@ -352,27 +442,141 @@ IPTR Dtpic__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
+    struct MUIP_HandleEvent *msg)
+{
+    struct Dtpic_DATA *data = INST_DATA(cl, obj);
+
+    if (msg->imsg)
+    {
+        switch (msg->imsg->Class)
+        {
+        case IDCMP_INTUITICKS:
+            data->currentalpha += data->deltaalpha;
+            if (data->deltaalpha > 0)
+            {
+                if (data->currentalpha > data->alpha)
+                {
+                    // reached target alpha, no more incrementing
+                    data->currentalpha = data->alpha;
+                    data->deltaalpha = 0;
+                }
+            }
+            else if (data->deltaalpha < 0)
+            {
+                if (data->currentalpha < data->alpha)
+                {
+                    // reached target alpha, no more decrementing
+                    data->currentalpha = data->alpha;
+                    data->deltaalpha = 0;
+                }
+            }
+            bug("intuitick %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY);
+            update_alpha(data);
+            change_event_handler(obj, data);
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+            break;
+
+        case IDCMP_MOUSEBUTTONS:
+            if (msg->imsg->Code==SELECTDOWN)
+            {
+                if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
+                {
+                    data->selected = TRUE;
+                    bug("selectdown %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY);
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                }
+            }
+            else if (msg->imsg->Code==SELECTUP)
+            {
+                if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
+                {
+                    data->selected = FALSE;
+                    bug("selectup %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY);
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                }
+            }
+            break;
+
+        case IDCMP_MOUSEMOVE:
+            if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
+            {
+                data->highlighted = TRUE;
+                bug("mouse move %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY);
+            }
+            else
+            {
+                data->highlighted = FALSE;
+            }
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
+            break;
+        }
+    }
+
+    return 0;
+}
+
+IPTR Dtpic__MUIM_Show(struct IClass *cl, Object *obj,
+    struct MUIP_Show *msg)
+{
+    struct Dtpic_DATA *data = INST_DATA(cl, obj);
+    IPTR retval;
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
+
+    change_event_handler(obj, data);
+
+    return retval;
+}
+
+IPTR Dtpic__MUIM_Hide(struct IClass *cl, Object *obj,
+    struct MUIP_Hide *msg)
+{
+    struct Dtpic_DATA *data = INST_DATA(cl, obj);
+
+    // remove event handler if it was installed
+    if (data->eh_active)
+    {
+        DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+        data->eh_active = FALSE;
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+
+}
+
 #if ZUNE_BUILTIN_DTPIC
 BOOPSI_DISPATCHER(IPTR, Dtpic_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
     case OM_NEW:
-        return Dtpic__OM_NEW(cl, obj, (struct opSet *)msg);
-    case MUIM_Setup:
-        return Dtpic__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
-    case MUIM_Cleanup:
-        return Dtpic__MUIM_Cleanup(cl, obj, (struct MUIP_Clean *)msg);
-    case MUIM_AskMinMax:
-        return Dtpic__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
-    case MUIM_Draw:
-        return Dtpic__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
+        return Dtpic__OM_NEW(cl, obj, (APTR)msg);
     case OM_DISPOSE:
-        return Dtpic__OM_DISPOSE(cl, obj, msg);
+        return Dtpic__OM_DISPOSE(cl, obj, (APTR)msg);
     case OM_SET:
-        return Dtpic__OM_SET(cl, obj, (struct opSet *)msg);
+        return Dtpic__OM_SET(cl, obj, (APTR)msg);
     case OM_GET:
-        return Dtpic__OM_GET(cl, obj, (struct opGet *)msg);
+        return Dtpic__OM_GET(cl, obj, (APTR)msg);
+
+    case MUIM_Setup:
+        return Dtpic__MUIM_Setup(cl, obj, (APTR)msg);
+    case MUIM_Cleanup:
+        return Dtpic__MUIM_Cleanup(cl, obj, (APTR)msg);
+
+    case MUIM_Show:
+        return Dtpic__MUIM_Show(cl, obj, (APTR)msg);
+    case MUIM_Hide:
+        return Dtpic__MUIM_Show(cl, obj, (APTR)msg);
+
+    case MUIM_AskMinMax:
+        return Dtpic__MUIM_AskMinMax(cl, obj, (APTR)msg);
+    case MUIM_Draw:
+        return Dtpic__MUIM_Draw(cl, obj, (APTR)msg);
+    case MUIM_HandleEvent:
+        return Dtpic__MUIM_HandleEvent(cl, obj, (APTR)msg);
+
     default:
         return DoSuperMethodA(cl, obj, msg);
     }

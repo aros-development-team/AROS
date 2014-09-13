@@ -58,6 +58,7 @@
 #define PendisplayObject    MUIOBJMACRO_START(MUIC_Pendisplay)
 #define PoppenObject        MUIOBJMACRO_START(MUIC_Poppen)
 #define CrawlingObject      MUIOBJMACRO_START(MUIC_Crawling)
+#define DtpicObject         MUIOBJMACRO_START(MUIC_Dtpic)
 /* The following in zune only */
 #define PopimageObject      MUIOBJMACRO_START(MUIC_Popimage)
 #define PopframeObject      MUIOBJMACRO_START(MUIC_Popframe)
