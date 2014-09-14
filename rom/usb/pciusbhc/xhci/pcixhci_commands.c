@@ -767,7 +767,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     return UHIOERR_BADPARAMS;
 }
 
-WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
+WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
@@ -810,7 +810,7 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
     return RC_DONTREPLY;
 }
 
-WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
+WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
     struct PCIXHCIPort *port = NULL;
@@ -827,10 +827,20 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
     */
     ForeachNode(&unit->roothub.port_list, port) {
         mybug_unit(-1, ("Port %d named %s at %p\n", port->number, port->name, port));
+//        if(unit->hu_RootPortChanges) {
+//            unit->hu_RootPortChanges = 0;
+//            return(0);
+//        }
     }
 
 
     mybug_unit(-1, ("Nothing done!\n\n"));
+
+//    ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
+//    Disable();
+//    AddTail(&unit->hu_RHIOQueue, (struct Node *) ioreq);
+//    Enable();
+
     return RC_DONTREPLY;
 }
 
