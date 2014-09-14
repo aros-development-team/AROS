@@ -126,17 +126,6 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         return FALSE;
     }
 
-    /* capability base(=base0) has been stored in the enumerator */
-
-    /* Store operational base */
-    unit->hc.operational_base = (APTR) ((IPTR) (unit->hc.capability_base) + capability_readb(XHCI_CAPLENGTH));
-
-    /* Store doorbell base */
-    unit->hc.doorbell_base = (APTR) ((IPTR) (unit->hc.capability_base) + XHCV_DBOFF(capability_readl(XHCI_DBOFF)));
-
-    /* Store runtime base */
-    unit->hc.runtime_base = (APTR) ((IPTR) (unit->hc.capability_base) + XHCV_RTSOFF(capability_readl(XHCI_RTSOFF)));
-
     mybug_unit(-1, ("unit node name %s\n", unit->node.ln_Name));
     mybug_unit(-1, ("pcidevice    = %p\n", unit->hc.pcidevice));
     mybug_unit(-1, ("pcidriver    = %p\n", unit->hc.pcidriver));
@@ -302,7 +291,7 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
                 return FALSE;
             }
 
-            unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 0));
+            unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 64*1024));
             if(!unit->hc.eventringsegmenttbl->address) {
                 return FALSE;
             }
@@ -313,15 +302,16 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
             runtime_writel(XHCI_IMAN(0), 3);
             bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(0))); //Flush
             runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
-            runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl));
             runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl->address));
+            runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl));
         } else {
             mybug(-1, ("Disable interrupter %d\n", i));
             runtime_writel(XHCI_IMOD(i), 0);
             runtime_writel(XHCI_IMAN(i), 1);
             bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(i))); //Flush
             runtime_writel(XHCI_ERSTSZ(i), 0);
-            runtime_writeq(XHCI_ERSTBA(i), 0);
+            /* Specs says: Writing ERSTBA enables event ring */
+            //runtime_writeq(XHCI_ERSTBA(i), 0);
             runtime_writel(XHCI_ERDP(i), 0);
         }
     }
