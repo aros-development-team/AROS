@@ -36,6 +36,8 @@
 
 #include "pcixhci_intern.h"
 
+#include "pcixhci_controller.h"
+
 #include LC_LIBDEFS_FILE
 
 /*
@@ -61,7 +63,15 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev,          &unit->hc.dev);
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub,          &unit->hc.sub);
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&unit->hc.pcidriver);
+
+                /* Store capability base */
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,  (APTR)&unit->hc.capability_base);
+                /* Store operational base */
+                unit->hc.operational_base = (APTR) ((IPTR) (unit->hc.capability_base) + capability_readb(XHCI_CAPLENGTH));
+                /* Store doorbell base */
+                unit->hc.doorbell_base = (APTR) ((IPTR) (unit->hc.capability_base) + XHCV_DBOFF(capability_readl(XHCI_DBOFF)));
+                /* Store runtime base */
+                unit->hc.runtime_base = (APTR) ((IPTR) (unit->hc.capability_base) + XHCV_RTSOFF(capability_readl(XHCI_RTSOFF)));
 
                 unit->hc.pcidevice = pciDevice;
                 unit->pcixhcibase = LIBBASE;
