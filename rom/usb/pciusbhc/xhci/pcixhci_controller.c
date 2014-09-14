@@ -109,20 +109,34 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     ULONG i;
     UQUAD *quadptr;
 
-    /* Our unit is in suspended state until it is reset */
+    /* Our unit is in suspended state until it is reset (cmdUsbReset) */
     unit->state = UHSF_SUSPENDED;
-
-    /* Init the port list but do not fill it */
-    NEWLIST(&unit->roothub.port_list);
 
     snprintf(unit->name, 255, "PCIXHCI[%02x:%02x.%01x]", (UBYTE)unit->hc.bus, (UBYTE)unit->hc.dev, (UBYTE)unit->hc.sub);
     unit->node.ln_Name = (STRPTR)&unit->name;
 
+    /* Needed before halt or reset */
     if(!PCIXHCI_CreateTimer(unit)) {
         return FALSE;
     }
 
+    /* We use pointers and stuff... */
+    struct TagItem pciActivateMemAndBusmaster[] = {
+            { aHidd_PCIDevice_isIO,     FALSE },
+            { aHidd_PCIDevice_isMEM,    TRUE },
+            { aHidd_PCIDevice_isMaster, TRUE },
+            { TAG_DONE, 0UL },
+    };
+
+    OOP_SetAttrs(unit->hc.pcidevice, (struct TagItem *)pciActivateMemAndBusmaster);
+
+    PCIXHCI_GetFromBIOS(unit);
+
     if(!PCIXHCI_HCHalt(unit)) {
+        return FALSE;
+    }
+
+    if(!PCIXHCI_HCReset(unit)) {
         return FALSE;
     }
 
@@ -139,27 +153,205 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     mybug_unit(-1, ("doorbell    = %p\n", unit->hc.doorbell_base));
     mybug_unit(-1, ("runtime     = %p\n", unit->hc.runtime_base));
 
-/*
-    PCIXHCI[03:00.0] PCIXHCI_HCInit: capability  = f3dfe000
-    PCIXHCI[03:00.0] PCIXHCI_HCInit: operational = f3dfe020
-    PCIXHCI[03:00.0] PCIXHCI_HCInit: doorbell    = f3dfe800 up to 256 32 bit doorbell registers (4*256 = 0x400)
-    PCIXHCI[03:00.0] PCIXHCI_HCInit: runtime     = f3dfe600
+    if(!PCIXHCI_FindPorts(unit)) {
+        return FALSE;
+    }
 
-    PCIXHCI[04:00.0] PCIXHCI_HCInit: capability  = f3efe000
-    PCIXHCI[04:00.0] PCIXHCI_HCInit: operational = f3efe020
-    PCIXHCI[04:00.0] PCIXHCI_HCInit: doorbell    = f3efe800 up to 256 32 bit doorbell registers (4*256 = 0x400)
-    PCIXHCI[04:00.0] PCIXHCI_HCInit: runtime     = f3efe600
-*/
+    struct PCIXHCIPort *port = NULL;
 
-    /* We use pointers and stuff... */
-    struct TagItem pciActivateMemAndBusmaster[] = {
-            { aHidd_PCIDevice_isIO,     FALSE },
-            { aHidd_PCIDevice_isMEM,    TRUE },
-            { aHidd_PCIDevice_isMaster, TRUE },
-            { TAG_DONE, 0UL },
-    };
+    mybug_unit(-1, ("Unit %d at %p %s\n", unit->number, unit, unit->name));
+    ForeachNode(&unit->roothub.port_list, port) {
+        mybug_unit(-1, ("     port %d at %p %s\n", port->number, port, port->name));
+    }
+    mybug(-1,("\n"));
 
-    OOP_SetAttrs(unit->hc.pcidevice, (struct TagItem *)pciActivateMemAndBusmaster);
+    unit->hc.pagesize = 1<<(AROS_LEAST_BIT_POS(operational_readl(XHCI_PAGESIZE) & 0xffff) + 12);
+    unit->hc.maxslots = XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1));
+    unit->hc.maxintrs = XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1));
+    unit->hc.maxscratchpads = XHCV_SPB_Max(capability_readl(XHCI_HCSPARAMS2));
+    unit->hc.maxeventringsegments = XHCV_ERST_Max(capability_readl(XHCI_HCSPARAMS2));
+
+    mybug(-1,("Page size = %d\n", unit->hc.pagesize));
+    mybug(-1,("Number of Device Slots = %d\n", unit->hc.maxslots));
+    mybug(-1,("Number of Interrupters = %d\n", unit->hc.maxintrs));
+    mybug(-1,("Max Scratchpad Buffers = %d\n", unit->hc.maxscratchpads));
+    mybug(-1,("Event Ring Segment Table Max = %d\n", unit->hc.maxeventringsegments));
+
+    mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
+    mybug(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
+
+    /* Enable all the slots */
+    operational_writel(XHCI_CONFIG, (operational_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | unit->hc.maxslots);
+
+    /* Already zeroed on my hardware */
+    operational_writel(XHCI_DNCTRL, 0);
+
+    /* Allocate DCBAA, 64 byte aligned, pagesize boundary, size = (maxslot+1)* sizeof(UQUAD) or 64-bit pointer array... */
+    unit->hc.dcbaa = AllocVecOnBoundary( ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * sizeof(UQUAD)), unit->hc.pagesize);
+    mybug(-1,("dcbaa alloc %p, size %d\n",unit->hc.dcbaa, ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * sizeof(UQUAD))));
+    operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)unit->hc.dcbaa));
+    mybug(-1,("dcbaa %p\n",unit->hc.dcbaa));
+    mybug(-1,("lo %08x\n", operational_readl(XHCI_DCBAAP+0)));
+    mybug(-1,("hi %08x\n", operational_readl(XHCI_DCBAAP+4)));
+    if(!unit->hc.dcbaa) {
+        mybug_unit(-1, ("Failed allocating DCBAA!\n"));
+        return FALSE;
+    }
+
+    /*
+        XHCI controller may or may not need a number of scratchpad buffers
+        We could append this to DCBAA and allocate both of them in one go but I don't bother right now, we just use excess amount of memory
+    */
+    if(unit->hc.maxscratchpads) {
+        /* Allocate SPBABA, 64 byte aligned, pagesize boundary, size = (maxscrathpad)* sizeof(UQUAD) or 64-bit pointer array... */
+        unit->hc.spbaba = AllocVecOnBoundary((unit->hc.maxscratchpads * sizeof(UQUAD)), unit->hc.pagesize);
+        mybug(-1,("spbaba alloc %p, size %d\n",unit->hc.dcbaa, (unit->hc.maxscratchpads * sizeof(UQUAD))));
+        if(!unit->hc.spbaba) {
+            mybug_unit(-1, ("Failed allocating SPBABA!\n"));
+            return FALSE;
+        }
+
+        /*
+            If unit->hc.maxscratchpads > 0 then the first pointer in DCBAA points to SPBABA else it is all 0
+        */
+        *unit->hc.dcbaa = (UQUAD)((IPTR)unit->hc.spbaba); /* Cast the pointer first to IPTR to avoid compiler warnings */
+        quadptr = unit->hc.spbaba;
+
+        for(i=0;i<unit->hc.maxscratchpads;i++) {
+            mybug(-1, ("Allocating scratchpad buffer %d\n",i));
+            *quadptr = (UQUAD)((IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize)) & ~(unit->hc.pagesize-1);
+            mybug(-1,("quadptr %p %llx\n", quadptr, *quadptr));
+            if(!*quadptr) {
+                return FALSE;
+            } else {
+                quadptr++;
+            }
+        }
+    }
+
+    /*
+        We can only use interrupter number 0 (PCI pin int)
+        Note: The Primary Event Ring (0) shall receive all Port Status Change Events.
+    */
+
+    unit->hc.eventringsegmenttbl = AllocVecOnBoundary((unit->hc.maxeventringsegments* sizeof(struct PCIXHCIEventRingTable)), 0);
+    if(!unit->hc.eventringsegmenttbl) {
+        mybug_unit(-1, ("Failed allocating event ring segment table!\n"));
+        return FALSE;
+    }
+
+    unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 64*1024));
+    if(!unit->hc.eventringsegmenttbl->address) {
+        mybug_unit(-1, ("Failed allocating event ring segment!\n"));
+        return FALSE;
+    }
+    unit->hc.eventringsegmenttbl->size = 100;
+
+    /* Add interrupt handler */
+    snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
+    unit->hc.inthandler.is_Node.ln_Name = (STRPTR)&unit->hc.intname;
+    unit->hc.inthandler.is_Node.ln_Pri = 15;
+    unit->hc.inthandler.is_Node.ln_Type = NT_INTERRUPT;
+    unit->hc.inthandler.is_Code = (VOID_FUNC)PCIXHCI_IntCode;
+    unit->hc.inthandler.is_Data = unit;
+    if(!HIDD_PCIDevice_AddInterrupt(unit->hc.pcidevice, &unit->hc.inthandler)) {
+        mybug_unit(-1, ("Failed setting up interrupt handler!\n"));
+        return FALSE;
+    }
+
+    mybug(-1, ("Enable interrupter 0\n"));
+    runtime_writel(XHCI_IMOD(0), 500);
+    runtime_writel(XHCI_IMAN(0), 3);
+    bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(0))); //Flush
+    runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
+    runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl->address));
+    runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl));
+
+    mybug(-1, ("Enabling interrupts and setting run bit\n"));
+    /* Enable host controller to issue interrupts */
+    mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
+    mybug_unit(-1, ("usbsts = %08x\n", operational_readl(XHCI_USBSTS)));
+    operational_writel(XHCI_USBCMD, (operational_readl(XHCI_USBCMD) | (XHCF_CMD_RS | XHCF_CMD_INTE | XHCF_CMD_HSEE) ));
+    mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
+    mybug_unit(-1, ("usbsts = %08x\n", operational_readl(XHCI_USBSTS)));
+
+    return TRUE;
+}
+
+
+BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
+    mybug_unit(-1, ("Entering function\n"));
+
+    ULONG timeout;
+
+    /* our unit is in reset state until the higher level usb reset is called */
+    unit->state = UHSF_RESET;
+
+    /* Reset controller by setting HCRST-bit */
+    operational_writel(XHCI_USBCMD, (operational_readl(XHCI_USBCMD) | XHCF_CMD_HCRST));
+
+    /*
+        Controller clears HCRST bit when reset is done, wait for it and the CNR-bit to be cleared
+    */
+    timeout = 250;  //FIXME: arbitrary value of 2500ms
+    while ((operational_readl(XHCI_USBCMD) & XHCF_CMD_HCRST) && (timeout-- != 0)) {
+        if(!timeout) {
+            mybug_unit(-1, ("Time is up for XHCF_CMD_HCRST bit!\n"));
+            return FALSE;
+        }
+        /* Wait 10ms and check again */
+        PCIXHCI_Delay(unit, 10);
+    }
+
+    timeout = 250;  //FIXME: arbitrary value of 2500ms
+    while ((operational_readl(XHCI_USBSTS) & XHCF_STS_CNR) && (timeout-- != 0)) {
+        if(!timeout) {
+            mybug_unit(-1, ("Time is up for XHCF_STS_CNR bit!\n"));
+            return FALSE;
+        }
+        /* Wait 10ms and check again */
+        PCIXHCI_Delay(unit, 10);
+    }
+
+    mybug_unit(-1, ("controller reseted!\n"));
+
+    return TRUE;
+}
+
+BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit) {
+    mybug_unit(-1, ("Entering function\n"));
+
+    ULONG timeout, temp;
+
+    /* Halt the controller by clearing Run/Stop bit */
+    temp = operational_readl(XHCI_USBCMD);
+    operational_writel(XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
+
+    /* Our unit advertises that it is in suspended state */
+    unit->state = UHSF_SUSPENDED;
+
+    /*
+        The xHC shall halt within 16 ms. after software clears the Run/Stop bit if certain conditions have been met.
+        The HCHalted (HCH) bit in the USBSTS register indicates when the xHC has finished its
+        pending pipelined transactions and has entered the stopped state. 
+    */
+    timeout = 250;  //FIXME: arbitrary value of 2500ms
+    do {
+        temp = operational_readl(XHCI_USBSTS);
+        if( (temp & XHCF_STS_HCH) ) {
+            mybug_unit(-1, ("controller halted!\n"));
+            return TRUE;
+        }
+        /* Wait 10ms and check again */
+        PCIXHCI_Delay(unit, 10);
+    } while(--timeout);
+
+    mybug_unit(-1, ("halt failed!\n"));
+    return FALSE;
+}
+
+BOOL PCIXHCI_GetFromBIOS(struct PCIXHCIUnit *unit) {
+    mybug_unit(-1, ("Entering function\n"));
 
     /* Get the host controller from BIOS if possible */
     IPTR cap_legacy;
@@ -207,234 +399,16 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         WRITEREG32(cap_legacy, XHCI_USBLEGCTLSTS, usblegctlsts);
         usblegctlsts = READREG32(cap_legacy, XHCI_USBLEGCTLSTS);
         mybug_unit(-1, ("usblegctlsts2 = %08x\n", usblegctlsts));
-/*
-    PCIXHCI[03:00.0] PCIXHCI_HCInit: usblegctlsts1 = e0000001 had 'USB SMI Enable' bit set (PCIXHCI[03:00.0] just happens to be the rev 3 board)
-    PCIXHCI[03:00.0] PCIXHCI_HCInit: usblegctlsts2 = 00000000
-
-    PCIXHCI[04:00.0] PCIXHCI_HCInit: usblegctlsts1 = e0000000 rev 4 board
-    PCIXHCI[04:00.0] PCIXHCI_HCInit: usblegctlsts2 = 00000000
-*/
-    }
-
-    unit->hc.pagesize = 1<<(AROS_LEAST_BIT_POS(operational_readl(XHCI_PAGESIZE) & 0xffff) + 12);
-    unit->hc.maxslots = XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1));
-    unit->hc.maxintrs = XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1));
-    unit->hc.maxscratchpads = XHCV_SPB_Max(capability_readl(XHCI_HCSPARAMS2));
-    unit->hc.maxeventringsegments = XHCV_ERST_Max(capability_readl(XHCI_HCSPARAMS2));
-
-    mybug(-1,("Page size = %d\n", unit->hc.pagesize));
-    mybug(-1,("Number of Device Slots = %d\n", unit->hc.maxslots));
-    mybug(-1,("Number of Interrupters = %d\n", unit->hc.maxintrs));
-    mybug(-1,("Max Scratchpad Buffers = %d\n", unit->hc.maxscratchpads));
-    mybug(-1,("Event Ring Segment Table Max = %d\n", unit->hc.maxeventringsegments));
-
-    mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
-    mybug(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
-
-    /* Enable all the slots */
-    operational_writel(XHCI_CONFIG, (operational_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | unit->hc.maxslots);
-
-    /* Already zeroed on my hardware */
-    operational_writel(XHCI_DNCTRL, 0);
-
-    /* Allocate DCBAA, 64 byte aligned, pagesize boundary, size = (maxslot+1)* sizeof(UQUAD) or 64-bit pointer array... */
-    unit->hc.dcbaa = AllocVecOnBoundary( ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * sizeof(UQUAD)), unit->hc.pagesize);
-    mybug(-1,("dcbaa alloc %p, size %d\n",unit->hc.dcbaa, ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * sizeof(UQUAD))));
-    operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)unit->hc.dcbaa));
-    mybug(-1,("dcbaa %p\n",unit->hc.dcbaa));
-    mybug(-1,("lo %08x\n", operational_readl(XHCI_DCBAAP+0)));
-    mybug(-1,("hi %08x\n", operational_readl(XHCI_DCBAAP+4)));
-    if(!unit->hc.dcbaa) {
-        return FALSE;
-    }
-
-    /*
-        XHCI controller may or may not need a number of scratchpad buffers
-        We could append this to DCBAA and allocate both of them in one go but I don't bother right now, we just use excess amount of memory
-    */
-    if(unit->hc.maxscratchpads) {
-        /* Allocate SPBABA, 64 byte aligned, pagesize boundary, size = (maxscrathpad)* sizeof(UQUAD) or 64-bit pointer array... */
-        unit->hc.spbaba = AllocVecOnBoundary((unit->hc.maxscratchpads * sizeof(UQUAD)), unit->hc.pagesize);
-        mybug(-1,("spbaba alloc %p, size %d\n",unit->hc.dcbaa, (unit->hc.maxscratchpads * sizeof(UQUAD))));
-        if(!unit->hc.spbaba) {
-            return FALSE;
-        }
-
-        /*
-            If unit->hc.maxscratchpads > 0 then the first pointer in DCBAA points to SPBABA else it is all 0
-        */
-        *unit->hc.dcbaa = (UQUAD)((IPTR)unit->hc.spbaba); /* Cast the pointer first to IPTR to avoid compiler warnings */
-        quadptr = unit->hc.spbaba;
-
-        for(i=0;i<unit->hc.maxscratchpads;i++) {
-            mybug(-1, ("Allocating scratchpad buffer %d\n",i));
-            *quadptr = (UQUAD)((IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize)) & ~(unit->hc.pagesize-1);
-            mybug(-1,("quadptr %p %llx\n", quadptr, *quadptr));
-            if(!*quadptr) {
-                return FALSE;
-            } else {
-                quadptr++;
-            }
-        }
-    }
-
-    /*
-        We can only use interrupter number 0 (PCI pin int)
-        Note: The Primary Event Ring (0) shall receive all Port Status Change Events.
-    */
-
-    for(i = 0; i<=unit->hc.maxintrs; i++) {
-        if(i==0) {
-
-            unit->hc.eventringsegmenttbl = AllocVecOnBoundary((unit->hc.maxeventringsegments* sizeof(struct PCIXHCIEventRingTable)), 0);
-            if(!unit->hc.eventringsegmenttbl) {
-                return FALSE;
-            }
-
-            unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 64*1024));
-            if(!unit->hc.eventringsegmenttbl->address) {
-                return FALSE;
-            }
-            unit->hc.eventringsegmenttbl->size = 100;
-
-            mybug(-1, ("Enable interrupter %d\n", i));
-            runtime_writel(XHCI_IMOD(0), 500);
-            runtime_writel(XHCI_IMAN(0), 3);
-            bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(0))); //Flush
-            runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
-            runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl->address));
-            runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl));
-        } else {
-            mybug(-1, ("Disable interrupter %d\n", i));
-            runtime_writel(XHCI_IMOD(i), 0);
-            runtime_writel(XHCI_IMAN(i), 1);
-            bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(i))); //Flush
-            runtime_writel(XHCI_ERSTSZ(i), 0);
-            /* Specs says: Writing ERSTBA enables event ring */
-            //runtime_writeq(XHCI_ERSTBA(i), 0);
-            runtime_writel(XHCI_ERDP(i), 0);
-        }
-    }
-
-
-
-
-    /* Add interrupt handler */
-    snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
-    unit->hc.inthandler.is_Node.ln_Name = (STRPTR)&unit->hc.intname;
-    unit->hc.inthandler.is_Node.ln_Pri = 15;
-    unit->hc.inthandler.is_Node.ln_Type = NT_INTERRUPT;
-    unit->hc.inthandler.is_Code = (VOID_FUNC)PCIXHCI_IntCode;
-    unit->hc.inthandler.is_Data = unit;
-    if(!HIDD_PCIDevice_AddInterrupt(unit->hc.pcidevice, &unit->hc.inthandler)) {
-        mybug_unit(-1, ("Failed setting up interrupt handler!\n"));
-        return FALSE;
     }
 
     return TRUE;
-}
-
-/*
-    We get called everytime the driver is trying to get online
-    We make use of it by also filling the port list of our unit,
-    that way toggling unit offline and online may give different results for ports after reset
-*/
-BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
-    mybug_unit(0, ("Entering function\n"));
-
-    ULONG timeout;
-
-    if(!PCIXHCI_HCHalt(unit)) {
-        return FALSE;
-    }
-
-    /* our unit is in reset state until the higher level usb reset is called */
-    unit->state = UHSF_RESET;
-
-    /* Reset controller by setting HCRST-bit */
-    operational_writel(XHCI_USBCMD, (operational_readl(XHCI_USBCMD) | XHCF_CMD_HCRST));
-
-    /*
-        Controller clears HCRST bit when reset is done, wait for it and the CNR-bit to be cleared
-    */
-    timeout = 250;  //FIXME: arbitrary value of 2500ms
-    while ((operational_readl(XHCI_USBCMD) & XHCF_CMD_HCRST) && (timeout-- != 0)) {
-        if(!timeout) {
-            mybug_unit(-1, ("Time is up for XHCF_CMD_HCRST bit!\n"));
-            return FALSE;
-        }
-        /* Wait 10ms and check again */
-        PCIXHCI_Delay(unit, 10);
-    }
-
-    timeout = 250;  //FIXME: arbitrary value of 2500ms
-    while ((operational_readl(XHCI_USBSTS) & XHCF_STS_CNR) && (timeout-- != 0)) {
-        if(!timeout) {
-            mybug_unit(-1, ("Time is up for XHCF_STS_CNR bit!\n"));
-            return FALSE;
-        }
-        /* Wait 10ms and check again */
-        PCIXHCI_Delay(unit, 10);
-    }
-
-    if(!PCIXHCI_FindPorts(unit)) {
-        return FALSE;
-    }
-
-    struct PCIXHCIPort *port = NULL;
-
-    mybug_unit(-1, ("Unit %d at %p %s\n", unit->number, unit, unit->name));
-    ForeachNode(&unit->roothub.port_list, port) {
-        mybug_unit(-1, ("     port %d at %p %s\n", port->number, port, port->name));
-    }
-    mybug(-1,("\n"));
-
-    /* Enable host controller to issue interrupts */
-    mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
-    mybug_unit(-1, ("usbsts = %08x\n", operational_readl(XHCI_USBSTS)));
-    operational_writel(XHCI_USBCMD, (operational_readl(XHCI_USBCMD) | (XHCF_CMD_RS | XHCF_CMD_INTE | XHCF_CMD_HSEE) ));
-    mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
-    mybug_unit(-1, ("usbsts = %08x\n", operational_readl(XHCI_USBSTS)));
-    return TRUE;
-}
-
-BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit) {
-    mybug_unit(-1, ("Entering function\n"));
-
-    ULONG timeout, temp;
-
-    /* Halt the controller by clearing Run/Stop bit */
-    temp = operational_readl(XHCI_USBCMD);
-    operational_writel(XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
-
-    /* Our unit advertises that it is in suspended state */
-    unit->state = UHSF_SUSPENDED;
-
-    /*
-        The xHC shall halt within 16 ms. after software clears the Run/Stop bit if certain conditions have been met.
-        The HCHalted (HCH) bit in the USBSTS register indicates when the xHC has finished its
-        pending pipelined transactions and has entered the stopped state. 
-    */
-    timeout = 250;  //FIXME: arbitrary value of 2500ms
-    do {
-        temp = operational_readl(XHCI_USBSTS);
-        if( (temp & XHCF_STS_HCH) ) {
-            mybug_unit(-1, ("controller halted!\n"));
-            return TRUE;
-        }
-        /* Wait 10ms and check again */
-        PCIXHCI_Delay(unit, 10);
-    } while(--timeout);
-
-    mybug_unit(-1, ("halt failed!\n"));
-    return FALSE;
 }
 
 IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcapoff) {
 
     IPTR extcap = (IPTR) NULL;
 
-    mybug_unit(-1,("searching for extended capability id(%ld)\n", id));
+    mybug_unit(0,("searching for extended capability id(%ld)\n", id));
 
     if(extcapoff) {
         /* Last known good */
@@ -445,17 +419,17 @@ IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcapof
         }
     } else {
         extcap = XHCV_xECP(capability_readl(XHCI_HCCPARAMS1)) + (IPTR) unit->hc.capability_base;
-        mybug_unit(-1, ("searching from beginning %p\n", extcap));
+        mybug_unit(0, ("searching from beginning %p\n", extcap));
     }
 
     /* Either the first (if exist) or the next from last known (if exist) else (IPTR) NULL */
     while(extcap != (IPTR) NULL) {
         if((XHCV_EXT_CAPS_ID(READMEM32(extcap)) == id)) {
-            mybug_unit(-1, ("found matching extended capability id at %lx\n", extcap));
+            mybug_unit(0, ("found matching extended capability id at %lx\n", extcap));
             break;
         } else {
             if(XHCV_EXT_CAPS_NEXT(READMEM32(extcap))) {
-                mybug_unit(-1, ("skipping extended capability id at %lx\n", extcap));
+                mybug_unit(0, ("skipping extended capability id at %lx\n", extcap));
                 extcap += XHCV_EXT_CAPS_NEXT(READMEM32(extcap));
             } else {
                 extcap = (IPTR) NULL;
@@ -475,12 +449,9 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
     ULONG portnum = 0, portcount = 0, temp, major, minor, po, pc;
 
-    /* (Re)build the port list of our unit */
-    ForeachNode(&unit->roothub.port_list, port) {
-        mybug_unit(-1, ("Deleting port %d named %s at %p\n", port->number, port->name, port));
-        REMOVE(port);
-        FreeVec(port);
-    }
+    NEWLIST(&unit->roothub.port_list);
+
+    /* Build the port list of our unit */
 
     portcount = XHCV_MaxPorts(capability_readl(XHCI_HCSPARAMS1));
     mybug_unit(-1, ("Controller advertises port count to be %d\n", portcount));

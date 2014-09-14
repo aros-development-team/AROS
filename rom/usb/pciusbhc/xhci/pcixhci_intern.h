@@ -134,6 +134,7 @@ VOID PCIXHCI_PCIE(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
 BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCHalt(struct PCIXHCIUnit *unit);
+BOOL PCIXHCI_GetFromBIOS(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_PortPower(struct PCIXHCIUnit *unit, ULONG portnum, BOOL poweron);
