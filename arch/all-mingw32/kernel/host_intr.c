@@ -28,13 +28,14 @@ unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
 
 /* Virtual CPU control registers */
-         __declspec(dllexport) int           (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
-         __declspec(dllexport) int           (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
+/* Note: variables need to have values set, otherwise they don't get exported from DLL */
+         __declspec(dllexport) int           (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs) = NULL;
+         __declspec(dllexport) int           (*IRQVector)(unsigned char *irqs, CONTEXT *regs) = NULL;
          __declspec(dllexport) int           NonMaskableInt = -1;
-volatile __declspec(dllexport) int           Ints_Enabled;
-volatile __declspec(dllexport) int           Supervisor;
-volatile __declspec(dllexport) unsigned char Sleep_Mode;
-volatile __declspec(dllexport) DWORD *       LastErrorPtr;
+volatile __declspec(dllexport) int           Ints_Enabled   = 0;
+volatile __declspec(dllexport) int           Supervisor     = 0;
+volatile __declspec(dllexport) unsigned char Sleep_Mode     = 0;
+volatile __declspec(dllexport) DWORD *       LastErrorPtr   = 0;
 
 /*
  * This can't be placed on stack because noone knows
