@@ -3723,32 +3723,17 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
                 //pp->pp_IOReq.iouh_Flags |= UHFF_NAKTIMEOUT;
                 //pp->pp_IOReq.iouh_NakTimeout = 1000;
                 pd->pd_Flags |= PDFF_CONNECTED;
-#ifdef AROS_USB30_CODE
-                pp->pp_IOReq.iouh_Req.io_Command = CMD_RESET;
-#else
-                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
-#endif
 
+                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
 #ifdef AROS_USB30_CODE
                 ioerr = psdDoPipe(pp, NULL, 0);
                 if(ioerr == UHIOERR_HOSTERROR) {
-                    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "CMD_RESET failed.");
+                    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
                     psdFreePipe(pp);
                     pFreeBindings(ps, pd);
                     pFreeDevice(ps, pd);
                     DeleteMsgPort(mp);
                     return(NULL);
-                } else {
-                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
-                    ioerr = psdDoPipe(pp, NULL, 0);
-                    if(ioerr == UHIOERR_HOSTERROR) {
-                        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
-                        psdFreePipe(pp);
-                        pFreeBindings(ps, pd);
-                        pFreeDevice(ps, pd);
-                        DeleteMsgPort(mp);
-                        return(NULL);
-                    }
                 }
 #else
                 psdDoPipe(pp, NULL, 0);
