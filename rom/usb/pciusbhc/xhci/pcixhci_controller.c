@@ -115,6 +115,9 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     snprintf(unit->name, 255, "PCIXHCI[%02x:%02x.%01x]", (UBYTE)unit->hc.bus, (UBYTE)unit->hc.dev, (UBYTE)unit->hc.sub);
     unit->node.ln_Name = (STRPTR)&unit->name;
 
+    NEWLIST(&unit->roothub.port_list);
+    NEWLIST(&unit->roothub.intxferqueue_list);
+
     /* Needed before halt or reset */
     if(!PCIXHCI_CreateTimer(unit)) {
         return FALSE;
@@ -449,8 +452,6 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
 
     ULONG portnum = 0, portcount = 0, temp, major, minor, po, pc;
 
-    NEWLIST(&unit->roothub.port_list);
-
     /* Build the port list of our unit */
 
     portcount = XHCV_MaxPorts(capability_readl(XHCI_HCSPARAMS1));
@@ -469,6 +470,7 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
         } else {
             port->node.ln_Type = NT_USER;
             port->number = ++portnum;
+            port->status = 0;
             AddTail(&unit->roothub.port_list, (struct Node *)port);
 
             mybug_unit(-1, ("Created new port %d at %p\n", port->number, port));

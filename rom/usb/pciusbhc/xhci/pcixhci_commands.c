@@ -9,7 +9,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-//#define DEBUG 1
+#define DEBUG 1
 
 #include <aros/io.h>
 #include <aros/debug.h>
@@ -767,7 +767,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     return UHIOERR_BADPARAMS;
 }
 
-WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
+WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
@@ -797,15 +797,38 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
         return(cmdIntXFerRootHub(ioreq));
     }
 
-    mybug_unit(-1, ("Nothing done!\n\n"));
+    ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
+    ioreq->iouh_Actual = 0;
+
+    /* Don't send anything yeat to others, change Disable->ObtainSemaphore (=atomics) */
+//    Disable();
+//    AddTail(&hc->hc_CtrlXFerQueue, (struct Node *) ioreq);
+//    Enable();
+//    SureCause(base, &hc->hc_CompleteInt);
+
+    mybug_unit(-1, ("Processed ioreq: %p\n", ioreq));
     return RC_DONTREPLY;
 }
 
-WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
+WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+    struct PCIXHCIPort *port = NULL;
 
     mybug_unit(-1, ("Entering function\n"));
+
+    if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length)) {
+        return(UHIOERR_STALL);
+    }
+
+    /*
+        What to do? I'd like to make use of this port list and send hubss.class something aquired with it
+        I would not like to define any maximum port numbers, we use dynamic lists (no shrinking though...)
+    */
+    ForeachNode(&unit->roothub.port_list, port) {
+        mybug_unit(-1, ("Port %d named %s at %p\n", port->number, port->name, port));
+    }
+
 
     mybug_unit(-1, ("Nothing done!\n\n"));
     return RC_DONTREPLY;

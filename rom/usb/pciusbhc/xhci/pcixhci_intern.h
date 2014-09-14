@@ -48,11 +48,13 @@ struct PCIXHCIPort {
     struct Node                  node;
     char                         name[256];
     ULONG                        number;
-    ULONG                        state;
+    ULONG                        status;
 };
 
 struct PCIXHCIRootHub {
     struct List                  port_list;
+
+    struct List                  intxferqueue_list;
 
     UWORD                        addr;
 
