@@ -111,7 +111,6 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
 
 /*
     Perform a hardware reset on the controller.
-*/
 WORD cmdReset(struct IOUsbHWReq *ioreq) {
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
@@ -126,16 +125,22 @@ WORD cmdReset(struct IOUsbHWReq *ioreq) {
         return UHIOERR_HOSTERROR;
     }
 }
+*/
 
 /*
-    We get called if the HW reset succeeded
+    We get called when the driver is first added
+    Driver init code has already reseted the controller and set it in operational mode
+    The way things are implemented right now is a bit messy...
+    - psdAddHardware->pDeviceTask()->OpenDevice()->driver init code->hw reset
+    - psdEnumerateHardware(UHCMD_USBRESET)->cmdUsbReset
+    We can't do a squat without first halting and reseting the controller so we do it in the init code.
 */
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
     struct PCIXHCIPort *port = NULL;
 
-    mybug_unit(0, ("Entering function\n"));
+    mybug_unit(-1, ("Entering function\n"));
 
     /* (Re)build descriptors */
     /* This is our root hub device descriptor */

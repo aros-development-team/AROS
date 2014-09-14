@@ -105,22 +105,30 @@ APTR AllocVecOnBoundary(ULONG size, ULONG boundary) {
     /* Sanity check, size can never exceed boundary by definition */
     if((size<=boundary) || (boundary == 0)) {
 
-        /* If no boundary defined, allocate with 64 byte alignement */
         if(boundary == 0) {
-            boundary = 64;
+            /* If no boundary defined, allocate with 64 byte alignement */
+            allocation = AllocVec(AROS_ROUNDUP2((size + sizeof(IPTR)), 64), (MEMF_ANY|MEMF_CLEAR));
+            if(allocation) {
+                onboundary = ++allocation;
+                onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, 64);
+                *--onboundary = (IPTR)--allocation;
+                return ++onboundary;
+            }
+        } else {
+            /*
+                Worst case scenario is that we allocate 64kb more, I can live with that... I think...
+                - transfer ring, command ring and event ring all have 64kb boundary requirement
+            */
+            allocation = AllocVec(AROS_ROUNDUP2((size + sizeof(IPTR)), boundary), (MEMF_ANY|MEMF_CLEAR));
+            if(allocation) {
+                onboundary = ++allocation;
+                onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, boundary);
+                *--onboundary = (IPTR)--allocation;
+                return ++onboundary;
+            }
         }
-        /*
-            Worst case scenario is that we allocate 64kb more, I can live with that... I think...
-            - transfer ring, command ring and event ring all have 64kb boundary requirement
-        */
-        allocation = AllocVec(AROS_ROUNDUP2((size + sizeof(IPTR)), boundary), (MEMF_ANY|MEMF_CLEAR));
 
-        if(allocation) {
-            onboundary = ++allocation;
-            onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, boundary);
-            *--onboundary = (IPTR)--allocation;
-            return ++onboundary;
-        }
+
     }
 
     return NULL;

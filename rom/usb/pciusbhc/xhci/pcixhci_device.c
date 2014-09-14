@@ -149,7 +149,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR
         switch (ioreq->iouh_Req.io_Command) {
             case CMD_RESET:
                 mybug_unit(0, ("CMD_RESET\n"));
-                ret = cmdReset(ioreq);
+                //ret = cmdReset(ioreq);
                 break;
             case CMD_FLUSH:
                 mybug_unit(0, ("CMD_FLUSH\n"));
