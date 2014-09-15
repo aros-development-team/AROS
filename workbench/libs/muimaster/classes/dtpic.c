@@ -47,8 +47,12 @@ extern struct Library *MUIMasterBase;
 
 static void killdto(struct Dtpic_DATA *data)
 {
+    if (data->bm_selected) FreeBitMap(data->bm_selected);
+    if (data->bm_highlighted) FreeBitMap(data->bm_highlighted);
     data->bm = NULL;
     data->bmhd = NULL;
+    data->bm_selected = NULL;
+    data->bm_highlighted = NULL;
 
     if (data->dto)
     {
@@ -120,11 +124,14 @@ static void update_alpha(struct Dtpic_DATA *data)
         // calculate delta
         if (data->alpha > data->currentalpha)
         {
-            data->deltaalpha = data->fade;
+            // fading should happen every 1/20 sec.
+            // Because we're using Intuiticks we must
+            // convert the value.
+            data->deltaalpha = data->fade * 50 / 20;
         }
         else if (data->alpha < data->currentalpha)
         {
-            data->deltaalpha = -data->fade;
+            data->deltaalpha = -data->fade * 50 / 20;
         }
         else
         {
@@ -134,56 +141,28 @@ static void update_alpha(struct Dtpic_DATA *data)
     bug("[Dtpic/update_alpha] alpha %d delta %d current %d\n", data->alpha, data->deltaalpha, data->currentalpha);
 }
 
-/*
- * We copy the filename, as the file is opened later in setup and
- * not at once.
- */
-IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+static struct BitMap *clone_bitmap(struct BitMap *from_bm, ULONG operation, ULONG value)
 {
-    obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg);
+    if (from_bm == NULL)
+        return NULL;
 
-    if (obj)
+    struct BitMap *to_bm = NULL;
+    struct RastPort rp;
+
+    UWORD width = GetBitMapAttr(from_bm, BMA_WIDTH);
+    UWORD height = GetBitMapAttr(from_bm, BMA_HEIGHT);
+    UWORD depth = GetBitMapAttr(from_bm, BMA_DEPTH);
+
+    InitRastPort(&rp);
+    to_bm = AllocBitMap(width, height, depth, BMF_MINPLANES, from_bm);
+    bug("[clone_bitmap] %p width %d height %d depth %d\n", to_bm, width, height, depth);
+    if (to_bm)
     {
-        struct Dtpic_DATA *data = INST_DATA(cl, obj);
-        struct TagItem *tags = msg->ops_AttrList;
-        struct TagItem *tag;
-
-        // initial values
-        data->currentalpha = data->alpha = 0xff;
-
-        while ((tag = NextTagItem(&tags)) != NULL)
-        {
-            switch (tag->ti_Tag)
-            {
-            case MUIA_Dtpic_Name:
-                // acc. to AOS4-MUI4 autodoc the string isn't copied
-                data->name = (STRPTR)tag->ti_Data;
-                break;
-            case MUIA_Dtpic_Alpha:
-                data->alpha = tag->ti_Data;
-                break;
-            case MUIA_Dtpic_DarkenSelState:
-                data->darkenselstate = tag->ti_Data ? TRUE : FALSE;
-                break;
-            case MUIA_Dtpic_Fade:
-                data->fade = tag->ti_Data;
-                break;
-            case MUIA_Dtpic_LightenOnMouse:
-                data->lightenonmouse = tag->ti_Data ? TRUE : FALSE;
-                break;
-            }
-        }
-
-        data->ehn.ehn_Events = 0;
-        data->ehn.ehn_Priority = 0;
-        data->ehn.ehn_Flags = 0;
-        data->ehn.ehn_Object = obj;
-        data->ehn.ehn_Class = cl;
-
-        update_alpha(data);
+        rp.BitMap = to_bm;
+        BltBitMapRastPort(from_bm, 0, 0, &rp, 0, 0, width, height, 0xC0);
+        ProcessPixelArray(&rp, 0, 0, width, height, operation, value, NULL);
     }
-
-    return (IPTR) obj;
+    return to_bm;
 }
 
 IPTR setup_datatype(struct IClass *cl, Object *obj)
@@ -241,7 +220,13 @@ IPTR setup_datatype(struct IClass *cl, Object *obj)
                             }
 
                             if (data->bm)
+                            {
+                                // create BitMaps for selected and highlighted state
+                                data->bm_selected = clone_bitmap(data->bm, POP_DARKEN, 127);
+                                data->bm_highlighted = clone_bitmap(data->bm, POP_BRIGHTEN, 50);
+
                                 return TRUE;
+                            }
                         }
                     }
                 }
@@ -251,6 +236,54 @@ IPTR setup_datatype(struct IClass *cl, Object *obj)
     killdto(data);
 
     return TRUE;
+}
+
+IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (obj)
+    {
+        struct Dtpic_DATA *data = INST_DATA(cl, obj);
+        struct TagItem *tags = msg->ops_AttrList;
+        struct TagItem *tag;
+
+        // initial values
+        data->currentalpha = data->alpha = 0xff;
+
+        while ((tag = NextTagItem(&tags)) != NULL)
+        {
+            switch (tag->ti_Tag)
+            {
+            case MUIA_Dtpic_Name:
+                // acc. to AOS4-MUI4 autodoc the string isn't copied
+                data->name = (STRPTR)tag->ti_Data;
+                break;
+            case MUIA_Dtpic_Alpha:
+                data->alpha = tag->ti_Data;
+                break;
+            case MUIA_Dtpic_DarkenSelState:
+                data->darkenselstate = tag->ti_Data ? TRUE : FALSE;
+                break;
+            case MUIA_Dtpic_Fade:
+                data->fade = tag->ti_Data;
+                break;
+            case MUIA_Dtpic_LightenOnMouse:
+                data->lightenonmouse = tag->ti_Data ? TRUE : FALSE;
+                break;
+            }
+        }
+
+        data->ehn.ehn_Events = 0;
+        data->ehn.ehn_Priority = 0;
+        data->ehn.ehn_Flags = 0;
+        data->ehn.ehn_Object = obj;
+        data->ehn.ehn_Class = cl;
+
+        update_alpha(data);
+    }
+
+    return (IPTR) obj;
 }
 
 IPTR Dtpic__MUIM_Setup(struct IClass *cl, Object *obj,
@@ -310,7 +343,7 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
-    if ((msg->flags & MADF_DRAWOBJECT) && data->bm)
+    if ((msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) && data->bm)
     {
         /* Note: codes taken from picture.datatype GM_RENDER routine */
         ULONG depth = (ULONG) GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH);
@@ -357,7 +390,24 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
             else
             {
                 /* All other cases */
-                BltBitMapRastPort(data->bm, 0, 0, _rp(obj), _mleft(obj),
+
+                struct BitMap *bm = data->bm;
+                if (data->selected)
+                {
+                    bm = data->bm_selected;
+                    bug("render selected\n");
+                }
+                else if (data->highlighted)
+                {
+                    bug("render highlighted\n");
+                    bm = data->bm_highlighted;
+                }
+                else
+                {
+                    bug("render normal\n");
+                }
+                
+                BltBitMapRastPort(bm, 0, 0, _rp(obj), _mleft(obj),
                     _mtop(obj), _mwidth(obj), _mheight(obj), 0xC0);
             }
         }
