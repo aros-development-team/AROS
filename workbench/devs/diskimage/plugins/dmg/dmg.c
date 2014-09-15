@@ -422,11 +422,9 @@ APTR DMG_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 	}
 
 	if (image->uses_bzlib) {
-#ifdef __AROS__
-		image->bz2base = OpenLibrary("bz2_au.library", 1);
-		BZ2Base = image->bz2base;
-#else
 		image->bz2base = OpenLibrary("bz2.library", 1);
+#ifdef __AROS__
+		BZ2Base = image->bz2base;
 #endif
 		if (!image->bz2base) {
 			error = ERROR_OBJECT_NOT_FOUND;
