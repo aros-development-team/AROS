@@ -13,6 +13,8 @@ struct Dtpic_DATA
     APTR dto;
     struct BitMapHeader *bmhd;
     struct BitMap *bm;
+    struct BitMap *bm_highlighted;
+    struct BitMap *bm_selected;
     struct MUI_EventHandlerNode ehn;
 
     BOOL highlighted;   // mouse pointer is within object
