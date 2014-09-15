@@ -89,7 +89,7 @@ static struct DIPluginIFace *IPlugin;
 #ifndef __AROS__
 #define ZBase image->zbase
 #else
-struct Library *ZBase;
+struct Library *Z1Base;
 #endif
 
 BOOL UIF_Init (struct DiskImagePlugin *Self, const struct PluginData *data) {
@@ -211,8 +211,8 @@ APTR UIF_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file, CONST_ST
 	image->block_size = rle32(&bbis.sector_size);
 
 #ifdef __AROS__
-	image->zbase = OpenLibrary("z_au.library", 1);
-	ZBase = image->zbase;
+	image->zbase = OpenLibrary("z1.library", 1);
+	Z1Base = image->zbase;
 #else
 	image->zbase = OpenLibrary("z.library", 1);
 #endif

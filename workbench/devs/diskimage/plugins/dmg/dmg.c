@@ -127,7 +127,7 @@ static struct DIPluginIFace *IPlugin;
 #define BZ2Base image->bz2base
 #else
 struct Library *BZ2Base;
-struct Library *ZBase;
+struct Library *Z1Base;
 struct Library *ExpatBase;
 #endif
 
@@ -406,8 +406,8 @@ APTR DMG_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 
 	if (image->uses_zlib) {
 #ifdef __AROS__
-		image->zbase = OpenLibrary("z_au.library", 1);
-		ZBase = image->zbase;
+		image->zbase = OpenLibrary("z1.library", 1);
+		Z1Base = image->zbase;
 #else
 		image->zbase = OpenLibrary("z.library", 1);
 #endif

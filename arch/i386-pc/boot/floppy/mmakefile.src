@@ -57,7 +57,7 @@ BOOT_TAR_EXECUTABLES := \
     Devs/serial.device \
     L/pipe-handler \
     Libs/stdc.library Libs/stdcio.library Libs/posixc.library \
-    Libs/png.library Libs/z_au.library Libs/uuid.library \
+    Libs/png.library Libs/z1.library Libs/uuid.library \
     Libs/asl.library Libs/commodities.library \
     Libs/cybergraphics.library \
     Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
