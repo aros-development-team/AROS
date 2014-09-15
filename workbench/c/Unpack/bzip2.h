@@ -2,12 +2,11 @@
 #define PKG_BZIP2_H
 
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <exec/types.h>
-#include <proto/bz2_au.h>
 
 /****************************************************************************/
 /*** Prototypes *************************************************************/

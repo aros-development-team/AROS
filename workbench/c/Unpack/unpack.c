@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,10 +48,6 @@
 
     INTERNALS
 
-    HISTORY
-
-    04.05.2000  SDuvan  implemented
-
 ******************************************************************************/
 
 #include <dos/dos.h>
@@ -90,7 +86,7 @@ AROS_SH2
 
     IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 0 );
     GfxBase = (struct GfxBase *)OpenLibrary( "graphics.library", 0 );
-    BZ2Base = OpenLibrary( "bz2_au.library", 0 );
+    BZ2Base = OpenLibrary( "bz2.library", 0 );
     
     //Printf( "%s, %s\n", SHArg(FILE), SHArg(TO) );
     
