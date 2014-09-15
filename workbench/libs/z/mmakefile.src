@@ -15,7 +15,7 @@ FILES := adler32 crc32 deflate infback inffast inflate inftrees trees \
 USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
 
 %build_module mmake=workbench-libs-z \
-  modname=z_au modtype=library \
+  modname=z1 modtype=library \
   files="$(FILES)" linklibname=z
 
 
