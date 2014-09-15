@@ -14,8 +14,7 @@ FILES := blocksort huffman crctable randtable  \
          compress decompress bzlib
 
 %build_module mmake=external-bz2-lib \
-    modname=bz2_au modtype=library \
-    files="$(FILES)" linklibname="bz2"
+    modname=bz2 modtype=library files="$(FILES)"
 
 ###################################################################################
 
