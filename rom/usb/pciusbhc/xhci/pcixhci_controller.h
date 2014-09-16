@@ -43,6 +43,7 @@
 #define READREG64(rb, offset) AROS_LE2QUAD(*((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 
 #define operational_readl(reg)          READREG32(unit->hc.operational_base, reg)
+#define operational_readq(reg)          READREG64(unit->hc.operational_base, reg)
 #define operational_writel(reg, value) WRITEREG32(unit->hc.operational_base, reg, value)
 #define operational_writeq(reg, value) WRITEREG64(unit->hc.operational_base, reg, value)
 
