@@ -106,9 +106,6 @@ static AROS_INTH1(PCIXHCI_IntCode, struct PCIXHCIUnit *, unit) {
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     //mybug(0, ("[PCIXHCI] PCIXHCI_HCInit: Entering function\n"));
 
-    ULONG i;
-    UQUAD *quadptr;
-
     /* Our unit is in suspended state until it is reset (cmdUsbReset) */
     unit->state = UHSF_SUSPENDED;
 
@@ -189,48 +186,53 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     /* Already zeroed on my hardware */
     operational_writel(XHCI_DNCTRL, 0);
 
-    /* Allocate DCBAA, 64 byte aligned, pagesize boundary, size = (maxslot+1)* sizeof(UQUAD) or 64-bit pointer array... */
-    unit->hc.dcbaa = AllocVecOnBoundary( ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * sizeof(UQUAD)), unit->hc.pagesize);
-    mybug(-1,("dcbaa alloc %p, size %d\n",unit->hc.dcbaa, ((XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1))+1) * sizeof(UQUAD))));
-    operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)unit->hc.dcbaa));
-    mybug(-1,("dcbaa %p\n",unit->hc.dcbaa));
-    mybug(-1,("lo %08x\n", operational_readl(XHCI_DCBAAP+0)));
-    mybug(-1,("hi %08x\n", operational_readl(XHCI_DCBAAP+4)));
+    /* TODO: do, now we waste a lot of memory */
+    //unit->hc.boundarypool = AllocBoundaryPool(unit->hc.pagesize*1000);
+    //AllocVecBoundaryPooled(unit->hc.boundarypool, 666, unit->hc.pagesize);
+
+    /* Testing */
+    //unit->hc.maxscratchpads = 4;
+
+    ULONG i;
+
+    mybug(-1,("Allocating space for DCBAA(%d) and SPBABA(%d)\n",unit->hc.maxslots, unit->hc.maxscratchpads));
+    /* Allocate DCBAA and SPBABA (64-bit pointer arrays) */
+    unit->hc.dcbaa = AllocVecOnBoundary((unit->hc.maxslots + unit->hc.maxscratchpads + 1) * sizeof(UQUAD), unit->hc.pagesize);
     if(!unit->hc.dcbaa) {
-        mybug_unit(-1, ("Failed allocating DCBAA!\n"));
+        mybug_unit(-1, ("Failed allocating space for DCBAA and SPBABA!\n"));
         return FALSE;
     }
-
-    /*
-        XHCI controller may or may not need a number of scratchpad buffers
-        We could append this to DCBAA and allocate both of them in one go but I don't bother right now, we just use excess amount of memory
-    */
     if(unit->hc.maxscratchpads) {
-        /* Allocate SPBABA, 64 byte aligned, pagesize boundary, size = (maxscrathpad)* sizeof(UQUAD) or 64-bit pointer array... */
-        unit->hc.spbaba = AllocVecOnBoundary((unit->hc.maxscratchpads * sizeof(UQUAD)), unit->hc.pagesize);
-        mybug(-1,("spbaba alloc %p, size %d\n",unit->hc.dcbaa, (unit->hc.maxscratchpads * sizeof(UQUAD))));
-        if(!unit->hc.spbaba) {
-            mybug_unit(-1, ("Failed allocating SPBABA!\n"));
-            return FALSE;
-        }
-
-        /*
-            If unit->hc.maxscratchpads > 0 then the first pointer in DCBAA points to SPBABA else it is all 0
-        */
-        *unit->hc.dcbaa = (UQUAD)((IPTR)unit->hc.spbaba); /* Cast the pointer first to IPTR to avoid compiler warnings */
-        quadptr = unit->hc.spbaba;
-
-        for(i=0;i<unit->hc.maxscratchpads;i++) {
-            mybug(-1, ("Allocating scratchpad buffer %d\n",i));
-            *quadptr = (UQUAD)((IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize)) & ~(unit->hc.pagesize-1);
-            mybug(-1,("quadptr %p %llx\n", quadptr, *quadptr));
-            if(!*quadptr) {
+        unit->hc.spbaba = (unit->hc.dcbaa + unit->hc.maxslots + 1);
+        unit->hc.dcbaa[0] = (UQUAD)((IPTR)unit->hc.spbaba);
+        mybug(-1,("DCBAA  %p\nSPBABA %p\n", unit->hc.dcbaa, unit->hc.spbaba));
+        for (i=0; i<(unit->hc.maxscratchpads); i++) {
+            /* Testing */
+            //unit->hc.spbaba[i] = (UQUAD)((IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize))|0x1234000000000000;
+            unit->hc.spbaba[i] = (UQUAD)(IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize);
+            if(!unit->hc.spbaba[i]) {
                 return FALSE;
-            } else {
-                quadptr++;
             }
         }
+    } else {
+        unit->hc.dcbaa[0] = (UQUAD)((IPTR)(unit->hc.spbaba = NULL));
+        mybug(-1,("DCBAA  %p SPBABA %p\n", unit->hc.dcbaa, unit->hc.spbaba));
     }
+
+    operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)&unit->hc.dcbaa[0]));
+
+    for (i=0; i<(unit->hc.maxslots + unit->hc.maxscratchpads + 1); i++) {
+        if(&unit->hc.dcbaa[i] == unit->hc.dcbaa) {
+            mybug(-1,("DCBAA  "));
+        } else if(&unit->hc.dcbaa[i] == unit->hc.spbaba) {
+            mybug(-1,("SPBABA "))
+        }else {
+            mybug(-1,("       "));
+        }
+        /* I fail to understand how to print quads directly... */
+        mybug(-1,("%2d %p %08x%08x\n",i, &unit->hc.dcbaa[i], (ULONG)(unit->hc.dcbaa[i]>>32), (ULONG)unit->hc.dcbaa[i]));
+    }
+
 
     /*
         We can only use interrupter number 0 (PCI pin int)
