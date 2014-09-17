@@ -1,0 +1,12 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FUNCS := class_Library class_DoMethodA class_GetAttrsA class_SetAttrsA class_DeviceBinding
+
+#MM- kernel-usb-classes-felsunxi : kernel-usb-usbclass kernel-usb-poseidon-includes
+
+%build_module mmake=kernel-usb-classes-felsunxi \
+  modname=felsunxi modtype=usbclass modsuffix="class" \
+  files=$(FUNCS) 
+
+%common

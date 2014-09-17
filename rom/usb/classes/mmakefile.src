@@ -27,7 +27,8 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-classes-serialpl2303 \
 #MM     kernel-usb-classes-simplemidi \
 #MM     kernel-usb-classes-stir4200 \
-#MM     kernel-usb-classes-rndis
+#MM     kernel-usb-classes-rndis \
+#MM     kernel-usb-classes-felsunxi
 
 # Build complete set of classes on disk
 #MM kernel-usb-classes :		\
@@ -71,7 +72,8 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-classes-serialpl2303-clean \
 #MM     kernel-usb-classes-simplemidi-clean \
 #MM     kernel-usb-classes-stir4200-clean \ 
-#MM     kernel-usb-classes-rndis-clean
+#MM     kernel-usb-classes-rndis-clean \
+#MM     kernel-usb-classes-felsunxi-clean
 
 .PHONY: kernel-usb-classes
 .PHONY: kernel-usb-classes-kobj
