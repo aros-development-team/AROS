@@ -1,0 +1,50 @@
+Article 179 of comp.sources.amiga:
+Path: !asuvax!ncar!elroy.jpl.nasa.gov!news.larc.nasa.gov!amiga-request
+From: amiga-request@ab20.larc.nasa.gov (Amiga Sources/Binaries Moderator)
+Newsgroups: comp.sources.amiga
+Subject: v91i143: SimpleRexx - ARexx support made simple, Part01/01
+Message-ID: <comp.sources.amiga.v91i143@ab20.larc.nasa.gov>
+Date: 30 Jul 91 00:48:25 GMT
+Reply-To: mks@cbmvax.uucp (Michael Sinz)
+Lines: 1357
+Approved: tadguy@uunet.UU.NET (Tad Guy)
+X-Mail-Submissions-To: amiga@uunet.uu.net
+X-Post-Discussions-To: comp.sys.amiga.misc
+
+Submitted-by: mks@cbmvax.uucp (Michael Sinz)
+Posting-number: Volume 91, Issue 143
+Archive-name: rexx/simplerexx/part01
+
+[ includes uuencoded executable  ...tad ]
+
+     ARexx,  ARexx,  ARexx.    2.0  has  ARexx.   So, why and how do I
+     support ARexx?
+
+     The "Why?" has been answered elsewhere and that is not  what this
+     article is  about.   Let it suffice that you should support ARexx
+     within your application.  It  is  a  standard  that  Commodore is
+     pushing and  we hope  that all  new applications  will have ARexx
+     support.
+
+     As to the "How?",  that  is  what  this  article  is  about.   We
+     understand that  your existing software may not currently support
+     ARexx and that some of you may never even have looked at  what is
+     needed to  support ARexx.   New applications can be designed with
+     ARexx support in mind  and, with  the advent  of the  AppShell by
+     David Junod,  the work  involved to support ARexx is nothing more
+     than  what  is  needed  to  support   the  features   within  you
+     application.    However,  existing  code  may  not  move into the
+     AppShell to  easily and  you may  wish to  do a  minor upgrade to
+     your application to support ARexx.
+
+     SimpleRexx is  a set  of routines that handle the low-level ARexx
+     work for you in such a way as to have your application  work with
+     or without ARexx on the target system.  The goal of SimpleRexx is
+     to make adding at least the minimum level of ARexx  support to an
+     application a trivial task.
+
+-- 
+Mail submissions (sources or binaries) to <amiga@uunet.uu.net>.
+Mail comments to the moderator at <amiga-request@uunet.uu.net>.
+Post requests for sources, and general discussion to comp.sys.amiga.misc.
+

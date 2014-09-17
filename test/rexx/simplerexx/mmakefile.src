@@ -1,0 +1,22 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := SimpleRexx SimpleRexxExample stptok
+EXEDIR := $(AROS_TESTS)/rexx
+
+#MM- test : test-rexx-simplerexx
+#MM test-rexx-simplerexx : includes linklibs test-rexx-copy
+
+#MM- test-quick : test-rexx-simplerexx-quick
+
+%build_prog mmake=test-rexx-simplerexx progname=SimpleRexxExample \
+    files=$(FILES) targetdir=$(EXEDIR) uselibs="rexxsyslib"
+
+#MM
+test-rexx-copy : $(EXEDIR)/simpletest.rexx
+
+$(EXEDIR)/simpletest.rexx : $(SRCDIR)/$(CURDIR)/test.rexx
+	@$(CP) $< $@
+
+%common
