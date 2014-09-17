@@ -89,7 +89,7 @@ struct	Library	*RexxSysBase;	/* We will hide the library pointer here... */
  */
 char *ARexxName(AREXXCONTEXT RexxContext)
 {
-register	char	*tmp=NULL;
+	char	*tmp=NULL;
 
 	if (RexxContext) tmp=RexxContext->PortName;
 	return(tmp);
@@ -103,7 +103,7 @@ register	char	*tmp=NULL;
  */
 ULONG ARexxSignal(AREXXCONTEXT RexxContext)
 {
-register	ULONG	tmp=NULL;
+	ULONG	tmp=0;
 
 	if (RexxContext) tmp=1L << (RexxContext->ARexxPort->mp_SigBit);
 	return(tmp);
@@ -118,8 +118,8 @@ register	ULONG	tmp=NULL;
  */
 struct RexxMsg *GetARexxMsg(AREXXCONTEXT RexxContext)
 {
-register	struct	RexxMsg	*tmp=NULL;
-register		short	flag;
+	struct	RexxMsg	*tmp=NULL;
+	short	flag;
 
 	if (RexxContext)
 	    if (tmp=(struct RexxMsg *)GetMsg(RexxContext->ARexxPort))
@@ -194,7 +194,7 @@ void ReplyARexxMsg(AREXXCONTEXT RexxContext,struct RexxMsg *rmsg,
 short SetARexxLastError(AREXXCONTEXT RexxContext,struct RexxMsg *rmsg,
 			char *ErrorString)
 {
-register	short	OkFlag=FALSE;
+	short	OkFlag=FALSE;
 
 	if (RexxContext) if (rmsg) if (CheckRexxMsg(rmsg))
 	{
@@ -224,9 +224,9 @@ register	short	OkFlag=FALSE;
 short SendARexxMsg(AREXXCONTEXT RexxContext,char *RString,
 			short StringFile)
 {
-register	struct	MsgPort	*RexxPort;
-register	struct	RexxMsg	*rmsg;
-register		short	flag=FALSE;
+	struct	MsgPort	*RexxPort;
+	struct	RexxMsg	*rmsg;
+	short	flag=FALSE;
 
 	if (RexxContext) if (RString)
 	{
@@ -276,7 +276,7 @@ register		short	flag=FALSE;
  */
 void FreeARexx(AREXXCONTEXT RexxContext)
 {
-register	struct	RexxMsg	*rmsg;
+	struct	RexxMsg	*rmsg;
 
 	if (RexxContext)
 	{
@@ -358,16 +358,16 @@ register	struct	RexxMsg	*rmsg;
  */
 AREXXCONTEXT InitARexx(char *AppName,char *Extension)
 {
-register	AREXXCONTEXT	RexxContext=NULL;
-register	short		loop;
-register	short		count;
-register	char		*tmp;
+	AREXXCONTEXT	RexxContext=NULL;
+	short		loop;
+	short		count;
+	char		*tmp;
 
 	if (RexxContext=AllocMem(sizeof(struct ARexxContext),
 					MEMF_PUBLIC|MEMF_CLEAR))
 	{
 		if (RexxContext->RexxSysBase=OpenLibrary("rexxsyslib.library",
-								NULL))
+								0))
 		{
 			/*
 			 * Set up the extension...
