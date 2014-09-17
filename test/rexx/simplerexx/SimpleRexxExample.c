@@ -75,7 +75,7 @@ static struct NewWindow nw=
  * Note: You will want to RUN this program or have another shell available such
  *       that you can still have access to ARexx...
  */
-void main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
 short	loopflag=TRUE;
 AREXXCONTEXT	RexxStuff;
@@ -83,7 +83,7 @@ struct	Window	*win=NULL;
 ULONG	signals;
 
 	if (IntuitionBase=(struct IntuitionBase *)
-					OpenLibrary("intuition.library",NULL))
+					OpenLibrary("intuition.library",0))
 	{
 		/*
 		 * Note that SimpleRexx is set up such that you do not
@@ -124,7 +124,7 @@ ULONG	signals;
 
 					nextchar=stptok(ARG0(rmsg),
 								cBuf,24," ,");
-					if (*nextchar) nextchar++;
+					if (nextchar && *nextchar) nextchar++;
 
 					if (!stricmp("WINDOW",cBuf))
 					{
@@ -216,4 +216,5 @@ ULONG	signals;
 		FreeARexx(RexxStuff);
 		CloseLibrary((struct Library *)IntuitionBase);
 	}
+	return 0;
 }
