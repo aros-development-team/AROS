@@ -1,0 +1,23 @@
+#
+# MakeFile for SimpleRexx and SimpleRexxExample
+#
+
+CFLAGS= -b1 -cfist -d0 -ms0 -rr1 -v -w
+
+HEAD=	SimpleRexx.h
+
+CODE=	SimpleRexx.c SimpleRexxExample.c
+
+OBJS=	SimpleRexx.o SimpleRexxExample.o
+
+LIBS=	LIB:lcsr.lib rexxvars.o LIB:amiga.lib
+
+.c.o:
+	@LC $(CFLAGS) $*
+
+SimpleRexxExample: $(OBJS) $(LIBS)
+	BLink FROM LIB:c.o $(OBJS) TO SimpleRexxExample LIB $(LIBS) SD SC ND
+
+SimpleRexx.o: SimpleRexx.c SimpleRexx.h
+
+SimpleRexxExample.o: SimpleRexxExample.c SimpleRexx.h
