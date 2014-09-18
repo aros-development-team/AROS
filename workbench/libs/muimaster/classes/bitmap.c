@@ -31,6 +31,8 @@ struct MUI_BitmapData
     PLANEPTR mask;
     WORD *remaptable;
     BYTE usefriend;
+    ULONG alpha;
+    BOOL use_alpha;
 };
 
 static void remap_bitmap(struct IClass *cl, Object *obj)
@@ -255,6 +257,8 @@ IPTR Bitmap__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->precision = PRECISION_GUI;
     data->transparent = -1;
+    data->alpha = 0xffffffff;
+    data->use_alpha = FALSE;
 
     /* parse initial taglist */
 
@@ -262,6 +266,11 @@ IPTR Bitmap__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+        case MUIA_Bitmap_Alpha:
+            data->alpha = tag->ti_Data;
+            data->use_alpha = TRUE;
+            break;
+
         case MUIA_Bitmap_Bitmap:
             data->bm = (struct BitMap *)tag->ti_Data;
             break;
@@ -331,6 +340,11 @@ IPTR Bitmap__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+        case MUIA_Bitmap_Alpha:
+            data->alpha = tag->ti_Data;
+            data->use_alpha = TRUE;
+            break;
+
         case MUIA_Bitmap_Bitmap:
             if (!data->remapped_bm)
             {
@@ -379,6 +393,10 @@ IPTR Bitmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
+    case MUIA_Bitmap_Alpha:
+        STORE = data->alpha;
+        return TRUE;
+
     case MUIA_Bitmap_Bitmap:
         STORE = (IPTR) data->bm;
         return TRUE;
@@ -518,7 +536,11 @@ IPTR Bitmap__MUIM_Draw(struct IClass *cl, Object *obj,
 
         if ((width > 0) && (height > 0))
         {
-            if (data->mask)
+            if (data->use_alpha)
+            {
+                // TODO: implement
+            }
+            else if (data->mask)
             {
                 BltMaskBitMapRastPort(bm, 0, 0, _rp(obj), _mleft(obj),
                     _mtop(obj), width, height, 0xE0, data->mask);
