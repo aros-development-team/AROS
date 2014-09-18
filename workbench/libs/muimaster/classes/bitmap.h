@@ -13,6 +13,8 @@
 #define MUIB_Bitmap                 (MUIB_ZUNE | 0x00000400)
 
 /*** Attributes *************************************************************/
+#define MUIA_Bitmap_Alpha \
+    (MUIB_MUI | 0x00423e71) /* MUI: V20 isg ULONG             */
 #define MUIA_Bitmap_Bitmap \
     (MUIB_MUI | 0x004279bd) /* MUI: V8  isg struct BitMap *   */
 #define MUIA_Bitmap_Height \
