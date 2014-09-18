@@ -16,50 +16,56 @@
 struct FELSunxiDevice * AttemptDeviceBinding(LIBBASETYPEPTR LIBBASE, struct PsdDevice *pd) {
     mybug(-1,("FELSunxi AttemptDeviceBinding\n"));
 
-    struct FELSunxiDevice *FELSunxiDevice;
-
     struct Library *ps;
 
     IPTR prodid;
     IPTR vendid;
 
-    /* Open Poseidon for us AND the FELSunxiTask (which is per device) */
     if((ps = OpenLibrary("poseidon.library", 4))) {
         psdGetAttrs(PGA_DEVICE, pd, DA_VendorID, &vendid, DA_ProductID, &prodid, TAG_END);
-        if((vendid == 0x1f3a) && (prodid == 0xefe8)) {
-            FELSunxiDevice = psdAllocVec(sizeof(struct FELSunxiDevice));
-            if(FELSunxiDevice) {
-                FELSunxiDevice->ps = ps;
-                FELSunxiDevice->pd = pd;
-                /* Open MUI for FELSunxiTask, don't bother to continue if it fails */
-                FELSunxiDevice->MUIMasterBase = OpenLibrary("muimaster.library", 0);
-                if(FELSunxiDevice->MUIMasterBase) {
-                    mybug(-1,("Creating FELSunxiTask\n"));
-                    FELSunxiDevice->readysignal = SIGB_SINGLE;
-                    FELSunxiDevice->readysigtask = FindTask(NULL);
-                    SetSignal(0, SIGF_SINGLE);
-
-                    FELSunxiDevice->felsunxitask = psdSpawnSubTask("FELSunxi task", FELSunxiTask, FELSunxiDevice);
-                    if(FELSunxiDevice->felsunxitask) {
-                        /* Wait for FELSunxiTask to be ready */
-                        psdBorrowLocksWait(FELSunxiDevice->felsunxitask, 1UL<<FELSunxiDevice->readysignal);
-                        return FELSunxiDevice;
-                    } else {
-                        mybug(-1,("Failed to spawn the task\n"));
-                    }
-                    CloseLibrary(FELSunxiDevice->MUIMasterBase);
-                }
-                psdFreeVec(FELSunxiDevice);
-            }
-        }
         CloseLibrary(ps);
+        if((vendid == 0x1f3a) && (prodid == 0xefe8)) {
+            return ForceDeviceBinding(LIBBASE, pd);
+        }
     }
 
     return NULL;
 }
 
 struct FELSunxiDevice * ForceDeviceBinding(LIBBASETYPEPTR LIBBASE, struct PsdDevice *pd) {
-    mybug(-1,("FELSunxi ForceDeviceBinding, nope!\n"));
+    mybug(-1,("FELSunxi ForceDeviceBinding\n"));
+
+    struct FELSunxiDevice *FELSunxiDevice;
+    struct Library *ps;
+
+    if((ps = OpenLibrary("poseidon.library", 4))) {
+        FELSunxiDevice = psdAllocVec(sizeof(struct FELSunxiDevice));
+        if(FELSunxiDevice) {
+            FELSunxiDevice->ps = ps;
+            FELSunxiDevice->pd = pd;
+            /* Open MUI for FELSunxiTask, don't bother to continue if it fails */
+            FELSunxiDevice->MUIMasterBase = OpenLibrary("muimaster.library", 0);
+            if(FELSunxiDevice->MUIMasterBase) {
+                mybug(-1,("Creating FELSunxiTask\n"));
+                FELSunxiDevice->readysignal = SIGB_SINGLE;
+                FELSunxiDevice->readysigtask = FindTask(NULL);
+                SetSignal(0, SIGF_SINGLE);
+
+                FELSunxiDevice->felsunxitask = psdSpawnSubTask("FELSunxi task", FELSunxiTask, FELSunxiDevice);
+                if(FELSunxiDevice->felsunxitask) {
+                /* Wait for FELSunxiTask to be ready */
+                    psdBorrowLocksWait(FELSunxiDevice->felsunxitask, 1UL<<FELSunxiDevice->readysignal);
+                    return FELSunxiDevice;
+                } else {
+                    mybug(-1,("Failed to spawn the task\n"));
+                }
+                CloseLibrary(FELSunxiDevice->MUIMasterBase);
+            }
+            psdFreeVec(FELSunxiDevice);
+        }
+        CloseLibrary(ps);
+    }
+
     return NULL;
 }
 

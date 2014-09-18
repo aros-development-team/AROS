@@ -35,9 +35,6 @@ struct FELSunxiDevice {
     struct Task            *readysigtask;
 
     struct Task            *felsunxitask;
-    struct MsgPort         *felsunxitask_msgport;
-    struct Message         *felsunxitask_msg;
-
 };
 
 struct FELSunxiBase {
