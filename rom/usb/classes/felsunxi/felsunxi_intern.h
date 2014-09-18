@@ -24,19 +24,31 @@
 #define mybug_unit(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug("%s %s: ", unit->name, __FUNCTION__); bug x; } } while (0); } )
 
 struct FELSunxiDevice {
-    struct Node             node; 
+    struct Node             node;
+
+    struct PsdDevice       *pd;
+
+    struct Library         *ps;
+    struct Library         *MUIMasterBase;
+
+    LONG                    readysignal;
+    struct Task            *readysigtask;
+
+    struct Task            *felsunxitask;
+    struct MsgPort         *felsunxitask_msgport;
+    struct Message         *felsunxitask_msg;
+
 };
 
 struct FELSunxiBase {
     struct Library          library;
-
-    struct List             device_list;
-    struct SignalSemaphore  device_listlock;
 };
 
 struct FELSunxiDevice * AttemptDeviceBinding(LIBBASETYPEPTR LIBBASE, struct PsdDevice *pd);
 struct FELSunxiDevice * ForceDeviceBinding(LIBBASETYPEPTR LIBBASE, struct PsdDevice *pd);
 void ReleaseDeviceBinding(LIBBASETYPEPTR LIBBASE, struct FELSunxiDevice *FELSunxiDevice);
+
+AROS_UFP0(void, FELSunxiTask);
 
 #endif /* FELSUNXI_INTERN_H */
 

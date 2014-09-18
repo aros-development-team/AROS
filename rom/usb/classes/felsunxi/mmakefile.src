@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FUNCS := class_Library class_DoMethodA class_GetAttrsA class_SetAttrsA class_DeviceBinding
+FUNCS := class_Library class_DoMethodA class_GetAttrsA class_SetAttrsA class_DeviceBinding class_FELSunxiTask
 
 #MM- kernel-usb-classes-felsunxi : kernel-usb-usbclass kernel-usb-poseidon-includes
 

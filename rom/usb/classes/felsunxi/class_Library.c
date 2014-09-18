@@ -17,10 +17,6 @@ static const STRPTR libname = MOD_NAME_STRING;
 
 static int libInit(LIBBASETYPEPTR LIBBASE) {
     mybug(0,("FELSunxi libInit\n"));
-
-    NEWLIST(&LIBBASE->device_list);
-    InitSemaphore(&LIBBASE->device_listlock);
-
     return(TRUE);
 }
 
