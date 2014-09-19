@@ -381,6 +381,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
     if (bn == NULL)
     {
         ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
+        SetIoErr(ERROR_OBJECT_NOT_FOUND);
         return BNULL;
     }
 
@@ -389,6 +390,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
     if (!mp)
     {
         ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
+        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
         return BNULL;
     }
 
