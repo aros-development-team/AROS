@@ -96,8 +96,8 @@ static struct prefinfo
 preftable[] =
 {
     {"input"	    , inputprefsname     , InputPrefs_Handler      },
+    {"locale"	    , localeprefsname	 , LocalePrefs_Handler     }, /* Keep before font */
     {"font" 	    , fontprefsname      , FontPrefs_Handler       },
-    {"locale"	    , localeprefsname	 , LocalePrefs_Handler     },
     {"palette"	    , paletteprefsname   , NULL                    },
     {"wbpattern"    , patternprefsname   , WBPatternPrefs_Handler  },
     {"icontrol"     , icontrolprefsname  , IControlPrefs_Handler   },
