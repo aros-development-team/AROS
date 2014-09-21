@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 #MM workbench-storage: workbench-storage-dosdrivers
 
 workbench-storage:
-	$(MKDIR) $(AROSDIR)/Storage/Datatypes
+	$(MKDIR) $(AROSDIR)/Storage/DataTypes
 	$(MKDIR) $(AROSDIR)/Storage/DOSDrivers
 	$(MKDIR) $(AROSDIR)/Storage/Keymaps
 	$(MKDIR) $(AROSDIR)/Storage/Monitors
