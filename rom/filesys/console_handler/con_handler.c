@@ -147,7 +147,7 @@ static LONG MakeConWindow(struct filehandle *fh)
 
             DoIO(ioReq(&fh->conwriteio));
 
-            if ((fh->appmsgport = CreateMsgPort()))
+            if (fh->workbenchbase && (fh->appmsgport = CreateMsgPort()))
             {
                 if ((fh->appwindow = AddAppWindow(0, 0, fh->window, fh->appmsgport, NULL)))
                     D(bug("[CON] Console promoted to be an AppWindow\n"));
