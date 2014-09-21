@@ -99,7 +99,7 @@ usbhardware.device/UHCMD_USBSUSPEND
        The new fields iouh_SplitHubAddr and iouh_SplitHubPort are filled
        for USB 2.0 lowspeed and fullspeed split transactions. Note that
        these fields are wrong for versions before V3.6 in the case you
-       have USB devices after a USB 1.1 hub after an USB 2.0 hub.
+       have USB devices after a USB 1.1 hub after a USB 2.0 hub.
 
        If your root hub is USB 2.0, Poseidon will not know this until it
        reads a USB 2.0 version number from the device descriptor. Hence,
@@ -214,7 +214,7 @@ usbhardware.device/UHCMD_USBSUSPEND
         io_Device    - pointer to device node, must be set by (or copied from
                        I/O block set by) OpenDevice() function
         io_Unit      - pointer to unit node to use, set by OpenDevice()
-        io_Command   - command number for UHCMD_BULKXFER
+        io_Command   - command number for UHCMD_CONTROLXFER
         io_Flags     - flags, must be cleared if not use:
                        IOF_QUICK - (CLEAR) reply I/O request
 
@@ -274,18 +274,19 @@ usbhardware.device/UHCMD_USBSUSPEND
         Starts a control transfer, containing a Setup phase, optional
         Data phases (in or out) and the final Status phase.
 
-        The setup stage contains of a 8 byte packet, with the USB standard
+        The setup stage contains an 8 byte packet, with the USB standard
         fields bmRequestType, bRequest, wIndex, wValue and wLength.
 
         If iouh_Length is greater than zero, a data phase is initiated and
-        the data is split into packets smaller or equal of iouh_MaxPktSize.
+        the data is split into packets smaller than or equal to
+        iouh_MaxPktSize.
 
         The direction of the transfer (buffer to device or device to buffer)
         is determined by the most significant bit of the bmRequestType field
         in the setup packet.
 
         Finally, in the status stage the host controller will send a zero
-        bytes data packet to terminate the control transfer.
+        byte data packet to terminate the control transfer.
 
         In case of an error, the transfer will be retried up to three times.
 
@@ -296,7 +297,7 @@ usbhardware.device/UHCMD_USBSUSPEND
                        I/O block set by) OpenDevice() function
         io_Unit      - pointer to unit node to use, set by OpenDevice()
         io_Command   - command number for UHCMD_CONTROLXFER
-        io_Flags     - flags, must be cleared if not use:
+        io_Flags     - flags, must be cleared if not used:
                        IOF_QUICK - (CLEAR) reply I/O request
 
         iouh_Flags        - UHFF_LOWSPEED for low speed devices.
@@ -319,7 +320,7 @@ usbhardware.device/UHCMD_USBSUSPEND
         iouh_MaxPktSize   - maximum size of a packet for this endpoint.
         iouh_Data         - pointer to a buffer to transport the data.
         iouh_Length       - number of bytes to transfer.
-        iouh_SetupData    - contents of the eight bytes setup packet.
+        iouh_SetupData    - contents of the eight byte setup packet.
                             The first bit in the bmRequestType field will
                             determine the direction (1=in, 0=out).
         iouh_SplitHubAddr - for split transactions only: the hub device
@@ -331,7 +332,7 @@ usbhardware.device/UHCMD_USBSUSPEND
                             be retired with UHIOERR_NAKTIMEOUT due to the
                             endpoint constantly denying the request with
                             NAKs. This can be used to avoid hangs on broken
-                            USB unit 1000 (1 second) is a reasonable value.
+                            USB units. 1000 (1 second) is a reasonable value.
 
    OUTPUTS
         iouh_Actual  - actual bytes transferred during the data phase

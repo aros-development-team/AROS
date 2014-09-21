@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP function OOP_GetMethodID
@@ -49,8 +49,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -69,7 +67,7 @@
     if (idb)
     {
     	D(bug("Got mid %ld\n", mid));
-        /* Should throw eception here if metodbase == -1UL */
+        /* Should throw exception here if methodbase == -1UL */
         mid = idb->methodbase + methodOffset;
 
     	ReturnInt ("OOP_GetMethodID", ULONG, mid);

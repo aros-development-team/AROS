@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PosixC internal functions for Amiga<>UNIX filename conversion
@@ -30,7 +30,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         const char *upath)
 
 /*  FUNCTION
-        Translates an unix-style path into an AmigaDOS one.
+        Translates a unix-style path into an AmigaDOS one.
 
     INPUTS
         upath - Unix-style path to translate into an AmigaDOS-style equivalent.

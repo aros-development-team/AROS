@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd class implementation.
@@ -2808,7 +2808,7 @@ VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
     INPUTS
 	gfxHidd - a display driver object, on whose display you wish to position the pointer
 	x       - An x coordinate of the pointer (relative to the physical screen origin)
-	y       - An y coordinate of the pointer (relative to the physical screen origin)
+	y       - A y coordinate of the pointer (relative to the physical screen origin)
 
     RESULT
 	Always TRUE. Reserved for future, do not use it.
@@ -2866,10 +2866,10 @@ BOOL GFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 	gfxHidd - a display driver object that you are going to use for copying
 	src     - a pointer to source bitmap object
 	srcX    - an X coordinate of the source rectangle
-	srcY    - an Y coordinate of the source rectangle
+	srcY    - a Y coordinate of the source rectangle
 	dest    - a pointer to destination bitmap object
 	destX   - an X coordinate of the destination rectangle
-	destY   - an Y coordinate of the destination rectangle
+	destY   - a Y coordinate of the destination rectangle
 	width   - width of the rectangle to copy
 	height  - height of the rectangle to copy
 	gc      - graphics context holding draw mode on the destination
@@ -3196,10 +3196,10 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	gfxHidd - a display driver object that you are going to use for copying
 	src     - a pointer to source bitmap object
 	srcX    - an X coordinate of the source rectangle
-	srcY    - an Y coordinate of the source rectangle
+	srcY    - a Y coordinate of the source rectangle
 	dest    - a pointer to destination bitmap object
 	destX   - an X coordinate of the destination rectangle
-	destY   - an Y coordinate of the destination rectangle
+	destY   - a Y coordinate of the destination rectangle
 	width   - width of the rectangle to copy
 	height  - height of the rectangle to copy
 	mask    - single bitplane mask

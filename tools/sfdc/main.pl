@@ -403,7 +403,7 @@ exit 0;
 ###############################################################################
 
 
-### parse_sfd: Parse a SFD file hand return a hash record #####################
+### parse_sfd: Parse an SFD file hand return a hash record #####################
 
 sub parse_sfd ( $ ) {
     my $file = shift;

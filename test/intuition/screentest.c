@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 		    if (args.scroll) {
 			tags[4].ti_Tag = SA_AutoScroll;
 			tags[4].ti_Data = *args.scroll;
-			printf("SA_Autoscroll: %ld\n", tags[4].ti_Data);
+			printf("SA_AutoScroll: %ld\n", tags[4].ti_Data);
 		    }
 		    if (args.drag) {
 			tags[5].ti_Tag = SA_Draggable;
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 		    if (args.top) {
 			tags[9].ti_Tag = SA_Top;
 			tags[9].ti_Data = *args.top;
-			printf("SA_Left: %ld\n", tags[9].ti_Data);
+			printf("SA_Top: %ld\n", tags[9].ti_Data);
 		    }
 
 		    screen = OpenScreenTagList(NULL, tags);

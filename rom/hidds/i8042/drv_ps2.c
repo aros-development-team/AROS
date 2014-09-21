@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PS/2 mouse driver.
@@ -190,7 +190,7 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
     result = mouse_ps2reset(data);
     Enable();
 
-    /* If mouse_ps2reset() returned non-zero value, there is vaild PS/2 mouse */
+    /* If mouse_ps2reset() returned non-zero value, there is valid PS/2 mouse */
     if (result)
     {
         return 1;

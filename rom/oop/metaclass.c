@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP metaclass
@@ -260,7 +260,7 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
 	    /*
 	     * Count how many methods we are going to have in our interface.
 	     * Caller-supplied MethodTable in interface descriptor table may
-	     * have skipped entries (noone promised that it will cover the
+	     * have skipped entries (no one promised that it will cover the
 	     * whole range from 0 to maximum method offset). However our bucket's
 	     * MethodTable must cover the whole range, since method offset is an
 	     * index into this table (see Meta_CoerceMethod() below).
@@ -462,7 +462,7 @@ static struct IFMethod *ifmeta_findmethod(OOP_Class *cl, OOP_Object *o, struct P
     EnterFunc(bug("IFMeta::findmethod(o=%p, mid=%ld)\n", o, msg->method_to_find));
     
 
-    /* Get method offset part of methdoID */
+    /* Get method offset part of methodID */
     method_offset =  msg->method_to_find & METHOD_MASK;
     
     /* Look up ID in hashtable and get linked list of buckets,

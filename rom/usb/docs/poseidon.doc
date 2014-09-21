@@ -1095,7 +1095,7 @@ psdSaveCfgToDisk
    FUNCTION
         Delays the execution of the current task by the given amount of
         milliseconds. The call is guaranteed to wait at least that amount of
-        milliseconds, but as usually in a multitasking environment, the call
+        milliseconds, but as usual in a multitasking environment, the call
         could also take longer to return.
 
    INPUTS

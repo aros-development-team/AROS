@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -134,7 +134,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     /* dp_Arg3 is the COS override */
     cos = (BPTR)dp->dp_Arg3;
 
-    /* dp_Arg7 is AROS extension information)*/
+    /* dp_Arg7 is AROS extension information */
     ea = (struct ExtArg *)dp->dp_Arg7;
     ces = ea->ea_CES;
 

@@ -5,7 +5,7 @@
     Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: IDE hardware register definitions
+    Desc: ATA hardware register definitions
     Lang: English
 */
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,7 @@
         a copy of the old one.
 
     INPUTS
-	oldmen - What you got from malloc(), calloc(), realloc() or realloc_nocopy().
+	oldmem - What you got from malloc(), calloc(), realloc() or realloc_nocopy().
                  If NULL, the function will behave exactly like malloc().
 	size   - The new size. If 0, the buffer will be freed.
 
