@@ -16,6 +16,8 @@
 #include <intuition/intuition.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/workbench.h>
+#include <workbench/startup.h>
 #include <devices/conunit.h>
 
 #include <stddef.h>
@@ -145,6 +147,12 @@ static LONG MakeConWindow(struct filehandle *fh)
 
             DoIO(ioReq(&fh->conwriteio));
 
+            if ((fh->appmsgport = CreateMsgPort()))
+            {
+                if ((fh->appwindow = AddAppWindow(0, 0, fh->window, fh->appmsgport, NULL)))
+                    D(bug("[CON] Console promoted to be an AppWindow\n"));
+            }
+
         } /* if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conreadio), 0)) */
         else
         {
@@ -190,6 +198,20 @@ static void close_con(struct filehandle *fh)
         CloseDevice((struct IORequest *) fh->conreadio);
     }
 
+    if (fh->appwindow)
+    {
+        D(bug("[CON] Unpromote console window from being an AppWindow\n"));
+        RemoveAppWindow(fh->appwindow);
+    }
+    if (fh->appmsgport)
+    {
+        struct AppMessage  *appmsg;
+        while ((appmsg = (struct AppMessage *) GetMsg(fh->appmsgport)))
+            ReplyMsg ((struct Message *) appmsg);
+        D(bug("[CON] Delete MsgPort for AppWindow\n"));
+        DeleteMsgPort(fh->appmsgport);
+    }
+
     D(bug("[CON] Closing window 0x%p\n", fh->window));
     if (fh->window)
         CloseWindow(fh->window);
@@ -209,6 +231,7 @@ static void close_con(struct filehandle *fh)
 
     CloseLibrary((struct Library*) fh->intuibase);
     CloseLibrary((struct Library*) fh->dosbase);
+    CloseLibrary((struct Library*) fh->workbenchbase);
 
     /* These libraries are opened only if completion was used */
     if (fh->gfxbase)
@@ -236,6 +259,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     fh->intuibase = (APTR) OpenLibrary("intuition.library", 0);
     fh->dosbase = (APTR) OpenLibrary("dos.library", 0);
     fh->utilbase = (APTR) OpenLibrary("utility.library", 0);
+    fh->workbenchbase = (APTR) OpenLibrary("workbench.library", 0);
     Forbid();
     fh->inputbase = (struct Device *) FindName(&SysBase->DeviceList, "input.device");
     Permit();
@@ -245,6 +269,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
         CloseLibrary((APTR) fh->utilbase);
         CloseLibrary((APTR) fh->dosbase);
         CloseLibrary((APTR) fh->intuibase);
+        CloseLibrary((APTR) fh->workbenchbase);
         FreeVec(fh);
         return NULL;
     }
@@ -402,9 +427,70 @@ LONG CONMain(struct ExecBase *SysBase)
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
         ULONG timermask = 1L << fh->timermp->mp_SigBit;
         ULONG packetmask = 1L << mp->mp_SigBit;
+        ULONG appwindowmask = fh->appmsgport ? 1L << fh->appmsgport->mp_SigBit : 0L;
+        ULONG i = 0, insertedlen = 0;
         ULONG sigs;
+        UBYTE iconpath[INPUTBUFFER_SIZE];
+        WORD currentpos, currentrest;
 
-        sigs = Wait(packetmask | conreadmask | timermask);
+        sigs = Wait(packetmask | conreadmask | timermask | appwindowmask);
+
+        if (sigs & appwindowmask)
+        {
+            while ((fh->appmsg = (struct AppMessage *)GetMsg(fh->appmsgport)))
+            {
+                if (fh->appmsg->am_Type == AMTYPE_APPWINDOW)
+                {
+                    if (fh->appmsg->am_NumArgs >= 1)
+                    {
+                        do
+                        {
+                            if (fh->appmsg->am_ArgList[i].wa_Lock)
+                            {
+                                NameFromLock(fh->appmsg->am_ArgList[i].wa_Lock,
+                                             iconpath, INPUTBUFFER_SIZE - 1);
+                                AddPart(iconpath, fh->appmsg->am_ArgList[i].wa_Name,
+                                        INPUTBUFFER_SIZE - 1);
+                                D(bug("[CON]: D&D iconpath: %s\n", iconpath));
+
+                                if ((insertedlen = strlen(iconpath)))
+                                {
+                                    /*
+                                     * Get rid of trailing slashes of drawers?
+                                    if ((iconpath[insertedlen - 1] == '/'))
+                                        insertedlen--;
+                                     */
+                                    if (    strchr(iconpath, ' ')
+                                         && insertedlen <= (INPUTBUFFER_SIZE - 2))
+                                    {
+                                        memmove(iconpath + 1, iconpath, ++insertedlen);
+                                        iconpath[0] = iconpath[insertedlen++] = '"';
+                                    }
+                                    if (insertedlen <= (INPUTBUFFER_SIZE - 1))
+                                        iconpath[insertedlen++] = ' ';
+
+                                    currentpos = fh->inputpos;
+                                    currentrest = fh->inputsize - fh->inputpos;
+                                    memmove(&fh->inputbuffer[currentpos + insertedlen],
+                                            &fh->inputbuffer[currentpos],
+                                            currentrest);
+                                    CopyMem(iconpath, &fh->inputbuffer[currentpos],
+                                            insertedlen);
+                                    fh->inputsize += insertedlen;
+                                    fh->inputpos += insertedlen;
+
+                                    do_write(fh, &fh->inputbuffer[currentpos],
+                                             insertedlen + currentrest);
+                                    do_movecursor(fh, CUR_LEFT, currentrest);
+                                }
+                            }
+                        } while (++i < fh->appmsg->am_NumArgs);
+                    }
+                }
+                ReplyMsg((struct Message *)fh->appmsg);
+            }
+            ActivateWindow(fh->window);
+        }
 
         if (sigs & timermask)
         {
