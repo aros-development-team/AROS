@@ -234,11 +234,11 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
                 entry->node.ln_Name = AllocVecPooled(mempool, strlen(ap.ap_Info.fib_FileName) + 1);
                 strcpy(entry->node.ln_Name, ap.ap_Info.fib_FileName);
 
-                entry->node.ln_Name[0] = ToUpper(entry->node.ln_Name[0]);
                 if ((sp = strchr(entry->node.ln_Name, '.')) != NULL)
                     sp[0] = '\0';
 
                 strcpy(entry->realname, entry->node.ln_Name);
+                entry->node.ln_Name[0] = ToUpper(entry->node.ln_Name[0]);
 
                 if (entrysize == sizeof(struct RegionEntry))
                 {
@@ -679,7 +679,7 @@ BOOL Prefs_Initialize(VOID)
     {
         entry->lve.node.ln_Name = AllocVecPooled(mempool, 8);
         strcpy( entry->lve.node.ln_Name, "English");
-        strcpy( entry->lve.realname, "English");
+        strcpy( entry->lve.realname, "english");
 
         SortInNode(&language_list, &entry->lve.node);
     }
