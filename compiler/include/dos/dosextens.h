@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -288,8 +288,7 @@ struct DevProc
 
 /* Standard file-handle as returned by Open() (as BPTR). Generally said, you
    should not use this structure in any way and only use library-calls to
-   access files. Note that this structure is very different to the structure
-   used in AmigaOS! Treat this structure as PRIVATE. If you want to create
+   access files. Treat this structure as PRIVATE. If you want to create
    this structure nevertheless, use AllocDosObject(). */
 struct FileHandle64
 {
@@ -374,7 +373,7 @@ struct FileLock
  **********************************************************************/
 
 /* This structure is returned by LockDosList() and similar calls. This
- * structure is identical the AmigaOS one, but this structure is PRIVATE
+ * structure is identical to the AmigaOS one, but this structure is PRIVATE
  * anyway. Use system-calls for dos list-handling.
  */
 struct DosList

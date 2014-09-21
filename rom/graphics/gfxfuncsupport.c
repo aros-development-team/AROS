@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -444,7 +444,7 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
     	
     if (    (srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE))
     {
-    	/* palettized with no colmap. Neew to get a colmap from dest*/
+        /* palettized with no colmap. Need to get a colmap from dest */
     	if (dstflags == FLG_TRUECOLOR)
 	{
     	

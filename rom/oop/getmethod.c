@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Get a pointer to a method for an object
@@ -28,8 +28,9 @@
 
 /*  FUNCTION
 	Get a specific method function for a specific object and 
-	a specific interface. This a direct pointer to the method implementation.
-	The pointer should ONLY be used on the object you aquired.
+	a specific interface. This a direct pointer to the method
+	implementation. The pointer should ONLY be used on the object you
+	acquired.
 
     INPUTS
     	obj	 - pointer to object to get method for.
@@ -55,10 +56,6 @@
     	OOP_GetMethodID()
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {

@@ -2,7 +2,7 @@
 #define DOS_DOS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic DOS structures and constants
@@ -300,8 +300,8 @@ struct InfoData32
 
 /* Miscellaneous errors. */
 #define ERROR_BAD_STREAM_NAME		206
-  /* The given object is too large for the operation to be made. Object is
-     this context are for example components of path-names. */
+  /* The given object is too large for the operation to be done. Object in
+     this context is for example a component of a path name. */
 #define ERROR_OBJECT_TOO_LARGE		207
   /* This is usually used to indicate that a filesystem does not support a
      certain action, but may generally also be used by functions. */

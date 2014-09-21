@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Set attributes of an object.
@@ -33,8 +33,7 @@
     	object	- pointer to a object in whih we
 		  want to set attributes.
 		 
-	tagList -  List of attributes an their new values.
-
+	tagList -  List of attributes and their new values.
 
     RESULT
     	Undefined.
@@ -49,10 +48,6 @@
 	OOP_DisposeObject()
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {

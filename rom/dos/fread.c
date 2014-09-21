@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -85,7 +85,6 @@
 
     readsize = (ULONG)(ptr - (UBYTE *)block);
 
-
     return (LONG)(readsize / blocklen);
 
     AROS_LIBFUNC_EXIT
@@ -126,7 +125,7 @@ static LONG handle_write_mode(BPTR file, struct DosLibrary * DOSBase)
  * Return values:
  *  (-2) on error
  *  (EOF) on EOF
- *  (>0) on sucesfull fetch
+ *  (>0) on successful fetch
  */
 LONG vbuf_fetch(BPTR file, UBYTE * buffer, ULONG fetchsize, struct DosLibrary *DOSBase)
 {
