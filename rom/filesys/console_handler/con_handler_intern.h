@@ -63,6 +63,9 @@ struct filehandle
     struct NewWindow        nw;
     struct MsgPort          *timermp;
     struct timerequest      *timerreq;
+    struct MsgPort          *appmsgport;
+    struct AppMessage       *appmsg;
+    struct AppWindow        *appwindow;
     UBYTE                   *wintitle;
     UBYTE                   *screenname;
 #if BETTER_WRITE_HANDLING
@@ -95,6 +98,7 @@ struct filehandle
     struct DosLibrary       *dosbase;
     struct Library          *gtbase;
     struct Library          *utilbase;
+    struct Library          *workbenchbase;
 };
 
 /* filehandle flags */
@@ -116,6 +120,7 @@ struct filehandle
 #undef DOSBase
 #undef GadToolsBase
 #undef UtilityBase
+#undef WorkbenchBase
 
 /*
  * FIXME: Remove these #define xxxBase hacks
@@ -127,5 +132,6 @@ struct filehandle
 #define GadToolsBase fh->gtbase
 #define GfxBase	fh->gfxbase
 #define UtilityBase fh->utilbase
+#define WorkbenchBase fh->workbenchbase
 
 #endif /* __CON_HANDLER_INTERN_H */
