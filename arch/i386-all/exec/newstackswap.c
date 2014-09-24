@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NewStackSwap() - Call a function with swapped stack.
@@ -23,6 +23,7 @@ AROS_LH3(IPTR, NewStackSwap,
 
     volatile struct Task *t = FindTask(NULL);
     volatile IPTR *sp = sss->stk_Pointer;
+    volatile APTR spreg = t->tc_SPReg;
     volatile APTR splower = t->tc_SPLower;
     volatile APTR spupper = t->tc_SPUpper;
     IPTR ret;
@@ -51,6 +52,7 @@ AROS_LH3(IPTR, NewStackSwap,
     Disable();
 
     /* Change limits. The rest is done in asm below */
+    t->tc_SPReg = (APTR)sp;
     t->tc_SPLower = sss->stk_Lower;
     t->tc_SPUpper = sss->stk_Upper;
 
@@ -86,6 +88,7 @@ AROS_LH3(IPTR, NewStackSwap,
     : "ecx", "edx", "cc");
 
     /* Change limits back and return */
+    t->tc_SPReg = spreg;
     t->tc_SPLower = splower;
     t->tc_SPUpper = spupper;
     Enable();
