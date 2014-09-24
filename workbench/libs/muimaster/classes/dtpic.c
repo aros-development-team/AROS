@@ -456,7 +456,8 @@ IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     update_alpha(data);
-    change_event_handler(obj, data);
+    if (_flags(obj) & MADF_SETUP)
+        change_event_handler(obj, data);
 
     if (needs_redraw)
     {
