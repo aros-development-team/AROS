@@ -138,7 +138,7 @@ static void update_alpha(struct Dtpic_DATA *data)
             data->deltaalpha = 0;
         }
     }
-    bug("[Dtpic/update_alpha] alpha %d delta %d current %d\n", data->alpha, data->deltaalpha, data->currentalpha);
+    D(bug("[Dtpic/update_alpha] alpha %d delta %d current %d\n", data->alpha, data->deltaalpha, data->currentalpha));
 }
 
 static struct BitMap *clone_bitmap(struct BitMap *from_bm, ULONG operation, ULONG value)
@@ -155,7 +155,7 @@ static struct BitMap *clone_bitmap(struct BitMap *from_bm, ULONG operation, ULON
 
     InitRastPort(&rp);
     to_bm = AllocBitMap(width, height, depth, BMF_MINPLANES, from_bm);
-    bug("[clone_bitmap] %p width %d height %d depth %d\n", to_bm, width, height, depth);
+    D(bug("[clone_bitmap] %p width %d height %d depth %d\n", to_bm, width, height, depth));
     if (to_bm)
     {
         rp.BitMap = to_bm;
@@ -338,8 +338,8 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
 
     // TODO: rendering of different states
 
-    bug("[Dtpic/MUIM_Draw] selected %d highlighted %d alpha %d\n",
-        data->selected, data->highlighted, data->currentalpha);
+    D(bug("[Dtpic/MUIM_Draw] selected %d highlighted %d alpha %d\n",
+        data->selected, data->highlighted, data->currentalpha));
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -395,16 +395,16 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
                 if (data->selected)
                 {
                     bm = data->bm_selected;
-                    bug("render selected\n");
+                    D(bug("render selected\n"));
                 }
                 else if (data->highlighted)
                 {
-                    bug("render highlighted\n");
+                    D(bug("render highlighted\n"));
                     bm = data->bm_highlighted;
                 }
                 else
                 {
-                    bug("render normal\n");
+                    D(bug("render normal\n"));
                 }
                 
                 BltBitMapRastPort(bm, 0, 0, _rp(obj), _mleft(obj),
@@ -521,7 +521,7 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     data->deltaalpha = 0;
                 }
             }
-            bug("intuitick %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY);
+            D(bug("intuitick %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY));
             update_alpha(data);
             change_event_handler(obj, data);
             MUI_Redraw(obj, MADF_DRAWUPDATE);
@@ -534,7 +534,7 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
                 {
                     data->selected = TRUE;
-                    bug("selectdown %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY);
+                    D(bug("selectdown %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY));
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
             }
@@ -543,7 +543,7 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
                 {
                     data->selected = FALSE;
-                    bug("selectup %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY);
+                    D(bug("selectup %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY));
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
             }
@@ -553,7 +553,7 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
             {
                 data->highlighted = TRUE;
-                bug("mouse move %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY);
+                D(bug("mouse move %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY));
             }
             else
             {
