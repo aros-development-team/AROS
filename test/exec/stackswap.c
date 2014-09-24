@@ -41,9 +41,38 @@ void Sub(IPTR a1, IPTR a2)
     print("Coming back to original stack...\n");
 }
 
+/* We keep quiet unless an error occurs to avoid context switches */
+BOOL SilentSub(IPTR a1, IPTR a2)
+{
+    BOOL success = TRUE;
+    APTR sp, spreg;
+    struct Task *t = FindTask(NULL);
+
+    if(a2 != (IPTR)t)
+    {
+        print("ERROR: second parameter has incorrect value!\n");
+        success = FALSE;
+    }
+
+    sp = AROS_GET_SP;
+    if(t->tc_SPReg < t->tc_SPLower || t->tc_SPReg > t->tc_SPUpper
+        || sp < t->tc_SPLower || sp > t->tc_SPUpper)
+    {
+        spreg = t->tc_SPReg;
+        print("ERROR: invalid stack values in user function:\n");
+        print("Lower: 0x%P\tUpper: 0x%P\nSP(struct): 0x%P\tSP(reg): 0x%P\n",
+            t->tc_SPLower, t->tc_SPUpper, spreg, sp);
+        success = FALSE;
+    }
+
+    return success;
+}
+
 int main(void)
 {
     struct StackSwapArgs args;
+    APTR sp, spreg;
+    struct Task *t = FindTask(NULL);
 
     sss.stk_Lower = AllocMem(STACK_SIZE, MEMF_ANY);
     if (!sss.stk_Lower)
@@ -76,6 +105,26 @@ int main(void)
     print("Came back from NewStackSwap()\n");
     PrintSSS(&sss);
     PrintTaskStack();
+
+    /* Check that stack fields in task structure make sense */
+
+    print("Checking NewStackSwap() again...\n");
+    args.Args[0] = 0x1234ABCD;
+    args.Args[1] = (IPTR)FindTask(NULL);
+
+    Forbid();
+    NewStackSwap(&sss, SilentSub, &args);
+
+    sp = AROS_GET_SP;
+    if(t->tc_SPReg < t->tc_SPLower || t->tc_SPReg > t->tc_SPUpper
+        || sp < t->tc_SPLower || sp > t->tc_SPUpper)
+    {
+        spreg = t->tc_SPReg;
+        print("ERROR: invalid stack values after return from user function:\n");
+        print("Lower: 0x%P\tUpper: 0x%P\nSP(struct): 0x%P\tSP(reg): 0x%P\n",
+            t->tc_SPLower, t->tc_SPUpper, spreg, sp);
+    }
+    Permit();
 
     FreeMem(sss.stk_Lower, STACK_SIZE);
 
