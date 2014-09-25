@@ -58,8 +58,14 @@ AROS_LH3(IPTR, NewStackSwap,
     D(bug("[sss] %08x %08x %08x\n", sss->stk_Lower, sss->stk_Pointer, sss->stk_Upper));
 
     /* Call the function with the new stack */
-    *retptr = entry(args->Args[0], args->Args[1], args->Args[2], args->Args[3],
-		    args->Args[4], args->Args[5], args->Args[6], args->Args[7]);
+    if (args != NULL)
+    {
+        *retptr = entry(args->Args[0], args->Args[1], args->Args[2],
+            args->Args[3], args->Args[4], args->Args[5], args->Args[6],
+            args->Args[7]);
+    }
+    else
+        *retptr = entry();
 
     StackSwap(sss);
 
