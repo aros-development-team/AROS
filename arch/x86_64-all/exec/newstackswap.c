@@ -28,9 +28,17 @@ AROS_LH3(IPTR, NewStackSwap,
     volatile APTR spupper = t->tc_SPUpper;
     IPTR ret;
 
-    /* Only last two arguments are put to stack in x86-64 */
-    _PUSH(sp, args->Args[7]);
-    _PUSH(sp, args->Args[6]);
+    if (args != NULL)
+    {
+        /* Only last two arguments are put to stack in x86-64 */
+        _PUSH(sp, args->Args[7]);
+        _PUSH(sp, args->Args[6]);
+    }
+    else
+    {
+        /* Dummy args to be put in registers below */
+        args = splower;
+    }
 
     if (t->tc_Flags & TF_STACKCHK)
     {

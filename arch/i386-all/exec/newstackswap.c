@@ -30,10 +30,14 @@ AROS_LH3(IPTR, NewStackSwap,
     BYTE i;
 
     /* Put arguments on stack in appropriate order */
-    for (i = 7; i >= 0; i--)
+    if (args != NULL)
     {
-	D(bug("[NewStackSwap] Argument %d value 0x%08lX\n", i, args->Args[i]));
-	_PUSH(sp, args->Args[i]);
+        for (i = 7; i >= 0; i--)
+        {
+            D(bug("[NewStackSwap] Argument %d value 0x%08lX\n",
+                i, args->Args[i]));
+            _PUSH(sp, args->Args[i]);
+        }
     }
 
     if (t->tc_Flags & TF_STACKCHK)
