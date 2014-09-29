@@ -37,7 +37,6 @@ USER_CFLAGS := -Wno-unused-but-set-variable
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
 
 %build_module mmake=workbench-libs-lcms2 \
-  modname=lcms2_au modtype=library \
-  files="$(FILES)" linklibname=lcms2
+  modname=lcms2 modtype=library files="$(FILES)"
 
 %common
