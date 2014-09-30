@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * AROS-thread-safe versions of libc memory allocation routines
  * This does not work with Android's bionic.
  */

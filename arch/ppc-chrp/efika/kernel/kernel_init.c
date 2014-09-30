@@ -1,9 +1,7 @@
 /*
- * kernel_init.c
- *
- *  Created on: Aug 19, 2008
- *      Author: misc
- */
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
 #include <proto/dos.h>

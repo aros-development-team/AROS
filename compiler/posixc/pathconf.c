@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <limits.h>	/* _POSIX_*_MAX */
 #include <stdio.h>	/* FILENAME_MAX */
 #include <unistd.h>	/* _PC_*	*/

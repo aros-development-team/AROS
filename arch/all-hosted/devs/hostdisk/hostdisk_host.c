@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * This file is just a dummy nonfunctional template. These functions
  * need host-specific implementations.
  */

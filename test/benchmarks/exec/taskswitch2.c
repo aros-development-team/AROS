@@ -1,4 +1,7 @@
-/* $Id$ */
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <stdio.h>
 #include <sys/time.h>

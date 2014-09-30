@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * A newstyle startup code for resident display drivers.
  *
  * Now it's the job of the driver to add ifself to the system.

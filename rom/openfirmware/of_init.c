@@ -1,9 +1,7 @@
 /*
- * of_init.c
- *
- *  Created on: Oct 12, 2008
- *      Author: misc
- */
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 

@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * Testing WeighTAMatch
  * Flags: FPF_PROPORTIONAL, FPF_TALLDOT, FPF_WIDEDOT
  * Style: FSF_EXTENDED, FSF_BOLD, FSF_UNDERLINED, FSF_ITALIC, FSF_COLORFONT

@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * WARNING!!!
  * This test relies on some particular internal functioning of kernel memory allocator!
  * You'll have to change the code if you change something in kernel!

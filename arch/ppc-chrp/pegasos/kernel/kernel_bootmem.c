@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * Boot-time memory management functions.
  * In fact this is just a placeholder. All this can be seriously improved.
  */

@@ -1,9 +1,7 @@
 /*
- * rtas_private.h
- *
- *  Created on: Mar 22, 2009
- *      Author: misc
- */
+    Copyright © 2009-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #ifndef RTAS_PRIVATE_H_
 #define RTAS_PRIVATE_H_

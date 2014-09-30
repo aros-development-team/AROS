@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <intuition/diattr.h>
 #include <intuition/iobsolete.h>
 #include <proto/intuition.h>

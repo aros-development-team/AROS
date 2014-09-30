@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * Include these before AROS includes, because __unused as a macro in AROS,
  * causing conflicts with __unused being a structure member name in Linux bits/stat.h.
  */

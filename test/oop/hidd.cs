@@ -1,5 +1,10 @@
 /*
-    This is an example for a pseudolanguage to use out OOP
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
+    This is an example for a pseudolanguage to use our OOP
     system in C.
 */
 

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define PACKAGE
 #define PACKAGE_VERSION
 #include <bfd.h>

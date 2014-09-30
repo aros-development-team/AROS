@@ -1,9 +1,7 @@
 /*
- * support.c
- *
- *  Created on: Jun 29, 2010
- *      Author: misc
- */
+    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include "boot.h"
 

@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * Windows-hosted timer driver.
  *
  * In Windows kernel we have two statically allocated timers.

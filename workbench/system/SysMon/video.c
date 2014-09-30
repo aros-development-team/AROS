@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include "sysmon_intern.h"
 
 #include <clib/alib_protos.h>

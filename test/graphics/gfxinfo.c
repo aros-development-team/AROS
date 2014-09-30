@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* A very hacky testcase which dumps lots of graphics subsystem internal things.
    Please do not rely on the information you obtain using this program! Remember
    that it some of things it will print are really private and internal! Do not

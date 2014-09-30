@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* AROS Multi Processor Support Functions by NicJA. */
 #ifndef _SMP_C
 #define _SMP_C
