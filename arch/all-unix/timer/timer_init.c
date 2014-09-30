@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * UNIX-hosted timer driver.
  * Unix operating systems have only one usable timer, producing SIGALRM.
  * In this implementation we run the timer with a fixed frequency, which

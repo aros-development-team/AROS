@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* Because fload is defined to "int" later below,
    and we still need the real float in some places */
    

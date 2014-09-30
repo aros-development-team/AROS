@@ -3,7 +3,8 @@
     $Id$
 
     This file does not contain LZW code. It can read uncompressed files only,
-    but it creates uncompressed files, that can be read by standard decoders, too.
+    but it creates uncompressed files, that can be read by standard decoders,
+    too.
 */
 
 /**********************************************************************/

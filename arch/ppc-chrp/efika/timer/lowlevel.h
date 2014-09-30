@@ -1,9 +1,7 @@
 /*
- * lowlevel.h
- *
- *  Created on: Sep 30, 2008
- *      Author: misc
- */
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #ifndef LOWLEVEL_H_
 #define LOWLEVEL_H_

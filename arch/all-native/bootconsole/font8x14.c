@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 const unsigned int fontWidth  = 8;
 const unsigned int fontHeight = 14;
 

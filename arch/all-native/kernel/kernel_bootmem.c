@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * Boot-time memory management functions.
  * This is a very simple allocator working on a continuous memory block.
  * Its purpose is to help to set up initial boot-time data for your kernel,

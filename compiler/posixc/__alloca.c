@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <proto/exec.h>
 
 /* private function to get the upper or lower bound (depending on the architecture) of the stack */

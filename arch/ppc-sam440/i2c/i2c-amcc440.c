@@ -1,10 +1,7 @@
 /*
- * i2c-amcc440.c
- *
- *  Created on: Feb 1, 2010
- *      Author: misc
- */
-
+    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <aros/symbolsets.h>
 #include <aros/debug.h>

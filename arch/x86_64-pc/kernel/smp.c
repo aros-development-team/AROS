@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/atomic.h>
 #include <asm/io.h>
 #include <exec/execbase.h>

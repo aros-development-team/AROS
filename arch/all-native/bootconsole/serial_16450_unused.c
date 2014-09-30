@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * This code was rescued from arch/x86_64/exec/serialrawio.c before x86-64 port update.
  * Perhaps it can be useful in future, however it's questionable whether it is really
  * needed for debugging console.

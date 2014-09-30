@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * This is a skeleton of cia.resource implementation.
  *
  * Note that it uses custom initcode because cia.resource does not

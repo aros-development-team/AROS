@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 #include <graphics/driver.h>
 #include <hidd/compositor.h>

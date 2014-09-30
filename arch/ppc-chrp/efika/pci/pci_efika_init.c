@@ -1,9 +1,7 @@
 /*
- * pci_efika_init.c
- *
- *  Created on: Oct 14, 2008
- *      Author: misc
- */
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <aros/symbolsets.h>
 

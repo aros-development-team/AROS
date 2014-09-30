@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * This file is intended to make generic kernel.resource compiling.
  * This code should NEVER be executed. This file MUST be overriden in
  * architecture-specific code for the scheduler to work!

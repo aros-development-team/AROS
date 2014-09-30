@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * Define struct stat64 on Linux.
  * Define this before anything, since AROS includes
  * may include POSIX includes (for example aros/debug.h

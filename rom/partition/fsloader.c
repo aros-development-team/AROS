@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * This hook is called after dos.library wakes up.
  * Its job is to load all queued filesystems and add to the system.
  */

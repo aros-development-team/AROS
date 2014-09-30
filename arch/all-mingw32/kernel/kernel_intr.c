@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * Architecture-specific interrupt processing. We reimplement
  * core_ExitInterrupt() because of non-typical idle loop implementation,
  * hence the file name.

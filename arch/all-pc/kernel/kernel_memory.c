@@ -1,7 +1,12 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * Functions for dealing with Multiboot memory map.
- * This file override basic MemHeader creation functions in rom/kernel,
- * because if you have memory map you don't need them.
+ * This file overrides basic MemHeader creation functions in rom/kernel,
+ * because if you have a memory map you don't need them.
  * This code builds a fully-functional set of MemHeaders and MemChunks
  * based on memory map contents and physical breakout described in the array
  * of MemRegion structures.

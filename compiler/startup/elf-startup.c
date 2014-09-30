@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * This file is used as startup code by ELF wrapper.
  * It's purpose is only to define _start symbol which is
  * the default entry point. This is needed in order to make

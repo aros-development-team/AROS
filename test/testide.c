@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <exec/io.h>
 #include <exec/memory.h>
@@ -49,7 +54,7 @@ int main ( int argc, char *argv[] )
     {
 	printf("Usage: testide <startblock>\n\n");
 	printf("Be warned, this tool WILL irrevocably destroy data on\n");
-	printf("data on the primary master IDE harddisk. Do not run this\n");
+	printf("the primary master IDE hard disk. Do not run this\n");
 	printf("on a computer holding any important data whatsoever.\n");
 	return 0;
     }

@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * We use printf() here instead of C++ traditional cout because linking in cout
  * increases executable size up to 3 megabytes (!!!), making it difficult to
  * disassemble it. Anyway our aim is to test exceptions.

@@ -1,9 +1,7 @@
 /*
- * of1275.c
- *
- *  Created on: Aug 13, 2008
- *      Author: misc
- */
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <inttypes.h>
 #include <of1275.h>

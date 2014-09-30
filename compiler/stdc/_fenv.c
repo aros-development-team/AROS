@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* The functions of fenv.h may be static inline functions which may not be
  * available for the shared library. Which of the functions may depend
  * on cpu arch.

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 // test for AddPart(). Test cases are from Guru Book.
 
 #include <proto/dos.h>

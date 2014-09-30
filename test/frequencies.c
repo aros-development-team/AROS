@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <devices/timer.h>
 #include <exec/execbase.h>
 #include <dos/dos.h>

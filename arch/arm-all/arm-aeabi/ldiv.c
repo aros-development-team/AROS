@@ -1,10 +1,7 @@
 /*
- * ldiv.c
- *
- *  Created on: Aug 12, 2009
- *      Author: misc
- */
-
+    Copyright © 2009-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <inttypes.h>
 

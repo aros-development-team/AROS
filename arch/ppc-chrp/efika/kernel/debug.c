@@ -1,9 +1,7 @@
 /*
- * debug.c
- *
- *  Created on: Aug 25, 2008
- *      Author: misc
- */
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define PCIC0_IO 0
 

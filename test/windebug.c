@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * This little utility is specific for Windows-hosted port. It allows you to enter
  * SAD even on completely frozen system.
  * It is written specifically to facilitate finding long-standing lockup bug.

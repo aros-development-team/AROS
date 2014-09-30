@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 // Opens a PubScreen. The name can be given as argument.
 // Default name is "MYPUBSCREEN".
 

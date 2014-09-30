@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * This code probes Amiga hardware timings, and
  * configures SysBase with those settings.
  */

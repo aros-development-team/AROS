@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* Very basic bootstrap for Poseidon in AROS kernel for enabling of USB booting and HID devices.
  * PsdStackloader should be started during startup-sequence nonetheless */
 

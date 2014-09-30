@@ -1,9 +1,7 @@
 /*
- * syscall.c
- *
- *  Created on: Aug 28, 2008
- *      Author: misc
- */
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <asm/mpc5200b.h>
 #include <aros/kernel.h>

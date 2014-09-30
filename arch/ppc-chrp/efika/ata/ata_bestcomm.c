@@ -1,9 +1,7 @@
 /*
- * ata_bestcomm.c
- *
- *  Created on: Feb 23, 2009
- *      Author: misc
- */
+    Copyright © 2009-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 

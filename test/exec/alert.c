@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* The main purpose is to test alert address detection and stack trace */
 
 #include <aros/asmcall.h>

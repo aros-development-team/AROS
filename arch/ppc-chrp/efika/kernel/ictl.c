@@ -1,9 +1,7 @@
 /*
- * pic.c
- *
- *  Created on: Sep 4, 2008
- *      Author: misc
- */
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 
