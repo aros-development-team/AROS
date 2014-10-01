@@ -43,11 +43,10 @@ extern void *__eng_functable[];
        |  (((x) & 0x000000FF) << 24);\
 }
 
-/* fileBuf is OUT variable of size PATH_MAX */
-
-static struct Library * OpenOnDiskLanguage(STRPTR lName, STRPTR fileBuf)
+static struct Library * OpenOnDiskLanguage(STRPTR lName)
 {
     struct Library * lang = NULL;
+    TEXT fileBuf[PATH_MAX];
 
     snprintf(fileBuf, PATH_MAX, "%s.language", lName);
     fileBuf[PATH_MAX - 1] = 0;
@@ -114,7 +113,6 @@ static struct Library * OpenOnDiskLanguage(STRPTR lName, STRPTR fileBuf)
 static void BuildPreferredLanguages(struct IntLocale * locale)
 {
     LONG i = 0;
-    TEXT fileBuf[PATH_MAX];
     struct Library * lang = NULL;
 
     while(i < 10)
@@ -123,7 +121,7 @@ static void BuildPreferredLanguages(struct IntLocale * locale)
 
         if (lName && lName[0] != '\0')
         {
-            lang = OpenOnDiskLanguage(lName, fileBuf);
+            lang = OpenOnDiskLanguage(lName);
 
             if (lang)
             {
@@ -150,15 +148,10 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 {
     struct Library *lang = NULL;
     ULONG mask = 0;
-    STRPTR fileBuf;
     LONG i = 0;
 
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Locale 0x%lx\n", il));
-
-    fileBuf = AllocMem(PATH_MAX, MEMF_ANY);
-    if (!fileBuf)
-        return;
 
     while (lang == NULL && i < 10)
     {
@@ -180,7 +173,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
             if (ret != 0)
             {
-                lang = OpenOnDiskLanguage(il->LanguagesOnDiskNames[i], fileBuf);
+                lang = OpenOnDiskLanguage(il->LanguagesOnDiskNames[i]);
 
                 if (lang)
                 {
@@ -254,8 +247,6 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: DosCatalog 0x%lx\n",
             il->il_DosCatalog));
-
-    FreeMem(fileBuf, PATH_MAX);
 }
 
 /* InitLocale(IntLocale *, LocalePrefs *)
