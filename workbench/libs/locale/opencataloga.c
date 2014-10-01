@@ -530,9 +530,12 @@ static STRPTR Preferred2OnDisk(struct IntLocale * locale, STRPTR language)
 {
     LONG i = 0;
     while (i < 10)
+    {
         if (locale->il_Locale.loc_PrefLanguages[i] &&
             strcmp(locale->il_Locale.loc_PrefLanguages[i], language) == 0)
             return locale->LanguagesOnDiskNames[i];
+        i++;
+    }
 
     return NULL;
 }
