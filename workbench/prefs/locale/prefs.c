@@ -253,6 +253,7 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
                 {
                     D(bug("[LocalePrefs] ScanDir: Checking for native Language name\n"));
                     GetAROSLanguageAttribs(&ap, &entry->node.ln_Name);
+                    entry->node.ln_Name[0] = ToUpper(entry->node.ln_Name[0]);
                 }
 
                 sp = entry->node.ln_Name;
