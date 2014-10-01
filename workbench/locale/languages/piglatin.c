@@ -27,10 +27,10 @@
 #include <aros/debug.h>
 
 #define LANGSTR     "piglatin"          /* String version of above      */
-#define NLANGSTR    "Pig-Latin"         /* Native version of LANGSTR    */
+#define NLANGSTR    "pig-latin"         /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
-#define LANGREV     2                   /* Revision number of language  */
-#define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (14.04.2013)"
+#define LANGREV     3                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.3 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,

@@ -59,7 +59,7 @@
 */
 
 #define LANGSTR     "english"           /* String version of above      */
-#define NLANGSTR    "English"           /* Native version of LANGSTR    */
+#define NLANGSTR    "english"           /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     2                   /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (14.04.2013)"

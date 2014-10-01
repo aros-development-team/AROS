@@ -19,10 +19,10 @@
 #include <aros/debug.h>
 
 #define LANGSTR     "czech"             /* String version of above      */
-#define NLANGSTR    "èeský"             /* Native version of LANGSTR    */
+#define NLANGSTR    "czech"             /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
-#define LANGREV     3                   /* Revision number of language  */
-#define LANGTAG     "\0$VER: " LANGSTR ".language 41.3 (15.04.2013)"
+#define LANGREV     4                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.4 (30.09.2014)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
