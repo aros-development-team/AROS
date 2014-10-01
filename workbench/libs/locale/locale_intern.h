@@ -75,6 +75,7 @@ struct IntLocale
     UBYTE                               LanguageName[30];
     
     UBYTE                               PreferredLanguages[10][30];
+    UBYTE                               LanguagesOnDiskNames[10][30];
 
     /*
     ** Don't change the order of the following field,
