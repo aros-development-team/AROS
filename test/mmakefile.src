@@ -77,7 +77,8 @@ COMMONTESTFILES := \
     taskstorage \
     mountlist \
     smult \
-    crashtest
+    crashtest \
+    openlocale
 
 SHTESTFILES=\
     pcilist \
@@ -93,7 +94,7 @@ USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 #MM- test : test-common test-sh test-clib test-kernel test-exec test-intuition \
-#MM  test-layers test-zune workbench-libs-version test-$(AROS_TARGET_ARCH) test-testscript
+#MM  test-layers test-zune workbench-libs-version test-$(AROS_TARGET_ARCH) test-miscfiles
 
 #MM  test-common : includes workbench-libs-version linklibs
 #MM  test-sh : includes linklibs
@@ -109,6 +110,6 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 %build_progs mmake=test-hosted \
     files=$(HOSTEDTESTFILES) targetdir=$(EXEDIR)
 
-%copy_files_q mmake=test-testscript files="testscript" dst=$(EXEDIR)
+%copy_files_q mmake=test-miscfiles files="testscript openlocale.prefs" dst=$(EXEDIR)
 
 %common
