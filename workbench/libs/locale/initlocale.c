@@ -111,6 +111,26 @@ static struct Library * OpenOnDiskLanguage(STRPTR lName, STRPTR fileBuf)
     return lang;
 }
 
+static STRPTR strsearch(STRPTR str, STRPTR search, LONG len)
+{
+    LONG a, b;
+    LONG blen = strlen(search);
+
+    b = 0;
+    for (a = 0; a < len; a++)
+    {
+        if (str[a] == search[b])
+        {
+            b++;
+            if (b == blen)
+                return str + a - b + 1;
+        }
+        else
+            b = 0;
+    }
+    return NULL;
+}
+
 static void BuildPreferredLanguages(struct IntLocale * locale)
 {
     LONG i = 0;
@@ -121,14 +141,41 @@ static void BuildPreferredLanguages(struct IntLocale * locale)
     {
         STRPTR lName = locale->LanguagesOnDiskNames[i];
 
-        if (lName)
+        if (lName && lName[0] != '\0')
         {
             lang = OpenOnDiskLanguage(lName, fileBuf);
 
             if (lang)
             {
-                strcpy(locale->PreferredLanguages[i], locale->LanguagesOnDiskNames[i]);
+                BPTR fh = BNULL;
+                TEXT nlang[30];
+
                 CloseLibrary(lang);
+
+                strncpy(nlang, locale->LanguagesOnDiskNames[i], 30);
+
+                if ((fh = Open(fileBuf, MODE_OLDFILE)) != BNULL)
+                {
+                    STRPTR buffer = NULL, ptr = NULL;
+                    LONG size = 0;
+
+                    struct FileInfoBlock * fib = AllocDosObject(DOS_FIB, NULL);
+                    ExamineFH(fh, fib);
+                    size = fib->fib_Size;
+                    FreeDosObject(DOS_FIB, fib);
+
+                    buffer = AllocMem(size, MEMF_ANY);
+                    Read(fh, buffer, size);
+                    Close(fh);
+                    ptr = strsearch(buffer, "$NLANG:", size);
+                    if (ptr)
+                        strncpy(nlang, (ptr + 7), 30);
+                    FreeMem(buffer, size);
+                }
+
+
+                strncpy(locale->PreferredLanguages[i], nlang, 30);
+
             }
         }
         i++;
@@ -174,7 +221,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
             if (ret != 0)
             {
-                lang = OpenOnDiskLanguage(lName, fileBuf);
+                lang = OpenOnDiskLanguage(il->LanguagesOnDiskNames[i], fileBuf);
 
                 if (lang)
                 {
