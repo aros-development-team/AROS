@@ -225,7 +225,8 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
                 if (lang)
                 {
-                    strncpy(il->LanguageName, FilePart(fileBuf), 30);
+                    /* Native name is expected in loc_LanguageName */
+                    sprintf(il->LanguageName, "%s.language", lName);
                 }
 
                 /* If it is still no good, then we have no hope */
