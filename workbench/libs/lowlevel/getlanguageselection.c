@@ -15,30 +15,24 @@
 
 #include "lowlevel_intern.h"
 
-/*
- * Put those in the same order as the LANG_* defines in libraries/lowlevel.h
- */
-static char * langlist[] =
+struct
 {
-	"American",
-	"English",
-	"German",
-	"French",
-	"Spanish",
-	"Italian",
-	"Portuguese",
-	"Danish",
-	"Dutch",
-	"Norwegian",
-	"Finnish",
-	"Swedish",
-	"Japanese",
-	"Chinese",
-	"Arabic",
-	"Greek",
-	"Hebrew",
-	"Korean",
-	NULL
+    char    * langstring;
+    ULONG   lang;
+} langlist [] =
+{
+    { "english.language"    , LANG_ENGLISH      },
+    { "deutsch.language"    , LANG_GERMAN       },
+    { "français.language"   , LANG_FRENCH       },
+    { "español.language"    , LANG_SPANISH      },
+    { "italiano.language"   , LANG_ITALIAN      },
+    { "português.language"  , LANG_PORTUGUESE   },
+    { "dansk.language"      , LANG_DANISH       },
+    { "nederlands.language" , LANG_DUTCH        },
+    { "norsk.language"      , LANG_NORWEGIAN    },
+    { "suomi.language"      , LANG_FINNISH      },
+    { "svenska.language"    , LANG_SWEDISH      },
+    { "greek.language"      , LANG_GREEK        }
 };
 
 /*****************************************************************************
@@ -85,13 +79,13 @@ static char * langlist[] =
     return LANG_UNKNOWN;
   }
   
-  while (NULL != langlist[index])
+  while (NULL != langlist[index].langstring)
   {
-    if (0 == strcmp(locale->loc_LanguageName,(char *)langlist[index]))
+    if (0 == strcmp(locale->loc_LanguageName, langlist[index].langstring))
     {
       CloseLocale(locale);
       CloseLibrary(LocaleBase);
-      return index+1;
+      return langlist[index].lang;
     }
     index++;
   }
