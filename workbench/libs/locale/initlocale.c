@@ -43,6 +43,97 @@ extern void *__eng_functable[];
        |  (((x) & 0x000000FF) << 24);\
 }
 
+/* fileBuf is OUT variable of size PATH_MAX */
+
+static struct Library * OpenOnDiskLanguage(STRPTR lName, STRPTR fileBuf)
+{
+    struct Library * lang = NULL;
+
+    snprintf(fileBuf, PATH_MAX, "%s.language", lName);
+    fileBuf[PATH_MAX - 1] = 0;
+
+    /* Try and open the specified language */
+    lang = OpenLibrary(fileBuf, 0);
+
+#ifdef __MORPHOS
+    if (lang == NULL)
+    {
+        /*
+           Ok, so the language didn't open, lets try for
+           MOSSYS:LOCALE/Languages/xxx.language
+         */
+
+        snprintf(fileBuf, PATH_MAX,
+            "MOSSYS:LOCALE/Languages/%s.language", lName);
+        fileBuf[PATH_MAX - 1] = 0;
+
+        {
+            APTR oldwinptr;
+            struct Process *me =
+                (struct Process *)FindTask(NULL);
+            oldwinptr = me->pr_WindowPtr;
+            me->pr_WindowPtr = (APTR) - 1;
+            lang = OpenLibrary(fileBuf, 0);
+            me->pr_WindowPtr = oldwinptr;
+        }
+    }
+#endif
+
+    if (lang == NULL)
+    {
+        /*
+           Ok, so the language didn't open, lets try for
+           LOCALE:Languages/xxx.language
+         */
+
+        snprintf(fileBuf, PATH_MAX,
+            "LOCALE:Languages/%s.language", lName);
+        fileBuf[PATH_MAX - 1] = 0;
+
+        lang = OpenLibrary(fileBuf, 0);
+    }
+
+    if ((lang == NULL)
+        && ((((struct Process *)FindTask(NULL))->pr_HomeDir) !=
+            BNULL))
+    {
+        /*
+           Ok, so we are still NULL, lets then try for
+           PROGDIR:Languages/xxx.language
+         */
+        snprintf(fileBuf, PATH_MAX,
+            "PROGDIR:Languages/%s.language", lName);
+        fileBuf[PATH_MAX - 1] = 0;
+
+        lang = OpenLibrary(fileBuf, 0);
+    }
+
+    return lang;
+}
+
+static void BuildPreferredLanguages(struct IntLocale * locale)
+{
+    LONG i = 0;
+    TEXT fileBuf[PATH_MAX];
+    struct Library * lang = NULL;
+
+    while(i < 10)
+    {
+        STRPTR lName = locale->LanguagesOnDiskNames[i];
+
+        if (lName)
+        {
+            lang = OpenOnDiskLanguage(lName, fileBuf);
+
+            if (lang)
+            {
+                strcpy(locale->PreferredLanguages[i], locale->LanguagesOnDiskNames[i]);
+                CloseLibrary(lang);
+            }
+        }
+        i++;
+    }
+}
 /*
    void SetLocaleLanguage(struct IntLocale *, struct LocaleBase *)
 
@@ -54,7 +145,8 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     struct Library *lang = NULL;
     ULONG mask = 0;
     STRPTR fileBuf;
-    int i = 0;
+    LONG i = 0;
+
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Locale 0x%lx\n", il));
 
@@ -82,64 +174,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
             if (ret != 0)
             {
-                snprintf(fileBuf, PATH_MAX, "%s.language", lName);
-                fileBuf[PATH_MAX - 1] = 0;
-
-                /* Try and open the specified language */
-                lang = OpenLibrary(fileBuf, 0);
-
-#ifdef __MORPHOS
-                if (lang == NULL)
-                {
-                    /*
-                       Ok, so the language didn't open, lets try for
-                       MOSSYS:LOCALE/Languages/xxx.language
-                     */
-
-                    snprintf(fileBuf, PATH_MAX,
-                        "MOSSYS:LOCALE/Languages/%s.language", lName);
-                    fileBuf[PATH_MAX - 1] = 0;
-
-                    {
-                        APTR oldwinptr;
-                        struct Process *me =
-                            (struct Process *)FindTask(NULL);
-                        oldwinptr = me->pr_WindowPtr;
-                        me->pr_WindowPtr = (APTR) - 1;
-                        lang = OpenLibrary(fileBuf, 0);
-                        me->pr_WindowPtr = oldwinptr;
-                    }
-                }
-#endif
-
-                if (lang == NULL)
-                {
-                    /*
-                       Ok, so the language didn't open, lets try for
-                       LOCALE:Languages/xxx.language
-                     */
-
-                    snprintf(fileBuf, PATH_MAX,
-                        "LOCALE:Languages/%s.language", lName);
-                    fileBuf[PATH_MAX - 1] = 0;
-
-                    lang = OpenLibrary(fileBuf, 0);
-                }
-
-                if ((lang == NULL)
-                    && ((((struct Process *)FindTask(NULL))->pr_HomeDir) !=
-                        BNULL))
-                {
-                    /*
-                       Ok, so we are still NULL, lets then try for
-                       PROGDIR:Languages/xxx.language
-                     */
-                    snprintf(fileBuf, PATH_MAX,
-                        "PROGDIR:Languages/%s.language", lName);
-                    fileBuf[PATH_MAX - 1] = 0;
-
-                    lang = OpenLibrary(fileBuf, 0);
-                }
+                lang = OpenOnDiskLanguage(lName, fileBuf);
 
                 if (lang)
                 {
@@ -244,12 +279,12 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
     strncpy(locale->LocaleName, FilePart(filename), 30);
     locale->il_Locale.loc_LocaleName = &locale->LocaleName[0];
 
-    /*
-       We can copy 300 bytes straight away since
-       the prefered languages are all in a row.
-     */
+    /* Configuration contains on-disk language names */
     CopyMem(lp->lp_PreferredLanguages[0],
-        locale->PreferredLanguages[0], 300);
+        locale->LanguagesOnDiskNames[0], 300);
+
+    /* Build PreferredLanguages array containing native names */
+    BuildPreferredLanguages(locale);
 
     for (i = 0, i2 = 0; i < 10; i++)
     {
