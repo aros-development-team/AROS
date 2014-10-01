@@ -111,26 +111,6 @@ static struct Library * OpenOnDiskLanguage(STRPTR lName, STRPTR fileBuf)
     return lang;
 }
 
-static STRPTR strsearch(STRPTR str, STRPTR search, LONG len)
-{
-    LONG a, b;
-    LONG blen = strlen(search);
-
-    b = 0;
-    for (a = 0; a < len; a++)
-    {
-        if (str[a] == search[b])
-        {
-            b++;
-            if (b == blen)
-                return str + a - b + 1;
-        }
-        else
-            b = 0;
-    }
-    return NULL;
-}
-
 static void BuildPreferredLanguages(struct IntLocale * locale)
 {
     LONG i = 0;
@@ -147,35 +127,14 @@ static void BuildPreferredLanguages(struct IntLocale * locale)
 
             if (lang)
             {
-                BPTR fh = BNULL;
-                TEXT nlang[30];
+                CONST_STRPTR nlang = NULL;
 
-                CloseLibrary(lang);
-
-                strncpy(nlang, locale->LanguagesOnDiskNames[i], 30);
-
-                if ((fh = Open(fileBuf, MODE_OLDFILE)) != BNULL)
-                {
-                    STRPTR buffer = NULL, ptr = NULL;
-                    LONG size = 0;
-
-                    struct FileInfoBlock * fib = AllocDosObject(DOS_FIB, NULL);
-                    ExamineFH(fh, fib);
-                    size = fib->fib_Size;
-                    FreeDosObject(DOS_FIB, fib);
-
-                    buffer = AllocMem(size, MEMF_ANY);
-                    Read(fh, buffer, size);
-                    Close(fh);
-                    ptr = strsearch(buffer, "$NLANG:", size);
-                    if (ptr)
-                        strncpy(nlang, (ptr + 7), 30);
-                    FreeMem(buffer, size);
-                }
-
+                nlang = AROS_CALL1(CONST_STRPTR, __AROS_GETVECADDR(lang, (3 + 6)),
+                            AROS_LCA(ULONG, LANG_NAME, D0), struct LocaleBase *, LocaleBase);
 
                 strncpy(locale->PreferredLanguages[i], nlang, 30);
 
+                CloseLibrary(lang);
             }
         }
         i++;

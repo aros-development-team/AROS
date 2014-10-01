@@ -715,7 +715,10 @@ const STRPTR __eng_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Yesterday", "Today", "Tomorrow", "Future"
+    "Yesterday", "Today", "Tomorrow", "Future",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* Array for the IsXXXXX() functions*/

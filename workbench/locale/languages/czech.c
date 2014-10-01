@@ -312,7 +312,10 @@ const STRPTR __czech_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "vèera", "dnes", "zítra", "budoucnost"
+    "vèera", "dnes", "zítra", "budoucnost",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

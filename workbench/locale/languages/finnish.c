@@ -315,7 +315,10 @@ const STRPTR __suomi_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Eilen", "T‰n‰‰n", "Huomenna", "Tulevaisuudessa"
+    "Eilen", "T‰n‰‰n", "Huomenna", "Tulevaisuudessa",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

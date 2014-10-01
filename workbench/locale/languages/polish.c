@@ -313,7 +313,10 @@ const STRPTR __polish_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Wczoraj", "Dzi¶", "Jutro", "Przysz³o¶æ"
+    "Wczoraj", "Dzi¶", "Jutro", "Przysz³o¶æ",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

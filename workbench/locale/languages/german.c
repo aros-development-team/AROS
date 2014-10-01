@@ -311,7 +311,10 @@ const STRPTR __german_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Gestern", "Heute", "Morgen", "Zukunft"
+    "Gestern", "Heute", "Morgen", "Zukunft",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

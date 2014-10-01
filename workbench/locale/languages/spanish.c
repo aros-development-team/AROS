@@ -311,7 +311,10 @@ const STRPTR __spanish_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ayer", "Hoy", "Mañana", "Futuro"
+    "Ayer", "Hoy", "Mañana", "Futuro",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

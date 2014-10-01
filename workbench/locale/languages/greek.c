@@ -309,7 +309,10 @@ const STRPTR __greek_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Χθες", "Σήμερα", "Αύριο", "Μελλοντικά"
+    "Χθες", "Σήμερα", "Αύριο", "Μελλοντικά",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

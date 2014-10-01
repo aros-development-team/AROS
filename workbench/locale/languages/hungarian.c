@@ -311,7 +311,10 @@ const STRPTR __magyar_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Tegnap", "Ma", "Holnap", "Jövô"
+    "Tegnap", "Ma", "Holnap", "Jövô",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

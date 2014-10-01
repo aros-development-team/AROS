@@ -313,7 +313,10 @@ const STRPTR __shqipja_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Dje", "Sot", "Nesër", "Ardhmen"
+    "Dje", "Sot", "Nesër", "Ardhmen",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */
