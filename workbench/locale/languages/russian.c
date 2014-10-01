@@ -310,7 +310,10 @@ const STRPTR __russian_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Вчера", "Сегодня", "Завтра", "Будущее"
+    "Вчера", "Сегодня", "Завтра", "Будущее",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

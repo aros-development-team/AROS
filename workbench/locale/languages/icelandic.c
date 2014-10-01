@@ -313,7 +313,10 @@ const STRPTR __islenska_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Í gær", "Í dag", "Á morgun", "Framtíð"
+    "Í gær", "Í dag", "Á morgun", "Framtíð",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

@@ -314,7 +314,10 @@ const STRPTR __thai_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "เมื่อวานนี้", "วันนี้", "วันพรุ่งนี้", "อนาคต"
+    "เมื่อวานนี้", "วันนี้", "วันพรุ่งนี้", "อนาคต",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

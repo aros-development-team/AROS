@@ -315,7 +315,10 @@ const STRPTR __catalan_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ahir", "Avui", "Demà", "Futur"
+    "Ahir", "Avui", "Demà", "Futur",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

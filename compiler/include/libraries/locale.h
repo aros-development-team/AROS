@@ -196,7 +196,9 @@ struct Locale
 #define TOMORROWSTR  49
 #define FUTURESTR    50
 
-#define MAXSTRMSG 51
+#define LANG_NAME   51  /* V50 */
+
+#define MAXSTRMSG 52
 
 struct Catalog
 {

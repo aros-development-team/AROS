@@ -309,7 +309,10 @@ const STRPTR __croatian_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Juèer", "Danas", "Sutra", "Buduænost"
+    "Juèer", "Danas", "Sutra", "Buduænost",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

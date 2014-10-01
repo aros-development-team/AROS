@@ -311,7 +311,10 @@ const STRPTR __dansk_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "i går", "i dag", "i morgen", "fremtid"
+    "i går", "i dag", "i morgen", "fremtid",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

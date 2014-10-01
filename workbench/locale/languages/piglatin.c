@@ -317,7 +317,10 @@ const STRPTR __pig_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Esterdayyay", "Odaytay", "Omorrowtay", "Uturefay"
+    "Esterdayyay", "Odaytay", "Omorrowtay", "Uturefay",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

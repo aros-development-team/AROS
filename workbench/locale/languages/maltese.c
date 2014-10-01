@@ -311,7 +311,10 @@ const STRPTR __malti_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ilbiera±", "Illum", "G±ada", "Fil-futur"
+    "Ilbiera±", "Illum", "G±ada", "Fil-futur",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

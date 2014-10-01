@@ -308,7 +308,10 @@ const STRPTR __dutch_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Gisteren", "Vandaag", "Morgen", "Toekomst"
+    "Gisteren", "Vandaag", "Morgen", "Toekomst",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

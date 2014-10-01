@@ -311,7 +311,10 @@ const STRPTR __esperanto_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Hieraý", "Hodiaý", "Morgaý", "Estonto"
+    "Hieraý", "Hodiaý", "Morgaý", "Estonto",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */

@@ -314,7 +314,10 @@ const STRPTR __turkce_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Dün", "Bugün", "Yarýn", "Gelecek"
+    "Dün", "Bugün", "Yarýn", "Gelecek",
+
+    /* Native language name */
+    NLANGSTR
 };
 
 /* This is the end of ROMtag marker. */
