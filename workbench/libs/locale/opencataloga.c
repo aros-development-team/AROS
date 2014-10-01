@@ -25,6 +25,8 @@ struct header
     unsigned char len[4];
 };
 
+static IPTR _OpenCatalog(CONST_STRPTR name, STRPTR language);
+
 /*****************************************************************************
 
     NAME */
@@ -65,10 +67,7 @@ struct header
     char *language;
     char *app_language;         /* Language given with tag OC_BuiltInLanguage */
     char *specific_language;    /* Language given with tag OC_Language */
-    struct Process *MyProcess;
-#define FILENAMESIZE 256
 
-    char filename[FILENAMESIZE];
     char buf[100];
     LONG chars;
     ULONG version;
@@ -92,8 +91,6 @@ struct header
         def_locale = (struct Locale *)locale;
         DEBUG_OPENCATALOG(dprintf("OpenCatalogA: default locale @ 0x%lx\n", def_locale));
     }
-
-    MyProcess = (struct Process *)FindTask(NULL);
 
     if ((specific_language = (char *)GetTagData(OC_Language, (IPTR) 0, tags)))
     {
@@ -211,65 +208,7 @@ struct header
                 return NULL;
             }
 
-            if ((MyProcess->pr_HomeDir) != BNULL)
-            {
-                DEBUG_OPENCATALOG(dprintf
-                    ("OpenCatalogA: HomeDir != BNULL..try progdir\n"));
-                strcpy(filename, "PROGDIR:Catalogs");
-                DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
-                        filename));
-                AddPart(filename, language, FILENAMESIZE);
-                DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
-                        filename));
-                AddPart(filename, name, FILENAMESIZE);
-
-                DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
-                        filename));
-                iff->iff_Stream = (IPTR) Open(filename, MODE_OLDFILE);
-                DEBUG_OPENCATALOG(dprintf("OpenCatalogA: iffstream 0x%lx\n",
-                        iff->iff_Stream));
-            }
-            if (iff->iff_Stream)
-                break;
-
-#ifdef __MORPHOS__
-            strcpy(filename, "MOSSYS:LOCALE/Catalogs");
-
-            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
-                    filename));
-            AddPart(filename, language, FILENAMESIZE);
-            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
-                    filename));
-            AddPart(filename, name, FILENAMESIZE);
-
-            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: try filename <%s>\n",
-                    filename));
-
-            {
-                APTR oldwinptr = MyProcess->pr_WindowPtr;
-                MyProcess->pr_WindowPtr = (APTR) - 1;
-                iff->iff_Stream = (IPTR) Open(filename, MODE_OLDFILE);
-                MyProcess->pr_WindowPtr = oldwinptr;
-            }
-
-            if (iff->iff_Stream)
-                break;
-#endif
-            strcpy(filename, "LOCALE:Catalogs");
-
-            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
-                    filename));
-            AddPart(filename, language, FILENAMESIZE);
-            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
-                    filename));
-            AddPart(filename, name, FILENAMESIZE);
-
-            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: try filename <%s>\n",
-                    filename));
-
-            iff->iff_Stream = (IPTR) Open(filename, MODE_OLDFILE);
-            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: iffstream 0x%lx\n",
-                    iff->iff_Stream));
+            iff->iff_Stream = _OpenCatalog(name, language);
 
             if (iff->iff_Stream)
                 break;
@@ -288,8 +227,6 @@ struct header
             CloseLocale(def_locale);
             def_locale = NULL;
         }
-
-#undef FILENAMESIZE
 
         if (iff->iff_Stream == 0)
         {
@@ -587,4 +524,67 @@ struct header
     return NULL;
 
     AROS_LIBFUNC_EXIT
+}
+
+static IPTR _OpenFile(STRPTR root, CONST_STRPTR name, STRPTR language)
+{
+#define FILENAMESIZE 256
+    char filename[FILENAMESIZE];
+    IPTR iff_Stream = (IPTR)NULL;
+
+    strcpy(filename, root);
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
+            filename));
+    AddPart(filename, language, FILENAMESIZE);
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
+            filename));
+    AddPart(filename, name, FILENAMESIZE);
+
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",
+            filename));
+    iff_Stream = (IPTR) Open(filename, MODE_OLDFILE);
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: iffstream 0x%lx\n",
+            iff_Stream));
+
+    return iff_Stream;
+
+#undef FILENAMESIZE
+}
+
+static IPTR _OpenCatalog(CONST_STRPTR name, STRPTR language)
+{
+    struct Process * MyProcess = (struct Process *)FindTask(NULL);
+
+    IPTR iff_Stream = (IPTR)NULL;
+
+    if ((MyProcess->pr_HomeDir) != BNULL)
+    {
+        DEBUG_OPENCATALOG(dprintf
+            ("OpenCatalogA: HomeDir != BNULL..try progdir\n"));
+        iff_Stream = _OpenFile("PROGDIR:Catalogs", name, language);
+    }
+
+    if (iff_Stream)
+        return iff_Stream;
+
+#ifdef __MORPHOS__
+
+    {
+        APTR oldwinptr = MyProcess->pr_WindowPtr;
+        MyProcess->pr_WindowPtr = (APTR) - 1;
+        iff_Stream = _OpenFile("MOSSYS:LOCALE/Catalogs", name, language);
+        MyProcess->pr_WindowPtr = oldwinptr;
+    }
+
+    if (iff_Stream)
+        return iff_Stream;
+#endif
+
+    iff_Stream = _OpenFile("LOCALE:Catalogs", name, language);
+
+    if (iff_Stream)
+        return iff_Stream;
+
+    return (IPTR)NULL;
+
 }
