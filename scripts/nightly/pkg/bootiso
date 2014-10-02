@@ -24,6 +24,7 @@ copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 cd      $BUILD_BASE/AROS
 execute ./configure --target=$TARGET --enable-target-variant=$VARIANT --enable-ccache --with-bootloader=$BOOTLOADER --enable-build-type=nightly
 make    -j $MAKE_JOBS
+make    -j $MAKE_JOBS contrib
 
 ISOFILE=aros-$BUILDTARGET.iso
 PACKAGE=$BASENAME-$BUILDTARGET-boot-iso
