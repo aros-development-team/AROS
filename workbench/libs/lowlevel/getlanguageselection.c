@@ -15,7 +15,7 @@
 
 #include "lowlevel_intern.h"
 
-struct
+static struct
 {
     char    * langstring;
     ULONG   lang;
