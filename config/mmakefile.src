@@ -14,7 +14,7 @@ machine : $(SRCDIR)/$(CURDIR)/machine.c
 #MM- kernel : kernel-link-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) kernel-link-$(ARCH)-$(CPU) kernel-link-$(FAMILY)
 #MM- kernel-$(ARCH)-$(CPU) : linklibs
 
-#MM- AROS : boot workbench demos external contrib
+#MM- AROS : boot workbench demos external
 #MM- workbench : workbench-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) workbench-$(ARCH)-$(CPU) workbench-$(FAMILY)
 #MM- demos : includes linklibs
 #MM- contrib : includes linklibs
