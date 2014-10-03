@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2013, The AROS Development Team. All rights reserved.
+    Copyright  2003-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,6 +35,7 @@ static struct Hook display_hook;
 /*** Instance Data **********************************************************/
 struct IPEditor_DATA
 {
+    Object *iped_KeyTypesView;
     Object *iped_KeyTypes;
     Object *iped_DefKey;
     Object *iped_AltKey;
@@ -133,6 +134,7 @@ AROS_UFH3(static void, switchEnableFunction,
 /*** Methods ****************************************************************/
 Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+    Object *keyTypesView;
     Object *keyTypes;
     Object *defKey;
     Object *altKey;
@@ -173,7 +175,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR)VGroup,
                         GroupFrameT(__(MSG_GAD_KEY_TYPE)),
                         MUIA_Weight, 50,
-                        Child, (IPTR)ListviewObject,
+                        Child, (IPTR)(keyTypesView = ListviewObject,
                             MUIA_Listview_List, (IPTR)(keyTypes = (Object *)ListObject,
                                 InputListFrame,
                                 MUIA_List_AutoVisible, TRUE,
@@ -181,7 +183,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_List_Format, (IPTR)"P=\033c,",
                                 MUIA_List_DisplayHook, (IPTR)&display_hook,
                             End),
-                        End,
+                        End),
                         Child, (IPTR)ColGroup(3),
                             Child, (IPTR)Label1(__(MSG_GAD_KEY_DEF)),
                             Child, (IPTR)(defKey = KeymapObject,
@@ -298,6 +300,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         data->iped_RepeatRate = RepeatRate;
         data->iped_RepeatDelay = RepeatDelay;
+        data->iped_KeyTypesView = keyTypesView;
         data->iped_KeyTypes = keyTypes;
         data->iped_DefKey = defKey;
         data->iped_AltKey = altKey;
@@ -363,6 +366,10 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod(setDefKey, MUIM_Notify, MUIA_Pressed, FALSE,
                  self, 3, MUIM_CallHook, &data->iped_setHook, defKey);
+
+        DoMethod(keyTypesView, MUIM_Notify, MUIA_Listview_DoubleClick,
+            MUIV_EveryTime, self, 3, MUIM_CallHook, &data->iped_setHook,
+            defKey);
 
         DoMethod(setAltKey, MUIM_Notify, MUIA_Pressed, FALSE,
             	 self, 3, MUIM_CallHook, &data->iped_setHook, altKey);

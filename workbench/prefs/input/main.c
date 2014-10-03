@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2013, The AROS Development Team. All rights reserved.
+    Copyright  2003-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,7 +23,7 @@
 
 #include <aros/debug.h>
 
-#define VERSION "$VER: Input 0.5 ("ADATE") AROS Dev Team"
+#define VERSION "$VER: Input 0.6 ("ADATE") AROS Dev Team"
 
 /*********************************************************************************************/
 
