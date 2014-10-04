@@ -9,7 +9,7 @@
 	#include "aros/m68k/asm.h"
 	#include "cache.h"
 
-	.chip 68040
+	.chip 68060
 
 	.text
 
