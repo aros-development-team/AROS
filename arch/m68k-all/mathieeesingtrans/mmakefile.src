@@ -5,7 +5,7 @@ FILES := mathieeesingtrans_init
 AFILES := fpu
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/libs/mathieeesingtrans
-USER_AFLAGS := -I$(GENINCDIR)
+USER_AFLAGS := -I$(GENINCDIR) -march=68040
 
 %build_archspecific \
   mainmmake=workbench-libs-mathieeesingtrans maindir=workbench/libs/mathieeesingtrans arch=m68k \

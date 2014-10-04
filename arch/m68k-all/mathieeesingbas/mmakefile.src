@@ -5,7 +5,7 @@ FILES := mathieeesingbas_init
 AFILES := fpu
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/libs/mathieeesingbas
-USER_AFLAGS := -I$(GENINCDIR)
+USER_AFLAGS := -I$(GENINCDIR) -march=68040
 
 %build_archspecific \
   mainmmake=workbench-libs-mathieeesingbas maindir=workbench/libs/mathieeesingbas arch=m68k \
