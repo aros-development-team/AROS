@@ -236,7 +236,7 @@ short SendARexxMsg(AREXXCONTEXT RexxContext,char *RString,
 		{
 			rmsg->rm_Action=RXCOMM | (StringFile ?
 							(1L << RXFB_STRING):0);
-			if (rmsg->rm_Args[0]=CreateArgstring(RString,
+			if (rmsg->rm_Args[0]=(IPTR)CreateArgstring(RString,
 							(LONG)strlen(RString)))
 			{
 				/*
@@ -291,7 +291,7 @@ void FreeARexx(AREXXCONTEXT RexxContext)
 		while (RexxContext->Outstanding)
 		{
 			WaitPort(RexxContext->ARexxPort);
-			while (rmsg=GetARexxMsg(RexxContext))
+			while ((rmsg=GetARexxMsg(RexxContext)))
 			{
 				if (rmsg!=REXX_RETURN_ERROR)
 				{
@@ -312,7 +312,7 @@ void FreeARexx(AREXXCONTEXT RexxContext)
 		 */
 		if (RexxContext->ARexxPort)
 		{
-			while (rmsg=GetARexxMsg(RexxContext))
+			while ((rmsg=GetARexxMsg(RexxContext)))
 			{
 				/*
 				 * Any messages that still are coming in are
@@ -413,7 +413,7 @@ AREXXCONTEXT InitARexx(char *AppName,char *Extension)
 			}
 
 			RexxContext->ARexxPort=CreatePort(
-						RexxContext->PortName,NULL);
+						RexxContext->PortName,0);
 			Permit();
 		}
 
