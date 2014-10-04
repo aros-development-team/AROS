@@ -150,8 +150,8 @@ LIBPROTOVA(CodesetsUTF8Create, UTF8 *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, 
 #endif
 LIBPROTO(CodesetsFreeVecPooledA, void, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, APTR pool), REG(a1, APTR mem), REG(a2, struct TagItem *attrs));
 LIBPROTOVA(CodesetsFreeVecPooled, void, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, APTR pool), REG(a1, APTR mem), ...);
-LIBPROTO(CodesetsIsValidUTF8, BOOL, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, STRPTR s));
-LIBPROTO(CodesetsUTF8Len,     ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, UTF8 *str));
+LIBPROTO(CodesetsIsValidUTF8, BOOL, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, CONST_STRPTR s));
+LIBPROTO(CodesetsUTF8Len,     ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF8 *str));
 LIBPROTO(CodesetsListCreateA, struct codesetList *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct TagItem *attrs));
 #if defined(__amigaos4__)
 LIBPROTOVA(CodesetsListCreate, struct codesetList *, REG(a6, UNUSED __BASE_OR_IFACE), ...);
