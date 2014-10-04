@@ -49,6 +49,8 @@ static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct DosLibrar
     return err;
 }
 
+static BOOL allowed_hunk(BPTR seglist);
+
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
                          SIPTR * funcarray,
@@ -71,7 +73,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 #if DEBUG
   static STRPTR segtypes[] = { "CODE", "DATA", "BSS", };
 #endif
-
 
   SIPTR *error = &dummy;
   
@@ -437,6 +438,12 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     } /* switch */
   } /* while */
 done:
+  if (firsthunk && !allowed_hunk(firsthunk))
+  {
+      ERROR(ERROR_NOT_EXECUTABLE);
+      goto end;
+  }
+
   if (hunktab)
   {
     ULONG hunksize;
@@ -575,3 +582,25 @@ AROS_UFH4(BPTR, LoadSeg_Overlay,
 }
 
 #endif
+
+static BOOL allowed_hunk(BPTR seglist)
+{
+#ifdef __mc68000
+    return TRUE;
+#else
+    /* deadwood: This is a not-so-great solution to the problem of crashes/reboots
+     * when users accidentally try running m68k hunk executables.
+     * I think the better solution would be to load the hunk (or non-native elf)
+     * but stop it from executing or redirect to emulator by mechanism similar
+     * to OS4 GetSegListInfo() and struct PseudoSegList. This way also runtime
+     * generated seglists would be handled properly.
+     */
+    UBYTE * ptr = (UBYTE *)BADDR(seglist);
+
+    /* Allow bitmap fonts */
+    if (ptr[22] == 0x0f && ptr[23] == 0x80)
+        return TRUE;
+
+    return FALSE;
+#endif
+}
