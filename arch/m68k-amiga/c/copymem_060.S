@@ -7,7 +7,7 @@
 */
 
 	.text
-	.chip 68040
+	.chip 68060
 
 #define SAFE_MOVE16 0
 
