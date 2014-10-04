@@ -198,9 +198,9 @@ static const char *getConfigItem(const char *buf, const char *item)
 
 ///
 /// parseUtf8()
-static int parseUtf8(STRPTR *ps)
+static int parseUtf8(CONST_STRPTR *ps)
 {
-  STRPTR s = *ps;
+  CONST_STRPTR s = *ps;
   int wc, n, i;
 
   ENTER();
@@ -2159,7 +2159,7 @@ LIBPROTOVA(CodesetsFindBest,  struct codeset *, REG(a6, UNUSED __BASE_OR_IFACE),
 /// CodesetsUTF8Len()
 // Returns the number of characters a utf8 string has. This is not
 // identically with the size of memory is required to hold the string.
-LIBPROTO(CodesetsUTF8Len, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, UTF8 *str))
+LIBPROTO(CodesetsUTF8Len, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF8 *str))
 {
   int len = 0;
   unsigned char c;
@@ -2996,9 +2996,9 @@ LIBPROTOVA(CodesetsUTF8Create, UTF8 *, REG(a6, UNUSED __BASE_OR_IFACE), ...)
      ((c) >= 160 && ((c) & ~0x3ff) != 0xd800 && \
       (c) != 0xfeff && (c) != 0xfffe && (c) != 0xffff)
 
-LIBPROTO(CodesetsIsValidUTF8, BOOL, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, STRPTR s))
+LIBPROTO(CodesetsIsValidUTF8, BOOL, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, CONST_STRPTR s))
 {
-  STRPTR t = s;
+  CONST_STRPTR t = s;
   int n;
 
   ENTER();
