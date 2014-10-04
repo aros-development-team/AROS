@@ -60,7 +60,7 @@ int main(void)
 
   ret = MySPrintf(buf, "This is a '%s' function", type);
 
-  printf("%s returning %d\n", buf, ret);
+  printf("%s returning %d\n", buf, (int)ret);
 
   return 0;
 }

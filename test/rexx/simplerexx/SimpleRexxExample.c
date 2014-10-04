@@ -114,7 +114,7 @@ ULONG	signals;
 				/*
 				 * Process the ARexx messages...
 				 */
-				while (rmsg=GetARexxMsg(RexxStuff))
+				while ((rmsg=GetARexxMsg(RexxStuff)))
 				{
 				char	cBuf[24];
 				char	*nextchar;
