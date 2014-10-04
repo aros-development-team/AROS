@@ -4334,7 +4334,7 @@ void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm,
 
 /****************************************************************************************/
 
-static ULONG ObtainAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULONG count, struct Library *OOPBase)
+static ULONG ObtainAttrBases(OOP_AttrBase *bases, CONST_STRPTR const *interfaces, ULONG count, struct Library *OOPBase)
 {
     ULONG i;
     ULONG failed = 0;
@@ -4349,7 +4349,7 @@ static ULONG ObtainAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULON
     return failed;
 }
 
-static void ReleaseAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULONG count, struct Library *OOPBase)
+static void ReleaseAttrBases(OOP_AttrBase *bases, CONST_STRPTR const *interfaces, ULONG count, struct Library *OOPBase)
 {
     ULONG i;
     
@@ -4360,7 +4360,7 @@ static void ReleaseAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULON
     }
 }
 
-static ULONG GetMethodBases(OOP_MethodID *bases, CONST_STRPTR *interfaces, ULONG count, struct Library *OOPBase)
+static ULONG GetMethodBases(OOP_MethodID *bases, CONST_STRPTR const *interfaces, ULONG count, struct Library *OOPBase)
 {
     ULONG i;
     ULONG failed = 0;
@@ -4375,7 +4375,7 @@ static ULONG GetMethodBases(OOP_MethodID *bases, CONST_STRPTR *interfaces, ULONG
     return failed;
 }
 
-static CONST_STRPTR interfaces[NUM_ATTRBASES] =
+static const CONST_STRPTR interfaces[NUM_ATTRBASES] =
 {
     IID_Hidd_BitMap,
     IID_Hidd_Gfx,
