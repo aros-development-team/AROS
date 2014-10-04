@@ -99,7 +99,7 @@ ext_entry.o: FORCE
 
 # USe -m68060 when compiling .S files, as we will need the
 # expanded instruction set to detect alterate CPUs
-USER_AFLAGS := -m68060 -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_AFLAGS := -march=68060 -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 # Sadly, we need to consume Chip RAM for the initial SS and the ROM BSS.
 # The initial System Stack is located at the end of the first 256K
