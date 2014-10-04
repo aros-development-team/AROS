@@ -908,9 +908,18 @@ diff -urN gcc-4.8.3/libcpp/configure.ac gcc-4.8.3.new/libcpp/configure.ac
  	x86_64-*-* | \
  	ia64-*-* | \
  	hppa*64*-*-* | \
-diff -urN gcc-4.8.3/libgcc/config.host gcc-4.8.3.new/libgcc/config.host
---- gcc-4.8.3/libgcc/config.host	2011-11-23 17:15:54.000000000 -0500
-+++ gcc-4.8.3.new/libgcc/config.host	2013-12-02 20:22:15.940776306 -0500
+diff -ruN gcc-4.8.3/libgcc/config.host gcc-4.8.3.aros/libgcc/config.host
+--- gcc-4.8.3/libgcc/config.host	2014-03-20 12:12:30.000000000 -0400
++++ gcc-4.8.3.aros/libgcc/config.host	2014-10-03 14:17:51.119086811 -0400
+@@ -681,7 +681,7 @@
+ m32rle-*-linux*)
+ 	tmake_file="$tmake_file m32r/t-linux t-fdpbit"
+ 	;;
+-m68k-*-elf* | fido-*-elf)
++m68k-*-elf* | fido-*-elf | m68k-*-aros*)
+ 	tmake_file="$tmake_file m68k/t-floatlib"
+ 	;;
+ m68k*-*-netbsdelf*)
 @@ -1117,6 +1117,9 @@
  	tmake_file="mep/t-mep t-fdpbit"
  	extra_parts="crtbegin.o crtend.o"
