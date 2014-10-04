@@ -5,7 +5,7 @@ FILES := ieeedpbas_fpu mathieeedoubbas_init
 AFILES := fpu
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/libs/mathieeedoubbas
-USER_AFLAGS := -I$(GENINCDIR)
+USER_AFLAGS := -I$(GENINCDIR) -march=68040
 
 %build_archspecific \
   mainmmake=workbench-libs-mathieeedoubbas maindir=workbench/libs/mathieeedoubbas arch=m68k \
