@@ -136,6 +136,7 @@ protected:
       ir_type = ir_type_unset;
       type = NULL;
    }
+   virtual ~ir_instruction() { }
 };
 
 
