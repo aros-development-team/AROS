@@ -14,17 +14,17 @@
     NAME */
 #include <unistd.h>
 
-	int dup2(
+        int dup2(
 
 /*  SYNOPSIS */
-	int oldfd,
-	int newfd
-	)
+        int oldfd,
+        int newfd
+        )
 
 /*  FUNCTION
-	Duplicates a file descriptor.
+        Duplicates a file descriptor.
 
-	The object referenced by the descriptor does not distinguish between
+        The object referenced by the descriptor does not distinguish between
         oldfd and newfd in any way. Thus if newfd and oldfd are duplicate
         references to an open file, read(), write() and lseek() calls all
         move a single pointer into the file, and append mode, non-blocking
@@ -44,8 +44,8 @@
         This function fails gracefully if oldfd is invalid.
 
     INPUTS
-	oldfd - The file descriptor to be duplicated
-	newfd - The value of the new descriptor we want the old one to be
+        oldfd - The file descriptor to be duplicated
+        newfd - The value of the new descriptor we want the old one to be
             duplicated in
 
     RESULT
@@ -60,8 +60,8 @@
     BUGS
 
     SEE ALSO
-	 bsdsocket.library/accept(),  open(),  close(),  fcntl(),  pipe()
-	 bsdsocket.library/socket()
+        bsdsocket.library/accept(),  open(),  close(),  fcntl(),  pipe()
+        bsdsocket.library/socket()
 
     INTERNALS
 
@@ -73,8 +73,8 @@
     oldfdesc = __getfdesc(oldfd);
     if (!oldfdesc)
     {
-    	errno = EBADF;
-	return -1;
+        errno = EBADF;
+        return -1;
     }
 
     /* Do nothing if FDs are identical */
@@ -88,8 +88,8 @@
     newfdesc = __alloc_fdesc();
     if (!newfdesc)
     {
-	errno = ENOMEM;
-	return -1;
+        errno = ENOMEM;
+        return -1;
     }
 
     /* Initialise new FD */
@@ -99,13 +99,13 @@
     newfd =__getfdslot(newfd);
     if (newfd != -1)
     {
-	newfdesc->fcb->opencount++;
+        newfdesc->fcb->opencount++;
 
         /* Free old "newfd" (now that we've definitely succeeded) */
         if (oldnewfdesc)
             __free_fdesc(oldnewfdesc);
 
-	__setfdesc(newfd, newfdesc);
+        __setfdesc(newfd, newfdesc);
     }
 
     return newfd;
