@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,14 +50,14 @@
 
 static const char *libcSymbols[] =
 {
-    "open",
-    "close",
-    "closedir",
-    "opendir",
+    "open" UNIX2003_SUFFIX,
+    "close" UNIX2003_SUFFIX,
+    "closedir" UNIX2003_SUFFIX,
+    "opendir" UNIX2003_SUFFIX,
     "readdir" INODE64_SUFFIX,
-    "rewinddir",
-    "read",
-    "write",
+    "rewinddir" UNIX2003_SUFFIX,
+    "read" UNIX2003_SUFFIX,
+    "write" UNIX2003_SUFFIX,
     "lseek",
     "ftruncate",
     "mkdir",
@@ -67,15 +67,15 @@ static const char *libcSymbols[] =
     "symlink",
     "readlink",
     "rename",
-    "chmod",
+    "chmod" UNIX2003_SUFFIX,
     "isatty",
     "statfs",
     "utime",
     "localtime",
-    "mktime",
+    "mktime" UNIX2003_SUFFIX,
     "getcwd",
     "getenv",
-    "poll",
+    "poll" UNIX2003_SUFFIX,
 #ifdef HOST_OS_linux
     "__xstat",
     "__lxstat",
@@ -84,8 +84,8 @@ static const char *libcSymbols[] =
     "lstat" INODE64_SUFFIX,
 #endif
 #ifndef HOST_OS_android
-    "seekdir",
-    "telldir",
+    "seekdir" UNIX2003_SUFFIX,
+    "telldir" UNIX2003_SUFFIX,
     "getpwent",
     "endpwent",
 #endif
