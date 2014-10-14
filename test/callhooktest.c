@@ -46,5 +46,5 @@ int main (int argc, char ** argv)
 	);
 	printf("CallHook result: %lx\n", res);
 
-	return (res == 0xbabadada) ? 0 : 1;
+	return (res == 0xbabadada) ? RETURN_OK : RETURN_FAIL;
 }

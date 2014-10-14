@@ -19,7 +19,7 @@ BPTR file;
   if ( !fd )
   {
     fprintf( stderr, "Could not write test file seek.txt\n" );
-    exit(-1);
+    exit(RETURN_ERROR);
   }
   fprintf( fd, "() does not work!\n" );
   fclose(fd);
@@ -29,7 +29,7 @@ BPTR file;
   if ( !fd )
   {
     fprintf( stderr, "Could not open test file seek.txt\n" );
-    exit(-1);
+    exit(RETURN_ERROR);
   }
   i = fread( buffer, 1, 1, fd );
 //printf("pos=%ld\n",ftell(fd));
@@ -37,7 +37,7 @@ BPTR file;
   if( i != 7 )
   {
     fprintf( stderr, "Wanted to fread() %d chars, but could only get %d!\n", 6, i-1 );
-    exit(-1);
+    exit(RETURN_ERROR);
   }
   fseek( fd, 4, SEEK_CUR );
   i = fread( &buffer[7], 1, 11, fd );
@@ -53,5 +53,5 @@ BPTR file;
   buffer[i] = 0;
   printf( "\nSeek%s", buffer );
   
-  return 0;
+  return RETURN_OK;
 }
