@@ -28,29 +28,29 @@ int main (int argc, char **argv) {
     struct DateTime dt;
     char date[32], time[32];
 
-    if (argc == 0) {
+    if (argc == 1) {
         printf("usage: %s file\n", argv[0]);
-        return 1;
+        return RETURN_FAIL;
     }
 
     lock = Lock(argv[1], SHARED_LOCK);
     if (lock == BNULL) {
         printf("couldn't open file [%ld]\n", (long)IoErr());
-        return 1;
+        return RETURN_FAIL;
     }
 
     fib = (struct FileInfoBlock *) AllocDosObject(DOS_FIB, NULL);
     if (fib == NULL) {
         printf("couldn't allocate FileInfoBlock structure\n");
         UnLock(lock);
-        return 1;
+        return RETURN_FAIL;
     }
 
     if (! Examine(lock, fib)) {
         printf("Examine() failed [%ld]\n", (long)IoErr());
         FreeDosObject(DOS_FIB, fib);
         UnLock(lock);
-        return 1;
+        return RETURN_FAIL;
     }
 
     printf("fib_DiskKey     : 0x%lx\n",   fib->fib_DiskKey);
@@ -78,5 +78,5 @@ int main (int argc, char **argv) {
     FreeDosObject(DOS_FIB, fib);
     UnLock(lock);
 
-    return 0;
+    return RETURN_OK;
 }

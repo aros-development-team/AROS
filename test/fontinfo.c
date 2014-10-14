@@ -55,7 +55,7 @@ static void cleanup(char *msg)
     
     if (myargs) FreeArgs(myargs);
     
-    exit(0);
+    exit(msg == NULL ? RETURN_OK : RETURN_FAIL);
 }
 
 static void getarguments(void)
@@ -309,7 +309,7 @@ int main(void)
     openfont();
     action();
     if (args[ARG_SHOW]) showfont();
-    cleanup(0);
+    cleanup(NULL);
     
     return 0;
 }
