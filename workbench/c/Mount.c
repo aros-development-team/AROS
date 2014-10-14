@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2012 The AROS Development Team
+    (C) 1995-2014 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -1295,6 +1295,7 @@ struct FileSysEntry *GetFileSysEntry(ULONG DosType)
   struct FileSysResource *MyFileSysRes;
   struct FileSysEntry *MyFileSysEntry;
   struct FileSysEntry *CurrentFileSysEntry;
+  BOOL Matched;
 
   MyFileSysEntry = NULL;
   MyFileSysRes = OpenResource(FSRNAME);
@@ -1304,7 +1305,12 @@ struct FileSysEntry *GetFileSysEntry(ULONG DosType)
     CurrentFileSysEntry	= (struct FileSysEntry*) MyFileSysRes->fsr_FileSysEntries.lh_Head;
     while (CurrentFileSysEntry->fse_Node.ln_Succ)
     {
-      if (CurrentFileSysEntry->fse_DosType == DosType)
+      if (HandlerString != NULL)
+        Matched = strcmp(HandlerString + BSTR_OFFSET,
+          AROS_BSTR_ADDR(CurrentFileSysEntry->fse_Handler)) == 0;
+      else
+        Matched = CurrentFileSysEntry->fse_DosType == DosType;
+      if (Matched)
       {
         if (MyFileSysEntry)
         {
