@@ -1,0 +1,18 @@
+Execute S/Test amiga2date
+Execute S/Test callhooktest
+Execute S/Test convertpixels
+Execute S/Test date2amiga
+Execute S/Test dosvartest
+;Execute S/Test "examine Tests/examine"
+Execute S/Test ExNext
+Execute S/Test fileseek
+Execute S/Test filetest
+;Execute S/Test fontinfo
+Execute S/Test frequencies
+
+Echo PASSED TO PASSED
+Shutdown
+
+Lab failure
+Echo FAILED TO FAILED
+Shutdown

@@ -33,6 +33,18 @@ delete	$PACKAGE/lib
 
 archive $ARCHIVE $PACKAGE
 
+if [ $TESTEXE != "" ]; then
+    cd $PACKAGE
+    copy $SP/autotest/* S/
+    #Xvfb :1
+    DISPLAY=:1 timeout $TESTTIMEOUT $TESTEXE
+
+    if [ ! -f PASSED ]; then
+        printe "Package $ARCHIVE failed runtime tests. ABORTING BUILD!"
+        exit 5
+    fi
+fi
+
 cd      $ROOT
 delete  $BUILD_BASE/AROS
 resetl
