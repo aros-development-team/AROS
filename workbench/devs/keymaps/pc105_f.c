@@ -40,7 +40,7 @@ STATIC CONST UBYTE lokeymaptypes[] =
     S|A,	/* 05 */
     S|A,       	/* 06 */
     S|A,       	/* 07 */
-    S|A,        /* 08 */
+    ST|V,       /* 08 */
     S|A,        /* 09 */
     S|A,	/* 0A */
     S|A,	/* 0B Right of 0 */
@@ -200,6 +200,26 @@ STATIC CONST UBYTE hikeymaptypes[] =
   
 */
 
+STATIC CONST UBYTE KEY08_descr[] =
+{
+    1,16,
+    1,17,
+    1,18,
+    1,19,
+    1,20,
+    1,21,
+    1,22,
+    1,23,
+    '_',  /* NO QUAL */
+    '8',  /* SHIFT */
+    '\\', /* ALT */
+    0,    /* ALT + SHIFT */
+    '_',  /* CTRL */
+    '8',  /* CTRL + SHIFT */
+    28,   /* CTRL + ALT */
+    0,    /* CTRL + ALT + SHIFT */
+};
+
 STATIC CONST UBYTE a_descr[] =
 {
     DPF_MOD, 0x10,
@@ -346,7 +366,7 @@ STATIC CONST IPTR lokeymap[] =
     BYTES('5', '[', '5', '('), 		/* 05 5 */
     BYTES('6', '|', '6', '-'), 		/* 06 6 */
     BYTES('7', '`', '7', 'è'), 		/* 07 7 */
-    BYTES('8','\\', '8', '_'), 		/* 08 8 */
+    STRING(KEY08_descr),                /* 08 8 */ /* old: BYTES('8','\\', '8', '_'), */
     BYTES('±', '^', '9', 'ç'),		/* 09 9 */
     BYTES('°', '@', '0', 'à'),		/* 0A 0 */
     BYTES('¿', ']', '°', ')'),	    	/* 0B Right of 0 */
