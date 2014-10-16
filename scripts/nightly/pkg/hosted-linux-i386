@@ -2,5 +2,7 @@
 # Creates linux-i386 "hosted" binary packages.
 
 BUILDTARGET=linux-i386
+TESTEXE=boot/linux/AROSBootstrap
+TESTTIMEOUT=5m
 
 source $SP/pkg/hosted
