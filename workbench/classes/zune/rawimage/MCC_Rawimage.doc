@@ -81,8 +81,8 @@ Rawimage.mcc/MUIA_Rawimage_Data
            0x3, /* width          */
            0x1, /* height         */
            0x0, /* no compression */
-           0x0  /* data size      */
-           0xFFFF0000, 0xFF00FF00, 0xFF0000FF,
+           0x0,  /* data size      */
+           0xFFFF0000, 0xFF00FF00, 0xFF0000FF
        };
 
        set(rawimgobj, MUIA_Rawimage_Data, rgbpixel);
