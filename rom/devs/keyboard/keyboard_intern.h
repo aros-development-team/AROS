@@ -2,7 +2,7 @@
 #define  KEYBOARD_INTERN_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -62,19 +62,6 @@ typedef struct KBUnit
 	struct MinNode node;
     UWORD  kbu_readPos;		/* Position in the key buffer */
     UWORD  kbu_Qualifiers;      /* Known qualifiers at this moment */
-    UWORD  kbu_LastCode;	/* Previous rawkey code */
-    UBYTE  kbu_LastQuals;	/* Lower half of previous qualifiers */
-    UWORD  kbu_LastLastCode;	/* The rawkey code two keys ago... */
-    UBYTE  kbu_LastLastQuals;	/* ...and the lower half of qualifiers
-				   associated with that code */
-
-    /* Note: The xxxQuals is UBYTE for now. They may be UWORDS at a later
-             implementation but as we want to be binary compatible,
-	     we just store UBYTEs in the InputEvent. This goes for
-	     deadkey handling too, but as it is a fact that keycodes will
-	     be UWORDS here in the future, it's so now. Regarding the
-	     qualifiers, it may be enough with 8. */
-
     UBYTE  kbu_flags;           /* For unit flags definitions, see below */
 } KBUnit;
 
