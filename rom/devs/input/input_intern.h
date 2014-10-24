@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for the input.device
@@ -59,6 +59,10 @@ struct inputbase
     struct timeval	KeyRepeatInterval;
     ULONG   	    	ResetSig;
     UWORD   	    	ActQualifier;
+    UBYTE Prev1DownCode;
+    UBYTE Prev1DownQual;
+    UBYTE Prev2DownCode;
+    UBYTE Prev2DownQual;
 };
 
 /* Prototypes */

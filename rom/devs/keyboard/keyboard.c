@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keyboard device
@@ -470,23 +470,9 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	event->ie_Code 			= code;
 	event->ie_Qualifier 		= kbUn->kbu_Qualifiers;
 	event->ie_Qualifier 		|= isNumericPad(trueCode) ? IEQUALIFIER_NUMERICPAD : 0;
-	event->ie_Prev1DownCode 	= (UBYTE)(kbUn->kbu_LastCode & 0xff);
-	event->ie_Prev1DownQual 	= kbUn->kbu_LastQuals;
-	event->ie_Prev2DownCode 	= (UBYTE)(kbUn->kbu_LastLastCode & 0xff);
-	event->ie_Prev2DownQual 	= kbUn->kbu_LastLastQuals;
 	event->ie_TimeStamp.tv_secs 	= 0;
 	event->ie_TimeStamp.tv_micro	= 0;
 	
-	/* Update list of previous states for dead key handling */
-	
-	if (!(code & IECODE_UP_PREFIX) && !isQualifier(code))
-	{
-	    kbUn->kbu_LastLastCode  = kbUn->kbu_LastCode;
-	    kbUn->kbu_LastLastQuals = kbUn->kbu_LastQuals;
-	    kbUn->kbu_LastCode      = code;
-	    kbUn->kbu_LastQuals     = (UBYTE)(kbUn->kbu_Qualifiers & 0xff);
-	}
-
 	if(code == 0x78) activate_resetphase = TRUE;
 
 	/* No more keys in buffer? */
