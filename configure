@@ -8356,10 +8356,6 @@ case "$target_os" in
         gcc_default_cpu_tune="cortex-a8"
 		gcc_default_float_abi="hard"
 
-		if test "$target_variant" = ""; then
-			as_fn_error $? "\"Please provide the target platform for sun4i with--enable-target-variant={platform}\"" "$LINENO" 5
-		fi
-
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
         aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_config_aflags="$aros_config_aflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
