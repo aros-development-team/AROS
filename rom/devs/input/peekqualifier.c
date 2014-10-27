@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Input device function PeekQualifier()
     Lang: english
 */
+
 #include "input_intern.h"
 
 /*****************************************************************************
@@ -36,15 +37,11 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    input_lib.fd and clib/input_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     return ((struct inputbase *)InputBase)->ActQualifier;
 
     AROS_LIBFUNC_EXIT
-} /* PeekQualifier */
+}

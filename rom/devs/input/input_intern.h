@@ -45,20 +45,20 @@
 
 struct inputbase
 {
-    struct InputDevice	pub;
+    struct InputDevice pub;
 
     /* The stuff below will never get deallocated, since
-    ** input device is never removed, once it's initialized.
-    */
-    struct Task 	*InputTask;
-    struct MsgPort 	*CommandPort;
-    struct MinList 	HandlerList;
-    struct InputEvent 	*EventQueueHead;
-    struct InputEvent 	*EventQueueTail;
-    struct timeval	KeyRepeatThreshold;
-    struct timeval	KeyRepeatInterval;
-    ULONG   	    	ResetSig;
-    UWORD   	    	ActQualifier;
+     ** input device is never removed, once it's initialized.
+     */
+    struct Task *InputTask;
+    struct MsgPort *CommandPort;
+    struct MinList HandlerList;
+    struct InputEvent *EventQueueHead;
+    struct InputEvent *EventQueueTail;
+    struct timeval KeyRepeatThreshold;
+    struct timeval KeyRepeatInterval;
+    ULONG ResetSig;
+    UWORD ActQualifier;
     UBYTE Prev1DownCode;
     UBYTE Prev1DownQual;
     UBYTE Prev2DownCode;
@@ -67,11 +67,11 @@ struct inputbase
 
 /* Prototypes */
 VOID ProcessEvents(struct inputbase *InputDevice);
-struct Task *CreateInputTask(APTR taskparams, struct inputbase *InputDevice);
+struct Task *CreateInputTask(APTR taskparams,
+    struct inputbase *InputDevice);
 VOID AddEQTail(struct InputEvent *ie, struct inputbase *InputDevice);
 struct InputEvent *GetEventsFromQueue(struct inputbase *InputDevice);
 BOOL IsQualifierKey(UWORD key);
 BOOL IsRepeatableKey(UWORD key);
 
 #endif /* INPUT_INTERN_H */
-
