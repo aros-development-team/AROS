@@ -4,9 +4,6 @@ include $(TOP)/config/make.cfg
 TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := bootstrap
 
-$(AROSDIR)/sun4i-bootstrap-img: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/arosraspi.img.elf
-
 #MM- sun4i-bootstrap: sun4i-bootstrap-img
 
 #MM
