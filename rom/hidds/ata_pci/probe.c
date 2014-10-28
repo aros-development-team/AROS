@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hardware detection routine
@@ -183,11 +183,11 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     /*
      * SATA controllers may need a special treatment before becoming usable.
      * The machine's firmware (EFI on Mac) may operate them in native AHCI mode
-     * and do not set up legacy mode by itself.
+     * and not set up legacy mode by itself.
      * In this case we have to do it ourselves.
      * This code is based on incomplete ahci.device source code by DissyOfCRN.
      * CHECKME: In order to work on PPC it uses explicit little-endian I/O,
-     * assuning AHCI register file is always little-endian. Is it correct ?
+     * assuming AHCI register file is always little-endian. Is it correct?
      */
     if (SubClass == PCI_SUBCLASS_SATA)
     {
@@ -306,7 +306,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     /*
      * we can have up to two buses assigned to this device
      */
-    for (x = 0; x < MAX_DEVICEBUSES; x++)
+    for (x = 0; devRef != NULL && x < MAX_DEVICEBUSES; x++)
     {
         BYTE basePri = ATABUSNODEPRI_PROBED;
 
@@ -399,7 +399,10 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
         }
 
         if (!devRef->ref_Count)
+        {
             DeviceFree(devRef, base);
+            devRef = NULL;
+        }
     }
 
     AROS_USERFUNC_EXIT
