@@ -21,7 +21,7 @@
 	struct MsgPort * port)
 
 /*  FUNCTION
-	Create a standard IORequest structure. The structire
+	Create a standard IORequest structure. The structure
 	can be freed with DeleteStdIO().
 
     INPUTS
