@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a standard IORequest structure
@@ -15,20 +15,21 @@
 #include <exec/io.h>
 #include <proto/alib.h>
 
-	struct IOStdReq * CreateStdIO (
+	struct IOStdReq * CreateStdIO(
 
 /*  SYNOPSIS */
 	struct MsgPort * port)
 
 /*  FUNCTION
-	Create a standard IORequest structure. The structure
-	can be freed with DeleteStdIO().
+	Create a standard IORequest structure. The structure must be freed
+	with DeleteStdIO().
 
     INPUTS
-	port - The port to be signaled on events.
+	port - The port to be signaled on events. May be NULL, in which case
+	    no IORequest is allocated.
 
     RESULT
-	A pointer to the new IORequest structure.
+	A pointer to the new IORequest structure, or NULL.
 
     NOTES
 
@@ -37,14 +38,11 @@
     BUGS
 
     SEE ALSO
-	CreateExtIO(), DeleteStdIO()
+	CreateExtIO(), DeleteExtIO(), DeleteStdIO()
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
-    return (struct IOStdReq *)CreateExtIO (port, sizeof (struct IOStdReq));
-} /* CreateStdIO */
-
+    return (struct IOStdReq *)CreateExtIO(port, sizeof(struct IOStdReq));
+}

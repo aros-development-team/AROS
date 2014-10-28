@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free a structure created by CreateExtIO()
@@ -14,7 +14,7 @@
 #include <exec/io.h>
 #include <proto/alib.h>
 
-	void DeleteExtIO (
+	void DeleteExtIO(
 
 /*  SYNOPSIS */
 	struct IORequest * ioreq)
@@ -23,8 +23,7 @@
 	Free a structure created by CreateExtIO().
 
     INPUTS
-	ioreq - The returnvalue of CreateExtIO(). Must be
-	    non-NULL.
+	ioreq - The return value of CreateExtIO(). May be NULL.
 
     RESULT
 	None.
@@ -36,21 +35,21 @@
     BUGS
 
     SEE ALSO
-	CreateStdIO(), CreateExtIO()
+	CreateStdIO(), CreateExtIO(), DeleteStdIO()
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
-    /* Erase some fields to enforce crashes */
-    ioreq->io_Message.mn_Node.ln_Type = -1L;
+    if (ioreq != NULL)
+    {
+        /* Erase some fields to enforce crashes */
+        ioreq->io_Message.mn_Node.ln_Type = -1L;
 
-    ioreq->io_Device = (struct Device *)-1L;
-    ioreq->io_Unit   = (struct Unit *)-1L;
+        ioreq->io_Device = (struct Device *)-1L;
+        ioreq->io_Unit   = (struct Unit *)-1L;
 
-    /* Free the memory */
-    FreeMem(ioreq,ioreq->io_Message.mn_Length);
-} /* DeleteExtIO */
-
+        /* Free the memory */
+        FreeMem(ioreq,ioreq->io_Message.mn_Length);
+    }
+}
