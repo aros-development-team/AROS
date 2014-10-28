@@ -30,6 +30,8 @@
 	None.
 
     NOTES
+	Invalidates values of certain fields, to assure the developer
+	doesn't	depend on them remaining valid after the structure is freed.
 
     EXAMPLE
 
