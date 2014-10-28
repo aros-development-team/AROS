@@ -1,20 +1,18 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: amiga.lib function DeleteStdIo()
+    Desc: amiga.lib function DeleteStdIO()
     Lang: english
 */
-#include <exec/memory.h>
 
 /*****************************************************************************
 
     NAME */
 #include <exec/io.h>
 #include <proto/alib.h>
-#include <proto/exec.h>
 
-	void DeleteStdIO (
+	void DeleteStdIO(
 
 /*  SYNOPSIS */
 	struct IOStdReq * io)
@@ -23,8 +21,7 @@
 	Delete a structure which was created by CreateStdIO().
 
     INPUTS
-	io - The value returned by CreateStdIO(). Must be
-	    non-NULL.
+	io - The value returned by CreateStdIO(). May be NULL.
 
     RESULT
 	None.
@@ -38,21 +35,11 @@
     BUGS
 
     SEE ALSO
-	CreateStdIO()
+	CreateStdIO(), CreateExtIO(), DeleteExtIO()
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
-#   define ioreq    ((struct IORequest *)io)
-    /* Write illegal values to some fields to enforce crashes */
-    ioreq->io_Message.mn_Node.ln_Type = -1L;
-
-    ioreq->io_Device = (struct Device *)-1L;
-    ioreq->io_Unit   = (struct Unit *)-1L;
-
-    FreeMem (ioreq, ioreq->io_Message.mn_Length);
-} /* DeleteStdIO */
-
+    DeleteExtIO((struct IORequest *)io);
+}
