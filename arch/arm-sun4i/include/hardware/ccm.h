@@ -21,15 +21,15 @@ struct CCM {
 	uint32_t PLL2_CFG;
 	uint32_t PLL2_TUN;
 	uint32_t PLL3_CFG;
-	uint32_t CCM_RESERVED_1
+	uint32_t CCM_RESERVED_1;
 	uint32_t PLL4_CFG;
-	uint32_t CCM_RESERVED_2
+	uint32_t CCM_RESERVED_2;
 	uint32_t PLL5_CFG;
 	uint32_t PLL5_TUN;
 	uint32_t PLL6_CFG;
 	uint32_t PLL6_TUN;
 	uint32_t PLL7_CFG;
-	uint32_t CCM_RESERVED_3
+	uint32_t CCM_RESERVED_3;
 	uint32_t PLL1_TUN2;
 	uint32_t PLL5_TUN2;
 	uint8_t  CCM_RESERVED_4[12]; 	
