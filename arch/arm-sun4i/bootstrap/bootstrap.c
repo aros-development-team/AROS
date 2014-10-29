@@ -10,6 +10,8 @@
 #include <hardware/sun4i/pio.h>
 #include <hardware/sun4i/uart.h>
 
+#include <stdio.h>
+
 #define CPU_AHB_APB0_CFG (*(volatile uint32_t *)0x01c20054)
 #define PLL1_CFG         (*(volatile uint32_t *)0x01c20000)
 #define APB1_CLK_DIV_CFG (*(volatile uint32_t *)0x01c20058)
@@ -58,11 +60,13 @@
 
 static inline void putByte(char chr);
 static inline void putBytes(char *str);
+void kprintf(const char *format, ...);
 
-asm("           .globl bootstrapS           \n"
+asm("           .text                       \n"
+"               .globl bootstrapS           \n"
 "		        .type bootstrapS,%function  \n"
 "                                           \n"
-"               ldr sp, =0x8000             \n"
+"bootstrapS:    ldr sp, =0x8000             \n"
 "               b bootstrapC                \n"
 "                                           \n");
 
@@ -73,13 +77,10 @@ void __attribute__((noreturn)) bootstrapC(void) {
     PLL1_CFG = 0xa1005000;
 
     CPU_AHB_APB0_CFG = (AXI_DIV_1 << 0 | AHB_DIV_2 << 4 | APB0_DIV_1 << 8 | CPU_CLK_SRC_PLL1 << 16);
-    asmdelay(200);
 
-    APB1_CLK_DIV_CFG = (APB1_CLK_SRC_OSC24M << 24)|(APB1_FACTOR_N_1 << 16)|(APB1_FACTOR_M_1 << 0);
-    asmdelay(200);
+    APB1_CLK_DIV_CFG = (APB1_CLK_SRC_OSC24M << 24 | APB1_FACTOR_N_1 << 16 | APB1_FACTOR_M_1 << 0);
 
     APB1_GATE = (0x1<<16);
-    asmdelay(200);
 
     PIO_CFG2_REG(PB) = (PIO_CFG2_REG(PB) & ~(0b01110111000000000000000000000000)) | 0b00100010000000000000000000000000;
 
@@ -92,13 +93,18 @@ void __attribute__((noreturn)) bootstrapC(void) {
     UART0_LCR = 3;
     UART0_FCR = 6;
 
-    putBytes(copyright);
+    /*
+    * Our CPU clock has not yeat stabilized, don't do any time critical things until it settles.
+    */
+    asmdelay(200);
 
+    putBytes((char *) copyright);
+    kprintf("[12345678?] %08x\n", 0x12345678);
     while(1);
 }
 
 static inline void putByte(char chr) {
-        while ((UART0_LSR & (1<<5)) == 0);
+        while ((UART0_LSR & (1<<6)) == 0);
         UART0_THR = chr;
 }
 
@@ -106,5 +112,18 @@ static inline void putBytes(char *str) {
 	while(*str) {
 		putByte(*str++);
 	}
+}
+
+void kprintf(const char *format, ...) {
+	char tmpbuf[512];
+	char *out = tmpbuf;
+
+	va_list vp;
+
+	va_start(vp, format);
+	vsnprintf(tmpbuf, 511, format, vp);
+	va_end(vp);
+
+	putBytes(out);
 }
 
