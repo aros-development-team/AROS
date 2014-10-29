@@ -58,8 +58,6 @@
 
 #define asmdelay(t) asm volatile("mov r0, %[value]\n1: sub r0, #1\nbne 1b\n"::[value] "i" (t) : "r0", "cc");
 
-static inline void putByte(char chr);
-static inline void putBytes(char *str);
 void kprintf(const char *format, ...);
 
 asm("           .text                       \n"
@@ -71,9 +69,6 @@ asm("           .text                       \n"
 "                                           \n");
 
 void __attribute__((noreturn)) bootstrapC(void) {
-
-    const char *copyright = "Copyright (c)2014, The AROS Development Team. All rights reserved.\n\n";
-
     PLL1_CFG = 0xa1005000;
 
     CPU_AHB_APB0_CFG = (AXI_DIV_1 << 0 | AHB_DIV_2 << 4 | APB0_DIV_1 << 8 | CPU_CLK_SRC_PLL1 << 16);
@@ -98,32 +93,21 @@ void __attribute__((noreturn)) bootstrapC(void) {
     */
     asmdelay(200);
 
-    putBytes((char *) copyright);
-    kprintf("[12345678?] %08x\n", 0x12345678);
+    kprintf("Copyright (c)2014, The AROS Development Team. All rights reserved. %08x\n\n", 0x12345678);
+
     while(1);
 }
 
-static inline void putByte(char chr) {
-        while ((UART0_LSR & (1<<6)) == 0);
-        UART0_THR = chr;
-}
-
-static inline void putBytes(char *str) {
-	while(*str) {
-		putByte(*str++);
-	}
+static inline void kprintf_uc(int chr, void *dummy) {
+    while ((UART0_LSR & (1<<6)) == 0);
+    UART0_THR = chr;
 }
 
 void kprintf(const char *format, ...) {
-	char tmpbuf[512];
-	char *out = tmpbuf;
+    va_list vp;
 
-	va_list vp;
-
-	va_start(vp, format);
-	vsnprintf(tmpbuf, 511, format, vp);
-	va_end(vp);
-
-	putBytes(out);
+    va_start(vp, format);
+    __vcformat (NULL, (void *)kprintf_uc, format, vp);
+    va_end(vp);
 }
 
