@@ -3,6 +3,6 @@
 include $(TOP)/config/make.cfg
 
 #MM- includes-sun4i : sun4i-includes
-#MM- AROS-sun4i-arm : includes-sun4i sun4i-linklibs sun4i-bootstrap
+#MM- AROS-sun4i-arm : core-linklibs includes-sun4i sun4i-linklibs sun4i-bootstrap
 
 %common
