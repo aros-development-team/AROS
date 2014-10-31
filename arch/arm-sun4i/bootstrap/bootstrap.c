@@ -93,21 +93,9 @@ void __attribute__((noreturn)) bootstrapC(void) {
     */
     asmdelay(200);
 
-    kprintf("Copyright (c)2014, The AROS Development Team. All rights reserved. %08x\n\n", 0x12345678);
+    kprintf("Copyright (c)2014, The AROS Development Team. All rights reserved.\n\n");
+    kprintf("0xabad1dea = %x\n", 0xabad1dea);
+    kprintf("1234567890 = %d\n", 1234567890);
 
     while(1);
 }
-
-static inline void kprintf_uc(int chr, void *dummy) {
-    while ((UART0_LSR & (1<<6)) == 0);
-    UART0_THR = chr;
-}
-
-void kprintf(const char *format, ...) {
-    va_list vp;
-
-    va_start(vp, format);
-    __vcformat (NULL, (void *)kprintf_uc, format, vp);
-    va_end(vp);
-}
-
