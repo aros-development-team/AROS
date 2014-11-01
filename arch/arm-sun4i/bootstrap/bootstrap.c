@@ -152,7 +152,7 @@ void __attribute__((noreturn)) bootstrapC(void) {
         kprintf("PLL1_N %d\n", PLL1_N);
         kprintf("PLL1_P %d\n", PLL1_P);
 */
-        kprintf("Bootstrap CPU speed %uMhz\n", ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P)));
+        kprintf("Bootstrap CPU speed is %uMHz\n", ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P)));
 
     while(1);
 }
