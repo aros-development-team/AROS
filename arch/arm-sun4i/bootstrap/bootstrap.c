@@ -125,10 +125,12 @@ void __attribute__((noreturn)) bootstrapC(void) {
 
         - Our bootstrap code should enable DRAM and check it's size, maximum of 2Gb DRAM available on sun4i
         - Boot0 header defines also the used DRAM type and its timing values etc. (DDR2 or DDR3), can it be automated to "safe" defaults?
+            - DDR3 memory chips use ODT (on die termination)
+            - Allwinner A10 has two(2) such pins, ODT0 and ODT1
         - Unsure if PMU (power management unit) is needed before DRAM can be initialized
 
         - Bootstrap code should enable NAND (in case the code is started from NAND it might be already setup by the BROM code)
-        - Bootstrap code should enable MMC access
+        - Bootstrap code should enable MMC access (in case the code is started from MMC it might be already setup by the BROM code)
         - Bootstrap code will need a read only filesystem (FAT or SFS)
 
         - Bootstrap code setups MMU
