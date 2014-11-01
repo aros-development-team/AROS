@@ -94,8 +94,39 @@ void __attribute__((noreturn)) bootstrapC(void) {
     asmdelay(200);
 
     kprintf("Copyright (c)2014, The AROS Development Team. All rights reserved.\n\n");
+
     kprintf("0xabad1dea = %x\n", 0xabad1dea);
     kprintf("1234567890 = %d\n", 1234567890);
+    kprintf("-1234567890 = %d\n", -1234567890);
+    kprintf("3060399406 = %u\n", -1234567890);
+
+    kprintf("-1234 = %d\n", -1234);
+    kprintf("4294966062 = %u\n", -1234);
+
+/*
+    Plan of attack:
+
+        - Move register definitions to header files
+
+        - Boot0 header that MKSUNXIBOOT creates can be truncated a bit (or can it?)
+        - Boot0 header will contain UARTDEBUG register address (and used GPIO pins same as on other operating systems)
+        - Boot0 header should be modifiable from Aros installer (Poseidon Sunxi class in case the destination is NAND)
+
+        - Our bootstrap code should enable DRAM and check it's size, maximum of 2Gb DRAM available on sun4i
+        - Boot0 header defines also the used DRAM type and its timing values etc. (DDR2 or DDR3), can it be automated to "safe" defaults?
+        - Unsure if PMU (power management unit) is needed before DRAM can be initialized
+
+        - Bootstrap code should enable NAND (in case the code is started from NAND it might be already setup by the BROM code)
+        - Bootstrap code should enable MMC access
+        - Bootstrap code will need a read only filesystem (FAT or SFS)
+
+        - Bootstrap code setups MMU
+        - Bootstrap code reads Aros module file list and loads and relocates ELF modules to DRAM
+        - Modules are loaded from NAND or MMC, depending on boot priority and presense of MMC card
+
+        - Bootstrap code jumps Aros and passes on information
+*/
 
     while(1);
 }
+

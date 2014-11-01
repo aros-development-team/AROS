@@ -52,6 +52,17 @@ static void kprintf_uint32_d(uint32_t value) {
 
 }
 
+static void kprintf_int32_d(int32_t value) {
+
+    if(value<0) {
+        kprintf_out('-');
+        kprintf_uint32_d(-value);
+    } else {
+        kprintf_uint32_d(value);
+    }
+
+}
+
 static void kprintf_uint32_x(uint32_t value) {
 
     kprintf_out('0');
@@ -79,9 +90,13 @@ void kprintf(const char *format, ...) {
             format++;
             switch(*format) {
                 case 'u':
-                case 'd':
                     t = va_arg(vp, uint32_t);
                     kprintf_uint32_d(t);
+                    format++;
+                break;
+                case 'd':
+                    t = va_arg(vp, int32_t);
+                    kprintf_int32_d(t);
                     format++;
                 break;
                 case 'x':
