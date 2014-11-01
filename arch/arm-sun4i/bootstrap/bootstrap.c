@@ -69,16 +69,35 @@ asm("           .text                       \n"
 "                                           \n");
 
 void __attribute__((noreturn)) bootstrapC(void) {
+
+    /*
+    * PLL1 output=(24MHz*N*K)/(M*P)
+    * PLL1_M = (0)=1
+    * PLL1_K = (0)=1
+    * PLL1_N = (16)=16
+    * PLL1_P = (0)=1
+    */
     PLL1_CFG = 0xa1005000;
 
+    /*
+    * Set CPU to use PLL1
+    */
     CPU_AHB_APB0_CFG = (AXI_DIV_1 << 0 | AHB_DIV_2 << 4 | APB0_DIV_1 << 8 | CPU_CLK_SRC_PLL1 << 16);
 
+    /*
+    * Setup APB1 clock and open the gate for UART0 clock
+    */
     APB1_CLK_DIV_CFG = (APB1_CLK_SRC_OSC24M << 24 | APB1_FACTOR_N_1 << 16 | APB1_FACTOR_M_1 << 0);
-
     APB1_GATE = (0x1<<16);
 
+    /*
+    * Setup IO pins for UART0
+    */
     PIO_CFG2_REG(PB) = (PIO_CFG2_REG(PB) & ~(0b01110111000000000000000000000000)) | 0b00100010000000000000000000000000;
 
+    /*
+    * Setup UART0 (115200, 8bits)
+    */
     while(UART0_USR & 1);
     UART0_LCR = (UART0_LCR | (1<<7));
     UART0_DLL = (13>>0) & 0xff;
@@ -94,14 +113,6 @@ void __attribute__((noreturn)) bootstrapC(void) {
     asmdelay(200);
 
     kprintf("Copyright (c)2014, The AROS Development Team. All rights reserved.\n\n");
-
-    kprintf("0xabad1dea = %x\n", 0xabad1dea);
-    kprintf("1234567890 = %d\n", 1234567890);
-    kprintf("-1234567890 = %d\n", -1234567890);
-    kprintf("3060399406 = %u\n", -1234567890);
-
-    kprintf("-1234 = %d\n", -1234);
-    kprintf("4294966062 = %u\n", -1234);
 
 /*
     Plan of attack:
@@ -124,8 +135,24 @@ void __attribute__((noreturn)) bootstrapC(void) {
         - Bootstrap code reads Aros module file list and loads and relocates ELF modules to DRAM
         - Modules are loaded from NAND or MMC, depending on boot priority and presense of MMC card
 
-        - Bootstrap code jumps Aros and passes on information
+        - Bootstrap code jumps to Aros kernel and passes on information
 */
+
+        uint32_t PLL1_P, PLL1_N, PLL1_K, PLL1_M;
+
+        PLL1_M = ((PLL1_CFG >> 0) & 0x3) + 1;
+        PLL1_K = ((PLL1_CFG >> 4) & 0x3) + 1;
+        PLL1_N = (PLL1_CFG >> 8) & 0x1f;
+        PLL1_P = (PLL1_CFG >> 16) & 0x3;
+        PLL1_P = (1<<PLL1_P);
+
+/*
+        kprintf("PLL1_M %d\n", PLL1_M);
+        kprintf("PLL1_K %d\n", PLL1_K);
+        kprintf("PLL1_N %d\n", PLL1_N);
+        kprintf("PLL1_P %d\n", PLL1_P);
+*/
+        kprintf("Bootstrap CPU speed %uMhz\n", ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P)));
 
     while(1);
 }
