@@ -64,7 +64,7 @@ asm("           .text                       \n"
 "               .globl bootstrapS           \n"
 "		        .type bootstrapS,%function  \n"
 "                                           \n"
-"bootstrapS:    ldr sp, =0x8000             \n"
+"bootstrapS:    ldr sp, =(0x8000-0x1000)    \n"
 "               b bootstrapC                \n"
 "                                           \n");
 
@@ -156,6 +156,29 @@ void __attribute__((noreturn)) bootstrapC(void) {
 */
         kprintf("Bootstrap CPU speed is %uMHz\n", ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P)));
 
-    while(1);
+    /*
+    * pcDuino uses CARD0 interface in SD card mode (PF io pins) and PH1 as card detect switch input with pull up resistor
+    * For generic bootstrap we will need information stored for used DEBUGUART and SD-card interface
+    */
+    PIO_CFG0_REG(PH) = (PIO_CFG2_REG(PB) & ~(0b00000000000000000000000001110000)) | 0b00000000000000000000000000000000;
+
+    BOOL cardinserted = FALSE;
+
+    if(!(PIO_DATA_REG(PH) & 0b10)) {
+        kprintf("SD card presence detected\n");
+        cardinserted = TRUE;
+    };
+
+    while(1){
+        if((PIO_DATA_REG(PH) & 0b10) && (cardinserted)) {
+            kprintf("SD card removed\n");
+            cardinserted = FALSE;
+        };
+
+        if(!(PIO_DATA_REG(PH) & 0b10) && !(cardinserted)) {
+            kprintf("SD card inserted\n");
+            cardinserted = TRUE;
+        };
+    };
 }
 
