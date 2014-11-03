@@ -9,6 +9,10 @@
 #ifndef HARDWARE_SUN4I_UART_H
 #define HARDWARE_SUN4I_UART_H
 
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+
 #ifndef _INTTYPES_H
 #include <inttypes.h>
 #endif
