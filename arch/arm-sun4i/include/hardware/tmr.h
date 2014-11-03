@@ -6,8 +6,12 @@
     Lang: english
 */
 
-#ifndef
-#define
+#ifndef HARDWARE_SUN4I_TIMER_H
+#define HARDWARE_SUN4I_TIMER_H
+
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
 
 #ifndef _INTTYPES_H
 #include <inttypes.h>

@@ -9,6 +9,10 @@
 #ifndef HARDWARE_SUN4I_PIOH
 #define HARDWARE_SUN4I_PIOH
 
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+
 #ifndef _INTTYPES_H
 #include <inttypes.h>
 #endif
