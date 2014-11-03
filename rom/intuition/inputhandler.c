@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -2561,16 +2561,17 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     struct SharedPointer    *shared_pointer;
                     struct Window           *window = IntuitionBase->ActiveWindow;
                     struct IntScreen         *scr;
-                    Object                  *pointer = ((struct IntWindow *)window)->pointer;
 
                     DEBUG_POINTER(dprintf("InputHandler: PointerDelay\n"));
-                    DEBUG_POINTER(dprintf("InputHandler:  Pointer 0x%lx\n",
-                                  pointer));
+                    DEBUG_POINTER(dprintf("InputHandler:  Window 0x%lx\n",
+                                  window));
 
                     if (window)
                     {
-                        DEBUG_POINTER(dprintf("InputHandler:  Window 0x%lx\n",
-                                      window));
+                        Object *pointer = ((struct IntWindow *)window)->pointer;
+
+                        DEBUG_POINTER(dprintf("InputHandler:  Pointer 0x%lx\n",
+                                      pointer));
                         scr = GetPrivScreen(window->WScreen);
                         if (scr)
                         {
