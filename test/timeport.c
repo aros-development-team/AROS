@@ -45,18 +45,6 @@ AROS_INTH1(intentry, struct MsgPort *, port)
     AROS_INTFUNC_EXIT
 }
 
-AROS_UFH4(void, fastentry,
-          AROS_UFHA(APTR,              data,    A1),
-          AROS_UFHA(APTR,              code,    A5),
-          AROS_UFHA(struct Message *,  msg,     D0),
-          AROS_UFHA(struct ExecBase *, SysBase, A6)) {
-    AROS_USERFUNC_INIT
-
-    ReplyMsg(msg);
-
-    AROS_USERFUNC_EXIT
-}
-
 AROS_UFH2(void, callentry,
           AROS_UFHA(struct MsgPort *,  port,    D0),
           AROS_UFHA(struct ExecBase *, SysBase, A6)) {
@@ -153,28 +141,6 @@ int main(int argc, char **argv) {
     }
 
     printf("PA_CALL: %ld.%lds\n", (long)(end.tv_sec - start.tv_sec), (long)(end.tv_usec - start.tv_usec) / 1000);
-
-    intr->is_Code = fastentry;
-
-    port->mp_Flags = PA_FASTCALL;
-    port->mp_SoftInt = intr;
-
-    gettimeofday(&start, NULL);
-
-    for (i = 0; i < NUM_MESSAGES; i++) {
-        PutMsg(port, msg);
-        WaitPort(reply);
-        GetMsg(reply);
-    }
-
-    gettimeofday(&end, NULL);
-
-    while (end.tv_usec < start.tv_usec) {
-        end.tv_sec--;
-        end.tv_usec += 1000000;
-    }
-
-    printf("PA_FASTCALL: %ld.%lds\n", (long)(end.tv_sec - start.tv_sec), (long)(end.tv_usec - start.tv_usec) / 1000);
 
     FreeVec(intr);
 

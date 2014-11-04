@@ -2,7 +2,7 @@
 #define EXEC_PORTS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Message ports and messages
@@ -38,13 +38,6 @@ struct MsgPort
 #define PA_CALL         3       /* Call function in mp_SigTask. This was never
                                    documented on AmigaOS and was never defined
                                    but would work for mp_Flags == 3 */
-
-#define PA_FASTCALL     4       /* AROS extension. Like PA_SOFTINT, calls an
-                                   Interrupt in mp_SoftInt, but passes the
-                                   message as the third argument without
-                                   adding it to the message list and so doesn't
-                                   require any locking, task switching or
-                                   Disable()/Enable() pairs */
 
 /* Message */
 struct Message
