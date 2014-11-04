@@ -51,9 +51,6 @@
 
     struct MsgPort *port;
 
-    /* Protect the message against access by other tasks. */
-    Disable();
-
     /* Get replyport */
     port=message->mn_ReplyPort;
 
@@ -68,8 +65,6 @@
 	InternalPutMsg(port, message, SysBase);
     }
 
-    /* All done */
-    Enable();
     AROS_LIBFUNC_EXIT
 } /* ReplyMsg() */
 

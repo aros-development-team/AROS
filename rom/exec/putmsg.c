@@ -60,26 +60,22 @@
     ASSERT_VALID_PTR(message);
     ASSERT_VALID_PTR(port);
 
-    /*
-	Messages may be sent from interrupts. Therefore the message list
-	of the message port must be protected with Disable().
-    */
-    Disable();
-
     /* Set the node type to NT_MESSAGE == sent message. */
     message->mn_Node.ln_Type=NT_MESSAGE;
 
     InternalPutMsg(port, message, SysBase);
 
-    /* All done. */
-    Enable();
     AROS_LIBFUNC_EXIT
 } /* PutMsg() */
 
 void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
 {
-    /* Add it to the message list. */
+    /* Add it to the message list. Messages may be sent from interrupts.
+       Therefore the message list of the message port must be protected with
+       Disable() */
+    Disable();
     AddTail(&port->mp_MsgList,&message->mn_Node);
+    Enable();
 
     if (port->mp_SigTask)
     {
