@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Reply a message
@@ -50,18 +50,6 @@
     AROS_LIBFUNC_INIT
 
     struct MsgPort *port;
-
-    /* handle FASTCALL before doing locking or anything else. yes, there's a
-     * potential race here if some task was to change mn_ReplyPort before/as
-     * we read it. thats why we fetch it again further down, after Disable().
-     * all bets are of when using FASTCALL */
-    port = message->mn_ReplyPort;
-
-    if (port != NULL && port->mp_Flags & PA_FASTCALL)
-    {
-        FastPutMsg(port, message, SysBase);
-        return;
-    }
 
     /* Protect the message against access by other tasks. */
     Disable();

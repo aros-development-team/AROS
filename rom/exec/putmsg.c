@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Send a message to a port.
@@ -60,14 +60,6 @@
     ASSERT_VALID_PTR(message);
     ASSERT_VALID_PTR(port);
 
-    /* FASTCALL is a special case that operates without the message list
-     * locked, so we have to check it before anything */
-    if (port->mp_Flags & PA_FASTCALL)
-    {
-        FastPutMsg(port, message, SysBase);
-        return;
-    }
-
     /*
 	Messages may be sent from interrupts. Therefore the message list
 	of the message port must be protected with Disable().
@@ -83,22 +75,6 @@
     Enable();
     AROS_LIBFUNC_EXIT
 } /* PutMsg() */
-
-void FastPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
-{
-    if (port->mp_SoftInt == NULL || ((struct Interrupt *) port->mp_SoftInt)->is_Code == NULL)
-        return;
-
-    ASSERT_VALID_PTR(port->mp_SoftInt);
-    ASSERT_VALID_PTR(((struct Interrupt *) port->mp_SoftInt)->is_Code);
-
-    /* call the "interrupt" with the message as an argument */
-    AROS_UFC4NR(void, ((struct Interrupt *) port->mp_SoftInt)->is_Code,
-             AROS_UFCA(APTR, ((struct Interrupt *) port->mp_SoftInt)->is_Data, A1),
-	         AROS_UFCA(ULONG_FUNC, (ULONG_FUNC)((struct Interrupt *) port->mp_SoftInt)->is_Code, A5),
-             AROS_UFCA(struct Message *,  message, D0),
-             AROS_UFCA(struct ExecBase *, SysBase, A6));
-}
 
 void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
 {
