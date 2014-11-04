@@ -19,7 +19,7 @@
 
 #define SUN4i_PIO_BASE          0x01C20800
 
-enum { PA = 0, PB, PC, PD, PE, PF, PG, PH, PI, PS };
+enum { PA = 0, PB, PC, PD, PE, PF, PG, PH, PI };
 
 #define PIO_CFG0_REG(n) *((volatile uint32_t *) ((uint32_t *) (SUN4i_PIO_BASE+(n*36+0))))
 #define PIO_CFG1_REG(n) *((volatile uint32_t *) ((uint32_t *) (SUN4i_PIO_BASE+(n*36+4))))
