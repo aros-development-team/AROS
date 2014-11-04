@@ -51,19 +51,20 @@
     EXAMPLE
         No you really don't want to use this function.
 
-BUGS
-    The only architecture that you can rely on the registers being
-    saved is on the Motorola mc68000 family.
+    BUGS
+        The only architecture that you can rely on the registers being
+        saved is on the Motorola mc68000 family.
 
-SEE ALSO
-    Forbid(), Disable(), Enable(), Wait()
+    SEE ALSO
+        Forbid(), Disable(), Enable(), Wait()
 
-INTERNALS
-    If you want to preserve all the registers, replace this function
-    in your $(KERNEL) directory. Otherwise this function is
-    satisfactory.
+    INTERNALS
+        If you want to preserve all the registers, replace this function
+        in your $(KERNEL) directory. Otherwise this function is
+        satisfactory.
 
-HISTORY
+    HISTORY
+
 
 ******************************************************************************/
 #undef Exec
