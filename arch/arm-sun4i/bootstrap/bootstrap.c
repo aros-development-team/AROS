@@ -18,6 +18,8 @@
 #define setbits(addr, set)             addr = (addr | (set))
 #define clrsetbits(addr, clear, set)   addr = ((addr & ~(clear)) | (set))
 
+#define PLL_SETTLING_DELAY 10000    /* CPU is running on 24MHz clock */
+
 void asmdelay(uint32_t t) {
     asm volatile ("1:              \n" \
     "              subs %0, %1, #1 \n" \
@@ -39,7 +41,7 @@ asm("           .text                       \n"
 void __attribute__((noreturn)) bootstrapC(void) {
 
     /*
-    * PLL1 output = (24MHz*N*K)/(M*P)
+    * PLL1 output for CPU = (24MHz*N*K)/(M*P)
     * PLL1_M = (0)=1
     * PLL1_K = (0)=1
     * PLL1_N = (16)=16
@@ -48,12 +50,41 @@ void __attribute__((noreturn)) bootstrapC(void) {
     PLL1_CFG = 0xa1005000;
 
     /*
+    * PLL5 output for DDR = (24MHz*N*K)/M
+    * PLL5 output for others = (24MHz*N*K)/P
+    *
+    * pcDuino has four(4) Hynix DDR3 chips, U2(d0-d7), U3(d8-d15), U10(d16-d23) and U11(d24-d31) in one rank
+    *     (pcDuino 408MHz, H5TQ2G83EFR 4 x (256M x 8), https://www.skhynix.com/inc/pdfDownload.jsp?path=/datasheet/pdf/dram/Computing_DDR3_H5TQ2G4%288%293EFR%28Rev1.1%29.pdf)
+    *
+    * PLL5_M = (0)=1
+    * PLL5_K = (0)=1
+    * PLL5_N = (17)=17 (408MHz/24MHz)
+    * PLL5_P = (0)=1 (1/2/4/8 or the exponent of 2 in other words)
+    *
+    * PLL5 bypass disabled, PLL5 enabled and DDR clk out disabled
+    *
+    * Writes over some unknown bits, bad bad... but seems to work :)
+    *
+    */
+  //PLL5_CFG = 0x80001100;  // 408MHz DRAM training passes on first iteration (0x40000000 contains 0x11111111)
+  //PLL5_CFG = 0x80001200;  // 432MHz DRAM training goes for a second iteration (0x40000000 contains 0x22222222)
+  //PLL5_CFG = 0x80001300;  // 456MHz DRAM training goes for a second iteration (0x40000000 contains 0x22222222)
+    PLL5_CFG = 0x80001400;  // 480MHz DRAM training passes on first iteration (0x40000000 contains 0x11111111)
+                            // These may not mean what I think they mean...
+
+    /*
+    * PLL clocks need time to lock on (or settle on a frequency), set both PLL clocks and then delay for both of them.
+    * It would be nice if there was a PLL lock bit to monitor.
+    */
+    asmdelay(PLL_SETTLING_DELAY);
+
+    /*
     * Set CPU to use PLL1
     */
     CPU_AHB_APB0_CFG = (AXI_DIV_1 << 0 | AHB_DIV_2 << 4 | APB0_DIV_1 << 8 | CPU_CLK_SRC_PLL1 << 16);
 
     /*
-    * Setup APB1 clock and open the gate for UART0 clock
+    * Setup APB1 clock and open the gate for UART0 clock, clear others
     */
     APB1_CLK_DIV_CFG = (APB1_CLK_SRC_OSC24M << 24 | APB1_FACTOR_N_1 << 16 | APB1_FACTOR_M_1 << 0);
     APB1_GATE = (0x1<<16);
@@ -116,34 +147,12 @@ void __attribute__((noreturn)) bootstrapC(void) {
     PLL1_P = (PLL1_CFG >> 16) & 0x3;
     PLL1_P = (1<<PLL1_P);
 
-/*
     kprintf("PLL1_M %d\n", PLL1_M);
     kprintf("PLL1_K %d\n", PLL1_K);
     kprintf("PLL1_N %d\n", PLL1_N);
     kprintf("PLL1_P %d\n", PLL1_P);
-*/
+
     kprintf("Bootstrap CPU clock is %uMHz\n", ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P)));
-
-    /*
-    * PLL5 output for DDR = (24MHz*N*K)/M
-    * PLL5 output for others = (24MHz*N*K)/P
-    *
-    * pcDuino has four(4) Hynix DDR3 chips, U2(d0-d7), U3(d8-d15), U10(d16-d23) and U11(d24-d31) in one rank
-    *     (pcDuino 408MHz, H5TQ2G83EFR 4 x (256M x 8), https://www.skhynix.com/inc/pdfDownload.jsp?path=/datasheet/pdf/dram/Computing_DDR3_H5TQ2G4%288%293EFR%28Rev1.1%29.pdf)
-    *
-    * PLL5_M = (0)=1
-    * PLL5_K = (0)=1
-    * PLL5_N = (17)=17 (408MHz/24MHz)
-    * PLL5_P = (0)=1 (1/2/4/8 or the exponent of 2 in other words)
-    *
-    * PLL5 bypass disabled, PLL5 enabled and DDR clk out disabled
-    *
-    * Write over some unknown bits, bad bad... :)
-    *
-    */
-
-    kprintf("PLL5_CFG %x\n", PLL5_CFG);
-    PLL5_CFG = 0x80001100;
 
     /*
     * Bits are identical to PLL1
@@ -158,15 +167,18 @@ void __attribute__((noreturn)) bootstrapC(void) {
 
     kprintf("Bootstrap DDR3 clock is %uMHz (for others PLL5 clock is %uMHz)\n", ((24*PLL5_N*PLL5_K)/PLL5_M), ((24*PLL5_N*PLL5_K)/PLL5_P));
 
-/*
     kprintf("PLL5_M %d\n", PLL5_M);
     kprintf("PLL5_K %d\n", PLL5_K);
     kprintf("PLL5_N %d\n", PLL5_N);
     kprintf("PLL5_P %d\n", PLL5_P);
-*/
 
+    /*
+    * Enable DDR_CLK_OUT
+    */
 	asmdelay(0x100000);
 	setbits(PLL5_CFG, 0x1<<29);
+
+
 
     /*
     * Check if we can write to DDR3 memory, if we can then it's all ours, every single bit and byte!
