@@ -27,7 +27,7 @@
 #define APB1_GATE           (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x006C))
 #define GPS_CLK_CFG         (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x00d0))
 #define DRAM_CLK_CFG        (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0100))
-#define MBUS_CLK_CFG        (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x015c))
+#define MBUS_CLK_CFG        (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x015c))   //According to some sources A10 doesn't have adjustable MBUS (some sort of interconnect bus afaik)
 
 #define APB1_CLK_SRC_OSC24M 0
 #define APB1_FACTOR_M_1     0
