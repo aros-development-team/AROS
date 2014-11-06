@@ -2,7 +2,7 @@
     Copyright © 2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: sun4i timer registers
+    Desc: sun4i timer module
     Lang: english
 */
 
@@ -60,6 +60,6 @@
 #define TIMER_GP1               (*(volatile uint32_t *)(SUN4I_TIMER_BASE + 0x0124))
 #define TIMER_GP2               (*(volatile uint32_t *)(SUN4I_TIMER_BASE + 0x0128))
 #define TIMER_GP3               (*(volatile uint32_t *)(SUN4I_TIMER_BASE + 0x012c))
-#define TIMER_CPU_CFG           (*(volatile uint32_t *)(SUN4I_TIMER_BASE + 0x0140))
+#define TIMER_CPU_CFG           (*(volatile uint32_t *)(SUN4I_TIMER_BASE + 0x013c)) // A10 user manual has this wrong!
 
 #endif
