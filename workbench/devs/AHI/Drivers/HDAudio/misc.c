@@ -246,7 +246,56 @@ void FreeDriverData(struct HDAudioChip* card, struct DriverBase*  AHIsubBase)
     }
 }
 
+#define CNT_VEN_ID_ATI_SB       0x437B1002
+#define CNT_VEN_ID_ATI_SB2      0x43831002
+#define CNT_VEN_ID_ATI_HUDSON   0x780D1022
+#define CNT_VEN_ID_NVIDIA       0x10DE
 
+/* This is the controller specific portion, for fixes to southbridge */
+void perform_controller_specific_settings(struct HDAudioChip *card)
+{
+    ULONG data;
+    ULONG mask = (1 << 16) - 1;
+
+    if ( card == NULL )
+    {
+        /* Should never happen, but its good practise to check. */
+        return;
+    }
+
+    /* Get vendor id */
+    data = inl_config(0x0, card->pci_dev);
+    D(bug("DEBUG: Controller Vendor ID: %x\n", data));
+
+    /* NVidia is for all nvidia MCP chipsets, create mask to get rid of device ID */
+
+    /* Check for ATI Southbridge or AMD Hudson controller */
+    if (data == CNT_VEN_ID_ATI_SB || data == CNT_VEN_ID_ATI_SB2 || data == CNT_VEN_ID_ATI_HUDSON)
+    {
+        D(bug("[HDAudio] ATI SB/AMD Hudson scontroller detected, setting snoop to on.\n"));
+        data = inb_config(0x42, card->pci_dev);
+        data &= ~0x07;
+        data |= 0x02;
+        outb_config(0x42, data, card->pci_dev);
+    }
+
+    /* Check for NVidia MCP controller */
+    if ((data & mask) == CNT_VEN_ID_NVIDIA )
+    {
+        D(bug("[HDAudio] NVidia MCP controller detected, setting snoop to on.\n"));
+        data = inb_config(0x4E, card->pci_dev);
+        data |= 0x0F;
+        outb_config(0x4E, data, card->pci_dev);
+
+        data = inb_config(0x4D, card->pci_dev);
+        data |= 0x01;
+        outb_config(0x4D, data, card->pci_dev);
+
+        data = inb_config(0x4C, card->pci_dev);
+        data |= 0x01;
+        outb_config(0x4C, data, card->pci_dev);
+    }
+}
 
 int card_init(struct HDAudioChip *card)
 {
@@ -261,7 +310,9 @@ int card_init(struct HDAudioChip *card)
         D(bug("[HDAudio] Reset chip failed\n"));
         return -1;
     }
-    
+
+    perform_controller_specific_settings(card);
+
     // 4.3 Codec discovery: 15 codecs can be connected, bits that are on indicate a codec
     card->codecbits = pci_inw(HD_STATESTS, card);
 
