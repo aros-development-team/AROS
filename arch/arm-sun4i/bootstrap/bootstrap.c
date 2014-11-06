@@ -9,56 +9,24 @@
 #include <hardware/sun4i/ccm.h>
 #include <hardware/sun4i/pio.h>
 #include <hardware/sun4i/uart.h>
+#include <hardware/sun4i/dram.h>
+#include <hardware/sun4i/tmr.h>
 
 #include <stdio.h>
 
-#define CPU_AHB_APB0_CFG (*(volatile uint32_t *)0x01c20054)
-#define PLL1_CFG         (*(volatile uint32_t *)0x01c20000)
-#define APB1_CLK_DIV_CFG (*(volatile uint32_t *)0x01c20058)
-#define APB1_GATE        (*(volatile uint32_t *)0x01c2006C)
+#define clrbits(addr, clear)           addr = (addr & ~(clear))
+#define setbits(addr, set)             addr = (addr | (set))
+#define clrsetbits(addr, clear, set)   addr = ((addr & ~(clear)) | (set))
 
-#define UART0_RBR (*(volatile uint32_t *)0x01c28000)
-#define UART0_THR (*(volatile uint32_t *)0x01c28000)
-#define UART0_DLL (*(volatile uint32_t *)0x01c28000)
-#define UART0_DLH (*(volatile uint32_t *)0x01c28004)
-#define UART0_IER (*(volatile uint32_t *)0x01c28004)
-#define UART0_IIR (*(volatile uint32_t *)0x01c28008)
-#define UART0_FCR (*(volatile uint32_t *)0x01c28008)
-#define UART0_LCR (*(volatile uint32_t *)0x01c2800c)
-#define UART0_MCR (*(volatile uint32_t *)0x01c28010)
-#define UART0_LSR (*(volatile uint32_t *)0x01c28014)
-#define UART0_MSR (*(volatile uint32_t *)0x01c28018)
-#define UART0_SCH (*(volatile uint32_t *)0x01c2801c)
-#define UART0_USR (*(volatile uint32_t *)0x01c2807c)
-#define UART0_TFL (*(volatile uint32_t *)0x01c28080)
-#define UART0_RFL (*(volatile uint32_t *)0x01c28084)
-#define UART0_HLT (*(volatile uint32_t *)0x01c280a4)
-
-#define APB1_CLK_SRC_OSC24M		0
-#define APB1_FACTOR_M_1			0
-#define APB1_FACTOR_N_1			0
-
-#define CPU_CLK_SRC_OSC24M		1
-#define CPU_CLK_SRC_PLL1		2
-
-#define AXI_DIV_1			0
-#define AXI_DIV_2			1
-#define AXI_DIV_3			2
-#define AXI_DIV_4			3
-
-#define AHB_DIV_1			0
-#define AHB_DIV_2			1
-#define AHB_DIV_4			2
-#define AHB_DIV_8			3
-
-#define APB0_DIV_1			0
-#define APB0_DIV_2			1
-#define APB0_DIV_4			2
-#define APB0_DIV_8			3
-
-#define asmdelay(t) asm volatile("mov r0, %[value]\n1: sub r0, #1\nbne 1b\n"::[value] "i" (t) : "r0", "cc");
+void asmdelay(uint32_t t) {
+    asm volatile ("1:              \n" \
+    "              subs %0, %1, #1 \n" \
+    "              bne 1b            ":"=r" (t):"0"(t));
+}
 
 void kprintf(const char *format, ...);
+
+int dramc_init(void);
 
 asm("           .text                       \n"
 "               .globl bootstrapS           \n"
@@ -71,11 +39,11 @@ asm("           .text                       \n"
 void __attribute__((noreturn)) bootstrapC(void) {
 
     /*
-    * PLL1 output=(24MHz*N*K)/(M*P)
+    * PLL1 output = (24MHz*N*K)/(M*P)
     * PLL1_M = (0)=1
     * PLL1_K = (0)=1
     * PLL1_N = (16)=16
-    * PLL1_P = (0)=1
+    * PLL1_P = (0)=1 (1/2/4/8 or the exponent of 2 in other words)
     */
     PLL1_CFG = 0xa1005000;
 
@@ -140,21 +108,75 @@ void __attribute__((noreturn)) bootstrapC(void) {
         - Bootstrap code jumps to Aros kernel and passes on information
 */
 
-        uint32_t PLL1_P, PLL1_N, PLL1_K, PLL1_M;
+    uint32_t PLL1_P, PLL1_N, PLL1_K, PLL1_M;
 
-        PLL1_M = ((PLL1_CFG >> 0) & 0x3) + 1;
-        PLL1_K = ((PLL1_CFG >> 4) & 0x3) + 1;
-        PLL1_N = (PLL1_CFG >> 8) & 0x1f;
-        PLL1_P = (PLL1_CFG >> 16) & 0x3;
-        PLL1_P = (1<<PLL1_P);
+    PLL1_M = ((PLL1_CFG >> 0) & 0x3) + 1;
+    PLL1_K = ((PLL1_CFG >> 4) & 0x3) + 1;
+    PLL1_N = (PLL1_CFG >> 8) & 0x1f;
+    PLL1_P = (PLL1_CFG >> 16) & 0x3;
+    PLL1_P = (1<<PLL1_P);
 
 /*
-        kprintf("PLL1_M %d\n", PLL1_M);
-        kprintf("PLL1_K %d\n", PLL1_K);
-        kprintf("PLL1_N %d\n", PLL1_N);
-        kprintf("PLL1_P %d\n", PLL1_P);
+    kprintf("PLL1_M %d\n", PLL1_M);
+    kprintf("PLL1_K %d\n", PLL1_K);
+    kprintf("PLL1_N %d\n", PLL1_N);
+    kprintf("PLL1_P %d\n", PLL1_P);
 */
-        kprintf("Bootstrap CPU speed is %uMHz\n", ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P)));
+    kprintf("Bootstrap CPU clock is %uMHz\n", ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P)));
+
+    /*
+    * PLL5 output for DDR = (24MHz*N*K)/M
+    * PLL5 output for others = (24MHz*N*K)/P
+    *
+    * pcDuino has four(4) Hynix DDR3 chips, U2(d0-d7), U3(d8-d15), U10(d16-d23) and U11(d24-d31) in one rank
+    *     (pcDuino 408MHz, H5TQ2G83EFR 4 x (256M x 8), https://www.skhynix.com/inc/pdfDownload.jsp?path=/datasheet/pdf/dram/Computing_DDR3_H5TQ2G4%288%293EFR%28Rev1.1%29.pdf)
+    *
+    * PLL5_M = (0)=1
+    * PLL5_K = (0)=1
+    * PLL5_N = (17)=17 (408MHz/24MHz)
+    * PLL5_P = (0)=1 (1/2/4/8 or the exponent of 2 in other words)
+    *
+    * PLL5 bypass disabled, PLL5 enabled and DDR clk out disabled
+    *
+    * Write over some unknown bits, bad bad... :)
+    *
+    */
+
+    kprintf("PLL5_CFG %x\n", PLL5_CFG);
+    PLL5_CFG = 0x80001100;
+
+    /*
+    * Bits are identical to PLL1
+    */
+    uint32_t PLL5_P, PLL5_N, PLL5_K, PLL5_M;
+
+    PLL5_M = ((PLL5_CFG >> 0) & 0x3) + 1;
+    PLL5_K = ((PLL5_CFG >> 4) & 0x3) + 1;
+    PLL5_N = (PLL5_CFG >> 8) & 0x1f;
+    PLL5_P = (PLL5_CFG >> 16) & 0x3;
+    PLL5_P = (1<<PLL5_P);
+
+    kprintf("Bootstrap DDR3 clock is %uMHz (for others PLL5 clock is %uMHz)\n", ((24*PLL5_N*PLL5_K)/PLL5_M), ((24*PLL5_N*PLL5_K)/PLL5_P));
+
+/*
+    kprintf("PLL5_M %d\n", PLL5_M);
+    kprintf("PLL5_K %d\n", PLL5_K);
+    kprintf("PLL5_N %d\n", PLL5_N);
+    kprintf("PLL5_P %d\n", PLL5_P);
+*/
+
+	asmdelay(0x100000);
+	setbits(PLL5_CFG, 0x1<<29);
+
+    /*
+    * Check if we can write to DDR3 memory, if we can then it's all ours, every single bit and byte!
+    */
+    uint32_t *this_one_is_in_ddr3_memory;
+    this_one_is_in_ddr3_memory = 0x40000000;
+
+    kprintf("this_one_is_in_ddr3_memory[0] = %x\n", *this_one_is_in_ddr3_memory);
+    *this_one_is_in_ddr3_memory = 0xabad1dea;
+    kprintf("this_one_is_in_ddr3_memory[0] = %x\n", *this_one_is_in_ddr3_memory);
 
     /*
     * pcDuino uses CARD0 interface in SD card mode (PF io pins) and PH1 as card detect switch input with pull up resistor
