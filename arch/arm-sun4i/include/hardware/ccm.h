@@ -17,7 +17,7 @@
 #include <inttypes.h>
 #endif
 
-#define SUN4I_CCM_BASE			0x01c28000
+#define SUN4I_CCM_BASE			0x01c20000
 
 struct CCM {
 	uint32_t PLL1_CFG;
