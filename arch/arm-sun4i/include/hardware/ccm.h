@@ -21,12 +21,13 @@
 
 #define PLL1_CFG            (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0000))
 #define PLL5_CFG            (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0020))
-
 #define CPU_AHB_APB0_CFG    (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0054))
 #define APB1_CLK_DIV_CFG    (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0058))
 #define AHB_GATE0           (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0060))
 #define APB1_GATE           (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x006C))
+#define GPS_CLK_CFG         (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x00d0))
 #define DRAM_CLK_CFG        (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0100))
+#define MBUS_CLK_CFG        (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x015c))
 
 #define APB1_CLK_SRC_OSC24M 0
 #define APB1_FACTOR_M_1     0
