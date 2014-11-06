@@ -17,89 +17,37 @@
 #include <inttypes.h>
 #endif
 
-#define SUN4I_CCM_BASE			0x01c20000
+#define SUN4I_CCM_BASE      0x01c20000
 
-struct CCM {
-	uint32_t PLL1_CFG;
-	uint32_t PLL1_TUN;
-	uint32_t PLL2_CFG;
-	uint32_t PLL2_TUN;
-	uint32_t PLL3_CFG;
-	uint32_t CCM_RESERVED_1;
-	uint32_t PLL4_CFG;
-	uint32_t CCM_RESERVED_2;
-	uint32_t PLL5_CFG;
-	uint32_t PLL5_TUN;
-	uint32_t PLL6_CFG;
-	uint32_t PLL6_TUN;
-	uint32_t PLL7_CFG;
-	uint32_t CCM_RESERVED_3;
-	uint32_t PLL1_TUN2;
-	uint32_t PLL5_TUN2;
-	uint8_t  CCM_RESERVED_4[12]; 	
-	uint32_t PLL_LOCK_DBG;
-	uint32_t OSC24M_CFG;
-	uint32_t CPU_AHB_APB0_CFG;
-	uint32_t APB1_CLK_DIV;
-	uint32_t AXI_GATING;
-	uint32_t AHB_GATING0;
-	uint32_t AHB_GATING1;
-	uint32_t APB0_GATING;
-	uint32_t APB1_GATING;
-	uint8_t  CCM_RESERVED_5[16]; 	
-	uint32_t NAND_SCLK_CFG;
-	uint32_t MS_SCLK_CFG;
-	uint32_t MMC0_SCLK_CFG;
-	uint32_t MMC1_SCLK_CFG;
-	uint32_t MMC2_SCLK_CFG;
-	uint32_t MMC3_SCLK_CFG;
-	uint32_t TS_CLK;
-	uint32_t SS_CLK;
-	uint32_t SPI0_CLK;
-	uint32_t SPI1_CLK;
-	uint32_t SPI2_CLK;
-	uint32_t PATA_CLK;
-	uint32_t IR0_CLK;
-	uint32_t IR1_CLK;
-	uint32_t IIS_CLK;
-	uint32_t AC97_CLK;
-	uint32_t SPDIF_CLK;
-	uint32_t KEYPAD_CLK;
-	uint32_t SATA_CLK;
-	uint32_t USB_CLK;
-	uint32_t GPS_CLK;
-	uint32_t SPI3_CLK;
-	uint8_t  CCM_RESERVED_6[40]; 	
-	uint32_t DRAM_CLK;
-	uint32_t BE0_SCLK;
-	uint32_t BE1_SCLK;
-	uint32_t FE0_CLK;
-	uint32_t FE1_CLK;
-	uint32_t MP_CLK;
-	uint32_t LCD0_CH0_CLK;
-	uint32_t LCD1_CH0_CLK;
-	uint32_t CSI_ISP_CLK;
-	uint32_t CCM_RESERVED_7[12]; 	
-	uint32_t TVD_CLK;
-	uint32_t LCD0_CH1_CLK;
-	uint32_t LCD1_CH1_CLK;
-	uint32_t CS0_CLK;
-	uint32_t CS1_CLK;
-	uint32_t VE_CLK;
-	uint32_t AUDIO_CODEC_CLK;
-	uint32_t AVS_CLK;
-	uint32_t ACE_CLK;
-	uint32_t LVDS_CLK;
-	uint32_t HDMI_CLK;
-	uint32_t MALI400_CLK;
-	uint32_t MBUS_CLK;
-	uint32_t GMAC_CLK;
-	uint32_t HDMI1_RST_CLK;
-	uint32_t HDMI1_CTRL_CLK;
-	uint32_t HDMI1_SLOW_CLK;	
-	uint32_t HDMI1_REPEAT_CLK;
-	uint32_t OUTA_CLK;
-	uint32_t OUTB_CLK;	
-}__attribute__((__packed__));
+#define PLL1_CFG            (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0000))
+#define PLL5_CFG            (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0020))
+
+#define CPU_AHB_APB0_CFG    (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0054))
+#define APB1_CLK_DIV_CFG    (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0058))
+#define AHB_GATE0           (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0060))
+#define APB1_GATE           (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x006C))
+#define DRAM_CLK_CFG        (*(volatile uint32_t *)(SUN4I_CCM_BASE + 0x0100))
+
+#define APB1_CLK_SRC_OSC24M 0
+#define APB1_FACTOR_M_1     0
+#define APB1_FACTOR_N_1     0
+
+#define CPU_CLK_SRC_OSC24M  1
+#define CPU_CLK_SRC_PLL1    2
+
+#define AXI_DIV_1           0
+#define AXI_DIV_2           1
+#define AXI_DIV_3           2
+#define AXI_DIV_4           3
+
+#define AHB_DIV_1           0
+#define AHB_DIV_2           1
+#define AHB_DIV_4           2
+#define AHB_DIV_8           3
+
+#define APB0_DIV_1          0
+#define APB0_DIV_2          1
+#define APB0_DIV_4          2
+#define APB0_DIV_8          3
 
 #endif
