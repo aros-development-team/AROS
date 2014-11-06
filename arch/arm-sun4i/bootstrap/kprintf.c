@@ -6,28 +6,12 @@
     Lang: english
 */
 
-#include <inttypes.h>
+#include <hardware/sun4i/uart.h>
+
 #include <stdio.h>
 
-#define UART0_RBR (*(volatile uint32_t *)0x01c28000)
-#define UART0_THR (*(volatile uint32_t *)0x01c28000)
-#define UART0_DLL (*(volatile uint32_t *)0x01c28000)
-#define UART0_DLH (*(volatile uint32_t *)0x01c28004)
-#define UART0_IER (*(volatile uint32_t *)0x01c28004)
-#define UART0_IIR (*(volatile uint32_t *)0x01c28008)
-#define UART0_FCR (*(volatile uint32_t *)0x01c28008)
-#define UART0_LCR (*(volatile uint32_t *)0x01c2800c)
-#define UART0_MCR (*(volatile uint32_t *)0x01c28010)
-#define UART0_LSR (*(volatile uint32_t *)0x01c28014)
-#define UART0_MSR (*(volatile uint32_t *)0x01c28018)
-#define UART0_SCH (*(volatile uint32_t *)0x01c2801c)
-#define UART0_USR (*(volatile uint32_t *)0x01c2807c)
-#define UART0_TFL (*(volatile uint32_t *)0x01c28080)
-#define UART0_RFL (*(volatile uint32_t *)0x01c28084)
-#define UART0_HLT (*(volatile uint32_t *)0x01c280a4)
-
 static inline void kprintf_out(char chr) {
-    while ((UART0_LSR & (1<<6)) == 0);
+    while ((UART0_LSR & ((1<<6)|(1<<5))) == 0);
     UART0_THR = chr;
 }
 
