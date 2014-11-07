@@ -3,14 +3,14 @@ include $(TOP)/config/make.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := bootstrap kprintf
-USER_CFLAGS     := -ffixed-r8 -Wall -fno-builtin -O3
+USER_CFLAGS     := -O3 -ffreestanding
 
 #MM- sun4i-bootstrap: sun4i-bootstrap-img
 
 #MM
 sun4i-bootstrap-img: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) -s --entry=bootstrapS --script=$(SRCDIR)/$(CURDIR)/ldscript.lds -Map $(TARGETDIR)/sun4i-bootstrap-img.map $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -L$(AROS_LIB) -laeabi -o $(TARGETDIR)/sun4i-bootstrap-img
-	$(OBJDUMP) -D $(TARGETDIR)/sun4i-bootstrap-img >>$(TARGETDIR)/sun4i-bootstrap-img.asm
+	$(KERNEL_LD) --entry=bootstrapS --script=$(SRCDIR)/$(CURDIR)/ldscript.lds -Map $(TARGETDIR)/sun4i-bootstrap-img.map $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -L$(AROS_LIB) -laeabi -o $(TARGETDIR)/sun4i-bootstrap-img
+	$(OBJDUMP) -d -S $(TARGETDIR)/sun4i-bootstrap-img >>$(TARGETDIR)/sun4i-bootstrap-img.asm
 	$(TARGET_OBJCOPY) -O binary $(TARGETDIR)/sun4i-bootstrap-img
 	$(MKSUNXIBOOT) $(TARGETDIR)/sun4i-bootstrap-img $(AROSDIR)/sun4i-bootstrap-img
 
@@ -19,7 +19,7 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(TARGETDIR)/%.o : %.c
-	%compile_q 
+	%compile_q cmd=$(KERNEL_CC) opt="$(CFLAGS) $(KERNEL_CFLAGS) $(KERNEL_OBJCFLAGS) -g -c"
 
 $(TARGETDIR)/%.o : %.S
 	%compile_q 
