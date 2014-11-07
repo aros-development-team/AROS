@@ -18,7 +18,12 @@
 #define setbits(addr, set)             addr = (addr | (set))
 #define clrsetbits(addr, clear, set)   addr = ((addr & ~(clear)) | (set))
 
-#define PLL_SETTLING_DELAY 10000    /* CPU is running on 24MHz clock */
+#define PLL_SETTLING_DELAY 100000    /* CPU is running on 24MHz clock when this gets used */
+
+#define TIMER_CPU_CFG_CHIP_REV_A  0
+#define TIMER_CPU_CFG_CHIP_REV_C1 1
+#define TIMER_CPU_CFG_CHIP_REV_C2 2
+#define TIMER_CPU_CFG_CHIP_REV_B  3
 
 void asmdelay(uint32_t t) {
     asm volatile ("1:              \n" \
@@ -30,6 +35,7 @@ void kprintf(const char *format, ...);
 
 int dramc_init(void);
 
+void bootstrapS(void);
 asm("           .text                       \n"
 "               .globl bootstrapS           \n"
 "		        .type bootstrapS,%function  \n"
@@ -39,6 +45,8 @@ asm("           .text                       \n"
 "                                           \n");
 
 void __attribute__((noreturn)) bootstrapC(void) {
+
+    uint32_t CPU_CFG_CHIP_REV;
 
     /*
     * PLL1 output for CPU = (24MHz*N*K)/(M*P)
@@ -66,22 +74,10 @@ void __attribute__((noreturn)) bootstrapC(void) {
     * Writes over some unknown bits, bad bad... but seems to work :)
     *
     */
-  //PLL5_CFG = 0x80001100;  // 408MHz DRAM training passes on first iteration (0x40000000 contains 0x11111111)
-  //PLL5_CFG = 0x80001200;  // 432MHz DRAM training goes for a second iteration (0x40000000 contains 0x22222222)
-  //PLL5_CFG = 0x80001300;  // 456MHz DRAM training goes for a second iteration (0x40000000 contains 0x22222222)
-    PLL5_CFG = 0x80001400;  // 480MHz DRAM training passes on first iteration (0x40000000 contains 0x11111111)
-                            // These may not mean what I think they mean...
-
-    /*
-    * PLL clocks need time to lock on (or settle on a frequency), set both PLL clocks and then delay for both of them.
-    * It would be nice if there was a PLL lock bit to monitor.
-    */
-    asmdelay(PLL_SETTLING_DELAY);
-
-    /*
-    * Set CPU to use PLL1
-    */
-    CPU_AHB_APB0_CFG = (AXI_DIV_1 << 0 | AHB_DIV_2 << 4 | APB0_DIV_1 << 8 | CPU_CLK_SRC_PLL1 << 16);
+  //PLL5_CFG = 0x80001100;  // 408MHz DRAM N=17
+  //PLL5_CFG = 0x80001200;  // 432MHz DRAM N=18
+  //PLL5_CFG = 0x80001300;  // 456MHz DRAM N=19
+    PLL5_CFG = 0x80001400;  // 480MHz DRAM N=20
 
     /*
     * Setup APB1 clock and open the gate for UART0 clock, clear others
@@ -97,6 +93,7 @@ void __attribute__((noreturn)) bootstrapC(void) {
     /*
     * Setup UART0 (115200, 8bits)
     */
+
     while(UART0_USR & 1);
     UART0_LCR = (UART0_LCR | (1<<7));
     UART0_DLL = (13>>0) & 0xff;
@@ -104,14 +101,54 @@ void __attribute__((noreturn)) bootstrapC(void) {
     UART0_LCR = (UART0_LCR & ~(1<<7));
     UART0_HLT = 0;
     UART0_LCR = 3;
+    UART0_MCR = 0;
+    UART0_IER = 0;
     UART0_FCR = 6;
 
     /*
-    * Our CPU clock has not yeat stabilized, don't do any time critical things until it settles.
+    * PLL clocks need time to lock on (or settle on a frequency), set both PLL clocks and then delay for both of them.
+    * It would be nice if there was a PLL lock bit to monitor.
+    * "Also, once the DLH is set, at least 8 clock cycles of the slowest UART clock should be allowed to pass before transmitting or receiving data."
     */
-    asmdelay(200);
+    asmdelay(PLL_SETTLING_DELAY);
+
+    /*
+    * Set CPU to use PLL1
+    */
+    CPU_AHB_APB0_CFG = (AXI_DIV_1 << 0 | AHB_DIV_2 << 4 | APB0_DIV_1 << 8 | CPU_CLK_SRC_PLL1 << 16);
+
+    /*
+    * Get chip revision. Clear the register first and see what pops up again or are read only.
+    * Apparently revision A has some bits inverted.
+    */
+    TIMER_CPU_CFG = 0;
+    CPU_CFG_CHIP_REV = ((TIMER_CPU_CFG>>6) & 0b11);
+
+    /*
+    * Allwinner user manual says "If the clock source is changed, at most to wait for 8 present running clock cycles"
+    */
+    asmdelay(1000);
 
     kprintf("Copyright (c)2014, The AROS Development Team. All rights reserved.\n\n");
+
+    kprintf("Allwinner A10 revision ");
+    switch(CPU_CFG_CHIP_REV) {
+        case TIMER_CPU_CFG_CHIP_REV_A:
+            kprintf("A\n\n");
+            break;
+        case TIMER_CPU_CFG_CHIP_REV_C1:
+            kprintf("C1\n\n");
+            break;
+        case TIMER_CPU_CFG_CHIP_REV_C2:
+            kprintf("C2\n\n");
+            break;
+        case TIMER_CPU_CFG_CHIP_REV_B:
+            kprintf("B\n\n");
+            break;
+        default:
+            kprintf("unknown\n\n");
+            break;
+    }
 
 /*
     Plan of attack:
@@ -139,7 +176,7 @@ void __attribute__((noreturn)) bootstrapC(void) {
         - Bootstrap code jumps to Aros kernel and passes on information
 */
 
-    uint32_t PLL1_P, PLL1_N, PLL1_K, PLL1_M;
+    uint32_t PLL1_P, PLL1_N, PLL1_K, PLL1_M, CPU_CLK;
 
     PLL1_M = ((PLL1_CFG >> 0) & 0x3) + 1;
     PLL1_K = ((PLL1_CFG >> 4) & 0x3) + 1;
@@ -147,17 +184,14 @@ void __attribute__((noreturn)) bootstrapC(void) {
     PLL1_P = (PLL1_CFG >> 16) & 0x3;
     PLL1_P = (1<<PLL1_P);
 
-    kprintf("PLL1_M %d\n", PLL1_M);
-    kprintf("PLL1_K %d\n", PLL1_K);
-    kprintf("PLL1_N %d\n", PLL1_N);
-    kprintf("PLL1_P %d\n", PLL1_P);
+    CPU_CLK = ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P));
 
-    kprintf("Bootstrap CPU clock is %uMHz\n", ((24*PLL1_N*PLL1_K)/(PLL1_M*PLL1_P)));
+    kprintf("Bootstrap CPU clock is %uMHz\n", CPU_CLK);
 
     /*
     * Bits are identical to PLL1
     */
-    uint32_t PLL5_P, PLL5_N, PLL5_K, PLL5_M;
+    uint32_t PLL5_P, PLL5_N, PLL5_K, PLL5_M, DRAM_CLK, PLL5_CLK;
 
     PLL5_M = ((PLL5_CFG >> 0) & 0x3) + 1;
     PLL5_K = ((PLL5_CFG >> 4) & 0x3) + 1;
@@ -165,19 +199,218 @@ void __attribute__((noreturn)) bootstrapC(void) {
     PLL5_P = (PLL5_CFG >> 16) & 0x3;
     PLL5_P = (1<<PLL5_P);
 
-    kprintf("Bootstrap DDR3 clock is %uMHz (for others PLL5 clock is %uMHz)\n", ((24*PLL5_N*PLL5_K)/PLL5_M), ((24*PLL5_N*PLL5_K)/PLL5_P));
+    DRAM_CLK = ((24*PLL5_N*PLL5_K)/PLL5_M);
+    PLL5_CLK = ((24*PLL5_N*PLL5_K)/PLL5_P);
 
-    kprintf("PLL5_M %d\n", PLL5_M);
-    kprintf("PLL5_K %d\n", PLL5_K);
-    kprintf("PLL5_N %d\n", PLL5_N);
-    kprintf("PLL5_P %d\n", PLL5_P);
+    kprintf("Bootstrap DDR3 clock is %uMHz (for others PLL5 clock is %uMHz)\n\n", DRAM_CLK, PLL5_CLK);
+
+/* DDR3 setup [start] - minus PLL5 clock for SDRAM */
 
     /*
     * Enable DDR_CLK_OUT
     */
-	asmdelay(0x100000);
 	setbits(PLL5_CFG, 0x1<<29);
 
+    /*
+    * Open DRAM gate
+    */
+	clrbits(AHB_GATE0, 0x1<<14);
+	asmdelay(0x1000);
+	setbits(AHB_GATE0, 0x1<<14);
+	asmdelay(0x1000);
+
+	if (CPU_CFG_CHIP_REV != 0) {
+		setbits(DRAM_MCR, 0x1<<12);
+		asmdelay(0x100);
+		clrbits(DRAM_MCR, 0x1<<12);
+	} else {
+		clrbits(DRAM_MCR, 0x1<<12);
+		asmdelay(0x100);
+		setbits(DRAM_MCR, 0x1<<12);
+	}
+
+	clrsetbits(DRAM_MCR, 0x3, (0x6<<12) | 0xffc);
+
+    /*
+    * DRAM clock off
+    */
+    clrbits(DRAM_CLK_CFG, 0x1<<15);
+
+    /*
+    * DRAM controller needs to be kicked with a magic word
+    */
+	DRAM_CSEL = SUN4I_DRAM_MAGIC1;
+
+	setbits(DRAM_CCR, 0x1<<28);
+
+    /*
+    * Enable DLL0
+    */
+	clrsetbits(DRAM_DLLCR0, 0x1<<30, 0x1<<31);
+	asmdelay(0x100);
+	clrbits(DRAM_DLLCR0, 0x3<<30);
+	asmdelay(0x1000);
+	clrsetbits(DRAM_DLLCR0, 0x1<<31, 0x1<<30);
+	asmdelay(0x1000);
+
+    /*
+    * Configure DRAM (specific for pcDuino)
+    *
+    * Type: DDR3
+    * Bus data width: 32
+    * Chip data width: 8
+    * Chip density: 2048 mebibits
+    * Ranks: 1
+    */
+    DRAM_DCR = 0x000030db;
+
+    /*
+    * DRAM clock on
+    */
+    setbits(DRAM_CLK_CFG, 0x1<<15);
+	asmdelay(0x10);
+
+	while (DRAM_CCR & (0x1 << 31));
+
+    /*
+    * Enable DLL1-DLL2 for 16-bit bus and DLL1-DLL4 for 32-bit bus others not supported and may hang
+    */
+	clrsetbits(DRAM_DLLCR1, 0x1<<30, 0x1<<31);
+	clrsetbits(DRAM_DLLCR2, 0x1<<30, 0x1<<31);
+    if(((DRAM_DCR>>6) & 0x3) == 0x3) {
+	    clrsetbits(DRAM_DLLCR3, 0x1<<30, 0x1<<31);
+	    clrsetbits(DRAM_DLLCR4, 0x1<<30, 0x1<<31);
+    }
+	asmdelay(0x100);
+
+	clrbits(DRAM_DLLCR1, 0x3<<30);
+	clrbits(DRAM_DLLCR2, 0x3<<30);
+    if(((DRAM_DCR>>6) & 0x3) == 0x3) {
+	    clrbits(DRAM_DLLCR3, 0x3<<30);
+	    clrbits(DRAM_DLLCR4, 0x3<<30);
+    }
+	asmdelay(0x1000);
+
+	clrsetbits(DRAM_DLLCR1, 0x1<<31, 0x1<<30);
+	clrsetbits(DRAM_DLLCR2, 0x1<<31, 0x1<<30);
+    if(((DRAM_DCR>>6) & 0x3) == 0x3) {
+	    clrsetbits(DRAM_DLLCR3, 0x1<<31, 0x1<<30);
+	    clrsetbits(DRAM_DLLCR4, 0x1<<31, 0x1<<30);
+    }
+	asmdelay(0x1000);
+
+    /*
+    * Set ODT impedance divide ratio
+    */
+    DRAM_ZQCR0 = 0x07b00000;
+
+    /*
+    * Set IO configuration register
+    */
+    DRAM_IOCR = 0x00cc0000;
+
+    /*
+    * Set refresh period, hardcode computed for pcDuino 480MHz
+    */
+	uint32_t reg_val;
+	uint32_t tmp_val;
+
+	if (DRAM_CLK < 600) {
+        /*
+        * Get back the chip density
+        */
+		if (((DRAM_DCR>>3) & 0x7) <= 0x2) {
+			reg_val = (131*DRAM_CLK)>>10;
+		} else {
+			reg_val = (336*DRAM_CLK)>>10;
+        }
+		tmp_val = (7987*DRAM_CLK)>>10;
+		tmp_val = tmp_val*9-200;
+		reg_val |= tmp_val<<8;
+		reg_val |= 0x8<<24;
+		DRAM_DRR = reg_val;
+//        DRAM_DRR = 0x0882cf9d; //480MHz DDR3 clock
+	} else {
+		DRAM_DRR = 0x0;
+	}
+
+    /*
+    * Set timing parameters
+    */
+	DRAM_TPR0 = 0x30926692;
+	DRAM_TPR1 = 0x00001090;
+	DRAM_TPR2 = 0x0001a0c8;
+
+    /*
+    * DDR3 and CAS = 6
+    */
+    DRAM_MR = (((6-4)<<4) | (0x5<<9));
+
+    DRAM_EMR =  0x00000004;
+    DRAM_EMR2 = 0x00000000;
+    DRAM_EMR3 = 0x00000000;
+
+    /*
+    * Set DQS window mode
+    */
+    clrsetbits(DRAM_CCR, 0x1<<17, 0x1<<14);
+
+    /* reset external DRAM */
+    setbits(DRAM_CCR, 0x1<<31);
+    while (DRAM_CCR & (0x1<<31));
+
+    clrbits(DRAM_CCR, 0x1<<28);
+
+    /*
+    * Trigger the data training and wait it to finish
+    */
+    setbits(DRAM_CCR, 0x1<<30);
+    while (DRAM_CCR & (0x1<<30));
+
+    /*
+    * Check the result
+    */
+    if(DRAM_CSR & (0x1<<20)) {
+        kprintf("DDR3 data training failed!\n");
+        bootstrapS();
+    } else {
+        kprintf("DDR3 data training succesful!\n");
+    }
+
+    DRAM_HPCR0 = 0x0301;
+    DRAM_HPCR1 = 0x0301;
+    DRAM_HPCR2 = 0x0301;
+    DRAM_HPCR3 = 0x0301;
+    DRAM_HPCR4 = 0x0301;
+    DRAM_HPCR5 = 0x0301;
+    DRAM_HPCR6 = 0;
+    DRAM_HPCR7 = 0;
+    DRAM_HPCR8 = 0;
+    DRAM_HPCR9 = 0;
+    DRAM_HPCR10 = 0;
+    DRAM_HPCR11 = 0;
+    DRAM_HPCR12 = 0;
+    DRAM_HPCR13 = 0;
+    DRAM_HPCR14 = 0;
+    DRAM_HPCR15 = 0;
+    DRAM_HPCR16 = 0x1031;
+    DRAM_HPCR17 = 0x1031;
+    DRAM_HPCR18 = 0x0735;
+    DRAM_HPCR19 = 0x1035;
+    DRAM_HPCR20 = 0x1035;
+    DRAM_HPCR21 = 0x0731;
+    DRAM_HPCR22 = 0x1031;
+    DRAM_HPCR23 = 0x0735;
+    DRAM_HPCR24 = 0x1035;
+    DRAM_HPCR25 = 0x1031;
+    DRAM_HPCR26 = 0x0731;
+    DRAM_HPCR27 = 0x1035;
+    DRAM_HPCR28 = 0x1031;
+    DRAM_HPCR29 = 0x0301;
+    DRAM_HPCR30 = 0x0301;
+    DRAM_HPCR31 = 0x0731;
+
+/* DDR3 setup [end] */
 
 
     /*
