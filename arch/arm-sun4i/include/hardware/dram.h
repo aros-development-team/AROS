@@ -96,6 +96,6 @@
 #define DRAM_HPCR31      (*(volatile uint32_t *)(SUN4I_DRAM_BASE + 0x02cc))
 #define DRAM_CSEL        (*(volatile uint32_t *)(SUN4I_DRAM_BASE + 0x02e0))
 
-#define SUN4I_DRAM_MAGIC 0x16237495
+#define SUN4I_DRAM_MAGIC1 0x16237495
 
 #endif
