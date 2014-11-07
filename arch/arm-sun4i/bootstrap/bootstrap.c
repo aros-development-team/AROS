@@ -20,11 +20,6 @@
 
 #define PLL_SETTLING_DELAY 100000    /* CPU is running on 24MHz clock when this gets used */
 
-#define TIMER_CPU_CFG_CHIP_REV_A  0
-#define TIMER_CPU_CFG_CHIP_REV_C1 1
-#define TIMER_CPU_CFG_CHIP_REV_C2 2
-#define TIMER_CPU_CFG_CHIP_REV_B  3
-
 void asmdelay(uint32_t t) {
     asm volatile ("1:              \n" \
     "              subs %0, %1, #1 \n" \
@@ -32,8 +27,6 @@ void asmdelay(uint32_t t) {
 }
 
 void kprintf(const char *format, ...);
-
-int dramc_init(void);
 
 void bootstrapS(void);
 asm("           .text                       \n"
@@ -377,6 +370,9 @@ void __attribute__((noreturn)) bootstrapC(void) {
         kprintf("DDR3 data training succesful!\n");
     }
 
+    /*
+    * Host port access and priority (USB, CPU, GPU etc.)
+    */
     DRAM_HPCR0 = 0x0301;
     DRAM_HPCR1 = 0x0301;
     DRAM_HPCR2 = 0x0301;
@@ -411,7 +407,6 @@ void __attribute__((noreturn)) bootstrapC(void) {
     DRAM_HPCR31 = 0x0731;
 
 /* DDR3 setup [end] */
-
 
     /*
     * Check if we can write to DDR3 memory, if we can then it's all ours, every single bit and byte!
