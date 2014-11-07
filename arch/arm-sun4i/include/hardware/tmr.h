@@ -62,4 +62,9 @@
 #define TIMER_GP3               (*(volatile uint32_t *)(SUN4I_TIMER_BASE + 0x012c))
 #define TIMER_CPU_CFG           (*(volatile uint32_t *)(SUN4I_TIMER_BASE + 0x013c)) // A10 user manual has this wrong!
 
+#define TIMER_CPU_CFG_CHIP_REV_A  0
+#define TIMER_CPU_CFG_CHIP_REV_C1 1
+#define TIMER_CPU_CFG_CHIP_REV_C2 2
+#define TIMER_CPU_CFG_CHIP_REV_B  3
+
 #endif
