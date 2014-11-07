@@ -8357,10 +8357,9 @@ case "$target_os" in
 		gcc_default_float_abi="hard"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
-        aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_config_aflags="$aros_config_aflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_kernel_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_optimization_cflags=""
+        aros_config_cflags="$aros_config_cflags -mcpu=cortex-a8 -mtune=cortex-a8 -fno-strict-aliasing"
+        aros_config_aflags="$aros_config_aflags -mcpu=cortex-a8 -mtune=cortex-a8 -fno-strict-aliasing"
         ;;
 
     amiga*)
