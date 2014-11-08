@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI direct driver for i386 native.
@@ -7,7 +7,7 @@
 */
 
 #define __OOP_NOATTRBASES__
-//#define DEBUG 1
+
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <hidd/pci.h>
@@ -28,6 +28,9 @@
 #define	HiddPCIDriverAttrBase (PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase          (PSD(cl)->hiddAB)
 #define HiddPCIDeviceAttrBase (PSD(cl)->hidd_PCIDeviceAB)
+
+/* ACPICABase is optional */
+struct Library *ACPICABase;
 
 /*
     We overload the New method in order to introduce the Hidd Name and
@@ -135,7 +138,7 @@ ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
 
     /*
         Last good long register without ECAM,
-        macros in CAM methods take care of the alignement.
+        macros in CAM methods take care of the alignment.
         we don't want to return some random value.
     */
     if(msg->reg < 0x100) {
@@ -176,7 +179,7 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     } else {
         /*
             Last good long register without ECAM,
-            macros in CAM methods take care of the alignement.
+            macros in CAM methods take care of the alignment.
             we don't want to store the value in some random address.
         */
         if(msg->reg < 0x100) {
@@ -194,8 +197,6 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     D(bug("[PCI.PC] Driver initialization\n"));
 
     struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
-
-    struct Library *ACPICABase;
 
     /*
         We only (try to) fetch the mcfg_table, no need to keep ACPI library open.
