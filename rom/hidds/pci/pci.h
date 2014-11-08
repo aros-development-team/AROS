@@ -2,7 +2,7 @@
 #define _PCI_H
 
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -60,7 +60,9 @@ typedef struct DeviceData {
 
     struct SignalSemaphore ownerLock;
 
-    IPTR                extendedconfig; /* If Extended Configuration exist the HW driver fills this with non NULL value */
+    /* If Extended Configuration exists, the HW driver fills this with a
+       non-NULL value */
+    IPTR                extendedconfig;
 
 } tDeviceData;
 
