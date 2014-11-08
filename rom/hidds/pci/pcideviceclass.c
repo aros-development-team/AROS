@@ -1,11 +1,11 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI device class
     Lang: English
 */
-//#define DEBUG 1
+
 #include <exec/types.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
