@@ -55,7 +55,7 @@ void __attribute__((noreturn)) bootstrapC(void) {
     * PLL5 output for others = (24MHz*N*K)/P
     *
     * pcDuino has four(4) Hynix DDR3 chips, U2(d0-d7), U3(d8-d15), U10(d16-d23) and U11(d24-d31) in one rank
-    *     (pcDuino 408MHz, H5TQ2G83EFR 4 x (256M x 8), https://www.skhynix.com/inc/pdfDownload.jsp?path=/datasheet/pdf/dram/Computing_DDR3_H5TQ2G4%288%293EFR%28Rev1.1%29.pdf)
+    *     (pcDuino 408MHz, H5TQ2G83EFR-PBC 250K 4 x (256M x 8), https://www.skhynix.com/inc/pdfDownload.jsp?path=/datasheet/pdf/dram/Computing_DDR3_H5TQ2G4%288%293EFR%28Rev1.1%29.pdf)
     *
     * PLL5_M = (0)=1
     * PLL5_K = (0)=1
@@ -302,30 +302,38 @@ void __attribute__((noreturn)) bootstrapC(void) {
     */
     DRAM_IOCR = 0x00cc0000;
 
-    /*
-    * Set refresh period, hardcode computed for pcDuino 480MHz
-    */
-	uint32_t reg_val;
-	uint32_t tmp_val;
+/*
+* Compute refresh interval
+* tREFI is 7.8uS from Hynix datasheet (normal temperature range, 3.9uS for extended range)
+* -> We need to convert it to our DDR3 clock ticks (nREFI)
+* -> 7.8uS = 7800nS
+* -> 7800nS/(DDR3_clk_period) = 7800nS*DDR3_clk
+* -> DDR3_clk is already known so we use that
+* -> nREFI = (7800nS*480MHz)/1000 = (7.8uS*480MHz) = 3744 ticks
+*
+* tRFC is given as clock ticks in Hynix datasheet (nRFC)
+* nRFC for 2Gb DDR3-1033 is 86 ticks 
+* -> 1/(1066MHz/2) = 0.00187617 or so seconds for the clock period
+* -> With 86 ticks this gives tRFC a value of 0.16135 seconds or so (161.35mS)
+* -> If we multiply this with the DDR3_clk frequency of the original 533MHz clock we should arrive at the same tick count of 86
+* -> (161.35mS*533MHz)/1000 = 86
+*
+* -> Instead we need to calculate the correct tic count for our DDR3 clock (480MHz for now)
+* -> (161.35mS*480MHz)/1000 = 77 ticks = nRFC
+* -> Or more simply ((86/533MHz) = (nRFC/480MHz)) or nRFC = ((86/533MHz)*480MHz)
+*
+* DDR3_numr = Number of posted refreshes 0-8 (0=1) set it to 8 for now
+*/
+#define DDR3_clk    480
+#define DDR3_tREFI  7800
+#define DDR3_nREFI  (DDR3_tREFI*DDR3_clk)/1000
+#define DDR3_tRFC   162
+#define DDR3_nRFC   (DDR3_tRFC*DDR3_clk)/1000
+#define DDR3_numr   8
 
-	if (DRAM_CLK < 600) {
-        /*
-        * Get back the chip density
-        */
-		if (((DRAM_DCR>>3) & 0x7) <= 0x2) {
-			reg_val = (131*DRAM_CLK)>>10;
-		} else {
-			reg_val = (336*DRAM_CLK)>>10;
-        }
-		tmp_val = (7987*DRAM_CLK)>>10;
-		tmp_val = tmp_val*9-200;
-		reg_val |= tmp_val<<8;
-		reg_val |= 0x8<<24;
-		DRAM_DRR = reg_val;
-//        DRAM_DRR = 0x0882cf9d; //480MHz DDR3 clock
-	} else {
-		DRAM_DRR = 0x0;
-	}
+#define DDR3_nRFPRD (DDR3_nREFI*(DDR3_numr+1))
+
+    DRAM_DRR = (DDR3_numr<<24)|((DDR3_nRFPRD)<<8)|(DDR3_nRFC);
 
     /*
     * Set timing parameters
