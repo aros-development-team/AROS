@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := bootstrap kprintf
-USER_CFLAGS     := -O3 -ffreestanding
+USER_CFLAGS     := -Os -ffreestanding
 
 #MM- sun4i-bootstrap: sun4i-bootstrap-img
 
