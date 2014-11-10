@@ -9,7 +9,7 @@ FILES := startup main disk cache packet ntfs ops lock direntry charset names tim
 DISABLEDFILES :=   file   
 
 %build_prog mmake=workbench-fs-ntfs \
-    progname=ntfs-handler targetdir=$(AROS_FS) \
+    progname=ntfs-handler targetdir=$(AROSDIR)/Storage \
     files="$(FILES)" usestartup=no
 
 %common
