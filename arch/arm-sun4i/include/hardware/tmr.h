@@ -67,4 +67,19 @@
 #define TIMER_CPU_CFG_CHIP_REV_C2 2
 #define TIMER_CPU_CFG_CHIP_REV_B  3
 
+#define TIMER_ENABLE        (1<<0)
+#define TIMER_AUTORELOAD    (1<<1)
+#define TIMER_OSC24M        (1<<2)
+
+#define TIMER_PRESCALAR_1   (0b000<<4)
+#define TIMER_PRESCALAR_2   (0b001<<4)
+#define TIMER_PRESCALAR_4   (0b010<<4)
+#define TIMER_PRESCALAR_8   (0b011<<4)
+#define TIMER_PRESCALAR_16  (0b100<<4)
+#define TIMER_PRESCALAR_32  (0b101<<4)
+#define TIMER_PRESCALAR_64  (0b110<<4)
+#define TIMER_PRESCALAR_128 (0b111<<4)
+
+#define TIMER_MODE_SINGLE   (1<<7)
+
 #endif
