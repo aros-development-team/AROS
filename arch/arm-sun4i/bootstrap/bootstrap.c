@@ -12,7 +12,13 @@
 #include <hardware/sun4i/dram.h>
 #include <hardware/sun4i/tmr.h>
 
+#include <asm/cpu.h>
+#include <asm/arm/mmu.h>
+#include <asm/arm/cp15.h>
+
 #include <stdio.h>
+
+//#include "arm-neon.h"
 
 #define clrbits(addr, clear)           addr = (addr & ~(clear))
 #define setbits(addr, set)             addr = (addr | (set))
@@ -20,6 +26,9 @@
 
 #define PLL_SETTLING_DELAY 100000    /* CPU is running on 24MHz clock when this gets used */
 
+/*
+* FIXME: Use timer0, it's so simple
+*/
 void asmdelay(uint32_t t) {
     asm volatile ("1:              \n" \
     "              subs %0, %1, #1 \n" \
@@ -40,6 +49,15 @@ asm("           .text                       \n"
 void __attribute__((noreturn)) bootstrapC(void) {
 
     uint32_t CPU_CFG_CHIP_REV;
+
+    /* Disable MMU, level one data cache and strict alignment fault checking */
+    CP15_C1CR_Clear(C1CRF_C|C1CRF_A|C1CRF_M);
+    /* Enable level one data cache */
+    CP15_C1CR_Set(C1CRF_C);
+	/* Set cp10 and cp11 for Privileged and User mode access */
+	CP15_C1CACR_All(C1CACRV_CPAP(10)|C1CACRV_CPAP(11));
+	/* Enable VFP (and NEON in our case) */
+    fmxr(cr8, fmrx(cr8) | 1 << 30);
 
     /*
     * PLL1 output for CPU = (24MHz*N*K)/(M*P)
@@ -67,10 +85,12 @@ void __attribute__((noreturn)) bootstrapC(void) {
     * Writes over some unknown bits, bad bad... but seems to work :)
     *
     */
+
+    PLL5_CFG = 0x91059191;  // 408MHz FIXME: document bits that are set and make it a macro
   //PLL5_CFG = 0x80001100;  // 408MHz DRAM N=17
   //PLL5_CFG = 0x80001200;  // 432MHz DRAM N=18
   //PLL5_CFG = 0x80001300;  // 456MHz DRAM N=19
-    PLL5_CFG = 0x80001400;  // 480MHz DRAM N=20
+  //PLL5_CFG = 0x80001400;  // 480MHz DRAM N=20
 
     /*
     * Setup APB1 clock and open the gate for UART0 clock, clear others
@@ -204,6 +224,8 @@ void __attribute__((noreturn)) bootstrapC(void) {
     */
 	setbits(PLL5_CFG, 0x1<<29);
 
+    //MBUS_CLK_CFG = 0x82000001;
+
     /*
     * Open DRAM gate
     */
@@ -324,16 +346,36 @@ void __attribute__((noreturn)) bootstrapC(void) {
 *
 * DDR3_numr = Number of posted refreshes 0-8 (0=1) set it to 8 for now
 */
-#define DDR3_clk    480
+//#define DDR3_clk    408
 #define DDR3_tREFI  7800
-#define DDR3_nREFI  (DDR3_tREFI*DDR3_clk)/1000
+//#define DDR3_nREFI  (DDR3_tREFI*DDR3_clk)/1000
 #define DDR3_tRFC   162
-#define DDR3_nRFC   (DDR3_tRFC*DDR3_clk)/1000
+//#define DDR3_nRFC   (DDR3_tRFC*DDR3_clk)/1000
 #define DDR3_numr   8
 
-#define DDR3_nRFPRD (DDR3_nREFI*(DDR3_numr+1))
+//#define DDR3_nRFPRD (DDR3_nREFI*(DDR3_numr+1))-200
 
-    DRAM_DRR = (DDR3_numr<<24)|((DDR3_nRFPRD)<<8)|(DDR3_nRFC);
+    uint32_t temp, DDR3_nREFI, DDR3_nRFC, DDR3_nRFPRD;
+
+    DDR3_nREFI = ((DDR3_tREFI*DRAM_CLK)/1000);
+    DDR3_nRFC = ((DDR3_tRFC*DRAM_CLK)/1000);
+    DDR3_nRFPRD = ((DDR3_nREFI*(DDR3_numr+1))-200);
+
+    temp = DRAM_DRR;
+    kprintf("DRAM_DRR %x\n", temp);
+
+    kprintf("DDR3_nREFI %x\n", DDR3_nREFI);
+    kprintf("DDR3_nRFC %x\n", DDR3_nRFC);
+    kprintf("DDR3_nRFPRD %x\n", DDR3_nRFPRD);
+
+    DRAM_DRR = ((1<<31) | (DDR3_numr<<24) | ((DDR3_nRFPRD)<<8) | (DDR3_nRFC));
+
+    temp = DRAM_DRR;
+    kprintf("DRAM_DRR %x\n", temp);
+
+    /*
+    * Computed DRAM_DRR = 0x886f1642, CHECKME:
+    */
 
     /*
     * Set timing parameters
@@ -416,6 +458,90 @@ void __attribute__((noreturn)) bootstrapC(void) {
 
 /* DDR3 setup [end] */
 
+    uint32_t *a, b, i;
+
+#if(0)
+    TIMER0_CTRL = (TIMER_OSC24M|TIMER_PRESCALAR_1|TIMER_MODE_SINGLE|TIMER_PRESCALAR_128);
+
+    TIMER0_INTR_VAL = ~0;
+    TIMER0_CUR_VAL = ~0;
+	setbits(TIMER0_CTRL, TIMER_ENABLE);
+    aligned_block_read_neon(0x40000000, 0x50000000, 1024*1024*10);
+	clrbits(TIMER0_CTRL, TIMER_ENABLE);
+    b = ~TIMER0_CUR_VAL;
+    kprintf("aligned_block_read_neon in %umS(%u)\n", (b*1000)/187500, b);
+
+    TIMER0_INTR_VAL = ~0;
+    TIMER0_CUR_VAL = ~0;
+	setbits(TIMER0_CTRL, TIMER_ENABLE);
+    aligned_block_read_pf32_neon(0x40000000, 0x50000000, 1024*1024*10);
+	clrbits(TIMER0_CTRL, TIMER_ENABLE);
+    b = ~TIMER0_CUR_VAL;
+    kprintf("aligned_block_read_pf32_neon in %umS(%u)\n", (b*1000)/187500, b);
+
+    TIMER0_INTR_VAL = ~0;
+    TIMER0_CUR_VAL = ~0;
+	setbits(TIMER0_CTRL, TIMER_ENABLE);
+    aligned_block_read_pf64_neon(0x40000000, 0x50000000, 1024*1024*10);
+	clrbits(TIMER0_CTRL, TIMER_ENABLE);
+    b = ~TIMER0_CUR_VAL;
+    kprintf("aligned_block_read_pf64_neon in %umS(%u)\n", (b*1000)/187500, b);
+
+    TIMER0_INTR_VAL = ~0;
+    TIMER0_CUR_VAL = ~0;
+	setbits(TIMER0_CTRL, TIMER_ENABLE);
+    aligned_block_copy_neon(0x40000000, 0x50000000, 1024*1024*10);
+	clrbits(TIMER0_CTRL, TIMER_ENABLE);
+    b = ~TIMER0_CUR_VAL;
+    kprintf("aligned_block_copy_neon in %umS(%u)\n", (b*1000)/187500, b);
+
+    TIMER0_INTR_VAL = ~0;
+    TIMER0_CUR_VAL = ~0;
+	setbits(TIMER0_CTRL, TIMER_ENABLE);
+    aligned_block_copy_vfp(0x40000000, 0x50000000, 1024*1024*10);
+	clrbits(TIMER0_CTRL, TIMER_ENABLE);
+    b = ~TIMER0_CUR_VAL;
+    kprintf("aligned_block_copy_vfp in %umS(%u)\n", (b*1000)/187500, b);
+#endif
+
+    a = 0x40000000;
+
+    for(i=0; i<10; i++) {
+        a[i] = &a[i];
+    }
+
+    /*
+    * Testing data retention
+    */
+    while(1) {
+        for(i=0; i<10; i++) {
+            kprintf("%x = %x\n", &a[i], a[i]);
+        }
+        kprintf("\n\n");
+    }
+
+    /*
+    * pcDuino uses CARD0 interface in SD card mode (PF io pins) and PH1 as card detect switch input with pull up resistor
+    * For generic bootstrap we will need information stored for used DEBUGUART and SD-card interface
+    */
+    PIO_CFG0_REG(PH) = (PIO_CFG2_REG(PB) & ~(0b00000000000000000000000001110000)) | 0b00000000000000000000000000000000;
+
+    BOOL cardinserted2 = FALSE;
+
+    if(!(PIO_DATA_REG(PH) & 0b10)) {
+        cardinserted2 = TRUE;
+    };
+
+    while(1){
+        if((PIO_DATA_REG(PH) & 0b10) && (cardinserted2)) {
+            bootstrapS();
+        };
+
+        if(!(PIO_DATA_REG(PH) & 0b10) && !(cardinserted2)) {
+            bootstrapS();
+        };
+    };
+
     /*
     * Check if we can write to DDR3 memory, if we can then it's all ours, every single bit and byte!
     */
@@ -442,11 +568,13 @@ void __attribute__((noreturn)) bootstrapC(void) {
     while(1){
         if((PIO_DATA_REG(PH) & 0b10) && (cardinserted)) {
             kprintf("SD card removed\n");
+            kprintf("%x = %x\n", this_one_is_in_ddr3_memory, *this_one_is_in_ddr3_memory);
             cardinserted = FALSE;
         };
 
         if(!(PIO_DATA_REG(PH) & 0b10) && !(cardinserted)) {
             kprintf("SD card inserted\n");
+            kprintf("%x = %x\n", this_one_is_in_ddr3_memory, *this_one_is_in_ddr3_memory);
             cardinserted = TRUE;
         };
     };
