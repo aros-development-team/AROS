@@ -88,8 +88,8 @@ void __attribute__((noreturn)) bootstrapC(void) {
   //PLL5_CFG = 0x91058091|(17<<8);  // 408MHz DRAM N=17
   //PLL5_CFG = 0x91058091|(18<<8);  // 432MHz DRAM N=18
   //PLL5_CFG = 0x91058091|(19<<8);  // 456MHz DRAM N=19
-    PLL5_CFG = 0x91058091|(20<<8);  // 480MHz DRAM N=20
-
+  //PLL5_CFG = 0x91048091|(20<<8)|(1<<17);  // 480MHz DRAM N=20 P=2
+    PLL5_CFG = 0x91048091|(24<<8)|(1<<17);  // 576MHz DRAM N=24 P=2
     /*
     * Setup APB1 clock and open the gate for UART0 clock, clear others
     */
@@ -214,6 +214,8 @@ void __attribute__((noreturn)) bootstrapC(void) {
     PLL5_CLK = ((24*PLL5_N*PLL5_K)/PLL5_P);
 
     kprintf("Bootstrap DDR3 clock is %uMHz (for others PLL5 clock is %uMHz)\n\n", DRAM_CLK, PLL5_CLK);
+
+    kprintf("PLL5_CFG = %x\n", PLL5_CFG);
 
 /* DDR3 setup [start] - minus PLL5 clock for SDRAM */
 
