@@ -18,8 +18,6 @@
 
 #include <stdio.h>
 
-//#include "arm-neon.h"
-
 #define clrbits(addr, clear)           addr = (addr & ~(clear))
 #define setbits(addr, set)             addr = (addr | (set))
 #define clrsetbits(addr, clear, set)   addr = ((addr & ~(clear)) | (set))
@@ -86,11 +84,11 @@ void __attribute__((noreturn)) bootstrapC(void) {
     *
     */
 
-    PLL5_CFG = 0x91059191;  // 408MHz FIXME: document bits that are set and make it a macro
-  //PLL5_CFG = 0x80001100;  // 408MHz DRAM N=17
-  //PLL5_CFG = 0x80001200;  // 432MHz DRAM N=18
-  //PLL5_CFG = 0x80001300;  // 456MHz DRAM N=19
-  //PLL5_CFG = 0x80001400;  // 480MHz DRAM N=20
+  //PLL5_CFG = 0x91059191;  // 408MHz FIXME: document bits that are set and make it a macro
+  //PLL5_CFG = 0x91058091|(17<<8);  // 408MHz DRAM N=17
+  //PLL5_CFG = 0x91058091|(18<<8);  // 432MHz DRAM N=18
+  //PLL5_CFG = 0x91058091|(19<<8);  // 456MHz DRAM N=19
+    PLL5_CFG = 0x91058091|(20<<8);  // 480MHz DRAM N=20
 
     /*
     * Setup APB1 clock and open the gate for UART0 clock, clear others
@@ -326,34 +324,29 @@ void __attribute__((noreturn)) bootstrapC(void) {
 
 /*
 * Compute refresh interval
-* tREFI is 7.8uS from Hynix datasheet (normal temperature range, 3.9uS for extended range)
+* tREFI is 7.8us from Hynix datasheet (normal temperature range, 3.9us for extended range)
 * -> We need to convert it to our DDR3 clock ticks (nREFI)
-* -> 7.8uS = 7800nS
-* -> 7800nS/(DDR3_clk_period) = 7800nS*DDR3_clk
+* -> 7.8us = 7800ns
+* -> 7800ns/(DDR3_clk_period) = 7800nS*DDR3_clk
 * -> DDR3_clk is already known so we use that
 * -> nREFI = (7800nS*480MHz)/1000 = (7.8uS*480MHz) = 3744 ticks
 *
 * tRFC is given as clock ticks in Hynix datasheet (nRFC)
-* nRFC for 2Gb DDR3-1033 is 86 ticks 
+* nRFC for 2Gb DDR3-1066 is 86 ticks 
 * -> 1/(1066MHz/2) = 0.00187617 or so seconds for the clock period
-* -> With 86 ticks this gives tRFC a value of 0.16135 seconds or so (161.35mS)
+* -> With 86 ticks this gives tRFC a value of 0.16135 seconds or so (161.35ms)
 * -> If we multiply this with the DDR3_clk frequency of the original 533MHz clock we should arrive at the same tick count of 86
-* -> (161.35mS*533MHz)/1000 = 86
+* -> (161.35ms*533MHz)/1000 = 86
 *
 * -> Instead we need to calculate the correct tic count for our DDR3 clock (480MHz for now)
-* -> (161.35mS*480MHz)/1000 = 77 ticks = nRFC
+* -> (161.35ms*480MHz)/1000 = 77 ticks = nRFC
 * -> Or more simply ((86/533MHz) = (nRFC/480MHz)) or nRFC = ((86/533MHz)*480MHz)
 *
 * DDR3_numr = Number of posted refreshes 0-8 (0=1) set it to 8 for now
 */
-//#define DDR3_clk    408
 #define DDR3_tREFI  7800
-//#define DDR3_nREFI  (DDR3_tREFI*DDR3_clk)/1000
 #define DDR3_tRFC   162
-//#define DDR3_nRFC   (DDR3_tRFC*DDR3_clk)/1000
 #define DDR3_numr   8
-
-//#define DDR3_nRFPRD (DDR3_nREFI*(DDR3_numr+1))-200
 
     uint32_t temp, DDR3_nREFI, DDR3_nRFC, DDR3_nRFPRD;
 
@@ -387,7 +380,40 @@ void __attribute__((noreturn)) bootstrapC(void) {
     /*
     * DDR3 and CAS = 6
     */
-    DRAM_MR = (((6-4)<<4) | (0x5<<9));
+
+/*
+* Compute CL
+*
+* Hynix gives CL as a tick count referencing used frequency
+*
+* DDR3-667  CL = 5  tCK = 3ns (or so) (5*3ns) = 15ns
+* DDR3-800  CL = 6  tCK = 2.5ns (6*2.5ns) = 15ns
+* DDR3-1066 CL = 7  tCK = 1.875ns (7*1.875ns) = 13.125ns
+* DDR3-1333 CL = 9  tCK = 1.5ns (9*1.5ns) = 13.5ns
+* DDR3-1600 CL = 11 tCK = 1.25ns (11*1.25ns) = 13.75ns
+*
+* tCK is from Hynix datasheet (CL7-CL11) and is approximate value, but we can observe that is has a linear relationship to CL
+* -> set tCL to 15.0ns which will give us close enough CL values as in Hynix datasheet for our parts speed grade
+*
+* DDR3-667  (333.5MHz)  CL = 5
+* DDR3-800  (400MHz)    CL = 6
+* DDR3-1066 (533MHz)    CL = 7
+* DDR3-1333 (666.5MHz)  CL = 9
+* DDR3-1600 (800MHz)    CL = 12
+*
+*/
+
+#define tCL 15
+
+    uint32_t nCL;
+
+    nCL = ((tCL*DRAM_CLK)/1000);
+    kprintf("nCL = %d\n", nCL);
+
+    /*
+    * Controller adds 4 extra cycles(or does it?), adjust the value
+    */
+    DRAM_MR = (((nCL-4)<<4) | (0x5<<9));
 
     DRAM_EMR =  0x00000004;
     DRAM_EMR2 = 0x00000000;
@@ -460,97 +486,38 @@ void __attribute__((noreturn)) bootstrapC(void) {
 
     uint32_t *a, b, i;
 
-#if(0)
-    TIMER0_CTRL = (TIMER_OSC24M|TIMER_PRESCALAR_1|TIMER_MODE_SINGLE|TIMER_PRESCALAR_128);
-
-    TIMER0_INTR_VAL = ~0;
-    TIMER0_CUR_VAL = ~0;
-	setbits(TIMER0_CTRL, TIMER_ENABLE);
-    aligned_block_read_neon(0x40000000, 0x50000000, 1024*1024*10);
-	clrbits(TIMER0_CTRL, TIMER_ENABLE);
-    b = ~TIMER0_CUR_VAL;
-    kprintf("aligned_block_read_neon in %umS(%u)\n", (b*1000)/187500, b);
-
-    TIMER0_INTR_VAL = ~0;
-    TIMER0_CUR_VAL = ~0;
-	setbits(TIMER0_CTRL, TIMER_ENABLE);
-    aligned_block_read_pf32_neon(0x40000000, 0x50000000, 1024*1024*10);
-	clrbits(TIMER0_CTRL, TIMER_ENABLE);
-    b = ~TIMER0_CUR_VAL;
-    kprintf("aligned_block_read_pf32_neon in %umS(%u)\n", (b*1000)/187500, b);
-
-    TIMER0_INTR_VAL = ~0;
-    TIMER0_CUR_VAL = ~0;
-	setbits(TIMER0_CTRL, TIMER_ENABLE);
-    aligned_block_read_pf64_neon(0x40000000, 0x50000000, 1024*1024*10);
-	clrbits(TIMER0_CTRL, TIMER_ENABLE);
-    b = ~TIMER0_CUR_VAL;
-    kprintf("aligned_block_read_pf64_neon in %umS(%u)\n", (b*1000)/187500, b);
-
-    TIMER0_INTR_VAL = ~0;
-    TIMER0_CUR_VAL = ~0;
-	setbits(TIMER0_CTRL, TIMER_ENABLE);
-    aligned_block_copy_neon(0x40000000, 0x50000000, 1024*1024*10);
-	clrbits(TIMER0_CTRL, TIMER_ENABLE);
-    b = ~TIMER0_CUR_VAL;
-    kprintf("aligned_block_copy_neon in %umS(%u)\n", (b*1000)/187500, b);
-
-    TIMER0_INTR_VAL = ~0;
-    TIMER0_CUR_VAL = ~0;
-	setbits(TIMER0_CTRL, TIMER_ENABLE);
-    aligned_block_copy_vfp(0x40000000, 0x50000000, 1024*1024*10);
-	clrbits(TIMER0_CTRL, TIMER_ENABLE);
-    b = ~TIMER0_CUR_VAL;
-    kprintf("aligned_block_copy_vfp in %umS(%u)\n", (b*1000)/187500, b);
-#endif
+    uint32_t t, x, y, z, w;
+ 
+    x = "AaAa";
+    y = "RrRr";
+    z = "OoOo";
+    w = "SsSs";
 
     a = 0x40000000;
 
-    for(i=0; i<10; i++) {
-        a[i] = &a[i];
+    for(i=0; i<1024*1024; i++) {
+        t = x ^ (x << 11);
+        x = y; y = z; z = w;
+        w = w ^ (w >> 19) ^ t ^ (t >> 8);
+        a[i] = w;
     }
 
-    /*
-    * Testing data retention
-    */
-    while(1) {
-        for(i=0; i<10; i++) {
-            kprintf("%x = %x\n", &a[i], a[i]);
+
+    x = "AaAa";
+    y = "RrRr";
+    z = "OoOo";
+    w = "SsSs";
+
+    a = 0x40000000;
+
+    for(i=0; i<1024*1024; i++) {
+        t = x ^ (x << 11);
+        x = y; y = z; z = w;
+        w = w ^ (w >> 19) ^ t ^ (t >> 8);
+        if(w!=a[i]) {
+            kprintf("%x = %x (should be %x)\n", &a[1], a[i], w);
         }
-        kprintf("\n\n");
     }
-
-    /*
-    * pcDuino uses CARD0 interface in SD card mode (PF io pins) and PH1 as card detect switch input with pull up resistor
-    * For generic bootstrap we will need information stored for used DEBUGUART and SD-card interface
-    */
-    PIO_CFG0_REG(PH) = (PIO_CFG2_REG(PB) & ~(0b00000000000000000000000001110000)) | 0b00000000000000000000000000000000;
-
-    BOOL cardinserted2 = FALSE;
-
-    if(!(PIO_DATA_REG(PH) & 0b10)) {
-        cardinserted2 = TRUE;
-    };
-
-    while(1){
-        if((PIO_DATA_REG(PH) & 0b10) && (cardinserted2)) {
-            bootstrapS();
-        };
-
-        if(!(PIO_DATA_REG(PH) & 0b10) && !(cardinserted2)) {
-            bootstrapS();
-        };
-    };
-
-    /*
-    * Check if we can write to DDR3 memory, if we can then it's all ours, every single bit and byte!
-    */
-    uint32_t *this_one_is_in_ddr3_memory;
-    this_one_is_in_ddr3_memory = 0x40000000;
-
-    kprintf("this_one_is_in_ddr3_memory[0] = %x\n", *this_one_is_in_ddr3_memory);
-    *this_one_is_in_ddr3_memory = 0xabad1dea;
-    kprintf("this_one_is_in_ddr3_memory[0] = %x\n", *this_one_is_in_ddr3_memory);
 
     /*
     * pcDuino uses CARD0 interface in SD card mode (PF io pins) and PH1 as card detect switch input with pull up resistor
@@ -568,13 +535,11 @@ void __attribute__((noreturn)) bootstrapC(void) {
     while(1){
         if((PIO_DATA_REG(PH) & 0b10) && (cardinserted)) {
             kprintf("SD card removed\n");
-            kprintf("%x = %x\n", this_one_is_in_ddr3_memory, *this_one_is_in_ddr3_memory);
             cardinserted = FALSE;
         };
 
         if(!(PIO_DATA_REG(PH) & 0b10) && !(cardinserted)) {
             kprintf("SD card inserted\n");
-            kprintf("%x = %x\n", this_one_is_in_ddr3_memory, *this_one_is_in_ddr3_memory);
             cardinserted = TRUE;
         };
     };
