@@ -16,6 +16,8 @@
 #include <asm/arm/mmu.h>
 #include <asm/arm/cp15.h>
 
+#include "platform.h"
+
 #include <stdio.h>
 
 #define clrbits(addr, clear)           addr = (addr & ~(clear))
@@ -217,6 +219,12 @@ void __attribute__((noreturn)) bootstrapC(void) {
 
     kprintf("PLL5_CFG = %x\n", PLL5_CFG);
 
+    struct parameters_ddr3 *parameter_ddr3 = (struct parameters_ddr3 *)platform_ddr3;
+    while (parameter_ddr3->speedbin) {
+        kprintf("Speed bin %u\n", (uint32_t)parameter_ddr3->speedbin);
+        parameter_ddr3++;
+    }
+
 /* DDR3 setup [start] - minus PLL5 clock for SDRAM */
 
     /*
@@ -372,6 +380,26 @@ void __attribute__((noreturn)) bootstrapC(void) {
     * Computed DRAM_DRR = 0x886f1642, CHECKME:
     */
 
+
+
+/*
+tCCD 	31 	Read/Write 	0 	
+
+0 = BL/2 for ddr2 and 4 for ddr3
+1 = BL/2 + 1 for ddr2 and 5 for ddr3
+
+	Read to Read and write to write command delay
+tRC 	30:25 	Read/Write 	0x18 	2-42 valid 	Activate to Activate (same blank) command delay
+tRRD 	24:21 	Read/Write 	0x4 	1-8 valid 	Activate to Activate (different blank) command delay
+tRAS 	20:16 	Read/Write 	0x12 		
+tRCD 	15:12 	Read/Write 	0x6 		
+tRP 	11:8 	Read/Write 	0x6 		
+tWTR 	7:5 	Read/Write 	0x3 		
+tRTP 	4:2 	Read/Write 	0x3 		
+tMRD 	1:0 	Read/Write 	0x2 		
+*/
+
+
     /*
     * Set timing parameters
     */
@@ -379,9 +407,6 @@ void __attribute__((noreturn)) bootstrapC(void) {
 	DRAM_TPR1 = 0x00001090;
 	DRAM_TPR2 = 0x0001a0c8;
 
-    /*
-    * DDR3 and CAS = 6
-    */
 
 /*
 * Compute CL
