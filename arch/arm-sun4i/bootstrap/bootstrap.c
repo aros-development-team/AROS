@@ -91,8 +91,8 @@ void __attribute__((noreturn)) bootstrapC(void) {
   //PLL5_CFG = 0x91058091|(18<<8);  // 432MHz DRAM N=18
   //PLL5_CFG = 0x91058091|(19<<8);  // 456MHz DRAM N=19
   //PLL5_CFG = 0x91048091|(20<<8)|(1<<17);  // 480MHz DRAM N=20 P=2
-    PLL5_CFG = 0x91048091|(24<<8)|(1<<17);  // 576MHz DRAM N=24 P=2
-  //PLL5_CFG = 0x91048091|(25<<8)|(1<<17);  // 600MHz DRAM N=24 P=2
+  //PLL5_CFG = 0x91048091|(24<<8)|(1<<17);  // 576MHz DRAM N=24 P=2
+    PLL5_CFG = 0x91048091|(25<<8)|(1<<17);  // 600MHz DRAM N=24 P=2
     /*
     * Setup APB1 clock and open the gate for UART0 clock, clear others
     */
@@ -271,13 +271,25 @@ void __attribute__((noreturn)) bootstrapC(void) {
 	setbits(DRAM_CCR, 0x1<<28);
 
     /*
-    * Enable DLL0
+    * Enable DLL's
     */
 	clrsetbits(DRAM_DLLCR0, 0x1<<30, 0x1<<31);
+    clrsetbits(DRAM_DLLCR1, 0x1<<30, 0x1<<31);
+    clrsetbits(DRAM_DLLCR2, 0x1<<30, 0x1<<31);
+    clrsetbits(DRAM_DLLCR3, 0x1<<30, 0x1<<31);
+    clrsetbits(DRAM_DLLCR4, 0x1<<30, 0x1<<31);
 	asmdelay(0x100);
 	clrbits(DRAM_DLLCR0, 0x3<<30);
+    clrbits(DRAM_DLLCR1, 0x3<<30);
+    clrbits(DRAM_DLLCR2, 0x3<<30);
+    clrbits(DRAM_DLLCR3, 0x3<<30);
+    clrbits(DRAM_DLLCR4, 0x3<<30);
 	asmdelay(0x1000);
 	clrsetbits(DRAM_DLLCR0, 0x1<<31, 0x1<<30);
+    clrsetbits(DRAM_DLLCR1, 0x1<<31, 0x1<<30);
+    clrsetbits(DRAM_DLLCR2, 0x1<<31, 0x1<<30);
+    clrsetbits(DRAM_DLLCR3, 0x1<<31, 0x1<<30);
+    clrsetbits(DRAM_DLLCR4, 0x1<<31, 0x1<<30);
 	asmdelay(0x1000);
 
     /*
@@ -298,33 +310,6 @@ void __attribute__((noreturn)) bootstrapC(void) {
 	asmdelay(0x10);
 
 	while (DRAM_CCR & (0x1 << 31));
-
-    /*
-    * Enable DLL1-DLL2 for 16-bit bus and DLL1-DLL4 for 32-bit bus others not supported and may hang
-    */
-	clrsetbits(DRAM_DLLCR1, 0x1<<30, 0x1<<31);
-	clrsetbits(DRAM_DLLCR2, 0x1<<30, 0x1<<31);
-    if(((DRAM_DCR>>6) & 0x3) == 0x3) {
-	    clrsetbits(DRAM_DLLCR3, 0x1<<30, 0x1<<31);
-	    clrsetbits(DRAM_DLLCR4, 0x1<<30, 0x1<<31);
-    }
-	asmdelay(0x100);
-
-	clrbits(DRAM_DLLCR1, 0x3<<30);
-	clrbits(DRAM_DLLCR2, 0x3<<30);
-    if(((DRAM_DCR>>6) & 0x3) == 0x3) {
-	    clrbits(DRAM_DLLCR3, 0x3<<30);
-	    clrbits(DRAM_DLLCR4, 0x3<<30);
-    }
-	asmdelay(0x1000);
-
-	clrsetbits(DRAM_DLLCR1, 0x1<<31, 0x1<<30);
-	clrsetbits(DRAM_DLLCR2, 0x1<<31, 0x1<<30);
-    if(((DRAM_DCR>>6) & 0x3) == 0x3) {
-	    clrsetbits(DRAM_DLLCR3, 0x1<<31, 0x1<<30);
-	    clrsetbits(DRAM_DLLCR4, 0x1<<31, 0x1<<30);
-    }
-	asmdelay(0x1000);
 
     /*
     * Set ODT impedance divide ratio
@@ -358,7 +343,7 @@ void __attribute__((noreturn)) bootstrapC(void) {
 *
 * DDR3_numr = Number of posted refreshes 0-8 (0=1) set it to 8 for now
 */
-#define DDR3_numr   8
+#define DDR3_numr   1
 
     uint32_t temp, DDR3_nREFI, DDR3_nRFC, DDR3_nRFPRD;
 
@@ -386,29 +371,36 @@ void __attribute__((noreturn)) bootstrapC(void) {
 
 /*
 
-DDR3_nREFI 4492
-DDR3_nRFC 92
-DDR3_nRFPRD 40228
-DRAM_DRR 0x889d245c
-DDR3_nRC 29
-DDR3_nRAS 21
-DDR3_nRCD 8
-DDR3_nRP 8
+Boostrap debug output:
 
-tCCD 	31 	Read/Write 	0 	
+Copyright (c)2014, The AROS Development Team. All rights reserved.
 
-0 = BL/2 for ddr2 and 4 for ddr3
-1 = BL/2 + 1 for ddr2 and 5 for ddr3
+Allwinner A10 revision C2
 
-	Read to Read and write to write command delay
-tRC 	30:25 	Read/Write 	0x18 	2-42 valid 	Activate to Activate (same blank) command delay
-tRRD 	24:21 	Read/Write 	0x4 	1-8 valid 	Activate to Activate (different blank) command delay
-tRAS 	20:16 	Read/Write 	0x12 		
-tRCD 	15:12 	Read/Write 	0x6 		
-tRP 	11:8 	Read/Write 	0x6 		
-tWTR 	7:5 	Read/Write 	0x3 		
-tRTP 	4:2 	Read/Write 	0x3 		
-tMRD 	1:0 	Read/Write 	0x2 		
+Bootstrap CPU clock is 384MHz
+Bootstrap DDR3 clock is 600MHz (for others PLL5 clock is 300MHz)
+
+PLL5_CFG = 0x91069991
+tAA  15ns
+tRCD 15ns
+tRP  15ns
+tRC  52ns
+tRAS 40ns
+tRFC 161ns
+tREFI 7800ns
+DRAM_DRR 0x086c9883
+DDR3_nREFI 4680
+DDR3_nRFC 96
+DDR3_nRFPRD 9160
+DRAM_DRR 0x8123c860
+DDR3_nRC 31
+DDR3_nRAS 24
+DDR3_nRCD 9
+DDR3_nRP 9
+DRAM_TPR0 0x3e989992
+DDR3_nCL = 9
+DDR3 data training succesful!
+		
 */
 
     uint32_t DDR3_nRC, DDR3_nRAS, DDR3_nRCD, DDR3_nRP;
@@ -433,36 +425,10 @@ tMRD 	1:0 	Read/Write 	0x2
     temp = DRAM_TPR0;
     kprintf("DRAM_TPR0 %x\n", temp);
 
-
-
-/*
-* Compute CL
-*
-* Hynix gives CL as a tick count referencing used frequency
-*
-* DDR3-667  CL = 5  tCK = 3ns (or so) (5*3ns) = 15ns
-* DDR3-800  CL = 6  tCK = 2.5ns (6*2.5ns) = 15ns
-* DDR3-1066 CL = 7  tCK = 1.875ns (7*1.875ns) = 13.125ns
-* DDR3-1333 CL = 9  tCK = 1.5ns (9*1.5ns) = 13.5ns
-* DDR3-1600 CL = 11 tCK = 1.25ns (11*1.25ns) = 13.75ns
-*
-* tCK is from Hynix datasheet (CL7-CL11) and is approximate value, but we can observe that is has a linear relationship to CL
-* -> set tCL to 15.0ns which will give us close enough CL values as in Hynix datasheet for our parts speed grade
-*
-* DDR3-667  (333.5MHz)  CL = 5
-* DDR3-800  (400MHz)    CL = 6
-* DDR3-1066 (533MHz)    CL = 7
-* DDR3-1333 (666.5MHz)  CL = 9
-* DDR3-1600 (800MHz)    CL = 12
-*
-*/
-
-#define tCL 15
-
     uint32_t nCL;
 
-    nCL = ((tCL*DRAM_CLK)/1000);
-    kprintf("nCL = %d\n", nCL);
+    nCL = ((parameter_ddr3->tCL*DRAM_CLK)/1000);
+    kprintf("DDR3_nCL = %d\n", nCL);
 
     /*
     * Controller adds 4 extra cycles(or does it?), adjust the value
@@ -569,7 +535,8 @@ tMRD 	1:0 	Read/Write 	0x2
         x = y; y = z; z = w;
         w = w ^ (w >> 19) ^ t ^ (t >> 8);
         if(w!=a[i]) {
-            kprintf("%x = %x (should be %x)\n", &a[1], a[i], w);
+            kprintf("%x = %x (should be %x)\n", &a[i], a[i], w);
+            while(1);
         }
     }
 

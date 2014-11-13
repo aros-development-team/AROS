@@ -18,6 +18,7 @@
 #endif
 
 struct parameters_ddr3 {
+    uint32_t tCL;
     uint32_t tAA;
     uint32_t tRCD;
     uint32_t tRP;
@@ -37,13 +38,24 @@ extern const struct parameters_ddr3 platform_ddr3[];
 * These are not exact values as timings are computed with integers, calculating the result back gives a bit different value
 */
 const struct parameters_ddr3 platform_ddr3[] = {
-    14,  /* tAA   13.125ns-15.000ns */
-    14,  /* tRCD  13.125ns-15.000ns */
-    14,  /* tRP   13.125ns-15.000ns */
-    51,  /* tRC   49.500ns-52.500ns */
-    37,  /* tRAS  36.000ns-37.500ns */
+    15,  /* tCL   13.125ns-15.000ns */
+    15,  /* tAA   13.125ns-15.000ns */
+    15,  /* tRCD  13.125ns-15.000ns */
+    15,  /* tRP   13.125ns-15.000ns */
+    52,  /* tRC   49.500ns-52.500ns */
+    40,  /* tRAS  36.000ns-37.500ns */
     161, /* tRFC  160.000ns-161.336ns */
     7800 /* tREFI 7800ns */
+
+//    14,  /* tCL   13.125ns-15.000ns */
+//    14,  /* tAA   13.125ns-15.000ns */
+//    14,  /* tRCD  13.125ns-15.000ns */
+//    14,  /* tRP   13.125ns-15.000ns */
+//    51,  /* tRC   49.500ns-52.500ns */
+//    37,  /* tRAS  36.000ns-37.500ns */
+//    161, /* tRFC  160.000ns-161.336ns */
+//    7800 /* tREFI 7800ns */
+
 };
 
 #endif
