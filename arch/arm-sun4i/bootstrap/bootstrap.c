@@ -92,6 +92,7 @@ void __attribute__((noreturn)) bootstrapC(void) {
   //PLL5_CFG = 0x91058091|(19<<8);  // 456MHz DRAM N=19
   //PLL5_CFG = 0x91048091|(20<<8)|(1<<17);  // 480MHz DRAM N=20 P=2
     PLL5_CFG = 0x91048091|(24<<8)|(1<<17);  // 576MHz DRAM N=24 P=2
+  //PLL5_CFG = 0x91048091|(25<<8)|(1<<17);  // 600MHz DRAM N=24 P=2
     /*
     * Setup APB1 clock and open the gate for UART0 clock, clear others
     */
@@ -220,10 +221,13 @@ void __attribute__((noreturn)) bootstrapC(void) {
     kprintf("PLL5_CFG = %x\n", PLL5_CFG);
 
     struct parameters_ddr3 *parameter_ddr3 = (struct parameters_ddr3 *)platform_ddr3;
-    while (parameter_ddr3->speedbin) {
-        kprintf("Speed bin %u\n", (uint32_t)parameter_ddr3->speedbin);
-        parameter_ddr3++;
-    }
+    kprintf("tAA  %uns\n", parameter_ddr3->tAA);
+    kprintf("tRCD %uns\n", parameter_ddr3->tRCD);
+    kprintf("tRP  %uns\n", parameter_ddr3->tRP);
+    kprintf("tRC  %uns\n", parameter_ddr3->tRC);
+    kprintf("tRAS %uns\n", parameter_ddr3->tRAS);
+    kprintf("tRFC %uns\n", parameter_ddr3->tRFC);
+    kprintf("tREFI %uns\n", parameter_ddr3->tREFI);
 
 /* DDR3 setup [start] - minus PLL5 clock for SDRAM */
 
@@ -354,22 +358,20 @@ void __attribute__((noreturn)) bootstrapC(void) {
 *
 * DDR3_numr = Number of posted refreshes 0-8 (0=1) set it to 8 for now
 */
-#define DDR3_tREFI  7800
-#define DDR3_tRFC   162
 #define DDR3_numr   8
 
     uint32_t temp, DDR3_nREFI, DDR3_nRFC, DDR3_nRFPRD;
 
-    DDR3_nREFI = ((DDR3_tREFI*DRAM_CLK)/1000);
-    DDR3_nRFC = ((DDR3_tRFC*DRAM_CLK)/1000);
+    DDR3_nREFI = ((parameter_ddr3->tREFI*DRAM_CLK)/1000);
+    DDR3_nRFC = ((parameter_ddr3->tRFC*DRAM_CLK)/1000);
     DDR3_nRFPRD = ((DDR3_nREFI*(DDR3_numr+1))-200);
 
     temp = DRAM_DRR;
     kprintf("DRAM_DRR %x\n", temp);
 
-    kprintf("DDR3_nREFI %x\n", DDR3_nREFI);
-    kprintf("DDR3_nRFC %x\n", DDR3_nRFC);
-    kprintf("DDR3_nRFPRD %x\n", DDR3_nRFPRD);
+    kprintf("DDR3_nREFI %u\n", DDR3_nREFI);
+    kprintf("DDR3_nRFC %u\n", DDR3_nRFC);
+    kprintf("DDR3_nRFPRD %u\n", DDR3_nRFPRD);
 
     DRAM_DRR = ((1<<31) | (DDR3_numr<<24) | ((DDR3_nRFPRD)<<8) | (DDR3_nRFC));
 
@@ -383,6 +385,16 @@ void __attribute__((noreturn)) bootstrapC(void) {
 
 
 /*
+
+DDR3_nREFI 4492
+DDR3_nRFC 92
+DDR3_nRFPRD 40228
+DRAM_DRR 0x889d245c
+DDR3_nRC 29
+DDR3_nRAS 21
+DDR3_nRCD 8
+DDR3_nRP 8
+
 tCCD 	31 	Read/Write 	0 	
 
 0 = BL/2 for ddr2 and 4 for ddr3
@@ -399,13 +411,28 @@ tRTP 	4:2 	Read/Write 	0x3
 tMRD 	1:0 	Read/Write 	0x2 		
 */
 
+    uint32_t DDR3_nRC, DDR3_nRAS, DDR3_nRCD, DDR3_nRP;
+
+    DDR3_nRC = ((parameter_ddr3->tRC*DRAM_CLK)/1000);
+    DDR3_nRAS = ((parameter_ddr3->tRAS*DRAM_CLK)/1000);
+    DDR3_nRCD = ((parameter_ddr3->tRCD*DRAM_CLK)/1000);
+    DDR3_nRP = ((parameter_ddr3->tRP*DRAM_CLK)/1000);
+
+    kprintf("DDR3_nRC %u\n", DDR3_nRC);
+    kprintf("DDR3_nRAS %u\n", DDR3_nRAS);
+    kprintf("DDR3_nRCD %u\n", DDR3_nRCD);
+    kprintf("DDR3_nRP %u\n", DDR3_nRP);
 
     /*
     * Set timing parameters
     */
-	DRAM_TPR0 = 0x30926692;
+	DRAM_TPR0 = (0x00800092 | (DDR3_nRC<<25) | (DDR3_nRAS<<16) | (DDR3_nRCD<<12) | (DDR3_nRP<<8));
 	DRAM_TPR1 = 0x00001090;
 	DRAM_TPR2 = 0x0001a0c8;
+
+    temp = DRAM_TPR0;
+    kprintf("DRAM_TPR0 %x\n", temp);
+
 
 
 /*
