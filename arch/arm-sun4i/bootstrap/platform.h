@@ -18,7 +18,13 @@
 #endif
 
 struct parameters_ddr3 {
-    uint16_t speedbin;
+    uint32_t tAA;
+    uint32_t tRCD;
+    uint32_t tRP;
+    uint32_t tRC;
+    uint32_t tRAS;
+    uint32_t tRFC;
+    uint32_t tREFI;
 };
 
 extern const struct parameters_ddr3 platform_ddr3[];
@@ -26,12 +32,18 @@ extern const struct parameters_ddr3 platform_ddr3[];
 #define PLATFORM_PCDUINO
 #ifdef PLATFORM_PCDUINO
 
+/*
+* Take some value that fits the scale and is easily computable with integers
+* These are not exact values as timings are computed with integers, calculating the result back gives a bit different value
+*/
 const struct parameters_ddr3 platform_ddr3[] = {
-    { 800 },
-    { 1066 },
-    { 1333 },
-    { 1666 },
-    { 0 }
+    14,  /* tAA   13.125ns-15.000ns */
+    14,  /* tRCD  13.125ns-15.000ns */
+    14,  /* tRP   13.125ns-15.000ns */
+    51,  /* tRC   49.500ns-52.500ns */
+    37,  /* tRAS  36.000ns-37.500ns */
+    161, /* tRFC  160.000ns-161.336ns */
+    7800 /* tREFI 7800ns */
 };
 
 #endif
