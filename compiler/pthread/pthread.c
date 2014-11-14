@@ -18,11 +18,14 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
-//#include <exec/lists.h>
+#ifdef __MORPHOS__
+#include <sys/time.h>
+#endif
 #include <dos/dostags.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/timer.h>
 #ifdef __AROS__
 #include <aros/symbolsets.h>
 #else
@@ -35,6 +38,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #include "pthread.h"
 #include "debug.h"
@@ -82,11 +86,9 @@ typedef struct
     struct MinList cleanup;
 } ThreadInfo;
 
-// TODO: make this a list
 static ThreadInfo threads[PTHREAD_THREADS_MAX];
 //static volatile pthread_t nextid = 0;
 static struct SignalSemaphore thread_sem;
-APTR mempool;
 
 //
 // Helper functions
@@ -296,7 +298,6 @@ int pthread_mutex_lock(pthread_mutex_t *mutex)
     if (SemaphoreIsInvalid(&mutex->semaphore))
         pthread_mutex_init(mutex, NULL);
 
-    // TODO: non-recursive mutexes?
     ObtainSemaphore(&mutex->semaphore);
 
     return 0;
@@ -315,7 +316,6 @@ int pthread_mutex_trylock(pthread_mutex_t *mutex)
     if (SemaphoreIsInvalid(&mutex->semaphore))
         pthread_mutex_init(mutex, NULL);
 
-    // TODO: non-recursive mutexes?
     ret = AttemptSemaphore(&mutex->semaphore);
 
     return (ret == TRUE) ? 0 : EBUSY;
@@ -370,12 +370,17 @@ int pthread_cond_destroy(pthread_cond_t *cond)
     return 0;
 }
 
-int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
 {
     CondWaiter waiter;
     BYTE signal;
+    ULONG sigs = 0;
+    ULONG timermask = 0;
+    struct MsgPort *timermp = NULL;
+    struct timerequest *timerio = NULL;
+    struct Device *TimerBase = NULL;
 
-    //D(bug("%s(%p, %p)\n", __FUNCTION__, cond, mutex));
+    //D(bug("%s(%p, %p, %p)\n", __FUNCTION__, cond, mutex, abstime));
 
     if (cond == NULL || mutex == NULL)
         return EINVAL;
@@ -383,6 +388,41 @@ int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
     // initialize static conditions
     if (SemaphoreIsInvalid(&cond->semaphore))
         pthread_cond_init(cond, NULL);
+
+    if (abstime)
+    {
+        if (!(timermp = CreateMsgPort()))
+            return EINVAL;
+
+        if (!(timerio = (struct timerequest *)CreateIORequest(timermp, sizeof(struct timerequest))))
+        {
+            DeleteMsgPort(timermp);
+            return EINVAL;
+        }
+
+        if (OpenDevice(TIMERNAME, UNIT_MICROHZ, &timerio->tr_node, 0) != 0)
+        {
+            DeleteMsgPort(timermp);
+            DeleteIORequest((struct IORequest *)timerio);
+            return EINVAL;
+        }
+
+        TimerBase = timerio->tr_node.io_Device;
+    }
+
+    if (TimerBase)
+    {
+        struct timeval starttime;
+
+        gettimeofday(&starttime, NULL);
+        timerio->tr_node.io_Command = TR_ADDREQUEST;
+        timerio->tr_time.tv_secs = abstime->tv_sec;
+        timerio->tr_time.tv_micro = abstime->tv_nsec / 1000;
+        SubTime(&timerio->tr_time, &starttime);
+        timermask = 1 << timermp->mp_SigBit;
+        sigs |= timermask;
+        SendIO((struct IORequest *)timerio);
+    }
 
     waiter.task = FindTask(NULL);
     signal = AllocSignal(-1);
@@ -392,13 +432,14 @@ int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
         SetSignal(1 << FALLBACKSIGNAL, 0);
     }
     waiter.sigmask = 1 << signal;
+    sigs |= waiter.sigmask;
     ObtainSemaphore(&cond->semaphore);
     AddTail((struct List *)&cond->waiters, (struct Node *)&waiter);
     cond->waiting++;
     ReleaseSemaphore(&cond->semaphore);
 
     pthread_mutex_unlock(mutex);
-    Wait(waiter.sigmask);
+    sigs = Wait(sigs);
     pthread_mutex_lock(mutex);
 
     ObtainSemaphore(&cond->semaphore);
@@ -409,14 +450,36 @@ int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
     if (signal != FALLBACKSIGNAL)
         FreeSignal(signal);
 
+    if (TimerBase)
+    {
+        if (!CheckIO((struct IORequest *)timerio))
+        {
+            AbortIO((struct IORequest *)timerio);
+            WaitIO((struct IORequest *)timerio);
+        }
+        CloseDevice((struct IORequest *)timerio);
+        DeleteIORequest((struct IORequest *)timerio);
+        DeleteMsgPort(timermp);
+
+        if (sigs & timermask)
+            return ETIMEDOUT;
+    }
+
     return 0;
 }
 
-int pthread_cond_signal(pthread_cond_t *cond)
+int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+{
+    //D(bug("%s(%p)\n", __FUNCTION__, cond));
+
+    return pthread_cond_timedwait(cond, mutex, NULL);
+}
+
+static int _pthread_cond_broadcast(pthread_cond_t *cond, BOOL onlyfirst)
 {
     CondWaiter *waiter;
 
-    //D(bug("%s(%p)\n", __FUNCTION__, cond));
+    //D(bug("%s(%p, %d)\n", __FUNCTION__, cond, onlyfirst));
 
     if (cond == NULL)
         return EINVAL;
@@ -428,13 +491,29 @@ int pthread_cond_signal(pthread_cond_t *cond)
     ObtainSemaphore(&cond->semaphore);
     if (cond->waiting > 0)
     {
-        waiter = (CondWaiter *)cond->waiters.mlh_Head;
-        if (waiter->node.mln_Succ)
+        ForeachNode(&cond->waiters, waiter)
+        {
             Signal(waiter->task, waiter->sigmask);
+            if (onlyfirst) break;
+        }
     }
     ReleaseSemaphore(&cond->semaphore);
 
     return 0;
+}
+
+int pthread_cond_signal(pthread_cond_t *cond)
+{
+    //D(bug("%s(%p)\n", __FUNCTION__, cond));
+
+    return _pthread_cond_broadcast(cond, TRUE);
+}
+
+int pthread_cond_broadcast(pthread_cond_t *cond)
+{
+    //D(bug("%s(%p)\n", __FUNCTION__, cond));
+
+    return _pthread_cond_broadcast(cond, FALSE);
 }
 
 //
@@ -654,6 +733,13 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
     return 0;
 }
 
+int pthread_detach(pthread_t thread)
+{
+    D(bug("%s(%u) not implemented\n", __FUNCTION__, thread));
+
+    return ESRCH;
+}
+
 int pthread_join(pthread_t thread, void **value_ptr)
 {
     ThreadInfo *inf;
@@ -741,6 +827,23 @@ void pthread_exit(void *value_ptr)
     longjmp(inf->jmp, 1);
 }
 
+int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
+{
+    if (once_control == NULL || init_routine == NULL)
+        return EINVAL;
+
+    if (__sync_val_compare_and_swap(&once_control->started, FALSE, TRUE))
+    {
+        if (!once_control->done)
+        {
+            (*init_routine)();
+            once_control->done = TRUE;
+        }
+    }
+
+    return 0;
+}
+
 //
 // Scheduling functions
 //
@@ -819,7 +922,7 @@ void pthread_cleanup_push(void (*routine)(void *), void *arg)
 
     D(bug("%s(%p, %p)\n", __FUNCTION__, routine, arg));
 
-    handler = AllocVecPooled(mempool, sizeof(CleanupHandler));
+    handler = calloc(1, sizeof(CleanupHandler));
 
     if (routine == NULL || handler == NULL)
         return;
@@ -845,7 +948,7 @@ void pthread_cleanup_pop(int execute)
     if (handler && handler->routine && execute)
         handler->routine(handler->arg);
 
-    FreeVecPooled(mempool, handler);
+    free(handler);
 }
 
 //
@@ -883,7 +986,6 @@ static int _Init_Func(void)
 
     memset(&threads, 0, sizeof(threads));
     InitSemaphore(&thread_sem);
-    mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 16384, 4096);
 
     return TRUE;
 }
@@ -899,8 +1001,6 @@ static void _Exit_Func(void)
     for (i = 0; i < PTHREAD_THREADS_MAX; i++)
         pthread_join(i, NULL);
 #endif
-
-    DeletePool(mempool);
 }
 
 #ifdef __AROS__
