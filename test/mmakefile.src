@@ -78,7 +78,8 @@ COMMONTESTFILES := \
     mountlist \
     smult \
     crashtest \
-    openlocale
+    openlocale \
+    pthreadtest
 
 SHTESTFILES=\
     pcilist \
@@ -101,7 +102,7 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
-    uselibs="coolimagesstatic hiddstubs"
+    uselibs="coolimagesstatic hiddstubs pthread"
 
 %build_progs mmake=test-sh \
     files=$(SHTESTFILES) targetdir=$(EXEDIR) \
