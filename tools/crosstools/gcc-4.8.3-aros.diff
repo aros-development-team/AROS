@@ -277,7 +277,7 @@ diff -urN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.new/gcc/config/aros.h
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  "-lmui -larossupport -lamiga %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit -lautoinit %{nostdc:-lstdc.static}"
++  "-lmui -lpthread -larossupport -lamiga %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit -lautoinit %{nostdc:-lstdc.static}"
 +
 +#if !defined(USE_GNULIBC_1) && defined(HAVE_LD_EH_FRAME_HDR)
 +#define LINK_EH_SPEC "%{!static:--eh-frame-hdr} "
@@ -699,7 +699,7 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
 +*-*-aros*)
 +  gas=yes
 +  gnu_ld=yes
-+  thread_file=single
++  thread_file=posix
 +  use_collect2=no
 +  xm_defines='STDC_HEADERS=1'
 +  ;;
@@ -930,6 +930,41 @@ diff -ruN gcc-4.8.3/libgcc/config.host gcc-4.8.3.aros/libgcc/config.host
  *)
  	echo "*** Configuration ${host} not supported" 1>&2
  	exit 1
+diff -urN gcc-4.8.3/libgcc/gthr.h gcc-4.8.3.new/libgcc/gthr.h
+--- gcc-4.8.3/libgcc/gthr.h	2013-02-04 20:06:20.000000000 +0100
++++ gcc-4.8.3.new/libgcc/gthr.h	2014-11-10 08:01:00.003789881 +0100
+@@ -141,6 +141,11 @@
+ #define GTHREAD_USE_WEAK 0
+ #endif
+ 
++#ifdef __AROS__
++#undef GTHREAD_USE_WEAK
++#define GTHREAD_USE_WEAK 0
++#endif
++
+ #ifndef GTHREAD_USE_WEAK
+ #define GTHREAD_USE_WEAK 1
+ #endif
+diff -urN gcc-4.8.3/libgcc/unwind-dw2-fde.c gcc-4.8.3.new/libgcc/unwind-dw2-fde.c
+--- gcc-4.8.3/libgcc/unwind-dw2-fde.c	2013-02-04 20:06:20.000000000 +0100
++++ gcc-4.8.3.new/libgcc/unwind-dw2-fde.c	2014-11-10 13:29:57.509564334 +0100
+@@ -92,12 +92,16 @@
+ #endif
+ 
+   init_object_mutex_once ();
++#ifndef __AROS__ /* This is called when SysBase is not yet set up */
+   __gthread_mutex_lock (&object_mutex);
++#endif
+ 
+   ob->next = unseen_objects;
+   unseen_objects = ob;
+ 
++#ifndef __AROS__
+   __gthread_mutex_unlock (&object_mutex);
++#endif
+ }
+ 
+ void
 diff -urN gcc-4.8.3/libiberty/filename_cmp.c gcc-4.8.3.new/libiberty/filename_cmp.c
 --- gcc-4.8.3/libiberty/filename_cmp.c	2011-02-28 13:23:25.000000000 -0500
 +++ gcc-4.8.3.new/libiberty/filename_cmp.c	2013-12-02 20:22:15.940776306 -0500
@@ -1179,6 +1214,17 @@ diff -urN gcc-4.8.3/libobjc/configure.ac gcc-4.8.3.new/libobjc/configure.ac
  
  AC_MSG_CHECKING([for exception model to use])
  AC_LANG_PUSH(C)
+diff -urN gcc-4.8.3/libobjc/thr.c gcc-4.8.3.new/libobjc/thr.c
+--- gcc-4.8.3/libobjc/thr.c	2013-02-03 12:16:21.000000000 +0100
++++ gcc-4.8.3.new/libobjc/thr.c	2014-11-10 08:01:00.003789881 +0100
+@@ -39,6 +39,7 @@
+ #include "objc/runtime.h"
+ #include "objc-private/module-abi-8.h"
+ #include "objc-private/runtime.h"
++#define __typedef_BOOL /* Remove definition of BOOL */
+ #include <gthr.h>
+ 
+ #include <stdlib.h>
 diff -urN gcc-4.8.3/libstdc++-v3/config/os/aros/ctype_base.h gcc-4.8.3.new/libstdc++-v3/config/os/aros/ctype_base.h
 --- gcc-4.8.3/libstdc++-v3/config/os/aros/ctype_base.h	1969-12-31 19:00:00.000000000 -0500
 +++ gcc-4.8.3.new/libstdc++-v3/config/os/aros/ctype_base.h	2013-12-02 20:22:15.944776326 -0500
@@ -1730,3 +1776,32 @@ diff -urN gcc-4.8.3/libstdc++-v3/crossconfig.m4 gcc-4.8.3.new/libstdc++-v3/cross
    arm*-*-symbianelf*)
      # This is a freestanding configuration; there is nothing to do here.
      ;;
+diff -urN gcc-4.8.3/libstdc++-v3/include/Makefile.in gcc-4.8.3.new/libstdc++-v3/include/Makefile.in
+--- gcc-4.8.3/libstdc++-v3/include/Makefile.in	2013-07-31 21:29:13.000000000 +0200
++++ gcc-4.8.3.new/libstdc++-v3/include/Makefile.in	2014-11-10 10:53:28.695812985 +0100
+@@ -1536,6 +1536,7 @@
+ 	    -e '/^#/s/\(${uppercase}${uppercase}*\)/_GLIBCXX_\1/g' \
+ 	    -e 's/_GLIBCXX_SUPPORTS_WEAK/__GXX_WEAK__/g' \
+ 	    -e 's/_GLIBCXX___MINGW32_GLIBCXX___/__MINGW32__/g' \
++	    -e 's/_GLIBCXX___AROS__/__AROS__/g' \
+ 	    -e 's,^#include "\(.*\)",#include <bits/\1>,g' \
+ 	    < $< > $@
+ 
+diff -urN gcc-4.8.3/libstdc++-v3/include/std/ratio gcc-4.8.3.new/libstdc++-v3/include/std/ratio
+--- gcc-4.8.3/libstdc++-v3/include/std/ratio	2013-02-03 18:54:05.000000000 +0100
++++ gcc-4.8.3.new/libstdc++-v3/include/std/ratio	2014-11-10 08:01:00.003789881 +0100
+@@ -211,10 +211,10 @@
+     {
+     private:
+       static_assert(__d != 0, "Internal library error");
+-      static_assert(sizeof (uintmax_t) == sizeof (unsigned long long),
+-		    "This library calls __builtin_clzll on uintmax_t, which "
+-		    "is unsafe on your platform. Please complain to "
+-		    "http://gcc.gnu.org/bugzilla/");
++//      static_assert(sizeof (uintmax_t) == sizeof (unsigned long long),
++//		    "This library calls __builtin_clzll on uintmax_t, which "
++//		    "is unsafe on your platform. Please complain to "
++//		    "http://gcc.gnu.org/bugzilla/");
+       static constexpr int __shift = __builtin_clzll(__d);
+       static constexpr int __coshift_ = sizeof(uintmax_t) * 8 - __shift;
+       static constexpr int __coshift = (__shift != 0) ? __coshift_ : 0;
