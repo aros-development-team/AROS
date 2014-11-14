@@ -269,9 +269,11 @@ static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
             _flags(msgint->obj) |= MADF_INVIRTUALGROUP;
         }
 
-        muiNotifyData(msgint->obj)->mnd_ParentObject = obj;
         DoMethod(msgint->obj, MUIM_ConnectParent, (IPTR) obj);
     }
+
+    /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
+    muiNotifyData(msgint->obj)->mnd_ParentObject = obj;
 
     if (_flags(obj) & MADF_SETUP)
     {

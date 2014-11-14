@@ -194,9 +194,11 @@ IPTR Family__MUIM_AddHead(struct IClass *cl, Object *obj,
         /* if we are in an application tree, propagate pointers */
         if (muiNotifyData(obj)->mnd_GlobalInfo)
         {
-            muiNotifyData(msg->obj)->mnd_ParentObject = obj;
             DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
         }
+
+        /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
+        muiNotifyData(msg->obj)->mnd_ParentObject = obj;
 
         return TRUE;
     }
@@ -222,9 +224,11 @@ IPTR Family__MUIM_AddTail(struct IClass *cl, Object *obj,
         /* if we are in an application tree, propagate pointers */
         if (muiNotifyData(obj)->mnd_GlobalInfo)
         {
-            muiNotifyData(msg->obj)->mnd_ParentObject = obj;
             DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
         }
+
+        /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
+        muiNotifyData(msg->obj)->mnd_ParentObject = obj;
 
         return TRUE;
     }
@@ -249,9 +253,11 @@ IPTR Family__MUIM_Insert(struct IClass *cl, Object *obj,
         /* if we are in an application tree, propagate pointers */
         if (muiNotifyData(obj)->mnd_GlobalInfo)
         {
-            muiNotifyData(msg->obj)->mnd_ParentObject = obj;
             DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
         }
+
+        /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
+        muiNotifyData(msg->obj)->mnd_ParentObject = obj;
 
         return TRUE;
     }
