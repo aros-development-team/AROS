@@ -16,7 +16,7 @@
 #   include <utility/tagitem.h>
 #endif
 
-struct Resident __mayalias;
+struct __mayalias Resident;
 struct Resident
 {
     UWORD                  rt_MatchWord; /* equal to RTC_MATCHWORD (see below) */
