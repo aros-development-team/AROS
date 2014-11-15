@@ -86,6 +86,8 @@ typedef struct
     struct MinList cleanup;
 } ThreadInfo;
 
+#define PTHREAD_FIRST_THREAD_ID (1) /* First thread id will be 1 so that it is different than default value of pthread_t */
+
 static ThreadInfo threads[PTHREAD_THREADS_MAX];
 //static volatile pthread_t nextid = 0;
 static struct SignalSemaphore thread_sem;
@@ -117,7 +119,7 @@ static pthread_t GetThreadId(struct Task *task)
 
     ObtainSemaphore(&thread_sem);
 
-    for (i = 0; i < PTHREAD_THREADS_MAX; i++)
+    for (i = PTHREAD_FIRST_THREAD_ID; i < PTHREAD_THREADS_MAX; i++)
     {
         if ((struct Task *)threads[i].process == task)
             break;
