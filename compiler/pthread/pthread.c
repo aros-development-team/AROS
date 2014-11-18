@@ -829,6 +829,22 @@ void pthread_exit(void *value_ptr)
     longjmp(inf->jmp, 1);
 }
 
+#if defined __mc68000__
+/* No CAS instruction on m68k */
+static int __sync_val_compare_and_swap(int *v, int o, int n)
+{
+    int ret;
+
+    Disable();
+    if ((*v) == (o))
+        (*v) = (n);
+    ret = (*v);
+    Enable();
+
+    return ret;
+}
+#endif
+
 int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
 {
     if (once_control == NULL || init_routine == NULL)
