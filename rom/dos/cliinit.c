@@ -481,9 +481,11 @@ static void AddBootAssign(CONST_STRPTR path, CONST_STRPTR assign, APTR DOSBase)
  */
 static LONG internalBootCliHandler(void)
 {
+    struct Process *bootProc = (struct Process *)FindTask(NULL);
+    BPTR bootWin = bootProc->pr_WindowPtr;
+
     struct ExpansionBase *ExpansionBase;
     struct DosLibrary *DOSBase;
-    struct MsgPort *mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
     BPTR lock;
     struct DosPacket *dp;
     ULONG BootFlags;
@@ -493,8 +495,8 @@ static LONG internalBootCliHandler(void)
     LONG err = 0;
 
     /* Ah. A DOS Process context. At last! */
-    WaitPort(mp);
-    dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
+    WaitPort(&bootProc->pr_MsgPort);
+    dp = (struct DosPacket *)(GetMsg(&bootProc->pr_MsgPort)->mn_Node.ln_Name);
 
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase == NULL) {
@@ -505,6 +507,9 @@ static LONG internalBootCliHandler(void)
     ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
     if (!ExpansionBase)
         err = ERROR_INVALID_RESIDENT_LIBRARY;
+
+    /* Suppress "insert volume" prompts  */
+    bootProc->pr_WindowPtr = (BPTR)-1;
 
     if (err == 0)
     {
@@ -533,7 +538,10 @@ static LONG internalBootCliHandler(void)
         CloseLibrary(&DOSBase->dl_lib);
 
         /* Immediately after ReplyPkt() DOSBase can be freed. */
-        internal_ReplyPkt(dp, mp, DOSFALSE, err);
+        internal_ReplyPkt(dp, &bootProc->pr_MsgPort, DOSFALSE, err);
+
+	bootProc->pr_WindowPtr = bootWin;
+
         return err;
     }
 
@@ -603,6 +611,9 @@ static LONG internalBootCliHandler(void)
     }
 
     CloseLibrary((APTR)ExpansionBase);
+
+    /* Enable prompts to insert missing volumes again .. */
+    bootProc->pr_WindowPtr = bootWin;
 
     /* Init all the RTF_AFTERDOS code, since we now have SYS:, the dos devices, and all the other assigns */
     D(bug("Dos/CliInit: Calling InitCode(RTF_AFTERDOS, 0)\n"));
