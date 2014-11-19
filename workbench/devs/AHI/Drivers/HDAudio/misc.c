@@ -252,16 +252,10 @@ void FreeDriverData(struct HDAudioChip* card, struct DriverBase*  AHIsubBase)
 #define CNT_VEN_ID_NVIDIA       0x10DE
 
 /* This is the controller specific portion, for fixes to southbridge */
-void perform_controller_specific_settings(struct HDAudioChip *card)
+static void perform_controller_specific_settings(struct HDAudioChip *card)
 {
     ULONG data;
     ULONG mask = (1 << 16) - 1;
-
-    if ( card == NULL )
-    {
-        /* Should never happen, but its good practise to check. */
-        return;
-    }
 
     /* Get vendor id */
     data = inl_config(0x0, card->pci_dev);
