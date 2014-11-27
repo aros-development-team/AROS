@@ -171,7 +171,13 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         {
         case MUIA_Cycle_Entries:
             data->entries = (const char **)tag->ti_Data;
+            DoMethod(data->pageobj, MUIM_Group_InitChange);
             UpdateEntries(obj, data);
+            DoMethod(data->pageobj, MUIM_Group_ExitChange);
+
+            data->entries_active = 0;
+            set(data->pageobj, MUIA_Group_ActivePage,
+                data->entries_active);
             break;
 
         case MUIA_Cycle_Active:
