@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2013 The AROS Development Team
+ * Copyright © 2007-2014 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -590,6 +590,8 @@ void ProcessPackets(void) {
                     break;
 
                 err = OpRenameFile(sfl, AROS_BSTR_ADDR(sname), AROS_BSTR_strlen(sname), dfl, AROS_BSTR_ADDR(dname), AROS_BSTR_strlen(dname));
+                if (err == 0)
+                    res = DOSTRUE;
 
                 break;
             }
