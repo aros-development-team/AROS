@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2011 The AROS Development Team
+ * Copyright © 2007-2014 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -42,9 +42,17 @@
  */
 static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname, ULONG *pnamelen) {
     LONG err;
-    UBYTE *name = *pname, *base;
+    UBYTE *name = *pname, *base, ch, *p;
     ULONG namelen = *pnamelen, baselen;
     struct DirEntry de;
+
+    /* Skip device name (if any) */
+    for (ch = *(p = name); ch != ':' && ch != '\0'; ch = *(++p));
+    if (ch == ':')
+    {
+        namelen -= (p - name) + 1;
+        name = p + 1;
+    }
 
     /* we break the given name into two pieces - the name of the containing
      * dir, and the name of the new dir to go within it. if the base ends up
