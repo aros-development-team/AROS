@@ -779,6 +779,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence, LONG *new
 
     if (lock->gl->size == size) {
         D(bug("[fat] new size matches old size, nothing to do\n"));
+        *newsize = size;
         return 0;
     }
 
