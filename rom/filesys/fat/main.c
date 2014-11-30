@@ -1,5 +1,5 @@
 /*
- * fat.handler - FAT12/16/32 filesystem handler
+ * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
  * Copyright © 2007-2014 The AROS Development Team
@@ -40,7 +40,7 @@ struct Library *IntuitionBase;
 struct Globals global_data;
 struct Globals *glob = &global_data;
 
-const TEXT version_string[] = "$VER: fat.handler 41.58 (28.11.2014)";
+const TEXT version_string[] = "$VER: fat-handler 41.58 (28.11.2014)";
 
 LONG handler(struct ExecBase *SysBase) {
     struct Message *msg;
