@@ -1,5 +1,5 @@
 /*
- * fat.handler - FAT12/16/32 filesystem handler
+ * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
  * Copyright © 2007-2014 The AROS Development Team
