@@ -323,6 +323,8 @@ static int detect_intellimouse(void)
 
 int mouse_ps2reset(struct mouse_data *data)
 {
+    int result;
+
     /*
      * The commands are for the mouse and nobody else.
      */
@@ -351,8 +353,16 @@ int mouse_ps2reset(struct mouse_data *data)
 
     /* Reset mouse */
     aux_write_ack(KBD_OUTCMD_RESET);
-    aux_wait_for_input();    /* Test result (0xAA) */
+    result = aux_wait_for_input();    /* Test result (0xAA) */
     aux_wait_for_input();    /* Mouse type */
+
+    if (result != 0xaa)
+    {
+        /* No mouse. Re-enable keyboard and return failure */
+        kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);
+        aux_write_ack(KBD_OUTCMD_ENABLE);
+        return 0;
+    }
 
     data->mouse_protocol = PS2_PROTOCOL_STANDARD;
     data->mouse_packetsize = 3;
