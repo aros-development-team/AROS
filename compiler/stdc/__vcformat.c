@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to format a string like printf().
@@ -41,7 +41,7 @@
 
 /* a little macro to make life easier */
 #define OUT(c)  do                           \
-		{ if((*outc)((c),data)==EOF)   \
+		{ if((*outc)((unsigned char)(c),data)==EOF)   \
 		    return outcount;	     \
 		  outcount++;		     \
 		}while(0)
