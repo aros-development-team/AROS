@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -63,7 +63,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    BYTE c = character;
+    UBYTE c = character;
     return (1 == FWriteChars(file, &c, 1, DOSBase))
         ? character
         : EOF;
