@@ -93,7 +93,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
             Child, (IPTR)Label1(__(MSG_DEFAULT)),
                 
             Child, (IPTR)Label1(__(MSG_DEPTH)),
-            Child, HLeft(depth = (Object *)NumericbuttonObject, MUIA_CycleChain, TRUE, End),
+            Child, HLeft(depth = (Object *)SliderObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)RectangleObject, End,
             Child, (IPTR)RectangleObject, End,
 
