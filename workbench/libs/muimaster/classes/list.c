@@ -2601,12 +2601,12 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
                     data->ci[col].entries_width +
                     data->ci[col].delta +
                     (data->ci[col].bar ? BAR_WIDTH : 0);
-                D(bug("[List/MUIM_HandleEvent] col %d "
+                D(bug("[List/MUIM_TestPos] col %d "
                     "width %d width_sum %d mx %d\n",
                     col, data->ci[col].entries_width, width_sum, mx));
                 if (mx < width_sum)
                 {
-                    D(bug("[List/MUIM_HandleEvent] Column hit %d\n", col));
+                    D(bug("[List/MUIM_TestPos] Column hit %d\n", col));
                     break;
                 }
             }
