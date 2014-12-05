@@ -103,19 +103,17 @@
 #include <aros/asmcall.h>
 
 #if DEBUG_ASSERTS
-#define ASSERT_VALID_PTR_ROMOK(ptr)                                                        \
-do {                                                                                       \
-    if (!((IPTR)ptr & 1)) {                                                                \
-        if (TypeOfMem((APTR)ptr))                                                                \
-            break;                                                                         \
-        else {                                                                             \
-            struct Task *me = FindTask(NULL);                                              \
-                                                                                           \
-            if (((IPTR)(ptr) >= (IPTR)me->tc_SPLower) && ((IPTR)(ptr) < (IPTR)me->tc_SPUpper))                         \
-                break;                                                                     \
-        }                                                                                  \
-    }                                                                                      \
-    bug("[intuition] Invalid pointer value %p at %s, line %u\n", ptr, __FILE__, __LINE__); \
+#define ASSERT_VALID_PTR_ROMOK(ptr)                                                             \
+do {                                                                                            \
+    if (TypeOfMem((APTR)ptr))                                                                   \
+        break;                                                                                  \
+    else {                                                                                      \
+        struct Task *me = FindTask(NULL);                                                       \
+                                                                                                \
+        if (((IPTR)(ptr) >= (IPTR)me->tc_SPLower) && ((IPTR)(ptr) < (IPTR)me->tc_SPUpper))      \
+            break;                                                                              \
+    }                                                                                           \
+    bug("[intuition] Invalid pointer value %p at %s, line %u\n", ptr, __FILE__, __LINE__);      \
 } while(0);
 #else
 #define ASSERT_VALID_PTR_ROMOK(ptr)
