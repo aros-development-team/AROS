@@ -116,12 +116,14 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *list =
         (Object *) GetTagData(MUIA_Listview_List, (IPTR) NULL,
         msg->ops_AttrList);
-    IPTR cyclechain =
-        (IPTR) GetTagData(MUIA_CycleChain, (IPTR) 0, msg->ops_AttrList);
+    IPTR cyclechain;
     LONG entries = 0, first = 0, visible = 0;
 
     if (!list)
         return (IPTR) NULL;
+
+    cyclechain =
+        (IPTR) GetTagData(MUIA_CycleChain, (IPTR) 0, msg->ops_AttrList);
 
     vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
 
