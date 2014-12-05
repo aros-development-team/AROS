@@ -5,14 +5,18 @@
 
 /* "TODO: fs support" */
 
+#define __CONSOLE_NOLIBBASE__
+
 #include <proto/alib.h>
-#include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/console.h>
 #include <proto/icon.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
 #include <exec/memory.h>
+#include <devices/rawkeycodes.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
 #include <intuition/intuition.h>
@@ -57,6 +61,7 @@
 #endif
 
 struct Library *MUIMasterBase = NULL;
+struct Library *ConsoleDevice = NULL;
 
 Object *app;
 Object *mainwin;
@@ -1484,6 +1489,94 @@ void enableObject(Object *object)
 
 /********************************** Left  Listview ***************************/
 
+struct LeftListview__Data
+{
+    struct IOStdReq ioreq;
+    struct MUI_EventHandlerNode ehn;
+};
+
+BOOPSI_DISPATCHER(IPTR, LeftListview_Dispatcher, CLASS, self, message)
+{
+    IPTR retval = 0;
+
+    switch (message->MethodID)
+    {
+        case OM_NEW:
+        {
+            struct opSet *msg = (struct opSet *)message;
+
+            retval = DoSuperMethod(CLASS, self, OM_NEW, msg->ops_AttrList, NULL);
+            if (retval)
+            {
+                struct LeftListview__Data *data = INST_DATA(CLASS, retval);
+                data->ehn.ehn_Events = IDCMP_RAWKEY;
+                data->ehn.ehn_Priority = 0;
+                data->ehn.ehn_Flags = 0;
+                data->ehn.ehn_Object = (Object *)retval;
+                data->ehn.ehn_Class = CLASS;
+            }
+            break;
+        }
+        case MUIM_Setup:
+        {
+            if ((retval = DoSuperMethodA(CLASS, self, message)))
+            {
+                struct LeftListview__Data *data = INST_DATA(CLASS, self);
+
+                if (0 == OpenDevice("console.device", -1, (struct IORequest *)&data->ioreq, 0)) {
+                    ConsoleDevice = (struct Library *)data->ioreq.io_Device;
+                    DoMethod(_win(self), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+                }
+            }
+            break;
+        }
+        case MUIM_Cleanup:
+        {
+            struct LeftListview__Data *data = INST_DATA(CLASS, self);
+
+            if (ConsoleDevice)
+            {
+                DoMethod(_win(self), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
+                CloseDevice((struct IORequest *)&data->ioreq);
+            }
+
+            retval = DoSuperMethodA(CLASS, self, message);
+            break;
+        }
+        case MUIM_HandleEvent:
+        {
+            struct MUIP_HandleEvent *msg = (struct MUIP_HandleEvent *)message;
+
+            if ((ConsoleDevice) && (msg->imsg) && (msg->imsg->Class == IDCMP_RAWKEY))
+            {
+                unsigned char buffer[10];
+                struct InputEvent keyEvent;
+                UBYTE numchars;
+
+                keyEvent.ie_Class = IECLASS_RAWKEY;
+                keyEvent.ie_Code = msg->imsg->Code;
+                keyEvent.ie_Qualifier = msg->imsg->Qualifier;
+                keyEvent.ie_EventAddress = (APTR) (msg->imsg->IAddress);
+
+                numchars = RawKeyConvert(&keyEvent, (char *)buffer, sizeof(buffer), NULL);
+
+                if ((numchars == 1) && (buffer[0] == 13))
+                {
+                    SET(self, MUIA_Listview_DoubleClick, TRUE);
+                    retval = MUI_EventHandlerRC_Eat;
+
+                    break;
+                }
+            }
+        }
+        default:
+            retval = DoSuperMethodA(CLASS, self, message);
+    }
+
+    return retval;
+}
+BOOPSI_DISPATCHER_END
+
 AROS_UFH3(void, lv_doubleclick,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, object, A2),
@@ -1700,6 +1793,7 @@ AROS_UFH3(void, lv_click,
 
 LONG initGUI(void) 
 {
+    struct MUI_CustomClass *listcc;
     int i;
 
     D(bug("[HDToolBox] initGUI()\n"));
@@ -1712,6 +1806,11 @@ LONG initGUI(void)
     if (ptclass == NULL)
         return ERR_GADGETS;
 
+    listcc = MUI_CreateCustomClass(NULL, MUIC_Listview, NULL,
+        sizeof(struct LeftListview__Data), LeftListview_Dispatcher);
+    if (listcc == NULL)
+        return ERR_GADGETS;
+
     hook_display.h_Entry = (HOOKFUNC)display_function;
     hook_buttons.h_Entry = (HOOKFUNC)buttons_function;
     hook_createml.h_Entry = (HOOKFUNC)createml_function;
@@ -1721,7 +1820,7 @@ LONG initGUI(void)
 
     app = ApplicationObject,
                 MUIA_Application_Title      , "HDToolBox",
-                MUIA_Application_Version    , "$VER: HDToolBox 0.3 (21.1.2014)",
+                MUIA_Application_Version    , "$VER: HDToolBox 0.4 (21.1.2014)",
                 MUIA_Application_Copyright  , "(c) 1995-2014 AROS Development Team",
                 MUIA_Application_Author     , "Bearly, Ogun, Fats and others at AROS",
                 MUIA_Application_Description, "Partition your disks.",
@@ -1760,14 +1859,15 @@ LONG initGUI(void)
                         MUIA_Text_Contents, MSG(MSG_Welcome),
                     End,
                     Child, HGroup,
-                        Child, (gadgets.leftlv = ListviewObject,
+                        Child, (gadgets.leftlv = NewObject(listcc->mcc_Class, NULL,
                             MUIA_Listview_List, ListObject,
                                 InputListFrame,
+                                MUIA_CycleChain, 1,
                                 MUIA_List_DisplayHook, &hook_display,
                                 MUIA_List_Format, ",",
                                 MUIA_List_Title, TRUE,
                             End,
-                        End),
+                        TAG_DONE)),
                         Child, ListviewObject,
                             MUIA_Listview_List, (gadgets.rightlv = ListObject,
                                 ReadListFrame,
