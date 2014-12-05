@@ -3129,6 +3129,15 @@ void FindBootLoader(void)
     BootLoaderType = BOOTLOADER_NONE;
 }
 
+#define BUTTONCOMMON \
+            ImageButtonFrame, \
+            MUIA_CycleChain, 1, \
+            MUIA_InputMode, MUIV_InputMode_Toggle, \
+            MUIA_Image_Spec, MUII_CheckMark, \
+            MUIA_Image_FreeVert, TRUE, \
+            MUIA_Background, MUII_ButtonBack, \
+            MUIA_ShowSelState, FALSE,
+
 int main(int argc, char *argv[])
 {
     Object *wnd = NULL;         /* installer window objects  - will get swallowed into the class eventually */
@@ -3153,51 +3162,43 @@ int main(int argc, char *argv[])
     Object *grub_grub = NULL;
 
     Object *LicenseMandGrp = NULL;
-    Object *check_license =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, End;
+    Object *check_license = ImageObject, BUTTONCOMMON
+            MUIA_Selected, FALSE,
+	End;
 
-    Object *check_format =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, TRUE, End;
-    Object *check_locale =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, End;
-    Object *check_core =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, TRUE, End;
-    Object *check_dev =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, End;
-    Object *check_extras =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, TRUE, End;
+    Object *check_format = ImageObject, BUTTONCOMMON
+            MUIA_Selected, TRUE,
+	End;
+
+    Object *check_locale = ImageObject, BUTTONCOMMON
+            MUIA_Selected, FALSE,
+	End;
+
+    Object *check_core = ImageObject, BUTTONCOMMON
+            MUIA_Selected, TRUE,
+        End;
+
+    Object *check_dev = ImageObject, BUTTONCOMMON
+            MUIA_Selected, FALSE,
+        End;
+
+    Object *check_extras = ImageObject, BUTTONCOMMON
+            MUIA_Selected, TRUE,
+        End;
+
     Object *check_bootloader;
 
-    Object *check_reboot =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, End;
+    Object *check_reboot = ImageObject, BUTTONCOMMON
+        End;
 
     Object *gauge1 =
         (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE,
         MUIA_Gauge_Current, 0, End);
+
     Object *gauge2 =
         (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE,
         MUIA_Gauge_Current, 0, End);
+
     Object *gauge3 =
         (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE,
         MUIA_Gauge_Current, 0, End);
@@ -3224,40 +3225,34 @@ int main(int argc, char *argv[])
 
     IPTR pathend = 0;
 
-    check_copytowork =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Disabled, TRUE, End;
-    check_work =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, End;
-    check_formatsys =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, TRUE, End;
-    check_formatwork =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Disabled, TRUE, End;
-
-    check_sizesys = ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, End;
-    check_sizework = ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, MUIA_Disabled, TRUE,
+    check_copytowork = ImageObject, BUTTONCOMMON
+            MUIA_Disabled, TRUE,
         End;
-    check_creatework = ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, MUIA_Disabled, TRUE,
+
+    check_work = ImageObject, BUTTONCOMMON
+            MUIA_Selected, FALSE,
+        End;
+
+    check_formatsys = ImageObject, BUTTONCOMMON
+            MUIA_Selected, TRUE,
+        End;
+
+    check_formatwork = ImageObject, BUTTONCOMMON
+            MUIA_Disabled, TRUE,
+        End;
+
+    check_sizesys = ImageObject, BUTTONCOMMON
+            MUIA_Selected, FALSE,
+        End;
+
+    check_sizework = ImageObject, BUTTONCOMMON
+            MUIA_Selected, FALSE,
+            MUIA_Disabled, TRUE,
+        End;
+
+    check_creatework = ImageObject, BUTTONCOMMON
+            MUIA_Selected, FALSE,
+            MUIA_Disabled, TRUE,
         End;
 
     static char *opt_fstypes[] = {
@@ -3266,9 +3261,12 @@ int main(int argc, char *argv[])
         NULL
     };
 
-    cycle_fstypework =
-        CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, TRUE,
-        MUIA_Cycle_Active, 1, End;
+    cycle_fstypework = CycleObject,
+            MUIA_CycleChain, 1,
+            MUIA_Cycle_Entries, opt_fstypes,
+            MUIA_Disabled, TRUE,
+            MUIA_Cycle_Active, 1,
+        End;
 
     static char *opt_sizeunits[] = {
         "MB",
@@ -3276,12 +3274,19 @@ int main(int argc, char *argv[])
         NULL
     };
 
-    cycle_sysunits =
-        CycleObject, MUIA_Cycle_Entries, opt_sizeunits, MUIA_Disabled, TRUE,
-        MUIA_Cycle_Active, 1, End;
-    cycle_workunits =
-        CycleObject, MUIA_Cycle_Entries, opt_sizeunits, MUIA_Disabled, TRUE,
-        MUIA_Cycle_Active, 1, End;
+    cycle_sysunits = CycleObject,
+            MUIA_CycleChain, 1,
+            MUIA_Cycle_Entries, opt_sizeunits,
+            MUIA_Disabled, TRUE,
+            MUIA_Cycle_Active, 1,
+        End;
+
+    cycle_workunits = CycleObject,
+            MUIA_CycleChain, 1,
+            MUIA_Cycle_Entries, opt_sizeunits,
+            MUIA_Disabled, TRUE,
+            MUIA_Cycle_Active, 1,
+        End;
 
     static char *opt_grub2mode[] = {
         "Text",
@@ -3289,14 +3294,19 @@ int main(int argc, char *argv[])
         NULL
     };
 
-    Object *cycle_grub2mode =
-        CycleObject, MUIA_Cycle_Entries, opt_grub2mode, MUIA_Disabled,
-        FALSE, MUIA_Cycle_Active, 0, End;
+    Object *cycle_grub2mode = CycleObject,
+            MUIA_CycleChain, 1,
+            MUIA_Cycle_Entries, opt_grub2mode,
+            MUIA_Disabled, FALSE,
+            MUIA_Cycle_Active, 0,
+        End;
 
     install_opts =
         AllocMem(sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC);
+
     grub_opts =
         AllocMem(sizeof(struct Grub_Options), MEMF_CLEAR | MEMF_PUBLIC);
+
     source_path = AllocVec(256, MEMF_CLEAR | MEMF_PUBLIC);
     extras_source = AllocVec(256, MEMF_CLEAR | MEMF_PUBLIC);
 
@@ -3351,21 +3361,23 @@ int main(int argc, char *argv[])
     sprintf(work_Path, "" WORK_PART_NAME);
 
     FindBootLoader();
-    cycle_fstypesys =
-        CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE,
-        MUIA_Cycle_Active, BootLoaderType == BOOTLOADER_GRUB1 ? 0 : 1, End;
-    check_bootloader =
-        ImageObject, ImageButtonFrame, MUIA_InputMode,
-        MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
-        MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
-        MUIA_ShowSelState, FALSE, MUIA_Selected,
-        BootLoaderType == BOOTLOADER_NONE ? FALSE : TRUE, MUIA_Disabled,
-        BootLoaderType == BOOTLOADER_NONE ? TRUE : FALSE, End;
+    cycle_fstypesys = CycleObject,
+            MUIA_CycleChain, 1,
+            MUIA_Cycle_Entries, opt_fstypes,
+            MUIA_Disabled, FALSE,
+            MUIA_Cycle_Active, BootLoaderType == BOOTLOADER_GRUB1 ? 0 : 1,
+        End;
+
+    check_bootloader = ImageObject, BUTTONCOMMON
+            MUIA_Selected, BootLoaderType == BOOTLOADER_NONE ? FALSE : TRUE,
+            MUIA_Disabled, BootLoaderType == BOOTLOADER_NONE ? TRUE : FALSE,
+        End;
 
     lock = Lock(DEF_INSTALL_IMAGE, ACCESS_READ);
     UnLock(lock);
 
     LicenseMsg = MUI_NewObject(MUIC_TextEditor,
+        MUIA_CycleChain, 1,
         MUIA_Background, MUII_SHINE,
         MUIA_TextEditor_ReadOnly, TRUE, TAG_DONE);
 
@@ -3379,7 +3391,7 @@ int main(int argc, char *argv[])
         MUIA_Application_Title,       (IPTR) "AROS Installer",
         MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.16 (28.12.2012)",
         MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2012, The AROS Development Team. All rights reserved.",
-        MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
+        MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nick Andrews & Neil Cafferkey",
         MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
         MUIA_Application_Base,        (IPTR) "INSTALLER",
 
@@ -3438,6 +3450,7 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) (radio_part = RadioObject,
                                             GroupFrame,
+                                            MUIA_CycleChain, 1,
                                             MUIA_Radio_Entries, (IPTR) opt_partentries,
                                         End),
 
@@ -3448,26 +3461,29 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) LLabel("Type:"),
                                             Child, (IPTR) (cycle_drivetype =
                                                 CycleObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_Cycle_Entries, (IPTR) opt_drivetypes,
                                                 MUIA_Cycle_Active, 0,
-                                                End),
+                                            End),
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) LLabel("Device:"),
                                             Child, (IPTR) (dest_device =
                                                 StringObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_String_Contents, (IPTR) boot_Device,
                                                 MUIA_String_Reject, " \"\'*",
                                                 MUIA_Frame, MUIV_Frame_String,
                                                 MUIA_HorizWeight, 300,
-                                                End),
+                                            End),
                                             Child, (IPTR) LLabel("Unit:"),
                                             Child, (IPTR) (dest_unit =
                                                 StringObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_String_Integer, 0,
                                                 MUIA_String_Accept, "0123456789",
                                                 MUIA_Frame, MUIV_Frame_String,
                                                 MUIA_HorizWeight, 20,
-                                                End),
+                                            End),
                                         End,
 
                                         Child, (IPTR) HVSpace,
@@ -3476,6 +3492,7 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) ColGroup(7),
                                             Child, (IPTR) LLabel("Name:"),
                                             Child, (IPTR) (sys_devname = StringObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_String_Contents, SYS_PART_NAME,
                                                 MUIA_Disabled, TRUE,
                                                 MUIA_Frame, MUIV_Frame_String,
@@ -3489,6 +3506,7 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) cycle_fstypesys,
                                             Child, (IPTR) LLabel("Size:"),
                                             Child, (IPTR) (sys_size = StringObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_String_Accept, "0123456789",
                                                 MUIA_String_Integer, 0,
                                                 MUIA_Disabled, TRUE,
@@ -3505,6 +3523,7 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) ColGroup(7),
                                             Child, (IPTR) LLabel("Name:"),
                                             Child, (IPTR) (work_devname = StringObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_String_Contents, WORK_PART_NAME,
                                                 MUIA_Disabled, TRUE,
                                                 MUIA_Frame, MUIV_Frame_String,
@@ -3518,6 +3537,7 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) cycle_fstypework,
                                             Child, (IPTR) LLabel("Size:"),
                                             Child, (IPTR) (work_size = StringObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_String_Accept, "0123456789",
                                                 MUIA_String_Integer, 0,
                                                 MUIA_Disabled, TRUE,
@@ -3566,9 +3586,10 @@ int main(int argc, char *argv[])
                                         End,
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) (dest_volume = StringObject,
+                                            MUIA_CycleChain, 1,
                                             MUIA_String_Contents, (IPTR) dest_Path,
                                             MUIA_Frame, MUIV_Frame_String,
-                                            End),
+                                        End),
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) ColGroup(2),
                                             Child, (IPTR) check_work,
@@ -3589,13 +3610,13 @@ int main(int argc, char *argv[])
                                             End),
                                         End,
                                         Child, (IPTR) HVSpace,
-                                        Child, (IPTR) (work_volume =
-                                            StringObject,
+                                        Child, (IPTR) (work_volume = StringObject,
+                                            MUIA_CycleChain, 1,
                                             MUIA_String_Contents,
                                             (IPTR) work_Path,
                                             MUIA_Disabled, TRUE,
                                             MUIA_Frame, MUIV_Frame_String,
-                                            End),
+                                        End),
                                         Child, (IPTR) HVSpace,
                                     End,
                                 End,
@@ -3612,28 +3633,34 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) ColGroup(5),
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) LLabel("Device:"),
-                                            Child, (IPTR) (grub_device =
-                                                StringObject,
+                                            Child, (IPTR) (grub_device = StringObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_String_Reject, " \"\'*",
                                                 MUIA_Frame, MUIV_Frame_String,
                                                 MUIA_HorizWeight, 200,
-                                                End),
+                                            End),
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) LLabel("Unit:"),
-                                            Child, (IPTR) (grub_unit =
-                                                StringObject,
+                                            Child, (IPTR) (grub_unit = StringObject,
+                                                MUIA_CycleChain, 1,
                                                 MUIA_String_Integer, 0,
                                                 MUIA_String_Accept, "0123456789",
                                                 MUIA_Frame, MUIV_Frame_String,
                                                 MUIA_HorizWeight, 20,
-                                                End),
+                                            End),
                                         End,
 
-                                        Child, (IPTR) (grub_drive = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
+                                        Child, (IPTR) (grub_drive = TextObject,
+                                            MUIA_Text_PreParse, (IPTR) "" MUIX_C,
+                                            MUIA_Text_Contents, (IPTR)" ",
+                                        End),
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) LLabel(KMsgGrubGrub),
                                         Child, (IPTR) HVSpace,
-                                        Child, (IPTR) (grub_grub = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
+                                        Child, (IPTR) (grub_grub = TextObject,
+                                            MUIA_Text_PreParse, (IPTR) "" MUIX_C,
+                                            MUIA_Text_Contents, (IPTR)" ",
+                                        End),
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) ColGroup(4),
                                             Child, (IPTR) LLabel("Menu Mode:"),
@@ -3648,7 +3675,11 @@ int main(int argc, char *argv[])
                                     Child, (IPTR) VGroup,
                                         Child, (IPTR) CLabel(KMsgPartitioning),
                                         Child, (IPTR) HVSpace,
-                                        Child, (IPTR) VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge1, End,
+                                        Child, (IPTR) VGroup,
+                                            GaugeFrame,
+                                            MUIA_Background, MUII_HSHINEBACK,
+                                            Child, gauge1,
+                                        End,
                                         Child, (IPTR) ScaleObject, End,
                                         Child, (IPTR) HVSpace,
                                     End,
@@ -3658,7 +3689,11 @@ int main(int argc, char *argv[])
                                     Child, (IPTR) VGroup,
                                         Child, (IPTR) CLabel(KMsgPartitioning),
                                         Child, (IPTR) HVSpace,
-                                        Child, (IPTR) VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, (IPTR) gauge3, End,
+                                        Child, (IPTR) VGroup,
+                                            GaugeFrame,
+                                            MUIA_Background, MUII_HSHINEBACK,
+                                            Child, (IPTR) gauge3,
+                                        End,
                                         Child, (IPTR) ScaleObject, End,
                                         Child, (IPTR) HVSpace,
                                     End,
@@ -3672,8 +3707,14 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) (label = FreeLLabel("YOU SHOULD NOT SEE THIS")),
                                         Child, (IPTR) HVSpace,
-                                        Child, (IPTR) (currentaction = TextObject,MUIA_Text_Contents,(IPTR)" ",End),
-                                        Child, (IPTR) VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge2, End,
+                                        Child, (IPTR) (currentaction = TextObject,
+                                            MUIA_Text_Contents,(IPTR)" ",
+                                        End),
+                                        Child, (IPTR) VGroup,
+                                            GaugeFrame,
+                                            MUIA_Background, MUII_HSHINEBACK,
+                                            Child, gauge2,
+                                        End,
                                         Child, (IPTR) HVSpace,
                                     End,
                                 End,
@@ -3814,7 +3855,6 @@ int main(int argc, char *argv[])
     DoMethod(check_bootloader, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
         (IPTR) cycle_grub2mode, 3, MUIM_Set,
         MUIA_Disabled, MUIV_NotTriggerValue);
-
 
     DoMethod(check_core, MUIM_Notify, MUIA_Selected, FALSE,
         (IPTR) check_formatsys, 3, MUIM_Set, MUIA_Selected, FALSE);
