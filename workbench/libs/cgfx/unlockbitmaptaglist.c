@@ -74,6 +74,8 @@ struct RectList
     struct RectList *rl = NULL;
     struct BitMap *bm = (struct BitMap *)Handle;
 
+    D(bug("[Cybergfx] %s(0x%p, 0x%p)\n", __PRETTY_FUNCTION__, bm, Tags));
+
     if ((bm) && (IS_HIDD_BM(bm)))
     {
         while ((tag = NextTagItem(&Tags)))
@@ -97,7 +99,10 @@ struct RectList
         }
 
         if (reallyunlock)
+        {
+            D(bug("[Cybergfx] %s: Calling HIDD_BM_ReleaseDirectAccess...\n", __PRETTY_FUNCTION__));
             HIDD_BM_ReleaseDirectAccess(HIDD_BM_OBJ(bm));
+        }
 
         if (rl)
         {
@@ -106,9 +111,11 @@ struct RectList
                 struct Rectangle *rectCurrent;
                 int count;
 
+                D(bug("[Cybergfx] %s: RectList @ 0x%p\n", __PRETTY_FUNCTION__, rl));
+
                 if ((count = rl->rl_num) > 0)
                 {
-                    D(bug("[Cybergfx] %s: RectList @ 0x%p [%d entries]\n", __PRETTY_FUNCTION__, rl, rl->rl_num));
+                    D(bug("[Cybergfx] %s: %d entries\n", __PRETTY_FUNCTION__, rl->rl_num));
 
                     for (rectCurrent = &rl->rect1; count > 0; count--)
                     {
@@ -121,7 +128,10 @@ struct RectList
             }
         }
         else
+        {
+            D(bug("[Cybergfx] %s: Updating full bitmap\n", __PRETTY_FUNCTION__));
             UpdateBitMap(bm, 0, 0, GetCyberMapAttr(bm, CYBRMATTR_WIDTH), GetCyberMapAttr(bm, CYBRMATTR_HEIGHT));
+        }
     }
     else
     {
