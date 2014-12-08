@@ -25,13 +25,13 @@
 #define GET_R(rgb) ((rgb >> 16) & 0xff)
 #define GET_G(rgb) ((rgb >> 8) & 0xff)
 #define GET_B(rgb) (rgb & 0xff)
-#define SET_ARGB(a, r, g, b) a << 24 | r << 16 | g << 8 | b
+#define SET_ARGB(a, r, g, b) (a << 24 | r << 16 | g << 8 | b)
 #else
 #define GET_A(rgb) (rgb & 0xff)
 #define GET_R(rgb) ((rgb >> 8) & 0xff)
 #define GET_G(rgb) ((rgb >> 16) & 0xff)
 #define GET_B(rgb) ((rgb >> 24) & 0xff)
-#define SET_ARGB(a, r, g, b) b << 24 | g << 16 | r << 8 | a
+#define SET_ARGB(a, r, g, b) (b << 24 | g << 16 | r << 8 | a)
 #endif
 
 struct ShadeData
@@ -1058,10 +1058,10 @@ ULONG CalcShade(ULONG base, UWORD fact)
 {
     int     c0, c1, c2, c3;
 
-    c0 = (base >> 24) & 0xff;
-    c1 = (base >> 16) & 0xff;
-    c2 = (base >> 8) & 0xff;
-    c3 = base & 0xff;
+    c0 = GET_A(base);
+    c1 = GET_R(base);
+    c2 = GET_G(base);
+    c3 = GET_B(base);
     c0 *= fact;
     c1 *= fact;
     c2 *= fact;
@@ -1076,7 +1076,7 @@ ULONG CalcShade(ULONG base, UWORD fact)
     if (c2 > 255) c2 = 255;
     if (c3 > 255) c3 = 255;
 
-    return (ULONG)((c0 << 24) | (c1 << 16) | (c2 << 8) | c3);
+    return (ULONG)SET_ARGB(c0, c1, c2, c3);
 }
 
 AROS_UFH3(void, RectShadeFunc,
@@ -1106,10 +1106,10 @@ AROS_UFH3(void, RectShadeFunc,
 
             if (bm_handle)
             {
-                col.alpha = (HIDDT_ColComp)((color >> 16) & 0x0000FF00);
-                col.red = (HIDDT_ColComp)((color >> 8) & 0x0000FF00);
-                col.green = (HIDDT_ColComp)(color & 0x0000FF00);
-                col.blue = (HIDDT_ColComp)((color << 8) & 0x0000FF00);
+                col.alpha = (HIDDT_ColComp) GET_A(color) << 8;
+                col.red = (HIDDT_ColComp) GET_R(color) << 8;
+                col.green = (HIDDT_ColComp) GET_G(color) << 8;
+                col.blue = (HIDDT_ColComp) GET_B(color) << 8;
 
                 HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
             }
