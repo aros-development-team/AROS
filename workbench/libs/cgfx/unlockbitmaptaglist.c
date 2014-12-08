@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,9 +20,9 @@
 
 struct RectList
 {
-     ULONG rl_num;             // no. of rects in this list
-     struct RectList *rl_next; // pointer to next list
-     struct Rectangle rect1;   // First Rectangle in the list
+    ULONG rl_num;             // no. of rects in this list
+    struct RectList *rl_next; // pointer to next list
+    struct Rectangle rect1;   // First Rectangle in the list
 };
 
 /*****************************************************************************
