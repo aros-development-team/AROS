@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2013, The AROS Development Team.
+    Copyright © 2011-2014, The AROS Development Team.
     $Id$
 */
 
@@ -33,6 +33,27 @@
 #define GET_B(rgb) ((rgb >> 24) & 0xff)
 #define SET_ARGB(a, r, g, b) b << 24 | g << 16 | r << 8 | a
 #endif
+
+struct ShadeData
+{
+    struct NewImage     *ni;
+    UWORD               fact;
+};
+
+struct RectList
+{
+    ULONG rl_num;
+    struct RectList *rl_next;
+    struct Rectangle rl_rect;
+};
+
+struct layerhookmsg
+{
+    struct Layer *l;
+/*  struct Rectangle rect; (replaced by the next line!) */
+    WORD MinX, MinY, MaxX, MaxY;
+    LONG OffsetX, OffsetY;
+};
 
 /* This function provides a number of ways to blit a NewImage onto RastPort. Please take great care when modifying it.
  *
@@ -778,14 +799,13 @@ struct myrgb
 void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle)
 {
     /* The basic idea of this algorithm is to calc the intersection between the
-    * diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with the line starting
-    * at (x,y) (every pixel inside the rectangle) and angle angle with direction vector (vx,vy).
-    *
-    * Having the intersection point we then know the color of the pixel.
-    *
-    * TODO: Turn the algorithm into a incremental one
-    *       Remove the use of floating point variables
-    */
+     * diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with the line starting
+     * at (x,y) (every pixel inside the rectangle) and angle angle with direction vector (vx,vy).
+     *
+     * Having the intersection point we then know the color of the pixel.
+     *
+     * TODO: Turn the algorithm into a incremental one
+     *       Remove the use of floating point variables */
     double rad = angle*M_PI/180;
     double cosarc = cos(rad);
     double sinarc = sin(rad);
@@ -845,18 +865,17 @@ void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG x
     if (angle > 90 && angle <= 270)
     {
 	/* for these angle we have y1 = height - y1. Instead of
-        *
-        *  y1 = height - (-vy*(yw*  xs -xw*  ys)         + yw*(vy*  x -vx*  y))        /(-yw*vx + xw*vy);
-        *
-        * we can write
-        *
-        *  y1 =          (-vy*(yw*(-xs)-xw*(-ys+height)) + yw*(vy*(-x)-vx*(-y+height)))/(-yw*vx + xw*vy);
-        *
-        * so height - y1 can be expressed with the normal formular adapting some parameters.
-        *
-        * Note that if one would exchanging startRGB/endRGB the values would only work
-        * for linear color gradients
- */
+         *
+         *  y1 = height - (-vy*(yw*  xs -xw*  ys)         + yw*(vy*  x -vx*  y))        /(-yw*vx + xw*vy);
+         *
+         * we can write
+         *
+         *  y1 =          (-vy*(yw*(-xs)-xw*(-ys+height)) + yw*(vy*(-x)-vx*(-y+height)))/(-yw*vx + xw*vy);
+         *
+         * so height - y1 can be expressed with the normal formular adapting some parameters.
+         *
+         * Note that if one would exchanging startRGB/endRGB the values would only work
+         * for linear color gradients */
         xadd = -1;
         yadd = -1;
         ystart = height;
@@ -875,29 +894,26 @@ void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG x
     t = -yw*vx + xw*vy;
 
     /* The formular as shown above is
-    *
-    * 	 y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
-    *
-    * We see that only yw*(vy*x-vx*y) changes during the loop.
-    *
-    * We write
-    *
-    *   Current Pixel: y1(x,y) = (r + yw*(vy*x-vx*y))/t = r/t + yw*(vy*x-vx*y)/t
-    *   Next Pixel:    y1(x+xadd,y) = (r + vw*(vy*(x+xadd)-vx*y))/t
-    *
-    *   t*(y1(x+xadd,y) - y1(x,y)) = yw*(vy*(x+xadd)-vx*y) - yw*(vy*x-vx*y) = yw*vy*xadd;
-    *
-    */
+     *
+     * 	 y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
+     *
+     * We see that only yw*(vy*x-vx*y) changes during the loop.
+     *
+     * We write
+     *
+     *   Current Pixel: y1(x,y) = (r + yw*(vy*x-vx*y))/t = r/t + yw*(vy*x-vx*y)/t
+     *   Next Pixel:    y1(x+xadd,y) = (r + vw*(vy*(x+xadd)-vx*y))/t
+     *
+     *   t*(y1(x+xadd,y) - y1(x,y)) = yw*(vy*(x+xadd)-vx*y) - yw*(vy*x-vx*y) = yw*vy*xadd; */
 
     incr_y1 = yw*vy*xadd;
     UBYTE *bufptr = buf;
     for (l = 0, y = ystart + ((yp - yt)* yadd); l < h; l++, y+=yadd)
     {
-
-	/* Calculate initial y1 accu, can be brought out of the loop as well (x=0). It's probably a
-        * a good idea to add here also a value of (t-1)/2 to ensure the correct rounding
-        * This (and for r) is also a place were actually a overflow can happen |yw|=16 |y|=16. So for
- * vx nothing is left, currently 9 bits are used for vx or vy */
+        /* Calculate initial y1 accu, can be brought out of the loop as well (x=0). It's probably a
+         * a good idea to add here also a value of (t-1)/2 to ensure the correct rounding
+         * This (and for r) is also a place were actually a overflow can happen |yw|=16 |y|=16. So for
+         * vx nothing is left, currently 9 bits are used for vx or vy */
         int y1_mul_t_accu = r - yw*vx*y;
 
 
@@ -906,14 +922,14 @@ void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG x
         {
             int red,green,blue;
 
-	    /* Calculate the intersection of two lines, this is not the fastet way to do but
-            * it is intuitive. Note: very slow! Will be optimzed later (remove FFP usage
-            * and making it incremental)...update: it's now incremental and no FFP is used
-            * but it probably can be optimized more by removing some more of the divisions and
-     * further specialize the stuff here (use of three accus). */
+            /* Calculate the intersection of two lines, this is not the fastet way to do but
+             * it is intuitive. Note: very slow! Will be optimzed later (remove FFP usage
+             * and making it incremental)...update: it's now incremental and no FFP is used
+             * but it probably can be optimized more by removing some more of the divisions and
+             * further specialize the stuff here (use of three accus). */
             /*	    y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));*/
             y1 = y1_mul_t_accu / t;
-					
+
             red = startRGB.red + (int)(diffR*y1/height);
             green = startRGB.green + (int)(diffG*y1/height);
             blue = startRGB.blue + (int)(diffB*y1/height);
@@ -934,8 +950,8 @@ void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LON
     
     if ((w <= 0) || (h <= 0)) return;
 
-	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
-        to WritePixelArray() can be made also faster */
+    /* By bringing building the gradient array in the same format as the RastPort BitMap a call
+      to WritePixelArray() can be made also faster */
     buf = AllocVec(1 * yb * 3, 0);
     
     FillMemoryBufferRGBGradient(buf, pen, xt, yt, xb, yb, xp, yp, 1, yb, start_rgb, end_rgb, angle);
@@ -1038,24 +1054,6 @@ void PutImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y) {
     }
 }
 
-struct ShadeData
-{
-    struct NewImage     *ni;
-    UWORD               fact;
-    /* RectList for UnLockBitMap */
-    ULONG               rl_num;
-    IPTR                  rl_next;
-    struct Rectangle rl_rect;
-};
-
-struct layerhookmsg
-{
-    struct Layer *l;
-/*  struct Rectangle rect; (replaced by the next line!) */
-    WORD MinX, MinY, MaxX, MaxY;
-    LONG OffsetX, OffsetY;
-};
-
 ULONG CalcShade(ULONG base, UWORD fact)
 {
     int     c0, c1, c2, c3;
@@ -1088,29 +1086,23 @@ AROS_UFH3(void, RectShadeFunc,
 {
     AROS_USERFUNC_INIT
 
-    APTR        bm_handle;
-    ULONG       bm_bytesperrow;
-    IPTR        bm_baseaddress;
-
-    int         px, py, x, y;
-
+    struct ShadeData *data = h->h_Data;
     ULONG       color;
     HIDDT_Color col;
-
-    struct ShadeData *data = h->h_Data;
+    APTR        bm_handle;
+    int         px, py, x, y;
 
     bm_handle = LockBitMapTags(rp->BitMap,
-                    LBMI_BYTESPERROW,   &bm_bytesperrow,
-                    LBMI_BASEADDRESS,   &bm_baseaddress,
                     TAG_END);
 
-    if (msg->MinX == msg->MaxX)
+    for (px = msg->MinX; px < (msg->MaxX + 1); px++)
     {
-        x = (msg->MinX - rp->Layer->bounds.MinX) % data->ni->w; 
+        x = (px - rp->Layer->bounds.MinX) % data->ni->w;
         for (py = msg->MinY; py < (msg->MaxY + 1); py++)
         {
             y = (py - rp->Layer->bounds.MinY) % data->ni->h;
-            color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
+
+            color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
 
             if (bm_handle)
             {
@@ -1119,55 +1111,34 @@ AROS_UFH3(void, RectShadeFunc,
                 col.green = (HIDDT_ColComp)(color & 0x0000FF00);
                 col.blue = (HIDDT_ColComp)((color << 8) & 0x0000FF00);
 
-                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
+                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
             }
             else
             {
-                WriteRGBPixel(rp, msg->OffsetX, py + msg->OffsetY - msg->MinY, color);
-            }
-        }
-    }
-    else
-    {
-        y = (msg->MinY - rp->Layer->bounds.MinY) % data->ni->h;
-        for (px = msg->MinX; px < (msg->MaxX + 1); px++) {
-            x = (px - rp->Layer->bounds.MinX) % data->ni->h;
-            color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
-
-            if (bm_handle)
-            {
-                col.alpha = (HIDDT_ColComp)((color >> 16) & 0x0000FF00);
-                col.red = (HIDDT_ColComp)((color >> 8) & 0x0000FF00);
-                col.green = (HIDDT_ColComp)(color & 0x0000FF00);
-                col.blue = (HIDDT_ColComp)((color << 8) & 0x0000FF00);
-
-                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
-            }
-            else
-            {
-                WriteRGBPixel(rp, px + msg->OffsetX - msg->MinX, msg->OffsetY, color);
+                WriteRGBPixel(rp, px + msg->OffsetX - msg->MinX, py + msg->OffsetY - msg->MinY, color);
             }
         }
     }
 
     if (bm_handle)
     {
+        struct RectList bm_rectlist;
         struct TagItem bm_ultags[3] =
         {
-                {UBMI_REALLYUNLOCK, TRUE                },
-                {UBMI_UPDATERECTS,  (IPTR)&data->rl_num },
-                {TAG_DONE, 0                            }
+            {UBMI_REALLYUNLOCK, TRUE                },
+            {UBMI_UPDATERECTS,  (IPTR)&bm_rectlist  },
+            {TAG_DONE, 0                            }
         };
 
-        data->rl_rect.MinX = msg->MinX;
-        data->rl_rect.MinY = msg->MinY;
-        data->rl_rect.MaxX = msg->MaxX;
-        data->rl_rect.MaxY = msg->MaxY;
+        bm_rectlist.rl_num = 1;
+        bm_rectlist.rl_next = (struct RectList *)0;
+        bm_rectlist.rl_rect.MinX = msg->MinX;
+        bm_rectlist.rl_rect.MinY = msg->MinY;
+        bm_rectlist.rl_rect.MaxX = msg->MaxX;
+        bm_rectlist.rl_rect.MaxY = msg->MaxY;
 
         UnLockBitMapTagList(bm_handle, bm_ultags);
     }
-    else
-        UpdateBitMap(rp->BitMap, msg->MinX, msg->MinY, msg->MaxX - msg->MinX + 1, msg->MaxY - msg->MinY + 1);
 
     AROS_USERFUNC_EXIT
 }
@@ -1195,7 +1166,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     {
         struct ShadeData shadeParams;
         struct Hook      shadeHook;
-	struct Rectangle shadeRect;
+        struct Rectangle shadeRect;
 
         shadeRect.MinX = x0;
         shadeRect.MaxX = x1;
@@ -1204,8 +1175,6 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
 
         shadeParams.ni = ni;
         shadeParams.fact = fact;
-        shadeParams.rl_num = 1;
-        shadeParams.rl_next = (IPTR)NULL;
 
         shadeHook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(RectShadeFunc);
         shadeHook.h_Data = &shadeParams;
