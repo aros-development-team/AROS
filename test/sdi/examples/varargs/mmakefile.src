@@ -7,12 +7,19 @@ EXEDIR          := $(AROS_TESTS)/sdi
 USER_INCLUDES   := -I$(SRCDIR)/$(CURDIR)/../..
 #USER_CFLAGS     := -D__UTILITY_STDLIBBASE__
 
-#MM- test : test-sdi-varargs
-#MM- test-quick : test-sdi-varargs-quick
+#MM- test : test-sdi-varargs-$(CPU)
+#MM- test-quick : test-sdi-varargs-$(CPU)-quick
 
-#MM test-sdi-varargs : includes linklibs
+#MM- test-sdi-varargs-i386 : test-sdi-varargs-prog
+#MM- test-sdi-varargs-i386-quick : test-sdi-varargs-prog-quick
+#MM- test-sdi-varargs-x86_64 : test-sdi-varargs-prog
+#MM- test-sdi-varargs-x86_64 : test-sdi-varargs-prog-quick
+#MM- test-sdi-varargs-m68k : test-sdi-varargs-prog
+#MM- test-sdi-varargs-m68k-quick : test-sdi-varargs-prog-quick
 
-%build_progs mmake=test-sdi-varargs \
+#MM test-sdi-varargs-prog : includes linklibs
+
+%build_progs mmake=test-sdi-varargs-prog \
     files=$(FILES) targetdir=$(EXEDIR)
 
 %common
