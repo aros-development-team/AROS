@@ -177,10 +177,9 @@ static void aros_ufc(int id, int flags)
     printf(") \\\n");
     printf("\t({ APTR _n = (n);\\\n");
     snprintf(jmp, sizeof(jmp),
-             "pea.l 0f\\n"
-             "move.l %%5, %%%%sp@-\\n"
-             "rts\\n"
-             "0:\\n"
+             "\tpea.l 6(%%%%pc)\\n"
+             "\tmove.l %%5, -(%%%%sp)\\n"
+             "\trts\\n"
     );
     jmp[sizeof(jmp)-1]=0;
 
