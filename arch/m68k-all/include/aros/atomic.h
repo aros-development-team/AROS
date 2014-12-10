@@ -10,62 +10,62 @@
 
 static inline void atomic_inc_l(LONG* p)
 {
-    asm volatile ("addql #1,%0" : "+m" (*p));
+    asm volatile ("addq.l #1,%0" : "+m" (*p));
 }
 
 static inline void atomic_dec_l(LONG* p)
 {
-    asm volatile ("subql #1,%0" : "+m" (*p));
+    asm volatile ("subq.l #1,%0" : "+m" (*p));
 }
 
 static inline void atomic_and_l(ULONG* p, ULONG mask)
 {
-    asm volatile ("andl %1,%0" : "+m" (*p) : "id" (mask));
+    asm volatile ("and.l %1,%0" : "+m" (*p) : "id" (mask));
 }
 
 static inline void atomic_or_l(ULONG* p, ULONG mask)
 {
-    asm volatile ("orl %1,%0" : "+m" (*p) : "id" (mask));
+    asm volatile ("or.l %1,%0" : "+m" (*p) : "id" (mask));
 }
 
 static inline void atomic_inc_b(BYTE* p)
 {
-    asm volatile ("addqb #1,%0" : "+m" (*p));
+    asm volatile ("addq.b #1,%0" : "+m" (*p));
 }
 
 static inline void atomic_dec_b(BYTE* p)
 {
-    asm volatile ("subqb #1,%0" : "+m" (*p));
+    asm volatile ("subq.b #1,%0" : "+m" (*p));
 }
 
 static inline void atomic_and_b(UBYTE* p, UBYTE mask)
 {
-    asm volatile ("andb %1,%0" : "+m" (*p) : "id" (mask));
+    asm volatile ("and.b %1,%0" : "+m" (*p) : "id" (mask));
 }
 
 static inline void atomic_or_b(UBYTE* p, UBYTE mask)
 {
-    asm volatile ("orb %1,%0" : "+m" (*p) : "id" (mask));
+    asm volatile ("or.b %1,%0" : "+m" (*p) : "id" (mask));
 }
 
 static inline void atomic_inc_w(WORD* p)
 {
-    asm volatile ("addqw #1,%0" : "+m" (*p));
+    asm volatile ("addq.w #1,%0" : "+m" (*p));
 }
 
 static inline void atomic_dec_w(WORD* p)
 {
-    asm volatile ("subqw #1,%0" : "+m" (*p));
+    asm volatile ("subq.w #1,%0" : "+m" (*p));
 }
 
 static inline void atomic_and_w(UWORD* p, UWORD mask)
 {
-    asm volatile ("andw %1,%0" : "+m" (*p) : "id" (mask));
+    asm volatile ("and.w %1,%0" : "+m" (*p) : "id" (mask));
 }
 
 static inline void atomic_or_w(UWORD* p, UWORD mask)
 {
-    asm volatile ("orw %1,%0" : "+m" (*p) : "id" (mask));
+    asm volatile ("or.w %1,%0" : "+m" (*p) : "id" (mask));
 }
 
 #define __AROS_ATOMIC_INC_B(var) atomic_inc_b((BYTE *) &(var))
