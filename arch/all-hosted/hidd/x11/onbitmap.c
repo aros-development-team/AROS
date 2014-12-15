@@ -1,17 +1,18 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for X11 hidd.
     Lang: English.
 */
 
+#include "x11_debug.h"
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 
-#include <aros/debug.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <graphics/rastport.h>
@@ -32,7 +33,7 @@
 #define MASTERWIN(data) (data)->masterxwindow
 #define ROOTWIN(data) (data)->masterxwindow
 #else
-#define MASTERWIN(data) WINDRAWABLE(data)
+#define MASTERWIN WINDRAWABLE
 #define ROOTWIN(data) rootwin
 #endif
 
@@ -55,7 +56,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct x11_staticdata *xsd = XSD(cl);
 
-    EnterFunc(bug("X11Gfx.BitMap::InitFB()\n"));
+    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
 
     /* stegerg */
     visualclass = GetTagData(aHidd_X11BitMap_VisualClass, TrueColor, attrList);
@@ -82,15 +83,16 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
      */
     OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
     OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *) &data->gfxhidd);
-    D(bug("[X11FB] ModeID 0x%08X, driver 0x%p\n", modeid, data->gfxhidd));
+    D(bug("[X11OnBm] ModeID 0x%08X, driver @ 0x%p\n", modeid, data->gfxhidd));
 
     HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pixfmt);
 
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &data->width);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &data->height);
+    depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
 
     /* Open an X window to be used for viewing */
-    D(bug("[X11FB] Framebuffer window size %ldx%ld\n", data->width, data->height));
+    D(bug("[X11OnBm] Framebuffer window size %ldx%ldx%d\n", data->width, data->height, depth));
 
     /* Listen for all sorts of events */
     winattr.event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask
@@ -109,7 +111,6 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
     rootwin = DefaultRootWindow(GetSysDisplay());
     D(bug("Creating XWindow: root win=%p\n", rootwin));
-    depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
 
     valuemask = CWCursor | CWEventMask | CWBackPixel;
 
@@ -156,6 +157,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
     if (MASTERWIN(data))
 #endif
+    {
         WINDRAWABLE(data) = XCALL(XCreateWindow, GetSysDisplay(),
                 ROOTWIN(data),
                 0, /* leftedge     */
@@ -165,12 +167,13 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
                 0, /* BorderWidth    */
                 depth,
                 InputOutput,
-                DefaultVisual (GetSysDisplay(), GetSysScreen()),
+                DefaultVisual(GetSysDisplay(), GetSysScreen()),
                 valuemask,
                 &winattr);
+    }
     HostLib_Unlock();
 
-    D(bug("[X11FB] Xwindow: 0x%p\n", WINDRAWABLE(data)));
+    D(bug("[X11OnBm] X Window @ 0x%p\n", WINDRAWABLE(data)));
 
     if (WINDRAWABLE(data))
     {
@@ -227,8 +230,6 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
             DRAWABLE(data) = XCALL(XCreatePixmap, data->display, WINDRAWABLE(data), data->width, data->height, depth);
         }
 
-        D(bug("Calling XMapRaised\n"));
-
         /*
          * stegerg: XMapRaised is now called inside the X11 task when getting
          *          the NOTY_MAPWINDOW message, otherwise the X11 task can
@@ -274,10 +275,12 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
             XCALL(XSync, GetSysDisplay(), FALSE);
             HostLib_Unlock();
 
+            D(bug("[X11] %s: notifying port @ 0x%p\n", __PRETTY_FUNCTION__, xsd->x11task_notify_port));
             X11DoNotify(xsd, &msg);
 
             if (!(XSD(cl)->options & OPTION_DELAYXWINMAPPING))
             {
+                D(bug("[X11OnBm] %s: notifying x11 task to map window..\n", __PRETTY_FUNCTION__));
                 /*
                  * Send a message to the X11 task to ask when the window has been mapped.
                  * We change only notify_type, other fields are already set.
@@ -288,8 +291,8 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
                 XCALL(XSync, GetSysDisplay(), FALSE);
                 HostLib_Unlock();
 
+                D(bug("[X11] %s: notifying port @ 0x%p\n", __PRETTY_FUNCTION__, xsd->x11task_notify_port));
                 X11DoNotify(xsd, &msg);
-                D(kprintf("NOTY_MAPWINDOW request done\n"));
             }
 
             DeleteMsgPort(port);
@@ -305,7 +308,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
 VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd)
 {
-    EnterFunc(bug("X11Gfx.BitMap::DisposePM()\n"));
+    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
 
     if (WINDRAWABLE(data))
     {
@@ -316,7 +319,8 @@ VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd)
 
         if (NULL == port)
         {
-            D(kprintf("COULD NOT CREATE PORT OR ALLOCATE MEM IN onbitmap_dispose()\n"));
+            D(bug("[X11OnBm] %s: failed to create notification message port!\n", __PRETTY_FUNCTION__));
+
             return;
         }
 
@@ -326,9 +330,9 @@ VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd)
         msg.masterxwindow = MASTERWIN(data);
         msg.execmsg.mn_ReplyPort = port;
 
+        D(bug("[X11] %s: notifying port @ 0x%p\n", __PRETTY_FUNCTION__, xsd->x11task_notify_port));
         X11DoNotify(xsd, &msg);
         DeleteMsgPort(port);
-
     }
 
     /* Dispose everything */
@@ -351,8 +355,6 @@ VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd)
     XCALL(XFlush, GetSysDisplay());
 
     HostLib_Unlock();
-
-    ReturnVoid("X11Gfx.BitMap::DisposeFB");
 }
 
 /****************************************************************************************/
@@ -364,10 +366,14 @@ BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid,
 {
     OOP_Object *sync, *pf;
 
+    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
+
     if (HIDD_Gfx_GetMode(data->gfxhidd, (HIDDT_ModeID) modeid, &sync, &pf))
     {
         struct MsgPort *port;
         IPTR new_width, new_height;
+
+        D(bug("[X11OnBm] %s: got mode info\n", __PRETTY_FUNCTION__));
 
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &new_width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &new_height);
@@ -377,7 +383,10 @@ BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid,
          * Prevents badly looking flashing, at least on Darwin.
          */
         if (!(xsd->options & OPTION_DELAYXWINMAPPING) && (new_width == data->width) && (new_height == data->height))
+        {
+            D(bug("[X11OnBm] %s: no change ..\n", __PRETTY_FUNCTION__));
             return TRUE;
+        }
 
         port = CreateMsgPort();
         if (port)
@@ -393,6 +402,7 @@ BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid,
             nmsg.height = new_height;
             nmsg.execmsg.mn_ReplyPort = port;
 
+            D(bug("[X11] %s: notifying port @ 0x%p\n", __PRETTY_FUNCTION__, xsd->x11task_notify_port));
             X11DoNotify(xsd, &nmsg);
             DeleteMsgPort(port);
 
@@ -414,6 +424,8 @@ VOID X11BM_ClearFB(struct bitmap_data *data, HIDDT_Pixel bg)
 {
     XSetWindowAttributes winattr;
 
+    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
+
     winattr.background_pixel = bg;
 
     XCALL(XChangeWindowAttributes, data->display, WINDRAWABLE(data), CWBackPixel, &winattr);
@@ -425,6 +437,8 @@ VOID X11BM_ClearFB(struct bitmap_data *data, HIDDT_Pixel bg)
 
 VOID X11BM_ExposeFB(struct bitmap_data *data, WORD x, WORD y, WORD width, WORD height)
 {
+    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
+
     if (!(data->flags & BMDF_BACKINGSTORE))
     {
         XCALL(XSetFunction, data->display, data->gc, GXcopy);
@@ -442,6 +456,8 @@ VOID X11BM_InitEmptyCursor(struct bitmap_data *data)
 {
     Pixmap p, mask;
     int width, height;
+
+    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
 
     width = height = 1;
 
@@ -531,6 +547,8 @@ static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth,
     char *data = header_data;
     LONG red_shift, green_shift, blue_shift;
     GC gc;
+
+    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
 
     red_shift = 24 - xsd->red_shift;
     green_shift = 24 - xsd->green_shift;

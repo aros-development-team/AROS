@@ -1,14 +1,15 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include "x11_debug.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 
-#include <aros/debug.h>
 #include <aros/macros.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
@@ -57,7 +58,7 @@
 
 OOP_Object *X11BM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("X11Gfx.BitMap::New()\n"));
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
@@ -73,7 +74,10 @@ OOP_Object *X11BM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         data->colmap = (Colormap) GetTagData(aHidd_X11BitMap_ColorMap, 0, msg->attrList);
         framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
-        D(bug("[X11BM] Display 0x%p, screen %d, cursor 0x%p, colormap 0x%p\n", data->display, data->screen, data->cursor, data->colmap));
+        D(
+            bug("[X11Bm] %s: display @ 0x%p, screen #%d\n", __PRETTY_FUNCTION__, data->display, data->screen);
+            bug("[X11Bm] %s: cursor @ 0x%p, colormap @ 0x%p\n", __PRETTY_FUNCTION__, data->cursor, data->colmap);
+        )
 
         if (framebuffer)
         {
@@ -109,19 +113,17 @@ OOP_Object *X11BM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 #endif
         }
 
-        if (ok)
-        {
-            ReturnPtr("X11Gfx.OnBitMap::New()", OOP_Object *, o);
-        }
-        else
+        if (!ok)
         {
             OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
             OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+            o = NULL;
         }
     } /* if (object allocated by superclass) */
 
-    ReturnPtr("X11Gfx.OnBitMap::New()", OOP_Object *, NULL);
+    D(bug("[X11Bm] %s: returning object @ 0x%p\n", __PRETTY_FUNCTION__, o));
+    return o;
 }
 
 /****************************************************************************************/
@@ -130,7 +132,7 @@ VOID X11BM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
-    EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     if (data->gc)
     {
@@ -145,7 +147,6 @@ VOID X11BM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         X11BM_DisposePM(data);
 
     OOP_DoSuperMethod(cl, o, msg);
-    ReturnVoid("X11Gfx.BitMap::Dispose");
 }
 
 /****************************************************************************************/
@@ -153,6 +154,8 @@ VOID X11BM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID X11BM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     HostLib_Lock();
 
@@ -170,6 +173,8 @@ static void SwapImageEndianess(XImage *image)
 {
     LONG x, y, height, width, bpp;
     UBYTE *imdata = (UBYTE *) image->data;
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     width = image->width;
     height = image->height;
@@ -234,6 +239,8 @@ BOOL MNAME(Hidd_BitMap__SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
     HIDDT_PixelFormat *pf;
     ULONG xc_i, col_i;
 
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     if (!OOP_DoSuperMethod(cl, o, &msg->mID))
         return FALSE;
 
@@ -279,6 +286,8 @@ VOID MNAME(Hidd_BitMap__PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     LOCK_X11
 
     XCALL(XSetForeground, data->display, data->gc, msg->pixel);
@@ -295,6 +304,8 @@ HIDDT_Pixel MNAME(Hidd_BitMap__GetPixel)(OOP_Class *cl, OOP_Object *o, struct pH
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel pixel = -1;
     XImage *image;
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     LOCK_X11
 
@@ -321,6 +332,8 @@ ULONG MNAME(Hidd_BitMap__DrawPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     XGCValues gcval;
 
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     gcval.function = GC_DRMD(msg->gc);
     gcval.foreground = GC_FG(msg->gc);
     gcval.background = GC_BG(msg->gc);
@@ -340,9 +353,8 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     XGCValues gcval;
 
-    EnterFunc(bug("X11Gfx.BitMap::FillRect(%d,%d,%d,%d)\n", msg->minX, msg->minY, msg->maxX, msg->maxY));
-
-    D(bug("Drawmode: %d\n", GC_DRMD(msg->gc)));
+    D(bug("[X11Bm] %s(%d,%d,%d,%d)\n", __PRETTY_FUNCTION__, msg->minX, msg->minY, msg->maxX, msg->maxY));
+    D(bug("[X11Bm] %s: Drawmode = %d\n", __PRETTY_FUNCTION__, GC_DRMD(msg->gc)));
 
     gcval.function = GC_DRMD(msg->gc);
     gcval.foreground = GC_FG(msg->gc);
@@ -354,8 +366,6 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
 
     UNLOCK_X11
-
-    ReturnVoid("X11Gfx.BitMap::FillRect");
 }
 
 /****************************************************************************************/
@@ -363,6 +373,8 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm, HIDDT_Pixel *buf, XImage *image, ULONG width, ULONG height,
         ULONG depth, struct pHidd_BitMap_GetImage *msg)
 {
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     switch (msg->pixFmt)
     {
     case vHidd_StdPixFmt_Native:
@@ -470,20 +482,20 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm, HIDDT_Pixel *buf, XIm
         OOP_Object *srcpf, *dstpf, *gfxhidd;
         APTR srcPixels = image->data, dstBuf = buf;
 
-        //kprintf("DEFAULT PIXEL CONVERSION\n");
+        //bug("DEFAULT PIXEL CONVERSION\n");
 
         OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *) &gfxhidd);
         dstpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 
         OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *) &srcpf);
 
-        //kprintf("CALLING ConvertPixels()\n");
+        //bug("CALLING ConvertPixels()\n");
 
         HIDD_BM_ConvertPixels(bm, &srcPixels, (HIDDT_PixelFormat *) srcpf, image->bytes_per_line, &dstBuf,
                 (HIDDT_PixelFormat *) dstpf, msg->modulo, width, height, NULL /* We have no CLUT */
                 );
 
-        //kprintf("CONVERTPIXELS DONE\n");
+        //bug("CONVERTPIXELS DONE\n");
 
         buf = (HIDDT_Pixel *) ((UBYTE *) buf + msg->modulo * height);
         break;
@@ -505,6 +517,8 @@ static inline UBYTE pix_to_lut(HIDDT_Pixel pixel, HIDDT_PixelLUT *plut, HIDDT_Pi
     HIDDT_ColComp red, green, blue;
     ULONG i, best_match = 0;
     ULONG diff, lowest_diff = 0xFFFFFFFF;
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     red = RED_COMP(pixel, pf);
     green = GREEN_COMP(pixel, pf);
@@ -545,6 +559,8 @@ static UBYTE *ximage_to_buf_lut(OOP_Class *cl, OOP_Object *bm, UBYTE *buf, XImag
 
     HIDDT_PixelFormat *pf = BM_PIXFMT(bm);
     UBYTE *pixarray = msg->pixels;
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     if (image->bits_per_pixel == 16)
     {
@@ -611,6 +627,8 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     OOP_Object *pf;
     Pixmap temp_pixmap = 0;
 
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     ASSERT(width > 0 && height > 0);
 
     data = OOP_INST_DATA(cl, o);
@@ -631,7 +649,7 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     UNLOCK_X11
 
     if (!image)
-    ReturnVoid("X11Gfx.BitMap::PutImage(XShmCreateImage failed)");
+        return;
 
     ASSERT(image->bytes_per_line > 0);
 
@@ -640,8 +658,8 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
 
     if (0 == maxlines)
     {
-        kprintf("ALERT !!! NOT ENOUGH MEMORY TO READ A COMPLETE SCANLINE\n");
-        kprintf("THROUGH XSHM IN X11GF X HIDD !!!\n");
+        bug("ALERT !!! NOT ENOUGH MEMORY TO READ A COMPLETE SCANLINE\n");
+        bug("THROUGH XSHM IN X11GF X HIDD !!!\n");
         Alert(AT_DeadEnd);
     }
 
@@ -734,6 +752,8 @@ static void getimage_xlib(OOP_Class *cl, OOP_Object *o, LONG x, LONG y, ULONG wi
     OOP_Object *pf;
     IPTR depth;
 
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     data = OOP_INST_DATA(cl, o);
 
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *) &pf);
@@ -771,6 +791,8 @@ static void getimage_xlib(OOP_Class *cl, OOP_Object *o, LONG x, LONG y, ULONG wi
 
 VOID MNAME(Hidd_BitMap__GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     ASSERT(msg->width > 0 && msg->height > 0);
 
 #if USE_XSHM
@@ -790,6 +812,8 @@ VOID MNAME(Hidd_BitMap__GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 
 VOID MNAME(Hidd_BitMap__GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     ASSERT(msg->width != 0 && msg->height != 0);
 #if USE_XSHM
     if (XSD(cl)->use_xshm)
@@ -815,6 +839,8 @@ VOID MNAME(Hidd_BitMap__GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_
 static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm, HIDDT_Pixel *buf, XImage *image, ULONG width, ULONG height,
         ULONG depth, struct pHidd_BitMap_PutImage *msg)
 {
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     switch (msg->pixFmt)
     {
     case vHidd_StdPixFmt_Native:
@@ -955,19 +981,19 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm, HIDDT_Pixel *buf, XIm
         OOP_Object *srcpf, *dstpf, *gfxhidd;
         APTR srcPixels = buf, dstBuf = image->data;
 
-        //kprintf("DEFAULT PIXEL CONVERSION\n");
+        //bug("DEFAULT PIXEL CONVERSION\n");
 
         OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *) &gfxhidd);
         srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 
         OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *) &dstpf);
 
-        //kprintf("CALLING ConvertPixels()\n");
+        //bug("CALLING ConvertPixels()\n");
 
         HIDD_BM_ConvertPixels(bm, &srcPixels, (HIDDT_PixelFormat *) srcpf, msg->modulo, &dstBuf,
                 (HIDDT_PixelFormat *) dstpf, image->bytes_per_line, width, height, NULL); /* We have no CLUT */
 
-        //kprintf("CONVERTPIXELS DONE\n");
+        //bug("CONVERTPIXELS DONE\n");
 
         buf = (HIDDT_Pixel *) ((UBYTE *) buf + msg->modulo * height);
         break;
@@ -984,6 +1010,8 @@ static UBYTE *buf_to_ximage_lut(OOP_Class *cl, OOP_Object *bm, UBYTE *pixarray, 
         ULONG height, ULONG depth, struct pHidd_BitMap_PutImageLUT *msg)
 {
     HIDDT_Pixel *lut = msg->pixlut->pixels;
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     switch (image->bits_per_pixel)
     {
@@ -1090,6 +1118,8 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     LONG maxlines;
     OOP_Object *pf;
 
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     data = OOP_INST_DATA(cl, o);
 
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
@@ -1108,15 +1138,15 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     UNLOCK_X11
 
     if (!image)
-    ReturnVoid("X11Gfx.BitMap::PutImage(XShmCreateImage failed)");
+        return;
 
     /* Calculate how many scanline can be stored in the buffer */
     maxlines = XSHM_MEMSIZE / image->bytes_per_line;
 
     if (0 == maxlines)
     {
-        kprintf("ALERT !!! NOT ENOUGH MEMORY TO WRITE A COMPLETE SCANLINE\n");
-        kprintf("THROUGH XSHM IN X11GF X HIDD !!!\n");
+        bug("ALERT !!! NOT ENOUGH MEMORY TO WRITE A COMPLETE SCANLINE\n");
+        bug("THROUGH XSHM IN X11GF X HIDD !!!\n");
         Alert(AT_DeadEnd);
     }
 
@@ -1181,6 +1211,8 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, LONG x, 
     IPTR depth;
     OOP_Object *pf;
 
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     data = OOP_INST_DATA(cl, o);
 
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *) &pf);
@@ -1200,7 +1232,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, LONG x, 
     UNLOCK_X11
 
     if (!image)
-        ReturnVoid("X11Gfx.BitMap::PutImage(XCreateImage failed)");
+        return;
 
 #if DO_ENDIAN_FIX
     if (NEEDS_ENDIAN_FIX(image))
@@ -1222,7 +1254,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, LONG x, 
         XCALL(XFree, image);
         UNLOCK_X11
 
-        ReturnVoid("X11Gfx.BitMap::PutImage(malloc(image data) failed)");
+        return;
     }
 
     toimage_func(cl, o, pixarray, image, width, height, depth, toimage_data);
@@ -1244,8 +1276,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, LONG x, 
 
 VOID MNAME(Hidd_BitMap__PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
-    EnterFunc(
-            bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n", msg->pixels, msg->x, msg->y, msg->width,
+    D(bug("[X11Bm] %s(pa=%p, x=%d, y=%d, w=%d, h=%d)\n", __PRETTY_FUNCTION__, msg->pixels, msg->x, msg->y, msg->width,
                     msg->height));
 
 #if USE_XSHM
@@ -1260,16 +1291,13 @@ VOID MNAME(Hidd_BitMap__PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     {
         putimage_xlib(cl, o, msg->gc, msg->x, msg->y, msg->width, msg->height, msg->pixels, (APTR(*)()) buf_to_ximage, msg);
     }
-
-    ReturnVoid("X11Gfx.BitMap::PutImage");
 }
 
 /****************************************************************************************/
 
 VOID MNAME(Hidd_BitMap__PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
-    EnterFunc(
-            bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n", msg->pixels, msg->x, msg->y, msg->width,
+    D(bug("[X11Bm] %s(pa=%p, x=%d, y=%d, w=%d, h=%d)\n", __PRETTY_FUNCTION__, msg->pixels, msg->x, msg->y, msg->width,
                     msg->height));
 
 #if USE_XSHM
@@ -1284,8 +1312,6 @@ VOID MNAME(Hidd_BitMap__PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     {
         putimage_xlib(cl, o, msg->gc, msg->x, msg->y, msg->width, msg->height, msg->pixels, (APTR(*)()) buf_to_ximage_lut, msg);
     }
-
-    ReturnVoid("X11Gfx.BitMap::PutImageLUT");
 }
 
 /****************************************************************************************/
@@ -1294,6 +1320,8 @@ VOID MNAME(Root__Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     if (IS_X11BM_ATTR(msg->attrID, idx))
     {
@@ -1316,6 +1344,8 @@ VOID MNAME(Root__Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 BOOL X11BM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
 #if ADJUST_XWIN_SIZE
     /* This provides support for framebuffer display mode switching */
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
@@ -1343,6 +1373,8 @@ VOID MNAME(Hidd_BitMap__DrawLine)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     OOP_Object *gc = msg->gc;
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     if (GC_LINEPAT(gc) != (UWORD) ~0)
     {
@@ -1385,13 +1417,15 @@ VOID MNAME(Hidd_BitMap__DrawEllipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     OOP_Object *gc = msg->gc;
 
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
+
     LOCK_X11
 
     if (GC_DOCLIP(gc))
     {
         XRectangle cr;
 
-        /* kprintf("X11::Drawllipse: clip %d %d %d %d\n"
+        /* bug("X11::Drawllipse: clip %d %d %d %d\n"
          , GC_CLIPX1(gc), GC_CLIPY1(gc), GC_CLIPX2(gc), GC_CLIPY2(gc));
          */
 
@@ -1406,7 +1440,7 @@ VOID MNAME(Hidd_BitMap__DrawEllipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     XCALL(XSetForeground, data->display, data->gc, GC_FG(gc));
     XCALL(XSetFunction, data->display, data->gc, GC_DRMD(gc));
 
-    /* kprintf("X11::Drawllipse: coord %d %d %d %d\n"
+    /* bug("X11::Drawllipse: coord %d %d %d %d\n"
      , msg->x, msg->y, msg->rx, msg->ry);
 
      */
@@ -1426,6 +1460,8 @@ VOID MNAME(Hidd_BitMap__DrawEllipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_
 VOID MNAME(Hidd_BitMap__UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    D(bug("[X11Bm] %s()\n", __PRETTY_FUNCTION__));
 
     LOCK_X11
 

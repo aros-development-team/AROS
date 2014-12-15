@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include "x11_debug.h"
+
 #include <aros/config.h>
 
 #include "x11gfx_intern.h"
@@ -13,9 +15,6 @@
 #include <proto/hostlib.h>
 
 #include LC_LIBDEFS_FILE
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 void *x11_handle = NULL;
 void *libc_handle = NULL;
@@ -147,38 +146,40 @@ static const char *libc_func_names[] = {
 
 void *HostLibBase;
 
-void *x11_hostlib_load_so(const char *sofile, const char **names, int nfuncs, void **funcptr) {
+void *x11_hostlib_load_so(const char *sofile, const char **names, int nfuncs, void **funcptr)
+{
     void *handle;
     char *err;
     int i;
 
-    D(bug("[x11] loading %d functions from %s\n", nfuncs, sofile));
+    D(bug("[X11host] %s('%s')\n", __PRETTY_FUNCTION__, sofile));
+
+    D(bug("[X11host] %s: attempting to load %d functions\n", __PRETTY_FUNCTION__, nfuncs));
 
     if ((handle = HostLib_Open(sofile, &err)) == NULL) {
-        kprintf("[x11] couldn't open '%s': %s\n", sofile, err);
+        bug("[X11host] %s: failed to open '%s': %s\n", __PRETTY_FUNCTION__, sofile, err);
         return NULL;
     }
 
     for (i = 0; i < nfuncs; i++) {
         funcptr[i] = HostLib_GetPointer(handle, names[i], &err);
-        D(bug("%s(%x)\n", names[i], funcptr[i]));
+        D(bug("[X11host] %s: 0x%p = '%s'\n", __PRETTY_FUNCTION__, funcptr[i], names[i]));
         if (err != NULL) {
-            kprintf("[x11] couldn't get symbol '%s' from '%s': %s\n", names[i], sofile, err);
+            bug("[X11host] %s: failed to get symbol '%s' (%s)\n", __PRETTY_FUNCTION__, names[i], err);
             HostLib_Close(handle, NULL);
             return NULL;
         }
     }
 
-    D(bug("[x11] done\n"));
-
     return handle;
 }
 
-static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[x11] hostlib init\n"));
+static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[X11host] %s()\n", __PRETTY_FUNCTION__));
 
     if ((HostLibBase = OpenResource("hostlib.resource")) == NULL) {
-        kprintf("[x11] couldn't open hostlib.resource\n");
+        bug("[X11host] %s: failed to open hostlib.resource!\n", __PRETTY_FUNCTION__);
         return FALSE;
     }
     if ((xf86vm_handle = x11_hostlib_load_so(XF86VM_SOFILE, xf86vm_func_names, XF86VM_NUM_FUNCS, (void **) &xf86vm_func)) == NULL)
@@ -195,8 +196,9 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE) {
     return TRUE;
 }
 
-static int x11_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[x11] hostlib expunge\n"));
+static int x11_hostlib_expunge(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[X11host] %s()\n", __PRETTY_FUNCTION__));
 
     if (xf86vm_handle != NULL)
         HostLib_Close(xf86vm_handle, NULL);
