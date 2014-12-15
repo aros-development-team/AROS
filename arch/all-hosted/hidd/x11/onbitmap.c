@@ -376,7 +376,7 @@ BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid,
          * Don't do anything if the size actually won't change.
          * Prevents badly looking flashing, at least on Darwin.
          */
-        if ((new_width == data->width) && (new_height == data->height))
+        if (!(xsd->options & OPTION_DELAYXWINMAPPING) && (new_width == data->width) && (new_height == data->height))
             return TRUE;
 
         port = CreateMsgPort();
