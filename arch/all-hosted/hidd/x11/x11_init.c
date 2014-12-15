@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
     Lang: English.
 */
+
+#include "x11_debug.h"
 
 #define __OOP_NOATTRBASES__
 
@@ -25,11 +27,6 @@
 #include <hidd/graphics.h>
 
 #include <aros/symbolsets.h>
-
-#undef  SDEBUG
-#undef  DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -61,6 +58,8 @@ static struct OOP_ABDescr abd[] =
 
 static BOOL initclasses(struct x11_staticdata *xsd)
 {
+    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+
     /* Get some attrbases */
 
     if (!OOP_ObtainAttrBases(abd))
@@ -77,6 +76,8 @@ static BOOL initclasses(struct x11_staticdata *xsd)
 
 static VOID freeclasses(struct x11_staticdata *xsd)
 {
+    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+
     OOP_ReleaseAttrBases(abd);
 }
 
@@ -103,7 +104,7 @@ static int MyErrorHandler(Display * display, XErrorEvent * errevent)
     XCALL(XGetErrorText, display, errevent->error_code, buffer, sizeof (buffer));
     Enable();
 
-    kprintf("XError %d (Major=%d, Minor=%d) task = %s\n%s\n", errevent->error_code, errevent->request_code,
+    bug("XError %d (Major=%d, Minor=%d) task = %s\n%s\n", errevent->error_code, errevent->request_code,
             errevent->minor_code, FindTask(0)->tc_Node.ln_Name, buffer);
 
     return 0;
@@ -124,10 +125,11 @@ static int MySysErrorHandler(Display * display)
 
 int X11_Init(struct x11_staticdata *xsd)
 {
-    D(bug("Entering X11_Init\n"));
+    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+
     if (xsd->display)
     {
-        D(bug("[X11GFX] Already initialized\n"));
+        D(bug("[X11] %s: already initialized\n", __PRETTY_FUNCTION__));
         return TRUE;
     }
 
@@ -136,7 +138,8 @@ int X11_Init(struct x11_staticdata *xsd)
      */
 
     xsd->display = XCALL(XOpenDisplay, NULL);
-    D(bug("display(%x)\n", xsd->display));
+    D(bug("[X11] %s: X display @ 0x%p\n", __PRETTY_FUNCTION__, xsd->display));
+
     if (xsd->display)
     {
         struct x11task_params xtp;
@@ -202,6 +205,13 @@ int X11_Init(struct x11_staticdata *xsd)
             }
         }
 
+        D(
+            if (xsd->options & OPTION_DELAYXWINMAPPING)
+            {
+                D(bug("[X11] %s: option DELAYXWINMAPPING\n", __PRETTY_FUNCTION__));
+            }
+        )
+
         xsd->delete_win_atom            = XCALL(XInternAtom, xsd->display, "WM_DELETE_WINDOW", FALSE);
         xsd->clipboard_atom             = XCALL(XInternAtom, xsd->display, "CLIPBOARD", FALSE);
         xsd->clipboard_property_atom    = XCALL(XInternAtom, xsd->display, "AROS_HOSTCLIP", FALSE);
@@ -218,7 +228,7 @@ int X11_Init(struct x11_staticdata *xsd)
         {
             if (initclasses(xsd))
             {
-                D(bug("X11_Init succeeded\n"));
+                D(bug("[X11] %s: task & classes initialized\n", __PRETTY_FUNCTION__));
                 return TRUE;
             }
 
@@ -229,7 +239,7 @@ int X11_Init(struct x11_staticdata *xsd)
 
     }
 
-    D(bug("X11_Init failed\n"));
+   D(bug("[X11] %s: failed to initialize\n", __PRETTY_FUNCTION__));
 
     return FALSE;
 }

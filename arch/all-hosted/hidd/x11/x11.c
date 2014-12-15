@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
     Lang: English.
 */
 
+#include "x11_debug.h"
 
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -48,8 +49,6 @@
 #include "fullscreen.h"
 #include "x11gfx_intern.h"
 
-#include <aros/debug.h>
-
 VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 
 /****************************************************************************************/
@@ -83,6 +82,8 @@ AROS_INTH1(x11VBlank, struct Task *, task)
 {
     AROS_INTFUNC_INIT
 
+    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+
     Signal(task, SIGBREAKF_CTRL_D);
 
     return FALSE;
@@ -94,24 +95,36 @@ AROS_INTH1(x11VBlank, struct Task *, task)
 
 VOID x11task_entry(struct x11task_params *xtpparam)
 {
-    struct x11_staticdata *xsd;
+    ULONG notifysig;
     struct MinList nmsg_list;
     struct MinList xwindowlist;
-    struct x11task_params xtp;
     ULONG hostclipboardmask;
     BOOL f12_down = FALSE;
     KeySym ks;
 
+    /* copy needed parameter's because they are allocated on the parent's stack */
+
+    struct Task *task_Parent = xtpparam->parent;
+    ULONG  task_SigKill = xtpparam->kill_signal;
+    struct x11_staticdata *xsd = xtpparam->xsd;
+
     struct Interrupt myint;
 
-    /* We must copy the parameter struct because they are allocated
-     on the parent's stack */
-    xtp = *xtpparam;
-    xsd = xtp.xsd;
+    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
 
     xsd->x11task_notify_port = CreateMsgPort();
     if (NULL == xsd->x11task_notify_port)
-        goto failexit;
+    {
+        D(bug("[X11] %s: failed to create notification port!\n", __PRETTY_FUNCTION__));
+        Signal(task_Parent, xtpparam->fail_signal);
+        return;
+    }
+
+    D(bug("[X11] %s: notification port @ 0x%p\n", __PRETTY_FUNCTION__, xsd->x11task_notify_port));
+
+    notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
+
+    D(bug("[X11] %s: notficiation signal = %08x (bit %d)\n", __PRETTY_FUNCTION__, notifysig, xsd->x11task_notify_port->mp_SigBit));
 
     NEWLIST(&nmsg_list);
     NEWLIST(&xwindowlist);
@@ -124,7 +137,9 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
     AddIntServer(INTB_VERTB, &myint);
 
-    Signal(xtp.parent, xtp.ok_signal);
+    Signal(task_Parent, xtpparam->ok_signal);
+
+    /* N.B : do not attempt to use xtpparam after this point! */
 
     hostclipboardmask = x11clipboard_init(xsd);
 
@@ -136,16 +151,23 @@ VOID x11task_entry(struct x11task_params *xtpparam)
         BOOL keyrelease_pending = FALSE;
 #endif
         struct notify_msg *nmsg;
-        ULONG notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
         ULONG sigs;
 
-        sigs = Wait(SIGBREAKF_CTRL_D | notifysig | xtp.kill_signal| hostclipboardmask);
+        D(bug("[X11] %s: waiting for signals..\n", __PRETTY_FUNCTION__));
 
-        if (sigs & xtp.kill_signal)
-            goto failexit;
+        sigs = Wait(SIGBREAKF_CTRL_D | notifysig | task_SigKill| hostclipboardmask);
+
+        D(bug("[X11] %s: signal %08x received\n", __PRETTY_FUNCTION__, sigs));
+
+        if (sigs & task_SigKill)
+        {
+            D(bug("[X11] %s: kill signal received - exiting\n", __PRETTY_FUNCTION__));
+            break;
+        }
 
         if (sigs & notifysig)
         {
+            D(bug("[X11] %s: notification signal received\n", __PRETTY_FUNCTION__));
 
             while ((nmsg = (struct notify_msg *) GetMsg(xsd->x11task_notify_port)))
             {
@@ -154,132 +176,133 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                 switch (nmsg->notify_type)
                 {
                 case NOTY_WINCREATE:
-                {
-                    struct xwinnode * node;
-                    /* Maintain a list of open windows for the X11 event handler in x11.c */
-
-                    node = AllocMem(sizeof(struct xwinnode), MEMF_CLEAR);
-
-                    if (NULL != node)
                     {
-                        node->xwindow = nmsg->xwindow;
-                        node->bmobj = nmsg->bmobj;
-                        AddTail((struct List *) &xwindowlist, (struct Node *) node);
-                    }
-                    else
-                    {
-                        kprintf("!!!! CANNOT GET MEMORY FOR X11 WIN NODE\n");
-                        CCALL(raise, 19);
-                    }
+                        struct xwinnode * node;
+                        /* Maintain a list of open windows for the X11 event handler in x11.c */
 
-                    ReplyMsg((struct Message *) nmsg);
-                    break;
-                }
+                        D(bug("[X11] %s: NOTY_WINCREATE\n", __PRETTY_FUNCTION__));
 
-                case NOTY_MAPWINDOW:
-                    LOCK_X11
-                    XCALL(XMapWindow, nmsg->xdisplay, nmsg->xwindow);
-#if ADJUST_XWIN_SIZE
-                    XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
-#endif
-                    UNLOCK_X11
+                        node = AllocMem(sizeof(struct xwinnode), MEMF_CLEAR);
 
-                    AddTail((struct List *) &nmsg_list, (struct Node *) nmsg);
-
-                    /* Do not reply message yet */
-                    break;
-
-                case NOTY_RESIZEWINDOW:
-                {
-                    XWindowChanges xwc;
-                    XSizeHints sizehint;
-                    BOOL replymsg = TRUE;
-
-                    xwc.width = nmsg->width;
-                    xwc.height = nmsg->height;
-
-                    sizehint.flags = PMinSize | PMaxSize;
-                    sizehint.min_width = nmsg->width;
-                    sizehint.min_height = nmsg->height;
-                    sizehint.max_width = nmsg->width;
-                    sizehint.max_height = nmsg->height;
-
-                    LOCK_X11
-                    if (xsd->options & OPTION_FULLSCREEN)
-                    {
-                        x11_fullscreen_switchmode(nmsg->xdisplay, &xwc.width, &xwc.height);
-                    }
-
-                    XCALL(XSetWMNormalHints, nmsg->xdisplay, nmsg->masterxwindow, &sizehint);
-                    XCALL(XConfigureWindow, nmsg->xdisplay, nmsg->masterxwindow, CWWidth | CWHeight, &xwc);
-                    XCALL(XFlush, nmsg->xdisplay);
-                    UNLOCK_X11
-
-                    if (xsd->options & OPTION_DELAYXWINMAPPING)
-                    {
-                        struct xwinnode *node;
-                        ForeachNode(&xwindowlist, node)
+                        if (NULL != node)
                         {
-                            if (node->xwindow == nmsg->xwindow)
-                            {
-                                if (!node->window_mapped)
-                                {
-                                    LOCK_X11
-                                    XCALL(XMapWindow, nmsg->xdisplay, nmsg->xwindow);
+                            node->xwindow = nmsg->xwindow;
+                            node->bmobj = nmsg->bmobj;
+                            AddTail((struct List *) &xwindowlist, (struct Node *) node);
+                        }
+                        else
+                        {
+                            bug("!!!! CANNOT GET MEMORY FOR X11 WIN NODE\n");
+                            CCALL(raise, 19);
+                        }
+
+                        ReplyMsg((struct Message *) nmsg);
+                        break;
+                    }
+                case NOTY_MAPWINDOW:
+                    {
+                        D(bug("[X11] %s: NOTY_MAPWINDOW Window @ 0x%p (Display = 0x%p)\n", __PRETTY_FUNCTION__, nmsg->xwindow, nmsg->xdisplay));
+
+                        LOCK_X11
+                        XCALL(XMapWindow, nmsg->xdisplay, nmsg->xwindow);
 #if ADJUST_XWIN_SIZE
-                                    XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
+                        XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
 #endif
-                                    if (xsd->options & OPTION_FULLSCREEN)
+                        UNLOCK_X11
+
+                        AddTail((struct List *) &nmsg_list, (struct Node *) nmsg);
+
+                        /* Do not reply message yet */
+                        break;
+                    }
+                case NOTY_RESIZEWINDOW:
+                    {
+                        XWindowChanges xwc;
+                        XSizeHints sizehint;
+                        BOOL replymsg = TRUE;
+
+                        D(bug("[X11] %s: NOTY_RESIZEWINDOW\n", __PRETTY_FUNCTION__));
+
+                        xwc.width = nmsg->width;
+                        xwc.height = nmsg->height;
+
+                        sizehint.flags = PMinSize | PMaxSize;
+                        sizehint.min_width = nmsg->width;
+                        sizehint.min_height = nmsg->height;
+                        sizehint.max_width = nmsg->width;
+                        sizehint.max_height = nmsg->height;
+
+                        LOCK_X11
+                        if (xsd->options & OPTION_FULLSCREEN)
+                        {
+                            x11_fullscreen_switchmode(nmsg->xdisplay, &xwc.width, &xwc.height);
+                        }
+
+                        XCALL(XSetWMNormalHints, nmsg->xdisplay, nmsg->masterxwindow, &sizehint);
+                        XCALL(XConfigureWindow, nmsg->xdisplay, nmsg->masterxwindow, CWWidth | CWHeight, &xwc);
+                        XCALL(XFlush, nmsg->xdisplay);
+                        UNLOCK_X11
+
+                        if (xsd->options & OPTION_DELAYXWINMAPPING)
+                        {
+                            struct xwinnode *node;
+                            ForeachNode(&xwindowlist, node)
+                            {
+                                if (node->xwindow == nmsg->xwindow)
+                                {
+                                    if (!node->window_mapped)
                                     {
-                                        XCALL(XGrabKeyboard, nmsg->xdisplay, nmsg->xwindow, False, GrabModeAsync, GrabModeAsync, CurrentTime);
-                                        XCALL(XGrabPointer, nmsg->xdisplay, nmsg->xwindow, 1, PointerMotionMask | ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, nmsg->xwindow, None, CurrentTime);
+                                        LOCK_X11
+                                        XCALL(XMapWindow, nmsg->xdisplay, nmsg->xwindow);
+#if ADJUST_XWIN_SIZE
+                                        XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
+#endif
+                                        if (xsd->options & OPTION_FULLSCREEN)
+                                        {
+                                            XCALL(XGrabKeyboard, nmsg->xdisplay, nmsg->xwindow, False, GrabModeAsync, GrabModeAsync, CurrentTime);
+                                            XCALL(XGrabPointer, nmsg->xdisplay, nmsg->xwindow, 1, PointerMotionMask | ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, nmsg->xwindow, None, CurrentTime);
+                                        }
+
+                                        XCALL(XFlush, nmsg->xdisplay);
+                                        UNLOCK_X11
+
+                                        nmsg->notify_type = NOTY_MAPWINDOW;
+                                        AddTail((struct List *) &nmsg_list, (struct Node *) nmsg);
+
+                                        /* Do not reply message yet */
+                                        replymsg = FALSE;
+
+                                        break;
                                     }
-
-                                    XCALL(XFlush, nmsg->xdisplay);
-                                    UNLOCK_X11
-
-                                    nmsg->notify_type = NOTY_MAPWINDOW;
-                                    AddTail((struct List *) &nmsg_list, (struct Node *) nmsg);
-
-                                    /* Do not reply message yet */
-                                    replymsg = FALSE;
-
-                                    break;
                                 }
                             }
                         }
+
+                        if (replymsg)
+                            ReplyMsg((struct Message *) nmsg);
+
+                        break;
                     }
-
-                    if (replymsg)
-                        ReplyMsg((struct Message *) nmsg);
-
-                    break;
-                }
-
                 case NOTY_WINDISPOSE:
-                {
-                    struct xwinnode *node, *safe;
-
-                    ForeachNodeSafe(&xwindowlist, node, safe)
                     {
-                        if (node->xwindow == nmsg->xwindow)
+                        struct xwinnode *node, *safe;
+
+                        D(bug("[X11] %s: NOTY_WINDISPOSE\n", __PRETTY_FUNCTION__));
+
+                        ForeachNodeSafe(&xwindowlist, node, safe)
                         {
-                            Remove((struct Node *) node);
-                            FreeMem(node, sizeof(struct xwinnode));
+                            if (node->xwindow == nmsg->xwindow)
+                            {
+                                Remove((struct Node *) node);
+                                FreeMem(node, sizeof(struct xwinnode));
+                            }
                         }
+                        ReplyMsg((struct Message *) nmsg);
+                        break;
                     }
-
-                    ReplyMsg((struct Message *) nmsg);
-
-                    break;
-                }
-
                 } /* switch() */
-
             } /* while () */
-
             //continue;
-
         } /* if (message from notify port) */
 
         if (sigs & hostclipboardmask)
@@ -423,7 +446,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                     break;
 
                 case ConfigureRequest:
-                    kprintf("!!! CONFIGURE REQUEST !!\n");
+                    bug("!!! CONFIGURE REQUEST !!\n");
                     break;
 
 #if 0
@@ -606,16 +629,11 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
     } /* Forever */
 
-    failexit:
     /* Also try to free window node list ? */
-
     if (xsd->x11task_notify_port)
     {
         DeleteMsgPort(xsd->x11task_notify_port);
     }
-
-    Signal(xtp.parent, xtp.fail_signal);
-
 }
 
 /****************************************************************************************/
@@ -624,17 +642,23 @@ struct Task *create_x11task(struct x11task_params *params)
 {
     struct Task *task;
 
+    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+
     task = NewCreateTask(TASKTAG_PC, x11task_entry, TASKTAG_STACKSIZE,
             XTASK_STACKSIZE, TASKTAG_NAME, XTASK_NAME, TASKTAG_PRI,
             XTASK_PRIORITY, TASKTAG_ARG1, params, TAG_DONE);
     if (task)
     {
+        D(bug("[X11] %s: task @ 0x%p\n", __PRETTY_FUNCTION__, task));
+
         /* Everything went OK. Wait for task to initialize */
         ULONG sigset;
 
         sigset = Wait(params->ok_signal | params->fail_signal);
         if (sigset & params->ok_signal)
         {
+            D(bug("[X11] %s: got ok signal\n", __PRETTY_FUNCTION__));
+
             return task;
         }
     }

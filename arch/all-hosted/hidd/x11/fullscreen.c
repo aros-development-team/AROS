@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Enable fullscreen mode.
@@ -19,9 +19,6 @@
 typedef unsigned char UBYTE;
 
 #include <aros/symbolsets.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 #define HAVE_XF86VMODE_H
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Offscreen bitmap class for X11 hidd.
@@ -8,6 +8,7 @@
 
 /****************************************************************************************/
 
+#include "x11_debug.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,10 +29,6 @@
 #include <oop/oop.h>
 #include <hidd/graphics.h>
 
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
-
 #include "x11gfx_intern.h"
 #include "x11.h"
 #include "bitmap.h"
@@ -44,6 +41,8 @@ BOOL X11BM_InitPM(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
     Drawable friend_drawable = 0;
     IPTR depth;
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    D(bug("[X11OffBm] %s()\n", __PRETTY_FUNCTION__));
 
     /* Retrieve bitmap size from superclass */
     OOP_GetAttr(o, aHidd_BitMap_Width , &data->width);
@@ -77,7 +76,7 @@ BOOL X11BM_InitPM(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 	data->width += 32;
     }
 
-    D(bug("Creating X Pixmap, 0x%p, %ld, %ld, %ld\n", friend_drawable, data->width, data->height, depth));
+    D(bug("[X11OffBm] %s: Creating X Pixmap, 0x%p, %ld, %ld, %ld\n", __PRETTY_FUNCTION__, friend_drawable, data->width, data->height, depth));
 
     HostLib_Lock();
 
@@ -93,7 +92,7 @@ BOOL X11BM_InitPM(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
 VOID X11BM_DisposePM(struct bitmap_data *data)
 {
-    EnterFunc(bug("X11Gfx.BitMap::DisposePM()\n"));
+    D(bug("[X11OffBm] %s()\n", __PRETTY_FUNCTION__));
 
     if (DRAWABLE(data))
     {
@@ -104,13 +103,14 @@ VOID X11BM_DisposePM(struct bitmap_data *data)
 
     	HostLib_Unlock();
     }
-    ReturnVoid("X11Gfx.BitMap::DisposePM");
 }
 
 /****************************************************************************************/
 
 VOID X11BM_ClearPM(struct bitmap_data *data, HIDDT_Pixel bg)
-{    
+{
+    D(bug("[X11OffBm] %s()\n", __PRETTY_FUNCTION__));
+
     XCALL(XSetForeground, data->display, data->gc, bg);
-    XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc, 0, 0, data->width, data->height);    
+    XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc, 0, 0, data->width, data->height);
 }

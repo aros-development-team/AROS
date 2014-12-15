@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
     Lang: English.
 */
+
+#include "x11_debug.h"
 
 #include <X11/Xlib.h>
 
@@ -13,7 +15,6 @@
 #include <exec/memory.h>
 
 #include <hidd/graphics.h>
-#include <aros/debug.h>
 
 #include "x11gfx_intern.h"
 #include "x11.h"
