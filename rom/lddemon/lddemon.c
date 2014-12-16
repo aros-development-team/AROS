@@ -27,6 +27,12 @@
 
 #include "lddemon.h"
 
+#ifdef __mc68000
+#define INIT_IN_LDDEMON_CONTEXT 1
+#else
+#define INIT_IN_LDDEMON_CONTEXT 0
+#endif
+
 #define CHECK_DEPENDENCY 1
 
 /* Please leave them here! They are needed on Linux-M68K */
@@ -58,7 +64,12 @@ struct LDDMsg
     STRPTR		 ldd_Name;	    /* Name of thing to load */
 
     STRPTR		 ldd_BaseDir;	    /* Base directory to load from */
+#if INIT_IN_LDDEMON_CONTEXT
+    struct Library	 *ldd_Return;	    /* Loaded and initialized Library */
+    struct List		 *ldd_List;	    /* List to add */
+#else
     BPTR		 ldd_Return;	    /* Loaded seglist */
+#endif
 };
 
 static const char ldDemonName[] = "Lib & Dev Loader Daemon";
@@ -214,6 +225,17 @@ static struct Library *LDInit(BPTR seglist, struct List *list, STRPTR resname, s
     return (struct Library*)node;
 }
 
+static struct Library *CallLDInit(BPTR seglist, struct List *list, STRPTR resname, struct Library *DOSBase, struct ExecBase *SysBase)
+{
+    struct Library *tmplib;
+    if (!seglist)
+        return NULL;
+    tmplib = LDInit(seglist, list, resname, SysBase);
+    if (!tmplib)
+        UnLoadSeg(seglist);
+    return tmplib;
+}
+
 #define ExecOpenLibrary(libname, version)                         \
 AROS_CALL2(struct Library *, ldBase->__OpenLibrary,               \
     AROS_LCA(STRPTR, libname, A1),                                \
@@ -264,6 +286,8 @@ static struct LDObjectNode *LDNewObjectNode(STRPTR name, struct ExecBase *SysBas
 
     return NULL;
 }
+
+static void ProcessLDMessage(struct LDDemonBase *ldBase, struct LDDMsg *ldd, struct Library *DOSBase, struct ExecBase *SysBase);
 
 static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPTR dir, struct List *list, struct ExecBase *SysBase)
 {
@@ -362,21 +386,32 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
 
 	ldd.ldd_Name    = libname;
 	ldd.ldd_BaseDir = dir;
+#if INIT_IN_LDDEMON_CONTEXT
+        ldd.ldd_List    = list;
+#endif
 
-    	SetSignal(0, SIGF_SINGLE);
-	D(bug("[LDCaller] Sending request for %s\n", stripped_libname));
+        D(bug("[LDCaller] Sending request for %s, InLDProcess %d\n",
+            stripped_libname, (struct Process*)FindTask(NULL) == ldBase->dl_LDDemonTask));
 
-	PutMsg(ldBase->dl_LDDemonPort, (struct Message *)&ldd);
-	WaitPort(&ldd.ldd_ReplyPort);
+#if INIT_IN_LDDEMON_CONTEXT
+        /* Direct call if already in LDDemon context */
+        if ((struct Process*)FindTask(NULL) == ldBase->dl_LDDemonTask) {
+            ProcessLDMessage(ldBase, &ldd, DOSBase, SysBase);
+        } else
+#endif
+        {
+            SetSignal(0, SIGF_SINGLE);
+            PutMsg(ldBase->dl_LDDemonPort, (struct Message *)&ldd);
+            WaitPort(&ldd.ldd_ReplyPort);
+        }
 
 	D(bug("[LDCaller] Returned 0x%p\n", ldd.ldd_Return));
 
-	if (ldd.ldd_Return)
-	{
-	    tmplib = LDInit(ldd.ldd_Return, list, stripped_libname, SysBase);
-	    if (!tmplib)
-	    	UnLoadSeg(ldd.ldd_Return);
-	}
+#if INIT_IN_LDDEMON_CONTEXT
+        tmplib = ldd.ldd_Return;
+#else
+        tmplib = CallLDInit(ldd.ldd_Return, list, stripped_libname, DOSBase, SysBase);
+#endif
     }
 
     if (!tmplib)
@@ -639,6 +674,22 @@ AROS_UFH3(LONG, LDFlush,
     AROS_USERFUNC_EXIT
 }
 
+static void ProcessLDMessage(struct LDDemonBase *ldBase, struct LDDMsg *ldd, struct Library *DOSBase, struct ExecBase *SysBase)
+{
+    BPTR seglist;
+    D(bug("[LDDemon] Got a request for %s in %s\n", ldd->ldd_Name, ldd->ldd_BaseDir));
+
+    seglist = LDLoad(ldd->ldd_ReplyPort.mp_SigTask, ldd->ldd_Name, ldd->ldd_BaseDir, DOSBase, SysBase);
+
+#if INIT_IN_LDDEMON_CONTEXT
+    ldd->ldd_Return = CallLDInit(seglist, ldd->ldd_List, FilePart(ldd->ldd_Name), DOSBase, SysBase);
+    D(bug("[LDDemon] Replying with %p as result, seglist was %p\n", ldd->ldd_Return, seglist));
+#else
+    ldd->ldd_Return = seglist;
+    D(bug("[LDDemon] Replying with %p as result\n", ldd->ldd_Return));
+#endif
+}
+
 /*
   void LDDemon()
     The LDDemon process entry. Sits around and does nothing until a
@@ -658,12 +709,8 @@ static AROS_PROCH(LDDemon, argptr, argsize, SysBase)
 	WaitPort(ldBase->dl_LDDemonPort);
 	while( (ldd = (struct LDDMsg *)GetMsg(ldBase->dl_LDDemonPort)) )
 	{
-	    D(bug("[LDDemon] Got a request for %s in %s\n", ldd->ldd_Name, ldd->ldd_BaseDir));
-
-	    ldd->ldd_Return = LDLoad(ldd->ldd_ReplyPort.mp_SigTask, ldd->ldd_Name, ldd->ldd_BaseDir, DOSBase, SysBase);
-
-	    D(bug("[LDDemon] Replying with %p as result\n", ldd->ldd_Return));
-	    ReplyMsg((struct Message *)ldd);
+            ProcessLDMessage(ldBase, ldd, DOSBase, SysBase);
+            ReplyMsg((struct Message *)ldd);
 	} /* messages available */
     }
 
