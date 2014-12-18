@@ -59,6 +59,7 @@
         LFORMAT       --  Specify the list output in printf-style
         ALL           --  List the contents of directories recursively
 
+
         The following attributes of the LFORMAT strings are available
 
         %A  --  file attributes
@@ -66,7 +67,7 @@
         %C  --  file comment
         %D  --  modification date
         %E  --  file extension
-        %F  --  volume name
+        %F  --  absolute file path, with volume label
         %K  --  file key block number
         %L  --  size of file in bytes
         %M  --  file name without extension
@@ -75,6 +76,16 @@
         %S  --  superceded by %N and %P; obsolete
         %T  --  modification time
 
+
+        Additionally, the following modifiers, each optional, can be used,
+        in this order, following the % character:
+
+        left-justify         --  minus sign
+        field width minumum  --  value
+        value width maximum  --  dot value
+
+        Value width maximum is not available for all numeric fields.
+
     RESULT
 
         Standard DOS return codes.
@@ -82,17 +93,27 @@
     EXAMPLE
 
         1> List C:
-        Directory "C:" on Wednesday 12-Dec-99
-        AddBuffers                  444 --p-rwed 02-Sep-99 11:51:31
-        Assign                     3220 --p-rwed 02-Sep-99 11:51:31
-        Avail                       728 --p-rwed 02-Sep-99 11:51:31
-        Copy                       3652 --p-rwed 02-Sep-99 11:51:31
-        Delete                     1972 --p-rwed 02-Sep-99 11:51:31
-        Execute                    4432 --p-rwed 02-Sep-99 11:51:31
-        List                       5108 --p-rwed 02-Sep-99 11:51:31
-        Installer                109956 ----rwed 02-Sep-99 11:51:31
-        Which                      1068 --p-rwed 02-Sep-99 11:51:31
-        9 files - 274 blocks used        
+        Directory "c:" on Wednesday 12/18/14:
+        Assign                             6548 ---rwed Saturday    01:12:16
+        Copy                              17772 ---rwed Saturday    01:12:24
+        AddBuffers                         5268 ---rwed Saturday    01:14:46
+        Avail                              8980 ---rwed Saturday    01:14:51
+        Delete                             8756 ---rwed Saturday    01:14:59
+        Install                           13024 ---rwed Saturday    01:15:09
+        List                              20228 ---rwed Today       12:06:38
+        Which                              7840 ---rwed Saturday    01:16:09
+        8 file - 167 blocks used
+        1>        
+        1> List C: lformat "[%10.5M] -- >-4b<"
+        [     Assig] -- >13  <
+        [      Copy] -- >35  <
+        [     AddBu] -- >11  <
+        [     Avail] -- >18  <
+        [     Delet] -- >18  <
+        [     Insta] -- >26  <
+        [      List] -- >40  <
+        [     Which] -- >16  <
+        1> 
 
     BUGS
 
@@ -101,6 +122,9 @@
         Dir
 
     INTERNALS
+
+        Current lformat interpretation requires re-interpretation of the format for each entry.
+
 
 ******************************************************************************/
 
@@ -120,7 +144,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 
-const TEXT version[] = "$VER: List 41.12 (3.4.2014)\n";
+const TEXT version[] = "$VER: List 41.13 (18.12.2014)\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
@@ -164,6 +188,31 @@ enum
 
 #define  BLOCKSIZE  512
 
+#define  DIRTEXT   "Dir"
+#define  EMPTYTEXT "empty"
+
+
+/* UQUAD2string: Helper fuction to generates a decimal string representation for a UQUAD value.
+   Arguments:    Value; a UBYTE buffer large enough to hold the string; length of the buffer.
+   Returns:      Pointer to string inside the buffer. (String is end-aligned in the buffer!)
+   Note:         Just a helper: Not safe with incorrect input!
+*/
+
+UBYTE *UQUAD2string( UQUAD value, UBYTE *buffer, int buflen)
+{
+    buffer[ --buflen] = '\0';
+
+    do
+    {
+        buffer[ --buflen] = '0' + (value % 10);
+        value /= 10;
+    } while (value);
+
+    return buffer +buflen;
+}
+
+
+
 int printDirHeader(STRPTR dirname, BOOL noHead)
 {
     struct DateTime dt;
@@ -188,14 +237,14 @@ int printDirHeader(STRPTR dirname, BOOL noHead)
 }
 
 
-/* Possible printf-type switches
+/* Possible lformat switches
 
         %A  --  file attributes
         %B  --  size of file in blocks rather than bytes
         %C  --  file comment
         %D  --  file date
         %E  --  file extension
-        %F  --  volume name
+        %F  --  absolute file path, with volume label
         %K  --  file key block number
         %L  --  size of file in bytes
         %M  --  file name without extension
@@ -203,30 +252,35 @@ int printDirHeader(STRPTR dirname, BOOL noHead)
         %P  --  file path
         %S  --  file name or file path
         %T  --  file time
+
+%F used to be documented as just volume name. Though not Amiga-compatible, volume and path separate might indeed be useful.
 */
 
 struct lfstruct
 {
     struct AnchorPath *ap;
-    BOOL    	       isdir;
-    STRPTR  	       date;
-    STRPTR  	       time;
-    STRPTR  	       flags;
-    STRPTR  	       filename;
-    STRPTR  	       comment;
-    UQUAD   	       size;
-    ULONG   	       key;
+    BOOL               isdir;
+    STRPTR             date;
+    STRPTR             time;
+    STRPTR             flags;
+    STRPTR             filename;
+    STRPTR             comment;
+    UQUAD              size;
+    ULONG              key;
 };
 
 
 #define  roundUp(x, bSize) ((x + bSize - 1)/bSize)
+
 
 int printLformat(STRPTR format, struct lfstruct *lf)
 {
     STRPTR filename       = FilePart(lf->filename);
     STRPTR temp           = format;
     LONG   substitutePath = 0;
-    char c;
+    char   c, cu;
+    UBYTE  fbuf[ 260]; // 256 plus 3 characters format string plus '\0'.
+    int    fbufindex, dot;
 
     /*
         Whether the path or the filename is substituted for an occurrence
@@ -238,6 +292,8 @@ int printLformat(STRPTR format, struct lfstruct *lf)
         2                   path        filename
         3                   path        filename    filename
         4                   path        filename    path        filename
+
+        For 5 or more occurences: As with 4, with occurences beyond the 4th the filename.
     */
 
     while ( ( substitutePath < 4 ) && ( '\0' != (c = *temp++) ) )
@@ -249,46 +305,100 @@ int printLformat(STRPTR format, struct lfstruct *lf)
     if ( substitutePath == 3 )
         substitutePath = 2;
 
+
     while ('\0' != (c = *format++))
     {
-        if ('%' == c)
+        if ('%' == c) // Character introducing a format switch in lformat.
         {
-            switch (ToUpper(*format++))
+            /* Try for modifiers */
+            fbufindex= 0;
+            dot= 0;
+            fbuf[ fbufindex++]= '%';  // Introducing a format type for PrintF.
+
+            while ((c = *format++))
+            {
+                if      (c == '-')            // Left align
+                {
+                    fbufindex= 1;                  // Only the last one counts
+                    dot= 0;                        // Reset max value width as well
+                }
+                else if (c == '.')            // Max value width.
+                {
+                    if (dot)
+                    {
+                        fbufindex= dot;            // Only the last one counts.
+                    }
+                    else
+                    {
+                        dot= fbufindex;            // Max value width starts after the dot
+                    }
+                }
+                else if ( c < '0' || '9' < c) // It's not a digit either ==> end of modifiers
+                {
+                    break;
+                }
+                if (fbufindex < 256)          // Leave room for a three character format string plus \0.
+                {
+                    fbuf[ fbufindex++]= c;
+                } // Squeezes out any overflow silently. Not a likely event, but is it acceptable? Desperado 20141217
+            }
+
+
+            /* Interpret argument */
+            switch (cu= ToUpper(c))
             {
                 /* File comment */
             case 'C':
-                Printf(lf->comment);
+                strcpy( fbuf +fbufindex, "s");
+                D(bug("[List] rawFormat = [%s]", fbuf));
+                Printf( fbuf, lf->comment);
                 break;
                 
                 /* Modification date */
             case 'D':
-                Printf(lf->date);
+                strcpy( fbuf +fbufindex, "s");
+                D(bug("[List] rawFormat = [%s]", fbuf));
+                Printf( fbuf, lf->date);
                 break;
                 
                 /* Modification time */
             case 'T':
-                Printf(lf->time);
+                strcpy( fbuf +fbufindex, "s");
+                D(bug("[List] rawFormat = [%s]", fbuf));
+                Printf( fbuf, lf->time);
                 break;
-                
-                /* File size in blocks of BLOCKSIZE bytes */
+
+                /* File size */
+            case 'L':
+                /* File size in blocks of BLOCKSIZE bytes */               
             case 'B':
+
                 if (lf->isdir)
                 {
-                    Printf("Dir");
+                    strcpy( fbuf +fbufindex, "s");
+                    D(bug("[List] rawFormat = [%s]", fbuf));
+                    Printf( fbuf, DIRTEXT);
                 }
                 else
                 {
-                    ULONG tmp = roundUp(lf->size, BLOCKSIZE);
-                
-                    /* File is 0 bytes? */
-                    if (tmp == 0)
+                    UQUAD size= ( cu == 'B' ? roundUp(lf->size, BLOCKSIZE) : lf->size); // Blocks or bytes.
+
+                    /* File has no content? */
+                    if (size == 0)
                     {
-                        Printf("empty");
+                        strcpy( fbuf +fbufindex, "s");
+                        D(bug("[List] rawFormat = [%s]", fbuf));
+                        Printf( fbuf, EMPTYTEXT);
                     }
                     else
                     {
-                        Printf("%lu", tmp);
-                    }
+                        UBYTE *buf[ 256]; // Should be UQUADSTRSIZE +1, but this will suffice.
+                        UBYTE *quadstr= UQUAD2string( size, buf, 256);
+
+                        strcpy( fbuf +fbufindex, "s"); // Should we implement a '%q' type?
+                        D(bug("[List] rawFormat = [%s]", fbuf));
+                        Printf( fbuf, quadstr);
+                    } // Side effect of converting uquad to string: User can even maxsize numbers, if wanted.
                 }
 
                 break;
@@ -296,19 +406,20 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                 /* Path incl. volume name*/
             case 'F':
                 {
-                    UBYTE buf[256];
+                    UBYTE buf[257]; // 256 + room for an extra '/'.
                     
                     if (NameFromLock(lf->ap->ap_Current->an_Lock, buf, 256))
                     {
-                        int len;
-                        
-                        Printf(buf);
-                        
-                        len = strlen(buf);
-                        if ((len > 0) && (buf[len - 1] != ':') && (buf[len - 1] != '/'))
+                        int len = strlen(buf); // For checking the end of the string
+
+                        if ((len > 0) && (buf[len - 1] != ':') && (buf[len - 1] != '/'))  // We need a separator:
                         {
-                            Printf("/");
+                            strcpy( buf +len, "/");  // Add an /.
                         }
+
+                        strcpy( fbuf +fbufindex, "s");
+                        D(bug("[List] rawFormat = [%s]", fbuf));
+                        Printf( fbuf, buf);
                     }
                 }
 
@@ -316,52 +427,16 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
                 /* File attributes (flags) */
             case 'A':
-                Printf(lf->flags);
+                strcpy( fbuf +fbufindex, "s");
+                D(bug("[List] rawFormat = [%s]", fbuf));
+                Printf( fbuf, lf->flags);
                 break;
 
                 /* Disk block key */
             case 'K':
-                Printf("[%lu]", lf->key);
-                break;
-                
-                /* File size */
-            case 'L':
-                if (lf->isdir)
-                {
-                    Printf("Dir");
-                }
-                else
-                {
-                    if (lf->size == 0)
-                    {
-                        Printf("empty");
-                    }
-                    else
-                    {
-                        UQUAD filesize = lf->size;
-
-                        char buf[256];
-                        buf[255] = '\0';
-                        int fill, i;
-
-                        char *bufpos = &buf[254];
-
-                        do
-                        {
-                            bufpos[0] = '0' + (filesize % 10);
-                            filesize /= 10;
-                            bufpos--;
-                        } while (filesize);
-
-                        fill = 13 - (&buf[254] - bufpos);
-                        for (i = 0; i < fill; i++)
-                        {
-                            Printf(" ");
-                        }
-                        Printf("%s ", &bufpos[1]);
-                    }
-                }
-
+                strcpy( fbuf +fbufindex, "lu");
+                D(bug("[List] rawFormat = [%s]", fbuf));
+                Printf( fbuf, lf->key);
                 break;
                 
                 /* File name without extension */
@@ -374,10 +449,11 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                         *lastPoint = 0;
                     }
                     
-                    Printf(filename);
+                    strcpy( fbuf +fbufindex, "s");
+                    D(bug("[List] rawFormat = [%s]", fbuf));
+                    Printf( fbuf, filename);
 
-                    /* Resurrect filename in case we should print it once
-                       more */
+                    /* Resurrect filename in case we need to print it again */
                     if (lastPoint != NULL)
                     {
                         *lastPoint = '.';
@@ -396,7 +472,9 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
                     *end = '\0';
 
-                    Printf(lf->filename);
+                    strcpy( fbuf +fbufindex, "s");
+                    D(bug("[List] rawFormat = [%s]", fbuf));
+                    Printf( fbuf, lf->filename);
 
                     /* Restore pathname */
                     *end = token;
@@ -405,7 +483,9 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                 }
                 /* Fall through */
             case 'N':
-                Printf(filename);
+                strcpy( fbuf +fbufindex, "s");
+                D(bug("[List] rawFormat = [%s]", fbuf));
+                Printf( fbuf,  filename);
                 break;
                 
                 /* File extension */
@@ -415,13 +495,15 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
                     if (extension != NULL)
                     {
-                        Printf(extension);
+                        strcpy( fbuf +fbufindex, "s");
+                        D(bug("[List] rawFormat = [%s]", fbuf));
+                        Printf( fbuf,  ++extension); // Skip the dot.
                     }
                 }
 
                 break;
 
-                /* Path name, but without volume */
+                /* File path as specified */
             case 'P':
                 {
                     STRPTR end = FilePart(lf->filename);
@@ -429,7 +511,9 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                     
                     *end = 0;
 
-                    Printf(lf->filename);
+                    strcpy( fbuf +fbufindex, "s");
+                    D(bug("[List] rawFormat = [%s]", fbuf));
+                    Printf( fbuf,  lf->filename);
                     
                     /* Restore pathname */
                     *end = token;
@@ -437,12 +521,17 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
                 break;
 
+                /* Unexpected end of format */
             case 0:
+                fbuf[ fbufindex]= '\0'; // Just add end to the string.
+                Printf( "%s", fbuf);    // We never found the switch, so print as text.
                 return 0;
                 break;
                 
+                /* Unrecognised %-sequence */
             default:
-                Printf("%%%lc", *format);
+                fbuf[ fbufindex]= '\0';   // Just add end to the string.
+                Printf("%s%lc", fbuf, c); // Print interpreted format part as text.
                 break;
             }
         }
@@ -464,13 +553,13 @@ int printFileData(struct AnchorPath *ap,
                   BOOL doSince, BOOL doUpto, STRPTR subpatternStr,
                   BOOL keys)
 {
-    STRPTR  	       filename = ap->ap_Buf;
-    BOOL    	       isDir = (ap->ap_Info.fib_DirEntryType >= 0);
+    STRPTR             filename = ap->ap_Buf;
+    BOOL               isDir = (ap->ap_Info.fib_DirEntryType >= 0);
     struct DateStamp  *ds = &ap->ap_Info.fib_Date;
-    ULONG   	       protection = ap->ap_Info.fib_Protection;
-    UQUAD   	       size = ap->ap_Info.fib_Size;
-    STRPTR  	       filenote = ap->ap_Info.fib_Comment;
-    ULONG    	       diskKey = ap->ap_Info.fib_DiskKey;
+    ULONG              protection = ap->ap_Info.fib_Protection;
+    UQUAD              size = ap->ap_Info.fib_Size;
+    STRPTR             filenote = ap->ap_Info.fib_Comment;
+    ULONG              diskKey = ap->ap_Info.fib_DiskKey;
     
     int error = 0;
 
@@ -532,11 +621,12 @@ int printFileData(struct AnchorPath *ap,
     DateToStr(&dt);
 
     /* Convert the protection bits to a string */
+    // Active when set
     flags[0] = protection & FIBF_SCRIPT  ? 's' : '-';
     flags[1] = protection & FIBF_PURE    ? 'p' : '-';
     flags[2] = protection & FIBF_ARCHIVE ? 'a' : '-';
 
-    /* The following flags are high-active! */
+    // Active when unset!
     flags[3] = protection & FIBF_READ    ? '-' : 'r';
     flags[4] = protection & FIBF_WRITE   ? '-' : 'w';
     flags[5] = protection & FIBF_EXECUTE ? '-' : 'e';
@@ -562,16 +652,16 @@ int printFileData(struct AnchorPath *ap,
             {
                 D(bug("Found file %s\n", filename));
 
-                Printf("%-25s ", FilePart(filename));
+                Printf("%-24s ", FilePart(filename)); // Entry name field width
 
                 if (!quick)
                 {
-                    Printf("        <Dir> %7s ", flags);
+                    Printf("%7s %7s ", DIRTEXT, flags); // Size field width, flags field width
                 }
                 
                 if (!noDates && (!quick || dates))
                 {
-                    Printf("%-11s %s", date, time);
+                    Printf("%-11s %s", date, time); // Date field width
                 }
                         
                 Printf("\n");
@@ -593,25 +683,18 @@ int printFileData(struct AnchorPath *ap,
         }
         else
         {
-            Printf("%-25s ", FilePart(filename));
+            Printf("%-24s ", FilePart(filename)); // Entryname field width
 
             if (!quick)
             {
                 if(keys)
                 {
                     char key[16];
-                    int  fill;
-                    int  i;	/* Loop variable */
+                    int  i;     /* Loop variable */
 
                     __sprintf(key, "%lu", (unsigned long)diskKey);
-                    fill = 7 - strlen(key) - 2;
 
-                    for (i = 0; i < fill; i++)
-                    {
-                        Printf(" ");
-                    }
-
-                    Printf("[%lu] ", diskKey);
+                    Printf("[%5lu] ", diskKey); // Key field width
                 }
                 else
                 {
@@ -619,38 +702,23 @@ int printFileData(struct AnchorPath *ap,
                     {
                         UQUAD filesize = block ? roundUp(size, BLOCKSIZE) : size;
 
-                        char buf[256];
-                        buf[255] = '\0';
-                        int fill, i;
+                        UBYTE buf[ 256]; // Should be UQUADSTRSIZE +1, but this will suffice.
+                        UBYTE *quadstr= UQUAD2string( filesize, buf, 256);
 
-                        char *bufpos = &buf[254];
-
-                        do
-                        {
-                            bufpos[0] = '0' + (filesize % 10);
-                            filesize /= 10;
-                            bufpos--;
-                        } while (filesize);
-
-                        fill = 13 - (&buf[254] - bufpos);
-                        for (i = 0; i < fill; i++)
-                        {
-                            Printf(" ");
-                        }    
-                        Printf("%s ", &bufpos[1]);
+                        Printf("%7s ", quadstr); // Size field width
                     }
                     else
                     {
-                        Printf("  empty ");
+                        Printf("%7s ", EMPTYTEXT); // Size field width
                     }
                 }
                 
-                Printf("%7s ", flags);
+                Printf("%7s ", flags); // Flags field width
             }
             
             if (!noDates && (!quick || dates))
             {
-                Printf("%-11s %s", date, time);
+                Printf("%-11s %s", date, time); // Date field width
             }
 
             if (!quick && (*filenote != 0))
@@ -721,7 +789,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
     NewList(&FreeDirNodeList);
      
     do 
-    {	
+    {
         ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
 
         if (ap == NULL)
@@ -749,7 +817,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
                         error = MatchNext(ap);
                     }
                 }
-            }	    
+            }    
         }
 
         if (0 == error)
@@ -763,7 +831,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
             }
             
             do
-            {		
+            {
                 /*
                 ** There's something to show.
                 */
@@ -920,7 +988,7 @@ int main(void)
                FALSE    // ARG_ALL
     };
     static CONST_STRPTR default_directories[] = {(CONST_STRPTR)"", 0};
-    struct RDArgs *rda;		       
+    struct RDArgs *rda;       
 
     LONG     result = RETURN_OK;
     LONG     error = 0;
@@ -954,7 +1022,7 @@ int main(void)
         struct DateTime  sinceDatetime;
         struct DateTime  uptoDatetime;
 
-        ULONG   i;		/* Loop variable */	    
+        ULONG   i;              /* Loop variable */    
 
         if (since != NULL)
         {
@@ -1021,7 +1089,7 @@ int main(void)
                 FreeArgs(rda);
                 PrintFault(error, "List");
                 
-                return RETURN_FAIL;		
+                return RETURN_FAIL;
             }
 
             FreeVec(subStrWithPat);
@@ -1067,7 +1135,7 @@ int main(void)
             dirs = TRUE;
         }
 
-/*	if (!dates && !noDates)
+/*      if (!dates && !noDates)
         {
             dates = TRUE;
         }*/
@@ -1096,7 +1164,7 @@ int main(void)
                 break;
             }
 
-//	    Printf("\n");
+//          Printf("\n");
         } 
         
         FreeArgs(rda);
