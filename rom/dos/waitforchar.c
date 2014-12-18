@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Waits for a character to arrive at a filehandle.
@@ -27,13 +27,14 @@
         Wait for a character to arrive at a filehandle. The filehandle
         can be either a console handle, or a regular file. For a regular
         file most filesystems will return a character immediately, but
-        sometimes (for example a network handler) the character may not
+        sometimes (for example, a network handler) the character may not
         have arrived.
 
     INPUTS
         file    - File to wait for a character on.
         timeout - Number of microseconds to wait for the character
-                  to arrive. A value of 0 says to wait indefinitely.
+                  to arrive.
+
     RESULT
         != 0    if a character arrived before the timeout expired
         == 0    if no character arrived
