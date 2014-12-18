@@ -67,5 +67,5 @@ void PutString( STRPTR buffer )
 
 void Wait4Char( void )
 {
-    WaitForChar( Input() , 0 );
+    WaitForChar( Input() , 1000000000 );
 }

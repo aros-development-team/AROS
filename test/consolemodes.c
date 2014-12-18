@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     something[63] = '\0';
     i = 0;
     while (i < 63) {
-        WaitForChar(in, 0);
+        WaitForChar(in, 1000000000);
         Read(in, &(something[i]), 1);
         if (something[i] == 0x0d) {
             something[i] = '\0';
