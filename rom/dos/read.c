@@ -36,7 +36,7 @@
         file   - filehandle
         buffer - pointer to buffer for the data
         length - number of bytes to read. The filesystem is
-                 advised to try to fulfill the request as good
+                 advised to try to fulfill the request as well
                  as possible.
 
     RESULT
