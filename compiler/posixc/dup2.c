@@ -67,7 +67,7 @@
 
 ******************************************************************************/
 {
-    fdesc *oldfdesc, *newfdesc, *oldnewfdesc;
+    fdesc *oldfdesc, *newfdesc;
 
     /* Fail if old FD is invalid */
     oldfdesc = __getfdesc(oldfd);
@@ -81,9 +81,6 @@
     if (oldfd == newfd)
         return newfd;
 
-    /* Keep back-up of old "newfd" */
-    oldnewfdesc = __getfdesc(newfd);
-
     /* Allocate new FD or fail */
     newfdesc = __alloc_fdesc();
     if (!newfdesc)
@@ -96,15 +93,11 @@
     newfdesc->fdflags = 0;
     newfdesc->fcb = oldfdesc->fcb;
 
+    /* Put new FD into its slot (and deallocate any FD previously there) */
     newfd =__getfdslot(newfd);
     if (newfd != -1)
     {
         newfdesc->fcb->opencount++;
-
-        /* Free old "newfd" (now that we've definitely succeeded) */
-        if (oldnewfdesc)
-            __free_fdesc(oldnewfdesc);
-
         __setfdesc(newfd, newfdesc);
     }
 
