@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Format a string and emit it.
@@ -434,7 +434,9 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 		       maxwidth  - maximum width of field (for strings only).
 				   Defaults to no limit.
 
-		       size	 - 'l' means LONG. Defaults to WORD, if nothing is specified.
+		       size	 - 'l' means LONG. 'll' or 'L' means QUAD
+                                   (AROS extension). Defaults to WORD, if
+                                   nothing is specified.
 
 		       type	 - 'b' BSTR. It will use the internal representation
                                        of the BSTR defined by the ABI.
@@ -450,7 +452,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 	               WORD aligned.
 
 	PutChProc    - Callback function. Called for each character, including
-		       the NULL terminator. The fuction is called as follow:
+		       the NULL terminator. The fuction is called as follows:
 
                        AROS_UFC2(void, PutChProc,
                                  AROS_UFCA(UBYTE, char,      D0),
