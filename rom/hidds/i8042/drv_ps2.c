@@ -323,7 +323,7 @@ static int detect_intellimouse(void)
 
 int mouse_ps2reset(struct mouse_data *data)
 {
-    int result;
+    int result, timeout = 100;
 
     /*
      * The commands are for the mouse and nobody else.
@@ -354,6 +354,12 @@ int mouse_ps2reset(struct mouse_data *data)
     /* Reset mouse */
     aux_write_ack(KBD_OUTCMD_RESET);
     result = aux_wait_for_input();    /* Test result (0xAA) */
+    while (result == 0xfa && --timeout)
+    {
+        /* somehow the ACK isn't always swallowed above */
+        kbd_usleep(1000);
+        result = aux_wait_for_input();
+    }
     aux_wait_for_input();    /* Mouse type */
 
     if (result != 0xaa)
