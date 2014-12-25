@@ -1,60 +1,7 @@
 /*
     Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
-
-    The shell program.
- */
-
-/******************************************************************************
-
-    NAME
-
-	Shell
-
-    SYNOPSIS
-
-    LOCATION
-
-	L:UserShell-Seg
-
-    FUNCTION
-
-	Start a shell (interactive or background).
-
-    INPUTS
-
-    RESULT
-
-    HISTORY
-
-    Aug 2011 - Use AOS startup packet mechanisms
-
-    Sep 2010 - rewrite of the convertLine function.
-
-    Jul 2010 - improved handling of $ and `: things like cd SYS:Olle/$pelle
-	       work now. Non-alphanumerical var-names must be enclosed in
-	       braces.
-
-    Feb 2008 - initial support for .key/bra/ket/dot/dollar/default.
-
-    EXAMPLE
-
-	Resident Shell L:UserShell-Seg SYSTEM PURE ADD
-
-	Configures the default User Shell to this shell
-
-    BUGS
-
-    SEE ALSO
-
-    Execute, NewShell, Run
-
-    INTERNALS
-
-    The prompt support does not use SetCurrentDirName() as this function
-    has improper limitations. More or less the same goes for GetProgramName().
-
-******************************************************************************/
+*/
 
 /* TODO:
    Break support (and +(0L) before execution) -- CreateNewProc()?
@@ -533,6 +480,7 @@ static LONG executeLine(ShellState *ss, STRPTR commandArgs)
 
 	mem_before = FindVar("__debug_mem", LV_VAR) ? AvailMem(MEMF_ANY) : 0;
 	cli->cli_ReturnCode = RunCommand(seglist, defaultStack, cmd, len);
+	error = (cli->cli_ReturnCode == RETURN_OK) ? 0 : IoErr();
 
 	/* Update the state of the cli_Interactive field */
 	setInteractive(cli, ss);
@@ -569,11 +517,14 @@ static LONG executeLine(ShellState *ss, STRPTR commandArgs)
 	    Printf("Memory leak of %lu bytes\n", mem_before - mem_after);
 	}
 
-	D(bug("[Shell] returned %ld (%ld): %s\n", cli->cli_ReturnCode, IoErr(), command));
-	error = (cli->cli_ReturnCode == RETURN_OK) ? 0 : IoErr();
+	D(bug("[Shell] returned %ld (%ld): %s\n", cli->cli_ReturnCode,
+	    error, command));
 	pr->pr_Task.tc_Node.ln_Name = oldtaskname;
 	unloadCommand(ss, module, homeDirChanged, residentCommand);
 
+        /* If command couldn't be started, explain why */
+        if (cli->cli_ReturnCode == -1)
+            PrintFault(error, command);
     }
     else
     {
