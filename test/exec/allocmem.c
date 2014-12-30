@@ -1,8 +1,3 @@
-/*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
-*/
-
 #include <aros/debug.h>
 #include <proto/exec.h>
 
@@ -50,67 +45,93 @@ int main(int argc, char **argv)
     Forbid();
 
     output("Available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+    output("Largest chunk: %lu bytes\n\n", (unsigned long)AvailMem(MEMF_ANY|MEMF_LARGEST));
 
-    output("Allocating 256 KB...\n");
-    block0 = AllocMem(256 * 1024, MEMF_ANY);
-    output("Allocated at 0x%p, available memory: %lu bytes\n", block0, (unsigned long)AvailMem(MEMF_ANY));
+    output("Testing AllocMem(256, MEMF_ANY) ...\n");
+    if ((block0 = AllocMem(256 * 1024, MEMF_ANY)) != NULL)
+    {
+        output("Allocated at 0x%p, available memory: %lu bytes\n", block0, (unsigned long)AvailMem(MEMF_ANY));
+        
+        AccessTest(block0 + 256 * 1024);
+     
+        if (!leak)
+        {
+            output("Freeing the block...\n");
+            FreeMem(block0, 256 * 1024);
+            output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+        }
+    }
+    else
+    {
+        output("Allocation failed!\n");
+    }
+
+    output("\nTesting AllocMem(4096, MEMF_ANY|MEMF_REVERSE) ...\n");
+    if ((block0 = AllocMem(4096, MEMF_ANY|MEMF_REVERSE)) != NULL)
+    {
+        output("Allocated at 0x%p, available memory: %lu bytes\n", block0, (unsigned long)AvailMem(MEMF_ANY));
+     
+        /* This test actually proves that we don't hit for example MMIO region */
+        *((volatile ULONG *)block0) = 0xC0DEBAD;
+        if (*((volatile ULONG *)block0) != 0xC0DEBAD)
+            output("Invalid memory allocated!!!\n");
+     
+        AccessTest(block0 + 4096);
+     
+        if (!leak)
+        {
+            output("Freeing the block...\n");
+            FreeMem(block0, 4096);
+            output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+        }
+    }
+    else
+    {
+        output("Allocation failed!\n");
+    }
     
-    AccessTest(block0 + 256 * 1024);
- 
-    if (!leak)
-    {
-    	output("Freeing the block...\n");
-    	FreeMem(block0, 256 * 1024);
-    	output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
-    }
-
     start = block0 + 1027;	/* Add some none-round displacement to make the life harder */
-    output("Now trying AllocAbs() 4 KB at 0x%p\n", start);
-    block1 = AllocAbs(4096, start);
-    output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
+    output("\nTesting AllocAbs(4096, 0x%p) ...\n", start);
+    if ((block1 = AllocAbs(4096, start)) != NULL)
+    {
+        output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
 
-    AccessTest(start + 4096);
+        AccessTest(start + 4096);
 
+        if (!leak)
+        {
+            output("Freeing the block...\n");
+            FreeMem(block1, 4096 + start - block1);
+            output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+        }
+    }
+    else
+    {
+        output("Allocation failed!\n");
+    }
+
+    /* Only perform the second AllocAbs if leak isnt specified,
+       otherwise we just duplicate the previous test */
     if (!leak)
     {
-    	output("Freeing the block...\n");
-    	FreeMem(block1, 4096 + start - block1);
-    	output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+        output("\nTesting AllocAbs(4096, 0x%p), but free using its requested start address...\n", start);
+        if ((block1 = AllocAbs(4096, start)) != NULL)
+        {
+            output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
+
+            AccessTest(start + 4096);
+
+            output("Freeing the block...\n");
+            FreeMem(start, 4096);
+            output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+        }
+        else
+        {
+            output("Allocation failed!\n");
+        }
     }
 
-    output("Now repeat this AllocAbs(), but free using our requested start address...\n");
-    block1 = AllocAbs(4096, start);
-    output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
-
-    if (block1)
-    {
-	AccessTest(start + 4096);
-
-	if (!leak)
-	{
-	    output("Freeing the block...\n");
-	    FreeMem(start, 4096);
-	    output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
-	}
-    }
-
-    output("And now trying MEMF_REVERSE...\n");
-    block0 = AllocMem(4096, MEMF_REVERSE);
-    output("Allocated at 0x%p, available memory: %lu bytes\n", block0, (unsigned long)AvailMem(MEMF_ANY));
- 
-    /* This test actually proves that we don't hit for example MMIO region */
-    *((volatile ULONG *)block0) = 0xC0DEBAD;
-    if (*((volatile ULONG *)block0) != 0xC0DEBAD)
-        output("It's not a memory!!!\n");
- 
-    AccessTest(block0 + 4096);
- 
-    if (!leak)
-    {
-    	output("Freeing the block...\n");
-    	FreeMem(block0, 4096);
-    	output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
-    }
+    output("\nFinal available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
     Permit();
     return 0;
