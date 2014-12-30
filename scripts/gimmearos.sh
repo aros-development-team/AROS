@@ -8,7 +8,7 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos.sh 1.11 (26.07.2014) WIP
+# $VER: gimmearos.sh 1.12 (30.12.2014) WIP
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -423,38 +423,38 @@ do
     case "$input" in
         1 ) echo -e "\nBuilding linux-i386 V1 with full debug...\n"
             cd aros-linux-i386-dbg
-            make $makeopts
+            make $makeopts . contrib ports
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-dbg/bin/<target>/AROS"
             ;;
         2 ) echo -e "\nBuilding linux-i386 V1 without debug...\n"
             cd aros-linux-i386
-            make $makeopts
+            make $makeopts . contrib ports
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386/bin/<target>/AROS"
             ;;
         3 ) echo -e "\nBuilding linux-x86_64 V1 with full debug...\n"
             cd aros-linux-x86_64-dbg
-            make $makeopts
+            make $makeopts . contrib ports
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
             ;;
         4 ) echo -e "\nBuilding linux-x86_64 V1 without debug...\n"
             cd aros-linux-x86_64
-            make $makeopts
+            make $makeopts . contrib ports
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64/bin/<target>/AROS"
             ;;
         5 ) echo -e "\nBuilding pc-i386 V1...\n"
             cd aros-pc-i386
-            make $makeopts
+            make $makeopts . contrib ports
             make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386/bin/<target>/AROS"
             ;;
         6 ) echo -e "\nBuilding pc-x86_64 V1...\n"
             cd aros-pc-x86_64
-            make $makeopts
+            make $makeopts . contrib ports
             make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-x86_64/bin/<target>/AROS"
@@ -463,38 +463,38 @@ do
 
         11 ) echo -e "\nBuilding linux-i386 V0 with full debug...\n"
             cd aros-linux-i386-v0-dbg
-            make $makeopts
+            make $makeopts . contrib ports
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-v0-dbg/bin/<target>/AROS"
             ;;
         12 ) echo -e "\nBuilding linux-i386 V0 without debug...\n"
             cd aros-linux-i386-v0
-            make $makeopts
+            make $makeopts . contrib ports
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-v0/bin/<target>/AROS"
             ;;
         13 ) echo -e "\nBuilding linux-x86_64 V0 with full debug...\n"
             cd aros-linux-x86_64-v0-dbg
-            make $makeopts
+            make $makeopts . contrib ports
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
             ;;
         14 ) echo -e "\nBuilding linux-x86_64 V0 without debug...\n"
             cd aros-linux-x86_64-v0
-            make $makeopts
+            make $makeopts . contrib ports
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-v0/bin/<target>/AROS"
             ;;
         15 ) echo -e "\nBuilding pc-i386 V0...\n"
             cd aros-pc-i386-v0
-            make $makeopts
+            make $makeopts . contrib ports
             make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386-v0/bin/<target>/AROS"
             ;;
         16 ) echo -e "\nBuilding pc-x86_64 V0...\n"
             cd aros-pc-x86_64-v0
-            make $makeopts
+            make $makeopts . contrib ports
             make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-x86_64-v0/bin/<target>/AROS"
