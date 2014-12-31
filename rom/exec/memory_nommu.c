@@ -22,15 +22,27 @@
 APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     APTR res = NULL;
-    struct MemHeader *mh;
+    struct MemHeader *mh, *mhn;
     ULONG requirements = flags & MEMF_PHYSICAL_MASK;
 
     /* Protect memory list against other tasks */
     MEM_LOCK;
 
+    if (flags & MEMF_REVERSE)
+        mhn = GetTail(&SysBase->MemList);
+    else
+        mhn = GetHead(&SysBase->MemList);
+
     /* Loop over MemHeader structures */
-    ForeachNode(&SysBase->MemList, mh)
+    while (mhn)
     {
+        mh = mhn;
+
+        if (flags & MEMF_REVERSE)
+            mhn = (((struct Node *)(mh))->ln_Pred);
+        else
+            mhn = (((struct Node *)(mh))->ln_Succ);
+
         /*
          * Check for the right requirements and enough free memory.
          * The requirements are OK if there's no bit in the
