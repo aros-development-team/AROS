@@ -63,6 +63,8 @@ static const struct MemRegion PC_Memory[] =
     {0          , 0          , NULL            ,  0, 0                                                                  }
 };
 
+static ULONG allocator = ALLOCATOR_TLSF;
+
 /*
  * Boot-time global variables.
  * __KernBootPrivate needs to survive accross warm reboots, so it's put into .data.
@@ -155,7 +157,6 @@ void kernel_cstart(const struct TagItem *start_msg)
     struct TagItem *tag;
     UBYTE _APICID;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
-
     /* Enable fxsave/fxrstor */ 
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
 
@@ -277,6 +278,9 @@ void kernel_cstart(const struct TagItem *start_msg)
 	    __KernBootPrivate->debug_y_resolution = vmode->y_resolution;
 	    __KernBootPrivate->debug_framebuffer  = (void *)(unsigned long)vmode->phys_base + vmode->y_resolution * vmode->bytes_per_scanline;
 	}
+
+        if (cmdline && strstr(cmdline, "notlsf"))
+            allocator = ALLOCATOR_STD;
     }
 
     /* Prepare GDT */
@@ -368,7 +372,7 @@ void kernel_cstart(const struct TagItem *start_msg)
      * We reserve one page (PAGE_SIZE) at zero address. We will protect it.
      */
     NEWLIST(&memList);
-    mmap_InitMemory(mmap, mmap_len, &memList, klo, kick_highest, PAGE_SIZE, PC_Memory, ALLOCATOR_STD);
+    mmap_InitMemory(mmap, mmap_len, &memList, klo, kick_highest, PAGE_SIZE, PC_Memory, allocator);
 
     D(bug("[Kernel] kernel_cstart: Booting exec.library...\n"));
 
