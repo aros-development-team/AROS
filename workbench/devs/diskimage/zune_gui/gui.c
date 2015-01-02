@@ -63,6 +63,8 @@ CONST_STRPTR device_types_array[] = {
 	NULL
 };
 
+static TEXT image_path[5][IMG_PATH_LEN];
+
 BOOL CreateGUI (void) {
 	STRPTR popkey;
 	CONST_STRPTR window_title;
@@ -125,23 +127,28 @@ BOOL CreateGUI (void) {
 					Child,						Gui.gad[GID_INSERT] = MakeImageButton(
 												"Insert",
 												GetString(&LocaleInfo, MSG_INSERT_GAD),
-												TRUE),
+												TRUE,
+												image_path[0]),
 					Child,						Gui.gad[GID_EJECT] = MakeImageButton(
 												"Eject",
 												GetString(&LocaleInfo, MSG_EJECT_GAD),
-												TRUE),
+												TRUE,
+												image_path[1]),
 					Child,						Gui.gad[GID_WRITEPROTECT] = MakeImageButton(
 												"Protect",
 												GetString(&LocaleInfo, MSG_WRITEPROTECT_GAD),
-												TRUE),
+												TRUE,
+												image_path[2]),
 					Child,						Gui.gad[GID_SETDEVICETYPE] = MakeImageButton(
 												"Prefs",
 												GetString(&LocaleInfo, MSG_SETDEVICETYPE_GAD),
-												TRUE),
+												TRUE,
+												image_path[3]),
 					Child,						Gui.gad[GID_REFRESH] = MakeImageButton(
 												"Refresh",
 												GetString(&LocaleInfo, MSG_REFRESH_GAD),
-												FALSE),
+												FALSE,
+												image_path[4]),
 					Child,						RectangleObject,
 					End,
 				End,

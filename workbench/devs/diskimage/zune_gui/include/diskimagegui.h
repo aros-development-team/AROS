@@ -157,8 +157,9 @@ void IoErrRequester (LONG error);
 void ErrorStringRequester (CONST_STRPTR error_string);
 
 /* images.c */
+#define IMG_PATH_LEN (128)
 BOOL FindImage (CONST_STRPTR image, STRPTR path, LONG path_size);
-Object *LoadImage (CONST_STRPTR image, const struct TagItem *tags);
-Object *MakeImageButton (CONST_STRPTR image, CONST_STRPTR help, BOOL disabled);
+Object *LoadImage (CONST_STRPTR image, STRPTR image_path, const struct TagItem *tags);
+Object *MakeImageButton (CONST_STRPTR image, CONST_STRPTR help, BOOL disabled, STRPTR image_path);
 
 #endif
