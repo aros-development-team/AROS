@@ -59,6 +59,9 @@ static CONST CONST_STRPTR image_name[DRIVE_ICO_MAX] = {
 	"CD",
 	"Crypt"
 };
+
+static TEXT image_path[DRIVE_ICO_MAX][IMG_PATH_LEN];
+
 static TEXT image_str[DRIVE_ICO_MAX][16];
 
 DISPATCHERPROTO(DriveList_Dispatch);
@@ -118,7 +121,7 @@ static IPTR DriveList_Setup(Class *cl, Object *o, Msg msg) {
 		return FALSE;
 	}
 	for (i = 0; i < DRIVE_ICO_MAX; i++) {
-		data->image[i] = LoadImage(image_name[i], NULL);
+		data->image[i] = LoadImage(image_name[i], image_path[i], NULL);
 		if (data->image[i]) {
 			data->handle[i] = DoMethod(o, MUIM_List_CreateImage, data->image[i], 0);
 		} else {

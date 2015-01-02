@@ -43,18 +43,17 @@ BOOL FindImage (CONST_STRPTR image, STRPTR path, int32 path_size) {
             || FileExists("IMAGES:digfx", image, path, path_size);
 }
 
-Object *LoadImage (CONST_STRPTR image, const struct TagItem *tags) {
-	TEXT path[64];
-	if (!FindImage(image, path, sizeof(path))) {
+Object *LoadImage (CONST_STRPTR image, STRPTR image_path, const struct TagItem *tags) {
+	if (!FindImage(image, image_path, IMG_PATH_LEN)) {
 		return NULL;
 	}
 	return DtpicObject,
-		MUIA_Dtpic_Name,			path,
+		MUIA_Dtpic_Name,		image_path,
 		tags ? TAG_MORE : TAG_END,	tags,
 	End;
 }
 
-Object *MakeImageButton (CONST_STRPTR image, CONST_STRPTR help, BOOL disabled) {
+Object *MakeImageButton (CONST_STRPTR image, CONST_STRPTR help, BOOL disabled, STRPTR image_path) {
 	Object *button;
 	struct TagItem tags[] = {
 		{ MUIA_Frame,     MUIV_Frame_ImageButton   },
@@ -63,7 +62,7 @@ Object *MakeImageButton (CONST_STRPTR image, CONST_STRPTR help, BOOL disabled) {
 		{ MUIA_Disabled,  disabled                 },
 		{ TAG_END,        0                        }
 	};
-	button = LoadImage(image, tags);
+	button = LoadImage(image, image_path, tags);
 	if (!button) {
 		ImageNotFoundRequester(image);
 	}
