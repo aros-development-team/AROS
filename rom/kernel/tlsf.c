@@ -352,7 +352,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 
     if (unlikely(!size)) return NULL;
 
-    D(nbug("tlsf_malloc(%p, %ld)\n", tlsf, size));
+    D(nbug("[Kernel:TLSF] %s(%p, %ld)\n", __PRETTY_FUNCTION__, tlsf, size));
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
@@ -363,12 +363,12 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     /* Find block of either the right size or larger */
     b = FIND_SUITABLE_BLOCK(tlsf, &fl, &sl);
 
-    D(nbug("  tlsf_malloc - adjusted size %ld\n", size));
+    D(nbug("[Kernel:TLSF] %s: adjusted size %ld\n", __PRETTY_FUNCTION__, size));
 
     /* No block found? Either failure or tlsf will get more memory. */
     if (unlikely(!b))
     {
-        D(nbug("tlsf_malloc out of memory\n"));
+        D(nbug("[Kernel:TLSF] %s: out of memory\n", __PRETTY_FUNCTION__));
 
         /* Do we have the autogrow feature? */
         if (tlsf->autogrow_get_fn)
@@ -380,7 +380,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
             if (sz < tlsf->autogrow_puddle_size)
                 sz = tlsf->autogrow_puddle_size;
 
-            D(nbug("querying for %d bytes\n", sz));
+            D(nbug("[Kernel:TLSF] %s: querying for %u bytes\n", __PRETTY_FUNCTION__, sz));
 
             /* Try to get some memory */
             void * ptr = tlsf->autogrow_get_fn(tlsf->autogrow_data, &sz);
@@ -434,7 +434,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
         /* Allocated block size truncated */
         SET_SIZE(b, size);
 
-        D(nbug("  new splitted block of size %ld\n", GET_SIZE(sb)));
+        D(nbug("[Kernel:TLSF] %s: block split, %ld bytes remaining\n", __PRETTY_FUNCTION__, GET_SIZE(sb)));
         /* Free block is inserted to free list */
         INSERT_FREE_BLOCK(tlsf, sb);
     }
@@ -565,17 +565,17 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
 
     size = ROUNDUP(size);
 
-    D(nbug("[TLSF] tlsf_malloc_aligned(%p, %lx, %d)\n", mhe, size, align));
+    D(nbug("[Kernel:TLSF] %s(%p, %lx, %u)\n", __PRETTY_FUNCTION__, mhe, size, align));
 
     /* Adjust align to the top nearest power of two */
     align = 1 << MS(align);
 
-    D(nbug("[TLSF] adjusted align = %d\n", align));
+    D(nbug("[Kernel:TLSF] %s: adjusted align = %u\n", __PRETTY_FUNCTION__, align));
 
     ptr = tlsf_malloc(mhe, size+align, flags);
     b = MEM_TO_BHDR(ptr);
 
-    D(nbug("[TLSF] allocated region @%p\n", ptr));
+    D(nbug("[Kernel:TLSF] %s: allocated region @%p\n", __PRETTY_FUNCTION__, ptr));
 
     if (align > SIZE_ALIGN)
     {
@@ -588,9 +588,9 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
 
         if (aligned_ptr != ptr)
         {
-            D(nbug("[TLSF] aligned ptr: %p\n", aligned_ptr));
-            D(nbug("[TLSF] difference begin: %d\n", diff_begin));
-            D(nbug("[TLSF] difference end: %d\n", diff_end));
+            D(nbug("[Kernel:TLSF] %s: aligned ptr: %p\n", __PRETTY_FUNCTION__, aligned_ptr));
+            D(nbug("[Kernel:TLSF] %s: difference begin: %d\n", __PRETTY_FUNCTION__, diff_begin));
+            D(nbug("[Kernel:TLSF] %s: difference end: %d\n", __PRETTY_FUNCTION__, diff_end));
 
             if (diff_begin > 0)
             {
@@ -604,7 +604,7 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
 
                 b = MERGE_PREV(tlsf, b);
 
-                D(nbug("[TLSF] block @%p, b->next %p\n", b, GET_NEXT_BHDR(b, GET_SIZE(b))));
+                D(nbug("[Kernel:TLSF] %s: block @%p, b->next %p\n", __PRETTY_FUNCTION__, b, GET_NEXT_BHDR(b, GET_SIZE(b))));
 
                 /* Insert free block into the proper list */
                 INSERT_FREE_BLOCK(tlsf, b);
@@ -638,8 +638,8 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
         bhdr_t *b2 = b;
         while(b2 && GET_SIZE(b2))
         {
-            nbug("[TLSF] bhdr %p, mem %p, size=%08x, flags=%x, prev=%p\n",
-                    b2, &b2->mem[0], GET_SIZE(b2), GET_FLAGS(b2), b2->header.prev);
+            nbug("[Kernel:TLSF] %s: bhdr %p, mem %p, size=%08x, flags=%x, prev=%p\n",
+                    __PRETTY_FUNCTION__, b2, &b2->mem[0], GET_SIZE(b2), GET_FLAGS(b2), b2->header.prev);
 
             b2 = GET_NEXT_BHDR(b2, GET_SIZE(b2));
         }
@@ -687,8 +687,10 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
     if (area != NULL && area->end == next && area->autogrown == 1)
         tlsf_release_memory_area(mhe, area);
     else
+    {
         /* Insert free block into the proper list */
         INSERT_FREE_BLOCK(tlsf, fb);
+    }
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
@@ -827,7 +829,7 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
     int fl, sl;
     IPTR sz = ROUNDUP(size);
 
-    D(nbug("[TLSF] allocabs(%p, %ld)\n", ptr, size));
+    D(nbug("[Kernel:TLSF] %s(%p, %ld)\n", __PRETTY_FUNCTION__, ptr, size));
 
     region_start = ptr;
     region_end = (UBYTE *)ptr + sz;
@@ -942,7 +944,6 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
 
                     tlsf->free_size -= GET_SIZE(breg);
 
-
                     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
                         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
@@ -1001,15 +1002,16 @@ tlsf_area_t * init_memory_area(void * memory, IPTR size)
 void tlsf_add_memory(struct MemHeaderExt *mhe, void *memory, IPTR size)
 {
     tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
+    BOOL adjusted = FALSE;
 
-    D(nbug("tlsf_add_memory(%p, %p, %d)\n", tlsf, memory, size));
+    D(nbug("[Kernel:TLSF] %s(%p, %p, %u)\n", __PRETTY_FUNCTION__, tlsf, memory, size));
 
     if (memory && size > HEADERS_SIZE)
     {
         tlsf_area_t *area = init_memory_area(memory, size);
         bhdr_t *b;
 
-        D(nbug("  adding memory\n"));
+        D(nbug("[Kernel:TLSF] %s:  adding memory\n", __PRETTY_FUNCTION__));
 
         area->next = tlsf->memory_area;
         tlsf->memory_area = area;
@@ -1022,7 +1024,25 @@ void tlsf_add_memory(struct MemHeaderExt *mhe, void *memory, IPTR size)
 
         tlsf->total_size += size;
 
-        D(nbug("  total_size=%08x\n", tlsf->total_size));
+        D(nbug("[Kernel:TLSF] %s:  total_size=%08x\n", __PRETTY_FUNCTION__, tlsf->total_size));
+
+        /* adjust the memheader if necessary */
+        if (memory < mhe->mhe_MemHeader.mh_Lower)
+        {
+            if ((memory + size) >= mhe->mhe_MemHeader.mh_Lower)
+                mhe->mhe_MemHeader.mh_Free += (mhe->mhe_MemHeader.mh_Lower - memory);
+            else
+                mhe->mhe_MemHeader.mh_Free += size;
+            mhe->mhe_MemHeader.mh_Lower = memory;
+        }
+        else if ((memory + size) > mhe->mhe_MemHeader.mh_Upper)
+        {
+            if (memory <= mhe->mhe_MemHeader.mh_Upper)
+                mhe->mhe_MemHeader.mh_Free += ((memory + size) - mhe->mhe_MemHeader.mh_Upper);
+            else
+                mhe->mhe_MemHeader.mh_Free += size;
+            mhe->mhe_MemHeader.mh_Upper = memory + size;
+        }
 
         /* Add the initialized memory */
         tlsf_freevec(mhe, b->mem);
@@ -1111,7 +1131,7 @@ void tlsf_destroy(struct MemHeaderExt * mhe)
 {
     tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
 
-    D(nbug("tlsf_destroy(%p)\n", tlsf));
+    D(nbug("[Kernel:TLSF] %s(%p)\n", __PRETTY_FUNCTION__, tlsf));
 
     if (tlsf)
     {
@@ -1183,18 +1203,18 @@ BOOL tlsf_in_bounds(struct MemHeaderExt * mhe, void * begin, void * end)
 
     area = tlsf->memory_area;
 
-    D(nbug("tlsf_in_bounds(%p, %p, %p)\n", tlsf, begin, end));
+    D(nbug("[Kernel:TLSF] %s(%p, %p, %p)\n", __PRETTY_FUNCTION__, tlsf, begin, end));
 
     while (area)
     {
-        D(nbug("  area %p\n"));
+        D(nbug("[Kernel:TLSF] %s:  area %p\n", __PRETTY_FUNCTION__));
         /*
          * Do checks only if questioned memory ends before the end (sentinel bhdr)
          * of area
          */
         if ((IPTR)end <= (IPTR)area->end)
         {
-            D(nbug("  end <= area->end (%p <= %p)\n", end, area->end));
+            D(nbug("[Kernel:TLSF] %s  end <= area->end (%p <= %p)\n", __PRETTY_FUNCTION__, end, area->end));
 
             /* Get the bhdr of this area */
             bhdr_t *b = MEM_TO_BHDR(area);
@@ -1205,7 +1225,7 @@ BOOL tlsf_in_bounds(struct MemHeaderExt * mhe, void * begin, void * end)
             /* requested memory starts at begin or after begin of the area */
             if ((IPTR)begin >= (IPTR)b->mem)
             {
-                D(nbug("  begin >= b->mem (%p >= %p)\n", begin, b->mem));
+                D(nbug("[Kernel:TLSF] %s  begin >= b->mem (%p >= %p)\n", __PRETTY_FUNCTION__, begin, b->mem));
                 return TRUE;
             }
         }
@@ -1227,7 +1247,7 @@ static APTR fetch_more_ram(void * data, IPTR *size)
     struct MemHeaderExt *mhe = (struct MemHeaderExt *)data;
     tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
 
-    D(nbug("[TLSF] fetch_more_ram(%p, %d)\n", mhe, *size));
+    D(nbug("[Kernel:TLSF] %s(%p, %u)\n", __PRETTY_FUNCTION__, mhe, *size));
 
     APTR ptr = AllocMem(*size, tlsf->autogrow_requirements);
     return ptr;
@@ -1235,7 +1255,7 @@ static APTR fetch_more_ram(void * data, IPTR *size)
 
 static VOID release_ram(void * data, APTR ptr, IPTR size)
 {
-    D(nbug("[TLSF] release_ram(%p, %d)\n", ptr, size));
+    D(nbug("[Kernel:TLSF] %s(%p, %u)\n", __PRETTY_FUNCTION__, ptr, size));
 
     FreeMem(ptr, size);
 }
@@ -1291,6 +1311,8 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
     mhe->mhe_MemHeader.mh_Lower           = start;
     mhe->mhe_MemHeader.mh_Upper           = start + size;
     mhe->mhe_MemHeader.mh_Free            = size;
+
+    D(nbug("[Kernel:TLSF] %s: 0x%p -> 0x%p\n", __PRETTY_FUNCTION__, mhe->mhe_MemHeader.mh_Lower, mhe->mhe_MemHeader.mh_Upper));
 
     tlsf_init(mhe);
 }
