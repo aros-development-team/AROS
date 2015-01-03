@@ -2,7 +2,7 @@
 #define _STDC_STDDEF_H_
 
 /*
-    Copyright Â© 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: C99 header file stddef.h
@@ -13,6 +13,10 @@
 #include <aros/types/wchar_t.h>
 #include <aros/types/null.h>
 
-#define offsetof(type, field)	    ((size_t)(&((type *)0)->field))
+#ifdef __GNUC__
+#define offsetof(type, member)      __builtin_offsetof(type, member)
+#else
+#define offsetof(type, member)	    ((size_t)(&((type *)0)->member))
+#endif
 
 #endif /* _STDC_STDDEF_H_ */
