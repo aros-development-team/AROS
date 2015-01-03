@@ -469,7 +469,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 			 RAWFMTFUNC_COUNT  - Count number of characters in the result.
 					     PutChData is a pointer to ULONG which
 					     is incremented every character. Initial
-					     value of the cointer is kept as it is.
+					     value of the counter is kept as it is.
 
 		       If you want to be compatible with AmigaOS you
 		       should check that exec.library has at least version 45.
