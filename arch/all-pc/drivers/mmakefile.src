@@ -2,11 +2,11 @@
 include $(TOP)/config/make.cfg
 
 #
-# Rules to create Support drivers for pc-i386
+# Rules to create Support drivers for pc
 # These are not needed as part of the kernel - and so get created seperately
 #
 
-#MM- AROS-pc-i386-drivers : \
+#MM- AROS-pc-drivers : \
 #MM    hidd-vmwaresvga \
 #MM    hidd-radeon \
 #MM    hidd-nouveau \
