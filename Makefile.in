@@ -184,10 +184,10 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 # targets which do not generate files or for which a file/directory exists
 .PHONY: default all makedirs tools crosstools docs clean arch-clean dist-clean install \
 	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts \
-	test kernel boot workbench compiler contrib sdk mmake query
+	test kernel boot workbench compiler contrib ports sdk mmake query
 
 # Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
-install test kernel boot workbench compiler contrib sdk : crosstools
+install test kernel boot workbench compiler contrib ports sdk : crosstools
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 # Bypass crosstools target.
