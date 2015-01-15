@@ -22,7 +22,7 @@ AROS_SLIB_ENTRY(NewStackSwap,Exec,134):
 
     jsr         %a6@(StackSwap)
 
-    tst.l       %a2
+    move.l      %a2,%d1
     beq.b       nopushargs
     move.l      %a2@(7*4),%sp@- // Put the C arguments on the stack
     move.l      %a2@(6*4),%sp@-
@@ -36,7 +36,7 @@ AROS_SLIB_ENTRY(NewStackSwap,Exec,134):
 nopushargs:
     jsr         %a4@            // Call the C function
 
-    tst.l       %a2
+    move.l      %a2,%d1
     beq.b       nopopargs
 
     lea.l       %sp@(8*4),%sp   // Remove the C arguments
