@@ -8848,9 +8848,6 @@ fi
 if test "$kernel_tool_version" != ""; then
     kernel_tool_version="-$kernel_tool_version"
 fi
-if test "$use_gcc_version" != ""; then
-    target_tool_version="-$target_gcc_version"
-fi
 
 #######################################################################
 ## Compute what toolchains to use, and their paths                   ##
