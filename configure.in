@@ -2878,8 +2878,11 @@ AC_CONFIG_FILES(
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
     tools/collect-aros/env.h
-    ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in
 )
+
+if test $aros_target_variant == android; then
+    AC_CONFIG_FILES(${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in)
+fi
 
 AC_OUTPUT
 
