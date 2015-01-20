@@ -42,6 +42,9 @@
  * 	ftp.isi.edu/in-notes/iana/assignments/smi-numbers
  */
 
+
+#define	IFT_SANA        0
+
 #define	IFT_OTHER	0x1		/* none of the following */
 #define	IFT_1822	0x2		/* old-style arpanet imp */
 #define	IFT_HDH1822	0x3		/* HDH arpanet imp */
