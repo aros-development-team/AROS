@@ -112,6 +112,7 @@ PCI_HIDD_TARGET       := @pci_hidd_target@
 OSS_LIBRARY_TARGET    := @oss_library_target@
 CROSSTOOLS_TARGET     := @crosstools_target@
 OBJC_TARGET           := @objc_target@
+JAVA_TARGET           := @java_target@
 
 # Defined as 'yes' if we can build our own toolchain.
 # This is a prerequisite for ObjectiveC and C++ support,
