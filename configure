@@ -622,6 +622,7 @@ ac_includes_default="\
 ac_header_list=
 ac_subst_vars='LTLIBOBJS
 aros_usb30_code
+java_target
 objc_target
 gcc_target_cpu
 ignore_undefined_symbols
@@ -911,6 +912,7 @@ enable_crosstools
 with_aros_toolchain_install
 with_gcc_version
 enable_objc
+enable_java
 with_cpu
 with_fpu
 with_float
@@ -1585,7 +1587,8 @@ Optional Features:
                           Enforce userspace AmigaOS compliance to a specific
                           KickStart version (default=none).
   --disable-crosstools    Do not build cross-compiler toolchain
-  --disable-objc          Build without Objectve-C support
+  --enable-objc           Enable Objectve-C support (default=yes)
+  --enable-java           Enable Java support (default=no)
   --enable-includes=dir   Alternative system include directory
   --enable-palm-debug-hack
                           Enable palm debug output hack in palm native
@@ -8642,8 +8645,8 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5
 $as_echo "$target_gcc_version" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to include Objective-C suppport" >&5
-$as_echo_n "checking whether to include Objective-C suppport... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable Objective-C suppport" >&5
+$as_echo_n "checking whether to enable Objective-C suppport... " >&6; }
 # Check whether --enable-objc was given.
 if test "${enable_objc+set}" = set; then :
   enableval=$enable_objc; objc="$enableval"
@@ -8654,9 +8657,26 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $objc" >&5
 $as_echo "$objc" >&6; }
 if test "x$objc" = "xyes"; then
-    objc_target="objc"
+    objc_target="$objc"
 else
     objc_target="no-objc"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable Java suppport" >&5
+$as_echo_n "checking whether to enable Java suppport... " >&6; }
+# Check whether --enable-java was given.
+if test "${enable_java+set}" = set; then :
+  enableval=$enable_java; java="$enableval"
+else
+  java="no"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $java" >&5
+$as_echo "$java" >&6; }
+if test "x$java" != "xno"; then
+    java_target="$java"
+else
+    java_target="no-java"
 fi
 
 spec_obj_format="-m $aros_object_format"
@@ -14591,6 +14611,9 @@ fi
 
 
 #ObjC compiler related
+
+
+#Java related
 
 
 # USB3.0 code

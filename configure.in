@@ -1568,13 +1568,22 @@ else
 fi
 AC_MSG_RESULT($target_gcc_version)
 
-AC_MSG_CHECKING([whether to include Objective-C suppport])
-AC_ARG_ENABLE(objc,AC_HELP_STRING([--disable-objc],[Build without Objectve-C support]),objc="$enableval",objc="yes")
+AC_MSG_CHECKING([whether to enable Objective-C suppport])
+AC_ARG_ENABLE(objc,AC_HELP_STRING([--enable-objc],[Enable Objectve-C support (default=yes)]),objc="$enableval",objc="yes")
 AC_MSG_RESULT($objc)
 if test "x$objc" = "xyes"; then
-    objc_target="objc"
+    objc_target="$objc"
 else
     objc_target="no-objc"
+fi
+
+AC_MSG_CHECKING([whether to enable Java suppport])
+AC_ARG_ENABLE(java,AC_HELP_STRING([--enable-java],[Enable Java support (default=no)]),java="$enableval",java="no")
+AC_MSG_RESULT($java)
+if test "x$java" != "xno"; then
+    java_target="$java"
+else
+    java_target="no-java"
 fi
 
 spec_obj_format="-m $aros_object_format"
@@ -2757,6 +2766,9 @@ AC_SUBST(target_gcc_version)
 
 #ObjC compiler related
 AC_SUBST(objc_target)
+
+#Java related
+AC_SUBST(java_target)
 
 # USB3.0 code
 AC_SUBST(aros_usb30_code)
