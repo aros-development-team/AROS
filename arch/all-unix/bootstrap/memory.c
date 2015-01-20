@@ -1,8 +1,3 @@
-/*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
-*/
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -13,12 +8,17 @@
 #define MAP_32BIT 0
 #endif
 
-static void *code = NULL;
 static void *data = NULL;
-static void *RAM  = NULL;
-
+static void *code = NULL;
 static size_t code_len = 0;
+
+static void *RAM32  = NULL;
+static size_t RAM32_len  = 0;
+
+#if (__WORDSIZE == 64)
+static void *RAM  = NULL;
 static size_t RAM_len  = 0;
+#endif
 
 /*
  * Allocate memory for kickstart's .code and .rodata. We allocate is as writable
@@ -30,19 +30,28 @@ static size_t RAM_len  = 0;
  * This causes DisplayError() function to crash on iOS. This also may cause similar effects
  * on other systems.
  */
+ 
+ void *doMMap(void **addr_store, size_t *size_store, size_t len, int prot, int flags)
+ {
+    /* There's no sense to set MAP_SHARED for ROM */
+    void *ret = mmap(NULL, len, prot, flags, -1, 0);
+
+    if (ret == MAP_FAILED)
+    	ret = NULL;
+    else
+    {
+        if (addr_store)
+            *addr_store = ret;
+        if (size_store)
+            *size_store = len;
+    }
+    return ret;
+ }
+
 void *AllocateRO(size_t len)
 {
     /* There's no sense to set MAP_SHARED for ROM */
-    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|MAP_32BIT, -1, 0);
-
-    if (ret == MAP_FAILED)
-    	return NULL;
-    else
-    {
-    	code = ret;
-    	code_len = len;
-    	return ret;
-    }
+    return doMMap(&code, &code_len, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|MAP_32BIT);
 }
 
 /*
@@ -66,30 +75,32 @@ void *AllocateRW(size_t len)
 }
 
 /*
- * This routine allocates memory usable as AROS ram. This means it
+ * These routines allocate memory usable as AROS ram. This means it
  * needs to have full permissions.
  * Yes, iOS will silently mask out PROT_EXEC here. This is bad.
  * Well, iOS will be a little bit special story in InternalLoadSeg()...
  */
+void *AllocateRAM32(size_t len)
+{
+    return doMMap(&RAM32, &RAM32_len, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_SHARED|MAP_32BIT);
+}
+
+#if (__WORDSIZE == 64)
 void *AllocateRAM(size_t len)
 {
-    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_SHARED|MAP_32BIT, -1, 0);
-
-    if (ret == MAP_FAILED)
-    	return NULL;
-    else
-    {
-    	RAM = ret;
-    	RAM_len = len;
-    	return ret;
-    }
+    return doMMap(&RAM, &RAM_len, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_SHARED);
 }
+#endif
 
 void Host_FreeMem(void)
 {
     munmap(code, code_len);
     free(data);
-    munmap(RAM, RAM_len);
+#if (__WORDSIZE == 64)
+    if (RAM)
+        munmap(RAM, RAM_len);
+#endif
+    munmap(RAM32, RAM32_len);
 
     free(SystemVersion);    
     if (KernelArgs)

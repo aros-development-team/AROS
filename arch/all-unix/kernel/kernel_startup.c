@@ -63,9 +63,15 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     char *cmdline = NULL;
     unsigned int mm_PageSize, memsize;
     struct MemHeader *bootmh = NULL, *chipmh = NULL, *fastmh = NULL;
+#if (__WORDSIZE == 64)
+    struct MemHeader *highmh = NULL;
+#endif
     struct TagItem *tag, *tstate = msg;
     struct HostInterface *hif = NULL;
     struct mb_mmap *mmap = NULL;
+    unsigned long mmap_len = 0;
+    BOOL mem_tlsf = FALSE;
+
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
     /* This bails out if the user started us from within AROS command line, as common executable */
@@ -86,6 +92,13 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
             case KRN_MMAPAddress:
                 mmap = (struct mb_mmap *)tag->ti_Data;
+                /* we have atleast 1 mmap */
+                if (!mmap_len)
+                    mmap_len = sizeof(struct mb_mmap);
+                break;
+
+            case KRN_MMAPLength:
+                mmap_len = tag->ti_Data;
                 break;
 
             case KRN_KernelBss:
@@ -148,6 +161,12 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     /* Now query memory page size. We need in order to get our memory manager functional. */
     mm_PageSize = krnGetPageSize(hostlib);
     D(nbug("[KRN] Memory page size is %u\n", mm_PageSize));
+    if (!(cmdline && strstr(cmdline, "notlsf")))
+    {
+        /* this should probably be handled directly in krnCreateMemHeader */
+        mem_tlsf = TRUE;
+        D(nbug("[KRN] Using TLSF Memory Manager\n"));
+    }
 
     if (!mm_PageSize)
     {
@@ -164,7 +183,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     /* Prepare the simulated mem headers */
     /* NOTE: two mem headers are created to cover more cases of memory system */
     krnCreateMemHeader("CHIP RAM", -5, chipmh, memsize, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
-    if (!(cmdline && strstr(cmdline, "notlsf")))
+    if (mem_tlsf)
         chipmh = krnConvertMemHeaderToTLSF(chipmh);
     bootmh = chipmh;
 
@@ -173,11 +192,25 @@ int __startup startup(struct TagItem *msg, ULONG magic)
         fastmh = (struct MemHeader *)(mmap->addr + memsize);
         memsize = mmap->len - memsize;
         krnCreateMemHeader("Fast RAM", 0, fastmh , memsize, MEMF_FAST|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
-        if (!(cmdline && strstr(cmdline, "notlsf")))
+        if (mem_tlsf)
             fastmh = krnConvertMemHeaderToTLSF(fastmh);
         if (memsize > (1024 * 1024))
             bootmh = fastmh;
     }
+
+#if (__WORDSIZE == 64)
+    /* on 64bit platforms, we may be passed an additional mmap */
+    if (mmap_len > sizeof(struct mb_mmap))
+    {
+        struct mb_mmap *mmapnxt = &mmap[1];
+
+        highmh = mmapnxt->addr;
+
+        krnCreateMemHeader("Fast RAM", 0, highmh, mmapnxt->len, MEMF_FAST|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
+        if (mem_tlsf)
+            highmh = krnConvertMemHeaderToTLSF(highmh);
+    }
+#endif
 
     /*
      * SysBase pre-validation after a warm restart.
@@ -203,6 +236,11 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     if (bootmh != fastmh && fastmh)
         Enqueue(&SysBase->MemList, &fastmh->mh_Node);
+
+#if (__WORDSIZE == 64)
+    if (bootmh != highmh && highmh)
+        Enqueue(&SysBase->MemList, &highmh->mh_Node);
+#endif
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
