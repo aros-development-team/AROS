@@ -14669,8 +14669,13 @@ ac_config_commands="$ac_config_commands compiler_executable"
 ac_config_commands="$ac_config_commands genmf_executable"
 
 
-ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_targetcfg_dir}/elf-specs:${elf_specs_in} ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in"
+ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_targetcfg_dir}/elf-specs:${elf_specs_in} ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h"
 
+
+if test $aros_target_variant == android; then
+    ac_config_files="$ac_config_files ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in"
+
+fi
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
