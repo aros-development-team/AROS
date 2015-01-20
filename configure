@@ -14669,7 +14669,13 @@ ac_config_commands="$ac_config_commands compiler_executable"
 ac_config_commands="$ac_config_commands genmf_executable"
 
 
-ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_targetcfg_dir}/elf-specs:${elf_specs_in} ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h"
+ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h"
+
+
+ac_config_files="$ac_config_files ${aros_targetcfg_dir}/elf-specs:${elf_specs_in} ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in"
+
+
+ac_config_files="$ac_config_files ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in"
 
 
 if test $aros_target_variant == android; then
@@ -15403,15 +15409,15 @@ do
     "${aros_targetcfg_dir}/target.cfg") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in" ;;
     "mmake.config") CONFIG_FILES="$CONFIG_FILES mmake.config" ;;
     "${aros_targetcfg_dir}/make.defaults") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in" ;;
-    "${aros_targetcfg_dir}/specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs:config/specs.in" ;;
+    "${aros_tools_dir}/genmf.py") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
+    "tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES tools/collect-aros/env.h" ;;
     "${aros_targetcfg_dir}/elf-specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/elf-specs:${elf_specs_in}" ;;
+    "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in" ;;
+    "${aros_targetcfg_dir}/specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs:config/specs.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in" ;;
-    "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in" ;;
-    "${aros_tools_dir}/genmf.py") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
-    "tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES tools/collect-aros/env.h" ;;
     "${aros_gendir}/arch/all-android/bootstrap/app/default.properties") CONFIG_FILES="$CONFIG_FILES ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -15969,8 +15975,6 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
         prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
         prefix3=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf
 
-        echo ${prefix2}
-        echo ${prefix3}
         chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-ld ${prefix2}-cpp ${prefix3}-gcc
 
         ln -sf $orig_target_as$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
