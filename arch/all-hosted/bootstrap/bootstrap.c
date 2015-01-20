@@ -5,6 +5,7 @@
 
 #include <ctype.h>
 #include <dirent.h>
+#include <errno.h>
 #include <limits.h>
 #include <locale.h>
 #include <stdarg.h>
@@ -46,12 +47,16 @@
 
 #define D(x)
 
+#define LOWMEMSIZE    (512 * 1024 * 1024)
+
 /* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
 #undef __pure
 #undef __const
 #undef __pure2
 #undef __deprecated
 
+extern int errno;
+ 
 extern void *HostIFace;
 
 /* 
@@ -65,16 +70,30 @@ char *KernelArgs = NULL;
 char *SystemVersion = NULL;
 char buf[BUFFER_SIZE];
 
-static struct mb_mmap MemoryMap =
-{
-    sizeof(struct mb_mmap) - 4,
-    0,
-    0,
 #if (__WORDSIZE != 64)
-    0,
-    0,
+static struct mb_mmap MemoryMap[1] =
+#else
+static struct mb_mmap MemoryMap[2] =
 #endif
-    MMAP_TYPE_RAM
+{
+    {
+        sizeof(struct mb_mmap) - 4,
+        0,
+        0,
+#if (__WORDSIZE != 64)
+        0,
+        0,
+#endif
+        MMAP_TYPE_RAM
+    }
+#if (__WORDSIZE == 64)
+    , {
+        sizeof(struct mb_mmap) - 4,
+        0,
+        0,
+        MMAP_TYPE_RAM
+    }
+#endif
 };
 
 /* gdb can pick up kickstart segments from here */
@@ -92,7 +111,7 @@ static struct TagItem km[] =
     {KRN_DebugInfo    , 0                },
     {KRN_HostInterface, 0                },
     {KRN_MMAPAddress  , 0                },
-    {KRN_MMAPLength   , sizeof(MemoryMap)},
+    {KRN_MMAPLength   , sizeof(struct mb_mmap)},
     {KRN_CmdLine      , 0                },
     {TAG_DONE         , 0                }
 };
@@ -285,6 +304,36 @@ int bootstrap(int argc, char ** argv)
     }
     fclose(file);
 
+    D(fprintf(stderr, "[Bootstrap] Allocating %iMB of RAM for AROS\n",memSize));
+
+#if (__WORDSIZE == 64)
+    if ((memSize << 20) > LOWMEMSIZE)
+    {
+        MemoryMap[1].len = (memSize << 20) - LOWMEMSIZE;
+        MemoryMap[1].addr = (IPTR)AllocateRAM((size_t)MemoryMap[1].len);
+        if (!MemoryMap[1].addr) {
+            int err = errno;
+            DisplayError("[Bootstrap] Failed to allocate %iMB of 'High' RAM for AROS: %08x %s\n", memSize, err, strerror(err));
+            return -1;
+        }
+        fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (%u bytes)\n",
+              (void *)(IPTR)MemoryMap[1].addr, (void *)(IPTR)MemoryMap[1].addr + MemoryMap[1].len, MemoryMap[1].len);
+
+        memSize = (LOWMEMSIZE >> 20);
+        km[7].ti_Data += sizeof(struct mb_mmap);
+    }
+#endif
+    MemoryMap[0].len = memSize << 20;
+    MemoryMap[0].addr = (IPTR)AllocateRAM32((size_t)MemoryMap[0].len);
+
+    if (!MemoryMap[0].addr) {
+        int err = errno;
+        DisplayError("[Bootstrap] Failed to allocate %iMB of RAM for AROS: %08x %s\n", memSize, err, strerror(err));
+        return -1;
+    }
+    fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (%u bytes)\n",
+              (void *)(IPTR)MemoryMap[0].addr, (void *)(IPTR)MemoryMap[0].addr + MemoryMap[0].len, MemoryMap[0].len);
+
     if (!GetKernelSize(FirstELF, &ro_size, &rw_size, &bss_size))
         return -1;
 
@@ -327,17 +376,6 @@ int bootstrap(int argc, char ** argv)
         return -1;
     }
 
-    D(fprintf(stderr, "[Bootstrap] Allocating %iMB of RAM for AROS\n",memSize));
-
-    MemoryMap.len = memSize << 20;
-    MemoryMap.addr = (IPTR)AllocateRAM(MemoryMap.len);
-
-    if (!MemoryMap.addr) {
-        DisplayError("[Bootstrap] Failed to allocate %iMB of RAM for AROS!\n", memSize);
-        return -1;
-    }
-    D(fprintf(stderr, "[Bootstrap] RAM memory allocated: %p - %p (%u bytes)\n",
-              (void *)(IPTR)MemoryMap.addr, (void *)(IPTR)MemoryMap.addr + MemoryMap.len, MemoryMap.len));
 
     km[0].ti_Data = (IPTR)ro_addr;
     km[1].ti_Data = (IPTR)ro_addr + ro_size - 1;

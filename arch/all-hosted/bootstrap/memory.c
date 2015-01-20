@@ -35,6 +35,14 @@ void *AllocateRW(size_t len)
 /*
  * Allocate read-write-execute area to be used as AROS RAM
  */
+void *AllocateRAM32(size_t len)
+{
+    return malloc(len);
+}
+
+/*
+ * Allocate read-write-execute area to be used as AROS RAM
+ */
 void *AllocateRAM(size_t len)
 {
     return malloc(len);
