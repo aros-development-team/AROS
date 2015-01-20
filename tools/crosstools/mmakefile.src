@@ -20,23 +20,33 @@ ICU_EXTRA_OPTS= \
         --with-data-packaging=static
 
 GCC_VERSION     = $(TARGET_GCC_VER)
-GCC_LANGUAGES = c,c++,objc
+
+GCC_LANGUAGES:=c,c++
+ifneq (no-objc,$OBJC_TARGET)
+GCC_LANGUAGES:=$(GCC_LANGUAGES),objc
+endif
+ifneq (no-java,$JAVA_TARGET)
+GCC_LANGUAGES:=$(GCC_LANGUAGES),java
+endif
+
+GCC_EXTRA_OPTS = --target=$(AROS_TARGET_CPU)-aros
 
 # ARM requires additional flags to determine CPU type and FP model
 ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
-GCC_EXTRA_OPTS = \
-  --with-arch=$(GCC_DEFAULT_CPU) --with-float=$(GCC_DEFAULT_FLOAT_ABI) --with-fpu=$(GCC_DEFAULT_FPU) --with-mode=arm \
-  --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
-  --enable-long-long --enable-version-specific-runtime-libs
-else
-GCC_EXTRA_OPTS = \
-  --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
-  --enable-long-long --enable-version-specific-runtime-libs
+GCC_EXTRA_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
+GCC_EXTRA_OPTS += --with-float=$(GCC_DEFAULT_FLOAT_ABI)
+GCC_EXTRA_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
+GCC_EXTRA_OPTS += --with-mode=arm
 endif
 
+GCC_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
+GCC_EXTRA_OPTS += --enable-languages=$(strip $(GCC_LANGUAGES))
+GCC_EXTRA_OPTS += --enable-long-long
+GCC_EXTRA_OPTS += --enable-version-specific-runtime-libs
 GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
 GCC_EXTRA_OPTS += --disable-bootstrap 
-GCC_EXTRA_OPTS += --enable-sjlj-exceptions=no --enable-tls=no
+GCC_EXTRA_OPTS += --disable-sjlj-exceptions
+GCC_EXTRA_OPTS += --disable-tls
 GCC_EXTRA_OPTS += --with-dwarf2
 GCC_EXTRA_OPTS += --enable-frame-pointer
 GCC_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
