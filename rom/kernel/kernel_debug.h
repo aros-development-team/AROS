@@ -11,6 +11,9 @@
  * need bug() in your code.
  */
 
+#ifndef __KERNEL_DEBUG_H_
+#define __KERNEL_DEBUG_H_
+
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
 #include <stdarg.h>
@@ -42,3 +45,4 @@ static inline void _bug(APTR kernelBase, const char *format, ...)
 
 #define bug(...) _bug(KernelBase, __VA_ARGS__)
 #define nbug(...) _bug(NULL, __VA_ARGS__)
+#endif
