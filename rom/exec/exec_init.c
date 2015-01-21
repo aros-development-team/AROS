@@ -146,8 +146,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     tsfs = AllocMem(sizeof(struct TaskStorageFreeSlot), MEMF_PUBLIC|MEMF_CLEAR);
     if (!tsfs)
     {
-        DINIT("ERROR: Could not allocate free slot node!");
-        return NULL;
+        DINIT("FATAL: Failed to allocate a task storage slot!");
+        goto execfatal;
     }
     tsfs->FreeSlot = __TS_FIRSTSLOT+1;
     AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
@@ -155,12 +155,18 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     /* Now we are ready to become a Boot Task and turn on the multitasking */
     t   = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
     ml  = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-    ctx = KrnCreateContext();
 
-    if (!t || !ml || !ctx)
+    if (!t || !ml)
     {
-        DINIT("Not enough memory for first task");
-        return NULL;
+        DINIT("FATAL: Failed to allocate any memory for first task!");
+        goto execfatal;
+    }
+
+    ctx = KrnCreateContext();
+    if (!ctx)
+    {
+        DINIT("FATAL: Failed to create the first task context!");
+        goto execfatal;
     }
 
     NEWLIST(&t->tc_MemEntry);
@@ -192,8 +198,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     /* Create a ETask structure and attach CPU context */
     if (!InitETask(t))
     {
-        DINIT("Not enough memory for first task");
-        return NULL;
+        DINIT("FATAL: Failed to allocate any memory for first tasks extended data!");
+        goto execfatal;
     }
     t->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
 
@@ -219,8 +225,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
             is = AllocMem(sizeof(struct Interrupt) + sizeof(struct SoftIntList), MEMF_CLEAR|MEMF_PUBLIC);
             if (is == NULL)
             {
-                DINIT("ERROR: Cannot install Interrupt Servers!");
-                Alert( AT_DeadEnd | AN_IntrMem );
+                DINIT("FATAL: Cannot install Interrupt Servers!");
+                Alert( AT_DeadEnd | AN_IntrMem | AN_ExecLib );
             }
 
             sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
@@ -241,7 +247,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
             if (NULL == is)
             {
                 DINIT("Error: Cannot install SoftInt Handler!\n");
-                Alert( AT_DeadEnd | AN_IntrMem );
+                Alert( AT_DeadEnd | AN_IntrMem | AN_ExecLib );
             }
 
             is->is_Node.ln_Type = NT_INTERRUPT;
@@ -268,8 +274,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
                       TAG_DONE);
     if (!t)
     {
-        DINIT("Failed to start up service task");
-        return NULL;
+        DINIT("FATAL: Failed to start up service task");
+        goto execfatal;
     }
 
     /* Create task for handling supervisor level errors */
@@ -293,6 +299,12 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 
     /* Done. Following the convention, we return our base pointer. */
     return SysBase;
+
+execfatal:
+
+    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+
+    return NULL;
 
     AROS_USERFUNC_EXIT
 }
