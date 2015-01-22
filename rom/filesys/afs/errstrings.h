@@ -21,7 +21,7 @@ const struct showReqStruct
 {
         const char* text;
         enum showReqType type;
-} const texts[] =
+} texts[] =
         {
                 {NULL, Req_Cancel },
                 {"No ioport", Req_Cancel },

@@ -189,7 +189,7 @@ ULONG error,i,block;
 	if (headerblock == NULL)
 		return ERROR_UNKNOWN;
 	/* is it a file? */
-	if (OS_BE2LONG(headerblock->buffer[BLK_SECONDARY_TYPE(ah->volume)]) < 0)
+	if ((signed)(OS_BE2LONG(headerblock->buffer[BLK_SECONDARY_TYPE(ah->volume)])) < 0)
 	{
 		error = examineEAD(afsbase, ah->volume, ead, headerblock, size, mode);
 		if (error == 0)
