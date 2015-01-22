@@ -40,7 +40,7 @@ void *AllocateRW(size_t len)
     return VirtualAlloc(NULL, len, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
 }
 
-void *AllocateRAM(size_t len)
+void *AllocateRAM32(size_t len)
 {
     SECURITY_ATTRIBUTES sa;
     void *addr = NULL;
