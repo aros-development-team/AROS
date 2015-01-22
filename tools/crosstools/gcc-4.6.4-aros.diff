@@ -273,7 +273,7 @@ diff -urN gcc-4.6.4/gcc/config/aros.h gcc-4.6.4.new/gcc/config/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "%{detach:detach.o%s} startup.o%s %{nix:nixmain.o%s}"
++  "startup.o%s %{detach:detach.o%s} %{nix:nixmain.o%s}"
 +
 +/* Provide a ENDFILE_SPEC appropriate for AROS. */
 +
@@ -294,7 +294,7 @@ diff -urN gcc-4.6.4/gcc/config/aros.h gcc-4.6.4.new/gcc/config/aros.h
 +}; \
 +
 +#undef CPP_SPEC
-+#define CPP_SPEC "%{!nostdinc:%{!nostdc:%{!noposixc:-isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc}}"
++#define CPP_SPEC "%(cc1_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc:-isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc} -isystem %R/include}"
 +
 +/* This is for -profile to use -lc_p instead of -lc.  */
 +#ifndef CC1_SPEC
