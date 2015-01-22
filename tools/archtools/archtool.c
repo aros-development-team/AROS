@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -643,7 +643,7 @@ void emit(FILE *out, struct libconf *lc, char **names, int number)
 int i;
 
   fprintf( out, "/*\n" );
-  fprintf( out, "    Copyright © 1995-1998, The AROS Development Team. All rights reserved.\n" );
+  fprintf( out, "    Copyright %c 1995-2015, The AROS Development Team. All rights reserved.\n", 0xa9 );
   fprintf( out, "    *** Automatic generated file. Do not edit ***\n" );
   fprintf( out, "    Desc: Function table for %s\n", lc->basename );
   fprintf( out, "    Lang: english\n" );
