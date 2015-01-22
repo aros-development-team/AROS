@@ -324,7 +324,7 @@ void Usage(void)
     printf("The given FILE (default: PROJECT_rev.h) will be searched for\n");
     printf("version and revision definitions and bumped to the next\n");
     printf("revision number.\n\n");
-    printf("%s © 1994  by  Jochen Wiedmann\n\n", VSTRING);
+    printf("%s %c 1994  by  Jochen Wiedmann\n\n", VSTRING, 0xa9);
     printf("This program is in the public domain, use it as you want, but\n");
     printf("WITHOUT ANY WARRANTY.\n");
     exit(5);

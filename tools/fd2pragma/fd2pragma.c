@@ -4197,9 +4197,17 @@ static void DoError(uint32 errnum, uint32 line, ...)
     Flags |= FLAG_DIDERROR;
 
   va_start(a, line);
-  printf((line ? "%s %ld in line %ld%s: " : "%s %ld : "),
-  (Errors[err].Type ? "Warning" : "Error"), err, line,
-  errnum & ERROFFSET_CLIB ? " of clib file" : "");
+  if (line)
+  {
+    printf("%s %ld in line %ld%s: ",
+    (Errors[err].Type ? "Warning" : "Error"),
+    err, line,
+    errnum & ERROFFSET_CLIB ? " of clib file" : "");
+  }
+  else
+  {
+    printf("%s %ld : ", (Errors[err].Type ? "Warning" : "Error"), err);
+  }
   vprintf(Errors[err].Error, a);
   printf("\n");
   if(line && Errors[err].Skip)
@@ -7843,7 +7851,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[1].st_other */
   EndPutM16Inc(data2, SHN_ABS);                                 /* esym[1].st_shndx */
 
-  sprintf((strptr)data+i, "%s.o", name); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "%s.o", name); while(data[i]) { i++;} ; /* get next store space */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_size */
@@ -7858,7 +7866,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[3].st_other */
   EndPutM16Inc(data2, 1);                                       /* esym[3].st_shndx - the second entry is program section! */
 
-  sprintf((strptr)data+i, "%s", name); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "%s", name); while(data[i]) { i++;} ; /* get next store space */
   EndPutM32Inc(data2, i);                                       /* esym[4].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[4].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[4].st_size */
@@ -7866,7 +7874,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[4].st_other */
   EndPutM16Inc(data2, 0);                                       /* esym[4].st_shndx */
 
-  sprintf((strptr)data+i, "PPCCallOS"); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "PPCCallOS"); while(data[i]) { i++;} ; /* get next store space */
   if(BaseName)
   {
     EndPutM32Inc(data2, i);                                     /* esym[5].st_name */
@@ -7876,7 +7884,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
     *(data2++) = 0;                                             /* esym[5].st_other */
     EndPutM16/*Inc*/(data2, 0);                                 /* esym[5].st_shndx */
 
-    sprintf((strptr)data+i, "%s", BaseName); while(data[i++]) ; /* get next store space */
+    sprintf((strptr)data+i, "%s", BaseName); while(data[i]) { i++;} ; /* get next store space */
   }
   EndPutM32(data3+(3*40)+(5*4), i);                             /* esh[5].sh_size */
   while(i&3) /* long aligned */
@@ -8566,7 +8574,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[1].st_other */
   EndPutM16Inc(data2, SHN_ABS);                                 /* esym[1].st_shndx */
 
-  sprintf((strptr)data+i, "%s.o", name); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "%s.o", name); while(data[i]) { i++;} ; /* get next store space */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_size */
@@ -8581,7 +8589,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[3].st_other */
   EndPutM16Inc(data2, 1);                                       /* esym[3].st_shndx - the second entry is program section! */
 
-  sprintf((strptr)data+i, "%s", name); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "%s", name); while(data[i]) { i++;} ; /* get next store space */
   if(BaseName)
   {
     EndPutM32Inc(data2, i);                                     /* esym[4].st_name */
@@ -8591,7 +8599,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
     *(data2++) = 0;                                             /* esym[4].st_other */
     EndPutM16/*Inc*/(data2, 0);                                 /* esym[4].st_shndx */
 
-    sprintf((strptr)data+i, "%s", BaseName); while(data[i++]) ; /* get next store space */
+    sprintf((strptr)data+i, "%s", BaseName); while(data[i]) { i++;} ; /* get next store space */
   }
   EndPutM32(data3+(3*40)+(5*4), i);                             /* esh[5].sh_size */
   while(i&3) /* long aligned */
@@ -10217,7 +10225,10 @@ static uint32 OutClibType(struct CPP_NameType *nt, strptr txt)
       DoOutput(" ("/*)*/);
       for(i = 0; i < nt->FuncPointerDepth; ++i)
         DoOutput("*");
-      DoOutput(/*((*/txt ? "%s)" : ")", txt);
+      if (txt)
+        DoOutput("%s)", txt);
+      else
+        DoOutput(")");
       if(nt->FuncArgs)
         return DoOutputDirect(nt->FuncArgs, nt->ArgsLength);
       else
@@ -10252,7 +10263,10 @@ static uint32 MakeClibType(strptr dest, struct CPP_NameType *nt, strptr txt)
   {
     if(nt->Flags & CPP_FLAG_FUNCTION)
     {
-      a += sprintf(a, (txt ? " (*%s)" : " (*)"), txt);
+      if (txt)
+        a += sprintf(a, " (*%s)", txt);
+      else
+        a += sprintf(a, " (*)");
       if(nt->FuncArgs)
       {
         memcpy(a, nt->FuncArgs, nt->ArgsLength);
@@ -11325,7 +11339,7 @@ static uint32 CreateClib(uint32 callmode)
     }
     DoOutput("**\n**\tC prototypes. For use with 32 bit integers only.\n**\n**\t");
     if(!Copyright || (Copyright && strncmp("Copyright ", Copyright, 10)))
-      DoOutput("Copyright © %d ", tim->tm_year+1900);
+      DoOutput("Copyright %c %d ", 0xa9, tim->tm_year+1900);
     DoOutput("%s\n", Copyright ? Copyright : Flags2 & FLAG2_SYSTEMRELEASE ?
     "Amiga, Inc." : "");
     DoOutput("**\tAll Rights Reserved\n*/\n\n");
@@ -11615,6 +11629,7 @@ static uint32 CreateGenAuto(strptr to, uint32 type)
 static uint32 CreateXML(void)
 {
   struct Include *inc;
+  char *basetypelib;
 
   LastBias = 30;
   DoOutput(
@@ -11622,8 +11637,9 @@ static uint32 CreateXML(void)
   "<!DOCTYPE library SYSTEM \"library.dtd\">\n"
   "<library name=\"%s\" basename=\"%s\" openname=\"%s\"",
   ShortBaseName, BaseName, GetLibraryName());
-  if(GetBaseTypeLib() != "Library")
-    DoOutput(" basetype=\"%s\"", GetBaseTypeLib());
+  basetypelib = GetBaseTypeLib();
+  if(basetypelib && (strcmp(basetypelib, "Library") != 0))
+    DoOutput(" basetype=\"%s\"", basetypelib);
   DoOutput(">\n");
   for(inc = (struct Include *) Includes.First; inc;
   inc = (struct Include *) inc->List.Next)

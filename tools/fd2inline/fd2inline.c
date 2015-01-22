@@ -39,7 +39,9 @@
  * if you use this code, please leave a little origin note.
  ******************************************************************************/
 
+#if defined(__AROS__)
 const static char version_str[]="$VER: fd2inline " VERSION " (24.2.2002)";
+#endif
 
 /******************************************************************************
  * These are general definitions including types for defining registers etc.
