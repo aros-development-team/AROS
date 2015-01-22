@@ -28,7 +28,7 @@ Boston, MA 02111-1307, USA.  */
 #include "compiler.h"
 
 /* Types */
-struct Node __mayalias;
+struct __mayalias Node;
 struct Node
 {
     struct Node * next,
@@ -44,7 +44,7 @@ struct List
 		* prelast;
 };
 #else
-struct List __mayalias;
+struct __mayalias List;
 struct List
 {
     union
