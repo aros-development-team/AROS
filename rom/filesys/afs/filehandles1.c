@@ -1073,7 +1073,7 @@ struct BlockCache *blockbuffer;
 	}
 	else
 		return -1;
-	if (newoffset >= 0)
+	if ((signed)newoffset >= 0)
 	{
 		blocksize = BLOCK_SIZE(ah->volume);
 		if (ah->volume->dosflags == 0)
