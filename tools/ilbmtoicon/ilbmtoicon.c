@@ -812,7 +812,9 @@ static void loadpng(struct ILBMImage *img, struct Palette *pal)
     img->bmh.bmh_PageWidth   = 320;
     img->bmh.bmh_PageHeight  = 200;
 
+#if (0)
     img->planarbmh;
+#endif
     img->bpr = ((img->bmh.bmh_Width + 15) & ~15) / 8;
     img->totdepth = 0;
 
