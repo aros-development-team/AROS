@@ -132,6 +132,9 @@ AROS_REQUIRED(aclocal/aclocal19/aclocal-1.9, $aros_host_aclocal)
 AROS_REQUIRED(automake/automake19/automake-1.9, $aros_host_automake)
 
 case "$aros_host_cc" in
+    *clang*)
+        aros_host_cc_pipe=""
+        ;;
     *gcc*)
         aros_host_cc_pipe="-pipe"
         ;;

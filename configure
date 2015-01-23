@@ -4667,6 +4667,9 @@ if test "$aros_host_automake" = ""; then
 fi
 
 case "$aros_host_cc" in
+    *clang*)
+        aros_host_cc_pipe=""
+        ;;
     *gcc*)
         aros_host_cc_pipe="-pipe"
         ;;
