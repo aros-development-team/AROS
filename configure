@@ -7725,19 +7725,13 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_sdk_version" >&5
 $as_echo "$aros_sdk_version" >&6; }
 
-    if test "$aros_android_ndk" != "none"; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking what Android NDK version to use" >&5
-$as_echo_n "checking what Android NDK version to use... " >&6; }
-
-# Check whether --with-ndk-version was given.
-if test "${with_ndk_version+set}" = set; then :
-  withval=$with_ndk_version; aros_ndk_version="$withval"
-else
-  aros_ndk_version="9"
-fi
-
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_ndk_version" >&5
-$as_echo "$aros_ndk_version" >&6; }
+    aros_android_level=android-$aros_sdk_version
+    if test ! -d $aros_android_sdk/platforms/$aros_android_level; then
+        echo "Platform $aros_android_level is not installed in your SDK"
+        echo "Use --with-sdk-version=<API level number> to select another platform version"
+        echo "You can check what plaform versions are installed in your SDK"
+        echo "by examining contents of $aros_android_sdk/platforms directory"
+        as_fn_error $? "Android platform $aros_android_level is not installed" "$LINENO" 5
     fi
 
     export PATH="$aros_android_sdk/tools:$PATH"
@@ -7785,13 +7779,19 @@ fi
     as_fn_error $? "android is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
-    aros_android_level=android-$aros_sdk_version
-    if test ! -d $aros_android_sdk/platforms/$aros_android_level; then
-        echo "Platform $aros_android_level is not installed in your SDK"
-        echo "Use --with-sdk-version=<API level number> to select another platform version"
-        echo "You can check what plaform versions are installed in your SDK"
-        echo "by examining contents of $aros_android_sdk/platforms directory"
-        as_fn_error $? "Android platform $aros_android_level is not installed" "$LINENO" 5
+    if test "$aros_android_ndk" != "none"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking what Android NDK version to use" >&5
+$as_echo_n "checking what Android NDK version to use... " >&6; }
+
+# Check whether --with-ndk-version was given.
+if test "${with_ndk_version+set}" = set; then :
+  withval=$with_ndk_version; aros_ndk_version="$withval"
+else
+  aros_ndk_version="9"
+fi
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_ndk_version" >&5
+$as_echo "$aros_ndk_version" >&6; }
     fi
 
     # Extract the first word of "ant", so it can be a program name with args.
@@ -7858,6 +7858,8 @@ $as_echo "$aros_android_antapk" >&6; }
         if test "$host_os" = "mingw32"; then
         android_tool="cmd //c $android_tool"
     fi
+
+    need_dlopen="no"
 
     ;;
 esac
@@ -12984,7 +12986,6 @@ fi
 aros_kernel_cc="$aros_kernel_cc $kernel_tool_flags"
 aros_kernel_ar="$aros_kernel_ar $aros_kernel_ar_flags"
 
-
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
 aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include/aros"
@@ -13011,8 +13012,6 @@ else
     fi
 fi
 
-prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
-
 aros_target_nostdinc_cflags=-nostdinc
 
 aros_target_nostartup_ldflags=-nostartfiles
@@ -13026,6 +13025,7 @@ aros_target_nostdlib_ldflags=-nostdlib
 
 # Target tools
 if test "$crosstools" != "yes"; then
+    prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
     if test "$GCC" = "yes"; then
         aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
     fi
@@ -13033,13 +13033,14 @@ else
     # We do not know which gcc version we are going to build and what we need to know
     # here is different for different versions so this will be set later during the
     # build of crosstools.
+    prefix="$AROS_CROSSTOOLSDIR/${aros_target_cpu}-aros-"
     aros_target_cc_path=@aros_target_cc_path@
 fi
 aros_target_cpp="${prefix}cpp"
 aros_target_cc="${prefix}gcc"
 aros_target_cxx="${prefix}g++"
 aros_target_as="${prefix}as"
-aros_target_ld="${prefix}ld"
+aros_target_ld="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld"
 aros_target_ar="${prefix}ar $aros_target_ar_flags"
 aros_target_objcopy="${prefix}objcopy"
 aros_target_objdump="${prefix}objdump"
@@ -14664,21 +14665,38 @@ fi
 ac_config_headers="$ac_config_headers ${aros_geninc_dir}/host-conf.h:config/host-conf.h.in"
 
 
-ac_config_commands="$ac_config_commands compiler_executable"
-
-ac_config_commands="$ac_config_commands genmf_executable"
-
+# Generic build tools (metamake, etc)
+ac_config_commands="$ac_config_commands genmf-executable-support"
 
 ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h"
 
 
-ac_config_files="$ac_config_files ${aros_targetcfg_dir}/elf-specs:${elf_specs_in} ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in"
+# Binutils
+ac_config_commands="$ac_config_commands binutils-support"
+
+ac_config_files="$ac_config_files ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in"
 
 
-ac_config_files="$ac_config_files ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in"
+# Bare Elf support script and spec
+if test "${use_kernel_cc_wrapper}" = "yes"; then
+    ac_config_commands="$ac_config_commands elf-compiler-support"
 
+    ac_config_files="$ac_config_files ${aros_targetcfg_dir}/elf-specs:${elf_specs_in} ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in"
 
-if test $aros_target_variant == android; then
+fi
+
+# Host compiler support scripts and spec
+if test "${crosstools}" = "no"; then
+    if test "${crosstools_guess}" = "no"; then
+        ac_config_commands="$ac_config_commands host-compiler-wrapper-support"
+
+        ac_config_files="$ac_config_files ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in"
+
+    fi
+fi
+
+# Android support
+if test "$aros_target_variant" == "android"; then
     ac_config_files="$ac_config_files ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in"
 
 fi
@@ -15371,6 +15389,8 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 #
 # INIT-COMMANDS
 #
+aros_tools_dir=${aros_tools_dir}
+
 
         aros_host_exe_suffix=${aros_host_exe_suffix}
         aros_tools_dir=${aros_tools_dir}
@@ -15387,7 +15407,22 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
         aros_kernel_ld=${aros_kernel_ld}
 
 
-aros_tools_dir=${aros_tools_dir}
+
+            aros_host_exe_suffix=${aros_host_exe_suffix}
+            aros_tools_dir=${aros_tools_dir}
+            aros_target_cpu=${aros_target_cpu}
+            aros_target_arch=${aros_target_arch}
+            aros_target_suffix=${aros_target_suffix}
+            aros_kernel_ld=${aros_kernel_ld}
+
+
+
+                aros_host_exe_suffix=${aros_host_exe_suffix}
+                aros_tools_dir=${aros_tools_dir}
+                aros_target_cpu=${aros_target_cpu}
+                aros_target_arch=${aros_target_arch}
+                aros_target_suffix=${aros_target_suffix}
+
 
 
 _ACEOF
@@ -15399,8 +15434,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "${aros_geninc_dir}/host-conf.h") CONFIG_HEADERS="$CONFIG_HEADERS ${aros_geninc_dir}/host-conf.h:config/host-conf.h.in" ;;
-    "compiler_executable") CONFIG_COMMANDS="$CONFIG_COMMANDS compiler_executable" ;;
-    "genmf_executable") CONFIG_COMMANDS="$CONFIG_COMMANDS genmf_executable" ;;
+    "genmf-executable-support") CONFIG_COMMANDS="$CONFIG_COMMANDS genmf-executable-support" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "config/make.cfg") CONFIG_FILES="$CONFIG_FILES config/make.cfg" ;;
     "${aros_inc_dir}/config.h") CONFIG_FILES="$CONFIG_FILES ${aros_inc_dir}/config.h:config/config.h.in" ;;
@@ -15411,13 +15445,16 @@ do
     "${aros_targetcfg_dir}/make.defaults") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in" ;;
     "${aros_tools_dir}/genmf.py") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
     "tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES tools/collect-aros/env.h" ;;
+    "binutils-support") CONFIG_COMMANDS="$CONFIG_COMMANDS binutils-support" ;;
+    "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in" ;;
+    "elf-compiler-support") CONFIG_COMMANDS="$CONFIG_COMMANDS elf-compiler-support" ;;
     "${aros_targetcfg_dir}/elf-specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/elf-specs:${elf_specs_in}" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in" ;;
+    "host-compiler-wrapper-support") CONFIG_COMMANDS="$CONFIG_COMMANDS host-compiler-wrapper-support" ;;
     "${aros_targetcfg_dir}/specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs:config/specs.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in" ;;
-    "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in" ;;
     "${aros_gendir}/arch/all-android/bootstrap/app/default.properties") CONFIG_FILES="$CONFIG_FILES ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -15969,13 +16006,13 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
 
 
   case $ac_file$ac_mode in
-    "compiler_executable":C)
+    "genmf-executable-support":C) chmod a+x ${aros_tools_dir}/genmf.py ;;
+    "binutils-support":C)
         prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
         mkdir -p $prefix
         prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
-        prefix3=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf
 
-        chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-ld ${prefix2}-cpp ${prefix3}-gcc
+        chmod a+x ${prefix2}-ld
 
         ln -sf $orig_target_as$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
         ln -sf $orig_target_nm$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
@@ -15984,10 +16021,23 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
         ln -sf $orig_target_objcopy$aros_host_exe_suffix ${prefix2}-objcopy$aros_host_exe_suffix
         ln -sf $orig_target_objdump$aros_host_exe_suffix ${prefix2}-objdump$aros_host_exe_suffix
         ln -sf $orig_target_strip$aros_host_exe_suffix   ${prefix2}-strip$aros_host_exe_suffix
-
-        ln -sf $aros_kernel_ld$aros_host_exe_suffix         ${prefix3}-ld$aros_host_exe_suffix
      ;;
-    "genmf_executable":C) chmod a+x ${aros_tools_dir}/genmf.py ;;
+    "elf-compiler-support":C)
+            prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
+            mkdir -p $prefix
+            prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf
+
+            chmod a+x ${prefix2}-gcc
+
+            ln -sf $aros_kernel_ld$aros_host_exe_suffix         ${prefix2}-ld$aros_host_exe_suffix
+         ;;
+    "host-compiler-wrapper-support":C)
+                prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
+                mkdir -p $prefix
+                prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
+
+                chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-cpp
+             ;;
 
   esac
 done # for ac_tag
