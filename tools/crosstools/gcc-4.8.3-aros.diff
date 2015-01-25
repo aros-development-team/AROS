@@ -243,7 +243,7 @@ diff -ruN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.aros/gcc/config/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "%{detach:detach.o%s} startup.o%s %{nix:nixmain.o%s}"
++  "startup.o%s %{detach:detach.o%s} %{nix:nixmain.o%s}"
 +
 +/* Provide a ENDFILE_SPEC appropriate for AROS. */
 +
@@ -264,7 +264,7 @@ diff -ruN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.aros/gcc/config/aros.h
 +}; \
 +
 +#undef CPP_SPEC
-+#define CPP_SPEC "%{!nostdinc:-isystem %R/include%{!nostdc:%{!noposixc: -isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc}}"
++#define CPP_SPEC "%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc:-isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc} -isystem %R/include}"
 +
 +/* This is for -profile to use -lc_p instead of -lc.  */
 +#ifndef CC1_SPEC
@@ -291,7 +291,7 @@ diff -ruN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.aros/gcc/config/aros.h
 diff -ruN gcc-4.8.3/gcc/config/i386/aros64.h gcc-4.8.3.aros/gcc/config/i386/aros64.h
 --- gcc-4.8.3/gcc/config/i386/aros64.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.8.3.aros/gcc/config/i386/aros64.h	2015-01-15 19:51:28.109870237 +0000
-@@ -0,0 +1,40 @@
+@@ -0,0 +1,34 @@
 +/* Definitions for AMD x86_64 running AROS systems with ELF64 format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -313,12 +313,6 @@ diff -ruN gcc-4.8.3/gcc/config/i386/aros64.h gcc-4.8.3.aros/gcc/config/i386/aros
 +along with GNU CC; see the file COPYING.  If not, write to
 +the Free Software Foundation, 59 Temple Place - Suite 330,
 +Boston, MA 02111-1307, USA.  */
-+
-+/* Output at beginning of assembler file.  */
-+/* The .file command should always begin the output.  */
-+
-+//#undef TARGET_VERSION
-+//#define TARGET_VERSION fprintf (stderr, " (x86_64 AROS/ELF)");
 +
 +/* The svr4 ABI for the i386 says that records and unions are returned
 +   in memory.  In the 64bit compilation we will turn this flag off in
@@ -428,7 +422,7 @@ diff -ruN gcc-4.8.3/gcc/config/m68k/t-aros gcc-4.8.3.aros/gcc/config/m68k/t-aros
 diff -ruN gcc-4.8.3/gcc/config/rs6000/aros.h gcc-4.8.3.aros/gcc/config/rs6000/aros.h
 --- gcc-4.8.3/gcc/config/rs6000/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.8.3.aros/gcc/config/rs6000/aros.h	2015-01-15 19:51:28.109870237 +0000
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,151 @@
 +/* Definitions for Powerpc running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -481,16 +475,6 @@ diff -ruN gcc-4.8.3/gcc/config/rs6000/aros.h gcc-4.8.3.aros/gcc/config/rs6000/ar
 +/* We are 32-bit all the time, so optimize a little.  */
 +#undef TARGET_64BIT
 +#define TARGET_64BIT 0
-+ 
-+/* Output at beginning of assembler file.  */
-+/* The .file command should always begin the output.  */
-+/*#undef TARGET_ASM_FILE_START_FILE_DIRECTIVE
-+#define TARGET_ASM_FILE_START_FILE_DIRECTIVE true
-+defined in elfos.h
-+*/
-+
-+#undef TARGET_VERSION
-+#define TARGET_VERSION fprintf (stderr, " (PowerPC AROS/ELF)");
 +
 +/* The svr4 ABI for the i386 says that records and unions are returned
 +   in memory.  */
