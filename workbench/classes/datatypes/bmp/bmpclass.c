@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -57,7 +57,6 @@ typedef struct {
     long                filebufsize;
     UBYTE               *linebuf;
     UBYTE               *linebufpos;
-    long                linebufbytes;
     long                linebufsize;
     
     APTR                codecvars;
@@ -370,7 +369,10 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 			      TAG_DONE);
 
     /* Now decode the picture data into a chunky buffer; and pass it to Bitmap line-by-line */
-    bmphandle->linebufsize = bmphandle->linebufbytes = alignbytes;
+    if (biBitCount == 24)
+        bmphandle->linebufsize = alignbytes;
+    else
+        bmphandle->linebufsize = alignwidth;
     if (! (bmphandle->linebuf = bmphandle->linebufpos = AllocMem(bmphandle->linebufsize, MEMF_ANY)) )
     {
 	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
@@ -403,6 +405,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 		*(bmphandle->linebufpos)++ = g;
 		*(bmphandle->linebufpos)++ = b;
 	    }
+            bmphandle->filebufpos += alignbytes;
 	}
 	else
 	{
@@ -416,7 +419,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 		    cont = 0;
 		    break;              
 		}
-		byte = *p++;
+		byte = *(bmphandle->filebufpos)++;
 		switch (biBitCount)
 		{
 		    case 1:
@@ -457,7 +460,6 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	    BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
 	    return FALSE;
 	}
-        bmphandle->filebufpos += alignbytes;
     }
     //D(bug("bmp.datatype/LoadBMP() --- bytes of %ld (%ld) bytes\n", (long)bmphandle->filebufbytes, (long)(bmphandle->filebufsize-(bmphandle->filebufpos-bmphandle->filebuf)) ));
 
@@ -586,7 +588,7 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     /* Now read the picture data from the bitplanes and write it to a chunky buffer */
     /* For now, we use a full picture pixel buffer, not a single line */
     widthxheight = width*height;
-    bmphandle->linebufsize = bmphandle->linebufbytes = widthxheight;
+    bmphandle->linebufsize = widthxheight;
     if (! (bmphandle->linebuf = bmphandle->linebufpos = AllocMem(bmphandle->linebufsize, MEMF_ANY)) )
     {
 	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
