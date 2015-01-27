@@ -350,7 +350,7 @@ AROS_UFH3(IPTR, DevWinDispatcher,
                     devstate = "Dead";
                 }
 
-                if( (devclass == HUB_CLASSCODE) && (devhubport == NULL)) {
+                if( (devclass == HUB_CLASSCODE) && (devhubport == (IPTR)NULL)) {
 
                     STRPTR cmpdevicename = "";
                     STRPTR devicename = "";
