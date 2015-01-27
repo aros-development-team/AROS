@@ -1002,7 +1002,6 @@ tlsf_area_t * init_memory_area(void * memory, IPTR size)
 void tlsf_add_memory(struct MemHeaderExt *mhe, void *memory, IPTR size)
 {
     tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
-    BOOL adjusted = FALSE;
 
     D(nbug("[Kernel:TLSF] %s(%p, %p, %u)\n", __PRETTY_FUNCTION__, tlsf, memory, size));
 
@@ -1262,7 +1261,7 @@ static VOID release_ram(void * data, APTR ptr, IPTR size)
 
 static void * init_Pool(struct MemHeaderExt *mhe, IPTR puddleSize, IPTR initialSize)
 {
-    return tlsf_init_autogrow(mhe, puddleSize, (ULONG)mhe->mhe_MemHeader.mh_First, fetch_more_ram, release_ram, mhe);
+    return tlsf_init_autogrow(mhe, puddleSize, (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First, fetch_more_ram, release_ram, mhe);
 }
 
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
