@@ -342,6 +342,11 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	    BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
 	    return FALSE;
 	}
+
+	/* Zero in the color count field means calculate it based on bits */
+	if (biClrUsed == 0)
+	    biClrUsed = 1 << biBitCount;
+
 	if( !LoadBMP_Colormap(bmphandle, biClrUsed, colormap, colorregs) )
 	{
 	    BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
@@ -409,7 +414,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	}
 	else
 	{
-	    for (x=0, p = bmphandle->filebufpos; x<alignbytes; x++)
+	    for (x=0; x<alignbytes; x++)
 	    {
 		if ( (bmphandle->filebufbytes -= 1) < 0 && !LoadBMP_FillBuf(bmphandle, 1) )
 		{
