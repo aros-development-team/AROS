@@ -83,7 +83,7 @@ static inline __attribute__((always_inline))
 	UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
 {
     struct pHidd_PCIDriver_ReadConfigLong __msg = {
-	sd->mid_ReadLong,
+	sd->mid_ReadLong, sd->Device,
 	bus, dev, sub, reg
     }, *msg = &__msg;
     
