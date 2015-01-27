@@ -82,8 +82,8 @@ AREXXCONTEXT	RexxStuff;
 struct	Window	*win=NULL;
 ULONG	signals;
 
-	if (IntuitionBase=(struct IntuitionBase *)
-					OpenLibrary("intuition.library",0))
+	if ((IntuitionBase=(struct IntuitionBase *)
+					OpenLibrary("intuition.library",0)))
 	{
 		/*
 		 * Note that SimpleRexx is set up such that you do not
@@ -196,8 +196,8 @@ ULONG	signals;
 				/*
 				 * If we have a window, process those messages
 				 */
-				if (win) while (msg=(struct IntuiMessage *)
-							GetMsg(win->UserPort))
+				if (win) while ((msg=(struct IntuiMessage *)
+							GetMsg(win->UserPort)))
 				{
 					if (msg->Class==CLOSEWINDOW)
 					{
