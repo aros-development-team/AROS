@@ -1,6 +1,5 @@
 include $(TOP)/config/make.cfg
 
-BINUTILS_VERSION = 2.23.2
 GMP_VERSION=5.1.2
 MPFR_VERSION=3.1.2
 MPC_VERSION=1.0.1
@@ -19,17 +18,30 @@ ICU_EXTRA_OPTS= \
         --disable-extras \
         --with-data-packaging=static
 
+BINUTILS_VERSION = 2.23.2
+
+ifneq (,$(findstring $(HOST_CC),clang))
+BINUTILS_EXTRA_OPTS :=
+else
+BINUTILS_EXTRA_OPTS :=
+endif
+BINUTILS_EXTRA_OPTS += --target=$(AROS_TARGET_CPU)-aros
+BINUTILS_EXTRA_OPTS += -bindir=$(CROSSTOOLSDIR)
+BINUTILS_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
+BINUTILS_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
+BINUTILS_EXTRA_OPTS += --disable-werror
+
 GCC_VERSION     = $(TARGET_GCC_VER)
 
 GCC_LANGUAGES:=c,c++
-ifneq (no-objc,$OBJC_TARGET)
+ifneq (no-objc,$(OBJC_TARGET))
 GCC_LANGUAGES:=$(GCC_LANGUAGES),objc
 endif
-ifneq (no-java,$JAVA_TARGET)
+ifneq (no-java,$(JAVA_TARGET))
 GCC_LANGUAGES:=$(GCC_LANGUAGES),java
 endif
 
-GCC_EXTRA_OPTS = --target=$(AROS_TARGET_CPU)-aros
+GCC_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
 
 # ARM requires additional flags to determine CPU type and FP model
 ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
@@ -47,6 +59,8 @@ GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
 GCC_EXTRA_OPTS += --disable-bootstrap 
 GCC_EXTRA_OPTS += --disable-sjlj-exceptions
 GCC_EXTRA_OPTS += --disable-tls
+GCC_EXTRA_OPTS += --disable-plugins
+GCC_EXTRA_OPTS += --disable-objc-gc
 GCC_EXTRA_OPTS += --with-dwarf2
 GCC_EXTRA_OPTS += --enable-frame-pointer
 GCC_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
@@ -155,7 +169,7 @@ tools-crosstools-binutils :
 	package_repo="$(GNU_REPOSITORY)/binutils" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --with-sysroot=$(AROS_DEVELOPMENT) --disable-werror"
+        extraoptions="$(BINUTILS_EXTRA_OPTS)"
 
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
