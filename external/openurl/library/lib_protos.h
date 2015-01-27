@@ -157,7 +157,7 @@ AROS_LD1(ULONG, URL_LaunchPrefsAppA,
 
 AROS_LD2(ULONG, URL_GetAttr,
     AROS_LDA(ULONG, ___attr, D0),
-    AROS_LDA(ULONG *, ___storage, A0),
+    AROS_LDA(IPTR *, ___storage, A0),
     struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
 );
 

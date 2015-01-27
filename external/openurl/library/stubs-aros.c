@@ -114,7 +114,7 @@ AROS_LH1(ULONG, URL_LaunchPrefsAppA,
 
 AROS_LH2(ULONG, URL_GetAttr,
     AROS_LHA(ULONG, ___attr, D0),
-    AROS_LHA(ULONG *, ___storage, A0),
+    AROS_LHA(IPTR  *, ___storage, A0),
     struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
 )
 {
