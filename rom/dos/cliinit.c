@@ -482,7 +482,7 @@ static void AddBootAssign(CONST_STRPTR path, CONST_STRPTR assign, APTR DOSBase)
 static LONG internalBootCliHandler(void)
 {
     struct Process *bootProc = (struct Process *)FindTask(NULL);
-    BPTR bootWin = bootProc->pr_WindowPtr;
+    APTR bootWin = bootProc->pr_WindowPtr;
 
     struct ExpansionBase *ExpansionBase;
     struct DosLibrary *DOSBase;
@@ -509,7 +509,7 @@ static LONG internalBootCliHandler(void)
         err = ERROR_INVALID_RESIDENT_LIBRARY;
 
     /* Suppress "insert volume" prompts  */
-    bootProc->pr_WindowPtr = (BPTR)-1;
+    bootProc->pr_WindowPtr = (APTR)(SIPTR)-1;
 
     if (err == 0)
     {

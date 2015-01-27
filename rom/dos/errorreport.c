@@ -88,7 +88,7 @@
     ASSERT_VALID_PROCESS(me);
 
     /* do nothing if errors are disabled */
-    if (me->pr_WindowPtr == (APTR) -1) {
+    if (me->pr_WindowPtr == (APTR)(SIPTR)-1) {
         SetIoErr(code);
         return DOSTRUE;
     }
