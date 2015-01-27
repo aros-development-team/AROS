@@ -122,7 +122,7 @@ struct RexxMsg *GetARexxMsg(AREXXCONTEXT RexxContext)
 	short	flag;
 
 	if (RexxContext)
-	    if (tmp=(struct RexxMsg *)GetMsg(RexxContext->ARexxPort))
+	    if ((tmp=(struct RexxMsg *)GetMsg(RexxContext->ARexxPort)))
 	{
 		if (tmp->rm_Node.mn_Node.ln_Type==NT_REPLYMSG)
 		{
@@ -138,7 +138,7 @@ struct RexxMsg *GetARexxMsg(AREXXCONTEXT RexxContext)
 			/*
 			 * Free the arguments and the message...
 			 */
-			DeleteArgstring(tmp->rm_Args[0]);
+			DeleteArgstring((UBYTE *)tmp->rm_Args[0]);
 			DeleteRexxMsg(tmp);
 			RexxContext->Outstanding-=1;
 
@@ -171,7 +171,7 @@ void ReplyARexxMsg(AREXXCONTEXT RexxContext,struct RexxMsg *rmsg,
 			 */
 			if (rmsg->rm_Action & (1L << RXFB_RESULT)) if (RString)
 			{
-				rmsg->rm_Result2=(LONG)CreateArgstring(RString,
+				rmsg->rm_Result2=(IPTR)CreateArgstring(RString,
 							(LONG)strlen(RString));
 			}
 		}
@@ -230,21 +230,21 @@ short SendARexxMsg(AREXXCONTEXT RexxContext,char *RString,
 
 	if (RexxContext) if (RString)
 	{
-		if (rmsg=CreateRexxMsg(RexxContext->ARexxPort,
+		if ((rmsg=CreateRexxMsg(RexxContext->ARexxPort,
 					RexxContext->Extension,
-					RexxContext->PortName))
+					RexxContext->PortName)))
 		{
 			rmsg->rm_Action=RXCOMM | (StringFile ?
 							(1L << RXFB_STRING):0);
-			if (rmsg->rm_Args[0]=(IPTR)CreateArgstring(RString,
-							(LONG)strlen(RString)))
+			if ((rmsg->rm_Args[0]=(IPTR)CreateArgstring(RString,
+							(LONG)strlen(RString))))
 			{
 				/*
 				 * We need to find the RexxPort and this needs
 				 * to be done in a Forbid()
 				 */
 				Forbid();
-				if (RexxPort=FindPort(RXSDIR))
+				if ((RexxPort=FindPort(RXSDIR)))
 				{
 					/*
 					 * We found the port, so put the
@@ -259,7 +259,7 @@ short SendARexxMsg(AREXXCONTEXT RexxContext,char *RString,
 					/*
 					 * No port, so clean up...
 					 */
-					DeleteArgstring(rmsg->rm_Args[0]);
+					DeleteArgstring((UBYTE *)rmsg->rm_Args[0]);
 					DeleteRexxMsg(rmsg);
 				}
 				Permit();
@@ -363,11 +363,11 @@ AREXXCONTEXT InitARexx(char *AppName,char *Extension)
 	short		count;
 	char		*tmp;
 
-	if (RexxContext=AllocMem(sizeof(struct ARexxContext),
-					MEMF_PUBLIC|MEMF_CLEAR))
+	if ((RexxContext=AllocMem(sizeof(struct ARexxContext),
+					MEMF_PUBLIC|MEMF_CLEAR)))
 	{
-		if (RexxContext->RexxSysBase=OpenLibrary("rexxsyslib.library",
-								0))
+		if ((RexxContext->RexxSysBase=OpenLibrary("rexxsyslib.library",
+								0)))
 		{
 			/*
 			 * Set up the extension...
