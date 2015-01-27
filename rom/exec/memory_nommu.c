@@ -29,9 +29,9 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
     MEM_LOCK;
 
     if (flags & MEMF_REVERSE)
-        mhn = GetTail(&SysBase->MemList);
+        mhn = (struct MemHeader *)GetTail(&SysBase->MemList);
     else
-        mhn = GetHead(&SysBase->MemList);
+        mhn = (struct MemHeader *)GetHead(&SysBase->MemList);
 
     /* Loop over MemHeader structures */
     while (mhn)
@@ -39,9 +39,9 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
         mh = mhn;
 
         if (flags & MEMF_REVERSE)
-            mhn = (((struct Node *)(mh))->ln_Pred);
+            mhn = (struct MemHeader *)(((struct Node *)(mh))->ln_Pred);
         else
-            mhn = (((struct Node *)(mh))->ln_Succ);
+            mhn = (struct MemHeader *)(((struct Node *)(mh))->ln_Succ);
 
         /*
          * Check for the right requirements and enough free memory.
