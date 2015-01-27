@@ -291,7 +291,7 @@ diff -ruN gcc-5-20150111/gcc/config/aros.h gcc-5-20150111.aros/gcc/config/aros.h
 diff -ruN gcc-5-20150111/gcc/config/aros.opt gcc-5-20150111.aros/gcc/config/aros.opt
 --- gcc-5-20150111/gcc/config/aros.opt	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-5-20150111.aros/gcc/config/aros.opt	2015-01-27 01:05:48.038232619 +0000
-@@ -0,0 +1,32 @@
+@@ -0,0 +1,35 @@
 +; Processor-independent options for AROS.
 +
 +; Copyright (C) 2015 Free Software Foundation, Inc.
@@ -322,6 +322,9 @@ diff -ruN gcc-5-20150111/gcc/config/aros.opt gcc-5-20150111.aros/gcc/config/aros
 +Driver
 +
 +nosysbase
++Driver
++
++nix
 +Driver
 +
 diff -ruN gcc-5-20150111/gcc/config/i386/aros64.h gcc-5-20150111.aros/gcc/config/i386/aros64.h
