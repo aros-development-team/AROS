@@ -392,7 +392,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                     }
                     else
                     {
-                        UBYTE *buf[ 256]; // Should be UQUADSTRSIZE +1, but this will suffice.
+                        UBYTE buf[ 256]; // Should be UQUADSTRSIZE +1, but this will suffice.
                         UBYTE *quadstr= UQUAD2string( size, buf, 256);
 
                         strcpy( fbuf +fbufindex, "s"); // Should we implement a '%q' type?
@@ -690,7 +690,6 @@ int printFileData(struct AnchorPath *ap,
                 if(keys)
                 {
                     char key[16];
-                    int  i;     /* Loop variable */
 
                     __sprintf(key, "%lu", (unsigned long)diskKey);
 
