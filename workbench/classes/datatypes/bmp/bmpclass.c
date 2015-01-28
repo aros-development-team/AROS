@@ -313,6 +313,11 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	    alignwidth = (biWidth + 3) & ~3UL;
 	    alignbytes = alignwidth;
 	    break;
+	case 16:
+	    alignbytes = ((biBitCount * biWidth + 31) / 32) * 4;
+	    alignwidth = alignbytes / 2;
+	    pixelfmt = PBPAFMT_RGB;
+	    break;
 	case 24:
 	    alignbytes = ((biBitCount * biWidth + 31) / 32) * 4;
 	    alignwidth = alignbytes / 3;
@@ -331,7 +336,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     bmhd->bmh_Depth  = biBitCount;
 
     /* get empty colormap, then fill in colormap to use*/
-    if (biBitCount != 24)
+    if (biBitCount <= 8)
     {
 	if( !(GetDTAttrs(o, PDTA_ColorRegisters, (IPTR)&colormap,
 			    PDTA_CRegs, (IPTR)&colorregs,
@@ -374,8 +379,8 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 			      TAG_DONE);
 
     /* Now decode the picture data into a chunky buffer; and pass it to Bitmap line-by-line */
-    if (biBitCount == 24)
-        bmphandle->linebufsize = alignbytes;
+    if (biBitCount > 8)
+        bmphandle->linebufsize = alignwidth * 3;
     else
         bmphandle->linebufsize = alignwidth;
     if (! (bmphandle->linebuf = bmphandle->linebufpos = AllocMem(bmphandle->linebufsize, MEMF_ANY)) )
@@ -390,6 +395,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     {
 	int r, g, b;
         UBYTE *p;
+	UWORD pixel;
 	
 	bmphandle->linebufpos = bmphandle->linebuf;
 	if (biBitCount == 24)
@@ -409,6 +415,25 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 		*(bmphandle->linebufpos)++ = r;
 		*(bmphandle->linebufpos)++ = g;
 		*(bmphandle->linebufpos)++ = b;
+	    }
+            bmphandle->filebufpos += alignbytes;
+	}
+	else if (biBitCount == 16)
+	{
+	    if ( (bmphandle->filebufbytes -= alignbytes) < 0 && !LoadBMP_FillBuf(bmphandle, alignbytes) )
+	    {
+		D(bug("bmp.datatype/LoadBMP() --- early end of bitmap data, x %ld y %ld\n", x, y));
+		//BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
+		//return FALSE;
+		cont = 0;
+	    }
+	    for (x=0, p = bmphandle->filebufpos; x<alignwidth; x++)
+	    {
+		pixel = *p++;
+		pixel |= *p++ << 8;
+		*(bmphandle->linebufpos)++ = (pixel & 0x7c00) >> 7;
+		*(bmphandle->linebufpos)++ = (pixel & 0x03e0) >> 2;
+		*(bmphandle->linebufpos)++ = (pixel & 0x1f) << 3;
 	    }
             bmphandle->filebufpos += alignbytes;
 	}
