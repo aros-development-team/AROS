@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Input device
@@ -170,7 +170,7 @@ AROS_LH1(void, beginio,
     {
 
         /* If the quick bit is not set but the IO request was done quick,
-         * reply the message to tell we're throgh
+         * reply the message to tell we're through
          */
         ioreq->io_Error = error;
         if (!(ioreq->io_Flags & IOF_QUICK))
