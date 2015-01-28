@@ -194,9 +194,9 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     BmpHandleType           *bmphandle;
     UBYTE                   *filebuf;
     IPTR                    sourcetype;
-    ULONG                   bfSize, bfOffBits;
+    ULONG                   D(bfSize,) bfOffBits;
     ULONG                   biSize, biWidth, biHeight, biCompression;
-    ULONG                   biClrUsed, biClrImportant;
+    ULONG                   biClrUsed D(, biClrImportant);
     UWORD                   biPlanes, biBitCount;
     ULONG                   alignwidth, alignbytes, pixelfmt;
     long                    x = 0, y;
@@ -265,7 +265,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	return FALSE;
     }
     /* byte-wise access isn't elegant, but it is endianess-safe */
-    bfSize = (filebuf[5]<<24) | (filebuf[4]<<16) | (filebuf[3]<<8) | filebuf[2];
+    D(bfSize = (filebuf[5]<<24) | (filebuf[4]<<16) | (filebuf[3]<<8) | filebuf[2]);
     bfOffBits = (filebuf[13]<<24) | (filebuf[12]<<16) | (filebuf[11]<<8) | filebuf[10];
     D(bug("bmp.datatype/LoadBMP() --- bfSize %ld bfOffBits %ld\n", bfSize, bfOffBits));
 
@@ -287,7 +287,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     biBitCount = (filebuf[15]<<8) | filebuf[14];
     biCompression = (filebuf[19]<<24) | (filebuf[18]<<16) | (filebuf[17]<<8) | filebuf[16];
     biClrUsed = (filebuf[35]<<24) | (filebuf[34]<<16) | (filebuf[33]<<8) | filebuf[32];
-    biClrImportant = (filebuf[39]<<24) | (filebuf[38]<<16) | (filebuf[37]<<8) | filebuf[36];
+    D(biClrImportant = (filebuf[39]<<24) | (filebuf[38]<<16) | (filebuf[37]<<8) | filebuf[36]);
     D(bug("bmp.datatype/LoadBMP() --- BMP-Screen %ld x %ld x %ld, %ld (%ld) colors, compression %ld, type %ld\n",
 	  biWidth, biHeight, (long)biBitCount, biClrUsed, biClrImportant, biCompression, biSize));
     if (biSize != 40 || biPlanes != 1 || biCompression != 0)
