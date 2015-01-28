@@ -20,7 +20,7 @@
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, ph,       A1),
-   AROS_LHA(const struct TagItem *, taglist,    A2),
+   AROS_LHA(struct TagItem *, taglist,    A2),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 15, Partition)

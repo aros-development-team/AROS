@@ -37,7 +37,7 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
 /*  SYNOPSIS */
         AROS_LHA(const struct Locale  *, locale, A0),
         AROS_LHA(CONST_STRPTR, name, A1),
-        AROS_LHA(const struct TagItem *, tags, A2),
+        AROS_LHA(struct TagItem *, tags, A2),
 
 /*  LOCATION */
         struct LocaleBase *, LocaleBase, 25, Locale)

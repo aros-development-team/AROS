@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, unit, D0),
-	AROS_LHA(const struct TagItem *, tags, A0),
+	AROS_LHA(struct TagItem *, tags, A0),
 
 /*  LOCATION */
 	struct HPETBase *, base, 4, Hpet)

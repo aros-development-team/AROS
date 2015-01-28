@@ -44,7 +44,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         AROS_LH1(struct Process *, CreateNewProc,
 
 /*  SYNOPSIS */
-        AROS_LHA(const struct TagItem *, tags, D1),
+        AROS_LHA(struct TagItem *, tags, D1),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 83, Dos)

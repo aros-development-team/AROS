@@ -20,7 +20,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name, A0),
-	AROS_LHA(const struct TagItem *, tags, A1),
+	AROS_LHA(struct TagItem *, tags, A1),
 /*  LOCATION */
 	struct IconBase *, IconBase, 30, Icon)
 

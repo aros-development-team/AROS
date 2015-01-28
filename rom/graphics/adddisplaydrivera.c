@@ -30,7 +30,7 @@
 /*  SYNOPSIS */
 	AROS_LHA(APTR, gfxclass, A0),
 	AROS_LHA(struct TagItem *, attrs, A1),
-	AROS_LHA(const struct TagItem *, tags, A2),
+	AROS_LHA(struct TagItem *, tags, A2),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 107, Graphics)

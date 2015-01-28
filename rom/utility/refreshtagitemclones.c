@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct TagItem *, clone, A0),
-	AROS_LHA(const struct TagItem *, original, A1),
+	AROS_LHA(struct TagItem *, original, A1),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 14, Utility)
