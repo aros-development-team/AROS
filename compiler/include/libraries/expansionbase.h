@@ -85,7 +85,7 @@ struct ExpansionBase
 #define EBB_KICKBACK36  5       /* reserved by AmigaDOS */
 #define EBF_KICKBACK36  (1L<<5)
 
-/*  If the following flag is set by a floppies boot code, then when DOS
+/*  If the following flag is set by a floppy's boot code, then when DOS
     awakes, it will not open its initial console window until the first
     output is written to that shell. Otherwise the old behaviour will
     apply.
