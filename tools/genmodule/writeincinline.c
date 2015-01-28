@@ -6,8 +6,10 @@
 */
 #include "genmodule.h"
 
-static void writeinlineregister(FILE *, struct functionhead *, struct config *);
-static void writeinlinevararg(FILE *, struct functionhead *, struct config *);
+extern int falsepositive(char *, char *);
+
+static void writeinlineregister(FILE *, struct functionhead *, struct config *, char);
+static void writeinlinevararg(FILE *, struct functionhead *, struct config *, char, char *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
 
 void writeincinline(struct config *cfg)
@@ -33,7 +35,7 @@ void writeincinline(struct config *cfg)
         "%s"
             "\n"
         "/*\n"
-            "    Desc: Inline function for %s\n"
+            "    Desc: Inline function(s) for %s\n"
             "*/\n"
             "\n"
             "#include <aros/libcall.h>\n"
@@ -49,6 +51,8 @@ void writeincinline(struct config *cfg)
     {
         if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo) && funclistit->libcall != STACK)
         {
+            char isvararg = 0, *varargname = NULL, *lastname;
+
             fprintf(out,
                     "\n"
                     "#if !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__)"
@@ -58,9 +62,80 @@ void writeincinline(struct config *cfg)
                     cfg->includenameupper
             );
 
-            writeinlineregister(out, funclistit, cfg);
-            if (!funclistit->novararg)
-                writeinlinevararg(out, funclistit, cfg);
+            if ((!funclistit->novararg) && (funclistit->arguments) && !falsepositive(cfg->includename, funclistit->name))
+            {
+                struct functionarg *arglistit = funclistit->arguments;
+
+                while (arglistit->next != NULL) arglistit = arglistit->next;
+
+                lastname = getargname(arglistit);
+                assert(lastname != NULL);
+
+                if (*(funclistit->name + strlen(funclistit->name) - 1) == 'A')
+                {
+                    isvararg = 1;
+                    varargname = strdup(funclistit->name);
+                    varargname[strlen(funclistit->name)-1] = '\0';
+                }
+                else if (strcmp(funclistit->name + strlen(funclistit->name) - 7, "TagList") == 0)
+                {
+                    isvararg = 1;
+                    /* TagList has to be changed in Tags at the end of the functionname */
+                    varargname = strdup(funclistit->name);
+                    varargname[strlen(funclistit->name)-4] = 's';
+                    varargname[strlen(funclistit->name)-3] = '\0';
+                }
+                else if (strcmp(funclistit->name + strlen(funclistit->name) - 4, "Args") == 0
+                         && (strcasecmp(lastname, "args") == 0 || strcasecmp(lastname, "arglist") == 0)
+                )
+                {
+                    isvararg = 1;
+                    varargname = strdup(funclistit->name);
+                    varargname[strlen(funclistit->name)-4] = '\0';
+                }
+                else if ((funclistit->name[0] == 'V') &&  (strncmp(arglistit->arg, "va_list", 7) == 0))
+                {
+                    isvararg = 2;
+                    varargname = malloc(strlen(funclistit->name));
+                    strcpy(varargname, &funclistit->name[1]);
+                }
+                else
+                {
+                    char *p;
+
+
+                    if (strncmp(arglistit->arg, "const", 5) == 0) {
+                        p = arglistit->arg + 5;
+                        while (isspace(*p)) p++;
+                    } else
+                        p = arglistit->arg;
+                    if (strncmp(p, "struct", 6)==0)
+                    {
+                        p += 6;
+                        while (isspace(*p)) p++;
+                        if (strncmp(p, "TagItem", 7) == 0)
+                        {
+                            p += 7;
+                            while (isspace(*p)) p++;
+
+                            if (*p == '*')
+                            {
+                                isvararg = 1;
+                                varargname = malloc(strlen(funclistit->name) + 5);
+                                strcpy(varargname, funclistit->name);
+                                strcat(varargname, "Tags");
+                            }
+                        }
+                    }
+                }
+            }
+
+            writeinlineregister(out, funclistit, cfg, isvararg);
+            if (!funclistit->novararg && isvararg)
+            {
+                writeinlinevararg(out, funclistit, cfg, isvararg, varargname);
+                free(varargname);
+            }
 
             writealiases(out, funclistit, cfg);
 
@@ -83,9 +158,8 @@ void writeincinline(struct config *cfg)
     fclose(out);
 }
 
-
 void
-writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *cfg)
+writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *cfg, char isvararg)
 {
     struct functionarg *arglistit;
     int count, isvoid;
@@ -106,7 +180,9 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
     )
     {
         type = getargtype(arglistit);
-        fprintf(out, "%s __arg%d, ", type, count);
+        fprintf(out, "%s%s __arg%d, ",
+            ((isvararg) && (!arglistit->next)) ? "const " : "",
+            type, count);
         if (strchr(arglistit->reg, '/') != NULL) {
             nquad++;
         } else {
@@ -139,7 +215,8 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
             type = getargtype(arglistit);
             assert(type != NULL);
             fprintf(out,
-                    "        AROS_LCA(%s,(__arg%d),%s),\n",
+                    "        AROS_LCA(%s%s,(__arg%d),%s),\n",
+                    ((isvararg) && (!arglistit->next)) ? "const " : "",
                     type, count, arglistit->reg
             );
             free(type);
@@ -177,13 +254,15 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
             if (quad2 != NULL) {
                 *quad2 = 0;
                 fprintf(out,
-                        "         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \\\n",
+                        "         AROS_LCAQUAD(%s%s, (__arg%d), %s, %s), \\\n",
+                        ((isvararg) && (!arglistit->next)) ? "const " : "",
                         type, count, arglistit->reg, quad2+1
                 );
                 *quad2 = '/';
             } else {
                 fprintf(out,
-                        "         AROS_LCA(%s, (__arg%d), %s), \\\n",
+                        "         AROS_LCA(%s%s, (__arg%d), %s), \\\n",
+                        ((isvararg) && (!arglistit->next)) ? "const " : "",
                         type, count, arglistit->reg
                 );
             }
@@ -217,77 +296,10 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
 }
 
 void
-writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg)
+writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg, char isvararg, char *varargname)
 {
     struct functionarg *arglistit = funclistit->arguments;
-    char isvararg = 0, *varargname, *lastname;
 
-    /* Go to last argument */
-    if (arglistit == NULL)
-        return;
-
-    while (arglistit->next != NULL) arglistit = arglistit->next;
-
-    lastname = getargname(arglistit);
-    assert(lastname != NULL);
-
-    if (*(funclistit->name + strlen(funclistit->name) - 1) == 'A')
-    {
-        isvararg = 1;
-        varargname = strdup(funclistit->name);
-        varargname[strlen(funclistit->name)-1] = '\0';
-    }
-    else if (strcmp(funclistit->name + strlen(funclistit->name) - 7, "TagList") == 0)
-    {
-        isvararg = 1;
-        /* TagList has to be changed in Tags at the end of the functionname */
-        varargname = strdup(funclistit->name);
-        varargname[strlen(funclistit->name)-4] = 's';
-        varargname[strlen(funclistit->name)-3] = '\0';
-    }
-    else if (strcmp(funclistit->name + strlen(funclistit->name) - 4, "Args") == 0
-             && (strcasecmp(lastname, "args") == 0 || strcasecmp(lastname, "arglist") == 0)
-    )
-    {
-        isvararg = 1;
-        varargname = strdup(funclistit->name);
-        varargname[strlen(funclistit->name)-4] = '\0';
-    }
-    else if ((funclistit->name[0] == 'V') &&  (strncmp(arglistit->arg, "va_list", 7) == 0))
-    {
-        isvararg = 2;
-        varargname = malloc(strlen(funclistit->name));
-        strcpy(varargname, &funclistit->name[1]);
-    }
-    else
-    {
-        char *p;
-
-
-        if (strncmp(arglistit->arg, "const", 5) == 0) {
-            p = arglistit->arg + 5;
-            while (isspace(*p)) p++;
-        } else
-            p = arglistit->arg;
-        if (strncmp(p, "struct", 6)==0)
-        {
-            p += 6;
-            while (isspace(*p)) p++;
-            if (strncmp(p, "TagItem", 7) == 0)
-            {
-                p += 7;
-                while (isspace(*p)) p++;
-
-                if (*p == '*')
-                {
-                    isvararg = 1;
-                    varargname = malloc(strlen(funclistit->name) + 5);
-                    strcpy(varargname, funclistit->name);
-                    strcat(varargname, "Tags");
-                }
-            }
-        }
-    }
     if (isvararg == 1)
     {
         int count;
@@ -323,7 +335,7 @@ writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
             {
                 type = getargtype(arglistit);
                 assert(type != NULL);
-                fprintf(out, "(%s)(IPTR []){ AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }", type);
+                fprintf(out, "(const %s)(const IPTR []){ AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }", type);
                 free(type);
             }
             else
@@ -334,8 +346,6 @@ writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
                 "})\n"
                 "#endif /* !NO_INLINE_STDARG */\n"
         );
-
-        free(varargname);
     }
     else if (isvararg == 2)
     {
@@ -409,8 +419,6 @@ writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
                 "__VA_ARGS__)\n"
                 "#endif /* !NO_INLINE_STDARG */\n"
         );
-
-        free(varargname);
     }
 }
 

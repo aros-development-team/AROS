@@ -20,7 +20,7 @@
 /*  SYNOPSIS */
 	AROS_LHA(Tag                   , tagValue, D0),
 	AROS_LHA(IPTR                  , defaultVal, D1),
-	AROS_LHA(const struct TagItem *, tagList, A0),
+	AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 6, Utility)
