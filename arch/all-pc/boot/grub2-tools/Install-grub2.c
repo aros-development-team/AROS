@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 /******************************************************************************
@@ -37,7 +37,7 @@
     NOTES
 
        EFI machines don't need this utility because EFI doesn't need a bootblock.
-       It is capable of loading files directy from the filesystem.
+       It is capable of loading files directly from the filesystem.
 
     EXAMPLE
 
