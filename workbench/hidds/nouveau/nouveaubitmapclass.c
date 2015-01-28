@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -521,9 +521,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
            relies on tiled bitmaps. AROS uses linear bitmaps for all card families.
            The optimization in this case is to use base class implementation,
            which does GetImage->Process->PutImage. Since all NV50 cards are
-           PCI-E based, the greatest limiting factor - VRAM->RAM download speed in
-           not a problem (1,1 Gbps on my GF8300). This approach is actually faster
-           than "per-pixel" functions below by order of 10. */
+           PCI-E based, the greatest limiting factor - VRAM->RAM download
+           speed - is not a problem (1.1 Gbps on my GF8300). This approach is
+           actually faster than "per-pixel" functions below by order of 10. */
            
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         UNLOCK_BITMAP;
