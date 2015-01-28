@@ -69,62 +69,12 @@
 #define A_INTE_MIDIRXENABLE     A_INTE_MIDIRXENABLE1
 #endif
 
-
-
-inline unsigned short my_inb(unsigned long port, APTR dev)
-{
-  unsigned char res = ahi_pci_inb( port, dev );
-
-  //  KPrintF( "my_inb(%08lx) ->%02lx\n", port, res );
-
-  return res;
-}
-
-inline unsigned short my_inw(unsigned long port, APTR dev)
-{
-  unsigned short res = ahi_pci_inw( port, dev );
-
-  //  KPrintF( "my_inw(%08lx) ->%04lx\n", port, res );
-
-  return res;
-}
-
-inline unsigned int my_inl(unsigned long port, APTR dev)
-{
-  unsigned int res = ahi_pci_inl( port, dev );
-
-  //  KPrintF( "my_inl(%08lx) ->%08lx\n", port, res );
-
-  return res;
-}
-
-inline void my_outb(unsigned char value, unsigned long port, APTR dev)
-{
-  //  KPrintF( "my_outb(%08lx,%02lx)\n", port, value );
-
-  ahi_pci_outb( value, port, dev );
-}
-
-inline void my_outw(unsigned short value, unsigned long port, APTR dev)
-{
-  //  KPrintF( "my_outw(%08lx,%04lx)\n", port, value );
-
-  ahi_pci_outw( value, port, dev );
-}
-
-inline void my_outl(unsigned int value, unsigned long port, APTR dev)
-{
-  //  KPrintF( "my_outl(%08lx,%08lx)\n", port, value );
-
-  ahi_pci_outl( value, port, dev );
-}
-
-#define inb(port)        my_inb(port, card->pci_dev)
-#define inw(port)        my_inw(port, card->pci_dev)
-#define inl(port)        my_inl(port, card->pci_dev)
-#define outb(value,port) my_outb(value, port, card->pci_dev)
-#define outw(value,port) my_outw(value, port, card->pci_dev)
-#define outl(value,port) my_outl(value, port, card->pci_dev)
+#define inb(port)        (unsigned short)ahi_pci_inb(port, card->pci_dev)
+#define inw(port)        (unsigned short)ahi_pci_inw(port, card->pci_dev)
+#define inl(port)        (unsigned int)ahi_pci_inl(port, card->pci_dev)
+#define outb(value,port) ahi_pci_outb(value, port, card->pci_dev)
+#define outw(value,port) ahi_pci_outw(value, port, card->pci_dev)
+#define outl(value,port) ahi_pci_outl(value, port, card->pci_dev)
 
 #else // AHI
 
