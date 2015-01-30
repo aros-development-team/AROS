@@ -10,29 +10,6 @@ static void writedefineregister(FILE *, struct functionhead *, struct config *, 
 static void writedefinevararg(FILE *, struct functionhead *, struct config *, char, char *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
 
-/* some functions are incorrectly identified as needing variadic support */
-struct variadicfp
-{
-    char *module;
-    char *func;
-} gm_variadicfp[] =
-{
-    { "utility",        "NextTagItem"                   },
-    { NULL,             NULL                            }  
-};
-
-int falsepositive(char *matchmodule, char *matchfunc)
-{
-    struct variadicfp *matchfp;
-    for (matchfp = gm_variadicfp; matchfp->module; matchfp++)
-    {
-        if (!strncmp(matchfp->module, matchmodule, strlen(matchfp->module)) &&
-            !strncmp(matchfp->func, matchfunc, strlen(matchfp->func)))
-            return 1;
-    }
-    return 0;
-}
-
 void writeincdefines(struct config *cfg)
 {
     FILE *out;
@@ -85,7 +62,7 @@ void writeincdefines(struct config *cfg)
                     cfg->includenameupper
             );
 
-            if ((!funclistit->novararg) && (funclistit->arguments) && !falsepositive(cfg->includename, funclistit->name))
+            if ((!funclistit->novararg) && (funclistit->arguments))
             {
                 struct functionarg *arglistit = funclistit->arguments;
 

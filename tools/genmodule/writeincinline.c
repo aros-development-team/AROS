@@ -6,8 +6,6 @@
 */
 #include "genmodule.h"
 
-extern int falsepositive(char *, char *);
-
 static void writeinlineregister(FILE *, struct functionhead *, struct config *, char);
 static void writeinlinevararg(FILE *, struct functionhead *, struct config *, char, char *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
@@ -62,7 +60,7 @@ void writeincinline(struct config *cfg)
                     cfg->includenameupper
             );
 
-            if ((!funclistit->novararg) && (funclistit->arguments) && !falsepositive(cfg->includename, funclistit->name))
+            if ((!funclistit->novararg) && (funclistit->arguments))
             {
                 struct functionarg *arglistit = funclistit->arguments;
 
