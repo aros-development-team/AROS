@@ -2,6 +2,7 @@ include $(TOP)/config/make.cfg
 
 FILES       := controller devices init pnp pnp_iterators pnp_structs end
 USER_CFLAGS := -fstrict-aliasing -W -Wall -Wstrict-prototypes -Wno-unused -I$(GENDIR)/$(CURDIR)
+USER_LDFLAGS := -static
 
 %build_module_simple mmake=kernel-isapnp \
     modname=isapnp modtype=resource \
