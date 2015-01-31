@@ -8,6 +8,7 @@ FILES := handler unit rtl8169 rtl8169_hw rtl8101_hw rtl8168_hw rtl8169_ids
 
 CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
 CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
+USER_LDFLAGS := -static
 
 #MM- workbench-devs-networks-rtl8169 : workbench-devs-networks-rtl8169-normal
 #MM- workbench-devs-networks-rtl8169 : workbench-devs-networks-rtl8169-debug

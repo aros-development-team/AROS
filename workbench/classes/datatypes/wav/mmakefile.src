@@ -31,6 +31,7 @@ broke :=   init
 #MM workbench-datatypes-wave : includes linklibs linklibs-gsm
 
 USER_CFLAGS := -DGSM610_SUPPORT -DG72X_SUPPORT -I$(SRCDIR)/$(CURDIR)/include
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-wave \
     modname=wave modtype=datatype \

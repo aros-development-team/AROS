@@ -83,11 +83,11 @@ USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -I$(OBJDIR)
 #MM workbench-c : includes linklibs workbench-c-sh workbench-c-requeststring workbench-libs-uuid
 #MM workbench-c-quick : workbench-c-sh-quick workbench-c-requeststring-quick
 
-USER_LDFLAGS := -nostdc
-
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
     uselibs="uuid debug"
+
+USER_LDFLAGS := -static
 
 %build_progs mmake=workbench-c-sh \
     files=$(SH_FILES) targetdir=$(AROS_C) \

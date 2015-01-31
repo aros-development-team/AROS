@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := nforce handler unit
 
 %build_module mmake=workbench-devs-networks-nforce-i386 \

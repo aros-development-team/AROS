@@ -11,8 +11,6 @@ FILES := main locale
 #MM workbench-c-loadresource-quick : \
 #MM     workbench-c-loadresource-catalogs 
 
-USER_LDFLAGS := -nostdc
-
 %build_prog mmake=workbench-c-loadresource \
     progname=LoadResource targetdir=$(AROS_C) \
     files=$(FILES)

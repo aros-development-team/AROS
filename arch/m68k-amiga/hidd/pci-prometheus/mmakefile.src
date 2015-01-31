@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES=pci-prometheus_init driverclass pci_resource
 
 #MM- workbench-expansion-amiga-m68k: hidd-pci-prometheus

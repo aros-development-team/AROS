@@ -6,6 +6,7 @@ FILES := dispatch sound_init
 #MM workbench-datatypes-sound : includes linklibs workbench-devs-AHI
 
 USER_CFLAGS := -I$(GENDIR)/workbench/devs/AHI/Include/gcc
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-sound \
     modname=sound modtype=datatype \

@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := binaryclass
 
 #MM workbench-datatypes-binary : includes linklibs

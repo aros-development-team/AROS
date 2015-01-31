@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 #MM- workbench-devs-networks-pcnet32-i386 : workbench-devs-networks-pcnet32-x86
 #MM- workbench-devs-networks-pcnet32-x86_64 : workbench-devs-networks-pcnet32-x86
 
+USER_LDFLAGS := -static
+
 FILES := handler unit pcnet32
 
 %build_module mmake=workbench-devs-networks-pcnet32-x86 \

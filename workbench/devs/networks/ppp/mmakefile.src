@@ -2,7 +2,8 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := \
 	 -Wno-parentheses 
-	
+USER_LDFLAGS := -static
+
 FILES := init handler ppp serial
 
 #MM workbench-devs-networks-ppp : workbench-devs-networks-ppp-mm

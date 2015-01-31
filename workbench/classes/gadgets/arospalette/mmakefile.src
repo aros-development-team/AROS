@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := paletteclass support
 
 #MM workbench-gadgets-arospalette : includes linklibs

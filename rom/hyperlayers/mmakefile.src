@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES	  := basicfuncs createlayertaglist movelayerz
+
 FUNCS := \
 	beginupdate \
 	behindlayer \
@@ -57,6 +58,7 @@ FUNCS := \
 #MM- core-linklibs: linklibs-layers
 
 USER_CFLAGS := -D__UTILITY_NOLIBBASE__ -D__GRAPHICS_NOLIBBASE__
+USER_LDFLAGS := -static
 
 %build_module mmake=kernel-layers \
   modname=layers modtype=library \

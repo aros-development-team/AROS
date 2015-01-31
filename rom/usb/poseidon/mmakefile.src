@@ -21,15 +21,15 @@ USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
 #MM- kernel-usb-usbromstartup : kernel-usb-poseidon
 
+%build_progs mmake=kernel-usb-shelltools \
+    files=$(SHELLFILES) targetdir=$(AROS_C)
+
+USER_LDFLAGS := -static
+
 %build_module mmake=kernel-usb-poseidon \
     modname=poseidon modtype=library \
     files="$(FUNCS) $(FILES)" \
     uselibs="debug"
-
-
-%build_progs mmake=kernel-usb-shelltools \
-    files=$(SHELLFILES) targetdir=$(AROS_C)
-
 
 %build_module_simple mmake=kernel-usb-usbromstartup \
   modname=usbromstartup modtype=resource \

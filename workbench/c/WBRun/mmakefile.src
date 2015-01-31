@@ -11,6 +11,7 @@ EXEDIR  := $(AROS_C)
 #MM workbench-c-wbrun : includes linklibs
 
 USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_LDFLAGS := -static
 
 %build_prog mmake=workbench-c-wbrun \
     progname=WBRun targetdir=$(EXEDIR) \

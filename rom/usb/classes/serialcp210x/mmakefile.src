@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES :=    serialcp210x.class dev debug
 
 #MM- kernel-usb-classes-serialcp210x : kernel-usb-usbclass kernel-usb-poseidon-includes

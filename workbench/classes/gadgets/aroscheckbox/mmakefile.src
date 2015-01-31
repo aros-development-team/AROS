@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := checkboxclass support
 
 #MM workbench-gadgets-aroscheckbox : includes linklibs

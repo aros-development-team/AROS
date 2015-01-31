@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := amigaguideclass nodeclass file util process navigator
 
 #MM workbench-datatypes-amigaguide : includes linklibs \

@@ -34,6 +34,7 @@ USER_CFLAGS := -DNDEBUG -DDEBUG=0
     files="$(CHECKCD_FILES)"
 
 USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
+USER_LDFLAGS := -static
 
 %build_module mmake=kernel-fs-cdvdfs \
     modname=cdrom modtype=handler \

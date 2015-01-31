@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := con_handler support completion
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_LDFLAGS := -static
 
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 

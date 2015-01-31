@@ -3,6 +3,8 @@ include $(TOP)/config/make.cfg
 
 FILES := vga_init vgaclass vgahw bitmap
 
+USER_LDFLAGS := -static
+
 %build_module mmake=kernel-hidd-vga \
   modname=vgah modtype=hidd \
   files=$(FILES) uselibs=acpica

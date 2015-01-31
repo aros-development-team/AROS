@@ -23,6 +23,8 @@ USER_CFLAGS += -D__BSD_VISIBLE
 # Enable AROS debugging
 #USER_CFLAGS += -DDEBUG=1
 
+USER_LDFLAGS := -static
+
 %build_module mmake=kernel-ahci \
   modname=ahci modtype=device \
   files="$(FILES)" \

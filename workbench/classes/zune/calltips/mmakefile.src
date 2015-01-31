@@ -4,6 +4,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
 
 FILES         := Calltips
 INCLUDE_FILES := Calltips_mcc.h

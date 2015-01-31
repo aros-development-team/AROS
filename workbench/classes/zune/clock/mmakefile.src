@@ -1,9 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES         := clock
 INCLUDE_FILES := clock.h
-
 
 #MM- workbench-classes-zune : workbench-classes-zune-clock 
 #MM workbench-classes-zune-clock

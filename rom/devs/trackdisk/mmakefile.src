@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-pc-i386-trackdisk-kobj : includes
 
 USER_INCLUDES := -I$(TOP)/rom/devs
+USER_LDFLAGS := -static
 
 %build_module mmake=kernel-devs-trackdisk \
   modname=trackdisk modtype=device \

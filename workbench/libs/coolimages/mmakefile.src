@@ -9,6 +9,8 @@ include $(TOP)/config/make.cfg
 #MM     includes-copy
 #MM- workbench-libs-coolimages : linklibs
 
+USER_LDFLAGS := -static
+
 %build_module mmake=workbench-libs-coolimages \
     modname=coolimages modtype=library \
     files="coolimages_init cool_obtainimagea" \

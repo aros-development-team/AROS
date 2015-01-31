@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := parallel_support parallel_interrupthandlers
 
 #MM- workbench-devs-complete : workbench-devs-parallel

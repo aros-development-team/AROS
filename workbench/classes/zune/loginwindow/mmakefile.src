@@ -3,6 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES         := loginwindow
 INCLUDE_FILES := loginwindow.h
 

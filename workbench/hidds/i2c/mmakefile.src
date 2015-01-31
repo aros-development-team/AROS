@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I.
 
 CFLAGS := $(CFLAGS) -D__KERNEL__
+USER_LDFLAGS := -static
 
 FILES	:= i2c_init i2cdeviceclass i2cclass
 

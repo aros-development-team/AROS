@@ -15,6 +15,7 @@ FILES := libfunctions audio_commands objpoollite audio_esys
 #MM- workbench-devs-eaudio : includes linklibs workbench-devs-AHI
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/devs/AHI/Include/C
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-devs-eaudio \
     modname=audio modtype=device \

@@ -3,7 +3,10 @@
 
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := intern_spisodd intern_spld 
+
 FUNCS := \
     spacos \
     spasin \

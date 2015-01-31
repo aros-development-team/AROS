@@ -15,6 +15,7 @@ USER_CFLAGS      += -Wno-parentheses
 USER_CFLAGS      += -D__GRAPHICS_NOLIBBASE__ \
                     -D__OOP_NOLIBBASE__ \
                     -D__UTILITY_NOLIBBASE__
+USER_LDFLAGS := -static
 
 %build_module mmake=kernel-hidd-graphics \
   modname=graphics modtype=hidd \

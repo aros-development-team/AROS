@@ -9,6 +9,7 @@ FILES := jpegclass stubs memory
 #MM workbench-datatypes-jpeg : includes linklibs workbench-libs-jpeg-linklib
 
 USER_CFLAGS := -DAROS_LC_SETFUNCS
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-jpeg \
     modname=jpeg modtype=datatype \

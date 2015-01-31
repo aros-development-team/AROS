@@ -8,6 +8,7 @@ FILES := printer driver prefs gfx text
 #MM- workbench-devs-quick: workbench-devs-printer-quick
 
 #USER_CFLAGS := -DDEBUG=1
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-devs-printer \
   modname=printer modtype=device \

@@ -34,7 +34,7 @@ ifeq ($(AROS_TARGET_CPU),m68k)
   USER_CFLAGS += -O1
 endif
 
-USER_LDFLAGS:=--verbose
+USER_LDFLAGS := --verbose -static
 
 %build_module mmake=workbench-libs-mathieeedoubtrans \
     modname=mathieeedoubtrans modtype=library \

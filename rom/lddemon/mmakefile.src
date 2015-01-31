@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS += -D__DOS_NOLIBBASE__
+USER_LDFLAGS := -static
 
 %build_module mmake=kernel-lddemon \
   modname=lddemon modtype=resource \

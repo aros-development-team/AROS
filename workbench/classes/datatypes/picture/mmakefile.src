@@ -6,6 +6,7 @@ FILES := pictureclass colorhandling prefs
 #MM workbench-datatypes-picture : includes linklibs
 
 USER_CFLAGS   := -DCOMPILE_DATATYPE -DMYDEBUG
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-picture \
     modname=picture modtype=datatype \

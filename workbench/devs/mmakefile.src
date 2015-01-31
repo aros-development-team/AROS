@@ -30,9 +30,13 @@ include $(TOP)/config/make.cfg
 #MM- includes-generate : \
 #MM      workbench-devs-input-includes
 
+USER_LDFLAGS := -static
+
 %build_module mmake=workbench-devs-fdsk \
   modname=fdsk modtype=device \
   files=fdsk_device
+
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-devs-ramdrive \
   modname=ramdrive modtype=device \

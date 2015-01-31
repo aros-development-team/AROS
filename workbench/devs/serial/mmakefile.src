@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := serial_support serial_interrupthandlers
 
 #MM- workbench-devs-complete : workbench-devs-serial

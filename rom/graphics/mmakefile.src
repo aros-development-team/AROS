@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/cgfx -D__OOP_NOMETHODBASES__
+USER_LDFLAGS := -static
 
 FILES	  := \
 	intregions \

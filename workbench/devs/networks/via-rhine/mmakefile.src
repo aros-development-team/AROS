@@ -8,6 +8,7 @@ FILES := handler unit via-rhine
 
 CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
 CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
+USER_LDFLAGS := -static
 
 #MM- networking-drivers-viarhine : networking-drivers-viarhine-normal
 #MM- networking-drivers-viarhine : networking-drivers-viarhine-debug

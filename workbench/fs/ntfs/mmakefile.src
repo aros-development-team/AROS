@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-fs-ntfs : workbench-libs-uuid-includes
 
+USER_LDFLAGS := -static
+
 FILES := startup main disk cache packet ntfs ops lock direntry charset names timer notify support
 
 DISABLEDFILES :=   file   

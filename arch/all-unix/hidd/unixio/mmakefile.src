@@ -17,6 +17,8 @@ endif
 ## complaints with -O1 or higher optimizations enabled.
 USER_CFLAGS += -Wno-attributes
 
+USER_LDFLAGS := -static
+
 #MM- includes-generate: kernel-unixio-includes
 
 %build_module mmake=kernel-unixio \

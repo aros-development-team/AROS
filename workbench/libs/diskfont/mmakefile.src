@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES	:=  af_fontdescr_io memoryfontfunc diskfontfunc \
 	    dosstreamhook diskfont_io bullet basicfuncs
 

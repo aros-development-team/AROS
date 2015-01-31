@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_LDFLAGS := -static
 
 FILES :=    stir4200.class dev debug
 

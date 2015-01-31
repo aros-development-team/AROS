@@ -38,6 +38,7 @@ FUNCS	:=  createcontext \
 #MM- core-linklibs : linklibs-gadtools
 
 USER_CFLAGS := -D__NOLIBBASE__
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-libs-gadtools \
     modname=gadtools modtype=library \

@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 SVNREV        := $(shell $(SRCDIR)/scripts/svnrev.sh $(SRCDIR))
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
 USER_CFLAGS   := -D__DOS_NOLIBBASE__ -DISODATE="\"$(shell date '+%Y-%m-%d')\"" -DSVNREV=\"$(SVNREV)\"
+USER_LDFLAGS := -static
 
 IMAGE_TYPES := aos elf
 
