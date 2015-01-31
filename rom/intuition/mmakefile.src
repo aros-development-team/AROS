@@ -167,6 +167,7 @@ USER_INCLUDES := -D__DOS_NOLIBBASE__ \
                  -D__GRAPHICS_NOLIBBASE__ \
                  -D__KEYMAP_NOLIBBASE__ \
                  -I$(GENDIR)/$(CURDIR)
+USER_LDFLAGS := -static
 
 #MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
 #MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)

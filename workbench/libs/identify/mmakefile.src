@@ -40,14 +40,16 @@ FILES := library \
 #MM workbench-libs-identify-test : \
 #MM    workbench-libs-identify-lib includes linklibs
 
-%build_module mmake=workbench-libs-identify-lib \
-    modname=identify modtype=library \
-    files="$(FILES)"
-
 %build_prog mmake=workbench-libs-identify-test progname=identifylib files=testidentifylib \
     targetdir=$(AROS_TESTS) \
     cflags=$(CFLAGS) \
     uselibs="identify"
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-libs-identify-lib \
+    modname=identify modtype=library \
+    files="$(FILES)"
 
 %copy_includes mmake=includes-copy includes=identify.h path=libraries
 

@@ -18,6 +18,7 @@ FILES := \
 # We need to use -idirafter, so that we
 # *don't* pick up the project's local MUI headers.
 USER_CFLAGS = -I. -idirafter $(SRCDIR)/$(CURDIR)/../include -DAROS_ABI_V1
+USER_LDFLAGS := -static
 
 #MM workbench-libs-codesets : workbench-libs-codesets-includes
 

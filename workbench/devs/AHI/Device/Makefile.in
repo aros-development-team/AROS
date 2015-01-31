@@ -33,6 +33,9 @@ CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir}
 CFLAGS		= @CFLAGS@
 ASFLAGS		= @ASFLAGS@
 LDFLAGS		= @LDFLAGS@ -nostartfiles
+ifeq (@host_os@,aros)
+LDFLAGS		+= -static
+endif
 ARFLAGS         = @ARFLAGS@
 
 LIBS		= -lamiga

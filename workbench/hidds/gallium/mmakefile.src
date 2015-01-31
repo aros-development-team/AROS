@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
+USER_LDFLAGS := -static
 
 FILES := galliumclass init
 

@@ -16,6 +16,8 @@ USER_CFLAGS = -DHOST_OS_$(ARCH) -isystem $(GENINCDIR) $(HOST_X11_CFLAGS) $(KERNE
 ## complaints with -O1 or higher optimizations enabled.
 USER_CFLAGS += -Wno-attributes
 
+USER_LDFLAGS := -static
+
 # TODO: What if the system is pure Darwin running a regular PC?
 ifeq ($(ARCH),darwin)
 USER_CFLAGS += -D_FORTIFY_SOURCE=0

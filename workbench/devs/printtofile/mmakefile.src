@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-devs-quick: workbench-devs-printtofile-quick
 
+USER_LDFLAGS := -static
+
 %build_module mmake=workbench-devs-printtofile \
   modname=printtofile modtype=device \
   files=printtofile

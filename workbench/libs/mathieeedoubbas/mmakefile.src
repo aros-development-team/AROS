@@ -3,7 +3,12 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := mathieeedoubbas_init ieeedpbas_fpu 
+USER_LDFLAGS := -static
+
+FILES := \
+    mathieeedoubbas_init \
+    ieeedpbas_fpu 
+
 FUNCS := \
     ieeedpabs \
     ieeedpadd \

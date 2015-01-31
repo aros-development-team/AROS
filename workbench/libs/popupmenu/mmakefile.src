@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS :=-D__UTILITY_STDLIBBASE__
+USER_LDFLAGS := -static
 
 FILES :=  pm \
 	  pmgraph \

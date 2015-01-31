@@ -3,6 +3,8 @@ include $(TOP)/config/make.cfg
 
 FILES := class_init probe bus_class interface_pio interface_dma
 
+USER_LDFLAGS := -static
+
 %build_module mmake=kernel-hidd-pciata \
     modname=ata_pci modtype=hidd \
     files="$(FILES)"

@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := \
 	-Wno-uninitialized -Wno-parentheses \
 	-Wno-implicit-function-declaration
+USER_LDFLAGS := -static
 
 %build_prog mmake=workbench-devs-networks-rtl8029 \
     progname=prm-rtl8029.device \

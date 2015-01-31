@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := htmlclass tables parse layout
 
 #MM workbench-datatypes-html : includes linklibs

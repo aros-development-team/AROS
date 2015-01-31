@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := gifclass codeclzw
 
 #MM workbench-datatypes-gif : includes linklibs

@@ -55,8 +55,6 @@
 #undef __pure2
 #undef __deprecated
 
-extern int errno;
- 
 extern void *HostIFace;
 
 /* 

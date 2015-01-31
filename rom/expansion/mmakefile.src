@@ -26,6 +26,8 @@ ifeq ($(ARCH),amiga)
 VERSION := $(ARCH)-$(CPU)
 endif
 
+USER_LDFLAGS := -static
+
 %build_module mmake=kernel-expansion \
   modname=expansion modtype=library version=$(VERSION) \
   files="expansion_init $(FUNCS)" archspecific=yes

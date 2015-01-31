@@ -32,6 +32,9 @@ CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${common_srcdir} -I${srcdir} \
 CFLAGS		= @CFLAGS@
 ASFLAGS		= @ASFLAGS@
 LDFLAGS		= @LDFLAGS@ -nostartfiles
+ifeq (@host_os@,aros)
+LDFLAGS		+= -static
+endif
 ARFLAGS         = @ARFLAGS@
 
 SFDC		= @SFDC@
@@ -114,7 +117,7 @@ Makefile: Makefile.in Makefile.common.in ../../config.status
 	$(AS) $(ASFLAGS) $^ -o $@
 
 $(DRIVER):		$(DRIVER_OBJECTS)
-	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@ -lstdc.static
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(MODEFILE):	$(MODEFILE).o
 	$(OBJCOPY) --output-target=binary $< $@

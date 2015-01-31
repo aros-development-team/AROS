@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 39345 2011-06-17 05:55:29Z jmcmullan $
+# $Id$
 include $(TOP)/config/make.cfg
 
 ACPICA_INCLUDE := ../../source/include
@@ -18,6 +18,8 @@ ACPICA_SOURCES := \
 #ACPICA_SOURCES +=  \
 #       $(call WILDCARD, ../../source/components/disassembler/*.c)
 #USER_CFLAGS += -DACPI_DEBUG_OUTPUT=1 -DACPI_DISASSEMBLER=1
+
+USER_LDFLAGS := -static
 
 # AROS Glue code debugging options
 USER_FLAGS += -DDEBUG=1

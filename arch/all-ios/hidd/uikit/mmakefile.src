@@ -35,9 +35,11 @@ $(OBJDIR$)/%.o : %.m
 $(OBJDIR)/%.d : %.m
 	%mkdepend_q cc=$(KERNEL_CC) flags="$(CFLAGS) $(IOS_CFLAGS)"
 
+BD_STRIP := $(ECHO) >/dev/null
+
 %rule_link_prog prog=$(NATIVE_BINDIR)/$(NATIVE_LIBNAME) \
     objs="$(OBJS)" ldflags="$(LDFLAGS) $(NATIVE_LDFLAGS)" \
-    linker=kernel
+    cmd=$(KERNEL_CC) strip="$(BD_STRIP)"
 
 %include_deps depstargets="kernel-hidd-uikit-native" deps=$(DEPS)
 

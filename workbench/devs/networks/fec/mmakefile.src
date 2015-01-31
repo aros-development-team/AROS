@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := fec_unit fec_handler fec_hardware
 
 %build_module mmake=workbench-devs-networks-fec-powerpc \

@@ -5,6 +5,7 @@ FILES := handler unit rtl8139
 
 CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
 CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
+USER_LDFLAGS := -static
 
 #MM- workbench-devs-networks-rtl8139 : workbench-devs-networks-rtl8139-normal
 #MM- workbench-devs-networks-rtl8139 : workbench-devs-networks-rtl8139-debug

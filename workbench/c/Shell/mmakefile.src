@@ -24,6 +24,7 @@ FILES := \
 
 USER_CFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
 	       -D__DOS_NOLIBBASE__
+USER_LDFLAGS := -static
 
 #MM- workbench-c : workbench-c-shell
 

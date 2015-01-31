@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := postscript
 
 USER_CFLAGS := -D__GRAPHICS_NOLIBBASE__
+USER_LDFLAGS := -static
 
 #MM- workbench-printers: workbench-printers-postscript
 

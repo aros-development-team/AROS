@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FUNCS := meminfonvd \
 	 readnvddata \
 	 setnvdprotection \

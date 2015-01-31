@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
 %build_prog mmake=workbench-datatypes-gemimage \

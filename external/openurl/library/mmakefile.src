@@ -15,6 +15,7 @@ FILES:= libinit \
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
 USER_CFLAGS := -DAROS_ABI_V1
+USER_LDFLAGS := -static
 
 #MM- external-openurl-lib : linklibs external-openurl-includes
 

@@ -14,6 +14,7 @@ FILES = \
 
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses \
  -I$(AROS_DEVELOPMENT)/netinclude -I$(SRCDIR)/$(CURDIR)/include
+USER_LDFLAGS := -static
 
 #MM workbench-network-smbfs-client : aros-tcpip workbench-network-smbfs-setup includes
 

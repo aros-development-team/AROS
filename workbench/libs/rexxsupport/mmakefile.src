@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := allocmem freemem openport closeport waitpkt getarg getpkt \
          portcleanup reply showdir showlist statef delay null next \
 	 offset baddr delete makedir rename typepkt forbid

@@ -2,6 +2,8 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-fs-complete : workbench-fs-port
 
+USER_LDFLAGS := -static
+
 FILES=port-handler
 
 %build_module mmake=workbench-fs-port \

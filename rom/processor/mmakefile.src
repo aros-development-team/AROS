@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 #MM kernel-processor-kobj: includes
 #MM kernel-processor: includes
 
+USER_LDFLAGS := -static
+
 %build_module mmake=kernel-processor modname=processor modtype=resource \
     version=$(AROS_TARGET_PLATFORM) files="init getcpuinfo" \
     archspecific=yes

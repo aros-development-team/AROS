@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := emac_hw emac_unit mal handler
 
 %build_module mmake=workbench-devs-networks-emac-powerpc \

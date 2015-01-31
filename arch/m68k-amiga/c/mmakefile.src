@@ -33,7 +33,7 @@ USER_AFLAGS := -I$(GENINCDIR) -Os -march=68060
 
 #MM workbench-c-m68k-setpatcharos : linklibs-loadseg
 
-USER_LDFLAGS := -nostdc
+USER_LDFLAGS := -static
 
 FILES := gdbstub
 
@@ -50,7 +50,7 @@ FILES := gdbstop
 CFILES := SetPatchAROS
 AFILES := newstackswap
 USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
-USER_LDFLAGS  := -L$(GENDIR)/lib -nostdc
+USER_LDFLAGS  := -L$(GENDIR)/lib -static
 
 %build_prog mmake=workbench-c-m68k-setpatcharos progname=SetPatchAROS \
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROSARCHDIR) \

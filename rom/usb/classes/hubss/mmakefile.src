@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES :=    hubss_class
 
 #MM- kernel-usb-classes-hubss : kernel-usb-usbclass kernel-usb-poseidon-includes

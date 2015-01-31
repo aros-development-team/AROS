@@ -8,6 +8,7 @@ include $(TOP)/config/make.cfg
 # *don't* pick up the project's local MUI headers.
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcp
 USER_CFLAGS := -DAROS_ABI_V1
+USER_LDFLAGS := -static
 
 FILES := library \
         AllocBitMap \

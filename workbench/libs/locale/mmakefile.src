@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := defaultlocale english initlocale catalog_funcs patches 
 FUNCS := \
     closecatalog closelocale convtolower convtoupper \

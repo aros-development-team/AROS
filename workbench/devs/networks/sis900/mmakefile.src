@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 #MM- workbench-devs-networks-sis900-i386 : workbench-devs-networks-sis900
 #MM- workbench-devs-networks-sis900-x86_64 : workbench-devs-networks-sis900
 
+USER_LDFLAGS := -static
+
 FILES := handler unit sis900
 
 %build_module mmake=workbench-devs-networks-sis900 \

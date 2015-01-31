@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES :=    cdcacm.class dev debug
 
 #MM- kernel-usb-classes-cdcacm : kernel-usb-usbclass kernel-usb-poseidon-includes

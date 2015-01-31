@@ -10,6 +10,7 @@ FILES := dosboot_init bootstrap bootscan \
 #MM- kernel-dosboot : includes linklibs kernel-bootloader-includes
 
 USER_INCLUDES := -I$(SRCDIR)/rom/devs -I$(GENDIR)/$(CURDIR)
+USER_LDFLAGS := -static
 
 %build_module mmake=kernel-dosboot \
   modname=dosboot modtype=resource \

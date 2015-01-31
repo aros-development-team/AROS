@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    midimsgtype2 miditodriver receiverproc strings sysexdistr \
 	    unlinkmidilink getmidilinkfromownernode

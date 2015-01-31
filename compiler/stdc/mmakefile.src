@@ -279,6 +279,11 @@ STDC_STATIC := \
     atoi \
     atol \
     bsearch \
+    math/s_copysign  math/s_copysignf  math/s_copysignl \
+    math/e_log  math/e_logf \
+    math/e_log10  math/e_log10f \
+    math/e_pow  math/e_powf \
+    math/s_scalbn  math/s_scalbnf  \
     math/e_sqrt \
     memchr \
     memcmp \

@@ -1,9 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES         := busy
 INCLUDE_FILES := Busy_mcc.h
-
 
 #MM- workbench-classes-zune : workbench-classes-zune-busy
 #MM workbench-classes-zune-busy

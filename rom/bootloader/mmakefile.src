@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 #MM kernel-bootloader: includes kernel-bootloader-includes
 
 USER_CFLAGS += -D__UTILITY_NOLIBBASE__
+USER_LDFLAGS := -static
 
 %build_module mmake=kernel-bootloader \
     modname=bootloader modtype=resource \

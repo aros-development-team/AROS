@@ -3,6 +3,8 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39 $(BASE_CFLAGS) -DCATCOMP_NUMBERS -D__NOLIBBASE__ -DUSE_FLAC -DUSE_MPG123 -DUSE_VORBIS -DUSE_WAVPACK
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../dms
+USER_LDFLAGS := -static
+
 TARGETDIR := $(AROS_DEVS)/DiskImage
 
 #MM- workbench-devs-diskimage-plugins : \

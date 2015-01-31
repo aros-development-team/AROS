@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := cycleclass support
 
 #MM workbench-gadgets-aroscycle : includes linklibs

@@ -2,6 +2,8 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-fs-complete : workbench-fs-pipe
 
+USER_LDFLAGS := -static
+
 FILES=pipebuf pipedebug pipecreate pipedir \
       pipe-handler pipelists pipename pipesched \
       main

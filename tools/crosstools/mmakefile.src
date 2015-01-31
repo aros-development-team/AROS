@@ -18,14 +18,12 @@ ICU_EXTRA_OPTS= \
         --disable-extras \
         --with-data-packaging=static
 
-BINUTILS_VERSION = 2.23.2
-
-ifneq (,$(findstring $(HOST_CC),clang))
-BINUTILS_EXTRA_OPTS :=
+ifneq (,$(findstring clang,"$(HOST_CC)"))
+BINUTILS_VERSION = 2.25
 else
-BINUTILS_EXTRA_OPTS :=
+BINUTILS_VERSION = 2.23.2
 endif
-BINUTILS_EXTRA_OPTS += --target=$(AROS_TARGET_CPU)-aros
+BINUTILS_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
 BINUTILS_EXTRA_OPTS += -bindir=$(CROSSTOOLSDIR)
 BINUTILS_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 BINUTILS_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)

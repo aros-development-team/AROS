@@ -3,6 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES         := prefseditor support
 INCLUDE_FILES := prefseditor.h
 

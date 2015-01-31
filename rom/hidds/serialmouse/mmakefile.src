@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 
 FILES := startup mouseclass drv_serial
 
+USER_LDFLAGS := -static
+
 %build_module mmake=kernel-hidd-serialmouse \
   modname=serialmouse modtype=hidd \
   files=$(FILES) \

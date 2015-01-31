@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
+USER_LDFLAGS := -static
 
 %build_prog mmake=workbench-devs-networks-rhine \
     progname="rhine.device" \

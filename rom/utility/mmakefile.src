@@ -13,6 +13,8 @@ FUNCTIONS := \
 	taginarray tolower toupper udivmod32 umult32 umult64 \
 	unpackstructuretags
 
+USER_LDFLAGS := -static
+
 #MM kernel-utility : kernel-utility-$(ARCH)-$(CPU)
 #MM kernel-utility-linklib : kernel-utility-$(ARCH)-$(CPU)
 
