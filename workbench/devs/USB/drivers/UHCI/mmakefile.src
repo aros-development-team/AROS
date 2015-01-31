@@ -1,11 +1,13 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := uhci_init uhciclass hardware
 
-%build_module mmake=hidd-usb-drivers-uhci 	\
-	modname=uhci modtype=hidd		\
-	files="$(FILES)"				\
-	uselibs="hiddstubs"
+%build_module mmake=hidd-usb-drivers-uhci \
+  modname=uhci modtype=hidd \
+  files="$(FILES)" \
+  uselibs="hiddstubs"
 
 %common
