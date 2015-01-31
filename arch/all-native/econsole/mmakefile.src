@@ -1,5 +1,7 @@
-#   $Id$
+# $Id$
 include $(TOP)/config/make.cfg
+
+USER_LDFLAGS := -static
 
 FILES := econsole
 
@@ -13,6 +15,5 @@ USER_CFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 %build_module mmake=kernel-econsole \
   modname=econsole modtype=handler \
   files="$(FILES)"
-
 
 %common

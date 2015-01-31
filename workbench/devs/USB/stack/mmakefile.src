@@ -1,11 +1,13 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES := usb_init usbclass usbdeviceclass usbhubclass usbprocess misc
 
-%build_module mmake=hidd-usb-stack 	\
-	modname=usb modtype=hidd		\
-	files="$(FILES)"				\
-	uselibs="hiddstubs"
+%build_module mmake=hidd-usb-stack \
+  modname=usb modtype=hidd \
+  files="$(FILES)" \
+  uselibs="hiddstubs"
 
 %common

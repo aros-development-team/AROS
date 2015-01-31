@@ -1,6 +1,7 @@
 # $Id$
-
 include $(TOP)/config/make.cfg
+
+USER_LDFLAGS := -static
 
 FILES := storage_init storageclass storage_task storage_device storage_volumes
 STUBS := storage_stubs
