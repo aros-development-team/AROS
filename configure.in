@@ -1546,6 +1546,7 @@ else
     AROS_CROSSTOOLSDIR="$aros_toolchain_install"
     PATH="$AROS_CROSSTOOLSDIR:$PATH"
     aros_config_ldflags="$aros_config_ldflags -L$AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/lib"
+    aros_config_cflags="$aros_config_cflags -isystem$AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include"
 fi
 AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
