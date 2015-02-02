@@ -22,6 +22,7 @@
 #include <grub/misc.h>
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
+#include <grub/mm.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -126,8 +127,9 @@ static const struct grub_arg_option options[] =
 
 static int iospace;
 
-static int NESTED_FUNC_ATTR
-grub_lspci_iter (grub_pci_device_t dev, grub_pci_id_t pciid)
+static int
+grub_lspci_iter (grub_pci_device_t dev, grub_pci_id_t pciid,
+		 void *data __attribute__ ((unused)))
 {
   grub_uint32_t class;
   const char *sclass;
@@ -218,7 +220,7 @@ grub_cmd_lspci (grub_extcmd_context_t ctxt,
 		char **args __attribute__ ((unused)))
 {
   iospace = ctxt->state[0].set;
-  grub_pci_iterate (grub_lspci_iter);
+  grub_pci_iterate (grub_lspci_iter, NULL);
   return GRUB_ERR_NONE;
 }
 

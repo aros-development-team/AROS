@@ -42,7 +42,6 @@ grub_font_draw_string (const char *str, grub_font_t font,
                        int left_x, int baseline_y)
 {
   int x;
-  struct grub_font_glyph *glyph;
   grub_uint32_t *logical;
   grub_ssize_t logical_len, visual_len;
   struct grub_unicode_glyph *visual, *ptr;
@@ -52,7 +51,7 @@ grub_font_draw_string (const char *str, grub_font_t font,
     return grub_errno;
 
   visual_len = grub_bidi_logical_to_visual (logical, logical_len, &visual,
-					    0, 0, 0);
+					    0, 0, 0, 0, 0, 0, 0);
   grub_free (logical);
   if (visual_len < 0)
     return grub_errno;
@@ -60,16 +59,18 @@ grub_font_draw_string (const char *str, grub_font_t font,
   for (ptr = visual, x = left_x; ptr < visual + visual_len; ptr++)
     {
       grub_err_t err;
+      struct grub_font_glyph *glyph;
       glyph = grub_font_construct_glyph (font, ptr);
       if (!glyph)
 	return grub_errno;
       err = grub_font_draw_glyph (glyph, color, x, baseline_y);
       x += glyph->device_width;
-      grub_free (glyph);
       if (err)
 	return err;
     }
 
+  for (ptr = visual; ptr < visual + visual_len; ptr++)
+    grub_unicode_destroy_glyph (ptr);
   grub_free (visual);
 
   return GRUB_ERR_NONE;
@@ -102,8 +103,9 @@ grub_font_get_string_width (grub_font_t font, const char *str)
 					   &glyph);
       width += grub_font_get_constructed_device_width (font, &glyph);
 
-      grub_free (glyph.combining);
+      grub_unicode_destroy_glyph (&glyph);
     }
+  grub_free (logical);
 
   return width;
 }

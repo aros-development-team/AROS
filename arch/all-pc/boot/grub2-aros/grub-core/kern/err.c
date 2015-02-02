@@ -48,18 +48,6 @@ grub_error (grub_err_t n, const char *fmt, ...)
 }
 
 void
-grub_fatal (const char *fmt, ...)
-{
-  va_list ap;
-
-  va_start (ap, fmt);
-  grub_vprintf (_(fmt), ap);
-  va_end (ap);
-
-  grub_abort ();
-}
-
-void
 grub_error_push (void)
 {
   /* Only add items to stack, if there is enough room.  */

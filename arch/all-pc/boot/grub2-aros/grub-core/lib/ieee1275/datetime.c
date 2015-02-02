@@ -30,22 +30,23 @@ GRUB_MOD_LICENSE ("GPLv3+");
 static char *rtc = 0;
 static int no_ieee1275_rtc = 0;
 
+/* Helper for find_rtc.  */
+static int
+find_rtc_iter (struct grub_ieee1275_devalias *alias)
+{
+  if (grub_strcmp (alias->type, "rtc") == 0)
+    {
+      grub_dprintf ("datetime", "Found RTC %s\n", alias->path);
+      rtc = grub_strdup (alias->path);
+      return 1;
+    }
+  return 0;
+}
+
 static void
 find_rtc (void)
 {
-  auto int hook (struct grub_ieee1275_devalias *alias);
-  int hook (struct grub_ieee1275_devalias *alias)
-  {
-    if (grub_strcmp (alias->type, "rtc") == 0)
-      {
-	grub_dprintf ("datetime", "Found RTC %s\n", alias->path);
-	rtc = grub_strdup (alias->path);
-	return 1;
-      }
-    return 0;
-  }
-  
-  grub_ieee1275_devices_iterate (hook);
+  grub_ieee1275_devices_iterate (find_rtc_iter);
   if (!rtc)
     no_ieee1275_rtc = 1;
 }
@@ -89,7 +90,7 @@ grub_get_datetime (struct grub_datetime *datetime)
 
   grub_ieee1275_close (ihandle);
 
-  if (status == -1)
+  if (status == -1 || args.catch_result)
     return grub_error (GRUB_ERR_IO, "get-time failed");
 
   datetime->year = args.year;
@@ -148,7 +149,7 @@ grub_set_datetime (struct grub_datetime *datetime)
 
   grub_ieee1275_close (ihandle);
 
-  if (status == -1)
+  if (status == -1 || args.catch_result)
     return grub_error (GRUB_ERR_IO, "set-time failed");
 
   return GRUB_ERR_NONE;

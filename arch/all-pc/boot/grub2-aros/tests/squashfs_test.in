@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+if ! which mksquashfs >/dev/null 2>&1; then
+   echo "mksquashfs not installed; cannot test squashfs."
+   exit 77
+fi
+
+"@builddir@/grub-fs-tester" squash4_gzip
+"@builddir@/grub-fs-tester" squash4_xz
+"@builddir@/grub-fs-tester" squash4_lzo

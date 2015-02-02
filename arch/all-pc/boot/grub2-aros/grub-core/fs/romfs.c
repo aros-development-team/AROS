@@ -171,10 +171,7 @@ grub_romfs_read_symlink (grub_fshelp_node_t node)
 
 static int
 grub_romfs_iterate_dir (grub_fshelp_node_t dir,
-			int NESTED_FUNC_ATTR
-			(*hook) (const char *filename,
-				 enum grub_fshelp_filetype filetype,
-				 grub_fshelp_node_t node))
+			grub_fshelp_iterate_dir_hook_t hook, void *hook_data)
 {
   grub_disk_addr_t caddr;
   struct grub_romfs_file_header hdr;
@@ -306,7 +303,7 @@ grub_romfs_iterate_dir (grub_fshelp_node_t dir,
 	  }
 	}
 
-      if (hook ((char *) name, filetype, node))
+      if (hook ((char *) name, filetype, node, hook_data))
 	{
 	  grub_free (name);
 	  return 1;
@@ -316,29 +313,35 @@ grub_romfs_iterate_dir (grub_fshelp_node_t dir,
   return 0;
 }
 
+/* Context for grub_romfs_dir.  */
+struct grub_romfs_dir_ctx
+{
+  grub_fs_dir_hook_t hook;
+  void *hook_data;
+};
+
+/* Helper for grub_romfs_dir.  */
+static int
+grub_romfs_dir_iter (const char *filename, enum grub_fshelp_filetype filetype,
+		     grub_fshelp_node_t node, void *data)
+{
+  struct grub_romfs_dir_ctx *ctx = data;
+  struct grub_dirhook_info info;
+
+  grub_memset (&info, 0, sizeof (info));
+
+  info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
+  grub_free (node);
+  return ctx->hook (filename, &info, ctx->hook_data);
+}
+
 static grub_err_t
 grub_romfs_dir (grub_device_t device, const char *path,
-		int (*hook) (const char *filename,
-			     const struct grub_dirhook_info *info))
+		grub_fs_dir_hook_t hook, void *hook_data)
 {
+  struct grub_romfs_dir_ctx ctx = { hook, hook_data };
   struct grub_romfs_data *data = 0;
   struct grub_fshelp_node *fdiro = 0, start;
-
-  auto int NESTED_FUNC_ATTR iterate (const char *filename,
-				     enum grub_fshelp_filetype filetype,
-				     grub_fshelp_node_t node);
-
-  int NESTED_FUNC_ATTR iterate (const char *filename,
-				enum grub_fshelp_filetype filetype,
-				grub_fshelp_node_t node)
-    {
-      struct grub_dirhook_info info;
-      grub_memset (&info, 0, sizeof (info));
-
-      info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
-      grub_free (node);
-      return hook (filename, &info);
-    }
 
   data = grub_romfs_mount (device);
   if (! data)
@@ -352,7 +355,7 @@ grub_romfs_dir (grub_device_t device, const char *path,
   if (grub_errno)
     goto fail;
 
-  grub_romfs_iterate_dir (fdiro, iterate);
+  grub_romfs_iterate_dir (fdiro, grub_romfs_dir_iter, &ctx);
 
  fail:
   grub_free (data);
@@ -396,6 +399,7 @@ grub_romfs_read (grub_file_t file, char *buf, grub_size_t len)
 
   /* XXX: The file is stored in as a single extent.  */
   data->data->disk->read_hook = file->read_hook;
+  data->data->disk->read_hook_data = file->read_hook_data;
   grub_disk_read (data->data->disk,
 		  (data->data_addr + file->offset) >> GRUB_DISK_SECTOR_BITS,
 		  (data->data_addr + file->offset) & (GRUB_DISK_SECTOR_SIZE - 1),		  

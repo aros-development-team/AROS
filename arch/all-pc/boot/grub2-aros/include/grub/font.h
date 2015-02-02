@@ -27,7 +27,25 @@
 /* Forward declaration of opaque structure grub_font.
    Users only pass struct grub_font pointers to the font module functions,
    and do not have knowledge of the structure contents.  */
-struct grub_font;
+/* Full structure was moved here for inline function but still
+   shouldn't be used directly.
+ */
+struct grub_font
+{
+  char *name;
+  grub_file_t file;
+  char *family;
+  short point_size;
+  short weight;
+  short max_char_width;
+  short max_char_height;
+  short ascent;
+  short descent;
+  short leading;
+  grub_uint32_t num_chars;
+  struct char_index_entry *char_index;
+  grub_uint16_t *bmp_idx;
+};
 
 /* Font type used to access font functions.  */
 typedef struct grub_font *grub_font_t;
@@ -81,7 +99,7 @@ void grub_font_loader_init (void);
 
 /* Load a font and add it to the beginning of the global font list.
    Returns: 0 upon success; nonzero upon failure.  */
-int grub_font_load (const char *filename);
+grub_font_t EXPORT_FUNC(grub_font_load) (const char *filename);
 
 /* Get the font that has the specified name.  Font names are in the form
    "Family Name Bold Italic 14", where Bold and Italic are optional.
@@ -93,9 +111,19 @@ const char *EXPORT_FUNC (grub_font_get_name) (grub_font_t font);
 
 int EXPORT_FUNC (grub_font_get_max_char_width) (grub_font_t font);
 
-int EXPORT_FUNC (grub_font_get_max_char_height) (grub_font_t font);
+/* Get the maximum height of any character in the font in pixels.  */
+static inline int
+grub_font_get_max_char_height (grub_font_t font)
+{
+  return font->max_char_height;
+}
 
-int EXPORT_FUNC (grub_font_get_ascent) (grub_font_t font);
+/* Get the distance in pixels from the top of characters to the baseline.  */
+static inline int
+grub_font_get_ascent (grub_font_t font)
+{
+  return font->ascent;
+}
 
 int EXPORT_FUNC (grub_font_get_descent) (grub_font_t font);
 

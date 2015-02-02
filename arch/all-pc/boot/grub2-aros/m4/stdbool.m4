@@ -1,17 +1,17 @@
 # Check for stdbool.h that conforms to C99.
 
-dnl Copyright (C) 2002-2006, 2009-2010 Free Software Foundation, Inc.
+dnl Copyright (C) 2002-2006, 2009-2013 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
 
-#serial 3
+#serial 5
 
 # Prepare for substituting <stdbool.h> if it is not supported.
 
 AC_DEFUN([AM_STDBOOL_H],
 [
-  AC_REQUIRE([AC_HEADER_STDBOOL])
+  AC_REQUIRE([AC_CHECK_HEADER_STDBOOL])
 
   # Define two additional variables used in the Makefile substitution.
 
@@ -21,6 +21,7 @@ AC_DEFUN([AM_STDBOOL_H],
     STDBOOL_H='stdbool.h'
   fi
   AC_SUBST([STDBOOL_H])
+  AM_CONDITIONAL([GL_GENERATE_STDBOOL_H], [test -n "$STDBOOL_H"])
 
   if test "$ac_cv_type__Bool" = yes; then
     HAVE__BOOL=1
@@ -33,11 +34,9 @@ AC_DEFUN([AM_STDBOOL_H],
 # AM_STDBOOL_H will be renamed to gl_STDBOOL_H in the future.
 AC_DEFUN([gl_STDBOOL_H], [AM_STDBOOL_H])
 
-# This version of the macro is needed in autoconf <= 2.67.  Autoconf has
-# it built in since 2.60, but we want the tweaks from the 2.68 version
-# to avoid rejecting xlc and clang due to relying on extensions.
+# This version of the macro is needed in autoconf <= 2.68.
 
-AC_DEFUN([AC_HEADER_STDBOOL],
+AC_DEFUN([AC_CHECK_HEADER_STDBOOL],
   [AC_CACHE_CHECK([for stdbool.h that conforms to C99],
      [ac_cv_header_stdbool_h],
      [AC_COMPILE_IFELSE(
@@ -98,6 +97,4 @@ AC_DEFUN([AC_HEADER_STDBOOL],
         [ac_cv_header_stdbool_h=yes],
         [ac_cv_header_stdbool_h=no])])
    AC_CHECK_TYPES([_Bool])
-   if test $ac_cv_header_stdbool_h = yes; then
-     AC_DEFINE([HAVE_STDBOOL_H], [1], [Define to 1 if stdbool.h conforms to C99.])
-   fi])
+])

@@ -95,7 +95,7 @@ struct grub_geli_key
   grub_uint8_t iv_key[64];
   grub_uint8_t cipher_key[64];
   grub_uint8_t hmac[64];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_geli_phdr
 {
@@ -111,7 +111,7 @@ struct grub_geli_phdr
   grub_uint32_t niter;
   grub_uint8_t salt[64];
   struct grub_geli_key keys[2];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 enum
   {
@@ -144,42 +144,35 @@ geli_rekey (struct grub_cryptodisk *dev, grub_uint64_t zoneno)
   const struct {
     char magic[4];
     grub_uint64_t zone;
-  } __attribute__ ((packed)) tohash
+  } GRUB_PACKED tohash
       = { {'e', 'k', 'e', 'y'}, grub_cpu_to_le64 (zoneno) };
-  grub_uint64_t key[(dev->hash->mdlen + 7) / 8];
+  GRUB_PROPERLY_ALIGNED_ARRAY (key, GRUB_CRYPTO_MAX_MDLEN);
+
+  if (dev->hash->mdlen > GRUB_CRYPTO_MAX_MDLEN)
+    return GPG_ERR_INV_ARG;
 
   grub_dprintf ("geli", "rekeying %" PRIuGRUB_UINT64_T " keysize=%d\n",
 		zoneno, dev->rekey_derived_size);
   gcry_err = grub_crypto_hmac_buffer (dev->hash, dev->rekey_key, 64,
 				      &tohash, sizeof (tohash), key);
   if (gcry_err)
-    return grub_crypto_gcry_error (gcry_err);
+    return gcry_err;
 
   return grub_cryptodisk_setkey (dev, (grub_uint8_t *) key,
 				 dev->rekey_derived_size); 
-}
-
-static inline int
-ascii2hex (char c)
-{
-  if (c >= '0' && c <= '9')
-    return c - '0';
-  if (c >= 'a' && c <= 'f')
-    return c - 'a' + 10;
-  if (c >= 'A' && c <= 'F')
-    return c - 'A' + 10;
-  return 0;
 }
 
 static inline gcry_err_code_t
 make_uuid (const struct grub_geli_phdr *header,
 	   char *uuid)
 {
-  grub_uint8_t uuidbin[GRUB_MD_SHA256->mdlen];
+  grub_uint8_t uuidbin[GRUB_CRYPTODISK_MAX_UUID_LENGTH];
   gcry_err_code_t err;
   grub_uint8_t *iptr;
   char *optr;
 
+  if (2 * GRUB_MD_SHA256->mdlen + 1 > GRUB_CRYPTODISK_MAX_UUID_LENGTH)
+    return GPG_ERR_TOO_LARGE;
   err = grub_crypto_hmac_buffer (GRUB_MD_SHA256,
 				 header->salt, sizeof (header->salt),
 				 "uuid", sizeof ("uuid") - 1, uuidbin);
@@ -187,7 +180,7 @@ make_uuid (const struct grub_geli_phdr *header,
     return err;
 
   optr = uuid;
-  for (iptr = uuidbin; iptr < &uuidbin[ARRAY_SIZE (uuidbin)]; iptr++)
+  for (iptr = uuidbin; iptr < &uuidbin[GRUB_MD_SHA256->mdlen]; iptr++)
     {
       grub_snprintf (optr, 3, "%02x", *iptr);
       optr += 2;
@@ -198,19 +191,13 @@ make_uuid (const struct grub_geli_phdr *header,
 
 #ifdef GRUB_UTIL
 
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <grub/emu/hostdisk.h>
-#include <unistd.h>
-#include <string.h>
 #include <grub/emu/misc.h>
 
 char *
 grub_util_get_geli_uuid (const char *dev)
 {
-  int fd = open (dev, O_RDONLY);
+  grub_util_fd_t fd;
   grub_uint64_t s;
   unsigned log_secsize;
   grub_uint8_t hdr[512];
@@ -218,29 +205,37 @@ grub_util_get_geli_uuid (const char *dev)
   char *uuid; 
   gcry_err_code_t err;
 
-  if (fd < 0)
+  fd = grub_util_fd_open (dev, GRUB_UTIL_FD_O_RDONLY);
+
+  if (!GRUB_UTIL_FD_IS_VALID (fd))
     return NULL;
 
   s = grub_util_get_fd_size (fd, dev, &log_secsize);
   s >>= log_secsize;
-  grub_util_fd_seek (fd, dev, (s << log_secsize) - 512);
+  if (grub_util_fd_seek (fd, (s << log_secsize) - 512) < 0)
+    grub_util_error ("%s", _("couldn't read ELI metadata"));
 
   uuid = xmalloc (GRUB_MD_SHA256->mdlen * 2 + 1);
   if (grub_util_fd_read (fd, (void *) &hdr, 512) < 0)
     grub_util_error ("%s", _("couldn't read ELI metadata"));
+
+  grub_util_fd_close (fd);
 	  
   COMPILE_TIME_ASSERT (sizeof (header) <= 512);
   header = (void *) &hdr;
 
   /* Look for GELI magic sequence.  */
   if (grub_memcmp (header->magic, GELI_MAGIC, sizeof (GELI_MAGIC))
-      || grub_le_to_cpu32 (header->version) > 5
+      || grub_le_to_cpu32 (header->version) > 7
       || grub_le_to_cpu32 (header->version) < 1)
     grub_util_error ("%s", _("wrong ELI magic or version"));
 
   err = make_uuid ((void *) &hdr, uuid);
   if (err)
-    return NULL;
+    {
+      grub_free (uuid);
+      return NULL;
+    }
 
   return uuid;
 }
@@ -256,9 +251,12 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
   const struct gcry_cipher_spec *ciph;
   const char *ciphername = NULL;
   gcry_err_code_t gcry_err;
-  char uuid[GRUB_MD_SHA256->mdlen * 2 + 1];
+  char uuid[GRUB_CRYPTODISK_MAX_UUID_LENGTH];
   grub_disk_addr_t sector;
   grub_err_t err;
+
+  if (2 * GRUB_MD_SHA256->mdlen + 1 > GRUB_CRYPTODISK_MAX_UUID_LENGTH)
+    return NULL;
 
   sector = grub_disk_get_size (disk);
   if (sector == GRUB_DISK_SIZE_UNKNOWN || sector == 0)
@@ -271,7 +269,7 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
 
   /* Look for GELI magic sequence.  */
   if (grub_memcmp (header.magic, GELI_MAGIC, sizeof (GELI_MAGIC))
-      || grub_le_to_cpu32 (header.version) > 5
+      || grub_le_to_cpu32 (header.version) > 7
       || grub_le_to_cpu32 (header.version) < 1)
     {
       grub_dprintf ("geli", "wrong magic %02x\n", header.magic[0]);
@@ -338,19 +336,29 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
     {
       secondary_cipher = grub_crypto_cipher_open (ciph);
       if (!secondary_cipher)
-	return NULL;
+	{
+	  grub_crypto_cipher_close (cipher);
+	  return NULL;
+	}
+
     }
 
   if (grub_le_to_cpu16 (header.keylen) > 1024)
     {
       grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid keysize %d",
 		  grub_le_to_cpu16 (header.keylen));
+      grub_crypto_cipher_close (cipher);
+      grub_crypto_cipher_close (secondary_cipher);
       return NULL;
     }
 
   newdev = grub_zalloc (sizeof (struct grub_cryptodisk));
   if (!newdev)
-    return NULL;
+    {
+      grub_crypto_cipher_close (cipher);
+      grub_crypto_cipher_close (secondary_cipher);
+      return NULL;
+    }
   newdev->cipher = cipher;
   newdev->secondary_cipher = secondary_cipher;
   newdev->offset = 0;
@@ -381,9 +389,7 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
       newdev->rekey_shift = 20;
     }
 
-#ifdef GRUB_UTIL
   newdev->modname = "geli";
-#endif
 
   newdev->total_length = grub_disk_get_size (disk) - 1;
   grub_memcpy (newdev->uuid, uuid, sizeof (newdev->uuid));
@@ -395,10 +401,11 @@ static grub_err_t
 recover_key (grub_disk_t source, grub_cryptodisk_t dev)
 {
   grub_size_t keysize;
-  grub_uint8_t digest[dev->hash->mdlen];
-  grub_uint8_t geomkey[dev->hash->mdlen];
-  grub_uint8_t verify_key[dev->hash->mdlen];
-  grub_uint8_t zero[dev->cipher->cipher->blocksize];
+  grub_uint8_t digest[GRUB_CRYPTO_MAX_MDLEN];
+  grub_uint8_t geomkey[GRUB_CRYPTO_MAX_MDLEN];
+  grub_uint8_t verify_key[GRUB_CRYPTO_MAX_MDLEN];
+  grub_uint8_t zero[GRUB_CRYPTO_MAX_CIPHER_BLOCKSIZE];
+  grub_uint8_t geli_cipher_key[64];
   char passphrase[MAX_PASSPHRASE] = "";
   unsigned i;
   gcry_err_code_t gcry_err;
@@ -406,6 +413,12 @@ recover_key (grub_disk_t source, grub_cryptodisk_t dev)
   char *tmp;
   grub_disk_addr_t sector;
   grub_err_t err;
+
+  if (dev->cipher->cipher->blocksize > GRUB_CRYPTO_MAX_CIPHER_BLOCKSIZE)
+    return grub_error (GRUB_ERR_BUG, "cipher block is too long");
+
+  if (dev->hash->mdlen > GRUB_CRYPTO_MAX_MDLEN)
+    return grub_error (GRUB_ERR_BUG, "mdlen is too long");
 
   sector = grub_disk_get_size (source);
   if (sector == GRUB_DISK_SIZE_UNKNOWN || sector == 0)
@@ -416,7 +429,7 @@ recover_key (grub_disk_t source, grub_cryptodisk_t dev)
   if (err)
     return err;
 
-  keysize = grub_le_to_cpu16 (header.keylen) / 8;
+  keysize = grub_le_to_cpu16 (header.keylen) / GRUB_CHAR_BIT;
   grub_memset (zero, 0, sizeof (zero));
 
   grub_puts_ (N_("Attempting to decrypt master key..."));
@@ -468,12 +481,12 @@ recover_key (grub_disk_t source, grub_cryptodisk_t dev)
     }
 
   gcry_err = grub_crypto_hmac_buffer (dev->hash, geomkey,
-				      sizeof (geomkey), "\1", 1, digest);
+				      dev->hash->mdlen, "\1", 1, digest);
   if (gcry_err)
     return grub_crypto_gcry_error (gcry_err);
 
   gcry_err = grub_crypto_hmac_buffer (dev->hash, geomkey,
-				      sizeof (geomkey), "\0", 1, verify_key);
+				      dev->hash->mdlen, "\0", 1, verify_key);
   if (gcry_err)
     return grub_crypto_gcry_error (gcry_err);
 
@@ -483,7 +496,7 @@ recover_key (grub_disk_t source, grub_cryptodisk_t dev)
   for (i = 0; i < ARRAY_SIZE (header.keys); i++)
     {
       struct grub_geli_key candidate_key;
-      grub_uint8_t key_hmac[dev->hash->mdlen];
+      grub_uint8_t key_hmac[GRUB_CRYPTO_MAX_MDLEN];
 
       /* Check if keyslot is enabled.  */
       if (! (header.keys_used & (1 << i)))
@@ -504,7 +517,7 @@ recover_key (grub_disk_t source, grub_cryptodisk_t dev)
 	return grub_crypto_gcry_error (gcry_err);
 
       gcry_err = grub_crypto_hmac_buffer (dev->hash, verify_key,
-					  sizeof (verify_key), 
+					  dev->hash->mdlen,
 					  &candidate_key,
 					  (sizeof (candidate_key)
 					   - sizeof (candidate_key.hmac)),
@@ -515,6 +528,19 @@ recover_key (grub_disk_t source, grub_cryptodisk_t dev)
       if (grub_memcmp (candidate_key.hmac, key_hmac, dev->hash->mdlen) != 0)
 	continue;
       grub_printf_ (N_("Slot %d opened\n"), i);
+
+      if (grub_le_to_cpu32 (header.version) >= 7)
+        {
+          /* GELI >=7 uses the cipher_key */
+	  grub_memcpy (geli_cipher_key, candidate_key.cipher_key,
+		sizeof (candidate_key.cipher_key));
+        }
+      else
+        {
+          /* GELI <=6 uses the iv_key */
+	  grub_memcpy (geli_cipher_key, candidate_key.iv_key,
+		sizeof (candidate_key.iv_key));
+        }
 
       /* Set the master key.  */
       if (!dev->rekey)
@@ -532,13 +558,13 @@ recover_key (grub_disk_t source, grub_cryptodisk_t dev)
 	  grub_size_t real_keysize = keysize;
 	  if (grub_le_to_cpu16 (header.alg) == 0x16)
 	    real_keysize *= 2;
-	  /* For a reason I don't know, the IV key is used in rekeying.  */
-	  grub_memcpy (dev->rekey_key, candidate_key.iv_key,
-		       sizeof (candidate_key.iv_key));
+
+	  grub_memcpy (dev->rekey_key, geli_cipher_key,
+		       sizeof (geli_cipher_key));
 	  dev->rekey_derived_size = real_keysize;
 	  dev->last_rekey = -1;
 	  COMPILE_TIME_ASSERT (sizeof (dev->rekey_key)
-			       >= sizeof (candidate_key.iv_key));
+		       >= sizeof (geli_cipher_key));
 	}
 
       dev->iv_prefix_len = sizeof (candidate_key.iv_key);

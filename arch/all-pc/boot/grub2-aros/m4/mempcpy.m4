@@ -1,5 +1,5 @@
-# mempcpy.m4 serial 10
-dnl Copyright (C) 2003-2004, 2006-2007, 2009-2010 Free Software Foundation,
+# mempcpy.m4 serial 11
+dnl Copyright (C) 2003-2004, 2006-2007, 2009-2013 Free Software Foundation,
 dnl Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
@@ -14,10 +14,9 @@ AC_DEFUN([gl_FUNC_MEMPCPY],
   AC_REQUIRE([AC_C_RESTRICT])
 
   AC_REQUIRE([gl_HEADER_STRING_H_DEFAULTS])
-  AC_REPLACE_FUNCS([mempcpy])
+  AC_CHECK_FUNCS([mempcpy])
   if test $ac_cv_func_mempcpy = no; then
     HAVE_MEMPCPY=0
-    gl_PREREQ_MEMPCPY
   fi
 ])
 

@@ -26,14 +26,16 @@
 #include <grub/i18n.h>
 
 grub_err_t
-grub_rescue_parse_line (char *line, grub_reader_getline_t getline)
+grub_rescue_parse_line (char *line,
+			grub_reader_getline_t getline, void *getline_data)
 {
   char *name;
   int n;
   grub_command_t cmd;
   char **args;
 
-  if (grub_parser_split_cmdline (line, getline, &n, &args) || n < 0)
+  if (grub_parser_split_cmdline (line, getline, getline_data, &n, &args)
+      || n < 0)
     return grub_errno;
 
   if (n == 0)

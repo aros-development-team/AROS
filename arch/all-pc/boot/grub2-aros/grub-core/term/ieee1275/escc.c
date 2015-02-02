@@ -200,6 +200,7 @@ struct grub_serial_driver grub_escc_driver =
   };
 
 static struct grub_escc_descriptor escc_descs[2];
+static char *macio = 0;
 
 static void
 add_device (grub_addr_t addr, int channel)
@@ -243,38 +244,34 @@ add_device (grub_addr_t addr, int channel)
   grub_serial_register (port);
 }
 
+static int
+find_macio (struct grub_ieee1275_devalias *alias)
+{
+  if (grub_strcmp (alias->type, "mac-io") != 0)
+    return 0;
+  macio = grub_strdup (alias->path);
+  return 1;
+}
+
 GRUB_MOD_INIT (escc)
 {
-  char *macio = 0;
-  char *escc = 0;
   grub_uint32_t macio_addr[4];
   grub_uint32_t escc_addr[2];
   grub_ieee1275_phandle_t dev;
-
-  auto int find_macio (struct grub_ieee1275_devalias *alias);
-  auto int find_escc (struct grub_ieee1275_devalias *alias);
-
-  int find_macio (struct grub_ieee1275_devalias *alias)
-    {
-      if (grub_strcmp (alias->type, "mac-io") != 0)
-	return 0;
-      macio = grub_strdup (alias->path);
-      return 1;
-    }
-
-  int find_escc (struct grub_ieee1275_devalias *alias)
-    {
-      if (grub_strcmp (alias->type, "escc") != 0)
-	return 0;
-      escc = grub_strdup (alias->path);
-      return 1;
-    }
+  struct grub_ieee1275_devalias alias;
+  char *escc = 0;
 
   grub_ieee1275_devices_iterate (find_macio);
   if (!macio)
     return;
 
-  grub_children_iterate (macio, find_escc);
+  FOR_IEEE1275_DEVCHILDREN(macio, alias)
+    if (grub_strcmp (alias.type, "escc") == 0)
+      {
+	escc = grub_strdup (alias.path);
+	break;
+      }
+  grub_ieee1275_devalias_free (&alias);
   if (!escc)
     {
       grub_free (macio);
@@ -310,8 +307,8 @@ GRUB_MOD_INIT (escc)
       return;
     }
 
-  add_device (macio_addr[2] + escc_addr[0] + 32, 1);
-  add_device (macio_addr[2] + escc_addr[0], 0);
+  add_device (macio_addr[2] + escc_addr[0] + 32, 0);
+  add_device (macio_addr[2] + escc_addr[0], 1);
 
   grub_free (macio);
   grub_free (escc);

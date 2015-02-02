@@ -25,22 +25,7 @@
 #include <grub/symbol.h>
 #include <grub/err.h>
 #include <grub/i18n.h>
-
-/* GCC version checking borrowed from glibc. */
-#if defined(__GNUC__) && defined(__GNUC_MINOR__)
-#  define GNUC_PREREQ(maj,min) \
-	((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
-#else
-#  define GNUC_PREREQ(maj,min) 0
-#endif
-
-/* Does this compiler support compile-time error attributes? */
-#if GNUC_PREREQ(4,3)
-#  define ATTRIBUTE_ERROR(msg) \
-	__attribute__ ((__error__ (msg)))
-#else
-#  define ATTRIBUTE_ERROR(msg) __attribute__ ((noreturn))
-#endif
+#include <grub/compiler.h>
 
 #define ALIGN_UP(addr, align) \
 	((addr + (typeof (addr)) align - 1) & ~((typeof (addr)) align - 1))
@@ -50,11 +35,22 @@
 #define ARRAY_SIZE(array) (sizeof (array) / sizeof (array[0]))
 #define COMPILE_TIME_ASSERT(cond) switch (0) { case 1: case !(cond): ; }
 
-#define grub_dprintf(condition, fmt, args...) grub_real_dprintf(GRUB_FILE, __LINE__, condition, fmt, ## args)
+#define grub_dprintf(condition, ...) grub_real_dprintf(GRUB_FILE, __LINE__, condition, __VA_ARGS__)
 
 void *EXPORT_FUNC(grub_memmove) (void *dest, const void *src, grub_size_t n);
 char *EXPORT_FUNC(grub_strcpy) (char *dest, const char *src);
-char *EXPORT_FUNC(grub_strncpy) (char *dest, const char *src, int c);
+
+static inline char *
+grub_strncpy (char *dest, const char *src, int c)
+{
+  char *p = dest;
+
+  while ((*p++ = *src++) != '\0' && --c)
+    ;
+
+  return dest;
+}
+
 static inline char *
 grub_stpcpy (char *dest, const char *src)
 {
@@ -75,55 +71,31 @@ grub_memcpy (void *dest, const void *src, grub_size_t n)
   return grub_memmove (dest, src, n);
 }
 
-static inline char *
-grub_strcat (char *dest, const char *src)
-{
-  char *p = dest;
+#if defined (__APPLE__) && defined(__i386__) && !defined (GRUB_UTIL)
+#define GRUB_BUILTIN_ATTR  __attribute__ ((regparm(0)))
+#else
+#define GRUB_BUILTIN_ATTR
+#endif
 
-  while (*p)
-    p++;
-
-  while ((*p = *src) != '\0')
-    {
-      p++;
-      src++;
-    }
-
-  return dest;
-}
-
-static inline char *
-grub_strncat (char *dest, const char *src, int c)
-{
-  char *p = dest;
-
-  while (*p)
-    p++;
-
-  while (c-- && (*p = *src) != '\0')
-    {
-      p++;
-      src++;
-    }
-
-  *p = '\0';
-
-  return dest;
-}
+#if defined(__x86_64__) && !defined (GRUB_UTIL)
+#if defined (__MINGW32__) || defined (__CYGWIN__) || defined (__MINGW64__)
+#define GRUB_ASM_ATTR __attribute__ ((sysv_abi))
+#else
+#define GRUB_ASM_ATTR
+#endif
+#endif
 
 /* Prototypes for aliases.  */
 #ifndef GRUB_UTIL
+int GRUB_BUILTIN_ATTR EXPORT_FUNC(memcmp) (const void *s1, const void *s2, grub_size_t n);
+void *GRUB_BUILTIN_ATTR EXPORT_FUNC(memmove) (void *dest, const void *src, grub_size_t n);
+void *GRUB_BUILTIN_ATTR EXPORT_FUNC(memcpy) (void *dest, const void *src, grub_size_t n);
+void *GRUB_BUILTIN_ATTR EXPORT_FUNC(memset) (void *s, int c, grub_size_t n);
+
 #ifdef __APPLE__
-int __attribute__ ((regparm(0))) EXPORT_FUNC(memcmp) (const void *s1, const void *s2, grub_size_t n);
-void *__attribute__ ((regparm(0))) EXPORT_FUNC(memmove) (void *dest, const void *src, grub_size_t n);
-void *__attribute__ ((regparm(0))) EXPORT_FUNC(memcpy) (void *dest, const void *src, grub_size_t n);
-void *__attribute__ ((regparm(0))) EXPORT_FUNC(memset) (void *s, int c, grub_size_t n);
-#else
-int EXPORT_FUNC(memcmp) (const void *s1, const void *s2, grub_size_t n);
-void *EXPORT_FUNC(memmove) (void *dest, const void *src, grub_size_t n);
-void *EXPORT_FUNC(memcpy) (void *dest, const void *src, grub_size_t n);
-void *EXPORT_FUNC(memset) (void *s, int c, grub_size_t n);
+void GRUB_BUILTIN_ATTR EXPORT_FUNC (__bzero) (void *s, grub_size_t n);
 #endif
+
 #endif
 
 int EXPORT_FUNC(grub_memcmp) (const void *s1, const void *s2, grub_size_t n);
@@ -181,7 +153,12 @@ grub_strstr (const char *haystack, const char *needle)
 }
 
 int EXPORT_FUNC(grub_isspace) (int c);
-int EXPORT_FUNC(grub_isprint) (int c);
+
+static inline int
+grub_isprint (int c)
+{
+  return (c >= ' ' && c <= '~');
+}
 
 static inline int
 grub_iscntrl (int c)
@@ -292,7 +269,7 @@ static inline long
 grub_strtol (const char *str, char **end, int base)
 {
   int negative = 0;
-  unsigned long magnitude;
+  unsigned long long magnitude;
 
   while (*str && grub_isspace (*str))
     str++;
@@ -324,12 +301,12 @@ grub_strtol (const char *str, char **end, int base)
     }
 }
 
-char *EXPORT_FUNC(grub_strdup) (const char *s) __attribute__ ((warn_unused_result));
-char *EXPORT_FUNC(grub_strndup) (const char *s, grub_size_t n) __attribute__ ((warn_unused_result));
+char *EXPORT_FUNC(grub_strdup) (const char *s) WARN_UNUSED_RESULT;
+char *EXPORT_FUNC(grub_strndup) (const char *s, grub_size_t n) WARN_UNUSED_RESULT;
 void *EXPORT_FUNC(grub_memset) (void *s, int c, grub_size_t n);
-grub_size_t EXPORT_FUNC(grub_strlen) (const char *s) __attribute__ ((warn_unused_result));
-int EXPORT_FUNC(grub_printf) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-int EXPORT_FUNC(grub_printf_) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+grub_size_t EXPORT_FUNC(grub_strlen) (const char *s) WARN_UNUSED_RESULT;
+int EXPORT_FUNC(grub_printf) (const char *fmt, ...) __attribute__ ((format (GNU_PRINTF, 1, 2)));
+int EXPORT_FUNC(grub_printf_) (const char *fmt, ...) __attribute__ ((format (GNU_PRINTF, 1, 2)));
 
 /* Replace all `ch' characters of `input' with `with' and copy the
    result into `output'; return EOS address of `output'. */
@@ -367,28 +344,25 @@ int EXPORT_FUNC(grub_puts_) (const char *s);
 void EXPORT_FUNC(grub_real_dprintf) (const char *file,
                                      const int line,
                                      const char *condition,
-                                     const char *fmt, ...) __attribute__ ((format (printf, 4, 5)));
+                                     const char *fmt, ...) __attribute__ ((format (GNU_PRINTF, 4, 5)));
 int EXPORT_FUNC(grub_vprintf) (const char *fmt, va_list args);
 int EXPORT_FUNC(grub_snprintf) (char *str, grub_size_t n, const char *fmt, ...)
-     __attribute__ ((format (printf, 3, 4)));
+     __attribute__ ((format (GNU_PRINTF, 3, 4)));
 int EXPORT_FUNC(grub_vsnprintf) (char *str, grub_size_t n, const char *fmt,
 				 va_list args);
 char *EXPORT_FUNC(grub_xasprintf) (const char *fmt, ...)
-     __attribute__ ((format (printf, 1, 2))) __attribute__ ((warn_unused_result));
-char *EXPORT_FUNC(grub_xvasprintf) (const char *fmt, va_list args) __attribute__ ((warn_unused_result));
+     __attribute__ ((format (GNU_PRINTF, 1, 2))) WARN_UNUSED_RESULT;
+char *EXPORT_FUNC(grub_xvasprintf) (const char *fmt, va_list args) WARN_UNUSED_RESULT;
 void EXPORT_FUNC(grub_exit) (void) __attribute__ ((noreturn));
-void EXPORT_FUNC(grub_abort) (void) __attribute__ ((noreturn));
 grub_uint64_t EXPORT_FUNC(grub_divmod64) (grub_uint64_t n,
 					  grub_uint64_t d,
 					  grub_uint64_t *r);
 
-#if !defined(GRUB_UTIL) && NEED_ENABLE_EXECUTE_STACK
-void EXPORT_FUNC(__enable_execute_stack) (void *addr);
-#endif
-
-#if !defined(GRUB_UTIL) && NEED_REGISTER_FRAME_INFO
+#if (defined (__MINGW32__) || defined (__CYGWIN__)) && !defined(GRUB_UTIL)
 void EXPORT_FUNC (__register_frame_info) (void);
 void EXPORT_FUNC (__deregister_frame_info) (void);
+void EXPORT_FUNC (___chkstk_ms) (void);
+void EXPORT_FUNC (__chkstk_ms) (void);
 #endif
 
 /* Inline functions.  */
@@ -396,7 +370,7 @@ void EXPORT_FUNC (__deregister_frame_info) (void);
 static inline char *
 grub_memchr (const void *p, int c, grub_size_t len)
 {
-  const char *s = p;
+  const char *s = (const char *) p;
   const char *e = s + len;
 
   for (; s < e; s++)
@@ -416,13 +390,6 @@ grub_abs (int x)
     return (unsigned int) x;
 }
 
-/* Rounded-up division */
-static inline unsigned int
-grub_div_roundup (unsigned int x, unsigned int y)
-{
-  return (x + y - 1) / y;
-}
-
 /* Reboot the machine.  */
 #if defined (GRUB_MACHINE_EMU) || defined (GRUB_MACHINE_QEMU_MIPS)
 void EXPORT_FUNC(grub_reboot) (void) __attribute__ ((noreturn));
@@ -430,21 +397,25 @@ void EXPORT_FUNC(grub_reboot) (void) __attribute__ ((noreturn));
 void grub_reboot (void) __attribute__ ((noreturn));
 #endif
 
+#if defined (__clang__) && !defined (GRUB_UTIL)
+void __attribute__ ((noreturn)) EXPORT_FUNC (abort) (void);
+#endif
+
 #ifdef GRUB_MACHINE_PCBIOS
 /* Halt the system, using APM if possible. If NO_APM is true, don't
  * use APM even if it is available.  */
 void grub_halt (int no_apm) __attribute__ ((noreturn));
-#elif defined (__mips__)
+#elif defined (__mips__) && !defined (GRUB_MACHINE_EMU)
 void EXPORT_FUNC (grub_halt) (void) __attribute__ ((noreturn));
 #else
 void grub_halt (void) __attribute__ ((noreturn));
 #endif
 
 #ifdef GRUB_MACHINE_EMU
-/* Flag to control module autoloading in normal mode.  */
-extern int EXPORT_VAR(grub_no_autoload);
+/* Flag to check if module loading is available.  */
+extern const int EXPORT_VAR(grub_no_modules);
 #else
-#define grub_no_autoload 0
+#define grub_no_modules 0
 #endif
 
 static inline void
@@ -461,5 +432,79 @@ grub_error_load (const struct grub_error_saved *save)
   grub_memcpy (grub_errmsg, save->errmsg, sizeof (grub_errmsg));
   grub_errno = save->grub_errno;
 }
+
+#ifndef GRUB_UTIL
+
+#if defined (__arm__)
+
+grub_uint32_t
+EXPORT_FUNC (__udivsi3) (grub_uint32_t a, grub_uint32_t b);
+
+grub_uint32_t
+EXPORT_FUNC (__umodsi3) (grub_uint32_t a, grub_uint32_t b);
+
+#endif
+
+#if defined (__sparc__) || defined (__powerpc__)
+unsigned
+EXPORT_FUNC (__ctzdi2) (grub_uint64_t x);
+#define NEED_CTZDI2 1
+#endif
+
+#if defined (__mips__) || defined (__arm__)
+unsigned
+EXPORT_FUNC (__ctzsi2) (grub_uint32_t x);
+#define NEED_CTZSI2 1
+#endif
+
+#ifdef __arm__
+grub_uint32_t
+EXPORT_FUNC (__aeabi_uidiv) (grub_uint32_t a, grub_uint32_t b);
+grub_uint32_t
+EXPORT_FUNC (__aeabi_uidivmod) (grub_uint32_t a, grub_uint32_t b);
+
+/* Needed for allowing modules to be compiled as thumb.  */
+grub_uint64_t
+EXPORT_FUNC (__muldi3) (grub_uint64_t a, grub_uint64_t b);
+grub_uint64_t
+EXPORT_FUNC (__aeabi_lmul) (grub_uint64_t a, grub_uint64_t b);
+
+#endif
+
+#if defined (__ia64__)
+
+grub_uint64_t
+EXPORT_FUNC (__udivdi3) (grub_uint64_t a, grub_uint64_t b);
+
+grub_uint64_t
+EXPORT_FUNC (__umoddi3) (grub_uint64_t a, grub_uint64_t b);
+
+#endif
+
+#endif /* GRUB_UTIL */
+
+
+#if BOOT_TIME_STATS
+struct grub_boot_time
+{
+  struct grub_boot_time *next;
+  grub_uint64_t tp;
+  const char *file;
+  int line;
+  char *msg;
+};
+
+extern struct grub_boot_time *EXPORT_VAR(grub_boot_time_head);
+
+void EXPORT_FUNC(grub_real_boot_time) (const char *file,
+				       const int line,
+				       const char *fmt, ...) __attribute__ ((format (GNU_PRINTF, 3, 4)));
+#define grub_boot_time(...) grub_real_boot_time(GRUB_FILE, __LINE__, __VA_ARGS__)
+#else
+#define grub_boot_time(...)
+#endif
+
+#define grub_max(a, b) (((a) > (b)) ? (a) : (b))
+#define grub_min(a, b) (((a) < (b)) ? (a) : (b))
 
 #endif /* ! GRUB_MISC_HEADER */

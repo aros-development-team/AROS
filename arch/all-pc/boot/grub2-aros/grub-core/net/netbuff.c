@@ -83,7 +83,11 @@ grub_netbuff_alloc (grub_size_t len)
     len = NETBUFFMINLEN;
 
   len = ALIGN_UP (len, NETBUFF_ALIGN);
+#ifdef GRUB_MACHINE_EMU
+  data = grub_malloc (len + sizeof (*nb));
+#else
   data = grub_memalign (NETBUFF_ALIGN, len + sizeof (*nb));
+#endif
   if (!data)
     return NULL;
   nb = (struct grub_net_buff *) ((grub_properly_aligned_t *) data

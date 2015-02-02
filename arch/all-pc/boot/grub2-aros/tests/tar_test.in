@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+if ! which tar >/dev/null 2>&1; then
+   echo "tar not installed; cannot test tar."
+   exit 77
+fi
+
+"@builddir@/grub-fs-tester" tarfs

@@ -42,7 +42,9 @@ LOCAL(base):
 	/* %rax contains now our new 'base'.  */
 	mov	RAX, RSI
 
-#ifdef __APPLE__
+#if defined (__APPLE__) && defined (__x86_64__)
+	leaq	LOCAL(cont0) (%rip), RAX
+#elif defined (__APPLE__)
 	LOCAL(cont0_offset) = LOCAL(cont0) - LOCAL(base)
 	add	$LOCAL(cont0_offset), RAX
 #else

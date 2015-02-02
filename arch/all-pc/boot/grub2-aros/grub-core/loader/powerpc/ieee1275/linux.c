@@ -29,6 +29,7 @@
 #include <grub/memory.h>
 #include <grub/lib/cmdline.h>
 #include <grub/cache.h>
+#include <grub/linux.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -51,51 +52,82 @@ static char *linux_args;
 typedef void (*kernel_entry_t) (void *, unsigned long, int (void *),
 				unsigned long, unsigned long);
 
+/* Context for grub_linux_claimmap_iterate.  */
+struct grub_linux_claimmap_iterate_ctx
+{
+  grub_addr_t target;
+  grub_size_t size;
+  grub_size_t align;
+  grub_addr_t found_addr;
+};
+
+/* Helper for grub_linux_claimmap_iterate.  */
+static int
+alloc_mem (grub_uint64_t addr, grub_uint64_t len, grub_memory_type_t type,
+	   void *data)
+{
+  struct grub_linux_claimmap_iterate_ctx *ctx = data;
+
+  grub_uint64_t end = addr + len;
+  addr = ALIGN_UP (addr, ctx->align);
+  ctx->target = ALIGN_UP (ctx->target, ctx->align);
+
+  /* Target above the memory chunk.  */
+  if (type != GRUB_MEMORY_AVAILABLE || ctx->target > end)
+    return 0;
+
+  /* Target inside the memory chunk.  */
+  if (ctx->target >= addr && ctx->target < end &&
+      ctx->size <= end - ctx->target)
+    {
+      if (grub_claimmap (ctx->target, ctx->size) == GRUB_ERR_NONE)
+	{
+	  ctx->found_addr = ctx->target;
+	  return 1;
+	}
+      grub_print_error ();
+    }
+  /* Target below the memory chunk.  */
+  if (ctx->target < addr && addr + ctx->size <= end)
+    {
+      if (grub_claimmap (addr, ctx->size) == GRUB_ERR_NONE)
+	{
+	  ctx->found_addr = addr;
+	  return 1;
+	}
+      grub_print_error ();
+    }
+  return 0;
+}
+
 static grub_addr_t
 grub_linux_claimmap_iterate (grub_addr_t target, grub_size_t size,
 			     grub_size_t align)
 {
-  grub_addr_t found_addr = (grub_addr_t) -1;
+  struct grub_linux_claimmap_iterate_ctx ctx = {
+    .target = target,
+    .size = size,
+    .align = align,
+    .found_addr = (grub_addr_t) -1
+  };
 
-  auto int NESTED_FUNC_ATTR alloc_mem (grub_uint64_t addr, grub_uint64_t len,
-				       grub_memory_type_t type);
-  int NESTED_FUNC_ATTR alloc_mem (grub_uint64_t addr, grub_uint64_t len,
-				  grub_memory_type_t type)
-  {
-    grub_uint64_t end = addr + len;
-    addr = ALIGN_UP (addr, align);
-    target = ALIGN_UP (target, align);
+  if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_FORCE_CLAIM))
+    {
+      grub_uint64_t addr = target;
+      if (addr < GRUB_IEEE1275_STATIC_HEAP_START
+	  + GRUB_IEEE1275_STATIC_HEAP_LEN)
+	addr = GRUB_IEEE1275_STATIC_HEAP_START
+	  + GRUB_IEEE1275_STATIC_HEAP_LEN;
+      addr = ALIGN_UP (addr, align);
+      if (grub_claimmap (addr, size) == GRUB_ERR_NONE)
+	return addr;
+      return (grub_addr_t) -1;
+    }
+	
 
-    /* Target above the memory chunk.  */
-    if (type != GRUB_MEMORY_AVAILABLE || target > end)
-      return 0;
+  grub_machine_mmap_iterate (alloc_mem, &ctx);
 
-    /* Target inside the memory chunk.  */
-    if (target >= addr && target < end && size <= end - target)
-      {
-	if (grub_claimmap (target, size) == GRUB_ERR_NONE)
-	  {
-	    found_addr = target;
-	    return 1;
-	  }
-	grub_print_error ();
-      }
-    /* Target below the memory chunk.  */
-    if (target < addr && addr + size <= end)
-      {
-	if (grub_claimmap (addr, size) == GRUB_ERR_NONE)
-	  {
-	    found_addr = addr;
-	    return 1;
-	  }
-	grub_print_error ();
-      }
-    return 0;
-  }
-
-  grub_machine_mmap_iterate (alloc_mem);
-
-  return found_addr;
+  return ctx.found_addr;
 }
 
 static grub_err_t
@@ -162,7 +194,7 @@ grub_linux_load32 (grub_elf_t elf, const char *filename)
   grub_uint32_t offset;
   Elf32_Addr entry;
 
-  linux_size = grub_elf32_size (elf, filename, &base_addr, &align);
+  linux_size = grub_elf32_size (elf, &base_addr, &align);
   if (linux_size == 0)
     return grub_errno;
   /* Pad it; the kernel scribbles over memory beyond its load address.  */
@@ -186,20 +218,7 @@ grub_linux_load32 (grub_elf_t elf, const char *filename)
   linux_addr = seg_addr;
 
   /* Now load the segments into the area we claimed.  */
-  auto grub_err_t offset_phdr (Elf32_Phdr *phdr, grub_addr_t *addr, int *do_load);
-  grub_err_t offset_phdr (Elf32_Phdr *phdr, grub_addr_t *addr, int *do_load)
-    {
-      if (phdr->p_type != PT_LOAD)
-	{
-	  *do_load = 0;
-	  return 0;
-	}
-      *do_load = 1;
-
-      *addr = (phdr->p_paddr - base_addr) + seg_addr;
-      return 0;
-    }
-  return grub_elf32_load (elf, filename, offset_phdr, 0, 0);
+  return grub_elf32_load (elf, filename, (void *) (seg_addr - base_addr), GRUB_ELF_LOAD_FLAGS_30BITS, 0, 0);
 }
 
 static grub_err_t
@@ -211,7 +230,7 @@ grub_linux_load64 (grub_elf_t elf, const char *filename)
   grub_uint64_t offset;
   Elf64_Addr entry;
 
-  linux_size = grub_elf64_size (elf, filename, &base_addr, &align);
+  linux_size = grub_elf64_size (elf, &base_addr, &align);
   if (linux_size == 0)
     return grub_errno;
   /* Pad it; the kernel scribbles over memory beyond its load address.  */
@@ -233,20 +252,7 @@ grub_linux_load64 (grub_elf_t elf, const char *filename)
   linux_addr = seg_addr;
 
   /* Now load the segments into the area we claimed.  */
-  auto grub_err_t offset_phdr (Elf64_Phdr *phdr, grub_addr_t *addr, int *do_load);
-  grub_err_t offset_phdr (Elf64_Phdr *phdr, grub_addr_t *addr, int *do_load)
-    {
-      if (phdr->p_type != PT_LOAD)
-	{
-	  *do_load = 0;
-	  return 0;
-	}
-      *do_load = 1;
-
-      *addr = (phdr->p_paddr - base_addr) + seg_addr;
-      return 0;
-    }
-  return grub_elf64_load (elf, filename, offset_phdr, 0, 0);
+  return grub_elf64_load (elf, filename, (void *) (grub_addr_t) (seg_addr - base_addr), GRUB_ELF_LOAD_FLAGS_62BITS, 0, 0);
 }
 
 static grub_err_t
@@ -324,13 +330,10 @@ static grub_err_t
 grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
 		 int argc, char *argv[])
 {
-  grub_file_t *files = 0;
   grub_size_t size = 0;
   grub_addr_t first_addr;
   grub_addr_t addr;
-  int i;
-  int nfiles = 0;
-  grub_uint8_t *ptr;
+  struct grub_linux_initrd_context initrd_ctx = { 0, 0, 0 };
 
   if (argc == 0)
     {
@@ -344,19 +347,10 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  files = grub_zalloc (argc * sizeof (files[0]));
-  if (!files)
+  if (grub_initrd_init (argc, argv, &initrd_ctx))
     goto fail;
 
-  for (i = 0; i < argc; i++)
-    {
-      grub_file_filter_disable_compression ();
-      files[i] = grub_file_open (argv[i]);
-      if (! files[i])
-	goto fail;
-      nfiles++;
-      size += ALIGN_UP (grub_file_size (files[i]), 4);
-    }
+  size = grub_get_initrd_size (&initrd_ctx);
 
   first_addr = linux_addr + linux_size;
 
@@ -368,30 +362,14 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
 
   grub_dprintf ("loader", "Loading initrd at 0x%x, size 0x%x\n", addr, size);
 
-  ptr = (void *) addr;
-  for (i = 0; i < nfiles; i++)
-    {
-      grub_ssize_t cursize = grub_file_size (files[i]);
-      if (grub_file_read (files[i], ptr, cursize) != cursize)
-	{
-	  grub_ieee1275_release (addr, size);
-	  if (!grub_errno)
-	    grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
-			argv[i]);
-	  goto fail;
-	}
-      ptr += cursize;
-      grub_memset (ptr, 0, ALIGN_UP_OVERHEAD (cursize, 4));
-      ptr += ALIGN_UP_OVERHEAD (cursize, 4);
-    }
+  if (grub_initrd_load (&initrd_ctx, argv, (void *) addr))
+    goto fail;
 
   initrd_addr = addr;
   initrd_size = size;
 
  fail:
-  for (i = 0; i < nfiles; i++)
-    grub_file_close (files[i]);
-  grub_free (files);
+  grub_initrd_close (&initrd_ctx);
 
   return grub_errno;
 }

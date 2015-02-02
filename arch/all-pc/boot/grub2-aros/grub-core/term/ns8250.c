@@ -36,46 +36,37 @@ static const grub_port_t serial_hw_io_addr[] = GRUB_MACHINE_SERIAL_PORTS;
 #define GRUB_SERIAL_PORT_NUM (ARRAY_SIZE(serial_hw_io_addr))
 #endif
 
+static int dead_ports = 0;
+
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+#define DEFAULT_BASE_CLOCK (2 * 115200)
+#else
+#define DEFAULT_BASE_CLOCK 115200
+#endif
+
+
 /* Convert speed to divisor.  */
 static unsigned short
 serial_get_divisor (const struct grub_serial_port *port __attribute__ ((unused)),
 		    const struct grub_serial_config *config)
 {
-  unsigned int i;
+  grub_uint32_t base_clock;
+  grub_uint32_t divisor;
+  grub_uint32_t actual_speed, error;
 
-  /* The structure for speed vs. divisor.  */
-  struct divisor
-  {
-    unsigned int speed;
-    unsigned short div;
-  };
+  base_clock = config->base_clock ? (config->base_clock >> 4) : DEFAULT_BASE_CLOCK;
 
-  /* The table which lists common configurations.  */
-  /* 1843200 / (speed * 16)  */
-  static struct divisor divisor_tab[] =
-    {
-      { 2400,   0x0030 },
-      { 4800,   0x0018 },
-      { 9600,   0x000C },
-      { 19200,  0x0006 },
-      { 38400,  0x0003 },
-      { 57600,  0x0002 },
-      { 115200, 0x0001 }
-    };
-
-  /* Set the baud rate.  */
-  for (i = 0; i < ARRAY_SIZE (divisor_tab); i++)
-    if (divisor_tab[i].speed == config->speed)
-      {
-	/* internal Loongson UART runs twice the usual rate.  */
-#ifdef GRUB_MACHINE_MIPS_LOONGSON
-	if (port->port == 0xbff003f8)
-	  return 2 * divisor_tab[i].div;
-	else
-#endif
-	  return divisor_tab[i].div;
-      }
-  return 0;
+  divisor = (base_clock + (config->speed / 2)) / config->speed;
+  if (config->speed == 0)
+    return 0;
+  if (divisor > 0xffff || divisor == 0)
+    return 0;
+  actual_speed = base_clock / divisor;
+  error = actual_speed > config->speed ? (actual_speed - config->speed)
+    : (config->speed - actual_speed);
+  if (error > (config->speed / 30 + 1))
+    return 0;
+  return divisor;
 }
 
 static void
@@ -83,6 +74,8 @@ do_real_config (struct grub_serial_port *port)
 {
   int divisor;
   unsigned char status = 0;
+  grub_uint64_t endtime;
+
   const unsigned char parities[] = {
     [GRUB_SERIAL_PARITY_NONE] = UART_NO_PARITY,
     [GRUB_SERIAL_PARITY_ODD] = UART_ODD_PARITY,
@@ -116,24 +109,34 @@ do_real_config (struct grub_serial_port *port)
 	     | stop_bits[port->config.stop_bits]);
   grub_outb (status, port->port + UART_LCR);
 
-  /* On Loongson machines serial port has only 3 wires.  */
-#ifndef GRUB_MACHINE_MIPS_LOONGSON
-  /* Enable the FIFO.  */
-  grub_outb (UART_ENABLE_FIFO_TRIGGER1, port->port + UART_FCR);
+  if (port->config.rtscts)
+    {
+      /* Enable the FIFO.  */
+      grub_outb (UART_ENABLE_FIFO_TRIGGER1, port->port + UART_FCR);
 
-  /* Turn on DTR and RTS.  */
-  grub_outb (UART_ENABLE_DTRRTS, port->port + UART_MCR);
-#else
-  /* Enable the FIFO.  */
-  grub_outb (UART_ENABLE_FIFO_TRIGGER14, port->port + UART_FCR);
+      /* Turn on DTR and RTS.  */
+      grub_outb (UART_ENABLE_DTRRTS, port->port + UART_MCR);
+    }
+  else
+    {
+      /* Enable the FIFO.  */
+      grub_outb (UART_ENABLE_FIFO_TRIGGER14, port->port + UART_FCR);
 
-  /* Turn on DTR, RTS, and OUT2.  */
-  grub_outb (UART_ENABLE_DTRRTS | UART_ENABLE_OUT2, port->port + UART_MCR);
-#endif
+      /* Turn on DTR, RTS, and OUT2.  */
+      grub_outb (UART_ENABLE_DTRRTS | UART_ENABLE_OUT2, port->port + UART_MCR);
+    }
 
   /* Drain the input buffer.  */
+  endtime = grub_get_time_ms () + 1000;
   while (grub_inb (port->port + UART_LSR) & UART_DATA_READY)
-    grub_inb (port->port + UART_RX);
+    {
+      grub_inb (port->port + UART_RX);
+      if (grub_get_time_ms () > endtime)
+	{
+	  port->broken = 1;
+	  break;
+	}
+    }
 
   port->configured = 1;
 }
@@ -239,6 +242,20 @@ grub_ns8250_init (void)
     if (serial_hw_io_addr[i])
       {
 	grub_err_t err;
+
+	grub_outb (0x5a, serial_hw_io_addr[i] + UART_SR);
+	if (grub_inb (serial_hw_io_addr[i] + UART_SR) != 0x5a)
+	  {
+	    dead_ports |= (1 << i);
+	    continue;
+	  }
+	grub_outb (0xa5, serial_hw_io_addr[i] + UART_SR);
+	if (grub_inb (serial_hw_io_addr[i] + UART_SR) != 0xa5)
+	  {
+	    dead_ports |= (1 << i);
+	    continue;
+	  }
+
 	grub_snprintf (com_names[i], sizeof (com_names[i]), "com%d", i);
 	com_ports[i].name = com_names[i];
 	com_ports[i].driver = &grub_ns8250_driver;
@@ -255,7 +272,8 @@ grub_ns8250_init (void)
 grub_port_t
 grub_ns8250_hw_get_port (const unsigned int unit)
 {
-  if (unit < GRUB_SERIAL_PORT_NUM)
+  if (unit < GRUB_SERIAL_PORT_NUM
+      && !(dead_ports & (1 << unit)))
     return serial_hw_io_addr[unit];
   else
     return 0;
@@ -268,7 +286,20 @@ grub_serial_ns8250_add_port (grub_port_t port)
   unsigned i;
   for (i = 0; i < GRUB_SERIAL_PORT_NUM; i++)
     if (com_ports[i].port == port)
-      return com_names[i];
+      {
+	if (dead_ports & (1 << i))
+	  return NULL;
+	return com_names[i];
+      }
+
+  grub_outb (0x5a, port + UART_SR);
+  if (grub_inb (port + UART_SR) != 0x5a)
+    return NULL;
+
+  grub_outb (0xa5, port + UART_SR);
+  if (grub_inb (port + UART_SR) != 0xa5)
+    return NULL;
+
   p = grub_malloc (sizeof (*p));
   if (!p)
     return NULL;

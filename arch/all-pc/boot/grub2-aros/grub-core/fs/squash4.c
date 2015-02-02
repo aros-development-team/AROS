@@ -71,7 +71,7 @@ struct grub_squash_super
   grub_uint64_t diroffset;
   grub_uint64_t unk1offset;
   grub_uint64_t unk2offset;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* Chunk-based */
 struct grub_squash_inode
@@ -89,7 +89,7 @@ struct grub_squash_inode
       grub_uint32_t offset;
       grub_uint32_t size;
       grub_uint32_t block_size[0];
-    }  __attribute__ ((packed)) file;
+    }  GRUB_PACKED file;
     struct {
       grub_uint64_t chunk;
       grub_uint64_t size;
@@ -98,13 +98,13 @@ struct grub_squash_inode
       grub_uint32_t offset;
       grub_uint32_t dummy3;
       grub_uint32_t block_size[0];
-    }  __attribute__ ((packed)) long_file;
+    }  GRUB_PACKED long_file;
     struct {
       grub_uint32_t chunk;
       grub_uint32_t dummy;
       grub_uint16_t size;
       grub_uint16_t offset;
-    } __attribute__ ((packed)) dir;
+    } GRUB_PACKED dir;
     struct {
       grub_uint32_t dummy1;
       grub_uint32_t size;
@@ -112,14 +112,14 @@ struct grub_squash_inode
       grub_uint32_t dummy2;
       grub_uint16_t dummy3;
       grub_uint16_t offset;
-    } __attribute__ ((packed)) long_dir;
+    } GRUB_PACKED long_dir;
     struct {
       grub_uint32_t dummy;
       grub_uint32_t namelen;
       char name[0];
-    } __attribute__ ((packed)) symlink;
-  }  __attribute__ ((packed));
-} __attribute__ ((packed));
+    } GRUB_PACKED symlink;
+  }  GRUB_PACKED;
+} GRUB_PACKED;
 
 struct grub_squash_cache_inode
 {
@@ -137,7 +137,7 @@ struct grub_squash_dirent_header
   grub_uint32_t nelems;
   grub_uint32_t ino_chunk;
   grub_uint32_t dummy;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_squash_dirent
 {
@@ -147,7 +147,7 @@ struct grub_squash_dirent
   /* Actually the value is the length of name - 1.  */
   grub_uint16_t namelen;
   char name[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 enum
   {
@@ -164,7 +164,7 @@ struct grub_squash_frag_desc
   grub_uint64_t offset;
   grub_uint32_t size;
   grub_uint32_t dummy;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 enum
   {
@@ -478,10 +478,7 @@ grub_squash_read_symlink (grub_fshelp_node_t node)
 
 static int
 grub_squash_iterate_dir (grub_fshelp_node_t dir,
-			 int NESTED_FUNC_ATTR
-			 (*hook) (const char *filename,
-				  enum grub_fshelp_filetype filetype,
-				  grub_fshelp_node_t node))
+			 grub_fshelp_iterate_dir_hook_t hook, void *hook_data)
 {
   grub_uint32_t off;
   grub_uint32_t endoff;
@@ -514,7 +511,7 @@ grub_squash_iterate_dir (grub_fshelp_node_t dir,
       return 0;
     grub_memcpy (node, dir,
 		 sizeof (*node) + dir->stsize * sizeof (dir->stack[0]));
-    if (hook (".", GRUB_FSHELP_DIR, node))
+    if (hook (".", GRUB_FSHELP_DIR, node, hook_data))
       return 1;
 
     if (dir->stsize != 1)
@@ -536,7 +533,7 @@ grub_squash_iterate_dir (grub_fshelp_node_t dir,
 	if (err)
 	  return 0;
 
-	if (hook ("..", GRUB_FSHELP_DIR, node))
+	if (hook ("..", GRUB_FSHELP_DIR, node, hook_data))
 	  return 1;
       }
   }
@@ -604,7 +601,7 @@ grub_squash_iterate_dir (grub_fshelp_node_t dir,
 	  node->stack[node->stsize].ino_chunk = grub_le_to_cpu32 (dh.ino_chunk);
 	  node->stack[node->stsize].ino_offset = grub_le_to_cpu16 (di.ino_offset);
 	  node->stsize++;
-	  r = hook (buf, filetype, node);
+	  r = hook (buf, filetype, node, hook_data);
 
 	  grub_free (buf);
 	  if (r)
@@ -640,28 +637,34 @@ squash_unmount (struct grub_squash_data *data)
 }
 
 
+/* Context for grub_squash_dir.  */
+struct grub_squash_dir_ctx
+{
+  grub_fs_dir_hook_t hook;
+  void *hook_data;
+};
+
+/* Helper for grub_squash_dir.  */
+static int
+grub_squash_dir_iter (const char *filename, enum grub_fshelp_filetype filetype,
+		      grub_fshelp_node_t node, void *data)
+{
+  struct grub_squash_dir_ctx *ctx = data;
+  struct grub_dirhook_info info;
+
+  grub_memset (&info, 0, sizeof (info));
+  info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
+  info.mtimeset = 1;
+  info.mtime = grub_le_to_cpu32 (node->ino.mtime);
+  grub_free (node);
+  return ctx->hook (filename, &info, ctx->hook_data);
+}
+
 static grub_err_t
 grub_squash_dir (grub_device_t device, const char *path,
-	       int (*hook) (const char *filename,
-			    const struct grub_dirhook_info *info))
+		 grub_fs_dir_hook_t hook, void *hook_data)
 {
-  auto int NESTED_FUNC_ATTR iterate (const char *filename,
-				     enum grub_fshelp_filetype filetype,
-				     grub_fshelp_node_t node);
-
-  int NESTED_FUNC_ATTR iterate (const char *filename,
-				enum grub_fshelp_filetype filetype,
-				grub_fshelp_node_t node)
-    {
-      struct grub_dirhook_info info;
-      grub_memset (&info, 0, sizeof (info));
-      info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
-      info.mtimeset = 1;
-      info.mtime = grub_le_to_cpu32 (node->ino.mtime);
-      grub_free (node);
-      return hook (filename, &info);
-    }
-
+  struct grub_squash_dir_ctx ctx = { hook, hook_data };
   struct grub_squash_data *data = 0;
   struct grub_fshelp_node *fdiro = 0;
   struct grub_fshelp_node root;
@@ -678,7 +681,7 @@ grub_squash_dir (grub_device_t device, const char *path,
   grub_fshelp_find_file (path, &root, &fdiro, grub_squash_iterate_dir,
 			 grub_squash_read_symlink, GRUB_FSHELP_DIR);
   if (!grub_errno)
-    grub_squash_iterate_dir (fdiro, iterate);
+    grub_squash_iterate_dir (fdiro, grub_squash_dir_iter, &ctx);
 
   squash_unmount (data);
 

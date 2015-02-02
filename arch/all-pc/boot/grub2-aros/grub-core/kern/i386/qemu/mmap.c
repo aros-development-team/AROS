@@ -69,38 +69,38 @@ grub_machine_mmap_init (void)
 }
 
 grub_err_t
-grub_machine_mmap_iterate (grub_memory_hook_t hook)
+grub_machine_mmap_iterate (grub_memory_hook_t hook, void *hook_data)
 {
   if (hook (0x0,
 	    (grub_addr_t) _start,
-	    GRUB_MEMORY_AVAILABLE))
+	    GRUB_MEMORY_AVAILABLE, hook_data))
     return 1;
 
   if (hook ((grub_addr_t) _end,
            0xa0000 - (grub_addr_t) _end,
-           GRUB_MEMORY_AVAILABLE))
+           GRUB_MEMORY_AVAILABLE, hook_data))
     return 1;
 
   if (hook (GRUB_MEMORY_MACHINE_UPPER,
 	    0x100000 - GRUB_MEMORY_MACHINE_UPPER,
-	    GRUB_MEMORY_RESERVED))
+	    GRUB_MEMORY_RESERVED, hook_data))
     return 1;
 
   /* Everything else is free.  */
   if (hook (0x100000,
 	    min (mem_size, (grub_uint32_t) -GRUB_BOOT_MACHINE_SIZE) - 0x100000,
-	    GRUB_MEMORY_AVAILABLE))
+	    GRUB_MEMORY_AVAILABLE, hook_data))
     return 1;
 
   /* Protect boot.img, which contains the gdt.  It is mapped at the top of memory
      (it is also mapped below 0x100000, but we already reserved that area).  */
   if (hook ((grub_uint32_t) -GRUB_BOOT_MACHINE_SIZE,
 	    GRUB_BOOT_MACHINE_SIZE,
-	    GRUB_MEMORY_RESERVED))
+	    GRUB_MEMORY_RESERVED, hook_data))
     return 1;
 
   if (above_4g != 0 && hook (0x100000000ULL, above_4g,
-			     GRUB_MEMORY_AVAILABLE))
+			     GRUB_MEMORY_AVAILABLE, hook_data))
     return 1;
 
   return 0;

@@ -47,7 +47,7 @@ static int
 parse_color_name (grub_uint8_t *ret, char *name)
 {
   grub_uint8_t i;
-  for (i = 0; i < sizeof (color_list) / sizeof (*color_list); i++)
+  for (i = 0; i < ARRAY_SIZE(color_list); i++)
     if (! grub_strcmp (name, color_list[i]))
       {
         *ret = i;
@@ -106,8 +106,6 @@ free_and_return:
   return result;
 }
 
-static grub_uint8_t color_normal, color_highlight;
-
 static void
 set_colors (void)
 {
@@ -115,9 +113,6 @@ set_colors (void)
 
   FOR_ACTIVE_TERM_OUTPUTS(term)
   {
-    /* Reloads terminal `normal' and `highlight' colors.  */
-    grub_term_setcolor (term, color_normal, color_highlight);
-
     /* Propagates `normal' color to terminal current color.  */
     grub_term_setcolorstate (term, GRUB_TERM_COLOR_NORMAL);
   }
@@ -128,7 +123,7 @@ char *
 grub_env_write_color_normal (struct grub_env_var *var __attribute__ ((unused)),
 			     const char *val)
 {
-  if (grub_parse_color_name_pair (&color_normal, val))
+  if (grub_parse_color_name_pair (&grub_term_normal_color, val))
     return NULL;
 
   set_colors ();
@@ -141,7 +136,7 @@ char *
 grub_env_write_color_highlight (struct grub_env_var *var __attribute__ ((unused)),
 				const char *val)
 {
-  if (grub_parse_color_name_pair (&color_highlight, val))
+  if (grub_parse_color_name_pair (&grub_term_highlight_color, val))
     return NULL;
 
   set_colors ();

@@ -139,6 +139,8 @@ grub_env_context_close (void)
   grub_current_context = context;
 
   menu = current_menu->prev;
+  if (current_menu->menu)
+    grub_normal_free_menu (current_menu->menu);
   grub_free (current_menu);
   current_menu = menu;
 

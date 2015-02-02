@@ -20,6 +20,9 @@
 #define GRUB_POSIX_STRING_H	1
 
 #include <grub/misc.h>
+#include <sys/types.h>
+
+#define HAVE_STRCASECMP 1
 
 static inline grub_size_t
 strlen (const char *s)
@@ -47,12 +50,18 @@ memcpy (void *dest, const void *src, grub_size_t n)
 }
 
 static inline int
-memcmp (const void *s1, const void *s2, size_t n)
+memcmp (const void *s1, const void *s2, grub_size_t n)
 {
   return grub_memcmp (s1, s2, n);
 }
 
 #endif
+
+static inline void
+bcopy (const void *src, void *dest, grub_size_t n)
+{
+  grub_memcpy (dest, src, n);
+}
 
 static inline char *
 strcpy (char *dest, const char *src)
@@ -73,21 +82,9 @@ strchr (const char *s, int c)
 }
 
 static inline char *
-strncpy (char *dest, const char *src, size_t n)
+strncpy (char *dest, const char *src, grub_size_t n)
 {
   return grub_strncpy (dest, src, n);
-}
-
-static inline char *
-strcat (char *dest, const char *src)
-{
-  return grub_strcat (dest, src);
-}
-
-static inline char *
-strncat (char *dest, const char *src, size_t n)
-{
-  return grub_strncat (dest, src, n);
 }
 
 static inline int
@@ -97,7 +94,7 @@ strcoll (const char *s1, const char *s2)
 }
 
 static inline void *
-memchr (const void *s, int c, size_t n)
+memchr (const void *s, int c, grub_size_t n)
 {
   return grub_memchr (s, c, n);
 }

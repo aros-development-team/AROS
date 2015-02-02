@@ -18,6 +18,10 @@
  */
 
 #include <config.h>
+#include <config-util.h>
+
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 
 #define _GNU_SOURCE	1
 #include <stdlib.h>

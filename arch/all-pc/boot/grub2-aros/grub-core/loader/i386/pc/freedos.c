@@ -32,6 +32,7 @@
 #include <grub/video.h>
 #include <grub/mm.h>
 #include <grub/cpu/relocator.h>
+#include <grub/machine/chainloader.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -40,8 +41,23 @@ static struct grub_relocator *rel;
 static grub_uint32_t ebx = 0xffffffff;
 
 #define GRUB_FREEDOS_SEGMENT         0x60
+#define GRUB_FREEDOS_ADDR            (GRUB_FREEDOS_SEGMENT << 4)
 #define GRUB_FREEDOS_STACK_SEGMENT         0x1fe0
-#define GRUB_FREEDOS_STACK_POINTER         0x8000
+#define GRUB_FREEDOS_STACK_BPB_POINTER     0x7c00
+#define GRUB_FREEDOS_BPB_ADDR        ((GRUB_FREEDOS_STACK_SEGMENT << 4) \
+                                       + GRUB_FREEDOS_STACK_BPB_POINTER)
+
+/* FreeDOS boot.asm passes register sp as exactly this. Importantly,
+   it must point below the BPB (to avoid overwriting any of it). */
+#define GRUB_FREEDOS_STACK_POINTER         (GRUB_FREEDOS_STACK_BPB_POINTER \
+                                             - 0x60)
+
+/* In this, the additional 8192 bytes are the stack reservation; the
+   remaining parts trivially give the maximum allowed size. */
+#define GRUB_FREEDOS_MAX_SIZE        ((GRUB_FREEDOS_STACK_SEGMENT << 4) \
+                                       + GRUB_FREEDOS_STACK_POINTER \
+                                       - GRUB_FREEDOS_ADDR \
+                                       - 8192)
 
 static grub_err_t
 grub_freedos_boot (void)
@@ -49,14 +65,16 @@ grub_freedos_boot (void)
   struct grub_relocator16_state state = { 
     .cs = GRUB_FREEDOS_SEGMENT,
     .ip = 0,
-    .ds = 0,
+
+    .ds = GRUB_FREEDOS_STACK_SEGMENT,
     .es = 0,
     .fs = 0,
     .gs = 0,
     .ss = GRUB_FREEDOS_STACK_SEGMENT,
     .sp = GRUB_FREEDOS_STACK_POINTER,
+    .ebp = GRUB_FREEDOS_STACK_BPB_POINTER,
     .ebx = ebx,
-    .edx = 0,
+    .edx = ebx,
     .a20 = 1
   };
   grub_video_set_mode ("text", 0, 0);
@@ -79,8 +97,9 @@ grub_cmd_freedos (grub_command_t cmd __attribute__ ((unused)),
 {
   grub_file_t file = 0;
   grub_err_t err;
-  void *kernelsys;
+  void *bs, *kernelsys;
   grub_size_t kernelsyssize;
+  grub_device_t dev;
 
   if (argc == 0)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
@@ -95,12 +114,44 @@ grub_cmd_freedos (grub_command_t cmd __attribute__ ((unused)),
   if (! file)
     goto fail;
 
-  ebx = grub_get_root_biosnumber ();
-
-  kernelsyssize = grub_file_size (file);
   {
     grub_relocator_chunk_t ch;
-    err = grub_relocator_alloc_chunk_addr (rel, &ch, GRUB_FREEDOS_SEGMENT << 4,
+    err = grub_relocator_alloc_chunk_addr (rel, &ch, GRUB_FREEDOS_BPB_ADDR,
+					   GRUB_DISK_SECTOR_SIZE);
+    if (err)
+      goto fail;
+    bs = get_virtual_current_address (ch);
+  }
+
+  ebx = grub_get_root_biosnumber ();
+  dev = grub_device_open (0);
+
+  if (dev && dev->disk)
+    {
+      err = grub_disk_read (dev->disk, 0, 0, GRUB_DISK_SECTOR_SIZE, bs);
+      if (err)
+	{
+	  grub_device_close (dev);
+	  goto fail;
+	}
+      grub_chainloader_patch_bpb (bs, dev, ebx);
+    }
+
+  if (dev)
+    grub_device_close (dev);
+
+  kernelsyssize = grub_file_size (file);
+
+  if (kernelsyssize > GRUB_FREEDOS_MAX_SIZE)
+    {
+      grub_error (GRUB_ERR_BAD_OS,
+		  N_("the size of `%s' is too large"), argv[0]);
+      goto fail;
+    }
+
+  {
+    grub_relocator_chunk_t ch;
+    err = grub_relocator_alloc_chunk_addr (rel, &ch, GRUB_FREEDOS_ADDR,
 					   kernelsyssize);
     if (err)
       goto fail;

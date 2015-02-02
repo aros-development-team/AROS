@@ -97,7 +97,7 @@ struct grub_raid_super_1x
    */
   grub_uint16_t dev_roles[0];	/* Role in array, or 0xffff for a spare, or 0xfffe for faulty.  */
 };
-/* Could be __attribute__ ((packed)), but since all members in this struct
+/* Could be GRUB_PACKED, but since all members in this struct
    are already appropriately aligned, we can omit this and avoid suboptimal
    assembly in some cases.  */
 

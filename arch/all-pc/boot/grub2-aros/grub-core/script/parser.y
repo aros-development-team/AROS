@@ -32,7 +32,6 @@
 
 #pragma GCC diagnostic ignored "-Wunreachable-code"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
-#pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
 
 %}
 

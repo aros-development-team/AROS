@@ -18,7 +18,6 @@
 
 #include <config.h>
 #include <grub/symbol.h>
-#include <grub/i386/pc/memory.h>
 #include <grub/machine/memory.h>
 #include <grub/machine/boot.h>
 #include <grub/machine/kernel.h>
@@ -51,8 +50,15 @@ VARIABLE(grub_core_entry_addr)
 	pushl	$1f
 	DATA32	jmp real_to_prot
 	.code32
+	/* Ensure A20 is enabled. We're in qemu, so control port A works
+	   and there is no need to wait since there is no real logic, it's
+	   all emulated.  */
+	inb	$0x92
+	andb	$(~0x03), %al
+	orb	$0x02, %al
+	outb	$0x92
 1:
-	movl	grub_core_entry_addr, %edx
+	movl	EXT_C(grub_core_entry_addr), %edx
 	jmp	*%edx
 
 #include "../../../kern/i386/realmode.S"

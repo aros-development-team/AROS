@@ -22,7 +22,7 @@ define dump_module_sections
 	printf "%s", $mod->name
 	set $segment = $mod->segment
 	while ($segment)
-		printf " %i 0x%x", $segment->section, $segment->addr
+		printf " %i 0x%lx", $segment->section, $segment->addr
 		set $segment = $segment->next
 	end
 	printf "\n"
@@ -61,7 +61,7 @@ end
 define load_all_modules
 	set $this = grub_dl_head
 	while ($this != 0)
-		dump_module_sections $this->mod
+		dump_module_sections $this
 		set $this = $this->next
 	end
 	match_and_load_symbols

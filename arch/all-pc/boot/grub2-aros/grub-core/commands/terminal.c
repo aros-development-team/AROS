@@ -108,9 +108,9 @@ handle_command (int argc, char **args, struct abstract_terminal **enabled,
          if (term)
            break;
          if (again)
-           return grub_error (GRUB_ERR_BAD_ARGUMENT,
+	   return grub_error (GRUB_ERR_BAD_ARGUMENT,
 			      N_("terminal `%s' isn't found"),
-                              args[i]);
+			      args[i]);
          for (aut = autoloads; aut; aut = aut->next)
            if (grub_strcmp (args[i], aut->name) == 0
 	       || (grub_strcmp (args[i], "ofconsole") == 0
@@ -126,6 +126,14 @@ handle_command (int argc, char **args, struct abstract_terminal **enabled,
                grub_errno = GRUB_ERR_NONE;
                break;
              }
+	 if (grub_memcmp (args[i], "serial_usb",
+				  sizeof ("serial_usb") - 1) == 0
+	     && grub_term_poll_usb)
+	   {
+	     grub_term_poll_usb (1);
+	     again = 1;
+	     continue;
+	   }
          if (!aut)
            return grub_error (GRUB_ERR_BAD_ARGUMENT,
 			      N_("terminal `%s' isn't found"),

@@ -32,7 +32,7 @@ if [ "x${GRUB_DISTRIBUTOR}" = "x" ] ; then
   OS=GNU/Linux
 else
   OS="${GRUB_DISTRIBUTOR} GNU/Linux"
-  CLASS="--class $(echo ${GRUB_DISTRIBUTOR} | tr 'A-Z' 'a-z' | cut -d' ' -f1) ${CLASS}"
+  CLASS="--class $(echo ${GRUB_DISTRIBUTOR} | tr 'A-Z' 'a-z' | cut -d' ' -f1|LC_ALL=C sed 's,[^[:alnum:]_],_,g') ${CLASS}"
 fi
 
 # loop-AES arranges things so that /dev/loop/X can be our root device, but
@@ -51,13 +51,7 @@ else
   LINUX_ROOT_DEVICE=UUID=${GRUB_DEVICE_UUID}
 fi
 
-GRUBFS="`${grub_probe} --device ${GRUB_DEVICE} --target=fs 2>/dev/null || true`"
-
-if [ x"$GRUBFS" = x ]; then
-    GRUBFS="$(stat -f --printf=%T / || true)"
-fi
-
-case x"$GRUBFS" in
+case x"$GRUB_FS" in
     xbtrfs)
 	rootsubvol="`make_system_path_relative_to_its_root /`"
 	rootsubvol="${rootsubvol#/}"
@@ -101,7 +95,7 @@ linux_entry ()
       echo "menuentry '$(echo "$os" | grub_quote)' ${CLASS} \$menuentry_id_option 'gnulinux-simple-$boot_device_id' {" | sed "s/^/$submenu_indentation/"
   fi      
   if [ x$type != xrecovery ] ; then
-      save_default_entry | sed -e "s/^/\t/"
+      save_default_entry | grub_add_tab
   fi
 
   # Use ELILO's generic "efifb" when it's known to be available.
@@ -123,25 +117,25 @@ linux_entry ()
 
   if [ x$dirname = x/ ]; then
     if [ -z "${prepare_root_cache}" ]; then
-      prepare_root_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE} | sed -e "s/^/\t/")"
+      prepare_root_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE} | grub_add_tab)"
     fi
     printf '%s\n' "${prepare_root_cache}" | sed "s/^/$submenu_indentation/"
   else
     if [ -z "${prepare_boot_cache}" ]; then
-      prepare_boot_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/")"
+      prepare_boot_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | grub_add_tab)"
     fi
     printf '%s\n' "${prepare_boot_cache}" | sed "s/^/$submenu_indentation/"
   fi
   message="$(gettext_printf "Loading Linux %s ..." ${version})"
   sed "s/^/$submenu_indentation/" << EOF
-	echo	'$message'
+	echo	'$(echo "$message" | grub_quote)'
 	linux	${rel_dirname}/${basename} root=${linux_root_device_thisversion} ro ${args}
 EOF
   if test -n "${initrd}" ; then
     # TRANSLATORS: ramdisk isn't identifier. Should be translated.
     message="$(gettext_printf "Loading initial ramdisk ...")"
     sed "s/^/$submenu_indentation/" << EOF
-	echo	'$message'
+	echo	'$(echo "$message" | grub_quote)'
 	initrd	${rel_dirname}/${initrd}
 EOF
   fi
@@ -153,13 +147,15 @@ EOF
 machine=`uname -m`
 case "x$machine" in
     xi?86 | xx86_64)
-	list=`for i in /boot/vmlinuz-* /vmlinuz-* /boot/kernel-* ; do
-                  if grub_file_is_not_garbage "$i" ; then echo -n "$i " ; fi
-              done` ;;
+	list=
+	for i in /boot/vmlinuz-* /vmlinuz-* /boot/kernel-* ; do
+	    if grub_file_is_not_garbage "$i" ; then list="$list $i" ; fi
+	done ;;
     *) 
-	list=`for i in /boot/vmlinuz-* /boot/vmlinux-* /vmlinuz-* /vmlinux-* /boot/kernel-* ; do
-                  if grub_file_is_not_garbage "$i" ; then echo -n "$i " ; fi
-	     done` ;;
+	list=
+	for i in /boot/vmlinuz-* /boot/vmlinux-* /vmlinuz-* /vmlinux-* /boot/kernel-* ; do
+                  if grub_file_is_not_garbage "$i" ; then list="$list $i" ; fi
+	done ;;
 esac
 
 case "$machine" in
@@ -179,7 +175,7 @@ title_correction_code=
 # yet, so it's empty. In a submenu it will be equal to '\t' (one tab).
 submenu_indentation=""
 
-is_first_entry=true
+is_top_level=true
 while [ "x$list" != "x" ] ; do
   linux=`version_find_latest $list`
   gettext_printf "Found linux image: %s\n" "$linux" >&2
@@ -226,17 +222,18 @@ while [ "x$list" != "x" ] ; do
     linux_root_device_thisversion=${GRUB_DEVICE}
   fi
 
-  if [ "x$is_first_entry" = xtrue ]; then
+  if [ "x$is_top_level" = xtrue ] && [ "x${GRUB_DISABLE_SUBMENU}" != xy ]; then
     linux_entry "${OS}" "${version}" simple \
     "${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}"
 
-    submenu_indentation="\t"
+    submenu_indentation="$grub_tab"
     
     if [ -z "$boot_device_id" ]; then
 	boot_device_id="$(grub_get_device_id "${GRUB_DEVICE}")"
     fi
     # TRANSLATORS: %s is replaced with an OS name
     echo "submenu '$(gettext_printf "Advanced options for %s" "${OS}" | grub_quote)' \$menuentry_id_option 'gnulinux-advanced-$boot_device_id' {"
+    is_top_level=false
   fi
 
   linux_entry "${OS}" "${version}" advanced \
@@ -246,13 +243,12 @@ while [ "x$list" != "x" ] ; do
                 "single ${GRUB_CMDLINE_LINUX}"
   fi
 
-  list=`echo $list | tr ' ' '\n' | grep -vx $linux | tr '\n' ' '`
-  is_first_entry=false
+  list=`echo $list | tr ' ' '\n' | fgrep -vx "$linux" | tr '\n' ' '`
 done
 
 # If at least one kernel was found, then we need to
 # add a closing '}' for the submenu command.
-if [ x"$is_first_entry" != xtrue ]; then
+if [ x"$is_top_level" != xtrue ]; then
   echo '}'
 fi
 

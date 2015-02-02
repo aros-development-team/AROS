@@ -210,60 +210,120 @@ split_path (const char *str, const char **noregexop, const char **regexop)
     *noregexop = split;
 }
 
+/* Context for match_devices.  */
+struct match_devices_ctx
+{
+  const regex_t *regexp;
+  int noparts;
+  int ndev;
+  char **devs;
+};
+
+/* Helper for match_devices.  */
+static int
+match_devices_iter (const char *name, void *data)
+{
+  struct match_devices_ctx *ctx = data;
+  char **t;
+  char *buffer;
+
+  /* skip partitions if asked to. */
+  if (ctx->noparts && grub_strchr (name, ','))
+    return 0;
+
+  buffer = grub_xasprintf ("(%s)", name);
+  if (! buffer)
+    return 1;
+
+  grub_dprintf ("expand", "matching: %s\n", buffer);
+  if (regexec (ctx->regexp, buffer, 0, 0, 0))
+    {
+      grub_dprintf ("expand", "not matched\n");
+      grub_free (buffer);
+      return 0;
+    }
+
+  t = grub_realloc (ctx->devs, sizeof (char*) * (ctx->ndev + 2));
+  if (! t)
+    {
+      grub_free (buffer);
+      return 1;
+    }
+
+  ctx->devs = t;
+  ctx->devs[ctx->ndev++] = buffer;
+  ctx->devs[ctx->ndev] = 0;
+  return 0;
+}
+
 static char **
 match_devices (const regex_t *regexp, int noparts)
 {
+  struct match_devices_ctx ctx = {
+    .regexp = regexp,
+    .noparts = noparts,
+    .ndev = 0,
+    .devs = 0
+  };
   int i;
-  int ndev;
-  char **devs;
 
-  auto int match (const char *name);
-  int match (const char *name)
-  {
-    char **t;
-    char *buffer;
-
-    /* skip partitions if asked to. */
-    if (noparts && grub_strchr(name, ','))
-      return 0;
-
-    buffer = grub_xasprintf ("(%s)", name);
-    if (! buffer)
-      return 1;
-
-    grub_dprintf ("expand", "matching: %s\n", buffer);
-    if (regexec (regexp, buffer, 0, 0, 0))
-      {
-	grub_dprintf ("expand", "not matched\n");
-	grub_free (buffer);
-	return 0;
-      }
-
-    t = grub_realloc (devs, sizeof (char*) * (ndev + 2));
-    if (! t)
-      return 1;
-
-    devs = t;
-    devs[ndev++] = buffer;
-    devs[ndev] = 0;
-    return 0;
-  }
-
-  ndev = 0;
-  devs = 0;
-
-  if (grub_device_iterate (match))
+  if (grub_device_iterate (match_devices_iter, &ctx))
     goto fail;
 
-  return devs;
+  return ctx.devs;
 
  fail:
 
-  for (i = 0; devs && devs[i]; i++)
-    grub_free (devs[i]);
+  for (i = 0; ctx.devs && ctx.devs[i]; i++)
+    grub_free (ctx.devs[i]);
 
-  grub_free (devs);
+  grub_free (ctx.devs);
 
+  return 0;
+}
+
+/* Context for match_files.  */
+struct match_files_ctx
+{
+  const regex_t *regexp;
+  char **files;
+  unsigned nfile;
+  char *dir;
+};
+
+/* Helper for match_files.  */
+static int
+match_files_iter (const char *name, const struct grub_dirhook_info *info,
+		  void *data)
+{
+  struct match_files_ctx *ctx = data;
+  char **t;
+  char *buffer;
+
+  /* skip . and .. names */
+  if (grub_strcmp(".", name) == 0 || grub_strcmp("..", name) == 0)
+    return 0;
+
+  grub_dprintf ("expand", "matching: %s in %s\n", name, ctx->dir);
+  if (regexec (ctx->regexp, name, 0, 0, 0))
+    return 0;
+
+  grub_dprintf ("expand", "matched\n");
+
+  buffer = grub_xasprintf ("%s%s", ctx->dir, name);
+  if (! buffer)
+    return 1;
+
+  t = grub_realloc (ctx->files, sizeof (char*) * (ctx->nfile + 2));
+  if (! t)
+    {
+      grub_free (buffer);
+      return 1;
+    }
+
+  ctx->files = t;
+  ctx->files[ctx->nfile++] = buffer;
+  ctx->files[ctx->nfile] = 0;
   return 0;
 }
 
@@ -271,59 +331,26 @@ static char **
 match_files (const char *prefix, const char *suffix, const char *end,
 	     const regex_t *regexp)
 {
+  struct match_files_ctx ctx = {
+    .regexp = regexp,
+    .nfile = 0,
+    .files = 0
+  };
   int i;
-  char **files;
-  unsigned nfile;
-  char *dir;
   const char *path;
   char *device_name;
   grub_fs_t fs;
   grub_device_t dev;
 
-  auto int match (const char *name, const struct grub_dirhook_info *info);
-  int match (const char *name, const struct grub_dirhook_info *info)
-  {
-    char **t;
-    char *buffer;
-
-    /* skip . and .. names */
-    if (grub_strcmp(".", name) == 0 || grub_strcmp("..", name) == 0)
-      return 0;
-
-    grub_dprintf ("expand", "matching: %s in %s\n", name, dir);
-    if (regexec (regexp, name, 0, 0, 0))
-      return 0;
-
-    grub_dprintf ("expand", "matched\n");
-
-    buffer = grub_xasprintf ("%s%s", dir, name);
-    if (! buffer)
-      return 1;
-
-    t = grub_realloc (files, sizeof (char*) * (nfile + 2));
-    if (! t)
-      {
-	grub_free (buffer);
-	return 1;
-      }
-
-    files = t;
-    files[nfile++] = buffer;
-    files[nfile] = 0;
-    return 0;
-  }
-
-  nfile = 0;
-  files = 0;
   dev = 0;
   device_name = 0;
   grub_error_push ();
 
-  dir = make_dir (prefix, suffix, end);
-  if (! dir)
+  ctx.dir = make_dir (prefix, suffix, end);
+  if (! ctx.dir)
     goto fail;
 
-  device_name = grub_file_get_device_name (dir);
+  device_name = grub_file_get_device_name (ctx.dir);
   dev = grub_device_open (device_name);
   if (! dev)
     goto fail;
@@ -332,33 +359,33 @@ match_files (const char *prefix, const char *suffix, const char *end,
   if (! fs)
     goto fail;
 
-  if (dir[0] == '(')
+  if (ctx.dir[0] == '(')
     {
-      path = grub_strchr (dir, ')');
+      path = grub_strchr (ctx.dir, ')');
       if (!path)
 	goto fail;
       path++;
     }
   else
-    path = dir;
+    path = ctx.dir;
 
-  if (fs->dir (dev, path, match))
+  if (fs->dir (dev, path, match_files_iter, &ctx))
     goto fail;
 
-  grub_free (dir);
+  grub_free (ctx.dir);
   grub_device_close (dev);
   grub_free (device_name);
   grub_error_pop ();
-  return files;
+  return ctx.files;
 
  fail:
 
-  grub_free (dir);
+  grub_free (ctx.dir);
 
-  for (i = 0; files && files[i]; i++)
-    grub_free (files[i]);
+  for (i = 0; ctx.files && ctx.files[i]; i++)
+    grub_free (ctx.files[i]);
 
-  grub_free (files);
+  grub_free (ctx.files);
 
   if (dev)
     grub_device_close (dev);
@@ -369,27 +396,41 @@ match_files (const char *prefix, const char *suffix, const char *end,
   return 0;
 }
 
+/* Context for check_file.  */
+struct check_file_ctx
+{
+  const char *basename;
+  int found;
+};
+
+/* Helper for check_file.  */
+static int
+check_file_iter (const char *name, const struct grub_dirhook_info *info,
+		 void *data)
+{
+  struct check_file_ctx *ctx = data;
+
+  if (ctx->basename[0] == 0
+      || (info->case_insensitive ? grub_strcasecmp (name, ctx->basename) == 0
+	  : grub_strcmp (name, ctx->basename) == 0))
+    {
+      ctx->found = 1;
+      return 1;
+    }
+  
+  return 0;
+}
+
 static int
 check_file (const char *dir, const char *basename)
 {
+  struct check_file_ctx ctx = {
+    .basename = basename,
+    .found = 0
+  };
   grub_fs_t fs;
   grub_device_t dev;
-  int found = 0;
   const char *device_name, *path;
-
-  auto int match (const char *name, const struct grub_dirhook_info *info);
-  int match (const char *name, const struct grub_dirhook_info *info)
-  {
-    if (basename[0] == 0
-	|| (info->case_insensitive ? grub_strcasecmp (name, basename) == 0
-	    : grub_strcmp (name, basename) == 0))
-      {
-	found = 1;
-	return 1;
-      }
-    
-    return 0;
-  }
 
   device_name = grub_file_get_device_name (dir);
   dev = grub_device_open (device_name);
@@ -410,14 +451,14 @@ check_file (const char *dir, const char *basename)
   else
     path = dir;
 
-  fs->dir (dev, path[0] ? path : "/", match);
+  fs->dir (dev, path[0] ? path : "/", check_file_iter, &ctx);
   if (grub_errno == 0 && basename[0] == 0)
-    found = 1;
+    ctx.found = 1;
 
  fail:
   grub_errno = 0;
 
-  return found;
+  return ctx.found;
 }
 
 static void

@@ -21,11 +21,12 @@
 #include <grub/mm.h>
 #include <grub/misc.h>
 #include <grub/kernel.h>
+#include <grub/loader.h>
 
 void
 grub_reboot (void)
 {
-  grub_machine_fini ();
+  grub_machine_fini (GRUB_LOADER_FLAG_NORETURN);
   efi_call_4 (grub_efi_system_table->runtime_services->reset_system,
               GRUB_EFI_RESET_COLD, GRUB_EFI_SUCCESS, 0, NULL);
   for (;;) ;

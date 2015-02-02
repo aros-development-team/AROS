@@ -36,7 +36,6 @@ GRUB_MOD_LICENSE ("GPLv3+");
 
 #include "types.h"
 #include "g10lib.h"
-#include "memory.h"
 #include "cipher.h"
 
 #include "bithelp.h"
@@ -118,7 +117,7 @@ static const u64 rc[R] =
     U64_C (0xfbee7c66dd17479e),
     U64_C (0xca2dbf07ad5a8333),
   };
-  
+
 
 
 /* Main lookup boxes.  */
@@ -1323,7 +1322,7 @@ whirlpool_add (whirlpool_context_t *context,
     }
   /*_gcry_burn_stack (80+6*sizeof(void*));*/ /* FIXME */
 
-  while (buffer_n >= BLOCK_SIZE) 
+  while (buffer_n >= BLOCK_SIZE)
     {
       whirlpool_transform (context, buffer);
       context->count = 0;
@@ -1413,6 +1412,7 @@ gcry_md_spec_t _gcry_digest_spec_whirlpool =
 
 GRUB_MOD_INIT(gcry_whirlpool)
 {
+  COMPILE_TIME_ASSERT(sizeof (whirlpool_context_t) <= GRUB_CRYPTO_MAX_MD_CONTEXT_SIZE);
   grub_md_register (&_gcry_digest_spec_whirlpool);
 }
 

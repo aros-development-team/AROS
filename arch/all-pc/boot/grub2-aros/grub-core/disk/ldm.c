@@ -22,6 +22,7 @@
 #include <grub/err.h>
 #include <grub/misc.h>
 #include <grub/diskfilter.h>
+#include <grub/msdos_partition.h>
 #include <grub/gpt_partition.h>
 #include <grub/i18n.h>
 
@@ -48,7 +49,7 @@ struct grub_ldm_vblk {
   grub_uint8_t type;
   grub_uint32_t unused2;
   grub_uint8_t dynamic[104];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 #define LDM_VBLK_MAGIC "VBLK"
 
 enum
@@ -82,7 +83,7 @@ struct grub_ldm_label
   grub_uint64_t pv_size;
   grub_uint64_t config_start;
   grub_uint64_t config_size;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 
 #define LDM_MAGIC "PRIVHEAD"
@@ -103,37 +104,72 @@ read_int (grub_uint8_t *in, grub_size_t s)
   return ret;
 }
 
+static int
+check_ldm_partition (grub_disk_t disk __attribute__ ((unused)), const grub_partition_t p, void *data)
+{
+  int *has_ldm = data;
+
+  if (p->number >= 4)
+    return 1;
+  if (p->msdostype == GRUB_PC_PARTITION_TYPE_LDM)
+    {
+      *has_ldm = 1;
+      return 1;
+    }
+  return 0;
+}
+
+static int
+msdos_has_ldm_partition (grub_disk_t dsk)
+{
+  grub_err_t err;
+  int has_ldm = 0;
+
+  err = grub_partition_msdos_iterate (dsk, check_ldm_partition, &has_ldm);
+  if (err)
+    {
+      grub_errno = GRUB_ERR_NONE;
+      return 0;
+    }
+
+  return has_ldm;
+}
+
 static const grub_gpt_part_type_t ldm_type = GRUB_GPT_PARTITION_TYPE_LDM;
+
+/* Helper for gpt_ldm_sector.  */
+static int
+gpt_ldm_sector_iter (grub_disk_t disk, const grub_partition_t p, void *data)
+{
+  grub_disk_addr_t *sector = data;
+  struct grub_gpt_partentry gptdata;
+  grub_partition_t p2;
+
+  p2 = disk->partition;
+  disk->partition = p->parent;
+  if (grub_disk_read (disk, p->offset, p->index,
+		      sizeof (gptdata), &gptdata))
+    {
+      disk->partition = p2;
+      return 0;
+    }
+  disk->partition = p2;
+
+  if (! grub_memcmp (&gptdata.type, &ldm_type, 16))
+    {
+      *sector = p->start + p->len - 1;
+      return 1;
+    }
+  return 0;
+}
 
 static grub_disk_addr_t
 gpt_ldm_sector (grub_disk_t dsk)
 {
   grub_disk_addr_t sector = 0;
   grub_err_t err;
-  auto int hook (grub_disk_t disk, const grub_partition_t p);
-  int hook (grub_disk_t disk, const grub_partition_t p)
-  {
-    struct grub_gpt_partentry gptdata;
-    grub_partition_t p2;
 
-    p2 = disk->partition;
-    disk->partition = p->parent;
-    if (grub_disk_read (disk, p->offset, p->index,
-			sizeof (gptdata), &gptdata))
-      {
-	disk->partition = p2;
-	return 0;
-      }
-    disk->partition = p2;
-
-    if (! grub_memcmp (&gptdata.type, &ldm_type, 16))
-      {
-	sector = p->start + p->len - 1;
-	return 1;
-      }
-    return 0;
-  }
-  err = grub_gpt_partition_map_iterate (dsk, hook);
+  err = grub_gpt_partition_map_iterate (dsk, gpt_ldm_sector_iter, &sector);
   if (err)
     {
       grub_errno = GRUB_ERR_NONE;
@@ -671,16 +707,16 @@ make_vg (grub_disk_t disk,
 
 	  if (comp->segment_alloc == 1)
 	    {
-	      unsigned index;
+	      unsigned node_index;
 	      ptr += *ptr + 1;
 	      if (ptr + *ptr + 1 >= vblk[i].dynamic
 		  + sizeof (vblk[i].dynamic))
 		{
 		  goto fail2;
 		}
-	      index = read_int (ptr + 1, *ptr);
-	      if (index < comp->segments->node_count)
-		comp->segments->nodes[index] = part;
+	      node_index = read_int (ptr + 1, *ptr);
+	      if (node_index < comp->segments->node_count)
+		comp->segments->nodes[node_index] = part;
 	    }
 	  else
 	    {
@@ -756,17 +792,20 @@ grub_ldm_detect (grub_disk_t disk,
 
   {
     int i;
+    int has_ldm = msdos_has_ldm_partition (disk);
     for (i = 0; i < 3; i++)
       {
 	grub_disk_addr_t sector = LDM_LABEL_SECTOR;
 	switch (i)
 	  {
 	  case 0:
+	    if (!has_ldm)
+	      continue;
 	    sector = LDM_LABEL_SECTOR;
 	    break;
 	  case 1:
 	    /* LDM is never inside a partition.  */
-	    if (disk->partition)
+	    if (!has_ldm || disk->partition)
 	      continue;
 	    sector = grub_disk_get_size (disk);
 	    if (sector == GRUB_DISK_SIZE_UNKNOWN)
@@ -867,6 +906,7 @@ int
 grub_util_is_ldm (grub_disk_t disk)
 {
   int i;
+  int has_ldm = msdos_has_ldm_partition (disk);
   for (i = 0; i < 3; i++)
     {
       grub_disk_addr_t sector = LDM_LABEL_SECTOR;
@@ -876,11 +916,13 @@ grub_util_is_ldm (grub_disk_t disk)
       switch (i)
 	{
 	case 0:
+	  if (!has_ldm)
+	    continue;
 	  sector = LDM_LABEL_SECTOR;
 	  break;
 	case 1:
 	  /* LDM is never inside a partition.  */
-	  if (disk->partition)
+	  if (!has_ldm || disk->partition)
 	    continue;
 	  sector = grub_disk_get_size (disk);
 	  if (sector == GRUB_DISK_SIZE_UNKNOWN)
@@ -970,7 +1012,7 @@ grub_util_ldm_embed (struct grub_disk *disk, unsigned int *nsectors,
 			      usable for bootloaders (called generically
 			      "embedding zone") and this operation is
 			      called "embedding".  */
-			   N_("your LDM embedding Partition is too small;"
+			   N_("your LDM Embedding Partition is too small;"
 			      " embedding won't be possible"));
       *nsectors = lv->size;
       if (*nsectors > max_nsectors)

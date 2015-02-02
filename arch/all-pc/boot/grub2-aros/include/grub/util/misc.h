@@ -39,23 +39,14 @@ void grub_util_write_image (const char *img, size_t size, FILE *out,
 void grub_util_write_image_at (const void *img, size_t size, off_t offset,
 			       FILE *out, const char *name);
 
-#ifdef __MINGW32__
-
-#define fseeko fseeko64
-#define ftello ftello64
-
-void sync (void);
-int fsync (int fno);
-
-grub_int64_t grub_util_get_disk_size (char *name);
-
-#endif
-
-
 char *make_system_path_relative_to_its_root (const char *path);
 
 char *canonicalize_file_name (const char *path);
 
 void grub_util_init_nls (void);
+
+void grub_util_host_init (int *argc, char ***argv);
+
+int grub_qsort_strcmp (const void *, const void *);
 
 #endif /* ! GRUB_UTIL_MISC_HEADER */

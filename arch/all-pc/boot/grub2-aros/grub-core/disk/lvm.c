@@ -65,7 +65,7 @@ grub_lvm_checkvalue (char **p, char *str, char *tmpl)
 static int
 grub_lvm_check_flag (char *p, const char *str, const char *flag)
 {
-  int len_str = grub_strlen (str), len_flag = grub_strlen (flag);
+  grub_size_t len_str = grub_strlen (str), len_flag = grub_strlen (flag);
   while (1)
     {
       char *q;
@@ -111,7 +111,8 @@ grub_lvm_detect (grub_disk_t disk,
   struct grub_lvm_disk_locn *dlocn;
   struct grub_lvm_mda_header *mdah;
   struct grub_lvm_raw_locn *rlocn;
-  unsigned int i, j, vgname_len;
+  unsigned int i, j;
+  grub_size_t vgname_len;
   struct grub_diskfilter_vg *vg;
   struct grub_diskfilter_pv *pv;
 
@@ -273,7 +274,7 @@ grub_lvm_detect (grub_disk_t disk,
 	  /* Add all the pvs to the volume group. */
 	  while (1)
 	    {
-	      int s;
+	      grub_ssize_t s;
 	      while (grub_isspace (*p))
 		p++;
 
@@ -332,15 +333,15 @@ grub_lvm_detect (grub_disk_t disk,
 	    }
 	}
 
-      p = grub_strstr (p, "logical_volumes");
+      p = grub_strstr (p, "logical_volumes {");
       if (p)
 	{
-	  p += sizeof ("logical_volumes = ") - 1;
+	  p += sizeof ("logical_volumes {") - 1;
 
 	  /* And add all the lvs to the volume group. */
 	  while (1)
 	    {
-	      int s;
+	      grub_ssize_t s;
 	      int skip_lv = 0;
 	      struct grub_diskfilter_lv *lv;
 	      struct grub_diskfilter_segment *seg;
@@ -387,6 +388,29 @@ grub_lvm_detect (grub_disk_t disk,
 		      *optr++ = '-';
 		  }
 		*optr++ = 0;
+		lv->idname = grub_malloc (sizeof ("lvmid/")
+					  + 2 * GRUB_LVM_ID_STRLEN + 1);
+		if (!lv->idname)
+		  goto lvs_fail;
+		grub_memcpy (lv->idname, "lvmid/",
+			     sizeof ("lvmid/") - 1);
+		grub_memcpy (lv->idname + sizeof ("lvmid/") - 1,
+			     vg_id, GRUB_LVM_ID_STRLEN);
+		lv->idname[sizeof ("lvmid/") - 1 + GRUB_LVM_ID_STRLEN] = '/';
+
+		p = grub_strstr (q, "id = \"");
+		if (p == NULL)
+		  {
+#ifdef GRUB_UTIL
+		    grub_util_info ("couldn't find ID\n");
+#endif
+		    goto lvs_fail;
+		  }
+		p += sizeof ("id = \"") - 1;
+		grub_memcpy (lv->idname + sizeof ("lvmid/") - 1
+			     + GRUB_LVM_ID_STRLEN + 1,
+			     p, GRUB_LVM_ID_STRLEN);
+		lv->idname[sizeof ("lvmid/") - 1 + 2 * GRUB_LVM_ID_STRLEN + 1] = '\0';
 	      }
 
 	      lv->size = 0;

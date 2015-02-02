@@ -27,7 +27,12 @@ void grub_usbserial_detach (grub_usb_device_t usbdev, int configno,
 
 int
 grub_usbserial_attach (grub_usb_device_t usbdev, int configno, int interfno,
-		       struct grub_serial_driver *driver);
+		       struct grub_serial_driver *driver, int in_endp,
+		       int out_endp);
+enum
+  {
+    GRUB_USB_SERIAL_ENDPOINT_LAST_MATCHING = -1
+  };
 int
 grub_usbserial_fetch (struct grub_serial_port *port, grub_size_t header_size);
 

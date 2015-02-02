@@ -24,6 +24,8 @@
 #include "xz_private.h"
 #include "xz_lzma2.h"
 
+#pragma GCC diagnostic warning "-Wattributes"
+
 /*
  * Range decoder initialization eats the first five bytes of each LZMA chunk.
  */
@@ -327,9 +329,9 @@ static inline uint32_t dict_get(
 /*
  * Put one byte into the dictionary. It is assumed that there is space for it.
  */
-static inline void dict_put(struct dictionary *dict, uint8_t byte)
+static inline void dict_put(struct dictionary *dict, uint8_t b)
 {
-	dict->buf[dict->pos++] = byte;
+	dict->buf[dict->pos++] = b;
 
 	if (dict->full < dict->pos)
 		dict->full = dict->pos;

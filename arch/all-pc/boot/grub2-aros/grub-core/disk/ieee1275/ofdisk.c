@@ -31,9 +31,14 @@ static grub_ieee1275_ihandle_t last_ihandle;
 struct ofdisk_hash_ent
 {
   char *devpath;
+  char *open_path;
+  char *grub_devpath;
+  int is_boot;
+  int is_cdrom;
   /* Pointer to shortest available name on nodes representing canonical names,
      otherwise NULL.  */
   const char *shortest;
+  const char *grub_shortest;
   struct ofdisk_hash_ent *next;
 };
 
@@ -68,16 +73,65 @@ ofdisk_hash_add_real (char *devpath)
 {
   struct ofdisk_hash_ent *p;
   struct ofdisk_hash_ent **head = &ofdisk_hash[ofdisk_hash_fn(devpath)];
+  const char *iptr;
+  char *optr;
 
-  p = grub_malloc(sizeof (*p));
+  p = grub_zalloc (sizeof (*p));
   if (!p)
     return NULL;
 
   p->devpath = devpath;
+
+  p->grub_devpath = grub_malloc (sizeof ("ieee1275/")
+				 + 2 * grub_strlen (p->devpath));
+
+  if (!p->grub_devpath)
+    {
+      grub_free (p);
+      return NULL;
+    }
+
+  if (! grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_NO_PARTITION_0))
+    {
+      p->open_path = grub_malloc (grub_strlen (p->devpath) + 3);
+      if (!p->open_path)
+	{
+	  grub_free (p->grub_devpath);
+	  grub_free (p);
+	  return NULL;
+	}
+      optr = grub_stpcpy (p->open_path, p->devpath);
+      *optr++ = ':';
+      *optr++ = '0';
+      *optr = '\0';
+    }
+  else
+    p->open_path = p->devpath;
+
+  optr = grub_stpcpy (p->grub_devpath, "ieee1275/");
+  for (iptr = p->devpath; *iptr; )
+    {
+      if (*iptr == ',')
+	*optr++ = '\\';
+      *optr++ = *iptr++;
+    }
+  *optr = 0;
+
   p->next = *head;
-  p->shortest = 0;
   *head = p;
   return p;
+}
+
+static int
+check_string_cdrom (const char *str)
+{
+  const char *ptr = grub_strrchr (str, '/');
+
+  if (ptr)
+    ptr++;
+  else
+    ptr = str;
+  return (grub_strncmp (ptr, "cdrom", 5) == 0);
 }
 
 static struct ofdisk_hash_ent *
@@ -91,7 +145,10 @@ ofdisk_hash_add (char *devpath, char *curcan)
 
   if (!curcan)
     {
-      p->shortest = devpath;
+      p->shortest = p->devpath;
+      p->grub_shortest = p->grub_devpath;
+      if (check_string_cdrom (devpath))
+	p->is_cdrom = 1;  
       return p;
     }
 
@@ -101,124 +158,136 @@ ofdisk_hash_add (char *devpath, char *curcan)
   else
     grub_free (curcan);
 
+  if (check_string_cdrom (devpath) || check_string_cdrom (curcan))
+    pcan->is_cdrom = 1;
+
   if (!pcan)
     grub_errno = GRUB_ERR_NONE;
   else
     {
       if (!pcan->shortest
 	  || grub_strlen (pcan->shortest) > grub_strlen (devpath))
-	pcan->shortest = devpath;
+	{
+	  pcan->shortest = p->devpath;
+	  pcan->grub_shortest = p->grub_devpath;
+	}
     }
 
   return p;
 }
 
 static void
-scan (void)
+dev_iterate_real (const char *name, const char *path)
 {
-  auto int dev_iterate_real (const char *name, const char *path);
+  struct ofdisk_hash_ent *op;
 
-  int dev_iterate_real (const char *name, const char *path)
+  grub_dprintf ("disk", "disk name = %s, path = %s\n", name,
+		path);
+
+  op = ofdisk_hash_find (path);
+  if (!op)
     {
-      struct ofdisk_hash_ent *op;
-
-      grub_dprintf ("disk", "disk name = %s, path = %s\n", name,
-		    path);
-
-      op = ofdisk_hash_find (path);
-      if (!op)
+      char *name_dup = grub_strdup (name);
+      char *can = grub_strdup (path);
+      if (!name_dup || !can)
 	{
-	  char *name_dup = grub_strdup (name);
-	  char *can = grub_strdup (path);
-	  if (!name_dup || !can)
-	    {
-	      grub_errno = GRUB_ERR_NONE;
-	      grub_free (name_dup);
-	      grub_free (can);
-	      return 0;
-	    }
-	  op = ofdisk_hash_add (name_dup, can);
+	  grub_errno = GRUB_ERR_NONE;
+	  grub_free (name_dup);
+	  grub_free (can);
+	  return;
 	}
-      return 0;
+      op = ofdisk_hash_add (name_dup, can);
+    }
+  return;
+}
+
+static void
+dev_iterate (const struct grub_ieee1275_devalias *alias)
+{
+  if (grub_strcmp (alias->type, "vscsi") == 0)
+    {
+      static grub_ieee1275_ihandle_t ihandle;
+      struct set_color_args
+      {
+	struct grub_ieee1275_common_hdr common;
+	grub_ieee1275_cell_t method;
+	grub_ieee1275_cell_t ihandle;
+	grub_ieee1275_cell_t catch_result;
+	grub_ieee1275_cell_t nentries;
+	grub_ieee1275_cell_t table;
+      }
+      args;
+      char *buf, *bufptr;
+      unsigned i;
+
+      if (grub_ieee1275_open (alias->path, &ihandle))
+	return;
+    
+      INIT_IEEE1275_COMMON (&args.common, "call-method", 2, 3);
+      args.method = (grub_ieee1275_cell_t) "vscsi-report-luns";
+      args.ihandle = ihandle;
+      args.table = 0;
+      args.nentries = 0;
+
+      if (IEEE1275_CALL_ENTRY_FN (&args) == -1 || args.catch_result)
+	{
+	  grub_ieee1275_close (ihandle);
+	  return;
+	}
+
+      buf = grub_malloc (grub_strlen (alias->path) + 32);
+      if (!buf)
+	return;
+      bufptr = grub_stpcpy (buf, alias->path);
+
+      for (i = 0; i < args.nentries; i++)
+	{
+	  grub_uint64_t *ptr;
+
+	  ptr = *(grub_uint64_t **) (args.table + 4 + 8 * i);
+	  while (*ptr)
+	    {
+	      grub_snprintf (bufptr, 32, "/disk@%" PRIxGRUB_UINT64_T, *ptr++);
+	      dev_iterate_real (buf, buf);
+	    }
+	}
+      grub_ieee1275_close (ihandle);
+      grub_free (buf);
+      return;
     }
 
-  auto int dev_iterate_alias (struct grub_ieee1275_devalias *alias);
-  int dev_iterate_alias (struct grub_ieee1275_devalias *alias)
+  if (!grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_NO_TREE_SCANNING_FOR_DISKS)
+      && grub_strcmp (alias->type, "block") == 0)
+    {
+      dev_iterate_real (alias->path, alias->path);
+      return;
+    }
+
   {
-    if (grub_strcmp (alias->type, "block") != 0)
-      return 0;
-    return dev_iterate_real (alias->name, alias->path);
+    struct grub_ieee1275_devalias child;
+
+    FOR_IEEE1275_DEVCHILDREN(alias->path, child)
+      dev_iterate (&child);
   }
+}
 
-  auto int dev_iterate (struct grub_ieee1275_devalias *alias);
-  int dev_iterate (struct grub_ieee1275_devalias *alias)
-  {
-    if (grub_strcmp (alias->type, "vscsi") == 0)
-      {
-	static grub_ieee1275_ihandle_t ihandle;
-	struct set_color_args
-	{
-	  struct grub_ieee1275_common_hdr common;
-	  grub_ieee1275_cell_t method;
-	  grub_ieee1275_cell_t ihandle;
-	  grub_ieee1275_cell_t catch_result;
-	  grub_ieee1275_cell_t nentries;
-	  grub_ieee1275_cell_t table;
-	}
-	args;
-	char *buf, *bufptr;
-	unsigned i;
+static void
+scan (void)
+{
+  struct grub_ieee1275_devalias alias;
+  FOR_IEEE1275_DEVALIASES(alias)
+    {
+      if (grub_strcmp (alias.type, "block") != 0)
+	continue;
+      dev_iterate_real (alias.name, alias.path);
+    }
 
-	if (grub_ieee1275_open (alias->path, &ihandle))
-	  return 0;
-    
-	INIT_IEEE1275_COMMON (&args.common, "call-method", 2, 3);
-	args.method = (grub_ieee1275_cell_t) "vscsi-report-luns";
-	args.ihandle = ihandle;
-	args.table = 0;
-	args.nentries = 0;
-
-	if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
-	  {
-	    grub_ieee1275_close (ihandle);
-	    return 0;
-	  }
-
-	buf = grub_malloc (grub_strlen (alias->path) + 32);
-	if (!buf)
-	  return 0;
-	bufptr = grub_stpcpy (buf, alias->path);
-
-	for (i = 0; i < args.nentries; i++)
-	  {
-	    grub_uint64_t *ptr;
-
-	    ptr = *(grub_uint64_t **) (args.table + 4 + 8 * i);
-	    while (*ptr)
-	      {
-		grub_snprintf (bufptr, 32, "/disk@%" PRIxGRUB_UINT64_T, *ptr++);
-		if (dev_iterate_real (buf, buf))
-		  return 1;
-	      }
-	  }
-	grub_ieee1275_close (ihandle);
-	grub_free (buf);
-	return 0;
-      }
-
-    if (!grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_NO_TREE_SCANNING_FOR_DISKS)
-	&& grub_strcmp (alias->type, "block") == 0)
-      return dev_iterate_real (alias->path, alias->path);
-
-    return grub_children_iterate (alias->path, dev_iterate);
-  }
-
-  grub_devalias_iterate (dev_iterate_alias);
-  grub_children_iterate ("/", dev_iterate);
+  FOR_IEEE1275_DEVCHILDREN("/", alias)
+    dev_iterate (&alias);
 }
 
 static int
-grub_ofdisk_iterate (int (*hook) (const char *name),
+grub_ofdisk_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
 		     grub_disk_pull_t pull)
 {
   unsigned i;
@@ -261,24 +330,11 @@ grub_ofdisk_iterate (int (*hook) (const char *name),
 		}
 	    }
 
-	  if (grub_strncmp (ent->shortest, "cdrom", 5) == 0)
+	  if (!ent->is_boot && ent->is_cdrom)
 	    continue;
 
-	  {
-	    char buffer[sizeof ("ieee1275/") + 2 * grub_strlen (ent->shortest)];
-	    const char *iptr;
-	    char *optr;
-	    optr = grub_stpcpy (buffer, "ieee1275/");
-	    for (iptr = ent->shortest; *iptr; )
-	      {
-		if (*iptr == ',')
-		  *optr++ = '\\';
-		*optr++ = *iptr++;
-	      }
-	    *optr = 0;
-	    if (hook (buffer))
-	      return 1;
-	  }
+	  if (hook (ent->grub_shortest, hook_data))
+	    return 1;
 	}
     }	  
   return 0;
@@ -349,6 +405,14 @@ grub_ofdisk_open (const char *name, grub_disk_t disk)
       return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "not a block device");
     }
 
+  grub_uint32_t block_size = 0;
+  if (grub_ofdisk_get_block_size (devpath, &block_size) == 0)
+    {
+      for (disk->log_sector_size = 0;
+           (1U << disk->log_sector_size) < block_size;
+           disk->log_sector_size++);
+    }
+
   /* XXX: There is no property to read the number of blocks.  There
      should be a property `#blocks', but it is not there.  Perhaps it
      is possible to use seek for this.  */
@@ -364,7 +428,7 @@ grub_ofdisk_open (const char *name, grub_disk_t disk)
     if (!op)
       return grub_errno;
     disk->id = (unsigned long) op;
-    disk->data = op->devpath;
+    disk->data = op->open_path;
   }
 
   return 0;
@@ -396,26 +460,13 @@ grub_ofdisk_prepare (grub_disk_t disk, grub_disk_addr_t sector)
       last_ihandle = 0;
       last_devpath = NULL;
 
-      if (! grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_NO_PARTITION_0))
-	{
-	  char name2[grub_strlen (disk->data) + 3];
-	  char *p;
-	  
-	  grub_strcpy (name2, disk->data);
-	  p = name2 + grub_strlen (name2);
-	  *p++ = ':';
-	  *p++ = '0';
-	  *p = 0;
-	  grub_ieee1275_open (name2, &last_ihandle);
-	}
-      else
-	grub_ieee1275_open (disk->data, &last_ihandle);
+      grub_ieee1275_open (disk->data, &last_ihandle);
       if (! last_ihandle)
 	return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "can't open device");
       last_devpath = disk->data;      
     }
 
-  pos = sector << GRUB_DISK_SECTOR_BITS;
+  pos = sector << disk->log_sector_size;
 
   grub_ieee1275_seek (last_ihandle, pos, &status);
   if (status < 0)
@@ -434,9 +485,9 @@ grub_ofdisk_read (grub_disk_t disk, grub_disk_addr_t sector,
   err = grub_ofdisk_prepare (disk, sector);
   if (err)
     return err;
-  grub_ieee1275_read (last_ihandle, buf, size  << GRUB_DISK_SECTOR_BITS,
+  grub_ieee1275_read (last_ihandle, buf, size  << disk->log_sector_size,
 		      &actual);
-  if (actual != (grub_ssize_t) (size  << GRUB_DISK_SECTOR_BITS))
+  if (actual != (grub_ssize_t) (size  << disk->log_sector_size))
     return grub_error (GRUB_ERR_READ_ERROR, N_("failure reading sector 0x%llx "
 					       "from `%s'"),
 		       (unsigned long long) sector,
@@ -454,9 +505,9 @@ grub_ofdisk_write (grub_disk_t disk, grub_disk_addr_t sector,
   err = grub_ofdisk_prepare (disk, sector);
   if (err)
     return err;
-  grub_ieee1275_write (last_ihandle, buf, size  << GRUB_DISK_SECTOR_BITS,
+  grub_ieee1275_write (last_ihandle, buf, size  << disk->log_sector_size,
 		       &actual);
-  if (actual != (grub_ssize_t) (size << GRUB_DISK_SECTOR_BITS))
+  if (actual != (grub_ssize_t) (size << disk->log_sector_size))
     return grub_error (GRUB_ERR_WRITE_ERROR, N_("failure writing sector 0x%llx "
 						"to `%s'"),
 		       (unsigned long long) sector,
@@ -477,10 +528,44 @@ static struct grub_disk_dev grub_ofdisk_dev =
     .next = 0
   };
 
-void
-grub_ofdisk_init (void)
+static void
+insert_bootpath (void)
 {
-  grub_disk_dev_register (&grub_ofdisk_dev);
+  char *bootpath;
+  grub_ssize_t bootpath_size;
+  char *type;
+
+  if (grub_ieee1275_get_property_length (grub_ieee1275_chosen, "bootpath",
+					 &bootpath_size)
+      || bootpath_size <= 0)
+    {
+      /* Should never happen.  */
+      grub_printf ("/chosen/bootpath property missing!\n");
+      return;
+    }
+
+  bootpath = (char *) grub_malloc ((grub_size_t) bootpath_size + 64);
+  if (! bootpath)
+    {
+      grub_print_error ();
+      return;
+    }
+  grub_ieee1275_get_property (grub_ieee1275_chosen, "bootpath", bootpath,
+                              (grub_size_t) bootpath_size + 1, 0);
+  bootpath[bootpath_size] = '\0';
+
+  /* Transform an OF device path to a GRUB path.  */
+
+  type = grub_ieee1275_get_device_type (bootpath);
+  if (!(type && grub_strcmp (type, "network") == 0))
+    {
+      struct ofdisk_hash_ent *op;
+      char *device = grub_ieee1275_get_devname (bootpath);
+      op = ofdisk_hash_add (device, NULL);
+      op->is_boot = 1;
+    }
+  grub_free (type);
+  grub_free (bootpath);
 }
 
 void
@@ -492,4 +577,55 @@ grub_ofdisk_fini (void)
   last_devpath = NULL;
 
   grub_disk_dev_unregister (&grub_ofdisk_dev);
+}
+
+void
+grub_ofdisk_init (void)
+{
+  grub_disk_firmware_fini = grub_ofdisk_fini;
+
+  insert_bootpath ();
+
+  grub_disk_dev_register (&grub_ofdisk_dev);
+}
+
+grub_err_t
+grub_ofdisk_get_block_size (const char *device, grub_uint32_t *block_size)
+{
+  struct size_args_ieee1275
+    {
+      struct grub_ieee1275_common_hdr common;
+      grub_ieee1275_cell_t method;
+      grub_ieee1275_cell_t ihandle;
+      grub_ieee1275_cell_t result;
+      grub_ieee1275_cell_t size1;
+      grub_ieee1275_cell_t size2;
+    } args_ieee1275;
+
+  if (last_ihandle)
+    grub_ieee1275_close (last_ihandle);
+
+  last_ihandle = 0;
+  last_devpath = NULL;
+
+  grub_ieee1275_open (device, &last_ihandle);
+  if (! last_ihandle)
+    return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "can't open device");
+
+  INIT_IEEE1275_COMMON (&args_ieee1275.common, "call-method", 2, 2);
+  args_ieee1275.method = (grub_ieee1275_cell_t) "block-size";
+  args_ieee1275.ihandle = last_ihandle;
+  args_ieee1275.result = 1;
+
+  *block_size = GRUB_DISK_SECTOR_SIZE;
+
+  if ((IEEE1275_CALL_ENTRY_FN (&args_ieee1275) == -1) || (args_ieee1275.result))
+    grub_dprintf ("disk", "can't get block size\n");
+  else
+    if (args_ieee1275.size1
+        && !(args_ieee1275.size1 & (args_ieee1275.size1 - 1))
+        && args_ieee1275.size1 >= 512 && args_ieee1275.size1 <= 16384)
+      *block_size = args_ieee1275.size1;
+
+  return 0;
 }

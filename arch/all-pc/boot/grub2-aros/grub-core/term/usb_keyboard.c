@@ -244,7 +244,7 @@ grub_usb_keyboard_attach (grub_usb_device_t usbdev, int configno, int interfno)
 #endif
 
   data->transfer = grub_usb_bulk_read_background (usbdev,
-						  data->endp->endp_addr,
+						  data->endp,
 						  sizeof (data->report),
 						  (char *) data->report);
   if (!data->transfer)
@@ -394,7 +394,7 @@ grub_usb_keyboard_getkey (struct grub_term_input *term)
                sizeof (termdata->report));
 
   termdata->transfer = grub_usb_bulk_read_background (termdata->usbdev,
-						      termdata->endp->endp_addr,
+						      termdata->endp,
 						      sizeof (termdata->report),
 						      (char *) termdata->report);
   if (!termdata->transfer)

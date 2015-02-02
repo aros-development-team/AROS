@@ -29,8 +29,8 @@ GRUB_MOD_LICENSE ("GPLv3+");
 /* Uncomment following define to enable TGA debug.  */
 //#define TGA_DEBUG
 
+#define dump_int_field(x) grub_dprintf ("tga", #x " = %d (0x%04x)\n", x, x);
 #if defined(TGA_DEBUG)
-#define dump_int_field(x) grub_printf( #x " = %d (0x%04x)\n", x, x);
 static grub_command_t cmd;
 #endif
 
@@ -75,198 +75,103 @@ struct grub_tga_header
   grub_uint16_t image_height;
   grub_uint8_t image_bpp;
   grub_uint8_t image_descriptor;
-} __attribute__ ((packed));
+} GRUB_PACKED;
+
+struct tga_data
+{
+  struct grub_tga_header hdr;
+  int uses_rle;
+  int pktlen;
+  int bpp;
+  int is_rle;
+  grub_uint8_t pixel[4];
+  grub_uint8_t palette[256][3];
+  struct grub_video_bitmap *bitmap;
+  grub_file_t file;
+  unsigned image_width;
+  unsigned image_height;
+};
 
 static grub_err_t
-tga_load_truecolor_rle_R8G8B8 (struct grub_video_bitmap *bitmap,
-                               struct grub_tga_header *header,
-                               grub_file_t file)
+fetch_pixel (struct tga_data *data)
 {
-  unsigned int x;
-  unsigned int y;
-  grub_uint8_t type;
-  grub_uint8_t *ptr;
-  grub_uint8_t tmp[4]; /* Size should be max_bpp / 8.  */
-  grub_uint8_t bytes_per_pixel;
-
-  bytes_per_pixel = header->image_bpp / 8;
-
-  for (y = 0; y < header->image_height; y++)
+  if (!data->uses_rle)
     {
-      ptr = bitmap->data;
-      if ((header->image_descriptor & GRUB_TGA_IMAGE_ORIGIN_TOP) != 0)
-        ptr += y * bitmap->mode_info.pitch;
-      else
-        ptr += (header->image_height - 1 - y) * bitmap->mode_info.pitch;
-
-      for (x = 0; x < header->image_width;)
-        {
-          if (grub_file_read (file, &type, sizeof (type)) != sizeof(type))
-            return grub_errno;
-
-          if (type & 0x80)
-            {
-              /* RLE-encoded packet.  */
-              type &= 0x7f;
-              type++;
-
-              if (grub_file_read (file, &tmp[0], bytes_per_pixel)
-                  != bytes_per_pixel)
-                return grub_errno;
-
-              while (type)
-                {
-                  if (x < header->image_width)
-                    {
-                      ptr[0] = tmp[2];
-                      ptr[1] = tmp[1];
-                      ptr[2] = tmp[0];
-                      ptr += 3;
-                    }
-
-                  type--;
-                  x++;
-                }
-            }
-          else
-            {
-              /* RAW-encoded packet.  */
-              type++;
-
-              while (type)
-                {
-                  if (grub_file_read (file, &tmp[0], bytes_per_pixel)
-                      != bytes_per_pixel)
-                    return grub_errno;
-
-                  if (x < header->image_width)
-                    {
-                      ptr[0] = tmp[2];
-                      ptr[1] = tmp[1];
-                      ptr[2] = tmp[0];
-                      ptr += 3;
-                    }
-
-                  type--;
-                  x++;
-                }
-            }
-        }
+      if (grub_file_read (data->file, &data->pixel[0], data->bpp)
+	  != data->bpp)
+	return grub_errno;
+      return GRUB_ERR_NONE;
     }
+  if (!data->pktlen)
+    {
+      grub_uint8_t type;
+      if (grub_file_read (data->file, &type, sizeof (type)) != sizeof(type))
+	return grub_errno;
+      data->is_rle = !!(type & 0x80);
+      data->pktlen = (type & 0x7f) + 1;
+      if (data->is_rle && grub_file_read (data->file, &data->pixel[0], data->bpp)
+	  != data->bpp)
+	return grub_errno;
+    }
+  if (!data->is_rle && grub_file_read (data->file, &data->pixel[0], data->bpp)
+      != data->bpp)
+    return grub_errno;
+  data->pktlen--;
   return GRUB_ERR_NONE;
 }
 
 static grub_err_t
-tga_load_truecolor_rle_R8G8B8A8 (struct grub_video_bitmap *bitmap,
-                                 struct grub_tga_header *header,
-                                 grub_file_t file)
+tga_load_palette (struct tga_data *data)
 {
-  unsigned int x;
-  unsigned int y;
-  grub_uint8_t type;
-  grub_uint8_t *ptr;
-  grub_uint8_t tmp[4]; /* Size should be max_bpp / 8.  */
-  grub_uint8_t bytes_per_pixel;
+  grub_size_t len = grub_le_to_cpu32 (data->hdr.color_map_length) * 3;
 
-  bytes_per_pixel = header->image_bpp / 8;
+  if (len > sizeof (data->palette))
+    len = sizeof (data->palette);
+  
+  if (grub_file_read (data->file, &data->palette, len)
+      != (grub_ssize_t) len)
+    return grub_errno;
 
-  for (y = 0; y < header->image_height; y++)
-    {
-      ptr = bitmap->data;
-      if ((header->image_descriptor & GRUB_TGA_IMAGE_ORIGIN_TOP) != 0)
-        ptr += y * bitmap->mode_info.pitch;
-      else
-        ptr += (header->image_height - 1 - y) * bitmap->mode_info.pitch;
-
-      for (x = 0; x < header->image_width;)
-        {
-          if (grub_file_read (file, &type, sizeof (type)) != sizeof(type))
-            return grub_errno;
-
-          if (type & 0x80)
-            {
-              /* RLE-encoded packet.  */
-              type &= 0x7f;
-              type++;
-
-              if (grub_file_read (file, &tmp[0], bytes_per_pixel)
-                  != bytes_per_pixel)
-                return grub_errno;
-
-              while (type)
-                {
-                  if (x < header->image_width)
-                    {
-                      ptr[0] = tmp[2];
-                      ptr[1] = tmp[1];
-                      ptr[2] = tmp[0];
-                      ptr[3] = tmp[3];
-                      ptr += 4;
-                    }
-
-                  type--;
-                  x++;
-                }
-            }
-          else
-            {
-              /* RAW-encoded packet.  */
-              type++;
-
-              while (type)
-                {
-                  if (grub_file_read (file, &tmp[0], bytes_per_pixel)
-                      != bytes_per_pixel)
-                    return grub_errno;
-
-                  if (x < header->image_width)
-                    {
-                      ptr[0] = tmp[2];
-                      ptr[1] = tmp[1];
-                      ptr[2] = tmp[0];
-                      ptr[3] = tmp[3];
-                      ptr += 4;
-                    }
-
-                  type--;
-                  x++;
-                }
-            }
-        }
-    }
+#ifndef GRUB_CPU_WORDS_BIGENDIAN
+  {
+    grub_size_t i;
+    for (i = 0; 3 * i < len; i++)
+      {
+	grub_uint8_t t;
+	t = data->palette[i][0];
+	data->palette[i][0] = data->palette[i][2];
+	data->palette[i][2] = t;
+      }
+  }
+#endif
   return GRUB_ERR_NONE;
 }
 
 static grub_err_t
-tga_load_truecolor_R8G8B8 (struct grub_video_bitmap *bitmap,
-                           struct grub_tga_header *header,
-                           grub_file_t file)
+tga_load_index_color (struct tga_data *data)
 {
   unsigned int x;
   unsigned int y;
   grub_uint8_t *ptr;
-  grub_uint8_t tmp[4]; /* Size should be max_bpp / 8.  */
-  grub_uint8_t bytes_per_pixel;
 
-  bytes_per_pixel = header->image_bpp / 8;
-
-  for (y = 0; y < header->image_height; y++)
+  for (y = 0; y < data->image_height; y++)
     {
-      ptr = bitmap->data;
-      if ((header->image_descriptor & GRUB_TGA_IMAGE_ORIGIN_TOP) != 0)
-        ptr += y * bitmap->mode_info.pitch;
+      ptr = data->bitmap->data;
+      if ((data->hdr.image_descriptor & GRUB_TGA_IMAGE_ORIGIN_TOP) != 0)
+        ptr += y * data->bitmap->mode_info.pitch;
       else
-        ptr += (header->image_height - 1 - y) * bitmap->mode_info.pitch;
+        ptr += (data->image_height - 1 - y) * data->bitmap->mode_info.pitch;
 
-      for (x = 0; x < header->image_width; x++)
+      for (x = 0; x < data->image_width; x++)
         {
-          if (grub_file_read (file, &tmp[0], bytes_per_pixel)
-              != bytes_per_pixel)
-            return grub_errno;
+	  grub_err_t err;
+	  err = fetch_pixel (data);
+          if (err)
+            return err;
 
-          ptr[0] = tmp[2];
-          ptr[1] = tmp[1];
-          ptr[2] = tmp[0];
+          ptr[0] = data->palette[data->pixel[0]][0];
+          ptr[1] = data->palette[data->pixel[0]][1];
+          ptr[2] = data->palette[data->pixel[0]][2];
 
           ptr += 3;
         }
@@ -275,36 +180,107 @@ tga_load_truecolor_R8G8B8 (struct grub_video_bitmap *bitmap,
 }
 
 static grub_err_t
-tga_load_truecolor_R8G8B8A8 (struct grub_video_bitmap *bitmap,
-                             struct grub_tga_header *header,
-                             grub_file_t file)
+tga_load_grayscale (struct tga_data *data)
 {
   unsigned int x;
   unsigned int y;
   grub_uint8_t *ptr;
-  grub_uint8_t tmp[4]; /* Size should be max_bpp / 8.  */
-  grub_uint8_t bytes_per_pixel;
 
-  bytes_per_pixel = header->image_bpp / 8;
-
-  for (y = 0; y < header->image_height; y++)
+  for (y = 0; y < data->image_height; y++)
     {
-      ptr = bitmap->data;
-      if ((header->image_descriptor & GRUB_TGA_IMAGE_ORIGIN_TOP) != 0)
-        ptr += y * bitmap->mode_info.pitch;
+      ptr = data->bitmap->data;
+      if ((data->hdr.image_descriptor & GRUB_TGA_IMAGE_ORIGIN_TOP) != 0)
+        ptr += y * data->bitmap->mode_info.pitch;
       else
-        ptr += (header->image_height - 1 - y) * bitmap->mode_info.pitch;
+        ptr += (data->image_height - 1 - y) * data->bitmap->mode_info.pitch;
 
-      for (x = 0; x < header->image_width; x++)
+      for (x = 0; x < data->image_width; x++)
         {
-          if (grub_file_read (file, &tmp[0], bytes_per_pixel)
-              != bytes_per_pixel)
-            return grub_errno;
+	  grub_err_t err;
+	  err = fetch_pixel (data);
+          if (err)
+            return err;
 
-          ptr[0] = tmp[2];
-          ptr[1] = tmp[1];
-          ptr[2] = tmp[0];
-          ptr[3] = tmp[3];
+          ptr[0] = data->pixel[0];
+          ptr[1] = data->pixel[0];
+          ptr[2] = data->pixel[0];
+
+          ptr += 3;
+        }
+    }
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
+tga_load_truecolor_R8G8B8 (struct tga_data *data)
+{
+  unsigned int x;
+  unsigned int y;
+  grub_uint8_t *ptr;
+
+  for (y = 0; y < data->image_height; y++)
+    {
+      ptr = data->bitmap->data;
+      if ((data->hdr.image_descriptor & GRUB_TGA_IMAGE_ORIGIN_TOP) != 0)
+        ptr += y * data->bitmap->mode_info.pitch;
+      else
+        ptr += (data->image_height - 1 - y) * data->bitmap->mode_info.pitch;
+
+      for (x = 0; x < data->image_width; x++)
+        {
+	  grub_err_t err;
+	  err = fetch_pixel (data);
+          if (err)
+            return err;
+
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+          ptr[0] = data->pixel[0];
+          ptr[1] = data->pixel[1];
+          ptr[2] = data->pixel[2];
+#else
+          ptr[0] = data->pixel[2];
+          ptr[1] = data->pixel[1];
+          ptr[2] = data->pixel[0];
+#endif
+          ptr += 3;
+        }
+    }
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
+tga_load_truecolor_R8G8B8A8 (struct tga_data *data)
+{
+  unsigned int x;
+  unsigned int y;
+  grub_uint8_t *ptr;
+
+  for (y = 0; y < data->image_height; y++)
+    {
+      ptr = data->bitmap->data;
+      if ((data->hdr.image_descriptor & GRUB_TGA_IMAGE_ORIGIN_TOP) != 0)
+        ptr += y * data->bitmap->mode_info.pitch;
+      else
+        ptr += (data->image_height - 1 - y) * data->bitmap->mode_info.pitch;
+
+      for (x = 0; x < data->image_width; x++)
+        {
+	  grub_err_t err;
+	  err = fetch_pixel (data);
+          if (err)
+            return err;
+
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+          ptr[0] = data->pixel[0];
+          ptr[1] = data->pixel[1];
+          ptr[2] = data->pixel[2];
+          ptr[3] = data->pixel[3];
+#else
+          ptr[0] = data->pixel[2];
+          ptr[1] = data->pixel[1];
+          ptr[2] = data->pixel[0];
+          ptr[3] = data->pixel[3];
+#endif
 
           ptr += 4;
         }
@@ -316,13 +292,13 @@ static grub_err_t
 grub_video_reader_tga (struct grub_video_bitmap **bitmap,
                        const char *filename)
 {
-  grub_file_t file;
   grub_ssize_t pos;
-  struct grub_tga_header header;
-  int has_alpha;
+  struct tga_data data;
 
-  file = grub_buffile_open (filename, 0);
-  if (! file)
+  grub_memset (&data, 0, sizeof (data));
+
+  data.file = grub_buffile_open (filename, 0);
+  if (! data.file)
     return grub_errno;
 
   /* TGA Specification states that we SHOULD start by reading
@@ -330,116 +306,154 @@ grub_video_reader_tga (struct grub_video_bitmap **bitmap,
      not going to support developer area & extensions at this point.  */
 
   /* Read TGA header from beginning of file.  */
-  if (grub_file_read (file, &header, sizeof (header))
-      != sizeof (header))
+  if (grub_file_read (data.file, &data.hdr, sizeof (data.hdr))
+      != sizeof (data.hdr))
     {
-      grub_file_close (file);
+      grub_file_close (data.file);
       return grub_errno;
     }
 
   /* Skip ID field.  */
-  pos = grub_file_tell (file);
-  pos += header.id_length;
-  grub_file_seek (file, pos);
+  pos = grub_file_tell (data.file);
+  pos += data.hdr.id_length;
+  grub_file_seek (data.file, pos);
   if (grub_errno != GRUB_ERR_NONE)
     {
-      grub_file_close (file);
+      grub_file_close (data.file);
       return grub_errno;
     }
 
-#if defined(TGA_DEBUG)
-  grub_printf("tga: header\n");
-  dump_int_field(header.id_length);
-  dump_int_field(header.color_map_type);
-  dump_int_field(header.image_type);
-  dump_int_field(header.color_map_first_index);
-  dump_int_field(header.color_map_length);
-  dump_int_field(header.color_map_bpp);
-  dump_int_field(header.image_x_origin);
-  dump_int_field(header.image_y_origin);
-  dump_int_field(header.image_width);
-  dump_int_field(header.image_height);
-  dump_int_field(header.image_bpp);
-  dump_int_field(header.image_descriptor);
-#endif
+  grub_dprintf("tga", "tga: header\n");
+  dump_int_field(data.hdr.id_length);
+  dump_int_field(data.hdr.color_map_type);
+  dump_int_field(data.hdr.image_type);
+  dump_int_field(data.hdr.color_map_first_index);
+  dump_int_field(data.hdr.color_map_length);
+  dump_int_field(data.hdr.color_map_bpp);
+  dump_int_field(data.hdr.image_x_origin);
+  dump_int_field(data.hdr.image_y_origin);
+  dump_int_field(data.hdr.image_width);
+  dump_int_field(data.hdr.image_height);
+  dump_int_field(data.hdr.image_bpp);
+  dump_int_field(data.hdr.image_descriptor);
+
+  data.image_width = grub_le_to_cpu16 (data.hdr.image_width);
+  data.image_height = grub_le_to_cpu16 (data.hdr.image_height);
 
   /* Check that bitmap encoding is supported.  */
-  switch (header.image_type)
+  switch (data.hdr.image_type)
     {
-      case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_TRUECOLOR:
-      case GRUB_TGA_IMAGE_TYPE_RLE_TRUECOLOR:
-        break;
+    case GRUB_TGA_IMAGE_TYPE_RLE_TRUECOLOR:
+    case GRUB_TGA_IMAGE_TYPE_RLE_BLACK_AND_WHITE:
+    case GRUB_TGA_IMAGE_TYPE_RLE_INDEXCOLOR:
+      data.uses_rle = 1;
+      break;
+    case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_TRUECOLOR:
+    case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_BLACK_AND_WHITE:
+    case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_INDEXCOLOR:
+      data.uses_rle = 0;
+      break;
 
-      default:
-        grub_file_close (file);
-        return grub_error (GRUB_ERR_BAD_FILE_TYPE,
-                           "unsupported bitmap format (unknown encoding)");
+    default:
+      grub_file_close (data.file);
+      return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+			 "unsupported bitmap format (unknown encoding %d)", data.hdr.image_type);
     }
+
+  data.bpp = data.hdr.image_bpp / 8;
 
   /* Check that bitmap depth is supported.  */
-  switch (header.image_bpp)
+  switch (data.hdr.image_type)
     {
-      case 24:
-        has_alpha = 0;
-        break;
-
-      case 32:
-        has_alpha = 1;
-        break;
-
-      default:
-        grub_file_close (file);
-        return grub_error (GRUB_ERR_BAD_FILE_TYPE,
-                           "unsupported bitmap format (bpp=%d)",
-                           header.image_bpp);
-    }
-
-  /* Allocate bitmap.  If there is alpha information store it too.  */
-  if (has_alpha)
-    {
-      grub_video_bitmap_create (bitmap, header.image_width,
-                                header.image_height,
-                                GRUB_VIDEO_BLIT_FORMAT_RGBA_8888);
+    case GRUB_TGA_IMAGE_TYPE_RLE_BLACK_AND_WHITE:
+    case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_BLACK_AND_WHITE:
+      if (data.hdr.image_bpp != 8)
+	{
+	  grub_file_close (data.file);
+	  return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+			     "unsupported bitmap format (bpp=%d)",
+			     data.hdr.image_bpp);
+	}
+      grub_video_bitmap_create (bitmap, data.image_width,
+				data.image_height,
+				GRUB_VIDEO_BLIT_FORMAT_RGB_888);
       if (grub_errno != GRUB_ERR_NONE)
-        {
-          grub_file_close (file);
-          return grub_errno;
-        }
+	{
+	  grub_file_close (data.file);
+	  return grub_errno;
+	}
 
+      data.bitmap = *bitmap;
       /* Load bitmap data.  */
-      switch (header.image_type)
-        {
-          case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_TRUECOLOR:
-            tga_load_truecolor_R8G8B8A8 (*bitmap, &header, file);
-            break;
+      tga_load_grayscale (&data);
+      break;
 
-          case GRUB_TGA_IMAGE_TYPE_RLE_TRUECOLOR:
-            tga_load_truecolor_rle_R8G8B8A8 (*bitmap, &header, file);
-            break;
-        }
-    }
-  else
-    {
-      grub_video_bitmap_create (bitmap, header.image_width,
-                                header.image_height,
-                                GRUB_VIDEO_BLIT_FORMAT_RGB_888);
+    case GRUB_TGA_IMAGE_TYPE_RLE_INDEXCOLOR:
+    case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_INDEXCOLOR:
+      if (data.hdr.image_bpp != 8
+	  || data.hdr.color_map_bpp != 24
+	  || data.hdr.color_map_first_index != 0)
+	{
+	  grub_file_close (data.file);
+	  return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+			     "unsupported bitmap format (bpp=%d)",
+			     data.hdr.image_bpp);
+	}
+      grub_video_bitmap_create (bitmap, data.image_width,
+				data.image_height,
+				GRUB_VIDEO_BLIT_FORMAT_RGB_888);
       if (grub_errno != GRUB_ERR_NONE)
-        {
-          grub_file_close (file);
-          return grub_errno;
-        }
+	{
+	  grub_file_close (data.file);
+	  return grub_errno;
+	}
 
+      data.bitmap = *bitmap;
       /* Load bitmap data.  */
-      switch (header.image_type)
-        {
-          case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_TRUECOLOR:
-            tga_load_truecolor_R8G8B8 (*bitmap, &header, file);
-            break;
+      tga_load_palette (&data);
+      tga_load_index_color (&data);
+      break;
 
-          case GRUB_TGA_IMAGE_TYPE_RLE_TRUECOLOR:
-            tga_load_truecolor_rle_R8G8B8 (*bitmap, &header, file);
-            break;
-        }
+    case GRUB_TGA_IMAGE_TYPE_RLE_TRUECOLOR:
+    case GRUB_TGA_IMAGE_TYPE_UNCOMPRESSED_TRUECOLOR:
+      switch (data.hdr.image_bpp)
+	{
+	case 24:
+	  grub_video_bitmap_create (bitmap, data.image_width,
+				    data.image_height,
+				    GRUB_VIDEO_BLIT_FORMAT_RGB_888);
+	  if (grub_errno != GRUB_ERR_NONE)
+	    {
+	      grub_file_close (data.file);
+	      return grub_errno;
+	    }
+
+	  data.bitmap = *bitmap;
+	  /* Load bitmap data.  */
+	  tga_load_truecolor_R8G8B8 (&data);
+	  break;
+
+	case 32:
+	  grub_video_bitmap_create (bitmap, data.image_width,
+				    data.image_height,
+				    GRUB_VIDEO_BLIT_FORMAT_RGBA_8888);
+	  if (grub_errno != GRUB_ERR_NONE)
+	    {
+	      grub_file_close (data.file);
+	      return grub_errno;
+	    }
+
+	  data.bitmap = *bitmap;
+	  /* Load bitmap data.  */
+	  tga_load_truecolor_R8G8B8A8 (&data);
+	  break;
+
+	default:
+	  grub_file_close (data.file);
+	  return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+			     "unsupported bitmap format (bpp=%d)",
+			     data.hdr.image_bpp);
+	}
     }
 
   /* If there was a loading problem, destroy bitmap.  */
@@ -449,13 +463,13 @@ grub_video_reader_tga (struct grub_video_bitmap **bitmap,
       *bitmap = 0;
     }
 
-  grub_file_close (file);
+  grub_file_close (data.file);
   return grub_errno;
 }
 
 #if defined(TGA_DEBUG)
 static grub_err_t
-grub_cmd_tgatest (grub_command_t cmd __attribute__ ((unused)),
+grub_cmd_tgatest (grub_command_t cmd_d __attribute__ ((unused)),
                   int argc, char **args)
 {
   struct grub_video_bitmap *bitmap = 0;

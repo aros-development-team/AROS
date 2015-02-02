@@ -34,7 +34,7 @@ struct grub_scsi_test_unit_ready
   grub_uint8_t reserved3;
   grub_uint8_t control;
   grub_uint8_t pad[6]; /* To be ATAPI compatible */
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_inquiry
 {
@@ -45,7 +45,7 @@ struct grub_scsi_inquiry
   grub_uint8_t alloc_length;
   grub_uint8_t control;
   grub_uint8_t pad[6]; /* To be ATAPI compatible */
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_inquiry_data
 {
@@ -57,7 +57,7 @@ struct grub_scsi_inquiry_data
   char vendor[8];
   char prodid[16];
   char prodrev[4];
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_request_sense
 {
@@ -68,7 +68,7 @@ struct grub_scsi_request_sense
   grub_uint8_t alloc_length;
   grub_uint8_t control;
   grub_uint8_t pad[6]; /* To be ATAPI compatible */
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_request_sense_data
 {
@@ -83,7 +83,7 @@ struct grub_scsi_request_sense_data
   grub_uint8_t field_replaceable_unit_code;
   grub_uint8_t sense_key_specific[3];
   /* there can be additional sense field */
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_read_capacity10
 {
@@ -95,13 +95,13 @@ struct grub_scsi_read_capacity10
   grub_uint8_t PMI;
   grub_uint8_t control;
   grub_uint16_t pad; /* To be ATAPI compatible */
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_read_capacity10_data
 {
   grub_uint32_t last_block;
   grub_uint32_t blocksize;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_read_capacity16
 {
@@ -111,14 +111,14 @@ struct grub_scsi_read_capacity16
   grub_uint32_t alloc_len;
   grub_uint8_t PMI;
   grub_uint8_t control;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_read_capacity16_data
 {
   grub_uint64_t last_block;
   grub_uint32_t blocksize;
   grub_uint8_t pad[20];
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_read10
 {
@@ -129,7 +129,7 @@ struct grub_scsi_read10
   grub_uint16_t size;
   grub_uint8_t reserved2;
   grub_uint16_t pad;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_read12
 {
@@ -139,7 +139,7 @@ struct grub_scsi_read12
   grub_uint32_t size;
   grub_uint8_t reserved;
   grub_uint8_t control;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_read16
 {
@@ -149,7 +149,7 @@ struct grub_scsi_read16
   grub_uint32_t size;
   grub_uint8_t reserved;
   grub_uint8_t control;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_write10
 {
@@ -160,7 +160,7 @@ struct grub_scsi_write10
   grub_uint16_t size;
   grub_uint8_t reserved2;
   grub_uint16_t pad;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_write12
 {
@@ -170,7 +170,7 @@ struct grub_scsi_write12
   grub_uint32_t size;
   grub_uint8_t reserved;
   grub_uint8_t control;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 struct grub_scsi_write16
 {
@@ -180,7 +180,7 @@ struct grub_scsi_write16
   grub_uint32_t size;
   grub_uint8_t reserved;
   grub_uint8_t control;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 typedef enum
   {

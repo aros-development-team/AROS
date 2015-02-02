@@ -2,22 +2,35 @@
 
 set -e
 
-export LC_CTYPE=C
 export LC_COLLATE=C
 unset LC_ALL
 
-autogen --version >/dev/null || exit 1
+find . -iname '*.[ch]' ! -ipath './grub-core/lib/libgcrypt-grub/*' ! -ipath './build-aux/*' ! -ipath './grub-core/lib/libgcrypt/src/misc.c' ! -ipath './grub-core/lib/libgcrypt/src/global.c' ! -ipath './grub-core/lib/libgcrypt/src/secmem.c'  ! -ipath './util/grub-gen-widthspec.c' ! -ipath './util/grub-gen-asciih.c' |sort > po/POTFILES.in
+find util -iname '*.in' ! -name Makefile.in  |sort > po/POTFILES-shell.in
 
 echo "Importing unicode..."
 python util/import_unicode.py unicode/UnicodeData.txt unicode/BidiMirroring.txt unicode/ArabicShaping.txt grub-core/unidata.c
 
 echo "Importing libgcrypt..."
 python util/import_gcry.py grub-core/lib/libgcrypt/ grub-core
+sed -n -f util/import_gcrypth.sed < grub-core/lib/libgcrypt/src/gcrypt.h.in > include/grub/gcrypt/gcrypt.h
+if [ -f include/grub/gcrypt/g10lib.h ]; then
+    rm include/grub/gcrypt/g10lib.h
+fi
+if [ -d grub-core/lib/libgcrypt-grub/mpi/generic ]; then 
+    rm -rf grub-core/lib/libgcrypt-grub/mpi/generic
+fi
+ln -s ../../../grub-core/lib/libgcrypt-grub/src/g10lib.h include/grub/gcrypt/g10lib.h
+cp -R grub-core/lib/libgcrypt/mpi/generic grub-core/lib/libgcrypt-grub/mpi/generic
 
-echo "Creating Makefile.tpl..."
-python gentpl.py | sed -e '/^$/{N;/^\n$/D;}' > Makefile.tpl
+for x in mpi-asm-defs.h mpih-add1.c mpih-sub1.c mpih-mul1.c mpih-mul2.c mpih-mul3.c mpih-lshift.c mpih-rshift.c; do
+    if [ -h grub-core/lib/libgcrypt-grub/mpi/"$x" ] || [ -f grub-core/lib/libgcrypt-grub/mpi/"$x" ]; then
+	rm grub-core/lib/libgcrypt-grub/mpi/"$x"
+    fi
+    ln -s generic/"$x" grub-core/lib/libgcrypt-grub/mpi/"$x"
+done
 
-echo "Running autogen..."
+echo "Generating Automake input..."
 
 # Automake doesn't like including files from a path outside the project.
 rm -f contrib grub-core/contrib
@@ -41,8 +54,8 @@ for extra in contrib/*/Makefile.core.def; do
   fi
 done
 
-cat $UTIL_DEFS | autogen -T Makefile.tpl | sed -e '/^$/{N;/^\n$/D;}' > Makefile.util.am
-cat $CORE_DEFS | autogen -T Makefile.tpl | sed -e '/^$/{N;/^\n$/D;}' > grub-core/Makefile.core.am
+python gentpl.py $UTIL_DEFS > Makefile.util.am
+python gentpl.py $CORE_DEFS > grub-core/Makefile.core.am
 
 for extra in contrib/*/Makefile.common; do
   if test -e "$extra"; then

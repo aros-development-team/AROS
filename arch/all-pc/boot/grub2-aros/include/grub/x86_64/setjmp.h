@@ -21,7 +21,7 @@
 
 typedef unsigned long grub_jmp_buf[8];
 
-int grub_setjmp (grub_jmp_buf env) __attribute__ ((returns_twice));
-void grub_longjmp (grub_jmp_buf env, int val) __attribute__ ((noreturn));
+int grub_setjmp (grub_jmp_buf env) RETURNS_TWICE GRUB_ASM_ATTR;
+void grub_longjmp (grub_jmp_buf env, int val) __attribute__ ((noreturn)) GRUB_ASM_ATTR;
 
 #endif /* ! GRUB_SETJMP_CPU_HEADER */

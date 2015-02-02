@@ -32,12 +32,12 @@
 GRUB_MOD_LICENSE ("GPLv3+");
 
 #define VGA_WIDTH	640
-#define VGA_HEIGHT	350
 #define VGA_MEM		((grub_uint8_t *) 0xa0000)
-#define PAGE_OFFSET(x)	((x) * (VGA_WIDTH * VGA_HEIGHT / 8))
+#define PAGE_OFFSET(x)	((x) * (VGA_WIDTH * vga_height / 8))
 
 static unsigned char text_mode;
 static unsigned char saved_map_mask;
+static int vga_height;
 
 static struct
 {
@@ -122,10 +122,12 @@ grub_video_vga_setup (unsigned int width, unsigned int height,
 {
   grub_err_t err;
 
-  if ((width && width != VGA_WIDTH) || (height && height != VGA_HEIGHT))
+  if ((width && width != VGA_WIDTH) || (height && height != 350 && height != 480))
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "no matching mode found");
 
-  framebuffer.temporary_buffer = grub_malloc (VGA_HEIGHT * VGA_WIDTH);
+  vga_height = height ? : 480;
+
+  framebuffer.temporary_buffer = grub_malloc (vga_height * VGA_WIDTH);
   framebuffer.front_page = 0;
   framebuffer.back_page = 0;
   if (!framebuffer.temporary_buffer)
@@ -133,21 +135,23 @@ grub_video_vga_setup (unsigned int width, unsigned int height,
 
   saved_map_mask = get_map_mask ();
 
-  text_mode = grub_vga_set_mode (0x10);
+  text_mode = grub_vga_set_mode (vga_height == 480 ? 0x12 : 0x10);
   setup = 1;
   set_map_mask (0x0f);
   set_start_address (PAGE_OFFSET (framebuffer.front_page));
 
   framebuffer.mode_info.width = VGA_WIDTH;
-  framebuffer.mode_info.height = VGA_HEIGHT;
+  framebuffer.mode_info.height = vga_height;
 
   framebuffer.mode_info.mode_type = GRUB_VIDEO_MODE_TYPE_INDEX_COLOR;
 
   if (grub_video_check_mode_flag (mode_type, mode_mask,
-				  GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED, 1))
+				  GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED,
+				  (VGA_WIDTH * vga_height <= (1 << 18))))
     {
       framebuffer.back_page = 1;
-      framebuffer.mode_info.mode_type |= GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED;
+      framebuffer.mode_info.mode_type |= GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED
+	| GRUB_VIDEO_MODE_TYPE_UPDATING_SWAP;
     }
 
   framebuffer.mode_info.bpp = 8;
@@ -219,7 +223,7 @@ update_target (void)
       set_map_mask (plane);
       for (ptr = framebuffer.temporary_buffer,
 	     ptr2 = VGA_MEM + PAGE_OFFSET (framebuffer.back_page);
-	   ptr < framebuffer.temporary_buffer + VGA_WIDTH * VGA_HEIGHT; ptr++)
+	   ptr < framebuffer.temporary_buffer + VGA_WIDTH * vga_height; ptr++)
 	{
 	  cbyte |= (!!(plane & *ptr)) << shift;
 	  shift--;
@@ -242,7 +246,8 @@ grub_video_vga_blit_bitmap (struct grub_video_bitmap *bitmap,
   grub_err_t ret;
   ret = grub_video_fb_blit_bitmap (bitmap, oper, x, y, offset_x, offset_y,
 				   width, height);
-  update_target ();
+  if (!(framebuffer.mode_info.mode_type & GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED))
+    update_target ();
   return ret;
 }
 
@@ -256,7 +261,8 @@ grub_video_vga_blit_render_target (struct grub_video_fbrender_target *source,
 
   ret = grub_video_fb_blit_render_target (source, oper, x, y,
 					  offset_x, offset_y, width, height);
-  update_target ();
+  if (!(framebuffer.mode_info.mode_type & GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED))
+    update_target ();
 
   return ret;
 }
@@ -295,11 +301,16 @@ grub_video_vga_swap_buffers (void)
   if (!(framebuffer.mode_info.mode_type & GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED))
     return GRUB_ERR_NONE;
 
-  /* Activate the other page.  */
-  framebuffer.front_page = !framebuffer.front_page;
-  framebuffer.back_page = !framebuffer.back_page;
-  wait_vretrace ();
-  set_start_address (PAGE_OFFSET (framebuffer.front_page));
+  update_target ();
+
+  if ((VGA_WIDTH * vga_height <= (1 << 18)))
+    {
+      /* Activate the other page.  */
+      framebuffer.front_page = !framebuffer.front_page;
+      framebuffer.back_page = !framebuffer.back_page;
+      wait_vretrace ();
+      set_start_address (PAGE_OFFSET (framebuffer.front_page));
+    }
 
   return GRUB_ERR_NONE;
 }
@@ -361,6 +372,10 @@ static struct grub_video_adapter grub_video_vga_adapter =
     .get_palette = grub_video_fb_get_palette,
     .set_viewport = grub_video_fb_set_viewport,
     .get_viewport = grub_video_fb_get_viewport,
+    .set_region = grub_video_fb_set_region,
+    .get_region = grub_video_fb_get_region,
+    .set_area_status = grub_video_fb_set_area_status,
+    .get_area_status = grub_video_fb_get_area_status,
     .map_color = grub_video_fb_map_color,
     .map_rgb = grub_video_fb_map_rgb,
     .map_rgba = grub_video_fb_map_rgba,

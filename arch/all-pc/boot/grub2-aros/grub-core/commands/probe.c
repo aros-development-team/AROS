@@ -83,6 +83,7 @@ grub_cmd_probe (grub_extcmd_context_t ctxt, int argc, char **args)
 	grub_env_set (state[0].arg, val);
       else
 	grub_printf ("%s", val);
+      grub_device_close (dev);
       return GRUB_ERR_NONE;
     }
   if (state[2].set)
@@ -94,6 +95,7 @@ grub_cmd_probe (grub_extcmd_context_t ctxt, int argc, char **args)
 	grub_env_set (state[0].arg, val);
       else
 	grub_printf ("%s", val);
+      grub_device_close (dev);
       return GRUB_ERR_NONE;
     }
   fs = grub_fs_probe (dev);
@@ -105,6 +107,7 @@ grub_cmd_probe (grub_extcmd_context_t ctxt, int argc, char **args)
 	grub_env_set (state[0].arg, fs->name);
       else
 	grub_printf ("%s", fs->name);
+      grub_device_close (dev);
       return GRUB_ERR_NONE;
     }
   if (state[4].set)
@@ -125,6 +128,7 @@ grub_cmd_probe (grub_extcmd_context_t ctxt, int argc, char **args)
       else
 	grub_printf ("%s", uuid);
       grub_free (uuid);
+      grub_device_close (dev);
       return GRUB_ERR_NONE;
     }
   if (state[5].set)
@@ -147,8 +151,10 @@ grub_cmd_probe (grub_extcmd_context_t ctxt, int argc, char **args)
       else
 	grub_printf ("%s", label);
       grub_free (label);
+      grub_device_close (dev);
       return GRUB_ERR_NONE;
     }
+  grub_device_close (dev);
   return grub_error (GRUB_ERR_BAD_ARGUMENT, "unrecognised target");
 }
 

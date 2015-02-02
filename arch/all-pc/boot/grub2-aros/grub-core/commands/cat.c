@@ -24,6 +24,7 @@
 #include <grub/misc.h>
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
+#include <grub/charset.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -39,9 +40,15 @@ grub_cmd_cat (grub_extcmd_context_t ctxt, int argc, char **args)
   struct grub_arg_list *state = ctxt->state;
   int dos = 0;
   grub_file_t file;
-  char buf[GRUB_DISK_SECTOR_SIZE];
+  unsigned char buf[GRUB_DISK_SECTOR_SIZE];
   grub_ssize_t size;
   int key = GRUB_TERM_NO_KEY;
+  grub_uint32_t code = 0;
+  int count = 0;
+  unsigned char utbuf[GRUB_MAX_UTF8_PER_CODEPOINT + 1];
+  int utcount = 0;
+  int is_0d = 0;
+  int j;
 
   if (state[0].set)
     dos = 1;
@@ -60,27 +67,83 @@ grub_cmd_cat (grub_extcmd_context_t ctxt, int argc, char **args)
 
       for (i = 0; i < size; i++)
 	{
-	  unsigned char c = buf[i];
+	  utbuf[utcount++] = buf[i];
 
-	  if ((grub_isprint (c) || grub_isspace (c)) && c != '\r')
-	    grub_printf ("%c", c);
-	  else if (dos && c == '\r' && i + 1 < size && buf[i + 1] == '\n')
-	    {
-	      grub_printf ("\n");
-	      i++;
-	    }
-	  else
+	  if (is_0d && buf[i] != '\n')
 	    {
 	      grub_setcolorstate (GRUB_TERM_COLOR_HIGHLIGHT);
-	      grub_printf ("<%x>", (int) c);
+	      grub_printf ("<%x>", (int) '\r');
 	      grub_setcolorstate (GRUB_TERM_COLOR_STANDARD);
 	    }
+
+	  is_0d = 0;
+
+	  if (!grub_utf8_process (buf[i], &code, &count))
+	    {
+	      grub_setcolorstate (GRUB_TERM_COLOR_HIGHLIGHT);
+	      for (j = 0; j < utcount - 1; j++)
+		grub_printf ("<%x>", (unsigned int) utbuf[j]);
+	      code = 0;
+	      count = 0;
+	      if (utcount == 1 || !grub_utf8_process (buf[i], &code, &count))
+		{
+		  grub_printf ("<%x>", (unsigned int) buf[i]);
+		  code = 0;
+		  count = 0;
+		  utcount = 0;
+		  grub_setcolorstate (GRUB_TERM_COLOR_STANDARD);
+		  continue;
+		}
+	      grub_setcolorstate (GRUB_TERM_COLOR_STANDARD);
+	      utcount = 1;
+	    }
+	  if (count)
+	    continue;
+
+	  if ((code >= 0xa1 || grub_isprint (code)
+	       || grub_isspace (code)) && code != '\r')
+	    {
+	      grub_printf ("%C", code);
+	      count = 0; 
+	      code = 0;
+	      utcount = 0;
+	      continue;
+	    }
+
+	  if (dos && code == '\r')
+	    {
+	      is_0d = 1;
+	      count = 0; 
+	      code = 0;
+	      utcount = 0;
+	      continue;
+	    }
+
+	  grub_setcolorstate (GRUB_TERM_COLOR_HIGHLIGHT);
+	  for (j = 0; j < utcount; j++)
+	    grub_printf ("<%x>", (unsigned int) utbuf[j]);
+	  grub_setcolorstate (GRUB_TERM_COLOR_STANDARD);
+	  count = 0; 
+	  code = 0;
+	  utcount = 0;
 	}
 
       do
 	key = grub_getkey_noblock ();
       while (key != GRUB_TERM_ESC && key != GRUB_TERM_NO_KEY);
     }
+
+  if (is_0d)
+    {
+      grub_setcolorstate (GRUB_TERM_COLOR_HIGHLIGHT);
+      grub_printf ("<%x>", (unsigned int) '\r');
+      grub_setcolorstate (GRUB_TERM_COLOR_STANDARD);
+    }
+
+  grub_setcolorstate (GRUB_TERM_COLOR_HIGHLIGHT);
+  for (j = 0; j < utcount; j++)
+    grub_printf ("<%x>", (unsigned int) utbuf[j]);
+  grub_setcolorstate (GRUB_TERM_COLOR_STANDARD);
 
   grub_xputs ("\n");
   grub_refresh ();

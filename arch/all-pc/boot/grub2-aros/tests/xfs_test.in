@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -e
+
+if [ "x$EUID" = "x" ] ; then
+  EUID=`id -u`
+fi
+
+if [ "$EUID" != 0 ] ; then
+   exit 77
+fi
+
+if ! which mkfs.xfs >/dev/null 2>&1; then
+   echo "mkfs.xfs not installed; cannot test xfs."
+   exit 77
+fi
+
+
+"@builddir@/grub-fs-tester" xfs

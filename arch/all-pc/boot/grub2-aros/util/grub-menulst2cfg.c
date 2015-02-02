@@ -37,6 +37,8 @@ main (int argc, char **argv)
   int suffixlen = 0;
   const char *out_fname = 0;
 
+  grub_util_host_init (&argc, &argv);
+
   if (argc >= 2 && argv[1][0] == '-')
     {
       fprintf (stdout, _("Usage: %s [INFILE [OUTFILE]]\n"), argv[0]);
@@ -45,7 +47,7 @@ main (int argc, char **argv)
 
   if (argc >= 2)
     {
-      in = fopen (argv[1], "r");
+      in = grub_util_fopen (argv[1], "r");
       if (!in)
 	{
 	  fprintf (stderr, _("cannot open `%s': %s"),
@@ -58,7 +60,7 @@ main (int argc, char **argv)
 
   if (argc >= 3)
     {
-      out = fopen (argv[2], "w");
+      out = grub_util_fopen (argv[2], "w");
       if (!out)
 	{					
 	  if (in != stdin)

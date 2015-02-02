@@ -47,7 +47,7 @@ EOF
 read mods
 for line in $mods; do
   if ${nm} --defined-only -P -p ${line} | grep grub_mod_init > /dev/null; then
-      echo "grub_${line}_init ();" | sed 's,\.mod,,g;'
+      echo "grub_${line%%.*}_init ();"
   fi
 done
 
@@ -63,7 +63,7 @@ EOF
 
 for line in $mods; do
   if ${nm} --defined-only -P -p ${line} | grep grub_mod_fini > /dev/null; then
-      echo "grub_${line}_fini ();" | sed 's,\.mod,,g;'
+      echo "grub_${line%%.*}_fini ();"
   fi
 done
 

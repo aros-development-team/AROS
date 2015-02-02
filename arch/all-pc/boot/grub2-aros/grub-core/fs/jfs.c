@@ -70,13 +70,16 @@ struct grub_jfs_extent
   /* The physical offset of the first block on the disk.  */
   grub_uint8_t blk1;
   grub_uint32_t blk2;
-} __attribute__ ((packed));
+} GRUB_PACKED;
+
+#define GRUB_JFS_IAG_INODES_OFFSET 3072
+#define GRUB_JFS_IAG_INODES_COUNT 128
 
 struct grub_jfs_iag
 {
-  grub_uint8_t unused[3072];
-  struct grub_jfs_extent inodes[128];
-} __attribute__ ((packed));
+  grub_uint8_t unused[GRUB_JFS_IAG_INODES_OFFSET];
+  struct grub_jfs_extent inodes[GRUB_JFS_IAG_INODES_COUNT];
+} GRUB_PACKED;
 
 
 /* The head of the tree used to find extents.  */
@@ -91,7 +94,7 @@ struct grub_jfs_treehead
   grub_uint16_t count;
   grub_uint16_t max;
   grub_uint8_t unused2[10];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* A node in the extent tree.  */
 struct grub_jfs_tree_extent
@@ -104,7 +107,7 @@ struct grub_jfs_tree_extent
   grub_uint32_t offset2;
 
   struct grub_jfs_extent extent;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* The tree of directory entries.  */
 struct grub_jfs_tree_dir
@@ -125,7 +128,7 @@ struct grub_jfs_tree_dir
   /* The location of the sorted array of pointers to dirents.  */
   grub_uint8_t sindex;
   grub_uint8_t unused[10];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* An internal node in the dirents tree.  */
 struct grub_jfs_internal_dirent
@@ -134,7 +137,7 @@ struct grub_jfs_internal_dirent
   grub_uint8_t next;
   grub_uint8_t len;
   grub_uint16_t namepart[11];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* A leaf node in the dirents tree.  */
 struct grub_jfs_leaf_dirent
@@ -147,7 +150,7 @@ struct grub_jfs_leaf_dirent
   grub_uint8_t len;
   grub_uint16_t namepart[11];
   grub_uint32_t index;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* A leaf in the dirents tree.  This one is used if the previously
    dirent was not big enough to store the name.  */
@@ -156,13 +159,13 @@ struct grub_jfs_leaf_next_dirent
   grub_uint8_t next;
   grub_uint8_t len;
   grub_uint16_t namepart[15];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_jfs_time
 {
   grub_int32_t sec;
   grub_int32_t nanosec;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_jfs_inode
 {
@@ -182,7 +185,7 @@ struct grub_jfs_inode
   union
   {
     /* The tree describing the extents of the file.  */
-    struct __attribute__ ((packed))
+    struct GRUB_PACKED
     {
       struct grub_jfs_treehead tree;
       struct grub_jfs_tree_extent extents[16];
@@ -203,15 +206,15 @@ struct grub_jfs_inode
 	grub_uint8_t sorted[8];
       } header;
       struct grub_jfs_leaf_dirent dirents[8];
-    } dir __attribute__ ((packed));
+    } GRUB_PACKED dir;
     /* Fast symlink.  */
     struct
     {
       grub_uint8_t unused[32];
       grub_uint8_t path[256];
     } symlink;
-  } __attribute__ ((packed));
-} __attribute__ ((packed));
+  } GRUB_PACKED;
+} GRUB_PACKED;
 
 struct grub_jfs_data
 {
@@ -223,7 +226,7 @@ struct grub_jfs_data
   int pos;
   int linknest;
   int namecomponentlen;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_jfs_diropen
 {
@@ -234,7 +237,7 @@ struct grub_jfs_diropen
     struct grub_jfs_leaf_dirent dirent[0];
     struct grub_jfs_leaf_next_dirent next_dirent[0];
     grub_uint8_t sorted[0];
-  } *dirpage __attribute__ ((packed));
+  } GRUB_PACKED *dirpage;
   struct grub_jfs_data *data;
   struct grub_jfs_inode *inode;
   int count;
@@ -248,12 +251,64 @@ struct grub_jfs_diropen
    */
   char name[256 * GRUB_MAX_UTF8_PER_UTF16 + 1];
   grub_uint32_t ino;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 
 static grub_dl_t my_mod;
 
 static grub_err_t grub_jfs_lookup_symlink (struct grub_jfs_data *data, grub_uint32_t ino);
+
+static grub_int64_t
+getblk (struct grub_jfs_treehead *treehead,
+	struct grub_jfs_tree_extent *extents,
+	struct grub_jfs_data *data,
+	grub_uint64_t blk)
+{
+  int found = -1;
+  int i;
+
+  for (i = 0; i < grub_le_to_cpu16 (treehead->count) - 2; i++)
+    {
+      if (treehead->flags & GRUB_JFS_TREE_LEAF)
+	{
+	  /* Read the leafnode.  */
+	  if (grub_le_to_cpu32 (extents[i].offset2) <= blk
+	      && ((grub_le_to_cpu16 (extents[i].extent.length))
+		  + (extents[i].extent.length2 << 16)
+		  + grub_le_to_cpu32 (extents[i].offset2)) > blk)
+	    return (blk - grub_le_to_cpu32 (extents[i].offset2)
+		    + grub_le_to_cpu32 (extents[i].extent.blk2));
+	}
+      else
+	if (blk >= grub_le_to_cpu32 (extents[i].offset2))
+	  found = i;
+    }
+
+  if (found != -1)
+    {
+      grub_int64_t ret = -1;
+      struct
+      {
+	struct grub_jfs_treehead treehead;
+	struct grub_jfs_tree_extent extents[254];
+      } *tree;
+
+      tree = grub_zalloc (sizeof (*tree));
+      if (!tree)
+	return -1;
+
+      if (!grub_disk_read (data->disk,
+			   ((grub_disk_addr_t) grub_le_to_cpu32 (extents[found].extent.blk2))
+			   << (grub_le_to_cpu16 (data->sblock.log2_blksz)
+			       - GRUB_DISK_SECTOR_BITS), 0,
+			   sizeof (*tree), (char *) tree))
+	ret = getblk (&tree->treehead, &tree->extents[0], data, blk);
+      grub_free (tree);
+      return ret;
+    }
+
+  return -1;
+}
 
 /* Get the block number for the block BLK in the node INODE in the
    mounted filesystem DATA.  */
@@ -261,54 +316,7 @@ static grub_int64_t
 grub_jfs_blkno (struct grub_jfs_data *data, struct grub_jfs_inode *inode,
 		grub_uint64_t blk)
 {
-  auto grub_int64_t getblk (struct grub_jfs_treehead *treehead,
-			    struct grub_jfs_tree_extent *extents);
-
-  grub_int64_t getblk (struct grub_jfs_treehead *treehead,
-		       struct grub_jfs_tree_extent *extents)
-    {
-      int found = -1;
-      int i;
-
-      for (i = 0; i < grub_le_to_cpu16 (treehead->count) - 2; i++)
-	{
-	  if (treehead->flags & GRUB_JFS_TREE_LEAF)
-	    {
-	      /* Read the leafnode.  */
-	      if (grub_le_to_cpu32 (extents[i].offset2) <= blk
-		  && ((grub_le_to_cpu16 (extents[i].extent.length))
-		      + (extents[i].extent.length2 << 16)
-		      + grub_le_to_cpu32 (extents[i].offset2)) > blk)
-		return (blk - grub_le_to_cpu32 (extents[i].offset2)
-			+ grub_le_to_cpu32 (extents[i].extent.blk2));
-	    }
-	  else
-	    if (blk >= grub_le_to_cpu32 (extents[i].offset2))
-	      found = i;
-	}
-
-      if (found != -1)
-	{
-	  struct
-	  {
-	    struct grub_jfs_treehead treehead;
-	    struct grub_jfs_tree_extent extents[254];
-	  } tree;
-
-	  if (grub_disk_read (data->disk,
-			      ((grub_disk_addr_t) grub_le_to_cpu32 (extents[found].extent.blk2))
-			      << (grub_le_to_cpu16 (data->sblock.log2_blksz)
-				  - GRUB_DISK_SECTOR_BITS), 0,
-			      sizeof (tree), (char *) &tree))
-	    return -1;
-
-	  return getblk (&tree.treehead, &tree.extents[0]);
-	}
-
-      return -1;
-    }
-
-  return getblk (&inode->file.tree, &inode->file.extents[0]);
+  return getblk (&inode->file.tree, &inode->file.extents[0], data, blk);
 }
 
 
@@ -316,7 +324,7 @@ static grub_err_t
 grub_jfs_read_inode (struct grub_jfs_data *data, grub_uint32_t ino,
 		     struct grub_jfs_inode *inode)
 {
-  struct grub_jfs_iag iag;
+  struct grub_jfs_extent iag_inodes[GRUB_JFS_IAG_INODES_COUNT];
   grub_uint32_t iagnum = ino / 4096;
   unsigned inoext = (ino % 4096) / 32;
   unsigned inonum = (ino % 4096) % 32;
@@ -330,11 +338,12 @@ grub_jfs_read_inode (struct grub_jfs_data *data, grub_uint32_t ino,
   /* Read in the IAG.  */
   if (grub_disk_read (data->disk,
 		      iagblk << (grub_le_to_cpu16 (data->sblock.log2_blksz)
-				 - GRUB_DISK_SECTOR_BITS), 0,
-		      sizeof (struct grub_jfs_iag), &iag))
+				 - GRUB_DISK_SECTOR_BITS),
+		      GRUB_JFS_IAG_INODES_OFFSET,
+		      sizeof (iag_inodes), &iag_inodes))
     return grub_errno;
 
-  inoblk = grub_le_to_cpu32 (iag.inodes[inoext].blk2);
+  inoblk = grub_le_to_cpu32 (iag_inodes[inoext].blk2);
   inoblk <<= (grub_le_to_cpu16 (data->sblock.log2_blksz)
 	      - GRUB_DISK_SECTOR_BITS);
   inoblk += inonum;
@@ -489,6 +498,13 @@ grub_jfs_closedir (struct grub_jfs_diropen *diro)
   grub_free (diro);
 }
 
+static void
+le_to_cpu16_copy (grub_uint16_t *out, grub_uint16_t *in, grub_size_t len)
+{
+  while (len--)
+    *out++ = grub_le_to_cpu16 (*in++);
+}
+
 
 /* Read in the next dirent from the directory described by DIRO.  */
 static grub_err_t
@@ -500,15 +516,6 @@ grub_jfs_getent (struct grub_jfs_diropen *diro)
   int len;
   int nextent;
   grub_uint16_t filename[256];
-
-  auto void addstr (grub_uint16_t *uname, int ulen);
-
-  /* Add the unicode string to the utf16 filename buffer.  */
-  void addstr (grub_uint16_t *name, int ulen)
-    {
-      while (ulen--)
-	filename[strpos++] = grub_le_to_cpu16 (*(name++));
-    }
 
   /* The last node, read in more.  */
   if (diro->index == diro->count)
@@ -547,8 +554,10 @@ grub_jfs_getent (struct grub_jfs_diropen *diro)
       return grub_jfs_getent (diro);
     }
 
-  addstr (leaf->namepart, len < diro->data->namecomponentlen ? len
-	  : diro->data->namecomponentlen);
+  le_to_cpu16_copy (filename + strpos, leaf->namepart, len < diro->data->namecomponentlen ? len
+		    : diro->data->namecomponentlen);
+  strpos += len < diro->data->namecomponentlen ? len
+    : diro->data->namecomponentlen;
   diro->ino = grub_le_to_cpu32 (leaf->inode);
   len -= diro->data->namecomponentlen;
 
@@ -558,7 +567,8 @@ grub_jfs_getent (struct grub_jfs_diropen *diro)
     do
       {
  	next_leaf = &diro->next_leaf[nextent];
-	addstr (next_leaf->namepart, len < 15 ? len : 15 );
+	le_to_cpu16_copy (filename + strpos, next_leaf->namepart, len < 15 ? len : 15);
+	strpos += len < 15 ? len : 15;
 
 	len -= 15;
 	nextent = next_leaf->next;
@@ -577,8 +587,7 @@ grub_jfs_getent (struct grub_jfs_diropen *diro)
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_jfs_read_file (struct grub_jfs_data *data,
-		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
-				       unsigned offset, unsigned length),
+		    grub_disk_read_hook_t read_hook, void *read_hook_data,
 		    grub_off_t pos, grub_size_t len, char *buf)
 {
   grub_off_t i;
@@ -616,6 +625,7 @@ grub_jfs_read_file (struct grub_jfs_data *data,
 	}
 
       data->disk->read_hook = read_hook;
+      data->disk->read_hook_data = read_hook_data;
       grub_disk_read (data->disk,
 		      blknr << (grub_le_to_cpu16 (data->sblock.log2_blksz)
 				- GRUB_DISK_SECTOR_BITS),
@@ -638,136 +648,74 @@ static grub_err_t
 grub_jfs_find_file (struct grub_jfs_data *data, const char *path,
 		    grub_uint32_t start_ino)
 {
-  char fpath[grub_strlen (path)];
-  char *name = fpath;
-  char *next;
-  struct grub_jfs_diropen *diro;
-
-  grub_strncpy (fpath, path, grub_strlen (path) + 1);
+  const char *name;
+  const char *next = path;
+  struct grub_jfs_diropen *diro = NULL;
 
   if (grub_jfs_read_inode (data, start_ino, &data->currinode))
     return grub_errno;
 
-  /* Skip the first slashes.  */
-  while (*name == '/')
+  while (1)
     {
-      name++;
-      if (!*name)
-	return 0;
-    }
-
-  /* Extract the actual part from the pathname.  */
-  next = grub_strchr (name, '/');
-  if (next)
-    {
-      while (*next == '/')
-	{
-	  next[0] = '\0';
-	  next++;
-	}
-    }
-  diro = grub_jfs_opendir (data, &data->currinode);
-  if (!diro)
-    return grub_errno;
-
-  for (;;)
-    {
+      name = next;
+      while (*name == '/')
+	name++;
       if (name[0] == 0)
 	return GRUB_ERR_NONE;
+      for (next = name; *next && *next != '/'; next++);
 
-      if (name[0] == '.' && name[1] == 0)
-	{
-	  if (!next)
-	    return 0;
+      if (name[0] == '.' && name + 1 == next)
+	continue;
 
-	  name = next;
-	  next = grub_strchr (name, '/');
-	  while (next && *next == '/')
-	    {
-	      next[0] = '\0';
-	      next++;
-	    }
-	  continue;
-	}
-
-      if (name[0] == '.' && name[1] == '.' && name[2] == 0)
+      if (name[0] == '.' && name[1] == '.' && name + 2 == next)
 	{
 	  grub_uint32_t ino = grub_le_to_cpu32 (data->currinode.dir.header.idotdot);
 
-	  grub_jfs_closedir (diro);
-	  diro = 0;
-
 	  if (grub_jfs_read_inode (data, ino, &data->currinode))
-	    break;
-
-	  if (!next)
-	    return 0;
-
-	  name = next;
-	  next = grub_strchr (name, '/');
-	  while (next && *next == '/')
-	    {
-	      next[0] = '\0';
-	      next++;
-	    }
-
-	  /* Open this directory for reading dirents.  */
-	  diro = grub_jfs_opendir (data, &data->currinode);
-	  if (!diro)
 	    return grub_errno;
 
 	  continue;
 	}
 
-      if (grub_jfs_getent (diro) == GRUB_ERR_OUT_OF_RANGE)
-	break;
+      diro = grub_jfs_opendir (data, &data->currinode);
+      if (!diro)
+	return grub_errno;
 
-      /* Check if the current direntry matches the current part of the
-	 pathname.  */
-      if (data->caseins ? grub_strcasecmp (name, diro->name) == 0
-	  : grub_strcmp (name, diro->name) == 0)
+      for (;;)
 	{
-	  grub_uint32_t ino = diro->ino;
-	  grub_uint32_t dirino = grub_le_to_cpu32 (data->currinode.inode);
-
-	  grub_jfs_closedir (diro);
-	  diro = 0;
-
-	  if (grub_jfs_read_inode (data, ino, &data->currinode))
-	    break;
-
-	  /* Check if this is a symlink.  */
-	  if ((grub_le_to_cpu32 (data->currinode.mode)
-	       & GRUB_JFS_FILETYPE_MASK) == GRUB_JFS_FILETYPE_LNK)
+	  if (grub_jfs_getent (diro) == GRUB_ERR_OUT_OF_RANGE)
 	    {
-	      grub_jfs_lookup_symlink (data, dirino);
-	      if (grub_errno)
-		return grub_errno;
+	      grub_jfs_closedir (diro);
+	      return grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), path);
 	    }
 
-	  if (!next)
-	    return 0;
-
-	  name = next;
-	  next = grub_strchr (name, '/');
-	  while (next && *next == '/')
+	  /* Check if the current direntry matches the current part of the
+	     pathname.  */
+	  if ((data->caseins ? grub_strncasecmp (name, diro->name, next - name) == 0
+	       : grub_strncmp (name, diro->name, next - name) == 0) && !diro->name[next - name])
 	    {
-	      next[0] = '\0';
-	      next++;
+	      grub_uint32_t ino = diro->ino;
+	      grub_uint32_t dirino = grub_le_to_cpu32 (data->currinode.inode);
+
+	      grub_jfs_closedir (diro);
+	      diro = 0;
+
+	      if (grub_jfs_read_inode (data, ino, &data->currinode))
+		break;
+
+	      /* Check if this is a symlink.  */
+	      if ((grub_le_to_cpu32 (data->currinode.mode)
+		   & GRUB_JFS_FILETYPE_MASK) == GRUB_JFS_FILETYPE_LNK)
+		{
+		  grub_jfs_lookup_symlink (data, dirino);
+		  if (grub_errno)
+		    return grub_errno;
+		}
+
+	      break;
 	    }
-
-	  /* Open this directory for reading dirents.  */
-	  diro = grub_jfs_opendir (data, &data->currinode);
-	  if (!diro)
-	    return grub_errno;
-
-	  continue;
 	}
     }
-
-  grub_jfs_closedir (diro);
-  grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), path);
-  return grub_errno;
 }
 
 
@@ -775,15 +723,21 @@ static grub_err_t
 grub_jfs_lookup_symlink (struct grub_jfs_data *data, grub_uint32_t ino)
 {
   grub_size_t size = grub_le_to_cpu64 (data->currinode.size);
-  char symlink[size + 1];
+  char *symlink;
 
   if (++data->linknest > GRUB_JFS_MAX_SYMLNK_CNT)
     return grub_error (GRUB_ERR_SYMLINK_LOOP, N_("too deep nesting of symlinks"));
 
-  if (size <= sizeof (data->currinode.symlink.path))
-    grub_strncpy (symlink, (char *) (data->currinode.symlink.path), size);
-  else if (grub_jfs_read_file (data, 0, 0, size, symlink) < 0)
+  symlink = grub_malloc (size + 1);
+  if (!symlink)
     return grub_errno;
+  if (size <= sizeof (data->currinode.symlink.path))
+    grub_memcpy (symlink, (char *) (data->currinode.symlink.path), size);
+  else if (grub_jfs_read_file (data, 0, 0, 0, size, symlink) < 0)
+    {
+      grub_free (symlink);
+      return grub_errno;
+    }
 
   symlink[size] = '\0';
 
@@ -793,14 +747,15 @@ grub_jfs_lookup_symlink (struct grub_jfs_data *data, grub_uint32_t ino)
 
   grub_jfs_find_file (data, symlink, ino);
 
+  grub_free (symlink);
+
   return grub_errno;
 }
 
 
 static grub_err_t
 grub_jfs_dir (grub_device_t device, const char *path,
-	      int (*hook) (const char *filename,
-			   const struct grub_dirhook_info *info))
+	      grub_fs_dir_hook_t hook, void *hook_data)
 {
   struct grub_jfs_data *data = 0;
   struct grub_jfs_diropen *diro = 0;
@@ -832,7 +787,7 @@ grub_jfs_dir (grub_device_t device, const char *path,
 		  & GRUB_JFS_FILETYPE_MASK) == GRUB_JFS_FILETYPE_DIR;
       info.mtimeset = 1;
       info.mtime = grub_le_to_cpu32 (inode.mtime.sec);
-      if (hook (diro->name, &info))
+      if (hook (diro->name, &info, hook_data))
 	goto fail;
     }
 
@@ -895,7 +850,8 @@ grub_jfs_read (grub_file_t file, char *buf, grub_size_t len)
   struct grub_jfs_data *data =
     (struct grub_jfs_data *) file->data;
 
-  return grub_jfs_read_file (data, file->read_hook, file->offset, len, buf);
+  return grub_jfs_read_file (data, file->read_hook, file->read_hook_data,
+			     file->offset, len, buf);
 }
 
 

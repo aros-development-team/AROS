@@ -33,25 +33,32 @@ struct grub_nand_data
 };
 
 static int
-grub_nand_iterate (int (*hook) (const char *name),
+grub_nand_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
 		   grub_disk_pull_t pull)
 {
-  auto int dev_iterate (struct grub_ieee1275_devalias *alias);
-  int dev_iterate (struct grub_ieee1275_devalias *alias)
-  {
-    if (grub_strcmp (alias->name, "nand") == 0)
-      {
-	hook (alias->name);
-	return 1;
-      }
-    
-    return 0;
-  }
+  static int have_nand = -1;
 
   if (pull != GRUB_DISK_PULL_NONE)
     return 0;
 
-  return grub_devalias_iterate (dev_iterate);
+  if (have_nand == -1)
+    {
+      struct grub_ieee1275_devalias alias;
+
+      have_nand = 0;
+      FOR_IEEE1275_DEVALIASES(alias)
+	if (grub_strcmp (alias.name, "nand") == 0)
+	  {
+	    have_nand = 1;
+	    break;
+	  }
+      grub_ieee1275_devalias_free (&alias);
+    }
+
+  if (have_nand)
+    return hook ("nand", hook_data);
+
+  return 0;
 }
 
 static grub_err_t
@@ -106,6 +113,11 @@ grub_nand_open (const char *name, grub_disk_t disk)
     }
 
   data->block_size = (args.size1 >> GRUB_DISK_SECTOR_BITS);
+  if (!data->block_size)
+    {
+      grub_error (GRUB_ERR_UNKNOWN_DEVICE, "invalid block size");
+      goto fail;
+    }
 
   INIT_IEEE1275_COMMON (&args.common, "call-method", 2, 3);
   args.method = (grub_ieee1275_cell_t) "size";
@@ -203,7 +215,8 @@ grub_nand_write (grub_disk_t disk __attribute ((unused)),
                  grub_size_t size __attribute ((unused)),
                  const char *buf __attribute ((unused)))
 {
-  return GRUB_ERR_NOT_IMPLEMENTED_YET;
+  return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+		     "nand write is not supported");
 }
 
 static struct grub_disk_dev grub_nand_dev =

@@ -19,6 +19,8 @@
 #ifndef	GRUB_USBTRANS_H
 #define	GRUB_USBTRANS_H	1
 
+#define MAX_USB_TRANSFER_LEN 0x0800
+
 typedef enum
   {
     GRUB_USB_TRANSFER_TYPE_IN,
@@ -147,7 +149,7 @@ struct grub_usb_packet_setup
   grub_uint16_t value;
   grub_uint16_t index;
   grub_uint16_t length;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 
 #endif /* GRUB_USBTRANS_H */

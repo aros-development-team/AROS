@@ -33,14 +33,14 @@
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
 #include <grub/time.h>
-#ifdef __powerpc__
+#if defined(__powerpc__) && defined(GRUB_MACHINE_IEEE1275)
 #include <grub/ieee1275/ieee1275.h>
 #endif
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-#define ANSI_C0 0x9b
-#define ANSI_C0_STR "\x9b"
+#define ANSI_CSI 0x9b
+#define ANSI_CSI_STR "\x9b"
 
 static struct grub_term_output *terminfo_outputs;
 
@@ -132,18 +132,19 @@ grub_terminfo_set_current (struct grub_term_output *term,
   if (grub_strcmp ("arc", str) == 0)
     {
       data->name              = grub_strdup ("arc");
-      data->gotoxy            = grub_strdup (ANSI_C0_STR "%i%p1%d;%p2%dH");
-      data->cls               = grub_strdup (ANSI_C0_STR "2J");
-      data->reverse_video_on  = grub_strdup (ANSI_C0_STR "7m");
-      data->reverse_video_off = grub_strdup (ANSI_C0_STR "0m");
+      data->gotoxy            = grub_strdup (ANSI_CSI_STR "%i%p1%d;%p2%dH");
+      data->cls               = grub_strdup (ANSI_CSI_STR "2J");
+      data->reverse_video_on  = grub_strdup (ANSI_CSI_STR "7m");
+      data->reverse_video_off = grub_strdup (ANSI_CSI_STR "0m");
       data->cursor_on         = 0;
       data->cursor_off        = 0;
-      data->setcolor          = grub_strdup (ANSI_C0_STR "3%p1%dm"
-					     ANSI_C0_STR "4%p2%dm");
+      data->setcolor          = grub_strdup (ANSI_CSI_STR "3%p1%dm"
+					     ANSI_CSI_STR "4%p2%dm");
       return grub_errno;
     }
 
-  if (grub_strcmp ("ieee1275", str) == 0)
+  if (grub_strcmp ("ieee1275", str) == 0
+      || grub_strcmp ("ieee1275-nocursor", str) == 0)
     {
       data->name              = grub_strdup ("ieee1275");
       data->gotoxy            = grub_strdup ("\e[%i%p1%d;%p2%dH");
@@ -153,8 +154,16 @@ grub_terminfo_set_current (struct grub_term_output *term,
       data->cls               = grub_strdup ("\e[2J");
       data->reverse_video_on  = grub_strdup ("\e[7m");
       data->reverse_video_off = grub_strdup ("\e[m");
-      data->cursor_on         = grub_strdup ("\e[?25h");
-      data->cursor_off        = grub_strdup ("\e[?25l");
+      if (grub_strcmp ("ieee1275", str) == 0)
+	{
+	  data->cursor_on         = grub_strdup ("\e[?25h");
+	  data->cursor_off        = grub_strdup ("\e[?25l");
+	}
+      else
+	{
+	  data->cursor_on         = 0;
+	  data->cursor_off        = 0;
+	}
       data->setcolor          = grub_strdup ("\e[3%p1%dm\e[4%p2%dm");
       return grub_errno;
     }
@@ -221,38 +230,37 @@ putstr (struct grub_term_output *term, const char *str)
     data->put (term, *str++);
 }
 
-grub_uint16_t
+struct grub_term_coordinate
 grub_terminfo_getxy (struct grub_term_output *term)
 {
   struct grub_terminfo_output_state *data
     = (struct grub_terminfo_output_state *) term->data;
 
-  return ((data->xpos << 8) | data->ypos);
+  return data->pos;
 }
 
 void
 grub_terminfo_gotoxy (struct grub_term_output *term,
-		      grub_uint8_t x, grub_uint8_t y)
+		      struct grub_term_coordinate pos)
 {
   struct grub_terminfo_output_state *data
     = (struct grub_terminfo_output_state *) term->data;
 
-  if (x > grub_term_width (term) || y > grub_term_height (term))
+  if (pos.x > grub_term_width (term) || pos.y > grub_term_height (term))
     {
-      grub_error (GRUB_ERR_BUG, "invalid point (%u,%u)", x, y);
+      grub_error (GRUB_ERR_BUG, "invalid point (%u,%u)", pos.x, pos.y);
       return;
     }
 
   if (data->gotoxy)
-    putstr (term, grub_terminfo_tparm (data->gotoxy, y, x));
+    putstr (term, grub_terminfo_tparm (data->gotoxy, pos.y, pos.x));
   else
     {
-      if ((y == data->ypos) && (x == data->xpos - 1))
+      if ((pos.y == data->pos.y) && (pos.x == data->pos.x - 1))
 	data->put (term, '\b');
     }
 
-  data->xpos = x;
-  data->ypos = y;
+  data->pos = pos;
 }
 
 /* Clear the screen.  */
@@ -263,8 +271,7 @@ grub_terminfo_cls (struct grub_term_output *term)
     = (struct grub_terminfo_output_state *) term->data;
 
   putstr (term, grub_terminfo_tparm (data->cls));
-
-  data->xpos = data->ypos = 0;
+  grub_terminfo_gotoxy (term, (struct grub_term_coordinate) { 0, 0 });
 }
 
 void
@@ -294,12 +301,12 @@ grub_terminfo_setcolorstate (struct grub_term_output *term,
 	{
 	case GRUB_TERM_COLOR_STANDARD:
 	case GRUB_TERM_COLOR_NORMAL:
-	  fg = term->normal_color & 0x0f;
-	  bg = term->normal_color >> 4;
+	  fg = grub_term_normal_color & 0x0f;
+	  bg = grub_term_normal_color >> 4;
 	  break;
 	case GRUB_TERM_COLOR_HIGHLIGHT:
-	  fg = term->highlight_color & 0x0f;
-	  bg = term->highlight_color >> 4;
+	  fg = grub_term_highlight_color & 0x0f;
+	  bg = grub_term_highlight_color >> 4;
 	  break;
 	default:
 	  return;
@@ -352,42 +359,42 @@ grub_terminfo_putchar (struct grub_term_output *term,
 
     case '\b':
     case 127:
-      if (data->xpos > 0)
-	data->xpos--;
+      if (data->pos.x > 0)
+	data->pos.x--;
     break;
 
     case '\n':
-      if (data->ypos < grub_term_height (term) - 1)
-	data->ypos++;
+      if (data->pos.y < grub_term_height (term) - 1)
+	data->pos.y++;
       break;
 
     case '\r':
-      data->xpos = 0;
+      data->pos.x = 0;
       break;
 
     default:
-      if (data->xpos + c->estimated_width >= grub_term_width (term) + 1)
+      if ((int) data->pos.x + c->estimated_width >= (int) grub_term_width (term) + 1)
 	{
-	  data->xpos = 0;
-	  if (data->ypos < grub_term_height (term) - 1)
-	    data->ypos++;
+	  data->pos.x = 0;
+	  if (data->pos.y < grub_term_height (term) - 1)
+	    data->pos.y++;
 	  data->put (term, '\r');
 	  data->put (term, '\n');
 	}
-      data->xpos += c->estimated_width;
+      data->pos.x += c->estimated_width;
       break;
     }
 
   data->put (term, c->base);
 }
 
-grub_uint16_t
+struct grub_term_coordinate
 grub_terminfo_getwh (struct grub_term_output *term)
 {
   struct grub_terminfo_output_state *data
     = (struct grub_terminfo_output_state *) term->data;
 
-  return (data->width << 8) | data->height;
+  return data->size;
 }
 
 static void
@@ -419,7 +426,7 @@ grub_terminfo_readkey (struct grub_term_input *term, int *keys, int *len,
     }
   *len = 1;
   keys[0] = c;
-  if (c != ANSI_C0 && c != '\e')
+  if (c != ANSI_CSI && c != '\e')
     {
       /* Backspace: Ctrl-h.  */
       if (c == 0x7f)
@@ -453,31 +460,49 @@ grub_terminfo_readkey (struct grub_term_input *term, int *keys, int *len,
 	{'@', GRUB_TERM_KEY_INSERT},
       };
 
-    static struct
-    {
-      char key;
-      unsigned ascii;
-    }
-    four_code_table[] =
+    static unsigned four_code_table[] =
       {
-	{'1', GRUB_TERM_KEY_HOME},
-	{'3', GRUB_TERM_KEY_DC},
-	{'5', GRUB_TERM_KEY_PPAGE},
-	{'6', GRUB_TERM_KEY_NPAGE}
+	[1] = GRUB_TERM_KEY_HOME,
+	[3] = GRUB_TERM_KEY_DC,
+	[5] = GRUB_TERM_KEY_PPAGE,
+	[6] = GRUB_TERM_KEY_NPAGE,
+	[7] = GRUB_TERM_KEY_HOME,
+	[8] = GRUB_TERM_KEY_END,
+	[17] = GRUB_TERM_KEY_F6,
+	[18] = GRUB_TERM_KEY_F7,
+	[19] = GRUB_TERM_KEY_F8,
+	[20] = GRUB_TERM_KEY_F9,
+	[21] = GRUB_TERM_KEY_F10,
+	[23] = GRUB_TERM_KEY_F11,
+	[24] = GRUB_TERM_KEY_F12,
       };
     char fx_key[] = 
       { 'P', 'Q', 'w', 'x', 't', 'u',
-        'q', 'r', 'p', 'M', 'A', 'B' };
+        'q', 'r', 'p', 'M', 'A', 'B', 'H', 'F' };
     unsigned fx_code[] = 
 	{ GRUB_TERM_KEY_F1, GRUB_TERM_KEY_F2, GRUB_TERM_KEY_F3,
 	  GRUB_TERM_KEY_F4, GRUB_TERM_KEY_F5, GRUB_TERM_KEY_F6,
 	  GRUB_TERM_KEY_F7, GRUB_TERM_KEY_F8, GRUB_TERM_KEY_F9,
-	  GRUB_TERM_KEY_F10, GRUB_TERM_KEY_F11, GRUB_TERM_KEY_F12 };
+	  GRUB_TERM_KEY_F10, GRUB_TERM_KEY_F11, GRUB_TERM_KEY_F12,
+	  GRUB_TERM_KEY_HOME, GRUB_TERM_KEY_END };
     unsigned i;
 
     if (c == '\e')
       {
 	CONTINUE_READ;
+
+	if (c == 'O')
+	  {
+	    CONTINUE_READ;
+
+	    for (i = 0; i < ARRAY_SIZE (fx_key); i++)
+	      if (fx_key[i] == c)
+		{
+		  keys[0] = fx_code[i];
+		  *len = 1;
+		  return;
+		}
+	  }
 
 	if (c != '[')
 	  return;
@@ -495,6 +520,15 @@ grub_terminfo_readkey (struct grub_term_input *term, int *keys, int *len,
 
     switch (c)
       {
+      case '[':
+	CONTINUE_READ;
+	if (c >= 'A' && c <= 'E')
+	  {
+	    keys[0] = GRUB_TERM_KEY_F1 + c - 'A';
+	    *len = 1;
+	    return;
+	  }
+	return;
       case 'O':
 	CONTINUE_READ;
 	for (i = 0; i < ARRAY_SIZE (fx_key); i++)
@@ -527,18 +561,26 @@ grub_terminfo_readkey (struct grub_term_input *term, int *keys, int *len,
 	  return;
 	}	  
 
-      default:
-	for (i = 0; i < ARRAY_SIZE (four_code_table); i++)
-	  if (four_code_table[i].key == c)
+      case '1' ... '9':
+	{
+	  unsigned val = c - '0';
+	  CONTINUE_READ;
+	  if (c >= '0' && c <= '9')
 	    {
+	      val = val * 10 + (c - '0');
 	      CONTINUE_READ;
-	      if (c != '~')
-		return;
-	      keys[0] = three_code_table[i].ascii;
-	      *len = 1;
-	      return;
 	    }
-	return;
+	  if (c != '~')
+	    return;
+	  if (val >= ARRAY_SIZE (four_code_table)
+	      || four_code_table[val] == 0)
+	    return;
+	  keys[0] = four_code_table[val];
+	  *len = 1;
+	  return;
+	}
+	default:
+	  return;
       }
   }
 #undef CONTINUE_READ
@@ -563,7 +605,7 @@ grub_terminfo_getkey (struct grub_term_input *termi)
   grub_terminfo_readkey (termi, data->input_buf,
 			 &data->npending, data->readkey);
 
-#ifdef __powerpc__
+#if defined(__powerpc__) && defined(GRUB_MACHINE_IEEE1275)
   if (data->npending == 1 && data->input_buf[0] == '\e'
       && grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_BROKEN_REPEAT)
       && grub_get_time_ms () - data->last_key_time < 1000
@@ -580,7 +622,7 @@ grub_terminfo_getkey (struct grub_term_input *termi)
       int ret;
       data->npending--;
       ret = data->input_buf[0];
-#ifdef __powerpc__
+#if defined(__powerpc__) && defined(GRUB_MACHINE_IEEE1275)
       if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_BROKEN_REPEAT))
 	{
 	  data->last_key = ret;
@@ -646,8 +688,8 @@ print_terminfo (void)
 		 grub_terminfo_get_current(cur),
 		 encoding_names[(cur->flags & GRUB_TERM_CODE_TYPE_MASK)
 				>> GRUB_TERM_CODE_TYPE_SHIFT],
-		 ((struct grub_terminfo_output_state *) cur->data)->width,
-	         ((struct grub_terminfo_output_state *) cur->data)->height);
+		 ((struct grub_terminfo_output_state *) cur->data)->pos.x,
+	         ((struct grub_terminfo_output_state *) cur->data)->pos.y);
 
   return GRUB_ERR_NONE;
 }
@@ -720,8 +762,8 @@ grub_cmd_terminfo (grub_extcmd_context_t ctxt, int argc, char **args)
 	  {
 	    struct grub_terminfo_output_state *data
 	      = (struct grub_terminfo_output_state *) cur->data;
-	    data->width = w;
-	    data->height = h;
+	    data->size.x = w;
+	    data->size.y = h;
 	  }
 
 	if (argc == 1)
@@ -737,11 +779,7 @@ grub_cmd_terminfo (grub_extcmd_context_t ctxt, int argc, char **args)
 
 static grub_extcmd_t cmd;
 
-#if defined (GRUB_MACHINE_IEEE1275) || defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS) || defined (GRUB_MACHINE_ARC)
-void grub_terminfo_init (void)
-#else
 GRUB_MOD_INIT(terminfo)
-#endif
 {
   cmd = grub_register_extcmd ("terminfo", grub_cmd_terminfo, 0,
 			      N_("[[-a|-u|-v] [-g WxH] TERM [TYPE]]"),
@@ -749,11 +787,7 @@ GRUB_MOD_INIT(terminfo)
 			      options);
 }
 
-#if defined (GRUB_MACHINE_IEEE1275) || defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS) || defined (GRUB_MACHINE_ARC)
-void grub_terminfo_fini (void)
-#else
 GRUB_MOD_FINI(terminfo)
-#endif
 {
   grub_unregister_extcmd (cmd);
 }

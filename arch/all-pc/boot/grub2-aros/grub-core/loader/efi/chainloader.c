@@ -35,6 +35,10 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 #include <grub/net.h>
+#if defined (__i386__) || defined (__x86_64__)
+#include <grub/macho.h>
+#include <grub/i386/macho.h>
+#endif
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -118,9 +122,7 @@ copy_file_path (grub_efi_file_path_device_path_t *fp,
     if (*p == '/')
       *p = '\\';
 
-  size = size * sizeof (grub_efi_char16_t) + sizeof (*fp);
-  fp->header.length[0] = (grub_efi_uint8_t) (size & 0xff);
-  fp->header.length[1] = (grub_efi_uint8_t) (size >> 8);
+  fp->header.length = size * sizeof (grub_efi_char16_t) + sizeof (*fp);
 }
 
 static grub_efi_device_path_t *
@@ -180,8 +182,7 @@ make_file_path (grub_efi_device_path_t *dp, const char *filename)
   d = GRUB_EFI_NEXT_DEVICE_PATH (d);
   d->type = GRUB_EFI_END_DEVICE_PATH_TYPE;
   d->subtype = GRUB_EFI_END_ENTIRE_DEVICE_PATH_SUBTYPE;
-  d->length[0] = sizeof (*d);
-  d->length[1] = 0;
+  d->length = sizeof (*d);
 
   return file_path;
 }
@@ -198,6 +199,7 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
   grub_efi_device_path_t *dp = 0;
   grub_efi_loaded_image_t *loaded_image;
   char *filename;
+  void *boot_image = 0;
   grub_efi_handle_t dev_handle = 0;
 
   if (argc == 0)
@@ -278,7 +280,8 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  if (grub_file_read (file, (void *) ((grub_addr_t) address), size) != size)
+  boot_image = (void *) ((grub_addr_t) address);
+  if (grub_file_read (file, boot_image, size) != size)
     {
       if (grub_errno == GRUB_ERR_NONE)
 	grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
@@ -287,9 +290,45 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
+#if defined (__i386__) || defined (__x86_64__)
+  if (size >= (grub_ssize_t) sizeof (struct grub_macho_fat_header))
+    {
+      struct grub_macho_fat_header *head = boot_image;
+      if (head->magic
+	  == grub_cpu_to_le32_compile_time (GRUB_MACHO_FAT_EFI_MAGIC))
+	{
+	  grub_uint32_t i;
+	  struct grub_macho_fat_arch *archs
+	    = (struct grub_macho_fat_arch *) (head + 1);
+	  for (i = 0; i < grub_cpu_to_le32 (head->nfat_arch); i++)
+	    {
+	      if (GRUB_MACHO_CPUTYPE_IS_HOST_CURRENT (archs[i].cputype))
+		break;
+	    }
+	  if (i == grub_cpu_to_le32 (head->nfat_arch))
+	    {
+	      grub_error (GRUB_ERR_BAD_OS, "no compatible arch found");
+	      goto fail;
+	    }
+	  if (grub_cpu_to_le32 (archs[i].offset)
+	      > ~grub_cpu_to_le32 (archs[i].size)
+	      || grub_cpu_to_le32 (archs[i].offset)
+	      + grub_cpu_to_le32 (archs[i].size)
+	      > (grub_size_t) size)
+	    {
+	      grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			  filename);
+	      goto fail;
+	    }
+	  boot_image = (char *) boot_image + grub_cpu_to_le32 (archs[i].offset);
+	  size = grub_cpu_to_le32 (archs[i].size);
+	}
+    }
+#endif
+
   status = efi_call_6 (b->load_image, 0, grub_efi_image_handle, file_path,
-			  (void *) ((grub_addr_t) address), size,
-			  &image_handle);
+		       boot_image, size,
+		       &image_handle);
   if (status != GRUB_EFI_SUCCESS)
     {
       if (status == GRUB_EFI_OUT_OF_RESOURCES)

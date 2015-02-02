@@ -79,6 +79,12 @@ struct grub_arc_display_status
   grub_arc_uchar_t reverse_video;
 };
 
+enum
+  {
+    GRUB_ARC_COMPONENT_FLAG_OUT = 0x40,
+    GRUB_ARC_COMPONENT_FLAG_IN = 0x20,
+  };
+
 struct grub_arc_component
 {
   grub_arc_enum_t class;
@@ -133,7 +139,9 @@ enum
     GRUB_ARC_COMPONENT_TYPE_POINTER,
     GRUB_ARC_COMPONENT_TYPE_KBD,
     GRUB_ARC_COMPONENT_TYPE_TERMINAL,
+#ifndef GRUB_CPU_WORDS_BIGENDIAN
     GRUB_ARC_COMPONENT_TYPE_OTHER_PERIPHERAL,
+#endif
     GRUB_ARC_COMPONENT_TYPE_LINE,
     GRUB_ARC_COMPONENT_TYPE_NET,
     GRUB_ARC_COMPONENT_TYPE_MEMORY_UNIT,
@@ -210,7 +218,7 @@ struct grub_arc_firmware_vector
   grub_arc_err_t (*seek) (grub_arc_fileno_t fileno,
 			  grub_arc_ularge_t *pos, grub_arc_enum_t mode);
   void *mount;
-  void *getenvironmentvariable;
+  const char * (*getenvironmentvariable) (const char *name);
   void *setenvironmentvariable;
 
   /* 0x80. */
@@ -255,7 +263,17 @@ struct grub_arc_system_parameter_block
 #define GRUB_ARC_STDIN 0
 #define GRUB_ARC_STDOUT 1
 
-int EXPORT_FUNC (grub_arc_iterate_devs) (int (*hook) (const char *name, const struct grub_arc_component *comp), int alt_names);
+typedef int (*grub_arc_iterate_devs_hook_t)
+  (const char *name, const struct grub_arc_component *comp, void *data);
+
+int EXPORT_FUNC (grub_arc_iterate_devs) (grub_arc_iterate_devs_hook_t hook,
+					 void *hook_data,
+					 int alt_names);
+
+char *EXPORT_FUNC (grub_arc_alt_name_to_norm) (const char *name, const char *suffix);
+
+int EXPORT_FUNC (grub_arc_is_device_serial) (const char *name, int alt_names);
+
 
 #define FOR_ARC_CHILDREN(comp, parent) for (comp = GRUB_ARC_FIRMWARE_VECTOR->getchild (parent); comp; comp = GRUB_ARC_FIRMWARE_VECTOR->getpeer (comp))
 

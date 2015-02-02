@@ -1,24 +1,10 @@
 
-#define SHUTDOWN_PORT 0x8900
-
 	.text
 	.globl _start
 _start:
 base:	
 	.code16
 	jmp cont
-
-portmsg:
-	xorw %ax, %ax
-1:	
-	movb 0(%si), %al
-	test %ax, %ax
-	jz 1f
-	outb %al, %dx
-	incw %si
-	jmp 1b
-1:
-	ret
 
 serialmsg:	
 1:	
@@ -50,17 +36,12 @@ cont:
 	movw %ax, %ds
 	lea message, %si
 	call serialmsg
-	lea shutdown, %si
-	movw $SHUTDOWN_PORT, %dx
-	call portmsg
+#include "qemu-shutdown-x86.S"
 
 1:
 	hlt
 	jmp 1b
 
-shutdown:
-	.ascii "Shutdown"
-	.byte 0
 message:
 	.ascii "Boot Test Passed Successfully\n" SUCCESSFUL_BOOT_STRING "\n"
 	.byte 0

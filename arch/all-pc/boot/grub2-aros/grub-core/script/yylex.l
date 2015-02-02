@@ -28,11 +28,12 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
-#pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wsign-compare"
 
-#define yyfree    grub_lexer_yyfree
-#define yyalloc   grub_lexer_yyalloc
-#define yyrealloc grub_lexer_yyrealloc
+#define yyalloc(size, scanner)   (grub_malloc((size)))
+#define yyfree(ptr, scanner)   (grub_free((ptr)))
+#define yyrealloc(ptr, size, scanner) (grub_realloc((ptr), (size)))
 
 /* 
  * As we don't have access to yyscanner, we cannot do much except to
@@ -67,9 +68,6 @@
 static int grub_lexer_unput (const char *input, yyscan_t yyscanner);
 static int grub_lexer_resplit (const char *input, yyscan_t yyscanner);
 
-static void  grub_lexer_yyfree (void *, yyscan_t yyscanner);
-static void* grub_lexer_yyalloc (yy_size_t, yyscan_t yyscanner);
-static void* grub_lexer_yyrealloc (void*, yy_size_t, yyscan_t yyscanner);
 static void  copy_string (struct grub_parser_param *, const char *,
                           unsigned hint);
 
@@ -168,8 +166,8 @@ POS_MULTILINE   {WORD}?\\\n
  /* Reserved words */
 "{"             { RECORD; return GRUB_PARSER_TOKEN_LBR;       }
 "}"             { RECORD; return GRUB_PARSER_TOKEN_RBR;       }
-"[["            { RECORD; return GRUB_PARSER_TOKEN_RSQBR2;    }
-"]]"            { RECORD; return GRUB_PARSER_TOKEN_LSQBR2;    }
+"[["            { RECORD; return GRUB_PARSER_TOKEN_LSQBR2;    }
+"]]"            { RECORD; return GRUB_PARSER_TOKEN_RSQBR2;    }
 "case"          { RECORD; return GRUB_PARSER_TOKEN_CASE;      }
 "do"            { RECORD; return GRUB_PARSER_TOKEN_DO;        }
 "done"          { RECORD; return GRUB_PARSER_TOKEN_DONE;      }
@@ -336,25 +334,6 @@ yywrap (yyscan_t yyscanner)
     return 1;
 
   return grub_script_lexer_yywrap (yyget_extra (yyscanner), 0);
-}
-
-static void
-grub_lexer_yyfree (void *ptr, yyscan_t yyscanner __attribute__ ((unused)))
-{
-  grub_free(ptr);
-}
-
-static void*
-grub_lexer_yyalloc (yy_size_t size, yyscan_t yyscanner __attribute__ ((unused)))
-{
-  return grub_malloc (size);
-}
-
-static void*
-grub_lexer_yyrealloc (void *ptr, yy_size_t size,
-                      yyscan_t yyscanner __attribute__ ((unused)))
-{
-  return grub_realloc (ptr, size);
 }
 
 static void copy_string (struct grub_parser_param *parser, const char *str, unsigned hint)

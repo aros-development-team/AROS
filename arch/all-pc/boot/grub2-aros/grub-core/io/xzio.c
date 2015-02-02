@@ -74,15 +74,15 @@ static grub_ssize_t
 read_vli (grub_file_t file, grub_uint64_t *num)
 {
   grub_uint8_t buf[VLI_MAX_DIGITS];
-  grub_ssize_t read;
+  grub_ssize_t read_bytes;
   grub_size_t dec;
 
-  read = grub_file_read (file, buf, VLI_MAX_DIGITS);
-  if (read < 0)
+  read_bytes = grub_file_read (file, buf, VLI_MAX_DIGITS);
+  if (read_bytes < 0)
     return -1;
 
-  dec = decode_vli (buf, read, num);
-  grub_file_seek (file, file->offset - (read - dec));
+  dec = decode_vli (buf, read_bytes, num);
+  grub_file_seek (file, file->offset - (read_bytes - dec));
   return dec;
 }
 
@@ -169,7 +169,8 @@ ERROR:
 }
 
 static grub_file_t
-grub_xzio_open (grub_file_t io)
+grub_xzio_open (grub_file_t io,
+		const char *name __attribute__ ((unused)))
 {
   grub_file_t file;
   grub_xzio_t xzio;
@@ -186,12 +187,9 @@ grub_xzio_open (grub_file_t io)
     }
 
   xzio->file = io;
-  xzio->saved_offset = 0;
 
   file->device = io->device;
-  file->offset = 0;
   file->data = xzio;
-  file->read_hook = 0;
   file->fs = &grub_xzio_fs;
   file->size = GRUB_FILE_SIZE_UNKNOWN;
   file->not_easily_seekable = 1;
@@ -210,10 +208,7 @@ grub_xzio_open (grub_file_t io)
     }
 
   xzio->buf.in = xzio->inbuf;
-  xzio->buf.in_pos = 0;
-  xzio->buf.in_size = 0;
   xzio->buf.out = xzio->outbuf;
-  xzio->buf.out_pos = 0;
   xzio->buf.out_size = XZBUFSIZ;
 
   /* FIXME: don't test footer on not easily seekable files.  */
@@ -324,6 +319,7 @@ grub_xzio_close (grub_file_t file)
 
   /* Device must not be closed twice.  */
   file->device = 0;
+  file->name = 0;
   return grub_errno;
 }
 

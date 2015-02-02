@@ -100,7 +100,6 @@ LOCAL (codestart):
 	/* The ".code32" directive takes GAS out of 16-bit mode. */
 	.code32
 
-	incl	%eax
 	cld
 	call	grub_gate_a20
 
@@ -119,12 +118,12 @@ LOCAL (codestart):
 
 #include "../../../kern/i386/realmode.S"
 
-#include <rs_decoder.S>
+#include <rs_decoder.h>
 
 	.text
 
 /*
- * grub_gate_a20(int on)
+ * grub_gate_a20(void)
  *
  * Gate address-line 20 for high memory.
  *
@@ -134,12 +133,10 @@ LOCAL (codestart):
  */
 
 grub_gate_a20:	
-	movl	%eax, %edx
-
 gate_a20_test_current_state:
 	/* first of all, test if already in a good state */
 	call	gate_a20_check_state
-	cmpb	%al, %dl
+	testb	%al, %al
 	jnz	gate_a20_try_bios
 	ret
 
@@ -149,18 +146,15 @@ gate_a20_try_bios:
 	call	prot_to_real
 
 	.code16
-	movw	$0x2400, %ax
-	testb	%dl, %dl
-	jz	1f
-	incw	%ax
-1:	int	$0x15
+	movw	$0x2401, %ax
+	int	$0x15
 
 	DATA32	call	real_to_prot
 	.code32
 
 	popl	%ebp
 	call	gate_a20_check_state
-	cmpb	%al, %dl
+	testb	%al, %al
 	jnz	gate_a20_try_system_control_port_a
 	ret
 
@@ -172,20 +166,13 @@ gate_a20_try_system_control_port_a:
 	/* fourth, try the system control port A */
 	inb	$0x92
 	andb	$(~0x03), %al
-	testb	%dl, %dl
-	jz	6f
 	orb	$0x02, %al
-6:	outb	$0x92
+	outb	$0x92
 
-	/* When turning off Gate A20, do not check the state strictly,
-	   because a failure is not fatal usually, and Gate A20 is always
-	   on some modern machines.  */
-	testb	%dl, %dl
-	jz	7f
 	call	gate_a20_check_state
-	cmpb	%al, %dl
+	testb	%al, %al
 	jnz	gate_a20_try_keyboard_controller
-7:	ret
+	ret
 
 gate_a20_flush_keyboard_buffer:
 	inb	$0x64
@@ -211,11 +198,8 @@ gate_a20_try_keyboard_controller:
 	andb	$0x02, %al
 	jnz	4b
 
-	movb	$0xdd, %al
-	testb	%dl, %dl
-	jz	5f
-	orb	$0x02, %al
-5:	outb	$0x60
+	movb	$0xdf, %al
+	outb	$0x60
 	call    gate_a20_flush_keyboard_buffer
 
 	/* output a dummy command (USB keyboard hack) */
@@ -224,7 +208,7 @@ gate_a20_try_keyboard_controller:
 	call    gate_a20_flush_keyboard_buffer
 
 	call	gate_a20_check_state
-	cmpb	%al, %dl
+	testb	%al, %al
 	/* everything failed, so restart from the beginning */
 	jnz	gate_a20_try_bios
 	ret
@@ -234,7 +218,7 @@ gate_a20_check_state:
 	movl	$100, %ecx
 1:
 	call	3f
-	cmpb	%al, %dl
+	testb	%al, %al
 	jz	2f
 	loop	1b
 2:
@@ -263,9 +247,8 @@ gate_a20_check_state:
 	pushl	%ebx
 	addl	$0x100000, %ebx
 	movb	(%ebx), %ch
-	/* this result is 1 if A20 is on or 0 if it is off */
+	/* this result is 0 if A20 is on or 1 if it is off */
 	subb	%ch, %al
-	xorb	$1, %al
 	/* restore the original */
 	popl	%ebx
 	movb	%cl, (%ebx)

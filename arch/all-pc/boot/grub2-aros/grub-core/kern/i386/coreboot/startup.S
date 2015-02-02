@@ -17,8 +17,6 @@
  */
 
 #include <grub/symbol.h>
-/* For stack parameters.  */
-#include <grub/i386/pc/memory.h>
 #include <grub/machine/memory.h>
 #include <grub/cpu/linux.h>
 #include <grub/offsets.h>
@@ -68,5 +66,3 @@ multiboot_header:
  *  only needed for BIOS gates).
  */
 #include "../realmode.S"
-
-#include "../int.S"

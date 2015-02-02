@@ -44,7 +44,7 @@ do_encrypt_stream( ARCFOUR_context *ctx,
   register int i = ctx->idx_i;
   register int j = ctx->idx_j;
   register byte *sbox = ctx->sbox;
-  register int t;  
+  register int t;
 
   while ( length-- )
     {
@@ -55,7 +55,7 @@ do_encrypt_stream( ARCFOUR_context *ctx,
       t = sbox[i]; sbox[i] = sbox[j]; sbox[j] = t;
       *outbuf++ = *inbuf++ ^ sbox[(sbox[i] + sbox[j]) & 255];
     }
-  
+
   ctx->idx_i = i;
   ctx->idx_j = j;
 }
@@ -79,7 +79,7 @@ do_arcfour_setkey (void *context, const byte *key, unsigned int keylen)
   byte karr[256];
   ARCFOUR_context *ctx = (ARCFOUR_context *) context;
 
-  if (!initialized ) 
+  if (!initialized )
     {
       initialized = 1;
       selftest_failed = selftest();
@@ -97,14 +97,14 @@ do_arcfour_setkey (void *context, const byte *key, unsigned int keylen)
     ctx->sbox[i] = i;
   for (i=0; i < 256; i++ )
     karr[i] = key[i%keylen];
-  for (i=j=0; i < 256; i++ ) 
+  for (i=j=0; i < 256; i++ )
     {
       int t;
       j = (j + ctx->sbox[i] + karr[i]) % 256;
       t = ctx->sbox[i];
       ctx->sbox[i] = ctx->sbox[j];
       ctx->sbox[j] = t;
-    } 
+    }
   memset( karr, 0, 256 );
 
   return GPG_ERR_NO_ERROR;
@@ -130,7 +130,6 @@ gcry_cipher_spec_t _gcry_cipher_spec_arcfour =
     .modname = "gcry_arcfour",
 #endif
   };
-
 
 
 GRUB_MOD_INIT(gcry_arcfour)

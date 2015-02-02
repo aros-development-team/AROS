@@ -33,7 +33,7 @@ struct grub_machine_mmap_entry
 #define GRUB_MACHINE_MEMORY_NVS 	4
 #define GRUB_MACHINE_MEMORY_BADRAM 	5
   grub_uint32_t type;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 
 /*
@@ -139,51 +139,54 @@ grub_get_mmap_entry (struct grub_machine_mmap_entry *entry,
 }
 
 grub_err_t
-grub_machine_mmap_iterate (grub_memory_hook_t hook)
+grub_machine_mmap_iterate (grub_memory_hook_t hook, void *hook_data)
 {
-  grub_uint32_t cont;
+  grub_uint32_t cont = 0;
   struct grub_machine_mmap_entry *entry
     = (struct grub_machine_mmap_entry *) GRUB_MEMORY_MACHINE_SCRATCH_ADDR;
+  int e820_works = 0;
 
-  grub_memset (entry, 0, sizeof (entry));
+  while (1)
+    {
+      grub_memset (entry, 0, sizeof (*entry));
 
-  /* Check if grub_get_mmap_entry works.  */
-  cont = grub_get_mmap_entry (entry, 0);
+      cont = grub_get_mmap_entry (entry, cont);
 
-  if (entry->size)
-    do
-      {
-	if (hook (entry->addr, entry->len,
-		  /* GRUB mmaps have been defined to match with the E820 definition.
-		     Therefore, we can just pass type through.  */
-		  ((entry->type <= GRUB_MACHINE_MEMORY_BADRAM) && (entry->type >= GRUB_MACHINE_MEMORY_AVAILABLE)) ? entry->type : GRUB_MEMORY_RESERVED))
-	  break;
+      if (!entry->size)
+	break;
 
-	if (! cont)
-	  break;
+      if (entry->len)
+	e820_works = 1;
+      if (entry->len
+	  && hook (entry->addr, entry->len,
+		   /* GRUB mmaps have been defined to match with
+		      the E820 definition.
+		      Therefore, we can just pass type through.  */
+		   entry->type, hook_data))
+	break;
 
-	grub_memset (entry, 0, sizeof (entry));
+      if (! cont)
+	break;
+    }
 
-	cont = grub_get_mmap_entry (entry, cont);
-      }
-    while (entry->size);
-  else
+  if (!e820_works)
     {
       grub_uint32_t eisa_mmap = grub_get_eisa_mmap ();
 
       if (hook (0x0, ((grub_uint32_t) grub_get_conv_memsize ()) << 10,
-		GRUB_MEMORY_AVAILABLE))
+		GRUB_MEMORY_AVAILABLE, hook_data))
 	return 0;
 
       if (eisa_mmap)
 	{
 	  if (hook (0x100000, (eisa_mmap & 0xFFFF) << 10,
-		    GRUB_MEMORY_AVAILABLE) == 0)
-	    hook (0x1000000, eisa_mmap & ~0xFFFF, GRUB_MEMORY_AVAILABLE);
+		    GRUB_MEMORY_AVAILABLE, hook_data) == 0)
+	    hook (0x1000000, eisa_mmap & ~0xFFFF, GRUB_MEMORY_AVAILABLE,
+		  hook_data);
 	}
       else
 	hook (0x100000, ((grub_uint32_t) grub_get_ext_memsize ()) << 10,
-	      GRUB_MEMORY_AVAILABLE);
+	      GRUB_MEMORY_AVAILABLE, hook_data);
     }
 
   return 0;

@@ -30,7 +30,7 @@ CLASS="--class os"
 case "${GRUB_DISTRIBUTOR}" in
   Debian)
 	OS="${GRUB_DISTRIBUTOR} GNU/kFreeBSD"
-	CLASS="--class $(echo ${GRUB_DISTRIBUTOR} | tr 'A-Z' 'a-z' | cut -d' ' -f1) --class gnu-kfreebsd --class gnu ${CLASS}"
+	CLASS="--class $(echo ${GRUB_DISTRIBUTOR} | tr 'A-Z' 'a-z' | cut -d' ' -f1|LC_ALL=C sed 's,[^[:alnum:]_],_,g') --class gnu-kfreebsd --class gnu ${CLASS}"
   ;;
   *)
 	OS="FreeBSD"
@@ -54,7 +54,7 @@ load_kfreebsd_module ()
   fi
 
   if [ -z "${prepare_module_dir_cache}" ]; then
-    prepare_module_dir_cache="$(prepare_grub_to_access_device $(grub-probe -t device "${module_dir}") | sed -e "s/^/\t/")"
+    prepare_module_dir_cache="$(prepare_grub_to_access_device $(${grub_probe} -t device "${module_dir}") | grub_add_tab)"
   fi
 
   printf '%s\n' "${prepare_module_dir_cache}"
@@ -91,16 +91,16 @@ kfreebsd_entry ()
       echo "menuentry '$(echo "$OS" | grub_quote)' ${CLASS} \$menuentry_id_option 'kfreebsd-simple-$boot_device_id' {" | sed "s/^/$submenu_indentation/"
   fi
   if [ x$type != xrecovery ] ; then
-      save_default_entry | sed -e "s/^/\t/" | sed "s/^/$submenu_indentation/"
+      save_default_entry | grub_add_tab | sed "s/^/$submenu_indentation/"
   fi
   if [ -z "${prepare_boot_cache}" ]; then
-    prepare_boot_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/")"
+    prepare_boot_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | grub_add_tab)"
   fi
 
   printf '%s\n' "${prepare_boot_cache}" | sed "s/^/$submenu_indentation/"
   message="$(gettext_printf "Loading kernel of FreeBSD %s ..." ${version})"
   sed "s/^/$submenu_indentation/" << EOF
-	echo			'$message'
+	echo			'$(echo "$message" | grub_quote)'
 	kfreebsd		${rel_dirname}/${basename} ${args}
 EOF
 
@@ -112,7 +112,7 @@ EOF
 
   load_kfreebsd_module acpi true
 
-  for abstraction in dummy $(grub-probe -t abstraction --device ${GRUB_DEVICE}) ; do
+  for abstraction in dummy $(${grub_probe} -t abstraction --device ${GRUB_DEVICE}) ; do
     case $abstraction in
       lvm) load_kfreebsd_module geom_linux_lvm false ;;
     esac
@@ -122,10 +122,10 @@ EOF
     zfs)
       load_kfreebsd_module opensolaris false
 
-      ls "${dirname}/zfs/zpool.cache" > /dev/null
+      ls "/boot/zfs/zpool.cache" > /dev/null
       printf '%s\n' "${prepare_boot_cache}"
       sed "s/^/$submenu_indentation/" << EOF
-	kfreebsd_module		${rel_dirname}/zfs/zpool.cache type=/boot/zfs/zpool.cache
+	kfreebsd_module		$(make_system_path_relative_to_its_root /boot)/zfs/zpool.cache type=/boot/zfs/zpool.cache
 EOF
     ;;
   esac
@@ -143,9 +143,12 @@ EOF
 EOF
 }
 
-list=`for i in /boot/kfreebsd-* /boot/kernel/kernel ; do
-        if grub_file_is_not_garbage "$i" ; then echo -n "$i " ; fi
-      done`
+list=
+for i in /boot/kfreebsd-* /boot/kernel/kernel ; do
+  if grub_file_is_not_garbage "$i" ; then
+    list="$list $i"
+  fi
+done
 prepare_boot_cache=
 boot_device_id=
 title_correction_code=
@@ -154,7 +157,7 @@ title_correction_code=
 # yet, so it's empty. In a submenu it will be equal to '\t' (one tab).
 submenu_indentation=""
 
-is_first_entry=true
+is_top_level=true
 
 while [ "x$list" != "x" ] ; do
   kfreebsd=`version_find_latest $list`
@@ -179,7 +182,7 @@ while [ "x$list" != "x" ] ; do
   case ${GRUB_FS} in
     zfs)
 			# zpool name
-			kfreebsd_device=$(grub-probe -t fs_label --device ${GRUB_DEVICE})
+			kfreebsd_device=$(${grub_probe} -t fs_label --device ${GRUB_DEVICE})
 			# filesystem name (empty string for the main filesystem)
 			kfreebsd_device="${kfreebsd_device}$(${grub_mkrelpath} / | sed -e "s,/*@$,,")"
     ;;
@@ -211,15 +214,16 @@ while [ "x$list" != "x" ] ; do
     module_dir_rel=$(make_system_path_relative_to_its_root $module_dir)
   fi
 
-  if [ "x$is_first_entry" = xtrue ]; then
+  if [ "x$is_top_level" = xtrue ] && [ "x${GRUB_DISABLE_SUBMENU}" != xy ]; then
       kfreebsd_entry "${OS}" "${version}" simple
-      submenu_indentation="\t"
+      submenu_indentation="$grub_tab"
     
       if [ -z "$boot_device_id" ]; then
 	  boot_device_id="$(grub_get_device_id "${GRUB_DEVICE}")"
       fi
       # TRANSLATORS: %s is replaced with an OS name
       echo "submenu '$(gettext_printf "Advanced options for %s" "${OS}" | grub_quote)' \$menuentry_id_option 'kfreebsd-advanced-$boot_device_id' {"
+      is_top_level=false
   fi
 
   kfreebsd_entry "${OS}" "${version}" advanced
@@ -227,13 +231,12 @@ while [ "x$list" != "x" ] ; do
     kfreebsd_entry "${OS}" "${version}" recovery "-s"
   fi
 
-  list=`echo $list | tr ' ' '\n' | grep -vx $kfreebsd | tr '\n' ' '`
-  is_first_entry=false
+  list=`echo $list | tr ' ' '\n' | fgrep -vx "$kfreebsd" | tr '\n' ' '`
 done
 
 # If at least one kernel was found, then we need to
 # add a closing '}' for the submenu command.
-if [ x"$is_first_entry" != xtrue ]; then
+if [ x"$is_top_level" != xtrue ]; then
   echo '}'
 fi
 

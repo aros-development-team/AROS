@@ -33,9 +33,11 @@ void *EXPORT_FUNC(grub_malloc) (grub_size_t size);
 void *EXPORT_FUNC(grub_zalloc) (grub_size_t size);
 void EXPORT_FUNC(grub_free) (void *ptr);
 void *EXPORT_FUNC(grub_realloc) (void *ptr, grub_size_t size);
+#ifndef GRUB_MACHINE_EMU
 void *EXPORT_FUNC(grub_memalign) (grub_size_t align, grub_size_t size);
+#endif
 
-void grub_mm_check_real (char *file, int line);
+void grub_mm_check_real (const char *file, int line);
 #define grub_mm_check() grub_mm_check_real (GRUB_FILE, __LINE__);
 
 /* For debugging.  */
@@ -71,22 +73,5 @@ void *EXPORT_FUNC(grub_debug_realloc) (const char *file, int line, void *ptr,
 void *EXPORT_FUNC(grub_debug_memalign) (const char *file, int line,
 					grub_size_t align, grub_size_t size);
 #endif /* MM_DEBUG && ! GRUB_UTIL */
-
-#include <grub/err.h>
-
-static inline grub_err_t 
-grub_extend_alloc (grub_size_t sz, grub_size_t *allocated, void **ptr)
-{
-  void *n;
-  if (sz < *allocated)
-    return GRUB_ERR_NONE;
-
-  *allocated = 2 * sz;
-  n = grub_realloc (*ptr, *allocated);
-  if (!n)
-    return grub_errno;
-  *ptr = n;
-  return GRUB_ERR_NONE;
-}
 
 #endif /* ! GRUB_MM_H */

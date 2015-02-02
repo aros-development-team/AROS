@@ -74,7 +74,7 @@ static const char sample_secret_key[] =
 "      42CAA7DC289F0C5A9D155F02D3D551DB741A81695B74D4C8F477F9C7838EB0FB#)"
 "  (x #11D54E4ADBD3034160F2CED4B7CD292A4EBF3EC0#)))";
 /* A sample 1024 bit DSA key used for the selftests (public only).  */
-static const char sample_public_key[] = 
+static const char sample_public_key[] =
 "(public-key"
 " (dsa"
 "  (p #00AD7C0025BA1A15F775F3F2D673718391D00456978D347B33D7B49E7F32EDAB"
@@ -141,14 +141,19 @@ gen_k( gcry_mpi_t q )
   unsigned int nbytes = (nbits+7)/8;
   char *rndbuf = NULL;
 
+  /* To learn why we don't use mpi_mod to get the requested bit size,
+     read the paper: "The Insecurity of the Digital Signature
+     Algorithm with Partially Known Nonces" by Nguyen and Shparlinski.
+     Journal of Cryptology, New York. Vol 15, nr 3 (2003)  */
+
   if ( DBG_CIPHER )
     log_debug("choosing a random k ");
-  for (;;) 
+  for (;;)
     {
       if( DBG_CIPHER )
         progress('.');
 
-      if ( !rndbuf || nbits < 32 ) 
+      if ( !rndbuf || nbits < 32 )
         {
           gcry_free(rndbuf);
           rndbuf = gcry_random_bytes_secure( (nbits+7)/8, GCRY_STRONG_RANDOM );
@@ -156,13 +161,20 @@ gen_k( gcry_mpi_t q )
       else
         { /* Change only some of the higher bits.  We could improve
 	     this by directly requesting more memory at the first call
-	     to get_random_bytes() and use this the here maybe it is
-	     easier to do this directly in random.c. */
+	     to get_random_bytes() and use these extra bytes here.
+	     However the required management code is more complex and
+	     thus we better use this simple method.  */
           char *pp = gcry_random_bytes_secure( 4, GCRY_STRONG_RANDOM );
           memcpy( rndbuf,pp, 4 );
           gcry_free(pp);
 	}
       _gcry_mpi_set_buffer( k, rndbuf, nbytes, 0 );
+
+      /* Make sure we have the requested number of bits.  This code
+         looks a bit funny but it is easy to understand if you
+         consider that mpi_set_highbit clears all higher bits.  We
+         don't have a clear_highbit, thus we first set the high bit
+         and then clear it again.  */
       if ( mpi_test_bit( k, nbits-1 ) )
         mpi_set_highbit( k, nbits-1 );
       else
@@ -172,7 +184,7 @@ gen_k( gcry_mpi_t q )
 	}
 
       if( !(mpi_cmp( k, q ) < 0) ) /* check: k < q */
-        {	
+        {
           if( DBG_CIPHER )
             progress('+');
           continue; /* no  */
@@ -188,7 +200,7 @@ gen_k( gcry_mpi_t q )
   gcry_free(rndbuf);
   if( DBG_CIPHER )
     progress('\n');
-  
+
   return k;
 }
 
@@ -315,7 +327,7 @@ generate (DSA_secret_key *sk, unsigned int nbits, unsigned int qbits,
           mpi_add_ui (h, h, 1);
           /* g = h^e mod p */
           gcry_mpi_powm (g, h, e, p);
-        } 
+        }
       while (!mpi_cmp_ui (g, 1));  /* Continue until g != 1. */
     }
 
@@ -330,13 +342,13 @@ generate (DSA_secret_key *sk, unsigned int nbits, unsigned int qbits,
   x = mpi_alloc_secure( mpi_get_nlimbs(q) );
   mpi_sub_ui( h, q, 1 );  /* put q-1 into h */
   rndbuf = NULL;
-  do 
+  do
     {
       if( DBG_CIPHER )
         progress('.');
       if( !rndbuf )
         rndbuf = gcry_random_bytes_secure ((qbits+7)/8, random_level);
-      else 
+      else
         { /* Change only some of the higher bits (= 2 bytes)*/
           char *r = gcry_random_bytes_secure (2, random_level);
           memcpy(rndbuf, r, 2 );
@@ -345,7 +357,7 @@ generate (DSA_secret_key *sk, unsigned int nbits, unsigned int qbits,
 
       _gcry_mpi_set_buffer( x, rndbuf, (qbits+7)/8, 0 );
       mpi_clear_highbit( x, qbits+1 );
-    } 
+    }
   while ( !( mpi_cmp_ui( x, 0 )>0 && mpi_cmp( x, h )<0 ) );
   gcry_free(rndbuf);
   mpi_free( e );
@@ -355,7 +367,7 @@ generate (DSA_secret_key *sk, unsigned int nbits, unsigned int qbits,
   y = mpi_alloc( mpi_get_nlimbs(p) );
   gcry_mpi_powm( y, g, x, p );
 
-  if( DBG_CIPHER ) 
+  if( DBG_CIPHER )
     {
       progress('\n');
       log_mpidump("dsa  p", p );
@@ -406,8 +418,8 @@ generate_fips186 (DSA_secret_key *sk, unsigned int nbits, unsigned int qbits,
     const void *seed;
     size_t seedlen;
   } initial_seed = { NULL, NULL, 0 };
-  gcry_mpi_t prime_q = NULL; 
-  gcry_mpi_t prime_p = NULL; 
+  gcry_mpi_t prime_q = NULL;
+  gcry_mpi_t prime_p = NULL;
   gcry_mpi_t value_g = NULL; /* The generator. */
   gcry_mpi_t value_y = NULL; /* g^x mod p */
   gcry_mpi_t value_x = NULL; /* The secret exponent. */
@@ -467,15 +479,15 @@ generate_fips186 (DSA_secret_key *sk, unsigned int nbits, unsigned int qbits,
             initial_seed.seed = gcry_sexp_nth_data (initial_seed.sexp, 1,
                                                     &initial_seed.seedlen);
         }
-      
+
       /* Fixme: Enable 186-3 after it has been approved and after fixing
          the generation function.  */
       /*   if (use_fips186_2) */
       (void)use_fips186_2;
-      ec = _gcry_generate_fips186_2_prime (nbits, qbits, 
-                                           initial_seed.seed, 
+      ec = _gcry_generate_fips186_2_prime (nbits, qbits,
+                                           initial_seed.seed,
                                            initial_seed.seedlen,
-                                           &prime_q, &prime_p, 
+                                           &prime_q, &prime_p,
                                            r_counter,
                                            r_seed, r_seedlen);
       /*   else */
@@ -493,33 +505,33 @@ generate_fips186 (DSA_secret_key *sk, unsigned int nbits, unsigned int qbits,
       mpi_sub_ui (value_e, prime_p, 1);
       mpi_fdiv_q (value_e, value_e, prime_q );
       value_g = mpi_alloc_like (prime_p);
-      value_h = mpi_alloc_set_ui (1); 
+      value_h = mpi_alloc_set_ui (1);
       do
         {
           mpi_add_ui (value_h, value_h, 1);
           /* g = h^e mod p */
           mpi_powm (value_g, value_h, value_e, prime_p);
-        } 
+        }
       while (!mpi_cmp_ui (value_g, 1));  /* Continue until g != 1.  */
     }
 
 
   /* Select a random number x with:  0 < x < q  */
   value_x = gcry_mpi_snew (qbits);
-  do 
+  do
     {
       if( DBG_CIPHER )
         progress('.');
       gcry_mpi_randomize (value_x, qbits, GCRY_VERY_STRONG_RANDOM);
       mpi_clear_highbit (value_x, qbits+1);
-    } 
+    }
   while (!(mpi_cmp_ui (value_x, 0) > 0 && mpi_cmp (value_x, prime_q) < 0));
 
   /* y = g^x mod p */
   value_y = mpi_alloc_like (prime_p);
   gcry_mpi_powm (value_y, value_g, value_x, prime_p);
 
-  if (DBG_CIPHER) 
+  if (DBG_CIPHER)
     {
       progress('\n');
       log_mpidump("dsa  p", prime_p );
@@ -691,7 +703,7 @@ dsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
   int use_fips186_2 = 0;
   int use_fips186 = 0;
   dsa_domain_t domain;
- 
+
   (void)algo;    /* No need to check it.  */
   (void)evalue;  /* Not required for DSA. */
 
@@ -700,7 +712,7 @@ dsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
   if (genparms)
     {
       gcry_sexp_t domainsexp;
-  
+
       /* Parse the optional qbits element.  */
       l1 = gcry_sexp_find_token (genparms, "qbits", 0);
       if (l1)
@@ -708,7 +720,7 @@ dsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
           char buf[50];
           const char *s;
           size_t n;
-          
+
           s = gcry_sexp_nth_data (l1, 1, &n);
           if (!s || n >= DIM (buf) - 1 )
             {
@@ -760,7 +772,7 @@ dsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
               gcry_sexp_release (deriveparms);
               return GPG_ERR_INV_VALUE;
             }
-          
+
           /* Put all domain parameters into the domain object.  */
           l1 = gcry_sexp_find_token (domainsexp, "p", 0);
           domain.p = gcry_sexp_nth_mpi (l1, 1, GCRYMPI_FMT_USG);
@@ -804,7 +816,7 @@ dsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
         {
           /* Format the seed-values unless domain parameters are used
              for which a H_VALUE of NULL is an indication.  */
-          ec = gpg_err_code (gcry_sexp_build 
+          ec = gpg_err_code (gcry_sexp_build
                              (&seedinfo, NULL,
                               "(seed-values(counter %d)(seed %b)(h %m))",
                               counter, (int)seedlen, seed, h_value));
@@ -879,7 +891,7 @@ dsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
                   p = stpcpy (p, ")");
                 }
               p = stpcpy (p, ")");
-              
+
               /* Allocate space for the list of factors plus one for
                  an S-expression plus an extra NULL entry for safety
                  and fill it with the factors.  */
@@ -894,8 +906,8 @@ dsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
                   for (j=0; j < nfactors; j++)
                     arg_list[i++] = (*retfactors) + j;
                   arg_list[i] = NULL;
-                  
-                  ec = gpg_err_code (gcry_sexp_build_array 
+
+                  ec = gpg_err_code (gcry_sexp_build_array
                                      (r_extrainfo, NULL, format, arg_list));
                 }
             }
@@ -907,6 +919,7 @@ dsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
               gcry_mpi_release ((*retfactors)[i]);
               (*retfactors)[i] = NULL;
             }
+          gcry_free (*retfactors);
           *retfactors = NULL;
           if (ec)
             {
@@ -1022,19 +1035,19 @@ dsa_get_nbits (int algo, gcry_mpi_t *pkey)
 
 
 
-/* 
+/*
      Self-test section.
  */
 
 static const char *
 selftest_sign_1024 (gcry_sexp_t pkey, gcry_sexp_t skey)
 {
-  static const char sample_data[] = 
-    "(data (flags pkcs1)"
-    " (hash sha1 #a0b1c2d3e4f500102030405060708090a1b2c3d4#))";
-  static const char sample_data_bad[] = 
-    "(data (flags pkcs1)"
-    " (hash sha1 #a0b1c2d3e4f510102030405060708090a1b2c3d4#))";
+  static const char sample_data[] =
+    "(data (flags raw)"
+    " (value #a0b1c2d3e4f500102030405060708090a1b2c3d4#))";
+  static const char sample_data_bad[] =
+    "(data (flags raw)"
+    " (value #a0b1c2d3e4f510102030405060708090a1b2c3d4#))";
 
   const char *errtxt = NULL;
   gcry_error_t err;
@@ -1045,7 +1058,7 @@ selftest_sign_1024 (gcry_sexp_t pkey, gcry_sexp_t skey)
   err = gcry_sexp_sscan (&data, NULL,
                          sample_data, strlen (sample_data));
   if (!err)
-    err = gcry_sexp_sscan (&data_bad, NULL, 
+    err = gcry_sexp_sscan (&data_bad, NULL,
                            sample_data_bad, strlen (sample_data_bad));
   if (err)
     {
@@ -1092,10 +1105,10 @@ selftests_dsa (selftest_report_func_t report)
 
   /* Convert the S-expressions into the internal representation.  */
   what = "convert";
-  err = gcry_sexp_sscan (&skey, NULL, 
+  err = gcry_sexp_sscan (&skey, NULL,
                          sample_secret_key, strlen (sample_secret_key));
   if (!err)
-    err = gcry_sexp_sscan (&pkey, NULL, 
+    err = gcry_sexp_sscan (&pkey, NULL,
                            sample_public_key, strlen (sample_public_key));
   if (err)
     {
@@ -1145,7 +1158,7 @@ run_selftests (int algo, int extended, selftest_report_func_t report)
     default:
       ec = GPG_ERR_PUBKEY_ALGO;
       break;
-        
+
     }
   return ec;
 }
@@ -1162,7 +1175,7 @@ static const char *dsa_names[] =
 
 gcry_pk_spec_t _gcry_pubkey_spec_dsa =
   {
-    "DSA", dsa_names, 
+    "DSA", dsa_names,
     "pqgy", "pqgyx", "", "rs", "pqgy",
     GCRY_PK_USAGE_SIGN,
     dsa_generate,
@@ -1173,9 +1186,8 @@ gcry_pk_spec_t _gcry_pubkey_spec_dsa =
     dsa_verify,
     dsa_get_nbits
   };
-pk_extra_spec_t _gcry_pubkey_extraspec_dsa = 
+pk_extra_spec_t _gcry_pubkey_extraspec_dsa =
   {
     run_selftests,
     dsa_generate_ext
   };
-

@@ -24,7 +24,6 @@
 #include <grub/types.h>
 #include <grub/symbol.h>
 #include <grub/term.h>
-#include <grub/i386/vga_common.h>
 
 /* Initialize the console system.  */
 void grub_console_init (void);

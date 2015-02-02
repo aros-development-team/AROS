@@ -63,9 +63,11 @@ struct grub_pe32_coff_header
   grub_uint16_t characteristics;
 };
 
-#define GRUB_PE32_MACHINE_I386		0x14c
-#define GRUB_PE32_MACHINE_IA64		0x200
-#define GRUB_PE32_MACHINE_X86_64	0x8664
+#define GRUB_PE32_MACHINE_I386			0x14c
+#define GRUB_PE32_MACHINE_IA64			0x200
+#define GRUB_PE32_MACHINE_X86_64		0x8664
+#define GRUB_PE32_MACHINE_ARMTHUMB_MIXED	0x01c2
+#define GRUB_PE32_MACHINE_ARM64			0xAA64
 
 #define GRUB_PE32_RELOCS_STRIPPED		0x0001
 #define GRUB_PE32_EXECUTABLE_IMAGE		0x0002
@@ -276,8 +278,10 @@ struct grub_pe32_fixup_block
 #define GRUB_PE32_REL_BASED_HIGHLOW	3
 #define GRUB_PE32_REL_BASED_HIGHADJ	4
 #define GRUB_PE32_REL_BASED_MIPS_JMPADDR 5
+#define GRUB_PE32_REL_BASED_ARM_MOV32A  5
 #define GRUB_PE32_REL_BASED_SECTION	6
 #define GRUB_PE32_REL_BASED_REL		7
+#define GRUB_PE32_REL_BASED_ARM_MOV32T  7
 #define GRUB_PE32_REL_BASED_IA64_IMM64	9
 #define GRUB_PE32_REL_BASED_DIR64	10
 #define GRUB_PE32_REL_BASED_HIGH3ADJ	11
@@ -295,7 +299,7 @@ struct grub_pe32_symbol
   grub_uint16_t type;
   grub_uint8_t storage_class;
   grub_uint8_t num_aux;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 #define GRUB_PE32_SYM_CLASS_EXTERNAL	2
 #define GRUB_PE32_SYM_CLASS_STATIC	3
@@ -308,7 +312,7 @@ struct grub_pe32_reloc
   grub_uint32_t offset;
   grub_uint32_t symtab_index;
   grub_uint16_t type;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 #define GRUB_PE32_REL_I386_DIR32	0x6
 #define GRUB_PE32_REL_I386_REL32	0x14

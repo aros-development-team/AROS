@@ -44,9 +44,9 @@ EOF
 read mods
 for line in $mods; do
   if ${nm} --defined-only -P -p ${line} | grep grub_mod_init > /dev/null; then
-      echo "void grub_${line}_init (void);" | sed 's,\.mod,,g;'
+      echo "void grub_${line%%.*}_init (void);"
   fi
   if ${nm} --defined-only -P -p ${line} | grep grub_mod_fini > /dev/null; then
-      echo "void grub_${line}_fini (void);" | sed 's,\.mod,,g;'
+      echo "void grub_${line%%.*}_fini (void);"
   fi
 done

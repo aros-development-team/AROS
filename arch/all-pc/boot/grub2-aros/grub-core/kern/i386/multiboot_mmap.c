@@ -57,13 +57,13 @@ grub_machine_mmap_init (void)
 }
 
 grub_err_t
-grub_machine_mmap_iterate (grub_memory_hook_t hook)
+grub_machine_mmap_iterate (grub_memory_hook_t hook, void *hook_data)
 {
   struct multiboot_mmap_entry *entry = (void *) kern_multiboot_info.mmap_addr;
 
   while ((unsigned long) entry < kern_multiboot_info.mmap_addr + kern_multiboot_info.mmap_length)
     {
-      if (hook (entry->addr, entry->len, entry->type))
+      if (hook (entry->addr, entry->len, entry->type, hook_data))
 	break;
 
       entry = (void *) ((grub_addr_t) entry + entry->size + sizeof (entry->size));

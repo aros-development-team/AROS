@@ -98,7 +98,7 @@ grub_pci_make_address (grub_pci_device_t dev, int reg)
 }
 
 void
-grub_pci_iterate (grub_pci_iteratefunc_t hook)
+grub_pci_iterate (grub_pci_iteratefunc_t hook, void *hook_data)
 {
   grub_pci_device_t dev;
   grub_pci_address_t addr;
@@ -125,7 +125,7 @@ grub_pci_iterate (grub_pci_iteratefunc_t hook)
 		    continue;
 		}
 
-	      if (hook (dev, id))
+	      if (hook (dev, id, hook_data))
 		return;
 
 	      /* Probe only func = 0 if the device if not multifunction */

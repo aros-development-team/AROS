@@ -35,7 +35,8 @@ grub_envblk_t grub_envblk_open (char *buf, grub_size_t size);
 int grub_envblk_set (grub_envblk_t envblk, const char *name, const char *value);
 void grub_envblk_delete (grub_envblk_t envblk, const char *name);
 void grub_envblk_iterate (grub_envblk_t envblk,
-                          int hook (const char *name, const char *value));
+                          void *hook_data,
+                          int hook (const char *name, const char *value, void *hook_data));
 void grub_envblk_close (grub_envblk_t envblk);
 
 static inline char *

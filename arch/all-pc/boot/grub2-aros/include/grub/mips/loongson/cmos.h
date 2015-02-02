@@ -24,5 +24,7 @@
 
 #define GRUB_CMOS_ADDR_REG	0xbfd00070
 #define GRUB_CMOS_DATA_REG	0xbfd00071
+#define GRUB_CMOS_ADDR_REG_HI	0xbfd00072
+#define GRUB_CMOS_DATA_REG_HI	0xbfd00073
 
 #endif /* GRUB_CPU_CMOS_H */

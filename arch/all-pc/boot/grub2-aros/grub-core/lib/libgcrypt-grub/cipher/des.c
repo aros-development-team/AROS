@@ -26,7 +26,7 @@ GRUB_MOD_LICENSE ("GPLv3+");
  *   Bruce Schneier: Applied Cryptography. Second Edition.
  *   John Wiley & Sons, 1996. ISBN 0-471-12845-7. Pages 358 ff.
  * This implementation is according to the definition of DES in FIPS
- * PUB 46-2 from December 1993. 
+ * PUB 46-2 from December 1993.
  */
 
 
@@ -110,7 +110,7 @@ GRUB_MOD_LICENSE ("GPLv3+");
  *
  *     if ( (error_msg = selftest()) )
  *     {
- *	   fprintf(stderr, "An error in the DES/Tripple-DES implementation occured: %s\n", error_msg);
+ *	   fprintf(stderr, "An error in the DES/Triple-DES implementation occurred: %s\n", error_msg);
  *	   abort();
  *     }
  */
@@ -163,8 +163,6 @@ tripledes_ctx[1];
 static void des_key_schedule (const byte *, u32 *);
 static int des_setkey (struct _des_ctx *, const byte *);
 static int des_ecb_crypt (struct _des_ctx *, const byte *, byte *, int);
-static int tripledes_set3keys (struct _tripledes_ctx *,
-                               const byte *, const byte *, const byte *);
 static int tripledes_ecb_crypt (struct _tripledes_ctx *,
                                 const byte *, byte *, int);
 static int is_weak_key ( const byte *key );
@@ -873,7 +871,7 @@ do_des_decrypt( void *context, byte *outbuf, const byte *inbuf )
 
 
 
-/* 
+/*
      Self-test section.
  */
 

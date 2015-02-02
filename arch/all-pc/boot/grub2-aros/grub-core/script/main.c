@@ -22,12 +22,13 @@
 #include <grub/script_sh.h>
 
 grub_err_t
-grub_normal_parse_line (char *line, grub_reader_getline_t getline)
+grub_normal_parse_line (char *line,
+			grub_reader_getline_t getline, void *getline_data)
 {
   struct grub_script *parsed_script;
 
   /* Parse the script.  */
-  parsed_script = grub_script_parse (line, getline);
+  parsed_script = grub_script_parse (line, getline, getline_data);
 
   if (parsed_script)
     {

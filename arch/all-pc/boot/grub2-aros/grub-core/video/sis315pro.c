@@ -88,6 +88,37 @@ grub_video_sis315pro_video_fini (void)
 
 #include "sis315_init.c"
 
+#ifndef TEST
+/* Helper for grub_video_sis315pro_setup.  */
+static int
+find_card (grub_pci_device_t dev, grub_pci_id_t pciid, void *data)
+{
+  int *found = data;
+  grub_pci_address_t addr;
+  grub_uint32_t class;
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
+  class = grub_pci_read (addr);
+
+  if (((class >> 16) & 0xffff) != GRUB_PCI_CLASS_SUBCLASS_VGA
+      || pciid != GRUB_SIS315PRO_PCIID)
+    return 0;
+  
+  *found = 1;
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
+  framebuffer.base = grub_pci_read (addr) & GRUB_PCI_ADDR_MEM_MASK;
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG1);
+  framebuffer.mmiobase = grub_pci_read (addr) & GRUB_PCI_ADDR_MEM_MASK;
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG2);
+  framebuffer.io = (grub_pci_read (addr) & GRUB_PCI_ADDR_IO_MASK)
+    + GRUB_MACHINE_PCI_IO_BASE;
+  framebuffer.dev = dev;
+
+  return 1;
+}
+#endif
+
 static grub_err_t
 grub_video_sis315pro_setup (unsigned int width, unsigned int height,
 			    unsigned int mode_type,
@@ -99,33 +130,6 @@ grub_video_sis315pro_setup (unsigned int width, unsigned int height,
   unsigned i;
 
 #ifndef TEST
-  auto int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev, grub_pci_id_t pciid __attribute__ ((unused)));
-  int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev, grub_pci_id_t pciid __attribute__ ((unused)))
-    {
-      grub_pci_address_t addr;
-      grub_uint32_t class;
-
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
-      class = grub_pci_read (addr);
-
-      if (((class >> 16) & 0xffff) != GRUB_PCI_CLASS_SUBCLASS_VGA
-	  || pciid != GRUB_SIS315PRO_PCIID)
-	return 0;
-      
-      found = 1;
-
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
-      framebuffer.base = grub_pci_read (addr) & GRUB_PCI_ADDR_MEM_MASK;
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG1);
-      framebuffer.mmiobase = grub_pci_read (addr) & GRUB_PCI_ADDR_MEM_MASK;
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG2);
-      framebuffer.io = (grub_pci_read (addr) & GRUB_PCI_ADDR_IO_MASK)
-	+ GRUB_MACHINE_PCI_IO_BASE;
-      framebuffer.dev = dev;
-
-      return 1;
-    }
-
   /* Decode depth from mode_type.  If it is zero, then autodetect.  */
   depth = (mode_type & GRUB_VIDEO_MODE_TYPE_DEPTH_MASK)
           >> GRUB_VIDEO_MODE_TYPE_DEPTH_POS;
@@ -135,7 +139,7 @@ grub_video_sis315pro_setup (unsigned int width, unsigned int height,
     return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
 		       "Only 640x480x8 is supported");
 
-  grub_pci_iterate (find_card);
+  grub_pci_iterate (find_card, &found);
   if (!found)
     return grub_error (GRUB_ERR_IO, "Couldn't find graphics card");
 #endif
@@ -148,7 +152,7 @@ grub_video_sis315pro_setup (unsigned int width, unsigned int height,
   framebuffer.mode_info.bpp = 8;
   framebuffer.mode_info.bytes_per_pixel = 1;
   framebuffer.mode_info.pitch = 640 * 1;
-  framebuffer.mode_info.number_of_colors = 256;
+  framebuffer.mode_info.number_of_colors = 16;
   framebuffer.mode_info.red_mask_size = 0;
   framebuffer.mode_info.red_field_pos = 0;
   framebuffer.mode_info.green_mask_size = 0;
@@ -368,7 +372,7 @@ grub_video_sis315pro_setup (unsigned int width, unsigned int height,
     return err;
 
   /* Copy default palette to initialize emulated palette.  */
-  err = grub_video_fb_set_palette (0, GRUB_VIDEO_FBSTD_NUMCOLORS,
+  err = grub_video_fb_set_palette (0, GRUB_VIDEO_FBSTD_EXT_NUMCOLORS,
 				   grub_video_fbstd_colors);
 #endif
   return err;
@@ -416,6 +420,10 @@ static struct grub_video_adapter grub_video_sis315pro_adapter =
     .get_palette = grub_video_fb_get_palette,
     .set_viewport = grub_video_fb_set_viewport,
     .get_viewport = grub_video_fb_get_viewport,
+    .set_region = grub_video_fb_set_region,
+    .get_region = grub_video_fb_get_region,
+    .set_area_status = grub_video_fb_set_area_status,
+    .get_area_status = grub_video_fb_get_area_status,
     .map_color = grub_video_fb_map_color,
     .map_rgb = grub_video_fb_map_rgb,
     .map_rgba = grub_video_fb_map_rgba,
@@ -433,20 +441,12 @@ static struct grub_video_adapter grub_video_sis315pro_adapter =
     .next = 0
   };
 
-#ifdef GRUB_MACHINE_MIPS_LOONGSON
-void grub_video_sis315pro_init (void)
-#else
 GRUB_MOD_INIT(video_sis315pro)
-#endif
 {
   grub_video_register (&grub_video_sis315pro_adapter);
 }
 
-#ifdef GRUB_MACHINE_MIPS_LOONGSON
-void grub_video_sis315pro_fini (void)
-#else
 GRUB_MOD_FINI(video_sis315pro)
-#endif
 {
   grub_video_unregister (&grub_video_sis315pro_adapter);
 }

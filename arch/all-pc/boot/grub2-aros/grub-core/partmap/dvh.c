@@ -34,7 +34,7 @@ struct grub_dvh_partition_descriptor
   grub_uint32_t length;
   grub_uint32_t start;
   grub_uint32_t type;  
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_dvh_block
 {
@@ -43,7 +43,7 @@ struct grub_dvh_block
   struct grub_dvh_partition_descriptor parts[16];
   grub_uint32_t checksum;
   grub_uint32_t unused2;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 static struct grub_partition_map grub_dvh_partition_map;
 
@@ -57,15 +57,14 @@ grub_dvh_is_valid (grub_uint32_t *label)
   for (pos = label;
        pos < (label + sizeof (struct grub_dvh_block) / 4);
        pos++)
-    sum += *pos;
+    sum += grub_be_to_cpu32 (*pos);
 
   return ! sum;
 }
 
 static grub_err_t
 dvh_partition_map_iterate (grub_disk_t disk,
-                           int (*hook) (grub_disk_t disk,
-					const grub_partition_t partition))
+			   grub_partition_iterate_hook_t hook, void *hook_data)
 {
   struct grub_partition p;
   union
@@ -101,7 +100,7 @@ dvh_partition_map_iterate (grub_disk_t disk,
       p.start = grub_be_to_cpu32 (block.dvh.parts[partnum].start);
       p.len = grub_be_to_cpu32 (block.dvh.parts[partnum].length);
       p.number = p.index = partnum;
-      if (hook (disk, &p))
+      if (hook (disk, &p, hook_data))
 	break;
     }
 

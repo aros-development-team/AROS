@@ -25,6 +25,13 @@
 #include <grub/types.h>
 #include <grub/symbol.h>
 
+#include <grub/video.h>
+#include <grub/video_fb.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct grub_test
 {
   /* The next test.  */
@@ -51,13 +58,13 @@ int grub_test_run (grub_test_t test);
 void grub_test_nonzero (int cond, const char *file,
 			const char *func, grub_uint32_t line,
 			const char *fmt, ...)
-  __attribute__ ((format (printf, 5, 6)));
+  __attribute__ ((format (GNU_PRINTF, 5, 6)));
 
 /* Macro to fill in location details and an optional error message.  */
 void grub_test_assert_helper (int cond, const char *file,
                             const char *func, grub_uint32_t line,
                             const char *condstr, const char *fmt, ...)
-  __attribute__ ((format (printf, 6, 7)));
+  __attribute__ ((format (GNU_PRINTF, 6, 7)));
 
 #define grub_test_assert(cond, ...)				\
   grub_test_assert_helper(cond, GRUB_FILE, __FUNCTION__, __LINE__,     \
@@ -89,5 +96,30 @@ void grub_unit_test_fini (void);
   {						\
     grub_test_unregister (#name);		\
   }
+
+void
+grub_video_checksum (const char *basename_in);
+void
+grub_video_checksum_end (void);
+void
+grub_terminal_input_fake_sequence (int *seq_in, int nseq_in);
+void
+grub_terminal_input_fake_sequence_end (void);
+const char *
+grub_video_checksum_get_modename (void);
+
+
+#define GRUB_TEST_VIDEO_SMALL_N_MODES 7
+#define GRUB_TEST_VIDEO_ALL_N_MODES 31
+
+extern struct grub_video_mode_info grub_test_video_modes[GRUB_TEST_VIDEO_ALL_N_MODES];
+
+int
+grub_test_use_gfxterm (void);
+void grub_test_use_gfxterm_end (void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ! GRUB_TEST_HEADER */

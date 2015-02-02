@@ -30,6 +30,9 @@
 #ifdef GRUB_MACHINE_IEEE1275
 #include <grub/ieee1275/ieee1275.h>
 #endif
+#ifdef GRUB_MACHINE_ARC
+#include <grub/arc/arc.h>
+#endif
 
 struct grub_serial_port;
 struct grub_serial_config;
@@ -64,6 +67,8 @@ struct grub_serial_config
   int word_len;
   grub_serial_parity_t parity;
   grub_serial_stop_bits_t stop_bits;
+  grub_uint64_t base_clock;
+  int rtscts;
 };
 
 struct grub_serial_port
@@ -104,6 +109,13 @@ struct grub_serial_port
 #endif
 #ifdef GRUB_MACHINE_EFI
     struct grub_efi_serial_io_interface *interface;
+#endif
+#ifdef GRUB_MACHINE_ARC
+    struct
+    {
+      grub_arc_fileno_t handle;
+      int handle_valid;
+    };
 #endif
   };
   grub_term_output_t term_out;
@@ -148,12 +160,16 @@ grub_serial_config_defaults (struct grub_serial_port *port)
     {
 #ifdef GRUB_MACHINE_MIPS_LOONGSON
       .speed = 115200,
+      /* On Loongson machines serial port has only 3 wires.  */
+      .rtscts = 0,
 #else
       .speed = 9600,
+      .rtscts = 1,
 #endif
       .word_len = 8,
       .parity = GRUB_SERIAL_PARITY_NONE,
-      .stop_bits = GRUB_SERIAL_STOP_BITS_1
+      .stop_bits = GRUB_SERIAL_STOP_BITS_1,
+      .base_clock = 0
     };
 
   return port->driver->configure (port, &config);
@@ -169,6 +185,12 @@ void grub_ofserial_init (void);
 #ifdef GRUB_MACHINE_EFI
 void
 grub_efiserial_init (void);
+#endif
+#ifdef GRUB_MACHINE_ARC
+void
+grub_arcserial_init (void);
+const char *
+grub_arcserial_add_port (const char *path);
 #endif
 
 struct grub_serial_port *grub_serial_find (const char *name);

@@ -338,9 +338,10 @@ grub_pata_device_initialize (int port, int device, int addr)
 }
 
 #ifndef GRUB_MACHINE_MIPS_QEMU_MIPS
-static int NESTED_FUNC_ATTR
+static int
 grub_pata_pciinit (grub_pci_device_t dev,
-		   grub_pci_id_t pciid)
+		   grub_pci_id_t pciid,
+		   void *data __attribute__ ((unused)))
 {
   static int compat_use[2] = { 0 };
   grub_pci_address_t addr;
@@ -401,9 +402,15 @@ grub_pata_pciinit (grub_pci_device_t dev,
 	  bar2 = grub_pci_read (addr);
 
 	  /* Check if the BARs describe an IO region.  */
-	  if ((bar1 & 1) && (bar2 & 1))
+	  if ((bar1 & 1) && (bar2 & 1) && (bar1 & ~3))
 	    {
 	      rega = bar1 & ~3;
+	      addr = grub_pci_make_address (dev, GRUB_PCI_REG_COMMAND);
+	      grub_pci_write_word (addr, grub_pci_read_word (addr)
+				   | GRUB_PCI_COMMAND_IO_ENABLED
+				   | GRUB_PCI_COMMAND_MEM_ENABLED
+				   | GRUB_PCI_COMMAND_BUS_MASTER);
+
 	    }
 	}
 
@@ -446,7 +453,7 @@ grub_pata_pciinit (grub_pci_device_t dev,
 static grub_err_t
 grub_pata_initialize (void)
 {
-  grub_pci_iterate (grub_pata_pciinit);
+  grub_pci_iterate (grub_pata_pciinit, NULL);
   return 0;
 }
 #else
@@ -500,7 +507,7 @@ grub_pata_open (int id, int devnum, struct grub_ata *ata)
 }
 
 static int
-grub_pata_iterate (int (*hook) (int id, int bus),
+grub_pata_iterate (grub_ata_dev_iterate_hook_t hook, void *hook_data,
 		   grub_disk_pull_t pull)
 {
   struct grub_pata_device *dev;
@@ -509,7 +516,8 @@ grub_pata_iterate (int (*hook) (int id, int bus),
     return 0;
 
   for (dev = grub_pata_devices; dev; dev = dev->next)
-    if (hook (GRUB_SCSI_SUBSYSTEM_PATA, dev->port * 2 + dev->device))
+    if (hook (GRUB_SCSI_SUBSYSTEM_PATA, dev->port * 2 + dev->device,
+	      hook_data))
       return 1;
 
   return 0;
@@ -528,13 +536,7 @@ static struct grub_ata_dev grub_pata_dev =
 
 GRUB_MOD_INIT(ata_pthru)
 {
-  /* To prevent two drivers operating on the same disks.  */
-  grub_disk_firmware_is_tainted = 1;
-  if (grub_disk_firmware_fini)
-    {
-      grub_disk_firmware_fini ();
-      grub_disk_firmware_fini = NULL;
-    }
+  grub_stop_disk_firmware ();
 
   /* ATA initialization.  */
   grub_pata_initialize ();

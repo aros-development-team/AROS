@@ -22,27 +22,44 @@
 #include <grub/misc.h>
 #include <grub/cpu/memory.h>
 
+/* Helper for grub_mmap_get_lower.  */
+static int
+lower_hook (grub_uint64_t addr, grub_uint64_t size, grub_memory_type_t type,
+	    void *data)
+{
+  grub_uint64_t *lower = data;
+
+  if (type != GRUB_MEMORY_AVAILABLE)
+    return 0;
+  if (addr == 0)
+    *lower = size;
+  return 0;
+}
+
 grub_uint64_t
 grub_mmap_get_lower (void)
 {
   grub_uint64_t lower = 0;
 
-  auto int NESTED_FUNC_ATTR hook (grub_uint64_t, grub_uint64_t,
-				  grub_memory_type_t);
-  int NESTED_FUNC_ATTR hook (grub_uint64_t addr, grub_uint64_t size,
-			     grub_memory_type_t type)
-    {
-      if (type != GRUB_MEMORY_AVAILABLE)
-	return 0;
-      if (addr == 0)
-	lower = size;
-      return 0;
-    }
-
-  grub_mmap_iterate (hook);
+  grub_mmap_iterate (lower_hook, &lower);
   if (lower > GRUB_ARCH_LOWMEMMAXSIZE)
     lower = GRUB_ARCH_LOWMEMMAXSIZE;
   return lower;
+}
+
+/* Helper for grub_mmap_get_upper.  */
+static int
+upper_hook (grub_uint64_t addr, grub_uint64_t size, grub_memory_type_t type,
+	    void *data)
+{
+  grub_uint64_t *upper = data;
+
+  if (type != GRUB_MEMORY_AVAILABLE)
+    return 0;
+  if (addr <= GRUB_ARCH_HIGHMEMPSTART && addr + size
+      > GRUB_ARCH_HIGHMEMPSTART)
+    *upper = addr + size - GRUB_ARCH_HIGHMEMPSTART;
+  return 0;
 }
 
 grub_uint64_t
@@ -50,19 +67,6 @@ grub_mmap_get_upper (void)
 {
   grub_uint64_t upper = 0;
 
-  auto int NESTED_FUNC_ATTR hook (grub_uint64_t, grub_uint64_t,
-				  grub_memory_type_t);
-  int NESTED_FUNC_ATTR hook (grub_uint64_t addr, grub_uint64_t size,
-			     grub_memory_type_t type)
-    {
-      if (type != GRUB_MEMORY_AVAILABLE)
-	return 0;
-      if (addr <= GRUB_ARCH_HIGHMEMPSTART && addr + size
-	  > GRUB_ARCH_HIGHMEMPSTART)
-	upper = addr + size - GRUB_ARCH_HIGHMEMPSTART;
-      return 0;
-    }
-
-  grub_mmap_iterate (hook);
+  grub_mmap_iterate (upper_hook, &upper);
   return upper;
 }

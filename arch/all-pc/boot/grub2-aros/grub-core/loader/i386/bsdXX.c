@@ -594,7 +594,7 @@ SUFFIX(grub_openbsd_find_ramdisk) (grub_file_t file,
 	return grub_errno;
       }
 
-    for (i = 0, sym = syms; i < symsize / symentsize;
+    for (i = 0, sym = syms; i * symentsize < symsize;
        i++, sym = (Elf_Sym *) ((char *) sym + symentsize))
       {
 	if (ELF_ST_TYPE (sym->st_info) != STT_OBJECT)

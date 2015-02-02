@@ -69,12 +69,14 @@ struct grub_openbsd_bootargs
   grub_uint32_t ba_type;
   grub_uint32_t ba_size;
   grub_uint32_t ba_next;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_openbsd_bootarg_console
 {
   grub_uint32_t device;
   grub_uint32_t speed;
+  grub_uint32_t addr;
+  grub_uint32_t frequency;
 };
 
 struct grub_openbsd_bootarg_pcibios

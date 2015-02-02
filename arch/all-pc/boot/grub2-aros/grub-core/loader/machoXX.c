@@ -55,7 +55,7 @@ SUFFIX (grub_macho_parse) (grub_macho_t macho, const char *filename)
 
   if (head.macho.magic != GRUB_MACHO_MAGIC)
     {
-      grub_error (GRUB_ERR_BAD_OS, "invalid Mach-O " XX "-bit header");
+      grub_error (GRUB_ERR_BAD_OS, "invalid Mach-O  header");
       macho->offsetXX = -1;
       return;
     }
@@ -79,7 +79,7 @@ SUFFIX (grub_macho_parse) (grub_macho_t macho, const char *filename)
     }
 }
 
-typedef int NESTED_FUNC_ATTR (*grub_macho_iter_hook_t)
+typedef int (*grub_macho_iter_hook_t)
 (grub_macho_t , struct grub_macho_cmd *,
 	       void *);
 
@@ -154,7 +154,7 @@ grub_macho_cmds_iterate (grub_macho_t macho,
     }
 
   if (! macho->cmdsXX)
-    return grub_error (GRUB_ERR_BAD_OS, "couldn't find " XX "-bit Mach-O");
+    return grub_error (GRUB_ERR_BAD_OS, "couldn't find Mach-O commands");
   hdrs = macho->cmdsXX;
   for (i = 0; i < macho->ncmdsXX; i++)
     {
@@ -200,46 +200,59 @@ SUFFIX (grub_macho_readfile) (grub_macho_t macho,
   return GRUB_ERR_NONE;
 }
 
+struct calcsize_ctx
+{
+  int flags;
+  int nr_phdrs;
+  grub_macho_addr_t *segments_start;
+  grub_macho_addr_t *segments_end;
+};
+
+/* Run through the program headers to calculate the total memory size we
+   should claim.  */
+static int
+calcsize (grub_macho_t _macho __attribute__ ((unused)),
+	  struct grub_macho_cmd *hdr0,
+	  void *_arg)
+{
+  grub_macho_segment_t *hdr = (grub_macho_segment_t *) hdr0;
+  struct calcsize_ctx *ctx = _arg;
+  if (hdr->cmd != GRUB_MACHO_CMD_SEGMENT)
+    return 0;
+
+  if (! hdr->vmsize)
+    return 0;
+
+  if (! hdr->filesize && (ctx->flags & GRUB_MACHO_NOBSS))
+    return 0;
+
+  ctx->nr_phdrs++;
+  if (hdr->vmaddr < *ctx->segments_start)
+    *ctx->segments_start = hdr->vmaddr;
+  if (hdr->vmaddr + hdr->vmsize > *ctx->segments_end)
+    *ctx->segments_end = hdr->vmaddr + hdr->vmsize;
+  return 0;
+}
+
 /* Calculate the amount of memory spanned by the segments. */
 grub_err_t
 SUFFIX (grub_macho_size) (grub_macho_t macho, grub_macho_addr_t *segments_start,
 			  grub_macho_addr_t *segments_end, int flags,
 			  const char *filename)
 {
-  int nr_phdrs = 0;
-
-  /* Run through the program headers to calculate the total memory size we
-     should claim.  */
-  auto int NESTED_FUNC_ATTR calcsize (grub_macho_t _macho,
-				      struct grub_macho_cmd *phdr, void *_arg);
-  int NESTED_FUNC_ATTR calcsize (grub_macho_t _macho __attribute__ ((unused)),
-				 struct grub_macho_cmd *hdr0,
-				 void *_arg __attribute__ ((unused)))
-    {
-      grub_macho_segment_t *hdr = (grub_macho_segment_t *) hdr0;
-      if (hdr->cmd != GRUB_MACHO_CMD_SEGMENT)
-	return 0;
-
-      if (! hdr->vmsize)
-	return 0;
-
-      if (! hdr->filesize && (flags & GRUB_MACHO_NOBSS))
-	return 0;
-
-      nr_phdrs++;
-      if (hdr->vmaddr < *segments_start)
-	*segments_start = hdr->vmaddr;
-      if (hdr->vmaddr + hdr->vmsize > *segments_end)
-	*segments_end = hdr->vmaddr + hdr->vmsize;
-      return 0;
-    }
+  struct calcsize_ctx ctx = {
+    .flags = flags,
+    .nr_phdrs = 0,
+    .segments_start = segments_start,
+    .segments_end = segments_end,
+  };
 
   *segments_start = (grub_macho_addr_t) -1;
   *segments_end = 0;
 
-  grub_macho_cmds_iterate (macho, calcsize, 0, filename);
+  grub_macho_cmds_iterate (macho, calcsize, &ctx, filename);
 
-  if (nr_phdrs == 0)
+  if (ctx.nr_phdrs == 0)
     return grub_error (GRUB_ERR_BAD_OS, "no program headers present");
 
   if (*segments_end < *segments_start)
@@ -249,109 +262,123 @@ SUFFIX (grub_macho_size) (grub_macho_t macho, grub_macho_addr_t *segments_start,
   return GRUB_ERR_NONE;
 }
 
+struct do_load_ctx
+{
+  int flags;
+  char *offset;
+  const char *filename;
+  int *darwin_version;
+};
+
+static int
+do_load(grub_macho_t _macho,
+	struct grub_macho_cmd *hdr0,
+	void *_arg)
+{
+  grub_macho_segment_t *hdr = (grub_macho_segment_t *) hdr0;
+  struct do_load_ctx *ctx = _arg;
+
+  if (hdr->cmd != GRUB_MACHO_CMD_SEGMENT)
+    return 0;
+
+  if (! hdr->filesize && (ctx->flags & GRUB_MACHO_NOBSS))
+    return 0;
+  if (! hdr->vmsize)
+    return 0;
+
+  if (hdr->filesize)
+    {
+      grub_ssize_t read, toread = min (hdr->filesize, hdr->vmsize);
+      if (_macho->uncompressedXX)
+	{
+	  if (hdr->fileoff + (grub_size_t) toread
+	      > _macho->uncompressed_sizeXX)
+	    read = -1;
+	  else
+	    {
+	      read = toread;
+	      grub_memcpy (ctx->offset + hdr->vmaddr,
+			   _macho->uncompressedXX + hdr->fileoff, read);
+	    }
+	}
+      else
+	{
+	  if (grub_file_seek (_macho->file, hdr->fileoff
+			      + _macho->offsetXX) == (grub_off_t) -1)
+	    return 1;
+	  read = grub_file_read (_macho->file, ctx->offset + hdr->vmaddr,
+				 toread);
+	}
+
+      if (read != toread)
+	{
+	  /* XXX How can we free memory from `load_hook'? */
+	  if (!grub_errno)
+	    grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			ctx->filename);
+
+	  return 1;
+	}
+      if (ctx->darwin_version)
+	{
+	  const char *ptr = ctx->offset + hdr->vmaddr;
+	  const char *end = ptr + min (hdr->filesize, hdr->vmsize)
+	    - (sizeof ("Darwin Kernel Version ") - 1);
+	  for (; ptr < end; ptr++)
+	    if (grub_memcmp (ptr, "Darwin Kernel Version ",
+			     sizeof ("Darwin Kernel Version ") - 1) == 0)
+	      {
+		ptr += sizeof ("Darwin Kernel Version ") - 1;
+		*ctx->darwin_version = 0;
+		end += (sizeof ("Darwin Kernel Version ") - 1);
+		while (ptr < end && grub_isdigit (*ptr))
+		  *ctx->darwin_version = (*ptr++ - '0') + *ctx->darwin_version * 10;
+		break;
+	      }
+	}
+    }
+
+  if (hdr->filesize < hdr->vmsize)
+    grub_memset (ctx->offset + hdr->vmaddr + hdr->filesize,
+		 0, hdr->vmsize - hdr->filesize);
+  return 0;
+}
+
 /* Load every loadable segment into memory specified by `_load_hook'.  */
 grub_err_t
 SUFFIX (grub_macho_load) (grub_macho_t macho, const char *filename,
 			  char *offset, int flags, int *darwin_version)
 {
-  auto int NESTED_FUNC_ATTR do_load(grub_macho_t _macho,
-			       struct grub_macho_cmd *hdr0,
-			       void *_arg __attribute__ ((unused)));
-  int NESTED_FUNC_ATTR do_load(grub_macho_t _macho,
-			       struct grub_macho_cmd *hdr0,
-			       void *_arg __attribute__ ((unused)))
-  {
-    grub_macho_segment_t *hdr = (grub_macho_segment_t *) hdr0;
-
-    if (hdr->cmd != GRUB_MACHO_CMD_SEGMENT)
-      return 0;
-
-    if (! hdr->filesize && (flags & GRUB_MACHO_NOBSS))
-      return 0;
-    if (! hdr->vmsize)
-      return 0;
-
-    if (hdr->filesize)
-      {
-	grub_ssize_t read, toread = min (hdr->filesize, hdr->vmsize);
-	if (macho->uncompressedXX)
-	  {
-	    if (hdr->fileoff + (grub_size_t) toread
-		> _macho->uncompressed_sizeXX)
-	      read = -1;
-	    else
-	      {
-		read = toread;
-		grub_memcpy (offset + hdr->vmaddr,
-			     _macho->uncompressedXX + hdr->fileoff, read);
-	      }
-	  }
-	else
-	  {
-	    if (grub_file_seek (_macho->file, hdr->fileoff
-				+ _macho->offsetXX) == (grub_off_t) -1)
-	      return 1;
-	    read = grub_file_read (_macho->file, offset + hdr->vmaddr,
-				   toread);
-	  }
-
-	if (read != toread)
-	  {
-	    /* XXX How can we free memory from `load_hook'? */
-	    if (!grub_errno)
-	      grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
-			  filename);
-
-	    return 1;
-	  }
-	if (darwin_version)
-	  {
-	    const char *ptr = offset + hdr->vmaddr;
-	    const char *end = ptr + min (hdr->filesize, hdr->vmsize)
-	      - (sizeof ("Darwin Kernel Version ") - 1);
-	    for (; ptr < end; ptr++)
-	      if (grub_memcmp (ptr, "Darwin Kernel Version ",
-			       sizeof ("Darwin Kernel Version ") - 1) == 0)
-		{
-		  ptr += sizeof ("Darwin Kernel Version ") - 1;
-		  *darwin_version = 0;
-		  end += (sizeof ("Darwin Kernel Version ") - 1);
-		  while (ptr < end && grub_isdigit (*ptr))
-		    *darwin_version = (*ptr++ - '0') + *darwin_version * 10;
-		  break;
-		}
-	  }
-      }
-
-    if (hdr->filesize < hdr->vmsize)
-      grub_memset (offset + hdr->vmaddr + hdr->filesize,
-		   0, hdr->vmsize - hdr->filesize);
-    return 0;
-  }
+  struct do_load_ctx ctx = {
+    .flags = flags,
+    .offset = offset,
+    .filename = filename,
+    .darwin_version = darwin_version
+  };
 
   if (darwin_version)
     *darwin_version = 0;
 
-  grub_macho_cmds_iterate (macho, do_load, 0, filename);
+  grub_macho_cmds_iterate (macho, do_load, &ctx, filename);
 
   return grub_errno;
+}
+
+static int
+find_entry_point (grub_macho_t _macho __attribute__ ((unused)),
+			    struct grub_macho_cmd *hdr,
+			    void *_arg)
+{
+  grub_macho_addr_t *entry_point = _arg;
+  if (hdr->cmd == GRUB_MACHO_CMD_THREAD)
+    *entry_point = ((grub_macho_thread_t *) hdr)->entry_point;
+  return 0;
 }
 
 grub_macho_addr_t
 SUFFIX (grub_macho_get_entry_point) (grub_macho_t macho, const char *filename)
 {
   grub_macho_addr_t entry_point = 0;
-  auto int NESTED_FUNC_ATTR hook(grub_macho_t _macho,
-				 struct grub_macho_cmd *hdr,
-				 void *_arg __attribute__ ((unused)));
-  int NESTED_FUNC_ATTR hook(grub_macho_t _macho __attribute__ ((unused)),
-			    struct grub_macho_cmd *hdr,
-			    void *_arg __attribute__ ((unused)))
-  {
-    if (hdr->cmd == GRUB_MACHO_CMD_THREAD)
-      entry_point = ((grub_macho_thread_t *) hdr)->entry_point;
-    return 0;
-  }
-  grub_macho_cmds_iterate (macho, hook, 0, filename);
+  grub_macho_cmds_iterate (macho, find_entry_point, &entry_point, filename);
   return entry_point;
 }

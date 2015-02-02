@@ -26,30 +26,41 @@
 
 /* Enable BCJ filter decoders. */
 
-#if defined(GRUB_TARGET_CPU_I386) || defined(GRUB_TARGET_CPU_X86_64)
+#ifndef GRUB_EMBED_DECOMPRESSOR
+
+#define XZ_DEC_X86
+#define XZ_DEC_POWERPC
+#define XZ_DEC_IA64
+#define XZ_DEC_ARM
+#define XZ_DEC_ARMTHUMB
+#define XZ_DEC_SPARC
+
+#else
+
+#if defined(__i386__) || defined(__x86_64__)
   #define XZ_DEC_X86
 #endif
 
-#ifdef GRUB_TARGET_CPU_POWERPC
+#ifdef __powerpc__
   #define XZ_DEC_POWERPC
 #endif
 
-#ifdef GRUB_TARGET_CPU_IA64
+#ifdef __ia64__
   #define XZ_DEC_IA64
 #endif
 
-#ifdef GRUB_TARGET_CPU_ARM
+#ifdef __arm__
   #define XZ_DEC_ARM
 #endif
 
-#if 0
+#ifdef __arm__
   #define XZ_DEC_ARMTHUMB
 #endif
 
-#ifdef GRUB_TARGET_CPU_SPARC
+#ifdef __sparc__
   #define XZ_DEC_SPARC
 #endif
-
+#endif
 
 #include "xz.h"
 #include <stdlib.h>

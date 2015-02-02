@@ -94,7 +94,7 @@ struct tftphdr {
       grub_int8_t data[TFTP_DEFAULTSIZE_PACKET+2];
     } oack;
   } u;
-} __attribute__ ((packed)) ;
+} GRUB_PACKED ;
 
 
 typedef struct tftp_data
@@ -102,12 +102,23 @@ typedef struct tftp_data
   grub_uint64_t file_size;
   grub_uint64_t block;
   grub_uint32_t block_size;
-  grub_uint32_t ack_sent;
+  grub_uint64_t ack_sent;
   int have_oack;
   struct grub_error_saved save_err;
   grub_net_udp_socket_t sock;
   grub_priority_queue_t pq;
 } *tftp_data_t;
+
+static int
+cmp_block (grub_uint16_t a, grub_uint16_t b)
+{
+  grub_int16_t i = (grub_int16_t) (a - b);
+  if (i > 0)
+    return +1;
+  if (i < 0)
+    return -1;
+  return 0;
+}
 
 static int
 cmp (const void *a__, const void *b__)
@@ -117,15 +128,11 @@ cmp (const void *a__, const void *b__)
   struct tftphdr *a = (struct tftphdr *) a_->data;
   struct tftphdr *b = (struct tftphdr *) b_->data;
   /* We want the first elements to be on top.  */
-  if (grub_be_to_cpu16 (a->u.data.block) < grub_be_to_cpu16 (b->u.data.block))
-    return +1;
-  if (grub_be_to_cpu16 (a->u.data.block) > grub_be_to_cpu16 (b->u.data.block))
-    return -1;
-  return 0;
+  return -cmp_block (grub_be_to_cpu16 (a->u.data.block), grub_be_to_cpu16 (b->u.data.block));
 }
 
 static grub_err_t
-ack (tftp_data_t data, grub_uint16_t block)
+ack (tftp_data_t data, grub_uint64_t block)
 {
   struct tftphdr *tftph_ack;
   grub_uint8_t nbdata[512];
@@ -142,8 +149,8 @@ ack (tftp_data_t data, grub_uint16_t block)
     return err;
 
   tftph_ack = (struct tftphdr *) nb_ack.data;
-  tftph_ack->opcode = grub_cpu_to_be16 (TFTP_ACK);
-  tftph_ack->u.ack.block = block;
+  tftph_ack->opcode = grub_cpu_to_be16_compile_time (TFTP_ACK);
+  tftph_ack->u.ack.block = grub_cpu_to_be16 (block);
 
   err = grub_net_send_udp_packet (data->sock, &nb_ack);
   if (err)
@@ -213,19 +220,20 @@ tftp_receive (grub_net_udp_socket_t sock __attribute__ ((unused)),
 	      return GRUB_ERR_NONE;
 	    nb_top = *nb_top_p;
 	    tftph = (struct tftphdr *) nb_top->data;
-	    if (grub_be_to_cpu16 (tftph->u.data.block) >= data->block + 1)
+	    if (cmp_block (grub_be_to_cpu16 (tftph->u.data.block), data->block + 1) >= 0)
 	      break;
+	    ack (data, grub_be_to_cpu16 (tftph->u.data.block));
 	    grub_netbuff_free (nb_top);
 	    grub_priority_queue_pop (data->pq);
 	  }
-	if (grub_be_to_cpu16 (tftph->u.data.block) == data->block + 1)
+	while (cmp_block (grub_be_to_cpu16 (tftph->u.data.block), data->block + 1) == 0)
 	  {
 	    unsigned size;
 
 	    grub_priority_queue_pop (data->pq);
 
 	    if (file->device->net->packs.count < 50)
-	      err = ack (data, tftph->u.data.block);
+	      err = ack (data, data->block + 1);
 	    else
 	      {
 		file->device->net->stall = 1;
@@ -243,6 +251,8 @@ tftp_receive (grub_net_udp_socket_t sock __attribute__ ((unused)),
 	    data->block++;
 	    if (size < data->block_size)
 	      {
+		if (data->ack_sent < data->block)
+		  ack (data, data->block);
 		file->device->net->eof = 1;
 		file->device->net->stall = 1;
 		grub_net_udp_close (data->sock);
@@ -323,7 +333,7 @@ tftp_open (struct grub_file *file, const char *filename)
   rrq = (char *) tftph->u.rrq;
   rrqlen = 0;
 
-  tftph->opcode = grub_cpu_to_be16 (TFTP_RRQ);
+  tftph->opcode = grub_cpu_to_be16_compile_time (TFTP_RRQ);
   grub_strcpy (rrq, filename);
   rrqlen += grub_strlen (filename) + 1;
   rrq += grub_strlen (filename) + 1;
@@ -388,7 +398,8 @@ tftp_open (struct grub_file *file, const char *filename)
 	  destroy_pq (data);
 	  return err;
 	}
-      grub_net_poll_cards (GRUB_NET_INTERVAL, &data->have_oack);
+      grub_net_poll_cards (GRUB_NET_INTERVAL + (i * GRUB_NET_INTERVAL_ADDITION),
+                           &data->have_oack);
       if (data->have_oack)
 	break;
     }
@@ -432,8 +443,8 @@ tftp_close (struct grub_file *file)
       if (!err)
 	{
 	  tftph = (struct tftphdr *) nb_err.data;
-	  tftph->opcode = grub_cpu_to_be16 (TFTP_ERROR);
-	  tftph->u.err.errcode = grub_cpu_to_be16 (TFTP_EUNDEF);
+	  tftph->opcode = grub_cpu_to_be16_compile_time (TFTP_ERROR);
+	  tftph->u.err.errcode = grub_cpu_to_be16_compile_time (TFTP_EUNDEF);
 	  grub_memcpy (tftph->u.err.errmsg, "closed", sizeof ("closed"));
 
 	  err = grub_net_send_udp_packet (data->sock, &nb_err);

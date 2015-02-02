@@ -50,14 +50,23 @@ struct grub_hfs_sblock
   /* A pascal style string that holds the volumename.  */
   grub_uint8_t volname[28];
 
-  grub_uint8_t unused5[52];
+  grub_uint8_t unused5[28];
+
+  grub_uint32_t ppc_bootdir;
+  grub_uint32_t intel_bootfile;
+  /* Folder opened when disk is mounted. Unused by GRUB. */
+  grub_uint32_t showfolder;
+  grub_uint32_t os9folder;
+  grub_uint8_t unused6[4];
+  grub_uint32_t osxfolder;
+
   grub_uint64_t num_serial;
   grub_uint16_t embed_sig;
   struct grub_hfs_extent embed_extent;
-  grub_uint8_t unused6[4];
+  grub_uint8_t unused7[4];
   grub_hfs_datarecord_t extent_recs;
   grub_uint32_t catalog_size;
   grub_hfs_datarecord_t catalog_recs;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 #endif /* ! GRUB_HFS_HEADER */

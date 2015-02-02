@@ -63,17 +63,23 @@ hextoval (char c)
 static grub_err_t
 hash_file (grub_file_t file, const gcry_md_spec_t *hash, void *result)
 {
-  grub_uint8_t context[hash->contextsize];
-  grub_uint8_t readbuf[4096];
+  void *context;
+  grub_uint8_t *readbuf;
+#define BUF_SIZE 4096
+  readbuf = grub_malloc (BUF_SIZE);
+  if (!readbuf)
+    return grub_errno;
+  context = grub_zalloc (hash->contextsize);
+  if (!readbuf || !context)
+    goto fail;
 
-  grub_memset (context, 0, sizeof (context));
   hash->init (context);
   while (1)
     {
       grub_ssize_t r;
-      r = grub_file_read (file, readbuf, sizeof (readbuf));
+      r = grub_file_read (file, readbuf, BUF_SIZE);
       if (r < 0)
-	return grub_errno;
+	goto fail;
       if (r == 0)
 	break;
       hash->write (context, readbuf, r);
@@ -81,7 +87,15 @@ hash_file (grub_file_t file, const gcry_md_spec_t *hash, void *result)
   hash->final (context);
   grub_memcpy (result, hash->read (context), hash->mdlen);
 
+  grub_free (readbuf);
+  grub_free (context);
+
   return GRUB_ERR_NONE;
+
+ fail:
+  grub_free (readbuf);
+  grub_free (context);
+  return grub_errno;
 }
 
 static grub_err_t
@@ -90,11 +104,14 @@ check_list (const gcry_md_spec_t *hash, const char *hashfilename,
 {
   grub_file_t hashlist, file;
   char *buf = NULL;
-  grub_uint8_t expected[hash->mdlen];
-  grub_uint8_t actual[hash->mdlen];
+  grub_uint8_t expected[GRUB_CRYPTO_MAX_MDLEN];
+  grub_uint8_t actual[GRUB_CRYPTO_MAX_MDLEN];
   grub_err_t err;
   unsigned i;
   unsigned unread = 0, mismatch = 0;
+
+  if (hash->mdlen > GRUB_CRYPTO_MAX_MDLEN)
+    return grub_error (GRUB_ERR_BUG, "mdlen is too long");
 
   hashlist = grub_file_open (hashfilename);
   if (!hashlist)
@@ -205,6 +222,9 @@ grub_cmd_hashsum (struct grub_extcmd_context *ctxt,
   if (!hash)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "unknown hash");
 
+  if (hash->mdlen > GRUB_CRYPTO_MAX_MDLEN)
+    return grub_error (GRUB_ERR_BUG, "mdlen is too long");
+
   if (state[2].set)
     prefix = state[2].arg;
 
@@ -218,7 +238,7 @@ grub_cmd_hashsum (struct grub_extcmd_context *ctxt,
 
   for (i = 0; i < (unsigned) argc; i++)
     {
-      GRUB_PROPERLY_ALIGNED_ARRAY (result, hash->mdlen);
+      GRUB_PROPERLY_ALIGNED_ARRAY (result, GRUB_CRYPTO_MAX_MDLEN);
       grub_file_t file;
       grub_err_t err;
       unsigned j;

@@ -24,7 +24,6 @@
 #include <string.h>
 
 #include "g10lib.h"
-#include "memory.h"
 #include "rmd.h"
 #include "cipher.h" /* Only used for the rmd160_hash_buffer() prototype. */
 
@@ -416,7 +415,7 @@ rmd160_write ( void *context, const void *inbuf_arg, size_t inlen)
     }
   if( !inbuf )
     return;
-  if( hd->count ) 
+  if( hd->count )
     {
       for( ; inlen && hd->count < 64; inlen-- )
         hd->buf[hd->count++] = *inbuf++;
@@ -469,7 +468,7 @@ rmd160_final( void *context )
   RMD160_CONTEXT *hd = context;
   u32 t, msb, lsb;
   byte *p;
-  
+
   rmd160_write(hd, NULL, 0); /* flush */;
 
   t = hd->nblocks;

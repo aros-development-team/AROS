@@ -21,6 +21,7 @@
 #include <grub/err.h>
 #include <grub/mm.h>
 #include <grub/types.h>
+#include <grub/misc.h>
 #include <grub/efiemu/efiemu.h>
 #include <grub/crypto.h>
 
@@ -122,7 +123,10 @@ SUFFIX (grub_efiemu_crc) (void)
   int handle;
   grub_off_t off;
   struct SUFFIX (grub_efiemu_runtime_services) *runtime_services;
-  grub_uint8_t crc32_context[GRUB_MD_CRC32->contextsize];
+  grub_uint32_t crc32_val;
+
+  if (GRUB_MD_CRC32->mdlen != 4)
+    return grub_error (GRUB_ERR_BUG, "incorrect mdlen");
 
   /* compute CRC32 of runtime_services */
   err = grub_efiemu_resolve_symbol ("efiemu_runtime_services",
@@ -134,12 +138,11 @@ SUFFIX (grub_efiemu_crc) (void)
 	((grub_uint8_t *) grub_efiemu_mm_obtain_request (handle) + off);
 
   runtime_services->hdr.crc32 = 0;
-  GRUB_MD_CRC32->init(crc32_context);
-  GRUB_MD_CRC32->write(crc32_context, runtime_services, runtime_services->hdr.header_size);
-  GRUB_MD_CRC32->final(crc32_context);
 
+  grub_crypto_hash (GRUB_MD_CRC32, &crc32_val,
+		    runtime_services, runtime_services->hdr.header_size);
   runtime_services->hdr.crc32 =
-      grub_be_to_cpu32(*(grub_uint32_t*)GRUB_MD_CRC32->read(crc32_context));
+      grub_be_to_cpu32(crc32_val);
 
   err = grub_efiemu_resolve_symbol ("efiemu_system_table", &handle, &off);
   if (err)
@@ -147,12 +150,11 @@ SUFFIX (grub_efiemu_crc) (void)
 
   /* compute CRC32 of system table */
   SUFFIX (grub_efiemu_system_table)->hdr.crc32 = 0;
-  GRUB_MD_CRC32->init(crc32_context);
-  GRUB_MD_CRC32->write(crc32_context, SUFFIX (grub_efiemu_system_table),
-		      SUFFIX (grub_efiemu_system_table)->hdr.header_size);
-  GRUB_MD_CRC32->final(crc32_context);
+  grub_crypto_hash (GRUB_MD_CRC32, &crc32_val,
+		    SUFFIX (grub_efiemu_system_table),
+		    SUFFIX (grub_efiemu_system_table)->hdr.header_size);
   SUFFIX (grub_efiemu_system_table)->hdr.crc32 =
-      grub_be_to_cpu32(*(grub_uint32_t*)GRUB_MD_CRC32->read(crc32_context));
+      grub_be_to_cpu32(crc32_val);
 
   grub_dprintf ("efiemu","system_table = %p, runtime_services = %p\n",
 		SUFFIX (grub_efiemu_system_table), runtime_services);

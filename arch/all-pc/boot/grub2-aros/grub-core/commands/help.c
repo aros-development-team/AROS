@@ -99,12 +99,13 @@ grub_cmd_help (grub_extcmd_context_t ctxt __attribute__ ((unused)), int argc,
   else
     {
       int i;
-      grub_command_t cmd_iter, cmd;
+      grub_command_t cmd_iter, cmd, cmd_next;
 
       for (i = 0; i < argc; i++)
 	{
 	  currarg = args[i];
-	  FOR_COMMANDS(cmd_iter)
+
+	  FOR_COMMANDS_SAFE (cmd_iter, cmd_next)
 	  {
 	    if (!(cmd_iter->prio & GRUB_COMMAND_FLAG_ACTIVE))
 	      continue;

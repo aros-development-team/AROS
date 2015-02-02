@@ -12,22 +12,40 @@ you don't have any of them, please obtain and install them before
 configuring the GRUB.
 
 * GCC 4.1.3 or later
+  Note: older versions may work but support is limited
+  Note: clang 3.2 or later works for i386 and x86_64 targets but results in
+        much bigger binaries.
+	earlier versions not tested
+  Note: clang 3.2 or later works for arm
+	None of tested clang versions generated usable thumb code
+	earlier versions not tested
+  Note: clang 3.3 or later works for arm64
+	earlier versions have no arm64 support
+  Note: clang 3.3 or later works for mips(el)
+	earlier versions fail to generate .reginfo and hence gprel relocations
+	fail.
+  Note: clang 3.2 or later works for powerpc
+	earlier versions not tested
+  Note: clang doesn't support -mno-app-regs and so can't be used for sparc64
+  Note: clang has no support for ia64 and hence you can't compile GRUB
+	for ia64 with clang
 * GNU Make
 * GNU Bison 2.3 or later
 * GNU gettext 0.17 or later
 * GNU binutils 2.9.1.0.23 or later
 * Flex 2.5.35 or later
 * Other standard GNU/Unix tools
+* a libc with large file support (e.g. glibc 2.1 or later)
 
 On GNU/Linux, you also need:
 
 * libdevmapper 1.02.34 or later (recommended)
 
-To build grub-emu, you need:
+For optional grub-emu features, you need:
 
-* ncurses
-* libusb (recommended)
 * SDL (recommended)
+* libpciaccess (optional)
+* libusb (optional)
 
 To build GRUB's graphical terminal (gfxterm), you need:
 
@@ -37,14 +55,14 @@ To build GRUB's graphical terminal (gfxterm), you need:
 If you use a development snapshot or want to hack on GRUB you may
 need the following.
 
-* Python 2.5.2 or later
+* Python 2.6 or later
 * Autoconf 2.60 or later
 * Automake 1.10.1 or later
-* Autogen 5.10 or later
 
 Prerequisites for make-check:
 
 * qemu, specifically the binary 'qemu-system-i386'
+* xorriso 1.2.9 or later, for grub-mkrescue and grub-shell
 
 Configuring the GRUB
 ====================
@@ -75,9 +93,14 @@ Building the GRUB
 
 The simplest way to compile this package is:
 
-  1. `cd' to the directory containing the package's source code.  If
-     you don't use a release tarball you have to type `./autogen.sh'.
-     Type `./configure' to configure the package for your system.
+  1. `cd' to the directory containing the package's source code.
+
+  2. Skip this and following step if you use release tarball and proceed to
+     step 4. If you want translations type `./linguas.sh'.
+  
+  3. Type `./autogen.sh'.
+
+  4. Type `./configure' to configure the package for your system.
      If you're using `csh' on an old version of System V, you might
      need to type `sh ./configure' instead to prevent `csh' from trying
      to execute `configure' itself.
@@ -85,15 +108,15 @@ The simplest way to compile this package is:
      Running `configure' takes awhile.  While running, it prints some
      messages telling which features it is checking for.
 
-  2. Type `make' to compile the package.
+  6. Type `make' to compile the package.
 
-  3. Optionally, type `make check' to run any self-tests that come with
+  7. Optionally, type `make check' to run any self-tests that come with
      the package.
 
-  4. Type `make install' to install the programs and any data files and
+  8. Type `make install' to install the programs and any data files and
      documentation.
 
-  5. You can remove the program binaries and object files from the
+  9. You can remove the program binaries and object files from the
      source code directory by typing `make clean'.  To also remove the
      files that `configure' created (so you can compile the package for
      a different kind of computer), type `make distclean'.  There is
@@ -102,6 +125,88 @@ The simplest way to compile this package is:
      all sorts of other programs in order to regenerate files that came
      with the distribution.
 
+Cross-compiling the GRUB
+========================
+
+GRUB defines 3 platforms:
+
+  - "Build" is the one which build systems runs on.
+  - "Host" is where you execute GRUB utils.
+  - "Target" is where GRUB itself runs.
+
+For grub-emu host and target must be the same but may differ from build.
+
+If build and host are different make check isn't available.
+
+If build and host are different man pages are not generated.
+
+As an example imagine you have a build system running on FreeBSD on sparc
+which prepares packages for developers running amd64 GNU/Linux laptop and
+they need to make images for ARM board running U-boot. In this case:
+
+build=sparc64-freebsd
+host=amd64-linux-gnu
+target=arm-uboot
+
+For this example the configure line might look like (more details below)
+(some options are optional and included here for completeness but some rarely
+used options are omitted):
+
+./configure BUILD_CC=gcc BUILD_FREETYPE=freetype-config --host=amd64-linux-gnu
+CC=amd64-linux-gnu-gcc CFLAGS="-g -O2" FREETYPE=amd64-linux-gnu-freetype-config
+--target=arm --with-platform=uboot TARGET_CC=arm-elf-gcc
+TARGET_CFLAGS="-Os -march=armv6" TARGET_CCASFLAGS="-march=armv6"
+TARGET_OBJCOPY="arm-elf-objcopy" TARGET_STRIP="arm-elf-strip"
+TARGET_NM=arm-elf-nm TARGET_RANLIB=arm-elf-ranlib LEX=gflex
+
+You need to use following options to specify tools and platforms. For minimum
+version look at prerequisites. All tools not mentioned in this section under
+corresponding platform are not needed for the platform in question.
+
+  - For build
+    1. BUILD_CC= to gcc able to compile for build. This is used, for
+       example, to compile build-gentrigtables which is then run to
+       generate sin and cos tables.
+    2. BUILD_CFLAGS= for C options for build.
+    3. BUILD_CPPFLAGS= for C preprocessor options for build.
+    4. BUILD_LDFLAGS= for linker options for build.
+    5. BUILD_FREETYPE= for freetype-config for build (optional).
+
+  - For host
+    1. --host= to autoconf name of host.
+    2. CC= for gcc able to compile for host
+    3. CFLAGS= for C options for host.
+    4. CPPFLAGS= for C preprocessor options for host.
+    5. LDFLAGS= for linker options for host.
+    6. FREETYPE= for freetype-config for host (optional).
+    7. Libdevmapper if any must be in standard linker folders (-ldevmapper) (optional).
+    8. Libfuse if any must be in standard linker folders (-lfuse) (optional).
+    9. Libzfs if any must be in standard linker folders (-lzfs) (optional).
+    10. Liblzma if any must be in standard linker folders (-llzma) (optional).
+
+  - For target
+    1. --target= to autoconf cpu name of target.
+    2. --with-platform to choose firmware.
+    3. TARGET_CC= for gcc able to compile for target
+    4. TARGET_CFLAGS= for C options for target.
+    5. TARGET_CPPFLAGS= for C preprocessor options for target.
+    6. TARGET_CCASFLAGS= for assembler options for target.
+    7. TARGET_LDFLAGS= for linker options for target.
+    8. TARGET_OBJCOPY= for objcopy for target.
+    9. TARGET_STRIP= for strip for target.
+    10. TARGET_NM= for nm for target.
+    11. TARGET_RANLIB= for ranlib for target.
+
+  - Additionally for emu, for host and target.
+    1. SDL is looked for in standard linker directories (-lSDL) (optional)
+    2. libpciaccess is looked for in standard linker directories (-lpciaccess) (optional)
+    3. libusb is looked for in standard linker directories (-lusb) (optional)
+
+  - Platform-agnostic tools and data.
+    1. make is the tool you execute after ./configure.
+    2. Bison is specified in YACC= variable
+    3. Flex is specified in LEX= variable
+    4. GNU unifont and Djvu sans are looked for in standard directories.
 
 Compiling For Multiple Architectures
 ====================================

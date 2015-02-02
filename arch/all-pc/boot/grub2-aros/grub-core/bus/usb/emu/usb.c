@@ -88,7 +88,7 @@ grub_usb_poll_devices (void)
 
 
 int
-grub_usb_iterate (int (*hook) (grub_usb_device_t dev))
+grub_usb_iterate (grub_usb_iterate_hook_t hook, void *hook_data)
 {
   int i;
 
@@ -96,7 +96,7 @@ grub_usb_iterate (int (*hook) (grub_usb_device_t dev))
     {
       if (grub_usb_devs[i])
 	{
-	  if (hook (grub_usb_devs[i]))
+	  if (hook (grub_usb_devs[i], hook_data))
 	      return 1;
 	}
     }

@@ -21,6 +21,7 @@
 
 #include <grub/err.h>
 
+#undef errno
 #define errno  grub_errno
 #define EINVAL GRUB_ERR_BAD_NUMBER
 #define ENOMEM GRUB_ERR_OUT_OF_MEMORY

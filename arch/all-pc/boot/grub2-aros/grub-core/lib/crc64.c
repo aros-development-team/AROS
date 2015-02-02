@@ -25,25 +25,26 @@ GRUB_MOD_LICENSE ("GPLv3+");
 
 static grub_uint64_t crc64_table [256];
 
+/* Helper for init_crc64_table.  */
+static grub_uint64_t
+reflect (grub_uint64_t ref, int len)
+{
+  grub_uint64_t result = 0;
+  int i;
+
+  for (i = 1; i <= len; i++)
+    {
+      if (ref & 1)
+	result |= 1ULL << (len - i);
+      ref >>= 1;
+    }
+
+  return result;
+}
+
 static void
 init_crc64_table (void)
 {
-  auto grub_uint64_t reflect (grub_uint64_t ref, int len);
-  grub_uint64_t reflect (grub_uint64_t ref, int len)
-    {
-      grub_uint64_t result = 0;
-      int i;
-
-      for (i = 1; i <= len; i++)
-        {
-          if (ref & 1)
-            result |= 1ULL << (len - i);
-          ref >>= 1;
-        }
-
-      return result;
-    }
-
   grub_uint64_t polynomial = 0x42f0e1eba9ea3693ULL;
   int i, j;
 

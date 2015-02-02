@@ -78,7 +78,7 @@ efiemu_get_next_variable_name (grub_efi_uintn_t *variable_name_size,
 
 grub_efi_status_t
 efiemu_set_variable (grub_efi_char16_t *variable_name,
-		     grub_efi_guid_t *vendor_guid,
+		     const grub_efi_guid_t *vendor_guid,
 		     grub_efi_uint32_t attributes,
 		     grub_efi_uintn_t data_size,
 		     void *data);
@@ -131,11 +131,11 @@ extern grub_uint32_t efiemu_time_accuracy;
 
 /* Some standard functions because we need to be standalone */
 static void
-efiemu_memcpy (void *to, void *from, int count)
+efiemu_memcpy (void *to, const void *from, int count)
 {
   int i;
   for (i = 0; i < count; i++)
-    ((grub_uint8_t *) to)[i] = ((grub_uint8_t *) from)[i];
+    ((grub_uint8_t *) to)[i] = ((const grub_uint8_t *) from)[i];
 }
 
 static int
@@ -503,10 +503,10 @@ grub_efi_status_t EFI_FUNC
 
 grub_efi_status_t
 EFI_FUNC (efiemu_set_variable) (grub_efi_char16_t *variable_name,
-				   grub_efi_guid_t *vendor_guid,
-				   grub_efi_uint32_t attributes,
-				   grub_efi_uintn_t data_size,
-				   void *data)
+				const grub_efi_guid_t *vendor_guid,
+				grub_efi_uint32_t attributes,
+				grub_efi_uintn_t data_size,
+				void *data)
 {
   struct efi_variable *efivar;
   grub_uint8_t *ptr;

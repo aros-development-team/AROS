@@ -31,6 +31,20 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
+/* Helper for grub_cmd_testload.  */
+static void
+read_progress (grub_disk_addr_t sector __attribute__ ((unused)),
+	       unsigned offset __attribute__ ((unused)),
+	       unsigned len,
+	       void *data __attribute__ ((unused)))
+{
+  for (; len >= GRUB_DISK_SECTOR_SIZE; len -= GRUB_DISK_SECTOR_SIZE)
+    grub_xputs (".");
+  if (len)
+    grub_xputs (".");
+  grub_refresh ();
+}
+
 static grub_err_t
 grub_cmd_testload (struct grub_command *cmd __attribute__ ((unused)),
 		   int argc, char *argv[])
@@ -39,15 +53,6 @@ grub_cmd_testload (struct grub_command *cmd __attribute__ ((unused)),
   char *buf;
   grub_size_t size;
   grub_off_t pos;
-  auto void NESTED_FUNC_ATTR read_func (grub_disk_addr_t sector, unsigned offset, unsigned len);
-
-  void NESTED_FUNC_ATTR read_func (grub_disk_addr_t sector __attribute__ ((unused)),
-		  unsigned offset __attribute__ ((unused)),
-		  unsigned len __attribute__ ((unused)))
-    {
-      grub_xputs (".");
-      grub_refresh ();
-    }
 
   if (argc < 1)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
@@ -68,7 +73,7 @@ grub_cmd_testload (struct grub_command *cmd __attribute__ ((unused)),
     goto fail;
 
   grub_printf ("Reading %s sequentially", argv[0]);
-  file->read_hook = read_func;
+  file->read_hook = read_progress;
   if (grub_file_read (file, buf, size) != (grub_ssize_t) size)
     goto fail;
   grub_printf (" Done.\n");

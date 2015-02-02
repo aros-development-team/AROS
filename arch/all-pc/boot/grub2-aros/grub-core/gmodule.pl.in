@@ -23,7 +23,7 @@ while (<>) {
 		}
 
 		print " -s $2 $sections{$1}"
-			if ($sections{$1} ne '0x0');
+			if ($sections{$1} ne '0x0' and $sections{$1} ne '');
 	};
 	close (READELF);
 	print "\n";

@@ -101,12 +101,18 @@ grub_mini_cmd_dump (struct grub_command *cmd __attribute__ ((unused)),
   if (argc == 0)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "no address specified");
 
-  addr = (grub_uint8_t *) grub_strtoul (argv[0], 0, 0);
+#if GRUB_CPU_SIZEOF_VOID_P == GRUB_CPU_SIZEOF_LONG
+#define grub_strtoaddr grub_strtoul
+#else
+#define grub_strtoaddr grub_strtoull
+#endif
+
+  addr = (grub_uint8_t *) grub_strtoaddr (argv[0], 0, 0);
   if (grub_errno)
     return grub_errno;
 
   if (argc > 1)
-    size = (grub_size_t) grub_strtoul (argv[1], 0, 0);
+    size = (grub_size_t) grub_strtoaddr (argv[1], 0, 0);
 
   while (size--)
     {

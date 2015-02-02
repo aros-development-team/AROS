@@ -30,13 +30,17 @@ struct grub_video_fbrender_target
      mode_type has been re-adjusted to requested render target settings.  */
   struct grub_video_mode_info mode_info;
 
-  struct
-  {
-    unsigned int x;
-    unsigned int y;
-    unsigned int width;
-    unsigned int height;
-  } viewport;
+  /* We should not draw outside of viewport.  */
+  grub_video_rect_t viewport;
+  /* Set region to make a re-draw of a part of the screen.  */
+  grub_video_rect_t region;
+  /* Should be set to 0 if the viewport is inside of the region.  */
+  int area_enabled;
+  /* Internal structure - intersection of the viewport and the region.  */
+  grub_video_rect_t area;
+  /* Internal values - offsets from the left top point of the viewport.  */
+  int area_offset_x;
+  int area_offset_y;
 
   /* Indicates whether the data has been allocated by us and must be freed
      when render target is destroyed.  */
@@ -48,28 +52,8 @@ struct grub_video_fbrender_target
 };
 
 void
-grub_video_fbfill (struct grub_video_fbblit_info *dst,
-		   grub_video_color_t color, int x, int y,
-		   int width, int height);
-
-void
-grub_video_fbfill_direct32 (struct grub_video_fbblit_info *dst,
-			    grub_video_color_t color,  int x, int y,
-			    int width, int height);
-
-void
-grub_video_fbfill_direct24 (struct grub_video_fbblit_info *dst,
-			    grub_video_color_t color, int x, int y,
-			    int width, int height);
-
-void
-grub_video_fbfill_direct16 (struct grub_video_fbblit_info *dst,
-			    grub_video_color_t color, int x, int y,
-			    int width, int height);
-
-void
-grub_video_fbfill_direct8 (struct grub_video_fbblit_info *dst,
-			   grub_video_color_t color, int x, int y,
-			   int width, int height);
+grub_video_fb_fill_dispatch (struct grub_video_fbblit_info *target,
+			     grub_video_color_t color, int x, int y,
+			     unsigned int width, unsigned int height);
 
 #endif /* ! GRUB_FBFILL_HEADER */

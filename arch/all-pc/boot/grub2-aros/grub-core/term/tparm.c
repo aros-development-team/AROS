@@ -158,6 +158,8 @@ get_space(grub_size_t need)
     }
 }
 
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+
 static inline void
 save_text(const char *fmt, const char *s, int len)
 {
@@ -182,6 +184,8 @@ save_number(const char *fmt, int number, int len)
     (void) grub_snprintf(out_buff + out_used, len + 1, fmt, number);
     out_used += grub_strlen(out_buff + out_used);
 }
+
+#pragma GCC diagnostic error "-Wformat-nonliteral"
 
 static inline void
 save_char(int c)
@@ -614,13 +618,15 @@ tparam_internal(const char *string, va_list ap)
 	    case '/':
 		y = npop();
 		x = npop();
-		npush(y ? (x / y) : 0);
+		/* GRUB has no signed divisions. */
+		npush(y ? ((unsigned)x / (unsigned)y) : 0);
 		break;
 
 	    case 'm':
 		y = npop();
 		x = npop();
-		npush(y ? (x % y) : 0);
+		/* GRUB has no signed divisions. */
+		npush(y ? ((unsigned)x % (unsigned)y) : 0);
 		break;
 
 	    case 'A':

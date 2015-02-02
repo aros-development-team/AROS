@@ -1,0 +1,4 @@
+[NAME]
+grub-syslinux2cfg \- transform syslinux config into grub.cfg
+[SEE ALSO]
+.BR grub-menulst2cfg (8)

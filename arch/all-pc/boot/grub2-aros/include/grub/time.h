@@ -21,12 +21,13 @@
 
 #include <grub/types.h>
 #include <grub/symbol.h>
+#if !defined(GRUB_MACHINE_EMU) && !defined(GRUB_UTIL)
 #include <grub/cpu/time.h>
-
-#if defined (GRUB_MACHINE_EMU) || defined (GRUB_UTIL)
-#define GRUB_TICKS_PER_SECOND 100000
-/* Return the real time in ticks.  */
-grub_uint32_t EXPORT_FUNC (grub_get_rtc) (void);
+#else
+static inline void
+grub_cpu_idle(void)
+{
+}
 #endif
 
 void EXPORT_FUNC(grub_millisleep) (grub_uint32_t ms);

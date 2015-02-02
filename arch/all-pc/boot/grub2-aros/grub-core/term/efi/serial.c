@@ -44,6 +44,7 @@ do_real_config (struct grub_serial_port *port)
   };
   const grub_efi_stop_bits_t stop_bits[] = {
     [GRUB_SERIAL_STOP_BITS_1] = GRUB_EFI_SERIAL_1_STOP_BIT,
+    [GRUB_SERIAL_STOP_BITS_1_5] = GRUB_EFI_SERIAL_1_5_STOP_BITS,
     [GRUB_SERIAL_STOP_BITS_2] = GRUB_EFI_SERIAL_2_STOP_BITS,
   };
 
@@ -57,6 +58,10 @@ do_real_config (struct grub_serial_port *port)
 		       stop_bits[port->config.stop_bits]);
   if (status != GRUB_EFI_SUCCESS)
     port->broken = 1;
+
+  status = efi_call_2 (port->interface->set_control_bits, port->interface,
+		       port->config.rtscts ? 0x4002 : 0x2);
+
   port->configured = 1;
 }
 
@@ -111,6 +116,7 @@ serial_hw_configure (struct grub_serial_port *port,
 		       N_("unsupported serial port parity"));
 
   if (config->stop_bits != GRUB_SERIAL_STOP_BITS_1
+      && config->stop_bits != GRUB_SERIAL_STOP_BITS_1_5
       && config->stop_bits != GRUB_SERIAL_STOP_BITS_2)
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
 		       N_("unsupported serial port stop bits number"));

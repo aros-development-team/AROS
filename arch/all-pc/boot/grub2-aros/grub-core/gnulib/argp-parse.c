@@ -1,5 +1,5 @@
-/* Hierarchial argument parsing, layered over getopt
-   Copyright (C) 1995-2000, 2002-2004, 2009-2010 Free Software Foundation, Inc.
+/* Hierarchical argument parsing, layered over getopt
+   Copyright (C) 1995-2000, 2002-2004, 2009-2013 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -21,6 +21,7 @@
 #endif
 
 #include <alloca.h>
+#include <stdalign.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +43,6 @@
 #include "argp.h"
 #include "argp-namefrob.h"
 
-#define alignof(type) offsetof (struct { char c; type x; }, x)
 #define alignto(n, d) ((((n) + (d) - 1) / (d)) * (d))
 
 /* Getopt return values.  */
@@ -154,8 +154,9 @@ argp_version_parser (int key, char *arg, struct argp_state *state)
       else if (argp_program_version)
         fprintf (state->out_stream, "%s\n", argp_program_version);
       else
-        __argp_error (state, dgettext (state->root_argp->argp_domain,
-                                       "(PROGRAM ERROR) No version known!?"));
+        __argp_error (state, "%s",
+                      dgettext (state->root_argp->argp_domain,
+                                "(PROGRAM ERROR) No version known!?"));
       if (! (state->flags & ARGP_NO_EXIT))
         exit (0);
       break;
@@ -187,7 +188,7 @@ find_long_option (struct option *long_options, const char *name)
 }
 
 
-/* The state of a `group' during parsing.  Each group corresponds to a
+/* The state of a "group" during parsing.  Each group corresponds to a
    particular argp structure from the tree of such descending from the top
    level argp passed to argp_parse.  */
 struct group
@@ -203,7 +204,7 @@ struct group
      particular short options is from.  */
   char *short_end;
 
-  /* The number of non-option args sucessfully handled by this parser.  */
+  /* The number of non-option args successfully handled by this parser.  */
   unsigned args_processed;
 
   /* This group's parser's parent's group.  */
@@ -254,7 +255,7 @@ struct parser
   struct group *groups;
   /* The end of the GROUPS array.  */
   struct group *egroup;
-  /* An vector containing storage for the CHILD_INPUTS field in all groups.  */
+  /* A vector containing storage for the CHILD_INPUTS field in all groups.  */
   void **child_inputs;
 
   /* True if we think using getopt is still useful; if false, then
@@ -385,7 +386,7 @@ convert_options (const struct argp *argp,
   return group;
 }
 
-/* Find the merged set of getopt options, with keys appropiately prefixed. */
+/* Find the merged set of getopt options, with keys appropriately prefixed. */
 static void
 parser_convert (struct parser *parser, const struct argp *argp, int flags)
 {
@@ -439,7 +440,7 @@ calc_sizes (const struct argp *argp,  struct parser_sizes *szs)
           int num_opts = 0;
           while (!__option_is_end (opt++))
             num_opts++;
-          szs->short_len += num_opts * 3; /* opt + up to 2 `:'s */
+          szs->short_len += num_opts * 3; /* opt + up to 2 ':'s */
           szs->long_len += num_opts;
         }
     }
@@ -781,7 +782,7 @@ parser_parse_next (struct parser *parser, int *arg_ebadkey)
 
   if (parser->state.quoted && parser->state.next < parser->state.quoted)
     /* The next argument pointer has been moved to before the quoted
-       region, so pretend we never saw the quoting `--', and give getopt
+       region, so pretend we never saw the quoting "--", and give getopt
        another chance.  If the user hasn't removed it, getopt will just
        process it again.  */
     parser->state.quoted = 0;
@@ -813,7 +814,7 @@ parser_parse_next (struct parser *parser, int *arg_ebadkey)
               && strcmp (parser->state.argv[parser->state.next - 1], QUOTE)
                    == 0)
             /* Not only is this the end of the options, but it's a
-               `quoted' region, which may have args that *look* like
+               "quoted" region, which may have args that *look* like
                options, so we definitely shouldn't try to use getopt past
                here, whatever happens.  */
             parser->state.quoted = parser->state.next;
@@ -879,11 +880,11 @@ __argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 #ifndef _LIBC
   if (!(flags & ARGP_PARSE_ARGV0))
     {
-#ifdef HAVE_DECL_PROGRAM_INVOCATION_NAME
+#if HAVE_DECL_PROGRAM_INVOCATION_NAME
       if (!program_invocation_name)
         program_invocation_name = argv[0];
 #endif
-#ifdef HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
+#if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
       if (!program_invocation_short_name)
         program_invocation_short_name = __argp_base_name (argv[0]);
 #endif

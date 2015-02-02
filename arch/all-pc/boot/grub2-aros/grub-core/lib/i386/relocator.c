@@ -28,19 +28,6 @@
 #include <grub/i386/relocator_private.h>
 #include <grub/i386/pc/int.h>
 
-extern grub_uint8_t grub_relocator_forward_start;
-extern grub_uint8_t grub_relocator_forward_end;
-extern grub_uint8_t grub_relocator_backward_start;
-extern grub_uint8_t grub_relocator_backward_end;
-
-extern void *grub_relocator_backward_dest;
-extern void *grub_relocator_backward_src;
-extern grub_size_t grub_relocator_backward_chunk_size;
-
-extern void *grub_relocator_forward_dest;
-extern void *grub_relocator_forward_src;
-extern grub_size_t grub_relocator_forward_chunk_size;
-
 extern grub_uint8_t grub_relocator16_start;
 extern grub_uint8_t grub_relocator16_end;
 extern grub_uint16_t grub_relocator16_cs;
@@ -54,6 +41,7 @@ extern grub_uint16_t grub_relocator16_sp;
 extern grub_uint32_t grub_relocator16_edx;
 extern grub_uint32_t grub_relocator16_ebx;
 extern grub_uint32_t grub_relocator16_esi;
+extern grub_uint32_t grub_relocator16_ebp;
 
 extern grub_uint16_t grub_relocator16_keep_a20_enabled;
 
@@ -84,75 +72,6 @@ extern struct grub_i386_idt grub_relocator16_idt;
 
 #define RELOCATOR_SIZEOF(x)	(&grub_relocator##x##_end - &grub_relocator##x##_start)
 
-grub_size_t grub_relocator_align = 1;
-grub_size_t grub_relocator_forward_size;
-grub_size_t grub_relocator_backward_size;
-#ifdef __x86_64__
-grub_size_t grub_relocator_jumper_size = 12;
-#else
-grub_size_t grub_relocator_jumper_size = 7;
-#endif
-
-void
-grub_cpu_relocator_init (void)
-{
-  grub_relocator_forward_size = RELOCATOR_SIZEOF(_forward);
-  grub_relocator_backward_size = RELOCATOR_SIZEOF(_backward);
-}
-
-void
-grub_cpu_relocator_jumper (void *rels, grub_addr_t addr)
-{
-  grub_uint8_t *ptr;
-  ptr = rels;
-#ifdef __x86_64__
-  /* movq imm64, %rax (for relocator) */
-  *(grub_uint8_t *) ptr = 0x48;
-  ptr++;
-  *(grub_uint8_t *) ptr = 0xb8;
-  ptr++;
-  *(grub_uint64_t *) ptr = addr;
-  ptr += sizeof (grub_uint64_t);
-#else
-  /* movl imm32, %eax (for relocator) */
-  *(grub_uint8_t *) ptr = 0xb8;
-  ptr++;
-  *(grub_uint32_t *) ptr = addr;
-  ptr += sizeof (grub_uint32_t);
-#endif
-  /* jmp $eax/$rax */
-  *(grub_uint8_t *) ptr = 0xff;
-  ptr++;
-  *(grub_uint8_t *) ptr = 0xe0;
-  ptr++;
-}
-
-void
-grub_cpu_relocator_backward (void *ptr, void *src, void *dest,
-			     grub_size_t size)
-{
-  grub_relocator_backward_dest = dest;
-  grub_relocator_backward_src = src;
-  grub_relocator_backward_chunk_size = size;
-
-  grub_memmove (ptr,
-		&grub_relocator_backward_start,
-		RELOCATOR_SIZEOF (_backward));
-}
-
-void
-grub_cpu_relocator_forward (void *ptr, void *src, void *dest,
-			     grub_size_t size)
-{
-  grub_relocator_forward_dest = dest;
-  grub_relocator_forward_src = src;
-  grub_relocator_forward_chunk_size = size;
-
-  grub_memmove (ptr,
-		&grub_relocator_forward_start,
-		RELOCATOR_SIZEOF (_forward));
-}
-
 grub_err_t
 grub_relocator32_boot (struct grub_relocator *rel,
 		       struct grub_relocator32_state state,
@@ -162,10 +81,13 @@ grub_relocator32_boot (struct grub_relocator *rel,
   void *relst;
   grub_relocator_chunk_t ch;
 
-  err = grub_relocator_alloc_chunk_align (rel, &ch, 0,
-					  (0xffffffff - RELOCATOR_SIZEOF (32))
-					  + 1, RELOCATOR_SIZEOF (32), 16,
-					  GRUB_RELOCATOR_PREFERENCE_NONE,
+  /* Specific memory range due to Global Descriptor Table for use by payload
+     that we will store in returned chunk.  The address range and preference
+     are based on "THE LINUX/x86 BOOT PROTOCOL" specification.  */
+  err = grub_relocator_alloc_chunk_align (rel, &ch, 0x1000,
+					  0x9a000 - RELOCATOR_SIZEOF (32),
+					  RELOCATOR_SIZEOF (32), 16,
+					  GRUB_RELOCATOR_PREFERENCE_LOW,
 					  avoid_efi_bootservices);
   if (err)
     return err;
@@ -225,6 +147,7 @@ grub_relocator16_boot (struct grub_relocator *rel,
   grub_relocator16_ss = state.ss;
   grub_relocator16_sp = state.sp;
 
+  grub_relocator16_ebp = state.ebp;
   grub_relocator16_ebx = state.ebx;
   grub_relocator16_edx = state.edx;
   grub_relocator16_esi = state.esi;

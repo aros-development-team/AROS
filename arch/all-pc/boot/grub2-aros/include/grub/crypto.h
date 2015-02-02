@@ -64,11 +64,15 @@ typedef enum
     GPG_ERR_WEAK_KEY,
     GPG_ERR_WRONG_KEY_USAGE,
     GPG_ERR_WRONG_PUBKEY_ALGO,
-    GPG_ERR_OUT_OF_MEMORY
-  } gcry_err_code_t;
-#define gpg_err_code_t gcry_err_code_t
-#define gpg_error_t gcry_err_code_t
-
+    GPG_ERR_OUT_OF_MEMORY,
+    GPG_ERR_TOO_LARGE,
+    GPG_ERR_ENOMEM
+  } gpg_err_code_t;
+typedef gpg_err_code_t gpg_error_t;
+typedef gpg_error_t gcry_error_t;
+typedef gpg_err_code_t gcry_err_code_t;
+#define gcry_error_t gcry_err_code_t
+#if 0
 enum gcry_cipher_modes 
   {
     GCRY_CIPHER_MODE_NONE   = 0,  /* Not yet specified. */
@@ -79,6 +83,12 @@ enum gcry_cipher_modes
     GCRY_CIPHER_MODE_OFB    = 5,  /* Outer feedback. */
     GCRY_CIPHER_MODE_CTR    = 6   /* Counter. */
   };
+#endif
+
+/* Don't rely on this. Check!  */
+#define GRUB_CRYPTO_MAX_MDLEN 64
+#define GRUB_CRYPTO_MAX_CIPHER_BLOCKSIZE 16
+#define GRUB_CRYPTO_MAX_MD_CONTEXT_SIZE 256
 
 /* Type for the cipher_setkey function.  */
 typedef gcry_err_code_t (*gcry_cipher_setkey_t) (void *c,
@@ -171,6 +181,74 @@ typedef struct gcry_md_spec
   struct gcry_md_spec *next;
 } gcry_md_spec_t;
 
+struct gcry_mpi;
+typedef struct gcry_mpi *gcry_mpi_t;
+
+/* Type for the pk_generate function.  */
+typedef gcry_err_code_t (*gcry_pk_generate_t) (int algo,
+					       unsigned int nbits,
+					       unsigned long use_e,
+					       gcry_mpi_t *skey,
+					       gcry_mpi_t **retfactors);
+
+/* Type for the pk_check_secret_key function.  */
+typedef gcry_err_code_t (*gcry_pk_check_secret_key_t) (int algo,
+						       gcry_mpi_t *skey);
+
+/* Type for the pk_encrypt function.  */
+typedef gcry_err_code_t (*gcry_pk_encrypt_t) (int algo,
+					      gcry_mpi_t *resarr,
+					      gcry_mpi_t data,
+					      gcry_mpi_t *pkey,
+					      int flags);
+
+/* Type for the pk_decrypt function.  */
+typedef gcry_err_code_t (*gcry_pk_decrypt_t) (int algo,
+					      gcry_mpi_t *result,
+					      gcry_mpi_t *data,
+					      gcry_mpi_t *skey,
+					      int flags);
+
+/* Type for the pk_sign function.  */
+typedef gcry_err_code_t (*gcry_pk_sign_t) (int algo,
+					   gcry_mpi_t *resarr,
+					   gcry_mpi_t data,
+					   gcry_mpi_t *skey);
+
+/* Type for the pk_verify function.  */
+typedef gcry_err_code_t (*gcry_pk_verify_t) (int algo,
+					     gcry_mpi_t hash,
+					     gcry_mpi_t *data,
+					     gcry_mpi_t *pkey,
+					     int (*cmp) (void *, gcry_mpi_t),
+					     void *opaquev);
+
+/* Type for the pk_get_nbits function.  */
+typedef unsigned (*gcry_pk_get_nbits_t) (int algo, gcry_mpi_t *pkey);
+
+/* Module specification structure for message digests.  */
+typedef struct gcry_pk_spec
+{
+  const char *name;
+  const char **aliases;
+  const char *elements_pkey;
+  const char *elements_skey;
+  const char *elements_enc;
+  const char *elements_sig;
+  const char *elements_grip;
+  int use;
+  gcry_pk_generate_t generate;
+  gcry_pk_check_secret_key_t check_secret_key;
+  gcry_pk_encrypt_t encrypt;
+  gcry_pk_decrypt_t decrypt;
+  gcry_pk_sign_t sign;
+  gcry_pk_verify_t verify;
+  gcry_pk_get_nbits_t get_nbits;
+#ifdef GRUB_UTIL
+  const char *modname;
+#endif
+} gcry_pk_spec_t;
+
 struct grub_crypto_cipher_handle
 {
   const struct gcry_cipher_spec *cipher;
@@ -215,9 +293,10 @@ grub_crypto_xor (void *out, const void *in1, const void *in2, grub_size_t size)
     }
   while (size >= sizeof (grub_uint64_t))
     {
+      /* We've already checked that all pointers are aligned.  */
       *(grub_uint64_t *) (void *) outptr
-	= (*(grub_uint64_t *) (void *) in1ptr
-	   ^ *(grub_uint64_t *) (void *) in2ptr);
+	= (*(const grub_uint64_t *) (const void *) in1ptr
+	   ^ *(const grub_uint64_t *) (const void *) in2ptr);
       in1ptr += sizeof (grub_uint64_t);
       in2ptr += sizeof (grub_uint64_t);
       outptr += sizeof (grub_uint64_t);
@@ -242,7 +321,7 @@ grub_crypto_ecb_encrypt (grub_crypto_cipher_handle_t cipher,
 			 void *out, const void *in, grub_size_t size);
 gcry_err_code_t
 grub_crypto_cbc_encrypt (grub_crypto_cipher_handle_t cipher,
-			 void *out, void *in, grub_size_t size,
+			 void *out, const void *in, grub_size_t size,
 			 void *iv_in);
 gcry_err_code_t
 grub_crypto_cbc_decrypt (grub_crypto_cipher_handle_t cipher,
@@ -256,6 +335,12 @@ void
 grub_md_register (gcry_md_spec_t *digest);
 void 
 grub_md_unregister (gcry_md_spec_t *cipher);
+
+extern struct gcry_pk_spec *grub_crypto_pk_dsa;
+extern struct gcry_pk_spec *grub_crypto_pk_ecdsa;
+extern struct gcry_pk_spec *grub_crypto_pk_ecdh;
+extern struct gcry_pk_spec *grub_crypto_pk_rsa;
+
 void
 grub_crypto_hash (const gcry_md_spec_t *hash, void *out, const void *in,
 		  grub_size_t inlen);
@@ -319,10 +404,20 @@ grub_password_get (char buf[], unsigned buf_size);
 
 extern void (*grub_crypto_autoload_hook) (const char *name);
 
+void _gcry_assert_failed (const char *expr, const char *file, int line,
+                          const char *func) __attribute__ ((noreturn));
+
+void _gcry_burn_stack (int bytes);
+void _gcry_log_error( const char *fmt, ... )  __attribute__ ((format (__printf__, 1, 2)));
+
+
 #ifdef GRUB_UTIL
 void grub_gcry_init_all (void);
 void grub_gcry_fini_all (void);
-#endif
 
+int
+grub_get_random (void *out, grub_size_t len);
+
+#endif
 
 #endif

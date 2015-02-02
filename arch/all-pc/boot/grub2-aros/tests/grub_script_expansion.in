@@ -21,12 +21,12 @@ disks=`echo ls | @builddir@/grub-shell| grep -av '^Network protocols:$'| grep -a
 other=`echo insmod regexp\; echo \* | @builddir@/grub-shell`
 for d in $disks; do
     if echo "$d" |grep ',' >/dev/null; then
-	if echo "$other" | grep "$d" >/dev/null; then
+	if echo "$other" | grep -F -- "$d" >/dev/null; then
 	    echo "$d should not occur in * expansion" >&2
 	    exit 1
 	fi
     else
-	if ! echo "$other" | grep "$d" >/dev/null; then
+	if ! echo "$other" | grep -F -- "$d" >/dev/null; then
 	    echo "$d missing from * expansion" >&2
 	    exit 1
 	fi
@@ -35,7 +35,7 @@ done
 
 other=`echo insmod regexp\; echo '(*)' | @builddir@/grub-shell`
 for d in $disks; do
-    if ! echo "$other" | grep "$d" >/dev/null; then
+    if ! echo "$other" | grep -F -- "$d" >/dev/null; then
 	echo "$d missing from (*) expansion" >&2
 	exit 1
     fi

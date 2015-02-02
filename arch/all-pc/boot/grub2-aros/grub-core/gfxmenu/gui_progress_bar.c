@@ -25,6 +25,7 @@
 #include <grub/gfxmenu_view.h>
 #include <grub/gfxwidgets.h>
 #include <grub/i18n.h>
+#include <grub/color.h>
 
 struct grub_gui_progress_bar
 {
@@ -51,6 +52,7 @@ struct grub_gui_progress_bar
   char *highlight_pattern;
   grub_gfxmenu_box_t bar_box;
   grub_gfxmenu_box_t highlight_box;
+  int highlight_overlay;
 };
 
 typedef struct grub_gui_progress_bar *grub_gui_progress_bar_t;
@@ -59,6 +61,9 @@ static void
 progress_bar_destroy (void *vself)
 {
   grub_gui_progress_bar_t self = vself;
+  grub_free (self->theme_dir);
+  grub_free (self->template);
+  grub_free (self->id);
   grub_gfxmenu_timeout_unregister ((grub_gui_component_t) self);
   grub_free (self);
 }
@@ -113,9 +118,15 @@ draw_filled_rect_bar (grub_gui_progress_bar_t self)
                         f.width + 2, f.height + 2);
 
   /* Bar background.  */
-  int barwidth = (f.width
-                  * (self->value - self->start)
-                  / (self->end - self->start));
+  unsigned barwidth;
+
+  if (self->end <= self->start
+      || self->value <= self->start)
+    barwidth = 0;
+  else
+    barwidth = (f.width
+		* (self->value - self->start)
+		/ (self->end - self->start));
   grub_video_fill_rect (grub_video_map_rgba_color (self->bg_color),
                         f.x + barwidth, f.y,
                         f.width - barwidth, f.height);
@@ -139,20 +150,46 @@ draw_pixmap_bar (grub_gui_progress_bar_t self)
   int bar_b_pad = bar->get_bottom_pad (bar);
   int bar_h_pad = bar_l_pad + bar_r_pad;
   int bar_v_pad = bar_t_pad + bar_b_pad;
+  int hl_l_pad = hl->get_left_pad (hl);
+  int hl_r_pad = hl->get_right_pad (hl);
+  int hl_t_pad = hl->get_top_pad (hl);
+  int hl_b_pad = hl->get_bottom_pad (hl);
+  int hl_h_pad = hl_l_pad + hl_r_pad;
+  int hl_v_pad = hl_t_pad + hl_b_pad;
   int tracklen = w - bar_h_pad;
   int trackheight = h - bar_v_pad;
   int barwidth;
+  int hlheight = trackheight;
+  int hlx = bar_l_pad;
+  int hly = bar_t_pad;
 
   bar->set_content_size (bar, tracklen, trackheight);
-
-  barwidth = (tracklen * (self->value - self->start) 
-	      / (self->end - self->start));
-
-  hl->set_content_size (hl, barwidth, h - bar_v_pad);
-
   bar->draw (bar, 0, 0);
-  hl->draw (hl, bar_l_pad, bar_t_pad);
+
+  if (self->highlight_overlay)
+    {
+      tracklen += hl_h_pad;
+      hlx -= hl_l_pad;
+      hly -= hl_t_pad;
+    }
+  else
+    hlheight -= hl_v_pad;
+
+  if (self->value <= self->start
+      || self->end <= self->start)
+    barwidth = 0;
+  else
+    barwidth = ((unsigned) (tracklen * (self->value - self->start))
+		/ ((unsigned) (self->end - self->start)));
+
+  if (barwidth >= hl_h_pad)
+    {
+      hl->set_content_size (hl, barwidth - hl_h_pad, hlheight);
+      hl->draw (hl, hlx, hly);
+    }
 }
+
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
 static void
 draw_text (grub_gui_progress_bar_t self)
@@ -179,8 +216,11 @@ draw_text (grub_gui_progress_bar_t self)
       int y = ((height - grub_font_get_descent (font)) / 2
                + grub_font_get_ascent (font) / 2);
       grub_font_draw_string (text, font, text_color, x, y);
+      grub_free (text);
     }
 }
+
+#pragma GCC diagnostic error "-Wformat-nonliteral"
 
 static void
 progress_bar_paint (void *vself, const grub_video_rect_t *region)
@@ -240,22 +280,40 @@ static void
 progress_bar_get_minimal_size (void *vself,
 			       unsigned *width, unsigned *height)
 {
-  unsigned text_width = 0, text_height = 0;
+  unsigned min_width = 0;
+  unsigned min_height = 0;
   grub_gui_progress_bar_t self = vself;
 
   if (self->template)
     {
-      text_width = grub_font_get_string_width (self->font, self->template);
-      text_width += grub_font_get_string_width (self->font, "XXXXXXXXXX");
-      text_height = grub_font_get_descent (self->font)
-	+ grub_font_get_ascent (self->font);
+      min_width = grub_font_get_string_width (self->font, self->template);
+      min_width += grub_font_get_string_width (self->font, "XXXXXXXXXX");
+      min_height = grub_font_get_descent (self->font)
+                   + grub_font_get_ascent (self->font);
+    }
+  if (check_pixmaps (self))
+    {
+      grub_gfxmenu_box_t bar = self->bar_box;
+      grub_gfxmenu_box_t hl = self->highlight_box;
+      min_width += bar->get_left_pad (bar) + bar->get_right_pad (bar);
+      min_height += bar->get_top_pad (bar) + bar->get_bottom_pad (bar);
+      if (!self->highlight_overlay)
+        {
+          min_width += hl->get_left_pad (hl) + hl->get_right_pad (hl);
+          min_height += hl->get_top_pad (hl) + hl->get_bottom_pad (hl);
+        }
+    }
+  else
+    {
+      min_height += 2;
+      min_width += 2;
     }
   *width = 200;
-  if (*width < text_width)
-    *width = text_width;
+  if (*width < min_width)
+    *width = min_width;
   *height = 28;
-  if (*height < text_height)
-    *height = text_height;
+  if (*height < min_height)
+    *height = min_height;
 }
 
 static void
@@ -326,6 +384,10 @@ progress_bar_set_property (void *vself, const char *name, const char *value)
       grub_free (self->highlight_pattern);
       self->highlight_pattern = value ? grub_strdup (value) : 0;
     }
+  else if (grub_strcmp (name, "highlight_overlay") == 0)
+    {
+      self->highlight_overlay = grub_strcmp (value, "true") == 0;
+    }
   else if (grub_strcmp (name, "theme_dir") == 0)
     {
       self->need_to_recreate_pixmaps = 1;
@@ -386,6 +448,7 @@ grub_gui_progress_bar_new (void)
   self->border_color = black;
   self->bg_color = gray;
   self->fg_color = lightgray;
+  self->highlight_overlay = 0;
 
   return (grub_gui_component_t) self;
 }

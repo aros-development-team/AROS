@@ -39,7 +39,7 @@ grub_backtrace_print_address (void *addr)
 	  + segment->size > (grub_uint8_t *) addr)
 	{
 	  grub_printf ("%s.%x+%" PRIxGRUB_SIZE, mod->name, segment->section,
-		       (grub_uint8_t *) addr - (grub_uint8_t *) segment->addr);
+		       (grub_size_t) ((grub_uint8_t *) addr - (grub_uint8_t *) segment->addr));
 	  return;
 	}
   }

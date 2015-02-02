@@ -47,10 +47,11 @@ FUNCTION(grub_setjmp)
 	stw	28, 60(3)
 	stw	29, 64(3)
 	stw	30, 68(3)
+	stw	31, 72(3)
 	mflr	4
-	stw	4, 72(3)
-	mfcr	4
 	stw	4, 76(3)
+	mfcr	4
+	stw	4, 80(3)
 	li	3, 0
 	blr
 
@@ -76,9 +77,10 @@ FUNCTION(grub_longjmp)
 	lwz	28, 60(3)
 	lwz	29, 64(3)
 	lwz	30, 68(3)
-	lwz	5, 72(3)
-	mtlr	5
+	lwz	31, 72(3)
 	lwz	5, 76(3)
+	mtlr	5
+	lwz	5, 80(3)
 	mtcr	5
 	mr.	3, 4
 	bne	1f

@@ -42,7 +42,7 @@ static int restore_needed;
 static grub_efi_handle_t gop_handle;
 
 static int
-grub_video_gop_iterate (int (*hook) (const struct grub_video_mode_info *info));
+grub_video_gop_iterate (int (*hook) (const struct grub_video_mode_info *info, void *hook_arg), void *hook_arg);
 
 static struct
 {
@@ -52,6 +52,14 @@ static struct
   grub_uint8_t *offscreen;
 } framebuffer;
 
+static int
+check_protocol_hook (const struct grub_video_mode_info *info __attribute__ ((unused)), void *hook_arg)
+{
+  int *have_usable_mode = hook_arg;
+  *have_usable_mode = 1;
+  return 1;
+}
+
 
 static int
 check_protocol (void)
@@ -59,13 +67,6 @@ check_protocol (void)
   grub_efi_handle_t *handles;
   grub_efi_uintn_t num_handles, i;
   int have_usable_mode = 0;
-
-  auto int hook (const struct grub_video_mode_info *info);
-  int hook (const struct grub_video_mode_info *info __attribute__ ((unused)))
-  {
-    have_usable_mode = 1;
-    return 1;
-  }
 
   handles = grub_efi_locate_handle (GRUB_EFI_BY_PROTOCOL,
 				    &graphics_output_guid, NULL, &num_handles);
@@ -77,7 +78,7 @@ check_protocol (void)
       gop_handle = handles[i];
       gop = grub_efi_open_protocol (gop_handle, &graphics_output_guid,
 				    GRUB_EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-      grub_video_gop_iterate (hook);
+      grub_video_gop_iterate (check_protocol_hook, &have_usable_mode);
       if (have_usable_mode)
 	{
 	  grub_free (handles);
@@ -256,7 +257,7 @@ grub_video_gop_fill_mode_info (unsigned mode,
 }
 
 static int
-grub_video_gop_iterate (int (*hook) (const struct grub_video_mode_info *info))
+grub_video_gop_iterate (int (*hook) (const struct grub_video_mode_info *info, void *hook_arg), void *hook_arg)
 {
   unsigned mode;
 
@@ -282,7 +283,7 @@ grub_video_gop_iterate (int (*hook) (const struct grub_video_mode_info *info))
 	  grub_errno = GRUB_ERR_NONE;
 	  continue;
 	}
-      if (hook (&mode_info))
+      if (hook (&mode_info, hook_arg))
 	return 1;
     }
   return 0;
@@ -366,8 +367,7 @@ grub_video_gop_setup (unsigned int width, unsigned int height,
 
   if (width == 0 && height == 0)
     {
-      err = 1;
-      grub_gop_get_preferred_mode (&preferred_width, &preferred_height);
+      err = grub_gop_get_preferred_mode (&preferred_width, &preferred_height);
       if (err || preferred_width >= 4096 || preferred_height >= 4096)
 	{
 	  preferred_width = 800;
@@ -586,6 +586,10 @@ static struct grub_video_adapter grub_video_gop_adapter =
     .get_palette = grub_video_fb_get_palette,
     .set_viewport = grub_video_fb_set_viewport,
     .get_viewport = grub_video_fb_get_viewport,
+    .set_region = grub_video_fb_set_region,
+    .get_region = grub_video_fb_get_region,
+    .set_area_status = grub_video_fb_set_area_status,
+    .get_area_status = grub_video_fb_get_area_status,
     .map_color = grub_video_fb_map_color,
     .map_rgb = grub_video_fb_map_rgb,
     .map_rgba = grub_video_fb_map_rgba,

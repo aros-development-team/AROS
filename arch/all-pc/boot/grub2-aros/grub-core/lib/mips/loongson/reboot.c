@@ -49,6 +49,12 @@ grub_reboot (void)
     case GRUB_ARCH_MACHINE_YEELOONG:
       grub_write_ec (GRUB_MACHINE_EC_COMMAND_REBOOT);
       break;
+    case GRUB_ARCH_MACHINE_YEELOONG_3A:
+      grub_millisleep (1);
+      grub_outb (0x4e, GRUB_MACHINE_PCI_IO_BASE_3A | 0x66);
+      grub_millisleep (1);
+      grub_outb (1, GRUB_MACHINE_PCI_IO_BASE_3A | 0x62);
+      grub_millisleep (5000);
     }
   grub_millisleep (1500);
 

@@ -80,9 +80,25 @@ draw (grub_gfxmenu_box_t self, int x, int y)
 {
   int height_n;
   int width_w;
+  int tmp;
 
-  height_n = get_height (self->scaled_pixmaps[BOX_PIXMAP_N]);
-  width_w = get_width (self->scaled_pixmaps[BOX_PIXMAP_W]);
+  /* Count maximum height of NW, N, NE.  */
+  height_n = get_height (self->scaled_pixmaps[BOX_PIXMAP_NW]);
+  tmp = get_height (self->scaled_pixmaps[BOX_PIXMAP_N]);
+  if (tmp > height_n)
+    height_n = tmp;
+  tmp = get_height (self->scaled_pixmaps[BOX_PIXMAP_NE]);
+  if (tmp > height_n)
+    height_n = tmp;
+
+  /* Count maximum width of NW, W, SW.  */
+  width_w = get_width (self->scaled_pixmaps[BOX_PIXMAP_NW]);
+  tmp = get_width (self->scaled_pixmaps[BOX_PIXMAP_W]);
+  if (tmp > width_w)
+    width_w = tmp;
+  tmp = get_width (self->scaled_pixmaps[BOX_PIXMAP_SW]);
+  if (tmp > width_w)
+    width_w = tmp;
 
   /* Draw sides.  */
   blit (self, BOX_PIXMAP_N, x + width_w, y);

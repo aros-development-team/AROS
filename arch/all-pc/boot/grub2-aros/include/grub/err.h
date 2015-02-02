@@ -62,6 +62,7 @@ typedef enum
     GRUB_ERR_NET_ROUTE_LOOP,
     GRUB_ERR_NET_NO_ROUTE,
     GRUB_ERR_NET_NO_ANSWER,
+    GRUB_ERR_NET_NO_CARD,
     GRUB_ERR_WAIT,
     GRUB_ERR_BUG,
     GRUB_ERR_NET_PORT_CLOSED,
@@ -69,7 +70,8 @@ typedef enum
     GRUB_ERR_NET_UNKNOWN_ERROR,
     GRUB_ERR_NET_PACKET_TOO_BIG,
     GRUB_ERR_NET_NO_DOMAIN,
-    GRUB_ERR_EOF
+    GRUB_ERR_EOF,
+    GRUB_ERR_BAD_SIGNATURE
   }
 grub_err_t;
 
@@ -89,6 +91,6 @@ int EXPORT_FUNC(grub_error_pop) (void);
 void EXPORT_FUNC(grub_print_error) (void);
 extern int EXPORT_VAR(grub_err_printed_errors);
 int grub_err_printf (const char *fmt, ...)
-     __attribute__ ((format (printf, 1, 2)));
+     __attribute__ ((format (__printf__, 1, 2)));
 
 #endif /* ! GRUB_ERR_HEADER */

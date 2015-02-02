@@ -23,6 +23,7 @@
 #include <grub/mm.h>
 #include <grub/time.h>
 #include <grub/i18n.h>
+#include <grub/ieee1275/console.h>
 
 #define IEEE1275_IHANDLE_INVALID  ((grub_ieee1275_cell_t) 0)
 
@@ -180,87 +181,107 @@ ofserial_hash_add (char *devpath, char *curcan)
   return p;
 }
 
+static void
+dev_iterate_real (struct grub_ieee1275_devalias *alias,
+		  int use_name)
+{
+  struct ofserial_hash_ent *op;
+
+  if (grub_strcmp (alias->type, "serial") != 0)
+    return;
+
+  grub_dprintf ("serial", "serial name = %s, path = %s\n", alias->name,
+		alias->path);
+
+  op = ofserial_hash_find (alias->path);
+  if (!op)
+    {
+      char *name = grub_strdup (use_name ? alias->name : alias->path);
+      char *can = grub_strdup (alias->path);
+      if (!name || !can)
+	{
+	  grub_errno = GRUB_ERR_NONE;
+	  grub_free (name);
+	  grub_free (can);
+	  return;
+	}
+      op = ofserial_hash_add (name, can);
+    }
+  return;
+}
+
+static int
+dev_iterate (struct grub_ieee1275_devalias *alias)
+{
+  dev_iterate_real (alias, 0);
+  return 0;
+}
+
+static const char *
+add_port (struct ofserial_hash_ent *ent)
+{
+  struct grub_serial_port *port;
+  char *ptr;
+  grub_err_t err;
+
+  if (!ent->shortest)
+    return NULL;
+
+  port = grub_zalloc (sizeof (*port));
+  if (!port)
+    return NULL;
+  port->name = grub_malloc (sizeof ("ieee1275/")
+			    + grub_strlen (ent->shortest));
+  port->elem = ent;
+  if (!port->name)
+    return NULL;
+  ptr = grub_stpcpy (port->name, "ieee1275/");
+  grub_strcpy (ptr, ent->shortest);
+
+  port->driver = &grub_ofserial_driver;
+  err = grub_serial_config_defaults (port);
+  if (err)
+    grub_print_error ();
+
+  grub_serial_register (port);
+
+  return port->name;
+}
+
+const char *
+grub_ofserial_add_port (const char *path)
+{
+  struct ofserial_hash_ent *ent;
+  char *name = grub_strdup (path);
+  char *can = grub_strdup (path);
+
+  if (!name || ! can)
+    {
+      grub_free (name);
+      grub_free (can);
+      return NULL;
+    }
+
+  ent = ofserial_hash_add (name, can);
+  return add_port (ent);
+}
+
 void
 grub_ofserial_init (void)
 {
-  auto int dev_iterate_real (struct grub_ieee1275_devalias *alias,
-			     int use_name);
-
-  int dev_iterate_real (struct grub_ieee1275_devalias *alias,
-			int use_name)
-    {
-      struct ofserial_hash_ent *op;
-
-      if (grub_strcmp (alias->type, "serial") != 0)
-	return 0;
-
-      grub_dprintf ("serial", "serial name = %s, path = %s\n", alias->name,
-		    alias->path);
-
-      op = ofserial_hash_find (alias->path);
-      if (!op)
-	{
-	  char *name = grub_strdup (use_name ? alias->name : alias->path);
-	  char *can = grub_strdup (alias->path);
-	  if (!name || !can)
-	    {
-	      grub_errno = GRUB_ERR_NONE;
-	      grub_free (name);
-	      grub_free (can);
-	      return 0;
-	    }
-	  op = ofserial_hash_add (name, can);
-	}
-      return 0;
-    }
-
-  auto int dev_iterate_alias (struct grub_ieee1275_devalias *alias);
-  int dev_iterate_alias (struct grub_ieee1275_devalias *alias)
-  {
-    return dev_iterate_real (alias, 1);
-  }
-
-  auto int dev_iterate (struct grub_ieee1275_devalias *alias);
-  int dev_iterate (struct grub_ieee1275_devalias *alias)
-  {
-    return dev_iterate_real (alias, 0);
-  }
-
   unsigned i;
-  grub_err_t err;
+  struct grub_ieee1275_devalias alias;
 
-  grub_devalias_iterate (dev_iterate_alias);
+  FOR_IEEE1275_DEVALIASES(alias)
+    dev_iterate_real (&alias, 1);
+
   grub_ieee1275_devices_iterate (dev_iterate);
-
   
   for (i = 0; i < ARRAY_SIZE (ofserial_hash); i++)
     {
-      static struct ofserial_hash_ent *ent;
+      struct ofserial_hash_ent *ent;
       for (ent = ofserial_hash[i]; ent; ent = ent->next)
-	{
-	  struct grub_serial_port *port;
-	  char *ptr;
-	  if (!ent->shortest)
-	    continue;
-
-	  port = grub_zalloc (sizeof (*port));
-	  if (!port)
-	    return;
-	  port->name = grub_malloc (sizeof ("ieee1275/")
-				    + grub_strlen (ent->shortest));
-	  port->elem = ent;
-	  if (!port->name)
-	    return;
-	  ptr = grub_stpcpy (port->name, "ieee1275/");
-	  grub_strcpy (ptr, ent->shortest);
-
-	  port->driver = &grub_ofserial_driver;
-	  err = grub_serial_config_defaults (port);
-	  if (err)
-	    grub_print_error ();
-
-	  grub_serial_register (port);
-	}
+	add_port (ent);
     }
 }
 

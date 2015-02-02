@@ -26,7 +26,9 @@
 
 #include <grub/lib/LzmaDec.h>
 
-#include <string.h>
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <grub/misc.h>
+#define memcpy grub_memcpy
 
 #define kNumTopBits 24
 #define kTopValue ((UInt32)1 << kNumTopBits)
@@ -718,7 +720,7 @@ static void LzmaDec_InitRc(CLzmaDec *p, const Byte *data)
   p->needFlush = 0;
 }
 
-void LzmaDec_InitDicAndState(CLzmaDec *p, Bool initDic, Bool initState)
+static void LzmaDec_InitDicAndState(CLzmaDec *p, Bool initDic, Bool initState)
 {
   p->needFlush = 1;
   p->remainLen = 0;

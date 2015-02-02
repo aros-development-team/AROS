@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004,2010  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2010,2012  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 #include <grub/legacy_parse.h>
 #include <grub/i386/pc/vesa_modes_table.h>
 #include <grub/i18n.h>
+
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
 struct legacy_command
 {
@@ -65,23 +67,27 @@ struct legacy_command
  */
 static struct legacy_command legacy_commands[] =
   {
+    /* FIXME: background unsupported.  */
     {"blocklist", "blocklist '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILE",
      "Print the blocklist notation of the file FILE."},
     {"boot", "boot\n", NULL, 0, 0, {}, 0, 0,
      "Boot the OS/chain-loader which has been loaded."},
-    {"bootp", "net_bootp; net_ls_addr; if [ x%s = x--with-configfile ]; then "
+    {"bootp", "net_bootp; net_ls_addr; echo $\"" N_("Default server is ${net_default_server}") "\"; if [ x%s = x--with-configfile ]; then "
      "if net_get_dhcp_option configfile_name pxe 150 string; then "
      "configfile $configfile_name; fi; fi\n", NULL, 0, 1,
      {TYPE_WITH_CONFIGFILE_OPTION}, FLAG_IGNORE_REST, "[--with-configfile]",
      "Initialize a network device via BOOTP. If the option `--with-configfile'"
      " is given, try to load a configuration file specified by the 150 vendor"
      " tag."},
+    /* FIXME: border unsupported.  */
     {"cat", "cat '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILE",
      "Print the contents of the file FILE."},
     {"chainloader", "chainloader %s '%s'\n", NULL, 0,
      2, {TYPE_FORCE_OPTION, TYPE_FILE}, 0, "[--force] FILE",
      "Load the chain-loader FILE. If --force is specified, then load it"
      " forcibly, whether the boot loader signature is present or not."},
+    {"clear", "clear\n", NULL, 0, 0, {}, 0, 0,
+     "Clear the screen."},
     {"cmp", "cmp '%s' '%s'\n", NULL, 0,
      2, {TYPE_FILE, TYPE_FILE}, FLAG_IGNORE_REST, "FILE1 FILE2",
      "Compare the file FILE1 with the FILE2 and inform the different values"
@@ -125,6 +131,7 @@ static struct legacy_command legacy_commands[] =
     {"displaymem", "lsmmap\n", NULL, 0, 0, {}, 0, 0, 
      "Display what GRUB thinks the system address space map of the"
      " machine is, including all regions of physical RAM installed."},
+    /* FIXME: device and efimap unsupported.  */
     /* NOTE: embed unsupported.  */
     {"fallback", "set fallback='%s'\n", NULL, 0,
      1, {TYPE_VERBATIM}, 0, "NUM...",
@@ -136,6 +143,8 @@ static struct legacy_command legacy_commands[] =
     {"find", "search -f '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILENAME",
      "Search for the filename FILENAME in all of partitions and print the list of"
      " the devices which contain the file."},
+    /* FIXME: findiso unsupported.  */
+    /* FIXME: foreground unsupported.  */
     /* FIXME: fstest unsupported.  */
     /* NOTE: The obsolete C/H/S geometry isn't shown anymore.  */
     {"geometry", "insmod regexp; ls -l (%s*)\n", NULL, 0, 1, {TYPE_VERBATIM}, 0, "DRIVE",
@@ -243,6 +252,10 @@ static struct legacy_command legacy_commands[] =
     {"pause", "echo %s; if ! sleep -i 60; then return; fi\n", NULL, 0, 1,
      {TYPE_REST_VERBATIM}, 0,
      "[MESSAGE ...]", "Print MESSAGE, then wait until a key is pressed."},
+    {"print", "echo %s\n", NULL, 0, 1,
+     {TYPE_REST_VERBATIM}, 0,
+     "[MESSAGE ...]", "Print MESSAGE."},
+    /* FIXME: quit unsupported.  */
     /* FIXME: rarp unsupported.  */
     {"read", "read_dword %s\n", NULL, 0, 1, {TYPE_INT}, 0, "ADDR",
      "Read a 32-bit value from memory at address ADDR and"
@@ -288,14 +301,18 @@ static struct legacy_command legacy_commands[] =
      " STOP is the length of stop bit(s). The option --device can be used only"
      " in the grub shell, which specifies the file name of a tty device. The"
      " default values are COM1, 9600, 8N1."},
+    /* FIXME: shade unsupported.  */
+    /* FIXME: silent unsupported.  */
+    /* FIXME: splashimage unsupported.  */
     /* FIXME: setkey unsupported.  */    /* NUL_TERMINATE */
     /* NOTE: setup unsupported.  */
-    /* FIXME: --no-echo, --no-edit, hercules unsupported.  */
+    /* FIXME: --no-echo, --no-edit unsupported.  */
     /* NOTE: both terminals are activated so --silent and --timeout
        are useless.  */
+    /* FIXME: graphics unsupported.  */
     {"terminal", NULL, NULL, 0, 0, {}, FLAG_TERMINAL | FLAG_IGNORE_REST,
      "[--dumb] [--no-echo] [--no-edit] [--timeout=SECS] [--lines=LINES] "
-     "[--silent] [console] [serial] [hercules]",
+     "[--silent] [console] [serial] [hercules] [graphics]",
      "Select a terminal. When multiple terminals are specified, wait until"
      " you push any key to continue. If both console and serial are specified,"
      " the terminal to which you input a key first will be selected. If no"
@@ -307,7 +324,7 @@ static struct legacy_command legacy_commands[] =
      " seconds. The option --lines specifies the maximum number of lines."
      " The option --silent is used to suppress messages."},
     /* FIXME: terminfo unsupported.  */    /* NUL_TERMINATE */
-    {"testload", "cat '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILE",
+    {"testload", "testload '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILE",
      "Read the entire contents of FILE in several different ways and"
      " compares them, to test the filesystem code. "
      " If this test succeeds, then a good next"
@@ -334,6 +351,9 @@ static struct legacy_command legacy_commands[] =
      " the information about only the mode."},
     {"vbeprobe", "insmod vbe; videoinfo\n", NULL, 0, 0, {},
      FLAG_FALLBACK, NULL, NULL}
+    /* FIXME: verbose unsupported.  */
+    /* FIXME: version unsupported.  */
+    /* FIXME: viewport unsupported.  */
   };
 
 char *
@@ -373,6 +393,29 @@ adjust_file (const char *in, grub_size_t len)
     if (*ptr == '\'' || *ptr == '\\')
       overhead++;
   comma = ptr;
+  if (*comma == ')' && comma - in == 3
+      && in[1] == 'n' && in[2] == 'd')
+    {
+      rest = comma + 1;
+      for (ptr = rest; ptr < in + len && *ptr; ptr++)
+	if (*ptr == '\'' || *ptr == '\\')
+	  overhead++;
+
+      ret = grub_malloc (ptr - in + overhead + 15);
+      if (!ret)
+	return NULL;
+
+      outptr = grub_stpcpy (ret, "(tftp)");;
+      for (ptr = rest; ptr < in + len; ptr++)
+	{
+	  if (*ptr == '\'' || *ptr == '\\')
+	    *outptr++ = '\\';
+
+	  *outptr++ = *ptr;
+	}
+      *outptr = 0;
+      return ret;
+    }
   if (*comma != ',')
     return grub_legacy_escape (in, len);
   part = grub_strtoull (comma + 1, (char **) &rest, 0);
@@ -386,7 +429,7 @@ adjust_file (const char *in, grub_size_t len)
       overhead++;
 
   /* 35 is enough for any 2 numbers.  */
-  ret = grub_malloc (ptr - in + overhead + 35);
+  ret = grub_malloc (ptr - in + overhead + 35 + 5);
   if (!ret)
     return NULL;
 
@@ -507,11 +550,11 @@ grub_legacy_parse (const char *buf, char **entryname, char **suffix)
       int dumb = 0, lines = 24;
 #ifdef TODO
       int no_echo = 0, no_edit = 0;
-      int hercules = 0;
 #endif
-      int console = 0, serial = 0;
+      int hercules = 0;
+      int console = 0, serial = 0, graphics = 0;
       /* Big enough for any possible resulting command. */
-      char outbuf[256] = "";
+      char outbuf[512] = "";
       char *outptr;
       while (*ptr)
 	{
@@ -541,45 +584,40 @@ grub_legacy_parse (const char *buf, char **entryname, char **suffix)
 
 	  if (grub_memcmp (ptr, "serial", sizeof ("serial") - 1) == 0)
 	    serial = 1;
-#ifdef TODO
 	  if (grub_memcmp (ptr, "hercules", sizeof ("hercules") - 1) == 0)
 	    hercules = 1;
-#endif
+	  if (grub_memcmp (ptr, "graphics", sizeof ("graphics") - 1) == 0)
+	    graphics = 1;
 	  while (*ptr && !grub_isspace (*ptr))
 	    ptr++;
 	  while (*ptr && grub_isspace (*ptr))
 	    ptr++;
 	}
 
-      if (!console && !serial)
+      if (!console && !serial && !hercules && !graphics)
 	return grub_strdup ("terminal_input; terminal_output; terminfo\n");
 
-      grub_strcpy (outbuf, "terminal_input ");
-      outptr = outbuf + grub_strlen (outbuf);
+      outptr = outbuf;
+
+      if (graphics)
+	outptr = grub_stpcpy (outptr, "insmod all_video; ");
+
+      outptr = grub_stpcpy (outptr, "terminal_input ");
       if (serial)
-	{
-	  grub_strcpy (outptr, "serial ");
-	  outptr += grub_strlen (outptr);
-	}
-      if (console)
-	{
-	  grub_strcpy (outptr, "console ");
-	  outptr += grub_strlen (outptr);
-	}
-      grub_strcpy (outptr, "; terminal_output ");
-      outptr += grub_strlen (outptr);
+	outptr = grub_stpcpy (outptr, "serial ");
+      if (console || hercules || graphics)
+	outptr = grub_stpcpy (outptr, "console ");
+      outptr = grub_stpcpy (outptr, "; terminal_output ");
       if (serial)
-	{
-	  grub_strcpy (outptr, "serial ");
-	  outptr += grub_strlen (outptr);
-	}
+	outptr = grub_stpcpy (outptr, "serial ");
       if (console)
-	{
-	  grub_strcpy (outptr, "console ");
-	  outptr += grub_strlen (outptr);
-	}
-      grub_strcpy (outptr, "; ");
-      outptr += grub_strlen (outptr);
+	outptr = grub_stpcpy (outptr, "console ");
+      if (hercules)
+	outptr = grub_stpcpy (outptr, "mda_text ");
+      if (graphics)
+	outptr = grub_stpcpy (outptr, "gfxterm ");
+      outptr = grub_stpcpy (outptr, "; ");
+      *outptr = '\0';
       if (serial)
 	{
 	  grub_snprintf (outptr, outbuf + sizeof (outbuf) - outptr,
@@ -626,6 +664,7 @@ grub_legacy_parse (const char *buf, char **entryname, char **suffix)
 	  {
 	  case TYPE_FILE_NO_CONSUME:
 	    hold_arg = 1;
+	    /* Fallthrough.  */
 	  case TYPE_PARTITION:
 	  case TYPE_FILE:
 	    args[i] = adjust_file (curarg, curarglen);

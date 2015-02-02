@@ -29,28 +29,39 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
+/* Context for grub_cs5536_find.  */
+struct grub_cs5536_find_ctx
+{
+  grub_pci_device_t *devp;
+  int found;
+};
+
+/* Helper for grub_cs5536_find.  */
+static int
+grub_cs5536_find_iter (grub_pci_device_t dev, grub_pci_id_t pciid, void *data)
+{
+  struct grub_cs5536_find_ctx *ctx = data;
+
+  if (pciid == GRUB_CS5536_PCIID)
+    {
+      *ctx->devp = dev;
+      ctx->found = 1;
+      return 1;
+    }
+  return 0;
+}
+
 int
 grub_cs5536_find (grub_pci_device_t *devp)
 {
-  int found = 0;
-  auto int NESTED_FUNC_ATTR hook (grub_pci_device_t dev,
-				  grub_pci_id_t pciid);
+  struct grub_cs5536_find_ctx ctx = {
+    .devp = devp,
+    .found = 0
+  };
 
-  int NESTED_FUNC_ATTR hook (grub_pci_device_t dev,
-			     grub_pci_id_t pciid)
-  {
-    if (pciid == GRUB_CS5536_PCIID)
-      {
-	*devp = dev;
-	found = 1;
-	return 1;
-      }
-    return 0;
-  }
+  grub_pci_iterate (grub_cs5536_find_iter, &ctx);
 
-  grub_pci_iterate (hook);
-
-  return found;
+  return ctx.found;
 }
 
 grub_uint64_t

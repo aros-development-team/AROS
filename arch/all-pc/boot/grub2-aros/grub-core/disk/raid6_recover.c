@@ -30,13 +30,13 @@ GRUB_MOD_LICENSE ("GPLv3+");
 /* x**y.  */
 static grub_uint8_t powx[255 * 2];
 /* Such an s that x**s = y */
-static int powx_inv[256];
+static unsigned powx_inv[256];
 static const grub_uint8_t poly = 0x1d;
 
 static void
-grub_raid_block_mulx (int mul, char *buf, int size)
+grub_raid_block_mulx (unsigned mul, char *buf, grub_size_t size)
 {
-  int i;
+  grub_size_t i;
   grub_uint8_t *p;
 
   p = (grub_uint8_t *) buf;
@@ -48,7 +48,7 @@ grub_raid_block_mulx (int mul, char *buf, int size)
 static void
 grub_raid6_init_table (void)
 {
-  int i;
+  unsigned i;
 
   grub_uint8_t cur = 1;
   for (i = 0; i < 255; i++)
@@ -148,7 +148,7 @@ grub_raid6_recover (struct grub_diskfilter_segment *array, int disknr, int p,
   else
     {
       /* Two bad devices */
-      int c;
+      unsigned c;
 
       if (grub_diskfilter_read_node (&array->nodes[p], sector,
 				     size >> GRUB_DISK_SECTOR_BITS, buf))
@@ -162,10 +162,11 @@ grub_raid6_recover (struct grub_diskfilter_segment *array, int disknr, int p,
 
       grub_crypto_xor (qbuf, qbuf, buf, size);
 
-      c = (255 - bad1 + (255 - powx_inv[(powx[bad2 - bad1 + 255] ^ 1)])) % 255;
+      c = ((255 ^ bad1)
+	   + (255 ^ powx_inv[(powx[bad2 + (bad1 ^ 255)] ^ 1)])) % 255;
       grub_raid_block_mulx (c, qbuf, size);
 
-      c = (bad2 + c) % 255;
+      c = ((unsigned) bad2 + c) % 255;
       grub_raid_block_mulx (c, pbuf, size);
 
       grub_crypto_xor (pbuf, pbuf, qbuf, size);

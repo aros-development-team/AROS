@@ -50,7 +50,7 @@ grub_cmd_xnu_uuid (grub_command_t cmd __attribute__ ((unused)),
   grub_uint8_t *xnu_uuid;
   char uuid_string[sizeof ("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")];
   char *ptr;
-  grub_uint8_t ctx[GRUB_MD_MD5->contextsize];
+  void *ctx;
   int low = 0;
 
   if (argc < 1)
@@ -65,11 +65,14 @@ grub_cmd_xnu_uuid (grub_command_t cmd __attribute__ ((unused)),
 
   serial = grub_cpu_to_be64 (grub_strtoull (args[0], 0, 16));
 
-  GRUB_MD_MD5->init (&ctx);
-  GRUB_MD_MD5->write (&ctx, hash_prefix, sizeof (hash_prefix));
-  GRUB_MD_MD5->write (&ctx, &serial, sizeof (serial));
-  GRUB_MD_MD5->final (&ctx);
-  xnu_uuid = GRUB_MD_MD5->read (&ctx);
+  ctx = grub_zalloc (GRUB_MD_MD5->contextsize);
+  if (!ctx)
+    return grub_errno;
+  GRUB_MD_MD5->init (ctx);
+  GRUB_MD_MD5->write (ctx, hash_prefix, sizeof (hash_prefix));
+  GRUB_MD_MD5->write (ctx, &serial, sizeof (serial));
+  GRUB_MD_MD5->final (ctx);
+  xnu_uuid = GRUB_MD_MD5->read (ctx);
 
   grub_snprintf (uuid_string, sizeof (uuid_string),
 		"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
@@ -90,6 +93,8 @@ grub_cmd_xnu_uuid (grub_command_t cmd __attribute__ ((unused)),
     grub_printf ("%s\n", uuid_string);
   if (argc > 1)
     grub_env_set (args[1], uuid_string);
+
+  grub_free (ctx);
 
   return GRUB_ERR_NONE;
 }

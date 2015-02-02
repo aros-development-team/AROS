@@ -33,21 +33,24 @@ GRUB_MOD_LICENSE ("GPLv3+");
 
 #define JPEG_SAMPLING_1x1	0x11
 
-#define JPEG_MARKER_SOI		0xd8
-#define JPEG_MARKER_EOI		0xd9
-#define JPEG_MARKER_DHT		0xc4
-#define JPEG_MARKER_DQT		0xdb
-#define JPEG_MARKER_SOF0	0xc0
-#define JPEG_MARKER_SOS		0xda
-#define JPEG_MARKER_DRI		0xdd
-#define JPEG_MARKER_RST0	0xd0
-#define JPEG_MARKER_RST1	0xd1
-#define JPEG_MARKER_RST2	0xd2
-#define JPEG_MARKER_RST3	0xd3
-#define JPEG_MARKER_RST4	0xd4
-#define JPEG_MARKER_RST5	0xd5
-#define JPEG_MARKER_RST6	0xd6
-#define JPEG_MARKER_RST7	0xd7
+enum
+  {
+    JPEG_MARKER_SOF0 = 0xc0,
+    JPEG_MARKER_DHT  = 0xc4,
+    JPEG_MARKER_SOI  = 0xd8,
+    JPEG_MARKER_EOI  = 0xd9,
+    JPEG_MARKER_RST0 = 0xd0,
+    JPEG_MARKER_RST1 = 0xd1,
+    JPEG_MARKER_RST2 = 0xd2,
+    JPEG_MARKER_RST3 = 0xd3,
+    JPEG_MARKER_RST4 = 0xd4,
+    JPEG_MARKER_RST5 = 0xd5,
+    JPEG_MARKER_RST6 = 0xd6,
+    JPEG_MARKER_RST7 = 0xd7,
+    JPEG_MARKER_SOS  = 0xda,
+    JPEG_MARKER_DQT  = 0xdb,
+    JPEG_MARKER_DRI  = 0xdd,
+  };
 
 #define SHIFT_BITS		8
 #define CONST(x)		((int) ((x) * (1L << SHIFT_BITS) + 0.5))
@@ -77,8 +80,8 @@ struct grub_jpeg_data
   struct grub_video_bitmap **bitmap;
   grub_uint8_t *bitmap_ptr;
 
-  int image_width;
-  int image_height;
+  unsigned image_width;
+  unsigned image_height;
 
   grub_uint8_t *huff_value[4];
   int huff_offset[4][16];
@@ -91,11 +94,13 @@ struct grub_jpeg_data
   jpeg_data_unit_t crdu;
   jpeg_data_unit_t cbdu;
 
-  int vs, hs;
+  unsigned vs, hs;
   int dri;
-  int r1;
+  unsigned r1;
 
   int dc_value[3];
+
+  int color_components;
 
   int bit_mask, bit_save;
 };
@@ -294,9 +299,10 @@ grub_jpeg_decode_sof (struct grub_jpeg_data *data)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE, "jpeg: invalid image size");
 
   cc = grub_jpeg_get_byte (data);
-  if (cc != 3)
+  if (cc != 1 && cc != 3)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE,
-		       "jpeg: component count must be 3");
+		       "jpeg: component count must be 1 or 3");
+  data->color_components = cc;
 
   for (i = 0; i < cc; i++)
     {
@@ -311,7 +317,7 @@ grub_jpeg_decode_sof (struct grub_jpeg_data *data)
 	{
 	  data->vs = ss & 0xF;	/* Vertical sampling.  */
 	  data->hs = ss >> 4;	/* Horizontal sampling.  */
-	  if ((data->vs > 2) || (data->hs > 2))
+	  if ((data->vs > 2) || (data->hs > 2) || (data->vs == 0) || (data->hs == 0))
 	    return grub_error (GRUB_ERR_BAD_FILE_TYPE,
 			       "jpeg: sampling method not supported");
 	}
@@ -528,7 +534,11 @@ grub_jpeg_ycrcb_to_rgb (int yy, int cr, int cb, grub_uint8_t * rgb)
     dd = 0;
   if (dd > 255)
     dd = 255;
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+  rgb[2] = dd;
+#else
   *(rgb++) = dd;
+#endif
 
   /* Green  */
   dd = yy - ((cb * CONST (0.34414) + cr * CONST (0.71414)) >> SHIFT_BITS);
@@ -536,7 +546,11 @@ grub_jpeg_ycrcb_to_rgb (int yy, int cr, int cb, grub_uint8_t * rgb)
     dd = 0;
   if (dd > 255)
     dd = 255;
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+  rgb[1] = dd;
+#else
   *(rgb++) = dd;
+#endif
 
   /* Blue  */
   dd = yy + ((cb * CONST (1.772)) >> SHIFT_BITS);
@@ -544,7 +558,12 @@ grub_jpeg_ycrcb_to_rgb (int yy, int cr, int cb, grub_uint8_t * rgb)
     dd = 0;
   if (dd > 255)
     dd = 255;
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+  rgb[0] = dd;
+  rgb += 3;
+#else
   *(rgb++) = dd;
+#endif
 }
 
 static grub_err_t
@@ -558,9 +577,10 @@ grub_jpeg_decode_sos (struct grub_jpeg_data *data)
 
   cc = grub_jpeg_get_byte (data);
 
-  if (cc != 3)
+  if (cc != 3 && cc != 1)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE,
-		       "jpeg: component count must be 3");
+		       "jpeg: component count must be 1 or 3");
+  data->color_components = cc;
 
   for (i = 0; i < cc; i++)
     {
@@ -593,7 +613,7 @@ grub_jpeg_decode_sos (struct grub_jpeg_data *data)
 static grub_err_t
 grub_jpeg_decode_data (struct grub_jpeg_data *data)
 {
-  int c1, vb, hb, nr1, nc1;
+  unsigned c1, vb, hb, nr1, nc1;
   int rst = data->dri;
 
   vb = data->vs * 8;
@@ -606,15 +626,18 @@ grub_jpeg_decode_data (struct grub_jpeg_data *data)
     for (c1 = 0;  c1 < nc1 && (!data->dri || rst);
 	c1++, rst--, data->bitmap_ptr += hb * 3)
       {
-	int r2, c2, nr2, nc2;
+	unsigned r2, c2, nr2, nc2;
 	grub_uint8_t *ptr2;
 
 	for (r2 = 0; r2 < data->vs; r2++)
 	  for (c2 = 0; c2 < data->hs; c2++)
 	    grub_jpeg_decode_du (data, 0, data->ydu[r2 * 2 + c2]);
 
-	grub_jpeg_decode_du (data, 1, data->cbdu);
-	grub_jpeg_decode_du (data, 2, data->crdu);
+	if (data->color_components >= 3)
+	  {
+	    grub_jpeg_decode_du (data, 1, data->cbdu);
+	    grub_jpeg_decode_du (data, 2, data->crdu);
+	  }
 
 	if (grub_errno)
 	  return grub_errno;
@@ -626,14 +649,25 @@ grub_jpeg_decode_data (struct grub_jpeg_data *data)
 	for (r2 = 0; r2 < nr2; r2++, ptr2 += (data->image_width - nc2) * 3)
 	  for (c2 = 0; c2 < nc2; c2++, ptr2 += 3)
 	    {
-	      int i0, yy, cr, cb;
+	      unsigned i0;
+	      int yy;
 
 	      i0 = (r2 / data->vs) * 8 + (c2 / data->hs);
-	      cr = data->crdu[i0];
-	      cb = data->cbdu[i0];
 	      yy = data->ydu[(r2 / 8) * 2 + (c2 / 8)][(r2 % 8) * 8 + (c2 % 8)];
 
-	      grub_jpeg_ycrcb_to_rgb (yy, cr, cb, ptr2);
+	      if (data->color_components >= 3)
+		{
+		  int cr, cb;
+		  cr = data->crdu[i0];
+		  cb = data->cbdu[i0];
+		  grub_jpeg_ycrcb_to_rgb (yy, cr, cb, ptr2);
+		}
+	      else
+		{
+		  ptr2[0] = yy;
+		  ptr2[1] = yy;
+		  ptr2[2] = yy;
+		}
 	    }
       }
 
@@ -680,9 +714,7 @@ grub_jpeg_decode_jpeg (struct grub_jpeg_data *data)
       if (grub_errno)
 	break;
 
-#ifdef JPEG_DEBUG
-      grub_printf ("jpeg marker: %x\n", marker);
-#endif
+      grub_dprintf ("jpeg", "jpeg marker: %x\n", marker);
 
       switch (marker)
 	{
@@ -767,7 +799,7 @@ grub_video_reader_jpeg (struct grub_video_bitmap **bitmap,
 
 #if defined(JPEG_DEBUG)
 static grub_err_t
-grub_cmd_jpegtest (grub_command_t cmd __attribute__ ((unused)),
+grub_cmd_jpegtest (grub_command_t cmdd __attribute__ ((unused)),
 		   int argc, char **args)
 {
   struct grub_video_bitmap *bitmap = 0;

@@ -34,8 +34,6 @@ GRUB_MOD_LICENSE ("GPLv3+");
    http://www.gnu.org/software/autoconf/manual/gettext/MO-Files.html .
 */
 
-static struct grub_gettext_context main_context, secondary_context;
-
 static const char *(*grub_gettext_original) (const char *s);
 
 struct grub_gettext_msg
@@ -68,6 +66,8 @@ struct grub_gettext_context
   int grub_gettext_max_log;
   struct grub_gettext_msg *grub_gettext_msg_list;
 };
+
+static struct grub_gettext_context main_context, secondary_context;
 
 #define MO_MAGIC_NUMBER 		0x950412de
 
@@ -355,19 +355,30 @@ grub_mofile_open_lang (struct grub_gettext_context *ctx,
     return grub_errno;
 
   err = grub_mofile_open (ctx, mo_file);
+  grub_free (mo_file);
 
   /* Will try adding .gz as well.  */
   if (err)
     {
-      char *mo_file_old;
       grub_errno = GRUB_ERR_NONE;
-      mo_file_old = mo_file;
-      mo_file = grub_xasprintf ("%s.gz", mo_file);
-      grub_free (mo_file_old);
+      mo_file = grub_xasprintf ("%s%s/%s.mo.gz", part1, part2, locale);
       if (!mo_file)
 	return grub_errno;
       err = grub_mofile_open (ctx, mo_file);
+      grub_free (mo_file);
     }
+
+  /* Will try adding .gmo as well.  */
+  if (err)
+    {
+      grub_errno = GRUB_ERR_NONE;
+      mo_file = grub_xasprintf ("%s%s/%s.gmo", part1, part2, locale);
+      if (!mo_file)
+	return grub_errno;
+      err = grub_mofile_open (ctx, mo_file);
+      grub_free (mo_file);
+    }
+
   return err;
 }
 
@@ -412,6 +423,10 @@ grub_gettext_init_ext (struct grub_gettext_context *ctx,
 
       grub_free (lang);
     }
+
+  if (locale[0] == 'e' && locale[1] == 'n'
+      && (locale[2] == '\0' || locale[2] == '_'))
+    grub_errno = err = GRUB_ERR_NONE;
   return err;
 }
 

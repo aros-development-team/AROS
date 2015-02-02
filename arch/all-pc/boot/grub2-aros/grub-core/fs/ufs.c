@@ -49,18 +49,46 @@ GRUB_MOD_LICENSE ("GPLv3+");
 
 #define GRUB_UFS_VOLNAME_LEN	32
 
+#ifdef MODE_BIGENDIAN
+#define grub_ufs_to_cpu16 grub_be_to_cpu16
+#define grub_ufs_to_cpu32 grub_be_to_cpu32
+#define grub_ufs_to_cpu64 grub_be_to_cpu64
+#define grub_cpu_to_ufs32_compile_time grub_cpu_to_be32_compile_time
+#else
+#define grub_ufs_to_cpu16 grub_le_to_cpu16
+#define grub_ufs_to_cpu32 grub_le_to_cpu32
+#define grub_ufs_to_cpu64 grub_le_to_cpu64
+#define grub_cpu_to_ufs32_compile_time grub_cpu_to_le32_compile_time
+#endif
+
+#ifdef MODE_UFS2
+typedef grub_uint64_t grub_ufs_blk_t;
+static inline grub_disk_addr_t
+grub_ufs_to_cpu_blk (grub_ufs_blk_t blk)
+{
+  return grub_ufs_to_cpu64 (blk);
+}
+#else
+typedef grub_uint32_t grub_ufs_blk_t;
+static inline grub_disk_addr_t
+grub_ufs_to_cpu_blk (grub_ufs_blk_t blk)
+{
+  return grub_ufs_to_cpu32 (blk);
+}
+#endif
+
 /* Calculate in which group the inode can be found.  */
-#define UFS_BLKSZ(sblock) (grub_le_to_cpu32 (sblock->bsize))
+#define UFS_BLKSZ(sblock) (grub_ufs_to_cpu32 (sblock->bsize))
 #define UFS_LOG_BLKSZ(sblock) (data->log2_blksz)
 
 #ifdef MODE_UFS2
-#define INODE_ENDIAN(data,field,bits1,bits2) grub_le_to_cpu##bits2 (data->inode.field)
+#define INODE_ENDIAN(data,field,bits1,bits2) grub_ufs_to_cpu##bits2 (data->inode.field)
 #else
-#define INODE_ENDIAN(data,field,bits1,bits2) grub_le_to_cpu##bits1 (data->inode.field)
+#define INODE_ENDIAN(data,field,bits1,bits2) grub_ufs_to_cpu##bits1 (data->inode.field)
 #endif
 
-#define INODE_SIZE(data) grub_le_to_cpu64 (data->inode.size)
-#define INODE_MODE(data) grub_le_to_cpu16 (data->inode.mode)
+#define INODE_SIZE(data) grub_ufs_to_cpu64 (data->inode.size)
+#define INODE_MODE(data) grub_ufs_to_cpu16 (data->inode.mode)
 #ifdef MODE_UFS2
 #define LOG_INODE_BLKSZ 3
 #else
@@ -139,9 +167,9 @@ struct grub_ufs_inode
   grub_uint64_t mtime;
   grub_uint64_t ctime;
   grub_uint64_t create_time;
-  grub_uint32_t atime_sec;
-  grub_uint32_t mtime_sec;
-  grub_uint32_t ctime_sec;
+  grub_uint32_t atime_usec;
+  grub_uint32_t mtime_usec;
+  grub_uint32_t ctime_usec;
   grub_uint32_t create_time_sec;
   grub_uint32_t gen;
   grub_uint32_t kernel_flags;
@@ -159,7 +187,7 @@ struct grub_ufs_inode
   };
 
   grub_uint8_t unused[24];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 #else
 /* UFS inode.  */
 struct grub_ufs_inode
@@ -169,9 +197,12 @@ struct grub_ufs_inode
   grub_uint16_t uid;
   grub_uint16_t gid;
   grub_uint64_t size;
-  grub_uint64_t atime;
-  grub_uint64_t mtime;
-  grub_uint64_t ctime;
+  grub_uint32_t atime;
+  grub_uint32_t atime_usec;
+  grub_uint32_t mtime;
+  grub_uint32_t mtime_usec;
+  grub_uint32_t ctime;
+  grub_uint32_t ctime_usec;
   union
   {
     struct
@@ -186,7 +217,7 @@ struct grub_ufs_inode
   grub_uint32_t gen;
   grub_uint32_t unused;
   grub_uint8_t pad[12];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 #endif
 
 /* Directory entry.  */
@@ -203,7 +234,7 @@ struct grub_ufs_dirent
       grub_uint8_t namelen_bsd;
     };
   };
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* Information about a "mounted" ufs filesystem.  */
 struct grub_ufs_data
@@ -226,7 +257,6 @@ static grub_err_t grub_ufs_find_file (struct grub_ufs_data *data,
 static grub_disk_addr_t
 grub_ufs_get_file_block (struct grub_ufs_data *data, grub_disk_addr_t blk)
 {
-  struct grub_ufs_sblock *sblock = &data->sblock;
   unsigned long indirsz;
   int log2_blksz, log_indirsz;
 
@@ -234,47 +264,41 @@ grub_ufs_get_file_block (struct grub_ufs_data *data, grub_disk_addr_t blk)
   if (blk < GRUB_UFS_DIRBLKS)
     return INODE_DIRBLOCKS (data, blk);
 
-  log2_blksz = grub_le_to_cpu32 (data->sblock.log2_blksz);
+  log2_blksz = grub_ufs_to_cpu32 (data->sblock.log2_blksz);
 
   blk -= GRUB_UFS_DIRBLKS;
 
   log_indirsz = data->log2_blksz - LOG_INODE_BLKSZ;
   indirsz = 1 << log_indirsz;
+
   /* Single indirect block.  */
   if (blk < indirsz)
     {
-#ifdef MODE_UFS2
-      grub_uint64_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint64_t)];
-#else
-      grub_uint32_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint32_t)];
-#endif
+      grub_ufs_blk_t indir;
       grub_disk_read (data->disk,
 		      ((grub_disk_addr_t) INODE_INDIRBLOCKS (data, 0))
 		      << log2_blksz,
-		      0, sizeof (indir), indir);
-      return indir[blk];
+		      blk * sizeof (indir), sizeof (indir), &indir);
+      return indir;
     }
   blk -= indirsz;
 
   /* Double indirect block.  */
   if (blk < (grub_disk_addr_t) indirsz * (grub_disk_addr_t) indirsz)
     {
-#ifdef MODE_UFS2
-      grub_uint64_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint64_t)];
-#else
-      grub_uint32_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint32_t)];
-#endif
+      grub_ufs_blk_t indir;
 
       grub_disk_read (data->disk,
 		      ((grub_disk_addr_t) INODE_INDIRBLOCKS (data, 1))
 		      << log2_blksz,
-		      0, sizeof (indir), indir);
+		      (blk >> log_indirsz) * sizeof (indir),
+		      sizeof (indir), &indir);
       grub_disk_read (data->disk,
-		      ((grub_disk_addr_t) indir [blk >> log_indirsz])
-		      << log2_blksz,
-		      0, sizeof (indir), indir);
+		      grub_ufs_to_cpu_blk (indir) << log2_blksz,
+		      (blk & ((1 << log_indirsz) - 1)) * sizeof (indir),
+		      sizeof (indir), &indir);
 
-      return indir[blk & ((1 << log_indirsz) - 1)];
+      return indir;
     }
 
   blk -= (grub_disk_addr_t) indirsz * (grub_disk_addr_t) indirsz;
@@ -282,31 +306,28 @@ grub_ufs_get_file_block (struct grub_ufs_data *data, grub_disk_addr_t blk)
   /* Triple indirect block.  */
   if (!(blk >> (3 * log_indirsz)))
     {
-#ifdef MODE_UFS2
-      grub_uint64_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint64_t)];
-#else
-      grub_uint32_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint32_t)];
-#endif
+      grub_ufs_blk_t indir;
 
       grub_disk_read (data->disk,
 		      ((grub_disk_addr_t) INODE_INDIRBLOCKS (data, 2))
 		      << log2_blksz,
-		      0, sizeof (indir), indir);
+		      (blk >> (2 * log_indirsz)) * sizeof (indir),
+		      sizeof (indir), &indir);
       grub_disk_read (data->disk,
-		      ((grub_disk_addr_t) indir [blk >> (2 * log_indirsz)])
-		      << log2_blksz,
-		      0, sizeof (indir), indir);
+		      grub_ufs_to_cpu_blk (indir) << log2_blksz,
+		      ((blk >> log_indirsz)
+		       & ((1 << log_indirsz) - 1)) * sizeof (indir),
+		      sizeof (indir), &indir);
 
       grub_disk_read (data->disk,
-		      ((grub_disk_addr_t) indir [(blk >> log_indirsz)
-						 & ((1 << log_indirsz) - 1)])
-		      << log2_blksz,
-		      0, sizeof (indir), indir);
+		      grub_ufs_to_cpu_blk (indir) << log2_blksz,
+		      (blk & ((1 << log_indirsz) - 1)) * sizeof (indir),
+		      sizeof (indir), &indir);
 
-      return indir[blk & ((1 << log_indirsz) - 1)];
+      return indir;
     }
 
-  grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+  grub_error (GRUB_ERR_BAD_FS,
 	      "ufs does not support quadruple indirect blocks");
   return 0;
 }
@@ -316,8 +337,7 @@ grub_ufs_get_file_block (struct grub_ufs_data *data, grub_disk_addr_t blk)
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_ufs_read_file (struct grub_ufs_data *data,
-		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
-				       unsigned offset, unsigned length),
+		    grub_disk_read_hook_t read_hook, void *read_hook_data,
 		    grub_off_t pos, grub_size_t len, char *buf)
 {
   struct grub_ufs_sblock *sblock = &data->sblock;
@@ -365,8 +385,9 @@ grub_ufs_read_file (struct grub_ufs_data *data,
       if (blknr)
 	{
 	  data->disk->read_hook = read_hook;
+	  data->disk->read_hook_data = read_hook_data;
 	  grub_disk_read (data->disk,
-			  blknr << grub_le_to_cpu32 (data->sblock.log2_blksz),
+			  blknr << grub_ufs_to_cpu32 (data->sblock.log2_blksz),
 			  skipfirst, blockend, buf);
 	  data->disk->read_hook = 0;
 	  if (grub_errno)
@@ -389,17 +410,17 @@ grub_ufs_read_inode (struct grub_ufs_data *data, int ino, char *inode)
   struct grub_ufs_sblock *sblock = &data->sblock;
 
   /* Determine the group the inode is in.  */
-  int group = ino / grub_le_to_cpu32 (sblock->ino_per_group);
+  int group = ino / grub_ufs_to_cpu32 (sblock->ino_per_group);
 
   /* Determine the inode within the group.  */
-  int grpino = ino % grub_le_to_cpu32 (sblock->ino_per_group);
+  int grpino = ino % grub_ufs_to_cpu32 (sblock->ino_per_group);
 
   /* The first block of the group.  */
-  int grpblk = group * (grub_le_to_cpu32 (sblock->frags_per_group));
+  int grpblk = group * (grub_ufs_to_cpu32 (sblock->frags_per_group));
 
 #ifndef MODE_UFS2
-  grpblk += grub_le_to_cpu32 (sblock->cylg_offset)
-    * (group & (~grub_le_to_cpu32 (sblock->cylg_mask)));
+  grpblk += grub_ufs_to_cpu32 (sblock->cylg_offset)
+    * (group & (~grub_ufs_to_cpu32 (sblock->cylg_mask)));
 #endif
 
   if (!inode)
@@ -409,8 +430,8 @@ grub_ufs_read_inode (struct grub_ufs_data *data, int ino, char *inode)
     }
 
   grub_disk_read (data->disk,
-		  ((grub_le_to_cpu32 (sblock->inoblk_offs) + grpblk)
-		   << grub_le_to_cpu32 (data->sblock.log2_blksz))
+		  ((grub_ufs_to_cpu32 (sblock->inoblk_offs) + grpblk)
+		   << grub_ufs_to_cpu32 (data->sblock.log2_blksz))
 		  + grpino / UFS_INODE_PER_BLOCK,
 		  (grpino % UFS_INODE_PER_BLOCK)
 		  * sizeof (struct grub_ufs_inode),
@@ -426,11 +447,15 @@ grub_ufs_read_inode (struct grub_ufs_data *data, int ino, char *inode)
 static grub_err_t
 grub_ufs_lookup_symlink (struct grub_ufs_data *data, int ino)
 {
-  char symlink[INODE_SIZE (data) + 1];
+  char *symlink;
+  grub_size_t sz = INODE_SIZE (data);
 
   if (++data->linknest > GRUB_UFS_MAX_SYMLNK_CNT)
     return grub_error (GRUB_ERR_SYMLINK_LOOP, N_("too deep nesting of symlinks"));
 
+  symlink = grub_malloc (sz + 1);
+  if (!symlink)
+    return grub_errno;
   /* Normally we should just check that data->inode.nblocks == 0.
      However old Linux doesn't maintain nblocks correctly and so it's always
      0. If size is bigger than inline space then the symlink is surely not
@@ -440,8 +465,14 @@ grub_ufs_lookup_symlink (struct grub_ufs_data *data, int ino)
       && INODE_SIZE (data) <= sizeof (data->inode.symlink))
     grub_strcpy (symlink, (char *) data->inode.symlink);
   else
-    grub_ufs_read_file (data, 0, 0, INODE_SIZE (data), symlink);
-  symlink[INODE_SIZE (data)] = '\0';
+    {
+      if (grub_ufs_read_file (data, 0, 0, 0, sz, symlink) < 0)
+	{
+	  grub_free(symlink);
+	  return grub_errno;
+	}
+    }
+  symlink[sz] = '\0';
 
   /* The symlink is an absolute path, go back to the root inode.  */
   if (symlink[0] == '/')
@@ -449,9 +480,14 @@ grub_ufs_lookup_symlink (struct grub_ufs_data *data, int ino)
 
   /* Now load in the old inode.  */
   if (grub_ufs_read_inode (data, ino, 0))
-    return grub_errno;
+    {
+      grub_free (symlink);
+      return grub_errno;
+    }
 
   grub_ufs_find_file (data, symlink);
+
+  grub_free (symlink);
 
   return grub_errno;
 }
@@ -462,95 +498,91 @@ grub_ufs_lookup_symlink (struct grub_ufs_data *data, int ino)
 static grub_err_t
 grub_ufs_find_file (struct grub_ufs_data *data, const char *path)
 {
-  char fpath[grub_strlen (path) + 1];
-  char *name = fpath;
-  char *next;
+  const char *name;
+  const char *next = path;
   unsigned int pos = 0;
   int dirino;
+  char *filename;
 
-  grub_strcpy (fpath, path);
+  /* We reject filenames longer than the one we're looking
+     for without reading, so this allocation is enough.  */
+  filename = grub_malloc (grub_strlen (path) + 2);
+  if (!filename)
+    return grub_errno;
 
-  /* Skip the first slash.  */
-  while (*name == '/')
-    name++;
-  if (!*name)
-    return 0;
-
-  /* Extract the actual part from the pathname.  */
-  next = grub_strchr (name, '/');
-  if (next)
-    {
-      next[0] = '\0';
-      next++;
-      while (*next == '/')
-	next++;
-    }
-
-  do
+  while (1)
     {
       struct grub_ufs_dirent dirent;
-      int namelen;
 
-      if (grub_strlen (name) == 0)
-	return GRUB_ERR_NONE;
+      name = next;
+      /* Skip the first slash.  */
+      while (*name == '/')
+	name++;
+      if (*name == 0)
+	{
+	  grub_free (filename);
+	  return GRUB_ERR_NONE;
+	}
 
-      if (grub_ufs_read_file (data, 0, pos, sizeof (dirent),
-			      (char *) &dirent) < 0)
-	return grub_errno;
+      if ((INODE_MODE(data) & GRUB_UFS_ATTR_TYPE)
+	  != GRUB_UFS_ATTR_DIR)
+	{
+	  grub_error (GRUB_ERR_BAD_FILE_TYPE,
+		      N_("not a directory"));
+	  goto fail;
+	}
+
+      /* Extract the actual part from the pathname.  */
+      for (next = name; *next && *next != '/'; next++);
+      for (pos = 0;  ; pos += grub_ufs_to_cpu16 (dirent.direntlen))
+	{
+	  int namelen;
+
+	  if (pos >= INODE_SIZE (data))
+	    {
+	      grub_error (GRUB_ERR_FILE_NOT_FOUND,
+			  N_("file `%s' not found"),
+			  path);
+	      goto fail;
+	    }
+
+	  if (grub_ufs_read_file (data, 0, 0, pos, sizeof (dirent),
+				  (char *) &dirent) < 0)
+	    goto fail;
 
 #ifdef MODE_UFS2
-      namelen = dirent.namelen_bsd;
+	  namelen = dirent.namelen_bsd;
 #else
-      namelen = grub_le_to_cpu16 (dirent.namelen);
+	  namelen = grub_ufs_to_cpu16 (dirent.namelen);
 #endif
-      {
-	char filename[namelen + 1];
-
-	if (grub_ufs_read_file (data, 0, pos + sizeof (dirent),
-				namelen, filename) < 0)
-	  return grub_errno;
-
-	filename[namelen] = '\0';
-
-	if (!grub_strcmp (name, filename))
-	  {
-	    dirino = data->ino;
-	    grub_ufs_read_inode (data, grub_le_to_cpu32 (dirent.ino), 0);
-
-	    if ((INODE_MODE(data) & GRUB_UFS_ATTR_TYPE)
-		== GRUB_UFS_ATTR_LNK)
-	      {
-		grub_ufs_lookup_symlink (data, dirino);
-		if (grub_errno)
-		  return grub_errno;
-	      }
-
-	    if (!next)
-	      return 0;
-
-	    pos = 0;
-
-	    name = next;
-	    next = grub_strchr (name, '/');
-	    if (next)
-	      {
-		next[0] = '\0';
-		next++;
-		while (*next == '/')
-		  next++;
-	      }
-
-	    if ((INODE_MODE(data) & GRUB_UFS_ATTR_TYPE) != GRUB_UFS_ATTR_DIR)
-	      return grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
-
+	  if (namelen < next - name)
 	    continue;
-	  }
-      }
 
-      pos += grub_le_to_cpu16 (dirent.direntlen);
-    } while (pos < INODE_SIZE (data));
+	  if (grub_ufs_read_file (data, 0, 0, pos + sizeof (dirent),
+				  next - name + (namelen != next - name),
+				  filename) < 0)
+	    goto fail;
 
-  grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), path);
+	  if (grub_strncmp (name, filename, next - name) == 0
+	      && (namelen == next - name || filename[next - name] == '\0'))
+	    {
+	      dirino = data->ino;
+	      grub_ufs_read_inode (data, grub_ufs_to_cpu32 (dirent.ino), 0);
+	      
+	      if ((INODE_MODE(data) & GRUB_UFS_ATTR_TYPE)
+		  == GRUB_UFS_ATTR_LNK)
+		{
+		  grub_ufs_lookup_symlink (data, dirino);
+		  if (grub_errno)
+		    goto fail;
+		}
+
+	      break;
+	    }
+	}
+    }
+ fail:
+  grub_free (filename);
   return grub_errno;
 }
 
@@ -576,12 +608,13 @@ grub_ufs_mount (grub_disk_t disk)
 
       /* No need to byteswap bsize in this check. It works the same on both
 	 endiannesses.  */
-      if (grub_le_to_cpu32 (data->sblock.magic) == GRUB_UFS_MAGIC
+      if (data->sblock.magic == grub_cpu_to_ufs32_compile_time (GRUB_UFS_MAGIC)
 	  && data->sblock.bsize != 0
-	  && ((data->sblock.bsize & (data->sblock.bsize - 1)) == 0))
+	  && ((data->sblock.bsize & (data->sblock.bsize - 1)) == 0)
+	  && data->sblock.ino_per_group != 0)
 	{
 	  for (data->log2_blksz = 0; 
-	       (1U << data->log2_blksz) < grub_le_to_cpu32 (data->sblock.bsize);
+	       (1U << data->log2_blksz) < grub_ufs_to_cpu32 (data->sblock.bsize);
 	       data->log2_blksz++);
 
 	  data->disk = disk;
@@ -610,8 +643,7 @@ grub_ufs_mount (grub_disk_t disk)
 
 static grub_err_t
 grub_ufs_dir (grub_device_t device, const char *path,
-	       int (*hook) (const char *filename,
-			    const struct grub_dirhook_info *info))
+	      grub_fs_dir_hook_t hook, void *hook_data)
 {
   struct grub_ufs_data *data;
   unsigned int pos = 0;
@@ -645,40 +677,56 @@ grub_ufs_dir (grub_device_t device, const char *path,
       struct grub_ufs_dirent dirent;
       int namelen;
 
-      if (grub_ufs_read_file (data, 0, pos, sizeof (dirent),
+      if (grub_ufs_read_file (data, 0, 0, pos, sizeof (dirent),
 			      (char *) &dirent) < 0)
+	break;
+
+      if (dirent.direntlen == 0)
 	break;
 
 #ifdef MODE_UFS2
       namelen = dirent.namelen_bsd;
 #else
-      namelen = grub_le_to_cpu16 (dirent.namelen);
+      namelen = grub_ufs_to_cpu16 (dirent.namelen);
 #endif
 
-      {
-	char filename[namelen + 1];
-	struct grub_dirhook_info info;
-	struct grub_ufs_inode inode;
+      char *filename = grub_malloc (namelen + 1);
+      if (!filename)
+	goto fail;
+      struct grub_dirhook_info info;
+      struct grub_ufs_inode inode;
 
-	grub_memset (&info, 0, sizeof (info));
+      grub_memset (&info, 0, sizeof (info));
 
-	if (grub_ufs_read_file (data, 0, pos + sizeof (dirent),
-				namelen, filename) < 0)
+      if (grub_ufs_read_file (data, 0, 0, pos + sizeof (dirent),
+			      namelen, filename) < 0)
+	{
+	  grub_free (filename);
 	  break;
+	}
 
-	filename[namelen] = '\0';
-	grub_ufs_read_inode (data, dirent.ino, (char *) &inode);
+      filename[namelen] = '\0';
+      grub_ufs_read_inode (data, grub_ufs_to_cpu32 (dirent.ino),
+			   (char *) &inode);
 
-	info.dir = ((grub_le_to_cpu16 (inode.mode) & GRUB_UFS_ATTR_TYPE)
-		    == GRUB_UFS_ATTR_DIR);
-	info.mtime = grub_le_to_cpu64 (inode.mtime);
-	info.mtimeset = 1;
+      info.dir = ((grub_ufs_to_cpu16 (inode.mode) & GRUB_UFS_ATTR_TYPE)
+		  == GRUB_UFS_ATTR_DIR);
+#ifdef MODE_UFS2
+      info.mtime = grub_ufs_to_cpu64 (inode.mtime);
+#else
+      info.mtime = grub_ufs_to_cpu32 (inode.mtime);
+#endif
+      info.mtimeset = 1;
 
-	if (hook (filename, &info))
+      if (hook (filename, &info, hook_data))
+	{
+	  grub_free (filename);
 	  break;
-      }
+	}
 
-      pos += grub_le_to_cpu16 (dirent.direntlen);
+      grub_free (filename);
+
+      pos += grub_ufs_to_cpu16 (dirent.direntlen);
     }
 
  fail:
@@ -730,7 +778,8 @@ grub_ufs_read (grub_file_t file, char *buf, grub_size_t len)
   struct grub_ufs_data *data =
     (struct grub_ufs_data *) file->data;
 
-  return grub_ufs_read_file (data, file->read_hook, file->offset, len, buf);
+  return grub_ufs_read_file (data, file->read_hook, file->read_hook_data,
+			     file->offset, len, buf);
 }
 
 
@@ -773,8 +822,8 @@ grub_ufs_uuid (grub_device_t device, char **uuid)
   data = grub_ufs_mount (disk);
   if (data && (data->sblock.uuidhi != 0 || data->sblock.uuidlow != 0))
     *uuid = grub_xasprintf ("%08x%08x",
-			   (unsigned) grub_le_to_cpu32 (data->sblock.uuidhi),
-			   (unsigned) grub_le_to_cpu32 (data->sblock.uuidlow));
+			   (unsigned) grub_ufs_to_cpu32 (data->sblock.uuidhi),
+			   (unsigned) grub_ufs_to_cpu32 (data->sblock.uuidlow));
   else
     *uuid = NULL;
 
@@ -799,10 +848,10 @@ grub_ufs_mtime (grub_device_t device, grub_int32_t *tm)
     *tm = 0;
   else
     {
-      *tm = grub_le_to_cpu32 (data->sblock.mtime);
+      *tm = grub_ufs_to_cpu32 (data->sblock.mtime);
 #ifdef MODE_UFS2
-      if (*tm < (grub_int64_t) grub_le_to_cpu64 (data->sblock.mtime2))
-	*tm = grub_le_to_cpu64 (data->sblock.mtime2);
+      if (*tm < (grub_int64_t) grub_ufs_to_cpu64 (data->sblock.mtime2))
+	*tm = grub_ufs_to_cpu64 (data->sblock.mtime2);
 #endif
     }
 
@@ -820,7 +869,11 @@ static struct grub_fs grub_ufs_fs =
 #ifdef MODE_UFS2
     .name = "ufs2",
 #else
+#ifdef MODE_BIGENDIAN
+    .name = "ufs1_be",
+#else
     .name = "ufs1",
+#endif
 #endif
     .dir = grub_ufs_dir,
     .open = grub_ufs_open,
@@ -839,7 +892,11 @@ static struct grub_fs grub_ufs_fs =
 #ifdef MODE_UFS2
 GRUB_MOD_INIT(ufs2)
 #else
+#ifdef MODE_BIGENDIAN
+GRUB_MOD_INIT(ufs1_be)
+#else
 GRUB_MOD_INIT(ufs1)
+#endif
 #endif
 {
   grub_fs_register (&grub_ufs_fs);
@@ -849,7 +906,11 @@ GRUB_MOD_INIT(ufs1)
 #ifdef MODE_UFS2
 GRUB_MOD_FINI(ufs2)
 #else
+#ifdef MODE_BIGENDIAN
+GRUB_MOD_FINI(ufs1_be)
+#else
 GRUB_MOD_FINI(ufs1)
+#endif
 #endif
 {
   grub_fs_unregister (&grub_ufs_fs);

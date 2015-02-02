@@ -105,7 +105,7 @@ fake_bios_data (int use_rom)
   smbios = 0;
   for (i = 0; i < grub_efi_system_table->num_table_entries; i++)
     {
-      grub_efi_guid_t *guid =
+      grub_efi_packed_guid_t *guid =
 	&grub_efi_system_table->configuration_table[i].vendor_guid;
 
       if (! grub_memcmp (guid, &acpi2_guid, sizeof (grub_efi_guid_t)))

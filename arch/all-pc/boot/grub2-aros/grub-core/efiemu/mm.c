@@ -268,26 +268,26 @@ grub_efiemu_mm_return_request (int handle)
       }
 }
 
+/* Helper for grub_efiemu_mmap_init.  */
+static int
+bounds_hook (grub_uint64_t addr __attribute__ ((unused)),
+	     grub_uint64_t size __attribute__ ((unused)),
+	     grub_memory_type_t type __attribute__ ((unused)),
+	     void *data __attribute__ ((unused)))
+{
+  mmap_reserved_size++;
+  return 0;
+}
+
 /* Reserve space for memory map */
 static grub_err_t
 grub_efiemu_mmap_init (void)
 {
-  auto int NESTED_FUNC_ATTR bounds_hook (grub_uint64_t, grub_uint64_t,
-					 grub_memory_type_t);
-  int NESTED_FUNC_ATTR bounds_hook (grub_uint64_t addr __attribute__ ((unused)),
-				    grub_uint64_t size __attribute__ ((unused)),
-				    grub_memory_type_t type
-				    __attribute__ ((unused)))
-    {
-      mmap_reserved_size++;
-      return 0;
-    }
-
   // the place for memory used by efiemu itself
   mmap_reserved_size = GRUB_EFI_MAX_MEMORY_TYPE + 1;
 
 #ifndef GRUB_MACHINE_EMU
-  grub_machine_mmap_iterate (bounds_hook);
+  grub_machine_mmap_iterate (bounds_hook, NULL);
 #endif
 
   return GRUB_ERR_NONE;
@@ -383,48 +383,47 @@ grub_efiemu_mm_init (void)
   return GRUB_ERR_NONE;
 }
 
+/* Helper for grub_efiemu_mmap_fill.  */
+static int
+fill_hook (grub_uint64_t addr, grub_uint64_t size, grub_memory_type_t type,
+	   void *data __attribute__ ((unused)))
+  {
+    switch (type)
+      {
+      case GRUB_MEMORY_AVAILABLE:
+	return grub_efiemu_add_to_mmap (addr, size,
+					GRUB_EFI_CONVENTIONAL_MEMORY);
+
+      case GRUB_MEMORY_ACPI:
+	return grub_efiemu_add_to_mmap (addr, size,
+					GRUB_EFI_ACPI_RECLAIM_MEMORY);
+
+      case GRUB_MEMORY_NVS:
+	return grub_efiemu_add_to_mmap (addr, size,
+					GRUB_EFI_ACPI_MEMORY_NVS);
+
+      default:
+	grub_dprintf ("efiemu",
+		      "Unknown memory type %d. Assuming unusable\n", type);
+      case GRUB_MEMORY_RESERVED:
+	return grub_efiemu_add_to_mmap (addr, size,
+					GRUB_EFI_UNUSABLE_MEMORY);
+      }
+  }
+
 /* Copy host memory map */
 static grub_err_t
 grub_efiemu_mmap_fill (void)
 {
-  auto int NESTED_FUNC_ATTR fill_hook (grub_uint64_t, grub_uint64_t,
-				       grub_memory_type_t);
-  int NESTED_FUNC_ATTR fill_hook (grub_uint64_t addr,
-				  grub_uint64_t size,
-				  grub_memory_type_t type)
-    {
-      switch (type)
-	{
-	case GRUB_MEMORY_AVAILABLE:
-	  return grub_efiemu_add_to_mmap (addr, size,
-					  GRUB_EFI_CONVENTIONAL_MEMORY);
-
-	case GRUB_MEMORY_ACPI:
-	  return grub_efiemu_add_to_mmap (addr, size,
-					  GRUB_EFI_ACPI_RECLAIM_MEMORY);
-
-	case GRUB_MEMORY_NVS:
-	  return grub_efiemu_add_to_mmap (addr, size,
-					  GRUB_EFI_ACPI_MEMORY_NVS);
-
-	default:
-	  grub_dprintf ("efiemu",
-			"Unknown memory type %d. Assuming unusable\n", type);
-	case GRUB_MEMORY_RESERVED:
-	  return grub_efiemu_add_to_mmap (addr, size,
-					  GRUB_EFI_UNUSABLE_MEMORY);
-	}
-    }
-
 #ifndef GRUB_MACHINE_EMU
-  grub_machine_mmap_iterate (fill_hook);
+  grub_machine_mmap_iterate (fill_hook, NULL);
 #endif
 
   return GRUB_ERR_NONE;
 }
 
 grub_err_t
-grub_efiemu_mmap_iterate (grub_memory_hook_t hook)
+grub_efiemu_mmap_iterate (grub_memory_hook_t hook, void *hook_data)
 {
   unsigned i;
 
@@ -433,12 +432,12 @@ grub_efiemu_mmap_iterate (grub_memory_hook_t hook)
       {
       case GRUB_EFI_RUNTIME_SERVICES_CODE:
 	hook (efiemu_mmap[i].physical_start, efiemu_mmap[i].num_pages * 4096,
-	      GRUB_MEMORY_CODE);
+	      GRUB_MEMORY_CODE, hook_data);
 	break;
 
       case GRUB_EFI_UNUSABLE_MEMORY:
 	hook (efiemu_mmap[i].physical_start, efiemu_mmap[i].num_pages * 4096,
-	      GRUB_MEMORY_BADRAM);
+	      GRUB_MEMORY_BADRAM, hook_data);
 	break;
 
       case GRUB_EFI_RESERVED_MEMORY_TYPE:
@@ -448,7 +447,7 @@ grub_efiemu_mmap_iterate (grub_memory_hook_t hook)
       case GRUB_EFI_PAL_CODE:
       case GRUB_EFI_MAX_MEMORY_TYPE:
 	hook (efiemu_mmap[i].physical_start, efiemu_mmap[i].num_pages * 4096,
-	      GRUB_MEMORY_RESERVED);
+	      GRUB_MEMORY_RESERVED, hook_data);
 	break;
 
       case GRUB_EFI_LOADER_CODE:
@@ -457,17 +456,17 @@ grub_efiemu_mmap_iterate (grub_memory_hook_t hook)
       case GRUB_EFI_BOOT_SERVICES_DATA:
       case GRUB_EFI_CONVENTIONAL_MEMORY:
 	hook (efiemu_mmap[i].physical_start, efiemu_mmap[i].num_pages * 4096,
-	      GRUB_MEMORY_AVAILABLE);
+	      GRUB_MEMORY_AVAILABLE, hook_data);
 	break;
 
       case GRUB_EFI_ACPI_RECLAIM_MEMORY:
 	hook (efiemu_mmap[i].physical_start, efiemu_mmap[i].num_pages * 4096,
-	      GRUB_MEMORY_ACPI);
+	      GRUB_MEMORY_ACPI, hook_data);
 	break;
 
       case GRUB_EFI_ACPI_MEMORY_NVS:
 	hook (efiemu_mmap[i].physical_start, efiemu_mmap[i].num_pages * 4096,
-	      GRUB_MEMORY_NVS);
+	      GRUB_MEMORY_NVS, hook_data);
 	break;
       }
 

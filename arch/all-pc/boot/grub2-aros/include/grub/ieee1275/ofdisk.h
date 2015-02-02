@@ -22,4 +22,7 @@
 extern void grub_ofdisk_init (void);
 extern void grub_ofdisk_fini (void);
 
+extern grub_err_t grub_ofdisk_get_block_size (const char *device,
+                                              grub_uint32_t *block_size);
+
 #endif /* ! GRUB_INIT_HEADER */

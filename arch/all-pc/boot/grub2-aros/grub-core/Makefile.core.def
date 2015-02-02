@@ -30,6 +30,20 @@ script = {
   common = gdb_grub.in;
 };
 
+script = {
+  installdir = platform;
+  name = grub.chrp;
+  common = boot/powerpc/grub.chrp.in;
+  enable = powerpc_ieee1275;
+};
+
+script = {
+  installdir = platform;
+  name = bootinfo.txt;
+  common = boot/powerpc/bootinfo.txt.in;
+  enable = powerpc_ieee1275;
+};
+
 kernel = {
   name = kernel;
 
@@ -45,31 +59,50 @@ kernel = {
   ia64_efi_ldflags = '-Wl,-r,-d';
   ia64_efi_stripflags = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version';
 
+  x86_64_xen_cppflags	   = '$(CPPFLAGS_XEN)';
+  i386_xen_cppflags	   = '$(CPPFLAGS_XEN)';
+
+  arm_efi_ldflags          = '-Wl,-r,-d';
+  arm_efi_stripflags       = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version';
+
+  arm64_efi_ldflags          = '-Wl,-r,-d';
+  arm64_efi_stripflags       = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version -R .eh_frame';
+
   i386_pc_ldflags          = '$(TARGET_IMG_LDFLAGS)';
   i386_pc_ldflags          = '$(TARGET_IMG_BASE_LDOPT),0x9000';
-
   i386_qemu_ldflags        = '$(TARGET_IMG_LDFLAGS)';
   i386_qemu_ldflags        = '$(TARGET_IMG_BASE_LDOPT),0x8200';
+  i386_coreboot_ldflags    = '$(TARGET_IMG_LDFLAGS)';
+  i386_coreboot_ldflags    = '$(TARGET_IMG_BASE_LDOPT),0x8200';
+  i386_multiboot_ldflags   = '$(TARGET_IMG_LDFLAGS)';
+  i386_multiboot_ldflags   = '$(TARGET_IMG_BASE_LDOPT),0x8200';
+  i386_ieee1275_ldflags    = '$(TARGET_IMG_LDFLAGS)';
+  i386_ieee1275_ldflags    = '$(TARGET_IMG_BASE_LDOPT),0x10000';
+  i386_xen_ldflags         = '$(TARGET_IMG_LDFLAGS)';
+  i386_xen_ldflags         = '$(TARGET_IMG_BASE_LDOPT),0';
+  x86_64_xen_ldflags       = '$(TARGET_IMG_LDFLAGS)';
+  x86_64_xen_ldflags       = '$(TARGET_IMG_BASE_LDOPT),0';
 
   ldadd = '$(LDADD_KERNEL)';
 
-  i386_coreboot_ldflags    = '-Wl,-Ttext=0x8200';
-  i386_multiboot_ldflags   = '-Wl,-Ttext=0x8200';
-  i386_ieee1275_ldflags    = '-Wl,-Ttext=0x10000';
   mips_loongson_ldflags    = '-Wl,-Ttext,0x80200000';
   powerpc_ieee1275_ldflags = '-Wl,-Ttext,0x200000';
   sparc64_ieee1275_ldflags = '-Wl,-Ttext,0x4400';
-  mips_arc_ldflags    = '-Wl,-Ttext,0x8bd00000';
+  mips_arc_ldflags    = '-Wl,-Ttext,$(TARGET_LINK_ADDR)';
   mips_qemu_mips_ldflags    = '-Wl,-Ttext,0x80200000';
 
-  mips_loongson_cppflags = '-DUSE_ASCII_FAILBACK';
+  mips_arc_cppflags = '-DGRUB_DECOMPRESSOR_LINK_ADDR=$(TARGET_DECOMPRESSOR_LINK_ADDR)';
   i386_qemu_cppflags     = '-DGRUB_BOOT_MACHINE_LINK_ADDR=$(GRUB_BOOT_MACHINE_LINK_ADDR)';
   emu_cflags = '$(CFLAGS_GNULIB)';
   emu_cppflags = '$(CPPFLAGS_GNULIB)';
+  arm_uboot_ldflags       = '-Wl,-Ttext=0x08000000';
+  arm_uboot_stripflags    = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version';
 
   i386_pc_startup = kern/i386/pc/startup.S;
   i386_efi_startup = kern/i386/efi/startup.S;
   x86_64_efi_startup = kern/x86_64/efi/startup.S;
+  i386_xen_startup = kern/i386/xen/startup.S;
+  x86_64_xen_startup = kern/x86_64/xen/startup.S;
   i386_qemu_startup = kern/i386/qemu/startup.S;
   i386_ieee1275_startup = kern/i386/ieee1275/startup.S;
   i386_coreboot_startup = kern/i386/coreboot/startup.S;
@@ -77,6 +110,9 @@ kernel = {
   mips_startup = kern/mips/startup.S;
   sparc64_ieee1275_startup = kern/sparc64/ieee1275/crt0.S;
   powerpc_ieee1275_startup = kern/powerpc/ieee1275/startup.S;
+  arm_uboot_startup = kern/arm/uboot/startup.S;
+  arm_efi_startup = kern/arm/efi/startup.S;
+  arm64_efi_startup = kern/arm64/efi/startup.S;
 
   common = kern/command.c;
   common = kern/corecmd.c;
@@ -102,7 +138,6 @@ kernel = {
 
   noemu_nodist = symlist.c;
 
-  i386_pc = kern/generic/rtc_get_time_ms.c;
   mips = kern/generic/rtc_get_time_ms.c;
 
   ieee1275 = disk/ieee1275/ofdisk.c;
@@ -113,20 +148,25 @@ kernel = {
   ieee1275 = term/ieee1275/console.c;
   ieee1275 = kern/ieee1275/init.c;
 
+  uboot = disk/uboot/ubootdisk.c;
+  uboot = kern/uboot/uboot.c;
+  uboot = kern/uboot/init.c;
+  uboot = kern/uboot/hw.c;
+  uboot = term/uboot/console.c;
+
   terminfoinkernel = term/terminfo.c;
   terminfoinkernel = term/tparm.c;
   terminfoinkernel = commands/extcmd.c;
   terminfoinkernel = lib/arg.c;
 
   i386 = kern/i386/dl.c;
+  i386_xen = kern/i386/dl.c;
 
-  i386_coreboot_multiboot_qemu = kern/i386/coreboot/init.c;
+  i386_coreboot = kern/i386/coreboot/init.c;
+  i386_multiboot = kern/i386/coreboot/init.c;
+  i386_qemu = kern/i386/qemu/init.c;
   i386_coreboot_multiboot_qemu = term/i386/pc/vga_text.c;
-
-  i386_coreboot_multiboot_qemu = term/i386/vga_common.c;
-  i386_pc = term/i386/vga_common.c;
-
-  x86 = kern/i386/pit.c;
+  i386_coreboot = video/i386/coreboot/cbfb.c;
 
   efi = disk/efi/efidisk.c;
   efi = kern/efi/efi.c;
@@ -134,36 +174,48 @@ kernel = {
   efi = kern/efi/mm.c;
   efi = term/efi/console.c;
 
-  i386_efi = kern/i386/tsc.c;
+  x86 = kern/i386/tsc.c;
+
   i386_efi = kern/i386/efi/init.c;
   i386_efi = bus/pci.c;
 
-  x86_64_efi = kern/i386/tsc.c;
-  x86_64_efi = kern/x86_64/dl.c;
+  x86_64 = kern/x86_64/dl.c;
+  x86_64_xen = kern/x86_64/dl.c;
   x86_64_efi = kern/x86_64/efi/callwrap.S;
   x86_64_efi = kern/i386/efi/init.c;
   x86_64_efi = bus/pci.c;
+
+  xen = kern/i386/tsc.c;
+  x86_64_xen = kern/x86_64/xen/hypercall.S;
+  i386_xen = kern/i386/xen/hypercall.S;
+  xen = kern/xen/init.c;
+  xen = term/xen/console.c;
+  xen = disk/xen/xendisk.c;
+  xen = commands/boot.c;
 
   ia64_efi = kern/ia64/efi/startup.S;
   ia64_efi = kern/ia64/efi/init.c;
   ia64_efi = kern/ia64/dl.c;
   ia64_efi = kern/ia64/dl_helper.c;
+  ia64_efi = kern/ia64/cache.c;
+
+  arm_efi = kern/arm/efi/init.c;
+  arm_efi = kern/arm/efi/misc.c;
+
+  arm64_efi = kern/arm/efi/init.c;
 
   i386_pc = kern/i386/pc/init.c;
   i386_pc = kern/i386/pc/mmap.c;
-  i386_pc = kern/i386/tsc.c;
   i386_pc = term/i386/pc/console.c;
 
   i386_qemu = bus/pci.c;
   i386_qemu = kern/vga_init.c;
   i386_qemu = kern/i386/qemu/mmap.c;
-  i386_qemu = kern/i386/tsc.c;
 
   i386_coreboot = kern/i386/coreboot/mmap.c;
-  i386_coreboot = kern/i386/tsc.c;
+  i386_coreboot = kern/i386/coreboot/cbtable.c;
 
   i386_multiboot = kern/i386/multiboot_mmap.c;
-  i386_multiboot = kern/i386/tsc.c;
 
   mips = kern/mips/cache.S;
   mips = kern/mips/dl.c;
@@ -173,9 +225,9 @@ kernel = {
   mips_qemu_mips = term/ns8250.c;
   mips_qemu_mips = term/serial.c;
   mips_qemu_mips = term/at_keyboard.c;
+  mips_qemu_mips = commands/boot.c;
   mips_qemu_mips = commands/keylayouts.c;
   mips_qemu_mips = term/i386/pc/vga_text.c;
-  mips_qemu_mips = term/i386/vga_common.c;
   mips_qemu_mips = kern/vga_init.c;
 
   mips_arc = kern/mips/arc/init.c;
@@ -188,10 +240,12 @@ kernel = {
   mips_loongson = bus/pci.c;
   mips_loongson = kern/mips/loongson/init.c;
   mips_loongson = term/at_keyboard.c;
+  mips_loongson = commands/boot.c;
   mips_loongson = term/serial.c;
   mips_loongson = video/sm712.c;
   mips_loongson = video/sis315pro.c;
   mips_loongson = video/radeon_fuloong2e.c;
+  mips_loongson = video/radeon_yeeloong3a.c;
   extra_dist = video/sm712_init.c;
   extra_dist = video/sis315_init.c;
   mips_loongson = commands/keylayouts.c;
@@ -203,11 +257,27 @@ kernel = {
   sparc64_ieee1275 = kern/sparc64/dl.c;
   sparc64_ieee1275 = kern/sparc64/ieee1275/ieee1275.c;
 
+  arm = kern/arm/dl.c;
+  arm = kern/arm/dl_helper.c;
+  arm = kern/arm/cache_armv6.S;
+  arm = kern/arm/cache_armv7.S;
+  extra_dist = kern/arm/cache.S;
+  arm = kern/arm/cache.c;
+  arm = kern/arm/misc.S;
+
+  arm64 = kern/arm64/cache.c;
+  arm64 = kern/arm64/cache_flush.S;
+  arm64 = kern/arm64/dl.c;
+  arm64 = kern/arm64/dl_helper.c;
+
   emu = disk/host.c;
-  emu = gnulib/progname.c;
-  emu = gnulib/error.c;
   emu = kern/emu/cache_s.S;
   emu = kern/emu/hostdisk.c;
+  emu = osdep/unix/hostdisk.c;
+  emu = osdep/exec.c;
+  extra_dist = osdep/unix/exec.c;
+  emu = osdep/devmapper/hostdisk.c;
+  emu = osdep/hostdisk.c;
   emu = kern/emu/hostfs.c;
   emu = kern/emu/main.c;
   emu = kern/emu/argp_common.c;
@@ -215,22 +285,30 @@ kernel = {
   emu = kern/emu/mm.c;
   emu = kern/emu/time.c;
   emu = kern/emu/cache.c;
-  emu = term/emu/console.c;
+  emu = osdep/emuconsole.c;
+  extra_dist = osdep/unix/emuconsole.c;
+  extra_dist = osdep/windows/emuconsole.c;
+  emu = osdep/dl.c;
+  extra_dist = osdep/unix/dl.c;
+  extra_dist = osdep/windows/dl.c;
+  emu = osdep/sleep.c;
+  emu = osdep/init.c;
+  emu = osdep/emunet.c;
+  extra_dist = osdep/linux/emunet.c;
+  extra_dist = osdep/basic/emunet.c;
+  emu = osdep/cputime.c;
+  extra_dist = osdep/unix/cputime.c;
+  extra_dist = osdep/windows/cputime.c;
 
   videoinkernel = term/gfxterm.c;
   videoinkernel = font/font.c;
   videoinkernel = font/font_cmd.c;
   videoinkernel = io/bufio.c;
-  videoinkernel = video/bitmap.c;
-  videoinkernel = video/bitmap_scale.c;
-  videoinkernel = video/colors.c;
   videoinkernel = video/fb/fbblit.c;
   videoinkernel = video/fb/fbfill.c;
   videoinkernel = video/fb/fbutil.c;
   videoinkernel = video/fb/video_fb.c;
   videoinkernel = video/video.c;
-
-  videoinkernel = commands/boot.c;
 
   extra_dist = kern/i386/int.S;
   extra_dist = kern/i386/realmode.S;
@@ -245,9 +323,9 @@ program = {
   emu = kern/emu/full.c;
   emu_nodist = grub_emu_init.c;
 
-  ldadd = 'kernel.img$(EXEEXT)';
+  ldadd = 'kernel.exec$(EXEEXT)';
   ldadd = '$(MODULE_FILES)';
-  ldadd = '$(LIBUTIL) $(LIBCURSES) $(LIBSDL) $(LIBUSB) $(LIBPCIACCESS) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
+  ldadd = 'gnulib/libgnu.a $(LIBINTL) $(LIBUTIL) $(LIBSDL) $(LIBUSB) $(LIBPCIACCESS) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
 
   enable = emu;
 };
@@ -258,8 +336,8 @@ program = {
   emu = kern/emu/lite.c;
   emu_nodist = symlist.c;
 
-  ldadd = 'kernel.img$(EXEEXT)';
-  ldadd = '$(LIBUTIL) $(LIBCURSES) $(LIBSDL) $(LIBUSB) $(LIBPCIACCESS) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
+  ldadd = 'kernel.exec$(EXEEXT)';
+  ldadd = 'gnulib/libgnu.a $(LIBINTL) $(LIBUTIL) $(LIBSDL) $(LIBUSB) $(LIBPCIACCESS) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
 
   enable = emu;
 };
@@ -287,11 +365,33 @@ image = {
 };
 
 image = {
+  name = boot_hybrid;
+  i386_pc = boot/i386/pc/boot.S;
+
+  cppflags = '-DHYBRID_BOOT=1';
+  
+  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';
+  i386_pc_ldflags = '$(TARGET_IMG_BASE_LDOPT),0x7C00';
+
+  objcopyflags = '-O binary';
+  enable = i386_pc;
+};
+
+image = {
   name = cdboot;
+
   i386_pc = boot/i386/pc/cdboot.S;
   i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';
   i386_pc_ldflags = '$(TARGET_IMG_BASE_LDOPT),0x7C00';
+
+  sparc64_ieee1275 = boot/sparc64/ieee1275/boot.S;
+  sparc64_ieee1275_objcopyflags = '-O a.out-sunos-big';
+  sparc64_ieee1275_ldflags = ' -Wl,-Ttext=0x4000';
+  sparc64_ieee1275_cppflags = '-DCDBOOT=1';
+
   objcopyflags = '-O binary';
+
+  enable = sparc64_ieee1275;
   enable = i386_pc;
 };
 
@@ -345,11 +445,9 @@ image = {
   cppflags = '-I$(srcdir)/lib/posix_wrap -I$(srcdir)/lib/xzembed -DGRUB_EMBED_DECOMPRESSOR=1';
 
   objcopyflags = '-O binary';
-  mips_loongson_ldflags = '-static-libgcc -Wl,-Ttext,0x80100000';
-  mips_qemu_mips_ldflags = '-static-libgcc -Wl,-Ttext,0x80100000';
-  mips_arc_ldflags = '-static-libgcc -Wl,-Ttext,0x8bc00000';
-  ldadd = '-lgcc';
-  cflags = '-Wno-unreachable-code -static-libgcc';
+  mips_ldflags = '$(TARGET_LDFLAGS_STATIC_LIBGCC) -Wl,-Ttext,$(TARGET_DECOMPRESSOR_LINK_ADDR)';
+  ldadd = '$(TARGET_LIBGCC)';
+  cflags = '-Wno-unreachable-code $(TARGET_LDFLAGS_STATIC_LIBGCC)';
   enable = mips;
 };
 
@@ -361,17 +459,16 @@ image = {
   cppflags = '-DGRUB_EMBED_DECOMPRESSOR=1';
 
   objcopyflags = '-O binary';
-  mips_loongson_ldflags = '-static-libgcc -Wl,-Ttext,0x80100000';
-  mips_qemu_mips_ldflags = '-static-libgcc -Wl,-Ttext,0x80100000';
-  mips_arc_ldflags = '-static-libgcc -Wl,-Ttext,0x8bc00000';
-  ldadd = '-lgcc';
-  cflags = '-static-libgcc';
+  mips_ldflags = '$(TARGET_LDFLAGS_STATIC_LIBGCC) -Wl,-Ttext,$(TARGET_DECOMPRESSOR_LINK_ADDR)';
+  ldadd = '$(TARGET_LIBGCC)';
+  cflags = '$(TARGET_LDFLAGS_STATIC_LIBGCC)';
   enable = mips;
 };
 
 image = {
   name = lzma_decompress;
   i386_pc = boot/i386/pc/startup_raw.S;
+  i386_pc_nodist = rs_decoder.h;
 
   objcopyflags = '-O binary';
   ldflags = '$(TARGET_IMG_LDFLAGS) $(TARGET_IMG_BASE_LDOPT),0x8200';
@@ -382,7 +479,7 @@ image = {
   name = fwstart;
   mips_loongson = boot/mips/loongson/fwstart.S;
   objcopyflags = '-O binary';
-  ldflags = '-static-libgcc -lgcc -Wl,-N,-S,-Ttext,0xbfc00000,-Bstatic';
+  ldflags = '$(TARGET_LDFLAGS_STATIC_LIBGCC) $(TARGET_LIBGCC) -Wl,-N,-S,-Ttext,0xbfc00000,-Bstatic';
   enable = mips_loongson;
 };
 
@@ -390,8 +487,14 @@ image = {
   name = fwstart_fuloong2f;
   mips_loongson = boot/mips/loongson/fuloong2f.S;
   objcopyflags = '-O binary';
-  ldflags = '-static-libgcc -lgcc -Wl,-N,-S,-Ttext,0xbfc00000,-Bstatic';
+  ldflags = '$(TARGET_LDFLAGS_STATIC_LIBGCC) $(TARGET_LIBGCC) -Wl,-N,-S,-Ttext,0xbfc00000,-Bstatic';
   enable = mips_loongson;
+};
+
+module = {
+  name = disk;
+  common = lib/disk.c;
+  extra_dist = kern/disk_common.c;
 };
 
 module = {
@@ -430,6 +533,7 @@ module = {
 module = {
   name = emuusb;
   common = bus/usb/usb.c;
+  enable = emu;
   condition = COND_GRUB_EMU_USB;
 };
 
@@ -452,9 +556,15 @@ module = {
 };
 
 module = {
+  name = usbserial_usbdebug;
+  common = bus/usb/serial/usbdebug_late.c;
+  enable = usb;
+};
+
+module = {
   name = uhci;
   common = bus/usb/uhci.c;
-  enable = x86;
+  enable = pci;
 };
 
 module = {
@@ -472,6 +582,7 @@ module = {
 module = {
   name = pci;
   common = bus/pci.c;
+  i386_ieee1275 = bus/i386/ieee1275/pci.c;
 
   enable = i386_pc;
   enable = i386_ieee1275;
@@ -480,10 +591,20 @@ module = {
 };
 
 module = {
+  name = nativedisk;
+  common = commands/nativedisk.c;
+
+  enable = x86;
+  enable = mips_loongson;
+  enable = mips_qemu_mips;
+};
+
+module = {
   name = emupci;
   common = bus/emu/pci.c;
   common = commands/lspci.c;
 
+  enable = emu;
   condition = COND_GRUB_EMU_PCI;
 };
 
@@ -494,16 +615,23 @@ module = {
   enable = mips_arc;
 };
 
-library = {
-  name = libgnulib.a;
-  common = gnulib/regex.c;
-  cflags = '$(CFLAGS_POSIX) $(CFLAGS_GNULIB)';
-  cppflags = '$(CPPFLAGS_POSIX) $(CPPFLAGS_GNULIB)';
+module = {
+  name = lsxen;
+  common = commands/xen/lsxen.c;
+  cppflags = '$(CPPFLAGS_XEN)';
+
+  enable = xen;
 };
 
 module = {
   name = cmostest;
   common = commands/i386/cmostest.c;
+  enable = cmos;
+};
+
+module = {
+  name = cmosdump;
+  common = commands/i386/cmosdump.c;
   enable = cmos;
 };
 
@@ -514,10 +642,39 @@ module = {
 };
 
 module = {
+  name = cbtable;
+  common = kern/i386/coreboot/cbtable.c;
+  enable = i386_pc;
+  enable = i386_efi;
+  enable = i386_qemu;
+  enable = i386_multiboot;
+  enable = i386_ieee1275;
+  enable = x86_64_efi;
+};
+
+module = {
+  name = cbtime;
+  common = commands/i386/coreboot/cb_timestamps.c;
+  enable = x86;
+};
+
+module = {
+  name = cbls;
+  common = commands/i386/coreboot/cbls.c;
+  enable = x86;
+};
+
+module = {
+  name = cbmemc;
+  common = term/i386/coreboot/cbmemc.c;
+  enable = x86;
+};
+
+module = {
   name = regexp;
   common = commands/regexp.c;
   common = commands/wildcard.c;
-  ldadd = libgnulib.a;
+  common = gnulib/regex.c;
   cflags = '$(CFLAGS_POSIX) $(CFLAGS_GNULIB)';
   cppflags = '$(CPPFLAGS_POSIX) $(CPPFLAGS_GNULIB)';
 };
@@ -573,6 +730,18 @@ module = {
 };
 
 module = {
+  name = lsefi;
+  common = commands/efi/lsefi.c;
+  enable = efi;
+};
+
+module = {
+  name = efifwsetup;
+  efi = commands/efi/efifwsetup.c;
+  enable = efi;
+};
+
+module = {
   name = blocklist;
   common = commands/blocklist.c;
 };
@@ -581,7 +750,15 @@ module = {
   name = boot;
   common = commands/boot.c;
   i386_pc = lib/i386/pc/biosnum.c;
-  enable = videomodules;
+  enable = x86;
+  enable = emu;
+  enable = sparc64_ieee1275;
+  enable = powerpc_ieee1275;
+  enable = mips_arc;
+  enable = ia64_efi;
+  enable = arm_efi;
+  enable = arm64_efi;
+  enable = arm_uboot;
 };
 
 module = {
@@ -601,8 +778,10 @@ module = {
 
 module = {
   name = cpuid;
-  x86 = commands/i386/cpuid.c;
+  common = commands/i386/cpuid.c;
   enable = x86;
+  enable = i386_xen;
+  enable = x86_64_xen;
 };
 
 module = {
@@ -621,6 +800,11 @@ module = {
 module = {
   name = echo;
   common = commands/echo.c;
+};
+
+module = {
+  name = eval;
+  common = commands/eval.c;
 };
 
 module = {
@@ -654,9 +838,12 @@ module = {
   i386_multiboot = lib/i386/halt.c;
   i386_coreboot = lib/i386/halt.c;
   i386_qemu = lib/i386/halt.c;
+  xen = lib/xen/halt.c;
+  xen_cppflags = '$(CPPFLAGS_XEN)';
   efi = lib/efi/halt.c;
   ieee1275 = lib/ieee1275/halt.c;
   emu = lib/emu/halt.c;
+  uboot = lib/uboot/halt.c;
 };
 
 module = {
@@ -665,17 +852,29 @@ module = {
   i386 = lib/i386/reboot_trampoline.S;
   ia64_efi = lib/efi/reboot.c;
   x86_64_efi = lib/efi/reboot.c;
+  arm_efi = lib/efi/reboot.c;
+  arm64_efi = lib/efi/reboot.c;
   powerpc_ieee1275 = lib/ieee1275/reboot.c;
   sparc64_ieee1275 = lib/ieee1275/reboot.c;
   mips_arc = lib/mips/arc/reboot.c;
   mips_loongson = lib/mips/loongson/reboot.c;
   mips_qemu_mips = lib/mips/qemu_mips/reboot.c;
+  xen = lib/xen/reboot.c;
+  xen_cppflags = '$(CPPFLAGS_XEN)';
+  uboot = lib/uboot/reboot.c;
   common = commands/reboot.c;
 };
 
 module = {
   name = hashsum;
   common = commands/hashsum.c;
+};
+
+module = {
+  name = verify;
+  common = commands/verify.c;
+  cflags = '$(CFLAGS_POSIX)';
+  cppflags = '-I$(srcdir)/lib/posix_wrap';
 };
 
 module = {
@@ -764,6 +963,18 @@ module = {
 };
 
 module = {
+  name = spkmodem;
+  x86 = term/spkmodem.c;
+  enable = x86;
+};
+
+module = {
+  name = morse;
+  x86 = term/morse.c;
+  enable = x86;
+};
+
+module = {
   name = probe;
   common = commands/probe.c;
 };
@@ -797,6 +1008,12 @@ module = {
 module = {
   name = setpci;
   common = commands/setpci.c;
+  enable = pci;
+};
+
+module = {
+  name = pcidump;
+  common = commands/pcidump.c;
   enable = pci;
 };
 
@@ -1008,6 +1225,11 @@ module = {
 };
 
 module = {
+  name = procfs;
+  common = fs/proc.c;
+};
+
+module = {
   name = affs;
   common = fs/affs.c;
 };
@@ -1028,6 +1250,16 @@ module = {
   common = lib/crc.c;
   cflags = '$(CFLAGS_POSIX) -Wno-undef';
   cppflags = '-I$(srcdir)/lib/posix_wrap -I$(srcdir)/lib/minilzo -DMINILZO_HAVE_CONFIG_H';
+};
+
+module = {
+  name = archelp;
+  common = fs/archelp.c;
+};
+
+module = {
+  name = cbfs;
+  common = fs/cbfs.c;
 };
 
 module = {
@@ -1078,6 +1310,11 @@ module = {
 module = {
   name = hfsplus;
   common = fs/hfsplus.c;
+};
+
+module = {
+  name = hfspluscomp;
+  common = fs/hfspluscomp.c;
 };
 
 module = {
@@ -1173,6 +1410,11 @@ module = {
 };
 
 module = {
+  name = ufs1_be;
+  common = fs/ufs_be.c;
+};
+
+module = {
   name = ufs2;
   common = fs/ufs2.c;
 };
@@ -1186,6 +1428,7 @@ module = {
   name = zfs;
   common = fs/zfs/zfs.c;
   common = fs/zfs/zfs_lzjb.c;
+  common = fs/zfs/zfs_lz4.c;
   common = fs/zfs/zfs_sha256.c;
   common = fs/zfs/zfs_fletcher.c;
 };
@@ -1198,6 +1441,11 @@ module = {
 module = {
   name = zfsinfo;
   common = fs/zfs/zfsinfo.c;
+};
+
+module = {
+  name = macbless;
+  common = commands/macbless.c;
 };
 
 module = {
@@ -1242,6 +1490,11 @@ module = {
 };
 
 module = {
+  name = offsetio;
+  common = io/offset.c;
+};
+
+module = {
   name = bufio;
   common = io/bufio.c;
   enable = videomodules;
@@ -1250,6 +1503,8 @@ module = {
 module = {
   name = elf;
   common = kern/elf.c;
+
+  extra_dist = kern/elfXX.c;
 };
 
 module = {
@@ -1272,13 +1527,21 @@ module = {
   x86 = lib/i386/relocator64.S;
   i386 = lib/i386/relocator_asm.S;
   x86_64 = lib/x86_64/relocator_asm.S;
+  i386_xen = lib/i386/relocator_asm.S;
+  x86_64_xen = lib/x86_64/relocator_asm.S;
   x86 = lib/i386/relocator.c;
+  x86 = lib/i386/relocator_common_c.c;
   ieee1275 = lib/ieee1275/relocator.c;
   efi = lib/efi/relocator.c;
   mips = lib/mips/relocator_asm.S;
   mips = lib/mips/relocator.c;
   powerpc = lib/powerpc/relocator_asm.S;
   powerpc = lib/powerpc/relocator.c;
+  xen = lib/xen/relocator.c;
+  i386_xen = lib/i386/xen/relocator.S;
+  x86_64_xen = lib/x86_64/xen/relocator.S;
+  xen = lib/i386/relocator_common_c.c;
+  xen_cppflags = '$(CPPFLAGS_XEN)';
 
   extra_dist = lib/i386/relocator_common.S;
   extra_dist = kern/powerpc/cache_flush.S;
@@ -1286,16 +1549,20 @@ module = {
   enable = mips;
   enable = powerpc;
   enable = x86;
+  enable = xen;
 };
 
 module = {
   name = datetime;
   cmos = lib/cmos_datetime.c;
   efi = lib/efi/datetime.c;
+  uboot = lib/uboot/datetime.c;
   sparc64_ieee1275 = lib/ieee1275/datetime.c;
   powerpc_ieee1275 = lib/ieee1275/datetime.c;
   sparc64_ieee1275 = lib/ieee1275/cmos.c;
   powerpc_ieee1275 = lib/ieee1275/cmos.c;
+  xen = lib/xen/datetime.c;
+  xen_cppflags = '$(CPPFLAGS_XEN)';
 
   mips_arc = lib/arc/datetime.c;
   enable = noemu;
@@ -1311,6 +1578,8 @@ module = {
   extra_dist = lib/powerpc/setjmp.S;
   extra_dist = lib/ia64/setjmp.S;
   extra_dist = lib/ia64/longjmp.S;
+  extra_dist = lib/arm/setjmp.S;
+  extra_dist = lib/arm64/setjmp.S;
 };
 
 module = {
@@ -1340,9 +1609,10 @@ module = {
 
 module = {
   name = linux16;
-  i386_pc = loader/i386/pc/linux.c;
-  i386_pc = lib/cmdline.c;
-  enable = i386_pc;
+  common = loader/i386/pc/linux.c;
+  common = loader/linux.c;
+  common = lib/cmdline.c;
+  enable = x86;
 };
 
 module = {
@@ -1350,6 +1620,14 @@ module = {
   i386_pc = loader/i386/pc/ntldr.c;
   enable = i386_pc;
 };
+
+
+module = {
+  name = truecrypt;
+  i386_pc = loader/i386/pc/truecrypt.c;
+  enable = i386_pc;
+};
+
 
 module = {
   name = freedos;
@@ -1368,6 +1646,7 @@ module = {
   cppflags = "-DGRUB_USE_MULTIBOOT2";
 
   common = loader/multiboot.c;
+  common = lib/cmdline.c;
   common = loader/multiboot_mbi2.c;
   enable = x86;
   enable = mips;
@@ -1376,6 +1655,7 @@ module = {
 module = {
   name = multiboot;
   common = loader/multiboot.c;
+  common = lib/cmdline.c;
   x86 = loader/i386/multiboot_mbi.c;
   extra_dist = loader/multiboot_elfxx.c;
   enable = x86;
@@ -1384,11 +1664,17 @@ module = {
 module = {
   name = linux;
   x86 = loader/i386/linux.c;
+  xen = loader/i386/xen.c;
+  xen_cppflags	   = '$(CPPFLAGS_XEN)';
   i386_pc = lib/i386/pc/vesa_modes_table.c;
   mips = loader/mips/linux.c;
   powerpc_ieee1275 = loader/powerpc/ieee1275/linux.c;
   sparc64_ieee1275 = loader/sparc64/ieee1275/linux.c;
   ia64_efi = loader/ia64/efi/linux.c;
+  arm = loader/arm/linux.c;
+  arm64 = loader/arm64/linux.c;
+  fdt = lib/fdt.c;
+  common = loader/linux.c;
   common = lib/cmdline.c;
   enable = noemu;
 };
@@ -1397,14 +1683,19 @@ module = {
   name = xnu;
   x86 = loader/xnu_resume.c;
   x86 = loader/i386/xnu.c;
-  x86 = loader/macho32.c;
-  x86 = loader/macho64.c;
-  x86 = loader/macho.c;
   x86 = loader/xnu.c;
-  x86 = loader/lzss.c;
 
-  extra_dist = loader/machoXX.c;
   enable = x86;
+};
+
+module = {
+  name = macho;
+
+  common = loader/macho.c;
+  common = loader/macho32.c;
+  common = loader/macho64.c;
+  common = loader/lzss.c;
+  extra_dist = loader/machoXX.c;
 };
 
 module = {
@@ -1419,6 +1710,7 @@ module = {
   efi = loader/efi/chainloader.c;
   i386_pc = loader/i386/pc/chainloader.c;
   i386_coreboot = loader/i386/coreboot/chainloader.c;
+  i386_coreboot = lib/LzmaDec.c;
   enable = i386_pc;
   enable = i386_coreboot;
   enable = efi;
@@ -1439,6 +1731,8 @@ module = {
 
   enable = x86;
   enable = ia64_efi;
+  enable = arm_efi;
+  enable = arm64_efi;
   enable = mips;
 };
 
@@ -1460,6 +1754,7 @@ module = {
   common = normal/term.c;
   common = normal/context.c;
   common = normal/charset.c;
+  common = lib/getline.c;
 
   common = script/main.c;
   common = script/script.c;
@@ -1534,6 +1829,11 @@ module = {
 };
 
 module = {
+  name = part_dfly;
+  common = partmap/dfly.c;
+};
+
+module = {
   name = msdospart;
   common = parttool/msdospart.c;
 };
@@ -1551,14 +1851,21 @@ module = {
 };
 
 module = {
+  name = gfxterm_background;
+  common = term/gfxterm_background.c;
+};
+
+module = {
   name = serial;
   common = term/serial.c;
   x86 = term/ns8250.c;
   ieee1275 = term/ieee1275/serial.c;
+  mips_arc = term/arc/serial.c;
   efi = term/efi/serial.c;
 
   enable = terminfomodule;
   enable = ieee1275;
+  enable = mips_arc;
 };
 
 module = {
@@ -1584,15 +1891,19 @@ module = {
   name = vga;
   common = video/i386/pc/vga.c;
   enable = i386_pc;
-  enable = i386_coreboot;
-  enable = i386_multiboot;
 };
 
 module = {
   name = vga_text;
   common = term/i386/pc/vga_text.c;
-  common = term/i386/vga_common.c;
   enable = i386_pc;
+};
+
+module = {
+  name = mda_text;
+  common = term/i386/pc/mda_text.c;
+  enable = i386_pc;
+  enable = i386_coreboot_multiboot_qemu;
 };
 
 module = {
@@ -1611,6 +1922,10 @@ module = {
   name = functional_test;
   common = tests/lib/functional_test.c;
   common = tests/lib/test.c;
+  common = tests/checksums.h;
+  common = tests/video_checksum.c;
+  common = tests/fake_input.c;
+  common = video/capture.c;
 };
 
 module = {
@@ -1619,15 +1934,69 @@ module = {
 };
 
 module = {
+  name = setjmp_test;
+  common = tests/setjmp_test.c;
+};
+
+module = {
+  name = signature_test;
+  common = tests/signature_test.c;
+  common = tests/signatures.h;
+};
+
+module = {
+  name = sleep_test;
+  common = tests/sleep_test.c;
+};
+
+module = {
+  name = xnu_uuid_test;
+  common = tests/xnu_uuid_test.c;
+};
+
+module = {
+  name = pbkdf2_test;
+  common = tests/pbkdf2_test.c;
+};
+
+module = {
+  name = legacy_password_test;
+  common = tests/legacy_password_test.c;
+  enable = i386_pc;
+  enable = i386_efi;
+  enable = x86_64_efi;
+  enable = emu;
+  enable = xen;
+};
+
+module = {
+  name = div_test;
+  common = tests/div_test.c;
+};
+
+module = {
+  name = videotest_checksum;
+  common = tests/videotest_checksum.c;
+};
+
+module = {
+  name = gfxterm_menu;
+  common = tests/gfxterm_menu.c;
+};
+
+module = {
+  name = cmdline_cat_test;
+  common = tests/cmdline_cat_test.c;
+};
+
+module = {
   name = bitmap;
   common = video/bitmap.c;
-  enable = videomodules;
 };
 
 module = {
   name = bitmap_scale;
   common = video/bitmap_scale.c;
-  enable = videomodules;
 };
 
 module = {
@@ -1662,8 +2031,6 @@ module = {
   name = vbe;
   common = video/i386/pc/vbe.c;
   enable = i386_pc;
-  enable = i386_coreboot;
-  enable = i386_multiboot;
 };
 
 module = {
@@ -1678,8 +2045,12 @@ module = {
 module = {
   name = video;
   common = video/video.c;
-  common = video/colors.c;
   enable = videomodules;
+};
+
+module = {
+  name = video_colors;
+  common = video/colors.c;
 };
 
 module = {
@@ -1732,6 +2103,12 @@ module = {
 };
 
 module = {
+  name = ubootnet;
+  common = net/drivers/uboot/ubootnet.c;
+  enable = uboot;
+};
+
+module = {
   name = efinet;
   common = net/drivers/efi/efinet.c;
   enable = efi;
@@ -1748,8 +2125,21 @@ module = {
   common = commands/legacycfg.c;
   common = lib/legacy_parse.c;
   emu = lib/i386/pc/vesa_modes_table.c;
+  i386_efi = lib/i386/pc/vesa_modes_table.c;
+  x86_64_efi = lib/i386/pc/vesa_modes_table.c;
+  xen = lib/i386/pc/vesa_modes_table.c;
+
   enable = i386_pc;
+  enable = i386_efi;
+  enable = x86_64_efi;
   enable = emu;
+  enable = xen;
+};
+
+module = {
+  name = syslinuxcfg;
+  common = lib/syslinux_parse.c;
+  common = commands/syslinuxcfg.c;
 };
 
 module = {
@@ -1783,8 +2173,12 @@ module = {
 module = {
   name = backtrace;
   x86 = lib/i386/backtrace.c;
+  i386_xen = lib/i386/backtrace.c;
+  x86_64_xen = lib/i386/backtrace.c;
   common = lib/backtrace.c;
   enable = x86;
+  enable = i386_xen;
+  enable = x86_64_xen;
 };
 
 module = {
@@ -1796,7 +2190,7 @@ module = {
 module = {
   name = keylayouts;
   common = commands/keylayouts.c;
-  enable = videomodules;
+  enable = x86;
 };
 
 module = {
@@ -1816,6 +2210,12 @@ module = {
 };
 
 module = {
+  name = boottime;
+  common = commands/boottime.c;
+  condition = COND_ENABLE_BOOT_TIME_STATS;
+};
+
+module = {
   name = adler32;
   common = lib/adler32.c;
 };
@@ -1823,6 +2223,36 @@ module = {
 module = {
   name = crc64;
   common = lib/crc64.c;
+};
+
+module = {
+  name = mpi;
+  common = lib/libgcrypt-grub/mpi/mpiutil.c;
+  common = lib/libgcrypt-grub/mpi/mpi-bit.c;
+  common = lib/libgcrypt-grub/mpi/mpi-add.c;
+  common = lib/libgcrypt-grub/mpi/mpi-mul.c;
+  common = lib/libgcrypt-grub/mpi/mpi-mod.c;
+  common = lib/libgcrypt-grub/mpi/mpi-gcd.c;
+  common = lib/libgcrypt-grub/mpi/mpi-div.c;
+  common = lib/libgcrypt-grub/mpi/mpi-cmp.c;
+  common = lib/libgcrypt-grub/mpi/mpi-inv.c;
+  common = lib/libgcrypt-grub/mpi/mpi-pow.c;
+  common = lib/libgcrypt-grub/mpi/mpi-mpow.c;
+  common = lib/libgcrypt-grub/mpi/mpih-lshift.c;
+  common = lib/libgcrypt-grub/mpi/mpih-mul.c;
+  common = lib/libgcrypt-grub/mpi/mpih-mul1.c;
+  common = lib/libgcrypt-grub/mpi/mpih-mul2.c;
+  common = lib/libgcrypt-grub/mpi/mpih-mul3.c;
+  common = lib/libgcrypt-grub/mpi/mpih-add1.c;
+  common = lib/libgcrypt-grub/mpi/mpih-sub1.c;
+  common = lib/libgcrypt-grub/mpi/mpih-div.c;
+  common = lib/libgcrypt-grub/mpi/mpicoder.c;
+  common = lib/libgcrypt-grub/mpi/mpih-rshift.c;
+  common = lib/libgcrypt-grub/mpi/mpi-inline.c;
+  common = lib/libgcrypt_wrap/mem.c;
+
+  cflags = '$(CFLAGS_GCRY) -Wno-redundant-decls -Wno-sign-compare';
+  cppflags = '$(CPPFLAGS_GCRY)';
 };
 
 module = {
@@ -1840,3 +2270,29 @@ module = {
   enable = i386;
 };
 
+module = {
+  name = testspeed;
+  common = commands/testspeed.c;
+};
+
+module = {
+  name = tr;
+  common = commands/tr.c;
+};
+
+module = {
+  name = progress;
+  common = lib/progress.c;
+};
+
+module = {
+  name = file;
+  common = commands/file.c;
+  common = commands/file32.c;
+  common = commands/file64.c;
+  extra_dist = commands/fileXX.c;
+  common = loader/i386/xen_file.c;
+  common = loader/i386/xen_file32.c;
+  common = loader/i386/xen_file64.c;
+  extra_dist = loader/i386/xen_fileXX.c;
+};

@@ -32,7 +32,6 @@ typedef void nvlist_t;
 int nvlist_lookup_string (nvlist_t *, const char *, char **);
 int nvlist_lookup_nvlist (nvlist_t *, const char *, nvlist_t **);
 int nvlist_lookup_nvlist_array (nvlist_t *, const char *, nvlist_t ***, unsigned int *);
-void nvlist_print (FILE *, nvlist_t *);
 
 #endif /* ! HAVE_LIBNVPAIR_H */
 

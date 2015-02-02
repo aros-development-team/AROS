@@ -32,12 +32,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_STDINT_H 
+#ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
 
 #include "g10lib.h"
-#include "memory.h"
 #include "bithelp.h"
 #include "cipher.h"
 #include "hash-common.h"
@@ -55,7 +54,7 @@
 #define TRANSFORM(x,d,n) transform ((x), (d), (n))
 
 
-typedef struct 
+typedef struct
 {
   u32           h0,h1,h2,h3,h4;
   u32           nblocks;
@@ -111,7 +110,7 @@ transform (SHA1_CONTEXT *hd, const unsigned char *data, size_t nblocks)
   register u32 a, b, c, d, e; /* Local copies of the chaining variables.  */
   register u32 tm;            /* Helper.  */
   u32 x[16];                  /* The array we work on. */
-  
+
   /* Loop over all blocks.  */
   for ( ;nblocks; nblocks--)
     {
@@ -288,7 +287,7 @@ static void
 sha1_final(void *context)
 {
   SHA1_CONTEXT *hd = context;
-  
+
   u32 t, msb, lsb;
   unsigned char *p;
 
@@ -375,7 +374,7 @@ _gcry_sha1_hash_buffer (void *outbuf, const void *buffer, size_t length)
 
 
 
-/* 
+/*
      Self-test section.
  */
 
@@ -385,10 +384,10 @@ selftests_sha1 (int extended, selftest_report_func_t report)
 {
   const char *what;
   const char *errtxt;
-  
+
   what = "short string";
   errtxt = _gcry_hash_selftest_check_one
-    (GCRY_MD_SHA1, 0, 
+    (GCRY_MD_SHA1, 0,
      "abc", 3,
      "\xA9\x99\x3E\x36\x47\x06\x81\x6A\xBA\x3E"
      "\x25\x71\x78\x50\xC2\x6C\x9C\xD0\xD8\x9D", 20);
@@ -399,13 +398,13 @@ selftests_sha1 (int extended, selftest_report_func_t report)
     {
       what = "long string";
       errtxt = _gcry_hash_selftest_check_one
-        (GCRY_MD_SHA1, 0, 
+        (GCRY_MD_SHA1, 0,
          "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56,
          "\x84\x98\x3E\x44\x1C\x3B\xD2\x6E\xBA\xAE"
          "\x4A\xA1\xF9\x51\x29\xE5\xE5\x46\x70\xF1", 20);
       if (errtxt)
         goto failed;
-      
+
       what = "one million \"a\"";
       errtxt = _gcry_hash_selftest_check_one
         (GCRY_MD_SHA1, 1,
@@ -439,7 +438,7 @@ run_selftests (int algo, int extended, selftest_report_func_t report)
     default:
       ec = GPG_ERR_DIGEST_ALGO;
       break;
-        
+
     }
   return ec;
 }
@@ -472,8 +471,7 @@ gcry_md_spec_t _gcry_digest_spec_sha1 =
     sha1_init, sha1_write, sha1_final, sha1_read,
     sizeof (SHA1_CONTEXT)
   };
-md_extra_spec_t _gcry_digest_extraspec_sha1 = 
+md_extra_spec_t _gcry_digest_extraspec_sha1 =
   {
     run_selftests
   };
-

@@ -26,6 +26,8 @@
 
 enum
   {
+    GRUB_VGA_IO_CR_BW_INDEX = 0x3b4,
+    GRUB_VGA_IO_CR_BW_DATA = 0x3b5,
     GRUB_VGA_IO_ARX = 0x3c0,
     GRUB_VGA_IO_ARX_READ = 0x3c1,
     GRUB_VGA_IO_MISC_WRITE = 0x3c2,

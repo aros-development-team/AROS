@@ -56,7 +56,7 @@ struct grub_luks_phdr
     grub_uint32_t keyMaterialOffset;
     grub_uint32_t stripes;
   } keyblock[8];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 typedef struct grub_luks_phdr *grub_luks_phdr_t;
 
@@ -82,7 +82,7 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
   const gcry_md_spec_t *hash = NULL, *essiv_hash = NULL;
   const struct gcry_cipher_spec *ciph;
   grub_cryptodisk_mode_t mode;
-  grub_cryptodisk_mode_iv_t mode_iv;
+  grub_cryptodisk_mode_iv_t mode_iv = GRUB_CRYPTODISK_MODE_IV_PLAIN64;
   int benbi_log = 0;
   grub_err_t err;
 
@@ -143,6 +143,7 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
     {
       grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid keysize %d",
 		  grub_be_to_cpu32 (header.keyBytes));
+      grub_crypto_cipher_close (cipher);
       return NULL;
     }
 
@@ -181,9 +182,10 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
 	}
       if (cipher->cipher->blocksize != GRUB_CRYPTODISK_GF_BYTES)
 	{
-	  grub_crypto_cipher_close (cipher);
 	  grub_error (GRUB_ERR_BAD_ARGUMENT, "Unsupported XTS block size: %d",
 		      cipher->cipher->blocksize);
+	  grub_crypto_cipher_close (cipher);
+	  grub_crypto_cipher_close (secondary_cipher);
 	  return NULL;
 	}
       if (secondary_cipher->cipher->blocksize != GRUB_CRYPTODISK_GF_BYTES)
@@ -191,6 +193,7 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
 	  grub_crypto_cipher_close (cipher);
 	  grub_error (GRUB_ERR_BAD_ARGUMENT, "Unsupported XTS block size: %d",
 		      secondary_cipher->cipher->blocksize);
+	  grub_crypto_cipher_close (secondary_cipher);
 	  return NULL;
 	}
     }
@@ -200,9 +203,9 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
       cipheriv = ciphermode + sizeof ("lrw-") - 1;
       if (cipher->cipher->blocksize != GRUB_CRYPTODISK_GF_BYTES)
 	{
-	  grub_crypto_cipher_close (cipher);
 	  grub_error (GRUB_ERR_BAD_ARGUMENT, "Unsupported LRW block size: %d",
 		      cipher->cipher->blocksize);
+	  grub_crypto_cipher_close (cipher);
 	  return NULL;
 	}
     }
@@ -225,6 +228,7 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
 	  || cipher->cipher->blocksize == 0)
 	grub_error (GRUB_ERR_BAD_ARGUMENT, "Unsupported benbi blocksize: %d",
 		    cipher->cipher->blocksize);
+	/* FIXME should we return an error here? */
       for (benbi_log = 0; 
 	   (cipher->cipher->blocksize << benbi_log) < GRUB_DISK_SECTOR_SIZE;
 	   benbi_log++);
@@ -243,6 +247,7 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
       if (!essiv_hash)
 	{
 	  grub_crypto_cipher_close (cipher);
+	  grub_crypto_cipher_close (secondary_cipher);
 	  grub_error (GRUB_ERR_FILE_NOT_FOUND,
 		      "Couldn't load %s hash", hash_str);
 	  return NULL;
@@ -251,12 +256,14 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
       if (!essiv_cipher)
 	{
 	  grub_crypto_cipher_close (cipher);
+	  grub_crypto_cipher_close (secondary_cipher);
 	  return NULL;
 	}
     }
   else
     {
       grub_crypto_cipher_close (cipher);
+      grub_crypto_cipher_close (secondary_cipher);
       grub_error (GRUB_ERR_BAD_ARGUMENT, "Unknown IV mode: %s",
 		  cipheriv);
       return NULL;
@@ -276,7 +283,12 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
 
   newdev = grub_zalloc (sizeof (struct grub_cryptodisk));
   if (!newdev)
-    return NULL;
+    {
+      grub_crypto_cipher_close (cipher);
+      grub_crypto_cipher_close (essiv_cipher);
+      grub_crypto_cipher_close (secondary_cipher);
+      return NULL;
+    }
   newdev->cipher = cipher;
   newdev->offset = grub_be_to_cpu32 (header.payloadOffset);
   newdev->source_disk = NULL;
@@ -290,9 +302,7 @@ configure_ciphers (grub_disk_t disk, const char *check_uuid,
   newdev->log_sector_size = 9;
   newdev->total_length = grub_disk_get_size (disk) - newdev->offset;
   grub_memcpy (newdev->uuid, uuid, sizeof (newdev->uuid));
-#ifdef GRUB_UTIL
   newdev->modname = "luks";
-#endif
   COMPILE_TIME_ASSERT (sizeof (newdev->uuid) >= sizeof (uuid));
   return newdev;
 }
@@ -318,6 +328,8 @@ luks_recover_key (grub_disk_t source,
 
   grub_puts_ (N_("Attempting to decrypt master key..."));
   keysize = grub_be_to_cpu32 (header.keyBytes);
+  if (keysize > GRUB_CRYPTODISK_MAX_KEYLEN)
+    return grub_error (GRUB_ERR_BAD_FS, "key is too long");
 
   for (i = 0; i < ARRAY_SIZE (header.keyblock); i++)
     if (grub_be_to_cpu32 (header.keyblock[i].active) == LUKS_KEY_ENABLED
@@ -346,8 +358,8 @@ luks_recover_key (grub_disk_t source,
   for (i = 0; i < ARRAY_SIZE (header.keyblock); i++)
     {
       gcry_err_code_t gcry_err;
-      grub_uint8_t candidate_key[keysize];
-      grub_uint8_t digest[keysize];
+      grub_uint8_t candidate_key[GRUB_CRYPTODISK_MAX_KEYLEN];
+      grub_uint8_t digest[GRUB_CRYPTODISK_MAX_KEYLEN];
 
       /* Check if keyslot is enabled.  */
       if (grub_be_to_cpu32 (header.keyblock[i].active) != LUKS_KEY_ENABLED)
@@ -451,6 +463,7 @@ luks_recover_key (grub_disk_t source,
       return GRUB_ERR_NONE;
     }
 
+  grub_free (split_key);
   return GRUB_ACCESS_DENIED;
 }
 

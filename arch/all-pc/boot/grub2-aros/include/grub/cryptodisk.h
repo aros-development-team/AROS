@@ -22,6 +22,9 @@
 #include <grub/disk.h>
 #include <grub/crypto.h>
 #include <grub/list.h>
+#ifdef GRUB_UTIL
+#include <grub/emu/hostdisk.h>
+#endif
 
 typedef enum
   {
@@ -49,6 +52,7 @@ typedef enum
 #define GRUB_CRYPTODISK_GF_SIZE (1U << GRUB_CRYPTODISK_GF_LOG_SIZE)
 #define GRUB_CRYPTODISK_GF_LOG_BYTES (GRUB_CRYPTODISK_GF_LOG_SIZE - 3)
 #define GRUB_CRYPTODISK_GF_BYTES (1U << GRUB_CRYPTODISK_GF_LOG_BYTES)
+#define GRUB_CRYPTODISK_MAX_KEYLEN 128
 
 struct grub_cryptodisk;
 
@@ -80,11 +84,13 @@ struct grub_cryptodisk
   grub_uint8_t *lrw_precalc;
   grub_uint8_t iv_prefix[64];
   grub_size_t iv_prefix_len;
+  grub_uint8_t key[GRUB_CRYPTODISK_MAX_KEYLEN];
+  grub_size_t keysize;
 #ifdef GRUB_UTIL
   char *cheat;
-  const char *modname;
-  int cheat_fd;
+  grub_util_fd_t cheat_fd;
 #endif
+  const char *modname;
   int log_sector_size;
   grub_cryptodisk_rekey_func_t rekey;
   int rekey_shift;
@@ -138,7 +144,10 @@ grub_err_t
 grub_cryptodisk_cheat_insert (grub_cryptodisk_t newdev, const char *name,
 			      grub_disk_t source, const char *cheat);
 void
-grub_util_cryptodisk_print_abstraction (grub_disk_t disk);
+grub_util_cryptodisk_get_abstraction (grub_disk_t disk,
+				      void (*cb) (const char *val, void *data),
+				      void *data);
+
 char *
 grub_util_get_geli_uuid (const char *dev);
 #endif

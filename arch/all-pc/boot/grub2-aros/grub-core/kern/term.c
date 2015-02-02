@@ -28,7 +28,11 @@ struct grub_term_input *grub_term_inputs_disabled;
 struct grub_term_output *grub_term_outputs;
 struct grub_term_input *grub_term_inputs;
 
-void (*grub_term_poll_usb) (void) = NULL;
+/* Current color state.  */
+grub_uint8_t grub_term_normal_color = GRUB_TERM_DEFAULT_NORMAL_COLOR;
+grub_uint8_t grub_term_highlight_color = GRUB_TERM_DEFAULT_HIGHLIGHT_COLOR;
+
+void (*grub_term_poll_usb) (int wait_for_completion) = NULL;
 void (*grub_net_poll_cards_idle) (void) = NULL;
 
 /* Put a Unicode character.  */
@@ -42,7 +46,6 @@ grub_putcode_dumb (grub_uint32_t code,
       .variant = 0,
       .attributes = 0,
       .ncomb = 0,
-      .combining = 0,
       .estimated_width = 1
     };
 
@@ -50,7 +53,7 @@ grub_putcode_dumb (grub_uint32_t code,
     {
       int n;
 
-      n = GRUB_TERM_TAB_WIDTH - ((term->getxy (term) >> 8)
+      n = GRUB_TERM_TAB_WIDTH - ((term->getxy (term).x)
 				 % GRUB_TERM_TAB_WIDTH);
       while (n--)
 	grub_putcode_dumb (' ', term);
@@ -86,7 +89,7 @@ grub_getkey_noblock (void)
   grub_term_input_t term;
 
   if (grub_term_poll_usb)
-    grub_term_poll_usb ();
+    grub_term_poll_usb (0);
 
   if (grub_net_poll_cards_idle)
     grub_net_poll_cards_idle ();

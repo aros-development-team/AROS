@@ -33,7 +33,7 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-#ifdef USE_ASCII_FAILBACK
+#if HAVE_FONT_SOURCE
 #include "ascii.h"
 #endif
 
@@ -54,23 +54,6 @@ struct char_index_entry
 #define FONT_WEIGHT_NORMAL 100
 #define FONT_WEIGHT_BOLD 200
 #define ASCII_BITMAP_SIZE 16
-
-struct grub_font
-{
-  char *name;
-  grub_file_t file;
-  char *family;
-  short point_size;
-  short weight;
-  short max_char_width;
-  short max_char_height;
-  short ascent;
-  short descent;
-  short leading;
-  grub_uint32_t num_chars;
-  struct char_index_entry *char_index;
-  grub_uint16_t *bmp_idx;
-};
 
 /* Definition of font registry.  */
 struct grub_font_node *grub_font_list;
@@ -127,14 +110,14 @@ static struct grub_font null_font;
 /* Flag to ensure module is initialized only once.  */
 static grub_uint8_t font_loader_initialized;
 
-#ifdef USE_ASCII_FAILBACK
+#if HAVE_FONT_SOURCE
 static struct grub_font_glyph *ascii_font_glyph[0x80];
 #endif
 
 static struct grub_font_glyph *
 ascii_glyph_lookup (grub_uint32_t code)
 {
-#ifdef USE_ASCII_FAILBACK
+#if HAVE_FONT_SOURCE
   static int ascii_failback_initialized = 0;
 
   if (code >= 0x80)
@@ -293,7 +276,7 @@ load_font_index (grub_file_t file, grub_uint32_t sect_length, struct
   grub_uint32_t last_code;
 
 #if FONT_DEBUG >= 2
-  grub_printf ("load_font_index(sect_length=%d)\n", sect_length);
+  grub_dprintf ("font", "load_font_index(sect_length=%d)\n", sect_length);
 #endif
 
   /* Sanity check: ensure section length is divisible by the entry size.  */
@@ -321,7 +304,7 @@ load_font_index (grub_file_t file, grub_uint32_t sect_length, struct
 
 
 #if FONT_DEBUG >= 2
-  grub_printf ("num_chars=%d)\n", font->num_chars);
+  grub_dprintf ("font", "num_chars=%d)\n", font->num_chars);
 #endif
 
   last_code = 0;
@@ -365,7 +348,7 @@ load_font_index (grub_file_t file, grub_uint32_t sect_length, struct
 #if FONT_DEBUG >= 5
       /* Print the 1st 10 characters.  */
       if (i < 10)
-	grub_printf ("c=%d o=%d\n", entry->code, entry->offset);
+	grub_dprintf ("font", "c=%d o=%d\n", entry->code, entry->offset);
 #endif
     }
 
@@ -422,7 +405,7 @@ read_section_as_short (struct font_file_section *section,
 
 /* Load a font and add it to the beginning of the global font list.
    Returns 0 upon success, nonzero upon failure.  */
-int
+grub_font_t
 grub_font_load (const char *filename)
 {
   grub_file_t file = 0;
@@ -431,7 +414,7 @@ grub_font_load (const char *filename)
   grub_font_t font = 0;
 
 #if FONT_DEBUG >= 1
-  grub_printf ("add_font(%s)\n", filename);
+  grub_dprintf ("font", "add_font(%s)\n", filename);
 #endif
 
   if (filename[0] == '(' || filename[0] == '/' || filename[0] == '+')
@@ -462,7 +445,7 @@ grub_font_load (const char *filename)
     goto fail;
 
 #if FONT_DEBUG >= 3
-  grub_printf ("file opened\n");
+  grub_dprintf ("font", "file opened\n");
 #endif
 
   /* Read the FILE section.  It indicates the file format.  */
@@ -470,7 +453,7 @@ grub_font_load (const char *filename)
     goto fail;
 
 #if FONT_DEBUG >= 3
-  grub_printf ("opened FILE section\n");
+  grub_dprintf ("font", "opened FILE section\n");
 #endif
   if (grub_memcmp (section.name, FONT_FORMAT_SECTION_NAMES_FILE,
 		   sizeof (FONT_FORMAT_SECTION_NAMES_FILE) - 1) != 0)
@@ -481,7 +464,7 @@ grub_font_load (const char *filename)
     }
 
 #if FONT_DEBUG >= 3
-  grub_printf ("section name ok\n");
+  grub_dprintf ("font", "section name ok\n");
 #endif
   if (section.length != 4)
     {
@@ -492,14 +475,14 @@ grub_font_load (const char *filename)
     }
 
 #if FONT_DEBUG >= 3
-  grub_printf ("section length ok\n");
+  grub_dprintf ("font", "section length ok\n");
 #endif
   /* Check the file format type code.  */
   if (grub_file_read (file, magic, 4) != 4)
     goto fail;
 
 #if FONT_DEBUG >= 3
-  grub_printf ("read magic ok\n");
+  grub_dprintf ("font", "read magic ok\n");
 #endif
 
   if (grub_memcmp (magic, FONT_FORMAT_PFF2_MAGIC, 4) != 0)
@@ -510,7 +493,7 @@ grub_font_load (const char *filename)
     }
 
 #if FONT_DEBUG >= 3
-  grub_printf ("compare magic ok\n");
+  grub_dprintf ("font", "compare magic ok\n");
 #endif
 
   /* Allocate the font object.  */
@@ -522,7 +505,7 @@ grub_font_load (const char *filename)
   font->file = file;
 
 #if FONT_DEBUG >= 3
-  grub_printf ("allocate font ok; loading font info\n");
+  grub_dprintf ("font", "allocate font ok; loading font info\n");
 #endif
 
   /* Load the font information.  */
@@ -537,7 +520,7 @@ grub_font_load (const char *filename)
 	}
 
 #if FONT_DEBUG >= 2
-      grub_printf ("opened section %c%c%c%c ok\n",
+      grub_dprintf ("font", "opened section %c%c%c%c ok\n",
 		   section.name[0], section.name[1],
 		   section.name[2], section.name[3]);
 #endif
@@ -621,7 +604,7 @@ grub_font_load (const char *filename)
 	{
 	  /* Unhandled section type, simply skip past it.  */
 #if FONT_DEBUG >= 3
-	  grub_printf ("Unhandled section type, skipping.\n");
+	  grub_dprintf ("font", "Unhandled section type, skipping.\n");
 #endif
 	  grub_off_t section_end = grub_file_tell (file) + section.length;
 	  if ((int) grub_file_seek (file, section_end) == -1)
@@ -636,7 +619,7 @@ grub_font_load (const char *filename)
     }
 
 #if FONT_DEBUG >= 1
-  grub_printf ("Loaded font `%s'.\n"
+  grub_dprintf ("font", "Loaded font `%s'.\n"
 	       "Ascent=%d Descent=%d MaxW=%d MaxH=%d Number of characters=%d.\n",
 	       font->name,
 	       font->ascent, font->descent,
@@ -657,7 +640,7 @@ grub_font_load (const char *filename)
   if (register_font (font) != 0)
     goto fail;
 
-  return 0;
+  return font;
 
 fail:
   if (file)
@@ -666,7 +649,7 @@ fail:
     font->file = 0;
 
   free_font (font);
-  return 1;
+  return 0;
 }
 
 /* Read a 16-bit big-endian integer from FILE, convert it to native byte
@@ -794,6 +777,7 @@ grub_font_get_glyph_internal (grub_font_t font, grub_uint32_t code)
 	  if (grub_file_read (font->file, glyph->bitmap, len) != len)
 	    {
 	      remove_font (font);
+	      grub_free (glyph);
 	      return 0;
 	    }
 	}
@@ -907,20 +891,6 @@ int
 grub_font_get_max_char_width (grub_font_t font)
 {
   return font->max_char_width;
-}
-
-/* Get the maximum height of any character in the font in pixels.  */
-int
-grub_font_get_max_char_height (grub_font_t font)
-{
-  return font->max_char_height;
-}
-
-/* Get the distance in pixels from the top of characters to the baseline.  */
-int
-grub_font_get_ascent (grub_font_t font)
-{
-  return font->ascent;
 }
 
 /* Get the distance in pixels from the baseline to the lowest descenders
@@ -1064,6 +1034,7 @@ grub_font_get_glyph_with_fallback (grub_font_t font, grub_uint32_t code)
   return best_glyph;
 }
 
+#if 0
 static struct grub_font_glyph *
 grub_font_dup_glyph (struct grub_font_glyph *glyph)
 {
@@ -1075,6 +1046,7 @@ grub_font_dup_glyph (struct grub_font_glyph *glyph)
 	       + (glyph->width * glyph->height + 7) / 8);
   return ret;
 }
+#endif
 
 /* FIXME: suboptimal.  */
 static void
@@ -1143,6 +1115,49 @@ grub_font_blit_glyph_mirror (struct grub_font_glyph *target,
     }
 }
 
+/* Context for blit_comb.  */
+struct blit_comb_ctx
+{
+  struct grub_font_glyph *glyph;
+  int *device_width;
+  struct grub_video_signed_rect bounds;
+};
+
+/* Helper for blit_comb.  */
+static void
+do_blit (struct grub_font_glyph *src, signed dx, signed dy,
+	 struct blit_comb_ctx *ctx)
+{
+  if (ctx->glyph)
+    grub_font_blit_glyph (ctx->glyph, src, dx - ctx->glyph->offset_x,
+			  (ctx->glyph->height + ctx->glyph->offset_y) + dy);
+  if (dx < ctx->bounds.x)
+    {
+      ctx->bounds.width += ctx->bounds.x - dx;
+      ctx->bounds.x = dx;
+    }
+  if (ctx->bounds.y > -src->height - dy)
+    {
+      ctx->bounds.height += ctx->bounds.y - (-src->height - dy);
+      ctx->bounds.y = (-src->height - dy);
+    }
+  if (dx + src->width - ctx->bounds.x >= (signed) ctx->bounds.width)
+    ctx->bounds.width = dx + src->width - ctx->bounds.x + 1;
+  if ((signed) ctx->bounds.height < src->height + (-src->height - dy)
+      - ctx->bounds.y)
+    ctx->bounds.height = src->height + (-src->height - dy) - ctx->bounds.y;
+}
+
+/* Helper for blit_comb.  */
+static inline void
+add_device_width (int val, struct blit_comb_ctx *ctx)
+{
+  if (ctx->glyph)
+    ctx->glyph->device_width += val;
+  if (ctx->device_width)
+    *ctx->device_width += val;
+}
+
 static void
 blit_comb (const struct grub_unicode_glyph *glyph_id,
 	   struct grub_font_glyph *glyph,
@@ -1150,63 +1165,37 @@ blit_comb (const struct grub_unicode_glyph *glyph_id,
 	   struct grub_font_glyph *main_glyph,
 	   struct grub_font_glyph **combining_glyphs, int *device_width)
 {
-  struct grub_video_signed_rect bounds;
+  struct blit_comb_ctx ctx = {
+    .glyph = glyph,
+    .device_width = device_width
+  };
   unsigned i;
   signed above_rightx, above_righty;
   signed above_leftx, above_lefty;
   signed below_rightx, below_righty;
   signed min_devwidth = 0;
-  auto void NESTED_FUNC_ATTR do_blit (struct grub_font_glyph *src,
-				      signed dx, signed dy);
-  void NESTED_FUNC_ATTR do_blit (struct grub_font_glyph *src,
-				 signed dx, signed dy)
-  {
-    if (glyph)
-      grub_font_blit_glyph (glyph, src, dx - glyph->offset_x,
-			    (glyph->height + glyph->offset_y) + dy);
-    if (dx < bounds.x)
-      {
-	bounds.width += bounds.x - dx;
-	bounds.x = dx;
-      }
-    if (bounds.y > -src->height - dy)
-      {
-	bounds.height += bounds.y - (-src->height - dy);
-	bounds.y = (-src->height - dy);
-      }
-    if (dx + src->width - bounds.x >= (signed) bounds.width)
-      bounds.width = dx + src->width - bounds.x + 1;
-    if ((signed) bounds.height < src->height + (-src->height - dy) - bounds.y)
-      bounds.height = src->height + (-src->height - dy) - bounds.y;
-  }
-
-  auto void add_device_width (int val);
-  void add_device_width (int val)
-  {
-    if (glyph)
-      glyph->device_width += val;
-    if (device_width)
-      *device_width += val;
-  }
+  const struct grub_unicode_combining *comb;
 
   if (glyph)
     glyph->device_width = main_glyph->device_width;
   if (device_width)
     *device_width = main_glyph->device_width;
 
-  bounds.x = main_glyph->offset_x;
-  bounds.y = main_glyph->offset_y;
-  bounds.width = main_glyph->width;
-  bounds.height = main_glyph->height;
+  ctx.bounds.x = main_glyph->offset_x;
+  ctx.bounds.y = main_glyph->offset_y;
+  ctx.bounds.width = main_glyph->width;
+  ctx.bounds.height = main_glyph->height;
 
   above_rightx = main_glyph->offset_x + main_glyph->width;
-  above_righty = bounds.y + bounds.height;
+  above_righty = ctx.bounds.y + ctx.bounds.height;
 
   above_leftx = main_glyph->offset_x;
-  above_lefty = bounds.y + bounds.height;
+  above_lefty = ctx.bounds.y + ctx.bounds.height;
 
-  below_rightx = bounds.x + bounds.width;
-  below_righty = bounds.y;
+  below_rightx = ctx.bounds.x + ctx.bounds.width;
+  below_righty = ctx.bounds.y;
+
+  comb = grub_unicode_get_comb (glyph_id);
 
   for (i = 0; i < glyph_id->ncomb; i++)
     {
@@ -1216,41 +1205,41 @@ blit_comb (const struct grub_unicode_glyph *glyph_id,
 
       if (!combining_glyphs[i])
 	continue;
-      targetx = (bounds.width - combining_glyphs[i]->width) / 2 + bounds.x;
+      targetx = (ctx.bounds.width - combining_glyphs[i]->width) / 2 + ctx.bounds.x;
       /* CGJ is to avoid diacritics reordering. */
-      if (glyph_id->combining[i].code
+      if (comb[i].code
 	  == GRUB_UNICODE_COMBINING_GRAPHEME_JOINER)
 	continue;
-      switch (glyph_id->combining[i].type)
+      switch (comb[i].type)
 	{
 	case GRUB_UNICODE_COMB_OVERLAY:
 	  do_blit (combining_glyphs[i],
 		   targetx,
-		   (bounds.height - combining_glyphs[i]->height) / 2
-		   - (bounds.height + bounds.y));
+		   (ctx.bounds.height - combining_glyphs[i]->height) / 2
+		   - (ctx.bounds.height + ctx.bounds.y), &ctx);
 	  if (min_devwidth < combining_glyphs[i]->width)
 	    min_devwidth = combining_glyphs[i]->width;
 	  break;
 
 	case GRUB_UNICODE_COMB_ATTACHED_ABOVE_RIGHT:
-	  do_blit (combining_glyphs[i], above_rightx, -above_righty);
+	  do_blit (combining_glyphs[i], above_rightx, -above_righty, &ctx);
 	  above_rightx += combining_glyphs[i]->width;
 	  break;
 
 	case GRUB_UNICODE_COMB_ABOVE_RIGHT:
 	  do_blit (combining_glyphs[i], above_rightx,
-		   -(above_righty + combining_glyphs[i]->height));
+		   -(above_righty + combining_glyphs[i]->height), &ctx);
 	  above_rightx += combining_glyphs[i]->width;
 	  break;
 
 	case GRUB_UNICODE_COMB_ABOVE_LEFT:
 	  above_leftx -= combining_glyphs[i]->width;
 	  do_blit (combining_glyphs[i], above_leftx,
-		   -(above_lefty + combining_glyphs[i]->height));
+		   -(above_lefty + combining_glyphs[i]->height), &ctx);
 	  break;
 
 	case GRUB_UNICODE_COMB_BELOW_RIGHT:
-	  do_blit (combining_glyphs[i], below_rightx, below_righty);
+	  do_blit (combining_glyphs[i], below_rightx, below_righty, &ctx);
 	  below_rightx += combining_glyphs[i]->width;
 	  break;
 
@@ -1276,7 +1265,7 @@ blit_comb (const struct grub_unicode_glyph *glyph_id,
 	    space = 1 + (grub_font_get_xheight (main_glyph->font)) / 8;
 	  do_blit (combining_glyphs[i], targetx,
 		   -(main_glyph->height + main_glyph->offset_y + space
-		     + combining_glyphs[i]->height));
+		     + combining_glyphs[i]->height), &ctx);
 	  if (min_devwidth < combining_glyphs[i]->width)
 	    min_devwidth = combining_glyphs[i]->width;
 	  break;
@@ -1297,19 +1286,19 @@ blit_comb (const struct grub_unicode_glyph *glyph_id,
 	    - grub_font_get_xheight (combining_glyphs[i]->font) - 1;
 	  if (space <= 0)
 	    space = 1 + (grub_font_get_xheight (main_glyph->font)) / 8;
-
+	  /* Fallthrough.  */
 	case GRUB_UNICODE_STACK_ATTACHED_ABOVE:
 	  do_blit (combining_glyphs[i], targetx,
-		   -(bounds.height + bounds.y + space
-		     + combining_glyphs[i]->height));
+		   -(ctx.bounds.height + ctx.bounds.y + space
+		     + combining_glyphs[i]->height), &ctx);
 	  if (min_devwidth < combining_glyphs[i]->width)
 	    min_devwidth = combining_glyphs[i]->width;
 	  break;
 
 	case GRUB_UNICODE_COMB_HEBREW_DAGESH:
 	  do_blit (combining_glyphs[i], targetx,
-		   -(bounds.height / 2 + bounds.y
-		     + combining_glyphs[i]->height / 2));
+		   -(ctx.bounds.height / 2 + ctx.bounds.y
+		     + combining_glyphs[i]->height / 2), &ctx);
 	  if (min_devwidth < combining_glyphs[i]->width)
 	    min_devwidth = combining_glyphs[i]->width;
 	  break;
@@ -1338,15 +1327,17 @@ blit_comb (const struct grub_unicode_glyph *glyph_id,
 		    + combining_glyphs[i]->height);
 	  if (space <= 0)
 	    space = 1 + (grub_font_get_xheight (main_glyph->font)) / 8;
+	  /* Fallthrough.  */
 
 	case GRUB_UNICODE_STACK_ATTACHED_BELOW:
-	  do_blit (combining_glyphs[i], targetx, -(bounds.y - space));
+	  do_blit (combining_glyphs[i], targetx, -(ctx.bounds.y - space),
+		   &ctx);
 	  if (min_devwidth < combining_glyphs[i]->width)
 	    min_devwidth = combining_glyphs[i]->width;
 	  break;
 
 	case GRUB_UNICODE_COMB_MN:
-	  switch (glyph_id->combining[i].code)
+	  switch (comb[i].code)
 	    {
 	    case GRUB_UNICODE_THAANA_ABAFILI:
 	    case GRUB_UNICODE_THAANA_AABAAFILI:
@@ -1373,39 +1364,36 @@ blit_comb (const struct grub_unicode_glyph *glyph_id,
 		     main_glyph->device_width
 		     + combining_glyphs[i]->offset_x,
 		     -(combining_glyphs[i]->height
-		       + combining_glyphs[i]->offset_y));
-	    add_device_width (combining_glyphs[i]->device_width);
+		       + combining_glyphs[i]->offset_y), &ctx);
+	    add_device_width (combining_glyphs[i]->device_width, &ctx);
 	  }
 	}
     }
   add_device_width ((above_rightx >
 		     below_rightx ? above_rightx : below_rightx) -
-		    (main_glyph->offset_x + main_glyph->width));
-  add_device_width (above_leftx - main_glyph->offset_x);
+		    (main_glyph->offset_x + main_glyph->width), &ctx);
+  add_device_width (above_leftx - main_glyph->offset_x, &ctx);
   if (glyph && glyph->device_width < min_devwidth)
     glyph->device_width = min_devwidth;
   if (device_width && *device_width < min_devwidth)
     *device_width = min_devwidth;
 
   if (bounds_out)
-    *bounds_out = bounds;
+    *bounds_out = ctx.bounds;
 }
 
 static struct grub_font_glyph *
 grub_font_construct_dry_run (grub_font_t hinted_font,
 			     const struct grub_unicode_glyph *glyph_id,
 			     struct grub_video_signed_rect *bounds,
-			     struct grub_font_glyph ***combining_glyphs_out,
+			     struct grub_font_glyph **combining_glyphs,
 			     int *device_width)
 {
   struct grub_font_glyph *main_glyph = NULL;
-  struct grub_font_glyph **combining_glyphs;
   grub_uint32_t desired_attributes = 0;
   unsigned i;
   grub_uint32_t base = glyph_id->base;
-
-  if (combining_glyphs_out)
-    *combining_glyphs_out = NULL;
+  const struct grub_unicode_combining *comb;
 
   if (glyph_id->attributes & GRUB_UNICODE_GLYPH_ATTRIBUTE_RIGHT_JOINED)
     desired_attributes |= GRUB_FONT_CODE_RIGHT_JOINED;
@@ -1413,11 +1401,12 @@ grub_font_construct_dry_run (grub_font_t hinted_font,
   if (glyph_id->attributes & GRUB_UNICODE_GLYPH_ATTRIBUTE_LEFT_JOINED)
     desired_attributes |= GRUB_FONT_CODE_LEFT_JOINED;
 
+  comb = grub_unicode_get_comb (glyph_id);
 
   if (base == 'i' || base == 'j')
     {
       for (i = 0; i < glyph_id->ncomb; i++)
-	if (glyph_id->combining[i].type == GRUB_UNICODE_STACK_ABOVE)
+	if (comb[i].type == GRUB_UNICODE_STACK_ABOVE)
 	  break;
       if (i < glyph_id->ncomb && base == 'i')
 	base = GRUB_UNICODE_DOTLESS_LOWERCASE_I;
@@ -1446,8 +1435,6 @@ grub_font_construct_dry_run (grub_font_t hinted_font,
   if (!glyph_id->ncomb && !glyph_id->attributes)
     return main_glyph;
 
-  combining_glyphs = grub_malloc (sizeof (combining_glyphs[0])
-				  * glyph_id->ncomb);
   if (glyph_id->ncomb && !combining_glyphs)
     {
       grub_errno = GRUB_ERR_NONE;
@@ -1457,16 +1444,31 @@ grub_font_construct_dry_run (grub_font_t hinted_font,
   for (i = 0; i < glyph_id->ncomb; i++)
     combining_glyphs[i]
       = grub_font_get_glyph_with_fallback (main_glyph->font,
-					   glyph_id->combining[i].code);
+					   comb[i].code);
 
   blit_comb (glyph_id, NULL, bounds, main_glyph, combining_glyphs,
 	     device_width);
-  if (combining_glyphs_out)
-    *combining_glyphs_out = combining_glyphs;
-  else
-    grub_free (combining_glyphs);
 
   return main_glyph;
+}
+
+static struct grub_font_glyph **render_combining_glyphs = 0;
+static grub_size_t render_max_comb_glyphs = 0;
+
+static void
+ensure_comb_space (const struct grub_unicode_glyph *glyph_id)
+{
+  if (glyph_id->ncomb <= render_max_comb_glyphs)
+    return;
+
+  render_max_comb_glyphs = 2 * glyph_id->ncomb;
+  if (render_max_comb_glyphs < 8)
+    render_max_comb_glyphs = 8;
+  grub_free (render_combining_glyphs);
+  render_combining_glyphs = grub_malloc (render_max_comb_glyphs
+					 * sizeof (render_combining_glyphs[0]));
+  if (!render_combining_glyphs)
+    grub_errno = 0;
 }
 
 int
@@ -1476,8 +1478,11 @@ grub_font_get_constructed_device_width (grub_font_t hinted_font,
 {
   int ret;
   struct grub_font_glyph *main_glyph;
+
+  ensure_comb_space (glyph_id);
+
   main_glyph = grub_font_construct_dry_run (hinted_font, glyph_id, NULL,
-					    NULL, &ret);
+					    render_combining_glyphs, &ret);
   if (!main_glyph)
     return unknown_glyph->device_width;
   return ret;
@@ -1489,25 +1494,41 @@ grub_font_construct_glyph (grub_font_t hinted_font,
 {
   struct grub_font_glyph *main_glyph;
   struct grub_video_signed_rect bounds;
-  struct grub_font_glyph *glyph;
-  struct grub_font_glyph **combining_glyphs;
+  static struct grub_font_glyph *glyph = 0;
+  static grub_size_t max_glyph_size = 0;
+
+  ensure_comb_space (glyph_id);
 
   main_glyph = grub_font_construct_dry_run (hinted_font, glyph_id,
-					    &bounds, &combining_glyphs, NULL);
+					    &bounds, render_combining_glyphs,
+					    NULL);
 
   if (!main_glyph)
-    return grub_font_dup_glyph (unknown_glyph);
+    return unknown_glyph;
 
-  if (!combining_glyphs)
-    return grub_font_dup_glyph (main_glyph);
+  if (!render_combining_glyphs && glyph_id->ncomb)
+    return main_glyph;
 
-  glyph =
-    grub_zalloc (sizeof (*glyph) + (bounds.width * bounds.height + 7) / 8);
+  if (!glyph_id->ncomb && !glyph_id->attributes)
+    return main_glyph;
+
+  if (max_glyph_size < sizeof (*glyph) + (bounds.width * bounds.height + GRUB_CHAR_BIT - 1) / GRUB_CHAR_BIT)
+    {
+      grub_free (glyph);
+      max_glyph_size = (sizeof (*glyph) + (bounds.width * bounds.height + GRUB_CHAR_BIT - 1) / GRUB_CHAR_BIT) * 2;
+      if (max_glyph_size < 8)
+	max_glyph_size = 8;
+      glyph = grub_malloc (max_glyph_size);
+    }
   if (!glyph)
     {
       grub_errno = GRUB_ERR_NONE;
-      return grub_font_dup_glyph (main_glyph);
+      return main_glyph;
     }
+
+  grub_memset (glyph, 0, sizeof (*glyph)
+	       + (bounds.width * bounds.height
+		  + GRUB_CHAR_BIT - 1) / GRUB_CHAR_BIT);
 
   glyph->font = main_glyph->font;
   glyph->width = bounds.width;
@@ -1527,7 +1548,7 @@ grub_font_construct_glyph (grub_font_t hinted_font,
 			  (glyph->height + glyph->offset_y)
 			  - (main_glyph->height + main_glyph->offset_y));
 
-  blit_comb (glyph_id, glyph, NULL, main_glyph, combining_glyphs, NULL);
+  blit_comb (glyph_id, glyph, NULL, main_glyph, render_combining_glyphs, NULL);
 
   return glyph;
 }

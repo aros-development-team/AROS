@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+if ! which genromfs >/dev/null 2>&1; then
+   echo "genromfs not installed; cannot test romfs."
+   exit 77
+fi
+
+"@builddir@/grub-fs-tester" romfs

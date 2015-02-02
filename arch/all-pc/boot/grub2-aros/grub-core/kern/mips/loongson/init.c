@@ -40,54 +40,57 @@
 #include <grub/at_keyboard.h>
 
 grub_err_t
-grub_machine_mmap_iterate (grub_memory_hook_t hook)
+grub_machine_mmap_iterate (grub_memory_hook_t hook, void *hook_data)
 {
   hook (GRUB_ARCH_LOWMEMPSTART, grub_arch_memsize << 20,
-	GRUB_MEMORY_AVAILABLE);
+	GRUB_MEMORY_AVAILABLE, hook_data);
   hook (GRUB_ARCH_HIGHMEMPSTART, grub_arch_highmemsize << 20,
-	GRUB_MEMORY_AVAILABLE);
+	GRUB_MEMORY_AVAILABLE, hook_data);
   return GRUB_ERR_NONE;
+}
+
+/* Helper for init_pci.  */
+static int
+set_card (grub_pci_device_t dev, grub_pci_id_t pciid,
+	  void *data __attribute__ ((unused)))
+{
+  grub_pci_address_t addr;
+  /* We could use grub_pci_assign_addresses for this but we prefer to
+     have exactly same memory map as on pmon.  */
+  switch (pciid)
+    {
+    case GRUB_LOONGSON_OHCI_PCIID:
+      addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
+      grub_pci_write (addr, 0x5025000);
+      addr = grub_pci_make_address (dev, GRUB_PCI_REG_COMMAND);
+      grub_pci_write_word (addr, GRUB_PCI_COMMAND_SERR_ENABLE
+			   | GRUB_PCI_COMMAND_PARITY_ERROR
+			   | GRUB_PCI_COMMAND_BUS_MASTER
+			   | GRUB_PCI_COMMAND_MEM_ENABLED);
+
+      addr = grub_pci_make_address (dev, GRUB_PCI_REG_STATUS);
+      grub_pci_write_word (addr, 0x0200 | GRUB_PCI_STATUS_CAPABILITIES);
+      break;
+    case GRUB_LOONGSON_EHCI_PCIID:
+      addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
+      grub_pci_write (addr, 0x5026000);
+      addr = grub_pci_make_address (dev, GRUB_PCI_REG_COMMAND);
+      grub_pci_write_word (addr, GRUB_PCI_COMMAND_SERR_ENABLE
+			   | GRUB_PCI_COMMAND_PARITY_ERROR
+			   | GRUB_PCI_COMMAND_BUS_MASTER
+			   | GRUB_PCI_COMMAND_MEM_ENABLED);
+
+      addr = grub_pci_make_address (dev, GRUB_PCI_REG_STATUS);
+      grub_pci_write_word (addr, (1 << GRUB_PCI_STATUS_DEVSEL_TIMING_SHIFT)
+			   | GRUB_PCI_STATUS_CAPABILITIES);
+      break;
+    }
+  return 0;
 }
 
 static void
 init_pci (void)
 {
-  auto int NESTED_FUNC_ATTR set_card (grub_pci_device_t dev, grub_pci_id_t pciid);
-  int NESTED_FUNC_ATTR set_card (grub_pci_device_t dev, grub_pci_id_t pciid)
-  {
-    grub_pci_address_t addr;
-    /* FIXME: autoscan for BARs and devices.  */
-    switch (pciid)
-      {
-      case GRUB_LOONGSON_OHCI_PCIID:
-	addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
-	grub_pci_write (addr, 0x5025000);
-	addr = grub_pci_make_address (dev, GRUB_PCI_REG_COMMAND);
-	grub_pci_write_word (addr, GRUB_PCI_COMMAND_SERR_ENABLE
-			     | GRUB_PCI_COMMAND_PARITY_ERROR
-			     | GRUB_PCI_COMMAND_BUS_MASTER
-			     | GRUB_PCI_COMMAND_MEM_ENABLED);
-
-	addr = grub_pci_make_address (dev, GRUB_PCI_REG_STATUS);
-	grub_pci_write_word (addr, 0x0200 | GRUB_PCI_STATUS_CAPABILITIES);
-	break;
-      case GRUB_LOONGSON_EHCI_PCIID:
-	addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
-	grub_pci_write (addr, 0x5026000);
-	addr = grub_pci_make_address (dev, GRUB_PCI_REG_COMMAND);
-	grub_pci_write_word (addr, GRUB_PCI_COMMAND_SERR_ENABLE
-			     | GRUB_PCI_COMMAND_PARITY_ERROR
-			     | GRUB_PCI_COMMAND_BUS_MASTER
-			     | GRUB_PCI_COMMAND_MEM_ENABLED);
-
-	addr = grub_pci_make_address (dev, GRUB_PCI_REG_STATUS);
-	grub_pci_write_word (addr, (1 << GRUB_PCI_STATUS_DEVSEL_TIMING_SHIFT)
-			     | GRUB_PCI_STATUS_CAPABILITIES);
-	break;
-      }
-    return 0;
-  }
-
   *((volatile grub_uint32_t *) GRUB_CPU_LOONGSON_PCI_HIT1_SEL_LO) = 0x8000000c;
   *((volatile grub_uint32_t *) GRUB_CPU_LOONGSON_PCI_HIT1_SEL_HI) = 0xffffffff;
 
@@ -110,7 +113,7 @@ init_pci (void)
   *((volatile grub_uint32_t *) (GRUB_MACHINE_PCI_CONTROLLER_HEADER 
 				+ GRUB_PCI_REG_ADDRESS_REG1)) = 0;
 
-  grub_pci_iterate (set_card);
+  grub_pci_iterate (set_card, NULL);
 }
 
 void
@@ -126,12 +129,19 @@ grub_machine_init (void)
       /* Loongson 2E.  */
     case 0x6302:
       grub_arch_machine = GRUB_ARCH_MACHINE_FULOONG2E;
+      grub_bonito_type = GRUB_BONITO_2F;
       break;
       /* Loongson 2F.  */
     case 0x6303:
       if (grub_arch_machine != GRUB_ARCH_MACHINE_FULOONG2F
 	  && grub_arch_machine != GRUB_ARCH_MACHINE_YEELOONG)
 	grub_arch_machine = GRUB_ARCH_MACHINE_YEELOONG;
+      grub_bonito_type = GRUB_BONITO_2F;
+      break;
+      /* Loongson 3A. */
+    case 0x6305:
+      grub_arch_machine = GRUB_ARCH_MACHINE_YEELOONG_3A;
+      grub_bonito_type = GRUB_BONITO_3A;
       break;
     }
 
@@ -200,11 +210,13 @@ grub_machine_init (void)
   grub_video_sm712_init ();
   grub_video_sis315pro_init ();
   grub_video_radeon_fuloong2e_init ();
+  grub_video_radeon_yeeloong3a_init ();
   grub_font_init ();
   grub_gfxterm_init ();
 
   grub_keylayouts_init ();
-  if (grub_arch_machine == GRUB_ARCH_MACHINE_YEELOONG)
+  if (grub_arch_machine == GRUB_ARCH_MACHINE_YEELOONG
+      || grub_arch_machine == GRUB_ARCH_MACHINE_YEELOONG_3A)
     grub_at_keyboard_init ();
 
   grub_terminfo_init ();
@@ -214,8 +226,40 @@ grub_machine_init (void)
 }
 
 void
-grub_machine_fini (void)
+grub_machine_fini (int flags __attribute__ ((unused)))
 {
+}
+
+static int
+halt_via (grub_pci_device_t dev, grub_pci_id_t pciid,
+	  void *data __attribute__ ((unused)))
+{
+  grub_uint16_t pm;
+  grub_pci_address_t addr;
+
+  if (pciid != 0x30571106)
+    return 0;
+
+  addr = grub_pci_make_address (dev, 0x40);
+  pm = grub_pci_read (addr) & ~1;
+
+  if (pm == 0)
+    {
+      grub_pci_write (addr, 0x1801);
+      pm = 0x1800;
+    }
+
+  addr = grub_pci_make_address (dev, 0x80);
+  grub_pci_write_byte (addr, 0xff);
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_COMMAND);
+  grub_pci_write_word (addr, grub_pci_read_word (addr) | GRUB_PCI_COMMAND_IO_ENABLED);
+
+  /* FIXME: This one is derived from qemu. Check on real hardware.  */
+  grub_outw (0x2000, pm + 4 + GRUB_MACHINE_PCI_IO_BASE);
+  grub_millisleep (5000);
+
+  return 0;
 }
 
 void
@@ -224,6 +268,7 @@ grub_halt (void)
   switch (grub_arch_machine)
     {
     case GRUB_ARCH_MACHINE_FULOONG2E:
+      grub_pci_iterate (halt_via, NULL);
       break;
     case GRUB_ARCH_MACHINE_FULOONG2F:
       {
@@ -244,6 +289,13 @@ grub_halt (void)
 		 & ~GRUB_CPU_YEELOONG_SHUTDOWN_GPIO, GRUB_CPU_LOONGSON_GPIOCFG);
       grub_millisleep (1500);
       break;
+    case GRUB_ARCH_MACHINE_YEELOONG_3A:
+      grub_millisleep (1);
+      grub_outb (0x4e, GRUB_MACHINE_PCI_IO_BASE_3A | 0x66);
+      grub_millisleep (1);
+      grub_outb (2, GRUB_MACHINE_PCI_IO_BASE_3A | 0x62);
+      grub_millisleep (5000);
+      break;
     }
 
   grub_puts_ (N_("Shutdown failed"));
@@ -255,6 +307,12 @@ void
 grub_exit (void)
 {
   grub_halt ();
+}
+
+void
+grub_machine_get_bootlocation (char **device __attribute__ ((unused)),
+			       char **path __attribute__ ((unused)))
+{
 }
 
 extern char _end[];

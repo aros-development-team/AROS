@@ -129,7 +129,7 @@ usb_print_str (const char *description, grub_usb_device_t dev, int idx)
 }
 
 static int
-usb_iterate (grub_usb_device_t dev)
+usb_iterate (grub_usb_device_t dev, void *data __attribute__ ((unused)))
 {
   struct grub_usb_desc_device *descdev;
   int i;
@@ -196,10 +196,10 @@ grub_cmd_usbtest (grub_command_t cmd __attribute__ ((unused)),
 		  int argc __attribute__ ((unused)),
 		  char **args __attribute__ ((unused)))
 {
-  grub_usb_poll_devices ();
+  grub_usb_poll_devices (1);
 
   grub_printf ("USB devices:\n\n");
-  grub_usb_iterate (usb_iterate);
+  grub_usb_iterate (usb_iterate, NULL);
 
   return 0;
 }

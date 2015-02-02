@@ -21,9 +21,4 @@
 
 #include <grub/symbol.h>
 
-#define GRUB_TICKS_PER_SECOND	18
-
-/* Return the real time in ticks.  */
-grub_uint32_t grub_get_rtc (void);
-
 #endif /* ! KERNEL_MACHINE_TIME_HEADER */

@@ -49,7 +49,6 @@ grub_cmd_videotest (grub_command_t cmd __attribute__ ((unused)),
   if (grub_strcmp (cmd->name, "vbetest") == 0)
     grub_dl_load ("vbe");
 #endif
-
   mode = grub_env_get ("gfxmode");
   if (argc)
     mode = args[0];
@@ -71,10 +70,10 @@ grub_cmd_videotest (grub_command_t cmd __attribute__ ((unused)),
     grub_font_t fixed;
     struct grub_font_glyph *glyph;
 
-    grub_video_create_render_target (&text_layer, width, height,
-				     GRUB_VIDEO_MODE_TYPE_RGB
-				     | GRUB_VIDEO_MODE_TYPE_ALPHA);
-    if (!text_layer)
+    if (grub_video_create_render_target (&text_layer, width, height,
+					 GRUB_VIDEO_MODE_TYPE_RGB
+					 | GRUB_VIDEO_MODE_TYPE_ALPHA)
+	|| !text_layer)
       goto fail;
 
     grub_video_set_active_render_target (text_layer);
@@ -155,26 +154,38 @@ grub_cmd_videotest (grub_command_t cmd __attribute__ ((unused)),
 
   grub_video_set_active_render_target (GRUB_VIDEO_RENDER_TARGET_DISPLAY);
 
-  for (i = 0; i < 2; i++)
-    {
-      color = grub_video_map_rgb (0, 0, 0);
-      grub_video_fill_rect (color, 0, 0, width, height);
-
-      color = grub_video_map_rgb (255, 0, 0);
-      grub_video_fill_rect (color, 0, 0, 100, 100);
-
-      color = grub_video_map_rgb (0, 255, 255);
-      grub_video_fill_rect (color, 100, 100, 100, 100);
-
-      grub_video_set_viewport (x + 150, y + 150,
-			       width - 150 * 2, height - 150 * 2);
-      color = grub_video_map_rgb (77, 33, 77);
-      grub_video_fill_rect (color, 0, 0, width, height);
-      grub_video_swap_buffers ();
-    }
-
   for (i = 0; i < 5; i++)
     {
+
+      if (i == 0 || i == 1)
+	{	  
+	  color = grub_video_map_rgb (0, 0, 0);
+	  grub_video_fill_rect (color, 0, 0, width, height);
+
+	  color = grub_video_map_rgb (255, 0, 0);
+	  grub_video_fill_rect (color, 0, 0, 100, 100);
+
+	  color = grub_video_map_rgb (0, 255, 0);
+	  grub_video_fill_rect (color, 100, 0, 100, 100);
+
+	  color = grub_video_map_rgb (0, 0, 255);
+	  grub_video_fill_rect (color, 200, 0, 100, 100);
+
+	  color = grub_video_map_rgb (0, 255, 255);
+	  grub_video_fill_rect (color, 0, 100, 100, 100);
+
+	  color = grub_video_map_rgb (255, 0, 255);
+	  grub_video_fill_rect (color, 100, 100, 100, 100);
+
+	  color = grub_video_map_rgb (255, 255, 0);
+	  grub_video_fill_rect (color, 200, 100, 100, 100);
+
+	  grub_video_set_viewport (x + 150, y + 150,
+				   width - 150 * 2, height - 150 * 2);
+	  color = grub_video_map_rgb (77, 33, 77);
+	  grub_video_fill_rect (color, 0, 0, width, height);
+	}
+
       color = grub_video_map_rgb (i, 33, 77);
       grub_video_fill_rect (color, 0, 0, width, height);
       grub_video_blit_render_target (text_layer, GRUB_VIDEO_BLIT_BLEND, 0, 0,

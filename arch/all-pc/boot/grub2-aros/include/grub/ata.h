@@ -193,10 +193,12 @@ struct grub_ata
 
 typedef struct grub_ata *grub_ata_t;
 
+typedef int (*grub_ata_dev_iterate_hook_t) (int id, int bus, void *data);
+
 struct grub_ata_dev
 {
   /* Call HOOK with each device name, until HOOK returns non-zero.  */
-  int (*iterate) (int (*hook) (int id, int bus),
+  int (*iterate) (grub_ata_dev_iterate_hook_t hook, void *hook_data,
 		  grub_disk_pull_t pull);
 
   /* Open the device named NAME, and set up SCSI.  */

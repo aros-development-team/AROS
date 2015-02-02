@@ -23,13 +23,12 @@
 #define SYSCALL_WRITE 4
 #define SYSCALL_RESET 55
 #define SYSCALL_EXIT 1
-#define SYSCALL_ARCH_IOPL	4
+#define SYSCALL_ARCH_IOPERM	4
 #define SYSCALL_FSYNC 95
 
 #define RESET_NOSYNC 0x4
 #define RESET_HALT 0x8
 #define RESET_POWEROFF 0x4000
-#define SHUTDOWN_PORT 0x8900
 
 	.section ".init", "ax"
 	.global start,_start
@@ -53,29 +52,18 @@ _start:
 	movq $SYSCALL_FSYNC, %rax
 	syscall
 
-	/* IOPL.  */
+	/* IOPERM.  */
 	movq $SYSCALL_ARCH, %rax
-	movq $SYSCALL_ARCH_IOPL, %rdi
-	leaq iopl_arg, %rsi
+	movq $SYSCALL_ARCH_IOPERM, %rdi
+	leaq ioperm_arg1, %rsi
 	syscall
 
-	movw $SHUTDOWN_PORT, %dx
-	movb $'S', %al
-	outb %al, %dx
-	movb $'h', %al
-	outb %al, %dx
-	movb $'u', %al
-	outb %al, %dx
-	movb $'t', %al
-	outb %al, %dx
-	movb $'d', %al
-	outb %al, %dx
-	movb $'o', %al
-	outb %al, %dx
-	movb $'w', %al
-	outb %al, %dx
-	movb $'n', %al
-	outb %al, %dx
+	movq $SYSCALL_ARCH, %rax
+	movq $SYSCALL_ARCH_IOPERM, %rdi
+	leaq ioperm_arg2, %rsi
+	syscall
+
+#include "qemu-shutdown-x86.S"
 	
 	/* shutdown.  */
 	movq $SYSCALL_RESET, %rax
@@ -92,7 +80,11 @@ device:
 message:
 	.ascii "Boot Test Passed Successfully\n" SUCCESSFUL_BOOT_STRING "\n"
 messageend:
-iopl_arg:
-	.long SHUTDOWN_PORT
+ioperm_arg1:
+	.long 0xcf8
+	.long 8
 	.long 1
+ioperm_arg2:
+	.long 0x7000
+	.long 8
 	.long 1

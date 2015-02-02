@@ -22,6 +22,7 @@
 #include <grub/symbol.h>
 #include <grub/err.h>
 #include <grub/list.h>
+#include <grub/misc.h>
 
 typedef enum grub_command_flags
   {
@@ -121,6 +122,7 @@ grub_command_execute (const char *name, int argc, char **argv)
 }
 
 #define FOR_COMMANDS(var) FOR_LIST_ELEMENTS((var), grub_command_list)
+#define FOR_COMMANDS_SAFE(var, next) FOR_LIST_ELEMENTS_SAFE((var), (next), grub_command_list)
 
 void grub_register_core_commands (void);
 

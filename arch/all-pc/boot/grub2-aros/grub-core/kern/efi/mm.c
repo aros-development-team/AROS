@@ -21,6 +21,7 @@
 #include <grub/mm.h>
 #include <grub/efi/api.h>
 #include <grub/efi/efi.h>
+#include <grub/cpu/efi/memory.h>
 
 #if defined (__i386__) || defined (__x86_64__)
 #include <grub/pci.h>
@@ -30,6 +31,7 @@
   ((grub_efi_memory_descriptor_t *) ((char *) (desc) + (size)))
 
 #define BYTES_TO_PAGES(bytes)	(((bytes) + 0xfff) >> 12)
+#define BYTES_TO_PAGES_DOWN(bytes)	((bytes) >> 12)
 #define PAGES_TO_BYTES(pages)	((pages) << 12)
 
 /* The size of a memory map obtained from the firmware. This must be
@@ -58,7 +60,7 @@ grub_efi_allocate_pages (grub_efi_physical_address_t address,
 
 #if 1
   /* Limit the memory access to less than 4GB for 32-bit platforms.  */
-  if (address > 0xffffffff)
+  if (address > GRUB_EFI_MAX_USABLE_ADDRESS)
     return 0;
 #endif
 
@@ -66,7 +68,7 @@ grub_efi_allocate_pages (grub_efi_physical_address_t address,
   if (address == 0)
     {
       type = GRUB_EFI_ALLOCATE_MAX_ADDRESS;
-      address = 0xffffffff;
+      address = GRUB_EFI_MAX_USABLE_ADDRESS;
     }
   else
     type = GRUB_EFI_ALLOCATE_ADDRESS;
@@ -86,7 +88,7 @@ grub_efi_allocate_pages (grub_efi_physical_address_t address,
     {
       /* Uggh, the address 0 was allocated... This is too annoying,
 	 so reallocate another one.  */
-      address = 0xffffffff;
+      address = GRUB_EFI_MAX_USABLE_ADDRESS;
       status = efi_call_4 (b->allocate_pages, type, GRUB_EFI_LOADER_DATA, pages, &address);
       grub_efi_free_pages (0, pages);
       if (status != GRUB_EFI_SUCCESS)
@@ -109,37 +111,36 @@ grub_efi_free_pages (grub_efi_physical_address_t address,
 
 #if defined (__i386__) || defined (__x86_64__)
 
+/* Helper for stop_broadcom.  */
+static int
+find_card (grub_pci_device_t dev, grub_pci_id_t pciid,
+	   void *data __attribute__ ((unused)))
+{
+  grub_pci_address_t addr;
+  grub_uint8_t cap;
+  grub_uint16_t pm_state;
+
+  if ((pciid & 0xffff) != GRUB_PCI_VENDOR_BROADCOM)
+    return 0;
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
+  if (grub_pci_read (addr) >> 24 != GRUB_PCI_CLASS_NETWORK)
+    return 0;
+  cap = grub_pci_find_capability (dev, GRUB_PCI_CAP_POWER_MANAGEMENT);
+  if (!cap)
+    return 0;
+  addr = grub_pci_make_address (dev, cap + 4);
+  pm_state = grub_pci_read_word (addr);
+  pm_state = pm_state | 0x03;
+  grub_pci_write_word (addr, pm_state);
+  grub_pci_read_word (addr);
+  return 0;
+}
+
 static void
 stop_broadcom (void)
 {
-  auto int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev,
-				       grub_pci_id_t pciid);
-
-  int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev,
-				  grub_pci_id_t pciid)
-    {
-      grub_pci_address_t addr;
-      grub_uint8_t cap;
-      grub_uint16_t pm_state;
-
-      if ((pciid & 0xffff) != GRUB_PCI_VENDOR_BROADCOM)
-	return 0;
-
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
-      if (grub_pci_read (addr) >> 24 != GRUB_PCI_CLASS_NETWORK)
-	return 0;
-      cap = grub_pci_find_capability (dev, GRUB_PCI_CAP_POWER_MANAGEMENT);
-      if (!cap)
-	return 0;
-      addr = grub_pci_make_address (dev, cap + 4);
-      pm_state = grub_pci_read_word (addr);
-      pm_state = pm_state | 0x03;
-      grub_pci_write_word (addr, pm_state);
-      grub_pci_read_word (addr);
-      return 0;
-    }
-
-  grub_pci_iterate (find_card);
+  grub_pci_iterate (find_card, NULL);
 }
 
 #endif
@@ -161,27 +162,41 @@ grub_efi_finish_boot_services (grub_efi_uintn_t *outbuf_size, void *outbuf,
 			   apple, sizeof (apple)) == 0);
 #endif
 
-  if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
-			       &finish_desc_size, &finish_desc_version) < 0)
-    return grub_error (GRUB_ERR_IO, "couldn't retrieve memory map");
+  while (1)
+    {
+      if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
+				   &finish_desc_size, &finish_desc_version) < 0)
+	return grub_error (GRUB_ERR_IO, "couldn't retrieve memory map");
 
-  if (outbuf && *outbuf_size < finish_mmap_size)
-    return grub_error (GRUB_ERR_IO, "memory map buffer is too small");
+      if (outbuf && *outbuf_size < finish_mmap_size)
+	return grub_error (GRUB_ERR_IO, "memory map buffer is too small");
 
-  finish_mmap_buf = grub_malloc (finish_mmap_size);
-  if (!finish_mmap_buf)
-    return grub_errno;
+      finish_mmap_buf = grub_malloc (finish_mmap_size);
+      if (!finish_mmap_buf)
+	return grub_errno;
 
-  if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
-			       &finish_desc_size, &finish_desc_version) <= 0)
-    return grub_error (GRUB_ERR_IO, "couldn't retrieve memory map");
+      if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
+				   &finish_desc_size, &finish_desc_version) <= 0)
+	{
+	  grub_free (finish_mmap_buf);
+	  return grub_error (GRUB_ERR_IO, "couldn't retrieve memory map");
+	}
 
-  b = grub_efi_system_table->boot_services;
-  status = efi_call_2 (b->exit_boot_services, grub_efi_image_handle,
-		       finish_key);
-  if (status != GRUB_EFI_SUCCESS)
-    return grub_error (GRUB_ERR_IO, "couldn't terminate EFI services");
+      b = grub_efi_system_table->boot_services;
+      status = efi_call_2 (b->exit_boot_services, grub_efi_image_handle,
+			   finish_key);
+      if (status == GRUB_EFI_SUCCESS)
+	break;
 
+      if (status != GRUB_EFI_INVALID_PARAMETER)
+	{
+	  grub_free (finish_mmap_buf);
+	  return grub_error (GRUB_ERR_IO, "couldn't terminate EFI services");
+	}
+
+      grub_free (finish_mmap_buf);
+      grub_printf ("Trying to terminate EFI services again\n");
+    }
   grub_efi_is_finished = 1;
   if (outbuf_size)
     *outbuf_size = finish_mmap_size;
@@ -215,6 +230,7 @@ grub_efi_get_memory_map (grub_efi_uintn_t *memory_map_size,
   grub_efi_boot_services_t *b;
   grub_efi_uintn_t key;
   grub_efi_uint32_t version;
+  grub_efi_uintn_t size;
 
   if (grub_efi_is_finished)
     {
@@ -244,10 +260,14 @@ grub_efi_get_memory_map (grub_efi_uintn_t *memory_map_size,
     map_key = &key;
   if (! descriptor_version)
     descriptor_version = &version;
+  if (! descriptor_size)
+    descriptor_size = &size;
 
   b = grub_efi_system_table->boot_services;
   status = efi_call_5 (b->get_memory_map, memory_map_size, memory_map, map_key,
 			      descriptor_size, descriptor_version);
+  if (*descriptor_size == 0)
+    *descriptor_size = sizeof (grub_efi_memory_descriptor_t);
   if (status == GRUB_EFI_SUCCESS)
     return 1;
   else if (status == GRUB_EFI_BUFFER_TOO_SMALL)
@@ -306,7 +326,7 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
     {
       if (desc->type == GRUB_EFI_CONVENTIONAL_MEMORY
 #if 1
-	  && desc->physical_start <= 0xffffffff
+	  && desc->physical_start <= GRUB_EFI_MAX_USABLE_ADDRESS
 #endif
 	  && desc->physical_start + PAGES_TO_BYTES (desc->num_pages) > 0x100000
 	  && desc->num_pages != 0)
@@ -324,9 +344,9 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
 #if 1
 	  if (BYTES_TO_PAGES (filtered_desc->physical_start)
 	      + filtered_desc->num_pages
-	      > BYTES_TO_PAGES (0x100000000LL))
+	      > BYTES_TO_PAGES_DOWN (GRUB_EFI_MAX_USABLE_ADDRESS))
 	    filtered_desc->num_pages
-	      = (BYTES_TO_PAGES (0x100000000LL)
+	      = (BYTES_TO_PAGES_DOWN (GRUB_EFI_MAX_USABLE_ADDRESS)
 		 - BYTES_TO_PAGES (filtered_desc->physical_start));
 #endif
 
@@ -498,7 +518,7 @@ grub_efi_mm_init (void)
   grub_printf ("printing memory map\n");
   print_memory_map (memory_map, desc_size,
 		    NEXT_MEMORY_DESCRIPTOR (memory_map, map_size));
-  grub_abort ();
+  grub_fatal ("Debug. ");
 #endif
 
   /* Release the memory maps.  */

@@ -40,75 +40,42 @@ grub_arch_dl_check_header (void *ehdr)
 
 /* Relocate symbols.  */
 grub_err_t
-grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
+grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
+			       Elf_Shdr *s, grub_dl_segment_t seg)
 {
-  Elf_Ehdr *e = ehdr;
-  Elf_Shdr *s;
-  Elf_Word entsize;
-  unsigned i;
+  Elf_Rel *rel, *max;
 
-  /* Find a symbol table.  */
-  for (i = 0, s = (Elf_Shdr *) ((char *) e + e->e_shoff);
-       i < e->e_shnum;
-       i++, s = (Elf_Shdr *) ((char *) s + e->e_shentsize))
-    if (s->sh_type == SHT_SYMTAB)
-      break;
+  for (rel = (Elf_Rel *) ((char *) ehdr + s->sh_offset),
+	 max = (Elf_Rel *) ((char *) rel + s->sh_size);
+       rel < max;
+       rel = (Elf_Rel *) ((char *) rel + s->sh_entsize))
+    {
+      Elf_Word *addr;
+      Elf_Sym *sym;
 
-  if (i == e->e_shnum)
-    return grub_error (GRUB_ERR_BAD_MODULE, N_("no symbol table"));
+      if (seg->size < rel->r_offset)
+	return grub_error (GRUB_ERR_BAD_MODULE,
+			   "reloc offset is out of the segment");
 
-  entsize = s->sh_entsize;
+      addr = (Elf_Word *) ((char *) seg->addr + rel->r_offset);
+      sym = (Elf_Sym *) ((char *) mod->symtab
+			 + mod->symsize * ELF_R_SYM (rel->r_info));
 
-  for (i = 0, s = (Elf_Shdr *) ((char *) e + e->e_shoff);
-       i < e->e_shnum;
-       i++, s = (Elf_Shdr *) ((char *) s + e->e_shentsize))
-    if (s->sh_type == SHT_REL)
-      {
-	grub_dl_segment_t seg;
+      switch (ELF_R_TYPE (rel->r_info))
+	{
+	case R_386_32:
+	  *addr += sym->st_value;
+	  break;
 
-	/* Find the target segment.  */
-	for (seg = mod->segment; seg; seg = seg->next)
-	  if (seg->section == s->sh_info)
-	    break;
-
-	if (seg)
-	  {
-	    Elf_Rel *rel, *max;
-
-	    for (rel = (Elf_Rel *) ((char *) e + s->sh_offset),
-		   max = rel + s->sh_size / s->sh_entsize;
-		 rel < max;
-		 rel++)
-	      {
-		Elf_Word *addr;
-		Elf_Sym *sym;
-
-		if (seg->size < rel->r_offset)
-		  return grub_error (GRUB_ERR_BAD_MODULE,
-				     "reloc offset is out of the segment");
-
-		addr = (Elf_Word *) ((char *) seg->addr + rel->r_offset);
-		sym = (Elf_Sym *) ((char *) mod->symtab
-				     + entsize * ELF_R_SYM (rel->r_info));
-
-		switch (ELF_R_TYPE (rel->r_info))
-		  {
-		  case R_386_32:
-		    *addr += sym->st_value;
-		    break;
-
-		  case R_386_PC32:
-		    *addr += (sym->st_value - (Elf_Word) seg->addr
-			      - rel->r_offset);
-		    break;
-		  default:
-		    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-				       N_("relocation 0x%x is not implemented yet"),
-				       ELF_R_TYPE (rel->r_info));
-		  }
-	      }
-	  }
-      }
+	case R_386_PC32:
+	  *addr += (sym->st_value - (grub_addr_t) addr);
+	  break;
+	default:
+	  return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+			     N_("relocation 0x%x is not implemented yet"),
+			     ELF_R_TYPE (rel->r_info));
+	}
+    }
 
   return GRUB_ERR_NONE;
 }

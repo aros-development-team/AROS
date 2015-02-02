@@ -96,10 +96,10 @@ grub_relocator_firmware_alloc_region (grub_addr_t start, grub_size_t size)
 
   if (grub_efi_is_finished)
     return 1;
-
+#ifdef DEBUG_RELOCATOR_NOMEM_DPRINTF
   grub_dprintf ("relocator", "EFI alloc: %llx, %llx\n",
 		(unsigned long long) start, (unsigned long long) size);
-
+#endif
   b = grub_efi_system_table->boot_services;
   status = efi_call_4 (b->allocate_pages, GRUB_EFI_ALLOCATE_ADDRESS,
 		       GRUB_EFI_LOADER_DATA, size >> 12, &address);

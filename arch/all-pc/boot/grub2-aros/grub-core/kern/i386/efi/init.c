@@ -26,6 +26,7 @@
 #include <grub/kernel.h>
 #include <grub/efi/efi.h>
 #include <grub/i386/tsc.h>
+#include <grub/loader.h>
 
 void
 grub_machine_init (void)
@@ -35,7 +36,8 @@ grub_machine_init (void)
 }
 
 void
-grub_machine_fini (void)
+grub_machine_fini (int flags)
 {
-  grub_efi_fini ();
+  if (flags & GRUB_LOADER_FLAG_NORETURN)
+    grub_efi_fini ();
 }

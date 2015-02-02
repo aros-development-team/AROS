@@ -40,10 +40,10 @@
 
 	/* __longjmp(__jmp_buf buf, int val) */
 
-	.text 
-	.global longjmp
-	.proc longjmp
-longjmp:
+	.text
+
+	.proc EXT_C(grub_longjmp)
+FUNCTION(grub_longjmp)
 	alloc r8=ar.pfs,2,1,0,0
 	mov r27=ar.rsc
 	add r2=0x98,in0		// r2 <- &jmpbuf.orig_jmp_buf_addr
@@ -159,4 +159,4 @@ longjmp:
 	invala			// virt. -> phys. regnum mapping may change
 	mov pr=r24,-1
 	br.ret.dptk.few rp
-	.endp longjmp
+	.endp EXT_C(grub_longjmp)

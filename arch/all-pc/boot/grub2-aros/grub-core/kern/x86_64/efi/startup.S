@@ -30,6 +30,6 @@ _start:
 	movq	%rcx, EXT_C(grub_efi_image_handle)(%rip)
 	movq	%rdx, EXT_C(grub_efi_system_table)(%rip)
 
+	andq	$~0xf, %rsp
 	call	EXT_C(grub_main)
-	ret
-
+	/* Doesn't return.  */

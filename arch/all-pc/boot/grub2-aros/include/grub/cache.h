@@ -23,10 +23,6 @@
 #include <grub/symbol.h>
 #include <grub/types.h>
 
-#ifdef _mips
-#include <grub/mips/cache.h>
-#endif
-
 #if defined (__i386__) || defined (__x86_64__)
 static inline void
 grub_arch_sync_caches (void *address __attribute__ ((unused)),
@@ -37,6 +33,7 @@ grub_arch_sync_caches (void *address __attribute__ ((unused)),
 void EXPORT_FUNC(grub_arch_sync_caches) (void *address, grub_size_t len);
 #endif
 
+#ifndef GRUB_MACHINE_EMU
 #ifdef _mips
 void EXPORT_FUNC(grub_arch_sync_dma_caches) (void *address, grub_size_t len);
 #else
@@ -45,6 +42,12 @@ grub_arch_sync_dma_caches (void *address __attribute__ ((unused)),
 			   grub_size_t len __attribute__ ((unused)))
 {
 }
+#endif
+#endif
+
+#ifdef __arm__
+void
+grub_arm_cache_enable (void);
 #endif
 
 #endif /* ! GRUB_CACHE_HEADER */

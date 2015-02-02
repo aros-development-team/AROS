@@ -5,8 +5,6 @@
 #include <multiboot.h>
 #endif
 
-#define SHUTDOWN_PORT 0x8900
-
 	.text
 	/* Align 32 bits boundary.  */
 	.align	8
@@ -38,17 +36,6 @@ multiboot_header:
 #endif
 	
 	.global start
-portmsg:
-	xorl %eax, %eax
-1:	
-	movb 0(%esi), %al
-	test %eax, %eax
-	jz 1f
-	outb %al, %dx
-	incl %esi
-	jmp 1b
-1:
-	ret
 
 serialmsg:	
 1:	
@@ -73,17 +60,13 @@ serialmsg:
 _start:
 	lea message, %esi
 	call serialmsg
-	lea shutdown, %esi
-	movw $SHUTDOWN_PORT, %dx
-	call portmsg
+
+#include "qemu-shutdown-x86.S"
 
 1:
 	hlt
 	jmp 1b
 
-shutdown:
-	.ascii "Shutdown"
-	.byte 0
 message:
 	.ascii "Boot Test Passed Successfully\n" SUCCESSFUL_BOOT_STRING "\n"
 	.byte 0

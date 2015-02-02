@@ -23,6 +23,7 @@
 #include <grub/pci.h>
 #include <grub/command.h>
 #include <grub/i18n.h>
+#include <grub/mm.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -40,8 +41,9 @@ static struct grub_video_patch
     {0, 0, 0, 0, 0}
   };
 
-static int NESTED_FUNC_ATTR
-scan_card (grub_pci_device_t dev, grub_pci_id_t pciid)
+static int
+scan_card (grub_pci_device_t dev, grub_pci_id_t pciid,
+	   void *data __attribute__ ((unused)))
 {
   grub_pci_address_t addr;
 
@@ -93,7 +95,7 @@ grub_cmd_fixvideo (grub_command_t cmd __attribute__ ((unused)),
 		   int argc __attribute__ ((unused)),
 		   char *argv[] __attribute__ ((unused)))
 {
-  grub_pci_iterate (scan_card);
+  grub_pci_iterate (scan_card, NULL);
   return 0;
 }
 

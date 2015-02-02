@@ -41,13 +41,13 @@ struct grub_lvm_label_header {
   grub_uint32_t crc_xl;		/* From next field to end of sector */
   grub_uint32_t offset_xl;	/* Offset from start of struct to contents */
   grub_int8_t type[8];		/* LVM2 001 */
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* On disk */
 struct grub_lvm_disk_locn {
   grub_uint64_t offset;		/* Offset in bytes to start sector */
   grub_uint64_t size;		/* Bytes */
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* Fields with the suffix _xl should be xlate'd wherever they appear */
 /* On disk */
@@ -60,7 +60,7 @@ struct grub_lvm_pv_header {
   /* NULL-terminated list of data areas followed by */
   /* NULL-terminated list of metadata area headers */
   struct grub_lvm_disk_locn disk_areas_xl[0];	/* Two lists */
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 #define GRUB_LVM_FMTT_MAGIC "\040\114\126\115\062\040\170\133\065\101\045\162\060\116\052\076"
 #define GRUB_LVM_FMTT_VERSION 1
@@ -72,7 +72,7 @@ struct grub_lvm_raw_locn {
   grub_uint64_t size;		/* Bytes */
   grub_uint32_t checksum;
   grub_uint32_t filler;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* On disk */
 /* Structure size limited to one sector */
@@ -84,7 +84,7 @@ struct grub_lvm_mda_header {
   grub_uint64_t size;		/* Size of metadata area */
 
   struct grub_lvm_raw_locn raw_locns[0];	/* NULL-terminated list */
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 
 #endif /* ! GRUB_LVM_H */

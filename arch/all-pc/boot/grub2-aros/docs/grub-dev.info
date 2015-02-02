@@ -1,8 +1,8 @@
-This is /home/phcoder/grub2/bzr/mainline/docs/grub-dev.info, produced
-by makeinfo version 4.13 from
-/home/phcoder/grub2/bzr/mainline/docs/grub-dev.texi.
+This is grub-dev.info, produced by makeinfo version 5.1 from
+grub-dev.texi.
 
-This developer manual is for GNU GRUB (version 2.00, 22 May 2012).
+This developer manual is for GNU GRUB (version 2.02~beta2, 1 February
+2015).
 
    Copyright (C) 1999,2000,2001,2002,2004,2005,2006,2008,2009,2010,2011
 Free Software Foundation, Inc.
@@ -11,7 +11,6 @@ Free Software Foundation, Inc.
      document under the terms of the GNU Free Documentation License,
      Version 1.2 or any later version published by the Free Software
      Foundation; with no Invariant Sections.
-
 INFO-DIR-SECTION Kernel
 START-INFO-DIR-ENTRY
 * grub-dev: (grub-dev).                 The GRand Unified Bootloader Dev
@@ -24,12 +23,13 @@ GNU GRUB developer manual
 *************************
 
 This is the developer documentation of GNU GRUB, the GRand Unified
-Bootloader, a flexible and powerful boot loader program for a wide
-range of architectures.
+Bootloader, a flexible and powerful boot loader program for a wide range
+of architectures.
 
-   This edition documents version 2.00.
+   This edition documents version 2.02~beta2.
 
-   This developer manual is for GNU GRUB (version 2.00, 22 May 2012).
+   This developer manual is for GNU GRUB (version 2.02~beta2, 1 February
+2015).
 
    Copyright (C) 1999,2000,2001,2002,2004,2005,2006,2008,2009,2010,2011
 Free Software Foundation, Inc.
@@ -42,12 +42,12 @@ Free Software Foundation, Inc.
 * Menu:
 
 * Getting the source code::
-* Finding your way around::
 * Coding style::
+* Finding your way around::
 * Contributing Changes::
 * Porting::
 * Error Handling::
-* CIA::
+* Stack and heap size::
 * BIOS port memory map::
 * Video Subsystem::
 * PFF2 Font File Format::
@@ -56,35 +56,45 @@ Free Software Foundation, Inc.
 * Index::
 
 
-File: grub-dev.info,  Node: Getting the source code,  Next: Finding your way around,  Prev: Top,  Up: Top
+File: grub-dev.info,  Node: Getting the source code,  Next: Coding style,  Prev: Top,  Up: Top
 
 1 Getting the source code
 *************************
 
-GRUB is maintained using the Bazaar revision control system
-(http://bazaar-vcs.org/).  To fetch the primary development branch:
+GRUB is maintained using the <GIT revision control system>.  To fetch:
 
-     bzr get http://bzr.savannah.gnu.org/r/grub/trunk/grub
+     git clone git://git.sv.gnu.org/grub.git
 
-   The GRUB developers maintain several other branches with work in
-progress.  Of these, the most interesting is the experimental branch,
-which is a staging area for new code which we expect to eventually
-merge into trunk but which is not yet ready:
+   Web access is available under
+     http://git.savannah.gnu.org/cgit/grub.git/
 
-     bzr get http://bzr.savannah.gnu.org/r/grub/branches/experimental
+   The branches available are:
 
-   Once you have used `bzr get' to fetch an initial copy of a branch,
-you can use `bzr pull' to keep it up to date.  If you have modified your
+'master'
+     Main development branch.
+'grub-legacy'
+     GRUB 0.97 codebase.  Kept for reference and legal reasons
+'multiboot'
+     Multiboot specfication
+'multiboot2'
+     Multiboot2 specfication
+'developer branches'
+     Prefixed with developer name.  Every developer of a team manages
+     his own branches.  Developer branches do not need changelog
+     entries.
+
+   Once you have used 'git clone' to fetch an initial copy of a branch,
+you can use 'git pull' to keep it up to date.  If you have modified your
 local version, you may need to resolve conflicts when pulling.
 
 
-File: grub-dev.info,  Node: Coding style,  Next: Contributing Changes,  Prev: Finding your way around,  Up: Top
+File: grub-dev.info,  Node: Coding style,  Next: Finding your way around,  Prev: Getting the source code,  Up: Top
 
 2 Coding style
 **************
 
 Basically we follow the GNU Coding Standards
-(http://www.gnu.org/prep/standards_toc.html). We define additional
+(http://www.gnu.org/prep/standards_toc.html).  We define additional
 conventions for GRUB here.
 
 * Menu:
@@ -103,8 +113,8 @@ File: grub-dev.info,  Node: Naming Conventions,  Next: Functions,  Up: Coding st
 2.1 Naming Conventions
 ======================
 
-All global symbols (i.e. functions, variables, types, and macros) must
-have the prefix grub_ or GRUB_. The all capital form is used only by
+All global symbols (i.e.  functions, variables, types, and macros) must
+have the prefix grub_ or GRUB_.  The all capital form is used only by
 macros.
 
 
@@ -114,18 +124,18 @@ File: grub-dev.info,  Node: Functions,  Next: Variables,  Prev: Naming Conventio
 =============
 
 If a function is global, its name must be prefixed with grub_ and must
-consist of only small letters. If the function belongs to a specific
+consist of only small letters.  If the function belongs to a specific
 function module, the name must also be prefixed with the module name.
 For example, if a function is for file systems, its name is prefixed
-with grub_fs_. If a function is for FAT file system but not for all
-file systems, its name is prefixed with grub_fs_fat_. The hierarchy is
+with grub_fs_.  If a function is for FAT file system but not for all
+file systems, its name is prefixed with grub_fs_fat_.  The hierarchy is
 noted this way.
 
    After a prefix, a function name must start with a verb (such as get
-or is). It must not be a noun. Some kind of abbreviation is permitted,
-as long as it wouldn't make code less readable (e.g. init).
+or is).  It must not be a noun.  Some kind of abbreviation is permitted,
+as long as it wouldn't make code less readable (e.g.  init).
 
-   If a function is local, its name may not start with any prefix. It
+   If a function is local, its name may not start with any prefix.  It
 must start with a verb.
 
 
@@ -134,25 +144,25 @@ File: grub-dev.info,  Node: Variables,  Next: Types,  Prev: Functions,  Up: Codi
 2.3 Variables
 =============
 
-The rule is mostly the same as functions, as noted above. If a variable
-is global, its name must be prefixed with grub_ and must consist of
-only small letters. If the variable belongs to a specific function
-module, the name must also be prefixed with the module name. For
-example, if a function is for dynamic loading, its name is prefixed
-with grub_dl_. If a variable is for ELF but not for all dynamic loading
-systems, its name is prefixed with grub_dl_elf_.
+The rule is mostly the same as functions, as noted above.  If a variable
+is global, its name must be prefixed with grub_ and must consist of only
+small letters.  If the variable belongs to a specific function module,
+the name must also be prefixed with the module name.  For example, if a
+function is for dynamic loading, its name is prefixed with grub_dl_.  If
+a variable is for ELF but not for all dynamic loading systems, its name
+is prefixed with grub_dl_elf_.
 
    After a prefix, a variable name must start with a noun or an
-adjective (such as name or long) and it should end with a noun. Some
-kind of abbreviation is permitted, as long as it wouldn't make code
-less readable (e.g. i18n).
+adjective (such as name or long) and it should end with a noun.  Some
+kind of abbreviation is permitted, as long as it wouldn't make code less
+readable (e.g.  i18n).
 
-   If a variable is global in the scope of a single file (i.e. it is
-declared with static), its name may not start with any prefix. It must
+   If a variable is global in the scope of a single file (i.e.  it is
+declared with static), its name may not start with any prefix.  It must
 start with a noun or an adjective.
 
    If a variable is local, you may choose any shorter name, as long as
-it wouldn't make code less readable (e.g. i).
+it wouldn't make code less readable (e.g.  i).
 
 
 File: grub-dev.info,  Node: Types,  Next: Macros,  Prev: Variables,  Up: Coding style
@@ -161,14 +171,14 @@ File: grub-dev.info,  Node: Types,  Next: Macros,  Prev: Variables,  Up: Coding 
 =========
 
 The name of a type must be prefixed with grub_ and must consist of only
-small letters. If the type belongs to a specific function module, the
-name must also be prefixed with the module name. For example, if a type
-is for OS loaders, its name is prefixed with grub_loader_. If a type is
+small letters.  If the type belongs to a specific function module, the
+name must also be prefixed with the module name.  For example, if a type
+is for OS loaders, its name is prefixed with grub_loader_.  If a type is
 for Multiboot but not for all OS loaders, its name is prefixed with
 grub_loader_linux_.
 
-   The name must be suffixed with _t, to emphasize the fact that it is
-a type but not a variable or a function.
+   The name must be suffixed with _t, to emphasize the fact that it is a
+type but not a variable or a function.
 
 
 File: grub-dev.info,  Node: Macros,  Next: Comments,  Prev: Types,  Up: Coding style
@@ -177,7 +187,7 @@ File: grub-dev.info,  Node: Macros,  Next: Comments,  Prev: Types,  Up: Coding s
 ==========
 
 If a macro is global, its name must be prefixed with GRUB_ and must
-consist of only large letters. Other rules are the same as functions or
+consist of only large letters.  Other rules are the same as functions or
 variables, depending on whether a macro is used like a function or a
 variable.
 
@@ -187,7 +197,7 @@ File: grub-dev.info,  Node: Comments,  Next: Multi-Line Comments,  Prev: Macros,
 2.6 Comments
 ============
 
-All comments shall be C-style comments, of the form `/* ... */'.
+All comments shall be C-style comments, of the form '/* ... */'.
 
    Comments shall be placed only on a line by themselves.  They shall
 not be placed together with code, variable declarations, or other
@@ -210,8 +220,8 @@ File: grub-dev.info,  Node: Multi-Line Comments,  Prev: Comments,  Up: Coding st
 2.7 Multi-Line Comments
 =======================
 
-Comments spanning multiple lines shall be formatted with all lines
-after the first aligned with the first line.
+Comments spanning multiple lines shall be formatted with all lines after
+the first aligned with the first line.
 
    Asterisk characters should not be repeated a the start of each
 subsequent line.
@@ -227,11 +237,11 @@ subsequent line.
       * which spans multiple lines.
       * It is long. */
 
-   The opening `/*' and closing `*/' should be placed together on a
-line with text.
+   The opening '/*' and closing '*/' should be placed together on a line
+with text.
 
 
-File: grub-dev.info,  Node: Finding your way around,  Next: Coding style,  Prev: Getting the source code,  Up: Top
+File: grub-dev.info,  Node: Finding your way around,  Next: Contributing Changes,  Prev: Coding style,  Up: Top
 
 3 Finding your way around
 *************************
@@ -239,97 +249,98 @@ File: grub-dev.info,  Node: Finding your way around,  Next: Coding style,  Prev:
 Here is a brief map of the GRUB code base.
 
    GRUB uses Autoconf and Automake, with most of the Automake input
-generated by AutoGen.  The top-level build rules are in `configure.ac',
-`grub-core/Makefile.core.def', and `Makefile.util.def'.  Each block in
-a `*.def' file represents a build target, and specifies the source
-files used to build it on various platforms.  The `*.def' files are
-processed into AutoGen input by `gentpl.py' (which you only need to
-look at if you are extending the build system).  If you are adding a new
-module which follows an existing pattern, such as a new command or a new
-filesystem implementation, it is usually easiest to grep
-`grub-core/Makefile.core.def' and `Makefile.util.def' for an existing
-example of that pattern to find out where it should be added.
+generated by a Python script.  The top-level build rules are in
+'configure.ac', 'grub-core/Makefile.core.def', and 'Makefile.util.def'.
+Each block in a '*.def' file represents a build target, and specifies
+the source files used to build it on various platforms.  The '*.def'
+files are processed into Automake input by 'gentpl.py' (which you only
+need to look at if you are extending the build system).  If you are
+adding a new module which follows an existing pattern, such as a new
+command or a new filesystem implementation, it is usually easiest to
+grep 'grub-core/Makefile.core.def' and 'Makefile.util.def' for an
+existing example of that pattern to find out where it should be added.
 
    In general, code that may be run at boot time is in a subdirectory of
-`grub-core', while code that is only run from within a full operating
+'grub-core', while code that is only run from within a full operating
 system is in a subdirectory of the top level.
 
    Low-level boot code, such as the MBR implementation on PC BIOS
-systems, is in the `grub-core/boot/' directory.
+systems, is in the 'grub-core/boot/' directory.
 
-   The GRUB kernel is in `grub-core/kern/'.  This contains core
+   The GRUB kernel is in 'grub-core/kern/'.  This contains core
 facilities such as the device, disk, and file frameworks, environment
 variable handling, list processing, and so on.  The kernel should
 contain enough to get up to a rescue prompt.  Header files for kernel
-facilities, among others, are in `include/'.
+facilities, among others, are in 'include/'.
 
-   Terminal implementations are in `grub-core/term/'.
+   Terminal implementations are in 'grub-core/term/'.
 
-   Disk access code is spread across `grub-core/disk/' (for accessing
-the disk devices themselves), `grub-core/partmap/' (for interpreting
-partition table data), and `grub-core/fs/' (for accessing filesystems).
+   Disk access code is spread across 'grub-core/disk/' (for accessing
+the disk devices themselves), 'grub-core/partmap/' (for interpreting
+partition table data), and 'grub-core/fs/' (for accessing filesystems).
 Note that, with the odd specialised exception, GRUB only contains code
 to _read_ from filesystems and tries to avoid containing any code to
 _write_ to filesystems; this lets us confidently assure users that GRUB
 cannot be responsible for filesystem corruption.
 
-   PCI and USB bus handling is in `grub-core/bus/'.
+   PCI and USB bus handling is in 'grub-core/bus/'.
 
-   Video handling code is in `grub-core/video/'.  The graphical menu
+   Video handling code is in 'grub-core/video/'.  The graphical menu
 system uses this heavily, but is in a separate directory,
-`grub-core/gfxmenu/'.
+'grub-core/gfxmenu/'.
 
-   Most commands are implemented by files in `grub-core/commands/', with
+   Most commands are implemented by files in 'grub-core/commands/', with
 the following exceptions:
 
-   * A few core commands live in `grub-core/kern/corecmd.c'.
+   * A few core commands live in 'grub-core/kern/corecmd.c'.
 
-   * Commands related to normal mode live under `grub-core/normal/'.
+   * Commands related to normal mode live under 'grub-core/normal/'.
 
-   * Commands that load and boot kernels live under `grub-core/loader/'.
+   * Commands that load and boot kernels live under 'grub-core/loader/'.
 
-   * The `loopback' command is really a disk device, and so lives in
-     `grub-core/disk/loopback.c'.
+   * The 'loopback' command is really a disk device, and so lives in
+     'grub-core/disk/loopback.c'.
 
-   * The `gettext' command lives under `grub-core/gettext/'.
+   * The 'gettext' command lives under 'grub-core/gettext/'.
 
-   * The `loadfont' and `lsfonts' commands live under `grub-core/font/'.
+   * The 'loadfont' and 'lsfonts' commands live under 'grub-core/font/'.
 
-   * The `serial', `terminfo', and `background_image' commands live
-     under `grub-core/term/'.
+   * The 'serial', 'terminfo', and 'background_image' commands live
+     under 'grub-core/term/'.
 
-   * The `efiemu_*' commands live under `grub-core/efiemu/'.
+   * The 'efiemu_*' commands live under 'grub-core/efiemu/'.
+
+   * OS-dependent code should be under 'grub-core/osdep/'
+
+   * Utility programs meant to be run from a full operating system
+     (except OS-dependent code mentioned previously) are in 'util/'.
 
    There are a few other special-purpose exceptions; grep for them if
 they matter to you.
 
-   Utility programs meant to be run from a full operating system are in
-`util/'.
-
 
-File: grub-dev.info,  Node: Contributing Changes,  Next: Porting,  Prev: Coding style,  Up: Top
+File: grub-dev.info,  Node: Contributing Changes,  Next: Porting,  Prev: Finding your way around,  Up: Top
 
 4 Contributing changes
 **********************
 
-Contributing changes to GRUB 2 is welcomed activity. However we have a
+Contributing changes to GRUB 2 is welcomed activity.  However we have a
 bit of control what kind of changes will be accepted to GRUB 2.
 Therefore it is important to discuss your changes on grub-devel mailing
-list (see MailingLists). On this page there are some basic details on
+list (see MailingLists).  On this page there are some basic details on
 the development process and activities.
 
    First of all you should come up with the idea yourself what you want
-to contribute. If you do not have that beforehand you are advised to
+to contribute.  If you do not have that beforehand you are advised to
 study this manual and try GRUB 2 out to see what you think is missing
 from there.
 
    Here are additional pointers:
-   * `https://savannah.gnu.org/task/?group=grub GRUB's Task Tracker'
+   * <https://savannah.gnu.org/task/?group=grub GRUB's Task Tracker>
+   * <https://savannah.gnu.org/bugs/?group=grub GRUB's Bug Tracker>
 
-   * `https://savannah.gnu.org/bugs/?group=grub GRUB's Bug Tracker'
-
-   If you intended to make changes to GRUB Legacy (<=0.97) those are
-not accepted anymore.
+   If you intended to make changes to GRUB Legacy (<=0.97) those are not
+accepted anymore.
 
 * Menu:
 
@@ -343,17 +354,17 @@ File: grub-dev.info,  Node: Getting started,  Next: Typical Developer Experience
 4.1 Getting started
 ===================
 
-   * Always use latest GRUB 2 source code. So get that first.
+   * Always use latest GRUB 2 source code.  So get that first.
 
      For developers it is recommended always to use the newest
-     development version of GRUB 2. If development takes a long period
+     development version of GRUB 2.  If development takes a long period
      of time, please remember to keep in sync with newest developments
      regularly so it is much easier to integrate your change in the
-     future. GRUB 2 is being developed in a Bazaar (bzr) repository.
+     future.  GRUB 2 is being developed in a GIT repository.
 
      Please check Savannah's GRUB project page for details how to get
-     newest bzr: GRUB 2 bzr Repository
-     (http://savannah.gnu.org/bzr/?group=grub)
+     newest git: GRUB 2 git Repository
+     (https://savannah.gnu.org/git/?group=grub)
 
    * Compile it and try it out.
 
@@ -364,27 +375,27 @@ File: grub-dev.info,  Node: Getting started,  Next: Typical Developer Experience
    * Study the code.
 
      There are sometimes odd ways to do things in GRUB 2 code base.
-     This is mainly related to limited environment where GRUB 2 is
-     being executed.  You usually do not need to understand it all so
-     it is better to only try to look at places that relates to your
-     work. Please do not hesitate to ask for help if there is something
-     that you do not understand.
+     This is mainly related to limited environment where GRUB 2 is being
+     executed.  You usually do not need to understand it all so it is
+     better to only try to look at places that relates to your work.
+     Please do not hesitate to ask for help if there is something that
+     you do not understand.
 
    * Develop a new feature.
 
      Now that you know what to do and how it should work in GRUB 2 code
-     base, please be free to develop it. If you have not so far
+     base, please be free to develop it.  If you have not so far
      announced your idea on grub-devel mailing list, please do it now.
      This is to make sure you are not wasting your time working on the
      solution that will not be integrated to GRUB 2 code base.
 
      You might want to study our coding style before starting
-     development so you do not need to change much of the code when
-     your patch is being reviewed.  (see *note Coding style::)
+     development so you do not need to change much of the code when your
+     patch is being reviewed.  (see *note Coding style::)
 
-     For every accepted patch there has to exist a ChangeLog entry. Our
+     For every accepted patch there has to exist a ChangeLog entry.  Our
      ChangeLog consist of changes within source code and are not
-     describing about what the change logically does. Please see
+     describing about what the change logically does.  Please see
      examples from previous entries.
 
      Also remember that GRUB 2 is licensed under GPLv3 license and that
@@ -395,39 +406,39 @@ File: grub-dev.info,  Node: Getting started,  Next: Typical Developer Experience
 
    * Test your change.
 
-     Test that your change works properly. Try it out a couple of
+     Test that your change works properly.  Try it out a couple of
      times, preferably on different systems, and try to find problems
      with it.
 
    * Publish your change.
 
      When you are happy with your change, first make sure it is
-     compilable with latest development version of GRUB 2. After that
-     please send a patch to grub-devel for review. Please describe in
+     compilable with latest development version of GRUB 2.  After that
+     please send a patch to grub-devel for review.  Please describe in
      your email why you made the change, what it changes and so on.
-     Please be prepared to receive even discouraging comments about
-     your patch. There is usually at least something that needs to be
+     Please be prepared to receive even discouraging comments about your
+     patch.  There is usually at least something that needs to be
      improved in every patch.
 
-     Please use unified diff to make your patch (good match of
-     arguments for diff is `-pruN').
+     Please use unified diff to make your patch (good match of arguments
+     for diff is '-pruN').
 
    * Respond to received feedback.
 
      If you are asked to modify your patch, please do that and resubmit
-     it for review. If your change is large you are required to submit
+     it for review.  If your change is large you are required to submit
      a copyright agreement to FSF. Please keep in mind that if you are
-     asked to submit for copyright agreement, process can take some
-     time and is mandatory in order to get your changes integrated.
+     asked to submit for copyright agreement, process can take some time
+     and is mandatory in order to get your changes integrated.
 
      If you are not on grub-devel to respond to questions, most likely
-     your patch will not be accepted. Also if problems arise from your
+     your patch will not be accepted.  Also if problems arise from your
      changes later on, it would be preferable that you also fix the
-     problem. So stay around for a while.
+     problem.  So stay around for a while.
 
    * Your patch is accepted.
 
-     Good job! Your patch will now be integrated into GRUB 2 mainline,
+     Good job!  Your patch will now be integrated into GRUB 2 mainline,
      and if it didn't break anything it will be publicly available in
      the next release.
 
@@ -441,21 +452,17 @@ File: grub-dev.info,  Node: Typical Developer Experience,  Next: When you are ap
 
 The typical experience for a developer in this project is the following:
 
-  1. You find yourself wanting to do something (e.g. fixing a bug).
-
+  1. You find yourself wanting to do something (e.g.  fixing a bug).
   2. You show some result in the mailing list or the IRC.
-
   3. You are getting to be known to other developers.
-
   4. You accumulate significant amount of contribution, so copyright
      assignment is processed.
-
   5. You are free to check in your changes on your own, legally
      speaking.
 
    At this point, it is rather annoying that you ought to ask somebody
-else every change to be checked in. For efficiency, it is far better,
-if you can commit it yourself. Therefore, our policy is to give you the
+else every change to be checked in.  For efficiency, it is far better,
+if you can commit it yourself.  Therefore, our policy is to give you the
 write permission to our official repository, once you have shown your
 skill and will, and the FSF clerks have dealt with your copyright
 assignment.
@@ -467,19 +474,18 @@ File: grub-dev.info,  Node: When you are approved for write access to project's 
 =============================================================
 
 As you might know, GRUB is hosted on
-`https://savannah.gnu.org/projects/grub Savannah', thus the membership
-is managed by Savannah. This means that, if you want to be a member of
+<https://savannah.gnu.org/projects/grub Savannah>, thus the membership
+is managed by Savannah.  This means that, if you want to be a member of
 this project:
 
   1. You need to create your own account on Savannah.
-
   2. You can submit "Request for Inclusion" from "My Groups" on
      Savannah.
 
    Then, one of the admins can approve your request, and you will be a
 member.  If you don't want to use the Savannah interface to submit a
 request, you can simply notify the admins by email or something else,
-alternatively. But you still need to create an account beforehand.
+alternatively.  But you still need to create an account beforehand.
 
    NOTE: we sometimes receive a "Request for Inclusion" from an unknown
 person.  In this case, the request would be just discarded, since it is
@@ -488,8 +494,8 @@ gives him a commit right to the repository, both for a legal reason and
 for a technical reason.
 
    If your intention is to just get started, please do not submit a
-inclusion request. Instead, please subscribe to the mailing list, and
-communicate first (e.g. sending a patch, asking a question, commenting
+inclusion request.  Instead, please subscribe to the mailing list, and
+communicate first (e.g.  sending a patch, asking a question, commenting
 on another message...).
 
 
@@ -498,20 +504,20 @@ File: grub-dev.info,  Node: Porting,  Next: Error Handling,  Prev: Contributing 
 5 Porting
 *********
 
-GRUB2 is designed to be easily portable accross platforms. But because
+GRUB2 is designed to be easily portable accross platforms.  But because
 of the nature of bootloader every new port must be done separately.
-Here is how I did MIPS (loongson and ARC) and Xen ports. Note than this
+Here is how I did MIPS (loongson and ARC) and Xen ports.  Note than this
 is more of suggestions, not absolute truth.
 
    First of all grab any architecture specifications you can find in
 public (please avoid NDA).
 
-   First stage is "Hello world". I've done it outside of GRUB for
+   First stage is "Hello world".  I've done it outside of GRUB for
 simplicity.  Your task is to have a small program which is loadable as
-bootloader and clearly shows its presence to you. If you have easily
-accessible console you can just print a message. If you have a mapped
-framebuffer you know address of, you can draw a square. If you have a
-debug facility, just hanging without crashing might be enough. For the
+bootloader and clearly shows its presence to you.  If you have easily
+accessible console you can just print a message.  If you have a mapped
+framebuffer you know address of, you can draw a square.  If you have a
+debug facility, just hanging without crashing might be enough.  For the
 first stage you can choose to load the bootloader across the network
 since format for network image is often easier than for local boot and
 it skips the need of small intermediary stages and nvram handling.
@@ -521,7 +527,7 @@ running "file" on any netbootable executable for given platform.
    This program should probably have 2 parts: an assembler and C one.
 Assembler one handles BSS cleaning and other needed setup (on some
 platforms you may need to switch modes or copy the executable to its
-definitive position). So your code may look like (x86 assembly for
+definitive position).  So your code may look like (x86 assembly for
 illustration purposes)
 
              .globl _start
@@ -556,12 +562,12 @@ illustration purposes)
    Sometimes you need a third file: assembly stubs for
 ABI-compatibility.
 
-   Once this file is functional it's time to move it into GRUB2. The
+   Once this file is functional it's time to move it into GRUB2.  The
 startup assembly file goes to grub-core/kern/$cpu/$platform/startup.S.
 You should also include grub/symbol.h and replace call to entry point
-with call to EXT_C(grub_main). The C file goes to
+with call to EXT_C(grub_main).  The C file goes to
 grub-core/kern/$cpu/$platform/init.c and its entry point is renamed to
-void grub_machine_init (void). Keep final infinite loop for now. Stubs
+void grub_machine_init (void).  Keep final infinite loop for now.  Stubs
 file if any goes to grub-core/kern/$cpu/$platform/callwrap.S. Sometimes
 either $cpu or $platform is dropped if file is used on several cpus
 respectivelyplatforms.  Check those locations if they already have what
@@ -601,7 +607,7 @@ on chosen compiler and compile options.
 
    This part deals with guessing the platform from CPU and vendor.
 Sometimes you need to use 32-bit mode for booting even if OS runs in
-64-bit one. If so add your platform to:
+64-bit one.  If so add your platform to:
 
      case "$target_cpu"-"$platform" in
        x86_64-efi) ;;
@@ -634,7 +640,7 @@ Sometimes you need to use 32-bit mode for booting even if OS runs in
      AM_CONDITIONAL([COND_sparc64_ieee1275], [test x$target_cpu = xsparc64 -a x$platform = xieee1275])
      AM_CONDITIONAL([COND_powerpc_ieee1275], [test x$target_cpu = xpowerpc -a x$platform = xieee1275])
 
-   Next stop is gentpl.py. You need to add your platform to the list of
+   Next stop is gentpl.py.  You need to add your platform to the list of
 supported ones (sorry that this list is duplicated):
 
      GRUB_PLATFORMS = [ "emu", "i386_pc", "i386_efi", "i386_qemu", "i386_coreboot",
@@ -644,13 +650,13 @@ supported ones (sorry that this list is duplicated):
                         "mips_qemu_mips", "s390_mainframe" ]
 
    You may also want already to add new platform to one or several of
-available groups. In particular we always have a group for each CPU
+available groups.  In particular we always have a group for each CPU
 even when only one platform for given CPU is available.
 
-   Then comes grub-core/Makefile.core.def. In the block "kernel" you'll
-need to define ldflags for your platform ($cpu_$platform_ldflags). You
+   Then comes grub-core/Makefile.core.def.  In the block "kernel" you'll
+need to define ldflags for your platform ($cpu_$platform_ldflags).  You
 also need to declare startup asm file ($cpu_$platform_startup) as well
-as any other files (e.g. init.c and callwrap.S) (e.g. $cpu_$platform =
+as any other files (e.g.  init.c and callwrap.S) (e.g.  $cpu_$platform =
 kern/$cpu/$platform/init.c).  At this stage you will also need to add
 dummy dl.c and cache.S with functions grub_err_t
 grub_arch_dl_check_header (void *ehdr), grub_err_t
@@ -659,7 +665,7 @@ void grub_arch_sync_caches (void *address, grub_size_t len) (cache.S).
 They won't be used for now.
 
    You will need to create directory include/$cpu/$platform and a file
-include/$cpu/types.h. The later folowing this template:
+include/$cpu/types.h.  The later folowing this template:
 
      #ifndef GRUB_TYPES_CPU_HEADER
      #define GRUB_TYPES_CPU_HEADER	1
@@ -677,15 +683,15 @@ include/$cpu/types.h. The later folowing this template:
 
      #endif /* ! GRUB_TYPES_CPU_HEADER */
 
-   You will also need to add a dummy file to datetime and setjmp
-modules to avoid any of it having no files. It can be just completely
-empty at this stage.
+   You will also need to add a dummy file to datetime and setjmp modules
+to avoid any of it having no files.  It can be just completely empty at
+this stage.
 
-   You'll need to make grub-mkimage.c (util/grub_mkimage.c) aware of
-the needed format. For most commonly used formats like ELF, PE, aout or
-raw the support is already present and you'll need to make it follow
-the existant code paths for your platform adding adjustments if
-necessary. When done compile:
+   You'll need to make grub-mkimage.c (util/grub_mkimage.c) aware of the
+needed format.  For most commonly used formats like ELF, PE, aout or raw
+the support is already present and you'll need to make it follow the
+existant code paths for your platform adding adjustments if necessary.
+When done compile:
 
      ./autogen.sh
      ./configure --target=$cpu --with-platform=$platform TARGET_CC=.. OBJCOPY=... STRIP=...
@@ -701,135 +707,115 @@ necessary. When done compile:
 
    To have the heap working you need to determine which regions are
 suitable for heap usage, allocate them from firmware and map (if
-applicable). Then call grub_mm_init_region (vois *start, grub_size_t s)
-for every of this region.  As a shortcut for early port you can
-allocate right after _end or have a big static array for heap. If you
-do you'll probably need to come back to this later. As for output
-console you should distinguish between an array of text, terminfo or
-graphics-based console. Many of real-world examples don't fit perfectly
-into any of these categories but one of the models is easier to be used
-as base. In second and third case you should add your platform to
-terminfokernel respectively videoinkernel group. A good example of
-array of text is i386-pc (kern/i386/pc/init.c and
-term/i386/pc/console.c).  Of terminfo is ieee1275 (kern/ieee1275/init.c
-and term/ieee1275/console.c).  Of video is loongson
-(kern/mips/loongson/init.c). Note that terminfo has to be inited in 2
-stages: one before (to get at least rudimentary console as early as
-possible) and another after the heap (to get full-featured console).
-For the input there are string of keys, terminfo and direct hardware.
-For string of keys look at i386-pc (same files), for termino ieee1275
-(same files) and for hardware loongson (kern/mips/loongson/init.c and
-term/at_keyboard.c).
+applicable).  Then call grub_mm_init_region (vois *start, grub_size_t s)
+for every of this region.  As a shortcut for early port you can allocate
+right after _end or have a big static array for heap.  If you do you'll
+probably need to come back to this later.  As for output console you
+should distinguish between an array of text, terminfo or graphics-based
+console.  Many of real-world examples don't fit perfectly into any of
+these categories but one of the models is easier to be used as base.  In
+second and third case you should add your platform to terminfokernel
+respectively videoinkernel group.  A good example of array of text is
+i386-pc (kern/i386/pc/init.c and term/i386/pc/console.c).  Of terminfo
+is ieee1275 (kern/ieee1275/init.c and term/ieee1275/console.c).  Of
+video is loongson (kern/mips/loongson/init.c).  Note that terminfo has
+to be inited in 2 stages: one before (to get at least rudimentary
+console as early as possible) and another after the heap (to get
+full-featured console).  For the input there are string of keys,
+terminfo and direct hardware.  For string of keys look at i386-pc (same
+files), for termino ieee1275 (same files) and for hardware loongson
+(kern/mips/loongson/init.c and term/at_keyboard.c).
 
    For the timer you'll need to call grub_install_get_time_ms (...)
 with as sole argument a function returning a grub_uint64_t of a number
 of milliseconds elapsed since arbitrary point in the past.
 
    Once these steps accomplished you can remove the inifinite loop and
-you should be able to get to the minimal console. Next step is to have
-module loading working. For this you'll need to fill kern/$cpu/dl.c and
-kern/$cpu/cache.S with real handling of relocations and respectively
-the real sync of I and D caches. Also you'll need to decide where in
-the image to store the modules.  Usual way is to have it concatenated
-at the end. In this case you'll need to modify startup.S to copy
-modules out of bss to let's say ALIGN_UP (_end, 8) before cleaning out
-bss. You'll probably find useful to add total_module_size field to
-startup.S. In init.c you need to set grub_modbase to the address where
-modules can be found. You may need grub_modules_get_end () to avoid
-declaring the space occupied by modules as usable for heap. You can
-test modules with:
+you should be able to get to the minimal console.  Next step is to have
+module loading working.  For this you'll need to fill kern/$cpu/dl.c and
+kern/$cpu/cache.S with real handling of relocations and respectively the
+real sync of I and D caches.  Also you'll need to decide where in the
+image to store the modules.  Usual way is to have it concatenated at the
+end.  In this case you'll need to modify startup.S to copy modules out
+of bss to let's say ALIGN_UP (_end, 8) before cleaning out bss.  You'll
+probably find useful to add total_module_size field to startup.S. In
+init.c you need to set grub_modbase to the address where modules can be
+found.  You may need grub_modules_get_end () to avoid declaring the
+space occupied by modules as usable for heap.  You can test modules
+with:
 
      ./grub-mkimage -d grub-core -O $format_id -o test.img hello
 
    and then running "hello" in the shell.
 
-   Once this works, you should think of implementing disk access. Look
+   Once this works, you should think of implementing disk access.  Look
 around disk/ for examples.
 
    Then, very importantly, you probably need to implement the actual
 loader (examples available in loader/)
 
    Last step to have minimally usable port is to add support to
-grub-install to put GRUB in a place where firmware or platform will
-pick it up.
+grub-install to put GRUB in a place where firmware or platform will pick
+it up.
 
    Next steps are: filling datetime.c, setjmp.S, network (net/drivers),
 video (video/), halt (lib/), reboot (lib/).
 
    Please add your platform to Platform limitations and Supported
 kernels chapter in user documentation and mention any steps you skipped
-which result in reduced features or performance. Here is the quick
-checklist of features. Some of them are less important than others and
+which result in reduced features or performance.  Here is the quick
+checklist of features.  Some of them are less important than others and
 skipping them is completely ok, just needs to be mentioned in user
 documentation.
 
    Checklist:
    * Is heap big enough?
-
    * Which charset is supported by console?
-
    * Does platform have disk driver?
-
    * Do you have network card support?
-
    * Are you able to retrieve datetime (with date)?
-
    * Are you able to set datetime (with date)?
-
    * Is serial supported?
-
    * Do you have direct disk support?
-
    * Do you have direct keyboard support?
-
    * Do you have USB support?
-
    * Do you support loading through network?
-
    * Do you support loading from disk?
-
    * Do you support chainloading?
-
    * Do you support network chainloading?
-
-   * Does cpuid command supports checking all CPU features that the
-     user might want conditionalise on (64-bit mode, hypervisor,...)
-
-   * Do you support hints? How reliable are they?
-
+   * Does cpuid command supports checking all CPU features that the user
+     might want conditionalise on (64-bit mode, hypervisor,...)
+   * Do you support hints?  How reliable are they?
    * Does platform have ACPI? If so do "acpi" and "lsacpi" modules work?
-
    * Do any of platform-specific operations mentioned in the relevant
      section of user manual makes sense on your platform?
-
    * Does your platform support PCI? If so is there an appropriate
      driver for GRUB?
-
    * Do you support badram?
 
 
-File: grub-dev.info,  Node: Error Handling,  Next: CIA,  Prev: Porting,  Up: Top
+File: grub-dev.info,  Node: Error Handling,  Next: Stack and heap size,  Prev: Porting,  Up: Top
 
 6 Error Handling
 ****************
 
-Error handling in GRUB 2 is based on exception handling model. As C
+Error handling in GRUB 2 is based on exception handling model.  As C
 language doesn't directly support exceptions, exception handling
 behavior is emulated in software.
 
    When exception is raised, function must return to calling function.
 If calling function does not provide handling of the exception it must
 return back to its calling function and so on, until exception is
-handled. If exception is not handled before prompt is displayed, error
+handled.  If exception is not handled before prompt is displayed, error
 message will be shown to user.
 
-   Exception information is stored on `grub_errno' global variable. If
-`grub_errno' variable contains value `GRUB_ERR_NONE', there is no active
-exception and application can continue normal processing. When
-`grub_errno' has other value, it is required that application code
-either handles this error or returns instantly to caller. If function
-is with return type `grub_err_t' is about to return `GRUB_ERR_NONE', it
-should not set `grub_errno' to that value. Only set `grub_errno' in
+   Exception information is stored on 'grub_errno' global variable.  If
+'grub_errno' variable contains value 'GRUB_ERR_NONE', there is no active
+exception and application can continue normal processing.  When
+'grub_errno' has other value, it is required that application code
+either handles this error or returns instantly to caller.  If function
+is with return type 'grub_err_t' is about to return 'GRUB_ERR_NONE', it
+should not set 'grub_errno' to that value.  Only set 'grub_errno' in
 cases where there is error situation.
 
    Simple exception forwarder.
@@ -852,11 +838,11 @@ cases where there is error situation.
      }
 
    Error reporting has two components, the actual error code (of type
-`grub_err_t') and textual message that will be displayed to user. List
-of valid error codes is listed in header file `include/grub/err.h'.
-Textual error message can contain any textual data. At time of writing,
+'grub_err_t') and textual message that will be displayed to user.  List
+of valid error codes is listed in header file 'include/grub/err.h'.
+Textual error message can contain any textual data.  At time of writing,
 error message can contain up to 256 characters (including terminating
-NUL). To ease error reporting there is a helper function `grub_error'
+NUL). To ease error reporting there is a helper function 'grub_error'
 that allows easier formatting of error messages and should be used
 instead of writing directly to global variables.
 
@@ -871,11 +857,11 @@ instead of writing directly to global variables.
      }
 
    If there is a special reason that error code does not need to be
-taken account, `grub_errno' can be zeroed back to `GRUB_ERR_NONE'. In
+taken account, 'grub_errno' can be zeroed back to 'GRUB_ERR_NONE'.  In
 cases like this all previous error codes should have been handled
-correctly. This makes sure that there are no unhandled exceptions.
+correctly.  This makes sure that there are no unhandled exceptions.
 
-   Example of zeroing `grub_errno'.
+   Example of zeroing 'grub_errno'.
      grub_err_t
      probe_example ()
      {
@@ -906,16 +892,16 @@ correctly. This makes sure that there are no unhandled exceptions.
      }
 
    Some times there is a need to continue processing even if there is a
-error state in application. In situations like this, there is a needed
+error state in application.  In situations like this, there is a needed
 to save old error state and then call other functions that might fail.
-To aid in this, there is a error stack implemented. Error state can be
-pushed to error stack by calling function `grub_error_push ()'. When
-processing has been completed, `grub_error_pop ()' can be used to pop
-error state from stack. Error stack contains predefined amount of error
-stack items. Error stack is protected for overflow and marks these
+To aid in this, there is a error stack implemented.  Error state can be
+pushed to error stack by calling function 'grub_error_push ()'.  When
+processing has been completed, 'grub_error_pop ()' can be used to pop
+error state from stack.  Error stack contains predefined amount of error
+stack items.  Error stack is protected for overflow and marks these
 situations so overflow error does not get unseen.  If there is no space
 available to store error message, it is simply discarded and overflow
-will be marked as happened. When overflow happens, it most likely will
+will be marked as happened.  When overflow happens, it most likely will
 corrupt error stack consistency as for pushed error there is no matching
 pop, but overflow message will be shown to inform user about the
 situation.  Overflow message will be shown at time when prompt is about
@@ -940,52 +926,91 @@ to be drawn.
      grub_error_pop ();
 
 
-File: grub-dev.info,  Node: CIA,  Next: BIOS port memory map,  Prev: Error Handling,  Up: Top
+File: grub-dev.info,  Node: Stack and heap size,  Next: BIOS port memory map,  Prev: Error Handling,  Up: Top
 
-7 CIA
-*****
+7 Stack and heap size
+*********************
 
-If you have commit access, please setup CIA in your Bazaar config so
-those in IRC receive notification of your commits.
+On emu stack and heap are just normal host OS stack and heap.  Stack is
+typically 8 MiB although it's OS-dependent.
 
-   In `~/.bazaar/bazaar.conf', add "cia_send_revno = true".
-Optionally, you can also add "cia_user = myusername" if you'd like CIA
-service to use a specific account (for statistical purpose).
+   On i386-pc, i386-coreboot, i386-qemu and i386-multiboot the stack is
+60KiB. All available space between 1MiB and 4GiB marks is part of heap.
 
-   In the `.bzr/branch/branch.conf' of your checkout branch, "set
-nickname = /path_to_this_branch" and "cia_project = GNU GRUB".
+   On *-xen stack is 4MiB. If compiled for x86-64 with GCC 4.4 or later
+adressable space is unlimited.  When compiled for x86-64 with older GCC
+version adressable space is limited to 2GiB. When compiling for i386
+adressable space is limited to 4GiB. All adressable pages except the
+ones for stack, GRUB binary, special pages and page table are in the
+heap.
 
-   Additionally, please set cia_send_revno in the [DEFAULT] section of
-your `~/.bazaar/bazaar.conf'. E.g.:
+   On *-efi GRUB uses same stack as EFI. If compiled for x86-64 with GCC
+4.4 or later adressable space is unlimited.  When compiled for x86-64
+with older GCC version adressable space is limited to 2GiB. For all
+other platforms adressable space is limited to 4GiB. GRUB allocates
+pages from EFI for its heap, at most 1.6 GiB.
 
-     [DEFAULT]
-     cia_send_revno = true
+   On i386-ieee1275 and powerpc-ieee1275 GRUB uses same stack as
+IEEE1275.  It allocates at most 32MiB for its heap.
 
-   Remember to install cia-clients (Debian/Ubuntu package) to be able
-to use CIA.
+   On sparc64-ieee1275 stack is 256KiB and heap is 2MiB.
 
-   Keep in mind Bazaar sends notifications for all commits to branches
-that have this setting, regardless of whether they're bound branches
-(checkouts) or not.  So if you make local commits in a non-bound branch
-and it bothers you that others can read them, do not use this setting.
+   On mips(el)-qemu_mips and mipsel-loongson stack is 2MiB (everything
+below GRUB image) and everything above GRUB image (from 2MiB + kernel
+size) until 256MiB is part of heap.
+
+   On mips-arc stack is 2MiB (everything below GRUB image) and
+everything above GRUB image(from 2MiB + kernel size) until 128MiB is
+part of heap.
+
+   On mipsel-arc stack is 2MiB (everything below GRUB image which is not
+part of ARC) and everything above GRUB image (from 7MiB + kernel size)
+until 256MiB is part of heap.
+
+   On arm-uboot stack is 256KiB and heap is 2MiB.
+
+   In short:
+
+Platform    Stack              Heap
+--------------------------------------------------------------------
+emu         8 MiB              ?
+i386-pc     60 KiB             < 4 GiB
+i386-coreboot60 KiB            < 4 GiB
+i386-multiboot60 KiB           < 4 GiB
+i386-qemu   60 KiB             < 4 GiB
+*-efi       ?                  < 1.6 GiB
+i386-ieee1275?                 < 32 MiB
+powerpc-ieee1275?              < 32 MiB
+sparc64-ieee1275256KiB         2 MiB
+arm-uboot   256KiB             2 MiB
+mips(el)-qemu_mips2MiB         253 MiB
+mipsel-loongson2MiB            253 MiB
+mips-arc    2MiB               125 MiB
+mipsel-arc  2MiB               248 MiB
+x86_64-xen  4MiB               unlimited
+(GCC >=
+4.4)
+x86_64-xen  4MiB               < 2GiB
+(GCC <
+4.4)
+i386-xen    4MiB               < 4GiB
 
 
-File: grub-dev.info,  Node: BIOS port memory map,  Next: Video Subsystem,  Prev: CIA,  Up: Top
+File: grub-dev.info,  Node: BIOS port memory map,  Next: Video Subsystem,  Prev: Stack and heap size,  Up: Top
 
 8 BIOS port memory map
 **********************
 
 Start       End                Usage
--------------------------------------------------------------------- 
+--------------------------------------------------------------------
 0           0x1000 - 1         BIOS and real mode interrupts
 0x07BE      0x07FF             Partition table passed to another
                                boot loader
 ?           0x2000 - 1         Real mode stack
 0x7C00      0x7D00 - 1         Boot sector
 0x8000      ?                  GRUB kernel
-0x68000     0x78000 - 1        Disk buffer
+0x68000     0x71000 - 1        Disk buffer
 ?           0x80000 - 1        Protected mode stack
-0x80000     ?                  Heap
 ?           0xA0000 - 1        Extended BIOS Data Area
 0xA0000     0xC0000 - 1        Video RAM
 0xC0000     0x100000 - 1       BIOS
@@ -1005,11 +1030,11 @@ driver manager works are not included here.
 * Menu:
 
 * Video API::
-* Bitmap API::
 * Example usage of Video API::
+* Bitmap API::
 
 
-File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
+File: grub-dev.info,  Node: Video API,  Next: Example usage of Video API,  Up: Video Subsystem
 
 9.1 Video API
 =============
@@ -1020,31 +1045,29 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
    * Prototype:
           grub_err_t
           grub_video_setup (unsigned int width, unsigned int height, unsigned int mode_type);
-
    * Description:
 
      Driver will use information provided to it to select best possible
-     video mode and switch to it. Supported values for `mode_type' are
-     `GRUB_VIDEO_MODE_TYPE_INDEX_COLOR' for index color modes,
-     `GRUB_VIDEO_MODE_TYPE_RGB' for direct RGB color modes and
-     `GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED' for double buffering. When
+     video mode and switch to it.  Supported values for 'mode_type' are
+     'GRUB_VIDEO_MODE_TYPE_INDEX_COLOR' for index color modes,
+     'GRUB_VIDEO_MODE_TYPE_RGB' for direct RGB color modes and
+     'GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED' for double buffering.  When
      requesting RGB mode, highest bits per pixel mode will be selected.
      When requesting Index color mode, mode with highest number of
-     colors will be selected. If all parameters are specified as zero,
+     colors will be selected.  If all parameters are specified as zero,
      video adapter will try to figure out best possible mode and
-     initialize it, platform specific differences are allowed here. If
-     there is no mode matching request, error X will be returned. If
-     there are no problems, function returns `GRUB_ERR_NONE'.
+     initialize it, platform specific differences are allowed here.  If
+     there is no mode matching request, error X will be returned.  If
+     there are no problems, function returns 'GRUB_ERR_NONE'.
 
      This function also performs following task upon succesful mode
-     switch. Active rendering target is changed to screen and viewport
+     switch.  Active rendering target is changed to screen and viewport
      is maximized to allow whole screen to be used when performing
-     graphics operations. In RGB modes, emulated palette gets 16
-     entries containing default values for VGA palette, other colors
-     are defined as black. When switching to Indexed Color mode, driver
-     may set default VGA palette to screen if the video card allows the
+     graphics operations.  In RGB modes, emulated palette gets 16
+     entries containing default values for VGA palette, other colors are
+     defined as black.  When switching to Indexed Color mode, driver may
+     set default VGA palette to screen if the video card allows the
      operation.
-
 
 9.1.2 grub_video_restore
 ------------------------
@@ -1053,12 +1076,11 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
 
           grub_err_t
           grub_video_restore (void);
-
    * Description:
 
-     Video subsystem will deinitialize activated video driver to
-     restore old state of video device. This can be used to switch back
-     to text mode.
+     Video subsystem will deinitialize activated video driver to restore
+     old state of video device.  This can be used to switch back to text
+     mode.
 
 9.1.3 grub_video_get_info
 -------------------------
@@ -1067,7 +1089,6 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
 
           grub_err_t
           grub_video_get_info (struct grub_video_mode_info *mode_info);
-
           struct grub_video_mode_info
           {
             /* Width of the screen.  */
@@ -1105,17 +1126,15 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
                this is 0.  */
             unsigned int reserved_field_pos;
           };
-
    * Description:
 
      Software developer can use this function to query properties of
-     active rendering taget. Information provided here can be used by
-     other parts of GRUB, like image loaders to convert loaded images
-     to correct screen format to allow more optimized blitters to be
-     used. If there there is no configured video driver with active
-     screen, error `GRUB_ERR_BAD_DEVICE' is returned, otherwise
-     `mode_info' is filled with valid information and `GRUB_ERR_NONE'
-     is returned.
+     active rendering taget.  Information provided here can be used by
+     other parts of GRUB, like image loaders to convert loaded images to
+     correct screen format to allow more optimized blitters to be used.
+     If there there is no configured video driver with active screen,
+     error 'GRUB_ERR_BAD_DEVICE' is returned, otherwise 'mode_info' is
+     filled with valid information and 'GRUB_ERR_NONE' is returned.
 
 9.1.4 grub_video_get_blit_format
 --------------------------------
@@ -1124,7 +1143,6 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
 
           enum grub_video_blit_format
           grub_video_get_blit_format (struct grub_video_mode_info *mode_info);
-
           enum grub_video_blit_format
             {
               /* Follow exactly field & mask information.  */
@@ -1138,13 +1156,12 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
               /* When needed, decode color or just use value as is.  */
               GRUB_VIDEO_BLIT_FORMAT_INDEXCOLOR
             };
-
    * Description:
 
      Used to query how data could be optimized to suit specified video
-     mode. Returns exact video format type, or a generic one if there
-     is no definition for the type. For generic formats, use
-     `grub_video_get_info' to query video color coding settings.
+     mode.  Returns exact video format type, or a generic one if there
+     is no definition for the type.  For generic formats, use
+     'grub_video_get_info' to query video color coding settings.
 
 9.1.5 grub_video_set_palette
 ----------------------------
@@ -1153,7 +1170,6 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
 
           grub_err_t
           grub_video_set_palette (unsigned int start, unsigned int count, struct grub_video_palette_data *palette_data);
-
           struct grub_video_palette_data
           {
               grub_uint8_t r; /* Red color value (0-255). */
@@ -1161,17 +1177,16 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
               grub_uint8_t b; /* Blue color value (0-255). */
               grub_uint8_t a; /* Reserved bits value (0-255). */
           };
-
    * Description:
 
-     Used to setup indexed color palettes. If mode is RGB mode, colors
-     will be set to emulated palette data. In Indexed Color modes,
-     palettes will be set to hardware. Color values will be converted
-     to suit requirements of the video mode. `start' will tell what
+     Used to setup indexed color palettes.  If mode is RGB mode, colors
+     will be set to emulated palette data.  In Indexed Color modes,
+     palettes will be set to hardware.  Color values will be converted
+     to suit requirements of the video mode.  'start' will tell what
      hardware color index (or emulated color index) will be set to
-     according information in first indice of `palette_data', after
-     that both hardware color index and `palette_data' index will be
-     incremented until `count' number of colors have been set.
+     according information in first indice of 'palette_data', after that
+     both hardware color index and 'palette_data' index will be
+     incremented until 'count' number of colors have been set.
 
 9.1.6 grub_video_get_palette
 ----------------------------
@@ -1180,7 +1195,6 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
 
           grub_err_t
           grub_video_get_palette (unsigned int start, unsigned int count, struct grub_video_palette_data *palette_data);
-
           struct grub_video_palette_data
           {
               grub_uint8_t r; /* Red color value (0-255). */
@@ -1188,162 +1202,211 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
               grub_uint8_t b; /* Blue color value (0-255). */
               grub_uint8_t a; /* Reserved bits value (0-255). */
           };
+   * Description:
+
+     Used to query indexed color palettes.  If mode is RGB mode, colors
+     will be copied from emulated palette data.  In Indexed Color modes,
+     palettes will be read from hardware.  Color values will be
+     converted to suit structure format.  'start' will tell what
+     hardware color index (or emulated color index) will be used as a
+     source for first indice of 'palette_data', after that both hardware
+     color index and 'palette_data' index will be incremented until
+     'count' number of colors have been read.
+
+9.1.7 grub_video_set_area_status
+--------------------------------
+
+   * Prototype:
+          grub_err_t
+          grub_video_set_area_status (grub_video_area_status_t area_status);
+          enum grub_video_area_status_t
+            {
+              GRUB_VIDEO_AREA_DISABLED,
+              GRUB_VIDEO_AREA_ENABLED
+            };
 
    * Description:
 
-     Used to query indexed color palettes. If mode is RGB mode, colors
-     will be copied from emulated palette data. In Indexed Color modes,
-     palettes will be read from hardware. Color values will be
-     converted to suit structure format. `start' will tell what
-     hardware color index (or emulated color index) will be used as a
-     source for first indice of `palette_data', after that both
-     hardware color index and `palette_data' index will be incremented
-     until `count' number of colors have been read.
+     Used to set area drawing mode for redrawing the specified region.
+     Draw commands are performed in the intersection of the viewport and
+     the region called area.  Coordinates remain related to the
+     viewport.  If draw commands try to draw over the area, they are
+     clipped.  Set status to DISABLED if you need to draw everything.
+     Set status to ENABLED and region to the desired rectangle to redraw
+     everything inside the region leaving everything else intact.
+     Should be used for redrawing of active elements.
 
-9.1.7 grub_video_set_viewport
+9.1.8 grub_video_get_area_status
+--------------------------------
+
+   * Prototype:
+          grub_err_r
+          grub_video_get_area_status (grub_video_area_status_t *area_status);
+
+   * Description: Used to query the area status.
+
+9.1.9 grub_video_set_viewport
 -----------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_set_viewport (unsigned int x, unsigned int y, unsigned int width, unsigned int height);
-
    * Description:
 
-     Used to specify viewport where draw commands are performed. When
+     Used to specify viewport where draw commands are performed.  When
      viewport is set, all draw commands coordinates relate to those
-     specified by `x' and `y'. If draw commands try to draw over
-     viewport, they are clipped. If developer requests larger than
+     specified by 'x' and 'y'.  If draw commands try to draw over
+     viewport, they are clipped.  If developer requests larger than
      possible viewport, width and height will be clamped to fit screen.
-     If `x' and `y' are out of bounds, all functions drawing to screen
-     will not be displayed. In order to maximize viewport, use
-     `grub_video_get_info' to query actual screen dimensions and
-     provide that information to this function.
+     If 'x' and 'y' are out of bounds, all functions drawing to screen
+     will not be displayed.  In order to maximize viewport, use
+     'grub_video_get_info' to query actual screen dimensions and provide
+     that information to this function.
 
-9.1.8 grub_video_get_viewport
------------------------------
+9.1.10 grub_video_get_viewport
+------------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_get_viewport (unsigned int *x, unsigned int *y, unsigned int *width, unsigned int *height);
-
    * Description:
 
-     Used to query current viewport dimensions. Software developer can
+     Used to query current viewport dimensions.  Software developer can
      use this to choose best way to render contents of the viewport.
 
-9.1.9 grub_video_map_color
---------------------------
+9.1.11 grub_video_set_region
+----------------------------
+
+   * Prototype:
+
+          grub_err_t
+          grub_video_set_region (unsigned int x, unsigned int y, unsigned int width, unsigned int height);
+   * Description:
+
+     Used to specify the region of the screen which should be redrawn.
+     Use absolute values.  When the region is set and area status is
+     ENABLE all draw commands will be performed inside the interseption
+     of region and viewport named area.  If draw commands try to draw
+     over viewport, they are clipped.  If developer requests larger than
+     possible region, width and height will be clamped to fit screen.
+     Should be used for redrawing of active elements.
+
+9.1.12 grub_video_get_region
+----------------------------
+
+   * Prototype:
+
+          grub_err_t
+          grub_video_get_region (unsigned int *x, unsigned int *y, unsigned int *width, unsigned int *height);
+   * Description:
+
+     Used to query current region dimensions.
+
+9.1.13 grub_video_map_color
+---------------------------
 
    * Prototype:
 
           grub_video_color_t
           grub_video_map_color (grub_uint32_t color_name);
-
    * Description:
 
      Map color can be used to support color themes in GRUB. There will
      be collection of color names that can be used to query actual
-     screen mapped color data. Examples could be
-     `GRUB_COLOR_CONSOLE_BACKGROUND', `GRUB_COLOR_CONSOLE_TEXT'. The
+     screen mapped color data.  Examples could be
+     'GRUB_COLOR_CONSOLE_BACKGROUND', 'GRUB_COLOR_CONSOLE_TEXT'.  The
      actual color defines are not specified at this point.
 
-9.1.10 grub_video_map_rgb
+9.1.14 grub_video_map_rgb
 -------------------------
 
    * Prototype:
 
           grub_video_color_t
           grub_video_map_rgb (grub_uint8_t red, grub_uint8_t green, grub_uint8_t blue);
-
    * Description:
 
-     Map RGB values to compatible screen color data. Values are
+     Map RGB values to compatible screen color data.  Values are
      expected to be in range 0-255 and in RGB modes they will be
-     converted to screen color data. In index color modes, index color
+     converted to screen color data.  In index color modes, index color
      palette will be searched for specified color and then index is
      returned.
 
-9.1.11 grub_video_map_rgba
+9.1.15 grub_video_map_rgba
 --------------------------
 
    * Prototype:
 
           grub_video_color_t
           grub_video_map_rgba (grub_uint8_t red, grub_uint8_t green, grub_uint8_t blue, grub_uint8_t alpha);
-
    * Description:
 
-     Map RGBA values to compatible screen color data. Values are
-     expected to be in range 0-255. In RGBA modes they will be
-     converted to screen color data. In index color modes, index color
+     Map RGBA values to compatible screen color data.  Values are
+     expected to be in range 0-255.  In RGBA modes they will be
+     converted to screen color data.  In index color modes, index color
      palette will be searched for best matching color and its index is
      returned.
 
-9.1.12 grub_video_unmap_color
+9.1.16 grub_video_unmap_color
 -----------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_unmap_color (grub_video_color_t color, grub_uint8_t *red, grub_uint8_t *green, grub_uint8_t *blue, grub_uint8_t *alpha);
-
    * Description:
 
-     Unmap color value from `color' to color channels in `red',
-     `green', `blue' and `alpha'. Values will be in range 0-255. Active
-     rendering target will be used for color domain. In case alpha
+     Unmap color value from 'color' to color channels in 'red', 'green',
+     'blue' and 'alpha'.  Values will be in range 0-255.  Active
+     rendering target will be used for color domain.  In case alpha
      information is not available in rendering target, it is assumed to
      be opaque (having value 255).
 
-9.1.13 grub_video_fill_rect
+9.1.17 grub_video_fill_rect
 ---------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_fill_rect (grub_video_color_t color, int x, int y, unsigned int width, unsigned int height);
-
    * Description:
 
      Fill specified area limited by given coordinates within specified
-     viewport. Negative coordinates are accepted in order to allow easy
-     moving of rectangle within viewport. If coordinates are negative,
-     area of the rectangle will be shrinken to follow size limits of
-     the viewport.
+     viewport.  Negative coordinates are accepted in order to allow easy
+     moving of rectangle within viewport.  If coordinates are negative,
+     area of the rectangle will be shrinken to follow size limits of the
+     viewport.
 
-     Software developer should use either `grub_video_map_color',
-     `grub_video_map_rgb' or `grub_video_map_rgba' to map requested
-     color to `color' parameter.
+     Software developer should use either 'grub_video_map_color',
+     'grub_video_map_rgb' or 'grub_video_map_rgba' to map requested
+     color to 'color' parameter.
 
-9.1.14 grub_video_blit_glyph
+9.1.18 grub_video_blit_glyph
 ----------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_blit_glyph (struct grub_font_glyph *glyph, grub_video_color_t color, int x, int y);
-
           struct grub_font_glyph {
               /* TBD. */
           };
-
    * Description:
 
-     Used to blit glyph to viewport in specified coodinates. If glyph
+     Used to blit glyph to viewport in specified coodinates.  If glyph
      is at edge of viewport, pixels outside of viewport will be clipped
-     out. Software developer should use either `grub_video_map_rgb' or
-     `grub_video_map_rgba' to map requested color to `color' parameter.
+     out.  Software developer should use either 'grub_video_map_rgb' or
+     'grub_video_map_rgba' to map requested color to 'color' parameter.
 
-9.1.15 grub_video_blit_bitmap
+9.1.19 grub_video_blit_bitmap
 -----------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_blit_bitmap (struct grub_video_bitmap *bitmap, enum grub_video_blit_operators oper, int x, int y, int offset_x, int offset_y, unsigned int width, unsigned int height);
-
           struct grub_video_bitmap
           {
               /* TBD. */
@@ -1354,31 +1417,29 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
               GRUB_VIDEO_BLIT_REPLACE,
               GRUB_VIDEO_BLIT_BLEND
             };
-
    * Description:
 
-     Used to blit bitmap to viewport in specified coordinates. If part
+     Used to blit bitmap to viewport in specified coordinates.  If part
      of bitmap is outside of viewport region, it will be clipped out.
      Offsets affect bitmap position where data will be copied from.
      Negative values for both viewport coordinates and bitmap offset
-     coordinates are allowed. If data is looked out of bounds of
-     bitmap, color value will be assumed to be transparent. If viewport
+     coordinates are allowed.  If data is looked out of bounds of
+     bitmap, color value will be assumed to be transparent.  If viewport
      coordinates are negative, area of the blitted rectangle will be
      shrinken to follow size limits of the viewport and bitmap.
-     Blitting operator `oper' specifies should source pixel replace
-     data in screen or blend with pixel alpha value.
+     Blitting operator 'oper' specifies should source pixel replace data
+     in screen or blend with pixel alpha value.
 
-     Software developer should use `grub_video_bitmap_create' or
-     `grub_video_bitmap_load' to create or load bitmap data.
+     Software developer should use 'grub_video_bitmap_create' or
+     'grub_video_bitmap_load' to create or load bitmap data.
 
-9.1.16 grub_video_blit_render_target
+9.1.20 grub_video_blit_render_target
 ------------------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_blit_render_target (struct grub_video_render_target *source, enum grub_video_blit_operators oper, int x, int y, int offset_x, int offset_y, unsigned int width, unsigned int height);
-
           struct grub_video_render_target {
               /* This is private data for video driver. Should not be accessed from elsewhere directly.  */
           };
@@ -1388,123 +1449,114 @@ File: grub-dev.info,  Node: Video API,  Next: Bitmap API,  Up: Video Subsystem
               GRUB_VIDEO_BLIT_REPLACE,
               GRUB_VIDEO_BLIT_BLEND
             };
-
    * Description:
 
      Used to blit source render target to viewport in specified
-     coordinates. If part of source render target is outside of
-     viewport region, it will be clipped out. If blitting operator is
+     coordinates.  If part of source render target is outside of
+     viewport region, it will be clipped out.  If blitting operator is
      specified and source contains alpha values, resulting pixel color
      components will be calculated using formula ((src_color *
      src_alpha) + (dst_color * (255 - src_alpha)) / 255, if target
-     buffer has alpha, it will be set to src_alpha. Offsets affect
-     render target position where data will be copied from. If data is
+     buffer has alpha, it will be set to src_alpha.  Offsets affect
+     render target position where data will be copied from.  If data is
      looked out of bounds of render target, color value will be assumed
-     to be transparent. Blitting operator `oper' specifies should
+     to be transparent.  Blitting operator 'oper' specifies should
      source pixel replace data in screen or blend with pixel alpha
      value.
 
-9.1.17 grub_video_scroll
+9.1.21 grub_video_scroll
 ------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_scroll (grub_video_color_t color, int dx, int dy);
-
    * Description:
 
-     Used to scroll viewport to specified direction. New areas are
-     filled with specified color. This function is used when screen is
+     Used to scroll viewport to specified direction.  New areas are
+     filled with specified color.  This function is used when screen is
      scroller up in video terminal.
 
-9.1.18 grub_video_swap_buffers
+9.1.22 grub_video_swap_buffers
 ------------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_swap_buffers (void);
-
    * Description:
 
      If double buffering is enabled, this swaps frontbuffer and
-     backbuffer, in order to show values drawn to back buffer. Video
+     backbuffer, in order to show values drawn to back buffer.  Video
      driver is free to choose how this operation is techincally done.
 
-9.1.19 grub_video_create_render_target
+9.1.23 grub_video_create_render_target
 --------------------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_create_render_target (struct grub_video_render_target **result, unsigned int width, unsigned int height, unsigned int mode_type);
-
           struct grub_video_render_target {
               /* This is private data for video driver. Should not be accessed from elsewhere directly.  */
           };
-
    * Description:
 
      Driver will use information provided to it to create best fitting
-     render target. `mode_type' will be used to guide on selecting what
-     features are wanted for render target. Supported values for
-     `mode_type' are `GRUB_VIDEO_MODE_TYPE_INDEX_COLOR' for index color
-     modes, `GRUB_VIDEO_MODE_TYPE_RGB' for direct RGB color modes and
-     `GRUB_VIDEO_MODE_TYPE_ALPHA' for alpha component.
+     render target.  'mode_type' will be used to guide on selecting what
+     features are wanted for render target.  Supported values for
+     'mode_type' are 'GRUB_VIDEO_MODE_TYPE_INDEX_COLOR' for index color
+     modes, 'GRUB_VIDEO_MODE_TYPE_RGB' for direct RGB color modes and
+     'GRUB_VIDEO_MODE_TYPE_ALPHA' for alpha component.
 
-9.1.20 grub_video_delete_render_target
+9.1.24 grub_video_delete_render_target
 --------------------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_delete_render_target (struct grub_video_render_target *target);
-
    * Description:
 
-     Used to delete previously created render target. If `target'
-     contains `NULL' pointer, nothing will be done. If render target is
+     Used to delete previously created render target.  If 'target'
+     contains 'NULL' pointer, nothing will be done.  If render target is
      correctly destroyed, GRUB_ERR_NONE is returned.
 
-9.1.21 grub_video_set_active_render_target
+9.1.25 grub_video_set_active_render_target
 ------------------------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_set_active_render_target (struct grub_video_render_target *target);
-
    * Description:
 
-     Sets active render target. If this comand is successful all
-     drawing commands will be done to specified `target'. There is also
-     special values for target, `GRUB_VIDEO_RENDER_TARGET_DISPLAY' used
+     Sets active render target.  If this comand is successful all
+     drawing commands will be done to specified 'target'.  There is also
+     special values for target, 'GRUB_VIDEO_RENDER_TARGET_DISPLAY' used
      to reference screen's front buffer,
-     `GRUB_VIDEO_RENDER_TARGET_FRONT_BUFFER' used to reference screen's
-     front buffer (alias for `GRUB_VIDEO_RENDER_TARGET_DISPLAY') and
-     `GRUB_VIDEO_RENDER_TARGET_BACK_BUFFER' used to reference back
-     buffer (if double buffering is enabled). If render target is
-     correclty switched GRUB_ERR_NONE is returned. In no any event
+     'GRUB_VIDEO_RENDER_TARGET_FRONT_BUFFER' used to reference screen's
+     front buffer (alias for 'GRUB_VIDEO_RENDER_TARGET_DISPLAY') and
+     'GRUB_VIDEO_RENDER_TARGET_BACK_BUFFER' used to reference back
+     buffer (if double buffering is enabled).  If render target is
+     correclty switched GRUB_ERR_NONE is returned.  In no any event
      shall there be non drawable active render target.
 
-
-9.1.22 grub_video_get_active_render_target
+9.1.26 grub_video_get_active_render_target
 ------------------------------------------
 
    * Prototype:
 
           grub_err_t
           grub_video_get_active_render_target (struct grub_video_render_target **target);
-
    * Description:
 
-     Returns currently active render target. It returns value in
-     `target' that can be subsequently issued back to
-     `grub_video_set_active_render_target'.
+     Returns currently active render target.  It returns value in
+     'target' that can be subsequently issued back to
+     'grub_video_set_active_render_target'.
 
 
-File: grub-dev.info,  Node: Example usage of Video API,  Prev: Bitmap API,  Up: Video Subsystem
+File: grub-dev.info,  Node: Example usage of Video API,  Next: Bitmap API,  Prev: Video API,  Up: Video Subsystem
 
 9.2 Example usage of Video API
 ==============================
@@ -1548,7 +1600,7 @@ File: grub-dev.info,  Node: Example usage of Video API,  Prev: Bitmap API,  Up: 
      grub_video_blit_glyph (&glyph, color, 0, 0);
 
 
-File: grub-dev.info,  Node: Bitmap API,  Next: Example usage of Video API,  Prev: Video API,  Up: Video Subsystem
+File: grub-dev.info,  Node: Bitmap API,  Prev: Example usage of Video API,  Up: Video Subsystem
 
 9.3 Bitmap API
 ==============
@@ -1563,7 +1615,7 @@ File: grub-dev.info,  Node: Bitmap API,  Next: Example usage of Video API,  Prev
 
      Creates a new bitmap with given dimensions and blitting format.
      Allocated bitmap data can then be modified freely and finally
-     blitted with `grub_video_blit_bitmap' to rendering target.
+     blitted with 'grub_video_blit_bitmap' to rendering target.
 
 9.3.2 grub_video_bitmap_destroy
 -------------------------------
@@ -1574,8 +1626,8 @@ File: grub-dev.info,  Node: Bitmap API,  Next: Example usage of Video API,  Prev
    * Description:
 
      When bitmap is no longer needed, it can be freed from memory using
-     this command. `bitmap' is previously allocated bitmap with
-     `grub_video_bitmap_create' or loaded with `grub_video_bitmap_load'.
+     this command.  'bitmap' is previously allocated bitmap with
+     'grub_video_bitmap_create' or loaded with 'grub_video_bitmap_load'.
 
 9.3.3 grub_video_bitmap_load
 ----------------------------
@@ -1585,9 +1637,9 @@ File: grub-dev.info,  Node: Bitmap API,  Next: Example usage of Video API,  Prev
 
    * Description:
 
-     Tries to load given bitmap (`filename') using registered bitmap
-     loaders. In case bitmap format is not recognized or supported
-     error `GRUB_ERR_BAD_FILE_TYPE' is returned.
+     Tries to load given bitmap ('filename') using registered bitmap
+     loaders.  In case bitmap format is not recognized or supported
+     error 'GRUB_ERR_BAD_FILE_TYPE' is returned.
 
 9.3.4 grub_video_bitmap_get_width
 ---------------------------------
@@ -1617,7 +1669,7 @@ File: grub-dev.info,  Node: Bitmap API,  Next: Example usage of Video API,  Prev
 
    * Description:
 
-     Returns bitmap format details in form of `grub_video_mode_info'.
+     Returns bitmap format details in form of 'grub_video_mode_info'.
 
 9.3.7 grub_video_bitmap_get_data
 --------------------------------
@@ -1627,8 +1679,8 @@ File: grub-dev.info,  Node: Bitmap API,  Next: Example usage of Video API,  Prev
 
    * Description:
 
-     Return pointer to bitmap data. Contents of the pointed data can be
-     freely modified. There is no extra protection against going off
+     Return pointer to bitmap data.  Contents of the pointed data can be
+     freely modified.  There is no extra protection against going off
      the bounds so you have to be carefull how to access the data.
 
 
@@ -1672,16 +1724,15 @@ simple to use, compact, and cleanly supports Unicode.
 -------------------------------
 
 There are many existing bitmap font formats that GRUB could use.
-However, there are aspects of these formats that may make them less
-than suitable for use in GRUB at this time:
+However, there are aspects of these formats that may make them less than
+suitable for use in GRUB at this time:
 
-`BDF'
+'BDF'
      Inefficient storage; uses ASCII to describe properties and
      hexadecimal numbers in ASCII for the bitmap rows.
-
-`PCF'
+'PCF'
      Many format variations such as byte order and bitmap padding (rows
-     padded to byte, word, etc.) would result in more complex code to
+     padded to byte, word, etc.)  would result in more complex code to
      handle the font format.
 
 
@@ -1694,60 +1745,60 @@ A file *section* consists of a 4-byte name, a 32-bit big-endian length
 (not including the name or length), and then LENGTH more
 section-type-specific bytes.
 
-   The standard file extension for PFF2 font files is `.pf2'.
+   The standard file extension for PFF2 font files is '.pf2'.
 
 10.2.1 Section Types
 --------------------
 
-`FILE'
+'FILE'
      *File type ID* (ASCII string).  This must be the first section in
      the file.  It has length 4 and the contents are the four bytes of
-     the ASCII string `PFF2'.
+     the ASCII string 'PFF2'.
 
-`NAME'
+'NAME'
      *Font name* (ASCII string).  This is the full font name including
      family, weight, style, and point size.  For instance, "Helvetica
      Bold Italic 14".
 
-`FAMI'
+'FAMI'
      *Font family name* (ASCII string).  For instance, "Helvetica".
      This should be included so that intelligent font substitution can
      take place.
 
-`WEIG'
-     *Font weight* (ASCII string).  Valid values are `bold' and
-     `normal'.  This should be included so that intelligent font
+'WEIG'
+     *Font weight* (ASCII string).  Valid values are 'bold' and
+     'normal'.  This should be included so that intelligent font
      substitution can take place.
 
-`SLAN'
-     *Font slant* (ASCII string).  Valid values are `italic' and
-     `normal'.  This should be included so that intelligent font
+'SLAN'
+     *Font slant* (ASCII string).  Valid values are 'italic' and
+     'normal'.  This should be included so that intelligent font
      substitution can take place.
 
-`PTSZ'
+'PTSZ'
      *Font point size* (uint16be).
 
-`MAXW'
+'MAXW'
      *Maximum character width in pixels* (uint16be).
 
-`MAXH'
+'MAXH'
      *Maximum character height in pixels* (uint16be).
 
-`ASCE'
+'ASCE'
      *Ascent in pixels* (uint16be).  *Note Font Metrics::, for details.
 
-`DESC'
+'DESC'
      *Descent in pixels* (uint16be).  *Note Font Metrics::, for details.
 
-`CHIX'
-     *Character index.* The character index begins with a 32-bit
+'CHIX'
+     *Character index.*  The character index begins with a 32-bit
      big-endian unsigned integer indicating the total size of the
      section, not including this size value.  For each character, there
      is an instance of the following entry structure:
 
-        * *Unicode code point.* (32-bit big-endian integer.)
+        * *Unicode code point.*  (32-bit big-endian integer.)
 
-        * *Storage flags.* (byte.)
+        * *Storage flags.*  (byte.)
 
              * Bits 2..0:
 
@@ -1755,61 +1806,60 @@ section-type-specific bytes.
                uncompressed beginning at the offset indicated by the
                character's *offset* value.
 
-               If equal to 001 binary, then the character data is
-               stored within a compressed character definition block
-               that begins at the offset within the file indicated by
-               the character's *offset* value.
+               If equal to 001 binary, then the character data is stored
+               within a compressed character definition block that
+               begins at the offset within the file indicated by the
+               character's *offset* value.
 
-        * *Offset.* (32-bit big-endian integer.)
+        * *Offset.*  (32-bit big-endian integer.)
 
           A marker that indicates the remainder of the file is data
-          accessed via the character index (CHIX) section.  When
-          reading this font file, the rest of the file can be ignored
-          when scanning the sections.  The length should be set to -1
+          accessed via the character index (CHIX) section.  When reading
+          this font file, the rest of the file can be ignored when
+          scanning the sections.  The length should be set to -1
           (0xFFFFFFFF).
 
           Supported data structures:
 
           Character definition Each character definition consists of:
 
-             * *Width.* Width of the bitmap in pixels.  The bitmap's
-               extents represent the glyph's bounding box.  `uint16be'.
+             * *Width.*  Width of the bitmap in pixels.  The bitmap's
+               extents represent the glyph's bounding box.  'uint16be'.
 
-             * *Height.* Height of the bitmap in pixels.  The bitmap's
-               extents represent the glyph's bounding box.  `uint16be'.
+             * *Height.*  Height of the bitmap in pixels.  The bitmap's
+               extents represent the glyph's bounding box.  'uint16be'.
 
-             * *X offset.* The number of pixels to shift the bitmap by
-               horizontally before drawing the character. `int16be'.
+             * *X offset.*  The number of pixels to shift the bitmap by
+               horizontally before drawing the character.  'int16be'.
 
-             * *Y offset.* The number of pixels to shift the bitmap by
-               vertically before drawing the character. `int16be'.
+             * *Y offset.*  The number of pixels to shift the bitmap by
+               vertically before drawing the character.  'int16be'.
 
-             * *Device width.* The number of pixels to advance
+             * *Device width.*  The number of pixels to advance
                horizontally from this character's origin to the origin
-               of the next character.  `int16be'.
+               of the next character.  'int16be'.
 
-             * *Bitmap data.* This is encoded as a string of bits.  It
+             * *Bitmap data.*  This is encoded as a string of bits.  It
                is organized as a row-major, top-down, left-to-right
                bitmap.  The most significant bit of each byte is taken
-               to be the leftmost or uppermost bit in the byte.  For
-               the sake of compact storage, rows are not padded to byte
+               to be the leftmost or uppermost bit in the byte.  For the
+               sake of compact storage, rows are not padded to byte
                boundaries (i.e., a single byte may contain bits
-               belonging to multiple rows).  The last byte of the
-               bitmap *is* padded with zero bits in the bits positions
-               to the right of the last used bit if the bitmap data
-               does not fill the last byte.
+               belonging to multiple rows).  The last byte of the bitmap
+               *is* padded with zero bits in the bits positions to the
+               right of the last used bit if the bitmap data does not
+               fill the last byte.
 
                The length of the *bitmap data* field is (WIDTH * HEIGHT
-               + 7) / 8 using integer arithmetic, which is equivalent
-               to ceil(WIDTH * HEIGHT / 8) using real number arithmetic.
+               + 7) / 8 using integer arithmetic, which is equivalent to
+               ceil(WIDTH * HEIGHT / 8) using real number arithmetic.
 
                It remains to be determined whether bitmap fonts usually
                make all glyph bitmaps the same height, or if smaller
                glyphs are stored with bitmaps having a lesser height.
-               In the latter case, the baseline would have to be used
-               to calculate the location the bitmap should be anchored
-               at on screen.
-
+               In the latter case, the baseline would have to be used to
+               calculate the location the bitmap should be anchored at
+               on screen.
 
 
 File: grub-dev.info,  Node: Font Metrics,  Prev: File Structure,  Up: PFF2 Font File Format
@@ -1836,8 +1886,7 @@ File: grub-dev.info,  Node: Font Metrics,  Prev: File Structure,  Up: PFF2 Font 
      glyphs.  The *device width* field determines the effective leading
      value that is used to render the font.
 
-[Please fill this in.
-]
+ [image src="font_char_metrics.png" text="Please fill this in." ]
 
    An illustration of how the various font metrics apply to characters.
 
@@ -1860,15 +1909,15 @@ File: grub-dev.info,  Node: Introduction_2,  Next: Startup Sequence,  Up: Graphi
 11.1 Introduction
 =================
 
-The `gfxmenu' module provides a graphical menu interface for GRUB 2.  It
+The 'gfxmenu' module provides a graphical menu interface for GRUB 2.  It
 functions as an alternative to the menu interface provided by the
-`normal' module, which uses the grub terminal interface to display a
+'normal' module, which uses the grub terminal interface to display a
 menu on a character-oriented terminal.
 
    The graphical menu uses the GRUB video API, which is currently for
 the VESA BIOS extensions (VBE) 2.0+.  This is supported on the i386-pc
 platform.  However, the graphical menu itself does not depend on using
-VBE, so if another GRUB video driver were implemented, the `gfxmenu'
+VBE, so if another GRUB video driver were implemented, the 'gfxmenu'
 graphical menu would work on the new video driver as well.
 
 
@@ -1878,30 +1927,18 @@ File: grub-dev.info,  Node: Startup Sequence,  Next: GUI Components,  Prev: Intr
 =====================
 
    * grub_enter_normal_mode [normal/main.c]
-
    * grub_normal_execute [normal/main.c]
-
    * read_config_file [normal/main.c]
-
-   * (When `gfxmenu.mod' is loaded with `insmod', it will call
-     `grub_menu_viewer_register()' to register itself.)
-
+   * (When 'gfxmenu.mod' is loaded with 'insmod', it will call
+     'grub_menu_viewer_register()' to register itself.)
    * GRUB_MOD_INIT (gfxmenu) [gfxmenu/gfxmenu.c]
-
    * grub_menu_viewer_register [kern/menu_viewer.c]
-
    * grub_menu_viewer_show_menu [kern/menu_viewer.c]
-
    * get_current_menu_viewer() [kern/menu_viewer.c]
-
    * show_menu() [gfxmenu/gfxmenu.c]
-
    * grub_gfxmenu_model_new [gfxmenu/model.c]
-
    * grub_gfxmenu_view_new [gfxmenu/view.c]
-
    * set_graphics_mode [gfxmenu/view.c]
-
    * grub_gfxmenu_view_load_theme [gfxmenu/theme_loader.c]
 
 
@@ -1914,32 +1951,26 @@ The graphical menu implements a GUI component system that supports a
 container-based layout system.  Components can be added to containers,
 and containers (which are a type of component) can then be added to
 other containers, to form a tree of components.  Currently, the root
-component of this tree is a `canvas' component, which allows manual
+component of this tree is a 'canvas' component, which allows manual
 layout of its child components.
 
    Components (non-container):
 
    * label
-
    * image
-
    * progress_bar
-
    * circular_progress
-
    * list (currently hard coded to be a boot menu list)
 
    Containers:
 
    * canvas
-
    * hbox
-
    * vbox
 
    The GUI component instances are created by the theme loader in
-`gfxmenu/theme_loader.c' when a theme is loaded.  Theme files specify
-statements such as `+vbox{ +label { text="Hello" } +label{ text="World"
+'gfxmenu/theme_loader.c' when a theme is loaded.  Theme files specify
+statements such as '+vbox{ +label { text="Hello" } +label{ text="World"
 } }' to add components to the component tree root.  By nesting the
 component creation statements in the theme file, the instantiated
 components are nested the same way.
@@ -1947,31 +1978,31 @@ components are nested the same way.
    When a component is added to a container, that new child is
 considered *owned* by the container.  Great care should be taken if the
 caller retains a reference to the child component, since it will be
-destroyed if its parent container is destroyed.  A better choice
-instead of storing a pointer to the child component is to use the
-component ID to find the desired component.  Component IDs do not have
-to be unique (it is often useful to have multiple components with an ID
-of "__timeout__", for instance).
+destroyed if its parent container is destroyed.  A better choice instead
+of storing a pointer to the child component is to use the component ID
+to find the desired component.  Component IDs do not have to be unique
+(it is often useful to have multiple components with an ID of
+"__timeout__", for instance).
 
    In order to access and use components in the component tree, there
-are two functions (defined in `gfxmenu/gui_util.c') that are
+are two functions (defined in 'gfxmenu/gui_util.c') that are
 particularly useful:
 
-   * `grub_gui_find_by_id (root, id, callback, userdata)':
+   * 'grub_gui_find_by_id (root, id, callback, userdata)':
 
      This function ecursively traverses the component tree rooted at
-     ROOT, and for every component that has an ID equal to ID, calls
-     the function pointed to by CALLBACK with the matching component
-     and the void pointer USERDATA as arguments.  The callback function
-     can do whatever is desired to use the component passed in.
+     ROOT, and for every component that has an ID equal to ID, calls the
+     function pointed to by CALLBACK with the matching component and the
+     void pointer USERDATA as arguments.  The callback function can do
+     whatever is desired to use the component passed in.
 
-   * `grub_gui_iterate_recursively (root, callback, userdata)':
+   * 'grub_gui_iterate_recursively (root, callback, userdata)':
 
      This function calls the function pointed to by CALLBACK for every
-     component that is a descendant of ROOT in the component tree.
-     When the callback function is called, the component and the void
-     pointer USERDATA as arguments.  The callback function can do
-     whatever is desired to use the component passed in.
+     component that is a descendant of ROOT in the component tree.  When
+     the callback function is called, the component and the void pointer
+     USERDATA as arguments.  The callback function can do whatever is
+     desired to use the component passed in.
 
 
 File: grub-dev.info,  Node: Command Line Window,  Prev: GUI Components,  Up: Graphical Menu Software Design
@@ -1980,7 +2011,7 @@ File: grub-dev.info,  Node: Command Line Window,  Prev: GUI Components,  Up: Gra
 ========================
 
 The terminal window used to provide command line access within the
-graphical menu is managed by `gfxmenu/view.c'.  The `gfxterm' terminal
+graphical menu is managed by 'gfxmenu/view.c'.  The 'gfxterm' terminal
 is used, and it has been modified to allow rendering to an offscreen
 render target to allow it to be composed into the double buffering
 system that the graphical menu view uses.  This is bad for performance,
@@ -1988,8 +2019,8 @@ however, so it would probably be a good idea to make it possible to
 temporarily disable double buffering as long as the terminal window is
 visible.  There are still unresolved problems that occur when commands
 are executed from the terminal window that change the graphics mode.
-It's possible that making `grub_video_restore()' return to the graphics
-mode that was in use before `grub_video_setup()' was called might fix
+It's possible that making 'grub_video_restore()' return to the graphics
+mode that was in use before 'grub_video_setup()' was called might fix
 some of the problems.
 
 
@@ -2036,21 +2067,21 @@ A.1 GNU Free Documentation License
      free program should come with manuals providing the same freedoms
      that the software does.  But this License is not limited to
      software manuals; it can be used for any textual work, regardless
-     of subject matter or whether it is published as a printed book.
-     We recommend this License principally for works whose purpose is
+     of subject matter or whether it is published as a printed book.  We
+     recommend this License principally for works whose purpose is
      instruction or reference.
 
   1. APPLICABILITY AND DEFINITIONS
 
      This License applies to any manual or other work, in any medium,
-     that contains a notice placed by the copyright holder saying it
-     can be distributed under the terms of this License.  Such a notice
+     that contains a notice placed by the copyright holder saying it can
+     be distributed under the terms of this License.  Such a notice
      grants a world-wide, royalty-free license, unlimited in duration,
      to use that work under the conditions stated herein.  The
      "Document", below, refers to any such manual or work.  Any member
-     of the public is a licensee, and is addressed as "you".  You
-     accept the license if you copy, modify or distribute the work in a
-     way requiring permission under copyright law.
+     of the public is a licensee, and is addressed as "you".  You accept
+     the license if you copy, modify or distribute the work in a way
+     requiring permission under copyright law.
 
      A "Modified Version" of the Document means any work containing the
      Document or a portion of it, either copied verbatim, or with
@@ -2068,12 +2099,12 @@ A.1 GNU Free Documentation License
      regarding them.
 
      The "Invariant Sections" are certain Secondary Sections whose
-     titles are designated, as being those of Invariant Sections, in
-     the notice that says that the Document is released under this
-     License.  If a section does not fit the above definition of
-     Secondary then it is not allowed to be designated as Invariant.
-     The Document may contain zero Invariant Sections.  If the Document
-     does not identify any Invariant Sections then there are none.
+     titles are designated, as being those of Invariant Sections, in the
+     notice that says that the Document is released under this License.
+     If a section does not fit the above definition of Secondary then it
+     is not allowed to be designated as Invariant.  The Document may
+     contain zero Invariant Sections.  If the Document does not identify
+     any Invariant Sections then there are none.
 
      The "Cover Texts" are certain short passages of text that are
      listed, as Front-Cover Texts or Back-Cover Texts, in the notice
@@ -2084,27 +2115,27 @@ A.1 GNU Free Documentation License
      A "Transparent" copy of the Document means a machine-readable copy,
      represented in a format whose specification is available to the
      general public, that is suitable for revising the document
-     straightforwardly with generic text editors or (for images
-     composed of pixels) generic paint programs or (for drawings) some
-     widely available drawing editor, and that is suitable for input to
-     text formatters or for automatic translation to a variety of
-     formats suitable for input to text formatters.  A copy made in an
-     otherwise Transparent file format whose markup, or absence of
-     markup, has been arranged to thwart or discourage subsequent
-     modification by readers is not Transparent.  An image format is
-     not Transparent if used for any substantial amount of text.  A
-     copy that is not "Transparent" is called "Opaque".
+     straightforwardly with generic text editors or (for images composed
+     of pixels) generic paint programs or (for drawings) some widely
+     available drawing editor, and that is suitable for input to text
+     formatters or for automatic translation to a variety of formats
+     suitable for input to text formatters.  A copy made in an otherwise
+     Transparent file format whose markup, or absence of markup, has
+     been arranged to thwart or discourage subsequent modification by
+     readers is not Transparent.  An image format is not Transparent if
+     used for any substantial amount of text.  A copy that is not
+     "Transparent" is called "Opaque".
 
      Examples of suitable formats for Transparent copies include plain
      ASCII without markup, Texinfo input format, LaTeX input format,
-     SGML or XML using a publicly available DTD, and
-     standard-conforming simple HTML, PostScript or PDF designed for
-     human modification.  Examples of transparent image formats include
-     PNG, XCF and JPG.  Opaque formats include proprietary formats that
-     can be read and edited only by proprietary word processors, SGML or
-     XML for which the DTD and/or processing tools are not generally
-     available, and the machine-generated HTML, PostScript or PDF
-     produced by some word processors for output purposes only.
+     SGML or XML using a publicly available DTD, and standard-conforming
+     simple HTML, PostScript or PDF designed for human modification.
+     Examples of transparent image formats include PNG, XCF and JPG.
+     Opaque formats include proprietary formats that can be read and
+     edited only by proprietary word processors, SGML or XML for which
+     the DTD and/or processing tools are not generally available, and
+     the machine-generated HTML, PostScript or PDF produced by some word
+     processors for output purposes only.
 
      The "Title Page" means, for a printed book, the title page itself,
      plus such following pages as are needed to hold, legibly, the
@@ -2139,8 +2170,8 @@ A.1 GNU Free Documentation License
      may not use technical measures to obstruct or control the reading
      or further copying of the copies you make or distribute.  However,
      you may accept compensation in exchange for copies.  If you
-     distribute a large enough number of copies you must also follow
-     the conditions in section 3.
+     distribute a large enough number of copies you must also follow the
+     conditions in section 3.
 
      You may also lend copies, under the same conditions stated above,
      and you may publicly display copies.
@@ -2154,12 +2185,11 @@ A.1 GNU Free Documentation License
      these Cover Texts: Front-Cover Texts on the front cover, and
      Back-Cover Texts on the back cover.  Both covers must also clearly
      and legibly identify you as the publisher of these copies.  The
-     front cover must present the full title with all words of the
-     title equally prominent and visible.  You may add other material
-     on the covers in addition.  Copying with changes limited to the
-     covers, as long as they preserve the title of the Document and
-     satisfy these conditions, can be treated as verbatim copying in
-     other respects.
+     front cover must present the full title with all words of the title
+     equally prominent and visible.  You may add other material on the
+     covers in addition.  Copying with changes limited to the covers, as
+     long as they preserve the title of the Document and satisfy these
+     conditions, can be treated as verbatim copying in other respects.
 
      If the required texts for either cover are too voluminous to fit
      legibly, you should put the first ones listed (as many as fit
@@ -2167,40 +2197,39 @@ A.1 GNU Free Documentation License
      adjacent pages.
 
      If you publish or distribute Opaque copies of the Document
-     numbering more than 100, you must either include a
-     machine-readable Transparent copy along with each Opaque copy, or
-     state in or with each Opaque copy a computer-network location from
-     which the general network-using public has access to download
-     using public-standard network protocols a complete Transparent
-     copy of the Document, free of added material.  If you use the
-     latter option, you must take reasonably prudent steps, when you
-     begin distribution of Opaque copies in quantity, to ensure that
-     this Transparent copy will remain thus accessible at the stated
-     location until at least one year after the last time you
-     distribute an Opaque copy (directly or through your agents or
-     retailers) of that edition to the public.
+     numbering more than 100, you must either include a machine-readable
+     Transparent copy along with each Opaque copy, or state in or with
+     each Opaque copy a computer-network location from which the general
+     network-using public has access to download using public-standard
+     network protocols a complete Transparent copy of the Document, free
+     of added material.  If you use the latter option, you must take
+     reasonably prudent steps, when you begin distribution of Opaque
+     copies in quantity, to ensure that this Transparent copy will
+     remain thus accessible at the stated location until at least one
+     year after the last time you distribute an Opaque copy (directly or
+     through your agents or retailers) of that edition to the public.
 
      It is requested, but not required, that you contact the authors of
-     the Document well before redistributing any large number of
-     copies, to give them a chance to provide you with an updated
-     version of the Document.
+     the Document well before redistributing any large number of copies,
+     to give them a chance to provide you with an updated version of the
+     Document.
 
   4. MODIFICATIONS
 
      You may copy and distribute a Modified Version of the Document
      under the conditions of sections 2 and 3 above, provided that you
-     release the Modified Version under precisely this License, with
-     the Modified Version filling the role of the Document, thus
-     licensing distribution and modification of the Modified Version to
-     whoever possesses a copy of it.  In addition, you must do these
-     things in the Modified Version:
+     release the Modified Version under precisely this License, with the
+     Modified Version filling the role of the Document, thus licensing
+     distribution and modification of the Modified Version to whoever
+     possesses a copy of it.  In addition, you must do these things in
+     the Modified Version:
 
        A. Use in the Title Page (and on the covers, if any) a title
-          distinct from that of the Document, and from those of
-          previous versions (which should, if there were any, be listed
-          in the History section of the Document).  You may use the
-          same title as a previous version if the original publisher of
-          that version gives permission.
+          distinct from that of the Document, and from those of previous
+          versions (which should, if there were any, be listed in the
+          History section of the Document).  You may use the same title
+          as a previous version if the original publisher of that
+          version gives permission.
 
        B. List on the Title Page, as authors, one or more persons or
           entities responsible for authorship of the modifications in
@@ -2230,31 +2259,30 @@ A.1 GNU Free Documentation License
 
        I. Preserve the section Entitled "History", Preserve its Title,
           and add to it an item stating at least the title, year, new
-          authors, and publisher of the Modified Version as given on
-          the Title Page.  If there is no section Entitled "History" in
-          the Document, create one stating the title, year, authors,
-          and publisher of the Document as given on its Title Page,
-          then add an item describing the Modified Version as stated in
-          the previous sentence.
+          authors, and publisher of the Modified Version as given on the
+          Title Page.  If there is no section Entitled "History" in the
+          Document, create one stating the title, year, authors, and
+          publisher of the Document as given on its Title Page, then add
+          an item describing the Modified Version as stated in the
+          previous sentence.
 
        J. Preserve the network location, if any, given in the Document
           for public access to a Transparent copy of the Document, and
           likewise the network locations given in the Document for
-          previous versions it was based on.  These may be placed in
-          the "History" section.  You may omit a network location for a
-          work that was published at least four years before the
-          Document itself, or if the original publisher of the version
-          it refers to gives permission.
+          previous versions it was based on.  These may be placed in the
+          "History" section.  You may omit a network location for a work
+          that was published at least four years before the Document
+          itself, or if the original publisher of the version it refers
+          to gives permission.
 
        K. For any section Entitled "Acknowledgements" or "Dedications",
-          Preserve the Title of the section, and preserve in the
-          section all the substance and tone of each of the contributor
+          Preserve the Title of the section, and preserve in the section
+          all the substance and tone of each of the contributor
           acknowledgements and/or dedications given therein.
 
-       L. Preserve all the Invariant Sections of the Document,
-          unaltered in their text and in their titles.  Section numbers
-          or the equivalent are not considered part of the section
-          titles.
+       L. Preserve all the Invariant Sections of the Document, unaltered
+          in their text and in their titles.  Section numbers or the
+          equivalent are not considered part of the section titles.
 
        M. Delete any section Entitled "Endorsements".  Such a section
           may not be included in the Modified Version.
@@ -2267,11 +2295,11 @@ A.1 GNU Free Documentation License
 
      If the Modified Version includes new front-matter sections or
      appendices that qualify as Secondary Sections and contain no
-     material copied from the Document, you may at your option
-     designate some or all of these sections as invariant.  To do this,
-     add their titles to the list of Invariant Sections in the Modified
-     Version's license notice.  These titles must be distinct from any
-     other section titles.
+     material copied from the Document, you may at your option designate
+     some or all of these sections as invariant.  To do this, add their
+     titles to the list of Invariant Sections in the Modified Version's
+     license notice.  These titles must be distinct from any other
+     section titles.
 
      You may add a section Entitled "Endorsements", provided it contains
      nothing but endorsements of your Modified Version by various
@@ -2280,15 +2308,15 @@ A.1 GNU Free Documentation License
      definition of a standard.
 
      You may add a passage of up to five words as a Front-Cover Text,
-     and a passage of up to 25 words as a Back-Cover Text, to the end
-     of the list of Cover Texts in the Modified Version.  Only one
-     passage of Front-Cover Text and one of Back-Cover Text may be
-     added by (or through arrangements made by) any one entity.  If the
-     Document already includes a cover text for the same cover,
-     previously added by you or by arrangement made by the same entity
-     you are acting on behalf of, you may not add another; but you may
-     replace the old one, on explicit permission from the previous
-     publisher that added the old one.
+     and a passage of up to 25 words as a Back-Cover Text, to the end of
+     the list of Cover Texts in the Modified Version.  Only one passage
+     of Front-Cover Text and one of Back-Cover Text may be added by (or
+     through arrangements made by) any one entity.  If the Document
+     already includes a cover text for the same cover, previously added
+     by you or by arrangement made by the same entity you are acting on
+     behalf of, you may not add another; but you may replace the old
+     one, on explicit permission from the previous publisher that added
+     the old one.
 
      The author(s) and publisher(s) of the Document do not by this
      License give permission to use their names for publicity for or to
@@ -2298,8 +2326,8 @@ A.1 GNU Free Documentation License
 
      You may combine the Document with other documents released under
      this License, under the terms defined in section 4 above for
-     modified versions, provided that you include in the combination
-     all of the Invariant Sections of all of the original documents,
+     modified versions, provided that you include in the combination all
+     of the Invariant Sections of all of the original documents,
      unmodified, and list them all as Invariant Sections of your
      combined work in its license notice, and that you preserve all
      their Warranty Disclaimers.
@@ -2326,20 +2354,20 @@ A.1 GNU Free Documentation License
      documents released under this License, and replace the individual
      copies of this License in the various documents with a single copy
      that is included in the collection, provided that you follow the
-     rules of this License for verbatim copying of each of the
-     documents in all other respects.
+     rules of this License for verbatim copying of each of the documents
+     in all other respects.
 
      You may extract a single document from such a collection, and
      distribute it individually under this License, provided you insert
-     a copy of this License into the extracted document, and follow
-     this License in all other respects regarding verbatim copying of
-     that document.
+     a copy of this License into the extracted document, and follow this
+     License in all other respects regarding verbatim copying of that
+     document.
 
   7. AGGREGATION WITH INDEPENDENT WORKS
 
      A compilation of the Document or its derivatives with other
-     separate and independent documents or works, in or on a volume of
-     a storage or distribution medium, is called an "aggregate" if the
+     separate and independent documents or works, in or on a volume of a
+     storage or distribution medium, is called an "aggregate" if the
      copyright resulting from the compilation is not used to limit the
      legal rights of the compilation's users beyond what the individual
      works permit.  When the Document is included in an aggregate, this
@@ -2382,26 +2410,26 @@ A.1 GNU Free Documentation License
      attempt to copy, modify, sublicense or distribute the Document is
      void, and will automatically terminate your rights under this
      License.  However, parties who have received copies, or rights,
-     from you under this License will not have their licenses
-     terminated so long as such parties remain in full compliance.
+     from you under this License will not have their licenses terminated
+     so long as such parties remain in full compliance.
 
- 10. FUTURE REVISIONS OF THIS LICENSE
+  10. FUTURE REVISIONS OF THIS LICENSE
 
      The Free Software Foundation may publish new, revised versions of
      the GNU Free Documentation License from time to time.  Such new
      versions will be similar in spirit to the present version, but may
      differ in detail to address new problems or concerns.  See
-     `http://www.gnu.org/copyleft/'.
+     <http://www.gnu.org/copyleft/>.
 
      Each version of the License is given a distinguishing version
      number.  If the Document specifies that a particular numbered
      version of this License "or any later version" applies to it, you
      have the option of following the terms and conditions either of
      that specified version or of any later version that has been
-     published (not as a draft) by the Free Software Foundation.  If
-     the Document does not specify a version number of this License,
-     you may choose any version ever published (not as a draft) by the
-     Free Software Foundation.
+     published (not as a draft) by the Free Software Foundation.  If the
+     Document does not specify a version number of this License, you may
+     choose any version ever published (not as a draft) by the Free
+     Software Foundation.
 
 A.1.1 ADDENDUM: How to use this License for your documents
 ----------------------------------------------------------
@@ -2419,7 +2447,7 @@ notices just after the title page:
        Free Documentation License''.
 
    If you have Invariant Sections, Front-Cover Texts and Back-Cover
-Texts, replace the "with...Texts." line with this:
+Texts, replace the "with...Texts."  line with this:
 
          with the Invariant Sections being LIST THEIR TITLES, with
          the Front-Cover Texts being LIST, and with the Back-Cover Texts
@@ -2430,9 +2458,9 @@ combination of the three, merge those two alternatives to suit the
 situation.
 
    If your document contains nontrivial examples of program code, we
-recommend releasing these examples in parallel under your choice of
-free software license, such as the GNU General Public License, to
-permit their use in free software.
+recommend releasing these examples in parallel under your choice of free
+software license, such as the GNU General Public License, to permit
+their use in free software.
 
 
 File: grub-dev.info,  Node: Index,  Prev: Copying This Manual,  Up: Top
@@ -2449,40 +2477,40 @@ Index
 
 
 Tag Table:
-Node: Top714
-Node: Getting the source code1786
-Node: Coding style2666
-Node: Naming Conventions3071
-Node: Functions3354
-Node: Variables4221
-Node: Types5327
-Node: Macros5925
-Node: Comments6256
-Node: Multi-Line Comments7018
-Node: Finding your way around7649
-Node: Contributing Changes10846
-Node: Getting started11923
-Node: Typical Developer Experience15969
-Node: When you are approved for write access to project's files17012
-Node: Porting18442
-Node: Error Handling30182
-Node: CIA35242
-Node: BIOS port memory map36314
-Node: Video Subsystem37184
-Node: Video API37656
-Node: Example usage of Video API55910
-Node: Bitmap API57466
-Node: PFF2 Font File Format59997
-Node: Introduction60237
-Node: File Structure61740
-Node: Font Metrics66647
-Node: Graphical Menu Software Design67751
-Node: Introduction_268043
-Node: Startup Sequence68777
-Node: GUI Components69640
-Node: Command Line Window72245
-Node: Copying This Manual73197
-Node: GNU Free Documentation License73453
-Node: Index95865
+Node: Top646
+Node: Getting the source code1750
+Node: Coding style2711
+Node: Naming Conventions3120
+Node: Functions3405
+Node: Variables4279
+Node: Types5394
+Node: Macros5995
+Node: Comments6327
+Node: Multi-Line Comments7089
+Node: Finding your way around7720
+Node: Contributing Changes11036
+Node: Getting started12126
+Node: Typical Developer Experience16178
+Node: When you are approved for write access to project's files17220
+Node: Porting18653
+Node: Error Handling30416
+Node: Stack and heap size35508
+Node: BIOS port memory map38141
+Node: Video Subsystem38990
+Node: Video API39462
+Node: Example usage of Video API59857
+Node: Bitmap API61431
+Node: PFF2 Font File Format63948
+Node: Introduction64188
+Node: File Structure65691
+Node: Font Metrics70609
+Node: Graphical Menu Software Design71757
+Node: Introduction_272049
+Node: Startup Sequence72783
+Node: GUI Components73634
+Node: Command Line Window76234
+Node: Copying This Manual77186
+Node: GNU Free Documentation License77442
+Node: Index99834
 
 End Tag Table

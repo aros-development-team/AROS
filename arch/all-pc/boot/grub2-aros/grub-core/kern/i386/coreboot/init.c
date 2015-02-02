@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2004,2005,2006,2007,2008,2009,2013  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,9 +34,7 @@
 #include <grub/cpu/io.h>
 #include <grub/cpu/floppy.h>
 #include <grub/cpu/tsc.h>
-#ifdef GRUB_MACHINE_QEMU
-#include <grub/machine/kernel.h>
-#endif
+#include <grub/video.h>
 
 extern grub_uint8_t _start[];
 extern grub_uint8_t _end[];
@@ -51,63 +49,84 @@ grub_exit (void)
     grub_cpu_idle ();
 }
 
-#ifdef GRUB_MACHINE_QEMU
-grub_addr_t grub_modbase;
-#else
-grub_addr_t grub_modbase = ALIGN_UP((grub_addr_t) _end, GRUB_KERNEL_MACHINE_MOD_ALIGN);
+grub_addr_t grub_modbase = GRUB_KERNEL_I386_COREBOOT_MODULES_ADDR;
+static grub_uint64_t modend;
+static int have_memory = 0;
+
+/* Helper for grub_machine_init.  */
+static int
+heap_init (grub_uint64_t addr, grub_uint64_t size, grub_memory_type_t type,
+	   void *data __attribute__ ((unused)))
+{
+  grub_uint64_t begin = addr, end = addr + size;
+
+#if GRUB_CPU_SIZEOF_VOID_P == 4
+  /* Restrict ourselves to 32-bit memory space.  */
+  if (begin > GRUB_ULONG_MAX)
+    return 0;
+  if (end > GRUB_ULONG_MAX)
+    end = GRUB_ULONG_MAX;
 #endif
+
+  if (type != GRUB_MEMORY_AVAILABLE)
+    return 0;
+
+  /* Avoid the lower memory.  */
+  if (begin < GRUB_MEMORY_MACHINE_LOWER_SIZE)
+    begin = GRUB_MEMORY_MACHINE_LOWER_SIZE;
+
+  if (modend && begin < modend)
+    begin = modend;
+  
+  if (end <= begin)
+    return 0;
+
+  grub_mm_init_region ((void *) (grub_addr_t) begin, (grub_size_t) (end - begin));
+
+  have_memory = 1;
+
+  return 0;
+}
+
+#ifndef GRUB_MACHINE_MULTIBOOT
 
 void
 grub_machine_init (void)
 {
-#ifdef GRUB_MACHINE_QEMU
-  grub_modbase = grub_core_entry_addr + (_edata - _start);
+  modend = grub_modules_get_end ();
 
-  grub_qemu_init_cirrus ();
-#endif
-  /* Initialize the console as early as possible.  */
+  grub_video_coreboot_fb_early_init ();
+
   grub_vga_text_init ();
 
-  auto int NESTED_FUNC_ATTR heap_init (grub_uint64_t, grub_uint64_t, 
-				       grub_memory_type_t);
-  int NESTED_FUNC_ATTR heap_init (grub_uint64_t addr, grub_uint64_t size,
-				  grub_memory_type_t type)
-  {
-#if GRUB_CPU_SIZEOF_VOID_P == 4
-    /* Restrict ourselves to 32-bit memory space.  */
-    if (addr > GRUB_ULONG_MAX)
-      return 0;
-    if (addr + size > GRUB_ULONG_MAX)
-      size = GRUB_ULONG_MAX - addr;
-#endif
+  grub_machine_mmap_iterate (heap_init, NULL);
+  if (!have_memory)
+    grub_fatal ("No memory found");
 
-    if (type != GRUB_MEMORY_AVAILABLE)
-      return 0;
+  grub_video_coreboot_fb_late_init ();
 
-    /* Avoid the lower memory.  */
-    if (addr < GRUB_MEMORY_MACHINE_LOWER_SIZE)
-      {
-	if (addr + size <= GRUB_MEMORY_MACHINE_LOWER_SIZE)
-	  return 0;
-	else
-	  {
-	    size -= GRUB_MEMORY_MACHINE_LOWER_SIZE - addr;
-	    addr = GRUB_MEMORY_MACHINE_LOWER_SIZE;
-	  }
-      }
-
-    grub_mm_init_region ((void *) (grub_addr_t) addr, (grub_size_t) size);
-
-    return 0;
-  }
-
-#if defined (GRUB_MACHINE_MULTIBOOT) || defined (GRUB_MACHINE_QEMU)
-  grub_machine_mmap_init ();
-#endif
-  grub_machine_mmap_iterate (heap_init);
+  grub_font_init ();
+  grub_gfxterm_init ();
 
   grub_tsc_init ();
 }
+
+#else
+
+void
+grub_machine_init (void)
+{
+  modend = grub_modules_get_end ();
+
+  grub_vga_text_init ();
+
+  grub_machine_mmap_init ();
+  grub_machine_mmap_iterate (heap_init, NULL);
+
+  grub_tsc_init ();
+}
+
+#endif
 
 void
 grub_machine_get_bootlocation (char **device __attribute__ ((unused)),
@@ -116,8 +135,9 @@ grub_machine_get_bootlocation (char **device __attribute__ ((unused)),
 }
 
 void
-grub_machine_fini (void)
+grub_machine_fini (int flags)
 {
-  grub_vga_text_fini ();
+  if (flags & GRUB_LOADER_FLAG_NORETURN)
+    grub_vga_text_fini ();
   grub_stop_floppy ();
 }

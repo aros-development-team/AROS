@@ -117,13 +117,44 @@ grub_mm_init_region (void *addr, grub_size_t size)
   grub_printf ("Using memory for heap: start=%p, end=%p\n", addr, addr + (unsigned int) size);
 #endif
 
+  /* Exclude last 4K to avoid overflows. */
+  /* If addr + 0x1000 overflows then whole region is in excluded zone.  */
+  if ((grub_addr_t) addr > ~((grub_addr_t) 0x1000))
+    return;
+
+  /* If addr + 0x1000 + size overflows then decrease size.  */
+  if (((grub_addr_t) addr + 0x1000) > ~(grub_addr_t) size)
+    size = ((grub_addr_t) -0x1000) - (grub_addr_t) addr;
+
+  for (p = &grub_mm_base, q = *p; q; p = &(q->next), q = *p)
+    if ((grub_uint8_t *) addr + size + q->pre_size == (grub_uint8_t *) q)
+      {
+	r = (grub_mm_region_t) ALIGN_UP ((grub_addr_t) addr, GRUB_MM_ALIGN);
+	*r = *q;
+	r->pre_size += size;
+	
+	if (r->pre_size >> GRUB_MM_ALIGN_LOG2)
+	  {
+	    h = (grub_mm_header_t) (r + 1);
+	    h->size = (r->pre_size >> GRUB_MM_ALIGN_LOG2);
+	    h->magic = GRUB_MM_ALLOC_MAGIC;
+	    r->size += h->size << GRUB_MM_ALIGN_LOG2;
+	    r->pre_size &= (GRUB_MM_ALIGN - 1);
+	    *p = r;
+	    grub_free (h + 1);
+	  }
+	*p = r;
+	return;
+      }
+
   /* Allocate a region from the head.  */
   r = (grub_mm_region_t) ALIGN_UP ((grub_addr_t) addr, GRUB_MM_ALIGN);
-  size -= (char *) r - (char *) addr + sizeof (*r);
 
   /* If this region is too small, ignore it.  */
-  if (size < GRUB_MM_ALIGN)
+  if (size < GRUB_MM_ALIGN + (char *) r - (char *) addr + sizeof (*r))
     return;
+
+  size -= (char *) r - (char *) addr + sizeof (*r);
 
   h = (grub_mm_header_t) (r + 1);
   h->next = h;
@@ -163,7 +194,7 @@ grub_real_malloc (grub_mm_header_t *first, grub_size_t n, grub_size_t align)
     {
       grub_off_t extra;
 
-      extra = ((grub_addr_t) (p + 1) >> GRUB_MM_ALIGN_LOG2) % align;
+      extra = ((grub_addr_t) (p + 1) >> GRUB_MM_ALIGN_LOG2) & (align - 1);
       if (extra)
 	extra = align - extra;
 
@@ -267,7 +298,10 @@ grub_real_malloc (grub_mm_header_t *first, grub_size_t n, grub_size_t align)
 	  /* Mark find as a start marker for next allocation to fasten it.
 	     This will have side effect of fragmenting memory as small
 	     pieces before this will be un-used.  */
-	  *first = q;
+	  /* So do it only for chunks under 64K.  */
+	  if (n < (0x8000 >> GRUB_MM_ALIGN_LOG2)
+	      || *first == p)
+	    *first = q;
 
 	  return p + 1;
 	}
@@ -452,7 +486,8 @@ grub_realloc (void *ptr, grub_size_t size)
   if (! q)
     return q;
 
-  grub_memcpy (q, ptr, size);
+  /* We've already checked that p->size < n.  */
+  grub_memcpy (q, ptr, p->size << GRUB_MM_ALIGN_LOG2);
   grub_free (ptr);
   return q;
 }

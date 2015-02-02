@@ -38,6 +38,29 @@ enum grub_video_bitmap_scale_method
   GRUB_VIDEO_BITMAP_SCALE_METHOD_BILINEAR
 };
 
+typedef enum grub_video_bitmap_selection_method
+{
+  GRUB_VIDEO_BITMAP_SELECTION_METHOD_STRETCH,
+  GRUB_VIDEO_BITMAP_SELECTION_METHOD_CROP,
+  GRUB_VIDEO_BITMAP_SELECTION_METHOD_PADDING,
+  GRUB_VIDEO_BITMAP_SELECTION_METHOD_FITWIDTH,
+  GRUB_VIDEO_BITMAP_SELECTION_METHOD_FITHEIGHT
+} grub_video_bitmap_selection_method_t;
+
+typedef enum grub_video_bitmap_v_align
+{
+  GRUB_VIDEO_BITMAP_V_ALIGN_TOP,
+  GRUB_VIDEO_BITMAP_V_ALIGN_CENTER,
+  GRUB_VIDEO_BITMAP_V_ALIGN_BOTTOM
+} grub_video_bitmap_v_align_t;
+
+typedef enum grub_video_bitmap_h_align
+{
+  GRUB_VIDEO_BITMAP_H_ALIGN_LEFT,
+  GRUB_VIDEO_BITMAP_H_ALIGN_CENTER,
+  GRUB_VIDEO_BITMAP_H_ALIGN_RIGHT
+} grub_video_bitmap_h_align_t;
+
 grub_err_t
 EXPORT_FUNC (grub_video_bitmap_create_scaled) (struct grub_video_bitmap **dst,
 					       int dst_width, int dst_height,
@@ -45,5 +68,18 @@ EXPORT_FUNC (grub_video_bitmap_create_scaled) (struct grub_video_bitmap **dst,
 					       enum 
 					       grub_video_bitmap_scale_method
 					       scale_method);
+
+grub_err_t
+EXPORT_FUNC (grub_video_bitmap_scale_proportional)
+                                     (struct grub_video_bitmap **dst,
+                                      int dst_width, int dst_height,
+                                      struct grub_video_bitmap *src,
+                                      enum grub_video_bitmap_scale_method
+                                      scale_method,
+                                      grub_video_bitmap_selection_method_t
+                                      selection_method,
+                                      grub_video_bitmap_v_align_t v_align,
+                                      grub_video_bitmap_h_align_t h_align);
+
 
 #endif /* ! GRUB_BITMAP_SCALE_HEADER */

@@ -59,6 +59,10 @@
 #define GRUB_TERM_TAB		'\t'
 #define GRUB_TERM_BACKSPACE	'\b'
 
+#define GRUB_PROGRESS_NO_UPDATE -1
+#define GRUB_PROGRESS_FAST      0
+#define GRUB_PROGRESS_SLOW      2
+
 #ifndef ASM_FILE
 
 #include <grub/err.h>
@@ -104,7 +108,7 @@ grub_term_color_state;
 #define GRUB_TERM_CODE_TYPE_CP437	                (1 << GRUB_TERM_CODE_TYPE_SHIFT)
 /* UTF-8 stream in logical order. Usually used for terminals
    which just forward the stream to another computer.  */
-#define GRUB_TERM_CODE_TYPE_UTF8_LOGICAL	(2 << GRUB_TERM_CODE_TYPE_SHIFT)
+#define GRUB_TERM_CODE_TYPE_UTF8_LOGICAL       	(2 << GRUB_TERM_CODE_TYPE_SHIFT)
 /* UTF-8 in visual order. Like UTF-8 logical but for buggy endpoints.  */
 #define GRUB_TERM_CODE_TYPE_UTF8_VISUAL	        (3 << GRUB_TERM_CODE_TYPE_SHIFT)
 /* Glyph description in visual order.  */
@@ -124,24 +128,11 @@ grub_term_color_state;
 
 /* Menu-related geometrical constants.  */
 
-/* The number of lines of "GRUB version..." at the top.  */
-#define GRUB_TERM_INFO_HEIGHT	1
-
 /* The number of columns/lines between messages/borders/etc.  */
 #define GRUB_TERM_MARGIN	1
 
 /* The number of columns of scroll information.  */
 #define GRUB_TERM_SCROLL_WIDTH	1
-
-/* The Y position of the top border.  */
-#define GRUB_TERM_TOP_BORDER_Y	(GRUB_TERM_MARGIN + GRUB_TERM_INFO_HEIGHT \
-                                 + GRUB_TERM_MARGIN)
-
-/* The X position of the left border.  */
-#define GRUB_TERM_LEFT_BORDER_X	GRUB_TERM_MARGIN
-
-/* The Y position of the first entry.  */
-#define GRUB_TERM_FIRST_ENTRY_Y	(GRUB_TERM_TOP_BORDER_Y + 1)
 
 struct grub_term_input
 {
@@ -168,6 +159,13 @@ struct grub_term_input
 };
 typedef struct grub_term_input *grub_term_input_t;
 
+/* Made in a way to fit into uint32_t and so be passed in a register.  */
+struct grub_term_coordinate
+{
+  grub_uint16_t x;
+  grub_uint16_t y;
+};
+
 struct grub_term_output
 {
   /* The next terminal.  */
@@ -189,18 +187,18 @@ struct grub_term_output
 
   /* Get the number of columns occupied by a given character C. C is
      encoded in Unicode.  */
-  grub_ssize_t (*getcharwidth) (struct grub_term_output *term,
-				const struct grub_unicode_glyph *c);
+  grub_size_t (*getcharwidth) (struct grub_term_output *term,
+			       const struct grub_unicode_glyph *c);
 
-  /* Get the screen size. The return value is ((Width << 8) | Height).  */
-  grub_uint16_t (*getwh) (struct grub_term_output *term);
+  /* Get the screen size.  */
+  struct grub_term_coordinate (*getwh) (struct grub_term_output *term);
 
   /* Get the cursor position. The return value is ((X << 8) | Y).  */
-  grub_uint16_t (*getxy) (struct grub_term_output *term);
+  struct grub_term_coordinate (*getxy) (struct grub_term_output *term);
 
   /* Go to the position (X, Y).  */
   void (*gotoxy) (struct grub_term_output *term,
-		  grub_uint8_t x, grub_uint8_t y);
+		  struct grub_term_coordinate pos);
 
   /* Clear the screen.  */
   void (*cls) (struct grub_term_output *term);
@@ -221,9 +219,9 @@ struct grub_term_output
   /* The feature flags defined above.  */
   grub_uint32_t flags;
 
-  /* Current color state.  */
-  grub_uint8_t normal_color;
-  grub_uint8_t highlight_color;
+  /* Progress data. */
+  grub_uint32_t progress_update_divisor;
+  grub_uint32_t progress_update_counter;
 
   void *data;
 };
@@ -232,6 +230,10 @@ typedef struct grub_term_output *grub_term_output_t;
 #define GRUB_TERM_DEFAULT_NORMAL_COLOR 0x07
 #define GRUB_TERM_DEFAULT_HIGHLIGHT_COLOR 0x70
 #define GRUB_TERM_DEFAULT_STANDARD_COLOR 0x07
+
+/* Current color state.  */
+extern grub_uint8_t EXPORT_VAR(grub_term_normal_color);
+extern grub_uint8_t EXPORT_VAR(grub_term_highlight_color);
 
 extern struct grub_term_output *EXPORT_VAR(grub_term_outputs_disabled);
 extern struct grub_term_input *EXPORT_VAR(grub_term_inputs_disabled);
@@ -327,35 +329,20 @@ int EXPORT_FUNC(grub_getkey_noblock) (void);
 void grub_cls (void);
 void EXPORT_FUNC(grub_refresh) (void);
 void grub_puts_terminal (const char *str, struct grub_term_output *term);
-grub_uint16_t *grub_term_save_pos (void);
-void grub_term_restore_pos (grub_uint16_t *pos);
+struct grub_term_coordinate *grub_term_save_pos (void);
+void grub_term_restore_pos (struct grub_term_coordinate *pos);
 
 static inline unsigned grub_term_width (struct grub_term_output *term)
 {
-  return ((term->getwh(term)&0xFF00)>>8);
+  return term->getwh(term).x ? : 80;
 }
 
 static inline unsigned grub_term_height (struct grub_term_output *term)
 {
-  return (term->getwh(term)&0xFF);
+  return term->getwh(term).y ? : 24;
 }
 
-/* The width of the border.  */
-static inline unsigned
-grub_term_border_width (struct grub_term_output *term)
-{
-  return grub_term_width (term) - GRUB_TERM_MARGIN * 3 - GRUB_TERM_SCROLL_WIDTH;
-}
-
-/* The max column number of an entry. The last "-1" is for a
-   continuation marker.  */
-static inline int
-grub_term_entry_width (struct grub_term_output *term)
-{
-  return grub_term_border_width (term) - 2 - GRUB_TERM_MARGIN * 2 - 1;
-}
-
-static inline grub_uint16_t
+static inline struct grub_term_coordinate
 grub_term_getxy (struct grub_term_output *term)
 {
   return term->getxy (term);
@@ -369,9 +356,9 @@ grub_term_refresh (struct grub_term_output *term)
 }
 
 static inline void
-grub_term_gotoxy (struct grub_term_output *term, grub_uint8_t x, grub_uint8_t y)
+grub_term_gotoxy (struct grub_term_output *term, struct grub_term_coordinate pos)
 {
-  term->gotoxy (term, x, y);
+  term->gotoxy (term, pos);
 }
 
 static inline void 
@@ -389,16 +376,6 @@ grub_setcolorstate (grub_term_color_state state)
   
   FOR_ACTIVE_TERM_OUTPUTS(term)
     grub_term_setcolorstate (term, state);
-}
-
-/* Set the normal color and the highlight color. The format of each
-   color is VGA's.  */
-static inline void 
-grub_term_setcolor (struct grub_term_output *term,
-		    grub_uint8_t normal_color, grub_uint8_t highlight_color)
-{
-  term->normal_color = normal_color;
-  term->highlight_color = highlight_color;
 }
 
 /* Turn on/off the cursor.  */
@@ -421,14 +398,14 @@ grub_term_cls (struct grub_term_output *term)
     }
 }
 
-#ifdef HAVE_UNIFONT_WIDTHSPEC
+#if HAVE_FONT_SOURCE
 
-grub_ssize_t
+grub_size_t
 grub_unicode_estimate_width (const struct grub_unicode_glyph *c);
 
 #else
 
-static inline grub_ssize_t
+static inline grub_size_t
 grub_unicode_estimate_width (const struct grub_unicode_glyph *c __attribute__ ((unused)))
 {
   if (grub_unicode_get_comb_type (c->base))
@@ -440,7 +417,7 @@ grub_unicode_estimate_width (const struct grub_unicode_glyph *c __attribute__ ((
 
 #define GRUB_TERM_TAB_WIDTH 8
 
-static inline grub_ssize_t 
+static inline grub_size_t
 grub_term_getcharwidth (struct grub_term_output *term,
 			const struct grub_unicode_glyph *c)
 {
@@ -460,14 +437,6 @@ grub_term_getcharwidth (struct grub_term_output *term,
     return 1;
 }
 
-static inline void 
-grub_term_getcolor (struct grub_term_output *term, 
-		    grub_uint8_t *normal_color, grub_uint8_t *highlight_color)
-{
-  *normal_color = term->normal_color;
-  *highlight_color = term->highlight_color;
-}
-
 struct grub_term_autoload
 {
   struct grub_term_autoload *next;
@@ -485,7 +454,7 @@ grub_print_spaces (struct grub_term_output *term, int number_spaces)
     grub_putcode (' ', term);
 }
 
-extern void (*EXPORT_VAR (grub_term_poll_usb)) (void);
+extern void (*EXPORT_VAR (grub_term_poll_usb)) (int wait_for_completion);
 
 #define GRUB_TERM_REPEAT_PRE_INTERVAL 400
 #define GRUB_TERM_REPEAT_INTERVAL 50

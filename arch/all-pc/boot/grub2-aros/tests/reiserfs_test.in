@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e
+
+if [ "x$EUID" = "x" ] ; then
+  EUID=`id -u`
+fi
+
+if [ "$EUID" != 0 ] ; then
+   exit 77
+fi
+
+if ! which mkfs.reiserfs >/dev/null 2>&1; then
+   echo "mkfs.reiserfs not installed; cannot test reiserfs."
+   exit 77
+fi
+
+"@builddir@/grub-fs-tester" reiserfs
+"@builddir@/grub-fs-tester" reiserfs_old
+

@@ -32,11 +32,21 @@ static int
 autoload_fs_module (void)
 {
   grub_named_list_t p;
+  int ret = 0;
+  grub_file_filter_t grub_file_filters_was[GRUB_FILE_FILTER_MAX];
+
+  grub_memcpy (grub_file_filters_was, grub_file_filters_enabled,
+	       sizeof (grub_file_filters_enabled));
+  grub_memcpy (grub_file_filters_enabled, grub_file_filters_all,
+	       sizeof (grub_file_filters_enabled));
 
   while ((p = fs_module_list) != NULL)
     {
       if (! grub_dl_get (p->name) && grub_dl_load (p->name))
-	return 1;
+	{
+	  ret = 1;
+	  break;
+	}
 
       if (grub_errno)
 	grub_print_error ();
@@ -46,7 +56,10 @@ autoload_fs_module (void)
       grub_free (p);
     }
 
-  return 0;
+  grub_memcpy (grub_file_filters_enabled, grub_file_filters_was,
+	       sizeof (grub_file_filters_enabled));
+
+  return ret;
 }
 
 /* Read the file fs.lst for auto-loading.  */

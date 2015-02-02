@@ -48,7 +48,7 @@ grub_bufio_open (grub_file_t io, int size)
   grub_file_t file;
   grub_bufio_t bufio = 0;
 
-  file = (grub_file_t) grub_malloc (sizeof (*file));
+  file = (grub_file_t) grub_zalloc (sizeof (*file));
   if (! file)
     return 0;
 
@@ -61,7 +61,7 @@ grub_bufio_open (grub_file_t io, int size)
     size = ((io->size > GRUB_BUFIO_MAX_SIZE) ? GRUB_BUFIO_MAX_SIZE :
             io->size);
 
-  bufio = grub_malloc (sizeof (struct grub_bufio) + size);
+  bufio = grub_zalloc (sizeof (struct grub_bufio) + size);
   if (! bufio)
     {
       grub_free (file);
@@ -70,14 +70,10 @@ grub_bufio_open (grub_file_t io, int size)
 
   bufio->file = io;
   bufio->block_size = size;
-  bufio->buffer_len = 0;
-  bufio->buffer_at = 0;
 
   file->device = io->device;
-  file->offset = 0;
   file->size = io->size;
   file->data = bufio;
-  file->read_hook = 0;
   file->fs = &grub_bufio_fs;
   file->not_easily_seekable = io->not_easily_seekable;
 

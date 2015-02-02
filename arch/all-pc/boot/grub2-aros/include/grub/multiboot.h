@@ -34,6 +34,16 @@
 #include <grub/types.h>
 #include <grub/err.h>
 
+#ifndef GRUB_USE_MULTIBOOT2
+typedef enum
+  {
+    GRUB_MULTIBOOT_QUIRKS_NONE = 0,
+    GRUB_MULTIBOOT_QUIRK_BAD_KLUDGE = 1,
+    GRUB_MULTIBOOT_QUIRK_MODULES_AFTER_KERNEL = 2
+  } grub_multiboot_quirks_t;
+extern grub_multiboot_quirks_t grub_multiboot_quirks;
+#endif
+
 extern struct grub_relocator *grub_multiboot_relocator;
 
 void grub_multiboot (int argc, char *argv[]);

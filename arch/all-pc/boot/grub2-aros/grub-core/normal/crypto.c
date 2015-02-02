@@ -136,7 +136,7 @@ read_crypto_list (const char *prefix)
 	}
       
       cur->name = grub_strdup (name);
-      if (! name)
+      if (! cur->name)
 	{
 	  grub_errno = GRUB_ERR_NONE;
 	  grub_free (cur);

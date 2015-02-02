@@ -31,10 +31,25 @@
 #ifdef GRUB_MACHINE_MIPS_LOONGSON
 #include <grub/machine/kernel.h>
 #endif
+#ifdef GRUB_MACHINE_IEEE1275
+#include <grub/ieee1275/console.h>
+#endif
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
 #define FOR_SERIAL_PORTS(var) FOR_LIST_ELEMENTS((var), (grub_serial_ports))
+
+enum
+  {
+    OPTION_UNIT,
+    OPTION_PORT,
+    OPTION_SPEED,
+    OPTION_WORD,
+    OPTION_PARITY,
+    OPTION_STOP,
+    OPTION_BASE_CLOCK,
+    OPTION_RTSCTS
+  };
 
 /* Argument options.  */
 static const struct grub_arg_option options[] =
@@ -45,6 +60,8 @@ static const struct grub_arg_option options[] =
   {"word",   'w', 0, N_("Set the serial port word length."), 0, ARG_TYPE_INT},
   {"parity", 'r', 0, N_("Set the serial port parity."),      0, ARG_TYPE_STRING},
   {"stop",   't', 0, N_("Set the serial port stop bits."),   0, ARG_TYPE_INT},
+  {"base-clock",   'b', 0, N_("Set the base frequency."),   0, ARG_TYPE_STRING},
+  {"rtscts",   'f', 0, N_("Enable/disable RTS/CTS."),   "on|off", ARG_TYPE_STRING},
   {0, 0, 0, 0, 0, 0}
 };
 
@@ -89,8 +106,7 @@ static const struct grub_serial_output_state grub_serial_terminfo_output_templat
     .tinfo =
     {
       .put = serial_put,
-      .width = 80,
-      .height = 24
+      .size = { 80, 24 }
     }
   };
 
@@ -121,8 +137,7 @@ static struct grub_term_output grub_serial_term_output =
   .setcursor = grub_terminfo_setcursor,
   .flags = GRUB_TERM_CODE_TYPE_ASCII,
   .data = &grub_serial_terminfo_output,
-  .normal_color = GRUB_TERM_DEFAULT_NORMAL_COLOR,
-  .highlight_color = GRUB_TERM_DEFAULT_HIGHLIGHT_COLOR,
+  .progress_update_divisor = GRUB_PROGRESS_SLOW
 };
 
 
@@ -136,12 +151,25 @@ grub_serial_find (const char *name)
     if (grub_strcmp (port->name, name) == 0)
       break;
 
-#if (defined(__mips__) || defined (__i386__) || defined (__x86_64__)) && !defined(GRUB_MACHINE_EMU)
+#if (defined(__mips__) || defined (__i386__) || defined (__x86_64__)) && !defined(GRUB_MACHINE_EMU) && !defined(GRUB_MACHINE_ARC)
   if (!port && grub_memcmp (name, "port", sizeof ("port") - 1) == 0
       && grub_isxdigit (name [sizeof ("port") - 1]))
     {
       name = grub_serial_ns8250_add_port (grub_strtoul (&name[sizeof ("port") - 1],
 							0, 16));
+      if (!name)
+	return NULL;
+
+      FOR_SERIAL_PORTS (port)
+	if (grub_strcmp (port->name, name) == 0)
+	  break;
+    }
+#endif
+
+#ifdef GRUB_MACHINE_IEEE1275
+  if (!port && grub_memcmp (name, "ieee1275/", sizeof ("ieee1275/") - 1) == 0)
+    {
+      name = grub_ofserial_add_port (&name[sizeof ("ieee1275/") - 1]);
       if (!name)
 	return NULL;
 
@@ -164,14 +192,14 @@ grub_cmd_serial (grub_extcmd_context_t ctxt, int argc, char **args)
   struct grub_serial_config config;
   grub_err_t err;
 
-  if (state[0].set)
+  if (state[OPTION_UNIT].set)
     {
       grub_snprintf (pname, sizeof (pname), "com%ld",
 		     grub_strtoul (state[0].arg, 0, 0));
       name = pname;
     }
 
-  if (state[1].set)
+  if (state[OPTION_PORT].set)
     {
       grub_snprintf (pname, sizeof (pname), "port%lx",
 		     grub_strtoul (state[1].arg, 0, 0));
@@ -192,43 +220,73 @@ grub_cmd_serial (grub_extcmd_context_t ctxt, int argc, char **args)
 
   config = port->config;
 
-  if (state[2].set)
-    config.speed = grub_strtoul (state[2].arg, 0, 0);
+  if (state[OPTION_SPEED].set) {
+    config.speed = grub_strtoul (state[OPTION_SPEED].arg, 0, 0);
+    if (config.speed == 0)
+      return grub_error (GRUB_ERR_BAD_ARGUMENT,
+			 N_("unsupported serial port parity"));
+  }
 
-  if (state[3].set)
-    config.word_len = grub_strtoul (state[3].arg, 0, 0);
+  if (state[OPTION_WORD].set)
+    config.word_len = grub_strtoul (state[OPTION_WORD].arg, 0, 0);
 
-  if (state[4].set)
+  if (state[OPTION_PARITY].set)
     {
-      if (! grub_strcmp (state[4].arg, "no"))
+      if (! grub_strcmp (state[OPTION_PARITY].arg, "no"))
 	config.parity = GRUB_SERIAL_PARITY_NONE;
-      else if (! grub_strcmp (state[4].arg, "odd"))
+      else if (! grub_strcmp (state[OPTION_PARITY].arg, "odd"))
 	config.parity = GRUB_SERIAL_PARITY_ODD;
-      else if (! grub_strcmp (state[4].arg, "even"))
+      else if (! grub_strcmp (state[OPTION_PARITY].arg, "even"))
 	config.parity = GRUB_SERIAL_PARITY_EVEN;
       else
 	return grub_error (GRUB_ERR_BAD_ARGUMENT,
 			   N_("unsupported serial port parity"));
     }
 
-  if (state[5].set)
+  if (state[OPTION_RTSCTS].set)
     {
-      if (! grub_strcmp (state[5].arg, "1"))
+      if (grub_strcmp (state[OPTION_RTSCTS].arg, "on") == 0)
+	config.rtscts = 1;
+      else if (grub_strcmp (state[OPTION_RTSCTS].arg, "off") == 0)
+	config.rtscts = 0;
+      else
+	return grub_error (GRUB_ERR_BAD_ARGUMENT,
+			   N_("unsupported serial port flow control"));
+    }
+
+  if (state[OPTION_STOP].set)
+    {
+      if (! grub_strcmp (state[OPTION_STOP].arg, "1"))
 	config.stop_bits = GRUB_SERIAL_STOP_BITS_1;
-      else if (! grub_strcmp (state[5].arg, "2"))
+      else if (! grub_strcmp (state[OPTION_STOP].arg, "2"))
 	config.stop_bits = GRUB_SERIAL_STOP_BITS_2;
-      else if (! grub_strcmp (state[5].arg, "1.5"))
+      else if (! grub_strcmp (state[OPTION_STOP].arg, "1.5"))
 	config.stop_bits = GRUB_SERIAL_STOP_BITS_1_5;
       else
 	return grub_error (GRUB_ERR_BAD_ARGUMENT,
 			   N_("unsupported serial port stop bits number"));
     }
 
+  if (state[OPTION_BASE_CLOCK].set)
+    {
+      char *ptr;
+      config.base_clock = grub_strtoull (state[OPTION_BASE_CLOCK].arg, &ptr, 0);
+      if (grub_errno)
+	return grub_errno;
+      if (ptr && *ptr == 'M')
+	config.base_clock *= 1000000;
+      if (ptr && (*ptr == 'k' || *ptr == 'K'))
+	config.base_clock *= 1000;
+    }
+
+  if (config.speed == 0)
+    config.speed = 9600;
+
   /* Initialize with new settings.  */
   err = port->driver->configure (port, &config);
   if (err)
     return err;
-#if !defined (GRUB_MACHINE_EMU) && (defined(__mips__) || defined (__i386__) || defined (__x86_64__))
+#if !defined (GRUB_MACHINE_EMU) && !defined(GRUB_MACHINE_ARC) && (defined(__mips__) || defined (__i386__) || defined (__x86_64__))
 
   /* Compatibility kludge.  */
   if (port->driver == &grub_ns8250_driver)
@@ -287,23 +345,23 @@ grub_serial_register (struct grub_serial_port *port)
       grub_free (indata);
       return grub_errno;
     }
-  
-  out = grub_malloc (sizeof (*out));
+
+  out = grub_zalloc (sizeof (*out));
   if (!out)
     {
-      grub_free (in);
       grub_free (indata);
       grub_free ((char *) in->name);
+      grub_free (in);
       return grub_errno;
     }
 
   outdata = grub_malloc (sizeof (*outdata));
   if (!outdata)
     {
-      grub_free (in);
       grub_free (indata);
       grub_free ((char *) in->name);
       grub_free (out);
+      grub_free (in);
       return grub_errno;
     }
 
@@ -365,11 +423,7 @@ grub_serial_unregister_driver (struct grub_serial_driver *driver)
 
 static grub_extcmd_t cmd;
 
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
-void grub_serial_init (void)
-#else
 GRUB_MOD_INIT(serial)
-#endif
 {
   cmd = grub_register_extcmd ("serial", grub_cmd_serial, 0,
 			      N_("[OPTIONS...]"),
@@ -382,7 +436,7 @@ GRUB_MOD_INIT(serial)
 	       &grub_serial_terminfo_input_template,
 	       sizeof (grub_serial_terminfo_input));
 
-#if !defined (GRUB_MACHINE_EMU) && (defined(__mips__) || defined (__i386__) || defined (__x86_64__))
+#if !defined (GRUB_MACHINE_EMU) && !defined(GRUB_MACHINE_ARC) && (defined(__mips__) || defined (__i386__) || defined (__x86_64__))
   grub_ns8250_init ();
 #endif
 #ifdef GRUB_MACHINE_IEEE1275
@@ -391,13 +445,12 @@ GRUB_MOD_INIT(serial)
 #ifdef GRUB_MACHINE_EFI
   grub_efiserial_init ();
 #endif
+#ifdef GRUB_MACHINE_ARC
+  grub_arcserial_init ();
+#endif
 }
 
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
-void grub_serial_fini (void)
-#else
 GRUB_MOD_FINI(serial)
-#endif
 {
   while (grub_serial_ports)
     grub_serial_unregister (grub_serial_ports);

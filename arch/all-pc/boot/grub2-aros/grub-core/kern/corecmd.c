@@ -36,17 +36,11 @@ grub_core_cmd_set (struct grub_command *cmd __attribute__ ((unused)),
   char *var;
   char *val;
 
-  auto int print_env (struct grub_env_var *env);
-
-  int print_env (struct grub_env_var *env)
-    {
-      grub_printf ("%s=%s\n", env->name, env->value);
-      return 0;
-    }
-
   if (argc < 1)
     {
-      grub_env_iterate (print_env);
+      struct grub_env_var *env;
+      FOR_SORTED_ENV (env)
+	grub_printf ("%s=%s\n", env->name, grub_env_get (env->name));
       return 0;
     }
 
@@ -96,7 +90,7 @@ grub_core_cmd_insmod (struct grub_command *cmd __attribute__ ((unused)),
 }
 
 static int
-grub_mini_print_devices (const char *name)
+grub_mini_print_devices (const char *name, void *data __attribute__ ((unused)))
 {
   grub_printf ("(%s) ", name);
 
@@ -105,7 +99,8 @@ grub_mini_print_devices (const char *name)
 
 static int
 grub_mini_print_files (const char *filename,
-		       const struct grub_dirhook_info *info)
+		       const struct grub_dirhook_info *info,
+		       void *data __attribute__ ((unused)))
 {
   grub_printf ("%s%s ", filename, info->dir ? "/" : "");
 
@@ -119,7 +114,7 @@ grub_core_cmd_ls (struct grub_command *cmd __attribute__ ((unused)),
 {
   if (argc < 1)
     {
-      grub_device_iterate (grub_mini_print_devices);
+      grub_device_iterate (grub_mini_print_devices, NULL);
       grub_xputs ("\n");
       grub_refresh ();
     }
@@ -144,13 +139,13 @@ grub_core_cmd_ls (struct grub_command *cmd __attribute__ ((unused)),
       else
 	path++;
 
-      if (! path && ! device_name)
+      if (! *path && ! device_name)
 	{
 	  grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid argument");
 	  goto fail;
 	}
 
-      if (! path)
+      if (! *path)
 	{
 	  if (grub_errno == GRUB_ERR_UNKNOWN_FS)
 	    grub_errno = GRUB_ERR_NONE;
@@ -160,7 +155,7 @@ grub_core_cmd_ls (struct grub_command *cmd __attribute__ ((unused)),
 	}
       else if (fs)
 	{
-	  (fs->dir) (dev, path, grub_mini_print_files);
+	  (fs->dir) (dev, path, grub_mini_print_files, NULL);
 	  grub_xputs ("\n");
 	  grub_refresh ();
 	}

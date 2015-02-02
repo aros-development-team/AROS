@@ -29,10 +29,14 @@
 struct term_state
 {
   struct term_state *next;
-  const struct grub_unicode_glyph *backlog_glyphs;
+  struct grub_unicode_glyph *backlog_glyphs;
   const grub_uint32_t *backlog_ucs4;
   int backlog_fixed_tab;
   grub_size_t backlog_len;
+
+  int bidi_stack_depth;
+  grub_uint8_t bidi_stack[GRUB_BIDI_MAX_EXPLICIT_LEVEL];
+  int invalid_pushes;
 
   void *free;
   int num_lines;
@@ -44,7 +48,10 @@ print_ucs4_real (const grub_uint32_t * str,
 		 const grub_uint32_t * last_position,
 		 int margin_left, int margin_right,
 		 struct grub_term_output *term, int backlog,
-		 int dry_run, int fixed_tab);
+		 int dry_run, int fixed_tab, unsigned skip_lines,
+		 unsigned max_lines,
+		 grub_uint32_t contchar, int fill_right,
+		 struct grub_term_pos *pos);
 
 static struct term_state *term_states = NULL;
 
@@ -66,7 +73,7 @@ static void
 print_more (void)
 {
   char key;
-  grub_uint16_t *pos;
+  struct grub_term_coordinate *pos;
   grub_term_output_t term;
   grub_uint32_t *unicode_str, *unicode_last_position;
 
@@ -117,15 +124,13 @@ print_more (void)
 void
 grub_set_more (int onoff)
 {
-  if (onoff == 1)
-    grub_more++;
-  else
-    grub_more--;
+  grub_more = !!onoff;
   grub_normal_reset_more ();
 }
 
 enum
   {
+    GRUB_CP437_UPDOWNARROW     = 0x12,
     GRUB_CP437_UPARROW         = 0x18,
     GRUB_CP437_DOWNARROW       = 0x19,
     GRUB_CP437_RIGHTARROW      = 0x1a,
@@ -153,6 +158,8 @@ map_code (grub_uint32_t in, struct grub_term_output *term)
 	  return GRUB_CP437_LEFTARROW;
 	case GRUB_UNICODE_UPARROW:
 	  return GRUB_CP437_UPARROW;
+	case GRUB_UNICODE_UPDOWNARROW:
+	  return GRUB_CP437_UPDOWNARROW;
 	case GRUB_UNICODE_RIGHTARROW:
 	  return GRUB_CP437_RIGHTARROW;
 	case GRUB_UNICODE_DOWNARROW:
@@ -222,7 +229,6 @@ grub_puts_terminal (const char *str, struct grub_term_output *term)
 	      .variant = 0,
 	      .attributes = 0,
 	      .ncomb = 0,
-	      .combining = 0,
 	      .estimated_width = 1,
 	      .base = *str
 	    };
@@ -243,16 +249,17 @@ grub_puts_terminal (const char *str, struct grub_term_output *term)
       return;
     }
 
-  print_ucs4_real (unicode_str, unicode_last_position, 0, 0, term, 0, 0, 0);
+  print_ucs4_real (unicode_str, unicode_last_position, 0, 0, term,
+		   0, 0, 0, 0, -1, 0, 0, 0);
   grub_free (unicode_str);
 }
 
-grub_uint16_t *
+struct grub_term_coordinate *
 grub_term_save_pos (void)
 {
   struct grub_term_output *cur;
   unsigned cnt = 0;
-  grub_uint16_t *ret, *ptr;
+  struct grub_term_coordinate *ret, *ptr;
   
   FOR_ACTIVE_TERM_OUTPUTS(cur)
     cnt++;
@@ -269,17 +276,17 @@ grub_term_save_pos (void)
 }
 
 void
-grub_term_restore_pos (grub_uint16_t *pos)
+grub_term_restore_pos (struct grub_term_coordinate *pos)
 {
   struct grub_term_output *cur;
-  grub_uint16_t *ptr = pos;
+  struct grub_term_coordinate *ptr = pos;
 
   if (!pos)
     return;
 
   FOR_ACTIVE_TERM_OUTPUTS(cur)
   {
-    grub_term_gotoxy (cur, (*ptr & 0xff00) >> 8, *ptr & 0xff);
+    grub_term_gotoxy (cur, *ptr);
     ptr++;
   }
 }
@@ -382,7 +389,7 @@ read_terminal_list (const char *prefix)
 	}
       
       cur->name = grub_strdup (name);
-      if (! name)
+      if (! cur->name)
 	{
 	  grub_errno = GRUB_ERR_NONE;
 	  grub_free (cur);
@@ -415,7 +422,6 @@ putglyph (const struct grub_unicode_glyph *c, struct grub_term_output *term,
       .variant = 0,
       .attributes = 0,
       .ncomb = 0,
-      .combining = 0,
       .estimated_width = 1
     };
 
@@ -435,7 +441,7 @@ putglyph (const struct grub_unicode_glyph *c, struct grub_term_output *term,
     {
       int n;
 
-      n = GRUB_TERM_TAB_WIDTH - ((term->getxy (term) >> 8)
+      n = GRUB_TERM_TAB_WIDTH - ((term->getxy (term).x)
 				 % GRUB_TERM_TAB_WIDTH);
       c2.base = ' ';
       while (n--)
@@ -468,7 +474,7 @@ putglyph (const struct grub_unicode_glyph *c, struct grub_term_output *term,
 		}
 	    }
 	  else
-	    code = c->combining[i].code;
+	    code = grub_unicode_get_comb (c) [i].code;
 
 	  grub_ucs4_to_utf8 (&code, 1, u8, sizeof (u8));
 
@@ -499,7 +505,6 @@ putcode_real (grub_uint32_t code, struct grub_term_output *term, int fixed_tab)
       .variant = 0,
       .attributes = 0,
       .ncomb = 0,
-      .combining = 0,
       .estimated_width = 1
     };
 
@@ -527,7 +532,6 @@ get_maxwidth (struct grub_term_output *term,
     .variant = 0,
     .attributes = 0,
     .ncomb = 0,
-    .combining = 0
   };
   return (grub_term_width (term)
 	  - grub_term_getcharwidth (term, &space_glyph) 
@@ -538,7 +542,16 @@ static grub_ssize_t
 get_startwidth (struct grub_term_output *term,
 		int margin_left)
 {
-  return ((term->getxy (term) >> 8) & 0xff) - margin_left;
+  return (term->getxy (term).x) - margin_left;
+}
+
+static void
+fill_margin (struct grub_term_output *term, int r)
+{
+  int sp = (term->getwh (term).x)
+    - (term->getxy (term).x) - r;
+  if (sp > 0)
+    grub_print_spaces (term, sp);
 }
 
 static int
@@ -547,7 +560,10 @@ print_ucs4_terminal (const grub_uint32_t * str,
 		     int margin_left, int margin_right,
 		     struct grub_term_output *term,
 		     struct term_state *state,
-		     int dry_run, int fixed_tab)
+		     int dry_run, int fixed_tab, unsigned skip_lines,
+		     unsigned max_lines,
+		     grub_uint32_t contchar,
+		     int primitive_wrap, int fill_right, struct grub_term_pos *pos)
 {
   const grub_uint32_t *ptr;
   grub_ssize_t startwidth = dry_run ? 0 : get_startwidth (term, margin_left);
@@ -556,23 +572,59 @@ print_ucs4_terminal (const grub_uint32_t * str,
   grub_ssize_t max_width = get_maxwidth (term, margin_left, margin_right);
   const grub_uint32_t *line_start = str, *last_space = str - 1;
   int lines = 0;
+  int i;
+  struct term_state local_state;
+
+  if (!state)
+    {
+      grub_memset (&local_state, 0, sizeof (local_state));
+      state = &local_state;
+    }
+
+  for (i = 0; i < state->bidi_stack_depth; i++)
+    putcode_real (state->bidi_stack[i] | (GRUB_UNICODE_LRE & ~0xff),
+		  term, fixed_tab);
 
   for (ptr = str; ptr < last_position; ptr++)
     {
       grub_ssize_t last_width = 0;
+
+      switch (*ptr)
+	{
+	case GRUB_UNICODE_LRE:
+	case GRUB_UNICODE_RLE:
+	case GRUB_UNICODE_LRO:
+	case GRUB_UNICODE_RLO:
+	  if (state->bidi_stack_depth >= (int) ARRAY_SIZE (state->bidi_stack))
+	    state->invalid_pushes++;
+	  else
+	    state->bidi_stack[state->bidi_stack_depth++] = *ptr;
+	  break;
+	case GRUB_UNICODE_PDF:
+	  if (state->invalid_pushes)
+	    state->invalid_pushes--;
+	  else if (state->bidi_stack_depth)
+	    state->bidi_stack_depth--;
+	  break;
+	}
       if (grub_unicode_get_comb_type (*ptr) == GRUB_UNICODE_COMB_NONE)
 	{
 	  struct grub_unicode_glyph c = {
 	    .variant = 0,
 	    .attributes = 0,
 	    .ncomb = 0,
-	    .combining = 0
 	  };
 	  c.base = *ptr;
+	  if (pos)
+	    {
+	      pos[ptr - str].x = line_width;
+	      pos[ptr - str].y = lines;
+	      pos[ptr - str].valid = 1;
+	    }
 	  line_width += last_width = grub_term_getcharwidth (term, &c);
 	}
 
-      if (*ptr == ' ')
+      if (*ptr == ' ' && !primitive_wrap)
 	{
 	  lastspacewidth = line_width;
 	  last_space = ptr;
@@ -581,6 +633,13 @@ print_ucs4_terminal (const grub_uint32_t * str,
       if (line_width > max_width || *ptr == '\n')
 	{
 	  const grub_uint32_t *ptr2;
+	  int wasn = (*ptr == '\n');
+
+	  if (wasn)
+	    {
+	      state->bidi_stack_depth = 0;
+	      state->invalid_pushes = 0;
+	    }
 
 	  if (line_width > max_width && last_space > line_start)
 	    ptr = last_space;
@@ -595,7 +654,7 @@ print_ucs4_terminal (const grub_uint32_t * str,
 
 	  lines++;
 
-	  if (!dry_run)
+	  if (!skip_lines && !dry_run)
 	    {
 	      for (ptr2 = line_start; ptr2 < ptr; ptr2++)
 		{
@@ -608,9 +667,14 @@ print_ucs4_terminal (const grub_uint32_t * str,
 		  putcode_real (*ptr2, term, fixed_tab);
 		}
 
-	      grub_print_spaces (term, margin_right);
-	      grub_putcode ('\n', term);
-	      if (state && ++state->num_lines
+	      if (!wasn && contchar)
+		putcode_real (contchar, term, fixed_tab);
+	      if (fill_right)
+		fill_margin (term, margin_right);
+
+	      if (!contchar || max_lines != 1)
+		grub_putcode ('\n', term);
+	      if (state != &local_state && ++state->num_lines
 		  >= (grub_ssize_t) grub_term_height (term) - 2)
 		{
 		  state->backlog_ucs4 = (ptr == last_space || *ptr == '\n') 
@@ -622,19 +686,52 @@ print_ucs4_terminal (const grub_uint32_t * str,
 	    }
 
 	  line_width -= lastspacewidth;
-	  if (!dry_run)
-	    grub_print_spaces (term, margin_left);
 	  if (ptr == last_space || *ptr == '\n')
 	    ptr++;
+	  else if (pos)
+	      {
+		pos[ptr - str].x = line_width - last_width;
+		pos[ptr - str].y = lines;
+		pos[ptr - str].valid = 1;
+	      }
+
 	  line_start = ptr;
+
+	  if (skip_lines)
+	    skip_lines--;
+	  else if (max_lines != (unsigned) -1)
+	    {
+	      max_lines--;
+	      if (!max_lines)
+		break;
+	    }
+	  if (!skip_lines && !dry_run)
+	    {
+	      if (!contchar)
+		grub_print_spaces (term, margin_left);
+	      else
+		grub_term_gotoxy (term, (struct grub_term_coordinate)
+				  { margin_left, grub_term_getxy (term).y });
+	      for (i = 0; i < state->bidi_stack_depth; i++)
+		putcode_real (state->bidi_stack[i] | (GRUB_UNICODE_LRE & ~0xff),
+			      term, fixed_tab);
+	    }
 	}
     }
 
+  if (pos)
+    {
+      pos[ptr - str].x = line_width;
+      pos[ptr - str].y = lines;
+      pos[ptr - str].valid = 1;
+    }
+
   if (line_start < last_position)
-    lines++;
-  if (!dry_run)
+      lines++;
+  if (!dry_run && !skip_lines && max_lines)
     {
       const grub_uint32_t *ptr2;
+
       for (ptr2 = line_start; ptr2 < last_position; ptr2++)
 	{
 	  /* Skip combining characters on non-UTF8 terminals.  */
@@ -645,6 +742,9 @@ print_ucs4_terminal (const grub_uint32_t * str,
 	    continue;
 	  putcode_real (*ptr2, term, fixed_tab);
 	}
+
+      if (fill_right)
+	fill_margin (term, margin_right);
     }
   return dry_run ? lines : 0;
 }
@@ -672,20 +772,26 @@ find_term_state (struct grub_term_output *term)
 }
 
 static int
-put_glyphs_terminal (const struct grub_unicode_glyph *visual,
+put_glyphs_terminal (struct grub_unicode_glyph *visual,
 		     grub_ssize_t visual_len,
 		     int margin_left, int margin_right,
 		     struct grub_term_output *term,
-		     struct term_state *state, int fixed_tab)
+		     struct term_state *state, int fixed_tab,
+		     grub_uint32_t contchar,
+		     int fill_right)
 {
-  const struct grub_unicode_glyph *visual_ptr;
+  struct grub_unicode_glyph *visual_ptr;
+  int since_last_nl = 1;
   for (visual_ptr = visual; visual_ptr < visual + visual_len; visual_ptr++)
     {
-      if (visual_ptr->base == '\n')
-	grub_print_spaces (term, margin_right);
+      if (visual_ptr->base == '\n' && fill_right)
+	fill_margin (term, margin_right);
+
       putglyph (visual_ptr, term, fixed_tab);
+      since_last_nl++;
       if (visual_ptr->base == '\n')
 	{
+	  since_last_nl = 0;
 	  if (state && ++state->num_lines
 	      >= (grub_ssize_t) grub_term_height (term) - 2)
 	    {
@@ -695,10 +801,18 @@ put_glyphs_terminal (const struct grub_unicode_glyph *visual,
 	      return 1;
 	    }
 
-	  grub_print_spaces (term, margin_left);
+	  if (!contchar)
+	    grub_print_spaces (term, margin_left);
+	  else
+	    grub_term_gotoxy (term,
+			      (struct grub_term_coordinate)
+			      { margin_left, grub_term_getxy (term).y });
 	}
-      grub_free (visual_ptr->combining);
+      grub_unicode_destroy_glyph (visual_ptr);
     }
+  if (fill_right && since_last_nl)
+	fill_margin (term, margin_right);
+
   return 0;
 }
 
@@ -717,7 +831,8 @@ print_backlog (struct grub_term_output *term,
       ret = print_ucs4_terminal (state->backlog_ucs4,
 				 state->backlog_ucs4 + state->backlog_len,
 				 margin_left, margin_right, term, state, 0,
-				 state->backlog_fixed_tab);
+				 state->backlog_fixed_tab, 0, -1, 0, 0,
+				 0, 0);
       if (!ret)
 	{
 	  grub_free (state->free);
@@ -734,7 +849,7 @@ print_backlog (struct grub_term_output *term,
       ret = put_glyphs_terminal (state->backlog_glyphs,
 				 state->backlog_len,
 				 margin_left, margin_right, term, state,
-				 state->backlog_fixed_tab);
+				 state->backlog_fixed_tab, 0, 0);
       if (!ret)
 	{
 	  grub_free (state->free);
@@ -748,22 +863,40 @@ print_backlog (struct grub_term_output *term,
   return 0;
 }
 
+static grub_size_t
+getcharwidth (const struct grub_unicode_glyph *c, void *term)
+{
+  return grub_term_getcharwidth (term, c);
+}
+
 static int
 print_ucs4_real (const grub_uint32_t * str,
 		 const grub_uint32_t * last_position,
 		 int margin_left, int margin_right,
 		 struct grub_term_output *term, int backlog,
-		 int dry_run, int fixed_tab)
+		 int dry_run, int fixed_tab, unsigned skip_lines,
+		 unsigned max_lines,
+		 grub_uint32_t contchar, int fill_right,
+		 struct grub_term_pos *pos)
 {
   struct term_state *state = NULL;
 
   if (!dry_run)
     {
+      struct grub_term_coordinate xy;
       if (backlog)
 	state = find_term_state (term);
 
-      if (((term->getxy (term) >> 8) & 0xff) < margin_left)
-	grub_print_spaces (term, margin_left - ((term->getxy (term) >> 8) & 0xff));
+      xy = term->getxy (term);
+      
+      if (xy.x < margin_left)
+	{
+	  if (!contchar)
+	    grub_print_spaces (term, margin_left - xy.x);
+	  else
+	    grub_term_gotoxy (term, (struct grub_term_coordinate) {margin_left,
+		  xy.y});
+	}
     }
 
   if ((term->flags & GRUB_TERM_CODE_TYPE_MASK) 
@@ -773,41 +906,58 @@ print_ucs4_real (const grub_uint32_t * str,
     {
       grub_ssize_t visual_len;
       struct grub_unicode_glyph *visual;
+      grub_ssize_t visual_len_show;
+      struct grub_unicode_glyph *visual_show;
       int ret;
-
-      auto grub_ssize_t getcharwidth (const struct grub_unicode_glyph *c);
-      grub_ssize_t getcharwidth (const struct grub_unicode_glyph *c)
-      {
-	return grub_term_getcharwidth (term, c);
-      }
+      struct grub_unicode_glyph *vptr;
 
       visual_len = grub_bidi_logical_to_visual (str, last_position - str,
-						&visual, getcharwidth,
+						&visual, getcharwidth, term,
 						get_maxwidth (term, 
 							      margin_left,
 							      margin_right),
-						get_startwidth (term, 
-								margin_left));
+						dry_run ? 0 : get_startwidth (term, 
+									      margin_left),
+						contchar, pos, !!contchar);
       if (visual_len < 0)
 	{
 	  grub_print_error ();
 	  return 0;
 	}
+      visual_show = visual;
+      for (; skip_lines && visual_show < visual + visual_len; visual_show++)
+	if (visual_show->base == '\n')
+	  skip_lines--;
+      if (max_lines != (unsigned) -1)
+	{
+	  for (vptr = visual_show;
+	       max_lines && vptr < visual + visual_len; vptr++)
+	    if (vptr->base == '\n')
+	      max_lines--;
+
+	  visual_len_show = vptr - visual_show;	  
+	}
+      else
+	visual_len_show = visual + visual_len - visual_show;
+
       if (dry_run)
 	{
-	  struct grub_unicode_glyph *vptr;
 	  ret = 0;
-	  for (vptr = visual; vptr < visual + visual_len; vptr++)
+	  for (vptr = visual_show; vptr < visual_show + visual_len_show; vptr++)
 	    if (vptr->base == '\n')
 	      ret++;
-	  if (visual_len && visual[visual_len - 1].base != '\n')
+	  if (visual_len_show && visual[visual_len_show - 1].base != '\n')
 	    ret++;
+	  for (vptr = visual; vptr < visual + visual_len; vptr++)
+	    grub_unicode_destroy_glyph (vptr);
 	  grub_free (visual);
 	}
       else
 	{
-	  ret = put_glyphs_terminal (visual, visual_len, margin_left,
-				     margin_right, term, state, fixed_tab);
+	  ret = put_glyphs_terminal (visual_show, visual_len_show, margin_left,
+				     margin_right,
+				     term, state, fixed_tab, contchar, fill_right);
+
 	  if (!ret)
 	    grub_free (visual);
 	  else
@@ -816,7 +966,22 @@ print_ucs4_real (const grub_uint32_t * str,
       return ret;
     }
   return print_ucs4_terminal (str, last_position, margin_left, margin_right,
-			      term, state, dry_run, fixed_tab);
+			      term, state, dry_run, fixed_tab, skip_lines,
+			      max_lines, contchar, !!contchar, fill_right, pos);
+}
+
+void
+grub_print_ucs4_menu (const grub_uint32_t * str,
+		      const grub_uint32_t * last_position,
+		      int margin_left, int margin_right,
+		      struct grub_term_output *term,
+		      int skip_lines, int max_lines,
+		      grub_uint32_t contchar,
+		      struct grub_term_pos *pos)
+{
+  print_ucs4_real (str, last_position, margin_left, margin_right,
+		   term, 0, 0, 1, skip_lines, max_lines,
+		   contchar, 1, pos);
 }
 
 void
@@ -826,7 +991,7 @@ grub_print_ucs4 (const grub_uint32_t * str,
 		 struct grub_term_output *term)
 {
   print_ucs4_real (str, last_position, margin_left, margin_right,
-		   term, 0, 0, 1);
+		   term, 0, 0, 1, 0, -1, 0, 0, 0);
 }
 
 int
@@ -836,31 +1001,31 @@ grub_ucs4_count_lines (const grub_uint32_t * str,
 		       struct grub_term_output *term)
 {
   return print_ucs4_real (str, last_position, margin_left, margin_right,
-			  term, 0, 1, 1);
+			  term, 0, 1, 1, 0, -1, 0, 0, 0);
 }
 
 void
-grub_xputs_normal (const char *str)
+grub_xnputs (const char *str, grub_size_t msg_len)
 {
   grub_uint32_t *unicode_str = NULL, *unicode_last_position;
   int backlog = 0;
   grub_term_output_t term;
 
   grub_error_push ();
-  grub_utf8_to_ucs4_alloc (str, &unicode_str,
-  			   &unicode_last_position);
+
+  unicode_str = grub_malloc (msg_len * sizeof (grub_uint32_t));
+ 
   grub_error_pop ();
 
   if (!unicode_str)
     {
-      for (; *str; str++)
+      for (; msg_len--; str++, msg_len++)
 	{
 	  struct grub_unicode_glyph c =
 	    {
 	      .variant = 0,
 	      .attributes = 0,
 	      .ncomb = 0,
-	      .combining = 0,
 	      .estimated_width = 1,
 	      .base = *str
 	    };
@@ -882,11 +1047,15 @@ grub_xputs_normal (const char *str)
       return;
     }
 
+  msg_len = grub_utf8_to_ucs4 (unicode_str, msg_len,
+			       (grub_uint8_t *) str, -1, 0);
+  unicode_last_position = unicode_str + msg_len;
+
   FOR_ACTIVE_TERM_OUTPUTS(term)
   {
     int cur;
     cur = print_ucs4_real (unicode_str, unicode_last_position, 0, 0,
-			   term, grub_more, 0, 0);
+			   term, grub_more, 0, 0, 0, -1, 0, 0, 0);
     if (cur)
       backlog = 1;
   }
@@ -903,6 +1072,12 @@ grub_xputs_normal (const char *str)
       }
     }
   grub_free (unicode_str);
+}
+
+void
+grub_xputs_normal (const char *str)
+{
+  grub_xnputs (str, grub_strlen (str));
 }
 
 void

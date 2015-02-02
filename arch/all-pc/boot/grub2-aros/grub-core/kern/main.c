@@ -30,8 +30,10 @@
 #include <grub/reader.h>
 #include <grub/parser.h>
 
-/* This is actualy platform-independant but used only on loongson and sparc.  */
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS) || defined (GRUB_MACHINE_SPARC64)
+#ifdef GRUB_MACHINE_PCBIOS
+#include <grub/machine/memory.h>
+#endif
+
 grub_addr_t
 grub_modules_get_end (void)
 {
@@ -45,7 +47,6 @@ grub_modules_get_end (void)
 
   return grub_modbase + modinfo->size;
 }
-#endif
 
 /* Load all modules in core.  */
 static void
@@ -67,6 +68,8 @@ grub_load_modules (void)
   }
 }
 
+static char *load_config;
+
 static void
 grub_load_config (void)
 {
@@ -76,9 +79,17 @@ grub_load_config (void)
     /* Not an embedded config, skip.  */
     if (header->type != OBJ_TYPE_CONFIG)
       continue;
-    
-    grub_parser_execute ((char *) header +
-			 sizeof (struct grub_module_header));
+
+    load_config = grub_malloc (header->size - sizeof (struct grub_module_header) + 1);
+    if (!load_config)
+      {
+	grub_print_error ();
+	break;
+      }
+    grub_memcpy (load_config, (char *) header +
+		 sizeof (struct grub_module_header),
+		 header->size - sizeof (struct grub_module_header));
+    load_config[header->size - sizeof (struct grub_module_header)] = 0;
     break;
   }
 }
@@ -114,6 +125,21 @@ grub_set_prefix_and_root (void)
 
   grub_register_variable_hook ("root", 0, grub_env_write_root);
 
+  grub_machine_get_bootlocation (&fwdevice, &fwpath);
+
+  if (fwdevice)
+    {
+      char *cmdpath;
+
+      cmdpath = grub_xasprintf ("(%s)%s", fwdevice, fwpath ? : "");
+      if (cmdpath)
+	{
+	  grub_env_set ("cmdpath", cmdpath);
+	  grub_env_export ("cmdpath");
+	  grub_free (cmdpath);
+	}
+    }
+
   if (prefix)
     {
       char *pptr = NULL;
@@ -131,8 +157,6 @@ grub_set_prefix_and_root (void)
       if (pptr[0])
 	path = grub_strdup (pptr);
     }
-  if ((!device || device[0] == ',' || !device[0]) || !path)
-    grub_machine_get_bootlocation (&fwdevice, &fwpath);
 
   if (!device && fwdevice)
     device = fwdevice;
@@ -168,7 +192,16 @@ grub_set_prefix_and_root (void)
   else
     grub_free (fwdevice);
   if (fwpath && !path)
-    path = fwpath;
+    {
+      grub_size_t len = grub_strlen (fwpath);
+      while (len > 1 && fwpath[len - 1] == '/')
+	fwpath[--len] = 0;
+      if (len >= sizeof (GRUB_TARGET_CPU "-" GRUB_PLATFORM) - 1
+	  && grub_memcmp (fwpath + len - (sizeof (GRUB_TARGET_CPU "-" GRUB_PLATFORM) - 1), GRUB_TARGET_CPU "-" GRUB_PLATFORM,
+			  sizeof (GRUB_TARGET_CPU "-" GRUB_PLATFORM) - 1) == 0)
+	fwpath[len - (sizeof (GRUB_TARGET_CPU "-" GRUB_PLATFORM) - 1)] = 0;
+      path = fwpath;
+    }
   else
     grub_free (fwpath);
   if (device)
@@ -203,6 +236,30 @@ grub_load_normal_mode (void)
   grub_command_execute ("normal", 0, 0);
 }
 
+static void
+reclaim_module_space (void)
+{
+  grub_addr_t modstart, modend;
+
+  if (!grub_modbase)
+    return;
+
+#ifdef GRUB_MACHINE_PCBIOS
+  modstart = GRUB_MEMORY_MACHINE_DECOMPRESSION_ADDR;
+#else
+  modstart = grub_modbase;
+#endif
+  modend = grub_modules_get_end ();
+  grub_modbase = 0;
+
+#if GRUB_KERNEL_PRELOAD_SPACE_REUSABLE
+  grub_mm_init_region ((void *) modstart, modend - modstart);
+#else
+  (void) modstart;
+  (void) modend;
+#endif
+}
+
 /* The main routine.  */
 void __attribute__ ((noreturn))
 grub_main (void)
@@ -210,10 +267,16 @@ grub_main (void)
   /* First of all, initialize the machine.  */
   grub_machine_init ();
 
+  grub_boot_time ("After machine init.");
+
   /* Hello.  */
   grub_setcolorstate (GRUB_TERM_COLOR_HIGHLIGHT);
   grub_printf ("Welcome to GRUB!\n\n");
   grub_setcolorstate (GRUB_TERM_COLOR_STANDARD);
+
+  grub_load_config ();
+
+  grub_boot_time ("Before loading embedded modules.");
 
   /* Load pre-loaded modules and free the space.  */
   grub_register_exported_symbols ();
@@ -222,15 +285,28 @@ grub_main (void)
 #endif  
   grub_load_modules ();
 
+  grub_boot_time ("After loading embedded modules.");
+
   /* It is better to set the root device as soon as possible,
      for convenience.  */
   grub_set_prefix_and_root ();
   grub_env_export ("root");
   grub_env_export ("prefix");
 
+  /* Reclaim space used for modules.  */
+  reclaim_module_space ();
+
+  grub_boot_time ("After reclaiming module space.");
+
   grub_register_core_commands ();
 
-  grub_load_config ();
+  grub_boot_time ("Before execution of embedded config.");
+
+  if (load_config)
+    grub_parser_execute (load_config);
+
+  grub_boot_time ("After execution of embedded config. Attempt to go to normal mode");
+
   grub_load_normal_mode ();
   grub_rescue_run ();
 }

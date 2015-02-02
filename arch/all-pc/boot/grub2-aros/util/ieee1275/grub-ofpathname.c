@@ -32,9 +32,7 @@ int main(int argc, char **argv)
 {
   char *of_path;
 
-  set_program_name (argv[0]);
-
-  grub_util_init_nls ();
+  grub_util_host_init (&argc, &argv);
 
   if (argc != 2 || strcmp (argv[1], "--help") == 0)
     {

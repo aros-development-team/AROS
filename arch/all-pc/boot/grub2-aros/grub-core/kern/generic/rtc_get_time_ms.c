@@ -34,5 +34,5 @@ grub_rtc_get_time_ms (void)
         1 s          1        T rtc ticks
    */
   grub_uint64_t ticks_ms_per_sec = ((grub_uint64_t) 1000) * grub_get_rtc ();
-  return grub_divmod64 (ticks_ms_per_sec, GRUB_TICKS_PER_SECOND, 0);
+  return grub_divmod64 (ticks_ms_per_sec, GRUB_TICKS_PER_SECOND ? : 1000, 0);
 }

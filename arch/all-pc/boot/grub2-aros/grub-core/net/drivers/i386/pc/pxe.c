@@ -45,7 +45,7 @@ struct grub_pxe_undi_open
   grub_uint16_t pkt_filter;
   grub_uint16_t mcast_count;
   grub_uint8_t mcast[8][6];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxe_undi_info
 {
@@ -60,7 +60,7 @@ struct grub_pxe_undi_info
   grub_uint32_t romaddr;
   grub_uint16_t rxbufct;
   grub_uint16_t txbufct;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 
 struct grub_pxe_undi_isr
@@ -73,7 +73,7 @@ struct grub_pxe_undi_isr
   grub_uint32_t buffer;
   grub_uint8_t prot_type;
   grub_uint8_t pkt_type;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 enum
   {
@@ -104,7 +104,7 @@ struct grub_pxe_undi_transmit
   grub_uint32_t dest;
   grub_uint32_t tbd;
   grub_uint32_t reserved[2];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxe_undi_tbd
 {
@@ -118,7 +118,7 @@ struct grub_pxe_undi_tbd
     grub_uint16_t len;
     grub_uint32_t ptr;
   } blocks[8];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxe_bangpxe *grub_pxe_pxenv;
 static grub_uint32_t pxe_rm_entry = 0;
@@ -218,8 +218,7 @@ grub_pxe_recv (struct grub_net_card *dev __attribute__ ((unused)))
     return NULL;
   /* Reserve 2 bytes so that 2 + 14/18 bytes of ethernet header is divisible
      by 4. So that IP header is aligned on 4 bytes. */
-  grub_netbuff_reserve (buf, 2);
-  if (!buf)
+  if (grub_netbuff_reserve (buf, 2))
     {
       grub_netbuff_free (buf);
       return NULL;

@@ -80,26 +80,44 @@ arcdisk_hash_add (char *devpath)
 }
 
 
+/* Context for grub_arcdisk_iterate.  */
+struct grub_arcdisk_iterate_ctx
+{
+  grub_disk_dev_iterate_hook_t hook;
+  void *hook_data;
+};
+
+/* Helper for grub_arcdisk_iterate.  */
 static int
-grub_arcdisk_iterate (int (*hook_in) (const char *name),
+grub_arcdisk_iterate_iter (const char *name,
+			   const struct grub_arc_component *comp, void *data)
+{
+  struct grub_arcdisk_iterate_ctx *ctx = data;
+
+  if (!(comp->type == GRUB_ARC_COMPONENT_TYPE_DISK
+	|| comp->type == GRUB_ARC_COMPONENT_TYPE_FLOPPY
+	|| comp->type == GRUB_ARC_COMPONENT_TYPE_TAPE))
+    return 0;
+  return ctx->hook (name, ctx->hook_data);
+}
+
+static int
+grub_arcdisk_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
 		      grub_disk_pull_t pull)
 {
-  auto int hook (const char *name, const struct grub_arc_component *comp);
-  int hook (const char *name, const struct grub_arc_component *comp)
-  {
-    if (!(comp->type == GRUB_ARC_COMPONENT_TYPE_DISK
-	  || comp->type == GRUB_ARC_COMPONENT_TYPE_DISK
-	  || comp->type == GRUB_ARC_COMPONENT_TYPE_TAPE))
-      return 0;
-    return hook_in (name);
-  }
+  struct grub_arcdisk_iterate_ctx ctx = { hook, hook_data };
+
   if (pull != GRUB_DISK_PULL_NONE)
     return 0;
 
-  return grub_arc_iterate_devs (hook, 1);
+  return grub_arc_iterate_devs (grub_arcdisk_iterate_iter, &ctx, 1);
 }
 
+#ifdef GRUB_CPU_MIPSEL
+#define RAW_SUFFIX "partition(0)"
+#else
 #define RAW_SUFFIX "partition(10)"
+#endif
 
 static grub_err_t
 reopen (const char *name, int writable)
@@ -139,9 +157,7 @@ reopen (const char *name, int writable)
 static grub_err_t
 grub_arcdisk_open (const char *name, grub_disk_t disk)
 {
-  char *fullname, *optr;
-  const char *iptr;
-  int state = 0;
+  char *fullname;
   grub_err_t err;
   grub_arc_err_t r;
   struct grub_arc_fileinfo info;
@@ -149,35 +165,7 @@ grub_arcdisk_open (const char *name, grub_disk_t disk)
 
   if (grub_memcmp (name, "arc/", 4) != 0)
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "not arc device");
-  fullname = grub_malloc (2 * grub_strlen (name) + sizeof (RAW_SUFFIX));
-  if (!fullname)
-    return grub_errno;
-  optr = fullname;
-  for (iptr = name + 4; *iptr; iptr++)
-    if (state == 0)
-      {
-	if (!grub_isdigit (*iptr))
-	  *optr++ = *iptr;
-	else
-	  {
-	    *optr++ = '(';
-	    *optr++ = *iptr;
-	    state = 1;
-	  }
-      }
-    else
-      {
-	if (grub_isdigit (*iptr))
-	  *optr++ = *iptr;
-	else
-	  {
-	    *optr++ = ')';
-	    state = 0;
-	  }
-      }
-  if (state)
-    *optr++ = ')';
-  grub_memcpy (optr, RAW_SUFFIX, sizeof (RAW_SUFFIX));
+  fullname = grub_arc_alt_name_to_norm (name, RAW_SUFFIX);
   disk->data = fullname;
   grub_dprintf ("arcdisk", "opening %s\n", fullname);
 

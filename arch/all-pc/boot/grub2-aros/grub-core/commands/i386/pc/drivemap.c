@@ -74,7 +74,7 @@ typedef struct drivemap_node
   grub_uint8_t redirto;
 } drivemap_node_t;
 
-typedef struct __attribute__ ((packed)) int13map_node
+typedef struct GRUB_PACKED int13map_node
 {
   grub_uint8_t disknum;
   grub_uint8_t mapto;

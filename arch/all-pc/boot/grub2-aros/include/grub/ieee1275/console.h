@@ -28,4 +28,7 @@ void grub_console_init_lately (void);
 /* Finish the console system.  */
 void grub_console_fini (void);
 
+const char *
+grub_ofserial_add_port (const char *name);
+
 #endif /* ! GRUB_CONSOLE_MACHINE_HEADER */

@@ -1,0 +1,13 @@
+=== modified file 'grub-core/gnulib/argp-parse.c'
+--- grub-core/gnulib/argp-parse.c	2010-04-02 22:45:01 +0000
++++ grub-core/gnulib/argp-parse.c	2011-04-10 13:25:52 +0000
+@@ -935,7 +935,7 @@
+ void *
+ __argp_input (const struct argp *argp, const struct argp_state *state)
+ {
+-  if (state)
++  if (state && state->pstate)
+     {
+       struct group *group;
+       struct parser *parser = state->pstate;
+

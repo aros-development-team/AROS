@@ -42,6 +42,9 @@ static grub_uint8_t grub_keyboard_controller_orig;
 static grub_uint8_t grub_keyboard_orig_set;
 static grub_uint8_t current_set; 
 
+static void
+grub_keyboard_controller_init (void);
+
 static const grub_uint8_t set1_mapping[128] =
   {
     /* 0x00 */ 0 /* Unused  */,               GRUB_KEYBOARD_KEY_ESCAPE, 
@@ -97,7 +100,18 @@ static const grub_uint8_t set1_mapping[128] =
     /* OLPC keys. Just mapped to normal keys.  */
     /* 0x64 */ 0,                             GRUB_KEYBOARD_KEY_UP,
     /* 0x66 */ GRUB_KEYBOARD_KEY_DOWN,        GRUB_KEYBOARD_KEY_LEFT,
-    /* 0x68 */ GRUB_KEYBOARD_KEY_RIGHT
+    /* 0x68 */ GRUB_KEYBOARD_KEY_RIGHT,       0,
+    /* 0x6a */ 0,                             0,
+    /* 0x6c */ 0,                             0,
+    /* 0x6e */ 0,                             0,
+    /* 0x70 */ 0,                             0,
+    /* 0x72 */ 0,                             GRUB_KEYBOARD_KEY_JP_RO,
+    /* 0x74 */ 0,                             0,
+    /* 0x76 */ 0,                             0,
+    /* 0x78 */ 0,                             0,
+    /* 0x7a */ 0,                             0,
+    /* 0x7c */ 0,                             GRUB_KEYBOARD_KEY_JP_YEN,
+    /* 0x7e */ GRUB_KEYBOARD_KEY_KPCOMMA
   };
 
 static const struct
@@ -163,7 +177,7 @@ static const grub_uint8_t set2_mapping[256] =
     /* 0x4a */ GRUB_KEYBOARD_KEY_SLASH,       GRUB_KEYBOARD_KEY_L,
     /* 0x4c */ GRUB_KEYBOARD_KEY_SEMICOLON,   GRUB_KEYBOARD_KEY_P,
     /* 0x4e */ GRUB_KEYBOARD_KEY_DASH,        0,
-    /* 0x50 */ 0,                             0,
+    /* 0x50 */ 0,                             GRUB_KEYBOARD_KEY_JP_RO,
     /* 0x52 */ GRUB_KEYBOARD_KEY_DQUOTE,      0,
     /* 0x54 */ GRUB_KEYBOARD_KEY_LBRACKET,    GRUB_KEYBOARD_KEY_EQUAL,
     /* 0x56 */ 0,                             0,
@@ -176,8 +190,8 @@ static const grub_uint8_t set2_mapping[256] =
     /* 0x64 */ 0,                             0,
     /* 0x66 */ GRUB_KEYBOARD_KEY_BACKSPACE,   0,
     /* 0x68 */ 0,                             GRUB_KEYBOARD_KEY_NUM1,
-    /* 0x6a */ 0,                             GRUB_KEYBOARD_KEY_NUM4,
-    /* 0x6c */ GRUB_KEYBOARD_KEY_NUM7,        0,
+    /* 0x6a */ GRUB_KEYBOARD_KEY_JP_YEN,      GRUB_KEYBOARD_KEY_NUM4,
+    /* 0x6c */ GRUB_KEYBOARD_KEY_NUM7,        GRUB_KEYBOARD_KEY_KPCOMMA,
     /* 0x6e */ 0,                             0,
     /* 0x70 */ GRUB_KEYBOARD_KEY_NUMDOT,      GRUB_KEYBOARD_KEY_NUM0,
     /* 0x72 */ GRUB_KEYBOARD_KEY_NUM2,        GRUB_KEYBOARD_KEY_NUM5,
@@ -211,6 +225,8 @@ static const struct
     {0x7a, GRUB_KEYBOARD_KEY_NPAGE},
     {0x7d, GRUB_KEYBOARD_KEY_PPAGE},
   };
+
+static int ping_sent;
 
 static void
 keyboard_controller_wait_until_ready (void)
@@ -259,7 +275,13 @@ grub_keyboard_controller_write (grub_uint8_t c)
   grub_outb (c, KEYBOARD_REG_DATA);
 }
 
-#if !defined (GRUB_MACHINE_MIPS_LOONGSON) && !defined (GRUB_MACHINE_QEMU) && !defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_QEMU) || defined (GRUB_MACHINE_COREBOOT) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+#define USE_SCANCODE_SET 1
+#else
+#define USE_SCANCODE_SET 0
+#endif
+
+#if !USE_SCANCODE_SET
 
 static grub_uint8_t
 grub_keyboard_controller_read (void)
@@ -332,7 +354,7 @@ set_scancodes (void)
       return;
     }
 
-#if !(defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_QEMU) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS))
+#if !USE_SCANCODE_SET
   current_set = 1;
   return;
 #else
@@ -351,7 +373,7 @@ set_scancodes (void)
   grub_dprintf ("atkeyb", "returned set %d\n", current_set);
   if (current_set == 1)
     return;
-  grub_printf ("No supported scancode set found\n");
+  grub_dprintf ("atkeyb", "no supported scancode set found\n");
 #endif
 }
 
@@ -374,6 +396,9 @@ fetch_key (int *is_break)
   if (! KEYBOARD_ISREADY (grub_inb (KEYBOARD_REG_STATUS)))
     return -1;
   at_key = grub_inb (KEYBOARD_REG_DATA);
+  /* May happen if no keyboard is connected. Just ignore this.  */
+  if (at_key == 0xff)
+    return -1;
   if (at_key == 0xe0)
     {
       e0_received = 1;
@@ -515,17 +540,42 @@ grub_keyboard_getkey (void)
   return key;
 }
 
+int
+grub_at_keyboard_is_alive (void)
+{
+  if (current_set != 0)
+    return 1;
+  if (ping_sent
+      && KEYBOARD_COMMAND_ISREADY (grub_inb (KEYBOARD_REG_STATUS))
+      && grub_inb (KEYBOARD_REG_DATA) == 0x55)
+    {
+      grub_keyboard_controller_init ();
+      return 1;
+    }
+
+  if (KEYBOARD_COMMAND_ISREADY (grub_inb (KEYBOARD_REG_STATUS)))
+    {
+      grub_outb (0xaa, KEYBOARD_REG_STATUS);
+      ping_sent = 1;
+    }
+  return 0;
+}
+
 /* If there is a character pending, return it;
    otherwise return GRUB_TERM_NO_KEY.  */
 static int
 grub_at_keyboard_getkey (struct grub_term_input *term __attribute__ ((unused)))
 {
   int code;
+
+  if (!grub_at_keyboard_is_alive ())
+    return GRUB_TERM_NO_KEY;
+
   code = grub_keyboard_getkey ();
   if (code == -1)
     return GRUB_TERM_NO_KEY;
 #ifdef DEBUG_AT_KEYBOARD
-  grub_dprintf ("atkeyb", "Detected key 0x%x\n", key);
+  grub_dprintf ("atkeyb", "Detected key 0x%x\n", code);
 #endif
   switch (code)
     {
@@ -535,7 +585,7 @@ grub_at_keyboard_getkey (struct grub_term_input *term __attribute__ ((unused)))
 	keyboard_controller_led (led_status);
 
 #ifdef DEBUG_AT_KEYBOARD
-	grub_dprintf ("atkeyb", "caps_lock = %d\n", !!(at_keyboard_status & KEYBOARD_STATUS_CAPS_LOCK));
+	grub_dprintf ("atkeyb", "caps_lock = %d\n", !!(at_keyboard_status & GRUB_KEYBOARD_STATUS_CAPS_LOCK));
 #endif
 	return GRUB_TERM_NO_KEY;
       case GRUB_KEYBOARD_KEY_NUM_LOCK:
@@ -544,7 +594,7 @@ grub_at_keyboard_getkey (struct grub_term_input *term __attribute__ ((unused)))
 	keyboard_controller_led (led_status);
 
 #ifdef DEBUG_AT_KEYBOARD
-	grub_dprintf ("atkeyb", "num_lock = %d\n", !!(at_keyboard_status & KEYBOARD_STATUS_NUM_LOCK));
+	grub_dprintf ("atkeyb", "num_lock = %d\n", !!(at_keyboard_status & GRUB_KEYBOARD_STATUS_NUM_LOCK));
 #endif
 	return GRUB_TERM_NO_KEY;
       case GRUB_KEYBOARD_KEY_SCROLL_LOCK:
@@ -557,8 +607,8 @@ grub_at_keyboard_getkey (struct grub_term_input *term __attribute__ ((unused)))
     }
 }
 
-static grub_err_t
-grub_keyboard_controller_init (struct grub_term_input *term __attribute__ ((unused)))
+static void
+grub_keyboard_controller_init (void)
 {
   at_keyboard_status = 0;
   /* Drain input buffer. */
@@ -570,8 +620,12 @@ grub_keyboard_controller_init (struct grub_term_input *term __attribute__ ((unus
       keyboard_controller_wait_until_ready ();
       grub_inb (KEYBOARD_REG_DATA);
     }
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_QEMU) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
   grub_keyboard_controller_orig = 0;
+  grub_keyboard_orig_set = 2;
+#elif defined (GRUB_MACHINE_QEMU) || defined (GRUB_MACHINE_COREBOOT)
+  /* *BSD relies on those settings.  */
+  grub_keyboard_controller_orig = KEYBOARD_AT_TRANSLATE;
   grub_keyboard_orig_set = 2;
 #else
   grub_keyboard_controller_orig = grub_keyboard_controller_read ();
@@ -579,13 +633,13 @@ grub_keyboard_controller_init (struct grub_term_input *term __attribute__ ((unus
 #endif
   set_scancodes ();
   keyboard_controller_led (led_status);
-
-  return GRUB_ERR_NONE;
 }
 
 static grub_err_t
 grub_keyboard_controller_fini (struct grub_term_input *term __attribute__ ((unused)))
 {
+  if (current_set == 0)
+    return GRUB_ERR_NONE;
   if (grub_keyboard_orig_set)
     write_mode (grub_keyboard_orig_set);
   grub_keyboard_controller_write (grub_keyboard_controller_orig);
@@ -601,6 +655,9 @@ grub_at_fini_hw (int noreturn __attribute__ ((unused)))
 static grub_err_t
 grub_at_restore_hw (void)
 {
+  if (current_set == 0)
+    return GRUB_ERR_NONE;
+
   /* Drain input buffer. */
   while (1)
     {
@@ -620,27 +677,18 @@ grub_at_restore_hw (void)
 static struct grub_term_input grub_at_keyboard_term =
   {
     .name = "at_keyboard",
-    .init = grub_keyboard_controller_init,
     .fini = grub_keyboard_controller_fini,
     .getkey = grub_at_keyboard_getkey
   };
 
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
-void grub_at_keyboard_init (void)
-#else
 GRUB_MOD_INIT(at_keyboard)
-#endif
 {
   grub_term_register_input ("at_keyboard", &grub_at_keyboard_term);
   grub_loader_register_preboot_hook (grub_at_fini_hw, grub_at_restore_hw,
 				     GRUB_LOADER_PREBOOT_HOOK_PRIO_CONSOLE);
 }
 
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
-void grub_at_keyboard_fini (void)
-#else
 GRUB_MOD_FINI(at_keyboard)
-#endif
 {
   grub_keyboard_controller_fini (NULL);
   grub_term_unregister_input (&grub_at_keyboard_term);

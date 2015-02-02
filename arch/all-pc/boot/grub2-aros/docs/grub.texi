@@ -20,7 +20,7 @@
 This manual is for GNU GRUB (version @value{VERSION},
 @value{UPDATED}).
 
-Copyright @copyright{} 1999,2000,2001,2002,2004,2006,2008,2009,2010,2011,2012 Free Software Foundation, Inc.
+Copyright @copyright{} 1999,2000,2001,2002,2004,2006,2008,2009,2010,2011,2012,2013 Free Software Foundation, Inc.
 
 @quotation
 Permission is granted to copy, distribute and/or modify this document
@@ -36,8 +36,11 @@ Invariant Sections.
 * grub-install: (grub)Invoking grub-install.    Install GRUB on your drive
 * grub-mkconfig: (grub)Invoking grub-mkconfig.  Generate GRUB configuration
 * grub-mkpasswd-pbkdf2: (grub)Invoking grub-mkpasswd-pbkdf2.
+* grub-mkrelpath: (grub)Invoking grub-mkrelpath.
 * grub-mkrescue: (grub)Invoking grub-mkrescue.  Make a GRUB rescue image
+* grub-mount: (grub)Invoking grub-mount.        Mount a file system using GRUB
 * grub-probe: (grub)Invoking grub-probe.        Probe device information
+* grub-script-check: (grub)Invoking grub-script-check.
 @end direntry
 
 @setchapternewpage odd
@@ -78,6 +81,9 @@ This edition documents version @value{VERSION}.
 @menu
 * Introduction::                Capturing the spirit of GRUB
 * Naming convention::           Names of your drives in GRUB
+* OS-specific notes about grub tools:: 
+                                Some notes about OS-specific behaviour of GRUB
+                                tools
 * Installation::                Installing GRUB on your drive
 * Booting::                     How to boot different operating systems
 * Configuration::               Writing your own configuration file
@@ -86,12 +92,13 @@ This edition documents version @value{VERSION}.
 * Serial terminal::             Using GRUB via a serial line
 * Vendor power-on keys::        Changing GRUB behaviour on vendor power-on keys
 * Images::                      GRUB image files
+* Core image size limitation::  GRUB image files size limitations
 * Filesystem::                  Filesystem syntax and semantics
 * Interface::                   The menu and the command-line
 * Environment::                 GRUB environment variables
 * Commands::                    The list of available builtin commands
 * Internationalisation::        Topics relating to language support
-* Security::                    Authentication and authorisation
+* Security::                    Authentication, authorisation, and signatures
 * Platform limitations::        The list of platform-specific limitations
 * Platform-specific operations:: Platform-specific operations
 * Supported kernels::           The list of supported kernels
@@ -100,8 +107,11 @@ This edition documents version @value{VERSION}.
 * Invoking grub-mkconfig::      Generate a GRUB configuration file
 * Invoking grub-mkpasswd-pbkdf2::
                                 Generate GRUB password hashes
+* Invoking grub-mkrelpath::     Make system path relative to its root
 * Invoking grub-mkrescue::      Make a GRUB rescue image
+* Invoking grub-mount::         Mount a file system using GRUB
 * Invoking grub-probe::         Probe device information for GRUB
+* Invoking grub-script-check::  Check GRUB script file for syntax errors
 * Obtaining and Building GRUB:: How to obtain and build GRUB
 * Reporting bugs::              Where you should send a bug report
 * Future::                      Some future plans on GRUB
@@ -311,8 +321,10 @@ tables are also loaded.
 
 @item Support non-Multiboot kernels
 Support many of the various free 32-bit kernels that lack Multiboot
-compliance (primarily FreeBSD, NetBSD, OpenBSD, and
-Linux). Chain-loading of other boot loaders is also supported.
+compliance (primarily FreeBSD, NetBSD@footnote{The NetBSD/i386 kernel
+is Multiboot-compliant, but lacks support for Multiboot modules.},
+OpenBSD, and Linux). Chain-loading of other boot loaders is also
+supported.
 
 @item Load multiples modules
 Fully support the Multiboot feature of loading multiple modules.
@@ -529,6 +541,75 @@ completion works with file names, too.
 That was easy, admit it. Now read the next chapter, to find out how to
 actually install GRUB on your drive.
 
+@node OS-specific notes about grub tools
+@chapter OS-specific notes about grub tools
+
+On OS which have device nodes similar to Unix-like OS GRUB tools use the
+OS name. E.g. for GNU/Linux:
+
+@example
+# @kbd{grub-install /dev/sda}
+@end example
+
+On AROS we use another syntax. For volumes:
+
+@example
+//:<volume name>
+@end example
+
+E.g.
+
+@example
+//:DH0
+@end example
+
+For disks we use syntax:
+@example
+//:<driver name>/unit/flags
+@end example
+
+E.g.
+
+@example
+# @kbd{grub-install //:ata.device/0/0}
+@end example
+
+On Windows we use UNC path. For volumes it's typically
+
+@example
+\\?\Volume@{<GUID>@}
+\\?\<drive letter>:
+@end example
+
+E.g.
+
+@example
+\\?\Volume@{17f34d50-cf64-4b02-800e-51d79c3aa2ff@}
+\\?\C:
+@end example
+
+
+For disks it's
+
+@example
+\\?\PhysicalDrive<number>
+@end example
+
+E.g.
+
+@example
+# @kbd{grub-install \\?\PhysicalDrive0}
+@end example
+
+Beware that you may need to further escape the backslashes depending on your
+shell.
+
+When compiled with cygwin support then cygwin drive names are automatically
+when needed. E.g.
+
+@example
+# @kbd{grub-install /dev/sda}
+@end example
 
 @node Installation
 @chapter Installation
@@ -575,7 +656,7 @@ For example, under Linux the following will install GRUB into the MBR
 of the first IDE disk:
 
 @example
-# @kbd{grub-install /dev/hda}
+# @kbd{grub-install /dev/sda}
 @end example
 
 Likewise, under GNU/Hurd, this has the same effect:
@@ -614,11 +695,31 @@ This install doesn't conflict with standard install as long as they are in
 separate directories.
 
 Note that @command{grub-install} is actually just a shell script and the
-real task is done by @command{grub-mkimage} and @command{grub-setup}.
-Therefore, you may run those commands directly to install GRUB, without
-using @command{grub-install}. Don't do that, however, unless you are very
-familiar with the internals of GRUB. Installing a boot loader on a running
-OS may be extremely dangerous.
+real task is done by other tools such as @command{grub-mkimage}. Therefore,
+you may run those commands directly to install GRUB, without using
+@command{grub-install}. Don't do that, however, unless you are very familiar
+with the internals of GRUB. Installing a boot loader on a running OS may be
+extremely dangerous.
+
+On EFI systems for fixed disk install you have to mount EFI System Partition.
+If you mount it at @file{/boot/efi} then you don't need any special arguments:
+
+@example
+# @kbd{grub-install}
+@end example
+
+Otherwise you need to specify where your EFI System partition is mounted:
+
+@example
+# @kbd{grub-install --efi-directory=/mnt/efi}
+@end example
+
+For removable installs you have to use @option{--removable} and specify both
+@option{--boot-directory} and @option{--efi-directory}:
+
+@example
+# @kbd{grub-install --efi-directory=/mnt/usb --boot-directory=/mnt/usb/boot --removable}
+@end example
 
 @node Making a GRUB bootable CD-ROM
 @section Making a GRUB bootable CD-ROM
@@ -680,8 +781,8 @@ storage devices.
 @section The map between BIOS drives and OS devices
 
 If the device map file exists, the GRUB utilities (@command{grub-probe},
-@command{grub-setup}, etc.) read it to map BIOS drives to OS devices.  This
-file consists of lines like this:
+etc.) read it to map BIOS drives to OS devices.  This file consists of lines
+like this:
 
 @example
 (@var{device}) @var{file}
@@ -897,6 +998,7 @@ Here, we describe some caveats on several operating systems.
 @menu
 * GNU/Hurd::
 * GNU/Linux::
+* NetBSD::
 * DOS/Windows::
 @end menu
 
@@ -997,6 +1099,63 @@ the size, run the command @command{uppermem} @emph{before} loading the
 kernel. @xref{uppermem}, for more information.
 
 
+@node NetBSD
+@subsection NetBSD
+
+Booting a NetBSD kernel from GRUB is also relatively easy: first set
+GRUB's root device, then load the kernel and the modules, and finally
+run @command{boot}.
+
+@enumerate
+@item
+Set GRUB's root device to the partition holding the NetBSD root file
+system.  For a disk with a NetBSD disk label, this is usually the first
+partition (a:).  In that case, and assuming that the partition is on the
+first hard disk, set GRUB's root device as follows:
+
+@example
+grub> @kbd{insmod part_bsd}
+grub> @kbd{set root=(hd0,netbsd1)}
+@end example
+
+For a disk with a GUID Partition Table (GPT), and assuming that the
+NetBSD root partition is the third GPT partition, do this:
+
+@example
+grub> @kbd{insmod part_gpt}
+grub> @kbd{set root=(hd0,gpt3)}
+@end example
+
+@item
+Load the kernel using the command @command{knetbsd}:
+
+@example
+grub> @kbd{knetbsd /netbsd}
+@end example
+
+Various options may be given to @command{knetbsd}.  These options are,
+for the most part, the same as in the NetBSD boot loader.  For instance,
+to boot the system in single-user mode and with verbose messages, do
+this:
+
+@example
+grub> @kbd{knetbsd /netbsd -s -v}
+@end example
+
+@item
+If needed, load kernel modules with the command
+@command{knetbsd_module_elf}.  A typical example is the module for the
+root file system:
+
+@example
+grub> @kbd{knetbsd_module_elf /stand/amd64/6.0/modules/ffs/ffs.kmod}
+@end example
+
+@item
+Finally, run the command @command{boot} (@pxref{boot}).
+@end enumerate
+
+
 @node DOS/Windows
 @subsection DOS/Windows
 
@@ -1095,14 +1254,14 @@ Valid keys in @file{/etc/default/grub} are as follows:
 @item GRUB_DEFAULT
 The default menu entry.  This may be a number, in which case it identifies
 the Nth entry in the generated menu counted from zero, or the title of a
-menu entry, or the special string @samp{saved}.  Using the title may be
+menu entry, or the special string @samp{saved}.  Using the id may be
 useful if you want to set a menu entry as the default even though there may
 be a variable number of entries before it.
 
 For example, if you have:
 
 @verbatim
-menuentry 'Example GNU/Linux distribution' --class gnu-linux {
+menuentry 'Example GNU/Linux distribution' --class gnu-linux --id example-gnu-linux {
 	...
 }
 @end verbatim
@@ -1110,12 +1269,17 @@ menuentry 'Example GNU/Linux distribution' --class gnu-linux {
 then you can make this the default using:
 
 @example
-GRUB_DEFAULT='Example GNU/Linux distribution'
+GRUB_DEFAULT=example-gnu-linux
 @end example
 
+Previously it was documented the way to use entry title. While this still
+works it's not recommended since titles often contain unstable device names
+and may be translated
+
 If you set this to @samp{saved}, then the default menu entry will be that
-saved by @samp{GRUB_SAVEDEFAULT}, @command{grub-set-default}, or
-@command{grub-reboot}.
+saved by @samp{GRUB_SAVEDEFAULT} or @command{grub-set-default}.  This relies on
+the environment block, which may not be available in all situations
+(@pxref{Environment block}).
 
 The default is @samp{0}.
 
@@ -1124,7 +1288,7 @@ If this option is set to @samp{true}, then, when an entry is selected, save
 it as a new default entry for use by future runs of GRUB.  This is only
 useful if @samp{GRUB_DEFAULT=saved}; it is a separate option because
 @samp{GRUB_DEFAULT=saved} is useful without this option, in conjunction with
-@command{grub-set-default} or @command{grub-reboot}.  Unset by default.
+@command{grub-set-default}.  Unset by default.
 This option relies on the environment block, which may not be available in
 all situations (@pxref{Environment block}).
 
@@ -1134,22 +1298,26 @@ a key is pressed.  The default is @samp{5}.  Set to @samp{0} to boot
 immediately without displaying the menu, or to @samp{-1} to wait
 indefinitely.
 
-@item GRUB_HIDDEN_TIMEOUT
-Wait this many seconds for a key to be pressed before displaying the menu.
-If no key is pressed during that time, display the menu for the number of
-seconds specified in GRUB_TIMEOUT before booting the default entry. We expect
-that most people who use GRUB_HIDDEN_TIMEOUT will want to have GRUB_TIMEOUT set 
-to @samp{0} so that the menu is not displayed at all unless a key is pressed.
-Unset by default.
+If @samp{GRUB_TIMEOUT_STYLE} is set to @samp{countdown} or @samp{hidden},
+the timeout is instead counted before the menu is displayed.
 
-@item GRUB_HIDDEN_TIMEOUT_QUIET
-In conjunction with @samp{GRUB_HIDDEN_TIMEOUT}, set this to @samp{true} to
-suppress the verbose countdown while waiting for a key to be pressed before
-displaying the menu.  Unset by default.
+@item GRUB_TIMEOUT_STYLE
+If this option is unset or set to @samp{menu}, then GRUB will display the
+menu and then wait for the timeout set by @samp{GRUB_TIMEOUT} to expire
+before booting the default entry.  Pressing a key interrupts the timeout.
+
+If this option is set to @samp{countdown} or @samp{hidden}, then, before
+displaying the menu, GRUB will wait for the timeout set by
+@samp{GRUB_TIMEOUT} to expire.  If @key{ESC} is pressed during that time, it
+will display the menu and wait for input.  If a hotkey associated with a
+menu entry is pressed, it will boot the associated menu entry immediately.
+If the timeout expires before either of these happens, it will boot the
+default entry.  In the @samp{countdown} case, it will show a one-line
+indication of the remaining time.
 
 @item GRUB_DEFAULT_BUTTON
 @itemx GRUB_TIMEOUT_BUTTON
-@itemx GRUB_HIDDEN_TIMEOUT_BUTTON
+@itemx GRUB_TIMEOUT_STYLE_BUTTON
 @itemx GRUB_BUTTON_CMOS_ADDRESS
 Variants of the corresponding variables without the @samp{_BUTTON} suffix,
 used to support vendor-specific power buttons.  @xref{Vendor power-on keys}.
@@ -1163,9 +1331,9 @@ Select the terminal input device.  You may select multiple devices here,
 separated by spaces.
 
 Valid terminal input names depend on the platform, but may include
-@samp{console} (PC BIOS and EFI consoles), @samp{serial} (serial terminal),
-@samp{ofconsole} (Open Firmware console), @samp{at_keyboard} (PC AT
-keyboard, mainly useful with Coreboot), or @samp{usb_keyboard} (USB keyboard
+@samp{console} (native platform console), @samp{serial} (serial terminal),
+@samp{serial_<port>} (serial terminal with explicit port selection),
+@samp{at_keyboard} (PC AT keyboard), or @samp{usb_keyboard} (USB keyboard
 using the HID Boot Protocol, for cases where the firmware does not handle
 this).
 
@@ -1176,9 +1344,21 @@ Select the terminal output device.  You may select multiple devices here,
 separated by spaces.
 
 Valid terminal output names depend on the platform, but may include
-@samp{console} (PC BIOS and EFI consoles), @samp{serial} (serial terminal),
-@samp{gfxterm} (graphics-mode output), @samp{ofconsole} (Open Firmware
-console), or @samp{vga_text} (VGA text output, mainly useful with Coreboot).
+@samp{console} (native platform console), @samp{serial} (serial terminal),
+@samp{serial_<port>} (serial terminal with explicit port selection),
+@samp{gfxterm} (graphics-mode output), @samp{vga_text} (VGA text output),
+@samp{mda_text} (MDA text output), @samp{morse} (Morse-coding using system
+beeper) or @samp{spkmodem} (simple data protocol using system speaker).
+
+@samp{spkmodem} is useful when no serial port is available. Connect the output
+of sending system (where GRUB is running) to line-in of receiving system
+(usually developer machine).
+On receiving system compile @samp{spkmodem-recv} from
+@samp{util/spkmodem-recv.c} and run:
+
+@example
+parecord --channels=1 --rate=48000 --format=s16le | ./spkmodem-recv
+@end example
 
 The default is to use the platform's native terminal output.
 
@@ -1210,9 +1390,8 @@ As @samp{GRUB_CMDLINE_LINUX}, but for GNU Mach.
 
 @item GRUB_CMDLINE_XEN
 @itemx GRUB_CMDLINE_XEN_DEFAULT
-The values of these options are appended to the values of
-@samp{GRUB_CMDLINE_LINUX} and @samp{GRUB_CMDLINE_LINUX_DEFAULT} for Linux
-and Xen menu entries.
+The values of these options are passed to Xen hypervisor Xen menu entries,
+for all respectively normal entries.
 
 @item GRUB_CMDLINE_LINUX_XEN_REPLACE
 @item GRUB_CMDLINE_LINUX_XEN_REPLACE_DEFAULT
@@ -1275,6 +1454,28 @@ Normally, @command{grub-mkconfig} will try to use the external
 systems installed on the same system and generate appropriate menu entries
 for them.  Set this option to @samp{true} to disable this.
 
+@item GRUB_OS_PROBER_SKIP_LIST
+List of space-separated FS UUIDs of filesystems to be ignored from os-prober
+output. For efi chainloaders it's <UUID>@@<EFI FILE>
+
+@item GRUB_DISABLE_SUBMENU
+Normally, @command{grub-mkconfig} will generate top level menu entry for
+the kernel with highest version number and put all other found kernels
+or alternative menu entries for recovery mode in submenu. For entries returned
+by @command{os-prober} first entry will be put on top level and all others
+in submenu. If this option is set to @samp{y}, flat menu with all entries
+on top level will be generated instead. Changing this option will require
+changing existing values of @samp{GRUB_DEFAULT}, @samp{fallback} (@pxref{fallback})
+and @samp{default} (@pxref{default}) environment variables as well as saved
+default entry using @command{grub-set-default} and value used with
+@command{grub-reboot}.
+
+@item GRUB_ENABLE_CRYPTODISK
+If set to @samp{y}, @command{grub-mkconfig} and @command{grub-install} will
+check for encrypted disks and generate additional commands needed to access
+them during boot.  Note that in this case unattended boot is not possible
+because GRUB will wait for passphrase to unlock encrypted container.
+
 @item GRUB_INIT_TUNE
 Play a tune on the speaker when GRUB starts.  This is particularly useful
 for users unable to see the screen.  The value of this option is passed
@@ -1288,6 +1489,44 @@ out specified regions of RAM.
 This option may be set to a list of GRUB module names separated by spaces.
 Each module will be loaded as early as possible, at the start of
 @file{grub.cfg}.
+
+@end table
+
+The following options are still accepted for compatibility with existing
+configurations, but have better replacements:
+
+@table @samp
+@item GRUB_HIDDEN_TIMEOUT
+Wait this many seconds before displaying the menu.  If @key{ESC} is pressed
+during that time, display the menu and wait for input according to
+@samp{GRUB_TIMEOUT}.  If a hotkey associated with a menu entry is pressed,
+boot the associated menu entry immediately.  If the timeout expires before
+either of these happens, display the menu for the number of seconds
+specified in @samp{GRUB_TIMEOUT} before booting the default entry.
+
+If you set @samp{GRUB_HIDDEN_TIMEOUT}, you should also set
+@samp{GRUB_TIMEOUT=0} so that the menu is not displayed at all unless
+@key{ESC} is pressed.
+
+This option is unset by default, and is deprecated in favour of the less
+confusing @samp{GRUB_TIMEOUT_STYLE=countdown} or
+@samp{GRUB_TIMEOUT_STYLE=hidden}.
+
+@item GRUB_HIDDEN_TIMEOUT_QUIET
+In conjunction with @samp{GRUB_HIDDEN_TIMEOUT}, set this to @samp{true} to
+suppress the verbose countdown while waiting for a key to be pressed before
+displaying the menu.
+
+This option is unset by default, and is deprecated in favour of the less
+confusing @samp{GRUB_TIMEOUT_STYLE=countdown}.
+
+@item GRUB_HIDDEN_TIMEOUT_BUTTON
+Variant of @samp{GRUB_HIDDEN_TIMEOUT}, used to support vendor-specific power
+buttons.  @xref{Vendor power-on keys}.
+
+This option is unset by default, and is deprecated in favour of the less
+confusing @samp{GRUB_TIMEOUT_STYLE=countdown} or
+@samp{GRUB_TIMEOUT_STYLE=hidden}.
 
 @end table
 
@@ -1442,7 +1681,7 @@ definitions do not affect the exit status in @code{$?}.  When executed, the
 exit status of a function is the exit status of the last command executed in
 the body.
 
-@item menuentry @var{title} [@option{--class=class} @dots{}] [@option{--users=users}] [@option{--unrestricted}] [@option{--hotkey=key}] @{ @var{command}; @dots{} @}
+@item menuentry @var{title} [@option{--class=class} @dots{}] [@option{--users=users}] [@option{--unrestricted}] [@option{--hotkey=key}] [@option{--id=id}] @{ @var{command}; @dots{} @}
 @xref{menuentry}.
 @end table
 
@@ -1473,6 +1712,10 @@ Causes a function to exit with the return value specified by @code{n}.  If
 @code{n} is omitted, the return status is that of the last command executed
 in the function body.  If used outside a function the return status is
 false.
+
+@item setparams [@code{arg}] @dots{}
+Replace positional parameters starting with @code{$1} with arguments to
+@command{setparams}.
 
 @item shift [@code{n}]
 The positional parameters from @code{n}+1 @dots{} are renamed to
@@ -1578,7 +1821,7 @@ menuentry "Debian sid installer" @{
 
 Notes:
 @itemize
-@item Argument to search after --label is FS LABEL. You can also use UUIDs with --fs-uuid UUID instead of --label LABEL. You could also use direct @code{root=hd0,msdosX} but this is not recommened due to device name instability.
+@item Argument to search after --label is FS LABEL. You can also use UUIDs with --fs-uuid UUID instead of --label LABEL. You could also use direct @code{root=hd0,msdosX} but this is not recommended due to device name instability.
 @end itemize
 
 @node Embedded configuration
@@ -1671,8 +1914,8 @@ Colors can be specified in several ways:
 The fonts GRUB uses ``PFF2 font format'' bitmap fonts.  Fonts are specified
 with full font names.  Currently there is no
 provision for a preference list of fonts, or deriving one font from another.
-Fonts are loaded with the ``loadfont'' command in GRUB.  To see the list of
-loaded fonts, execute the ``lsfonts'' command.  If there are too many fonts to
+Fonts are loaded with the ``loadfont'' command in GRUB (@ref{loadfont}).  To see the list of
+loaded fonts, execute the ``lsfonts'' command (@ref{lsfonts}).  If there are too many fonts to
 fit on screen, do ``set pager=1'' before executing ``lsfonts''.
 
 
@@ -1812,15 +2055,60 @@ In this example, name3 is assigned a color value.
 @subsection Global Property List
 
 @multitable @columnfractions 0.3 0.6
-@item title-text @tab Specifies the text to display at the top center of the screen as a title.
-@item title-font @tab Defines the font used for the title message at the top of the screen.
-@item title-color @tab Defines the color of the title message.
-@item message-font @tab Defines the font used for messages, such as when GRUB is unable to automatically boot an entry.
-@item message-color @tab Defines the color of the message text.
-@item message-bg-color @tab Defines the background color of the message text area.
-@item desktop-image @tab Specifies the image to use as the background.  It will be scaled to fit the screen size.
-@item desktop-color @tab Specifies the color for the background if *desktop-image* is not specified.
-@item terminal-box @tab Specifies the file name pattern for the styled box slices used for the command line terminal window.  For example, ``terminal-box: terminal_*.png'' will use the images ``terminal_c.png`` as the center area, ``terminal_n.png`` as the north (top) edge, ``terminal_nw.png`` as the northwest (upper left) corner, and so on.  If the image for any slice is not found, it will simply be left empty.
+@item title-text
+   @tab Specifies the text to display at the top center of the screen as a title.
+@item title-font
+   @tab Defines the font used for the title message at the top of the screen.
+@item title-color
+   @tab Defines the color of the title message.
+@item message-font
+   @tab Currently unused. Left for backward compatibility.
+@item message-color
+   @tab Currently unused. Left for backward compatibility.
+@item message-bg-color
+   @tab Currently unused. Left for backward compatibility.
+@item desktop-image
+   @tab Specifies the image to use as the background.  It will be scaled
+   to fit the screen size or proportionally scaled depending on the scale
+   method.
+@item desktop-image-scale-method
+   @tab Specifies the scaling method for the *desktop-image*. Options are
+   ``stretch``, ``crop``, ``padding``, ``fitwidth``, ``fitheight``.
+   ``stretch`` for fitting the screen size. Otherwise it is proportional
+   scaling of a part of *desktop-image* to the part of the screen.
+   ``crop`` part of the *desktop-image* will be proportionally scaled to
+   fit the screen sizes. ``padding`` the entire *desktop-image* will be
+   contained on the screen. ``fitwidth`` for fitting the *desktop-image*'s
+   width with screen width. ``fitheight`` for fitting the *desktop-image*'s
+   height with the screen height. Default is ``stretch``.
+@item desktop-image-h-align
+   @tab Specifies the horizontal alignment of the *desktop-image* if
+   *desktop-image-scale-method* isn't equeal to ``stretch``. Options are
+   ``left``, ``center``, ``right``. Default is ``center``.
+@item desktop-image-v-align
+   @tab Specifies the vertical alignment of the *desktop-image* if
+   *desktop-image-scale-method* isn't equeal to ``stretch``. Options are
+   ``top``, ``center``, ``bottom``. Default is ``center``.
+@item desktop-color
+   @tab Specifies the color for the background if *desktop-image* is not
+   specified.
+@item terminal-box
+   @tab Specifies the file name pattern for the styled box slices used for the
+   command line terminal window.  For example, ``terminal-box: terminal_*.png``
+   will use the images ``terminal_c.png`` as the center area, ``terminal_n.png``
+   as the north (top) edge, ``terminal_nw.png`` as the northwest (upper left)
+   corner, and so on.  If the image for any slice is not found, it will simply
+   be left empty.
+@item terminal-border
+   @tab Specifies the border width of the terminal window.
+@item terminal-left
+   @tab Specifies the left coordinate of the terminal window.
+@item terminal-top
+   @tab Specifies the top coordinate of the terminal window.
+@item terminal-width
+   @tab Specifies the width of the terminal window.
+@item terminal-height
+   @tab Specifies the height of the terminal window.
 @end multitable
 
 
@@ -1854,21 +2142,34 @@ The following is a list of the components and the properties they support.
    
    Properties:
    @multitable @columnfractions 0.2 0.7
-   @item text @tab The text to display.
-   @item font @tab The font to use for text display.
-   @item color @tab The color of the text.
-   @item align @tab The horizontal alignment of the text within the component. Options are ``left``, ``center``, and ``right``.
+   @item id
+      @tab Set to ``__timeout__`` to display the time elapsed to an automatical
+      boot of the default entry.
+   @item text
+      @tab The text to display. If ``id`` is set to ``__timeout__`` and no
+      ``text`` property is set then the amount of seconds will be shown.
+      If set to ``@@KEYMAP_SHORT@@``, ``@@KEYMAP_MIDDLE@@`` or
+      ``@@KEYMAP_LONG@@`` then predefined hotkey information will be shown.
+   @item font
+      @tab The font to use for text display.
+   @item color
+      @tab The color of the text.
+   @item align
+      @tab The horizontal alignment of the text within the component.
+      Options are ``left``, ``center`` and ``right``.
+   @item visible
+      @tab Set to ``false`` to hide the label.
    @end multitable
 
 @item image
-   A component that displays an image.  The image is scaled to fit the
-   component, although the preferred size defaults to the image's original
-   size unless the ``preferred_size`` property is explicitly set.
+   A component that displays an image.  The image is scaled to fit
+   the component.
 
    Properties:
 
    @multitable @columnfractions 0.2 0.7
-   @item file @tab The full path to the image file to load.
+   @item file
+      @tab The full path to the image file to load.
    @end multitable
 
 @item progress_bar
@@ -1878,17 +2179,45 @@ The following is a list of the components and the properties they support.
    Properties:
 
    @multitable @columnfractions 0.2 0.7
-   @item fg_color @tab The foreground color for plain solid color rendering.
-   @item bg_color @tab The background color for plain solid color rendering.
-   @item border_color @tab The border color for plain solid color rendering.
-   @item text_color @tab The text color.
-   @item show_text @tab Boolean value indicating whether or not text should be displayed on the progress bar.  If set to *false*, then no text will be displayed on the bar.  If set to any other value, text will be displayed on the bar.
-   @item bar_style @tab The styled box specification for the frame of the progress bar. Example: ``progress_frame_*.png``
-   @item highlight_style @tab The styled box specification for the highlighted region of the progress bar. This box will be used to paint just the highlighted region of the bar, and will be increased in size as the bar nears completion. Example: ``progress_hl_*.png``.
-   @item text @tab The text to display on the progress bar.  If the progress bar's ID is set to ``__timeout__``, then GRUB will updated this property with an informative message as the timeout approaches.
-   @item value @tab The progress bar current value.  Normally not set manually.
-   @item start @tab The progress bar start value.  Normally not set manually.
-   @item end @tab The progress bar end value.  Normally not set manually.
+   @item id
+      @tab Set to ``__timeout__`` to display the time elapsed to an automatical
+      boot of the default entry.
+   @item fg_color
+      @tab The foreground color for plain solid color rendering.
+   @item bg_color
+      @tab The background color for plain solid color rendering.
+   @item border_color
+      @tab The border color for plain solid color rendering.
+   @item text_color
+      @tab The text color.
+   @item bar_style
+      @tab The styled box specification for the frame of the progress bar.
+      Example: ``progress_frame_*.png``
+      If the value is equal to ``highlight_style`` then no styled boxes
+      will be shown.
+   @item highlight_style
+      @tab The styled box specification for the highlighted region of the
+      progress bar. This box will be used to paint just the highlighted region
+      of the bar, and will be increased in size as the bar nears completion.
+      Example: ``progress_hl_*.png``.
+      If the value is equal to ``bar_style`` then no styled boxes
+      will be shown.
+   @item highlight_overlay
+      @tab If this option is set to ``true`` then the highlight box
+      side slices (every slice except the center slice) will overlay the
+      frame box side slices. And the center slice of the highlight box
+      can move all the way (from top to bottom), being drawn on the center
+      slice of the frame box. That way we can make a progress bar with
+      round-shaped edges so there won't be a free space from the highlight to
+      the frame in top and bottom scrollbar positions. Default is ``false``.
+   @item font
+      @tab The font to use for progress bar.
+   @item text
+      @tab The text to display on the progress bar.  If the progress bar's ID
+      is set to ``__timeout__`` and the value of this property is set to
+      ``@@TIMEOUT_NOTIFICATION_SHORT@@``, ``@@TIMEOUT_NOTIFICATION_MIDDLE@@``
+      or ``@@TIMEOUT_NOTIFICATION_LONG@@``, then GRUB will update this
+      property with an informative message as the timeout approaches.
    @end multitable
 
 @item circular_progress
@@ -1902,6 +2231,9 @@ The following is a list of the components and the properties they support.
    Properties:
 
    @multitable @columnfractions 0.3 0.6
+   @item id
+      @tab Set to ``__timeout__`` to display the time elapsed to an automatical
+      boot of the default entry.
    @item center_bitmap
       @tab The file name of the image to draw in the center of the component.
    @item tick_bitmap
@@ -1911,14 +2243,13 @@ The following is a list of the components and the properties they support.
    @item ticks_disappear
       @tab Boolean value indicating whether tick marks should progressively appear,
       or progressively disappear as *value* approaches *end*.  Specify
-      ``true`` or ``false``.
-   @item value
-      @tab The progress indicator current value.  Normally not set manually.
-   @item start
-      @tab The progress indicator start value.  Normally not set manually.
-   @item end
-      @tab The progress indicator end value.  Normally not set manually.
+      ``true`` or ``false``. Default is ``false``.
+   @item start_angle
+      @tab The position of the first tick mark to appear or disappear.
+      Measured in "parrots", 1 "parrot" = 1 / 256 of the full circle.
+      Use values ``xxx deg`` or ``xxx \xc2\xb0`` to set the angle in degrees.
    @end multitable
+
 @item boot_menu
    Displays the GRUB boot menu.  It allows selecting items and executing them.
 
@@ -1952,6 +2283,8 @@ The following is a list of the components and the properties they support.
       @tab The image file pattern for the menu frame styled box.
       Example:  ``menu_*.png`` (this will use images such as ``menu_c.png``,
       ``menu_w.png``, `menu_nw.png``, etc.)
+   @item item_pixmap_style
+      @tab The image file pattern for the item styled box.
    @item selected_item_pixmap_style
       @tab The image file pattern for the selected item highlight styled box.
    @item scrollbar
@@ -1964,10 +2297,39 @@ The following is a list of the components and the properties they support.
       @tab The image file pattern for the scroll bar thumb (the part of the scroll
       bar that moves as scrolling occurs).
       Example:  ``scrollbar_thumb_*.png``
-   @item max_items_shown
-      @tab The maximum number of items to show on the menu.  If there are more than
-      *max_items_shown* items in the menu, the list will scroll to make all
-      items accessible.
+   @item scrollbar_thumb_overlay
+      @tab If this option is set to ``true`` then the scrollbar thumb
+      side slices (every slice except the center slice) will overlay the
+      scrollbar frame side slices. And the center slice of the scrollbar_thumb
+      can move all the way (from top to bottom), being drawn on the center
+      slice of the scrollbar frame. That way we can make a scrollbar with
+      round-shaped edges so there won't be a free space from the thumb to
+      the frame in top and bottom scrollbar positions. Default is ``false``.
+   @item scrollbar_slice
+      @tab The menu frame styled box's slice in which the scrollbar will be
+      drawn. Possible values are ``west``, ``center``, ``east`` (default).
+      ``west`` - the scrollbar will be drawn in the west slice (right-aligned).
+      ``east`` - the scrollbar will be drawn in the east slice (left-aligned).
+      ``center`` - the scrollbar will be drawn in the center slice.
+      Note: in case of ``center`` slice:
+      a) If the scrollbar should be drawn then boot menu entry's width is
+      decreased by the scrollbar's width and the scrollbar is drawn at the
+      right side of the center slice.
+      b) If the scrollbar won't be drawn then the boot menu entry's width
+      is the width of the center slice.
+      c) We don't necessary need the menu pixmap box to display the scrollbar.
+   @item scrollbar_left_pad
+      @tab The left scrollbar padding in pixels.
+      Unused if ``scrollbar_slice`` is ``west``.
+   @item scrollbar_right_pad
+      @tab The right scrollbar padding in pixels.
+      Unused if ``scrollbar_slice`` is ``east``.
+   @item scrollbar_top_pad
+      @tab The top scrollbar padding in pixels.
+   @item scrollbar_bottom_pad
+      @tab The bottom scrollbar padding in pixels.
+   @item visible
+      @tab Set to ``false`` to hide the boot menu.
    @end multitable
 
 @item canvas
@@ -2011,7 +2373,10 @@ The following properties are supported by all components:
    recognizes:
 
    @multitable @columnfractions 0.2 0.7
-   @item ``__timeout__`` @tab Any component with this ID will have its *text*, *start*, *end*, *value*, and *visible* properties set by GRUB when it is counting down to an automatic boot of the default menu entry.
+   @item ``__timeout__``
+      @tab Component with this ID will be updated by GRUB and will indicate
+      time elapsed to an automatical boot of the default entry.
+      Affected components: ``label``, ``circular_progress``, ``progress_bar``.
    @end multitable
 @end table
 
@@ -2020,67 +2385,83 @@ The following properties are supported by all components:
 @node Network
 @chapter Booting GRUB from the network
 
-The following instructions only work on PC BIOS systems where the Preboot
-eXecution Environment (PXE) is available.
+The following instructions don't work for *-emu, i386-qemu, i386-coreboot,
+i386-multiboot, mips_loongson, mips-arc and mips_qemu_mips
 
-To generate a PXE boot image, run:
+To generate a netbootable directory, run:
 
 @example
 @group
-grub-mkimage --format=i386-pc-pxe --output=grub.pxe --prefix='(pxe)/boot/grub' pxe pxecmd
+grub-mknetdir --net-directory=/srv/tftp --subdir=/boot/grub -d /usr/lib/grub/<platform>
 @end group
 @end example
 
-Copy @file{grub.pxe}, @file{/boot/grub/*.mod}, and @file{/boot/grub/*.lst}
-to the PXE (TFTP) server, ensuring that @file{*.mod} and @file{*.lst} are
-accessible via the @file{/boot/grub/} path from the TFTP server root.  Set
-the DHCP server configuration to offer @file{grub.pxe} as the boot file (the
-@samp{filename} option in ISC dhcpd).
+E.g. for i386-pc:
 
-You can also use the @command{grub-mknetdir} utility to generate an image
-and a GRUB directory tree, rather than copying files around manually.
+@example
+@group
+grub-mknetdir --net-directory=/srv/tftp --subdir=/boot/grub -d /usr/lib/grub/i386-pc
+@end group
+@end example
+
+Then follow instructions printed out by grub-mknetdir on configuring your DHCP
+server.
 
 After GRUB has started, files on the TFTP server will be accessible via the
-@samp{(pxe)} device.
+@samp{(tftp)} device.
 
-The server and gateway IP address can be controlled by changing the
-@samp{(pxe)} device name to @samp{(pxe:@var{server-ip})} or
-@samp{(pxe:@var{server-ip}:@var{gateway-ip})}.  Note that this should be
-changed both in the prefix and in any references to the device name in the
-configuration file.
+The server IP address can be controlled by changing the
+@samp{(tftp)} device name to @samp{(tftp,@var{server-ip})}. Note that
+this should be changed both in the prefix and in any references to the
+device name in the configuration file.
 
 GRUB provides several environment variables which may be used to inspect or
-change the behaviour of the PXE device:
+change the behaviour of the PXE device. In the following description
+@var{<interface>} is placeholder for the name of network interface (platform
+dependent):
 
 @table @samp
-@item net_pxe_ip
-The IP address of this machine.  Read-only.
+@item net_@var{<interface>}_ip
+The network interface's IP address.  Read-only.
 
-@item net_pxe_mac
+@item net_@var{<interface>}_mac
 The network interface's MAC address.  Read-only.
 
-@item net_pxe_hostname
+@item net_@var{<interface>}_hostname
 The client host name provided by DHCP.  Read-only.
 
-@item net_pxe_domain
+@item net_@var{<interface>}_domain
 The client domain name provided by DHCP.  Read-only.
 
-@item net_pxe_rootpath
+@item net_@var{<interface>}_rootpath
 The path to the client's root disk provided by DHCP.  Read-only.
 
-@item net_pxe_extensionspath
+@item net_@var{<interface>}_extensionspath
 The path to additional DHCP vendor extensions provided by DHCP.  Read-only.
 
-@item net_pxe_boot_file
+@item net_@var{<interface>}_boot_file
 The boot file name provided by DHCP.  Read-only.
 
-@item net_pxe_dhcp_server_name
+@item net_@var{<interface>}_dhcp_server_name
 The name of the DHCP server responsible for these boot parameters.
 Read-only.
 
+@item net_default_interface
+Initially set to name of network interface that was used to load grub.
+Read-write, although setting it affects only interpretation of
+@samp{net_default_ip} and @samp{net_default_mac}
+
+@item net_default_ip
+The IP address of default interface.  Read-only. This is alias for the
+@samp{net_$@{net_default_interface@}_ip}.
+
+@item net_default_mac
+The default interface's MAC address.  Read-only.  This is alias for the
+@samp{net_$@{net_default_interface@}_mac}.
+
 @item net_default_server
-The default server.  Read-write, although setting this is only useful
-before opening a network device.
+The default server used by network drives (@pxref{Device syntax}).  Read-write,
+although setting this is only useful before opening a network device.
 
 @end table
 
@@ -2137,18 +2518,23 @@ menu requires several fancy features of your terminal.
 @node Vendor power-on keys
 @chapter Using GRUB with vendor power-on keys
 
-Some laptop vendors provide an additional power-on button which boots another
-OS.  GRUB supports such buttons with the @samp{GRUB_TIMEOUT_BUTTON},
-@samp{GRUB_DEFAULT_BUTTON}, @samp{GRUB_HIDDEN_TIMEOUT_BUTTON} and
+Some laptop vendors provide an additional power-on button which boots
+another OS.  GRUB supports such buttons with the @samp{GRUB_TIMEOUT_BUTTON},
+@samp{GRUB_TIMEOUT_STYLE_BUTTON}, @samp{GRUB_DEFAULT_BUTTON}, and
 @samp{GRUB_BUTTON_CMOS_ADDRESS} variables in default/grub (@pxref{Simple
-configuration}).  @samp{GRUB_TIMEOUT_BUTTON}, @samp{GRUB_DEFAULT_BUTTON} and
-@samp{GRUB_HIDDEN_TIMEOUT_BUTTON} are used instead of the corresponding
-variables without the @samp{_BUTTON} suffix when powered on using the special
-button.  @samp{GRUB_BUTTON_CMOS_ADDRESS} is vendor-specific and partially
-model-specific.  Values known to the GRUB team are:
+configuration}).  @samp{GRUB_TIMEOUT_BUTTON},
+@samp{GRUB_TIMEOUT_STYLE_BUTTON}, and @samp{GRUB_DEFAULT_BUTTON} are used
+instead of the corresponding variables without the @samp{_BUTTON} suffix
+when powered on using the special button.  @samp{GRUB_BUTTON_CMOS_ADDRESS}
+is vendor-specific and partially model-specific.  Values known to the GRUB
+team are:
 
 @table @key
+@item Dell XPS M1330M
+121:3
 @item Dell XPS M1530
+85:3
+@item Dell Latitude E4300
 85:3
 @item Asus EeePC 1005PE 
 84:1 (unconfirmed)
@@ -2216,8 +2602,8 @@ bytes.
 The sole function of @file{boot.img} is to read the first sector of the core
 image from a local disk and jump to it.  Because of the size restriction,
 @file{boot.img} cannot understand any file system structure, so
-@command{grub-setup} hardcodes the location of the first sector of the core
-image into @file{boot.img} when installing GRUB.
+@command{grub-install} hardcodes the location of the first sector of the
+core image into @file{boot.img} when installing GRUB.
 
 @item diskboot.img
 This image is used as the first sector of the core image when booting from a
@@ -2310,6 +2696,44 @@ In GRUB 2, images for PXE network booting are now constructed using
 contains the @samp{pxe} and @samp{pxecmd} modules.  @xref{Network}.
 @end table
 
+@node Core image size limitation
+@chapter Core image size limitation
+
+Heavily limited platforms:
+@itemize
+@item i386-pc (normal and PXE): the core image size (compressed) is limited by 458240 bytes.
+ kernel.img (.text + .data + .bss, uncompressed) is limited by 392704 bytes.
+ module size (uncompressed) + kernel.img (.text + .data, uncompressed) is limited by the size of contiguous chunk at 1M address.
+@item sparc64-ieee1275: kernel.img (.text + .data + .bss) + modules + 256K (stack) + 2M (heap) is limited by space available at 0x4400. On most platforms it's just 3 or 4M since ieee1275 maps only so much.
+@item i386-ieee1275: kernel.img  (.text + .data + .bss) + modules is limited by memory available at 0x10000, at most 596K
+@end itemize
+
+Lightly limited platforms:
+
+@itemize
+@item *-xen: limited only by adress space and RAM size.
+@item i386-qemu: kernel.img (.text + .data + .bss) is limited by 392704 bytes.
+                 (core.img would be limited by ROM size but it's unlimited on qemu
+@item All EFI platforms: limited by contiguous RAM size and possibly firmware bugs
+@item Coreboot and multiboot. kernel.img (.text + .data + .bss) is limited by 392704 bytes.
+      module size is limited by the size of contiguous chunk at 1M address.
+@item mipsel-loongson (ELF), mips(el)-qemu_mips (ELF): if uncompressed:
+                kernel.img (.text + .data) + modules is limited by the space from 80200000 forward
+                if compressed:
+                kernel.img (.text + .data, uncompressed) + modules (uncompressed)
+                + (modules + kernel.img (.text + .data)) (compressed)
+                + decompressor is limited by the space from 80200000 forward
+@item mipsel-loongson (Flash), mips(el)-qemu_mips (Flash): kernel.img (.text + .data) + modules is limited by the space from 80200000 forward
+                               core.img (final) is limited by flash size (512K on yeeloong and fulooong)
+@item mips-arc: if uncompressed:
+                kernel.img (.text + .data) is limited by the space from 8bd00000 forward
+                modules + dummy decompressor  is limited by the space from 8bd00000 backward
+                if compressed:
+                kernel.img (.text + .data, uncompressed) is limited by the space from 8bd00000 forward
+                modules (uncompressed) + (modules + kernel.img (.text + .data)) (compressed, aligned to 1M)
+                + 1M (decompressor + scratch space) is limited by the space from 8bd00000 backward
+@item powerpc-ieee1275: kernel.img (.text + .data + .bss) + modules is limited by space available at 0x200000
+@end itemize
 
 @node Filesystem
 @chapter Filesystem syntax and semantics
@@ -2343,16 +2767,17 @@ by a digit, like @samp{fd0}, or @samp{cd}.
 AHCI, PATA (ata), crypto, USB use the name of driver followed by a number.
 Memdisk and host are limited to one disk and so it's refered just by driver
 name.
-RAID (md), ofdisk (ieee1275 and nand), LVM (lv), LDM and arcdisk (arc) use
-intrinsic name of disk prefixed by driver name. Additionally just ``nand''
-refers to the disk aliased as ``nand''.
+RAID (md), ofdisk (ieee1275 and nand), LVM (lvm), LDM, virtio (vdsk)
+and arcdisk (arc) use intrinsic name of disk prefixed by driver name.
+Additionally just ``nand'' refers to the disk aliased as ``nand''.
 Conflicts are solved by suffixing a number if necessarry.
 Commas need to be escaped.
 Loopback uses whatever name specified to @command{loopback} command.
 Hostdisk uses names specified in device.map as long as it's of the form
 [fhc]d[0-9]* or hostdisk/<OS DEVICE>.
 For crypto and RAID (md) additionally you can use the syntax
-<driver name>uuid/<uuid>.
+<driver name>uuid/<uuid>.  For LVM additionally you can use the syntax
+lvmid/<volume-group-uuid>/<volume-uuid>.
 
 @example
 (fd0)
@@ -2364,7 +2789,8 @@ For crypto and RAID (md) additionally you can use the syntax
 (usb0)
 (cryptouuid/123456789abcdef0123456789abcdef0)
 (mduuid/123456789abcdef0123456789abcdef0)
-(lv/system-root)
+(lvm/system-root)
+(lvmid/F1ikgD-2RES-306G-il9M-7iwa-4NKW-EbV1NV/eLGuCQ-L4Ka-XUgR-sjtJ-ffch-bajr-fCNfz5)
 (md/myraid)
 (md/0)
 (ieee1275/disk2)
@@ -2395,8 +2821,10 @@ of the partition when installing GRUB).
 (hd0,1,3)
 @end example
 
-If you enabled the network support, the special drives @samp{(tftp)},
-@samp{(http)} and so on ars also available.
+If you enabled the network support, the special drives
+@code{(@var{protocol}[,@var{server}])} are also available. Supported protocols
+are @samp{http} and @samp{tftp}. If @var{server} is omitted, value of
+environment variable @samp{net_default_server} is used.
 Before using the network drive, you must initialize the network.
 @xref{Network}, for more information.
 
@@ -2418,6 +2846,13 @@ disk. If you omit the device name in an absolute file name, GRUB uses
 GRUB's @dfn{root device} implicitly. So if you set the root device to,
 say, @samp{(hd1,1)} by the command @samp{set root=(hd1,1)} (@pxref{set}),
 then @code{/boot/kernel} is the same as @code{(hd1,1)/boot/kernel}.
+
+On ZFS filesystem the first path component must be
+@var{volume}@samp{@@}[@var{snapshot}].
+So @samp{/rootvol@@snap-129/boot/grub/grub.cfg} refers to file
+@samp{/boot/grub/grub.cfg} in snapshot of volume @samp{rootvol} with name
+@samp{snap-129}.  Trailing @samp{@@} after volume name is mandatory even if
+snapshot name is omitted.
 
 
 @node Block list syntax
@@ -2598,7 +3033,9 @@ These variables have special meaning to GRUB.
 
 @menu
 * biosnum::
+* check_signatures::
 * chosen::
+* cmdpath::
 * color_highlight::
 * color_normal::
 * debug::
@@ -2607,19 +3044,25 @@ These variables have special meaning to GRUB.
 * gfxmode::
 * gfxpayload::
 * gfxterm_font::
+* grub_cpu::
+* grub_platform::
 * icondir::
 * lang::
 * locale_dir::
 * menu_color_highlight::
 * menu_color_normal::
-* net_pxe_boot_file::
-* net_pxe_dhcp_server_name::
-* net_pxe_domain::
-* net_pxe_extensionspath::
-* net_pxe_hostname::
-* net_pxe_ip::
-* net_pxe_mac::
-* net_pxe_rootpath::
+* net_@var{<interface>}_boot_file::
+* net_@var{<interface>}_dhcp_server_name::
+* net_@var{<interface>}_domain::
+* net_@var{<interface>}_extensionspath::
+* net_@var{<interface>}_hostname::
+* net_@var{<interface>}_ip::
+* net_@var{<interface>}_mac::
+* net_@var{<interface>}_rootpath::
+* net_default_interface::
+* net_default_ip::
+* net_default_mac::
+* net_default_server::
 * pager::
 * prefix::
 * pxe_blksize::
@@ -2629,6 +3072,7 @@ These variables have special meaning to GRUB.
 * superusers::
 * theme::
 * timeout::
+* timeout_style::
 @end menu
 
 
@@ -2645,6 +3089,12 @@ For an alternative approach which also changes BIOS drive mappings for the
 chain-loaded system, @pxref{drivemap}.
 
 
+@node check_signatures
+@subsection check_signatures
+
+This variable controls whether GRUB enforces digital signature
+validation on loaded files. @xref{Using digital signatures}.
+
 @node chosen
 @subsection chosen
 
@@ -2656,6 +3106,16 @@ the titles of each of the submenus starting from the top level followed by
 the title of the menu entry itself, separated by @samp{>}.
 
 
+@node cmdpath
+@subsection cmdpath
+
+The location from which @file{core.img} was loaded as an absolute
+directory name (@pxref{File name syntax}).  This is set by GRUB at
+startup based on information returned by platform firmware.  Not every
+platform provides this information and some may return only device
+without path name.
+
+
 @node color_highlight
 @subsection color_highlight
 
@@ -2663,7 +3123,7 @@ This variable contains the ``highlight'' foreground and background terminal
 colors, separated by a slash (@samp{/}).  Setting this variable changes
 those colors.  For the available color names, @pxref{color_normal}.
 
-The default is @samp{black/white}.
+The default is @samp{black/light-gray}.
 
 
 @node color_normal
@@ -2692,8 +3152,33 @@ those colors.  Each color must be a name from the following list:
 @item white
 @end itemize
 
-The default is @samp{white/black}.
+The default is @samp{light-gray/black}.
 
+The color support support varies from terminal to terminal.
+
+@samp{morse} has no color support at all.
+
+@samp{mda_text} color support is limited to highlighting by
+black/white reversal.
+
+@samp{console} on ARC, EMU and IEEE1275, @samp{serial_*} and
+@samp{spkmodem} are governed by terminfo and support
+only 8 colors if in modes @samp{vt100-color} (default for console on emu),
+@samp{arc} (default for console on ARC), @samp{ieee1275} (default
+for console on IEEE1275). When in mode @samp{vt100}
+then the color support is limited to highlighting by black/white
+reversal. When in mode @samp{dumb} there is no color support.
+
+When console supports no colors this setting is ignored.
+When console supports 8 colors, then the colors from the
+second half of the previous list are mapped to the
+matching colors of first half.
+
+@samp{console} on EFI and BIOS and @samp{vga_text} support all 16 colors.
+
+@samp{gfxterm} supports all 16 colors and would be theoretically extendable
+to support whole rgb24 palette but currently there is no compelling reason
+to go beyond the current 16 colors.
 
 @node debug
 @subsection debug
@@ -2701,7 +3186,8 @@ The default is @samp{white/black}.
 This variable may be set to enable debugging output from various components
 of GRUB.  The value is a list of debug facility names separated by
 whitespace or @samp{,}, or @samp{all} to enable all available debugging
-output.
+output. The facility names are the first argument to grub_dprintf. Consult
+source for more details.
 
 
 @node default
@@ -2709,7 +3195,21 @@ output.
 
 If this variable is set, it identifies a menu entry that should be selected
 by default, possibly after a timeout (@pxref{timeout}).  The entry may be
-identified by number or by title.
+identified by number or by id.
+
+For example, if you have:
+
+@verbatim
+menuentry 'Example GNU/Linux distribution' --class gnu-linux --id example-gnu-linux {
+	...
+}
+@end verbatim
+
+then you can make this the default using:
+
+@example
+default=example-gnu-linux
+@end example
 
 If the entry is in a submenu, then it must be identified using the titles of
 each of the submenus starting from the top level followed by the number or
@@ -2749,7 +3249,8 @@ If this variable is set, it sets the resolution used on the @samp{gfxterm}
 graphical terminal.  Note that you can only use modes which your graphics
 card supports via VESA BIOS Extensions (VBE), so for example native LCD
 panel resolutions may not be available.  The default is @samp{auto}, which
-selects a platform-specific default that should look reasonable.
+selects a platform-specific default that should look reasonable. Supported
+modes can be listed by @samp{videoinfo} command in GRUB.
 
 The resolution may be specified as a sequence of one or more modes,
 separated by commas (@samp{,}) or semicolons (@samp{;}); each will be tried
@@ -2788,6 +3289,20 @@ configuration}).
 If this variable is set, it names a font to use for text on the
 @samp{gfxterm} graphical terminal.  Otherwise, @samp{gfxterm} may use any
 available font.
+
+
+@node grub_cpu
+@subsection grub_cpu
+
+In normal mode (@pxref{normal}), GRUB sets the @samp{grub_cpu} variable to
+the CPU type for which GRUB was built (e.g. @samp{i386} or @samp{powerpc}).
+
+
+@node grub_platform
+@subsection grub_platform
+
+In normal mode (@pxref{normal}), GRUB sets the @samp{grub_platform} variable
+to the platform for which GRUB was built (e.g. @samp{pc} or @samp{efi}).
 
 
 @node icondir
@@ -2845,50 +3360,74 @@ variable changes those colors.  For the available color names,
 The default is the value of @samp{color_normal} (@pxref{color_normal}).
 
 
-@node net_pxe_boot_file
-@subsection net_pxe_boot_file
+@node net_@var{<interface>}_boot_file
+@subsection net_@var{<interface>}_boot_file
 
 @xref{Network}.
 
 
-@node net_pxe_dhcp_server_name
-@subsection net_pxe_dhcp_server_name
+@node net_@var{<interface>}_dhcp_server_name
+@subsection net_@var{<interface>}_dhcp_server_name
 
 @xref{Network}.
 
 
-@node net_pxe_domain
-@subsection net_pxe_domain
+@node net_@var{<interface>}_domain
+@subsection net_@var{<interface>}_domain
 
 @xref{Network}.
 
 
-@node net_pxe_extensionspath
-@subsection net_pxe_extensionspath
+@node net_@var{<interface>}_extensionspath
+@subsection net_@var{<interface>}_extensionspath
 
 @xref{Network}.
 
 
-@node net_pxe_hostname
-@subsection net_pxe_hostname
+@node net_@var{<interface>}_hostname
+@subsection net_@var{<interface>}_hostname
 
 @xref{Network}.
 
 
-@node net_pxe_ip
-@subsection net_pxe_ip
+@node net_@var{<interface>}_ip
+@subsection net_@var{<interface>}_ip
 
 @xref{Network}.
 
 
-@node net_pxe_mac
-@subsection net_pxe_mac
+@node net_@var{<interface>}_mac
+@subsection net_@var{<interface>}_mac
 
 @xref{Network}.
 
 
-@node net_pxe_rootpath
-@subsection net_pxe_rootpath
+@node net_@var{<interface>}_rootpath
+@subsection net_@var{<interface>}_rootpath
+
+@xref{Network}.
+
+
+@node net_default_interface
+@subsection net_default_interface
+
+@xref{Network}.
+
+
+@node net_default_ip
+@subsection net_default_ip
+
+@xref{Network}.
+
+
+@node net_default_mac
+@subsection net_default_mac
+
+@xref{Network}.
+
+
+@node net_default_server
+@subsection net_default_server
 
 @xref{Network}.
 
@@ -2966,8 +3505,21 @@ keyboard input before booting the default menu entry.  A timeout of @samp{0}
 means to boot the default entry immediately without displaying the menu; a
 timeout of @samp{-1} (or unset) means to wait indefinitely.
 
-This variable is often set by @samp{GRUB_TIMEOUT} or
-@samp{GRUB_HIDDEN_TIMEOUT} (@pxref{Simple configuration}).
+If @samp{timeout_style} (@pxref{timeout_style}) is set to @samp{countdown}
+or @samp{hidden}, the timeout is instead counted before the menu is
+displayed.
+
+This variable is often set by @samp{GRUB_TIMEOUT} (@pxref{Simple
+configuration}).
+
+
+@node timeout_style
+@subsection timeout_style
+
+This variable may be set to @samp{menu}, @samp{countdown}, or @samp{hidden}
+to control the way in which the timeout (@pxref{timeout}) interacts with
+displaying the menu.  See the documentation of @samp{GRUB_TIMEOUT_STYLE}
+(@pxref{Simple configuration}) for details.
 
 
 @node Environment block
@@ -3017,6 +3569,7 @@ shell}.
 * Menu-specific commands::
 * General commands::
 * Command-line and menu entry commands::
+* Networking commands::
 @end menu
 
 
@@ -3054,13 +3607,13 @@ These commands can only be used in the menu:
 
 @deffn Command menuentry @var{title} @
  [@option{--class=class} @dots{}] [@option{--users=users}] @
- [@option{--unrestricted}] [@option{--hotkey=key}] @
- @{ @var{command}; @dots{} @}
+ [@option{--unrestricted}] [@option{--hotkey=key}] [@option{--id=id}] @
+ [@var{arg} @dots{}] @{ @var{command}; @dots{} @}
 This defines a GRUB menu entry named @var{title}.  When this entry is
 selected from the menu, GRUB will set the @var{chosen} environment variable
-to @var{title}, execute the list of commands given within braces, and if the
-last command in the list returned successfully and a kernel was loaded it
-will execute the @command{boot} command.
+to value of @option{--id} if @option{--id} is given, execute the list of
+commands given within braces, and if the last command in the list returned
+successfully and a kernel was loaded it will execute the @command{boot} command.
 
 The @option{--class} option may be used any number of times to group menu
 entries into classes.  Menu themes may display different classes using
@@ -3075,6 +3628,13 @@ entries.  @xref{Security}.
 The @option{--hotkey} option associates a hotkey with a menu entry.
 @var{key} may be a single letter, or one of the aliases @samp{backspace},
 @samp{tab}, or @samp{delete}.
+
+The @option{--id} may be used to associate unique identifier with a menu entry.
+@var{id} is string of ASCII aphanumeric characters, underscore and hyphen
+and should not start with a digit.
+
+All other arguments including @var{title} are passed as positional parameters
+when list of commands is executed with @var{title} always assigned to @code{$1}.
 @end deffn
 
 
@@ -3083,7 +3643,7 @@ The @option{--hotkey} option associates a hotkey with a menu entry.
 
 @deffn Command submenu @var{title} @
  [@option{--class=class} @dots{}] [@option{--users=users}] @
- [@option{--unrestricted}] [@option{--hotkey=key}] @
+ [@option{--unrestricted}] [@option{--hotkey=key}] [@option{--id=id}] @
  @{ @var{menu entries} @dots{} @}
 This defines a submenu.  An entry called @var{title} will be added to the
 menu; when that entry is selected, a new menu will be displayed showing all
@@ -3200,24 +3760,37 @@ you forget a command, you can run the command @command{help}
 (@pxref{help}).
 
 @menu
+* [::                           Check file types and compare values
 * acpi::                        Load ACPI tables
+* authenticate::                Check whether user is in user list
+* background_color::            Set background color for active terminal
+* background_image::            Load background image for active terminal
 * badram::                      Filter out bad regions of RAM
 * blocklist::                   Print a block list
 * boot::                        Start up your operating system
 * cat::                         Show the contents of a file
 * chainloader::                 Chain-load another boot loader
+* clear::                       Clear the screen
+* cmosclean::                   Clear bit in CMOS
+* cmosdump::                    Dump CMOS contents
+* cmostest::                    Test bit in CMOS
 * cmp::                         Compare two files
 * configfile::                  Load a configuration file
 * cpuid::                       Check for CPU features
-* crc::                         Calculate CRC32 checksums
+* crc::                         Compute or check CRC32 checksums
+* cryptomount::                 Mount a crypto device
 * date::                        Display or set current date and time
+* devicetree::                  Load a device tree blob
+* distrust::                    Remove a pubkey from trusted keys
 * drivemap::                    Map a drive to another
 * echo::                        Display a line of text
+* eval::                        Evaluate agruments as GRUB commands
 * export::                      Export an environment variable
 * false::                       Do nothing, unsuccessfully
 * gettext::                     Translate a string
 * gptsync::                     Fill an MBR based on GPT entries
 * halt::                        Shut down your computer
+* hashsum::                     Compute or check hash checksum
 * help::                        Show help messages
 * initrd::                      Load a Linux initrd
 * initrd16::                    Load a Linux initrd (16-bit mode)
@@ -3226,26 +3799,54 @@ you forget a command, you can run the command @command{help}
 * linux::                       Load a Linux kernel
 * linux16::                     Load a Linux kernel (16-bit mode)
 * list_env::                    List variables in environment block
+* list_trusted::                List trusted public keys
 * load_env::                    Load variables from environment block
+* loadfont::                    Load font files
 * loopback::                    Make a device from a filesystem image
 * ls::                          List devices or files
+* lsfonts::                     List loaded fonts
+* lsmod::                       Show loaded modules
+* md5sum::                      Compute or check MD5 hash
+* module::                      Load module for multiboot kernel
+* multiboot::                   Load multiboot compliant kernel
+* nativedisk::                  Switch to native disk drivers
 * normal::                      Enter normal mode
 * normal_exit::                 Exit from normal mode
 * parttool::                    Modify partition table entries
 * password::                    Set a clear-text password
 * password_pbkdf2::             Set a hashed password
 * play::                        Play a tune
+* probe::                       Retrieve device info
 * pxe_unload::                  Unload the PXE environment
 * read::                        Read user input
 * reboot::                      Reboot your computer
+* regexp::                      Test if regular expression matches string
+* rmmod::                       Remove a module
 * save_env::                    Save variables to environment block
 * search::                      Search devices by file, label, or UUID
 * sendkey::                     Emulate keystrokes
 * set::                         Set an environment variable
+* sha1sum::                     Compute or check SHA1 hash
+* sha256sum::                   Compute or check SHA256 hash
+* sha512sum::                   Compute or check SHA512 hash
+* sleep::                       Wait for a specified number of seconds
+* source::                      Read a configuration file in same context
+* test::                        Check file types and compare values
 * true::                        Do nothing, successfully
+* trust::                       Add public key to list of trusted keys
 * unset::                       Unset an environment variable
 * uppermem::                    Set the upper memory size
+@comment * vbeinfo::                     List available video modes
+* verify_detached::             Verify detached digital signature
+* videoinfo::                   List available video modes
 @end menu
+
+
+@node [
+@subsection [
+@deffn Command @code{[} expression @code{]}
+Alias for @code{test @var{expression}} (@pxref{test}).
+@end deffn
 
 
 @node acpi
@@ -3268,6 +3869,42 @@ Normally, this command will replace the Root System Description Pointer
 @option{--no-ebda} option is used, the new tables will be known only to
 GRUB, but may be used by GRUB's EFI emulation.
 @end deffn
+
+
+@node authenticate
+@subsection authenticate
+@deffn Command authenticate [userlist]
+Check whether user is in @var{userlist} or listed in the value of variable
+@samp{superusers}. See @pxref{superusers} for valid user list format.
+If @samp{superusers} is empty, this command returns true. @xref{Security}.
+@end deffn
+
+
+@node background_color
+@subsection background_color
+
+@deffn Command background_color color
+Set background color for active terminal. For valid color specifications see
+@pxref{Theme file format, ,Colors}. Background color can be changed only when
+using @samp{gfxterm} for terminal output.
+
+This command sets color of empty areas without text. Text background color
+is controlled by environment variables @var{color_normal}, @var{color_highlight},
+@var{menu_color_normal}, @var{menu_color_highlight}. @xref{Special environment variables}.
+@end deffn
+
+
+@node background_image
+@subsection background_image
+
+@deffn Command background_image [[@option{--mode} @samp{stretch}|@samp{normal}] file]
+Load background image for active terminal from @var{file}. Image is stretched
+to fill up entire screen unless option @option{--mode} @samp{normal} is given.
+Without arguments remove currently loaded background image. Background image
+can be changed only when using @samp{gfxterm} for terminal output.
+
+@end deffn
+
 
 @node badram
 @subsection badram
@@ -3341,6 +3978,42 @@ load a defective boot loader, such as SCO UnixWare 7.1.
 @end deffn
 
 
+@node clear
+@subsection clear
+
+@deffn Command clear
+Clear the screen.
+@end deffn
+
+
+@node cmosclean
+@subsection cmosclean
+
+@deffn Command cmosclean byte:bit
+Clear value of bit in CMOS at location @var{byte}:@var{bit}. This command
+is available only on platforms that support CMOS.
+@end deffn
+
+
+@node cmosdump
+@subsection cmosdump
+
+@deffn Dump CMOS contents
+Dump full CMOS contents as hexadecimal values. This command is available only
+on platforms that support CMOS.
+@end deffn
+
+
+@node cmostest
+@subsection cmostest
+
+@deffn Command cmostest byte:bit
+Test value of bit in CMOS at location @var{byte}:@var{bit}. Exit status
+is zero if bit is set, non zero otherwise. This command is available only
+on platforms that support CMOS.
+@end deffn
+
+
 @node cmp
 @subsection cmp
 
@@ -3368,7 +4041,9 @@ If they are completely identical, nothing will be printed.
 
 @deffn Command configfile file
 Load @var{file} as a configuration file.  If @var{file} defines any menu
-entries, then show a menu containing them immediately.
+entries, then show a menu containing them immediately.  Any environment
+variable changes made by the commands in @var{file} will not be preserved
+after @command{configfile} returns.
 @end deffn
 
 
@@ -3389,8 +4064,24 @@ invoked with @option{-l}.  This may change in the future.
 @node crc
 @subsection crc
 
-@deffn Command crc file
-Display the CRC32 checksum of @var{file}.
+@deffn Command crc arg @dots{}
+Alias for @code{hashsum --hash crc32 arg @dots{}}. See command @command{hashsum}
+(@pxref{hashsum}) for full description.
+@end deffn
+
+
+@node cryptomount
+@subsection cryptomount
+
+@deffn Command cryptomount device|@option{-u} uuid|@option{-a}|@option{-b}
+Setup access to encrypted device. If necessary, passphrase
+is requested interactively. Option @var{device} configures specific grub device
+(@pxref{Naming convention}); option @option{-u} @var{uuid} configures device
+with specified @var{uuid}; option @option{-a} configures all detected encrypted
+devices; option @option{-b} configures all geli containers that have boot flag set.
+
+GRUB suports devices encrypted using LUKS and geli. Note that necessary modules (@var{luks} and @var{geli}) have to be loaded manually before this command can
+be used.
 @end deffn
 
 
@@ -3406,6 +4097,32 @@ arguments, and set the result as the new date and time.  For example, `date
 hour, minute, and second unchanged.
 @end deffn
 
+
+@node devicetree
+@subsection linux
+
+@deffn Command devicetree file
+Load a device tree blob (.dtb) from a filesystem, for later use by a Linux
+kernel. Does not perform merging with any device tree supplied by firmware,
+but rather replaces it completely.
+@ref{GNU/Linux}.
+@end deffn
+
+@node distrust
+@subsection distrust
+
+@deffn Command distrust pubkey_id
+Remove public key @var{pubkey_id} from GRUB's keyring of trusted keys.
+@var{pubkey_id} is the last four bytes (eight hexadecimal digits) of
+the GPG v4 key id, which is also the output of @command{list_trusted}
+(@pxref{list_trusted}).  Outside of GRUB, the key id can be obtained
+using @code{gpg --fingerprint}).
+These keys are used to validate signatures when environment variable
+@code{check_signatures} is set to @code{enforce}
+(@pxref{check_signatures}), and by some invocations of
+@command{verify_detached} (@pxref{verify_detached}).  @xref{Using
+digital signatures}, for more information.
+@end deffn
 
 @node drivemap
 @subsection drivemap
@@ -3476,6 +4193,15 @@ character will print that character.
 @end deffn
 
 
+@node eval
+@subsection eval
+
+@deffn Command eval string ...
+Concatenate arguments together using single space as separator and evaluate
+result as sequence of GRUB commands.
+@end deffn
+
+
 @node export
 @subsection export
 
@@ -3533,6 +4259,30 @@ type are omitted, then the partition will be inactive.
 The command halts the computer. If the @option{--no-apm} option
 is specified, no APM BIOS call is performed. Otherwise, the computer
 is shut down using APM.
+@end deffn
+
+
+@node hashsum
+@subsection hashsum
+
+@deffn Command hashsum @option{--hash} hash @option{--keep-going} @option{--uncompress} @option{--check} file [@option{--prefix} dir]|file @dots{}
+Compute or verify file hashes. Hash type is selected with option @option{--hash}.
+Supported hashes are: @samp{adler32}, @samp{crc64}, @samp{crc32},
+@samp{crc32rfc1510}, @samp{crc24rfc2440}, @samp{md4}, @samp{md5},
+@samp{ripemd160}, @samp{sha1}, @samp{sha224}, @samp{sha256}, @samp{sha512},
+@samp{sha384}, @samp{tiger192}, @samp{tiger}, @samp{tiger2}, @samp{whirlpool}.
+Option @option{--uncompress} uncompresses files before computing hash.
+
+When list of files is given, hash of each file is computed and printed,
+followed by file name, each file on a new line.
+
+When option @option{--check} is given, it points to a file that contains
+list of @var{hash name} pairs in the same format as used by UNIX
+@command{md5sum} command. Option @option{--prefix}
+may be used to give directory where files are located. Hash verification
+stops after the first mismatch was found unless option @option{--keep-going}
+was given.  The exit code @code{$?} is set to 0 if hash verification
+is successful.  If it fails, @code{$?} is set to a nonzero value.
 @end deffn
 
 
@@ -3634,23 +4384,69 @@ This command is only available on x86 systems.
 @node list_env
 @subsection list_env
 
-@deffn Command list_env [@option{-f} file]
+@deffn Command list_env [@option{--file} file]
 List all variables in the environment block file.  @xref{Environment block}.
 
-The @option{-f} option overrides the default location of the environment
-block.
+The @option{--file} option overrides the default location of the
+environment block.
 @end deffn
 
+@node list_trusted
+@subsection list_trusted
+
+@deffn Command list_trusted
+List all public keys trusted by GRUB for validating signatures.
+The output is in GPG's v4 key fingerprint format (i.e., the output of
+@code{gpg --fingerprint}).  The least significant four bytes (last
+eight hexadecimal digits) can be used as an argument to
+@command{distrust} (@pxref{distrust}).
+@xref{Using digital signatures}, for more information about uses for
+these keys.
+@end deffn
 
 @node load_env
 @subsection load_env
 
-@deffn Command load_env [@option{-f} file]
+@deffn Command load_env [@option{--file} file] [@option{--skip-sig}] [whitelisted_variable_name] @dots{}
 Load all variables from the environment block file into the environment.
 @xref{Environment block}.
 
-The @option{-f} option overrides the default location of the environment
+The @option{--file} option overrides the default location of the environment
 block.
+
+The @option{--skip-sig} option skips signature checking even when the
+value of environment variable @code{check_signatures} is set to
+@code{enforce} (@pxref{check_signatures}).
+
+If one or more variable names are provided as arguments, they are
+interpreted as a whitelist of variables to load from the environment
+block file.  Variables set in the file but not present in the
+whitelist are ignored.
+
+The @option{--skip-sig} option should be used with care, and should
+always be used in concert with a whitelist of acceptable variables
+whose values should be set.  Failure to employ a carefully constructed
+whitelist could result in reading a malicious value into critical
+environment variables from the file, such as setting
+@code{check_signatures=no}, modifying @code{prefix} to boot from an
+unexpected location or not at all, etc.
+
+When used with care, @option{--skip-sig} and the whitelist enable an
+administrator to configure a system to boot only signed
+configurations, but to allow the user to select from among multiple
+configurations, and to enable ``one-shot'' boot attempts and
+``savedefault'' behavior.  @xref{Using digital signatures}, for more
+information.
+@end deffn
+
+
+@node loadfont
+@subsection loadfont
+
+@deffn Command loadfont file @dots{}
+Load specified font files. Unless absolute pathname is given, @var{file}
+is assumed to be in directory @samp{$prefix/fonts} with
+suffix @samp{.pf2} appended. @xref{Theme file format,,Fonts}.
 @end deffn
 
 
@@ -3680,12 +4476,75 @@ List devices or files.
 With no arguments, print all devices known to GRUB.
 
 If the argument is a device name enclosed in parentheses (@pxref{Device
-syntax}), then list all files at the root directory of that device.
+syntax}), then print the name of the filesystem of that device.
 
 If the argument is a directory given as an absolute file name (@pxref{File
 name syntax}), then list the contents of that directory.
 @end deffn
 
+
+@node lsfonts
+@subsection lsfonts
+
+@deffn Command lsfonts
+List loaded fonts.
+@end deffn
+
+
+@node lsmod
+@subsection lsmod
+
+@deffn Command lsmod
+Show list of loaded modules.
+@end deffn
+
+@node md5sum
+@subsection md5sum
+
+@deffn Command md5sum arg @dots{}
+Alias for @code{hashsum --hash md5 arg @dots{}}. See command @command{hashsum}
+(@pxref{hashsum}) for full description.
+@end deffn
+
+@node module
+@subsection module
+
+@deffn Command module [--nounzip] file [arguments]
+Load a module for multiboot kernel image.  The rest of the
+line is passed verbatim as the module command line.
+@end deffn
+
+@node multiboot
+@subsection multiboot
+
+@deffn Command multiboot [--quirk-bad-kludge] [--quirk-modules-after-kernel] file @dots{}
+Load a multiboot kernel image from @var{file}.  The rest of the
+line is passed verbatim as the @dfn{kernel command-line}.  Any module must
+be reloaded after using this command (@pxref{module}).
+
+Some kernels have known problems. You need to specify --quirk-* for those.
+--quirk-bad-kludge is a problem seen in several products that they include
+loading kludge information with invalid data in ELF file. GRUB prior to 0.97
+and some custom builds prefered ELF information while 0.97 and GRUB 2
+use kludge. Use this option to ignore kludge.
+Known affected systems: old Solaris, SkyOS.
+
+--quirk-modules-after-kernel is needed for kernels which load at relatively
+high address e.g. 16MiB mark and can't cope with modules stuffed between
+1MiB mark and beginning of the kernel.
+Known afftected systems: VMWare.
+@end deffn
+
+@node nativedisk
+@subsection nativedisk
+
+@deffn Command nativedisk
+Switch from firmware disk drivers to native ones.
+Really useful only on platforms where both
+firmware and native disk drives are available.
+Currently i386-pc, i386-efi, i386-ieee1275 and
+x86_64-efi.
+@end deffn
 
 @node normal
 @subsection normal
@@ -3772,7 +4631,7 @@ to generate password hashes.  @xref{Security}.
 @node play
 @subsection play
 
-@deffn Command play file | tempo [pitch1 duration1] [pitch2 duration2] ...
+@deffn Command play file | tempo [pitch1 duration1] [pitch2 duration2] @dots{}
 Plays a tune
 
 If the argument is a file name (@pxref{File name syntax}), play the tune
@@ -3785,6 +4644,15 @@ If the arguments are a series of numbers, play the inline tune.
 The tempo is the base for all note durations. 60 gives a 1-second base, 120
 gives a half-second base, etc.  Pitches are Hz.  Set pitch to 0 to produce
 a rest.
+@end deffn
+
+
+@node probe
+@subsection probe
+
+@deffn Command probe [@option{--set} var] @option{--driver}|@option{--partmap}|@option{--fs}|@option{--fs-uuid}|@option{--label} device
+Retrieve device information. If option @option{--set} is given, assign result
+to variable @var{var}, otherwise print information on the screen.
 @end deffn
 
 
@@ -3816,15 +4684,45 @@ Reboot the computer.
 @end deffn
 
 
+@node regexp
+@subsection regexp
+
+@deffn Command regexp [@option{--set} [number:]var] regexp string
+Test if regular expression @var{regexp} matches @var{string}. Supported
+regular expressions are POSIX.2 Extended Regular Expressions. If option
+@option{--set} is given, store @var{number}th matched subexpression in
+variable @var{var}. Subexpressions are numbered in order of their opening
+parentheses starting from @samp{1}.  @var{number} defaults to @samp{1}.
+@end deffn
+
+
+@node rmmod
+@subsection rmmod
+
+@deffn Command rmmod module
+Remove a loaded @var{module}.
+@end deffn
+
+
 @node save_env
 @subsection save_env
 
-@deffn Command save_env [@option{-f} file] var @dots{}
+@deffn Command save_env [@option{--file} file] var @dots{}
 Save the named variables from the environment to the environment block file.
 @xref{Environment block}.
 
-The @option{-f} option overrides the default location of the environment
+The @option{--file} option overrides the default location of the environment
 block.
+
+This command will operate successfully even when environment variable
+@code{check_signatures} is set to @code{enforce}
+(@pxref{check_signatures}), since it writes to disk and does not alter
+the behavior of GRUB based on any contents of disk that have been
+read.  It is possible to modify a digitally signed environment block
+file from within GRUB using this command, such that its signature will
+no longer be valid on subsequent boots.  Care should be taken in such
+advanced configurations to avoid rendering the system
+unbootable. @xref{Using digital signatures}, for more information.
 @end deffn
 
 
@@ -4008,12 +4906,147 @@ arguments, print all environment variables with their values.
 @end deffn
 
 
+@node sha1sum
+@subsection sha1sum
+
+@deffn Command sha1sum arg @dots{}
+Alias for @code{hashsum --hash sha1 arg @dots{}}. See command @command{hashsum}
+(@pxref{hashsum}) for full description.
+@end deffn
+
+
+@node sha256sum
+@subsection sha256sum
+
+@deffn Command sha256sum arg @dots{}
+Alias for @code{hashsum --hash sha256 arg @dots{}}. See command @command{hashsum}
+(@pxref{hashsum}) for full description.
+@end deffn
+
+
+@node sha512sum
+@subsection sha512sum
+
+@deffn Command sha512sum arg @dots{}
+Alias for @code{hashsum --hash sha512 arg @dots{}}. See command @command{hashsum}
+(@pxref{hashsum}) for full description.
+@end deffn
+
+
+@node sleep
+@subsection sleep
+
+@deffn Command sleep [@option{--verbose}] [@option{--interruptible}] count
+Sleep for @var{count} seconds. If option @option{--interruptible} is given,
+allow @key{ESC} to interrupt sleep. With @option{--verbose} show countdown
+of remaining seconds. Exit code is set to 0 if timeout expired and to 1
+if timeout was interrupted by @key{ESC}.
+@end deffn
+
+
+@node source
+@subsection source
+
+@deffn Command source file
+Read @var{file} as a configuration file, as if its contents had been
+incorporated directly into the sourcing file.  Unlike @command{configfile}
+(@pxref{configfile}), this executes the contents of @var{file} without
+changing context: any environment variable changes made by the commands in
+@var{file} will be preserved after @command{source} returns, and the menu
+will not be shown immediately.
+@end deffn
+
+
+@node test
+@subsection test
+
+@deffn Command test expression
+Evaluate @var{expression} and return zero exit status if result is true,
+non zero status otherwise.
+
+@var{expression} is one of:
+
+@table @asis
+@item @var{string1} @code{==} @var{string2}
+the strings are equal
+@item @var{string1} @code{!=} @var{string2}
+the strings are not equal
+@item @var{string1} @code{<} @var{string2}
+@var{string1} is lexicographically less than @var{string2}
+@item @var{string1} @code{<=} @var{string2}
+@var{string1} is lexicographically less or equal than @var{string2}
+@item @var{string1} @code{>} @var{string2}
+@var{string1} is lexicographically greater than @var{string2}
+@item @var{string1} @code{>=} @var{string2}
+@var{string1} is lexicographically greater or equal than @var{string2}
+@item @var{integer1} @code{-eq} @var{integer2}
+@var{integer1} is equal to @var{integer2}
+@item @var{integer1} @code{-ge} @var{integer2}
+@var{integer1} is greater than or equal to @var{integer2}
+@item @var{integer1} @code{-gt} @var{integer2}
+@var{integer1} is greater than @var{integer2}
+@item @var{integer1} @code{-le} @var{integer2}
+@var{integer1} is less than or equal to @var{integer2}
+@item @var{integer1} @code{-lt} @var{integer2}
+@var{integer1} is less than @var{integer2}
+@item @var{integer1} @code{-ne} @var{integer2}
+@var{integer1} is not equal to @var{integer2}
+@item @var{prefix}@var{integer1} @code{-pgt} @var{prefix}@var{integer2}
+@var{integer1} is greater than @var{integer2} after stripping off common non-numeric @var{prefix}.
+@item @var{prefix}@var{integer1} @code{-plt} @var{prefix}@var{integer2}
+@var{integer1} is less than @var{integer2} after stripping off common non-numeric @var{prefix}.
+@item @var{file1} @code{-nt} @var{file2}
+@var{file1} is newer than @var{file2} (modification time). Optionally numeric @var{bias} may be directly appended to @code{-nt} in which case it is added to the first file modification time.
+@item @var{file1} @code{-ot} @var{file2}
+@var{file1} is older than @var{file2} (modification time). Optionally numeric @var{bias} may be directly appended to @code{-ot} in which case it is added to the first file modification time.
+@item @code{-d} @var{file}
+@var{file} exists and is a directory
+@item @code{-e} @var{file}
+@var{file} exists
+@item @code{-f} @var{file}
+@var{file} exists and is not a directory
+@item @code{-s} @var{file}
+@var{file} exists and has a size greater than zero
+@item @code{-n} @var{string}
+the length of @var{string} is nonzero
+@item @var{string}
+@var{string} is equivalent to @code{-n @var{string}}
+@item @code{-z} @var{string}
+the length of @var{string} is zero
+@item @code{(} @var{expression} @code{)}
+@var{expression} is true
+@item @code{!} @var{expression}
+@var{expression} is false
+@item @var{expression1} @code{-a} @var{expression2}
+both @var{expression1} and @var{expression2} are true
+@item @var{expression1} @code{-o} @var{expression2}
+either @var{expression1} or @var{expression2} is true
+@end table
+@end deffn
+
+
 @node true
 @subsection true
 
 @deffn Command true
 Do nothing, successfully.  This is mainly useful in control constructs such
 as @code{if} and @code{while} (@pxref{Shell-like scripting}).
+@end deffn
+
+@node trust
+@subsection trust
+
+@deffn Command trust [@option{--skip-sig}] pubkey_file
+Read public key from @var{pubkey_file} and add it to GRUB's internal
+list of trusted public keys.  These keys are used to validate digital
+signatures when environment variable @code{check_signatures} is set to
+@code{enforce}.  Note that if @code{check_signatures} is set to
+@code{enforce} when @command{trust} executes, then @var{pubkey_file}
+must itself be properly signed.  The @option{--skip-sig} option can be
+used to disable signature-checking when reading @var{pubkey_file}
+itself. It is expected that @option{--skip-sig} is useful for testing
+and manual booting. @xref{Using digital signatures}, for more
+information.
 @end deffn
 
 
@@ -4030,13 +5063,228 @@ Unset the environment variable @var{envvar}.
 
 This command is not yet implemented for GRUB 2, although it is planned.
 
+
+@ignore
+@node vbeinfo
+@subsection vbeinfo
+
+@deffn Command vbeinfo [[WxH]xD]
+Alias for command @command{videoinfo} (@pxref{videoinfo}). It is available
+only on PC BIOS platforms.
+@end deffn
+@end ignore
+
+
+@node verify_detached
+@subsection verify_detached
+
+@deffn Command verify_detached [@option{--skip-sig}] file signature_file [pubkey_file]
+Verifies a GPG-style detached signature, where the signed file is
+@var{file}, and the signature itself is in file @var{signature_file}.
+Optionally, a specific public key to use can be specified using
+@var{pubkey_file}.  When environment variable @code{check_signatures}
+is set to @code{enforce}, then @var{pubkey_file} must itself be
+properly signed by an already-trusted key.  An unsigned
+@var{pubkey_file} can be loaded by specifying @option{--skip-sig}.
+If @var{pubkey_file} is omitted, then public keys from GRUB's trusted keys
+(@pxref{list_trusted}, @pxref{trust}, and @pxref{distrust}) are
+tried.
+
+Exit code @code{$?} is set to 0 if the signature validates
+successfully.  If validation fails, it is set to a non-zero value.
+@xref{Using digital signatures}, for more information.
+@end deffn
+
+@node videoinfo
+@subsection videoinfo
+
+@deffn Command videoinfo [[WxH]xD]
+List available video modes. If resolution is given, show only matching modes.
+@end deffn
+
+@node Networking commands
+@section The list of networking commands
+
+@menu
+* net_add_addr::                Add a network address
+* net_add_dns::                 Add a DNS server
+* net_add_route::               Add routing entry
+* net_bootp::                   Perform a bootp autoconfiguration
+* net_del_addr::                Remove IP address from interface
+* net_del_dns::                 Remove a DNS server
+* net_del_route::               Remove a route entry
+* net_get_dhcp_option::         Retrieve DHCP options
+* net_ipv6_autoconf::           Perform IPv6 autoconfiguration
+* net_ls_addr::                 List interfaces
+* net_ls_cards::                List network cards
+* net_ls_dns::                  List DNS servers
+* net_ls_routes::               List routing entries
+* net_nslookup::                Perform a DNS lookup
+@end menu
+
+
+@node net_add_addr
+@subsection net_add_addr
+
+@deffn Command net_add_addr @var{interface} @var{card} @var{address}
+Configure additional network @var{interface} with @var{address} on a
+network @var{card}. @var{address} can be either IP in dotted decimal notation,
+or symbolic name which is resolved using DNS lookup. If successful, this command
+also adds local link routing entry to the default subnet of @var{address}
+with name @var{interface}@samp{:local} via @var{interface}.
+@end deffn
+
+
+@node net_add_dns
+@subsection net_add_dns
+
+@deffn Command net_add_dns @var{server}
+Resolve @var{server} IP address and add to the list of DNS servers used during
+name lookup.
+@end deffn
+
+
+@node net_add_route
+@subsection net_add_route
+
+@deffn Command net_add_route @var{shortname} @var{ip}[/@var{prefix}] [@var{interface} | @samp{gw} @var{gateway}]
+Add route to network with address @var{ip} as modified by @var{prefix} via
+either local @var{interface} or @var{gateway}. @var{prefix} is optional and
+defaults to 32 for IPv4 address and 128 for IPv6 address. Route is identified
+by @var{shortname} which can be used to remove it (@pxref{net_del_route}).
+@end deffn
+
+
+@node net_bootp
+@subsection net_bootp
+
+@deffn Command net_bootp [@var{card}]
+Perform configuration of @var{card} using DHCP protocol. If no card name
+is specified, try to configure all existing cards. If configuration was
+successful, interface with name @var{card}@samp{:dhcp} and configured
+address is added to @var{card}. If server provided gateway information in
+DHCP ACK packet, it is added as route entry with the name @var{card}@samp{:dhcp:gw}. Additionally the following DHCP options are recognized and processed:
+
+@table @samp
+@item 1 (Subnet Mask)
+Used to calculate network local routing entry for interface @var{card}@samp{:dhcp}.
+@item 3 (Router)
+Adds default route entry with the name @var{card}@samp{:dhcp:default} via gateway
+from DHCP option. Note that only option with single route is accepted.
+@item 6 (Domain Name Server)
+Adds all servers from option value to the list of servers used during name resolution.
+@item 12 (Host Name)
+Sets environment variable @samp{net_}@var{<card>}@samp{_dhcp_hostname}
+(@pxref{net_@var{<interface>}_hostname}) to the value of option.
+@item 15 (Domain Name)
+Sets environment variable @samp{net_}@var{<card>}@samp{_dhcp_domain}
+(@pxref{net_@var{<interface>}_domain}) to the value of option.
+@item 17 (Root Path)
+Sets environment variable @samp{net_}@var{<card>}@samp{_dhcp_rootpath}
+(@pxref{net_@var{<interface>}_rootpath}) to the value of option.
+@item 18 (Extensions Path)
+Sets environment variable @samp{net_}@var{<card>}@samp{_dhcp_extensionspath}
+(@pxref{net_@var{<interface>}_extensionspath}) to the value of option.
+@end table
+
+@end deffn
+
+
+@node net_del_addr
+@subsection net_del_addr
+
+@deffn Command net_del_addr @var{interface}
+Remove configured @var{interface} with associated address.
+@end deffn
+
+
+@node net_del_dns
+@subsection net_del_dns
+
+@deffn Command net_del_dns @var{address}
+Remove @var{address} from list of servers used during name lookup.
+@end deffn
+
+
+@node net_del_route
+@subsection net_del_route
+
+@deffn Command net_del_route @var{shortname}
+Remove route entry identified by @var{shortname}.
+@end deffn
+
+
+@node net_get_dhcp_option
+@subsection net_get_dhcp_option
+
+@deffn Command net_get_dhcp_option @var{var} @var{interface} @var{number} @var{type}
+Request DHCP option @var{number} of @var{type} via @var{interface}. @var{type}
+can be one of @samp{string}, @samp{number} or @samp{hex}. If option is found,
+assign its value to variable @var{var}. Values of types @samp{number} and @samp{hex}
+are converted to string representation.
+@end deffn
+
+
+@node net_ipv6_autoconf
+@subsection net_ipv6_autoconf
+
+@deffn Command net_ipv6_autoconf [@var{card}]
+Perform IPv6 autoconfiguration by adding to the @var{card} interface with name
+@var{card}@samp{:link} and link local MAC-based address. If no card is specified,
+perform autoconfiguration for all existing cards.
+@end deffn
+
+
+@node net_ls_addr
+@subsection net_ls_addr
+
+@deffn Command net_ls_addr
+List all configured interfaces with their MAC and IP addresses.
+@end deffn
+
+
+@node net_ls_cards
+@subsection net_ls_cards
+
+@deffn Command net_ls_cards
+List all detected network cards with their MAC address.
+@end deffn
+
+
+@node net_ls_dns
+@subsection net_ls_dns
+
+@deffn Command net_ls_dns
+List addresses of DNS servers used during name lookup.
+@end deffn
+
+
+@node net_ls_routes
+@subsection net_ls_routes
+
+@deffn Command net_ls_routes
+List routing entries.
+@end deffn
+
+
+@node net_nslookup
+@subsection net_nslookup
+
+@deffn Command net_nslookup @var{name} [@var{server}]
+Resolve address of @var{name} using DNS server @var{server}. If no server
+is given, use default list of servers.
+@end deffn
+
+
 @node Internationalisation
-@chapter Charset
+@chapter Internationalisation
+
+@section Charset
 GRUB uses UTF-8 internally other than in rendering where some GRUB-specific
 appropriate representation is used. All text files (including config) are
 assumed to be encoded in UTF-8.
 
-@chapter Filesystems
+@section Filesystems
 NTFS, JFS, UDF, HFS+, exFAT, long filenames in FAT, Joliet part of
 ISO9660 are treated as UTF-16 as per specification. AFS and BFS are read
 as UTF-8, again according to specification. BtrFS, cpio, tar, squash4, minix,
@@ -4070,32 +5318,41 @@ treated as distinct from u+combining diaresis. This however means that in
 order to access file on HFS+ its name must be specified in normalisation form D.
 On normalized ZFS subvolumes filenames out of normalisation are inaccessible.
 
-@chapter Output terminal
+@section Output terminal
 Firmware output console ``console'' on ARC and IEEE1275 are limited to ASCII.
+
 BIOS firmware console and VGA text are limited to ASCII and some pseudographics.
+
 None of above mentioned is appropriate for displaying international and any
 unsupported character is replaced with question mark except pseudographics
-which we attempt to approximate with ASCII. EFI console on the other hand
-nominally supports UTF-16 but actual language coverage depends on firmware and
-may be very limited. The encoding used on serial can be chosen with
-@command{terminfo} as either ASCII, UTF-8 or ``visual UTF-8''. Last one is
-against the specification but results in correct rendering of right-to-left
-on some readers which don't have own bidi implementation. When using gfxterm
-or gfxmenu GRUB itself is responsible for rendering the text. In this case
-GRUB is limited by loaded fonts. If fonts contain all required characters
-then bidirectional text, cursive variants and combining marks other than
-enclosing, half (e.g. left half tilde or combining overline) and double ones.
-Ligatures aren't supported though. This should cover European, Middle Eastern
-(if you don't mind lack of lam-alif ligature in Arabic) and East Asian scripts.
-Notable unsupported scripts are Brahmic family and derived as well as
-Mongolian, Tifinagh, Korean Jamo (precomposed characters have no problem)
-and tonal writing (2e5-2e9). GRUB also ignores deprecated (as specified
-in Unicode) characters (e.g. tags). GRUB also doesn't handle so called
-``annotation characters'' If you can complete either of
-two lists or, better, propose a patch to improve rendering, please contact
-developper team.
+which we attempt to approximate with ASCII.
 
-@chapter Input terminal
+EFI console on the other hand nominally supports UTF-16 but actual language
+coverage depends on firmware and may be very limited.
+
+The encoding used on serial can be chosen with @command{terminfo} as
+either ASCII, UTF-8 or ``visual UTF-8''. Last one is against the specification
+but results in correct rendering of right-to-left on some readers which don't
+have own bidi implementation.
+
+On emu GRUB checks if charset is UTF-8 and uses it if so and uses ASCII
+otherwise.
+
+When using gfxterm or gfxmenu GRUB itself is responsible for rendering the
+text. In this case GRUB is limited by loaded fonts. If fonts contain all
+required characters then bidirectional text, cursive variants and combining
+marks other than enclosing, half (e.g. left half tilde or combining overline)
+and double ones. Ligatures aren't supported though. This should cover European,
+Middle Eastern (if you don't mind lack of lam-alif ligature in Arabic) and
+East Asian scripts. Notable unsupported scripts are Brahmic family and
+derived as well as Mongolian, Tifinagh, Korean Jamo (precomposed characters
+have no problem) and tonal writing (2e5-2e9). GRUB also ignores deprecated
+(as specified in Unicode) characters (e.g. tags). GRUB also doesn't handle so
+called ``annotation characters'' If you can complete either of
+two lists or, better, propose a patch to improve rendering, please contact
+developer team.
+
+@section Input terminal
 Firmware console on BIOS, IEEE1275 and ARC doesn't allow you to enter non-ASCII
 characters. EFI specification allows for such but author is unaware of any
 actual implementations. Serial input is currently limited for latin1 (unlikely
@@ -4105,15 +5362,15 @@ So no dead keys or advanced input method. Also there is no keymap change hotkey.
 In practice it makes difficult to enter any text using non-Latin alphabet.
 Moreover all current input consumers are limited to ASCII.
 
-@chapter Gettext
+@section Gettext
 GRUB supports being translated. For this you need to have language *.mo files in $prefix/locale, load gettext module and set ``lang'' variable.
 
-@chapter Regexp
+@section Regexp
 Regexps work on unicode characters, however no attempt at checking cannonical
 equivalence has been made. Moreover the classes like [:alpha:] match only
 ASCII subset.
 
-@chapter Other
+@section Other
 Currently GRUB always uses YEAR-MONTH-DAY HOUR:MINUTE:SECOND [WEEKDAY] 24-hour
 datetime format but weekdays are translated.
 GRUB always uses the decimal number format with [0-9] as digits and . as
@@ -4130,13 +5387,21 @@ Identifiers containing non-ASCII may work but aren't supported.
 Only the ASCII space characters (space U+0020, tab U+000b, CR U+000d and
 LF U+000a) are recognised. Other unicode space characters aren't a valid
 field separator.
-@command{test} tests <, >, <=, >=, -pgt and -plt compare the strings in the
+@command{test} (@pxref{test}) tests <, >, <=, >=, -pgt and -plt compare the strings in the
 lexicographical order of unicode codepoints, replicating the behaviour of
 test from coreutils.
 environment variables and commands are listed in the same order.
 
 @node Security
-@chapter Authentication and authorisation
+@chapter Security
+
+@menu
+* Authentication and authorisation:: Users and access control
+* Using digital signatures::         Booting digitally signed code
+@end menu
+
+@node Authentication and authorisation
+@section Authentication and authorisation in GRUB
 
 By default, the boot loader interface is accessible to anyone with physical
 access to the console: anyone can select and edit any menu entry, and anyone
@@ -4203,6 +5468,95 @@ generating configuration files with authentication.  You can use
 adding @kbd{set superusers=} and @kbd{password} or @kbd{password_pbkdf2}
 commands.
 
+@node Using digital signatures
+@section Using digital signatures in GRUB
+
+GRUB's @file{core.img} can optionally provide enforcement that all files
+subsequently read from disk are covered by a valid digital signature.
+This document does @strong{not} cover how to ensure that your
+platform's firmware (e.g., Coreboot) validates @file{core.img}.
+
+If environment variable @code{check_signatures}
+(@pxref{check_signatures}) is set to @code{enforce}, then every
+attempt by the GRUB @file{core.img} to load another file @file{foo}
+implicitly invokes @code{verify_detached foo foo.sig}
+(@pxref{verify_detached}).  @code{foo.sig} must contain a valid
+digital signature over the contents of @code{foo}, which can be
+verified with a public key currently trusted by GRUB
+(@pxref{list_trusted}, @pxref{trust}, and @pxref{distrust}).  If
+validation fails, then file @file{foo} cannot be opened.  This failure
+may halt or otherwise impact the boot process.
+
+@comment Unfortunately --pubkey is not yet supported by grub-install,
+@comment but we should not bring up internal detail grub-mkimage here
+@comment in the user guide (as opposed to developer's manual).
+
+@comment An initial trusted public key can be embedded within the GRUB
+@comment @file{core.img} using the @code{--pubkey} option to
+@comment @command{grub-mkimage} (@pxref{Invoking grub-install}).  Presently it
+@comment is necessary to write a custom wrapper around @command{grub-mkimage}
+@comment using the @code{--grub-mkimage} flag to @command{grub-install}.
+
+GRUB uses GPG-style detached signatures (meaning that a file
+@file{foo.sig} will be produced when file @file{foo} is signed), and
+currently supports the DSA and RSA signing algorithms. A signing key
+can be generated as follows:
+
+@example
+gpg --gen-key
+@end example
+
+An individual file can be signed as follows:
+
+@example
+gpg --detach-sign /path/to/file
+@end example
+
+For successful validation of all of GRUB's subcomponents and the
+loaded OS kernel, they must all be signed.  One way to accomplish this
+is the following (after having already produced the desired
+@file{grub.cfg} file, e.g., by running @command{grub-mkconfig}
+(@pxref{Invoking grub-mkconfig}):
+
+@example
+@group
+# Edit /dev/shm/passphrase.txt to contain your signing key's passphrase
+for i in `find /boot -name "*.cfg" -or -name "*.lst" -or \
+  -name "*.mod" -or -name "vmlinuz*" -or -name "initrd*" -or \
+  -name "grubenv"`;
+do
+  gpg --batch --detach-sign --passphrase-fd 0 $i < \
+    /dev/shm/passphrase.txt
+done
+shred /dev/shm/passphrase.txt
+@end group
+@end example
+
+See also: @ref{check_signatures}, @ref{verify_detached}, @ref{trust},
+@ref{list_trusted}, @ref{distrust}, @ref{load_env}, @ref{save_env}.
+
+Note that internally signature enforcement is controlled by setting
+the environment variable @code{check_signatures} equal to
+@code{enforce}.  Passing one or more @code{--pubkey} options to
+@command{grub-mkimage} implicitly defines @code{check_signatures}
+equal to @code{enforce} in @file{core.img} prior to processing any
+configuration files.
+
+Note that signature checking does @strong{not} prevent an attacker
+with (serial, physical, ...) console access from dropping manually to
+the GRUB console and executing:
+
+@example
+set check_signatures=no
+@end example
+
+To prevent this, password-protection (@pxref{Authentication and
+authorisation}) is essential.  Note that even with GRUB password
+protection, GRUB itself cannot prevent someone with physical access to
+the machine from altering that machine's firmware (e.g., Coreboot
+or BIOS) configuration to cause the machine to boot from a different
+(attacker-controlled) device.  GRUB is at best only one link in a
+secure boot chain.
 
 @node Platform limitations
 @chapter Platform limitations
@@ -4215,8 +5569,7 @@ ARC platform is unable to change datetime (firmware doesn't seem to provide a
 function for it).
 EMU has similar limitation.
 
-ARC platform no serial port is available.
-EMU has similar limitation.
+On EMU platform no serial port is available.
 
 Console charset refers only to firmware-assisted console. gfxterm is always
 Unicode (see Internationalisation section for its limitations). Serial is
@@ -4233,15 +5586,14 @@ the actual console may be much more limited depending on firmware
 On BIOS network is supported only if the image is loaded through network.
 On sparc64 GRUB is unable to determine which server it was booted from.
 
-On platforms not having direct serial support (as indicated in the line serial)
-you can still redirect firmware console to serial if it allows so.
-
 Direct ATA/AHCI support allows to circumvent various firmware limitations but
 isn't needed for normal operation except on baremetal ports.
 
 AT keyboard support allows keyboard layout remapping and support for keys not
 available through firmware. It isn't needed for normal operation except
 baremetal ports.
+
+Speaker allows morse and spkmodem communication.
 
 USB support provides benefits similar to ATA (for USB disks) or AT (for USB
 keyboards). In addition it allows USBserial.
@@ -4264,6 +5616,7 @@ and mips-qemu_mips can use only memory up to first hole.
 @item network            @tab yes (*) @tab no       @tab no           @tab no
 @item ATA/AHCI           @tab yes     @tab yes      @tab yes          @tab yes
 @item AT keyboard        @tab yes     @tab yes      @tab yes          @tab yes
+@item Speaker            @tab yes     @tab yes      @tab yes          @tab yes
 @item USB                @tab yes     @tab yes      @tab yes          @tab yes
 @item chainloader        @tab local   @tab yes      @tab yes          @tab no
 @item cpuid              @tab partial @tab partial  @tab partial      @tab partial
@@ -4281,6 +5634,7 @@ and mips-qemu_mips can use only memory up to first hole.
 @item network            @tab yes         @tab yes       @tab yes           @tab yes
 @item ATA/AHCI           @tab yes         @tab yes       @tab yes           @tab no
 @item AT keyboard        @tab yes         @tab yes       @tab yes           @tab no
+@item Speaker            @tab yes         @tab yes       @tab yes           @tab no
 @item USB                @tab yes         @tab yes       @tab yes           @tab no
 @item chainloader        @tab local       @tab local     @tab no            @tab local
 @item cpuid              @tab partial     @tab partial   @tab partial       @tab no
@@ -4298,6 +5652,7 @@ and mips-qemu_mips can use only memory up to first hole.
 @item network            @tab no          @tab yes (*) @tab yes     @tab no
 @item ATA/AHCI           @tab yes         @tab no      @tab no      @tab no
 @item AT keyboard        @tab yes         @tab no      @tab no      @tab no
+@item Speaker            @tab no          @tab no      @tab no      @tab no
 @item USB                @tab yes         @tab no      @tab no      @tab no
 @item chainloader        @tab yes         @tab no      @tab no      @tab no
 @item cpuid              @tab no          @tab no      @tab no      @tab no
@@ -4311,10 +5666,11 @@ and mips-qemu_mips can use only memory up to first hole.
 @multitable @columnfractions .20 .20 .20 .20 .20
 @item                    @tab MIPS qemu @tab emu
 @item video              @tab no        @tab yes
-@item console charset    @tab CP437     @tab ASCII
+@item console charset    @tab CP437     @tab Unicode (*)
 @item network            @tab no        @tab yes
 @item ATA/AHCI           @tab yes       @tab no
 @item AT keyboard        @tab yes       @tab no
+@item Speaker            @tab no        @tab no
 @item USB                @tab N/A       @tab yes
 @item chainloader        @tab yes       @tab no
 @item cpuid              @tab no        @tab no
@@ -4338,14 +5694,15 @@ Information retrieval:
 @itemize
 @item mipsel-loongson: lsspd
 @item mips-arc: lsdev
-@item efi: lsefisystab, lssal, lsefimmap
+@item efi: lsefisystab, lssal, lsefimmap, lsefi
 @item i386-pc: lsapm
+@item i386-coreboot: lscoreboot, coreboot_boottime, cbmemc
 @item acpi-enabled (i386-pc, i386-coreboot, i386-multiboot, *-efi): lsacpi
 @end itemize
 
 Workarounds for platform-specific issues:
 @itemize
-@item i386-efi/x86_64-efi: loadbios, fixvideo
+@item i386-efi/x86_64-efi: loadbios, fakebios, fix_video
 @item acpi-enabled (i386-pc, i386-coreboot, i386-multiboot, *-efi):
     acpi (override ACPI tables)
 @item i386-pc: drivemap
@@ -4360,7 +5717,7 @@ Advanced operations for power users:
 Miscelaneous:
 @itemize
 @item cmos (x86-*, ieee1275, mips-qemu_mips, mips-loongson): cmostest
-    (used on some laptops to check for special power-on key)
+    (used on some laptops to check for special power-on key), cmosclean
 @item i386-pc: play
 @end itemize
 
@@ -4375,10 +5732,10 @@ X86 support is summarised in the following table. ``Yes'' means that the kernel 
 @item Plan9                          @tab yes     @tab no (1)
 @item Freedos                        @tab yes     @tab no (1)
 @item FreeBSD bootloader             @tab yes     @tab crashes (1)
-@item 32-bit kFreeBSD                @tab yes     @tab crashes (2,6)
-@item 64-bit kFreeBSD                @tab yes     @tab crashes (2,6)
+@item 32-bit kFreeBSD                @tab yes     @tab crashes (5)
+@item 64-bit kFreeBSD                @tab yes     @tab crashes (5)
 @item 32-bit kNetBSD                 @tab yes     @tab crashes (1)
-@item 64-bit kNetBSD                 @tab yes     @tab crashes (2)
+@item 64-bit kNetBSD                 @tab yes     @tab crashes
 @item 32-bit kOpenBSD                @tab yes     @tab yes
 @item 64-bit kOpenBSD                @tab yes     @tab yes
 @item Multiboot                      @tab yes     @tab yes
@@ -4389,9 +5746,9 @@ X86 support is summarised in the following table. ``Yes'' means that the kernel 
 @item 64-bit Linux (modern protocol) @tab yes     @tab yes
 @item 32-bit XNU                     @tab yes     @tab ?
 @item 64-bit XNU                     @tab yes     @tab ?
-@item 32-bit EFI chainloader         @tab no (3)  @tab no (3)
-@item 64-bit EFI chainloader         @tab no (3)  @tab no (3)
-@item Appleloader                    @tab no (3)  @tab no (3)
+@item 32-bit EFI chainloader         @tab no (2)  @tab no (2)
+@item 64-bit EFI chainloader         @tab no (2)  @tab no (2)
+@item Appleloader                    @tab no (2)  @tab no (2)
 @end multitable
 
 @multitable @columnfractions .50 .22 .22
@@ -4401,8 +5758,8 @@ X86 support is summarised in the following table. ``Yes'' means that the kernel 
 @item Plan9                          @tab no (1)       @tab no (1)
 @item FreeDOS                        @tab no (1)       @tab no (1)
 @item FreeBSD bootloader             @tab crashes (1)  @tab crashes (1)
-@item 32-bit kFreeBSD                @tab crashes (6)  @tab crashes (6)
-@item 64-bit kFreeBSD                @tab crashes (6)  @tab crashes (6)
+@item 32-bit kFreeBSD                @tab crashes (5)  @tab crashes (5)
+@item 64-bit kFreeBSD                @tab crashes (5)  @tab crashes (5)
 @item 32-bit kNetBSD                 @tab crashes (1)  @tab crashes (1)  
 @item 64-bit kNetBSD                 @tab yes          @tab yes
 @item 32-bit kOpenBSD                @tab yes          @tab yes
@@ -4415,9 +5772,9 @@ X86 support is summarised in the following table. ``Yes'' means that the kernel 
 @item 64-bit Linux (modern protocol) @tab yes          @tab yes
 @item 32-bit XNU                     @tab ?            @tab ?
 @item 64-bit XNU                     @tab ?            @tab ?
-@item 32-bit EFI chainloader         @tab no (3)       @tab no (3)
-@item 64-bit EFI chainloader         @tab no (3)       @tab no (3)
-@item Appleloader                    @tab no (3)       @tab no (3)
+@item 32-bit EFI chainloader         @tab no (2)       @tab no (2)
+@item 64-bit EFI chainloader         @tab no (2)       @tab no (2)
+@item Appleloader                    @tab no (2)       @tab no (2)
 @end multitable
 
 @multitable @columnfractions .50 .22 .22
@@ -4440,9 +5797,9 @@ X86 support is summarised in the following table. ``Yes'' means that the kernel 
 @item 32-bit Linux (modern protocol) @tab yes           @tab yes
 @item 64-bit Linux (modern protocol) @tab yes           @tab yes
 @item 32-bit XNU                     @tab yes           @tab yes
-@item 64-bit XNU                     @tab yes (5)       @tab yes
-@item 32-bit EFI chainloader         @tab yes           @tab no (4)
-@item 64-bit EFI chainloader         @tab no (4)        @tab yes
+@item 64-bit XNU                     @tab yes (4)       @tab yes
+@item 32-bit EFI chainloader         @tab yes           @tab no (3)
+@item 64-bit EFI chainloader         @tab no (3)        @tab yes
 @item Appleloader                    @tab yes           @tab yes
 @end multitable
 
@@ -4453,8 +5810,8 @@ X86 support is summarised in the following table. ``Yes'' means that the kernel 
 @item Plan9                          @tab no (1)
 @item FreeDOS                        @tab no (1)
 @item FreeBSD bootloader             @tab crashes (1)
-@item 32-bit kFreeBSD                @tab crashes (6)
-@item 64-bit kFreeBSD                @tab crashes (6)
+@item 32-bit kFreeBSD                @tab crashes (5)
+@item 64-bit kFreeBSD                @tab crashes (5)
 @item 32-bit kNetBSD                 @tab crashes (1)
 @item 64-bit kNetBSD                 @tab ?
 @item 32-bit kOpenBSD                @tab ?
@@ -4467,14 +5824,13 @@ X86 support is summarised in the following table. ``Yes'' means that the kernel 
 @item 64-bit Linux (modern protocol) @tab ?
 @item 32-bit XNU                     @tab ?
 @item 64-bit XNU                     @tab ?
-@item 32-bit EFI chainloader         @tab no (3)
-@item 64-bit EFI chainloader         @tab no (3)
-@item Appleloader                    @tab no (3)
+@item 32-bit EFI chainloader         @tab no (2)
+@item 64-bit EFI chainloader         @tab no (2)
+@item Appleloader                    @tab no (2)
 @end multitable
 
 @enumerate
 @item Requires BIOS
-@item Crashes because the memory at 0x0-0x1000 isn't available
 @item EFI only
 @item 32-bit and 64-bit EFI have different structures and work in different CPU modes so it's not possible to chainload 32-bit bootloader on 64-bit platform and vice-versa
 @item Some modules may need to be disabled
@@ -4484,7 +5840,7 @@ X86 support is summarised in the following table. ``Yes'' means that the kernel 
 PowerPC, IA64 and Sparc64 ports support only Linux. MIPS port supports Linux
 and multiboot2.
 
-@chapter Boot tests
+@section Boot tests
 
 As you have seen in previous chapter the support matrix is pretty big and some of the configurations are only rarely used. To ensure the quality bootchecks are available for all x86 targets except EFI chainloader, Appleloader and XNU. All x86 platforms have bootcheck facility except ieee1275. Multiboot, multiboot2, BIOS chainloader, ntldr and freebsd-bootloader boot targets are tested only with a fake kernel images. Only Linux is tested among the payloads using Linux protocols.
 
@@ -4582,17 +5938,17 @@ Installing to the whole disk device is normally more robust.
 @item
 Check that GRUB actually knows how to read from the device and file system
 containing @file{/boot/grub}.  It will not be able to read from encrypted
-devices, nor from file systems for which support has not yet been added to
-GRUB.
+devices with unsupported encryption scheme, nor from file systems for which
+support has not yet been added to GRUB.
 @end itemize
 
 
 @node Invoking grub-install
 @chapter Invoking grub-install
 
-The program @command{grub-install} installs GRUB on your drive using
-@command{grub-mkimage} and (on some platforms) @command{grub-setup}.  You
-must specify the device name on which you want to install GRUB, like this:
+The program @command{grub-install} generates a GRUB core image using
+@command{grub-mkimage} and installs it on your system.  You must specify the
+device name on which you want to install GRUB, like this:
 
 @example
 grub-install @var{install_device}
@@ -4638,8 +5994,20 @@ mounted on
 Recheck the device map, even if @file{/boot/grub/device.map} already
 exists. You should use this option whenever you add/remove a disk
 into/from your computer.
-@end table
 
+@item --no-rs-codes
+By default on x86 BIOS systems, @command{grub-install} will use some
+extra space in the bootloader embedding area for Reed-Solomon
+error-correcting codes. This enables GRUB to still boot successfully
+if some blocks are corrupted.  The exact amount of protection offered
+is dependent on available space in the embedding area.  R sectors of
+redundancy can tolerate up to R/2 corrupted sectors. This
+redundancy may be cumbersome if attempting to cryptographically
+validate the contents of the bootloader embedding area, or in more
+modern systems with GPT-style partition tables (@pxref{BIOS
+installation}) where GRUB does not reside in any unpartitioned space
+outside of the MBR.  Disable the Reed-Solomon codes with this option.
+@end table
 
 @node Invoking grub-mkconfig
 @chapter Invoking grub-mkconfig
@@ -4692,6 +6060,33 @@ Length of the generated hash.  Defaults to 64.
 @item -s @var{number}
 @itemx --salt=@var{number}
 Length of the salt.  Defaults to 64.
+@end table
+
+
+@node Invoking grub-mkrelpath
+@chapter Invoking grub-mkrelpath
+
+The program @command{grub-mkrelpath} makes a file system path relative to
+the root of its containing file system.  For instance, if @file{/usr} is a
+mount point, then:
+
+@example
+$ @kbd{grub-mkrelpath /usr/share/grub/unicode.pf2}
+@samp{/share/grub/unicode.pf2}
+@end example
+
+This is mainly used internally by other GRUB utilities such as
+@command{grub-mkconfig} (@pxref{Invoking grub-mkconfig}), but may
+occasionally also be useful for debugging.
+
+@command{grub-mkrelpath} accepts the following options:
+
+@table @option
+@item --help
+Print a summary of the command-line options and exit.
+
+@item --version
+Print the version number of GRUB and exit.
 @end table
 
 
@@ -4750,6 +6145,93 @@ default.
 @item --grub-mkimage=@var{file}
 Use @var{file} as the @command{grub-mkimage} program, rather than the
 built-in default.
+@end table
+
+
+@node Invoking grub-mount
+@chapter Invoking grub-mount
+
+The program @command{grub-mount} performs a read-only mount of any file
+system or file system image that GRUB understands, using GRUB's file system
+drivers via FUSE.  (It is only available if FUSE development files were
+present when GRUB was built.)  This has a number of uses:
+
+@itemize @bullet
+@item
+It provides a convenient way to check how GRUB will view a file system at
+boot time.  You can use normal command-line tools to compare that view with
+that of your operating system, making it easy to find bugs.
+
+@item
+It offers true read-only mounts.  Linux does not have these for journalling
+file systems, because it will always attempt to replay the journal at mount
+time; while you can temporarily mark the block device read-only to avoid
+this, that causes the mount to fail.  Since GRUB intentionally contains no
+code for writing to file systems, it can easily provide a guaranteed
+read-only mount mechanism.
+
+@item
+It allows you to examine any file system that GRUB understands without
+needing to load additional modules into your running kernel, which may be
+useful in constrained environments such as installers.
+
+@item
+Since it can examine file system images (contained in regular files) just as
+easily as file systems on block devices, you can use it to inspect any file
+system image that GRUB understands with only enough privileges to use FUSE,
+even if nobody has yet written a FUSE module specifically for that file
+system type.
+@end itemize
+
+Using @command{grub-mount} is normally as simple as:
+
+@example
+grub-mount /dev/sda1 /mnt
+@end example
+
+@command{grub-mount} must be given one or more images and a mount point as
+non-option arguments (if it is given more than one image, it will treat them
+as a RAID set), and also accepts the following options:
+
+@table @option
+@item --help
+Print a summary of the command-line options and exit.
+
+@item --version
+Print the version number of GRUB and exit.
+
+@item -C
+@itemx --crypto
+Mount encrypted devices, prompting for a passphrase if necessary.
+
+@item -d @var{string}
+@itemx --debug=@var{string}
+Show debugging output for conditions matching @var{string}.
+
+@item -K prompt|@var{file}
+@itemx --zfs-key=prompt|@var{file}
+Load a ZFS encryption key.  If you use @samp{prompt} as the argument,
+@command{grub-mount} will read a passphrase from the terminal; otherwise, it
+will read key material from the specified file.
+
+@item -r @var{device}
+@itemx --root=@var{device}
+Set the GRUB root device to @var{device}.  You do not normally need to set
+this; @command{grub-mount} will automatically set the root device to the
+root of the supplied file system.
+
+If @var{device} is just a number, then it will be treated as a partition
+number within the supplied image.  This means that, if you have an image of
+an entire disk in @file{disk.img}, then you can use this command to mount
+its second partition:
+
+@example
+grub-mount -r 2 disk.img mount-point
+@end example
+
+@item -v
+@itemx --verbose
+Print verbose messages.
 @end table
 
 
@@ -4839,6 +6321,33 @@ Print verbose messages.
 @end table
 
 
+@node Invoking grub-script-check
+@chapter Invoking grub-script-check
+
+The program @command{grub-script-check} takes a GRUB script file
+(@pxref{Shell-like scripting}) and checks it for syntax errors, similar to
+commands such as @command{sh -n}.  It may take a @var{path} as a non-option
+argument; if none is supplied, it will read from standard input.
+
+@example
+grub-script-check /boot/grub/grub.cfg
+@end example
+
+@command{grub-script-check} accepts the following options:
+
+@table @option
+@item --help
+Print a summary of the command-line options and exit.
+
+@item --version
+Print the version number of GRUB and exit.
+
+@item -v
+@itemx --verbose
+Print each line of input after reading it.
+@end table
+
+
 @node Obtaining and Building GRUB
 @appendix How to obtain and build GRUB
 
@@ -4876,8 +6385,8 @@ just do:
 @end group
 @end example
 
-Also, the latest version is available using Bazaar. See
-@uref{http://www.gnu.org/software/grub/grub-download.en.html} for more
+Also, the latest version is available using Git. See
+@uref{http://www.gnu.org/software/grub/grub-download.html} for more
 information.
 
 @node Reporting bugs

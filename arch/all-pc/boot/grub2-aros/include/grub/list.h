@@ -21,8 +21,8 @@
 #define GRUB_LIST_HEADER 1
 
 #include <grub/symbol.h>
-#include <grub/types.h>
-#include <grub/misc.h>
+#include <grub/err.h>
+#include <grub/compiler.h>
 
 struct grub_list
 {
@@ -35,6 +35,7 @@ void EXPORT_FUNC(grub_list_push) (grub_list_t *head, grub_list_t item);
 void EXPORT_FUNC(grub_list_remove) (grub_list_t item);
 
 #define FOR_LIST_ELEMENTS(var, list) for ((var) = (list); (var); (var) = (var)->next)
+#define FOR_LIST_ELEMENTS_SAFE(var, nxt, list) for ((var) = (list), (nxt) = ((var) ? (var)->next : 0); (var); (var) = (nxt), ((nxt) = (var) ? (var)->next : 0))
 
 static inline void *
 grub_bad_type_cast_real (int line, const char *file)

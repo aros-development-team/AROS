@@ -26,7 +26,11 @@
 #include <grub/err.h>
 #include <grub/dl.h>
 #include <grub/charset.h>
+#ifndef MODE_EXFAT
 #include <grub/fat.h>
+#else
+#include <grub/exfat.h>
+#endif
 #include <grub/i18n.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
@@ -60,33 +64,16 @@ enum
   };
 
 #ifdef MODE_EXFAT
-struct grub_exfat_bpb
-{
-  grub_uint8_t jmp_boot[3];
-  grub_uint8_t oem_name[8];
-  grub_uint8_t mbz[53];
-  grub_uint64_t num_hidden_sectors;
-  grub_uint64_t num_total_sectors;
-  grub_uint32_t num_reserved_sectors;
-  grub_uint32_t sectors_per_fat;
-  grub_uint32_t cluster_offset;
-  grub_uint32_t cluster_count;
-  grub_uint32_t root_cluster;
-  grub_uint32_t num_serial;
-  grub_uint16_t fs_revision;
-  grub_uint16_t volume_flags;
-  grub_uint8_t bytes_per_sector_shift;
-  grub_uint8_t sectors_per_cluster_shift;
-  grub_uint8_t num_fats;
-  grub_uint8_t num_ph_drive;
-  grub_uint8_t reserved[8];
-} __attribute__ ((packed));
 typedef struct grub_exfat_bpb grub_current_fat_bpb_t;
 #else
 typedef struct grub_fat_bpb grub_current_fat_bpb_t;
 #endif
 
 #ifdef MODE_EXFAT
+enum
+  {
+    FLAG_CONTIGUOUS = 2
+  };
 struct grub_fat_dir_entry
 {
   grub_uint8_t entry_type;
@@ -105,7 +92,7 @@ struct grub_fat_dir_entry
       grub_uint8_t m_time_tenth;
       grub_uint8_t a_time_tenth;
       grub_uint8_t reserved2[9];
-    }  __attribute__ ((packed)) file;
+    }  GRUB_PACKED file;
     struct {
       grub_uint8_t flags;
       grub_uint8_t reserved1;
@@ -116,17 +103,17 @@ struct grub_fat_dir_entry
       grub_uint32_t reserved3;
       grub_uint32_t first_cluster;
       grub_uint64_t file_size;
-    }   __attribute__ ((packed)) stream_extension;
+    }   GRUB_PACKED stream_extension;
     struct {
       grub_uint8_t flags;
       grub_uint16_t str[15];
-    }  __attribute__ ((packed))  file_name;
+    }  GRUB_PACKED  file_name;
     struct {
       grub_uint8_t character_count;
       grub_uint16_t str[15];
-    }  __attribute__ ((packed))  volume_label;
-  }  __attribute__ ((packed)) type_specific;
-} __attribute__ ((packed));
+    }  GRUB_PACKED  volume_label;
+  }  GRUB_PACKED type_specific;
+} GRUB_PACKED;
 
 struct grub_fat_dir_node
 {
@@ -135,7 +122,7 @@ struct grub_fat_dir_node
   grub_uint64_t file_size;
   grub_uint64_t valid_size;
   int have_stream;
-  int is_label;
+  int is_contiguous;
 };
 
 typedef struct grub_fat_dir_node grub_fat_dir_node_t;
@@ -155,7 +142,7 @@ struct grub_fat_dir_entry
   grub_uint16_t w_date;
   grub_uint16_t first_cluster_low;
   grub_uint32_t file_size;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_fat_long_name_entry
 {
@@ -167,7 +154,7 @@ struct grub_fat_long_name_entry
   grub_uint16_t name2[6];
   grub_uint16_t first_cluster;
   grub_uint16_t name3[2];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 typedef struct grub_fat_dir_entry grub_fat_dir_node_t;
 
@@ -186,6 +173,8 @@ struct grub_fat_data
 #ifndef MODE_EXFAT
   grub_uint32_t root_sector;
   grub_uint32_t num_root_sectors;
+#else
+  int is_contiguous;
 #endif
 
   int cluster_bits;
@@ -336,13 +325,12 @@ grub_fat_mount (grub_disk_t disk)
 #ifdef MODE_EXFAT
   {
     /* exFAT.  */
-    grub_uint16_t flags = grub_le_to_cpu16 (bpb.volume_flags);
-
     data->root_cluster = grub_le_to_cpu32 (bpb.root_cluster);
     data->fat_size = 32;
     data->cluster_eof_mark = 0xffffffff;
 
-    if ((flags & 0x1) && bpb.num_fats > 1)
+    if ((bpb.volume_flags & grub_cpu_to_le16_compile_time (0x1))
+	&& bpb.num_fats > 1)
       data->fat_sector += data->sectors_per_fat;
   }
 #else
@@ -443,6 +431,9 @@ grub_fat_mount (grub_disk_t disk)
   data->file_cluster = data->root_cluster;
   data->cur_cluster_num = ~0U;
   data->attr = GRUB_FAT_ATTR_DIRECTORY;
+#ifdef MODE_EXFAT
+  data->is_contiguous = 0;
+#endif
   return data;
 
  fail:
@@ -454,8 +445,7 @@ grub_fat_mount (grub_disk_t disk)
 
 static grub_ssize_t
 grub_fat_read_data (grub_disk_t disk, struct grub_fat_data *data,
-		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
-				       unsigned offset, unsigned length),
+		    grub_disk_read_hook_t read_hook, void *read_hook_data,
 		    grub_off_t offset, grub_size_t len, char *buf)
 {
   grub_size_t size;
@@ -480,6 +470,26 @@ grub_fat_read_data (grub_disk_t disk, struct grub_fat_data *data,
     }
 #endif
 
+#ifdef MODE_EXFAT
+  if (data->is_contiguous)
+    {
+      /* Read the data here.  */
+      sector = (data->cluster_sector
+		+ ((data->file_cluster - 2)
+		   << data->cluster_bits));
+
+      disk->read_hook = read_hook;
+      disk->read_hook_data = read_hook_data;
+      grub_disk_read (disk, sector + (offset >> GRUB_DISK_SECTOR_BITS),
+		      offset & (GRUB_DISK_SECTOR_SIZE - 1), len, buf);
+      disk->read_hook = 0;
+      if (grub_errno)
+	return -1;
+
+      return len;
+    }
+#endif
+
   /* Calculate the logical cluster number and offset.  */
   logical_cluster_bits = (data->cluster_bits
 			  + GRUB_DISK_SECTOR_BITS);
@@ -498,7 +508,7 @@ grub_fat_read_data (grub_disk_t disk, struct grub_fat_data *data,
 	{
 	  /* Find next cluster.  */
 	  grub_uint32_t next_cluster;
-	  unsigned long fat_offset;
+	  grub_uint32_t fat_offset;
 
 	  switch (data->fat_size)
 	    {
@@ -561,6 +571,7 @@ grub_fat_read_data (grub_disk_t disk, struct grub_fat_data *data,
 	size = len;
 
       disk->read_hook = read_hook;
+      disk->read_hook_data = read_hook_data;
       grub_disk_read (disk, sector, offset, size, buf);
       disk->read_hook = 0;
       if (grub_errno)
@@ -630,7 +641,7 @@ grub_fat_iterate_dir_next (grub_disk_t disk, struct grub_fat_data *data,
 
       ctxt->offset += sizeof (dir);
 
-      if (grub_fat_read_data (disk, data, 0, ctxt->offset, sizeof (dir),
+      if (grub_fat_read_data (disk, data, 0, 0, ctxt->offset, sizeof (dir),
 			      (char *) &dir)
 	   != sizeof (dir))
 	break;
@@ -652,7 +663,7 @@ grub_fat_iterate_dir_next (grub_disk_t disk, struct grub_fat_data *data,
 	    {
 	      struct grub_fat_dir_entry sec;
 	      ctxt->offset += sizeof (sec);
-	      if (grub_fat_read_data (disk, data, 0,
+	      if (grub_fat_read_data (disk, data, 0, 0,
 				      ctxt->offset, sizeof (sec), (char *) &sec)
 		  != sizeof (sec))
 		break;
@@ -669,6 +680,8 @@ grub_fat_iterate_dir_next (grub_disk_t disk, struct grub_fat_data *data,
 		  ctxt->dir.file_size
 		    = grub_cpu_to_le64 (sec.type_specific.stream_extension.file_size);
 		  ctxt->dir.have_stream = 1;
+		  ctxt->dir.is_contiguous = !!(dir.type_specific.stream_extension.flags
+					       & grub_cpu_to_le16_compile_time (FLAG_CONTIGUOUS));
 		  break;
 		case 0xc1:
 		  {
@@ -729,7 +742,7 @@ grub_fat_iterate_dir_next (grub_disk_t disk, struct grub_fat_data *data,
       ctxt->offset += sizeof (ctxt->dir);
 
       /* Read a directory entry.  */
-      if (grub_fat_read_data (disk, data, 0,
+      if (grub_fat_read_data (disk, data, 0, 0,
 			      ctxt->offset, sizeof (ctxt->dir),
 			      (char *) &ctxt->dir)
 	   != sizeof (ctxt->dir) || ctxt->dir.name[0] == 0)
@@ -844,8 +857,7 @@ grub_fat_iterate_dir_next (grub_disk_t disk, struct grub_fat_data *data,
 static char *
 grub_fat_find_dir (grub_disk_t disk, struct grub_fat_data *data,
 		   const char *path, const char *origpath,
-		   int (*hook) (const char *filename,
-				const struct grub_dirhook_info *info))
+		   grub_fs_dir_hook_t hook, void *hook_data)
 {
   char *dirname, *dirp;
   int call_hook;
@@ -905,7 +917,7 @@ grub_fat_find_dir (grub_disk_t disk, struct grub_fat_data *data,
 #endif
       if (*dirname == '\0' && call_hook)
 	{
-	  if (hook (ctxt.filename, &info))
+	  if (hook (ctxt.filename, &info, hook_data))
 	    break;
 	  else
 	    continue;
@@ -918,6 +930,7 @@ grub_fat_find_dir (grub_disk_t disk, struct grub_fat_data *data,
 #ifdef MODE_EXFAT
 	  data->file_size = ctxt.dir.file_size;
 	  data->file_cluster = ctxt.dir.first_cluster;
+	  data->is_contiguous = ctxt.dir.is_contiguous;
 #else
 	  data->file_size = grub_le_to_cpu32 (ctxt.dir.file_size);
 	  data->file_cluster = ((grub_le_to_cpu16 (ctxt.dir.first_cluster_high) << 16)
@@ -926,7 +939,7 @@ grub_fat_find_dir (grub_disk_t disk, struct grub_fat_data *data,
 	  data->cur_cluster_num = ~0U;
 
 	  if (call_hook)
-	    hook (ctxt.filename, &info);
+	    hook (ctxt.filename, &info, hook_data);
 
 	  break;
 	}
@@ -946,9 +959,8 @@ grub_fat_find_dir (grub_disk_t disk, struct grub_fat_data *data,
 }
 
 static grub_err_t
-grub_fat_dir (grub_device_t device, const char *path,
-	      int (*hook) (const char *filename,
-			   const struct grub_dirhook_info *info))
+grub_fat_dir (grub_device_t device, const char *path, grub_fs_dir_hook_t hook,
+	      void *hook_data)
 {
   struct grub_fat_data *data = 0;
   grub_disk_t disk = device->disk;
@@ -976,7 +988,7 @@ grub_fat_dir (grub_device_t device, const char *path,
 
   do
     {
-      p = grub_fat_find_dir (disk, data, p, path, hook);
+      p = grub_fat_find_dir (disk, data, p, path, hook, hook_data);
     }
   while (p && grub_errno == GRUB_ERR_NONE);
 
@@ -1004,7 +1016,7 @@ grub_fat_open (grub_file_t file, const char *name)
 
   do
     {
-      p = grub_fat_find_dir (file->device->disk, data, p, name, 0);
+      p = grub_fat_find_dir (file->device->disk, data, p, name, 0, 0);
       if (grub_errno != GRUB_ERR_NONE)
 	goto fail;
     }
@@ -1033,7 +1045,8 @@ grub_fat_open (grub_file_t file, const char *name)
 static grub_ssize_t
 grub_fat_read (grub_file_t file, char *buf, grub_size_t len)
 {
-  return grub_fat_read_data (file->device->disk, file->data, file->read_hook,
+  return grub_fat_read_data (file->device->disk, file->data,
+			     file->read_hook, file->read_hook_data,
 			     file->offset, len, buf);
 }
 
@@ -1066,7 +1079,7 @@ grub_fat_label (grub_device_t device, char **label)
     {
       offset += sizeof (dir);
 
-      if (grub_fat_read_data (disk, data, 0,
+      if (grub_fat_read_data (disk, data, 0, 0,
 			       offset, sizeof (dir), (char *) &dir)
 	   != sizeof (dir))
 	break;
@@ -1123,7 +1136,7 @@ grub_fat_label (grub_device_t device, char **label)
   if (! (data->attr & GRUB_FAT_ATTR_DIRECTORY))
     {
       grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
-      return 0;
+      goto fail;
     }
 
   err = grub_fat_iterate_init (&ctxt);
@@ -1177,6 +1190,29 @@ grub_fat_uuid (grub_device_t device, char **uuid)
 
   return grub_errno;
 }
+
+#ifdef GRUB_UTIL
+#ifndef MODE_EXFAT
+grub_disk_addr_t
+grub_fat_get_cluster_sector (grub_disk_t disk, grub_uint64_t *sec_per_lcn)
+#else
+grub_disk_addr_t
+  grub_exfat_get_cluster_sector (grub_disk_t disk, grub_uint64_t *sec_per_lcn)
+#endif
+{
+  grub_disk_addr_t ret;
+  struct grub_fat_data *data;
+  data = grub_fat_mount (disk);
+  if (!data)
+    return 0;
+  ret = data->cluster_sector;
+
+  *sec_per_lcn = 1ULL << data->cluster_bits;
+
+  grub_free (data);
+  return ret;
+}
+#endif
 
 static struct grub_fs grub_fat_fs =
   {

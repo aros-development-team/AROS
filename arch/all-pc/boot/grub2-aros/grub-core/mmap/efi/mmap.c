@@ -29,7 +29,8 @@
   ((grub_efi_memory_descriptor_t *) ((char *) (desc) + (size)))
 
 grub_err_t
-grub_efi_mmap_iterate (grub_memory_hook_t hook, int avoid_efi_boot_services)
+grub_efi_mmap_iterate (grub_memory_hook_t hook, void *hook_data,
+		       int avoid_efi_boot_services)
 {
   grub_efi_uintn_t mmap_size = 0;
   grub_efi_memory_descriptor_t *map_buf = 0;
@@ -69,17 +70,17 @@ grub_efi_mmap_iterate (grub_memory_hook_t hook, int avoid_efi_boot_services)
 	  if (!avoid_efi_boot_services)
 	    {
 	      hook (desc->physical_start, desc->num_pages * 4096,
-		    GRUB_MEMORY_AVAILABLE);
+		    GRUB_MEMORY_AVAILABLE, hook_data);
 	      break;
 	    }
 	case GRUB_EFI_RUNTIME_SERVICES_CODE:
 	  hook (desc->physical_start, desc->num_pages * 4096,
-		GRUB_MEMORY_CODE);
+		GRUB_MEMORY_CODE, hook_data);
 	  break;
 
 	case GRUB_EFI_UNUSABLE_MEMORY:
 	  hook (desc->physical_start, desc->num_pages * 4096,
-		GRUB_MEMORY_BADRAM);
+		GRUB_MEMORY_BADRAM, hook_data);
 	  break;
 
 	default:
@@ -90,7 +91,7 @@ grub_efi_mmap_iterate (grub_memory_hook_t hook, int avoid_efi_boot_services)
 	  if (!avoid_efi_boot_services)
 	    {
 	      hook (desc->physical_start, desc->num_pages * 4096,
-		    GRUB_MEMORY_AVAILABLE);
+		    GRUB_MEMORY_AVAILABLE, hook_data);
 	      break;
 	    }
 	case GRUB_EFI_RESERVED_MEMORY_TYPE:
@@ -99,24 +100,24 @@ grub_efi_mmap_iterate (grub_memory_hook_t hook, int avoid_efi_boot_services)
 	case GRUB_EFI_MEMORY_MAPPED_IO_PORT_SPACE:
 	case GRUB_EFI_PAL_CODE:
 	  hook (desc->physical_start, desc->num_pages * 4096,
-		GRUB_MEMORY_RESERVED);
+		GRUB_MEMORY_RESERVED, hook_data);
 	  break;
 
 	case GRUB_EFI_LOADER_CODE:
 	case GRUB_EFI_LOADER_DATA:
 	case GRUB_EFI_CONVENTIONAL_MEMORY:
 	  hook (desc->physical_start, desc->num_pages * 4096,
-		GRUB_MEMORY_AVAILABLE);
+		GRUB_MEMORY_AVAILABLE, hook_data);
 	  break;
 
 	case GRUB_EFI_ACPI_RECLAIM_MEMORY:
 	  hook (desc->physical_start, desc->num_pages * 4096,
-		GRUB_MEMORY_ACPI);
+		GRUB_MEMORY_ACPI, hook_data);
 	  break;
 
 	case GRUB_EFI_ACPI_MEMORY_NVS:
 	  hook (desc->physical_start, desc->num_pages * 4096,
-		GRUB_MEMORY_NVS);
+		GRUB_MEMORY_NVS, hook_data);
 	  break;
 	}
     }
@@ -125,9 +126,9 @@ grub_efi_mmap_iterate (grub_memory_hook_t hook, int avoid_efi_boot_services)
 }
 
 grub_err_t
-grub_machine_mmap_iterate (grub_memory_hook_t hook)
+grub_machine_mmap_iterate (grub_memory_hook_t hook, void *hook_data)
 {
-  return grub_efi_mmap_iterate (hook, 0);
+  return grub_efi_mmap_iterate (hook, hook_data, 0);
 }
 
 static inline grub_efi_memory_type_t
@@ -183,8 +184,8 @@ grub_mmap_register (grub_uint64_t start, grub_uint64_t size, int type)
     return 0;
 
   b = grub_efi_system_table->boot_services;
-  address = start & (~0x3ffULL);
-  pages = (end - address  + 0x3ff) >> 12;
+  address = start & (~0xfffULL);
+  pages = (end - address + 0xfff) >> 12;
   status = efi_call_2 (b->free_pages, address, pages);
   if (status != GRUB_EFI_SUCCESS && status != GRUB_EFI_NOT_FOUND)
     {
@@ -262,7 +263,7 @@ grub_mmap_malign_and_register (grub_uint64_t align __attribute__ ((unused)),
   atype = GRUB_EFI_ALLOCATE_ANY_PAGES;
 #endif
 
-  pages = (size + 0x3ff) >> 12;
+  pages = (size + 0xfff) >> 12;
   status = efi_call_4 (b->allocate_pages, atype,
 		       make_efi_memtype (type), pages, &address);
   if (status != GRUB_EFI_SUCCESS)

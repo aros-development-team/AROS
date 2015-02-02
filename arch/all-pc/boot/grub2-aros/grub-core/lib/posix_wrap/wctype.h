@@ -22,6 +22,8 @@
 #include <grub/misc.h>
 #include <wchar.h>
 
+#define wctype_t grub_posix_wctype_t
+
 typedef enum { GRUB_CTYPE_INVALID,
 	       GRUB_CTYPE_ALNUM, GRUB_CTYPE_CNTRL, GRUB_CTYPE_LOWER,
 	       GRUB_CTYPE_SPACE, GRUB_CTYPE_ALPHA, GRUB_CTYPE_DIGIT,

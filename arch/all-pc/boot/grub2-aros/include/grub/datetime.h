@@ -89,9 +89,7 @@ grub_datetime2unixtime (const struct grub_datetime *datetime, grub_int32_t *nix)
   ret = 3 * SECPERYEAR + SECPERDAY;
 
   /* Transform C divisions and modulos to mathematical ones */
-  y4 = (datetime->year - 1973) / 4;
-  if (datetime->year < 1973)
-    y4--;
+  y4 = ((datetime->year - 1) >> 2) - (1973 / 4);
   ay = datetime->year - 1973 - 4 * y4;
   ret += y4 * SECPER4YEARS;
   ret += ay * SECPERYEAR;

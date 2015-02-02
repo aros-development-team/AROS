@@ -81,6 +81,7 @@
 #define  GRUB_PCI_STATUS_DEVSEL_TIMING_SHIFT 9
 #define  GRUB_PCI_STATUS_DEVSEL_TIMING_MASK 0x0600
 #define  GRUB_PCI_CLASS_SUBCLASS_VGA  0x0300
+#define  GRUB_PCI_CLASS_SUBCLASS_USB  0x0c03
 
 #ifndef ASM_FILE
 
@@ -132,13 +133,14 @@ grub_pci_get_function (grub_pci_device_t dev)
 #include <grub/cpu/pci.h>
 #endif
 
-typedef int NESTED_FUNC_ATTR (*grub_pci_iteratefunc_t)
-     (grub_pci_device_t dev, grub_pci_id_t pciid);
+typedef int (*grub_pci_iteratefunc_t)
+     (grub_pci_device_t dev, grub_pci_id_t pciid, void *data);
 
 grub_pci_address_t EXPORT_FUNC(grub_pci_make_address) (grub_pci_device_t dev,
 						       int reg);
 
-void EXPORT_FUNC(grub_pci_iterate) (grub_pci_iteratefunc_t hook);
+void EXPORT_FUNC(grub_pci_iterate) (grub_pci_iteratefunc_t hook,
+				    void *hook_data);
 
 struct grub_pci_dma_chunk;
 

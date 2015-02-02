@@ -16,36 +16,11 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TEST
 #include <grub/priority_queue.h>
 #include <grub/mm.h>
 #include <grub/dl.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
-
-#else
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <queue>
-
-using namespace std;
-
-typedef size_t grub_size_t;
-typedef int (*grub_comparator_t) (const void *a, const void *b);
-typedef unsigned char grub_uint8_t;
-#define grub_malloc malloc
-#define grub_memcpy memcpy
-#define grub_realloc realloc
-#define grub_free free
-
-typedef enum
-  {
-    GRUB_ERR_NONE,
-    grub_errno
-  } grub_err_t;
-#endif
 
 struct grub_priority_queue
 {
@@ -55,10 +30,6 @@ struct grub_priority_queue
   grub_comparator_t cmp;
   void *els;
 };
-
-#ifdef TEST
-typedef struct grub_priority_queue *grub_priority_queue_t;
-#endif
 
 static inline void *
 element (struct grub_priority_queue *pq, grub_size_t k)
@@ -189,69 +160,4 @@ grub_priority_queue_pop (grub_priority_queue_t pq)
     }
 }
 
-#ifdef TEST
 
-static int 
-compar (const void *a_, const void *b_)
-{
-  int a = *(int *) a_;
-  int b = *(int *) b_;
-  if (a < b)
-    return -1;
-  if (a > b)
-    return +1;
-  return 0;
-}
-
-int
-main (void)
-{
-  priority_queue <int> pq;
-  grub_priority_queue_t pq2;
-  int counter;
-  int s = 0;
-  pq2 = grub_priority_queue_new (sizeof (int), compar);
-  if (!pq2)
-    return 1;
-  srand (1);
-
-  for (counter = 0; counter < 1000000; counter++)
-    {
-      int op = rand () % 10;
-      if (s && *(int *) grub_priority_queue_top (pq2) != pq.top ())
-	{
-	  printf ("Error at %d\n", counter);
-	  return 2;
-	}
-      if (op < 3 && s)
-	{
-	  grub_priority_queue_pop (pq2);
-	  pq.pop ();
-	  s--;
-	}
-      else
-	{
-	  int v = rand ();
-	  int e;
-	  pq.push (v);
-	  e = grub_priority_queue_push (pq2, &v);
-	  if (e)
-	    return 3;
-	  s++;
-	}
-    }
-  while (s)
-    {
-      if (*(int *) grub_priority_queue_top (pq2) != pq.top ())
-	{
-	  printf ("Error at the end. %d elements remaining.\n", s);
-	  return 4;
-	}
-      grub_priority_queue_pop (pq2);
-      pq.pop ();
-      s--;
-    }
-  printf ("All tests passed successfully\n");
-  return 0;
-}
-#endif

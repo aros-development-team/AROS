@@ -48,8 +48,8 @@ static struct grub_partition_map grub_gpt_partition_map;
 
 grub_err_t
 grub_gpt_partition_map_iterate (grub_disk_t disk,
-				int (*hook) (grub_disk_t disk,
-					     const grub_partition_t partition))
+				grub_partition_iterate_hook_t hook,
+				void *hook_data)
 {
   struct grub_partition part;
   struct grub_gpt_header gpt;
@@ -65,7 +65,7 @@ grub_gpt_partition_map_iterate (grub_disk_t disk,
     return grub_errno;
 
   /* Check if it is valid.  */
-  if (mbr.signature != grub_cpu_to_le16 (GRUB_PC_PARTITION_SIGNATURE))
+  if (mbr.signature != grub_cpu_to_le16_compile_time (GRUB_PC_PARTITION_SIGNATURE))
     return grub_error (GRUB_ERR_BAD_PART_TABLE, "no signature");
 
   /* Make sure the MBR is a protective MBR and not a normal MBR.  */
@@ -113,7 +113,7 @@ grub_gpt_partition_map_iterate (grub_disk_t disk,
 			(unsigned long long) part.start,
 			(unsigned long long) part.len);
 
-	  if (hook (disk, &part))
+	  if (hook (disk, &part, hook_data))
 	    return grub_errno;
 	}
 
@@ -129,71 +129,81 @@ grub_gpt_partition_map_iterate (grub_disk_t disk,
 }
 
 #ifdef GRUB_UTIL
+/* Context for gpt_partition_map_embed.  */
+struct gpt_partition_map_embed_ctx
+{
+  grub_disk_addr_t start, len;
+};
+
+/* Helper for gpt_partition_map_embed.  */
+static int
+find_usable_region (grub_disk_t disk __attribute__ ((unused)),
+		    const grub_partition_t p, void *data)
+{
+  struct gpt_partition_map_embed_ctx *ctx = data;
+  struct grub_gpt_partentry gptdata;
+  grub_partition_t p2;
+
+  p2 = disk->partition;
+  disk->partition = p->parent;
+  if (grub_disk_read (disk, p->offset, p->index,
+		      sizeof (gptdata), &gptdata))
+    {
+      disk->partition = p2;
+      return 0;
+    }
+  disk->partition = p2;
+
+  /* If there's an embed region, it is in a dedicated partition.  */
+  if (! grub_memcmp (&gptdata.type, &grub_gpt_partition_type_bios_boot, 16))
+    {
+      ctx->start = p->start;
+      ctx->len = p->len;
+      return 1;
+    }
+
+  return 0;
+}
+
 static grub_err_t
-gpt_partition_map_embed (struct grub_disk *disk_, unsigned int *nsectors,
+gpt_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
 			 unsigned int max_nsectors,
 			 grub_embed_type_t embed_type,
 			 grub_disk_addr_t **sectors)
 {
-  grub_disk_addr_t start = 0, len = 0;
+  struct gpt_partition_map_embed_ctx ctx = {
+    .start = 0,
+    .len = 0
+  };
   unsigned i;
   grub_err_t err;
-
-  auto int NESTED_FUNC_ATTR find_usable_region (grub_disk_t disk,
-						const grub_partition_t p);
-  int NESTED_FUNC_ATTR find_usable_region (grub_disk_t disk __attribute__ ((unused)),
-					   const grub_partition_t p)
-  {
-    struct grub_gpt_partentry gptdata;
-    grub_partition_t p2;
-
-    p2 = disk->partition;
-    disk->partition = p->parent;
-    if (grub_disk_read (disk, p->offset, p->index,
-			sizeof (gptdata), &gptdata))
-      {
-	disk->partition = p2;
-	return 0;
-      }
-    disk->partition = p2;
-
-    /* If there's an embed region, it is in a dedicated partition.  */
-    if (! grub_memcmp (&gptdata.type, &grub_gpt_partition_type_bios_boot, 16))
-      {
-	start = p->start;
-	len = p->len;
-	return 1;
-      }
-
-      return 0;
-    }
 
   if (embed_type != GRUB_EMBED_PCBIOS)
     return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
 		       "GPT currently supports only PC-BIOS embedding");
 
-  err = grub_gpt_partition_map_iterate (disk_, find_usable_region);
+  err = grub_gpt_partition_map_iterate (disk, find_usable_region, &ctx);
   if (err)
     return err;
 
-  if (len == 0)
+  if (ctx.len == 0)
     return grub_error (GRUB_ERR_FILE_NOT_FOUND,
 		       N_("this GPT partition label contains no BIOS Boot Partition;"
 			  " embedding won't be possible"));
 
-  if (len < *nsectors)
+  if (ctx.len < *nsectors)
     return grub_error (GRUB_ERR_OUT_OF_RANGE,
 		       N_("your BIOS Boot Partition is too small;"
 			  " embedding won't be possible"));
 
-  *nsectors = len;
+  *nsectors = ctx.len;
   if (*nsectors > max_nsectors)
     *nsectors = max_nsectors;
   *sectors = grub_malloc (*nsectors * sizeof (**sectors));
   if (!*sectors)
     return grub_errno;
   for (i = 0; i < *nsectors; i++)
-    (*sectors)[i] = start + i;
+    (*sectors)[i] = ctx.start + i;
 
   return GRUB_ERR_NONE;
 }

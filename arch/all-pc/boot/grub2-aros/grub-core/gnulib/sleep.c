@@ -1,5 +1,5 @@
 /* Pausing execution of the current thread.
-   Copyright (C) 2007, 2009, 2010 Free Software Foundation, Inc.
+   Copyright (C) 2007, 2009-2013 Free Software Foundation, Inc.
    Written by Bruno Haible <bruno@clisp.org>, 2007.
 
    This program is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ sleep (unsigned int seconds)
   unsigned int remaining;
 
   /* Sleep for 1 second many times, because
-       1. Sleep is not interruptiple by Ctrl-C,
+       1. Sleep is not interruptible by Ctrl-C,
        2. we want to avoid arithmetic overflow while multiplying with 1000.  */
   for (remaining = seconds; remaining > 0; remaining--)
     Sleep (1000);
@@ -50,13 +50,14 @@ sleep (unsigned int seconds)
 /* Guarantee unlimited sleep and a reasonable return value.  Cygwin
    1.5.x rejects attempts to sleep more than 49.7 days (2**32
    milliseconds), but uses uninitialized memory which results in a
-   garbage answer.  */
+   garbage answer.  Similarly, Linux 2.6.9 with glibc 2.3.4 has a too
+   small return value when asked to sleep more than 24.85 days.  */
 unsigned int
 rpl_sleep (unsigned int seconds)
 {
   /* This requires int larger than 16 bits.  */
-  verify (UINT_MAX / 49 / 24 / 60 / 60);
-  const unsigned int limit = 49 * 24 * 60 * 60;
+  verify (UINT_MAX / 24 / 24 / 60 / 60);
+  const unsigned int limit = 24 * 24 * 60 * 60;
   while (limit < seconds)
     {
       unsigned int result;

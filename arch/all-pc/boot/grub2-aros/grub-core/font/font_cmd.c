@@ -32,7 +32,7 @@ loadfont_command (grub_command_t cmd __attribute__ ((unused)),
     return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   while (argc--)
-    if (grub_font_load (*args++) != 0)
+    if (grub_font_load (*args++) == 0)
       {
 	if (!grub_errno)
 	  return grub_error (GRUB_ERR_BAD_FONT, "invalid font");
@@ -61,7 +61,7 @@ lsfonts_command (grub_command_t cmd __attribute__ ((unused)),
 
 static grub_command_t cmd_loadfont, cmd_lsfonts;
 
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_COREBOOT)
 void grub_font_init (void)
 #else
 GRUB_MOD_INIT(font)
@@ -78,7 +78,7 @@ GRUB_MOD_INIT(font)
 			   0, N_("List the loaded fonts."));
 }
 
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_COREBOOT)
 void grub_font_fini (void)
 #else
 GRUB_MOD_FINI(font)

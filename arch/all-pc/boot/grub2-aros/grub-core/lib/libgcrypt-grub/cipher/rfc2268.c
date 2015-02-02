@@ -26,7 +26,7 @@ GRUB_MOD_LICENSE ("GPLv3+");
 /* This implementation was written by Nikos Mavroyanopoulos for GNUTLS
  * as a Libgcrypt module (gnutls/lib/x509/rc2.c) and later adapted for
  * direct use by Libgcrypt by Werner Koch.  This implementation is
- * only useful for pkcs#12 descryption.
+ * only useful for pkcs#12 decryption.
  *
  * The implementation here is based on Peter Gutmann's RRC.2 paper.
  */
@@ -38,15 +38,15 @@ GRUB_MOD_LICENSE ("GPLv3+");
 
 #define RFC2268_BLOCKSIZE 8
 
-typedef struct 
+typedef struct
 {
   u16 S[64];
 } RFC2268_context;
 
-static const unsigned char rfc2268_sbox[] = { 
-  217, 120, 249, 196,  25, 221, 181, 237, 
+static const unsigned char rfc2268_sbox[] = {
+  217, 120, 249, 196,  25, 221, 181, 237,
    40, 233, 253, 121,  74, 160, 216, 157,
-  198, 126,  55, 131,  43, 118,  83, 142, 
+  198, 126,  55, 131,  43, 118,  83, 142,
    98,  76, 100, 136,  68, 139, 251, 162,
    23, 154,  89, 245, 135, 179,  79,  19,
    97,  69, 109, 141,   9, 129, 125,  50,
@@ -105,10 +105,10 @@ do_encrypt (void *context, unsigned char *outbuf, const unsigned char *inbuf)
       /* For some reason I cannot combine those steps. */
       word0 += (word1 & ~word3) + (word2 & word3) + ctx->S[j];
       word0 = rotl16(word0, 1);
-		
+
       word1 += (word2 & ~word0) + (word3 & word0) + ctx->S[j + 1];
       word1 = rotl16(word1, 2);
-		
+
       word2 += (word3 & ~word1) + (word0 & word1) + ctx->S[j + 2];
       word2 = rotl16(word2, 3);
 
@@ -151,7 +151,7 @@ do_decrypt (void *context, unsigned char *outbuf, const unsigned char *inbuf)
   word3 = (word3 << 8) | inbuf[7];
   word3 = (word3 << 8) | inbuf[6];
 
-  for (i = 15; i >= 0; i--) 
+  for (i = 15; i >= 0; i--)
     {
       j = i * 4;
 
@@ -167,7 +167,7 @@ do_decrypt (void *context, unsigned char *outbuf, const unsigned char *inbuf)
       word0 = rotr16(word0, 1);
       word0 -= (word1 & ~word3) + (word2 & word3) + ctx->S[j];
 
-      if (i == 5 || i == 11) 
+      if (i == 5 || i == 11)
         {
           word3 = word3 - ctx->S[word2 & 63];
           word2 = word2 - ctx->S[word1 & 63];
@@ -213,7 +213,7 @@ setkey_core (void *context, const unsigned char *key, unsigned int keylen, int w
     return GPG_ERR_INV_KEYLEN;
 
   S = (unsigned char *) ctx->S;
-  
+
   for (i = 0; i < keylen; i++)
     S[i] = key[i];
 
@@ -231,8 +231,8 @@ setkey_core (void *context, const unsigned char *key, unsigned int keylen, int w
       i = 128 - len;
       x = rfc2268_sbox[S[i] & (255 >> (7 & -bits))];
       S[i] = x;
-      
-      while (i--) 
+
+      while (i--)
         {
           x = rfc2268_sbox[x ^ S[i + len]];
           S[i] = x;
@@ -240,7 +240,7 @@ setkey_core (void *context, const unsigned char *key, unsigned int keylen, int w
     }
 
   /* Make the expanded key, endian independent. */
-  for (i = 0; i < 64; i++) 
+  for (i = 0; i < 64; i++)
     ctx->S[i] = ( (u16) S[i * 2] | (((u16) S[i * 2 + 1]) << 8));
 
   return 0;
@@ -272,7 +272,6 @@ gcry_cipher_spec_t _gcry_cipher_spec_rfc2268_40 = {
     .modname = "gcry_rfc2268",
 #endif
 };
-
 
 
 GRUB_MOD_INIT(gcry_rfc2268)

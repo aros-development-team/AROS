@@ -28,31 +28,9 @@
 #endif
 
 #include <grub/i386/memory.h>
+#include <grub/i386/memory_raw.h>
 
 #include <grub/offsets.h>
-
-/* The scratch buffer used in real mode code.  */
-#define GRUB_MEMORY_MACHINE_SCRATCH_ADDR	0x68000
-#define GRUB_MEMORY_MACHINE_SCRATCH_SEG	(GRUB_MEMORY_MACHINE_SCRATCH_ADDR >> 4)
-#define GRUB_MEMORY_MACHINE_SCRATCH_SIZE	0x10000
-
-/* The real mode stack.  */
-#define GRUB_MEMORY_MACHINE_REAL_STACK	(0x2000 - 0x10)
-
-/* The size of the protect mode stack.  */
-#define GRUB_MEMORY_MACHINE_PROT_STACK_SIZE	0x8000
-
-/* The protected mode stack.  */
-#define GRUB_MEMORY_MACHINE_PROT_STACK	\
-	(GRUB_MEMORY_MACHINE_SCRATCH_ADDR + GRUB_MEMORY_MACHINE_SCRATCH_SIZE \
-	 + GRUB_MEMORY_MACHINE_PROT_STACK_SIZE - 0x10)
-
-/* The memory area where GRUB uses its own purpose. This part is not added
-   into free memory for dynamic allocations.  */
-#define GRUB_MEMORY_MACHINE_RESERVED_START	\
-	GRUB_MEMORY_MACHINE_SCRATCH_ADDR
-#define GRUB_MEMORY_MACHINE_RESERVED_END	\
-	(GRUB_MEMORY_MACHINE_PROT_STACK + 0x10)
 
 /* The area where GRUB is decompressed at early startup.  */
 #define GRUB_MEMORY_MACHINE_DECOMPRESSION_ADDR	0x100000
@@ -62,18 +40,6 @@
 
 /* The address where another boot loader is loaded.  */
 #define GRUB_MEMORY_MACHINE_BOOT_LOADER_ADDR	0x7c00
-
-/* The code segment of the protected mode.  */
-#define GRUB_MEMORY_MACHINE_PROT_MODE_CSEG	0x8
-
-/* The data segment of the protected mode.  */
-#define GRUB_MEMORY_MACHINE_PROT_MODE_DSEG	0x10
-
-/* The code segment of the pseudo real mode.  */
-#define GRUB_MEMORY_MACHINE_PSEUDO_REAL_CSEG	0x18
-
-/* The data segment of the pseudo real mode.  */
-#define GRUB_MEMORY_MACHINE_PSEUDO_REAL_DSEG	0x20
 
 #define GRUB_MEMORY_MACHINE_BIOS_DATA_AREA_ADDR	0x400
 

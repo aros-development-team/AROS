@@ -1,7 +1,9 @@
-2012-06-26  Automatic import tool
+2015-02-01  Automatic import tool
 
 	Imported ciphers to GRUB
 
+	* Makefile.am: Removed
+	* Manifest: Removed
 	* ac.c: Removed
 	* arcfour.c: Removed including of config.h
 	Removed including of stdio.h
@@ -85,14 +87,75 @@
 
 	Unregister cipher _gcry_cipher_spec_des
 	Unregister cipher _gcry_cipher_spec_tripledes
+	* dsa.c: Removed including of config.h
+	Removed including of stdio.h
+	Removed including of stdlib.h
+	Removed including of string.h
+	(gen_k): Removed declaration.
+	(test_keys): Removed declaration.
+	(progress_cb): Removed declaration.
+	(progress_cb): Removed declaration.
+	(_gcry_register_pk_dsa_progress): Removed.
+	(progress): Removed.
+	(gen_k): Removed.
+	(test_keys): Removed.
+	(generate): Removed.
+	(generate_fips186): Removed.
+	(sign): Removed.
+	(dsa_generate_ext): Removed.
+	(dsa_generate): Removed.
+	(dsa_sign): Removed.
+	(selftest_sign_1024): Removed.
+	(selftests_dsa): Removed.
+	(run_selftests): Removed.
+	(_gcry_pubkey_extraspec_dsa): Removed.
+	(GRUB_MOD_INIT(gcry_dsa)): New function
 
-	* dsa.c: Removed
+	Register pk _gcry_digest_spec_crc24_rfc2440
+	(GRUB_MOD_FINI(gcry_dsa)): New function
+
+	Unregister pk _gcry_digest_spec_crc24_rfc2440
 	* ecc.c: Removed
-	* elgamal.c: Removed	* hash-common.c: Removed
+	* elgamal.c: Removed
+	* hash-common.c: Removed
 	* hmac-tests.c: Removed
-	* md.c: Removed
+	* idea.c: Removed including of config.h
+	Removed including of stdio.h
+	Removed including of stdlib.h
+	Removed including of string.h
+	Removed including of assert.h
+	(elftest): Removed declaration.
+	(selftest): Removed.
+	(GRUB_MOD_INIT(gcry_idea)): New function
 
-	* primegen.c: Removed	* pubkey.c: Removed
+	Register cipher _gcry_cipher_spec_idea
+	(GRUB_MOD_FINI(gcry_idea)): New function
+
+	Unregister cipher _gcry_cipher_spec_idea
+	* kdf.c: Removed
+	* md.c: Removed
+	* md4.c: Removed including of config.h
+	Removed including of stdio.h
+	Removed including of stdlib.h
+	Removed including of string.h
+	(GRUB_MOD_INIT(gcry_md4)): New function
+
+	Register digest _gcry_digest_spec_md4
+	(GRUB_MOD_FINI(gcry_md4)): New function
+
+	Unregister MD _gcry_digest_spec_md4
+	* md5.c: Removed including of config.h
+	Removed including of stdio.h
+	Removed including of stdlib.h
+	Removed including of string.h
+	(GRUB_MOD_INIT(gcry_md5)): New function
+
+	Register digest _gcry_digest_spec_md5
+	(GRUB_MOD_FINI(gcry_md5)): New function
+
+	Unregister MD _gcry_digest_spec_md5
+	* primegen.c: Removed
+	* pubkey.c: Removed
 	* rfc2268.c: Removed including of config.h
 	Removed including of stdio.h
 	Removed including of stdlib.h
@@ -105,8 +168,84 @@
 	(GRUB_MOD_FINI(gcry_rfc2268)): New function
 
 	Unregister cipher _gcry_cipher_spec_rfc2268_40
+	* rijndael.c: Removed including of config.h
+	Removed including of stdio.h
+	Removed including of stdlib.h
+	Removed including of string.h
+	(elftest): Removed declaration.
+	(_gcry_aes_cfb_enc): Removed.
+	(_gcry_aes_cbc_enc): Removed.
+	(_gcry_aes_ctr_enc): Removed.
+	(_gcry_aes_cfb_dec): Removed.
+	(_gcry_aes_cbc_dec): Removed.
+	(selftest_basic_128): Removed.
+	(selftest_basic_192): Removed.
+	(selftest_basic_256): Removed.
+	(selftest): Removed.
+	(selftest_fips_128_38a): Removed.
+	(selftest_fips_128): Removed.
+	(selftest_fips_192): Removed.
+	(selftest_fips_256): Removed.
+	(run_selftests): Removed.
+	(_gcry_cipher_extraspec_aes): Removed.
+	(_gcry_cipher_extraspec_aes192): Removed.
+	(_gcry_cipher_extraspec_aes256): Removed.
+	(GRUB_MOD_INIT(gcry_rijndael)): New function
 
-	* rsa.c: Removed	* seed.c: Removed including of config.h
+	Register cipher _gcry_cipher_spec_aes
+	Register cipher _gcry_cipher_spec_aes192
+	Register cipher _gcry_cipher_spec_aes256
+	(GRUB_MOD_FINI(gcry_rijndael)): New function
+
+	Unregister cipher _gcry_cipher_spec_aes
+	Unregister cipher _gcry_cipher_spec_aes192
+	Unregister cipher _gcry_cipher_spec_aes256
+	* rmd160.c: Removed including of config.h
+	Removed including of stdio.h
+	Removed including of stdlib.h
+	Removed including of string.h
+	(_gcry_rmd160_mixblock): Removed.
+	(_gcry_rmd160_hash_buffer): Removed.
+	(GRUB_MOD_INIT(gcry_rmd160)): New function
+
+	Register digest _gcry_digest_spec_rmd160
+	(GRUB_MOD_FINI(gcry_rmd160)): New function
+
+	Unregister MD _gcry_digest_spec_rmd160
+	* rsa.c: Removed including of config.h
+	Removed including of stdio.h
+	Removed including of stdlib.h
+	Removed including of string.h
+	Removed including of errno.h
+	(test_keys): Removed declaration.
+	(secret): Removed declaration.
+	(test_keys): Removed.
+	(check_exponent): Removed.
+	(generate_std): Removed.
+	(gen_x931_parm_xp): Removed.
+	(gen_x931_parm_xi): Removed.
+	(generate_x931): Removed.
+	(secret): Removed.
+	(rsa_blind): Removed.
+	(rsa_unblind): Removed.
+	(rsa_generate_ext): Removed.
+	(rsa_generate): Removed.
+	(rsa_decrypt): Removed.
+	(rsa_sign): Removed.
+	(compute_keygrip): Removed.
+	(selftest_sign_1024): Removed.
+	(extract_a_from_sexp): Removed.
+	(selftest_encr_1024): Removed.
+	(selftests_rsa): Removed.
+	(run_selftests): Removed.
+	(_gcry_pubkey_extraspec_rsa): Removed.
+	(GRUB_MOD_INIT(gcry_rsa)): New function
+
+	Register pk _gcry_digest_spec_rmd160
+	(GRUB_MOD_FINI(gcry_rsa)): New function
+
+	Unregister pk _gcry_digest_spec_rmd160
+	* seed.c: Removed including of config.h
 	Removed including of stdio.h
 	Removed including of stdlib.h
 	(elftest): Removed declaration.
@@ -117,6 +256,20 @@
 	(GRUB_MOD_FINI(gcry_seed)): New function
 
 	Unregister cipher _gcry_cipher_spec_seed
+	* serpent.c: Removed including of config.h
+	Removed including of string.h
+	Removed including of stdio.h
+	(serpent_test): Removed.
+	(GRUB_MOD_INIT(gcry_serpent)): New function
+
+	Register cipher _gcry_cipher_spec_serpent128
+	Register cipher _gcry_cipher_spec_serpent192
+	Register cipher _gcry_cipher_spec_serpent256
+	(GRUB_MOD_FINI(gcry_serpent)): New function
+
+	Unregister cipher _gcry_cipher_spec_serpent128
+	Unregister cipher _gcry_cipher_spec_serpent192
+	Unregister cipher _gcry_cipher_spec_serpent256
 	* sha1.c: Removed including of config.h
 	Removed including of stdio.h
 	Removed including of stdlib.h
@@ -164,6 +317,7 @@
 
 	Unregister MD _gcry_digest_spec_sha512
 	Unregister MD _gcry_digest_spec_sha384
+	* test-getrusage.c: Removed
 	* tiger.c: Removed including of config.h
 	Removed including of stdio.h
 	Removed including of stdlib.h
@@ -171,9 +325,13 @@
 	(GRUB_MOD_INIT(gcry_tiger)): New function
 
 	Register digest _gcry_digest_spec_tiger
+	Register digest _gcry_digest_spec_tiger1
+	Register digest _gcry_digest_spec_tiger2
 	(GRUB_MOD_FINI(gcry_tiger)): New function
 
 	Unregister MD _gcry_digest_spec_tiger
+	Unregister MD _gcry_digest_spec_tiger1
+	Unregister MD _gcry_digest_spec_tiger2
 	* twofish.c: Removed including of config.h
 	Removed including of stdio.h
 	Removed including of stdlib.h
@@ -201,88 +359,101 @@
 	(GRUB_MOD_FINI(gcry_whirlpool)): New function
 
 	Unregister MD _gcry_digest_spec_whirlpool
-	* md4.c: Removed including of config.h
-	Removed including of stdio.h
-	Removed including of stdlib.h
-	Removed including of string.h
-	(GRUB_MOD_INIT(gcry_md4)): New function
-
-	Register digest _gcry_digest_spec_md4
-	(GRUB_MOD_FINI(gcry_md4)): New function
-
-	Unregister MD _gcry_digest_spec_md4
-	* md5.c: Removed including of config.h
-	Removed including of stdio.h
-	Removed including of stdlib.h
-	Removed including of string.h
-	(GRUB_MOD_INIT(gcry_md5)): New function
-
-	Register digest _gcry_digest_spec_md5
-	(GRUB_MOD_FINI(gcry_md5)): New function
-
-	Unregister MD _gcry_digest_spec_md5
-	* rmd160.c: Removed including of config.h
-	Removed including of stdio.h
-	Removed including of stdlib.h
-	Removed including of string.h
-	(_gcry_rmd160_mixblock): Removed.
-	(_gcry_rmd160_hash_buffer): Removed.
-	(GRUB_MOD_INIT(gcry_rmd160)): New function
-
-	Register digest _gcry_digest_spec_rmd160
-	(GRUB_MOD_FINI(gcry_rmd160)): New function
-
-	Unregister MD _gcry_digest_spec_rmd160
-	* rijndael.c: Removed including of config.h
-	Removed including of stdio.h
-	Removed including of stdlib.h
-	Removed including of string.h
-	(elftest): Removed declaration.
-	(_gcry_aes_cfb_enc): Removed.
-	(_gcry_aes_cbc_enc): Removed.
-	(_gcry_aes_cfb_dec): Removed.
-	(_gcry_aes_cbc_dec): Removed.
-	(selftest_basic_128): Removed.
-	(selftest_basic_192): Removed.
-	(selftest_basic_256): Removed.
-	(selftest): Removed.
-	(selftest_fips_128_38a): Removed.
-	(selftest_fips_128): Removed.
-	(selftest_fips_192): Removed.
-	(selftest_fips_256): Removed.
-	(run_selftests): Removed.
-	(_gcry_cipher_extraspec_aes): Removed.
-	(_gcry_cipher_extraspec_aes192): Removed.
-	(_gcry_cipher_extraspec_aes256): Removed.
-	(GRUB_MOD_INIT(gcry_rijndael)): New function
-
-	Register cipher _gcry_cipher_spec_aes
-	Register cipher _gcry_cipher_spec_aes192
-	Register cipher _gcry_cipher_spec_aes256
-	(GRUB_MOD_FINI(gcry_rijndael)): New function
-
-	Unregister cipher _gcry_cipher_spec_aes
-	Unregister cipher _gcry_cipher_spec_aes192
-	Unregister cipher _gcry_cipher_spec_aes256
-	* serpent.c: Removed including of config.h
-	Removed including of string.h
-	Removed including of stdio.h
-	(serpent_test): Removed.
-	(GRUB_MOD_INIT(gcry_serpent)): New function
-
-	Register cipher _gcry_cipher_spec_serpent128
-	Register cipher _gcry_cipher_spec_serpent192
-	Register cipher _gcry_cipher_spec_serpent256
-	(GRUB_MOD_FINI(gcry_serpent)): New function
-
-	Unregister cipher _gcry_cipher_spec_serpent128
-	Unregister cipher _gcry_cipher_spec_serpent192
-	Unregister cipher _gcry_cipher_spec_serpent256
 	* crypto.lst: New file.
 	* types.h: New file.
 	* memory.h: New file.
 	* cipher.h: Likewise.
 	* g10lib.h: Likewise.
+
+2010-08-19  Werner Koch  <wk@g10code.com>
+
+	* cipher.c (gcry_cipher_open): Remove double release of the module.
+	Fixes bug#1263.
+
+2010-06-10  Jeff Johnson  <n3npq@mac.com>  (wk)
+
+	* ecc.c (ecc_generate_ext): Parse transient-key flag.
+	(generate_key): Add arg TRANSIENT_KEY and use it to set the random
+	level.
+
+2010-04-12  Brad Hards  <bradh@frogmouth.net>  (wk)
+
+	Spelling fixes.
+
+2010-03-26  Werner Koch  <wk@g10code.com>
+
+	* tiger.c (asn): Unfetter the old TIGER from an OID.
+	(TIGER_CONTEXT): Add field VARIANT.
+	(tiger_init): Factor code out to ...
+	(do_init): New.
+	(tiger1_init, tiger2_init): New.
+	(_gcry_digest_spec_tiger1, _gcry_digest_spec_tiger2): New.
+	* md.c (digest_table): Add TIGER1 and TIGER2 variants.
+
+2009-12-11  Werner Koch  <wk@g10code.com>
+
+	* sha256.c (Cho, Maj, Sum0, Sum1): Turn macros into inline
+	functions.
+	(transform): Partly unroll to interweave the chain variables
+
+	* sha512.c (ROTR, Ch, Maj, Sum0, Sum1): Turn macros into inline
+	functions.
+	(transform): Partly unroll to interweave the chain variables.
+	Suggested by Christian Grothoff.
+
+2009-12-10  Werner Koch  <wk@g10code.com>
+
+	* Makefile.am (o_flag_munging): New.
+	(tiger.o, tiger.lo): Use it.
+
+	* cipher.c (do_ctr_encrypt): Add arg OUTBUFLEN.  Check for
+	suitable value.  Add check for valid inputlen.  Wipe temporary
+	memory.
+	(do_ctr_decrypt): Likewise.
+	(do_cbc_encrypt, do_cbc_decrypt): Add arg OUTBUFLEN.  Check for
+	suitable value.  Move check for valid inputlen to here; change
+	returned error from INV_ARG to INV_LENGTH.
+	(do_ecb_encrypt, do_ecb_decrypt): Ditto.
+	(do_cfb_encrypt, do_cfb_decrypt): Ditto.
+	(do_ofb_encrypt, do_ofb_decrypt): Ditto.
+	(cipher_encrypt, cipher_encrypt): Adjust for above changes.
+	(gcry_cipher_encrypt, gcry_cipher_decrypt): Simplify.
+
+2009-12-09  Werner Koch  <wk@g10code.com>
+
+	* cipher.c (gcry_cipher_open): Allow for GCRY_CIPHER_MODE_AESWRAP.
+	(cipher_encrypt, cipher_decrypt): Ditto.
+	(do_aeswrap_encrypt, do_aeswrap_decrypt): New.
+	(struct gcry_cipher_handle): Add field marks.
+	(cipher_setkey, cipher_setiv): Update marks flags.
+	(cipher_reset): Reset marks.
+	(cipher_encrypt, cipher_decrypt): Add new arg OUTBUFLEN.
+	(gcry_cipher_encrypt, gcry_cipher_decrypt): Pass outbuflen to
+	cipher_encrypt.  Replace GPG_ERR_TOO_SHORT by
+	GPG_ERR_BUFFER_TOO_SHORT.
+
+2009-08-21  Werner Koch  <wk@g10code.com>
+
+	* dsa.c (dsa_generate_ext): Release retfactors array before
+	setting it to NULL.  Reported by Daiko Ueno.
+
+2009-07-02  Werner Koch  <wk@g10code.com>
+
+	* md.c (md_read): Fix incomplete check for NULL.
+	Reported by Fabian Kail.
+
+2009-03-31  Werner Koch  <wk@g10code.com>
+
+	* rsa.c (rsa_check_secret_key): Return GPG_ERR_BAD_SECKEY and not
+	GPG_ERR_PUBKEY_ALGO.
+
+2009-02-16  Werner Koch  <wk@g10code.com>
+
+	* rsa.c (generate_x931): Do not initialize TBL with automatic
+	variables.
+	* whirlpool.c, tiger.c, sha256.c, sha1.c, rmd160.c, md5.c
+	* md4.c, crc.c: Remove memory.h.  This is garbage from gnupg.
+	Reported by Dan Fandrich.
 
 2009-01-22  Werner Koch  <wk@g10code.com>
 
@@ -4174,8 +4345,8 @@ Mon Feb 16 10:08:47 1998  Werner Koch  (wk@isil.d.shuttle.de)
 	(digest_algo_to_string): New.
 
 
- Copyright 1998,1999,2000,2001,2002,2003,2004,2005,2006
-	   2007, 2008, 2009 Free Software Foundation, Inc.
+ Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+	   2007, 2008, 2009, 2010 Free Software Foundation, Inc.
 
  This file is free software; as a special exception the author gives
  unlimited permission to copy and/or distribute it, with or without
