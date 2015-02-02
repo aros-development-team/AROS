@@ -56,7 +56,7 @@
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
-#ifndef __TINYC__
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__TINYC__)
 register unsigned char * AROS_GET_SP __asm__("%rsp");
 #endif
 
