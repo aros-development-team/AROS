@@ -47,7 +47,9 @@
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
+#if defined(__GNUC__) && !defined(__clang__)
 register unsigned char* AROS_GET_SP __asm__("%sp");
+#endif
 
 /*
      An offset value sometimes added to
