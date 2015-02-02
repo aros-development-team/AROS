@@ -1,5 +1,5 @@
 /* sha256.c - SHA256 hash function
- *	Copyright (C) 2003, 2006, 2008 Free Software Foundation, Inc.
+ * Copyright (C) 2003, 2006, 2008, 2009 Free Software Foundation, Inc.
  *
  * This file is part of Libgcrypt.
  *
@@ -19,7 +19,7 @@
 
 
 /*  Test vectors:
-    
+
     "abc"
     SHA224: 23097d22 3405d822 8642a477 bda255b3 2aadbce4 bda0b3f7 e36c9da7
     SHA256: ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad
@@ -27,7 +27,7 @@
     "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
     SHA224: 75388b16 512776cc 5dba5da1 fd890150 b0c6455c b4f58b19 52522525
     SHA256: 248d6a61 d20638b8 e5c02693 0c3e6039 a33ce459 64ff2167 f6ecedd4 19db06c1
- 
+
     "a" one million times
     SHA224: 20794655 980c91d8 bbb4c1ea 97618a4b f03f4258 1948b2ee 4ee7ad67
     SHA256: cdc76e5c 9914fb92 81a1c7e2 84d73e67 f1809a48 a497200e 046d39cc c7112cd0
@@ -41,7 +41,6 @@
 #include <string.h>
 
 #include "g10lib.h"
-#include "memory.h"
 #include "bithelp.h"
 #include "cipher.h"
 #include "hash-common.h"
@@ -95,10 +94,6 @@ sha224_init (void *context)
 /*
   Transform the message X which consists of 16 32-bit-words. See FIPS
   180-2 for details.  */
-#define Cho(x,y,z) (z ^ (x & (y ^ z)))      /* (4.2) same as SHA-1's F1 */
-#define Maj(x,y,z) ((x & y) | (z & (x|y)))  /* (4.3) same as SHA-1's F3 */
-#define Sum0(x) (ror ((x), 2) ^ ror ((x), 13) ^ ror ((x), 22))  /* (4.4) */
-#define Sum1(x) (ror ((x), 6) ^ ror ((x), 11) ^ ror ((x), 25))  /* (4.5) */
 #define S0(x) (ror ((x), 7) ^ ror ((x), 18) ^ ((x) >> 3))       /* (4.6) */
 #define S1(x) (ror ((x), 17) ^ ror ((x), 19) ^ ((x) >> 10))     /* (4.7) */
 #define R(a,b,c,d,e,f,g,h,k,w) do                                 \
@@ -114,7 +109,36 @@ sha224_init (void *context)
             b = a;                                                \
             a = t1 + t2;                                          \
           } while (0)
- 
+
+/* (4.2) same as SHA-1's F1.  */
+static inline u32
+Cho (u32 x, u32 y, u32 z)
+{
+  return (z ^ (x & (y ^ z)));
+}
+
+/* (4.3) same as SHA-1's F3 */
+static inline u32
+Maj (u32 x, u32 y, u32 z)
+{
+  return ((x & y) | (z & (x|y)));
+}
+
+/* (4.4) */
+static inline u32
+Sum0 (u32 x)
+{
+  return (ror (x, 2) ^ ror (x, 13) ^ ror (x, 22));
+}
+
+/* (4.5) */
+static inline u32
+Sum1 (u32 x)
+{
+  return (ror (x, 6) ^ ror (x, 11) ^ ror (x, 25));
+}
+
+
 static void
 transform (SHA256_CONTEXT *hd, const unsigned char *data)
 {
@@ -122,7 +146,7 @@ transform (SHA256_CONTEXT *hd, const unsigned char *data)
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
     0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-    0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 
+    0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
     0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
     0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
     0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
@@ -141,7 +165,7 @@ transform (SHA256_CONTEXT *hd, const unsigned char *data)
   u32 x[16];
   u32 w[64];
   int i;
-  
+
   a = hd->h0;
   b = hd->h1;
   c = hd->h2;
@@ -150,14 +174,14 @@ transform (SHA256_CONTEXT *hd, const unsigned char *data)
   f = hd->h5;
   g = hd->h6;
   h = hd->h7;
-  
+
 #ifdef WORDS_BIGENDIAN
   memcpy (x, data, 64);
 #else
-  { 
+  {
     byte *p2;
-  
-    for (i=0, p2=(byte*)x; i < 16; i++, p2 += 4 ) 
+
+    for (i=0, p2=(byte*)x; i < 16; i++, p2 += 4 )
       {
         p2[3] = *data++;
         p2[2] = *data++;
@@ -172,8 +196,55 @@ transform (SHA256_CONTEXT *hd, const unsigned char *data)
   for (; i < 64; i++)
     w[i] = S1(w[i-2]) + w[i-7] + S0(w[i-15]) + w[i-16];
 
-  for (i=0; i < 64; i++)
-    R(a,b,c,d,e,f,g,h,K[i],w[i]);
+  for (i=0; i < 64;)
+    {
+#if 0
+      R(a,b,c,d,e,f,g,h,K[i],w[i]);
+      i++;
+#else
+      t1 = h + Sum1 (e) + Cho (e, f, g) + K[i] + w[i];
+      t2 = Sum0 (a) + Maj (a, b, c);
+      d += t1;
+      h  = t1 + t2;
+
+      t1 = g + Sum1 (d) + Cho (d, e, f) + K[i+1] + w[i+1];
+      t2 = Sum0 (h) + Maj (h, a, b);
+      c += t1;
+      g  = t1 + t2;
+
+      t1 = f + Sum1 (c) + Cho (c, d, e) + K[i+2] + w[i+2];
+      t2 = Sum0 (g) + Maj (g, h, a);
+      b += t1;
+      f  = t1 + t2;
+
+      t1 = e + Sum1 (b) + Cho (b, c, d) + K[i+3] + w[i+3];
+      t2 = Sum0 (f) + Maj (f, g, h);
+      a += t1;
+      e  = t1 + t2;
+
+      t1 = d + Sum1 (a) + Cho (a, b, c) + K[i+4] + w[i+4];
+      t2 = Sum0 (e) + Maj (e, f, g);
+      h += t1;
+      d  = t1 + t2;
+
+      t1 = c + Sum1 (h) + Cho (h, a, b) + K[i+5] + w[i+5];
+      t2 = Sum0 (d) + Maj (d, e, f);
+      g += t1;
+      c  = t1 + t2;
+
+      t1 = b + Sum1 (g) + Cho (g, h, a) + K[i+6] + w[i+6];
+      t2 = Sum0 (c) + Maj (c, d, e);
+      f += t1;
+      b  = t1 + t2;
+
+      t1 = a + Sum1 (f) + Cho (f, g, h) + K[i+7] + w[i+7];
+      t2 = Sum0 (b) + Maj (b, c, d);
+      e += t1;
+      a  = t1 + t2;
+
+      i += 8;
+#endif
+    }
 
   hd->h0 += a;
   hd->h1 += b;
@@ -184,10 +255,6 @@ transform (SHA256_CONTEXT *hd, const unsigned char *data)
   hd->h6 += g;
   hd->h7 += h;
 }
-#undef Cho
-#undef Maj
-#undef Sum0
-#undef Sum1
 #undef S0
 #undef S1
 #undef R
@@ -244,7 +311,7 @@ sha256_final(void *context)
   SHA256_CONTEXT *hd = context;
   u32 t, msb, lsb;
   byte *p;
-  
+
   sha256_write (hd, NULL, 0); /* flush */;
 
   t = hd->nblocks;
@@ -315,7 +382,7 @@ sha256_read (void *context)
 
 
 
-/* 
+/*
      Self-test section.
  */
 
@@ -325,10 +392,10 @@ selftests_sha224 (int extended, selftest_report_func_t report)
 {
   const char *what;
   const char *errtxt;
-  
+
   what = "short string";
   errtxt = _gcry_hash_selftest_check_one
-    (GCRY_MD_SHA224, 0, 
+    (GCRY_MD_SHA224, 0,
      "abc", 3,
      "\x23\x09\x7d\x22\x34\x05\xd8\x22\x86\x42\xa4\x77\xbd\xa2\x55\xb3"
      "\x2a\xad\xbc\xe4\xbd\xa0\xb3\xf7\xe3\x6c\x9d\xa7", 28);
@@ -339,13 +406,13 @@ selftests_sha224 (int extended, selftest_report_func_t report)
     {
       what = "long string";
       errtxt = _gcry_hash_selftest_check_one
-        (GCRY_MD_SHA224, 0, 
+        (GCRY_MD_SHA224, 0,
          "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56,
          "\x75\x38\x8b\x16\x51\x27\x76\xcc\x5d\xba\x5d\xa1\xfd\x89\x01\x50"
          "\xb0\xc6\x45\x5c\xb4\xf5\x8b\x19\x52\x52\x25\x25", 28);
       if (errtxt)
         goto failed;
-      
+
       what = "one million \"a\"";
       errtxt = _gcry_hash_selftest_check_one
         (GCRY_MD_SHA224, 1,
@@ -369,10 +436,10 @@ selftests_sha256 (int extended, selftest_report_func_t report)
 {
   const char *what;
   const char *errtxt;
-  
+
   what = "short string";
   errtxt = _gcry_hash_selftest_check_one
-    (GCRY_MD_SHA256, 0, 
+    (GCRY_MD_SHA256, 0,
      "abc", 3,
      "\xba\x78\x16\xbf\x8f\x01\xcf\xea\x41\x41\x40\xde\x5d\xae\x22\x23"
      "\xb0\x03\x61\xa3\x96\x17\x7a\x9c\xb4\x10\xff\x61\xf2\x00\x15\xad", 32);
@@ -383,14 +450,14 @@ selftests_sha256 (int extended, selftest_report_func_t report)
     {
       what = "long string";
       errtxt = _gcry_hash_selftest_check_one
-        (GCRY_MD_SHA256, 0, 
+        (GCRY_MD_SHA256, 0,
          "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56,
          "\x24\x8d\x6a\x61\xd2\x06\x38\xb8\xe5\xc0\x26\x93\x0c\x3e\x60\x39"
          "\xa3\x3c\xe4\x59\x64\xff\x21\x67\xf6\xec\xed\xd4\x19\xdb\x06\xc1",
          32);
       if (errtxt)
         goto failed;
-      
+
       what = "one million \"a\"";
       errtxt = _gcry_hash_selftest_check_one
         (GCRY_MD_SHA256, 1,
@@ -428,7 +495,7 @@ run_selftests (int algo, int extended, selftest_report_func_t report)
     default:
       ec = GPG_ERR_DIGEST_ALGO;
       break;
-        
+
     }
   return ec;
 }
@@ -445,7 +512,7 @@ static byte asn224[19] = /* Object ID is 2.16.840.1.101.3.4.2.4 */
 static gcry_md_oid_spec_t oid_spec_sha224[] =
   {
     /* From RFC3874, Section 4 */
-    { "2.16.840.1.101.3.4.2.4" }, 
+    { "2.16.840.1.101.3.4.2.4" },
     { NULL },
   };
 
@@ -457,7 +524,7 @@ static byte asn256[19] = /* Object ID is  2.16.840.1.101.3.4.2.1 */
 static gcry_md_oid_spec_t oid_spec_sha256[] =
   {
     /* According to the OpenPGP draft rfc2440-bis06 */
-    { "2.16.840.1.101.3.4.2.1" }, 
+    { "2.16.840.1.101.3.4.2.1" },
     /* PKCS#1 sha256WithRSAEncryption */
     { "1.2.840.113549.1.1.11" },
 
@@ -470,7 +537,7 @@ gcry_md_spec_t _gcry_digest_spec_sha224 =
     sha224_init, sha256_write, sha256_final, sha256_read,
     sizeof (SHA256_CONTEXT)
   };
-md_extra_spec_t _gcry_digest_extraspec_sha224 = 
+md_extra_spec_t _gcry_digest_extraspec_sha224 =
   {
     run_selftests
   };
@@ -481,7 +548,7 @@ gcry_md_spec_t _gcry_digest_spec_sha256 =
     sha256_init, sha256_write, sha256_final, sha256_read,
     sizeof (SHA256_CONTEXT)
   };
-md_extra_spec_t _gcry_digest_extraspec_sha256 = 
+md_extra_spec_t _gcry_digest_extraspec_sha256 =
   {
     run_selftests
   };

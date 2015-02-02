@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_STDINT_H 
+#ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
 
@@ -35,10 +35,10 @@
    describing the error.
 
    DATAMODE controls what will be hashed according to this table:
-   
+
      0 - Hash the supplied DATA of DATALEN.
      1 - Hash one million times a 'a'.  DATA and DATALEN are ignored.
-   
+
 */
 const char *
 _gcry_hash_selftest_check_one (int algo,
@@ -49,14 +49,14 @@ _gcry_hash_selftest_check_one (int algo,
   gcry_error_t err = 0;
   gcry_md_hd_t hd;
   unsigned char *digest;
-  
+
   if (_gcry_md_get_algo_dlen (algo) != expectlen)
     return "digest size does not match expected size";
-    
+
   err = _gcry_md_open (&hd, algo, 0);
   if (err)
     return "gcry_md_open failed";
-  
+
   switch (datamode)
     {
     case 0:
@@ -64,7 +64,7 @@ _gcry_hash_selftest_check_one (int algo,
       break;
 
     case 1: /* Hash one million times an "a". */
-      {		
+      {
         char aaa[1000];
         int i;
 
@@ -82,7 +82,7 @@ _gcry_hash_selftest_check_one (int algo,
   if (!result)
     {
       digest = _gcry_md_read (hd, algo);
-      
+
       if ( memcmp (digest, expect, expectlen) )
         result = "digest mismatch";
     }
@@ -91,4 +91,3 @@ _gcry_hash_selftest_check_one (int algo,
 
   return result;
 }
-

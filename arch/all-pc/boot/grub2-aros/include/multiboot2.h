@@ -58,6 +58,8 @@
 #define MULTIBOOT_TAG_TYPE_ACPI_OLD          14
 #define MULTIBOOT_TAG_TYPE_ACPI_NEW          15
 #define MULTIBOOT_TAG_TYPE_NETWORK           16
+#define MULTIBOOT_TAG_TYPE_EFI_MMAP          17
+#define MULTIBOOT_TAG_TYPE_EFI_BS            18
 
 #define MULTIBOOT_HEADER_TAG_END  0
 #define MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST  1
@@ -66,6 +68,7 @@
 #define MULTIBOOT_HEADER_TAG_CONSOLE_FLAGS  4
 #define MULTIBOOT_HEADER_TAG_FRAMEBUFFER  5
 #define MULTIBOOT_HEADER_TAG_MODULE_ALIGN  6
+#define MULTIBOOT_HEADER_TAG_EFI_BS  7
 
 #define MULTIBOOT_ARCHITECTURE_I386  0
 #define MULTIBOOT_ARCHITECTURE_MIPS32  4
@@ -176,7 +179,7 @@ struct multiboot_mmap_entry
 #define MULTIBOOT_MEMORY_BADRAM                 5
   multiboot_uint32_t type;
   multiboot_uint32_t zero;
-} __attribute__((packed));
+} GRUB_PACKED;
 typedef struct multiboot_mmap_entry multiboot_memory_map_t;
 
 struct multiboot_tag
@@ -360,6 +363,15 @@ struct multiboot_tag_network
   multiboot_uint32_t size;
   multiboot_uint8_t dhcpack[0];
 };
+
+struct multiboot_tag_efi_mmap
+{
+  multiboot_uint32_t type;
+  multiboot_uint32_t size;
+  multiboot_uint32_t descr_size;
+  multiboot_uint32_t descr_vers;
+  multiboot_uint8_t efi_mmap[0];
+}; 
 
 #endif /* ! ASM_FILE */
 

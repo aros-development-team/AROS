@@ -1,5 +1,5 @@
 /* sha512.c - SHA384 and SHA512 hash functions
- *	Copyright (C) 2003, 2008 Free Software Foundation, Inc.
+ * Copyright (C) 2003, 2008, 2009 Free Software Foundation, Inc.
  *
  * This file is part of Libgcrypt.
  *
@@ -98,6 +98,36 @@ sha384_init (void *context)
 }
 
 
+static inline u64
+ROTR (u64 x, u64 n)
+{
+  return ((x >> n) | (x << (64 - n)));
+}
+
+static inline u64
+Ch (u64 x, u64 y, u64 z)
+{
+  return ((x & y) ^ ( ~x & z));
+}
+
+static inline u64
+Maj (u64 x, u64 y, u64 z)
+{
+  return ((x & y) ^ (x & z) ^ (y & z));
+}
+
+static inline u64
+Sum0 (u64 x)
+{
+  return (ROTR (x, 28) ^ ROTR (x, 34) ^ ROTR (x, 39));
+}
+
+static inline u64
+Sum1 (u64 x)
+{
+  return (ROTR (x, 14) ^ ROTR (x, 18) ^ ROTR (x, 41));
+}
+
 /****************
  * Transform the message W which consists of 16 64-bit-words
  */
@@ -182,21 +212,26 @@ transform (SHA512_CONTEXT *hd, const unsigned char *data)
   }
 #endif
 
-#define ROTR(x,n) (((x)>>(n)) | ((x)<<(64-(n))))
-#define Ch(x,y,z) (((x) & (y)) ^ ((~(x)) & (z)))
-#define Maj(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define Sum0(x) (ROTR((x),28) ^ ROTR((x),34) ^ ROTR((x),39))
-#define Sum1(x) (ROTR((x),14) ^ ROTR((x),18) ^ ROTR((x),41))
 #define S0(x) (ROTR((x),1) ^ ROTR((x),8) ^ ((x)>>7))
 #define S1(x) (ROTR((x),19) ^ ROTR((x),61) ^ ((x)>>6))
 
   for (t = 16; t < 80; t++)
     w[t] = S1 (w[t - 2]) + w[t - 7] + S0 (w[t - 15]) + w[t - 16];
 
-  for (t = 0; t < 80; t++)
+
+  for (t = 0; t < 80; )
     {
       u64 t1, t2;
 
+      /* Performance on a AMD Athlon(tm) Dual Core Processor 4050e
+         with gcc 4.3.3 using gcry_md_hash_buffer of each 10000 bytes
+         initialized to 0,1,2,3...255,0,... and 1000 iterations:
+
+         Not unrolled with macros:  440ms
+         Unrolled with macros:      350ms
+         Unrolled with inline:      330ms
+      */
+#if 0 /* Not unrolled.  */
       t1 = h + Sum1 (e) + Ch (e, f, g) + k[t] + w[t];
       t2 = Sum0 (a) + Maj (a, b, c);
       h = g;
@@ -207,12 +242,53 @@ transform (SHA512_CONTEXT *hd, const unsigned char *data)
       c = b;
       b = a;
       a = t1 + t2;
+      t++;
+#else /* Unrolled to interweave the chain variables.  */
+      t1 = h + Sum1 (e) + Ch (e, f, g) + k[t] + w[t];
+      t2 = Sum0 (a) + Maj (a, b, c);
+      d += t1;
+      h  = t1 + t2;
 
-      /* printf("t=%d a=%016llX b=%016llX c=%016llX d=%016llX "
-          "e=%016llX f=%016llX g=%016llX h=%016llX\n",t,a,b,c,d,e,f,g,h); */
+      t1 = g + Sum1 (d) + Ch (d, e, f) + k[t+1] + w[t+1];
+      t2 = Sum0 (h) + Maj (h, a, b);
+      c += t1;
+      g  = t1 + t2;
+
+      t1 = f + Sum1 (c) + Ch (c, d, e) + k[t+2] + w[t+2];
+      t2 = Sum0 (g) + Maj (g, h, a);
+      b += t1;
+      f  = t1 + t2;
+
+      t1 = e + Sum1 (b) + Ch (b, c, d) + k[t+3] + w[t+3];
+      t2 = Sum0 (f) + Maj (f, g, h);
+      a += t1;
+      e  = t1 + t2;
+
+      t1 = d + Sum1 (a) + Ch (a, b, c) + k[t+4] + w[t+4];
+      t2 = Sum0 (e) + Maj (e, f, g);
+      h += t1;
+      d  = t1 + t2;
+
+      t1 = c + Sum1 (h) + Ch (h, a, b) + k[t+5] + w[t+5];
+      t2 = Sum0 (d) + Maj (d, e, f);
+      g += t1;
+      c  = t1 + t2;
+
+      t1 = b + Sum1 (g) + Ch (g, h, a) + k[t+6] + w[t+6];
+      t2 = Sum0 (c) + Maj (c, d, e);
+      f += t1;
+      b  = t1 + t2;
+
+      t1 = a + Sum1 (f) + Ch (f, g, h) + k[t+7] + w[t+7];
+      t2 = Sum0 (b) + Maj (b, c, d);
+      e += t1;
+      a  = t1 + t2;
+
+      t += 8;
+#endif
     }
 
-  /* update chaining vars */
+  /* Update chaining vars.  */
   hd->h0 += a;
   hd->h1 += b;
   hd->h2 += c;
@@ -362,7 +438,7 @@ sha512_read (void *context)
 
 
 
-/* 
+/*
      Self-test section.
  */
 
@@ -372,10 +448,10 @@ selftests_sha384 (int extended, selftest_report_func_t report)
 {
   const char *what;
   const char *errtxt;
-  
+
   what = "short string";
   errtxt = _gcry_hash_selftest_check_one
-    (GCRY_MD_SHA384, 0, 
+    (GCRY_MD_SHA384, 0,
      "abc", 3,
      "\xcb\x00\x75\x3f\x45\xa3\x5e\x8b\xb5\xa0\x3d\x69\x9a\xc6\x50\x07"
      "\x27\x2c\x32\xab\x0e\xde\xd1\x63\x1a\x8b\x60\x5a\x43\xff\x5b\xed"
@@ -387,9 +463,9 @@ selftests_sha384 (int extended, selftest_report_func_t report)
     {
       what = "long string";
       errtxt = _gcry_hash_selftest_check_one
-        (GCRY_MD_SHA384, 0, 
+        (GCRY_MD_SHA384, 0,
          "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmn"
-         "hijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112, 
+         "hijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
          "\x09\x33\x0C\x33\xF7\x11\x47\xE8\x3D\x19\x2F\xC7\x82\xCD\x1B\x47"
          "\x53\x11\x1B\x17\x3B\x3B\x05\xD2\x2F\xA0\x80\x86\xE3\xB0\xF7\x12"
          "\xFC\xC7\xC7\x1A\x55\x7E\x2D\xB9\x66\xC3\xE9\xFA\x91\x74\x60\x39",
@@ -422,10 +498,10 @@ selftests_sha512 (int extended, selftest_report_func_t report)
 {
   const char *what;
   const char *errtxt;
-  
+
   what = "short string";
   errtxt = _gcry_hash_selftest_check_one
-    (GCRY_MD_SHA512, 0, 
+    (GCRY_MD_SHA512, 0,
      "abc", 3,
      "\xDD\xAF\x35\xA1\x93\x61\x7A\xBA\xCC\x41\x73\x49\xAE\x20\x41\x31"
      "\x12\xE6\xFA\x4E\x89\xA9\x7E\xA2\x0A\x9E\xEE\xE6\x4B\x55\xD3\x9A"
@@ -438,9 +514,9 @@ selftests_sha512 (int extended, selftest_report_func_t report)
     {
       what = "long string";
       errtxt = _gcry_hash_selftest_check_one
-        (GCRY_MD_SHA512, 0, 
+        (GCRY_MD_SHA512, 0,
          "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmn"
-         "hijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112, 
+         "hijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 112,
          "\x8E\x95\x9B\x75\xDA\xE3\x13\xDA\x8C\xF4\xF7\x28\x14\xFC\x14\x3F"
          "\x8F\x77\x79\xC6\xEB\x9F\x7F\xA1\x72\x99\xAE\xAD\xB6\x88\x90\x18"
          "\x50\x1D\x28\x9E\x49\x00\xF7\xE4\x33\x1B\x99\xDE\xC4\xB5\x43\x3A"
@@ -448,7 +524,7 @@ selftests_sha512 (int extended, selftest_report_func_t report)
          64);
       if (errtxt)
         goto failed;
-      
+
       what = "one million \"a\"";
       errtxt = _gcry_hash_selftest_check_one
         (GCRY_MD_SHA512, 1,
@@ -488,7 +564,7 @@ run_selftests (int algo, int extended, selftest_report_func_t report)
     default:
       ec = GPG_ERR_DIGEST_ALGO;
       break;
-        
+
     }
   return ec;
 }
@@ -513,13 +589,13 @@ static gcry_md_oid_spec_t oid_spec_sha512[] =
     { NULL }
   };
 
-gcry_md_spec_t _gcry_digest_spec_sha512 = 
+gcry_md_spec_t _gcry_digest_spec_sha512 =
   {
     "SHA512", sha512_asn, DIM (sha512_asn), oid_spec_sha512, 64,
     sha512_init, sha512_write, sha512_final, sha512_read,
     sizeof (SHA512_CONTEXT),
   };
-md_extra_spec_t _gcry_digest_extraspec_sha512 = 
+md_extra_spec_t _gcry_digest_extraspec_sha512 =
   {
     run_selftests
   };
@@ -533,7 +609,7 @@ static byte sha384_asn[] =	/* Object ID is 2.16.840.1.101.3.4.2.2 */
 
 static gcry_md_oid_spec_t oid_spec_sha384[] =
   {
-    { "2.16.840.1.101.3.4.2.2" }, 
+    { "2.16.840.1.101.3.4.2.2" },
 
     /* PKCS#1 sha384WithRSAEncryption */
     { "1.2.840.113549.1.1.12" },
@@ -541,13 +617,13 @@ static gcry_md_oid_spec_t oid_spec_sha384[] =
     { NULL },
   };
 
-gcry_md_spec_t _gcry_digest_spec_sha384 = 
+gcry_md_spec_t _gcry_digest_spec_sha384 =
   {
     "SHA384", sha384_asn, DIM (sha384_asn), oid_spec_sha384, 48,
     sha384_init, sha512_write, sha512_final, sha512_read,
     sizeof (SHA512_CONTEXT),
   };
-md_extra_spec_t _gcry_digest_extraspec_sha384 = 
+md_extra_spec_t _gcry_digest_extraspec_sha384 =
   {
     run_selftests
   };

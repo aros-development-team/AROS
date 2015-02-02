@@ -142,49 +142,59 @@ iszero (grub_uint8_t *reg, int size)
 }
 
 #if defined (__i386__) || defined (__x86_64__)
+/* Context for grub_acpi_create_ebda.  */
+struct grub_acpi_create_ebda_ctx {
+  int ebda_len;
+  grub_uint64_t highestlow;
+};
+
+/* Helper for grub_acpi_create_ebda.  */
+static int
+find_hook (grub_uint64_t start, grub_uint64_t size, grub_memory_type_t type,
+	   void *data)
+{
+  struct grub_acpi_create_ebda_ctx *ctx = data;
+  grub_uint64_t end = start + size;
+  if (type != GRUB_MEMORY_AVAILABLE)
+    return 0;
+  if (end > 0x100000)
+    end = 0x100000;
+  if (end > start + ctx->ebda_len
+      && ctx->highestlow < ((end - ctx->ebda_len) & (~0xf)) )
+    ctx->highestlow = (end - ctx->ebda_len) & (~0xf);
+  return 0;
+}
+
 grub_err_t
 grub_acpi_create_ebda (void)
 {
-  int ebda_kb_len;
-  int ebda_len;
+  struct grub_acpi_create_ebda_ctx ctx = {
+    .highestlow = 0
+  };
+  int ebda_kb_len = 0;
   int mmapregion = 0;
   grub_uint8_t *ebda, *v1inebda = 0, *v2inebda = 0;
-  grub_uint64_t highestlow = 0;
   grub_uint8_t *targetebda, *target;
   struct grub_acpi_rsdp_v10 *v1;
   struct grub_acpi_rsdp_v20 *v2;
-  auto int NESTED_FUNC_ATTR find_hook (grub_uint64_t, grub_uint64_t,
-				       grub_uint32_t);
-  int NESTED_FUNC_ATTR find_hook (grub_uint64_t start, grub_uint64_t size,
-				  grub_memory_type_t type)
-  {
-    grub_uint64_t end = start + size;
-    if (type != GRUB_MEMORY_AVAILABLE)
-      return 0;
-    if (end > 0x100000)
-      end = 0x100000;
-    if (end > start + ebda_len
-	&& highestlow < ((end - ebda_len) & (~0xf)) )
-      highestlow = (end - ebda_len) & (~0xf);
-    return 0;
-  }
 
   ebda = (grub_uint8_t *) (grub_addr_t) ((*((grub_uint16_t *)0x40e)) << 4);
-  ebda_kb_len = *(grub_uint16_t *) ebda;
-  if (! ebda || ebda_kb_len > 16)
+  if (ebda)
+    ebda_kb_len = *(grub_uint16_t *) ebda;
+  if (ebda_kb_len > 16)
     ebda_kb_len = 0;
-  ebda_len = (ebda_kb_len + 1) << 10;
+  ctx.ebda_len = (ebda_kb_len + 1) << 10;
 
   /* FIXME: use low-memory mm allocation once it's available. */
-  grub_mmap_iterate (find_hook);
-  targetebda = (grub_uint8_t *) (grub_addr_t) highestlow;
+  grub_mmap_iterate (find_hook, &ctx);
+  targetebda = (grub_uint8_t *) (grub_addr_t) ctx.highestlow;
   grub_dprintf ("acpi", "creating ebda @%llx\n",
-		(unsigned long long) highestlow);
-  if (! highestlow)
+		(unsigned long long) ctx.highestlow);
+  if (! ctx.highestlow)
     return grub_error (GRUB_ERR_OUT_OF_MEMORY,
 		       "couldn't find space for the new EBDA");
 
-  mmapregion = grub_mmap_register ((grub_addr_t) targetebda, ebda_len,
+  mmapregion = grub_mmap_register ((grub_addr_t) targetebda, ctx.ebda_len,
 				   GRUB_MEMORY_RESERVED);
   if (! mmapregion)
     return grub_errno;
@@ -207,7 +217,7 @@ grub_acpi_create_ebda (void)
     {
       grub_dprintf ("acpi", "Scanning EBDA for old rsdpv2\n");
       for (; target < targetebda + 0x400 - v2->length; target += 0x10)
-	if (grub_memcmp (target, "RSD PTR ", 8) == 0
+	if (grub_memcmp (target, GRUB_RSDP_SIGNATURE, GRUB_RSDP_SIGNATURE_SIZE) == 0
 	    && grub_byte_checksum (target,
 				   sizeof (struct grub_acpi_rsdp_v10)) == 0
 	    && ((struct grub_acpi_rsdp_v10 *) target)->revision != 0
@@ -217,7 +227,7 @@ grub_acpi_create_ebda (void)
 	    grub_dprintf ("acpi", "Copying rsdpv2 to %p\n", target);
 	    v2inebda = target;
 	    target += v2->length;
-	    target = (grub_uint8_t *) ((((long) target - 1) | 0xf) + 1);
+	    target = (grub_uint8_t *) ALIGN_UP((grub_addr_t) target, 16);
 	    v2 = 0;
 	    break;
 	  }
@@ -228,7 +238,7 @@ grub_acpi_create_ebda (void)
       grub_dprintf ("acpi", "Scanning EBDA for old rsdpv1\n");
       for (; target < targetebda + 0x400 - sizeof (struct grub_acpi_rsdp_v10);
 	   target += 0x10)
-	if (grub_memcmp (target, "RSD PTR ", 8) == 0
+	if (grub_memcmp (target, GRUB_RSDP_SIGNATURE, GRUB_RSDP_SIGNATURE_SIZE) == 0
 	    && grub_byte_checksum (target,
 				   sizeof (struct grub_acpi_rsdp_v10)) == 0)
 	  {
@@ -236,7 +246,7 @@ grub_acpi_create_ebda (void)
 	    grub_dprintf ("acpi", "Copying rsdpv1 to %p\n", target);
 	    v1inebda = target;
 	    target += sizeof (struct grub_acpi_rsdp_v10);
-	    target = (grub_uint8_t *) ((((long) target - 1) | 0xf) + 1);
+	    target = (grub_uint8_t *) ALIGN_UP((grub_addr_t) target, 16);
 	    v1 = 0;
 	    break;
 	  }
@@ -255,7 +265,7 @@ grub_acpi_create_ebda (void)
 	    grub_memcpy (target, v2, v2->length);
 	    v2inebda = target;
 	    target += v2->length;
-	    target = (grub_uint8_t *) ((((long) target - 1) | 0xf) + 1);
+	    target = (grub_uint8_t *) ALIGN_UP((grub_addr_t) target, 16);
 	    v2 = 0;
 	    break;
 	  }
@@ -272,7 +282,7 @@ grub_acpi_create_ebda (void)
 	    grub_memcpy (target, v1, sizeof (struct grub_acpi_rsdp_v10));
 	    v1inebda = target;
 	    target += sizeof (struct grub_acpi_rsdp_v10);
-	    target = (grub_uint8_t *) ((((long) target - 1) | 0xf) + 1);
+	    target = (grub_uint8_t *) ALIGN_UP((grub_addr_t) target, 16);
 	    v1 = 0;
 	    break;
 	  }
@@ -289,14 +299,14 @@ grub_acpi_create_ebda (void)
   for (target = targetebda;
        target < targetebda + 0x400 - sizeof (struct grub_acpi_rsdp_v10);
        target += 0x10)
-    if (grub_memcmp (target, "RSD PTR ", 8) == 0
+    if (grub_memcmp (target, GRUB_RSDP_SIGNATURE, GRUB_RSDP_SIGNATURE_SIZE) == 0
 	&& grub_byte_checksum (target,
 			       sizeof (struct grub_acpi_rsdp_v10)) == 0
 	&& target != v1inebda && target != v2inebda)
       *target = 0;
 
   grub_dprintf ("acpi", "Switching EBDA\n");
-  (*((grub_uint16_t *) 0x40e)) = ((long)targetebda) >> 4;
+  (*((grub_uint16_t *) 0x40e)) = ((grub_addr_t) targetebda) >> 4;
   grub_dprintf ("acpi", "EBDA switched\n");
 
   return GRUB_ERR_NONE;
@@ -355,13 +365,13 @@ setup_common_tables (void)
     numoftables++;
 
   rsdt_addr = rsdt = (struct grub_acpi_table_header *) playground_ptr;
-  playground_ptr += sizeof (struct grub_acpi_table_header) + 4 * numoftables;
+  playground_ptr += sizeof (struct grub_acpi_table_header) + sizeof (grub_uint32_t) * numoftables;
 
   rsdt_entry = (grub_uint32_t *) (rsdt + 1);
 
   /* Fill RSDT header. */
   grub_memcpy (&(rsdt->signature), "RSDT", 4);
-  rsdt->length = sizeof (struct grub_acpi_table_header) + 4 * numoftables;
+  rsdt->length = sizeof (struct grub_acpi_table_header) + sizeof (grub_uint32_t) * numoftables;
   rsdt->revision = 1;
   grub_memcpy (&(rsdt->oemid), root_oemid, sizeof (rsdt->oemid));
   grub_memcpy (&(rsdt->oemtable), root_oemtable, sizeof (rsdt->oemtable));
@@ -384,7 +394,7 @@ setv1table (void)
   /* Create RSDP. */
   rsdpv1_new = (struct grub_acpi_rsdp_v10 *) playground_ptr;
   playground_ptr += sizeof (struct grub_acpi_rsdp_v10);
-  grub_memcpy (&(rsdpv1_new->signature), "RSD PTR ",
+  grub_memcpy (&(rsdpv1_new->signature), GRUB_RSDP_SIGNATURE,
 	       sizeof (rsdpv1_new->signature));
   grub_memcpy (&(rsdpv1_new->oemid), root_oemid, sizeof  (rsdpv1_new->oemid));
   rsdpv1_new->revision = 0;
@@ -409,13 +419,13 @@ setv2table (void)
 
   /* Create XSDT. */
   xsdt = (struct grub_acpi_table_header *) playground_ptr;
-  playground_ptr += sizeof (struct grub_acpi_table_header) + 8 * numoftables;
+  playground_ptr += sizeof (struct grub_acpi_table_header) + sizeof (grub_uint64_t) * numoftables;
 
   xsdt_entry = (grub_uint64_t *)(xsdt + 1);
   for (cur = acpi_tables; cur; cur = cur->next)
     *(xsdt_entry++) = (grub_addr_t) cur->addr;
   grub_memcpy (&(xsdt->signature), "XSDT", 4);
-  xsdt->length = sizeof (struct grub_acpi_table_header) + 8 * numoftables;
+  xsdt->length = sizeof (struct grub_acpi_table_header) + sizeof (grub_uint64_t) * numoftables;
   xsdt->revision = 1;
   grub_memcpy (&(xsdt->oemid), root_oemid, sizeof (xsdt->oemid));
   grub_memcpy (&(xsdt->oemtable), root_oemtable, sizeof (xsdt->oemtable));
@@ -428,7 +438,7 @@ setv2table (void)
   /* Create RSDPv2. */
   rsdpv2_new = (struct grub_acpi_rsdp_v20 *) playground_ptr;
   playground_ptr += sizeof (struct grub_acpi_rsdp_v20);
-  grub_memcpy (&(rsdpv2_new->rsdpv1.signature), "RSD PTR ",
+  grub_memcpy (&(rsdpv2_new->rsdpv1.signature), GRUB_RSDP_SIGNATURE,
 	       sizeof (rsdpv2_new->rsdpv1.signature));
   grub_memcpy (&(rsdpv2_new->rsdpv1.oemid), root_oemid,
 	       sizeof (rsdpv2_new->rsdpv1.oemid));
@@ -698,11 +708,11 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
   /* DSDT. */
   playground_size += dsdt_size;
   /* RSDT. */
-  playground_size += sizeof (struct grub_acpi_table_header) + 4 * numoftables;
+  playground_size += sizeof (struct grub_acpi_table_header) + sizeof (grub_uint32_t) * numoftables;
   /* RSDPv1. */
   playground_size += sizeof (struct grub_acpi_rsdp_v10);
   /* XSDT. */
-  playground_size += sizeof (struct grub_acpi_table_header) + 8 * numoftables;
+  playground_size += sizeof (struct grub_acpi_table_header) + sizeof (grub_uint64_t) * numoftables;
   /* RSDPv2. */
   playground_size += sizeof (struct grub_acpi_rsdp_v20);
 

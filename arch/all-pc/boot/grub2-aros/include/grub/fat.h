@@ -29,13 +29,18 @@ struct grub_fat_bpb
   grub_uint8_t sectors_per_cluster;
   grub_uint16_t num_reserved_sectors;
   grub_uint8_t num_fats;
+  /* 0x10 */
   grub_uint16_t num_root_entries;
   grub_uint16_t num_total_sectors_16;
   grub_uint8_t media;
+  /*0 x15 */
   grub_uint16_t sectors_per_fat_16;
   grub_uint16_t sectors_per_track;
+  /*0 x19 */
   grub_uint16_t num_heads;
+  /*0 x1b */
   grub_uint32_t num_hidden_sectors;
+  /* 0x1f */
   grub_uint32_t num_total_sectors_32;
   union
   {
@@ -47,7 +52,7 @@ struct grub_fat_bpb
       grub_uint32_t num_serial;
       grub_uint8_t label[11];
       grub_uint8_t fstype[8];
-    } __attribute__ ((packed)) fat12_or_fat16;
+    } GRUB_PACKED fat12_or_fat16;
     struct
     {
       grub_uint32_t sectors_per_fat_32;
@@ -63,8 +68,15 @@ struct grub_fat_bpb
       grub_uint32_t num_serial;
       grub_uint8_t label[11];
       grub_uint8_t fstype[8];
-    } __attribute__ ((packed)) fat32;
-  } __attribute__ ((packed)) version_specific;
-} __attribute__ ((packed));
+    } GRUB_PACKED fat32;
+  } GRUB_PACKED version_specific;
+} GRUB_PACKED;
+
+#ifdef GRUB_UTIL
+#include <grub/disk.h>
+
+grub_disk_addr_t
+grub_fat_get_cluster_sector (grub_disk_t disk, grub_uint64_t *sec_per_lcn);
+#endif
 
 #endif

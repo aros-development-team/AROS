@@ -80,8 +80,12 @@ static void
 canvas_paint (void *vself, const grub_video_rect_t *region)
 {
   grub_gui_canvas_t self = vself;
+
   struct component_node *cur;
   grub_video_rect_t vpsave;
+
+  grub_video_area_status_t canvas_area_status;
+  grub_video_get_area_status (&canvas_area_status);
 
   grub_gui_set_viewport (&self->bounds, &vpsave);
   for (cur = self->components.next; cur; cur = cur->next)
@@ -135,9 +139,16 @@ canvas_paint (void *vself, const grub_video_rect_t *region)
       r.height = h;
       comp->ops->set_bounds (comp, &r);
 
+      if (!grub_video_have_common_points (region, &r))
+        continue;
+
       /* Paint the child.  */
-      if (grub_video_have_common_points (region, &r))
-	comp->ops->paint (comp, region);
+      if (canvas_area_status == GRUB_VIDEO_AREA_ENABLED
+          && grub_video_bounds_inside_region (&r, region))
+        grub_video_set_area_status (GRUB_VIDEO_AREA_DISABLED);
+      comp->ops->paint (comp, region);
+      if (canvas_area_status == GRUB_VIDEO_AREA_ENABLED)
+        grub_video_set_area_status (GRUB_VIDEO_AREA_ENABLED);
     }
   grub_gui_restore_viewport (&vpsave);
 }

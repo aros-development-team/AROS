@@ -108,6 +108,9 @@ grub_ata_identify (struct grub_ata *dev)
   grub_uint16_t *info16;
   grub_err_t err;
 
+  if (dev->atapi)
+    return grub_atapi_identify (dev);
+
   info64 = grub_malloc (GRUB_DISK_SECTOR_SIZE);
   info32 = (grub_uint32_t *) info64;
   info16 = (grub_uint16_t *) info64;
@@ -129,7 +132,7 @@ grub_ata_identify (struct grub_ata *dev)
       grub_free (info16);
       grub_errno = GRUB_ERR_NONE;
       if ((sts & (GRUB_ATA_STATUS_BUSY | GRUB_ATA_STATUS_DRQ
-	  | GRUB_ATA_STATUS_ERR)) == GRUB_ATA_STATUS_ERR
+		   | GRUB_ATA_STATUS_ERR)) == GRUB_ATA_STATUS_ERR
 	  && (parms.taskfile.error & 0x04 /* ABRT */))
 	/* Device without ATA IDENTIFY, try ATAPI.  */
 	return grub_atapi_identify (dev);
@@ -213,6 +216,12 @@ grub_ata_setaddress (struct grub_ata *dev,
 	unsigned int head;
 	unsigned int sect;
 
+	if (dev->sectors_per_track == 0
+	    || dev->heads == 0)
+	  return grub_error (GRUB_ERR_OUT_OF_RANGE,
+			     "sector %d cannot be addressed "
+			     "using CHS addressing", sector);
+
 	/* Calculate the sector, cylinder and head to use.  */
 	sect = ((grub_uint32_t) sector % dev->sectors_per_track) + 1;
 	cylinder = (((grub_uint32_t) sector / dev->sectors_per_track)
@@ -285,7 +294,6 @@ grub_ata_readwrite (grub_disk_t disk, grub_disk_addr_t sector,
 
   if (addressing == GRUB_ATA_LBA48 && ((sector + size) >> 28) != 0)
     {
-      batch = 65536;
       if (ata->dma)
 	{
 	  cmd = GRUB_ATA_CMD_READ_SECTORS_DMA_EXT;
@@ -301,10 +309,6 @@ grub_ata_readwrite (grub_disk_t disk, grub_disk_addr_t sector,
     {
       if (addressing == GRUB_ATA_LBA48)
 	addressing = GRUB_ATA_LBA;
-      if (addressing != GRUB_ATA_CHS)
-	batch = 256;
-      else
-	batch = 1;
       if (ata->dma)
 	{
 	  cmd = GRUB_ATA_CMD_READ_SECTORS_DMA;
@@ -317,8 +321,10 @@ grub_ata_readwrite (grub_disk_t disk, grub_disk_addr_t sector,
 	}
     }
 
-  if (batch > (ata->maxbuffer >> ata->log_sector_size))
-    batch = (ata->maxbuffer >> ata->log_sector_size);
+  if (addressing != GRUB_ATA_CHS)
+    batch = 256;
+  else
+    batch = 1;
 
   while (nsectors < size)
     {
@@ -366,7 +372,7 @@ grub_ata_real_open (int id, int bus)
   struct grub_ata *ata;
   grub_ata_dev_t p;
 
-  ata = grub_malloc (sizeof (*ata));
+  ata = grub_zalloc (sizeof (*ata));
   if (!ata)
     return NULL;
   for (p = grub_ata_dev_list; p; p = p->next)
@@ -382,6 +388,8 @@ grub_ata_real_open (int id, int bus)
       err = grub_ata_identify (ata);
       if (err)
 	{
+	  if (!grub_errno)
+	    grub_error (GRUB_ERR_UNKNOWN_DEVICE, "no such ATA device");
 	  grub_free (ata);
 	  return NULL;
 	}
@@ -392,40 +400,50 @@ grub_ata_real_open (int id, int bus)
   return NULL;
 }
 
+/* Context for grub_ata_iterate.  */
+struct grub_ata_iterate_ctx
+{
+  grub_disk_dev_iterate_hook_t hook;
+  void *hook_data;
+};
+
+/* Helper for grub_ata_iterate.  */
 static int
-grub_ata_iterate (int (*hook_in) (const char *name),
+grub_ata_iterate_iter (int id, int bus, void *data)
+{
+  struct grub_ata_iterate_ctx *ctx = data;
+  struct grub_ata *ata;
+  int ret;
+  char devname[40];
+
+  ata = grub_ata_real_open (id, bus);
+
+  if (!ata)
+    {
+      grub_errno = GRUB_ERR_NONE;
+      return 0;
+    }
+  if (ata->atapi)
+    {
+      grub_ata_real_close (ata);
+      return 0;
+    }
+  grub_snprintf (devname, sizeof (devname), 
+		 "%s%d", grub_scsi_names[id], bus);
+  ret = ctx->hook (devname, ctx->hook_data);
+  grub_ata_real_close (ata);
+  return ret;
+}
+
+static int
+grub_ata_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
 		  grub_disk_pull_t pull)
 {
-  auto int hook (int id, int bus);
-  int hook (int id, int bus)
-  {
-    struct grub_ata *ata;
-    int ret;
-    char devname[40];
-
-    ata = grub_ata_real_open (id, bus);
-
-    if (!ata)
-      {
-	grub_errno = GRUB_ERR_NONE;
-	return 0;
-      }
-    if (ata->atapi)
-      {
-	grub_ata_real_close (ata);
-	return 0;
-      }
-    grub_snprintf (devname, sizeof (devname), 
-		   "%s%d", grub_scsi_names[id], bus);
-    ret = hook_in (devname);
-    grub_ata_real_close (ata);
-    return ret;
-  }
-
+  struct grub_ata_iterate_ctx ctx = { hook, hook_data };
   grub_ata_dev_t p;
   
   for (p = grub_ata_dev_list; p; p = p->next)
-    if (p->iterate && p->iterate (hook, pull))
+    if (p->iterate && p->iterate (grub_ata_iterate_iter, &ctx, pull))
       return 1;
   return 0;
 }
@@ -452,6 +470,10 @@ grub_ata_open (const char *name, grub_disk_t disk)
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "not an ATA harddisk");
 
   disk->total_sectors = ata->size;
+  disk->max_agglomerate = (ata->maxbuffer >> (GRUB_DISK_CACHE_BITS + GRUB_DISK_SECTOR_BITS));
+  if (disk->max_agglomerate > (256U >> (GRUB_DISK_CACHE_BITS + GRUB_DISK_SECTOR_BITS - ata->log_sector_size)))
+    disk->max_agglomerate = (256U >> (GRUB_DISK_CACHE_BITS + GRUB_DISK_SECTOR_BITS - ata->log_sector_size));
+
   disk->log_sector_size = ata->log_sector_size;
 
   disk->id = grub_make_scsi_id (id, bus, 0);
@@ -561,37 +583,47 @@ grub_atapi_open (int id, int bus, struct grub_scsi *scsi)
   return GRUB_ERR_NONE;
 }
 
+/* Context for grub_atapi_iterate.  */
+struct grub_atapi_iterate_ctx
+{
+  grub_scsi_dev_iterate_hook_t hook;
+  void *hook_data;
+};
+
+/* Helper for grub_atapi_iterate.  */
 static int
-grub_atapi_iterate (int NESTED_FUNC_ATTR (*hook_in) (int id, int bus, int luns),
+grub_atapi_iterate_iter (int id, int bus, void *data)
+{
+  struct grub_atapi_iterate_ctx *ctx = data;
+  struct grub_ata *ata;
+  int ret;
+
+  ata = grub_ata_real_open (id, bus);
+
+  if (!ata)
+    {
+      grub_errno = GRUB_ERR_NONE;
+      return 0;
+    }
+  if (!ata->atapi)
+    {
+      grub_ata_real_close (ata);
+      return 0;
+    }
+  ret = ctx->hook (id, bus, 1, ctx->hook_data);
+  grub_ata_real_close (ata);
+  return ret;
+}
+
+static int
+grub_atapi_iterate (grub_scsi_dev_iterate_hook_t hook, void *hook_data,
 		    grub_disk_pull_t pull)
 {
-  auto int hook (int id, int bus);
-  int hook (int id, int bus)
-  {
-    struct grub_ata *ata;
-    int ret;
-
-    ata = grub_ata_real_open (id, bus);
-
-    if (!ata)
-      {
-	grub_errno = GRUB_ERR_NONE;
-	return 0;
-      }
-    if (!ata->atapi)
-      {
-	grub_ata_real_close (ata);
-	return 0;
-      }
-    ret = hook_in (id, bus, 1);
-    grub_ata_real_close (ata);
-    return ret;
-  }
-
+  struct grub_atapi_iterate_ctx ctx = { hook, hook_data };
   grub_ata_dev_t p;
   
   for (p = grub_ata_dev_list; p; p = p->next)
-    if (p->iterate && p->iterate (hook, pull))
+    if (p->iterate && p->iterate (grub_atapi_iterate_iter, &ctx, pull))
       return 1;
   return 0;
 }

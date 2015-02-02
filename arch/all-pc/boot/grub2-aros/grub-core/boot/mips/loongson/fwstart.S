@@ -63,18 +63,18 @@ __start:
 	   This way we don't need to sacrifice a register for it.  */
 retry_cs5536:	
 	/* We have only one bus (0). Function is 0.  */
-	lui $t0, %hi(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR)
-	lui $t1, %hi(GRUB_MACHINE_PCI_CONFSPACE)
+	lui $t0, %hi(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR_2F)
+	lui $t1, %hi(GRUB_MACHINE_PCI_CONFSPACE_2F)
 	lui $t3, %hi(GRUB_CS5536_PCIID)
 	addiu $t3, $t3, %lo(GRUB_CS5536_PCIID)
 	ori $t4, $zero, 1
 1:
-	andi $t4, $t4, ((1 << GRUB_PCI_NUM_DEVICES) - 1)
+	andi $t4, $t4, ((1 << GRUB_PCI_NUM_DEVICES_2F) - 1)
 	/* In case of failure try again. CS5536 may be slow to come up.  */
 	beql  $t4, $zero, retry_cs5536
 	 nop
-	sw   $t4, %lo(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR) ($t0)
-	lw   $t2, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_PCI_REG_PCI_ID) ($t1)
+	sw   $t4, %lo(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR_2F) ($t0)
+	lw   $t2, (%lo(GRUB_MACHINE_PCI_CONFSPACE_2F) + GRUB_PCI_REG_PCI_ID) ($t1)
 	bnel  $t2, $t3, 1b
 	 sll $t4, $t4, 1
 
@@ -86,9 +86,9 @@ retry_cs5536:
 	 move $a0, $t4
 #endif
 
-	lui $t0, %hi(GRUB_MACHINE_PCI_CONFSPACE)
+	lui $t0, %hi(GRUB_MACHINE_PCI_CONFSPACE_2F)
 	li  $t1, GRUB_CS5536_MSR_MAILBOX_CONFIG_ENABLED
-	sw  $t1, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_CS5536_MSR_MAILBOX_CONFIG) ($t0)
+	sw  $t1, (%lo(GRUB_MACHINE_PCI_CONFSPACE_2F) + GRUB_CS5536_MSR_MAILBOX_CONFIG) ($t0)
 	
 	/* Set GPIO LBAR.  */
 	lui $a0, %hi(GRUB_CS5536_MSR_GPIO_BAR)
@@ -121,21 +121,21 @@ retry_cs5536:
 	bal message
 	  addiu $a0, $a0, %lo(smbus_enabled)
 
-	lui $t0, %hi(GRUB_MACHINE_PCI_IO_BASE + GRUB_CS5536_LBAR_SMBUS)
+	lui $t0, %hi(GRUB_MACHINE_PCI_IO_BASE_2F + GRUB_CS5536_LBAR_SMBUS)
 
 	/* Disable SMB.  */
-	sb $zero, %lo(GRUB_MACHINE_PCI_IO_BASE + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL2) ($t0)
+	sb $zero, %lo(GRUB_MACHINE_PCI_IO_BASE_2F + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL2) ($t0)
 
 	/* Disable interrupts.  */
-	sb $zero, %lo(GRUB_MACHINE_PCI_IO_BASE + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1) ($t0)
+	sb $zero, %lo(GRUB_MACHINE_PCI_IO_BASE_2F + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1) ($t0)
 
 	/* Set as master.  */
-	sb $zero, %lo(GRUB_MACHINE_PCI_IO_BASE + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_ADDR) ($t0)
+	sb $zero, %lo(GRUB_MACHINE_PCI_IO_BASE_2F + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_ADDR) ($t0)
 
 	/* Launch SMBus controller at slowest speed possible.  */
 	ori $t1, $zero, 0xff
-	sb $t1, %lo(GRUB_MACHINE_PCI_IO_BASE + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL3) ($t0)
-	sb $t1, %lo(GRUB_MACHINE_PCI_IO_BASE + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL2) ($t0)
+	sb $t1, %lo(GRUB_MACHINE_PCI_IO_BASE_2F + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL3) ($t0)
+	sb $t1, %lo(GRUB_MACHINE_PCI_IO_BASE_2F + GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL2) ($t0)
 
 	/* Yeeloong and Fuloong2f have only one memory slot.  */
 	/* Output first byte on serial for debugging.  */
@@ -237,8 +237,8 @@ other_exception:
 	 addiu $a0, $a0, %lo(unhandled_exception)
 
 gpio_init:
-	lui $t0, %hi(GRUB_MACHINE_PCI_IO_BASE + GRUB_CS5536_LBAR_GPIO)
-	addiu  $t0, $t0, %lo(GRUB_MACHINE_PCI_IO_BASE + GRUB_CS5536_LBAR_GPIO)
+	lui $t0, %hi(GRUB_MACHINE_PCI_IO_BASE_2F + GRUB_CS5536_LBAR_GPIO)
+	addiu  $t0, $t0, %lo(GRUB_MACHINE_PCI_IO_BASE_2F + GRUB_CS5536_LBAR_GPIO)
 	lui $t1, %hi (gpio_dump)
 	addiu $t1, $t1, %lo (gpio_dump)
 
@@ -368,18 +368,18 @@ self:
            Clobbered:	 $t0
 	*/
 wrmsr:
-	lui $t0, %hi(GRUB_MACHINE_PCI_CONFSPACE)
-	sw  $a0, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_CS5536_MSR_MAILBOX_ADDR) ($t0)
-	sw  $a1, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_CS5536_MSR_MAILBOX_DATA0) ($t0)
+	lui $t0, %hi(GRUB_MACHINE_PCI_CONFSPACE_2F)
+	sw  $a0, (%lo(GRUB_MACHINE_PCI_CONFSPACE_2F) + GRUB_CS5536_MSR_MAILBOX_ADDR) ($t0)
+	sw  $a1, (%lo(GRUB_MACHINE_PCI_CONFSPACE_2F) + GRUB_CS5536_MSR_MAILBOX_DATA0) ($t0)
 	jr $ra
-	 sw  $a2, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_CS5536_MSR_MAILBOX_DATA1) ($t0)
+	 sw  $a2, (%lo(GRUB_MACHINE_PCI_CONFSPACE_2F) + GRUB_CS5536_MSR_MAILBOX_DATA1) ($t0)
 
 	/* Wait for SMBus data or empty transmitter.  */
 	/* In: $a0 = exception handler. Out: none. Clobbered: $t0, $t1  */
 smbus_wait:
 1:	
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_STATUS + GRUB_MACHINE_PCI_IO_BASE)
-	lb $t0, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_STATUS + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_STATUS + GRUB_MACHINE_PCI_IO_BASE_2F)
+	lb $t0, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_STATUS + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 	andi $t1, $t0, GRUB_CS5536_SMB_REG_STATUS_SDAST
 	bne $t1, $zero, return
 	 nop
@@ -401,52 +401,52 @@ read_spd:
 	addiu $a0, $a0, %hi(read_spd_fail)
 
 	/* Send START.  */
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE)
-	lb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F)
+	lb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 	ori $t1, $t1, GRUB_CS5536_SMB_REG_CTRL1_START
 	bal smbus_wait
-	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 	
 	/* Send device address.  */
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE_2F)
 	sll $t1, $a1, 1
 	bal smbus_wait
-	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 
 	/* Send ACK.  */
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE)
-	lb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F)
+	lb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 	ori $t1, $t1, GRUB_CS5536_SMB_REG_CTRL1_ACK
-	sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 
 	/* Send byte address.  */
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE_2F)
 	bal smbus_wait
-	 sb $t2, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	 sb $t2, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 
 	/* Send START.  */
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE)
-	lb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F)
+	lb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 	ori $t1, $t1, GRUB_CS5536_SMB_REG_CTRL1_START
 	bal smbus_wait
-	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 
 	/* Send device address.  */
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE_2F)
 	sll $t1, $a1, 1
 	ori $t1, $t1, 1
 	bal smbus_wait
-	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 
 	/* Send STOP.  */
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE)
-	lb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F)
+	lb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 	ori $t1, $t1, GRUB_CS5536_SMB_REG_CTRL1_STOP
 	bal smbus_wait
-	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	 sb $t1, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_CTRL1 + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 
-	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE)
-	lb $v0, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE) ($t0)
+	lui $t0, %hi(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE_2F)
+	lb $v0, %lo(GRUB_CS5536_LBAR_SMBUS + GRUB_CS5536_SMB_REG_DATA + GRUB_MACHINE_PCI_IO_BASE_2F) ($t0)
 	jr $t3
 	 andi $v0, $v0, 0xff
 read_spd_fail:
@@ -754,140 +754,3 @@ continue:
 #endif
 
 cached_continue:
-#ifndef FULOONG2F
-	/* We have to init video early enough or watchdog will reboot us.  */
-
-        /* Setup PCI controller.  */
-
-	lui    $t0, %hi (GRUB_CPU_LOONGSON_PCI_HIT1_SEL_LO)
-	lui    $t1, %hi(0x8000000c)
-	addiu  $t1, $t1, %lo(0x8000000c)
-
-	sw  $t1, %lo (GRUB_CPU_LOONGSON_PCI_HIT1_SEL_LO) ($t0)
-	li  $t1, 0xffffffff
-	sw  $t1, %lo (GRUB_CPU_LOONGSON_PCI_HIT1_SEL_HI) ($t0)
-
-	li  $t0, GRUB_MACHINE_PCI_CONTROLLER_HEADER
-	li  $t1, (GRUB_PCI_COMMAND_PARITY_ERROR | GRUB_PCI_COMMAND_BUS_MASTER \
-                  | GRUB_PCI_COMMAND_MEM_ENABLED)
-	sh  $t0, GRUB_PCI_REG_COMMAND ($t1)
-	li  $t1, ((1 << GRUB_PCI_STATUS_DEVSEL_TIMING_SHIFT) \
-                  | GRUB_PCI_STATUS_FAST_B2B_CAPABLE         \
-	          | GRUB_PCI_STATUS_66MHZ_CAPABLE            \
-                  | GRUB_PCI_STATUS_CAPABILITIES)
-	sh  $t0, GRUB_PCI_REG_STATUS ($t1)
-	li  $t0, 0xff
-	sw  $t0, GRUB_PCI_REG_CACHELINE ($t1)
-	lui  $t1, %hi(0x80000000 | GRUB_PCI_ADDR_MEM_TYPE_64 \
-	              | GRUB_PCI_ADDR_MEM_PREFETCH)
-	addiu  $t1, $t1,  %lo(0x80000000 | GRUB_PCI_ADDR_MEM_TYPE_64 \
-	                      | GRUB_PCI_ADDR_MEM_PREFETCH)
-	sw  $t0, GRUB_PCI_REG_ADDRESS_REG0 ($t1)
-	sw  $zero, GRUB_PCI_REG_ADDRESS_REG1 ($t1)
-
-	/* Find video.  */
-	/* $t4 chooses device in priority encoding.  */
-	/* Resulting value is kept in GRUB_MACHINE_PCI_CONF_CTRL_REG.
-	   This way we don't need to sacrifice a register for it.  */
-retry_sm712:
-	/* We have only one bus (0). Function is 0.  */
-	lui $t0, %hi(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR)
-	lui $t1, %hi(GRUB_MACHINE_PCI_CONFSPACE)
-	lui $t3, %hi(GRUB_SM712_PCIID)
-	addiu $t3, $t3, %lo(GRUB_SM712_PCIID)
-	ori $t4, $zero, 1
-1:
-	andi $t4, $t4, ((1 << GRUB_PCI_NUM_DEVICES) - 1)
-	/* In case of failure try again. SM712 may be slow to come up.  */
-	beql  $t4, $zero, retry_sm712
-	 nop
-	sw   $t4, %lo(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR) ($t0)
-	lw   $t2, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_PCI_REG_PCI_ID) ($t1)
-	bnel  $t2, $t3, 1b
-	 sll $t4, $t4, 1
-
-	/* FIXME: choose address dynamically if needed.   */
-#define SM712_MAP 0x04000000
-	
-	lui  $t2, %hi(SM712_MAP)
-	sw   $t4, %lo(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR) ($t0)
-	sw   $t2, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_PCI_REG_ADDRESS_REG0) ($t1)
-
-	/* Set latency.  */
-	li   $t2, 0x8
-	sw   $t4, %lo(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR) ($t0)
-	sw   $t2, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_PCI_REG_CACHELINE) ($t1)
-
-	/* Enable address spaces.  */
-	li   $t2, 0x7
-	sw   $t4, %lo(GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR) ($t0)
-	sw   $t2, (%lo(GRUB_MACHINE_PCI_CONFSPACE) + GRUB_PCI_REG_COMMAND) ($t1)
-
-	lui   $t3, %hi(GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_SR_INDEX)
-	li   $t2, 0x18
-	sb   $t2, %lo(GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_SR_INDEX)($t3)
-
-	lui   $t3, %hi(GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_SR_DATA)
-	li   $t2, 0x11
-	sb   $t2, %lo(GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_SR_DATA)($t3)
-
-	li   $t2, ((((SM712_MAP & ~GRUB_MACHINE_PCI_WIN_OFFSET_MASK) \
-	             >> GRUB_MACHINE_PCI_WIN_SHIFT)                  \
-	           & GRUB_MACHINE_PCI_WIN_MASK))
-	lui   $t3, %hi(0xbfe00110)
-	addiu   $t3, $t3, %lo(0xbfe00110)
-	sw   $t2, 0 ($t3)
-	li   $t2, (GRUB_MACHINE_PCI_WIN1_ADDR                        \
-	           | (SM712_MAP & GRUB_MACHINE_PCI_WIN_OFFSET_MASK))
-
-	lui   $t3, %hi(GRUB_SM712_REG_BASE)
-	addiu $t3, $t3, %lo(GRUB_SM712_REG_BASE)
-	addu  $t2, $t2, $t3
-	lui   $t0, %hi(init_table - 0x20000000)
-	addiu $t0, $t0, %lo(init_table - 0x20000000)
-	lui   $t1, %hi(init_table_end - 0x20000000)
-	addiu $t1, $t1, %lo(init_table_end - 0x20000000)
-	li    $t5, 0x80
-	addiu $t6, $t2, 0x3c0
-
-table_cont:	
-	lb    $t3, 0($t0)
-	andi  $t5, $t3, 0x80
-	andi  $t3, $t3, 0x7f
-	addu  $t3, $t3, $t6
-	lb    $t4, 1($t0)
-
-	bne   $zero, $t5, 1f
-         addiu $t0, $t0, 2
-        b  2f
-	 sb    $t4, 0($t3)
-1:	
-	lb    $t4, 0($t3)
-2:	
-	bne   $t0, $t1, table_cont
-         nop
-
-	lui   $t3, %hi(0x40c000 - GRUB_SM712_REG_BASE)
-	addiu $t3, $t3, %lo(0x40c000 - GRUB_SM712_REG_BASE)
-	addu  $t1, $t2, $t3 
-	sw    $zero, 0xc ($t1)
-	sw    $zero, 0x40 ($t1)
-	li    $t3, 0x20000
-	sw    $t3, 0x0 ($t1)
-	lui   $t3, %hi(0x1020100)
-	addiu $t3, $t3, %lo(0x1020100)
-	sw    $t3, 0x10 ($t1)
-
-	li    $t4, 0x16
-        sb    $t4, GRUB_VGA_IO_SR_INDEX($t2)
-
-        lb    $t4, GRUB_VGA_IO_SR_DATA($t2)
-
-	b init_end
-	  nop
-init_table:	
-#include "sm712_start.S"
-init_table_end:
-	.align 4
-init_end:	
-#endif

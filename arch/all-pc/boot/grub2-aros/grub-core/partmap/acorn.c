@@ -25,8 +25,8 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-#define LINUX_NATIVE_MAGIC grub_cpu_to_le32 (0xdeafa1de)
-#define LINUX_SWAP_MAGIC   grub_cpu_to_le32 (0xdeafab1e)
+#define LINUX_NATIVE_MAGIC grub_cpu_to_le32_compile_time (0xdeafa1de)
+#define LINUX_SWAP_MAGIC   grub_cpu_to_le32_compile_time (0xdeafab1e)
 #define LINUX_MAP_ENTRIES  (512 / 12)
 
 #define NONADFS_PARTITION_TYPE_LINUX 9
@@ -43,10 +43,10 @@ struct grub_acorn_boot_block
       grub_uint8_t flags;
       grub_uint16_t start_cylinder;
       grub_uint8_t checksum;
-    } __attribute__ ((packed, aligned));
+    } GRUB_PACKED;
     grub_uint8_t bin[0x200];
   };
-} __attribute__ ((packed, aligned));
+} GRUB_PACKED;
 
 struct linux_part
 {
@@ -101,8 +101,8 @@ fail:
 
 static grub_err_t
 acorn_partition_map_iterate (grub_disk_t disk,
-			     int (*hook) (grub_disk_t disk,
-					  const grub_partition_t partition))
+			     grub_partition_iterate_hook_t hook,
+			     void *hook_data)
 {
   struct grub_partition part;
   struct linux_part map[LINUX_MAP_ENTRIES];
@@ -127,7 +127,7 @@ acorn_partition_map_iterate (grub_disk_t disk,
       part.offset = 6;
       part.number = part.index = i;
 
-      if (hook (disk, &part))
+      if (hook (disk, &part, hook_data))
 	return grub_errno;
     }
 

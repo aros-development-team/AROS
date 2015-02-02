@@ -49,15 +49,13 @@ grub_machine_init (void)
     }
 
   /* FIXME: measure this.  */
-  grub_arch_cpuclock = 64000000;
+  grub_arch_cpuclock = 200000000;
 
   modend = grub_modules_get_end ();
   grub_mm_init_region ((void *) modend, grub_arch_memsize
 		       - (modend - GRUB_ARCH_LOWMEMVSTART));
 
   grub_install_get_time_ms (grub_rtc_get_time_ms);
-
-  grub_font_init ();
 
   grub_keylayouts_init ();
   grub_at_keyboard_init ();
@@ -69,12 +67,10 @@ grub_machine_init (void)
   grub_serial_init ();
 
   grub_boot_init ();
-
-  grub_gfxterm_init ();
 }
 
 void
-grub_machine_fini (void)
+grub_machine_fini (int flags __attribute__ ((unused)))
 {
 }
 
@@ -92,10 +88,16 @@ grub_halt (void)
 }
 
 grub_err_t 
-grub_machine_mmap_iterate (grub_memory_hook_t hook)
+grub_machine_mmap_iterate (grub_memory_hook_t hook, void *hook_data)
 {
-  hook (0, grub_arch_memsize, GRUB_MEMORY_AVAILABLE);
+  hook (0, grub_arch_memsize, GRUB_MEMORY_AVAILABLE, hook_data);
   return GRUB_ERR_NONE;
+}
+
+void
+grub_machine_get_bootlocation (char **device __attribute__ ((unused)),
+			       char **path __attribute__ ((unused)))
+{
 }
 
 extern char _end[];

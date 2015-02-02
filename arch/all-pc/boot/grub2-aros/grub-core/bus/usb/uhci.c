@@ -26,6 +26,7 @@
 #include <grub/cpu/io.h>
 #include <grub/time.h>
 #include <grub/cpu/pci.h>
+#include <grub/disk.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -44,12 +45,22 @@ typedef enum
     GRUB_UHCI_REG_USBLEGSUP = 0xc0
   } grub_uhci_reg_t;
 
+enum
+  {
+    GRUB_UHCI_DETECT_CHANGED = (1 << 1),
+    GRUB_UHCI_DETECT_HAVE_DEVICE = 1,
+    GRUB_UHCI_DETECT_LOW_SPEED = (1 << 8)
+  };
+
 /* R/WC legacy support bits */
-#define GRUB_UHCI_LEGSUP_END_A20GATE (1 << 15)
-#define GRUB_UHCI_TRAP_BY_64H_WSTAT  (1 << 11)
-#define GRUB_UHCI_TRAP_BY_64H_RSTAT  (1 << 10)
-#define GRUB_UHCI_TRAP_BY_60H_WSTAT  (1 <<  9)
-#define GRUB_UHCI_TRAP_BY_60H_RSTAT  (1 <<  8)
+enum
+  {
+    GRUB_UHCI_LEGSUP_END_A20GATE = (1 << 15),
+    GRUB_UHCI_TRAP_BY_64H_WSTAT = (1 << 11),
+    GRUB_UHCI_TRAP_BY_64H_RSTAT = (1 << 10),
+    GRUB_UHCI_TRAP_BY_60H_WSTAT = (1 <<  9),
+    GRUB_UHCI_TRAP_BY_60H_RSTAT = (1 <<  8)
+  };
 
 /* Reset all legacy support - clear all R/WC bits and all R/W bits */
 #define GRUB_UHCI_RESET_LEGSUP_SMI ( GRUB_UHCI_LEGSUP_END_A20GATE \
@@ -94,7 +105,7 @@ struct grub_uhci_qh
   /* Queue heads are aligned on 16 bytes, pad so a queue head is 16
      bytes so we can store many in a 4K page.  */
   grub_uint8_t pad[8];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* UHCI Transfer Descriptor.  */
 struct grub_uhci_td
@@ -118,14 +129,14 @@ struct grub_uhci_td
 
   /* 3 additional 32 bits words reserved for the Host Controller Driver.  */
   grub_uint32_t data[3];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 typedef volatile struct grub_uhci_td *grub_uhci_td_t;
 typedef volatile struct grub_uhci_qh *grub_uhci_qh_t;
 
 struct grub_uhci
 {
-  int iobase;
+  grub_port_t iobase;
   volatile grub_uint32_t *framelist_virt;
   grub_uint32_t framelist_phys;
   struct grub_pci_dma_chunk *framelist_chunk;
@@ -178,16 +189,12 @@ grub_uhci_writereg32 (struct grub_uhci *u,
   grub_outl (val, u->iobase + reg);
 }
 
-static grub_err_t
-grub_uhci_portstatus (grub_usb_controller_t dev,
-		      unsigned int port, unsigned int enable);
-
-
 /* Iterate over all PCI devices.  Determine if a device is an UHCI
    controller.  If this is the case, initialize it.  */
-static int NESTED_FUNC_ATTR
+static int
 grub_uhci_pci_iter (grub_pci_device_t dev,
-		    grub_pci_id_t pciid __attribute__((unused)))
+		    grub_pci_id_t pciid __attribute__((unused)),
+		    void *data __attribute__ ((unused)))
 {
   grub_uint32_t class_code;
   grub_uint32_t class;
@@ -210,24 +217,31 @@ grub_uhci_pci_iter (grub_pci_device_t dev,
   if (class != 0x0c || subclass != 0x03 || interf != 0x00)
     return 0;
 
-  /* Set bus master - needed for coreboot or broken BIOSes */
-  addr = grub_pci_make_address (dev, GRUB_PCI_REG_COMMAND);
-  grub_pci_write_word(addr,
-    GRUB_PCI_COMMAND_BUS_MASTER | grub_pci_read_word(addr));
-
   /* Determine IO base address.  */
   addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG4);
   base = grub_pci_read (addr);
   /* Stop if there is no IO space base address defined.  */
-  if (! (base & 1))
+  if ((base & GRUB_PCI_ADDR_SPACE_MASK) != GRUB_PCI_ADDR_SPACE_IO)
     return 0;
+
+  if ((base & GRUB_UHCI_IOMASK) == 0)
+    return 0;
+
+  /* Set bus master - needed for coreboot or broken BIOSes */
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_COMMAND);
+  grub_pci_write_word(addr, GRUB_PCI_COMMAND_IO_ENABLED
+		      | GRUB_PCI_COMMAND_BUS_MASTER
+		      | GRUB_PCI_COMMAND_MEM_ENABLED
+		      | grub_pci_read_word (addr));
+
+  grub_dprintf ("uhci", "base = %x\n", base);
 
   /* Allocate memory for the controller and register it.  */
   u = grub_zalloc (sizeof (*u));
   if (! u)
     return 1;
 
-  u->iobase = base & GRUB_UHCI_IOMASK;
+  u->iobase = (base & GRUB_UHCI_IOMASK) + GRUB_MACHINE_PCI_IO_BASE;
 
   /* Reset PIRQ and SMI */
   addr = grub_pci_make_address (dev, GRUB_UHCI_REG_USBLEGSUP);       
@@ -351,7 +365,7 @@ grub_uhci_pci_iter (grub_pci_device_t dev,
 static void
 grub_uhci_inithw (void)
 {
-  grub_pci_iterate (grub_uhci_pci_iter);
+  grub_pci_iterate (grub_uhci_pci_iter, NULL);
 }
 
 static grub_uhci_td_t
@@ -391,6 +405,7 @@ grub_free_queue (struct grub_uhci *u, grub_uhci_qh_t qh, grub_uhci_td_t td,
     {
       grub_uhci_td_t tdprev;
 
+      grub_dprintf ("uhci", "Freeing %p\n", td);
       /* Check state of TD and possibly set last_trans */
       if (transfer && (td->linkptr & 1))
         transfer->last_trans = i;
@@ -399,7 +414,10 @@ grub_free_queue (struct grub_uhci *u, grub_uhci_qh_t qh, grub_uhci_td_t td,
       
       /* Unlink the queue.  */
       tdprev = td;
-      td = grub_dma_phys2virt (td->linkptr2, u->td_chunk);
+      if (!td->linkptr2)
+	td = 0;
+      else
+	td = grub_dma_phys2virt (td->linkptr2, u->td_chunk);
 
       /* Free the TD.  */
       grub_free_td (u, tdprev);
@@ -582,10 +600,17 @@ grub_uhci_check_transfer (grub_usb_controller_t dev,
 
   *actual = 0;
 
-  errtd = grub_dma_phys2virt (cdata->qh->elinkptr & ~0x0f, u->qh_chunk);
+  if (cdata->qh->elinkptr & ~0x0f)
+    errtd = grub_dma_phys2virt (cdata->qh->elinkptr & ~0x0f, u->qh_chunk);
+  else
+    errtd = 0;
   
-  grub_dprintf ("uhci", ">t status=0x%02x data=0x%02x td=%p\n",
-		errtd->ctrl_status, errtd->buffer & (~15), errtd);
+  if (errtd)
+    {
+      grub_dprintf ("uhci", ">t status=0x%02x data=0x%02x td=%p, %x\n",
+		    errtd->ctrl_status, errtd->buffer & (~15), errtd,
+		    cdata->qh->elinkptr);
+    }
 
   /* Check if the transaction completed.  */
   if (cdata->qh->elinkptr & 1)
@@ -600,9 +625,7 @@ grub_uhci_check_transfer (grub_usb_controller_t dev,
       return GRUB_USB_ERR_NONE;
     }
 
-  grub_dprintf ("uhci", "t status=0x%02x\n", errtd->ctrl_status);
-
-  if (!(errtd->ctrl_status & (1 << 23)))
+  if (errtd && !(errtd->ctrl_status & (1 << 23)))
     {
       grub_usb_err_t err = GRUB_USB_ERR_NONE;
 
@@ -671,7 +694,7 @@ grub_uhci_cancel_transfer (grub_usb_controller_t dev,
 }
 
 static int
-grub_uhci_iterate (int (*hook) (grub_usb_controller_t dev))
+grub_uhci_iterate (grub_usb_controller_iterate_hook_t hook, void *hook_data)
 {
   struct grub_uhci *u;
   struct grub_usb_controller dev;
@@ -679,14 +702,14 @@ grub_uhci_iterate (int (*hook) (grub_usb_controller_t dev))
   for (u = uhci; u; u = u->next)
     {
       dev.data = u;
-      if (hook (&dev))
+      if (hook (&dev, hook_data))
 	return 1;
     }
 
   return 0;
 }
 
-static grub_err_t
+static grub_usb_err_t
 grub_uhci_portstatus (grub_usb_controller_t dev,
 		      unsigned int port, unsigned int enable)
 {
@@ -704,8 +727,7 @@ grub_uhci_portstatus (grub_usb_controller_t dev,
   else if (port == 1)
     reg = GRUB_UHCI_REG_PORTSC2;
   else
-    return grub_error (GRUB_ERR_OUT_OF_RANGE,
-		       "UHCI Root Hub port does not exist");
+    return GRUB_USB_ERR_INTERNAL;
 
   status = grub_uhci_readreg16 (u, reg);
   grub_dprintf ("uhci", "detect=0x%02x\n", status);
@@ -718,11 +740,11 @@ grub_uhci_portstatus (grub_usb_controller_t dev,
       endtime = grub_get_time_ms () + 1000;
       while ((grub_uhci_readreg16 (u, reg) & (1 << 2)))
         if (grub_get_time_ms () > endtime)
-          return grub_error (GRUB_ERR_IO, "UHCI Timed out - disable");
+          return GRUB_USB_ERR_TIMEOUT;
 
       status = grub_uhci_readreg16 (u, reg);
       grub_dprintf ("uhci", ">3detect=0x%02x\n", status);
-      return GRUB_ERR_NONE;
+      return GRUB_USB_ERR_NONE;
     }
     
   /* Reset the port.  */
@@ -753,7 +775,7 @@ grub_uhci_portstatus (grub_usb_controller_t dev,
   endtime = grub_get_time_ms () + 1000;
   while (! ((status = grub_uhci_readreg16 (u, reg)) & (1 << 2)))
     if (grub_get_time_ms () > endtime)
-      return grub_error (GRUB_ERR_IO, "UHCI Timed out - enable");
+      return GRUB_USB_ERR_TIMEOUT;
 
   /* Reset recovery time */
   grub_millisleep (10);
@@ -763,7 +785,7 @@ grub_uhci_portstatus (grub_usb_controller_t dev,
   grub_dprintf ("uhci", ">3detect=0x%02x\n", status);
 
 
-  return GRUB_ERR_NONE;
+  return GRUB_USB_ERR_NONE;
 }
 
 static grub_usb_speed_t
@@ -787,7 +809,7 @@ grub_uhci_detect_dev (grub_usb_controller_t dev, int port, int *changed)
   grub_dprintf ("uhci", "detect=0x%02x port=%d\n", status, port);
 
   /* Connect Status Change bit - it detects change of connection */
-  if (status & (1 << 1))
+  if (status & GRUB_UHCI_DETECT_CHANGED)
     {
       *changed = 1;
       /* Reset bit Connect Status Change */
@@ -797,9 +819,9 @@ grub_uhci_detect_dev (grub_usb_controller_t dev, int port, int *changed)
   else
     *changed = 0;
     
-  if (! (status & 1))
+  if (! (status & GRUB_UHCI_DETECT_HAVE_DEVICE))
     return GRUB_USB_SPEED_NONE;
-  else if (status & (1 << 8))
+  else if (status & GRUB_UHCI_DETECT_LOW_SPEED)
     return GRUB_USB_SPEED_LOW;
   else
     return GRUB_USB_SPEED_FULL;
@@ -822,11 +844,15 @@ static struct grub_usb_controller_dev usb_controller =
   .cancel_transfer = grub_uhci_cancel_transfer,
   .hubports = grub_uhci_hubports,
   .portstatus = grub_uhci_portstatus,
-  .detect_dev = grub_uhci_detect_dev
+  .detect_dev = grub_uhci_detect_dev,
+  /* estimated max. count of TDs for one bulk transfer */
+  .max_bulk_tds = N_TD * 3 / 4
 };
 
 GRUB_MOD_INIT(uhci)
 {
+  grub_stop_disk_firmware ();
+
   grub_uhci_inithw ();
   grub_usb_controller_dev_register (&usb_controller);
   grub_dprintf ("uhci", "registered\n");

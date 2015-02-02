@@ -87,7 +87,8 @@ failure_append_vtext(grub_test_failure_t failure, const char *fmt, va_list args)
       char *oldmsg = failure->message;
 
       failure->message = grub_xasprintf("%s%s", oldmsg, msg);
-      grub_free(oldmsg);
+      grub_free (oldmsg);
+      grub_free (msg);
     }
   else
     {
@@ -225,10 +226,14 @@ grub_test_run (grub_test_t test)
 		 failure->line, (failure->message ? : "<no message>"));
 
   if (!failure_list)
-    grub_printf ("%s: PASS\n", test->name);
+    {
+      grub_printf ("%s: PASS\n", test->name);
+      return GRUB_ERR_NONE;
+    }
   else
-    grub_printf ("%s: FAIL\n", test->name);
-
-  free_failures ();
-  return GRUB_ERR_NONE;
+    {
+      grub_printf ("%s: FAIL\n", test->name);
+      free_failures ();
+      return GRUB_ERR_TEST_FAILURE;
+    }
 }

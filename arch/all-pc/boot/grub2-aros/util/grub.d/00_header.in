@@ -17,8 +17,6 @@ set -e
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-transform="@program_transform_name@"
-
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 datarootdir="@datarootdir@"
@@ -53,13 +51,25 @@ if [ "x$GRUB_BUTTON_CMOS_ADDRESS" != "x" ]; then
     cat <<EOF
 if cmostest $GRUB_BUTTON_CMOS_ADDRESS ; then
    set default="${GRUB_DEFAULT_BUTTON}"
+elif [ "\${next_entry}" ] ; then
+   set default="\${next_entry}"
+   set next_entry=
+   save_env next_entry
+   set boot_once=true
 else
    set default="${GRUB_DEFAULT}"
 fi
 EOF
 else
     cat <<EOF
-set default="${GRUB_DEFAULT}"
+if [ "\${next_entry}" ] ; then
+   set default="\${next_entry}"
+   set next_entry=
+   save_env next_entry
+   set boot_once=true
+else
+   set default="${GRUB_DEFAULT}"
+fi
 EOF
 fi
 cat <<EOF
@@ -181,7 +191,7 @@ EOF
 EOF
 
 # Gettext variables and module
-if [ "x${LANG}" != "xC" ] ; then
+if [ "x${LANG}" != "xC" ] &&  [ "x${LANG}" != "x" ]; then
   cat << EOF
   set locale_dir=\$prefix/locale
   set lang=${grub_lang}
@@ -272,34 +282,62 @@ fi
 
 make_timeout ()
 {
-    if [ "x${1}" != "x" ] ; then
+    if [ "x${3}" != "x" ] ; then
+	timeout="${2}"
+	style="${3}"
+    elif [ "x${1}" != "x" ] && [ "x${1}" != "x0" ] ; then
+	# Handle the deprecated GRUB_HIDDEN_TIMEOUT scheme.
+	timeout="${1}"
+	if [ "x${2}" != "x0" ] ; then
+	    grub_warn "$(gettext "Setting GRUB_TIMEOUT to a non-zero value when GRUB_HIDDEN_TIMEOUT is set is no longer supported.")"
+	fi
 	if [ "x${GRUB_HIDDEN_TIMEOUT_QUIET}" = "xtrue" ] ; then
+	    style="hidden"
 	    verbose=
 	else
+	    style="countdown"
 	    verbose=" --verbose"
 	fi
+    else
+	# No hidden timeout, so treat as GRUB_TIMEOUT_STYLE=menu
+	timeout="${2}"
+	style="menu"
+    fi
+    cat << EOF
+if [ x\$feature_timeout_style = xy ] ; then
+  set timeout_style=${style}
+  set timeout=${timeout}
+EOF
+    if [ "x${style}" = "xmenu" ] ; then
 	cat << EOF
-if sleep$verbose --interruptible ${1} ; then
-  set timeout=${2}
-fi
+# Fallback normal timeout code in case the timeout_style feature is
+# unavailable.
+else
+  set timeout=${timeout}
 EOF
     else
 	cat << EOF
-set timeout=${2}
+# Fallback hidden-timeout code in case the timeout_style feature is
+# unavailable.
+elif sleep${verbose} --interruptible ${timeout} ; then
+  set timeout=0
 EOF
     fi
+    cat << EOF
+fi
+EOF
 }
 
 if [ "x$GRUB_BUTTON_CMOS_ADDRESS" != "x" ]; then
     cat <<EOF
 if cmostest $GRUB_BUTTON_CMOS_ADDRESS ; then
 EOF
-make_timeout "${GRUB_HIDDEN_TIMEOUT_BUTTON}" "${GRUB_TIMEOUT_BUTTON}"
+make_timeout "${GRUB_HIDDEN_TIMEOUT_BUTTON}" "${GRUB_TIMEOUT_BUTTON}" "${GRUB_TIMEOUT_STYLE_BUTTON}"
 echo else
-make_timeout "${GRUB_HIDDEN_TIMEOUT}" "${GRUB_TIMEOUT}"
+make_timeout "${GRUB_HIDDEN_TIMEOUT}" "${GRUB_TIMEOUT}" "${GRUB_TIMEOUT_STYLE}"
 echo fi
 else
-make_timeout "${GRUB_HIDDEN_TIMEOUT}" "${GRUB_TIMEOUT}"
+make_timeout "${GRUB_HIDDEN_TIMEOUT}" "${GRUB_TIMEOUT}" "${GRUB_TIMEOUT_STYLE}"
 fi
 
 if [ "x$GRUB_BUTTON_CMOS_ADDRESS" != "x" ] && [ "x$GRUB_BUTTON_CMOS_CLEAN" = "xyes" ]; then

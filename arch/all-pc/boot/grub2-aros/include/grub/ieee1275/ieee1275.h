@@ -24,13 +24,6 @@
 #include <grub/types.h>
 #include <grub/machine/ieee1275.h>
 
-struct grub_ieee1275_devalias
-{
-  char *name;
-  char *path;
-  char *type;
-};
-
 struct grub_ieee1275_mem_region
 {
   unsigned int start;
@@ -64,14 +57,41 @@ struct grub_ieee1275_common_hdr
 typedef grub_uint32_t grub_ieee1275_ihandle_t;
 typedef grub_uint32_t grub_ieee1275_phandle_t;
 
+#define GRUB_IEEE1275_PHANDLE_INVALID  ((grub_ieee1275_phandle_t) -1)
+
+struct grub_ieee1275_devalias
+{
+  char *name;
+  char *path;
+  char *type;
+  char *parent_path;
+  grub_ieee1275_phandle_t phandle;
+  grub_ieee1275_phandle_t parent_dev;
+};
+
 extern void (*EXPORT_VAR(grub_ieee1275_net_config)) (const char *dev,
-						     char **device,
-						     char **path);
+                                                     char **device,
+                                                     char **path,
+                                                     char *bootargs);
 
 /* Maps a device alias to a pathname.  */
 extern grub_ieee1275_phandle_t EXPORT_VAR(grub_ieee1275_chosen);
 extern grub_ieee1275_ihandle_t EXPORT_VAR(grub_ieee1275_mmu);
-extern int (* EXPORT_VAR(grub_ieee1275_entry_fn)) (void *);
+#ifdef __i386__
+#define GRUB_IEEE1275_ENTRY_FN_ATTRIBUTE  __attribute__ ((regparm(3)))
+#else
+#define GRUB_IEEE1275_ENTRY_FN_ATTRIBUTE
+#endif
+
+extern int (* EXPORT_VAR(grub_ieee1275_entry_fn)) (void *) GRUB_IEEE1275_ENTRY_FN_ATTRIBUTE;
+
+/* Static heap, used only if FORCE_CLAIM is set,
+   happens on Open Hack'Ware. Should be in platform-specific
+   header but is used only on PPC anyway.
+*/
+#define GRUB_IEEE1275_STATIC_HEAP_START 0x1000000
+#define GRUB_IEEE1275_STATIC_HEAP_LEN   0x1000000
+
 
 enum grub_ieee1275_flag
 {
@@ -123,7 +143,9 @@ enum grub_ieee1275_flag
 
   GRUB_IEEE1275_FLAG_VIRT_TO_REAL_BROKEN,
 
-  GRUB_IEEE1275_FLAG_BROKEN_REPEAT
+  GRUB_IEEE1275_FLAG_BROKEN_REPEAT,
+
+  GRUB_IEEE1275_FLAG_CURSORONOFF_ANSI_BROKEN,
 };
 
 extern int EXPORT_FUNC(grub_ieee1275_test_flag) (enum grub_ieee1275_flag flag);
@@ -190,10 +212,6 @@ int EXPORT_FUNC(grub_ieee1275_set_color) (grub_ieee1275_ihandle_t ihandle,
 int EXPORT_FUNC(grub_ieee1275_milliseconds) (grub_uint32_t *msecs);
 
 
-int EXPORT_FUNC(grub_devalias_iterate)
-     (int (*hook) (struct grub_ieee1275_devalias *alias));
-int EXPORT_FUNC(grub_children_iterate) (const char *devpath,
-     int (*hook) (struct grub_ieee1275_devalias *alias));
 grub_err_t EXPORT_FUNC(grub_claimmap) (grub_addr_t addr, grub_size_t size);
 
 int
@@ -208,5 +226,19 @@ int EXPORT_FUNC(grub_ieee1275_devices_iterate) (int (*hook)
 char *EXPORT_FUNC(grub_ieee1275_get_aliasdevname) (const char *path);
 char *EXPORT_FUNC(grub_ieee1275_canonicalise_devname) (const char *path);
 char *EXPORT_FUNC(grub_ieee1275_get_device_type) (const char *path);
+char *EXPORT_FUNC(grub_ieee1275_get_devname) (const char *path);
+
+void EXPORT_FUNC(grub_ieee1275_devalias_init_iterator) (struct grub_ieee1275_devalias *alias);
+void EXPORT_FUNC(grub_ieee1275_devalias_free) (struct grub_ieee1275_devalias *alias);
+int EXPORT_FUNC(grub_ieee1275_devalias_next) (struct grub_ieee1275_devalias *alias);
+void EXPORT_FUNC(grub_ieee1275_children_peer) (struct grub_ieee1275_devalias *alias);
+void EXPORT_FUNC(grub_ieee1275_children_first) (const char *devpath,
+						struct grub_ieee1275_devalias *alias);
+
+#define FOR_IEEE1275_DEVALIASES(alias) for (grub_ieee1275_devalias_init_iterator (&(alias)); grub_ieee1275_devalias_next (&(alias));)
+
+#define FOR_IEEE1275_DEVCHILDREN(devpath, alias) for (grub_ieee1275_children_first ((devpath), &(alias)); \
+						      (alias).name;	\
+						      grub_ieee1275_children_peer (&(alias)))
 
 #endif /* ! GRUB_IEEE1275_HEADER */

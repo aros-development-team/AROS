@@ -16,7 +16,7 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/i386/pc/memory.h>
+#include <grub/machine/memory.h>
 
 /*
  * Note: These functions defined in this file may be called from C.
@@ -195,8 +195,6 @@ protcseg:
  *  You should have received a copy of the GNU General Public License
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <grub/i386/pc/memory.h>
 
 prot_to_real:
 	/* just in case, set GDT */

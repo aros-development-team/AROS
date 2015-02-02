@@ -210,26 +210,6 @@ grub_video_bitmap_load (struct grub_video_bitmap **bitmap,
 			" unsupported format"), filename);
 }
 
-/* Return bitmap width.  */
-unsigned int
-grub_video_bitmap_get_width (struct grub_video_bitmap *bitmap)
-{
-  if (!bitmap)
-    return 0;
-
-  return bitmap->mode_info.width;
-}
-
-/* Return bitmap height.  */
-unsigned int
-grub_video_bitmap_get_height (struct grub_video_bitmap *bitmap)
-{
-  if (!bitmap)
-    return 0;
-
-  return bitmap->mode_info.height;
-}
-
 /* Return mode info for bitmap.  */
 void grub_video_bitmap_get_mode_info (struct grub_video_bitmap *bitmap,
                                       struct grub_video_mode_info *mode_info)

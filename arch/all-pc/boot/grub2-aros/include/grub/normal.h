@@ -48,11 +48,25 @@ extern int grub_normal_exit_level;
 /* Defined in `main.c'.  */
 void grub_enter_normal_mode (const char *config);
 void grub_normal_execute (const char *config, int nested, int batch);
-void grub_menu_init_page (int nested, int edit, int *num_entries,
+struct grub_term_screen_geometry
+{
+  /* The number of entries shown at a time.  */
+  int num_entries;
+  int first_entry_y;
+  int first_entry_x;
+  int entry_width;
+  int timeout_y;
+  int timeout_lines;
+  int border;
+  int right_margin;
+};
+
+void grub_menu_init_page (int nested, int edit,
+			  struct grub_term_screen_geometry *geo,
 			  struct grub_term_output *term);
-void grub_normal_init_page (struct grub_term_output *term);
+void grub_normal_init_page (struct grub_term_output *term, int y);
 char *grub_file_getline (grub_file_t file);
-void grub_cmdline_run (int nested);
+void grub_cmdline_run (int nested, int force_auth);
 
 /* Defined in `cmdline.c'.  */
 char *grub_cmdline_get (const char *prompt);
@@ -77,14 +91,22 @@ grub_print_ucs4 (const grub_uint32_t * str,
 		 const grub_uint32_t * last_position,
 		 int margin_left, int margin_right,
 		 struct grub_term_output *term);
+
+void
+grub_print_ucs4_menu (const grub_uint32_t * str,
+		      const grub_uint32_t * last_position,
+		      int margin_left, int margin_right,
+		      struct grub_term_output *term,
+		      int skip_lines, int max_lines, grub_uint32_t contchar,
+		      struct grub_term_pos *pos);
 int
 grub_ucs4_count_lines (const grub_uint32_t * str,
 		       const grub_uint32_t * last_position,
 		       int margin_left, int margin_right,
 		       struct grub_term_output *term);
-grub_ssize_t grub_getstringwidth (grub_uint32_t * str,
-				  const grub_uint32_t * last_position,
-				  struct grub_term_output *term);
+grub_size_t grub_getstringwidth (grub_uint32_t * str,
+				 const grub_uint32_t * last_position,
+				 struct grub_term_output *term);
 void grub_print_message_indented (const char *msg, int margin_left,
 				  int margin_right,
 				  struct grub_term_output *term);
@@ -133,10 +155,23 @@ void grub_normal_free_menu (grub_menu_t menu);
 void grub_normal_auth_init (void);
 void grub_normal_auth_fini (void);
 
+void
+grub_xnputs (const char *str, grub_size_t msg_len);
+
 grub_command_t
 grub_dyncmd_get_cmd (grub_command_t cmd);
 
 void
 grub_gettext_reread_prefix (const char *val);
+
+enum grub_human_size_type
+  {
+    GRUB_HUMAN_SIZE_NORMAL,
+    GRUB_HUMAN_SIZE_SHORT,
+    GRUB_HUMAN_SIZE_SPEED,
+  };
+
+const char *
+grub_get_human_size (grub_uint64_t size, enum grub_human_size_type type);
 
 #endif /* ! GRUB_NORMAL_HEADER */

@@ -64,7 +64,7 @@ struct grub_freebsd_bootinfo
   grub_uint32_t kern_end;
   grub_uint32_t environment;
   grub_uint32_t tags;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct freebsd_tag_header
 {

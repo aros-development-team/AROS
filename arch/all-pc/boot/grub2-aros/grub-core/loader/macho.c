@@ -23,12 +23,14 @@
 
 #include <grub/err.h>
 #include <grub/macho.h>
-#include <grub/cpu/macho.h>
 #include <grub/machoload.h>
 #include <grub/file.h>
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/i18n.h>
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 grub_err_t
 grub_macho_close (grub_macho_t macho)
@@ -85,7 +87,7 @@ grub_macho_file (grub_file_t file, const char *filename, int is_64bit)
     }
 
   /* Is it a fat file? */
-  if (filestart.fat.magic == grub_be_to_cpu32 (GRUB_MACHO_FAT_MAGIC))
+  if (filestart.fat.magic == grub_cpu_to_be32_compile_time (GRUB_MACHO_FAT_MAGIC))
     {
       struct grub_macho_fat_arch *archs;
       int i, narchs;
@@ -111,15 +113,17 @@ grub_macho_file (grub_file_t file, const char *filename, int is_64bit)
 
       for (i = 0; i < narchs; i++)
 	{
-	  if (GRUB_MACHO_CPUTYPE_IS_HOST32
-	      (grub_be_to_cpu32 (archs[i].cputype)) && !is_64bit)
+	  if ((archs[i].cputype
+	       == grub_cpu_to_be32_compile_time (GRUB_MACHO_CPUTYPE_IA32))
+	      && !is_64bit)
 	    {
 	      macho->offset32 = grub_be_to_cpu32 (archs[i].offset);
 	      macho->end32 = grub_be_to_cpu32 (archs[i].offset)
 		+ grub_be_to_cpu32 (archs[i].size);
 	    }
-	  if (GRUB_MACHO_CPUTYPE_IS_HOST64
-	      (grub_be_to_cpu32 (archs[i].cputype)) && is_64bit)
+	  if ((archs[i].cputype
+	       == grub_cpu_to_be32_compile_time (GRUB_MACHO_CPUTYPE_AMD64))
+	      && is_64bit)
 	    {
 	      macho->offset64 = grub_be_to_cpu32 (archs[i].offset);
 	      macho->end64 = grub_be_to_cpu32 (archs[i].offset)

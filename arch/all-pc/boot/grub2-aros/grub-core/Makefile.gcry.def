@@ -44,8 +44,57 @@ module = {
 };
 
 module = {
+  name = gcry_dsa;
+  common = lib/libgcrypt-grub/cipher/dsa.c;
+  cflags = '$(CFLAGS_GCRY)';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
+  name = gcry_idea;
+  common = lib/libgcrypt-grub/cipher/idea.c;
+  cflags = '$(CFLAGS_GCRY)';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
+  name = gcry_md4;
+  common = lib/libgcrypt-grub/cipher/md4.c;
+  cflags = '$(CFLAGS_GCRY) -Wno-cast-align';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
+  name = gcry_md5;
+  common = lib/libgcrypt-grub/cipher/md5.c;
+  cflags = '$(CFLAGS_GCRY) -Wno-cast-align';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
   name = gcry_rfc2268;
   common = lib/libgcrypt-grub/cipher/rfc2268.c;
+  cflags = '$(CFLAGS_GCRY)';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
+  name = gcry_rijndael;
+  common = lib/libgcrypt-grub/cipher/rijndael.c;
+  cflags = '$(CFLAGS_GCRY) -Wno-cast-align';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
+  name = gcry_rmd160;
+  common = lib/libgcrypt-grub/cipher/rmd160.c;
+  cflags = '$(CFLAGS_GCRY) -Wno-cast-align';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
+  name = gcry_rsa;
+  common = lib/libgcrypt-grub/cipher/rsa.c;
   cflags = '$(CFLAGS_GCRY)';
   cppflags = '$(CPPFLAGS_GCRY)';
 };
@@ -58,30 +107,37 @@ module = {
 };
 
 module = {
+  name = gcry_serpent;
+  common = lib/libgcrypt-grub/cipher/serpent.c;
+  cflags = '$(CFLAGS_GCRY)';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
   name = gcry_sha1;
   common = lib/libgcrypt-grub/cipher/sha1.c;
-  cflags = '$(CFLAGS_GCRY) -Wno-cast-align -Wno-strict-aliasing';
+  cflags = '$(CFLAGS_GCRY) -Wno-cast-align';
   cppflags = '$(CPPFLAGS_GCRY)';
 };
 
 module = {
   name = gcry_sha256;
   common = lib/libgcrypt-grub/cipher/sha256.c;
-  cflags = '$(CFLAGS_GCRY) -Wno-cast-align -Wno-strict-aliasing';
+  cflags = '$(CFLAGS_GCRY) -Wno-cast-align';
   cppflags = '$(CPPFLAGS_GCRY)';
 };
 
 module = {
   name = gcry_sha512;
   common = lib/libgcrypt-grub/cipher/sha512.c;
-  cflags = '$(CFLAGS_GCRY) -Wno-cast-align -Wno-strict-aliasing';
+  cflags = '$(CFLAGS_GCRY) -Wno-cast-align';
   cppflags = '$(CPPFLAGS_GCRY)';
 };
 
 module = {
   name = gcry_tiger;
   common = lib/libgcrypt-grub/cipher/tiger.c;
-  cflags = '$(CFLAGS_GCRY) -Wno-cast-align -Wno-strict-aliasing';
+  cflags = '$(CFLAGS_GCRY) -Wno-cast-align';
   cppflags = '$(CPPFLAGS_GCRY)';
 };
 
@@ -95,41 +151,6 @@ module = {
 module = {
   name = gcry_whirlpool;
   common = lib/libgcrypt-grub/cipher/whirlpool.c;
-  cflags = '$(CFLAGS_GCRY)';
-  cppflags = '$(CPPFLAGS_GCRY)';
-};
-
-module = {
-  name = gcry_md4;
-  common = lib/libgcrypt-grub/cipher/md4.c;
-  cflags = '$(CFLAGS_GCRY) -Wno-cast-align -Wno-strict-aliasing';
-  cppflags = '$(CPPFLAGS_GCRY)';
-};
-
-module = {
-  name = gcry_md5;
-  common = lib/libgcrypt-grub/cipher/md5.c;
-  cflags = '$(CFLAGS_GCRY) -Wno-cast-align -Wno-strict-aliasing';
-  cppflags = '$(CPPFLAGS_GCRY)';
-};
-
-module = {
-  name = gcry_rmd160;
-  common = lib/libgcrypt-grub/cipher/rmd160.c;
-  cflags = '$(CFLAGS_GCRY) -Wno-cast-align -Wno-strict-aliasing';
-  cppflags = '$(CPPFLAGS_GCRY)';
-};
-
-module = {
-  name = gcry_rijndael;
-  common = lib/libgcrypt-grub/cipher/rijndael.c;
-  cflags = '$(CFLAGS_GCRY) -Wno-cast-align -Wno-strict-aliasing';
-  cppflags = '$(CPPFLAGS_GCRY)';
-};
-
-module = {
-  name = gcry_serpent;
-  common = lib/libgcrypt-grub/cipher/serpent.c;
   cflags = '$(CFLAGS_GCRY)';
   cppflags = '$(CPPFLAGS_GCRY)';
 };

@@ -161,6 +161,9 @@ struct grub_lexer_param
      expected, but not available.  */
   grub_reader_getline_t getline;
 
+  /* Caller-supplied data passed to `getline'.  */
+  void *getline_data;
+
   /* A reference counter.  If this is >0 it means that the parser
      expects more tokens and `getline' should be called to fetch more.
      Otherwise the lexer can stop processing if the current buffer is
@@ -287,14 +290,16 @@ grub_script_arg_add (struct grub_parser_param *state,
 		     grub_script_arg_type_t type, char *str);
 
 struct grub_script *grub_script_parse (char *script,
-				       grub_reader_getline_t getline);
+				       grub_reader_getline_t getline_func,
+				       void *getline_func_data);
 void grub_script_free (struct grub_script *script);
 struct grub_script *grub_script_create (struct grub_script_cmd *cmd,
 					struct grub_script_mem *mem);
 
 struct grub_lexer_param *grub_script_lexer_init (struct grub_parser_param *parser,
 						 char *script,
-						 grub_reader_getline_t getline);
+						 grub_reader_getline_t getline_func,
+						 void *getline_func_data);
 void grub_script_lexer_fini (struct grub_lexer_param *);
 void grub_script_lexer_ref (struct grub_lexer_param *);
 void grub_script_lexer_deref (struct grub_lexer_param *);
@@ -324,7 +329,8 @@ grub_err_t grub_script_execute_cmdwhile (struct grub_script_cmd *cmd);
 
 /* Execute any GRUB pre-parsed command or script.  */
 grub_err_t grub_script_execute (struct grub_script *script);
-grub_err_t grub_script_execute_sourcecode (const char *source, int argc, char **args);
+grub_err_t grub_script_execute_sourcecode (const char *source);
+grub_err_t grub_script_execute_new_scope (const char *source, int argc, char **args);
 
 /* Break command for loops.  */
 grub_err_t grub_script_break (grub_command_t cmd, int argc, char *argv[]);
@@ -380,7 +386,9 @@ char **
 grub_script_execute_arglist_to_argv (struct grub_script_arglist *arglist, int *count);
 
 grub_err_t
-grub_normal_parse_line (char *line, grub_reader_getline_t getline);
+grub_normal_parse_line (char *line,
+			grub_reader_getline_t getline_func,
+			void *getline_func_data);
 
 static inline struct grub_script *
 grub_script_ref (struct grub_script *script)

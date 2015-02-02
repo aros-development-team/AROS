@@ -53,7 +53,6 @@
 #include <string.h>
 
 #include "g10lib.h"
-#include "memory.h"
 #include "cipher.h"
 
 #include "bithelp.h"
@@ -199,7 +198,7 @@ md4_write ( void *context, const void *inbuf_arg, size_t inlen)
   MD4_CONTEXT *hd = context;
 
   if( hd->count == 64 ) /* flush the buffer */
-    { 
+    {
       transform( hd, hd->buf );
       _gcry_burn_stack (80+6*sizeof(void*));
       hd->count = 0;
@@ -260,15 +259,15 @@ md4_final( void *context )
   lsb <<= 3;
   msb <<= 3;
   msb |= t >> 29;
-  
+
   if( hd->count < 56 )  /* enough room */
     {
       hd->buf[hd->count++] = 0x80; /* pad */
       while( hd->count < 56 )
         hd->buf[hd->count++] = 0;  /* pad */
     }
-  else /* need one extra block */ 
-    { 
+  else /* need one extra block */
+    {
       hd->buf[hd->count++] = 0x80; /* pad character */
       while( hd->count < 64 )
         hd->buf[hd->count++] = 0;
@@ -326,4 +325,3 @@ gcry_md_spec_t _gcry_digest_spec_md4 =
     md4_init, md4_write, md4_final, md4_read,
     sizeof (MD4_CONTEXT)
   };
-

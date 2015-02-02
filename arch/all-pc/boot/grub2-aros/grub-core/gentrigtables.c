@@ -40,7 +40,7 @@ main (int argc __attribute__ ((unused)),
   printf ("GRUB_MOD_DUAL_LICENSE (\"Public Domain\");");
 
 #define TAB(op) \
-  printf ("grub_int16_t grub_trig_" #op "tab[] =\n{"); \
+  printf ("const grub_int16_t grub_trig_" #op "tab[] =\n{"); \
   for (i = 0; i < GRUB_TRIG_ANGLE_MAX; i++) \
     { \
       double x = i * 2 * M_PI / GRUB_TRIG_ANGLE_MAX; \

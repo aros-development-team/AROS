@@ -1,7 +1,5 @@
 #!/bin/sh
 
-transform="@program_transform_name@"
-
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 bindir="@bindir@"
@@ -11,7 +9,7 @@ if [ "x$pkgdatadir" = x ]; then
     pkgdatadir="${datadir}/@PACKAGE@"
 fi
 
-grub_mklayout="${bindir}/`echo grub-mklayout | sed ${transform}`"
+grub_mklayout="${bindir}/@grub_mklayout@"
 
 ckbcomp_options=""
 

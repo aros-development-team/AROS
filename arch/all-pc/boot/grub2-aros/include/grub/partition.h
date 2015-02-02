@@ -33,6 +33,10 @@ typedef enum
 } grub_embed_type_t;
 #endif
 
+typedef int (*grub_partition_iterate_hook_t) (struct grub_disk *disk,
+					      const grub_partition_t partition,
+					      void *data);
+
 /* Partition map type.  */
 struct grub_partition_map
 {
@@ -45,8 +49,7 @@ struct grub_partition_map
 
   /* Call HOOK with each partition, until HOOK returns non-zero.  */
   grub_err_t (*iterate) (struct grub_disk *disk,
-			 int (*hook) (struct grub_disk *disk,
-				      const grub_partition_t partition));
+			 grub_partition_iterate_hook_t hook, void *hook_data);
 #ifdef GRUB_UTIL
   /* Determine sectors available for embedding.  */
   grub_err_t (*embed) (struct grub_disk *disk, unsigned int *nsectors,
@@ -89,8 +92,8 @@ struct grub_partition
 grub_partition_t EXPORT_FUNC(grub_partition_probe) (struct grub_disk *disk,
 						    const char *str);
 int EXPORT_FUNC(grub_partition_iterate) (struct grub_disk *disk,
-					 int (*hook) (struct grub_disk *disk,
-						      const grub_partition_t partition));
+					 grub_partition_iterate_hook_t hook,
+					 void *hook_data);
 char *EXPORT_FUNC(grub_partition_get_name) (const grub_partition_t partition);
 
 

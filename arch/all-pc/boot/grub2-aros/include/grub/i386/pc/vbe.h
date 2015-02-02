@@ -84,7 +84,7 @@ struct grub_vbe_info_block
   grub_uint8_t reserved[222];
 
   grub_uint8_t oem_data[256];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_vbe_mode_info_block
 {
@@ -147,7 +147,7 @@ struct grub_vbe_mode_info_block
      that doesn't make structure to be 256 bytes.  So additional one is
      added here.  */
   grub_uint8_t reserved4[189 + 1];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_vbe_crtc_info_block
 {
@@ -161,7 +161,7 @@ struct grub_vbe_crtc_info_block
   grub_uint32_t pixel_clock;
   grub_uint16_t refresh_rate;
   grub_uint8_t reserved[40];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_vbe_palette_data
 {
@@ -169,7 +169,7 @@ struct grub_vbe_palette_data
   grub_uint8_t green;
   grub_uint8_t red;
   grub_uint8_t alignment;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_vbe_flat_panel_info
 {
@@ -184,7 +184,7 @@ struct grub_vbe_flat_panel_info
   grub_vbe_farptr_t reserved_offscreen_mem_ptr;
 
   grub_uint8_t reserved[14];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* Prototypes for helper functions.  */
 /* Call VESA BIOS 0x4f00 to get VBE Controller Information, return status.  */

@@ -21,6 +21,10 @@
 
 #include <grub/charset.h>
 
+#define wint_t grub_posix_wint_t
+#define wchar_t grub_posix_wchar_t
+#define mbstate_t grub_posix_mbstate_t
+
 /* UCS-4.  */
 typedef grub_int32_t wint_t;
 enum

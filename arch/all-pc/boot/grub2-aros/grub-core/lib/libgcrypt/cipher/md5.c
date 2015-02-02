@@ -20,8 +20,8 @@
  *
  * According to the definition of MD5 in RFC 1321 from April 1992.
  * NOTE: This is *not* the same file as the one from glibc.
- * Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995. 
- * heavily modified for GnuPG by Werner Koch <wk@gnupg.org> 
+ * Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
+ * heavily modified for GnuPG by Werner Koch <wk@gnupg.org>
  */
 
 /* Test values:
@@ -37,7 +37,6 @@
 #include <string.h>
 
 #include "g10lib.h"
-#include "memory.h"
 #include "cipher.h"
 
 #include "bithelp.h"
@@ -88,9 +87,9 @@ transform ( MD5_CONTEXT *ctx, const unsigned char *data )
   register u32 C = ctx->C;
   register u32 D = ctx->D;
   u32 *cwp = correct_words;
-    
+
 #ifdef WORDS_BIGENDIAN
-  { 
+  {
     int i;
     byte *p2;
     const byte *p1;
@@ -222,7 +221,7 @@ md5_write( void *context, const void *inbuf_arg , size_t inlen)
 {
   const unsigned char *inbuf = inbuf_arg;
   MD5_CONTEXT *hd = context;
-  
+
   if( hd->count == 64 )  /* flush the buffer */
     {
       transform( hd, hd->buf );
@@ -243,7 +242,7 @@ md5_write( void *context, const void *inbuf_arg , size_t inlen)
     }
   _gcry_burn_stack (80+6*sizeof(void*));
 
-  while( inlen >= 64 ) 
+  while( inlen >= 64 )
     {
       transform( hd, inbuf );
       hd->count = 0;
@@ -270,7 +269,7 @@ md5_final( void *context)
   MD5_CONTEXT *hd = context;
   u32 t, msb, lsb;
   byte *p;
-  
+
   md5_write(hd, NULL, 0); /* flush */;
 
   t = hd->nblocks;

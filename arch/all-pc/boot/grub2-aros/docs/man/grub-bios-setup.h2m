@@ -1,5 +1,5 @@
 [NAME]
-grub-setup \- set up a device to boot using GRUB
+grub-bios-setup \- set up a device to boot using GRUB
 [SEE ALSO]
 .BR grub-install (8),
 .BR grub-mkimage (1),

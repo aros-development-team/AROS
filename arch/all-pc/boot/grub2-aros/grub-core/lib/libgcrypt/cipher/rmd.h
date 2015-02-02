@@ -22,7 +22,7 @@
 
 
 /* We need this here because random.c must have direct access. */
-typedef struct 
+typedef struct
 {
   u32  h0,h1,h2,h3,h4;
   u32  nblocks;
@@ -34,4 +34,3 @@ void _gcry_rmd160_init ( void *context );
 void _gcry_rmd160_mixblock ( RMD160_CONTEXT *hd, void *blockof64byte );
 
 #endif /*G10_RMD_H*/
-

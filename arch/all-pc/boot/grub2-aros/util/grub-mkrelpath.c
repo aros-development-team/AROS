@@ -26,7 +26,11 @@
 #include <grub/i18n.h>
 
 #define _GNU_SOURCE	1
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 #include <argp.h>
+#pragma GCC diagnostic error "-Wmissing-prototypes"
+#pragma GCC diagnostic error "-Wmissing-declarations"
 
 #include "progname.h"
 
@@ -82,9 +86,7 @@ main (int argc, char *argv[])
   char *relpath;
   struct arguments arguments;
 
-  set_program_name (argv[0]);
-
-  grub_util_init_nls ();
+  grub_util_host_init (&argc, &argv);
 
   memset (&arguments, 0, sizeof (struct arguments));
 

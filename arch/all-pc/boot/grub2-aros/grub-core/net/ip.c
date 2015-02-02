@@ -38,7 +38,7 @@ struct iphdr {
   grub_uint16_t chksum;
   grub_uint32_t src;
   grub_uint32_t dest;
-} __attribute__ ((packed)) ;
+} GRUB_PACKED ;
 
 enum
 {
@@ -56,7 +56,7 @@ struct ip6hdr {
   grub_uint8_t ttl;
   ip6addr src;
   ip6addr dest;
-} __attribute__ ((packed)) ;
+} GRUB_PACKED ;
 
 static int
 cmp (const void *a__, const void *b__)
@@ -191,15 +191,18 @@ grub_net_send_ip4_packet (struct grub_net_network_level_interface *inf,
 			  grub_net_ip_protocol_t proto)
 {
   struct iphdr *iph;
+  grub_err_t err;
 
   COMPILE_TIME_ASSERT (GRUB_NET_OUR_IPV4_HEADER_SIZE == sizeof (*iph));
 
   if (nb->tail - nb->data + sizeof (struct iphdr) > inf->card->mtu)
     return send_fragmented (inf, target, nb, proto, *ll_target_addr);
 
-  grub_netbuff_push (nb, sizeof (*iph));
-  iph = (struct iphdr *) nb->data;
+  err = grub_netbuff_push (nb, sizeof (*iph));
+  if (err)
+    return err;
 
+  iph = (struct iphdr *) nb->data;
   iph->verhdrlen = ((4 << 4) | 5);
   iph->service = 0;
   iph->len = grub_cpu_to_be16 (nb->tail - nb->data);
@@ -403,7 +406,7 @@ grub_net_recv_ip4_packets (struct grub_net_buff *nb,
 					    * sizeof (grub_uint32_t)))
     {
       grub_dprintf ("net", "IP packet too short: %" PRIdGRUB_SSIZE "\n",
-		    (nb->tail - nb->data));
+		    (grub_ssize_t) (nb->tail - nb->data));
       grub_netbuff_free (nb);
       return GRUB_ERR_NONE;
     }
@@ -602,16 +605,19 @@ grub_net_send_ip6_packet (struct grub_net_network_level_interface *inf,
 			  grub_net_ip_protocol_t proto)
 {
   struct ip6hdr *iph;
+  grub_err_t err;
 
   COMPILE_TIME_ASSERT (GRUB_NET_OUR_IPV6_HEADER_SIZE == sizeof (*iph));
 
   if (nb->tail - nb->data + sizeof (struct iphdr) > inf->card->mtu)
     return grub_error (GRUB_ERR_NET_PACKET_TOO_BIG, "packet too big");
 
-  grub_netbuff_push (nb, sizeof (*iph));
-  iph = (struct ip6hdr *) nb->data;
+  err = grub_netbuff_push (nb, sizeof (*iph));
+  if (err)
+    return err;
 
-  iph->version_class_flow = grub_cpu_to_be32 ((6 << 28));
+  iph = (struct ip6hdr *) nb->data;
+  iph->version_class_flow = grub_cpu_to_be32_compile_time ((6 << 28));
   iph->len = grub_cpu_to_be16 (nb->tail - nb->data - sizeof (*iph));
   iph->protocol = proto;
   iph->ttl = 0xff;
@@ -654,7 +660,7 @@ grub_net_recv_ip6_packets (struct grub_net_buff *nb,
   if (nb->tail - nb->data < (grub_ssize_t) sizeof (*iph))
     {
       grub_dprintf ("net", "IP packet too short: %" PRIdGRUB_SSIZE "\n",
-		    nb->tail - nb->data);
+		    (grub_ssize_t) (nb->tail - nb->data));
       grub_netbuff_free (nb);
       return GRUB_ERR_NONE;
     }

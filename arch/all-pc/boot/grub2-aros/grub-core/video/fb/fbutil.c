@@ -31,41 +31,6 @@
 #include <grub/types.h>
 #include <grub/video.h>
 
-void *
-grub_video_fb_get_video_ptr (struct grub_video_fbblit_info *source,
-              unsigned int x, unsigned int y)
-{
-  grub_uint8_t *ptr = 0;
-
-  switch (source->mode_info->bpp)
-    {
-    case 32:
-      ptr = source->data + y * source->mode_info->pitch + x * 4;
-      break;
-
-    case 24:
-      ptr = source->data + y * source->mode_info->pitch + x * 3;
-      break;
-
-    case 16:
-    case 15:
-      ptr = source->data + y * source->mode_info->pitch + x * 2;
-      break;
-
-    case 8:
-      ptr = source->data + y * source->mode_info->pitch + x;
-      break;
-
-    case 1:
-      /* For 1-bit bitmaps, addressing needs to be done at the bit level
-         and it doesn't make sense, in general, to ask for a pointer
-         to a particular pixel's data.  */
-      break;
-    }
-
-  return ptr;
-}
-
 grub_video_color_t
 get_pixel (struct grub_video_fbblit_info *source,
            unsigned int x, unsigned int y)
@@ -82,7 +47,11 @@ get_pixel (struct grub_video_fbblit_info *source,
       {
         grub_uint8_t *ptr;
         ptr = grub_video_fb_get_video_ptr (source, x, y);
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+        color = ptr[2] | (ptr[1] << 8) | (ptr[0] << 16);
+#else
         color = ptr[0] | (ptr[1] << 8) | (ptr[2] << 16);
+#endif
       }
       break;
 
@@ -131,7 +100,11 @@ set_pixel (struct grub_video_fbblit_info *source,
     case 24:
       {
         grub_uint8_t *ptr;
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+        grub_uint8_t *colorptr = ((grub_uint8_t *)&color) + 1;
+#else
         grub_uint8_t *colorptr = (grub_uint8_t *)&color;
+#endif
 
         ptr = grub_video_fb_get_video_ptr (source, x, y);
 

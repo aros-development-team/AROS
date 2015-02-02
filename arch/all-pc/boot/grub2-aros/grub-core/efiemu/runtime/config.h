@@ -19,16 +19,18 @@
 
 #define GRUB_TYPES_CPU_HEADER	1
 
-#ifdef ELF32
+#ifdef __i386__
 # define SIZEOF_VOID_P	4
 # define SIZEOF_LONG	4
 # define GRUB_TARGET_SIZEOF_VOID_P	4
 # define GRUB_TARGET_SIZEOF_LONG	4
 # define EFI_FUNC(x) x
-#else
+#elif defined (__x86_64__)
 # define SIZEOF_VOID_P	8
 # define SIZEOF_LONG	8
 # define GRUB_TARGET_SIZEOF_VOID_P	8
 # define GRUB_TARGET_SIZEOF_LONG	8
 # define EFI_FUNC(x) x ## _real
+#else
+#error "Unknown architecture"
 #endif

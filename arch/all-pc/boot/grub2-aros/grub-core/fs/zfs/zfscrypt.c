@@ -143,7 +143,7 @@ grub_ccm_decrypt (grub_crypto_cipher_handle_t cipher,
     return err;
   if (mac_out)
     grub_crypto_xor (mac_out, mac, mul, m);
-  return GRUB_ERR_NONE;
+  return GPG_ERR_NO_ERROR;
 }
 
 static void
@@ -238,13 +238,13 @@ grub_gcm_decrypt (grub_crypto_cipher_handle_t cipher,
       grub_crypto_xor (out + 16 * i, in + 16 * i, mul, csize);
     }
   for (j = 0; j < 8; j++)
-    mac[15 - j] ^= ((psize * 8) >> (8 * j));
+    mac[15 - j] ^= ((((grub_uint64_t) psize) * 8) >> (8 * j));
   grub_gcm_mul (mac, h);
 
   if (mac_out)
     grub_crypto_xor (mac_out, mac, mac_xor, m);
 
-  return GRUB_ERR_NONE;
+  return GPG_ERR_NO_ERROR;
 }
 
 
@@ -258,13 +258,14 @@ algo_decrypt (grub_crypto_cipher_handle_t cipher, grub_uint64_t algo,
   switch (algo)
     {
     case 0:
-      return grub_ccm_decrypt (cipher, out, in, psize, mac_out, nonce, l, m);
+      return grub_ccm_decrypt (cipher, out, in, psize,
+			       mac_out, nonce, l, m);
     case 1:
-      return grub_gcm_decrypt (cipher, out, in, psize, mac_out, nonce,
+      return grub_gcm_decrypt (cipher, out, in, psize,
+			       mac_out, nonce,
 			       15 - l, m);
     default:
-      return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET, "algorithm %" 
-			 PRIuGRUB_UINT64_T " is not supported yet", algo);
+      return GPG_ERR_CIPHER_ALGO;
     }
 }
 
@@ -279,7 +280,7 @@ grub_zfs_decrypt_real (grub_crypto_cipher_handle_t cipher,
   grub_uint32_t mac[4];
   unsigned i;
   grub_uint32_t sw[4];
-  grub_err_t err;
+  gcry_err_code_t err;
       
   grub_memcpy (sw, nonce, 16);
   if (endian != GRUB_ZFS_BIG_ENDIAN)
@@ -295,7 +296,7 @@ grub_zfs_decrypt_real (grub_crypto_cipher_handle_t cipher,
 		      size, mac,
 		      sw + 1, 3, 12);
   if (err)
-    return err;
+    return grub_crypto_gcry_error (err);
   
   for (i = 0; i < 3; i++)
     if (grub_zfs_to_cpu32 (expected_mac[i], endian)
@@ -353,6 +354,7 @@ grub_zfs_load_key_real (const struct grub_zfs_key *key,
       if (err)
 	{
 	  grub_errno = GRUB_ERR_NONE;
+	  grub_crypto_cipher_close (cipher);
 	  continue;
 	}
 		    
@@ -361,6 +363,7 @@ grub_zfs_load_key_real (const struct grub_zfs_key *key,
       if (err)
 	{
 	  grub_errno = GRUB_ERR_NONE;
+	  grub_crypto_cipher_close (cipher);
 	  continue;
 	}
       
@@ -371,6 +374,7 @@ grub_zfs_load_key_real (const struct grub_zfs_key *key,
 	{
 	  grub_dprintf ("zfs", "key loading failed\n");
 	  grub_errno = GRUB_ERR_NONE;
+	  grub_crypto_cipher_close (cipher);
 	  continue;
 	}
 
@@ -380,21 +384,25 @@ grub_zfs_load_key_real (const struct grub_zfs_key *key,
 	{
 	  grub_dprintf ("zfs", "key loading failed\n");
 	  grub_errno = GRUB_ERR_NONE;
+	  grub_crypto_cipher_close (cipher);
 	  continue;
 	}
       ret = grub_crypto_cipher_open (GRUB_CIPHER_AES);
       if (!ret)
 	{
 	  grub_errno = GRUB_ERR_NONE;
+	  grub_crypto_cipher_close (cipher);
 	  continue;
 	}
       err = grub_crypto_cipher_set_key (ret, decrypted, keylen);
       if (err)
 	{
-	    grub_errno = GRUB_ERR_NONE;
-	    grub_crypto_cipher_close (ret);
-	    continue;
-	  }
+	  grub_errno = GRUB_ERR_NONE;
+	  grub_crypto_cipher_close (ret);
+	  grub_crypto_cipher_close (cipher);
+	  continue;
+	}
+      grub_crypto_cipher_close (cipher);
       return ret;
     }
   return NULL;

@@ -54,7 +54,7 @@ typedef struct serpent_context
 
 /* A prototype.  */
 static const char *serpent_test (void);
-      
+
 
 #define byte_swap_32(x) \
   (0 \
@@ -586,18 +586,20 @@ serpent_key_prepare (const byte *key, unsigned int key_length,
 
   /* Copy key.  */
   memcpy (key_prepared, key, key_length);
+  key_length /= 4;
 #ifdef WORDS_BIGENDIAN
-  for (i = 0; i < key_length / 4; i++)
+  for (i = 0; i < key_length; i++)
     key_prepared[i] = byte_swap_32 (key_prepared[i]);
+#else
+  i = key_length;
 #endif
-
-  if (key_length < 32)
+  if (i < 8)
     {
       /* Key must be padded according to the Serpent
 	 specification.  */
-      key_prepared[key_length / 4] = 0x00000001;
+      key_prepared[i] = 0x00000001;
 
-      for (i = key_length / 4 + 1; i < 8; i++)
+      for (i++; i < 8; i++)
 	key_prepared[i] = 0;
     }
 }
@@ -681,7 +683,7 @@ serpent_setkey (void *ctx,
   static const char *serpent_test_ret;
   static int serpent_init_done;
   gcry_err_code_t ret = GPG_ERR_NO_ERROR;
-  
+
   if (! serpent_init_done)
     {
       /* Execute a self-test the first time, Serpent is used.  */
@@ -767,12 +769,12 @@ serpent_decrypt_internal (serpent_context_t *context,
   serpent_block_t b, b_next;
   int round = ROUNDS;
 
-  memcpy (b, input, sizeof (b));
+  memcpy (b_next, input, sizeof (b));
 #ifdef WORDS_BIGENDIAN
-  b[0] = byte_swap_32 (b[0]);
-  b[1] = byte_swap_32 (b[1]);
-  b[2] = byte_swap_32 (b[2]);
-  b[3] = byte_swap_32 (b[3]);
+  b_next[0] = byte_swap_32 (b_next[0]);
+  b_next[1] = byte_swap_32 (b_next[1]);
+  b_next[2] = byte_swap_32 (b_next[2]);
+  b_next[3] = byte_swap_32 (b_next[3]);
 #endif
 
   ROUND_FIRST_INVERSE (7, context->keys, b_next, b);
@@ -891,9 +893,7 @@ serpent_test (void)
     {
       serpent_setkey_internal (&context, test_data[i].key,
                                test_data[i].key_length);
-      serpent_encrypt_internal (&context,
-				test_data[i].text_plain,
-				scratch);
+      serpent_encrypt_internal (&context, test_data[i].text_plain, scratch);
 
       if (memcmp (scratch, test_data[i].text_cipher, sizeof (serpent_block_t)))
 	switch (test_data[i].key_length)
@@ -906,9 +906,7 @@ serpent_test (void)
 	    return "Serpent-256 test encryption failed.";
 	  }
 
-    serpent_decrypt_internal (&context,
-			      test_data[i].text_cipher,
-			      scratch);
+    serpent_decrypt_internal (&context, test_data[i].text_cipher, scratch);
     if (memcmp (scratch, test_data[i].text_plain, sizeof (serpent_block_t)))
       switch (test_data[i].key_length)
 	{

@@ -26,14 +26,14 @@ struct grub_acpi_rsdp_v10 *
 grub_machine_acpi_get_rsdpv1 (void)
 {
   unsigned i;
-  static grub_efi_guid_t acpi_guid = GRUB_EFI_ACPI_TABLE_GUID;
+  static grub_efi_packed_guid_t acpi_guid = GRUB_EFI_ACPI_TABLE_GUID;
 
   for (i = 0; i < grub_efi_system_table->num_table_entries; i++)
     {
-      grub_efi_guid_t *guid =
+      grub_efi_packed_guid_t *guid =
 	&grub_efi_system_table->configuration_table[i].vendor_guid;
 
-      if (! grub_memcmp (guid, &acpi_guid, sizeof (grub_efi_guid_t)))
+      if (! grub_memcmp (guid, &acpi_guid, sizeof (grub_efi_packed_guid_t)))
 	return (struct grub_acpi_rsdp_v10 *)
 	  grub_efi_system_table->configuration_table[i].vendor_table;
     }
@@ -44,14 +44,14 @@ struct grub_acpi_rsdp_v20 *
 grub_machine_acpi_get_rsdpv2 (void)
 {
   unsigned i;
-  static grub_efi_guid_t acpi20_guid = GRUB_EFI_ACPI_20_TABLE_GUID;
+  static grub_efi_packed_guid_t acpi20_guid = GRUB_EFI_ACPI_20_TABLE_GUID;
 
   for (i = 0; i < grub_efi_system_table->num_table_entries; i++)
     {
-      grub_efi_guid_t *guid =
+      grub_efi_packed_guid_t *guid =
 	&grub_efi_system_table->configuration_table[i].vendor_guid;
 
-      if (! grub_memcmp (guid, &acpi20_guid, sizeof (grub_efi_guid_t)))
+      if (! grub_memcmp (guid, &acpi20_guid, sizeof (grub_efi_packed_guid_t)))
 	return (struct grub_acpi_rsdp_v20 *)
 	  grub_efi_system_table->configuration_table[i].vendor_table;
     }

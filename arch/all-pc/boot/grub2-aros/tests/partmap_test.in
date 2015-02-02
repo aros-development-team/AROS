@@ -28,6 +28,14 @@ create_disk_image () {
     dd if=/dev/zero of="${name}" bs=512 count=1 seek=$((size * 2048 - 1)) status=noxfer > /dev/null
 }
 
+create_dfly_image () {
+    name="$1"
+    rm -f ${name}
+    
+    gunzip < "@srcdir@/tests/dfly-mbr-mbexample.mbr.img.gz" | dd of=${name} bs=1 seek=440 count=72 conv=notrunc > /dev/null
+    gunzip < "@srcdir@/tests/dfly-mbr-mbexample.dfly.img.gz" | dd of=${name} bs=512 seek=33 count=1 conv=notrunc > /dev/null
+}
+
 check_output () {
     outfile=$1
     shift
@@ -49,7 +57,7 @@ list_parts () {
     outfile="$1"
     shift
 
-    echo ls | "${grubshell}" --qemu-opts="-hda ${imgfile}" \
+    echo ls | "${grubshell}" --disk="${imgfile}" \
 	--modules=$mod | tr -d "\n\r" > "${outfile}"
     cat "${outfile}"
     echo
@@ -61,8 +69,24 @@ case "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" in
 	;;
     powerpc-ieee1275)
 	disk=ieee1275//pci@80000000/mac-io@4/ata-3@20000/disk@0
-	# QEMU firmware has bugs which prevent it from accessing hard disk.
+	# FIXME: QEMU firmware has bugs which prevent it from accessing hard disk w/o recognised label.
 	exit 0
+	;;
+    sparc64-ieee1275)
+	disk=ieee1275//pci@1fe\,0/pci-ata@5/ide0@500/disk@0
+	# FIXME: QEMU firmware has bugs which prevent it from accessing hard disk w/o recognised label.
+	exit 0
+	;;
+    i386-ieee1275)
+	disk=ieee1275/d
+	# FIXME: QEMU firmware has bugs which prevent it from accessing hard disk w/o recognised label.
+	exit 0
+	;;
+    mips-arc)
+	# FIXME: ARC firmware has bugs which prevent it from accessing hard disk w/o dvh disklabel.
+	exit 0 ;;
+    mipsel-arc)
+	disk=arc/scsi0/disk0/rdisk0
 	;;
     *)
 	disk=hd0
@@ -237,13 +261,19 @@ ${parted} -a none -s "${imgfile}" mklabel sun mkpart 0 10M mkpart 10M 20M mkpart
 list_parts part_sun "${imgfile}" "${outfile}"
 check_output "${outfile}" $disk $disk,sun1 $disk,sun2 $disk,sun4 $disk,sun5 $disk,sun6 $disk,sun7
 
+# 7 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M mkpart 30M 40M mkpart 40M 50M mkpart 50M 60M mkpart 60M 70M
+list_parts part_sun "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,sun1 $disk,sun2 $disk,sun4 $disk,sun5 $disk,sun6 $disk,sun7 $disk,sun8
+
 
 #
 # Apple partition types
 #
 # Partition table itself is part of some partition, so there is always
-# a partition by default.  But I don't understand why GRUB displays
-# two partitions by default :-(
+# a partition by default.  Furthermore free space is also a partition,
+# so there is always at least 2 partitions
 #
 
 echo "Checking APPLE partition types..."
@@ -289,3 +319,162 @@ create_disk_image "${imgfile}" 128
 ${parted} -a none -s "${imgfile}" mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M mkpart d 30M 40M mkpart e 40M 50M mkpart f 50M 60M
 list_parts part_apple "${imgfile}" "${outfile}"
 check_output "${outfile}" $disk $disk,apple1 $disk,apple2 $disk,apple4 $disk,apple5 $disk,apple6 $disk,apple7 $disk,apple8
+
+#
+# DVH partition types
+#
+# Partition #11 is reserved for whole disk by parted.
+# Parted also aliases #9 as whole disk
+#
+
+echo "Checking DVH partition types..."
+
+# 0 parts
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel dvh
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk
+
+# 1 parts
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M 
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1
+
+# 2 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2
+
+# 3 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3
+
+# 4 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4
+
+# 5 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5
+
+# 6 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6
+
+# 7 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M mkpart primary 60M 70M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6 $disk,dvh7
+
+# 8 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M mkpart primary 60M 70M mkpart primary 70M 80M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6 $disk,dvh7 $disk,dvh8
+
+# 9 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M mkpart primary 60M 70M mkpart primary 70M 80M mkpart primary 80M 90M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6 $disk,dvh7 $disk,dvh8  $disk,dvh10
+
+# 10 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M mkpart primary 60M 70M mkpart primary 70M 80M mkpart primary 80M 90M mkpart primary 90M 100M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6 $disk,dvh7 $disk,dvh8 $disk,dvh10 $disk,dvh12
+
+# 11 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M mkpart primary 60M 70M mkpart primary 70M 80M mkpart primary 80M 90M mkpart primary 90M 100M mkpart primary 100M 110M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6 $disk,dvh7 $disk,dvh8 $disk,dvh10 $disk,dvh12 $disk,dvh13
+
+# 12 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M mkpart primary 60M 70M mkpart primary 70M 80M mkpart primary 80M 90M mkpart primary 90M 100M mkpart primary 100M 110M mkpart primary 110M 120M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6 $disk,dvh7 $disk,dvh8 $disk,dvh10 $disk,dvh12 $disk,dvh13 $disk,dvh14
+
+# 13 parts
+create_disk_image "${imgfile}" 135
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M mkpart primary 60M 70M mkpart primary 70M 80M mkpart primary 80M 90M mkpart primary 90M 100M mkpart primary 100M 110M mkpart primary 110M 120M mkpart primary 120M 130M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6 $disk,dvh7 $disk,dvh8 $disk,dvh10 $disk,dvh12 $disk,dvh13 $disk,dvh14 $disk,dvh15
+
+# 14 parts
+create_disk_image "${imgfile}" 145
+${parted} -a none -s "${imgfile}" mklabel dvh mkpart primary 3M 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M mkpart primary 40M 50M mkpart primary 50M 60M mkpart primary 60M 70M mkpart primary 70M 80M mkpart primary 80M 90M mkpart primary 90M 100M mkpart primary 100M 110M mkpart primary 110M 120M mkpart primary 120M 130M mkpart primary 130M 140M
+list_parts part_dvh "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,dvh1 $disk,dvh2 $disk,dvh3 $disk,dvh4 $disk,dvh5 $disk,dvh6 $disk,dvh7 $disk,dvh8 $disk,dvh10 $disk,dvh12 $disk,dvh13 $disk,dvh14 $disk,dvh15 $disk,dvh16
+
+echo "Checking AMIGA partition types..."
+
+# 0 parts
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel amiga
+list_parts part_amiga "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk
+
+# 1 parts
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel amiga mkpart x 0 10M 
+list_parts part_amiga "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,amiga1
+
+# 2 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel amiga mkpart x 0 10M mkpart x 10M 20M
+list_parts part_amiga "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,amiga1 $disk,amiga2
+
+# 3 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel amiga mkpart x 0 10M mkpart x 10M 20M mkpart x 20M 30M
+list_parts part_amiga "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,amiga1 $disk,amiga2 $disk,amiga3
+
+# 4 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel amiga mkpart x 0 10M mkpart x 10M 20M mkpart x 20M 30M mkpart x 30M 40M
+list_parts part_amiga "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,amiga1 $disk,amiga2 $disk,amiga3 $disk,amiga4
+
+# 5 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel amiga mkpart x 0 10M mkpart x 10M 20M mkpart x 20M 30M mkpart x 30M 40M mkpart x 40M 50M
+list_parts part_amiga "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,amiga1 $disk,amiga2 $disk,amiga3 $disk,amiga4 $disk,amiga5
+
+# 6 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel amiga mkpart x 0 10M mkpart x 10M 20M mkpart x 20M 30M mkpart x 30M 40M mkpart x 40M 50M mkpart x 50M 60M
+list_parts part_amiga "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,amiga1 $disk,amiga2 $disk,amiga3 $disk,amiga4 $disk,amiga5 $disk,amiga6
+
+# 7 parts
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel amiga mkpart x 0 10M mkpart x 10M 20M mkpart x 20M 30M mkpart x 30M 40M mkpart x 40M 50M mkpart x 50M 60M mkpart x 60M 70M
+list_parts part_amiga "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,amiga1 $disk,amiga2 $disk,amiga3 $disk,amiga4 $disk,amiga5 $disk,amiga6 $disk,amiga7
+
+#
+# DragonFly BSD disklabel64
+#
+
+echo "Checking DragonFly BSD disklabel64..."
+
+create_dfly_image "${imgfile}"
+list_parts part_dfly "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1 $disk,msdos1,dfly1 $disk,msdos1,dfly2 $disk,msdos1,dfly3

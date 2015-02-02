@@ -26,67 +26,44 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-static grub_usb_controller_dev_t grub_usb_list;
 static struct grub_usb_attach_desc *attach_hooks;
 
-void
-grub_usb_controller_dev_register (grub_usb_controller_dev_t usb)
-{
-  auto int iterate_hook (grub_usb_controller_t dev);
-
-  /* Iterate over all controllers found by the driver.  */
-  int iterate_hook (grub_usb_controller_t dev)
-    {
-      dev->dev = usb;
-
-      /* Enable the ports of the USB Root Hub.  */
-      grub_usb_root_hub (dev);
-
-      return 0;
-    }
-
-  usb->next = grub_usb_list;
-  grub_usb_list = usb;
-
-  if (usb->iterate)
-    usb->iterate (iterate_hook);
-}
-
-void
-grub_usb_controller_dev_unregister (grub_usb_controller_dev_t usb)
-{
-  grub_usb_controller_dev_t *p, q;
-
-  for (p = &grub_usb_list, q = *p; q; p = &(q->next), q = q->next)
-    if (q == usb)
-      {
-	*p = q->next;
-	break;
-      }
-}
-
 #if 0
-int
-grub_usb_controller_iterate (int (*hook) (grub_usb_controller_t dev))
+/* Context for grub_usb_controller_iterate.  */
+struct grub_usb_controller_iterate_ctx
 {
+  grub_usb_controller_iterate_hook_t hook;
+  void *hook_data;
   grub_usb_controller_dev_t p;
+};
 
-  auto int iterate_hook (grub_usb_controller_t dev);
+/* Helper for grub_usb_controller_iterate.  */
+static int
+grub_usb_controller_iterate_iter (grub_usb_controller_t dev, void *data)
+{
+  struct grub_usb_controller_iterate_ctx *ctx = data;
 
-  int iterate_hook (grub_usb_controller_t dev)
-    {
-      dev->dev = p;
-      if (hook (dev))
-	return 1;
-      return 0;
-    }
+  dev->dev = ctx->p;
+  if (ctx->hook (dev, ctx->hook_data))
+    return 1;
+  return 0;
+}
+
+int
+grub_usb_controller_iterate (grub_usb_controller_iterate_hook_t hook,
+			     void *hook_data)
+{
+  struct grub_usb_controller_iterate_ctx ctx = {
+    .hook = hook,
+    .hook_data = hook_data
+  };
 
   /* Iterate over all controller drivers.  */
-  for (p = grub_usb_list; p; p = p->next)
+  for (ctx.p = grub_usb_list; ctx.p; ctx.p = ctx.p->next)
     {
       /* Iterate over the busses of the controllers.  XXX: Actually, a
 	 hub driver should do this.  */
-      if (p->iterate (iterate_hook))
+      if (ctx.p->iterate (grub_usb_controller_iterate_iter, &ctx))
 	return 1;
     }
 
@@ -132,31 +109,6 @@ grub_usb_get_descriptor (grub_usb_device_t dev,
 			       0, size, data);
 }
 
-struct grub_usb_desc_endp *
-grub_usb_get_endpdescriptor (grub_usb_device_t usbdev, int addr)
-{
-  int i;
-
-  for (i = 0; i < usbdev->config[0].descconf->numif; i++)
-    {
-      struct grub_usb_desc_if *interf;
-      int j;
-
-      interf = usbdev->config[0].interf[i].descif;
-
-      for (j = 0; j < interf->endpointcnt; j++)
-	{
-	  struct grub_usb_desc_endp *endp;
-	  endp = &usbdev->config[0].interf[i].descendp[j];
-
-	  if (endp->endp_addr == addr)
-	    return endp;
-	}
-    }
-
-  return NULL;
-}
-
 grub_usb_err_t
 grub_usb_device_initialize (grub_usb_device_t dev)
 {
@@ -196,6 +148,7 @@ grub_usb_device_initialize (grub_usb_device_t dev)
       int pos;
       int currif;
       char *data;
+      struct grub_usb_desc *desc;
 
       /* First just read the first 4 bytes of the configuration
 	 descriptor, after that it is known how many bytes really have
@@ -222,18 +175,35 @@ grub_usb_device_initialize (grub_usb_device_t dev)
       /* Read all interfaces.  */
       for (currif = 0; currif < dev->config[i].descconf->numif; currif++)
 	{
-	  while (pos < config.totallen
-		 && ((struct grub_usb_desc *)&data[pos])->type
-		 != GRUB_USB_DESCRIPTOR_INTERFACE)
-	    pos += ((struct grub_usb_desc *)&data[pos])->length;
+	  while (pos < config.totallen)
+            {
+              desc = (struct grub_usb_desc *)&data[pos];
+              if (desc->type == GRUB_USB_DESCRIPTOR_INTERFACE)
+                break;
+              if (!desc->length)
+                {
+                  err = GRUB_USB_ERR_BADDEVICE;
+                  goto fail;
+                }
+              pos += desc->length;
+            }
+
 	  dev->config[i].interf[currif].descif
 	    = (struct grub_usb_desc_if *) &data[pos];
 	  pos += dev->config[i].interf[currif].descif->length;
 
-	  while (pos < config.totallen
-		 && ((struct grub_usb_desc *)&data[pos])->type
-		 != GRUB_USB_DESCRIPTOR_ENDPOINT)
-	    pos += ((struct grub_usb_desc *)&data[pos])->length;
+	  while (pos < config.totallen)
+            {
+              desc = (struct grub_usb_desc *)&data[pos];
+              if (desc->type == GRUB_USB_DESCRIPTOR_ENDPOINT)
+                break;
+              if (!desc->length)
+                {
+                  err = GRUB_USB_ERR_BADDEVICE;
+                  goto fail;
+                }
+              pos += desc->length;
+            }
 
 	  /* Point to the first endpoint.  */
 	  dev->config[i].interf[currif].descendp
@@ -272,8 +242,13 @@ void grub_usb_device_attach (grub_usb_device_t dev)
 	continue;
 
       for (desc = attach_hooks; desc; desc = desc->next)
-	if (interf->class == desc->class && desc->hook (dev, 0, i))
-	  dev->config[0].interf[i].attached = 1;
+	if (interf->class == desc->class)
+	  {
+	    grub_boot_time ("Probing USB device driver class %x", desc->class);
+	    if (desc->hook (dev, 0, i))
+	      dev->config[0].interf[i].attached = 1;
+	    grub_boot_time ("Probed USB device driver class %x", desc->class);
+	  }
 
       if (dev->config[0].interf[i].attached)
 	continue;
@@ -282,59 +257,66 @@ void grub_usb_device_attach (grub_usb_device_t dev)
 	{
 	case GRUB_USB_CLASS_MASS_STORAGE:
 	  grub_dl_load ("usbms");
+	  grub_print_error ();
 	  break;
 	case GRUB_USB_CLASS_HID:
 	  grub_dl_load ("usb_keyboard");
+	  grub_print_error ();
 	  break;
 	case 0xff:
 	  /* FIXME: don't load useless modules.  */
 	  grub_dl_load ("usbserial_ftdi");
+	  grub_print_error ();
 	  grub_dl_load ("usbserial_pl2303");
+	  grub_print_error ();
+	  grub_dl_load ("usbserial_usbdebug");
+	  grub_print_error ();
 	  break;
 	}
     }
 }
 
+/* Helper for grub_usb_register_attach_hook_class.  */
+static int
+grub_usb_register_attach_hook_class_iter (grub_usb_device_t usbdev, void *data)
+{
+  struct grub_usb_attach_desc *desc = data;
+  struct grub_usb_desc_device *descdev = &usbdev->descdev;
+  int i;
+
+  if (descdev->class != 0 || descdev->subclass || descdev->protocol != 0
+      || descdev->configcnt == 0)
+    return 0;
+
+  /* XXX: Just check configuration 0 for now.  */
+  for (i = 0; i < usbdev->config[0].descconf->numif; i++)
+    {
+      struct grub_usb_desc_if *interf;
+
+      interf = usbdev->config[0].interf[i].descif;
+
+      grub_dprintf ("usb", "iterate: interf=%d, class=%d, subclass=%d, protocol=%d\n",
+		    i, interf->class, interf->subclass, interf->protocol);
+
+      if (usbdev->config[0].interf[i].attached)
+	continue;
+
+      if (interf->class != desc->class)
+	continue;
+      if (desc->hook (usbdev, 0, i))
+	usbdev->config[0].interf[i].attached = 1;
+    }
+
+  return 0;
+}
+
 void
 grub_usb_register_attach_hook_class (struct grub_usb_attach_desc *desc)
 {
-  auto int usb_iterate (grub_usb_device_t dev);
-
-  int usb_iterate (grub_usb_device_t usbdev)
-    {
-      struct grub_usb_desc_device *descdev = &usbdev->descdev;
-      int i;
-
-      if (descdev->class != 0 || descdev->subclass || descdev->protocol != 0
-	  || descdev->configcnt == 0)
-	return 0;
-
-      /* XXX: Just check configuration 0 for now.  */
-      for (i = 0; i < usbdev->config[0].descconf->numif; i++)
-	{
-	  struct grub_usb_desc_if *interf;
-
-	  interf = usbdev->config[0].interf[i].descif;
-
-	  grub_dprintf ("usb", "iterate: interf=%d, class=%d, subclass=%d, protocol=%d\n",
-	                i, interf->class, interf->subclass, interf->protocol);
-
-	  if (usbdev->config[0].interf[i].attached)
-	    continue;
-
-	  if (interf->class != desc->class)
-	    continue;
-	  if (desc->hook (usbdev, 0, i))
-	    usbdev->config[0].interf[i].attached = 1;
-	}
-
-      return 0;
-    }
-
   desc->next = attach_hooks;
   attach_hooks = desc;
 
-  grub_usb_iterate (usb_iterate);
+  grub_usb_iterate (grub_usb_register_attach_hook_class_iter, desc);
 }
 
 void

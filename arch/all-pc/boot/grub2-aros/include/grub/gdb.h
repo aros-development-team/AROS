@@ -33,7 +33,7 @@ struct grub_serial_port;
 extern struct grub_serial_port *grub_gdb_port;
 
 void grub_gdb_breakpoint (void);
-int grub_gdb_trap2sig (int);
+unsigned int grub_gdb_trap2sig (int);
 
 #endif /* ! GRUB_GDB_HEADER */
 

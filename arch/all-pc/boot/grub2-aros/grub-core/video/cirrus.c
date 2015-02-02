@@ -235,6 +235,36 @@ grub_video_cirrus_set_palette (unsigned int start, unsigned int count,
   return grub_video_fb_set_palette (start, count, palette_data);
 }
 
+/* Helper for grub_video_cirrus_setup.  */
+static int
+find_card (grub_pci_device_t dev, grub_pci_id_t pciid, void *data)
+{
+  int *found = data;
+  grub_pci_address_t addr;
+  grub_uint32_t class;
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
+  class = grub_pci_read (addr);
+
+  if (((class >> 16) & 0xffff) != 0x0300 || pciid != 0x00b81013)
+    return 0;
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
+  framebuffer.base = grub_pci_read (addr) & GRUB_PCI_ADDR_MEM_MASK;
+  if (!framebuffer.base)
+    return 0;
+
+  *found = 1;
+
+  /* Enable address spaces.  */
+  addr = grub_pci_make_address (framebuffer.dev, GRUB_PCI_REG_COMMAND);
+  grub_pci_write (addr, 0x7);
+
+  framebuffer.dev = dev;
+
+  return 1;
+}
+
 static grub_err_t
 grub_video_cirrus_setup (unsigned int width, unsigned int height,
 			 grub_video_mode_type_t mode_type,
@@ -244,27 +274,6 @@ grub_video_cirrus_setup (unsigned int width, unsigned int height,
   grub_err_t err;
   int found = 0;
   int pitch, bytes_per_pixel;
-
-  auto int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev, grub_pci_id_t pciid __attribute__ ((unused)));
-  int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev, grub_pci_id_t pciid)
-    {
-      grub_pci_address_t addr;
-      grub_uint32_t class;
-
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
-      class = grub_pci_read (addr);
-
-      if (((class >> 16) & 0xffff) != 0x0300 || pciid != 0x00b81013)
-	return 0;
-      
-      found = 1;
-
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
-      framebuffer.base = grub_pci_read (addr) & GRUB_PCI_ADDR_MEM_MASK;
-      framebuffer.dev = dev;
-
-      return 1;
-    }
 
   /* Decode depth from mode_type.  If it is zero, then autodetect.  */
   depth = (mode_type & GRUB_VIDEO_MODE_TYPE_DEPTH_MASK)
@@ -293,15 +302,14 @@ grub_video_cirrus_setup (unsigned int width, unsigned int height,
       && !grub_video_check_mode_flag (mode_type, mode_mask,
 				      GRUB_VIDEO_MODE_TYPE_INDEX_COLOR, 0))
     depth = 24;
-
-  if (depth == 0)
+  else if (depth == 0)
     depth = 8;
 
   if (depth != 32 && depth != 24 && depth != 16 && depth != 15 && depth != 8)
     return grub_error (GRUB_ERR_IO, "only 32, 24, 16, 15 and 8-bit bpp are"
 		       " supported by cirrus video");
 
-  bytes_per_pixel = (depth + 7) / 8;
+  bytes_per_pixel = (depth + GRUB_CHAR_BIT - 1) / GRUB_CHAR_BIT;
   pitch = width * bytes_per_pixel;
 
   if (pitch > CIRRUS_MAX_PITCH)
@@ -314,7 +322,7 @@ grub_video_cirrus_setup (unsigned int width, unsigned int height,
   if (framebuffer.page_size > CIRRUS_APERTURE_SIZE)
     return grub_error (GRUB_ERR_IO, "Not enough video memory for this mode");
 
-  grub_pci_iterate (find_card);
+  grub_pci_iterate (find_card, &found);
   if (!found)
     return grub_error (GRUB_ERR_IO, "Couldn't find graphics card");
 
@@ -409,6 +417,7 @@ grub_video_cirrus_setup (unsigned int width, unsigned int height,
     {
     case 8:
       framebuffer.mode_info.mode_type = GRUB_VIDEO_MODE_TYPE_INDEX_COLOR;
+      framebuffer.mode_info.number_of_colors = 16;
       break;
     case 16:
       framebuffer.mode_info.red_mask_size = 5;
@@ -431,6 +440,7 @@ grub_video_cirrus_setup (unsigned int width, unsigned int height,
     case 32:
       framebuffer.mode_info.reserved_mask_size = 8;
       framebuffer.mode_info.reserved_field_pos = 24;
+      /* Fallthrough.  */
 
     case 24:
       framebuffer.mode_info.red_mask_size = 8;
@@ -478,6 +488,10 @@ static struct grub_video_adapter grub_video_cirrus_adapter =
     .get_palette = grub_video_fb_get_palette,
     .set_viewport = grub_video_fb_set_viewport,
     .get_viewport = grub_video_fb_get_viewport,
+    .set_region = grub_video_fb_set_region,
+    .get_region = grub_video_fb_get_region,
+    .set_area_status = grub_video_fb_set_area_status,
+    .get_area_status = grub_video_fb_get_area_status,
     .map_color = grub_video_fb_map_color,
     .map_rgb = grub_video_fb_map_rgb,
     .map_rgba = grub_video_fb_map_rgba,

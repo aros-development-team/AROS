@@ -37,11 +37,11 @@ GRUB_MOD_LICENSE ("GPLv3+");
    Is it a problem?
 */
 static void
-lba_to_chs (int lba, grub_uint8_t *cl, grub_uint8_t *ch,
+lba_to_chs (grub_uint32_t lba, grub_uint8_t *cl, grub_uint8_t *ch,
 	    grub_uint8_t *dh)
 {
-  int cylinder, head, sector;
-  int sectors = 63, heads = 255, cylinders = 1024;
+  grub_uint32_t cylinder, head, sector;
+  grub_uint32_t sectors = 63, heads = 255, cylinders = 1024;
 
   sector = lba % sectors + 1;
   head = (lba / sectors) % heads;
@@ -101,7 +101,7 @@ grub_cmd_gptsync (grub_command_t cmd __attribute__ ((unused)),
     }
 
   /* Check if it is valid.  */
-  if (mbr.signature != grub_cpu_to_le16 (GRUB_PC_PARTITION_SIGNATURE))
+  if (mbr.signature != grub_cpu_to_le16_compile_time (GRUB_PC_PARTITION_SIGNATURE))
     {
       grub_device_close (dev);
       return grub_error (GRUB_ERR_BAD_PART_TABLE, "no signature");
@@ -216,7 +216,7 @@ grub_cmd_gptsync (grub_command_t cmd __attribute__ ((unused)),
     first_sector--;
   mbr.entries[0].flag = 0;
   mbr.entries[0].type = GRUB_PC_PARTITION_TYPE_GPT_DISK;
-  mbr.entries[0].start = grub_cpu_to_le32 (1);
+  mbr.entries[0].start = grub_cpu_to_le32_compile_time (1);
   lba_to_chs (1,
 	      &(mbr.entries[0].start_sector),
 	      &(mbr.entries[0].start_cylinder),
@@ -227,13 +227,15 @@ grub_cmd_gptsync (grub_command_t cmd __attribute__ ((unused)),
 	      &(mbr.entries[0].end_head));
   mbr.entries[0].length = grub_cpu_to_le32 (first_sector);
 
-  mbr.signature = grub_cpu_to_le16 (GRUB_PC_PARTITION_SIGNATURE);
+  mbr.signature = grub_cpu_to_le16_compile_time (GRUB_PC_PARTITION_SIGNATURE);
 
   if (grub_disk_write (dev->disk, 0, 0, sizeof (mbr), &mbr))
     {
       grub_device_close (dev);
       return grub_errno;
     }
+
+  grub_device_close (dev);
 
   grub_printf_ (N_("New MBR is written to `%s'\n"), args[0]);
 

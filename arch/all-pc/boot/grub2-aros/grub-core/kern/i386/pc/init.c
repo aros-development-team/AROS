@@ -52,8 +52,8 @@ void (*grub_pc_net_config) (char **device, char **path);
  *	return the real time in ticks, of which there are about
  *	18-20 per second
  */
-grub_uint32_t
-grub_get_rtc (void)
+grub_uint64_t
+grub_rtc_get_time_ms (void)
 {
   struct grub_bios_int_registers regs;
 
@@ -61,7 +61,7 @@ grub_get_rtc (void)
   regs.flags = GRUB_CPU_INT_FLAGS_DEFAULT;
   grub_bios_interrupt (0x1a, &regs);
 
-  return (regs.ecx << 16) | (regs.edx & 0xffff);
+  return ((regs.ecx << 16) | (regs.edx & 0xffff)) * 55ULL;
 }
 
 void
@@ -154,6 +154,36 @@ compact_mem_regions (void)
 grub_addr_t grub_modbase;
 extern grub_uint8_t _start[], _edata[];
 
+/* Helper for grub_machine_init.  */
+static int
+mmap_iterate_hook (grub_uint64_t addr, grub_uint64_t size,
+		   grub_memory_type_t type,
+		   void *data __attribute__ ((unused)))
+{
+  /* Avoid the lower memory.  */
+  if (addr < GRUB_MEMORY_MACHINE_UPPER_START)
+    {
+      if (size <= GRUB_MEMORY_MACHINE_UPPER_START - addr)
+	return 0;
+
+      size -= GRUB_MEMORY_MACHINE_UPPER_START - addr;
+      addr = GRUB_MEMORY_MACHINE_UPPER_START;
+    }
+
+  /* Ignore >4GB.  */
+  if (addr <= 0xFFFFFFFF && type == GRUB_MEMORY_AVAILABLE)
+    {
+      grub_size_t len;
+
+      len = (grub_size_t) ((addr + size > 0xFFFFFFFF)
+	     ? 0xFFFFFFFF - addr
+	     : size);
+      add_mem_region (addr, len);
+    }
+
+  return 0;
+}
+
 void
 grub_machine_init (void)
 {
@@ -161,6 +191,7 @@ grub_machine_init (void)
 #if 0
   int grub_lower_mem;
 #endif
+  grub_addr_t modend;
 
   grub_modbase = GRUB_MEMORY_MACHINE_DECOMPRESSION_ADDR + (_edata - _start);
 
@@ -188,48 +219,29 @@ grub_machine_init (void)
 		    grub_lower_mem - GRUB_MEMORY_MACHINE_RESERVED_END);
 #endif
 
-  auto int NESTED_FUNC_ATTR hook (grub_uint64_t, grub_uint64_t,
-				  grub_memory_type_t);
-  int NESTED_FUNC_ATTR hook (grub_uint64_t addr, grub_uint64_t size,
-			     grub_memory_type_t type)
-    {
-      /* Avoid the lower memory.  */
-      if (addr < 0x100000)
-	{
-	  if (size <= 0x100000 - addr)
-	    return 0;
-
-	  size -= 0x100000 - addr;
-	  addr = 0x100000;
-	}
-
-      /* Ignore >4GB.  */
-      if (addr <= 0xFFFFFFFF && type == GRUB_MEMORY_AVAILABLE)
-	{
-	  grub_size_t len;
-
-	  len = (grub_size_t) ((addr + size > 0xFFFFFFFF)
-		 ? 0xFFFFFFFF - addr
-		 : size);
-	  add_mem_region (addr, len);
-	}
-
-      return 0;
-    }
-
-  grub_machine_mmap_iterate (hook);
+  grub_machine_mmap_iterate (mmap_iterate_hook, NULL);
 
   compact_mem_regions ();
 
+  modend = grub_modules_get_end ();
   for (i = 0; i < num_regions; i++)
-      grub_mm_init_region ((void *) mem_regions[i].addr, mem_regions[i].size);
+    {
+      grub_addr_t beg = mem_regions[i].addr;
+      grub_addr_t fin = mem_regions[i].addr + mem_regions[i].size;
+      if (modend && beg < modend)
+	beg = modend;
+      if (beg >= fin)
+	continue;
+      grub_mm_init_region ((void *) beg, fin - beg);
+    }
 
   grub_tsc_init ();
 }
 
 void
-grub_machine_fini (void)
+grub_machine_fini (int flags)
 {
-  grub_console_fini ();
+  if (flags & GRUB_LOADER_FLAG_NORETURN)
+    grub_console_fini ();
   grub_stop_floppy ();
 }

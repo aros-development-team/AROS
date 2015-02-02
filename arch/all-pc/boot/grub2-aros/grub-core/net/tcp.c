@@ -104,7 +104,7 @@ struct tcphdr
   grub_uint16_t window;
   grub_uint16_t checksum;
   grub_uint16_t urgent;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct tcp_pseudohdr
 {
@@ -113,7 +113,7 @@ struct tcp_pseudohdr
   grub_uint8_t zero;
   grub_uint8_t proto;
   grub_uint16_t tcp_length;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct tcp6_pseudohdr
 {
@@ -122,7 +122,7 @@ struct tcp6_pseudohdr
   grub_uint32_t tcp_length;
   grub_uint8_t zero[3];
   grub_uint8_t proto;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 static struct grub_net_tcp_socket *tcp_sockets;
 static struct grub_net_tcp_listen *tcp_listens;
@@ -766,7 +766,7 @@ grub_net_recv_tcp_packet (struct grub_net_buff *nb,
 					     >> 12) * sizeof (grub_uint32_t)))
     {
       grub_dprintf ("net", "TCP packet too short: %" PRIuGRUB_SIZE "\n",
-		    nb->tail - nb->data);
+		    (grub_size_t) (nb->tail - nb->data));
       grub_netbuff_free (nb);
       return GRUB_ERR_NONE;
     }
@@ -918,7 +918,7 @@ grub_net_recv_tcp_packet (struct grub_net_buff *nb,
 	      do_ack = 1;
 	    }
 	  else
-	    grub_netbuff_free (nb);
+	    grub_netbuff_free (nb_top);
 	}
       if (do_ack)
 	ack (sock);

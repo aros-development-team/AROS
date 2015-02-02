@@ -23,6 +23,7 @@
 #include <grub/font.h>
 #include <grub/gui_string_util.h>
 #include <grub/i18n.h>
+#include <grub/color.h>
 
 static const char *align_options[] =
 {
@@ -153,6 +154,8 @@ label_get_minimal_size (void *vself, unsigned *width, unsigned *height)
              + grub_font_get_descent (self->font));
 }
 
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+
 static void
 label_set_state (void *vself, int visible, int start __attribute__ ((unused)),
 		 int current, int end __attribute__ ((unused)))
@@ -233,6 +236,8 @@ label_set_property (void *vself, const char *name, const char *value)
     }
   return GRUB_ERR_NONE;
 }
+
+#pragma GCC diagnostic error "-Wformat-nonliteral"
 
 static struct grub_gui_component_ops label_ops =
 {

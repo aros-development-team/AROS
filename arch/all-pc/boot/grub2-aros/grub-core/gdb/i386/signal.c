@@ -24,7 +24,7 @@
 
 /* Converting CPU trap number to UNIX signal number as
    described in System V ABI i386 Processor Supplement, 3-25.  */
-int
+unsigned int
 grub_gdb_trap2sig (int trap_no)
 {
   const int signals[] = {

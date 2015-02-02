@@ -78,7 +78,7 @@ GRUB_MOD_INIT(configfile)
   cmd_extractor_configfile =
     grub_register_command ("extract_entries_configfile", grub_cmd_source,
 			   N_("FILE"),
-			   N_("Load another config file without changing context but take only menu entries.")
+			   N_("Load another config file but take only menu entries.")
 			   );
 
   cmd_dot =

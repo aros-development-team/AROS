@@ -37,8 +37,6 @@
 #define RESET_HALT 0x8
 #define RESET_POWEROFF 0x800
 
-#define SHUTDOWN_PORT 0x8900
-
 	.section ".init", "ax"
 	.global start,_start
 start:
@@ -72,23 +70,7 @@ _start:
 	int $SYSCALL_INT
 	addl $12, %esp
 
-	movw $SHUTDOWN_PORT, %dx
-	movb $'S', %al
-	outb %al, %dx
-	movb $'h', %al
-	outb %al, %dx
-	movb $'u', %al
-	outb %al, %dx
-	movb $'t', %al
-	outb %al, %dx
-	movb $'d', %al
-	outb %al, %dx
-	movb $'o', %al
-	outb %al, %dx
-	movb $'w', %al
-	outb %al, %dx
-	movb $'n', %al
-	outb %al, %dx
+#include "qemu-shutdown-x86.S"
 
 	/* shutdown.  */
 	movl $SYSCALL_RESET, %eax

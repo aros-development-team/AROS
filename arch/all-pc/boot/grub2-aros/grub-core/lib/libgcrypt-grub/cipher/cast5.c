@@ -524,7 +524,7 @@ do_cast_setkey( CAST5_context *c, const byte *key, unsigned keylen )
   u32 z[4];
   u32 k[16];
 
-  if( !initialized ) 
+  if( !initialized )
     {
       initialized = 1;
       selftest_failed = selftest();

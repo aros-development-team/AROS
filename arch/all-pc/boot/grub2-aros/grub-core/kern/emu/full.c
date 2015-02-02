@@ -24,6 +24,8 @@
 #include <grub/emu/misc.h>
 #include <grub/disk.h>
 
+const int grub_no_modules = 1;
+
 void
 grub_register_exported_symbols (void)
 {
@@ -37,25 +39,24 @@ grub_arch_dl_check_header (void *ehdr)
 }
 
 grub_err_t
-grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
+grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
+			       Elf_Shdr *s, grub_dl_segment_t seg)
 {
   (void) mod;
   (void) ehdr;
+  (void) s;
+  (void) seg;
   return GRUB_ERR_BAD_MODULE;
 }
 
-void
-grub_emu_init (void)
-{
-  grub_no_autoload = 1;
-}
-
-#if defined (__ia64__) || defined (__powerpc__)
-void grub_arch_dl_get_tramp_got_size (const void *ehdr __attribute__ ((unused)),
-				      grub_size_t *tramp, grub_size_t *got)
+#if !defined (__i386__) && !defined (__x86_64__)
+grub_err_t
+grub_arch_dl_get_tramp_got_size (const void *ehdr __attribute__ ((unused)),
+			         grub_size_t *tramp, grub_size_t *got)
 {
   *tramp = 0;
   *got = 0;
+  return GRUB_ERR_BAD_MODULE;
 }
 #endif
 
@@ -66,7 +67,3 @@ grub_arch_dl_init_linker (void)
 }
 #endif
 
-void
-grub_emu_post_init (void)
-{
-}

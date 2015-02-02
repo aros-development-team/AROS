@@ -234,14 +234,30 @@ static void
 box_paint (void *vself, const grub_video_rect_t *region)
 {
   grub_gui_box_t self = vself;
+
   struct component_node *cur;
   grub_video_rect_t vpsave;
+
+  grub_video_area_status_t box_area_status;
+  grub_video_get_area_status (&box_area_status);
 
   grub_gui_set_viewport (&self->bounds, &vpsave);
   for (cur = self->chead.next; cur != &self->ctail; cur = cur->next)
     {
       grub_gui_component_t comp = cur->component;
+      grub_video_rect_t r;
+      comp->ops->get_bounds(comp, &r);
+
+      if (!grub_video_have_common_points (region, &r))
+        continue;
+
+      /* Paint the child.  */
+      if (box_area_status == GRUB_VIDEO_AREA_ENABLED
+          && grub_video_bounds_inside_region (&r, region))
+        grub_video_set_area_status (GRUB_VIDEO_AREA_DISABLED);
       comp->ops->paint (comp, region);
+      if (box_area_status == GRUB_VIDEO_AREA_ENABLED)
+        grub_video_set_area_status (GRUB_VIDEO_AREA_ENABLED);
     }
   grub_gui_restore_viewport (&vpsave);
 }

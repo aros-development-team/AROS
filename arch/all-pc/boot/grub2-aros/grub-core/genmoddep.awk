@@ -14,25 +14,23 @@
 # Read symbols' info from stdin.
 BEGIN {
   error = 0
-  lineno = 0;
-  while (getline <"/dev/stdin") {
-    lineno++;
-    if ($1 == "defined") {
-      symtab[$3] = $2;
-      modtab[$2] = "" modtab[$2]
-    } else if ($1 == "undefined") {
-      if ($3 in symtab)
-	modtab[$2] = modtab[$2] " " symtab[$3];
-      else if ($3 != "__gnu_local_gp") {
-	printf "%s in %s is not defined\n", $3, $2 >"/dev/stderr";
-	error++;
-      }
-    }
-    else {
-      printf "error: %u: unrecognized input format\n", lineno;
+}
+
+{
+  if ($1 == "defined") {
+    symtab[$3] = $2;
+    modtab[$2] = "" modtab[$2]
+  } else if ($1 == "undefined") {
+    if ($3 in symtab)
+      modtab[$2] = modtab[$2] " " symtab[$3];
+    else if ($3 != "__gnu_local_gp" && $3 != "_gp_disp") {
+      printf "%s in %s is not defined\n", $3, $2 >"/dev/stderr";
       error++;
-      break;
     }
+  }
+  else {
+    printf "error: %u: unrecognized input format\n", NR;
+    error++;
   }
 }
 

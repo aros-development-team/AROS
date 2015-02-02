@@ -28,9 +28,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <argp.h>
+
 #include <unistd.h>
 #include <errno.h>
+
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
+
+#include <argp.h>
+#pragma GCC diagnostic error "-Wmissing-prototypes"
+#pragma GCC diagnostic error "-Wmissing-declarations"
 
 #include "progname.h"
 
@@ -250,7 +257,7 @@ static grub_uint8_t linux_to_usb_map[128] = {
   /* 0x52 */ GRUB_KEYBOARD_KEY_NUMDOT,      GRUB_KEYBOARD_KEY_NUMDOT, 
   /* 0x54 */ 0,                             0, 
   /* 0x56 */ GRUB_KEYBOARD_KEY_102ND,       GRUB_KEYBOARD_KEY_F11, 
-  /* 0x58 */ GRUB_KEYBOARD_KEY_F12,         0,
+  /* 0x58 */ GRUB_KEYBOARD_KEY_F12,         GRUB_KEYBOARD_KEY_JP_RO,
   /* 0x5a */ 0,                             0,
   /* 0x5c */ 0,                             0,
   /* 0x5e */ 0,                             0,
@@ -261,7 +268,14 @@ static grub_uint8_t linux_to_usb_map[128] = {
   /* 0x68 */ GRUB_KEYBOARD_KEY_PPAGE,       GRUB_KEYBOARD_KEY_LEFT,
   /* 0x6a */ GRUB_KEYBOARD_KEY_RIGHT,       GRUB_KEYBOARD_KEY_END,
   /* 0x6c */ GRUB_KEYBOARD_KEY_DOWN,        GRUB_KEYBOARD_KEY_NPAGE, 
-  /* 0x6e */ GRUB_KEYBOARD_KEY_INSERT,      GRUB_KEYBOARD_KEY_DELETE
+  /* 0x6e */ GRUB_KEYBOARD_KEY_INSERT,      GRUB_KEYBOARD_KEY_DELETE,
+  /* 0x70 */ 0,                             0,
+  /* 0x72 */ 0,                             GRUB_KEYBOARD_KEY_JP_RO,
+  /* 0x74 */ 0,                             0,
+  /* 0x76 */ 0,                             0,
+  /* 0x78 */ 0,                             GRUB_KEYBOARD_KEY_KPCOMMA,
+  /* 0x7a */ 0,                             0,
+  /* 0x7c */ GRUB_KEYBOARD_KEY_JP_YEN,
 }; 
 
 static void
@@ -315,7 +329,7 @@ write_file (FILE *out, const char *fname, struct grub_keyboard_layout *layout)
   grub_uint32_t version;
   unsigned i;
 
-  version = grub_cpu_to_le32 (GRUB_KEYBOARD_LAYOUTS_VERSION);
+  version = grub_cpu_to_le32_compile_time (GRUB_KEYBOARD_LAYOUTS_VERSION);
   
   for (i = 0; i < ARRAY_SIZE (layout->keyboard_map); i++)
     layout->keyboard_map[i] = grub_cpu_to_le32(layout->keyboard_map[i]);
@@ -464,7 +478,7 @@ main (int argc, char *argv[])
   FILE *in, *out;
   struct arguments arguments;
 
-  set_program_name (argv[0]);
+  grub_util_host_init (&argc, &argv);
 
   /* Check for options.  */
   memset (&arguments, 0, sizeof (struct arguments));
@@ -475,7 +489,7 @@ main (int argc, char *argv[])
     }
 
   if (arguments.input)
-    in = fopen (arguments.input, "r");
+    in = grub_util_fopen (arguments.input, "r");
   else
     in = stdin;
 
@@ -484,7 +498,7 @@ main (int argc, char *argv[])
 		     strerror (errno));
 
   if (arguments.output)
-    out = fopen (arguments.output, "wb");
+    out = grub_util_fopen (arguments.output, "wb");
   else
     out = stdout;
 

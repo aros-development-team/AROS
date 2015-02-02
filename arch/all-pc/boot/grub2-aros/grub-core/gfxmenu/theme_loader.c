@@ -30,6 +30,10 @@
 #include <grub/gfxwidgets.h>
 #include <grub/gfxmenu_view.h>
 #include <grub/gui.h>
+#include <grub/color.h>
+
+static grub_err_t
+parse_proportional_spec (const char *value, signed *abs, grub_fixed_signed_t *prop);
 
 /* Construct a new box widget using ABSPATTERN to find the pixmap files for
    it, storing the new box instance at *BOXPTR.
@@ -112,6 +116,24 @@ grub_gui_recreate_box (grub_gfxmenu_box_t *boxptr,
   return grub_errno;
 }
 
+static grub_err_t
+theme_get_unsigned_int_from_proportional (const char *value,
+                                          unsigned absolute_value,
+                                          unsigned int *parsed_value)
+{
+  grub_err_t err;
+  grub_fixed_signed_t frac;
+  signed pixels;
+  err = parse_proportional_spec (value, &pixels, &frac);
+  if (err != GRUB_ERR_NONE)
+    return err;
+  int result = grub_fixed_sfs_multiply (absolute_value, frac) + pixels;
+  if (result < 0)
+    result = 0;
+  *parsed_value = result;
+  return GRUB_ERR_NONE;
+}
+
 /* Set the specified property NAME on the view to the given string VALUE.
    The caller is responsible for the lifetimes of NAME and VALUE.  */
 static grub_err_t
@@ -143,7 +165,6 @@ theme_set_string (grub_gfxmenu_view_t view,
   else if (! grub_strcmp ("desktop-image", name))
     {
       struct grub_video_bitmap *raw_bitmap;
-      struct grub_video_bitmap *scaled_bitmap;
       char *path;
       path = grub_resolve_relative_path (theme_dir, value);
       if (! path)
@@ -154,20 +175,56 @@ theme_set_string (grub_gfxmenu_view_t view,
           return grub_errno;
         }
       grub_free(path);
-      grub_video_bitmap_create_scaled (&scaled_bitmap,
-                                       view->screen.width,
-                                       view->screen.height,
-                                       raw_bitmap,
-                                       GRUB_VIDEO_BITMAP_SCALE_METHOD_BEST);
-      grub_video_bitmap_destroy (raw_bitmap);
-      if (! scaled_bitmap)
-        {
-          grub_error_push ();
-          return grub_error (grub_errno, "error scaling desktop image");
-        }
-
-      grub_video_bitmap_destroy (view->desktop_image);
-      view->desktop_image = scaled_bitmap;
+      grub_video_bitmap_destroy (view->raw_desktop_image);
+      view->raw_desktop_image = raw_bitmap;
+    }
+  else if (! grub_strcmp ("desktop-image-scale-method", name))
+    {
+      if (! value || ! grub_strcmp ("stretch", value))
+        view->desktop_image_scale_method =
+            GRUB_VIDEO_BITMAP_SELECTION_METHOD_STRETCH;
+      else if (! grub_strcmp ("crop", value))
+        view->desktop_image_scale_method =
+            GRUB_VIDEO_BITMAP_SELECTION_METHOD_CROP;
+      else if (! grub_strcmp ("padding", value))
+        view->desktop_image_scale_method =
+            GRUB_VIDEO_BITMAP_SELECTION_METHOD_PADDING;
+      else if (! grub_strcmp ("fitwidth", value))
+        view->desktop_image_scale_method =
+            GRUB_VIDEO_BITMAP_SELECTION_METHOD_FITWIDTH;
+      else if (! grub_strcmp ("fitheight", value))
+        view->desktop_image_scale_method =
+            GRUB_VIDEO_BITMAP_SELECTION_METHOD_FITHEIGHT;
+      else
+        return grub_error (GRUB_ERR_BAD_ARGUMENT,
+                           "Unsupported scale method: %s",
+                           value);
+    }
+  else if (! grub_strcmp ("desktop-image-h-align", name))
+    {
+      if (! grub_strcmp ("left", value))
+        view->desktop_image_h_align = GRUB_VIDEO_BITMAP_H_ALIGN_LEFT;
+      else if (! grub_strcmp ("center", value))
+        view->desktop_image_h_align = GRUB_VIDEO_BITMAP_H_ALIGN_CENTER;
+      else if (! grub_strcmp ("right", value))
+        view->desktop_image_h_align = GRUB_VIDEO_BITMAP_H_ALIGN_RIGHT;
+      else
+        return grub_error (GRUB_ERR_BAD_ARGUMENT,
+                           "Unsupported horizontal align method: %s",
+                           value);
+    }
+  else if (! grub_strcmp ("desktop-image-v-align", name))
+    {
+      if (! grub_strcmp ("top", value))
+        view->desktop_image_v_align = GRUB_VIDEO_BITMAP_V_ALIGN_TOP;
+      else if (! grub_strcmp ("center", value))
+        view->desktop_image_v_align = GRUB_VIDEO_BITMAP_V_ALIGN_CENTER;
+      else if (! grub_strcmp ("bottom", value))
+        view->desktop_image_v_align = GRUB_VIDEO_BITMAP_V_ALIGN_BOTTOM;
+      else
+        return grub_error (GRUB_ERR_BAD_ARGUMENT,
+                           "Unsupported vertical align method: %s",
+                           value);
     }
   else if (! grub_strcmp ("desktop-color", name))
      grub_video_parse_color (value, &view->desktop_color);
@@ -177,6 +234,52 @@ theme_set_string (grub_gfxmenu_view_t view,
         err = grub_gui_recreate_box (&view->terminal_box, value, theme_dir);
         if (err != GRUB_ERR_NONE)
           return err;
+    }
+  else if (! grub_strcmp ("terminal-border", name))
+    {
+      view->terminal_border = grub_strtoul (value, 0, 10);
+      if (grub_errno)
+        return grub_errno;
+    }
+  else if (! grub_strcmp ("terminal-left", name))
+    {
+      unsigned int tmp;
+      int err = theme_get_unsigned_int_from_proportional (value,
+                                                          view->screen.width,
+                                                          &tmp);
+      if (err != GRUB_ERR_NONE)
+        return err;
+      view->terminal_rect.x = tmp;
+    }
+  else if (! grub_strcmp ("terminal-top", name))
+    {
+      unsigned int tmp;
+      int err = theme_get_unsigned_int_from_proportional (value,
+                                                          view->screen.width,
+                                                          &tmp);
+      if (err != GRUB_ERR_NONE)
+        return err;
+      view->terminal_rect.y = tmp;
+    }
+  else if (! grub_strcmp ("terminal-width", name))
+    {
+      unsigned int tmp;
+      int err = theme_get_unsigned_int_from_proportional (value,
+                                                          view->screen.width,
+                                                          &tmp);
+      if (err != GRUB_ERR_NONE)
+        return err;
+      view->terminal_rect.width = tmp;
+    }
+  else if (! grub_strcmp ("terminal-height", name))
+    {
+      unsigned int tmp;
+      int err = theme_get_unsigned_int_from_proportional (value,
+                                                          view->screen.width,
+                                                          &tmp);
+      if (err != GRUB_ERR_NONE)
+        return err;
+      view->terminal_rect.height = tmp;
     }
   else if (! grub_strcmp ("title-text", name))
     {
@@ -362,10 +465,10 @@ read_expression (struct parsebuf *p)
 }
 
 static grub_err_t
-parse_proportional_spec (char *value, signed *abs, grub_fixed_signed_t *prop)
+parse_proportional_spec (const char *value, signed *abs, grub_fixed_signed_t *prop)
 {
   signed num;
-  char *ptr;
+  const char *ptr;
   int sig = 0;
   *abs = 0;
   *prop = 0;
@@ -381,7 +484,7 @@ parse_proportional_spec (char *value, signed *abs, grub_fixed_signed_t *prop)
 	  ptr++;
 	}
 
-      num = grub_strtoul (ptr, &ptr, 0);
+      num = grub_strtoul (ptr, (char **) &ptr, 0);
       if (grub_errno)
 	return grub_errno;
       if (sig)
@@ -671,6 +774,8 @@ grub_gfxmenu_view_load_theme (grub_gfxmenu_view_t view, const char *theme_path)
     view->canvas->component.ops->destroy (view->canvas);
 
   view->canvas = grub_gui_canvas_new ();
+  if (!view->canvas)
+    goto fail;
   ((grub_gui_component_t) view->canvas)
     ->ops->set_bounds ((grub_gui_component_t) view->canvas,
                        &view->screen);

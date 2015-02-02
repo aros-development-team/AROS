@@ -67,6 +67,8 @@ struct grub_gui_list_ops
 {
   void (*set_view_info) (void *self,
                          grub_gfxmenu_view_t view);
+  void (*refresh_list) (void *self,
+                        grub_gfxmenu_view_t view);
 };
 
 struct grub_gui_progress_ops
@@ -110,6 +112,7 @@ grub_gfxmenu_timeout_unregister (grub_gui_component_t self)
     if (q->self == self)
       {
 	*p = q->next;
+	grub_free (q);
 	break;
       }
 }
@@ -117,16 +120,36 @@ grub_gfxmenu_timeout_unregister (grub_gui_component_t self)
 typedef signed grub_fixed_signed_t;
 #define GRUB_FIXED_1 0x10000
 
+/* Special care is taken to round to nearest integer and not just truncate.  */
+static inline signed
+grub_divide_round (signed a, signed b)
+{
+  int neg = 0;
+  signed ret;
+  if (b < 0)
+    {
+      b = -b;
+      neg = !neg;
+    }
+  if (a < 0)
+    {
+      a = -a;
+      neg = !neg;
+    }
+  ret = (unsigned) (a + b / 2) / (unsigned) b;
+  return neg ? -ret : ret;
+}
+
 static inline signed
 grub_fixed_sfs_divide (signed a, grub_fixed_signed_t b)
 {
-  return (a * GRUB_FIXED_1) / b;
+  return grub_divide_round (a * GRUB_FIXED_1, b);
 }
 
 static inline grub_fixed_signed_t
 grub_fixed_fsf_divide (grub_fixed_signed_t a, signed b)
 {
-  return a / b;
+  return grub_divide_round (a, b);
 }
 
 static inline signed
@@ -241,6 +264,17 @@ grub_video_have_common_points (const grub_video_rect_t *a,
     return 0;
   if (!((a->y <= b->y && b->y <= a->y + a->height)
 	|| (b->y <= a->y && a->y <= b->y + b->height)))
+    return 0;
+  return 1;
+}
+
+static inline int
+grub_video_bounds_inside_region (const grub_video_rect_t *b,
+                                 const grub_video_rect_t *r)
+{
+  if (r->x > b->x || r->x + r->width < b->x + b->width)
+    return 0;
+  if (r->y > b->y || r->y + r->height < b->y + b->height)
     return 0;
   return 1;
 }

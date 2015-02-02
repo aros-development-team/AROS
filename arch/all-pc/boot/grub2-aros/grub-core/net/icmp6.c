@@ -25,13 +25,13 @@ struct icmp_header
   grub_uint8_t type;
   grub_uint8_t code;
   grub_uint16_t checksum;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct ping_header
 {
   grub_uint16_t id;
   grub_uint16_t seq;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct router_adv
 {
@@ -41,13 +41,13 @@ struct router_adv
   grub_uint32_t reachable_time;
   grub_uint32_t retrans_timer;
   grub_uint8_t options[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct option_header
 {
   grub_uint8_t type;
   grub_uint8_t len;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct prefix_option
 {
@@ -55,22 +55,27 @@ struct prefix_option
   grub_uint8_t prefixlen;
   grub_uint8_t flags;
   grub_uint32_t valid_lifetime;
-  grub_uint32_t prefered_lifetime;
+  grub_uint32_t preferred_lifetime;
   grub_uint32_t reserved;
   grub_uint64_t prefix[2];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct neighbour_solicit
 {
   grub_uint32_t reserved;
   grub_uint64_t target[2];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct neighbour_advertise
 {
   grub_uint32_t flags;
   grub_uint64_t target[2];
-} __attribute__ ((packed));
+} GRUB_PACKED;
+
+struct router_solicit
+{
+  grub_uint32_t reserved;
+} GRUB_PACKED;
 
 enum
   {
@@ -81,6 +86,7 @@ enum
   {
     ICMP6_ECHO = 128,
     ICMP6_ECHO_REPLY = 129,
+    ICMP6_ROUTER_SOLICIT = 133,
     ICMP6_ROUTER_ADVERTISE = 134,
     ICMP6_NEIGHBOUR_SOLICIT = 135,
     ICMP6_NEIGHBOUR_ADVERTISE = 136,
@@ -205,7 +211,7 @@ grub_net_recv_icmp6_packet (struct grub_net_buff *nb,
 	if (ttl != 0xff)
 	  break;
 	nbh = (struct neighbour_solicit *) nb->data;
-	err = grub_netbuff_pull (nb, sizeof (struct router_adv));
+	err = grub_netbuff_pull (nb, sizeof (*nbh));
 	if (err)
 	  {
 	    grub_netbuff_free (nb);
@@ -370,14 +376,14 @@ grub_net_recv_icmp6_packet (struct grub_net_buff *nb,
 		struct grub_net_slaac_mac_list *slaac;
 		if (!(opt->flags & FLAG_SLAAC)
 		    || (grub_be_to_cpu64 (opt->prefix[0]) >> 48) == 0xfe80
-		    || (grub_be_to_cpu32 (opt->prefered_lifetime)
+		    || (grub_be_to_cpu32 (opt->preferred_lifetime)
 			> grub_be_to_cpu32 (opt->valid_lifetime))
 		    || opt->prefixlen != 64)
 		  {
 		    grub_dprintf ("net", "discarded prefix: %d, %d, %d, %d\n",
 				  !(opt->flags & FLAG_SLAAC),
 				  (grub_be_to_cpu64 (opt->prefix[0]) >> 48) == 0xfe80,
-				  (grub_be_to_cpu32 (opt->prefered_lifetime)
+				  (grub_be_to_cpu32 (opt->preferred_lifetime)
 				   > grub_be_to_cpu32 (opt->valid_lifetime)),
 				  opt->prefixlen != 64);
 		    continue;
@@ -412,14 +418,19 @@ grub_net_recv_icmp6_packet (struct grub_net_buff *nb,
 		    grub_dprintf ("net", "creating slaac\n");
 
 		    {
-		      char name[grub_strlen (slaac->name)
-				+ sizeof (":XXXXXXXXXXXXXXXXXXXX")];
-		      grub_snprintf (name, sizeof (name), "%s:%d",
-				     slaac->name, slaac->slaac_counter++);
+		      char *name;
+		      name = grub_xasprintf ("%s:%d",
+					     slaac->name, slaac->slaac_counter++);
+		      if (!name)
+			{
+			  grub_errno = GRUB_ERR_NONE;
+			  continue;
+			}
 		      inf = grub_net_add_addr (name, 
 					       card, &addr,
 					       &slaac->address, 0);
 		      grub_net_add_route (name, netaddr, inf);
+		      grub_free (name);
 		    }
 		  }
 	      }
@@ -513,7 +524,8 @@ grub_net_icmp6_send_request (struct grub_net_network_level_interface *inf,
     {
       if (grub_net_link_layer_resolve_check (inf, proto_addr))
 	break;
-      grub_net_poll_cards (GRUB_NET_INTERVAL, 0);
+      grub_net_poll_cards (GRUB_NET_INTERVAL + (i * GRUB_NET_INTERVAL_ADDITION),
+                           0);
       if (grub_net_link_layer_resolve_check (inf, proto_addr))
 	break;
       nb->data = nbd;
@@ -523,6 +535,83 @@ grub_net_icmp6_send_request (struct grub_net_network_level_interface *inf,
 	break;
     }
 
+ fail:
+  grub_netbuff_free (nb);
+  return err;
+}
+
+grub_err_t
+grub_net_icmp6_send_router_solicit (struct grub_net_network_level_interface *inf)
+{
+  struct grub_net_buff *nb;
+  grub_err_t err = GRUB_ERR_NONE;
+  grub_net_network_level_address_t multicast;
+  grub_net_link_level_address_t ll_multicast;
+  struct option_header *ohdr;
+  struct router_solicit *sol;
+  struct icmp_header *icmphr;
+
+  multicast.type = GRUB_NET_NETWORK_LEVEL_PROTOCOL_IPV6;
+  multicast.ipv6[0] = grub_cpu_to_be64 (0xff02ULL << 48);
+  multicast.ipv6[1] = grub_cpu_to_be64 (0x02ULL);
+
+  err = grub_net_link_layer_resolve (inf, &multicast, &ll_multicast);
+  if (err)
+    return err;
+
+  nb = grub_netbuff_alloc (sizeof (struct router_solicit)
+			   + sizeof (struct option_header)
+			   + 6
+			   + sizeof (struct icmp_header)
+			   + GRUB_NET_OUR_IPV6_HEADER_SIZE
+			   + GRUB_NET_MAX_LINK_HEADER_SIZE);
+  if (!nb)
+    return grub_errno;
+  err = grub_netbuff_reserve (nb,
+			      sizeof (struct router_solicit)
+			      + sizeof (struct option_header)
+			      + 6
+			      + sizeof (struct icmp_header)
+			      + GRUB_NET_OUR_IPV6_HEADER_SIZE
+			      + GRUB_NET_MAX_LINK_HEADER_SIZE);
+  if (err)
+    goto fail;
+
+  err = grub_netbuff_push (nb, 6);
+  if (err)
+    goto fail;
+
+  grub_memcpy (nb->data, inf->hwaddress.mac, 6);
+
+  err = grub_netbuff_push (nb, sizeof (*ohdr));
+  if (err)
+    goto fail;
+
+  ohdr = (struct option_header *) nb->data;
+  ohdr->type = OPTION_SOURCE_LINK_LAYER_ADDRESS;
+  ohdr->len = 1;
+
+  err = grub_netbuff_push (nb, sizeof (*sol));
+  if (err)
+    goto fail;
+
+  sol = (struct router_solicit *) nb->data;
+  sol->reserved = 0;
+
+  err = grub_netbuff_push (nb, sizeof (*icmphr));
+  if (err)
+    goto fail;
+
+  icmphr = (struct icmp_header *) nb->data;
+  icmphr->type = ICMP6_ROUTER_SOLICIT;
+  icmphr->code = 0;
+  icmphr->checksum = 0;
+  icmphr->checksum = grub_net_ip_transport_checksum (nb,
+						     GRUB_NET_IP_ICMPV6,
+						     &inf->address,
+						     &multicast);
+  err = grub_net_send_ip_packet (inf, &multicast, &ll_multicast, nb,
+				 GRUB_NET_IP_ICMPV6);
  fail:
   grub_netbuff_free (nb);
   return err;

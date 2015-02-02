@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+
+if [ "x$EUID" = "x" ] ; then
+  EUID=`id -u`
+fi
+
+if [ "$EUID" != 0 ] ; then
+   exit 77
+fi
+
+if ! which mkfs.exfat >/dev/null 2>&1; then
+   echo "mkfs.exfat not installed; cannot test exFAT."
+   exit 77
+fi
+
+"@builddir@/grub-fs-tester" exfat

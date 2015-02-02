@@ -29,15 +29,14 @@ GRUB_MOD_LICENSE ("GPLv3+");
 /* Uncomment following define to enable PNG debug.  */
 //#define PNG_DEBUG
 
-#define PNG_COLOR_MASK_PALETTE	1
-#define PNG_COLOR_MASK_COLOR	2
-#define PNG_COLOR_MASK_ALPHA	4
-
-#define PNG_COLOR_TYPE_GRAY	0
-#define PNG_COLOR_TYPE_PALETTE	(PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)
-#define PNG_COLOR_TYPE_RGB	(PNG_COLOR_MASK_COLOR)
-#define PNG_COLOR_TYPE_RGBA	(PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_ALPHA)
-#define PNG_COLOR_TYPE_GRAYA	(PNG_COLOR_MASK_ALPHA)
+enum
+  {
+    PNG_COLOR_TYPE_GRAY = 0,
+    PNG_COLOR_MASK_PALETTE = 1,
+    PNG_COLOR_MASK_COLOR = 2,
+    PNG_COLOR_MASK_ALPHA = 4,
+    PNG_COLOR_TYPE_PALETTE = (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE),
+  };
 
 #define PNG_COMPRESSION_BASE	0
 
@@ -53,9 +52,13 @@ GRUB_MOD_LICENSE ("GPLv3+");
 #define PNG_FILTER_VALUE_PAETH	4
 #define PNG_FILTER_VALUE_LAST	5
 
-#define PNG_CHUNK_IHDR		0x49484452
-#define PNG_CHUNK_IDAT		0x49444154
-#define PNG_CHUNK_IEND		0x49454e44
+enum
+  {
+    PNG_CHUNK_IHDR = 0x49484452,
+    PNG_CHUNK_IDAT = 0x49444154,
+    PNG_CHUNK_IEND = 0x49454e44,
+    PNG_CHUNK_PLTE = 0x504c5445
+  };
 
 #define Z_DEFLATED		8
 #define Z_FLAG_DICT		32
@@ -94,7 +97,10 @@ struct grub_png_data
 
   grub_uint32_t next_offset;
 
-  int image_width, image_height, bpp, is_16bit, raw_bytes;
+  unsigned image_width, image_height;
+  int bpp, is_16bit;
+  int raw_bytes, is_gray, is_alpha, is_palette;
+  int row_bytes, color_bits;
   grub_uint8_t *image_data;
 
   int inside_idat, idat_remain;
@@ -106,6 +112,8 @@ struct grub_png_data
   int dist_values[DEFLATE_HDIST_MAX];
   int dist_maxval[DEFLATE_HUFF_LEN];
   int dist_offset[DEFLATE_HUFF_LEN];
+
+  grub_uint8_t palette[256][3];
 
   struct huff_table code_table;
   struct huff_table dist_table;
@@ -214,10 +222,31 @@ grub_png_get_bits (struct grub_png_data *data, int num)
 }
 
 static grub_err_t
+grub_png_decode_image_palette (struct grub_png_data *data,
+			       unsigned len)
+{
+  unsigned i = 0, j;
+
+  if (len == 0 || len % 3 != 0)
+    return GRUB_ERR_NONE;
+
+  for (i = 0; 3 * i < len && i < 256; i++)
+    for (j = 0; j < 3; j++)
+      data->palette[i][j] = grub_png_get_byte (data);
+  for (i *= 3; i < len; i++)
+    grub_png_get_byte (data);
+
+  grub_png_get_dword (data);
+
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
 grub_png_decode_image_header (struct grub_png_data *data)
 {
   int color_type;
   int color_bits;
+  enum grub_video_blit_format blt;
 
   data->image_width = grub_png_get_dword (data);
   data->image_height = grub_png_get_dword (data);
@@ -226,50 +255,75 @@ grub_png_decode_image_header (struct grub_png_data *data)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE, "png: invalid image size");
 
   color_bits = grub_png_get_byte (data);
-  if ((color_bits != 8) && (color_bits != 16))
-    return grub_error (GRUB_ERR_BAD_FILE_TYPE,
-                       "png: bit depth must be 8 or 16");
   data->is_16bit = (color_bits == 16);
 
   color_type = grub_png_get_byte (data);
-  if (color_type == PNG_COLOR_TYPE_RGB)
-    {
-      if (grub_video_bitmap_create (data->bitmap, data->image_width,
-				    data->image_height,
-				    GRUB_VIDEO_BLIT_FORMAT_RGB_888))
-	return grub_errno;
-      data->bpp = 3;
-    }
-  else if (color_type == PNG_COLOR_TYPE_RGBA)
-    {
-      if (grub_video_bitmap_create (data->bitmap, data->image_width,
-				    data->image_height,
-				    GRUB_VIDEO_BLIT_FORMAT_RGBA_8888))
-	return grub_errno;
-      data->bpp = 4;
-    }
-  else
+
+  /* According to PNG spec, no other types are valid.  */
+  if ((color_type & ~(PNG_COLOR_MASK_ALPHA | PNG_COLOR_MASK_COLOR))
+      && (color_type != PNG_COLOR_TYPE_PALETTE))
     return grub_error (GRUB_ERR_BAD_FILE_TYPE,
 		       "png: color type not supported");
+  if (color_type == PNG_COLOR_TYPE_PALETTE)
+    data->is_palette = 1;
+  if (data->is_16bit && data->is_palette)
+    return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+		       "png: color type not supported");
+  if (color_type & PNG_COLOR_MASK_ALPHA)
+    blt = GRUB_VIDEO_BLIT_FORMAT_RGBA_8888;
+  else
+    blt = GRUB_VIDEO_BLIT_FORMAT_RGB_888;
+  if (data->is_palette)
+    data->bpp = 1;
+  else if (color_type & PNG_COLOR_MASK_COLOR)
+    data->bpp = 3;
+  else
+    {
+      data->is_gray = 1;
+      data->bpp = 1;
+    }
+
+  if ((color_bits != 8) && (color_bits != 16)
+      && (color_bits != 4
+	  || !(data->is_gray || data->is_palette)))
+    return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+                       "png: bit depth must be 8 or 16");
+
+  if (color_type & PNG_COLOR_MASK_ALPHA)
+    data->bpp++;
+
+  if (grub_video_bitmap_create (data->bitmap, data->image_width,
+				data->image_height,
+				blt))
+    return grub_errno;
 
   if (data->is_16bit)
-    {
       data->bpp <<= 1;
 
-      data->image_data = grub_malloc (data->image_height *
-                                      data->image_width *  data->bpp);
+  data->color_bits = color_bits;
+  data->row_bytes = data->image_width * data->bpp;
+  if (data->color_bits <= 4)
+    data->row_bytes = (data->image_width * data->color_bits + 7) / 8;
+
+#ifndef GRUB_CPU_WORDS_BIGENDIAN
+  if (data->is_16bit || data->is_gray || data->is_palette)
+#endif
+    {
+      data->image_data = grub_malloc (data->image_height * data->row_bytes);
       if (grub_errno)
         return grub_errno;
 
       data->cur_rgb = data->image_data;
     }
+#ifndef GRUB_CPU_WORDS_BIGENDIAN
   else
     {
       data->image_data = 0;
       data->cur_rgb = (*data->bitmap)->data;
     }
+#endif
 
-  data->raw_bytes = data->image_height * (data->image_width + 1) * data->bpp;
+  data->raw_bytes = data->image_height * (data->row_bytes + 1);
 
   data->cur_column = 0;
   data->first_line = 1;
@@ -523,8 +577,6 @@ grub_png_init_dynamic_block (struct grub_png_data *data)
 static grub_err_t
 grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
 {
-  int row_bytes;
-
   if (--data->raw_bytes < 0)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE, "image size overflown");
 
@@ -536,27 +588,26 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
       data->cur_filter = n;
     }
   else
-    *(data->cur_rgb++) = n;
+    *data->cur_rgb++ = n;
 
   data->cur_column++;
-  row_bytes = data->image_width * data->bpp;
-  if (data->cur_column == row_bytes + 1)
+  if (data->cur_column == data->row_bytes + 1)
     {
       grub_uint8_t *blank_line = NULL;
-      grub_uint8_t *cur = data->cur_rgb - row_bytes;
+      grub_uint8_t *cur = data->cur_rgb - data->row_bytes;
       grub_uint8_t *left = cur;
       grub_uint8_t *up;
 
       if (data->first_line)
 	{
-	  blank_line = grub_zalloc (row_bytes);
+	  blank_line = grub_zalloc (data->row_bytes);
 	  if (blank_line == NULL)
 	    return grub_errno;
 
 	  up = blank_line;
 	}
       else
-	up = cur - row_bytes;
+	up = cur - data->row_bytes;
 
       switch (data->cur_filter)
 	{
@@ -565,7 +616,7 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
 	    int i;
 
 	    cur += data->bpp;
-	    for (i = data->bpp; i < row_bytes; i++, cur++, left++)
+	    for (i = data->bpp; i < data->row_bytes; i++, cur++, left++)
 	      *cur += *left;
 
 	    break;
@@ -574,7 +625,7 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
 	  {
 	    int i;
 
-	    for (i = 0; i < row_bytes; i++, cur++, up++)
+	    for (i = 0; i < data->row_bytes; i++, cur++, up++)
 	      *cur += *up;
 
 	    break;
@@ -586,7 +637,7 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
 	    for (i = 0; i < data->bpp; i++, cur++, up++)
 	      *cur += *up >> 1;
 
-	    for (; i < row_bytes; i++, cur++, up++, left++)
+	    for (; i < data->row_bytes; i++, cur++, up++, left++)
 	      *cur += ((int) *up + (int) *left) >> 1;
 
 	    break;
@@ -599,7 +650,7 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
 	    for (i = 0; i < data->bpp; i++, cur++, up++)
 	      *cur += *up;
 
-	    for (; i < row_bytes; i++, cur++, up++, left++, upper_left++)
+	    for (; i < data->row_bytes; i++, cur++, up++, left++, upper_left++)
 	      {
 		int a, b, c, pa, pb, pc;
 
@@ -768,16 +819,193 @@ static const grub_uint8_t png_magic[8] =
 static void
 grub_png_convert_image (struct grub_png_data *data)
 {
-  int i;
+  unsigned i;
   grub_uint8_t *d1, *d2;
 
   d1 = (*data->bitmap)->data;
-  d2 = data->image_data + 1;
+  d2 = data->image_data + data->is_16bit;
 
+#ifndef GRUB_CPU_WORDS_BIGENDIAN
+#define R4 3
+#define G4 2
+#define B4 1
+#define A4 0
+#define R3 2
+#define G3 1
+#define B3 0
+#else
+#define R4 0
+#define G4 1
+#define B4 2
+#define A4 3
+#define R3 0
+#define G3 1
+#define B3 2
+#endif
+
+  if (data->color_bits <= 4)
+    {
+      grub_uint8_t palette[16][3];
+      grub_uint8_t *d1c, *d2c;
+      int shift;
+      int mask = (1 << data->color_bits) - 1;
+      unsigned j;
+      if (data->is_gray)
+	for (i = 0; i < (1U << data->color_bits); i++)
+	  {
+	    grub_uint8_t col = (0xff * i) / ((1U << data->color_bits) - 1);
+	    palette[i][0] = col;
+	    palette[i][1] = col;
+	    palette[i][2] = col;
+	  }
+      else
+	grub_memcpy (palette, data->palette, 16 * 3);
+      d1c = d1;
+      d2c = d2;
+      for (j = 0; j < data->image_height; j++, d1c += data->image_width * 3,
+	   d2c += data->row_bytes)
+	{
+	  d1 = d1c;
+	  d2 = d2c;
+	  shift = 8 - data->color_bits;
+	  for (i = 0; i < data->image_width; i++, d1 += 3)
+	    {
+	      grub_uint8_t col = (d2[0] >> shift) & mask;
+	      d1[R3] = data->palette[col][2];
+	      d1[G3] = data->palette[col][1];
+	      d1[B3] = data->palette[col][0];
+	      shift -= data->color_bits;
+	      if (shift < 0)
+		{
+		  d2++;
+		  shift += 8;
+		}
+	    }
+	}
+      return;
+    }
+
+  if (data->is_palette)
+    {
+      for (i = 0; i < (data->image_width * data->image_height);
+	   i++, d1 += 3, d2++)
+	{
+	  d1[R3] = data->palette[d2[0]][2];
+	  d1[G3] = data->palette[d2[0]][1];
+	  d1[B3] = data->palette[d2[0]][0];
+	}
+      return;
+    }
+  
+  if (data->is_gray)
+    {
+      switch (data->bpp)
+	{
+	case 4:
+	  /* 16-bit gray with alpha.  */
+	  for (i = 0; i < (data->image_width * data->image_height);
+	       i++, d1 += 4, d2 += 4)
+	    {
+	      d1[R4] = d2[3];
+	      d1[G4] = d2[3];
+	      d1[B4] = d2[3];
+	      d1[A4] = d2[1];
+	    }
+	  break;
+	case 2:
+	  if (data->is_16bit)
+	    /* 16-bit gray without alpha.  */
+	    {
+	      for (i = 0; i < (data->image_width * data->image_height);
+		   i++, d1 += 4, d2 += 2)
+		{
+		  d1[R3] = d2[1];
+		  d1[G3] = d2[1];
+		  d1[B3] = d2[1];
+		}
+	    }
+	  else
+	    /* 8-bit gray with alpha.  */
+	    {
+	      for (i = 0; i < (data->image_width * data->image_height);
+		   i++, d1 += 4, d2 += 2)
+		{
+		  d1[R4] = d2[1];
+		  d1[G4] = d2[1];
+		  d1[B4] = d2[1];
+		  d1[A4] = d2[0];
+		}
+	    }
+	  break;
+	  /* 8-bit gray without alpha.  */
+	case 1:
+	  for (i = 0; i < (data->image_width * data->image_height);
+	       i++, d1 += 3, d2++)
+	    {
+	      d1[R3] = d2[0];
+	      d1[G3] = d2[0];
+	      d1[B3] = d2[0];
+	    }
+	  break;
+	}
+      return;
+    }
+
+    {
   /* Only copy the upper 8 bit.  */
-  for (i = 0; i < (data->image_width * data->image_height * data->bpp >> 1);
-       i++, d1++, d2+=2)
-    *d1 = *d2;
+#ifndef GRUB_CPU_WORDS_BIGENDIAN
+      for (i = 0; i < (data->image_width * data->image_height * data->bpp >> 1);
+	   i++, d1++, d2 += 2)
+	*d1 = *d2;
+#else
+      switch (data->bpp)
+	{
+	  /* 16-bit with alpha.  */
+	case 8:
+	  for (i = 0; i < (data->image_width * data->image_height);
+	       i++, d1 += 4, d2+=8)
+	    {
+	      d1[0] = d2[7];
+	      d1[1] = d2[5];
+	      d1[2] = d2[3];
+	      d1[3] = d2[1];
+	    }
+	  break;
+	  /* 16-bit without alpha.  */
+	case 6:
+	  for (i = 0; i < (data->image_width * data->image_height);
+	       i++, d1 += 3, d2+=6)
+	    {
+	      d1[0] = d2[5];
+	      d1[1] = d2[3];
+	      d1[2] = d2[1];
+	    }
+	  break;
+	case 4:
+	  /* 8-bit with alpha.  */
+	  for (i = 0; i < (data->image_width * data->image_height);
+	       i++, d1 += 4, d2 += 4)
+	    {
+	      d1[0] = d2[3];
+	      d1[1] = d2[2];
+	      d1[2] = d2[1];
+	      d1[3] = d2[0];
+	    }
+	  break;
+	  /* 8-bit without alpha.  */
+	case 3:
+	  for (i = 0; i < (data->image_width * data->image_height);
+	       i++, d1 += 3, d2 += 3)
+	    {
+	      d1[0] = d2[2];
+	      d1[1] = d2[1];
+	      d1[2] = d2[0];
+	    }
+	  break;
+	}
+#endif
+    }
+
 }
 
 static grub_err_t
@@ -805,6 +1033,10 @@ grub_png_decode_png (struct grub_png_data *data)
 	  grub_png_decode_image_header (data);
 	  break;
 
+	case PNG_CHUNK_PLTE:
+	  grub_png_decode_image_palette (data, len);
+	  break;
+
 	case PNG_CHUNK_IDAT:
 	  data->inside_idat = 1;
 	  data->idat_remain = len;
@@ -816,7 +1048,7 @@ grub_png_decode_png (struct grub_png_data *data)
 	  break;
 
 	case PNG_CHUNK_IEND:
-          if (data->is_16bit)
+          if (data->image_data)
             grub_png_convert_image (data);
 
 	  return grub_errno;
@@ -871,7 +1103,7 @@ grub_video_reader_png (struct grub_video_bitmap **bitmap,
 
 #if defined(PNG_DEBUG)
 static grub_err_t
-grub_cmd_pngtest (grub_command_t cmd __attribute__ ((unused)),
+grub_cmd_pngtest (grub_command_t cmd_d __attribute__ ((unused)),
 		  int argc, char **args)
 {
   struct grub_video_bitmap *bitmap = 0;

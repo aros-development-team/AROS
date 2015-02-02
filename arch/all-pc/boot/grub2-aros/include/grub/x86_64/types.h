@@ -20,10 +20,18 @@
 #define GRUB_TYPES_CPU_HEADER	1
 
 /* The size of void *.  */
+#ifdef __ILP32__
+#define GRUB_TARGET_SIZEOF_VOID_P	4
+#else
 #define GRUB_TARGET_SIZEOF_VOID_P	8
+#endif
 
 /* The size of long.  */
+#if defined(__MINGW32__) || defined(__ILP32__)
+#define GRUB_TARGET_SIZEOF_LONG		4
+#else
 #define GRUB_TARGET_SIZEOF_LONG		8
+#endif
 
 /* x86_64 is little-endian.  */
 #undef GRUB_TARGET_WORDS_BIGENDIAN

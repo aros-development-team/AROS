@@ -30,36 +30,8 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#include "progname.h"
 
 /* Please don't internationalise this file. It's pointless.  */
-
-static struct option options[] = {
-  {"help", no_argument, 0, 'h'},
-  {"version", no_argument, 0, 'V'},
-  {"verbose", no_argument, 0, 'v'},
-  {0, 0, 0, 0}
-};
-
-static void __attribute__ ((noreturn))
-usage (int status)
-{
-  if (status)
-    fprintf (stderr, "Try `%s --help' for more information.\n", program_name);
-  else
-    printf ("\
-Usage: %s [OPTIONS] input [output]\n\
-\n\
-Tool to convert pe image to elf.\n\
-\nOptions:\n\
-  -h, --help                display this message and exit\n\
-  -V, --version             print version information and exit\n\
-  -v, --verbose             print verbose messages\n\
-\n\
-Report bugs to <%s>.\n", program_name, PACKAGE_BUGREPORT);
-
-  exit (status);
-}
 
 /*
  *  Section layout
@@ -76,30 +48,23 @@ Report bugs to <%s>.\n", program_name, PACKAGE_BUGREPORT);
  *    relocation sections
  */
 
-#define TEXT_SECTION	1
-#define RDATA_SECTION	2
-#define DATA_SECTION	3
-#define BSS_SECTION	4
-#define MODNAME_SECTION	5
-#define MODDEPS_SECTION	6
-#define MODLICENSE_SECTION	7
-#define SYMTAB_SECTION	8
-#define STRTAB_SECTION	9
-
-#define REL_SECTION	10
-
-/* 10 normal section + up to 4 relocation (.text, .rdata, .data, .symtab).  */
-#define MAX_SECTIONS    16
+#if GRUB_TARGET_WORDSIZE == 64
+typedef Elf64_Rela elf_reloc_t;
+#define GRUB_PE32_MACHINE GRUB_PE32_MACHINE_X86_64
+#else
+typedef Elf32_Rel elf_reloc_t;
+#define GRUB_PE32_MACHINE GRUB_PE32_MACHINE_I386
+#endif
 
 #define STRTAB_BLOCK	256
 
 static char *strtab;
 static int strtab_max, strtab_len;
 
-static Elf32_Ehdr ehdr;
-static Elf32_Shdr shdr[MAX_SECTIONS];
-static int num_sections;
-static grub_uint32_t offset;
+static Elf_Ehdr ehdr;
+static Elf_Shdr *shdr;
+static int num_sections, first_reloc_section, reloc_sections_end, symtab_section, strtab_section;
+static grub_uint32_t offset, image_base;
 
 static int
 insert_string (const char *name)
@@ -130,16 +95,22 @@ write_section_data (FILE* fp, const char *name, char *image,
 {
   int *section_map;
   int i;
+  grub_uint32_t last_category = 0;
+  grub_uint32_t idx, idx_reloc;
   char *pe_strtab = (image + pe_chdr->symtab_offset
 		     + pe_chdr->num_symbols * sizeof (struct grub_pe32_symbol));
 
-  section_map = xmalloc ((pe_chdr->num_sections + 1) * sizeof (int));
+  section_map = xmalloc ((2 * pe_chdr->num_sections + 5) * sizeof (int));
   section_map[0] = 0;
+  shdr = xmalloc ((2 * pe_chdr->num_sections + 5) * sizeof (shdr[0]));
+  idx = 1;
+  idx_reloc = pe_chdr->num_sections + 1;
 
   for (i = 0; i < pe_chdr->num_sections; i++, pe_shdr++)
     {
-      grub_uint32_t idx;
+      grub_uint32_t category;
       const char *shname = pe_shdr->name;
+      grub_size_t secsize;
 
       if (shname[0] == '/' && grub_isdigit (shname[1]))
       {
@@ -149,76 +120,97 @@ write_section_data (FILE* fp, const char *name, char *image,
         shname = pe_strtab + atoi (t + 1);
       }
 
+      secsize = pe_shdr->raw_data_size;
+
+      shdr[idx].sh_type = SHT_PROGBITS;
+
       if (! strcmp (shname, ".text"))
         {
-          idx = TEXT_SECTION;
+          category = 0;
           shdr[idx].sh_flags = SHF_ALLOC | SHF_EXECINSTR;
         }
-      else if (! strcmp (shname, ".rdata"))
+      else if (! strncmp (shname, ".rdata", 6))
         {
-          idx = RDATA_SECTION;
+          category = 1;
           shdr[idx].sh_flags = SHF_ALLOC;
         }
       else if (! strcmp (shname, ".data"))
         {
-          idx = DATA_SECTION;
+          category = 2;
           shdr[idx].sh_flags = SHF_ALLOC | SHF_WRITE;
         }
       else if (! strcmp (shname, ".bss"))
         {
-          idx = BSS_SECTION;
+          category = 3;
+	  shdr[idx].sh_type = SHT_NOBITS;
           shdr[idx].sh_flags = SHF_ALLOC | SHF_WRITE;
+	  if (secsize < pe_shdr->virtual_size)
+	    secsize = pe_shdr->virtual_size;
         }
-      else if (! strcmp (shname, ".modname"))
-        idx = MODNAME_SECTION;
-      else if (! strcmp (shname, ".moddeps"))
-        idx = MODDEPS_SECTION;
-      else if (strcmp (shname, ".module_license") == 0)
-        idx = MODLICENSE_SECTION;
+      else if (strcmp (shname, ".modname") == 0 || strcmp (shname, ".moddeps") == 0
+	       || strcmp (shname, ".module_license") == 0)
+        category = 4;
       else
         {
           section_map[i + 1] = -1;
           continue;
         }
 
+      if (category < last_category)
+	grub_util_error ("out of order sections");
+
       section_map[i + 1] = idx;
 
-      shdr[idx].sh_type = (idx == BSS_SECTION) ? SHT_NOBITS : SHT_PROGBITS;
-      shdr[idx].sh_size = pe_shdr->raw_data_size;
+      if (pe_shdr->virtual_size
+	  && pe_shdr->virtual_size < secsize)
+	secsize = pe_shdr->virtual_size;
+
+      shdr[idx].sh_size = secsize;
       shdr[idx].sh_addralign = 1 << (((pe_shdr->characteristics >>
                                        GRUB_PE32_SCN_ALIGN_SHIFT) &
                                       GRUB_PE32_SCN_ALIGN_MASK) - 1);
+      shdr[idx].sh_addr = pe_shdr->virtual_address + image_base;
 
-      if (idx != BSS_SECTION)
+      if (shdr[idx].sh_type != SHT_NOBITS)
         {
           shdr[idx].sh_offset = offset;
           grub_util_write_image_at (image + pe_shdr->raw_data_offset,
                                     pe_shdr->raw_data_size, offset, fp,
 				    shname);
 
-          offset += pe_shdr->raw_data_size;
+          offset += secsize;
         }
 
       if (pe_shdr->relocations_offset)
         {
           char relname[5 + strlen (shname)];
 
-          if (num_sections >= MAX_SECTIONS)
-            grub_util_error ("too many sections");
-
           sprintf (relname, ".rel%s", shname);
 
-          shdr[num_sections].sh_name = insert_string (relname);
-          shdr[num_sections].sh_link = i;
-          shdr[num_sections].sh_info = idx;
+          shdr[idx_reloc].sh_name = insert_string (relname);
+          shdr[idx_reloc].sh_link = i;
+          shdr[idx_reloc].sh_info = idx;
 
-          shdr[idx].sh_name = shdr[num_sections].sh_name + 4;
+          shdr[idx].sh_name = shdr[idx_reloc].sh_name + 4;
 
-          num_sections++;
+          idx_reloc++;
         }
       else
         shdr[idx].sh_name = insert_string (shname);
+      idx++;
     }
+
+  idx_reloc -= pe_chdr->num_sections + 1;
+  num_sections = idx + idx_reloc + 2;
+  first_reloc_section = idx;
+  reloc_sections_end = idx + idx_reloc;
+  memmove (shdr + idx, shdr + pe_chdr->num_sections + 1,
+	   idx_reloc * sizeof (shdr[0]));
+  memset (shdr + idx + idx_reloc, 0, 3 * sizeof (shdr[0]));
+  memset (shdr, 0, sizeof (shdr[0]));
+
+  symtab_section = idx + idx_reloc;
+  strtab_section = idx + idx_reloc + 1;
 
   return section_map;
 }
@@ -226,22 +218,22 @@ write_section_data (FILE* fp, const char *name, char *image,
 static void
 write_reloc_section (FILE* fp, const char *name, char *image,
                      struct grub_pe32_coff_header *pe_chdr,
-                     struct grub_pe32_section_table *pe_shdr,
-                     Elf32_Sym *symtab,
+                     struct grub_pe32_section_table  *pe_shdr,
+                     Elf_Sym *symtab,
                      int *symtab_map)
 {
   int i;
 
-  for (i = REL_SECTION; i < num_sections; i++)
+  for (i = first_reloc_section; i < reloc_sections_end; i++)
     {
       struct grub_pe32_section_table *pe_sec;
       struct grub_pe32_reloc *pe_rel;
-      Elf32_Rel *rel;
+      elf_reloc_t *rel;
       int num_rels, j, modified;
 
       pe_sec = pe_shdr + shdr[i].sh_link;
       pe_rel = (struct grub_pe32_reloc *) (image + pe_sec->relocations_offset);
-      rel = (Elf32_Rel *) xmalloc (pe_sec->num_relocations * sizeof (Elf32_Rel));
+      rel = (elf_reloc_t *) xmalloc (pe_sec->num_relocations * sizeof (elf_reloc_t));
       num_rels = 0;
       modified = 0;
 
@@ -254,43 +246,84 @@ write_reloc_section (FILE* fp, const char *name, char *image,
               (symtab_map[pe_rel->symtab_index] == -1))
             grub_util_error ("invalid symbol");
 
-          if (pe_rel->type == GRUB_PE32_REL_I386_DIR32)
-            type = R_386_32;
-          else if (pe_rel->type == GRUB_PE32_REL_I386_REL32)
-            type = R_386_PC32;
-          else
-            grub_util_error ("unknown pe relocation type %d\n", pe_rel->type);
-
           ofs = pe_rel->offset - pe_sec->virtual_address;
           addr = (grub_uint32_t *)(image + pe_sec->raw_data_offset + ofs);
-          if (type == R_386_PC32)
+
+          switch (pe_rel->type)
+	    {
+#if GRUB_TARGET_WORDSIZE == 64
+	    case 1:
+	      type = R_X86_64_64;
+	      rel[num_rels].r_addend = *(grub_int64_t *)addr;
+	      *(grub_int64_t *)addr = 0;
+	      modified = 1;
+	      break;
+	    case 4:
+	      type = R_X86_64_PC32;
+	      rel[num_rels].r_addend = *(grub_int32_t *)addr;
+	      *addr = 0;
+	      modified = 1;
+	      break;
+	    case 14:
+	      type = R_X86_64_PC64;
+	      rel[num_rels].r_addend = *(grub_uint64_t *)addr - 8;
+	      *(grub_uint64_t *)addr = 0;
+	      modified = 1;
+	      break;
+#else
+	    case GRUB_PE32_REL_I386_DIR32:
+	      type = R_386_32;
+	      break;
+	    case GRUB_PE32_REL_I386_REL32:
+	      type = R_386_PC32;
+	      break;
+#endif
+	    default:
+	      grub_util_error ("unknown pe relocation type %d\n", pe_rel->type);
+	    }
+
+          if (type ==
+#if GRUB_TARGET_WORDSIZE == 64
+	      R_386_PC32
+#else
+	      R_X86_64_PC32
+#endif
+
+	      )
             {
               unsigned char code;
 
               code = image[pe_sec->raw_data_offset + ofs - 1];
 
+#if GRUB_TARGET_WORDSIZE == 32
               if (((code != 0xe8) && (code != 0xe9)) || (*addr))
                 grub_util_error ("invalid relocation (%x %x)", code, *addr);
+#endif
 
-              modified = 1;
-              if (symtab[symtab_map[pe_rel->symtab_index]].st_shndx)
+              if (symtab[symtab_map[pe_rel->symtab_index]].st_shndx
+		  && symtab[symtab_map[pe_rel->symtab_index]].st_shndx
+		  == shdr[i].sh_info)
                 {
-                  if (symtab[symtab_map[pe_rel->symtab_index]].st_shndx
-                      != shdr[i].sh_info)
-                    grub_util_error ("cross section call is not allowed");
-
-                  *addr = (symtab[symtab_map[pe_rel->symtab_index]].st_value
-                           - ofs - 4);
+		  modified = 1;
+                  *addr += (symtab[symtab_map[pe_rel->symtab_index]].st_value
+			    - ofs - 4);
 
                   continue;
                 }
               else
-                *addr = -4;
+		{
+#if GRUB_TARGET_WORDSIZE == 64
+		  rel[num_rels].r_addend -= 4;
+#else
+		  modified = 1;
+		  *addr = -4;
+#endif
+		}
             }
 
           rel[num_rels].r_offset = ofs;
-          rel[num_rels].r_info = ELF32_R_INFO (symtab_map[pe_rel->symtab_index],
-                                               type);
+          rel[num_rels].r_info = ELF_R_INFO (symtab_map[pe_rel->symtab_index],
+					     type);
           num_rels++;
         }
 
@@ -300,12 +333,16 @@ write_reloc_section (FILE* fp, const char *name, char *image,
                                   shdr[shdr[i].sh_info].sh_offset,
                                   fp, name);
 
+#if GRUB_TARGET_WORDSIZE == 64
+      shdr[i].sh_type = SHT_RELA;
+#else
       shdr[i].sh_type = SHT_REL;
+#endif
       shdr[i].sh_offset = offset;
-      shdr[i].sh_link = SYMTAB_SECTION;
+      shdr[i].sh_link = symtab_section;
       shdr[i].sh_addralign = 4;
-      shdr[i].sh_entsize = sizeof (Elf32_Rel);
-      shdr[i].sh_size = num_rels * sizeof (Elf32_Rel);
+      shdr[i].sh_entsize = sizeof (elf_reloc_t);
+      shdr[i].sh_size = num_rels * sizeof (elf_reloc_t);
 
       grub_util_write_image_at (rel, shdr[i].sh_size, offset, fp, name);
       offset += shdr[i].sh_size;
@@ -321,16 +358,16 @@ write_symbol_table (FILE* fp, const char *name, char *image,
 {
   struct grub_pe32_symbol *pe_symtab;
   char *pe_strtab;
-  Elf32_Sym *symtab;
+  Elf_Sym *symtab;
   int *symtab_map, num_syms;
   int i;
 
   pe_symtab = (struct grub_pe32_symbol *) (image + pe_chdr->symtab_offset);
   pe_strtab = (char *) (pe_symtab + pe_chdr->num_symbols);
 
-  symtab = (Elf32_Sym *) xmalloc ((pe_chdr->num_symbols + 1) *
-                                  sizeof (Elf32_Sym));
-  memset (symtab, 0, (pe_chdr->num_symbols + 1) * sizeof (Elf32_Sym));
+  symtab = (Elf_Sym *) xmalloc ((pe_chdr->num_symbols + 1) *
+				sizeof (Elf_Sym));
+  memset (symtab, 0, (pe_chdr->num_symbols + 1) * sizeof (Elf_Sym));
   num_syms = 1;
 
   symtab_map = (int *) xmalloc (pe_chdr->num_symbols * sizeof (int));
@@ -359,19 +396,10 @@ write_symbol_table (FILE* fp, const char *name, char *image,
 
       if ((pe_symtab->type != GRUB_PE32_DT_FUNCTION) && (pe_symtab->num_aux))
         {
-          /*
-           * AROS FIX: Standalone build under Cygwin generates a reference to __enable_execute_stack
-           * in part_bsd.module.exe intermediate file. This symbol refers to section zero, but has
-           * num_aux set to 1. Processing it here causes insertion of empty symbol into ELF output,
-           * which causes following strip command to fail.
-           */
-          if (type != STT_NOTYPE)
-            {
-              if (! pe_symtab->value)
-                type = STT_SECTION;
-  
-              symtab[num_syms].st_name = shdr[section_map[pe_symtab->section]].sh_name;
-            }
+          if (! pe_symtab->value)
+            type = STT_SECTION;
+
+          symtab[num_syms].st_name = shdr[section_map[pe_symtab->section]].sh_name;
         }
       else
         {
@@ -389,6 +417,8 @@ write_symbol_table (FILE* fp, const char *name, char *image,
 
           if ((strcmp (symname, "_grub_mod_init")) &&
               (strcmp (symname, "_grub_mod_fini")) &&
+	      (strcmp (symname, "grub_mod_init")) &&
+              (strcmp (symname, "grub_mod_fini")) &&
               (bind == STB_LOCAL))
               continue;
 
@@ -397,7 +427,7 @@ write_symbol_table (FILE* fp, const char *name, char *image,
 
       symtab[num_syms].st_shndx = section_map[pe_symtab->section];
       symtab[num_syms].st_value = pe_symtab->value;
-      symtab[num_syms].st_info = ELF32_ST_INFO (bind, type);
+      symtab[num_syms].st_info = ELF_ST_INFO (bind, type);
 
       symtab_map[i] = num_syms;
       num_syms++;
@@ -406,17 +436,17 @@ write_symbol_table (FILE* fp, const char *name, char *image,
   write_reloc_section (fp, name, image, pe_chdr, pe_shdr,
 		       symtab, symtab_map);
 
-  shdr[SYMTAB_SECTION].sh_name = insert_string (".symtab");
-  shdr[SYMTAB_SECTION].sh_type = SHT_SYMTAB;
-  shdr[SYMTAB_SECTION].sh_offset = offset;
-  shdr[SYMTAB_SECTION].sh_size = num_syms * sizeof (Elf32_Sym);
-  shdr[SYMTAB_SECTION].sh_entsize = sizeof (Elf32_Sym);
-  shdr[SYMTAB_SECTION].sh_link = STRTAB_SECTION;
-  shdr[SYMTAB_SECTION].sh_addralign = 4;
+  shdr[symtab_section].sh_name = insert_string (".symtab");
+  shdr[symtab_section].sh_type = SHT_SYMTAB;
+  shdr[symtab_section].sh_offset = offset;
+  shdr[symtab_section].sh_size = num_syms * sizeof (Elf_Sym);
+  shdr[symtab_section].sh_entsize = sizeof (Elf_Sym);
+  shdr[symtab_section].sh_link = strtab_section;
+  shdr[symtab_section].sh_addralign = 4;
 
-  grub_util_write_image_at (symtab, shdr[SYMTAB_SECTION].sh_size,
+  grub_util_write_image_at (symtab, shdr[symtab_section].sh_size,
                             offset, fp, name);
-  offset += shdr[SYMTAB_SECTION].sh_size;
+  offset += shdr[symtab_section].sh_size;
 
   free (symtab);
   free (symtab_map);
@@ -425,11 +455,11 @@ write_symbol_table (FILE* fp, const char *name, char *image,
 static void
 write_string_table (FILE *fp, const char *name)
 {
-  shdr[STRTAB_SECTION].sh_name = insert_string (".strtab");
-  shdr[STRTAB_SECTION].sh_type = SHT_STRTAB;
-  shdr[STRTAB_SECTION].sh_offset = offset;
-  shdr[STRTAB_SECTION].sh_size = strtab_len;
-  shdr[STRTAB_SECTION].sh_addralign = 1;
+  shdr[strtab_section].sh_name = insert_string (".strtab");
+  shdr[strtab_section].sh_type = SHT_STRTAB;
+  shdr[strtab_section].sh_offset = offset;
+  shdr[strtab_section].sh_size = strtab_len;
+  shdr[strtab_section].sh_addralign = 1;
   grub_util_write_image_at (strtab, strtab_len, offset, fp,
 			    name);
   offset += strtab_len;
@@ -448,20 +478,25 @@ write_section_header (FILE *fp, const char *name)
   ehdr.e_version = EV_CURRENT;
   ehdr.e_type = ET_REL;
 
+#if GRUB_TARGET_WORDSIZE == 64
+  ehdr.e_ident[EI_CLASS] = ELFCLASS64;
+  ehdr.e_ident[EI_DATA] = ELFDATA2LSB;
+  ehdr.e_machine = EM_X86_64;
+#else
   ehdr.e_ident[EI_CLASS] = ELFCLASS32;
   ehdr.e_ident[EI_DATA] = ELFDATA2LSB;
   ehdr.e_machine = EM_386;
-
+#endif
   ehdr.e_ehsize = sizeof (ehdr);
-  ehdr.e_shentsize = sizeof (Elf32_Shdr);
-  ehdr.e_shstrndx = STRTAB_SECTION;
+  ehdr.e_shentsize = sizeof (Elf_Shdr);
+  ehdr.e_shstrndx = strtab_section;
 
   ehdr.e_shoff = offset;
   ehdr.e_shnum = num_sections;
-  grub_util_write_image_at (&shdr, sizeof (Elf32_Shdr) * num_sections,
+  grub_util_write_image_at (shdr, sizeof (Elf_Shdr) * num_sections,
                             offset, fp, name);
 
-  grub_util_write_image_at (&ehdr, sizeof (Elf32_Ehdr), 0, fp, name);
+  grub_util_write_image_at (&ehdr, sizeof (Elf_Ehdr), 0, fp, name);
 }
 
 static void
@@ -471,9 +506,13 @@ convert_pe (FILE* fp, const char *name, char *image)
   struct grub_pe32_section_table *pe_shdr;
   int *section_map;
 
-  pe_chdr = (struct grub_pe32_coff_header *) image;
-  if (grub_le_to_cpu16 (pe_chdr->machine) != GRUB_PE32_MACHINE_I386)
-    grub_util_error ("invalid coff image");
+  if (image[0] == 'M' && image[1] == 'Z')
+    pe_chdr = (struct grub_pe32_coff_header *) (image + (grub_le_to_cpu32 (((grub_uint32_t *)image)[0xf]) + 4));
+  else
+    pe_chdr = (struct grub_pe32_coff_header *) image;
+  if (grub_le_to_cpu16 (pe_chdr->machine) != GRUB_PE32_MACHINE)
+    grub_util_error ("invalid coff image (%x != %x)",
+		     grub_le_to_cpu16 (pe_chdr->machine), GRUB_PE32_MACHINE);
 
   strtab = xmalloc (STRTAB_BLOCK);
   strtab_max = STRTAB_BLOCK;
@@ -481,8 +520,17 @@ convert_pe (FILE* fp, const char *name, char *image)
   strtab_len = 1;
 
   offset = sizeof (ehdr);
-  pe_shdr = (struct grub_pe32_section_table *) (pe_chdr + 1);
-  num_sections = REL_SECTION;
+  if (pe_chdr->optional_header_size)
+    {
+#if GRUB_TARGET_WORDSIZE == 64
+      struct grub_pe64_optional_header *o;
+#else
+      struct grub_pe32_optional_header *o;
+#endif
+      o = (void *) (pe_chdr + 1);
+      image_base = o->image_base;
+    }
+  pe_shdr = (struct grub_pe32_section_table *) ((char *) (pe_chdr + 1) + pe_chdr->optional_header_size);
 
   section_map = write_section_data (fp, name, image, pe_chdr, pe_shdr);
 
@@ -499,54 +547,27 @@ main (int argc, char *argv[])
 {
   char *image;
   FILE* fp;
-
-  set_program_name (argv[0]);
-
-    /* Check for options.  */
-  while (1)
-    {
-      int c = getopt_long (argc, argv, "hVv", options, 0);
-
-      if (c == -1)
-	break;
-      else
-	switch (c)
-	  {
-	  case 'h':
-	    usage (0);
-	    break;
-
-	  case 'V':
-	    printf ("%s (%s) %s\n", program_name, PACKAGE_NAME, PACKAGE_VERSION);
-	    return 0;
-
-	  case 'v':
-	    verbosity++;
-	    break;
-
-	  default:
-	    usage (1);
-	    break;
-	  }
-    }
+  char *in, *out;
 
   /* Obtain PATH.  */
-  if (optind >= argc)
+  if (1 >= argc)
     {
       fprintf (stderr, "Filename not specified.\n");
-      usage (1);
+      return 1;
     }
 
-  image = grub_util_read_image (argv[optind]);
+  in = argv[1];
+  if (argc > 2)
+    out = argv[2];
+  else
+    out = in;
+  image = grub_util_read_image (in);
 
-  if (optind + 1 < argc)
-    optind++;
-
-  fp = fopen (argv[optind], "wb");
+  fp = grub_util_fopen (out, "wb");
   if (! fp)
-    grub_util_error ("cannot open %s", argv[optind]);
+    grub_util_error ("cannot open %s", out);
 
-  convert_pe (fp, argv[optind], image);
+  convert_pe (fp, out, image);
 
   fclose (fp);
 

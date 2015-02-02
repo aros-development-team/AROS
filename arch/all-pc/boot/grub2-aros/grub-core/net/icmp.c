@@ -25,13 +25,13 @@ struct icmp_header
   grub_uint8_t type;
   grub_uint8_t code;
   grub_uint16_t checksum;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct ping_header
 {
   grub_uint16_t id;
   grub_uint16_t seq;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 enum
   {

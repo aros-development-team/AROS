@@ -60,18 +60,18 @@ struct grub_cpu_interrupt_gate
   grub_uint8_t unused;
   grub_uint8_t gate;
   grub_uint16_t offset_hi;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_cpu_idt_descriptor
 {
   grub_uint16_t limit;
   grub_uint32_t base;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 extern void (*grub_gdb_trapvec[]) (void);
 void grub_gdb_idtinit (void);
 void grub_gdb_idtrestore (void);
-void grub_gdb_trap (int trap_no);
+void grub_gdb_trap (int trap_no) __attribute__ ((regparm(3)));
 
 #endif /* ! ASM */
 #endif /* ! GRUB_GDB_CPU_HEADER */

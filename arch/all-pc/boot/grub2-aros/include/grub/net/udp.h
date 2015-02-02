@@ -27,7 +27,7 @@ struct udphdr
   grub_uint16_t dst;
   grub_uint16_t len;
   grub_uint16_t chksum;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_net_udp_socket;
 typedef struct grub_net_udp_socket *grub_net_udp_socket_t;

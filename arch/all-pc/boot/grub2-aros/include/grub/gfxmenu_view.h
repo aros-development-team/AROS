@@ -75,6 +75,7 @@ int grub_font_get_string_width (grub_font_t font,
 
 #include <grub/video.h>
 #include <grub/bitmap.h>
+#include <grub/bitmap_scale.h>
 #include <grub/gui.h>
 #include <grub/gfxwidgets.h>
 #include <grub/icon_manager.h>
@@ -84,13 +85,21 @@ struct grub_gfxmenu_view
 {
   grub_video_rect_t screen;
 
+  int need_to_check_sanity;
+  grub_video_rect_t terminal_rect;
+  int terminal_border;
+
   grub_font_t title_font;
   grub_font_t message_font;
   char *terminal_font_name;
   grub_video_rgba_color_t title_color;
   grub_video_rgba_color_t message_color;
   grub_video_rgba_color_t message_bg_color;
-  struct grub_video_bitmap *desktop_image;
+  struct grub_video_bitmap *raw_desktop_image;
+  struct grub_video_bitmap *scaled_desktop_image;
+  grub_video_bitmap_selection_method_t desktop_image_scale_method;
+  grub_video_bitmap_h_align_t desktop_image_h_align;
+  grub_video_bitmap_v_align_t desktop_image_v_align;
   grub_video_rgba_color_t desktop_color;
   grub_gfxmenu_box_t terminal_box;
   char *title_text;

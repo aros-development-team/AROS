@@ -22,6 +22,8 @@
 #include <grub/types.h>
 #include <grub/machine/int.h>
 
+static grub_uint8_t grub_console_cur_color = 0x7;
+
 static void
 int10_9 (grub_uint8_t ch, grub_uint16_t n)
 {
@@ -45,7 +47,7 @@ int10_9 (grub_uint8_t ch, grub_uint16_t n)
  */
 
 
-static grub_uint16_t
+static struct grub_term_coordinate
 grub_console_getxy (struct grub_term_output *term __attribute__ ((unused)))
 {
   struct grub_bios_int_registers regs;
@@ -55,7 +57,8 @@ grub_console_getxy (struct grub_term_output *term __attribute__ ((unused)))
   regs.flags = GRUB_CPU_INT_FLAGS_DEFAULT;  
   grub_bios_interrupt (0x10, &regs);
 
-  return ((regs.edx & 0xff) << 8) | ((regs.edx & 0xff00) >> 8);
+  return (struct grub_term_coordinate) {
+    (regs.edx & 0xff), ((regs.edx & 0xff00) >> 8) };
 }
 
 /*
@@ -67,14 +70,14 @@ grub_console_getxy (struct grub_term_output *term __attribute__ ((unused)))
  */
 static void
 grub_console_gotoxy (struct grub_term_output *term __attribute__ ((unused)),
-		     grub_uint8_t x, grub_uint8_t y)
+		     struct grub_term_coordinate pos)
 {
   struct grub_bios_int_registers regs;
 
   /* set page to 0 */
   regs.ebx = 0;
   regs.eax = 0x0200;
-  regs.edx = (y << 8) | x;
+  regs.edx = (pos.y << 8) | pos.x;
   regs.flags = GRUB_CPU_INT_FLAGS_DEFAULT;  
   grub_bios_interrupt (0x10, &regs);
 }
@@ -84,19 +87,15 @@ grub_console_gotoxy (struct grub_term_output *term __attribute__ ((unused)),
  * Put the character C on the console. Because GRUB wants to write a
  * character with an attribute, this implementation is a bit tricky.
  * If C is a control character (CR, LF, BEL, BS), use INT 10, AH = 0Eh
- * (TELETYPE OUTPUT). Otherwise, save the original position, put a space,
- * save the current position, restore the original position, write the
- * character and the attribute, and restore the current position.
- *
- * The reason why this is so complicated is that there is no easy way to
- * get the height of the screen, and the TELETYPE OUTPUT BIOS call doesn't
- * support setting a background attribute.
+ * (TELETYPE OUTPUT). Otherwise, use INT 10, AH = 9 to write character
+ * with attributes and advance cursor. If we are on the last column,
+ * let BIOS to wrap line correctly.
  */
 static void
 grub_console_putchar_real (grub_uint8_t c)
 {
   struct grub_bios_int_registers regs;
-  grub_uint16_t pos;
+  struct grub_term_coordinate pos;
 
   if (c == 7 || c == 8 || c == 0xa || c == 0xd)
     {
@@ -110,19 +109,18 @@ grub_console_putchar_real (grub_uint8_t c)
   /* get the current position */
   pos = grub_console_getxy (NULL);
   
-  /* check the column with the width */
-  if ((pos & 0xff00) >= (79 << 8))
-    {
-      grub_console_putchar_real (0x0d);
-      grub_console_putchar_real (0x0a);
-      /* get the current position */
-      pos = grub_console_getxy (NULL);
-    }
-
   /* write the character with the attribute */
   int10_9 (c, 1);
 
-  grub_console_gotoxy (NULL, ((pos & 0xff00) >> 8) + 1, (pos & 0xff));
+  /* check the column with the width */
+  if (pos.x >= 79)
+    {
+      grub_console_putchar_real (0x0d);
+      grub_console_putchar_real (0x0a);
+    }
+  else
+    grub_console_gotoxy (NULL, (struct grub_term_coordinate) { pos.x + 1,
+	  pos.y });
 }
 
 static void
@@ -144,13 +142,13 @@ static void
 grub_console_cls (struct grub_term_output *term)
 {
   /* move the cursor to the beginning */
-  grub_console_gotoxy (term, 0, 0);
+  grub_console_gotoxy (term, (struct grub_term_coordinate) { 0, 0 });
 
   /* write spaces to the entire screen */
   int10_9 (' ', 80 * 25);
 
   /* move back the cursor */
-  grub_console_gotoxy (term, 0, 0);
+  grub_console_gotoxy (term, (struct grub_term_coordinate) { 0, 0 });
 }
 
 /*
@@ -250,6 +248,32 @@ grub_console_getkeystatus (struct grub_term_input *term __attribute__ ((unused))
   return bios_data_area->keyboard_flag_lower & ~0x80;
 }
 
+static struct grub_term_coordinate
+grub_console_getwh (struct grub_term_output *term __attribute__ ((unused)))
+{
+  return (struct grub_term_coordinate) { 80, 25 };
+}
+
+static void
+grub_console_setcolorstate (struct grub_term_output *term
+			    __attribute__ ((unused)),
+			    grub_term_color_state state)
+{
+  switch (state) {
+    case GRUB_TERM_COLOR_STANDARD:
+      grub_console_cur_color = GRUB_TERM_DEFAULT_STANDARD_COLOR & 0x7f;
+      break;
+    case GRUB_TERM_COLOR_NORMAL:
+      grub_console_cur_color = grub_term_normal_color & 0x7f;
+      break;
+    case GRUB_TERM_COLOR_HIGHLIGHT:
+      grub_console_cur_color = grub_term_highlight_color & 0x7f;
+      break;
+    default:
+      break;
+  }
+}
+
 static struct grub_term_input grub_console_term_input =
   {
     .name = "console",
@@ -268,8 +292,7 @@ static struct grub_term_output grub_console_term_output =
     .setcolorstate = grub_console_setcolorstate,
     .setcursor = grub_console_setcursor,
     .flags = GRUB_TERM_CODE_TYPE_CP437,
-    .normal_color = GRUB_TERM_DEFAULT_NORMAL_COLOR,
-    .highlight_color = GRUB_TERM_DEFAULT_HIGHLIGHT_COLOR,
+    .progress_update_divisor = GRUB_PROGRESS_FAST
   };
 
 void

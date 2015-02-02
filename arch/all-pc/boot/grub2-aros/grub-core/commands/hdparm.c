@@ -329,6 +329,7 @@ grub_cmd_hdparm (grub_extcmd_context_t ctxt, int argc, char **args)
 	  break;
 	}
     default:
+      grub_disk_close (disk);
       return grub_error (GRUB_ERR_IO, "not an ATA device");
     }
     

@@ -42,7 +42,7 @@ grub_getkeystatus (void)
   grub_term_input_t term;
 
   if (grub_term_poll_usb)
-    grub_term_poll_usb ();
+    grub_term_poll_usb (0);
 
   FOR_ACTIVE_TERM_INPUTS(term)
   {

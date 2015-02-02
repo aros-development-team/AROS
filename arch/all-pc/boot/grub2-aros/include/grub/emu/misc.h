@@ -22,62 +22,58 @@
 #include <config.h>
 #include <stdarg.h>
 
+#include <stdio.h>
+
 #include <grub/symbol.h>
 #include <grub/types.h>
-
-#ifdef __CYGWIN__
-# include <sys/fcntl.h>
-# include <sys/cygwin.h>
-# include <limits.h>
-# define DEV_CYGDRIVE_MAJOR 98
-#endif
-
-#ifdef __NetBSD__
-/* NetBSD uses /boot for its boot block.  */
-# define DEFAULT_DIRECTORY	"/"GRUB_DIR_NAME
-#else
-# define DEFAULT_DIRECTORY	"/"GRUB_BOOT_DIR_NAME"/"GRUB_DIR_NAME
-#endif
-
-#define DEFAULT_DEVICE_MAP	DEFAULT_DIRECTORY "/device.map"
+#include <grub/misc.h>
 
 extern int verbosity;
 extern const char *program_name;
 
-void grub_emu_init (void);
 void grub_init_all (void);
 void grub_fini_all (void);
-void grub_emu_post_init (void);
 
 void grub_find_zpool_from_dir (const char *dir,
 			       char **poolname, char **poolfs);
 
 char *grub_make_system_path_relative_to_its_root (const char *path)
-  __attribute__ ((warn_unused_result));
+ WARN_UNUSED_RESULT;
 int
 grub_util_device_is_mapped (const char *dev);
 
-void * EXPORT_FUNC(xmalloc) (grub_size_t size) __attribute__ ((warn_unused_result));
-void * EXPORT_FUNC(xrealloc) (void *ptr, grub_size_t size) __attribute__ ((warn_unused_result));
-char * EXPORT_FUNC(xstrdup) (const char *str) __attribute__ ((warn_unused_result));
-char * EXPORT_FUNC(xasprintf) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2))) __attribute__ ((warn_unused_result));
-
-void EXPORT_FUNC(grub_util_warn) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void EXPORT_FUNC(grub_util_info) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void EXPORT_FUNC(grub_util_error) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2), noreturn));
-
-#ifndef HAVE_VASPRINTF
-int EXPORT_FUNC(vasprintf) (char **buf, const char *fmt, va_list ap);
+#ifdef __MINGW32__
+#define GRUB_HOST_PRIuLONG_LONG "I64u"
+#define GRUB_HOST_PRIxLONG_LONG "I64x"
+#else
+#define GRUB_HOST_PRIuLONG_LONG "llu"
+#define GRUB_HOST_PRIxLONG_LONG "llx"
 #endif
 
-#ifndef  HAVE_ASPRINTF
-int EXPORT_FUNC(asprintf) (char **buf, const char *fmt, ...);
-#endif
+void * EXPORT_FUNC(xmalloc) (grub_size_t size) WARN_UNUSED_RESULT;
+void * EXPORT_FUNC(xrealloc) (void *ptr, grub_size_t size) WARN_UNUSED_RESULT;
+char * EXPORT_FUNC(xstrdup) (const char *str) WARN_UNUSED_RESULT;
+char * EXPORT_FUNC(xasprintf) (const char *fmt, ...) __attribute__ ((format (__printf__, 1, 2))) WARN_UNUSED_RESULT;
+
+void EXPORT_FUNC(grub_util_warn) (const char *fmt, ...) __attribute__ ((format (__printf__, 1, 2)));
+void EXPORT_FUNC(grub_util_info) (const char *fmt, ...) __attribute__ ((format (__printf__, 1, 2)));
+void EXPORT_FUNC(grub_util_error) (const char *fmt, ...) __attribute__ ((format (__printf__, 1, 2), noreturn));
+
+grub_uint64_t EXPORT_FUNC (grub_util_get_cpu_time_ms) (void);
 
 extern char * canonicalize_file_name (const char *path);
 
 #ifdef HAVE_DEVICE_MAPPER
 int grub_device_mapper_supported (void);
 #endif
+
+#ifdef GRUB_BUILD
+#define grub_util_fopen fopen
+#else
+FILE *
+grub_util_fopen (const char *path, const char *mode);
+#endif
+
+void grub_util_file_sync (FILE *f);
 
 #endif /* GRUB_EMU_MISC_H */

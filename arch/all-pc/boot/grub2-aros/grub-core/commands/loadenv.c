@@ -35,45 +35,53 @@ static const struct grub_arg_option options[] =
     /* TRANSLATORS: This option is used to override default filename
        for loading and storing environment.  */
     {"file", 'f', 0, N_("Specify filename."), 0, ARG_TYPE_PATHNAME},
+    {"skip-sig", 's', 0,
+     N_("Skip signature-checking of the environment file."), 0, ARG_TYPE_NONE},
     {0, 0, 0, 0, 0, 0}
   };
 
+/* Opens 'filename' with compression filters disabled. Optionally disables the
+   PUBKEY filter (that insists upon properly signed files) as well.  PUBKEY
+   filter is restored before the function returns. */
 static grub_file_t
-open_envblk_file (char *filename)
+open_envblk_file (char *filename, int untrusted)
 {
   grub_file_t file;
+  char *buf = 0;
 
   if (! filename)
     {
       const char *prefix;
+      int len;
 
       prefix = grub_env_get ("prefix");
-      if (prefix)
-        {
-          int len;
-
-          len = grub_strlen (prefix);
-          filename = grub_malloc (len + 1 + sizeof (GRUB_ENVBLK_DEFCFG));
-          if (! filename)
-            return 0;
-
-          grub_strcpy (filename, prefix);
-          filename[len] = '/';
-          grub_strcpy (filename + len + 1, GRUB_ENVBLK_DEFCFG);
-	  grub_file_filter_disable_compression ();
-          file = grub_file_open (filename);
-          grub_free (filename);
-          return file;
-        }
-      else
+      if (! prefix)
         {
           grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("variable `%s' isn't set"), "prefix");
           return 0;
         }
+
+      len = grub_strlen (prefix);
+      buf = grub_malloc (len + 1 + sizeof (GRUB_ENVBLK_DEFCFG));
+      if (! buf)
+        return 0;
+      filename = buf;
+
+      grub_strcpy (filename, prefix);
+      filename[len] = '/';
+      grub_strcpy (filename + len + 1, GRUB_ENVBLK_DEFCFG);
     }
 
+  /* The filters that are disabled will be re-enabled by the call to
+     grub_file_open() after this particular file is opened. */
   grub_file_filter_disable_compression ();
-  return grub_file_open (filename);
+  if (untrusted)
+    grub_file_filter_disable_pubkey ();
+
+  file = grub_file_open (filename);
+
+  grub_free (buf);
+  return file;
 }
 
 static grub_envblk_t
@@ -114,23 +122,56 @@ read_envblk_file (grub_file_t file)
   return envblk;
 }
 
+struct grub_env_whitelist
+{
+  grub_size_t len;
+  char **list;
+};
+typedef struct grub_env_whitelist grub_env_whitelist_t;
+
+static int
+test_whitelist_membership (const char* name,
+                           const grub_env_whitelist_t* whitelist)
+{
+  grub_size_t i;
+
+  for (i = 0; i < whitelist->len; i++)
+    if (grub_strcmp (name, whitelist->list[i]) == 0)
+      return 1;  /* found it */
+
+  return 0;  /* not found */
+}
+
+/* Helper for grub_cmd_load_env.  */
+static int
+set_var (const char *name, const char *value, void *whitelist)
+{
+  if (! whitelist)
+    {
+      grub_env_set (name, value);
+      return 0;
+    }
+
+  if (test_whitelist_membership (name,
+				 (const grub_env_whitelist_t *) whitelist))
+    grub_env_set (name, value);
+
+  return 0;
+}
+
 static grub_err_t
-grub_cmd_load_env (grub_extcmd_context_t ctxt,
-		   int argc __attribute__ ((unused)),
-		   char **args __attribute__ ((unused)))
+grub_cmd_load_env (grub_extcmd_context_t ctxt, int argc, char **args)
 {
   struct grub_arg_list *state = ctxt->state;
   grub_file_t file;
   grub_envblk_t envblk;
+  grub_env_whitelist_t whitelist;
 
-  auto int set_var (const char *name, const char *value);
-  int set_var (const char *name, const char *value)
-  {
-    grub_env_set (name, value);
-    return 0;
-  }
+  whitelist.len = argc;
+  whitelist.list = args;
 
-  file = open_envblk_file ((state[0].set) ? state[0].arg : 0);
+  /* state[0] is the -f flag; state[1] is the --skip-sig flag */
+  file = open_envblk_file ((state[0].set) ? state[0].arg : 0, state[1].set);
   if (! file)
     return grub_errno;
 
@@ -138,12 +179,22 @@ grub_cmd_load_env (grub_extcmd_context_t ctxt,
   if (! envblk)
     goto fail;
 
-  grub_envblk_iterate (envblk, set_var);
+  /* argc > 0 indicates caller provided a whitelist of variables to read. */
+  grub_envblk_iterate (envblk, argc > 0 ? &whitelist : 0, set_var);
   grub_envblk_close (envblk);
 
  fail:
   grub_file_close (file);
   return grub_errno;
+}
+
+/* Print all variables in current context.  */
+static int
+print_var (const char *name, const char *value,
+           void *hook_data __attribute__ ((unused)))
+{
+  grub_printf ("%s=%s\n", name, value);
+  return 0;
 }
 
 static grub_err_t
@@ -155,15 +206,7 @@ grub_cmd_list_env (grub_extcmd_context_t ctxt,
   grub_file_t file;
   grub_envblk_t envblk;
 
-  /* Print all variables in current context.  */
-  auto int print_var (const char *name, const char *value);
-  int print_var (const char *name, const char *value)
-    {
-      grub_printf ("%s=%s\n", name, value);
-      return 0;
-    }
-
-  file = open_envblk_file ((state[0].set) ? state[0].arg : 0);
+  file = open_envblk_file ((state[0].set) ? state[0].arg : 0, 0);
   if (! file)
     return grub_errno;
 
@@ -171,7 +214,7 @@ grub_cmd_list_env (grub_extcmd_context_t ctxt,
   if (! envblk)
     goto fail;
 
-  grub_envblk_iterate (envblk, print_var);
+  grub_envblk_iterate (envblk, NULL, print_var);
   grub_envblk_close (envblk);
 
  fail:
@@ -216,10 +259,19 @@ check_blocklists (grub_envblk_t envblk, struct blocklist *blocklists,
   for (p = blocklists; p; p = p->next)
     {
       struct blocklist *q;
+      /* Check if any pair of blocks overlap.  */
       for (q = p->next; q; q = q->next)
         {
-          /* Check if any pair of blocks overlap.  */
-          if (p->sector == q->sector)
+	  grub_disk_addr_t s1, s2;
+	  grub_disk_addr_t e1, e2;
+
+	  s1 = p->sector;
+	  e1 = s1 + ((p->length + GRUB_DISK_SECTOR_SIZE - 1) >> GRUB_DISK_SECTOR_BITS);
+
+	  s2 = q->sector;
+	  e2 = s2 + ((q->length + GRUB_DISK_SECTOR_SIZE - 1) >> GRUB_DISK_SECTOR_BITS);
+
+	  if (s1 < e2 && s2 < e1)
             {
               /* This might be actually valid, but it is unbelievable that
                  any filesystem makes such a silly allocation.  */
@@ -243,9 +295,18 @@ check_blocklists (grub_envblk_t envblk, struct blocklist *blocklists,
   part_start = grub_partition_get_start (disk->partition);
 
   buf = grub_envblk_buffer (envblk);
+  char *blockbuf = NULL;
+  grub_size_t blockbuf_len = 0;
   for (p = blocklists, index = 0; p; index += p->length, p = p->next)
     {
-      char blockbuf[GRUB_DISK_SECTOR_SIZE];
+      if (p->length > blockbuf_len)
+	{
+	  grub_free (blockbuf);
+	  blockbuf_len = 2 * p->length;
+	  blockbuf = grub_malloc (blockbuf_len);
+	  if (!blockbuf)
+	    return grub_errno;
+	}
 
       if (grub_disk_read (disk, p->sector - part_start,
                           p->offset, p->length, blockbuf))
@@ -283,49 +344,53 @@ write_blocklists (grub_envblk_t envblk, struct blocklist *blocklists,
   return 1;
 }
 
+/* Context for grub_cmd_save_env.  */
+struct grub_cmd_save_env_ctx
+{
+  struct blocklist *head, *tail;
+};
+
+/* Store blocklists in a linked list.  */
+static void
+save_env_read_hook (grub_disk_addr_t sector, unsigned offset, unsigned length,
+		    void *data)
+{
+  struct grub_cmd_save_env_ctx *ctx = data;
+  struct blocklist *block;
+
+  block = grub_malloc (sizeof (*block));
+  if (! block)
+    return;
+
+  block->sector = sector;
+  block->offset = offset;
+  block->length = length;
+
+  /* Slightly complicated, because the list should be FIFO.  */
+  block->next = 0;
+  if (ctx->tail)
+    ctx->tail->next = block;
+  ctx->tail = block;
+  if (! ctx->head)
+    ctx->head = block;
+}
+
 static grub_err_t
 grub_cmd_save_env (grub_extcmd_context_t ctxt, int argc, char **args)
 {
   struct grub_arg_list *state = ctxt->state;
   grub_file_t file;
   grub_envblk_t envblk;
-  struct blocklist *head = 0;
-  struct blocklist *tail = 0;
-
-  /* Store blocklists in a linked list.  */
-  auto void NESTED_FUNC_ATTR read_hook (grub_disk_addr_t sector,
-                                        unsigned offset,
-                                        unsigned length);
-  void NESTED_FUNC_ATTR read_hook (grub_disk_addr_t sector,
-                                   unsigned offset, unsigned length)
-    {
-      struct blocklist *block;
-
-      if (offset + length > GRUB_DISK_SECTOR_SIZE)
-        /* Seemingly a bug.  */
-        return;
-
-      block = grub_malloc (sizeof (*block));
-      if (! block)
-        return;
-
-      block->sector = sector;
-      block->offset = offset;
-      block->length = length;
-
-      /* Slightly complicated, because the list should be FIFO.  */
-      block->next = 0;
-      if (tail)
-        tail->next = block;
-      tail = block;
-      if (! head)
-        head = block;
-    }
+  struct grub_cmd_save_env_ctx ctx = {
+    .head = 0,
+    .tail = 0
+  };
 
   if (! argc)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "no variable is specified");
 
-  file = open_envblk_file ((state[0].set) ? state[0].arg : 0);
+  file = open_envblk_file ((state[0].set) ? state[0].arg : 0,
+                           1 /* allow untrusted */);
   if (! file)
     return grub_errno;
 
@@ -335,13 +400,14 @@ grub_cmd_save_env (grub_extcmd_context_t ctxt, int argc, char **args)
       return grub_error (GRUB_ERR_BAD_DEVICE, "disk device required");
     }
 
-  file->read_hook = read_hook;
+  file->read_hook = save_env_read_hook;
+  file->read_hook_data = &ctx;
   envblk = read_envblk_file (file);
   file->read_hook = 0;
   if (! envblk)
     goto fail;
 
-  if (check_blocklists (envblk, head, file))
+  if (check_blocklists (envblk, ctx.head, file))
     goto fail;
 
   while (argc)
@@ -357,17 +423,19 @@ grub_cmd_save_env (grub_extcmd_context_t ctxt, int argc, char **args)
               goto fail;
             }
         }
+      else
+	grub_envblk_delete (envblk, args[0]);
 
       argc--;
       args++;
     }
 
-  write_blocklists (envblk, head, file);
+  write_blocklists (envblk, ctx.head, file);
 
  fail:
   if (envblk)
     grub_envblk_close (envblk);
-  free_blocklists (head);
+  free_blocklists (ctx.head);
   grub_file_close (file);
   return grub_errno;
 }
@@ -377,7 +445,8 @@ static grub_extcmd_t cmd_load, cmd_list, cmd_save;
 GRUB_MOD_INIT(loadenv)
 {
   cmd_load =
-    grub_register_extcmd ("load_env", grub_cmd_load_env, 0, N_("[-f FILE]"),
+    grub_register_extcmd ("load_env", grub_cmd_load_env, 0,
+			  N_("[-f FILE] [-s|--skip-sig] [variable_name_to_whitelist] [...]"),
 			  N_("Load variables from environment block file."),
 			  options);
   cmd_list =

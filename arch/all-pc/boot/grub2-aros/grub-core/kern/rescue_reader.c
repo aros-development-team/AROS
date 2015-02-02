@@ -30,7 +30,8 @@ static char linebuf[GRUB_RESCUE_BUF_SIZE];
 
 /* Prompt to input a command and read the line.  */
 static grub_err_t
-grub_rescue_read_line (char **line, int cont)
+grub_rescue_read_line (char **line, int cont,
+		       void *data __attribute__ ((unused)))
 {
   int c;
   int pos = 0;
@@ -87,11 +88,11 @@ grub_rescue_run (void)
       grub_print_error ();
       grub_errno = GRUB_ERR_NONE;
 
-      grub_rescue_read_line (&line, 0);
+      grub_rescue_read_line (&line, 0, NULL);
       if (! line || line[0] == '\0')
 	continue;
 
-      grub_rescue_parse_line (line, grub_rescue_read_line);
+      grub_rescue_parse_line (line, grub_rescue_read_line, NULL);
       grub_free (line);
     }
 }

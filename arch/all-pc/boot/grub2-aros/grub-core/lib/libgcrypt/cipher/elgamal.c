@@ -115,7 +115,7 @@ wiener_map( unsigned int n )
     };
   int i;
 
-  for(i=0; t[i].p_n; i++ )  
+  for(i=0; t[i].p_n; i++ )
     {
       if( n <= t[i].p_n )
         return t[i].q_n;
@@ -158,7 +158,7 @@ test_keys ( ELG_secret_key *sk, unsigned int nbits, int nodie )
     log_fatal ("Elgamal test key for %s %s failed\n",
                (failed & 1)? "encrypt+decrypt":"",
                (failed & 2)? "sign+verify":"");
-  if (failed && DBG_CIPHER) 
+  if (failed && DBG_CIPHER)
     log_debug ("Elgamal test key for %s %s failed\n",
                (failed & 1)? "encrypt+decrypt":"",
                (failed & 2)? "sign+verify":"");
@@ -199,15 +199,15 @@ gen_k( gcry_mpi_t p, int small_k )
   if( DBG_CIPHER )
     log_debug("choosing a random k ");
   mpi_sub_ui( p_1, p, 1);
-  for(;;) 
+  for(;;)
     {
-      if( !rndbuf || nbits < 32 ) 
+      if( !rndbuf || nbits < 32 )
         {
           gcry_free(rndbuf);
           rndbuf = gcry_random_bytes_secure( nbytes, GCRY_STRONG_RANDOM );
         }
       else
-        { 
+        {
           /* Change only some of the higher bits.  We could improve
              this by directly requesting more memory at the first call
              to get_random_bytes() and use this the here maybe it is
@@ -218,7 +218,7 @@ gen_k( gcry_mpi_t p, int small_k )
           gcry_free(pp);
 	}
       _gcry_mpi_set_buffer( k, rndbuf, nbytes, 0 );
-        
+
       for(;;)
         {
           if( !(mpi_cmp( k, p_1 ) < 0) )  /* check: k < (p-1) */
@@ -294,7 +294,7 @@ generate ( ELG_secret_key *sk, unsigned int nbits, gcry_mpi_t **ret_factors )
   if( DBG_CIPHER )
     log_debug("choosing a random x of size %u", xbits );
   rndbuf = NULL;
-  do 
+  do
     {
       if( DBG_CIPHER )
         progress('.');
@@ -314,21 +314,21 @@ generate ( ELG_secret_key *sk, unsigned int nbits, gcry_mpi_t **ret_factors )
               gcry_free(r);
             }
 	}
-      else 
+      else
         {
           rndbuf = gcry_random_bytes_secure( (xbits+7)/8,
                                              GCRY_VERY_STRONG_RANDOM );
 	}
       _gcry_mpi_set_buffer( x, rndbuf, (xbits+7)/8, 0 );
       mpi_clear_highbit( x, xbits+1 );
-    } 
+    }
   while( !( mpi_cmp_ui( x, 0 )>0 && mpi_cmp( x, p_min1 )<0 ) );
   gcry_free(rndbuf);
 
   y = gcry_mpi_new (nbits);
   gcry_mpi_powm( y, g, x, p );
 
-  if( DBG_CIPHER ) 
+  if( DBG_CIPHER )
     {
       progress('\n');
       log_mpidump("elg  p= ", p );
@@ -354,7 +354,7 @@ generate ( ELG_secret_key *sk, unsigned int nbits, gcry_mpi_t **ret_factors )
    value for the secret key but the one given as X.  This is useful to
    implement a passphrase based decryption for a public key based
    encryption.  It has appliactions in backup systems.
- 
+
    Returns: A structure filled with all needed values and an array
  	    with n-1 factors of (p-1).  */
 static gcry_err_code_t
@@ -399,7 +399,7 @@ generate_using_x (ELG_secret_key *sk, unsigned int nbits, gcry_mpi_t x,
   y = gcry_mpi_new (nbits);
   gcry_mpi_powm ( y, g, x, p );
 
-  if ( DBG_CIPHER ) 
+  if ( DBG_CIPHER )
     {
       progress ('\n');
       log_mpidump ("elg  p= ", p );
@@ -493,7 +493,7 @@ decrypt(gcry_mpi_t output, gcry_mpi_t a, gcry_mpi_t b, ELG_secret_key *skey )
   mpi_invm( t1, t1, skey->p );
   mpi_mulm( output, b, t1, skey->p );
 #if 0
-  if( DBG_CIPHER ) 
+  if( DBG_CIPHER )
     {
       log_mpidump("elg decrypted x= ", skey->x);
       log_mpidump("elg decrypted p= ", skey->p);
@@ -533,7 +533,7 @@ sign(gcry_mpi_t a, gcry_mpi_t b, gcry_mpi_t input, ELG_secret_key *skey )
     mpi_mulm(b, t, inv, p_1 );
 
 #if 0
-    if( DBG_CIPHER ) 
+    if( DBG_CIPHER )
       {
 	log_mpidump("elg sign p= ", skey->p);
 	log_mpidump("elg sign g= ", skey->g);
@@ -652,7 +652,7 @@ elg_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
   skey[1] = sk.g;
   skey[2] = sk.y;
   skey[3] = sk.x;
-  
+
   return ec;
 }
 
@@ -671,7 +671,7 @@ elg_generate (int algo, unsigned int nbits, unsigned long evalue,
   skey[1] = sk.g;
   skey[2] = sk.y;
   skey[3] = sk.x;
-  
+
   return GPG_ERR_NO_ERROR;
 }
 
@@ -692,7 +692,7 @@ elg_check_secret_key (int algo, gcry_mpi_t *skey)
       sk.g = skey[1];
       sk.y = skey[2];
       sk.x = skey[3];
-      
+
       if (! check_secret_key (&sk))
 	err = GPG_ERR_BAD_SECKEY;
     }
@@ -773,7 +773,7 @@ elg_sign (int algo, gcry_mpi_t *resarr, gcry_mpi_t data, gcry_mpi_t *skey)
       resarr[1] = mpi_alloc (mpi_get_nlimbs (sk.p));
       sign (resarr[0], resarr[1], data, &sk);
     }
-  
+
   return err;
 }
 
@@ -837,10 +837,9 @@ gcry_pk_spec_t _gcry_pubkey_spec_elg =
     elg_get_nbits
   };
 
-pk_extra_spec_t _gcry_pubkey_extraspec_elg = 
+pk_extra_spec_t _gcry_pubkey_extraspec_elg =
   {
     NULL,
     elg_generate_ext,
     NULL
   };
-

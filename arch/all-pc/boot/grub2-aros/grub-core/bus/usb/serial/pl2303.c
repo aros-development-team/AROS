@@ -55,7 +55,7 @@ struct grub_pl2303_config
   grub_uint8_t stop_bits;
   grub_uint8_t parity;
   grub_uint8_t word_len;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 static void
 real_config (struct grub_serial_port *port)
@@ -125,7 +125,7 @@ real_config (struct grub_serial_port *port)
 			0x22, 3, 0, 0, 0);
 
   grub_usb_control_msg (port->usbdev, GRUB_USB_REQTYPE_VENDOR_OUT,
-			1, 0, 0x61, 0, 0);
+			1, 0, port->config.rtscts ? 0x61 : 0, 0, 0);
   port->configured = 1;
 }
 
@@ -146,7 +146,7 @@ pl2303_hw_put (struct grub_serial_port *port, const int c)
 
   real_config (port);
 
-  grub_usb_bulk_write (port->usbdev, port->out_endp->endp_addr, 1, &cc);
+  grub_usb_bulk_write (port->usbdev, port->out_endp, 1, &cc);
 }
 
 static grub_err_t
@@ -208,7 +208,9 @@ grub_pl2303_attach (grub_usb_device_t usbdev, int configno, int interfno)
     return 0;
 
   return grub_usbserial_attach (usbdev, configno, interfno,
-				&grub_pl2303_driver);
+				&grub_pl2303_driver,
+				GRUB_USB_SERIAL_ENDPOINT_LAST_MATCHING,
+				GRUB_USB_SERIAL_ENDPOINT_LAST_MATCHING);
 }
 
 static struct grub_usb_attach_desc attach_hook =

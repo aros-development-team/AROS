@@ -59,7 +59,7 @@ EOF
   | grep -v '^#' \
   | sed -n \
         -e '/EXPORT_FUNC *([a-zA-Z0-9_]*)/{s/.*EXPORT_FUNC *(\([a-zA-Z0-9_]*\)).*/      {"\1", \1, 1},/;p;}' \
-        -e '/EXPORT_VAR *([a-zA-Z0-9_]*)/{s/.*EXPORT_VAR *(\([a-zA-Z0-9_]*\)).*/      {"\1", \&\1, 0},/;p;}' \
+        -e '/EXPORT_VAR *([a-zA-Z0-9_]*)/{s/.*EXPORT_VAR *(\([a-zA-Z0-9_]*\)).*/      {"\1", (void *) \&\1, 0},/;p;}' \
   | sort -u
 
 cat <<EOF

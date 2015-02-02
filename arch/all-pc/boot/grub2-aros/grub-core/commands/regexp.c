@@ -47,6 +47,18 @@ static const struct grub_arg_option options[] =
   };
 
 static grub_err_t
+setvar (char *str, char *v, regmatch_t *m)
+{
+  char ch;
+  grub_err_t err;
+  ch = str[m->rm_eo];
+  str[m->rm_eo] = '\0';
+  err = grub_env_set (v, str + m->rm_so);
+  str[m->rm_eo] = ch;
+  return err;
+}
+
+static grub_err_t
 set_matches (char **varnames, char *str, grub_size_t nmatches,
 	     regmatch_t *matches)
 {
@@ -56,18 +68,9 @@ set_matches (char **varnames, char *str, grub_size_t nmatches,
   grub_err_t err;
   unsigned long j;
 
-  auto void setvar (char *v, regmatch_t *m);
-  void setvar (char *v, regmatch_t *m)
-  {
-    char ch;
-    ch = str[m->rm_eo];
-    str[m->rm_eo] = '\0';
-    err = grub_env_set (v, str + m->rm_so);
-    str[m->rm_eo] = ch;
-  }
-
   for (i = 0; varnames && varnames[i]; i++)
     {
+      err = GRUB_ERR_NONE;
       p = grub_strchr (varnames[i], ':');
       if (! p)
 	{
@@ -75,7 +78,7 @@ set_matches (char **varnames, char *str, grub_size_t nmatches,
 	  if (nmatches < 2 || matches[1].rm_so == -1)
 	    grub_env_unset (varnames[i]);
 	  else
-	    setvar (varnames[i], &matches[1]);
+	    err = setvar (str, varnames[i], &matches[1]);
 	}
       else
 	{
@@ -87,7 +90,7 @@ set_matches (char **varnames, char *str, grub_size_t nmatches,
 	  if (nmatches <= j || matches[j].rm_so == -1)
 	    grub_env_unset (p + 1);
 	  else
-	    setvar (p + 1, &matches[j]);
+	    err = setvar (str, p + 1, &matches[j]);
 	}
 
       if (err != GRUB_ERR_NONE)

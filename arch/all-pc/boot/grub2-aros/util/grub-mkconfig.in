@@ -17,7 +17,6 @@ set -e
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-transform="@program_transform_name@"
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 datarootdir="@datarootdir@"
@@ -39,9 +38,10 @@ grub_mkconfig_dir="${sysconfdir}"/grub.d
 
 self=`basename $0`
 
-grub_probe="${sbindir}/`echo grub-probe | sed "${transform}"`"
-grub_editenv="${bindir}/`echo grub-editenv | sed "${transform}"`"
-grub_script_check="${bindir}/`echo grub-script-check | sed "${transform}"`"
+grub_probe="${sbindir}/@grub_probe@"
+grub_file="${bindir}/@grub_file@"
+grub_editenv="${bindir}/@grub_editenv@"
+grub_script_check="${bindir}/@grub_script_check@"
 
 export TEXTDOMAIN=@PACKAGE@
 export TEXTDOMAINDIR="@localedir@"
@@ -66,7 +66,7 @@ argument () {
   shift
 
   if test $# -eq 0; then
-      gettext_printf "%s: option requires an argument -- \`%s'\n" "$0" "$opt" 1>&2
+      gettext_printf "%s: option requires an argument -- \`%s'\n" "$self" "$opt" 1>&2
       exit 1
   fi
   echo $1
@@ -124,7 +124,7 @@ set $grub_probe dummy
 if test -f "$1"; then
     :
 else
-    gettext_print "%s: Not found.\n" "$1" 1>&2
+    gettext_printf "%s: Not found.\n" "$1" 1>&2
     exit 1
 fi
 
@@ -139,6 +139,10 @@ GRUB_DEVICE_BOOT_UUID="`${grub_probe} --device ${GRUB_DEVICE_BOOT} --target=fs_u
 # Filesystem for the device containing our userland.  Used for stuff like
 # choosing Hurd filesystem module.
 GRUB_FS="`${grub_probe} --device ${GRUB_DEVICE} --target=fs 2> /dev/null || echo unknown`"
+
+if [ x"$GRUB_FS" = xunknown ]; then
+    GRUB_FS="$(stat -f --printf=%T / || echo unknown)"
+fi
 
 if test -f ${sysconfdir}/default/grub ; then
   . ${sysconfdir}/default/grub
@@ -159,7 +163,7 @@ fi
 for x in ${GRUB_TERMINAL_OUTPUT}; do
     case "x${x}" in
 	xgfxterm) ;;
-	xconsole | xserial | xofconsole)
+	xconsole | xserial | xofconsole | xvga_text)
             # make sure all our children behave in conformance with ascii..
 	    export LANG=C;;
 	*) echo "Invalid output terminal \"${GRUB_TERMINAL_OUTPUT}\"" >&2 ; exit 1 ;;
@@ -187,9 +191,11 @@ export GRUB_DEFAULT \
   GRUB_HIDDEN_TIMEOUT \
   GRUB_HIDDEN_TIMEOUT_QUIET \
   GRUB_TIMEOUT \
+  GRUB_TIMEOUT_STYLE \
   GRUB_DEFAULT_BUTTON \
   GRUB_HIDDEN_TIMEOUT_BUTTON \
   GRUB_TIMEOUT_BUTTON \
+  GRUB_TIMEOUT_STYLE_BUTTON \
   GRUB_BUTTON_CMOS_ADDRESS \
   GRUB_BUTTON_CMOS_CLEAN \
   GRUB_DISTRIBUTOR \
@@ -216,7 +222,9 @@ export GRUB_DEFAULT \
   GRUB_INIT_TUNE \
   GRUB_SAVEDEFAULT \
   GRUB_ENABLE_CRYPTODISK \
-  GRUB_BADRAM
+  GRUB_BADRAM \
+  GRUB_OS_PROBER_SKIP_LIST \
+  GRUB_DISABLE_SUBMENU
 
 if test "x${grub_cfg}" != "x"; then
   rm -f "${grub_cfg}.new"
@@ -224,7 +232,7 @@ if test "x${grub_cfg}" != "x"; then
   exec > "${grub_cfg}.new"
   umask $oldumask
 fi
-gettext "Generating grub.cfg ..." >&2
+gettext "Generating grub configuration file ..." >&2
 echo >&2
 
 cat << EOF
@@ -236,12 +244,13 @@ cat << EOF
 #
 EOF
 
-for i in ${grub_mkconfig_dir}/* ; do
+
+for i in "${grub_mkconfig_dir}"/* ; do
   case "$i" in
     # emacsen backup files. FIXME: support other editors
     *~) ;;
     # emacsen autosave files. FIXME: support other editors
-    \#*\#) ;;
+    */\#*\#) ;;
     *)
       if grub_file_is_not_garbage "$i" && test -x "$i" ; then
         echo
@@ -260,6 +269,7 @@ if test "x${grub_cfg}" != "x" ; then
 Ensure that there are no errors in /etc/default/grub
 and /etc/grub.d/* files or please file a bug report with
 %s file attached." "${grub_cfg}.new" >&2
+    echo >&2
   else
     # none of the children aborted with error, install the new grub.cfg
     mv -f ${grub_cfg}.new ${grub_cfg}

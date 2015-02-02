@@ -92,4 +92,6 @@ grub_err_t
 grub_net_icmp6_send_request (struct grub_net_network_level_interface *inf,
 			     const grub_net_network_level_address_t *proto_addr);
 
+grub_err_t
+grub_net_icmp6_send_router_solicit (struct grub_net_network_level_interface *inf);
 #endif 

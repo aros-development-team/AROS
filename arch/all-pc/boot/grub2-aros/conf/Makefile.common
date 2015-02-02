@@ -3,40 +3,28 @@
 CFLAGS_PLATFORM=
 
 export LC_COLLATE := C
-export LC_CTYPE := C
 unexport LC_ALL
 
 # Platform specific options
-if COND_i386_pc
-  CFLAGS_PLATFORM += -mrtd -mregparm=3
-endif
-if COND_i386_efi
-  LDFLAGS_PLATFORM = -Wl,-melf_i386
-endif
-if COND_x86_64_efi
-  LDFLAGS_PLATFORM = -Wl,-melf_x86_64
-endif
-if COND_i386_qemu
-  CFLAGS_PLATFORM += -mrtd -mregparm=3
-endif
-if COND_i386_coreboot
-  CFLAGS_PLATFORM += -mrtd -mregparm=3
-endif
-if COND_i386_ieee1275
-  CFLAGS_PLATFORM += -mrtd -mregparm=3
-endif
-if COND_mips_loongson
-  CFLAGS_PLATFORM += -mexplicit-relocs
-  CPPFLAGS_PLATFORM = -DUSE_ASCII_FAILBACK
-endif
-if COND_mips
-  CFLAGS_PLATFORM += -mflush-func=grub_cpu_flush_cache
-  CCASFLAGS_PLATFORM = -march=mips3
-endif
 if COND_sparc64_ieee1275
   CFLAGS_PLATFORM += -mno-app-regs
   LDFLAGS_PLATFORM = -Wl,-melf64_sparc -mno-relax
 endif
+if COND_sparc64_emu
+  CFLAGS_PLATFORM += -mno-app-regs
+  LDFLAGS_PLATFORM = -Wl,--no-relax
+endif
+if COND_arm
+if !COND_emu
+  LDFLAGS_PLATFORM = -Wl,--wrap=__clear_cache
+endif
+endif
+if COND_arm64
+  CFLAGS_PLATFORM += -mcmodel=large
+endif
+
+#FIXME: discover and check XEN headers
+CPPFLAGS_XEN = -I/usr/include
 
 # Other options
 
@@ -47,43 +35,25 @@ CPPFLAGS_DEFAULT += -I$(top_builddir)
 CPPFLAGS_DEFAULT += -I$(top_srcdir)
 CPPFLAGS_DEFAULT += -I$(top_srcdir)/include
 CPPFLAGS_DEFAULT += -I$(top_builddir)/include
-CCASFLAGS_DEFAULT = -DASM_FILE=1
+CPPFLAGS_DEFAULT += -I$(top_srcdir)/grub-core/lib/libgcrypt-grub/src/
+CCASFLAGS_DEFAULT = $(CPPFLAGS_DEFAULT) -DASM_FILE=1
+BUILD_CPPFLAGS += $(CPPFLAGS_DEFAULT)
 
-LDADD_KERNEL =
+LDADD_KERNEL = $(TARGET_LIBGCC)
 
-if ! COND_i386_pc
-if ! COND_i386_efi
-if ! COND_i386_qemu
-if ! COND_i386_coreboot
-if ! COND_i386_multiboot
-if ! COND_i386_ieee1275
-if ! COND_x86_64_efi
-LDADD_KERNEL += -lgcc
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-
-CFLAGS_KERNEL = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -ffreestanding
-LDFLAGS_KERNEL = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) -static-libgcc
-CPPFLAGS_KERNEL = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
+CFLAGS_KERNEL = $(CFLAGS_PLATFORM) -ffreestanding
+LDFLAGS_KERNEL = $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) $(TARGET_LDFLAGS_STATIC_LIBGCC)
+CPPFLAGS_KERNEL = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM) -DGRUB_KERNEL=1
 CCASFLAGS_KERNEL = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
-if COND_CYGWIN
-STRIPFLAGS_KERNEL = -F elf32-i386 -R .rel.dyn -R .reginfo -R .note -R .comment -R .drectve -R .note.gnu.gold-version
-else
-STRIPFLAGS_KERNEL = -R .rel.dyn -R .reginfo -R .note -R .comment -R .note.gnu.gold-version
-endif
+STRIPFLAGS_KERNEL = -R .rel.dyn -R .reginfo -R .note -R .comment -R .drectve -R .note.gnu.gold-version
 
-CFLAGS_MODULE = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -ffreestanding
-LDFLAGS_MODULE = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) -Wl,-r,-d
+CFLAGS_MODULE = $(CFLAGS_PLATFORM) -ffreestanding
+LDFLAGS_MODULE = $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) -Wl,-r,-d
 CPPFLAGS_MODULE = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
 CCASFLAGS_MODULE = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
 
-CFLAGS_IMAGE = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -fno-builtin
-LDFLAGS_IMAGE = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) -Wl,-S
+CFLAGS_IMAGE = $(CFLAGS_PLATFORM) -fno-builtin
+LDFLAGS_IMAGE = $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) -Wl,-S
 CPPFLAGS_IMAGE = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
 CCASFLAGS_IMAGE = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
 
@@ -102,14 +72,14 @@ grubconfdir = $(sysconfdir)/grub.d
 platformdir = $(pkglibdir)/$(target_cpu)-$(platform)
 starfielddir = $(pkgdatadir)/themes/starfield
 
-CFLAGS_GCRY = -Wno-error -Wno-missing-field-initializers
-CPPFLAGS_GCRY = -I$(top_srcdir)/grub-core/lib/libgcrypt_wrap
-
-CFLAGS_GNULIB = -Wno-undef -Wno-sign-compare -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code -Wno-conversion -Wno-old-style-definition -Wno-unsafe-loop-optimizations
+CFLAGS_GNULIB = -Wno-undef -Wno-sign-compare -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code -Wno-conversion
 CPPFLAGS_GNULIB = -I$(top_builddir)/grub-core/gnulib -I$(top_srcdir)/grub-core/gnulib
 
 CFLAGS_POSIX = -fno-builtin
 CPPFLAGS_POSIX = -I$(top_srcdir)/grub-core/lib/posix_wrap
+
+CFLAGS_GCRY = -Wno-error -Wno-missing-field-initializers -Wno-redundant-decls -Wno-undef $(CFLAGS_POSIX)
+CPPFLAGS_GCRY = -I$(top_srcdir)/grub-core/lib/libgcrypt_wrap $(CPPFLAGS_POSIX) -D_GCRYPT_IN_LIBGCRYPT=1 -I$(top_srcdir)/include/grub/gcrypt
 
 CPPFLAGS_EFIEMU = -I$(top_srcdir)/grub-core/efiemu/runtime
 
@@ -144,7 +114,7 @@ bin_PROGRAMS =
 platform_DATA =
 sbin_PROGRAMS =
 check_SCRIPTS =
-grubconf_DATA =
+dist_grubconf_DATA =
 check_PROGRAMS =
 noinst_SCRIPTS =
 noinst_PROGRAMS =
@@ -159,20 +129,15 @@ EXTRA_DIST =
 CLEANFILES =
 BUILT_SOURCES =
 
-# Rules for autogen definition files
-
-.PRECIOUS: $(top_srcdir)/Makefile.tpl
-$(top_srcdir)/Makefile.tpl: $(top_srcdir)/gentpl.py
-	python $< | sed -e '/^$$/{N;/^\\n$$/D;}' > $@.new || (rm -f $@.new; exit 1)
-	mv $@.new $@
+# Rules for Automake input
 
 .PRECIOUS: $(top_srcdir)/Makefile.util.am
-$(top_srcdir)/Makefile.util.am: $(top_srcdir)/Makefile.util.def $(top_srcdir)/Makefile.tpl
-	autogen -T $(top_srcdir)/Makefile.tpl $< | sed -e '/^$$/{N;/^\\n$$/D;}' > $@.new || (rm -f $@.new; exit 1)
+$(top_srcdir)/Makefile.util.am: $(top_srcdir)/gentpl.py $(top_srcdir)/Makefile.util.def $(top_srcdir)/Makefile.utilgcry.def
+	python $^ > $@.new || (rm -f $@.new; exit 1)
 	mv $@.new $@
 
 .PRECIOUS: $(top_srcdir)/grub-core/Makefile.core.am
-$(top_srcdir)/grub-core/Makefile.core.am: $(top_srcdir)/grub-core/Makefile.core.def $(top_srcdir)/grub-core/Makefile.gcry.def $(top_srcdir)/Makefile.tpl
+$(top_srcdir)/grub-core/Makefile.core.am: $(top_srcdir)/gentpl.py $(top_srcdir)/grub-core/Makefile.core.def $(top_srcdir)/grub-core/Makefile.gcry.def
 	if [ "x$$GRUB_CONTRIB" != x ]; then echo "You need to run ./autogen.sh manually." >&2; exit 1; fi
-	autogen -T $(top_srcdir)/Makefile.tpl $(top_srcdir)/grub-core/Makefile.core.def $(top_srcdir)/grub-core/Makefile.gcry.def | sed -e '/^$$/{N;/^\\n$$/D;}' > $@.new || (rm -f $@.new; exit 1)
+	python $^ > $@.new || (rm -f $@.new; exit 1)
 	mv $@.new $@

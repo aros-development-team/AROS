@@ -151,8 +151,7 @@ grub_video_sdl_setup (unsigned int width, unsigned int height,
     return err;
 
   /* Copy default palette to initialize emulated palette.  */
-  grub_video_sdl_set_palette (0, (sizeof (grub_video_fbstd_colors)
-				  / sizeof (grub_video_fbstd_colors[0])),
+  grub_video_sdl_set_palette (0, GRUB_VIDEO_FBSTD_NUMCOLORS,
 			      grub_video_fbstd_colors);
 
   /* Reset render target to SDL one.  */
@@ -166,7 +165,14 @@ grub_video_sdl_set_palette (unsigned int start, unsigned int count,
   unsigned i;
   if (window->format->palette)
     {
-      SDL_Color *tmp = grub_malloc (count * sizeof (tmp[0]));
+      SDL_Color *tmp;
+      if (start >= mode_info.number_of_colors)
+	return GRUB_ERR_NONE;
+
+      if (start + count > mode_info.number_of_colors)
+	count = mode_info.number_of_colors - start;
+
+      tmp = grub_malloc (count * sizeof (tmp[0]));
       for (i = 0; i < count; i++)
 	{
 	  tmp[i].r = palette_data[i].r;
@@ -214,6 +220,10 @@ static struct grub_video_adapter grub_video_sdl_adapter =
     .get_palette = grub_video_fb_get_palette,
     .set_viewport = grub_video_fb_set_viewport,
     .get_viewport = grub_video_fb_get_viewport,
+    .set_region = grub_video_fb_set_region,
+    .get_region = grub_video_fb_get_region,
+    .set_area_status = grub_video_fb_set_area_status,
+    .get_area_status = grub_video_fb_get_area_status,
     .map_color = grub_video_fb_map_color,
     .map_rgb = grub_video_fb_map_rgb,
     .map_rgba = grub_video_fb_map_rgba,

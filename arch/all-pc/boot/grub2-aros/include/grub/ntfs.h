@@ -87,6 +87,7 @@ enum
 #define GRUB_NTFS_COM_LEN		4096
 #define GRUB_NTFS_COM_LOG_LEN	12
 #define GRUB_NTFS_COM_SEC		(GRUB_NTFS_COM_LEN >> GRUB_NTFS_BLK_SHR)
+#define GRUB_NTFS_LOG_COM_SEC		(GRUB_NTFS_COM_LOG_LEN - GRUB_NTFS_BLK_SHR)
 
 enum
   {
@@ -97,9 +98,7 @@ enum
 
 enum
   {
-    GRUB_NTFS_RF_COMP		= 1,
-    GRUB_NTFS_RF_CBLK		= 2,
-    GRUB_NTFS_RF_BLNK		= 4
+    GRUB_NTFS_RF_BLNK		= 1
   };
 
 struct grub_ntfs_bpb
@@ -126,25 +125,25 @@ struct grub_ntfs_bpb
   grub_int8_t reserved_6[3];
   grub_uint64_t num_serial;
   grub_uint32_t checksum;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_ntfs_attr
 {
   int flags;
-  char *emft_buf, *edat_buf;
-  char *attr_cur, *attr_nxt, *attr_end;
+  grub_uint8_t *emft_buf, *edat_buf;
+  grub_uint8_t *attr_cur, *attr_nxt, *attr_end;
   grub_uint32_t save_pos;
-  char *sbuf;
+  grub_uint8_t *sbuf;
   struct grub_ntfs_file *mft;
 };
 
 struct grub_ntfs_file
 {
   struct grub_ntfs_data *data;
-  char *buf;
+  grub_uint8_t *buf;
   grub_uint64_t size;
   grub_uint64_t mtime;
-  grub_uint32_t ino;
+  grub_uint64_t ino;
   int inode_read;
   struct grub_ntfs_attr attr;
 };
@@ -154,10 +153,10 @@ struct grub_ntfs_data
   struct grub_ntfs_file cmft;
   struct grub_ntfs_file mmft;
   grub_disk_t disk;
-  grub_uint32_t mft_size;
-  grub_uint32_t idx_size;
-  grub_uint32_t spc;
-  grub_uint32_t mft_start;
+  grub_uint64_t mft_size;
+  grub_uint64_t idx_size;
+  int log_spc;
+  grub_uint64_t mft_start;
   grub_uint64_t uuid;
 };
 
@@ -172,25 +171,25 @@ struct grub_ntfs_comp
   grub_disk_t disk;
   int comp_head, comp_tail;
   struct grub_ntfs_comp_table_element comp_table[16];
-  grub_uint32_t cbuf_ofs, cbuf_vcn, spc;
-  char *cbuf;
+  grub_uint32_t cbuf_ofs, cbuf_vcn;
+  int log_spc;
+  grub_uint8_t *cbuf;
 };
 
 struct grub_ntfs_rlst
 {
   int flags;
   grub_disk_addr_t target_vcn, curr_vcn, next_vcn, curr_lcn;
-  char *cur_run;
+  grub_uint8_t *cur_run;
   struct grub_ntfs_attr *attr;
   struct grub_ntfs_comp comp;
+  void *file;
 };
 
-typedef grub_err_t (*grub_ntfscomp_func_t) (struct grub_ntfs_attr * at,
-					    char *dest,
+typedef grub_err_t (*grub_ntfscomp_func_t) (grub_uint8_t *dest,
 					    grub_disk_addr_t ofs,
 					    grub_size_t len,
-					    struct grub_ntfs_rlst * ctx,
-					    grub_disk_addr_t vcn);
+					    struct grub_ntfs_rlst * ctx);
 
 extern grub_ntfscomp_func_t grub_ntfscomp_func;
 

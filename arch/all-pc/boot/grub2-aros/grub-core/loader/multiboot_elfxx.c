@@ -75,18 +75,6 @@ CONCAT(grub_multiboot_load_elf, XX) (grub_file_t file, const char *filename, voi
   if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > MULTIBOOT_SEARCH)
     return grub_error (GRUB_ERR_BAD_OS, "program header at a too high offset");
 
-#ifdef MULTIBOOT_LOAD_ELF64
-# ifdef __mips
-  /* We still in 32-bit mode.  */
-  if (ehdr->e_entry < 0xffffffff80000000ULL)
-    return grub_error (GRUB_ERR_BAD_OS, "invalid entry point for ELF64");
-# else
-  /* We still in 32-bit mode.  */
-  if (ehdr->e_entry > 0xffffffff)
-    return grub_error (GRUB_ERR_BAD_OS, "invalid entry point for ELF64");
-# endif
-#endif
-
   phdr_base = (char *) buffer + ehdr->e_phoff;
 #define phdr(i)			((Elf_Phdr *) (phdr_base + (i) * ehdr->e_phentsize))
 
@@ -97,6 +85,9 @@ CONCAT(grub_multiboot_load_elf, XX) (grub_file_t file, const char *filename, voi
         {
 	  grub_err_t err;
 	  void *source;
+
+	  if (phdr(i)->p_paddr + phdr(i)->p_memsz > highest_load)
+	    highest_load = phdr(i)->p_paddr + phdr(i)->p_memsz;
 
 	  grub_dprintf ("multiboot_loader", "segment %d: paddr=0x%lx, memsz=0x%lx, vaddr=0x%lx\n",
 			i, (long) phdr(i)->p_paddr, (long) phdr(i)->p_memsz, (long) phdr(i)->p_vaddr);
@@ -142,6 +133,19 @@ CONCAT(grub_multiboot_load_elf, XX) (grub_file_t file, const char *filename, voi
       {
 	grub_multiboot_payload_eip = (ehdr->e_entry - phdr(i)->p_vaddr)
 	  + phdr(i)->p_paddr;
+#ifdef MULTIBOOT_LOAD_ELF64
+# ifdef __mips
+  /* We still in 32-bit mode.  */
+  if ((ehdr->e_entry - phdr(i)->p_vaddr)
+      + phdr(i)->p_paddr < 0xffffffff80000000ULL)
+    return grub_error (GRUB_ERR_BAD_OS, "invalid entry point for ELF64");
+# else
+  /* We still in 32-bit mode.  */
+  if ((ehdr->e_entry - phdr(i)->p_vaddr)
+      + phdr(i)->p_paddr > 0xffffffff)
+    return grub_error (GRUB_ERR_BAD_OS, "invalid entry point for ELF64");
+# endif
+#endif
 	break;
       }
 

@@ -50,17 +50,18 @@ typedef enum
     GRUB_USB_SPEED_HIGH
   } grub_usb_speed_t;
 
+typedef int (*grub_usb_iterate_hook_t) (grub_usb_device_t dev, void *data);
+typedef int (*grub_usb_controller_iterate_hook_t) (grub_usb_controller_t dev,
+						   void *data);
+
 /* Call HOOK with each device, until HOOK returns non-zero.  */
-int grub_usb_iterate (int (*hook) (grub_usb_device_t dev));
+int grub_usb_iterate (grub_usb_iterate_hook_t hook, void *hook_data);
 
 grub_usb_err_t grub_usb_device_initialize (grub_usb_device_t dev);
 
 grub_usb_err_t grub_usb_get_descriptor (grub_usb_device_t dev,
 					grub_uint8_t type, grub_uint8_t index,
 					grub_size_t size, char *data);
-
-struct grub_usb_desc_endp *
-grub_usb_get_endpdescriptor (grub_usb_device_t usbdev, int addr);
 
 grub_usb_err_t grub_usb_clear_halt (grub_usb_device_t dev, int endpoint);
 
@@ -72,7 +73,8 @@ void grub_usb_controller_dev_register (grub_usb_controller_dev_t usb);
 
 void grub_usb_controller_dev_unregister (grub_usb_controller_dev_t usb);
 
-int grub_usb_controller_iterate (int (*hook) (grub_usb_controller_t dev));
+int grub_usb_controller_iterate (grub_usb_controller_iterate_hook_t hook,
+				 void *hook_data);
 
 
 grub_usb_err_t grub_usb_control_msg (grub_usb_device_t dev, grub_uint8_t reqtype,
@@ -82,10 +84,12 @@ grub_usb_err_t grub_usb_control_msg (grub_usb_device_t dev, grub_uint8_t reqtype
 
 grub_usb_err_t
 grub_usb_bulk_read (grub_usb_device_t dev,
-		    int endpoint, grub_size_t size, char *data);
+		    struct grub_usb_desc_endp *endpoint,
+		    grub_size_t size, char *data);
 grub_usb_err_t
 grub_usb_bulk_write (grub_usb_device_t dev,
-		     int endpoint, grub_size_t size, char *data);
+		     struct grub_usb_desc_endp *endpoint,
+		     grub_size_t size, char *data);
 
 grub_usb_err_t
 grub_usb_root_hub (grub_usb_controller_t controller);
@@ -98,7 +102,7 @@ struct grub_usb_controller_dev
   /* The device name.  */
   const char *name;
 
-  int (*iterate) (int (*hook) (grub_usb_controller_t dev));
+  int (*iterate) (grub_usb_controller_iterate_hook_t hook, void *hook_data);
 
   grub_usb_err_t (*setup_transfer) (grub_usb_controller_t dev,
 				    grub_usb_transfer_t transfer);
@@ -112,13 +116,20 @@ struct grub_usb_controller_dev
 
   int (*hubports) (grub_usb_controller_t dev);
 
-  grub_err_t (*portstatus) (grub_usb_controller_t dev, unsigned int port,
-			    unsigned int enable);
+  grub_usb_err_t (*portstatus) (grub_usb_controller_t dev, unsigned int port,
+				unsigned int enable);
 
   grub_usb_speed_t (*detect_dev) (grub_usb_controller_t dev, int port, int *changed);
 
   /* Per controller flag - port reset pending, don't do another reset */
   grub_uint64_t pending_reset;
+
+  /* Max. number of transfer descriptors used per one bulk transfer */
+  /* The reason is to prevent "exhausting" of TD by large bulk */
+  /* transfer - number of TD is limited in USB host driver */
+  /* Value is calculated/estimated in driver - some TDs should be */
+  /* reserved for posible concurrent control or "interrupt" transfers */
+  grub_size_t max_bulk_tds;
   
   /* The next host controller.  */
   struct grub_usb_controller_dev *next;
@@ -159,6 +170,18 @@ struct grub_usb_configuration
   struct grub_usb_interface interf[32];
 };
 
+struct grub_usb_hub_port
+{
+  grub_uint64_t soft_limit_time;
+  grub_uint64_t hard_limit_time;
+  enum { 
+    PORT_STATE_NORMAL = 0,
+    PORT_STATE_WAITING_FOR_STABLE_POWER = 1,
+    PORT_STATE_FAILED_DEVICE = 2,
+    PORT_STATE_STABLE_POWER = 3,
+  } state;
+};
+
 struct grub_usb_device
 {
   /* The device descriptor of this device.  */
@@ -193,6 +216,8 @@ struct grub_usb_device
   /* Number of hub ports.  */
   unsigned nports;
 
+  struct grub_usb_hub_port *ports;
+
   grub_usb_transfer_t hub_transfer;
 
   grub_uint32_t statuschange;
@@ -200,9 +225,9 @@ struct grub_usb_device
   struct grub_usb_desc_endp *hub_endpoint;
 
   /* EHCI Split Transfer information */
-  int port;
+  int split_hubport;
 
-  int hubaddr;
+  int split_hubaddr;
 };
 
 
@@ -280,16 +305,18 @@ struct grub_usb_attach_desc
 void grub_usb_register_attach_hook_class (struct grub_usb_attach_desc *desc);
 void grub_usb_unregister_attach_hook_class (struct grub_usb_attach_desc *desc);
 
-void grub_usb_poll_devices (void);
+void grub_usb_poll_devices (int wait_for_completion);
 
 void grub_usb_device_attach (grub_usb_device_t dev);
 grub_usb_err_t
 grub_usb_bulk_read_extended (grub_usb_device_t dev,
-			     int endpoint, grub_size_t size, char *data,
+			     struct grub_usb_desc_endp *endpoint,
+			     grub_size_t size, char *data,
 			     int timeout, grub_size_t *actual);
 grub_usb_transfer_t
 grub_usb_bulk_read_background (grub_usb_device_t dev,
-			      int endpoint, grub_size_t size, void *data);
+			       struct grub_usb_desc_endp *endpoint,
+			       grub_size_t size, void *data);
 grub_usb_err_t
 grub_usb_check_transfer (grub_usb_transfer_t trans, grub_size_t *actual);
 void

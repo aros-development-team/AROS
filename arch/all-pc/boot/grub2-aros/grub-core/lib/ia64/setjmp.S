@@ -74,13 +74,13 @@ GRUB_MOD_LICENSE "GPLv2+"
 	/* The following two entry points are the traditional entry points: */
 
 	.text
-	.global setjmp
-	.proc setjmp
-setjmp:
+	
+	.proc EXT_C(grub_setjmp)
+FUNCTION(grub_setjmp)
 	alloc r8=ar.pfs,2,0,0,0
 	mov in1=1
 	br.cond.sptk.many __sigsetjmp
-	.endp setjmp
+	.endp EXT_C(grub_setjmp)
 
 	/* __sigsetjmp(__jmp_buf buf, int savemask) */
 

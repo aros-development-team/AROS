@@ -97,7 +97,15 @@ typedef struct dva {
  * Each block has a 256-bit checksum -- strong enough for cryptographic hashes.
  */
 typedef struct zio_cksum {
+  union
+  {
 	grub_uint64_t	zc_word[4];
+	struct
+	{
+		grub_uint32_t   zc_cut_cksum[5];
+		grub_uint32_t   zc_mac[3];
+	};
+  };
 } zio_cksum_t;
 
 /*

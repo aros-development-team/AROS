@@ -1,4 +1,4 @@
-#include <grub/cpu/macho.h>
+#include <grub/macho.h>
 #include <grub/machoload.h>
 
 #define SUFFIX(x) x ## 32

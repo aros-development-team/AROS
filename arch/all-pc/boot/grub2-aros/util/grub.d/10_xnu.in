@@ -39,8 +39,8 @@ osx_entry() {
         cat << EOF
 menuentry '$(echo "Darwin/Mac OS X $bitstr $onstr" | grub_quote)' --class osx --class darwin --class os \$menuentry_id_option 'osprober-xnu-$2-$(grub_get_device_id "${GRUB_DEVICE}")'  {
 EOF
-	save_default_entry | sed -e "s/^/	/"
-	prepare_grub_to_access_device ${GRUB_DEVICE} | sed -e "s/^/	/"
+	save_default_entry | grub_add_tab
+	prepare_grub_to_access_device ${GRUB_DEVICE} | grub_add_tab
 	cat << EOF
         load_video
         set do_resume=0

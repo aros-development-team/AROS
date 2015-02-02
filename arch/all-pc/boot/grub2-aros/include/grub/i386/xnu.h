@@ -61,7 +61,7 @@ struct grub_xnu_boot_params_common
   grub_uint32_t efi_runtime_first_page;
   /* First memory page containing runtime code or data minus previous value. */
   grub_uint32_t efi_runtime_npages;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_xnu_boot_params_v1
 {
@@ -72,7 +72,7 @@ struct grub_xnu_boot_params_v1
   grub_uint32_t efi_system_table;
   /* Size of grub_efi_uintn_t in bits. */
   grub_uint8_t efi_uintnbits;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 #define GRUB_XNU_BOOTARGSV1_VERMINOR 5
 #define GRUB_XNU_BOOTARGSV1_VERMAJOR 1
 
@@ -92,7 +92,7 @@ struct grub_xnu_boot_params_v2
   grub_uint32_t unused2[11];
   grub_uint64_t fsbfreq;
   grub_uint32_t unused3[734];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 #define GRUB_XNU_BOOTARGSV2_VERMINOR 0
 #define GRUB_XNU_BOOTARGSV2_VERMAJOR 2
 

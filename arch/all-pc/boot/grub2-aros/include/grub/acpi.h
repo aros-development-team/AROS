@@ -24,14 +24,17 @@
 #include <grub/err.h>
 #endif
 
+#define GRUB_RSDP_SIGNATURE "RSD PTR "
+#define GRUB_RSDP_SIGNATURE_SIZE 8
+
 struct grub_acpi_rsdp_v10
 {
-  grub_uint8_t signature[8];
+  grub_uint8_t signature[GRUB_RSDP_SIGNATURE_SIZE];
   grub_uint8_t checksum;
   grub_uint8_t oemid[6];
   grub_uint8_t revision;
   grub_uint32_t rsdt_addr;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_acpi_rsdp_v20
 {
@@ -40,7 +43,7 @@ struct grub_acpi_rsdp_v20
   grub_uint64_t xsdt_addr;
   grub_uint8_t checksum;
   grub_uint8_t reserved[3];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_acpi_table_header
 {
@@ -53,7 +56,7 @@ struct grub_acpi_table_header
   grub_uint32_t oemrev;
   grub_uint8_t creator_id[4];
   grub_uint32_t creator_rev;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 #define GRUB_ACPI_FADT_SIGNATURE "FACP"
 
@@ -68,7 +71,7 @@ struct grub_acpi_fadt
   grub_uint64_t facs_xaddr;
   grub_uint64_t dsdt_xaddr;
   grub_uint8_t somefields3[96];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 #define GRUB_ACPI_MADT_SIGNATURE "APIC"
 
@@ -88,11 +91,31 @@ struct grub_acpi_madt
 
 enum
   {
+    GRUB_ACPI_MADT_ENTRY_TYPE_LAPIC = 0,
+    GRUB_ACPI_MADT_ENTRY_TYPE_IOAPIC = 1,
     GRUB_ACPI_MADT_ENTRY_TYPE_INTERRUPT_OVERRIDE = 2,
+    GRUB_ACPI_MADT_ENTRY_TYPE_LAPIC_NMI = 4,
     GRUB_ACPI_MADT_ENTRY_TYPE_SAPIC = 6,
     GRUB_ACPI_MADT_ENTRY_TYPE_LSAPIC = 7,
     GRUB_ACPI_MADT_ENTRY_TYPE_PLATFORM_INT_SOURCE = 8
   };
+
+struct grub_acpi_madt_entry_lapic
+{
+  struct grub_acpi_madt_entry_header hdr;
+  grub_uint8_t acpiid;
+  grub_uint8_t apicid;
+  grub_uint32_t flags;
+};
+
+struct grub_acpi_madt_entry_ioapic
+{
+  struct grub_acpi_madt_entry_header hdr;
+  grub_uint8_t id;
+  grub_uint8_t pad;
+  grub_uint32_t address;
+  grub_uint32_t global_sys_interrupt;
+};
 
 struct grub_acpi_madt_entry_interrupt_override
 {
@@ -101,7 +124,16 @@ struct grub_acpi_madt_entry_interrupt_override
   grub_uint8_t source;
   grub_uint32_t global_sys_interrupt;
   grub_uint16_t flags;
-};
+} GRUB_PACKED;
+
+
+struct grub_acpi_madt_entry_lapic_nmi
+{
+  struct grub_acpi_madt_entry_header hdr;
+  grub_uint8_t acpiid;
+  grub_uint16_t flags;
+  grub_uint8_t lint;
+} GRUB_PACKED;
 
 struct grub_acpi_madt_entry_sapic
 {
@@ -159,7 +191,8 @@ void grub_acpi_halt (void);
 enum
   {
     GRUB_ACPI_OPCODE_ZERO = 0, GRUB_ACPI_OPCODE_ONE = 1,
-    GRUB_ACPI_OPCODE_NAME = 8, GRUB_ACPI_OPCODE_BYTE_CONST = 0x0a,
+    GRUB_ACPI_OPCODE_NAME = 8, GRUB_ACPI_OPCODE_ALIAS = 0x06,
+    GRUB_ACPI_OPCODE_BYTE_CONST = 0x0a,
     GRUB_ACPI_OPCODE_WORD_CONST = 0x0b,
     GRUB_ACPI_OPCODE_DWORD_CONST = 0x0c,
     GRUB_ACPI_OPCODE_STRING_CONST = 0x0d,
@@ -167,6 +200,22 @@ enum
     GRUB_ACPI_OPCODE_BUFFER = 0x11,
     GRUB_ACPI_OPCODE_PACKAGE = 0x12,
     GRUB_ACPI_OPCODE_METHOD = 0x14, GRUB_ACPI_OPCODE_EXTOP = 0x5b,
+    GRUB_ACPI_OPCODE_ADD = 0x72,
+    GRUB_ACPI_OPCODE_CONCAT = 0x73,
+    GRUB_ACPI_OPCODE_SUBTRACT = 0x74,
+    GRUB_ACPI_OPCODE_MULTIPLY = 0x77,
+    GRUB_ACPI_OPCODE_DIVIDE = 0x78,
+    GRUB_ACPI_OPCODE_LSHIFT = 0x79,
+    GRUB_ACPI_OPCODE_RSHIFT = 0x7a,
+    GRUB_ACPI_OPCODE_AND = 0x7b,
+    GRUB_ACPI_OPCODE_NAND = 0x7c,
+    GRUB_ACPI_OPCODE_OR = 0x7d,
+    GRUB_ACPI_OPCODE_NOR = 0x7e,
+    GRUB_ACPI_OPCODE_XOR = 0x7f,
+    GRUB_ACPI_OPCODE_CONCATRES = 0x84,
+    GRUB_ACPI_OPCODE_MOD = 0x85,
+    GRUB_ACPI_OPCODE_INDEX = 0x88,
+    GRUB_ACPI_OPCODE_TOSTRING = 0x9c,
     GRUB_ACPI_OPCODE_CREATE_WORD_FIELD = 0x8b,
     GRUB_ACPI_OPCODE_CREATE_BYTE_FIELD = 0x8c,
     GRUB_ACPI_OPCODE_IF = 0xa0, GRUB_ACPI_OPCODE_ONES = 0xff
@@ -174,9 +223,15 @@ enum
 enum
   {
     GRUB_ACPI_EXTOPCODE_MUTEX = 0x01,
+    GRUB_ACPI_EXTOPCODE_EVENT_OP = 0x02,
     GRUB_ACPI_EXTOPCODE_OPERATION_REGION = 0x80,
     GRUB_ACPI_EXTOPCODE_FIELD_OP = 0x81,
+    GRUB_ACPI_EXTOPCODE_DEVICE_OP = 0x82,
+    GRUB_ACPI_EXTOPCODE_PROCESSOR_OP = 0x83,
+    GRUB_ACPI_EXTOPCODE_POWER_RES_OP = 0x84,
+    GRUB_ACPI_EXTOPCODE_THERMAL_ZONE_OP = 0x85,
     GRUB_ACPI_EXTOPCODE_INDEX_FIELD_OP = 0x86,
+    GRUB_ACPI_EXTOPCODE_BANK_FIELD_OP = 0x87,
   };
 
 #endif /* ! GRUB_ACPI_HEADER */

@@ -473,7 +473,7 @@ do_bf_setkey (BLOWFISH_context *c, const byte *key, unsigned keylen)
   static int initialized;
   static const char *selftest_failed;
 
-  if( !initialized ) 
+  if( !initialized )
     {
       initialized = 1;
       selftest_failed = selftest();
@@ -485,7 +485,7 @@ do_bf_setkey (BLOWFISH_context *c, const byte *key, unsigned keylen)
 
   for(i=0; i < BLOWFISH_ROUNDS+2; i++ )
     c->p[i] = ps[i];
-  for(i=0; i < 256; i++ ) 
+  for(i=0; i < 256; i++ )
     {
       c->s0[i] = ks0[i];
       c->s1[i] = ks1[i];
@@ -493,7 +493,7 @@ do_bf_setkey (BLOWFISH_context *c, const byte *key, unsigned keylen)
       c->s3[i] = ks3[i];
     }
 
-  for(i=j=0; i < BLOWFISH_ROUNDS+2; i++ ) 
+  for(i=j=0; i < BLOWFISH_ROUNDS+2; i++ )
     {
 #ifdef WORDS_BIGENDIAN
       ((byte*)&data)[0] = key[j];
@@ -517,7 +517,7 @@ do_bf_setkey (BLOWFISH_context *c, const byte *key, unsigned keylen)
       c->p[i]   = datal;
       c->p[i+1] = datar;
     }
-  for(i=0; i < 256; i += 2 )	
+  for(i=0; i < 256; i += 2 )
     {
       do_encrypt( c, &datal, &datar );
       c->s0[i]   = datal;

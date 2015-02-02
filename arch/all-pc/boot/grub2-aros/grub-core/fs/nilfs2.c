@@ -136,13 +136,14 @@ struct grub_nilfs2_dir_entry
 {
   grub_uint64_t inode;
   grub_uint16_t rec_len;
+#define MAX_NAMELEN 255
   grub_uint8_t name_len;
   grub_uint8_t file_type;
 #if 0				/* followed by file name. */
   char name[NILFS_NAME_LEN];
   char pad;
 #endif
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 enum
 {
@@ -213,6 +214,8 @@ struct grub_nilfs2_palloc_group_desc
 {
   grub_uint32_t pg_nfrees;
 };
+
+#define LOG_SIZE_GROUP_DESC 2
 
 #define LOG_NILFS_DAT_ENTRY_SIZE 5
 struct grub_nilfs2_dat_entry
@@ -311,10 +314,12 @@ grub_nilfs2_palloc_group (struct grub_nilfs2_data *data,
 }
 
 static inline grub_uint32_t
-grub_nilfs2_palloc_groups_per_desc_block (struct grub_nilfs2_data *data)
+grub_nilfs2_palloc_log_groups_per_desc_block (struct grub_nilfs2_data *data)
 {
-  return NILFS2_BLOCK_SIZE (data) /
-    sizeof (struct grub_nilfs2_palloc_group_desc);
+  return LOG2_BLOCK_SIZE (data) - LOG_SIZE_GROUP_DESC;
+
+  COMPILE_TIME_ASSERT (sizeof (struct grub_nilfs2_palloc_group_desc)
+		       == (1 << LOG_SIZE_GROUP_DESC));
 }
 
 static inline grub_uint32_t
@@ -338,8 +343,8 @@ static inline grub_uint32_t
 grub_nilfs2_blocks_per_desc_block_log (struct grub_nilfs2_data *data,
 				       unsigned long log_entry_size)
 {
-  return grub_nilfs2_palloc_groups_per_desc_block (data) *
-    grub_nilfs2_blocks_per_group_log (data, log_entry_size) + 1;
+  return(grub_nilfs2_blocks_per_group_log (data, log_entry_size)
+	 << grub_nilfs2_palloc_log_groups_per_desc_block (data)) + 1;
 }
 
 static inline grub_uint32_t
@@ -348,7 +353,7 @@ grub_nilfs2_palloc_desc_block_offset_log (struct grub_nilfs2_data *data,
 					  unsigned long log_entry_size)
 {
   grub_uint32_t desc_block =
-    group / grub_nilfs2_palloc_groups_per_desc_block (data);
+    group >> grub_nilfs2_palloc_log_groups_per_desc_block (data);
   return desc_block * grub_nilfs2_blocks_per_desc_block_log (data,
 							     log_entry_size);
 }
@@ -358,8 +363,8 @@ grub_nilfs2_palloc_bitmap_block_offset (struct grub_nilfs2_data *data,
 					unsigned long group,
 					unsigned long log_entry_size)
 {
-  unsigned long desc_offset = group %
-    grub_nilfs2_palloc_groups_per_desc_block (data);
+  unsigned long desc_offset = group
+    & ((1 << grub_nilfs2_palloc_log_groups_per_desc_block (data)) - 1);
 
   return grub_nilfs2_palloc_desc_block_offset_log (data, group, log_entry_size)
     + 1
@@ -501,9 +506,13 @@ grub_nilfs2_btree_lookup (struct grub_nilfs2_data *data,
 			  grub_uint64_t key, int need_translate)
 {
   struct grub_nilfs2_btree_node *node;
-  GRUB_PROPERLY_ALIGNED_ARRAY (block, NILFS2_BLOCK_SIZE (data));
+  void *block;
   grub_uint64_t ptr;
-  int level, found, index;
+  int level, found = 0, index;
+
+  block = grub_malloc (NILFS2_BLOCK_SIZE (data));
+  if (!block)
+    return -1;
 
   node = grub_nilfs2_btree_get_root (inode);
   level = grub_nilfs2_btree_get_level (node);
@@ -518,14 +527,14 @@ grub_nilfs2_btree_lookup (struct grub_nilfs2_data *data,
       grub_nilfs2_btree_get_nonroot_node (data, ptr, block);
       if (grub_errno)
 	{
-	  return -1;
+	  goto fail;
 	}
       node = (struct grub_nilfs2_btree_node *) block;
 
       if (node->bn_level != level)
 	{
 	  grub_error (GRUB_ERR_BAD_FS, "btree level mismatch\n");
-	  return -1;
+	  goto fail;
 	}
 
       if (!found)
@@ -542,14 +551,19 @@ grub_nilfs2_btree_lookup (struct grub_nilfs2_data *data,
       else
 	{
 	  grub_error (GRUB_ERR_BAD_FS, "btree corruption\n");
-	  return -1;
+	  goto fail;
 	}
     }
+
+  grub_free (block);
 
   if (!found)
     return -1;
 
   return ptr;
+ fail:
+  grub_free (block);
+  return -1;
 }
 
 static inline grub_uint64_t
@@ -626,13 +640,11 @@ grub_nilfs2_read_block (grub_fshelp_node_t node, grub_disk_addr_t fileblock)
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_nilfs2_read_file (grub_fshelp_node_t node,
-		       void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t
-							   sector,
-							   unsigned offset,
-							   unsigned length),
+		       grub_disk_read_hook_t read_hook, void *read_hook_data,
 		       grub_off_t pos, grub_size_t len, char *buf)
 {
-  return grub_fshelp_read_file (node->data->disk, node, read_hook,
+  return grub_fshelp_read_file (node->data->disk, node,
+				read_hook, read_hook_data,
 				pos, len, buf, grub_nilfs2_read_block,
 				grub_le_to_cpu64 (node->inode.i_size),
 				LOG2_NILFS2_BLOCK_SIZE (node->data), 0);
@@ -710,6 +722,10 @@ grub_nilfs2_valid_sb (struct grub_nilfs2_super_block *sbp)
     return 0;
 
   if (grub_le_to_cpu32 (sbp->s_rev_level) != NILFS_SUPORT_REV)
+    return 0;
+
+  /* 20 already means 1GiB blocks. We don't want to deal with blocks overflowing int32. */
+  if (grub_le_to_cpu32 (sbp->s_log_block_size) > 20)
     return 0;
 
   return 1;
@@ -852,7 +868,7 @@ grub_nilfs2_read_symlink (grub_fshelp_node_t node)
   if (!symlink)
     return 0;
 
-  grub_nilfs2_read_file (diro, 0, 0,
+  grub_nilfs2_read_file (diro, 0, 0, 0,
 			 grub_le_to_cpu64 (diro->inode.i_size), symlink);
   if (grub_errno)
     {
@@ -866,10 +882,7 @@ grub_nilfs2_read_symlink (grub_fshelp_node_t node)
 
 static int
 grub_nilfs2_iterate_dir (grub_fshelp_node_t dir,
-			 int NESTED_FUNC_ATTR
-			 (*hook) (const char *filename,
-				  enum grub_fshelp_filetype filetype,
-				  grub_fshelp_node_t node))
+			 grub_fshelp_iterate_dir_hook_t hook, void *hook_data)
 {
   grub_off_t fpos = 0;
   struct grub_fshelp_node *diro = (struct grub_fshelp_node *) dir;
@@ -886,7 +899,7 @@ grub_nilfs2_iterate_dir (grub_fshelp_node_t dir,
     {
       struct grub_nilfs2_dir_entry dirent;
 
-      grub_nilfs2_read_file (diro, 0, fpos,
+      grub_nilfs2_read_file (diro, 0, 0, fpos,
 			     sizeof (struct grub_nilfs2_dir_entry),
 			     (char *) &dirent);
       if (grub_errno)
@@ -897,11 +910,11 @@ grub_nilfs2_iterate_dir (grub_fshelp_node_t dir,
 
       if (dirent.name_len != 0)
 	{
-	  char filename[dirent.name_len + 1];
+	  char filename[MAX_NAMELEN + 1];
 	  struct grub_fshelp_node *fdiro;
 	  enum grub_fshelp_filetype type = GRUB_FSHELP_UNKNOWN;
 
-	  grub_nilfs2_read_file (diro, 0,
+	  grub_nilfs2_read_file (diro, 0, 0,
 				 fpos + sizeof (struct grub_nilfs2_dir_entry),
 				 dirent.name_len, filename);
 	  if (grub_errno)
@@ -953,7 +966,7 @@ grub_nilfs2_iterate_dir (grub_fshelp_node_t dir,
 		type = GRUB_FSHELP_REG;
 	    }
 
-	  if (hook (filename, type, fdiro))
+	  if (hook (filename, type, fdiro, hook_data))
 	    return 1;
 	}
 
@@ -1024,64 +1037,74 @@ grub_nilfs2_read (grub_file_t file, char *buf, grub_size_t len)
 {
   struct grub_nilfs2_data *data = (struct grub_nilfs2_data *) file->data;
 
-  return grub_nilfs2_read_file (&data->diropen, file->read_hook,
+  return grub_nilfs2_read_file (&data->diropen,
+				file->read_hook, file->read_hook_data,
 				file->offset, len, buf);
+}
+
+/* Context for grub_nilfs2_dir.  */
+struct grub_nilfs2_dir_ctx
+{
+  grub_fs_dir_hook_t hook;
+  void *hook_data;
+  struct grub_nilfs2_data *data;
+};
+
+/* Helper for grub_nilfs2_dir.  */
+static int
+grub_nilfs2_dir_iter (const char *filename, enum grub_fshelp_filetype filetype,
+		      grub_fshelp_node_t node, void *data)
+{
+  struct grub_nilfs2_dir_ctx *ctx = data;
+  struct grub_dirhook_info info;
+
+  grub_memset (&info, 0, sizeof (info));
+  if (!node->inode_read)
+    {
+      grub_nilfs2_read_inode (ctx->data, node->ino, &node->inode);
+      if (!grub_errno)
+	node->inode_read = 1;
+      grub_errno = GRUB_ERR_NONE;
+    }
+  if (node->inode_read)
+    {
+      info.mtimeset = 1;
+      info.mtime = grub_le_to_cpu64 (node->inode.i_mtime);
+    }
+
+  info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
+  grub_free (node);
+  return ctx->hook (filename, &info, ctx->hook_data);
 }
 
 static grub_err_t
 grub_nilfs2_dir (grub_device_t device, const char *path,
-		 int (*hook) (const char *filename,
-			      const struct grub_dirhook_info * info))
+		 grub_fs_dir_hook_t hook, void *hook_data)
 {
-  struct grub_nilfs2_data *data = 0;
+  struct grub_nilfs2_dir_ctx ctx = {
+    .hook = hook,
+    .hook_data = hook_data
+  };
   struct grub_fshelp_node *fdiro = 0;
-
-  auto int NESTED_FUNC_ATTR iterate (const char *filename,
-				     enum grub_fshelp_filetype filetype,
-				     grub_fshelp_node_t node);
-
-  int NESTED_FUNC_ATTR iterate (const char *filename,
-				enum grub_fshelp_filetype filetype,
-				grub_fshelp_node_t node)
-  {
-    struct grub_dirhook_info info;
-    grub_memset (&info, 0, sizeof (info));
-    if (!node->inode_read)
-      {
-	grub_nilfs2_read_inode (data, node->ino, &node->inode);
-	if (!grub_errno)
-	  node->inode_read = 1;
-	grub_errno = GRUB_ERR_NONE;
-      }
-    if (node->inode_read)
-      {
-	info.mtimeset = 1;
-	info.mtime = grub_le_to_cpu64 (node->inode.i_mtime);
-      }
-
-    info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
-    grub_free (node);
-    return hook (filename, &info);
-  }
 
   grub_dl_ref (my_mod);
 
-  data = grub_nilfs2_mount (device->disk);
-  if (!data)
+  ctx.data = grub_nilfs2_mount (device->disk);
+  if (!ctx.data)
     goto fail;
 
-  grub_fshelp_find_file (path, &data->diropen, &fdiro,
+  grub_fshelp_find_file (path, &ctx.data->diropen, &fdiro,
 			 grub_nilfs2_iterate_dir, grub_nilfs2_read_symlink,
 			 GRUB_FSHELP_DIR);
   if (grub_errno)
     goto fail;
 
-  grub_nilfs2_iterate_dir (fdiro, iterate);
+  grub_nilfs2_iterate_dir (fdiro, grub_nilfs2_dir_iter, &ctx);
 
 fail:
-  if (fdiro != &data->diropen)
+  if (fdiro != &ctx.data->diropen)
     grub_free (fdiro);
-  grub_free (data);
+  grub_free (ctx.data);
 
   grub_dl_unref (my_mod);
 

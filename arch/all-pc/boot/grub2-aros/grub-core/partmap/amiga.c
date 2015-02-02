@@ -25,6 +25,8 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
+#define AMIGA_CHECKSUM_WORDS 128
+
 struct grub_amiga_rdsk
 {
   /* "RDSK".  */
@@ -39,15 +41,15 @@ struct grub_amiga_rdsk
   grub_uint32_t partitionlst;
   grub_uint32_t fslst;
 
-  grub_uint32_t unused[128 - 9];
-} __attribute__ ((packed));
+  grub_uint32_t unused[AMIGA_CHECKSUM_WORDS - 9];
+} GRUB_PACKED;
 
 struct grub_amiga_partition
 {
   /* "PART".  */
   grub_uint8_t magic[4];
 #define GRUB_AMIGA_PART_MAGIC "PART"
-  grub_int32_t size;
+  grub_uint32_t size;
   grub_int32_t checksum;
   grub_uint32_t scsihost;
   grub_uint32_t next;
@@ -67,28 +69,35 @@ struct grub_amiga_partition
   grub_uint32_t highcyl;
 
   grub_uint32_t firstcyl;
-  grub_uint32_t unused[128 - 44];
-} __attribute__ ((packed));
+  grub_uint32_t unused[AMIGA_CHECKSUM_WORDS - 44];
+} GRUB_PACKED;
 
 static struct grub_partition_map grub_amiga_partition_map;
 
 
 
 static grub_uint32_t
-amiga_partition_map_checksum (void *buf, grub_size_t sz)
+amiga_partition_map_checksum (void *buf)
 {
   grub_uint32_t *ptr = buf;
   grub_uint32_t r = 0;
-  sz /= sizeof (grub_uint32_t);
+  grub_size_t sz;
+  /* Fancy and quick way of checking sz >= 512 / 4 = 128.  */
+  if (ptr[1] & ~grub_cpu_to_be32_compile_time (AMIGA_CHECKSUM_WORDS - 1))
+    sz = AMIGA_CHECKSUM_WORDS;
+  else
+    sz = grub_be_to_cpu32 (ptr[1]);
+
   for (; sz; sz--, ptr++)
     r += grub_be_to_cpu32 (*ptr);
+
   return r;
 }
 
 static grub_err_t
 amiga_partition_map_iterate (grub_disk_t disk,
-			     int (*hook) (grub_disk_t disk,
-					  const grub_partition_t partition))
+			     grub_partition_iterate_hook_t hook,
+			     void *hook_data)
 {
   struct grub_partition part;
   struct grub_amiga_rdsk rdsk;
@@ -105,7 +114,7 @@ amiga_partition_map_iterate (grub_disk_t disk,
 
       if (grub_memcmp (rdsk.magic, GRUB_AMIGA_RDSK_MAGIC,
 		       sizeof (rdsk.magic)) == 0
-	  && amiga_partition_map_checksum (&rdsk, sizeof (rdsk)) == 0)
+	  && amiga_partition_map_checksum (&rdsk) == 0)
 	{
 	  /* Found the first PART block.  */
 	  next = grub_be_to_cpu32 (rdsk.partitionlst);
@@ -128,7 +137,7 @@ amiga_partition_map_iterate (grub_disk_t disk,
 
       if (grub_memcmp (apart.magic, GRUB_AMIGA_PART_MAGIC,
 		       sizeof (apart.magic)) != 0
-	  || amiga_partition_map_checksum (&apart, sizeof (apart)) != 0)
+	  || amiga_partition_map_checksum (&apart) != 0)
 	return grub_error (GRUB_ERR_BAD_PART_TABLE,
 			   "invalid Amiga partition map");
       /* Calculate the first block and the size of the partition.  */
@@ -140,12 +149,12 @@ amiga_partition_map_iterate (grub_disk_t disk,
 		  * grub_be_to_cpu32 (apart.heads)
 		  * grub_be_to_cpu32 (apart.block_per_track));
 
-      part.offset = (grub_off_t) next * 512;
+      part.offset = next;
       part.number = partno;
       part.index = 0;
       part.partmap = &grub_amiga_partition_map;
 
-      if (hook (disk, &part))
+      if (hook (disk, &part, hook_data))
 	return grub_errno;
 
       next = grub_be_to_cpu32 (apart.next);

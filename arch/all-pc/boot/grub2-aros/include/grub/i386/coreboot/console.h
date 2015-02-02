@@ -22,4 +22,11 @@
 void grub_vga_text_init (void);
 void grub_vga_text_fini (void);
 
+void grub_video_coreboot_fb_init (void);
+void grub_video_coreboot_fb_early_init (void);
+void grub_video_coreboot_fb_late_init (void);
+void grub_video_coreboot_fb_fini (void);
+
+extern struct grub_linuxbios_table_framebuffer *grub_video_coreboot_fbtable;
+
 #endif /* ! GRUB_MACHINE_CONSOLE_HEADER */

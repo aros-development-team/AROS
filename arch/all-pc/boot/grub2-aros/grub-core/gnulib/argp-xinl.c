@@ -1,5 +1,5 @@
 /* Real definitions for extern inline functions in argp.h
-   Copyright (C) 1997, 1998, 2004, 2009, 2010 Free Software Foundation, Inc.
+   Copyright (C) 1997-1998, 2004, 2009-2013 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -27,7 +27,11 @@
 #ifndef __USE_EXTERN_INLINES
 # define __USE_EXTERN_INLINES   1
 #endif
-#define ARGP_EI
+#ifdef _LIBC
+# define ARGP_EI
+#else
+# define ARGP_EI _GL_EXTERN_INLINE
+#endif
 #undef __OPTIMIZE__
 #define __OPTIMIZE__ 1
 #include "argp.h"

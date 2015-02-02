@@ -1,5 +1,5 @@
-# strndup.m4 serial 18
-dnl Copyright (C) 2002-2003, 2005-2010 Free Software Foundation, Inc.
+# strndup.m4 serial 21
+dnl Copyright (C) 2002-2003, 2005-2013 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -18,13 +18,18 @@ AC_DEFUN([gl_FUNC_STRNDUP],
   fi
 
   if test $ac_cv_func_strndup = yes; then
+    HAVE_STRNDUP=1
     # AIX 4.3.3, AIX 5.1 have a function that fails to add the terminating '\0'.
     AC_CACHE_CHECK([for working strndup], [gl_cv_func_strndup_works],
       [AC_RUN_IFELSE([
          AC_LANG_PROGRAM([[#include <string.h>
                            #include <stdlib.h>]], [[
-#ifndef HAVE_DECL_STRNDUP
-  extern char *strndup (const char *, size_t);
+#if !HAVE_DECL_STRNDUP
+  extern
+  #ifdef __cplusplus
+  "C"
+  #endif
+  char *strndup (const char *, size_t);
 #endif
   char *s;
   s = strndup ("some longer string", 15);
@@ -42,12 +47,9 @@ changequote(,)dnl
 changequote([,])dnl
          ])])
     case $gl_cv_func_strndup_works in
-      *no)
-        REPLACE_STRNDUP=1
-        AC_LIBOBJ([strndup])
-        ;;
+      *no) REPLACE_STRNDUP=1 ;;
     esac
   else
-    AC_LIBOBJ([strndup])
+    HAVE_STRNDUP=0
   fi
 ])

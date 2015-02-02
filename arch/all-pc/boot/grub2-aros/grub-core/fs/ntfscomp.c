@@ -33,8 +33,9 @@ decomp_nextvcn (struct grub_ntfs_comp *cc)
   if (grub_disk_read
       (cc->disk,
        (cc->comp_table[cc->comp_head].next_lcn -
-	(cc->comp_table[cc->comp_head].next_vcn - cc->cbuf_vcn)) * cc->spc, 0,
-       cc->spc << GRUB_NTFS_BLK_SHR, cc->cbuf))
+	(cc->comp_table[cc->comp_head].next_vcn - cc->cbuf_vcn)) << cc->log_spc,
+       0,
+       1 << (cc->log_spc + GRUB_NTFS_BLK_SHR), cc->cbuf))
     return grub_errno;
   cc->cbuf_vcn++;
   if ((cc->cbuf_vcn >= cc->comp_table[cc->comp_head].next_vcn))
@@ -44,21 +45,21 @@ decomp_nextvcn (struct grub_ntfs_comp *cc)
 }
 
 static grub_err_t
-decomp_getch (struct grub_ntfs_comp *cc, unsigned char *res)
+decomp_getch (struct grub_ntfs_comp *cc, grub_uint8_t *res)
 {
-  if (cc->cbuf_ofs >= (cc->spc << GRUB_NTFS_BLK_SHR))
+  if (cc->cbuf_ofs >= (1U << (cc->log_spc + GRUB_NTFS_BLK_SHR)))
     {
       if (decomp_nextvcn (cc))
 	return grub_errno;
     }
-  *res = (unsigned char) cc->cbuf[cc->cbuf_ofs++];
+  *res = cc->cbuf[cc->cbuf_ofs++];
   return 0;
 }
 
 static grub_err_t
 decomp_get16 (struct grub_ntfs_comp *cc, grub_uint16_t * res)
 {
-  unsigned char c1 = 0, c2 = 0;
+  grub_uint8_t c1 = 0, c2 = 0;
 
   if ((decomp_getch (cc, &c1)) || (decomp_getch (cc, &c2)))
     return grub_errno;
@@ -68,7 +69,7 @@ decomp_get16 (struct grub_ntfs_comp *cc, grub_uint16_t * res)
 
 /* Decompress a block (4096 bytes) */
 static grub_err_t
-decomp_block (struct grub_ntfs_comp *cc, char *dest)
+decomp_block (struct grub_ntfs_comp *cc, grub_uint8_t *dest)
 {
   grub_uint16_t flg, cnt;
 
@@ -80,7 +81,7 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
     {
       if (flg & 0x8000)
 	{
-	  unsigned char tag;
+	  grub_uint8_t tag;
 	  grub_uint32_t bits, copied;
 
 	  bits = copied = tag = 0;
@@ -135,7 +136,7 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
 		}
 	      else
 		{
-		  unsigned char ch = 0;
+		  grub_uint8_t ch = 0;
 
 		  if (decomp_getch (cc, &ch))
 		    return grub_errno;
@@ -159,7 +160,7 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
     {
       int n;
 
-      n = (cc->spc << GRUB_NTFS_BLK_SHR) - cc->cbuf_ofs;
+      n = (1 << (cc->log_spc + GRUB_NTFS_BLK_SHR)) - cc->cbuf_ofs;
       if (n > cnt)
 	n = cnt;
       if ((dest) && (n))
@@ -176,9 +177,9 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
 }
 
 static grub_err_t
-read_block (struct grub_ntfs_rlst *ctx, char *buf, grub_size_t num)
+read_block (struct grub_ntfs_rlst *ctx, grub_uint8_t *buf, grub_size_t num)
 {
-  int cpb = GRUB_NTFS_COM_SEC / ctx->comp.spc;
+  int log_cpb = GRUB_NTFS_LOG_COM_SEC - ctx->comp.log_spc;
 
   while (num)
     {
@@ -192,7 +193,7 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, grub_size_t num)
 	    return grub_error (GRUB_ERR_BAD_FS, "invalid compression block");
 	  ctx->comp.comp_head = ctx->comp.comp_tail = 0;
 	  ctx->comp.cbuf_vcn = ctx->target_vcn;
-	  ctx->comp.cbuf_ofs = (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
+	  ctx->comp.cbuf_ofs = (1 << (ctx->comp.log_spc + GRUB_NTFS_BLK_SHR));
 	  if (ctx->target_vcn >= ctx->next_vcn)
 	    {
 	      if (grub_ntfs_read_run_list (ctx))
@@ -211,20 +212,23 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, grub_size_t num)
 	    }
 	}
 
-      nn = (16 - (unsigned) (ctx->target_vcn & 0xF)) / cpb;
+      nn = (16 - (unsigned) (ctx->target_vcn & 0xF)) >> log_cpb;
       if (nn > num)
 	nn = num;
       num -= nn;
 
       if (ctx->flags & GRUB_NTFS_RF_BLNK)
 	{
-	  ctx->target_vcn += nn * cpb;
+	  ctx->target_vcn += nn << log_cpb;
 	  if (ctx->comp.comp_tail == 0)
 	    {
 	      if (buf)
 		{
 		  grub_memset (buf, 0, nn * GRUB_NTFS_COM_LEN);
 		  buf += nn * GRUB_NTFS_COM_LEN;
+		  if (grub_file_progress_hook && ctx->file)
+		    grub_file_progress_hook (0, 0, nn * GRUB_NTFS_COM_LEN,
+					     ctx->file);
 		}
 	    }
 	  else
@@ -235,13 +239,16 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, grub_size_t num)
 		    return grub_errno;
 		  if (buf)
 		    buf += GRUB_NTFS_COM_LEN;
+		  if (grub_file_progress_hook && ctx->file)
+		    grub_file_progress_hook (0, 0, GRUB_NTFS_COM_LEN,
+					     ctx->file);
 		  nn--;
 		}
 	    }
 	}
       else
 	{
-	  nn *= cpb;
+	  nn <<= log_cpb;
 	  while ((ctx->comp.comp_head < ctx->comp.comp_tail) && (nn))
 	    {
 	      grub_disk_addr_t tt;
@@ -258,10 +265,15 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, grub_size_t num)
 		      (ctx->comp.disk,
 		       (ctx->comp.comp_table[ctx->comp.comp_head].next_lcn -
 			(ctx->comp.comp_table[ctx->comp.comp_head].next_vcn -
-			 ctx->target_vcn)) * ctx->comp.spc, 0,
-		       tt * (ctx->comp.spc << GRUB_NTFS_BLK_SHR), buf))
+			 ctx->target_vcn)) << ctx->comp.log_spc, 0,
+		       tt << (ctx->comp.log_spc + GRUB_NTFS_BLK_SHR), buf))
 		    return grub_errno;
-		  buf += tt * (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
+		  if (grub_file_progress_hook && ctx->file)
+		    grub_file_progress_hook (0, 0,
+					     tt << (ctx->comp.log_spc
+						    + GRUB_NTFS_BLK_SHR),
+					     ctx->file);
+		  buf += tt << (ctx->comp.log_spc + GRUB_NTFS_BLK_SHR);
 		}
 	      nn -= tt;
 	      if (ctx->target_vcn >=
@@ -275,10 +287,15 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, grub_size_t num)
 		  if (grub_disk_read
 		      (ctx->comp.disk,
 		       (ctx->target_vcn - ctx->curr_vcn +
-			ctx->curr_lcn) * ctx->comp.spc, 0,
-		       nn * (ctx->comp.spc << GRUB_NTFS_BLK_SHR), buf))
+			ctx->curr_lcn) << ctx->comp.log_spc, 0,
+		       nn << (ctx->comp.log_spc + GRUB_NTFS_BLK_SHR), buf))
 		    return grub_errno;
-		  buf += nn * (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
+		  buf += nn << (ctx->comp.log_spc + GRUB_NTFS_BLK_SHR);
+		  if (grub_file_progress_hook && ctx->file)
+		    grub_file_progress_hook (0, 0,
+					     nn << (ctx->comp.log_spc
+						    + GRUB_NTFS_BLK_SHR),
+					     ctx->file);
 		}
 	      ctx->target_vcn += nn;
 	    }
@@ -288,23 +305,62 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, grub_size_t num)
 }
 
 static grub_err_t
-ntfscomp (struct grub_ntfs_attr *at, char *dest, grub_disk_addr_t ofs,
-	  grub_size_t len, struct grub_ntfs_rlst *ctx, grub_disk_addr_t vcn)
+ntfscomp (grub_uint8_t *dest, grub_disk_addr_t ofs,
+	  grub_size_t len, struct grub_ntfs_rlst *ctx)
 {
   grub_err_t ret;
+  grub_disk_addr_t vcn;
+
+  if (ctx->attr->sbuf)
+    {
+      if ((ofs & (~(GRUB_NTFS_COM_LEN - 1))) == ctx->attr->save_pos)
+	{
+	  grub_disk_addr_t n;
+
+	  n = GRUB_NTFS_COM_LEN - (ofs - ctx->attr->save_pos);
+	  if (n > len)
+	    n = len;
+
+	  grub_memcpy (dest, ctx->attr->sbuf + ofs - ctx->attr->save_pos, n);
+	  if (grub_file_progress_hook && ctx->file)
+	    grub_file_progress_hook (0, 0, n, ctx->file);
+	  if (n == len)
+	    return 0;
+
+	  dest += n;
+	  len -= n;
+	  ofs += n;
+	}
+    }
+  else
+    {
+      ctx->attr->sbuf = grub_malloc (GRUB_NTFS_COM_LEN);
+      if (ctx->attr->sbuf == NULL)
+	return grub_errno;
+      ctx->attr->save_pos = 1;
+    }
+
+  vcn = ctx->target_vcn = (ofs >> GRUB_NTFS_COM_LOG_LEN) * (GRUB_NTFS_COM_SEC >> ctx->comp.log_spc);
+  ctx->target_vcn &= ~0xFULL;
+  while (ctx->next_vcn <= ctx->target_vcn)
+    {
+      if (grub_ntfs_read_run_list (ctx))
+	return grub_errno;
+    }
 
   ctx->comp.comp_head = ctx->comp.comp_tail = 0;
-  ctx->comp.cbuf = grub_malloc ((ctx->comp.spc) << GRUB_NTFS_BLK_SHR);
+  ctx->comp.cbuf = grub_malloc (1 << (ctx->comp.log_spc + GRUB_NTFS_BLK_SHR));
   if (!ctx->comp.cbuf)
     return 0;
 
   ret = 0;
 
   //ctx->comp.disk->read_hook = read_hook;
+  //ctx->comp.disk->read_hook_data = read_hook_data;
 
   if ((vcn > ctx->target_vcn) &&
       (read_block
-       (ctx, NULL, ((vcn - ctx->target_vcn) * ctx->comp.spc) / GRUB_NTFS_COM_SEC)))
+       (ctx, NULL, (vcn - ctx->target_vcn) >> (GRUB_NTFS_LOG_COM_SEC - ctx->comp.log_spc))))
     {
       ret = grub_errno;
       goto quit;
@@ -313,21 +369,28 @@ ntfscomp (struct grub_ntfs_attr *at, char *dest, grub_disk_addr_t ofs,
   if (ofs % GRUB_NTFS_COM_LEN)
     {
       grub_uint32_t t, n, o;
+      void *file = ctx->file;
 
-      t = ctx->target_vcn * (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
-      if (read_block (ctx, at->sbuf, 1))
+      ctx->file = 0;
+
+      t = ctx->target_vcn << (ctx->comp.log_spc + GRUB_NTFS_BLK_SHR);
+      if (read_block (ctx, ctx->attr->sbuf, 1))
 	{
 	  ret = grub_errno;
 	  goto quit;
 	}
 
-      at->save_pos = t;
+      ctx->file = file;
+
+      ctx->attr->save_pos = t;
 
       o = ofs % GRUB_NTFS_COM_LEN;
       n = GRUB_NTFS_COM_LEN - o;
       if (n > len)
 	n = len;
-      grub_memcpy (dest, &at->sbuf[o], n);
+      grub_memcpy (dest, &ctx->attr->sbuf[o], n);
+      if (grub_file_progress_hook && ctx->file)
+	grub_file_progress_hook (0, 0, n, ctx->file);
       if (n == len)
 	goto quit;
       dest += n;
@@ -345,17 +408,21 @@ ntfscomp (struct grub_ntfs_attr *at, char *dest, grub_disk_addr_t ofs,
   if (len)
     {
       grub_uint32_t t;
+      void *file = ctx->file;
 
-      t = ctx->target_vcn * (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
-      if (read_block (ctx, at->sbuf, 1))
+      ctx->file = 0;
+      t = ctx->target_vcn << (ctx->comp.log_spc + GRUB_NTFS_BLK_SHR);
+      if (read_block (ctx, ctx->attr->sbuf, 1))
 	{
 	  ret = grub_errno;
 	  goto quit;
 	}
 
-      at->save_pos = t;
+      ctx->attr->save_pos = t;
 
-      grub_memcpy (dest, at->sbuf, len);
+      grub_memcpy (dest, ctx->attr->sbuf, len);
+      if (grub_file_progress_hook && file)
+	grub_file_progress_hook (0, 0, len, file);
     }
 
 quit:

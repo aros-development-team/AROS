@@ -46,7 +46,7 @@ struct grub_xnu_hibernate_header
      Used only to skip it.
    */
   grub_uint32_t extmapsize;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* In-memory structure for temporary keeping device tree. */
 struct grub_xnu_devtree_key
@@ -67,7 +67,7 @@ grub_xnu_extdesc
 {
   grub_uint32_t addr;
   grub_uint32_t size;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* Header describing extension in the memory. */
 struct grub_xnu_extheader
@@ -78,7 +78,7 @@ struct grub_xnu_extheader
   grub_uint32_t binarysize;
   grub_uint32_t nameaddr;
   grub_uint32_t namesize;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_xnu_devtree_key *grub_xnu_create_key (struct grub_xnu_devtree_key **parent,
 						  const char *name);

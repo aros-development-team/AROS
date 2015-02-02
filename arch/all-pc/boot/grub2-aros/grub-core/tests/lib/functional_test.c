@@ -30,9 +30,48 @@ grub_functional_test (grub_extcmd_context_t ctxt __attribute__ ((unused)),
 		      char **args __attribute__ ((unused)))
 {
   grub_test_t test;
+  int ok = 1;
 
   FOR_LIST_ELEMENTS (test, grub_test_list)
-    grub_test_run (test);
+    {
+      grub_errno = 0;
+      ok = ok && !grub_test_run (test);
+      grub_errno = 0;
+    }
+  if (ok)
+    grub_printf ("ALL TESTS PASSED\n");
+  else
+    grub_printf ("TEST FAILURE\n");
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
+grub_functional_all_tests (grub_extcmd_context_t ctxt __attribute__ ((unused)),
+			   int argc __attribute__ ((unused)),
+			   char **args __attribute__ ((unused)))
+{
+  grub_test_t test;
+  int ok = 1;
+
+  grub_dl_load ("legacy_password_test");
+  grub_errno = GRUB_ERR_NONE;
+  grub_dl_load ("exfctest");
+  grub_dl_load ("videotest_checksum");
+  grub_dl_load ("gfxterm_menu");
+  grub_dl_load ("setjmp_test");
+  grub_dl_load ("cmdline_cat_test");
+  grub_dl_load ("div_test");
+  grub_dl_load ("xnu_uuid_test");
+  grub_dl_load ("pbkdf2_test");
+  grub_dl_load ("signature_test");
+  grub_dl_load ("sleep_test");
+
+  FOR_LIST_ELEMENTS (test, grub_test_list)
+    ok = !grub_test_run (test) && ok;
+  if (ok)
+    grub_printf ("ALL TESTS PASSED\n");
+  else
+    grub_printf ("TEST FAILURE\n");
   return GRUB_ERR_NONE;
 }
 
@@ -41,6 +80,8 @@ static grub_extcmd_t cmd;
 GRUB_MOD_INIT (functional_test)
 {
   cmd = grub_register_extcmd ("functional_test", grub_functional_test, 0, 0,
+			      "Run all loaded functional tests.", 0);
+  cmd = grub_register_extcmd ("all_functional_test", grub_functional_all_tests, 0, 0,
 			      "Run all functional tests.", 0);
 }
 

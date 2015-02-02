@@ -59,7 +59,7 @@ union wordbuf
 
 static const char *selftest(void);
 
-typedef struct 
+typedef struct
 {
   u32 keyschedule[32];
 } SEED_context;
@@ -258,7 +258,7 @@ static const u32 KC[NUMKC] = {
 
 
 /* Perform the key setup.
- */  
+ */
 static gcry_err_code_t
 do_setkey (SEED_context *ctx, const byte *key, const unsigned keylen)
 {
@@ -432,7 +432,7 @@ static const char*
 selftest (void)
 {
   SEED_context ctx;
-  byte scratch[16];	   
+  byte scratch[16];
 
   /* The test vector is taken from the appendix section B.3 of RFC4269.
    */

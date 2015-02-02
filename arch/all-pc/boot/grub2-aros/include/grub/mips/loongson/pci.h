@@ -27,19 +27,36 @@
 #define GRUB_LOONGSON_OHCI_PCIID 0x00351033
 #define GRUB_LOONGSON_EHCI_PCIID 0x00e01033
 
-#define GRUB_PCI_NUM_BUS        1
-#define GRUB_PCI_NUM_DEVICES    16
-
-#define GRUB_MACHINE_PCI_IO_BASE           0xbfd00000
-#define GRUB_MACHINE_PCI_CONFSPACE         0xbfe80000
+#define GRUB_MACHINE_PCI_IO_BASE_2F        0xbfd00000
+#define GRUB_MACHINE_PCI_IO_BASE_3A        0xb8000000
+#define GRUB_MACHINE_PCI_CONFSPACE_2F      0xbfe80000
+#define GRUB_MACHINE_PCI_CONFSPACE_3A      0xba000000
+#define GRUB_MACHINE_PCI_CONFSPACE_3A_EXT  0xbb000000
 #define GRUB_MACHINE_PCI_CONTROLLER_HEADER 0xbfe00000
 
-#define GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR 0xbfe00118
+#define GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR_2F 0xbfe00118
+
+#define GRUB_PCI_NUM_DEVICES_2F 16
 
 #ifndef ASM_FILE
-#define GRUB_MACHINE_PCI_CONF_CTRL_REG    (*(volatile grub_uint32_t *) \
-					   GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR)
-#define GRUB_MACHINE_PCI_IO_CTRL_REG      (*(volatile grub_uint32_t *) 0xbfe00110)
+
+typedef enum { GRUB_BONITO_2F, GRUB_BONITO_3A } grub_bonito_type_t;
+extern grub_bonito_type_t EXPORT_VAR (grub_bonito_type);
+
+#define GRUB_PCI_NUM_DEVICES    (grub_bonito_type ? 32 \
+				 : GRUB_PCI_NUM_DEVICES_2F)
+#define GRUB_PCI_NUM_BUS        (grub_bonito_type ? 256 : 1)
+
+#define GRUB_MACHINE_PCI_IO_BASE	(grub_bonito_type \
+					 ? GRUB_MACHINE_PCI_IO_BASE_3A \
+					 : GRUB_MACHINE_PCI_IO_BASE_2F)
+
+#define GRUB_MACHINE_PCI_CONF_CTRL_REG_2F    (*(volatile grub_uint32_t *) \
+					   GRUB_MACHINE_PCI_CONF_CTRL_REG_ADDR_2F)
+#define GRUB_MACHINE_PCI_IO_CTRL_REG_2F      (*(volatile grub_uint32_t *) 0xbfe00110)
+#define GRUB_MACHINE_PCI_CONF_CTRL_REG_3A    (*(volatile grub_uint32_t *) \
+					      0xbfe00118)
+
 #endif
 #define GRUB_MACHINE_PCI_WIN_MASK_SIZE    6
 #define GRUB_MACHINE_PCI_WIN_MASK         ((1 << GRUB_MACHINE_PCI_WIN_MASK_SIZE) - 1)
@@ -59,53 +76,23 @@
 #define GRUB_MACHINE_PCI_WIN3_ADDR        0xb8000000
 
 #ifndef ASM_FILE
-static inline grub_uint32_t
-grub_pci_read (grub_pci_address_t addr)
-{
-  GRUB_MACHINE_PCI_CONF_CTRL_REG = 1 << ((addr >> 11) & 0xf);
-  return *(volatile grub_uint32_t *) (GRUB_MACHINE_PCI_CONFSPACE
-				      | (addr & 0x07ff));
-}
+grub_uint32_t
+EXPORT_FUNC (grub_pci_read) (grub_pci_address_t addr);
 
-static inline grub_uint16_t
-grub_pci_read_word (grub_pci_address_t addr)
-{
-  GRUB_MACHINE_PCI_CONF_CTRL_REG = 1 << ((addr >> 11) & 0xf);
-  return *(volatile grub_uint16_t *) (GRUB_MACHINE_PCI_CONFSPACE
-				      | (addr & 0x07ff));
-}
+grub_uint16_t
+EXPORT_FUNC (grub_pci_read_word) (grub_pci_address_t addr);
 
-static inline grub_uint8_t
-grub_pci_read_byte (grub_pci_address_t addr)
-{
-  GRUB_MACHINE_PCI_CONF_CTRL_REG = 1 << ((addr >> 11) & 0xf);
-  return *(volatile grub_uint8_t *) (GRUB_MACHINE_PCI_CONFSPACE
-				     | (addr & 0x07ff));
-}
+grub_uint8_t
+EXPORT_FUNC (grub_pci_read_byte) (grub_pci_address_t addr);
 
-static inline void
-grub_pci_write (grub_pci_address_t addr, grub_uint32_t data)
-{
-  GRUB_MACHINE_PCI_CONF_CTRL_REG = 1 << ((addr >> 11) & 0xf);
-  *(volatile grub_uint32_t *) (GRUB_MACHINE_PCI_CONFSPACE
-			       | (addr & 0x07ff)) = data;
-}
+void
+EXPORT_FUNC (grub_pci_write) (grub_pci_address_t addr, grub_uint32_t data);
 
-static inline void
-grub_pci_write_word (grub_pci_address_t addr, grub_uint16_t data)
-{
-  GRUB_MACHINE_PCI_CONF_CTRL_REG = 1 << ((addr >> 11) & 0xf);
-  *(volatile grub_uint16_t *) (GRUB_MACHINE_PCI_CONFSPACE
-			       | (addr & 0x07ff)) = data;
-}
+void
+EXPORT_FUNC (grub_pci_write_word) (grub_pci_address_t addr, grub_uint16_t data);
 
-static inline void
-grub_pci_write_byte (grub_pci_address_t addr, grub_uint8_t data)
-{
-  GRUB_MACHINE_PCI_CONF_CTRL_REG = 1 << ((addr >> 11) & 0xf);
-  *(volatile grub_uint8_t *) (GRUB_MACHINE_PCI_CONFSPACE
-			      | (addr & 0x07ff)) = data;
-}
+void
+EXPORT_FUNC (grub_pci_write_byte) (grub_pci_address_t addr, grub_uint8_t data);
 
 volatile void *
 EXPORT_FUNC (grub_pci_device_map_range) (grub_pci_device_t dev,

@@ -93,11 +93,12 @@ LOCAL(read_cdrom):
 	pushw	$CDBLK_LENG
 
 	/* Block number.  */
+	incl    %esi
 	pushl	%eax
 	pushl	%esi
 
 	/* Buffer address.  */
-	pushw	$((DATA_ADDR - 0x400)>> 4)
+	pushw	$((DATA_ADDR - 0x200)>> 4)
 	pushl	%eax
 	pushw	$0x10
 
@@ -167,6 +168,6 @@ err_noboot_msg:
 err_cdfail_msg:
 	.ascii	"cdrom read fails\0"
 
-	. = start + 0x1FF
+	. = start + 0x7FF
 
 	.byte	0

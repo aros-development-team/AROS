@@ -36,7 +36,7 @@ GRUB_MOD_LICENSE ("GPLv3+");
  * space of the library clean.  The following macro is thus useful:
  *
  *     #define CAMELLIA_EXT_SYM_PREFIX foo_
- *  
+ *
  * This prefixes all external symbols with "foo_".
  */
 #ifdef HAVE_CONFIG_H
@@ -53,7 +53,7 @@ GRUB_MOD_LICENSE ("GPLv3+");
 #define camellia_encrypt128   CAMELLIA_PREFIX(camellia_encrypt128)
 #define camellia_encrypt256   CAMELLIA_PREFIX(camellia_encrypt256)
 #define camellia_setup128     CAMELLIA_PREFIX(camellia_setup128)
-#define camellia_setup192     CAMELLIA_PREFIX(camellia_setup192) 
+#define camellia_setup192     CAMELLIA_PREFIX(camellia_setup192)
 #define camellia_setup256     CAMELLIA_PREFIX(camellia_setup256)
 #endif /*CAMELLIA_EXT_SYM_PREFIX*/
 
@@ -100,7 +100,7 @@ camellia_setkey(void *c, const byte *key, unsigned keylen)
      +(4+32)*sizeof(u32)+2*sizeof(void*)    /* camellia_setup192 */
      +0+sizeof(int)+2*sizeof(void*)         /* Camellia_Ekeygen */
      +3*2*sizeof(void*)                     /* Function calls.  */
-     );  
+     );
 
   return 0;
 }

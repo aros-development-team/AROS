@@ -165,12 +165,12 @@ _grub_set_entry () {
     fi
 }
 
-__grub_set_default_program=$( echo grub-set-default | sed "@program_transform_name@" )
+__grub_set_default_program="@grub_set_default@"
 have ${__grub_set_default_program} && \
     complete -F _grub_set_entry -o filenames ${__grub_set_default_program}
 unset __grub_set_default_program
 
-__grub_reboot_program=$( echo grub-reboot | sed "@program_transform_name@" )
+__grub_reboot_program="@grub_reboot@"
 have ${__grub_reboot_program} && \
  complete -F _grub_set_entry -o filenames ${__grub_reboot_program}
 unset __grub_reboot_program
@@ -197,7 +197,7 @@ _grub_editenv () {
                 create list set unset"
 }
 
-__grub_editenv_program=$( echo grub-editenv | sed "@program_transform_name@" )
+__grub_editenv_program="@grub_editenv@"
 have ${__grub_editenv_program} && \
  complete -F _grub_editenv -o filenames ${__grub_editenv_program}
 unset __grub_editenv_program
@@ -218,7 +218,7 @@ _grub_mkconfig () {
         _filedir
     fi
 }
-__grub_mkconfig_program=$( echo grub-mkconfig | sed "@program_transform_name@" )
+__grub_mkconfig_program="@grub_mkconfig@"
 have ${__grub_mkconfig_program} && \
  complete -F _grub_mkconfig -o filenames ${__grub_mkconfig_program}
 unset __grub_mkconfig_program
@@ -252,10 +252,16 @@ _grub_setup () {
         _filedir
     fi
 }
-__grub_setup_program=$( echo grub-setup | sed "@program_transform_name@" )
-have ${__grub_setup_program} && \
- complete -F _grub_setup -o filenames ${__grub_setup_program}
-unset __grub_setup_program
+
+__grub_bios_setup_program="@grub_bios_setup@"
+have ${__grub_bios_setup_program} && \
+ complete -F _grub_setup -o filenames ${__grub_bios_setup_program}
+unset __grub_bios_setup_program
+
+__grub_sparc64_setup_program="@grub_sparc64_setup@"
+have ${__grub_sparc64_setup_program} && \
+ complete -F _grub_setup -o filenames ${__grub_sparc64_setup_program}
+unset __grub_sparc64_setup_program
 
 
 #
@@ -298,7 +304,7 @@ _grub_install () {
         _filedir
     fi
 }
-__grub_install_program=$( echo grub-install | sed "@program_transform_name@" )
+__grub_install_program="@grub_install@"
 have ${__grub_install_program} && \
  complete -F _grub_install -o filenames ${__grub_install_program}
 unset __grub_install_program
@@ -320,7 +326,7 @@ _grub_mkfont () {
         _filedir
     fi
 }
-__grub_mkfont_program=$( echo grub-mkfont | sed "@program_transform_name@" )
+__grub_mkfont_program="@grub_mkfont@"
 have ${__grub_mkfont_program} && \
  complete -F _grub_mkfont -o filenames ${__grub_mkfont_program}
 unset __grub_mkfont_program
@@ -351,7 +357,7 @@ _grub_mkrescue () {
         _filedir
     fi
 }
-__grub_mkrescue_program=$( echo grub-mkrescue | sed "@program_transform_name@" )
+__grub_mkrescue_program="@grub_mkrescue@"
 have ${__grub_mkrescue_program} && \
  complete -F _grub_mkrescue -o filenames ${__grub_mkrescue_program}
 unset __grub_mkrescue_program
@@ -393,7 +399,7 @@ _grub_mkimage () {
         _filedir
     fi
 }
-__grub_mkimage_program=$( echo grub-mkimage | sed "@program_transform_name@" )
+__grub_mkimage_program="@grub_mkimage@"
 have ${__grub_mkimage_program} && \
  complete -F _grub_mkimage -o filenames ${__grub_mkimage_program}
 unset __grub_mkimage_program
@@ -415,7 +421,7 @@ _grub_mkpasswd_pbkdf2 () {
         _filedir
     fi
 }
-__grub_mkpasswd_pbkdf2_program=$( echo grub-mkpasswd-pbkdf2 | sed "@program_transform_name@" )
+__grub_mkpasswd_pbkdf2_program="@grub_mkpasswd_pbkdf2@"
 have ${__grub_mkpasswd_pbkdf2_program} && \
  complete -F _grub_mkpasswd_pbkdf2 -o filenames ${__grub_mkpasswd_pbkdf2_program}
 unset __grub_mkpasswd_pbkdf2_program
@@ -453,7 +459,7 @@ _grub_probe () {
         _filedir
     fi
 }
-__grub_probe_program=$( echo grub-probe | sed "@program_transform_name@" )
+__grub_probe_program="@grub_probe@"
 have ${__grub_probe_program} && \
  complete -F _grub_probe -o filenames ${__grub_probe_program}
 unset __grub_probe_program
@@ -475,7 +481,7 @@ _grub_script_check () {
         _filedir
     fi
 }
-__grub_script_check_program=$( echo grub-script-check | sed "@program_transform_name@" )
+__grub_script_check_program="@grub_script_check@"
 have ${__grub_script_check_program} && \
  complete -F _grub_script_check -o filenames ${__grub_script_check_program}
 

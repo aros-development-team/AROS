@@ -157,9 +157,10 @@ http_err (grub_net_tcp_socket_t sock __attribute__ ((unused)),
 
   if (data->sock)
     grub_net_tcp_close (data->sock, GRUB_NET_TCP_ABORT);
+  data->sock = 0;
   if (data->current_line)
     grub_free (data->current_line);
-  grub_free (data);
+  data->current_line = 0;
   file->device->net->eof = 1;
   file->device->net->stall = 1;
   if (file->size == GRUB_FILE_SIZE_UNKNOWN)
@@ -174,6 +175,12 @@ http_receive (grub_net_tcp_socket_t sock __attribute__ ((unused)),
   grub_file_t file = f;
   http_data_t data = file->data;
   grub_err_t err;
+
+  if (!data->sock)
+    {
+      grub_netbuff_free (nb);
+      return GRUB_ERR_NONE;
+    }
 
   while (1)
     {
@@ -432,7 +439,8 @@ http_seek (struct grub_file *file, grub_off_t off)
   grub_err_t err;
   old_data = file->data;
   /* FIXME: Reuse socket?  */
-  grub_net_tcp_close (old_data->sock, GRUB_NET_TCP_ABORT);
+  if (old_data->sock)
+    grub_net_tcp_close (old_data->sock, GRUB_NET_TCP_ABORT);
   old_data->sock = 0;
 
   while (file->device->net->packs.first)
@@ -529,7 +537,8 @@ http_packets_pulled (struct grub_file *file)
 
   if (!file->device->net->eof)
     file->device->net->stall = 0;
-  grub_net_tcp_unstall (data->sock);
+  if (data && data->sock)
+    grub_net_tcp_unstall (data->sock);
   return 0;
 }
 

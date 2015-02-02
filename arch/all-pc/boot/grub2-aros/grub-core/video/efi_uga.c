@@ -81,77 +81,88 @@ find_line_len (grub_uint32_t *fb_base, grub_uint32_t *line_len)
   return 0;
 }
 
+/* Context for find_framebuf.  */
+struct find_framebuf_ctx
+{
+  grub_uint32_t *fb_base;
+  grub_uint32_t *line_len;
+  int found;
+};
+
+/* Helper for find_framebuf.  */
+static int
+find_card (grub_pci_device_t dev, grub_pci_id_t pciid, void *data)
+{
+  struct find_framebuf_ctx *ctx = data;
+  grub_pci_address_t addr;
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
+  if (grub_pci_read (addr) >> 24 == 0x3)
+    {
+      int i;
+
+      grub_dprintf ("fb", "Display controller: %d:%d.%d\nDevice id: %x\n",
+		    grub_pci_get_bus (dev), grub_pci_get_device (dev),
+		    grub_pci_get_function (dev), pciid);
+      addr += 8;
+      for (i = 0; i < 6; i++, addr += 4)
+	{
+	  grub_uint32_t old_bar1, old_bar2, type;
+	  grub_uint64_t base64;
+
+	  old_bar1 = grub_pci_read (addr);
+	  if ((! old_bar1) || (old_bar1 & GRUB_PCI_ADDR_SPACE_IO))
+	    continue;
+
+	  type = old_bar1 & GRUB_PCI_ADDR_MEM_TYPE_MASK;
+	  if (type == GRUB_PCI_ADDR_MEM_TYPE_64)
+	    {
+	      if (i == 5)
+		break;
+
+	      old_bar2 = grub_pci_read (addr + 4);
+	    }
+	  else
+	    old_bar2 = 0;
+
+	  base64 = old_bar2;
+	  base64 <<= 32;
+	  base64 |= (old_bar1 & GRUB_PCI_ADDR_MEM_MASK);
+
+	  grub_dprintf ("fb", "%s(%d): 0x%llx\n",
+			((old_bar1 & GRUB_PCI_ADDR_MEM_PREFETCH) ?
+			"VMEM" : "MMIO"), i,
+		       (unsigned long long) base64);
+
+	  if ((old_bar1 & GRUB_PCI_ADDR_MEM_PREFETCH) && (! ctx->found))
+	    {
+	      *ctx->fb_base = base64;
+	      if (find_line_len (ctx->fb_base, ctx->line_len))
+		ctx->found++;
+	    }
+
+	  if (type == GRUB_PCI_ADDR_MEM_TYPE_64)
+	    {
+	      i++;
+	      addr += 4;
+	    }
+	}
+    }
+
+  return ctx->found;
+}
+
 static int
 find_framebuf (grub_uint32_t *fb_base, grub_uint32_t *line_len)
 {
-  int found = 0;
+  struct find_framebuf_ctx ctx = {
+    .fb_base = fb_base,
+    .line_len = line_len,
+    .found = 0
+  };
 
-  auto int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev,
-				       grub_pci_id_t pciid);
-
-  int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev,
-				  grub_pci_id_t pciid)
-    {
-      grub_pci_address_t addr;
-
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
-      if (grub_pci_read (addr) >> 24 == 0x3)
-	{
-	  int i;
-
-	  grub_dprintf ("fb", "Display controller: %d:%d.%d\nDevice id: %x\n",
-			grub_pci_get_bus (dev), grub_pci_get_device (dev),
-			grub_pci_get_function (dev), pciid);
-	  addr += 8;
-	  for (i = 0; i < 6; i++, addr += 4)
-	    {
-	      grub_uint32_t old_bar1, old_bar2, type;
-	      grub_uint64_t base64;
-
-	      old_bar1 = grub_pci_read (addr);
-	      if ((! old_bar1) || (old_bar1 & GRUB_PCI_ADDR_SPACE_IO))
-		continue;
-
-	      type = old_bar1 & GRUB_PCI_ADDR_MEM_TYPE_MASK;
-	      if (type == GRUB_PCI_ADDR_MEM_TYPE_64)
-		{
-		  if (i == 5)
-		    break;
-
-		  old_bar2 = grub_pci_read (addr + 4);
-		}
-	      else
-		old_bar2 = 0;
-
-	      base64 = old_bar2;
-	      base64 <<= 32;
-	      base64 |= (old_bar1 & GRUB_PCI_ADDR_MEM_MASK);
-
-	      grub_dprintf ("fb", "%s(%d): 0x%llx\n",
-			    ((old_bar1 & GRUB_PCI_ADDR_MEM_PREFETCH) ?
-			    "VMEM" : "MMIO"), i,
-			   (unsigned long long) base64);
-
-	      if ((old_bar1 & GRUB_PCI_ADDR_MEM_PREFETCH) && (! found))
-		{
-		  *fb_base = base64;
-		  if (find_line_len (fb_base, line_len))
-		    found++;
-		}
-
-	      if (type == GRUB_PCI_ADDR_MEM_TYPE_64)
-		{
-		  i++;
-		  addr += 4;
-		}
-	    }
-	}
-
-      return found;
-    }
-
-  grub_pci_iterate (find_card);
-  return found;
+  grub_pci_iterate (find_card, &ctx);
+  return ctx.found;
 }
 
 static int
@@ -236,7 +247,7 @@ grub_video_uga_setup (unsigned int width, unsigned int height,
       framebuffer.mode_info.mode_type = GRUB_VIDEO_MODE_TYPE_RGB;
       framebuffer.mode_info.bpp = 32;
       framebuffer.mode_info.bytes_per_pixel = 4;
-      framebuffer.mode_info.number_of_colors = 256; /* TODO: fix me.  */
+      framebuffer.mode_info.number_of_colors = 256;
       framebuffer.mode_info.red_mask_size = 8;
       framebuffer.mode_info.red_field_pos = 16;
       framebuffer.mode_info.green_mask_size = 8;
@@ -316,6 +327,10 @@ static struct grub_video_adapter grub_video_uga_adapter =
     .get_palette = grub_video_fb_get_palette,
     .set_viewport = grub_video_fb_set_viewport,
     .get_viewport = grub_video_fb_get_viewport,
+    .set_region = grub_video_fb_set_region,
+    .get_region = grub_video_fb_get_region,
+    .set_area_status = grub_video_fb_set_area_status,
+    .get_area_status = grub_video_fb_get_area_status,
     .map_color = grub_video_fb_map_color,
     .map_rgb = grub_video_fb_map_rgb,
     .map_rgba = grub_video_fb_map_rgba,

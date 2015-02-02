@@ -31,15 +31,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef GRUB_BUILD
 #define _GNU_SOURCE	1
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 #include <argp.h>
+#pragma GCC diagnostic error "-Wmissing-prototypes"
+#pragma GCC diagnostic error "-Wmissing-declarations"
+#endif
 #include <assert.h>
+
+#include <errno.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_TRUETYPE_TAGS_H
 #include FT_TRUETYPE_TABLES_H
-#include <freetype/ftsynth.h>
+#include FT_SYNTHESIS_H
 
 #undef __FTERRORS_H__
 #define FT_ERROR_START_LIST   const char *ft_errmsgs[] = { 
@@ -47,7 +55,13 @@
 #define FT_ERROR_END_LIST     };
 #include FT_ERRORS_H   
 
+#ifndef GRUB_BUILD
 #include "progname.h"
+#endif
+
+#ifdef GRUB_BUILD
+#define grub_util_fopen fopen
+#endif
 
 #define GRUB_FONT_DEFAULT_SIZE		16
 
@@ -68,15 +82,16 @@ struct grub_glyph_info
 
 enum file_formats
 {
-  PF2,
-  ASCII_BITMAPS,
-  WIDTH_SPEC
+  PF2
 };
 
-#define GRUB_FONT_FLAG_BOLD		1
-#define GRUB_FONT_FLAG_NOBITMAP		2
-#define GRUB_FONT_FLAG_NOHINTING	4
-#define GRUB_FONT_FLAG_FORCEHINT	8
+enum
+  {
+    GRUB_FONT_FLAG_BOLD	= 1,
+    GRUB_FONT_FLAG_NOBITMAP = 2,
+    GRUB_FONT_FLAG_NOHINTING = 4,
+    GRUB_FONT_FLAG_FORCEHINT = 8
+  };
 
 struct grub_font_info
 {
@@ -363,7 +378,7 @@ struct gsub_header
   grub_uint16_t scripts_off;
   grub_uint16_t features_off;
   grub_uint16_t lookups_off;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct gsub_features
 {
@@ -378,21 +393,21 @@ struct gsub_features
 #define FEATURE_RLIG 0x726c6967
     grub_uint32_t feature_tag;
     grub_uint16_t offset;
-  } __attribute__ ((packed)) features[0];
-} __attribute__ ((packed));
+  } GRUB_PACKED features[0];
+} GRUB_PACKED;
 
 struct gsub_feature
 {
   grub_uint16_t params;
   grub_uint16_t lookupcount;
   grub_uint16_t lookupindices[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct gsub_lookup_list
 {
   grub_uint16_t count;
   grub_uint16_t offsets[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct gsub_lookup
 {
@@ -400,7 +415,7 @@ struct gsub_lookup
   grub_uint16_t flag;
   grub_uint16_t subtablecount;
   grub_uint16_t subtables[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct gsub_substitution
 {
@@ -415,14 +430,14 @@ struct gsub_substitution
       grub_uint16_t repl[0];
     };
   };
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct gsub_coverage_list
 {
   grub_uint16_t type;
   grub_uint16_t count;
   grub_uint16_t glyphs[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct gsub_coverage_ranges
 {
@@ -433,8 +448,8 @@ struct gsub_coverage_ranges
     grub_uint16_t start;
     grub_uint16_t end;
     grub_uint16_t start_index;
-  } __attribute__ ((packed)) ranges[0];
-} __attribute__ ((packed));
+  } GRUB_PACKED ranges[0];
+} GRUB_PACKED;
 
 #define GSUB_SINGLE_SUBSTITUTION 1
 
@@ -457,29 +472,30 @@ add_subst (grub_uint32_t from, grub_uint32_t to, struct glyph_replace **target)
 }
 
 static void
+subst (const struct gsub_substitution *sub, grub_uint32_t glyph,
+       struct glyph_replace **target, int *i)
+{
+  grub_uint16_t substtype;
+  substtype = grub_be_to_cpu16 (sub->type);
+
+  if (substtype == GSUB_SUBSTITUTION_DELTA)
+    add_subst (glyph, glyph + grub_be_to_cpu16 (sub->delta), target);
+  else if (*i >= grub_be_to_cpu16 (sub->count))
+    printf (_("Out of range substitution (%d, %d)\n"), *i,
+	    grub_be_to_cpu16 (sub->count));
+  else
+    add_subst (glyph, grub_be_to_cpu16 (sub->repl[(*i)++]), target);
+}
+
+static void
 process_cursive (struct gsub_feature *feature,
 		 struct gsub_lookup_list *lookups,
 		 grub_uint32_t feattag)
 {
   int j, k;
   int i;
-  struct glyph_replace **target;
+  struct glyph_replace **target = NULL;
   struct gsub_substitution *sub;
-
-  auto inline void subst (grub_uint32_t glyph);
-  void subst (grub_uint32_t glyph)
-  {
-    grub_uint16_t substtype;
-    substtype = grub_be_to_cpu16 (sub->type);
-
-    if (substtype == GSUB_SUBSTITUTION_DELTA)
-      add_subst (glyph, glyph + grub_be_to_cpu16 (sub->delta), target);
-    else if (i >= grub_be_to_cpu16 (sub->count))
-      printf (_("Out of range substitution (%d, %d)\n"), i,
-	      grub_be_to_cpu16 (sub->count));
-    else
-      add_subst (glyph, grub_be_to_cpu16 (sub->repl[i++]), target);
-  }
 
   for (j = 0; j < grub_be_to_cpu16 (feature->lookupcount); j++)
     {
@@ -504,8 +520,8 @@ process_cursive (struct gsub_feature *feature,
 	}		      
       if (grub_be_to_cpu16 (lookup->flag) & ~GSUB_RTL_CHAR)
 	{
-	  printf (_("Unsupported substitution flag: 0x%x\n"),
-		  grub_be_to_cpu16 (lookup->flag));
+	  grub_util_info ("unsupported substitution flag: 0x%x",
+			  grub_be_to_cpu16 (lookup->flag));
 	}
       switch (feattag)
 	{
@@ -541,14 +557,14 @@ process_cursive (struct gsub_feature *feature,
 	  void *coverage = (grub_uint8_t *) sub
 	    + grub_be_to_cpu16 (sub->coverage_off);
 	  grub_uint32_t covertype;
-	  covertype = grub_be_to_cpu16 (*(grub_uint16_t * __attribute__ ((packed))) coverage);
+	  covertype = grub_be_to_cpu16 (grub_get_unaligned16 (coverage));
 	  i = 0;
 	  if (covertype == GSUB_COVERAGE_LIST)
 	    {
 	      struct gsub_coverage_list *cover = coverage;
 	      int l;
 	      for (l = 0; l < grub_be_to_cpu16 (cover->count); l++)
-		subst (grub_be_to_cpu16 (cover->glyphs[l]));
+		subst (sub, grub_be_to_cpu16 (cover->glyphs[l]), target, &i);
 	    }
 	  else if (covertype == GSUB_COVERAGE_RANGE)
 	    {
@@ -557,7 +573,7 @@ process_cursive (struct gsub_feature *feature,
 	      for (l = 0; l < grub_be_to_cpu16 (cover->count); l++)
 		for (m = grub_be_to_cpu16 (cover->ranges[l].start);
 		     m <= grub_be_to_cpu16 (cover->ranges[l].end); m++)
-		  subst (m);
+		  subst (sub, m, target, &i);
 	    }
 	  else
 	    /* TRANSLATORS: most font transformations apply only to
@@ -565,7 +581,8 @@ process_cursive (struct gsub_feature *feature,
 	       There are 2 coverage specifications: list and range.
 	       This warning is thrown when another coverage specification
 	       is detected.  */
-	    printf (_("Unsupported coverage specification: %d\n"), covertype);
+	    fprintf (stderr,
+		     _("Unsupported coverage specification: %d\n"), covertype);
 	}
     }
 }
@@ -604,7 +621,8 @@ add_font (struct grub_font_info *font_info, FT_Face face, int nocut)
 	  grub_uint32_t feattag
 	    = grub_be_to_cpu32 (features->features[i].feature_tag);
 	  if (feature->params)
-	    printf (_("WARNING: unsupported font feature parameters: %x\n"),
+	    fprintf (stderr,
+		     _("WARNING: unsupported font feature parameters: %x\n"),
 		    grub_be_to_cpu16 (feature->params));
 	  switch (feattag)
 	    {
@@ -635,8 +653,8 @@ add_font (struct grub_font_info *font_info, FT_Face face, int nocut)
 		  if (!grub_isgraph (str[j]))
 		    str[j] = '?';
 		/* TRANSLATORS: It's gsub feature, not gsub font.  */
-		printf (_("Unknown gsub font feature 0x%x (%s)\n"),
-			feattag, str);
+		grub_util_info ("Unknown gsub font feature 0x%x (%s)",
+				feattag, str);
 	      }
 	    }
 	}
@@ -686,7 +704,7 @@ write_be16_section (const char *name, grub_uint16_t data, int* offset,
 {
   grub_uint32_t leng;
 
-  leng = grub_cpu_to_be32 (2);
+  leng = grub_cpu_to_be32_compile_time (2);
   data = grub_cpu_to_be16 (data);
   grub_util_write_image (name, 4, file, filename);
   grub_util_write_image ((char *) &leng, 4, file, filename);
@@ -694,8 +712,6 @@ write_be16_section (const char *name, grub_uint16_t data, int* offset,
 
   *offset += 10;
 }
-
-#pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
 
 static void
 print_glyphs (struct grub_font_info *font_info)
@@ -770,81 +786,22 @@ print_glyphs (struct grub_font_info *font_info)
 }
 
 static void
-write_font_ascii_bitmap (struct grub_font_info *font_info, char *output_file)
-{
-  FILE *file;
-  struct grub_glyph_info *glyph;
-  int num; 
-  
-  file = fopen (output_file, "wb");
-  if (! file)
-    grub_util_error (_("cannot write to `%s': %s"), output_file,
-		     strerror (errno));
-
-  int correct_size;
-  for (glyph = font_info->glyphs_sorted, num = 0; num < font_info->num_glyphs;
-       glyph++, num++)
-    {
-      correct_size = 1;
-      if (glyph->width != 8 || glyph->height != 16)
-      {
-        /* printf ("Width or height from glyph U+%04x not supported, skipping.\n", glyph->char_code);  */
-	correct_size = 0;
-      }
-      int row;
-      for (row = 0; row < glyph->height; row++)
-        {
-	  if (correct_size)
-	    fwrite (&glyph->bitmap[row], sizeof(glyph->bitmap[row]), 1, file);
-	  else
-	    fwrite (&correct_size, 1, 1, file);
-        }
-    }
-    fclose (file);
-}
-
-static void
-write_font_width_spec (struct grub_font_info *font_info, char *output_file)
-{
-  FILE *file;
-  struct grub_glyph_info *glyph;
-  grub_uint8_t *out;
-
-  out = xmalloc (8192);
-  memset (out, 0, 8192);
-  
-  file = fopen (output_file, "wb");
-  if (! file)
-    grub_util_error (_("cannot write to `%s': %s"), output_file,
-		     strerror (errno));
-
-  for (glyph = font_info->glyphs_sorted;
-       glyph < font_info->glyphs_sorted + font_info->num_glyphs; glyph++)
-    if (glyph->width > 12)
-      out[glyph->char_code >> 3] |= (1 << (glyph->char_code & 7));
-
-  fwrite (out, 8192, 1, file);
-  fclose (file);
-  free (out);
-}
-
-static void
 write_font_pf2 (struct grub_font_info *font_info, char *output_file)
 {
   FILE *file;
   grub_uint32_t leng;
-  char style_name[20], *font_name;
+  char style_name[20], *font_name, *ptr;
   int offset;
   struct grub_glyph_info *cur;
 
-  file = fopen (output_file, "wb");
+  file = grub_util_fopen (output_file, "wb");
   if (! file)
     grub_util_error (_("cannot write to `%s': %s"), output_file,
 		     strerror (errno));
 
   offset = 0;
 
-  leng = grub_cpu_to_be32 (4);
+  leng = grub_cpu_to_be32_compile_time (4);
   grub_util_write_image (FONT_FORMAT_SECTION_NAMES_FILE,
   			 sizeof(FONT_FORMAT_SECTION_NAMES_FILE) - 1, file,
 			 output_file);
@@ -868,8 +825,13 @@ write_font_pf2 (struct grub_font_info *font_info, char *output_file)
   if (! style_name[0])
     strcpy (style_name, " Regular");
 
-  font_name = xasprintf ("%s %s %d", font_info->name, &style_name[1],
-			 font_info->size);
+  font_name = xmalloc (strlen (font_info->name) + strlen (&style_name[1])
+		       + 3 + 20);
+  ptr = grub_stpcpy (font_name, font_info->name);
+  *ptr++ = ' ';
+  ptr = grub_stpcpy (ptr, &style_name[1]);
+  *ptr++ = ' ';
+  snprintf (ptr, 20, "%d", font_info->size);
 
   write_string_section (FONT_FORMAT_SECTION_NAMES_FONT_NAME,
   			font_name, &offset, file, output_file);
@@ -972,14 +934,10 @@ write_font_pf2 (struct grub_font_info *font_info, char *output_file)
   fclose (file);
 }
 
+#ifndef GRUB_BUILD
 static struct argp_option options[] = {
   {"output",  'o', N_("FILE"), 0, N_("save output in FILE [required]"), 0},
   /* TRANSLATORS: bitmaps are images like e.g. in JPEG.  */
-  {"ascii-bitmaps",  0x102, 0, 0, N_("save only the ASCII bitmaps"), 0},
-  {"width-spec",  0x103, 0, 0, 
-   /* TRANSLATORS: this refers to creating a file containing the width of
-      every glyph but not the glyphs themselves.  */
-   N_("create width summary file"), 0},
   {"index",  'i', N_("NUM"), 0,
    /* TRANSLATORS: some font files may have multiple faces (fonts).
       This option is used to chose among them, the first face being '0'.
@@ -1007,6 +965,24 @@ static struct argp_option options[] = {
   {"verbose",  'v', 0, 0, N_("print verbose messages."), 0},
   { 0, 0, 0, 0, 0, 0 }
 };
+#define my_argp_parse argp_parse
+#define MY_ARGP_KEY_ARG ARGP_KEY_ARG
+#define my_error_t error_t
+#define MY_ARGP_ERR_UNKNOWN ARGP_ERR_UNKNOWN
+#define my_argp_state argp_state
+
+#else
+
+#define my_error_t int
+#define MY_ARGP_ERR_UNKNOWN -1
+#define MY_ARGP_KEY_ARG -1
+#define my_argp_parse(a, argc, argv, b, c, st) my_argp_parse_real(argc, argv, st)
+struct my_argp_state
+{
+  void *input;
+};
+
+#endif
 
 struct arguments
 {
@@ -1020,8 +996,19 @@ struct arguments
   enum file_formats file_format;
 };
 
-static error_t
-argp_parser (int key, char *arg, struct argp_state *state)
+#ifdef GRUB_BUILD
+
+static int
+has_argument (int v)
+{
+  return v =='o' || v == 'i' || v == 'r' || v == 'n' || v == 's'
+    || v == 'd' || v == 'c';
+}
+
+#endif
+
+static my_error_t
+argp_parser (int key, char *arg, struct my_argp_state *state)
 {
   /* Get the input argument from argp_parse, which we
      know is a pointer to our arguments structure. */
@@ -1101,7 +1088,7 @@ argp_parser (int key, char *arg, struct argp_state *state)
       arguments->font_info.desc = strtoul (arg, NULL, 0);
       break;
 
-    case 'e':
+    case 'c':
       arguments->font_info.asce = strtoul (arg, NULL, 0);
       break;
 
@@ -1109,30 +1096,66 @@ argp_parser (int key, char *arg, struct argp_state *state)
       font_verbosity++;
       break;
 
-    case 0x102:
-      arguments->file_format = ASCII_BITMAPS;
-      break;
-
-    case 0x103:
-      arguments->file_format = WIDTH_SPEC;
-      break;
-
-    case ARGP_KEY_ARG:
+    case MY_ARGP_KEY_ARG:
       assert (arguments->nfiles < arguments->files_max);
       arguments->files[arguments->nfiles++] = xstrdup(arg);
       break;
 
     default:
-      return ARGP_ERR_UNKNOWN;
+      return MY_ARGP_ERR_UNKNOWN;
     }
   return 0;
 }
 
+#ifdef GRUB_BUILD
+
+/* We don't require host platform to have argp. In the same time configuring
+   gnulib for build would result in even worse mess. So we have our
+   minimalistic argp replacement just enough for build system. Most
+   argp features are omitted.  */
+
+static int
+my_argp_parse_real (int argc, char **argv, void *st)
+{
+  int curar;
+  struct my_argp_state p;
+
+  p.input = st;
+
+  for (curar = 1; curar < argc; )
+    {
+      if (argv[curar][0] == '-')
+	{
+	  if (has_argument (argv[curar][1])
+	      && curar + 1 >= argc)
+	    return 1;
+	  if (has_argument (argv[curar][1]))
+	    {
+	      if (argp_parser (argv[curar][1], argv[curar + 1], &p))
+		return 1;
+	      curar += 2;
+	      continue;
+	    }
+	  if (argp_parser (argv[curar][1], NULL, &p))
+	    return 1;
+	  curar++;
+	  continue;
+	}
+      if (argp_parser (MY_ARGP_KEY_ARG, argv[curar], &p))
+	return 1;
+      curar++;
+    }
+  return 0;
+}
+#endif
+
+#ifndef GRUB_BUILD
 static struct argp argp = {
   options, argp_parser, N_("[OPTIONS] FONT_FILES"),
   N_("Convert common font file formats into PF2"),
   NULL, NULL, NULL
 };
+#endif
 
 int
 main (int argc, char *argv[])
@@ -1140,9 +1163,9 @@ main (int argc, char *argv[])
   FT_Library ft_lib;
   struct arguments arguments;
 
-  set_program_name (argv[0]);
-
-  grub_util_init_nls ();
+#ifndef GRUB_BUILD
+  grub_util_host_init (&argc, &argv);
+#endif
 
   memset (&arguments, 0, sizeof (struct arguments));
   arguments.file_format = PF2;
@@ -1152,27 +1175,10 @@ main (int argc, char *argv[])
   memset (arguments.files, 0, (arguments.files_max + 1)
 	  * sizeof (arguments.files[0]));
 
-  if (argp_parse (&argp, argc, argv, 0, 0, &arguments) != 0)
+  if (my_argp_parse (&argp, argc, argv, 0, 0, &arguments) != 0)
     {
       fprintf (stderr, "%s", _("Error in parsing command line arguments\n"));
       exit(1);
-    }
-
-  if (arguments.file_format == ASCII_BITMAPS
-      && arguments.font_info.num_range > 0)
-    {
-      grub_util_error ("%s", _("Option --ascii-bitmaps doesn't accept ranges (it always uses ASCII)."));
-      return 1;
-    }
-  else if (arguments.file_format == ASCII_BITMAPS)
-    {
-      arguments.font_info.ranges = xrealloc (arguments.font_info.ranges,
-					     GRUB_FONT_RANGE_BLOCK *
-					     sizeof (grub_uint32_t) * 2);
-	  
-      arguments.font_info.ranges[0] = (grub_uint32_t) 0x00;
-      arguments.font_info.ranges[1] = (grub_uint32_t) 0x7f;
-      arguments.font_info.num_range = 1;
     }
 
   if (! arguments.output_file)
@@ -1193,9 +1199,9 @@ main (int argc, char *argv[])
 			   arguments.font_index, &ft_face);
 	if (err)
 	  {
-	    grub_printf (_("can't open file %s, index %d: error %d"),
-			 arguments.files[i],
-			 arguments.font_index, err);
+	    printf (_("can't open file %s, index %d: error %d"),
+		    arguments.files[i],
+		    arguments.font_index, err);
 	    if (err > 0 && err < (signed) ARRAY_SIZE (ft_errmsgs))
 	      printf (": %s\n", ft_errmsgs[err]);
 	    else
@@ -1220,9 +1226,13 @@ main (int argc, char *argv[])
 	arguments.font_info.style = ft_face->style_flags;
 	arguments.font_info.size = size;
 
-	if (FT_Set_Pixel_Sizes (ft_face, size, size))
-	  grub_util_error (_("can't set %dx%d font size"),
-			   size, size);
+	err = FT_Set_Pixel_Sizes (ft_face, size, size);
+
+	if (err)
+	  grub_util_error (_("can't set %dx%d font size: Freetype error %d: %s"),
+			   size, size, err,
+			   (err > 0 && err < (signed) ARRAY_SIZE (ft_errmsgs))
+			   ? ft_errmsgs[err] : "");
 	add_font (&arguments.font_info, ft_face, arguments.file_format != PF2);
 	FT_Done_Face (ft_face);
       }
@@ -1264,14 +1274,6 @@ main (int argc, char *argv[])
     {
     case PF2:
       write_font_pf2 (&arguments.font_info, arguments.output_file);
-      break;
-
-    case ASCII_BITMAPS:
-      write_font_ascii_bitmap (&arguments.font_info, arguments.output_file);
-      break;
-
-    case WIDTH_SPEC:
-      write_font_width_spec (&arguments.font_info, arguments.output_file);
       break;
     }
 

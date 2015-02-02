@@ -33,20 +33,20 @@ struct etherhdr
   grub_uint8_t dst[6];
   grub_uint8_t src[6];
   grub_uint16_t type;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct llchdr
 {
   grub_uint8_t dsap;
   grub_uint8_t ssap;
   grub_uint8_t ctrl;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct snaphdr
 {
   grub_uint8_t oui[3]; 
   grub_uint16_t type;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 grub_err_t
 send_ethernet_packet (struct grub_net_network_level_interface *inf,

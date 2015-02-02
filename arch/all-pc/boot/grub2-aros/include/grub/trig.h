@@ -24,8 +24,8 @@
 #define GRUB_TRIG_ANGLE_MASK 255
 #define GRUB_TRIG_FRACTION_SCALE 16384
 
-extern short grub_trig_sintab[];
-extern short grub_trig_costab[];
+extern const short grub_trig_sintab[];
+extern const short grub_trig_costab[];
 
 static __inline int
 grub_sin (int x)

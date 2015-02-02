@@ -56,6 +56,9 @@ unsigned int grub_loader_cmdline_size (int argc, char *argv[])
       size++; /* Separator space or NULL.  */
     }
 
+  if (size == 0)
+    size = 1;
+
   return size;
 }
 

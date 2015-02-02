@@ -42,23 +42,29 @@ struct cache_entry
 
 static struct cache_entry *cache;
 
-void
-FUNC_NAME (const char *key, const char *var, int no_floppy,
-	   char **hints, unsigned nhints)
+/* Context for FUNC_NAME.  */
+struct search_ctx
 {
-  int count = 0;
-  int is_cache = 0;
-  grub_fs_autoload_hook_t saved_autoload;
+  const char *key;
+  const char *var;
+  int no_floppy;
+  char **hints;
+  unsigned nhints;
+  int count;
+  int is_cache;
+};
 
-  auto int iterate_device (const char *name);
-  int iterate_device (const char *name)
-  {
-    int found = 0;
+/* Helper for FUNC_NAME.  */
+static int
+iterate_device (const char *name, void *data)
+{
+  struct search_ctx *ctx = data;
+  int found = 0;
 
-    /* Skip floppy drives when requested.  */
-    if (no_floppy &&
-	name[0] == 'f' && name[1] == 'd' && name[2] >= '0' && name[2] <= '9')
-      return 0;
+  /* Skip floppy drives when requested.  */
+  if (ctx->no_floppy &&
+      name[0] == 'f' && name[1] == 'd' && name[2] >= '0' && name[2] <= '9')
+    return 0;
 
 #ifdef DO_SEARCH_FS_UUID
 #define compare_fn grub_strcasecmp
@@ -67,34 +73,34 @@ FUNC_NAME (const char *key, const char *var, int no_floppy,
 #endif
 
 #ifdef DO_SEARCH_FILE
-      {
-	char *buf;
-	grub_file_t file;
+    {
+      char *buf;
+      grub_file_t file;
 
-	buf = grub_xasprintf ("(%s)%s", name, key);
-	if (! buf)
-	  return 1;
+      buf = grub_xasprintf ("(%s)%s", name, ctx->key);
+      if (! buf)
+	return 1;
 
-	grub_file_filter_disable_compression ();
-	file = grub_file_open (buf);
-	if (file)
-	  {
-	    found = 1;
-	    grub_file_close (file);
-	  }
-	grub_free (buf);
-      }
+      grub_file_filter_disable_compression ();
+      file = grub_file_open (buf);
+      if (file)
+	{
+	  found = 1;
+	  grub_file_close (file);
+	}
+      grub_free (buf);
+    }
 #else
-      {
-	/* SEARCH_FS_UUID or SEARCH_LABEL */
-	grub_device_t dev;
-	grub_fs_t fs;
-	char *quid;
+    {
+      /* SEARCH_FS_UUID or SEARCH_LABEL */
+      grub_device_t dev;
+      grub_fs_t fs;
+      char *quid;
 
-	dev = grub_device_open (name);
-	if (dev)
-	  {
-	    fs = grub_fs_probe (dev);
+      dev = grub_device_open (name);
+      if (dev)
+	{
+	  fs = grub_fs_probe (dev);
 
 #ifdef DO_SEARCH_FS_UUID
 #define read_fn uuid
@@ -102,173 +108,191 @@ FUNC_NAME (const char *key, const char *var, int no_floppy,
 #define read_fn label
 #endif
 
-	    if (fs && fs->read_fn)
-	      {
-		fs->read_fn (dev, &quid);
+	  if (fs && fs->read_fn)
+	    {
+	      fs->read_fn (dev, &quid);
 
-		if (grub_errno == GRUB_ERR_NONE && quid)
-		  {
-		    if (compare_fn (quid, key) == 0)
-		      found = 1;
+	      if (grub_errno == GRUB_ERR_NONE && quid)
+		{
+		  if (compare_fn (quid, ctx->key) == 0)
+		    found = 1;
 
-		    grub_free (quid);
-		  }
-	      }
+		  grub_free (quid);
+		}
+	    }
 
-	    grub_device_close (dev);
-	  }
-      }
+	  grub_device_close (dev);
+	}
+    }
 #endif
 
-    if (!is_cache && found && count == 0)
-      {
-	struct cache_entry *cache_ent;
-	cache_ent = grub_malloc (sizeof (*cache_ent));
-	if (cache_ent)
-	  {
-	    cache_ent->key = grub_strdup (key);
-	    cache_ent->value = grub_strdup (name);
-	    if (cache_ent->value && cache_ent->key)
-	      {
-		cache_ent->next = cache;
-		cache = cache_ent;
-	      }
-	    else
-	      {
-		grub_free (cache_ent->value);
-		grub_free (cache_ent->key);
-		grub_free (cache_ent);
-		grub_errno = GRUB_ERR_NONE;
-	      }
-	  }
-	else
-	  grub_errno = GRUB_ERR_NONE;
-      }
+  if (!ctx->is_cache && found && ctx->count == 0)
+    {
+      struct cache_entry *cache_ent;
+      cache_ent = grub_malloc (sizeof (*cache_ent));
+      if (cache_ent)
+	{
+	  cache_ent->key = grub_strdup (ctx->key);
+	  cache_ent->value = grub_strdup (name);
+	  if (cache_ent->value && cache_ent->key)
+	    {
+	      cache_ent->next = cache;
+	      cache = cache_ent;
+	    }
+	  else
+	    {
+	      grub_free (cache_ent->value);
+	      grub_free (cache_ent->key);
+	      grub_free (cache_ent);
+	      grub_errno = GRUB_ERR_NONE;
+	    }
+	}
+      else
+	grub_errno = GRUB_ERR_NONE;
+    }
 
-    if (found)
-      {
-	count++;
-	if (var)
-	  grub_env_set (var, name);
-	else
-	  grub_printf (" %s", name);
-      }
+  if (found)
+    {
+      ctx->count++;
+      if (ctx->var)
+	grub_env_set (ctx->var, name);
+      else
+	grub_printf (" %s", name);
+    }
 
-    grub_errno = GRUB_ERR_NONE;
-    return (found && var);
-  }
+  grub_errno = GRUB_ERR_NONE;
+  return (found && ctx->var);
+}
 
-  auto int part_hook (grub_disk_t disk, const grub_partition_t partition);
-  int part_hook (grub_disk_t disk, const grub_partition_t partition)
-  {
-    char *partition_name, *devname;
-    int ret;
+/* Helper for FUNC_NAME.  */
+static int
+part_hook (grub_disk_t disk, const grub_partition_t partition, void *data)
+{
+  struct search_ctx *ctx = data;
+  char *partition_name, *devname;
+  int ret;
 
-    partition_name = grub_partition_get_name (partition);
-    if (! partition_name)
-      return 1;
+  partition_name = grub_partition_get_name (partition);
+  if (! partition_name)
+    return 1;
 
-    devname = grub_xasprintf ("%s,%s", disk->name, partition_name);
-    grub_free (partition_name);
-    if (!devname)
-      return 1;
-    ret = iterate_device (devname);
-    grub_free (devname);    
+  devname = grub_xasprintf ("%s,%s", disk->name, partition_name);
+  grub_free (partition_name);
+  if (!devname)
+    return 1;
+  ret = iterate_device (devname, ctx);
+  grub_free (devname);    
 
-    return ret;
-  }
+  return ret;
+}
 
-  auto void try (void);
-  void try (void)    
-  {
-    unsigned i;
-    struct cache_entry **prev;
-    struct cache_entry *cache_ent;
+/* Helper for FUNC_NAME.  */
+static void
+try (struct search_ctx *ctx)    
+{
+  unsigned i;
+  struct cache_entry **prev;
+  struct cache_entry *cache_ent;
 
-    for (prev = &cache, cache_ent = *prev; cache_ent;
-	 prev = &cache_ent->next, cache_ent = *prev)
-      if (compare_fn (cache_ent->key, key) == 0)
-	break;
-    if (cache_ent)
-      {
-	is_cache = 1;
-	if (iterate_device (cache_ent->value))
-	  {
-	    is_cache = 0;
+  for (prev = &cache, cache_ent = *prev; cache_ent;
+       prev = &cache_ent->next, cache_ent = *prev)
+    if (compare_fn (cache_ent->key, ctx->key) == 0)
+      break;
+  if (cache_ent)
+    {
+      ctx->is_cache = 1;
+      if (iterate_device (cache_ent->value, ctx))
+	{
+	  ctx->is_cache = 0;
+	  return;
+	}
+      ctx->is_cache = 0;
+      /* Cache entry was outdated. Remove it.  */
+      if (!ctx->count)
+	{
+	  grub_free (cache_ent->key);
+	  grub_free (cache_ent->value);
+	  grub_free (cache_ent);
+	  *prev = cache_ent->next;
+	}
+    }
+
+  for (i = 0; i < ctx->nhints; i++)
+    {
+      char *end;
+      if (!ctx->hints[i][0])
+	continue;
+      end = ctx->hints[i] + grub_strlen (ctx->hints[i]) - 1;
+      if (*end == ',')
+	*end = 0;
+      if (iterate_device (ctx->hints[i], ctx))
+	{
+	  if (!*end)
+	    *end = ',';
+	  return;
+	}
+      if (!*end)
+	{
+	  grub_device_t dev;
+	  int ret;
+	  dev = grub_device_open (ctx->hints[i]);
+	  if (!dev)
+	    {
+	      if (!*end)
+		*end = ',';
+	      continue;
+	    }
+	  if (!dev->disk)
+	    {
+	      grub_device_close (dev);
+	      if (!*end)
+		*end = ',';
+	      continue;
+	    }
+	  ret = grub_partition_iterate (dev->disk, part_hook, ctx);
+	  if (!*end)
+	    *end = ',';
+	  grub_device_close (dev);
+	  if (ret)
 	    return;
-	  }
-	is_cache = 0;
-	/* Cache entry was outdated. Remove it.  */
-	if (!count)
-	  {
-	    grub_free (cache_ent->key);
-	    grub_free (cache_ent->value);
-	    grub_free (cache_ent);
-	    *prev = cache_ent->next;
-	  }
-      }
+	}
+    }
+  grub_device_iterate (iterate_device, ctx);
+}
 
-    for (i = 0; i < nhints; i++)
-      {
-	char *end;
-	if (!hints[i][0])
-	  continue;
-	end = hints[i] + grub_strlen (hints[i]) - 1;
-	if (*end == ',')
-	  *end = 0;
-	if (iterate_device (hints[i]))
-	  {
-	    if (!*end)
-	      *end = ',';
-	    return;
-	  }
-	if (!*end)
-	  {
-	    grub_device_t dev;
-	    int ret;
-	    dev = grub_device_open (hints[i]);
-	    if (!dev)
-	      {
-		if (!*end)
-		  *end = ',';
-		continue;
-	      }
-	    if (!dev->disk)
-	      {
-		grub_device_close (dev);
-		if (!*end)
-		  *end = ',';
-		continue;
-	      }
-	    ret = grub_partition_iterate (dev->disk, part_hook);
-	    if (!*end)
-	      *end = ',';
-	    grub_device_close (dev);
-	    if (ret)
-	      return;
-	  }
-      }
-    grub_device_iterate (iterate_device);
-  }
+void
+FUNC_NAME (const char *key, const char *var, int no_floppy,
+	   char **hints, unsigned nhints)
+{
+  struct search_ctx ctx = {
+    .key = key,
+    .var = var,
+    .no_floppy = no_floppy,
+    .hints = hints,
+    .nhints = nhints,
+    .count = 0,
+    .is_cache = 0
+  };
+  grub_fs_autoload_hook_t saved_autoload;
 
   /* First try without autoloading if we're setting variable. */
   if (var)
     {
       saved_autoload = grub_fs_autoload_hook;
       grub_fs_autoload_hook = 0;
-      try ();
+      try (&ctx);
 
       /* Restore autoload hook.  */
       grub_fs_autoload_hook = saved_autoload;
 
       /* Retry with autoload if nothing found.  */
-      if (grub_errno == GRUB_ERR_NONE && count == 0)
-	try ();
+      if (grub_errno == GRUB_ERR_NONE && ctx.count == 0)
+	try (&ctx);
     }
   else
-    try ();
+    try (&ctx);
 
-  if (grub_errno == GRUB_ERR_NONE && count == 0)
+  if (grub_errno == GRUB_ERR_NONE && ctx.count == 0)
     grub_error (GRUB_ERR_FILE_NOT_FOUND, "no such device: %s", key);
 }
 

@@ -41,6 +41,7 @@
    You need at least three UTF-8 bytes to have 2 UTF-16 words (surrogate pairs).
  */
 #define GRUB_MAX_UTF16_PER_UTF8 1
+#define GRUB_MAX_UTF8_PER_CODEPOINT 4
 
 #define GRUB_UCS2_LIMIT 0x10000
 #define GRUB_UTF16_UPPER_SURROGATE(code) \
@@ -67,6 +68,14 @@ grub_utf8_process (grub_uint8_t c, grub_uint32_t *code, int *count)
 	  *code <<= 6;
 	  *code |= (c & GRUB_UINT8_6_TRAILINGBITS);
 	  (*count)--;
+	  /* Overlong.  */
+	  if ((*count == 1 && *code <= 0x1f)
+	      || (*count == 2 && *code <= 0xf))
+	    {
+	      *code = 0;
+	      *count = 0;
+	      return 0;
+	    }
 	  return 1;
 	}
     }
@@ -80,6 +89,13 @@ grub_utf8_process (grub_uint8_t c, grub_uint32_t *code, int *count)
     {
       *count = 1;
       *code = c & GRUB_UINT8_5_TRAILINGBITS;
+      /* Overlong */
+      if (*code <= 1)
+	{
+	  *count = 0;
+	  *code = 0;
+	  return 0;
+	}
       return 1;
     }
   if ((c & GRUB_UINT8_4_LEADINGBITS) == GRUB_UINT8_3_LEADINGBITS)

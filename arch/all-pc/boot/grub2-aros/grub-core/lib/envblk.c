@@ -225,7 +225,8 @@ grub_envblk_delete (grub_envblk_t envblk, const char *name)
 
 void
 grub_envblk_iterate (grub_envblk_t envblk,
-                     int hook (const char *name, const char *value))
+                     void *hook_data,
+                     int hook (const char *name, const char *value, void *hook_data))
 {
   char *p, *pend;
 
@@ -285,7 +286,7 @@ grub_envblk_iterate (grub_envblk_t envblk,
             }
           *q = '\0';
 
-          ret = hook (name, value);
+          ret = hook (name, value, hook_data);
           grub_free (name);
           if (ret)
             return;

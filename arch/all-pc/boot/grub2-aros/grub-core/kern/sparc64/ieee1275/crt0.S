@@ -36,10 +36,14 @@ codestart:
 	/* Copy the modules past the end of the kernel image.
 	 * They are currently sitting in the BSS.
 	 */
-	sethi	%hi(__bss_start), %o2
-	or	%o2, %lo(__bss_start), %o2
-	sethi	%hi(_end), %o3
-	or	%o3, %lo(_end), %o3
+	sethi	%hi(__bss_start + GRUB_KERNEL_SPARC64_IEEE1275_MOD_ALIGN - 1), %o2
+	or	%o2, %lo(__bss_start + GRUB_KERNEL_SPARC64_IEEE1275_MOD_ALIGN - 1), %o2
+	srl	%o2, GRUB_KERNEL_SPARC64_IEEE1275_LOG_MOD_ALIGN, %o2
+	sll	%o2, GRUB_KERNEL_SPARC64_IEEE1275_LOG_MOD_ALIGN, %o2
+	sethi	%hi(_end + GRUB_KERNEL_SPARC64_IEEE1275_MOD_ALIGN - 1), %o3
+	or	%o3, %lo(_end + GRUB_KERNEL_SPARC64_IEEE1275_MOD_ALIGN - 1), %o3
+	srl	%o3, GRUB_KERNEL_SPARC64_IEEE1275_LOG_MOD_ALIGN, %o3
+	sll	%o3, GRUB_KERNEL_SPARC64_IEEE1275_LOG_MOD_ALIGN, %o3
 	sethi	%hi(grub_total_module_size), %o4
 	lduw	[%o4 + %lo(grub_total_module_size)], %o4
 
@@ -67,16 +71,34 @@ codestart:
 	/* Now it's safe to clear out the BSS.  */
 	sethi	%hi(__bss_start), %o2
 	or	%o2, %lo(__bss_start), %o2
-	sethi	%hi(_end), %o3
-	or	%o3, %lo(_end), %o3
+1:	stb	%g0, [%o2]
+	add	%o2, 1, %o2
+	and	%o2, 7, %o3
+	brnz	%o3, 1b
+	 nop
+
+	sethi	%hi(_end - 1), %o3
+	or	%o3, %lo(_end - 1), %o3
+	srl	%o3, 3, %o3
+	sll	%o3, 3, %o3
 1:	stx	%g0, [%o2]
 	add	%o2, 8, %o2
 	cmp	%o2, %o3
 	blt,pt	%xcc, 1b
 	 nop
+
+	sethi	%hi(_end), %o3
+	or	%o3, %lo(_end), %o3
+1:	stb	%g0, [%o2]
+	add	%o2, 1, %o2
+	cmp	%o2, %o3
+	blt,pt	%xcc, 1b
+	 nop
+
 	sethi	%hi(grub_ieee1275_original_stack), %o2
 	stx	%o1, [%o2 + %lo(grub_ieee1275_original_stack)]
 	sethi	%hi(grub_ieee1275_entry_fn), %o2
 	call	grub_main
 	 stx	%o0, [%o2 + %lo(grub_ieee1275_entry_fn)]
 1:	ba,a	1b
+	 nop

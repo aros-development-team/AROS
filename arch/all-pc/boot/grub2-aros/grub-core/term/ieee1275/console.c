@@ -97,8 +97,8 @@ grub_console_dimensions (void)
 	  val[sizeof (val) - 1] = 0;
 	  if (grub_strcmp (val, "serial") == 0)
 	    {
-	      grub_console_terminfo_output.width = 80;
-	      grub_console_terminfo_output.height = 24;
+	      grub_console_terminfo_output.size.x = 80;
+	      grub_console_terminfo_output.size.y = 24;
 	      return;
 	    }
 	}
@@ -111,23 +111,31 @@ grub_console_dimensions (void)
 					val, sizeof (val) - 1, 0))
 	{
 	  val[sizeof (val) - 1] = 0;
-	  grub_console_terminfo_output.width
+	  grub_console_terminfo_output.size.x
 	    = (grub_uint8_t) grub_strtoul (val, 0, 10);
 	}
       if (! grub_ieee1275_get_property (options, "screen-#rows",
 					val, sizeof (val) - 1, 0))
 	{
 	  val[sizeof (val) - 1] = 0;
-	  grub_console_terminfo_output.height
+	  grub_console_terminfo_output.size.y
 	    = (grub_uint8_t) grub_strtoul (val, 0, 10);
 	}
     }
 
+  /* Bogus default value on SLOF in QEMU.  */
+  if (grub_console_terminfo_output.size.x == 200
+      && grub_console_terminfo_output.size.y == 200)
+    {
+      grub_console_terminfo_output.size.x = 80;
+      grub_console_terminfo_output.size.y = 24;
+    }
+
   /* Use a small console by default.  */
-  if (! grub_console_terminfo_output.width)
-    grub_console_terminfo_output.width = 80;
-  if (! grub_console_terminfo_output.height)
-    grub_console_terminfo_output.height = 24;
+  if (! grub_console_terminfo_output.size.x)
+    grub_console_terminfo_output.size.x = 80;
+  if (! grub_console_terminfo_output.size.y)
+    grub_console_terminfo_output.size.y = 24;
 }
 
 static void
@@ -204,8 +212,7 @@ struct grub_terminfo_input_state grub_console_terminfo_input =
 struct grub_terminfo_output_state grub_console_terminfo_output =
   {
     .put = put,
-    .width = 80,
-    .height = 24
+    .size = { 80, 24 }
   };
 
 static struct grub_term_input grub_console_term_input =
@@ -229,8 +236,7 @@ static struct grub_term_output grub_console_term_output =
     .setcursor = grub_console_setcursor,
     .flags = GRUB_TERM_CODE_TYPE_ASCII,
     .data = &grub_console_terminfo_output,
-    .normal_color = GRUB_TERM_DEFAULT_NORMAL_COLOR,
-    .highlight_color = GRUB_TERM_DEFAULT_HIGHLIGHT_COLOR,
+    .progress_update_divisor = GRUB_PROGRESS_FAST
   };
 
 void
@@ -247,9 +253,10 @@ grub_console_init_lately (void)
 
   if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_NO_ANSI))
     type = "dumb";
+  else if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_CURSORONOFF_ANSI_BROKEN))
+    type = "ieee1275-nocursor";
   else
     type = "ieee1275";
-
   grub_terminfo_init ();
   grub_terminfo_output_register (&grub_console_term_output, type);
 }

@@ -59,8 +59,25 @@ grub_err_t EXPORT_FUNC (grub_video_bitmap_destroy) (struct grub_video_bitmap *bi
 grub_err_t EXPORT_FUNC (grub_video_bitmap_load) (struct grub_video_bitmap **bitmap,
 						 const char *filename);
 
-unsigned int EXPORT_FUNC (grub_video_bitmap_get_width) (struct grub_video_bitmap *bitmap);
-unsigned int EXPORT_FUNC (grub_video_bitmap_get_height) (struct grub_video_bitmap *bitmap);
+/* Return bitmap width.  */
+static inline unsigned int
+grub_video_bitmap_get_width (struct grub_video_bitmap *bitmap)
+{
+  if (!bitmap)
+    return 0;
+
+  return bitmap->mode_info.width;
+}
+
+/* Return bitmap height.  */
+static inline unsigned int
+grub_video_bitmap_get_height (struct grub_video_bitmap *bitmap)
+{
+  if (!bitmap)
+    return 0;
+
+  return bitmap->mode_info.height;
+}
 
 void EXPORT_FUNC (grub_video_bitmap_get_mode_info) (struct grub_video_bitmap *bitmap,
 						    struct grub_video_mode_info *mode_info);

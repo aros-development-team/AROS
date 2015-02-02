@@ -74,7 +74,7 @@ struct grub_e820_mmap
   grub_uint64_t addr;
   grub_uint64_t size;
   grub_uint32_t type;
-} __attribute__((packed));
+} GRUB_PACKED;
 
 enum
   {
@@ -139,7 +139,7 @@ struct linux_kernel_header
   grub_uint64_t setup_data;
   grub_uint64_t pref_address;
   grub_uint32_t init_size;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 /* Boot parameters for Linux based on 2.6.12. This is used by the setup
    sectors of Linux, and must be simulated by GRUB on EFI, because
@@ -309,7 +309,7 @@ struct linux_kernel_params
   grub_uint8_t pad2[120];		/* 258 */
   struct grub_e820_mmap e820_map[(0x400 - 0x2d0) / 20];	/* 2d0 */
 
-} __attribute__ ((packed));
+} GRUB_PACKED;
 #endif /* ! ASM_FILE */
 
 #endif /* ! GRUB_LINUX_MACHINE_HEADER */

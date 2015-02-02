@@ -30,13 +30,13 @@ static char *memdisk_addr;
 static grub_off_t memdisk_size = 0;
 
 static int
-grub_memdisk_iterate (int (*hook) (const char *name),
+grub_memdisk_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
 		      grub_disk_pull_t pull)
 {
   if (pull != GRUB_DISK_PULL_NONE)
     return 0;
 
-  return hook ("memdisk");
+  return hook ("memdisk", hook_data);
 }
 
 static grub_err_t
@@ -46,7 +46,8 @@ grub_memdisk_open (const char *name, grub_disk_t disk)
       return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "not a memdisk");
 
   disk->total_sectors = memdisk_size / GRUB_DISK_SECTOR_SIZE;
-  disk->id = (unsigned long) "mdsk";
+  disk->max_agglomerate = GRUB_DISK_MAX_MAX_AGGLOMERATE;
+  disk->id = 0;
 
   return GRUB_ERR_NONE;
 }

@@ -80,6 +80,7 @@ struct grub_diskfilter_pv {
 struct grub_diskfilter_lv {
   /* Name used for disk.  */
   char *fullname;
+  char *idname;
   /* Optional.  */
   char *name;
   int number;
@@ -200,7 +201,9 @@ struct grub_diskfilter_pv *
 grub_diskfilter_get_pv_from_disk (grub_disk_t disk,
 				  struct grub_diskfilter_vg **vg);
 void
-grub_diskfilter_print_partmap (grub_disk_t disk);
+grub_diskfilter_get_partmap (grub_disk_t disk,
+			     void (*cb) (const char *val, void *data),
+			     void *data);
 #endif
 
 #endif /* ! GRUB_RAID_H */

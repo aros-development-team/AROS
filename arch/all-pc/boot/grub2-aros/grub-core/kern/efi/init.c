@@ -63,10 +63,13 @@ grub_machine_get_bootlocation (char **device, char **path)
   if (!*device && grub_efi_net_config)
     grub_efi_net_config (image->device_handle, device, path);
 
-  /* Get the directory.  */
-  p = grub_strrchr (*path, '/');
-  if (p)
-    *p = '\0';
+  if (*path)
+    {
+      /* Get the directory.  */
+      p = grub_strrchr (*path, '/');
+      if (p)
+        *p = '\0';
+    }
 }
 
 void

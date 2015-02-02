@@ -11,6 +11,10 @@
 #elif defined(__ia64__)
 #include "./ia64/setjmp.S"
 #include "./ia64/longjmp.S"
+#elif defined(__arm__)
+#include "./arm/setjmp.S"
+#elif defined(__aarch64__)
+#include "./arm64/setjmp.S"
 #else
 #error "Unknown target cpu type"
 #endif

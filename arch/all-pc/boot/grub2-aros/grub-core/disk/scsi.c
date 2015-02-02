@@ -201,7 +201,7 @@ grub_scsi_read_capacity16 (grub_scsi_t scsi)
   rc.opcode = grub_scsi_cmd_read_capacity16;
   rc.lun = (scsi->lun << GRUB_SCSI_LUN_SHIFT) | 0x10;
   rc.logical_block_addr = 0;
-  rc.alloc_len = grub_cpu_to_be32 (sizeof (rcd));
+  rc.alloc_len = grub_cpu_to_be32_compile_time (sizeof (rcd));
   rc.PMI = 0;
   rc.control = 0;
 	
@@ -423,50 +423,59 @@ grub_scsi_write16 (grub_disk_t disk, grub_disk_addr_t sector,
 
 
 
-static int
-grub_scsi_iterate (int (*hook) (const char *name),
-		   grub_disk_pull_t pull)
+/* Context for grub_scsi_iterate.  */
+struct grub_scsi_iterate_ctx
 {
-  grub_scsi_dev_t p;
+  grub_disk_dev_iterate_hook_t hook;
+  void *hook_data;
+};
 
-  auto int NESTED_FUNC_ATTR scsi_iterate (int id, int bus, int luns);
+/* Helper for grub_scsi_iterate.  */
+static int
+scsi_iterate (int id, int bus, int luns, void *data)
+{
+  struct grub_scsi_iterate_ctx *ctx = data;
+  int i;
 
-  int NESTED_FUNC_ATTR scsi_iterate (int id, int bus, int luns)
+  /* In case of a single LUN, just return `usbX'.  */
+  if (luns == 1)
     {
-      int i;
-
-      /* In case of a single LUN, just return `usbX'.  */
-      if (luns == 1)
-	{
-	  char *sname;
-	  int ret;
-	  sname = grub_xasprintf ("%s%d", grub_scsi_names[id], bus);
-	  if (!sname)
-	    return 1;
-	  ret = hook (sname);
-	  grub_free (sname);
-	  return ret;
-	}
-
-      /* In case of multiple LUNs, every LUN will get a prefix to
-	 distinguish it.  */
-      for (i = 0; i < luns; i++)
-	{
-	  char *sname;
-	  int ret;
-	  sname = grub_xasprintf ("%s%d%c", grub_scsi_names[id], bus, 'a' + i);
-	  if (!sname)
-	    return 1;
-	  ret = hook (sname);
-	  grub_free (sname);
-	  if (ret)
-	    return 1;
-	}
-      return 0;
+      char *sname;
+      int ret;
+      sname = grub_xasprintf ("%s%d", grub_scsi_names[id], bus);
+      if (!sname)
+	return 1;
+      ret = ctx->hook (sname, ctx->hook_data);
+      grub_free (sname);
+      return ret;
     }
 
+  /* In case of multiple LUNs, every LUN will get a prefix to
+     distinguish it.  */
+  for (i = 0; i < luns; i++)
+    {
+      char *sname;
+      int ret;
+      sname = grub_xasprintf ("%s%d%c", grub_scsi_names[id], bus, 'a' + i);
+      if (!sname)
+	return 1;
+      ret = ctx->hook (sname, ctx->hook_data);
+      grub_free (sname);
+      if (ret)
+	return 1;
+    }
+  return 0;
+}
+
+static int
+grub_scsi_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
+		   grub_disk_pull_t pull)
+{
+  struct grub_scsi_iterate_ctx ctx = { hook, hook_data };
+  grub_scsi_dev_t p;
+
   for (p = grub_scsi_dev_list; p; p = p->next)
-    if (p->iterate && (p->iterate) (scsi_iterate, pull))
+    if (p->iterate && (p->iterate) (scsi_iterate, &ctx, pull))
       return 1;
 
   return 0;
@@ -597,6 +606,13 @@ grub_scsi_open (const char *name, grub_disk_t disk)
 	}
 
       disk->total_sectors = scsi->last_block + 1;
+      /* PATA doesn't support more than 32K reads.
+	 Not sure about AHCI and USB. If it's confirmed that either of
+	 them can do bigger reads reliably this value can be moved to 'scsi'
+	 structure.  */
+      disk->max_agglomerate = 32768 >> (GRUB_DISK_SECTOR_BITS
+					+ GRUB_DISK_CACHE_BITS);
+
       if (scsi->blocksize & (scsi->blocksize - 1) || !scsi->blocksize)
 	{
 	  grub_free (scsi);
@@ -638,40 +654,27 @@ grub_scsi_read (grub_disk_t disk, grub_disk_addr_t sector,
 
   scsi = disk->data;
 
-  while (size)
+  grub_err_t err;
+  /* Depending on the type, select a read function.  */
+  switch (scsi->devtype)
     {
-      /* PATA doesn't support more than 32K reads.
-	 Not sure about AHCI and USB. If it's confirmed that either of
-	 them can do bigger reads reliably this value can be moved to 'scsi'
-	 structure.  */
-      grub_size_t len = 32768 >> disk->log_sector_size;
-      grub_err_t err;
-      if (len > size)
-	len = size;
-      /* Depending on the type, select a read function.  */
-      switch (scsi->devtype)
-	{
-	case grub_scsi_devtype_direct:
-	  if (sector >> 32)
-	    err = grub_scsi_read16 (disk, sector, len, buf);
-	  else
-	    err = grub_scsi_read10 (disk, sector, len, buf);
-	  if (err)
-	    return err;
-	  break;
+    case grub_scsi_devtype_direct:
+      if (sector >> 32)
+	err = grub_scsi_read16 (disk, sector, size, buf);
+      else
+	err = grub_scsi_read10 (disk, sector, size, buf);
+      if (err)
+	return err;
+      break;
 
-	case grub_scsi_devtype_cdrom:
-	  if (sector >> 32)
-	    err = grub_scsi_read16 (disk, sector, len, buf);
-	  else
-	    err = grub_scsi_read12 (disk, sector, len, buf);
-	  if (err)
-	    return err;
-	  break;
-	}
-      size -= len;
-      sector += len;
-      buf += len << disk->log_sector_size;
+    case grub_scsi_devtype_cdrom:
+      if (sector >> 32)
+	err = grub_scsi_read16 (disk, sector, size, buf);
+      else
+	err = grub_scsi_read12 (disk, sector, size, buf);
+      if (err)
+	return err;
+      break;
     }
 
   return GRUB_ERR_NONE;
@@ -709,10 +712,10 @@ grub_scsi_read (grub_disk_t disk, grub_disk_addr_t sector,
 }
 
 static grub_err_t
-grub_scsi_write (grub_disk_t disk __attribute((unused)),
-		 grub_disk_addr_t sector __attribute((unused)),
-		 grub_size_t size __attribute((unused)),
-		 const char *buf __attribute((unused)))
+grub_scsi_write (grub_disk_t disk,
+		 grub_disk_addr_t sector,
+		 grub_size_t size,
+		 const char *buf)
 {
   grub_scsi_t scsi;
 
@@ -721,31 +724,18 @@ grub_scsi_write (grub_disk_t disk __attribute((unused)),
   if (scsi->devtype == grub_scsi_devtype_cdrom)
     return grub_error (GRUB_ERR_IO, N_("cannot write to CD-ROM"));
 
-  while (size)
+  grub_err_t err;
+  /* Depending on the type, select a read function.  */
+  switch (scsi->devtype)
     {
-      /* PATA doesn't support more than 32K reads.
-	 Not sure about AHCI and USB. If it's confirmed that either of
-	 them can do bigger reads reliably this value can be moved to 'scsi'
-	 structure.  */
-      grub_size_t len = 32768 >> disk->log_sector_size;
-      grub_err_t err;
-      if (len > size)
-	len = size;
-      /* Depending on the type, select a read function.  */
-      switch (scsi->devtype)
-	{
-	case grub_scsi_devtype_direct:
-	  if (sector >> 32)
-	    err = grub_scsi_write16 (disk, sector, len, buf);
-	  else
-	    err = grub_scsi_write10 (disk, sector, len, buf);
-	  if (err)
-	    return err;
-	  break;
-	}
-      size -= len;
-      sector += len;
-      buf += len << disk->log_sector_size;
+    case grub_scsi_devtype_direct:
+      if (sector >> 32)
+	err = grub_scsi_write16 (disk, sector, size, buf);
+      else
+	err = grub_scsi_write10 (disk, sector, size, buf);
+      if (err)
+	return err;
+      break;
     }
 
   return GRUB_ERR_NONE;

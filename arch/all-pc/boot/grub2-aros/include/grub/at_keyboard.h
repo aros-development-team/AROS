@@ -37,5 +37,6 @@
 
 extern void grub_at_keyboard_init (void);
 extern void grub_at_keyboard_fini (void);
+int grub_at_keyboard_is_alive (void);
 
 #endif

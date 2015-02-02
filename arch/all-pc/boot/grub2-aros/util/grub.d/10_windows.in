@@ -45,7 +45,7 @@ get_os_name_from_boot_ini ()
     sort | uniq | wc -l`" = 1 || return 1
 
   # Search 'default=PARTITION'
-  get_os_name_from_boot_ini_part=`sed -n 's,^default=,,p' "$1" | sed 's,\\\\,/,g;s,[ \t\r]*$,,;1q'`
+  get_os_name_from_boot_ini_part=`sed -n 's,^default=,,p' "$1" | sed 's,\\\\,/,g;s,[ $grub_tab\r]*$,,;1q'`
   test -n "$get_os_name_from_boot_ini_part" || return 1
 
   # Search 'PARTITION="NAME" ...'
@@ -66,11 +66,11 @@ for drv in $drives ; do
   osid=
 
   # Check for Vista bootmgr.
-  if [ -f "$dir"/bootmgr -a -f "$dir"/boot/bcd ] ; then
+  if [ -f "$dir"/bootmgr ] && [ -f "$dir"/boot/bcd ] ; then
     OS="$(gettext "Windows Vista/7 (loader)")"
     osid=bootmgr
   # Check for NTLDR.
-  elif [ -f "$dir"/ntldr -a -f "$dir"/ntdetect.com -a -f "$dir"/boot.ini ] ; then
+  elif [ -f "$dir"/ntldr ] && [ -f "$dir"/ntdetect.com ] && [ -f "$dir"/boot.ini ] ; then
     OS=`get_os_name_from_boot_ini "$dir"/boot.ini` || OS="$(gettext "Windows NT/2000/XP (loader)")"
     osid=ntldr
     needmap=t
@@ -87,8 +87,8 @@ for drv in $drives ; do
 menuentry '$(echo "$OS" | grub_quote)' \$menuentry_id_option '$osid-$(grub_get_device_id "${dev}")' {
 EOF
 
-  save_default_entry | sed -e 's,^,\t,'
-  prepare_grub_to_access_device "$dev" | sed 's,^,\t,'
+  save_default_entry | sed -e 's,^,$grub_tab,'
+  prepare_grub_to_access_device "$dev" | sed 's,^,$grub_tab,'
   test -z "$needmap" || cat <<EOF
 	drivemap -s (hd0) \$root
 EOF

@@ -32,7 +32,7 @@ if [ "x${GRUB_DISTRIBUTOR}" = "x" ] ; then
   OS=GNU
 else
   OS="${GRUB_DISTRIBUTOR} GNU/Hurd"
-  CLASS="--class $(echo ${GRUB_DISTRIBUTOR} | tr 'A-Z' 'a-z' | cut -d' ' -f1) ${CLASS}"
+  CLASS="--class $(echo ${GRUB_DISTRIBUTOR} | tr 'A-Z' 'a-z' | cut -d' ' -f1|LC_ALL=C sed 's,[^[:alnum:]_],_,g') ${CLASS}"
 fi
 
 at_least_one=false
@@ -108,7 +108,7 @@ menuentry '$(echo "$OS" | grub_quote)' ${CLASS} \$menuentry_id_option 'gnuhurd-s
 EOF
   fi
 
-  prepare_grub_to_access_device "${GRUB_DEVICE_BOOT}" | sed -e "s/^/\t/"|sed "s/^/$submenu_indentation/"
+  prepare_grub_to_access_device "${GRUB_DEVICE_BOOT}" | grub_add_tab|sed "s/^/$submenu_indentation/"
   message="$(gettext_printf "Loading GNU Mach ...")"
 
   if [ x$type = xrecovery ] ; then
@@ -117,14 +117,14 @@ EOF
       opts=
   fi
   sed "s/^/$submenu_indentation/" << EOF
-	echo		'$message'
+	echo		'$(echo "$message" | grub_quote)'
 	multiboot	${kernel} root=device:${GRUB_DEVICE#/dev/} $opts ${GRUB_CMDLINE_GNUMACH}
 EOF
 
   if [ x$type != xrecovery ] ; then
-      save_default_entry | sed -e "s/^/\t/"| sed "s/^/$submenu_indentation/"
+      save_default_entry | grub_add_tab| sed "s/^/$submenu_indentation/"
   fi
-  prepare_grub_to_access_device "${GRUB_DEVICE}" | sed -e "s/^/\t/"| sed "s/^/$submenu_indentation/"
+  prepare_grub_to_access_device "${GRUB_DEVICE}" | grub_add_tab| sed "s/^/$submenu_indentation/"
   message="$(gettext_printf "Loading the Hurd ...")"
   if [ x$type = xrecovery ] ; then
       opts=
@@ -133,7 +133,7 @@ EOF
   fi
 
   sed "s/^/$submenu_indentation/" << EOF
-	echo		'$message'
+	echo		'$(echo "$message" | grub_quote)'
 	module		/hurd/${hurd_fs}.static ${hurd_fs} $opts \\
 			--multiboot-command-line='\${kernel-command-line}' \\
 			--host-priv-port='\${host-port}' \\
@@ -151,27 +151,29 @@ title_correction_code=
 # Extra indentation to add to menu entries in a submenu. We're not in a submenu
 # yet, so it's empty. In a submenu it will be equal to '\t' (one tab).
 submenu_indentation=""
-is_first_entry=true
+is_top_level=true
 
-for kernel in ${kernels}
-do
+while [ "x$kernels" != "x" ] ; do
+  kernel=`version_find_latest $kernels`
 
-  if [ "x$is_first_entry" = xtrue ]; then
+  if [ "x$is_top_level" = xtrue ] && [ "x${GRUB_DISABLE_SUBMENU}" != xy ]; then
       hurd_entry "$kernel" simple
-      submenu_indentation="\t"
+      submenu_indentation="$grub_tab"
     
       # TRANSLATORS: %s is replaced with an OS name
       echo "submenu '$(gettext_printf "Advanced options for %s" "${OS}" | grub_quote)' \$menuentry_id_option 'gnuhurd-advanced-$(grub_get_device_id "${GRUB_DEVICE_BOOT}")' {"
+      is_top_level=false
   fi
 
   hurd_entry "$kernel" advanced
   hurd_entry "$kernel" recovery
-  is_first_entry=false
+
+  kernels=`echo $kernels | tr ' ' '\n' | fgrep -vx "$kernel" | tr '\n' ' '`
 done
 
 # If at least one kernel was found, then we need to
 # add a closing '}' for the submenu command.
-if [ x"$is_first_entry" != xtrue ]; then
+if [ x"$is_top_level" != xtrue ]; then
   echo '}'
 fi
 

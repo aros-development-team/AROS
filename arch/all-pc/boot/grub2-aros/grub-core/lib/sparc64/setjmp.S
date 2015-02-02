@@ -41,7 +41,11 @@ FUNCTION(grub_setjmp)
 FUNCTION(grub_longjmp)
 	ldx	[%o0 + 0x10], %g1
 	movrz	%o1, 1, %o1
+
+	save %sp, -64, %sp
 	flushw
+	restore
+
 	ldx	[%o0 + 0x00], %o7
 	ldx	[%o0 + 0x08], %fp
 	sub	%fp, 192, %sp

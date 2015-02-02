@@ -17,11 +17,10 @@
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
 # Initialize some variables.
-transform="@program_transform_name@"
-
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
+sysconfdir="@sysconfdir@"
 PACKAGE_NAME=@PACKAGE_NAME@
 PACKAGE_VERSION=@PACKAGE_VERSION@
 datarootdir="@datarootdir@"
@@ -32,7 +31,7 @@ fi
 
 self=`basename $0`
 
-grub_editenv=${bindir}/`echo grub-editenv | sed ${transform}`
+grub_editenv=${bindir}/@grub_editenv@
 rootdir=
 bootdir=
 grubdir=`echo "/@bootdirname@/@grubdirname@" | sed 's,//*,/,g'`
@@ -47,13 +46,16 @@ export TEXTDOMAINDIR="@localedir@"
 usage () {
     gettext_printf "Usage: %s [OPTION] MENU_ENTRY\n" "$self"
     gettext "Set the default boot menu entry for GRUB, for the next boot only."; echo
-    echo
     print_option_help "-h, --help" "$(gettext "print this message and exit")"
     print_option_help "-v, --version" "$(gettext "print the version information and exit")"
     dirmsg="$(gettext_printf "expect GRUB images under the directory DIR/%s instead of the %s directory" "@grubdirname@" "$grubdir")"
     print_option_help "--boot-directory=$(gettext "DIR")" "$dirmsg"
     echo
-    gettext "MENU_ENTRY is a number, a menu item title or a menu item identifier."; echo
+    gettext "MENU_ENTRY is a number, a menu item title or a menu item identifier. Please note that menu items in
+submenus or sub-submenus require specifying the submenu components and then the
+menu item component. The titles should be separated using the greater-than
+character (>) with no extra spaces. Depending on your shell some characters including > may need escaping. More information about this is available
+in the GRUB Manual in the section about the 'default' command. "; echo
     echo
     gettext "Report bugs to <bug-grub@gnu.org>."; echo
 }
@@ -63,7 +65,7 @@ argument () {
   shift
 
   if test $# -eq 0; then
-      gettext_printf "%s: option requires an argument -- \`%s'\n" "$0" "$opt" 1>&2
+      gettext_printf "%s: option requires an argument -- \`%s'\n" "$self" "$opt" 1>&2
       exit 1
   fi
   echo $1
@@ -129,17 +131,14 @@ fi
 
 grubdir=`echo "${bootdir}/@grubdirname@" | sed 's,//*,/,g'`
 
-prev_saved_entry=`$grub_editenv ${grubdir}/grubenv list | sed -n 's/^saved_entry=//p'`
+# Restore saved_entry if it was set by previous version
+prev_saved_entry=`$grub_editenv ${grubdir}/grubenv list | sed -n 's/^prev_saved_entry=//p'`
 if [ "$prev_saved_entry" ]; then
-    $grub_editenv ${grubdir}/grubenv set prev_saved_entry="$prev_saved_entry"
-else
-    # We need some non-empty value for prev_saved_entry so that GRUB will
-    # recognise that grub-reboot has been used and restore the previous
-    # saved entry. "0" is the same as an empty value, i.e. the first menu
-    # entry.
-    $grub_editenv ${grubdir}/grubenv set prev_saved_entry=0
+    $grub_editenv ${grubdir}/grubenv set saved_entry="$prev_saved_entry"
+    $grub_editenv ${grubdir}/grubenv unset prev_saved_entry
 fi
-$grub_editenv ${grubdir}/grubenv set saved_entry="$entry"
+
+$grub_editenv ${grubdir}/grubenv set next_entry="$entry"
 
 # Bye.
 exit 0

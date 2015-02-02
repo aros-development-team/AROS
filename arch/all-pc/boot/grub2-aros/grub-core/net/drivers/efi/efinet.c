@@ -37,7 +37,6 @@ send_card_buffer (struct grub_net_card *dev,
   grub_efi_status_t st;
   grub_efi_simple_network_t *net = dev->efi_net;
   grub_uint64_t limit_time = grub_get_time_ms () + 4000;
-  grub_size_t len;
 
   if (dev->txbusy)
     while (1)
@@ -52,17 +51,26 @@ send_card_buffer (struct grub_net_card *dev,
 	    dev->txbusy = 0;
 	    break;
 	  }
+	if (txbuf)
+	  {
+	    st = efi_call_7 (net->transmit, net, 0, dev->last_pkt_size,
+			     dev->txbuf, NULL, NULL, NULL);
+	    if (st != GRUB_EFI_SUCCESS)
+	      return grub_error (GRUB_ERR_IO,
+				 N_("couldn't send network packet"));
+	  }
 	if (limit_time < grub_get_time_ms ())
-	  return grub_error (GRUB_ERR_TIMEOUT, N_("couldn't send network packet"));
+	  return grub_error (GRUB_ERR_TIMEOUT,
+			     N_("couldn't send network packet"));
       }
 
-  len = (pack->tail - pack->data);
-  if (len > dev->mtu)
-    len = dev->mtu;
+  dev->last_pkt_size = (pack->tail - pack->data);
+  if (dev->last_pkt_size > dev->mtu)
+    dev->last_pkt_size = dev->mtu;
 
-  grub_memcpy (dev->txbuf, pack->data, len);
+  grub_memcpy (dev->txbuf, pack->data, dev->last_pkt_size);
 
-  st = efi_call_7 (net->transmit, net, 0, len,
+  st = efi_call_7 (net->transmit, net, 0, dev->last_pkt_size,
 		   dev->txbuf, NULL, NULL, NULL);
   if (st != GRUB_EFI_SUCCESS)
     return grub_error (GRUB_ERR_IO, N_("couldn't send network packet"));

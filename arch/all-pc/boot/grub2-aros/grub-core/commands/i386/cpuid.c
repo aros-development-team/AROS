@@ -29,29 +29,43 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-#define cpuid(num,a,b,c,d) \
-  asm volatile ("xchgl %%ebx, %1; cpuid; xchgl %%ebx, %1" \
-		: "=a" (a), "=r" (b), "=c" (c), "=d" (d)  \
-		: "0" (num))
-
 static const struct grub_arg_option options[] =
   {
     /* TRANSLATORS: "(default)" at the end means that this option is used if
        no argument is specified.  */
     {"long-mode", 'l', 0, N_("Check if CPU supports 64-bit (long) mode (default)."), 0, 0},
+    {"pae", 'p', 0, N_("Check if CPU supports Physical Address Extension."), 0, 0},
     {0, 0, 0, 0, 0, 0}
   };
 
-#define bit_LM (1 << 29)
+enum
+  {
+    MODE_LM = 0,
+    MODE_PAE = 1
+  };
 
-unsigned char grub_cpuid_has_longmode = 0;
+enum
+  {
+    bit_PAE = (1 << 6),
+  };
+enum
+  {
+    bit_LM = (1 << 29)
+  };
+
+unsigned char grub_cpuid_has_longmode = 0, grub_cpuid_has_pae = 0;
 
 static grub_err_t
-grub_cmd_cpuid (grub_extcmd_context_t ctxt __attribute__ ((unused)),
+grub_cmd_cpuid (grub_extcmd_context_t ctxt,
 		int argc __attribute__ ((unused)),
 		char **args __attribute__ ((unused)))
 {
-  return grub_cpuid_has_longmode ? GRUB_ERR_NONE
+  int val = 0;
+  if (ctxt->state[MODE_PAE].set)
+    val = grub_cpuid_has_pae;
+  else
+    val = grub_cpuid_has_longmode;
+  return val ? GRUB_ERR_NONE
     /* TRANSLATORS: it's a standalone boolean value,
        opposite of "true".  */
     : grub_error (GRUB_ERR_TEST_FAILURE, N_("false"));
@@ -64,6 +78,7 @@ GRUB_MOD_INIT(cpuid)
 #ifdef __x86_64__
   /* grub-emu */
   grub_cpuid_has_longmode = 1;
+  grub_cpuid_has_pae = 1;
 #else
   unsigned int eax, ebx, ecx, edx;
   unsigned int max_level;
@@ -78,18 +93,24 @@ GRUB_MOD_INIT(cpuid)
     goto done;
 
   /* Check the highest input value for eax.  */
-  cpuid (0, eax, ebx, ecx, edx);
+  grub_cpuid (0, eax, ebx, ecx, edx);
   /* We only look at the first four characters.  */
   max_level = eax;
   if (max_level == 0)
     goto done;
 
-  cpuid (0x80000000, eax, ebx, ecx, edx);
+  if (max_level >= 1)
+    {
+      grub_cpuid (1, eax, ebx, ecx, edx);
+      grub_cpuid_has_pae = !!(edx & bit_PAE);
+    }
+
+  grub_cpuid (0x80000000, eax, ebx, ecx, edx);
   ext_level = eax;
   if (ext_level < 0x80000000)
     goto done;
 
-  cpuid (0x80000001, eax, ebx, ecx, edx);
+  grub_cpuid (0x80000001, eax, ebx, ecx, edx);
   grub_cpuid_has_longmode = !!(edx & bit_LM);
 done:
 #endif

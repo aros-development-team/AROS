@@ -207,6 +207,10 @@ real_code_2:
 2:
 	call	LOCAL(move_memory)
 
+	movb	%dh, %ss:(DATA_ADDR + GRUB_DECOMPRESSOR_I386_PC_BOOT_DEVICE + 2)
+	movb	(reg_edx + 2 - start), %dh
+	movb	%dh, %ss:(DATA_ADDR + GRUB_DECOMPRESSOR_I386_PC_BOOT_DEVICE + 1)
+
 	movb	$0xFF, %dh
 
 	ljmp	$(DATA_ADDR >> 4), $0

@@ -69,18 +69,18 @@ netbsd_load_fs_module ()
   kversion=$(zcat -f "${kernel}" | strings | sed -n -e '/^@(#)NetBSD/ { s/^@(#)NetBSD \([0-9\.]*\) .*$/\1/g ; p ; q ; }')
   kmodule="/stand/${karch}/${kversion}/modules/${kmod}/${kmod}.kmod"
 
-  if test -z "$karch" -o -z "$kversion" -o ! -f "${kmodule}"; then
+  if test -z "$karch" || test -z "$kversion" || test ! -f "${kmodule}"; then
     return
   fi
 
   kmodule_rel=$(make_system_path_relative_to_its_root "$kmodule") || return
-  prepare_grub_to_access_device $(${grub_probe} -t device "${kmodule}") | sed -e 's,^,	,'
+  prepare_grub_to_access_device $(${grub_probe} -t device "${kmodule}") | sed -e 's,^,	,' | sed "s/^/$submenu_indentation/"
   case "${loader}" in
     knetbsd)
-      printf "\tknetbsd_module_elf %s\n" "${kmodule_rel}"
+      printf "${grub_tab}knetbsd_module_elf %s\n" "${kmodule_rel}" | sed "s/^/$submenu_indentation/"
       ;;
     multiboot)
-      printf "\tmodule %s\n" "${kmodule_rel}"
+      printf "${grub_tab}module %s\n" "${kmodule_rel}" | sed "s/^/$submenu_indentation/"
       ;;
   esac
 }
@@ -121,11 +121,11 @@ netbsd_entry ()
   printf "%s\n" "${prepare_boot_cache}" | sed "s/^/$submenu_indentation/"
   case "${loader}" in
     knetbsd)
-      printf "\tknetbsd %s -r %s %s\n" \
+      printf "${grub_tab}knetbsd %s -r %s %s\n" \
         "${kernel}" "${kroot_device}" "${GRUB_CMDLINE_NETBSD} ${args}" | sed "s/^/$submenu_indentation/"
       ;;
     multiboot)
-      printf "\tmultiboot %s %s root=%s %s\n" \
+      printf "${grub_tab}multiboot %s %s root=%s %s\n" \
         "${kernel}" "${kernel}" "${kroot_device}" "${GRUB_CMDLINE_NETBSD} ${args}" | sed "s/^/$submenu_indentation/"
       ;;
   esac
@@ -146,8 +146,8 @@ pattern="^ELF[^,]*executable.*statically linked"
 # yet, so it's empty. In a submenu it will be equal to '\t' (one tab).
 submenu_indentation=""
 
-is_first_entry=true
-for k in $(ls -t /netbsd*) ; do
+is_top_level=true
+for k in /netbsd $(ls -t /netbsd?* 2>/dev/null) ; do
   if ! grub_file_is_not_garbage "$k" ; then
     continue
   fi
@@ -157,15 +157,16 @@ for k in $(ls -t /netbsd*) ; do
 
   gettext_printf "Found NetBSD kernel: %s\n" "$k" >&2
 
-  if [ "x$is_first_entry" = xtrue ]; then
+  if [ "x$is_top_level" = xtrue ] && [ "x${GRUB_DISABLE_SUBMENU}" != xy ]; then
       netbsd_entry "knetbsd"   "$k" simple "${GRUB_CMDLINE_NETBSD_DEFAULT}"
-    submenu_indentation="\t"
+    submenu_indentation="$grub_tab"
     
     if [ -z "$boot_device_id" ]; then
 	boot_device_id="$(grub_get_device_id "${GRUB_DEVICE}")"
     fi
     # TRANSLATORS: %s is replaced with an OS name
     echo "submenu '$(gettext_printf "Advanced options for %s" "${OS}" | grub_quote)' \$menuentry_id_option 'netbsd-advanced-$boot_device_id' {"
+    is_top_level=false
   fi
 
   netbsd_entry "knetbsd"   "$k" advanced "${GRUB_CMDLINE_NETBSD_DEFAULT}"
@@ -174,12 +175,11 @@ for k in $(ls -t /netbsd*) ; do
     netbsd_entry "knetbsd"   "$k" recovery "-s"
     netbsd_entry "multiboot" "$k" recovery "-s"
   fi
-  is_first_entry=false
 done
 
 # If at least one kernel was found, then we need to
 # add a closing '}' for the submenu command.
-if [ x"$is_first_entry" != xtrue ]; then
+if [ x"$is_top_level" != xtrue ]; then
   echo '}'
 fi
 

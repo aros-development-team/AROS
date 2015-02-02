@@ -31,8 +31,8 @@ static struct grub_partition_map grub_plan_partition_map;
 
 static grub_err_t
 plan_partition_map_iterate (grub_disk_t disk,
-			    int (*hook) (grub_disk_t disk,
-					 const grub_partition_t partition))
+			    grub_partition_iterate_hook_t hook,
+			    void *hook_data)
 {
   struct grub_partition p;
   int ptr = 0;
@@ -92,7 +92,7 @@ plan_partition_map_iterate (grub_disk_t disk,
       if (c != '\n')
 	break;
       p.len -= p.start;
-      if (hook (disk, &p))
+      if (hook (disk, &p, hook_data))
 	return grub_errno;
     }
   if (p.number == 0)

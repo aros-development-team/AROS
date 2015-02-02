@@ -22,25 +22,26 @@
 
 static grub_uint32_t crc32c_table [256];
 
+/* Helper for init_crc32c_table.  */
+static grub_uint32_t
+reflect (grub_uint32_t ref, int len)
+{
+  grub_uint32_t result = 0;
+  int i;
+
+  for (i = 1; i <= len; i++)
+    {
+      if (ref & 1)
+	result |= 1 << (len - i);
+      ref >>= 1;
+    }
+
+  return result;
+}
+
 static void
 init_crc32c_table (void)
 {
-  auto grub_uint32_t reflect (grub_uint32_t ref, int len);
-  grub_uint32_t reflect (grub_uint32_t ref, int len)
-    {
-      grub_uint32_t result = 0;
-      int i;
-
-      for (i = 1; i <= len; i++)
-        {
-          if (ref & 1)
-            result |= 1 << (len - i);
-          ref >>= 1;
-        }
-
-      return result;
-    }
-
   grub_uint32_t polynomial = 0x1edc6f41;
   int i, j;
 

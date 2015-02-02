@@ -91,11 +91,13 @@ real_config (struct grub_serial_port *port)
 
   grub_usb_control_msg (port->usbdev, GRUB_USB_REQTYPE_VENDOR_OUT,
 			GRUB_FTDI_MODEM_CTRL,
-			GRUB_FTDI_MODEM_CTRL_DTRRTS, 0, 0, 0);
+			port->config.rtscts ? GRUB_FTDI_MODEM_CTRL_DTRRTS : 0,
+			0, 0, 0);
 
   grub_usb_control_msg (port->usbdev, GRUB_USB_REQTYPE_VENDOR_OUT,
 			GRUB_FTDI_FLOW_CTRL,
-			GRUB_FTDI_FLOW_CTRL_DTRRTS, 0, 0, 0);
+			port->config.rtscts ? GRUB_FTDI_FLOW_CTRL_DTRRTS : 0,
+			0, 0, 0);
 
   divisor = get_divisor (port->config.speed);
   grub_usb_control_msg (port->usbdev, GRUB_USB_REQTYPE_VENDOR_OUT,
@@ -128,7 +130,7 @@ ftdi_hw_put (struct grub_serial_port *port, const int c)
 
   real_config (port);
 
-  grub_usb_bulk_write (port->usbdev, port->out_endp->endp_addr, 1, &cc);
+  grub_usb_bulk_write (port->usbdev, port->out_endp, 1, &cc);
 }
 
 static grub_err_t
@@ -193,7 +195,9 @@ grub_ftdi_attach (grub_usb_device_t usbdev, int configno, int interfno)
     return 0;
 
   return grub_usbserial_attach (usbdev, configno, interfno,
-				&grub_ftdi_driver);
+				&grub_ftdi_driver,
+				GRUB_USB_SERIAL_ENDPOINT_LAST_MATCHING,
+				GRUB_USB_SERIAL_ENDPOINT_LAST_MATCHING);
 }
 
 static struct grub_usb_attach_desc attach_hook =

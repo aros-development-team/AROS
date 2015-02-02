@@ -53,6 +53,7 @@ grub_gfxmenu_try (int entry, grub_menu_t menu, int nested)
 {
   grub_gfxmenu_view_t view = NULL;
   const char *theme_path;
+  char *full_theme_path = 0;
   struct grub_menu_viewer *instance;
   grub_err_t err;
   struct grub_video_mode_info mode_info;
@@ -70,15 +71,27 @@ grub_gfxmenu_try (int entry, grub_menu_t menu, int nested)
   if (err)
     return err;
 
-  if (!cached_view || grub_strcmp (cached_view->theme_path, theme_path) != 0
+  if (theme_path[0] != '/' && theme_path[0] != '(')
+    {
+      const char *prefix;
+      prefix = grub_env_get ("prefix");
+      full_theme_path = grub_xasprintf ("%s/themes/%s",
+					prefix,
+					theme_path);
+    }
+
+  if (!cached_view || grub_strcmp (cached_view->theme_path,
+				   full_theme_path ? : theme_path) != 0
       || cached_view->screen.width != mode_info.width
       || cached_view->screen.height != mode_info.height)
     {
-      grub_free (cached_view);
+      grub_gfxmenu_view_destroy (cached_view);
       /* Create the view.  */
-      cached_view = grub_gfxmenu_view_new (theme_path, mode_info.width,
+      cached_view = grub_gfxmenu_view_new (full_theme_path ? : theme_path,
+					   mode_info.width,
 					   mode_info.height);
     }
+  grub_free (full_theme_path);
 
   if (! cached_view)
     {

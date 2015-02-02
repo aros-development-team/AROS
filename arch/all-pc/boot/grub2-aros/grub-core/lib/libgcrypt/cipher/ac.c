@@ -1,19 +1,19 @@
 /* ac.c - Alternative interface for asymmetric cryptography.
    Copyright (C) 2003, 2004, 2005, 2006
                  2007, 2008  Free Software Foundation, Inc.
- 
+
    This file is part of Libgcrypt.
-  
+
    Libgcrypt is free software; you can redistribute it and/or modify
    it under the terms of the GNU Lesser general Public License as
    published by the Free Software Foundation; either version 2.1 of
    the License, or (at your option) any later version.
-  
+
    Libgcrypt is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU Lesser General Public License for more details.
-  
+
    You should have received a copy of the GNU Lesser General Public
    License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -115,7 +115,7 @@ struct gcry_ac_key_pair
 
 
 
-/* 
+/*
  * Functions for working with data sets.
  */
 
@@ -151,7 +151,7 @@ static void
 ac_data_values_destroy (gcry_ac_data_t data)
 {
   unsigned int i;
-  
+
   for (i = 0; i < data->data_n; i++)
     if (data->data[i].flags & GCRY_AC_FLAG_DEALLOC)
       {
@@ -256,7 +256,7 @@ _gcry_ac_data_copy (gcry_ac_data_t *data_cp, gcry_ac_data_t data)
   err = ac_data_mpi_copy (data->data, data->data_n, &data_mpis);
   if (err)
     goto out;
-  
+
   data_new->data_n = data->data_n;
   data_new->data = data_mpis;
   *data_cp = data_new;
@@ -524,13 +524,13 @@ _gcry_ac_data_to_sexp (gcry_ac_data_t data, gcry_sexp_t *sexp,
 	i++;
       }
   identifiers_n = i;
-  
+
   if (! identifiers_n)
     /* If there are NO identifiers, we still add surrounding braces so
        that we have a list of named MPI value lists.  Otherwise it
        wouldn't be too much fun to process these lists.  */
     sexp_buffer_n += 2;
-  
+
   data_n = _gcry_ac_data_length (data);
   for (i = 0; i < data_n; i++)
     {
@@ -666,7 +666,7 @@ _gcry_ac_data_from_sexp (gcry_ac_data_t *data_set, gcry_sexp_t sexp,
 
 	  /* Identifier matches.  Now we have to distinguish two
 	     cases:
-	     
+
 	     (i)  we are at the last identifier:
 	     leave loop
 
@@ -725,7 +725,7 @@ _gcry_ac_data_from_sexp (gcry_ac_data_t *data_set, gcry_sexp_t sexp,
     skip_name = 0;
 
   /* Create data set from S-expression data.  */
-  
+
   err = gcry_ac_data_new (&data_set_new);
   if (err)
     goto out;
@@ -793,7 +793,7 @@ _gcry_ac_data_from_sexp (gcry_ac_data_t *data_set, gcry_sexp_t sexp,
   gcry_sexp_release (sexp_tmp);
   gcry_mpi_release (mpi);
   gcry_free (string);
-  
+
   if (err)
     gcry_ac_data_destroy (data_set_new);
 
@@ -1005,7 +1005,7 @@ _gcry_ac_io_read (gcry_ac_io_t *ac_io,
 		  unsigned int nread, unsigned char *buffer, size_t *buffer_n)
 {
   gcry_error_t err;
-  
+
   gcry_assert (ac_io->mode == GCRY_AC_IO_READABLE);
   err = 0;
 
@@ -1072,7 +1072,7 @@ _gcry_ac_io_read_all (gcry_ac_io_t *ac_io, unsigned char **buffer, size_t *buffe
 	      err = gcry_error_from_errno (errno);
 	      break;
 	    }
-	  
+
 	  if (buffer_new != p)
 	    buffer_new = p;
 
@@ -1132,7 +1132,7 @@ _gcry_ac_io_process (gcry_ac_io_t *ac_io,
 
 
 
-/* 
+/*
  * Functions for converting data between the native ac and the
  * S-expression structure used by the pk interface.
  */
@@ -1403,7 +1403,7 @@ _gcry_ac_open (gcry_ac_handle_t *handle,
   err = _gcry_pk_module_lookup (algorithm, &module);
   if (err)
     goto out;
-  
+
   /* Allocate.  */
   handle_new = gcry_malloc (sizeof (*handle_new));
   if (! handle_new)
@@ -1420,7 +1420,7 @@ _gcry_ac_open (gcry_ac_handle_t *handle,
   *handle = handle_new;
 
  out:
-  
+
   /* Deallocate resources.  */
   if (err)
     _gcry_pk_module_release (module);
@@ -1443,7 +1443,7 @@ _gcry_ac_close (gcry_ac_handle_t handle)
 
 
 
-/* 
+/*
  * Key management.
  */
 
@@ -1662,7 +1662,7 @@ _gcry_ac_key_pair_generate (gcry_ac_handle_t handle, unsigned int nbits,
  out:
 
   /* Deallocate resources.  */
-  
+
   gcry_free (genkey_format);
   gcry_free (arg_list);
   gcry_sexp_release (genkey_sexp_request);
@@ -1682,7 +1682,7 @@ _gcry_ac_key_pair_generate (gcry_ac_handle_t handle, unsigned int nbits,
 
 /* Returns the key of type WHICH out of the key pair KEY_PAIR.  */
 gcry_ac_key_t
-_gcry_ac_key_pair_extract (gcry_ac_key_pair_t key_pair, 
+_gcry_ac_key_pair_extract (gcry_ac_key_pair_t key_pair,
                            gcry_ac_key_type_t which)
 {
   gcry_ac_key_t key;
@@ -1851,7 +1851,7 @@ _gcry_ac_key_get_grip (gcry_ac_handle_t handle,
 
 
 
-/* 
+/*
  * Functions performing cryptographic operations.
  */
 
@@ -2176,7 +2176,7 @@ em_randomize_nonzero (unsigned char *buffer, size_t buffer_n,
 
   for (i = 0; i < buffer_n; i++)
     buffer[i] = 0;
-  
+
   do
     {
       /* Count zeros.  */
@@ -2384,7 +2384,7 @@ emsa_pkcs_v1_5_encode (unsigned int flags, void *opts,
   unsigned int i;
 
   (void)flags;
-  
+
   options = opts;
   buffer = NULL;
   md = NULL;
@@ -2499,7 +2499,7 @@ typedef enum dencode_action
 dencode_action_t;
 
 /* Encode or decode a message according to the the encoding method
-   METHOD; ACTION specifies wether the message that is contained in
+   METHOD; ACTION specifies whether the message that is contained in
    BUFFER_IN and of length BUFFER_IN_N should be encoded or decoded.
    The resulting message will be stored in a newly allocated buffer in
    BUFFER_OUT and BUFFER_OUT_N.  */
@@ -2656,7 +2656,7 @@ _gcry_ac_mpi_to_os_alloc (gcry_mpi_t mpi, unsigned char **os, size_t *os_n)
       err = gcry_error_from_errno (errno);
       goto out;
     }
-      
+
   _gcry_ac_mpi_to_os (mpi, buffer, buffer_n);
   *os = buffer;
   *os_n = buffer_n;
@@ -2676,7 +2676,7 @@ _gcry_ac_os_to_mpi (gcry_mpi_t mpi, unsigned char *os, size_t os_n)
   gcry_mpi_t xi;
   gcry_mpi_t x;
   gcry_mpi_t a;
-  
+
   if (fips_mode ())
     return;
 
@@ -2692,7 +2692,7 @@ _gcry_ac_os_to_mpi (gcry_mpi_t mpi, unsigned char *os, size_t os_n)
       gcry_mpi_add (x, x, xi);
       gcry_mpi_mul_ui (a, a, 256);
     }
-      
+
   gcry_mpi_release (xi);
   gcry_mpi_release (a);
 
@@ -2702,7 +2702,7 @@ _gcry_ac_os_to_mpi (gcry_mpi_t mpi, unsigned char *os, size_t os_n)
 
 
 
-/* 
+/*
  * Implementation of Encryption Schemes (ES) and Signature Schemes
  * with Appendix (SSA).
  */
@@ -2824,7 +2824,7 @@ ac_dencode_prepare (gcry_ac_handle_t handle, gcry_ac_key_t key, void *opts,
       err = gcry_error_from_errno (errno);
       goto out;
     }
-  
+
   err = (*scheme.dencode_prepare) (handle, key, opts, options_em);
   if (err)
     goto out;
@@ -3065,7 +3065,7 @@ _gcry_ac_data_decrypt_scheme (gcry_ac_handle_t handle,
     goto out;
 
  out:
-  
+
   _gcry_ac_data_destroy (data_encrypted);
   gcry_mpi_release (mpi_encrypted);
   gcry_mpi_release (mpi_decrypted);
@@ -3270,7 +3270,7 @@ _gcry_ac_data_verify_scheme (gcry_ac_handle_t handle,
 
   gcry_mpi_release (mpi_signature);
   mpi_signature = NULL;
-  
+
   err = _gcry_ac_data_verify (handle, key, mpi_data, data_signed);
 
  out:
@@ -3287,7 +3287,7 @@ _gcry_ac_data_verify_scheme (gcry_ac_handle_t handle,
 }
 
 
-/* 
+/*
  * General functions.
  */
 

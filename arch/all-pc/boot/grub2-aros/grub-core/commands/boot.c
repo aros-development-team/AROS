@@ -146,8 +146,7 @@ grub_loader_boot (void)
     return grub_error (GRUB_ERR_NO_KERNEL,
 		       N_("you need to load the kernel first"));
 
-  if (grub_loader_flags & GRUB_LOADER_FLAG_NORETURN)
-    grub_machine_fini ();
+  grub_machine_fini (grub_loader_flags);
 
   for (cur = preboots_head; cur; cur = cur->next)
     {
@@ -183,22 +182,14 @@ grub_cmd_boot (struct grub_command *cmd __attribute__ ((unused)),
 
 static grub_command_t cmd_boot;
 
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
-void grub_boot_init (void)
-#else
 GRUB_MOD_INIT(boot)
-#endif
 {
   cmd_boot =
     grub_register_command ("boot", grub_cmd_boot,
 			   0, N_("Boot an operating system."));
 }
 
-#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
-void grub_boot_fini (void)
-#else
 GRUB_MOD_FINI(boot)
-#endif
 {
   grub_unregister_command (cmd_boot);
 }

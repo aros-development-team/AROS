@@ -43,15 +43,15 @@ static struct digest_table_entry
   gcry_md_spec_t *digest;
   md_extra_spec_t *extraspec;
   unsigned int algorithm;
-  int fips_allowed; 
+  int fips_allowed;
 } digest_table[] =
   {
-#if USE_CRC    
+#if USE_CRC
     /* We allow the CRC algorithms even in FIPS mode because they are
        actually no cryptographic primitives.  */
-    { &_gcry_digest_spec_crc32,   
+    { &_gcry_digest_spec_crc32,
       &dummy_extra_spec,                 GCRY_MD_CRC32, 1 },
-    { &_gcry_digest_spec_crc32_rfc1510,  
+    { &_gcry_digest_spec_crc32_rfc1510,
       &dummy_extra_spec,                 GCRY_MD_CRC32_RFC1510, 1 },
     { &_gcry_digest_spec_crc24_rfc2440,
       &dummy_extra_spec,                 GCRY_MD_CRC24_RFC2440, 1 },
@@ -69,7 +69,7 @@ static struct digest_table_entry
       &dummy_extra_spec,                 GCRY_MD_RMD160 },
 #endif
 #if USE_SHA1
-    { &_gcry_digest_spec_sha1, 
+    { &_gcry_digest_spec_sha1,
       &_gcry_digest_extraspec_sha1,      GCRY_MD_SHA1, 1 },
 #endif
 #if USE_SHA256
@@ -87,6 +87,10 @@ static struct digest_table_entry
 #if USE_TIGER
     { &_gcry_digest_spec_tiger,
       &dummy_extra_spec,                 GCRY_MD_TIGER },
+    { &_gcry_digest_spec_tiger1,
+      &dummy_extra_spec,                 GCRY_MD_TIGER1 },
+    { &_gcry_digest_spec_tiger2,
+      &dummy_extra_spec,                 GCRY_MD_TIGER2 },
 #endif
 #if USE_WHIRLPOOL
     { &_gcry_digest_spec_whirlpool,
@@ -101,7 +105,7 @@ static gcry_module_t digests_registered;
 /* This is the lock protecting DIGESTS_REGISTERED.  */
 static ath_mutex_t digests_registered_lock = ATH_MUTEX_INITIALIZER;
 
-/* Flag to check wether the default ciphers have already been
+/* Flag to check whether the default ciphers have already been
    registered.  */
 static int default_digests_registered;
 
@@ -173,7 +177,7 @@ md_register_default (void)
 {
   gcry_err_code_t err = 0;
   int i;
-  
+
   for (i = 0; !err && digest_table[i].digest; i++)
     {
       if ( fips_mode ())
@@ -226,7 +230,7 @@ gcry_md_lookup_func_oid (void *spec, void *data)
 }
 
 /* Internal function.  Lookup a digest entry by it's name.  */
-static gcry_module_t 
+static gcry_module_t
 gcry_md_lookup_name (const char *name)
 {
   gcry_module_t digest;
@@ -267,11 +271,11 @@ _gcry_md_register (gcry_md_spec_t *digest,
 
   ath_mutex_lock (&digests_registered_lock);
   err = _gcry_module_add (&digests_registered, 0,
-			  (void *) digest, 
-			  (void *)(extraspec? extraspec : &dummy_extra_spec), 
+			  (void *) digest,
+			  (void *)(extraspec? extraspec : &dummy_extra_spec),
                           &mod);
   ath_mutex_unlock (&digests_registered_lock);
-  
+
   if (! err)
     {
       *module = mod;
@@ -292,7 +296,7 @@ gcry_md_unregister (gcry_module_t module)
 }
 
 
-static int 
+static int
 search_oid (const char *oid, int *algorithm, gcry_md_oid_spec_t *oid_spec)
 {
   gcry_module_t module;
@@ -563,7 +567,7 @@ md_enable (gcry_md_hd_t hd, int algorithm)
  else
     digest = (gcry_md_spec_t *) module->spec;
 
-  
+
   if (!err && algorithm == GCRY_MD_MD5 && fips_mode ())
     {
       _gcry_inactivate_fips_mode ("MD5 used");
@@ -574,7 +578,7 @@ md_enable (gcry_md_hd_t hd, int algorithm)
           err = GPG_ERR_DIGEST_ALGO;
         }
     }
-  
+
   if (!err)
     {
       size_t size = (sizeof (*entry)
@@ -631,7 +635,7 @@ md_copy (gcry_md_hd_t ahd, gcry_md_hd_t *b_hd)
   GcryDigestEntry *ar, *br;
   gcry_md_hd_t bhd;
   size_t n;
-  
+
   if (ahd->bufpos)
     md_write (ahd, NULL, 0);
 
@@ -693,7 +697,7 @@ md_copy (gcry_md_hd_t ahd, gcry_md_hd_t *b_hd)
                            - sizeof (ar->context)));
           br->next = b->list;
           b->list = br;
-          
+
           /* Add a reference to the module.  */
           ath_mutex_lock (&digests_registered_lock);
           _gcry_module_use (br->module);
@@ -783,7 +787,7 @@ static void
 md_write (gcry_md_hd_t a, const void *inbuf, size_t inlen)
 {
   GcryDigestEntry *r;
-  
+
   if (a->ctx->debug)
     {
       if (a->bufpos && fwrite (a->buf, a->bufpos, 1, a->ctx->debug) != 1)
@@ -834,8 +838,8 @@ md_final (gcry_md_hd_t a)
 
       if (err)
 	_gcry_fatal_error (err, NULL);
-      md_write (om, 
-                (a->ctx->macpads)+(a->ctx->macpads_Bsize), 
+      md_write (om,
+                (a->ctx->macpads)+(a->ctx->macpads_Bsize),
                 a->ctx->macpads_Bsize);
       md_write (om, p, dlen);
       md_final (om);
@@ -856,7 +860,7 @@ prepare_macpads (gcry_md_hd_t hd, const unsigned char *key, size_t keylen)
   if (!algo)
     return GPG_ERR_DIGEST_ALGO; /* Might happen if no algo is enabled.  */
 
-  if ( keylen > hd->ctx->macpads_Bsize ) 
+  if ( keylen > hd->ctx->macpads_Bsize )
     {
       helpkey = gcry_malloc_secure (md_digest_length (algo));
       if (!helpkey)
@@ -872,7 +876,7 @@ prepare_macpads (gcry_md_hd_t hd, const unsigned char *key, size_t keylen)
   opad = (hd->ctx->macpads)+(hd->ctx->macpads_Bsize);
   memcpy ( ipad, key, keylen );
   memcpy ( opad, key, keylen );
-  for (i=0; i < hd->ctx->macpads_Bsize; i++ ) 
+  for (i=0; i < hd->ctx->macpads_Bsize; i++ )
     {
       ipad[i] ^= 0x36;
       opad[i] ^= 0x5c;
@@ -886,7 +890,7 @@ gcry_error_t
 gcry_md_ctl (gcry_md_hd_t hd, int cmd, void *buffer, size_t buflen)
 {
   gcry_err_code_t rc = 0;
-  
+
   switch (cmd)
     {
     case GCRYCTL_FINALIZE:
@@ -948,10 +952,13 @@ md_read( gcry_md_hd_t a, int algo )
 
   if (! algo)
     {
-      /* return the first algorithm */
-      if (r && r->next)
-	log_debug ("more than one algorithm in md_read(0)\n");
-      return r->digest->read( &r->context.c );
+      /* Return the first algorithm */
+      if (r)
+        {
+          if (r->next)
+            log_debug ("more than one algorithm in md_read(0)\n");
+          return r->digest->read (&r->context.c);
+        }
     }
   else
     {
@@ -1135,7 +1142,7 @@ md_asn_oid (int algorithm, size_t *asnlen, size_t *mdlen)
  * Note:  Because this function is in most cases used to return an
  * integer value, we can make it easier for the caller to just look at
  * the return value.  The caller will in all cases consult the value
- * and thereby detecting whether a error occured or not (i.e. while checking
+ * and thereby detecting whether a error occurred or not (i.e. while checking
  * the block size)
  */
 gcry_error_t
@@ -1160,7 +1167,7 @@ gcry_md_algo_info (int algo, int what, void *buffer, size_t *nbytes)
         {
           const char unsigned *asn;
           size_t asnlen;
-          
+
           asn = md_asn_oid (algo, &asnlen, NULL);
           if (buffer && (*nbytes >= asnlen))
 	  {
@@ -1195,7 +1202,7 @@ md_start_debug ( gcry_md_hd_t md, const char *suffix )
 
   if (fips_mode ())
     return;
-  
+
   if ( md->ctx->debug )
     {
       log_debug("Oops: md debug already started\n");
@@ -1225,6 +1232,7 @@ md_stop_debug( gcry_md_hd_t md )
     volatile u64 b = 42;
     volatile u64 c;
     c = a * b;
+    (void)c;
   }
 #endif
 }
@@ -1261,7 +1269,7 @@ gcry_md_info (gcry_md_hd_t h, int cmd, void *buffer, size_t *nbytes)
 	else
 	  {
 	    algo = *(int*)buffer;
-	    
+
 	    *nbytes = 0;
 	    for(r=h->ctx->list; r; r = r->next ) {
 	      if (r->module->mod_id == algo)
@@ -1295,7 +1303,7 @@ _gcry_md_init (void)
 
 
 int
-gcry_md_is_secure (gcry_md_hd_t a) 
+gcry_md_is_secure (gcry_md_hd_t a)
 {
   size_t value;
 
@@ -1307,7 +1315,7 @@ gcry_md_is_secure (gcry_md_hd_t a)
 
 
 int
-gcry_md_is_enabled (gcry_md_hd_t a, int algo) 
+gcry_md_is_enabled (gcry_md_hd_t a, int algo)
 {
   size_t value;
 
@@ -1359,7 +1367,7 @@ _gcry_md_selftest (int algo, int extended, selftest_report_func_t report)
     {
       ec = GPG_ERR_DIGEST_ALGO;
       if (report)
-        report ("digest", algo, "module", 
+        report ("digest", algo, "module",
                 module && !(module->flags & FLAG_MODULE_DISABLED)?
                 "no selftest available" :
                 module? "algorithm disabled" : "algorithm not found");

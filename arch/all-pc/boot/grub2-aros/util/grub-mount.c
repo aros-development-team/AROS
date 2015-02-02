@@ -41,8 +41,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
+#include <argp.h>
+#pragma GCC diagnostic error "-Wmissing-prototypes"
+#pragma GCC diagnostic error "-Wmissing-declarations"
+
 #include "progname.h"
-#include "argp.h"
 
 static const char *root = NULL;
 grub_device_t dev = NULL;
@@ -116,30 +121,38 @@ translate_error (void)
   return ret;
 }
 
+/* Context for fuse_getattr.  */
+struct fuse_getattr_ctx
+{
+  char *filename;
+  struct grub_dirhook_info file_info;
+  int file_exists;
+};
+
+/* A hook for iterating directories. */
+static int
+fuse_getattr_find_file (const char *cur_filename,
+			const struct grub_dirhook_info *info, void *data)
+{
+  struct fuse_getattr_ctx *ctx = data;
+
+  if ((info->case_insensitive ? grub_strcasecmp (cur_filename, ctx->filename)
+       : grub_strcmp (cur_filename, ctx->filename)) == 0)
+    {
+      ctx->file_info = *info;
+      ctx->file_exists = 1;
+      return 1;
+    }
+  return 0;
+}
+
 static int
 fuse_getattr (const char *path, struct stat *st)
 {
-  char *filename, *pathname, *path2;
+  struct fuse_getattr_ctx ctx;
+  char *pathname, *path2;
   const char *pathname_t;
-  struct grub_dirhook_info file_info;
-  int file_exists = 0;
   
-  /* A hook for iterating directories. */
-  auto int find_file (const char *cur_filename,
-		      const struct grub_dirhook_info *info);
-  int find_file (const char *cur_filename,
-		 const struct grub_dirhook_info *info)
-  {
-    if ((info->case_insensitive ? grub_strcasecmp (cur_filename, filename)
-	 : grub_strcmp (cur_filename, filename)) == 0)
-      {
-	file_info = *info;
-	file_exists = 1;
-	return 1;
-      }
-    return 0;
-  }
-
   if (path[0] == '/' && path[1] == 0)
     {
       st->st_dev = 0;
@@ -155,7 +168,7 @@ fuse_getattr (const char *path, struct stat *st)
       return 0;
     }
 
-  file_exists = 0;
+  ctx.file_exists = 0;
 
   pathname_t = grub_strchr (path, ')');
   if (! pathname_t)
@@ -169,49 +182,56 @@ fuse_getattr (const char *path, struct stat *st)
     pathname[grub_strlen (pathname) - 1] = 0;
 
   /* Split into path and filename. */
-  filename = grub_strrchr (pathname, '/');
-  if (! filename)
+  ctx.filename = grub_strrchr (pathname, '/');
+  if (! ctx.filename)
     {
       path2 = grub_strdup ("/");
-      filename = pathname;
+      ctx.filename = pathname;
     }
   else
     {
-      filename++;
+      ctx.filename++;
       path2 = grub_strdup (pathname);
-      path2[filename - pathname] = 0;
+      path2[ctx.filename - pathname] = 0;
     }
 
   /* It's the whole device. */
-  (fs->dir) (dev, path2, find_file);
+  (fs->dir) (dev, path2, fuse_getattr_find_file, &ctx);
 
   grub_free (path2);
-  if (!file_exists)
+  if (!ctx.file_exists)
     {
       grub_errno = GRUB_ERR_NONE;
       return -ENOENT;
     }
   st->st_dev = 0;
   st->st_ino = 0;
-  st->st_mode = file_info.dir ? (0555 | S_IFDIR) : (0444 | S_IFREG);
+  st->st_mode = ctx.file_info.dir ? (0555 | S_IFDIR) : (0444 | S_IFREG);
   st->st_uid = 0;
   st->st_gid = 0;
   st->st_rdev = 0;
-  if (!file_info.dir)
+  st->st_size = 0;
+  if (!ctx.file_info.dir)
     {
       grub_file_t file;
       file = grub_file_open (path);
-      if (! file)
+      if (! file && grub_errno == GRUB_ERR_BAD_FILE_TYPE)
+	{
+	  grub_errno = GRUB_ERR_NONE;
+	  st->st_mode = (0555 | S_IFDIR);
+	}
+      else if (! file)
 	return translate_error ();
-      st->st_size = file->size;
-      grub_file_close (file);
+      else
+	{
+	  st->st_size = file->size;
+	  grub_file_close (file);
+	}
     }
-  else
-    st->st_size = 0;
   st->st_blksize = 512;
   st->st_blocks = (st->st_size + 511) >> 9;
-  st->st_atime = st->st_mtime = st->st_ctime = file_info.mtimeset
-    ? file_info.mtime : 0;
+  st->st_atime = st->st_mtime = st->st_ctime = ctx.file_info.mtimeset
+    ? ctx.file_info.mtime : 0;
   grub_errno = GRUB_ERR_NONE;
   return 0;
 }
@@ -271,38 +291,65 @@ fuse_release (const char *path, struct fuse_file_info *fi)
   return 0;
 }
 
+/* Context for fuse_readdir.  */
+struct fuse_readdir_ctx
+{
+  const char *path;
+  void *buf;
+  fuse_fill_dir_t fill;
+};
+
+/* Helper for fuse_readdir.  */
+static int
+fuse_readdir_call_fill (const char *filename,
+			const struct grub_dirhook_info *info, void *data)
+{
+  struct fuse_readdir_ctx *ctx = data;
+  struct stat st;
+
+  grub_memset (&st, 0, sizeof (st));
+  st.st_mode = info->dir ? (0555 | S_IFDIR) : (0444 | S_IFREG);
+  if (!info->dir)
+    {
+      grub_file_t file;
+      char *tmp;
+      tmp = xasprintf ("%s/%s", ctx->path, filename);
+      file = grub_file_open (tmp);
+      free (tmp);
+      /* Symlink to directory.  */
+      if (! file && grub_errno == GRUB_ERR_BAD_FILE_TYPE)
+	{
+	  grub_errno = GRUB_ERR_NONE;
+	  st.st_mode = (0555 | S_IFDIR);
+	}
+      else if (!file)
+	{
+	  grub_errno = GRUB_ERR_NONE;
+	}
+      else
+	{
+	  st.st_size = file->size;
+	  grub_file_close (file);
+	}
+    }
+  st.st_blksize = 512;
+  st.st_blocks = (st.st_size + 511) >> 9;
+  st.st_atime = st.st_mtime = st.st_ctime
+    = info->mtimeset ? info->mtime : 0;
+  ctx->fill (ctx->buf, filename, &st, 0);
+  return 0;
+}
+
 static int 
 fuse_readdir (const char *path, void *buf,
 	      fuse_fill_dir_t fill, off_t off, struct fuse_file_info *fi)
 {
+  struct fuse_readdir_ctx ctx = {
+    .path = path,
+    .buf = buf,
+    .fill = fill
+  };
   char *pathname;
-
-  auto int call_fill (const char *filename,
-		      const struct grub_dirhook_info *info);
-  int call_fill (const char *filename, const struct grub_dirhook_info *info)
-  {
-    struct stat st;
-    grub_memset (&st, 0, sizeof (st));
-    st.st_mode = info->dir ? (0555 | S_IFDIR) : (0444 | S_IFREG);
-    if (!info->dir)
-      {
-	grub_file_t file;
-	char *tmp;
-	tmp = xasprintf ("%s/%s", path, filename);
-	file = grub_file_open (tmp);
-	free (tmp);
-	if (! file)
-	  return translate_error ();
-	st.st_size = file->size;
-	grub_file_close (file);
-      }
-    st.st_blksize = 512;
-    st.st_blocks = (st.st_size + 511) >> 9;
-    st.st_atime = st.st_mtime = st.st_ctime
-      = info->mtimeset ? info->mtime : 0;
-    fill (buf, filename, &st, 0);
-    return 0;
-  }
 
   pathname = xstrdup (path);
   
@@ -311,7 +358,7 @@ fuse_readdir (const char *path, void *buf,
 	 && pathname[grub_strlen (pathname) - 1] == '/')
     pathname[grub_strlen (pathname) - 1] = 0;
 
-  (fs->dir) (dev, pathname, call_fill);
+  (fs->dir) (dev, pathname, fuse_readdir_call_fill, &ctx);
   free (pathname);
   grub_errno = GRUB_ERR_NONE;
   return 0;
@@ -383,7 +430,8 @@ fuse_init (void)
       return grub_errno;
     }
 
-  fuse_main (fuse_argc, fuse_args, &grub_opers, NULL);
+  if (fuse_main (fuse_argc, fuse_args, &grub_opers, NULL))
+    grub_error (GRUB_ERR_IO, "fuse_main failed");
 
   for (i = 0; i < num_disks; i++)
     {
@@ -403,7 +451,7 @@ fuse_init (void)
       grub_free (loop_name);
     }
 
-  return GRUB_ERR_NONE;
+  return grub_errno;
 }
 
 static struct argp_option options[] = {  
@@ -449,7 +497,7 @@ argp_parser (int key, char *arg, struct argp_state *state)
 	  FILE *f;
 	  ssize_t real_size;
 	  grub_uint8_t buf[1024];
-	  f = fopen (arg, "rb");
+	  f = grub_util_fopen (arg, "rb");
 	  if (!f)
 	    {
 	      printf (_("%s: error:"), program_name);
@@ -468,6 +516,7 @@ argp_parser (int key, char *arg, struct argp_state *state)
 	      return 0;
 	    }
 	  grub_zfs_add_key (buf, real_size, 0);
+	  fclose (f);
 	}
       return 0;
 
@@ -516,9 +565,7 @@ main (int argc, char *argv[])
   const char *default_root;
   char *alloc_root;
 
-  set_program_name (argv[0]);
-
-  grub_util_init_nls ();
+  grub_util_host_init (&argc, &argv);
 
   fuse_args = xrealloc (fuse_args, (fuse_argc + 2) * sizeof (fuse_args[0]));
   fuse_args[fuse_argc] = xstrdup (argv[0]);

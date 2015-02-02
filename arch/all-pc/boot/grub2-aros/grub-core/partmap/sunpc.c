@@ -38,7 +38,7 @@ struct grub_sun_pc_partition_descriptor
   grub_uint16_t unused;
   grub_uint32_t start_sector;
   grub_uint32_t num_sectors;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_sun_pc_block
 {
@@ -47,7 +47,7 @@ struct grub_sun_pc_block
   grub_uint8_t unused2[244];
   grub_uint16_t  magic;         /* Magic number.  */
   grub_uint16_t  csum;          /* Label xor'd checksum.  */
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 static struct grub_partition_map grub_sun_pc_partition_map;
 
@@ -68,8 +68,8 @@ grub_sun_is_valid (grub_uint16_t *label)
 
 static grub_err_t
 sun_pc_partition_map_iterate (grub_disk_t disk,
-			      int (*hook) (grub_disk_t disk,
-					   const grub_partition_t partition))
+			      grub_partition_iterate_hook_t hook,
+			      void *hook_data)
 {
   grub_partition_t p;
   union
@@ -122,7 +122,7 @@ sun_pc_partition_map_iterate (grub_disk_t disk,
       p->number = partnum;
       if (p->len)
 	{
-	  if (hook (disk, p))
+	  if (hook (disk, p, hook_data))
 	    partnum = GRUB_PARTMAP_SUN_PC_MAX_PARTS;
 	}
     }

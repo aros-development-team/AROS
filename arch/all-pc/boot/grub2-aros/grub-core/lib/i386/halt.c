@@ -20,6 +20,8 @@
 #include <grub/misc.h>
 #include <grub/acpi.h>
 #include <grub/i18n.h>
+#include <grub/pci.h>
+#include <grub/mm.h>
 
 const char bochs_shutdown[] = "Shutdown";
 
@@ -37,6 +39,23 @@ stop (void)
     }
 }
 
+static int
+grub_shutdown_pci_iter (grub_pci_device_t dev, grub_pci_id_t pciid,
+			void *data __attribute__ ((unused)))
+{
+  /* QEMU.  */
+  if (pciid == 0x71138086)
+    {
+      grub_pci_address_t addr;
+      addr = grub_pci_make_address (dev, 0x40);
+      grub_pci_write (addr, 0x7001);
+      addr = grub_pci_make_address (dev, 0x80);
+      grub_pci_write (addr, grub_pci_read (addr) | 1);
+      grub_outw (0x2000, 0x7004);
+    }
+  return 0;
+}
+
 void
 grub_halt (void)
 {
@@ -49,9 +68,11 @@ grub_halt (void)
   /* Disable interrupts.  */
   __asm__ __volatile__ ("cli");
 
-  /* Bochs, QEMU, etc.  */
+  /* Bochs, QEMU, etc. Removed in newer QEMU releases.  */
   for (i = 0; i < sizeof (bochs_shutdown) - 1; i++)
     grub_outb (bochs_shutdown[i], 0x8900);
+
+  grub_pci_iterate (grub_shutdown_pci_iter, NULL);
 
   grub_puts_ (N_("GRUB doesn't know how to halt this machine yet!"));
 

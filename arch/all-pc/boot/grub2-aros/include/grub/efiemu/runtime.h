@@ -25,7 +25,7 @@ struct grub_efiemu_ptv_rel
   grub_efi_memory_type_t plustype;
   grub_efi_memory_type_t minustype;
   grub_uint32_t size;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct efi_variable
 {
@@ -33,5 +33,5 @@ struct efi_variable
   grub_uint32_t namelen;
   grub_uint32_t size;
   grub_efi_uint32_t attributes;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 #endif /* ! GRUB_EFI_EMU_RUNTIME_HEADER */

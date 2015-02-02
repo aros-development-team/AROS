@@ -24,7 +24,6 @@ GRUB_MOD_LICENSE ("GPLv3+");
 
 
 #include "g10lib.h"
-#include "memory.h"
 #include "rmd.h"
 #include "cipher.h" /* Only used for the rmd160_hash_buffer() prototype. */
 
@@ -416,7 +415,7 @@ rmd160_write ( void *context, const void *inbuf_arg, size_t inlen)
     }
   if( !inbuf )
     return;
-  if( hd->count ) 
+  if( hd->count )
     {
       for( ; inlen && hd->count < 64; inlen-- )
         hd->buf[hd->count++] = *inbuf++;
@@ -455,7 +454,7 @@ rmd160_final( void *context )
   RMD160_CONTEXT *hd = context;
   u32 t, msb, lsb;
   byte *p;
-  
+
   rmd160_write(hd, NULL, 0); /* flush */;
 
   t = hd->nblocks;
@@ -556,6 +555,7 @@ gcry_md_spec_t _gcry_digest_spec_rmd160 =
 
 GRUB_MOD_INIT(gcry_rmd160)
 {
+  COMPILE_TIME_ASSERT(sizeof (RMD160_CONTEXT) <= GRUB_CRYPTO_MAX_MD_CONTEXT_SIZE);
   grub_md_register (&_gcry_digest_spec_rmd160);
 }
 

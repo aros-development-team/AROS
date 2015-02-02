@@ -360,6 +360,32 @@ grub_sm712_write_dda_lookup (int idx, grub_uint8_t compare, grub_uint16_t dda,
 		       GRUB_SM712_CR_DDA_LOOKUP_REG1_START + idx);
 }
 
+#if !defined (TEST) && !defined(GENINIT)
+/* Helper for grub_video_sm712_setup.  */
+static int
+find_card (grub_pci_device_t dev, grub_pci_id_t pciid, void *data)
+{
+  int *found = data;
+  grub_pci_address_t addr;
+  grub_uint32_t class;
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
+  class = grub_pci_read (addr);
+
+  if (((class >> 16) & 0xffff) != GRUB_PCI_CLASS_SUBCLASS_VGA
+      || pciid != GRUB_SM712_PCIID)
+    return 0;
+  
+  *found = 1;
+
+  addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
+  framebuffer.base = grub_pci_read (addr);
+  framebuffer.dev = dev;
+
+  return 1;
+}
+#endif
+
 static grub_err_t
 grub_video_sm712_setup (unsigned int width, unsigned int height,
 			unsigned int mode_type, unsigned int mode_mask __attribute__ ((unused)))
@@ -370,28 +396,6 @@ grub_video_sm712_setup (unsigned int width, unsigned int height,
   grub_err_t err;
   int found = 0;
 
-  auto int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev, grub_pci_id_t pciid __attribute__ ((unused)));
-  int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev, grub_pci_id_t pciid __attribute__ ((unused)))
-    {
-      grub_pci_address_t addr;
-      grub_uint32_t class;
-
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
-      class = grub_pci_read (addr);
-
-      if (((class >> 16) & 0xffff) != GRUB_PCI_CLASS_SUBCLASS_VGA
-	  || pciid != GRUB_SM712_PCIID)
-	return 0;
-      
-      found = 1;
-
-      addr = grub_pci_make_address (dev, GRUB_PCI_REG_ADDRESS_REG0);
-      framebuffer.base = grub_pci_read (addr);
-      framebuffer.dev = dev;
-
-      return 1;
-    }
-
   /* Decode depth from mode_type.  If it is zero, then autodetect.  */
   depth = (mode_type & GRUB_VIDEO_MODE_TYPE_DEPTH_MASK)
           >> GRUB_VIDEO_MODE_TYPE_DEPTH_POS;
@@ -401,7 +405,7 @@ grub_video_sm712_setup (unsigned int width, unsigned int height,
     return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
 		       "Only 1024x600x16 is supported");
 
-  grub_pci_iterate (find_card);
+  grub_pci_iterate (find_card, &found);
   if (!found)
     return grub_error (GRUB_ERR_IO, "Couldn't find graphics card");
   /* Fill mode info details.  */
@@ -775,6 +779,10 @@ static struct grub_video_adapter grub_video_sm712_adapter =
     .get_palette = grub_video_fb_get_palette,
     .set_viewport = grub_video_fb_set_viewport,
     .get_viewport = grub_video_fb_get_viewport,
+    .set_region = grub_video_fb_set_region,
+    .get_region = grub_video_fb_get_region,
+    .set_area_status = grub_video_fb_set_area_status,
+    .get_area_status = grub_video_fb_get_area_status,
     .map_color = grub_video_fb_map_color,
     .map_rgb = grub_video_fb_map_rgb,
     .map_rgba = grub_video_fb_map_rgba,
@@ -792,20 +800,12 @@ static struct grub_video_adapter grub_video_sm712_adapter =
     .next = 0
   };
 
-#ifdef GRUB_MACHINE_MIPS_LOONGSON
-void grub_video_sm712_init (void)
-#else
 GRUB_MOD_INIT(video_sm712)
-#endif
 {
   grub_video_register (&grub_video_sm712_adapter);
 }
 
-#ifdef GRUB_MACHINE_MIPS_LOONGSON
-void grub_video_sm712_fini (void)
-#else
 GRUB_MOD_FINI(video_sm712)
-#endif
 {
   grub_video_unregister (&grub_video_sm712_adapter);
 }

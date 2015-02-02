@@ -34,7 +34,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 #include <argp.h>
+#pragma GCC diagnostic error "-Wmissing-prototypes"
+#pragma GCC diagnostic error "-Wmissing-declarations"
 
 #include "progname.h"
 
@@ -85,81 +89,91 @@ static struct argp argp = {
   NULL, NULL, NULL
 };
 
+/* Context for main.  */
+struct main_ctx
+{
+  int lineno;
+  FILE *file;
+  struct arguments arguments;
+};
+
+/* Helper for main.  */
+static grub_err_t
+get_config_line (char **line, int cont __attribute__ ((unused)), void *data)
+{
+  struct main_ctx *ctx = data;
+  int i;
+  char *cmdline = 0;
+  size_t len = 0;
+  ssize_t curread;
+
+  curread = getline (&cmdline, &len, (ctx->file ?: stdin));
+  if (curread == -1)
+    {
+      *line = 0;
+      grub_errno = GRUB_ERR_READ_ERROR;
+
+      if (cmdline)
+	free (cmdline);
+      return grub_errno;
+    }
+
+  if (ctx->arguments.verbose)
+    grub_printf ("%s", cmdline);
+
+  for (i = 0; cmdline[i] != '\0'; i++)
+    {
+      /* Replace tabs and carriage returns with spaces.  */
+      if (cmdline[i] == '\t' || cmdline[i] == '\r')
+	cmdline[i] = ' ';
+
+      /* Replace '\n' with '\0'.  */
+      if (cmdline[i] == '\n')
+	cmdline[i] = '\0';
+    }
+
+  ctx->lineno++;
+  *line = grub_strdup (cmdline);
+
+  free (cmdline);
+  return 0;
+}
+
 int
 main (int argc, char *argv[])
 {
+  struct main_ctx ctx = {
+    .lineno = 0,
+    .file = 0
+  };
   char *input;
-  int lineno = 0;
-  FILE *file = 0;
-  struct arguments arguments;
-  int found_input = 0;
+  int found_input = 0, found_cmd = 0;
   struct grub_script *script = NULL;
 
-  auto grub_err_t get_config_line (char **line, int cont);
-  grub_err_t get_config_line (char **line, int cont __attribute__ ((unused)))
-  {
-    int i;
-    char *cmdline = 0;
-    size_t len = 0;
-    ssize_t curread;
+  grub_util_host_init (&argc, &argv);
 
-    curread = getline(&cmdline, &len, (file ?: stdin));
-    if (curread == -1)
-      {
-	*line = 0;
-	grub_errno = GRUB_ERR_READ_ERROR;
-
-	if (cmdline)
-	  free (cmdline);
-	return grub_errno;
-      }
-
-    if (arguments.verbose)
-      grub_printf("%s", cmdline);
-
-    for (i = 0; cmdline[i] != '\0'; i++)
-      {
-	/* Replace tabs and carriage returns with spaces.  */
-	if (cmdline[i] == '\t' || cmdline[i] == '\r')
-	  cmdline[i] = ' ';
-
-	/* Replace '\n' with '\0'.  */
-	if (cmdline[i] == '\n')
-	  cmdline[i] = '\0';
-      }
-
-    lineno++;
-    *line = grub_strdup (cmdline);
-
-    free (cmdline);
-    return 0;
-  }
-
-  set_program_name (argv[0]);
-  grub_util_init_nls ();
-
-  memset (&arguments, 0, sizeof (struct arguments));
+  memset (&ctx.arguments, 0, sizeof (struct arguments));
 
   /* Check for options.  */
-  if (argp_parse (&argp, argc, argv, 0, 0, &arguments) != 0)
+  if (argp_parse (&argp, argc, argv, 0, 0, &ctx.arguments) != 0)
     {
       fprintf (stderr, "%s", _("Error in parsing command line arguments\n"));
       exit(1);
     }
 
   /* Obtain ARGUMENT.  */
-  if (!arguments.filename)
+  if (!ctx.arguments.filename)
     {
-      file = 0; /* read from stdin */
+      ctx.file = 0; /* read from stdin */
     }
   else
     {
-      file = fopen (arguments.filename, "r");
-      if (! file)
+      ctx.file = grub_util_fopen (ctx.arguments.filename, "r");
+      if (! ctx.file)
 	{
           char *program = xstrdup(program_name);
-	  fprintf (stderr, "%s: %s: %s\n", program_name, 
-		   arguments.filename, strerror(errno));
+	  fprintf (stderr, _("cannot open `%s': %s"),
+		   ctx.arguments.filename, strerror (errno));
           argp_help (&argp, stderr, ARGP_HELP_STD_USAGE, program);
           free(program);
           exit(1);
@@ -169,14 +183,16 @@ main (int argc, char *argv[])
   do
     {
       input = 0;
-      get_config_line(&input, 0);
+      get_config_line (&input, 0, &ctx);
       if (! input) 
 	break;
       found_input = 1;
 
-      script = grub_script_parse (input, get_config_line);
+      script = grub_script_parse (input, get_config_line, &ctx);
       if (script)
 	{
+	  if (script->cmd)
+	    found_cmd = 1;
 	  grub_script_execute (script);
 	  grub_script_free (script);
 	}
@@ -184,11 +200,17 @@ main (int argc, char *argv[])
       grub_free (input);
     } while (script != 0);
 
-  if (file) fclose (file);
+  if (ctx.file) fclose (ctx.file);
 
   if (found_input && script == 0)
     {
-      fprintf (stderr, _("Syntax error at line %u\n"), lineno);
+      fprintf (stderr, _("Syntax error at line %u\n"), ctx.lineno);
+      return 1;
+    }
+  if (! found_cmd)
+    {
+      fprintf (stderr, _("Script `%s' contains no commands and will do nothing\n"),
+	       ctx.arguments.filename);
       return 1;
     }
 

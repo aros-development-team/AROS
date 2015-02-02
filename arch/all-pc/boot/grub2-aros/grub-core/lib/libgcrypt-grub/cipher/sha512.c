@@ -3,7 +3,7 @@
 #include <grub/dl.h>
 GRUB_MOD_LICENSE ("GPLv3+");
 /* sha512.c - SHA384 and SHA512 hash functions
- *	Copyright (C) 2003, 2008 Free Software Foundation, Inc.
+ * Copyright (C) 2003, 2008, 2009 Free Software Foundation, Inc.
  *
  * This file is part of Libgcrypt.
  *
@@ -100,6 +100,36 @@ sha384_init (void *context)
 }
 
 
+static inline u64
+ROTR (u64 x, u64 n)
+{
+  return ((x >> n) | (x << (64 - n)));
+}
+
+static inline u64
+Ch (u64 x, u64 y, u64 z)
+{
+  return ((x & y) ^ ( ~x & z));
+}
+
+static inline u64
+Maj (u64 x, u64 y, u64 z)
+{
+  return ((x & y) ^ (x & z) ^ (y & z));
+}
+
+static inline u64
+Sum0 (u64 x)
+{
+  return (ROTR (x, 28) ^ ROTR (x, 34) ^ ROTR (x, 39));
+}
+
+static inline u64
+Sum1 (u64 x)
+{
+  return (ROTR (x, 14) ^ ROTR (x, 18) ^ ROTR (x, 41));
+}
+
 /****************
  * Transform the message W which consists of 16 64-bit-words
  */
@@ -184,21 +214,26 @@ transform (SHA512_CONTEXT *hd, const unsigned char *data)
   }
 #endif
 
-#define ROTR(x,n) (((x)>>(n)) | ((x)<<(64-(n))))
-#define Ch(x,y,z) (((x) & (y)) ^ ((~(x)) & (z)))
-#define Maj(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define Sum0(x) (ROTR((x),28) ^ ROTR((x),34) ^ ROTR((x),39))
-#define Sum1(x) (ROTR((x),14) ^ ROTR((x),18) ^ ROTR((x),41))
 #define S0(x) (ROTR((x),1) ^ ROTR((x),8) ^ ((x)>>7))
 #define S1(x) (ROTR((x),19) ^ ROTR((x),61) ^ ((x)>>6))
 
   for (t = 16; t < 80; t++)
     w[t] = S1 (w[t - 2]) + w[t - 7] + S0 (w[t - 15]) + w[t - 16];
 
-  for (t = 0; t < 80; t++)
+
+  for (t = 0; t < 80; )
     {
       u64 t1, t2;
 
+      /* Performance on a AMD Athlon(tm) Dual Core Processor 4050e
+         with gcc 4.3.3 using gcry_md_hash_buffer of each 10000 bytes
+         initialized to 0,1,2,3...255,0,... and 1000 iterations:
+
+         Not unrolled with macros:  440ms
+         Unrolled with macros:      350ms
+         Unrolled with inline:      330ms
+      */
+#if 0 /* Not unrolled.  */
       t1 = h + Sum1 (e) + Ch (e, f, g) + k[t] + w[t];
       t2 = Sum0 (a) + Maj (a, b, c);
       h = g;
@@ -209,12 +244,53 @@ transform (SHA512_CONTEXT *hd, const unsigned char *data)
       c = b;
       b = a;
       a = t1 + t2;
+      t++;
+#else /* Unrolled to interweave the chain variables.  */
+      t1 = h + Sum1 (e) + Ch (e, f, g) + k[t] + w[t];
+      t2 = Sum0 (a) + Maj (a, b, c);
+      d += t1;
+      h  = t1 + t2;
 
-      /* printf("t=%d a=%016llX b=%016llX c=%016llX d=%016llX "
-          "e=%016llX f=%016llX g=%016llX h=%016llX\n",t,a,b,c,d,e,f,g,h); */
+      t1 = g + Sum1 (d) + Ch (d, e, f) + k[t+1] + w[t+1];
+      t2 = Sum0 (h) + Maj (h, a, b);
+      c += t1;
+      g  = t1 + t2;
+
+      t1 = f + Sum1 (c) + Ch (c, d, e) + k[t+2] + w[t+2];
+      t2 = Sum0 (g) + Maj (g, h, a);
+      b += t1;
+      f  = t1 + t2;
+
+      t1 = e + Sum1 (b) + Ch (b, c, d) + k[t+3] + w[t+3];
+      t2 = Sum0 (f) + Maj (f, g, h);
+      a += t1;
+      e  = t1 + t2;
+
+      t1 = d + Sum1 (a) + Ch (a, b, c) + k[t+4] + w[t+4];
+      t2 = Sum0 (e) + Maj (e, f, g);
+      h += t1;
+      d  = t1 + t2;
+
+      t1 = c + Sum1 (h) + Ch (h, a, b) + k[t+5] + w[t+5];
+      t2 = Sum0 (d) + Maj (d, e, f);
+      g += t1;
+      c  = t1 + t2;
+
+      t1 = b + Sum1 (g) + Ch (g, h, a) + k[t+6] + w[t+6];
+      t2 = Sum0 (c) + Maj (c, d, e);
+      f += t1;
+      b  = t1 + t2;
+
+      t1 = a + Sum1 (f) + Ch (f, g, h) + k[t+7] + w[t+7];
+      t2 = Sum0 (b) + Maj (b, c, d);
+      e += t1;
+      a  = t1 + t2;
+
+      t += 8;
+#endif
     }
 
-  /* update chaining vars */
+  /* Update chaining vars.  */
   hd->h0 += a;
   hd->h1 += b;
   hd->h2 += c;
@@ -364,7 +440,7 @@ sha512_read (void *context)
 
 
 
-/* 
+/*
      Self-test section.
  */
 
@@ -394,7 +470,7 @@ static gcry_md_oid_spec_t oid_spec_sha512[] =
     { NULL }
   };
 
-gcry_md_spec_t _gcry_digest_spec_sha512 = 
+gcry_md_spec_t _gcry_digest_spec_sha512 =
   {
     "SHA512", sha512_asn, DIM (sha512_asn), oid_spec_sha512, 64,
     sha512_init, sha512_write, sha512_final, sha512_read,
@@ -414,7 +490,7 @@ static byte sha384_asn[] =	/* Object ID is 2.16.840.1.101.3.4.2.2 */
 
 static gcry_md_oid_spec_t oid_spec_sha384[] =
   {
-    { "2.16.840.1.101.3.4.2.2" }, 
+    { "2.16.840.1.101.3.4.2.2" },
 
     /* PKCS#1 sha384WithRSAEncryption */
     { "1.2.840.113549.1.1.12" },
@@ -422,7 +498,7 @@ static gcry_md_oid_spec_t oid_spec_sha384[] =
     { NULL },
   };
 
-gcry_md_spec_t _gcry_digest_spec_sha384 = 
+gcry_md_spec_t _gcry_digest_spec_sha384 =
   {
     "SHA384", sha384_asn, DIM (sha384_asn), oid_spec_sha384, 48,
     sha384_init, sha512_write, sha512_final, sha512_read,
@@ -436,6 +512,8 @@ gcry_md_spec_t _gcry_digest_spec_sha384 =
 
 GRUB_MOD_INIT(gcry_sha512)
 {
+  COMPILE_TIME_ASSERT(sizeof (SHA512_CONTEXT) <= GRUB_CRYPTO_MAX_MD_CONTEXT_SIZE);
+  COMPILE_TIME_ASSERT(sizeof (SHA512_CONTEXT) <= GRUB_CRYPTO_MAX_MD_CONTEXT_SIZE);
   grub_md_register (&_gcry_digest_spec_sha512);
   grub_md_register (&_gcry_digest_spec_sha384);
 }

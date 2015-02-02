@@ -1,6 +1,6 @@
 /* A substitute <strings.h>.
 
-   Copyright (C) 2007-2010 Free Software Foundation, Inc.
+   Copyright (C) 2007-2013 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,21 +13,36 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software Foundation,
-   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
+   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
 
-#ifndef _GL_STRINGS_H
+#ifndef _@GUARD_PREFIX@_STRINGS_H
 
 #if __GNUC__ >= 3
 @PRAGMA_SYSTEM_HEADER@
 #endif
+@PRAGMA_COLUMNS@
+
+/* Minix 3.1.8 has a bug: <sys/types.h> must be included before <strings.h>.
+   But avoid namespace pollution on glibc systems.  */
+#if defined __minix && !defined __GLIBC__
+# include <sys/types.h>
+#endif
 
 /* The include_next requires a split double-inclusion guard.  */
-#@INCLUDE_NEXT@ @NEXT_STRINGS_H@
+#if @HAVE_STRINGS_H@
+# @INCLUDE_NEXT@ @NEXT_STRINGS_H@
+#endif
 
-#ifndef _GL_STRINGS_H
-#define _GL_STRINGS_H
+#ifndef _@GUARD_PREFIX@_STRINGS_H
+#define _@GUARD_PREFIX@_STRINGS_H
 
+#if ! @HAVE_DECL_STRNCASECMP@
+/* Get size_t.  */
+# include <stddef.h>
+#endif
+
+
+/* The definitions of _GL_FUNCDECL_RPL etc. are copied here.  */
 
 /* The definition of _GL_ARG_NONNULL is copied here.  */
 
@@ -37,6 +52,20 @@
 extern "C" {
 #endif
 
+
+  /* Find the index of the least-significant set bit.  */
+#if @GNULIB_FFS@
+# if !@HAVE_FFS@
+_GL_FUNCDECL_SYS (ffs, int, (int i));
+# endif
+_GL_CXXALIAS_SYS (ffs, int, (int i));
+_GL_CXXALIASWARN (ffs);
+#elif defined GNULIB_POSIXCHECK
+# undef ffs
+# if HAVE_RAW_DECL_FFS
+_GL_WARN_ON_USE (ffs, "ffs is not portable - use the ffs module");
+# endif
+#endif
 
 /* Compare strings S1 and S2, ignoring case, returning less than, equal to or
    greater than zero if S1 is lexicographically less than, equal to or greater
@@ -89,5 +118,5 @@ _GL_WARN_ON_USE (strncasecmp, "strncasecmp cannot work correctly on character "
 }
 #endif
 
-#endif /* _GL_STRING_H */
-#endif /* _GL_STRING_H */
+#endif /* _@GUARD_PREFIX@_STRING_H */
+#endif /* _@GUARD_PREFIX@_STRING_H */

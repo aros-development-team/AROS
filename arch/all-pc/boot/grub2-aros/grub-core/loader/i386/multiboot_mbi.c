@@ -35,6 +35,11 @@
 #include <grub/file.h>
 #include <grub/net.h>
 #include <grub/i18n.h>
+#include <grub/lib/cmdline.h>
+
+#ifdef GRUB_MACHINE_EFI
+#include <grub/efi/efi.h>
+#endif
 
 /* The bits in the required part of flags field we don't support.  */
 #define UNSUPPORTED_FLAGS			0x0000fff8
@@ -58,7 +63,81 @@ static int bootdev_set;
 static grub_size_t elf_sec_num, elf_sec_entsize;
 static unsigned elf_sec_shstrndx;
 static void *elf_sections;
+grub_multiboot_quirks_t grub_multiboot_quirks;
 
+static grub_err_t
+load_kernel (grub_file_t file, const char *filename,
+	     char *buffer, struct multiboot_header *header)
+{
+  grub_err_t err;
+  if (grub_multiboot_quirks & GRUB_MULTIBOOT_QUIRK_BAD_KLUDGE)
+    {
+      err = grub_multiboot_load_elf (file, filename, buffer);
+      if (err == GRUB_ERR_UNKNOWN_OS && (header->flags & MULTIBOOT_AOUT_KLUDGE))
+	grub_errno = err = GRUB_ERR_NONE;
+    }
+  if (header->flags & MULTIBOOT_AOUT_KLUDGE)
+    {
+      int offset = ((char *) header - buffer -
+		    (header->header_addr - header->load_addr));
+      int load_size = ((header->load_end_addr == 0) ? file->size - offset :
+		       header->load_end_addr - header->load_addr);
+      grub_size_t code_size;
+      void *source;
+      grub_relocator_chunk_t ch;
+
+      if (header->bss_end_addr)
+	code_size = (header->bss_end_addr - header->load_addr);
+      else
+	code_size = load_size;
+
+      err = grub_relocator_alloc_chunk_addr (grub_multiboot_relocator, 
+					     &ch, header->load_addr,
+					     code_size);
+      if (err)
+	{
+	  grub_dprintf ("multiboot_loader", "Error loading aout kludge\n");
+	  return err;
+	}
+      source = get_virtual_current_address (ch);
+
+      if ((grub_file_seek (file, offset)) == (grub_off_t) -1)
+	{
+	  return grub_errno;
+	}
+
+      grub_file_read (file, source, load_size);
+      if (grub_errno)
+	return grub_errno;
+
+      if (header->bss_end_addr)
+	grub_memset ((grub_uint8_t *) source + load_size, 0,
+		     header->bss_end_addr - header->load_addr - load_size);
+
+      grub_multiboot_payload_eip = header->entry_addr;
+      return GRUB_ERR_NONE;
+    }
+
+  return grub_multiboot_load_elf (file, filename, buffer);
+}
+
+static struct multiboot_header *
+find_header (char *buffer, grub_ssize_t len)
+{
+  struct multiboot_header *header;
+
+  /* Look for the multiboot header in the buffer.  The header should
+     be at least 12 bytes and aligned on a 4-byte boundary.  */
+  for (header = (struct multiboot_header *) buffer;
+       ((char *) header <= buffer + len - 12);
+       header = (struct multiboot_header *) ((char *) header + MULTIBOOT_HEADER_ALIGN))
+    {
+      if (header->magic == MULTIBOOT_HEADER_MAGIC
+	  && !(header->magic + header->flags + header->checksum))
+	return header;
+    }
+  return NULL;
+}
 
 grub_err_t
 grub_multiboot_load (grub_file_t file, const char *filename)
@@ -82,16 +161,7 @@ grub_multiboot_load (grub_file_t file, const char *filename)
       return grub_errno;
     }
 
-  /* Look for the multiboot header in the buffer.  The header should
-     be at least 12 bytes and aligned on a 4-byte boundary.  */
-  for (header = (struct multiboot_header *) buffer;
-       ((char *) header <= buffer + len - 12) || (header = 0);
-       header = (struct multiboot_header *) ((char *) header + MULTIBOOT_HEADER_ALIGN))
-    {
-      if (header->magic == MULTIBOOT_HEADER_MAGIC
-	  && !(header->magic + header->flags + header->checksum))
-	break;
-    }
+  header = find_header (buffer, len);
 
   if (header == 0)
     {
@@ -106,59 +176,11 @@ grub_multiboot_load (grub_file_t file, const char *filename)
 			 "unsupported flag: 0x%x", header->flags);
     }
 
-  if (header->flags & MULTIBOOT_AOUT_KLUDGE)
+  err = load_kernel (file, filename, buffer, header);
+  if (err)
     {
-      int offset = ((char *) header - buffer -
-		    (header->header_addr - header->load_addr));
-      int load_size = ((header->load_end_addr == 0) ? file->size - offset :
-		       header->load_end_addr - header->load_addr);
-      grub_size_t code_size;
-      void *source;
-      grub_relocator_chunk_t ch;
-
-      if (header->bss_end_addr)
-	code_size = (header->bss_end_addr - header->load_addr);
-      else
-	code_size = load_size;
-
-      err = grub_relocator_alloc_chunk_addr (grub_multiboot_relocator, 
-					     &ch, header->load_addr,
-					     code_size);
-      if (err)
-	{
-	  grub_dprintf ("multiboot_loader", "Error loading aout kludge\n");
-	  grub_free (buffer);
-	  return err;
-	}
-      source = get_virtual_current_address (ch);
-
-      if ((grub_file_seek (file, offset)) == (grub_off_t) -1)
-	{
-	  grub_free (buffer);
-	  return grub_errno;
-	}
-
-      grub_file_read (file, source, load_size);
-      if (grub_errno)
-	{
-	  grub_free (buffer);
-	  return grub_errno;
-	}
-
-      if (header->bss_end_addr)
-	grub_memset ((grub_uint8_t *) source + load_size, 0,
-		     header->bss_end_addr - header->load_addr - load_size);
-
-      grub_multiboot_payload_eip = header->entry_addr;
-    }
-  else
-    {
-      err = grub_multiboot_load_elf (file, filename, buffer);
-      if (err)
-	{
-	  grub_free (buffer);
-	  return err;
-	}
+      grub_free (buffer);
+      return err;
     }
 
   if (header->flags & MULTIBOOT_VIDEO_MODE)
@@ -224,48 +246,29 @@ grub_multiboot_get_mbi_size (void)
   return ret;
 }
 
+/* Helper for grub_fill_multiboot_mmap.  */
+static int
+grub_fill_multiboot_mmap_iter (grub_uint64_t addr, grub_uint64_t size,
+			       grub_memory_type_t type, void *data)
+{
+  struct multiboot_mmap_entry **mmap_entry = data;
+
+  (*mmap_entry)->addr = addr;
+  (*mmap_entry)->len = size;
+  (*mmap_entry)->type = type;
+  (*mmap_entry)->size = sizeof (struct multiboot_mmap_entry) - sizeof ((*mmap_entry)->size);
+  (*mmap_entry)++;
+
+  return 0;
+}
+
 /* Fill previously allocated Multiboot mmap.  */
 static void
 grub_fill_multiboot_mmap (struct multiboot_mmap_entry *first_entry)
 {
   struct multiboot_mmap_entry *mmap_entry = (struct multiboot_mmap_entry *) first_entry;
 
-  auto int NESTED_FUNC_ATTR hook (grub_uint64_t, grub_uint64_t,
-				  grub_memory_type_t);
-  int NESTED_FUNC_ATTR hook (grub_uint64_t addr, grub_uint64_t size, 
-			     grub_memory_type_t type)
-    {
-      mmap_entry->addr = addr;
-      mmap_entry->len = size;
-      switch (type)
-	{
-	case GRUB_MEMORY_AVAILABLE:
- 	  mmap_entry->type = MULTIBOOT_MEMORY_AVAILABLE;
- 	  break;
-
-	case GRUB_MEMORY_ACPI:
- 	  mmap_entry->type = MULTIBOOT_MEMORY_ACPI_RECLAIMABLE;
- 	  break;
-
-	case GRUB_MEMORY_NVS:
- 	  mmap_entry->type = MULTIBOOT_MEMORY_NVS;
- 	  break;
-
-	case GRUB_MEMORY_BADRAM:
- 	  mmap_entry->type = MULTIBOOT_MEMORY_BADRAM;
- 	  break;
-	  
- 	default:
- 	  mmap_entry->type = MULTIBOOT_MEMORY_RESERVED;
- 	  break;
- 	}
-      mmap_entry->size = sizeof (struct multiboot_mmap_entry) - sizeof (mmap_entry->size);
-      mmap_entry++;
-
-      return 0;
-    }
-
-  grub_mmap_iterate (hook);
+  grub_mmap_iterate (grub_fill_multiboot_mmap_iter, &mmap_entry);
 }
 
 #if GRUB_MACHINE_HAS_VBE || GRUB_MACHINE_HAS_VGA_TEXT
@@ -452,7 +455,7 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
   bufsize = grub_multiboot_get_mbi_size ();
 
   err = grub_relocator_alloc_chunk_align (grub_multiboot_relocator, &ch,
-					  0x10000, 0x100000 - bufsize,
+					  0x10000, 0xa0000 - bufsize,
 					  bufsize, 4,
 					  GRUB_RELOCATOR_PREFERENCE_NONE, 0);
   if (err)
@@ -598,6 +601,12 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
   ptrdest += sizeof (struct grub_vbe_mode_info_block);
 #endif
 
+#ifdef GRUB_MACHINE_EFI
+  err = grub_efi_finish_boot_services (NULL, NULL, NULL, NULL, NULL);
+  if (err)
+    return err;
+#endif
+
   return GRUB_ERR_NONE;
 }
 
@@ -642,31 +651,18 @@ grub_err_t
 grub_multiboot_init_mbi (int argc, char *argv[])
 {
   grub_ssize_t len = 0;
-  char *p;
-  int i;
 
   grub_multiboot_free_mbi ();
 
-  for (i = 0; i < argc; i++)
-    len += grub_strlen (argv[i]) + 1;
-  if (len == 0)
-    len = 1;
+  len = grub_loader_cmdline_size (argc, argv);
 
-  cmdline = p = grub_malloc (len);
+  cmdline = grub_malloc (len);
   if (! cmdline)
     return grub_errno;
   cmdline_size = len;
 
-  for (i = 0; i < argc; i++)
-    {
-      p = grub_stpcpy (p, argv[i]);
-      *(p++) = ' ';
-    }
-
-  /* Remove the space after the last word.  */
-  if (p != cmdline)
-    p--;
-  *p = '\0';
+  grub_create_loader_cmdline (argc, argv, cmdline,
+			      cmdline_size);
 
   return GRUB_ERR_NONE;
 }
@@ -676,9 +672,7 @@ grub_multiboot_add_module (grub_addr_t start, grub_size_t size,
 			   int argc, char *argv[])
 {
   struct module *newmod;
-  char *p;
-  grub_ssize_t len = 0;
-  int i;
+  grub_size_t len = 0;
 
   newmod = grub_malloc (sizeof (*newmod));
   if (!newmod)
@@ -687,13 +681,9 @@ grub_multiboot_add_module (grub_addr_t start, grub_size_t size,
   newmod->size = size;
   newmod->next = 0;
 
-  for (i = 0; i < argc; i++)
-    len += grub_strlen (argv[i]) + 1;
+  len = grub_loader_cmdline_size (argc, argv);
 
-  if (len == 0)
-    len = 1;
-
-  newmod->cmdline = p = grub_malloc (len);
+  newmod->cmdline = grub_malloc (len);
   if (! newmod->cmdline)
     {
       grub_free (newmod);
@@ -702,24 +692,13 @@ grub_multiboot_add_module (grub_addr_t start, grub_size_t size,
   newmod->cmdline_size = len;
   total_modcmd += ALIGN_UP (len, 4);
 
-  for (i = 0; i < argc; i++)
-    {
-      p = grub_stpcpy (p, argv[i]);
-      *(p++) = ' ';
-    }
-
-  /* Remove the space after the last word.  */
-  if (p != newmod->cmdline)
-    p--;
-  *p = '\0';
+  grub_create_loader_cmdline (argc, argv, newmod->cmdline,
+			      newmod->cmdline_size);
 
   if (modules_last)
     modules_last->next = newmod;
   else
-    {
-      modules = newmod;
-      modules_last->next = NULL;
-    }
+    modules = newmod;
   modules_last = newmod;
 
   modcnt++;

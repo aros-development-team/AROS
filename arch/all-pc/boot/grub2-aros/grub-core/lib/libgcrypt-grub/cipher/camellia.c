@@ -23,7 +23,7 @@ GRUB_MOD_LICENSE ("GPLv3+");
  */
 
 /*
- * Algorithm Specification 
+ * Algorithm Specification
  *  http://info.isl.ntt.co.jp/crypt/eng/camellia/specifications.html
  */
 
@@ -939,7 +939,7 @@ void camellia_setup256(const unsigned char *key, u32 *subkey)
     CamelliaSubkeyR(30) = CamelliaSubkeyL(30) ^ dw, CamelliaSubkeyL(30) = dw;
     dw = CamelliaSubkeyL(31) ^ CamelliaSubkeyR(31), dw = CAMELLIA_RL8(dw);
     CamelliaSubkeyR(31) = CamelliaSubkeyL(31) ^ dw,CamelliaSubkeyL(31) = dw;
-    
+
     return;
 }
 
@@ -1051,14 +1051,14 @@ void camellia_encrypt128(const u32 *subkey, u32 *io)
     io[1] = io[3];
     io[2] = t0;
     io[3] = t1;
-	
+
     return;
 }
 
 void camellia_decrypt128(const u32 *subkey, u32 *io)
 {
     u32 il,ir,t0,t1;               /* temporary valiables */
-    
+
     /* pre whitening but absorb kw2*/
     io[0] ^= CamelliaSubkeyL(24);
     io[1] ^= CamelliaSubkeyR(24);
@@ -1269,7 +1269,7 @@ void camellia_decrypt256(const u32 *subkey, u32 *io)
     /* pre whitening but absorb kw2*/
     io[0] ^= CamelliaSubkeyL(32);
     io[1] ^= CamelliaSubkeyR(32);
-	
+
     /* main iteration */
     CAMELLIA_ROUNDSM(io[0],io[1],
 		     CamelliaSubkeyL(31),CamelliaSubkeyR(31),
@@ -1381,8 +1381,8 @@ void camellia_decrypt256(const u32 *subkey, u32 *io)
  * API for compatibility
  */
 
-void Camellia_Ekeygen(const int keyBitLength, 
-		      const unsigned char *rawKey, 
+void Camellia_Ekeygen(const int keyBitLength,
+		      const unsigned char *rawKey,
 		      KEY_TABLE_TYPE keyTable)
 {
     switch(keyBitLength) {
@@ -1401,9 +1401,9 @@ void Camellia_Ekeygen(const int keyBitLength,
 }
 
 
-void Camellia_EncryptBlock(const int keyBitLength, 
-			   const unsigned char *plaintext, 
-			   const KEY_TABLE_TYPE keyTable, 
+void Camellia_EncryptBlock(const int keyBitLength,
+			   const unsigned char *plaintext,
+			   const KEY_TABLE_TYPE keyTable,
 			   unsigned char *ciphertext)
 {
     u32 tmp[4];
@@ -1432,9 +1432,9 @@ void Camellia_EncryptBlock(const int keyBitLength,
     PUTU32(ciphertext + 12, tmp[3]);
 }
 
-void Camellia_DecryptBlock(const int keyBitLength, 
-			   const unsigned char *ciphertext, 
-			   const KEY_TABLE_TYPE keyTable, 
+void Camellia_DecryptBlock(const int keyBitLength,
+			   const unsigned char *ciphertext,
+			   const KEY_TABLE_TYPE keyTable,
 			   unsigned char *plaintext)
 {
     u32 tmp[4];

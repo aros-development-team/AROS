@@ -41,8 +41,8 @@ grub_crypto_pbkdf2 (const struct gcry_md_spec *md,
 		    grub_uint8_t *DK, grub_size_t dkLen)
 {
   unsigned int hLen = md->mdlen;
-  grub_uint8_t U[md->mdlen];
-  grub_uint8_t T[md->mdlen];
+  grub_uint8_t U[GRUB_CRYPTO_MAX_MDLEN];
+  grub_uint8_t T[GRUB_CRYPTO_MAX_MDLEN];
   unsigned int u;
   unsigned int l;
   unsigned int r;
@@ -51,6 +51,9 @@ grub_crypto_pbkdf2 (const struct gcry_md_spec *md,
   gcry_err_code_t rc;
   grub_uint8_t *tmp;
   grub_size_t tmplen = Slen + 4;
+
+  if (md->mdlen > GRUB_CRYPTO_MAX_MDLEN || md->mdlen == 0)
+    return GPG_ERR_INV_ARG;
 
   if (c == 0)
     return GPG_ERR_INV_ARG;

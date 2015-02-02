@@ -72,7 +72,7 @@ static const char sample_secret_key[] =
 "  (u #304559a9ead56d2309d203811a641bb1a09626bc8eb36fffa23c968ec5bd891e"
 "      ebbafc73ae666e01ba7c8990bae06cc2bbe10b75e69fcacb353a6473079d8e9b#)))";
 /* A sample 1024 bit RSA key used for the selftests (public only).  */
-static const char sample_public_key[] = 
+static const char sample_public_key[] =
 "(public-key"
 " (rsa"
 "  (n #00e0ce96f90b6c9e02f3922beada93fe50a875eac6bcc18bb9a9cf2e84965caa"
@@ -127,7 +127,7 @@ test_keys (RSA_secret_key *sk, unsigned int nbits)
 
   /* Use the RSA secret function to create a signature of the plaintext.  */
   secret (signature, plaintext, sk);
-  
+
   /* Use the RSA public function to verify this signature.  */
   public (decr_plaintext, signature, &pk);
   if (gcry_mpi_cmp (decr_plaintext, plaintext))
@@ -158,7 +158,7 @@ check_exponent (void *arg, gcry_mpi_t a)
   gcry_mpi_t e = arg;
   gcry_mpi_t tmp;
   int result;
-  
+
   mpi_sub_ui (a, a, 1);
   tmp = _gcry_mpi_alloc_like (a);
   result = !gcry_mpi_gcd(tmp, e, a); /* GCD is not 1. */
@@ -168,12 +168,12 @@ check_exponent (void *arg, gcry_mpi_t a)
 }
 
 /****************
- * Generate a key pair with a key of size NBITS.  
+ * Generate a key pair with a key of size NBITS.
  * USE_E = 0 let Libcgrypt decide what exponent to use.
- *       = 1 request the use of a "secure" exponent; this is required by some 
+ *       = 1 request the use of a "secure" exponent; this is required by some
  *           specification to be 65537.
  *       > 2 Use this public exponent.  If the given exponent
- *           is not odd one is internally added to it. 
+ *           is not odd one is internally added to it.
  * TRANSIENT_KEY:  If true, generate the primes using the standard RNG.
  * Returns: 2 structures filled with all needed values
  */
@@ -205,7 +205,7 @@ generate_std (RSA_secret_key *sk, unsigned int nbits, unsigned long use_e,
 
   /* Make sure that nbits is even so that we generate p, q of equal size. */
   if ( (nbits&1) )
-    nbits++; 
+    nbits++;
 
   if (use_e == 1)   /* Alias for a secure value */
     use_e = 65537;  /* as demanded by Sphinx. */
@@ -213,7 +213,7 @@ generate_std (RSA_secret_key *sk, unsigned int nbits, unsigned long use_e,
   /* Public exponent:
      In general we use 41 as this is quite fast and more secure than the
      commonly used 17.  Benchmarking the RSA verify function
-     with a 1024 bit key yields (2001-11-08): 
+     with a 1024 bit key yields (2001-11-08):
      e=17    0.54 ms
      e=41    0.75 ms
      e=257   0.95 ms
@@ -222,12 +222,12 @@ generate_std (RSA_secret_key *sk, unsigned int nbits, unsigned long use_e,
   e = mpi_alloc( (32+BITS_PER_MPI_LIMB-1)/BITS_PER_MPI_LIMB );
   if (!use_e)
     mpi_set_ui (e, 41);     /* This is a reasonable secure and fast value */
-  else 
+  else
     {
       use_e |= 1; /* make sure this is odd */
-      mpi_set_ui (e, use_e); 
+      mpi_set_ui (e, use_e);
     }
-    
+
   n = gcry_mpi_new (nbits);
 
   p = q = NULL;
@@ -329,14 +329,14 @@ generate_std (RSA_secret_key *sk, unsigned int nbits, unsigned long use_e,
 
 
 /* Helper for generate_x931.  */
-static gcry_mpi_t 
+static gcry_mpi_t
 gen_x931_parm_xp (unsigned int nbits)
 {
   gcry_mpi_t xp;
 
   xp = gcry_mpi_snew (nbits);
   gcry_mpi_randomize (xp, nbits, GCRY_VERY_STRONG_RANDOM);
-      
+
   /* The requirement for Xp is:
 
        sqrt{2}*2^{nbits-1} <= xp <= 2^{nbits} - 1
@@ -347,13 +347,13 @@ gen_x931_parm_xp (unsigned int nbits)
   mpi_set_highbit (xp, nbits-1);
   mpi_set_bit (xp, nbits-2);
   gcry_assert ( mpi_get_nbits (xp) == nbits );
-  
+
   return xp;
-}     
+}
 
 
 /* Helper for generate_x931.  */
-static gcry_mpi_t 
+static gcry_mpi_t
 gen_x931_parm_xi (void)
 {
   gcry_mpi_t xi;
@@ -362,9 +362,9 @@ gen_x931_parm_xi (void)
   gcry_mpi_randomize (xi, 101, GCRY_VERY_STRONG_RANDOM);
   mpi_set_highbit (xi, 100);
   gcry_assert ( mpi_get_nbits (xi) == 101 );
-  
+
   return xi;
-}     
+}
 
 
 
@@ -389,19 +389,19 @@ generate_x931 (RSA_secret_key *sk, unsigned int nbits, unsigned long e_value,
   *swapped = 0;
 
   if (e_value == 1)   /* Alias for a secure value. */
-    e_value = 65537; 
+    e_value = 65537;
 
   /* Point 1 of section 4.1:  k = 1024 + 256s with S >= 0  */
   if (nbits < 1024 || (nbits % 256))
     return GPG_ERR_INV_VALUE;
-  
+
   /* Point 2:  2 <= bitlength(e) < 2^{k-2}
      Note that we do not need to check the upper bound because we use
      an unsigned long for E and thus there is no way for E to reach
      that limit.  */
   if (e_value < 3)
     return GPG_ERR_INV_VALUE;
-     
+
   /* Our implementaion requires E to be odd.  */
   if (!(e_value & 1))
     return GPG_ERR_INV_VALUE;
@@ -444,18 +444,28 @@ generate_x931 (RSA_secret_key *sk, unsigned int nbits, unsigned long e_value,
     else
       {
         /* Parameters to derive the key are given.  */
+        /* Note that we explicitly need to setup the values of tbl
+           because some compilers (e.g. OpenWatcom, IRIX) don't allow
+           to initialize a structure with automatic variables.  */
         struct { const char *name; gcry_mpi_t *value; } tbl[] = {
-          { "Xp1", &xp1 },
-          { "Xp2", &xp2 },
-          { "Xp",  &xp  },
-          { "Xq1", &xq1 },
-          { "Xq2", &xq2 },
-          { "Xq",  &xq  },
-          { NULL,  NULL }
+          { "Xp1" },
+          { "Xp2" },
+          { "Xp"  },
+          { "Xq1" },
+          { "Xq2" },
+          { "Xq"  },
+          { NULL }
         };
         int idx;
         gcry_sexp_t oneparm;
-        
+
+        tbl[0].value = &xp1;
+        tbl[1].value = &xp2;
+        tbl[2].value = &xp;
+        tbl[3].value = &xq1;
+        tbl[4].value = &xq2;
+        tbl[5].value = &xq;
+
         for (idx=0; tbl[idx].name; idx++)
           {
             oneparm = gcry_sexp_find_token (deriveparms, tbl[idx].name, 0);
@@ -477,8 +487,8 @@ generate_x931 (RSA_secret_key *sk, unsigned int nbits, unsigned long e_value,
             return GPG_ERR_MISSING_VALUE;
           }
       }
-    
-    e = mpi_alloc_set_ui (e_value); 
+
+    e = mpi_alloc_set_ui (e_value);
 
     /* Find two prime numbers.  */
     p = _gcry_derive_x931_prime (xp, xp1, xp2, e, NULL, NULL);
@@ -486,7 +496,7 @@ generate_x931 (RSA_secret_key *sk, unsigned int nbits, unsigned long e_value,
     gcry_mpi_release (xp);  xp  = NULL;
     gcry_mpi_release (xp1); xp1 = NULL;
     gcry_mpi_release (xp2); xp2 = NULL;
-    gcry_mpi_release (xq);  xq  = NULL; 
+    gcry_mpi_release (xq);  xq  = NULL;
     gcry_mpi_release (xq1); xq1 = NULL;
     gcry_mpi_release (xq2); xq2 = NULL;
     if (!p || !q)
@@ -572,7 +582,7 @@ generate_x931 (RSA_secret_key *sk, unsigned int nbits, unsigned long e_value,
 
 
 /****************
- * Test wether the secret key is valid.
+ * Test whether the secret key is valid.
  * Returns: true if this is a valid key.
  */
 static int
@@ -580,7 +590,7 @@ check_secret_key( RSA_secret_key *sk )
 {
   int rc;
   gcry_mpi_t temp = mpi_alloc( mpi_get_nlimbs(sk->p)*2 );
-  
+
   mpi_mul(temp, sk->p, sk->q );
   rc = mpi_cmp( temp, sk->n );
   mpi_free(temp);
@@ -682,9 +692,9 @@ stronger_key_check ( RSA_secret_key *skey )
  *
  * Or faster:
  *
- *      m1 = c ^ (d mod (p-1)) mod p 
- *      m2 = c ^ (d mod (q-1)) mod q 
- *      h = u * (m2 - m1) mod q 
+ *      m1 = c ^ (d mod (p-1)) mod p
+ *      m2 = c ^ (d mod (q-1)) mod q
+ *      h = u * (m2 - m1) mod q
  *      m = m1 + h * p
  *
  * Where m is OUTPUT, c is INPUT and d,n,p,q,u are elements of SKEY.
@@ -701,10 +711,10 @@ secret(gcry_mpi_t output, gcry_mpi_t input, RSA_secret_key *skey )
       gcry_mpi_t m1 = mpi_alloc_secure( mpi_get_nlimbs(skey->n)+1 );
       gcry_mpi_t m2 = mpi_alloc_secure( mpi_get_nlimbs(skey->n)+1 );
       gcry_mpi_t h  = mpi_alloc_secure( mpi_get_nlimbs(skey->n)+1 );
-      
+
       /* m1 = c ^ (d mod (p-1)) mod p */
       mpi_sub_ui( h, skey->p, 1  );
-      mpi_fdiv_r( h, skey->d, h );   
+      mpi_fdiv_r( h, skey->d, h );
       mpi_powm( m1, input, h, skey->p );
       /* m2 = c ^ (d mod (q-1)) mod q */
       mpi_sub_ui( h, skey->q, 1  );
@@ -712,13 +722,13 @@ secret(gcry_mpi_t output, gcry_mpi_t input, RSA_secret_key *skey )
       mpi_powm( m2, input, h, skey->q );
       /* h = u * ( m2 - m1 ) mod q */
       mpi_sub( h, m2, m1 );
-      if ( mpi_is_neg( h ) ) 
+      if ( mpi_is_neg( h ) )
         mpi_add ( h, h, skey->q );
-      mpi_mulm( h, skey->u, h, skey->q ); 
+      mpi_mulm( h, skey->u, h, skey->q );
       /* m = m2 + h * p */
       mpi_mul ( h, h, skey->p );
       mpi_add ( output, m1, h );
-    
+
       mpi_free ( h );
       mpi_free ( m1 );
       mpi_free ( m2 );
@@ -739,7 +749,7 @@ rsa_blind (gcry_mpi_t x, gcry_mpi_t r, gcry_mpi_t e, gcry_mpi_t n)
 
   a = gcry_mpi_snew (gcry_mpi_get_nbits (n));
   y = gcry_mpi_snew (gcry_mpi_get_nbits (n));
-  
+
   /* Now we calculate: y = (x * r^e) mod n, where r is the random
      number, e is the public exponent, x is the non-blinded data and n
      is the RSA modulus.  */
@@ -786,7 +796,7 @@ rsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
   gcry_sexp_t l1;
 
   (void)algo;
-  
+
   *retfactors = NULL; /* We don't return them.  */
 
   deriveparms = (genparms?
@@ -809,7 +819,7 @@ rsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
       gcry_sexp_release (deriveparms);
       if (!ec && r_extrainfo && swapped)
         {
-          ec = gcry_sexp_new (r_extrainfo, 
+          ec = gcry_sexp_new (r_extrainfo,
                               "(misc-key-info(p-q-swapped))", 0, 1);
           if (ec)
             {
@@ -844,7 +854,7 @@ rsa_generate_ext (int algo, unsigned int nbits, unsigned long evalue,
       skey[4] = sk.q;
       skey[5] = sk.u;
     }
-  
+
   return ec;
 }
 
@@ -876,7 +886,7 @@ rsa_check_secret_key (int algo, gcry_mpi_t *skey)
     err = GPG_ERR_NO_OBJ;  /* To check the key we need the optional
                               parameters. */
   else if (!check_secret_key (&sk))
-    err = GPG_ERR_PUBKEY_ALGO;
+    err = GPG_ERR_BAD_SECKEY;
 
   return err;
 }
@@ -890,12 +900,12 @@ rsa_encrypt (int algo, gcry_mpi_t *resarr, gcry_mpi_t data,
 
   (void)algo;
   (void)flags;
-  
+
   pk.n = pkey[0];
   pk.e = pkey[1];
   resarr[0] = mpi_alloc (mpi_get_nlimbs (pk.n));
   public (resarr[0], data, &pk);
-  
+
   return GPG_ERR_NO_ERROR;
 }
 
@@ -925,11 +935,11 @@ rsa_decrypt (int algo, gcry_mpi_t *result, gcry_mpi_t *data,
 
   /* We use blinding by default to mitigate timing attacks which can
      be practically mounted over the network as shown by Brumley and
-     Boney in 2003.  */ 
+     Boney in 2003.  */
   if (! (flags & PUBKEY_FLAG_NO_BLINDING))
     {
       /* Initialize blinding.  */
-      
+
       /* First, we need a random number r between 0 and n - 1, which
 	 is relatively prime to n (i.e. it is neither p nor q).  The
 	 random number needs to be only unpredictable, thus we employ
@@ -937,12 +947,12 @@ rsa_decrypt (int algo, gcry_mpi_t *result, gcry_mpi_t *data,
 	 gcry_mpi_randomize.  */
       r = gcry_mpi_snew (gcry_mpi_get_nbits (sk.n));
       ri = gcry_mpi_snew (gcry_mpi_get_nbits (sk.n));
-      
+
       gcry_mpi_randomize (r, gcry_mpi_get_nbits (sk.n), GCRY_WEAK_RANDOM);
       gcry_mpi_mod (r, r, sk.n);
 
       /* Calculate inverse of r.  It practically impossible that the
-         follwing test fails, thus we do not add code to release
+         following test fails, thus we do not add code to release
          allocated resources.  */
       if (!gcry_mpi_invm (ri, r, sk.n))
 	return GPG_ERR_INTERNAL;
@@ -960,7 +970,7 @@ rsa_decrypt (int algo, gcry_mpi_t *result, gcry_mpi_t *data,
     {
       /* Undo blinding.  */
       gcry_mpi_t a = gcry_mpi_copy (y);
-      
+
       gcry_mpi_release (y);
       y = rsa_unblind (a, ri, sk.n);
 
@@ -977,7 +987,7 @@ rsa_decrypt (int algo, gcry_mpi_t *result, gcry_mpi_t *data,
 
   /* Copy out result.  */
   *result = y;
-  
+
   return GPG_ERR_NO_ERROR;
 }
 
@@ -988,7 +998,7 @@ rsa_sign (int algo, gcry_mpi_t *resarr, gcry_mpi_t data, gcry_mpi_t *skey)
   RSA_secret_key sk;
 
   (void)algo;
-  
+
   sk.n = skey[0];
   sk.e = skey[1];
   sk.d = skey[2];
@@ -1026,10 +1036,12 @@ rsa_verify (int algo, gcry_mpi_t hash, gcry_mpi_t *data, gcry_mpi_t *pkey,
       log_mpidump ("             hash:", hash );
     }
 #endif /*IS_DEVELOPMENT_VERSION*/
-  /*rc = (*cmp)( opaquev, result );*/
-  rc = mpi_cmp (result, hash) ? GPG_ERR_BAD_SIGNATURE : GPG_ERR_NO_ERROR;
+  if (cmp)
+    rc = (*cmp) (opaquev, result);
+  else
+    rc = mpi_cmp (result, hash) ? GPG_ERR_BAD_SIGNATURE : GPG_ERR_NO_ERROR;
   gcry_mpi_release (result);
-  
+
   return rc;
 }
 
@@ -1051,9 +1063,9 @@ rsa_get_nbits (int algo, gcry_mpi_t *pkey)
       (rsa
         (n #00B...#)
         (e #010001#))
-        
+
    PKCS-15 says that for RSA only the modulus should be hashed -
-   however, it is not clear wether this is meant to use the raw bytes
+   however, it is not clear whether this is meant to use the raw bytes
    (assuming this is an unsigned integer) or whether the DER required
    0 should be prefixed.  We hash the raw bytes.  */
 static gpg_err_code_t
@@ -1083,17 +1095,17 @@ compute_keygrip (gcry_md_hd_t md, gcry_sexp_t keyparam)
 
 
 
-/* 
+/*
      Self-test section.
  */
 
 static const char *
 selftest_sign_1024 (gcry_sexp_t pkey, gcry_sexp_t skey)
 {
-  static const char sample_data[] = 
+  static const char sample_data[] =
     "(data (flags pkcs1)"
     " (hash sha1 #11223344556677889900aabbccddeeff10203040#))";
-  static const char sample_data_bad[] = 
+  static const char sample_data_bad[] =
     "(data (flags pkcs1)"
     " (hash sha1 #11223344556677889900aabbccddeeff80203040#))";
 
@@ -1106,7 +1118,7 @@ selftest_sign_1024 (gcry_sexp_t pkey, gcry_sexp_t skey)
   err = gcry_sexp_sscan (&data, NULL,
                          sample_data, strlen (sample_data));
   if (!err)
-    err = gcry_sexp_sscan (&data_bad, NULL, 
+    err = gcry_sexp_sscan (&data_bad, NULL,
                            sample_data_bad, strlen (sample_data_bad));
   if (err)
     {
@@ -1192,7 +1204,7 @@ selftest_encr_1024 (gcry_sexp_t pkey, gcry_sexp_t skey)
   /* Create plaintext.  The plaintext is actually a big integer number.  */
   plaintext = gcry_mpi_new (nbits);
   gcry_mpi_randomize (plaintext, nbits, GCRY_WEAK_RANDOM);
-  
+
   /* Put the plaintext into an S-expression.  */
   err = gcry_sexp_build (&plain, NULL,
                          "(data (flags raw) (value %m))", plaintext);
@@ -1252,7 +1264,7 @@ selftest_encr_1024 (gcry_sexp_t pkey, gcry_sexp_t skey)
       errtxt = "decrypt returned no plaintext";
       goto leave;
     }
-  
+
   /* Check that the decrypted plaintext matches the original  plaintext.  */
   if (gcry_mpi_cmp (plaintext, decr_plaintext))
     {
@@ -1280,13 +1292,13 @@ selftests_rsa (selftest_report_func_t report)
   gcry_error_t err;
   gcry_sexp_t skey = NULL;
   gcry_sexp_t pkey = NULL;
-  
+
   /* Convert the S-expressions into the internal representation.  */
   what = "convert";
-  err = gcry_sexp_sscan (&skey, NULL, 
+  err = gcry_sexp_sscan (&skey, NULL,
                          sample_secret_key, strlen (sample_secret_key));
   if (!err)
-    err = gcry_sexp_sscan (&pkey, NULL, 
+    err = gcry_sexp_sscan (&pkey, NULL,
                            sample_public_key, strlen (sample_public_key));
   if (err)
     {
@@ -1341,7 +1353,7 @@ run_selftests (int algo, int extended, selftest_report_func_t report)
     default:
       ec = GPG_ERR_PUBKEY_ALGO;
       break;
-        
+
     }
   return ec;
 }
@@ -1370,10 +1382,9 @@ gcry_pk_spec_t _gcry_pubkey_spec_rsa =
     rsa_verify,
     rsa_get_nbits,
   };
-pk_extra_spec_t _gcry_pubkey_extraspec_rsa = 
+pk_extra_spec_t _gcry_pubkey_extraspec_rsa =
   {
     run_selftests,
     rsa_generate_ext,
     compute_keygrip
   };
-

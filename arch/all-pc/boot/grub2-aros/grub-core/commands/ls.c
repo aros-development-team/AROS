@@ -43,23 +43,24 @@ static const struct grub_arg_option options[] =
     {0, 0, 0, 0, 0, 0}
   };
 
-static const char grub_human_sizes[] = {' ', 'K', 'M', 'G', 'T'};
+/* Helper for grub_ls_list_devices.  */
+static int
+grub_ls_print_devices (const char *name, void *data)
+{
+  int *longlist = data;
+
+  if (*longlist)
+    grub_normal_print_device_info (name);
+  else
+    grub_printf ("(%s) ", name);
+
+  return 0;
+}
 
 static grub_err_t
 grub_ls_list_devices (int longlist)
 {
-  auto int grub_ls_print_devices (const char *name);
-  int grub_ls_print_devices (const char *name)
-    {
-      if (longlist)
-	grub_normal_print_device_info (name);
-      else
-	grub_printf ("(%s) ", name);
-
-      return 0;
-    }
-
-  grub_device_iterate (grub_ls_print_devices);
+  grub_device_iterate (grub_ls_print_devices, &longlist);
   grub_xputs ("\n");
 
 #if 0
@@ -82,6 +83,93 @@ grub_ls_list_devices (int longlist)
   return 0;
 }
 
+/* Context for grub_ls_list_files.  */
+struct grub_ls_list_files_ctx
+{
+  char *dirname;
+  int all;
+  int human;
+};
+
+/* Helper for grub_ls_list_files.  */
+static int
+print_files (const char *filename, const struct grub_dirhook_info *info,
+	     void *data)
+{
+  struct grub_ls_list_files_ctx *ctx = data;
+
+  if (ctx->all || filename[0] != '.')
+    grub_printf ("%s%s ", filename, info->dir ? "/" : "");
+
+  return 0;
+}
+
+/* Helper for grub_ls_list_files.  */
+static int
+print_files_long (const char *filename, const struct grub_dirhook_info *info,
+		  void *data)
+{
+  struct grub_ls_list_files_ctx *ctx = data;
+
+  if ((! ctx->all) && (filename[0] == '.'))
+    return 0;
+
+  if (! info->dir)
+    {
+      grub_file_t file;
+      char *pathname;
+
+      if (ctx->dirname[grub_strlen (ctx->dirname) - 1] == '/')
+	pathname = grub_xasprintf ("%s%s", ctx->dirname, filename);
+      else
+	pathname = grub_xasprintf ("%s/%s", ctx->dirname, filename);
+
+      if (!pathname)
+	return 1;
+
+      /* XXX: For ext2fs symlinks are detected as files while they
+	 should be reported as directories.  */
+      grub_file_filter_disable_compression ();
+      file = grub_file_open (pathname);
+      if (! file)
+	{
+	  grub_errno = 0;
+	  grub_free (pathname);
+	  return 0;
+	}
+
+      if (! ctx->human)
+	grub_printf ("%-12llu", (unsigned long long) file->size);
+      else
+	grub_printf ("%-12s", grub_get_human_size (file->size,
+						   GRUB_HUMAN_SIZE_SHORT));
+      grub_file_close (file);
+      grub_free (pathname);
+    }
+  else
+    grub_printf ("%-12s", _("DIR"));
+
+  if (info->mtimeset)
+    {
+      struct grub_datetime datetime;
+      grub_unixtime2datetime (info->mtime, &datetime);
+      if (ctx->human)
+	grub_printf (" %d-%02d-%02d %02d:%02d:%02d %-11s ",
+		     datetime.year, datetime.month, datetime.day,
+		     datetime.hour, datetime.minute,
+		     datetime.second,
+		     grub_get_weekday_name (&datetime));
+      else
+	grub_printf (" %04d%02d%02d%02d%02d%02d ",
+		     datetime.year, datetime.month,
+		     datetime.day, datetime.hour,
+		     datetime.minute, datetime.second);
+    }
+  grub_printf ("%s%s\n", filename, info->dir ? "/" : "");
+
+  return 0;
+}
+
 static grub_err_t
 grub_ls_list_files (char *dirname, int longlist, int all, int human)
 {
@@ -89,107 +177,6 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
   grub_fs_t fs;
   const char *path;
   grub_device_t dev;
-
-  auto int print_files (const char *filename,
-			const struct grub_dirhook_info *info);
-  auto int print_files_long (const char *filename,
-			     const struct grub_dirhook_info *info);
-
-  int print_files (const char *filename, const struct grub_dirhook_info *info)
-    {
-      if (all || filename[0] != '.')
-	grub_printf ("%s%s ", filename, info->dir ? "/" : "");
-
-      return 0;
-    }
-
-  int print_files_long (const char *filename,
-			const struct grub_dirhook_info *info)
-    {
-      if ((! all) && (filename[0] == '.'))
-	return 0;
-
-      if (! info->dir)
-	{
-	  grub_file_t file;
-	  char *pathname;
-
-	  if (dirname[grub_strlen (dirname) - 1] == '/')
-	    pathname = grub_xasprintf ("%s%s", dirname, filename);
-	  else
-	    pathname = grub_xasprintf ("%s/%s", dirname, filename);
-
-	  if (!pathname)
-	    return 1;
-
-	  /* XXX: For ext2fs symlinks are detected as files while they
-	     should be reported as directories.  */
-	  grub_file_filter_disable_compression ();
-	  file = grub_file_open (pathname);
-	  if (! file)
-	    {
-	      grub_errno = 0;
-	      grub_free (pathname);
-	      return 0;
-	    }
-
-	  if (! human)
-	    grub_printf ("%-12llu", (unsigned long long) file->size);
-	  else
-	    {
-	      grub_uint64_t fsize = file->size * 100ULL;
-	      grub_uint64_t fsz = file->size;
-	      int units = 0;
-	      char buf[20];
-
-	      while (fsz / 1024)
-		{
-		  fsize = (fsize + 512) / 1024;
-		  fsz /= 1024;
-		  units++;
-		}
-
-	      if (units)
-		{
-		  grub_uint64_t whole, fraction;
-
-		  whole = grub_divmod64 (fsize, 100, &fraction);
-		  grub_snprintf (buf, sizeof (buf),
-				 "%" PRIuGRUB_UINT64_T
-				 ".%02" PRIuGRUB_UINT64_T "%c", whole, fraction,
-				 grub_human_sizes[units]);
-		  grub_printf ("%-12s", buf);
-		}
-	      else
-		grub_printf ("%-12llu", (unsigned long long) file->size);
-
-	    }
-	  grub_file_close (file);
-	  grub_free (pathname);
-	}
-      else
-	grub_printf ("%-12s", _("DIR"));
-
-      if (info->mtimeset)
-	{
-	  struct grub_datetime datetime;
-	  grub_unixtime2datetime (info->mtime, &datetime);
-	  if (human)
-	    grub_printf (" %d-%02d-%02d %02d:%02d:%02d %-11s ",
-			 datetime.year, datetime.month, datetime.day,
-			 datetime.hour, datetime.minute,
-			 datetime.second,
-			 grub_get_weekday_name (&datetime));
-	  else
-	    grub_printf (" %04d%02d%02d%02d%02d%02d ",
-			 datetime.year, datetime.month,
-			 datetime.day, datetime.hour,
-			 datetime.minute, datetime.second);
-	}
-      grub_printf ("%s%s\n", filename, info->dir ? "/" : "");
-
-      return 0;
-    }
 
   device_name = grub_file_get_device_name (dirname);
   dev = grub_device_open (device_name);
@@ -218,10 +205,16 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
     }
   else if (fs)
     {
+      struct grub_ls_list_files_ctx ctx = {
+	.dirname = dirname,
+	.all = all,
+	.human = human
+      };
+
       if (longlist)
-	(fs->dir) (dev, path, print_files_long);
+	(fs->dir) (dev, path, print_files_long, &ctx);
       else
-	(fs->dir) (dev, path, print_files);
+	(fs->dir) (dev, path, print_files, &ctx);
 
       if (grub_errno == GRUB_ERR_BAD_FILE_TYPE
 	  && path[grub_strlen (path) - 1] != '/')
@@ -247,9 +240,9 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
 	  all = 1;
 	  grub_memset (&info, 0, sizeof (info));
 	  if (longlist)
-	    print_files_long (p, &info);
+	    print_files_long (p, &info, &ctx);
 	  else
-	    print_files (p, &info);
+	    print_files (p, &info, &ctx);
 
 	  grub_free (dirname);
 	}

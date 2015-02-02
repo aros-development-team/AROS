@@ -259,6 +259,11 @@ VARIABLE(grub_relocator16_edx)
 VARIABLE(grub_relocator16_ebx)
 	.long	0
 
+	/* movl imm32, %ebp.  */
+	.byte	0x66, 0xbd
+VARIABLE(grub_relocator16_ebp)
+	.long	0
+
 	/* Cleared direction flag is of no problem with any current
 	   payload and makes this implementation easier.  */
 	cld

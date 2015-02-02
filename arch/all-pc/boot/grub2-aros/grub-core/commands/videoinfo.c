@@ -27,23 +27,28 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-static unsigned height, width, depth; 
-static struct grub_video_mode_info *current_mode;
+struct hook_ctx
+{
+  unsigned height, width, depth; 
+  struct grub_video_mode_info *current_mode;
+};
 
 static int
-hook (const struct grub_video_mode_info *info)
+hook (const struct grub_video_mode_info *info, void *hook_arg)
 {
-  if (height && width && (info->width != width || info->height != height))
+  struct hook_ctx *ctx = hook_arg;
+
+  if (ctx->height && ctx->width && (info->width != ctx->width || info->height != ctx->height))
     return 0;
 
-  if (depth && info->bpp != depth)
+  if (ctx->depth && info->bpp != ctx->depth)
     return 0;
 
   if (info->mode_number == GRUB_VIDEO_MODE_NUMBER_INVALID)
     grub_printf ("        ");
   else
     {
-      if (current_mode && info->mode_number == current_mode->mode_number)
+      if (ctx->current_mode && info->mode_number == ctx->current_mode->mode_number)
 	grub_printf ("*");
       else
 	grub_printf (" ");
@@ -68,9 +73,9 @@ hook (const struct grub_video_mode_info *info)
 		  info->blue_field_pos,
 		  info->reserved_field_pos);
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_INDEX_COLOR)
-    /* TRANSLATORS: In "packed pixel" mode you write the index of the color
-       in the palette. Synonyms include "paletted color".  */
-    grub_xputs (_("Packed pixel "));
+    /* TRANSLATORS: In "paletted color" mode you write the index of the color
+       in the palette. Synonyms include "packed pixel".  */
+    grub_xputs (_("Paletted "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_YUV)
     grub_xputs (_("YUV "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_PLANAR)
@@ -126,13 +131,14 @@ grub_cmd_videoinfo (grub_command_t cmd __attribute__ ((unused)),
 {
   grub_video_adapter_t adapter;
   grub_video_driver_id_t id;
+  struct hook_ctx ctx;
 
-  height = width = depth = 0;
+  ctx.height = ctx.width = ctx.depth = 0;
   if (argc)
     {
       char *ptr;
       ptr = args[0];
-      width = grub_strtoul (ptr, &ptr, 0);
+      ctx.width = grub_strtoul (ptr, &ptr, 0);
       if (grub_errno)
 	return grub_errno;
       if (*ptr != 'x')
@@ -140,13 +146,13 @@ grub_cmd_videoinfo (grub_command_t cmd __attribute__ ((unused)),
 			   N_("invalid video mode specification `%s'"),
 			   args[0]);
       ptr++;
-      height = grub_strtoul (ptr, &ptr, 0);
+      ctx.height = grub_strtoul (ptr, &ptr, 0);
       if (grub_errno)
 	return grub_errno;
       if (*ptr == 'x')
 	{
 	  ptr++;
-	  depth = grub_strtoul (ptr, &ptr, 0);
+	  ctx.depth = grub_strtoul (ptr, &ptr, 0);
 	  if (grub_errno)
 	    return grub_errno;
 	}
@@ -175,12 +181,12 @@ grub_cmd_videoinfo (grub_command_t cmd __attribute__ ((unused)),
 	continue;
       }
 
-    current_mode = NULL;
+    ctx.current_mode = NULL;
 
     if (adapter->id == id)
       {
 	if (grub_video_get_info (&info) == GRUB_ERR_NONE)
-	  current_mode = &info;
+	  ctx.current_mode = &info;
 	else
 	  /* Don't worry about errors.  */
 	  grub_errno = GRUB_ERR_NONE;
@@ -198,14 +204,14 @@ grub_cmd_videoinfo (grub_command_t cmd __attribute__ ((unused)),
     if (adapter->print_adapter_specific_info)
       adapter->print_adapter_specific_info ();
 
-    adapter->iterate (hook);
+    adapter->iterate (hook, &ctx);
 
     if (adapter->get_edid && adapter->get_edid (&edid_info) == GRUB_ERR_NONE)
       print_edid (&edid_info);
     else
       grub_errno = GRUB_ERR_NONE;
 
-    current_mode = NULL;
+    ctx.current_mode = NULL;
 
     if (adapter->id != id)
       {

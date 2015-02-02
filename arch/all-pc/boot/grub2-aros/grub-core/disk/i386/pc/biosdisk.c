@@ -272,21 +272,22 @@ grub_biosdisk_get_drive (const char *name)
 }
 
 static int
-grub_biosdisk_call_hook (int (*hook) (const char *name), int drive)
+grub_biosdisk_call_hook (grub_disk_dev_iterate_hook_t hook, void *hook_data,
+			 int drive)
 {
   char name[10];
 
   if (cd_drive && drive == cd_drive)
-    return hook ("cd");
+    return hook ("cd", hook_data);
 
   grub_snprintf (name, sizeof (name),
 		 (drive & 0x80) ? "hd%d" : "fd%d", drive & (~0x80));
-  return hook (name);
+  return hook (name, hook_data);
 }
 
 static int
-grub_biosdisk_iterate (int (*hook) (const char *name),
-		       grub_disk_pull_t pull __attribute__ ((unused)))
+grub_biosdisk_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
+		       grub_disk_pull_t pull)
 {
   int num_floppies;
   int drive;
@@ -304,7 +305,7 @@ grub_biosdisk_iterate (int (*hook) (const char *name),
 	      break;
 	    }
 
-	  if (grub_biosdisk_call_hook (hook, drive))
+	  if (grub_biosdisk_call_hook (hook, hook_data, drive))
 	    return 1;
 	}
       return 0;
@@ -312,14 +313,14 @@ grub_biosdisk_iterate (int (*hook) (const char *name),
     case GRUB_DISK_PULL_REMOVABLE:
       if (cd_drive)
 	{
-	  if (grub_biosdisk_call_hook (hook, cd_drive))
+	  if (grub_biosdisk_call_hook (hook, hook_data, cd_drive))
 	    return 1;
 	}
 
       /* For floppy disks, we can get the number safely.  */
       num_floppies = grub_biosdisk_get_num_floppies ();
       for (drive = 0; drive < num_floppies; drive++)
-	if (grub_biosdisk_call_hook (hook, drive))
+	if (grub_biosdisk_call_hook (hook, hook_data, drive))
 	  return 1;
       return 0;
     default:
@@ -381,7 +382,8 @@ grub_biosdisk_open (const char *name, grub_disk_t disk)
                 /* Some buggy BIOSes doesn't return the total sectors
                    correctly but returns zero. So if it is zero, compute
                    it by C/H/S returned by the LBA BIOS call.  */
-                total_sectors = drp->cylinders * drp->heads * drp->sectors;
+                total_sectors = ((grub_uint64_t) drp->cylinders)
+		  * drp->heads * drp->sectors;
 	      if (drp->bytes_per_sector
 		  && !(drp->bytes_per_sector & (drp->bytes_per_sector - 1))
 		  && drp->bytes_per_sector >= 512
@@ -418,11 +420,24 @@ grub_biosdisk_open (const char *name, grub_disk_t disk)
 	    }
         }
 
+      if (data->sectors == 0)
+	data->sectors = 63;
+      if (data->heads == 0)
+	data->heads = 255;
+
       if (! total_sectors)
-        total_sectors = data->cylinders * data->heads * data->sectors;
+        total_sectors = ((grub_uint64_t) data->cylinders)
+	  * data->heads * data->sectors;
     }
 
   disk->total_sectors = total_sectors;
+  /* Limit the max to 0x7f because of Phoenix EDD.  */
+  disk->max_agglomerate = 0x7f >> GRUB_DISK_CACHE_BITS;
+  COMPILE_TIME_ASSERT ((0x7f >> GRUB_DISK_CACHE_BITS
+			<< (GRUB_DISK_SECTOR_BITS + GRUB_DISK_CACHE_BITS))
+		       + sizeof (struct grub_biosdisk_dap)
+		       < GRUB_MEMORY_MACHINE_SCRATCH_SIZE);
+
   disk->data = data;
 
   return GRUB_ERR_NONE;
@@ -446,6 +461,14 @@ grub_biosdisk_rw (int cmd, grub_disk_t disk,
 		  unsigned segment)
 {
   struct grub_biosdisk_data *data = disk->data;
+
+  /* VirtualBox fails with sectors above 2T on CDs.
+     Since even BD-ROMS are never that big anyway, return error.  */
+  if ((data->flags & GRUB_BIOSDISK_FLAG_CDROM)
+      && (sector >> 32))
+    return grub_error (GRUB_ERR_OUT_OF_RANGE,
+		       N_("attempt to read or write outside of disk `%s'"),
+		       disk->name);
 
   if (data->flags & GRUB_BIOSDISK_FLAG_LBA)
     {
@@ -546,10 +569,6 @@ get_safe_sectors (grub_disk_t disk, grub_disk_addr_t sector)
   grub_divmod64 (sector, sectors, &offset);
 
   size = sectors - offset;
-
-  /* Limit the max to 0x7f because of Phoenix EDD.  */
-  if (size > ((0x7fU << GRUB_DISK_SECTOR_BITS) >> disk->log_sector_size))
-    size = ((0x7fU << GRUB_DISK_SECTOR_BITS) >> disk->log_sector_size);
 
   return size;
 }

@@ -58,6 +58,8 @@
 #define GRUB_EFI_OPEN_PROTOCOL_BY_DRIVER		0x00000010
 #define GRUB_EFI_OPEN_PROTOCOL_BY_EXCLUSIVE		0x00000020
 
+#define GRUB_EFI_OS_INDICATIONS_BOOT_TO_FW_UI	0x0000000000000001ULL
+
 #define GRUB_EFI_VARIABLE_NON_VOLATILE		0x0000000000000001
 #define GRUB_EFI_VARIABLE_BOOTSERVICE_ACCESS	0x0000000000000002
 #define GRUB_EFI_VARIABLE_RUNTIME_ACCESS	0x0000000000000004
@@ -104,9 +106,149 @@
     { 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b } \
   }
 
+#define GRUB_EFI_SIMPLE_TEXT_INPUT_PROTOCOL_GUID \
+  { 0x387477c1, 0x69c7, 0x11d2, \
+    { 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b } \
+  }
+
+#define EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL_GUID \
+  { 0xdd9e7534, 0x7762, 0x4698, \
+    { 0x8c, 0x14, 0xf5, 0x85, 0x17, 0xa6, 0x25, 0xaa } \
+  }
+
+#define GRUB_EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_GUID \
+  { 0x387477c2, 0x69c7, 0x11d2, \
+    { 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b } \
+  }
+
+#define GRUB_EFI_SIMPLE_POINTER_PROTOCOL_GUID \
+  { 0x31878c87, 0xb75, 0x11d5, \
+    { 0x9a, 0x4f, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } \
+  }
+
+#define GRUB_EFI_ABSOLUTE_POINTER_PROTOCOL_GUID \
+  { 0x8D59D32B, 0xC655, 0x4AE9, \
+    { 0x9B, 0x15, 0xF2, 0x59, 0x04, 0x99, 0x2A, 0x43 } \
+  }
+
+#define GRUB_EFI_DRIVER_BINDING_PROTOCOL_GUID \
+  { 0x18A031AB, 0xB443, 0x4D1A, \
+    { 0xA5, 0xC0, 0x0C, 0x09, 0x26, 0x1E, 0x9F, 0x71 } \
+  }
+
+#define GRUB_EFI_LOADED_IMAGE_PROTOCOL_GUID \
+  { 0x5B1B31A1, 0x9562, 0x11d2, \
+    { 0x8E, 0x3F, 0x00, 0xA0, 0xC9, 0x69, 0x72, 0x3B } \
+  }
+
+#define GRUB_EFI_LOAD_FILE_PROTOCOL_GUID \
+  { 0x56EC3091, 0x954C, 0x11d2, \
+    { 0x8E, 0x3F, 0x00, 0xA0, 0xC9, 0x69, 0x72, 0x3B } \
+  }
+
+#define GRUB_EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID \
+  { 0x0964e5b22, 0x6459, 0x11d2, \
+    { 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b } \
+  }
+
+#define GRUB_EFI_TAPE_IO_PROTOCOL_GUID \
+  { 0x1e93e633, 0xd65a, 0x459e, \
+    { 0xab, 0x84, 0x93, 0xd9, 0xec, 0x26, 0x6d, 0x18 } \
+  }
+
+#define GRUB_EFI_UNICODE_COLLATION_PROTOCOL_GUID \
+  { 0x1d85cd7f, 0xf43d, 0x11d2, \
+    { 0x9a, 0x0c, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } \
+  }
+
+#define GRUB_EFI_SCSI_IO_PROTOCOL_GUID \
+  { 0x932f47e6, 0x2362, 0x4002, \
+    { 0x80, 0x3e, 0x3c, 0xd5, 0x4b, 0x13, 0x8f, 0x85 } \
+  }
+
+#define GRUB_EFI_USB2_HC_PROTOCOL_GUID \
+  { 0x3e745226, 0x9818, 0x45b6, \
+    { 0xa2, 0xac, 0xd7, 0xcd, 0x0e, 0x8b, 0xa2, 0xbc } \
+  }
+
+#define GRUB_EFI_DEBUG_SUPPORT_PROTOCOL_GUID \
+  { 0x2755590C, 0x6F3C, 0x42FA, \
+    { 0x9E, 0xA4, 0xA3, 0xBA, 0x54, 0x3C, 0xDA, 0x25 } \
+  }
+
+#define GRUB_EFI_DEBUGPORT_PROTOCOL_GUID \
+  { 0xEBA4E8D2, 0x3858, 0x41EC, \
+    { 0xA2, 0x81, 0x26, 0x47, 0xBA, 0x96, 0x60, 0xD0 } \
+  }
+
+#define GRUB_EFI_DECOMPRESS_PROTOCOL_GUID \
+  { 0xd8117cfe, 0x94a6, 0x11d4, \
+    { 0x9a, 0x3a, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } \
+  }
+
+#define GRUB_EFI_DEVICE_PATH_TO_TEXT_PROTOCOL_GUID \
+  { 0x8b843e20, 0x8132, 0x4852, \
+    { 0x90, 0xcc, 0x55, 0x1a, 0x4e, 0x4a, 0x7f, 0x1c } \
+  }
+
+#define GRUB_EFI_DEVICE_PATH_UTILITIES_PROTOCOL_GUID \
+  { 0x379be4e, 0xd706, 0x437d, \
+    { 0xb0, 0x37, 0xed, 0xb8, 0x2f, 0xb7, 0x72, 0xa4 } \
+  }
+
+#define GRUB_EFI_DEVICE_PATH_FROM_TEXT_PROTOCOL_GUID \
+  { 0x5c99a21, 0xc70f, 0x4ad2, \
+    { 0x8a, 0x5f, 0x35, 0xdf, 0x33, 0x43, 0xf5, 0x1e } \
+  }
+
+#define GRUB_EFI_ACPI_TABLE_PROTOCOL_GUID \
+  { 0xffe06bdd, 0x6107, 0x46a6, \
+    { 0x7b, 0xb2, 0x5a, 0x9c, 0x7e, 0xc5, 0x27, 0x5c} \
+  }
+
+#define GRUB_EFI_HII_CONFIG_ROUTING_PROTOCOL_GUID \
+  { 0x587e72d7, 0xcc50, 0x4f79, \
+    { 0x82, 0x09, 0xca, 0x29, 0x1f, 0xc1, 0xa1, 0x0f } \
+  }
+
+#define GRUB_EFI_HII_DATABASE_PROTOCOL_GUID \
+  { 0xef9fc172, 0xa1b2, 0x4693, \
+    { 0xb3, 0x27, 0x6d, 0x32, 0xfc, 0x41, 0x60, 0x42 } \
+  }
+
+#define GRUB_EFI_HII_STRING_PROTOCOL_GUID \
+  { 0xfd96974, 0x23aa, 0x4cdc, \
+    { 0xb9, 0xcb, 0x98, 0xd1, 0x77, 0x50, 0x32, 0x2a } \
+  }
+
+#define GRUB_EFI_HII_IMAGE_PROTOCOL_GUID \
+  { 0x31a6406a, 0x6bdf, 0x4e46, \
+    { 0xb2, 0xa2, 0xeb, 0xaa, 0x89, 0xc4, 0x9, 0x20 } \
+  }
+
+#define GRUB_EFI_HII_FONT_PROTOCOL_GUID \
+  { 0xe9ca4775, 0x8657, 0x47fc, \
+    { 0x97, 0xe7, 0x7e, 0xd6, 0x5a, 0x8, 0x43, 0x24 } \
+  }
+
+#define GRUB_EFI_HII_CONFIGURATION_ACCESS_PROTOCOL_GUID \
+  { 0x330d4706, 0xf2a0, 0x4e4f, \
+    { 0xa3, 0x69, 0xb6, 0x6f, 0xa8, 0xd5, 0x43, 0x85 } \
+  }
+
+#define GRUB_EFI_COMPONENT_NAME2_PROTOCOL_GUID \
+  { 0x6a7a5cff, 0xe8d9, 0x4f70, \
+    { 0xba, 0xda, 0x75, 0xab, 0x30, 0x25, 0xce, 0x14} \
+  }
+
+#define GRUB_EFI_USB_IO_PROTOCOL_GUID \
+  { 0x2B2F68D6, 0x0CD2, 0x44cf, \
+    { 0x8E, 0x8B, 0xBB, 0xA2, 0x0B, 0x1B, 0x5B, 0x75 } \
+  }
+
 #define GRUB_EFI_MPS_TABLE_GUID	\
   { 0xeb9d2d2f, 0x2d88, 0x11d3, \
-    { 0x9a, 0x16, 0x0, 0x90, 0x27, 0x3f, 0xc1, 0x4d } \
+    { 0x9a, 0x16, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } \
   }
 
 #define GRUB_EFI_ACPI_TABLE_GUID	\
@@ -132,6 +274,16 @@
 #define GRUB_EFI_HCDP_TABLE_GUID \
   { 0xf951938d, 0x620b, 0x42ef, \
       { 0x82, 0x79, 0xa8, 0x4b, 0x79, 0x61, 0x78, 0x98 } \
+  }
+
+#define GRUB_EFI_DEVICE_TREE_GUID \
+  { 0xb1b621d5, 0xf19c, 0x41a5, \
+      { 0x83, 0x0b, 0xd9, 0x15, 0x2c, 0x69, 0xaa, 0xe0 } \
+  }
+
+#define GRUB_EFI_VENDOR_APPLE_GUID \
+  { 0x2B0585EB, 0xD8B8, 0x49A9,	\
+      { 0x8B, 0x8C, 0xE2, 0x1B, 0x01, 0xAE, 0xF2, 0xB7 } \
   }
 
 struct grub_efi_sal_system_table
@@ -307,8 +459,13 @@ typedef enum grub_efi_reset_type grub_efi_reset_type_t;
 
 /* Types.  */
 typedef char grub_efi_boolean_t;
-typedef long grub_efi_intn_t;
-typedef unsigned long grub_efi_uintn_t;
+#if GRUB_CPU_SIZEOF_VOID_P == 8
+typedef grub_int64_t grub_efi_intn_t;
+typedef grub_uint64_t grub_efi_uintn_t;
+#else
+typedef grub_int32_t grub_efi_intn_t;
+typedef grub_uint32_t grub_efi_uintn_t;
+#endif
 typedef grub_int8_t grub_efi_int8_t;
 typedef grub_uint8_t grub_efi_uint8_t;
 typedef grub_int16_t grub_efi_int16_t;
@@ -320,12 +477,10 @@ typedef grub_uint64_t grub_efi_uint64_t;
 typedef grub_uint8_t grub_efi_char8_t;
 typedef grub_uint16_t grub_efi_char16_t;
 
-#define PRIxGRUB_EFI_UINTN_T "lx"
-
 typedef grub_efi_intn_t grub_efi_status_t;
 
 #define GRUB_EFI_ERROR_CODE(value)	\
-  ((1L << (sizeof (grub_efi_status_t) * 8 - 1)) | (value))
+  ((((grub_efi_status_t) 1) << (sizeof (grub_efi_status_t) * 8 - 1)) | (value))
 
 #define GRUB_EFI_WARNING_CODE(value)	(value)
 
@@ -384,6 +539,15 @@ struct grub_efi_guid
 } __attribute__ ((aligned(8)));
 typedef struct grub_efi_guid grub_efi_guid_t;
 
+struct grub_efi_packed_guid
+{
+  grub_uint32_t data1;
+  grub_uint16_t data2;
+  grub_uint16_t data3;
+  grub_uint8_t data4[8];
+} GRUB_PACKED;
+typedef struct grub_efi_packed_guid grub_efi_packed_guid_t;
+
 /* XXX although the spec does not specify the padding, this actually
    must have the padding!  */
 struct grub_efi_memory_descriptor
@@ -394,7 +558,7 @@ struct grub_efi_memory_descriptor
   grub_efi_virtual_address_t virtual_start;
   grub_efi_uint64_t num_pages;
   grub_efi_uint64_t attribute;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_memory_descriptor grub_efi_memory_descriptor_t;
 
 /* Device Path definitions.  */
@@ -402,8 +566,8 @@ struct grub_efi_device_path
 {
   grub_efi_uint8_t type;
   grub_efi_uint8_t subtype;
-  grub_efi_uint8_t length[2];
-};
+  grub_efi_uint16_t length;
+} GRUB_PACKED;
 typedef struct grub_efi_device_path grub_efi_device_path_t;
 /* XXX EFI does not define EFI_DEVICE_PATH_PROTOCOL but uses it.
    It seems to be identical to EFI_DEVICE_PATH.  */
@@ -411,8 +575,7 @@ typedef struct grub_efi_device_path grub_efi_device_path_protocol_t;
 
 #define GRUB_EFI_DEVICE_PATH_TYPE(dp)		((dp)->type & 0x7f)
 #define GRUB_EFI_DEVICE_PATH_SUBTYPE(dp)	((dp)->subtype)
-#define GRUB_EFI_DEVICE_PATH_LENGTH(dp)		\
-  ((dp)->length[0] | ((grub_efi_uint16_t) ((dp)->length[1]) << 8))
+#define GRUB_EFI_DEVICE_PATH_LENGTH(dp)		((dp)->length)
 
 /* The End of Device Path nodes.  */
 #define GRUB_EFI_END_DEVICE_PATH_TYPE			(0xff & 0x7f)
@@ -439,7 +602,7 @@ struct grub_efi_pci_device_path
   grub_efi_device_path_t header;
   grub_efi_uint8_t function;
   grub_efi_uint8_t device;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_pci_device_path grub_efi_pci_device_path_t;
 
 #define GRUB_EFI_PCCARD_DEVICE_PATH_SUBTYPE		2
@@ -448,7 +611,7 @@ struct grub_efi_pccard_device_path
 {
   grub_efi_device_path_t header;
   grub_efi_uint8_t function;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_pccard_device_path grub_efi_pccard_device_path_t;
 
 #define GRUB_EFI_MEMORY_MAPPED_DEVICE_PATH_SUBTYPE	3
@@ -459,7 +622,7 @@ struct grub_efi_memory_mapped_device_path
   grub_efi_uint32_t memory_type;
   grub_efi_physical_address_t start_address;
   grub_efi_physical_address_t end_address;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_memory_mapped_device_path grub_efi_memory_mapped_device_path_t;
 
 #define GRUB_EFI_VENDOR_DEVICE_PATH_SUBTYPE		4
@@ -467,9 +630,9 @@ typedef struct grub_efi_memory_mapped_device_path grub_efi_memory_mapped_device_
 struct grub_efi_vendor_device_path
 {
   grub_efi_device_path_t header;
-  grub_efi_guid_t vendor_guid;
+  grub_efi_packed_guid_t vendor_guid;
   grub_efi_uint8_t vendor_defined_data[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_vendor_device_path grub_efi_vendor_device_path_t;
 
 #define GRUB_EFI_CONTROLLER_DEVICE_PATH_SUBTYPE		5
@@ -478,7 +641,7 @@ struct grub_efi_controller_device_path
 {
   grub_efi_device_path_t header;
   grub_efi_uint32_t controller_number;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_controller_device_path grub_efi_controller_device_path_t;
 
 /* ACPI Device Path.  */
@@ -491,7 +654,7 @@ struct grub_efi_acpi_device_path
   grub_efi_device_path_t header;
   grub_efi_uint32_t hid;
   grub_efi_uint32_t uid;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_acpi_device_path grub_efi_acpi_device_path_t;
 
 #define GRUB_EFI_EXPANDED_ACPI_DEVICE_PATH_SUBTYPE	2
@@ -503,7 +666,7 @@ struct grub_efi_expanded_acpi_device_path
   grub_efi_uint32_t uid;
   grub_efi_uint32_t cid;
   char hidstr[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_expanded_acpi_device_path grub_efi_expanded_acpi_device_path_t;
 
 #define GRUB_EFI_EXPANDED_ACPI_HIDSTR(dp)	\
@@ -526,7 +689,7 @@ struct grub_efi_atapi_device_path
   grub_efi_uint8_t primary_secondary;
   grub_efi_uint8_t slave_master;
   grub_efi_uint16_t lun;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_atapi_device_path grub_efi_atapi_device_path_t;
 
 #define GRUB_EFI_SCSI_DEVICE_PATH_SUBTYPE		2
@@ -536,7 +699,7 @@ struct grub_efi_scsi_device_path
   grub_efi_device_path_t header;
   grub_efi_uint16_t pun;
   grub_efi_uint16_t lun;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_scsi_device_path grub_efi_scsi_device_path_t;
 
 #define GRUB_EFI_FIBRE_CHANNEL_DEVICE_PATH_SUBTYPE	3
@@ -547,7 +710,7 @@ struct grub_efi_fibre_channel_device_path
   grub_efi_uint32_t reserved;
   grub_efi_uint64_t wwn;
   grub_efi_uint64_t lun;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_fibre_channel_device_path grub_efi_fibre_channel_device_path_t;
 
 #define GRUB_EFI_1394_DEVICE_PATH_SUBTYPE		4
@@ -557,7 +720,7 @@ struct grub_efi_1394_device_path
   grub_efi_device_path_t header;
   grub_efi_uint32_t reserved;
   grub_efi_uint64_t guid;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_1394_device_path grub_efi_1394_device_path_t;
 
 #define GRUB_EFI_USB_DEVICE_PATH_SUBTYPE		5
@@ -566,8 +729,8 @@ struct grub_efi_usb_device_path
 {
   grub_efi_device_path_t header;
   grub_efi_uint8_t parent_port_number;
-  grub_efi_uint8_t interface;
-} __attribute__ ((packed));
+  grub_efi_uint8_t usb_interface;
+} GRUB_PACKED;
 typedef struct grub_efi_usb_device_path grub_efi_usb_device_path_t;
 
 #define GRUB_EFI_USB_CLASS_DEVICE_PATH_SUBTYPE		15
@@ -580,7 +743,7 @@ struct grub_efi_usb_class_device_path
   grub_efi_uint8_t device_class;
   grub_efi_uint8_t device_subclass;
   grub_efi_uint8_t device_protocol;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_usb_class_device_path grub_efi_usb_class_device_path_t;
 
 #define GRUB_EFI_I2O_DEVICE_PATH_SUBTYPE		6
@@ -589,7 +752,7 @@ struct grub_efi_i2o_device_path
 {
   grub_efi_device_path_t header;
   grub_efi_uint32_t tid;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_i2o_device_path grub_efi_i2o_device_path_t;
 
 #define GRUB_EFI_MAC_ADDRESS_DEVICE_PATH_SUBTYPE	11
@@ -599,7 +762,7 @@ struct grub_efi_mac_address_device_path
   grub_efi_device_path_t header;
   grub_efi_mac_address_t mac_address;
   grub_efi_uint8_t if_type;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_mac_address_device_path grub_efi_mac_address_device_path_t;
 
 #define GRUB_EFI_IPV4_DEVICE_PATH_SUBTYPE		12
@@ -613,7 +776,7 @@ struct grub_efi_ipv4_device_path
   grub_efi_uint16_t remote_port;
   grub_efi_uint16_t protocol;
   grub_efi_uint8_t static_ip_address;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_ipv4_device_path grub_efi_ipv4_device_path_t;
 
 #define GRUB_EFI_IPV6_DEVICE_PATH_SUBTYPE		13
@@ -627,7 +790,7 @@ struct grub_efi_ipv6_device_path
   grub_efi_uint16_t remote_port;
   grub_efi_uint16_t protocol;
   grub_efi_uint8_t static_ip_address;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_ipv6_device_path grub_efi_ipv6_device_path_t;
 
 #define GRUB_EFI_INFINIBAND_DEVICE_PATH_SUBTYPE		9
@@ -640,7 +803,7 @@ struct grub_efi_infiniband_device_path
   grub_efi_uint64_t remote_id;
   grub_efi_uint64_t target_port_id;
   grub_efi_uint64_t device_id;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_infiniband_device_path grub_efi_infiniband_device_path_t;
 
 #define GRUB_EFI_UART_DEVICE_PATH_SUBTYPE		14
@@ -653,18 +816,21 @@ struct grub_efi_uart_device_path
   grub_efi_uint8_t data_bits;
   grub_efi_uint8_t parity;
   grub_efi_uint8_t stop_bits;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_uart_device_path grub_efi_uart_device_path_t;
 
-#define GRUB_EFI_VENDOR_MESSAGING_DEVICE_PATH_SUBTYPE	10
+#define GRUB_EFI_SATA_DEVICE_PATH_SUBTYPE		18
 
-struct grub_efi_vendor_messaging_device_path
+struct grub_efi_sata_device_path
 {
   grub_efi_device_path_t header;
-  grub_efi_guid_t vendor_guid;
-  grub_efi_uint8_t vendor_defined_data[0];
-} __attribute__ ((packed));
-typedef struct grub_efi_vendor_messaging_device_path grub_efi_vendor_messaging_device_path_t;
+  grub_efi_uint16_t hba_port;
+  grub_efi_uint16_t multiplier_port;
+  grub_efi_uint16_t lun;
+} GRUB_PACKED;
+typedef struct grub_efi_sata_device_path grub_efi_sata_device_path_t;
+
+#define GRUB_EFI_VENDOR_MESSAGING_DEVICE_PATH_SUBTYPE	10
 
 /* Media Device Path.  */
 #define GRUB_EFI_MEDIA_DEVICE_PATH_TYPE			4
@@ -677,10 +843,10 @@ struct grub_efi_hard_drive_device_path
   grub_efi_uint32_t partition_number;
   grub_efi_lba_t partition_start;
   grub_efi_lba_t partition_size;
-  grub_efi_uint8_t partition_signature[8];
-  grub_efi_uint8_t mbr_type;
+  grub_efi_uint8_t partition_signature[16];
+  grub_efi_uint8_t partmap_type;
   grub_efi_uint8_t signature_type;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_hard_drive_device_path grub_efi_hard_drive_device_path_t;
 
 #define GRUB_EFI_CDROM_DEVICE_PATH_SUBTYPE		2
@@ -691,7 +857,7 @@ struct grub_efi_cdrom_device_path
   grub_efi_uint32_t boot_entry;
   grub_efi_lba_t partition_start;
   grub_efi_lba_t partition_size;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_cdrom_device_path grub_efi_cdrom_device_path_t;
 
 #define GRUB_EFI_VENDOR_MEDIA_DEVICE_PATH_SUBTYPE	3
@@ -699,9 +865,9 @@ typedef struct grub_efi_cdrom_device_path grub_efi_cdrom_device_path_t;
 struct grub_efi_vendor_media_device_path
 {
   grub_efi_device_path_t header;
-  grub_efi_guid_t vendor_guid;
+  grub_efi_packed_guid_t vendor_guid;
   grub_efi_uint8_t vendor_defined_data[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_vendor_media_device_path grub_efi_vendor_media_device_path_t;
 
 #define GRUB_EFI_FILE_PATH_DEVICE_PATH_SUBTYPE		4
@@ -710,7 +876,7 @@ struct grub_efi_file_path_device_path
 {
   grub_efi_device_path_t header;
   grub_efi_char16_t path_name[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_file_path_device_path grub_efi_file_path_device_path_t;
 
 #define GRUB_EFI_PROTOCOL_DEVICE_PATH_SUBTYPE		5
@@ -718,8 +884,8 @@ typedef struct grub_efi_file_path_device_path grub_efi_file_path_device_path_t;
 struct grub_efi_protocol_device_path
 {
   grub_efi_device_path_t header;
-  grub_efi_guid_t guid;
-} __attribute__ ((packed));
+  grub_efi_packed_guid_t guid;
+} GRUB_PACKED;
 typedef struct grub_efi_protocol_device_path grub_efi_protocol_device_path_t;
 
 #define GRUB_EFI_PIWG_DEVICE_PATH_SUBTYPE		6
@@ -727,8 +893,8 @@ typedef struct grub_efi_protocol_device_path grub_efi_protocol_device_path_t;
 struct grub_efi_piwg_device_path
 {
   grub_efi_device_path_t header;
-  grub_efi_guid_t guid __attribute__ ((packed));
-} __attribute__ ((packed));
+  grub_efi_packed_guid_t guid;
+} GRUB_PACKED;
 typedef struct grub_efi_piwg_device_path grub_efi_piwg_device_path_t;
 
 
@@ -743,7 +909,7 @@ struct grub_efi_bios_device_path
   grub_efi_uint16_t device_type;
   grub_efi_uint16_t status_flags;
   char description[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_bios_device_path grub_efi_bios_device_path_t;
 
 struct grub_efi_open_protocol_information_entry
@@ -768,7 +934,7 @@ struct grub_efi_time
   grub_efi_int16_t time_zone;
   grub_efi_uint8_t daylight;
   grub_efi_uint8_t pad2;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_time grub_efi_time_t;
 
 struct grub_efi_time_capabilities
@@ -873,8 +1039,8 @@ struct grub_efi_boot_services
    grub_efi_status_t
    (*install_protocol_interface) (grub_efi_handle_t *handle,
 				  grub_efi_guid_t *protocol,
-				  grub_efi_interface_type_t interface_type,
-				  void *interface);
+				  grub_efi_interface_type_t protocol_interface_type,
+				  void *protocol_interface);
 
   grub_efi_status_t
   (*reinstall_protocol_interface) (grub_efi_handle_t handle,
@@ -885,12 +1051,12 @@ struct grub_efi_boot_services
   grub_efi_status_t
   (*uninstall_protocol_interface) (grub_efi_handle_t handle,
 				   grub_efi_guid_t *protocol,
-				   void *interface);
+				   void *protocol_interface);
 
   grub_efi_status_t
   (*handle_protocol) (grub_efi_handle_t handle,
 		      grub_efi_guid_t *protocol,
-		      void **interface);
+		      void **protocol_interface);
 
   void *reserved;
 
@@ -966,7 +1132,7 @@ struct grub_efi_boot_services
   grub_efi_status_t
   (*open_protocol) (grub_efi_handle_t handle,
 		    grub_efi_guid_t *protocol,
-		    void **interface,
+		    void **protocol_interface,
 		    grub_efi_handle_t agent_handle,
 		    grub_efi_handle_t controller_handle,
 		    grub_efi_uint32_t attributes);
@@ -985,7 +1151,7 @@ struct grub_efi_boot_services
 
   grub_efi_status_t
   (*protocols_per_handle) (grub_efi_handle_t handle,
-			   grub_efi_guid_t ***protocol_buffer,
+			   grub_efi_packed_guid_t ***protocol_buffer,
 			   grub_efi_uintn_t *protocol_buffer_count);
 
   grub_efi_status_t
@@ -998,7 +1164,7 @@ struct grub_efi_boot_services
   grub_efi_status_t
   (*locate_protocol) (grub_efi_guid_t *protocol,
 		      void *registration,
-		      void **interface);
+		      void **protocol_interface);
 
   grub_efi_status_t
   (*install_multiple_protocol_interfaces) (grub_efi_handle_t *handle, ...);
@@ -1066,7 +1232,7 @@ struct grub_efi_runtime_services
 
   grub_efi_status_t
   (*set_variable) (grub_efi_char16_t *variable_name,
-		   grub_efi_guid_t *vendor_guid,
+		   const grub_efi_guid_t *vendor_guid,
 		   grub_efi_uint32_t attributes,
 		   grub_efi_uintn_t data_size,
 		   void *data);
@@ -1084,9 +1250,9 @@ typedef struct grub_efi_runtime_services grub_efi_runtime_services_t;
 
 struct grub_efi_configuration_table
 {
-  grub_efi_guid_t vendor_guid;
+  grub_efi_packed_guid_t vendor_guid;
   void *vendor_table;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 typedef struct grub_efi_configuration_table grub_efi_configuration_table_t;
 
 #define GRUB_EFIEMU_SYSTEM_TABLE_SIGNATURE 0x5453595320494249LL
@@ -1103,7 +1269,8 @@ struct grub_efi_serial_io_interface
 				       grub_efi_parity_type_t parity,
 				       grub_uint8_t word_len,
 				       grub_efi_stop_bits_t stop_bits);
-  void (*set_control_bits) (void);
+  grub_efi_status_t (*set_control_bits) (struct grub_efi_serial_io_interface *this,
+					 grub_efi_uint32_t flags);
   void (*get_control_bits) (void);
   grub_efi_status_t (*write) (struct grub_efi_serial_io_interface *this,
 			      grub_efi_uintn_t *buf_size,
@@ -1392,7 +1559,8 @@ struct grub_efi_block_io
 };
 typedef struct grub_efi_block_io grub_efi_block_io_t;
 
-#if (GRUB_TARGET_SIZEOF_VOID_P == 4) || defined (__ia64__)
+#if (GRUB_TARGET_SIZEOF_VOID_P == 4) || defined (__ia64__) \
+  || defined (__aarch64__) || defined (__MINGW64__) || defined (__CYGWIN__)
 
 #define efi_call_0(func)		func()
 #define efi_call_1(func, a)		func(a)

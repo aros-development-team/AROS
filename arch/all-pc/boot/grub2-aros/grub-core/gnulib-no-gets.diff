@@ -1,0 +1,10 @@
+--- /tmp/x.diff	2013-04-11 16:51:42.777873536 +0200
++++ grub-core/gnulib/stdio.in.h	2013-04-11 16:51:49.917873298 +0200
+@@ -700,7 +700,6 @@
+    removed it.  */
+ #undef gets
+ #if HAVE_RAW_DECL_GETS
+-_GL_WARN_ON_USE (gets, "gets is a security hole - use fgets instead");
+ #endif
+ 
+ 

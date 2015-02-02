@@ -68,10 +68,10 @@ UPDATEPOFILES = @UPDATEPOFILES@
 DUMMYPOFILES = @DUMMYPOFILES@
 DISTFILES.common = Makefile.in.in remove-potcdate.sin \
 $(DISTFILES.common.extra1) $(DISTFILES.common.extra2) \
-$(DISTFILES.common.extra3) $(DISTFILES.common.extra4)
+$(DISTFILES.common.extra3) $(DISTFILES.common.extra4) $(DISTFILES.common.extra5)
 DISTFILES = $(DISTFILES.common) Makevars POTFILES.in POTFILES-shell.in \
 $(POFILES) $(GMOFILES) \
-$(DISTFILES.extra1) $(DISTFILES.extra2) $(DISTFILES.extra3) $(DISTFILES.extra4) grub.d.sed README
+$(DISTFILES.extra1) $(DISTFILES.extra2) $(DISTFILES.extra3) $(DISTFILES.extra4) $(DISTFILES.extra5) grub.d.sed README
 
 POTFILES = \
 

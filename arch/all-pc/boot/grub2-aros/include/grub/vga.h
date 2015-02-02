@@ -57,6 +57,20 @@ grub_vga_cr_read (grub_uint8_t addr)
 }
 
 static inline void
+grub_vga_cr_bw_write (grub_uint8_t val, grub_uint8_t addr)
+{
+  grub_outb (addr, GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_CR_BW_INDEX);
+  grub_outb (val, GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_CR_BW_DATA);
+}
+
+static inline grub_uint8_t
+grub_vga_cr_bw_read (grub_uint8_t addr)
+{
+  grub_outb (addr, GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_CR_BW_INDEX);
+  return grub_inb (GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_CR_BW_DATA);
+}
+
+static inline void
 grub_vga_sr_write (grub_uint8_t val, grub_uint8_t addr)
 {
   grub_outb (addr, GRUB_MACHINE_PCI_IO_BASE + GRUB_VGA_IO_SR_INDEX);

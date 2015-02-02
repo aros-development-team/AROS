@@ -70,6 +70,8 @@ grub_pci_write_byte (grub_pci_address_t addr, grub_uint8_t data)
   grub_outb (data, GRUB_PCI_DATA_REG + (addr & 3));
 }
 
+#ifndef GRUB_MACHINE_IEEE1275
+
 static inline volatile void *
 grub_pci_device_map_range (grub_pci_device_t dev __attribute__ ((unused)),
 			   grub_addr_t base,
@@ -84,6 +86,20 @@ grub_pci_device_unmap_range (grub_pci_device_t dev __attribute__ ((unused)),
 			     grub_size_t size __attribute__ ((unused)))
 {
 }
+
+#else
+
+volatile void *
+grub_pci_device_map_range (grub_pci_device_t dev,
+			   grub_addr_t base,
+			   grub_size_t size);
+
+void
+grub_pci_device_unmap_range (grub_pci_device_t dev,
+			     volatile void *mem,
+			     grub_size_t size);
+
+#endif
 
 
 #endif /* GRUB_CPU_PCI_H */

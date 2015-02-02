@@ -73,7 +73,6 @@ cont:
 #endif
 
 	/* Move the modules out of BSS.  */
-#ifndef GRUB_MACHINE_ARC
 	lui $t2, %hi(__bss_start)
 	addiu $t2, %lo(__bss_start)
 	
@@ -103,7 +102,6 @@ modulesmovcont:
 	b modulesmovcont
 	 addiu $t3, $t3, -1
 modulesmovdone:
-#endif
 
 	/* Clean BSS.  */
 	
@@ -118,10 +116,10 @@ bsscont:
 	bne $t3, $0, bsscont
          nop
 
-	lui $t1, %hi(grub_main)
-	addiu $t1, %lo(grub_main)
+	lui $t9, %hi(grub_main)
+	addiu $t9, %lo(grub_main)
 
 	lui $sp, %hi(GRUB_MACHINE_MEMORY_STACK_HIGH)
-	jr $t1
+	jr $t9
 	 addiu $sp, $sp, %lo(GRUB_MACHINE_MEMORY_STACK_HIGH)
 

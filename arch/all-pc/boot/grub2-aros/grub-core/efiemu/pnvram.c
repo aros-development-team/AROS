@@ -102,92 +102,7 @@ nvram_set (void * data __attribute__ ((unused)))
   grub_uint32_t *accuracy
     = grub_efiemu_mm_obtain_request (accuracy_handle);
   char *nvramptr;
-
-  auto int iterate_env (struct grub_env_var *var);
-  int iterate_env (struct grub_env_var *var)
-  {
-    char *guid, *attr, *name, *varname;
-    struct efi_variable *efivar;
-    int len = 0;
-    int i;
-    grub_uint64_t guidcomp;
-
-    if (grub_memcmp (var->name, "EfiEmu.pnvram.",
-		     sizeof ("EfiEmu.pnvram.") - 1) != 0)
-      return 0;
-
-    guid = var->name + sizeof ("EfiEmu.pnvram.") - 1;
-
-    attr = grub_strchr (guid, '.');
-    if (!attr)
-      return 0;
-    attr++;
-
-    name = grub_strchr (attr, '.');
-    if (!name)
-      return 0;
-    name++;
-
-    efivar = (struct efi_variable *) nvramptr;
-    if (nvramptr - nvram + sizeof (struct efi_variable) > nvramsize)
-      {
-	grub_error (GRUB_ERR_OUT_OF_MEMORY,
-		    "too many NVRAM variables for reserved variable space."
-		    " Try increasing EfiEmu.pnvram.size");
-	return 1;
-      }
-
-    nvramptr += sizeof (struct efi_variable);
-
-    efivar->guid.data1 = grub_cpu_to_le32 (grub_strtoul (guid, &guid, 16));
-    if (*guid != '-')
-      return 0;
-    guid++;
-
-    efivar->guid.data2 = grub_cpu_to_le16 (grub_strtoul (guid, &guid, 16));
-    if (*guid != '-')
-      return 0;
-    guid++;
-
-    efivar->guid.data3 = grub_cpu_to_le16 (grub_strtoul (guid, &guid, 16));
-    if (*guid != '-')
-      return 0;
-    guid++;
-
-    guidcomp = grub_strtoull (guid, 0, 16);
-    for (i = 0; i < 8; i++)
-      efivar->guid.data4[i] = (guidcomp >> (56 - 8 * i)) & 0xff;
-
-    efivar->attributes = grub_strtoull (attr, 0, 16);
-
-    varname = grub_malloc (grub_strlen (name) + 1);
-    if (! varname)
-      return 1;
-
-    if (unescape (name, varname, varname + grub_strlen (name) + 1, &len))
-      return 1;
-
-    len = grub_utf8_to_utf16 ((grub_uint16_t *) nvramptr,
-			      (nvramsize - (nvramptr - nvram)) / 2,
-			      (grub_uint8_t *) varname, len, NULL);
-
-    nvramptr += 2 * len;
-    *((grub_uint16_t *) nvramptr) = 0;
-    nvramptr += 2;
-    efivar->namelen = 2 * len + 2;
-
-    if (unescape (var->value, nvramptr, nvram + nvramsize, &len))
-      {
-	efivar->namelen = 0;
-	return 1;
-      }
-
-    nvramptr += len;
-
-    efivar->size = len;
-
-    return 0;
-  }
+  struct grub_env_var *var;
 
   /* Copy to definitive loaction */
   grub_dprintf ("efiemu", "preparing pnvram\n");
@@ -203,9 +118,88 @@ nvram_set (void * data __attribute__ ((unused)))
 
   nvramptr = nvram;
   grub_memset (nvram, 0, nvramsize);
-  grub_env_iterate (iterate_env);
+  FOR_SORTED_ENV (var)
+  {
+    char *guid, *attr, *name, *varname;
+    struct efi_variable *efivar;
+    int len = 0;
+    int i;
+    grub_uint64_t guidcomp;
+
+    if (grub_memcmp (var->name, "EfiEmu.pnvram.",
+		     sizeof ("EfiEmu.pnvram.") - 1) != 0)
+      continue;
+
+    guid = var->name + sizeof ("EfiEmu.pnvram.") - 1;
+
+    attr = grub_strchr (guid, '.');
+    if (!attr)
+      continue;
+    attr++;
+
+    name = grub_strchr (attr, '.');
+    if (!name)
+      continue;
+    name++;
+
+    efivar = (struct efi_variable *) nvramptr;
+    if (nvramptr - nvram + sizeof (struct efi_variable) > nvramsize)
+      return grub_error (GRUB_ERR_OUT_OF_MEMORY,
+			 "too many NVRAM variables for reserved variable space."
+			 " Try increasing EfiEmu.pnvram.size");
+
+    nvramptr += sizeof (struct efi_variable);
+
+    efivar->guid.data1 = grub_cpu_to_le32 (grub_strtoul (guid, &guid, 16));
+    if (*guid != '-')
+      continue;
+    guid++;
+
+    efivar->guid.data2 = grub_cpu_to_le16 (grub_strtoul (guid, &guid, 16));
+    if (*guid != '-')
+      continue;
+    guid++;
+
+    efivar->guid.data3 = grub_cpu_to_le16 (grub_strtoul (guid, &guid, 16));
+    if (*guid != '-')
+      continue;
+    guid++;
+
+    guidcomp = grub_strtoull (guid, 0, 16);
+    for (i = 0; i < 8; i++)
+      efivar->guid.data4[i] = (guidcomp >> (56 - 8 * i)) & 0xff;
+
+    efivar->attributes = grub_strtoull (attr, 0, 16);
+
+    varname = grub_malloc (grub_strlen (name) + 1);
+    if (! varname)
+      return grub_errno;
+
+    if (unescape (name, varname, varname + grub_strlen (name) + 1, &len))
+      break;
+
+    len = grub_utf8_to_utf16 ((grub_uint16_t *) nvramptr,
+			      (nvramsize - (nvramptr - nvram)) / 2,
+			      (grub_uint8_t *) varname, len, NULL);
+
+    nvramptr += 2 * len;
+    *((grub_uint16_t *) nvramptr) = 0;
+    nvramptr += 2;
+    efivar->namelen = 2 * len + 2;
+
+    if (unescape (var->value, nvramptr, nvram + nvramsize, &len))
+      {
+	efivar->namelen = 0;
+	break;
+      }
+
+    nvramptr += len;
+
+    efivar->size = len;
+  }
   if (grub_errno)
     return grub_errno;
+
   *nvramsize_def = nvramsize;
 
   /* Register symbols */

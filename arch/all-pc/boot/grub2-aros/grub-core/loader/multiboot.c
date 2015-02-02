@@ -63,6 +63,18 @@ static int console_required;
 static grub_dl_t my_mod;
 
 
+/* Helper for grub_get_multiboot_mmap_count.  */
+static int
+count_hook (grub_uint64_t addr __attribute__ ((unused)),
+	    grub_uint64_t size __attribute__ ((unused)),
+	    grub_memory_type_t type __attribute__ ((unused)), void *data)
+{
+  grub_size_t *count = data;
+
+  (*count)++;
+  return 0;
+}
+
 /* Return the length of the Multiboot mmap that will be needed to allocate
    our platform's map.  */
 grub_uint32_t
@@ -70,16 +82,7 @@ grub_get_multiboot_mmap_count (void)
 {
   grub_size_t count = 0;
 
-  auto int NESTED_FUNC_ATTR hook (grub_uint64_t, grub_uint64_t, grub_uint32_t);
-  int NESTED_FUNC_ATTR hook (grub_uint64_t addr __attribute__ ((unused)),
-			     grub_uint64_t size __attribute__ ((unused)),
-			     grub_memory_type_t type __attribute__ ((unused)))
-    {
-      count++;
-      return 0;
-    }
-
-  grub_mmap_iterate (hook);
+  grub_mmap_iterate (count_hook, &count);
 
   return count;
 }
@@ -128,12 +131,6 @@ grub_multiboot_boot (void)
   if (err)
     return err;
 
-#ifdef GRUB_MACHINE_EFI
-  err = grub_efi_finish_boot_services (NULL, NULL, NULL, NULL, NULL);
-  if (err)
-    return err;
-#endif
-
 #if defined (__i386__) || defined (__x86_64__)
   grub_relocator32_boot (grub_multiboot_relocator, state, 0);
 #else
@@ -156,6 +153,8 @@ grub_multiboot_unload (void)
 
   return GRUB_ERR_NONE;
 }
+
+static grub_uint64_t highest_load;
 
 #define MULTIBOOT_LOAD_ELF64
 #include "multiboot_elfxx.c"
@@ -213,34 +212,15 @@ grub_multiboot_set_console (int console_type, int accepted_consoles,
       grub_env_set ("gfxpayload", buf);
       grub_free (buf);
     }
- else
-
-/* 
- * AROS FIX
- * Our kernel (secondary level bootstrap) supports both framebuffer and text.
- * Its preferred mode is text (otherwise we will always run in VESA mode and
- * will not be able to use VGA one.
- * Intelmac (being a EFI machine) is considered to have no text mode at all
- * (GRUB_MACHINE_HAS_VGA_TEXT == 0). Setting "text" here seems to actually
- * leave GRUB in graphics mode whatever it is, but trick it into thinking that
- * it's a real text mode (video.c line 561 is reached, grub_set_video_mode("text; auto", 0, 0)
- * is called). As a result no framebuffer information is provided to the kernel
- * (grub_video_get_driver_id() returns GRUB_VIDEO_DRIVER_NONE, actually leaving
- * it with no display.
- * An alternative is to teach GRUB to really switch EFI to text mode using
- * grub_efi_set_text_mode(1) in such a case.
- * Plain "auto" would be more logical here, but it does not work on my Mac.
- * Perhaps GOP driver does not accept width == height == 0 as a signal to
- * auto-select best available mode. I have to set some resolution manually,
- * and the driver selects best match (1280x1024, which is the only available
- * mode on my machine). I choose to set "640x200" here as graphical representation
- * of 80x25 VGA text mode.
- */
+  else
+    {
 #if GRUB_MACHINE_HAS_VGA_TEXT
-   grub_env_set ("gfxpayload", "text");
+      grub_env_set ("gfxpayload", "text");
 #else
-   grub_env_set ("gfxpayload", "640x200,auto");
+      /* Always use video if no VGA text is available.  */
+      grub_env_set ("gfxpayload", "auto");
 #endif
+    }
 
   accepts_video = !!(accepted_consoles & GRUB_MULTIBOOT_CONSOLE_FRAMEBUFFER);
   accepts_ega_text = !!(accepted_consoles & GRUB_MULTIBOOT_CONSOLE_EGA_TEXT);
@@ -255,6 +235,26 @@ grub_cmd_multiboot (grub_command_t cmd __attribute__ ((unused)),
   grub_err_t err;
 
   grub_loader_unset ();
+
+  highest_load = 0;
+
+#ifndef GRUB_USE_MULTIBOOT2
+  grub_multiboot_quirks = GRUB_MULTIBOOT_QUIRKS_NONE;
+
+  if (argc != 0 && grub_strcmp (argv[0], "--quirk-bad-kludge") == 0)
+    {
+      argc--;
+      argv++;
+      grub_multiboot_quirks |= GRUB_MULTIBOOT_QUIRK_BAD_KLUDGE;
+    }
+
+  if (argc != 0 && grub_strcmp (argv[0], "--quirk-modules-after-kernel") == 0)
+    {
+      argc--;
+      argv++;
+      grub_multiboot_quirks |= GRUB_MULTIBOOT_QUIRK_MODULES_AFTER_KERNEL;
+    }
+#endif
 
   if (argc == 0)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
@@ -306,6 +306,7 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
   grub_addr_t target;
   grub_err_t err;
   int nounzip = 0;
+  grub_uint64_t lowest_addr = 0;
 
   if (argc == 0)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
@@ -331,13 +332,19 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
   if (! file)
     return grub_errno;
 
+#ifndef GRUB_USE_MULTIBOOT2
+  if (grub_multiboot_quirks & GRUB_MULTIBOOT_QUIRK_MODULES_AFTER_KERNEL)
+    lowest_addr = ALIGN_UP (highest_load + 1048576, 4096);
+#endif
+
   size = grub_file_size (file);
+  if (size)
   {
     grub_relocator_chunk_t ch;
     err = grub_relocator_alloc_chunk_align (grub_multiboot_relocator, &ch,
-					    0, (0xffffffff - size) + 1,
+					    lowest_addr, (0xffffffff - size) + 1,
 					    size, MULTIBOOT_MOD_ALIGN,
-					    GRUB_RELOCATOR_PREFERENCE_NONE, 0);
+					    GRUB_RELOCATOR_PREFERENCE_NONE, 1);
     if (err)
       {
 	grub_file_close (file);
@@ -346,6 +353,11 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
     module = get_virtual_current_address (ch);
     target = get_physical_target_address (ch);
   }
+  else
+    {
+      module = 0;
+      target = 0;
+    }
 
   err = grub_multiboot_add_module (target, size, argc - 1, argv + 1);
   if (err)
@@ -354,7 +366,7 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
       return err;
     }
 
-  if (grub_file_read (file, module, size) != size)
+  if (size && grub_file_read (file, module, size) != size)
     {
       grub_file_close (file);
       if (!grub_errno)
@@ -364,7 +376,7 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
     }
 
   grub_file_close (file);
-  return GRUB_ERR_NONE;;
+  return GRUB_ERR_NONE;
 }
 
 static grub_command_t cmd_multiboot, cmd_module;

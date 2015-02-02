@@ -74,12 +74,12 @@ This edition documents version @value{VERSION}.
 
 @menu
 * Getting the source code::
-* Finding your way around::
 * Coding style::
+* Finding your way around::
 * Contributing Changes::
 * Porting::
 * Error Handling::
-* CIA::
+* Stack and heap size::
 * BIOS port memory map::
 * Video Subsystem::
 * PFF2 Font File Format::
@@ -92,24 +92,36 @@ This edition documents version @value{VERSION}.
 @node Getting the source code
 @chapter Getting the source code
 
-GRUB is maintained using the @uref{http://bazaar-vcs.org/, Bazaar revision
-control system}.  To fetch the primary development branch:
+GRUB is maintained using the @uref{GIT revision
+control system}.  To fetch:
 
 @example
-bzr get http://bzr.savannah.gnu.org/r/grub/trunk/grub
+git clone git://git.sv.gnu.org/grub.git
 @end example
 
-The GRUB developers maintain several other branches with work in progress.
-Of these, the most interesting is the experimental branch, which is a
-staging area for new code which we expect to eventually merge into trunk but
-which is not yet ready:
-
+Web access is available under
 @example
-bzr get http://bzr.savannah.gnu.org/r/grub/branches/experimental
+http://git.savannah.gnu.org/cgit/grub.git/
 @end example
 
-Once you have used @kbd{bzr get} to fetch an initial copy of a branch, you
-can use @kbd{bzr pull} to keep it up to date.  If you have modified your
+The branches available are:
+
+@table @samp
+@item master
+      Main development branch.
+@item grub-legacy
+      GRUB 0.97 codebase. Kept for reference and legal reasons
+@item multiboot
+      Multiboot specfication
+@item multiboot2
+      Multiboot2 specfication
+@item developer branches
+      Prefixed with developer name. Every developer of a team manages his own branches.
+      Developer branches do not need changelog entries.
+@end table
+
+Once you have used @kbd{git clone} to fetch an initial copy of a branch, you
+can use @kbd{git pull} to keep it up to date.  If you have modified your
 local version, you may need to resolve conflicts when pulling.
 
 @node Coding style
@@ -216,12 +228,12 @@ The opening @samp{/*} and closing @samp{*/} should be placed together on a line 
 Here is a brief map of the GRUB code base.
 
 GRUB uses Autoconf and Automake, with most of the Automake input generated
-by AutoGen.  The top-level build rules are in @file{configure.ac},
+by a Python script.  The top-level build rules are in @file{configure.ac},
 @file{grub-core/Makefile.core.def}, and @file{Makefile.util.def}.  Each
 block in a @file{*.def} file represents a build target, and specifies the
 source files used to build it on various platforms.  The @file{*.def} files
-are processed into AutoGen input by @file{gentpl.py} (which you only need to
-look at if you are extending the build system).  If you are adding a new
+are processed into Automake input by @file{gentpl.py} (which you only need
+to look at if you are extending the build system).  If you are adding a new
 module which follows an existing pattern, such as a new command or a new
 filesystem implementation, it is usually easiest to grep
 @file{grub-core/Makefile.core.def} and @file{Makefile.util.def} for an
@@ -286,13 +298,18 @@ live under @file{grub-core/term/}.
 
 @item
 The @samp{efiemu_*} commands live under @file{grub-core/efiemu/}.
+
+@item
+OS-dependent code should be under @file{grub-core/osdep/}
+
+@item
+Utility programs meant to be run from a full operating system
+(except OS-dependent code mentioned previously) are in @file{util/}.
+
 @end itemize
 
 There are a few other special-purpose exceptions; grep for them if they
 matter to you.
-
-Utility programs meant to be run from a full operating system are in
-@file{util/}.
 
 @node Contributing Changes
 @chapter Contributing changes
@@ -329,10 +346,10 @@ anymore.
 @itemize
 @item Always use latest GRUB 2 source code. So get that first.
 
-For developers it is recommended always to use the newest development version of GRUB 2. If development takes a long period of time, please remember to keep in sync with newest developments regularly so it is much easier to integrate your change in the future. GRUB 2 is being developed in a Bazaar (bzr) repository.
+For developers it is recommended always to use the newest development version of GRUB 2. If development takes a long period of time, please remember to keep in sync with newest developments regularly so it is much easier to integrate your change in the future. GRUB 2 is being developed in a GIT repository.
 
-Please check Savannah's GRUB project page for details how to get newest bzr:
-@uref{http://savannah.gnu.org/bzr/?group=grub, GRUB 2 bzr Repository}
+Please check Savannah's GRUB project page for details how to get newest git:
+@uref{https://savannah.gnu.org/git/?group=grub, GRUB 2 git Repository}
 
 @item Compile it and try it out.
 
@@ -890,33 +907,68 @@ if (grub_errno != GRUB_ERR_NONE)
 grub_error_pop ();
 @end example
 
-@node CIA
-@chapter CIA
-@c By Robert Millan and Carles Pina
-If you have commit access, please setup CIA in your Bazaar
-config so those in IRC receive notification of your commits.
+@node Stack and heap size
+@chapter Stack and heap size
 
-In @file{~/.bazaar/bazaar.conf}, add "cia_send_revno = true". 
-Optionally, you can also add "cia_user = myusername" if you'd
-like CIA service to use a specific account (for statistical purpose).
+On emu stack and heap are just normal host OS stack and heap. Stack is typically
+8 MiB although it's OS-dependent.
 
-In the @file{.bzr/branch/branch.conf} of your checkout branch,
-"set nickname = /path_to_this_branch" and "cia_project = GNU GRUB".
+On i386-pc, i386-coreboot, i386-qemu and i386-multiboot the stack is 60KiB.
+All available space between 1MiB and 4GiB marks is part of heap.
 
-Additionally, please set cia_send_revno in the [DEFAULT] section
-of your @file{~/.bazaar/bazaar.conf}. E.g.:
+On *-xen stack is 4MiB. If compiled for x86-64 with GCC 4.4 or later adressable
+space is unlimited. When compiled for x86-64 with older GCC version adressable
+space is limited to 2GiB. When compiling for i386 adressable space is limited
+to 4GiB. All adressable pages except the ones for stack, GRUB binary, special
+pages and page table are in the heap.
 
-@example
-[DEFAULT]
-cia_send_revno = true
-@end example
+On *-efi GRUB uses same stack as EFI. If compiled for x86-64 with GCC 4.4 or
+later adressable space is unlimited. When compiled for x86-64 with older GCC
+version adressable space is limited to 2GiB. For all other platforms adressable
+space is limited to 4GiB. GRUB allocates pages from EFI for its heap, at most
+1.6 GiB.
 
-Remember to install cia-clients (Debian/Ubuntu package) to be able to use CIA.
+On i386-ieee1275 and powerpc-ieee1275 GRUB uses same stack as IEEE1275.
+It allocates at most 32MiB for its heap.
 
-Keep in mind Bazaar sends notifications for all commits to branches that have
-this setting, regardless of whether they're bound branches (checkouts) or not.
-So if you make local commits in a non-bound branch and it bothers you that
-others can read them, do not use this setting.
+On sparc64-ieee1275 stack is 256KiB and heap is 2MiB.
+
+On mips(el)-qemu_mips and mipsel-loongson stack is 2MiB (everything below
+GRUB image) and everything above GRUB image (from 2MiB + kernel size)
+until 256MiB is part of heap.
+
+On mips-arc stack is 2MiB (everything below GRUB image) and everything above
+GRUB image(from 2MiB + kernel size) until 128MiB is part of heap.
+
+On mipsel-arc stack is 2MiB (everything below GRUB image which is not part
+of ARC) and everything above GRUB image (from 7MiB + kernel size)
+until 256MiB is part of heap.
+
+On arm-uboot stack is 256KiB and heap is 2MiB.
+
+In short:
+
+@multitable @columnfractions .15 .25 .5
+@headitem Platform @tab Stack @tab Heap
+@item emu                     @tab 8 MiB   @tab ?
+@item i386-pc                 @tab 60 KiB  @tab < 4 GiB
+@item i386-coreboot           @tab 60 KiB  @tab < 4 GiB
+@item i386-multiboot          @tab 60 KiB  @tab < 4 GiB
+@item i386-qemu               @tab 60 KiB  @tab < 4 GiB
+@item *-efi                   @tab ?       @tab < 1.6 GiB
+@item i386-ieee1275           @tab ?       @tab < 32 MiB
+@item powerpc-ieee1275        @tab ?       @tab < 32 MiB
+@item sparc64-ieee1275        @tab 256KiB  @tab 2 MiB
+@item arm-uboot               @tab 256KiB  @tab 2 MiB
+@item mips(el)-qemu_mips      @tab 2MiB    @tab 253 MiB
+@item mipsel-loongson         @tab 2MiB    @tab 253 MiB
+@item mips-arc                @tab 2MiB    @tab 125 MiB
+@item mipsel-arc              @tab 2MiB    @tab 248 MiB
+@item x86_64-xen (GCC >= 4.4) @tab 4MiB    @tab unlimited
+@item x86_64-xen (GCC < 4.4)  @tab 4MiB    @tab < 2GiB
+@item i386-xen                @tab 4MiB    @tab < 4GiB
+@end multitable
+
 
 @node BIOS port memory map
 @chapter BIOS port memory map
@@ -929,9 +981,8 @@ others can read them, do not use this setting.
 @item ?        @tab 0x2000 - 1   @tab Real mode stack 
 @item 0x7C00   @tab 0x7D00 - 1   @tab Boot sector 
 @item 0x8000   @tab ?            @tab GRUB kernel 
-@item 0x68000  @tab 0x78000 - 1  @tab Disk buffer 
+@item 0x68000  @tab 0x71000 - 1  @tab Disk buffer 
 @item ?        @tab 0x80000 - 1  @tab Protected mode stack 
-@item 0x80000  @tab ?            @tab Heap 
 @item ?        @tab 0xA0000 - 1  @tab Extended BIOS Data Area 
 @item 0xA0000  @tab 0xC0000 - 1  @tab Video RAM 
 @item 0xC0000  @tab 0x100000 - 1 @tab BIOS 
@@ -948,8 +999,8 @@ driver manager works are not included here.
 
 @menu
 * Video API::
-* Bitmap API::
 * Example usage of Video API::
+* Bitmap API::
 @end menu
 
 @node Video API
@@ -1108,6 +1159,47 @@ struct grub_video_palette_data
 Used to query indexed color palettes. If mode is RGB mode, colors will be copied from emulated palette data. In Indexed Color modes, palettes will be read from hardware. Color values will be converted to suit structure format. @code{start} will tell what hardware color index (or emulated color index) will be used as a source for first indice of @code{palette_data}, after that both hardware color index and @code{palette_data} index will be incremented until @code{count} number of colors have been read.
 @end itemize
 
+@subsection grub_video_set_area_status
+@itemize
+
+@item Prototype:
+@example
+grub_err_t
+grub_video_set_area_status (grub_video_area_status_t area_status);
+@end example
+@example
+enum grub_video_area_status_t
+  @{
+    GRUB_VIDEO_AREA_DISABLED,
+    GRUB_VIDEO_AREA_ENABLED
+  @};
+@end example
+
+@item Description:
+
+Used to set area drawing mode for redrawing the specified region. Draw commands
+are performed in the intersection of the viewport and the region called area.
+Coordinates remain related to the viewport. If draw commands try to draw over
+the area, they are clipped.
+Set status to DISABLED if you need to draw everything.
+Set status to ENABLED and region to the desired rectangle to redraw everything
+inside the region leaving everything else intact.
+Should be used for redrawing of active elements.
+@end itemize
+
+@subsection grub_video_get_area_status
+@itemize
+
+@item Prototype:
+@example
+grub_err_r
+grub_video_get_area_status (grub_video_area_status_t *area_status);
+@end example
+
+@item Description:
+Used to query the area status.
+@end itemize
+
 @subsection grub_video_set_viewport
 @itemize
 @item Prototype:
@@ -1132,6 +1224,37 @@ grub_video_get_viewport (unsigned int *x, unsigned int *y, unsigned int *width, 
 @item Description:
 
 Used to query current viewport dimensions. Software developer can use this to choose best way to render contents of the viewport.
+@end itemize
+
+@subsection grub_video_set_region
+@itemize
+@item Prototype:
+
+@example
+grub_err_t
+grub_video_set_region (unsigned int x, unsigned int y, unsigned int width, unsigned int height);
+@end example
+@item Description:
+
+Used to specify the region of the screen which should be redrawn. Use absolute
+values. When the region is set and area status is ENABLE all draw commands will
+be performed inside the interseption of region and viewport named area.
+If draw commands try to draw over viewport, they are clipped. If developer
+requests larger than possible region, width and height will be clamped to fit
+screen. Should be used for redrawing of active elements.
+@end itemize
+
+@subsection grub_video_get_region
+@itemize
+@item Prototype:
+
+@example
+grub_err_t
+grub_video_get_region (unsigned int *x, unsigned int *y, unsigned int *width, unsigned int *height);
+@end example
+@item Description:
+
+Used to query current region dimensions.
 @end itemize
 
 @subsection grub_video_map_color
@@ -1394,8 +1517,8 @@ grub_video_blit_glyph (&glyph, color, 0, 0);
 
 @node Bitmap API
 @section Bitmap API
-@itemize
 @subsection grub_video_bitmap_create
+@itemize
 @item Prototype:
 @example
 grub_err_t grub_video_bitmap_create (struct grub_video_bitmap **bitmap, unsigned int width, unsigned int height, enum grub_video_blit_format blit_format)
@@ -1689,7 +1812,9 @@ right edges of two adjacent glyphs.  The @strong{device width} field determines
 the effective leading value that is used to render the font.
 
 @end itemize
-@image{font_char_metrics,,,,png}
+@ifnottex
+@image{font_char_metrics,,,,.png}
+@end ifnottex
    
 An illustration of how the various font metrics apply to characters.
 

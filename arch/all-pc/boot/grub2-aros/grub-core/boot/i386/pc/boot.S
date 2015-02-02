@@ -28,6 +28,86 @@
 #define MSG(x)	movw $x, %si; call LOCAL(message)
 #define ERR(x)	movw $x, %si; jmp LOCAL(error_message)
 
+	.macro floppy
+part_start:
+
+LOCAL(probe_values):
+	.byte	36, 18, 15, 9, 0
+
+LOCAL(floppy_probe):
+	pushw	%dx
+/*
+ *  Perform floppy probe.
+ */
+#ifdef __APPLE__
+	LOCAL(probe_values_minus_one) = LOCAL(probe_values) - 1
+	movw	MACRO_DOLLAR(LOCAL(probe_values_minus_one)), %si
+#else
+	movw	MACRO_DOLLAR(LOCAL(probe_values)) - 1, %si
+#endif
+
+LOCAL(probe_loop):
+	/* reset floppy controller INT 13h AH=0 */
+	xorw	%ax, %ax
+	int	MACRO_DOLLAR(0x13)
+
+	incw	%si
+	movb	(%si), %cl
+
+	/* if number of sectors is 0, display error and die */
+	testb	%cl, %cl
+	jnz	1f
+
+/*
+ * Floppy disk probe failure.
+ */
+	MSG(fd_probe_error_string)
+	jmp	LOCAL(general_error)
+
+/* "Floppy" */
+fd_probe_error_string:	.asciz "Floppy"
+
+1:
+	/* perform read */
+	movw	MACRO_DOLLAR(GRUB_BOOT_MACHINE_BUFFER_SEG), %bx
+	movw	%bx, %es
+	xorw	%bx, %bx
+	movw	MACRO_DOLLAR(0x201), %ax
+	movb	MACRO_DOLLAR(0), %ch
+	movb	MACRO_DOLLAR(0), %dh
+	int	MACRO_DOLLAR(0x13)
+
+	/* if error, jump to "LOCAL(probe_loop)" */
+	jc	LOCAL(probe_loop)
+
+	/* %cl is already the correct value! */
+	movb	MACRO_DOLLAR(1), %dh
+	movb	MACRO_DOLLAR(79), %ch
+
+	jmp	LOCAL(final_init)
+	.endm
+
+	.macro scratch
+
+	/* scratch space */
+mode:
+	.byte	0
+disk_address_packet:
+sectors:
+	.long	0
+heads:
+	.long	0
+cylinders:
+	.word	0
+sector_start:
+	.byte	0
+head_start:
+	.byte	0
+cylinder_start:
+	.word	0
+	/* more space... */
+	.endm
+
 	.file	"boot.S"
 
 	.text
@@ -51,6 +131,34 @@ start:
 	jmp	LOCAL(after_BPB)
 	nop	/* do I care about this ??? */
 
+#ifdef HYBRID_BOOT
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+
+	nop
+	nop
+	jmp	LOCAL(after_BPB)
+#else
 	/*
 	 * This space is for the BIOS parameter block!!!!  Don't change
 	 * the first jump, nor start the code anywhere but right after
@@ -59,27 +167,14 @@ start:
 
 	. = _start + GRUB_BOOT_MACHINE_BPB_START
 	. = _start + 4
-
-	/* scratch space */
-mode:
-	.byte	0
-disk_address_packet:
-sectors:
-	.long	0
-heads:
-	.long	0
-cylinders:
-	.word	0
-sector_start:
-	.byte	0
-head_start:
-	.byte	0
-cylinder_start:
-	.word	0
-	/* more space... */
+#endif
+#ifdef HYBRID_BOOT
+	floppy
+#else
+	scratch
+#endif
 
 	. = _start + GRUB_BOOT_MACHINE_BPB_END
-
 	/*
 	 * End of BIOS parameter block.
 	 */
@@ -87,9 +182,13 @@ cylinder_start:
 kernel_address:
 	.word	GRUB_BOOT_MACHINE_KERNEL_ADDR
 
+#ifndef HYBRID_BOOT
 	. = _start + GRUB_BOOT_MACHINE_KERNEL_SECTOR
 kernel_sector:
-	.long	1, 0
+	.long	1
+kernel_sector_high:
+	.long	0
+#endif
 
 	. = _start + GRUB_BOOT_MACHINE_BOOT_DRIVE
 boot_drive:
@@ -193,7 +292,7 @@ lba_mode:
 	/* the absolute address */
 	movl	kernel_sector, %ebx
 	movl	%ebx, 8(%si)
-	movl	kernel_sector + 4, %ebx
+	movl	kernel_sector_high, %ebx
 	movl	%ebx, 12(%si)
 
 	/* the segment of buffer address */
@@ -226,11 +325,12 @@ LOCAL(chs_mode):
 	int	$0x13
 	jnc	LOCAL(final_init)
 
+	popw	%dx
 	/*
 	 *  The call failed, so maybe use the floppy probe instead.
 	 */
-	testb	$GRUB_BOOT_MACHINE_BIOS_HD_FLAG, %dl
-	jz	LOCAL(floppy_probe)
+	testb	%dl, %dl
+	jnb	LOCAL(floppy_probe)
 
 	/* Nope, we definitely have a hard disk, and we're screwed. */
 	ERR(hd_probe_error_string)
@@ -261,7 +361,7 @@ LOCAL(final_init):
 
 setup_sectors:
 	/* load logical sector start (top half) */
-	movl	kernel_sector + 4, %eax
+	movl	kernel_sector_high, %eax
 
 	orl	%eax, %eax
 	jnz	LOCAL(geometry_error)
@@ -410,6 +510,13 @@ LOCAL(message):
 	 *  number here.
 	 */
 
+#ifdef HYBRID_BOOT
+	. = _start + 0x1b0
+kernel_sector:
+	.long	1
+kernel_sector_high:
+	.long	0
+#endif
 	. = _start + GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC
 nt_magic:
 	.long 0
@@ -419,62 +526,17 @@ nt_magic:
 	 *  This is where an MBR would go if on a hard disk.  The code
 	 *  here isn't even referenced unless we're on a floppy.  Kinda
 	 *  sneaky, huh?
-	 */
+	*/
 
 	. = _start + GRUB_BOOT_MACHINE_PART_START
-part_start:
 
-probe_values:
-	.byte	36, 18, 15, 9, 0
-
-LOCAL(floppy_probe):
-/*
- *  Perform floppy probe.
- */
-
-	movw	$probe_values - 1, %si
-
-LOCAL(probe_loop):
-	/* reset floppy controller INT 13h AH=0 */
-	xorw	%ax, %ax
-	int	$0x13
-
-	incw	%si
-	movb	(%si), %cl
-
-	/* if number of sectors is 0, display error and die */
-	cmpb	$0, %cl
-	jne	1f
-
-/*
- * Floppy disk probe failure.
- */
-	MSG(fd_probe_error_string)
-	jmp	LOCAL(general_error)
-
-/* "Floppy" */
-fd_probe_error_string:	.asciz "Floppy"
-
-1:
-	/* perform read */
-	movw	$GRUB_BOOT_MACHINE_BUFFER_SEG, %bx
-	movw	%bx, %es
-	xorw	%bx, %bx
-	movw	$0x201, %ax
-	movb	$0, %ch
-	movb	$0, %dh
-	int	$0x13
-
-	/* if error, jump to "LOCAL(probe_loop)" */
-	jc	LOCAL(probe_loop)
-
-	/* %cl is already the correct value! */
-	movb	$1, %dh
-	movb	$79, %ch
-
-	jmp	LOCAL(final_init)
+#ifndef HYBRID_BOOT
+	floppy
+#else
+	scratch
+#endif
 
 	. = _start + GRUB_BOOT_MACHINE_PART_END
-
+	
 /* the last 2 bytes in the sector 0 contain the signature */
 	.word	GRUB_BOOT_MACHINE_SIGNATURE

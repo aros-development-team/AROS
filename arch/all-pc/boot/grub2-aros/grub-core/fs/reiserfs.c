@@ -109,14 +109,14 @@ struct grub_reiserfs_superblock
   grub_uint8_t unused[4];
   grub_uint16_t uuid[8];
   char label[16];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_journal_header
 {
   grub_uint32_t last_flush_uid;
   grub_uint32_t unflushed_offset;
   grub_uint32_t mount_id;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_description_block
 {
@@ -124,14 +124,14 @@ struct grub_reiserfs_description_block
   grub_uint32_t len;
   grub_uint32_t mount_id;
   grub_uint32_t real_blocks[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_commit_block
 {
   grub_uint32_t id;
   grub_uint32_t len;
   grub_uint32_t real_blocks[0];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_stat_item_v1
 {
@@ -145,7 +145,7 @@ struct grub_reiserfs_stat_item_v1
   grub_uint32_t ctime;
   grub_uint32_t rdev;
   grub_uint32_t first_direct_byte;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_stat_item_v2
 {
@@ -160,7 +160,7 @@ struct grub_reiserfs_stat_item_v2
   grub_uint32_t ctime;
   grub_uint32_t blocks;
   grub_uint32_t first_direct_byte;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_key
 {
@@ -172,13 +172,13 @@ struct grub_reiserfs_key
     {
       grub_uint32_t offset;
       grub_uint32_t type;
-    } v1 __attribute__ ((packed));
+    } GRUB_PACKED v1;
     struct
     {
       grub_uint64_t offset_type;
-    } v2 __attribute__ ((packed));
+    } GRUB_PACKED v2;
   } u;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_item_header
 {
@@ -187,11 +187,11 @@ struct grub_reiserfs_item_header
   {
     grub_uint16_t free_space;
     grub_uint16_t entry_count;
-  } u __attribute__ ((packed));
+  } GRUB_PACKED u;
   grub_uint16_t item_size;
   grub_uint16_t item_location;
   grub_uint16_t version;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_block_header
 {
@@ -200,14 +200,14 @@ struct grub_reiserfs_block_header
   grub_uint16_t free_space;
   grub_uint16_t reserved;
   struct grub_reiserfs_key block_right_delimiting_key;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_disk_child
 {
   grub_uint32_t block_number;
   grub_uint16_t size;
   grub_uint16_t reserved;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_reiserfs_directory_header
 {
@@ -216,7 +216,7 @@ struct grub_reiserfs_directory_header
   grub_uint32_t object_id;
   grub_uint16_t location;
   grub_uint16_t state;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_fshelp_node
 {
@@ -240,9 +240,8 @@ struct grub_reiserfs_data
 static grub_ssize_t
 grub_reiserfs_read_real (struct grub_fshelp_node *node,
 			 grub_off_t off, char *buf, grub_size_t len,
-			 void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
-							     unsigned offset,
-							     unsigned length));
+			 grub_disk_read_hook_t read_hook,
+			 void *read_hook_data);
 
 /* Internal-only functions. Not to be used outside of this file.  */
 
@@ -366,7 +365,7 @@ grub_reiserfs_set_key_offset (struct grub_reiserfs_key *key,
     key->u.v1.offset = grub_cpu_to_le32 (value);
   else
     key->u.v2.offset_type \
-      = ((key->u.v2.offset_type & grub_cpu_to_le64 (15ULL << 60))
+      = ((key->u.v2.offset_type & grub_cpu_to_le64_compile_time (15ULL << 60))
          | grub_cpu_to_le64 (value & (~0ULL >> 4)));
 }
 
@@ -413,7 +412,7 @@ grub_reiserfs_set_key_type (struct grub_reiserfs_key *key,
     key->u.v1.type = grub_cpu_to_le32 (type);
   else
     key->u.v2.offset_type
-      = ((key->u.v2.offset_type & grub_cpu_to_le64 (~0ULL >> 4))
+      = ((key->u.v2.offset_type & grub_cpu_to_le64_compile_time (~0ULL >> 4))
          | grub_cpu_to_le64 ((grub_uint64_t) type << 60));
 
   assert (grub_reiserfs_get_key_type (key) == grub_type);
@@ -674,7 +673,7 @@ grub_reiserfs_read_symlink (grub_fshelp_node_t node)
   if (! symlink_buffer)
     return 0;
 
-  ret = grub_reiserfs_read_real (node, 0, symlink_buffer, len, 0);
+  ret = grub_reiserfs_read_real (node, 0, symlink_buffer, len, 0, 0);
   if (ret < 0)
     {
       grub_free (symlink_buffer);
@@ -718,10 +717,8 @@ grub_reiserfs_mount (grub_disk_t disk)
 /* Call HOOK for each file in directory ITEM.  */
 static int
 grub_reiserfs_iterate_dir (grub_fshelp_node_t item,
-                           int NESTED_FUNC_ATTR
-                           (*hook) (const char *filename,
-                                    enum grub_fshelp_filetype filetype,
-                                    grub_fshelp_node_t node))
+                           grub_fshelp_iterate_dir_hook_t hook,
+			   void *hook_data)
 {
   struct grub_reiserfs_data *data = item->data;
   struct grub_reiserfs_block_header *block_header = 0;
@@ -784,7 +781,7 @@ grub_reiserfs_iterate_dir (grub_fshelp_node_t item,
             = grub_le_to_cpu16 (directory_header->state);
 	  grub_fshelp_node_t entry_item;
 	  struct grub_reiserfs_key entry_key;
-	  enum grub_reiserfs_item_type entry_type;
+	  enum grub_fshelp_filetype entry_type;
 	  char *entry_name;
 	  
           if (!(entry_state & GRUB_REISERFS_VISIBLE_MASK))
@@ -946,7 +943,7 @@ grub_reiserfs_iterate_dir (grub_fshelp_node_t item,
 		  goto next;
 		}
 	    }
-	  if (hook (entry_name, entry_type, entry_item))
+	  if (hook (entry_name, entry_type, entry_item, hook_data))
 	    {
 	      grub_dprintf ("reiserfs", "Found : %s, type=%d\n",
 			    entry_name, entry_type);
@@ -1000,8 +997,8 @@ grub_reiserfs_open (struct grub_file *file, const char *name)
   data = grub_reiserfs_mount (file->device->disk);
   if (! data)
     goto fail;
-  key.directory_id = grub_cpu_to_le32 (1);
-  key.object_id = grub_cpu_to_le32 (2);
+  key.directory_id = grub_cpu_to_le32_compile_time (1);
+  key.object_id = grub_cpu_to_le32_compile_time (2);
   key.u.v2.offset_type = 0;
   grub_reiserfs_set_key_type (&key, GRUB_REISERFS_DIRECTORY, 2);
   grub_reiserfs_set_key_offset (&key, 1);
@@ -1038,9 +1035,7 @@ grub_reiserfs_open (struct grub_file *file, const char *name)
 static grub_ssize_t
 grub_reiserfs_read_real (struct grub_fshelp_node *node,
 			 grub_off_t off, char *buf, grub_size_t len,
-			 void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
-							     unsigned offset,
-							     unsigned length))
+			 grub_disk_read_hook_t read_hook, void *read_hook_data)
 {
   unsigned int indirect_block, indirect_block_count;
   struct grub_reiserfs_key key;
@@ -1095,7 +1090,7 @@ grub_reiserfs_read_real (struct grub_fshelp_node *node,
       switch (found.type)
         {
         case GRUB_REISERFS_DIRECT:
-          block = found.block_number * (block_size  >> GRUB_DISK_SECTOR_BITS);
+          block = ((grub_disk_addr_t) found.block_number) * (block_size  >> GRUB_DISK_SECTOR_BITS);
           grub_dprintf ("reiserfs_blocktype", "D: %u\n", (unsigned) block);
           if (initial_position < current_position + item_size)
             {
@@ -1107,6 +1102,7 @@ grub_reiserfs_read_real (struct grub_fshelp_node *node,
                             (unsigned) block, (unsigned) offset,
                             (unsigned) (offset + length));
               found.data->disk->read_hook = read_hook;
+              found.data->disk->read_hook_data = read_hook_data;
               grub_disk_read (found.data->disk,
                               block,
                               offset
@@ -1133,6 +1129,7 @@ grub_reiserfs_read_real (struct grub_fshelp_node *node,
           if (grub_errno)
             goto fail;
           found.data->disk->read_hook = read_hook;
+          found.data->disk->read_hook_data = read_hook_data;
           for (indirect_block = 0;
                indirect_block < indirect_block_count
                  && current_position < final_position;
@@ -1238,7 +1235,7 @@ static grub_ssize_t
 grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
 {
   return grub_reiserfs_read_real (file->data, file->offset, buf, len,
-				  file->read_hook);
+				  file->read_hook, file->read_hook_data);
 }
 
 /* Close the file FILE.  */
@@ -1254,38 +1251,46 @@ grub_reiserfs_close (grub_file_t file)
   return GRUB_ERR_NONE;
 }
 
+/* Context for grub_reiserfs_dir.  */
+struct grub_reiserfs_dir_ctx
+{
+  grub_fs_dir_hook_t hook;
+  void *hook_data;
+};
+
+/* Helper for grub_reiserfs_dir.  */
+static int
+grub_reiserfs_dir_iter (const char *filename,
+			enum grub_fshelp_filetype filetype,
+			grub_fshelp_node_t node, void *data)
+{
+  struct grub_reiserfs_dir_ctx *ctx = data;
+  struct grub_dirhook_info info;
+
+  grub_memset (&info, 0, sizeof (info));
+  info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
+  info.mtimeset = 1;
+  info.mtime = node->mtime;
+  grub_free (node);
+  return ctx->hook (filename, &info, ctx->hook_data);
+}
+
 /* Call HOOK with each file under DIR.  */
 static grub_err_t
 grub_reiserfs_dir (grub_device_t device, const char *path,
-                   int (*hook) (const char *filename,
-				const struct grub_dirhook_info *info))
+                   grub_fs_dir_hook_t hook, void *hook_data)
 {
+  struct grub_reiserfs_dir_ctx ctx = { hook, hook_data };
   struct grub_reiserfs_data *data = 0;
   struct grub_fshelp_node root, *found;
   struct grub_reiserfs_key root_key;
 
-  auto int NESTED_FUNC_ATTR iterate (const char *filename,
-                                     enum grub_fshelp_filetype filetype,
-                                     grub_fshelp_node_t node);
-
-  int NESTED_FUNC_ATTR iterate (const char *filename,
-                                enum grub_fshelp_filetype filetype,
-                                grub_fshelp_node_t node)
-    {
-      struct grub_dirhook_info info;
-      grub_memset (&info, 0, sizeof (info));
-      info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
-      info.mtimeset = 1;
-      info.mtime = node->mtime;
-      grub_free (node);
-      return hook (filename, &info);
-    }
   grub_dl_ref (my_mod);
   data = grub_reiserfs_mount (device->disk);
   if (! data)
     goto fail;
-  root_key.directory_id = grub_cpu_to_le32 (1);
-  root_key.object_id = grub_cpu_to_le32 (2);
+  root_key.directory_id = grub_cpu_to_le32_compile_time (1);
+  root_key.object_id = grub_cpu_to_le32_compile_time (2);
   root_key.u.v2.offset_type = 0;
   grub_reiserfs_set_key_type (&root_key, GRUB_REISERFS_DIRECTORY, 2);
   grub_reiserfs_set_key_offset (&root_key, 1);
@@ -1300,7 +1305,7 @@ grub_reiserfs_dir (grub_device_t device, const char *path,
                          grub_reiserfs_read_symlink, GRUB_FSHELP_DIR);
   if (grub_errno)
     goto fail;
-  grub_reiserfs_iterate_dir (found, iterate);
+  grub_reiserfs_iterate_dir (found, grub_reiserfs_dir_iter, &ctx);
   grub_free (data);
   grub_dl_unref (my_mod);
   return GRUB_ERR_NONE;

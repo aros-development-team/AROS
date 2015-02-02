@@ -185,7 +185,7 @@ struct grub_pxenv
   grub_uint16_t	undi_code_seg;	/* UNDI Code segment address.  */
   grub_uint16_t	undi_code_size;	/* UNDI Code segment size (bytes).  */
   grub_uint32_t pxe_ptr;	/* SEG:OFF to !PXE struct.  */
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxe_bangpxe
 {
@@ -198,7 +198,7 @@ struct grub_pxe_bangpxe
   grub_uint32_t undiromid;
   grub_uint32_t baseromid;
   grub_uint32_t rm_entry;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_get_cached_info
 {
@@ -207,7 +207,7 @@ struct grub_pxenv_get_cached_info
   grub_uint16_t buffer_size;
   grub_uint32_t buffer;
   grub_uint16_t buffer_limit;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_tftp_open
 {
@@ -217,12 +217,12 @@ struct grub_pxenv_tftp_open
   grub_uint8_t filename[128];
   grub_uint16_t tftp_port;
   grub_uint16_t packet_size;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_tftp_close
 {
   grub_uint16_t status;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_tftp_read
 {
@@ -230,7 +230,7 @@ struct grub_pxenv_tftp_read
   grub_uint16_t packet_number;
   grub_uint16_t buffer_size;
   grub_uint32_t buffer;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_tftp_get_fsize
 {
@@ -239,18 +239,18 @@ struct grub_pxenv_tftp_get_fsize
   grub_uint32_t gateway_ip;
   grub_uint8_t filename[128];
   grub_uint32_t file_size;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_udp_open
 {
   grub_uint16_t status;
   grub_uint32_t src_ip;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_udp_close
 {
   grub_uint16_t status;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_udp_write
 {
@@ -261,7 +261,7 @@ struct grub_pxenv_udp_write
   grub_uint16_t dst_port;
   grub_uint16_t buffer_size;
   grub_uint32_t buffer;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_udp_read
 {
@@ -272,15 +272,15 @@ struct grub_pxenv_udp_read
   grub_uint16_t dst_port;
   grub_uint16_t buffer_size;
   grub_uint32_t buffer;
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
 struct grub_pxenv_unload_stack
 {
   grub_uint16_t status;
   grub_uint8_t reserved[10];
-} __attribute__ ((packed));
+} GRUB_PACKED;
 
-int EXPORT_FUNC(grub_pxe_call) (int func, void * data, grub_uint32_t pxe_rm_entry);
+int EXPORT_FUNC(grub_pxe_call) (int func, void * data, grub_uint32_t pxe_rm_entry) __attribute__ ((regparm(3)));
 
 extern struct grub_pxe_bangpxe *grub_pxe_pxenv;
 

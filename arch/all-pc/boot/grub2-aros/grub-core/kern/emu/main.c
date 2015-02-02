@@ -16,15 +16,16 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
+#include <config-util.h>
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <setjmp.h>
-#include <sys/stat.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include <grub/dl.h>
 #include <grub/mm.h>
@@ -40,6 +41,10 @@
 #include <grub/env.h>
 #include <grub/partition.h>
 #include <grub/i18n.h>
+#include <grub/loader.h>
+#include <grub/util/misc.h>
+
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 
 #include "progname.h"
 #include <argp.h>
@@ -51,8 +56,6 @@ static jmp_buf main_env;
 
 /* Store the prefix specified by an argument.  */
 static char *root_dev = NULL, *dir = NULL;
-
-int grub_no_autoload;
 
 grub_addr_t grub_modbase = 0;
 
@@ -75,9 +78,10 @@ grub_machine_get_bootlocation (char **device, char **path)
 }
 
 void
-grub_machine_fini (void)
+grub_machine_fini (int flags)
 {
-  grub_console_fini ();
+  if (flags & GRUB_LOADER_FLAG_NORETURN)
+    grub_console_fini ();
 }
 
 
@@ -94,6 +98,8 @@ static struct argp_option options[] = {
   { 0, 0, 0, 0, 0, 0 }
 };
 
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+
 static char *
 help_filter (int key, const char *text, void *input __attribute__ ((unused)))
 {
@@ -107,6 +113,8 @@ help_filter (int key, const char *text, void *input __attribute__ ((unused)))
       return (char *) text;
     }
 }
+
+#pragma GCC diagnostic error "-Wformat-nonliteral"
 
 struct arguments
 {
@@ -164,11 +172,7 @@ static struct argp argp = {
 
 
 
-void grub_hostfs_init (void);
-void grub_hostfs_fini (void);
-void grub_host_init (void);
-void grub_host_fini (void);
-void grub_emu_init (void);
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 
 int
 main (int argc, char *argv[])
@@ -180,7 +184,7 @@ main (int argc, char *argv[])
     };
   volatile int hold = 0;
 
-  set_program_name (argv[0]);
+  grub_util_host_init (&argc, &argv);
 
   dir = xstrdup (DEFAULT_DIRECTORY);
 
@@ -205,7 +209,6 @@ main (int argc, char *argv[])
     }
 
   signal (SIGINT, SIG_IGN);
-  grub_emu_init ();
   grub_console_init ();
   grub_host_init ();
 
@@ -215,8 +218,6 @@ main (int argc, char *argv[])
   grub_init_all ();
 
   grub_hostfs_init ();
-
-  grub_emu_post_init ();
 
   /* Make sure that there is a root device.  */
   if (! root_dev)
@@ -232,29 +233,7 @@ main (int argc, char *argv[])
   grub_hostfs_fini ();
   grub_host_fini ();
 
-  grub_machine_fini ();
+  grub_machine_fini (GRUB_LOADER_FLAG_NORETURN);
 
   return 0;
 }
-
-#ifdef __MINGW32__
-
-void
-grub_millisleep (grub_uint32_t ms)
-{
-  Sleep (ms);
-}
-
-#else
-
-void
-grub_millisleep (grub_uint32_t ms)
-{
-  struct timespec ts;
-
-  ts.tv_sec = ms / 1000;
-  ts.tv_nsec = (ms % 1000) * 1000000;
-  nanosleep (&ts, NULL);
-}
-
-#endif

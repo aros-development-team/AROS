@@ -69,7 +69,7 @@ static void
 grub_console_putchar (struct grub_term_output *term __attribute__ ((unused)),
 		      const struct grub_unicode_glyph *c)
 {
-  grub_efi_char16_t str[2 + c->ncomb];
+  grub_efi_char16_t str[2 + 30];
   grub_efi_simple_text_output_interface_t *o;
   unsigned i, j;
 
@@ -84,9 +84,9 @@ grub_console_putchar (struct grub_term_output *term __attribute__ ((unused)),
   else
     str[0] = (grub_efi_char16_t)  map_char (c->base & 0xffff);
   j = 1;
-  for (i = 0; i < c->ncomb; i++)
+  for (i = 0; i < c->ncomb && j + 1 < ARRAY_SIZE (str); i++)
     if (c->base < 0xffff)
-      str[j++] = c->combining[i].code;
+      str[j++] = grub_unicode_get_comb (c)[i].code;
   str[j] = 0;
 
   /* Should this test be cached?  */
@@ -125,14 +125,24 @@ grub_console_getkey (struct grub_term_input *term __attribute__ ((unused)))
     return GRUB_TERM_NO_KEY;
 
   if (key.scan_code == 0)
-    return key.unicode_char;
+    {
+      /* Some firmware implementations use VT100-style codes against the spec.
+	 This is especially likely if driven by serial.
+       */
+      if (key.unicode_char < 0x20 && key.unicode_char != 0
+	  && key.unicode_char != '\t' && key.unicode_char != '\b'
+	  && key.unicode_char != '\n' && key.unicode_char != '\r')
+	return GRUB_TERM_CTRL | (key.unicode_char - 1 + 'a');
+      else
+	return key.unicode_char;
+    }
   else if (key.scan_code < ARRAY_SIZE (efi_codes))
     return efi_codes[key.scan_code];
 
   return GRUB_TERM_NO_KEY;
 }
 
-static grub_uint16_t
+static struct grub_term_coordinate
 grub_console_getwh (struct grub_term_output *term __attribute__ ((unused)))
 {
   grub_efi_simple_text_output_interface_t *o;
@@ -147,24 +157,24 @@ grub_console_getwh (struct grub_term_output *term __attribute__ ((unused)))
       rows = 25;
     }
 
-  return ((columns << 8) | rows);
+  return (struct grub_term_coordinate) { columns, rows };
 }
 
-static grub_uint16_t
+static struct grub_term_coordinate
 grub_console_getxy (struct grub_term_output *term __attribute__ ((unused)))
 {
   grub_efi_simple_text_output_interface_t *o;
 
   if (grub_efi_is_finished)
-    return 0;
+    return (struct grub_term_coordinate) { 0, 0 };
 
   o = grub_efi_system_table->con_out;
-  return ((o->mode->cursor_column << 8) | o->mode->cursor_row);
+  return (struct grub_term_coordinate) { o->mode->cursor_column, o->mode->cursor_row };
 }
 
 static void
 grub_console_gotoxy (struct grub_term_output *term __attribute__ ((unused)),
-		     grub_uint8_t x, grub_uint8_t y)
+		     struct grub_term_coordinate pos)
 {
   grub_efi_simple_text_output_interface_t *o;
 
@@ -172,7 +182,7 @@ grub_console_gotoxy (struct grub_term_output *term __attribute__ ((unused)),
     return;
 
   o = grub_efi_system_table->con_out;
-  efi_call_3 (o->set_cursor_position, o, x, y);
+  efi_call_3 (o->set_cursor_position, o, pos.x, pos.y);
 }
 
 static void
@@ -192,7 +202,8 @@ grub_console_cls (struct grub_term_output *term __attribute__ ((unused)))
 }
 
 static void
-grub_console_setcolorstate (struct grub_term_output *term,
+grub_console_setcolorstate (struct grub_term_output *term
+			    __attribute__ ((unused)),
 			    grub_term_color_state state)
 {
   grub_efi_simple_text_output_interface_t *o;
@@ -208,10 +219,10 @@ grub_console_setcolorstate (struct grub_term_output *term,
 		  & 0x7f);
       break;
     case GRUB_TERM_COLOR_NORMAL:
-      efi_call_2 (o->set_attributes, o, term->normal_color & 0x7f);
+      efi_call_2 (o->set_attributes, o, grub_term_normal_color & 0x7f);
       break;
     case GRUB_TERM_COLOR_HIGHLIGHT:
-      efi_call_2 (o->set_attributes, o, term->highlight_color & 0x7f);
+      efi_call_2 (o->set_attributes, o, grub_term_highlight_color & 0x7f);
       break;
     default:
       break;
@@ -265,9 +276,8 @@ static struct grub_term_output grub_console_term_output =
     .cls = grub_console_cls,
     .setcolorstate = grub_console_setcolorstate,
     .setcursor = grub_console_setcursor,
-    .normal_color = GRUB_TERM_DEFAULT_NORMAL_COLOR,
-    .highlight_color = GRUB_TERM_DEFAULT_HIGHLIGHT_COLOR,
-    .flags = GRUB_TERM_CODE_TYPE_VISUAL_GLYPHS
+    .flags = GRUB_TERM_CODE_TYPE_VISUAL_GLYPHS,
+    .progress_update_divisor = GRUB_PROGRESS_FAST
   };
 
 void

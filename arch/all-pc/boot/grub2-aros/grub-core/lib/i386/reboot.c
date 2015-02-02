@@ -58,4 +58,3 @@ grub_reboot (void)
 
   while (1);
 }
-

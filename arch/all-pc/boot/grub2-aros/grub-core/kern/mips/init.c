@@ -36,9 +36,3 @@ grub_get_rtc (void)
 
   return (((grub_uint64_t) high) << 32) | low;
 }
-
-void
-grub_machine_get_bootlocation (char **device __attribute__ ((unused)),
-			       char **path __attribute__ ((unused)))
-{
-}

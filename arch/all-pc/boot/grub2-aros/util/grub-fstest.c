@@ -34,20 +34,18 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 #include <grub/zfs/zfs.h>
+#include <grub/emu/hostfile.h>
 
 #include <stdio.h>
-#include <unistd.h>
+#include <errno.h>
 #include <string.h>
-#include <stdlib.h>
-
-#include <sys/types.h>
-#include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "progname.h"
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 #include "argp.h"
+#pragma GCC diagnostic error "-Wmissing-prototypes"
+#pragma GCC diagnostic error "-Wmissing-declarations"
 
 static grub_err_t
 execute_command (const char *name, int n, char **args)
@@ -79,7 +77,7 @@ static grub_disk_addr_t skip, leng;
 static int uncompress = 0;
 
 static void
-read_file (char *pathname, int (*hook) (grub_off_t ofs, char *buf, int len))
+read_file (char *pathname, int (*hook) (grub_off_t ofs, char *buf, int len, void *hook_arg), void *hook_arg)
 {
   static char buf[BUF_SIZE];
   grub_file_t file;
@@ -92,7 +90,7 @@ read_file (char *pathname, int (*hook) (grub_off_t ofs, char *buf, int len))
       if ((! dev) || (! dev->disk))
         grub_util_error ("%s", grub_errmsg);
 
-      grub_util_info ("total sectors : %lld",
+      grub_util_info ("total sectors : %" GRUB_HOST_PRIuLONG_LONG,
                       (unsigned long long) dev->disk->total_sectors);
 
       if (! leng)
@@ -105,10 +103,13 @@ read_file (char *pathname, int (*hook) (grub_off_t ofs, char *buf, int len))
           len = (leng > BUF_SIZE) ? BUF_SIZE : leng;
 
           if (grub_disk_read (dev->disk, 0, skip, len, buf))
-            grub_util_error (_("disk read fails at offset %lld, length %d"),
-                             skip, len);
+	    {
+	      char *msg = grub_xasprintf (_("disk read fails at offset %lld, length %lld"),
+					  (long long) skip, (long long) len);
+	      grub_util_error ("%s", msg);
+	    }
 
-          if (hook (skip, buf, len))
+          if (hook (skip, buf, len, hook_arg))
             break;
 
           skip += len;
@@ -129,11 +130,14 @@ read_file (char *pathname, int (*hook) (grub_off_t ofs, char *buf, int len))
       return;
     }
 
-  grub_util_info ("file size : %lld", (unsigned long long) file->size);
+  grub_util_info ("file size : %" GRUB_HOST_PRIuLONG_LONG,
+		  (unsigned long long) file->size);
 
   if (skip > file->size)
     {
-      grub_util_error (_("invalid skip value %lld"), (unsigned long long) skip);
+      char *msg = grub_xasprintf (_("invalid skip value %lld"),
+				  (unsigned long long) skip);
+      grub_util_error ("%s", msg);
       return;
     }
 
@@ -153,12 +157,13 @@ read_file (char *pathname, int (*hook) (grub_off_t ofs, char *buf, int len))
 	sz = grub_file_read (file, buf, (len > BUF_SIZE) ? BUF_SIZE : len);
 	if (sz < 0)
 	  {
-	    grub_util_error (_("read error at offset %llu: %s"), ofs,
-			     grub_errmsg);
+	    char *msg = grub_xasprintf (_("read error at offset %llu: %s"),
+					(unsigned long long) ofs, grub_errmsg);
+	    grub_util_error ("%s", msg);
 	    break;
 	  }
 
-	if ((sz == 0) || (hook (ofs, buf, sz)))
+	if ((sz == 0) || (hook (ofs, buf, sz, hook_arg)))
 	  break;
 
 	ofs += sz;
@@ -169,104 +174,114 @@ read_file (char *pathname, int (*hook) (grub_off_t ofs, char *buf, int len))
   grub_file_close (file);
 }
 
-static void
-cmd_cp (char *src, char *dest)
+struct cp_hook_ctx
 {
   FILE *ff;
+  const char *dest;
+};
 
-  auto int cp_hook (grub_off_t ofs, char *buf, int len);
-  int cp_hook (grub_off_t ofs, char *buf, int len)
-  {
-    (void) ofs;
+static int
+cp_hook (grub_off_t ofs, char *buf, int len, void *_ctx)
+{
+  struct cp_hook_ctx *ctx = _ctx;
+  (void) ofs;
 
-    if ((int) fwrite (buf, 1, len, ff) != len)
-      {
-	grub_util_error (_("cannot write to `%s': %s"),
-			 dest, strerror (errno));
-	return 1;
-      }
+  if ((int) fwrite (buf, 1, len, ctx->ff) != len)
+    {
+      grub_util_error (_("cannot write to `%s': %s"),
+		       ctx->dest, strerror (errno));
+      return 1;
+    }
 
-    return 0;
-  }
+  return 0;
+}
 
-  ff = fopen (dest, "wb");
-  if (ff == NULL)
+static void
+cmd_cp (char *src, const char *dest)
+{
+  struct cp_hook_ctx ctx = 
+    {
+      .dest = dest
+    };
+
+  ctx.ff = grub_util_fopen (dest, "wb");
+  if (ctx.ff == NULL)
     {
       grub_util_error (_("cannot open OS file `%s': %s"), dest,
 		       strerror (errno));
       return;
     }
-  read_file (src, cp_hook);
-  fclose (ff);
+  read_file (src, cp_hook, &ctx);
+  fclose (ctx.ff);
+}
+
+static int
+cat_hook (grub_off_t ofs, char *buf, int len, void *_arg __attribute__ ((unused)))
+{
+  (void) ofs;
+
+  if ((int) fwrite (buf, 1, len, stdout) != len)
+    {
+      grub_util_error (_("cannot write to the stdout: %s"),
+		       strerror (errno));
+      return 1;
+    }
+
+  return 0;
 }
 
 static void
 cmd_cat (char *src)
 {
-  auto int cat_hook (grub_off_t ofs, char *buf, int len);
-  int cat_hook (grub_off_t ofs, char *buf, int len)
-  {
-    (void) ofs;
-
-    if ((int) fwrite (buf, 1, len, stdout) != len)
-      {
-	grub_util_error (_("cannot write to the stdout: %s"),
-			 strerror (errno));
-	return 1;
-      }
-
-    return 0;
-  }
-
-  read_file (src, cat_hook);
+  read_file (src, cat_hook, 0);
 }
+
+static int
+cmp_hook (grub_off_t ofs, char *buf, int len, void *ff_in)
+{
+  FILE *ff = ff_in;
+  static char buf_1[BUF_SIZE];
+  if ((int) fread (buf_1, 1, len, ff) != len)
+    {
+      char *msg = grub_xasprintf (_("read error at offset %llu: %s"),
+				  (unsigned long long) ofs, grub_errmsg);
+      grub_util_error ("%s", msg);
+      return 1;
+    }
+
+  if (grub_memcmp (buf, buf_1, len) != 0)
+    {
+      int i;
+
+      for (i = 0; i < len; i++, ofs++)
+	if (buf_1[i] != buf[i])
+	  {
+	    char *msg = grub_xasprintf (_("compare fail at offset %llu"),
+					(unsigned long long) ofs);
+	    grub_util_error ("%s", msg);
+	    return 1;
+	  }
+    }
+  return 0;
+}
+
 
 static void
 cmd_cmp (char *src, char *dest)
 {
   FILE *ff;
-  static char buf_1[BUF_SIZE];
 
-  auto int cmp_hook (grub_off_t ofs, char *buf, int len);
-  int cmp_hook (grub_off_t ofs, char *buf, int len)
-  {
-    if ((int) fread (buf_1, 1, len, ff) != len)
-      {
-	grub_util_error (_("read error at offset %llu: %s"), ofs,
-			 grub_errmsg);
-	return 1;
-      }
-
-    if (grub_memcmp (buf, buf_1, len))
-      {
-	int i;
-
-	for (i = 0; i < len; i++, ofs++)
-	  if (buf_1[i] != buf[i])
-	    {
-	      grub_util_error (_("compare fail at offset %llu"), ofs);
-	      return 1;
-	    }
-      }
-    return 0;
-  }
-
-  struct stat st;
-  if (stat (dest, &st) == -1)
-    grub_util_error (_("OS file %s open error: %s"), dest,
-		     strerror (errno));
-
-  if (S_ISDIR (st.st_mode))
+  if (grub_util_is_directory (dest))
     {
-      DIR *dir = opendir (dest);
-      struct dirent *entry;
+      grub_util_fd_dir_t dir = grub_util_fd_opendir (dest);
+      grub_util_fd_dirent_t entry;
       if (dir == NULL)
 	{
 	  grub_util_error (_("OS file %s open error: %s"), dest,
-			   strerror (errno));
+			   grub_util_fd_strerror ());
 	  return;
 	}
-      while ((entry = readdir (dir)))
+      while ((entry = grub_util_fd_readdir (dir)))
 	{
 	  char *srcnew, *destnew;
 	  char *ptr;
@@ -277,24 +292,23 @@ cmd_cmp (char *src, char *dest)
 			    + strlen (entry->d_name));
 	  destnew = xmalloc (strlen (dest) + sizeof ("/")
 			    + strlen (entry->d_name));
-	  ptr = stpcpy (srcnew, src);
+	  ptr = grub_stpcpy (srcnew, src);
 	  *ptr++ = '/';
 	  strcpy (ptr, entry->d_name);
-	  ptr = stpcpy (destnew, dest);
+	  ptr = grub_stpcpy (destnew, dest);
 	  *ptr++ = '/';
 	  strcpy (ptr, entry->d_name);
 
-	  if (lstat (destnew, &st) == -1 || (!S_ISREG (st.st_mode)
-					  && !S_ISDIR (st.st_mode)))
+	  if (grub_util_is_special_file (destnew))
 	    continue;
 
 	  cmd_cmp (srcnew, destnew);
 	}
-      closedir (dir);
+      grub_util_fd_closedir (dir);
       return;
     }
 
-  ff = fopen (dest, "rb");
+  ff = grub_util_fopen (dest, "rb");
   if (ff == NULL)
     {
       grub_util_error (_("OS file %s open error: %s"), dest,
@@ -306,7 +320,7 @@ cmd_cmp (char *src, char *dest)
     grub_util_error (_("cannot seek `%s': %s"), dest,
 		     strerror (errno));
 
-  read_file (src, cmp_hook);
+  read_file (src, cmp_hook, ff);
 
   {
     grub_uint64_t pre;
@@ -318,38 +332,39 @@ cmd_cmp (char *src, char *dest)
   fclose (ff);
 }
 
+static int
+hex_hook (grub_off_t ofs, char *buf, int len, void *arg __attribute__ ((unused)))
+{
+  hexdump (ofs, buf, len);
+  return 0;
+}
+
 static void
 cmd_hex (char *pathname)
 {
-  auto int hex_hook (grub_off_t ofs, char *buf, int len);
-  int hex_hook (grub_off_t ofs, char *buf, int len)
-  {
-    hexdump (ofs, buf, len);
-    return 0;
-  }
+  read_file (pathname, hex_hook, 0);
+}
 
-  read_file (pathname, hex_hook);
+static int
+crc_hook (grub_off_t ofs, char *buf, int len, void *crc_ctx)
+{
+  (void) ofs;
+  
+  GRUB_MD_CRC32->write(crc_ctx, buf, len);
+  return 0;
 }
 
 static void
 cmd_crc (char *pathname)
 {
-  grub_uint8_t crc32_context[GRUB_MD_CRC32->contextsize];
+  grub_uint8_t *crc32_context = xmalloc (GRUB_MD_CRC32->contextsize);
   GRUB_MD_CRC32->init(crc32_context);
 
-  auto int crc_hook (grub_off_t ofs, char *buf, int len);
-  int crc_hook (grub_off_t ofs, char *buf, int len)
-  {
-    (void) ofs;
-
-    GRUB_MD_CRC32->write(crc32_context, buf, len);
-    return 0;
-  }
-
-  read_file (pathname, crc_hook);
+  read_file (pathname, crc_hook, crc32_context);
   GRUB_MD_CRC32->final(crc32_context);
   printf ("%08x\n",
 	  grub_be_to_cpu32 (grub_get_unaligned32 (GRUB_MD_CRC32->read (crc32_context))));
+  free (crc32_context);
 }
 
 static const char *root = NULL;
@@ -546,7 +561,7 @@ argp_parser (int key, char *arg, struct argp_state *state)
 	FILE *f;
 	ssize_t real_size;
 	grub_uint8_t buf[1024];
-	f = fopen (arg, "rb");
+	f = grub_util_fopen (arg, "rb");
 	if (!f)
 	  {
 	    printf (_("%s: error:"), program_name);
@@ -555,12 +570,12 @@ argp_parser (int key, char *arg, struct argp_state *state)
 	    return 0;
 	  }
 	real_size = fread (buf, 1, 1024, f);
+	fclose (f);
 	if (real_size < 0)
 	  {
 	    printf (_("%s: error:"), program_name);
 	    printf (_("cannot read `%s': %s"), arg, strerror (errno));
 	    printf ("\n");
-	    fclose (f);
 	    return 0;
 	  }
 	grub_zfs_add_key (buf, real_size, 0);
@@ -717,9 +732,7 @@ main (int argc, char *argv[])
   const char *default_root;
   char *alloc_root;
 
-  set_program_name (argv[0]);
-
-  grub_util_init_nls ();
+  grub_util_host_init (&argc, &argv);
 
   args = xmalloc (argc * sizeof (args[0]));
 

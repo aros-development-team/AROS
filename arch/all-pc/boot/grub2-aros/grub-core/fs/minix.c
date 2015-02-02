@@ -65,7 +65,6 @@ typedef grub_uint16_t grub_minix_uintn_t;
 #define grub_minix_to_cpu_n grub_minix_to_cpu16
 #endif
 
-#define GRUB_MINIX_INODE_BLKSZ(data) sizeof (grub_minix_uintn_t)
 #ifdef MODE_MINIX3
 typedef grub_uint32_t grub_minix_ino_t;
 #define grub_minix_to_cpu_ino grub_minix_to_cpu32
@@ -82,19 +81,6 @@ typedef grub_uint16_t grub_minix_ino_t;
 					    (data->inode.indir_zone))
 #define GRUB_MINIX_INODE_DINDIR_ZONE(data) (grub_minix_to_cpu_n \
 					    (data->inode.double_indir_zone))
-
-#ifndef MODE_MINIX3
-#define GRUB_MINIX_LOG2_ZONESZ	(GRUB_MINIX_LOG2_BSIZE				\
-				 + grub_minix_to_cpu16 (data->sblock.log2_zone_size))
-#endif
-#define GRUB_MINIX_ZONESZ	((grub_uint64_t) data->block_size <<			\
-				 (GRUB_DISK_SECTOR_BITS + grub_minix_to_cpu16 (data->sblock.log2_zone_size)))
-
-#ifdef MODE_MINIX3
-#define GRUB_MINIX_ZONE2SECT(zone) ((zone) * data->block_size)
-#else
-#define GRUB_MINIX_ZONE2SECT(zone) ((zone) << GRUB_MINIX_LOG2_ZONESZ)
-#endif
 
 
 #ifdef MODE_MINIX3
@@ -161,11 +147,18 @@ struct grub_minix_inode
 
 #endif
 
+#if defined(MODE_MINIX3)
+#define MAX_MINIX_FILENAME_SIZE 60
+#else
+#define MAX_MINIX_FILENAME_SIZE 30
+#endif
+
 /* Information about a "mounted" minix filesystem.  */
 struct grub_minix_data
 {
   struct grub_minix_sblock sblock;
   struct grub_minix_inode inode;
+  grub_uint32_t block_per_zone;
   grub_minix_ino_t ino;
   int linknest;
   grub_disk_t disk;
@@ -178,27 +171,41 @@ static grub_dl_t my_mod;
 static grub_err_t grub_minix_find_file (struct grub_minix_data *data,
 					const char *path);
 
+#ifdef MODE_MINIX3
+static inline grub_disk_addr_t
+grub_minix_zone2sect (struct grub_minix_data *data, grub_minix_uintn_t zone)
+{
+  return ((grub_disk_addr_t) zone) * data->block_size;
+}
+#else
+static inline grub_disk_addr_t
+grub_minix_zone2sect (struct grub_minix_data *data, grub_minix_uintn_t zone)
+{
+  int log2_zonesz = (GRUB_MINIX_LOG2_BSIZE
+		     + grub_minix_to_cpu16 (data->sblock.log2_zone_size));
+  return (((grub_disk_addr_t) zone) << log2_zonesz);
+}
+#endif
+
+
+  /* Read the block pointer in ZONE, on the offset NUM.  */
+static grub_minix_uintn_t
+grub_get_indir (struct grub_minix_data *data,
+		 grub_minix_uintn_t zone,
+		 grub_minix_uintn_t num)
+{
+  grub_minix_uintn_t indirn;
+  grub_disk_read (data->disk,
+		  grub_minix_zone2sect(data, zone),
+		  sizeof (grub_minix_uintn_t) * num,
+		  sizeof (grub_minix_uintn_t), (char *) &indirn);
+  return grub_minix_to_cpu_n (indirn);
+}
+
 static grub_minix_uintn_t
 grub_minix_get_file_block (struct grub_minix_data *data, unsigned int blk)
 {
   grub_minix_uintn_t indir;
-  const grub_uint32_t block_per_zone = (GRUB_MINIX_ZONESZ
-					/ GRUB_MINIX_INODE_BLKSZ (data));
-
-  auto grub_minix_uintn_t grub_get_indir (grub_minix_uintn_t,
-					  grub_minix_uintn_t);
-
-  /* Read the block pointer in ZONE, on the offset NUM.  */
-  grub_minix_uintn_t grub_get_indir (grub_minix_uintn_t zone,
-				     grub_minix_uintn_t num)
-    {
-      grub_minix_uintn_t indirn;
-      grub_disk_read (data->disk,
-		      GRUB_MINIX_ZONE2SECT(zone),
-		      sizeof (grub_minix_uintn_t) * num,
-		      sizeof (grub_minix_uintn_t), (char *) &indirn);
-      return grub_minix_to_cpu_n (indirn);
-    }
 
   /* Direct block.  */
   if (blk < GRUB_MINIX_INODE_DIR_BLOCKS)
@@ -206,33 +213,33 @@ grub_minix_get_file_block (struct grub_minix_data *data, unsigned int blk)
 
   /* Indirect block.  */
   blk -= GRUB_MINIX_INODE_DIR_BLOCKS;
-  if (blk < block_per_zone)
+  if (blk < data->block_per_zone)
     {
-      indir = grub_get_indir (GRUB_MINIX_INODE_INDIR_ZONE (data), blk);
+      indir = grub_get_indir (data, GRUB_MINIX_INODE_INDIR_ZONE (data), blk);
       return indir;
     }
 
   /* Double indirect block.  */
-  blk -= block_per_zone;
-  if (blk < block_per_zone * block_per_zone)
+  blk -= data->block_per_zone;
+  if (blk < (grub_uint64_t) data->block_per_zone * (grub_uint64_t) data->block_per_zone)
     {
-      indir = grub_get_indir (GRUB_MINIX_INODE_DINDIR_ZONE (data),
-			      blk / block_per_zone);
+      indir = grub_get_indir (data, GRUB_MINIX_INODE_DINDIR_ZONE (data),
+			      blk / data->block_per_zone);
 
-      indir = grub_get_indir (indir, blk % block_per_zone);
+      indir = grub_get_indir (data, indir, blk % data->block_per_zone);
 
       return indir;
     }
 
 #if defined (MODE_MINIX3) || defined (MODE_MINIX2)
-  blk -= block_per_zone * block_per_zone;
-  if (blk < ((grub_uint64_t) block_per_zone * (grub_uint64_t) block_per_zone
-	     * (grub_uint64_t) block_per_zone))
+  blk -= data->block_per_zone * data->block_per_zone;
+  if (blk < ((grub_uint64_t) data->block_per_zone * (grub_uint64_t) data->block_per_zone
+	     * (grub_uint64_t) data->block_per_zone))
     {
-      indir = grub_get_indir (grub_minix_to_cpu_n (data->inode.triple_indir_zone),
-			      (blk / block_per_zone) / block_per_zone);
-      indir = grub_get_indir (indir, (blk / block_per_zone) % block_per_zone);
-      indir = grub_get_indir (indir, blk % block_per_zone);
+      indir = grub_get_indir (data, grub_minix_to_cpu_n (data->inode.triple_indir_zone),
+			      (blk / data->block_per_zone) / data->block_per_zone);
+      indir = grub_get_indir (data, indir, (blk / data->block_per_zone) % data->block_per_zone);
+      indir = grub_get_indir (data, indir, blk % data->block_per_zone);
 
       return indir;
     }
@@ -249,8 +256,7 @@ grub_minix_get_file_block (struct grub_minix_data *data, unsigned int blk)
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_minix_read_file (struct grub_minix_data *data,
-		      void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
-					 unsigned offset, unsigned length),
+		      grub_disk_read_hook_t read_hook, void *read_hook_data,
 		      grub_off_t pos, grub_size_t len, char *buf)
 {
   grub_uint32_t i;
@@ -258,15 +264,22 @@ grub_minix_read_file (struct grub_minix_data *data,
   grub_uint32_t posblock;
   grub_uint32_t blockoff;
 
+  if (pos > GRUB_MINIX_INODE_SIZE (data))
+    {
+      grub_error (GRUB_ERR_OUT_OF_RANGE,
+		  N_("attempt to read past the end of file"));
+      return -1;
+    }
+
   /* Adjust len so it we can't read past the end of the file.  */
   if (len + pos > GRUB_MINIX_INODE_SIZE (data))
     len = GRUB_MINIX_INODE_SIZE (data) - pos;
+  if (len == 0)
+    return 0;
 
   /* Files are at most 2G/4G - 1 bytes on minixfs. Avoid 64-bit division.  */
-  blockcnt = ((grub_uint32_t) ((len + pos
-				+ (data->block_size << GRUB_DISK_SECTOR_BITS)
-				- 1)
-	       >> GRUB_DISK_SECTOR_BITS)) / data->block_size;
+  blockcnt = ((grub_uint32_t) ((len + pos - 1)
+	       >> GRUB_DISK_SECTOR_BITS)) / data->block_size + 1;
   posblock = (((grub_uint32_t) pos)
 	      / (data->block_size << GRUB_DISK_SECTOR_BITS));
   blockoff = (((grub_uint32_t) pos)
@@ -274,7 +287,7 @@ grub_minix_read_file (struct grub_minix_data *data,
 
   for (i = posblock; i < blockcnt; i++)
     {
-      grub_disk_addr_t blknr;
+      grub_minix_uintn_t blknr;
       grub_uint64_t blockend = data->block_size << GRUB_DISK_SECTOR_BITS;
       grub_off_t skipfirst = 0;
 
@@ -301,8 +314,9 @@ grub_minix_read_file (struct grub_minix_data *data,
 	}
 
       data->disk->read_hook = read_hook;
+      data->disk->read_hook_data = read_hook_data;
       grub_disk_read (data->disk,
-		      GRUB_MINIX_ZONE2SECT(blknr),
+		      grub_minix_zone2sect(data, blknr),
 		      skipfirst, blockend, buf);
       data->disk->read_hook = 0;
       if (grub_errno)
@@ -328,7 +342,8 @@ grub_minix_read_inode (struct grub_minix_data *data, grub_minix_ino_t ino)
 
   /* The first inode in minix is inode 1.  */
   ino--;
-  block = GRUB_MINIX_ZONE2SECT (2 + grub_minix_to_cpu16 (sblock->inode_bmap_size)
+  block = grub_minix_zone2sect (data,
+				2 + grub_minix_to_cpu16 (sblock->inode_bmap_size)
 				+ grub_minix_to_cpu16 (sblock->zone_bmap_size));
   block += ino / (GRUB_DISK_SECTOR_SIZE / sizeof (struct grub_minix_inode));
   int offs = (ino % (GRUB_DISK_SECTOR_SIZE
@@ -347,16 +362,19 @@ grub_minix_read_inode (struct grub_minix_data *data, grub_minix_ino_t ino)
 static grub_err_t
 grub_minix_lookup_symlink (struct grub_minix_data *data, grub_minix_ino_t ino)
 {
-  char symlink[GRUB_MINIX_INODE_SIZE (data) + 1];
+  char *symlink;
+  grub_size_t sz = GRUB_MINIX_INODE_SIZE (data);
 
   if (++data->linknest > GRUB_MINIX_MAX_SYMLNK_CNT)
     return grub_error (GRUB_ERR_SYMLINK_LOOP, N_("too deep nesting of symlinks"));
 
-  if (grub_minix_read_file (data, 0, 0,
-			    GRUB_MINIX_INODE_SIZE (data), symlink) < 0)
+  symlink = grub_malloc (sz + 1);
+  if (!symlink)
+    return grub_errno;
+  if (grub_minix_read_file (data, 0, 0, 0, sz, symlink) < 0)
     return grub_errno;
 
-  symlink[GRUB_MINIX_INODE_SIZE (data)] = '\0';
+  symlink[sz] = '\0';
 
   /* The symlink is an absolute path, go back to the root inode.  */
   if (symlink[0] == '/')
@@ -377,90 +395,70 @@ grub_minix_lookup_symlink (struct grub_minix_data *data, grub_minix_ino_t ino)
 static grub_err_t
 grub_minix_find_file (struct grub_minix_data *data, const char *path)
 {
-  char fpath[grub_strlen (path) + 1];
-  char *name = fpath;
-  char *next;
+  const char *name;
+  const char *next = path;
   unsigned int pos = 0;
   grub_minix_ino_t dirino;
 
-  grub_strcpy (fpath, path);
-
-  /* Skip the first slash.  */
-  while (*name == '/')
-    name++;
-  if (!*name)
-    return 0;
-
-  /* Extract the actual part from the pathname.  */
-  next = grub_strchr (name, '/');
-  if (next)
+  while (1)
     {
-      next[0] = '\0';
-      next++;
-      while (*next == '/')
-	next++;
-    }
-
-  do
-    {
-      grub_minix_ino_t ino;
-      char filename[data->filename_size + 1];
-
-      if (grub_strlen (name) == 0)
+      name = next;
+      /* Skip the first slash.  */
+      while (*name == '/')
+	name++;
+      if (!*name)
 	return GRUB_ERR_NONE;
 
-      if (grub_minix_read_file (data, 0, pos, sizeof (ino),
-				(char *) &ino) < 0)
-	return grub_errno;
-      if (grub_minix_read_file (data, 0, pos + sizeof (ino),
-				data->filename_size, (char *) filename)< 0)
-	return grub_errno;
+      if ((GRUB_MINIX_INODE_MODE (data)
+	   & GRUB_MINIX_IFDIR) != GRUB_MINIX_IFDIR)
+	return grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
 
-      filename[data->filename_size] = '\0';
+      /* Extract the actual part from the pathname.  */
+      for (next = name; *next && *next != '/'; next++);
 
-      /* Check if the current direntry matches the current part of the
-	 pathname.  */
-      if (!grub_strcmp (name, filename))
+      for (pos = 0; ; )
 	{
-	  dirino = data->ino;
-	  grub_minix_read_inode (data, grub_minix_to_cpu_ino (ino));
+	  grub_minix_ino_t ino;
+	  char filename[MAX_MINIX_FILENAME_SIZE + 1];
 
-	  /* Follow the symlink.  */
-	  if ((GRUB_MINIX_INODE_MODE (data)
-	       & GRUB_MINIX_IFLNK) == GRUB_MINIX_IFLNK)
+	  if (pos >= GRUB_MINIX_INODE_SIZE (data))
 	    {
-	      grub_minix_lookup_symlink (data, dirino);
-	      if (grub_errno)
-		return grub_errno;
+	      grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), path);
+	      return grub_errno;
 	    }
 
-	  if (!next)
-	    return 0;
+	  if (grub_minix_read_file (data, 0, 0, pos, sizeof (ino),
+				    (char *) &ino) < 0)
+	    return grub_errno;
+	  if (grub_minix_read_file (data, 0, 0, pos + sizeof (ino),
+				    data->filename_size, (char *) filename)< 0)
+	    return grub_errno;
 
-	  pos = 0;
+	  pos += sizeof (ino) + data->filename_size;
 
-	  name = next;
-	  next = grub_strchr (name, '/');
-	  if (next)
+	  filename[data->filename_size] = '\0';
+
+	  /* Check if the current direntry matches the current part of the
+	     pathname.  */
+	  if (grub_strncmp (name, filename, next - name) == 0
+	      && filename[next - name] == '\0')
 	    {
-	      next[0] = '\0';
-	      next++;
-	      while (*next == '/')
-		next++;
+	      dirino = data->ino;
+	      grub_minix_read_inode (data, grub_minix_to_cpu_ino (ino));
+
+	      /* Follow the symlink.  */
+	      if ((GRUB_MINIX_INODE_MODE (data)
+		   & GRUB_MINIX_IFLNK) == GRUB_MINIX_IFLNK)
+		{
+		  grub_minix_lookup_symlink (data, dirino);
+		  if (grub_errno)
+		    return grub_errno;
+		}
+
+	      break;
 	    }
-
-     	  if ((GRUB_MINIX_INODE_MODE (data)
-	       & GRUB_MINIX_IFDIR) != GRUB_MINIX_IFDIR)
-	    return grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
-
-	  continue;
 	}
-
-      pos += sizeof (ino) + data->filename_size;
-    } while (pos < GRUB_MINIX_INODE_SIZE (data));
-
-  grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), path);
-  return grub_errno;
+    }
 }
 
 
@@ -520,6 +518,12 @@ grub_minix_mount (grub_disk_t disk)
   data->block_size = 2;
 #endif
 
+  data->block_per_zone = (((grub_uint64_t) data->block_size <<	\
+			   (GRUB_DISK_SECTOR_BITS + grub_minix_to_cpu16 (data->sblock.log2_zone_size)))
+			  / sizeof (grub_minix_uintn_t));
+  if (!data->block_per_zone)
+    goto fail;
+
   return data;
 
  fail:
@@ -536,8 +540,7 @@ grub_minix_mount (grub_disk_t disk)
 
 static grub_err_t
 grub_minix_dir (grub_device_t device, const char *path,
-		  int (*hook) (const char *filename,
-			       const struct grub_dirhook_info *info))
+		grub_fs_dir_hook_t hook, void *hook_data)
 {
   struct grub_minix_data *data = 0;
   unsigned int pos = 0;
@@ -563,17 +566,17 @@ grub_minix_dir (grub_device_t device, const char *path,
   while (pos < GRUB_MINIX_INODE_SIZE (data))
     {
       grub_minix_ino_t ino;
-      char filename[data->filename_size + 1];
+      char filename[MAX_MINIX_FILENAME_SIZE + 1];
       grub_minix_ino_t dirino = data->ino;
       struct grub_dirhook_info info;
       grub_memset (&info, 0, sizeof (info));
 
 
-      if (grub_minix_read_file (data, 0, pos, sizeof (ino),
+      if (grub_minix_read_file (data, 0, 0, pos, sizeof (ino),
 				(char *) &ino) < 0)
 	return grub_errno;
 
-      if (grub_minix_read_file (data, 0, pos + sizeof (ino),
+      if (grub_minix_read_file (data, 0, 0, pos + sizeof (ino),
 				data->filename_size,
 				(char *) filename) < 0)
 	return grub_errno;
@@ -590,7 +593,7 @@ grub_minix_dir (grub_device_t device, const char *path,
       info.mtimeset = 1;
       info.mtime = grub_minix_to_cpu32 (data->inode.mtime);
 
-      if (hook (filename, &info) ? 1 : 0)
+      if (hook (filename, &info, hook_data) ? 1 : 0)
 	break;
 
       /* Load the old inode back in.  */
@@ -650,7 +653,8 @@ grub_minix_read (grub_file_t file, char *buf, grub_size_t len)
   struct grub_minix_data *data =
     (struct grub_minix_data *) file->data;
 
-  return grub_minix_read_file (data, file->read_hook, file->offset, len, buf);
+  return grub_minix_read_file (data, file->read_hook, file->read_hook_data,
+			       file->offset, len, buf);
 }
 
 

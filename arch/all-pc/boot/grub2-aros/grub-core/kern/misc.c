@@ -25,8 +25,39 @@
 #include <grub/env.h>
 #include <grub/i18n.h>
 
+union printf_arg
+{
+  /* Yes, type is also part of union as the moment we fill the value
+     we don't need to store its type anymore (when we'll need it, we'll
+     have format spec again. So save some space.  */
+  enum
+    {
+      INT, LONG, LONGLONG,
+      UNSIGNED_INT = 3, UNSIGNED_LONG, UNSIGNED_LONGLONG
+    } type;
+  long long ll;
+};
+
+struct printf_args
+{
+  union printf_arg prealloc[32];
+  union printf_arg *ptr;
+  grub_size_t count;
+};
+
+static void
+parse_printf_args (const char *fmt0, struct printf_args *args,
+		   va_list args_in);
 static int
-grub_vsnprintf_real (char *str, grub_size_t n, const char *fmt, va_list args);
+grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0,
+		     struct printf_args *args);
+
+static void
+free_printf_args (struct printf_args *args)
+{
+  if (args->ptr != args->prealloc)
+    grub_free (args->ptr);
+}
 
 static int
 grub_iswordseparator (int c)
@@ -71,12 +102,12 @@ void *memmove (void *dest, const void *src, grub_size_t n)
 void *memcpy (void *dest, const void *src, grub_size_t n)
   __attribute__ ((alias ("grub_memmove")));
 #else
-void * __attribute__ ((regparm(0)))
+void * GRUB_BUILTIN_ATTR
 memcpy (void *dest, const void *src, grub_size_t n)
 {
 	return grub_memmove (dest, src, n);
 }
-void * __attribute__ ((regparm(0)))
+void * GRUB_BUILTIN_ATTR
 memmove (void *dest, const void *src, grub_size_t n)
 {
 	return grub_memmove (dest, src, n);
@@ -89,17 +120,6 @@ grub_strcpy (char *dest, const char *src)
   char *p = dest;
 
   while ((*p++ = *src++) != '\0')
-    ;
-
-  return dest;
-}
-
-char *
-grub_strncpy (char *dest, const char *src, int c)
-{
-  char *p = dest;
-
-  while ((*p++ = *src++) != '\0' && --c)
     ;
 
   return dest;
@@ -180,15 +200,16 @@ grub_real_dprintf (const char *file, const int line, const char *condition,
 #define PREALLOC_SIZE 255
 
 int
-grub_vprintf (const char *fmt, va_list args)
+grub_vprintf (const char *fmt, va_list ap)
 {
   grub_size_t s;
   static char buf[PREALLOC_SIZE + 1];
   char *curbuf = buf;
-  va_list ap2;
-  va_copy (ap2, args);
+  struct printf_args args;
 
-  s = grub_vsnprintf_real (buf, PREALLOC_SIZE, fmt, args);
+  parse_printf_args (fmt, &args, ap);
+
+  s = grub_vsnprintf_real (buf, PREALLOC_SIZE, fmt, &args);
   if (s > PREALLOC_SIZE)
     {
       curbuf = grub_malloc (s + 1);
@@ -202,16 +223,16 @@ grub_vprintf (const char *fmt, va_list args)
 	  curbuf = buf;
 	}
       else
-	s = grub_vsnprintf_real (curbuf, s, fmt, ap2);
+	s = grub_vsnprintf_real (curbuf, s, fmt, &args);
     }
 
-  va_end (ap2);
+  free_printf_args (&args);
 
   grub_xputs (curbuf);
 
   if (curbuf != buf)
     grub_free (curbuf);
-  
+
   return s;
 }
 
@@ -236,7 +257,7 @@ grub_memcmp (const void *s1, const void *s2, grub_size_t n)
 int memcmp (const void *s1, const void *s2, grub_size_t n)
   __attribute__ ((alias ("grub_memcmp")));
 #else
-int __attribute__ ((regparm(0)))
+int GRUB_BUILTIN_ATTR
 memcmp (const void *s1, const void *s2, grub_size_t n)
 {
   return grub_memcmp (s1, s2, n);
@@ -347,13 +368,6 @@ grub_isspace (int c)
   return (c == '\n' || c == '\r' || c == ' ' || c == '\t');
 }
 
-int
-grub_isprint (int c)
-{
-  return (c >= ' ' && c <= '~');
-}
-
-
 unsigned long
 grub_strtoul (const char *str, char **end, int base)
 {
@@ -378,7 +392,8 @@ grub_strtoull (const char *str, char **end, int base)
   int found = 0;
 
   /* Skip white spaces.  */
-  while (*str && grub_isspace (*str))
+  /* grub_isspace checks that *str != '\0'.  */
+  while (grub_isspace (*str))
     str++;
 
   /* Guess the base, if not specified. The prefix `0x' means 16, and
@@ -471,6 +486,15 @@ grub_strndup (const char *s, grub_size_t n)
   return p;
 }
 
+/* clang detects that we're implementing here a memset so it decides to
+   optimise and calls memset resulting in infinite recursion. With volatile
+   we make it not optimise in this way.  */
+#ifdef __clang__
+#define VOLATILE_CLANG volatile
+#else
+#define VOLATILE_CLANG
+#endif
+
 void *
 grub_memset (void *s, int c, grub_size_t len)
 {
@@ -487,13 +511,13 @@ grub_memset (void *s, int c, grub_size_t len)
 
       while (len > 0 && (((grub_addr_t) p) & (sizeof (unsigned long) - 1)))
 	{
-	  *(grub_uint8_t *) p = pattern8;
+	  *(VOLATILE_CLANG grub_uint8_t *) p = pattern8;
 	  p = (grub_uint8_t *) p + 1;
 	  len--;
 	}
       while (len >= sizeof (unsigned long))
 	{
-	  *(unsigned long *) p = patternl;
+	  *(VOLATILE_CLANG unsigned long *) p = patternl;
 	  p = (unsigned long *) p + 1;
 	  len -= sizeof (unsigned long);
 	}
@@ -501,7 +525,7 @@ grub_memset (void *s, int c, grub_size_t len)
 
   while (len > 0)
     {
-      *(grub_uint8_t *) p = pattern8;
+      *(VOLATILE_CLANG grub_uint8_t *) p = pattern8;
       p = (grub_uint8_t *) p + 1;
       len--;
     }
@@ -512,11 +536,21 @@ grub_memset (void *s, int c, grub_size_t len)
 void *memset (void *s, int c, grub_size_t n)
   __attribute__ ((alias ("grub_memset")));
 #else
-void * __attribute__ ((regparm(0)))
+void * GRUB_BUILTIN_ATTR
 memset (void *s, int c, grub_size_t n)
 {
   return grub_memset (s, c, n);
 }
+
+#endif
+
+#if !defined(GRUB_UTIL) && defined(__APPLE__)
+void GRUB_BUILTIN_ATTR
+__bzero (void *s, grub_size_t n)
+{
+  grub_memset (s, 0, n);
+}
+
 #endif
 
 grub_size_t
@@ -559,6 +593,11 @@ grub_divmod64 (grub_uint64_t n, grub_uint64_t d, grub_uint64_t *r)
   grub_uint64_t q = 0;
   grub_uint64_t m = 0;
 
+  /* ARM and IA64 don't have a fast 32-bit division.
+     Using that code would just make us use libgcc routines, calling
+     them twice (once for modulo and once for quotient.
+  */
+#if !defined (__arm__) && !defined (__ia64__)
   /* Skip the slow computation if 32-bit arithmetic is possible.  */
   if (n < 0xffffffff && d < 0xffffffff)
     {
@@ -567,6 +606,7 @@ grub_divmod64 (grub_uint64_t n, grub_uint64_t d, grub_uint64_t *r)
 
       return ((grub_uint32_t) n) / (grub_uint32_t) d;
     }
+#endif
 
   while (bits--)
     {
@@ -591,9 +631,135 @@ grub_divmod64 (grub_uint64_t n, grub_uint64_t d, grub_uint64_t *r)
   return q;
 }
 
+#if !defined (GRUB_UTIL) && !defined (GRUB_MACHINE_EMU)
+
+#if defined (__arm__)
+
+grub_uint32_t
+__udivsi3 (grub_uint32_t a, grub_uint32_t b)
+{
+  return grub_divmod64 (a, b, 0);
+}
+
+grub_uint32_t
+__umodsi3 (grub_uint32_t a, grub_uint32_t b)
+{
+  grub_uint64_t ret;
+  grub_divmod64 (a, b, &ret);
+  return ret;
+}
+
+#endif
+
+#ifdef NEED_CTZDI2
+
+unsigned
+__ctzdi2 (grub_uint64_t x)
+{
+  unsigned ret = 0;
+  if (!x)
+    return 64;
+  if (!(x & 0xffffffff))
+    {
+      x >>= 32;
+      ret |= 32;
+    }
+  if (!(x & 0xffff))
+    {
+      x >>= 16;
+      ret |= 16;
+    }
+  if (!(x & 0xff))
+    {
+      x >>= 8;
+      ret |= 8;
+    }
+  if (!(x & 0xf))
+    {
+      x >>= 4;
+      ret |= 4;
+    }
+  if (!(x & 0x3))
+    {
+      x >>= 2;
+      ret |= 2;
+    }
+  if (!(x & 0x1))
+    {
+      x >>= 1;
+      ret |= 1;
+    }
+  return ret;
+}
+#endif
+
+#ifdef NEED_CTZSI2
+unsigned
+__ctzsi2 (grub_uint32_t x)
+{
+  unsigned ret = 0;
+  if (!x)
+    return 32;
+
+  if (!(x & 0xffff))
+    {
+      x >>= 16;
+      ret |= 16;
+    }
+  if (!(x & 0xff))
+    {
+      x >>= 8;
+      ret |= 8;
+    }
+  if (!(x & 0xf))
+    {
+      x >>= 4;
+      ret |= 4;
+    }
+  if (!(x & 0x3))
+    {
+      x >>= 2;
+      ret |= 2;
+    }
+  if (!(x & 0x1))
+    {
+      x >>= 1;
+      ret |= 1;
+    }
+  return ret;
+}
+
+#endif
+
+#ifdef __arm__
+grub_uint32_t
+__aeabi_uidiv (grub_uint32_t a, grub_uint32_t b)
+  __attribute__ ((alias ("__udivsi3")));
+#endif
+
+#if defined (__ia64__)
+
+grub_uint64_t
+__udivdi3 (grub_uint64_t a, grub_uint64_t b)
+{
+  return grub_divmod64 (a, b, 0);
+}
+
+grub_uint64_t
+__umoddi3 (grub_uint64_t a, grub_uint64_t b)
+{
+  grub_uint64_t ret;
+  grub_divmod64 (a, b, &ret);
+  return ret;
+}
+
+#endif
+
+#endif /* GRUB_UTIL */
+
 /* Convert a long long value to a string. This function avoids 64-bit
    modular arithmetic or divisions.  */
-static char *
+static inline char *
 grub_lltoa (char *str, int c, unsigned long long n)
 {
   unsigned base = (c == 'x') ? 16 : 10;
@@ -631,38 +797,21 @@ grub_lltoa (char *str, int c, unsigned long long n)
   return p;
 }
 
-static int
-grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list args_in)
+static void
+parse_printf_args (const char *fmt0, struct printf_args *args,
+		   va_list args_in)
 {
+  const char *fmt;
   char c;
   grub_size_t n = 0;
-  grub_size_t count = 0;
-  grub_size_t count_args = 0;
-  const char *fmt;
-  auto void write_char (unsigned char ch);
-  auto void write_str (const char *s);
-  auto void write_fill (const char ch, int n);
 
-  void write_char (unsigned char ch)
-    {
-      if (count < max_len)
-	*str++ = ch;
+  args->count = 0;
 
-      count++;
-    }
-
-  void write_str (const char *s)
-    {
-      while (*s)
-	write_char (*s++);
-    }
-
-  void write_fill (const char ch, int count_fill)
-    {
-      int i;
-      for (i = 0; i < count_fill; i++)
-	write_char (ch);
-    }
+  COMPILE_TIME_ASSERT (sizeof (int) == sizeof (grub_uint32_t));
+  COMPILE_TIME_ASSERT (sizeof (int) <= sizeof (long long));
+  COMPILE_TIME_ASSERT (sizeof (long) <= sizeof (long long));
+  COMPILE_TIME_ASSERT (sizeof (long long) == sizeof (void *)
+		       || sizeof (int) == sizeof (void *));
 
   fmt = fmt0;
   while ((c = *fmt++) != 0)
@@ -670,34 +819,33 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list a
       if (c != '%')
 	continue;
 
-      if (*fmt && *fmt =='-')
+      if (*fmt =='-')
 	fmt++;
 
-      while (*fmt && grub_isdigit (*fmt))
+      while (grub_isdigit (*fmt))
 	fmt++;
 
-      if (*fmt && *fmt == '$')
+      if (*fmt == '$')
 	fmt++;
 
-      if (*fmt && *fmt =='-')
+      if (*fmt =='-')
 	fmt++;
 
-      while (*fmt && grub_isdigit (*fmt))
+      while (grub_isdigit (*fmt))
 	fmt++;
 
-      if (*fmt && *fmt =='.')
+      if (*fmt =='.')
 	fmt++;
 
-      while (*fmt && grub_isdigit (*fmt))
+      while (grub_isdigit (*fmt))
 	fmt++;
 
       c = *fmt++;
       if (c == 'l')
-	{
-	  c = *fmt++;
-	  if (c == 'l')
-	    c = *fmt++;
-	}
+	c = *fmt++;
+      if (c == 'l')
+	c = *fmt++;
+
       switch (c)
 	{
 	case 'p':
@@ -707,29 +855,31 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list a
 	case 'c':
 	case 'C':
 	case 's':
-	  count_args++;
+	  args->count++;
 	  break;
 	}
     }
 
-  enum { INT, WCHAR, LONG, LONGLONG, POINTER } types[count_args];
-  union 
-  { 
-    int i;
-    grub_uint32_t w;
-    long l;
-    long long ll;
-    void *p;
-  } args[count_args];
+  if (args->count <= ARRAY_SIZE (args->prealloc))
+    args->ptr = args->prealloc;
+  else
+    {
+      args->ptr = grub_malloc (args->count * sizeof (args->ptr[0]));
+      if (!args->ptr)
+	{
+	  grub_errno = GRUB_ERR_NONE;
+	  args->ptr = args->prealloc;
+	  args->count = ARRAY_SIZE (args->prealloc);
+	}
+    }
 
-  grub_memset (types, 0, sizeof (types));
+  grub_memset (args->ptr, 0, args->count * sizeof (args->ptr[0]));
 
   fmt = fmt0;
   n = 0;
   while ((c = *fmt++) != 0)
     {
       int longfmt = 0;
-      int longlongfmt = 0;
       grub_size_t curn;
       const char *p;
 
@@ -738,27 +888,30 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list a
 
       curn = n++;
 
-      if (*fmt && *fmt =='-')
-	fmt++;
-
-      while (*fmt && grub_isdigit (*fmt))
-	fmt++;
-
-      if (*fmt && *fmt =='.')
-	fmt++;
-
-      while (*fmt && grub_isdigit (*fmt))
+      if (*fmt =='-')
 	fmt++;
 
       p = fmt;
 
-      if (*fmt && *fmt == '$')
+      while (grub_isdigit (*fmt))
+	fmt++;
+
+      if (*fmt == '$')
 	{
 	  curn = grub_strtoull (p, 0, 10) - 1;
 	  fmt++;
 	}
 
-      while (*fmt && grub_isdigit (*fmt))
+      if (*fmt =='-')
+	fmt++;
+
+      while (grub_isdigit (*fmt))
+	fmt++;
+
+      if (*fmt =='.')
+	fmt++;
+
+      while (grub_isdigit (*fmt))
 	fmt++;
 
       c = *fmt++;
@@ -766,78 +919,90 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list a
 	{
 	  c = *fmt++;
 	  longfmt = 1;
-	  if (c == 'l')
-	    {
-	      c = *fmt++;
-	      longlongfmt = 1;
-	    }
 	}
-      if (curn >= count_args)
+      if (c == 'l')
+	{
+	  c = *fmt++;
+	  longfmt = 2;
+	}
+      if (curn >= args->count)
 	continue;
       switch (c)
 	{
 	case 'x':
 	case 'u':
+	  args->ptr[curn].type = UNSIGNED_INT + longfmt;
+	  break;
 	case 'd':
-	  if (longlongfmt)
-	    types[curn] = LONGLONG;
-	  else if (longfmt)
-	    types[curn] = LONG;
-	  else
-	    types[curn] = INT;
+	  args->ptr[curn].type = INT + longfmt;
 	  break;
 	case 'p':
 	case 's':
-	  types[curn] = POINTER;
-	  break;
-	case 'c':
-	  types[curn] = INT;
+	  if (sizeof (void *) == sizeof (long long))
+	    args->ptr[curn].type = UNSIGNED_LONGLONG;
+	  else
+	    args->ptr[curn].type = UNSIGNED_INT;
 	  break;
 	case 'C':
-	  types[curn] = WCHAR;
+	case 'c':
+	  args->ptr[curn].type = INT;
 	  break;
 	}
     }
 
-  for (n = 0; n < count_args; n++)
-    switch (types[n])
+  for (n = 0; n < args->count; n++)
+    switch (args->ptr[n].type)
       {
-      case WCHAR:
-	args[n].w = va_arg (args_in, grub_uint32_t);
-	break;
-      case POINTER:
-	args[n].p = va_arg (args_in, void *);
-	break;
       case INT:
-	args[n].i = va_arg (args_in, int);
+	args->ptr[n].ll = va_arg (args_in, int);
 	break;
       case LONG:
-	args[n].l = va_arg (args_in, long);
+	args->ptr[n].ll = va_arg (args_in, long);
+	break;
+      case UNSIGNED_INT:
+	args->ptr[n].ll = va_arg (args_in, unsigned int);
+	break;
+      case UNSIGNED_LONG:
+	args->ptr[n].ll = va_arg (args_in, unsigned long);
 	break;
       case LONGLONG:
-	args[n].ll = va_arg (args_in, long long);
+      case UNSIGNED_LONGLONG:
+	args->ptr[n].ll = va_arg (args_in, long long);
 	break;
       }
+}
+
+static inline void __attribute__ ((always_inline))
+write_char (char *str, grub_size_t *count, grub_size_t max_len, unsigned char ch)
+{
+  if (*count < max_len)
+    str[*count] = ch;
+
+  (*count)++;
+}
+
+static int
+grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0,
+		     struct printf_args *args)
+{
+  char c;
+  grub_size_t n = 0;
+  grub_size_t count = 0;
+  const char *fmt;
 
   fmt = fmt0;
 
-  n = 0;
   while ((c = *fmt++) != 0)
     {
-      char tmp[32];
-      char *p;
       unsigned int format1 = 0;
       unsigned int format2 = ~ 0U;
       char zerofill = ' ';
-      int rightfill = 0;
-      int longfmt = 0;
-      int longlongfmt = 0;
-      int unsig = 0;
+      char rightfill = 0;
       grub_size_t curn;
-      
+
       if (c != '%')
 	{
-	  write_char (c);
+	  write_char (str, &count, max_len,c);
 	  continue;
 	}
 
@@ -845,44 +1010,26 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list a
 
     rescan:;
 
-      if (*fmt && *fmt =='-')
+      if (*fmt =='-')
 	{
 	  rightfill = 1;
 	  fmt++;
 	}
 
-      p = (char *) fmt;
       /* Read formatting parameters.  */
-      while (*p && grub_isdigit (*p))
-	p++;
-
-      if (p > fmt)
+      if (grub_isdigit (*fmt))
 	{
-	  char s[p - fmt + 1];
-	  grub_strncpy (s, fmt, p - fmt);
-	  s[p - fmt] = 0;
-	  if (s[0] == '0')
+	  if (fmt[0] == '0')
 	    zerofill = '0';
-	  format1 = grub_strtoul (s, 0, 10);
-	  fmt = p;
+	  format1 = grub_strtoul (fmt, (char **) &fmt, 10);
 	}
 
-      if (*p && *p == '.')
-	{
-	  p++;
-	  fmt++;
-	  while (*p && grub_isdigit (*p))
-	    p++;
+      if (*fmt == '.')
+	fmt++;
 
-	  if (p > fmt)
-	    {
-	      char fstr[p - fmt + 1];
-	      grub_strncpy (fstr, fmt, p - fmt);
-	      fstr[p - fmt] = 0;
-	      format2 = grub_strtoul (fstr, 0, 10);
-	      fmt = p;
-	    }
-	}
+      if (grub_isdigit (*fmt))
+	format2 = grub_strtoul (fmt, (char **) &fmt, 10);
+
       if (*fmt == '$')
 	{
 	  curn = format1 - 1;
@@ -897,55 +1044,57 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list a
 
       c = *fmt++;
       if (c == 'l')
+	c = *fmt++;
+      if (c == 'l')
+	c = *fmt++;
+
+      if (c == '%')
 	{
-	  longfmt = 1;
-	  c = *fmt++;
-	  if (c == 'l')
-	    {
-	      longlongfmt = 1;
-	      c = *fmt++;
-	    }
+	  write_char (str, &count, max_len,c);
+	  continue;
 	}
 
-      if (curn >= count_args)
+      if (curn >= args->count)
 	continue;
+
+      long long curarg = args->ptr[curn].ll;
 
       switch (c)
 	{
 	case 'p':
-	  write_str ("0x");
+	  write_char (str, &count, max_len, '0');
+	  write_char (str, &count, max_len, 'x');
 	  c = 'x';
-	  longlongfmt |= (sizeof (void *) == sizeof (long long));
 	  /* Fall through. */
 	case 'x':
 	case 'u':
-	  unsig = 1;
-	  /* Fall through. */
 	case 'd':
-	  if (longlongfmt)
-	    grub_lltoa (tmp, c, args[curn].ll);
-	  else if (longfmt && unsig)
-	    grub_lltoa (tmp, c, (unsigned long) args[curn].l);
-	  else if (longfmt)
-	    grub_lltoa (tmp, c, args[curn].l);
-	  else if (unsig)
-	    grub_lltoa (tmp, c, (unsigned) args[curn].i);
-	  else
-	    grub_lltoa (tmp, c, args[curn].i);
-	  if (! rightfill && grub_strlen (tmp) < format1)
-	    write_fill (zerofill, format1 - grub_strlen (tmp));
-	  write_str (tmp);
-	  if (rightfill && grub_strlen (tmp) < format1)
-	    write_fill (zerofill, format1 - grub_strlen (tmp));
+	  {
+	    char tmp[32];
+	    const char *p = tmp;
+	    grub_size_t len;
+	    grub_size_t fill;
+
+	    len = grub_lltoa (tmp, c, curarg) - tmp;
+	    fill = len < format1 ? format1 - len : 0;
+	    if (! rightfill)
+	      while (fill--)
+		write_char (str, &count, max_len, zerofill);
+	    while (*p)
+	      write_char (str, &count, max_len, *p++);
+	    if (rightfill)
+	      while (fill--)
+		write_char (str, &count, max_len, zerofill);
+	  }
 	  break;
 
 	case 'c':
-	  write_char (args[curn].i & 0xff);
+	  write_char (str, &count, max_len,curarg & 0xff);
 	  break;
 
 	case 'C':
 	  {
-	    grub_uint32_t code = args[curn].w;
+	    grub_uint32_t code = curarg;
 	    int shift;
 	    unsigned mask;
 
@@ -964,20 +1113,10 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list a
 		shift = 12;
 		mask = 0xe0;
 	      }
-	    else if (code <= 0x1fffff)
+	    else if (code <= 0x10ffff)
 	      {
 		shift = 18;
 		mask = 0xf0;
-	      }
-	    else if (code <= 0x3ffffff)
-	      {
-		shift = 24;
-		mask = 0xf8;
-	      }
-	    else if (code <= 0x7fffffff)
-	      {
-		shift = 30;
-		mask = 0xfc;
 	      }
 	    else
 	      {
@@ -986,44 +1125,49 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0, va_list a
 		mask = 0;
 	      }
 
-	    write_char (mask | (code >> shift));
+	    write_char (str, &count, max_len,mask | (code >> shift));
 
 	    for (shift -= 6; shift >= 0; shift -= 6)
-	      write_char (0x80 | (0x3f & (code >> shift)));
+	      write_char (str, &count, max_len,0x80 | (0x3f & (code >> shift)));
 	  }
 	  break;
 
 	case 's':
-	  p = args[curn].p;
-	  if (p)
-	    {
-	      grub_size_t len = 0;
-	      while (len < format2 && p[len])
-		len++;
+	  {
+	    grub_size_t len = 0;
+	    grub_size_t fill;
+	    const char *p = ((char *) (grub_addr_t) curarg) ? : "(null)";
+	    grub_size_t i;
 
-	      if (!rightfill && len < format1)
-		write_fill (zerofill, format1 - len);
+	    while (len < format2 && p[len])
+	      len++;
 
-	      grub_size_t i;
-	      for (i = 0; i < len; i++)
-		write_char (*p++);
+	    fill = len < format1 ? format1 - len : 0;
 
-	      if (rightfill && len < format1)
-		write_fill (zerofill, format1 - len);
-	    }
-	  else
-	    write_str ("(null)");
+	    if (!rightfill)
+	      while (fill--)
+		write_char (str, &count, max_len, zerofill);
+
+	    for (i = 0; i < len; i++)
+	      write_char (str, &count, max_len,*p++);
+
+	    if (rightfill)
+	      while (fill--)
+		write_char (str, &count, max_len, zerofill);
+	  }
 
 	  break;
 
 	default:
-	  write_char (c);
+	  write_char (str, &count, max_len,c);
 	  break;
 	}
     }
 
-  *str = '\0';
-
+  if (count < max_len)
+    str[count] = '\0';
+  else
+    str[max_len] = '\0';
   return count;
 }
 
@@ -1031,13 +1175,18 @@ int
 grub_vsnprintf (char *str, grub_size_t n, const char *fmt, va_list ap)
 {
   grub_size_t ret;
+  struct printf_args args;
 
   if (!n)
     return 0;
 
   n--;
 
-  ret = grub_vsnprintf_real (str, n, fmt, ap);
+  parse_printf_args (fmt, &args, ap);
+
+  ret = grub_vsnprintf_real (str, n, fmt, &args);
+
+  free_printf_args (&args);
 
   return ret < n ? ret : n;
 }
@@ -1060,22 +1209,26 @@ grub_xvasprintf (const char *fmt, va_list ap)
 {
   grub_size_t s, as = PREALLOC_SIZE;
   char *ret;
+  struct printf_args args;
+
+  parse_printf_args (fmt, &args, ap);
 
   while (1)
     {
-      va_list ap2;
       ret = grub_malloc (as + 1);
       if (!ret)
-	return NULL;
+	{
+	  free_printf_args (&args);
+	  return NULL;
+	}
 
-      va_copy (ap2, ap);
-
-      s = grub_vsnprintf_real (ret, as, fmt, ap2);
-
-      va_end (ap2);
+      s = grub_vsnprintf_real (ret, as, fmt, &args);
 
       if (s <= as)
-	return ret;
+	{
+	  free_printf_args (&args);
+	  return ret;
+	}
 
       grub_free (ret);
       as = s;
@@ -1096,7 +1249,7 @@ grub_xasprintf (const char *fmt, ...)
 }
 
 /* Abort GRUB. This function does not return.  */
-void
+static void __attribute__ ((noreturn))
 grub_abort (void)
 {
   grub_printf ("\nAborted.");
@@ -1112,20 +1265,28 @@ grub_abort (void)
   grub_exit ();
 }
 
-#if ! defined (__APPLE__) && !defined (GRUB_UTIL)
-/* GCC emits references to abort().  */
-void abort (void) __attribute__ ((alias ("grub_abort")));
-#endif
-
-#if NEED_ENABLE_EXECUTE_STACK && !defined(GRUB_UTIL) && !defined(GRUB_MACHINE_EMU)
-/* Some gcc versions generate a call to this function
-   in trampolines for nested functions.  */
-void __enable_execute_stack (void *addr __attribute__ ((unused)))
+#if defined (__clang__) && !defined (GRUB_UTIL)
+/* clang emits references to abort().  */
+void __attribute__ ((noreturn))
+abort (void)
 {
+  grub_abort ();
 }
 #endif
 
-#if NEED_REGISTER_FRAME_INFO && !defined(GRUB_UTIL)
+void
+grub_fatal (const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start (ap, fmt);
+  grub_vprintf (_(fmt), ap);
+  va_end (ap);
+
+  grub_abort ();
+}
+
+#if (defined (__MINGW32__) || defined (__CYGWIN__)) && !defined(GRUB_UTIL)
 void __register_frame_info (void)
 {
 }
@@ -1133,5 +1294,51 @@ void __register_frame_info (void)
 void __deregister_frame_info (void)
 {
 }
+void ___chkstk_ms (void)
+{
+}
+
+void __chkstk_ms (void)
+{
+}
 #endif
 
+#if BOOT_TIME_STATS
+
+#include <grub/time.h>
+
+struct grub_boot_time *grub_boot_time_head;
+static struct grub_boot_time **boot_time_last = &grub_boot_time_head;
+
+void
+grub_real_boot_time (const char *file,
+		     const int line,
+		     const char *fmt, ...)
+{
+  struct grub_boot_time *n;
+  va_list args;
+
+  grub_error_push ();
+  n = grub_malloc (sizeof (*n));
+  if (!n)
+    {
+      grub_errno = 0;
+      grub_error_pop ();
+      return;
+    }
+  n->file = file;
+  n->line = line;
+  n->tp = grub_get_time_ms ();
+  n->next = 0;
+
+  va_start (args, fmt);
+  n->msg = grub_xvasprintf (fmt, args);    
+  va_end (args);
+
+  *boot_time_last = n;
+  boot_time_last = &n->next;
+
+  grub_errno = 0;
+  grub_error_pop ();
+}
+#endif

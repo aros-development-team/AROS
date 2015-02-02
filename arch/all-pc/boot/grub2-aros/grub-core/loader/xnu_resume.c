@@ -83,6 +83,13 @@ grub_xnu_resume (char *imagename)
 			 "encrypted images aren't supported yet");
     }
 
+  if (hibhead.image_size == 0)
+    {
+      grub_file_close (file);
+      return grub_error (GRUB_ERR_BAD_OS,
+			 "hibernate image is empty");
+    }
+
   codedest = hibhead.launchcode_target_page;
   codedest *= GRUB_XNU_PAGESIZE;
   codesize = hibhead.launchcode_numpages;

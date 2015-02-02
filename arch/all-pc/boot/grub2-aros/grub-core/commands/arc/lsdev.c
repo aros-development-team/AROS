@@ -24,18 +24,22 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
+/* Helper for grub_cmd_lsdev.  */
+static int
+grub_cmd_lsdev_iter (const char *name,
+		     const struct grub_arc_component *comp __attribute__ ((unused)),
+		     void *data __attribute__ ((unused)))
+{
+  grub_printf ("%s\n", name);
+  return 0;
+}
+
 static grub_err_t
 grub_cmd_lsdev (grub_command_t cmd __attribute__ ((unused)),
 		int argc __attribute__ ((unused)),
 		char **args __attribute__ ((unused)))
 {
-  auto int hook (const char *name, const struct grub_arc_component *comp);
-  int hook (const char *name, const struct grub_arc_component *comp __attribute__ ((unused)))
-  {
-    grub_printf ("%s\n", name);
-    return 0;
-  }
-  grub_arc_iterate_devs (hook, 0);
+  grub_arc_iterate_devs (grub_cmd_lsdev_iter, 0, 0);
   return 0;
 }
 
