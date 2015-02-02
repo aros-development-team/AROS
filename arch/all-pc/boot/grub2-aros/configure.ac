@@ -316,7 +316,7 @@ AC_PROG_LN_S
 if test "x$LEX" = "x:"; then
   AC_MSG_ERROR([flex is not found])
 else
-  version=`$LEX --version | $AWK '{ split($0,tmp," "); print tmp[2];}' | $AWK '{ split($NF,x,"."); print x[[1]]*10000+x[[2]]*100+x[[3]]; }'`
+  version=`$LEX --version | $AWK '{ split($0,tmp," "); print tmp[2];}' | $AWK '{ split($NF,x,"."); print x[1]*10000+x[2]*100+x[3]; }'`
   if test -n "$version" -a "$version" -ge 20535; then
     :
   else
