@@ -64,15 +64,15 @@ endif
 # Link a specified number of objects to an executable
 %define link_q cmd=$(AROS_CC) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP)
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,%(to))..."
-	@$(IF) %(cmd) %(from) -o %(to) %(libs) %(opt) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) %(from) -o %(to) %(opt) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-				$(ECHO) "%(to): %(cmd) %(from) -o %(to) %(libs) %(opt)" >> $(GENDIR)/errors ; \
+				$(ECHO) "%(to): %(cmd) %(from) -o %(to) %(opt) %(libs)" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	   	else \
 			$(NOP) ; \
     		fi ; \
 	else \
-	    $(ECHO) "Link failed: %(cmd) %(from) -o %(to) %(libs) %(opt)" 1>&2 ; \
+	    $(ECHO) "Link failed: %(cmd) %(from) -o %(to) %(opt) %(libs)" 1>&2 ; \
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi; \
@@ -312,7 +312,7 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK := $(KERNEL_CC)
+BD_LINK := $(KERNEL_CC) $(KERNEL_LDFLAGS)
 BD_STRIP := $(ECHO) >/dev/null
 $(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
@@ -394,7 +394,7 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK := $(KERNEL_CXX)
+BD_LINK := $(KERNEL_CXX) $(KERNEL_LDFLAGS)
 BD_STRIP := $(ECHO) >/dev/null
 $(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
@@ -486,7 +486,7 @@ $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK := $(KERNEL_CC)
+BD_LINK := $(KERNEL_CC) $(KERNEL_LDFLAGS)
 BD_STRIP := $(ECHO) >/dev/null
 $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
@@ -570,7 +570,7 @@ ifeq (%(compiler),host)
   TMP_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-  BD_LINK := $(KERNEL_CXX)
+  BD_LINK := $(KERNEL_CXX) $(KERNEL_LDFLAGS)
   BD_STRIP := $(ECHO) >/dev/null
   TMP_CXXCMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
   TMP_CXXIQUOTE:=$(KERNEL_IQUOTE)
@@ -660,7 +660,7 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK := $(KERNEL_CC)
+BD_LINK := $(KERNEL_CC) $(KERNEL_LDFLAGS)
 BD_STRIP := $(ECHO) >/dev/null
 $(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
@@ -762,7 +762,7 @@ ifeq (%(compiler),host)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-  BD_LINK := $(KERNEL_OBJC)
+  BD_LINK := $(KERNEL_OBJC) $(KERNEL_LDFLAGS)
   BD_STRIP := $(ECHO) >/dev/null
   $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_OBJC) $(KERNEL_CFLAGS)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
