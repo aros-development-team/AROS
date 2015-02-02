@@ -8525,6 +8525,7 @@ esac
 
 #-----------------------------------------------------------------------------
 crosstools_guess=yes
+aros_target_toolchain="no"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Kernel toolchain prefix" >&5
 $as_echo_n "checking Kernel toolchain prefix... " >&6; }
@@ -8582,6 +8583,10 @@ if test "${crosstools}" = "yes"; then
     if test "${crosstools_guess}" = "no"; then
         as_fn_error $? "Cannot build external toolchain if an external ELF or AROS toolchain is specified" "$LINENO" 5
     fi
+fi
+
+if test "${crosstools}" = "yes" || test "${crosstools_guess}" = "no"; then
+    aros_target_toolchain="yes"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking where to install the crosstools binaries" >&5
@@ -10894,7 +10899,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking which target tools to use" >&5
 $as_echo_n "checking which target tools to use... " >&6; }
-if test "$crosstools" = "yes"; then
+if test "$aros_target_toolchain" = "yes"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_tool_prefix" >&5
 $as_echo "$target_tool_prefix" >&6; }
     # We are building AROS crosstools
@@ -14422,12 +14427,6 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc"
 fi
 
-if test "${crosstools}" = "yes" || test "${crosstools_guess}" = "no"; then
-    aros_target_toolchain=yes
-else
-    aros_target_toolchain=no
-fi
-
 
 # Generic
 
@@ -14689,13 +14688,11 @@ if test "${use_kernel_cc_wrapper}" = "yes"; then
 fi
 
 # Host compiler support scripts and spec
-if test "${crosstools}" = "no"; then
-    if test "${crosstools_guess}" = "no"; then
-        ac_config_commands="$ac_config_commands host-compiler-wrapper-support"
+if test "${aros_target_toolchain}" = "no"; then
+    ac_config_commands="$ac_config_commands host-compiler-wrapper-support"
 
-        ac_config_files="$ac_config_files ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in"
+    ac_config_files="$ac_config_files ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in"
 
-    fi
 fi
 
 # Android support
@@ -15420,11 +15417,11 @@ aros_tools_dir=${aros_tools_dir}
 
 
 
-                aros_host_exe_suffix=${aros_host_exe_suffix}
-                aros_tools_dir=${aros_tools_dir}
-                aros_target_cpu=${aros_target_cpu}
-                aros_target_arch=${aros_target_arch}
-                aros_target_suffix=${aros_target_suffix}
+            aros_host_exe_suffix=${aros_host_exe_suffix}
+            aros_tools_dir=${aros_tools_dir}
+            aros_target_cpu=${aros_target_cpu}
+            aros_target_arch=${aros_target_arch}
+            aros_target_suffix=${aros_target_suffix}
 
 
 
@@ -16035,12 +16032,12 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
             ln -sf $aros_kernel_ld$aros_host_exe_suffix         ${prefix2}-ld$aros_host_exe_suffix
          ;;
     "host-compiler-wrapper-support":C)
-                prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
-                mkdir -p $prefix
-                prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
+            prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
+            mkdir -p $prefix
+            prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
 
-                chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-cpp
-             ;;
+            chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-cpp
+         ;;
 
   esac
 done # for ac_tag
