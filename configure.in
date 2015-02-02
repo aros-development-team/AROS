@@ -1503,6 +1503,7 @@ esac
 
 #-----------------------------------------------------------------------------
 crosstools_guess=yes
+aros_target_toolchain="no"
 
 AC_MSG_CHECKING([Kernel toolchain prefix])
 AC_ARG_WITH(kernel-toolchain-prefix,AC_HELP_STRING([--with-kernel-toolchain-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"])
@@ -1531,6 +1532,10 @@ if test "${crosstools}" = "yes"; then
     if test "${crosstools_guess}" = "no"; then
         AC_MSG_ERROR([Cannot build external toolchain if an external ELF or AROS toolchain is specified])
     fi
+fi
+
+if test "${crosstools}" = "yes" || test "${crosstools_guess}" = "no"; then
+    aros_target_toolchain="yes"
 fi
 
 AC_MSG_CHECKING([where to install the crosstools binaries])
@@ -1839,7 +1844,7 @@ else
 fi
 
 AC_MSG_CHECKING([which target tools to use])
-if test "$crosstools" = "yes"; then
+if test "$aros_target_toolchain" = "yes"; then
     AC_MSG_RESULT([$target_tool_prefix])
     # We are building AROS crosstools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
@@ -2573,12 +2578,6 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc"
 fi
 
-if test "${crosstools}" = "yes" || test "${crosstools_guess}" = "no"; then
-    aros_target_toolchain=yes
-else
-    aros_target_toolchain=no
-fi
-
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
@@ -2905,31 +2904,29 @@ if test "${use_kernel_cc_wrapper}" = "yes"; then
 fi
 
 # Host compiler support scripts and spec
-if test "${crosstools}" = "no"; then
-    if test "${crosstools_guess}" = "no"; then
-        AC_CONFIG_COMMANDS([host-compiler-wrapper-support],
-            [
-                prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
-                mkdir -p $prefix
-                prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
+if test "${aros_target_toolchain}" = "no"; then
+    AC_CONFIG_COMMANDS([host-compiler-wrapper-support],
+        [
+            prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
+            mkdir -p $prefix
+            prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
 
-                chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-cpp
-            ],
-            [
-                aros_host_exe_suffix=${aros_host_exe_suffix}
-                aros_tools_dir=${aros_tools_dir}
-                aros_target_cpu=${aros_target_cpu}
-                aros_target_arch=${aros_target_arch}
-                aros_target_suffix=${aros_target_suffix}
-            ]
-        )
-        AC_CONFIG_FILES(
-            ${aros_targetcfg_dir}/specs:config/specs.in
-            ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in
-            ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
-            ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in
-        )
-    fi
+            chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-cpp
+        ],
+        [
+            aros_host_exe_suffix=${aros_host_exe_suffix}
+            aros_tools_dir=${aros_tools_dir}
+            aros_target_cpu=${aros_target_cpu}
+            aros_target_arch=${aros_target_arch}
+            aros_target_suffix=${aros_target_suffix}
+        ]
+    )
+    AC_CONFIG_FILES(
+        ${aros_targetcfg_dir}/specs:config/specs.in
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in
+    )
 fi
 
 # Android support
