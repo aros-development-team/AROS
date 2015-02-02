@@ -276,7 +276,7 @@ diff -ruN gcc-5-20150125/gcc/config/aros.h gcc-5-20150125.aros/gcc/config/aros.h
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  "-lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:-lposixc } -lstdcio -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}}"
++  "--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group"
 +
 +#undef	LIBSTDCXX_STATIC
 +#define LIBSTDCXX_STATIC "pthread"
