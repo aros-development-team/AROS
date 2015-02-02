@@ -8524,7 +8524,7 @@ fi
 esac
 
 #-----------------------------------------------------------------------------
-crosstools_guess=yes
+crosstools_guess="yes"
 aros_target_toolchain="no"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Kernel toolchain prefix" >&5
@@ -8544,7 +8544,7 @@ $as_echo_n "checking ELF toolchain prefix... " >&6; }
 # Check whether --with-elf-toolchain-prefix was given.
 if test "${with_elf_toolchain_prefix+set}" = set; then :
   withval=$with_elf_toolchain_prefix; elf_tool_prefix="$withval"
-                                                 crosstools_guess=no
+                                                 crosstools_guess="no"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $elf_tool_prefix" >&5
@@ -8556,7 +8556,7 @@ $as_echo_n "checking AROS toolchain prefix... " >&6; }
 # Check whether --with-aros-toolchain was given.
 if test "${with_aros_toolchain+set}" = set; then :
   withval=$with_aros_toolchain; aros_tool_prefix="$withval"
-                crosstools_guess=no
+                crosstools_guess="no"
 fi
 
 if test "$aros_tool_prefix" = "yes" ; then
@@ -13032,7 +13032,7 @@ aros_target_nostdlib_ldflags=-nostdlib
 
 
 # Target tools
-if test "$crosstools" != "yes"; then
+if test "$aros_target_toolchain" != "yes"; then
     prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
     if test "$GCC" = "yes"; then
         aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`

@@ -1502,7 +1502,7 @@ case "$target_os" in
 esac
 
 #-----------------------------------------------------------------------------
-crosstools_guess=yes
+crosstools_guess="yes"
 aros_target_toolchain="no"
 
 AC_MSG_CHECKING([Kernel toolchain prefix])
@@ -1511,12 +1511,12 @@ AC_MSG_RESULT($kernel_tool_prefix)
 
 AC_MSG_CHECKING([ELF toolchain prefix])
 AC_ARG_WITH(elf-toolchain-prefix,AC_HELP_STRING([--with-elf-toolchain-prefix=...],[Specify crosscompile toolchain prefix to wrap for AROS objects]),[elf_tool_prefix="$withval"
-                                                 crosstools_guess=no])
+                                                 crosstools_guess="no"])
 AC_MSG_RESULT($elf_tool_prefix)
 
 AC_MSG_CHECKING([AROS toolchain prefix])
 AC_ARG_WITH(aros-toolchain,AC_HELP_STRING([--with-aros-toolchain=PREFIX],[Specify prebuilt AROS toolchain. Use yes for default name]),[aros_tool_prefix="$withval"
-                crosstools_guess=no])
+                crosstools_guess="no"])
 if test "$aros_tool_prefix" = "yes" ; then
     aros_tool_prefix=$aros_target_cpu-aros-
 fi
@@ -1997,7 +1997,7 @@ AC_SUBST(aros_target_detach_ldflags,-detach)
 AC_SUBST(aros_target_nostdlib_ldflags,-nostdlib)
 
 # Target tools
-if test "$crosstools" != "yes"; then
+if test "$aros_target_toolchain" != "yes"; then
     prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
     if test "$GCC" = "yes"; then
         aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
