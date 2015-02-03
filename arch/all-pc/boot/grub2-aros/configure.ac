@@ -316,7 +316,7 @@ AC_PROG_LN_S
 if test "x$LEX" = "x:"; then
   AC_MSG_ERROR([flex is not found])
 else
-  version=`$LEX --version | $AWK '{ split($0,tmp," "); print tmp[2];}' | $AWK '{ split($NF,x,"."); print x[1]*10000+x[2]*100+x[3]; }'`
+  version=`$LEX --version | $AWK '{ split($0,tmp," "); split(tmp[[2]],x,"."); print x[[1]]*10000+x[[2]]*100+x[[3]]; }'`
   if test -n "$version" -a "$version" -ge 20535; then
     :
   else
@@ -483,7 +483,7 @@ if test "x$target_alias" != x && test "x$host_alias" != "x$target_alias"; then
 
   AC_CHECK_TOOLS(TARGET_CC, [gcc egcs cc],
                  [AC_MSG_ERROR([none of gcc, egcs and cc is found. set TARGET_CC manually.])])
-  AC_CHECK_TOOL(TARGET_OBJCOPY, objcopy)
+  AC_CHECK_TOOLS(TARGET_OBJCOPY, [gobjcopy objcopy])
   AC_CHECK_TOOL(TARGET_STRIP, strip)
   AC_CHECK_TOOL(TARGET_NM, nm)
   AC_CHECK_TOOL(TARGET_RANLIB, ranlib)
@@ -493,7 +493,7 @@ else
   if test "x$TARGET_CC" = x; then
     TARGET_CC=$CC
   fi
-  AC_CHECK_TOOL(TARGET_OBJCOPY, objcopy)
+  AC_CHECK_TOOLS(TARGET_OBJCOPY, [gobjcopy objcopy])
   AC_CHECK_TOOL(TARGET_STRIP, strip)
   AC_CHECK_TOOL(TARGET_NM, nm)
   AC_CHECK_TOOL(TARGET_RANLIB, ranlib)

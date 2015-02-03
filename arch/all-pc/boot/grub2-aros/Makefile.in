@@ -97,8 +97,8 @@ DIST_COMMON = $(top_srcdir)/conf/Makefile.common \
 	$(top_srcdir)/build-aux/test-driver COPYING THANKS TODO \
 	build-aux/compile build-aux/config.guess \
 	build-aux/config.rpath build-aux/config.sub build-aux/depcomp \
-	build-aux/install-sh build-aux/missing \
-	$(top_srcdir)/build-aux/compile \
+	build-aux/install-sh build-aux/mdate-sh build-aux/missing \
+	build-aux/texinfo.tex $(top_srcdir)/build-aux/compile \
 	$(top_srcdir)/build-aux/config.guess \
 	$(top_srcdir)/build-aux/config.rpath \
 	$(top_srcdir)/build-aux/config.sub \
@@ -2962,6 +2962,7 @@ ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_FREETYPE = @ac_ct_FREETYPE@
 ac_ct_TARGET_CC = @ac_ct_TARGET_CC@
+ac_ct_TARGET_OBJCOPY = @ac_ct_TARGET_OBJCOPY@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
