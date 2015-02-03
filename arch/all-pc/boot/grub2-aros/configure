@@ -803,6 +803,7 @@ HOST_CC
 TARGET_RANLIB
 TARGET_NM
 TARGET_STRIP
+ac_ct_TARGET_OBJCOPY
 TARGET_OBJCOPY
 ac_ct_TARGET_CC
 TARGET_CC
@@ -5949,7 +5950,7 @@ fi
 if test "x$LEX" = "x:"; then
   as_fn_error $? "flex is not found" "$LINENO" 5
 else
-  version=`$LEX --version | $AWK '{ split($0,tmp," "); print tmp[2];}' | $AWK '{ split($NF,x,"."); print x[1]*10000+x[2]*100+x[3]; }'`
+  version=`$LEX --version | $AWK '{ split($0,tmp," "); split(tmp[2],x,"."); print x[1]*10000+x[2]*100+x[3]; }'`
   if test -n "$version" -a "$version" -ge 20535; then
     :
   else
@@ -23748,8 +23749,10 @@ esac
 fi
 
   if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}objcopy", so it can be a program name with args.
-set dummy ${ac_tool_prefix}objcopy; ac_word=$2
+  for ac_prog in gobjcopy objcopy
+  do
+    # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
+set dummy $ac_tool_prefix$ac_prog; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_prog_TARGET_OBJCOPY+:} false; then :
@@ -23765,7 +23768,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_TARGET_OBJCOPY="${ac_tool_prefix}objcopy"
+    ac_cv_prog_TARGET_OBJCOPY="$ac_tool_prefix$ac_prog"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -23785,11 +23788,15 @@ $as_echo "no" >&6; }
 fi
 
 
+    test -n "$TARGET_OBJCOPY" && break
+  done
 fi
-if test -z "$ac_cv_prog_TARGET_OBJCOPY"; then
+if test -z "$TARGET_OBJCOPY"; then
   ac_ct_TARGET_OBJCOPY=$TARGET_OBJCOPY
-  # Extract the first word of "objcopy", so it can be a program name with args.
-set dummy objcopy; ac_word=$2
+  for ac_prog in gobjcopy objcopy
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_prog_ac_ct_TARGET_OBJCOPY+:} false; then :
@@ -23805,7 +23812,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ac_ct_TARGET_OBJCOPY="objcopy"
+    ac_cv_prog_ac_ct_TARGET_OBJCOPY="$ac_prog"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -23824,6 +23831,10 @@ else
 $as_echo "no" >&6; }
 fi
 
+
+  test -n "$ac_ct_TARGET_OBJCOPY" && break
+done
+
   if test "x$ac_ct_TARGET_OBJCOPY" = x; then
     TARGET_OBJCOPY=""
   else
@@ -23835,8 +23846,6 @@ ac_tool_warned=yes ;;
 esac
     TARGET_OBJCOPY=$ac_ct_TARGET_OBJCOPY
   fi
-else
-  TARGET_OBJCOPY="$ac_cv_prog_TARGET_OBJCOPY"
 fi
 
   if test -n "$ac_tool_prefix"; then
@@ -24122,8 +24131,10 @@ else
     TARGET_CC=$CC
   fi
   if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}objcopy", so it can be a program name with args.
-set dummy ${ac_tool_prefix}objcopy; ac_word=$2
+  for ac_prog in gobjcopy objcopy
+  do
+    # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
+set dummy $ac_tool_prefix$ac_prog; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_prog_TARGET_OBJCOPY+:} false; then :
@@ -24139,7 +24150,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_TARGET_OBJCOPY="${ac_tool_prefix}objcopy"
+    ac_cv_prog_TARGET_OBJCOPY="$ac_tool_prefix$ac_prog"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -24159,11 +24170,15 @@ $as_echo "no" >&6; }
 fi
 
 
+    test -n "$TARGET_OBJCOPY" && break
+  done
 fi
-if test -z "$ac_cv_prog_TARGET_OBJCOPY"; then
+if test -z "$TARGET_OBJCOPY"; then
   ac_ct_TARGET_OBJCOPY=$TARGET_OBJCOPY
-  # Extract the first word of "objcopy", so it can be a program name with args.
-set dummy objcopy; ac_word=$2
+  for ac_prog in gobjcopy objcopy
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_prog_ac_ct_TARGET_OBJCOPY+:} false; then :
@@ -24179,7 +24194,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ac_ct_TARGET_OBJCOPY="objcopy"
+    ac_cv_prog_ac_ct_TARGET_OBJCOPY="$ac_prog"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -24198,6 +24213,10 @@ else
 $as_echo "no" >&6; }
 fi
 
+
+  test -n "$ac_ct_TARGET_OBJCOPY" && break
+done
+
   if test "x$ac_ct_TARGET_OBJCOPY" = x; then
     TARGET_OBJCOPY=""
   else
@@ -24209,8 +24228,6 @@ ac_tool_warned=yes ;;
 esac
     TARGET_OBJCOPY=$ac_ct_TARGET_OBJCOPY
   fi
-else
-  TARGET_OBJCOPY="$ac_cv_prog_TARGET_OBJCOPY"
 fi
 
   if test -n "$ac_tool_prefix"; then

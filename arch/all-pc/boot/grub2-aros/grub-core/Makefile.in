@@ -13207,6 +13207,7 @@ ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_FREETYPE = @ac_ct_FREETYPE@
 ac_ct_TARGET_CC = @ac_ct_TARGET_CC@
+ac_ct_TARGET_OBJCOPY = @ac_ct_TARGET_OBJCOPY@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@

@@ -823,6 +823,7 @@
 ./grub-core/tests/video_checksum.c
 ./grub-core/tests/videotest_checksum.c
 ./grub-core/tests/xnu_uuid_test.c
+./grub-core/unidata.c
 ./grub-core/video/bitmap.c
 ./grub-core/video/bitmap_scale.c
 ./grub-core/video/bochs.c
@@ -939,6 +940,8 @@
 ./include/grub/fs.h
 ./include/grub/fshelp.h
 ./include/grub/gcry/types.h
+./include/grub/gcrypt/g10lib.h
+./include/grub/gcrypt/gcrypt.h
 ./include/grub/gcrypt/gpg-error.h
 ./include/grub/gdb.h
 ./include/grub/gfxmenu_model.h
