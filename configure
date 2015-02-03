@@ -8332,17 +8332,6 @@ case "$target_os" in
 
         gcc_default_cpu="armv6"
         gcc_default_cpu_tune="arm1176jzf-s"
-        case "$target_cpu" in
-            *armhf*)
-                gcc_default_float_abi="hard"
-                ;;
-            *arm*)
-                gcc_default_float_abi="softfp"
-                ;;
-            *)
-                as_fn_error $? "\"Unknown CPU for RasPi $target_cpu\"" "$LINENO" 5
-                ;;
-        esac
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
         aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
@@ -8559,8 +8548,12 @@ if test "${with_aros_toolchain+set}" = set; then :
                 crosstools_guess="no"
 fi
 
-if test "$aros_tool_prefix" = "yes" ; then
-    aros_tool_prefix=$aros_target_cpu-aros-
+if test "$aros_tool_prefix" != "no" ; then
+    if test "$aros_tool_prefix" = "yes" ; then
+        aros_tool_prefix=$aros_target_cpu-aros-
+    fi
+    aros_config_cflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_cflags"
+    aros_config_ldflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_ldflags"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_tool_prefix" >&5
 $as_echo "$aros_tool_prefix" >&6; }
@@ -8602,8 +8595,6 @@ if test "x$aros_toolchain_install" = "x"; then
 else
     AROS_CROSSTOOLSDIR="$aros_toolchain_install"
     PATH="$AROS_CROSSTOOLSDIR:$PATH"
-    aros_config_ldflags="$aros_config_ldflags -L$AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/lib"
-    aros_config_cflags="$aros_config_cflags -isystem$AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
 $as_echo "$AROS_CROSSTOOLSDIR" >&6; }
@@ -8699,7 +8690,7 @@ case "$aros_target_cpu" in
 *x86_64*)
         spec_obj_format="%{!m32:-m elf_x86_64} %{m32:-m elf_i386}"
     ;;
-arm)
+arm*)
         if test "$gcc_default_cpu" = ""; then
         gcc_default_cpu="armv6"
     fi
@@ -8707,7 +8698,11 @@ arm)
         gcc_default_fpu="vfp"
     fi
     if test "$gcc_default_float_abi" = ""; then
-        gcc_default_float_abi="softfp"
+        if test "$target_cpu" = "armhf"; then
+            gcc_default_float_abi="hard"
+        else
+            gcc_default_float_abi="softfp"
+        fi
     fi
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum CPU to use" >&5

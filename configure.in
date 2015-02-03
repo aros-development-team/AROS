@@ -1314,17 +1314,6 @@ case "$target_os" in
 
         gcc_default_cpu="armv6"
         gcc_default_cpu_tune="arm1176jzf-s"
-        case "$target_cpu" in
-            *armhf*)
-                gcc_default_float_abi="hard"
-                ;;
-            *arm*)
-                gcc_default_float_abi="softfp"
-                ;;
-            *)
-                AC_MSG_ERROR("Unknown CPU for RasPi $target_cpu")
-                ;;
-        esac
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
         aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
@@ -1545,8 +1534,10 @@ if test "x$aros_toolchain_install" = "x"; then
 else
     AROS_CROSSTOOLSDIR="$aros_toolchain_install"
     PATH="$AROS_CROSSTOOLSDIR:$PATH"
-    aros_config_ldflags="$aros_config_ldflags -L$AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/lib"
-    aros_config_cflags="$aros_config_cflags -isystem$AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include"
+    if test "$aros_tool_prefix" = "yes" ; then
+        aros_config_cflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_cflags"
+        aros_config_ldflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_ldflags"
+    fi
 fi
 AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
@@ -1607,7 +1598,7 @@ case "$aros_target_cpu" in
     dnl x86_64 can build 32 or 64bit code
     spec_obj_format="%{!m32:-m elf_x86_64} %{m32:-m elf_i386}"
     ;;
-arm)
+arm*)
     dnl ARM defaults are: armv6 + vfp (unless overriden in per-target section above)
     if test "$gcc_default_cpu" = ""; then
         gcc_default_cpu="armv6"
@@ -1616,7 +1607,11 @@ arm)
         gcc_default_fpu="vfp"
     fi
     if test "$gcc_default_float_abi" = ""; then
-        gcc_default_float_abi="softfp"
+        if test "$target_cpu" = "armhf"; then
+            gcc_default_float_abi="hard"
+        else
+            gcc_default_float_abi="softfp"
+        fi
     fi
 
     AC_MSG_CHECKING([Which minimum CPU to use])
