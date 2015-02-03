@@ -8548,12 +8548,8 @@ if test "${with_aros_toolchain+set}" = set; then :
                 crosstools_guess="no"
 fi
 
-if test "$aros_tool_prefix" != "no" ; then
-    if test "$aros_tool_prefix" = "yes" ; then
-        aros_tool_prefix=$aros_target_cpu-aros-
-    fi
-    aros_config_cflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_cflags"
-    aros_config_ldflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_ldflags"
+if test "$aros_tool_prefix" = "yes" ; then
+    aros_tool_prefix=$aros_target_cpu-aros-
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_tool_prefix" >&5
 $as_echo "$aros_tool_prefix" >&6; }
@@ -8595,6 +8591,10 @@ if test "x$aros_toolchain_install" = "x"; then
 else
     AROS_CROSSTOOLSDIR="$aros_toolchain_install"
     PATH="$AROS_CROSSTOOLSDIR:$PATH"
+    if test "$aros_tool_prefix" = "yes" ; then
+        aros_config_cflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_cflags"
+        aros_config_ldflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_ldflags"
+    fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
 $as_echo "$AROS_CROSSTOOLSDIR" >&6; }
