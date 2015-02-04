@@ -169,7 +169,10 @@ struct Palette scalos16colpal =
 static char 	     	    *filename, *outfilename, *infilename;
 static unsigned char	    *filebuffer, *body;
 static FILE 	     	    *file, *outfile, *infile;
-static long 	     	    filesize, bodysize, bodysize_packed;
+static long 	     	    filesize, bodysize;
+#if (0)
+static long                     bodysize_packed;
+#endif
 static long 	     	    filepos;
 static struct ILBMImage     img1, img2;
 static BOOL 	    	    have_bmhd, have_cmap, have_body, is_png;
@@ -257,7 +260,9 @@ static void cleanup(char *msg, int rc)
 
 static void getarguments(int argc, char **argv)
 {
+#if (0)
     WORD i;
+#endif
 
     nosavePNG = 1;
 
@@ -586,6 +591,7 @@ static void parseiconsource(void)
 
 /****************************************************************************************/
 
+#if (0)
 static void showoptions(void)
 {
     char **strarray;
@@ -604,6 +610,7 @@ static void showoptions(void)
 	}
     }
 }
+#endif
 
 /****************************************************************************************/
 
@@ -1012,6 +1019,7 @@ static unsigned char *unpack_byterun1(unsigned char *source, unsigned char *dest
 
 /****************************************************************************************/
 
+#if (0)
 static BOOL norm1(LONG count, unsigned char **source_backup,
     	    	  unsigned char **dest, LONG *checksize)
 {
@@ -1127,6 +1135,7 @@ static BOOL pack_byterun1(unsigned char *source, unsigned char *dest,
     
     return 1;
 }
+#endif
 
 /****************************************************************************************/
 
@@ -1270,11 +1279,14 @@ static UBYTE findcolor(struct Palette *pal, ULONG r, ULONG g, ULONG b, BOOL notr
 static void remapplanar(struct ILBMImage *img, struct Palette *pal)
 {
     UBYTE *remapbuffer;
-    LONG i, x, y, highestcol = 0, newdepth = 0;
-    
+#if (0)
+    LONG x,y;
+#endif
+    LONG i, highestcol = 0, newdepth = 0;
+
     remapbuffer = malloc(img->bmh.bmh_Width * img->bmh.bmh_Height);
     if (!remapbuffer) cleanup("Error allocating remap buffer!", 1);
-    
+
     for(i = 0; i < img->cmapentries; i++)
     {
     	img->remaptable[i] = findcolor(pal, img->rgb[i][0], img->rgb[i][1], img->rgb[i][2], FALSE);
@@ -1617,6 +1629,7 @@ static void writelong(LONG l)
 
 /****************************************************************************************/
 
+#if (0)
 static void writenormalstring(char *s)
 {
     int len = strlen(s) + 1;
@@ -1625,8 +1638,8 @@ static void writenormalstring(char *s)
     {
     	cleanup("Error writing string!", 1);
     }
-    
 }
+#endif
 
 /****************************************************************************************/
 
@@ -1946,11 +1959,13 @@ static LONG writeimagchunk(struct ILBMImage *img)
 static LONG writeargb(APTR argb, ULONG argb_size)
 {
     LONG formsize = 10;
+#if (0)
     struct ARGB35_Header {
         ULONG ztype;    /* Always 1 */
         ULONG zsize;    /* Compressed size, or -1 */
         UWORD resv;     /* Always 0 */
     } ahdr;
+#endif
     Bytef *zdest;
     uLongf zsize, size;
     int err;
@@ -2047,7 +2062,9 @@ static void write35data(void)
 
 static void writeicon(void)
 {
+#if (0)
     struct diskobject dobj;
+#endif
 
     D(printf("Writing %s\n", outfilename));
     outfile = fopen(outfilename, "wb");
@@ -2107,11 +2124,13 @@ int main(int argc, char **argv)
             fprintf(stderr, "%s: Image %s (%dx%d) is not the same size as Image %s (%dx%d)\n", argv[0], image1option, img1.bmh.bmh_Width, img1.bmh.bmh_Height, image2option, img2.bmh.bmh_Width, img2.bmh.bmh_Height);
         }
     }
-                        
+
     remapicon();
     writeicon();
-    
+
     cleanup(0, 0);
+
+    return 0;
 }
 
 /****************************************************************************************/
