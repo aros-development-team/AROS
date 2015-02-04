@@ -8594,6 +8594,8 @@ else
     if test "$aros_tool_prefix" = "yes" ; then
         aros_config_cflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_cflags"
         aros_config_ldflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_ldflags"
+        aros_kernel_cflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_kernel_cflags"
+        aros_kernel_ldflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_kernel_ldflags"
     fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
