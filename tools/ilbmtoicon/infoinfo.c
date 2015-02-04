@@ -312,7 +312,7 @@ uint32_t iff_copy_chunk(int fd, int ofd, int depth)
     type = r32(fd);
     len = total = r32(fd);
 
-    printf("; %*sBegin %s (%d)\n", depth, "", type2str(type), len);
+    printf("; %*sBegin %s (%d)\n", depth, "", type2str(type), (int)len);
     w32(ofd, type);
     w32(ofd, len);
     if (type == IFF_FORM) {
@@ -331,7 +331,7 @@ uint32_t iff_copy_chunk(int fd, int ofd, int depth)
             uint8_t buff[256];
             err = read(fd, buff, (len >= sizeof(buff)) ? sizeof(buff) : len);
             if (err == 0) {
-                printf("ERROR: Still had %d bytes to read!\n", len);
+                printf("ERROR: Still had %d bytes to read!\n", (int)len);
                 exit(EXIT_FAILURE);
             }
             if (err < 0) {
@@ -357,8 +357,10 @@ uint32_t iff_copy_chunk(int fd, int ofd, int depth)
 void dump_iff(int fd, const char *file_iff)
 {
     int ofd;
+#if (0)
     int len;
     uint8_t buff[256];
+#endif
 
     ofd = open(file_iff, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (ofd < 0) {
@@ -420,4 +422,6 @@ int main(int argc, char **argv)
     }
 
     close(fd);
+
+    return 0;
 }
