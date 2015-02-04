@@ -62,57 +62,71 @@ STRPTR CodesetsUTF8ToStr(Tag tag1, ...)
 #include <proto/codesets.h>
 STRPTR *CodesetsSupported(Tag tag1, ...)
 {
+#undef AROS_TAGRETURNTYPE
+#define AROS_TAGRETURNTYPE	  STRPTR *
   AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = (IPTR)CodesetsSupportedA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
+  retval = (STRPTR *)CodesetsSupportedA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
 struct codeset *CodesetsFind(STRPTR name, Tag tag1, ...)
 {
+#undef AROS_TAGRETURNTYPE
+#define AROS_TAGRETURNTYPE	  struct codeset *
   AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = (IPTR)CodesetsFindA(name, (struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
+  retval = (struct codeset *)CodesetsFindA(name, (struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
 struct codeset *CodesetsFindBest(Tag tag1, ...)
 {
   AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = (IPTR)CodesetsFindBestA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
+  retval = (struct codeset *)CodesetsFindBestA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
 STRPTR CodesetsConvertStr(Tag tag1, ...)
 {
+#undef AROS_TAGRETURNTYPE
+#define AROS_TAGRETURNTYPE	  STRPTR
   AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = (IPTR)CodesetsConvertStrA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
+  retval = (STRPTR)CodesetsConvertStrA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
 struct codesetList *CodesetsListCreate(Tag tag1, ...)
 {
+#undef AROS_TAGRETURNTYPE
+#define AROS_TAGRETURNTYPE	  struct codesetList *
   AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = (IPTR)CodesetsListCreateA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
+  retval = (struct codesetList *)CodesetsListCreateA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
 BOOL CodesetsListDelete(Tag tag1, ...)
 {
+#undef AROS_TAGRETURNTYPE
+#define AROS_TAGRETURNTYPE	  BOOL
   AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = (IPTR)CodesetsListDeleteA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
+  retval = (BOOL)CodesetsListDeleteA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
 STRPTR CodesetsUTF8ToStr(Tag tag1, ...)
 {
+#undef AROS_TAGRETURNTYPE
+#define AROS_TAGRETURNTYPE	  STRPTR
   AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = (IPTR)CodesetsUTF8ToStrA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
+  retval = (STRPTR)CodesetsUTF8ToStrA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
 UTF8 *CodesetsUTF8Create(Tag tag1, ...)
 {
+#undef AROS_TAGRETURNTYPE
+#define AROS_TAGRETURNTYPE	  UTF8 *
   AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = (IPTR)CodesetsUTF8CreateA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
+  retval = (UTF8 *)CodesetsUTF8CreateA((struct TagItem *)AROS_SLOWSTACKTAGS_ARG(tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
