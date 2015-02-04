@@ -54,8 +54,8 @@ long int atol(const char *nptr);
 
 double strtod(const char * restrict nptr, char ** restrict endptr);
 /* NOTIMPL float strtof(const char * restrict nptr, char ** restrict endptr); */
-/* NOTIMPL long double strtold(const char * restrict nptr, char ** restrict endptr); */
-
+long double strtold(const char * restrict nptr,
+		char ** restrict endptr);
 long int strtol(const char * restrict nptr,
 		char ** restrict endptr,
 		int base);
