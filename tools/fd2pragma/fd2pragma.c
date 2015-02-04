@@ -8215,7 +8215,8 @@ uint32 FuncVBCCMorphText(struct AmiPragma *ap, uint32 flags, strptr name)
 
 uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
 {
-  int32 i, j, k=0, size, nrcopyar = 0, stcksize = 16, basereg = 12;
+  int32 i, j, k=0, size, nrcopyar = 0, stcksize = 16;
+  int basereg __attribute__ ((unused)) = 12;
   uint8 *data, *data2, *data3;
   struct ArHeader *arh;
 
