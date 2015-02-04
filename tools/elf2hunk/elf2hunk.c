@@ -495,8 +495,8 @@ static int relocate
         struct symbol sym;
         ULONG offset;
         ULONG shindex;
-        ULONG hunk;
-        ULONG value;
+        ULONG hunk = 0;
+        ULONG value = 0;
         const char *symname;
 
         rel_fixup(rel);
@@ -535,7 +535,7 @@ static int relocate
 
             case SHN_UNDEF:
                 if (ELF_R_TYPE(rel->info) != 0) {
-                    bug("[ELF2HUNK] SHN_UNDEF symbol '%s', type %d unsupported\n", symname, ELF_R_TYPE(rel->info));
+                    bug("[ELF2HUNK] SHN_UNDEF symbol '%s', type %d unsupported\n", symname, (int)ELF_R_TYPE(rel->info));
                     set_error(EINVAL);
                     return 0;
                 }
@@ -713,11 +713,11 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
     struct hunkheader **hh;
     struct elfheader  eh;
     struct sheader   *sh;
-    char *strtab;
+    char *strtab = NULL;
     int symtab_shndx = -1;
     int err;
     ULONG  i;
-    BOOL   exec_hunk_seen = FALSE;
+    BOOL   exec_hunk_seen __attribute__ ((unused)) = FALSE;
     ULONG  int_shnum;
     int hunks = 0;
 
