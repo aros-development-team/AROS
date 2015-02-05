@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 # Rules to create AROS for amiga-m68k
 #
 
+#MM- distfiles-amiga-m68k : bootdisk bootiso
+
 #MM- AROS-amiga-m68k : kernel-amiga-m68k software-amiga-m68k
 
 #MM- software-amiga-m68k : general-setup binary-amiga-m68k \
