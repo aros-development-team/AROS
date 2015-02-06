@@ -52,7 +52,7 @@ lha:		all tgz
 		$(MAN) $(TXT) $(EXECUTABLE)-$(VERSION).tar.gz
 
 $(EXECUTABLE):	$(MAIN) $(CLASSES) $(PODS)
-	sed "s/SFDC_VERSION/$(VERSION)/g" $^ | sed "s/SFDC_DATE/$(DATE)/g" >$@
+	cat $^ | sed "s/SFDC_VERSION/$(VERSION)/g" | sed "s/SFDC_DATE/$(DATE)/g" >$@
 	chmod a+x $@
 
 $(MAN):	$(EXECUTABLE)
