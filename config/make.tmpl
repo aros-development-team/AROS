@@ -22,7 +22,7 @@ endif
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
-%define compile_q cmd="$(TARGET_CC) $(TARGET_CFLAGS)" opt=$(CFLAGS) from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
+%define compile_q cmd="$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)" opt=$(CFLAGS) from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 	@$(ECHO) "Compiling  $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))"
 	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -42,7 +42,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Assemble the file %(from) to %(to) with %(cmd) with the options in %(opt).
-%define assemble_q cmd=$(CC) opt=$(AFLAGS) from=$< to=$@
+%define assemble_q cmd="$(CC) $(SYSROOT_FLAG)" opt=$(AFLAGS) from=$< to=$@
 	@$(ECHO) "Assembling $(notdir %(from))..."
 	@$(IF) %(cmd) %(opt) %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -62,7 +62,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
-%define link_q cmd=$(AROS_CC) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP)
+%define link_q cmd="$(AROS_CC)  $(SYSROOT_FLAG)" opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP)
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,%(to))..."
 	@$(IF) %(cmd) %(from) -o %(to) %(opt) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -85,7 +85,7 @@ endif
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
-%define link_module_q cmd=$(AROS_CC) err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
+%define link_module_q cmd="$(AROS_CC) $(SYSROOT_FLAG)" err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
 	@if %(cmd) $(NOSTARTUP_LDFLAGS) \
 	    $(GENMAP) %(objdir)/%(module).map \
@@ -117,7 +117,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Create the dependency file %(to) for %(from)
-%define mkdepend_q flags=$(CFLAGS) from=$< to=$@ cc=$(AROS_CC)
+%define mkdepend_q flags=$(CFLAGS) from=$< to=$@ cc="$(AROS_CC) $(SYSROOT_FLAG)"
 	%mkdir_q dir="$(dir %(to))"
 	@$(ECHO) "Makedepend $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))..."
 	@AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
@@ -292,10 +292,10 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-BD_LINK ?= $(TARGET_CC) $(TARGET_LDFLAGS)
+BD_LINK ?= $(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_LDFLAGS)
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
@@ -312,10 +312,10 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK ?= $(KERNEL_CC) $(KERNEL_LDFLAGS)
+BD_LINK ?= $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -374,10 +374,10 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-BD_LINK ?= $(AROS_CXX) $(TARGET_LDFLAGS)
+BD_LINK ?= $(AROS_CXX) $(SYSROOT_FLAG) $(TARGET_LDFLAGS)
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(AROS_CXX) $(TARGET_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(AROS_CXX) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(AROS_CXX) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(AROS_CXX) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
@@ -394,10 +394,10 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK ?= $(KERNEL_CXX) $(KERNEL_LDFLAGS)
+BD_LINK ?= $(KERNEL_CXX) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CXX) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CXX) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -472,9 +472,9 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-BD_LINK ?= $(TARGET_CC) $(TARGET_LDFLAGS)
+BD_LINK ?= $(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_LDFLAGS)
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -486,16 +486,16 @@ $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK ?= $(KERNEL_CC) $(KERNEL_LDFLAGS)
+BD_LINK ?= $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
 $(TMP_TARGETS) : CFLAGS := %(cflags)
 $(TMP_TARGETS) : $(TMP_WILDCARD).o : %.c
-	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd="$(CMD)" iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 ifeq (%(dflags),)
 $(TMP_DTARGETS) : DFLAGS:=%(cflags)
@@ -503,7 +503,7 @@ else
 $(TMP_DTARGETS) : DFLAGS:=%(dflags)
 endif
 $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
-	%mkdepend_q cc=$(CMD) flags=$(DFLAGS)
+	%mkdepend_q cc="$(CMD)" flags=$(DFLAGS)
 %end
 #------------------------------------------------------------------------------
 
@@ -556,9 +556,9 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-  BD_LINK ?= $(AROS_CXX) $(TARGET_LDFLAGS)
+  BD_LINK ?= $(AROS_CXX) $(SYSROOT_FLAG) $(TARGET_LDFLAGS)
   BD_STRIP ?= $(TARGET_STRIP)
-  TMP_CXXCMD:=$(AROS_CXX) $(TARGET_CFLAGS)
+  TMP_CXXCMD:=$(AROS_CXX) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
   TMP_CXXIQUOTE:=$(CFLAGS_IQUOTE)
   TMP_CXXIQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -570,9 +570,9 @@ ifeq (%(compiler),host)
   TMP_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-  BD_LINK ?= $(KERNEL_CXX) $(KERNEL_LDFLAGS)
+  BD_LINK ?= $(KERNEL_CXX) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
   BD_STRIP ?= $(ECHO) >/dev/null
-  TMP_CXXCMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
+  TMP_CXXCMD:=$(KERNEL_CXX) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
   TMP_CXXIQUOTE:=$(KERNEL_IQUOTE)
   TMP_CXXIQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -640,10 +640,10 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-BD_LINK ?= $(TMP_CC) $(TARGET_LDFLAGS)
+BD_LINK ?= $(TMP_CC) $(SYSROOT_FLAG) $(TARGET_LDFLAGS)
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(TMP_CC) $(TARGET_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(TMP_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TMP_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TMP_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
@@ -660,10 +660,10 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK ?= $(KERNEL_CC) $(KERNEL_LDFLAGS)
+BD_LINK ?= $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -748,9 +748,9 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-  BD_LINK ?= $(TMP_CC) $(TARGET_LDFLAGS)
+  BD_LINK ?= $(TMP_CC) $(SYSROOT_FLAG) $(TARGET_LDFLAGS)
   BD_STRIP ?= $(TARGET_STRIP)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(TARGET_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -762,9 +762,9 @@ ifeq (%(compiler),host)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-  BD_LINK ?= $(KERNEL_OBJC) $(KERNEL_LDFLAGS)
+  BD_LINK ?= $(KERNEL_OBJC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
   BD_STRIP ?= $(ECHO) >/dev/null
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_OBJC) $(KERNEL_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_OBJC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -870,13 +870,13 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(TMP_TARGETS) : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETS) : TMP_CMD:=$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
 endif
 ifeq (%(compiler),host)
 $(TMP_TARGETS) : TMP_CMD:=$(HOST_CC)
 endif
 ifeq (%(compiler),kernel)
-$(TMP_TARGETS) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETS) : TMP_CMD:=$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
 endif
 
 $(TMP_TARGETS) : AFLAGS := %(aflags)
@@ -889,7 +889,7 @@ $(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
 #------------------------------------------------------------------------------
 # Link %(objs) to %(prog) using the libraries in %(uselibs)
 %define rule_link_prog prog=/A objs=/A ldflags=$(LDFLAGS) uselibs= \
-    usehostlibs= usestartup=yes detach=no nix=no cmd=$(AROS_CC) strip=$(TARGET_STRIP)
+    usehostlibs= usestartup=yes detach=no nix=no cmd="$(AROS_CC) $(SYSROOT_FLAG)" strip=$(TARGET_STRIP)
 
 TMP_EXTRA_LDFLAGS := 
 TMP_EXTRA_LIBS :=
@@ -929,7 +929,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 %(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
 %(prog) : LIBS := $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
 %(prog) : %(objs) $(TMP_DEPLIBS)
-	%link_q cmd=%(cmd) strip=%(strip) from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS)
+	%link_q cmd="%(cmd)" strip=%(strip) from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS)
 %end
 #------------------------------------------------------------------------------
 
@@ -939,7 +939,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 # the AROS libraries in %(uselibs) and the host libraries in %(usehostlibs)
 %define rule_link_progs progs=/A targetdir=$(AROSDIR)/$(CURDIR) nix=%(nix) \
     objdir=$(GENDIR)/$(CURDIR) ldflags=$(LDFLAGS) uselibs= usehostlibs= \
-    usestartup=yes detach=no cmd=$(AROS_CC) strip=$(TARGET_STRIP)
+    usestartup=yes detach=no cmd="$(AROS_CC) $(SYSROOT_FLAG)" strip=$(TARGET_STRIP)
 
 TMP_EXTRA_LDFLAGS := 
 TMP_EXTRA_LIBS :=
@@ -1004,7 +1004,7 @@ endif
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in %(uselibs) and the host libraries in %(usehostlibs)
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
-    cmd=$(AROS_CC) ldflags=$(LDFLAGS) uselibs= usehostlibs=
+    cmd="$(AROS_CC) $(SYSROOT_FLAG)" ldflags=$(LDFLAGS) uselibs= usehostlibs=
 
 TMP_LDFLAGS  := %(ldflags)
 # Make a list of the lib files the programs depend on.
@@ -1038,7 +1038,7 @@ else
                     -L/usr/lib $(addprefix -l,%(usehostlibs))
 endif 
 %(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(USER_DEPLIBS)
-	%link_module_q cmd=%(cmd) err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS)"
+	%link_module_q cmd="%(cmd)" err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS)"
 
 %end
 #------------------------------------------------------------------------------
@@ -1560,7 +1560,7 @@ endif
 
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir=%(objdir) \
-		 cmd=$(AROS_CC) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
+		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link kernel object file
@@ -2337,7 +2337,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)
 $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -2347,7 +2347,7 @@ $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS)
 $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -2358,7 +2358,7 @@ $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
 endif
 ifeq ($(TARGET),$(BD_TARGET))
 $(BD_OBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
-	%compile_q opt=$(TMP_CFLAGS) cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(TMP_CMD) opt=$(TMP_CFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 endif
 
 ifeq (%(dflags),)
@@ -2504,7 +2504,7 @@ $(HIDD_LIB)($(STUBS_MEM)) : $(STUBS_OBJ)
 	%mklib_q from=$^
 
 $(STUBS_OBJ) : $(STUBS_SRC) 
-	%compile_q cmd="$(TARGET_CC) $(TARGET_CFLAGS)" opt=%(cflags) iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
+	%compile_q cmd="$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS)" opt=%(cflags) iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 
 $(STUBS_DEP) : $(STUBS_SRC)
 	%mkdepend_q flags=%(dflags)
@@ -2699,7 +2699,7 @@ ifeq (%(compiler),host)
         CC="$(HOST_CC) $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
         CXX="$(HOST_CXX) $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
         LDFLAGS="-L$(CROSSTOOLSDIR)/lib" \
-        TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
+        TARGET_CC="$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
         TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)" \
         TARGET_NM="$(NM_PLAIN)"
@@ -2710,18 +2710,18 @@ ifeq (%(compiler),target)
         PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)" \
         CFLAGS="$(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" \
         CXXFLAGS="$(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" \
-        CPP="$(TARGET_CPP)" \
-        CXXCPP="$(TARGET_CPP)" \
-        CC="$(TARGET_CC) $(TARGET_CFLAGS) -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
-        CXX="$(TARGET_CXX) $(TARGET_CFLAGS) -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
+        CPP="$(TARGET_CPP) $(SYSROOT_FLAG)" \
+        CXXCPP="$(TARGET_CPP) $(SYSROOT_FLAG)" \
+        CC="$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS) -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
+        CXX="$(TARGET_CXX) $(SYSROOT_FLAG) $(TARGET_CFLAGS) -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
         LDFLAGS="-L$(AROS_DEVELOPMENT)/lib" \
         AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" AR="$(AR_PLAIN)" STRIP="$(STRIP_PLAIN)"\
-        TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
+        TARGET_CC="$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"\
         TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)"\
         TARGET_NM="$(NM_PLAIN)" \
-        CC_FOR_TARGET="$(TARGET_CC) $(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
-        CXX_FOR_TARGET="$(TARGET_CXX) $(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
+        CC_FOR_TARGET="$(TARGET_CC) $(SYSROOT_FLAG) $(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
+        CXX_FOR_TARGET="$(TARGET_CXX) $(SYSROOT_FLAG) $(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
         --target=$(AROS_TARGET_CPU)-aros\
@@ -2732,8 +2732,8 @@ ifeq (%(compiler),kernel)
     CONFIG_ENV := \
         CPP="$(KERNEL_CPP)" \
         CXXCPP="$(KERNEL_CPP)" \
-        CC="$(KERNEL_CC) $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)"\
-        CXX="$(KERNEL_CXX) $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)"\
+        CC="$(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)"\
+        CXX="$(KERNEL_CXX) $(SYSROOT_FLAG) $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)"\
         AS="$(KERNEL_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"\
         TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)" \
         TARGET_NM="$(NM_PLAIN)"
@@ -3271,7 +3271,7 @@ endif
 %(file): LDLIBS := $(addprefix -l, %(uselibs))
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
 	@$(ECHO) "Kickstart  $(subst $(TARGETDIR)/,,$@)..."
-	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
+	@$(TARGET_CC) $(SYSROOT_FLAG) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
 	@$(STRIP) $@
 
 %compress_file mmake=%(mmake) file=%(file)

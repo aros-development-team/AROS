@@ -1493,6 +1493,7 @@ esac
 #-----------------------------------------------------------------------------
 crosstools_guess="yes"
 aros_target_toolchain="no"
+aros_config_sysroot = ""
 
 AC_MSG_CHECKING([Kernel toolchain prefix])
 AC_ARG_WITH(kernel-toolchain-prefix,AC_HELP_STRING([--with-kernel-toolchain-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"])
@@ -1535,10 +1536,7 @@ else
     AROS_CROSSTOOLSDIR="$aros_toolchain_install"
     PATH="$AROS_CROSSTOOLSDIR:$PATH"
     if test "$crosstools_guess" = "no" ; then
-        aros_config_cflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_cflags"
-        aros_config_ldflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_config_ldflags"
-        aros_kernel_cflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_kernel_cflags"
-        aros_kernel_ldflags="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development $aros_kernel_ldflags"
+        aros_config_sysroot="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development"
     fi
 fi
 AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
@@ -2668,6 +2666,7 @@ AC_SUBST(spec_obj_format)
 AC_SUBST(aros_compiler_libs)
 AC_SUBST(aros_arch_libs)
 
+AC_SUBST(aros_config_sysroot)
 AC_SUBST(aros_config_cflags)
 AC_SUBST(aros_config_aflags)
 AC_SUBST(aros_config_ldflags)
