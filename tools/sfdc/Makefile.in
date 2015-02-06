@@ -53,7 +53,7 @@ lha:		all tgz
 
 $(EXECUTABLE):	$(MAIN) $(CLASSES) $(PODS)
 	sed "s/SFDC_VERSION/$(VERSION)/g" $^ | sed "s/SFDC_DATE/$(DATE)/g" >$@
-	chmod +x $@
+	chmod a+x $@
 
 $(MAN):	$(EXECUTABLE)
 	$(POD2MAN) $^ -o $@
