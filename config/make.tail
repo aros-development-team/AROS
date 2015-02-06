@@ -19,9 +19,9 @@ $(GENMODULE) : $(GENMODULE_DEPS)
 # Disk-based module header
 $(GENDIR)/compiler/libinit/libentry.o : $(SRCDIR)/compiler/libinit/libentry.c
 	@$(ECHO) "Compiling  $<"
-	@$(TARGET_CC) -c $(CFLAGS) $< -o $@
+	@$(TARGET_CC) $(SYSROOT_FLAG) -c $(CFLAGS) $< -o $@
 
 # Special kickstart module header
 $(GENDIR)/$(KICKSTART_BEGIN).o : $(SRCDIR)/$(KICKSTART_BEGIN).c
 	@$(ECHO) "Compiling  $<"
-	@$(TARGET_CC) -c $(CFLAGS) $< -o $@
+	@$(TARGET_CC) $(SYSROOT_FLAG) -c $(CFLAGS) $< -o $@
