@@ -23,8 +23,6 @@ FILES := \
     IconX \
     Info \
     Install \
-    install-i386-pc \
-    Install-grub2-i386-pc \
     Join \
     LeakWatch \
     LibList \
@@ -59,6 +57,10 @@ FILES := \
     WaitForPort \
     Which
 
+BLFILES :=  \
+    install-grub-pc \
+    Install-grub2-pc
+
 # Files that use AROS_SHx() instead of main()
 SH_FILES := \
     AROSMonDrvs \
@@ -84,7 +86,7 @@ USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -I$(OBJDIR)
 #MM workbench-c-quick : workbench-c-sh-quick workbench-c-requeststring-quick
 
 %build_progs mmake=workbench-c \
-    files=$(FILES) targetdir=$(AROS_C) \
+    files="$(FILES) $(BLFILES)" targetdir=$(AROS_C) \
     uselibs="uuid debug"
 
 USER_LDFLAGS := -static
@@ -102,5 +104,5 @@ $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...
 	@$(BISON) -o $@ $<
 
-$(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c
+$(OBJDIR)/Eval.d : $(OBJDIR)/evalParser.tab.c
 
