@@ -58,8 +58,8 @@ FILES := \
     Which
 
 BLFILES :=  \
-    install-grub-pc \
-    Install-grub2-pc
+    install-i386-pc \
+    Install-grub2-i386-pc
 
 # Files that use AROS_SHx() instead of main()
 SH_FILES := \
@@ -85,6 +85,9 @@ USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -I$(OBJDIR)
 #MM workbench-c : includes linklibs workbench-c-sh workbench-c-requeststring workbench-libs-uuid
 #MM workbench-c-quick : workbench-c-sh-quick workbench-c-requeststring-quick
 
+%build_prog mmake=workbench-c-requeststring progname=RequestString \
+    files=RequestString targetdir=$(AROS_C)
+
 %build_progs mmake=workbench-c \
     files="$(FILES) $(BLFILES)" targetdir=$(AROS_C) \
     uselibs="uuid debug"
@@ -94,11 +97,6 @@ USER_LDFLAGS := -static
 %build_progs mmake=workbench-c-sh \
     files=$(SH_FILES) targetdir=$(AROS_C) \
     usestartup=no
-
-USER_LDFLAGS := 
-
-%build_prog mmake=workbench-c-requeststring progname=RequestString \
-    files=RequestString targetdir=$(AROS_C)
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...
