@@ -21,8 +21,7 @@ cd      $BUILD_BASE/AROS
 export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
 execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-serial-debug
 make
-make    bootdisk
-make    bootiso
+make    distfiles
 
 cd      $BUILD_BASE/AROS/bin/amiga-m68k
 move    AROS $PACKAGE
