@@ -16,6 +16,13 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+#ifdef __THROW
+#undef __THROW
+#endif
+#ifdef __CONCAT
+#undef __CONCAT
+#endif
+
 #include "sdl_intern.h"
 
 #define DEBUG 0
