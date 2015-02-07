@@ -21,6 +21,6 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(S
 
 %build_prog mmake=kernel-bootstrap-hosted \
     progname=$(PROG)$(EXE_SUFFIX) targetdir=$(AROSARCHDIR) \
-    files=$(FILES) compiler=kernel uselibs="bootstrap"
+    files=$(FILES) compiler=host uselibs="bootstrap"
 
 %common

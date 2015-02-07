@@ -7,6 +7,6 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 
 %build_archspecific \
 	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=linux \
-	files=$(FILES) compiler=kernel
+	files=$(FILES) compiler=host
 
 %common
