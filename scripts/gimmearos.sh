@@ -309,6 +309,7 @@ do
     echo -e   "  5    |   15   | pc-i386      (32-bit)"
     echo -e   "  6    |   16   | pc-x86_64    (64-bit)"
     echo -e   "  7    |        | amiga-m68k   (32-bit)"
+    echo -e   "  8    |        | raspi-armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
@@ -352,12 +353,17 @@ do
             cd aros-pc-x86_64
             "../$srcdir/configure" --target=pc-x86_64 --with-portssources="$portsdir"
             ;;
-
         7 ) echo -e "\nConfiguring amiga-m68k V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-amiga-m68k
             cd aros-amiga-m68k
             "../$srcdir/configure" --target=amiga-m68k --with-serial-debug=yes --with-portssources="$portsdir"
+            ;;
+        8 ) echo -e "\nConfiguring raspi-armhf V1...\n"
+            mkdir -p "$portsdir"
+            mkdir -p aros-raspi-armhf
+            cd aros-raspi-armhf
+            "../$srcdir/configure" --target=raspi-armhf --with-portssources="$portsdir"
             ;;
 
         11 ) echo -e "\nConfiguring linux-i386 V0 with full debug...\n"
@@ -424,6 +430,7 @@ do
     echo -e   "   5   |   15   | pc-i386      (32-bit)"
     echo -e   "   6   |   16   | pc-x86_64    (64-bit)"
     echo -e   "   7   |        | amiga-m68k   (32-bit)"
+    echo -e   "   8   |        | raspi-armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
     echo -e "\nEnter number and press <Enter>:"
@@ -467,18 +474,18 @@ do
             make $makeopts
             make $makeopts contrib
             make $makeopts ports
-            make $makeopts bootiso
+            make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-pc-i386/bin/<target>/AROS"
+            echo -e "in the directory aros-pc-i386/distfiles"
             ;;
         6 ) echo -e "\nBuilding pc-x86_64 V1...\n"
             cd aros-pc-x86_64
             make $makeopts
             make $makeopts contrib
             make $makeopts ports
-            make $makeopts bootiso
+            make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-pc-x86_64/bin/<target>/AROS"
+            echo -e "in the directory aros-pc-x86_64/distfiles"
             ;;
         7 ) echo -e "\nBuilding amiga-m68k V1...\n"
             cd aros-amiga-m68k
@@ -489,7 +496,15 @@ do
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-amiga-m68k/distfiles"
             ;;
-
+        8 ) echo -e "\nBuilding raspi-armhf V1...\n"
+            cd aros-raspi-armhf
+            make $makeopts
+            make $makeopts contrib
+            make $makeopts ports
+            make $makeopts distfiles
+            echo -e "\nIf everything went well AROS will be available"
+            echo -e "in the directory aros-raspi-armhf/distfiles"
+            ;;
 
         11 ) echo -e "\nBuilding linux-i386 V0 with full debug...\n"
             cd aros-linux-i386-v0-dbg
@@ -528,18 +543,18 @@ do
             make $makeopts
             make $makeopts contrib
             make $makeopts ports
-            make $makeopts bootiso
+            make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-pc-i386-v0/bin/<target>/AROS"
+            echo -e "in the directory aros-pc-i386-v0/distfiles"
             ;;
         16 ) echo -e "\nBuilding pc-x86_64 V0...\n"
             cd aros-pc-x86_64-v0
             make $makeopts
             make $makeopts contrib
             make $makeopts ports
-            make $makeopts bootiso
+            make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-pc-x86_64-v0/bin/<target>/AROS"
+            echo -e "in the directory aros-pc-x86_64-v0/distfiles"
             ;;
 
         0 ) exit 0

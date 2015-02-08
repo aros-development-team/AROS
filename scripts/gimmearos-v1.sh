@@ -284,6 +284,7 @@ do
     echo -e "\n  1    | i386   (32-bit)"
     echo -e   "  2    | x86_64 (64-bit)"
     echo -e   "  3    | m68k   (32-bit)"
+    echo -e   "  4    | armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
@@ -309,6 +310,12 @@ do
             cd aros-m68k-toolchain-builddir
             "../$srcdir/configure" --target=amiga-m68k --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir"
             ;;
+        4 ) echo -e "\nConfiguring armhf Toolchain...\n"
+            mkdir -p "$portsdir"
+            mkdir -p aros-armhf-toolchain-builddir
+            cd aros-armhf-toolchain-builddir
+            "../$srcdir/configure" --target=raspi-armhf --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir"
+            ;;
 
         0 ) exit 0
             ;;
@@ -331,6 +338,7 @@ do
     echo -e "\n   1   | i386   (32-bit)"
     echo -e   "   2   | x86_64 (64-bit)"
     echo -e   "   3   | m68k   (32-bit)"
+    echo -e   "   4   | armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
     echo -e "\nEnter number and press <Enter>:"
@@ -354,6 +362,12 @@ do
             make $makeopts crosstools
             cd "$curdir"
             rm -rf aros-m68k-toolchain-builddir
+            ;;
+        4 ) echo -e "\nBuilding armhf Toolchain...\n"
+            cd aros-armhf-toolchain-builddir
+            make $makeopts crosstools
+            cd "$curdir"
+            rm -rf aros-armhf-toolchain-builddir
             ;;
 
         0 ) exit 0
@@ -380,6 +394,7 @@ do
     echo -e   "  5    | pc-i386      (32-bit)"
     echo -e   "  6    | pc-x86_64    (64-bit)"
     echo -e   "  7    | amiga-m68k   (32-bit)"
+    echo -e   "  8    | raspi-armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
@@ -429,6 +444,12 @@ do
             cd aros-amiga-m68k
             "../$srcdir/configure" --target=amiga-m68k --with-serial-debug=yes --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
             ;;
+        8 ) echo -e "\nConfiguring raspi-armhf V1...\n"
+            mkdir -p "$portsdir"
+            mkdir -p aros-raspi-armhf
+            cd aros-raspi-armhf
+            "../$srcdir/configure" --target=raspi-armhf --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            ;;
 
         0 ) exit 0
             ;;
@@ -455,6 +476,7 @@ do
     echo -e   "   5   | pc-i386      (32-bit)"
     echo -e   "   6   | pc-x86_64    (64-bit)"
     echo -e   "   7   | amiga-m68k   (32-bit)"
+    echo -e   "   8   | raspi-armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
     echo -e "\nEnter number and press <Enter>:"
@@ -498,7 +520,7 @@ do
             make $makeopts
             make $makeopts contrib
             make $makeopts ports
-            make $makeopts bootiso
+            make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386/bin/<target>/AROS"
             ;;
@@ -507,7 +529,7 @@ do
             make $makeopts
             make $makeopts contrib
             make $makeopts ports
-            make $makeopts bootiso
+            make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-x86_64/bin/<target>/AROS"
             ;;
@@ -519,6 +541,15 @@ do
             make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-amiga-m68k/distfiles"
+            ;;
+        8 ) echo -e "\nBuilding raspi-armhf V1...\n"
+            cd aros-raspi-armhf
+            make $makeopts
+            make $makeopts contrib
+            make $makeopts ports
+            make $makeopts distfiles
+            echo -e "\nIf everything went well AROS will be available"
+            echo -e "in the directory aros-raspi-armhf/distfiles"
             ;;
 
         0 ) exit 0
