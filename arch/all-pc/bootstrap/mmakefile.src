@@ -20,7 +20,7 @@ USER_LDFLAGS := -m32 -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstra
 		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -static-libgcc $(ARCH_LIBS)
 USER_OBJS    := $(OBJDIR)/vesa.bin.o
 
-kernel-bootstrap-pc : BD_LINK := $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
+BD_LINK := $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
 
 %build_prog mmake=kernel-bootstrap-pc progname=$(EXENAME) \
 	files=$(FILES) targetdir=$(EXEDIR) \
