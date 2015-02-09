@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -378,7 +378,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUI_List_TestPos_Result pos;
     LONG seltype, old_active, new_active, visible, first, last, i;
     IPTR result = 0;
-    BOOL select = FALSE, clear = FALSE, range_select = FALSE;
+    BOOL select = FALSE, clear = FALSE, range_select = FALSE, changing;
     WORD delta;
     typeof(msg->muikey) muikey = msg->muikey;
 
@@ -605,8 +605,13 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         }
     }
 
+    /* Decide in advance if any selections may change */
+    changing = clear || muikey == MUIKEY_TOGGLE || select;
+
     /* Change selected and active entries */
-    set(obj, MUIA_Listview_SelectChange, TRUE);
+    if (changing)
+        set(obj, MUIA_Listview_SelectChange, TRUE);
+
     if (clear)
     {
         DoMethod(list, MUIM_List_Select, MUIV_List_Select_All,
@@ -639,7 +644,9 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active, seltype,
                 NULL);
     }
-    set(obj, MUIA_Listview_SelectChange, FALSE);
+
+    if (changing)
+        set(obj, MUIA_Listview_SelectChange, FALSE);
 
     return result;
 }
