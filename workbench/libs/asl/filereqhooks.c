@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     File requester specific code.
@@ -610,6 +610,9 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
                        (GADGETSPACINGY + udata->ButHeight) * gadrows +
                        BORDERLVSPACINGY * 2 +
                        (ld->ld_Font->tf_YSize + BORDERLVITEMSPACINGY * 2) * FREQ_MIN_VISIBLELINES;
+
+    ld->ld_MinWidth  += ld->ld_WBorLeft + ld->ld_WBorRight;
+    ld->ld_MinHeight += ld->ld_WBorTop  + ld->ld_WBorBottom;
 
     /* make listview gadget */
 
