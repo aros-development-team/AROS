@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -54,10 +54,6 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-        27-11-96    digulla automatically created from
-                            asl_lib.fd and clib/asl_protos.h
 
 *****************************************************************************/
 {
@@ -130,8 +126,6 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
             struct TagItem   wintags[] =
             {
                 {WA_CustomScreen        , (IPTR)ld->ld_Screen       }, /* stegerg: requesters should not use WA_PubScreen */
-                {WA_InnerWidth          , 0                         },
-                {WA_InnerHeight         , 0                         },
                 {WA_AutoAdjust          , TRUE                      },
                 {WA_NewLookMenus        , TRUE                      },
             #if AVOID_FLICKER

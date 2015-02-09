@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic helpfuncs for Asl.
@@ -92,7 +92,7 @@ VOID ParseCommonTags
         IPTR tidata = tag->ti_Data;
 
         /* The tags that are put "in a row" are defined as the same value,
-                and therefor we only use one of them, but the effect is for all of them
+                and therefore we only use one of them, but the effect is for all of them
         */
 
         switch (tag->ti_Tag)
