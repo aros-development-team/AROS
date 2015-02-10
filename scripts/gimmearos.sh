@@ -8,7 +8,7 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos.sh 1.12 (08.02.2015) WIP
+# $VER: gimmearos.sh 1.12 (10.02.2015) WIP
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -304,10 +304,10 @@ do
     echo -e   "-------+--------+----------------------------"
     echo -e   "  1    |   11   | linux-i386   (32-bit) debug"
     echo -e   "  2    |   12   | linux-i386   (32-bit)"
-    echo -e   "  3    |   13   | linux-x86_64 (64-bit) debug"
-    echo -e   "  4    |   14   | linux-x86_64 (64-bit)"
+    echo -e   "  3    |        | linux-x86_64 (64-bit) debug"
+    echo -e   "  4    |        | linux-x86_64 (64-bit)"
     echo -e   "  5    |   15   | pc-i386      (32-bit)"
-    echo -e   "  6    |   16   | pc-x86_64    (64-bit)"
+    echo -e   "  6    |        | pc-x86_64    (64-bit)"
     echo -e   "  7    |        | amiga-m68k   (32-bit)"
     echo -e   "  8    |        | raspi-armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
@@ -378,29 +378,11 @@ do
             cd aros-linux-i386-v0
             "../$srcdir_v0/configure" --target=linux-i386 --with-portssources="$portsdir"
             ;;
-        13 ) echo -e "\nConfiguring linux-x86_64 V0 with full debug...\n"
-            mkdir -p "$portsdir"
-            mkdir -p aros-linux-x86_64-v0-dbg
-            cd aros-linux-x86_64-v0-dbg
-            "../$srcdir_v0/configure" --target=linux-x86_64 --enable-debug=all --with-portssources="$portsdir"
-            ;;
-        14 ) echo -e "\nConfiguring linux-x86_64 V0 without debug...\n"
-            mkdir -p "$portsdir"
-            mkdir -p aros-linux-x86_64-v0
-            cd aros-linux-x86_64-v0
-            "../$srcdir_v0/configure" --target=linux-x86_64 --with-portssources="$portsdir"
-            ;;
         15 ) echo -e "\nConfiguring pc-i386 V0...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-i386-v0
             cd aros-pc-i386-v0
             "../$srcdir_v0/configure" --target=pc-i386 --with-portssources="$portsdir"
-            ;;
-        16 ) echo -e "\nConfiguring pc-x86_64 V0...\n"
-            mkdir -p "$portsdir"
-            mkdir -p aros-pc-x86_64-v0
-            cd aros-pc-x86_64-v0
-            "../$srcdir_v0/configure" --target=pc-x86_64 --with-portssources="$portsdir"
             ;;
 
         0 ) exit 0
@@ -425,10 +407,10 @@ do
     echo -e   "-------+--------+----------------------------"
     echo -e   "   1   |   11   | linux-i386   (32-bit) debug"
     echo -e   "   2   |   12   | linux-i386   (32-bit)"
-    echo -e   "   3   |   13   | linux-x86_64 (64-bit) debug"
-    echo -e   "   4   |   14   | linux-x86_64 (64-bit)"
+    echo -e   "   3   |        | linux-x86_64 (64-bit) debug"
+    echo -e   "   4   |        | linux-x86_64 (64-bit)"
     echo -e   "   5   |   15   | pc-i386      (32-bit)"
-    echo -e   "   6   |   16   | pc-x86_64    (64-bit)"
+    echo -e   "   6   |        | pc-x86_64    (64-bit)"
     echo -e   "   7   |        | amiga-m68k   (32-bit)"
     echo -e   "   8   |        | raspi-armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
@@ -522,22 +504,6 @@ do
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-v0/bin/<target>/AROS"
             ;;
-        13 ) echo -e "\nBuilding linux-x86_64 V0 with full debug...\n"
-            cd aros-linux-x86_64-v0-dbg
-            make $makeopts
-            make $makeopts contrib
-            make $makeopts ports
-            echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
-            ;;
-        14 ) echo -e "\nBuilding linux-x86_64 V0 without debug...\n"
-            cd aros-linux-x86_64-v0
-            make $makeopts
-            make $makeopts contrib
-            make $makeopts ports
-            echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-linux-x86_64-v0/bin/<target>/AROS"
-            ;;
         15 ) echo -e "\nBuilding pc-i386 V0...\n"
             cd aros-pc-i386-v0
             make $makeopts
@@ -546,15 +512,6 @@ do
             make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386-v0/distfiles"
-            ;;
-        16 ) echo -e "\nBuilding pc-x86_64 V0...\n"
-            cd aros-pc-x86_64-v0
-            make $makeopts
-            make $makeopts contrib
-            make $makeopts ports
-            make $makeopts distfiles
-            echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-pc-x86_64-v0/distfiles"
             ;;
 
         0 ) exit 0
