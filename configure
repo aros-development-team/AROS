@@ -2759,7 +2759,7 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 # Default version of gnu tools to use
 default_gcc_version="4.6.4"
-default_binutils_version="2.32.2"
+default_binutils_version="2.23.2"
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
