@@ -18,11 +18,8 @@ ICU_EXTRA_OPTS= \
         --disable-extras \
         --with-data-packaging=static
 
-ifneq (,$(findstring clang,"$(HOST_CC)"))
-BINUTILS_VERSION = 2.25
-else
-BINUTILS_VERSION = 2.23.2
-endif
+BINUTILS_VERSION = $(TARGET_BINUTILS_VER)
+
 BINUTILS_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
 BINUTILS_EXTRA_OPTS += -bindir=$(CROSSTOOLSDIR)
 BINUTILS_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
@@ -49,16 +46,15 @@ GCC_EXTRA_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
 GCC_EXTRA_OPTS += --with-mode=arm
 endif
 
+GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
 GCC_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
 GCC_EXTRA_OPTS += --enable-languages=$(strip $(GCC_LANGUAGES))
 GCC_EXTRA_OPTS += --enable-long-long
 GCC_EXTRA_OPTS += --enable-version-specific-runtime-libs
-GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
 GCC_EXTRA_OPTS += --disable-bootstrap 
 GCC_EXTRA_OPTS += --disable-sjlj-exceptions
 GCC_EXTRA_OPTS += --disable-tls
 GCC_EXTRA_OPTS += --disable-plugins
-GCC_EXTRA_OPTS += --disable-objc-gc
 GCC_EXTRA_OPTS += --with-dwarf2
 GCC_EXTRA_OPTS += --enable-frame-pointer
 GCC_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
