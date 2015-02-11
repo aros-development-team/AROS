@@ -1547,11 +1547,11 @@ AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what specific target binutils version to use])
-AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-binutils-version=VERSION],[Use gcc-VERSION for building AROS]),use_binutils_version="$withval",use_binutils_version="")
+AC_ARG_WITH(binutils-version,AC_HELP_STRING([--with-binutils-version=VERSION],[Use binutils-VERSION for building AROS]),use_binutils_version="$withval",use_binutils_version="")
 if test "$use_binutils_version" = ""; then
         target_binutils_version="$default_binutils_version"
 else
-    target_gcc_version="$use_binutils_version"
+    target_binutils_version="$use_binutils_version"
 fi
 AC_MSG_RESULT($target_binutils_version)
 
