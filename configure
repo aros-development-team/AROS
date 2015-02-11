@@ -624,6 +624,7 @@ ac_subst_vars='LTLIBOBJS
 aros_usb30_code
 java_target
 objc_target
+target_binutils_version
 gcc_target_cpu
 ignore_undefined_symbols
 aros_modules_debug
@@ -1640,6 +1641,8 @@ Optional Packages:
                           name
   --with-aros-toolchain-install=DIR
                           Where to install or search for cross tools binaries
+  --with-binutils-version=VERSION
+                          Use gcc-VERSION for building AROS
   --with-gcc-version=VERSION
                           Use gcc-VERSION for building AROS
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
@@ -2753,6 +2756,10 @@ IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
+
+# Default version of gnu tools to use
+default_gcc_version=4.6.4
+default_binutils_version=2.32.2
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -8600,6 +8607,26 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
 $as_echo "$AROS_CROSSTOOLSDIR" >&6; }
 
+#-----------------------------------------------------------------------------
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target binutils version to use" >&5
+$as_echo_n "checking what specific target binutils version to use... " >&6; }
+
+# Check whether --with-gcc-version was given.
+if test "${with_gcc_version+set}" = set; then :
+  withval=$with_gcc_version; use_binutils_version="$withval"
+else
+  use_binutils_version=""
+fi
+
+if test "$use_binutils_version" = ""; then
+        target_binutils_version="$(default_binutils_version)"
+else
+    target_gcc_version="$use_binutils_version"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_binutils_version" >&5
+$as_echo "$target_binutils_version" >&6; }
+
+
 # Helper to identify gcc version
 
 
@@ -8641,7 +8668,7 @@ $as_echo "$ax_cv_gcc_version" >&6; }
       fi
     fi
     if test "$use_gcc_version" = ""; then
-        target_gcc_version="4.6.4"
+        target_gcc_version="$(default_gcc_version)"
     fi
 else
     target_gcc_version="$use_gcc_version"
@@ -14609,6 +14636,7 @@ fi
 
 
 # C compiler related
+
 
 
 
