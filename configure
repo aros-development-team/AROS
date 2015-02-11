@@ -2758,8 +2758,8 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 # Default version of gnu tools to use
-default_gcc_version=4.6.4
-default_binutils_version=2.32.2
+default_gcc_version="4.6.4"
+default_binutils_version="2.32.2"
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -8523,7 +8523,7 @@ esac
 #-----------------------------------------------------------------------------
 crosstools_guess="yes"
 aros_target_toolchain="no"
-aros_config_sysroot = ""
+aros_config_sysroot=""
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Kernel toolchain prefix" >&5
 $as_echo_n "checking Kernel toolchain prefix... " >&6; }
@@ -8619,7 +8619,7 @@ else
 fi
 
 if test "$use_binutils_version" = ""; then
-        target_binutils_version="$(default_binutils_version)"
+        target_binutils_version="$default_binutils_version"
 else
     target_gcc_version="$use_binutils_version"
 fi
@@ -8668,7 +8668,7 @@ $as_echo "$ax_cv_gcc_version" >&6; }
       fi
     fi
     if test "$use_gcc_version" = ""; then
-        target_gcc_version="$(default_gcc_version)"
+        target_gcc_version="$default_gcc_version"
     fi
 else
     target_gcc_version="$use_gcc_version"
