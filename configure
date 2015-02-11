@@ -912,6 +912,7 @@ with_elf_toolchain_prefix
 with_aros_toolchain
 enable_crosstools
 with_aros_toolchain_install
+with_binutils_version
 with_gcc_version
 enable_objc
 enable_java
@@ -1642,7 +1643,7 @@ Optional Packages:
   --with-aros-toolchain-install=DIR
                           Where to install or search for cross tools binaries
   --with-binutils-version=VERSION
-                          Use gcc-VERSION for building AROS
+                          Use binutils-VERSION for building AROS
   --with-gcc-version=VERSION
                           Use gcc-VERSION for building AROS
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
@@ -8611,9 +8612,9 @@ $as_echo "$AROS_CROSSTOOLSDIR" >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target binutils version to use" >&5
 $as_echo_n "checking what specific target binutils version to use... " >&6; }
 
-# Check whether --with-gcc-version was given.
-if test "${with_gcc_version+set}" = set; then :
-  withval=$with_gcc_version; use_binutils_version="$withval"
+# Check whether --with-binutils-version was given.
+if test "${with_binutils_version+set}" = set; then :
+  withval=$with_binutils_version; use_binutils_version="$withval"
 else
   use_binutils_version=""
 fi
@@ -8621,7 +8622,7 @@ fi
 if test "$use_binutils_version" = ""; then
         target_binutils_version="$default_binutils_version"
 else
-    target_gcc_version="$use_binutils_version"
+    target_binutils_version="$use_binutils_version"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_binutils_version" >&5
 $as_echo "$target_binutils_version" >&6; }
