@@ -154,8 +154,10 @@ POSIXC := \
     sigemptyset \
     sigfillset \
     sigismember \
+    siglongjmp \
     sigpending \
     sigprocmask \
+    sigsetjmp \
     sigsuspend \
     sleep \
     srand48 \

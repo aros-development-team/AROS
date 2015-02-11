@@ -21,10 +21,10 @@ typedef struct __sigjmp_buf
 __BEGIN_DECLS
 
 /* NOTIMPL void	_longjmp(jmp_buf, int) __noreturn ; */
-/* NOTIMPL void   siglongjmp(sigjmp_buf, int) __noreturn ; */
+void   siglongjmp(sigjmp_buf, int) __noreturn ;
 
 /* NOTIMPL int	_setjmp(jmp_buf); */
-/* NOTIMPL int    sigsetjmp(sigjmp_buf, int); */
+int    sigsetjmp(sigjmp_buf, int);
 
 __END_DECLS
 
