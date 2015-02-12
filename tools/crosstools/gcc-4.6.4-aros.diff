@@ -232,7 +232,7 @@ diff -ruN gcc-4.6.4/gcc/config/arm/unwind-arm.c gcc-4.6.4.aros/gcc/config/arm/un
 diff -ruN gcc-4.6.4/gcc/config/aros.h gcc-4.6.4.aros/gcc/config/aros.h
 --- gcc-4.6.4/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.4.aros/gcc/config/aros.h	2015-02-11 11:43:43.826090922 +0000
-@@ -0,0 +1,107 @@
+@@ -0,0 +1,108 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -311,6 +311,7 @@ diff -ruN gcc-4.6.4/gcc/config/aros.h gcc-4.6.4.aros/gcc/config/aros.h
 +    { GPLUSPLUS_INCLUDE_DIR, "G++", 1, 1, 0, 0 }, \
 +    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1, 0, 1 }, \
 +    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, 0, 0 }, \
++    { "/include", STANDARD_INCLUDE_COMPONENT, 0, 0, 1, 0 }, \
 +    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
 +    { 0, 0, 0, 0, 0, 0 } \
 +}; \
