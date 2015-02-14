@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS += -I $(SRCDIR)/$(CURDIR) -D__TIMER_NOLIBBASE__
+USER_LDFLAGS := -static
 
 SDCARDFILES = \
     sdcard_init \
