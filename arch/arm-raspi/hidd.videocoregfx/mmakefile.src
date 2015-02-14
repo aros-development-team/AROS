@@ -1,12 +1,14 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_LDFLAGS := -static
+
 FILES	:=	\
 	videocoregfx_init \
 	videocoregfx_class \
-        videocoregfx_memory \
-        videocoregfx_sdtv \
-        videocoregfx_hdmi \
+	videocoregfx_memory \
+	videocoregfx_sdtv \
+	videocoregfx_hdmi \
 	videocoregfx_hardware \
 	videocoregfx_pixfmts \
 	videocoregfx_onbitmap
