@@ -1590,7 +1590,7 @@ Optional Features:
                           Enforce userspace AmigaOS compliance to a specific
                           KickStart version (default=none).
   --disable-crosstools    Do not build cross-compiler toolchain
-  --enable-objc           Enable Objectve-C support (default=yes)
+  --enable-objc           Enable Objectve-C support (default=no)
   --enable-java           Enable Java support (default=no)
   --enable-includes=dir   Alternative system include directory
   --enable-palm-debug-hack
@@ -8683,7 +8683,7 @@ $as_echo_n "checking whether to enable Objective-C suppport... " >&6; }
 if test "${enable_objc+set}" = set; then :
   enableval=$enable_objc; objc="$enableval"
 else
-  objc="yes"
+  objc="no"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $objc" >&5
