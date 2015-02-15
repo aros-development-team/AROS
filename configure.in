@@ -1587,7 +1587,7 @@ fi
 AC_MSG_RESULT($target_gcc_version)
 
 AC_MSG_CHECKING([whether to enable Objective-C suppport])
-AC_ARG_ENABLE(objc,AC_HELP_STRING([--enable-objc],[Enable Objectve-C support (default=yes)]),objc="$enableval",objc="yes")
+AC_ARG_ENABLE(objc,AC_HELP_STRING([--enable-objc],[Enable Objectve-C support (default=no)]),objc="$enableval",objc="no")
 AC_MSG_RESULT($objc)
 if test "x$objc" = "xyes"; then
     objc_target="$objc"
