@@ -56,6 +56,21 @@ fetch_sf()
     $ret
 }
 
+github_mirrors="https://github.com"
+
+fetch_github()
+{
+    local origin="$1" file="$2" destination="$3"
+    local full_path
+    local ret=true
+
+    if ! fetch_mirrored "$origin" "$file" "$destination" "Github" "${github_mirrors}"; then
+        ret=false
+    fi
+
+    $ret
+}
+
 fetch()
 {
     local origin="$1" file="$2" destination="$3"
@@ -71,7 +86,7 @@ fetch()
     trap 'rm -f "$destination/$file".tmp; exit' SIGINT SIGKILL SIGTERM
     
     case $protocol in
-        http | ftp)    
+        https| http | ftp)    
             if ! wget -t 5 -T 15 -c "$origin/$file" -O "$destination/$file".tmp; then
                 ret=false
             else
@@ -86,6 +101,11 @@ fetch()
             ;;
         sf | sourceforge)
             if ! fetch_sf "${origin:${#protocol}+3}" "$file" "$destination"; then
+                ret=false
+            fi
+            ;;
+        github)
+            if ! fetch_github "${origin:${#protocol}+3}" "$file" "$destination"; then
                 ret=false
             fi
             ;;
