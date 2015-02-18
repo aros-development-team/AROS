@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#include <aros/cpu.h> // for __WORDSIZE
+
 #include "bootstrap.h"
 
 #ifndef MAP_32BIT
