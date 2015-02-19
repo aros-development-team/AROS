@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: 
+    Desc: Install CLI command
     Lang: English
 */
 /******************************************************************************
@@ -72,6 +72,12 @@
 #include <exec/types.h>
 #include <exec/ports.h>
 #include <aros/macros.h>
+#ifndef ERROR_UNKNOWN
+#define ERROR_UNKNOWN 100
+#define AROS_BSTR_ADDR(s) (((STRPTR)BADDR(s))+1)
+#endif
+
+const TEXT version[] = "$VER: Install 42.1 (19.2.2015)\n";
 
 struct Volume {
 	STRPTR drivename;

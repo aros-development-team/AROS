@@ -8,7 +8,9 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#ifdef __AROS__
 #include <aros/macros.h>
+#endif
 
 #include "support.h"
 #include "modes.h"
