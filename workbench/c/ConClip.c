@@ -89,6 +89,8 @@
 #define CODE_COPY       'C'
 #define CODE_PASTE      'V'
 
+const TEXT version[] = "$VER: Conclip 42.1 (19.2.2015)\n";
+
 struct MyEditHookMsg
 {
     struct Message      msg;

@@ -85,6 +85,10 @@ int __nocommandline;
 #include <proto/utility.h>
 
 #define NAME_BUFFER_SIZE 32
+#ifndef ERROR_UNKNOWN
+#define ERROR_UNKNOWN 100
+#define AROS_BSTR_ADDR(s) (((STRPTR)BADDR(s))+1)
+#endif
 
 const TEXT version_string[] = "$VER: Eject 41.1 (26.9.2009)";
 const TEXT template[] = "DEVICE/A";
