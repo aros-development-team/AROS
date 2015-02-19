@@ -7,9 +7,7 @@
 */
 
 #include <exec/types.h>
-#ifdef __AROS__
 #include <dos/bptr.h>
-#endif
 
 /****************************************************************************/
 /*** Prototypes *************************************************************/
@@ -19,3 +17,4 @@ LONG FILE_Read( BPTR file, APTR buffer, LONG length );
 LONG FILE_Write( BPTR file, CONST_APTR buffer, LONG length );
 
 #endif /* PKG_FILE_H */
+

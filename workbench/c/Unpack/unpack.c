@@ -58,15 +58,7 @@
 #define SH_GLOBAL_DOSBASE 1
 #define SH_GLOBAL_SYSBASE 1
 
-#ifdef __AROS__
 #include <aros/shcommands.h>
-#else
-#define AROS_SH2(a,b,c,d) main()
-#define AROS_SHCOMMAND_INIT
-#define AROS_SHCOMMAND_EXIT
-#define FILE 0
-#define TO 0
-#endif
 
 #include "modes.h"
 #include "package.h"
@@ -124,3 +116,4 @@ cleanup:
 
     AROS_SHCOMMAND_EXIT
 }
+
