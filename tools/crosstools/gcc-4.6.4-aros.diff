@@ -232,7 +232,7 @@ diff -ruN gcc-4.6.4/gcc/config/arm/unwind-arm.c gcc-4.6.4.aros/gcc/config/arm/un
 diff -ruN gcc-4.6.4/gcc/config/aros.h gcc-4.6.4.aros/gcc/config/aros.h
 --- gcc-4.6.4/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.4.aros/gcc/config/aros.h	2015-02-11 11:43:43.826090922 +0000
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,113 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -305,16 +305,21 @@ diff -ruN gcc-4.6.4/gcc/config/aros.h gcc-4.6.4.aros/gcc/config/aros.h
 +#define ENDFILE_SPEC \
 +  "-lautoinit"
 +
++#undef STANDARD_INCLUDE_DIR
++#define STANDARD_INCLUDE_DIR "/include"
++
++/* The compiler is configured with ONLY the gcc/g++ standard headers.
++   N.B-: STANDARD_INCLUDE_DIR must come before GCC_INCLUDE_DIR on AROS */
 +#undef INCLUDE_DEFAULTS
 +#define INCLUDE_DEFAULTS \
 +{ \
 +    { GPLUSPLUS_INCLUDE_DIR, "G++", 1, 1, 0, 0 }, \
 +    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1, 0, 1 }, \
 +    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, 0, 0 }, \
-+    { "/include", STANDARD_INCLUDE_COMPONENT, 0, 0, 1, 0 }, \
++    { STANDARD_INCLUDE_DIR, STANDARD_INCLUDE_COMPONENT, 0, 0, 1, 0 }, \
 +    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
 +    { 0, 0, 0, 0, 0, 0 } \
-+}; \
++};
 +
 +#undef CPP_SPEC
 +#define CPP_SPEC "%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc:-isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc} -isystem %R/include}"
@@ -701,8 +706,7 @@ diff -ruN gcc-4.6.4/gcc/config/rs6000/rs6000.h gcc-4.6.4.aros/gcc/config/rs6000/
 diff -ruN gcc-4.6.4/gcc/config/t-aros gcc-4.6.4.aros/gcc/config/t-aros
 --- gcc-4.6.4/gcc/config/t-aros	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.4.aros/gcc/config/t-aros	2015-02-11 11:43:43.826090922 +0000
-@@ -0,0 +1,29 @@
-+# In AROS, "/usr" is a four-letter word.
+@@ -0,0 +1,28 @@
 +# Must match STANDARD_INCLUDE_DIR in aros.h !
 +NATIVE_SYSTEM_HEADER_DIR = /include
 +
