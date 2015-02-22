@@ -2879,6 +2879,12 @@ ifneq (%(gendir),)
     else
         %(mmake)-pkgdir := %(gendir)/$(CURDIR)/%(package)
     endif
+else
+    ifeq (%(package),)
+        %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
+    else
+        %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)/%(package)
+    endif
 endif
 
 %(mmake)-cmakeflag := $(%(mmake)-pkgdir)/.cmake
@@ -2918,6 +2924,7 @@ $(%(mmake)-cmakeflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmake
 	$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
+	$(RM) -Rf CMakeCache.txt CMakeFiles \; && \
 	cmake $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR) && \
 	$(TOUCH) $@
 
