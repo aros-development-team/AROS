@@ -1,0 +1,14 @@
+set(CMAKE_SYSTEM_NAME AROS)
+set(BUILD_SHARED_LIBS OFF)
+set(LIBTYPE STATIC)
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_FIND_ROOT_PATH @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_C_COMPILER @aros_target_cc@)
+set(CMAKE_CXX_COMPILER @aros_target_cxx@)
+set(CMAKE_MODULE_PATH "@SRCDIR@/config/cmake" ${CMAKE_MODULE_PATH}) # For mxe FindPackage scripts
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Debug|Release|RelWithDebInfo|MinSizeRel")
+set(CMAKE_CROSS_COMPILING ON) # Workaround for http://www.cmake.org/Bug/view.php?id=14075
+# set(PKG_CONFIG_EXECUTABLE )
