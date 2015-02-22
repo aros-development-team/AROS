@@ -12,6 +12,7 @@
 #endif
 
 typedef char* string;
+#define G(o) ((struct Gadget *)(o))
 #ifdef __AROS__
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -19,7 +20,6 @@ typedef char* string;
 #define MFREE(pool,ptr)
 typedef unsigned char u_char;
 typedef unsigned short u_short;
-#define G(o) ((struct Gadget *)(o))
 #undef DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
@@ -174,4 +174,3 @@ struct _layout_struct
 	para_flags	paraflags;
 	style_flags	styleflags;
 };
-
