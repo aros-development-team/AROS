@@ -43,8 +43,14 @@
 
 #include <aros/symbolsets.h>
 
+#ifdef __AROS__
 /* Open superclass */
 ADD2LIBS("datatypes/text.datatype", 0, struct Library *, TextBase);
+#else
+#define AROS_SLOWSTACKTAGS_PRE(tag1) int
+#define AROS_SLOWSTACKTAGS_ARG(tag1) tag1
+#define AROS_SLOWSTACKTAGS_POST
+#endif /* __AROS__ */
 
 /*******************************************************************************************/
 /* Parser */
