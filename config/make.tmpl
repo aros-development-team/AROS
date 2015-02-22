@@ -2907,7 +2907,7 @@ $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 
 $(%(mmake)-pkgdir)/.files-touched:
 	%mkdirs_q $(%(mmake)-pkgdir)
-	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/configure '{}' \; && \
+	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/CMakeLists.txt '{}' \; && \
 	$(TOUCH) $@
 
 #MM
@@ -2918,7 +2918,6 @@ $(%(mmake)-cmakeflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmake
 	$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
-	find . -name config.cache -exec $(RM) '{}' \; && \
 	cmake $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR) && \
 	$(TOUCH) $@
 
