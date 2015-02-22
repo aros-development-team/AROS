@@ -1,6 +1,7 @@
 include $(TOP)/config/make.cfg
 
 GMP_VERSION=5.1.2
+ISL_VERSION=0.14
 MPFR_VERSION=3.1.2
 MPC_VERSION=1.0.1
 ICU_VERSION := 4.2.1
@@ -52,12 +53,13 @@ GCC_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
 GCC_EXTRA_OPTS += --enable-languages=$(strip $(GCC_LANGUAGES))
 GCC_EXTRA_OPTS += --enable-long-long
 GCC_EXTRA_OPTS += --enable-version-specific-runtime-libs
+GCC_EXTRA_OPTS += --enable-frame-pointer
+GCC_EXTRA_OPTS += --with-isl
+GCC_EXTRA_OPTS += --with-dwarf2
 GCC_EXTRA_OPTS += --disable-bootstrap 
 GCC_EXTRA_OPTS += --disable-sjlj-exceptions
 GCC_EXTRA_OPTS += --disable-tls
 GCC_EXTRA_OPTS += --disable-plugins
-GCC_EXTRA_OPTS += --with-dwarf2
-GCC_EXTRA_OPTS += --enable-frame-pointer
 GCC_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 GCC_UNUSED_BUT_SET_VARIABLE := -Wno-unused-but-set-variable
@@ -65,11 +67,13 @@ GCC_ARRAY_BOUNDS            := -Wno-array-bounds
 GCC_ENUM_COMPARE            := -Wno-enum-compare
 
 GNU_REPOSITORY := gnu://
+ISL_REPOSITORY :=  ftp://gcc.gnu.org/pub/gcc/infrastructure
 MPC_REPOSITORY := http://www.multiprecision.org/mpc/download http://ftp.osuosl.org/pub/lfs/lfs-packages/7.3
 ICU_REPOSITORY := http://download.icu-project.org/files/$(ICU_PKGNAME)/$(ICU_VERSION)
 
 binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
 gmp-installflag := $(CROSSTOOLSDIR)/.installflag-gmp-$(GMP_VERSION)
+isl-installflag := $(CROSSTOOLSDIR)/.installflag-isl-$(ISL_VERSION)
 mpfr-installflag := $(CROSSTOOLSDIR)/.installflag-mpfr-$(MPFR_VERSION)
 mpc-installflag := $(CROSSTOOLSDIR)/.installflag-mpc-$(MPC_VERSION)
 gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_TARGET_CPU)
@@ -88,6 +92,7 @@ icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
 #MM                        compiler-includes compiler-clib-includes \
 #MM                        tools-crosstools-gmp \
+#MM                        tools-crosstools-isl \
 #MM                        tools-crosstools-mpfr \
 #MM                        tools-crosstools-mpc
 
@@ -108,12 +113,27 @@ tools-crosstools-gmp :
 	    && $(TOUCH) $(gmp-installflag) ; \
 	fi
 
-
 %fetch_and_build mmake=crosstools-gmp package=gmp version=$(GMP_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/gmp" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
+
+#MM
+tools-crosstools-isl :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(isl-installflag) ; then \
+	       $(RM) $(HOSTGENDIR)/$(CURDIR)/isl/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-isl--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-isl--build_and_install-quick \
+	    && $(TOUCH) $(isl-installflag) ; \
+	fi
+
+%fetch_and_build mmake=crosstools-isl package=isl version=$(ISL_VERSION) compiler=host \
+	package_repo="$(ISL_REPOSITORY)" \
+	patch=no \
+	prefix="$(CROSSTOOLSDIR)" \
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --without-piplib --disable-shared"
 
 #MM
 tools-crosstools-mpfr :
@@ -124,7 +144,6 @@ tools-crosstools-mpfr :
 	    && $(MAKE) -f ./mmakefile crosstools-mpfr--build_and_install-quick \
 	    && $(TOUCH) $(mpfr-installflag) ; \
 	fi
-
 
 %fetch_and_build mmake=crosstools-mpfr package=mpfr version=$(MPFR_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/mpfr" \
@@ -142,7 +161,6 @@ tools-crosstools-mpc :
 	    && $(TOUCH) $(mpc-installflag) ; \
 	fi
 
-
 %fetch_and_build mmake=crosstools-mpc package=mpc version=$(MPC_VERSION) compiler=host \
 	package_repo="$(MPC_REPOSITORY)" suffixes="tar.gz" \
 	patch=no \
@@ -158,7 +176,6 @@ tools-crosstools-binutils :
 	    && $(MAKE) -f ./mmakefile crosstools-binutils--build_and_install-quick \
 	    && $(TOUCH) $(binutils-installflag) ; \
 	fi
-
 
 %fetch_and_build mmake=crosstools-binutils package=binutils version=$(BINUTILS_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/binutils" \
