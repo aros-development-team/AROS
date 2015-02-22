@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -30,6 +30,7 @@ static inline void AccessTest(ULONG *ptr)
 
 int main(int argc, char **argv)
 {
+    LONG result = RETURN_OK;
     int i;
     APTR block0, start, block1;
 
@@ -69,6 +70,7 @@ int main(int argc, char **argv)
     else
     {
         output("Allocation failed!\n");
+        result = RETURN_ERROR;
     }
 
     output("\nTesting AllocMem(4096, MEMF_ANY|MEMF_REVERSE) ...\n");
@@ -79,8 +81,11 @@ int main(int argc, char **argv)
         /* This test actually proves that we don't hit for example MMIO region */
         *((volatile ULONG *)block0) = 0xC0DEBAD;
         if (*((volatile ULONG *)block0) != 0xC0DEBAD)
+        {
             output("Invalid memory allocated!!!\n");
-     
+            result = RETURN_ERROR;
+        }
+
         AccessTest(block0 + 4096);
      
         if (!leak)
@@ -93,9 +98,10 @@ int main(int argc, char **argv)
     else
     {
         output("Allocation failed!\n");
+        result = RETURN_ERROR;
     }
     
-    start = block0 + 1027;	/* Add some none-round displacement to make the life harder */
+    start = block0 + 1027;	/* Add some non-round displacement to make life harder */
     output("\nTesting AllocAbs(4096, 0x%p) ...\n", start);
     if ((block1 = AllocAbs(4096, start)) != NULL)
     {
@@ -113,9 +119,10 @@ int main(int argc, char **argv)
     else
     {
         output("Allocation failed!\n");
+        result = RETURN_ERROR;
     }
 
-    /* Only perform the second AllocAbs if leak isnt specified,
+    /* Only perform the second AllocAbs() if leak isn't specified,
        otherwise we just duplicate the previous test */
     if (!leak)
     {
@@ -133,11 +140,12 @@ int main(int argc, char **argv)
         else
         {
             output("Allocation failed!\n");
+            result = RETURN_ERROR;
         }
     }
 
     output("\nFinal available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
     Permit();
-    return 0;
+    return result;
 }
