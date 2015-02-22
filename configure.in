@@ -2948,6 +2948,9 @@ if test "$aros_target_variant" == "android"; then
     AC_CONFIG_FILES(${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in)
 fi
 
+# cmake helper
+AC_CONFIG_FILES(${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in)
+
 AC_OUTPUT
 
 dnl This is in order to not define SHARED_CFLAGS sometimes
