@@ -9,6 +9,7 @@ Execute S/Test fileseek
 Execute S/Test filetest
 ;Execute S/Test fontinfo
 Execute S/Test frequencies
+Execute S/Test exec/allocmem
 
 Echo PASSED TO PASSED
 Shutdown
