@@ -276,7 +276,7 @@ diff -ruN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.aros/gcc/config/aros.h
 +  "-lautoinit"
 +
 +/* The compiler is configured with ONLY the gcc/g++ standard headers.
-+   N.B-: STANDARD_INCLUDE_DIR must come before GCC_INCLUDE_DIR on AROS */
++   N.B-: NATIVE_SYSTEM_HEADER_DIR must come before GCC_INCLUDE_DIR on AROS */
 +#undef INCLUDE_DEFAULTS
 +#define INCLUDE_DEFAULTS \
 +{ \
