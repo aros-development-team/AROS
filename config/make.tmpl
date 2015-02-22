@@ -2843,6 +2843,93 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 
 
 #------------------------------------------------------------------------------
+# Build an imported source tree which uses cmake 
+#
+# Arguments:
+#
+#     - mmake           = the meta make target.
+#     - package         = name of the package to be built.
+#     - srcdir          = the location of the unpacked source code. Defaults
+#                         to $(SRCDIR)/$(CURDIR).
+#     - prefix          = the target directory. Must be an absolute path of the
+#                         host system. Defaults to $(AROS_CONTRIB).
+#     - aros_prefix     = set a path which is valid within the AROS filesystem.
+#                         Defaults to the value of the prefix option.
+#     - extraoptions    = additional options for the cmake script.
+#
+
+%define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
+    aros_prefix= extraoptions= cflags=$(CFLAGS) 
+
+ifneq (%(prefix),)
+    %(mmake)-prefix := %(prefix)
+else
+    %(mmake)-prefix := $(AROS_CONTRIB)
+endif
+
+ifneq (%(aros_prefix),)
+    %(mmake)-aros_prefix := %(aros_prefix)
+else
+    %(mmake)-aros_prefix := $(%(mmake)-prefix)
+endif
+
+ifneq (%(gendir),)
+    ifeq (%(package),)
+        %(mmake)-pkgdir := %(gendir)/$(CURDIR)
+    else
+        %(mmake)-pkgdir := %(gendir)/$(CURDIR)/%(package)
+    endif
+endif
+
+%(mmake)-cmakeflag := $(%(mmake)-pkgdir)/.cmake
+%(mmake)-installflag := $(%(mmake)-pkgdir)/.installed
+
+BD_CFLAGS := %(cflags)
+BD_CXXFLAGS := $(subst -Wno-pointer-sign,,$(BD_CFLAGS))
+
+%(mmake)-cmake_opts  := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
+
+.PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
+
+#MM- %(mmake): setup includes core-linklibs %(mmake)-quick
+
+#MM- %(mmake)-quick : %(mmake)-cmake %(mmake)-build_and_install-quick
+
+#MM
+%(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
+
+$(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
+	if ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
+            $(RM)  $(%(mmake)-installflag) && \
+	    $(MAKE) -C $(%(mmake)-pkgdir) && \
+	    $(TOUCH) $@ -r $^; \
+        fi
+
+$(%(mmake)-pkgdir)/.files-touched:
+	%mkdirs_q $(%(mmake)-pkgdir)
+	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/configure '{}' \; && \
+	$(TOUCH) $@
+
+#MM
+%(mmake)-cmake : $(%(mmake)-cmakeflag)
+
+$(%(mmake)-cmakeflag) : TMP_SRCDIR := $(shell echo %(srcdir) | sed 's/^\(.\):\//\/\1\//')
+$(%(mmake)-cmakeflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	$(RM) $@
+	%mkdirs_q $(%(mmake)-pkgdir)
+	cd $(%(mmake)-pkgdir) && \
+	find . -name config.cache -exec $(RM) '{}' \; && \
+	cmake $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR) && \
+	$(TOUCH) $@
+
+#MM
+%(mmake)-clean : %(mmake)-uninstall
+	@$(RM) $(%(mmake)-pkgdir)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Given an archive name, patches names and locations where to find them, fetch
 # the archive and the patches from any of those locations, unpack the archive
 # and then apply the patches.
