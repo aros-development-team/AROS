@@ -2856,10 +2856,11 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 #     - aros_prefix     = set a path which is valid within the AROS filesystem.
 #                         Defaults to the value of the prefix option.
 #     - extraoptions    = additional options for the cmake script.
+#     - installoptions    = additional options for the install step.
 #
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
-    aros_prefix= extraoptions= cflags=$(CFLAGS) 
+    aros_prefix= extraoptions= installoptions= cflags=$(CFLAGS)
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -2908,6 +2909,8 @@ $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 	if ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
             $(RM)  $(%(mmake)-installflag) && \
 	    $(MAKE) -C $(%(mmake)-pkgdir) && \
+	    cd $(%(mmake)-pkgdir) && \
+	    cmake %(installoptions) -P cmake_install.cmake && \
 	    $(TOUCH) $@ -r $^; \
         fi
 
