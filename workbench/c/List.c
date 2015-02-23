@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     List the contents of a directory.
@@ -73,7 +73,7 @@
         %M  --  file name without extension
         %N  --  file name
         %P  --  file path
-        %S  --  superceded by %N and %P; obsolete
+        %S  --  superseded by %N and %P; obsolete
         %T  --  modification time
 
 
@@ -81,7 +81,7 @@
         in this order, following the % character:
 
         left-justify         --  minus sign
-        field width minumum  --  value
+        field width minimum  --  value
         value width maximum  --  dot value
 
         Value width maximum is not available for all numeric fields.
@@ -94,16 +94,16 @@
 
         1> List C:
         Directory "c:" on Wednesday 12/18/14:
-        Assign                             6548 ---rwed Saturday    01:12:16
-        Copy                              17772 ---rwed Saturday    01:12:24
-        AddBuffers                         5268 ---rwed Saturday    01:14:46
-        Avail                              8980 ---rwed Saturday    01:14:51
-        Delete                             8756 ---rwed Saturday    01:14:59
-        Install                           13024 ---rwed Saturday    01:15:09
-        List                              20228 ---rwed Today       12:06:38
-        Which                              7840 ---rwed Saturday    01:16:09
+        Assign                      6548 ---rwed Saturday    01:12:16
+        Copy                       17772 ---rwed Saturday    01:12:24
+        AddBuffers                  5268 ---rwed Saturday    01:14:46
+        Avail                       8980 ---rwed Saturday    01:14:51
+        Delete                      8756 ---rwed Saturday    01:14:59
+        Install                    13024 ---rwed Saturday    01:15:09
+        List                       20228 ---rwed Today       12:06:38
+        Which                       7840 ---rwed Saturday    01:16:09
         8 file - 167 blocks used
-        1>        
+        1>
         1> List C: lformat "[%10.5M] -- >-4b<"
         [     Assig] -- >13  <
         [      Copy] -- >35  <
@@ -192,7 +192,7 @@ enum
 #define  EMPTYTEXT "empty"
 
 
-/* UQUAD2string: Helper fuction to generates a decimal string representation for a UQUAD value.
+/* UQUAD2string: Helper function to generate a decimal string representation for a UQUAD value.
    Arguments:    Value; a UBYTE buffer large enough to hold the string; length of the buffer.
    Returns:      Pointer to string inside the buffer. (String is end-aligned in the buffer!)
    Note:         Just a helper: Not safe with incorrect input!
