@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for the colorwheel class
@@ -119,11 +119,12 @@ void kprintf( STRPTR FormatStr, ... )
 
 /***************************************************************************************************/
 
-#if FIXED_MATH
 BOOL CalcWheelColor(LONG x, LONG y, LONG cx, LONG cy, ULONG *hue, ULONG *sat)
 {
+#if FIXED_MATH
     Fixed32	r, l, h, s, sinus;
     LONG	rx, ry;
+    ULONG	sq1, sq2;
 
     rx = cx - x;
     ry = ( y - cy ) * cx / cy;
@@ -132,8 +133,18 @@ BOOL CalcWheelColor(LONG x, LONG y, LONG cx, LONG cy, ULONG *hue, ULONG *sat)
     
     h = (r != 0) ? FixAtan2( FixDiv( INT_TO_FIXED(rx), r ), FixDiv( INT_TO_FIXED(ry), r ) ) : 0;
 
-    l = FixSqrti( FIXED_TO_INT( (FixSqr( cx * FixSinCos( h + (FIXED_PI/2), &sinus ) ) +
-    	          FixSqr( cx * sinus )) ) );
+    /* N.B. We convert to ints before adding the two squared values below to
+       avoid an overflow with large wheel sizes. Storing the squares in
+       variables beforehand also seems necessary */
+#if 1
+    sq1 = FixSqr(cx * FixSinCos(h + (FIXED_PI/2), &sinus));
+    sq2 = FixSqr(cx * sinus);
+    l = FixSqrti(FIXED_TO_INT(sq1) + FIXED_TO_INT(sq2));
+#else
+    l = FixSqrti(
+        FIXED_TO_INT((ULONG)FixSqr(cx * FixSinCos(h + (FIXED_PI/2), &sinus)))
+        + (ULONG)FIXED_TO_INT(FixSqr(cx * sinus)));
+#endif
 
     s = FixDiv( r, l );
 
@@ -149,39 +160,36 @@ BOOL CalcWheelColor(LONG x, LONG y, LONG cx, LONG cy, ULONG *hue, ULONG *sat)
     *sat = ( s << 16 ) | s;
     
     return (r <= INT_TO_FIXED(cx));
-}
 #else
-BOOL CalcWheelColor(LONG x, LONG y, double cx, double cy, ULONG *hue, ULONG *sat)
-{
-    double d, r, rx, ry, l, h, s;
+    double d, r, rx, ry, l, h, s, cx2 = cx, cy2 = cy;
 
 #if 1
-    /* Should also work with not perfect (cy == cy) circle */
+    /* Should also work with not perfect (cx == cy) circle */
     
-    rx = (double) cx - x;
-    ry = ((double) y - cy) * cx / cy;
+    rx = (double) cx2 - x;
+    ry = ((double) y - cy2) * cx2 / cy2;
 
-    /* d = (SQR(cx) * SQR(rx) + SQR(cx) * SQR(ry) - SQR(cx) * SQR(cx)); */
+    /* d = (SQR(cx2) * SQR(rx) + SQR(cx2) * SQR(ry) - SQR(cx2) * SQR(cx2)); */
 
     r = sqrt (SQR(rx) + SQR(ry));
-    if (r > cx) d = 1.0; else d = 0.0;
+    if (r > cx2) d = 1.0; else d = 0.0;
     
     if (r != 0.0)
         h = atan2 (rx / r, ry / r);
     else
         h = 0.0;
 
-    l = sqrt (SQR((cx * cos (h + 0.5 * CW_PI))) + SQR((cx * sin (h + 0.5 * CW_PI))));
-    /*             ^^                                  ^^                          */
+    l = sqrt (SQR((cx2 * cos (h + 0.5 * CW_PI))) + SQR((cx2 * sin (h + 0.5 * CW_PI))));
+    /*             ^^^                                  ^^^                        */
     /* no bug!                                                                     */
     
 #else
     /* Does not work well if cx != cy (elliptical shape) */
     
-    rx = (double) cx - x;
-    ry = (double) y - cy;
+    rx = (double) cx2 - x;
+    ry = (double) y - cy2;
 
-    d = (SQR(cy) * SQR(rx) + SQR(cx) * SQR(ry) - SQR(cx) * SQR(cy));
+    d = (SQR(cy2) * SQR(rx) + SQR(cx2) * SQR(ry) - SQR(cx2) * SQR(cy2));
 
     r = sqrt (SQR(rx) + SQR(ry));
 
@@ -190,7 +198,7 @@ BOOL CalcWheelColor(LONG x, LONG y, double cx, double cy, ULONG *hue, ULONG *sat
     else
         h = 0.0;
 
-    l = sqrt (SQR((cx * cos (h + 0.5 * CW_PI))) + SQR((cy * sin (h + 0.5 * CW_PI))));
+    l = sqrt (SQR((cx2 * cos (h + 0.5 * CW_PI))) + SQR((cy2 * sin (h + 0.5 * CW_PI))));
 #endif
 
     s = r / l;
@@ -205,8 +213,8 @@ BOOL CalcWheelColor(LONG x, LONG y, double cx, double cy, ULONG *hue, ULONG *sat
     *sat = (ULONG)rint (s * 0xFFFFFFFF);
     
     return (d > 0.0) ? FALSE : TRUE;
-}
 #endif
+}
     
 /***************************************************************************************************/
 
@@ -246,23 +254,14 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     struct ColorWheelRGB 	rgb;
     ULONG			col;
     WORD 			x, y, left, top, width, height;
-#if FIXED_MATH
     LONG			cx, cy;
-#else
-    double 			cx, cy;
-#endif
 
     left   = box->Left;
     top    = box->Top;
     width  = box->Width;
     height = box->Height;
-#if FIXED_MATH    
     cx = width / 2;
     cy = height / 2;
-#else
-    cx = (double)width  / 2.0;
-    cy = (double)height / 2.0;
-#endif
         
     hsb.cw_Brightness = 0xFFFFFFFF;
     
@@ -378,11 +377,7 @@ STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     struct BitMap	       *tBM;
 //  ULONG			col; 
     WORD 			x, y, left, top, width, height;
-#if FIXED_MATH
     LONG			cx, cy;
-#else
-    double 			cx, cy;
-#endif
     UBYTE			*buf;
 
     left   = box->Left;
@@ -498,13 +493,8 @@ STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
    	return;
     }	
 
-#if FIXED_MATH    
     cx = width / 2;
     cy = height / 2;
-#else
-    cx = (double)width  / 2.0;
-    cy = (double)height / 2.0;
-#endif
 
     hsb.cw_Brightness = 0xFFFFFFFF;
     

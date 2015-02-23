@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,7 +45,8 @@ Fixed32 FixAtan2( Fixed32, Fixed32 );
 __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
 {
 #ifdef __AROS__
-    return (Fixed32) ( (double) eins * (double) zwei * 0.0000152587890625 );
+    QUAD result = (QUAD)eins * (QUAD)zwei;
+    eins = result >> 16;
 #else
 
 #ifndef version060
@@ -58,8 +59,6 @@ __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
       : "=d" (eins), "=d" (zwei)
       : "0" (eins), "1" (zwei)
     );
-
-    return eins;
 
 #else
 #if 0
@@ -75,16 +74,15 @@ __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
       : "0" (eins), "d" (zwei)
       : "fp0"
     );
-
-    return eins;
 #else
-    return (Fixed32) ( (double) eins * (double) zwei * 0.0000152587890625 );
+    eins = (Fixed32) ( (double) eins * (double) zwei * 0.0000152587890625 );
 #endif
 
 #endif /* version060 */
 
 #endif /* __AROS__ */
 
+    return eins;
 }
 
 /****************************************************************************/
@@ -92,7 +90,8 @@ __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
 __inline static Fixed32 FixDiv(Fixed32 eins,Fixed32 zwei)
 {
 #ifdef __AROS__
-    eins = (double) eins / (double) zwei * 65536.0;
+    QUAD result = ((QUAD)eins << 16) / (QUAD)zwei;
+    eins = (Fixed32) result;
 #else
 	
 #ifndef version060

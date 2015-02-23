@@ -2,7 +2,7 @@
 #define COLORWHEEL_INTERN_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for colorwheel.gadget.
@@ -34,7 +34,11 @@
 #endif
 #endif
 
+#ifdef __mc68000
+#define FIXED_MATH		1
+#else
 #define FIXED_MATH		0
+#endif
 //#define USE_ALLOCRASTER
 
 #if FIXED_MATH
@@ -104,11 +108,7 @@ struct ColorWheelData
 
 /***************************************************************************************************/
 
-#if FIXED_MATH
 BOOL CalcWheelColor(LONG x, LONG y, LONG cx, LONG cy, ULONG *hue, ULONG *sat);
-#else
-BOOL CalcWheelColor(LONG x, LONG y, double cx, double cy, ULONG *hue, ULONG *sat);
-#endif
 VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
 		 struct Library *ColorWheelBase
 );

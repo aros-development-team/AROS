@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ColorWheel function ConvertRGBToHSB()
@@ -36,7 +36,7 @@
     INPUTS
         rgb - filled-in ColorWheelRGB structure containing
               the values to convert
-        hsb - structure to recieive the converted values
+        hsb - structure to receive the converted values
 
     RESULT
 
@@ -50,15 +50,12 @@
 
     INTERNALS
 
-    HISTORY
-        27-04-2000  lbischoff  implemented
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
 #if FIXED_MATH
-    Fixed32 R, G, B, H, S, I, max, min, delta;
+    Fixed32 R, G, B, H = 0, S, I, max, min, delta;
     
     R = rgb->cw_Red >> 16;
     G = rgb->cw_Green >> 16;
