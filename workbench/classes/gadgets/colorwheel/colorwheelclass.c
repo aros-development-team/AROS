@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS colorwheel gadget.
@@ -42,10 +42,6 @@
 #include "colorwheel_intern.h"
 
 #define ColorWheelBase ((struct Library *)(cl->cl_UserData))
-
-#if FIXED_MATH
-#include "fixmath.h"
-#endif
 
 /****************************************************************************/
 
@@ -483,13 +479,8 @@ IPTR ColorWheel__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
 	
 	if (CalcWheelColor(mousex,
 			   mousey,
-			   #if FIXED_MATH
 			   data->wheelrx,
 			   data->wheelry,
-			   #else
-			   (double)data->wheelrx,
-			   (double)data->wheelry,
-			   #endif
 			   &hue,
 			   &sat))
 	{
@@ -517,13 +508,8 @@ IPTR ColorWheel__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 	
 	CalcWheelColor(mousex,
 		       mousey,
-		       #if FIXED_MATH
-			   data->wheelrx,
-			   data->wheelry,
-			   #else
-		       (double)data->wheelrx,
-		       (double)data->wheelry, 
-		       #endif
+		       data->wheelrx,
+		       data->wheelry,
 		       &data->hsb.cw_Hue,
 		       &data->hsb.cw_Saturation);
 		       
@@ -574,13 +560,8 @@ IPTR ColorWheel__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 
 			CalcWheelColor(mousex,
 				       mousey,
-				    #if FIXED_MATH
 				       data->wheelrx,
 				       data->wheelry,
-			   	    #else
-				       (double)data->wheelrx,
-				       (double)data->wheelry, 
-				    #endif
 				       &data->hsb.cw_Hue,
 				       &data->hsb.cw_Saturation);
 
