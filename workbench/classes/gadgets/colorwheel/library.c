@@ -13,9 +13,11 @@
 #include <graphics/gfxbase.h>
 
 #ifdef __GNUC__
+#ifndef __MORPHOS__
 #include <inline/exec.h>
 #include <inline/intuition.h>
 #include <inline/dos.h>
+#endif
 #else
 #include <pragma/exec_lib.h>
 #include <pragma/intuition_lib.h>

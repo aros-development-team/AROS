@@ -1,5 +1,5 @@
 CC	= gcc
-CFLAGS	= -m68020-40 -O2 -mregparm=3 -fstrength-reduce -fomit-frame-pointer -msmall-code -c
+CFLAGS	= -DLC_LIBDEFS_FILE=\"libdefs.h\" -O2 -fstrength-reduce -fomit-frame-pointer -c #-m68020-40 -mregparm=3 -msmall-code
 LDFLAGS	= -noixemul -nostartfiles -s
 LDLIBS	=
 

@@ -57,6 +57,8 @@
 #define ReturnPtr(a,b,c) return c
 #define ReturnInt(a,b,c) return c
 #define ReturnVoid(a) return
+#define AROS_LIBFUNC_INIT
+#define AROS_LIBFUNC_EXIT
 #endif
 
 #undef 	EG
