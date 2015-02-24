@@ -104,15 +104,15 @@
         Which                       7840 ---rwed Saturday    01:16:09
         8 file - 167 blocks used
         1>
-        1> List C: lformat "[%10.5M] -- >-4b<"
-        [     Assig] -- >13  <
-        [      Copy] -- >35  <
-        [     AddBu] -- >11  <
-        [     Avail] -- >18  <
-        [     Delet] -- >18  <
-        [     Insta] -- >26  <
-        [      List] -- >40  <
-        [     Which] -- >16  <
+        1> List C: lformat "[%10.5M] -- >%-4b<"
+        [     Assig] -- >13  <
+        [      Copy] -- >35  <
+        [     AddBu] -- >11  <
+        [     Avail] -- >18  <
+        [     Delet] -- >18  <
+        [     Insta] -- >26  <
+        [      List] -- >40  <
+        [     Which] -- >16  <
         1> 
 
     BUGS
