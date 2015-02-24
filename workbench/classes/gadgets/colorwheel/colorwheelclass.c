@@ -16,6 +16,7 @@
 #else
 
 #include "BoopsiStubs.h"
+#define LONG_TYPEDEF
 
 #endif
 
