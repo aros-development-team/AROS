@@ -38,9 +38,11 @@ if [ $TESTEXE != "" ]; then
     copy $SP/autotest/* S/
     #Xvfb :1
     DISPLAY=:1 timeout $TESTTIMEOUT $TESTEXE
+    printfile "Test_Report.txt"
 
     if [ ! -f PASSED ]; then
-        printe "Package $ARCHIVE failed runtime tests. ABORTING BUILD!"
+        printe "Package $ARCHIVE failed runtime tests. REMOVING ARCHIVE!"
+        delete $ARCHIVE
         exit 5
     fi
 fi

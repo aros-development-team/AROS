@@ -6,5 +6,3 @@ If WARN
 Else
     Echo >> Test_Report.txt
 Endif
-
-
