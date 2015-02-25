@@ -13,6 +13,6 @@ USER_CFLAGS   := -DARCH=\"$(AROS_DIR_ARCH)\"
 
 %build_archspecific \
 	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=unix \
-	files=$(FILES) compiler=host
+	files=$(FILES) compiler=kernel
 
 %common

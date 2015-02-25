@@ -19,10 +19,8 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(S
 
 #MM kernel-bootstrap-hosted: linklibs-bootstrap linklibs-arossupport
 
-BD_LINK := $(HOST_CC) $(KERNEL_LDFLAGS)
-
 %build_prog mmake=kernel-bootstrap-hosted \
     progname=$(PROG)$(EXE_SUFFIX) targetdir=$(AROSARCHDIR) \
-    files=$(FILES) compiler=host uselibs="bootstrap"
+    files=$(FILES) compiler=kernel uselibs="bootstrap"
 
 %common
