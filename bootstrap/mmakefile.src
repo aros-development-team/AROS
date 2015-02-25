@@ -5,20 +5,15 @@ include $(TOP)/config/make.cfg
 FILES := elfloader
 
 USER_INCLUDES := -I $(SRCDIR)/$(CURDIR)/include -I $(GENINCDIR)
-ifeq ($(FLAVOUR),emulation)
-BOOTSTRAP_COMPILER:=host
-else
-BOOTSTRAP_COMPILER:=kernel
-endif
 
 %build_linklib mmake=linklibs-bootstrap libname=bootstrap files="$(FILES)" \
-	       compiler=$(BOOTSTRAP_COMPILER) libdir=$(GENDIR)/lib
+	       compiler=kernel libdir=$(GENDIR)/lib
 
 # linklibs-bootstrap32 target is used by x86-64 bootstrap which runs in 32-bit mode
 
 USER_CFLAGS := -m32 -DELF_64BIT
 
 %build_linklib mmake=linklibs-bootstrap32 libname=bootstrap files="$(FILES)" \
-	       compiler=$(BOOTSTRAP_COMPILER) objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
+	       compiler=kernel objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
 
 %common
