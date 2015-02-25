@@ -24,6 +24,10 @@ printx()
     print '>>>' $*
 }
 
+printfile()
+{
+    cat $* | tee -a $LOG_ALL | tee -a $LOG_THIS
+}
 
 execute()
 {
