@@ -35,7 +35,8 @@ endif
 TARGET_OBJDUMP	:= @aros_target_objdump@
 KERNEL_RESCOMP  := @aros_kernel_rescomp@
 
-SYSROOT_FLAG		:= @aros_config_sysroot@
+TARGET_SYSROOT	:= @aros_config_sysroot@
+KERNEL_SYSROOT	:= @aros_kernel_sysroot@
 CONFIG_CFLAGS	:= @aros_config_cflags@
 CONFIG_AFLAGS	:= @aros_config_aflags@
 CONFIG_LDFLAGS	:= @aros_config_ldflags@
