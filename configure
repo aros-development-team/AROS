@@ -682,13 +682,14 @@ aros_kernel_ldflags
 aros_kernel_objcflags
 aros_kernel_includes
 aros_kernel_cflags
-aros_shared_ldflags
-aros_shared_aflags
-aros_shared_cflags
+aros_kernel_sysroot
 aros_config_ldflags
 aros_config_aflags
 aros_config_cflags
 aros_config_sysroot
+aros_shared_ldflags
+aros_shared_aflags
+aros_shared_cflags
 aros_arch_libs
 aros_compiler_libs
 spec_obj_format
@@ -8524,6 +8525,7 @@ esac
 crosstools_guess="yes"
 aros_target_toolchain="no"
 aros_config_sysroot=""
+aros_kernel_sysroot=""
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Kernel toolchain prefix" >&5
 $as_echo_n "checking Kernel toolchain prefix... " >&6; }
@@ -14497,6 +14499,8 @@ fi
 
 
 # Target Related
+
+
 
 
 

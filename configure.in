@@ -1497,6 +1497,7 @@ esac
 crosstools_guess="yes"
 aros_target_toolchain="no"
 aros_config_sysroot=""
+aros_kernel_sysroot=""
 
 AC_MSG_CHECKING([Kernel toolchain prefix])
 AC_ARG_WITH(kernel-toolchain-prefix,AC_HELP_STRING([--with-kernel-toolchain-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"])
@@ -2680,14 +2681,16 @@ AC_SUBST(spec_obj_format)
 AC_SUBST(aros_compiler_libs)
 AC_SUBST(aros_arch_libs)
 
+AC_SUBST(aros_shared_cflags)
+AC_SUBST(aros_shared_aflags)
+AC_SUBST(aros_shared_ldflags)
+
 AC_SUBST(aros_config_sysroot)
 AC_SUBST(aros_config_cflags)
 AC_SUBST(aros_config_aflags)
 AC_SUBST(aros_config_ldflags)
 
-AC_SUBST(aros_shared_cflags)
-AC_SUBST(aros_shared_aflags)
-AC_SUBST(aros_shared_ldflags)
+AC_SUBST(aros_kernel_sysroot)
 AC_SUBST(aros_kernel_cflags)
 AC_SUBST(aros_kernel_includes)
 AC_SUBST(aros_kernel_objcflags)
