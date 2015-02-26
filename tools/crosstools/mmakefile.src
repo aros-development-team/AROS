@@ -45,22 +45,30 @@ GCC_EXTRA_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
 GCC_EXTRA_OPTS += --with-float=$(GCC_DEFAULT_FLOAT_ABI)
 GCC_EXTRA_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
 GCC_EXTRA_OPTS += --with-mode=arm
+GCC_EXTRA_OPTS += --disable-libunwind-exceptions
+else
+GCC_EXTRA_OPTS += --with-dwarf2
 endif
 
 GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
 GCC_EXTRA_OPTS += --with-native-system-header-dir=/include
 GCC_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
+GCC_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 GCC_EXTRA_OPTS += --enable-languages=$(strip $(GCC_LANGUAGES))
 GCC_EXTRA_OPTS += --enable-long-long
 GCC_EXTRA_OPTS += --enable-version-specific-runtime-libs
 GCC_EXTRA_OPTS += --enable-frame-pointer
-GCC_EXTRA_OPTS += --with-isl
-GCC_EXTRA_OPTS += --with-dwarf2
+GCC_EXTRA_OPTS += --with-isl=$(CROSSTOOLSDIR)
+GCC_EXTRA_OPTS += --disable-isl-version-check
 GCC_EXTRA_OPTS += --disable-bootstrap 
 GCC_EXTRA_OPTS += --disable-sjlj-exceptions
 GCC_EXTRA_OPTS += --disable-tls
 GCC_EXTRA_OPTS += --disable-plugins
-GCC_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
+GCC_EXTRA_OPTS += --disable-libssp
+GCC_EXTRA_OPTS += --disable-libstdcxx-pch
+GCC_EXTRA_OPTS += --disable-build-with-cxx
+GCC_EXTRA_OPTS += --disable-build-poststage1-with-cxx
+
 GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 GCC_UNUSED_BUT_SET_VARIABLE := -Wno-unused-but-set-variable
 GCC_ARRAY_BOUNDS            := -Wno-array-bounds
