@@ -2413,7 +2413,7 @@ endif
 %define ctoasm_q
 %.s : %.c
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(TARGET_CC) -S $(CFLAGS) $(TARGET_CFLAGS) $< -c -o $@
+	@$(TARGET_CC) $(TARGET_SYSROOT) -S $(CFLAGS) $(TARGET_CFLAGS) $< -c -o $@
 %end
 #------------------------------------------------------------------------------
 
