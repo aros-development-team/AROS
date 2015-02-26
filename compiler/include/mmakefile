@@ -90,7 +90,7 @@ includes-asm_h-$(CPU) : $(GENINCDIR)/aros/$(CPU)/asm.h
 
 $(OBJDIR)/asm.s : asm.c | $(OBJDIR)
 	@$(ECHO) "Compiling  $<..."
-	@$(TARGET_CC) $(SYSROOT_FLAG) $(CFLAGS) $(PRIV_EXEC_INCLUDES) $(PRIV_KERNEL_INCLUDES) -S $< -o $@
+	@$(TARGET_CC) $(TARGET_SYSROOT) $(CFLAGS) $(PRIV_EXEC_INCLUDES) $(PRIV_KERNEL_INCLUDES) -S $< -o $@
 
 $(GENINCDIR)/aros/$(CPU)/asm.h : $(OBJDIR)/asm.s | $(GENINCDIR)/aros/$(AROS_TARGET_CPU)
 	@$(ECHO) Generating $@...
