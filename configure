@@ -8604,7 +8604,8 @@ else
     PATH="$AROS_CROSSTOOLSDIR:$PATH"
     if test "$crosstools_guess" = "no" ; then
         aros_config_sysroot="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development"
-        if test "$aros_flavour" = "standalone" ; then
+
+        if test "x-$aros_flavour" != "x-emulation" -a "x-$aros_flavour" != "x-emulcompat" ; then
             aros_kernel_sysroot = $aros_config_sysroot
         fi
     fi
