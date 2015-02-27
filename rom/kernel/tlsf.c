@@ -953,6 +953,8 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
                 b0 = b0->free_node.next;
             }
         }
+        /* Iterate through next level */
+        sl = 0;
     }
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
