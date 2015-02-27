@@ -1631,7 +1631,7 @@ static BOOL CmdGetNetworks(struct IOSana2Req *request,
    struct DevUnit *unit;
    BOOL complete = FALSE;
    const TEXT *ssid;
-   const struct TagItem *tag_list;
+   struct TagItem *tag_list;
 
    /* Request a new scan and queue request to receive results */
 
@@ -1639,7 +1639,7 @@ static BOOL CmdGetNetworks(struct IOSana2Req *request,
    if((unit->flags & UNITF_ONLINE) != 0)
    {
       PutRequest(unit->request_ports[SCAN_QUEUE], (APTR)request, base);
-      tag_list = (const struct TagItem *)request->ios2_StatData;
+      tag_list = (struct TagItem *)request->ios2_StatData;
       ssid = (const TEXT *)GetTagData(S2INFO_SSID, (UPINT)NULL, tag_list);
       StartScan(unit, ssid, base);
    }

@@ -43,7 +43,7 @@ struct BusContext
    struct DevBase *device;
    VOID *card;
    UPINT io_base;
-   const struct TagItem *unit_tags;
+   struct TagItem *unit_tags;
    BOOL have_card;
    UWORD generation;
 };
@@ -86,7 +86,7 @@ const UWORD product_codes[] =
 };
 
 
-static const struct TagItem unit_tags[] =
+static struct TagItem unit_tags[] =
 {
    {IOTAG_ByteIn, (UPINT)ByteInHook},
    {IOTAG_ByteOut, (UPINT)ByteOutHook},

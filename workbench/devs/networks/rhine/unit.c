@@ -109,7 +109,7 @@ static const UBYTE broadcast_address[] =
 */
 
 struct DevUnit *CreateUnit(ULONG index, APTR card,
-   const struct TagItem *io_tags, UWORD bus, struct DevBase *base)
+   struct TagItem *io_tags, UWORD bus, struct DevBase *base)
 {
    BOOL success = TRUE;
    struct DevUnit *unit;

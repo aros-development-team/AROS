@@ -77,7 +77,7 @@ const UWORD product_codes[] =
 };
 
 
-static const struct TagItem unit_tags[] =
+static struct TagItem unit_tags[] =
 {
    {IOTAG_AllocDMAMem, (UPINT)AllocDMAMemHook},
    {IOTAG_FreeDMAMem, (UPINT)FreeDMAMemHook},

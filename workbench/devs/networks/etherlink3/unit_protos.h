@@ -26,7 +26,7 @@ MA 02111-1307, USA.
 #include "device.h"
 
 struct DevUnit *CreateUnit(ULONG index, APTR card,
-   const struct TagItem *io_tags, UWORD generation, UWORD bus,
+   struct TagItem *io_tags, UWORD generation, UWORD bus,
    struct DevBase *base);
 VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base);
 BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,

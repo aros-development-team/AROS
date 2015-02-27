@@ -142,7 +142,7 @@ static const struct EmulLibEntry mos_task_trap =
 */
 
 struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
-   const struct TagItem *io_tags, UWORD bus, struct DevBase *base)
+   struct TagItem *io_tags, UWORD bus, struct DevBase *base)
 {
    BOOL success = TRUE;
    struct DevUnit *unit;
