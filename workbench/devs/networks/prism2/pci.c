@@ -90,7 +90,7 @@ const UWORD product_codes[] =
 };
 
 
-static const struct TagItem unit_tags[] =
+static struct TagItem unit_tags[] =
 {
    {IOTAG_WordsIn, (UPINT)WordsInHook},
    {IOTAG_WordsOut, (UPINT)WordsOutHook},
@@ -101,7 +101,7 @@ static const struct TagItem unit_tags[] =
 };
 
 
-static const struct TagItem bridge_unit_tags[] =
+static struct TagItem bridge_unit_tags[] =
 {
    {IOTAG_WordsIn, (UPINT)WordsInIOHook},
    {IOTAG_WordsOut, (UPINT)WordsOutIOHook},

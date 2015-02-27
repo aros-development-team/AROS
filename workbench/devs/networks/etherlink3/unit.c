@@ -159,7 +159,7 @@ static const UBYTE port_masks[] =
 */
 
 struct DevUnit *CreateUnit(ULONG index, APTR card,
-   const struct TagItem *io_tags, UWORD generation, UWORD bus,
+   struct TagItem *io_tags, UWORD generation, UWORD bus,
    struct DevBase *base)
 {
    BOOL success = TRUE;
