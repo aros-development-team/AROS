@@ -825,20 +825,27 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
     tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
     UBYTE *region_start;
     UBYTE *region_end;
+    IPTR region_size;
 
     int fl, sl;
-    IPTR sz = ROUNDUP(size);
 
     D(nbug("[Kernel:TLSF] %s(%p, %ld)\n", __PRETTY_FUNCTION__, ptr, size));
 
-    region_start = ptr;
-    region_end = (UBYTE *)ptr + sz;
+    /*
+      Returned memory needs to meet two requirements:
+      a) requested range is within returned memory (AllocAbs definition)
+      b) returned address is LONG aligned (needed by TLSF implementation)
+     */
+    region_start = (UBYTE *)((IPTR)ptr & SIZE_MASK);
+    region_size = (IPTR)ROUNDUP((IPTR)ptr - (IPTR)region_start + size);
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     /* Start searching here. It doesn't make sense to go through regions which are smaller */
-    MAPPING_SEARCH(&sz, &fl, &sl);
+    MAPPING_SEARCH(&region_size, &fl, &sl);
+
+    region_end = region_start + region_size; /* region_size is modified in MAPPING_SEARCH */
 
     /* Start looking now :) */
     for (; fl < MAX_FLI; fl++)
@@ -852,11 +859,11 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
             {
                 bhdr_t *b1 = GET_NEXT_BHDR(b0, GET_SIZE(b0));
 
-                /* The block has to contain _whole_ requested region, max exceed it in size though */
+                /* The block has to contain _whole_ requested region, may exceed it in size though */
                 if (b0->mem <= region_start && (UBYTE *)b1 >= region_end)
                 {
                     /* block header of requested region */
-                    bhdr_t *breg = MEM_TO_BHDR(ptr);
+                    bhdr_t *breg = MEM_TO_BHDR(region_start);
 
                     /*
                      This is the block we're looking for. Unchain it from the bidirectional list of
@@ -919,19 +926,19 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
                     }
 
                     /* Is it necessary to split the requested region at the end? */
-                    if ((SIZE_ALIGN + GET_SIZE(breg)) > size)
+                    if ((SIZE_ALIGN + GET_SIZE(breg)) > region_size)
                     {
-                        IPTR tmp_size = GET_SIZE(breg) - size - SIZE_ALIGN;
+                        IPTR tmp_size = GET_SIZE(breg) - region_size - SIZE_ALIGN;
 
                         /* New region header directly at end of the requested region */
-                        bhdr_t *b2 = GET_NEXT_BHDR(breg, size);
+                        bhdr_t *b2 = GET_NEXT_BHDR(breg, region_size);
 
                         /* Adjust fields */
                         b2->header.prev = breg;
                         SET_SIZE_AND_FLAGS(b2, tmp_size, PREV_BUSY | THIS_FREE);
 
                         /* requested region's size is now smaller */
-                        SET_SIZE(breg, size);
+                        SET_SIZE(breg, region_size);
 
                         /* The next block header point to newly created one */
                         b1->header.prev = b2;
