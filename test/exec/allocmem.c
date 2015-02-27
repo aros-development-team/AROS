@@ -28,11 +28,63 @@ static inline void AccessTest(ULONG *ptr)
     ptr[0]  = 0x01020304;	/* This SHOULD produce mungwall warning   */
 }
 
+static LONG test_allocabs(APTR block0)
+{
+    LONG result = RETURN_OK;
+    APTR start, block1;
+    const ULONG allocsize = 4096;
+
+    start = block0 + 1027;  /* Add some non-round displacement to make life harder */
+    output("\nTesting AllocAbs(%d, 0x%p) ...\n", allocsize, start);
+    if ((block1 = AllocAbs(allocsize, start)) != NULL)
+    {
+        output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
+
+        AccessTest(start + allocsize);
+
+        if (!leak)
+        {
+            output("Freeing the block at 0x%p of %lu bytes...\n", block1, (unsigned long)(allocsize + start - block1));
+            FreeMem(block1, allocsize + start - block1);
+            output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+        }
+    }
+    else
+    {
+        output("Allocation failed!\n");
+        result = RETURN_ERROR;
+    }
+
+    /* Only perform the second AllocAbs() if leak isn't specified,
+       otherwise we just duplicate the previous test */
+    if (!leak)
+    {
+        output("\nTesting AllocAbs(%u, 0x%p), but free using its requested start address...\n", allocsize, start);
+        if ((block1 = AllocAbs(allocsize, start)) != NULL)
+        {
+            output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
+
+            AccessTest(start + allocsize);
+
+            output("Freeing the block at 0x%p of %lu bytes...\n", start, (unsigned long)allocsize);
+            FreeMem(start, allocsize);
+            output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+        }
+        else
+        {
+            output("Allocation failed!\n");
+            result = RETURN_ERROR;
+        }
+    }
+
+    return result;
+}
+
 int main(int argc, char **argv)
 {
     LONG result = RETURN_OK;
     int i;
-    APTR block0, start, block1;
+    APTR block0;
 
     /*
      * Do some memory trashing if started with "trash" argument.
@@ -53,7 +105,7 @@ int main(int argc, char **argv)
     output("Available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
     output("Largest chunk: %lu bytes\n\n", (unsigned long)AvailMem(MEMF_ANY|MEMF_LARGEST));
 
-    output("Testing AllocMem(256, MEMF_ANY) ...\n");
+    output("Testing AllocMem(256 * 1024, MEMF_ANY) ...\n");
     if ((block0 = AllocMem(256 * 1024, MEMF_ANY)) != NULL)
     {
         output("Allocated at 0x%p, available memory: %lu bytes\n", block0, (unsigned long)AvailMem(MEMF_ANY));
@@ -73,48 +125,8 @@ int main(int argc, char **argv)
         result = RETURN_ERROR;
     }
 
-    start = block0 + 1027;	/* Add some non-round displacement to make life harder */
-    output("\nTesting AllocAbs(4096, 0x%p) ...\n", start);
-    if ((block1 = AllocAbs(4096, start)) != NULL)
-    {
-        output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
-
-        AccessTest(start + 4096);
-
-        if (!leak)
-        {
-            output("Freeing the block...\n");
-            FreeMem(block1, 4096 + start - block1);
-            output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
-        }
-    }
-    else
-    {
-        output("Allocation failed!\n");
+    if(test_allocabs(block0) != RETURN_OK)
         result = RETURN_ERROR;
-    }
-
-    /* Only perform the second AllocAbs() if leak isn't specified,
-       otherwise we just duplicate the previous test */
-    if (!leak)
-    {
-        output("\nTesting AllocAbs(4096, 0x%p), but free using its requested start address...\n", start);
-        if ((block1 = AllocAbs(4096, start)) != NULL)
-        {
-            output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
-
-            AccessTest(start + 4096);
-
-            output("Freeing the block...\n");
-            FreeMem(start, 4096);
-            output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
-        }
-        else
-        {
-            output("Allocation failed!\n");
-            result = RETURN_ERROR;
-        }
-    }
 
     output("\nTesting AllocMem(4096, MEMF_ANY|MEMF_REVERSE) ...\n");
     if ((block0 = AllocMem(4096, MEMF_ANY|MEMF_REVERSE)) != NULL)
