@@ -18,11 +18,11 @@ labels2sids = {
     'Zune'                           : 'SID_ZUNE',
     'Kernel'                         : 'SID_KERNEL',
     'DOS'                            : 'SID_DOS',
-    'NETWORKING'                     : 'SID_NETWORKING',
+    'Networking'                     : 'SID_NETWORKING',
     'C link library and POSIX layer' : 'SID_LIBC_POSIX',
     'Documentation'                  : 'SID_DOCUMENTATION',
     'Translation'                    : 'SID_TRANSLATION',
-    'Artistry'                       : 'SID_ARTISTRY',
+    'Art work'                       : 'SID_ARTISTRY',
     'Website'                        : 'SID_WEBSITE',
     'Datatypes'                      : 'SID_DATATYPES',
     'Testing'                        : 'SID_TESTING'
