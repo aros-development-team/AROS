@@ -238,6 +238,7 @@ case "$host_os" in
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         aros_host_arch="darwin"
         host_cc_elf=no
+        if [ -z ${SED+x} ]; then SED="gsed"; fi
         android_build_os="darwin-x86"
         android_tool="android"
         default_android_sdk="/android-sdk-mac_x86"
