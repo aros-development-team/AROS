@@ -53,7 +53,18 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
 
             D(bug("[USB2OTG] %s: Enabling Power ..\n", __PRETTY_FUNCTION__));
             *((volatile unsigned int *)USB2OTG_POWER) = 0;
+#if (0)
+            D(bug("[USB2OTG] %s: Preparing Controller (non HSIC mode) ..\n", __PRETTY_FUNCTION__));
+            *((volatile unsigned int *)USB2OTG_USB) = USB2OTG_USB_MODESELECT|USB2OTG_USB_USBTRDTIM(5)|(USB2OTGBase->hd_Unit->hu_OperatingMode << 29);
+            *((volatile unsigned int *)USB2OTG_OTGCTRL) = 0;
 
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_LPMCONFIG);
+            otg_RegVal &= ~USB2OTG_LPMCONFIG_HSICCONNECT;
+            *((volatile unsigned int *)USB2OTG_LPMCONFIG) = otg_RegVal;
+
+            D(bug("[USB2OTG] %s: Clearing Global NAK ..\n", __PRETTY_FUNCTION__));
+            *((volatile unsigned int *)USB2OTG_DEVCTRL) = (1 << 10) | (1 << 8);
+#endif
             otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
             if (((otg_RegVal & (3 << 6) >> 6) == 2) && ((otg_RegVal & (3 << 8) >> 8) == 1))
             {
@@ -79,103 +90,89 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                 otg_RegVal &= ~3;
                 *((volatile unsigned int *)USB2OTG_HOSTCFG) = otg_RegVal;
             }
-
             otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTCFG);
             otg_RegVal |= (1 << 2);
             *((volatile unsigned int *)USB2OTG_HOSTCFG) = otg_RegVal;
 
             D(bug("[USB2OTG] %s: Enabling HNP...\n", __PRETTY_FUNCTION__));
-            
             otg_RegVal = *((volatile unsigned int *)USB2OTG_OTGCTRL);
             otg_RegVal |= USB2OTG_OTGCTRL_HOSTSETHNPENABLE;
             *((volatile unsigned int *)USB2OTG_OTGCTRL) = otg_RegVal;
 
             D(bug("[USB2OTG] %s: Flushing Tx Fifo's...\n", __PRETTY_FUNCTION__));
             *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_TXFIFOFLUSH|(16 << 6);
-            for (ns = 0; ns < 8000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 8ms
+            for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
             if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_TXFIFOFLUSH) != 0)
                 bug("[USB2OTG] %s: Tx Flush Timed-Out!\n", __PRETTY_FUNCTION__);
 
             D(bug("[USB2OTG] %s: Flushing Rx Fifo's...\n", __PRETTY_FUNCTION__));
             *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_RXFIFOFLUSH;
-            for (ns = 0; ns < 8000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 8ms
+            for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
             if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_RXFIFOFLUSH) != 0)
                 bug("[USB2OTG] %s: Rx Flush Timed-Out!\n", __PRETTY_FUNCTION__);
+
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
+            D(bug("[USB2OTG] %s: Queue Depths:\n",
+                        __PRETTY_FUNCTION__));
+            D(bug("[USB2OTG] %s:      Periodic Transmit: 0x%0x\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 24)) >> 24)));
+            D(bug("[USB2OTG] %s:      Non-Periodic Transmit: 0x%0x\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 22)) >> 22)));
+#if (0)
+            D(bug("[USB2OTG] %s:      Device Tokens: 0x%0x\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x1F << 26)) >> 26)));
+#endif
+            D(bug("[USB2OTG] %s:      FIFO: %ld bytes\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0xFFFF << 16)) >> 16) << 2));
+#if (0)
+            D(bug("[USB2OTG] %s: Xfer Size: %ld\n",
+                        __PRETTY_FUNCTION__, (otg_RegVal & 0xF)));
+#endif
+
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+            if ((otg_Unit->hu_HostChans = ((otg_RegVal & (0xF << 14)) >> 14) + 1) > EPSCHANS_MAX)
+                otg_Unit->hu_HostChans = EPSCHANS_MAX;
 
             otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTCFG);
             if ((otg_RegVal & (1 << 23)) == 0)
             {
-                
-            }
-
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
-            if (!(otg_RegVal & USB2OTG_HOSTPORT_PRTPWR))
-            {
-                D(bug("[USB2OTG] %s: Powering On Host Port ..\n", __PRETTY_FUNCTION__));
-                otg_RegVal |= USB2OTG_HOSTPORT_PRTPWR;
-                *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;    
-            }
-
-            D(bug("[USB2OTG] %s: Reseting Host Port ..\n", __PRETTY_FUNCTION__));            
-            otg_RegVal |= USB2OTG_HOSTPORT_PRTRST;
-            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
-            for (ns = 0; ns < 8000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 8ms
-            otg_RegVal &= ~USB2OTG_HOSTPORT_PRTRST;
-            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
-
-#if (0)
-            D(bug("[USB2OTG] %s: Preparing Controller (non HSIC mode) ..\n", __PRETTY_FUNCTION__));
-            *((volatile unsigned int *)USB2OTG_USB) = USB2OTG_USB_MODESELECT|USB2OTG_USB_USBTRDTIM(5)|(USB2OTGBase->hd_Unit->hu_OperatingMode << 29);
-            *((volatile unsigned int *)USB2OTG_OTGCTRL) = 0;
-
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_LPMCONFIG);
-            otg_RegVal &= ~USB2OTG_LPMCONFIG_HSICCONNECT;
-            *((volatile unsigned int *)USB2OTG_LPMCONFIG) = otg_RegVal;
-
-            D(bug("[USB2OTG] %s: Clearing Global NAK ..\n", __PRETTY_FUNCTION__));
-            *((volatile unsigned int *)USB2OTG_DEVCTRL) = (1 << 10) | (1 << 8);
-
-            D(bug("[USB2OTG] %s: Disabling Port ..\n", __PRETTY_FUNCTION__));
-            *((volatile unsigned int *)USB2OTG_POWER) = 0xFFFFFFFF;
-
-            for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-
-            for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-
-            D(bug("[USB2OTG] %s: Pulling-Up D+ ..\n", __PRETTY_FUNCTION__));
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_DEVCTRL);
-            otg_RegVal &= ~(1 << 1);
-            *((volatile unsigned int *)USB2OTG_DEVCTRL) = otg_RegVal;
-            
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
-
-            if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBHOSTMODE))
-            {
-                D(bug("[USB2OTG] %s: Configuring USB Core HOST mode -:\n",
-                            __PRETTY_FUNCTION__));
-
-                if ((otg_Unit->hu_HostChans = ((otg_RegVal & (0xF << 14)) >> 14) + 1) > EPSCHANS_MAX)
-                    otg_Unit->hu_HostChans = EPSCHANS_MAX;
-
-                D(bug("[USB2OTG] %s:      Channels: %d\n",
+                D(bug("[USB2OTG] %s: Host Channels: %d\n",
                             __PRETTY_FUNCTION__, otg_Unit->hu_HostChans));
 
                 for (chan = 0; chan < otg_Unit->hu_HostChans; chan++) {
+#if (0)
                     *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_INTRMASK)) = 
                         (USB2OTG_INTRCHAN_STALL|USB2OTG_INTRCHAN_BABBLEERROR|USB2OTG_INTRCHAN_TRANSACTIONERROR) |
                         (USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE|USB2OTG_INTRCHAN_ACKNOWLEDGE|USB2OTG_INTRCHAN_NOTREADY) |
                         (USB2OTG_INTRCHAN_HALT|USB2OTG_INTRCHAN_FRAMEOVERRUN|USB2OTG_INTRCHAN_DATATOGGLEERROR);
-
-                    D(bug("[USB2OTG] %s:      Chan #%d FIFO @ 0x%p, Characteristics: %08x\n",
+#endif
+                    otg_RegVal = *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)); 
+                    D(bug("[USB2OTG] %s:      Chan #%d FIFO @ 0x%p, Characteristics: %08x -> %08x\n",
                                 __PRETTY_FUNCTION__,
-                                chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE),
-                                *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE))));
+                                chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE), otg_RegVal, (otg_RegVal & ~USB2OTG_HOSTCHAR_ENABLE) | (USB2OTG_HOSTCHAR_DISABLE | (1 << USB2OTG_HOSTCHAR_EPDIR))
+                                ));
+                    otg_RegVal &= ~USB2OTG_HOSTCHAR_ENABLE;
+                    otg_RegVal |= USB2OTG_HOSTCHAR_DISABLE | (1 << USB2OTG_HOSTCHAR_EPDIR);
+                    *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) = otg_RegVal;
                 }
 
+                for (chan = 0; chan < otg_Unit->hu_HostChans; chan++) {
+                    otg_RegVal = *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)); 
+                    otg_RegVal |= USB2OTG_HOSTCHAR_ENABLE|USB2OTG_HOSTCHAR_DISABLE|(1 << USB2OTG_HOSTCHAR_EPDIR);
+                    *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) = otg_RegVal;
+                    for (ns = 0; ns < 100000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 100ms
+                    if ((*((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE) != 0)
+                        bug("[USB2OTG] %s: Unable to clear Halt on channel #%d\n", __PRETTY_FUNCTION__, chan);
+                }
+                
+#if (0)
                 D(bug("[USB2OTG] %s: Enabling HOST Channel Interrupts ...\n",
                             __PRETTY_FUNCTION__));
                 *((volatile unsigned int *)USB2OTG_HOSTINTRMASK) = (1U << otg_Unit->hu_HostChans) - 1U;
+#endif
             }
+#if (0)
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
 
             if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBDEVICEMODE))
             {
@@ -200,35 +197,31 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                     D(bug("OUT_CTL: %08x\n", *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
                 }
             }
+#endif
 
-            D(bug("[USB2OTG] %s: Reset Rx Fifo...\n",
-                        __PRETTY_FUNCTION__));
-            *((volatile unsigned int *)USB2OTG_RESET) = (1 << 4);
+#if (0)
+            D(bug("[USB2OTG] %s: Pulling-Up D+ ..\n", __PRETTY_FUNCTION__));
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_DEVCTRL);
+            otg_RegVal &= ~(1 << 1);
+            *((volatile unsigned int *)USB2OTG_DEVCTRL) = otg_RegVal;
+#endif
 
-            if (otg_Unit->hu_OperatingMode)
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
+            if (!(otg_RegVal & USB2OTG_HOSTPORT_PRTPWR))
             {
-                D(bug("[USB2OTG] %s: Reset Tx Fifo...\n",
-                            __PRETTY_FUNCTION__));
-                *((volatile unsigned int *)USB2OTG_RESET) = (1 << 5) | (0x10 << 6);
+                D(bug("[USB2OTG] %s: Powering On Host Port ..\n", __PRETTY_FUNCTION__));
+                otg_RegVal |= USB2OTG_HOSTPORT_PRTPWR;
+                *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;    
             }
 
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
-            D(bug("[USB2OTG] %s: Operating Mode: %0x\n",
-                        __PRETTY_FUNCTION__, (otg_RegVal & 0x7)));
-            D(bug("[USB2OTG] %s: Queue Depths:\n",
-                        __PRETTY_FUNCTION__));
-            D(bug("[USB2OTG] %s:      Periodic Transmit: 0x%0x\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 24)) >> 24)));
-            D(bug("[USB2OTG] %s:      Non-Periodic Transmit: 0x%0x\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 22)) >> 22)));
-            D(bug("[USB2OTG] %s:      Device Tokens: 0x%0x\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x1F << 26)) >> 26)));
-            D(bug("[USB2OTG] %s:      FIFO: %ld bytes\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0xFFFF << 16)) >> 16) << 2));
+            D(bug("[USB2OTG] %s: Reseting Host Port ..\n", __PRETTY_FUNCTION__));            
+            otg_RegVal |= USB2OTG_HOSTPORT_PRTRST;
+            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
+            for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
+            otg_RegVal &= ~USB2OTG_HOSTPORT_PRTRST;
+            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
 
-            D(bug("[USB2OTG] %s: Xfer Size: %ld\n",
-                        __PRETTY_FUNCTION__, (otg_RegVal & 0xF)));
-
+#if (0)
             D(bug("[USB2OTG] %s: Configuring Interrupts ...\n",
                         __PRETTY_FUNCTION__));
 
@@ -257,24 +250,17 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                 }
             }
 
-            if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBHOSTMODE))
-            {
-		D(bug("[USB2OTG] %s: Setup Host Clocks ...\n",
-                        __PRETTY_FUNCTION__));
-		otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTCFG);
-		otg_RegVal &= ~((1 << 2) | 0x3);
-		otg_RegVal |= (1 << 0);
-		*((volatile unsigned int *)USB2OTG_HOSTCFG) = otg_RegVal;
-            }
-
             D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n",
                         __PRETTY_FUNCTION__));
             *((volatile unsigned int *)USB2OTG_AHB) = USB2OTG_AHB_INTENABLE;
-            
-//            Cause(&otg_Unit->hu_NakTimeoutInt);
 #endif
+
+            D(bug("[USB2OTG] %s: Initialising NakTimeout (intr @ 0x%p) ...\n",
+                        __PRETTY_FUNCTION__, &otg_Unit->hu_NakTimeoutInt));
+
+            Cause(&otg_Unit->hu_NakTimeoutInt);
         }
-        
+
         otg_RegVal = *((volatile unsigned int *)USB2OTG_OTGCTRL);
         D(bug("[USB2OTG] %s: OTG Control: %08x\n",
                     __PRETTY_FUNCTION__, otg_RegVal));

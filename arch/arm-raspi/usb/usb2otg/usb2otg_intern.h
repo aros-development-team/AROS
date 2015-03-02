@@ -122,9 +122,6 @@ struct USB2OTGDevice
 
 #define KernelBase      USB2OTGBase->hd_KernelBase
 
-AROS_INTP(FNAME_DEV(PendingInt));
-AROS_INTP(FNAME_DEV(NakTimeoutInt));
-
 struct Unit             *FNAME_DEV(OpenUnit)(struct IOUsbHWReq *, LONG, struct USB2OTGDevice *);
 void                    FNAME_DEV(CloseUnit)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 
