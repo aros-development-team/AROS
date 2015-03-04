@@ -232,7 +232,7 @@ double	ldexp(double, int);
 double	log(double);
 double	log10(double);
 double	log1p(double);
-//NOT IMPL double	log2(double);
+double	log2(double);
 double	logb(double);
 double	modf(double, double *);	/* fundamentally !__pure2 */
 double	scalbn(double, int);
@@ -326,7 +326,7 @@ float	ldexpf(float, int);
 float	logf(float);
 float	log10f(float);
 float	log1pf(float);
-//NOT IMPL float	log2f(float);
+float	log2f(float);
 float	logbf(float);
 float	modff(float, float *);	/* fundamentally !__pure2 */
 float	scalbnf(float, int);
