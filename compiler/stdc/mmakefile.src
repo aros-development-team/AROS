@@ -52,6 +52,7 @@ STDC := \
     math/e_jn  math/e_jnf \
     math/e_lgamma  math/e_lgammaf  math/e_lgamma_r  math/e_lgammaf_r \
     math/e_log  math/e_logf \
+    math/e_log2  math/e_log2f \
     math/e_log10  math/e_log10f \
     math/e_pow  math/e_powf \
     math/e_rem_pio2  math/e_rem_pio2f \
@@ -282,6 +283,7 @@ STDC_STATIC := \
     bsearch \
     math/s_copysign  math/s_copysignf  math/s_copysignl \
     math/e_log  math/e_logf \
+    math/e_log2  math/e_log2f \
     math/e_log10  math/e_log10f \
     math/e_pow  math/e_powf \
     math/s_scalbn  math/s_scalbnf  \
