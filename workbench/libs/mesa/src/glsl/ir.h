@@ -45,7 +45,6 @@
 #include <aros/debug.h>
 #undef VOLATILE
 #undef STATIC
-#define log2(x)             ((float) (log(x) * 1.442695f))
 #define printf(fmt, ...)    bug(fmt, ##__VA_ARGS__)
 #endif
 
