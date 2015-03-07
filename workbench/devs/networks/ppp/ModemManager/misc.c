@@ -11,9 +11,11 @@
 #include <exec/errors.h>
 #include <exec/lists.h>
 
+#ifdef __AROS__
 #include <aros/io.h>
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
+#endif
 
 #include <devices/sana2.h>
 #include <devices/sana2specialstats.h>
@@ -28,7 +30,9 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#ifdef __AROS__
 #include <proto/oop.h>
+#endif
 #include <proto/timer.h>
 #include <proto/utility.h>
 
@@ -36,8 +40,10 @@
 #include <stdio.h>
 #include <aros/debug.h>
 	 
+#ifdef __AROS__
 #include <oop/oop.h>
 #include <hidd/pci.h>
+#endif
 
 #include <ctype.h>
 #include <ctype.h>
@@ -50,7 +56,11 @@
 #define STRSIZE 1000
 
 #define PREFSFILE "ENV:MobileBroadband.prefs"
+#ifdef __MORPHOS__
+#define INTERFACEFILE "ENV:sys/net/interfaces"
+#else
 #define INTERFACEFILE "ENV:AROSTCP/db/interfaces"
+#endif
 
 BOOL StartStack()
 {
@@ -630,6 +640,3 @@ VOID QueueSerRequest(struct EasySerial *s , LONG maxlength){
 	}
 
 }
-
-
-
