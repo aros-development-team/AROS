@@ -889,7 +889,7 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
                         ClrBit(sl, &tlsf->slbitmap[fl]);
 
                         /* Empty entire SL matrix for given FL index? clear that bit too */
-                        if (tlsf->slbitmap[fl])
+                        if (!tlsf->slbitmap[fl])
                             ClrBit(fl, &tlsf->flbitmap);
                     }
 
