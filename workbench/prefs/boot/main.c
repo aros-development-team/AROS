@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,7 +16,7 @@
 #include "args.h"
 #include "booteditor.h"
 
-#define VERSION "$VER: Boot 1.2 (21.2.2013)"
+#define VERSION "$VER: Boot 1.3 (8.3.2014)"
 
 int main(int argc, char **argv)
 {

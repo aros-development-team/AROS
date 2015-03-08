@@ -139,3 +139,30 @@ seconds
 MSG_DEVICE_DEFAULTDELAY (//)
 Use Default Boot Delay
 ;
+MSG_OPTIONS (//)
+Options
+;
+MSG_MODULES (//)
+Modules
+;
+MSG_ACTIVE (//)
+Active
+;
+MSG_PATH (//)
+Path
+;
+MSG_ADD (//)
+Add
+;
+MSG_REMOVE (//)
+Remove
+;
+MSG_OK (//)
+OK
+;
+MSG_CANCEL (//)
+Cancel
+;
+MSG_BAD_MODULE (//)
+Bad module path "%s"
+;
