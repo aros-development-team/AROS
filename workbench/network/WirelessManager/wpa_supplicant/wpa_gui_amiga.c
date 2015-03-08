@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - MUI GUI
- * Copyright (c) 2012, Neil Cafferkey
+ * Copyright (c) 2012-2015, Neil Cafferkey
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -187,7 +187,7 @@ VOID MUIGUI(VOID)
     app = ApplicationObject,
         MUIA_Application_Title, "Wireless Manager",
         MUIA_Application_DiskObject,
-            (IPTR) (dobj = GetDiskObject("ENV:SYS/def_Wireless")),
+            (IPTR) (dobj = GetDiskObject("ENVARC:SYS/def_Wireless")),
         SubWindow, window = WindowObject,
             MUIA_Window_Title, "Wireless Manager",
             MUIA_Window_Activate, TRUE,
