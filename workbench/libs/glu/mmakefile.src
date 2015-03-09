@@ -11,7 +11,7 @@ include $(TOP)/config/make.cfg
 #MM workbench-libs-glu : includes workbench-libs-mesa-linklib
 
 SHARED_LIB_SOURCES = \
-            aros/emul_arosc \
+            aros/emul_stdc \
             
 LIBUTIL_SOURCES = \
             glu/sgi/libutil/error \
@@ -125,7 +125,7 @@ CC_SOURCES := \
     $(addprefix ../../, $(LIBNURBS_SOURCES)) \
 
 CPP_SOURCES := \
-    ../../aros/emul_cpp \
+    ../../aros/emul_stdc++ \
 
 #MM- core-linklibs : linklibs-glu
 
