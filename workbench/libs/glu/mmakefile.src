@@ -121,7 +121,7 @@ LIBNURBS_SOURCES = \
 LIBRARY_SOURCES = \
             $(addprefix $(top_srcdir)/src/, $(LIBUTIL_SOURCES)) \
             $(addprefix $(top_srcdir)/src/, $(LIBTESS_SOURCES)) \
-            $(SHARED_LIB_SOURCES)
+            $(EMUL_C_SOURCES)
 
 USER_INCLUDES := \
             -I$(top_srcdir)/src/include \
@@ -133,10 +133,10 @@ USER_CFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions
 CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
 
-SHARED_LIB_SOURCES = \
+EMUL_C_SOURCES = \
     emul_stdc \
 
-CPP_SOURCES := \
+EMUL_CXX_SOURCES := \
     emul_stdc++
 
 #MM- core-linklibs : linklibs-glu
@@ -150,7 +150,7 @@ CPP_SOURCES := \
 
 %build_module mmake=workbench-libs-glu \
     modname=glu modtype=library linklibname=GLU \
-    files="$(LIBRARY_SOURCES)" cxxfiles="$(CPP_SOURCES) $(CC_SOURCES)" \
+    files="$(LIBRARY_SOURCES)" cxxfiles="$(EMUL_CXX_SOURCES) $(CC_SOURCES)" \
     uselibs="GL stdcio stdc"
 
 #MM
