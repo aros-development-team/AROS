@@ -5,134 +5,159 @@ include $(TOP)/config/make.cfg
 # GLU                                                                          #
 ################################################################################
 
-#MM- workbench-libs-complete : workbench-libs-glu-$(AROS_TARGET_TOOLCHAIN)
+##MM- workbench-libs-complete : workbench-libs-glu-$(AROS_TARGET_TOOLCHAIN)
 #MM- workbench-libs-glu-yes : workbench-libs-glu
 
-#MM workbench-libs-glu : includes workbench-libs-mesa-linklib
+#MM workbench-libs-glu : includes workbench-libs-mesa-linklib workbench-libs-glu-fetch
+#MM workbench-libs-glu-includes : workbench-libs-glu-fetch
 
-SHARED_LIB_SOURCES = \
-            aros/emul_stdc \
-            
+#MM- includes-copy : workbench-libs-glu-includes
+
+REPOSITORIES = ftp://ftp.freedesktop.org/pub/mesa/glu/
+ARCHBASE := glu-9.0.0
+#PATCHSPEC := $(ARCHBASE)-aros.diff:bdwgc-$(ARCHBASE):-p1
+PATCHSPEC := 
+
+top_srcdir = $(PORTSDIR)/glu/$(ARCHBASE)
+top_builddir := $(GENDIR)/workbench/libs/glu
+
+GLU_INCLUDE_FILES := glu.h
+
 LIBUTIL_SOURCES = \
-            glu/sgi/libutil/error \
-            glu/sgi/libutil/glue \
-            glu/sgi/libutil/mipmap \
-            glu/sgi/libutil/project \
-            glu/sgi/libutil/quad \
-            glu/sgi/libutil/registry
+            libutil/error \
+            libutil/glue \
+            libutil/mipmap \
+            libutil/project \
+            libutil/quad \
+            libutil/registry
 
 LIBTESS_SOURCES = \
-            glu/sgi/libtess/dict \
-            glu/sgi/libtess/geom \
-            glu/sgi/libtess/memalloc \
-            glu/sgi/libtess/mesh \
-            glu/sgi/libtess/normal \
-            glu/sgi/libtess/priorityq \
-            glu/sgi/libtess/render \
-            glu/sgi/libtess/sweep \
-            glu/sgi/libtess/tess \
-            glu/sgi/libtess/tessmono
+            libtess/dict \
+            libtess/geom \
+            libtess/memalloc \
+            libtess/mesh \
+            libtess/normal \
+            libtess/priorityq \
+            libtess/render \
+            libtess/sweep \
+            libtess/tess \
+            libtess/tessmono
 
 LIBNURBS_SOURCES = \
-            glu/sgi/libnurbs/interface/bezierEval \
-            glu/sgi/libnurbs/interface/bezierPatch \
-            glu/sgi/libnurbs/interface/bezierPatchMesh \
-            glu/sgi/libnurbs/interface/glcurveval \
-            glu/sgi/libnurbs/interface/glinterface \
-            glu/sgi/libnurbs/interface/glrenderer \
-            glu/sgi/libnurbs/interface/glsurfeval \
-            glu/sgi/libnurbs/interface/incurveeval \
-            glu/sgi/libnurbs/interface/insurfeval \
-            glu/sgi/libnurbs/internals/arc \
-            glu/sgi/libnurbs/internals/arcsorter \
-            glu/sgi/libnurbs/internals/arctess \
-            glu/sgi/libnurbs/internals/backend \
-            glu/sgi/libnurbs/internals/basiccrveval \
-            glu/sgi/libnurbs/internals/basicsurfeval \
-            glu/sgi/libnurbs/internals/bin \
-            glu/sgi/libnurbs/internals/bufpool \
-            glu/sgi/libnurbs/internals/cachingeval \
-            glu/sgi/libnurbs/internals/ccw \
-            glu/sgi/libnurbs/internals/coveandtiler \
-            glu/sgi/libnurbs/internals/curve \
-            glu/sgi/libnurbs/internals/curvelist \
-            glu/sgi/libnurbs/internals/curvesub \
-            glu/sgi/libnurbs/internals/dataTransform \
-            glu/sgi/libnurbs/internals/displaylist \
-            glu/sgi/libnurbs/internals/flist \
-            glu/sgi/libnurbs/internals/flistsorter \
-            glu/sgi/libnurbs/internals/hull \
-            glu/sgi/libnurbs/internals/intersect \
-            glu/sgi/libnurbs/internals/knotvector \
-            glu/sgi/libnurbs/internals/mapdesc \
-            glu/sgi/libnurbs/internals/mapdescv \
-            glu/sgi/libnurbs/internals/maplist \
-            glu/sgi/libnurbs/internals/mesher \
-            glu/sgi/libnurbs/internals/monotonizer \
-            glu/sgi/libnurbs/internals/monoTriangulationBackend \
-            glu/sgi/libnurbs/internals/mycode \
-            glu/sgi/libnurbs/internals/nurbstess \
-            glu/sgi/libnurbs/internals/nurbsinterfac \
-            glu/sgi/libnurbs/internals/patch \
-            glu/sgi/libnurbs/internals/patchlist \
-            glu/sgi/libnurbs/internals/quilt \
-            glu/sgi/libnurbs/internals/reader \
-            glu/sgi/libnurbs/internals/renderhints \
-            glu/sgi/libnurbs/internals/slicer \
-            glu/sgi/libnurbs/internals/sorter \
-            glu/sgi/libnurbs/internals/splitarcs \
-            glu/sgi/libnurbs/internals/subdivider \
-            glu/sgi/libnurbs/internals/tobezier \
-            glu/sgi/libnurbs/internals/trimline \
-            glu/sgi/libnurbs/internals/trimregion \
-            glu/sgi/libnurbs/internals/trimvertpool \
-            glu/sgi/libnurbs/internals/uarray \
-            glu/sgi/libnurbs/internals/varray \
-            glu/sgi/libnurbs/nurbtess/directedLine \
-            glu/sgi/libnurbs/nurbtess/gridWrap \
-            glu/sgi/libnurbs/nurbtess/monoChain \
-            glu/sgi/libnurbs/nurbtess/monoPolyPart \
-            glu/sgi/libnurbs/nurbtess/monoTriangulation \
-            glu/sgi/libnurbs/nurbtess/partitionX \
-            glu/sgi/libnurbs/nurbtess/partitionY \
-            glu/sgi/libnurbs/nurbtess/polyDBG \
-            glu/sgi/libnurbs/nurbtess/polyUtil \
-            glu/sgi/libnurbs/nurbtess/primitiveStream \
-            glu/sgi/libnurbs/nurbtess/quicksort \
-            glu/sgi/libnurbs/nurbtess/rectBlock \
-            glu/sgi/libnurbs/nurbtess/sampleCompBot \
-            glu/sgi/libnurbs/nurbtess/sampleComp \
-            glu/sgi/libnurbs/nurbtess/sampleCompRight \
-            glu/sgi/libnurbs/nurbtess/sampleCompTop \
-            glu/sgi/libnurbs/nurbtess/sampledLine \
-            glu/sgi/libnurbs/nurbtess/sampleMonoPoly \
-            glu/sgi/libnurbs/nurbtess/searchTree \
+            libnurbs/interface/bezierEval \
+            libnurbs/interface/bezierPatch \
+            libnurbs/interface/bezierPatchMesh \
+            libnurbs/interface/glcurveval \
+            libnurbs/interface/glinterface \
+            libnurbs/interface/glrenderer \
+            libnurbs/interface/glsurfeval \
+            libnurbs/interface/incurveeval \
+            libnurbs/interface/insurfeval \
+            libnurbs/internals/arc \
+            libnurbs/internals/arcsorter \
+            libnurbs/internals/arctess \
+            libnurbs/internals/backend \
+            libnurbs/internals/basiccrveval \
+            libnurbs/internals/basicsurfeval \
+            libnurbs/internals/bin \
+            libnurbs/internals/bufpool \
+            libnurbs/internals/cachingeval \
+            libnurbs/internals/ccw \
+            libnurbs/internals/coveandtiler \
+            libnurbs/internals/curve \
+            libnurbs/internals/curvelist \
+            libnurbs/internals/curvesub \
+            libnurbs/internals/dataTransform \
+            libnurbs/internals/displaylist \
+            libnurbs/internals/flist \
+            libnurbs/internals/flistsorter \
+            libnurbs/internals/hull \
+            libnurbs/internals/intersect \
+            libnurbs/internals/knotvector \
+            libnurbs/internals/mapdesc \
+            libnurbs/internals/mapdescv \
+            libnurbs/internals/maplist \
+            libnurbs/internals/mesher \
+            libnurbs/internals/monotonizer \
+            libnurbs/internals/monoTriangulationBackend \
+            libnurbs/internals/mycode \
+            libnurbs/internals/nurbstess \
+            libnurbs/internals/nurbsinterfac \
+            libnurbs/internals/patch \
+            libnurbs/internals/patchlist \
+            libnurbs/internals/quilt \
+            libnurbs/internals/reader \
+            libnurbs/internals/renderhints \
+            libnurbs/internals/slicer \
+            libnurbs/internals/sorter \
+            libnurbs/internals/splitarcs \
+            libnurbs/internals/subdivider \
+            libnurbs/internals/tobezier \
+            libnurbs/internals/trimline \
+            libnurbs/internals/trimregion \
+            libnurbs/internals/trimvertpool \
+            libnurbs/internals/uarray \
+            libnurbs/internals/varray \
+            libnurbs/nurbtess/directedLine \
+            libnurbs/nurbtess/gridWrap \
+            libnurbs/nurbtess/monoChain \
+            libnurbs/nurbtess/monoPolyPart \
+            libnurbs/nurbtess/monoTriangulation \
+            libnurbs/nurbtess/partitionX \
+            libnurbs/nurbtess/partitionY \
+            libnurbs/nurbtess/polyDBG \
+            libnurbs/nurbtess/polyUtil \
+            libnurbs/nurbtess/primitiveStream \
+            libnurbs/nurbtess/quicksort \
+            libnurbs/nurbtess/rectBlock \
+            libnurbs/nurbtess/sampleCompBot \
+            libnurbs/nurbtess/sampleComp \
+            libnurbs/nurbtess/sampleCompRight \
+            libnurbs/nurbtess/sampleCompTop \
+            libnurbs/nurbtess/sampledLine \
+            libnurbs/nurbtess/sampleMonoPoly \
+            libnurbs/nurbtess/searchTree
 
 LIBRARY_SOURCES = \
-            $(addprefix ../../, $(LIBUTIL_SOURCES)) \
-            $(addprefix ../../, $(LIBTESS_SOURCES)) \
-            $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
+            $(addprefix $(top_srcdir)/src/, $(LIBUTIL_SOURCES)) \
+            $(addprefix $(top_srcdir)/src/, $(LIBTESS_SOURCES)) \
+            $(SHARED_LIB_SOURCES)
 
 USER_INCLUDES := \
-            -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/include \
-            -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/libnurbs/internals \
-            -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/libnurbs/nurbtess \
+            -I$(top_srcdir)/src/include \
+            -I$(top_srcdir)/src/libnurbs/internals \
+            -I$(top_srcdir)/src/libnurbs/nurbtess
 
 USER_CFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
 
-
 CC_SOURCES := \
-    $(addprefix ../../, $(LIBNURBS_SOURCES)) \
+    $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
+
+SHARED_LIB_SOURCES = \
+    emul_stdc \
 
 CPP_SOURCES := \
-    ../../aros/emul_stdc++ \
+    emul_stdc++
 
 #MM- core-linklibs : linklibs-glu
+
+%fetch mmake=workbench-libs-glu-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/glu \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.bz2" \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=workbench-libs-glu-create-patch \
+    archive=$(ARCHBASE) srcdir=bdwgc-$(ARCHBASE) destination=$(PORTSDIR)/gc
 
 %build_module mmake=workbench-libs-glu \
     modname=glu modtype=library linklibname=GLU \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(CPP_SOURCES) $(CC_SOURCES)" \
     uselibs="GL stdcio stdc"
 
+#MM
+workbench-libs-glu-includes:
+%copy_includes path=GL dir=$(top_srcdir)/include/GL includes=$(GLU_INCLUDE_FILES)
+
 %common
+
+
 
