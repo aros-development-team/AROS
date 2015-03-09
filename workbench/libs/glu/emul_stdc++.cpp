@@ -1,6 +1,6 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
-    $Id: emul_cpp.cpp 36255 2010-12-27 11:33:51Z deadwood $
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <proto/exec.h>
