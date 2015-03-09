@@ -2472,9 +2472,16 @@ $(error %copy_includes: compiler argument (%(compiler)) has to be host, kernel o
 endif
 
 ifneq (%(dir),)
+TMP_DIR := %(dir)
+$(eval TMP_DIRREMAIN := $$$(TMP_DIR))
+TMP_DIRFIRST := $(subst $(TMP_DIRREMAIN),,$(TMP_DIR))
 BD_INCL_FILES := $(subst %(dir),$(GENINCDIR)/%(path),$(dir %(includes)))
 BD_INCL_FILES := $(addprefix $(GENINCDIR)/%(path)/,$(notdir %(includes)))
+ifeq ($(TMP_DIRFIRST),/)
+BD_INC_PATH := %(dir)/
+else
 BD_INC_PATH := $(SRCDIR)/$(CURDIR)/%(dir)/
+endif
 else
 BD_INCL_FILES := $(addprefix $(GENINCDIR)/%(path)/,%(includes))
 BD_INC_PATH := $(SRCDIR)/$(CURDIR)/
