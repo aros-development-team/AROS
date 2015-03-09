@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/card \
 		 -I$(SRCDIR)/arch/all-$(ARCH)/card
 USER_INCLUDES += -I$(SRCDIR)/rom/card
+USER_LDFLAGS := -static
 
 #MM kernel-card : includes kernel-card-$(ARCH)-$(CPU)
 
