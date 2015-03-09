@@ -146,7 +146,7 @@ EMUL_CXX_SOURCES := \
     patches_specs=$(PATCHSPEC)
 
 %create_patch mmake=workbench-libs-glu-create-patch \
-    archive=$(ARCHBASE) srcdir=bdwgc-$(ARCHBASE) destination=$(PORTSDIR)/glu
+    archive=$(ARCHBASE) srcdir=$(ARCHBASE) destination=$(PORTSDIR)/glu
 
 %build_module mmake=workbench-libs-glu \
     modname=glu modtype=library linklibname=GLU \
