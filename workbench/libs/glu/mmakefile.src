@@ -19,7 +19,6 @@ ARCHBASE := glu-9.0.0
 PATCHSPEC := 
 
 top_srcdir = $(PORTSDIR)/glu/$(ARCHBASE)
-top_builddir := $(GENDIR)/workbench/libs/glu
 
 GLU_INCLUDE_FILES := glu.h
 
@@ -134,7 +133,7 @@ CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
 
 EMUL_C_SOURCES = \
-    emul_stdc \
+    emul_stdc
 
 EMUL_CXX_SOURCES := \
     emul_stdc++
