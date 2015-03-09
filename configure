@@ -8340,7 +8340,7 @@ case "$target_os" in
         aros_shared_default="no"
         aros_arch_libs="-laeabi"
 
-        gcc_default_cpu="armv6"
+        gcc_default_cpu="armv6zk"
         gcc_default_cpu_tune="arm1176jzf-s"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
