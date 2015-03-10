@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 # GLU                                                                          #
 ################################################################################
 
-##MM- workbench-libs-complete : workbench-libs-glu-$(AROS_TARGET_TOOLCHAIN)
+#MM- workbench-libs-complete : workbench-libs-glu-$(AROS_TARGET_TOOLCHAIN)
 #MM- workbench-libs-glu-yes : workbench-libs-glu
 
 #MM workbench-libs-glu : includes workbench-libs-mesa-linklib workbench-libs-glu-fetch
