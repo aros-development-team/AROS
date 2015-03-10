@@ -1,7 +1,9 @@
 /*
-    Copyright 2014, The AROS Development Team. All rights reserved.
+    Copyright 2014-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/debug.h>
 
 #include <GL/gla.h>
 

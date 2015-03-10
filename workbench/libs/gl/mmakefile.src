@@ -1,0 +1,86 @@
+#   $Id$
+#
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-libs-complete : workbench-libs-gl
+
+#MM workbench-libs-gl : includes workbench-libs-gl-gen-includes
+#MM- core-linklibs : linklibs-gl
+
+#MM- linklibs-gl : workbench-libs-gl-linklib workbench-libs-gl-linklib-rel
+#MM workbench-libs-gl-linklib : workbench-libs-gl-gen-stubs
+#MM workbench-libs-gl-linklib-rel : workbench-libs-gl-gen-stubs
+#MM workbench-libs-gl-gen-includes : workbench-libs-gl-setup
+#MM workbench-libs-gl-gen-stubs : workbench-libs-gl-gen-includes
+
+#
+# build the pass-through gl.library
+#
+
+GL_LIBRARY_SOURCES = \
+            gl_init
+
+USER_INCLUDES := -I$(GENDIR)/$(CURDIR)/include
+
+USER_LDFLAGS := -static
+
+%build_module_simple mmake=workbench-libs-gl \
+	modname=gl modtype=library \
+	files="$(GL_LIBRARY_SOURCES)"
+
+#
+# build the gl.library support libs using genmodule generated API stubs
+#
+
+GL_LIB_SOURCES := \
+            gl_funcs.c \
+            $(wildcard $(GENDIR)/$(CURDIR)/*_stub.c) \
+            $(wildcard $(GENDIR)/$(CURDIR)/*_stubs.c) \
+            $(wildcard $(GENDIR)/$(CURDIR)/*_autoinit.c) \
+            $(wildcard $(GENDIR)/$(CURDIR)/*_getlibbase.c)
+
+%build_linklib mmake=workbench-libs-gl-linklib libname=GL files=$(GL_LIB_SOURCES:.c=)
+
+GL_RELLIB_SOURCES := \
+            gl_funcs.c \
+            $(wildcard $(GENDIR)/$(CURDIR)/*_relstub.c) \
+            $(wildcard $(GENDIR)/$(CURDIR)/*_relstubs.c) \
+            $(wildcard $(GENDIR)/$(CURDIR)/*_relautoinit.c) \
+            $(wildcard $(GENDIR)/$(CURDIR)/*_relgetlibbase.c)
+
+%build_linklib mmake=workbench-libs-gl-linklib-rel libname=GL_rel files=$(GL_RELLIB_SOURCES:.c=)
+
+#MM
+workbench-libs-gl-gen-stubs: $(GENDIR)/$(CURDIR)/.stubs-generated
+
+$(GENDIR)/$(CURDIR)/.stubs-generated : 
+	@$(ECHO) "Generating GL.library API stubs..."
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/gl.conf -d $(GENDIR)/$(CURDIR) writefiles gl library
+	@$(TOUCH) $@
+
+#
+# use genmodule to generate the AROS gl.library API headers
+#
+
+#MM
+workbench-libs-gl-gen-includes: $(GENDIR)/$(CURDIR)/.includes-generated
+
+$(GENDIR)/$(CURDIR)/.includes-generated : 
+	@$(ECHO) "Generating GL.library API headers..."
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/gl.conf -d $(GENDIR)/$(CURDIR)/include writeincludes gl library
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/gl.conf -d $(GENDIR)/$(CURDIR)/include writelibdefs gl library
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/gl.conf -d $(GENDIR)/include writeincludes gl library
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/gl.conf -d $(AROS_INCLUDES) writeincludes gl library
+	@$(TOUCH) $@
+
+INCLUDE_FILES := gla.h
+
+#MM- includes-copy
+%copy_includes path=GL includes=$(INCLUDE_FILES)
+
+#MM
+workbench-libs-gl-setup:
+	%mkdirs_q $(GENDIR)/$(CURDIR)/include/clib $(GENDIR)/$(CURDIR)/include/defines $(GENDIR)/$(CURDIR)/include/inline $(GENDIR)/$(CURDIR)/include/proto
+
+%common
