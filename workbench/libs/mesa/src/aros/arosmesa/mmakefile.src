@@ -102,7 +102,7 @@ GLSL_CXX_SOURCES = \
             s_expression.cpp \
 
 GLSL_GENERATED_CXX_SOURCES = \
-    builtin_function.cpp \
+            builtin_function.cpp \
 
 GLSL_C_SOURCES = \
             $(GLSL_LIBGLCPP_SOURCES) \
@@ -145,18 +145,17 @@ LIBRARY_SOURCES = \
             $(addprefix ../../, $(AROSMESA_SOURCES)) \
             $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
 
-#MM- core-linklibs : linklibs-mesa
+# #MM- core-linklibs : linklibs-mesa
 
-%build_module mmake=workbench-libs-mesa-legacy \
-    modname=mesa modtype=library conffile=arosmesa.conf \
-    files="arosmesa_library_api arosmesa_extensions" \
-    uselibs="GL"
+# %build_module mmake=workbench-libs-mesa-legacy \
+#     modname=mesa modtype=library conffile=arosmesa.conf \
+#     files="arosmesa_library_api arosmesa_extensions" \
+#     uselibs="GL"
 
-%build_module mmake=workbench-libs-mesa \
-    modname=gl modtype=library linklibname=GL linklibfiles="varargfuncs" \
+%build_module_library mmake=workbench-libs-mesa \
+    modname=mesa3dgl modtype=library conffile=gl.conf \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(CXX_SOURCES)" \
     uselibs="galliumauxiliary gallium stdcio stdc"
-
 
 # NOTE: Both files have been generated and added to AROS repository. Once all
 # build machines support python 2.5 with libxml2, these targets can be enabled
