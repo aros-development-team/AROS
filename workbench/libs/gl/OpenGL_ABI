@@ -9,7 +9,7 @@ The library base variable shall be called GLBase.
 
 Library exposes OpenGL 1.3 + ARB_multitexture extension in its vector table.
 Native API (glA) is exposed in first 30 free LVOs. The exact placement of each
-function can be referenced in gl.conf in arosmesa.
+function can be referenced in the included gl.conf.
 
 All exposed library functions shall use stack call calling convention.
 
