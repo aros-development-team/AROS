@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -69,7 +69,7 @@ static const struct OOP_ABDescr attrbases[] =
     {NULL, NULL }
 };
 
-const TEXT version_string[] = "$VER: IntelGMA 3.8 (19.4.2014)\n";
+const TEXT version_string[] = "$VER: IntelGMA 3.9 (11.3.2015)\n";
 
 extern struct WBStartup *WBenchMsg;
 int __nocommandline = 1;
