@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,7 +36,7 @@
 #ifdef DEBUG_POINTER
 
 #define PRINT_POINTER(image, xsize, xmax, ymax)		\
-bug("[ATI] Pointer data:\n");			\
+bug("[GMA] Pointer data:\n");				\
 {							\
     ULONG *pix = (ULONG *)image;			\
     ULONG x, y;						\
@@ -315,8 +315,8 @@ static VOID G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr,
 				vsync_w = edid[i+10] & 0x0f;
 				hsync_o |= 0x300 & ((edid[i+11] >> 6) << 8);
 				hsync_w |= 0x300 & ((edid[i+11] >> 4) << 8);
-				vsync_o |= 0x300 & ((edid[i+11] >> 2) << 8);
-				vsync_w |= 0x300 & ((edid[i+11]) << 8);
+				vsync_o |= 0x30 & ((edid[i+11] >> 2) << 4);
+				vsync_w |= 0x30 & ((edid[i+11]) << 4);
 
 				pixel = (edid[i] | (edid[i+1] << 8));
 
