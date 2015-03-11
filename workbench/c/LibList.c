@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -50,7 +50,7 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-const TEXT version[] = "$VER: LibList 41.2 (10.10.2005)\n";
+const TEXT version[] = "$VER: LibList 41.3 (11.3.2015)\n";
 
 struct lib
 {
@@ -81,7 +81,7 @@ static int addlib(struct Library *lib, struct lib **l, STRPTR *e)
             ;
         while(s2>s1)
         {
-            if(*e<=(STRPTR)l)
+            if(*e<=(STRPTR)*l)
                 return 0;
             *--(*e)=*--s2;
         }
@@ -103,11 +103,13 @@ static int fillbuffer(struct lib **buffer, IPTR size)
     for(lib=(struct Library *)SysBase->LibList.lh_Head;
         lib->lib_Node.ln_Succ!=NULL;
         lib=(struct Library *)lib->lib_Node.ln_Succ)
+    {
         if(!addlib(lib,buffer,&end))
         {
             Permit();
             return 0;
         }
+    }
     Permit();
     return 1;
 }
