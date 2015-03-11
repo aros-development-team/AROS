@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -56,7 +56,7 @@
 /* Dirty hack! Is there a better way? */
 #include "../../rom/exec/etask.h"
 
-const TEXT version[] = "$VER: tasklist 41.2 (15.5.2009)\n";
+const TEXT version[] = "$VER: tasklist 41.3 (11.3.2015)\n";
 
 ULONG eclock;
 
@@ -103,7 +103,7 @@ static int addtask(struct Task *task, struct task **t, STRPTR *e)
             ;
         while(s2>s1)
         {
-            if(*e<=(STRPTR)t)
+            if(*e<=(STRPTR)*t)
                 return 0;
             *--(*e)=*--s2;
         }
@@ -128,19 +128,23 @@ static int fillbuffer(struct task **buffer, IPTR size)
     for(task=(struct Task *)SysBase->TaskReady.lh_Head;
         task->tc_Node.ln_Succ!=NULL;
         task=(struct Task *)task->tc_Node.ln_Succ)
+    {
         if(!addtask(task,buffer,&end))
         {
             Enable();
             return 0;
         }
+    }
     for(task=(struct Task *)SysBase->TaskWait.lh_Head;
         task->tc_Node.ln_Succ!=NULL;
         task=(struct Task *)task->tc_Node.ln_Succ)
+    {
         if(!addtask(task,buffer,&end))
         {
             Enable();
             return 0;
         }
+    }
     Enable();
     return 1;
 }

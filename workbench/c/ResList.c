@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -50,7 +50,7 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-const TEXT version[] = "$VER: reslist 41.2 (20.7.2001)\n";
+const TEXT version[] = "$VER: reslist 41.3 (11.3.2015)\n";
 
 struct res
 {
@@ -73,7 +73,7 @@ static int addres(struct Node *r, struct res **l, STRPTR *e)
             ;
         while(s2>s1)
         {
-            if(*e<=(STRPTR)l)
+            if(*e<=(STRPTR)*l)
                 return 0;
             *--(*e)=*--s2;
         }
@@ -95,11 +95,13 @@ static int fillbuffer(struct res **buffer, IPTR size)
     for(r=(struct Node *)SysBase->ResourceList.lh_Head;
         r->ln_Succ!=NULL;
         r=(struct Node *)r->ln_Succ)
+    {
         if(!addres(r,buffer,&end))
         {
             Permit();
             return 0;
         }
+    }
     Permit();
     return 1;
 }
