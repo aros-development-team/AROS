@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,7 @@
 #define MUIB_Colorfield         (MUIB_ZUNE | 0x00000800)
 
 /*** Attributes *************************************************************/
-#define MUIA_Colorfield_Pen         (MUIB_MUI | 0x0042713a) /* ..g  ULONG   */
+#define MUIA_Colorfield_Pen         (MUIB_MUI | 0x0042713a) /* isg  ULONG   */
 #define MUIA_Colorfield_Red         (MUIB_MUI | 0x004279f6) /* isg  ULONG   */
 #define MUIA_Colorfield_Green       (MUIB_MUI | 0x00424466) /* isg  ULONG   */
 #define MUIA_Colorfield_Blue        (MUIB_MUI | 0x0042d3b0) /* isg  ULONG   */

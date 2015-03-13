@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,6 +35,86 @@ extern struct Library *MUIMasterBase;
 #define FLAG_PEN_ALLOCATED  2
 #define FLAG_NO_PEN 	    4
 
+
+/****** Colorfield.mui/MUIA_Colorfield_Pen ***********************************
+*
+*   NAME
+*       MUIA_Colorfield_Pen -- (V4) [ISG], ULONG
+*
+*   FUNCTION
+*       The used pen. If not set explicitly, a new one is obtained
+*       automatically.
+*
+*       This attribute was incorrectly documented as gettable-only in the MUI
+*       documentation.
+*
+******************************************************************************
+*
+*/
+
+/****** Colorfield.mui/MUIA_Colorfield_Red ***********************************
+*
+*   NAME
+*       MUIA_Colorfield_Red -- (V4) [ISG], ULONG
+*
+*   FUNCTION
+*       The red component of the color field as an unsigned 32-bit value
+*       (0 to 0xFFFFFFFF).
+*
+*   SEE ALSO
+*       MUIA_Colorfield_RGB, MUIA_Colorfield_Green, MUIA_Colorfield_Blue
+*
+******************************************************************************
+*
+*/
+
+/****** Colorfield.mui/MUIA_Colorfield_Green *********************************
+*
+*   NAME
+*       MUIA_Colorfield_Green -- (V4) [ISG], ULONG
+*
+*   FUNCTION
+*       The green component of the color field as an unsigned 32-bit value
+*       (0 to 0xFFFFFFFF).
+*
+*   SEE ALSO
+*       MUIA_Colorfield_RGB, MUIA_Colorfield_Red, MUIA_Colorfield_Blue
+*
+******************************************************************************
+*
+*/
+
+/****** Colorfield.mui/MUIA_Colorfield_Blue **********************************
+*
+*   NAME
+*       MUIA_Colorfield_Blue -- (V4) [ISG], ULONG
+*
+*   FUNCTION
+*       The blue component of the color field as an unsigned 32-bit value
+*       (0 to 0xFFFFFFFF).
+*
+*   SEE ALSO
+*       MUIA_Colorfield_RGB, MUIA_Colorfield_Red, MUIA_Colorfield_Green
+*
+******************************************************************************
+*
+*/
+
+/****** Colorfield.mui/MUIA_Colorfield_RGB ***********************************
+*
+*   NAME
+*       MUIA_Colorfield_RGB -- (V4) [ISG], ULONG *
+*
+*   FUNCTION
+*       The red, green and blue components of the color field as an array of
+*       unsigned 32-bit values (0 to 0xFFFFFFFF).
+*
+*   SEE ALSO
+*       MUIA_Colorfield_Red, MUIA_Colorfield_Green, MUIA_Colorfield_Blue
+*
+******************************************************************************
+*
+*/
 
 IPTR Colorfield__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -129,7 +209,7 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
                 ReleasePen(_screen(obj)->ViewPort.ColorMap, data->pen);
                 data->flags &= ~(FLAG_PEN_ALLOCATED | FLAG_NO_PEN);
             }
-            data->pen = (UBYTE) data->pen;
+            data->pen = (UBYTE) tag->ti_Data;
             data->flags |= FLAG_FIXED_PEN;
             break;
 
@@ -206,7 +286,7 @@ IPTR Colorfield__MUIM_Setup(struct IClass *cl, Object *obj,
         LONG pen;
 
         pen = ObtainPen(_screen(obj)->ViewPort.ColorMap,
-            (ULONG) - 1,
+            (ULONG) -1,
             data->rgb[0], data->rgb[1], data->rgb[2], PENF_EXCLUSIVE);
 
         if (pen == -1)
