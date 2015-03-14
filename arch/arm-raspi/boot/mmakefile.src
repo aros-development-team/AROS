@@ -67,7 +67,8 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM kernel-package-raspi-arm-missing: \
 #MM kernel-battclock
 
-RASPIFW_URI     := https://github.com/Hexxeh/rpi-firmware/blob/master
+#RASPIFW_URI     := https://github.com/Hexxeh/rpi-firmware/blob/master
+RASPIFW_URI       := https://github.com/raspberrypi/firmware/tree/master/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat fixup_cd.dat start.elf start_cd.elf start_x.elf
 
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
