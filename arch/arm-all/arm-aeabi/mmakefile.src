@@ -8,4 +8,4 @@ include $(TOP)/config/make.cfg
 #MM- compiler-stdc-arm : includes-asm_h-arm linklibs-aeabi-arm
 
 %build_linklib mmake=linklibs-aeabi-arm \
-    libname=aeabi files="uldiv ldiv" asmfiles="uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind"
+    libname=aeabi files="uldiv ldiv l2f" asmfiles="uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind"
