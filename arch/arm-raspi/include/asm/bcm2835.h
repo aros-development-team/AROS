@@ -9,6 +9,7 @@
 #define CLID_I2C_BCM2835        "hidd.i2c.bcm2835"
 
 #define BCM2835_PERIPHYSBASE    0x20000000                      // Peripheral physical base address
+#define BCM2836_PERIPHYSBASE    0x3f000000                       // Peripheral physical base address
 #define BCM2835_PERIPHYSSIZE    0x400000
 #define BCM2835_PERIBUSBASE     0x7E000000
 
@@ -173,7 +174,7 @@
 #define GPFSEL1                 (GPIO_BASE + 0x4)
 #define GPFSEL2                 (GPIO_BASE + 0x8)
 #define GPFSEL3                 (GPIO_BASE + 0xC)
-#define GPFSEL4                 (GPIO_BASE + 0x10
+#define GPFSEL4                 (GPIO_BASE + 0x10)
 #define GPFSEL5                 (GPIO_BASE + 0x14)
 #define GPSET0                  (GPIO_BASE + 0x1C)              // GPIO Pin Output control..
 #define GPSET1                  (GPIO_BASE + 0x20)
