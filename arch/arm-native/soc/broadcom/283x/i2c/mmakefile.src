@@ -1,11 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- hidd-i2c-raspi : hidd-i2c-bcm2835
+#MM- hidd-i2c-raspi : hidd-i2c-bcm283x
 
-%build_module mmake=hidd-i2c-bcm2835 \
-  modname=i2c-bcm2835 modtype=hidd \
-  files="i2c-bcm2835"
+%build_module mmake=hidd-i2c-bcm283x \
+  modname=i2c-bcm283x modtype=hidd \
+  files="i2c-bcm283x"
 
 %common
   

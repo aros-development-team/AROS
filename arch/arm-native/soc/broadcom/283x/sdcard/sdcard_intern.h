@@ -1,7 +1,7 @@
-#ifndef _SDCARDBCM2835_INTERN_H
-#define _SDCARDBCM2835_INTERN_H
+#ifndef _SDCARDBCM283x_INTERN_H
+#define _SDCARDBCM283x_INTERN_H
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,17 +14,17 @@
 
 #include <devices/timer.h>
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 
 #include "sdcard_base.h"
 
-#define FNAME_BCMSDC(x)                 BCM2835SD__Device__ ## x
-#define FNAME_BCMSDCBUS(x)              BCM2835SD__SDBus__ ## x
+#define FNAME_BCMSDC(x)                 BCM283xSD__Device__ ## x
+#define FNAME_BCMSDCBUS(x)              BCM283xSD__SDBus__ ## x
 
 #define TIMEOUT			        30
 
-#define BCM2835SDUNIT_MAX               1
-#define BCM2835SDCLOCK_MIN              400000
+#define BCM283xSDUNIT_MAX               1
+#define BCM283xSDCLOCK_MIN              400000
 
 #define VCMB_PROPCHAN                   8
 
@@ -43,4 +43,4 @@ void FNAME_BCMSDCBUS(BCMMMIOWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
 void FNAME_BCMSDCBUS(BCMMMIOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
 void FNAME_BCMSDCBUS(BCMMMIOWriteLong)(ULONG, ULONG, struct sdcard_Bus *);
 
-#endif // _SDCARDBCM2835_INTERN_H
+#endif // _SDCARDBCM283x_INTERN_H

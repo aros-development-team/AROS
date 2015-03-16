@@ -9,12 +9,12 @@
 
 #include <hidd/i2c.h>
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 #include <asm/io.h>
 
-#include "i2c-bcm2835.h"
+#include "i2c-bcm283x.h"
 
-void METHOD(I2CBCM2835, Hidd_I2C, PutByte)
+void METHOD(I2CBCM283X, Hidd_I2C, PutByte)
 {
     while (!((*(volatile UBYTE *)BSC0_STATUS) & BSC_STATUS_DONE))
     {
@@ -28,7 +28,7 @@ void METHOD(I2CBCM2835, Hidd_I2C, PutByte)
     *(volatile UBYTE *)BSC0_CONTROL = BSC_WRITE;
 }
 
-void METHOD(I2CBCM2835, Hidd_I2C, GetByte)
+void METHOD(I2CBCM283X, Hidd_I2C, GetByte)
 {
     while (!((*(volatile UBYTE *)BSC0_STATUS) & BSC_STATUS_DONE))
     {
@@ -42,7 +42,7 @@ void METHOD(I2CBCM2835, Hidd_I2C, GetByte)
     *msg->data = *(volatile UBYTE *)BSC0_FIFO;
 }
 
-void I2CBCM2835_Init(void)
+void I2CBCM283X_Init(void)
 {
     /* BSC0 is on GPIO 0 & 1 */
     *(volatile UBYTE *)GPFSEL0 &= ~0x3f; // Mask out bits 0-5

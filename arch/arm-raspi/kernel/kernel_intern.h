@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 
 #undef KernelBase
 

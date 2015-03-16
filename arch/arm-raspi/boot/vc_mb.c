@@ -1,12 +1,12 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VideoCore mailbox support routines
     Lang: english
 */
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 #include <hardware/videocore.h>
 
 volatile unsigned int *vcmb_read(void *mb, unsigned int chan)

@@ -5,8 +5,8 @@
  *      Author: misc
  */
 
-#ifndef I2CRASPI_H_
-#define I2CRASPI_H_
+#ifndef I2C_BCM283X_H
+#define I2C_BCM283X_H
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -21,9 +21,9 @@
 #include <aros/arossupportbase.h>
 #include <exec/execbase.h>
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 
-struct i2cbcm2835base {
+struct i2cbcm283xbase {
     struct Library i2c_LibNode;
     OOP_Class *		i2c_DrvClass;
 };
@@ -39,4 +39,4 @@ struct i2cbcm2835base {
 
 #define BASE(lib) ((struct pcibase*)(lib))
 
-#endif /* I2CRASPI_H_ */
+#endif /* I2C_BCM283X_H */

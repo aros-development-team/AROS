@@ -5,7 +5,7 @@
 #include <hidd/pci.h>
 #include <oop/oop.h>
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 #include <hardware/videocore.h>
 
 #include "videocoregfx_class.h"
