@@ -1,9 +1,9 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 
 //#define USE_VBLANK_INT
 #define TICK_TIMER            1

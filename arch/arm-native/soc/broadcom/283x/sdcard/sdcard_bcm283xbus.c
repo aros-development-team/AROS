@@ -45,7 +45,7 @@ ULONG FNAME_BCMSDCBUS(BCMMMIOReadLong)(ULONG reg, struct sdcard_Bus *bus)
     return *(volatile ULONG *)(bus->sdcb_IOBase + reg);
 }
 
-static void FNAME_BCMSDCBUS(BCM2835WriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
+static void FNAME_BCMSDCBUS(BCM283xWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 {
     /* Bug: two SDC clock cycle delay required between successive chipset writes */
     while (sdcard_CurrentTime() < (bus->sdcb_Private + 6))
@@ -62,7 +62,7 @@ void FNAME_BCMSDCBUS(BCMMMIOWriteByte)(ULONG reg, UBYTE val, struct sdcard_Bus *
     ULONG mask = 0xFF << shift;
     ULONG newval = (currval & ~mask) | (val << shift);
 
-    FNAME_BCMSDCBUS(BCM2835WriteLong)(reg & ~3, newval, bus);
+    FNAME_BCMSDCBUS(BCM283xWriteLong)(reg & ~3, newval, bus);
 }
 
 void FNAME_BCMSDCBUS(BCMMMIOWriteWord)(ULONG reg, UWORD val, struct sdcard_Bus *bus)
@@ -72,10 +72,10 @@ void FNAME_BCMSDCBUS(BCMMMIOWriteWord)(ULONG reg, UWORD val, struct sdcard_Bus *
     ULONG mask = 0xFFFF << shift;
     ULONG newval = (currval & ~mask) | (val << shift);
 
-    FNAME_BCMSDCBUS(BCM2835WriteLong)(reg & ~3, newval, bus);
+    FNAME_BCMSDCBUS(BCM283xWriteLong)(reg & ~3, newval, bus);
 }
 
 void FNAME_BCMSDCBUS(BCMMMIOWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 {
-    FNAME_BCMSDCBUS(BCM2835WriteLong)(reg, val, bus);
+    FNAME_BCMSDCBUS(BCM283xWriteLong)(reg, val, bus);
 }

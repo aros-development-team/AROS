@@ -1,12 +1,12 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <inttypes.h>
 #include <stdio.h>
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 #include <hardware/videocore.h>
 #include <hardware/pl011uart.h>
 
