@@ -54,7 +54,7 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM kernel-vcmbox \
 #MM kernel-sdcard \
 #MM hidd-i2c \
-#MM hidd-i2c-bcm2835 \
+#MM hidd-i2c-bcm283x \
 #MM hidd-videocoregfx \
 #MM kernel-hidd-graphics \
 #MM kernel-hidd-kbd \
@@ -78,7 +78,7 @@ PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-PKG_HIDDS     := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocoregfx
+PKG_HIDDS     := graphics mouse keyboard hiddclass i2c i2c-bcm283x videocoregfx
 PKG_CLASSES   := USB/hid USB/hub USB/bootmouse USB/bootkeyboard USB/massstorage
  
 %make_package mmake=kernel-package-raspi-arm file=$(AROSDIR)/arosraspi.rom \
