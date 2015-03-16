@@ -27,7 +27,6 @@
 #include <proto/utility.h>
 #include <proto/kernel.h>
 
-#include <asm/bcm2835.h>
 #include <hardware/mmc.h>
 #include <hardware/sdhc.h>
 
