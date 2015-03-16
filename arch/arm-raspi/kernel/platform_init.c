@@ -16,7 +16,7 @@
 #include <proto/exec.h>
 #include <strings.h>
 
-#include <asm/bcm2835.h>
+#include <hardware/bcm283x.h>
 
 #include "etask.h"
 
