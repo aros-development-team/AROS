@@ -6,7 +6,7 @@
 #ifndef BCM2835_H
 #define BCM2835_H
 
-#define CLID_I2C_BCM2835        "hidd.i2c.bcm2835"
+#define CLID_I2C_BCM283X        "hidd.i2c.bcm283x"
 
 #define BCM2835_PERIPHYSBASE    0x20000000                      // Peripheral physical base address
 #define BCM2836_PERIPHYSBASE    0x3f000000                       // Peripheral physical base address
