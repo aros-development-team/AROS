@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -105,16 +105,15 @@ VOID set_status(ULONG i,ULONG v)
 #endif
 }
 
-APTR AllocGfxMem(ULONG size)
+APTR alloc_gfx_mem(ULONG size)
 {
     APTR result;
+
 #ifdef GALLIUM_SIMULATION
     return malloc(size);
 #endif
 
-    Forbid();
-        result = Allocate(&sd->CardMem, size );
-    Permit();
+    result = AllocGfxMem(sd, size);
 
     if( result == 0 )
     {
@@ -123,25 +122,30 @@ APTR AllocGfxMem(ULONG size)
             WAIT_IDLE();
         UNLOCK_HW
         destroy_unused_buffers();
-        
-        Forbid();
-            result = Allocate(&sd->CardMem, size );
-        Permit();       
+
+        result = AllocGfxMem(sd, size);
     }
-    if(result) allocated_mem+=size;
-    //bug("[GMA winsys] AllocGfxMem(%d) = %p allocated_mem %d\n",size,result,allocated_mem);
+
+    if(result)
+    {
+        memset(result, 0, size);
+        allocated_mem+=size;
+        D(bug("[GMA winsys] alloc_gfx_mem(%d) = %p allocated_mem %d\n",
+            size, result, allocated_mem));
+    }
+
     return result;
 }
 
-VOID FreeGfxMem(APTR ptr, ULONG size)
+VOID free_gfx_mem(APTR ptr, ULONG size)
 {
 #ifdef GALLIUM_SIMULATION
     free(ptr);return;
 #endif
-    Forbid();
-        Deallocate(&sd->CardMem, ptr,  size );
-        allocated_mem-=size;
-    Permit();
+
+    FreeGfxMem(sd, ptr, size);
+    allocated_mem-=size;
+    D(bug("[GMA winsys] free_gfx_mem(%p, %d) allocated_mem %d\n", ptr, size, allocated_mem));
 }
 
 VOID init_aros_winsys()
@@ -187,7 +191,8 @@ struct i915_winsys_batchbuffer *batchbuffer_create(struct i915_winsys *iws)
     batch->base.map = MALLOC(batch->actual_size);
     
     batch->allocated_size = batch->actual_size + 4096;
-    if( !(batch->allocated_map = AllocGfxMem(batch->allocated_size) ) ) return NULL;
+    if( !(batch->allocated_map = alloc_gfx_mem(batch->allocated_size) ) )
+        return NULL;
     batch->gfxmap = (APTR)(((IPTR)batch->allocated_map + 4095)& ~4095);
     
     batch->base.ptr = NULL;
@@ -203,7 +208,7 @@ struct i915_winsys_batchbuffer *batchbuffer_create(struct i915_winsys *iws)
 
 /**
 * Validate buffers for usage in this batchbuffer.
-* Does space-checking and asorted other book-keeping.
+* Does space-checking and assorted other book-keeping.
 *
 * @batch
 * @buffers array to buffers to validate
@@ -380,7 +385,7 @@ void batchbuffer_destroy(struct i915_winsys_batchbuffer *ibatch)
     struct aros_batchbuffer *batch = aros_batchbuffer(ibatch);
     FREE(ibatch->map);
     FREE(batch);
-    FreeGfxMem( batch->allocated_map, batch->allocated_size);
+    free_gfx_mem(batch->allocated_map, batch->allocated_size);
 
     LOCK_HW
         DO_FLUSH();
@@ -431,7 +436,7 @@ void destroy_unused_buffers()
                 D(bug("[GMA winsys]     destroy %p\n",buf));
                 Remove(node);
                 buf->magic = 0;
-                FreeGfxMem( buf->allocated_map, buf->allocated_size);
+                free_gfx_mem(buf->allocated_map, buf->allocated_size);
                 FREE(buf);
             }
             
@@ -479,7 +484,8 @@ struct i915_winsys_buffer *
 
     // allocate page aligned gfx memory
     buf->allocated_size = size + 4096;
-    if( !(buf->allocated_map = AllocGfxMem(buf->allocated_size) ) ) return NULL;
+    if( !(buf->allocated_map = alloc_gfx_mem(buf->allocated_size) ) )
+        return NULL;
     buf->map = (APTR)(((IPTR)buf->allocated_map + 4095)& ~4095);
     buf->size = size;
     buf->magic = MAGIC;
@@ -601,7 +607,7 @@ void buffer_destroy(struct i915_winsys *iws,
     {
         while( buffer_is_busy(0, buf ) ){};
         buf->magic = 0;
-        FreeGfxMem( buf->allocated_map, buf->allocated_size);
+        free_gfx_mem(buf->allocated_map, buf->allocated_size);
         FREE(buf);
     }
     else

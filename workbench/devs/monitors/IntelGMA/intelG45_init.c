@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,20 +21,9 @@
 #include "intelG45_regs.h"
 #include "compositing.h"
 
-#define KBYTES 1024
-#define MBYTES (1024 * 1024)
-
 static uint32_t min(uint32_t a, uint32_t b)
 {
         if (a < b)
-                return a;
-        else
-                return b;
-}
-
-static uint32_t max(uint32_t a, uint32_t b)
-{
-        if (a > b)
                 return a;
         else
                 return b;
@@ -211,8 +200,7 @@ AROS_UFH3(void, Enumerator,
     AROS_USERFUNC_INIT
 
     struct g45staticdata *sd = hook->h_Data;
-    ULONG gfx_mem_size = 64 * MBYTES, min_gfx_mem_size = 8 * MBYTES,
-        max_gfx_mem_size, extra_mem_size;
+    ULONG max_gfx_mem_size;
     IPTR ProductID;
     IPTR VendorID;
     IPTR RevisionID;
@@ -275,7 +263,7 @@ AROS_UFH3(void, Enumerator,
         OOP_Object *driver;
         struct TagItem attrs[] =
         {
-            { aHidd_PCIDevice_isIO,     TRUE }, /* Don't listen IO transactions */
+            { aHidd_PCIDevice_isIO,     TRUE }, /* Don't listen to IO transactions */
             { aHidd_PCIDevice_isMEM,    TRUE }, /* Listen to MEM transactions */
             { aHidd_PCIDevice_isMaster, TRUE }, /* Can work in BusMaster */
             { TAG_DONE, 0UL },
@@ -317,83 +305,26 @@ AROS_UFH3(void, Enumerator,
             (APTR)gatt_base, gatt_size);
         sd->Card.GATT_size = gatt_size;
 
-        /* Estimate the common size of the GATT and the graphics aperature.
+        /* Estimate the common size of the GATT and the graphics aperture.
          * Substract 16MB for scratch area */
         max_gfx_mem_size = min(window_size, gatt_size * 1024) - 16 * MBYTES;
-
-        /* Ensure graphics buffer isn't smaller than stolen memory */
-        gfx_mem_size = max(sd->Card.Stolen_size, gfx_mem_size);
-
-        /*
-         * start initialization:
-         * obtain parameters
-         */
-        if (sd->memsize)
-        {
-            uint32_t meg = sd->memsize;
-
-            if (meg < 16)
-                meg = 16;
-
-            gfx_mem_size = max(min_gfx_mem_size, meg * MBYTES);
-            gfx_mem_size = min(gfx_mem_size, max_gfx_mem_size);
-
-            D(bug("[GMA] Driver parameter sets video memory to %dMB\n", gfx_mem_size >> 20));
-        }
-
-        /* Calculate amount of extra memory to request */
-        if (gfx_mem_size > sd->Card.Stolen_size)
-            extra_mem_size = gfx_mem_size - sd->Card.Stolen_size;
-        else
-            extra_mem_size = 0;
-
-        /* GATT table and a 4K popup are in stolen memory, so we don't get
-         * quite the full amount */
-        gfx_mem_size -= sd->Card.GATT_size + 4096;
 
         D(bug("[GMA] GATT space for %d entries\n", gatt_size / 4));
 
         D(bug("[GMA] Stolen memory size: %dMB\n", sd->Card.Stolen_size >> 20));
         D(bug("[GMA] Framebuffer window size: %d MB\n", sd->Card.Framebuffer_size >> 20));
 
-        struct MemChunk *mc = (struct MemChunk *)sd->Card.Framebuffer;
-
-        sd->CardMem.mh_Node.ln_Type = NT_MEMORY;
-        sd->CardMem.mh_Node.ln_Name = "Intel GMA Framebuffer";
-        sd->CardMem.mh_First = mc;
-        sd->CardMem.mh_Lower = (APTR)mc;
-
-        sd->CardMem.mh_Free = gfx_mem_size;
-        sd->CardMem.mh_Upper = (APTR)(sd->CardMem.mh_Free + (IPTR)mc);
-
-        mc->mc_Next = NULL;
-        mc->mc_Bytes = sd->CardMem.mh_Free;
-
-        sd->PCIDevice = pciDevice;
-
-        D(bug("[GMA] Usable memory: %d MB\n", gfx_mem_size >> 20));
-        D(bug("[GMA] Requesting %d KB memory\n", extra_mem_size >> 10));
-
         /* Virtual address of end of stolen graphics memory */
         uintptr_t virtual = sd->Card.Stolen_size - sd->Card.GATT_size - 4096;
 
-        if (extra_mem_size != 0)
-        {
-            /* Get memory */
-            uintptr_t phys_memory =
-                (uintptr_t)AllocMem(extra_mem_size + 4095, MEMF_REVERSE);
-            D(bug("[GMA] Got %08x\n", phys_memory));
-
-            /* Align it to the page size boundary (we allocated one page
-             * more already) */
-            phys_memory = (phys_memory + 4095) &~4095;
-
-            D(bug("[GMA] Mapping physical %08x to virtual %08x with size %08x\n",
-                phys_memory, virtual, extra_mem_size));
-            G45_AttachMemory(sd, phys_memory, virtual, extra_mem_size);
-        }
-        sd->ScratchArea = virtual + extra_mem_size;
+        sd->ScratchArea = max_gfx_mem_size;
         D(bug("[GMA] Scratch area at %08x\n", sd->ScratchArea));
+
+        /* Add stolen memory to internal memory list */
+        AddTail((APTR)&sd->CardMem,
+            (APTR)ObtainGfxMemory(sd, 0, virtual, TRUE));
+
+        sd->PCIDevice = pciDevice;
 
         uint32_t val;
 
@@ -419,13 +350,14 @@ AROS_UFH3(void, Enumerator,
 
         /* Ring buffer. The very first allocation, therefore I take for granted it's aligned on 4K page boundary.
          * Get 8KB of it. */
-        sd->RingBufferPhys = Allocate(&sd->CardMem, 64 * 4096);
+        sd->RingBufferPhys = AllocGfxMem(sd, 64 * 4096);
         sd->RingBuffer = (intptr_t)sd->RingBufferPhys - (intptr_t)sd->Card.Framebuffer;
         sd->RingBufferSize = 64*4096;
         sd->RingBufferTail = 0;
 
         /* Reserve some memory for HW cursor */
-        sd->CursorImage =  ((intptr_t)Allocate(&sd->CardMem, 64*64*4)) - (intptr_t)sd->Card.Framebuffer;
+        sd->CursorImage = ((intptr_t)AllocGfxMem(sd, 64 * 64 * 4))
+            - (intptr_t)sd->Card.Framebuffer;
         if (NeedsPhysicalCursor(ProductID))
             sd->CursorBase = G45_VirtualToPhysical(sd, sd->CursorImage);
         else
@@ -541,6 +473,8 @@ int G45_Init(struct g45staticdata *sd)
     sd->MsgPort.mp_SigTask = FindTask(NULL);
     sd->MsgPort.mp_Node.ln_Type = NT_MSGPORT;
     NEWLIST(&sd->MsgPort.mp_MsgList);
+
+    NEWLIST((struct List *)&sd->CardMem);
 
     sd->tr = (struct timerequest *)CreateIORequest(&sd->MsgPort, sizeof(struct timerequest));
     if (sd->tr)

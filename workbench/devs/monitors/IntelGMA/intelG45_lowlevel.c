@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -132,7 +132,7 @@ void EnablePlane(struct g45staticdata *sd,LONG plane){
     char *dspcntr_reg = sd->Card.MMIO + ((plane == PIPE_A) ? G45_DSPACNTR : G45_DSPBCNTR);
 
     writel( readl( dspcntr_reg ) | G45_DSPCNTR_PLANE_ENABLE ,dspcntr_reg);
-    writel( readl( dspbase_reg ) ,dspbase_reg);
+    writel( readl( dspbase_reg ), dspbase_reg);
     delay_ms(sd, 20);
 }
 
@@ -141,7 +141,7 @@ void DisablePlane(struct g45staticdata *sd,LONG plane){
     char *dspcntr_reg = sd->Card.MMIO + ((plane == PIPE_A) ? G45_DSPACNTR : G45_DSPBCNTR);
 
 	writel( readl( dspcntr_reg ) & ~G45_DSPCNTR_PLANE_ENABLE ,dspcntr_reg);
-	writel( readl( dspbase_reg ) ,dspbase_reg);
+	writel( readl( dspbase_reg ), dspbase_reg);
 	readl( dspbase_reg );
 	delay_ms(sd, 20);
 }
@@ -545,9 +545,7 @@ IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height,
 
     LOCK_HW
 
-    Forbid();
-    result = (IPTR)Allocate(&sd->CardMem, 1024+((width * bpp + 63) & ~63) * height);
-    Permit();
+    result = (IPTR)AllocGfxMem(sd, 1024 + ((width * bpp + 63) & ~63) * height);
 
     if (result)
     	result +=512;
@@ -578,9 +576,7 @@ VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG heigh
     D(bug("[GMA] FreeBitmapArea(%p,%dx%d@%d)\n",
 	ptr, width, height, bpp));
 
-    Forbid();
-    Deallocate(&sd->CardMem, ptr, 1024+((width * bpp + 63) & ~63) * height);
-    Permit();
+    FreeGfxMem(sd, ptr, 1024 + ((width * bpp + 63) & ~63) * height);
     D(bug("[GMA] Available graphics memory is now %ldMB\n", sd->CardMem.mh_Free >> 20));
 
     UNLOCK_HW
