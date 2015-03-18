@@ -69,7 +69,7 @@ static const struct OOP_ABDescr attrbases[] =
     {NULL, NULL }
 };
 
-const TEXT version_string[] = "$VER: IntelGMA 3.9 (11.3.2015)\n";
+const TEXT version_string[] = "$VER: IntelGMA 3.10 (18.3.2015)\n";
 
 extern struct WBStartup *WBenchMsg;
 int __nocommandline = 1;
@@ -80,7 +80,7 @@ int main(void)
     STRPTR myname;
     struct DiskObject *icon;
     struct RDArgs *rdargs = NULL;
-    IPTR args[3] = {0};
+    IPTR args[2] = {0};
     int ret = RETURN_FAIL;
     BOOL success = TRUE;
 
@@ -145,21 +145,15 @@ int main(void)
             str = FindToolType(icon->do_ToolTypes, "FORCEGMA");
             args[0] = str ? TRUE : FALSE;
 
-            str = FindToolType(icon->do_ToolTypes, "GMA_MEM=");
-            if (str)
-                sd.memsize = atoi(str);
-
             str = FindToolType(icon->do_ToolTypes, "FORCEGALLIUM");
-            args[2] = str ? TRUE : FALSE;
+            args[1] = str ? TRUE : FALSE;
         }
 
         if (!WBenchMsg)
-            rdargs = ReadArgs("FORCEGMA/S,GMA_MEM/N,FORCEGALLIUM/S", args, NULL);
+            rdargs = ReadArgs("FORCEGMA/S,FORCEGALLIUM/S", args, NULL);
 
         sd.forced  = args[0];
-        if (args[1])
-            sd.memsize = *((ULONG *)args[1]);
-        sd.force_gallium  = args[2];
+        sd.force_gallium  = args[1];
 
         if (rdargs)
             FreeArgs(rdargs);

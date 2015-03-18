@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,6 +24,9 @@
 #define IID_Hidd_IntelG45BitMap		"IIntelBitMap"
 
 extern OOP_AttrBase HiddGMABitMapAttrBase;
+
+#define KBYTES 1024
+#define MBYTES (1024 * 1024)
 
 struct Sync{
 	uint16_t width;
@@ -122,7 +125,6 @@ struct g45staticdata
     void *MemPool;
     BOOL forced;
     BOOL force_gallium;
-    ULONG memsize;
 
     /* The rest should be moved to object data */
     struct SignalSemaphore	HWLock;
@@ -130,8 +132,7 @@ struct g45staticdata
     struct MsgPort		MsgPort;
     struct timerequest		*tr;
 
-    struct MemHeader	    CardMem;
-
+    struct MinList CardMem;
 
 	struct g45chip			Card;
 	uint16_t				ProductID;
@@ -245,10 +246,13 @@ extern const struct OOP_InterfaceDescr INTELI2C_ifdescr[];
 
 int G45_Init(struct g45staticdata *sd);
 
+APTR AllocGfxMem(struct g45staticdata *sd, ULONG size);
+VOID FreeGfxMem(struct g45staticdata *sd, APTR ptr, ULONG size);
 intptr_t G45_VirtualToPhysical(struct g45staticdata *sd, intptr_t virtual);
-void G45_AttachMemory(struct g45staticdata *sd, intptr_t physical, intptr_t virtual, intptr_t length);
+struct MemHeader *ObtainGfxMemory(struct g45staticdata *sd, intptr_t virtual,
+    intptr_t length, BOOL stolen);
+void ReleaseGfxMemory(struct g45staticdata *sd, struct MemHeader *header);
 void G45_AttachCacheableMemory(struct g45staticdata *sd, intptr_t physical, intptr_t virtual, intptr_t length);
-void G45_DetachMemory(struct g45staticdata *sd, intptr_t virtual, intptr_t length);
 
 void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 		uint16_t width, uint16_t height, uint8_t depth, uint32_t pixelclock, intptr_t framebuffer,
