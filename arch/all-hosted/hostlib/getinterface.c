@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,7 +41,7 @@
     NOTES
 	Note that the resulting array will always have as many entries as there
 	are in symbol names array. It some symbols (or even all of them) fail
-	to resolve, correspondind entries will be set to NULL. You may supply
+	to resolve, corresponding entries will be set to NULL. You may supply
 	a valid unresolved pointer if you want to get unresolved symbols count.
 	
 	Even incomplete interface needs to be freed using HostLib_DropInterface().

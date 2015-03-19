@@ -42,7 +42,7 @@ Edit Window
 ===========
 On the left:
 	Partition Table:
-		Select wether the current partition is a partition table
+		Select whether the current partition is a partition table
 		or not. If checked the partition will appear as a "sub partition table"
 		in the main screen. If you select it there you will be asked to create
 		a new partition table. If you quit HDToolBox without creating a table

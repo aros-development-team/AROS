@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute a loaded command synchronously
@@ -49,7 +49,8 @@
         argsize         - size of the arguments string.
 
     RESULT
-        The return code from the program. See also IoErr().
+        The return code from the program, or -1 if the command could not be
+        started (e.g. no memory for the stack). See also IoErr().
 
     NOTES
         Programs expect the argument string to end with a newline ('\n')

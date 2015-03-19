@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory at address
@@ -33,6 +33,7 @@
 
 /*  FUNCTION
         Allocate some memory from the system memory pool at a given address.
+        The memory must be freed with FreeMem().
 
     INPUTS
         byteSize - Number of bytes you want to get
@@ -40,7 +41,7 @@
 
     RESULT
         A pointer to some memory including the requested bytes or NULL if
-        the memory couldn't be allocated
+        the memory couldn't be allocated.
 
     NOTES
 
