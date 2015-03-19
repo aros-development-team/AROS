@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team
+ * Copyright (C) 2012-2015, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -16,11 +16,14 @@
 	APTR LibAllocAligned (
 
 /*  SYNOPSIS */
-	ULONG memSize,
+	IPTR memSize,
 	ULONG requirements,
 	IPTR  alignBytes)
 
 /*  FUNCTION
+        Allocate a memory block with a start address and size that are
+        multiples of a power-of-two. The returned memory must be freed using
+        FreeMem().
 
     INPUTS
         memSize      - Size in bytes of the aligned area
@@ -29,14 +32,10 @@
                        This must be a power of 2!
 
     RESULT
-
-        Pointer to the newly alloctated area, or
-        NULL if no saisfying memory can be found.
-
-        Free this pointer using FreeMem(..., memSize)
+        Pointer to the newly allocated area, or NULL if no satisfying memory
+        can be found.
 
     NOTES
-
         If alignBytes is not a power of two, NULL is returned.
 
         If memSize is not a multiple of alignBytes, NULL is returned.
@@ -46,10 +45,9 @@
     BUGS
 
     SEE ALSO
+        exec.library/AllocMem, exec.library/FreeMem().
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {
@@ -66,14 +64,13 @@
 
     alignMask = alignBytes - 1;
 
-    if ((ptr = AllocMem(memSize + alignMask, requirements))) {
+    if ((ptr = AllocMem(memSize + alignMask, requirements)))
+    {
         APTR aptr = (APTR)((((IPTR)ptr) + alignMask) & ~alignMask);
-        if (aptr != ptr) {
-            Forbid();
-            FreeMem(ptr, memSize + alignMask);
-            ptr = AllocAbs(memSize, aptr);
-            Permit();
-        }
+        Forbid();
+        FreeMem(ptr, memSize + alignMask);
+        ptr = AllocAbs(memSize, aptr);
+        Permit();
     }
 
     return ptr;

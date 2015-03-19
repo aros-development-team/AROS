@@ -2,7 +2,7 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for amiga.lib
@@ -121,7 +121,7 @@ APTR LibAllocPooled (APTR poolHeader, ULONG memSize);
 void LibFreePooled (APTR poolHeader, APTR memory, ULONG memSize);
 
 /* Aligned */
-APTR LibAllocAligned (ULONG memSize, ULONG requirements, IPTR alignBytes);
+APTR LibAllocAligned (IPTR memSize, ULONG requirements, IPTR alignBytes);
 
 /* Hook Support */
 AROS_UFP3(IPTR, HookEntry,
