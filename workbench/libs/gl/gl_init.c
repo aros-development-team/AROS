@@ -71,7 +71,7 @@ STATIC CONST IPTR GM_UNIQUENAME(LibInitTab)[] =
     (IPTR)GM_UNIQUENAME(LibInit)
 };
 
-static const struct Resident ROMTag =
+static const struct Resident ROMTag __attribute__((used)) =
 {
     RTC_MATCHWORD,
     (struct Resident *)&ROMTag,
