@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NewStackSwap() - Call a function with swapped stack.
@@ -15,7 +15,7 @@
 	AROS_LH3(IPTR, NewStackSwap,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct StackSwapStruct *,  sss, A0),
+	AROS_LHA(struct StackSwapStruct *, sss, A0),
 	AROS_LHA(LONG_FUNC, entry, A1),
 	AROS_LHA(struct StackSwapArgs *, args, A2),
 
@@ -30,13 +30,14 @@
 		    and current bounds of the stack you wish to use.
 	entry	-   Address of the function to call.
 	args	-   A structure (actually an array) containing up to 8
-		    function arguments
+		    function arguments. May be NULL.
 
     RESULT
-	A value actually returned by your function. The function will be
-	running on a new stack.
+	The value returned by your function.
 
     NOTES
+	This function is mostly compatible with MorphOS's NewPPCStackSwap()
+	function.
 
     EXAMPLE
 

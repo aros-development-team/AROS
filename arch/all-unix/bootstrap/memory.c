@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -23,7 +28,7 @@ static size_t RAM_len  = 0;
 #endif
 
 /*
- * Allocate memory for kickstart's .code and .rodata. We allocate is as writable
+ * Allocate memory for kickstart's .code and .rodata. We allocate it as writable
  * because we will load the kickstart into it. We will enable execution later in SetRO().
  * We have to use mmap() and not posix_memalign() here because posix_memalign()
  * does not pad the allocated memory up to next page boundary. As a result, setting
@@ -77,8 +82,8 @@ void *AllocateRW(size_t len)
 }
 
 /*
- * These routines allocate memory usable as AROS ram. This means it
- * needs to have full permissions.
+ * These routines allocate memory usable as AROS RAM. This means they
+ * need to have full permissions.
  * Yes, iOS will silently mask out PROT_EXEC here. This is bad.
  * Well, iOS will be a little bit special story in InternalLoadSeg()...
  */

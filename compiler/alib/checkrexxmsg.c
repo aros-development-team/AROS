@@ -1,5 +1,5 @@
 /*
-        Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,7 +27,7 @@
         msg - The message to check
 
     RESULT
-        Wether this message is OK.
+        Whether this message is OK.
 
     NOTES
 

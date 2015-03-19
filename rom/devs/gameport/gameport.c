@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gameport device
@@ -232,7 +232,7 @@ static int GM_UNIQUENAME(open)
     {
 	GPBase->gp_MouseHiddBase = OpenLibrary("mouse.hidd", 0);
 
-	/* Install our own keyboard handler if opened for the first time */
+	/* Install our own mouse handler if opened for the first time */
 	if(GPBase->gp_MouseHiddBase) {
 	    struct TagItem tags[] = {
 		{ aHidd_Mouse_IrqHandler    , (IPTR)mouseCallback},
@@ -241,7 +241,7 @@ static int GM_UNIQUENAME(open)
 	    };
 
 	    GPBase->gp_Hidd = OOP_NewObject(NULL, CLID_Hidd_Mouse, tags);
-	    D(bug("keyboard.device: keyboard HIDD object 0x%p\n", GPBase->gp_Hidd));
+	    D(bug("gameport.device: mouse HIDD object 0x%p\n", GPBase->gp_Hidd));
  	    if(!GPBase->gp_Hidd)
 	    {
 	        CloseLibrary(GPBase->gp_MouseHiddBase);
@@ -543,7 +543,7 @@ static VOID mouseCallback(struct GameportBase *GPBase,
 
 /****************************************************************************************/
 
-/* nlorentz: Software interrupt to be called when keys are received
+/* nlorentz: Software interrupt to be called when input is received
 Copied and pasted from the function above */
 
 #undef SysBase
@@ -592,7 +592,7 @@ static AROS_INTH1(gpSendQueuedEvents, struct GameportBase *, GPBase)
 /****************************************************************************************/
 
 /* When this function is called, there *must* be at least one event ready for
-   processing. It returns TRUE as long as there are more events to preocess */
+   processing. It returns TRUE as long as there are more events to process */
 
 static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 			struct GameportBase *GPBase)

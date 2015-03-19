@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -103,7 +103,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
 #ifndef __MORPHOS__
     /* We take a very simple approach to avoid race conditions with the
-       intuition input handler running one input.device 's task:
+       intuition input handler running on input.device's task:
        We just send it a msg about closing the window
     */
     if (HAS_CHILDREN(window))
@@ -218,7 +218,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 VOID int_closewindow(struct CloseWindowActionMsg *msg,
                      struct IntuitionBase *IntuitionBase)
 {
-    /* Free everything except the applications messageport */
+    /* Free everything except the application's messageport */
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window   *window, *win2;
@@ -417,7 +417,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     if (((struct IntWindow *)(window))->transpregion) DisposeRegion(((struct IntWindow *)(window))->transpregion);
 #endif
 
-    /* Let the driver clean up. Driver wil dealloc window's rastport */
+    /* Let the driver clean up. Driver will dealloc window's rastport */
     intui_CloseWindow (window, IntuitionBase);
 
     /* jDc: trash the screen pointer to avoid unnecessary checks in WindowValid() and
