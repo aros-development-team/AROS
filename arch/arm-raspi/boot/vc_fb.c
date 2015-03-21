@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VideoCore framebuffer routines
@@ -7,11 +7,17 @@
 */
 
 #include <hardware/bcm283x.h>
+#undef ARM_PERIIOBASE
+
 #include <hardware/videocore.h>
 
 #include "bootconsole.h"
 #include "vc_mb.h"
 #include "vc_fb.h"
+
+#undef ARM_PERIIOBASE
+#define ARM_PERIIOBASE (__arm_periiobase)
+extern uint32_t __arm_periiobase;
 
 int vcfb_init(void)
 {
