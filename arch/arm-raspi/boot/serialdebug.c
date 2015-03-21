@@ -1,10 +1,11 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include <hardware/bcm283x.h>
 #include <hardware/videocore.h>
@@ -13,6 +14,10 @@
 #include "serialdebug.h"
 #include "bootconsole.h"
 #include "vc_mb.h"
+
+#undef ARM_PERIIOBASE
+#define ARM_PERIIOBASE (__arm_periiobase)
+extern uint32_t __arm_periiobase;
 
 #define PL011_ICR_FLAGS (PL011_ICR_RXIC|PL011_ICR_TXIC|PL011_ICR_RTIC|PL011_ICR_FEIC|PL011_ICR_PEIC|PL011_ICR_BEIC|PL011_ICR_OEIC|PL011_ICR_RIMIC|PL011_ICR_CTSMIC|PL011_ICR_DSRMIC|PL011_ICR_DCDMIC)
 
@@ -40,10 +45,12 @@ inline void putByte(uint8_t chr)
     waitSerOUT();
 
     if (chr == '\n')
+    {
         *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = '\r';
+        waitSerOUT();
+    }
     *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = chr;
 }
-
 
 void serInit(void)
 {
@@ -64,7 +71,7 @@ void serInit(void)
 
     vcmb_write(VCMB_BASE, VCMB_PROPCHAN, uart_msg);
     uart_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
-    
+
     uartclock = uart_msg[6];
     
     *(volatile uint32_t *)(PL011_0_BASE + PL011_CR) = 0;
@@ -76,6 +83,7 @@ void serInit(void)
     uartvar |= 4<<15;                           // alt0
     *(volatile uint32_t *)GPFSEL1 = uartvar;
 
+    /* Disable pull-ups and pull-downs on rs232 lines */
     *(volatile uint32_t *)GPPUD = 0;
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
