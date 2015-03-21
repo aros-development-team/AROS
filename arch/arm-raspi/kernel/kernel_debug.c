@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,7 +28,10 @@ inline void krnSerPutC(uint8_t chr)
     krnWaitSerOut();
 
     if (chr == '\n')
+    {
         *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = '\r';
+        krnWaitSerOut();
+    }
     *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = chr;
 }
 
