@@ -90,6 +90,12 @@ PKG_CLASSES   := USB/hid USB/hub USB/bootmouse USB/bootkeyboard USB/massstorage
 distfiles-raspi-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
 
+#MM
+distfiles-raspi-bootimg: $(AROSDIR)/arosraspi.img
+
+#MM
+distfiles-raspi-bootimg-quick: $(AROSDIR)/arosraspi.img
+
 %copy_files_q mmake=kernel-raspi-config-copy files="$(CONFIG_FILE)" dst=$(AROSDIR)
 
 $(AROSDIR)/arosraspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
