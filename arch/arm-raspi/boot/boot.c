@@ -164,12 +164,12 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     /* tmp == 7 means armv6 architecture. */
     if (tmp == 0xc07) /* armv7, also RaspberryPi 2 */
     {
-        __arm_periiobase = 0x3f000000;
+        __arm_periiobase = BCM2836_PERIPHYSBASE;
         plus_board = 1;
     }
     else
     {
-        __arm_periiobase = 0x20000000;
+        __arm_periiobase = BCM2835_PERIPHYSBASE;
         /* Need to detect the plus board here in order to control LEDs properly */
     }
 
