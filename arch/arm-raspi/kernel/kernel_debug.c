@@ -12,6 +12,10 @@
 #include <kernel_base.h>
 #include <kernel_debug.h>
 
+#undef ARM_PERIIOBASE
+extern uint32_t __arm_periiobase;
+#define ARM_PERIIOBASE (__arm_periiobase)
+
 void (*_KrnPutC)(char) = NULL;
 
 inline void krnWaitSerOut()

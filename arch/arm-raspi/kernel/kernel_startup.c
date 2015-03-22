@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,6 +26,9 @@
 #include "kernel_debug.h"
 #include "kernel_fb.h"
 #include "kernel_romtags.h"
+
+#undef ARM_PERIIOBASE
+#define ARM_PERIIOBASE (__arm_periiobase)
 
 extern void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 
@@ -107,6 +110,8 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
+uint32_t __arm_periiobase = 0;
+
 void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
     UWORD *ranges[3];
@@ -117,11 +122,28 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     unsigned int delay;
     BootMsg = msg;
     register unsigned int fpuflags;
+    uint32_t tmp;
+
+    /* Guess the cpu type and adjust __arm_periiobase accordingly */
+    asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
+    if ((tmp & 0xfff0) == 0xc070) /* armv7, also RaspberryPi 2 */
+    {
+        __arm_periiobase = BCM2836_PERIPHYSBASE;
+
+        /* Power LED back on */
+        *(volatile unsigned int *)GPSET1 = (1 << (35-32)); // Power LED ON
+    }
+    else
+    {
+        __arm_periiobase = BCM2835_PERIPHYSBASE;
+        /* Need to detect the plus board here in order to control LEDs properly */
+
+        *(volatile unsigned int *)GPCLR0 = (1 << 16); // Activity LED ON
+    }
 
     /* NB: the bootstrap has conveniently setup the framebuffer
             and initialised the serial port and led for us */
 
-    *(volatile unsigned int *)GPCLR0 = (1 << 16); // LED ON
 
     core_SetupMMU();
 
