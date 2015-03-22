@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -65,7 +65,8 @@ AROS_LH2(volatile unsigned int *, VCMBoxRead,
             APTR ssp = SuperState();
             while ((VCMBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
             {
-                asm volatile ("mcr p15, 0, %[r], c7, c14, 0" : : [r] "r" (0) );
+                /* Data synchronization barrier */
+                asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
 
                 if(try-- == 0)
                 {
@@ -105,7 +106,8 @@ AROS_LH3(void, VCMBoxWrite,
         APTR ssp = SuperState();
         while ((VCMBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
         {
-            asm volatile ("mcr p15, 0, %[r], c7, c14, 0" : : [r] "r" (0) );
+            /* Data synchronization barrier */
+            asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
         }
 
         asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
