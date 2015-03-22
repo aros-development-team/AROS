@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,6 +12,11 @@
 #include <kernel_debug.h>
 
 #include <proto/kernel.h>
+#include <stdint.h>
+
+#undef ARM_PERIIOBASE
+extern uint32_t __arm_periiobase;
+#define ARM_PERIIOBASE (__arm_periiobase)
 
 /* See rom/kernel/maygetchar.c for documentation */
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,6 +16,10 @@
 #include <kernel_objects.h>
 
 #include "kernel_intern.h"
+
+#undef ARM_PERIIOBASE
+extern uint32_t __arm_periiobase;
+#define ARM_PERIIOBASE (__arm_periiobase)
 
 /* We use own implementation of bug(), so we don't need aros/debug.h */
 #define DIRQ(x)

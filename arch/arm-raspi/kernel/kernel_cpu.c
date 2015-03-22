@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,6 +27,10 @@
 
 #define D(x)
 #define DREGS(x)
+
+#undef ARM_PERIIOBASE
+extern uint32_t __arm_periiobase;
+#define ARM_PERIIOBASE (__arm_periiobase)
 
 extern struct Task *sysIdleTask;
 

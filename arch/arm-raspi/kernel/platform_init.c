@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,6 +23,10 @@
 #include "kernel_intern.h"
 #include "kernel_arch.h"
 #include "kernel_romtags.h"
+
+#undef ARM_PERIIOBASE
+extern uint32_t __arm_periiobase;
+#define ARM_PERIIOBASE (__arm_periiobase)
 
 void *(*__AllocMem)();
 
