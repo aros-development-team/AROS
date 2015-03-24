@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,6 @@
 #define BCM2835_PERIPHYSSIZE    0x400000
 #define BCM2835_PERIBUSBASE     0x7E000000
 
-#define ARM_PERIIOBASE          BCM2835_PERIPHYSBASE
 #define BCM_BUSBASE             BCM2835_PERIBUSBASE
 #define ARM_PERIIOSIZE          BCM2835_PERIPHYSSIZE
 
@@ -26,7 +25,11 @@
 
 #define STACK_SIZE              ARM_STACK_DEF
 
-// TODO: Everything after this point needs to be moved to ARM/Peripheral specific headers ..
+
+/*
+   caller must provide ARM_PERIIOBASE
+*/
+
 #define SYSTIMER_BASE           (ARM_PERIIOBASE + 0x003000)
 #define ARMTIMER_BASE           (ARM_PERIIOBASE + 0x00b000)
 #define IRQ_BASE                (ARM_PERIIOBASE + 0x00b200)
