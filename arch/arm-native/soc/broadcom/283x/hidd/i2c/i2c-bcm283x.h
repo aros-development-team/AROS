@@ -1,9 +1,7 @@
 /*
- * i2c-raspi.h
- *
- *  Created on: Feb 1, 2010
- *      Author: misc
- */
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #ifndef I2C_BCM283X_H
 #define I2C_BCM283X_H
