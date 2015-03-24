@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,10 +18,6 @@
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
-
-#undef ARM_PERIIOBASE
-extern uint32_t __arm_periiobase;
-#define ARM_PERIIOBASE (__arm_periiobase)
 
 #define BOOT_STACK_SIZE		(256 << 2)
 #define BOOT_TAGS_SIZE          (128 << 3)

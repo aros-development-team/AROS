@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+extern uint32_t __arm_periiobase;
+#define ARM_PERIIOBASE (__arm_periiobase)
 #include <hardware/bcm283x.h>
 
 #undef KernelBase

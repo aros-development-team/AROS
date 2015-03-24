@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,9 +26,6 @@
 #include "kernel_debug.h"
 #include "kernel_fb.h"
 #include "kernel_romtags.h"
-
-#undef ARM_PERIIOBASE
-#define ARM_PERIIOBASE (__arm_periiobase)
 
 extern void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 
