@@ -21,7 +21,7 @@ const char devname[]    = MOD_NAME_STRING;
 AROS_INTP(FNAME_DEV(PendingInt));
 AROS_INTP(FNAME_DEV(NakTimeoutInt));
 
-uint32_t	__arm_periiobase __attribute__((used)) = 0 ;
+IPTR	__arm_periiobase __attribute__((used)) = 0 ;
 
 static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase)
 {
@@ -42,7 +42,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
-    pmmailbox = (ARM_PERIIOBASE + 0xB880);
+    pmmailbox = (volatile unsigned int *)(ARM_PERIIOBASE + 0xB880);
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));
