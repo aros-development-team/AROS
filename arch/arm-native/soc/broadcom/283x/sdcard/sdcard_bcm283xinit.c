@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <proto/vcmbox.h>
+#include <proto/kernel.h>
 
 #include <hardware/mmc.h>
 #include <hardware/sdhc.h>
@@ -18,8 +19,9 @@
 #include <hardware/arasan.h>
 #include <hardware/videocore.h>
 
-APTR                VCMBoxBase;
-unsigned int        VCMBoxMessage[8] __attribute__((used, aligned(16)));
+APTR            VCMBoxBase;
+unsigned int    VCMBoxMessage[8] __attribute__((used, aligned(16)));
+uint32_t	__arm_periiobase __attribute__((used)) = 0 ;
 
 static int FNAME_BCMSDC(BCM283xInit)(struct SDCardBase *SDCardBase)
 {
@@ -27,6 +29,8 @@ static int FNAME_BCMSDC(BCM283xInit)(struct SDCardBase *SDCardBase)
     int                 retVal = FALSE;
 
     DINIT(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
+
+    __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
     if ((VCMBoxBase = OpenResource("vcmbox.resource")) == NULL)
     {

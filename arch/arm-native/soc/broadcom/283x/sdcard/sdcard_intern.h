@@ -14,6 +14,8 @@
 
 #include <devices/timer.h>
 
+extern uint32_t __arm_periiobase;
+#define ARM_PERIIOBASE __arm_periiobase
 #include <hardware/bcm283x.h>
 
 #include "sdcard_base.h"

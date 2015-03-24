@@ -9,9 +9,19 @@
 void FNAME_BCMSDCBUS(BCMLEDCtrl)(int lvl)
 {
     if (lvl > 0)
-        *(volatile ULONG *)GPCLR0 = (1 << 16); // Turn Activity LED ON
+    {
+        if (__arm_periiobase == BCM2835_PERIPHYSBASE)
+            *(volatile unsigned int *)GPCLR0 = (1 << 16); // Activity LED ON
+        else
+            *(volatile unsigned int *)GPCLR1 = (1 << (35 - 32));
+    }
     else
-        *(volatile ULONG *)GPSET0 = (1 << 16); // Turn Activity LED OFF
+    {
+        if (__arm_periiobase == BCM2835_PERIPHYSBASE)
+            *(volatile unsigned int *)GPSET0 = (1 << 16); // Activity LED OFF
+        else
+            *(volatile unsigned int *)GPSET1 = (1 << (35 - 32));
+    }
 }
 
 ULONG FNAME_SDCBUS(GetClockDiv)(ULONG speed, struct sdcard_Bus *bus)
