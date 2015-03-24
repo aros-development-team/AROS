@@ -21,7 +21,7 @@
 
 APTR            VCMBoxBase;
 unsigned int    VCMBoxMessage[8] __attribute__((used, aligned(16)));
-uint32_t	__arm_periiobase __attribute__((used)) = 0 ;
+IPTR		__arm_periiobase __attribute__((used)) = 0 ;
 
 static int FNAME_BCMSDC(BCM283xInit)(struct SDCardBase *SDCardBase)
 {
