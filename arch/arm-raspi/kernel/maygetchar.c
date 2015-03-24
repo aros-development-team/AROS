@@ -1,22 +1,17 @@
 /*
-    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/kernel.h>
 
-#include <hardware/bcm283x.h>
-#include <hardware/pl011uart.h>
-
 #include <kernel_base.h>
 #include <kernel_debug.h>
+#include <kernel_intern.h>
+#include <hardware/pl011uart.h>
 
 #include <proto/kernel.h>
 #include <stdint.h>
-
-#undef ARM_PERIIOBASE
-extern uint32_t __arm_periiobase;
-#define ARM_PERIIOBASE (__arm_periiobase)
 
 /* See rom/kernel/maygetchar.c for documentation */
 
