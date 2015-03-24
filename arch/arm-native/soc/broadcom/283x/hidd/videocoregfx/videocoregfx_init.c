@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VideoCore Hidd initialisation code
@@ -37,6 +37,9 @@
 #endif
 
 #define VCMBoxBase      xsd->vcsd_VCMBoxBase
+
+IPTR    	__arm_periiobase __attribute__((used)) = 0 ;
+APTR KernelBase __attribute__((used)) = NULL;
 
 static void FNAME_SUPPORT(FreeAttrBases)(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 {
@@ -85,7 +88,10 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 {
     struct VideoCoreGfx_staticdata *xsd = &LIBBASE->vsd;
     int retval = FALSE;
-    
+
+    KernelBase = OpenResource("kernel.resource");
+    __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
+
     if (!FNAME_SUPPORT(GetAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))
         goto failure;
 

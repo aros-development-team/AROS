@@ -5,6 +5,8 @@
 #include <hidd/pci.h>
 #include <oop/oop.h>
 
+extern IPTR __arm_periiobase;
+#define ARM_PERIIOBASE __arm_periiobase
 #include <hardware/bcm283x.h>
 #include <hardware/videocore.h>
 
