@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2015 Szilard Biro
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -26,8 +26,14 @@
 #else
     #ifdef DEBUG
         #define D(x) x
+        #if DEBUG > 1
+            #define DB2(x) x
+        #else
+            #define DB2(x)
+        #endif
     #else
         #define D(x)
+        #define DB2(x)
     #endif
     #ifdef __amigaos4__
         #include <proto/exec.h>
