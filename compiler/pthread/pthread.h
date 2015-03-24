@@ -29,40 +29,18 @@
 #include <sched.h>
 
 //
-// Basic types
-//
-
-/*#ifndef _TIMESPEC_DEFINED
-#define _TIMESPEC_DEFINED
-struct timespec
-{
-    long tv_sec;
-    long tv_nsec;
-};
-#endif*/
-
-#ifndef _SCHED_PARAM_DEFINED
-#define _SCHED_PARAM_DEFINED
-struct sched_param
-{
-    int sched_priority;
-};
-#endif
-
-#ifndef SCHED_RR
-#define SCHED_RR 0
-#endif
-
-//
 // POSIX options
 //
 
+#undef _POSIX_THREADS
 #define _POSIX_THREADS
+#undef _POSIX_READER_WRITER_LOCKS
 #define _POSIX_READER_WRITER_LOCKS
+#undef _POSIX_SPIN_LOCKS
 #define _POSIX_SPIN_LOCKS
-#define _POSIX_BARRIERS
-#define _POSIX_THREAD_SAFE_FUNCTIONS
+#undef _POSIX_THREAD_ATTR_STACKSIZE
 #define _POSIX_THREAD_ATTR_STACKSIZE
+#undef _POSIX_THREAD_PRIORITY_SCHEDULING
 #define _POSIX_THREAD_PRIORITY_SCHEDULING
 
 //
@@ -72,6 +50,7 @@ struct sched_param
 #define PTHREAD_KEYS_MAX                      64
 #define PTHREAD_STACK_MIN                     40960
 #define PTHREAD_THREADS_MAX                   2019
+#define PTHREAD_DESTRUCTOR_ITERATIONS         4
 
 //
 // POSIX pthread types
@@ -118,20 +97,22 @@ struct pthread_attr
 
 typedef struct pthread_attr pthread_attr_t;
 
+#define PTHREAD_CANCELED              ((void *)-1)
+
 //
 // Once key
 //
 
 struct pthread_once
 {
-    volatile int done;        // Indicates if user function executed
-    int started;            // First thread to increment this value 
-                            // to zero executes the user function
+    volatile int done;
+    int started;
+    int lock;
 };
 
 typedef struct pthread_once pthread_once_t;
 
-#define PTHREAD_ONCE_INIT       {0, -1}
+#define PTHREAD_ONCE_INIT       {0, -1, 0}
 
 //
 // Mutex
@@ -139,7 +120,7 @@ typedef struct pthread_once pthread_once_t;
 
 #define PTHREAD_MUTEX_NORMAL     0
 #define PTHREAD_MUTEX_RECURSIVE  1
-//#define PTHREAD_MUTEX_ERRORCHECK 2
+#define PTHREAD_MUTEX_ERRORCHECK 2
 #define PTHREAD_MUTEX_DEFAULT    PTHREAD_MUTEX_NORMAL
 
 struct pthread_mutexattr
@@ -154,11 +135,16 @@ struct pthread_mutex
 {
     int kind;
     struct SignalSemaphore semaphore;
+    int incond;
 };
 
 typedef struct pthread_mutex pthread_mutex_t;
 
+#ifndef __AROS__
+#define NULL_MINLIST {0, 0, 0}
+#else
 #define NULL_MINLIST {0, 0, {0}}
+#endif
 #define NULL_MINNODE {0, 0}
 #define NULL_NODE {0, 0, 0, 0, 0}
 #define NULL_SEMAPHOREREQUEST {NULL_MINNODE, 0}
@@ -166,6 +152,7 @@ typedef struct pthread_mutex pthread_mutex_t;
 
 #define PTHREAD_MUTEX_INITIALIZER {PTHREAD_MUTEX_NORMAL, NULL_SEMAPHORE}
 #define PTHREAD_RECURSIVE_MUTEX_INITIALIZER {PTHREAD_MUTEX_RECURSIVE, NULL_SEMAPHORE}
+#define PTHREAD_ERRORCHECK_MUTEX_INITIALIZER {PTHREAD_MUTEX_ERRORCHECK, NULL_SEMAPHORE}
 
 //
 // Condition variables
@@ -180,7 +167,7 @@ typedef struct pthread_condattr pthread_condattr_t;
 
 struct pthread_cond
 {
-    int waiting;
+    int pad1;
     struct SignalSemaphore semaphore;
     struct MinList waiters;
 };
@@ -188,6 +175,57 @@ struct pthread_cond
 typedef struct pthread_cond pthread_cond_t;
 
 #define PTHREAD_COND_INITIALIZER {0, NULL_SEMAPHORE, NULL_MINLIST}
+
+//
+// Barriers
+//
+
+#define PTHREAD_BARRIER_SERIAL_THREAD 1
+
+struct pthread_barrierattr
+{
+    int pshared;
+};
+
+typedef struct pthread_barrierattr pthread_barrierattr_t;
+
+struct pthread_barrier
+{
+    unsigned int curr_height;
+    unsigned int total_height;
+    pthread_cond_t breeched;
+    pthread_mutex_t lock;
+};
+
+typedef struct pthread_barrier pthread_barrier_t;
+
+//
+// Read-write locks
+//
+
+struct pthread_rwlockattr
+{
+    int pshared;
+};
+
+typedef struct pthread_rwlockattr pthread_rwlockattr_t;
+
+struct pthread_rwlock
+{
+    struct SignalSemaphore semaphore;
+};
+
+typedef struct pthread_rwlock pthread_rwlock_t;
+
+#define PTHREAD_RWLOCK_INITIALIZER {NULL_SEMAPHORE}
+
+//
+// Spinlocks
+//
+
+typedef int pthread_spinlock_t;
+
+#define PTHREAD_SPINLOCK_INITIALIZER 0
 
 //
 // POSIX thread routines
@@ -275,6 +313,15 @@ int pthread_mutex_trylock(pthread_mutex_t *mutex);
 int pthread_mutex_unlock(pthread_mutex_t *mutex);
 
 //
+// Condition variable attribute functions
+//
+
+int pthread_condattr_init(pthread_condattr_t *attr);
+int pthread_condattr_destroy(pthread_condattr_t *attr);
+int pthread_condattr_getpshared(const pthread_condattr_t *attr, int *pshared);
+int pthread_condattr_setpshared(pthread_condattr_t *attr, int pshared);
+
+//
 // Condition variable functions
 //
 
@@ -286,11 +333,62 @@ int pthread_cond_signal(pthread_cond_t *cond);
 int pthread_cond_broadcast(pthread_cond_t *cond);
 
 //
-// NP
+// Barrier attribute functions
+//
+
+int pthread_barrierattr_init(pthread_barrierattr_t *attr);
+int pthread_barrierattr_destroy(pthread_barrierattr_t *attr);
+int pthread_barrierattr_getpshared(const pthread_barrierattr_t *attr, int *pshared);
+int pthread_barrierattr_setpshared(pthread_barrierattr_t *attr, int pshared);
+
+//
+// Barrier functions
+//
+
+int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count);
+int pthread_barrier_destroy(pthread_barrier_t *barrier);
+int pthread_barrier_wait(pthread_barrier_t *barrier);
+
+//
+// Read-write lock attribute functions
+//
+
+int pthread_rwlockattr_init(pthread_rwlockattr_t *attr);
+int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr);
+int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *attr, int *pshared);
+int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attr, int pshared);
+
+//
+// Read-write lock functions
+//
+
+int pthread_rwlock_init(pthread_rwlock_t *lock, const pthread_rwlockattr_t *attr);
+int pthread_rwlock_destroy(pthread_rwlock_t *lock);
+int pthread_rwlock_tryrdlock(pthread_rwlock_t *lock);
+int pthread_rwlock_trywrlock(pthread_rwlock_t *lock);
+int pthread_rwlock_rdlock(pthread_rwlock_t *lock);
+int pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *abstime);
+int pthread_rwlock_wrlock(pthread_rwlock_t *lock);
+int pthread_rwlock_timedwrlock(pthread_rwlock_t *lock, const struct timespec *abstime);
+int pthread_rwlock_unlock(pthread_rwlock_t *lock);
+
+//
+// Spinlock functions
+//
+
+int pthread_spin_init(pthread_spinlock_t *lock, int pshared);
+int pthread_spin_destroy(pthread_spinlock_t *lock);
+int pthread_spin_lock(pthread_spinlock_t *lock);
+int pthread_spin_trylock(pthread_spinlock_t *lock);
+int pthread_spin_unlock(pthread_spinlock_t *lock);
+
+//
+// Non-portable functions
 //
 
 int pthread_setname_np(pthread_t thread, const char *name);
 int pthread_getname_np(pthread_t thread, char *name, size_t len);
+int pthread_cond_timedwait_relative_np(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *reltime);
 
 //
 // Cancellation cleanup
@@ -304,6 +402,54 @@ void pthread_cleanup_pop(int execute);
 //
 
 int pthread_kill(pthread_t thread, int sig);
+
+//
+// Wrap cancellation points
+//
+
+#ifdef _UNISTD_H_
+#define close(...) (pthread_testcancel(), close(__VA_ARGS__))
+#define fsync(...) (pthread_testcancel(), fsync(__VA_ARGS__))
+#define read(...) (pthread_testcancel(), read(__VA_ARGS__))
+#ifdef __MORPHOS__
+#define select(...) (pthread_testcancel(), select(__VA_ARGS__))
+#endif
+#define sleep(...) (pthread_testcancel(), sleep(__VA_ARGS__))
+#define usleep(...) (pthread_testcancel(), usleep(__VA_ARGS__))
+#endif
+
+#ifdef _FCNTL_H_
+#define creat(...) (pthread_testcancel(), creat(__VA_ARGS__))
+#define fcntl(...) (pthread_testcancel(), fcntl(__VA_ARGS__))
+#define open(...) (pthread_testcancel(), open(__VA_ARGS__))
+#endif
+
+#ifdef _TIME_H_
+#define nanosleep(...) (pthread_testcancel(), nanosleep(__VA_ARGS__))
+#endif
+
+#ifdef _SYS_UIO_H_
+#define readv(...) (pthread_testcancel(), readv(__VA_ARGS__))
+#endif
+
+#ifdef _STDLIB_H_
+#define system(...) (pthread_testcancel(), system(__VA_ARGS__))
+#endif
+
+#if defined(CLIB_BSDSOCKET_PROTOS_H) || defined(CLIB_SOCKET_PROTOS_H)
+#define accept(...) (pthread_testcancel(), accept(__VA_ARGS__))
+#define connect(...) (pthread_testcancel(), connect(__VA_ARGS__))
+#define CloseSocket(...) (pthread_testcancel(), CloseSocket(__VA_ARGS__))
+#define recv(...) (pthread_testcancel(), recv(__VA_ARGS__))
+#define recvfrom(...) (pthread_testcancel(), recvfrom(__VA_ARGS__))
+#define recvmsg(...) (pthread_testcancel(), recvmsg(__VA_ARGS__))
+#ifdef __AROS__
+#define select(...) (pthread_testcancel(), select(__VA_ARGS__))
+#endif
+#define send(...) (pthread_testcancel(), send(__VA_ARGS__))
+#define sendmsg(...) (pthread_testcancel(), sendmsg(__VA_ARGS__))
+#define sendto(...) (pthread_testcancel(), sendto(__VA_ARGS__))
+#endif
 
 #ifdef  __cplusplus
 }

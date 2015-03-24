@@ -6,9 +6,9 @@ include $(TOP)/config/make.cfg
 #MM- includes-copy : pthread-includes-copy
 #MM- compiler-includes : pthread-includes-copy
 
-%copy_includes mmake=pthread-includes-copy includes="pthread.h sched.h"
+%copy_includes mmake=pthread-includes-copy includes="pthread.h sched.h semaphore.h"
 
-LINKLIBFILES := pthread sched
+LINKLIBFILES := pthread sched semaphore
 LIBRARYFILES := 
 
 #%build_module mmake=compiler-pthread \

@@ -42,12 +42,15 @@ int sched_get_priority_min(int policy)
 
 int sched_yield(void)
 {
-    BYTE oldPrio;
+    BYTE oldpri;
+    struct Task *task;
 
     D(bug("%s()\n", __FUNCTION__));
 
-    oldPrio = SetTaskPri(FindTask(NULL), -10);
-    SetTaskPri(FindTask(NULL), oldPrio);
+    task = FindTask(NULL);
+    // changing the priority will trigger a reschedule
+    oldpri = SetTaskPri(task, -10);
+    SetTaskPri(task, oldpri);
 
     return 0;
 }
