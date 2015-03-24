@@ -12,9 +12,6 @@
 
 #include <proto/alib.h>
 
-#include <hardware/bcm283x.h>
-#include <hardware/usb2otg.h>
-
 #include "usb2otg_intern.h"
 
 #define DEVNAME         "usb2otg.device"
@@ -23,6 +20,8 @@ const char devname[]    = MOD_NAME_STRING;
 
 AROS_INTP(FNAME_DEV(PendingInt));
 AROS_INTP(FNAME_DEV(NakTimeoutInt));
+
+uint32_t	__arm_periiobase __attribute__((used)) = 0 ;
 
 static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase)
 {
@@ -37,9 +36,13 @@ static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBa
  */
 static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 {
-    volatile unsigned int *pmmailbox = (ARM_PERIIOBASE + 0xB880);
+    volatile unsigned int *pmmailbox;
     volatile unsigned int otg_RegVal;
     unsigned int otg_OperatingMode = 0, pmres;
+
+    __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
+
+    pmmailbox = (ARM_PERIIOBASE + 0xB880);
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));

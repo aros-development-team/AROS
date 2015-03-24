@@ -3,15 +3,12 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/kernel.h>
 #include <proto/utility.h>
-
-#include <hardware/bcm283x.h>
-#include <hardware/usb2otg.h>
 
 #include "usb2otg_intern.h"
 

@@ -34,6 +34,11 @@
 
 #include <oop/oop.h>
 
+extern uint32_t __arm_periiobase;
+#define ARM_PERIIOBASE __arm_periiobase
+#include <hardware/bcm283x.h>
+#include <hardware/usb2otg.h>
+
 /*
     Force the USB chipset to run in Host mode
     AFAIK Poseidon doesnt support device mode? - TODO
