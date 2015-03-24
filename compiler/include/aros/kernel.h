@@ -74,7 +74,8 @@ typedef int (*exhandler_t)(void *ctx, void *data, void *data2);
 typedef void (*irqhandler_t)(void *data, void *data2);
 
 /* System attributes */
-#define KATTR_Architecture	(TAG_USER + 0x03F00000) /* [.G] (char *)  - Name of architecture, like "i386-pc"	 */
+#define KATTR_Architecture	(TAG_USER + 0x03F00000) /* [.G] (char *)  - Name of architecture, like "i386-pc"                        */
+#define KATTR_PeripheralBase	(TAG_USER + 0x03F00001) /* [.G] (IPTR)    - SoC Peripheral IO base address (on relevant hardware)       */
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)
