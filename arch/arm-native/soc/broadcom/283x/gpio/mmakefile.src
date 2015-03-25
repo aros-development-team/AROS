@@ -1,0 +1,6 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-gpio 	\
+  modname=gpio modtype=resource		\
+  files="gpio_init"
