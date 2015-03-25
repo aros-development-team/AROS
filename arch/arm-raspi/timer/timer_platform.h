@@ -11,6 +11,7 @@
 struct PlatformTimer
 {
     APTR tbp_BootLoaderBase;
+    IPTR tbp_periiobase;
     struct timeval tbp_TickRate;	/* Our periodic timer interval   */
     unsigned int tbp_cs;
     unsigned int tbp_CLO;
@@ -22,3 +23,6 @@ struct PlatformTimer
 
 #undef BootLoaderBase
 #define BootLoaderBase TimerBase->tb_Platform.tbp_BootLoaderBase
+
+#define ARM_PERIIOBASE TimerBase->tb_Platform.tbp_periiobase
+#include <hardware/bcm283x.h>

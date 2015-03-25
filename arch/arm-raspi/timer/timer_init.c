@@ -24,7 +24,6 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-#include <hardware/bcm283x.h>
 
 #include "timer_intern.h"
 #include "timer_macros.h"
@@ -90,6 +89,8 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 static int Timer_Init(struct TimerBase *TimerBase)
 {
     D(bug("[Timer] Timer_Init: kernel.resource @ 0x%p\n", KernelBase));
+
+    TimerBase->tb_Platform.tbp_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
     /* Install timer IRQ handler */
     TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(IRQ_TIMER0 + TICK_TIMER, Timer1Tick, TimerBase, SysBase);
