@@ -8,7 +8,6 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <aros/libcall.h>
-#include <proto/openfirmware.h>
 #include <proto/kernel.h>
 #include <proto/exec.h>
 #include <proto/vcmbox.h>
