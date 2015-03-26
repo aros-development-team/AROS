@@ -666,7 +666,7 @@ ifeq (%(compiler),target)
 endif
 ifeq (%(compiler),host)
   BD_LINK ?= $(HOST_CXX) $(HOST_LDFLAGS)
-  BD_STRIP ?= $(TARGET_STRIP)
+  BD_STRIP ?= $(HOST_STRIP)
   TMP_CXXCMD:=$(HOST_CXX)
   TMP_CXXIQUOTE:=$(HOST_IQUOTE)
   TMP_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
@@ -1388,7 +1388,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
     objs="$(BD_OBJS) $(BD_ARCHOBJS) $(USER_OBJS)" ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
-     cmd=$(BD_LINK) strip=$(BD_STRIP)
+    cmd=$(BD_LINK) strip=$(BD_STRIP)
 
 endif
 
