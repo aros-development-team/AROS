@@ -1,3 +1,2 @@
 TYPE = PROJECT
-TOOLTYPE = CLI
-DEFAULTTOOL = gs850:bin/gs
+DEFAULTTOOL = arospdf:arospdf
