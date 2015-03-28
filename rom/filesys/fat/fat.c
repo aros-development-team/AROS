@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2013 The AROS Development Team
+ * Copyright © 2007-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -673,7 +673,7 @@ void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds) {
 
     /* time bits: hhhh hmmm mmms ssss */
     hours = (time & 0xf800) >> 11;  /* bits 15-11 */
-    mins = (time & 0x07e0) >> 5;    /* bits 8-5 */
+    mins = (time & 0x07e0) >> 5;    /* bits 10-5 */
     secs = time & 0x001f;           /* bits 4-0 */
 
     D(bug("[fat] converting fat date: year %d month %d day %d hours %d mins %d secs %d\n", year, month, day, hours, mins, secs));
@@ -705,6 +705,9 @@ void ConvertAROSDate(struct DateStamp *ds, UWORD *date, UWORD *time) {
     /* convert datestamp to seconds since 1978 */
     secs = ds->ds_Days * 60 * 60 * 24 + ds->ds_Minute * 60
         + ds->ds_Tick / TICKS_PER_SECOND;
+
+    /* Round up to next even second because of FAT's two-second granularity */
+    secs = (secs & ~1) + 2;
 
     /* convert seconds since 1978 to calendar/time data */
     Amiga2Date(secs, &clock_data);
