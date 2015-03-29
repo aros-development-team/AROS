@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -53,7 +53,7 @@ void core_SetupMMU(void)
 #if defined(ARM_PERIIOBASE)
             if ((page < (ARM_PERIIOBASE >> 20)) || (page > ((ARM_PERIIOBASE + ARM_PERIIOSIZE) >> 20)))
 #endif
-                pageflags |= PAGE_C_BIT;
+                pageflags |= PAGE_C_BIT | PAGE_B_BIT | (1 << PAGE_TEX_SHIFT);
         }
         pagetable[page] = pageflags;
     }
@@ -61,7 +61,7 @@ void core_SetupMMU(void)
     D(bug("[Kernel] core_SetupMMU: Creating MMU pagetable[1] entries for 64MB address space\n"));
     for (page = 0; page < 64; page++)
     {
-            pagetable0[page] = (page << 20) | PAGE_FL_S_BIT | PAGE_C_BIT | PAGE_SECTION;
+            pagetable0[page] = (page << 20) | PAGE_FL_S_BIT | PAGE_C_BIT | PAGE_SECTION | PAGE_B_BIT | (1 << PAGE_TEX_SHIFT);
     }
 
     core_MMUUpdatePageTables();
