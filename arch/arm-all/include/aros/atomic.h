@@ -12,7 +12,7 @@
 #include <aros/arm/atomic_v7.h>
 #endif
 
-#ifdef __ARM_ARCH_6__
+#if defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6ZK__)
 #include <aros/arm/atomic_v6.h>
 #endif
 
