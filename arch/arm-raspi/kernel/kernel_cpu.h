@@ -21,7 +21,7 @@
 #define goSuper() 0
 #define goUser()
 
-#define krnSysCall(n) asm volatile ("swi %[swi_no]\n\t" : : [swi_no] "I" (n));
+#define krnSysCall(n) asm volatile ("swi %[swi_no]\n\t" : : [swi_no] "I" (n) : "lr");
 
 void cpu_DumpRegs(regs_t *regs);
 
