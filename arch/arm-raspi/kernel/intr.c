@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -339,6 +339,28 @@ void handle_prefetchabort(regs_t *regs)
 /* linker exports */
 extern void *__intvecs_start, *__intvecs_end;
 
+void arm_flush_cache(uint32_t addr, uint32_t length)
+{
+        while (length)
+        {
+                __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 1"::"r"(addr));
+                addr += 32;
+                length -= 32;
+        }
+        __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+}
+
+void arm_icache_invalidate(uint32_t addr, uint32_t length)
+{
+        while (length)
+        {
+                __asm__ __volatile__("mcr p15, 0, %0, c7, c5, 1"::"r"(addr));
+                addr += 32;
+                length -= 32;
+        }
+        __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+}
+
 void core_SetupIntr(void)
 {
     int irq;
@@ -348,6 +370,9 @@ void core_SetupIntr(void)
     memcpy(0, &__intvecs_start,
             (unsigned int)&__intvecs_end -
             (unsigned int)&__intvecs_start);
+
+    arm_flush_cache(0, 1024);
+    arm_icache_invalidate(0, 1024);
 
     D(bug("[KRN] Copied %d bytes from 0x%p to 0x00000000\n", (unsigned int)&__intvecs_end - (unsigned int)&__intvecs_start, &__intvecs_start));
 
