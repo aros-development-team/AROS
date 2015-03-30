@@ -15,6 +15,7 @@
 #include <stdint.h>
 
 #include <hardware/bcm283x.h>
+#include <hardware/videocore.h>
 
 #include "boot.h"
 #include "serialdebug.h"
@@ -22,6 +23,7 @@
 #include "atags.h"
 #include "elf.h"
 
+#include "vc_mb.h"
 #include "vc_fb.h"
 
 #define DBOOT(x) x
@@ -132,6 +134,34 @@ static void parse_atags(struct tag *tags)
                 break;
         }
     }
+}
+
+void query_vmem()
+{
+    volatile unsigned int *vc_msg = (unsigned int *) MESSAGE_BUFFER;
+
+    kprintf("[BOOT] Query VC memory\n");
+    vc_msg[0] = 8 * 4;
+    vc_msg[1] = VCTAG_REQ;
+    vc_msg[2] = VCTAG_GETVCRAM;
+    vc_msg[3] = 8;
+    vc_msg[4] = 0;
+    vc_msg[5] = 0;
+    vc_msg[6] = 0;
+    vc_msg[7] = 0;
+
+    vcmb_write(VCMB_BASE, VCMB_PROPCHAN, vc_msg);
+    vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+
+    kprintf("[BOOT] Base = %08x, Size = %08x\n", vc_msg[5], vc_msg[6]);
+
+    boottag->ti_Tag = KRN_VMEMLower;
+    boottag->ti_Data = vc_msg[5];
+    boottag++;
+
+    boottag->ti_Tag = KRN_VMEMUpper;
+    boottag->ti_Data = vc_msg[5] + vc_msg[6];
+    boottag++;
 }
 
 static const char bootstrapName[] = "Bootstrap/RasPI ARM";
@@ -245,6 +275,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     })
 
     parse_atags(atags);
+    query_vmem();
 
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
 
