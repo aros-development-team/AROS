@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,7 +32,7 @@ extern uint32_t __arm_periiobase;
 #define VFPSingle               (3 << 20) 
 #define VFPDouble               (3 << 22)
 
-void core_SetupMMU(void);
+void core_SetupMMU(struct TagItem *msg);
 void core_SetupIntr(void);
 
 void *KrnAddSysTimerHandler(struct KernelBase *);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -142,7 +142,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             and initialised the serial port and led for us */
 
 
-    core_SetupMMU();
+    core_SetupMMU(msg);
 
     for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
 
