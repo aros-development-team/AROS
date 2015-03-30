@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+#include <asm/arm/mmu.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -37,7 +38,7 @@ void core_MMUUpdatePageTables(void)
     asm volatile("mcr   p15, 0, %[n], c2, c0, 2" : : [n] "r" (7));
 }
 
-void core_SetupMMU(void)
+void core_SetupMMU(struct TagItem *msg)
 {
     unsigned int page;
     register unsigned int control;
