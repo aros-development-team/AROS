@@ -50,8 +50,7 @@ static void bcm283x_toggle_led(IPTR LED, IPTR state)
         if (state == ARM_LED_ON)
             gpiofunc = GPCLR1;
 
-        /* Power LED back on */
-        *(volatile unsigned int *)gpiofunc = (1 << (35-32)); // Power LED ON
+        *(volatile unsigned int *)gpiofunc = (1 << (pin-32));
     }
     else
     {
@@ -61,7 +60,6 @@ static void bcm283x_toggle_led(IPTR LED, IPTR state)
         else
             *(volatile unsigned int *)GPSET0 = (1 << 16);
     }
-
 }
 
 static IPTR bcm283x_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)

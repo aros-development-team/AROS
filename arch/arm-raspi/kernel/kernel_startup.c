@@ -117,7 +117,6 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     struct MemHeader *mh;
     struct MemChunk *mc;
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
-    unsigned int delay;
     BootMsg = msg;
 
     cpu_Probe(&krnARMImpl);
@@ -178,7 +177,8 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     if (krnARMImpl.ARMI_LED_Toggle)
     {
         krnARMImpl.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
-        for (delay = 0; delay < 1500; delay++) asm volatile ("mov r0, r0\n");
+        if (krnARMImpl.ARMI_Delay)
+            krnARMImpl.ARMI_Delay(1500);
         krnARMImpl.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
     }
 
