@@ -10,17 +10,19 @@ void FNAME_BCMSDCBUS(BCMLEDCtrl)(int lvl)
 {
     if (lvl > 0)
     {
+        // Activity LED ON
         if (__arm_periiobase == BCM2835_PERIPHYSBASE)
-            *(volatile unsigned int *)GPCLR0 = (1 << 16); // Activity LED ON
+            *(volatile unsigned int *)GPCLR0 = (1 << 16);
         else
-            *(volatile unsigned int *)GPCLR1 = (1 << (35 - 32));
+            *(volatile unsigned int *)GPCLR1 = (1 << (47 - 32));
     }
     else
     {
+        // Activity LED OFF
         if (__arm_periiobase == BCM2835_PERIPHYSBASE)
-            *(volatile unsigned int *)GPSET0 = (1 << 16); // Activity LED OFF
+            *(volatile unsigned int *)GPSET0 = (1 << 16);
         else
-            *(volatile unsigned int *)GPSET1 = (1 << (35 - 32));
+            *(volatile unsigned int *)GPSET1 = (1 << (47 - 32));
     }
 }
 
