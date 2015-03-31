@@ -6,7 +6,6 @@
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include "kernel_intern.h"
-#include "kernel_arm.h"
 
 static void bcm283x_init(void)
 {
@@ -38,13 +37,43 @@ static void bcm283x_init(void)
 #endif
 }
 
-static void bcm283x_toggle_led(void)
+static void bcm283x_toggle_led(IPTR LED, IPTR state)
 {
-    
+    if (__arm_periiobase == BCM2836_PERIPHYSBASE)
+    {
+        int pin = 35;
+        IPTR gpiofunc = GPSET1;
+
+        if (LED == ARM_LED_ACTIVITY)
+            pin = 47;
+
+        if (state == ARM_LED_ON)
+            gpiofunc = GPCLR1;
+
+        /* Power LED back on */
+        *(volatile unsigned int *)gpiofunc = (1 << (35-32)); // Power LED ON
+    }
+    else
+    {
+        // RasPi 1 only allows us to toggle the activity LED
+        if (state)
+            *(volatile unsigned int *)GPCLR0 = (1 << 16);
+        else
+            *(volatile unsigned int *)GPSET0 = (1 << 16);
+    }
+
 }
 
-static IPTR bcm283x_probe(struct KernelBase *KernelBase)
+static IPTR bcm283x_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
+    //TODO: really detect if we are running on a broadcom 2835/2836
+    if (krnARMImpl->ARMI_Family == 7) /*  bcm2836 uses armv7 */
+        __arm_periiobase = BCM2836_PERIPHYSBASE;
+    else
+        __arm_periiobase = BCM2835_PERIPHYSBASE;
+
+    krnARMImpl->ARMI_LED_Toggle = bcm283x_toggle_led;
+
     return TRUE;
 }
 
