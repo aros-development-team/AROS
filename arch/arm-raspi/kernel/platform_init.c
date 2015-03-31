@@ -21,21 +21,25 @@
 #include "kernel_intern.h"
 #include "kernel_arch.h"
 #include "kernel_romtags.h"
-#include "kernel_arm.h"
 
 THIS_PROGRAM_HANDLES_SYMBOLSET(ARMPLATFORMS)
 DEFINESET(ARMPLATFORMS)
 
-void platform_Init(struct KernelBase *KernelBase)
+void platform_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
-    IPTR (*platprobe) (struct KernelBase *);
+    IPTR (*platprobe) (struct ARM_Implementation *, struct TagItem *);
     int cur = 0;
 
     for ( ; ((long *)SETNAME(ARMPLATFORMS)[cur]) != NULL; cur++)
     {
         platprobe = SETNAME(ARMPLATFORMS)[cur];
-        if (platprobe(KernelBase))
+        if (platprobe(krnARMImpl, msg))
+        {
+            if (krnARMImpl->ARMI_LED_Toggle)
+                krnARMImpl->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+
             break;
+        }
     }
 
     return;

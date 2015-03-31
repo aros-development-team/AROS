@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "kernel_arm.h"
+
 extern uint32_t __arm_periiobase;
 #define ARM_PERIIOBASE (__arm_periiobase)
 #include <hardware/bcm283x.h>
@@ -33,7 +35,10 @@ struct KernelBase;
 #define VFPSingle               (3 << 20) 
 #define VFPDouble               (3 << 22)
 
-void platform_Init(struct KernelBase *);
+void cpu_Probe(struct ARM_Implementation *);
+void cpu_Init(struct ARM_Implementation *, struct TagItem *);
+
+void platform_Init(struct ARM_Implementation *, struct TagItem *);
 
 void core_SetupMMU(struct TagItem *msg);
 void core_SetupIntr(void);

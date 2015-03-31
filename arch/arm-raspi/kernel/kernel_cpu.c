@@ -30,6 +30,46 @@
 
 extern struct Task *sysIdleTask;
 
+void cpu_Probe(struct ARM_Implementation *kernARM)
+{
+    uint32_t tmp;
+
+    asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
+    if ((tmp & 0xfff0) == 0xc070) /* armv7 */
+        kernARM->ARMI_Family = 7;
+    else
+        kernARM->ARMI_Family = 6;
+}
+
+void cpu_Init(struct ARM_Implementation *kernARM, struct TagItem *msg)
+{
+    register unsigned int fpuflags;
+    unsigned int delay;
+
+    core_SetupMMU(msg);
+
+    if (kernARM->ARMI_LED_Toggle)
+    {
+        for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
+        kernARM->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
+    }
+
+    /* Enable Vector Floating Point Calculations */
+    asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register 
+    fpuflags |= (VFPSingle | VFPDouble);                                            // Enable Single & Double Precision 
+    asm volatile("mcr p15,0,%[fpuflags],c1,c0,2\n" : : [fpuflags] "r" (fpuflags)); // Set Access Control Register
+    asm volatile(
+        "       mov %[fpuflags],%[vfpenable]    \n"                                 // Enable VFP 
+        "       fmxr fpexc,%[fpuflags]          \n"
+         : [fpuflags] "=r" (fpuflags) : [vfpenable] "I" (VFPEnable));
+
+    if (kernARM->ARMI_LED_Toggle)
+    {
+        for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
+        kernARM->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+    }
+}
+
 void cpu_Switch(regs_t *regs)
 {
     struct Task *task;

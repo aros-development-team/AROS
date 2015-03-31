@@ -62,7 +62,8 @@ static uint32_t * const stack_super_end __attribute__((used, section(".aros.init
 static uint32_t * const stack_abort_end __attribute__((used, section(".aros.init"))) = &stack_abort[STACK_SIZE - sizeof(IPTR)];
 static uint32_t * const stack_irq_end __attribute__((used, section(".aros.init"))) = &stack_irq[STACK_SIZE - sizeof(IPTR)];
 
-__attribute__((section(".data"))) struct ExecBase *SysBase = NULL;
+struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
+struct ARM_Implementation krnARMImpl  __attribute__((section(".data")));
 
 extern struct TagItem *BootMsg;
 
@@ -118,48 +119,13 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
     unsigned int delay;
     BootMsg = msg;
-    register unsigned int fpuflags;
-    uint32_t tmp;
 
-    /* Guess the cpu type and adjust __arm_periiobase accordingly */
-    asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
-    if ((tmp & 0xfff0) == 0xc070) /* armv7, also RaspberryPi 2 */
-    {
-        __arm_periiobase = BCM2836_PERIPHYSBASE;
-
-        /* Power LED back on */
-        *(volatile unsigned int *)GPSET1 = (1 << (35-32)); // Power LED ON
-    }
-    else
-    {
-        __arm_periiobase = BCM2835_PERIPHYSBASE;
-        /* Need to detect the plus board here in order to control LEDs properly */
-
-        *(volatile unsigned int *)GPCLR0 = (1 << 16); // Activity LED ON
-    }
+    cpu_Probe(&krnARMImpl);
+    platform_Init(&krnARMImpl, msg);
+    cpu_Init(&krnARMImpl, msg);
 
     /* NB: the bootstrap has conveniently setup the framebuffer
             and initialised the serial port and led for us */
-
-
-    core_SetupMMU(msg);
-
-    for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
-
-    *(volatile unsigned int *)GPSET0 = (1 << 16); // LED OFF
-
-    /* Enable Vector Floating Point Calculations */
-    asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register 
-    fpuflags |= (VFPSingle | VFPDouble);                                            // Enable Single & Double Precision 
-    asm volatile("mcr p15,0,%[fpuflags],c1,c0,2\n" : : [fpuflags] "r" (fpuflags)); // Set Access Control Register
-    asm volatile(
-        "       mov %[fpuflags],%[vfpenable]    \n"                                 // Enable VFP 
-        "       fmxr fpexc,%[fpuflags]          \n"
-         : [fpuflags] "=r" (fpuflags) : [vfpenable] "I" (VFPEnable));
-
-    for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
-
-    *(volatile unsigned int *)GPCLR0 = (1 << 16); // LED ON
 
     while(msg->ti_Tag != TAG_DONE)
     {
@@ -209,9 +175,12 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     core_SetupIntr();
 
-    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
-    for (delay = 0; delay < 1500; delay++) asm volatile("mov r0, r0\n");
-    *(volatile unsigned int *)GPCLR0 = 1<<16; // LED ON
+    if (krnARMImpl.ARMI_LED_Toggle)
+    {
+        krnARMImpl.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
+        for (delay = 0; delay < 1500; delay++) asm volatile ("mov r0, r0\n");
+        krnARMImpl.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+    }
 
     NEWLIST(&memList);
 
