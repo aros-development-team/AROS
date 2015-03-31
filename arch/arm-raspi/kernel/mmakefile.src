@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES := kernel_startup kernel_cpu platform_init kernel_debug getsystemattr maygetchar tags intr kernel_systimer syscall mmu issuper cli sti vars screen_fb font8x14
+PLATFILES := platform_bcm283x
 AFILES := intvecs
 
 #MM kernel-raspi-arm: setup-raspi-arm kernel-kernel-kobj kernel-exec-kobj
@@ -20,5 +21,5 @@ USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel arch=raspi-arm \
-  files="$(CFILES)" asmfiles="$(AFILES)" compiler=kernel
+  files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
   

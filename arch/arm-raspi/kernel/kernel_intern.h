@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,6 +20,7 @@ extern uint32_t __arm_periiobase;
 #include <hardware/bcm283x.h>
 
 #undef KernelBase
+struct KernelBase;
 
 /* Use system timer 3 for our scheduling heartbeat */
 #define VBLANK_TIMER            3
@@ -31,6 +32,8 @@ extern uint32_t __arm_periiobase;
 #define VFPEnable               (1 << 30) 
 #define VFPSingle               (3 << 20) 
 #define VFPDouble               (3 << 22)
+
+void platform_Init(struct KernelBase *);
 
 void core_SetupMMU(struct TagItem *msg);
 void core_SetupIntr(void);
