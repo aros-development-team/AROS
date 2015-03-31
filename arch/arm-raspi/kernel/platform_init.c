@@ -47,10 +47,10 @@ AROS_LH2(APTR, AllocMem,
     AROS_LIBFUNC_EXIT
 }
 
-static int PlatformInit(struct KernelBase *KernelBase)
+static int PlatformPostInit(struct KernelBase *KernelBase)
 {
     UBYTE *ptr;
-    D(bug("[Kernel] PlatformInit()\n"));
+    D(bug("[Kernel] PlatformPostInit()\n"));
 
 #if (1)
     // TODO:
@@ -73,26 +73,26 @@ static int PlatformInit(struct KernelBase *KernelBase)
         {
             if (perihreg)
             {
-                D(bug("[Kernel] PlatformInit:           0x%p: PrimeCellID != %08x\n", ptr, perihreg));
+                D(bug("[Kernel] PlatformPostInit:           0x%p: PrimeCellID != %08x\n", ptr, perihreg));
             }
         }*/
     }
 #endif
 
-    D(bug("[Kernel] PlatformInit: Patching in our AllocMem to ignore MEMF_CHIP..\n"));
+    D(bug("[Kernel] PlatformPostInit: Patching in our AllocMem to ignore MEMF_CHIP..\n"));
     
     __AllocMem = SetFunction(SysBase, -33*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel, 33));
 
-    D(bug("[Kernel] PlatformInit: Registering Heartbeat timer..\n"));
+    D(bug("[Kernel] PlatformPostInit: Registering Heartbeat timer..\n"));
 
     KrnAddSysTimerHandler(KernelBase);
 
-    D(bug("[Kernel] PlatformInit: Done..\n"));
+    D(bug("[Kernel] PlatformPostInit: Done..\n"));
 
     return TRUE;
 }
 
-ADD2INITLIB(PlatformInit, 0)
+ADD2INITLIB(PlatformPostInit, 0)
 
 struct KernelBase *getKernelBase()
 {
