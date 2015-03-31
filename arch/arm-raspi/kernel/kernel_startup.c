@@ -62,8 +62,9 @@ static uint32_t * const stack_super_end __attribute__((used, section(".aros.init
 static uint32_t * const stack_abort_end __attribute__((used, section(".aros.init"))) = &stack_abort[STACK_SIZE - sizeof(IPTR)];
 static uint32_t * const stack_irq_end __attribute__((used, section(".aros.init"))) = &stack_irq[STACK_SIZE - sizeof(IPTR)];
 
+static struct ARM_Implementation krnARMImpl  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,NULL};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
-struct ARM_Implementation krnARMImpl  __attribute__((section(".data")));
+
 
 extern struct TagItem *BootMsg;
 
