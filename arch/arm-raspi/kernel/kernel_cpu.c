@@ -30,28 +30,36 @@
 
 extern struct Task *sysIdleTask;
 
-void cpu_Probe(struct ARM_Implementation *kernARM)
+void cpu_Delay(IPTR len)
+{
+    unsigned int delay;
+    for (delay = 0; delay < len; delay++) asm volatile ("mov r0, r0\n");
+}
+
+void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 {
     uint32_t tmp;
 
     asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
     if ((tmp & 0xfff0) == 0xc070) /* armv7 */
-        kernARM->ARMI_Family = 7;
+        krnARMImpl->ARMI_Family = 7;
     else
-        kernARM->ARMI_Family = 6;
+        krnARMImpl->ARMI_Family = 6;
+
+    krnARMImpl->ARMI_Delay = cpu_Delay;
 }
 
-void cpu_Init(struct ARM_Implementation *kernARM, struct TagItem *msg)
+void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     register unsigned int fpuflags;
-    unsigned int delay;
 
     core_SetupMMU(msg);
 
-    if (kernARM->ARMI_LED_Toggle)
+    if (krnARMImpl->ARMI_LED_Toggle)
     {
-        for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
-        kernARM->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
+        if (krnARMImpl->ARMI_Delay)
+            krnARMImpl->ARMI_Delay(100000);
+        krnARMImpl->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
     }
 
     /* Enable Vector Floating Point Calculations */
@@ -63,10 +71,11 @@ void cpu_Init(struct ARM_Implementation *kernARM, struct TagItem *msg)
         "       fmxr fpexc,%[fpuflags]          \n"
          : [fpuflags] "=r" (fpuflags) : [vfpenable] "I" (VFPEnable));
 
-    if (kernARM->ARMI_LED_Toggle)
+    if (krnARMImpl->ARMI_LED_Toggle)
     {
-        for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
-        kernARM->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+        if (krnARMImpl->ARMI_Delay)
+            krnARMImpl->ARMI_Delay(100000);
+        krnARMImpl->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
     }
 }
 
