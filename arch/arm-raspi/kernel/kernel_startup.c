@@ -76,7 +76,7 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     {
         while (bss->addr && bss->len)
         {
-            dest = bss->addr;
+            dest = (unsigned int)bss->addr;
             length = bss->len;
 
             // If the start address is unaligned, fill in the first 1-3 bytes until it is
@@ -130,7 +130,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         switch (msg->ti_Tag)
         {
         case KRN_FuncPutC:
-            _KrnPutC = msg->ti_Data;
+            _KrnPutC = (void *)msg->ti_Data;
             _KrnPutC(0xFF); // Clear the display
             break;
         case KRN_MEMLower:
@@ -193,7 +193,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     if (mh->mh_First->mc_Next == NULL)
     {
         mh->mh_First->mc_Next = mc;
-        mh->mh_Upper = memupper;
+        mh->mh_Upper = (void *)memupper;
         mh->mh_Free += mc->mc_Bytes;
     }
 

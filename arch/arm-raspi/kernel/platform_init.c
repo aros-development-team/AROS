@@ -28,7 +28,7 @@ DECLARESET(ARMPLATFORMS);
 void platform_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     IPTR (*platprobe) (struct ARM_Implementation *, struct TagItem *);
-    int cur = 1;
+    int cur = 0;
 
     for ( ; SETNAME(ARMPLATFORMS)[cur] != NULL; cur++)
     {
@@ -76,7 +76,7 @@ static int platform_PostInit(struct KernelBase *KernelBase)
 
     D(bug("[Kernel] platform_PostInit: Patching in our AllocMem to ignore MEMF_CHIP..\n"));
     
-    __AllocMem = SetFunction(SysBase, -33*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel, 33));
+    __AllocMem = SetFunction((struct Library *)SysBase, -33*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel, 33));
 
     D(bug("[Kernel] platform_PostInit: Registering Heartbeat timer..\n"));
 
