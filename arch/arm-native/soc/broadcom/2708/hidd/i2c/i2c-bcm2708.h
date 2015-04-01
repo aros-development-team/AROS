@@ -3,8 +3,8 @@
     $Id$
 */
 
-#ifndef I2C_BCM283X_H
-#define I2C_BCM283X_H
+#ifndef I2C_BCM2708_H
+#define I2C_BCM2708_H
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -19,9 +19,9 @@
 #include <aros/arossupportbase.h>
 #include <exec/execbase.h>
 
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 
-struct i2cbcm283xbase {
+struct i2cbcm2708base {
     struct Library i2c_LibNode;
     OOP_Class *		i2c_DrvClass;
 };
@@ -37,4 +37,4 @@ struct i2cbcm283xbase {
 
 #define BASE(lib) ((struct pcibase*)(lib))
 
-#endif /* I2C_BCM283X_H */
+#endif /* I2C_BCM2708_H */

@@ -28,6 +28,7 @@
 #include "kernel_romtags.h"
 
 extern void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
+extern struct TagItem *BootMsg;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 
@@ -62,11 +63,8 @@ static uint32_t * const stack_super_end __attribute__((used, section(".aros.init
 static uint32_t * const stack_abort_end __attribute__((used, section(".aros.init"))) = &stack_abort[STACK_SIZE - sizeof(IPTR)];
 static uint32_t * const stack_irq_end __attribute__((used, section(".aros.init"))) = &stack_irq[STACK_SIZE - sizeof(IPTR)];
 
-static struct ARM_Implementation krnARMImpl  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,NULL};
+struct ARM_Implementation krnARMImpl  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,NULL};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
-
-
-extern struct TagItem *BootMsg;
 
 static void __attribute__((used)) __clear_bss(struct TagItem *msg)
 {
@@ -109,7 +107,7 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
-uint32_t __arm_periiobase = 0;
+uint32_t __arm_periiobase __attribute__((section(".data"))) = 0;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {

@@ -79,7 +79,7 @@ const struct UsbHubDesc    OTGRootHubDesc = {
 static const CONST_STRPTR OTGRootHubStrings[] =
 {
     "The AROS Dev Team",
-    "OTG2USB Root Hub",
+    "BCM2708 OTG2USB Root Hub",
     "Standard Config",
     "Hub interface"
 };

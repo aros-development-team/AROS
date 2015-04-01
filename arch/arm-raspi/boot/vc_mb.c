@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 
 #undef ARM_PERIIOBASE
 

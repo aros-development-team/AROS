@@ -19,7 +19,7 @@
 
 extern uint32_t __arm_periiobase;
 #define ARM_PERIIOBASE (__arm_periiobase)
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 
 #undef KernelBase
 struct KernelBase;

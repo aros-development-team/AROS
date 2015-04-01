@@ -10,59 +10,59 @@
 #include <aros/libcall.h>
 #include <proto/kernel.h>
 #include <proto/exec.h>
-#include <proto/vcmbox.h>
+#include <proto/mbox.h>
 
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 #include <hardware/videocore.h>
 
-#include "vcmbox_private.h"
+#include "mbox_private.h"
 
 
-static int vcmbox_init(struct VCMBoxBase *VCMBoxBase)
+static int mbox_init(struct MBoxBase *MBoxBase)
 {
     int retval = TRUE;
 
-    D(bug("[VCMBox] vcmbox_init()\n"));
+    D(bug("[MBox] mbox_init()\n"));
 
-    InitSemaphore(&VCMBoxBase->vcmb_Sem);
+    InitSemaphore(&MBoxBase->mbox_Sem);
 
-    D(bug("[VCMBox] vcmbox_init: Initialised Semaphore @ 0x%p\n", &VCMBoxBase->vcmb_Sem));
+    D(bug("[MBox] mbox_init: Initialised Semaphore @ 0x%p\n", &MBoxBase->mbox_Sem));
 
     return retval;
 }
 
-AROS_LH1(unsigned int, VCMBoxStatus,
+AROS_LH1(unsigned int, MBoxStatus,
 		AROS_LHA(void *, mb, A0),
-		struct VCMBoxBase *, VCMBoxBase, 1, Vcmbox)
+		struct MBoxBase *, MBoxBase, 1, Mbox)
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[VCMBox] VCMBoxStatus(0x%p)\n", mb));
+    D(bug("[MBox] MBoxStatus(0x%p)\n", mb));
 
     return *((volatile unsigned int *)(mb + VCMB_STATUS));
 
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2(volatile unsigned int *, VCMBoxRead,
+AROS_LH2(volatile unsigned int *, MBoxRead,
 		AROS_LHA(void *, mb, A0),
 		AROS_LHA( unsigned int, chan, D0),
-		struct VCMBoxBase *, VCMBoxBase, 2, Vcmbox)
+		struct MBoxBase *, MBoxBase, 2, Mbox)
 {
     AROS_LIBFUNC_INIT
 
     unsigned int try = 0x2000000;
     unsigned int msg;
 
-    D(bug("[VCMBox] VCMBoxRead(chan %d @ 0x%p)\n", chan, mb));
+    D(bug("[MBox] MBoxRead(chan %d @ 0x%p)\n", chan, mb));
 
     if (chan <= VCMB_CHAN_MAX)
     {
         while(1)
         {
-            ObtainSemaphore(&VCMBoxBase->vcmb_Sem);
+            ObtainSemaphore(&MBoxBase->mbox_Sem);
             APTR ssp = SuperState();
-            while ((VCMBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
+            while ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
             {
                 /* Data synchronization barrier */
                 asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
@@ -78,7 +78,7 @@ AROS_LH2(volatile unsigned int *, VCMBoxRead,
             
             asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
             UserState(ssp);
-            ReleaseSemaphore(&VCMBoxBase->vcmb_Sem);
+            ReleaseSemaphore(&MBoxBase->mbox_Sem);
 
             if ((msg & VCMB_CHAN_MASK) == chan)
                 return (volatile unsigned int *)(msg & ~VCMB_CHAN_MASK);
@@ -89,21 +89,21 @@ AROS_LH2(volatile unsigned int *, VCMBoxRead,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH3(void, VCMBoxWrite,
+AROS_LH3(void, MBoxWrite,
 		AROS_LHA(void *, mb, A0),
 		AROS_LHA( unsigned int, chan, D0),
 		AROS_LHA(void *, msg, A1),
-		struct VCMBoxBase *, VCMBoxBase, 3, Vcmbox)
+		struct MBoxBase *, MBoxBase, 3, Mbox)
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[VCMB] VCMBWrite(chan %d @ 0x%p, msg @ 0x%p)\n", chan, mb, msg));
+    D(bug("[MBOX] MBoxWrite(chan %d @ 0x%p, msg @ 0x%p)\n", chan, mb, msg));
 
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
     { 
-        ObtainSemaphore(&VCMBoxBase->vcmb_Sem);
+        ObtainSemaphore(&MBoxBase->mbox_Sem);
         APTR ssp = SuperState();
-        while ((VCMBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
+        while ((MBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
         {
             /* Data synchronization barrier */
             asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
@@ -113,10 +113,10 @@ AROS_LH3(void, VCMBoxWrite,
 
         *((volatile unsigned int *)(mb + VCMB_WRITE)) = ((unsigned int)msg | chan);
         UserState(ssp);
-        ReleaseSemaphore(&VCMBoxBase->vcmb_Sem);
+        ReleaseSemaphore(&MBoxBase->mbox_Sem);
     }
 
     AROS_LIBFUNC_EXIT
 }
 
-ADD2INITLIB(vcmbox_init, 0)
+ADD2INITLIB(mbox_init, 0)

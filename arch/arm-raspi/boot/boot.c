@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: boot.c
@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 #include <hardware/videocore.h>
 
 #include "boot.h"

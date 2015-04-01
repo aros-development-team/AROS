@@ -1,6 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-%build_module mmake=kernel-vcmbox 	\
-  modname=vcmbox modtype=resource		\
-  files="vcmbox_init"
+%build_module mmake=kernel-mbox-bcm2708 	\
+  modname=mbox modtype=resource		\
+  files="mbox_init"

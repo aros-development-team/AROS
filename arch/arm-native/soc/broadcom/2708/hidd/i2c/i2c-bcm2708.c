@@ -12,14 +12,14 @@
 
 static IPTR __arm_periiobase;
 #define ARM_PERIIOBASE __arm_periiobase
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 #include <asm/io.h>
 
-#include "i2c-bcm283x.h"
+#include "i2c-bcm2708.h"
 
 APTR KernelBase __attribute__((used)) = NULL;
 
-void METHOD(I2CBCM283X, Hidd_I2C, PutByte)
+void METHOD(I2CBCM2708, Hidd_I2C, PutByte)
 {
     while (!((*(volatile UBYTE *)BSC0_STATUS) & BSC_STATUS_DONE))
     {
@@ -33,7 +33,7 @@ void METHOD(I2CBCM283X, Hidd_I2C, PutByte)
     *(volatile UBYTE *)BSC0_CONTROL = BSC_WRITE;
 }
 
-void METHOD(I2CBCM283X, Hidd_I2C, GetByte)
+void METHOD(I2CBCM2708, Hidd_I2C, GetByte)
 {
     while (!((*(volatile UBYTE *)BSC0_STATUS) & BSC_STATUS_DONE))
     {
@@ -47,7 +47,7 @@ void METHOD(I2CBCM283X, Hidd_I2C, GetByte)
     *msg->data = *(volatile UBYTE *)BSC0_FIFO;
 }
 
-void I2CBCM283X_Init(void)
+void I2CBCM2708_Init(void)
 {
     KernelBase = OpenResource("kernel.resource");
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
