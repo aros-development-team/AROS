@@ -72,7 +72,7 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat fixup_cd.dat start.
 
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
 PKG_LIBS_ARCH := expansion
-PKG_RSRC      := misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
+PKG_RSRC      := misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox
 PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
