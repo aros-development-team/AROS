@@ -11,6 +11,7 @@
 int ambabus_init()
 {
     IPTR __arm_periiobase;
+    UBYTE *ptr;
 
     if ((__arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase)) != NULL)
     {

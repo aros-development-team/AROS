@@ -72,7 +72,6 @@ AROS_LH2(APTR, AllocMem,
 
 static int platform_PostInit(struct KernelBase *KernelBase)
 {
-    UBYTE *ptr;
     D(bug("[Kernel] platform_PostInit()\n"));
 
     D(bug("[Kernel] platform_PostInit: Patching in our AllocMem to ignore MEMF_CHIP..\n"));
