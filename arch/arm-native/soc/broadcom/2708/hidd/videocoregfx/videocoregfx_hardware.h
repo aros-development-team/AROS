@@ -7,7 +7,7 @@
 
 extern IPTR __arm_periiobase;
 #define ARM_PERIIOBASE __arm_periiobase
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 #include <hardware/videocore.h>
 
 #include "videocoregfx_class.h"

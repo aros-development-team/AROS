@@ -22,15 +22,15 @@
 #include "kernel_arch.h"
 #include "kernel_romtags.h"
 
-THIS_PROGRAM_HANDLES_SYMBOLSET(ARMPLATFORMS)
-DEFINESET(ARMPLATFORMS)
+THIS_PROGRAM_HANDLES_SYMBOLSET(ARMPLATFORMS);
+DECLARESET(ARMPLATFORMS);
 
 void platform_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     IPTR (*platprobe) (struct ARM_Implementation *, struct TagItem *);
-    int cur = 0;
+    int cur = 1;
 
-    for ( ; ((long *)SETNAME(ARMPLATFORMS)[cur]) != NULL; cur++)
+    for ( ; SETNAME(ARMPLATFORMS)[cur] != NULL; cur++)
     {
         platprobe = SETNAME(ARMPLATFORMS)[cur];
         if (platprobe(krnARMImpl, msg))
@@ -94,3 +94,5 @@ struct KernelBase *getKernelBase()
 {
     return (struct KernelBase *)KernelBase;
 }
+
+DEFINESET(ARMPLATFORMS);

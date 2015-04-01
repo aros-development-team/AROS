@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 #include <hardware/videocore.h>
 #include <hardware/pl011uart.h>
 

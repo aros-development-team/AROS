@@ -17,6 +17,6 @@ struct GPIOBase {
 };
 
 #define ARM_PERIIOBASE GPIOBase->gpio_periiobase
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 
 #endif /* GPIO_PRIVATE_H_ */

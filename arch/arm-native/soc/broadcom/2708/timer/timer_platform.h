@@ -3,8 +3,6 @@
     $Id$
 */
 
-#include <hardware/bcm283x.h>
-
 //#define USE_VBLANK_INT
 #define TICK_TIMER            1
 
@@ -25,4 +23,4 @@ struct PlatformTimer
 #define BootLoaderBase TimerBase->tb_Platform.tbp_BootLoaderBase
 
 #define ARM_PERIIOBASE TimerBase->tb_Platform.tbp_periiobase
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>

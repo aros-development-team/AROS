@@ -3,8 +3,8 @@
     $Id$
 */
 
-#ifndef BCM2835_H
-#define BCM2835_H
+#ifndef BCM2708_H
+#define BCM2708_H
 
 #define CLID_I2C_BCM2708        "hidd.i2c.bcm2708"
 
@@ -262,4 +262,4 @@
 #define AUX_SPI1_IO_REG         (ARM_PERIIOBASE + 0x2150D0)       // SPI 2 Data
 #define AUX_SPI1_PEEK_REG       (ARM_PERIIOBASE + 0x2150D4)       // SPI 2 Peek
 #endif
-#endif /* BCM2835_H */
+#endif /* BCM2708_H */

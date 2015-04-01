@@ -21,62 +21,19 @@
 #define DIRQ(x)
 #define D(x)
 
-void GPUSysTimerHandler(unsigned int timerno, void *unused1)
-{
-    unsigned int stc, cs;
-
-    DIRQ(bug("[KRN] GPUSysTimerHandler(%d)\n", timerno));
-
-    /* Aknowledge our timer interrupt */
-    cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    cs &= ~ (1 << timerno);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = cs;
-
-    /* Signal the Exec VBlankServer */
-    if (SysBase && (SysBase->IDNestCnt < 0)) {
-        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
-    }
-
-    /* Refresh our timer interrupt */
-    stc = *((volatile unsigned int *)(SYSTIMER_CLO));
-    stc += VBLANK_INTERVAL;
-    *((volatile unsigned int *)(SYSTIMER_CS)) = cs | (1 << timerno);
-    *((volatile unsigned int *)(SYSTIMER_C0 + (timerno * 4))) = stc;
-
-    DIRQ(bug("[KRN] GPUSysTimerHandler: Done..\n"));
-}
+extern struct ARM_Implementation krnARMImpl;
 
 void *KrnAddSysTimerHandler(struct KernelBase *KernelBase)
 {
-    struct IntrNode *GPUSysTimerHandle;
+    struct IntrNode *SysTimerHandle = NULL;
     unsigned int stc;
 
     D(bug("[KRN] KrnAddSysTimerHandler(%012p)\n", KernelBase));
 
-    if ((GPUSysTimerHandle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
-    {
-        D(bug("[KRN] KrnAddSysTimerHandler: IntrNode @ 0x%p:\n", GPUSysTimerHandle));
-        D(bug("[KRN] KrnAddSysTimerHandler: Using GPUTimer %d for VBlank\n", VBLANK_TIMER));
+    if (krnARMImpl.ARMI_InitTimer)
+        SysTimerHandle = krnARMImpl.ARMI_InitTimer(KernelBase);
 
-        GPUSysTimerHandle->in_Handler = GPUSysTimerHandler;
-        GPUSysTimerHandle->in_HandlerData = VBLANK_TIMER;
-        GPUSysTimerHandle->in_HandlerData2 = KernelBase;
-        GPUSysTimerHandle->in_type = it_interrupt;
-        GPUSysTimerHandle->in_nr = IRQ_TIMER0 + VBLANK_TIMER;
+    D(bug("[KRN] KrnAddSysTimerHandler: returning handle @ 0x%p \n", SysTimerHandle));
 
-        ADDHEAD(&KernelBase->kb_Interrupts[IRQ_TIMER0 + VBLANK_TIMER], &GPUSysTimerHandle->in_Node);
-
-        D(bug("[KRN] KrnAddSysTimerHandler: Enabling Hardware IRQ.. \n"));
-
-        stc = *((volatile unsigned int *)(SYSTIMER_CLO));
-        stc += VBLANK_INTERVAL;
-        *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << VBLANK_TIMER);
-        *((volatile unsigned int *)(SYSTIMER_C0 + (VBLANK_TIMER * 4))) = stc;
-
-        ictl_enable_irq(IRQ_TIMER0 + VBLANK_TIMER, KernelBase);
-    }
-
-    D(bug("[KRN] KrnAddSysTimerHandler: Done.. \n"));
-
-    return GPUSysTimerHandle;
+    return SysTimerHandle;
 }

@@ -3,14 +3,14 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/devs/sdcard
 
-BCM283XFILES = \
-    sdcard_bcm283xinit \
-    sdcard_bcm283xbus \
-    sdcard_bcm283xtime
+BCM2708FILES = \
+    sdcard_bcm2708init \
+    sdcard_bcm2708bus \
+    sdcard_bcm2708time
 
 %build_archspecific \
   mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
   arch=raspi-arm modulename=sdcard \
-  files="$(BCM283XFILES)"
+  files="$(BCM2708FILES)"
 
 %common

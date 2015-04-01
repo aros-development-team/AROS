@@ -30,10 +30,10 @@
 
 extern struct Task *sysIdleTask;
 
-void cpu_Delay(IPTR len)
+void cpu_Delay(int usecs)
 {
     unsigned int delay;
-    for (delay = 0; delay < len; delay++) asm volatile ("mov r0, r0\n");
+    for (delay = 0; delay < usecs; delay++) asm volatile ("mov r0, r0\n");
 }
 
 void cpu_Probe(struct ARM_Implementation *krnARMImpl)
@@ -46,7 +46,7 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     else
         krnARMImpl->ARMI_Family = 6;
 
-    krnARMImpl->ARMI_Delay = cpu_Delay;
+    krnARMImpl->ARMI_Delay = &cpu_Delay;
 }
 
 void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)

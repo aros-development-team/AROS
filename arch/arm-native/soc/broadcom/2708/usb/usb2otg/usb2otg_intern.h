@@ -1,7 +1,7 @@
 #ifndef USB2OTG_INTERN_H
 #define USB2OTG_INTERN_H
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,7 +36,7 @@
 
 extern IPTR __arm_periiobase;
 #define ARM_PERIIOBASE __arm_periiobase
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 #include <hardware/usb2otg.h>
 
 /*

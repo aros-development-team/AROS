@@ -16,7 +16,7 @@
 #include <proto/exec.h>
 #include <strings.h>
 
-#include <hardware/bcm283x.h>
+#include <hardware/bcm2708.h>
 
 /* Linked from kernel.resource,
  * need to retrieve in a cleaner fashion .. */
