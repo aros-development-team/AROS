@@ -10,6 +10,7 @@ Execute S/Test filetest
 ;Execute S/Test fontinfo
 Execute S/Test frequencies
 Execute S/Test exec/allocmem
+Avail FLUSH
 
 Echo PASSED TO PASSED
 Shutdown
