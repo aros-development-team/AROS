@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -2664,7 +2664,7 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
     struct MUI_ListData *data = INST_DATA(cl, obj);
     struct MUI_List_TestPos_Result *result = msg->res;
     LONG col = -1, row = -1;
-    UWORD flags = 0;
+    UWORD flags = 0, i;
     LONG mx = msg->x - _left(obj);
     LONG entries_visible;
 
@@ -2698,18 +2698,20 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
         if (data->entries_num > 0 && data->columns > 0)
         {
             LONG width_sum = 0;
-            for (col = 0; col < data->columns; col++)
+            col = data->columns - 1;
+            for (i = 0; i < data->columns; i++)
             {
                 result->xoffset = mx - width_sum;
                 width_sum +=
-                    data->ci[col].entries_width +
-                    data->ci[col].delta +
-                    (data->ci[col].bar ? BAR_WIDTH : 0);
-                D(bug("[List/MUIM_TestPos] col %d "
+                    data->ci[i].entries_width +
+                    data->ci[i].delta +
+                    (data->ci[i].bar ? BAR_WIDTH : 0);
+                D(bug("[List/MUIM_TestPos] i %d "
                     "width %d width_sum %d mx %d\n",
-                    col, data->ci[col].entries_width, width_sum, mx));
+                    i, data->ci[i].entries_width, width_sum, mx));
                 if (mx < width_sum)
                 {
+                    col = i;
                     D(bug("[List/MUIM_TestPos] Column hit %d\n", col));
                     break;
                 }
