@@ -5,7 +5,17 @@
 
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
+
+#include <proto/exec.h>
+
+#include <inttypes.h>
+#include <hardware/intbits.h>
+
 #include "kernel_intern.h"
+#include "kernel_base.h"
+#include "kernel_cpu.h"
+#include "kernel_interrupts.h"
+#include "kernel_intr.h"
 
 static void bcm2708_init(void)
 {
@@ -41,7 +51,7 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
 {
     unsigned int stc, cs;
 
-    DIRQ(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, timerno));
+    D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, timerno));
 
     /* Aknowledge our timer interrupt */
     cs = *((volatile unsigned int *)(SYSTIMER_CS));
@@ -59,7 +69,7 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
     *((volatile unsigned int *)(SYSTIMER_CS)) = cs | (1 << timerno);
     *((volatile unsigned int *)(SYSTIMER_C0 + (timerno * 4))) = stc;
 
-    DIRQ(bug("[BCM2708] %s: Done..\n", __PRETTY_FUNCTION__));
+    D(bug("[BCM2708] %s: Done..\n", __PRETTY_FUNCTION__));
 }
 
 static bcm2708_init_gputimer(struct KernelBase *KernelBase)
