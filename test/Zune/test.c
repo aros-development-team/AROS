@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2014, The AROS Development Team.
+    Copyright © 2002-2015, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -377,9 +377,11 @@ int main(void)
     Object *lists[LIST_COUNT];
     Object *list_add_button, *list_remove_button, *list_clear_button;
     Object *dragsortable_check, *showdropmarks_check, *quiet_check;
-    Object *sort_button, *clear_button, *fill_button;
+    Object *sort_button, *clear_button, *fill_button, *enable_button;
     Object *multi_lists[MULTI_LIST_COUNT];
     Object *format_string;
+    Object *column_string;
+    Object *column_text;
     Object *showheadings_check;
     Object *numerics[NUMERIC_COUNT];
     Object *min_string, *max_string;
@@ -709,12 +711,13 @@ int main(void)
                         Child, VGroup,
                             Child, ColGroup(LIST_COUNT),
                                 Child, VGroup, GroupFrameT("No Multiselect"),
-                                    Child, ListviewObject,
+                                    Child, lists[0] = ListviewObject,
                                         MUIA_Listview_List,
-                                            lists[0] = ListObject,
+                                            ListObject,
                                             InputListFrame,
                                             MUIA_List_Title, "Fruits",
                                             MUIA_List_SourceArray, fruits,
+                                            MUIA_ShortHelp, "Default scroller",
                                             End,
                                         MUIA_Listview_MultiSelect,
                                             MUIV_Listview_MultiSelect_None,
@@ -723,11 +726,12 @@ int main(void)
                                     End,
                                 Child, VGroup,
                                     GroupFrameT("Default Multiselect"),
-                                    Child, ListviewObject,
+                                    Child, lists[1] = ListviewObject,
                                         MUIA_Listview_List,
-                                            lists[1] = ListObject,
+                                            ListObject,
                                             InputListFrame,
                                             MUIA_List_SourceArray, fruits,
+                                            MUIA_ShortHelp, "Left scroller",
                                             End,
                                         MUIA_Listview_ScrollerPos,
                                             MUIV_Listview_ScrollerPos_Left,
@@ -736,11 +740,12 @@ int main(void)
                                     End,
                                 Child, VGroup,
                                     GroupFrameT("Shifted Multiselect"),
-                                    Child, ListviewObject,
+                                    Child, lists[2] = ListviewObject,
                                         MUIA_Listview_List,
-                                            lists[2] = ListObject,
+                                            ListObject,
                                             InputListFrame,
                                             MUIA_List_SourceArray, fruits,
+                                            MUIA_ShortHelp, "Right scroller",
                                             End,
                                         MUIA_Listview_MultiSelect,
                                             MUIV_Listview_MultiSelect_Shifted,
@@ -751,11 +756,12 @@ int main(void)
                                     End,
                                 Child, VGroup,
                                     GroupFrameT("Unconditional Multiselect"),
-                                    Child, ListviewObject,
+                                    Child, lists[3] = ListviewObject,
                                         MUIA_Listview_List,
-                                            lists[3] = ListObject,
+                                            ListObject,
                                             InputListFrame,
                                             MUIA_List_SourceArray, fruits,
+                                            MUIA_ShortHelp, "No scroller",
                                             End,
                                         MUIA_Listview_MultiSelect,
                                             MUIV_Listview_MultiSelect_Always,
@@ -766,11 +772,12 @@ int main(void)
                                     End,
                                 Child, VGroup,
                                     GroupFrameT("Read Only"),
-                                    Child, ListviewObject,
+                                    Child, lists[4] = ListviewObject,
                                         MUIA_Listview_List,
-                                            lists[4] = ListObject,
+                                            ListObject,
                                             ReadListFrame,
                                             MUIA_List_SourceArray, fruits,
+                                            MUIA_ShortHelp, "Default scroller",
                                             End,
                                         MUIA_Listview_Input, FALSE,
                                         MUIA_CycleChain, 1,
@@ -782,13 +789,17 @@ int main(void)
                                 MUIA_Rectangle_HBar, TRUE,
                                 MUIA_Rectangle_BarTitle, "List Controls",
                                 End,
-                            Child, ColGroup(3),
+                            Child, HGroup,
                                 Child, sort_button =
                                     MUI_MakeObject(MUIO_Button, "Sort"),
                                 Child, clear_button =
                                     MUI_MakeObject(MUIO_Button, "Clear"),
                                 Child, fill_button =
                                     MUI_MakeObject(MUIO_Button, "Fill"),
+                                Child, enable_button =
+                                    MUI_MakeObject(MUIO_Button, "Enable"),
+                                End,
+                            Child, HGroup,
                                 Child, HGroup,
                                     Child, dragsortable_check =
                                         MUI_MakeObject(MUIO_Checkmark, NULL),
@@ -831,9 +842,9 @@ int main(void)
                         Child, VGroup,
                             Child, ColGroup(LIST_COUNT / 2),
                                 Child, VGroup, GroupFrameT("Standard Format"),
-                                    Child, ListviewObject,
+                                    Child, multi_lists[0] = ListviewObject,
                                         MUIA_Listview_List,
-                                            multi_lists[0] = ListObject,
+                                            ListObject,
                                             InputListFrame,
                                             MUIA_List_DisplayHook,
                                                 &hook_display,
@@ -847,9 +858,9 @@ int main(void)
                                         End,
                                     End,
                                 Child, VGroup, GroupFrameT("Custom Format"),
-                                    Child, ListviewObject,
+                                    Child, multi_lists[1] = ListviewObject,
                                         MUIA_Listview_List,
-                                            multi_lists[1] = ListObject,
+                                            ListObject,
                                             InputListFrame,
                                             MUIA_List_DisplayHook,
                                                 &hook_display,
@@ -879,6 +890,17 @@ int main(void)
                                     MUI_MakeObject(MUIO_Checkmark, NULL),
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Show column headings", 0),
+                                End,
+                            Child, HGroup,
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Clicked column:", 0),
+                                Child, column_string = StringObject,
+                                    MUIA_ShowMe, FALSE,
+                                    End,
+                                Child, column_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
+                                    End,
                                 End,
                             End,
                         End,
@@ -1199,6 +1221,8 @@ int main(void)
         set(showdropmarks_check, MUIA_Selected, TRUE);
         for (i = 0; i < LIST_COUNT; i++)
         {
+            DoMethod(lists[i], MUIM_Notify, MUIA_Listview_DoubleClick,
+                MUIV_EveryTime, lists[i], 3, MUIM_Set, MUIA_Disabled, TRUE);
             DoMethod(sort_button, MUIM_Notify, MUIA_Pressed, FALSE,
                 lists[i], 1, MUIM_List_Sort);
             DoMethod(clear_button, MUIM_Notify, MUIA_Pressed, FALSE,
@@ -1206,6 +1230,8 @@ int main(void)
             DoMethod(fill_button, MUIM_Notify, MUIA_Pressed, FALSE,
                 lists[i], 4, MUIM_List_Insert, fruits, -1,
                 MUIV_List_Insert_Bottom);
+            DoMethod(enable_button, MUIM_Notify, MUIA_Pressed, FALSE,
+                lists[i], 3, MUIM_Set, MUIA_Disabled, FALSE);
             DoMethod(dragsortable_check, MUIM_Notify, MUIA_Selected,
                 MUIV_EveryTime, lists[i], 3, MUIM_Set,
                 MUIA_List_DragSortable, MUIV_TriggerValue);
@@ -1226,7 +1252,13 @@ int main(void)
             DoMethod(showheadings_check, MUIM_Notify, MUIA_Selected,
                 MUIV_EveryTime, multi_lists[i], 3, MUIM_Set,
                 MUIA_List_Title, MUIV_TriggerValue);
+            DoMethod(multi_lists[i], MUIM_Notify, MUIA_Listview_ClickColumn,
+                MUIV_EveryTime, column_string, 3, MUIM_Set,
+                MUIA_String_Integer, MUIV_TriggerValue);
         }
+        DoMethod(column_string, MUIM_Notify, MUIA_String_Contents,
+            MUIV_EveryTime, column_text, 3, MUIM_Set, MUIA_Text_Contents,
+            MUIV_TriggerValue);
 
         DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
             popobject, 2, MUIM_Popstring_Close, TRUE);
