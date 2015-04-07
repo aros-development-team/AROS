@@ -279,6 +279,16 @@ IPTR Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Listview_SelectChange:
             data->select_change = tag->ti_Data != 0;
             break;
+        case MUIA_Disabled:
+            /* Stop listening for events we only listen to when mouse button is
+               down: we will not be informed of the button being released */
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                (IPTR) &data->ehn);
+            data->ehn.ehn_Events &=
+                ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                (IPTR) &data->ehn);
+            break;
         }
     }
 
@@ -511,6 +521,8 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
                         /* Handle MUIA_Listview_ClickColumn */
                         data->click_column = pos.column;
+                        superset(cl, obj, MUIA_Listview_ClickColumn,
+                            data->click_column);
 
                         /* Handle double clicking */
                         if (data->last_active == pos.entry
@@ -528,13 +540,14 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                             data->last_mics = msg->imsg->Micros;
                         }
 
-                        /* Look out for mouse movement and timer events while
-                           mouse button is down */
-                        DoMethod(_win(list), MUIM_Window_RemEventHandler,
+                        /* Look out for mouse movement, timer and
+                           inactive-window events while mouse button is
+                           down */
+                        DoMethod(_win(obj), MUIM_Window_RemEventHandler,
                             (IPTR) &data->ehn);
-                        data->ehn.ehn_Events |=
-                            (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                        DoMethod(_win(list), MUIM_Window_AddEventHandler,
+                        data->ehn.ehn_Events |= (IDCMP_MOUSEMOVE
+                            | IDCMP_INTUITICKS |IDCMP_INACTIVEWINDOW);
+                        DoMethod(_win(obj), MUIM_Window_AddEventHandler,
                             (IPTR) &data->ehn);
                     }
                 }
@@ -549,11 +562,11 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 }
 
                 /* Restore normal event mask */
-                DoMethod(_win(list), MUIM_Window_RemEventHandler,
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
                     (IPTR) &data->ehn);
-                data->ehn.ehn_Events &=
-                    ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                DoMethod(_win(list), MUIM_Window_AddEventHandler,
+                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS
+                    | IDCMP_INACTIVEWINDOW);
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
                     (IPTR) &data->ehn);
             }
             break;
@@ -576,6 +589,17 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 range_select = new_active >= 0;
             }
 
+            break;
+
+        case IDCMP_INACTIVEWINDOW:
+            /* Stop listening for events we only listen to when mouse button is
+               down: we will not be informed of the button being released */
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                (IPTR) &data->ehn);
+            data->ehn.ehn_Events &=
+                ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                (IPTR) &data->ehn);
             break;
 
         case IDCMP_RAWKEY:
