@@ -116,20 +116,15 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *list =
         (Object *) GetTagData(MUIA_Listview_List, (IPTR) NULL,
         msg->ops_AttrList);
-    IPTR cyclechain;
     LONG entries = 0, first = 0, visible = 0;
 
     if (!list)
         return (IPTR) NULL;
 
-    cyclechain =
-        (IPTR) GetTagData(MUIA_CycleChain, (IPTR) 0, msg->ops_AttrList);
-
     vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
 
     obj = (Object *) DoSuperNewTags(cl, obj, NULL,
         MUIA_Group_Horiz, FALSE,
-        MUIA_CycleChain, cyclechain,
         MUIA_InnerLeft, 0,
         MUIA_InnerRight, 0,
         Child, (IPTR) (group = HGroup,
@@ -137,7 +132,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             MUIA_InnerRight, 0,
             MUIA_Group_Spacing, 0,
             End),
-        TAG_DONE);
+        TAG_MORE, msg->ops_AttrList);
 
     if (!obj)
         return (IPTR) NULL;
@@ -280,14 +275,18 @@ IPTR Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             data->select_change = tag->ti_Data != 0;
             break;
         case MUIA_Disabled:
-            /* Stop listening for events we only listen to when mouse button is
-               down: we will not be informed of the button being released */
-            DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                (IPTR) &data->ehn);
-            data->ehn.ehn_Events &=
-                ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
-            DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                (IPTR) &data->ehn);
+            if (_flags(obj) & MADF_SETUP)
+            {
+                /* Stop listening for events we only listen to when mouse
+                   button is down: we will not be informed of the button
+                   being released */
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                    (IPTR) &data->ehn);
+                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS
+                    | IDCMP_INACTIVEWINDOW);
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                    (IPTR) &data->ehn);
+            }
             break;
         }
     }
