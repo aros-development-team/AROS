@@ -28,11 +28,11 @@ DECLARESET(ARMPLATFORMS);
 void platform_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     IPTR (*platprobe) (struct ARM_Implementation *, struct TagItem *);
-    int cur = 0;
+    int cur;
 
-    for ( ; SETNAME(ARMPLATFORMS)[cur] != NULL; cur++)
+    for ( cur = 1; (void *)(SETNAME(ARMPLATFORMS))[cur] != NULL; cur++)
     {
-        platprobe = SETNAME(ARMPLATFORMS)[cur];
+        platprobe = (void *)(SETNAME(ARMPLATFORMS))[cur];
         if (platprobe(krnARMImpl, msg))
         {
             if (krnARMImpl->ARMI_LED_Toggle)
