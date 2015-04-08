@@ -27,13 +27,13 @@ static void bcm2708_toggle_led(int LED, int state)
     if (__arm_periiobase == BCM2836_PERIPHYSBASE)
     {
         int pin = 35;
-        IPTR gpiofunc = GPSET1;
+        IPTR gpiofunc = GPCLR1;
 
         if (LED == ARM_LED_ACTIVITY)
             pin = 47;
 
         if (state == ARM_LED_ON)
-            gpiofunc = GPCLR1;
+            gpiofunc = GPSET1;
 
         *(volatile unsigned int *)gpiofunc = (1 << (pin-32));
     }
