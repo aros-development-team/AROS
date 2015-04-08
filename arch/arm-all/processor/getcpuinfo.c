@@ -35,8 +35,7 @@ AROS_LH1(void, GetCPUInfo,
 
     D(bug("[processor.ARM] :%s()\n", __PRETTY_FUNCTION__));
 
-    /* If processor was not selected, fall back to legacy mode and report on
-    first available processor */
+    /* If no processor is specified, query the BP */
     selectedprocessor = (ULONG)GetTagData(GCIT_SelectedProcessor, 0, tagList);
 
     /* If selectedprocessor not in line with number of processors, report on 
