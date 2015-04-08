@@ -14,7 +14,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
-#include <proto/vcmbox.h>
+#include <proto/mbox.h>
 #include <proto/kernel.h>
 #include <proto/utility.h>
 
@@ -32,11 +32,11 @@
 
 #include LC_LIBDEFS_FILE
 
-#ifdef VCMBoxBase
-#undef VCMBoxBase
+#ifdef MBoxBase
+#undef MBoxBase
 #endif
 
-#define VCMBoxBase      xsd->vcsd_VCMBoxBase
+#define MBoxBase      xsd->vcsd_MBoxBase
 
 IPTR    	__arm_periiobase __attribute__((used)) = 0 ;
 APTR KernelBase __attribute__((used)) = NULL;
@@ -95,34 +95,34 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     if (!FNAME_SUPPORT(GetAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))
         goto failure;
 
-    if (!(VCMBoxBase = OpenResource("vcmbox.resource")))
+    if (!(MBoxBase = OpenResource("vcmbox.resource")))
         goto failure;
 
-    if (!(xsd->vcsd_VCMBoxBuff = AllocVec(16 + (sizeof(IPTR) * 2 * MAX_TAGS), MEMF_CLEAR)))
+    if (!(xsd->vcsd_MBoxBuff = AllocVec(16 + (sizeof(IPTR) * 2 * MAX_TAGS), MEMF_CLEAR)))
         goto failure;
 
-    xsd->vcsd_VCMBoxMessage =
-        (unsigned int *)((xsd->vcsd_VCMBoxBuff + 0xF) & ~0x0000000F);
+    xsd->vcsd_MBoxMessage =
+        (unsigned int *)((xsd->vcsd_MBoxBuff + 0xF) & ~0x0000000F);
 
-    D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, VCMBoxBase));
-    D(bug("[VideoCoreGfx] %s: VideoCore message buffer @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage));
+    D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, MBoxBase));
+    D(bug("[VideoCoreGfx] %s: VideoCore message buffer @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_MBoxMessage));
 
     
-    xsd->vcsd_VCMBoxMessage[0] = 8 * 4;
-    xsd->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
-    xsd->vcsd_VCMBoxMessage[2] = VCTAG_GETVCRAM;
-    xsd->vcsd_VCMBoxMessage[3] = 8;
-    xsd->vcsd_VCMBoxMessage[4] = 0;
+    xsd->vcsd_MBoxMessage[0] = 8 * 4;
+    xsd->vcsd_MBoxMessage[1] = VCTAG_REQ;
+    xsd->vcsd_MBoxMessage[2] = VCTAG_GETVCRAM;
+    xsd->vcsd_MBoxMessage[3] = 8;
+    xsd->vcsd_MBoxMessage[4] = 0;
 
-    xsd->vcsd_VCMBoxMessage[5] = 0;
-    xsd->vcsd_VCMBoxMessage[6] = 0;
+    xsd->vcsd_MBoxMessage[5] = 0;
+    xsd->vcsd_MBoxMessage[6] = 0;
 
-    xsd->vcsd_VCMBoxMessage[7] = 0; // terminate tag
+    xsd->vcsd_MBoxMessage[7] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_VCMBoxMessage)
+    MBoxWrite(VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    if (MBoxRead(VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
     {
-        if (FNAME_SUPPORT(InitMem)(xsd->vcsd_VCMBoxMessage[5], xsd->vcsd_VCMBoxMessage[6], LIBBASE))
+        if (FNAME_SUPPORT(InitMem)(xsd->vcsd_MBoxMessage[5], xsd->vcsd_MBoxMessage[6], LIBBASE))
         {
             bug("[VideoCoreGfx] VideoCore GPU Found\n");
 
@@ -147,7 +147,7 @@ failure:
     {
         bug("[VideoCoreGfx] No VideoCore GPU Found\n");
 
-        FreeVec((APTR)xsd->vcsd_VCMBoxBuff);
+        FreeVec((APTR)xsd->vcsd_MBoxBuff);
 
         FNAME_SUPPORT(FreeAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM);
     }

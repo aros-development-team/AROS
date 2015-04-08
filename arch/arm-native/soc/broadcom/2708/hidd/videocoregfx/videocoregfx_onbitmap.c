@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VideoCore Gfx Onscreen Bitmap Class.
@@ -12,7 +12,7 @@
 #define __OOP_NOATTRBASES__
 
 #include <proto/oop.h>
-#include <proto/vcmbox.h>
+#include <proto/mbox.h>
 #include <proto/utility.h>
 #include <assert.h>
 #include <exec/memory.h>
@@ -28,11 +28,11 @@
 
 #include LC_LIBDEFS_FILE
 
-#ifdef VCMBoxBase
-#undef VCMBoxBase
+#ifdef MBoxBase
+#undef MBoxBase
 #endif
 
-#define VCMBoxBase      (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxBase
+#define MBoxBase      (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxBase
 
 #define MNAME_ROOT(x) VideoCoreGfxOnBM__Root__ ## x
 #define MNAME_BM(x) VideoCoreGfxOnBM__Hidd_BitMap__ ## x
@@ -124,71 +124,71 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             RawPutChar(0x03);
 
             {
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[0] = 6 * 4;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[2] = VCTAG_FBFREE;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[3] = 0;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[4] = 0;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[5] = 0;          // terminate tags
-                VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, (unsigned int)(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage);
-                VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN);
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[0] = 6 * 4;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[1] = VCTAG_REQ;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[2] = VCTAG_FBFREE;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[3] = 0;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[4] = 0;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[5] = 0;          // terminate tags
+                MBoxWrite(VCMB_BASE, VCMB_PROPCHAN, (unsigned int)(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage);
+                MBoxRead(VCMB_BASE, VCMB_PROPCHAN);
             }
 #endif
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[1] = VCTAG_REQ;
 
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[2] = VCTAG_SETRES;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[3] = 8;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[4] = 8;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[5] = data->width;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[6] = data->height;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[2] = VCTAG_SETRES;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[3] = 8;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[4] = 8;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[5] = data->width;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[6] = data->height;
 
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[7] = VCTAG_SETVRES; // duplicate physical size...
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[8] = 8;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[9] = 8;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[10] = data->width;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[11] = data->height;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[7] = VCTAG_SETVRES; // duplicate physical size...
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[8] = 8;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[9] = 8;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[10] = data->width;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[11] = data->height;
 
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[12] = VCTAG_SETDEPTH;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[13] = 4;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[14] = 4;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[15] = data->bpp;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[12] = VCTAG_SETDEPTH;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[13] = 4;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[14] = 4;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[15] = data->bpp;
 
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[16] = VCTAG_FBALLOC;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[17] = 8;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[18] = 4;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[19] = 16;
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[20] = 0;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[16] = VCTAG_FBALLOC;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[17] = 8;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[18] = 4;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[19] = 16;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[20] = 0;
 
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[21] = 0;          // terminate tags
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[21] = 0;          // terminate tags
 
-            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[0] = (22 << 2);   // fill in request size
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[0] = (22 << 2);   // fill in request size
 
 #if !defined(DEBUGDISPLAY)
-            VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, (unsigned int)(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage);
-            if ((VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage)
-                && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] == VCTAG_RESP)
-                && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[18] == (VCTAG_RESP + 8)))
+            MBoxWrite(VCMB_BASE, VCMB_PROPCHAN, (unsigned int)(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage);
+            if ((MBoxRead(VCMB_BASE, VCMB_PROPCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage)
+                && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[1] == VCTAG_RESP)
+                && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[18] == (VCTAG_RESP + 8)))
             {
                 struct TagItem buffertags[] = {
-                    { aHidd_ChunkyBM_Buffer, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[19]      },
+                    { aHidd_ChunkyBM_Buffer, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[19]      },
                     { aHidd_BitMap_BytesPerRow,     0                                                                       },
                     { TAG_DONE,                     0                                                                       }
                 };
                 
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[0] = 7 * 4;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[2] = VCTAG_GETPITCH;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[3] = 4;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[4] = 0;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[5] = 0;
-                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[6] = 0;       // terminate tag
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[0] = 7 * 4;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[1] = VCTAG_REQ;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[2] = VCTAG_GETPITCH;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[3] = 4;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[4] = 0;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[5] = 0;
+                (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[6] = 0;       // terminate tag
 
-                VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, (unsigned int)(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage);
-                if ((VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage)
-                    && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[4] == (VCTAG_RESP + 4)))
+                MBoxWrite(VCMB_BASE, VCMB_PROPCHAN, (unsigned int)(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage);
+                if ((MBoxRead(VCMB_BASE, VCMB_PROPCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage)
+                    && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[4] == (VCTAG_RESP + 4)))
                 {
                     // Set the bitmaps stride..
-                    buffertags[1].ti_Data = (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[5];
+                    buffertags[1].ti_Data = (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[5];
                 }
                 else
                 {
