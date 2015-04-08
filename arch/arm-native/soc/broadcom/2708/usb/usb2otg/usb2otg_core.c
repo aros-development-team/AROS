@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -347,7 +347,7 @@ WORD FNAME_DEV(cmdQueryDevice)(struct IOUsbHWReq *ioreq,
 
     if (((tag = FindTagItem(UHA_Description, taglist)) != NULL) && (tag->ti_Data))
     {
-        *((STRPTR *) tag->ti_Data) = "Synopsys/DesignWare USB 2.0 OTG Controller for Raspberry Pi";
+        *((STRPTR *) tag->ti_Data) = "Synopsys/DesignWare USB 2.0 OTG Controller";
         count++;
     }
 
