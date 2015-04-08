@@ -53,7 +53,7 @@ asm("   .section .aros.startup      \n"
 // The bootstrap tmp stack is re-used by the reset handler so we store it at this fixed location
 static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup"))) = (void *)(0x1000 - 16);
 static struct TagItem *boottag;
-static unsigned long mem_upper;
+static unsigned long *mem_upper;
 static void *pkg_image;
 static uint32_t pkg_size;
 
@@ -85,9 +85,10 @@ static void parse_atags(struct tag *tags)
                 boottag++;
                 boottag->ti_Tag = KRN_MEMUpper;
                 boottag->ti_Data = t->u.mem.start + t->u.mem.size;
-                boottag++;
 
-                mem_upper = t->u.mem.start + t->u.mem.size;
+                mem_upper = &boottag->ti_Data;
+
+                boottag++;
 
                 break;
 
@@ -287,11 +288,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     boottag->ti_Data = (IPTR)&__bootstrap_end;
     boottag++;
 
-    kprintf("[BOOT] Topmost address for kernel: %p\n", mem_upper);
+    kprintf("[BOOT] Topmost address for kernel: %p\n", *mem_upper);
 
     if (mem_upper)
     {
-        mem_upper = mem_upper & ~4095;
+        *mem_upper = *mem_upper & ~4095;
 
         unsigned long kernel_phys = mem_upper;
         unsigned long kernel_virt = kernel_phys;
@@ -362,11 +363,15 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
             }
         }
 
-        kernel_phys = mem_upper - total_size_ro - total_size_rw;
+        kernel_phys = *mem_upper - total_size_ro - total_size_rw;
         kernel_virt = kernel_phys;
 
         kprintf("[BOOT] Physical address of kernel: %p\n", kernel_phys);
         kprintf("[BOOT] Virtual address of kernel: %p\n", kernel_virt);
+
+        *mem_upper = kernel_phys;
+
+        DBOOT(kprintf("[BOOT] Topmost memory address: %p\n", *mem_upper));
 
         entry = (void (*)(struct TagItem))kernel_virt;
 
