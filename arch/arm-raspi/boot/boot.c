@@ -294,7 +294,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     {
         *mem_upper = *mem_upper & ~4095;
 
-        unsigned long kernel_phys = mem_upper;
+        unsigned long kernel_phys = *mem_upper;
         unsigned long kernel_virt = kernel_phys;
 
         unsigned long total_size_ro, total_size_rw;
@@ -312,8 +312,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
             if (base[0] == 0x7f && base[1] == 'E' && base[2] == 'L' && base[3] == 'F')
             {
-                kprintf("[BOOT] Kernel image is ELF file\n");
-
                 getElfSize(base, &size_rw, &size_ro);
 
                 total_size_ro += (size_ro + 4095) & ~4095;
@@ -321,14 +319,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
             }
             else if (base[0] == 'P' && base[1] == 'K' && base[2] == 'G' && base[3] == 0x01)
             {
-                kprintf("[BOOT] Kernel image is a package:\n");
-
                 uint8_t *file = base+4;
                 uint32_t total_length = AROS_BE2LONG(*(uint32_t*)file); /* Total length of the module */
                 const uint8_t *file_end = base+total_length;
                 uint32_t len, cnt = 0;
-
-                kprintf("[BOOT] Package size: %dKB", total_length >> 10);
 
                 file = base + 8;
 
@@ -338,11 +332,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
                     /* get text length */
                     len = AROS_BE2LONG(*(uint32_t*)file);
-                    /* display the file name */
-                    if (cnt % 4 == 0)
-                        kprintf("\n[BOOT]    %s", filename);
-                    else
-                        kprintf(", %s", filename);
 
                     file += len + 5;
 
@@ -359,7 +348,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
                     file += len;
                     cnt++;
                 }
-                kprintf("\n");
             }
         }
 
