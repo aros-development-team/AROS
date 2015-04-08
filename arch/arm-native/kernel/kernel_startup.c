@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
