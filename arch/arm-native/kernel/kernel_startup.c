@@ -160,7 +160,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     }
     msg = BootMsg;
 
-    D(bug("[KRN] AROS Raspberry Pi Kernel built on %s\n", __DATE__));
+    D(bug("[KRN] AROS ARM Native Kernel built on %s\n", __DATE__));
 
     D(bug("[KRN] Entered kernel_cstart @ 0x%p, BootMsg @ %p\n", kernel_cstart, BootMsg));
 
