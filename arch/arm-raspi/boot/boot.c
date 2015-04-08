@@ -22,6 +22,7 @@
 #include "bootconsole.h"
 #include "atags.h"
 #include "elf.h"
+#include "mmu.h"
 
 #include "vc_mb.h"
 #include "vc_fb.h"
@@ -89,6 +90,8 @@ static void parse_atags(struct tag *tags)
                 mem_upper = &boottag->ti_Data;
 
                 boottag++;
+
+                mmu_map_section(t->u.mem.start, t->u.mem.start, t->u.mem.size, 1, 1, 3, 1);
 
                 break;
 
@@ -163,6 +166,8 @@ void query_vmem()
     boottag->ti_Tag = KRN_VMEMUpper;
     boottag->ti_Data = vc_msg[5] + vc_msg[6];
     boottag++;
+
+    mmu_map_section(vc_msg[5], vc_msg[5], vc_msg[6], 1, 0, 3, 0);
 }
 
 static const char bootstrapName[] = "Bootstrap/RasPI ARM";
@@ -184,6 +189,8 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     tmp = (tmp & ~2) | (1 << 22);               /* Unaligned access enable */
     asm volatile ("mcr p15, 0, %0, c1, c0, 0" : : "r"(tmp));
 
+    mmu_init();
+
     /*
         Check processor type - armv6 is old raspberry pi with SOC IO base at 0x20000000.
         armv7 will be raspberry pi 2 with SOC IO base at 0x3f000000
@@ -203,6 +210,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
         __arm_periiobase = BCM2835_PERIPHYSBASE;
         /* Need to detect the plus board here in order to control LEDs properly */
     }
+
+    /* Prepare map for MMIO registers */
+    mmu_map_section(__arm_periiobase, __arm_periiobase, ARM_PERIIOSIZE, 1, 0, 3, 0);
 
     mem_init();
 
@@ -351,6 +361,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
             }
         }
 
+        total_size_ro = (total_size_ro + 1024*1024-1) & 0xfff00000;
+        total_size_rw = (total_size_rw + 1024*1024-1) & 0xfff00000;
+
         kernel_phys = *mem_upper - total_size_ro - total_size_rw;
         kernel_virt = kernel_phys;
 
@@ -366,11 +379,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
         initAllocator(kernel_phys, kernel_phys  + total_size_ro, kernel_virt - kernel_phys);
 
         boottag->ti_Tag = KRN_KernelLowest;
-        boottag->ti_Data = kernel_phys;
+        boottag->ti_Data = kernel_virt;
         boottag++;
 
         boottag->ti_Tag = KRN_KernelHighest;
-        boottag->ti_Data = kernel_phys + ((total_size_ro + 4095) & ~4095) + ((total_size_rw + 4095) & ~4095);
+        boottag->ti_Data = kernel_virt + ((total_size_ro + 4095) & ~4095) + ((total_size_rw + 4095) & ~4095);
         boottag++;
 
         loadElf(&_binary_core_bin_start);
@@ -444,6 +457,8 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
     kprintf("[BOOT] Kernel taglist contains %d entries\n", ((intptr_t)boottag - (intptr_t)(tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE))/sizeof(struct TagItem));
     kprintf("[BOOT] Bootstrap wasted %d bytes of memory for kernels use\n", mem_used()   );
+
+    mmu_load();
 
     kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
 

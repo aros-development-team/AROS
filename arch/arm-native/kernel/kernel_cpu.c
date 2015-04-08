@@ -53,7 +53,7 @@ void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     register unsigned int fpuflags;
 
-    core_SetupMMU(msg);
+    //core_SetupMMU(msg);
 
     if (krnARMImpl->ARMI_LED_Toggle)
     {
