@@ -1,7 +1,7 @@
 #ifndef _VIDEOCOREGFX_CLASS_H
 #define _VIDEOCOREGFX_CLASS_H
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -30,9 +30,9 @@
 #define ATTRBASES_NUM   8
 
 struct VideoCoreGfx_staticdata {
-        APTR                    vcsd_VCMBoxBase;
-        unsigned int            *vcsd_VCMBoxMessage;
-        IPTR                    vcsd_VCMBoxBuff;
+        APTR                    vcsd_MBoxBase;
+        unsigned int            *vcsd_MBoxMessage;
+        IPTR                    vcsd_MBoxBuff;
 
         struct SignalSemaphore  vcsd_GPUMemLock;
         struct MemHeaderExt     vcsd_GPUMemManage;
