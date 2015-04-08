@@ -24,9 +24,9 @@
 
 #define IRQBANK_POINTER(bank)   ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
 
-#define DREGS(x)
-#define DIRQ(x)
-#define D(x)
+#define DREGS(x) x
+#define DIRQ(x) x
+#define D(x) x
 
 void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
@@ -275,6 +275,8 @@ void handle_dataabort(regs_t *regs)
     bug("[Kernel] Trap ARM Data Abort Exception -> Exception #2 (Bus Error)\n");
     bug("[Kernel] attempt to access 0x%p\n", far);
 
+    DREGS(cpu_DumpRegs(regs));
+
     if (krnRunExceptionHandlers(KernelBase, 2, regs))
 	return;
 
@@ -285,6 +287,7 @@ void handle_dataabort(regs_t *regs)
     }
 
     bug("[Kernel] UNHANDLED EXCEPTION #2\n");
+
 
     while (1)
         asm volatile ("mov r0, r0\n");
