@@ -8,7 +8,7 @@
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
-#include <kernel_intern.h>
+#include "kernel_intern.h"
 #include <hardware/pl011uart.h>
 
 void (*_KrnPutC)(char) = NULL;
@@ -45,4 +45,5 @@ int krnPutC(int chr, struct KernelBase *KernelBase)
 
         krnSerPutC(chr);
     }
+    return 1;
 }

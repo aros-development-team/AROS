@@ -7,7 +7,7 @@
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
-#include <kernel_intern.h>
+#include "kernel_intern.h"
 #include <hardware/pl011uart.h>
 
 #include <proto/kernel.h>
