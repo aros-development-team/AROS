@@ -3,17 +3,17 @@ include $(TOP)/config/make.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := boot serialdebug kprintf elf support bc/font8x14 bc/vars vc_mb vc_fb bc/screen_fb
-CONFIG_FILE     := config.txt
 USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
+
+ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 
 #MM- distfiles-raspi-armhf : distfiles-raspi
 #MM- distfiles-raspi-arm : distfiles-raspi
 
 #MM distfiles-raspi : \
 #MM kernel-raspi-arm \
-#MM kernel-raspi-config-copy \
 #MM kernel-package-raspi-arm \
 #MM distfiles-raspi-fw
 
@@ -80,7 +80,7 @@ PKG_HANDLERS  := con ram cdrom sfs fat afs
 PKG_HIDDS     := graphics mouse keyboard hiddclass i2c i2c-bcm2708 videocoregfx
 PKG_CLASSES   := USB/hid USB/hub USB/bootmouse USB/bootkeyboard USB/massstorage
  
-%make_package mmake=kernel-package-raspi-arm file=$(AROSDIR)/arosraspi.rom \
+%make_package mmake=kernel-package-raspi-arm file=$(AROSDIR)/$(ARM_BSP) \
     libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
     arch_res=$(PKG_RSRC_ARCH) devs=$(PKG_DEVS) arch_devs=$(PKG_DEVS_ARCH) \
     handlers=$(PKG_HANDLERS) hidds=$(PKG_HIDDS) classes=$(PKG_CLASSES)
@@ -90,16 +90,17 @@ distfiles-raspi-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
 
 #MM
-distfiles-raspi-bootimg: $(AROSDIR)/arosraspi.img
+distfiles-raspi-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 #MM
-distfiles-raspi-bootimg-quick: $(AROSDIR)/arosraspi.img
+distfiles-raspi-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
-%copy_files_q mmake=kernel-raspi-config-copy files="$(CONFIG_FILE)" dst=$(AROSDIR)
+$(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
+	$(ECHO) -e "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
 
-$(AROSDIR)/arosraspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/arosraspi.img.elf
-	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/arosraspi.img.elf $@
+$(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-$(AROS_TARGET_CPU)-raspi.img.elf
+	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-$(AROS_TARGET_CPU)-raspi.img.elf $@
 
 $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
@@ -107,7 +108,7 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 
 distfiles-raspi: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2
 
-$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2: $(AROSDIR)/arosraspi.img  $(AROSDIR)/arosraspi.rom
+$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(DISTDIR)"
