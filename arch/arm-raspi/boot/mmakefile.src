@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot serialdebug kprintf elf support bc/font8x14 bc/vars vc_mb vc_fb bc/screen_fb
+FILES           := boot serialdebug mmu kprintf elf support bc/font8x14 bc/vars vc_mb vc_fb bc/screen_fb
 USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
