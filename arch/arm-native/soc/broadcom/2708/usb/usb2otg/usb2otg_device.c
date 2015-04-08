@@ -40,6 +40,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
     volatile unsigned int otg_RegVal;
     unsigned int otg_OperatingMode = 0, pmres;
 
+    KernelBase = OpenResource("kernel.resource");
+
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
     pmmailbox = (volatile unsigned int *)(ARM_PERIIOBASE + 0xB880);
