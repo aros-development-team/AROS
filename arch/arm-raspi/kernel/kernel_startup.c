@@ -223,3 +223,5 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     /* The above should not return */
     krnPanic(KernelBase, "System Boot Failed!");
 }
+
+DEFINESET(ARMPLATFORMS);

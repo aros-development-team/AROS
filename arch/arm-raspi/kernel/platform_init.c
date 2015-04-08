@@ -93,5 +93,3 @@ struct KernelBase *getKernelBase()
 {
     return (struct KernelBase *)KernelBase;
 }
-
-DEFINESET(ARMPLATFORMS);
