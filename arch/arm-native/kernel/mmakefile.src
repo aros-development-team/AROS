@@ -16,7 +16,7 @@ $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 #MM kernel-kernel-raspi-arm : includes
 #MM kernel-kernel-raspi-arm-kobj : includes
 
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+USER_INCLUDES := -I$(SRCDIR)/$(CURIDR) $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
                  -I$(GENINCDIR) -I$(AROSDIR)/Development/include
 
 %build_archspecific \
