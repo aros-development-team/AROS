@@ -11,6 +11,7 @@
 #include <aros/arm/cpucontext.h>
 
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <exec/tasks.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
@@ -22,12 +23,13 @@
 #include "exec_intern.h"
 #include "etask.h"
 
+#include "tlsf.h"
+
 #include "kernel_intern.h"
 #include "kernel_debug.h"
 #include "kernel_fb.h"
 #include "kernel_romtags.h"
 
-extern void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 extern struct TagItem *BootMsg;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg);
@@ -184,18 +186,12 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     NEWLIST(&memList);
 
     mh = (struct MemHeader *)memlower;
-    krnCreateMemHeader("System Memory", 0, mh, protlower - (long unsigned int)mh, MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
 
-    mc = (struct MemChunk *)((protupper + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
-    mc->mc_Bytes = memupper - (long unsigned int)mc;
-    mc->mc_Next = NULL;
+    /* Initialize TLSF memory allocator */
+    krnCreateTLSFMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
 
-    if (mh->mh_First->mc_Next == NULL)
-    {
-        mh->mh_First->mc_Next = mc;
-        mh->mh_Upper = (void *)memupper;
-        mh->mh_Free += mc->mc_Bytes;
-    }
+    /* Protect the bootstrap area from further use. AllocAbs will do the trick */
+    ((struct MemHeaderExt *)mh)->mhe_AllocAbs((struct MemHeaderExt *)mh, protupper-protlower, (void *)protlower);
 
     ranges[0] = (UWORD *)krnGetTagData(KRN_KernelLowest, 0, msg);
     ranges[1] = (UWORD *)krnGetTagData(KRN_KernelHighest, 0, msg);
