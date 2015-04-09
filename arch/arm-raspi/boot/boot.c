@@ -365,7 +365,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
         total_size_rw = (total_size_rw + 1024*1024-1) & 0xfff00000;
 
         kernel_phys = *mem_upper - total_size_ro - total_size_rw;
-        kernel_virt = kernel_phys;
+        kernel_virt = 0xf8000000;
 
         kprintf("[BOOT] Physical address of kernel: %p\n", kernel_phys);
         kprintf("[BOOT] Virtual address of kernel: %p\n", kernel_virt);
@@ -373,6 +373,13 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
         *mem_upper = kernel_phys;
 
         DBOOT(kprintf("[BOOT] Topmost memory address: %p\n", *mem_upper));
+
+        /* Unmap memory at physical location of kernel. In future this has to be eventually changed */
+        mmu_unmap_section(kernel_phys, total_size_ro + total_size_rw);
+
+        /* map kernel memory for user access */
+        mmu_map_section(kernel_phys, kernel_virt, total_size_ro, 1, 1, 2, 1);
+        mmu_map_section(kernel_phys + total_size_ro, kernel_virt + total_size_ro, total_size_rw, 1, 1, 3, 1);
 
         entry = (void (*)(struct TagItem))kernel_virt;
 
