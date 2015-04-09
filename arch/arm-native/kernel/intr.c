@@ -24,9 +24,9 @@
 
 #define IRQBANK_POINTER(bank)   ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
 
-#define DREGS(x) x
-#define DIRQ(x) x
-#define D(x) x
+#define DREGS(x)
+#define DIRQ(x)
+#define D(x)
 
 void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
