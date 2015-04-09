@@ -26,7 +26,6 @@ extern struct ARM_Implementation krnARMImpl;
 void *KrnAddSysTimerHandler(struct KernelBase *KernelBase)
 {
     struct IntrNode *SysTimerHandle = NULL;
-    unsigned int stc;
 
     D(bug("[KRN] KrnAddSysTimerHandler(%012p)\n", KernelBase));
 
