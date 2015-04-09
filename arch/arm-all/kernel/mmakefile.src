@@ -4,10 +4,6 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 	       -I$(GENINCDIR) -D__AROS_EXEC_LIBRARY__
 
-ifneq (,$(findstring $(AROS_TARGET_ARCH),raspi))
-USER_CFLAGS := -I$(SRCDIR)/arch/arm-native/kernel  $(USER_CFLAGS)
-endif
-
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \
   files="cpu_init createcontext" \
