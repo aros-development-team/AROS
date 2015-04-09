@@ -139,8 +139,12 @@ DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
 USE_MMU		:= @aros_enable_mmu@
 
 # Kernel private includes, in order of precedence:
-PRIV_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
-	                -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+ifneq (,$(findstring $(ARCH),raspi))
+PRIV_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/kernel
+else
+PRIV_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
+endif
+PRIV_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
 ifneq ($(FAMILY),)
 PRIV_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
@@ -148,8 +152,12 @@ PRIV_KERNEL_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
                         -I$(SRCDIR)/rom/kernel
 
 # Exec private includes, in order of precedence:
-PRIV_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec \
-	              -I$(SRCDIR)/arch/all-$(ARCH)/exec
+ifneq (,$(findstring $(ARCH),raspi))
+PRIV_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/exec
+else
+PRIV_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
+endif
+PRIV_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/exec
 ifneq ($(FAMILY),)
 PRIV_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
 endif
