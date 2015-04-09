@@ -92,11 +92,15 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
     }
 }
 
+void * malloc(size_t size);
+
 void fb_Init(unsigned int width, unsigned int height, unsigned int depth, unsigned int pitch)
 {
     scr_Width       = width / fontWidth;
     fb_BytesPerPix  = depth >> 3;
     fb_BytesPerLine = pitch;
+
+    fb_Mirror = malloc(scr_Width * (height + fontHeight - 1) / fontHeight);
 
     fb_Resize(height);
 }
