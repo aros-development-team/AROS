@@ -150,8 +150,14 @@ asm (
 
     "           cpsid   i, #MODE_IRQ           \n" // switch to IRQ mode, with interrupts disabled..
     "           mov     r0, sp                 \n"
+    "           ldr     r1, [r0, #16*4]        \n" // load the spr register
+    "           and     r1, r1, #31            \n" // mask processor mode
+    "           cmp     r1, #16                \n" // will we go back to user mode?
+    "           cmpne   r1, #31                \n" // or maybe system mode which is basically privileged user mode?
+    "           bne     1f                     \n" // no? don't call core_ExitInterrupt!
     "           mov     fp, #0                 \n" // clear fp
     "           bl      core_ExitInterrupt     \n"
+    "1:                                        \n"
     VECTCOMMON_END
 );
 
