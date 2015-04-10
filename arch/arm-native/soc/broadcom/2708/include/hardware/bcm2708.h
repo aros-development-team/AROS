@@ -10,7 +10,7 @@
 
 #define BCM2835_PERIPHYSBASE    0x20000000                      // Peripheral physical base address
 #define BCM2836_PERIPHYSBASE    0x3f000000                       // Peripheral physical base address
-#define BCM2835_PERIPHYSSIZE    0x400000
+#define BCM2835_PERIPHYSSIZE    0x1000000
 #define BCM2835_PERIBUSBASE     0x7E000000
 
 #define BCM_BUSBASE             BCM2835_PERIBUSBASE
