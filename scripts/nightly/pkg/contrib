@@ -28,7 +28,7 @@ mkdir   $PACKAGE
 move    Extras $PACKAGE/
 move    Development $PACKAGE/
 move    Libs $PACKAGE/
-mkdir   $PACKAGE/Prefs/Env-Archive/SYS
+mkdir   -p $PACKAGE/Prefs/Env-Archive/SYS
 move    Prefs/Env-Archive/SYS/Packages $PACKAGE/Prefs/Env-Archive/SYS/
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
