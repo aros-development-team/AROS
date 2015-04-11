@@ -101,6 +101,10 @@ AROS_LH3(void, MBoxWrite,
 
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
     { 
+        ULONG length = ((ULONG *)msg)[0];
+
+        void *phys_addr = CachePreDMA(msg, &length, DMA_ReadFromRAM);
+
         ObtainSemaphore(&MBoxBase->mbox_Sem);
 
         while ((MBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
@@ -111,7 +115,7 @@ AROS_LH3(void, MBoxWrite,
 
         asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
 
-        *((volatile unsigned int *)(mb + VCMB_WRITE)) = ((unsigned int)msg | chan);
+        *((volatile unsigned int *)(mb + VCMB_WRITE)) = ((unsigned int)phys_addr | chan);
 
         ReleaseSemaphore(&MBoxBase->mbox_Sem);
     }
