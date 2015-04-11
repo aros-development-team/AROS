@@ -61,7 +61,7 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
         while(1)
         {
             ObtainSemaphore(&MBoxBase->mbox_Sem);
-            APTR ssp = SuperState();
+
             while ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
             {
                 /* Data synchronization barrier */
@@ -77,7 +77,7 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
             msg = *((volatile unsigned int *)(mb + VCMB_READ));
             
             asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
-            UserState(ssp);
+
             ReleaseSemaphore(&MBoxBase->mbox_Sem);
 
             if ((msg & VCMB_CHAN_MASK) == chan)
@@ -102,7 +102,7 @@ AROS_LH3(void, MBoxWrite,
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
     { 
         ObtainSemaphore(&MBoxBase->mbox_Sem);
-        APTR ssp = SuperState();
+
         while ((MBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
         {
             /* Data synchronization barrier */
@@ -112,7 +112,7 @@ AROS_LH3(void, MBoxWrite,
         asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
 
         *((volatile unsigned int *)(mb + VCMB_WRITE)) = ((unsigned int)msg | chan);
-        UserState(ssp);
+
         ReleaseSemaphore(&MBoxBase->mbox_Sem);
     }
 
