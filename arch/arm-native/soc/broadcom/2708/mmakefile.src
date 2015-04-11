@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 BCM2708_SP := aros-$(AROS_TARGET_CPU)-bcm2708.rom
 
-#MM distfiles-raspi : \
+#MM- distfiles-raspi : \
 #MM kernel-package-arm-bcm2708
 
 #MM kernel-package-arm-bcm2708: \
