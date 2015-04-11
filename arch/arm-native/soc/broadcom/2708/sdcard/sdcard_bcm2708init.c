@@ -20,13 +20,14 @@
 #include <hardware/videocore.h>
 
 APTR            MBoxBase;
-unsigned int    MBoxMessage[8] __attribute__((used, aligned(16)));
 IPTR		__arm_periiobase __attribute__((used)) = 0 ;
 
 static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
 {
     struct sdcard_Bus   *__BCM2708Bus;
     int                 retVal = FALSE;
+    unsigned int *MBoxMessage_ = AllocMem(8*4+16, MEMF_PUBLIC | MEMF_CLEAR);
+    unsigned int *MBoxMessage = (unsigned int *)((((IPTR)MBoxMessage_) + 15) & ~15);
 
     DINIT(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
@@ -156,6 +157,9 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
         }
     }
 bcminit_fail:
+
+    if (MBoxMessage_)
+        FreeMem(MBoxMessage_, 8*4+16);
 
     return retVal;
 }
