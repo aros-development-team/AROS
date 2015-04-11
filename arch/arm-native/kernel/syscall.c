@@ -53,6 +53,44 @@ asm (
     VECTCOMMON_END
 );
 
+void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
+{
+    uint32_t count = 0;
+
+    if (addr == NULL && length == 0xffffffff)
+    {
+        count = 0x8000000;
+    }
+    else
+    {
+        void *end_addr = ((uintptr_t)addr + length + 31) & ~31;
+        addr = (void *)((uintptr_t)addr & ~31);
+        count = (uintptr_t)(end_addr - addr) >> 5;
+    }
+
+    D(bug("[KRN] CacheClearE from %p length %d count %d, flags %x\n", addr, length, count, flags));
+
+    while (count--)
+    {
+        if (flags & CACRF_ClearD)
+        {
+            __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 1"::"r"(addr));
+        }
+        if (flags & CACRF_ClearI)
+        {
+            __asm__ __volatile__("mcr p15, 0, %0, c7, c5, 1"::"r"(addr));
+        }
+        if (flags & CACRF_InvalidateD)
+        {
+            __asm__ __volatile__("mcr p15, 0, %0, c7, c6, 1"::"r"(addr));
+        }
+
+        addr += 32;
+    }
+
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+}
+
 void handle_syscall(void *regs)
 {
     register unsigned int addr;
@@ -75,7 +113,7 @@ void handle_syscall(void *regs)
         D(bug("[KRN] ## SWI : ILLEGAL ACCESS!\n"));
         return;
     }
-    if (swi_no <= 0x0a || swi_no == 0x100)
+    if (swi_no <= 0x0b || swi_no == 0x100)
     {
         DREGS(cpu_DumpRegs(regs));
     
@@ -116,6 +154,18 @@ void handle_syscall(void *regs)
             {
                 D(bug("[KRN] ## REBOOT...\n"));
                 asm volatile ("mov pc, #0\n"); // Jump to the reset vector..
+                break;
+            }
+
+            case SC_CACHECLEARE:
+            {
+                D(bug("[KRN] ## CACHECLEARE...\n"));
+                void * address = ((void **)regs)[0];
+                uint32_t length = ((uint32_t *)regs)[1];
+                uint32_t flags = ((uint32_t *)regs)[2];
+
+                cache_clear_e(address, length, flags);
+
                 break;
             }
             default:
