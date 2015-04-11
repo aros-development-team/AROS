@@ -7,6 +7,8 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
+#include <kernel_intern.h>
+
 #include <proto/kernel.h>
 
 AROS_LH3I(void, KrnSetProtection,
