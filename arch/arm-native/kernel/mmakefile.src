@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES := kernel_startup kernel_cpu platform_init kernel_debug getsystemattr maygetchar tags intr kernel_systimer syscall mmu issuper cli sti vars screen_fb font8x14
+CFILES := kernel_startup kernel_cpu platform_init kernel_debug getsystemattr maygetchar tags intr kernel_systimer syscall mmu issuper cli sti virtualtophysical setprotection mapglobal unmapglobal vars screen_fb font8x14
 PLATFILES := platform_bcm2708
 AFILES := intvecs
 
