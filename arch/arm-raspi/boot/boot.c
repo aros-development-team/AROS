@@ -393,6 +393,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
         boottag->ti_Data = kernel_virt + ((total_size_ro + 4095) & ~4095) + ((total_size_rw + 4095) & ~4095);
         boottag++;
 
+        boottag->ti_Tag = KRN_KernelPhysLowest;
+        boottag->ti_Data = kernel_phys;
+        boottag++;
+
         loadElf(&_binary_core_bin_start);
 
         if (pkg_image && pkg_size)
