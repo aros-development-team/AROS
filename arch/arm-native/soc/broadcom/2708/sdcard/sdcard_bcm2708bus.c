@@ -14,7 +14,7 @@ void FNAME_BCMSDCBUS(BCMLEDCtrl)(int lvl)
         if (__arm_periiobase == BCM2835_PERIPHYSBASE)
             *(volatile unsigned int *)GPCLR0 = (1 << 16);
         else
-            *(volatile unsigned int *)GPCLR1 = (1 << (47 - 32));
+            *(volatile unsigned int *)GPSET1 = (1 << (47 - 32));
     }
     else
     {
@@ -22,7 +22,7 @@ void FNAME_BCMSDCBUS(BCMLEDCtrl)(int lvl)
         if (__arm_periiobase == BCM2835_PERIPHYSBASE)
             *(volatile unsigned int *)GPSET0 = (1 << 16);
         else
-            *(volatile unsigned int *)GPSET1 = (1 << (47 - 32));
+            *(volatile unsigned int *)GPCLR1 = (1 << (47 - 32));
     }
 }
 
