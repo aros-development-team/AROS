@@ -1,0 +1,36 @@
+# $Id $
+include $(TOP)/config/make.cfg
+
+BCM2708_SP := aros-$(AROS_TARGET_CPU)-bcm2708.rom
+
+#MM distfiles-raspi : \
+#MM kernel-package-arm-bcm2708
+
+#MM kernel-package-arm-bcm2708: \
+#MM linklibs-stdc-static \
+#MM kernel-timer \
+#MM kernel-mbox-bcm2708 \
+#MM kernel-sdcard \
+#MM hidd-i2c-bcm2708 \
+#MM hidd-videocoregfx \
+#MM kernel-usb-usb2otg
+
+#MM kernel-package-arm-bcm2708-missing: \
+#MM kernel-battclock
+
+PKG_LIBS      :=
+PKG_LIBS_ARCH :=
+PKG_RSRC      := mbox
+PKG_RSRC_ARCH :=
+PKG_DEVS      := sdcard USBHardware/usb2otg
+PKG_DEVS_ARCH := timer
+PKG_HANDLERS  :=
+PKG_HIDDS     := i2c-bcm2708 videocoregfx
+PKG_CLASSES   :=
+ 
+%make_package mmake=kernel-package-arm-bcm2708 file=$(AROSDIR)/$(BCM2708_SP) \
+    libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
+    arch_res=$(PKG_RSRC_ARCH) devs=$(PKG_DEVS) arch_devs=$(PKG_DEVS_ARCH) \
+    handlers=$(PKG_HANDLERS) hidds=$(PKG_HIDDS) classes=$(PKG_CLASSES)
+
+%common
