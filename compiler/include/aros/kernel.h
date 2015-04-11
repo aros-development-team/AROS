@@ -60,6 +60,7 @@ typedef enum
 #define KRN_KernelStackSize     (KRN_Dummy + 27) /* Kickstart Boot Task stack size */
 #define KRN_VMEMLower           (KRN_Dummy + 28) /* Lowest address of framebuffer, e.g. on embedded systems */
 #define KRN_VMEMUpper           (KRN_Dummy + 29) /* Highest address of framebuffer, e.g. on embedded systems */
+#define KRN_KernelPhysLowest    (KRN_Dummy + 30) /* Lowest *PHYSICAL* address occupied by Kernel */
 
 /* Magic value passed by the bootstrap as second parameter */
 #define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')
