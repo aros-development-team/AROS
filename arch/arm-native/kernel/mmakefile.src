@@ -1,10 +1,32 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES := kernel_startup kernel_cpu platform_init kernel_debug getsystemattr \ 
-        maygetchar tags intr kernel_systimer syscall mmu issuper cli sti \
-        virtualtophysical setprotection mapglobal unmapglobal vars screen_fb font8x14
+
+CFILES := \
+        kernel_startup \
+	kernel_cpu \
+	platform_init \
+	kernel_debug \
+	getsystemattr \
+	maygetchar \
+	tags \
+	intr \
+	kernel_systimer \
+	syscall \
+        mmu \
+	issuper \
+        cli \
+	sti \
+	virtualtophysical \
+	setprotection \
+	mapglobal \
+	unmapglobal \
+	vars \
+	screen_fb \
+	font8x14
+
 PLATFILES := platform_bcm2708
+
 AFILES := intvecs
 
 #MM kernel-raspi-arm: setup-raspi-arm kernel-kernel-kobj kernel-exec-kobj
@@ -19,7 +41,7 @@ $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 #MM kernel-kernel-raspi-arm-kobj : includes
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-                 -I$(GENINCDIR) -I$(AROSDIR)/Development/include
+	-I$(GENINCDIR) -I$(AROSDIR)/Development/include
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel arch=raspi-arm \
