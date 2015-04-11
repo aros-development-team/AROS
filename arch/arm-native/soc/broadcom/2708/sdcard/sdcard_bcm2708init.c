@@ -32,9 +32,9 @@ static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
 
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
-    if ((MBoxBase = OpenResource("vcmbox.resource")) == NULL)
+    if ((MBoxBase = OpenResource("mbox.resource")) == NULL)
     {
-        bug("[SDCard--] %s: Failed to open vcmbox.resource\n", __PRETTY_FUNCTION__);
+        bug("[SDCard--] %s: Failed to open mbox.resource\n", __PRETTY_FUNCTION__);
         goto bcminit_fail;
     }
 

@@ -95,7 +95,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     if (!FNAME_SUPPORT(GetAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))
         goto failure;
 
-    if (!(MBoxBase = OpenResource("vcmbox.resource")))
+    if (!(MBoxBase = OpenResource("mbox.resource")))
         goto failure;
 
     if (!(xsd->vcsd_MBoxBuff = AllocVec(16 + (sizeof(IPTR) * 2 * MAX_TAGS), MEMF_CLEAR)))
