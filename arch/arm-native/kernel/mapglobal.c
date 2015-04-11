@@ -7,10 +7,11 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
+#include <kernel_intern.h>
 
 #include <proto/kernel.h>
 
-    AROS_LH4I(int, KrnMapGlobal,
+AROS_LH4I(int, KrnMapGlobal,
 	AROS_LHA(void *, virtual, A0),
 	AROS_LHA(void *, physical, A1),
 	AROS_LHA(uint32_t, length, D0),
