@@ -3,12 +3,6 @@
     $Id$
 */
 
-/*
- * This file is intended to make generic kernel.resource compiling.
- * This code should NEVER be executed. This file MUST be overriden in
- * architecture-specific code for the scheduler to work!
- */
-
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>
@@ -41,8 +35,18 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     uint32_t tmp;
 
     asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
-    if ((tmp & 0xfff0) == 0xc070) /* armv7 */
+    if ((tmp & 0xfff0) == 0xc070)
+    {
         krnARMImpl->ARMI_Family = 7;
+
+        // Read the Multiprocessor Affinity Register (MPIDR)
+        asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (tmp));
+
+        if (tmp & (2 << 30))
+        {
+            //Multicore system
+        }
+    }
     else
         krnARMImpl->ARMI_Family = 6;
 
