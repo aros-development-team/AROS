@@ -17,6 +17,8 @@
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
 
+extern void cpu_Register(void);
+
 static void bcm2708_init(void)
 {
 
@@ -118,6 +120,18 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
 
     krnARMImpl->ARMI_InitTimer = &bcm2708_init_gputimer;
     krnARMImpl->ARMI_LED_Toggle = &bcm2708_toggle_led;
+
+    if (__arm_periiobase == BCM2836_PERIPHYSBASE)
+    {
+        int core;
+        for (core = 1; core < 3; core ++)
+        {
+             *((volatile unsigned int *)(0x4000008C + (0x10 * core))) = cpu_Register;
+        }
+
+        if (krnARMImpl->ARMI_Delay)
+            krnARMImpl->ARMI_Delay(1500);
+    }
 
     return TRUE;
 }
