@@ -15,7 +15,7 @@ root="$HOME/aros-snapshot-ports"
 srcdir="$root/src"
 arcdir="$root/archive/snapshots2/$date/Binaries"
 portsdir="$HOME/aros-ports-src"
-user = "marust"
+user="marust"
 
 copy()
 {
@@ -41,9 +41,6 @@ build()
     local builddir="$root/build/$target"
     local arcname="AROS-$date-$target-ports"
     local bindir="$root/bin/$arcname"
-
-    echo "Update the sources"
-    svn up "$srcdir" "$srcdir/contrib" "$srcdir/ports"
 
     echo "Building $target in $builddir"
     rm "$builddir" -rf
@@ -124,6 +121,9 @@ if [ $# -eq 1 ] && [ "$1" == "-i" ] ; then
 fi
 
 if [ $# -eq 1 ] && [ "$1" == "-b" ] ; then
+    echo "Updating the sources"
+    svn up "$srcdir" "$srcdir/contrib" "$srcdir/ports"
+
     # for some reason I can't build the pc variant ATM -- mazze
     #build pc-i386
     #build pc-i386
@@ -142,7 +142,7 @@ fi
 
 echo "Usage:"
 echo "snapshotports -i  : create directories and do checkout of source"
-echo "snapshotports -b  : build AROS and create the archivies"
-echo "snapshotports -u  : updload of archives to sourceforge"
+echo "snapshotports -b  : build AROS and create the archives"
+echo "snapshotports -u  : upload of archives to sourceforge"
 
 exit 0
