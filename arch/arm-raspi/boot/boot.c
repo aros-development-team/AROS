@@ -204,6 +204,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     {
         __arm_periiobase = BCM2836_PERIPHYSBASE;
         plus_board = 1;
+
+        /* prepare map for core boot vector(s) */
+        mmu_map_section(0x40000000, 0x40000000, 0x100000, 0, 0, 3, 0);
     }
     else
     {
