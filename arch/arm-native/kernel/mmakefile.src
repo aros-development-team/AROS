@@ -1,7 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-
 CFILES := \
         kernel_startup \
 	kernel_cpu \
