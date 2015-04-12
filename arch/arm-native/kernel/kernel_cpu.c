@@ -23,6 +23,18 @@
 #define DREGS(x)
 
 extern struct Task *sysIdleTask;
+uint32_t __arm_coremap __attribute__((section(".data"))) = 1;
+
+void cpu_Register()
+{
+    uint32_t tmp;
+
+    asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
+
+    __arm_coremap |= (1 << (tmp & 0x3));
+    
+    asm volatile("wfi");
+}
 
 void cpu_Delay(int usecs)
 {
