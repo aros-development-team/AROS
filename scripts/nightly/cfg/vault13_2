@@ -8,4 +8,3 @@ CFG_DS_USER=deadwood_pl,aros
 CFG_DS_KEY=/home/aros/.ssh/id_dsa.aros-nightly-upload
 CFG_DS_DIRECTORY=uploads/nightly2/
 CFG_BACKUP_ENABLE=no
-CFG_MAKE_JOBS=3
