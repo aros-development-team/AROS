@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,7 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     D(bug("[processor.ARM] :%s()\n", __PRETTY_FUNCTION__));
 
     sysprocs = AllocVec(ProcessorBase->cpucount * sizeof(APTR), MEMF_ANY | MEMF_CLEAR);
-    if (sysprocs == NULL)
+    if ((ProcessorBase->Private1 = sysprocs) == NULL)
         return FALSE;
 
     for (i = 0; i < ProcessorBase->cpucount; i++)
@@ -33,9 +33,20 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     	sysprocs[i] = AllocMem(sizeof(struct ARMProcessorInformation), MEMF_CLEAR);
     	if (!sysprocs[i])
     	    return FALSE;
+#if defined(__AROSEXEC_SMP__)
+    	if (i > 0)
+	{
+    	    struct TagItem coreTags[] = 
+            {
+                {NP_Entry	,  ReadProcessorInformation     },
+                {TASKTAG_AFFINITY	,  (1<<i)                       },
+                {NP_UserData	,  sysprocs[i]                  },
+                {TAG_DONE	, NULL                          }
+            };
+    	    CreateNewProc(coreTags);
+	}
+#endif
     }
-
-    ProcessorBase->Private1 = sysprocs;
 
     /* Boot CPU is number 0. Fill in its data. */
     ReadProcessorInformation(sysprocs[0]);

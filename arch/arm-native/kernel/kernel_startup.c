@@ -10,6 +10,8 @@
 
 #include <aros/arm/cpucontext.h>
 
+#include <aros/cpu.h>
+
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
 #include <exec/tasks.h>
@@ -27,17 +29,16 @@
 
 #include "kernel_intern.h"
 #include "kernel_debug.h"
-#include "kernel_fb.h"
 #include "kernel_romtags.h"
 
 extern struct TagItem *BootMsg;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 
-uint32_t stack[STACK_SIZE] __attribute__((used,aligned(16)));
-static uint32_t stack_super[STACK_SIZE] __attribute__((used,aligned(16)));
-static uint32_t stack_abort[STACK_SIZE] __attribute__((used,aligned(16)));
-static uint32_t stack_irq[STACK_SIZE] __attribute__((used,aligned(16)));
+uint32_t stack[AROS_STACKSIZE] __attribute__((used,aligned(16)));
+static uint32_t stack_super[AROS_STACKSIZE] __attribute__((used,aligned(16)));
+static uint32_t stack_abort[AROS_STACKSIZE] __attribute__((used,aligned(16)));
+static uint32_t stack_irq[AROS_STACKSIZE] __attribute__((used,aligned(16)));
 
 asm (
     ".section .aros.init,\"ax\"\n\t"
@@ -60,12 +61,12 @@ asm (
     ".string \"Native/CORE v3 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
-static uint32_t * const stack_end __attribute__((used, section(".aros.init"))) = &stack[STACK_SIZE - sizeof(IPTR)];
-static uint32_t * const stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[STACK_SIZE - sizeof(IPTR)];
-static uint32_t * const stack_abort_end __attribute__((used, section(".aros.init"))) = &stack_abort[STACK_SIZE - sizeof(IPTR)];
-static uint32_t * const stack_irq_end __attribute__((used, section(".aros.init"))) = &stack_irq[STACK_SIZE - sizeof(IPTR)];
+static uint32_t * const stack_end __attribute__((used, section(".aros.init"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_abort_end __attribute__((used, section(".aros.init"))) = &stack_abort[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_irq_end __attribute__((used, section(".aros.init"))) = &stack_irq[AROS_STACKSIZE - sizeof(IPTR)];
 
-struct ARM_Implementation krnARMImpl  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,NULL};
+struct ARM_Implementation __arm_arosintern  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,NULL};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
 
 static void __attribute__((used)) __clear_bss(struct TagItem *msg)
@@ -120,9 +121,9 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
     BootMsg = msg;
 
-    cpu_Probe(&krnARMImpl);
-    platform_Init(&krnARMImpl, msg);
-    cpu_Init(&krnARMImpl, msg);
+    cpu_Probe(&__arm_arosintern);
+    platform_Init(&__arm_arosintern, msg);
+    cpu_Init(&__arm_arosintern, msg);
 
     /* NB: the bootstrap has conveniently setup the framebuffer
             and initialised the serial port and led for us */
@@ -131,10 +132,6 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     {
         switch (msg->ti_Tag)
         {
-        case KRN_FuncPutC:
-            _KrnPutC = (void *)msg->ti_Data;
-            _KrnPutC(0xFF); // Clear the display
-            break;
         case KRN_MEMLower:
             memlower = msg->ti_Data;
             break;
@@ -167,20 +164,20 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     D(bug("[KRN] Entered kernel_cstart @ 0x%p, BootMsg @ %p\n", kernel_cstart, BootMsg));
 
     D(
-        if (_KrnPutC)
+        if (__arm_arosintern.ARMI_PutChar)
         {
-            bug("[KRN] Using boostrap PutC implementation @ %p\n", _KrnPutC);
+            bug("[KRN] Using PutChar implementation @ %p\n", __arm_arosintern.ARMI_PutChar);
         }
     )
 
     core_SetupIntr();
 
-    if (krnARMImpl.ARMI_LED_Toggle)
+    if (__arm_arosintern.ARMI_LED_Toggle)
     {
-        krnARMImpl.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
-        if (krnARMImpl.ARMI_Delay)
-            krnARMImpl.ARMI_Delay(1500);
-        krnARMImpl.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
+        if (__arm_arosintern.ARMI_Delay)
+            __arm_arosintern.ARMI_Delay(1500);
+        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
     }
 
     NEWLIST(&memList);

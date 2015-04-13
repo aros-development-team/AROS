@@ -28,3 +28,17 @@ AROS_LH0(unsigned int, KrnGetCPUNumber,
 
     AROS_LIBFUNC_EXIT
 }
+
+AROS_LH1(unsigned int, KrnGetCPUMask,
+	AROS_LHA(uint32_t, id, D0),
+	 struct KernelBase *, KernelBase, 37, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    int shift = 0;
+
+
+    return (1 << shift);
+
+    AROS_LIBFUNC_EXIT
+}

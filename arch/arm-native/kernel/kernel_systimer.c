@@ -21,16 +21,14 @@
 #define DIRQ(x)
 #define D(x)
 
-extern struct ARM_Implementation krnARMImpl;
-
 void *KrnAddSysTimerHandler(struct KernelBase *KernelBase)
 {
     struct IntrNode *SysTimerHandle = NULL;
 
     D(bug("[KRN] KrnAddSysTimerHandler(%012p)\n", KernelBase));
 
-    if (krnARMImpl.ARMI_InitTimer)
-        SysTimerHandle = krnARMImpl.ARMI_InitTimer(KernelBase);
+    if (__arm_arosintern.ARMI_InitTimer)
+        SysTimerHandle = __arm_arosintern.ARMI_InitTimer(KernelBase);
 
     D(bug("[KRN] KrnAddSysTimerHandler: returning handle @ 0x%p \n", SysTimerHandle));
 

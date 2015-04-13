@@ -107,8 +107,11 @@ void cpu_Switch(regs_t *regs)
     /* Restore the task's state */
     STORE_TASKSTATE(task, regs)
 
-    /* Update the taks CPU time .. */
-    GetIntETask(task)->iet_CpuTime += *((volatile unsigned int *)(SYSTIMER_CLO)) - GetIntETask(task)->iet_private1;
+    if (__arm_arosintern.ARMI_GetTime)
+    {
+        /* Update the taks CPU time .. */
+        GetIntETask(task)->iet_CpuTime += __arm_arosintern.ARMI_GetTime() - GetIntETask(task)->iet_private1;
+    }
 
     core_Switch();
 }
@@ -139,8 +142,11 @@ void cpu_Dispatch(regs_t *regs)
     if (task->tc_Flags & TF_EXCEPT)
         Exception();
 
-    /* Store the launch time */
-    GetIntETask(task)->iet_private1 = *((volatile unsigned int *)(SYSTIMER_CLO));
+    if (__arm_arosintern.ARMI_GetTime)
+    {
+        /* Store the launch time */
+        GetIntETask(task)->iet_private1 = __arm_arosintern.ARMI_GetTime();
+    }
 
     if (task->tc_Flags & TF_LAUNCH)
     {
