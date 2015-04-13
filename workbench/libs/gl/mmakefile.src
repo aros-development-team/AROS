@@ -66,7 +66,7 @@ $(GENDIR)/$(CURDIR)/.stubs-generated :
 #MM
 workbench-libs-gl-gen-includes: $(GENDIR)/$(CURDIR)/.includes-generated
 
-$(GENDIR)/$(CURDIR)/.includes-generated : 
+$(GENDIR)/$(CURDIR)/.includes-generated : $(GENMODULE)
 	@$(ECHO) "Generating GL.library API headers..."
 	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/gl.conf -d $(GENDIR)/$(CURDIR)/include writeincludes gl library
 	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/gl.conf -d $(GENDIR)/$(CURDIR)/include writelibdefs gl library
@@ -78,6 +78,13 @@ INCLUDE_FILES := gla.h
 
 #MM- includes-copy
 %copy_includes path=GL includes=$(INCLUDE_FILES)
+
+#MM
+workbench-libs-gl-gen-config: $(GENDIR)/config/gl.config
+
+$(GENDIR)/config/gl.config: $(SRCDIR)/$(CURDIR)/gl.config
+	@$(ECHO) "Generating GL.library config file..."
+	@$(CP) $< $@
 
 #MM
 workbench-libs-gl-setup:
