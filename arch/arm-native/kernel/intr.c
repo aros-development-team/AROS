@@ -22,49 +22,32 @@
 #define BOOT_STACK_SIZE		(256 << 2)
 #define BOOT_TAGS_SIZE          (128 << 3)
 
-#define IRQBANK_POINTER(bank)   ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
-
 #define DREGS(x)
 #define DIRQ(x)
 #define D(x)
 
+/* linker exports */
+extern void *__intvecs_start, *__intvecs_end;
+extern void __arm_halt(void);
+
 void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
-    int bank = IRQ_BANK(irq);
-    unsigned int val, reg;
-
-    reg = IRQBANK_POINTER(bank);
-
-    DIRQ(bug("[KRN] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
-
-    val = *((volatile unsigned int *)reg);
-    val |= IRQ_MASK(irq);
-    *((volatile unsigned int *)reg) = val;
+    if (__arm_arosintern.ARMI_IRQEnable)
+        __arm_arosintern.ARMI_IRQEnable(irq);
 }
 
 void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
-    int bank = IRQ_BANK(irq);
-    unsigned int val, reg;
-
-    reg = IRQBANK_POINTER(bank);
-
-    DIRQ(bug("[KRN] Dissabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
-
-    val = *((volatile unsigned int *)reg);
-    val |= IRQ_MASK(irq);
-    *((volatile unsigned int *)reg) = val;
+    if (__arm_arosintern.ARMI_IRQDisable)
+        __arm_arosintern.ARMI_IRQDisable(irq);
 } 
 
-static void arm_halt(void)
-{
-    bug("[Kernel] halting cpu\n");
-
-    __asm__ __volatile__(
-    "haltloop:          \n"
-    "   b  haltloop     \n"
+asm (
+    ".globl __arm_halt                         \n"
+    ".type __arm_halt,%function                \n"
+    "__arm_halt:                               \n"
+    "           b       __arm_halt             \n"
     );
-}
 
 /*
     ** UNDEF INSTRUCTION EXCEPTION
@@ -87,7 +70,7 @@ asm (
     "           bl      handle_undef           \n"
 
     VECTCOMMON_END
-);
+    );
 
 void handle_undef(regs_t *regs)
 {
@@ -110,7 +93,7 @@ void handle_undef(regs_t *regs)
 
     cpu_DumpRegs(regs);
 
-    arm_halt();
+    __arm_halt();
 }
 
 /*
@@ -132,8 +115,7 @@ asm (
     "           ldr     pc, 2f                          \n" // jump into kernel resource
     "1:         b       1b                              \n"
     "2:         .word   kernel_cstart                   \n"
-
-);
+    );
 
 
 /* ** SWI HANDLER ** */
@@ -174,74 +156,16 @@ asm (
     "           bl      core_ExitInterrupt     \n"
     "1:                                        \n"
     VECTCOMMON_END
-);
-
-#define IRQ_BANK1	0x00000100
-#define IRQ_BANK2	0x00000200
+    );
 
 void handle_irq(regs_t *regs)
 {
-    unsigned int pending, processed, irq;
-
     DIRQ(bug("[KRN] ## IRQ ##\n"));
 
     DREGS(cpu_DumpRegs(regs));
 
-    pending = *((volatile unsigned int *)(ARMIRQ_PEND));
-    DIRQ(bug("[KRN] PendingARM %08x\n", pending));
-    if (!(pending & IRQ_BANK1))
-    {
-        processed = 0;
-        for (irq = (2 << 5); irq < ((2 << 5) + 32); irq++)
-        {
-            if (pending & (1 << (irq - (2 << 5))))
-            {
-                DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
-                krnRunIRQHandlers(KernelBase, irq);
-                processed |= (1 << (irq - (2 << 5)));
-            }
-        }
-    }
-    else
-    {
-        processed = IRQ_BANK1;
-    }
-    if (processed) *((volatile unsigned int *)(ARMIRQ_PEND)) = (pending & ~processed);
-
-    pending = *((volatile unsigned int *)(GPUIRQ_PEND0));
-    DIRQ(bug("[KRN] Pending0 %08x\n", pending));
-    if (!(pending & IRQ_BANK2))
-    {
-        processed = 0;
-        for (irq = (0 << 5); irq < ((0 << 5) + 32); irq++)
-        {
-            if (pending & (1 << (irq - (0 << 5))))
-            {
-                DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
-                krnRunIRQHandlers(KernelBase, irq);
-                processed |= (1 << (irq - (0 << 5)));
-            }
-        }
-    }
-    else
-    {
-        processed = IRQ_BANK2;
-    }
-    if (processed) *((volatile unsigned int *)(GPUIRQ_PEND0)) = (pending & ~processed);
-
-    pending = *((volatile unsigned int *)(GPUIRQ_PEND1));
-    DIRQ(bug("[KRN] Pending1 %08x\n", pending));
-    processed = 0;
-    for (irq = (1 << 5); irq < ((1 << 5) + 32); irq++)
-    {
-            if (pending & (1 << (irq - (1 << 5))))
-        {
-            DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
-            krnRunIRQHandlers(KernelBase, irq);
-            processed |= (1 << (irq - (1 << 5)));
-        }
-    }
-    if (processed) *((volatile unsigned int *)(GPUIRQ_PEND1)) = (pending & ~processed);
+    if (__arm_arosintern.ARMI_IRQProcess)
+        __arm_arosintern.ARMI_IRQProcess();
 
     DIRQ(bug("[KRN] IRQ processing finished\n"));
 
@@ -258,9 +182,10 @@ __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 {
     DIRQ(bug("[KRN] ## FIQ ##\n"));
 
+    DIRQ(bug("[KRN] FIQ processing finished\n"));
+
     return;
 }
-
 
 /*
     ** DATA ABORT EXCEPTION
@@ -284,7 +209,7 @@ asm (
     "           bl      handle_dataabort       \n"
 
     VECTCOMMON_END
-);
+    );
 
 void handle_dataabort(regs_t *regs)
 {
@@ -312,7 +237,7 @@ void handle_dataabort(regs_t *regs)
 
     cpu_DumpRegs(regs);
 
-    arm_halt();
+    __arm_halt();
 }
 
 /*
@@ -337,7 +262,7 @@ asm (
     "           bl      handle_prefetchabort   \n"
 
     VECTCOMMON_END
-);
+    );
 
 void handle_prefetchabort(regs_t *regs)
 {
@@ -360,35 +285,32 @@ void handle_prefetchabort(regs_t *regs)
 
     cpu_DumpRegs(regs);
 
-    arm_halt();
+    __arm_halt();
 }
 
 
 /* ** SETUP ** */
 
-/* linker exports */
-extern void *__intvecs_start, *__intvecs_end;
-
 void arm_flush_cache(uint32_t addr, uint32_t length)
 {
-        while (length)
-        {
-                __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 1"::"r"(addr));
-                addr += 32;
-                length -= 32;
-        }
-        __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+    while (length)
+    {
+        __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 1"::"r"(addr));
+        addr += 32;
+        length -= 32;
+    }
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
 }
 
 void arm_icache_invalidate(uint32_t addr, uint32_t length)
 {
-        while (length)
-        {
-                __asm__ __volatile__("mcr p15, 0, %0, c7, c5, 1"::"r"(addr));
-                addr += 32;
-                length -= 32;
-        }
-        __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+    while (length)
+    {
+        __asm__ __volatile__("mcr p15, 0, %0, c7, c5, 1"::"r"(addr));
+        addr += 32;
+        length -= 32;
+    }
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
 }
 
 void core_SetupIntr(void)
@@ -419,8 +341,6 @@ void core_SetupIntr(void)
         bug("\n");
     )
 
-    D(bug("[KRN] Disabling IRQs\n"));
-    *(volatile unsigned int *)ARMIRQ_DIBL = ~0;
-    *(volatile unsigned int *)GPUIRQ_DIBL0 = ~0; 
-    *(volatile unsigned int *)GPUIRQ_DIBL1 = ~0;
+    if (__arm_arosintern.ARMI_IRQInit)
+        __arm_arosintern.ARMI_IRQInit();
 }

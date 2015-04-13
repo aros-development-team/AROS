@@ -9,5 +9,3 @@
 #if !defined(KRN_FuncPutC)
 #define KRN_FuncPutC      (KRN_Dummy + 99) /* RAW FrameBuffer descriptor */
 #endif
-
-extern void (*_KrnPutC)(char);

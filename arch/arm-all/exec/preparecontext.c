@@ -15,6 +15,9 @@
 
 #include "exec_intern.h"
 #include "exec_util.h"
+#if defined(__AROSEXEC_SMP__)
+#include "etask.h"
+#endif
 
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
                     const struct TagItem *tagList, struct ExecBase *SysBase)
@@ -38,6 +41,11 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     {
     	switch(t->ti_Tag)
 	{
+#if defined(__AROSEXEC_SMP__)
+            case TASKTAG_AFFINITY:
+                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
+                break;
+#endif
 #define REGARG(x)			\
 	case TASKTAG_ARG ## x:		\
 	    ctx->r[x - 1] = t->ti_Data;	\

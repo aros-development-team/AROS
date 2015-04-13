@@ -18,13 +18,9 @@
 
 #if (1)
 // TODO: Move to a more generic ARM header..
-#define ARM_STACK_DEF           4096
 #define ARM_VIRTBASE            0xF0000000
 #define ARM_PRIMECELLID         0xB105F00D
 #define ARM_PRIMECELLPERISIZE   0x1000
-
-#define STACK_SIZE              ARM_STACK_DEF
-
 
 /*
    caller must provide ARM_PERIIOBASE

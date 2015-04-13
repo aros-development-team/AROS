@@ -58,7 +58,7 @@
 	return (intptr_t)"arm-raspi";
 
     case KATTR_PeripheralBase:
-	return (intptr_t)__arm_periiobase;
+	return (intptr_t)__arm_arosintern.ARMI_PeripheralBase;
 
     default:
 	return -1;

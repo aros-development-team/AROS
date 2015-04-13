@@ -6,6 +6,7 @@
 #define DEBUG 0
 
 #include <aros/debug.h>
+#include <aros/cpu.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <exec/memory.h>
@@ -15,8 +16,6 @@
 #include <asm/io.h>
 #include <proto/exec.h>
 #include <strings.h>
-
-#include <hardware/bcm2708.h>
 
 /* Linked from kernel.resource,
  * need to retrieve in a cleaner fashion .. */
@@ -35,9 +34,10 @@ static int PlatformInit(struct ExecBase *SysBase)
 
     /* for our sanity we will tell exec about the correct stack for the boot task */
     BootTask->tc_SPLower = stack;
-    BootTask->tc_SPUpper = stack + STACK_SIZE;
+    BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
 
     sysIdleTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
+                                TASKTAG_AFFINITY   , ~0,
                                 TASKTAG_PRI        , -127,
                                 TASKTAG_PC         , IdleTask,
                                 TASKTAG_ARG1       , SysBase,

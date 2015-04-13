@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/mbox.h>
