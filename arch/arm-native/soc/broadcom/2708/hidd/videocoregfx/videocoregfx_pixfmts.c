@@ -148,7 +148,7 @@ APTR FNAME_SUPPORT(GenPixFmts)(OOP_Class *cl)
 
     D(bug("[VideoCore] %s: Allocating storage for %d pixfmts\n", __PRETTY_FUNCTION__, fmtcount));
 
-    if ((pixfmtarray = AllocVec(fmtcount * sizeof(struct TagItem), MEMF_PUBLIC)) != NULL)
+    if ((pixfmtarray = AllocVec((fmtcount + 1) * sizeof(struct TagItem), MEMF_PUBLIC)) != NULL)
     {
         for (fmtcount = 0; supportedfmts[fmtcount] != 0; fmtcount++)
         {
@@ -156,7 +156,7 @@ APTR FNAME_SUPPORT(GenPixFmts)(OOP_Class *cl)
             if (supportedfmts[fmtcount][0] == ARRAYSIZE_TRUECOLOR)
             {
                 D(bug("[VideoCore] %s: %dbit TRUECOLOR pixfmt\n", __PRETTY_FUNCTION__, supportedfmts[fmtcount][9]));
-                newfmt_tags = AllocVec((ARRAYSIZE_TRUECOLOR + 1) * sizeof(struct TagItem), MEMF_PUBLIC);
+                newfmt_tags = AllocVec((ARRAYSIZE_TRUECOLOR + 2) * sizeof(struct TagItem), MEMF_PUBLIC);
                 newfmt_tags[0].ti_Tag = aHidd_PixFmt_RedShift;
                 newfmt_tags[0].ti_Data = supportedfmts[fmtcount][1];
                 newfmt_tags[1].ti_Tag = aHidd_PixFmt_GreenShift;
@@ -190,7 +190,7 @@ APTR FNAME_SUPPORT(GenPixFmts)(OOP_Class *cl)
             else if (supportedfmts[fmtcount][0] == ARRAYSIZE_LUT)
             {
                 D(bug("[VideoCore] %s: %dbit LUT pixfmt\n", __PRETTY_FUNCTION__, supportedfmts[fmtcount][11]));
-                newfmt_tags = AllocVec((ARRAYSIZE_LUT + 1) * sizeof(struct TagItem), MEMF_PUBLIC);
+                newfmt_tags = AllocVec((ARRAYSIZE_LUT + 2) * sizeof(struct TagItem), MEMF_PUBLIC);
                 newfmt_tags[0].ti_Tag = aHidd_PixFmt_RedShift;
                 newfmt_tags[0].ti_Data = supportedfmts[fmtcount][1];
                 newfmt_tags[1].ti_Tag = aHidd_PixFmt_GreenShift;
