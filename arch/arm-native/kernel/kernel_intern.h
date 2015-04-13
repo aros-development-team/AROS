@@ -91,13 +91,17 @@ static inline void bug(const char *format, ...)
     "           str     lr, [r0, #15*4]        \n"
 
 #define VECTCOMMON_END \
+    "           ldr     r1, [sp, #16*4]        \n" \
+    "           msr     spsr, r1               \n" \
+    "           and     r1, r1, #31            \n" \
+    "           cmp     r1, #16                \n" \
+    "           cmpne   r1, #31                \n" \
+    "           bne     1f                     \n" \
     "           add     r1, sp, #13*4          \n" \
     "           ldm     r1, {sp}^              \n" \
     "           add     r1, sp, #14*4          \n" \
     "           ldm     r1, {lr}^              \n" \
-    "           ldr     lr, [sp, #15*4]        \n" \
-    "           ldr     r1, [sp, #16*4]        \n" \
-    "           msr     spsr, r1               \n" \
+    "1:         ldr     lr, [sp, #15*4]        \n" \
     "           ldmfd   sp!, {r0-r12}          \n" \
     "           add     sp, sp, #4*4           \n" \
     "           movs    pc, lr                 \n"
