@@ -11,15 +11,15 @@
 
 struct ExceptionContext
 {
-    UWORD Flags;	/* Currently reserved		*/
-    UBYTE FPUType;	/* FPU type (see below)		*/
-    UBYTE Reserved;	/* Unused			*/
     ULONG r[12];	/* General purpose registers	*/
     ULONG ip;		/* r12				*/
     ULONG sp;		/* r13				*/
     ULONG lr;		/* r14				*/
     ULONG pc;		/* r15				*/
     ULONG cpsr;
+    UWORD Flags;	/* Currently reserved		*/
+    UBYTE FPUType;	/* FPU type (see below)		*/
+    UBYTE Reserved;	/* Unused			*/
     APTR  fpuContext;	/* Pointer to FPU context area	*/
 };
 
