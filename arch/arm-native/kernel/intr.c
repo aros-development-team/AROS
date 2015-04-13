@@ -56,6 +56,16 @@ void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
     *((volatile unsigned int *)reg) = val;
 } 
 
+static void arm_halt(void)
+{
+    bug("[Kernel] halting cpu\n");
+
+    __asm__ __volatile__(
+    "haltloop:          \n"
+    "   b  haltloop     \n"
+    );
+}
+
 /*
     ** UNDEF INSTRUCTION EXCEPTION
     return addr = lr
@@ -81,21 +91,26 @@ asm (
 
 void handle_undef(regs_t *regs)
 {
-    bug("[Kernel] Trap ARM Undef Exception -> Exception #4 (Illegal instruction)\n");
+    bug("[Kernel] Trap ARM Undef Exception\n");
+    bug("[Kernel]    exception #4 (Illegal instruction)\n");
+    bug("[Kernel]    at 0x%p\n", regs[14]);
 
     if (krnRunExceptionHandlers(KernelBase, 4, regs))
 	return;
 
+    D(bug("[Kernel] exception handler(s) returned\n"));
+
     if (core_Trap(4, regs))
     {
-        bug("[Kernel] Trap handler returned\n");
+        D(bug("[Kernel] trap handler(s) returned\n"));
         return;
     }
 
     bug("[Kernel] UNHANDLED EXCEPTION #4\n");
 
-    while (1)
-        asm volatile ("mov r0, r0\n");
+    cpu_DumpRegs(regs);
+
+    arm_halt();
 }
 
 /*
@@ -278,25 +293,26 @@ void handle_dataabort(regs_t *regs)
     // Read fault address register
     asm volatile("mrc p15, 0, %[far], c6, c0, 0": [far] "=r" (far) );
 
-    bug("[Kernel] Trap ARM Data Abort Exception -> Exception #2 (Bus Error)\n");
-    bug("[Kernel] attempt to access 0x%p\n", far);
-
-    DREGS(cpu_DumpRegs(regs));
+    bug("[Kernel] Trap ARM Data Abort Exception\n");
+    bug("[Kernel]    exception #2 (Bus Error)\n");
+    bug("[Kernel]    attempt to access 0x%p from 0x%p\n", far, regs[14]);
 
     if (krnRunExceptionHandlers(KernelBase, 2, regs))
 	return;
 
+    D(bug("[Kernel] exception handler(s) returned\n"));
+
     if (core_Trap(2, regs))
     {
-        bug("[Kernel] Trap handler returned\n");
+        D(bug("[Kernel] trap handler(s) returned\n"));
         return;
     }
 
     bug("[Kernel] UNHANDLED EXCEPTION #2\n");
 
+    cpu_DumpRegs(regs);
 
-    while (1)
-        asm volatile ("mov r0, r0\n");
+    arm_halt();
 }
 
 /*
@@ -325,21 +341,26 @@ asm (
 
 void handle_prefetchabort(regs_t *regs)
 {
-    bug("[Kernel] Trap ARM Prefetch Abort Exception -> Exception #3 (Address Error)\n");
+    bug("[Kernel] Trap ARM Prefetch Abort Exception\n");
+    bug("[Kernel]    exception #3 (Address Error)\n");
+    bug("[Kernel]    at 0x%p\n", regs[14]);
 
     if (krnRunExceptionHandlers(KernelBase, 3, regs))
 	return;
 
+    D(bug("[Kernel] exception handler(s) returned\n"));
+
     if (core_Trap(3, regs))
     {
-        bug("[Kernel] Trap handler returned\n");
+        D(bug("[Kernel] trap handler(s) returned\n"));
         return;
     }
 
     bug("[Kernel] UNHANDLED EXCEPTION #3\n");
 
-    while (1)
-        asm volatile ("mov r0, r0\n");
+    cpu_DumpRegs(regs);
+
+    arm_halt();
 }
 
 
