@@ -82,8 +82,10 @@ static inline void bug(const char *format, ...)
     va_end(args);
 }
 
+// NB - we use sizeof(ExceptionContext) on the stack
+
 #define VECTCOMMON_START \
-    "           sub     sp, sp, #4*4           \n" \
+    "           sub     sp, sp, #6*4           \n" \
     "           stmfd   sp!, {r0-r12}          \n" \
     "           mov     r0, sp                 \n" \
     "           mrs     r1, spsr               \n" \
@@ -103,7 +105,7 @@ static inline void bug(const char *format, ...)
     "           ldm     r1, {lr}^              \n" \
     "1:         ldr     lr, [sp, #15*4]        \n" \
     "           ldmfd   sp!, {r0-r12}          \n" \
-    "           add     sp, sp, #4*4           \n" \
+    "           add     sp, sp, #6*4           \n" \
     "           movs    pc, lr                 \n"
 
 #define STORE_TASKSTATE(task, regs)                                             \
