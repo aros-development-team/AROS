@@ -37,7 +37,9 @@ static int PlatformInit(struct ExecBase *SysBase)
     BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
 
     sysIdleTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
+#if defined(__AROSEXEC_SMP__)
                                 TASKTAG_AFFINITY   , ~0,
+#endif
                                 TASKTAG_PRI        , -127,
                                 TASKTAG_PC         , IdleTask,
                                 TASKTAG_ARG1       , SysBase,
