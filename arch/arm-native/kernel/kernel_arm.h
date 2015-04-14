@@ -13,7 +13,7 @@ struct ARM_Implementation
     void                (*ARMI_Delay) (int);
     unsigned int        (*ARMI_GetTime) (void);
     void                (*ARMI_PutChar) (int);
-    void                (*ARMI_SerPutChar) (int);
+    void                (*ARMI_SerPutChar) (uint8_t);
     int                 (*ARMI_SerGetChar) (void);
     void                (*ARMI_IRQInit) ();
     void                (*ARMI_IRQEnable) (int);
