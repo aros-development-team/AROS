@@ -174,12 +174,16 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     if (__arm_arosintern.ARMI_LED_Toggle)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
-    
+
+    D(bug("[KRN] Platform initialised\n"));
+
     if (__arm_arosintern.ARMI_Delay)
             __arm_arosintern.ARMI_Delay(1500);
     
     if (__arm_arosintern.ARMI_LED_Toggle)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+
+    D(bug("[KRN] Preparing memory\n"));
 
     NEWLIST(&memList);
 
