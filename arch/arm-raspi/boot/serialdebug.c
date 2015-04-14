@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include <hardware/bcm2708.h>
+#include <hardware/bcm2708_boot.h>
 #include <hardware/videocore.h>
 #include <hardware/pl011uart.h>
 
@@ -56,7 +57,7 @@ void serInit(void)
 {
     unsigned int        uartvar;
 
-    volatile unsigned int *uart_msg = (unsigned int *) MESSAGE_BUFFER;
+    volatile unsigned int *uart_msg = (unsigned int *) BOOTMEMADDR(bm_mboxmsg);
 
     uartbaud = DEF_BAUD;
 

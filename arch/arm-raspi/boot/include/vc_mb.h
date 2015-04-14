@@ -6,9 +6,6 @@
 #ifndef VC_MB_H
 #define VC_MB_H
 
-/* location used for vc message buffer */
-#define MESSAGE_BUFFER	        0x1000
-
 #define VCMB_PROPCHAN           8
 
 extern volatile unsigned int *vcmb_read(void *mb, unsigned int chan);
