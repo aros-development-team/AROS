@@ -15,6 +15,7 @@
 #include <stdint.h>
 
 #include <hardware/bcm2708.h>
+#include <hardware/bcm2708_boot.h>
 #include <hardware/videocore.h>
 
 #include "boot.h"
@@ -81,7 +82,7 @@ static void parse_atags(struct tag *tags)
                 kprintf("ATAG_MEM (%08x-%08x)\n", t->u.mem.start, t->u.mem.size + t->u.mem.start - 1);
                 boottag->ti_Tag = KRN_MEMLower;
                 if ((boottag->ti_Data = t->u.mem.start) == 0)
-                    boottag->ti_Data = 0x1000; // Skip the *reserved* space for the cpu vectors/boot tmp stack/kernel private data.
+                    boottag->ti_Data = sizeof(struct bcm2708bootmem); // Skip the *reserved* space for the cpu vectors/boot tmp stack/kernel private data.
 
                 boottag++;
                 boottag->ti_Tag = KRN_MEMUpper;
@@ -142,7 +143,7 @@ static void parse_atags(struct tag *tags)
 
 void query_vmem()
 {
-    volatile unsigned int *vc_msg = (unsigned int *) MESSAGE_BUFFER;
+    volatile unsigned int *vc_msg = (unsigned int *) BOOTMEMADDR(bm_mboxmsg);
 
     kprintf("[BOOT] Query VC memory\n");
     vc_msg[0] = 8 * 4;

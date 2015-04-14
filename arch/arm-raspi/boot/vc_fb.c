@@ -7,6 +7,7 @@
 */
 
 #include <hardware/bcm2708.h>
+#include <hardware/bcm2708_boot.h>
 #undef ARM_PERIIOBASE
 
 #include <hardware/videocore.h>
@@ -23,7 +24,7 @@ int vcfb_init(void)
 {
     unsigned int fb_width, fb_height, fb_depth, fb_pitch;
     unsigned int count;
-    volatile unsigned int *vcmb_msg = (unsigned int *) MESSAGE_BUFFER;
+    volatile unsigned int *vcmb_msg = (unsigned int *)BOOTMEMADDR(bm_mboxmsg);
 
     scr_Type = SCR_UNKNOWN;
 

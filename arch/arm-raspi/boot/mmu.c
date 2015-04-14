@@ -6,17 +6,16 @@
     Lang: english
  */
 
-#include <asm/arm/mmu.h>
 #include <stdint.h>
+#include <hardware/bcm2708_boot.h>
 #include "mmu.h"
 #include "boot.h"
 
 #define DMMU(x) x
 
-static pde_t pde[4096] __attribute__((used, aligned(16384)));
-
 void mmu_init()
 {
+    static pde_t *pde = BOOTMEMADDR(bm_pde);
     int i;
 
     for (i = 0; i < 4096; i++)
@@ -38,6 +37,8 @@ void mmu_init()
 void mmu_load()
 {
     uint32_t tmp;
+
+    static pde_t *pde = BOOTMEMADDR(bm_pde);
 
     arm_flush_cache((uint32_t)pde, 16384);
 
@@ -62,6 +63,8 @@ void mmu_load()
 
 void mmu_unmap_section(uint32_t virt, uint32_t length)
 {
+    static pde_t *pde = BOOTMEMADDR(bm_pde);
+
     uint32_t start = virt & ~(1024*1024-1);
     uint32_t end = (start + length) & ~(1024*1024-1);
 
@@ -77,6 +80,8 @@ void mmu_unmap_section(uint32_t virt, uint32_t length)
 
 void mmu_map_section(uint32_t phys, uint32_t virt, uint32_t length, int b, int c, int ap, int tex)
 {
+    static pde_t *pde = BOOTMEMADDR(bm_pde);
+
     uint32_t start = virt & ~(1024*1024-1);
     uint32_t end = (start + length) & ~(1024*1024-1);
 
