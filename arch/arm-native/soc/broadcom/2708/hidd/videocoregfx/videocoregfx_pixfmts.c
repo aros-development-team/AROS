@@ -245,7 +245,6 @@ APTR FNAME_SUPPORT(GenPixFmts)(OOP_Class *cl)
             D(bug("[VideoCoreGfx] %s: 0x%p: %08x, %08x\n", __PRETTY_FUNCTION__, cur_pixfmt, cur_pixfmt->ti_Tag, cur_pixfmt->ti_Data));
             cur_pixfmt++;
         }
-        D(bug("[VideoCoreGfx] %s: 0x%p: %08x, %08x\n", __PRETTY_FUNCTION__, cur_pixfmt, cur_pixfmt->ti_Tag, cur_pixfmt->ti_Data));
     }
 #endif
     return (APTR)pixfmtarray;

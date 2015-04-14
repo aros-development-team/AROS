@@ -62,12 +62,13 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
     {
         if ((modearray = AllocVec((fmtcount * sizeof(struct TagItem)) + ((modecount + 1) * sizeof(struct TagItem)) + (modecount * SYNCTAGS_SIZE), MEMF_PUBLIC)) != NULL)
         {
-            D(bug("[VideoCoreGfx] %s: PixFmt's @ 0x%p\n", __PRETTY_FUNCTION__, modearray));
-
             struct TagItem *ma_fmts = (struct TagItem  *)modearray;
+
+            D(bug("[VideoCoreGfx] %s: PixFmt's @ 0x%p\n", __PRETTY_FUNCTION__, modearray));
 
             for (i = 0; i < fmtcount; i ++)
             {
+                D(bug("[VideoCoreGfx] %s: PixFmt #%d @ 0x%p\n", __PRETTY_FUNCTION__, i, fmts[i].ti_Data));
                 ma_fmts[i].ti_Tag = aHidd_Gfx_PixFmtTags;
                 ma_fmts[i].ti_Data = fmts[i].ti_Data;
             }
@@ -119,7 +120,6 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
             D(bug("[VideoCoreGfx] %s: 0x%p: %08x, %08x\n", __PRETTY_FUNCTION__, ma_syncs, ma_syncs->ti_Tag, ma_syncs->ti_Data));
             ma_syncs++;
         }
-        D(bug("[VideoCoreGfx] %s: 0x%p: %08x, %08x\n", __PRETTY_FUNCTION__, ma_syncs, ma_syncs->ti_Tag, ma_syncs->ti_Data));
     }
 #endif
     return (APTR)modearray;
