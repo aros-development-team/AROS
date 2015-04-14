@@ -557,6 +557,8 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
     DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
+    SetSignal(0, 1L << bus->sdcb_CommandSig);
+
     if ((sdDataLen = GetTagData(SDCARD_TAG_DATALEN, 0, CmdTags)) > 0)
     {
         sdDataFlags = GetTagData(SDCARD_TAG_DATAFLAGS, 0, CmdTags);
@@ -807,7 +809,18 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
 
 ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 {
-    bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
+    D(bug("[SDBus%02u] %s(), task %p %s\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name));
+    D(bug("Task=%p\n", bus->sdcb_Task));
+    if (bus->sdcb_Task == FindTask(NULL))
+    {
+        D(bug("Waiting for signal %d\n", bus->sdcb_CommandSig));
+        Wait(1L << bus->sdcb_CommandSig);
+    }
+    else
+    {
+        D(bug("\nNot a Bus task!\n\n"));
+        sdcard_Udelay(10000);
+    }
 
     while (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & mask) {
         sdcard_Udelay(1000);
@@ -887,7 +900,13 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
                     error = TRUE;
                 bus->sdcb_RespListener = NULL;
             }
-            bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK; 
+            if (bus->sdcb_Task && (bus->sdcb_BusStatus & SDHCI_INT_RESPONSE))
+            {
+                DIRQ(bug("Signalling task %p (%s) with signal %d\n", bus->sdcb_Task, bus->sdcb_Task->tc_Node.ln_Name, bus->sdcb_CommandSig));
+                Signal(bus->sdcb_Task, 1L << bus->sdcb_CommandSig);
+            }
+
+            bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK;
         }
         if (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
         {
@@ -954,6 +973,11 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     if ((bus->sdcb_MediaSig = AllocSignal(-1)) == -1)
     {
         D(bug("[SDBus%02u] %s: failed to allocate Media Change sigbit\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+    }
+
+    if ((bus->sdcb_CommandSig = AllocSignal(-1)) == -1)
+    {
+        D(bug("[SDBus%02u] %s: failed to allocate Command Completed sigbit\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
     }
 
     /* Failed to get it? Use SIGBREAKB_CTRL_E instead */
