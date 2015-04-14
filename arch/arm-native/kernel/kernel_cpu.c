@@ -40,7 +40,7 @@ void cpu_Register()
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
 
     __arm_affinitymask |= (1 << (tmp & 0x3));
-    
+
     asm volatile("wfi");
 }
 
