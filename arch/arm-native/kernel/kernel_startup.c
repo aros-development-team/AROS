@@ -123,7 +123,22 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     cpu_Probe(&__arm_arosintern);
     platform_Init(&__arm_arosintern, msg);
+
+    if (__arm_arosintern.ARMI_LED_Toggle)
+    {
+        if (__arm_arosintern.ARMI_Delay)
+            __arm_arosintern.ARMI_Delay(100000);
+        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
+    }
+
     cpu_Init(&__arm_arosintern, msg);
+
+    if (__arm_arosintern.ARMI_LED_Toggle)
+    {
+        if (__arm_arosintern.ARMI_Delay)
+            __arm_arosintern.ARMI_Delay(100000);
+        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+    }
 
     /* NB: the bootstrap has conveniently setup the framebuffer
             and initialised the serial port and led for us */
