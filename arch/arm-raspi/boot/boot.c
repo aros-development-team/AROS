@@ -81,7 +81,7 @@ static void parse_atags(struct tag *tags)
             case ATAG_MEM:
                 kprintf("ATAG_MEM (%08x-%08x)\n", t->u.mem.start, t->u.mem.size + t->u.mem.start - 1);
                 boottag->ti_Tag = KRN_MEMLower;
-                if ((boottag->ti_Data = t->u.mem.start) == 0)
+                if ((boottag->ti_Data = t->u.mem.start) < sizeof(struct bcm2708bootmem))
                     boottag->ti_Data = sizeof(struct bcm2708bootmem); // Skip the *reserved* space for the cpu vectors/boot tmp stack/kernel private data.
 
                 boottag++;
