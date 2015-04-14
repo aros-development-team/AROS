@@ -32,12 +32,12 @@ extern void cpu_Register(void);
 
 static void bcm2708_init(void)
 {
-    if (__arm_arosintern.ARMI_PeripheralBase == BCM2836_PERIPHYSBASE)
+    if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
         int core;
         for (core = 1; core < 3; core ++)
         {
-             *((volatile unsigned int *)(0x4000008C + (0x10 * core))) = cpu_Register;
+             *((volatile unsigned int *)(0x4000008C + (0x10 * core))) = (unsigned int)cpu_Register;
         }
 
         if (__arm_arosintern.ARMI_Delay)
@@ -63,7 +63,7 @@ static void bcm2807_irq_enable(int irq)
     int bank = IRQ_BANK(irq);
     unsigned int val, reg;
 
-    reg = IRQBANK_POINTER(bank);
+    reg = (unsigned int)IRQBANK_POINTER(bank);
 
     DIRQ(bug("[KRN:BCM2708] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
@@ -77,7 +77,7 @@ static void bcm2807_irq_disable(int irq)
     int bank = IRQ_BANK(irq);
     unsigned int val, reg;
 
-    reg = IRQBANK_POINTER(bank);
+    reg = (unsigned int)IRQBANK_POINTER(bank);
 
     DIRQ(bug("[KRN:BCM2708] Dissabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
@@ -150,10 +150,10 @@ static void bcm2807_irq_process()
 
 static void bcm2708_toggle_led(int LED, int state)
 {
-    if (__arm_arosintern.ARMI_PeripheralBase == BCM2836_PERIPHYSBASE)
+    if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
         int pin = 35;
-        IPTR gpiofunc = GPCLR1;
+        APTR gpiofunc = GPCLR1;
 
         if (LED == ARM_LED_ACTIVITY)
             pin = 47;
@@ -198,8 +198,9 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
     D(bug("[BCM2708] %s: Done..\n", __PRETTY_FUNCTION__));
 }
 
-static bcm2708_init_gputimer(struct KernelBase *KernelBase)
+static APTR bcm2708_init_gputimer(APTR _kernelBase)
 {
+    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
     struct IntrNode *GPUTimerHandle;
     unsigned int stc;
 
@@ -264,7 +265,7 @@ static int bcm2708_ser_getc(void)
 static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     BOOL bcm2708found = FALSE;
-    char *bootPutC = NULL;
+    void *bootPutC = NULL;
 
     while(msg->ti_Tag != TAG_DONE)
     {
@@ -285,9 +286,9 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         return FALSE;
 
     if (krnARMImpl->ARMI_Family == 7) /*  bcm2836 uses armv7 */
-        krnARMImpl->ARMI_PeripheralBase = BCM2836_PERIPHYSBASE;
+        krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2836_PERIPHYSBASE;
     else
-        krnARMImpl->ARMI_PeripheralBase = BCM2835_PERIPHYSBASE;
+        krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2835_PERIPHYSBASE;
 
     krnARMImpl->ARMI_GetTime = &bcm2807_get_time;
     krnARMImpl->ARMI_InitTimer = &bcm2708_init_gputimer;

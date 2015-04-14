@@ -8,6 +8,8 @@
 
 #include <inttypes.h>
 
+extern uint32_t __arm_affinitymask;
+
 #define EXCEPTIONS_COUNT	1
 
 #define ARM_FPU_TYPE	        FPU_VFP
