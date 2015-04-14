@@ -32,7 +32,17 @@ extern void cpu_Register(void);
 
 static void bcm2708_init(void)
 {
+    if (__arm_arosintern.ARMI_PeripheralBase == BCM2836_PERIPHYSBASE)
+    {
+        int core;
+        for (core = 1; core < 3; core ++)
+        {
+             *((volatile unsigned int *)(0x4000008C + (0x10 * core))) = cpu_Register;
+        }
 
+        if (__arm_arosintern.ARMI_Delay)
+            __arm_arosintern.ARMI_Delay(1500);
+    }
 }
 
 static unsigned int bcm2807_get_time(void)
@@ -253,7 +263,27 @@ static int bcm2708_ser_getc(void)
 
 static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
-    //TODO: really detect if we are running on a broadcom 2835/2836
+    BOOL bcm2708found = FALSE;
+    char *bootPutC = NULL;
+
+    while(msg->ti_Tag != TAG_DONE)
+    {
+        switch (msg->ti_Tag)
+        {
+        case KRN_Platform:
+            if (msg->ti_Data == 0xc42)
+                bcm2708found = TRUE;
+            break;
+        case KRN_FuncPutC:
+            bootPutC = (void *)msg->ti_Data;
+            break;
+        }
+        msg++;
+    }
+
+    if (!bcm2708found)
+        return FALSE;
+
     if (krnARMImpl->ARMI_Family == 7) /*  bcm2836 uses armv7 */
         krnARMImpl->ARMI_PeripheralBase = BCM2836_PERIPHYSBASE;
     else
@@ -265,35 +295,15 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
 
     krnARMImpl->ARMI_SerPutChar = &bcm2708_ser_putc;
     krnARMImpl->ARMI_SerGetChar = &bcm2708_ser_getc;
-
-    while(msg->ti_Tag != TAG_DONE)
-    {
-        switch (msg->ti_Tag)
-        {
-        case KRN_FuncPutC:
-            krnARMImpl->ARMI_PutChar = (void *)msg->ti_Data;
+    if ((krnARMImpl->ARMI_PutChar = bootPutC) != NULL)
             krnARMImpl->ARMI_PutChar(0xFF); // Clear the display
-            break;
-        }
-        msg++;
-    }
 
     krnARMImpl->ARMI_IRQInit = &bcm2807_irq_init;
     krnARMImpl->ARMI_IRQEnable = &bcm2807_irq_enable;
     krnARMImpl->ARMI_IRQDisable = &bcm2807_irq_disable;
     krnARMImpl->ARMI_IRQProcess = &bcm2807_irq_process;
 
-    if (krnARMImpl->ARMI_PeripheralBase == BCM2836_PERIPHYSBASE)
-    {
-        int core;
-        for (core = 1; core < 3; core ++)
-        {
-             *((volatile unsigned int *)(0x4000008C + (0x10 * core))) = cpu_Register;
-        }
-
-        if (krnARMImpl->ARMI_Delay)
-            krnARMImpl->ARMI_Delay(1500);
-    }
+    krnARMImpl->ARMI_Init = &bcm2708_init;
 
     return TRUE;
 }
