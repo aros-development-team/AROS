@@ -20,7 +20,7 @@ struct bcm2708bootmem
     UBYTE       bm_bootstack[__bcm2708_bootstacksize];
     /* 0x1000 */
     UBYTE       bm_mboxmsg[0x1000];
-    UBYTE       bm_padding2[0x3000];
+    UBYTE       bm_padding2[0x2000];
     /* 0x4000 */
     pde_t       bm_pde[4096];
 }  __attribute__((packed));
