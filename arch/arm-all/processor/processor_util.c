@@ -70,11 +70,11 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     {
         info->Family = CPUFAMILY_ARM_6;
 
+        if  if ((scp_reg & 0xFFF0) == 0xc070)
+            info->Family = CPUFAMILY_ARM_7;
+
         DPROBE(bug("[processor.ARM] %s: Checking Memory Model Feature Register..\n", __PRETTY_FUNCTION__));
         asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 4" : [scp_reg] "=r" (scp_reg) );
-
-        if (((((scp_reg >> 4) & 0xF) >= 1) && ((scp_reg & 0xF) >= 3)) || (((scp_reg >> 4) & 0xF) >= 3))
-            info->Family = CPUFAMILY_ARM_7;
 
         DPROBE(bug("[processor.ARM] %s:  - %02d:%02d\n", __PRETTY_FUNCTION__, (scp_reg >> 4) & 0xF, scp_reg & 0xF));
     } 
