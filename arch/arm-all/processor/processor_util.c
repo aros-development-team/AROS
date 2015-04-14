@@ -70,7 +70,7 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     {
         info->Family = CPUFAMILY_ARM_6;
 
-        if  if ((scp_reg & 0xFFF0) == 0xc070)
+        if ((scp_reg & 0xFFF0) == 0xc070)
             info->Family = CPUFAMILY_ARM_7;
 
         DPROBE(bug("[processor.ARM] %s: Checking Memory Model Feature Register..\n", __PRETTY_FUNCTION__));
