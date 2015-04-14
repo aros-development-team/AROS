@@ -183,17 +183,24 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     if (__arm_arosintern.ARMI_LED_Toggle)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
 
-    D(bug("[KRN] Preparing memory\n"));
+    D(bug("[KRN] Preparing memory 0x%p -> 0x%p\n", memlower, memupper));
+    D(bug("[KRN] (protected area 0x%p -> 0x%p)\n", protlower, protupper));
 
     NEWLIST(&memList);
+
+    if (memlower >= protlower)
+        memlower = protupper;
 
     mh = (struct MemHeader *)memlower;
 
     /* Initialize TLSF memory allocator */
     krnCreateTLSFMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
 
-    /* Protect the bootstrap area from further use. AllocAbs will do the trick */
-    ((struct MemHeaderExt *)mh)->mhe_AllocAbs((struct MemHeaderExt *)mh, protupper-protlower, (void *)protlower);
+    if (memlower < protlower)
+    {
+        /* Protect the bootstrap area from further use. AllocAbs will do the trick */
+        ((struct MemHeaderExt *)mh)->mhe_AllocAbs((struct MemHeaderExt *)mh, protupper-protlower, (void *)protlower);
+    }
 
     ranges[0] = (UWORD *)krnGetTagData(KRN_KernelLowest, 0, msg);
     ranges[1] = (UWORD *)krnGetTagData(KRN_KernelHighest, 0, msg);
