@@ -29,6 +29,8 @@ void cpu_Register()
 {
     uint32_t tmp;
 
+    cpu_Init(&__arm_arosintern, NULL);
+
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
 
     __arm_affinitymask |= (1 << (tmp & 0x3));
@@ -69,14 +71,7 @@ void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     register unsigned int fpuflags;
 
-    //core_SetupMMU(msg);
-
-    if (krnARMImpl->ARMI_LED_Toggle)
-    {
-        if (krnARMImpl->ARMI_Delay)
-            krnARMImpl->ARMI_Delay(100000);
-        krnARMImpl->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
-    }
+    core_SetupMMU(msg);
 
     /* Enable Vector Floating Point Calculations */
     asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register 
@@ -86,13 +81,6 @@ void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
         "       mov %[fpuflags],%[vfpenable]    \n"                                 // Enable VFP 
         "       fmxr fpexc,%[fpuflags]          \n"
          : [fpuflags] "=r" (fpuflags) : [vfpenable] "I" (VFPEnable));
-
-    if (krnARMImpl->ARMI_LED_Toggle)
-    {
-        if (krnARMImpl->ARMI_Delay)
-            krnARMImpl->ARMI_Delay(100000);
-        krnARMImpl->ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
-    }
 }
 
 void cpu_Switch(regs_t *regs)
