@@ -19,7 +19,7 @@
 
 //#define VC_FMT_32
 #define VC_FMT_24
-#define VC_FMT_16
+//#define VC_FMT_16
 //#define VC_FMT_15
 //#define VC_FMT_8
 
