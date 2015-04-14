@@ -14,13 +14,12 @@ AROS_LH0(unsigned int, KrnGetCPUCount,
 {
     AROS_LIBFUNC_INIT
 
-    uint32_t count = 0, mask;
+    uint32_t count;
 
-    for (mask = __arm_affinitymask; mask > 0 ; mask >> 1)
-    {
-        if (mask & 1)
-            count++;
-    }
+     count = __arm_affinitymask - ((__arm_affinitymask >> 1) & 0x55555555);
+     count = (count & 0x33333333) + ((count >> 2) & 0x33333333);
+     return (((count + (count >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
+
     return count;
 
     AROS_LIBFUNC_EXIT
