@@ -36,60 +36,65 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 #if defined(__AROSEXEC_SMP__)
     	if (i > 0)
 	{
-    	    struct TagItem coreTags[] = 
-            {
-                {NP_Entry	,  ReadProcessorInformation     },
-                {TASKTAG_AFFINITY	,  (1<<i)                       },
-                {NP_UserData	,  sysprocs[i]                  },
-                {TAG_DONE	, NULL                          }
-            };
-    	    CreateNewProc(coreTags);
+            NewCreateTask(TASKTAG_AFFINITY      , KrnGetCPUMask(i)              },
+                          TASKTAG_PRI           , -127,
+                          TASKTAG_PC            , ReadProcessorInformation,
+                          TASKTAG_ARG1          , sysprocs[i],
+                          TAG_DONE);
 	}
+        else
+#else
+        if (i == 0)
 #endif
+            ReadProcessorInformation(sysprocs[i]);
     }
 
-    /* Boot CPU is number 0. Fill in its data. */
-    ReadProcessorInformation(sysprocs[0]);
-
     DUMPINFO(
-        if (sysprocs[0]->FamilyString)
+    bug("[processor.ARM] Processor Details -:\n");
+        for (i = 0; i < ProcessorBase->cpucount; i++)
         {
-            bug("[processor.ARM] %s ARM%s Processor Core\n", sysprocs[0]->Vendor, sysprocs[0]->FamilyString);
-        }
-        else
-        {
-            bug("[processor.ARM] %s ARM Processor Core (unknown family)\n", sysprocs[0]->Vendor);
-        }
+            bug("[processor.ARM] ");
+            if (ProcessorBase->cpucount > 1)
+                bug("#%d ", i);
+            if (sysprocs[i]->FamilyString)
+            {
+                bug("%s ARM%s Processor Core\n", sysprocs[i]->Vendor, sysprocs[i]->FamilyString);
+            }
+            else
+            {
+                bug("%s ARM Processor Core (unknown family)\n", sysprocs[i]->Vendor);
+            }
 
-        if (sysprocs[0]->Features1 & FEATF_FPU_VFP4)
-        {
-            bug("[processor.ARM] VFPv4 Co-Processor\n");
-        }
-        else if (sysprocs[0]->Features1 & FEATF_FPU_VFP3_16)
-        {
-            bug("[processor.ARM] VFPv3 [16Double] Co-Processor\n");
-        }
-        else if (sysprocs[0]->Features1 & FEATF_FPU_VFP3)
-        {
-            bug("[processor.ARM] VFPv3 Co-Processor\n");
-        }
-        else if (sysprocs[0]->Features1 & FEATF_FPU_VFP2)
-        {
-            bug("[processor.ARM] VFPv2 Co-Processor\n");
-        }
-        else
-        {
-            bug("[processor.ARM] VFPv1 Co-Processor\n");            
-        }
+            if (sysprocs[i]->Features1 & FEATF_FPU_VFP4)
+            {
+                bug("[processor.ARM]   VFPv4 Co-Processor\n");
+            }
+            else if (sysprocs[i]->Features1 & FEATF_FPU_VFP3_16)
+            {
+                bug("[processor.ARM]   VFPv3 [16Double] Co-Processor\n");
+            }
+            else if (sysprocs[i]->Features1 & FEATF_FPU_VFP3)
+            {
+                bug("[processor.ARM]   VFPv3 Co-Processor\n");
+            }
+            else if (sysprocs[i]->Features1 & FEATF_FPU_VFP2)
+            {
+                bug("[processor.ARM]   VFPv2 Co-Processor\n");
+            }
+            else
+            {
+                bug("[processor.ARM]   VFPv1 Co-Processor\n");            
+            }
 
-        if (sysprocs[0]->Features1 & FEATF_NEON)
-        {
-            bug("[processor.ARM]   NEON SIMD Extensions\n");
-        }
+            if (sysprocs[i]->Features1 & FEATF_NEON)
+            {
+                bug("[processor.ARM]    NEON SIMD Extensions\n");
+            }
 
-        bug("[processor.ARM] Cache Info:\n");
-        bug("[processor.ARM]   L1 Data   : %dKb\n", sysprocs[0]->L1DataCacheSize);
-        bug("[processor.ARM]   L1 Instr. : %dKb\n", sysprocs[0]->L1InstructionCacheSize);
+            bug("[processor.ARM] Cache Info:\n");
+            bug("[processor.ARM]   L1 Data   : %dKb\n", sysprocs[i]->L1DataCacheSize);
+            bug("[processor.ARM]   L1 Instr. : %dKb\n", sysprocs[i]->L1InstructionCacheSize);
+        }
     )
 
     return TRUE;
