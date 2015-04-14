@@ -29,6 +29,12 @@ void cpu_Register()
 {
     uint32_t tmp;
 
+    asm volatile ("mrc p15, 0, %0, c1, c0, 0" : "=r"(tmp));
+    tmp &= ~1;                                  /* Disable MMU */
+    tmp |= (1 << 2) | (1 << 12) | (1 << 11);    /* I and D caches, branch prediction */
+    tmp = (tmp & ~2) | (1 << 22);               /* Unaligned access enable */
+    asm volatile ("mcr p15, 0, %0, c1, c0, 0" : : "r"(tmp));
+
     cpu_Init(&__arm_arosintern, NULL);
 
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
