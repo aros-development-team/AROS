@@ -78,6 +78,11 @@ static int platform_PostInit(struct KernelBase *KernelBase)
     
     __AllocMem = SetFunction((struct Library *)SysBase, -33*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel, 33));
 
+    D(bug("[Kernel] platform_PostInit: Performing Post Init..\n"));
+
+    if (__arm_arosintern.ARMI_Init)
+        __arm_arosintern.ARMI_Init(KernelBase);
+    
     D(bug("[Kernel] platform_PostInit: Registering Heartbeat timer..\n"));
 
     KrnAddSysTimerHandler(KernelBase);

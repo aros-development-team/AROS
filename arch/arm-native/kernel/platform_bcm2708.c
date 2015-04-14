@@ -6,13 +6,15 @@
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 
+#include "kernel_base.h"
+
+#include <proto/kernel.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
 #include <hardware/intbits.h>
 
 #include "kernel_intern.h"
-#include "kernel_base.h"
 #include "kernel_cpu.h"
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
@@ -30,14 +32,15 @@
 
 extern void cpu_Register(void);
 
-static void bcm2708_init(void)
+static void bcm2708_init(APTR _kernelBase)
 {
+    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
         int core;
-        for (core = 1; core < 3; core ++)
+        for (core = 1; core < 4; core ++)
         {
-             *((volatile unsigned int *)(0x4000008C + (0x10 * core))) = (unsigned int)cpu_Register;
+             *((volatile unsigned int *)(0x4000008C + (0x10 * core))) = (unsigned int)KrnVirtualToPhysical(cpu_Register);
         }
 
         if (__arm_arosintern.ARMI_Delay)

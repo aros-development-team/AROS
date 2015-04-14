@@ -175,9 +175,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     if (__arm_arosintern.ARMI_LED_Toggle)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
     
-    if (__arm_arosintern.ARMI_Init)
-        __arm_arosintern.ARMI_Init();
-    else if (__arm_arosintern.ARMI_Delay)
+    if (__arm_arosintern.ARMI_Delay)
             __arm_arosintern.ARMI_Delay(1500);
     
     if (__arm_arosintern.ARMI_LED_Toggle)
