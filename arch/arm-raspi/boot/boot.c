@@ -170,7 +170,7 @@ void query_vmem()
     mmu_map_section(vc_msg[5], vc_msg[5], vc_msg[6], 1, 0, 3, 0);
 }
 
-static const char bootstrapName[] = "Bootstrap/RasPI ARM";
+static const char bootstrapName[] = "Bootstrap/ARM BCM2708";
 
 void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 {
@@ -220,6 +220,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     mem_init();
 
     boottag = tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE;
+
+    /* first of all, store the arch for the kernel to use .. */
+    boottag->ti_Tag = KRN_Platform;
+    boottag->ti_Data = (IPTR)arch;
+    boottag++;
 
     /* Init LED */
     {
