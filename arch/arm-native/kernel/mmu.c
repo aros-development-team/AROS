@@ -6,7 +6,7 @@
 #include <inttypes.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
-#include <asm/arm/mmu.h>
+#include <hardware/bcm2708_boot.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -16,13 +16,9 @@
 #include "kernel_intern.h"
 #include "mmu.h"
 
-unsigned int pagetable[4096]	__attribute__ ((aligned (16384)));
-unsigned int pagetable0[64]	__attribute__ ((aligned (16384)));
-
 void core_MMUUpdatePageTables(void)
 {
-    unsigned int pt_addr = (unsigned int) &pagetable;
-    unsigned int pt0_addr = (unsigned int) &pagetable0;
+    static pde_t *pde = BOOTMEMADDR(bm_pde);
 
     /* Invalidate caches */
     asm volatile("mcr   p15, 0, %[r], c8, c7, 0" : : [r] "r" (0x0));   //Invalidate entire unified TLB
@@ -32,8 +28,7 @@ void core_MMUUpdatePageTables(void)
     asm volatile("mcr   p15, 0, %[r], c7, c5, 0" : : [r] "r" (0x0));   //Invalidate icache
 
     /* setup_ttbr0/1 */
-    asm volatile("mcr   p15, 0, %[addr], c2, c0, 0" : : [addr] "r" (pt0_addr));
-    asm volatile("mcr   p15, 0, %[addr], c2, c0, 1" : : [addr] "r" (pt_addr));
+    asm volatile("mcr   p15, 0, %[addr], c2, c0, 1" : : [addr] "r" (pde));
     /* setup_ttbrc */
     asm volatile("mcr   p15, 0, %[n], c2, c0, 2" : : [n] "r" (7));
 }
@@ -42,28 +37,6 @@ void core_SetupMMU(struct TagItem *msg)
 {
     unsigned int page;
     register unsigned int control;
-
-    D(bug("[Kernel] core_SetupMMU: Creating MMU pagetable[0] entries for 4GB address space\n"));
-
-    for (page = 0; page < 4096; page ++)
-    {
-        unsigned int pageflags = PAGE_TRANSLATIONFAULT;
-        if (page > 64)
-        {
-            pageflags = (page << 20) | PAGE_FL_S_BIT | PAGE_SECTION;
-#if defined(ARM_PERIIOBASE)
-            if ((page < (ARM_PERIIOBASE >> 20)) || (page > ((ARM_PERIIOBASE + ARM_PERIIOSIZE) >> 20)))
-#endif
-                pageflags |= PAGE_C_BIT | PAGE_B_BIT | (1 << PAGE_TEX_SHIFT);
-        }
-        pagetable[page] = pageflags;
-    }
-
-    D(bug("[Kernel] core_SetupMMU: Creating MMU pagetable[1] entries for 64MB address space\n"));
-    for (page = 0; page < 64; page++)
-    {
-            pagetable0[page] = (page << 20) | PAGE_FL_S_BIT | PAGE_C_BIT | PAGE_SECTION | PAGE_B_BIT | (1 << PAGE_TEX_SHIFT);
-    }
 
     core_MMUUpdatePageTables();
 
