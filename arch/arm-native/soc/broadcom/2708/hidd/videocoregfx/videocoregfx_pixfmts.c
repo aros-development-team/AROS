@@ -43,18 +43,18 @@ IPTR pftags_32bpp[ARRAYSIZE_TRUECOLOR] =
 IPTR pftags_24bpp[ARRAYSIZE_TRUECOLOR] =
 {
     ARRAYSIZE_TRUECOLOR,
-    24,
-    16,
     8,
+    16,
+    24,
     0,
-    0x000000FF,
-    0x0000FF00,
     0x00FF0000,
+    0x0000FF00,
+    0x000000FF,
     0x00000000,
     24,
     3,
     24,
-    vHidd_StdPixFmt_RGB24
+    vHidd_StdPixFmt_BGR24
 };
 #endif
 
