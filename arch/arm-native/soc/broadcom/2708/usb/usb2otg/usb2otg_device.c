@@ -263,11 +263,17 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                             break;
                                     }
 #else
-                                    D(bug("Disable HNP/SRP\n"));
+                                    D(bug("[USB2OTG] %s: Disable HNP/SRP\n", __PRETTY_FUNCTION__));
+                                    D(bug("\n"));
                                     otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
                                     otg_RegVal &= ~(USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
                                     *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
 #endif
+
+                                    D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n", __PRETTY_FUNCTION__));
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
+                                    otg_RegVal = ~0UL;
+                                    *((volatile unsigned int *)USB2OTG_INTR) = otg_RegVal;
 
                                     bug("[USB2OTG] HS OTG USB Driver Initialised\n");
                                 }
