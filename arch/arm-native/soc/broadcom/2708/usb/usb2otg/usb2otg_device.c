@@ -264,7 +264,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     }
 #else
                                     D(bug("[USB2OTG] %s: Disable HNP/SRP\n", __PRETTY_FUNCTION__));
-                                    D(bug("\n"));
                                     otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
                                     otg_RegVal &= ~(USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
                                     *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
