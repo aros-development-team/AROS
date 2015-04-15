@@ -50,6 +50,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
 
             D(bug("[USB2OTG] %s: Enabling Power ..\n", __PRETTY_FUNCTION__));
             *((volatile unsigned int *)USB2OTG_POWER) = 0;
+
 #if (0)
             D(bug("[USB2OTG] %s: Preparing Controller (non HSIC mode) ..\n", __PRETTY_FUNCTION__));
             *((volatile unsigned int *)USB2OTG_USB) = USB2OTG_USB_MODESELECT|USB2OTG_USB_USBTRDTIM(5)|(USB2OTGBase->hd_Unit->hu_OperatingMode << 29);
@@ -91,13 +92,15 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
             otg_RegVal |= (1 << 2);
             *((volatile unsigned int *)USB2OTG_HOSTCFG) = otg_RegVal;
 
+#if (0)
             D(bug("[USB2OTG] %s: Enabling HNP...\n", __PRETTY_FUNCTION__));
             otg_RegVal = *((volatile unsigned int *)USB2OTG_OTGCTRL);
             otg_RegVal |= USB2OTG_OTGCTRL_HOSTSETHNPENABLE;
             *((volatile unsigned int *)USB2OTG_OTGCTRL) = otg_RegVal;
+#endif
 
             D(bug("[USB2OTG] %s: Flushing Tx Fifo's...\n", __PRETTY_FUNCTION__));
-            *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_TXFIFOFLUSH|(16 << 6);
+            *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_TXFIFOFLUSH|(10 << 6);
             for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
             if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_TXFIFOFLUSH) != 0)
                 bug("[USB2OTG] %s: Tx Flush Timed-Out!\n", __PRETTY_FUNCTION__);
@@ -211,13 +214,27 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                 *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;    
             }
 
-            D(bug("[USB2OTG] %s: Reseting Host Port ..\n", __PRETTY_FUNCTION__));            
-            otg_RegVal |= USB2OTG_HOSTPORT_PRTRST;
-            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
-            for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-            otg_RegVal &= ~USB2OTG_HOSTPORT_PRTRST;
-            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
+            for (ns = 0; ns < 20000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 20ms
 
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
+            if (otg_RegVal & USB2OTG_HOSTPORT_PRTCONNSTS)
+            {
+                D(bug("[USB2OTG] %s: Reseting Host Port ..\n", __PRETTY_FUNCTION__));            
+                for (ns = 0; ns < 100000; ns++) { asm volatile("mov r0, r0\n"); } // see USB 2.0 spec
+
+                otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
+                otg_RegVal &= ~(USB2OTG_HOSTPORT_PRTCONNSTS|USB2OTG_HOSTPORT_PRTENA|USB2OTG_HOSTPORT_PRTENCHNG|USB2OTG_HOSTPORT_PRTOVRCURRCHNG);
+                otg_RegVal |= USB2OTG_HOSTPORT_PRTRST;
+                *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
+
+                for (ns = 0; ns < 50000; ns++) { asm volatile("mov r0, r0\n"); } // see USB 2.0 spec (tDRSTR)
+
+                otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
+                otg_RegVal &= ~(USB2OTG_HOSTPORT_PRTCONNSTS|USB2OTG_HOSTPORT_PRTENA|USB2OTG_HOSTPORT_PRTENCHNG|USB2OTG_HOSTPORT_PRTOVRCURRCHNG| USB2OTG_HOSTPORT_PRTRST);
+                *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
+
+                for (ns = 0; ns < 20000; ns++) { asm volatile("mov r0, r0\n"); } // see USB 2.0 spec (tRSTRCY)
+            }
 #if (0)
             D(bug("[USB2OTG] %s: Configuring Interrupts ...\n",
                         __PRETTY_FUNCTION__));
