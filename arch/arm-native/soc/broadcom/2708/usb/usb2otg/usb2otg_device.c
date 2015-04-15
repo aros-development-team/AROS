@@ -141,16 +141,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     bug("%08x\n", otg_RegVal);
                                 )
 
-                                otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
-                                otg_RegVal &= ~(USB2OTG_USB_ULPIDRIVEEXTERNALVBUS|USB2OTG_USB_TSDLINEPULSEENABLE);
-                                *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
-
-                                D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
-                                *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_CORESOFT;
-                                for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-                                if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_CORESOFT) != 0)
-                                    bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
-
                                 if ((USB2OTGBase->hd_Unit = AllocPooled(USB2OTGBase->hd_MemPool, sizeof(struct USB2OTGUnit))) != NULL)
                                 {
                                     D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
@@ -194,15 +184,13 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     D(bug("[USB2OTG] %s: Unit Mode %d\n",
                                                 __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_OperatingMode));
 #endif
-                                    USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_HOSTPORT, GlobalIRQHandler, USB2OTGBase->hd_Unit, SysBase);
+                                    USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, GlobalIRQHandler, USB2OTGBase->hd_Unit, SysBase);
 
                                     D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p] for IRQ #%ld\n",
                                                 __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle, IRQ_HOSTPORT));
 
-                                    D(bug("[USB2OTG] %s: Initialising PHY ..\n", __PRETTY_FUNCTION__));
                                     otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
-                                    otg_RegVal &= ~USB2OTG_USB_PHYINTERFACE;
-                                    otg_RegVal |= USB2OTG_USB_MODESELECT_UTMI;
+                                    otg_RegVal &= ~(USB2OTG_USB_ULPIDRIVEEXTERNALVBUS|USB2OTG_USB_TSDLINEPULSEENABLE);
                                     *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
 
                                     D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
@@ -210,6 +198,20 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
                                     if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_CORESOFT) != 0)
                                         bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
+
+                                    D(bug("[USB2OTG] %s: Initialising PHY ..\n", __PRETTY_FUNCTION__));
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                    otg_RegVal &= ~USB2OTG_USB_PHYINTERFACE;
+                                    otg_RegVal &= ~USB2OTG_USB_MODESELECT_UTMI;
+                                    *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+
+#if (0)
+                                    D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
+                                    *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_CORESOFT;
+                                    for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
+                                    if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_CORESOFT) != 0)
+                                        bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
+#endif
 
                                     otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
                                     if (((otg_RegVal & (3 << 6) >> 6) == 2) && ((otg_RegVal & (3 << 8) >> 8) == 1))
