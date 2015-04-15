@@ -233,6 +233,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     otg_RegVal |= (USB2OTG_AHB_DMAENABLE|USB2OTG_AHB_DMAREMAINDERMODE_INCR);
                                     *((volatile unsigned int *)USB2OTG_AHB) = otg_RegVal;
 
+#if (0)
                                     D(bug("[USB2OTG] %s: Operating Mode: ", __PRETTY_FUNCTION__));
                                     otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
                                     switch (otg_RegVal & 7)
@@ -261,6 +262,12 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                             *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
                                             break;
                                     }
+#else
+                                    D(bug("Disable HNP/SRP\n"));
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                    otg_RegVal &= ~(USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
+                                    *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+#endif
 
                                     bug("[USB2OTG] HS OTG USB Driver Initialised\n");
                                 }
