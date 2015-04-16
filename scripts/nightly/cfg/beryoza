@@ -6,4 +6,5 @@ CFG_MAIL_CC=pavel_fedin@mail.ru
 CFG_UPLOAD_ENABLE=yes
 CFG_DS_KEY=/Users/sonic/.ssh/id_dsa
 CFG_DS_USER=sonic_amiga,aros
+CFG_DS_DIRECTORY=uploads/nightly2/
 CFG_BACKUP_ENABLE=no
