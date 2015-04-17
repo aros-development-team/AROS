@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2014, The AROS Development Team.
+    Copyright  2002-2015, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -271,6 +271,10 @@ static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
 
         DoMethod(msgint->obj, MUIM_ConnectParent, (IPTR) obj);
     }
+
+    /* Ensure new children are disabled if their parent is */
+    if (XGET(obj, MUIA_Disabled))
+        nnset(obj, MUIA_Disabled, TRUE);
 
     /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
     muiNotifyData(msgint->obj)->mnd_ParentObject = obj;
