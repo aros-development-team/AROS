@@ -26,7 +26,7 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_ListviewData
 {
-    Object *list, *group, *vert;
+    Object *list, *vert;
     struct Hook hook;
     struct Hook selfnotify_hook;
     BOOL noforward;
@@ -112,7 +112,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListviewData *data;
     struct TagItem *tag, *tags;
-    Object *group, *vert;
+    Object *vert;
     Object *list =
         (Object *) GetTagData(MUIA_Listview_List, (IPTR) NULL,
         msg->ops_AttrList);
@@ -124,14 +124,10 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
 
     obj = (Object *) DoSuperNewTags(cl, obj, NULL,
-        MUIA_Group_Horiz, FALSE,
+        MUIA_Group_Horiz, TRUE,
         MUIA_InnerLeft, 0,
         MUIA_InnerRight, 0,
-        Child, (IPTR) (group = HGroup,
-            MUIA_InnerLeft, 0,
-            MUIA_InnerRight, 0,
-            MUIA_Group_Spacing, 0,
-            End),
+        MUIA_Group_Spacing, 0,
         TAG_MORE, msg->ops_AttrList);
 
     if (!obj)
@@ -140,7 +136,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->list = list;
     data->vert = vert;
-    data->group = group;
 
     data->hook.h_Entry = HookEntry;
     data->hook.h_SubEntry = (HOOKFUNC) Listview_Function;
@@ -183,15 +178,15 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     switch (data->scroller_pos)
     {
     case MUIV_Listview_ScrollerPos_None:
-        DoMethod(group, OM_ADDMEMBER, list);
+        DoMethod(obj, OM_ADDMEMBER, list);
         break;
     case MUIV_Listview_ScrollerPos_Left:
-        DoMethod(group, OM_ADDMEMBER, vert);
-        DoMethod(group, OM_ADDMEMBER, list);
+        DoMethod(obj, OM_ADDMEMBER, vert);
+        DoMethod(obj, OM_ADDMEMBER, list);
         break;
     default:
-        DoMethod(group, OM_ADDMEMBER, list);
-        DoMethod(group, OM_ADDMEMBER, vert);
+        DoMethod(obj, OM_ADDMEMBER, list);
+        DoMethod(obj, OM_ADDMEMBER, vert);
         break;
     }
 
