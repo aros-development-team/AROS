@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -16,30 +16,33 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
 {
     AROS_INTFUNC_INIT
 
-   D(bug("[USB2OTG] ## Pending Work Interupt\n"));
+    D(bug("[USB2OTG] [0x%p:PEND] Pending Work Interupt\n", otg_Unit));
 
     /* **************** PROCESS DONE TRANSFERS **************** */
 
     FNAME_ROOTHUB(PendingIO)(otg_Unit);
 
-//    uhciHandleFinishedTDs(otg_Unit);
+//    FNAME_DEV(DoFinishedTDs)(otg_Unit);
 
     if (otg_Unit->hu_CtrlXFerQueue.lh_Head->ln_Succ)
     {
-//        uhciScheduleCtrlTDs(otg_Unit);
+        D(bug("[USB2OTG] [0x%p:PEND] Process CtrlXFer ..\n", otg_Unit));
+//        FNAME_DEV(ScheduleCtrlTDs)(otg_Unit);
     }
 
     if (otg_Unit->hu_IntXFerQueue.lh_Head->ln_Succ)
     {
-//        uhciScheduleIntTDs(otg_Unit);
+        D(bug("[USB2OTG] [0x%p:PEND] Process IntXFer ..\n", otg_Unit));
+//        FNAME_DEV(ScheduleIntTDs)(otg_Unit);
     }
 
     if (otg_Unit->hu_BulkXFerQueue.lh_Head->ln_Succ)
     {
-//        uhciScheduleBulkTDs(otg_Unit);
+        D(bug("[USB2OTG] [0x%p:PEND] Process BulkXFer ..\n", otg_Unit));
+//        FNAME_DEV(ScheduleBulkTDs)(otg_Unit);
     }
 
-    D(bug("[USB2OTG] ## Pending Work Processed\n"));
+    D(bug("[USB2OTG] [0x%p:PEND] finished\n", otg_Unit));
 
     return FALSE;
 
@@ -52,7 +55,7 @@ AROS_INTH1(FNAME_DEV(NakTimeoutInt), struct USB2OTGUnit *, otg_Unit)
 
     struct IOUsbHWReq *ioreq;
 
-   D(bug("[USB2OTG] ## NakTimeout Interupt\n"));
+   D(bug("[USB2OTG] [0x%p:NAK] NakTimeout Interupt\n", otg_Unit));
 
 //    ULONG framecnt;
 //    uhciUpdateFrameCounter(hc);
@@ -112,7 +115,7 @@ AROS_INTH1(FNAME_DEV(NakTimeoutInt), struct USB2OTGUnit *, otg_Unit)
     otg_Unit->hu_NakTimeoutReq.tr_time.tv_micro = 150 * 1000;
     SendIO((APTR) &otg_Unit->hu_NakTimeoutReq);
 
-    D(bug("[USB2OTG] ## NakTimeout Processed\n"));
+    D(bug("[USB2OTG] [0x%p:NAK] processed\n", otg_Unit));
 
     return FALSE;
 

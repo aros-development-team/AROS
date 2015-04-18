@@ -25,8 +25,32 @@ IPTR	__arm_periiobase __attribute__((used)) = 0 ;
 
 static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase)
 {
+    volatile unsigned int otg_RegVal;
+
     D(bug("[USB2OTG] %s: Received USB interrupt for Unit @ 0x%p\n",
                  __PRETTY_FUNCTION__, USBUnit));
+
+    otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
+
+    if (otg_RegVal & USB2OTG_INTRCORE_HOSTCHANNEL)
+    {
+        volatile unsigned int otg_ChanVal;
+        otg_ChanVal = *((volatile unsigned int *)USB2OTG_HOSTINTR);
+        *((volatile unsigned int *)USB2OTG_HOSTINTR) = otg_ChanVal;
+#if (0)
+              for (chan = 0; chan < ... ; chan ++)
+              {
+                      if (otg_ChanVal & (1 << chan))
+                      {
+                              *((volatile unsigned int *)USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + 0x0c) = 0;
+                              D(bug("[USB2OTG] %s: Host Channel #%d Interrupt\n",
+                                      __PRETTY_FUNCTION__, chan));
+                      }
+              }
+#endif
+    }
+
+    *((volatile unsigned int *)USB2OTG_INTR) = otg_RegVal;
 }
 
 /*
@@ -532,10 +556,12 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
     /* Is it pending? */
     if (ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
     {
-//        if (FNAME_DEV(cmdAbortIO)(ioreq, USB2OTGBase))
-//        {
-//            return(0);
-//        }
+#if (0)
+        if (FNAME_DEV(cmdAbortIO)(ioreq, USB2OTGBase))
+        {
+            return(0);
+        }
+#endif
     }
     return(-1);
 

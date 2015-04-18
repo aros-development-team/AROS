@@ -145,7 +145,6 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                         (USB2OTG_INTRCHAN_STALL|USB2OTG_INTRCHAN_BABBLEERROR|USB2OTG_INTRCHAN_TRANSACTIONERROR) |
                         (USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE|USB2OTG_INTRCHAN_ACKNOWLEDGE|USB2OTG_INTRCHAN_NOTREADY) |
                         (USB2OTG_INTRCHAN_HALT|USB2OTG_INTRCHAN_FRAMEOVERRUN|USB2OTG_INTRCHAN_DATATOGGLEERROR);
-#endif
                     otg_RegVal = *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)); 
                     D(bug("[USB2OTG] %s:      Chan #%d FIFO @ 0x%p, Characteristics: %08x -> %08x\n",
                                 __PRETTY_FUNCTION__,
@@ -154,15 +153,18 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                     otg_RegVal &= ~USB2OTG_HOSTCHAR_ENABLE;
                     otg_RegVal |= USB2OTG_HOSTCHAR_DISABLE | (1 << USB2OTG_HOSTCHAR_EPDIR);
                     *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) = otg_RegVal;
+#endif
                 }
 
                 for (chan = 0; chan < otg_Unit->hu_HostChans; chan++) {
+#if (0)
                     otg_RegVal = *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)); 
                     otg_RegVal |= USB2OTG_HOSTCHAR_ENABLE|USB2OTG_HOSTCHAR_DISABLE|(1 << USB2OTG_HOSTCHAR_EPDIR);
                     *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) = otg_RegVal;
                     for (ns = 0; ns < 100000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 100ms
                     if ((*((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE) != 0)
                         bug("[USB2OTG] %s: Unable to clear Halt on channel #%d\n", __PRETTY_FUNCTION__, chan);
+#endif
                 }
                 
 #if (0)
@@ -251,8 +253,8 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                     D(bug("[USB2OTG] %s: Multi-Process Interrupts ...\n",
                         __PRETTY_FUNCTION__));
                     for (chan = 0; chan < otg_Unit->hu_DevInEPs; chan++) {
-//                        *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)) = (1 << 0);
-//                        *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)) = 0;
+                        *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)) = (1 << 0);
+                        *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)) = 0;
                         *((volatile unsigned int *)USB2OTG_DEVEACHINTMSK) = 0xFFFF;
                     }
                 }
@@ -267,12 +269,13 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
             D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n",
                         __PRETTY_FUNCTION__));
             *((volatile unsigned int *)USB2OTG_AHB) = USB2OTG_AHB_INTENABLE;
-#endif
 
             D(bug("[USB2OTG] %s: Initialising NakTimeout (intr @ 0x%p) ...\n",
                         __PRETTY_FUNCTION__, &otg_Unit->hu_NakTimeoutInt));
 
+
             Cause(&otg_Unit->hu_NakTimeoutInt);
+#endif
         }
 
         otg_RegVal = *((volatile unsigned int *)USB2OTG_OTGCTRL);
