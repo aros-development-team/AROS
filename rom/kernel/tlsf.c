@@ -573,6 +573,15 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
     D(nbug("[Kernel:TLSF] %s: adjusted align = %u\n", __PRETTY_FUNCTION__, align));
 
     ptr = tlsf_malloc(mhe, size+align, flags);
+
+    if (!ptr)
+    {
+        if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+            ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
+
+        return ptr;
+    }
+
     b = MEM_TO_BHDR(ptr);
 
     D(nbug("[Kernel:TLSF] %s: allocated region @%p\n", __PRETTY_FUNCTION__, ptr));
