@@ -150,7 +150,6 @@ asm (
     "           ldr     r1, [r0, #16*4]        \n" // load the spr register
     "           and     r1, r1, #31            \n" // mask processor mode
     "           cmp     r1, #16                \n" // will we go back to user mode?
-    "           cmpne   r1, #31                \n" // or maybe system mode which is basically privileged user mode?
     "           bne     1f                     \n" // no? don't call core_ExitInterrupt!
     "           mov     fp, #0                 \n" // clear fp
     "           bl      core_ExitInterrupt     \n"
@@ -220,7 +219,9 @@ void handle_dataabort(regs_t *regs)
 
     bug("[Kernel] Trap ARM Data Abort Exception\n");
     bug("[Kernel]    exception #2 (Bus Error)\n");
-    bug("[Kernel]    attempt to access 0x%p from 0x%p\n", far, regs[14]);
+    bug("[Kernel]    attempt to access 0x%p from 0x%p\n", far, regs->lr);
+
+    cpu_DumpRegs(regs);
 
     if (krnRunExceptionHandlers(KernelBase, 2, regs))
 	return;
@@ -268,7 +269,9 @@ void handle_prefetchabort(regs_t *regs)
 {
     bug("[Kernel] Trap ARM Prefetch Abort Exception\n");
     bug("[Kernel]    exception #3 (Address Error)\n");
-    bug("[Kernel]    at 0x%p\n", regs[14]);
+    bug("[Kernel]    at 0x%p\n", regs->lr);
+
+    cpu_DumpRegs(regs);
 
     if (krnRunExceptionHandlers(KernelBase, 3, regs))
 	return;
