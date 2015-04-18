@@ -48,7 +48,6 @@ asm (
     "           add     r1, r0, #14*4          \n" // store lr^ in ctx_lr
     "           stm     r1, {lr}^              \n"
     "           mov     fp, #0                 \n" // clear fp(??)
-
     "           bl      handle_syscall         \n"
     VECTCOMMON_END
 );
@@ -168,6 +167,16 @@ void handle_syscall(void *regs)
 
                 break;
             }
+
+            /*
+             * Execure core_SysCall only when we will go back to user mode. Default core_SysCall does
+             * not check this condition and could execute Cause() handler before IRQ is entirely handled.
+             */
+            case SC_CAUSE:
+                if ((((uint32_t *)regs)[16] & 0x1f) == 0x10)
+                    core_SysCall(swi_no, regs);
+                break;
+
             default:
                 core_SysCall(swi_no, regs);
                 break;
