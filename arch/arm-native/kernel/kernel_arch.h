@@ -9,7 +9,7 @@
 #include "kernel_cpu.h"
 
 /* Number of IRQs used in the machine. Needed by kernel_base.h */
-#define IRQ_COUNT 96
+#define IRQ_COUNT 72
 
 /*
  * Interrupt controller functions.
