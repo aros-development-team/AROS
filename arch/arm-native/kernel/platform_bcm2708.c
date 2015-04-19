@@ -25,6 +25,7 @@
 #include <hardware/pl011uart.h>
 
 #define IRQBANK_POINTER(bank)   ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
+
 #define IRQ_BANK1	0x00000100
 #define IRQ_BANK2	0x00000200
 
@@ -64,90 +65,84 @@ static void bcm2807_irq_init(void)
 static void bcm2807_irq_enable(int irq)
 {
     int bank = IRQ_BANK(irq);
-    unsigned int val, reg;
+    unsigned int reg;
 
     reg = (unsigned int)IRQBANK_POINTER(bank);
 
-    DIRQ(bug("[KRN:BCM2708] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    (bug("[KRN:BCM2708] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
-    val = *((volatile unsigned int *)reg);
-    val |= IRQ_MASK(irq);
-    *((volatile unsigned int *)reg) = val;
+    *((volatile unsigned int *)reg) = IRQ_MASK(irq);
+
+    (bug("[KRN:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
 }
 
 static void bcm2807_irq_disable(int irq)
 {
     int bank = IRQ_BANK(irq);
-    unsigned int val, reg;
+    unsigned int reg;
 
-    reg = (unsigned int)IRQBANK_POINTER(bank);
+    reg = (unsigned int)IRQBANK_POINTER(bank) + 0x0c;
 
-    DIRQ(bug("[KRN:BCM2708] Dissabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    (bug("[KRN:BCM2708] Disabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
-    val = *((volatile unsigned int *)reg);
-    val |= IRQ_MASK(irq);
-    *((volatile unsigned int *)reg) = val;
+    *((volatile unsigned int *)reg) = IRQ_MASK(irq);
+
+    (bug("[KRN:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
 }
 
 static void bcm2807_irq_process()
 {
-    unsigned int pending, processed, irq;
+    unsigned int pendingarm, pending0, pending1, irq;
 
-    pending = *((volatile unsigned int *)(ARMIRQ_PEND));
-    DIRQ(bug("[KRN] PendingARM %08x\n", pending));
-    if (!(pending & IRQ_BANK1))
+    for(;;)
     {
-        processed = 0;
-        for (irq = (2 << 5); irq < ((2 << 5) + 32); irq++)
+        pendingarm = *((volatile unsigned int *)(ARMIRQ_PEND));
+        pending0 = *((volatile unsigned int *)(GPUIRQ_PEND0));
+        pending1 = *((volatile unsigned int *)(GPUIRQ_PEND1));
+
+        if (!(pendingarm || pending0 || pending1))
+            break;
+
+        DIRQ(bug("[KRN] PendingARM %08x\n", pendingarm));
+        DIRQ(bug("[KRN] Pending0 %08x\n", pending0));
+        DIRQ(bug("[KRN] Pending1 %08x\n", pending1));
+
+        if (pendingarm & ~(IRQ_BANK1 | IRQ_BANK2))
         {
-            if (pending & (1 << (irq - (2 << 5))))
+            for (irq = (2 << 5); irq < ((2 << 5) + 8); irq++)
             {
-                DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
-                krnRunIRQHandlers(KernelBase, irq);
-                processed |= (1 << (irq - (2 << 5)));
+                if (pendingarm & (1 << (irq - (2 << 5))))
+                {
+                    DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
+                    krnRunIRQHandlers(KernelBase, irq);
+                }
+            }
+        }
+
+        if (pending0)
+        {
+            for (irq = (0 << 5); irq < ((0 << 5) + 32); irq++)
+            {
+                if (pending0 & (1 << (irq - (0 << 5))))
+                {
+                    DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
+                    krnRunIRQHandlers(KernelBase, irq);
+                }
+            }
+        }
+
+        if (pending1)
+        {
+            for (irq = (1 << 5); irq < ((1 << 5) + 32); irq++)
+            {
+                if (pending1 & (1 << (irq - (1 << 5))))
+                {
+                    DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
+                    krnRunIRQHandlers(KernelBase, irq);
+                }
             }
         }
     }
-    else
-    {
-        processed = IRQ_BANK1;
-    }
-    if (processed) *((volatile unsigned int *)(ARMIRQ_PEND)) = (pending & ~processed);
-
-    pending = *((volatile unsigned int *)(GPUIRQ_PEND0));
-    DIRQ(bug("[KRN] Pending0 %08x\n", pending));
-    if (!(pending & IRQ_BANK2))
-    {
-        processed = 0;
-        for (irq = (0 << 5); irq < ((0 << 5) + 32); irq++)
-        {
-            if (pending & (1 << (irq - (0 << 5))))
-            {
-                DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
-                krnRunIRQHandlers(KernelBase, irq);
-                processed |= (1 << (irq - (0 << 5)));
-            }
-        }
-    }
-    else
-    {
-        processed = IRQ_BANK2;
-    }
-    if (processed) *((volatile unsigned int *)(GPUIRQ_PEND0)) = (pending & ~processed);
-
-    pending = *((volatile unsigned int *)(GPUIRQ_PEND1));
-    DIRQ(bug("[KRN] Pending1 %08x\n", pending));
-    processed = 0;
-    for (irq = (1 << 5); irq < ((1 << 5) + 32); irq++)
-    {
-            if (pending & (1 << (irq - (1 << 5))))
-        {
-            DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
-            krnRunIRQHandlers(KernelBase, irq);
-            processed |= (1 << (irq - (1 << 5)));
-        }
-    }
-    if (processed) *((volatile unsigned int *)(GPUIRQ_PEND1)) = (pending & ~processed);
 }
 
 
@@ -178,14 +173,12 @@ static void bcm2708_toggle_led(int LED, int state)
 
 static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
 {
-    unsigned int stc, cs;
+    unsigned int stc;
 
     D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, timerno));
 
     /* Aknowledge our timer interrupt */
-    cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    cs &= ~ (1 << timerno);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = cs;
+    *((volatile unsigned int *)(SYSTIMER_CS)) = 1 << timerno;
 
     /* Signal the Exec VBlankServer */
     if (SysBase && (SysBase->IDNestCnt < 0)) {
@@ -195,7 +188,6 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
     /* Refresh our timer interrupt */
     stc = *((volatile unsigned int *)(SYSTIMER_CLO));
     stc += VBLANK_INTERVAL;
-    *((volatile unsigned int *)(SYSTIMER_CS)) = cs | (1 << timerno);
     *((volatile unsigned int *)(SYSTIMER_C0 + (timerno * 4))) = stc;
 
     D(bug("[BCM2708] %s: Done..\n", __PRETTY_FUNCTION__));
