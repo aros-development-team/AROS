@@ -78,31 +78,31 @@ static inline void bug(const char *format, ...)
     va_end(args);
 }
 
-// NB - we use sizeof(ExceptionContext) on the stack
-
 #define VECTCOMMON_START \
-    "           sub     sp, sp, #6*4           \n" \
-    "           stmfd   sp!, {r0-r12}          \n" \
-    "           mov     r0, sp                 \n" \
-    "           mrs     r1, spsr               \n" \
-    "           str     r1, [r0, #16*4]        \n" \
-    "           str     lr, [r0, #15*4]        \n"
+    "           srsfd   sp!, #0x13              \n" \
+    "           cpsid   i, #0x13                \n" \
+    "           sub     sp, sp, #2*4            \n" \
+    "           stmfd   sp!, {r0-r12}           \n" \
+    "           mov     r0, sp                  \n" \
+    "           ldr     ip, [r0, #16*4]         \n" \
+    "           and     ip, ip, #0x1f           \n" \
+    "           cmp     ip, #0x10               \n" \
+    "           cmpne   ip, #0x1f               \n" \
+    "           addeq   r1, r0, #13*4           \n" \
+    "           stmeq   r1, {sp, lr}^           \n" \
+    "           strne   lr, [r0, #14*4]         \n"
 
 #define VECTCOMMON_END \
-    "           ldr     r1, [sp, #16*4]        \n" \
-    "           msr     spsr, r1               \n" \
-    "           and     r1, r1, #31            \n" \
-    "           cmp     r1, #16                \n" \
-    "           cmpne   r1, #31                \n" \
-    "           bne     1f                     \n" \
-    "           add     r1, sp, #13*4          \n" \
-    "           ldm     r1, {sp}^              \n" \
-    "           add     r1, sp, #14*4          \n" \
-    "           ldm     r1, {lr}^              \n" \
-    "1:         ldr     lr, [sp, #15*4]        \n" \
-    "           ldmfd   sp!, {r0-r12}          \n" \
-    "           add     sp, sp, #6*4           \n" \
-    "           movs    pc, lr                 \n"
+    "           ldr     ip, [sp, #16*4]         \n" \
+    "           and     ip, ip, #0x1f           \n" \
+    "           cmp     ip, #0x10               \n" \
+    "           cmpne   ip, #0x1f               \n" \
+    "           addeq   r1, sp, #13*4           \n" \
+    "           ldmeq   r1, {sp, lr}^           \n" \
+    "           ldrne   lr, [sp, #14*4]         \n" \
+    "           ldmfd   sp!, {r0-r12}           \n" \
+    "           add     sp, sp, #2*4            \n" \
+    "           rfefd   sp!                     \n"
 
 #define STORE_TASKSTATE(task, regs)                                             \
     struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;   \
