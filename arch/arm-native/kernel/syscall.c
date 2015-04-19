@@ -131,7 +131,7 @@ void handle_syscall(void *regs)
             {
                 D(bug("[KRN] ## SUPERSTATE... (0x%p ->", ((uint32_t *)regs)[16]));
                 ((uint32_t *)regs)[16] &= ~CPUMODE_MASK;
-                ((uint32_t *)regs)[16] |= (0x80 | CPUMODE_SUPERVISOR);
+                ((uint32_t *)regs)[16] |= (0x80 | CPUMODE_SYSTEM);
                 D(bug(" 0x%p)\n", ((uint32_t *)regs)[16]));
                 break;
             }
@@ -139,7 +139,7 @@ void handle_syscall(void *regs)
             case SC_ISSUPERSTATE:
             {
                 D(bug("[KRN] ## ISSUPERSTATE... "));
-                ((uint32_t *)regs)[0] = !(((((uint32_t *)regs)[16] & CPUMODE_MASK) == CPUMODE_USER) || ((((uint32_t *)regs)[16] & CPUMODE_MASK) == CPUMODE_SYSTEM));
+                ((uint32_t *)regs)[0] = !(((((uint32_t *)regs)[16] & CPUMODE_MASK) == CPUMODE_USER));
                 D(bug("%d\n", ((uint32_t *)regs)[0]));
                 break;
             }
