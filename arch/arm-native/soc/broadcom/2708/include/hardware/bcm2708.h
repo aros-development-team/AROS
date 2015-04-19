@@ -153,17 +153,6 @@
 #define IRQ_ILLEGAL_TYPE1       (ARMIRQ_BASE + 7)
 #define IRQ_PENDING1            (ARMIRQ_BASE + 8)
 #define IRQ_PENDING2            (ARMIRQ_BASE + 9)
-#define IRQ_JPEG                (ARMIRQ_BASE + 10)
-#define IRQ_USB                 (ARMIRQ_BASE + 11)
-#define IRQ_3D                  (ARMIRQ_BASE + 12)
-#define IRQ_DMA2                (ARMIRQ_BASE + 13)
-#define IRQ_DMA3                (ARMIRQ_BASE + 14)
-#define IRQ_I2C                 (ARMIRQ_BASE + 15)
-#define IRQ_SPI                 (ARMIRQ_BASE + 16)
-#define IRQ_I2SPCM              (ARMIRQ_BASE + 17)
-#define IRQ_SDIO                (ARMIRQ_BASE + 18)
-#define IRQ_UART0               (ARMIRQ_BASE + 19)
-#define IRQ_ARASANSDIO          (ARMIRQ_BASE + 20)
 
 #define GPIO_PADS_0_27          0x002c
 #define GPIO_PADS_28_45         0x0030
