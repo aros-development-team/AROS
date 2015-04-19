@@ -70,7 +70,7 @@ void handle_undef(regs_t *regs)
 {
     bug("[Kernel] Trap ARM Undef Exception\n");
     bug("[Kernel]    exception #4 (Illegal instruction)\n");
-    bug("[Kernel]    at 0x%p\n", regs[14]);
+    bug("[Kernel]    at 0x%p\n", regs->pc);
 
     if (krnRunExceptionHandlers(KernelBase, 4, regs))
 	return;
@@ -200,7 +200,7 @@ void handle_dataabort(regs_t *regs)
 
     bug("[Kernel] Trap ARM Data Abort Exception\n");
     bug("[Kernel]    exception #2 (Bus Error)\n");
-    bug("[Kernel]    attempt to access 0x%p from 0x%p\n", far, regs->lr);
+    bug("[Kernel]    attempt to access 0x%p from 0x%p\n", far, regs->pc);
 
     cpu_DumpRegs(regs);
 
@@ -246,7 +246,7 @@ void handle_prefetchabort(regs_t *regs)
 {
     bug("[Kernel] Trap ARM Prefetch Abort Exception\n");
     bug("[Kernel]    exception #3 (Address Error)\n");
-    bug("[Kernel]    at 0x%p\n", regs->lr);
+    bug("[Kernel]    at 0x%p\n", regs->pc);
 
     cpu_DumpRegs(regs);
 
