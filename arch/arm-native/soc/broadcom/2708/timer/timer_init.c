@@ -48,9 +48,7 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
     last_CLO = TimerBase->tb_Platform.tbp_CLO;
     
     /* Aknowledge and update our timer interrupt */
-    TimerBase->tb_Platform.tbp_cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    TimerBase->tb_Platform.tbp_cs &= ~(1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
+    *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << TICK_TIMER); //TimerBase->tb_Platform.tbp_cs;
     TimerBase->tb_Platform.tbp_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
     TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
 
@@ -77,14 +75,13 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
     D(bug("[Timer] Timer1Tick: Reconfiguring interrupt..\n"));
 
     TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
-    TimerBase->tb_Platform.tbp_cs |= (1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
     *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tbp_CLO + (1000000 / TimerBase->tb_eclock_rate));
 
     D(bug("[Timer] Timer1Tick: Done..\n"));
 }
 
 /****************************************************************************************/
+int vblank_Init(struct TimerBase *LIBBASE);
 
 static int Timer_Init(struct TimerBase *TimerBase)
 {
@@ -136,15 +133,12 @@ static int Timer_Init(struct TimerBase *TimerBase)
 
     /* Start up GPU timer #TICK_TIMER */
     Forbid();
-    TimerBase->tb_Platform.tbp_cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    TimerBase->tb_Platform.tbp_cs &= ~(1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
     TimerBase->tb_Platform.tbp_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
     TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
-    TimerBase->tb_Platform.tbp_cs |= (1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
     *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tbp_CLO + TimerBase->tb_Platform.tbp_TickRate.tv_micro);
     Permit();
+
+    vblank_Init(TimerBase);
 
     D(bug("[Timer] Timer_Init: configured GPU timer %d\n", TICK_TIMER));
 
@@ -154,12 +148,6 @@ static int Timer_Init(struct TimerBase *TimerBase)
 static int Timer_Expunge(struct TimerBase *TimerBase)
 {
     D(bug("[Timer] Timer_Expunge()\n"));
-
-    Forbid();
-    TimerBase->tb_Platform.tbp_cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    TimerBase->tb_Platform.tbp_cs &= ~ (1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
-    Permit();
 
     if (TimerBase->tb_TimerIRQHandle)
     	KrnRemIRQHandler(TimerBase->tb_TimerIRQHandle);
