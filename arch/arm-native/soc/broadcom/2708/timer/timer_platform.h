@@ -3,7 +3,7 @@
     $Id$
 */
 
-//#define USE_VBLANK_INT
+#define USE_VBLANK_INT
 #define TICK_TIMER            1
 
 struct PlatformTimer
@@ -11,7 +11,6 @@ struct PlatformTimer
     APTR tbp_BootLoaderBase;
     IPTR tbp_periiobase;
     struct timeval tbp_TickRate;	/* Our periodic timer interval   */
-    unsigned int tbp_cs;
     unsigned int tbp_CLO;
     unsigned int tbp_CHI;
 };
