@@ -43,11 +43,6 @@ asm (
     ".type __vectorhand_swi,%function          \n"
     "__vectorhand_swi:                         \n"
     VECTCOMMON_START
-    "           add     r1, r0, #13*4          \n" // store sp^ in ctx_sp
-    "           stm     r1, {sp}^              \n" 
-    "           add     r1, r0, #14*4          \n" // store lr^ in ctx_lr
-    "           stm     r1, {lr}^              \n"
-    "           mov     fp, #0                 \n" // clear fp(??)
     "           bl      handle_syscall         \n"
     VECTCOMMON_END
 );
@@ -173,9 +168,12 @@ void handle_syscall(void *regs)
              * not check this condition and could execute Cause() handler before IRQ is entirely handled.
              */
             case SC_CAUSE:
-                if ((((uint32_t *)regs)[16] & 0x1f) == 0x10)
+            {
+                uint32_t mode = (((uint32_t *)regs)[16]) & 0x1f;
+                if (mode == 0x10 || mode == 0x1f)
                     core_SysCall(swi_no, regs);
                 break;
+            }
 
             default:
                 core_SysCall(swi_no, regs);

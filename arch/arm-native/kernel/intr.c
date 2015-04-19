@@ -62,13 +62,7 @@ asm (
     ".type __vectorhand_undef,%function        \n"
     "__vectorhand_undef:                       \n"
     VECTCOMMON_START
-    "           cpsid   i, #" STR(MODE_SYSTEM)"\n" // switch to system mode, with interrupts disabled..
-    "           str     sp, [r0, #13*4]        \n"
-    "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
-    "           mov     fp, #0                 \n" // clear fp
-
     "           bl      handle_undef           \n"
-
     VECTCOMMON_END
     );
 
@@ -107,8 +101,7 @@ asm (
     ".type __vectorhand_reset,%function                 \n"
     "__vectorhand_reset:                                \n"
     "           mov     sp, #0x1000 - 16                \n" // re-use bootstrap tmp stack
-    "           mov     r0, sp                          \n"
-    "           sub     r0, r0, #" STR(BOOT_STACK_SIZE)"\n" // get the boottag's
+    "           sub     r0, sp, #" STR(BOOT_STACK_SIZE)"\n" // get the boottag's
     "           sub     r0, r0, #" STR(BOOT_TAGS_SIZE) "\n"
     "           mov     fp, #0                          \n" // clear fp
 
@@ -138,18 +131,12 @@ asm (
     "__vectorhand_irq:                         \n"
     "           sub     lr, lr, #4             \n" // adjust lr_irq
     VECTCOMMON_START
-    "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
-    "           str     sp, [r0, #13*4]        \n"
-    "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
-    "           mov     fp, #0                 \n" // clear fp
-
     "           bl      handle_irq             \n"
-
-    "           cpsid   i, #MODE_IRQ           \n" // switch to IRQ mode, with interrupts disabled..
     "           mov     r0, sp                 \n"
     "           ldr     r1, [r0, #16*4]        \n" // load the spr register
     "           and     r1, r1, #31            \n" // mask processor mode
-    "           cmp     r1, #16                \n" // will we go back to user mode?
+    "           cmp     r1, #0x10              \n" // will we go back to user mode?
+    "           cmpne   r1, #0x1f              \n" // or system mode (falls we use it)
     "           bne     1f                     \n" // no? don't call core_ExitInterrupt!
     "           mov     fp, #0                 \n" // clear fp
     "           bl      core_ExitInterrupt     \n"
@@ -200,13 +187,7 @@ asm (
     "__vectorhand_dataabort:                   \n"
     "           sub     lr, lr, #8             \n" // adjust lr_irq
     VECTCOMMON_START
-    "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
-    "           str     sp, [r0, #13*4]        \n"
-    "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
-    "           mov     fp, #0                 \n" // clear fp
-
     "           bl      handle_dataabort       \n"
-
     VECTCOMMON_END
     );
 
@@ -255,10 +236,6 @@ asm (
     "__vectorhand_prefetchabort:               \n"
     "           sub     lr, lr, #4             \n" // adjust lr_irq
     VECTCOMMON_START
-    "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
-    "           str     sp, [r0, #13*4]        \n"
-    "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
-    "           mov     fp, #0                 \n" // clear fp
 
     "           bl      handle_prefetchabort   \n"
 
