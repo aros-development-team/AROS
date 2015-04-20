@@ -7,8 +7,7 @@ USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer	\
 ifneq ($(FAMILY),)
 USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/timer
 endif
-USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/timer	\
-	         -I$(SRCDIR)/rom/timer
+USER_INCLUDES += -I$(SRCDIR)/rom/timer
 
 # Allow to add architecture-specific options
 # -DUSE_VBLANK_EMU needs to be defined in make.opts if needed, because
