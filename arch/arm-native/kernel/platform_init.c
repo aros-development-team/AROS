@@ -81,7 +81,7 @@ static int platform_PostInit(struct KernelBase *KernelBase)
     D(bug("[Kernel] platform_PostInit: Performing Post Init..\n"));
 
     if (__arm_arosintern.ARMI_Init)
-        __arm_arosintern.ARMI_Init(KernelBase);
+        __arm_arosintern.ARMI_Init(KernelBase, SysBase);
     
     D(bug("[Kernel] platform_PostInit: Registering Heartbeat timer..\n"));
 
