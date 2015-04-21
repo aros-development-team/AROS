@@ -42,6 +42,7 @@ asm(
 "               orr     r4, r4, #1              \n"
 "               mcr     p15, 0, r4, c1, c0, 0   \n"
 "               mcr     p15, 0, r3, c7, c5, 4   \n"
+"               cps     #0x13                   \n"
 "               ldr     sp, mpcore_data         \n"
 "               ldr     pc, mpcore_code         \n"
 
