@@ -79,9 +79,10 @@ Object *r_slider;
 Object *g_slider;
 Object *b_slider;
 Object *hue_gauge;
-Object *colorfield, *coloradjust, *colorfield_pen, *pendisplay, *pendisplay2,
-    *pendisplay_pen, *pendisplay_spec, *reference_check, *shine_button,
-    *shadow_button, *yellow_button, *poppen;
+Object *colorfield, *colorfield2, *colorfield_reset_button, *colorfield_pen;
+Object *coloradjust;
+Object *pendisplay, *pendisplay2, *pendisplay_pen, *pendisplay_spec,
+    *reference_check, *shine_button, *shadow_button, *yellow_button, *poppen;
 Object *group;
 Object *editor_text;
 Object *filename_string;
@@ -731,10 +732,21 @@ int main(void)
                             End,
                         Child, HGroup,
                             Child, VGroup, GroupFrameT("Colorfield"),
-                                Child, colorfield = ColorfieldObject,
-                                    MUIA_Colorfield_RGB, default_color,
-                                    MUIA_Colorfield_Pen, 253,
+
+                                Child, HGroup,
+                                    Child, colorfield = ColorfieldObject,
+                                        MUIA_Colorfield_RGB, default_color,
+                                        MUIA_Colorfield_Pen, 253,
+                                        End,
+                                    Child, colorfield2 = ColorfieldObject,
+                                        MUIA_Colorfield_Red, default_color[0],
+                                        MUIA_Colorfield_Green, default_color[1],
+                                        MUIA_Colorfield_Blue, default_color[2],
+                                        End,
                                     End,
+                                Child, colorfield_reset_button =
+                                    MUI_MakeObject(MUIO_Button,
+                                        "Reset"),
                                 Child, HGroup,
                                     Child,
                                         MUI_MakeObject(MUIO_Label, "Pen:", 0),
@@ -1332,6 +1344,15 @@ int main(void)
             about_function);
 
         /* Notifications for color objects */
+        DoMethod(colorfield, MUIM_Notify, MUIA_Colorfield_Red,
+            MUIV_EveryTime, colorfield2, 3, MUIM_Set, MUIA_Colorfield_Red,
+            MUIV_TriggerValue);
+        DoMethod(colorfield, MUIM_Notify, MUIA_Colorfield_Green,
+            MUIV_EveryTime, colorfield2, 3, MUIM_Set, MUIA_Colorfield_Green,
+            MUIV_TriggerValue);
+        DoMethod(colorfield, MUIM_Notify, MUIA_Colorfield_Blue,
+            MUIV_EveryTime, colorfield2, 3, MUIM_Set, MUIA_Colorfield_Blue,
+            MUIV_TriggerValue);
         DoMethod(coloradjust, MUIM_Notify, MUIA_Coloradjust_Red,
             MUIV_EveryTime, colorfield, 3, MUIM_Set, MUIA_Colorfield_Red,
             MUIV_TriggerValue);
@@ -1347,6 +1368,8 @@ int main(void)
         DoMethod(colorfield_pen, MUIM_Notify, MUIA_String_Acknowledge,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             changepen_function);
+        DoMethod(colorfield_reset_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            colorfield, 3, MUIM_Set, MUIA_Colorfield_RGB, default_color);
 
         /* Notifications for pen objects */
         DoMethod(pendisplay, MUIM_Notify, MUIA_Pendisplay_Pen,
@@ -1358,7 +1381,7 @@ int main(void)
         DoMethod(pendisplay, MUIM_Notify, MUIA_Pendisplay_Spec,
             MUIV_EveryTime, pendisplay_spec, 3, MUIM_Set,
             MUIA_String_Contents, MUIV_TriggerValue);
-        DoMethod(coloradjust, MUIM_Notify, MUIA_Coloradjust_RGB,
+        DoMethod(colorfield, MUIM_Notify, MUIA_Colorfield_RGB,
             MUIV_EveryTime, pendisplay, 3, MUIM_Set,
             MUIA_Pendisplay_RGBcolor, MUIV_TriggerValue);
         DoMethod(pendisplay, MUIM_Notify, MUIA_Pendisplay_RGBcolor,
