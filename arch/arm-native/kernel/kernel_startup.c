@@ -103,6 +103,7 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
 }
 
 uint32_t __arm_periiobase __attribute__((section(".data"))) = 0;
+extern uint32_t __arm_affinitymask;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
@@ -170,6 +171,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     D(bug("[KRN] Entered kernel_cstart @ 0x%p, BootMsg @ %p\n", kernel_cstart, BootMsg));
 
+    cpu_Probe(&__arm_arosintern);
     D(
         if (__arm_arosintern.ARMI_PutChar)
         {
@@ -183,6 +185,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
 
     D(bug("[KRN] Platform initialised\n"));
+    D(bug("[KRN] Affinity mask %08x\n", __arm_affinitymask));
 
     if (__arm_arosintern.ARMI_Delay)
             __arm_arosintern.ARMI_Delay(1500);
