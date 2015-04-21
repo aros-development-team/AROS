@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2012, The AROS Development Team. All rights reserved.
+    Copyright  2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -256,7 +256,7 @@ struct MUI_CustomClass
     struct Library *mcc_GfxBase;
     struct Library *mcc_IntuitionBase;
 
-    struct IClass *mcc_Super;           /* the boopsi class' superclass */
+    struct IClass *mcc_Super;           /* the boopsi class's superclass */
     struct IClass *mcc_Class;           /* the boopsi class */
 
     /* the following stuff is private */
@@ -285,7 +285,7 @@ typedef enum {
     PST_SYS = 's',
 } PenSpecType;
 
-/* MUI_PenSpec is a an ascii spec like this:
+/* MUI_PenSpec is an ascii spec like this:
 
    "m5"     	    	    	(mui pen #5)
    "p123"   	    	    	(cmap entry #123)
@@ -293,12 +293,12 @@ typedef enum {
    "s3"                         (system pen #3)
    
    It needs to be like this, because for example nlist has
-   default penspecs in it's source encoded like above which
+   default penspecs in its source encoded like above which
    it directly passes to MUI_ObtainBestPen */
    
 struct MUI_PenSpec
 {
-    UBYTE ps_buf[32];
+    UBYTE buf[32];
 };
 
 

@@ -1,7 +1,6 @@
 /*
-    Copyright  2003-2012, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2003-2015, The AROS Development Team. All rights reserved.
+
     $Id$
 */
 #include <stdlib.h>
@@ -28,23 +27,23 @@ BOOL zune_pen_spec_to_intern(const struct MUI_PenSpec *spec,
 
     memset(intern, 0, sizeof(*intern));
 
-    D(bug("zune_pen_spec_to_intern: parsing %s\n", spec->ps_buf));
-    switch (spec->ps_buf[0])
+    D(bug("zune_pen_spec_to_intern: parsing %s\n", spec->buf));
+    switch (spec->buf[0])
     {
     case 'm':
-        if (!StrToLong(spec->ps_buf + 1, &intern->p_mui))
+        if (!StrToLong(spec->buf + 1, &intern->p_mui))
             return FALSE;
         intern->p_type = PST_MUI;
         break;
 
     case 'p':
-        if (!StrToLong(spec->ps_buf + 1, &intern->p_cmap))
+        if (!StrToLong(spec->buf + 1, &intern->p_cmap))
             return FALSE;
         intern->p_type = PST_CMAP;
         break;
 
     case 's':
-        if (!StrToLong(spec->ps_buf + 1, &intern->p_sys))
+        if (!StrToLong(spec->buf + 1, &intern->p_sys))
             return FALSE;
         intern->p_type = PST_SYS;
         break;
@@ -55,7 +54,7 @@ BOOL zune_pen_spec_to_intern(const struct MUI_PenSpec *spec,
             const char *s;
             const char *t;
 
-            s = spec->ps_buf;
+            s = spec->buf;
             if (*s == 'r')
             {
                 s++;
@@ -100,25 +99,25 @@ BOOL zune_pen_intern_to_spec(const struct MUI_PenSpec_intern *intern,
     switch (intern->p_type)
     {
     case PST_MUI:
-        spec->ps_buf[0] = 'm';
-        sprintf(spec->ps_buf + 1, "%ld", (long)intern->p_mui);
+        spec->buf[0] = 'm';
+        sprintf(spec->buf + 1, "%ld", (long)intern->p_mui);
         break;
 
     case PST_CMAP:
-        spec->ps_buf[0] = 'p';
-        sprintf(spec->ps_buf + 1, "%ld", (long)intern->p_cmap);
+        spec->buf[0] = 'p';
+        sprintf(spec->buf + 1, "%ld", (long)intern->p_cmap);
         break;
 
     case PST_RGB:
-        spec->ps_buf[0] = 'r';
-        sprintf(spec->ps_buf + 1, "%08lx,%08lx,%08lx",
+        spec->buf[0] = 'r';
+        sprintf(spec->buf + 1, "%08lx,%08lx,%08lx",
             (long)intern->p_rgb.red, (long)intern->p_rgb.green,
             (long)intern->p_rgb.blue);
         break;
 
     case PST_SYS:
-        spec->ps_buf[0] = 's';
-        sprintf(spec->ps_buf + 1, "%ld", (long)intern->p_sys);
+        spec->buf[0] = 's';
+        sprintf(spec->buf + 1, "%ld", (long)intern->p_sys);
         break;
 
     default:

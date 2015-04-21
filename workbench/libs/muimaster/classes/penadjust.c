@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -167,7 +167,7 @@ IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->sliderobj = sliderobj;
     data->coloradjobj = coloradjobj;
 
-    strcpy(data->penspec.ps_buf, "m5");
+    strcpy(data->penspec.buf, "m5");
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
