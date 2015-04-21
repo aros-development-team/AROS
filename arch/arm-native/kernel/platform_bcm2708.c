@@ -72,8 +72,8 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
 
         for (core = 1; core < 4; core ++)
         {
-                core_stack = (uint32_t *)AllocMem(1024, MEMF_CLEAR); /* MEMF_PRIVATE */
-                ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = &core_stack[1024-16];
+                core_stack = (uint32_t *)AllocMem(AROS_STACKSIZE*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
+                ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = &core_stack[AROS_STACKSIZE-sizeof(IPTR)];
 
                 D(bug("[KRN:BCM2708] %s: Attempting to wake core #%d\n", __PRETTY_FUNCTION__, core));
                 D(bug("[KRN:BCM2708] %s: core #%d stack @ 0x%p : 0x%p)\n", __PRETTY_FUNCTION__, core, core_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
