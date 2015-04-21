@@ -222,7 +222,7 @@ IPTR Colorfield__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_Colorfield_Pen:
             data->pen = (UBYTE) tag->ti_Data;
-            data->pen = FLAG_FIXED_PEN;
+            data->flags |= FLAG_FIXED_PEN;
             break;
 
         }
@@ -240,6 +240,9 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
     ULONG *rgb;
     BOOL newcol = FALSE;
     IPTR retval;
+    struct TagItem extra_tags[] = {{TAG_IGNORE, 0}, {TAG_IGNORE, 0},
+        {TAG_IGNORE, 0}, {TAG_IGNORE, 0},
+        {TAG_MORE, (IPTR)msg->ops_AttrList}};
 
     data = INST_DATA(cl, obj);
 
@@ -250,16 +253,19 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
         case MUIA_Colorfield_Red:
             data->rgb[0] = (ULONG) tag->ti_Data;
             newcol = TRUE;
+            extra_tags[3].ti_Tag = MUIA_Colorfield_RGB;
             break;
 
         case MUIA_Colorfield_Green:
             data->rgb[1] = (ULONG) tag->ti_Data;
             newcol = TRUE;
+            extra_tags[3].ti_Tag = MUIA_Colorfield_RGB;
             break;
 
         case MUIA_Colorfield_Blue:
             data->rgb[2] = (ULONG) tag->ti_Data;
             newcol = TRUE;
+            extra_tags[3].ti_Tag = MUIA_Colorfield_RGB;
             break;
 
         case MUIA_Colorfield_RGB:
@@ -268,6 +274,9 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
             data->rgb[1] = *rgb++;
             data->rgb[2] = *rgb++;
             newcol = TRUE;
+            extra_tags[0].ti_Tag = MUIA_Colorfield_Red;
+            extra_tags[1].ti_Tag = MUIA_Colorfield_Green;
+            extra_tags[2].ti_Tag = MUIA_Colorfield_Blue;
             break;
 
         case MUIA_Colorfield_Pen:
@@ -278,10 +287,18 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
             }
             data->pen = (UBYTE) tag->ti_Data;
             data->flags |= FLAG_FIXED_PEN;
+            newcol = TRUE;
             break;
 
         }
     }
+
+    /* Prepare notification values for inter-dependent attributes */
+    extra_tags[0].ti_Data = data->rgb[0];
+    extra_tags[1].ti_Data = data->rgb[1];
+    extra_tags[2].ti_Data = data->rgb[2];
+    extra_tags[3].ti_Data = (IPTR) data->rgb;
+    msg->ops_AttrList = extra_tags;
 
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
