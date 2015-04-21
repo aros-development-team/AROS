@@ -10,8 +10,6 @@
 
 #include <proto/kernel.h>
 
-#include <strings.h>
-
 #include "etask.h"
 
 #include "kernel_intern.h"
@@ -47,15 +45,13 @@ asm(
 "               ldr     sp, mpcore_data         \n"
 "               ldr     pc, mpcore_code         \n"
 
+"       .globl mpcore_pde                       \n"
 "mpcore_pde:    .word   0                       \n"
 "mpcore_code:   .word   0                       \n"
 "mpcore_data:   .word   0                       \n"
+"       .globl mpcore_end                       \n"
 "mpcore_end:  "
 );
-
-extern mpcore_trampoline();
-extern uint32_t mpcore_end;
-extern uint32_t mpcore_pde;
 
 void cpu_Register()
 {
@@ -83,10 +79,6 @@ void cpu_Delay(int usecs)
     for (delay = 0; delay < usecs; delay++) asm volatile ("mov r0, r0\n");
 }
 
-void arm_flush_cache(uint32_t addr, uint32_t length);
-
-uint32_t tmp_stacks_smp[4*1024];
-
 void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 {
     uint32_t tmp;
@@ -96,47 +88,13 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     {
         krnARMImpl->ARMI_Family = 7;
 
-        if (krnARMImpl->ARMI_Delay)
-        {
         // Read the Multiprocessor Affinity Register (MPIDR)
         asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (tmp));
 
         if (tmp & (2 << 30))
         {
-            void *trampoline_src = mpcore_trampoline;
-            void *trampoline_dst = (void *)0x2000;
-            uint32_t trampoline_length = (uintptr_t)&mpcore_end - (uintptr_t)mpcore_trampoline;
-            uint32_t trampoline_data_offset = (uintptr_t)&mpcore_pde - (uintptr_t)mpcore_trampoline;
 
-            bug("[KRN] Multicore system\n");
 
-            bug("[KRN] Copy SMP trampoline from %p to %p (%d bytes)\n", trampoline_src, trampoline_dst, trampoline_length);
-            bcopy(trampoline_src, trampoline_dst, trampoline_length);
-
-            bug("[KRN] Patching data for trampoline at offset %d\n", trampoline_data_offset);
-            asm volatile ("mrc p15, 0, %0, c2, c0, 0":"=r"(tmp));
-            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[0] = tmp; // pde
-            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[1] = (uint32_t)cpu_Register;
-
-            bug("[KRN] Waking up cores\n");
-
-            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = &tmp_stacks_smp[4*1024-16];
-            arm_flush_cache((uint32_t)trampoline_dst, 512);
-            *((uint32_t *)(0x4000008c + 0x10)) = trampoline_dst;
-            cpu_Delay(10000000);
-
-            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = &tmp_stacks_smp[3*1024-16];
-            arm_flush_cache((uint32_t)trampoline_dst, 512);
-            *((uint32_t *)(0x4000008c + 0x20)) = trampoline_dst;
-
-            cpu_Delay(10000000);
-
-            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = &tmp_stacks_smp[2*1024-16];
-            arm_flush_cache((uint32_t)trampoline_dst, 512);
-            *((uint32_t *)(0x4000008c + 0x30)) = trampoline_dst;
-            cpu_Delay(10000000);
-
-        }
         }
     }
     else

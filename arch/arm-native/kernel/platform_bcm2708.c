@@ -14,7 +14,10 @@
 #include <inttypes.h>
 #include <hardware/intbits.h>
 
+#include <strings.h>
+
 #include "kernel_intern.h"
+#include "kernel_debug.h"
 #include "kernel_cpu.h"
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
@@ -29,23 +32,58 @@
 #define IRQ_BANK1	0x00000100
 #define IRQ_BANK2	0x00000200
 
+#define D(x)
 #define DIRQ(x)
 
-extern void cpu_Register(void);
+extern mpcore_trampoline();
+extern uint32_t mpcore_end;
+extern uint32_t mpcore_pde;
 
-static void bcm2708_init(APTR _kernelBase)
+extern void cpu_Register(void);
+extern void arm_flush_cache(uint32_t addr, uint32_t length);
+
+static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
 {
+    struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
     struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+
+    D(bug("[KRN:BCM2708] %s()\n", __PRETTY_FUNCTION__));
+
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
+        void *trampoline_src = mpcore_trampoline;
+        void *trampoline_dst = (void *)0x2000;
+        uint32_t trampoline_length = (uintptr_t)&mpcore_end - (uintptr_t)mpcore_trampoline;
+        uint32_t trampoline_data_offset = (uintptr_t)&mpcore_pde - (uintptr_t)mpcore_trampoline;
         int core;
+        uint32_t *core_stack;
+        uint32_t tmp;
+
+        bug("[KRN:BCM2708] Initialising Multicore System\n");
+        D(bug("[KRN:BCM2708] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
+
+        bcopy(trampoline_src, trampoline_dst, trampoline_length);
+
+        D(bug("[KRN:BCM2708] %s: Patching data for trampoline at offset %d\n", __PRETTY_FUNCTION__, trampoline_data_offset));
+
+        asm volatile ("mrc p15, 0, %0, c2, c0, 0":"=r"(tmp));
+        ((uint32_t *)(trampoline_dst + trampoline_data_offset))[0] = tmp; // pde
+        ((uint32_t *)(trampoline_dst + trampoline_data_offset))[1] = (uint32_t)cpu_Register;
+
         for (core = 1; core < 4; core ++)
         {
-             *((volatile unsigned int *)(0x4000008C + (0x10 * core))) = (unsigned int)KrnVirtualToPhysical(cpu_Register);
-        }
+                core_stack = (uint32_t *)AllocMem(1024, MEMF_CLEAR); /* MEMF_PRIVATE */
+                ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = &core_stack[1024-16];
 
-        if (__arm_arosintern.ARMI_Delay)
-            __arm_arosintern.ARMI_Delay(1500);
+                D(bug("[KRN:BCM2708] %s: Attempting to wake core #%d\n", __PRETTY_FUNCTION__, core));
+                D(bug("[KRN:BCM2708] %s: core #%d stack @ 0x%p : 0x%p)\n", __PRETTY_FUNCTION__, core, core_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
+
+                arm_flush_cache((uint32_t)trampoline_dst, 512);
+                *((uint32_t *)(0x4000008c + (0x10 * core))) = trampoline_dst;
+
+                if (__arm_arosintern.ARMI_Delay)
+                    __arm_arosintern.ARMI_Delay(10000000);
+        }
     }
 }
 
@@ -170,6 +208,10 @@ static void bcm2708_toggle_led(int LED, int state)
             *(volatile unsigned int *)GPSET0 = (1 << 16);
     }
 }
+
+/* Use system timer 3 for our scheduling heartbeat */
+#define VBLANK_TIMER            3
+#define VBLANK_INTERVAL         (1000000 / 50)
 
 static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
 {
