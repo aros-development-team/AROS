@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -976,7 +976,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj,
                         len = strlen((STRPTR) penspec) + 3;
                         if ((data->imagespec = AllocVec(len, 0)))
                             snprintf(data->imagespec, len, "2:%s",
-                                penspec->ps_buf);
+                                penspec->buf);
                     }
                 }
                 break;
