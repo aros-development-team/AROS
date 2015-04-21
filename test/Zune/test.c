@@ -28,7 +28,9 @@
 ** consists of the public constants and members. Actually this is easy
 */
 
+#if 0
 #define TEST_ICONLIST
+#endif
 
 #include <libraries/mui.h>
 #if defined(TEST_ICONLIST)
@@ -42,6 +44,8 @@
 #define NUMERIC_MIN 0
 #define NUMERIC_MAX 100
 
+static const ULONG default_color[] = {155 << 24, 180 << 24, 255 << 24};
+static const struct MUI_PenSpec default_penspec = {"m0"};
 static const TEXT list_format[] = "BAR,BAR,";
 
 enum
@@ -75,6 +79,9 @@ Object *r_slider;
 Object *g_slider;
 Object *b_slider;
 Object *hue_gauge;
+Object *colorfield, *coloradjust, *colorfield_pen, *pendisplay, *pendisplay2,
+    *pendisplay_pen, *pendisplay_spec, *reference_check, *shine_button,
+    *shadow_button, *yellow_button, *poppen;
 Object *group;
 Object *editor_text;
 Object *filename_string;
@@ -154,6 +161,29 @@ AROS_UFH0(void, about_function)
 
     if (about_wnd)
         set(about_wnd, MUIA_Window_Open, TRUE);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, changepen_function)
+{
+    AROS_USERFUNC_INIT
+
+    SIPTR pen;
+
+    GET(colorfield_pen, MUIA_String_Integer, &pen);
+    if (pen >= 0)
+        SET(colorfield, MUIA_Colorfield_Pen, pen);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ChangePendisplayPen)
+{
+    AROS_USERFUNC_INIT
+
+    DoMethod(pendisplay, MUIM_Pendisplay_SetColormap,
+        XGET(pendisplay_pen, MUIA_String_Integer));
 
     AROS_USERFUNC_EXIT
 }
@@ -390,8 +420,14 @@ int main(void)
     UWORD i;
 
     static char *pages[] =
-        {"General", "Text", "Colorwheel", "Color", "Edit", "List", "Gauges",
-            "Numeric", "Radio", "Icon List", "Balancing", NULL};
+        {"General", "Text", "Boopsi", "Color", "Edit", "List", "Gauges",
+            "Numeric", "Radio",
+#if defined(TEST_ICONLIST)
+            "Icon List",
+#endif
+            "Balancing", NULL};
+    static char *color_pages[] =
+        {"Palette", "Colors", "Pens", NULL};
     static char *list_pages[] =
         {"Single Column (1)", "Single Column (2)", "Multicolumn", NULL};
     static char **radio_entries1 = pages;
@@ -445,6 +481,8 @@ int main(void)
     CL_DropText = MUI_CreateCustomClass(NULL, MUIC_Text, NULL,
         sizeof(struct DropText_Data), dispatcher);
     ColorWheelBase = OpenLibrary("gadgets/colorwheel.gadget", 0);
+
+    pendisplay = PendisplayObject, MUIA_Pendisplay_Spec, &default_penspec, End;
 
     app = ApplicationObject,
         MUIA_Application_Menustrip, MenuitemObject,
@@ -631,7 +669,7 @@ int main(void)
                         Child, HVSpace,
                         End,
 
-                    /* colorwheel */
+                    /* boopsi */
                     Child, VGroup,
                         Child, wheel = BoopsiObject, /* MUI/Boopsi tags mixed */
                             GroupFrame,
@@ -686,8 +724,84 @@ int main(void)
                         End,
 
                     /* color */
-                    Child, VGroup, GroupFrameT("Palette"),
-                        Child, PaletteObject,
+                    Child, RegisterGroup(color_pages),
+                        Child, VGroup, GroupFrameT("Palette"),
+                            Child, PaletteObject,
+                                End,
+                            End,
+                        Child, HGroup,
+                            Child, VGroup, GroupFrameT("Colorfield"),
+                                Child, colorfield = ColorfieldObject,
+                                    MUIA_Colorfield_RGB, default_color,
+                                    MUIA_Colorfield_Pen, 253,
+                                    End,
+                                Child, HGroup,
+                                    Child,
+                                        MUI_MakeObject(MUIO_Label, "Pen:", 0),
+                                    Child, colorfield_pen = StringObject,
+                                        StringFrame,
+                                        End,
+                                    End,
+                                End,
+                            Child, VGroup, GroupFrameT("Coloradjust"),
+                                Child, coloradjust = ColoradjustObject,
+                                    MUIA_Coloradjust_RGB, default_color,
+                                    End,
+                                End,
+                            End,
+                        Child, HGroup,
+                            Child, VGroup,
+                                Child, VGroup, GroupFrameT("Pendisplay"),
+                                    Child, HGroup,
+                                        Child, pendisplay,
+                                        Child, pendisplay2 = PendisplayObject,
+                                            MUIA_Pendisplay_RGBcolor,
+                                                default_color,
+                                            End,
+                                        End,
+                                    Child, ColGroup(2),
+                                        Child,
+                                            MUI_MakeObject(
+                                                MUIO_Label, "Pen:", 0),
+                                        Child, HGroup,
+                                            Child, pendisplay_pen =
+                                                StringObject, StringFrame,
+                                                End,
+                                            Child, HVSpace,
+                                            Child, reference_check =
+                                                MUI_MakeObject(MUIO_Checkmark,
+                                                    NULL),
+                                            Child, MUI_MakeObject(MUIO_Label,
+                                                "Reference", 0),
+                                            End,
+                                        Child,
+                                            MUI_MakeObject(
+                                                MUIO_Label, "Penspec:", 0),
+                                        Child, pendisplay_spec = StringObject,
+                                            StringFrame,
+                                            End,
+                                        End,
+                                    Child, HGroup,
+                                        Child, shine_button =
+                                            MUI_MakeObject(MUIO_Button,
+                                                "Shine"),
+                                        Child, shadow_button =
+                                            MUI_MakeObject(MUIO_Button,
+                                                "Shadow"),
+                                        Child, yellow_button =
+                                            MUI_MakeObject(MUIO_Button,
+                                                "Yellow"),
+                                        End,
+                                    End,
+                                Child, VGroup, GroupFrameT("Poppen"),
+                                    Child, poppen = PoppenObject,
+                                        End,
+                                    End,
+                                End,
+                            Child, VGroup, GroupFrameT("Penadjust"),
+                                Child, PenadjustObject,
+                                    End,
+                                End,
                             End,
                         End,
 
@@ -1217,6 +1331,53 @@ int main(void)
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             about_function);
 
+        /* Notifications for color objects */
+        DoMethod(coloradjust, MUIM_Notify, MUIA_Coloradjust_Red,
+            MUIV_EveryTime, colorfield, 3, MUIM_Set, MUIA_Colorfield_Red,
+            MUIV_TriggerValue);
+        DoMethod(coloradjust, MUIM_Notify, MUIA_Coloradjust_Green,
+            MUIV_EveryTime, colorfield, 3, MUIM_Set, MUIA_Colorfield_Green,
+            MUIV_TriggerValue);
+        DoMethod(coloradjust, MUIM_Notify, MUIA_Coloradjust_Blue,
+            MUIV_EveryTime, colorfield, 3, MUIM_Set, MUIA_Colorfield_Blue,
+            MUIV_TriggerValue);
+        DoMethod(colorfield, MUIM_Notify, MUIA_Colorfield_Pen,
+            MUIV_EveryTime, colorfield_pen, 3, MUIM_Set,
+            MUIA_String_Integer, MUIV_TriggerValue);
+        DoMethod(colorfield_pen, MUIM_Notify, MUIA_String_Acknowledge,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            changepen_function);
+
+        /* Notifications for pen objects */
+        DoMethod(pendisplay, MUIM_Notify, MUIA_Pendisplay_Pen,
+            MUIV_EveryTime, pendisplay_pen, 3, MUIM_NoNotifySet,
+            MUIA_String_Integer, MUIV_TriggerValue);
+        DoMethod(pendisplay_pen, MUIM_Notify, MUIA_String_Acknowledge,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ChangePendisplayPen);
+        DoMethod(pendisplay, MUIM_Notify, MUIA_Pendisplay_Spec,
+            MUIV_EveryTime, pendisplay_spec, 3, MUIM_Set,
+            MUIA_String_Contents, MUIV_TriggerValue);
+        DoMethod(coloradjust, MUIM_Notify, MUIA_Coloradjust_RGB,
+            MUIV_EveryTime, pendisplay, 3, MUIM_Set,
+            MUIA_Pendisplay_RGBcolor, MUIV_TriggerValue);
+        DoMethod(pendisplay, MUIM_Notify, MUIA_Pendisplay_RGBcolor,
+            MUIV_EveryTime, poppen, 3, MUIM_Set, MUIA_Pendisplay_RGBcolor,
+            MUIV_TriggerValue);
+        DoMethod(pendisplay_spec, MUIM_Notify, MUIA_String_Contents,
+            MUIV_EveryTime, pendisplay, 3, MUIM_Set, MUIA_Pendisplay_Spec,
+            MUIV_TriggerValue);
+        DoMethod(reference_check, MUIM_Notify, MUIA_Selected, TRUE,
+            pendisplay2, 3, MUIM_Set, MUIA_Pendisplay_Reference, pendisplay);
+        DoMethod(reference_check, MUIM_Notify, MUIA_Selected, FALSE,
+            pendisplay2, 3, MUIM_Set, MUIA_Pendisplay_Reference, NULL);
+        DoMethod(shine_button, MUIM_Notify, MUIA_Pressed, FALSE, pendisplay,
+            2, MUIM_Pendisplay_SetMUIPen, MPEN_SHINE);
+        DoMethod(shadow_button, MUIM_Notify, MUIA_Pressed, FALSE, pendisplay,
+            2, MUIM_Pendisplay_SetMUIPen, MPEN_SHADOW);
+        DoMethod(yellow_button, MUIM_Notify, MUIA_Pressed, FALSE, pendisplay,
+            4, MUIM_Pendisplay_SetRGB, 0xffffffff, 0xffffffff, 0);
+
         /* list */
         set(showdropmarks_check, MUIA_Selected, TRUE);
         for (i = 0; i < LIST_COUNT; i++)
@@ -1304,6 +1465,19 @@ int main(void)
 
         set(wnd, MUIA_Window_Open, TRUE);
         set(wnd, MUIA_Window_ScreenTitle, "Zune Test application");
+
+        /* Set pen fields */
+        set(colorfield_pen, MUIA_String_Integer,
+            XGET(colorfield, MUIA_Colorfield_Pen));
+
+        char pen_str[10];
+        nnset(pendisplay_pen, MUIA_String_Integer,
+            XGET(pendisplay, MUIA_Pendisplay_Pen));
+
+        struct MUI_PenSpec *pen_spec;
+        GET(pendisplay, MUIA_Pendisplay_Spec, &pen_spec);
+        strncpy(pen_str, pen_spec->ps_buf, 10);
+        set(pendisplay_spec, MUIA_String_Contents, pen_str);
 
         while ((LONG) DoMethod(app, MUIM_Application_NewInput,
                 &sigs) != MUIV_Application_ReturnID_Quit)
