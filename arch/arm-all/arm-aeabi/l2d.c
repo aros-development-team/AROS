@@ -36,7 +36,7 @@ uint64_t __aeabi_ul2d(uint64_t val)
     return result;
 }
 
-uint64_t __aeabi_u2d(int64_t val)
+uint64_t __aeabi_l2d(int64_t val)
 {
     if (val == 0)
     return 0;
