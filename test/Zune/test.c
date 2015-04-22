@@ -1499,7 +1499,7 @@ int main(void)
 
         struct MUI_PenSpec *pen_spec;
         GET(pendisplay, MUIA_Pendisplay_Spec, &pen_spec);
-        strncpy(pen_str, pen_spec->ps_buf, 10);
+        strncpy(pen_str, pen_spec->buf, 10);
         set(pendisplay_spec, MUIA_String_Contents, pen_str);
 
         while ((LONG) DoMethod(app, MUIM_Application_NewInput,
