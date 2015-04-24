@@ -2,8 +2,8 @@
 #define _AROS_TYPES_UCONTEXT_T_H
 
 /*
-    Copyright Â© 2010-2012, The AROS Development Team. All rights reserved.
-    $Id: /aros/branches/ABI_V1/trunk-aroscsplit/AROS/compiler/arosnixc/include/aros/types/ucontext_t.h 35143 2010-10-23T21:19:57.420395Z verhaegs  $
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: POSIX.1-2004 mcontext_t and ucontext_t type definition
           Not present anymore in POSIX.1-2008
