@@ -2142,12 +2142,15 @@ BD_CFLAGS    := %(cflags)
 BD_AFLAGS    := %(aflags)
 BD_DFLAGS    := %(dflags)
 
-.PHONY : %(mmake) %(mmake)-clean
+.PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
+
+#MM
+%(mmake)-quick : %(mmake)
 
 #MM %(mmake) : includes-generate-deps
 %(mmake) : $(BD_LINKLIB)
 
-ifeq ($(TARGET),%(mmake))
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 
 %rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir="%(objdir)" \
     compiler="%(compiler)" cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
@@ -2159,7 +2162,7 @@ ifeq ($(TARGET),%(mmake))
 %rule_link_linklib libname="%(libname)" objs=$(BD_OBJS) libdir="%(libdir)" linker="%(compiler)"
 endif
 
-%include_deps depstargets="%(mmake)" deps=$(BD_DEPS)
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) : | %(objdir)
 $(BD_LINKLIB) : | %(libdir)
