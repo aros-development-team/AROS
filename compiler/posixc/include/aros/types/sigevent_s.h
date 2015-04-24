@@ -2,8 +2,8 @@
 #define _AROS_TYPES_SIGEVENT_S_H
 
 /*
-    Copyright Â© 2010-2012, The AROS Development Team. All rights reserved.
-    $Id: /aros/branches/ABI_V1/trunk-aroscsplit/AROS/compiler/arosnixc/include/aros/types/sigevent_s.h 36762 2011-01-11T21:10:26.430438Z verhaegs  $
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: POSIX.1-2008 struct sigevent definition
 */

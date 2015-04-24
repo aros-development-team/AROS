@@ -2,8 +2,8 @@
 #define _AROS_TYPES_STACK_T_H
 
 /*
-    Copyright Â© 2010-2011, The AROS Development Team. All rights reserved.
-    $Id: /aros/branches/ABI_V1/trunk-aroscsplit/AROS/compiler/arosnixc/include/aros/types/stack_t.h 35142 2010-10-23T20:40:12.589298Z verhaegs  $
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    $Id$
 
     POSIX.1-2008 stack_t type definition
 */

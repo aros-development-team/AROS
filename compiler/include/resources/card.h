@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 */
 
 #ifndef RESOURCES_CARD_H

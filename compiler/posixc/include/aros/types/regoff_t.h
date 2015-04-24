@@ -2,8 +2,8 @@
 #define _AROS_TYPES_REGOFF_T_H
 
 /*
-    Copyright Â© 2010-2011, The AROS Development Team. All rights reserved.
-    $Id: /aros/branches/ABI_V1/trunk-aroscsplit/AROS/compiler/arosnixc/include/aros/types/regoff_t.h 35134 2010-10-23T10:55:40.569523Z verhaegs  $
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    $Id$
 
     off_t type definition
 */
