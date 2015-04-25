@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 {
     struct Task *t;
 
-    parent=SysBase->ThisTask;
+    parent=FindTask(NULL);
 
     sigbit1=AllocSignal(-1);
     if(sigbit1>=0)

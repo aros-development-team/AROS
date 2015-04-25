@@ -12,6 +12,7 @@ extern struct ExecBase *SysBase;
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
+#include <proto/exec.h>
 
 #if __SASC
 #include <proto/dos.h>
@@ -90,7 +91,7 @@ BPTR __dosio_files[3];
 long __stdargs
 _STI_500_dosio_init(void)
 {
-  struct Process *p = (struct Process *)SysBase->ThisTask;
+  struct Process *p = (struct Process *)FindTask(NULL);
 
   __dosio_files[0] = p->pr_CIS;	/* stdin */
   __dosio_files[1] = p->pr_COS;	/* stdout */

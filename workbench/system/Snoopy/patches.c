@@ -386,7 +386,7 @@ AROS_LH3(LONG, New_MakeLink,
 
     if (patches[PATCH_MakeLink].enabled)
     {
-        struct Process *myproc = (struct Process *)SysBase->ThisTask;
+        struct Process *myproc = (struct Process *)FindTask(NULL);
 
         CONST_STRPTR opt;
         if (soft) opt = "Softlink";
@@ -1137,7 +1137,7 @@ void GetVolName(BPTR lock, char *buf, int maxlen)
  */
 char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
 {
-    struct Process *myproc = (struct Process *)SysBase->ThisTask;
+    struct Process *myproc = (struct Process *)FindTask(NULL);
     int pos = maxlen - 1;
     D_S(fib, struct FileInfoBlock);
     LONG savedioerr = IoErr();

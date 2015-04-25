@@ -67,7 +67,7 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option,
 {
     char pathbuf[MAX_STR_LEN+1];
 
-    struct Task *thistask = SysBase->ThisTask;
+    struct Task *thistask = FindTask(NULL);
     STRPTR name = thistask->tc_Node.ln_Name;
 
     if (setup.onlyShowFails && result) return;

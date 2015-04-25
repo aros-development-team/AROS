@@ -120,7 +120,7 @@ static int fillbuffer(struct task **buffer, IPTR size)
     STRPTR end=(STRPTR)*buffer+size;
     struct Task *task;
     Disable();
-    if(!addtask(SysBase->ThisTask,buffer,&end))
+    if(!addtask(FindTask(NULL),buffer,&end))
     {
         Enable();
         return 0;

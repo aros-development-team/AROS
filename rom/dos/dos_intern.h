@@ -321,7 +321,7 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
         struct FileLock *fl = BADDR(lock); \
         if (fl && fl->fl_Access != SHARED_LOCK && fl->fl_Access != EXCLUSIVE_LOCK) { \
             bug("%s() bogus FileLock! '%s' %x %d %s/%s/%d\n", \
-                __FUNCTION__, SysBase->ThisTask->tc_Node.ln_Name, fl, fl->fl_Access, __FILE__,__FUNCTION__,__LINE__); \
+                __FUNCTION__, FindTask(NULL)->tc_Node.ln_Name, fl, fl->fl_Access, __FILE__,__FUNCTION__,__LINE__); \
         } \
     } while (0);
 

@@ -53,7 +53,7 @@ Slave( struct ExecBase* SysBase )
 
   /* Note that in OS4, we cannot call FindTask(NULL) here, since IExec
    * is inside AHIsubBase! */
-  AudioCtrl  = (struct AHIAudioCtrlDrv*) SysBase->ThisTask->tc_UserData;
+  AudioCtrl  = (struct AHIAudioCtrlDrv*) FindTask(NULL)->tc_UserData;
   AHIsubBase = (struct DriverBase*) dd->ahisubbase;
   VoidBase   = (struct VoidBase*) AHIsubBase;
 
