@@ -327,7 +327,7 @@ D(bug("[AROSTCP](kern_synch.c) tsleep()\n"));
 #endif 
 
 #if DIAGNOSTIC
-  if (SysBase->ThisTask != syscall_semaphore.ss_Owner) {
+  if (FindTask(NULL) != syscall_semaphore.ss_Owner) {
     log(LOG_ERR, "tsleep() called with NO syscall_semaphore!");
     return (-1);
   }

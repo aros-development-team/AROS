@@ -110,7 +110,7 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
 
 LONG launcher()
 {
-    D(bug("launcher: Entered child launcher, ThisTask=%p\n", SysBase->ThisTask));
+    D(bug("launcher: Entered child launcher, ThisTask=%p\n", FindTask(NULL)));
 
     struct Task *this = FindTask(NULL);
     struct vfork_data *udata = this->tc_UserData;

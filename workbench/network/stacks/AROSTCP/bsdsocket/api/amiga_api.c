@@ -160,7 +160,7 @@ D(bug("[AROSTCP](amiga_api.c) ELL_Open()\n[AROSTCP](amiga_api.c) ELL_Open: versi
    * One task may open socket library more than once. In that case caller
    * receives the base it has opened already.
    */
-  if ((newBase = FindSocketBase(SysBase->ThisTask)) != NULL) {
+  if ((newBase = FindSocketBase(FindTask(NULL))) != NULL) {
     newBase->libNode.lib_OpenCnt++;
     return (struct Library *)newBase;
   }
@@ -215,7 +215,7 @@ D(bug("[AROSTCP](amiga_api.c) ELL_Open: Created user library base @ 0x%p\n", new
   newBase->libNode.lib_OpenCnt = 1;
   newBase->errnoPtr = (VOID *)&newBase->defErrno;
   newBase->errnoSize = sizeof newBase->defErrno;
-  newBase->thisTask = SysBase->ThisTask;
+  newBase->thisTask = FindTask(NULL);
   newBase->sigIntrMask = SIGBREAKF_CTRL_C;
 
   /* initialize syslog variables */

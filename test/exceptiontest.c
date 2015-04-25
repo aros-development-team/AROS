@@ -7,6 +7,7 @@
 #include <aros/libcall.h>
 #include <clib/exec_protos.h>
 #include <exec/execbase.h>
+#include <exec/tasks.h>
 #include <stdio.h>
 
 ULONG s;
@@ -41,13 +42,14 @@ int main(void)
 	s2=AllocSignal(-1);
 	if(s2>=0)
 	{
+	    struct Task *task = FindTask(NULL);
 	    printf("sig2: %d\n",s2);
-	    oldexc=SysBase->ThisTask->tc_ExceptCode;
-	    SysBase->ThisTask->tc_ExceptCode=&AROS_SLIB_ENTRY(handler,Test,0);
+	    oldexc=task->tc_ExceptCode;
+	    task->tc_ExceptCode=&AROS_SLIB_ENTRY(handler,Test,0);
 	    SetExcept(1<<s2,1<<s2);
-	    Signal(SysBase->ThisTask,(1<<s2)|(1<<s1));
+	    Signal(task,(1<<s2)|(1<<s1));
 	    SetExcept(0,1<<s2);
-	    SysBase->ThisTask->tc_ExceptCode=oldexc;
+	    task->tc_ExceptCode=oldexc;
 	    printf("got: %08lx\n",(unsigned long)s);
 	    FreeSignal(s2);
 	}

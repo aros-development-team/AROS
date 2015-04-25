@@ -90,7 +90,7 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
     struct Task *me;
     
     /* Get pointer to current task */
-    me=SysBase->ThisTask;
+    me=FindTask(NULL);
 
     /* Arbitrate for the semaphore structure */
     Forbid();
