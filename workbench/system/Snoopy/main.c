@@ -74,6 +74,7 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option,
     if (setup.ignoreWB)
     {
         if ( ! Stricmp(name, "wanderer:wanderer")) return;
+        if ( ! Stricmp(name, "Shell")) return;
         if ( ! Stricmp(name, "new shell")) return;
         if ( ! Stricmp(name, "newshell")) return;
         if ( ! Stricmp(name, "boot shell")) return;
