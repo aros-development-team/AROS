@@ -7,6 +7,8 @@
 #include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
+#include <aros/arm/cpucontext.h>
+#include <strings.h>
 
 #include <proto/kernel.h>
 
@@ -80,6 +82,42 @@ void cpu_Delay(int usecs)
     for (delay = 0; delay < usecs; delay++) asm volatile ("mov r0, r0\n");
 }
 
+void cpu_Save_VFP16_State(void *buffer);
+void cpu_Save_VFP32_State(void *buffer);
+void cpu_Restore_VFP16_State(void *buffer);
+void cpu_Restore_VFP32_State(void *buffer);
+
+asm(
+"cpu_Save_VFP16_State:                      \n"
+"           vmsr    fpscr, r3               \n"
+"           str     r3, [r0, #256]          \n"
+"           vstmia  r0, {d0-d15}            \n"
+"           bx      lr                      \n"
+
+"cpu_Save_VFP32_State:                      \n"
+"           vmsr    fpscr, r3               \n"
+"           str     r3, [r0, #256]          \n"
+"           .word   0xec800b40              \n"         // vstmia  r0, {d0-d31}
+"           bx      lr                      \n"
+
+"cpu_Restore_VFP16_State:                   \n"
+"           ldr     r3, [r0, #256]          \n"
+"           vmrs    r3, fpscr               \n"
+"           vldmia  r0, {d0-d15}            \n"
+"           bx      lr                      \n"
+
+"cpu_Restore_VFP32_State:                   \n"
+"           ldr     r3, [r0, #256]          \n"
+"           vmrs    r3, fpscr               \n"
+"           .word   0xec900b20              \n"         // vldmia  r0, {d0-d31}
+"           bx      lr                      \n"
+);
+
+void cpu_Init_VFP_State(void *buffer)
+{
+    bzero(buffer, sizeof(struct VFPContext));
+}
+
 void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 {
     uint32_t tmp;
@@ -88,6 +126,9 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     if ((tmp & 0xfff0) == 0xc070)
     {
         krnARMImpl->ARMI_Family = 7;
+
+        krnARMImpl->ARMI_Save_VFP_State = &cpu_Save_VFP16_State;
+        krnARMImpl->ARMI_Restore_VFP_State = &cpu_Restore_VFP16_State;
 
         // Read the Multiprocessor Affinity Register (MPIDR)
         asm volatile ("mrc p15, 0, %0, c0, c0, 5" : "=r" (tmp));
@@ -99,8 +140,13 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
         }
     }
     else
+    {
         krnARMImpl->ARMI_Family = 6;
+        krnARMImpl->ARMI_Save_VFP_State = &cpu_Save_VFP16_State;
+        krnARMImpl->ARMI_Restore_VFP_State = &cpu_Restore_VFP16_State;
+    }
 
+    krnARMImpl->ARMI_Init_VFP_State = &cpu_Init_VFP_State;
     krnARMImpl->ARMI_Delay = &cpu_Delay;
 }
 

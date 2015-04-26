@@ -111,7 +111,8 @@ static inline void bug(const char *format, ...)
     ctx->sp = task->tc_SPReg = ((uint32_t *)regs)[13];                          \
     ctx->lr = ((uint32_t *)regs)[14];                                           \
     ctx->pc = ((uint32_t *)regs)[15];                                           \
-    ctx->cpsr = ((uint32_t *)regs)[16];
+    ctx->cpsr = ((uint32_t *)regs)[16];                                         \
+    if (__arm_arosintern.ARMI_Save_VFP_State) __arm_arosintern.ARMI_Save_VFP_State(ctx->fpuContext);
 
 #define RESTORE_TASKSTATE(task, regs)                                           \
     struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;   \
@@ -124,6 +125,7 @@ static inline void bug(const char *format, ...)
     ((uint32_t *)regs)[13] = ctx->sp = task->tc_SPReg;                          \
     ((uint32_t *)regs)[14] = ctx->lr;                                           \
     ((uint32_t *)regs)[15] = ctx->pc;                                           \
-    ((uint32_t *)regs)[16] = ctx->cpsr;
+    ((uint32_t *)regs)[16] = ctx->cpsr;                                         \
+    if (__arm_arosintern.ARMI_Restore_VFP_State) __arm_arosintern.ARMI_Restore_VFP_State(ctx->fpuContext);
 
 #endif /*KERNEL_INTERN_H_*/
