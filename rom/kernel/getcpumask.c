@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,21 +15,22 @@
     NAME */
 #include <proto/kernel.h>
 
-        AROS_LH0(uint32_t, KrnGetCPUNumber,
+        AROS_LH1(uint32_t, KrnGetCPUMask,
 
 /*  SYNOPSIS */
+	AROS_LHA(uint32_t, id, D0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 37, Kernel)
+	struct KernelBase *, KernelBase, 38, Kernel)
 
 /*  FUNCTION
-	Return number of the caller CPU
+	Return the affinity mask for the specified CPU number 
 
     INPUTS
-	None
+	CPU number (as returned by KrnGetCPUNumber())
 
     RESULT
-	Number of the CPU on which the function is called
+	CPU's affinity mask
 
     NOTES
 
@@ -38,6 +39,7 @@
     BUGS
 
     SEE ALSO
+	KrnGetCPUNumber()
 
     INTERNALS
 
@@ -46,7 +48,7 @@
     AROS_LIBFUNC_INIT
 
     /* The actual implementation is entirely architecture-specific */
-    return 0;
+    return (1 << 0);
 
     AROS_LIBFUNC_EXIT
 }
