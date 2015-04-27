@@ -1,8 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-	       -I$(GENINCDIR) -D__AROS_EXEC_LIBRARY__
+USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -D__AROS_EXEC_LIBRARY__
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \
