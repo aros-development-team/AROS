@@ -140,29 +140,41 @@ USE_MMU		:= @aros_enable_mmu@
 
 # Kernel private includes, in order of precedence:
 ifneq (,$(findstring $(ARCH),raspi))
-PRIV_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/kernel
+TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/kernel
 else
-PRIV_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
+TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
 endif
-PRIV_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
 ifneq ($(FAMILY),)
-PRIV_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
+TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
-PRIV_KERNEL_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
+TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
                         -I$(SRCDIR)/rom/kernel
 
 # Exec private includes, in order of precedence:
 ifneq (,$(findstring $(ARCH),raspi))
-PRIV_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/exec
+TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/exec
 else
-PRIV_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
+TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
 endif
-PRIV_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/exec
+TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/exec
 ifneq ($(FAMILY),)
-PRIV_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
+TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
 endif
-PRIV_EXEC_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/exec \
+TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/exec \
                       -I$(SRCDIR)/rom/exec
+
+ifneq (,$(findstring $(ARCH),raspi))
+PRIV_KERNEL_INCLUDES := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
+else
+PRIV_KERNEL_INCLUDES := $(TARGET_KERNEL_INCLUDES)
+endif
+
+ifneq (,$(findstring $(ARCH),raspi))
+PRIV_EXEC_INCLUDES := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)
+else
+PRIV_EXEC_INCLUDES := $(TARGET_EXEC_INCLUDES)
+endif
 
 # Android
 AROS_ANDROID_ANTAPK := @aros_android_antapk@
