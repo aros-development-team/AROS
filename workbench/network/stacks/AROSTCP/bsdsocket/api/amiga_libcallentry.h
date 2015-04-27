@@ -68,7 +68,7 @@ extern const char wrongTaskErrorFmt[];
 #define CHECK_TASK2() CHECK_TASK_NULL()
 
 #define CHECK_TASK_VOID()				\
-  if (libPtr->thisTask != FindTask(NULL) {		\
+  if (libPtr->thisTask != FindTask(NULL)) {		\
     struct Task * wTask = FindTask(NULL);		\
     __log(LOG_CRIT, wrongTaskErrorFmt, wTask,		\
 	wTask->tc_Node.ln_Name,	libPtr->thisTask,	\
