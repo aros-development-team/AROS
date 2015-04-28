@@ -43,4 +43,7 @@ struct Exec_PlatformData
 
 #define HostLibBase PD(SysBase).HostLibBase
 
+#define GET_THIS_TASK           (SysBase->ThisTask)
+#define SET_THIS_TASK(x)        (SysBase->ThisTask=(x))
+
 #endif /* __EXEC_PLATFORM_H */
