@@ -23,7 +23,7 @@ struct bcm2708bootmem
     UBYTE       bm_padding2[16];
     /* 0x1000 */
     UBYTE       bm_mboxmsg[0x1000];
-    UBYTE       bm_padding3[0x2000];
+    UBYTE       bm_mctrampoline[0x2000];
     /* 0x4000 */
     pde_t       bm_pde[4096];
 }  __attribute__((packed));
