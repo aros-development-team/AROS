@@ -128,7 +128,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
  */
 ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
 {
-    struct Task *task = SysBase->ThisTask;
+    struct Task *task = GET_THIS_TASK;
     struct IntETask *iet;
     LONG res;
 

@@ -61,7 +61,7 @@
 
     D(bug("RemLibrary $%lx (\"%s\") by \"%s\"\n", library,
 	library ? library->lib_Node.ln_Name : "(null)",
-	SysBase->ThisTask->tc_Node.ln_Name));
+	GET_THIS_TASK->tc_Node.ln_Name));
 
     /* Arbitrate for the library list */
     Forbid();

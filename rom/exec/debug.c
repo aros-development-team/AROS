@@ -278,9 +278,9 @@ static char *NextWord(char *s)
 
             kprintf("Task List:\n");
 
-            kprintf("0x%p T %d %s\n",SysBase->ThisTask,
-                SysBase->ThisTask->tc_Node.ln_Pri,
-                SysBase->ThisTask->tc_Node.ln_Name);
+            kprintf("0x%p T %d %s\n",GET_THIS_TASK,
+                GET_THIS_TASK->tc_Node.ln_Pri,
+                GET_THIS_TASK->tc_Node.ln_Name);
 
             /* Look through the list */
             for (node = GetHead(&SysBase->TaskReady); node; node = GetSucc(node))

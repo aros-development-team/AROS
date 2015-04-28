@@ -61,7 +61,7 @@
 
     D(bug("CloseLibrary $%lx (\"%s\") by \"%s\"\n", library,
 	library ? library->lib_Node.ln_Name : "(null)",
-	SysBase->ThisTask->tc_Node.ln_Name));
+	GET_THIS_TASK->tc_Node.ln_Name));
 
     /* Something to do? */
     if(library!=NULL)

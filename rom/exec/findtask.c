@@ -8,6 +8,7 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -52,7 +53,7 @@
 
     /* Quick return for a quick argument */
     if(name==NULL)
-	return SysBase->ThisTask;
+	return GET_THIS_TASK;
 
     /* Always protect task lists with a Disable(). */
     Disable();
@@ -70,7 +71,7 @@
 		you know the name of your own task - so it is close
 		to nonsense to look for it this way.
 	    */
-	    char *s1=SysBase->ThisTask->tc_Node.ln_Name;
+	    char *s1=GET_THIS_TASK->tc_Node.ln_Name;
 	    const char *s2=name;
 
 	    /* Check as long as the names are identical. */
@@ -79,7 +80,7 @@
 		if(!*s2++)
 		{
 		    /* Got it. */
-		    ret=SysBase->ThisTask;
+		    ret=GET_THIS_TASK;
 		    break;
 		}
 	}

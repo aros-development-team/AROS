@@ -10,6 +10,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -48,7 +50,7 @@
     if(signalNum!=-1)
     {
         /* No more atomic problem - i beleive THIS is atomic. - sonic */
-        struct Task *me = SysBase->ThisTask;
+        struct Task *me = GET_THIS_TASK;
 
 	/* Clear the bit */
 	me->tc_SigAlloc &= ~(1<<signalNum);

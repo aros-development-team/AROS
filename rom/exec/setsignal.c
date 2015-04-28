@@ -9,6 +9,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -54,7 +56,7 @@
     Disable();
 
     /* Get address */
-    sig=&SysBase->ThisTask->tc_SigRecvd;
+    sig=&GET_THIS_TASK->tc_SigRecvd;
 
     /* Change only the bits in 'mask' */
     old=*sig;
