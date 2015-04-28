@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -30,6 +30,8 @@
 #include "kernel_intern.h"
 #include "kernel_debug.h"
 #include "kernel_romtags.h"
+
+#include "exec_platform.h"
 
 extern struct TagItem *BootMsg;
 
@@ -102,7 +104,6 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
-uint32_t __arm_periiobase __attribute__((section(".data"))) = 0;
 extern uint32_t __arm_affinitymask;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg)
@@ -112,9 +113,27 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     struct MemHeader *mh;
     struct MemChunk *mc;
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
+    char *cmdline = NULL;
     BootMsg = msg;
+    tls_t *__tls;
 
+    // Probe the ARM core
     cpu_Probe(&__arm_arosintern);
+
+    // Probe the ARM Implementation/Platform
+    __arm_arosintern.ARMI_Platform = 0;
+    while(msg->ti_Tag != TAG_DONE)
+    {
+        switch (msg->ti_Tag)
+        {
+        case KRN_Platform:
+            __arm_arosintern.ARMI_Platform = msg->ti_Data;
+            break;
+        }
+        msg++;
+    }
+    msg = BootMsg;
+
     platform_Init(&__arm_arosintern, msg);
 
     if (__arm_arosintern.ARMI_LED_Toggle)
@@ -140,6 +159,10 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     {
         switch (msg->ti_Tag)
         {
+        case KRN_CmdLine:
+//            RelocateStringData(tag);
+            cmdline = (char *)msg->ti_Data;
+            break;
         case KRN_MEMLower:
             memlower = msg->ti_Data;
             break;
@@ -150,7 +173,8 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             protlower = msg->ti_Data;
             break;
         case KRN_ProtAreaEnd:
-            protupper = msg->ti_Data;
+            // Page align
+            protupper = (msg->ti_Data + 4095) & ~4095;
             break;
         case KRN_KernelBase:
             /*
@@ -167,16 +191,25 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     }
     msg = BootMsg;
 
+    __tls = (void *)protupper;
+    protupper += (sizeof(tls_t) + 4095) & ~4095;
+
+    __tls->KernelBase = NULL;
+    __tls->SysBase = NULL;
+    __tls->ThisTask = NULL;
+
     D(bug("[KRN] AROS ARM Native Kernel built on %s\n", __DATE__));
 
-    D(bug("[KRN] Entered kernel_cstart @ 0x%p, BootMsg @ %p\n", kernel_cstart, BootMsg));
+    D(bug("[KRN] Entered kernel_cstart @ 0x%p, BootMsg @ 0x%p\n", kernel_cstart, BootMsg));
 
-    cpu_Probe(&__arm_arosintern);
+    asm volatile("mcr p15, 0, %0, c13, c0, 3" : : "r"(__tls));
+    
     D(
         if (__arm_arosintern.ARMI_PutChar)
         {
             bug("[KRN] Using PutChar implementation @ %p\n", __arm_arosintern.ARMI_PutChar);
         }
+        bug("[KRN] Boot CPU TLS @ 0x%p\n", __tls);
     )
 
     core_SetupIntr();
@@ -203,13 +236,26 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     mh = (struct MemHeader *)memlower;
 
-    /* Initialize TLSF memory allocator */
-    krnCreateTLSFMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
-
-    if (memlower < protlower)
+    if (cmdline && strstr(cmdline, "notlsf"))
     {
-        /* Protect the bootstrap area from further use. AllocAbs will do the trick */
-        ((struct MemHeaderExt *)mh)->mhe_AllocAbs((struct MemHeaderExt *)mh, protupper-protlower, (void *)protlower);
+#if (0)
+        krnCreateMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+
+        if (memlower < protlower)
+        {
+//            AllocAbs(protupper-protlower, (void *)protlower);
+        }
+#endif
+    }
+    else
+    {
+        /* Initialize TLSF memory allocator */
+        krnCreateTLSFMemHeader("System Memory", 0, mh, (memupper - memlower), MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+        if (memlower < protlower)
+        {
+            /* Protect the bootstrap area from further use. AllocAbs will do the trick */
+            ((struct MemHeaderExt *)mh)->mhe_AllocAbs((struct MemHeaderExt *)mh, protupper-protlower, (void *)protlower);
+        }
     }
 
     ranges[0] = (UWORD *)krnGetTagData(KRN_KernelLowest, 0, msg);
@@ -218,6 +264,9 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     D(bug("[KRN] Preparing ExecBase (memheader @ 0x%p)\n", mh));
     krnPrepareExecBase(ranges, mh, BootMsg);
+
+    __tls->SysBase = SysBase;
+    D(bug("[KRN] SysBase @ 0x%p\n", SysBase));
 
     /* 
      * Make kickstart code area read-only.
@@ -229,10 +278,10 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     D(bug("[KRN] InitCode(RTF_SINGLETASK) ... \n"));
     InitCode(RTF_SINGLETASK, 0);
 
-    D(bug("[KRN] InitCode(RTF_COLDSTART) ...\n"));
-
+    D(bug("[KRN] Dropping into USER mode ... \n"));
     asm("cps %[mode_user]\n" : : [mode_user] "I" (CPUMODE_USER)); /* switch to user mode */
 
+    D(bug("[KRN] InitCode(RTF_COLDSTART) ...\n"));
     InitCode(RTF_COLDSTART, 0);
 
     /* The above should not return */

@@ -4,10 +4,12 @@ include $(TOP)/config/make.cfg
 CFILES := \
         kernel_startup \
 	kernel_cpu \
+        kernel_scheduler \
 	platform_init \
 	kernel_debug \
 	getsystemattr \
         getcpucount \
+        getcpumask \
         getcpunumber \
 	maygetchar \
 	tags \
