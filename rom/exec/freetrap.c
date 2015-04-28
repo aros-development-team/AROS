@@ -44,7 +44,7 @@
     if(trapNum!=-1)
     {
         /* No more atomic problem - i beleive THIS is atomic. - sonic */
-        struct Task *me = SysBase->ThisTask;
+        struct Task *me = GET_THIS_TASK;
 
         if (me->tc_Flags & TF_ETASK) {
 	    struct ETask *et = me->tc_UnionETask.tc_ETask;

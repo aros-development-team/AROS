@@ -49,7 +49,7 @@ AROS_LD3(ULONG, MakeFunctions,
 static void Exec_TaskFinaliser(void)
 {
     /* Get rid of current task. */
-    RemTask(SysBase->ThisTask);
+    RemTask(GET_THIS_TASK);
 }
 
 #undef kprintf

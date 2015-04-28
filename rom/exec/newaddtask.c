@@ -187,8 +187,8 @@
         is already gone.
     */
 
-    if (task->tc_Node.ln_Pri > SysBase->ThisTask->tc_Node.ln_Pri &&
-       SysBase->ThisTask->tc_State == TS_RUN)
+    if (task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri &&
+       GET_THIS_TASK->tc_State == TS_RUN)
     {
         D(bug("[AddTask] Rescheduling...\n"));
 

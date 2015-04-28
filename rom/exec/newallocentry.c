@@ -72,7 +72,7 @@
     struct MemList *ret;
     ULONG   	    mlsize, i;
 
-    D(bug("NewAllocEntry $%lx num=%d\ttask=\"%s\"\n", entry, entry->ml_NumEntries, SysBase->ThisTask->tc_Node.ln_Name));
+    D(bug("NewAllocEntry $%lx num=%d\ttask=\"%s\"\n", entry, entry->ml_NumEntries, GET_THIS_TASK->tc_Node.ln_Name));
 
     D(
       for(i = 0; i < entry->ml_NumEntries; i++)

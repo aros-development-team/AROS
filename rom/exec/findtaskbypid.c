@@ -6,6 +6,8 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 
+#include "exec_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -51,11 +53,11 @@
     /*
 	First up, check ThisTask. It could be NULL because of exec_init.c
     */
-    if (SysBase->ThisTask != NULL)
+    if (GET_THIS_TASK != NULL)
     {
-	et = GetETask(SysBase->ThisTask);
+	et = GetETask(GET_THIS_TASK);
 	if (et != NULL && et->et_UniqueID == id)
-	    return SysBase->ThisTask;
+	    return GET_THIS_TASK;
     }
 
     /*	Next, go through the ready list */

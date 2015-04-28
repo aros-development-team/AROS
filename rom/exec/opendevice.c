@@ -85,7 +85,7 @@
     }
 
     D(bug("[exec] OpenDevice(\"%s\", %ld, 0x%p, %d) by \"%s\"\n", devName, unitNumber, iORequest,
-    	  flags, SysBase->ThisTask->tc_Node.ln_Name));
+    	  flags, GET_THIS_TASK->tc_Node.ln_Name));
 
     /* Arbitrate for the device list */
     Forbid();

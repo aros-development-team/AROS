@@ -220,7 +220,7 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
 	 * the stack to some safe place and make sure that task structure is not
 	 * accessed after freeing it.
 	 */
-	if (SysBase->ThisTask->tc_State != TS_REMOVED)
+	if (GET_THIS_TASK->tc_State != TS_REMOVED)
 		MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, byteSize);
 
 	/* Return real start of the block to deallocate */

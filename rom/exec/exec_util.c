@@ -242,7 +242,7 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 
     Forbid();
 
-    if (task == SysBase->ThisTask)
+    if (task == GET_THIS_TASK)
     {
     	Permit();
     	return TRUE;

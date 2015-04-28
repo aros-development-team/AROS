@@ -210,7 +210,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
      * Set ThisTask only AFTER InitETask() has been called. InitETask() sets et_Parent
      * to FindTask(NULL). We must get NULL there, otherwise we'll get task looped on itself.
      */
-    SysBase->ThisTask = t;
+    SET_THIS_TASK(t);
     SysBase->Elapsed  = SysBase->Quantum;
 
     /* Install the interrupt servers. Again, do it here because allocations are needed. */

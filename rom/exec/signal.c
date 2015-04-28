@@ -11,6 +11,8 @@
 #include <proto/exec.h>
 #include <aros/debug.h>
 
+#include "exec_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -90,13 +92,13 @@
         Enqueue(&SysBase->TaskReady,&task->tc_Node);
 
         /* Has it a higher priority as the current one? */
-        if (task->tc_Node.ln_Pri > SysBase->ThisTask->tc_Node.ln_Pri)
+        if (task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri)
         {
             /*
                 Yes. A taskswitch is necessary. Prepare one if possible.
                 (If the current task is not running it is already moved)
             */
-            if (SysBase->ThisTask->tc_State == TS_RUN)
+            if (GET_THIS_TASK->tc_State == TS_RUN)
                 Reschedule();
         }
     }

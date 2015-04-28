@@ -67,7 +67,7 @@ void Exec__TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 #endif
 {
-    struct Task *task = SysBase->ThisTask;
+    struct Task *task = GET_THIS_TASK;
 
     /* Our situation is deadend */
     trapNum |= AT_DeadEnd;

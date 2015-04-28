@@ -64,7 +64,7 @@
 
     D(bug("CloseDevice $%lx $%lx (\"%s\") by \"%s\"\n", iORequest, iORequest->io_Device,
 	iORequest->io_Device ? iORequest->io_Device->dd_Library.lib_Node.ln_Name : "(null)",
-	SysBase->ThisTask->tc_Node.ln_Name));
+	GET_THIS_TASK->tc_Node.ln_Name));
 
     /* Single-thread the close routine. */
     Forbid();
