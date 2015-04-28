@@ -13,4 +13,7 @@ struct Exec_PlatformData
 	struct TagItem *BootMsg;
 };
 
+#define GET_THIS_TASK           (SysBase->ThisTask)
+#define SET_THIS_TASK(x)        (SysBase->ThisTask=(x))
+
 #endif
