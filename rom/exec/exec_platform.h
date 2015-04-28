@@ -1,9 +1,10 @@
 /*
- * This file can be overriden in arch/all-$(ARCH)/exec. Currently
- * used only by Windows-hosted port
+ * This file can be overriden in arch/all-$(ARCH)/exec. 
  */
 #ifndef __EXEC_PLATFORM_H
 #define __EXEC_PLATFORM_H
+
+#warning "Using BASE exec_platform.h"
 
 struct Exec_PlatformData
 {
