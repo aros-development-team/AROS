@@ -23,8 +23,11 @@
 #include "kernel_intr.h"
 #include "kernel_fb.h"
 
+#include "exec_platform.h"
+
 #define ARM_PERIIOBASE __arm_arosintern.ARMI_PeripheralBase
 #include <hardware/bcm2708.h>
+#include <hardware/bcm2708_boot.h>
 #include <hardware/pl011uart.h>
 
 #define IRQBANK_POINTER(bank)   ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
@@ -32,10 +35,11 @@
 #define IRQ_BANK1	0x00000100
 #define IRQ_BANK2	0x00000200
 
-#define D(x)
+#define D(x) x
 #define DIRQ(x)
+#define DTIMER(x)
 
-extern mpcore_trampoline();
+extern void mpcore_trampoline();
 extern uint32_t mpcore_end;
 extern uint32_t mpcore_pde;
 
@@ -52,12 +56,13 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
         void *trampoline_src = mpcore_trampoline;
-        void *trampoline_dst = (void *)0x2000;
+        void *trampoline_dst = (void *)BOOTMEMADDR(bm_mctrampoline);
         uint32_t trampoline_length = (uintptr_t)&mpcore_end - (uintptr_t)mpcore_trampoline;
         uint32_t trampoline_data_offset = (uintptr_t)&mpcore_pde - (uintptr_t)mpcore_trampoline;
         int core;
         uint32_t *core_stack;
         uint32_t tmp;
+        tls_t   *__tls;
 
         bug("[KRN:BCM2708] Initialising Multicore System\n");
         D(bug("[KRN:BCM2708] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
@@ -73,13 +78,21 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
         for (core = 1; core < 4; core ++)
         {
                 core_stack = (uint32_t *)AllocMem(AROS_STACKSIZE*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
-                ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = &core_stack[AROS_STACKSIZE-sizeof(IPTR)];
+                ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = (uint32_t)&core_stack[AROS_STACKSIZE-sizeof(IPTR)];
+
+                __tls =  AllocMem(sizeof(tls_t),  MEMF_CLEAR); /* MEMF_PRIVATE */
+                __tls->SysBase = _sysBase;
+                __tls->KernelBase = _kernelBase;
+                __tls->ThisTask = NULL;
+                arm_flush_cache(((uint32_t)__tls) & ~63, 512);
+                ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3] = __tls;
 
                 D(bug("[KRN:BCM2708] %s: Attempting to wake core #%d\n", __PRETTY_FUNCTION__, core));
-                D(bug("[KRN:BCM2708] %s: core #%d stack @ 0x%p : 0x%p)\n", __PRETTY_FUNCTION__, core, core_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
+                D(bug("[KRN:BCM2708] %s: core #%d stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, core, core_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
+                D(bug("[KRN:BCM2708] %s: core #%d tls @ 0x%p\n", __PRETTY_FUNCTION__, core, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
                 arm_flush_cache((uint32_t)trampoline_dst, 512);
-                *((uint32_t *)(0x4000008c + (0x10 * core))) = trampoline_dst;
+                *((uint32_t *)(0x4000008c + (0x10 * core))) = (uint32_t)trampoline_dst;
 
                 if (__arm_arosintern.ARMI_Delay)
                     __arm_arosintern.ARMI_Delay(10000000);
@@ -107,11 +120,11 @@ static void bcm2807_irq_enable(int irq)
 
     reg = (unsigned int)IRQBANK_POINTER(bank);
 
-    (bug("[KRN:BCM2708] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    DIRQ(bug("[KRN:BCM2708] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
     *((volatile unsigned int *)reg) = IRQ_MASK(irq);
 
-    (bug("[KRN:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
+    DIRQ(bug("[KRN:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
 }
 
 static void bcm2807_irq_disable(int irq)
@@ -121,11 +134,11 @@ static void bcm2807_irq_disable(int irq)
 
     reg = (unsigned int)IRQBANK_POINTER(bank) + 0x0c;
 
-    (bug("[KRN:BCM2708] Disabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    DIRQ(bug("[KRN:BCM2708] Disabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
     *((volatile unsigned int *)reg) = IRQ_MASK(irq);
 
-    (bug("[KRN:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
+    DIRQ(bug("[KRN:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
 }
 
 static void bcm2807_irq_process()
@@ -217,7 +230,7 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
 {
     unsigned int stc;
 
-    D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, timerno));
+    DTIMER(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, timerno));
 
     /* Aknowledge our timer interrupt */
     *((volatile unsigned int *)(SYSTIMER_CS)) = 1 << timerno;
@@ -232,7 +245,7 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
     stc += VBLANK_INTERVAL;
     *((volatile unsigned int *)(SYSTIMER_C0 + (timerno * 4))) = stc;
 
-    D(bug("[BCM2708] %s: Done..\n", __PRETTY_FUNCTION__));
+    DTIMER(bug("[BCM2708] %s: Done..\n", __PRETTY_FUNCTION__));
 }
 
 static APTR bcm2708_init_gputimer(APTR _kernelBase)
@@ -241,22 +254,22 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
     struct IntrNode *GPUTimerHandle;
     unsigned int stc;
 
-    D(bug("[KRN:BCM2708] %s(%012p)\n", __PRETTY_FUNCTION__, KernelBase));
+    DTIMER(bug("[KRN:BCM2708] %s(%012p)\n", __PRETTY_FUNCTION__, KernelBase));
 
     if ((GPUTimerHandle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
     {
-        D(bug("[KRN:BCM2708] %s: IntrNode @ 0x%p:\n", __PRETTY_FUNCTION__, GPUTimerHandle));
-        D(bug("[KRN:BCM2708] %s: Using GPUTimer %d for VBlank\n", __PRETTY_FUNCTION__, VBLANK_TIMER));
+        DTIMER(bug("[KRN:BCM2708] %s: IntrNode @ 0x%p:\n", __PRETTY_FUNCTION__, GPUTimerHandle));
+        DTIMER(bug("[KRN:BCM2708] %s: Using GPUTimer %d for VBlank\n", __PRETTY_FUNCTION__, VBLANK_TIMER));
 
         GPUTimerHandle->in_Handler = bcm2708_gputimer_handler;
-        GPUTimerHandle->in_HandlerData = VBLANK_TIMER;
+        GPUTimerHandle->in_HandlerData = (void *)VBLANK_TIMER;
         GPUTimerHandle->in_HandlerData2 = KernelBase;
         GPUTimerHandle->in_type = it_interrupt;
         GPUTimerHandle->in_nr = IRQ_TIMER0 + VBLANK_TIMER;
 
         ADDHEAD(&KernelBase->kb_Interrupts[IRQ_TIMER0 + VBLANK_TIMER], &GPUTimerHandle->in_Node);
 
-        D(bug("[KRN:BCM2708] %s: Enabling Hardware IRQ.. \n", __PRETTY_FUNCTION__));
+        DTIMER(bug("[KRN:BCM2708] %s: Enabling Hardware IRQ.. \n", __PRETTY_FUNCTION__));
 
         stc = *((volatile unsigned int *)(SYSTIMER_CLO));
         stc += VBLANK_INTERVAL;
@@ -266,7 +279,7 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
         ictl_enable_irq(IRQ_TIMER0 + VBLANK_TIMER, KernelBase);
     }
 
-    D(bug("[KRN:BCM2708] %s: Done.. \n", __PRETTY_FUNCTION__));
+    DTIMER(bug("[KRN:BCM2708] %s: Done.. \n", __PRETTY_FUNCTION__));
 
     return GPUTimerHandle;
 }
@@ -301,17 +314,12 @@ static int bcm2708_ser_getc(void)
 
 static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
-    BOOL bcm2708found = FALSE;
     void *bootPutC = NULL;
 
     while(msg->ti_Tag != TAG_DONE)
     {
         switch (msg->ti_Tag)
         {
-        case KRN_Platform:
-            if (msg->ti_Data == 0xc42)
-                bcm2708found = TRUE;
-            break;
         case KRN_FuncPutC:
             bootPutC = (void *)msg->ti_Data;
             break;
@@ -319,7 +327,7 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         msg++;
     }
 
-    if (!bcm2708found)
+    if (krnARMImpl->ARMI_Platform != 0xc42)
         return FALSE;
 
     if (krnARMImpl->ARMI_Family == 7) /*  bcm2836 uses armv7 */
