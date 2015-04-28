@@ -4,8 +4,6 @@
 #ifndef __EXEC_PLATFORM_H
 #define __EXEC_PLATFORM_H
 
-#warning "Using BASE exec_platform.h"
-
 struct Exec_PlatformData
 {
     /* No platform-specific data by default */
