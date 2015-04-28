@@ -12,7 +12,7 @@
 #include <exec/interrupts.h>
 #include <exec/tasks.h>
 
-#include "exec_platform.h"
+#include <exec_platform.h>
 
 #include "alertextra.h"
 
