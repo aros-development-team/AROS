@@ -95,6 +95,10 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
         return FALSE;
     task->tc_Flags |= TF_ETASK;
 
+#if defined(__AROSEXEC_SMP__)
+    IntETask(et)->iet_CpuAffinity = (1 << 0);
+#endif
+
     et->et_Parent = thistask;
     NEWLIST(&et->et_Children);
 
