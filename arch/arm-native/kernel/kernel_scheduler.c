@@ -13,9 +13,9 @@
 #include <kernel_debug.h>
 #include <kernel_scheduler.h>
 
-#include "exec_platform.h"
+#include <exec_platform.h>
 
-#include "etask.h"
+#include <etask.h>
 
 #define D(x)
 
@@ -122,12 +122,16 @@ struct Task *core_Dispatch(void)
 // ## TODO: Lock TaskReady access READ
     for (task = (struct Task *)GetHead(&SysBase->TaskReady); task != NULL; task = (struct Task *)GetSucc(task))
     {
+#if defined(__AROSEXEC_SMP__)
         if ((GetIntETask(task)->iet_CpuAffinity  & cpumask) == cpumask)
         {
+#endif
 // ## TODO: switch TaskReady Lock to  WRITE
             Remove(&task->tc_Node);
             break;
+#if defined(__AROSEXEC_SMP__)
         }
+#endif
     }
 // ## TODO: Unlock TaskReady access
 
