@@ -17,6 +17,8 @@
 #include <proto/exec.h>
 #include <strings.h>
 
+#include "exec_intern.h"
+
 /* Linked from kernel.resource,
  * need to retrieve in a cleaner fashion .. */
 extern IPTR stack[];
@@ -29,7 +31,7 @@ static int PlatformInit(struct ExecBase *SysBase)
 {
     D(bug("[Exec] PlatformInit()\n"));
     
-    struct Task *BootTask = SysBase->ThisTask;
+    struct Task *BootTask = GET_THIS_TASK;
     D(bug("[Exec] PlatformInit: Boot Task @ 0x%p\n", BootTask));
 
     /* for our sanity we will tell exec about the correct stack for the boot task */
