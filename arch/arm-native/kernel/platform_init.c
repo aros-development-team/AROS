@@ -92,7 +92,7 @@ static int platform_PostInit(struct KernelBase *KernelBase)
     return TRUE;
 }
 
-ADD2INITLIB(platform_PostInit, 0)
+ADD2INITLIB(platform_PostInit, 10)
 
 struct KernelBase *getKernelBase()
 {
