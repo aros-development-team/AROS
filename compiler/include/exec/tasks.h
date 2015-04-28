@@ -217,6 +217,7 @@ struct ETask
 #define TASKTAG_TASKMSGPORT     (TASKTAG_Dummy + 25)
 #define TASKTAG_FLAGS           (TASKTAG_Dummy + 26)
 #define TASKTAG_TCBEXTRASIZE    (TASKTAG_Dummy + 28)
+#define TASKTAG_AFFINITY    (TASKTAG_Dummy + 29)
 
 #define TASKERROR_OK       0
 #define TASKERROR_NOMEMORY 1
