@@ -22,6 +22,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-hidd \
 #MM     kernel-aros \
 #MM     kernel-misc \
+#MM     kernel-task \
 #MM     kernel-timer \
 #MM     kernel-hidd-pci \
 #MM     kernel-hidd-pci-amcc440 \

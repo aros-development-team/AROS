@@ -8,7 +8,7 @@ MINGW32_DEVS	 := timer
 MINGW32_HANDLERS := emul
 MINGW32_HIDD	 := wingdi
 MINGW32_LIBS	 := expansion exec
-MINGW32_RES	 := hostlib battclock processor
+MINGW32_RES	 := hostlib battclock processor task
 
 #MM- boot-mingw32: kernel-bootstrap-hosted kernel-boot-mingw32
 
@@ -22,6 +22,7 @@ MINGW32_RES	 := hostlib battclock processor
 #MM			  kernel-timer-kobj		\
 #MM			  kernel-expansion-kobj		\
 #MM			  kernel-exec-kobj		\
+#MM			  kernel-task-kobj		\
 #MM			  kernel-emul-kobj		\
 #MM			  kernel-fs-emul-kobj		\
 #MM			  kernel-hidd-wingdi-kobj	\

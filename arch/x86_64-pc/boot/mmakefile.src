@@ -36,10 +36,11 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-hidd-vesa    		 \
 #MM			   kernel-hidd-pci    		 \
 #MM			   kernel-hidd-pci-pcipc    	 \
-#MM			   kernel-processor
+#MM			   kernel-processor  		 \
+#MM			   kernel-task
 
 KRSRCS      := efi hpet
-KRSRCS_ARCH := battclock processor
+KRSRCS_ARCH := battclock processor task
 KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci

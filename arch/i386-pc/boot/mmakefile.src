@@ -36,6 +36,7 @@ KLIBS   := exec
 #MM	linklibs			\
 #MM	kernel-battclock    		\
 #MM	kernel-processor    		\
+#MM	kernel-task    		        \
 #MM	kernel-timer    		\
 #MM	kernel-expansion    		\
 #MM	kernel-efi     			\
@@ -53,7 +54,7 @@ KLIBS   := exec
 #MM     kernel-hidd-vga    
 
 KRSRCS      := efi hpet
-KRSRCS_ARCH := battclock processor
+KRSRCS_ARCH := battclock processor task
 KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ahci ata
