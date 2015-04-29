@@ -10,6 +10,9 @@
 #   include <utility/tagitem.h>
 #endif
 
-#define TaskTag_CPUTime     (TAG_USER +   1)
+#define TaskTag_CPUNumber       (TAG_USER + 0x00000001) // CPU Number task is currently running on
+#define TaskTag_CPUAffinity     (TAG_USER + 0x00000002) // CPU Affinity mask
+#define TaskTag_CPUTime         (TAG_USER + 0x00000003) // Amount of CPU time spent running
+#define TaskTag_StartTime       (TAG_USER + 0x00000004) // Time the task was started
 
 #endif /* TASKRES_H */
