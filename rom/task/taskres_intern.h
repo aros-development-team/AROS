@@ -18,8 +18,23 @@
 
 struct TaskResBase
 {
-    struct Library      trb_LibNode;
-    APTR                trb_KernelBase;
+    struct Library              trb_LibNode;
+    APTR                        trb_KernelBase;
+    struct List                 trb_TaskLists;
+};
+
+struct TaskListEntry
+{
+    struct Node                 tle_Node;
+    struct Task                 *tle_Task;
+};
+
+// The "Real" implementation of struct TaskList
+struct TaskListPrivate
+{
+    struct Node                 tlp_Node;
+    struct List                 tlp_Tasks;
+    struct TaskListEntry        *tlp_Next;
 };
 
 #ifdef KernelBase

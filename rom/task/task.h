@@ -19,9 +19,10 @@
 #define TaskTag_CPUTime         (TAG_USER + 0x00000003) // Amount of CPU time spent running
 #define TaskTag_StartTime       (TAG_USER + 0x00000004) // Time the task was started
 
+// The contents of the tasklist are private to task.resource
 struct TaskList
 {
-    struct Task *tl_Next;
+    void *tl_Private;
 };
 
 #endif /* TASKRES_H */
