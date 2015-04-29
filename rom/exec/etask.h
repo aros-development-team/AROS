@@ -38,16 +38,18 @@ struct IntETask
     struct ETask       iet_ETask;
     APTR                iet_RT;                 /* Structure for resource tracking         */
 #if defined(__AROSEXEC_SMP__)
+    IPTR                iet_CpuNumber;          /* core this task is currently running on  */
     IPTR                iet_CpuAffinity;        /* bitmap of cores this task can run on    */
 #endif
-    UQUAD               iet_CpuTime;
+    UQUAD               iet_StartTime;          /* time the task was launched              */
+    UQUAD               iet_CpuTime;            /* time the task has spent running         */
     UQUAD               iet_private1;
     ULONG               iet_AlertCode;          /* Alert code for crash handler            */
     UBYTE               iet_AlertType;          /* Type of the alert context               */
     UBYTE               iet_AlertFlags;         /* See below                               */
     APTR                iet_AlertLocation;      /* Alert location for crash handler        */
     APTR                iet_AlertStack;         /* Frame pointer for stack backtrace       */
-    struct AlertContext iet_AlertData;         /* Extra data coming with the crash        */
+    struct AlertContext iet_AlertData;          /* Extra data coming with the crash        */
 #ifdef DEBUG_ETASK
     STRPTR              iet_Me;
 #endif
