@@ -1,9 +1,9 @@
-# Copyright © 2009-2010, The AROS Development Team. All rights reserved.
-# $Id: mmakefile.src 49977 2015-01-31 05:19:35Z NicJA $
+# Copyright © 2015, The AROS Development Team. All rights reserved.
+# $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-processor-kobj: includes
-#MM kernel-processor: includes
+#MM kernel-task-kobj: includes
+#MM kernel-task: includes
 
 INCLUDE_FILES := task.h
 
