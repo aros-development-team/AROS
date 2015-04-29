@@ -1,0 +1,17 @@
+# Copyright © 2009-2010, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 49977 2015-01-31 05:19:35Z NicJA $
+include $(TOP)/config/make.cfg
+
+#MM kernel-processor-kobj: includes
+#MM kernel-processor: includes
+
+INCLUDE_FILES := task.h
+
+USER_LDFLAGS := -static
+USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+
+%build_module mmake=kernel-task modname=task modtype=resource \
+    version=$(AROS_TARGET_PLATFORM) files="init QueryTaskTagList" \
+    archspecific=yes
+
+%copy_includes path=resources
