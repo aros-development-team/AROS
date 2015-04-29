@@ -12,6 +12,9 @@
 #ifndef EXEC_NODES_H
 #include <exec/nodes.h>
 #endif
+#ifndef EXEC_LISTS_H
+#include <exec/lists.h>
+#endif
 #ifndef UTILITY_UTILITY_H
 #include <utility/utility.h>
 #endif
