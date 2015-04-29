@@ -69,8 +69,25 @@
     {
         switch(Tag->ti_Tag)
         {
+        case(TaskTag_CPUNumber):
+#if defined(__AROSEXEC_SMP__)
+            Tag->ti_Data = GetIntETask(task)->iet_CpuNumber;
+#else
+            Tag->ti_Data = 0;
+#endif
+            break;
+        case(TaskTag_CPUAffinity):
+#if defined(__AROSEXEC_SMP__)
+            Tag->ti_Data = GetIntETask(task)->iet_CpuAffinity;
+#else
+            Tag->ti_Data = (1 << 0);
+#endif
+            break;
         case(TaskTag_CPUTime):
             Tag->ti_Data = GetIntETask(task)->iet_CpuTime;
+            break;
+        case(TaskTag_StartTime):
+            Tag->ti_Data = GetIntETask(task)->iet_StartTime;
             break;
         }
     }
