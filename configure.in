@@ -775,6 +775,7 @@ AC_MSG_RESULT($enableval)
 #
 # Bootloader name. Currently used by PC target.
 target_bootloader="none"
+ENABLE_EXECSMP=
 
 #-----------------------------------------------------------------------------
 # Additional options for some specific targets
@@ -1324,6 +1325,11 @@ case "$target_os" in
         aros_config_aflags="$aros_config_aflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_kernel_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        case "$aros_target_variant" in
+            smp)
+                ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
+            ;;
+        esac
         ;;
 
     sun4i)
@@ -2738,6 +2744,7 @@ AC_SUBST(aros_host_sdl_libs)
 
 # Native version related
 AC_SUBST(aros_serial_debug)
+AC_SUBST(ENABLE_EXECSMP)
 
 # Palm native version related
 AC_SUBST(aros_palm_debug_hack)

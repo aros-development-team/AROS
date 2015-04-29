@@ -649,6 +649,7 @@ aros_ios_platform
 aros_enable_mmu
 aros_nesting_supervisor
 aros_palm_debug_hack
+ENABLE_EXECSMP
 aros_serial_debug
 aros_host_sdl_libs
 aros_host_sdl_cflags
@@ -7664,6 +7665,7 @@ $as_echo "$enableval" >&6; }
 #
 # Bootloader name. Currently used by PC target.
 target_bootloader="none"
+ENABLE_EXECSMP=
 
 #-----------------------------------------------------------------------------
 # Additional options for some specific targets
@@ -8348,6 +8350,11 @@ case "$target_os" in
         aros_config_aflags="$aros_config_aflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_kernel_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        case "$aros_target_variant" in
+            smp)
+                ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
+            ;;
+        esac
         ;;
 
     sun4i)
