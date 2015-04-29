@@ -62,6 +62,7 @@ Q ?= @
 #MM     kernel-oop-kobj \
 #MM     kernel-partition-kobj \
 #MM     kernel-processor-kobj \
+#MM     kernel-task-kobj \
 #MM     kernel-potgo-kobj \
 #MM     kernel-romboot-kobj \
 #MM     kernel-setpatch-kobj \
@@ -119,7 +120,7 @@ KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs ram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
-KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
+KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
 KHOOKS  := diag romboot
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \

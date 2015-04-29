@@ -25,6 +25,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-graphics \
 #MM     kernel-layers \
 #MM     kernel-intuition \
+#MM     kernel-task \
 #MM     kernel-keymap \
 #MM     workbench-libs-workbench \
 #MM     kernel-dos \
@@ -45,7 +46,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-hidd-pci
 
 PKG_GEN_LIBS 	:= aros expansion utility oop graphics layers intuition keymap workbench dos
-PKG_GEN_RSRC 	:= dosboot bestcomm lddemon
+PKG_GEN_RSRC 	:= dosboot bestcomm lddemon task
 PKG_GEN_DEVS 	:= input gameport keyboard console
 PKG_GEN_HANDLERS:= con ram
 PKG_GEN_HIDDS	:= graphics keyboard mouse hiddclass i2c pci
