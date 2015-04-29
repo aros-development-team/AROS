@@ -52,12 +52,13 @@
 #include <devices/timer.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
+#include <proto/task.h>
 
-/* Dirty hack! Is there a better way? */
-#include "../../rom/exec/etask.h"
+#include <resources/task.h>
 
-const TEXT version[] = "$VER: tasklist 41.3 (11.3.2015)\n";
+const TEXT version[] = "$VER: tasklist 41.4 (29.4.2015)\n";
 
+APTR TaskResBase = NULL;
 ULONG eclock;
 
 struct task
@@ -75,7 +76,15 @@ struct task
 static int addtask(struct Task *task, struct task **t, STRPTR *e)
 {
     STRPTR s1,s2;
-    (*t)->cputime = GetIntETask(task)->iet_CpuTime;
+    struct TagItem QueryTaskTags[] =
+    {
+        {TaskTag_CPUTime        , 0     },
+        {TAG_DONE               , 0     }
+    };
+
+    QueryTaskTagList(task, QueryTaskTags);
+
+    (*t)->cputime = QueryTaskTags[0].ti_Data;
     (*t)->address=task;
     (*t)->type=task->tc_Node.ln_Type;
     (*t)->pri =(WORD)task->tc_Node.ln_Pri;
@@ -167,6 +176,8 @@ int main(void)
     CloseDevice((struct IORequest *)io);
     DeleteIORequest((struct IORequest *)io);
     DeleteMsgPort(port);
+
+    TaskResBase = OpenResource("task.resource");
 
     for(size=2048;;size+=2048)
     {

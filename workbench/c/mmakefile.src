@@ -82,7 +82,7 @@ USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -I$(OBJDIR)
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
-#MM workbench-c : includes linklibs workbench-c-sh workbench-c-requeststring workbench-libs-uuid
+#MM workbench-c : includes kernel-task-includes linklibs workbench-c-sh workbench-c-requeststring workbench-libs-uuid
 #MM workbench-c-quick : workbench-c-sh-quick workbench-c-requeststring-quick
 
 %build_prog mmake=workbench-c-requeststring progname=RequestString \
