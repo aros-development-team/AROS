@@ -51,7 +51,6 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-fs-sfs \
 #MM kernel-fs-ram \
 #MM kernel-processor \
-#MM kernel-task \
 #MM kernel-mbox-bcm2708 \
 #MM kernel-sdcard \
 #MM hidd-i2c \
@@ -74,7 +73,7 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox
-PKG_RSRC_ARCH := processor task
+PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
