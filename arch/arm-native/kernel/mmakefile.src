@@ -32,12 +32,12 @@ PLATFILES := platform_bcm2708
 
 AFILES := intvecs
 
-#MM kernel-raspi-arm: setup-raspi-arm kernel-kernel-kobj kernel-exec-kobj
+#MM kernel-raspi-arm: setup-raspi-arm kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
 kernel-raspi-arm: $(OSGENDIR)/boot/core.elf
 
-$(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+$(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o  $(KOBJSDIR)/task_resource.o
 		%mkdirs_q $(OSGENDIR)/boot
-		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
 		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 
 #MM kernel-kernel-raspi-arm : includes
