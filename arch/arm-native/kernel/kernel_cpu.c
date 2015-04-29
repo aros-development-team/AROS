@@ -143,6 +143,7 @@ void cpu_Register()
     t->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
 
     /* This Bootstrap task can run only on one of the available cores */
+    GetIntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber = (tmp & 0x3);
     GetIntETask(t->tc_UnionETask.tc_ETask)->iet_CpuAffinity = 1 << (tmp & 0x3);
 
     __tls->ThisTask = t;
