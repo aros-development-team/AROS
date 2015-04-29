@@ -1,11 +1,12 @@
 /*
- * This file can be overriden in arch/all-$(ARCH)/exec. Currently
- * used only by Windows-hosted port
- */
+    Copyright © 2015, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 #ifndef __EXEC_PLATFORM_H
 #define __EXEC_PLATFORM_H
 
-//#define __AROSEXEC_SMP__
+// needed to determine if this is an smp build..
+#include <aros/config.h>
 
 #include "tls.h"
 
