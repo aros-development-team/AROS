@@ -27,7 +27,7 @@
 	AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
-	struct TaskResBase *, TaskResBase, 1, Task)
+	struct TaskResBase *, TaskResBase, 6, Task)
 
 /*  FUNCTION
 
@@ -40,7 +40,10 @@
 
     TAGS
 
+        TaskTag_CPUNumber - (ULONG) Returns the CPU Number the task is currently running on
+        TaskTag_CPUAffinity - (ULONG) Returns the CPU Affinity mask
         TaskTag_CPUTime - (ULONG) Returns the amount of cpu time a task has used .
+        TaskTag_StartTime - (ULONG) Returns the time the task was launched .
 
     RESULT
 
@@ -94,4 +97,3 @@
 
     AROS_LIBFUNC_EXIT
 } /* QueryTaskTagList() */
-
