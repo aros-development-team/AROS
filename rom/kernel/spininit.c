@@ -5,6 +5,7 @@
     Desc:
 */
 
+#include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
@@ -21,7 +22,7 @@
 	AROS_LHA(spinlock_t *, lock, A0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 38, Kernel)
+	struct KernelBase *, KernelBase, 40, Kernel)
 
 /*  FUNCTION
 
