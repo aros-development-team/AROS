@@ -37,6 +37,7 @@
 
 #define D(x) x
 #define DIRQ(x)
+#define DFIQ(x)
 #define DTIMER(x)
 
 extern void mpcore_trampoline();
@@ -219,12 +220,17 @@ static void bcm2807_irq_process()
 
 static void bcm2807_fiq_process()
 {
-    uint32_t tmp;
+    uint32_t tmp, fiq;
 
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
 
-    D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, (tmp & 0x3)));
+    DFIQ(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, (tmp & 0x3)));
 
+    fiq = *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * (tmp & 0x3))));
+
+    DFIQ(bug("[KRN:BCM2708] %s: FIQ %x\n", __PRETTY_FUNCTION__, fiq));
+
+    *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * (tmp & 0x3)))) = fiq;
 }
 
 static void bcm2708_toggle_led(int LED, int state)
