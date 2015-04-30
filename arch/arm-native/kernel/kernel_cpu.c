@@ -52,6 +52,8 @@ asm(
 "               orr     r4, r4, #1              \n"
 "               mcr     p15, 0, r4, c1, c0, 0   \n"
 "               mcr     p15, 0, r3, c7, c5, 4   \n"
+"               cps     #0x11                   \n"
+"               ldr     sp, mpcore_fstack       \n"
 "               cps     #0x13                   \n"
 "               ldr     sp, mpcore_stack        \n"
 "               ldr     r3, mpcore_tls          \n"
@@ -63,13 +65,14 @@ asm(
 "mpcore_code:   .word   0                       \n"
 "mpcore_stack:  .word   0                       \n"
 "mpcore_tls:    .word   0                       \n"
+"mpcore_fstack: .word   0                       \n"
 "       .globl mpcore_end                       \n"
 "mpcore_end:  "
 );
 
 void cpu_Register()
 {
-    uint32_t tmp;
+    uint32_t tmp, ttmp;
 #if defined(__AROSEXEC_SMP__)
     tls_t *__tls;
     struct ExecBase *SysBase;
@@ -93,6 +96,13 @@ void cpu_Register()
 
     /* Now we are ready to boostrap and launch the schedular */
     bug("[KRN] Core %d Boostrapping..\n", (tmp & 0x3));
+
+    asm volatile ("mrs %0, cpsr" :"=r"(ttmp));
+    bug("[KRN] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
+    ttmp &= ~(1 << 6);
+    asm volatile ("msr cpsr_cxsf, %0" ::"r"(ttmp));
+    bug("[KRN] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
+
     bug("[KRN] Core %d TLS @ 0x%p\n", (tmp & 0x3), (__tls));
     KernelBase = __tls->KernelBase; // TLS_GET(KernelBase)
     SysBase = __tls->SysBase; // TLS_GET(SysBase)
