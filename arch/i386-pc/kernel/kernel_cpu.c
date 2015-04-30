@@ -107,7 +107,10 @@ void cpu_Switch(struct ExceptionContext *regs)
     /* Set task's tc_SPReg */
     task->tc_SPReg = (APTR)regs->esp;
 
+    //warning: fixme
+#if (0)
     GetIntETask(task)->iet_CpuTime += (RDTSC() - GetIntETask(task)->iet_private1);
+#endif
 
     core_Switch();
 }
