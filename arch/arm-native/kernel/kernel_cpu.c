@@ -258,9 +258,20 @@ void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
          : [fpuflags] "=r" (fpuflags) : [vfpenable] "I" (VFPEnable));
 }
 
+#define ADDTIME(dest, src)			\
+    (dest)->tv_micro += (src)->tv_micro;	\
+    (dest)->tv_secs  += (src)->tv_secs;		\
+    while((dest)->tv_micro > 999999)		\
+    {						\
+	(dest)->tv_secs++;			\
+	(dest)->tv_micro -= 1000000;		\
+    }
+
 void cpu_Switch(regs_t *regs)
 {
     struct Task *task;
+    UQUAD timeCur;
+    struct timeval timeVal;
 
     D(bug("[Kernel] cpu_Switch()\n"));
 
@@ -273,7 +284,11 @@ void cpu_Switch(regs_t *regs)
     if (__arm_arosintern.ARMI_GetTime)
     {
         /* Update the taks CPU time .. */
-        GetIntETask(task)->iet_CpuTime += __arm_arosintern.ARMI_GetTime() - GetIntETask(task)->iet_private1;
+        timeCur = __arm_arosintern.ARMI_GetTime() - GetIntETask(task)->iet_private1;
+        timeVal.tv_secs = timeCur / 1000000;
+        timeVal.tv_micro = timeCur - (timeVal.tv_secs * 1000000);
+
+        ADDTIME(&GetIntETask(task)->iet_CpuTime, &timeVal);
     }
 
     core_Switch();
@@ -309,6 +324,11 @@ void cpu_Dispatch(regs_t *regs)
     {
         /* Store the launch time */
         GetIntETask(task)->iet_private1 = __arm_arosintern.ARMI_GetTime();
+        if (!GetIntETask(task)->iet_StartTime.tv_secs && !GetIntETask(task)->iet_StartTime.tv_micro)
+        {
+            GetIntETask(task)->iet_StartTime.tv_secs = (GetIntETask(task)->iet_private1 / 1000000);
+            GetIntETask(task)->iet_StartTime.tv_micro = GetIntETask(task)->iet_private1 - (GetIntETask(task)->iet_StartTime.tv_secs * 1000000);
+        }
     }
 
     if (task->tc_Flags & TF_LAUNCH)
