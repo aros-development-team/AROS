@@ -20,6 +20,7 @@ struct ARM_Implementation
     void                (*ARMI_IRQEnable) (int);
     void                (*ARMI_IRQDisable) (int);
     void                (*ARMI_IRQProcess) (void);
+    void                (*ARMI_FIQProcess) (void);
     void                (*ARMI_LED_Toggle) (int, int);
     void                (*ARMI_Save_VFP_State) (void *); // saves state of vfp to buffer
     void                (*ARMI_Restore_VFP_State) (void *); // restores state of vfp from buffer

@@ -168,6 +168,9 @@ __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 {
     DIRQ(bug("[KRN] ## FIQ ##\n"));
 
+    if (__arm_arosintern.ARMI_FIQProcess)
+        __arm_arosintern.ARMI_FIQProcess();
+
     DIRQ(bug("[KRN] FIQ processing finished\n"));
 
     return;
