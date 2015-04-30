@@ -100,8 +100,15 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
     }
 }
 
-static void bcm2708_init_core(void)
+static void bcm2708_init_core(APTR _kernelBase, APTR _sysBase)
 {
+    struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
+    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+
+    D(bug("[KRN:BCM2708] %s()\n", __PRETTY_FUNCTION__));
+
+    // enable interrupts
+    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * core))) = 0x1;
 }
 
 static unsigned int bcm2807_get_time(void)

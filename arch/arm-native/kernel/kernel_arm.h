@@ -9,7 +9,7 @@ struct ARM_Implementation
     IPTR                ARMI_Platform;
     APTR                ARMI_PeripheralBase;
     void                (*ARMI_Init) (APTR, APTR); // takes pointers to KernelBase & SysBase as input
-    void                (*ARMI_InitCore) (void);
+    void                (*ARMI_InitCore) (APTR, APTR); // takes pointers to KernelBase & SysBase as input
     APTR                (*ARMI_InitTimer) (APTR); // takes a pointer to KernelBase as input, and returns struct IntrNode
     void                (*ARMI_Delay) (int);
     unsigned int        (*ARMI_GetTime) (void);
