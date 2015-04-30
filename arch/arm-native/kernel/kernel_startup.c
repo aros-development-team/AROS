@@ -33,6 +33,10 @@
 
 #include "exec_platform.h"
 
+#if defined(__AROSEXEC_SMP__)
+extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
+#endif
+
 extern struct TagItem *BootMsg;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg);
@@ -267,6 +271,12 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     __tls->SysBase = SysBase;
     D(bug("[KRN] SysBase @ 0x%p\n", SysBase));
+
+#if defined(__AROSEXEC_SMP__)
+    /* Initialise exec spinlocks */
+    Kernel_40_KrnSpinInit(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL);
+    Kernel_40_KrnSpinInit(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL);
+#endif
 
     /* 
      * Make kickstart code area read-only.
