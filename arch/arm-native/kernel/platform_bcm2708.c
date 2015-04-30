@@ -137,7 +137,7 @@ static void bcm2708_init_core(APTR _kernelBase, APTR _sysBase)
     *((uint32_t *)(BCM2836_MAILBOX3_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
 
     // enable FIQ mailbox interupt
-    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = 0xf0;
+    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = 0x10;
 }
 
 static unsigned int bcm2807_get_time(void)
@@ -153,6 +153,18 @@ static void bcm2807_irq_init(void)
     *(volatile unsigned int *)ARMIRQ_DIBL = ~0;
     *(volatile unsigned int *)GPUIRQ_DIBL0 = ~0; 
     *(volatile unsigned int *)GPUIRQ_DIBL1 = ~0;
+}
+
+static void bcm2807_send_ipi(uint32_t msg, uint32_t cpumask)
+{
+    int i = 0;
+    for (i = 0; i < 4; i++)
+    {
+        if (cpumask & (1 << i))
+        {
+            *((uint32_t *)(BCM2836_MAILBOX0_SET0 + (0x10 * i))) = msg;
+        }
+    }
 }
 
 static void bcm2807_irq_enable(int irq)
@@ -401,6 +413,7 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2836_PERIPHYSBASE;
         krnARMImpl->ARMI_InitCore = &bcm2708_init_core;
         krnARMImpl->ARMI_FIQProcess = &bcm2807_fiq_process;
+        krnARMImpl->ARMI_SendIPI = &bcm2807_send_ipi;
     }
     else
         krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2835_PERIPHYSBASE;
