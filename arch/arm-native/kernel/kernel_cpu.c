@@ -10,6 +10,7 @@
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 #include <aros/arm/cpucontext.h>
+#include <asm/arm/cpu.h>
 #include <strings.h>
 
 #include "kernel_base.h"
