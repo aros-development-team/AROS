@@ -1,3 +1,6 @@
+#ifndef __KERNEL_ARM_H
+#define __KERNEL_ARM_H
+
 /*
     Copyright © 2015, The AROS Development Team. All rights reserved.
     $Id$
@@ -8,6 +11,7 @@ struct ARM_Implementation
     IPTR                ARMI_Family;
     IPTR                ARMI_Platform;
     APTR                ARMI_PeripheralBase;
+    void                (*ARMI_SendIPI) (uint32_t, uint32_t); // Sends IPI to processors in mask
     void                (*ARMI_Init) (APTR, APTR); // takes pointers to KernelBase & SysBase as input
     void                (*ARMI_InitCore) (APTR, APTR); // takes pointers to KernelBase & SysBase as input
     APTR                (*ARMI_InitTimer) (APTR); // takes a pointer to KernelBase as input, and returns struct IntrNode
@@ -39,3 +43,4 @@ extern struct ARM_Implementation __arm_arosintern;
 
 
 
+#endif // __KERNEL_ARM_H

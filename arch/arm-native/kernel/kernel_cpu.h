@@ -7,6 +7,7 @@
 #define CPU_ARM_H_
 
 #include <inttypes.h>
+#include "kernel_arm.h"
 
 extern uint32_t __arm_affinitymask;
 
@@ -26,5 +27,29 @@ extern uint32_t __arm_affinitymask;
 #define krnSysCall(n) asm volatile ("swi %[swi_no]\n\t" : : [swi_no] "I" (n) : "lr");
 
 void cpu_DumpRegs(regs_t *regs);
+
+static inline int GetCPUNumber() {
+    int tmp;
+    asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
+    return tmp & 3;
+}
+
+static inline void SendIPISelf(uint32_t msg)
+{
+    int cpu = GetCPUNumber();
+    __arm_arosintern.ARMI_SendIPI((msg & 0x0fffffff) | (cpu << 28), 1 << cpu);
+}
+
+static inline void SendIPIOthers(uint32_t msg)
+{
+    int cpu = GetCPUNumber();
+    __arm_arosintern.ARMI_SendIPI((msg & 0x0fffffff) | (cpu << 28), 0xf & ~(1 << cpu));
+}
+
+static inline void SendIPIAll(uint32_t msg)
+{
+    int cpu = GetCPUNumber();
+    __arm_arosintern.ARMI_SendIPI((msg & 0x0fffffff) | (cpu << 28), 0xf);
+}
 
 #endif /* CPU_ARM_H_ */
