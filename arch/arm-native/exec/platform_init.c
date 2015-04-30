@@ -40,7 +40,7 @@ static int PlatformInit(struct ExecBase *SysBase)
 
     sysIdleTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
 #if defined(__AROSEXEC_SMP__)
-                                TASKTAG_AFFINITY   , ~0,
+                                TASKTAG_AFFINITY   , (1 << 0),
 #endif
                                 TASKTAG_PRI        , -127,
                                 TASKTAG_PC         , IdleTask,
