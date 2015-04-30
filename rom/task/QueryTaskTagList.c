@@ -40,10 +40,10 @@
 
     TAGS
 
-        TaskTag_CPUNumber - (ULONG) Returns the CPU Number the task is currently running on
-        TaskTag_CPUAffinity - (ULONG) Returns the CPU Affinity mask
-        TaskTag_CPUTime - (ULONG) Returns the amount of cpu time a task has used .
-        TaskTag_StartTime - (ULONG) Returns the time the task was launched .
+        TaskTag_CPUNumber - (IPTR *) Returns the CPU Number the task is currently running on
+        TaskTag_CPUAffinity - (IPTR *) Returns the CPU Affinity mask
+        TaskTag_CPUTime - (struct timeval *) Returns the amount of cpu time a task has used .
+        TaskTag_StartTime - (struct timeval *) Returns the time the task was launched .
 
     RESULT
 
@@ -74,23 +74,25 @@
         {
         case(TaskTag_CPUNumber):
 #if defined(__AROSEXEC_SMP__)
-            Tag->ti_Data = GetIntETask(task)->iet_CpuNumber;
+            *((IPTR *)Tag->ti_Data) = GetIntETask(task)->iet_CpuNumber;
 #else
-            Tag->ti_Data = 0;
+            *((IPTR *)Tag->ti_Data) = 0;
 #endif
             break;
         case(TaskTag_CPUAffinity):
 #if defined(__AROSEXEC_SMP__)
-            Tag->ti_Data = GetIntETask(task)->iet_CpuAffinity;
+            *((IPTR *)Tag->ti_Data) = GetIntETask(task)->iet_CpuAffinity;
 #else
-            Tag->ti_Data = (1 << 0);
+            *((IPTR *)Tag->ti_Data) = (1 << 0);
 #endif
             break;
         case(TaskTag_CPUTime):
-            Tag->ti_Data = GetIntETask(task)->iet_CpuTime;
+            ((struct timeval *)Tag->ti_Data)->tv_micro = GetIntETask(task)->iet_CpuTime.tv_micro;
+            ((struct timeval *)Tag->ti_Data)->tv_secs  = GetIntETask(task)->iet_CpuTime.tv_secs;
             break;
         case(TaskTag_StartTime):
-            Tag->ti_Data = GetIntETask(task)->iet_StartTime;
+            ((struct timeval *)Tag->ti_Data)->tv_micro = GetIntETask(task)->iet_StartTime.tv_micro;
+            ((struct timeval *)Tag->ti_Data)->tv_secs  = GetIntETask(task)->iet_StartTime.tv_secs;
             break;
         }
     }
