@@ -152,7 +152,9 @@ void cpu_Register()
 
     bug("[KRN] Core %d operational\n", (tmp & 0x3));
 
+//      amlock = KrnSpinLock(amlock, 0);    
     __arm_affinitymask |= (1 << (tmp & 0x3));
+//      KrnSpinUnLock(amlock);
 
 cpu_registerfatal:
 
