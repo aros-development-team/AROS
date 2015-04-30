@@ -191,11 +191,11 @@ int main(void)
                 	       tasks2->state==TS_READY?"ready":"waiting");
 
                 time = tasks2->cputime.tv_secs;
-                args[4]=time % 60;
+                args[6]=time % 60;
                 time /= 60;
                 args[5]=time % 60;
                 time /= 60;
-                args[6]=time % 60;
+                args[4]=time % 60;
 
                 args[7]=tasks2->stacksize;
                 args[8]=tasks2->stackused;
