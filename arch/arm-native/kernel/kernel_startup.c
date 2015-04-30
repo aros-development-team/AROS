@@ -44,6 +44,8 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 uint32_t stack[AROS_STACKSIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_super[AROS_STACKSIZE] __attribute__((used,aligned(16)));
 
+static uint32_t stack_fiq[1024] __attribute__((used,aligned(16)));
+
 asm (
     ".section .aros.init,\"ax\"\n\t"
     ".globl start\n\t"
@@ -54,6 +56,8 @@ asm (
     "           pop {r0}                     \n"
     "           cps     #0x1f                \n" /* system mode */
     "           ldr     sp, stack_end        \n"
+    "           cps     #0x11                \n" /* fiq mode */
+    "           ldr     sp, stack_fiq_end    \n"
     "           cps     #0x13                \n" /* SVC (supervisor) mode */
     "           ldr     sp, stack_super_end  \n"
     "		b       kernel_cstart	     \n"
@@ -63,6 +67,8 @@ asm (
 
 static uint32_t * const stack_end __attribute__((used, section(".aros.init"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
 static uint32_t * const stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init"))) = &stack_fiq[1024 - sizeof(IPTR)];
+
 
 struct ARM_Implementation __arm_arosintern  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,NULL};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;

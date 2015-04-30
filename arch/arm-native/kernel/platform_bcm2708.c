@@ -62,6 +62,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
         uint32_t trampoline_data_offset = (uintptr_t)&mpcore_pde - (uintptr_t)mpcore_trampoline;
         int core;
         uint32_t *core_stack;
+        uint32_t *core_fiq_stack;
         uint32_t tmp;
         tls_t   *__tls;
 
@@ -81,6 +82,9 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
                 core_stack = (uint32_t *)AllocMem(AROS_STACKSIZE*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
                 ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = (uint32_t)&core_stack[AROS_STACKSIZE-sizeof(IPTR)];
 
+                core_fiq_stack = (uint32_t *)AllocMem(1024*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
+                ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4] = (uint32_t)&core_fiq_stack[1024-sizeof(IPTR)];
+
                 __tls =  AllocMem(sizeof(tls_t),  MEMF_CLEAR); /* MEMF_PRIVATE */
                 __tls->SysBase = _sysBase;
                 __tls->KernelBase = _kernelBase;
@@ -90,13 +94,28 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
 
                 D(bug("[KRN:BCM2708] %s: Attempting to wake core #%d\n", __PRETTY_FUNCTION__, core));
                 D(bug("[KRN:BCM2708] %s: core #%d stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, core, core_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
+                D(bug("[KRN:BCM2708] %s: core #%d fiq stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, core, core_fiq_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4]));
                 D(bug("[KRN:BCM2708] %s: core #%d tls @ 0x%p\n", __PRETTY_FUNCTION__, core, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
                 arm_flush_cache((uint32_t)trampoline_dst, 512);
                 *((uint32_t *)(BCM2836_MAILBOX3_SET0 + (0x10 * core))) = (uint32_t)trampoline_dst;
 
                 if (__arm_arosintern.ARMI_Delay)
-                    __arm_arosintern.ARMI_Delay(10000000);
+                    __arm_arosintern.ARMI_Delay(30000000);
+#if 0
+                /*
+                 * Just for fun try to fire FIQ interrupts on new cores
+                 */
+                int iii;
+
+                for (iii = 0; iii < 4; iii++)
+                {
+                    *((uint32_t *)(BCM2836_MAILBOX0_SET0 + iii*4 + (0x10 * core))) = 0xdead0000 + (core << 8) + iii;
+
+                    if (__arm_arosintern.ARMI_Delay)
+                        __arm_arosintern.ARMI_Delay(30000000);
+                }
+#endif
         }
     }
 }
@@ -111,8 +130,14 @@ static void bcm2708_init_core(APTR _kernelBase, APTR _sysBase)
 
     D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, (tmp & 0x3)));
 
+    /* Clear all pending FIQ sources on mailboxes */
+    *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
+    *((uint32_t *)(BCM2836_MAILBOX1_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
+    *((uint32_t *)(BCM2836_MAILBOX2_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
+    *((uint32_t *)(BCM2836_MAILBOX3_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
+
     // enable FIQ mailbox interupt
-    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = (1 << 3);
+    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = 0xf0;
 }
 
 static unsigned int bcm2807_get_time(void)
@@ -220,7 +245,8 @@ static void bcm2807_irq_process()
 
 static void bcm2807_fiq_process()
 {
-    uint32_t tmp, fiq;
+    uint32_t tmp, fiq, reason;
+    int i;
 
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
 
@@ -230,7 +256,15 @@ static void bcm2807_fiq_process()
 
     DFIQ(bug("[KRN:BCM2708] %s: Core #%d FIQ %x\n", __PRETTY_FUNCTION__, (tmp & 0x3), fiq));
 
-    *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * (tmp & 0x3)))) = fiq;
+    if (fiq)
+    {
+        for (i=0; i < 4; i++)
+        {
+            reason = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3))));
+            DFIQ(bug("[KRN:BCM2708] %s: Mailbox%d: %08x\n", __PRETTY_FUNCTION__, i, reason));
+            *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3)))) = 0xffffffff;
+        }
+    }
 }
 
 static void bcm2708_toggle_led(int LED, int state)
