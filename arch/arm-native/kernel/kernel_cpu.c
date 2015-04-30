@@ -148,6 +148,9 @@ void cpu_Register()
 
     __tls->ThisTask = t;
 
+    if (__arm_arosintern.ARMI_InitCore)
+        __arm_arosintern.ARMI_InitCore();
+
 #endif
 
     bug("[KRN] Core %d operational\n", (tmp & 0x3));
