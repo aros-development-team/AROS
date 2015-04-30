@@ -110,8 +110,8 @@ static void bcm2708_init_core(APTR _kernelBase, APTR _sysBase)
 
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
 
-    // enable interrupts
-    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = 0x1;
+    // enable FIQ mailbox interupt
+    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = (1 << 3);
 }
 
 static unsigned int bcm2807_get_time(void)
