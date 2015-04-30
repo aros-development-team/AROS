@@ -217,6 +217,9 @@ static void bcm2807_irq_process()
     }
 }
 
+static void bcm2807_fiq_process()
+{
+}
 
 static void bcm2708_toggle_led(int LED, int state)
 {
@@ -356,6 +359,7 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         /*  bcm2836 uses armv7 */
         krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2836_PERIPHYSBASE;
         krnARMImpl->ARMI_InitCore = &bcm2708_init_core;
+        krnARMImpl->ARMI_FIQProcess = &bcm2807_fiq_process;
     }
     else
         krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2835_PERIPHYSBASE;
