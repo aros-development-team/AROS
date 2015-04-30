@@ -104,11 +104,14 @@ static void bcm2708_init_core(APTR _kernelBase, APTR _sysBase)
 {
     struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
     struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+    uint32_t tmp;
 
     D(bug("[KRN:BCM2708] %s()\n", __PRETTY_FUNCTION__));
 
+    asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
+
     // enable interrupts
-    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * core))) = 0x1;
+    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = 0x1;
 }
 
 static unsigned int bcm2807_get_time(void)
