@@ -78,7 +78,7 @@ static int addtask(struct Task *task, struct task **t, STRPTR *e)
     STRPTR s1,s2;
     struct TagItem QueryTaskTags[] =
     {
-        {TaskTag_CPUTime        , &(*t)->cputime        },
+        {TaskTag_CPUTime        , (IPTR)&(*t)->cputime  },
         {TAG_DONE               , 0                     }
     };
 
@@ -164,18 +164,6 @@ int main(void)
     IPTR size;
     struct task *buffer,*tasks,*tasks2;
 
-    /* Is all this code really needed to read the EClock frequency? sigh... */
-    struct TimerBase *TimerBase = NULL;
-    struct EClockVal ec;
-    struct MsgPort *port = CreateMsgPort();
-    struct timerequest *io = (struct timerequest *)CreateIORequest(port, sizeof(struct timerequest));
-    OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)io, 0);
-    TimerBase = (struct TimerBase *)io->tr_node.io_Device;
-    eclock = ReadEClock(&ec);
-    CloseDevice((struct IORequest *)io);
-    DeleteIORequest((struct IORequest *)io);
-    DeleteMsgPort(port);
-
     TaskResBase = OpenResource("task.resource");
 
     for(size=2048;;size+=2048)
@@ -192,15 +180,7 @@ int main(void)
             FPuts(Output(),"Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
             for(tasks2=buffer;tasks2<tasks;tasks2++)
             {
-#if (0)
             	ULONG time;
-
-            	/* If eclock was not null, use it */
-            	if (eclock)
-					time = tasks2->cputime / eclock;
-            	else /* Otherwise we cannot calculate the cpu time :/ */
-            		time = 0;
-#endif
 
                 IPTR args[10];
                 args[0]=(IPTR)tasks2->address;
@@ -210,13 +190,13 @@ int main(void)
                 args[3]=(IPTR)(tasks2->state==TS_RUN?"running":
                 	       tasks2->state==TS_READY?"ready":"waiting");
 
-#if (0)
-                args[6]=time % 60;
+                time = tasks2->cputime.tv_secs;
+                args[4]=time % 60;
                 time /= 60;
                 args[5]=time % 60;
                 time /= 60;
-                args[4]=time;
-#endif
+                args[6]=time % 60;
+
                 args[7]=tasks2->stacksize;
                 args[8]=tasks2->stackused;
                 args[9]=tasks2->name!=NULL?(IPTR)tasks2->name:0;
