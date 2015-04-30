@@ -11,6 +11,7 @@
 
 #include <exec/interrupts.h>
 #include <exec/tasks.h>
+#include <devices/timer.h>
 
 #include <exec_platform.h>
 
@@ -41,8 +42,8 @@ struct IntETask
     IPTR                iet_CpuNumber;          /* core this task is currently running on  */
     IPTR                iet_CpuAffinity;        /* bitmap of cores this task can run on    */
 #endif
-    UQUAD               iet_StartTime;          /* time the task was launched              */
-    UQUAD               iet_CpuTime;            /* time the task has spent running         */
+    struct timeval      iet_StartTime;          /* time the task was launched              */
+    struct timeval      iet_CpuTime;            /* time the task has spent running         */
     UQUAD               iet_private1;
     ULONG               iet_AlertCode;          /* Alert code for crash handler            */
     UBYTE               iet_AlertType;          /* Type of the alert context               */
@@ -63,7 +64,7 @@ struct IntETask
 #define AF_Location 0x02    /* iet_AlertLocation is filled in */
 
 /*
- * This function resets crash status of the task:
+ * This function resets a task's crash status:
  * - AF_Alert flag serves as an actual indicator of crash status.
  *   If we enter Alert() with this flag already set, this is
  *   considered a nested alert and is directed to supervisor-mode routine.
