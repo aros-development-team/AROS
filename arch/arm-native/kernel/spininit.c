@@ -17,6 +17,8 @@ AROS_LH1(void, KrnSpinInit,
 {
     AROS_LIBFUNC_INIT
 
+    lock->lock = 0;
+
     return;
 
     AROS_LIBFUNC_EXIT
