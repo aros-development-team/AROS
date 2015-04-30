@@ -92,7 +92,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
                 D(bug("[KRN:BCM2708] %s: core #%d tls @ 0x%p\n", __PRETTY_FUNCTION__, core, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
                 arm_flush_cache((uint32_t)trampoline_dst, 512);
-                *((uint32_t *)(0x4000008c + (0x10 * core))) = (uint32_t)trampoline_dst;
+                *((uint32_t *)(BCM2836_MAILBOX3_SET0 + (0x10 * core))) = (uint32_t)trampoline_dst;
 
                 if (__arm_arosintern.ARMI_Delay)
                     __arm_arosintern.ARMI_Delay(10000000);
