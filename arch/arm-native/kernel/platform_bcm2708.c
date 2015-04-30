@@ -175,9 +175,9 @@ static void bcm2807_irq_process()
         if (!(pendingarm || pending0 || pending1))
             break;
 
-        DIRQ(bug("[KRN] PendingARM %08x\n", pendingarm));
-        DIRQ(bug("[KRN] Pending0 %08x\n", pending0));
-        DIRQ(bug("[KRN] Pending1 %08x\n", pending1));
+        DIRQ(bug("[KRN:BCM2708] PendingARM %08x\n", pendingarm));
+        DIRQ(bug("[KRN:BCM2708] Pending0 %08x\n", pending0));
+        DIRQ(bug("[KRN:BCM2708] Pending1 %08x\n", pending1));
 
         if (pendingarm & ~(IRQ_BANK1 | IRQ_BANK2))
         {
@@ -185,7 +185,7 @@ static void bcm2807_irq_process()
             {
                 if (pendingarm & (1 << (irq - (2 << 5))))
                 {
-                    DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
+                    DIRQ(bug("[KRN:BCM2708] Handling IRQ %d ..\n", irq));
                     krnRunIRQHandlers(KernelBase, irq);
                 }
             }
@@ -197,7 +197,7 @@ static void bcm2807_irq_process()
             {
                 if (pending0 & (1 << (irq - (0 << 5))))
                 {
-                    DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
+                    DIRQ(bug("[KRN:BCM2708] Handling IRQ %d ..\n", irq));
                     krnRunIRQHandlers(KernelBase, irq);
                 }
             }
@@ -209,7 +209,7 @@ static void bcm2807_irq_process()
             {
                 if (pending1 & (1 << (irq - (1 << 5))))
                 {
-                    DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
+                    DIRQ(bug("[KRN:BCM2708] Handling IRQ %d ..\n", irq));
                     krnRunIRQHandlers(KernelBase, irq);
                 }
             }
@@ -219,6 +219,12 @@ static void bcm2807_irq_process()
 
 static void bcm2807_fiq_process()
 {
+    uint32_t tmp;
+
+    asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
+
+    D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, (tmp & 0x3)));
+
 }
 
 static void bcm2708_toggle_led(int LED, int state)
