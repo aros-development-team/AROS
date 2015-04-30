@@ -43,6 +43,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    /* The implementation of this function is architecture-specific */
     return;
 
     AROS_LIBFUNC_EXIT
