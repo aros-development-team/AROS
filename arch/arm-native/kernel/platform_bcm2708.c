@@ -153,11 +153,6 @@ static void bcm2807_irq_init(void)
     *(volatile unsigned int *)ARMIRQ_DIBL = ~0;
     *(volatile unsigned int *)GPUIRQ_DIBL0 = ~0; 
     *(volatile unsigned int *)GPUIRQ_DIBL1 = ~0;
-
-    // aknowledge pending IRQ's
-    *(volatile unsigned int *)ARMIRQ_PEND = *(volatile unsigned int *)ARMIRQ_PEND;
-    *(volatile unsigned int *)GPUIRQ_PEND0 = *(volatile unsigned int *)GPUIRQ_PEND0;
-    *(volatile unsigned int *)GPUIRQ_PEND1 = *(volatile unsigned int *)GPUIRQ_PEND1;
 }
 
 static void bcm2807_irq_enable(int irq)
