@@ -195,9 +195,11 @@ void core_Switch(regs_t *regs)
 
 //        wrmsr(rdmsr() | MSR_EE);
 
+        // warning: fixme
+#if (0)
         /* Task says byebye. Update the CPU Time now. */
         GetIntETask(task)->iet_CpuTime += mftbu() - GetIntETask(task)->iet_private1;
-
+#endif
         /* TF_SWITCH flag set? Call the switch routine */
         if (task->tc_Flags & TF_SWITCH)
         {
