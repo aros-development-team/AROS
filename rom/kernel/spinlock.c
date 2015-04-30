@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-        AROS_LH1(spinlock_t *, KrnSpinLock,
+        AROS_LH2(spinlock_t *, KrnSpinLock,
 
 /*  SYNOPSIS */
 	AROS_LHA(spinlock_t *, lock, A0),
