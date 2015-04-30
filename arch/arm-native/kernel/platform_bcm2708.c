@@ -228,7 +228,7 @@ static void bcm2807_fiq_process()
 
     fiq = *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * (tmp & 0x3))));
 
-    DFIQ(bug("[KRN:BCM2708] %s: FIQ %x\n", __PRETTY_FUNCTION__, fiq));
+    DFIQ(bug("[KRN:BCM2708] %s: Core #%d FIQ %x\n", __PRETTY_FUNCTION__, (tmp & 0x3), fiq));
 
     *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * (tmp & 0x3)))) = fiq;
 }
