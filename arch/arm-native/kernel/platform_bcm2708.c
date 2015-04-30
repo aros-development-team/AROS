@@ -267,9 +267,12 @@ static void bcm2807_fiq_process()
     {
         for (i=0; i < 4; i++)
         {
-            reason = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3))));
-            DFIQ(bug("[KRN:BCM2708] %s: Mailbox%d: %08x\n", __PRETTY_FUNCTION__, i, reason));
-            *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3)))) = 0xffffffff;
+            if (fiq & (0x10 << i))
+            {
+                reason = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3))));
+                DFIQ(bug("[KRN:BCM2708] %s: Mailbox%d: %08x\n", __PRETTY_FUNCTION__, i, reason));
+                *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3)))) = 0xffffffff;
+            }
         }
     }
 }
