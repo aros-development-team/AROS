@@ -18,6 +18,10 @@
 
 #include <exec_platform.h>
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#endif
+
 #define ALERT_BUFFER_SIZE 2048
 
 /* Internals of this structure are host-specific, we don't know them here */
@@ -41,6 +45,10 @@ struct IntExecBase
     struct MinList AllocMemList;                /* Mungwall allocations list                             */
     struct SignalSemaphore MemListSem;          /* Memory list protection semaphore                      */
     struct SignalSemaphore LowMemSem;           /* Lock for single-threading low memory handlers         */
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t TaskReadySpinLock;
+    spinlock_t TaskWaitSpinLock;
+#endif
     APTR   KernelBase;                          /* kernel.resource base                                  */
     struct Library *DebugBase;                  /* debug.library base                                    */
     ULONG  PageSize;                            /* Memory page size                                      */
