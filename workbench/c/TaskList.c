@@ -70,7 +70,7 @@ struct task
     IPTR stacksize;
     IPTR stackused;
     WORD pri;
-    UQUAD cputime;
+    struct timeval cputime;
 };
 
 static int addtask(struct Task *task, struct task **t, STRPTR *e)
@@ -78,13 +78,12 @@ static int addtask(struct Task *task, struct task **t, STRPTR *e)
     STRPTR s1,s2;
     struct TagItem QueryTaskTags[] =
     {
-        {TaskTag_CPUTime        , 0     },
-        {TAG_DONE               , 0     }
+        {TaskTag_CPUTime        , &(*t)->cputime        },
+        {TAG_DONE               , 0                     }
     };
 
     QueryTaskTagList(task, QueryTaskTags);
 
-    (*t)->cputime = QueryTaskTags[0].ti_Data;
     (*t)->address=task;
     (*t)->type=task->tc_Node.ln_Type;
     (*t)->pri =(WORD)task->tc_Node.ln_Pri;
@@ -193,6 +192,7 @@ int main(void)
             FPuts(Output(),"Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
             for(tasks2=buffer;tasks2<tasks;tasks2++)
             {
+#if (0)
             	ULONG time;
 
             	/* If eclock was not null, use it */
@@ -200,6 +200,7 @@ int main(void)
 					time = tasks2->cputime / eclock;
             	else /* Otherwise we cannot calculate the cpu time :/ */
             		time = 0;
+#endif
 
                 IPTR args[10];
                 args[0]=(IPTR)tasks2->address;
@@ -208,11 +209,14 @@ int main(void)
                 args[2]=tasks2->pri;
                 args[3]=(IPTR)(tasks2->state==TS_RUN?"running":
                 	       tasks2->state==TS_READY?"ready":"waiting");
+
+#if (0)
                 args[6]=time % 60;
                 time /= 60;
                 args[5]=time % 60;
                 time /= 60;
                 args[4]=time;
+#endif
                 args[7]=tasks2->stacksize;
                 args[8]=tasks2->stackused;
                 args[9]=tasks2->name!=NULL?(IPTR)tasks2->name:0;
