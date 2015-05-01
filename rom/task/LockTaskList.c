@@ -59,8 +59,8 @@
     if ((taskList = AllocMem(sizeof(struct TaskListPrivate), MEMF_CLEAR)) != NULL)
     {
         taskList->tlp_Tasks = &TaskResBase->trb_TaskList;
-        taskList->tlp_Next = GetHead(taskList->tlp_Tasks);
-        AddTail(&TaskResBase->trb_LockedLists, taskList->tlp_Node);
+        taskList->tlp_Next = (struct TaskListEntry *)GetHead(taskList->tlp_Tasks);
+        AddTail(&TaskResBase->trb_LockedLists, &taskList->tlp_Node);
     }
 
     return (struct TaskList *)taskList;

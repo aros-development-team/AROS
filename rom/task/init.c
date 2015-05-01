@@ -19,6 +19,9 @@ struct TaskResBase *internTaskResBase = NULL;
 
 static LONG taskres_Init(struct TaskResBase *TaskResBase)
 {
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t *listLock;
+#endif
     struct TaskListEntry *taskEntry = NULL;
     struct Task *curTask = NULL;
 
@@ -37,9 +40,29 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 
     /*
        Add existing tasks to our internal list ..
-       TODO: get the running tasks from all cores ..
     */
-
+#if defined(__AROSEXEC_SMP__)
+    listLock = KrnSpinLock(&SysBase->TaskRunningSpinLock, SPINLOCK_MODE_READ)
+    ForeachNode(&SysBase->TaskRunning, curTask)
+    {
+        if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+        {
+            taskEntry->tle_Task = curTask;
+            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+        }
+    }
+    KrnSpinUnLock(listLock);
+    listLock = KrnSpinLock(&SysBase->TaskReadySpinLock, SPINLOCK_MODE_READ)
+#else
+    if (SysBase->ThisTask)
+    {
+        if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+        {
+            taskEntry->tle_Task = SysBase->ThisTask;
+            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+        }
+    }
+#endif
     ForeachNode(&SysBase->TaskReady, curTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
@@ -48,6 +71,10 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
     }
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(listLock);
+    listLock = KrnSpinLock(&SysBase->TaskWaitSpinLock, SPINLOCK_MODE_READ)
+#endif
     ForeachNode(&SysBase->TaskWait, curTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
@@ -56,6 +83,9 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
     }
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(listLock);
+#endif
 
     return TRUE;
 }
