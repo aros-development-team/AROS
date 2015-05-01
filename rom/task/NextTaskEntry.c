@@ -56,9 +56,18 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TaskListPrivate *taskList = (struct TaskListPrivate *)tlist;
+    struct Task *retVal = NULL;
+
     D(bug("NextTaskEntry: tlist @ 0x%p, flags = $%lx\n", tlist, flags));
 
-    return NULL;
+    if (taskList && taskList->tlp_Next)
+    {
+        retVal = taskList->tlp_Next->tle_Task;
+        taskList->tlp_Next = GetSucc(taskList->tlp_Next);
+    }
+
+    return retVal;
 
     AROS_LIBFUNC_EXIT
 } /* NextTaskEntry */

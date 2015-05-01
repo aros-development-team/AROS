@@ -52,9 +52,18 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TaskListPrivate *taskList = NULL;
+
     D(bug("LockTaskList: flags = $%lx\n", flags));
 
-    return NULL;
+    if ((taskList = AllocMem(sizeof(struct TaskListPrivate), MEMF_CLEAR)) != NULL)
+    {
+        taskList->tlp_Tasks = &TaskResBase->trb_TaskList;
+        taskList->tlp_Next = GetHead(taskList->tlp_Tasks);
+        AddTail(&TaskResBase->trb_LockedLists, taskList->tlp_Node);
+    }
+
+    return (struct TaskList *)taskList;
 
     AROS_LIBFUNC_EXIT
 } /* LockTaskList */

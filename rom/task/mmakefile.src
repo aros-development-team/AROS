@@ -13,7 +13,7 @@ USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
 TASKRES_FILES := LockTaskList UnLockTaskList NextTaskEntry QueryTaskTagList
 
 %build_module mmake=kernel-task modname=task modtype=resource \
-    version=$(AROS_TARGET_PLATFORM) files="init $(TASKRES_FILES)" \
+    version=$(AROS_TARGET_PLATFORM) files="init execfuncs $(TASKRES_FILES)" \
     archspecific=yes
 
 %copy_includes path=resources

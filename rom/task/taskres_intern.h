@@ -23,7 +23,11 @@ struct TaskResBase
 {
     struct Library              trb_LibNode;
     APTR                        trb_KernelBase;
-    struct List                 trb_TaskLists;
+    APTR                        trb_AddTask;
+    APTR                        trb_NewAddTask;
+    APTR                        trb_RemTask;
+    struct List                 trb_TaskList;
+    struct List                 trb_LockedLists;
 };
 
 struct TaskListEntry
@@ -36,7 +40,7 @@ struct TaskListEntry
 struct TaskListPrivate
 {
     struct Node                 tlp_Node;
-    struct List                 tlp_Tasks;
+    struct List                 *tlp_Tasks;
     struct TaskListEntry        *tlp_Next;
 };
 
