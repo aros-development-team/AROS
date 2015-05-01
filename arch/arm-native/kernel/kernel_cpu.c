@@ -73,6 +73,8 @@ asm(
 "mpcore_end:  "
 );
 
+spinlock_t startup_lock;
+
 void cpu_Register()
 {
     uint32_t tmp, ttmp;
@@ -176,6 +178,8 @@ void cpu_Register()
 cpu_registerfatal:
 
     bug("[KRN] Core %d waiting for interrupts\n", (tmp & 0x3));
+
+    KrnSpinUnLock(&startup_lock);
 
     for (;;) asm volatile("wfi");
 }

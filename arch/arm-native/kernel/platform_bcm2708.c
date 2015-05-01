@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 
@@ -43,6 +44,7 @@
 extern void mpcore_trampoline();
 extern uint32_t mpcore_end;
 extern uint32_t mpcore_pde;
+extern spinlock_t startup_lock;
 
 extern void cpu_Register(void);
 extern void arm_flush_cache(uint32_t addr, uint32_t length);
@@ -51,6 +53,8 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
 {
     struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
     struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+
+    KrnSpinInit(&startup_lock);
 
     D(bug("[KRN:BCM2708] %s()\n", __PRETTY_FUNCTION__));
 
@@ -98,11 +102,25 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
                 D(bug("[KRN:BCM2708] %s: core #%d tls @ 0x%p\n", __PRETTY_FUNCTION__, core, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
                 arm_flush_cache((uint32_t)trampoline_dst, 512);
+
+                /* Lock the startup spinlock */
+                KrnSpinLock(&startup_lock, SPINLOCK_MODE_WRITE);
+
+                /* Wake up the core */
                 *((uint32_t *)(BCM2836_MAILBOX3_SET0 + (0x10 * core))) = (uint32_t)trampoline_dst;
 
+                /*
+                 * Try to obtain spinlock again.
+                 * This should put this core to sleep since the locked was already obtained. Once the core startup
+                 * is ready, it will call KrnSpinUnLock too
+                 */
+                KrnSpinLock(&startup_lock, SPINLOCK_MODE_WRITE);
+                KrnSpinUnLock(&startup_lock);
+
+#if 0
                 if (__arm_arosintern.ARMI_Delay)
                     __arm_arosintern.ARMI_Delay(30000000);
-#if 0
+
                 /*
                  * Just for fun try to fire FIQ interrupts on new cores
                  */
