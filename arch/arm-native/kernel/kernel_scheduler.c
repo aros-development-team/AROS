@@ -8,14 +8,19 @@
 #include <exec/execbase.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
-#include <kernel_base.h>
+//#include <kernel_base.h>
 #include <kernel_debug.h>
 #include <kernel_scheduler.h>
 
 #include <exec_platform.h>
 
+#include <aros/types/spinlock_s.h>
+
 #include <etask.h>
+
+#include "exec_intern.h"
 
 #define D(x)
 
@@ -41,7 +46,7 @@ BOOL core_Schedule(void)
         if (IsListEmpty(&SysBase->TaskReady))
             return FALSE;
 
-//        KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, 0);
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
         /* Does the TaskReady list contains tasks with priority equal or lower than current task?
          * If so, then check further... */
         pri = ((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri;
@@ -50,11 +55,11 @@ BOOL core_Schedule(void)
             /* If the running task did not used it's whole quantum yet, let it work */
             if (!(SysBase->SysFlags & SFF_QuantumOver))
             {
-//                KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+                KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
                 return FALSE;
             }
         }
-//        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
     }
 
     /* 
@@ -63,9 +68,9 @@ BOOL core_Schedule(void)
      */
     D(bug("[KRN:BCM2708] Setting task 0x%p (%s) to READY\n", task, task->tc_Node.ln_Name));
     task->tc_State = TS_READY;
-//    KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, 1);
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
     Enqueue(&SysBase->TaskReady, &task->tc_Node);
-//    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 
     /* Select new task to run */
     return TRUE;
@@ -119,21 +124,20 @@ struct Task *core_Dispatch(void)
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
     cpumask =  (1 << (tmp & 3));
 
-//    KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, 0);
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
     for (task = (struct Task *)GetHead(&SysBase->TaskReady); task != NULL; task = (struct Task *)GetSucc(task))
     {
 #if defined(__AROSEXEC_SMP__)
         if ((GetIntETask(task)->iet_CpuAffinity  & cpumask) == cpumask)
         {
 #endif
-// ## TODO: switch TaskReady Lock to  WRITE
             Remove(&task->tc_Node);
             break;
 #if defined(__AROSEXEC_SMP__)
         }
 #endif
     }
-//      KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 
     if (!task)
     {

@@ -13,6 +13,8 @@
 #include <asm/arm/cpu.h>
 #include <strings.h>
 
+#include <aros/types/spinlock_s.h>
+
 #include "kernel_base.h"
 
 #include <proto/kernel.h>
@@ -32,6 +34,7 @@
 
 extern struct Task *sysIdleTask;
 uint32_t __arm_affinitymask __attribute__((section(".data"))) = 1;
+spinlock_t amlock;
 
 extern BOOL Exec_InitETask(struct Task *, struct ExecBase *);
 
@@ -166,9 +169,9 @@ void cpu_Register()
 
     bug("[KRN] Core %d operational\n", (tmp & 0x3));
 
-//      amlock = KrnSpinLock(amlock, 0);    
+      KrnSpinLock(&amlock, SPINLOCK_MODE_WRITE);
     __arm_affinitymask |= (1 << (tmp & 0x3));
-//      KrnSpinUnLock(amlock);
+      KrnSpinUnLock(&amlock);
 
 cpu_registerfatal:
 
@@ -223,6 +226,9 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 {
     uint32_t tmp;
 
+    amlock = (spinlock_t)SPINLOCK_INIT_UNLOCKED;
+    __arm_affinitymask = 1;
+
     asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
     if ((tmp & 0xfff0) == 0xc070)
     {
@@ -237,6 +243,7 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 
         if (tmp & (2 << 30))
         {
+            __arm_affinitymask = 1 << (tmp & 3);
             //Multicore system
         }
 #endif
