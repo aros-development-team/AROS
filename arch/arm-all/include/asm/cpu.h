@@ -22,8 +22,8 @@
         asm("mcr p10, 7, %0, " vfpreg(_vfp_) ", cr0, 0 @ fmxr   " #_vfp_ ", %0" \
            : : "r" (_var_) : "cc")
 
-#define isb(x) asm volatile("mcr p15, 0, %0, c7, c5, 4" : : "r" (0) : "memory")
-#define dsb(x) asm volatile("mcr p15, 0, %0, c7, c10, 4" : : "r" (0) : "memory")
-#define dmb(x) asm volatile("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory")
+static inline void isb() { asm volatile("mcr p15, 0, %0, c7, c5, 4" : : "r" (0) : "memory"); }
+static inline void dsb() { asm volatile("mcr p15, 0, %0, c7, c10, 4" : : "r" (0) : "memory"); }
+static inline void dmb() { asm volatile("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); }
 
 #endif /* ASM_ARM_CPU_H */
