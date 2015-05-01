@@ -17,6 +17,9 @@ AROS_LH1(void, KrnSpinUnLock,
 {
     AROS_LIBFUNC_INIT
 
+    if (lock->lock == 0)
+        return;
+
     /*
      * Are we releasing a write lock? Just zero out the value. Also send event so that other cores waiting for lock
      * wake up.
