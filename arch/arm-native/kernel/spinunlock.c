@@ -36,7 +36,7 @@ AROS_LH1(void, KrnSpinUnLock,
                 "       strex   %1, %0, [%2]    \n\t"   // Try to update the lock value
                 "       teq     %1, #0          \n\t"   // test if write succeeded
                 "       bne     1b              \n\t"   // Try again if write failed
-                :"=%r"(lock_value), "=&r"(write_result)
+                :"=&r"(lock_value), "=&r"(write_result)
                 :"r"(&lock->lock)
                 :"cc"
         );
