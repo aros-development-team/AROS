@@ -82,7 +82,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                     - Check if alternative interfaces with varying isochronous payload sizes exist.
                     - Data being sent on an isochronous endpoint can be less than the pre-negotiated size and may vary in length from transaction to transaction
                 */
-                *((ULONG *) tag->ti_Data) = (UHCF_USB30|UHCB_ISO);
+                *((ULONG *) tag->ti_Data) = (UHCF_USB30|UHCF_ISO);
                 count++;
                 break;
             default:
