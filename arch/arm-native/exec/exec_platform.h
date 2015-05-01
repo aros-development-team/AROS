@@ -8,6 +8,13 @@
 // needed to determine if this is an smp build..
 #include <aros/config.h>
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+
+extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
+#define EXEC_SPINLOCK_INIT(a,b) Kernel_40_KrnSpinInit(a,b)
+#endif
+
 #include "tls.h"
 
 struct Exec_PlatformData
