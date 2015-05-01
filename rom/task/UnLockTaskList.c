@@ -51,7 +51,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("UnLockTaskList: flags = $%lx\n", flags));
+    D(bug("[TaskRes] UnLockTaskList: flags = $%lx\n", flags));
 
     AROS_LIBFUNC_EXIT
 } /* UnLockTaskList */

@@ -54,7 +54,7 @@
 
     struct TaskListPrivate *taskList = NULL;
 
-    D(bug("LockTaskList: flags = $%lx\n", flags));
+    D(bug("[TaskRes] LockTaskList: flags = $%lx\n", flags));
 
     if ((taskList = AllocMem(sizeof(struct TaskListPrivate), MEMF_CLEAR)) != NULL)
     {

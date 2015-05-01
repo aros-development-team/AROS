@@ -59,7 +59,7 @@
     struct TaskListPrivate *taskList = (struct TaskListPrivate *)tlist;
     struct Task *retVal = NULL;
 
-    D(bug("NextTaskEntry: tlist @ 0x%p, flags = $%lx\n", tlist, flags));
+    D(bug("[TaskRes] NextTaskEntry: tlist @ 0x%p, flags = $%lx\n", tlist, flags));
 
     if (taskList && taskList->tlp_Next)
     {

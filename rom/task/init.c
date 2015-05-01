@@ -50,6 +50,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
+            D(bug("[TaskRes] 0x%p [R  ] %s\n", curTask, curTask->tc_Node.ln_Name));
             taskEntry->tle_Task = curTask;
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
@@ -61,6 +62,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
+            D(bug("[TaskRes] 0x%p [R  ] %s\n", SysBase->ThisTask, SysBase->ThisTask->tc_Node.ln_Name));
             taskEntry->tle_Task = SysBase->ThisTask;
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
@@ -70,6 +72,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
+            D(bug("[TaskRes] 0x%p [ R ] %s\n", curTask, curTask->tc_Node.ln_Name));
             taskEntry->tle_Task = curTask;
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
@@ -82,6 +85,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
+            D(bug("[TaskRes] 0x%p [  W] %s\n", curTask, curTask->tc_Node.ln_Name));
             taskEntry->tle_Task = curTask;
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
