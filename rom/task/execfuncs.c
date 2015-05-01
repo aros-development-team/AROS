@@ -25,35 +25,10 @@ void TaskResAddTask(struct Task *task)
     */
     if ((newEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
     {
+        D(bug("[TaskRes] TaskResAddTask: taskentry @ 0x%p\n", newEntry));
         newEntry->tle_Task = task;
         AddTail(&internTaskResBase->trb_TaskList, &newEntry->tle_Node);
     }
-}
-
-AROS_LH3(APTR, AddTask,
-	AROS_LHA(struct Task *,     task,      A1),
-	AROS_LHA(APTR,              initialPC, A2),
-	AROS_LHA(APTR,              finalPC,   A3),
-	struct ExecBase *, SysBase, 47, Task)
-{
-    AROS_LIBFUNC_INIT
-
-    APTR newTask;
-
-    D(bug("[TaskRes] AddTask()\n"));
-
-    newTask = AROS_CALL3(APTR, internTaskResBase->trb_AddTask,
-                AROS_LCA(struct Task *,     task,      A1),
-                AROS_LCA(APTR,              initialPC, A2),
-                AROS_LCA(APTR,              finalPC,   A3),
-		struct ExecBase *, SysBase);
-
-    if (newTask)
-        TaskResAddTask(newTask);
-        
-    return newTask;
-
-    AROS_LIBFUNC_EXIT
 }
 
 AROS_LH4(APTR, NewAddTask,
@@ -75,6 +50,8 @@ AROS_LH4(APTR, NewAddTask,
                 AROS_LCA(APTR,              finalPC,   A3),
                 AROS_LCA(struct TagItem *,  tagList,   A4),
 		struct ExecBase *, SysBase);
+
+    D(bug("[TaskRes] NewAddTask: task @ 0x%p\n", task));
 
     if (newTask)
         TaskResAddTask(newTask);
