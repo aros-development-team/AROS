@@ -16,9 +16,9 @@
 
 #include "taskres_intern.h"
 
-extern APTR AROS_SLIB_ENTRY(AddTask, Task, 47);
-extern APTR AROS_SLIB_ENTRY(NewAddTask, Task, 176);
-extern APTR AROS_SLIB_ENTRY(RemTask, Task, 48);
+extern APTR AROS_SLIB_ENTRY(AddTask, Task, 47)();
+extern APTR AROS_SLIB_ENTRY(NewAddTask, Task, 176)();
+extern void AROS_SLIB_ENTRY(RemTask, Task, 48)();
 
 struct TaskResBase *internTaskResBase = NULL;
 
