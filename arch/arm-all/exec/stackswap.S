@@ -15,8 +15,13 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
         // r1 contains ExecBase
 	// lr contains the return address
 
+	stmfd sp!, {r0, r1, lr}     // save some useful registers
+	mov r0, #0
+	ldr ip, [r1, #-196]         // Call FindTask(NULL)
+	blx ip
+	mov r2, r0                  // copy result to r2 register
+	ldmfd sp!, {r0, r1, lr}     // restore r0, r1 and lr
 	mov	r3, r0                  // newstack to r3	
-	ldr	r2, [r1, ThisTask]      // r2 contains pointer to current task
 
 	/* Disable interrupts */
 	stmfd	sp!, {r0, r1, r2, r3, lr}
