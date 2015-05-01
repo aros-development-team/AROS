@@ -46,6 +46,8 @@ struct IntExecBase
     struct SignalSemaphore MemListSem;          /* Memory list protection semaphore                      */
     struct SignalSemaphore LowMemSem;           /* Lock for single-threading low memory handlers         */
 #if defined(__AROSEXEC_SMP__)
+    spinlock_t TaskRunningSpinLock;
+    struct List        TaskRunning;      /* Tasks that are running on CPUs */
     spinlock_t TaskReadySpinLock;
     spinlock_t TaskWaitSpinLock;
 #endif
