@@ -7,9 +7,6 @@
 #include "uhcichip.h"
 #include "ohcichip.h"
 #include "ehcichip.h"
-#ifdef AROS_USB30_CODE
-#include "xhcichip.h"
-#endif
 #include "pciusb.h"
 
 #if (__WORDSIZE == 64)
@@ -98,18 +95,6 @@ static inline struct EhciQH * ehciAllocQH(struct PCIController *hc);
 static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
 static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
 static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
-
-#ifdef AROS_USB30_CODE
-/* xhcichip.c, in order of appearance */
-IPTR xhciSearchExtCap(struct PCIController *hc, ULONG id, IPTR extcap);
-BOOL xhciHaltHC(struct PCIController *hc);
-BOOL xhciResetHC(struct PCIController *hc);
-BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu);
-void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
-void xhciParseSupProtocol(struct PCIController *hc, IPTR extcap);
-APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary);
-void FreeVecAligned(APTR allocation);
-#endif
 
 UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset);
 UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset);
