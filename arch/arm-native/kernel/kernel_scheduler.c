@@ -67,6 +67,11 @@ BOOL core_Schedule(void)
      * Put the task into the TaskReady list.
      */
     D(bug("[KRN:BCM2708] Setting task 0x%p (%s) to READY\n", task, task->tc_Node.ln_Name));
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
+    Remove(&task->tc_Node);
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+#endif
     task->tc_State = TS_READY;
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
     Enqueue(&SysBase->TaskReady, &task->tc_Node);
@@ -92,9 +97,13 @@ void core_Switch(void)
          * lock on some global/library semaphore it will most likelly mean immenent freeze. In most cases
          * however, user will be shown an alert.
          */
-//## TODO : Lock "Tasks" list access (WRITE)
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
+#endif
         Remove(&task->tc_Node);
-//## TODO: Unlock access
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+#endif
 
         task->tc_SigWait    = 0;
         task->tc_State      = TS_WAIT;
@@ -156,6 +165,11 @@ struct Task *core_Dispatch(void)
 
     SysBase->DispCount++;
     SysBase->IDNestCnt = task->tc_IDNestCnt;
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
+    Enqueue(&PrivExecBase(SysBase)->TaskRunning, &task->tc_Node);
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+#endif
     SET_THIS_TASK(task);
     SysBase->Elapsed   = SysBase->Quantum;
     SysBase->SysFlags &= ~SFF_QuantumOver;
