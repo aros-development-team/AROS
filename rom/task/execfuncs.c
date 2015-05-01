@@ -19,6 +19,10 @@ void TaskResAddTask(struct Task *task)
 {
     struct TaskListEntry *newEntry;
 
+    /*
+       TODO:
+        if the list is locked, defer tasks addition until it is unlocked
+    */
     if ((newEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
     {
         newEntry->tle_Task = task;
