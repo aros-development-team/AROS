@@ -89,6 +89,8 @@ static inline void bug(const char *format, ...)
     "           strne   lr, [r0, #14*4]         \n"
 
 #define VECTCOMMON_END \
+    "           sub     r0, sp, #4              \n" \
+    "           strex   r1, r2, [r0]            \n" \
     "           ldr     ip, [sp, #16*4]         \n" \
     "           and     ip, ip, #0x1f           \n" \
     "           cmp     ip, #0x10               \n" \
