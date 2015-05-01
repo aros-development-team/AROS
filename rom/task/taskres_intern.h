@@ -23,7 +23,6 @@ struct TaskResBase
 {
     struct Library              trb_LibNode;
     APTR                        trb_KernelBase;
-    APTR                        trb_AddTask;
     APTR                        trb_NewAddTask;
     APTR                        trb_RemTask;
     struct List                 trb_TaskList;
