@@ -17,7 +17,10 @@ AROS_LH1(int, KrnSpinIsLocked,
 {
     AROS_LIBFUNC_INIT
 
-    return 0;
+    if (lock->lock == 0)
+        return 0;
+    else
+        return 1;
 
     AROS_LIBFUNC_EXIT
 }
