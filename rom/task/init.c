@@ -12,7 +12,7 @@
 #include <proto/kernel.h>
 #include <resources/task.h>
 
-#include "etask.h"
+#include <exec_intern.h>
 
 #include "taskres_intern.h"
 
@@ -47,8 +47,8 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
        Add existing tasks to our internal list ..
     */
 #if defined(__AROSEXEC_SMP__)
-    listLock = KrnSpinLock(&SysBase->TaskRunningSpinLock, SPINLOCK_MODE_READ);
-    ForeachNode(&SysBase->TaskRunning, curTask)
+    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+    ForeachNode(&PrivExecBase(SysBase)->TaskRunning, curTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
@@ -57,7 +57,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
         }
     }
     KrnSpinUnLock(listLock);
-    listLock = KrnSpinLock(&SysBase->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
 #else
     if (SysBase->ThisTask)
     {
@@ -78,7 +78,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     }
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(listLock);
-    listLock = KrnSpinLock(&SysBase->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
 #endif
     ForeachNode(&SysBase->TaskWait, curTask)
     {
