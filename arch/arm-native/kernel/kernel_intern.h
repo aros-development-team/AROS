@@ -79,6 +79,8 @@ static inline void bug(const char *format, ...)
     "           cpsid   i, #0x13                \n" \
     "           sub     sp, sp, #2*4            \n" \
     "           stmfd   sp!, {r0-r12}           \n" \
+    "           sub     r0, sp, #4              \n" \
+    "           strex   r1, r2, [r0]            \n" \
     "           mov     r0, sp                  \n" \
     "           ldr     ip, [r0, #16*4]         \n" \
     "           and     ip, ip, #0x1f           \n" \
