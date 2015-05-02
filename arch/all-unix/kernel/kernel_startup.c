@@ -204,7 +204,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     {
         struct mb_mmap *mmapnxt = &mmap[1];
 
-        highmh = mmapnxt->addr;
+        highmh = (void *)mmapnxt->addr;
 
         krnCreateMemHeader("Fast RAM", 0, highmh, mmapnxt->len, MEMF_FAST|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
         if (mem_tlsf)
