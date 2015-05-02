@@ -27,6 +27,7 @@ struct TaskResBase
     APTR                        trb_RemTask;
     struct List                 trb_TaskList;
     struct List                 trb_LockedLists;
+    struct Library *            trb_UtilityBase;
 };
 
 struct TaskListEntry

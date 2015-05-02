@@ -13,9 +13,7 @@
 
 #include "taskres_intern.h"
 
-extern struct TaskResBase *internTaskResBase;
-
-void TaskResAddTask(struct Task *task)
+void TaskResAddTask(struct TaskResBase *TaskResBase, struct Task *task)
 {
     struct TaskListEntry *newEntry;
 
@@ -27,7 +25,7 @@ void TaskResAddTask(struct Task *task)
     {
         D(bug("[TaskRes] TaskResAddTask: taskentry @ 0x%p for '%s'\n", newEntry, task->tc_Node.ln_Name));
         newEntry->tle_Task = task;
-        AddTail(&internTaskResBase->trb_TaskList, &newEntry->tle_Node);
+        AddTail(&TaskResBase->trb_TaskList, &newEntry->tle_Node);
     }
 }
 
@@ -41,10 +39,13 @@ AROS_LH4(APTR, NewAddTask,
     AROS_LIBFUNC_INIT
 
     APTR newTask;
+    struct TaskResBase *TaskResBase;
+    
+    TaskResBase = (struct TaskResBase *)SysBase->lb_TaskResBase;
 
     D(bug("[TaskRes] NewAddTask(0x%p)\n", task));
 
-    newTask = AROS_CALL4(APTR, internTaskResBase->trb_NewAddTask,
+    newTask = AROS_CALL4(APTR, TaskResBase->trb_NewAddTask,
                 AROS_LCA(struct Task *,     task,      A1),
                 AROS_LCA(APTR,              initialPC, A2),
                 AROS_LCA(APTR,              finalPC,   A3),
@@ -54,7 +55,7 @@ AROS_LH4(APTR, NewAddTask,
     D(bug("[TaskRes] NewAddTask: task @ 0x%p\n", newTask));
 
     if (newTask)
-        TaskResAddTask(newTask);
+        TaskResAddTask(TaskResBase, newTask);
 
     return newTask;
 
@@ -68,14 +69,17 @@ AROS_LH1(void, RemTask,
     AROS_LIBFUNC_INIT
 
     struct TaskListEntry *tmpEntry;
+    struct TaskResBase *TaskResBase;
+    
+    TaskResBase = (struct TaskResBase *)SysBase->lb_TaskResBase;
 
     D(bug("[TaskRes] RemTask()\n"));
 
-    AROS_CALL1(APTR, internTaskResBase->trb_RemTask,
+    AROS_CALL1(APTR, TaskResBase->trb_RemTask,
                 AROS_LCA(struct Task *,     task,      A1),
 		struct ExecBase *, SysBase);
 
-    ForeachNode(&internTaskResBase->trb_TaskList, tmpEntry)
+    ForeachNode(&TaskResBase->trb_TaskList, tmpEntry)
     {
         if (tmpEntry->tle_Task == task)
         {

@@ -19,8 +19,6 @@
 extern APTR AROS_SLIB_ENTRY(NewAddTask, Task, 176)();
 extern void AROS_SLIB_ENTRY(RemTask, Task, 48)();
 
-struct TaskResBase *internTaskResBase = NULL;
-
 static LONG taskres_Init(struct TaskResBase *TaskResBase)
 {
 #if defined(__AROSEXEC_SMP__)
@@ -33,11 +31,14 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     if (!KernelBase)
     	return FALSE;
 
-    internTaskResBase = TaskResBase;
+    TaskResBase->trb_UtilityBase = OpenLibrary("utility.library", 0);
+    if (!TaskResBase->trb_UtilityBase)
+        return FALSE;
 
     NEWLIST(&TaskResBase->trb_TaskList);
     NEWLIST(&TaskResBase->trb_LockedLists);
 
+    SysBase->lb_TaskResBase = (struct Library *)TaskResBase;
     TaskResBase->trb_NewAddTask = SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewAddTask, Task, 176));
     TaskResBase->trb_RemTask = SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, AROS_SLIB_ENTRY(RemTask, Task, 48));
 
@@ -97,4 +98,16 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     return TRUE;
 }
 
+static LONG taskres_Exit(struct TaskResBase *TaskResBase)
+{
+    SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, TaskResBase->trb_NewAddTask);
+    SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, TaskResBase->trb_RemTask);
+
+    CloseLibrary(TaskResBase->trb_UtilityBase);
+
+    return TRUE;
+}
+
 ADD2INITLIB(taskres_Init, 0)
+
+ADD2EXPUNGELIB(taskres_Exit, 0)

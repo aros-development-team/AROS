@@ -104,6 +104,7 @@ struct ExecBase
 
 /* Additional field for AROS */
     struct Library      * DebugAROSBase;
+    struct Library      * lb_TaskResBase;
 };
 
 /* AttnFlags */
