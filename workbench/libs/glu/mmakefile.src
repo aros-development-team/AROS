@@ -15,8 +15,7 @@ include $(TOP)/config/make.cfg
 
 REPOSITORIES = ftp://ftp.freedesktop.org/pub/mesa/glu/
 ARCHBASE := glu-9.0.0
-#PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
-PATCHSPEC := 
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
 
 top_srcdir = $(PORTSDIR)/glu/$(ARCHBASE)
 
