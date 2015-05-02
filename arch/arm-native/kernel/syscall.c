@@ -116,21 +116,21 @@ void handle_syscall(void *regs)
             case SC_CLI:
             {
                 D(bug("[KRN] ## CLI...\n"));
-                ((uint32_t *)regs)[16] |= 0x80;
+                ((uint32_t *)regs)[16] |= (1 << 7);
                 break;
             }
 
             case SC_STI:
             {
                 D(bug("[KRN] ## STI...\n"));
-                ((uint32_t *)regs)[16] &= ~0x80;
+                ((uint32_t *)regs)[16] &= ~(1 << 7);
                 break;
             }
 
             case SC_SUPERSTATE:
             {
                 D(bug("[KRN] ## SUPERSTATE... (0x%p ->", ((uint32_t *)regs)[16]));
-                ((uint32_t *)regs)[16] &= ~CPUMODE_MASK;
+                ((uint32_t *)regs)[16] &= ~(CPUMODE_MASK);
                 ((uint32_t *)regs)[16] |= (0x80 | CPUMODE_SYSTEM);
                 D(bug(" 0x%p)\n", ((uint32_t *)regs)[16]));
                 break;
