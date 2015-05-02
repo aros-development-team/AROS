@@ -145,7 +145,7 @@ struct MemHeader *ObtainGfxMemory(struct g45staticdata *sd, intptr_t virtual,
         }
 
         header = AllocVec(sizeof(struct MemHeader), MEMF_CLEAR);
-        if (sys_mem == NULL && !stolen || header == NULL)
+        if ((sys_mem == NULL && !stolen) || header == NULL)
             success = FALSE;
     }
 
