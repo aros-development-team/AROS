@@ -314,8 +314,8 @@ int bootstrap(int argc, char ** argv)
             DisplayError("[Bootstrap] Failed to allocate %iMB of 'High' RAM for AROS: %08x %s\n", memSize, err, strerror(err));
             return -1;
         }
-        fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (%u bytes)\n",
-              (void *)(IPTR)MemoryMap[1].addr, (void *)(IPTR)MemoryMap[1].addr + MemoryMap[1].len, MemoryMap[1].len);
+        fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (%llu bytes)\n",
+              (void *)(IPTR)MemoryMap[1].addr, (void *)(IPTR)MemoryMap[1].addr + MemoryMap[1].len, (unsigned long long)MemoryMap[1].len);
 
         memSize = (LOWMEMSIZE >> 20);
         km[7].ti_Data += sizeof(struct mb_mmap);
@@ -329,8 +329,8 @@ int bootstrap(int argc, char ** argv)
         DisplayError("[Bootstrap] Failed to allocate %iMB of RAM for AROS: %08x %s\n", memSize, err, strerror(err));
         return -1;
     }
-    fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (%u bytes)\n",
-              (void *)(IPTR)MemoryMap[0].addr, (void *)(IPTR)MemoryMap[0].addr + MemoryMap[0].len, MemoryMap[0].len);
+    fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (%llu bytes)\n",
+              (void *)(IPTR)MemoryMap[0].addr, (void *)(IPTR)MemoryMap[0].addr + MemoryMap[0].len, (unsigned long long)MemoryMap[0].len);
 
     if (!GetKernelSize(FirstELF, &ro_size, &rw_size, &bss_size))
         return -1;
