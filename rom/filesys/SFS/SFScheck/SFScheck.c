@@ -619,7 +619,7 @@ BOOL checkobjectcontainers2(ULONG block, ULONG previous, ULONG parent) {
                       }
                     }
                     else if((o->bits & OTYPE_DIR)==0) {
-                      struct fsExtentBNode *ebn;
+                      struct fsExtentBNode *ebn = NULL;
                       ULONG next=BE2L(o->object.file.be_data);
                       ULONG prev=0;
                       LONG errorcode;
