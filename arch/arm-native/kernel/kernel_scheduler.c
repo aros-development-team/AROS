@@ -46,7 +46,9 @@ BOOL core_Schedule(void)
         if (IsListEmpty(&SysBase->TaskReady))
             return FALSE;
 
+#if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+#endif
         /* Does the TaskReady list contains tasks with priority equal or lower than current task?
          * If so, then check further... */
         pri = ((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri;
@@ -55,11 +57,15 @@ BOOL core_Schedule(void)
             /* If the running task did not used it's whole quantum yet, let it work */
             if (!(SysBase->SysFlags & SFF_QuantumOver))
             {
+#if defined(__AROSEXEC_SMP__)
                 KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+#endif
                 return FALSE;
             }
         }
+#if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+#endif
     }
 
     /* 
@@ -73,9 +79,13 @@ BOOL core_Schedule(void)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
 #endif
     task->tc_State = TS_READY;
+#if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
+#endif
     Enqueue(&SysBase->TaskReady, &task->tc_Node);
+#if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+#endif
 
     /* Select new task to run */
     return TRUE;
@@ -133,7 +143,9 @@ struct Task *core_Dispatch(void)
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
     cpumask =  (1 << (tmp & 3));
 
+#if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
+#endif
     for (task = (struct Task *)GetHead(&SysBase->TaskReady); task != NULL; task = (struct Task *)GetSucc(task))
     {
 #if defined(__AROSEXEC_SMP__)
@@ -146,7 +158,9 @@ struct Task *core_Dispatch(void)
         }
 #endif
     }
+#if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+#endif
 
     if (!task)
     {
