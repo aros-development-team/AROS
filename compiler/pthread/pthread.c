@@ -185,7 +185,7 @@ static int __m68k_sync_lock_test_and_set(int *v, int n)
 #undef __sync_lock_release
 #define __sync_lock_release(v) __m68k_sync_lock_test_and_set(v, 0)
 
-static int __m68k_sync_add_and_fetch(int *v, int n)
+static inline int __m68k_sync_add_and_fetch(int *v, int n)
 {
     int ret;
 
