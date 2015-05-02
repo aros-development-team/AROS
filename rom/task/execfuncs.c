@@ -25,7 +25,7 @@ void TaskResAddTask(struct Task *task)
     */
     if ((newEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
     {
-        D(bug("[TaskRes] TaskResAddTask: taskentry @ 0x%p\n", newEntry));
+        D(bug("[TaskRes] TaskResAddTask: taskentry @ 0x%p for '%s'\n", newEntry, task->tc_Node.ln_Name));
         newEntry->tle_Task = task;
         AddTail(&internTaskResBase->trb_TaskList, &newEntry->tle_Node);
     }
@@ -42,7 +42,7 @@ AROS_LH4(APTR, NewAddTask,
 
     APTR newTask;
 
-    D(bug("[TaskRes] NewAddTask()\n"));
+    D(bug("[TaskRes] NewAddTask(0x%p)\n", task));
 
     newTask = AROS_CALL4(APTR, internTaskResBase->trb_NewAddTask,
                 AROS_LCA(struct Task *,     task,      A1),
@@ -51,7 +51,7 @@ AROS_LH4(APTR, NewAddTask,
                 AROS_LCA(struct TagItem *,  tagList,   A4),
 		struct ExecBase *, SysBase);
 
-    D(bug("[TaskRes] NewAddTask: task @ 0x%p\n", task));
+    D(bug("[TaskRes] NewAddTask: task @ 0x%p\n", newTask));
 
     if (newTask)
         TaskResAddTask(newTask);
@@ -84,6 +84,7 @@ AROS_LH1(void, RemTask,
                 if the list is locked flag the entry to be removed,
                 else remove it immediately
             */
+            D(bug("[TaskRes] RemTask:  destroying taskentry @ 0x%p for '%s'\n", tmpEntry, task->tc_Node.ln_Name));
             Remove(&tmpEntry->tle_Node);
             FreeMem(tmpEntry, sizeof(struct TaskListEntry));
             break;
