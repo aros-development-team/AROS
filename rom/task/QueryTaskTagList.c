@@ -64,7 +64,7 @@
     AROS_LIBFUNC_INIT
 
     struct TagItem * Tag = NULL;
-
+    struct Library *UtilityBase = TaskResBase->trb_UtilityBase;
     
     /* This is the default implementation */
         
