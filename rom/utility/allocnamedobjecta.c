@@ -116,17 +116,17 @@
 	no->no_Node.ln_Name = (STRPTR)(no + 1);
 	strcpy(no->no_Node.ln_Name, name);
 
-	no->no_Node.ln_Pri = GetTagData( ANO_Priority, 0, tagList );
+	no->no_Node.ln_Pri = GetTagData( ANO_Priority, 0, (struct TagItem *)tagList );
 	no->no_UseCount = 0;
 	no->no_FreeObject = FALSE;
 
 	/* Find out if we need a NameSpace. */
-	if(GetTagData(ANO_NameSpace, FALSE, tagList))
+	if(GetTagData(ANO_NameSpace, FALSE, (struct TagItem *)tagList))
 	{
 	    no->no_NameSpace = AllocMem(sizeof(struct NameSpace), MEMF_CLEAR|MEMF_PUBLIC);
 	    if(no->no_NameSpace != NULL)
 	    {
-		no->no_NameSpace->ns_Flags = GetTagData(ANO_Flags, 0, tagList);
+		no->no_NameSpace->ns_Flags = GetTagData(ANO_Flags, 0, (struct TagItem *)tagList);
 		InitSemaphore(&no->no_NameSpace->ns_Lock);
 		NEWLIST((struct List *)&no->no_NameSpace->ns_List);
 	    }
@@ -142,7 +142,7 @@
 	   NamedObject.
 	*/
 
-	if((size = GetTagData(ANO_UserSpace, 0, tagList)))
+	if((size = GetTagData(ANO_UserSpace, 0, (struct TagItem *)tagList)))
 	{
 	    GetNamedObject(no)->no_Object = AllocVec(size, MEMF_CLEAR|MEMF_PUBLIC);
 	    if(no->no.no_Object == NULL)
