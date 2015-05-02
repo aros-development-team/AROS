@@ -3,8 +3,6 @@
     $Id$
 */
 
-#include <exec_platform.h>
-
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>
@@ -32,11 +30,13 @@
 #define D(x)
 #define DREGS(x)
 
-extern struct Task *sysIdleTask;
-uint32_t __arm_affinitymask __attribute__((section(".data"))) = 1;
-spinlock_t amlock;
+uint32_t        __arm_affinitymask __attribute__((section(".data"))) = 1;
+spinlock_t      __arm_affinitymasklock;
 
-extern BOOL Exec_InitETask(struct Task *, struct ExecBase *);
+#if defined(__AROSEXEC_SMP__)
+extern struct Task *cpu_InitBootStrap(struct ExecBase *);
+extern void cpu_BootStrap(struct Task *, struct ExecBase *);
+#endif
 
 asm(
 "       .globl mpcore_trampoline                \n"
@@ -82,9 +82,6 @@ void cpu_Register()
     tls_t *__tls;
     struct ExecBase *SysBase;
     struct KernelBase *KernelBase;
-    struct Task *t;
-    struct MemList *ml;
-    struct ExceptionContext *ctx;
 #endif
 
     asm volatile ("mrc p15, 0, %0, c1, c0, 0" : "=r"(tmp));
@@ -114,66 +111,23 @@ void cpu_Register()
     bug("[KRN] Core %d KernelBase @ 0x%p\n", (tmp & 0x3), KernelBase);
     bug("[KRN] Core %d SysBase @ 0x%p\n", (tmp & 0x3), SysBase);
 
-    t   = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
-    ml  = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-
-    if (!t || !ml)
+    if ((__tls->ThisTask = cpu_InitBootStrap(SysBase)) == NULL)
     {
-        bug("[KRN] Core %d FATAL : Failed to allocate memory for bootstrap task!", (tmp & 0x3));
+        /* Free up bootstrap resources ? */
         goto cpu_registerfatal;
     }
-
-    bug("[KRN] Core %d Bootstrap task @ 0x%p\n", (tmp & 0x3), t);
-    bug("[KRN] Core %d cpu context size %d\n", (tmp & 0x3), KernelBase->kb_ContextSize);
-
-    ctx = KrnCreateContext();
-    if (!ctx)
-    {
-        bug("[KRN] Core %d FATAL : Failed to create the boostrap task context!\n", (tmp & 0x3));
-        goto cpu_registerfatal;
-    }
-
-    bug("[KRN] Core %d cpu ctx @ 0x%p\n", (tmp & 0x3), ctx);
-
-    NEWLIST(&t->tc_MemEntry);
-
-    t->tc_Node.ln_Name = AllocVec(20, MEMF_CLEAR);
-    sprintf( t->tc_Node.ln_Name, "Core(%d) Bootstrap", (tmp & 0x3));
-    t->tc_Node.ln_Type = NT_TASK;
-    t->tc_Node.ln_Pri  = 0;
-    t->tc_State        = TS_RUN;
-    t->tc_SigAlloc     = 0xFFFF;
-
-    /* Build bootstraps memory list */
-    ml->ml_NumEntries      = 1;
-    ml->ml_ME[0].me_Addr   = t;
-    ml->ml_ME[0].me_Length = sizeof(struct Task);
-    AddHead(&t->tc_MemEntry, &ml->ml_Node);
-
-    /* Create a ETask structure and attach CPU context */
-    if (!Exec_InitETask(t, SysBase))
-    {
-        bug("[KRN] Core %d FATAL : Failed to allocate memory for boostrap extended data!\n", (tmp & 0x3));
-        goto cpu_registerfatal;
-    }
-    t->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
-
-    /* This Bootstrap task can run only on one of the available cores */
-    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber = (tmp & 0x3);
-    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuAffinity = 1 << (tmp & 0x3);
-
-    __tls->ThisTask = t;
 
     if (__arm_arosintern.ARMI_InitCore)
         __arm_arosintern.ARMI_InitCore(KernelBase, SysBase);
 
+    cpu_BootStrap(__tls->ThisTask, SysBase);
 #endif
 
     bug("[KRN] Core %d operational\n", (tmp & 0x3));
 
-      KrnSpinLock(&amlock, SPINLOCK_MODE_WRITE);
+    KrnSpinLock(&__arm_affinitymasklock, SPINLOCK_MODE_WRITE);
     __arm_affinitymask |= (1 << (tmp & 0x3));
-      KrnSpinUnLock(&amlock);
+    KrnSpinUnLock(&__arm_affinitymasklock);
 
 cpu_registerfatal:
 
@@ -230,7 +184,7 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 {
     uint32_t tmp;
 
-    amlock = (spinlock_t)SPINLOCK_INIT_UNLOCKED;
+    __arm_affinitymasklock = (spinlock_t)SPINLOCK_INIT_UNLOCKED;
     __arm_affinitymask = 1;
 
     asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
@@ -323,9 +277,13 @@ void cpu_Switch(regs_t *regs)
 
 void cpu_Dispatch(regs_t *regs)
 {
+#if defined(__AROSEXEC_SMP__) || defined(DEBUG)
+    int cpunum = GetCPUNumber();
+#endif
+
     struct Task *task;
 
-    D(bug("[Kernel] cpu_Dispatch()\n"));
+    D(bug("[Kernel] cpu_Dispatch(%02d)\n", cpunum));
 
     /* Break Disable() if needed */
     if (SysBase->IDNestCnt >= 0) {
@@ -334,9 +292,11 @@ void cpu_Dispatch(regs_t *regs)
     }
 
     if (!(task = core_Dispatch()))
-        task = sysIdleTask;
+    {
+        task = TLS_GET(IdleTask);
+    }
 
-    D(bug("[Kernel] cpu_Dispatch: Letting '%s' run for a bit..\n", task->tc_Node.ln_Name));
+    D(bug("[Kernel] cpu_Dispatch[%02d]: 0x%p [R  ] '%s'\n", cpunum, task, task->tc_Node.ln_Name));
 
     /* Restore the task's state */
     RESTORE_TASKSTATE(task, regs)
@@ -346,6 +306,10 @@ void cpu_Dispatch(regs_t *regs)
     /* Handle tasks's flags */
     if (task->tc_Flags & TF_EXCEPT)
         Exception();
+
+#if defined(__AROSEXEC_SMP__)
+    GetIntETask(task)->iet_CpuNumber = cpunum;
+#endif
 
     if (__arm_arosintern.ARMI_GetTime)
     {
@@ -367,16 +331,17 @@ void cpu_Dispatch(regs_t *regs)
 
 void cpu_DumpRegs(regs_t *regs)
 {
+    int cpunum = GetCPUNumber();
     int i;
     
-    bug("[KRN] Register Dump:\n");
+    bug("[KRN][%02d] Register Dump:\n", cpunum);
     for (i = 0; i < 12; i++)
     {
-        bug("[KRN]      r%02d: 0x%08x\n", i, ((uint32_t *)regs)[i]);
+        bug("[KRN][%02d]      r%02d: 0x%08x\n", cpunum, i, ((uint32_t *)regs)[i]);
     }
-    bug("[KRN] (ip) r12: 0x%08x\n", ((uint32_t *)regs)[12]);
-    bug("[KRN] (sp) r13: 0x%08x\n", ((uint32_t *)regs)[13]);
-    bug("[KRN] (lr) r14: 0x%08x\n", ((uint32_t *)regs)[14]);
-    bug("[KRN] (pc) r15: 0x%08x\n", ((uint32_t *)regs)[15]);
-    bug("[KRN]     cpsr: 0x%08x\n", ((uint32_t *)regs)[16]);
+    bug("[KRN][%02d] (ip) r12: 0x%08x\n", cpunum, ((uint32_t *)regs)[12]);
+    bug("[KRN][%02d] (sp) r13: 0x%08x\n", cpunum, ((uint32_t *)regs)[13]);
+    bug("[KRN][%02d] (lr) r14: 0x%08x\n", cpunum, ((uint32_t *)regs)[14]);
+    bug("[KRN][%02d] (pc) r15: 0x%08x\n", cpunum, ((uint32_t *)regs)[15]);
+    bug("[KRN][%02d]     cpsr: 0x%08x\n", cpunum, ((uint32_t *)regs)[16]);
 }

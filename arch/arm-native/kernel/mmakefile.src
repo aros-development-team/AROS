@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 CFILES := \
         kernel_startup \
+        kernel_execsmp \
         kernel_cpu \
         kernel_scheduler \
         spininit \

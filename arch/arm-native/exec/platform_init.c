@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/debug.h>
 #include <aros/cpu.h>
@@ -15,6 +15,7 @@
 #include <exec/execbase.h>
 #include <asm/io.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <strings.h>
 
 #include "exec_intern.h"
@@ -25,33 +26,41 @@ extern IPTR stack[];
 
 extern void IdleTask(struct ExecBase *);
 
-struct Task *sysIdleTask = NULL;
-
-static int PlatformInit(struct ExecBase *SysBase)
+int Exec_ARMCPUInit(struct ExecBase *SysBase)
 {
-    D(bug("[Exec] PlatformInit()\n"));
-    
-    struct Task *BootTask = GET_THIS_TASK;
-    D(bug("[Exec] PlatformInit: Boot Task @ 0x%p\n", BootTask));
+    struct Task *BootTask, *CPUIdleTask;
+    int cpunum = KrnGetCPUNumber();
 
-    /* for our sanity we will tell exec about the correct stack for the boot task */
-    BootTask->tc_SPLower = stack;
-    BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
+    D(bug("[Exec] Exec_ARMCPUInit(%02d)\n", cpunum));
 
-    sysIdleTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
+    BootTask = GET_THIS_TASK;
+
+    D(bug("[Exec] Exec_ARMCPUInit[%02d]: %s @ 0x%p\n", cpunum, BootTask->tc_Node.ln_Name, BootTask));
+
+    if (cpunum == 0)
+    {
+        /* for our sanity we will tell exec about the correct stack for the boot task */
+        BootTask->tc_SPLower = stack;
+        BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
+    }
+
+    CPUIdleTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
 #if defined(__AROSEXEC_SMP__)
-                                TASKTAG_AFFINITY   , (1 << 0),
+                                TASKTAG_AFFINITY   , KrnGetCPUMask(cpunum),
 #endif
                                 TASKTAG_PRI        , -127,
                                 TASKTAG_PC         , IdleTask,
                                 TASKTAG_ARG1       , SysBase,
                                 TAG_DONE);
 
-    sysIdleTask->tc_State      = TS_WAIT;
-
-    D(bug("[Exec] PlatformInit: Idle Task @ 0x%p\n", sysIdleTask));
+    if (CPUIdleTask)
+    {
+        CPUIdleTask->tc_State      = TS_WAIT;
+        TLS_SET(IdleTask, CPUIdleTask);
+        D(bug("[Exec] Exec_ARMCPUInit[%02d]: %s Task @ 0x%p\n", cpunum, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask));
+    }
 
     return TRUE;
 }
 
-ADD2INITLIB(PlatformInit, 0)
+ADD2INITLIB(Exec_ARMCPUInit, 0)
