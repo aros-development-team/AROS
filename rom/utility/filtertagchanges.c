@@ -68,7 +68,7 @@
 
 	while ((change = NextTagItem(&changeList)))
 	{
-	    if ((orig = FindTagItem(change->ti_Tag, originalList)))
+	    if ((orig = FindTagItem(change->ti_Tag, (struct TagItem *)originalList)))
 	    {
 		if (change->ti_Data == orig->ti_Data)
 		{
