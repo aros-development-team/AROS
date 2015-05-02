@@ -123,7 +123,7 @@ struct MemHeader *ObtainGfxMemory(struct g45staticdata *sd, intptr_t virtual,
 {
     BOOL success = TRUE;
     APTR sys_mem = NULL;
-    struct MemHeader *header;
+    struct MemHeader *header = NULL;
     struct MemChunk *chunk;
 
     /* Ensure we don't over-extend graphics memory into scratch area at end
