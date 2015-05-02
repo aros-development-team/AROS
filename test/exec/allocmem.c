@@ -32,7 +32,7 @@ static LONG test_allocabs(APTR block0, BOOL trash, BOOL leak, BOOL notlsf)
     const ULONG allocsize = 4096;
 
     start = block0 + 1027;  /* Add some non-round displacement to make life harder */
-    output("\nTesting AllocAbs(%d, 0x%p) ...\n", allocsize, start);
+    output("\nTesting AllocAbs(%lu, 0x%p) ...\n", (unsigned long)allocsize, start);
     if ((block1 = AllocAbs(allocsize, start)) != NULL)
     {
         output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
@@ -56,7 +56,7 @@ static LONG test_allocabs(APTR block0, BOOL trash, BOOL leak, BOOL notlsf)
        otherwise we just duplicate the previous test */
     if (!leak)
     {
-        output("\nTesting AllocAbs(%u, 0x%p), but free using its requested start address...\n", allocsize, start);
+        output("\nTesting AllocAbs(%lu, 0x%p), but free using its requested start address...\n", (unsigned long)allocsize, start);
         if ((block1 = AllocAbs(allocsize, start)) != NULL)
         {
             output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
