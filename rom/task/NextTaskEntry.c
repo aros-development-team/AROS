@@ -64,7 +64,7 @@
     if (taskList && taskList->tlp_Next)
     {
         retVal = taskList->tlp_Next->tle_Task;
-        taskList->tlp_Next = GetSucc(taskList->tlp_Next);
+        taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
     }
 
     return retVal;
