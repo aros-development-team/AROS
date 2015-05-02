@@ -170,7 +170,7 @@ AROS_UFH0(void, changepen_function)
 {
     AROS_USERFUNC_INIT
 
-    SIPTR pen;
+    SIPTR pen = 0;
 
     GET(colorfield_pen, MUIA_String_Integer, &pen);
     if (pen >= 0)
@@ -1497,7 +1497,7 @@ int main(void)
         nnset(pendisplay_pen, MUIA_String_Integer,
             XGET(pendisplay, MUIA_Pendisplay_Pen));
 
-        struct MUI_PenSpec *pen_spec;
+        struct MUI_PenSpec *pen_spec = NULL;
         GET(pendisplay, MUIA_Pendisplay_Spec, &pen_spec);
         strncpy(pen_str, pen_spec->buf, 10);
         set(pendisplay_spec, MUIA_String_Contents, pen_str);
