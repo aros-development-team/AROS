@@ -143,7 +143,7 @@ static UPINT GetOwner(struct LibBase *base, PCIBoard *board)
             break;
             
          default:
-            aros_tag = GetTagData(tag, TAG_DONE, (const struct TagItem *)map_tag_list);
+            aros_tag = GetTagData(tag, TAG_DONE, (struct TagItem *)map_tag_list);
             if (aros_tag != TAG_DONE)
                OOP_GetAttr(board->aros_board, base->pcidevice_attr_base + aros_tag,
                            &board_data);
@@ -228,7 +228,7 @@ static UPINT GetOwner(struct LibBase *base, PCIBoard *board)
       }
       else
       {
-         aros_tag = GetTagData(tag_item->ti_Tag, TAG_DONE, map_tag_list);
+         aros_tag = GetTagData(tag_item->ti_Tag, TAG_DONE, (struct TagItem *)map_tag_list);
          if(aros_tag != TAG_DONE)
          {
             OOP_GetAttr(board->aros_board,
