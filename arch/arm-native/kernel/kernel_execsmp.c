@@ -91,6 +91,8 @@ void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase)
     Enqueue(&PrivExecBase(SysBase)->TaskRunning, &bstask->tc_Node);
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
 
+#if (0)
     Exec_ARMCPUInit(SysBase);
+#endif
 }
 #endif
