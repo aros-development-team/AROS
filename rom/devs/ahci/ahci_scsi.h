@@ -114,6 +114,7 @@ struct scsi_sense_data {
 #define         SSD_KEY_EQUAL           0x0c
 #define         SSD_KEY_VOLUME_OVERFLOW 0x0d
 #define         SSD_KEY_MISCOMPARE      0x0e
+#define         SSD_KEY_COMPLETED       0x0f
 #define SSD_ILI                 0x20
 #define SSD_EOM                 0x40
 #define SSD_FILEMARK            0x80
