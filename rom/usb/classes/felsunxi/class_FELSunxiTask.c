@@ -9,7 +9,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-#define DEBUG 1
+#define DEBUG 0
 
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
