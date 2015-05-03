@@ -99,12 +99,21 @@ struct scsi_sense_data {
     UBYTE segment;
     UBYTE flags;
 #define SSD_KEY                 0x0f
+#define         SSD_KEY_NO_SENSE        0x00
 #define         SSD_KEY_RECOVERED_ERROR 0x01
 #define         SSD_KEY_NOT_READY       0x02
 #define         SSD_KEY_MEDIUM_ERROR    0x03
 #define         SSD_KEY_HARDWARE_ERROR  0x04
 #define         SSD_KEY_ILLEGAL_REQUEST 0x05
+#define         SSD_KEY_UNIT_ATTENTION  0x06
+#define         SSD_KEY_DATA_PROTECT    0x07
+#define         SSD_KEY_BLANK_CHECK     0x08
+#define         SSD_KEY_VENDOR_SPECIFIC 0x09
+#define         SSD_KEY_COPY_ABORTED    0x0a
 #define         SSD_KEY_ABORTED_COMMAND 0x0b
+#define         SSD_KEY_EQUAL           0x0c
+#define         SSD_KEY_VOLUME_OVERFLOW 0x0d
+#define         SSD_KEY_MISCOMPARE      0x0e
 #define SSD_ILI                 0x20
 #define SSD_EOM                 0x40
 #define SSD_FILEMARK            0x80
