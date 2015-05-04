@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -805,7 +805,7 @@ AROS_LH1(APTR, New_OpenResource,
 
     if (patches[PATCH_OpenResource].enabled)
     {
-        main_output("OpenLibrary", resName, 0, (IPTR)result, TRUE, FALSE);
+        main_output("OpenResource", resName, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
