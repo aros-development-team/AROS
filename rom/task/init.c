@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -39,6 +39,14 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     NEWLIST(&TaskResBase->trb_LockedLists);
 
     SysBase->lb_TaskResBase = (struct Library *)TaskResBase;
+
+    /*
+        Use Disable/Enable to lock all access to the task list -:
+        the SpinLocks should only be used by the schedular itself, otherwise we
+        may end up with a deadlock.
+    */
+    Disable();
+
     TaskResBase->trb_NewAddTask = SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewAddTask, Task, 176));
     TaskResBase->trb_RemTask = SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, AROS_SLIB_ENTRY(RemTask, Task, 48));
 
@@ -46,7 +54,6 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
        Add existing tasks to our internal list ..
     */
 #if defined(__AROSEXEC_SMP__)
-    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, curTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
@@ -56,8 +63,6 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
     }
-    KrnSpinUnLock(listLock);
-    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
 #else
     if (SysBase->ThisTask)
     {
@@ -78,10 +83,6 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
     }
-#if defined(__AROSEXEC_SMP__)
-    KrnSpinUnLock(listLock);
-    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
-#endif
     ForeachNode(&SysBase->TaskWait, curTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
@@ -91,9 +92,8 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
     }
-#if defined(__AROSEXEC_SMP__)
-    KrnSpinUnLock(listLock);
-#endif
+
+    Enable();
 
     return TRUE;
 }
