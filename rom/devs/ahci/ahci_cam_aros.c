@@ -57,75 +57,53 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
 
             D(bug("%s %d: Monitoring\n", ((struct Node *)device)->ln_Name, unit->sim_Unit)); 
             do {
-                /* Issue a dummy read and gather sense data as we wish to get the current sense and not the previous */
+                BOOL is_present;
+
                 io->io_Command = HD_SCSICMD;
                 io->io_Flags   = 0;
                 io->io_Error = 0;
                 IOStdReq(io)->io_Data = &scsi;
                 IOStdReq(io)->io_Length = sizeof(scsi);
                 IOStdReq(io)->io_Actual = 0;
-                scsi.scsi_Data = NULL;
-                scsi.scsi_Length = 0;
                 scsi.scsi_Command = (UBYTE *)&test_unit_ready;
                 scsi.scsi_CmdLength = sizeof(test_unit_ready);
                 scsi.scsi_Actual = 0;
                 scsi.scsi_Status = 0;
-                scsi.scsi_Flags = SCSIF_READ|SCSIF_AUTOSENSE|0x80;
+                scsi.scsi_Flags = SCSIF_AUTOSENSE;
                 scsi.scsi_SenseData = (UBYTE *)&sense;
                 scsi.scsi_SenseLength = sizeof(sense);
                 scsi.scsi_SenseActual = 0;
 
                 DoIO(io);
 
-                if((io->io_Error == 0)) {
-                    if((scsi.scsi_Status != SCSI_GOOD)) {
-                        if((sense.flags & SSD_KEY) == SSD_KEY_NOT_READY) {
-                            /* Medium is not present and tray is either closed or open (when additional sense code is 0x3a) */
-                            if(sense.add_sense_code == 0x3a) {
-                                media_present = FALSE;
-                                /*
-                                if(sense.add_sense_qual == 1) {
-                                    // medium not present - tray closed
-                                }
-                                if(sense.add_sense_qual == 2) {
-                                    // medium not present - tray open
-                                }
-                                */
-                            }
+                is_present = (io->io_Error == 0) && (scsi.scsi_Status == SCSI_GOOD);
+                // TODO: Check sense for additional information
 
+                ObtainSemaphore(&unit->sim_Lock);
+                if (is_present)
+                    unit->sim_Flags |= SIMF_MediaPresent;
+                else
+                    unit->sim_Flags &= ~SIMF_MediaPresent;
+                if (is_present != media_present)
+                    unit->sim_ChangeNum++;
+                ReleaseSemaphore(&unit->sim_Lock);
+
+                if (is_present != media_present) {
+                    struct IORequest *msg;
+
+                    D(bug("%s: Media change detected on ahci.device %d (%s => %s)\n", __func__, unit->sim_Unit, media_present ? "TRUE" : "FALSE", is_present ? "TRUE" : "FALSE"));
+
+                    Forbid();
+                    ForeachNode((struct Node *)&unit->sim_IOs, msg) {
+                        D(bug("%s %d: io_Command = 0x%04x\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, msg->io_Command)); 
+                        if (msg->io_Command == TD_ADDCHANGEINT) {
+                            D(bug("%s %d: Interrupt = 0x%p\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, IOStdReq(msg)->io_Data));
+                            Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
                         }
-                    } else {
-                        /* When status returns GOOD, sense key is not applicable -> assume media to be present */
-                        media_present = TRUE;
                     }
-
-                    /* Presence of media has changed */
-                    if((unit->sim_Flags |= SIMF_MediaPresent) != (media_present)) {
-                        ObtainSemaphore(&unit->sim_Lock);
-                        if (media_present) {
-                            unit->sim_Flags |= SIMF_MediaPresent;
-                        } else {
-                            unit->sim_Flags &= ~SIMF_MediaPresent;
-                        }
-                        unit->sim_ChangeNum++;
-                        ReleaseSemaphore(&unit->sim_Lock);
-
-                        struct IORequest *msg;
-
-                        D(bug("%s: Media change detected on ahci.device %d (media is %s)\n", __func__, unit->sim_Unit, media_present ? "present" : "not present"));
-
-                        Forbid();
-                        ForeachNode((struct Node *)&unit->sim_IOs, msg) {
-                            D(bug("%s %d: io_Command = 0x%04x\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, msg->io_Command)); 
-                            if (msg->io_Command == TD_ADDCHANGEINT) {
-                                D(bug("%s %d: Interrupt = 0x%p\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, IOStdReq(msg)->io_Data));
-                                Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
-                            }
-                        }
-                        Permit();
-
-                    }
+                    Permit();
                 }
+                media_present = is_present;
 
                 /* Wait 1s to the next scan */
             } while ((ahci_WaitTO(tmr, 1, 0, SIGF_DOS) & SIGF_DOS) == 0);
