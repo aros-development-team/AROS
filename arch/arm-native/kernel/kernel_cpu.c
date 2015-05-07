@@ -28,6 +28,7 @@
 #include "kernel_intr.h"
 
 #define D(x)
+#define DSCHED(x)
 #define DREGS(x)
 
 uint32_t        __arm_affinitymask __attribute__((section(".data"))) = 1;
@@ -250,13 +251,15 @@ void cpu_Switch(regs_t *regs)
     struct Task *task;
     UQUAD timeCur;
     struct timeval timeVal;
-
-    D(bug("[Kernel] cpu_Switch()\n"));
+#if defined(__AROSEXEC_SMP__) || defined(DEBUG)
+    int cpunum = GetCPUNumber();
+#endif
+    
+    DSCHED(bug("[Kernel] cpu_Switch(%02d)\n", cpunum));
 
     task = GET_THIS_TASK;
 
-    /* Copy current task's context into the ETask structure */
-    /* Restore the task's state */
+    /* Cache running task's context */
     STORE_TASKSTATE(task, regs)
 
     if (__arm_arosintern.ARMI_GetTime)
@@ -280,7 +283,7 @@ void cpu_Dispatch(regs_t *regs)
 
     struct Task *task;
 
-    D(bug("[Kernel] cpu_Dispatch(%02d)\n", cpunum));
+    DSCHED(bug("[Kernel] cpu_Dispatch(%02d)\n", cpunum));
 
     /* Break Disable() if needed */
     if (SysBase->IDNestCnt >= 0) {
@@ -288,12 +291,13 @@ void cpu_Dispatch(regs_t *regs)
         ((uint32_t *)regs)[13] &= ~0x80;
     }
 
-    if (!(task = core_Dispatch()))
+    while (!(task = core_Dispatch()))
     {
-        task = TLS_GET(IdleTask);
+        DSCHED(bug("[Kernel] cpu_Dispatch[%02d]: Nothing to run - idling\n", cpunum));
+        asm volatile("wfi");
     }
 
-    D(bug("[Kernel] cpu_Dispatch[%02d]: 0x%p [R  ] '%s'\n", cpunum, task, task->tc_Node.ln_Name));
+    DSCHED(bug("[Kernel] cpu_Dispatch[%02d]: 0x%p [R  ] '%s'\n", cpunum, task, task->tc_Node.ln_Name));
 
     /* Restore the task's state */
     RESTORE_TASKSTATE(task, regs)
@@ -324,6 +328,7 @@ void cpu_Dispatch(regs_t *regs)
         AROS_UFC1(void, task->tc_Launch,
                   AROS_UFCA(struct ExecBase *, SysBase, A6));       
     }
+    /* Leave interrupt and jump to the new task */
 }
 
 void cpu_DumpRegs(regs_t *regs)

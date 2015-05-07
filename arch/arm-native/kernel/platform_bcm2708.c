@@ -74,9 +74,9 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
         void *trampoline_dst = (void *)BOOTMEMADDR(bm_mctrampoline);
         uint32_t trampoline_length = (uintptr_t)&mpcore_end - (uintptr_t)mpcore_trampoline;
         uint32_t trampoline_data_offset = (uintptr_t)&mpcore_pde - (uintptr_t)mpcore_trampoline;
-        int core;
-        uint32_t *core_stack;
-        uint32_t *core_fiq_stack;
+        int cpu;
+        uint32_t *cpu_stack;
+        uint32_t *cpu_fiq_stack;
         uint32_t tmp;
         tls_t   *__tls;
 
@@ -91,37 +91,37 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
         ((uint32_t *)(trampoline_dst + trampoline_data_offset))[0] = tmp; // pde
         ((uint32_t *)(trampoline_dst + trampoline_data_offset))[1] = (uint32_t)cpu_Register;
 
-        for (core = 1; core < 4; core ++)
+        for (cpu = 1; cpu < 4; cpu ++)
         {
-            core_stack = (uint32_t *)AllocMem(AROS_STACKSIZE*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
-            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = (uint32_t)&core_stack[AROS_STACKSIZE-sizeof(IPTR)];
+            cpu_stack = (uint32_t *)AllocMem(AROS_STACKSIZE*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
+            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2] = (uint32_t)&cpu_stack[AROS_STACKSIZE-sizeof(IPTR)];
 
-            core_fiq_stack = (uint32_t *)AllocMem(1024*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
-            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4] = (uint32_t)&core_fiq_stack[1024-sizeof(IPTR)];
+            cpu_fiq_stack = (uint32_t *)AllocMem(1024*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
+            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4] = (uint32_t)&cpu_fiq_stack[1024-sizeof(IPTR)];
 
-            __tls =  (tls_t *)AllocMem(sizeof(tls_t),  MEMF_CLEAR); /* MEMF_PRIVATE */
+            __tls =  (tls_t *)AllocMem(sizeof(tls_t) + sizeof(struct cpu_ipidata),  MEMF_CLEAR); /* MEMF_PRIVATE */
             __tls->SysBase = _sysBase;
             __tls->KernelBase = _kernelBase;
             __tls->ThisTask = NULL;
             arm_flush_cache(((uint32_t)__tls) & ~63, 512);
             ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint32_t)__tls;
 
-            D(bug("[KRN:BCM2708] %s: Attempting to wake core #%d\n", __PRETTY_FUNCTION__, core));
-            D(bug("[KRN:BCM2708] %s: core #%d stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, core, core_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
-            D(bug("[KRN:BCM2708] %s: core #%d fiq stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, core, core_fiq_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4]));
-            D(bug("[KRN:BCM2708] %s: core #%d tls @ 0x%p\n", __PRETTY_FUNCTION__, core, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
+            D(bug("[KRN:BCM2708] %s: Attempting to wake CPU #%d\n", __PRETTY_FUNCTION__, cpu));
+            D(bug("[KRN:BCM2708] %s: CPU #%d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
+            D(bug("[KRN:BCM2708] %s: CPU #%d FIQ Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_fiq_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4]));
+            D(bug("[KRN:BCM2708] %s: CPU #%d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
             arm_flush_cache((uint32_t)trampoline_dst, 512);
 
             /* Lock the startup spinlock */
             KrnSpinLock(&startup_lock, SPINLOCK_MODE_WRITE);
 
-            /* Wake up the core */
-            *((uint32_t *)(BCM2836_MAILBOX3_SET0 + (0x10 * core))) = (uint32_t)trampoline_dst;
+            /* Wake up the cpu */
+            *((uint32_t *)(BCM2836_MAILBOX3_SET0 + (0x10 * cpu))) = (uint32_t)trampoline_dst;
 
             /*
                  * Try to obtain spinlock again.
-                 * This should put this core to sleep since the locked was already obtained. Once the core startup
+                 * This should put this cpu to sleep since the locked was already obtained. Once the cpu startup
                  * is ready, it will call KrnSpinUnLock too
                  */
                 KrnSpinLock(&startup_lock, SPINLOCK_MODE_WRITE);
@@ -130,31 +130,29 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
     }
 }
 
-static void bcm2708_init_core(APTR _kernelBase, APTR _sysBase)
+static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 {
     struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
     struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
-    struct cpu_ipidata *core_ipidata;
-    uint32_t tmp;
+#if defined(__AROSEXEC_SMP__)
+    tls_t   *__tls = TLS_PTR_GET();
+#endif
+    int cpunum = GetCPUNumber();
 
-    asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
-
-    D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, (tmp & 0x3)));
+    D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
 
     /* Clear all pending FIQ sources on mailboxes */
-    *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
-    *((uint32_t *)(BCM2836_MAILBOX1_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
-    *((uint32_t *)(BCM2836_MAILBOX2_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
-    *((uint32_t *)(BCM2836_MAILBOX3_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
+    *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + (16 * cpunum))) = 0xffffffff;
+    *((uint32_t *)(BCM2836_MAILBOX1_CLR0 + (16 * cpunum))) = 0xffffffff;
+    *((uint32_t *)(BCM2836_MAILBOX2_CLR0 + (16 * cpunum))) = 0xffffffff;
+    *((uint32_t *)(BCM2836_MAILBOX3_CLR0 + (16 * cpunum))) = 0xffffffff;
 
 #if defined(__AROSEXEC_SMP__)
-    if ((core_ipidata = (struct cpu_ipidata *)AllocMem(sizeof(struct cpu_ipidata), MEMF_CLEAR)) != NULL)
-    {
-        bcm2708_cpuipid[(tmp & 0x3)] = core_ipidata;
+    bcm2708_cpuipid[cpunum] = (unsigned int)__tls + sizeof(tls_t);
+    D(bug("[KRN:BCM2708] %s: cpu #%d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cpuipid[cpunum]));
 
-        // enable FIQ mailbox interupt
-        *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = 0x10;
-    }
+    // enable FIQ mailbox interupt
+    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum))) = 0x10;
 #endif
 }
 
@@ -175,15 +173,16 @@ static void bcm2807_irq_init(void)
 
 static void bcm2807_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
 {
-    int i = 0;
-    for (i = 0; i < 4; i++)
+    int cpu, mbno = 0;
+
+    for (cpu = 0; cpu < 4; cpu++)
     {
 #if defined(__AROSEXEC_SMP__)
-        if ((cpumask & (1 << i)) && bcm2708_cpuipid[i])
+        if ((cpumask & (1 << cpu)) && bcm2708_cpuipid[cpu])
         {
             /* TODO:  check which mailbox is available and use it */
-            bcm2708_cpuipid[i]->ipi_data[0] = ipi_data;
-            *((uint32_t *)(BCM2836_MAILBOX0_SET0 + (0x10 * i))) = ipi;
+            bcm2708_cpuipid[cpu]->ipi_data[mbno] = ipi_data;
+            *((uint32_t *)(BCM2836_MAILBOX0_SET0 + (0x10 * cpu))) = ipi;
         }
 #endif
     }
@@ -274,30 +273,29 @@ static void bcm2807_irq_process()
 
 static void bcm2807_fiq_process()
 {
-    uint32_t tmp, fiq, fiq_data;
-    int i;
+    int cpunum = GetCPUNumber();
+    uint32_t fiq, fiq_data;
+    int mbno;
 
-    asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
+    DFIQ(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
 
-    DFIQ(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, (tmp & 0x3)));
+    fiq = *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * cpunum)));
 
-    fiq = *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * (tmp & 0x3))));
-
-    DFIQ(bug("[KRN:BCM2708] %s: Core #%d FIQ %x\n", __PRETTY_FUNCTION__, (tmp & 0x3), fiq));
+    DFIQ(bug("[KRN:BCM2708] %s: CPU #%d FIQ %x\n", __PRETTY_FUNCTION__, cpunum, fiq));
 
     if (fiq)
     {
-        for (i=0; i < 4; i++)
+        for (mbno=0; mbno < 4; mbno++)
         {
-            if (fiq & (0x10 << i))
+            if (fiq & (0x10 << mbno))
             {
-                fiq_data = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3))));
-                DFIQ(bug("[KRN:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, i, fiq_data));
+                fiq_data = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum)));
+                DFIQ(bug("[KRN:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, mbno, fiq_data));
 #if defined(__AROSEXEC_SMP__)
-                if (bcm2708_cpuipid[(tmp & 0x3)])
-                    handle_ipi(fiq_data, bcm2708_cpuipid[(tmp & 0x3)]->ipi_data[0]);
+                if (bcm2708_cpuipid[cpunum])
+                    handle_ipi(fiq_data, bcm2708_cpuipid[cpunum]->ipi_data[0]);
 #endif
-                *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3)))) = 0xffffffff;
+                *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum))) = 0xffffffff;
             }
         }
     }
@@ -440,7 +438,7 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     {
         /*  bcm2836 uses armv7 */
         krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2836_PERIPHYSBASE;
-        krnARMImpl->ARMI_InitCore = &bcm2708_init_core;
+        krnARMImpl->ARMI_InitCore = &bcm2708_init_cpu;
         krnARMImpl->ARMI_FIQProcess = &bcm2807_fiq_process;
         krnARMImpl->ARMI_SendIPI = &bcm2807_send_ipi;
     }
