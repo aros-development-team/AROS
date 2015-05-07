@@ -34,22 +34,22 @@ static inline int GetCPUNumber() {
     return tmp & 3;
 }
 
-static inline void SendIPISelf(uint32_t msg)
+static inline void SendIPISelf(uint32_t ipi, uint32_t ipi_param)
 {
     int cpu = GetCPUNumber();
-    __arm_arosintern.ARMI_SendIPI((msg & 0x0fffffff) | (cpu << 28), 1 << cpu);
+    __arm_arosintern.ARMI_SendIPI((ipi & 0x0fffffff) | (cpu << 28), ipi_param, (1 << cpu));
 }
 
-static inline void SendIPIOthers(uint32_t msg)
+static inline void SendIPIOthers(uint32_t ipi, uint32_t ipi_param)
 {
     int cpu = GetCPUNumber();
-    __arm_arosintern.ARMI_SendIPI((msg & 0x0fffffff) | (cpu << 28), 0xf & ~(1 << cpu));
+    __arm_arosintern.ARMI_SendIPI((ipi & 0x0fffffff) | (cpu << 28), ipi_param, 0xf & ~(1 << cpu));
 }
 
-static inline void SendIPIAll(uint32_t msg)
+static inline void SendIPIAll(uint32_t ipi, uint32_t ipi_param)
 {
     int cpu = GetCPUNumber();
-    __arm_arosintern.ARMI_SendIPI((msg & 0x0fffffff) | (cpu << 28), 0xf);
+    __arm_arosintern.ARMI_SendIPI((ipi & 0x0fffffff) | (cpu << 28), ipi_param, 0xf);
 }
 
 #endif /* CPU_ARM_H_ */
