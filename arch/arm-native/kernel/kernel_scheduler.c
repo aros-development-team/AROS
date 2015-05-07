@@ -179,11 +179,6 @@ struct Task *core_Dispatch(void)
 
     SysBase->DispCount++;
     SysBase->IDNestCnt = task->tc_IDNestCnt;
-#if defined(__AROSEXEC_SMP__)
-    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
-    AddHead(&PrivExecBase(SysBase)->TaskRunning, &task->tc_Node);
-    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-#endif
     SET_THIS_TASK(task);
     SysBase->Elapsed   = SysBase->Quantum;
     SysBase->SysFlags &= ~SFF_QuantumOver;
