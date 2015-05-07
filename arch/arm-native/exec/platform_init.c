@@ -35,7 +35,7 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
 
     BootTask = GET_THIS_TASK;
 
-    D(bug("[Exec] Exec_ARMCPUInit[%02d]: %s @ 0x%p\n", cpunum, BootTask->tc_Node.ln_Name, BootTask));
+    D(bug("[Exec] Exec_ARMCPUInit[%02d]: launched from %s @ 0x%p\n", cpunum, BootTask->tc_Node.ln_Name, BootTask));
 
     if (cpunum == 0)
     {
@@ -55,9 +55,7 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
 
     if (CPUIdleTask)
     {
-        CPUIdleTask->tc_State      = TS_WAIT;
-        TLS_SET(IdleTask, CPUIdleTask);
-        D(bug("[Exec] Exec_ARMCPUInit[%02d]: %s Task @ 0x%p\n", cpunum, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask));
+        D(bug("[Exec] Exec_ARMCPUInit[%02d]: %s Task created @ 0x%p\n", cpunum, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask));
     }
 
     return TRUE;
