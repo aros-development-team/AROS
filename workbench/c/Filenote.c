@@ -76,7 +76,9 @@
 
 ******************************************************************************/
 
+#ifdef __AROS__
 #include <proto/arossupport.h>
+#endif
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -88,8 +90,15 @@
 #include <utility/utility.h>
 
 #include <ctype.h>
+#include <string.h>
 
+#ifdef __AROS__
 #include <aros/rt.h>
+#else
+#define RT_Init()
+#define RT_Exit()
+#define IsDosEntryA(file, flags) 0
+#endif
 
 #define ERROR_HEADER "Filenote"
 
@@ -106,7 +115,7 @@
 
 #define MAX_PATH_LEN    512
 
-const TEXT version[] = "$VER: Filenote 41.2 (30.12.2011)\n";
+const TEXT version[] = "$VER: Filenote 41.3 (7.5.2015)\n";
 
 int Do_Filenote(struct AnchorPath *, STRPTR, STRPTR, LONG, LONG);
 
@@ -161,7 +170,7 @@ int main(void)
 
     RT_Exit();
 
-    return (Return_Value);
+    return Return_Value;
 
 } /* main */
 
@@ -275,7 +284,7 @@ int Do_Filenote(struct AnchorPath *a,
         }
     }
 
-    return (Return_Value);
+    return Return_Value;
 
 } /* Do_Filenote */
 
@@ -316,9 +325,15 @@ int SafeSetFileComment(struct AnchorPath *a, char *c)
     if (!SetComment(a->ap_Buf, c))
     {
         PrintFault(IoErr(), ERROR_HEADER);
+        Return_Value = RETURN_ERROR;
+    }
+    else
+    if (strlen(c) > 79)
+    {
+        VPrintf("Note truncated to 79 characters\n", NULL);
         Return_Value = RETURN_WARN;
     }
 
-    return(Return_Value);
+    return Return_Value;
 
 } /* SafeSetFileComment */
