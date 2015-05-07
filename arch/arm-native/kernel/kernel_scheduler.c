@@ -181,7 +181,7 @@ struct Task *core_Dispatch(void)
     SysBase->IDNestCnt = task->tc_IDNestCnt;
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
-    Enqueue(&PrivExecBase(SysBase)->TaskRunning, &task->tc_Node);
+    AddHead(&PrivExecBase(SysBase)->TaskRunning, &task->tc_Node);
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
 #endif
     SET_THIS_TASK(task);
