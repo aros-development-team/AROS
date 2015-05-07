@@ -27,7 +27,7 @@
 
 void handle_ipi(uint32_t ipi)
 {
-    DFIQ(bug("[KRN:IPI] %s: IPI Msg %08x\n", __PRETTY_FUNCTION__, ipi));
+    D(bug("[KRN:IPI] %s: IPI Msg %08x\n", __PRETTY_FUNCTION__, ipi));
     switch (ipi)
     {
         case IPI_CAUSE:
