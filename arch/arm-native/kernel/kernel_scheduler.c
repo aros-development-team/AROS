@@ -50,11 +50,8 @@ BOOL core_Schedule(void)
         {
             struct Task *nexttask;
 #if defined(__AROSEXEC_SMP__)
-            uint32_t cpumask;
-            uint32_t tmp;
-
-            asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
-            cpumask =  (1 << (tmp & 3));
+            int cpunum = GetCPUNumber();
+            uint32_t cpumask = (1 << cpunum);
 #endif
             /*
                     If there are tasks ready for this cpu that have equal or lower priority,
@@ -127,10 +124,8 @@ void core_Switch(void)
 
         Alert(AN_StackProbe);
     }
-    else
-    {
+    else if (task->tc_State == TS_RUN)
         task->tc_State = TS_READY;
-    }
 
     task->tc_IDNestCnt = SysBase->IDNestCnt;
 
@@ -144,15 +139,13 @@ struct Task *core_Dispatch(void)
     struct Task *newtask;
     struct Task *task = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__)
-    uint32_t cpumask;
     int cpunum = GetCPUNumber();
+    uint32_t cpumask = (1 << cpunum);
 #endif
 
     DSCHED(bug("[KRN:BCM2708] core_Dispatch()\n"));
 
 #if defined(__AROSEXEC_SMP__)
-    cpumask =  (1 << cpunum);
-
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock,
                 SPINLOCK_MODE_WRITE);
 #endif
@@ -180,7 +173,28 @@ struct Task *core_Dispatch(void)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
 
-    if (!newtask)
+    if (newtask)
+    {
+
+        SysBase->DispCount++;
+        SysBase->IDNestCnt = newtask->tc_IDNestCnt;
+        SET_THIS_TASK(newtask);
+        SysBase->Elapsed   = SysBase->Quantum;
+        SysBase->SysFlags &= ~SFF_QuantumOver;
+        newtask->tc_State     = TS_RUN;
+
+        DSCHED(bug("[KRN:BCM2708] New task = %p (%s)\n", newtask, newtask->tc_Node.ln_Name));
+
+        /* Check the stack of the task we are about to launch. */
+
+        if (newtask->tc_SPReg <= newtask->tc_SPLower || newtask->tc_SPReg > newtask->tc_SPUpper)
+        {
+            /* Don't let the task run, switch it away (raising Alert) and dispatch another task */
+            core_Switch();
+            return core_Dispatch();
+        }
+    }
+    else
     {
         /* Is the list of ready tasks empty? Well, go idle. */
         DSCHED(bug("[KRN:BCM2708] No ready tasks, entering sleep mode\n"));
@@ -191,27 +205,7 @@ struct Task *core_Dispatch(void)
          */
         SysBase->IdleCount++;
         SysBase->AttnResched |= ARF_AttnSwitch;
-
-        return NULL;
-    }
-
-    SysBase->DispCount++;
-    SysBase->IDNestCnt = newtask->tc_IDNestCnt;
-    SET_THIS_TASK(newtask);
-    SysBase->Elapsed   = SysBase->Quantum;
-    SysBase->SysFlags &= ~SFF_QuantumOver;
-    newtask->tc_State     = TS_RUN;
-
-    DSCHED(bug("[KRN:BCM2708] New task = %p (%s)\n", newtask, newtask->tc_Node.ln_Name));
-
-    /* Check the stack of the task we are about to launch. */
-
-    if (newtask->tc_SPReg <= newtask->tc_SPLower || newtask->tc_SPReg > newtask->tc_SPUpper)
-    {
-        /* Don't let the task run, switch it away (raising Alert) and dispatch another task */
-        core_Switch();
-        return core_Dispatch();
-    }
+    } 
 
     return newtask;
 }
