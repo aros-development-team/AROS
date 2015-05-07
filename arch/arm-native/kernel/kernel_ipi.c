@@ -27,8 +27,13 @@
 
 void handle_ipi(uint32_t ipi, uint32_t ipi_data)
 {
-    D(bug("[KRN:IPI] %s: IPI Msg %08x Param  %08x\n", __PRETTY_FUNCTION__, ipi,  ipi_data));
-    switch (ipi)
+    int cpu = GetCPUNumber();
+    uint32_t ipi_src = (ipi >> 28) & 0xF;
+    uint32_t ipi_msg = ipi & ~(0xF << 28);
+
+    D(bug("[KRN:IPI] %s: Core #%02d IPI Msg %08x:%08x from Core #%02d\n",
+        __PRETTY_FUNCTION__, cpu, ipi_msg,  ipi_data, ipi_src));
+    switch (ipi_msg)
     {
         case IPI_CAUSE:
         {
