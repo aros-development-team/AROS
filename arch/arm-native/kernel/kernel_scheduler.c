@@ -96,14 +96,18 @@ void core_Switch(void)
 
     DSCHED(bug("[KRN:BCM2708] core_Switch(): Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
+    if (task->tc_State == TS_RUN)
+    {
 #if defined(__AROSEXEC_SMP__)
-    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock,
-                SPINLOCK_MODE_WRITE);
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock,
+                    SPINLOCK_MODE_WRITE);
 #endif
-    Remove(&task->tc_Node);
+        Remove(&task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
-    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
 #endif
+        task->tc_State = TS_READY;
+    }
 
     /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
@@ -124,8 +128,6 @@ void core_Switch(void)
 
         Alert(AN_StackProbe);
     }
-    else if (task->tc_State == TS_RUN)
-        task->tc_State = TS_READY;
 
     task->tc_IDNestCnt = SysBase->IDNestCnt;
 
