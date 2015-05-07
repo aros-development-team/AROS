@@ -5,6 +5,7 @@ CFILES := \
         kernel_startup \
         kernel_execsmp \
         kernel_cpu \
+        kernel_ipi \
         kernel_scheduler \
         spininit \
         spinislocked \
