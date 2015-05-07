@@ -49,7 +49,7 @@ extern spinlock_t startup_lock;
 extern void cpu_Register(void);
 extern void arm_flush_cache(uint32_t, uint32_t);
 #if defined(__AROSEXEC_SMP__)
-extern void handle_ipi(uint32_t);
+extern void handle_ipi(uint32_t, uint32_t);
 #endif
 
 static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
@@ -275,7 +275,7 @@ static void bcm2807_fiq_process()
                 fiq_data = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3))));
                 DFIQ(bug("[KRN:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, i, fiq_data));
 #if defined(__AROSEXEC_SMP__)
-                handle_ipi(fiq_data);
+                handle_ipi(fiq_data, NULL);
 #endif
                 *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3)))) = 0xffffffff;
             }

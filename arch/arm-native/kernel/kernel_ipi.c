@@ -25,9 +25,9 @@
 
 #include "kernel_ipi.h"
 
-void handle_ipi(uint32_t ipi)
+void handle_ipi(uint32_t ipi, uint32_t ipi_data)
 {
-    D(bug("[KRN:IPI] %s: IPI Msg %08x\n", __PRETTY_FUNCTION__, ipi));
+    D(bug("[KRN:IPI] %s: IPI Msg %08x Param  %08x\n", __PRETTY_FUNCTION__, ipi,  ipi_data));
     switch (ipi)
     {
         case IPI_CAUSE:
