@@ -6,7 +6,10 @@ typedef struct tls
     struct ExecBase     *SysBase;
     void *              *KernelBase;    /* Base of kernel.resource */
     struct Task         *ThisTask;      /* Currently running task on this core */
+#if (1)
+    // TODO: to be removed since it isnt needed ..
     struct Task         *IdleTask;
+#endif
 } tls_t;
 
 #define TLS_OFFSET(name) ((char *)&(((tls_t *)0)->name)-(char *)0)
