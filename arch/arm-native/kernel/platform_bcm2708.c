@@ -50,6 +50,13 @@ extern void cpu_Register(void);
 extern void arm_flush_cache(uint32_t, uint32_t);
 #if defined(__AROSEXEC_SMP__)
 extern void handle_ipi(uint32_t, uint32_t);
+
+struct cpu_ipidata
+{
+    uint32_t    ipi_data[4];
+};
+
+struct cpu_ipidata *bcm2708_cpuipid[4] = { 0, 0, 0, 0};
 #endif
 
 static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
@@ -92,12 +99,12 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             core_fiq_stack = (uint32_t *)AllocMem(1024*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
             ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4] = (uint32_t)&core_fiq_stack[1024-sizeof(IPTR)];
 
-            __tls =  AllocMem(sizeof(tls_t),  MEMF_CLEAR); /* MEMF_PRIVATE */
+            __tls =  (tls_t *)AllocMem(sizeof(tls_t),  MEMF_CLEAR); /* MEMF_PRIVATE */
             __tls->SysBase = _sysBase;
             __tls->KernelBase = _kernelBase;
             __tls->ThisTask = NULL;
             arm_flush_cache(((uint32_t)__tls) & ~63, 512);
-            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3] = __tls;
+            ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint32_t)__tls;
 
             D(bug("[KRN:BCM2708] %s: Attempting to wake core #%d\n", __PRETTY_FUNCTION__, core));
             D(bug("[KRN:BCM2708] %s: core #%d stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, core, core_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
@@ -127,6 +134,7 @@ static void bcm2708_init_core(APTR _kernelBase, APTR _sysBase)
 {
     struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
     struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+    struct cpu_ipidata *core_ipidata;
     uint32_t tmp;
 
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
@@ -139,8 +147,15 @@ static void bcm2708_init_core(APTR _kernelBase, APTR _sysBase)
     *((uint32_t *)(BCM2836_MAILBOX2_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
     *((uint32_t *)(BCM2836_MAILBOX3_CLR0 + (16 * (tmp & 0x3)))) = 0xffffffff;
 
-    // enable FIQ mailbox interupt
-    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = 0x10;
+#if defined(__AROSEXEC_SMP__)
+    if ((core_ipidata = (struct cpu_ipidata *)AllocMem(sizeof(struct cpu_ipidata), MEMF_CLEAR)) != NULL)
+    {
+        bcm2708_cpuipid[(tmp & 0x3)] = core_ipidata;
+
+        // enable FIQ mailbox interupt
+        *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * (tmp & 0x3)))) = 0x10;
+    }
+#endif
 }
 
 static unsigned int bcm2807_get_time(void)
@@ -158,15 +173,19 @@ static void bcm2807_irq_init(void)
     *(volatile unsigned int *)GPUIRQ_DIBL1 = ~0;
 }
 
-static void bcm2807_send_ipi(uint32_t msg, uint32_t cpumask)
+static void bcm2807_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
 {
     int i = 0;
     for (i = 0; i < 4; i++)
     {
-        if (cpumask & (1 << i))
+#if defined(__AROSEXEC_SMP__)
+        if ((cpumask & (1 << i)) && bcm2708_cpuipid[i])
         {
-            *((uint32_t *)(BCM2836_MAILBOX0_SET0 + (0x10 * i))) = msg;
+            /* TODO:  check which mailbox is available and use it */
+            bcm2708_cpuipid[i]->ipi_data[0] = ipi_data;
+            *((uint32_t *)(BCM2836_MAILBOX0_SET0 + (0x10 * i))) = ipi;
         }
+#endif
     }
 }
 
@@ -275,7 +294,8 @@ static void bcm2807_fiq_process()
                 fiq_data = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3))));
                 DFIQ(bug("[KRN:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, i, fiq_data));
 #if defined(__AROSEXEC_SMP__)
-                handle_ipi(fiq_data, NULL);
+                if (bcm2708_cpuipid[(tmp & 0x3)])
+                    handle_ipi(fiq_data, bcm2708_cpuipid[(tmp & 0x3)]->ipi_data[0]);
 #endif
                 *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4*i + (16 * (tmp & 0x3)))) = 0xffffffff;
             }
