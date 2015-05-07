@@ -16,6 +16,13 @@ typedef struct tls
 
 ////
 
+#define TLS_PTR_GET() \
+    ({ \
+        tls_t *__tls; \
+        asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
+        __tls;  \
+    })
+
 #define TLS_GET(name) \
     ({ \
         tls_t *__tls; \
