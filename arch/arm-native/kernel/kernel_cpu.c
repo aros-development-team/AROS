@@ -94,7 +94,7 @@ void cpu_Register()
     asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
     
 #if defined(__AROSEXEC_SMP__)
-    asm volatile (" mrc p15, 0, %0, c13, c0, 3 " : "=r" (__tls));
+    __tls = TLS_PTR_GET();
 
     /* Now we are ready to boostrap and launch the schedular */
     bug("[KRN] Core %d Boostrapping..\n", (tmp & 0x3));
@@ -106,16 +106,13 @@ void cpu_Register()
     bug("[KRN] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
 
     bug("[KRN] Core %d TLS @ 0x%p\n", (tmp & 0x3), (__tls));
-    KernelBase = __tls->KernelBase; // TLS_GET(KernelBase)
-    SysBase = __tls->SysBase; // TLS_GET(SysBase)
+    KernelBase = (struct KernelBase *)__tls->KernelBase; // TLS_GET(KernelBase)
+    SysBase = (struct ExecBase *)__tls->SysBase; // TLS_GET(SysBase)
     bug("[KRN] Core %d KernelBase @ 0x%p\n", (tmp & 0x3), KernelBase);
     bug("[KRN] Core %d SysBase @ 0x%p\n", (tmp & 0x3), SysBase);
 
     if ((__tls->ThisTask = cpu_InitBootStrap(SysBase)) == NULL)
-    {
-        /* Free up bootstrap resources ? */
         goto cpu_registerfatal;
-    }
 
     if (__arm_arosintern.ARMI_InitCore)
         __arm_arosintern.ARMI_InitCore(KernelBase, SysBase);

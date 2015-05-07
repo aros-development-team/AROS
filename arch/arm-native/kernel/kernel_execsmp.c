@@ -87,9 +87,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 
 void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase)
 {
-    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
-    Enqueue(&PrivExecBase(SysBase)->TaskRunning, &bstask->tc_Node);
-    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+    SET_THIS_TASK(bstask);
 
 #if (0)
     Exec_ARMCPUInit(SysBase);
