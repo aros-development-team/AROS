@@ -14,9 +14,12 @@
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <asm/io.h>
+
 #include <proto/exec.h>
 #include <proto/kernel.h>
+
 #include <strings.h>
+#include <stdio.h>
 
 #include "exec_intern.h"
 
@@ -29,13 +32,14 @@ extern void IdleTask(struct ExecBase *);
 int Exec_ARMCPUInit(struct ExecBase *SysBase)
 {
     struct Task *BootTask, *CPUIdleTask;
-    int cpunum = KrnGetCPUNumber();
+    int cpu, cpunum = KrnGetCPUCount();
+    char *taskName;
 
-    D(bug("[Exec] Exec_ARMCPUInit(%02d)\n", cpunum));
+    D(bug("[Exec] %s()\n", __PRETTY_FUNCTION__));
 
     BootTask = GET_THIS_TASK;
 
-    D(bug("[Exec] Exec_ARMCPUInit[%02d]: launched from %s @ 0x%p\n", cpunum, BootTask->tc_Node.ln_Name, BootTask));
+    D(bug("[Exec] %s: launched from %s @ 0x%p\n", __PRETTY_FUNCTION__, BootTask->tc_Node.ln_Name, BootTask));
 
     if (cpunum == 0)
     {
@@ -44,19 +48,30 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
         BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
     }
 
-    CPUIdleTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
 #if defined(__AROSEXEC_SMP__)
-                                TASKTAG_AFFINITY   , KrnGetCPUMask(cpunum),
+    for (cpu = 0; cpu < cpunum; cpu ++)
+    {
+        taskName = AllocVec(15, MEMF_CLEAR);
+        sprintf( taskName, "CPU #%02d Idle", cpu);
+#else
+    taskName = "System Idle";
+#endif
+        CPUIdleTask = NewCreateTask(TASKTAG_NAME   , taskName,
+#if defined(__AROSEXEC_SMP__)
+                                TASKTAG_AFFINITY   , KrnGetCPUMask(cpu),
 #endif
                                 TASKTAG_PRI        , -127,
                                 TASKTAG_PC         , IdleTask,
                                 TASKTAG_ARG1       , SysBase,
                                 TAG_DONE);
 
-    if (CPUIdleTask)
-    {
-        D(bug("[Exec] Exec_ARMCPUInit[%02d]: %s Task created @ 0x%p\n", cpunum, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask));
+        if (CPUIdleTask)
+        {
+            D(bug("[Exec] %s: %s Task created @ 0x%p\n", __PRETTY_FUNCTION__, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask));
+        }
+#if defined(__AROSEXEC_SMP__)
     }
+#endif
 
     return TRUE;
 }

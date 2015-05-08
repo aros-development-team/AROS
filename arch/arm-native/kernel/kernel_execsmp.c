@@ -8,13 +8,13 @@
 
 #include <stdio.h>
 
+#include "etask.h"
 #include "exec_intern.h"
 
-#include "etask.h"
+#define D(x)
 
 #if defined(__AROSEXEC_SMP__)
 extern BOOL Exec_InitETask(struct Task *, struct ExecBase *);
-extern int Exec_ARMCPUInit(struct ExecBase *);
 
 struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 {
@@ -27,34 +27,34 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 
     if ((bstask = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
-        bug("[KRN] Core %d FATAL : Failed to allocate task for bootstrap", (tmp & 0x3));
+        bug("[KRN] CPU #%02d FATAL : Failed to allocate task for bootstrap", (tmp & 0x3));
         return NULL;
     }
 
     if ((ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
-        bug("[KRN] Core %d FATAL : Failed to allocate memory for bootstrap task", (tmp & 0x3));
+        bug("[KRN] CPU #%02d FATAL : Failed to allocate memory for bootstrap task", (tmp & 0x3));
         FreeMem(bstask, sizeof(struct Task));
         return NULL;
     }
 
-    bug("[KRN] Core %d Bootstrap task @ 0x%p\n", (tmp & 0x3), bstask);
+    D(bug("[KRN] CPU #%02d Bootstrap task @ 0x%p\n", (tmp & 0x3), bstask));
 
     if ((bsctx = KrnCreateContext()) == NULL)
     {
-        bug("[KRN] Core %d FATAL : Failed to create the boostrap task context\n", (tmp & 0x3));
+        bug("[KRN] CPU %d FATAL : Failed to create the boostrap task context\n", (tmp & 0x3));
         FreeMem(ml, sizeof(struct MemList));
         FreeMem(bstask, sizeof(struct Task));
         return NULL;
     }
 
-    bug("[KRN] Core %d cpu ctx @ 0x%p\n", (tmp & 0x3), bsctx);
+    D(bug("[KRN] CPU #%02d cpu ctx @ 0x%p\n", (tmp & 0x3), bsctx));
 
     NEWLIST(&bstask->tc_MemEntry);
 
     if ((bstask->tc_Node.ln_Name = AllocVec(20, MEMF_CLEAR)) != NULL)
     {
-        sprintf( bstask->tc_Node.ln_Name, "Core(%d) Bootstrap", (tmp & 0x3));
+        sprintf(bstask->tc_Node.ln_Name, "CPU #%02d Bootstrap", (tmp & 0x3));
     }
     bstask->tc_Node.ln_Type = NT_TASK;
     bstask->tc_Node.ln_Pri  = 0;
@@ -70,7 +70,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     /* Create a ETask structure and attach CPU context */
     if (!Exec_InitETask(bstask, SysBase))
     {
-        bug("[KRN] Core %d FATAL : Failed to initialize boostrap etask\n", (tmp & 0x3));
+        bug("[KRN] CPU %d FATAL : Failed to initialize boostrap etask\n", (tmp & 0x3));
         FreeVec(bstask->tc_Node.ln_Name);
         FreeMem(ml, sizeof(struct MemList));
         FreeMem(bstask, sizeof(struct Task));
@@ -88,9 +88,5 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase)
 {
     SET_THIS_TASK(bstask);
-
-#if (0)
-    Exec_ARMCPUInit(SysBase);
-#endif
 }
 #endif
