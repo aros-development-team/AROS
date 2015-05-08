@@ -12,7 +12,11 @@
 #include <aros/types/spinlock_s.h>
 
 extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
-#define EXEC_SPINLOCK_INIT(a,b) Kernel_40_KrnSpinInit(a,b)
+#define EXEC_SPINLOCK_INIT(a) Kernel_40_KrnSpinInit(a,NULL)
+extern void Kernel_43_KrnSpinLock(spinlock_t *, ULONG, void *);
+#define EXEC_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock(a,b,NULL)
+extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
+#define EXEC_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock(a,NULL)
 #endif
 
 #include "tls.h"
@@ -26,10 +30,10 @@ struct Exec_PlatformData
 #if !defined(__AROSEXEC_SMP__)
 #define SET_THIS_TASK(x)        TLS_SET(ThisTask,(x))
 #else
-#define SET_THIS_TASK(x)        TLS_SET(ThisTask,(x)) \
+#define SET_THIS_TASK(x)        TLS_SET(ThisTask,(x)); \
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE); \
     AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
-    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock)
 #endif
 
 #endif /* __EXEC_PLATFORM_H */
