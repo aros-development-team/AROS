@@ -13,6 +13,7 @@
 #include <resources/task.h>
 
 #include <exec_intern.h>
+#include "etask.h"
 
 #include "taskres_intern.h"
 
@@ -45,7 +46,6 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
         the SpinLocks should only be used by the schedular itself, otherwise we
         may end up with a deadlock.
     */
-    Disable();
 
     TaskResBase->trb_NewAddTask = SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewAddTask, Task, 176));
     TaskResBase->trb_RemTask = SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, AROS_SLIB_ENTRY(RemTask, Task, 48));
@@ -54,21 +54,29 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
        Add existing tasks to our internal list ..
     */
 #if defined(__AROSEXEC_SMP__)
+    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+#endif
+    Disable();
+#if defined(__AROSEXEC_SMP__)
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, curTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
-            D(bug("[TaskRes] 0x%p [R  ] %s\n", curTask, curTask->tc_Node.ln_Name));
+            D(bug("[TaskRes] 0x%p [R  ] %02d %s\n", curTask, GetIntETask(curTask)->iet_CpuNumber, curTask->tc_Node.ln_Name));
             taskEntry->tle_Task = curTask;
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
     }
+    KrnSpinUnLock(listLock);
+    Enable();
+    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    Disable();
 #else
     if (SysBase->ThisTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
-            D(bug("[TaskRes] 0x%p [R  ] %s\n", SysBase->ThisTask, SysBase->ThisTask->tc_Node.ln_Name));
+            D(bug("[TaskRes] 0x%p [R--] 00 %s\n", SysBase->ThisTask, SysBase->ThisTask->tc_Node.ln_Name));
             taskEntry->tle_Task = SysBase->ThisTask;
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
@@ -78,21 +86,30 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
-            D(bug("[TaskRes] 0x%p [ R ] %s\n", curTask, curTask->tc_Node.ln_Name));
+            D(bug("[TaskRes] 0x%p [-R-] -- %s\n", curTask, curTask->tc_Node.ln_Name));
             taskEntry->tle_Task = curTask;
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
     }
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(listLock);
+    Enable();
+    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+    Disable();
+#endif
     ForeachNode(&SysBase->TaskWait, curTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
         {
-            D(bug("[TaskRes] 0x%p [  W] %s\n", curTask, curTask->tc_Node.ln_Name));
+            D(bug("[TaskRes] 0x%p [--W] -- %s\n", curTask, curTask->tc_Node.ln_Name));
             taskEntry->tle_Task = curTask;
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
     }
 
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(listLock);
+#endif
     Enable();
 
     return TRUE;
