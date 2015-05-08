@@ -14,6 +14,7 @@
 #include <proto/kernel.h>
 #include <aros/symbolsets.h>
 
+#include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "exec_debug.h"
@@ -61,6 +62,9 @@
     struct MemList *mb;
     struct ETask *et;
     BOOL suicide;
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t *task_listlock = NULL;
+#endif
 
     /* A value of NULL means current task */
     if (task==NULL)
@@ -70,7 +74,9 @@
 
     /* Don't let any other task interfere with us at the moment
     */
+#if !defined(__AROSEXEC_SMP__)
     Forbid();
+#endif
 
     suicide = (task == GET_THIS_TASK);
     if (suicide)
@@ -80,7 +86,28 @@
        the MemEntry list might contain the task struct itself! */
 
     if (!suicide)
+    {
+#if defined(__AROSEXEC_SMP__)
+        switch (task->tc_State)
+        {
+            case TS_RUN:
+                task_listlock =&PrivExecBase(SysBase)->TaskRunningSpinLock;
+                break;
+            case TS_WAIT:
+                task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
+                break;
+            default:
+                task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
+                break;
+        }
+        EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
+        Disable();
+#endif
         Remove(&task->tc_Node);
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(task_listlock);
+#endif
+    }
 
     /*
      * The task is being removed.
@@ -111,8 +138,10 @@
         InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort,
             (struct Message *)task, SysBase);
 
+#if !defined(__AROSEXEC_SMP__)
         /* Changing the task lists always needs a Disable(). */
         Disable();
+#endif
 
         /*
             Since I don't know how many levels of Forbid()
@@ -140,7 +169,12 @@
     }
 
     /* All done. */
+#if defined(__AROSEXEC_SMP__)
+    if (task_listlock)
+        Enable();
+#else
     Permit();
+#endif
 
     DREMTASK("Success");
 
