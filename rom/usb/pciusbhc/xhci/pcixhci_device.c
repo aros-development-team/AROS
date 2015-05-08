@@ -9,7 +9,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-//#define DEBUG 1
+#define DEBUG 1
 
 #include <aros/io.h>
 #include <aros/debug.h>
@@ -57,7 +57,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
     OOP_ReleaseAttrBases(attrbases);
     OOP_DisposeObject(LIBBASE->pci);
 
-    mybug(0,("[PCIXHCI] Init: Failing...\n"));
+    mybug(-1,("[PCIXHCI] Init: Failing...\n"));
     return FALSE;
 }
 
