@@ -169,13 +169,17 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     unit->hc.maxslots = XHCV_MaxSlots(capability_readl(XHCI_HCSPARAMS1));
     unit->hc.maxintrs = XHCV_MaxIntrs(capability_readl(XHCI_HCSPARAMS1));
     unit->hc.maxscratchpads = XHCV_SPB_Max(capability_readl(XHCI_HCSPARAMS2));
-    unit->hc.maxeventringsegments = XHCV_ERST_Max(capability_readl(XHCI_HCSPARAMS2));
+    unit->hc.maxeventringsegments = (1<<XHCV_ERST_Max(capability_readl(XHCI_HCSPARAMS2)));
 
     mybug_unit(-1,("Page size = %d\n", unit->hc.pagesize));
     mybug_unit(-1,("Number of Device Slots = %d\n", unit->hc.maxslots));
     mybug_unit(-1,("Number of Interrupters = %d\n", unit->hc.maxintrs));
     mybug_unit(-1,("Max Scratchpad Buffers = %d\n", unit->hc.maxscratchpads));
-    mybug_unit(-1,("Event Ring Segment Table Max = %d\n", unit->hc.maxeventringsegments));
+    mybug_unit(-1,("Max event ring segments (ERST Max) = %d\n", unit->hc.maxeventringsegments));
+    if(!(unit->hc.maxeventringsegments)) {
+        mybug_unit(-1,(" -> FAILING!\n"));
+        return FALSE;
+    }
 
     mybug_unit(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
     mybug_unit(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
@@ -210,12 +214,16 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         Make sure secondary interrupters are disabled.
     */
 
-    /* Allocate event ring segment table(s) */
-    unit->hc.erstbl = AllocVecOnBoundary((unit->hc.maxeventringsegments* sizeof(struct PCIXHCIEventRingTable)), 0, "Event ring segment table (ERSTBL)");
+    /*
+        Allocate space for Event Ring Segment Table Entries
+        - Maximum number of entries is 1<<ERST_Max, boundary none and alignment of 64 bytes
+        - Max size 512K (=(2^15)*(sizeof(xhci_erste)=16 bytes))
+    */
+    unit->hc.erstbl = AllocVecOnBoundary((unit->hc.maxeventringsegments*sizeof(struct xhci_erste)), 0, "Event ring segment table (ERSTBL)");
     if(!unit->hc.erstbl) {
         return FALSE;
     }
-    mybug_unit(-1,("Event ring segment table (ERSTBL) %p\n", unit->hc.erstbl));
+    mybug_unit(-1,("Event ring segment table at (ERSTBL) %p\n", unit->hc.erstbl));
 
 //    unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 64*1024, "ERSTBLA"));
 //    if(!unit->hc.eventringsegmenttbl->address) {

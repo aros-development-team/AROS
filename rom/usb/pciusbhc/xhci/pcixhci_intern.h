@@ -95,7 +95,7 @@ struct PCIXHCIHostController {
     UQUAD                        *dcbaa;     /* Device Context Base Address Array */
     UQUAD                        *spbaba;    /* Scratch Pad Buffer Address Base Array */
 
-    struct PCIXHCIEventRingTable *erstbl;
+    IPTR                         *erstbl;
 
     char                          intname[256];
     struct Interrupt              inthandler;
