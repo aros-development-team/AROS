@@ -306,10 +306,10 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     NEWLIST(&PrivExecBase(SysBase)->TaskStorageSlots);
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL);
+    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskRunningSpinLock);
     NEWLIST(&PrivExecBase(SysBase)->TaskRunning);
-    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL);
-    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL);
+    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #endif
 
     SetSysBaseChkSum();
