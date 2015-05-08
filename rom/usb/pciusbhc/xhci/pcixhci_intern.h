@@ -95,7 +95,7 @@ struct PCIXHCIHostController {
     UQUAD                        *dcbaa;     /* Device Context Base Address Array */
     UQUAD                        *spbaba;    /* Scratch Pad Buffer Address Base Array */
 
-    struct PCIXHCIEventRingTable *eventringsegmenttbl;
+    struct PCIXHCIEventRingTable *erstbl;
 
     char                          intname[256];
     struct Interrupt              inthandler;
@@ -144,7 +144,7 @@ IPTR PCIXHCI_SearchExtendedCap(struct PCIXHCIUnit *unit, ULONG id, IPTR extcapof
 void PCIXHCI_Delay(struct PCIXHCIUnit *unit, ULONG msec);
 
 void FreeVecOnBoundary(APTR onboundary);
-APTR AllocVecOnBoundary(ULONG size, ULONG boundary);
+APTR AllocVecOnBoundary(ULONG size, ULONG boundary, STRPTR description);
 BOOL PCIXHCI_CreateTimer(struct PCIXHCIUnit *unit);
 void PCIXHCI_DeleteTimer(struct PCIXHCIUnit *unit);
 

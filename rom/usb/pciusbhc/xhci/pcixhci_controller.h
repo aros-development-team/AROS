@@ -141,11 +141,11 @@
     XHCI runtime register defines
 */
 #define XHCI_MFINDEX    0    
-#define XHCI_IMAN(n)    0x20+(32*n)+0x0
-#define XHCI_IMOD(n)    0x20+(32*n)+0x4
-#define XHCI_ERSTSZ(n)  0x20+(32*n)+0x8
-#define XHCI_ERSTBA(n)  0x20+(32*n)+0x10
-#define XHCI_ERDP(n)    0x20+(32*n)+0x18 
+#define XHCI_IMAN(n)    0x20+(32*n)
+#define XHCI_IMOD(n)    0x24+(32*n)
+#define XHCI_ERSTSZ(n)  0x28+(32*n)
+#define XHCI_ERSTBA(n)  0x30+(32*n)
+#define XHCI_ERDP(n)    0x38+(32*n) 
 
 #define XHCB_IMANIE     1
 #define XHCF_IMANIE     (1UL<<XHCB_IMANIE)
@@ -371,5 +371,15 @@ struct PCIXHCITransferRequestBlock {
 	ULONG	b;
 	ULONG	c;
 } __packed;
+
+enum xhci_ring_type {
+    TYPE_CTRL = 0,
+    TYPE_ISOC,
+    TYPE_BULK,
+    TYPE_INTR,
+    TYPE_STREAM,
+    TYPE_COMMAND,
+    TYPE_EVENT,
+};
 
 #endif /* PCIXHCICONTROLLER_H */

@@ -97,7 +97,7 @@ void FreeVecOnBoundary(APTR onboundary) {
     }
 }
 
-APTR AllocVecOnBoundary(ULONG size, ULONG boundary) {
+APTR AllocVecOnBoundary(ULONG size, ULONG boundary, STRPTR description) {
 
     IPTR *allocation;
     IPTR *onboundary;
@@ -107,11 +107,13 @@ APTR AllocVecOnBoundary(ULONG size, ULONG boundary) {
 
         if(boundary == 0) {
             /* If no boundary defined, allocate with 64 byte alignement */
-            allocation = AllocVec(AROS_ROUNDUP2((size + sizeof(IPTR)), 64), (MEMF_ANY|MEMF_CLEAR));
+            allocation = AllocVec(AROS_ROUNDUP2((size + AROS_ROUNDUP2(strlen(description), sizeof(IPTR)) + sizeof(IPTR)), 64), (MEMF_ANY|MEMF_CLEAR));
             if(allocation) {
                 onboundary = ++allocation;
                 onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, 64);
                 *--onboundary = (IPTR)--allocation;
+
+                mybug(-1, ("Allocated %d bytes for %s\n", size, description));
                 return ++onboundary;
             }
         } else {
@@ -119,11 +121,27 @@ APTR AllocVecOnBoundary(ULONG size, ULONG boundary) {
                 Worst case scenario is that we allocate 64kb more, I can live with that... I think...
                 - transfer ring, command ring and event ring all have 64kb boundary requirement
             */
-            allocation = AllocVec(AROS_ROUNDUP2((size + sizeof(IPTR)), boundary), (MEMF_ANY|MEMF_CLEAR));
+
+            /*
+                We might get the allocation spot on to boundary in the first place, but we need to store the address of our allocation
+                for possible FreeVecOnBoundary() call. We need twice the allocation size plus size for one IPTR. Or do we?
+
+                TODO: Add a string description for the allocation, "needed" for DEBUG purposes.
+
+                onboundary becomes the original allocation advanced by the size of one IPTR. We do not yeat know where our allocation is.
+                The allocation might have been spot on to boundary, but it is not anymore.
+
+                We then roundup the onboundary address to the boundary. We now have atleast one IPTR below onboundary.
+                We store the original allocation address to that address and return onboundary as the allocation.
+
+            */
+            allocation = AllocVec(AROS_ROUNDUP2((size + AROS_ROUNDUP2(strlen(description), sizeof(IPTR)) + sizeof(IPTR)), boundary), (MEMF_ANY|MEMF_CLEAR));
             if(allocation) {
                 onboundary = ++allocation;
                 onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, boundary);
                 *--onboundary = (IPTR)--allocation;
+
+                mybug(-1, ("Allocated %d bytes for %s\n", size, description));
                 return ++onboundary;
             }
         }
@@ -131,5 +149,6 @@ APTR AllocVecOnBoundary(ULONG size, ULONG boundary) {
 
     }
 
+    mybug(-1, ("Allocation for %s failed!\n", description));
     return NULL;
 }

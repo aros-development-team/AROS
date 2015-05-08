@@ -171,14 +171,14 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     unit->hc.maxscratchpads = XHCV_SPB_Max(capability_readl(XHCI_HCSPARAMS2));
     unit->hc.maxeventringsegments = XHCV_ERST_Max(capability_readl(XHCI_HCSPARAMS2));
 
-    mybug(-1,("Page size = %d\n", unit->hc.pagesize));
-    mybug(-1,("Number of Device Slots = %d\n", unit->hc.maxslots));
-    mybug(-1,("Number of Interrupters = %d\n", unit->hc.maxintrs));
-    mybug(-1,("Max Scratchpad Buffers = %d\n", unit->hc.maxscratchpads));
-    mybug(-1,("Event Ring Segment Table Max = %d\n", unit->hc.maxeventringsegments));
+    mybug_unit(-1,("Page size = %d\n", unit->hc.pagesize));
+    mybug_unit(-1,("Number of Device Slots = %d\n", unit->hc.maxslots));
+    mybug_unit(-1,("Number of Interrupters = %d\n", unit->hc.maxintrs));
+    mybug_unit(-1,("Max Scratchpad Buffers = %d\n", unit->hc.maxscratchpads));
+    mybug_unit(-1,("Event Ring Segment Table Max = %d\n", unit->hc.maxeventringsegments));
 
-    mybug(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
-    mybug(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
+    mybug_unit(-1,("XHCI_CONFIG   = %08x\n", operational_readl(XHCI_CONFIG)));
+    mybug_unit(-1,("XHCI_DNCTRL   = %08x\n", operational_readl(XHCI_DNCTRL)));
 
     /* Enable all the slots */
     operational_writel(XHCI_CONFIG, (operational_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | unit->hc.maxslots);
@@ -186,71 +186,63 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     /* Already zeroed on my hardware */
     operational_writel(XHCI_DNCTRL, 0);
 
-    /* TODO: do, now we waste a lot of memory */
-    //unit->hc.boundarypool = AllocBoundaryPool(unit->hc.pagesize*1000);
-    //AllocVecBoundaryPooled(unit->hc.boundarypool, 666, unit->hc.pagesize);
-
     /* Testing */
     //unit->hc.maxscratchpads = 4;
 
     ULONG i;
 
-    mybug(-1,("Allocating space for DCBAA(%d) and SPBABA(%d)\n",unit->hc.maxslots, unit->hc.maxscratchpads));
-    /* Allocate DCBAA and SPBABA (64-bit pointer arrays) */
-    unit->hc.dcbaa = AllocVecOnBoundary((unit->hc.maxslots + unit->hc.maxscratchpads + 1) * sizeof(UQUAD), unit->hc.pagesize);
+    /* Allocate device context base address array (DCBAA), 64-bit pointer array */
+    mybug_unit(-1,("Allocating space for DCBAA(%d UQUAD's)\n",unit->hc.maxslots));
+
+    unit->hc.dcbaa = AllocVecOnBoundary((unit->hc.maxslots + 1) * sizeof(UQUAD), unit->hc.pagesize, "Device context base address array (DCBAA)");
     if(!unit->hc.dcbaa) {
-        mybug_unit(-1, ("Failed allocating space for DCBAA and SPBABA!\n"));
         return FALSE;
     }
-    if(unit->hc.maxscratchpads) {
-        unit->hc.spbaba = (unit->hc.dcbaa + unit->hc.maxslots + 1);
-        unit->hc.dcbaa[0] = (UQUAD)((IPTR)unit->hc.spbaba);
-        mybug(-1,("DCBAA  %p\nSPBABA %p\n", unit->hc.dcbaa, unit->hc.spbaba));
-        for (i=0; i<(unit->hc.maxscratchpads); i++) {
-            /* Testing */
-            //unit->hc.spbaba[i] = (UQUAD)((IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize))|0x1234000000000000;
-            unit->hc.spbaba[i] = (UQUAD)(IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize);
-            if(!unit->hc.spbaba[i]) {
-                return FALSE;
-            }
-        }
-    } else {
-        unit->hc.dcbaa[0] = (UQUAD)((IPTR)(unit->hc.spbaba = NULL));
-        mybug(-1,("DCBAA  %p SPBABA %p\n", unit->hc.dcbaa, unit->hc.spbaba));
-    }
 
+    unit->hc.dcbaa[0] = (UQUAD)((IPTR)(unit->hc.spbaba = NULL));
     operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)&unit->hc.dcbaa[0]));
-
-    for (i=0; i<(unit->hc.maxslots + unit->hc.maxscratchpads + 1); i++) {
-        if(&unit->hc.dcbaa[i] == unit->hc.dcbaa) {
-            mybug(-1,("DCBAA  "));
-        } else if(&unit->hc.dcbaa[i] == unit->hc.spbaba) {
-            mybug(-1,("SPBABA "))
-        }else {
-            mybug(-1,("       "));
-        }
-        /* I fail to understand how to print quads directly... */
-        mybug(-1,("%2d %p %08x%08x\n",i, &unit->hc.dcbaa[i], (ULONG)(unit->hc.dcbaa[i]>>32), (ULONG)unit->hc.dcbaa[i]));
-    }
-
+    mybug_unit(-1,("Device context base address array (DCBAA) at %p\n", unit->hc.dcbaa));
 
     /*
         We can only use interrupter number 0 (PCI pin int)
         Note: The Primary Event Ring (0) shall receive all Port Status Change Events.
+
+        Make sure secondary interrupters are disabled.
     */
 
-    unit->hc.eventringsegmenttbl = AllocVecOnBoundary((unit->hc.maxeventringsegments* sizeof(struct PCIXHCIEventRingTable)), 0);
-    if(!unit->hc.eventringsegmenttbl) {
-        mybug_unit(-1, ("Failed allocating event ring segment table!\n"));
+    /* Allocate event ring segment table(s) */
+    unit->hc.erstbl = AllocVecOnBoundary((unit->hc.maxeventringsegments* sizeof(struct PCIXHCIEventRingTable)), 0, "Event ring segment table (ERSTBL)");
+    if(!unit->hc.erstbl) {
         return FALSE;
     }
+    mybug_unit(-1,("Event ring segment table (ERSTBL) %p\n", unit->hc.erstbl));
 
-    unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 64*1024));
-    if(!unit->hc.eventringsegmenttbl->address) {
-        mybug_unit(-1, ("Failed allocating event ring segment!\n"));
-        return FALSE;
+//    unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 64*1024, "ERSTBLA"));
+//    if(!unit->hc.eventringsegmenttbl->address) {
+//        mybug_unit(-1, ("Failed allocating event ring segment!\n"));
+//        return FALSE;
+//    }
+//    unit->hc.eventringsegmenttbl->size = 100;
+
+    mybug_unit(-1, ("Enabling interrupter 0\n"));
+    runtime_writel(XHCI_IMAN(0), 3);
+    //runtime_writel(XHCI_IMOD(0), 500);
+    runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
+    runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.erstbl));
+    //runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl->address));
+    mybug_unit(-1, ("IMAN %08x\n",runtime_readl(XHCI_IMAN(0)))); //Flush
+
+    /* I fail to understand how to print quads directly... */
+//    mybug(-1,("%2d %p %08x%08x\n",i, &unit->hc.dcbaa[i], (ULONG)(unit->hc.dcbaa[i]>>32), (ULONG)unit->hc.dcbaa[i]));
+
+    for (i=1; i<unit->hc.maxintrs; i++) {
+        mybug_unit(-1, ("Disabling interrupter %d\n", i));
+        runtime_writel(XHCI_IMAN(i), 1);
+        runtime_writel(XHCI_ERSTSZ(0), 0);
+        runtime_writeq(XHCI_ERSTBA(0), 0);
+        runtime_writeq(XHCI_ERDP(0), 0);
+        mybug_unit(-1, ("IMAN %08x\n",runtime_readl(XHCI_IMAN(i)))); //Flush
     }
-    unit->hc.eventringsegmenttbl->size = 100;
 
     /* Add interrupt handler */
     snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
@@ -264,15 +256,9 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         return FALSE;
     }
 
-    mybug(-1, ("Enable interrupter 0\n"));
-    runtime_writel(XHCI_IMOD(0), 500);
-    runtime_writel(XHCI_IMAN(0), 3);
-    bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(0))); //Flush
-    runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
-    runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl->address));
-    runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl));
 
-    mybug(-1, ("Enabling interrupts and setting run bit\n"));
+
+    mybug_unit(-1, ("Enabling interrupts and setting run bit\n"));
     /* Enable host controller to issue interrupts */
     mybug_unit(-1, ("usbcmd = %08x\n", operational_readl(XHCI_USBCMD)));
     mybug_unit(-1, ("usbsts = %08x\n", operational_readl(XHCI_USBSTS)));
@@ -365,21 +351,21 @@ BOOL PCIXHCI_GetFromBIOS(struct PCIXHCIUnit *unit) {
     cap_legacy = PCIXHCI_SearchExtendedCap(unit, XHCI_EXT_CAPS_LEGACY, (IPTR) NULL);
     if(cap_legacy) {
         usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
-        mybug_unit(-1, ("usblegsup1 = %08x\n", usblegsup));
+        mybug_unit(0, ("usblegsup1 = %08x\n", usblegsup));
 
         /* Check if not OS owned or BIOS owned*/
         if( ((!(usblegsup & XHCF_OSOWNED)) || (usblegsup & XHCF_BIOSOWNED)) ){
             WRITEMEM32(cap_legacy, (usblegsup|XHCF_OSOWNED));
 
             usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
-            mybug_unit(-1, ("usblegsup2 = %08x\n", usblegsup));
+            mybug_unit(0, ("usblegsup2 = %08x\n", usblegsup));
 
             /* Spec says "no more than a second", we give it a little more */
             timeout = 250;
 
             while(1) {
                 usblegsup = READREG32(cap_legacy, XHCI_USBLEGSUP);
-                mybug_unit(-1, ("usblegsup3 = %08x\n", usblegsup));
+                mybug_unit(0, ("usblegsup3 = %08x\n", usblegsup));
                 if( (usblegsup & XHCF_OSOWNED) && (!(usblegsup & XHCF_BIOSOWNED)) ){
                     break;
                 }
@@ -398,13 +384,15 @@ BOOL PCIXHCI_GetFromBIOS(struct PCIXHCIUnit *unit) {
         }
 
         usblegctlsts = READREG32(cap_legacy, XHCI_USBLEGCTLSTS);
-        mybug_unit(-1, ("usblegctlsts1 = %08x\n", usblegctlsts));
+        mybug_unit(0, ("usblegctlsts1 = %08x\n", usblegctlsts));
         /* Disable all legacy SMI's */
         usblegctlsts &= ~(XHCF_SMI_USBE|XHCF_SMI_HSEE|XHCF_SMI_OSOE|XHCF_SMI_PCICE|XHCF_SMI_BARE);
         WRITEREG32(cap_legacy, XHCI_USBLEGCTLSTS, usblegctlsts);
         usblegctlsts = READREG32(cap_legacy, XHCI_USBLEGCTLSTS);
-        mybug_unit(-1, ("usblegctlsts2 = %08x\n", usblegctlsts));
+        mybug_unit(0, ("usblegctlsts2 = %08x\n", usblegctlsts));
     }
+
+    mybug_unit(-1, ("Controller owned!\n"));
 
     return TRUE;
 }
@@ -463,6 +451,8 @@ BOOL PCIXHCI_FindPorts(struct PCIXHCIUnit *unit) {
         port = AllocVec(sizeof(struct PCIXHCIPort), MEMF_ANY|MEMF_CLEAR);
         if(port == NULL) {
             mybug_unit(-1, ("Failed to create new port structure\n"));
+
+            /* Give up easily when memory is not available and delete previous ports (if any) from the roothub */
             ForeachNode(&unit->roothub.port_list, port) {
                 mybug_unit(-1, ("Deleting port %d named %s at %p\n", port->number, port->name, port));
                 REMOVE(port);
