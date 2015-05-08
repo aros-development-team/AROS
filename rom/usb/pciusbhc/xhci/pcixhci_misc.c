@@ -113,7 +113,7 @@ APTR AllocVecOnBoundary(ULONG size, ULONG boundary, STRPTR description) {
                 onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, 64);
                 *--onboundary = (IPTR)--allocation;
 
-                mybug(-1, ("Allocated %d bytes for %s\n", size, description));
+                mybug(-1, (" - Allocated %d bytes for %s\n", size, description));
                 return ++onboundary;
             }
         } else {
@@ -141,7 +141,7 @@ APTR AllocVecOnBoundary(ULONG size, ULONG boundary, STRPTR description) {
                 onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, boundary);
                 *--onboundary = (IPTR)--allocation;
 
-                mybug(-1, ("Allocated %d bytes for %s\n", size, description));
+                mybug(-1, (" - Allocated %d bytes for %s\n", size, description));
                 return ++onboundary;
             }
         }
