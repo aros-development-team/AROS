@@ -358,12 +358,14 @@
 #define	XHCF_PS_WPR     (1UL<<XHCB_PS_WPR)
 #define XHCV_PS_SPEED(p)    (((p)&XHCM_PS_SPEED)>>XHCB_PS_SPEED)
 
-struct PCIXHCIEventRingTable {
-    UQUAD address;
-    UWORD size;
-    UWORD reserved1;
-    ULONG reserved2;
+/* Event Ring Segment Table Entry */
+struct xhci_erste {
+    ULONG address_lo;
+    ULONG address_hi;
+    ULONG size;
+    ULONG rsvd;
 } __packed;
+
 
 /* TODO: define these */
 struct PCIXHCITransferRequestBlock {
