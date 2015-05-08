@@ -182,7 +182,7 @@ static void bcm2807_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
         {
             /* TODO:  check which mailbox is available and use it */
             bcm2708_cpuipid[cpu]->ipi_data[mbno] = ipi_data;
-            *((uint32_t *)(BCM2836_MAILBOX0_SET0 + (0x10 * cpu))) = ipi;
+            *((uint32_t *)(BCM2836_MAILBOX0_SET0 + 4 * mbno + (0x10 * cpu))) = ipi;
         }
 #endif
     }
