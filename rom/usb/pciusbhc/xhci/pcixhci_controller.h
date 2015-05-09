@@ -360,10 +360,16 @@
 
 /* Event Ring Segment Table Entry */
 struct xhci_erste {
-    ULONG address_lo;
-    ULONG address_hi;
-    ULONG size;
-    ULONG rsvd;
+    UQUAD address;
+    UWORD size;
+    UWORD rsvd1;
+	ULONG rsvd2;
+} __packed;
+
+struct xhci_trb_template {
+    UQUAD parameter;
+    ULONG status;
+    ULONG control;
 } __packed;
 
 
