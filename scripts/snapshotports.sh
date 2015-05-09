@@ -50,6 +50,8 @@ build()
     make -s -j3
     make -s -j3 ports
 
+    # TODO: copy package variables
+
     echo "Copying the binaries"
     mkdir "$bindir" -p
 
@@ -91,6 +93,7 @@ build()
     copy "$target" "Extras/MultiMedia/Gfx"          "Potrace"
     copy "$target" "Extras/MultiMedia/Gfx"          "ZuneView"
     copy "$target" "Extras/Office"                  "MUIbase"
+    copy "$target" "Extras/Utilities/Archive"       "ZuneARC"
     copy "$target" "Extras/Utilities/Print"         "A2ps"
     copy "$target" "Extras/Utilities/Scientific"    "Mathomatic"
     copy "$target" "Extras/Utilities/Scientific"    "MathX"
@@ -98,6 +101,7 @@ build()
     copy "$target" "Extras/Utilities/Text"          "Antiword"
     copy "$target" "Extras/Utilities/Text"          "Gocr"
     copy "$target" "Extras/Utilities/Text"          "PolyglotMan"
+    copy "$target" "Extras/Utilities/Text"          "Vim"
     copy "$target" "Extras/MultiMedia/Video"        "ScreenRecorder"
 
     echo "Creating the archive $arcdir/$arcname.tar.bz2"
@@ -121,23 +125,20 @@ if [ $# -eq 1 ] && [ "$1" == "-i" ] ; then
 fi
 
 if [ $# -eq 1 ] && [ "$1" == "-b" ] ; then
-    echo "Updating the sources"
+    echo "Update the sources"
     svn up "$srcdir" "$srcdir/contrib" "$srcdir/ports"
 
-    # for some reason I can't build the pc variant ATM -- mazze
-    #build pc-i386
-    #build pc-i386
-    build linux-i386
-    build linux-x86_64
+    build pc-i386
+    #build pc-x86_64
     build amiga-m68k
-    build raspi-armhf
+    #build raspi-armhf
     exit 0
 fi
 
 if [ $# -eq 1 ] && [ "$1" == "-u" ] ; then
     echo "Uploading archives"
-    scp -r "$root/archive/snapshots2" "$user@frs.sourceforge.net:userweb/htdocs/uploads"
-    exit 1
+    scp -r "$root/archive/snapshots2" "$user,aros@web.sourceforge.net:/home/project-web/aros/uploads"
+    exit 0
 fi
 
 echo "Usage:"
