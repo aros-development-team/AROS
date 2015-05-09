@@ -188,6 +188,10 @@ int main(void)
     struct task *buffer,*tasks,*tasks2;
 
     TaskResBase = OpenResource("task.resource");
+    if (!TaskResBase) {
+        FPuts(Output(),"Can't open task.resource\n");
+        return 20;
+    }
 
     for(size = 2048; ; size += 2048)
     {
