@@ -196,16 +196,45 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     ULONG i;
 
     /* Allocate device context base address array (DCBAA), 64-bit pointer array */
-    mybug_unit(-1,("Allocating space for DCBAA(%d UQUAD's)\n",unit->hc.maxslots));
+    mybug_unit(-1,("Allocating space for DCBAA(%d UQUAD's + 1)\n",unit->hc.maxslots));
 
-    unit->hc.dcbaa = AllocVecOnBoundary((unit->hc.maxslots + 1) * sizeof(UQUAD), unit->hc.pagesize, "Device context base address array (DCBAA)");
+    unit->hc.dcbaa = AllocVecOnBoundary((unit->hc.maxslots + unit->hc.maxscratchpads + 1) * sizeof(UQUAD), unit->hc.pagesize, "Device context base address array (DCBAA) + (SPBABA)");
     if(!unit->hc.dcbaa) {
+        mybug_unit(-1, ("Failed allocating space for DCBAA and SPBABA!\n"));
         return FALSE;
     }
 
-    unit->hc.dcbaa[0] = (UQUAD)((IPTR)(unit->hc.spbaba = NULL));
+    char scratch_pad_page_desc[32];
+    if(unit->hc.maxscratchpads) {
+        unit->hc.spbaba = (unit->hc.dcbaa + unit->hc.maxslots + 1);
+        unit->hc.dcbaa[0] = (UQUAD)((IPTR)unit->hc.spbaba);
+        mybug(-1,("DCBAA  %p\nSPBABA %p\n", unit->hc.dcbaa, unit->hc.spbaba));
+        for (i=0; i<(unit->hc.maxscratchpads); i++) {
+            snprintf(scratch_pad_page_desc, 31, "Scratch pad page %d", i);
+            unit->hc.spbaba[i] = (UQUAD)(IPTR)AllocVecOnBoundary(unit->hc.pagesize, unit->hc.pagesize, scratch_pad_page_desc);
+            if(!unit->hc.spbaba[i]) {
+                return FALSE;
+            }
+        }
+    } else {
+        unit->hc.dcbaa[0] = (UQUAD)((IPTR)(unit->hc.spbaba = NULL));
+        mybug(-1,("DCBAA  %p SPBABA %p\n", unit->hc.dcbaa, unit->hc.spbaba));
+    }
+
     operational_writeq(XHCI_DCBAAP, (UQUAD)((IPTR)&unit->hc.dcbaa[0]));
-    mybug_unit(-1,("Device context base address array (DCBAA) at %p\n", unit->hc.dcbaa));
+
+    for (i=0; i<(unit->hc.maxslots + unit->hc.maxscratchpads + 1); i++) {
+        if(&unit->hc.dcbaa[i] == unit->hc.dcbaa) {
+            mybug(-1,("DCBAA  "));
+        } else if(&unit->hc.dcbaa[i] == unit->hc.spbaba) {
+            mybug(-1,("SPBABA "))
+        }else {
+            mybug(-1,("       "));
+        }
+        /* I fail to understand how to print quads directly... */
+        mybug(-1,("%2d %p %08x%08x\n",i, &unit->hc.dcbaa[i], (ULONG)(unit->hc.dcbaa[i]>>32), (ULONG)unit->hc.dcbaa[i]));
+    }
+
 
     /*
         We can only use interrupter number 0 (PCI pin int)
@@ -219,38 +248,85 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         - Maximum number of entries is 1<<ERST_Max, boundary none and alignment of 64 bytes
         - Max size 512K (=(2^15)*(sizeof(xhci_erste)=16 bytes))
     */
+
+    //unit->hc.maxeventringsegments = 1;
+
     unit->hc.erstbl = AllocVecOnBoundary((unit->hc.maxeventringsegments*sizeof(struct xhci_erste)), 0, "Event ring segment table (ERSTBL)");
     if(!unit->hc.erstbl) {
         return FALSE;
     }
     mybug_unit(-1,("Event ring segment table at (ERSTBL) %p\n", unit->hc.erstbl));
 
-//    unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 64*1024, "ERSTBLA"));
-//    if(!unit->hc.eventringsegmenttbl->address) {
-//        mybug_unit(-1, ("Failed allocating event ring segment!\n"));
-//        return FALSE;
-//    }
-//    unit->hc.eventringsegmenttbl->size = 100;
+/*
+    unit->hc.eventringsegmenttbl = AllocVecOnBoundary((unit->hc.maxeventringsegments* sizeof(struct PCIXHCIEventRingTable)), 0);
+    if(!unit->hc.eventringsegmenttbl) {
+        mybug_unit(-1, ("Failed allocating event ring segment table!\n"));
+        return FALSE;
+    }
+*/
+
+    /*
+        One Event Ring Segment constitutes from at least 16 TRB's (max 4096)
+         - Hardcode this to be 64 for now
+         - Event TRB has 16-byte boundary, same as Transfer TRB's (CHECKME:)
+    */
+
+#define MAX_ER_TRB 4096
+
+    char event_ring_trb_desc[32];
+
+    for(i=0;i<unit->hc.maxeventringsegments;i++) {
+        snprintf(event_ring_trb_desc, 31, "Event Ring Segment %d TRB space", i);
+        unit->hc.erstbl[i].address = (UQUAD) ((IPTR) AllocVecOnBoundary((MAX_ER_TRB*sizeof(struct xhci_trb_template)), 0, event_ring_trb_desc));
+        if(!(unit->hc.erstbl[i].address)) {
+            return FALSE;
+        }
+        unit->hc.erstbl[i].size = MAX_ER_TRB;
+        /* I fail to understand how to print quads directly... */
+        mybug(-1,("hi: %08x lo: %08x\n",(ULONG)(unit->hc.erstbl[i].address>>32), (ULONG)unit->hc.erstbl[i].address));
+    }
+
+/*
+    unit->hc.eventringsegmenttbl->address = (UQUAD)((IPTR)AllocVecOnBoundary((sizeof(struct PCIXHCITransferRequestBlock)*100), 64*1024));
+    if(!unit->hc.eventringsegmenttbl->address) {
+        mybug_unit(-1, ("Failed allocating event ring segment!\n"));
+        return FALSE;
+    }
+    unit->hc.eventringsegmenttbl->size = 100;
+*/
+
+
+
+
+
 
     mybug_unit(-1, ("Enabling interrupter 0\n"));
+    runtime_writel(XHCI_IMOD(0), 500);
     runtime_writel(XHCI_IMAN(0), 3);
-    //runtime_writel(XHCI_IMOD(0), 500);
-    runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
-    runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.erstbl));
-    //runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl->address));
     mybug_unit(-1, ("IMAN %08x\n",runtime_readl(XHCI_IMAN(0)))); //Flush
+    runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
+    runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.erstbl->address));
+    /* Write to ERSTBA sets Event Ring State Machine state to start */
+    runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.erstbl));
 
-    /* I fail to understand how to print quads directly... */
-//    mybug(-1,("%2d %p %08x%08x\n",i, &unit->hc.dcbaa[i], (ULONG)(unit->hc.dcbaa[i]>>32), (ULONG)unit->hc.dcbaa[i]));
 
-    for (i=1; i<unit->hc.maxintrs; i++) {
-        mybug_unit(-1, ("Disabling interrupter %d\n", i));
-        runtime_writel(XHCI_IMAN(i), 1);
-        runtime_writel(XHCI_ERSTSZ(0), 0);
-        runtime_writeq(XHCI_ERSTBA(0), 0);
-        runtime_writeq(XHCI_ERDP(0), 0);
-        mybug_unit(-1, ("IMAN %08x\n",runtime_readl(XHCI_IMAN(i)))); //Flush
-    }
+/*
+    mybug(-1, ("Enable interrupter 0\n"));
+    runtime_writel(XHCI_IMOD(0), 500);
+    runtime_writel(XHCI_IMAN(0), 3);
+    bug("IMAN %08x\n",runtime_readl(XHCI_IMAN(0))); //Flush
+    runtime_writel(XHCI_ERSTSZ(0), unit->hc.maxeventringsegments);
+    runtime_writeq(XHCI_ERDP(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl->address));
+    runtime_writeq(XHCI_ERSTBA(0), (UQUAD)((IPTR)unit->hc.eventringsegmenttbl));
+
+    mybug(-1, ("Enabling interrupts and setting run bit\n"));
+*/
+
+
+
+
+
+
 
     /* Add interrupt handler */
     snprintf(unit->hc.intname, 255, "%s interrupt handler", unit->node.ln_Name);
@@ -263,8 +339,6 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
         mybug_unit(-1, ("Failed setting up interrupt handler!\n"));
         return FALSE;
     }
-
-
 
     mybug_unit(-1, ("Enabling interrupts and setting run bit\n"));
     /* Enable host controller to issue interrupts */
