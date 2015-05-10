@@ -354,7 +354,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 
     D(nbug("[Kernel:TLSF] %s(%p, %ld)\n", __PRETTY_FUNCTION__, tlsf, size));
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     /* Find the indices fl and sl for given size */
@@ -402,7 +402,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
         /* No block? FAILURE! */
         if (!b)
         {
-            if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+            if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
                 ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
             return NULL;
@@ -455,7 +455,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     tlsf->free_size -= GET_SIZE(b);
     mhe->mhe_MemHeader.mh_Free = tlsf->free_size;
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     if (flags && (*flags & MEMF_CLEAR))
@@ -560,7 +560,7 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
     void * ptr;
     bhdr_t *b;
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     size = ROUNDUP(size);
@@ -576,7 +576,7 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
 
     if (!ptr)
     {
-        if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+        if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
             ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
         return ptr;
@@ -654,7 +654,7 @@ void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULON
         }
     });
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     return ptr;
@@ -673,7 +673,7 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
 
     fb = MEM_TO_BHDR(ptr);
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     /* Mark block as free */
@@ -701,7 +701,7 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
         INSERT_FREE_BLOCK(tlsf, fb);
     }
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 }
 
@@ -822,7 +822,7 @@ void * tlsf_realloc(struct MemHeaderExt *mhe, APTR ptr, IPTR new_size)
         }
     }
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     return b->mem;
@@ -848,7 +848,7 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
     region_start = (UBYTE *)((IPTR)ptr & SIZE_MASK);
     region_size = (IPTR)ROUNDUP((IPTR)ptr - (IPTR)region_start + size);
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     /* Start searching here. It doesn't make sense to go through regions which are smaller */
@@ -960,7 +960,7 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
 
                     tlsf->free_size -= GET_SIZE(breg);
 
-                    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+                    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
                         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
                     return breg->mem;
@@ -973,7 +973,7 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
         sl = 0;
     }
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     return NULL;
@@ -1316,7 +1316,7 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
     mhe->mhe_MemHeader.mh_Node.ln_Name    = (STRPTR)name;
     mhe->mhe_MemHeader.mh_Node.ln_Pri     = pri;
     mhe->mhe_MemHeader.mh_Attributes      = flags;
-    /* The first MemChunk needs to be aligned. We do it by adding MEMHEADER_TOTAL. */
+    /* mh_First is not valid. Also in current implementation it is used to transport pool requirements */
     mhe->mhe_MemHeader.mh_First           = NULL;
 
     mhe->mhe_UserData      = NULL;
