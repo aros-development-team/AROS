@@ -59,10 +59,10 @@
 
     if (IsManagedMem(mhe))
     {
-        ULONG attributes = (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First;
+        ULONG poolrequirements = (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First;
 
         if (mhe->mhe_Alloc)
-            return mhe->mhe_AllocVec(mhe, memSize, &attributes);
+            return mhe->mhe_AllocVec(mhe, memSize, &poolrequirements);
         else
             return NULL;
     }

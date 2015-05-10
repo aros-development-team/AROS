@@ -147,6 +147,9 @@
              * for the semaphore
              */
             firstPuddle->mh_Node.ln_Name = (STRPTR)&pool->sem;
+
+            /* Use mh_First to store the pool requirements */
+            firstPuddle->mh_First = (APTR)(IPTR)requirements;
         }
         else
         {
