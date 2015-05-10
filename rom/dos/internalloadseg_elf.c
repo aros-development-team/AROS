@@ -868,8 +868,7 @@ BPTR InternalLoadSeg_ELF
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
     ULONG  int_shnum;
-    struct SRBuffer srb;
-    srb.srb_Buffer = NULL;
+    struct SRBuffer srb = { 0 };
 
     /* load and validate ELF header */
     if (!load_header(file, &eh, funcarray, &srb, DOSBase))
