@@ -730,15 +730,15 @@ void * tlsf_realloc(struct MemHeaderExt *mhe, APTR ptr, IPTR new_size)
         return NULL;
     }
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
-        ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
-
     new_size = ROUNDUP(new_size);
 
     b = MEM_TO_BHDR(ptr);
 
     if (unlikely(new_size == GET_SIZE(b)))
         return ptr;
+
+    if (((ULONG)(IPTR)mhe->mhe_MemHeader.mh_First) & MEMF_SEM_PROTECTED)
+        ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
     bnext = GET_NEXT_BHDR(b, GET_SIZE(b));
 
