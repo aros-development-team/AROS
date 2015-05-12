@@ -238,7 +238,7 @@ case "$host_os" in
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         aros_host_arch="darwin"
         host_cc_elf=no
-        if [ -z ${SED+x} ]; then SED="gsed"; fi
+        if [[ -z ${SED+x} ]]; then SED="gsed"; fi
         android_build_os="darwin-x86"
         android_tool="android"
         default_android_sdk="/android-sdk-mac_x86"
@@ -2069,9 +2069,17 @@ if test "$aros_kernel_includes" != "" ; then
             if test -d "$aros_kernel_cc_includes"-fixed; then
                 aros_kernel_cc_includes+=" -isystem $aros_kernel_cc_includes"-fixed
             fi
-            # Check for specific includes directory. Neede for Ubuntu 11.10
-            if test -d "/usr/include/${host_cpu}-linux-gnu"; then
-                aros_kernel_cc_includes+=" -isystem /usr/include/${host_cpu}-linux-gnu"
+            # Check for specific includes directory. Needed for Ubuntu 11.10 and Debian
+            case ${host_cpu} in
+                i[[3456]]86)
+                    host_cpu_glibc=i386
+                    ;;
+                *)
+                    host_cpu_glibc=${host_cpu}
+                    ;;
+            esac
+            if test -d "/usr/include/${host_cpu_glibc}-linux-gnu"; then
+                aros_kernel_cc_includes+=" -isystem /usr/include/${host_cpu_glibc}-linux-gnu"
             fi
         else
             # The directory doesn't exist, we need to do some more work.
