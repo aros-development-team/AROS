@@ -88,67 +88,74 @@ void PCIXHCI_DeleteTimer(struct PCIXHCIUnit *unit) {
 }
 
 void FreeVecOnBoundary(APTR onboundary) {
-
-    IPTR *allocation;
-
-    if(onboundary) {
-        allocation = onboundary;
-        FreeVec((APTR)*--allocation);
-    }
 }
 
 APTR AllocVecOnBoundary(ULONG size, ULONG boundary, STRPTR description) {
 
-    IPTR *allocation;
-    IPTR *onboundary;
+    UBYTE *allocation;
+    UBYTE *ret;
 
-    /* Sanity check, size can never exceed boundary by definition */
-    if((size<=boundary) || (boundary == 0)) {
+    IPTR   newsize;
+    IPTR   alignement;
+    IPTR   description_size;
 
-        if(boundary == 0) {
-            /* If no boundary defined, allocate with 64 byte alignement */
-            allocation = AllocVec(AROS_ROUNDUP2((size + AROS_ROUNDUP2(strlen(description), sizeof(IPTR)) + sizeof(IPTR)), 64), (MEMF_ANY|MEMF_CLEAR));
-            if(allocation) {
-                onboundary = ++allocation;
-                onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, 64);
-                *--onboundary = (IPTR)--allocation;
+    STRPTR default_description = "(something?!?)";
 
-                mybug(-1, (" - Allocated %d bytes for %s\n", size, description));
-                return ++onboundary;
-            }
-        } else {
-            /*
-                Worst case scenario is that we allocate 64kb more, I can live with that... I think...
-                - transfer ring, command ring and event ring all have 64kb boundary requirement
-            */
+    mybug(-1, ("[ALLOCVECONBOUNDARY] size %d(0x%x), boundary %d(0x%x), %s\n", size, size, boundary, boundary, (description ? description : default_description)));
 
-            /*
-                We might get the allocation spot on to boundary in the first place, but we need to store the address of our allocation
-                for possible FreeVecOnBoundary() call. We need twice the allocation size plus size for one IPTR. Or do we?
-
-                TODO: Add a string description for the allocation, "needed" for DEBUG purposes.
-
-                onboundary becomes the original allocation advanced by the size of one IPTR. We do not yeat know where our allocation is.
-                The allocation might have been spot on to boundary, but it is not anymore.
-
-                We then roundup the onboundary address to the boundary. We now have atleast one IPTR below onboundary.
-                We store the original allocation address to that address and return onboundary as the allocation.
-
-            */
-            allocation = AllocVec(AROS_ROUNDUP2((size + AROS_ROUNDUP2(strlen(description), sizeof(IPTR)) + sizeof(IPTR)), boundary), (MEMF_ANY|MEMF_CLEAR));
-            if(allocation) {
-                onboundary = ++allocation;
-                onboundary = (APTR)AROS_ROUNDUP2((IPTR)onboundary, boundary);
-                *--onboundary = (IPTR)--allocation;
-
-                mybug(-1, (" - Allocated %d bytes for %s\n", size, description));
-                return ++onboundary;
-            }
-        }
-
-
+    if(!size) {
+        mybug(-1, (" - Allocation called with zero size\n"));
+        return NULL;
     }
 
-    mybug(-1, ("Allocation for %s failed!\n", description));
+    /* Sanity check, size can never exceed boundary if boundary is set */
+    if((boundary<size) && (boundary != 0)) {
+        mybug(-1, (" - Allocation called with size exceeding boundary (%d<%d)\n", boundary, size));
+        return NULL;
+    }
+
+    if(boundary) {
+        alignement = boundary;    // Align allocation to start at boundary
+    } else {
+        alignement = 64;          // Else allocation is aligned to 64 bytes
+    }
+
+    description_size = AROS_ROUNDUP2(strlen((description ? description : default_description)) + 1, sizeof(IPTR));
+
+    newsize = size + 2*(sizeof(IPTR)) + description_size + alignement;
+
+    mybug(-1, (" - Allocating size %d->%d\n", size, newsize));
+
+    allocation = AllocMem(newsize, (MEMF_ANY|MEMF_CLEAR));
+
+    mybug(-1, (" - Allocated space from %p to %p with boundary %d\n", allocation, allocation+newsize-1, boundary));
+
+    /*
+        Allocation:
+            size (IPTR)
+            description string rounded up to IPTR
+            padding to 64 byte alignement or to boundary alignement
+            return address minus one IPTR = address of original allocation
+    */
+    if(allocation) {
+        ret = allocation;
+
+        *(IPTR *)ret=newsize;
+        ret +=sizeof(IPTR);
+
+        strcpy(ret, (description ? description : default_description));
+        ret += description_size;
+
+        ret = (UBYTE *)AROS_ROUNDUP2((IPTR)ret, alignement) - sizeof(IPTR);
+        *(IPTR *)ret = (IPTR)allocation;
+
+        ret += sizeof(IPTR);
+
+        mybug(-1, (" - Return allocation space from %p to %p\n", ret, ret+size-1));
+
+        return ret;
+    }
+
+    mybug(-1, ("Allocation for %s failed!\n", (description ? description : default_description)));
     return NULL;
 }
