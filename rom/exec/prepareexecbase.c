@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sets up the ExecBase a bit. (Mostly clearing).
@@ -308,6 +308,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskRunningSpinLock);
     NEWLIST(&PrivExecBase(SysBase)->TaskRunning);
+    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskSpinningLock);
+    NEWLIST(&PrivExecBase(SysBase)->TaskSpinning);
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskReadySpinLock);
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #endif
