@@ -118,6 +118,7 @@ struct StackSwapArgs
 #define TS_WAIT		4
 #define TS_EXCEPT	5
 #define TS_REMOVED	6
+#define TS_SPIN	        7       /* AROS specific */
 
 /* Predefined Signals */
 #define SIGB_ABORT	0
