@@ -79,7 +79,6 @@
 BOOL
 Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
 {
-    struct Task *thistask = FindTask(NULL);
     /*
      *  We don't add this to the task memory, it isn't free'd by
      *  RemTask(), rather by somebody else calling ChildFree().
@@ -100,7 +99,7 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
     IntETask(et)->iet_CpuAffinity = (1 << 0);
 #endif
 
-    et->et_Parent = thistask;
+    et->et_Parent = FindTask(NULL);
     NEWLIST(&et->et_Children);
 
     /* Initialise the message list */
