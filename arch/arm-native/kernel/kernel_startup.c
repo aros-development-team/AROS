@@ -204,18 +204,18 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     __tls->SysBase = NULL;
     __tls->ThisTask = NULL;
 
-    D(bug("[KRN] AROS ARM Native Kernel built on %s\n", __DATE__));
+    D(bug("[Kernel] AROS ARM Native Kernel built on %s\n", __DATE__));
 
-    D(bug("[KRN] Entered kernel_cstart @ 0x%p, BootMsg @ 0x%p\n", kernel_cstart, BootMsg));
+    D(bug("[Kernel] Entered kernel_cstart @ 0x%p, BootMsg @ 0x%p\n", kernel_cstart, BootMsg));
 
     asm volatile("mcr p15, 0, %0, c13, c0, 3" : : "r"(__tls));
     
     D(
         if (__arm_arosintern.ARMI_PutChar)
         {
-            bug("[KRN] Using PutChar implementation @ %p\n", __arm_arosintern.ARMI_PutChar);
+            bug("[Kernel] Using PutChar implementation @ %p\n", __arm_arosintern.ARMI_PutChar);
         }
-        bug("[KRN] Boot CPU TLS @ 0x%p\n", __tls);
+        bug("[Kernel] Boot CPU TLS @ 0x%p\n", __tls);
     )
 
     core_SetupIntr();
@@ -223,8 +223,8 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     if (__arm_arosintern.ARMI_LED_Toggle)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
 
-    D(bug("[KRN] Platform initialised\n"));
-    D(bug("[KRN] Affinity mask %08x\n", __arm_affinitymask));
+    D(bug("[Kernel] Platform initialised\n"));
+    D(bug("[Kernel] Affinity mask %08x\n", __arm_affinitymask));
 
     if (__arm_arosintern.ARMI_Delay)
             __arm_arosintern.ARMI_Delay(1500);
@@ -232,8 +232,8 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     if (__arm_arosintern.ARMI_LED_Toggle)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
 
-    D(bug("[KRN] Preparing memory 0x%p -> 0x%p\n", memlower, memupper));
-    D(bug("[KRN] (protected area 0x%p -> 0x%p)\n", protlower, protupper));
+    D(bug("[Kernel] Preparing memory 0x%p -> 0x%p\n", memlower, memupper));
+    D(bug("[Kernel] (protected area 0x%p -> 0x%p)\n", protlower, protupper));
 
     NEWLIST(&memList);
 
@@ -268,11 +268,11 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     ranges[1] = (UWORD *)krnGetTagData(KRN_KernelHighest, 0, msg);
     ranges[2] = (UWORD *)-1;
 
-    D(bug("[KRN] Preparing ExecBase (memheader @ 0x%p)\n", mh));
+    D(bug("[Kernel] Preparing ExecBase (memheader @ 0x%p)\n", mh));
     krnPrepareExecBase(ranges, mh, BootMsg);
 
     __tls->SysBase = SysBase;
-    D(bug("[KRN] SysBase @ 0x%p\n", SysBase));
+    D(bug("[Kernel] SysBase @ 0x%p\n", SysBase));
 
     /* 
      * Make kickstart code area read-only.
@@ -281,13 +281,13 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
      */
 //    core_ProtKernelArea(addr, kick_highest - addr, 1, 0, 1);
 
-    D(bug("[KRN] InitCode(RTF_SINGLETASK) ... \n"));
+    D(bug("[Kernel] InitCode(RTF_SINGLETASK) ... \n"));
     InitCode(RTF_SINGLETASK, 0);
 
-    D(bug("[KRN] Dropping into USER mode ... \n"));
+    D(bug("[Kernel] Dropping into USER mode ... \n"));
     asm("cps %[mode_user]\n" : : [mode_user] "I" (CPUMODE_USER)); /* switch to user mode */
 
-    D(bug("[KRN] InitCode(RTF_COLDSTART) ...\n"));
+    D(bug("[Kernel] InitCode(RTF_COLDSTART) ...\n"));
     InitCode(RTF_COLDSTART, 0);
 
     /* The above should not return */

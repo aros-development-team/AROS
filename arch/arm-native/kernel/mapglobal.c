@@ -22,7 +22,7 @@ AROS_LH4I(int, KrnMapGlobal,
 
     int retval = 0;
 
-    D(bug("[KRN] KrnMapGlobal(%08x->%08x %08x %04x)\n", virtual, physical, length, flags));
+    D(bug("[Kernel] KrnMapGlobal(%08x->%08x %08x %04x)\n", virtual, physical, length, flags));
 
     return retval;
 

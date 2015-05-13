@@ -146,14 +146,14 @@ asm (
 
 void handle_irq(regs_t *regs)
 {
-    DIRQ(bug("[KRN] ## IRQ ##\n"));
+    DIRQ(bug("[Kernel] ## IRQ ##\n"));
 
     DREGS(cpu_DumpRegs(regs));
 
     if (__arm_arosintern.ARMI_IRQProcess)
         __arm_arosintern.ARMI_IRQProcess();
 
-    DIRQ(bug("[KRN] IRQ processing finished\n"));
+    DIRQ(bug("[Kernel] IRQ processing finished\n"));
 
     return;
 }
@@ -166,12 +166,12 @@ void handle_irq(regs_t *regs)
 
 __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 {
-    DIRQ(bug("[KRN] ## FIQ ##\n"));
+    DIRQ(bug("[Kernel] ## FIQ ##\n"));
 
     if (__arm_arosintern.ARMI_FIQProcess)
         __arm_arosintern.ARMI_FIQProcess();
 
-    DIRQ(bug("[KRN] FIQ processing finished\n"));
+    DIRQ(bug("[Kernel] FIQ processing finished\n"));
 
     return;
 }
@@ -299,7 +299,7 @@ void arm_icache_invalidate(uint32_t addr, uint32_t length)
 void core_SetupIntr(void)
 {
     int irq;
-    bug("[KRN] Initializing cpu vectors\n");
+    bug("[Kernel] Initializing cpu vectors\n");
 
     /* Copy vectors into place */
     memcpy(0, &__intvecs_start,
@@ -309,15 +309,15 @@ void core_SetupIntr(void)
     arm_flush_cache(0, 1024);
     arm_icache_invalidate(0, 1024);
 
-    D(bug("[KRN] Copied %d bytes from 0x%p to 0x00000000\n", (unsigned int)&__intvecs_end - (unsigned int)&__intvecs_start, &__intvecs_start));
+    D(bug("[Kernel] Copied %d bytes from 0x%p to 0x00000000\n", (unsigned int)&__intvecs_end - (unsigned int)&__intvecs_start, &__intvecs_start));
 
     D(
         unsigned int x = 0;
-        bug("[KRN]: Vector dump-:");
+        bug("[Kernel]: Vector dump-:");
         for (x=0; x < (unsigned int)&__intvecs_end - (unsigned int)&__intvecs_start; x++) {
             if ((x%16) == 0)
             {
-                bug("\n[KRN]:     %08x:", x);
+                bug("\n[Kernel]:     %08x:", x);
             }
             bug(" %02x", *((volatile UBYTE *)x));
         }

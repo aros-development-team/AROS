@@ -98,19 +98,19 @@ void cpu_Register()
     __tls = TLS_PTR_GET();
 
     /* Now we are ready to boostrap and launch the schedular */
-    bug("[KRN] Core %d Boostrapping..\n", (tmp & 0x3));
+    bug("[Kernel] Core %d Boostrapping..\n", (tmp & 0x3));
 
     asm volatile ("mrs %0, cpsr" :"=r"(ttmp));
-    bug("[KRN] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
+    bug("[Kernel] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
     ttmp &= ~(1 << 6);
     asm volatile ("msr cpsr_cxsf, %0" ::"r"(ttmp));
-    bug("[KRN] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
+    bug("[Kernel] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
 
-    bug("[KRN] Core %d TLS @ 0x%p\n", (tmp & 0x3), (__tls));
+    bug("[Kernel] Core %d TLS @ 0x%p\n", (tmp & 0x3), (__tls));
     KernelBase = (struct KernelBase *)__tls->KernelBase; // TLS_GET(KernelBase)
     SysBase = (struct ExecBase *)__tls->SysBase; // TLS_GET(SysBase)
-    bug("[KRN] Core %d KernelBase @ 0x%p\n", (tmp & 0x3), KernelBase);
-    bug("[KRN] Core %d SysBase @ 0x%p\n", (tmp & 0x3), SysBase);
+    bug("[Kernel] Core %d KernelBase @ 0x%p\n", (tmp & 0x3), KernelBase);
+    bug("[Kernel] Core %d SysBase @ 0x%p\n", (tmp & 0x3), SysBase);
 
     if ((__tls->ThisTask = cpu_InitBootStrap(SysBase)) == NULL)
         goto cpu_registerfatal;
@@ -121,7 +121,7 @@ void cpu_Register()
     cpu_BootStrap(__tls->ThisTask, SysBase);
 #endif
 
-    bug("[KRN] Core %d operational\n", (tmp & 0x3));
+    bug("[Kernel] Core %d operational\n", (tmp & 0x3));
 
     KrnSpinLock(&__arm_affinitymasklock, NULL, SPINLOCK_MODE_WRITE);
     __arm_affinitymask |= (1 << (tmp & 0x3));
@@ -129,7 +129,7 @@ void cpu_Register()
 
 cpu_registerfatal:
 
-    bug("[KRN] Core %d waiting for interrupts\n", (tmp & 0x3));
+    bug("[Kernel] Core %d waiting for interrupts\n", (tmp & 0x3));
 
     KrnSpinUnLock(&startup_lock);
 
@@ -336,14 +336,14 @@ void cpu_DumpRegs(regs_t *regs)
     int cpunum = GetCPUNumber();
     int i;
     
-    bug("[KRN][%02d] Register Dump:\n", cpunum);
+    bug("[Kernel][%02d] Register Dump:\n", cpunum);
     for (i = 0; i < 12; i++)
     {
-        bug("[KRN][%02d]      r%02d: 0x%08x\n", cpunum, i, ((uint32_t *)regs)[i]);
+        bug("[Kernel][%02d]      r%02d: 0x%08x\n", cpunum, i, ((uint32_t *)regs)[i]);
     }
-    bug("[KRN][%02d] (ip) r12: 0x%08x\n", cpunum, ((uint32_t *)regs)[12]);
-    bug("[KRN][%02d] (sp) r13: 0x%08x\n", cpunum, ((uint32_t *)regs)[13]);
-    bug("[KRN][%02d] (lr) r14: 0x%08x\n", cpunum, ((uint32_t *)regs)[14]);
-    bug("[KRN][%02d] (pc) r15: 0x%08x\n", cpunum, ((uint32_t *)regs)[15]);
-    bug("[KRN][%02d]     cpsr: 0x%08x\n", cpunum, ((uint32_t *)regs)[16]);
+    bug("[Kernel][%02d] (ip) r12: 0x%08x\n", cpunum, ((uint32_t *)regs)[12]);
+    bug("[Kernel][%02d] (sp) r13: 0x%08x\n", cpunum, ((uint32_t *)regs)[13]);
+    bug("[Kernel][%02d] (lr) r14: 0x%08x\n", cpunum, ((uint32_t *)regs)[14]);
+    bug("[Kernel][%02d] (pc) r15: 0x%08x\n", cpunum, ((uint32_t *)regs)[15]);
+    bug("[Kernel][%02d]     cpsr: 0x%08x\n", cpunum, ((uint32_t *)regs)[16]);
 }

@@ -20,7 +20,7 @@ AROS_LH2I(int, KrnUnmapGlobal,
 
     int retval = 0;
 
-    D(bug("[KRN] KrnMapGlobal(%08x, %08x)\n", virtual, length));
+    D(bug("[Kernel] KrnMapGlobal(%08x, %08x)\n", virtual, length));
 
     return retval;
 

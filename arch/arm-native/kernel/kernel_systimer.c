@@ -25,12 +25,12 @@ void *KrnAddSysTimerHandler(struct KernelBase *KernelBase)
 {
     struct IntrNode *SysTimerHandle = NULL;
 
-    D(bug("[KRN] KrnAddSysTimerHandler(%012p)\n", KernelBase));
+    D(bug("[Kernel] KrnAddSysTimerHandler(%012p)\n", KernelBase));
 
     if (__arm_arosintern.ARMI_InitTimer)
         SysTimerHandle = __arm_arosintern.ARMI_InitTimer(KernelBase);
 
-    D(bug("[KRN] KrnAddSysTimerHandler: returning handle @ 0x%p \n", SysTimerHandle));
+    D(bug("[Kernel] KrnAddSysTimerHandler: returning handle @ 0x%p \n", SysTimerHandle));
 
     return SysTimerHandle;
 }
