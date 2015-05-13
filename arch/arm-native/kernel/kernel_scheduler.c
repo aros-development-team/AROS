@@ -40,7 +40,7 @@ BOOL core_Schedule(void)
     if (!(task->tc_Flags & TF_EXCEPT))
     {
 #if defined(__AROSEXEC_SMP__)
-        KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock,
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                     SPINLOCK_MODE_READ);
 #endif
         /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
@@ -99,7 +99,7 @@ void core_Switch(void)
     if (task->tc_State == TS_RUN)
     {
 #if defined(__AROSEXEC_SMP__)
-        KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock,
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
 #endif
         Remove(&task->tc_Node);
@@ -118,7 +118,7 @@ void core_Switch(void)
         task->tc_SigWait    = 0;
         task->tc_State      = TS_WAIT;
 #if defined(__AROSEXEC_SMP__)
-        KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock,
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
 #endif
         Enqueue(&SysBase->TaskWait, &task->tc_Node);
@@ -148,7 +148,7 @@ struct Task *core_Dispatch(void)
     DSCHED(bug("[KRN:BCM2708] core_Dispatch()\n"));
 
 #if defined(__AROSEXEC_SMP__)
-    KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock,
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
 #endif
     for (newtask = (struct Task *)GetHead(&SysBase->TaskReady); newtask != NULL; newtask = (struct Task *)GetSucc(newtask))
@@ -163,43 +163,64 @@ struct Task *core_Dispatch(void)
         }
 #endif
     }
-    
-    if ((newtask == NULL) && (task != NULL))
-        newtask = task;
 
-    if ((task != NULL) && (task->tc_State == TS_READY) && (newtask != task))
+    if (task)
     {
-        Enqueue(&SysBase->TaskReady, &task->tc_Node);
+        if (newtask == NULL)
+            newtask = task;
+        else if ((task->tc_State == TS_READY) && (task != newtask))
+            Enqueue(&SysBase->TaskReady, &task->tc_Node);
     }
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
 
-    if (newtask)
+    if ((newtask) &&
+        (newtask->tc_State == TS_READY) ||
+        (newtask->tc_State == TS_RUN))
     {
-
         SysBase->DispCount++;
         SysBase->IDNestCnt = newtask->tc_IDNestCnt;
         SET_THIS_TASK(newtask);
         SysBase->Elapsed   = SysBase->Quantum;
         SysBase->SysFlags &= ~SFF_QuantumOver;
-        newtask->tc_State     = TS_RUN;
-
-        DSCHED(bug("[KRN:BCM2708] New task = %p (%s)\n", newtask, newtask->tc_Node.ln_Name));
 
         /* Check the stack of the task we are about to launch. */
+        if ((newtask->tc_SPReg <= newtask->tc_SPLower) ||
+             (newtask->tc_SPReg > newtask->tc_SPUpper))
+            newtask->tc_State     = TS_WAIT;
+        else
+            newtask->tc_State     = TS_RUN;
+    }
 
-        if (newtask->tc_SPReg <= newtask->tc_SPLower || newtask->tc_SPReg > newtask->tc_SPUpper)
+    if (newtask)
+    {
+#if defined(__AROSEXEC_SMP__)
+        if (newtask->tc_State == TS_SPIN)
         {
-            /* Don't let the task run, switch it away (raising Alert) and dispatch another task */
+            /* move it to the spinning list */
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
+                SPINLOCK_MODE_WRITE);
+            AddHead(&PrivExecBase(SysBase)->TaskSpinning, &newtask->tc_Node);
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+        }
+#endif
+
+        /* if the task shouldnt run - force a reschedulre.. */
+        if (newtask->tc_State != TS_RUN)
+        {
             core_Switch();
-            return core_Dispatch();
+            newtask = core_Dispatch();
+        }
+        else
+        {
+            DSCHED(bug("[KRN:BCM2708] Dispatching Task @ %p (%s)\n", newtask, newtask->tc_Node.ln_Name));
         }
     }
     else
     {
         /* Is the list of ready tasks empty? Well, go idle. */
-        DSCHED(bug("[KRN:BCM2708] No ready tasks, entering sleep mode\n"));
+        DSCHED(bug("[KRN:BCM2708] No ready Task(s) - entering sleep mode\n"));
 
         /*
          * Idle counter is incremented every time when we enter here,
