@@ -64,7 +64,7 @@
     switch (task->tc_State)
     {
         case TS_RUN:
-            task_listlock =&PrivExecBase(SysBase)->TaskRunningSpinLock;
+            task_listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
             break;
         case TS_WAIT:
             task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
