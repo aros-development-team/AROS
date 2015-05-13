@@ -19,7 +19,7 @@ AROS_LH3I(void, KrnSetProtection,
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[KRN] KrnSetProtection(%08x, %08x, %04x)\n", address, address + length - 1, flags));
+    D(bug("[Kernel] KrnSetProtection(%08x, %08x, %04x)\n", address, address + length - 1, flags));
 
     AROS_LIBFUNC_EXIT
 }

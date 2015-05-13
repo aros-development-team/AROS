@@ -66,7 +66,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
 
     KrnSpinInit(&startup_lock);
 
-    D(bug("[KRN:BCM2708] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Kernel:BCM2708] %s()\n", __PRETTY_FUNCTION__));
 
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
@@ -80,12 +80,12 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
         uint32_t tmp;
         tls_t   *__tls;
 
-        bug("[KRN:BCM2708] Initialising Multicore System\n");
-        D(bug("[KRN:BCM2708] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
+        bug("[Kernel:BCM2708] Initialising Multicore System\n");
+        D(bug("[Kernel:BCM2708] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
 
         bcopy(trampoline_src, trampoline_dst, trampoline_length);
 
-        D(bug("[KRN:BCM2708] %s: Patching data for trampoline at offset %d\n", __PRETTY_FUNCTION__, trampoline_data_offset));
+        D(bug("[Kernel:BCM2708] %s: Patching data for trampoline at offset %d\n", __PRETTY_FUNCTION__, trampoline_data_offset));
 
         asm volatile ("mrc p15, 0, %0, c2, c0, 0":"=r"(tmp));
         ((uint32_t *)(trampoline_dst + trampoline_data_offset))[0] = tmp; // pde
@@ -106,10 +106,10 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             arm_flush_cache(((uint32_t)__tls) & ~63, 512);
             ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint32_t)__tls;
 
-            D(bug("[KRN:BCM2708] %s: Attempting to wake CPU #%d\n", __PRETTY_FUNCTION__, cpu));
-            D(bug("[KRN:BCM2708] %s: CPU #%d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
-            D(bug("[KRN:BCM2708] %s: CPU #%d FIQ Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_fiq_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4]));
-            D(bug("[KRN:BCM2708] %s: CPU #%d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
+            D(bug("[Kernel:BCM2708] %s: Attempting to wake CPU #%d\n", __PRETTY_FUNCTION__, cpu));
+            D(bug("[Kernel:BCM2708] %s: CPU #%d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
+            D(bug("[Kernel:BCM2708] %s: CPU #%d FIQ Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_fiq_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4]));
+            D(bug("[Kernel:BCM2708] %s: CPU #%d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
             arm_flush_cache((uint32_t)trampoline_dst, 512);
 
@@ -139,7 +139,7 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 #endif
     int cpunum = GetCPUNumber();
 
-    D(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
+    D(bug("[Kernel:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
 
     /* Clear all pending FIQ sources on mailboxes */
     *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + (16 * cpunum))) = 0xffffffff;
@@ -149,7 +149,7 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 
 #if defined(__AROSEXEC_SMP__)
     bcm2708_cpuipid[cpunum] = (unsigned int)__tls + sizeof(tls_t);
-    D(bug("[KRN:BCM2708] %s: cpu #%d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cpuipid[cpunum]));
+    D(bug("[Kernel:BCM2708] %s: cpu #%d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cpuipid[cpunum]));
 
     // enable FIQ mailbox interupt
     *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum))) = 0x10;
@@ -195,11 +195,11 @@ static void bcm2807_irq_enable(int irq)
 
     reg = (unsigned int)IRQBANK_POINTER(bank);
 
-    DIRQ(bug("[KRN:BCM2708] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    DIRQ(bug("[Kernel:BCM2708] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
     *((volatile unsigned int *)reg) = IRQ_MASK(irq);
 
-    DIRQ(bug("[KRN:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
+    DIRQ(bug("[Kernel:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
 }
 
 static void bcm2807_irq_disable(int irq)
@@ -209,11 +209,11 @@ static void bcm2807_irq_disable(int irq)
 
     reg = (unsigned int)IRQBANK_POINTER(bank) + 0x0c;
 
-    DIRQ(bug("[KRN:BCM2708] Disabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    DIRQ(bug("[Kernel:BCM2708] Disabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
     *((volatile unsigned int *)reg) = IRQ_MASK(irq);
 
-    DIRQ(bug("[KRN:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
+    DIRQ(bug("[Kernel:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
 }
 
 static void bcm2807_irq_process()
@@ -229,9 +229,9 @@ static void bcm2807_irq_process()
         if (!(pendingarm || pending0 || pending1))
             break;
 
-        DIRQ(bug("[KRN:BCM2708] PendingARM %08x\n", pendingarm));
-        DIRQ(bug("[KRN:BCM2708] Pending0 %08x\n", pending0));
-        DIRQ(bug("[KRN:BCM2708] Pending1 %08x\n", pending1));
+        DIRQ(bug("[Kernel:BCM2708] PendingARM %08x\n", pendingarm));
+        DIRQ(bug("[Kernel:BCM2708] Pending0 %08x\n", pending0));
+        DIRQ(bug("[Kernel:BCM2708] Pending1 %08x\n", pending1));
 
         if (pendingarm & ~(IRQ_BANK1 | IRQ_BANK2))
         {
@@ -239,7 +239,7 @@ static void bcm2807_irq_process()
             {
                 if (pendingarm & (1 << (irq - (2 << 5))))
                 {
-                    DIRQ(bug("[KRN:BCM2708] Handling IRQ %d ..\n", irq));
+                    DIRQ(bug("[Kernel:BCM2708] Handling IRQ %d ..\n", irq));
                     krnRunIRQHandlers(KernelBase, irq);
                 }
             }
@@ -251,7 +251,7 @@ static void bcm2807_irq_process()
             {
                 if (pending0 & (1 << (irq - (0 << 5))))
                 {
-                    DIRQ(bug("[KRN:BCM2708] Handling IRQ %d ..\n", irq));
+                    DIRQ(bug("[Kernel:BCM2708] Handling IRQ %d ..\n", irq));
                     krnRunIRQHandlers(KernelBase, irq);
                 }
             }
@@ -263,7 +263,7 @@ static void bcm2807_irq_process()
             {
                 if (pending1 & (1 << (irq - (1 << 5))))
                 {
-                    DIRQ(bug("[KRN:BCM2708] Handling IRQ %d ..\n", irq));
+                    DIRQ(bug("[Kernel:BCM2708] Handling IRQ %d ..\n", irq));
                     krnRunIRQHandlers(KernelBase, irq);
                 }
             }
@@ -277,11 +277,11 @@ static void bcm2807_fiq_process()
     uint32_t fiq, fiq_data;
     int mbno;
 
-    DFIQ(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
+    DFIQ(bug("[Kernel:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
 
     fiq = *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * cpunum)));
 
-    DFIQ(bug("[KRN:BCM2708] %s: CPU #%d FIQ %x\n", __PRETTY_FUNCTION__, cpunum, fiq));
+    DFIQ(bug("[Kernel:BCM2708] %s: CPU #%d FIQ %x\n", __PRETTY_FUNCTION__, cpunum, fiq));
 
     if (fiq)
     {
@@ -290,7 +290,7 @@ static void bcm2807_fiq_process()
             if (fiq & (0x10 << mbno))
             {
                 fiq_data = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum)));
-                DFIQ(bug("[KRN:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, mbno, fiq_data));
+                DFIQ(bug("[Kernel:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, mbno, fiq_data));
 #if defined(__AROSEXEC_SMP__)
                 if (bcm2708_cpuipid[cpunum])
                     handle_ipi(fiq_data, bcm2708_cpuipid[cpunum]->ipi_data[0]);
@@ -334,7 +334,7 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
 {
     unsigned int stc;
 
-    DTIMER(bug("[KRN:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, timerno));
+    DTIMER(bug("[Kernel:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, timerno));
 
     /* Aknowledge our timer interrupt */
     *((volatile unsigned int *)(SYSTIMER_CS)) = 1 << timerno;
@@ -358,12 +358,12 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
     struct IntrNode *GPUTimerHandle;
     unsigned int stc;
 
-    DTIMER(bug("[KRN:BCM2708] %s(%012p)\n", __PRETTY_FUNCTION__, KernelBase));
+    DTIMER(bug("[Kernel:BCM2708] %s(%012p)\n", __PRETTY_FUNCTION__, KernelBase));
 
     if ((GPUTimerHandle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
     {
-        DTIMER(bug("[KRN:BCM2708] %s: IntrNode @ 0x%p:\n", __PRETTY_FUNCTION__, GPUTimerHandle));
-        DTIMER(bug("[KRN:BCM2708] %s: Using GPUTimer %d for VBlank\n", __PRETTY_FUNCTION__, VBLANK_TIMER));
+        DTIMER(bug("[Kernel:BCM2708] %s: IntrNode @ 0x%p:\n", __PRETTY_FUNCTION__, GPUTimerHandle));
+        DTIMER(bug("[Kernel:BCM2708] %s: Using GPUTimer %d for VBlank\n", __PRETTY_FUNCTION__, VBLANK_TIMER));
 
         GPUTimerHandle->in_Handler = bcm2708_gputimer_handler;
         GPUTimerHandle->in_HandlerData = (void *)VBLANK_TIMER;
@@ -373,7 +373,7 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
 
         ADDHEAD(&KernelBase->kb_Interrupts[IRQ_TIMER0 + VBLANK_TIMER], &GPUTimerHandle->in_Node);
 
-        DTIMER(bug("[KRN:BCM2708] %s: Enabling Hardware IRQ.. \n", __PRETTY_FUNCTION__));
+        DTIMER(bug("[Kernel:BCM2708] %s: Enabling Hardware IRQ.. \n", __PRETTY_FUNCTION__));
 
         stc = *((volatile unsigned int *)(SYSTIMER_CLO));
         stc += VBLANK_INTERVAL;
@@ -383,7 +383,7 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
         ictl_enable_irq(IRQ_TIMER0 + VBLANK_TIMER, KernelBase);
     }
 
-    DTIMER(bug("[KRN:BCM2708] %s: Done.. \n", __PRETTY_FUNCTION__));
+    DTIMER(bug("[Kernel:BCM2708] %s: Done.. \n", __PRETTY_FUNCTION__));
 
     return GPUTimerHandle;
 }

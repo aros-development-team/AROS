@@ -27,28 +27,28 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 
     if ((bstask = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
-        bug("[KRN] CPU #%02d FATAL : Failed to allocate task for bootstrap", (tmp & 0x3));
+        bug("[Kernel] CPU #%02d FATAL : Failed to allocate task for bootstrap", (tmp & 0x3));
         return NULL;
     }
 
     if ((ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
-        bug("[KRN] CPU #%02d FATAL : Failed to allocate memory for bootstrap task", (tmp & 0x3));
+        bug("[Kernel] CPU #%02d FATAL : Failed to allocate memory for bootstrap task", (tmp & 0x3));
         FreeMem(bstask, sizeof(struct Task));
         return NULL;
     }
 
-    D(bug("[KRN] CPU #%02d Bootstrap task @ 0x%p\n", (tmp & 0x3), bstask));
+    D(bug("[Kernel] CPU #%02d Bootstrap task @ 0x%p\n", (tmp & 0x3), bstask));
 
     if ((bsctx = KrnCreateContext()) == NULL)
     {
-        bug("[KRN] CPU %d FATAL : Failed to create the boostrap task context\n", (tmp & 0x3));
+        bug("[Kernel] CPU %d FATAL : Failed to create the boostrap task context\n", (tmp & 0x3));
         FreeMem(ml, sizeof(struct MemList));
         FreeMem(bstask, sizeof(struct Task));
         return NULL;
     }
 
-    D(bug("[KRN] CPU #%02d cpu ctx @ 0x%p\n", (tmp & 0x3), bsctx));
+    D(bug("[Kernel] CPU #%02d cpu ctx @ 0x%p\n", (tmp & 0x3), bsctx));
 
     NEWLIST(&bstask->tc_MemEntry);
 
@@ -70,7 +70,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     /* Create a ETask structure and attach CPU context */
     if (!Exec_InitETask(bstask, SysBase))
     {
-        bug("[KRN] CPU %d FATAL : Failed to initialize boostrap etask\n", (tmp & 0x3));
+        bug("[Kernel] CPU %d FATAL : Failed to initialize boostrap etask\n", (tmp & 0x3));
         FreeVec(bstask->tc_Node.ln_Name);
         FreeMem(ml, sizeof(struct MemList));
         FreeMem(bstask, sizeof(struct Task));

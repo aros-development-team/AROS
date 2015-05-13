@@ -62,7 +62,7 @@ void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
         count = (uintptr_t)(end_addr - addr) >> 5;
     }
 
-    D(bug("[KRN] CacheClearE from %p length %d count %d, flags %x\n", addr, length, count, flags));
+    D(bug("[Kernel] CacheClearE from %p length %d count %d, flags %x\n", addr, length, count, flags));
 
     while (count--)
     {
@@ -100,11 +100,11 @@ void handle_syscall(void *regs)
     addr -= 4;
     swi_no = *((unsigned int *)addr) & 0x00ffffff;
 
-    D(bug("[KRN] ## SWI %d @ 0x%p\n", swi_no, addr));
+    D(bug("[Kernel] ## SWI %d @ 0x%p\n", swi_no, addr));
 
     if (((char*)addr < &__text_start) || ((char*)addr >= &__text_end))
     {
-        D(bug("[KRN] ## SWI : ILLEGAL ACCESS!\n"));
+        D(bug("[Kernel] ## SWI : ILLEGAL ACCESS!\n"));
         return;
     }
     if (swi_no <= 0x0b || swi_no == 0x100)
@@ -115,21 +115,21 @@ void handle_syscall(void *regs)
         {
             case SC_CLI:
             {
-                D(bug("[KRN] ## CLI...\n"));
+                D(bug("[Kernel] ## CLI...\n"));
                 ((uint32_t *)regs)[16] |= (1 << 7);
                 break;
             }
 
             case SC_STI:
             {
-                D(bug("[KRN] ## STI...\n"));
+                D(bug("[Kernel] ## STI...\n"));
                 ((uint32_t *)regs)[16] &= ~(1 << 7);
                 break;
             }
 
             case SC_SUPERSTATE:
             {
-                D(bug("[KRN] ## SUPERSTATE... (0x%p ->", ((uint32_t *)regs)[16]));
+                D(bug("[Kernel] ## SUPERSTATE... (0x%p ->", ((uint32_t *)regs)[16]));
                 ((uint32_t *)regs)[16] &= ~(CPUMODE_MASK);
                 ((uint32_t *)regs)[16] |= (0x80 | CPUMODE_SYSTEM);
                 D(bug(" 0x%p)\n", ((uint32_t *)regs)[16]));
@@ -138,7 +138,7 @@ void handle_syscall(void *regs)
 
             case SC_ISSUPERSTATE:
             {
-                D(bug("[KRN] ## ISSUPERSTATE... "));
+                D(bug("[Kernel] ## ISSUPERSTATE... "));
                 ((uint32_t *)regs)[0] = !(((((uint32_t *)regs)[16] & CPUMODE_MASK) == CPUMODE_USER));
                 D(bug("%d\n", ((uint32_t *)regs)[0]));
                 break;
@@ -146,14 +146,14 @@ void handle_syscall(void *regs)
 
             case SC_REBOOT:
             {
-                D(bug("[KRN] ## REBOOT...\n"));
+                D(bug("[Kernel] ## REBOOT...\n"));
                 asm volatile ("mov pc, #0\n"); // Jump to the reset vector..
                 break;
             }
 
             case SC_CACHECLEARE:
             {
-                D(bug("[KRN] ## CACHECLEARE...\n"));
+                D(bug("[Kernel] ## CACHECLEARE...\n"));
                 void * address = ((void **)regs)[0];
                 uint32_t length = ((uint32_t *)regs)[1];
                 uint32_t flags = ((uint32_t *)regs)[2];
@@ -182,9 +182,9 @@ void handle_syscall(void *regs)
     }
     else
     {
-        D(bug("[KRN] ## SWI : ILLEGAL SWI!\n"));
+        D(bug("[Kernel] ## SWI : ILLEGAL SWI!\n"));
         return;
     }
 
-    D(bug("[KRN] ## SWI returning ..\n"));
+    D(bug("[Kernel] ## SWI returning ..\n"));
 }

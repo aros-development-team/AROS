@@ -31,53 +31,53 @@ void handle_ipi(uint32_t ipi, uint32_t ipi_data)
     uint32_t ipi_src = (ipi >> 28) & 0xF;
     uint32_t ipi_msg = ipi & ~(0xF << 28);
 
-    D(bug("[KRN:IPI] %s: Core #%02d IPI Msg %08x:%08x from Core #%02d\n",
+    D(bug("[Kernel:IPI] %s: Core #%02d IPI Msg %08x:%08x from Core #%02d\n",
         __PRETTY_FUNCTION__, cpu, ipi_msg,  ipi_data, ipi_src));
     switch (ipi_msg)
     {
         case IPI_CAUSE:
         {
-            D(bug("[KRN:IPI] IPI_CAUSE:\n"));
+            D(bug("[Kernel:IPI] IPI_CAUSE:\n"));
             break;
         }
         case IPI_DISPATCH:
         {
-            D(bug("[KRN:IPI] IPI_DISPATCH:\n"));
+            D(bug("[Kernel:IPI] IPI_DISPATCH:\n"));
             break;
         }
         case IPI_SWITCH:
         {
-            D(bug("[KRN:IPI] IPI_SWITCH:\n"));
+            D(bug("[Kernel:IPI] IPI_SWITCH:\n"));
             break;
         }
         case IPI_SCHEDULE:
         {
-            D(bug("[KRN:IPI] IPI_SCHEDULE:\n"));
+            D(bug("[Kernel:IPI] IPI_SCHEDULE:\n"));
             break;
         }
         case IPI_CLI:
         {
-            D(bug("[KRN:IPI] IPI_CLI:\n"));
+            D(bug("[Kernel:IPI] IPI_CLI:\n"));
             break;
         }
         case IPI_STI:
         {
-            D(bug("[KRN:IPI] IPI_STI:\n"));
+            D(bug("[Kernel:IPI] IPI_STI:\n"));
             break;
         }
         case IPI_REBOOT:
         {
-            D(bug("[KRN:IPI] IPI_REBOOT:\n"));
+            D(bug("[Kernel:IPI] IPI_REBOOT:\n"));
             break;
         }
         case IPI_ADDTASK:
         {
-            D(bug("[KRN:IPI] IPI_ADDTASK:\n"));
+            D(bug("[Kernel:IPI] IPI_ADDTASK:\n"));
             break;
         }
         case IPI_REMTASK:
         {
-            D(bug("[KRN:IPI] IPI_REMTASK:\n"));
+            D(bug("[Kernel:IPI] IPI_REMTASK:\n"));
             break;
         }
     }
