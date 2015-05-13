@@ -20,8 +20,8 @@
         AROS_LH3(spinlock_t *, KrnSpinLock,
 
 /*  SYNOPSIS */
-	AROS_LHA(spinlock_t *, lock, A0),
-	AROS_LHA(struct Hook *, failhook, A1),
+	AROS_LHA(spinlock_t *, lock, A1),
+	AROS_LHA(struct Hook *, failhook, A0),
 	AROS_LHA(ULONG, mode, D0),
 
 /*  LOCATION */
