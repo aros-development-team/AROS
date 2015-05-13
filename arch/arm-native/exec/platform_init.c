@@ -89,8 +89,8 @@ struct Hook Exec_TaskSpinLockFailHook;
 
 AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
     AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(spinlock_t *, thisLock, A2),
-    AROS_UFHA(APTR, msg, A1))
+    AROS_UFHA(spinlock_t *, thisLock, A1),
+    AROS_UFHA(void *, unused, A2))
 {
     AROS_USERFUNC_INIT
 
