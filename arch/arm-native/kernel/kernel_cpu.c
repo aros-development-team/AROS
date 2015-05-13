@@ -123,7 +123,7 @@ void cpu_Register()
 
     bug("[KRN] Core %d operational\n", (tmp & 0x3));
 
-    KrnSpinLock(&__arm_affinitymasklock, SPINLOCK_MODE_WRITE);
+    KrnSpinLock(&__arm_affinitymasklock, NULL, SPINLOCK_MODE_WRITE);
     __arm_affinitymask |= (1 << (tmp & 0x3));
     KrnSpinUnLock(&__arm_affinitymasklock);
 
