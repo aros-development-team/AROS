@@ -106,10 +106,10 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             arm_flush_cache(((uint32_t)__tls) & ~63, 512);
             ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint32_t)__tls;
 
-            D(bug("[Kernel:BCM2708] %s: Attempting to wake CPU #%d\n", __PRETTY_FUNCTION__, cpu));
-            D(bug("[Kernel:BCM2708] %s: CPU #%d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
-            D(bug("[Kernel:BCM2708] %s: CPU #%d FIQ Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_fiq_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4]));
-            D(bug("[Kernel:BCM2708] %s: CPU #%d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
+            D(bug("[Kernel:BCM2708] %s: Attempting to wake CPU #%02d\n", __PRETTY_FUNCTION__, cpu));
+            D(bug("[Kernel:BCM2708] %s: CPU #%02d Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[2]));
+            D(bug("[Kernel:BCM2708] %s: CPU #%02d FIQ Stack @ 0x%p (sp=0x%p)\n", __PRETTY_FUNCTION__, cpu, cpu_fiq_stack, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4]));
+            D(bug("[Kernel:BCM2708] %s: CPU #%02d TLS @ 0x%p\n", __PRETTY_FUNCTION__, cpu, ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3]));
 
             arm_flush_cache((uint32_t)trampoline_dst, 512);
 
@@ -139,7 +139,7 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 #endif
     int cpunum = GetCPUNumber();
 
-    D(bug("[Kernel:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
+    D(bug("[Kernel:BCM2708] %s(#%02d)\n", __PRETTY_FUNCTION__, cpunum));
 
     /* Clear all pending FIQ sources on mailboxes */
     *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + (16 * cpunum))) = 0xffffffff;
@@ -149,7 +149,7 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 
 #if defined(__AROSEXEC_SMP__)
     bcm2708_cpuipid[cpunum] = (unsigned int)__tls + sizeof(tls_t);
-    D(bug("[Kernel:BCM2708] %s: cpu #%d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cpuipid[cpunum]));
+    D(bug("[Kernel:BCM2708] %s: CPU #%02d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cpuipid[cpunum]));
 
     // enable FIQ mailbox interupt
     *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum))) = 0x10;
@@ -281,7 +281,7 @@ static void bcm2807_fiq_process()
 
     fiq = *((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * cpunum)));
 
-    DFIQ(bug("[Kernel:BCM2708] %s: CPU #%d FIQ %x\n", __PRETTY_FUNCTION__, cpunum, fiq));
+    DFIQ(bug("[Kernel:BCM2708] %s: CPU #%02d FIQ %x\n", __PRETTY_FUNCTION__, cpunum, fiq));
 
     if (fiq)
     {
