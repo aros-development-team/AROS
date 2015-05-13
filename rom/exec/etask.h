@@ -41,6 +41,7 @@ struct IntETask
 #if defined(__AROSEXEC_SMP__)
     IPTR                iet_CpuNumber;          /* core this task is currently running on  */
     IPTR                iet_CpuAffinity;        /* bitmap of cores this task can run on    */
+    spinlock_t          *iet_SpinLock;          /* pointer to spinlock task is spinning on */
 #endif
     struct timeval      iet_StartTime;          /* time the task was launched              */
     struct timeval      iet_CpuTime;            /* time the task has spent running         */
