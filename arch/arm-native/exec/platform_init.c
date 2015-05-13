@@ -129,9 +129,11 @@ int Exec_TaskSpinningInit(struct ExecBase *SysBase)
 {
     /* setup the task spinning hook */
     Exec_TaskSpinLockFailHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockFailFunc;
+
+    D(bug("[Exec] %s: Task SpinLock Fail hook @ 0x%p initialised (func @ 0x%p)\n", __PRETTY_FUNCTION__, &Exec_TaskSpinLockFailHook, Exec_TaskSpinLockFailHook.h_Entry));
 }
 
-ADD2INITLIB(Exec_TaskSpinningInit, 125)
+ADD2INITLIB(Exec_TaskSpinningInit, -127)
 #endif
 
 ADD2INITLIB(Exec_ARMCPUInit, 0)
