@@ -230,7 +230,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
 
     D(bug("[Kernel] Preparing memory 0x%p -> 0x%p\n", memlower, memupper));
-    D(bug("[Kernel] (protected area 0x%p -> 0x%p)\n", protlower, protupper));
+    D(bug("[Kernel] - protected area 0x%p -> 0x%p)\n", protlower, protupper));
 
     NEWLIST(&memList);
 
