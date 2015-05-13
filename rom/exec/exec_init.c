@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: exec.library resident and initialization.
@@ -265,26 +265,6 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 
     D(debugmem());
 
-    /* Our housekeeper must have the largest possible priority */
-    t = NewCreateTask(TASKTAG_NAME       , "Exec housekeeper",
-                      TASKTAG_PRI        , 127,
-                      TASKTAG_PC         , ServiceTask,
-                      TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->ServicePort,
-                      TASKTAG_ARG1       , SysBase,
-                      TAG_DONE);
-    if (!t)
-    {
-        DINIT("FATAL: Failed to start up service task");
-        goto execfatal;
-    }
-
-    /* Create task for handling supervisor level errors */
-    NewCreateTask(TASKTAG_NAME       , "Exec Guru Task",
-                  TASKTAG_PRI        , 126,
-                  TASKTAG_PC         , SupervisorAlertTask,
-                  TASKTAG_ARG1       , SysBase,
-                  TAG_DONE);
-
     /* Call platform-specific init code (if any) */
     set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
 
@@ -307,6 +287,36 @@ execfatal:
     return NULL;
 
     AROS_USERFUNC_EXIT
+}
+
+int Exec_InitServices(struct ExecBase *SysBase)
+{
+    struct Task *t;
+
+    DINIT("starting exec service tasks");
+
+    /* Our housekeeper must have the largest possible priority */
+    t = NewCreateTask(TASKTAG_NAME       , "Exec housekeeper",
+                      TASKTAG_PRI        , 127,
+                      TASKTAG_PC         , ServiceTask,
+                      TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->ServicePort,
+                      TASKTAG_ARG1       , SysBase,
+                      TAG_DONE);
+
+    if (!t)
+    {
+        Alert( AT_DeadEnd | AN_ExecLib );
+        return FALSE;
+    }
+
+    /* Create task for handling supervisor level errors */
+    NewCreateTask(TASKTAG_NAME       , "Exec Guru Task",
+                  TASKTAG_PRI        , 126,
+                  TASKTAG_PC         , SupervisorAlertTask,
+                  TASKTAG_ARG1       , SysBase,
+                  TAG_DONE);
+
+    return TRUE;
 }
 
 AROS_PLH1(struct ExecBase *, open,
@@ -333,3 +343,5 @@ AROS_PLH0(BPTR, close,
 
     AROS_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(Exec_InitServices, -126)
