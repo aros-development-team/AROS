@@ -98,19 +98,19 @@ void cpu_Register()
     __tls = TLS_PTR_GET();
 
     /* Now we are ready to boostrap and launch the schedular */
-    bug("[Kernel] Core %d Boostrapping..\n", (tmp & 0x3));
+    bug("[Kernel] CPU #%02d Boostrapping..\n", (tmp & 0x3));
 
     asm volatile ("mrs %0, cpsr" :"=r"(ttmp));
-    bug("[Kernel] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
+    bug("[Kernel] CPU #%02d CPSR=%08x\n", (tmp & 0x3), ttmp);
     ttmp &= ~(1 << 6);
     asm volatile ("msr cpsr_cxsf, %0" ::"r"(ttmp));
-    bug("[Kernel] Core %d CPSR=%08x\n", (tmp & 0x3), ttmp);
+    bug("[Kernel] CPU #%02d CPSR=%08x\n", (tmp & 0x3), ttmp);
 
-    bug("[Kernel] Core %d TLS @ 0x%p\n", (tmp & 0x3), (__tls));
+    bug("[Kernel] CPU #%02d TLS @ 0x%p\n", (tmp & 0x3), (__tls));
     KernelBase = (struct KernelBase *)__tls->KernelBase; // TLS_GET(KernelBase)
     SysBase = (struct ExecBase *)__tls->SysBase; // TLS_GET(SysBase)
-    bug("[Kernel] Core %d KernelBase @ 0x%p\n", (tmp & 0x3), KernelBase);
-    bug("[Kernel] Core %d SysBase @ 0x%p\n", (tmp & 0x3), SysBase);
+    bug("[Kernel] CPU #%02d KernelBase @ 0x%p\n", (tmp & 0x3), KernelBase);
+    bug("[Kernel] CPU #%02d SysBase @ 0x%p\n", (tmp & 0x3), SysBase);
 
     if ((__tls->ThisTask = cpu_InitBootStrap(SysBase)) == NULL)
         goto cpu_registerfatal;
@@ -121,7 +121,7 @@ void cpu_Register()
     cpu_BootStrap(__tls->ThisTask, SysBase);
 #endif
 
-    bug("[Kernel] Core %d operational\n", (tmp & 0x3));
+    bug("[Kernel] CPU #%02d operational\n", (tmp & 0x3));
 
     KrnSpinLock(&__arm_affinitymasklock, NULL, SPINLOCK_MODE_WRITE);
     __arm_affinitymask |= (1 << (tmp & 0x3));
@@ -129,7 +129,7 @@ void cpu_Register()
 
 cpu_registerfatal:
 
-    bug("[Kernel] Core %d waiting for interrupts\n", (tmp & 0x3));
+    bug("[Kernel] CPU #%02d waiting for interrupts\n", (tmp & 0x3));
 
     KrnSpinUnLock(&startup_lock);
 
