@@ -89,14 +89,15 @@
         /* task is running (Signal() called from within interrupt)? Raise the exception or defer it for later. */
         if (task->tc_State == TS_RUN)
         {
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(task_listlock);
+#endif
             /* Order a reschedule */
             Reschedule();
 
             /* All done. */
-#if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(task_listlock);
-#endif
             Enable();
+
             return;
         }
     }
@@ -127,12 +128,21 @@
                 (If the current task is not running it is already moved)
             */
             if (GET_THIS_TASK->tc_State == TS_RUN)
+            {
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_UNLOCK(task_listlock);
+                task_listlock = NULL;
+#endif
                 Reschedule();
+            }
         }
     }
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(task_listlock);
+    if (task_listlock)
+    {
+        EXEC_SPINLOCK_UNLOCK(task_listlock);
+    }
 #endif
     Enable();
 
