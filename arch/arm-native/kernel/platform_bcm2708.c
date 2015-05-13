@@ -114,7 +114,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             arm_flush_cache((uint32_t)trampoline_dst, 512);
 
             /* Lock the startup spinlock */
-            KrnSpinLock(&startup_lock, SPINLOCK_MODE_WRITE);
+            KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
 
             /* Wake up the cpu */
             *((uint32_t *)(BCM2836_MAILBOX3_SET0 + (0x10 * cpu))) = (uint32_t)trampoline_dst;
@@ -124,7 +124,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
                  * This should put this cpu to sleep since the locked was already obtained. Once the cpu startup
                  * is ready, it will call KrnSpinUnLock too
                  */
-                KrnSpinLock(&startup_lock, SPINLOCK_MODE_WRITE);
+                KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
                 KrnSpinUnLock(&startup_lock);
         }
     }
