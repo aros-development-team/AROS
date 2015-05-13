@@ -83,7 +83,7 @@ BOOL core_Schedule(void)
     DSCHED
         (
             if (corereschedule)
-                bug("[KRN:BCM2708] Setting task 0x%p (%s) to READY\n", task, task->tc_Node.ln_Name);
+                bug("[KRN:BCM2708] '%s' @ 0x%p needs rescheduled ..\n", task->tc_Node.ln_Name, task);
         )
 
     return corereschedule;
@@ -94,7 +94,7 @@ void core_Switch(void)
 {
     struct Task *task = GET_THIS_TASK;
 
-    DSCHED(bug("[KRN:BCM2708] core_Switch(): Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
+    DSCHED(bug("[KRN:BCM2708] core_Switch(): Switching away from '%s' @ 0x%p\n", task->tc_Node.ln_Name, task));
 
     if (task->tc_State == TS_RUN)
     {
@@ -112,8 +112,8 @@ void core_Switch(void)
     /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
-        bug("[KRN:BCM2708] Task %s went out of stack limits\n", task->tc_Node.ln_Name);
-        bug("[KRN:BCM2708] Lower %p, upper %p, SP %p\n", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
+        bug("[KRN:BCM2708] '%s' @ 0x%p went out of stack limits\n", task->tc_Node.ln_Name, task);
+        bug("[KRN:BCM2708]   Lower 0x%p, upper 0x%p, SP 0x%p\n", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
 
         task->tc_SigWait    = 0;
         task->tc_State      = TS_WAIT;
@@ -206,7 +206,7 @@ struct Task *core_Dispatch(void)
         }
 #endif
 
-        /* if the task shouldnt run - force a reschedulre.. */
+        /* if the task shouldnt run - force a reschedule.. */
         if (newtask->tc_State != TS_RUN)
         {
             core_Switch();
@@ -214,12 +214,12 @@ struct Task *core_Dispatch(void)
         }
         else
         {
-            DSCHED(bug("[KRN:BCM2708] Dispatching Task @ %p (%s)\n", newtask, newtask->tc_Node.ln_Name));
+            DSCHED(bug("[KRN:BCM2708] Launching '%s' @ %p\n", newtask->tc_Node.ln_Name, newtask));
         }
     }
     else
     {
-        /* Is the list of ready tasks empty? Well, go idle. */
+        /* Go idle if there is nothing to do ... */
         DSCHED(bug("[KRN:BCM2708] No ready Task(s) - entering sleep mode\n"));
 
         /*
