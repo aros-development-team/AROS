@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -47,34 +47,80 @@
 {
     AROS_LIBFUNC_INIT
 
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t *listLock;
+#endif
     struct Task *t;
     struct ETask *et;
 
-    /*
-	First up, check ThisTask. It could be NULL because of exec_init.c
-    */
+    /* First up, check running task(s) */
+#if defined(__AROSEXEC_SMP__)
+    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+#endif
+    Disable();
+#if defined(__AROSEXEC_SMP__)
+    ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
+    {
+	et = GetETask(t);
+	if (et != NULL && et->et_UniqueID == id)
+        {
+            EXEC_SPINLOCK_UNLOCK(listLock);
+            Enable();
+	    return t;
+        }
+    }
+    EXEC_SPINLOCK_UNLOCK(listLock);
+    Enable();
+    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    Disable();
+#else
     if (GET_THIS_TASK != NULL)
     {
 	et = GetETask(GET_THIS_TASK);
 	if (et != NULL && et->et_UniqueID == id)
+        {
+            Enable();
 	    return GET_THIS_TASK;
+        }
     }
-
+#endif
     /*	Next, go through the ready list */
     ForeachNode(&SysBase->TaskReady, t)
     {
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
+        {
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(listLock);
+#endif
+            Enable();
 	    return t;
+        }
     }
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(listLock);
+    Enable();
+    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+    Disable();
+#endif
     /* Finally, go through the wait list */
     ForeachNode(&SysBase->TaskWait, t)
     {
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
+        {
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(listLock);
+#endif
+            Enable();
 	    return t;
+        }
     }
+
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(listLock);
+#endif
+    Enable();
 
     return NULL;
 

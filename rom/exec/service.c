@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: exec.library's internal service task. Performs memory management according
@@ -68,8 +68,15 @@ void ServiceTask(struct ExecBase *SysBase)
 
                 /* The task is ready to run again. Move it back to TaskReady list. */
                 task->tc_State = TS_READY;
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+                Disable();
+#endif
                 Enqueue(&SysBase->TaskReady,&task->tc_Node);
-
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+                Enable();
+#endif
                 break;
             }
         }

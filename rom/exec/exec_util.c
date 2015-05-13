@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Exec utility functions.
@@ -87,8 +87,9 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
      */
     struct ETask *et =
         AllocMem(sizeof(struct IntETask), MEMF_PUBLIC | MEMF_CLEAR);
-    D(bug("[TSS] Create new ETask=%p for task=%p with size %d\n",
-        et, task, sizeof(struct IntETask)));
+
+    D(bug("[EXEC:ETask] Init: Allocated ETask @ 0x%p, %d bytes for Task @ %p\n",
+        et, sizeof(struct IntETask), task));
 
     task->tc_UnionETask.tc_ETask = et;
     if (!et)
@@ -161,10 +162,10 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
     if(!et)
 	return;
 
-    D(bug("CleanupETask: task=%x, et=%x\n", task, et));
+    D(bug("[EXEC:ETask] Cleanup: Task @ 0x%p, ETask @ 0x%p\n", task, et));
 
     Forbid();
-    
+
     /* Clean up after all the children that the task didn't do itself. */
     ForeachNodeSafe(&et->et_TaskMsgPort.mp_MsgList, child, tmpNode)
     {
@@ -225,7 +226,7 @@ Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 #ifdef DEBUG_ETASK
     FreeVec(IntETask(et)->iet_Me);
 #endif
-    D(bug("Exec_ExpungeETask: Freeing et=%x, ts=%x, size=%d\n",
+    D(bug("[EXEC:ETask] Expunge: Freeing ETask @ 0x%p, TS @ 0x%p, size=%d\n",
           et, ts, ts ? (ULONG)ts[__TS_FIRSTSLOT] : 0
     ));
     FreeMem(et, sizeof(struct IntETask));
@@ -240,32 +241,73 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     if (!task)
 	return FALSE;
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+    Disable();
+#else
     Forbid();
+#endif
 
+#if defined(__AROSEXEC_SMP__)
+    ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
+    {
+        if (task == t)
+        {
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+            Enable();
+            return TRUE;
+        }
+    }
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+    Enable();
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    Disable();
+#else
     if (task == GET_THIS_TASK)
     {
     	Permit();
     	return TRUE;
     }
+#endif
 
     ForeachNode(&SysBase->TaskReady, t)
     {
     	if (task == t)
     	{
-    	    Permit();
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+            Enable();
+#else
+            Permit();
+#endif
     	    return TRUE;
     	}
     }
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    Enable();
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+    Disable();
+#endif
     ForeachNode(&SysBase->TaskWait, t)
     {
     	if (task == t)
     	{
-    	    Permit();
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+            Enable();
+#else
+            Permit();
+#endif
     	    return TRUE;
     	}
     }
-    
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+    Enable();
+#else
     Permit();
+#endif
+
     return FALSE;
 }
