@@ -110,8 +110,6 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
-extern uint32_t __arm_affinitymask;
-
 void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
     UWORD *ranges[3];
@@ -224,7 +222,6 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
 
     D(bug("[Kernel] Platform initialised\n"));
-    D(bug("[Kernel] Affinity mask %08x\n", __arm_affinitymask));
 
     if (__arm_arosintern.ARMI_Delay)
             __arm_arosintern.ARMI_Delay(1500);
