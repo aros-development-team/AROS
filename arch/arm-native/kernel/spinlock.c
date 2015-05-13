@@ -6,6 +6,7 @@
 #include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+#include <utility/hooks.h>
 
 #include <asm/arm/cpu.h>
 
@@ -13,8 +14,9 @@
 
 #include <proto/kernel.h>
 
-AROS_LH2(spinlock_t *, KrnSpinLock,
+AROS_LH3(spinlock_t *, KrnSpinLock,
 	AROS_LHA(spinlock_t *, lock, A0),
+	AROS_LHA(struct Hook *, failhook, A1),
 	AROS_LHA(ULONG, mode, D0),
 	struct KernelBase *, KernelBase, 43, Kernel)
 {
