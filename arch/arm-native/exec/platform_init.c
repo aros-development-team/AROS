@@ -22,6 +22,9 @@
 #include <stdio.h>
 
 #include "exec_intern.h"
+#if defined(__AROSEXEC_SMP__)
+#include "etask.h"
+#endif
 
 /* Linked from kernel.resource,
  * need to retrieve in a cleaner fashion .. */
@@ -67,7 +70,12 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
 
         if (CPUIdleTask)
         {
-            D(bug("[Exec] %s: %s Task created @ 0x%p\n", __PRETTY_FUNCTION__, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask));
+            D(
+                bug("[Exec] %s: %s Task created @ 0x%p\n", __PRETTY_FUNCTION__, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask);
+#if defined(__AROSEXEC_SMP__)
+                bug("[Exec] %s: CPU Affinity : %08x\n", __PRETTY_FUNCTION__, GetIntETask(CPUIdleTask)->iet_CpuAffinity);
+#endif
+            )
         }
 #if defined(__AROSEXEC_SMP__)
     }
@@ -75,5 +83,54 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
 
     return TRUE;
 }
+
+#if defined(__AROSEXEC_SMP__)
+struct Hook Exec_TaskSpinLockFailHook;
+
+AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(void *, unused, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Task *thisTask = GET_THIS_TASK;
+
+    /* tell the schedular that the task is waiting on a spinlock */
+    thisTask->tc_State = TS_SPIN;
+
+    AROS_USERFUNC_EXIT
+}
+
+void Exec_TaskSpinUnlock(spinlock_t *thisLock)
+{
+#if (0)
+    struct Task *curTask, *tmp;
+
+    ForeachNodeSafe(&PrivExecBase(SysBase)->TaskSpinning, (struct Node *)curTask, tmp)
+    {
+        if (curTask-> == thisLock)
+        {
+            Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
+                SPINLOCK_MODE_WRITE);
+            Disable();
+            Remove(&curTask->tc_Node);
+            Enqueue(&SysBase->TaskReady, &task->tc_Node);
+            Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL);
+            Enable();
+        }
+    }
+    Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL);
+#endif
+}
+
+int Exec_TaskSpinningInit(struct ExecBase *SysBase)
+{
+    /* setup the task spinning hook */
+    Exec_TaskSpinLockFailHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockFailFunc;
+}
+
+ADD2INITLIB(Exec_TaskSpinningInit, 125)
+#endif
 
 ADD2INITLIB(Exec_ARMCPUInit, 0)
