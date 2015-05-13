@@ -89,7 +89,7 @@ struct Hook Exec_TaskSpinLockFailHook;
 
 AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
     AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(void *, unused, A2),
+    AROS_UFHA(spinlock_t *, thisLock, A2),
     AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
@@ -98,30 +98,31 @@ AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
 
     /* tell the schedular that the task is waiting on a spinlock */
     thisTask->tc_State = TS_SPIN;
+    GetIntETask(thisTask)->iet_SpinLock = thisLock;
 
     AROS_USERFUNC_EXIT
 }
 
 void Exec_TaskSpinUnlock(spinlock_t *thisLock)
 {
-#if (0)
-    struct Task *curTask, *tmp;
+    struct Task *curTask, *nxtTask;
 
-    ForeachNodeSafe(&PrivExecBase(SysBase)->TaskSpinning, (struct Node *)curTask, tmp)
+    Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
+                SPINLOCK_MODE_WRITE, NULL);
+    ForeachNodeSafe(&PrivExecBase(SysBase)->TaskSpinning, curTask, nxtTask)
     {
-        if (curTask-> == thisLock)
+        if (GetIntETask(curTask)->iet_SpinLock == thisLock)
         {
             Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
-                SPINLOCK_MODE_WRITE);
+                SPINLOCK_MODE_WRITE, NULL);
             Disable();
             Remove(&curTask->tc_Node);
-            Enqueue(&SysBase->TaskReady, &task->tc_Node);
+            Enqueue(&SysBase->TaskReady, &curTask->tc_Node);
             Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL);
             Enable();
         }
     }
     Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL);
-#endif
 }
 
 int Exec_TaskSpinningInit(struct ExecBase *SysBase)
