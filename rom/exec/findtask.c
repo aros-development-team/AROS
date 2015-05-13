@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Search a task by name.
@@ -8,6 +8,7 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
 #include "exec_intern.h"
 
 /*****************************************************************************
@@ -49,46 +50,80 @@
 {
     AROS_LIBFUNC_INIT
 
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t *listLock;
+#endif
     struct Task *ret;
 
     /* Quick return for a quick argument */
-    if(name==NULL)
+    if (name == NULL)
 	return GET_THIS_TASK;
 
+#if defined(__AROSEXEC_SMP__)
+    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+#endif
     /* Always protect task lists with a Disable(). */
     Disable();
 
     /* First look into the ready list. */
-    ret=(struct Task *)FindName(&SysBase->TaskReady,name);
-    if(ret==NULL)
+    ret = (struct Task *)FindName(&SysBase->TaskReady, name);
+    if (ret == NULL)
     {
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(listLock);
+        Enable();
+        listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+        Disable();
+#endif
 	/* Then into the waiting list. */
-	ret=(struct Task *)FindName(&SysBase->TaskWait,name);
-	if(ret==NULL)
+	ret = (struct Task *)FindName(&SysBase->TaskWait, name);
+	if (ret == NULL)
 	{
 	    /*
-		Finally test the current task. Note that generally
+		Finally test the running task(s). Note that generally
 		you know the name of your own task - so it is close
 		to nonsense to look for it this way.
 	    */
-	    char *s1=GET_THIS_TASK->tc_Node.ln_Name;
-	    const char *s2=name;
+	    char *s1;
+	    const char *s2 = name;
 
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(listLock);
+            Enable();
+            listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+            Disable();
+            ForeachNode(&PrivExecBase(SysBase)->TaskRunning, ret)
+            {
+                s1 = ret->tc_Node.ln_Name;
+#else
+            s1 = GET_THIS_TASK->tc_Node.ln_Name;
+#endif
 	    /* Check as long as the names are identical. */
-	    while(*s1++==*s2)
+	    while (*s1++ == *s2)
 		/* Terminator found? */
-		if(!*s2++)
+		if (!*s2++)
 		{
 		    /* Got it. */
-		    ret=GET_THIS_TASK;
+#if defined(__AROSEXEC_SMP__)
+#else
+		    ret = GET_THIS_TASK;
+#endif
 		    break;
 		}
-	}
+#if defined(__AROSEXEC_SMP__)
+            }
+#endif
+        }
     }
 
-    /* Return whatever I found. */
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(listLock);
+#endif
     Enable();
+
+    /* Return whatever was found. */
     return ret;
+
     AROS_LIBFUNC_EXIT
 } /* FindTask */
 

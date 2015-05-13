@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal debugger.
@@ -278,10 +278,16 @@ static char *NextWord(char *s)
 
             kprintf("Task List:\n");
 
-            kprintf("0x%p T %d %s\n",GET_THIS_TASK,
-                GET_THIS_TASK->tc_Node.ln_Pri,
-                GET_THIS_TASK->tc_Node.ln_Name);
-
+#if defined(__AROSEXEC_SMP__)
+            ForeachNode(&PrivExecBase(SysBase)->TaskRunning, node)
+            {
+#else
+            node = (struct Node *)GET_THIS_TASK;
+#endif
+            kprintf("0x%p T %d %s\n",node, node->ln_Pri, node->ln_Name);
+#if defined(__AROSEXEC_SMP__)
+            }
+#endif
             /* Look through the list */
             for (node = GetHead(&SysBase->TaskReady); node; node = GetSucc(node))
             {
