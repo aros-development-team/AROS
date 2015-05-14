@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2003-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -106,6 +106,65 @@ enum
 
 #define SECRET_CHAR '*'
 
+
+/****** String.mui/MUIA_String_Accept ****************************************
+*
+*   NAME
+*       MUIA_String_Accept -- (V4) [ISG], STRPTR
+*
+*   FUNCTION
+*       A string containing the characters to be accepted by the string
+*       gadget. If NULL is specified, all characters are accepted. The
+*       character list is case sensitive.
+*
+*   NOTES
+*       MUIA_String_Reject takes precedence over MUIA_String_Accept.
+*
+*       The specified string is not cached within the object.
+*
+*   SEE ALSO
+*       MUIA_String_Reject
+*
+******************************************************************************
+*
+*/
+
+/****** String.mui/MUIA_String_Reject ****************************************
+*
+*   NAME
+*       MUIA_String_Reject -- (V4) [ISG], STRPTR
+*
+*   FUNCTION
+*       A string containing the characters to be rejected by the string
+*       gadget. If NULL is specified, no characters are rejected. The
+*       character list is case sensitive.
+*
+*   NOTES
+*       MUIA_String_Reject takes precedence over MUIA_String_Accept.
+*
+*       The specified string is not cached within the object.
+*
+*   SEE ALSO
+*       MUIA_String_Accept
+*
+******************************************************************************
+*
+*/
+
+/****** String.mui/MUIA_String_BufferPos *************************************
+*
+*   NAME
+*       MUIA_String_BufferPos -- (V4) [ISG], STRPTR
+*
+*   FUNCTION
+*       The cursor's position relative to the start of the string.
+*
+*   NOTES
+*       The MUI AutoDocs claim this attribute is not initialisable.
+*
+******************************************************************************
+*
+*/
 
 /**************************************************************************
  Buffer_Alloc
@@ -446,6 +505,10 @@ IPTR String__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 MSDF_ADVANCEONCR);
             break;
 
+        case MUIA_String_BufferPos:
+            data->BufferPos = (ULONG) tag->ti_Data;
+            break;
+
         case MUIA_String_AttachedList:
             data->msd_AttachedList = (Object *) tag->ti_Data;
             break;
@@ -649,6 +712,10 @@ IPTR String__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     case MUIA_String_AttachedList:
         STORE = (IPTR) data->msd_AttachedList;
+        return TRUE;
+
+    case MUIA_String_Format:
+        STORE = (IPTR) data->msd_Align;
         return TRUE;
 
     case MUIA_String_Integer:
@@ -1211,7 +1278,7 @@ IPTR String__MUIM_Draw(struct IClass *cl, Object *obj,
  Returns whether object needs redrawing
 **************************************************************************/
 static int String_HandleVanillakey(struct IClass *cl, Object *obj,
-    unsigned char code, UWORD qual)
+    unsigned char code, UWORD qual, IPTR *retval)
 {
     struct MUI_StringData *data =
         (struct MUI_StringData *)INST_DATA(cl, obj);
@@ -1335,6 +1402,11 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
         return 1;
     }
 
+    if (code == '\t')             // tab
+    {
+        return 0;
+    }
+
     if (((ToLower(code) == 'c') || (ToLower(code) == 'x')) &&
         (qual & IEQUALIFIER_RCOMMAND))
     {
@@ -1394,7 +1466,11 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
     {
         /* Check if character is accepted */
         if (NULL == strchr(data->msd_Accept, code))
+        {
+            DisplayBeep(NULL);
+            *retval = MUI_EventHandlerRC_Eat;
             return 0;
+        }
     }
 
     if (data->msd_Reject != NULL)
@@ -1403,6 +1479,7 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
         if (NULL != strchr(data->msd_Reject, code))
         {
             DisplayBeep(NULL);
+            *retval = MUI_EventHandlerRC_Eat;
             return 0;
         }
     }
@@ -1437,7 +1514,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 {
     struct MUI_StringData *data =
         (struct MUI_StringData *)INST_DATA(cl, obj);
-    ULONG retval = 0;
+    IPTR retval = 0;
     int update = 0;
     BOOL edited = FALSE;
     LONG muikey = msg->muikey;
@@ -1922,7 +1999,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 {
                     update =
                         String_HandleVanillakey(cl, obj, code,
-                        msg->imsg->Qualifier);
+                        msg->imsg->Qualifier, &retval);
                     if (update)
                     {
                         retval = MUI_EventHandlerRC_Eat;
