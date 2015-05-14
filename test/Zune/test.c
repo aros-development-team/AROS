@@ -38,12 +38,16 @@
 #include "../../workbench/system/Wanderer/Classes/iconlist.h"
 #endif
 
+#define STRING_COUNT 6
 #define LIST_COUNT 5
 #define MULTI_LIST_COUNT 2
 
 #define NUMERIC_MIN 0
 #define NUMERIC_MAX 100
 
+static const TEXT digits[] = "-0123456789";
+static const TEXT default_accept_chars[] = "aeiou?.";
+static const TEXT default_reject_chars[] = "*?";
 static const ULONG default_color[] = {155 << 24, 180 << 24, 255 << 24};
 static const struct MUI_PenSpec default_penspec = {"m0"};
 static const TEXT list_format[] = "BAR,BAR,";
@@ -73,6 +77,24 @@ struct list_entry
 };
 
 Object *app;
+
+struct
+{
+    Object *strings[STRING_COUNT],
+        *accept_string,
+        *reject_string,
+        *cursor_pos_slider,
+        *display_pos_slider,
+        *integer_string,
+        *plaintext_string,
+        *max_len_text,
+        *cr_advance_check,
+        *attach_list_check,
+        *standard_hook_check,
+        *custom_hook_check,
+        *accept_all_check;
+}
+string;
 
 Object *wheel;
 Object *r_slider;
@@ -166,11 +188,38 @@ AROS_UFH0(void, about_function)
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH0(void, ChangeStringAccept)
+{
+    AROS_USERFUNC_INIT
+
+    STRPTR accept_chars = NULL, reject_chars = NULL;
+    BOOL accept_all;
+    UWORD i;
+
+    accept_all = XGET(string.accept_all_check, MUIA_Selected);
+    SET(string.accept_string, MUIA_Disabled, accept_all);
+    SET(string.reject_string, MUIA_Disabled, accept_all);
+
+    if (!accept_all)
+    {
+        GET(string.accept_string, MUIA_String_Contents, &accept_chars);
+        GET(string.reject_string, MUIA_String_Contents, &reject_chars);
+    }
+
+    for (i = 0; i < STRING_COUNT; i++)
+    {
+        SET(string.strings[i], MUIA_String_Accept, accept_chars);
+        SET(string.strings[i], MUIA_String_Reject, reject_chars);
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
 AROS_UFH0(void, changepen_function)
 {
     AROS_USERFUNC_INIT
 
-    SIPTR pen = 0;
+    SIPTR pen = -1;
 
     GET(colorfield_pen, MUIA_String_Integer, &pen);
     if (pen >= 0)
@@ -362,7 +411,6 @@ AROS_UFH3S(IPTR, dispatcher,
             char buf[100];
             data->times++;
             sprintf(buf, "%ld times", (long)data->times);
-                /* no MUIM_SetAsString yet */
             set(obj, MUIA_Text_Contents, buf);
         }
     }
@@ -427,6 +475,8 @@ int main(void)
             "Icon List",
 #endif
             "Balancing", NULL};
+    static char *text_pages[] =
+        {"Text", "String", NULL};
     static char *color_pages[] =
         {"Palette", "Colors", "Pens", NULL};
     static char *list_pages[] =
@@ -647,6 +697,8 @@ int main(void)
                         End,
 
                     /* text */
+                    Child, RegisterGroup(text_pages),
+
                     Child, VGroup,
                         Child, TextObject,
                             MUIA_Background, "2:cfffffff,cfffffff,10000000",
@@ -668,6 +720,204 @@ int main(void)
                             MUIA_String_AdvanceOnCR, TRUE,
                             End,
                         Child, HVSpace,
+                        End,
+
+                        /* string */
+                        Child, HGroup,
+                            Child, VGroup,
+                                Child, VGroup, GroupFrameT("Default Alignment"),
+                                    Child, string.strings[0] = StringObject,
+                                        StringFrame,
+                                        MUIA_String_Accept,
+                                            (IPTR)default_accept_chars,
+                                        MUIA_String_Reject,
+                                            (IPTR)default_reject_chars,
+                                        MUIA_String_AdvanceOnCR, TRUE,
+                                        MUIA_String_MaxLen, 9,
+                                        MUIA_CycleChain, 1,
+                                        MUIA_String_AttachedList, lists[0],
+                                        End,
+                                    End,
+                                Child, VGroup, GroupFrameT("Left Aligned"),
+                                    Child, string.strings[1] = StringObject,
+                                        StringFrame,
+                                        MUIA_String_Accept,
+                                            (IPTR)default_accept_chars,
+                                        MUIA_String_Reject,
+                                            (IPTR)default_reject_chars,
+                                        MUIA_String_Format,
+                                            MUIV_String_Format_Left,
+                                        MUIA_String_AdvanceOnCR, TRUE,
+                                        MUIA_String_MaxLen, 9,
+                                        MUIA_CycleChain, 1,
+                                        MUIA_String_Contents,
+                                            (IPTR)default_accept_chars,
+                                        MUIA_String_BufferPos, 3,
+                                        MUIA_String_AttachedList, lists[0],
+                                        End,
+                                    End,
+                                Child, VGroup, GroupFrameT("Right Aligned"),
+                                    Child, string.strings[2] = StringObject,
+                                        StringFrame,
+                                        MUIA_String_Accept,
+                                            (IPTR)default_accept_chars,
+                                        MUIA_String_Reject,
+                                            (IPTR)default_reject_chars,
+                                        MUIA_String_Format,
+                                            MUIV_String_Format_Right,
+                                        MUIA_String_AdvanceOnCR, TRUE,
+                                        MUIA_String_MaxLen, 9,
+                                        MUIA_CycleChain, 1,
+                                        MUIA_String_AttachedList, lists[0],
+                                        End,
+                                    End,
+                                Child, VGroup, GroupFrameT("Centered"),
+                                    Child, string.strings[3] = StringObject,
+                                        StringFrame,
+                                        MUIA_String_Accept,
+                                            (IPTR)default_accept_chars,
+                                        MUIA_String_Reject,
+                                            (IPTR)default_reject_chars,
+                                        MUIA_String_Format,
+                                            MUIV_String_Format_Center,
+                                        MUIA_String_AdvanceOnCR, TRUE,
+                                        MUIA_String_MaxLen, 9,
+                                        MUIA_CycleChain, 1,
+                                        MUIA_String_Integer, 123,
+                                        MUIA_String_AttachedList, lists[0],
+                                        End,
+                                    End,
+                                Child, VGroup, GroupFrameT("Secret"),
+                                    Child, string.strings[4] = StringObject,
+                                        StringFrame,
+                                        MUIA_String_Accept,
+                                            (IPTR)default_accept_chars,
+                                        MUIA_String_Reject,
+                                            (IPTR)default_reject_chars,
+                                        MUIA_String_Format,
+                                            MUIV_String_Format_Center,
+                                        MUIA_String_Secret, TRUE,
+                                        MUIA_String_AdvanceOnCR, TRUE,
+                                        MUIA_String_MaxLen, 9,
+                                        MUIA_CycleChain, 1,
+                                        MUIA_String_AttachedList, lists[0],
+                                        End,
+                                    End,
+                                Child, HGroup, GroupFrameT("Narrow"),
+                                    Child, HVSpace,
+                                    Child, string.strings[5] = StringObject,
+                                        StringFrame,
+                                        MUIA_String_Accept,
+                                            (IPTR)default_accept_chars,
+                                        MUIA_String_Reject,
+                                            (IPTR)default_reject_chars,
+                                        MUIA_String_Format,
+                                            MUIV_String_Format_Center,
+                                        MUIA_String_AdvanceOnCR, TRUE,
+                                        MUIA_MaxWidth, 20,
+                                        MUIA_String_MaxLen, 9,
+                                        MUIA_CycleChain, 1,
+                                        MUIA_String_AttachedList, lists[0],
+                                        End,
+                                    Child, HVSpace,
+                                    End,
+                                Child, HVSpace,
+                                End,
+                            Child, VGroup, GroupFrameT("Controls"),
+                                Child, HGroup,
+                                    Child, string.accept_all_check =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL),
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Accept all characters", 0),
+                                    Child, HVSpace,
+                                    End,
+                                Child, ColGroup(2),
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Acceptable characters:", 0),
+                                    Child, string.accept_string = StringObject,
+                                        StringFrame,
+                                        MUIA_String_Contents,
+                                            (IPTR)default_accept_chars,
+                                        End,
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Unacceptable characters:", 0),
+                                    Child, string.reject_string = StringObject,
+                                        StringFrame,
+                                        End,
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Cursor position:", 0),
+                                    Child, string.cursor_pos_slider =
+                                        SliderObject,
+                                        MUIA_Group_Horiz, TRUE,
+                                        MUIA_Numeric_Min, 0,
+                                        End,
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Display position:", 0),
+                                    Child, string.display_pos_slider =
+                                        SliderObject,
+                                        MUIA_Group_Horiz, TRUE,
+                                        MUIA_Numeric_Min, 0,
+                                        End,
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Integer value:", 0),
+                                    Child, string.integer_string =
+                                        StringObject,
+                                        StringFrame,
+                                        MUIA_String_Accept, (IPTR)digits,
+                                        End,
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Plaintext:", 0),
+                                    Child, string.plaintext_string =
+                                        StringObject,
+                                        StringFrame,
+                                        End,
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Maximum string length:", 0),
+                                    Child, string.max_len_text = TextObject,
+                                        TextFrame,
+                                        MUIA_Text_Contents, "Unknown",
+                                        End,
+                                    End,
+                                Child, VGroup,
+                                    Child, HGroup,
+                                        Child, string.cr_advance_check =
+                                            MUI_MakeObject(MUIO_Checkmark,
+                                                NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Advance on CR", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, string.attach_list_check =
+                                            MUI_MakeObject(MUIO_Checkmark,
+                                                NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Attach list", 0),
+                                        Child, HVSpace,
+                                        End,
+#if 0
+                                    Child, HGroup,
+                                        Child, string.standard_hook_check =
+                                            MUI_MakeObject(MUIO_Checkmark,
+                                                NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Use standard edit hook", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, string.custom_hook_check =
+                                            MUI_MakeObject(MUIO_Checkmark,
+                                                NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Use custom edit hook", 0),
+                                        Child, HVSpace,
+                                        End,
+#endif
+                                    End,
+                                Child, HVSpace,
+                                End,
+
+                            End,
                         End,
 
                     /* boopsi */
@@ -1180,7 +1430,7 @@ int main(void)
                                 "Minimum Value:", 0),
                             Child, min_string = (Object *)StringObject,
                                 StringFrame,
-                                MUIA_String_Accept, (IPTR)"-0123456789",
+                                MUIA_String_Accept, (IPTR)digits,
                                 MUIA_String_Integer, NUMERIC_MIN,
                                 MUIA_CycleChain, 1,
                                 End,
@@ -1188,7 +1438,7 @@ int main(void)
                                 "Maximum Value:", 0),
                             Child, max_string = (Object *)StringObject,
                                 StringFrame,
-                                MUIA_String_Accept, (IPTR)"-0123456789",
+                                MUIA_String_Accept, (IPTR)digits,
                                 MUIA_String_Integer, NUMERIC_MAX,
                                 MUIA_CycleChain, 1,
                                 End,
@@ -1321,6 +1571,95 @@ int main(void)
             MUIM_CallHook, &hook_objects);
         DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime,
             app, 2, MUIM_CallHook, &hook);
+
+        /* Notifications and set-up for string objects */
+        DoMethod(string.max_len_text, MUIM_SetAsString, MUIA_Text_Contents,
+            "%ld", XGET(string.strings[0], MUIA_String_MaxLen) - 1);
+        set(string.cursor_pos_slider, MUIA_Numeric_Max,
+            XGET(string.strings[0], MUIA_String_MaxLen) - 1);
+        set(string.display_pos_slider, MUIA_Numeric_Max,
+            XGET(string.strings[0], MUIA_String_MaxLen) - 1);
+        set(string.cr_advance_check, MUIA_Selected, TRUE);
+        set(string.attach_list_check, MUIA_Selected, TRUE);
+        set(string.strings[1], MUIA_Disabled,
+            XGET(string.strings[1], MUIA_String_Format)
+            != MUIV_String_Format_Left);
+        set(string.strings[2], MUIA_Disabled,
+            XGET(string.strings[2], MUIA_String_Format)
+            != MUIV_String_Format_Right);
+        set(string.strings[3], MUIA_Disabled,
+            XGET(string.strings[3], MUIA_String_Format)
+            != MUIV_String_Format_Center);
+        set(string.strings[4], MUIA_Disabled,
+            !XGET(string.strings[4], MUIA_String_Secret));
+        set(string.strings[0], MUIA_String_MaxLen, 100);
+        set(string.reject_string, MUIA_String_Contents,
+            (IPTR)default_reject_chars);
+
+        for (i = 0; i < STRING_COUNT; i++)
+        {
+            if (i == 0)
+            {
+                DoMethod(string.accept_string, MUIM_Notify,
+                    MUIA_String_Contents, MUIV_EveryTime, string.strings[i],
+                    3, MUIM_Set, MUIA_String_Accept, MUIV_TriggerValue);
+                DoMethod(string.cr_advance_check, MUIM_Notify, MUIA_Selected,
+                    MUIV_EveryTime, string.strings[i], 3, MUIM_Set,
+                    MUIA_String_AdvanceOnCR, MUIV_TriggerValue);
+                DoMethod(string.cursor_pos_slider, MUIM_Notify,
+                    MUIA_Numeric_Value, MUIV_EveryTime, string.strings[i], 3,
+                    MUIM_Set, MUIA_String_BufferPos, MUIV_TriggerValue);
+                DoMethod(string.display_pos_slider, MUIM_Notify,
+                    MUIA_Numeric_Value, MUIV_EveryTime, string.strings[i], 3,
+                    MUIM_Set, MUIA_String_DisplayPos, MUIV_TriggerValue);
+                DoMethod(string.attach_list_check, MUIM_Notify, MUIA_Selected,
+                    TRUE, string.strings[i], 3, MUIM_Set,
+                    MUIA_String_AttachedList, lists[0]);
+                DoMethod(string.attach_list_check, MUIM_Notify, MUIA_Selected,
+                    FALSE, string.strings[i], 3, MUIM_Set,
+                    MUIA_String_AttachedList, NULL);
+            }
+            else
+            {
+                DoMethod(string.strings[0], MUIM_Notify, MUIA_String_Accept,
+                    MUIV_EveryTime, string.strings[i], 3, MUIM_Set,
+                    MUIA_String_Accept, MUIV_TriggerValue);
+                DoMethod(string.strings[0], MUIM_Notify,
+                    MUIA_String_AdvanceOnCR, MUIV_EveryTime,
+                    string.strings[i], 3, MUIM_Set, MUIA_String_AdvanceOnCR,
+                    MUIV_TriggerValue);
+                DoMethod(string.strings[0], MUIM_Notify,
+                    MUIA_String_BufferPos, MUIV_EveryTime,
+                    string.strings[i], 3, MUIM_Set, MUIA_String_BufferPos,
+                    MUIV_TriggerValue);
+                DoMethod(string.strings[0], MUIM_Notify,
+                    MUIA_String_DisplayPos, MUIV_EveryTime,
+                    string.strings[i], 3, MUIM_Set, MUIA_String_DisplayPos,
+                    MUIV_TriggerValue);
+                DoMethod(string.strings[0], MUIM_Notify,
+                    MUIA_String_AttachedList, MUIV_EveryTime,
+                    string.strings[i], 3, MUIM_Set,
+                    MUIA_String_AttachedList, MUIV_TriggerValue);
+            }
+            DoMethod(string.reject_string, MUIM_Notify, MUIA_String_Contents,
+                MUIV_EveryTime, string.strings[i], 3, MUIM_Set,
+                MUIA_String_Reject, MUIV_TriggerValue);
+            DoMethod(string.strings[i], MUIM_Notify, MUIA_String_Integer,
+                MUIV_EveryTime, string.integer_string, 3, MUIM_NoNotifySet,
+                MUIA_String_Integer, MUIV_TriggerValue);
+            DoMethod(string.integer_string, MUIM_Notify, MUIA_String_Integer,
+                MUIV_EveryTime, string.strings[i], 3, MUIM_NoNotifySet,
+                MUIA_String_Integer, MUIV_TriggerValue);
+        }
+        DoMethod(string.accept_all_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ChangeStringAccept);
+        DoMethod(string.strings[4], MUIM_Notify, MUIA_String_Acknowledge,
+            MUIV_EveryTime, string.plaintext_string, 3, MUIM_NoNotifySet,
+            MUIA_String_Contents, MUIV_TriggerValue);
+        DoMethod(string.plaintext_string, MUIM_Notify,
+            MUIA_String_Acknowledge, MUIV_EveryTime, string.strings[4], 3,
+            MUIM_NoNotifySet, MUIA_String_Contents, MUIV_TriggerValue);
 
         DoMethod(wheel, MUIM_Notify, WHEEL_Hue, MUIV_EveryTime, app, 2,
             MUIM_CallHook, &hook_wheel);
