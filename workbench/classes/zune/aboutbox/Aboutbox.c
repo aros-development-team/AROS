@@ -144,6 +144,11 @@ static char *BuildAppInfo(struct IClass *cl, Object *obj)
             info += 6;
         appendExpandStr(&data->appInfo, "\n");
         appendExpandStr(&data->appInfo, info);
+        if (data->build)
+        {
+            appendExpandStr(&data->appInfo, "\n");
+            appendExpandStr(&data->appInfo, data->build);
+        }
         appendExpandStr(&data->appInfo, "\n");
     }
     if((info = (char *)XGET(_app(obj), MUIA_Application_Copyright)) != NULL)
