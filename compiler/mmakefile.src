@@ -1,5 +1,9 @@
 # $Id$
 
+include $(TOP)/config/make.cfg
+
+#MM- AROS     : compiler-setup
+
 #MM- compiler : includes linklibs
 
 #MM- includes : includes-$(AROS_TARGET_CPU) \
@@ -13,3 +17,8 @@
 #MM             linklibs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
 #MM             linklibs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_VARIANT) \
 #MM             linklibs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)
+
+
+#MM compiler-setup :
+%rule_makedirs dirs="$(AROS_INCLUDES) $(AROS_LIB) $(AROS_DEVELOPMENT)/bin $(AROS_DEVELOPMENT)/etc" \
+    setuptarget=compiler-setup

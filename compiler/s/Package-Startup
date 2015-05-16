@@ -2,9 +2,8 @@ Assign INCLUDE: Development:include
 Assign LIB: Development:lib
 Assign USR: Development:
 Assign TMP: T:
+Assign ETC: Development:etc
 Stack 262144
 
-If Exists Development:bin
-    Assign BIN: Development:bin
-    Path ADD Development:bin
-EndIf
+Assign BIN: Development:bin
+Path ADD Development:bin
