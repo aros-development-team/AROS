@@ -1392,9 +1392,9 @@ struct PsdPoPoGadgets * pAllocPoPoGadgets(LIBBASETYPEPTR ps, STRPTR body, STRPTR
                         MUIA_Text_Contents, (IPTR)(gad[3] ? gad[3] : (STRPTR) ""),
                         MUIA_ShowMe, (IPTR)gad[3],
                         End),
-                    End,
+                    End),
                 //Child, VSpace(0),
-                Child, (IPTR)BalanceObject,
+                Child, (IPTR)(BalanceObject,
                     End),
                 //Child, VSpace(0),
                 End;
