@@ -2735,7 +2735,7 @@ ifeq (%(compiler),host)
         TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
         TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)" \
-        TARGET_NM="$(NM_PLAIN)"
+        TARGET_NM="$(NM_PLAIN)" TARGET_OBJCOPY="$(TARGET_OBJCOPY)"
 endif
 ifeq (%(compiler),target)
     CONFIG_ENV := \
