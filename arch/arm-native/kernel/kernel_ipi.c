@@ -21,7 +21,7 @@
 
 #if defined(__AROSEXEC_SMP__)
 
-#define D(x)
+#define D(x) x
 
 #include "kernel_ipi.h"
 

@@ -16,6 +16,7 @@
 
 #include "kernel_cpu.h"
 
+#define AROS_NO_ATOMIC_OPERATIONS
 #include <exec_platform.h>
 
 #include <aros/types/spinlock_s.h>
@@ -37,7 +38,7 @@ BOOL core_Schedule(void)
 
     DSCHED(bug("[Kernel:%02d] core_Schedule()\n", cpunum));
 
-    SysBase->AttnResched &= ~ARF_AttnSwitch;
+    FLAG_SCHEDSWITCH_CLEAR;
 
     /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
     if (!(task->tc_Flags & TF_EXCEPT))
@@ -69,7 +70,7 @@ BOOL core_Schedule(void)
                     if (nexttask->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
                     {
                         /* If the running task did not used it's whole quantum yet, let it work */
-                        if (!(SysBase->SysFlags & SFF_QuantumOver))
+                        if (!FLAG_SCHEDQUANTUM_ISSET)
                             corereschedule = FALSE;
                     }
                     break;
@@ -100,7 +101,7 @@ void core_Switch(void)
 #endif
     struct Task *task = GET_THIS_TASK;
 
-    DSCHED(bug("[Kernel:%02d] core_Switch()\n"));
+    DSCHED(bug("[Kernel:%02d] core_Switch(%08x)\n", cpunum, task->tc_State));
 
     if (task->tc_State == TS_RUN)
     {
@@ -135,7 +136,7 @@ void core_Switch(void)
             Alert(AN_StackProbe);
         }
 
-        task->tc_IDNestCnt = SysBase->IDNestCnt;
+        task->tc_IDNestCnt = IDNESTCOUNT_GET;
 
         if (task->tc_Flags & TF_SWITCH)
             AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
@@ -143,14 +144,14 @@ void core_Switch(void)
         if (task->tc_State == TS_READY)
         {
             DSCHED(bug("[Kernel:%02d] Setting '%s' @ 0x%p as ready\n", cpunum, task->tc_Node.ln_Name, task));
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
-    #endif
+#endif
             Enqueue(&SysBase->TaskReady, &task->tc_Node);
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
             KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
-    #endif
+#endif
         }
     }
 }
@@ -189,7 +190,7 @@ struct Task *core_Dispatch(void)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
 
-    if ((task) && (!newtask))
+    if ((!newtask) && (task) && (task->tc_State != TS_WAIT))
         newtask = task;
 
     if ((newtask) &&
@@ -199,10 +200,10 @@ struct Task *core_Dispatch(void)
         DSCHED(bug("[Kernel:%02d] Preparing to run '%s' @ 0x%p\n", cpunum, newtask->tc_Node.ln_Name, newtask));
 
         SysBase->DispCount++;
-        SysBase->IDNestCnt = newtask->tc_IDNestCnt;
+        IDNESTCOUNT_SET(task->tc_IDNestCnt);
         SET_THIS_TASK(newtask);
         SysBase->Elapsed   = SysBase->Quantum;
-        SysBase->SysFlags &= ~SFF_QuantumOver;
+        FLAG_SCHEDQUANTUM_CLEAR;
 
         /* Check the stack of the task we are about to launch. */
         if ((newtask->tc_SPReg <= newtask->tc_SPLower) ||
@@ -262,7 +263,7 @@ struct Task *core_Dispatch(void)
          * not only once. This is correct.
          */
         SysBase->IdleCount++;
-        SysBase->AttnResched |= ARF_AttnSwitch;
+        FLAG_SCHEDSWITCH_SET;
     } 
 
     return newtask;
