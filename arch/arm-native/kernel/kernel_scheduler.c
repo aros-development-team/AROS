@@ -200,7 +200,7 @@ struct Task *core_Dispatch(void)
         DSCHED(bug("[Kernel:%02d] Preparing to run '%s' @ 0x%p\n", cpunum, newtask->tc_Node.ln_Name, newtask));
 
         SysBase->DispCount++;
-        IDNESTCOUNT_SET(task->tc_IDNestCnt);
+        IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
         SET_THIS_TASK(newtask);
         SysBase->Elapsed   = SysBase->Quantum;
         FLAG_SCHEDQUANTUM_CLEAR;
