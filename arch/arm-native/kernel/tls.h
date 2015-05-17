@@ -12,8 +12,8 @@ typedef struct tls
 } tls_t;
 
 #define TLSSF_Quantum   (1 << 0)
-#define TLSSF_Switch    (1 << 0)
-#define TLSSF_Dispatch  (1 << 0)
+#define TLSSF_Switch    (1 << 1)
+#define TLSSF_Dispatch  (1 << 2)
 
 #define TLS_OFFSET(name) ((char *)&(((tls_t *)0)->name)-(char *)0)
 
