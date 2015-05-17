@@ -60,7 +60,7 @@
 
     if (TDNESTCOUNT_GET < 0)                 /* If task switching enabled */
     {
-        if (TDNESTCOUNT_GET < 0)             /* And interrupts enabled */
+        if (IDNESTCOUNT_GET < 0)             /* And interrupts enabled */
         {
             D(bug("[Reschedule] Calling scheduler, KernelBase 0x%p\n", KernelBase));
             KrnSchedule();                      /* Call scheduler */
