@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Exception - Perform a task exception.
@@ -7,6 +7,7 @@
 */
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
+#include <exec_platform.h>
 
 /*****i*************************************************************************
 
@@ -58,8 +59,8 @@
 
     task->tc_Flags &= ~TF_EXCEPT;
 
-    nestCnt = SysBase->IDNestCnt;
-    SysBase->IDNestCnt = 0;
+    nestCnt = IDNESTCOUNT_GET;
+    IDNESTCOUNT_SET(0);
 
     while ((flags = (task->tc_SigExcept & task->tc_SigRecvd)))
     {
@@ -80,7 +81,7 @@
 	Disable();
     }
 
-    SysBase->IDNestCnt = nestCnt;
+    IDNESTCOUNT_SET(nestCnt);
 
     AROS_LIBFUNC_EXIT
 } /* Exception */
