@@ -114,15 +114,17 @@ void cpu_Register()
 
     if (__arm_arosintern.ARMI_InitCore)
         __arm_arosintern.ARMI_InitCore(KernelBase, SysBase);
+
+    cpu_BootStrap(__tls->ThisTask, SysBase);
 #endif
 
     bug("[Kernel:%02d] Operational\n", cpunum);
 
 cpu_registerfatal:
+    bug("[Kernel:%02d] Waiting for interrupts\n", cpunum);
 
     KrnSpinUnLock(&startup_lock);
 
-    bug("[Kernel:%02d] Waiting for interrupts\n", cpunum);
 #if !defined(__AROSEXEC_SMP__)
     do {
 #endif
@@ -130,7 +132,6 @@ cpu_registerfatal:
 #if !defined(__AROSEXEC_SMP__)
     } while (1);
 #else
-    cpu_BootStrap(__tls->ThisTask, SysBase);
 
     /* switch to user mode, and load the bs task stack */
     bug("[Kernel:%02d] Dropping into USER mode ... \n", cpunum);
