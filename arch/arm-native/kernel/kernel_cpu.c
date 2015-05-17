@@ -8,7 +8,6 @@
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 #include <aros/arm/cpucontext.h>
-#include <asm/arm/cpu.h>
 #include <strings.h>
 
 #include <aros/types/spinlock_s.h>
@@ -31,7 +30,6 @@
 #define DSCHED(x)
 #define DREGS(x)
 
-uint32_t        __arm_affinitymask __attribute__((section(".data"))) = 1;
 spinlock_t      __arm_affinitymasklock;
 
 #if defined(__AROSEXEC_SMP__)
@@ -78,39 +76,38 @@ spinlock_t startup_lock;
 
 void cpu_Register()
 {
-    uint32_t tmp, ttmp;
+    uint32_t tmp;
 #if defined(__AROSEXEC_SMP__)
     tls_t *__tls;
     struct ExecBase *SysBase;
     struct KernelBase *KernelBase;
 #endif
+    cpuid_t cpunum = GetCPUNumber();
 
     asm volatile ("mrc p15, 0, %0, c1, c0, 0" : "=r"(tmp));
-    tmp |= (1 << 2) | (1 << 12) | (1 << 11);    /* I and D caches, branch prediction */
-    tmp = (tmp & ~2) | (1 << 22);               /* Unaligned access enable */
+    tmp |= (1 << 2) | (1 << 12) | (1 << 11);                    // I and D caches, branch prediction
+    tmp = (tmp & ~2) | (1 << 22);                               // Unaligned access enable
     asm volatile ("mcr p15, 0, %0, c1, c0, 0" : : "r"(tmp));
 
     cpu_Init(&__arm_arosintern, NULL);
-
-    asm volatile (" mrc p15, 0, %0, c0, c0, 5 " : "=r" (tmp));
     
 #if defined(__AROSEXEC_SMP__)
     __tls = TLS_PTR_GET();
 
     /* Now we are ready to boostrap and launch the schedular */
-    bug("[Kernel] CPU #%02d Boostrapping..\n", (tmp & 0x3));
+    bug("[Kernel:%02d] Boostrapping..\n", cpunum);
 
-    asm volatile ("mrs %0, cpsr" :"=r"(ttmp));
-    bug("[Kernel] CPU #%02d CPSR=%08x\n", (tmp & 0x3), ttmp);
-    ttmp &= ~(1 << 6);
-    asm volatile ("msr cpsr_cxsf, %0" ::"r"(ttmp));
-    bug("[Kernel] CPU #%02d CPSR=%08x\n", (tmp & 0x3), ttmp);
+    asm volatile ("mrs %0, cpsr" :"=r"(tmp));
+    bug("[Kernel:%02d] CPSR=%08x\n", cpunum, tmp);
+    tmp &= ~(1 << 6);
+    asm volatile ("msr cpsr_cxsf, %0" ::"r"(tmp));
+    bug("[Kernel:%02d] CPSR=%08x\n", cpunum, tmp);
 
-    bug("[Kernel] CPU #%02d TLS @ 0x%p\n", (tmp & 0x3), (__tls));
-    KernelBase = (struct KernelBase *)__tls->KernelBase; // TLS_GET(KernelBase)
-    SysBase = (struct ExecBase *)__tls->SysBase; // TLS_GET(SysBase)
-    bug("[Kernel] CPU #%02d KernelBase @ 0x%p\n", (tmp & 0x3), KernelBase);
-    bug("[Kernel] CPU #%02d SysBase @ 0x%p\n", (tmp & 0x3), SysBase);
+    bug("[Kernel:%02d] TLS @ 0x%p\n", cpunum, (__tls));
+    KernelBase = (struct KernelBase *)__tls->KernelBase;        // TLS_GET(KernelBase)
+    SysBase = (struct ExecBase *)__tls->SysBase;                // TLS_GET(SysBase)
+    bug("[Kernel:%02d] KernelBase @ 0x%p\n", cpunum, KernelBase);
+    bug("[Kernel:%02d] SysBase @ 0x%p\n", cpunum, SysBase);
 
     if ((__tls->ThisTask = cpu_InitBootStrap(SysBase)) == NULL)
         goto cpu_registerfatal;
@@ -121,19 +118,36 @@ void cpu_Register()
     cpu_BootStrap(__tls->ThisTask, SysBase);
 #endif
 
-    bug("[Kernel] CPU #%02d operational\n", (tmp & 0x3));
-
-    KrnSpinLock(&__arm_affinitymasklock, NULL, SPINLOCK_MODE_WRITE);
-    __arm_affinitymask |= (1 << (tmp & 0x3));
-    KrnSpinUnLock(&__arm_affinitymasklock);
+    bug("[Kernel:%02d] Operational\n", cpunum);
 
 cpu_registerfatal:
 
-    bug("[Kernel] CPU #%02d waiting for interrupts\n", (tmp & 0x3));
-
     KrnSpinUnLock(&startup_lock);
 
-    for (;;) asm volatile("wfi");
+#if defined(__AROSEXEC_SMP__)
+    /* switch to user mode, and load the bs task stack */
+    bug("[Kernel:%02d] Dropping into USER mode ... \n", cpunum);
+
+#if (0)
+    uint32_t bs_stack = __tls->ThisTask->tc_SPUpper;
+    asm volatile(
+        "cps %[mode_user]\n"
+        "mov sp, %[bs_stack]\n"
+        : : [bs_stack] "r" (bs_stack), [mode_user] "I" (CPUMODE_USER)
+        );
+#endif
+#else
+    bug("[Kernel:%02d] Waiting for interrupts\n", cpunum);
+    do {
+#endif
+    asm volatile("wfi");
+#if !defined(__AROSEXEC_SMP__)
+    } while (1);
+#endif
+
+    /* We now start up the interrupts */
+    Permit();
+    Enable();
 }
 
 void cpu_Delay(int usecs)
@@ -183,7 +197,6 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     uint32_t tmp;
 
     __arm_affinitymasklock = (spinlock_t)SPINLOCK_INIT_UNLOCKED;
-    __arm_affinitymask = 1;
 
     asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
     if ((tmp & 0xfff0) == 0xc070)
@@ -199,7 +212,6 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 
         if (tmp & (2 << 30))
         {
-            __arm_affinitymask = 1 << (tmp & 3);
             //Multicore system
         }
 #endif
@@ -218,14 +230,11 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     register unsigned int fpuflags;
+    cpuid_t cpunum = GetCPUNumber();
 
     core_SetupMMU(msg);
 
-    if (msg)
-    {
-        /* Only boot processor calls cpu_Init with a valid msg */
-        
-    }
+     __arm_arosintern.ARMI_AffinityMask |= (1 << cpunum);
 
     /* Enable Vector Floating Point Calculations */
     asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register 
@@ -252,10 +261,10 @@ void cpu_Switch(regs_t *regs)
     UQUAD timeCur;
     struct timeval timeVal;
 #if defined(__AROSEXEC_SMP__) || defined(DEBUG)
-    int cpunum = GetCPUNumber();
+    cpuid_t cpunum = GetCPUNumber();
 #endif
-    
-    DSCHED(bug("[Kernel] cpu_Switch(%02d)\n", cpunum));
+
+    DSCHED(bug("[Kernel:%02d] cpu_Switch()\n", cpunum));
 
     task = GET_THIS_TASK;
 
@@ -278,26 +287,26 @@ void cpu_Switch(regs_t *regs)
 void cpu_Dispatch(regs_t *regs)
 {
 #if defined(__AROSEXEC_SMP__) || defined(DEBUG)
-    int cpunum = GetCPUNumber();
+    cpuid_t cpunum = GetCPUNumber();
 #endif
 
     struct Task *task;
 
-    DSCHED(bug("[Kernel] cpu_Dispatch(%02d)\n", cpunum));
+    DSCHED(bug("[Kernel:%02d] cpu_Dispatch()\n", cpunum));
 
     /* Break Disable() if needed */
-    if (SysBase->IDNestCnt >= 0) {
-        SysBase->IDNestCnt = -1;
+    if (IDNESTCOUNT_GET >= 0) {
+        IDNESTCOUNT_SET(-1);
         ((uint32_t *)regs)[13] &= ~0x80;
     }
 
     while (!(task = core_Dispatch()))
     {
-        DSCHED(bug("[Kernel] cpu_Dispatch[%02d]: Nothing to run - idling\n", cpunum));
+        DSCHED(bug("[Kernel:%02d] cpu_Dispatch: Nothing to run - idling\n", cpunum));
         asm volatile("wfi");
     }
 
-    DSCHED(bug("[Kernel] cpu_Dispatch[%02d]: 0x%p [R  ] '%s'\n", cpunum, task, task->tc_Node.ln_Name));
+    DSCHED(bug("[Kernel:%02d] cpu_Dispatch: 0x%p [R  ] '%s'\n", cpunum, task, task->tc_Node.ln_Name));
 
     /* Restore the task's state */
     RESTORE_TASKSTATE(task, regs)
@@ -333,17 +342,17 @@ void cpu_Dispatch(regs_t *regs)
 
 void cpu_DumpRegs(regs_t *regs)
 {
-    int cpunum = GetCPUNumber();
+    cpuid_t cpunum = GetCPUNumber();
     int i;
     
-    bug("[Kernel][%02d] Register Dump:\n", cpunum);
+    bug("[Kernel:%02d] CPU Register Dump:\n", cpunum);
     for (i = 0; i < 12; i++)
     {
-        bug("[Kernel][%02d]      r%02d: 0x%08x\n", cpunum, i, ((uint32_t *)regs)[i]);
+        bug("[Kernel:%02d]      r%02d: 0x%08x\n", cpunum, i, ((uint32_t *)regs)[i]);
     }
-    bug("[Kernel][%02d] (ip) r12: 0x%08x\n", cpunum, ((uint32_t *)regs)[12]);
-    bug("[Kernel][%02d] (sp) r13: 0x%08x\n", cpunum, ((uint32_t *)regs)[13]);
-    bug("[Kernel][%02d] (lr) r14: 0x%08x\n", cpunum, ((uint32_t *)regs)[14]);
-    bug("[Kernel][%02d] (pc) r15: 0x%08x\n", cpunum, ((uint32_t *)regs)[15]);
-    bug("[Kernel][%02d]     cpsr: 0x%08x\n", cpunum, ((uint32_t *)regs)[16]);
+    bug("[Kernel:%02d] (ip) r12: 0x%08x\n", cpunum, ((uint32_t *)regs)[12]);
+    bug("[Kernel:%02d] (sp) r13: 0x%08x\n", cpunum, ((uint32_t *)regs)[13]);
+    bug("[Kernel:%02d] (lr) r14: 0x%08x\n", cpunum, ((uint32_t *)regs)[14]);
+    bug("[Kernel:%02d] (pc) r15: 0x%08x\n", cpunum, ((uint32_t *)regs)[15]);
+    bug("[Kernel:%02d]     cpsr: 0x%08x\n", cpunum, ((uint32_t *)regs)[16]);
 }

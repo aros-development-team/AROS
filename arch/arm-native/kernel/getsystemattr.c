@@ -60,6 +60,9 @@
     case KATTR_PeripheralBase:
 	return (intptr_t)__arm_arosintern.ARMI_PeripheralBase;
 
+    case KATTR_AffinityMask:
+        return (intptr_t)__arm_arosintern.ARMI_AffinityMask;
+
     default:
 	return -1;
     }

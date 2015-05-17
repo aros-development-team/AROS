@@ -1,6 +1,8 @@
 #ifndef __KERNEL_ARM_H
 #define __KERNEL_ARM_H
 
+#include <asm/cpu.h>
+
 /*
     Copyright © 2015, The AROS Development Team. All rights reserved.
     $Id$
@@ -11,6 +13,7 @@ struct ARM_Implementation
     IPTR                ARMI_Family;
     IPTR                ARMI_Platform;
     APTR                ARMI_PeripheralBase;
+    cpumask_t           ARMI_AffinityMask;
     void                (*ARMI_Init) (APTR, APTR); // takes pointers to KernelBase & SysBase as input
     void                (*ARMI_InitCore) (APTR, APTR); // takes pointers to KernelBase & SysBase as input
     void                (*ARMI_SendIPI) (uint32_t, uint32_t, uint32_t); // Sends IPI msg to processors in mask

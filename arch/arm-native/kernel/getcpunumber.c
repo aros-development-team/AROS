@@ -9,7 +9,7 @@
 #include "kernel_base.h"
 #include "kernel_intern.h"
 
-AROS_LH0(unsigned int, KrnGetCPUNumber,
+AROS_LH0(cpuid_t, KrnGetCPUNumber,
 	 struct KernelBase *, KernelBase, 37, Kernel)
 {
     AROS_LIBFUNC_INIT
@@ -44,11 +44,11 @@ AROS_LH0(unsigned int, KrnGetCPUNumber,
 
     if (tmp & (2 << 30))
     {
-        return (tmp & 0x3);
+        return (cpuid_t)(((tmp & 0xF00) >> 4) | (tmp & 0xF));
     }
 
     // Uniprocessor System
-    return 0;
+    return (cpuid_t)0;
 
     AROS_LIBFUNC_EXIT
 }

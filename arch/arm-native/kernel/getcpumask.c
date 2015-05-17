@@ -10,8 +10,8 @@
 
 #include <kernel_base.h>
 
-AROS_LH1(uint32_t, KrnGetCPUMask,
-	AROS_LHA(uint32_t, id, D0),
+AROS_LH1(cpumask_t, KrnGetCPUMask,
+	AROS_LHA(cpuid_t, id, D0),
 	struct KernelBase *, KernelBase, 38, Kernel)
 {
     AROS_LIBFUNC_INIT

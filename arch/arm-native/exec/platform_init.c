@@ -21,6 +21,9 @@
 #include <strings.h>
 #include <stdio.h>
 
+#include "kernel_cpu.h"
+#include "kernel_ipi.h"
+
 #include "exec_intern.h"
 #if defined(__AROSEXEC_SMP__)
 #include "etask.h"
@@ -35,7 +38,9 @@ extern void IdleTask(struct ExecBase *);
 int Exec_ARMCPUInit(struct ExecBase *SysBase)
 {
     struct Task *BootTask, *CPUIdleTask;
+#if defined(__AROSEXEC_SMP__)
     int cpu, cpunum = KrnGetCPUCount();
+#endif
     char *taskName;
 
     D(bug("[Exec] %s()\n", __PRETTY_FUNCTION__));
@@ -44,14 +49,16 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
 
     D(bug("[Exec] %s: launched from %s @ 0x%p\n", __PRETTY_FUNCTION__, BootTask->tc_Node.ln_Name, BootTask));
 
+#if defined(__AROSEXEC_SMP__)
     if (cpunum == 0)
     {
+#endif
         /* for our sanity we will tell exec about the correct stack for the boot task */
         BootTask->tc_SPLower = stack;
         BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
+#if defined(__AROSEXEC_SMP__)
     }
 
-#if defined(__AROSEXEC_SMP__)
     for (cpu = 0; cpu < cpunum; cpu ++)
     {
         taskName = AllocVec(15, MEMF_CLEAR);
@@ -125,15 +132,23 @@ void Exec_TaskSpinUnlock(spinlock_t *thisLock)
     Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL);
 }
 
-int Exec_TaskSpinningInit(struct ExecBase *SysBase)
+int Exec_ARMCPUSMPInit(struct ExecBase *SysBase)
 {
+    int cpu, thiscpu = KrnGetCPUNumber();
+
     /* setup the task spinning hook */
     Exec_TaskSpinLockFailHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockFailFunc;
 
     D(bug("[Exec] %s: Task SpinLock Fail hook @ 0x%p initialised (func @ 0x%p)\n", __PRETTY_FUNCTION__, &Exec_TaskSpinLockFailHook, Exec_TaskSpinLockFailHook.h_Entry));
+#if (0)
+    for (cpu = 1; cpu < 4; cpu++)
+    {
+        __arm_arosintern.ARMI_SendIPI((IPI_SCHEDULE & 0x0fffffff) | (thiscpu << 28), 0, KrnGetCPUMask(cpu));
+    }
+#endif
 }
 
-ADD2INITLIB(Exec_TaskSpinningInit, -127)
+ADD2INITLIB(Exec_ARMCPUSMPInit, -127)
 #endif
 
 ADD2INITLIB(Exec_ARMCPUInit, 0)
