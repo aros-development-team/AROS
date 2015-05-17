@@ -30,8 +30,6 @@
 #define DSCHED(x)
 #define DREGS(x)
 
-spinlock_t      __arm_affinitymasklock;
-
 #if defined(__AROSEXEC_SMP__)
 extern struct Task *cpu_InitBootStrap(struct ExecBase *);
 extern void cpu_BootStrap(struct Task *, struct ExecBase *);
@@ -194,8 +192,6 @@ void cpu_Init_VFP_State(void *buffer)
 void cpu_Probe(struct ARM_Implementation *krnARMImpl)
 {
     uint32_t tmp;
-
-    __arm_affinitymasklock = (spinlock_t)SPINLOCK_INIT_UNLOCKED;
 
     asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
     if ((tmp & 0xfff0) == 0xc070)
