@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES := debug_init debug memoryrawio
-AFILES := userstate
+CFILES := cachecleare debug_init debug memoryrawio
+AFILES := cache userstate
 
 #MM kernel-exec-pc-i386 : kernel-kernel-includes kernel-exec-includes includes-asm_h-i386
 
