@@ -66,7 +66,7 @@
     /* Get pointer to current task - I'll need it very often */
     me = FindTask(NULL);
 
-    D(bug("[Exec] Wait(0x%08lX)\n", signalSet));
+    D(bug("[Exec] Wait(%08lX)\n", signalSet));
 
     /* If at least one of the signals is already set do not wait. */
     while (!(me->tc_SigRecvd & signalSet))
@@ -79,13 +79,6 @@
         D(bug("[Exec] Task state = %08x\n", me->tc_State));
 	/* Set the wait signal mask */
 	me->tc_SigWait = signalSet;
-
-	/*
-	    Clear TDNestCnt (because Switch() will not care about it),
-	    but memorize it first. IDNestCnt is handled by Switch().
-	*/
-	me->tc_TDNestCnt = TDNESTCOUNT_GET;
-	TDNESTCOUNT_SET(-1);
 
         /* Protect the task lists against access by other tasks. */
 #if defined(__AROSEXEC_SMP__)
@@ -100,6 +93,13 @@
             EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
             Disable();
 #endif
+        /*
+	    Clear TDNestCnt (because Switch() will not care about it),
+	    but memorize it first. IDNestCnt is handled by Switch().
+	*/
+	me->tc_TDNestCnt = TDNESTCOUNT_GET;
+	TDNESTCOUNT_SET(-1);
+
 	/* Move current task to the waiting list. */
         me->tc_State = TS_WAIT;
 	Enqueue(&SysBase->TaskWait, &me->tc_Node);
