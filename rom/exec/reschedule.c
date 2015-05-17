@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Enforce task rescheduling
@@ -54,18 +54,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    UWORD oldAttnSwitch = SysBase->AttnResched & ARF_AttnSwitch;
+    BOOL switchpending = FLAG_SCHEDSWITCH_ISSET;
 
-    AROS_ATOMIC_OR(SysBase->AttnResched, ARF_AttnSwitch);       /* Set scheduling attention */
+    FLAG_SCHEDSWITCH_SET;       /* Set scheduling attention */
 
-    if (SysBase->TDNestCnt < 0)                 /* If task switching enabled */
+    if (TDNESTCOUNT_GET < 0)                 /* If task switching enabled */
     {
-        if (SysBase->IDNestCnt < 0)             /* And interrupts enabled */
+        if (TDNESTCOUNT_GET < 0)             /* And interrupts enabled */
         {
             D(bug("[Reschedule] Calling scheduler, KernelBase 0x%p\n", KernelBase));
             KrnSchedule();                      /* Call scheduler */
         }
-        else if (!oldAttnSwitch)
+        else if (!switchpending)
         {
             /*
              * Interrupts are disabled and there was no pending switch before us.

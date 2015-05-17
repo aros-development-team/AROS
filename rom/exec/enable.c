@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Enable() - Allow interrupts to occur after Disable().
@@ -76,13 +76,9 @@
 
     AROS_LIBFUNC_INIT
 
-#ifdef AROS_NO_ATOMIC_OPERATIONS
-    SysBase->IDNestCnt--;
-#else
-    AROS_ATOMIC_DEC(SysBase->IDNestCnt);
-#endif
+    IDNESTCOUNT_DEC;
 
-    if (KernelBase && (SysBase->IDNestCnt < 0))
+    if (KernelBase && (IDNESTCOUNT_GET < 0))
     {
         D(bug("[Enable] Enabling interrupts\n"));
         KrnSti();
@@ -109,7 +105,7 @@
             KrnCause();
         }
 
-        if ((SysBase->TDNestCnt < 0) && (SysBase->AttnResched & ARF_AttnSwitch))
+        if ((TDNESTCOUNT_GET < 0) && FLAG_SCHEDSWITCH_ISSET)
         {
             /*
              * If SFF_SoftInt hasn't been set, we have a chance that task switching

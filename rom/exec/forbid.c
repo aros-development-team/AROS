@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Forbid() - Prevent tasks switches from taking place.
@@ -10,6 +10,7 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
+#include <exec_platform.h>
 
 /*****************************************************************************/
 #undef  Exec
@@ -72,7 +73,7 @@
 
     AROS_LIBFUNC_INIT
 
-    AROS_ATOMIC_INC(SysBase->TDNestCnt);
+    TDNESTCOUNT_INC;
 
     AROS_LIBFUNC_EXIT
 } /* Forbid() */

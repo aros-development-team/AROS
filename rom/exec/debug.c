@@ -106,7 +106,7 @@ static char *NextWord(char *s)
     {
         int i = 0;
 
-        kprintf("SAD(%d,%d)>", SysBase->TDNestCnt, SysBase->IDNestCnt);
+        kprintf("SAD(%d,%d)>", TDNESTCOUNT_GET, IDNESTCOUNT_GET);
 
         /* Get Command code */
         do

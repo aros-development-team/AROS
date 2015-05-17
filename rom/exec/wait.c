@@ -66,12 +66,17 @@
     /* Get pointer to current task - I'll need it very often */
     me = FindTask(NULL);
 
-    D(bug("[Exec] Wait(0x%08lX) called by %s\n", signalSet, me->tc_Node.ln_Name));
+    D(bug("[Exec] Wait(0x%08lX)\n", signalSet));
 
     /* If at least one of the signals is already set do not wait. */
     while (!(me->tc_SigRecvd & signalSet))
     {
-	D(bug("[Exec] Signals are not set, putting the task to sleep\n"));
+#if defined(__AROSEXEC_SMP__)
+        if (me->tc_State != TS_WAIT)
+        {
+#endif
+	D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", me->tc_Node.ln_Name, me));
+        D(bug("[Exec] Task state = %08x\n", me->tc_State));
 	/* Set the wait signal mask */
 	me->tc_SigWait = signalSet;
 
@@ -79,27 +84,27 @@
 	    Clear TDNestCnt (because Switch() will not care about it),
 	    but memorize it first. IDNestCnt is handled by Switch().
 	*/
-	me->tc_TDNestCnt = SysBase->TDNestCnt;
-	SysBase->TDNestCnt = -1;
+	me->tc_TDNestCnt = TDNESTCOUNT_GET;
+	TDNESTCOUNT_SET(-1);
 
         /* Protect the task lists against access by other tasks. */
 #if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
+            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
 #endif
         Disable();
 
 #if defined(__AROSEXEC_SMP__)
-        Remove(&me->tc_Node);
-        EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-        Enable();
-        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
-        Disable();
+            Remove(&me->tc_Node);
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+            Enable();
+            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
+            Disable();
 #endif
 	/* Move current task to the waiting list. */
         me->tc_State = TS_WAIT;
 	Enqueue(&SysBase->TaskWait, &me->tc_Node);
 #if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #endif
 	/* And switch to the next ready task. */
 	KrnSwitch();
@@ -111,9 +116,12 @@
 	*/
 
 	/* Restore TDNestCnt. */
-	SysBase->TDNestCnt = me->tc_TDNestCnt;
+	TDNESTCOUNT_SET(me->tc_TDNestCnt);
 
         Enable();
+#if defined(__AROSEXEC_SMP__)
+        }
+ #endif
     }
     /* Get active signals. */
     rcvd = (me->tc_SigRecvd & signalSet);

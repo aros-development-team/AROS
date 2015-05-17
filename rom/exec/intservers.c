@@ -1,11 +1,14 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <exec/lists.h>
+
+#define AROS_NO_ATOMIC_OPERATIONS
+#include <exec_platform.h>
 
 #include "intservers.h"
 
@@ -50,8 +53,8 @@ AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
     /* First decrease Elapsed time for current task */
     if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
     {
-        SysBase->SysFlags    |= SFF_QuantumOver;
-        SysBase->AttnResched |= ARF_AttnSwitch;
+        FLAG_SCHEDQUANTUM_SET;
+        FLAG_SCHEDSWITCH_SET;
     }
 
     /* Chain to the generic routine */
