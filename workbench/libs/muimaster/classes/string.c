@@ -1521,7 +1521,8 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         cursor_kills_marking = TRUE;
     }
 
-    if (muikey == MUIKEY_NONE)
+    /* Convert raw keys to MUI keys for marking */
+    if (muikey == MUIKEY_NONE && msg->imsg != NULL)
     {
         if (msg->imsg->Class == IDCMP_RAWKEY)
         {
@@ -1554,7 +1555,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
             }
 
-            if ((dirindex != -1) && (muikey == MUIKEY_NONE))
+            if (dirindex != -1)
             {
                 if (msg->imsg->
                     Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
