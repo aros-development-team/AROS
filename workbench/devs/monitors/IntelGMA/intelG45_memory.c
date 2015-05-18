@@ -95,7 +95,7 @@ VOID FreeGfxMem(struct g45staticdata *sd, APTR ptr, ULONG size)
             }
         }
 
-        if(!freed)
+        if (!freed)
             header = (APTR)header->mh_Node.ln_Succ;
     }
 }
@@ -192,6 +192,7 @@ void ReleaseGfxMemory(struct g45staticdata *sd, struct MemHeader *header)
     G45_DetachMemory(sd, (char *)header->mh_Lower - sd->Card.Framebuffer,
         header->mh_Free);
     FreeAlignedMem(header->mh_Node.ln_Name);
+    FreeVec(header);
 }
 
 static void G45_AttachMemory(struct g45staticdata *sd, intptr_t physical,
