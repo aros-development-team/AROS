@@ -56,8 +56,9 @@ struct MUI_StringData
     ULONG msd_useSecret;
     /* Fields mostly ripped from rom/intuition/strgadgets.c */
     STRPTR Buffer;              /* char container                   */
-    ULONG BufferSize;           /* memory allocated                 */
     STRPTR SecBuffer;           /* Buffer for secret string         */
+    STRPTR VisualBuffer;        /* Pointer to either Buffer or SecBuffer */
+    ULONG BufferSize;           /* memory allocated                 */
     ULONG NumChars;             /* string length                    */
     ULONG BufferPos;            /* cursor (insert/delete) position  */
     ULONG MarkPos;              /* cursor text marking start pos    */
@@ -172,6 +173,8 @@ enum
 **************************************************************************/
 static BOOL Buffer_Alloc(struct MUI_StringData *data)
 {
+    UWORD i;
+
     data->Buffer =
         (STRPTR) AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
     if (NULL == data->Buffer)
@@ -192,8 +195,29 @@ static BOOL Buffer_Alloc(struct MUI_StringData *data)
             data->Buffer = NULL;
             return FALSE;
         }
+
+        /* Initialise maximum number of asterisks we'll need */
+        for (i = 0; i < data->BufferSize - 1; i++)
+            data->SecBuffer[i] = SECRET_CHAR;
+
+        data->VisualBuffer = data->SecBuffer;
     }
+    else
+        data->VisualBuffer = data->Buffer;
+
     return TRUE;
+}
+
+static inline VOID PrepareVisualBuffer(struct MUI_StringData *data)
+{
+    if (data->msd_useSecret)
+        data->VisualBuffer[data->NumChars] = '\0';
+}
+
+static inline VOID CleanVisualBuffer(struct MUI_StringData *data)
+{
+    if (data->msd_useSecret)
+        data->VisualBuffer[data->NumChars] = SECRET_CHAR;
 }
 
 /**************************************************************************
@@ -209,8 +233,6 @@ static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
     if (NULL == str)
     {
         data->Buffer[0] = 0;
-        if (data->msd_useSecret)
-            data->SecBuffer[0] = 0;
         data->NumChars = 0;
     }
     else
@@ -219,21 +241,8 @@ static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
         if (data->NumChars >= data->BufferSize)
             data->NumChars = data->BufferSize - 1;
 
-        if (data->msd_useSecret)
-        {
-            strncpy(data->SecBuffer, str, data->BufferSize);
-            data->SecBuffer[data->BufferSize - 1] = 0;
-            int i;
-            for (i = 0; i < data->NumChars; i++)
-                data->Buffer[i] = SECRET_CHAR;
-            data->Buffer[data->NumChars] = 0;
-        }
-        else
-        {
-            strncpy(data->Buffer, str, data->BufferSize);
-            data->Buffer[data->BufferSize - 1] = 0;
-        }
-
+        strncpy(data->Buffer, str, data->BufferSize);
+        data->Buffer[data->BufferSize - 1] = 0;
     }
 
     // avoid to BufferPos jumps to end of string if characters are inserted
@@ -258,24 +267,10 @@ static BOOL Buffer_AddChar(struct MUI_StringData *data, unsigned char code)
     if (data->NumChars + 1 >= data->BufferSize)
         return FALSE;
 
-    if (data->msd_useSecret)
-    {
-        dst = &data->SecBuffer[data->BufferPos + 1];
+    dst = &data->Buffer[data->BufferPos + 1];
 
-        memmove(dst, &data->SecBuffer[data->BufferPos],
-            data->NumChars - data->BufferPos);
-
-        data->Buffer[data->NumChars] = SECRET_CHAR;
-        data->Buffer[data->NumChars + 1] = 0;
-    }
-    else
-    {
-        dst = &data->Buffer[data->BufferPos + 1];
-
-        memmove(dst, &data->Buffer[data->BufferPos],
-            data->NumChars - data->BufferPos);
-
-    }
+    memmove(dst, &data->Buffer[data->BufferPos],
+        data->NumChars - data->BufferPos);
 
     dst[data->NumChars - data->BufferPos] = 0;
     dst[-1] = code;
@@ -692,10 +687,7 @@ IPTR String__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
     case MUIA_String_Contents:
-        if (data->msd_useSecret)
-            STORE = (IPTR) data->SecBuffer;
-        else
-            STORE = (IPTR) data->Buffer;
+        STORE = (IPTR) data->Buffer;
         return TRUE;
 
     case MUIA_String_Secret:
@@ -942,7 +934,7 @@ static void UpdateDisp(struct IClass *cl, Object *obj)
 
     /* If the cursor is at the trailing \0, insert a SPACE instead */
     if (data->BufferPos == data->NumChars)
-        data->Buffer[data->NumChars] = 0x20;
+        data->VisualBuffer[data->NumChars] = ' ';
 
     /* In this function we check if the cursor has gone outside
      ** of the visible area (because of application setting
@@ -978,7 +970,7 @@ static void UpdateDisp(struct IClass *cl, Object *obj)
 
         /* How many pixels are there from current 1st displayed to cursor? */
         strsize = TextLength(_rp(obj),
-            data->Buffer + data->DispPos,
+            data->VisualBuffer + data->DispPos,
             data->BufferPos - data->DispPos + 1);
 
         /* 2) More than fits into the gadget ? */
@@ -987,7 +979,7 @@ static void UpdateDisp(struct IClass *cl, Object *obj)
             /* Compute new DispPos such that the cursor is at the right */
             data->DispPos = data->BufferPos
                 - TextFit(_rp(obj),
-                &(data->Buffer[data->BufferPos]),
+                &(data->VisualBuffer[data->BufferPos]),
                 data->NumChars, &te, NULL, -1,
                 _mwidth(obj), _mheight(obj)) + 1;
 
@@ -1008,15 +1000,15 @@ static void UpdateDisp(struct IClass *cl, Object *obj)
 
     /* Update the DispCount */
     /* It might be necessary with special handling for centre aligned gads */
-    dispstr = &(data->Buffer[data->DispPos]);
+    dispstr = &(data->VisualBuffer[data->DispPos]);
 /*      D(bug("DispCount before = %d\n", data->DispCount)); */
     data->DispCount = TextFit(_rp(obj), dispstr,
         data->NumChars - data->DispPos,
         &te, NULL, 1, _mwidth(obj), _mheight(obj));
 /*      D(bug("DispCount after = %d\n", data->DispCount)); */
 
-    /* 0-terminate string */
-    data->Buffer[data->NumChars] = 0x00;
+    /* 0-terminate string (in case we put a SPACE at the end) */
+    data->VisualBuffer[data->NumChars] = '\0';
 }
 
 
@@ -1025,7 +1017,7 @@ static UWORD GetTextLeft(struct IClass *cl, Object *obj)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     UWORD text_left = 0;
-    STRPTR dispstr = &(data->Buffer[data->DispPos]);
+    STRPTR dispstr = &(data->VisualBuffer[data->DispPos]);
     UWORD dispstrlen;
     BOOL cursor_at_end;
 
@@ -1068,7 +1060,7 @@ static UWORD GetTextRight(struct IClass *cl, Object *obj)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     UWORD text_right = 0;
-    STRPTR dispstr = &(data->Buffer[data->DispPos]);
+    STRPTR dispstr = &(data->VisualBuffer[data->DispPos]);
     UWORD dispstrlen;
     BOOL cursor_at_end;
 
@@ -1197,6 +1189,7 @@ IPTR String__MUIM_Draw(struct IClass *cl, Object *obj,
     if (!(msg->flags & MADF_DRAWUPDATE) && !(msg->flags & MADF_DRAWOBJECT))
         return 0;
 
+    PrepareVisualBuffer(data);
     SetFont(_rp(obj), _font(obj));
     if (data->is_active)
         textpen = data->active_text.p_pen;
@@ -1214,7 +1207,7 @@ IPTR String__MUIM_Draw(struct IClass *cl, Object *obj,
         + ((_mheight(obj) - _rp(obj)->Font->tf_YSize) >> 1)
         + _rp(obj)->Font->tf_Baseline;
 
-    dispstr = data->Buffer + data->DispPos;
+    dispstr = data->VisualBuffer + data->DispPos;
     dispstrlen = MIN(data->DispCount, data->NumChars - data->DispPos);
     textleft_save = text_left = GetTextLeft(cl, obj);
 
@@ -1255,7 +1248,7 @@ IPTR String__MUIM_Draw(struct IClass *cl, Object *obj,
         {
             UWORD cursoroffset = data->BufferPos - data->DispPos;
 
-            dispstr = data->Buffer + data->DispPos;
+            dispstr = data->VisualBuffer + data->DispPos;
             text_left = textleft_save;
 
             SetABPenDrMd(_rp(obj), data->active_text.p_pen,
@@ -1271,6 +1264,8 @@ IPTR String__MUIM_Draw(struct IClass *cl, Object *obj,
     }
 
     data->msd_RedrawReason = NO_REASON;
+    CleanVisualBuffer(data);
+
     return TRUE;
 }
 
@@ -1519,7 +1514,6 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     BOOL edited = FALSE;
     LONG muikey = msg->muikey;
     BOOL cursor_kills_marking = FALSE;
-    STRPTR buf;
 
     if ((data->msd_Flags & MSDF_MARKING)
         && !(data->msd_Flags & MSDF_KEYMARKING))
@@ -1803,8 +1797,10 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                             (IPTR) & data->ehn);
                     }
 
+                    PrepareVisualBuffer(data);
                     text_left = GetTextLeft(cl, obj);
                     text_right = GetTextRight(cl, obj);
+                    CleanVisualBuffer(data);
 
                     /* Check if mouseclick is inside displayed text */
                     if ((x >= text_left) && (x <= text_right))
@@ -1903,8 +1899,10 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     data->msd_Flags |= MSDF_MARKING;
                 }
 
+                PrepareVisualBuffer(data);
                 text_left = GetTextLeft(cl, obj);
                 text_right = GetTextRight(cl, obj);
+                CleanVisualBuffer(data);
 
                 /* Check if mouseclick is inside displayed text */
                 if ((x >= text_left) && (x <= text_right))
@@ -2013,14 +2011,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
     /* Trigger notification */
     if (edited)
-    {
-        if (data->msd_useSecret)
-            buf = data->SecBuffer;
-        else
-            buf = data->Buffer;
-
-        superset(cl, obj, MUIA_String_Contents, buf);
-    }
+        superset(cl, obj, MUIA_String_Contents, data->Buffer);
 
     if (update)
     {
@@ -2040,18 +2031,12 @@ IPTR String__MUIM_Export(struct IClass *cl, Object *obj,
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     ULONG id;
-    STRPTR buf = NULL;
-
-    if (data->msd_useSecret)
-        buf = data->SecBuffer;
-    else
-        buf = data->Buffer;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-        if (buf != NULL)
+        if (data->Buffer != NULL)
             DoMethod(msg->dataspace, MUIM_Dataspace_Add,
-                (IPTR) buf, data->NumChars + 1, (IPTR) id);
+                (IPTR) data->Buffer, data->NumChars + 1, (IPTR) id);
         else
             DoMethod(msg->dataspace, MUIM_Dataspace_Remove, (IPTR) id);
     }
@@ -2220,14 +2205,8 @@ IPTR String__MUIM_FileNameStart(struct IClass *cl, Object *obj,
 
     //D(bug("String_FileNameStart %p\n", obj));
 
-    if (data->msd_useSecret)
-    {
-        buf = data->SecBuffer;
-    }
-    else
-    {
-        buf = data->Buffer;
-    }
+    buf = data->Buffer;
+
     // TODO: Implement String_FileNameStart correctly!
 
     return (IPTR) buf;
