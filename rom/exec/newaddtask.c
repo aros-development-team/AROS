@@ -18,6 +18,10 @@
 #include "exec_debug.h"
 #include "taskstorage.h"
 
+#if defined(__AROSEXEC_SMP__)
+#include <proto/kernel.h>
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -75,9 +79,13 @@
 
     ASSERT_VALID_PTR(task);
 
+#if defined(__AROSEXEC_SMP__)
+    int cpunum = KrnGetCPUNumber();
+#endif
+
     /* Sigh - you should provide a name for your task. */
-    if(task->tc_Node.ln_Name==NULL)
-        task->tc_Node.ln_Name="unknown task";
+    if (task->tc_Node.ln_Name == NULL)
+        task->tc_Node.ln_Name = "unknown task";
 
     DADDTASK("NewAddTask (0x%p (\"%s\"), 0x%p, 0x%p)", task, task->tc_Node.ln_Name, initialPC, finalPC);
 
@@ -88,31 +96,31 @@
     DADDTASK("NewAddTask MemEntry head: 0x%p", GetHead(&task->tc_MemEntry.lh_Head));
 
     /* Set node type to NT_TASK if not set to something else. */
-    if(!task->tc_Node.ln_Type)
-        task->tc_Node.ln_Type=NT_TASK;
+    if (!task->tc_Node.ln_Type)
+        task->tc_Node.ln_Type = NT_TASK;
 
     /* This is moved into SysBase at the tasks's startup */
-    task->tc_IDNestCnt=-1;
-    task->tc_TDNestCnt=-1;
+    task->tc_IDNestCnt = -1;
+    task->tc_TDNestCnt = -1;
 
     task->tc_State = TS_ADDED;
     task->tc_Flags = 0;
-    
+
     task->tc_SigWait = 0;
     task->tc_SigRecvd = 0;
     task->tc_SigExcept = 0;
-        
+
     /* Signals default to all system signals allocated. */
-    if(task->tc_SigAlloc==0)
-        task->tc_SigAlloc=SysBase->TaskSigAlloc;
+    if (task->tc_SigAlloc == 0)
+        task->tc_SigAlloc = SysBase->TaskSigAlloc;
 
     /* Currently only used for segmentation violation */
-    if(task->tc_TrapCode==NULL)
-        task->tc_TrapCode=SysBase->TaskTrapCode;
+    if (task->tc_TrapCode == NULL)
+        task->tc_TrapCode = SysBase->TaskTrapCode;
 
-    if(task->tc_ExceptCode==NULL)
-        task->tc_ExceptCode=SysBase->TaskExceptCode;
-        
+    if (task->tc_ExceptCode == NULL)
+        task->tc_ExceptCode = SysBase->TaskExceptCode;
+
     /*
      * EXECF_StackSnoop can be set or reset at runtime.
      * However task's stack is either snooped or not, it's problematic
@@ -126,7 +134,7 @@
         return NULL;
 
     /* Get new stackpointer. */
-    if (task->tc_SPReg==NULL)
+    if (task->tc_SPReg == NULL)
         task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
 
 #ifdef AROS_STACKALIGN
@@ -145,15 +153,15 @@
         startfill = (UBYTE *)task->tc_SPLower;
         endfill   = ((UBYTE *)task->tc_SPReg) - 16;
 
-        while(startfill <= endfill)
+        while (startfill <= endfill)
         {
             *startfill++ = 0xE1;
         }
     }
 
     /* Default finalizer? */
-    if(finalPC==NULL)
-        finalPC=SysBase->TaskExitCode;
+    if (finalPC == NULL)
+        finalPC = SysBase->TaskExitCode;
 
     /* Init new context. */
     if (!PrepareContext(task, initialPC, finalPC, tagList, SysBase))
@@ -174,15 +182,15 @@
         of Signal() which is usable from interrupts and may change those
         lists.
      */
-    
+
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
 #endif
     Disable();
 
     /* Add the new task to the ready list. */
-    task->tc_State=TS_READY;
-    Enqueue(&SysBase->TaskReady,&task->tc_Node);
+    task->tc_State = TS_READY;
+    Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
@@ -194,14 +202,24 @@
         is already gone.
     */
 
-    if (task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri &&
-       GET_THIS_TASK->tc_State == TS_RUN)
+    if (
+#if defined(__AROSEXEC_SMP__)
+        ((IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) == KrnGetCPUMask(cpunum)) &&
+#endif
+        task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri &&
+        GET_THIS_TASK->tc_State == TS_RUN)
     {
         D(bug("[AddTask] Rescheduling...\n"));
 
         /* Reschedule() will take care about disabled task switching automatically */
         Reschedule();
     }
+#if defined(__AROSEXEC_SMP__)
+    else
+    {
+        bug("[Exec] AddTask:\n");
+    }
+#endif
 
     Enable();
 

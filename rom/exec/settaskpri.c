@@ -5,12 +5,18 @@
     Desc: Change the priority of a task.
     Lang: english
 */
+#define DEBUG 0
 
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#if defined(__AROSEXEC_SMP__)
+#include <proto/kernel.h>
+#include "etask.h"
+#endif
 
 /*****************************************************************************
 
@@ -55,8 +61,11 @@
 
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *task_listlock = NULL;
+    int cpunum = KrnGetCPUNumber();
 #endif
     BYTE old;
+
+    D(bug("[Exec] SetTaskPri(0x%p, %d)\n", task, priority));
 
     /* Always Disable() when doing something with task lists. */
 #if defined(__AROSEXEC_SMP__)
@@ -92,19 +101,33 @@
             Enqueue(&SysBase->TaskReady, &task->tc_Node);
         }
 
-        /*
-            I could check the task priorities here to determine if
-            the following is really necessary, but OTOH priority
-            changes are rare and the hassle isn't really worth it.
-
-            This should be reconsidered, because of Executive [ldp].
-        */
-        Reschedule();
+        if (
+#if defined(__AROSEXEC_SMP__)
+             (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum) && 
+#endif
+            ((task->tc_State == TS_RUN) || ( task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri))
+        )
+        {
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(task_listlock);
+            task_listlock = NULL;
+#endif
+            Reschedule();
+#if defined(__AROSEXEC_SMP__)
+        }
+        else
+        {
+            bug("[Exec] SetTaskPri:\n");
+        }
+#endif
     }
 
     /* All done. */
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(task_listlock);
+    if (task_listlock)
+    {
+        EXEC_SPINLOCK_UNLOCK(task_listlock);
+    }
 #endif
     Enable();
 

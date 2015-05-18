@@ -60,6 +60,9 @@
 {
     AROS_LIBFUNC_INIT
 
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t *task_listlock = NULL;
+#endif
     ULONG rcvd;
     struct Task *me;
 
@@ -71,24 +74,32 @@
     /* If at least one of the signals is already set do not wait. */
     while (!(me->tc_SigRecvd & signalSet))
     {
+	/* Set the wait signal mask */
+	me->tc_SigWait = signalSet;
 #if defined(__AROSEXEC_SMP__)
         if (me->tc_State != TS_WAIT)
         {
 #endif
 	D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", me->tc_Node.ln_Name, me));
         D(bug("[Exec] Task state = %08x\n", me->tc_State));
-	/* Set the wait signal mask */
-	me->tc_SigWait = signalSet;
 
         /* Protect the task lists against access by other tasks. */
 #if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_WRITE);
+            switch (me->tc_State)
+            {
+                case TS_RUN:
+                    task_listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
+                    break;
+                default:
+                    task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
+                    break;
+            }
+            EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
 #endif
         Disable();
-
 #if defined(__AROSEXEC_SMP__)
             Remove(&me->tc_Node);
-            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+            EXEC_SPINLOCK_UNLOCK(task_listlock);
             Enable();
             EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
             Disable();
@@ -105,6 +116,13 @@
 	Enqueue(&SysBase->TaskWait, &me->tc_Node);
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+        }
+        else
+        {
+            Disable();
+            me->tc_TDNestCnt = TDNESTCOUNT_GET;
+            TDNESTCOUNT_SET(-1);
+        }
 #endif
 	/* And switch to the next ready task. */
 	KrnSwitch();
@@ -119,9 +137,6 @@
 	TDNESTCOUNT_SET(me->tc_TDNestCnt);
 
         Enable();
-#if defined(__AROSEXEC_SMP__)
-        }
- #endif
     }
     /* Get active signals. */
     rcvd = (me->tc_SigRecvd & signalSet);
