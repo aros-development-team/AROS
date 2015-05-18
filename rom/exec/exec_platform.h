@@ -32,9 +32,9 @@ struct Exec_PlatformData
 #define FLAG_SCHEDDISPATCH_SET          AROS_ATOMIC_OR(SysBase->AttnResched, ARF_AttnDispatch)
 #endif
 #define IDNESTCOUNT_GET                 (SysBase->IDNestCnt)
-#define IDNESTCOUNT_SET(val)            (SysBase->IDNestCnt=(x))
+#define IDNESTCOUNT_SET(val)            (SysBase->IDNestCnt=(val))
 #define TDNESTCOUNT_GET                 (SysBase->TDNestCnt)
-#define TDNESTCOUNT_SET(val)            (SysBase->TDNestCnt=(x))
+#define TDNESTCOUNT_SET(val)            (SysBase->TDNestCnt=(val))
 #define FLAG_SCHEDQUANTUM_ISSET         (SysBase->SysFlags & SFF_QuantumOver)
 #define FLAG_SCHEDSWITCH_ISSET          (SysBase->AttnResched & ARF_AttnSwitch)
 #define FLAG_SCHEDDISPATCH_ISSET        (SysBase->AttnResched & ARF_AttnDispatch)
