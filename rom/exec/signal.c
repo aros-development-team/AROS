@@ -5,13 +5,18 @@
     Desc: Send some signal to a given task
     Lang: english
 */
+#define DEBUG 0
 
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
-#include <aros/debug.h>
 
 #include "exec_intern.h"
+#if defined(__AROSEXEC_SMP__)
+#include <proto/kernel.h>
+#include "etask.h"
+#endif
 
 /*****************************************************************************
 
@@ -57,7 +62,13 @@
 
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *task_listlock = NULL;
+    int cpunum = KrnGetCPUNumber();
 #endif
+
+    D(
+        bug("[Exec] Signal(0x%p, %08lX)\n", task, signalSet);
+        bug("[Exec] Signal: '%s' state %08x\n", task->tc_Node.ln_Name, task->tc_State);
+    )
 
     /* Protect the task lists against other tasks that may use Signal(). */
 #if defined(__AROSEXEC_SMP__)
@@ -74,27 +85,44 @@
             break;
     }
     EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
+    D(bug("[Exec] Signal: initial lock @ 0x%p\n", task_listlock));
 #endif
     Disable();
+
+    D(bug("[Exec] Signal: multitasking disabled\n"));
 
     /* Set the signals in the task structure. */
     task->tc_SigRecvd |= signalSet;
 
     /* Do those bits raise exceptions? */
-    if (task->tc_SigExcept & task->tc_SigRecvd)
+    if (task->tc_SigRecvd & task->tc_SigExcept)
     {
         /* Yes. Set the exception flag. */
         task->tc_Flags |= TF_EXCEPT;
 
-        /* task is running (Signal() called from within interrupt)? Raise the exception or defer it for later. */
+        D(bug("[Exec] Signal: TF_EXCEPT set\n"));
+
+        /* 
+                if the target task is running (called from within interrupt handler),
+                raise the exception or defer it for later.
+            */
         if (task->tc_State == TS_RUN)
         {
+            D(bug("[Exec] Signal: signaling running task\n"));
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_UNLOCK(task_listlock);
+            if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum)
+            {
 #endif
             /* Order a reschedule */
             Reschedule();
-
+#if defined(__AROSEXEC_SMP__)
+            }
+            else
+            {
+                D(bug("[Exec] Signal:\n"));
+            }
+#endif
             /* All done. */
             Enable();
 
@@ -107,11 +135,13 @@
         (or on a exception) ?
     */
     if ((task->tc_State == TS_WAIT) &&
-       (task->tc_SigRecvd&(task->tc_SigWait | task->tc_SigExcept)))
+       (task->tc_SigRecvd & (task->tc_SigWait | task->tc_SigExcept)))
     {
-        /* Yes. Move him to the ready list. */
-        task->tc_State = TS_READY;
+        D(bug("[Exec] Signal: signaling waiting task\n"));
+
+        /* Yes. Move it to the ready list. */
         Remove(&task->tc_Node);
+        task->tc_State = TS_READY;
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(task_listlock);
         Enable();
@@ -119,9 +149,16 @@
         Disable();
 #endif
         Enqueue(&SysBase->TaskReady, &task->tc_Node);
-
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(task_listlock);
+        task_listlock = NULL;
+#endif
         /* Has it a higher priority as the current one? */
-        if (task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri)
+        if (
+#if defined(__AROSEXEC_SMP__)
+            (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) &&
+#endif
+            (task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri))
         {
             /*
                 Yes. A taskswitch is necessary. Prepare one if possible.
@@ -129,10 +166,6 @@
             */
             if (GET_THIS_TASK->tc_State == TS_RUN)
             {
-#if defined(__AROSEXEC_SMP__)
-                EXEC_SPINLOCK_UNLOCK(task_listlock);
-                task_listlock = NULL;
-#endif
                 Reschedule();
             }
         }
@@ -145,6 +178,8 @@
     }
 #endif
     Enable();
+
+    D(bug("[Exec] Signal: 0x%p finished signal processing\n", task));
 
     AROS_LIBFUNC_EXIT
 }
