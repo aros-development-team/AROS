@@ -263,7 +263,7 @@ AROS_UFH3(void, Enumerator,
         OOP_Object *driver;
         struct TagItem attrs[] =
         {
-            { aHidd_PCIDevice_isIO,     TRUE }, /* Don't listen to IO transactions */
+            { aHidd_PCIDevice_isIO,     TRUE }, /* Listen to I/O transactions */
             { aHidd_PCIDevice_isMEM,    TRUE }, /* Listen to MEM transactions */
             { aHidd_PCIDevice_isMaster, TRUE }, /* Can work in BusMaster */
             { TAG_DONE, 0UL },
@@ -355,7 +355,8 @@ AROS_UFH3(void, Enumerator,
         sd->RingBufferSize = 64*4096;
         sd->RingBufferTail = 0;
 
-        /* Reserve some memory for HW cursor */
+        /* Reserve some memory for HW cursor (this is also assumed to be 4kB
+         * aligned) */
         sd->CursorImage = ((intptr_t)AllocGfxMem(sd, 64 * 64 * 4))
             - (intptr_t)sd->Card.Framebuffer;
         if (NeedsPhysicalCursor(ProductID))

@@ -554,8 +554,8 @@ IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height,
 	width, height, bpp, result));
     D(bug("[GMA] Available graphics memory is now %ldMB\n", sd->CardMem.mh_Free >> 20));
     /*
-	If Allocate failed, make the 0xffffffff as return. If it succeeded, make
-	the memory pointer relative to the begin of GFX memory
+	If allocation failed, use -1 as return value. If it succeeded,
+	make the memory pointer relative to the beginning of GFX memory
     */
     if (result == 0) result--;
     else result -= (IPTR)sd->Card.Framebuffer;

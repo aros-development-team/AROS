@@ -105,7 +105,7 @@ VOID set_status(ULONG i,ULONG v)
 #endif
 }
 
-APTR alloc_gfx_mem(ULONG size)
+static APTR alloc_gfx_mem(ULONG size)
 {
     APTR result;
 
@@ -128,7 +128,6 @@ APTR alloc_gfx_mem(ULONG size)
 
     if(result)
     {
-        memset(result, 0, size);
         allocated_mem+=size;
         D(bug("[GMA winsys] alloc_gfx_mem(%d) = %p allocated_mem %d\n",
             size, result, allocated_mem));
@@ -137,7 +136,7 @@ APTR alloc_gfx_mem(ULONG size)
     return result;
 }
 
-VOID free_gfx_mem(APTR ptr, ULONG size)
+static VOID free_gfx_mem(APTR ptr, ULONG size)
 {
 #ifdef GALLIUM_SIMULATION
     free(ptr);return;
@@ -150,7 +149,8 @@ VOID free_gfx_mem(APTR ptr, ULONG size)
 
 VOID init_aros_winsys()
 {
-    // clean hw_status table,reserve first 100,( 0-15 is reserved,and bitmapclass uses at least 16-20)
+    // clean hw_status table, reserve first 100, (0-15 is reserved, and
+    // bitmapclass uses at least 16-20)
     int i;
     for(i=100;i<1024;i++)
     {
@@ -384,8 +384,8 @@ void batchbuffer_destroy(struct i915_winsys_batchbuffer *ibatch)
     (bug("[GMA winsys] batchbuffer_destroy %p\n",ibatch));
     struct aros_batchbuffer *batch = aros_batchbuffer(ibatch);
     FREE(ibatch->map);
-    FREE(batch);
     free_gfx_mem(batch->allocated_map, batch->allocated_size);
+    FREE(batch);
 
     LOCK_HW
         DO_FLUSH();
@@ -467,7 +467,7 @@ struct i915_winsys_buffer *
             {
                 if( ! buffer_is_busy(0, buf ) )
                 {
-                    D(bug("[GMA winsys] buffer_create: cheap seconhand buffer found:%p\n",buf);)
+                    D(bug("[GMA winsys] buffer_create: cheap secondhand buffer found:%p\n", buf));
                     Remove((struct Node *)buf);
                     ReleaseSemaphore(&UnusedBuffersListLock);
                     return buf;
@@ -485,7 +485,10 @@ struct i915_winsys_buffer *
     // allocate page aligned gfx memory
     buf->allocated_size = size + 4096;
     if( !(buf->allocated_map = alloc_gfx_mem(buf->allocated_size) ) )
+    {
+        FREE(buf);
         return NULL;
+    }
     buf->map = (APTR)(((IPTR)buf->allocated_map + 4095)& ~4095);
     buf->size = size;
     buf->magic = MAGIC;
