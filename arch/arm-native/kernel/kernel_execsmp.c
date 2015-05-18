@@ -96,6 +96,10 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpunum;
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = (1 << cpunum);
 
+    bsctx->r[11] = 0;
+    bsctx->lr = SysBase->TaskExitCode;
+    bsctx->Flags = 0;
+
     return bstask;
 #undef  bstask
 }

@@ -269,11 +269,11 @@ void cpu_Switch(regs_t *regs)
     if (__arm_arosintern.ARMI_GetTime)
     {
         /* Update the taks CPU time .. */
-        timeCur = __arm_arosintern.ARMI_GetTime() - GetIntETask(task)->iet_private1;
+        timeCur = __arm_arosintern.ARMI_GetTime() - IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
         timeVal.tv_secs = timeCur / 1000000;
         timeVal.tv_micro = timeCur % 1000000;
 
-        ADDTIME(&GetIntETask(task)->iet_CpuTime, &timeVal);
+        ADDTIME(&IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime, &timeVal);
     }
 
     core_Switch();
@@ -313,17 +313,17 @@ void cpu_Dispatch(regs_t *regs)
         Exception();
 
 #if defined(__AROSEXEC_SMP__)
-    GetIntETask(task)->iet_CpuNumber = cpunum;
+    IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpunum;
 #endif
 
     if (__arm_arosintern.ARMI_GetTime)
     {
         /* Store the launch time */
-        GetIntETask(task)->iet_private1 = __arm_arosintern.ARMI_GetTime();
-        if (!GetIntETask(task)->iet_StartTime.tv_secs && !GetIntETask(task)->iet_StartTime.tv_micro)
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = __arm_arosintern.ARMI_GetTime();
+        if (!IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_secs && !IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_micro)
         {
-            GetIntETask(task)->iet_StartTime.tv_secs = GetIntETask(task)->iet_private1 / 1000000;
-            GetIntETask(task)->iet_StartTime.tv_micro = GetIntETask(task)->iet_private1 % 1000000;
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_secs = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 / 1000000;
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_micro = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 % 1000000;
         }
     }
 

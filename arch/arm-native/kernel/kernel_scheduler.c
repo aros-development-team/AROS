@@ -177,7 +177,7 @@ struct Task *core_Dispatch(void)
     for (newtask = (struct Task *)GetHead(&SysBase->TaskReady); newtask != NULL; newtask = (struct Task *)GetSucc(newtask))
     {
 #if defined(__AROSEXEC_SMP__)
-        if ((GetIntETask(newtask)->iet_CpuAffinity  & cpumask) == cpumask)
+        if ((GetIntETask(newtask)->iet_CpuAffinity & cpumask) == cpumask)
         {
 #endif
             Remove(&newtask->tc_Node);
