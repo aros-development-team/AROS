@@ -40,25 +40,25 @@ struct Exec_PlatformData
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         __tls->IDNestCnt++; \
-    } while(0);
+    } while(0)
 #define IDNESTCOUNT_DEC \
     do { \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         __tls->IDNestCnt--; \
-    } while(0);
+    } while(0)
 #define TDNESTCOUNT_INC \
     do { \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         __tls->TDNestCnt++; \
-    } while(0);
+    } while(0)
 #define TDNESTCOUNT_DEC \
     do { \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         __tls->TDNestCnt--; \
-    } while(0);
+    } while(0)
 #define FLAG_SCHEDQUANTUM_CLEAR \
     do { \
         tls_t *__tls; \
@@ -101,25 +101,25 @@ struct Exec_PlatformData
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         AROS_ATOMIC_INC(__tls->IDNestCnt); \
-    } while(0);
+    } while(0)
 #define IDNESTCOUNT_DEC \
     do { \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         AROS_ATOMIC_DEC(__tls->IDNestCnt); \
-    } while(0);
+    } while(0)
     #define TDNESTCOUNT_INC \
     do { \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         AROS_ATOMIC_INC(__tls->TDNestCnt); \
-    } while(0);
+    } while(0)
 #define TDNESTCOUNT_DEC \
     do { \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         AROS_ATOMIC_DEC(__tls->TDNestCnt); \
-    } while(0);
+    } while(0)
 #define FLAG_SCHEDQUANTUM_CLEAR \
     do { \
         tls_t *__tls; \
@@ -157,7 +157,6 @@ struct Exec_PlatformData
         AROS_ATOMIC_OR(__tls->ScheduleFlags, TLSSF_Dispatch); \
     } while(0)
 #endif
-
 #define IDNESTCOUNT_GET \
     ({ \
         tls_t *__tls; \
@@ -170,7 +169,7 @@ struct Exec_PlatformData
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         __tls->IDNestCnt = val; \
-    } while(0);
+    } while(0)
 #define TDNESTCOUNT_GET \
     ({ \
         tls_t *__tls; \
@@ -183,8 +182,7 @@ struct Exec_PlatformData
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         __tls->TDNestCnt = val; \
-    } while(0);
-
+    } while(0)
 #define FLAG_SCHEDQUANTUM_ISSET \
     ({ \
         tls_t *__tls; \
