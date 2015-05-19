@@ -13,8 +13,8 @@
 #include <kernel_debug.h>
 #include <kernel_scheduler.h>
 
+#define AROS_NO_ATOMIC_OPERATIONS
 #include "exec_platform.h"
-
 
 #define D(x)
 
