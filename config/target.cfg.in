@@ -164,17 +164,8 @@ endif
 TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/exec \
                       -I$(SRCDIR)/rom/exec
 
-ifneq (,$(findstring $(ARCH),raspi))
 PRIV_KERNEL_INCLUDES := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
-else
-PRIV_KERNEL_INCLUDES := $(TARGET_KERNEL_INCLUDES)
-endif
-
-ifneq (,$(findstring $(ARCH),raspi))
 PRIV_EXEC_INCLUDES := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)
-else
-PRIV_EXEC_INCLUDES := $(TARGET_EXEC_INCLUDES)
-endif
 
 # Android
 AROS_ANDROID_ANTAPK := @aros_android_antapk@
