@@ -1003,7 +1003,6 @@ case "$target_os" in
                 ;;
             *x86_64*)
                 aros_target_cpu="x86_64"
-                ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
                 aros_serial_debug=1
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="elf_x86_64"
