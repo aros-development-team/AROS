@@ -175,6 +175,7 @@ void setChanged(struct ListNode *iln)
         parent = parent->parent;
     }
     DoMethod(gadgets.leftlv, MUIM_List_Redraw, MUIV_List_Redraw_All);
+    DoMethod(gadgets.leftlv, MUIM_CallHook, (IPTR)&hook_lv_click);
 }
 
 void unsetChanged(struct ListNode *iln)
@@ -2386,9 +2387,9 @@ LONG initGUI(void)
     );
     DoMethod
     (
-        partitiontypegadgets.lv,
-        MUIM_Notify, MUIA_Listview_SelectChange, TRUE, (IPTR)partitiontypegadgets.lv, 2,
-        MUIM_CallHook, (IPTR)&hook_buttons
+        partitiontypegadgets.lv, MUIM_Notify, MUIA_List_Active,
+        MUIV_EveryTime, (IPTR)partitiontypegadgets.lv, 2, MUIM_CallHook,
+        (IPTR)&hook_buttons
     );
     /* partition table type window */
     DoMethod
