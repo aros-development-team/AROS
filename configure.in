@@ -1003,6 +1003,7 @@ case "$target_os" in
                 ;;
             *x86_64*)
                 aros_target_cpu="x86_64"
+                ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
                 aros_serial_debug=1
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="elf_x86_64"
@@ -1013,6 +1014,11 @@ case "$target_os" in
                 aros_kernel_ldflags=""
                 aros_default_wbwidth=640
                 aros_default_wbheight=480
+                case "$aros_target_variant" in
+                    smp)
+                        ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
+                    ;;
+                esac
                 ;;
             *)
                 AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
