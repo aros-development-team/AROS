@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: High-level scheduler calling code
@@ -14,6 +14,8 @@
 #include <kernel_intr.h>
 #include <kernel_scheduler.h>
 #include <kernel_syscall.h>
+
+#include "exec_platform.h"
 
 /*
  * Leave the interrupt. This function receives the interrupt register frame
@@ -33,13 +35,13 @@ void core_ExitInterrupt(regs_t *regs)
         core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
 
     /* If task switching is disabled, do nothing */
-    if (SysBase->TDNestCnt < 0)
+    if (TDNESTCOUNT_GET < 0)
     {
         /*
          * Do not disturb task if it's not necessary. 
          * Reschedule only if switch pending flag is set. Exit otherwise.
          */
-        if (SysBase->AttnResched & ARF_AttnSwitch)
+        if (FLAG_SCHEDSWITCH_ISSET)
         {
 	    /* Run task scheduling sequence */
             if (core_Schedule())
