@@ -113,8 +113,8 @@
             task_listlock = NULL;
 #endif
             Reschedule();
-#if defined(__AROSEXEC_SMP__)
         }
+#if defined(__AROSEXEC_SMP__)
         else
         {
             bug("[Exec] SetTaskPri:\n");
