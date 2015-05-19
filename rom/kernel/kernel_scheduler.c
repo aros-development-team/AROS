@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -12,6 +12,9 @@
 #include <kernel_base.h>
 #include <kernel_debug.h>
 #include <kernel_scheduler.h>
+
+#include "exec_platform.h"
+
 
 #define D(x)
 
@@ -26,7 +29,7 @@ BOOL core_Schedule(void)
 
     D(bug("[KRN] core_Schedule()\n"));
 
-    SysBase->AttnResched &= ~ARF_AttnSwitch;
+    FLAG_SCHEDSWITCH_CLEAR;
 
     /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
     if (!(task->tc_Flags & TF_EXCEPT))
@@ -43,7 +46,7 @@ BOOL core_Schedule(void)
         if (pri <= task->tc_Node.ln_Pri)
         {
             /* If the running task did not used it's whole quantum yet, let it work */
-            if (!(SysBase->SysFlags & SFF_QuantumOver))
+            if (!FLAG_SCHEDQUANTUM_ISSET)
                 return FALSE;
         }
     }
@@ -86,7 +89,7 @@ void core_Switch(void)
     }
 #endif
 
-    task->tc_IDNestCnt = SysBase->IDNestCnt;
+    task->tc_IDNestCnt = IDNESTCOUNT_GET;
 
     if (task->tc_Flags & TF_SWITCH)
         AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
@@ -113,16 +116,16 @@ struct Task *core_Dispatch(void)
          * not only once. This is correct.
          */
         SysBase->IdleCount++;
-        SysBase->AttnResched |= ARF_AttnSwitch;
+        FLAG_SCHEDSWITCH_SET;
 
         return NULL;
     }
 
     SysBase->DispCount++;
-    SysBase->IDNestCnt = task->tc_IDNestCnt;
+    IDNESTCOUNT_SET(task->tc_IDNestCnt);
     SysBase->ThisTask  = task;
     SysBase->Elapsed   = SysBase->Quantum;
-    SysBase->SysFlags &= ~SFF_QuantumOver;
+    FLAG_SCHEDQUANTUM_CLEAR;
     task->tc_State     = TS_RUN;
 
     D(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
