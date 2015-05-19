@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -175,7 +175,6 @@ void setChanged(struct ListNode *iln)
         parent = parent->parent;
     }
     DoMethod(gadgets.leftlv, MUIM_List_Redraw, MUIV_List_Redraw_All);
-    set(gadgets.leftlv, MUIA_Listview_SelectChange, TRUE);
 }
 
 void unsetChanged(struct ListNode *iln)
@@ -1820,7 +1819,7 @@ LONG initGUI(void)
 
     app = ApplicationObject,
                 MUIA_Application_Title      , "HDToolBox",
-                MUIA_Application_Version    , "$VER: HDToolBox 0.4 (21.1.2014)",
+                MUIA_Application_Version    , "$VER: HDToolBox 0.5 (19.5.2015)",
                 MUIA_Application_Copyright  , "(c) 1995-2014 AROS Development Team",
                 MUIA_Application_Author     , "Bearly, Ogun, Fats and others at AROS",
                 MUIA_Application_Description, "Partition your disks.",
@@ -2253,9 +2252,8 @@ LONG initGUI(void)
     );
     DoMethod
     (
-        gadgets.leftlv,
-            MUIM_Notify, MUIA_Listview_SelectChange, TRUE, (IPTR)gadgets.leftlv, 2,
-            MUIM_CallHook, (IPTR)&hook_lv_click
+        gadgets.leftlv, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+        (IPTR)gadgets.leftlv, 2, MUIM_CallHook, (IPTR)&hook_lv_click
     );
     for (i=GB_FIRST;i<GB_EXIT;i++)
     {
