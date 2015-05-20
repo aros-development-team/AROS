@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
@@ -76,13 +78,13 @@
 
     AROS_LIBFUNC_INIT
 
-    D(bug("[EXEC] Enable()\n"));
+    D(bug("[Exec] Enable()\n"));
 
     IDNESTCOUNT_DEC;
 
     if (KernelBase && (IDNESTCOUNT_GET < 0))
     {
-        D(bug("[EXEC] Enable: Enabling interrupts\n"));
+        D(bug("[Exec] Enable: Enabling interrupts\n"));
         KrnSti();
 
         if (KrnIsSuper())
