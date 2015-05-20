@@ -24,7 +24,7 @@
 	determine whether a particular child task is still running or not.
 
     INPUTS
-	tid	--  The ID of the task to examine. Note that ThisTask is _NOT_
+	tid	--  The ID of the task to examine. Note that it is _NOT_
 		    a task pointer.
 
     RESULT
