@@ -60,6 +60,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *ThisTask = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *task_listlock = NULL;
     int cpunum = KrnGetCPUNumber();
@@ -67,34 +68,20 @@
 
     D(
         bug("[Exec] Signal(0x%p, %08lX)\n", task, signalSet);
-        bug("[Exec] Signal: '%s' state %08x\n", task->tc_Node.ln_Name, task->tc_State);
+        bug("[Exec] Signal: signaling '%s' (state %08x)\n", task->tc_Node.ln_Name, task->tc_State);
+        bug("[Exec] Signal: from '%s'\n", ThisTask->tc_Node.ln_Name);
     )
 
-    /* Protect the task lists against other tasks that may use Signal(). */
 #if defined(__AROSEXEC_SMP__)
-    switch (task->tc_State)
-    {
-        case TS_RUN:
-            task_listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
-            break;
-        case TS_WAIT:
-            task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
-            break;
-        default:
-            task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
-            break;
-    }
-    EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
-    D(bug("[Exec] Signal: initial lock @ 0x%p\n", task_listlock));
-    Forbid();
-#else
-    Disable();
+    EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
 #endif
-
-    D(bug("[Exec] Signal: multitasking disabled\n"));
-
+    Disable();
     /* Set the signals in the task structure. */
     task->tc_SigRecvd |= signalSet;
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    Enable();
+#endif
 
     /* Do those bits raise exceptions? */
     if (task->tc_SigRecvd & task->tc_SigExcept)
@@ -112,20 +99,17 @@
         {
             D(bug("[Exec] Signal: signaling running task\n"));
 #if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(task_listlock);
             if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum)
             {
 #endif
             /* Order a reschedule */
             Reschedule();
-
 #if defined(__AROSEXEC_SMP__)
             }
             else
             {
                 D(bug("[Exec] Signal:\n"));
             }
-            Permit();
 #else
             Enable();
 #endif
@@ -145,6 +129,11 @@
         D(bug("[Exec] Signal: signaling waiting task\n"));
 
         /* Yes. Move it to the ready list. */
+#if defined(__AROSEXEC_SMP__)
+        task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
+        EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
+        Forbid();
+#endif
         Remove(&task->tc_Node);
         task->tc_State = TS_READY;
 #if defined(__AROSEXEC_SMP__)
@@ -156,6 +145,7 @@
         Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(task_listlock);
+        Permit();
         task_listlock = NULL;
 #endif
         /* Has it a higher priority as the current one? */
@@ -163,26 +153,20 @@
 #if defined(__AROSEXEC_SMP__)
             (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) &&
 #endif
-            (task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri))
+            (task->tc_Node.ln_Pri > ThisTask->tc_Node.ln_Pri))
         {
             /*
                 Yes. A taskswitch is necessary. Prepare one if possible.
                 (If the current task is not running it is already moved)
             */
-            if (GET_THIS_TASK->tc_State == TS_RUN)
+            if (ThisTask->tc_State == TS_RUN)
             {
                 Reschedule();
             }
         }
     }
 
-#if defined(__AROSEXEC_SMP__)
-    if (task_listlock)
-    {
-        EXEC_SPINLOCK_UNLOCK(task_listlock);
-        Permit();
-    }
-#else
+#if !defined(__AROSEXEC_SMP__)
     Enable();
 #endif
 
