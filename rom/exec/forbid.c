@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -76,7 +78,7 @@
 
     AROS_LIBFUNC_INIT
 
-    D(bug("[EXEC] Forbid()\n"));
+    D(bug("[Exec] Forbid()\n"));
 
     TDNESTCOUNT_INC;
 
