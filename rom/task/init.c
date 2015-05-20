@@ -61,6 +61,19 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     }
     KrnSpinUnLock(listLock);
     Permit();
+    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
+    Forbid();
+    ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, curTask)
+    {
+        if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+        {
+            D(bug("[TaskRes] 0x%p [  S] %02d %s\n", curTask, GetIntETask(curTask)->iet_CpuNumber, curTask->tc_Node.ln_Name));
+            taskEntry->tle_Task = curTask;
+            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+        }
+    }
+    KrnSpinUnLock(listLock);
+    Permit();
     listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
     Forbid();
     // TODO : list TaskSpinning tasks..
