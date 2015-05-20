@@ -22,11 +22,12 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 {
     struct ExceptionContext *bsctx;
     struct MemList *ml;
-#define  bstask    ((struct Task *)(ml->ml_ME[0].me_Addr))
+#define bstask          ((struct Task *)(ml->ml_ME[0].me_Addr))
+#define bstaskmlsize    (sizeof(struct MemList) + sizeof(struct MemEntry))
     cpuid_t cpunum = GetCPUNumber();
 
     /* Build bootstraps memory list */
-    if ((ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
+    if ((ml = AllocMem(bstaskmlsize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
         bug("[Kernel:%02d] FATAL : Failed to allocate memory for bootstrap task", cpunum);
         return NULL;
@@ -38,7 +39,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     if ((ml->ml_ME[0].me_Addr = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
         bug("[Kernel:%02d] FATAL : Failed to allocate task for bootstrap", cpunum);
-        FreeMem(ml, sizeof(struct MemList));
+        FreeMem(ml, bstaskmlsize);
         return NULL;
     }
 
@@ -48,7 +49,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     {
         bug("[Kernel:%02d] FATAL : Failed to allocate stack for bootstrap task", cpunum);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
-        FreeMem(ml, sizeof(struct MemList));
+        FreeMem(ml, bstaskmlsize);
         return NULL;
     }
     bstask->tc_SPLower = (APTR)(((unsigned int )ml->ml_ME[1].me_Addr + 15) & ~0xF);
@@ -63,7 +64,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
         bug("[Kernel:%02d] FATAL : Failed to create the boostrap Task context\n", cpunum);
         FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
-        FreeMem(ml, sizeof(struct MemList));
+        FreeMem(ml, bstaskmlsize);
         return NULL;
     }
 
@@ -87,7 +88,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
         FreeVec(bstask->tc_Node.ln_Name);
         FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
-        FreeMem(ml, sizeof(struct MemList));
+        FreeMem(ml, bstaskmlsize);
         return NULL;
     }
     bstask->tc_UnionETask.tc_ETask->et_RegFrame = bsctx;
