@@ -25,7 +25,7 @@
 
 #include "exec_intern.h"
 
-#define DSCHED(x) x
+#define DSCHED(x)
 
 /* Check if the currently running task on this cpu should be rescheduled.. */
 BOOL core_Schedule(void)
