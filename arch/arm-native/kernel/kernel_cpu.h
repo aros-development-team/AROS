@@ -21,6 +21,15 @@ extern uint32_t __arm_affinitymask;
 /* There are no private add-ons */
 #define AROSCPUContext ExceptionContext
 
+#define ADDTIME(dest, src)			\
+    (dest)->tv_micro += (src)->tv_micro;	\
+    (dest)->tv_secs  += (src)->tv_secs;		\
+    while((dest)->tv_micro > 999999)		\
+    {						\
+	(dest)->tv_secs++;			\
+	(dest)->tv_micro -= 1000000;		\
+    }
+
 #define goSuper() 0
 #define goUser()
 
