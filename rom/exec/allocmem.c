@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate some memory
@@ -123,7 +123,7 @@
     /* Set DOS error if called from a process */
     if (res == NULL)
     {
-        struct Process *process = (struct Process *)FindTask(NULL);
+        struct Process *process = (struct Process *)GET_THIS_TASK;
         if (process->pr_Task.tc_Node.ln_Type == NT_PROCESS)
             process->pr_Result2 = ERROR_NO_FREE_STORE;
     }

@@ -86,8 +86,10 @@
     }
     EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
     D(bug("[Exec] Signal: initial lock @ 0x%p\n", task_listlock));
-#endif
+    Forbid();
+#else
     Disable();
+#endif
 
     D(bug("[Exec] Signal: multitasking disabled\n"));
 
@@ -116,16 +118,19 @@
 #endif
             /* Order a reschedule */
             Reschedule();
+
 #if defined(__AROSEXEC_SMP__)
             }
             else
             {
                 D(bug("[Exec] Signal:\n"));
             }
-#endif
-            /* All done. */
+            Permit();
+#else
             Enable();
+#endif
 
+            /* All done. */
             return;
         }
     }
@@ -144,9 +149,9 @@
         task->tc_State = TS_READY;
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(task_listlock);
-        Enable();
+        Permit();
         task_listlock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
-        Disable();
+        Forbid();
 #endif
         Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
@@ -175,9 +180,11 @@
     if (task_listlock)
     {
         EXEC_SPINLOCK_UNLOCK(task_listlock);
+        Permit();
     }
-#endif
+#else
     Enable();
+#endif
 
     D(bug("[Exec] Signal: 0x%p finished signal processing\n", task));
 

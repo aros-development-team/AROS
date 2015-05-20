@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Examine and/or modify the signals which cause an exception.
@@ -9,6 +9,11 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#if defined(__AROSEXEC_SMP__)
+#include "etask.h"
+#endif
 
 /*****************************************************************************
 
@@ -51,27 +56,33 @@
     AROS_LIBFUNC_INIT
 
     /* Get pointer to current task */
-    struct Task *me = FindTask(NULL);
+    struct Task *ThisTask = GET_THIS_TASK;
     ULONG old;
 
     /* Protect mask of sent signals and task lists */
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+#endif
     Disable();
 
     /* Get returncode */
-    old=me->tc_SigExcept;
+    old = ThisTask->tc_SigExcept;
 
     /* Change exception mask */
-    me->tc_SigExcept=(old&~signalSet)|(newSignals&signalSet);
+    ThisTask->tc_SigExcept = (old & ~signalSet) | (newSignals & signalSet);
 
     /* Does this change include an exception? */
-    if (me->tc_SigExcept & me->tc_SigRecvd)
+    if (ThisTask->tc_SigExcept & ThisTask->tc_SigRecvd)
     {
         /* Yes. Set the exception flag. */
-        me->tc_Flags|=TF_EXCEPT;
+        ThisTask->tc_Flags |= TF_EXCEPT;
 
         /* And order rescheduling */
         Reschedule();
     }
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+#endif
     Enable();
 
     return old;

@@ -21,7 +21,6 @@
 #    define Exec _Exec
 #endif
 
-
 /*****************************************************************************
 
     NAME */
@@ -70,6 +69,8 @@
 #undef Exec
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[EXEC] Permit()\n"));
 
     /*
         Task switches are allowed again, if a switch is pending, we

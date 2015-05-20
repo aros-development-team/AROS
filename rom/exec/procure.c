@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Try to lock a semaphore.
@@ -65,7 +65,7 @@
     if( (IPTR)(bidMsg->ssm_Message.mn_Node.ln_Name) == SM_SHARED )
 	bidMsg->ssm_Semaphore = NULL;
     else
-	bidMsg->ssm_Semaphore = (struct SignalSemaphore *)FindTask(NULL);
+	bidMsg->ssm_Semaphore = (struct SignalSemaphore *)GET_THIS_TASK;
 
     /* Arbitrate for the semaphore structure - following like ObtainSema() */
     Forbid();
@@ -128,7 +128,7 @@
     /* All done. */
     Permit();
 
-    /* Huh? */
     return 0;
+
     AROS_LIBFUNC_EXIT
 } /* Procure */

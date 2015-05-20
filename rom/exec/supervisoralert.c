@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display an alert passed from supervisor mode.
@@ -36,7 +36,7 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
     struct Task * t = NULL;
     ULONG alertNum = 0;
 
-    IntSysBase->SAT.sat_Task = FindTask(NULL);
+    IntSysBase->SAT.sat_Task = GET_THIS_TASK;
     IntSysBase->SAT.sat_IsAvailable = TRUE;
 
     while(TRUE)

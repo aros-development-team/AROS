@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: MungWall memory anti-trashing checker
@@ -48,7 +48,7 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
 	header->mwh_allocsize = origSize;
 	header->mwh_pool      = pool;
 	header->mwh_AllocFunc = loc->function;
-	header->mwh_Owner     = FindTask(NULL);
+	header->mwh_Owner     = GET_THIS_TASK;
 	header->mwh_Caller    = loc->caller;
 
 	/* Skip to the start of data space */

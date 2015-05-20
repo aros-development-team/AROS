@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     ChildWait() - Wait for a task to finish it processing.
@@ -21,7 +21,7 @@
 
 /*  FUNCTION
 	Wait for either a specific child task, or any child task to finish.
-	If you specify tid = 0, then this call will return when any child
+	If you specify tid = 0, then ThisTask call will return when any child
 	task exits, otherwise it will not return until the requested task
 	finishes.
 
@@ -56,7 +56,7 @@
     EXAMPLE
 
     BUGS
-	Be careful with the return result of this function.
+	Be careful with the return result of ThisTask function.
 
     SEE ALSO
 
@@ -66,7 +66,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *this = FindTask(NULL);
+    struct Task *ThisTask = GET_THIS_TASK;
     struct ETask *et;
     struct ETask *child;
 
@@ -76,13 +76,13 @@
 
 	Firstly, are we a new-style Task?
     */
-    if ((this->tc_Flags & TF_ETASK) == 0)
+    if ((ThisTask->tc_Flags & TF_ETASK) == 0)
 	return CHILD_NOTNEW;
 
-    et = this->tc_UnionETask.tc_ETask;
+    et = ThisTask->tc_UnionETask.tc_ETask;
 
     /*
-	Scanning this list is unsafe, I need to Forbid(). Note that the
+	Scanning ThisTask list is unsafe, I need to Forbid(). Note that the
 	Wait() below will break the Forbid() condition. This is how I need
 	it to be.
     */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate a trap
@@ -41,11 +41,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *ThisTask;
+    struct Task *ThisTask = GET_THIS_TASK;
     UWORD mask;
     UWORD mask1;
-    
-    ThisTask = FindTask(NULL);
+
     mask = GetTrapAlloc(ThisTask);
 
     /* Will any trap do? */

@@ -61,35 +61,38 @@
 
     struct MemList *mb;
     struct ETask *et;
-    BOOL suicide;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *task_listlock = NULL;
 #endif
+    struct Task *suicide = GET_THIS_TASK;
 
     /* A value of NULL means current task */
-    if (task==NULL)
-        task=GET_THIS_TASK;
+    if (task == NULL)
+        task = suicide;
 
     DREMTASK("RemTask (0x%p (\"%s\"))", task, task->tc_Node.ln_Name);
 
-    /* Don't let any other task interfere with us at the moment
-    */
 #if !defined(__AROSEXEC_SMP__)
+    /* Don't let any other task interfere with us at the moment */
     Forbid();
 #endif
 
-    suicide = (task == GET_THIS_TASK);
-    if (suicide)
-        DREMTASK("Removing itself");
-
-    /* Remove() here, before freeing the MemEntry list. Because
-       the MemEntry list might contain the task struct itself! */
-
-    if (!suicide)
+    if (suicide == task)
     {
+        DREMTASK("Removing itself");
+    }
+    else
+    {
+        /*
+         * Remove() here, before freeing the MemEntry list. Because
+         * the MemEntry list might contain the task struct itself!
+        */
 #if defined(__AROSEXEC_SMP__)
         switch (task->tc_State)
         {
+            case TS_SPIN:
+                task_listlock =&PrivExecBase(SysBase)->TaskSpinningLock;
+                break;
             case TS_RUN:
                 task_listlock =&PrivExecBase(SysBase)->TaskRunningSpinLock;
                 break;
@@ -101,7 +104,7 @@
                 break;
         }
         EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
-        Disable();
+        Forbid();
 #endif
         Remove(&task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
@@ -125,8 +128,8 @@
     DREMTASK("Cleaning up ETask et=%p", et);
     CleanupETask(task);
 
-    /* Freeing myself? */
-    if (suicide)
+    /* Freeing itself? */
+    if (suicide == task)
     {
         /*
          * Send task to task cleaner to clean up memory. This avoids ripping
@@ -138,23 +141,22 @@
         InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort,
             (struct Message *)task, SysBase);
 
-#if !defined(__AROSEXEC_SMP__)
         /* Changing the task lists always needs a Disable(). */
         Disable();
-#endif
 
         /*
-            Since I don't know how many levels of Forbid()
-            are already pending I set a default value.
+         * We don't know how many levels of Forbid()
+         * are already pending, so use a default value.
         */
         TDNESTCOUNT_SET(-1);
 
-        /* And force a task switch. Note: Dispatch, not Switch,
-           because the state of ThisTask must not be saved
+        /*
+         * Force rescheduling.
+         * Note #1: We dont want to preseve the task context so use Dispatch, not Switch.
+         * Note #2: We will never return from the dispatch to "ThisTask"
         */
 
         KrnDispatch();
-        /* Does not return. */
     }
     else
     {
@@ -169,12 +171,7 @@
     }
 
     /* All done. */
-#if defined(__AROSEXEC_SMP__)
-    if (task_listlock)
-        Enable();
-#else
     Permit();
-#endif
 
     DREMTASK("Success");
 

@@ -61,7 +61,7 @@
     ASSERT_VALID_PTR(port);
 
     /* Set the node type to NT_MESSAGE == sent message. */
-    message->mn_Node.ln_Type=NT_MESSAGE;
+    message->mn_Node.ln_Type = NT_MESSAGE;
 
     InternalPutMsg(port, message, SysBase);
 
@@ -74,7 +74,7 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
        Therefore the message list of the message port must be protected with
        Disable() */
     Disable();
-    AddTail(&port->mp_MsgList,&message->mn_Node);
+    AddTail(&port->mp_MsgList, &message->mn_Node);
     Enable();
 
     if (port->mp_SigTask)
@@ -85,12 +85,14 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 	switch(port->mp_Flags & PF_ACTION)
 	{
 	    case PA_SIGNAL:
+	    	D(bug("[EXEC] PutMsg: PA_SIGNAL, task 0x%p, signal %08x\n", port->mp_SigTask, (1 << port->mp_SigBit)));
+
 		/* Send the signal */
-		Signal((struct Task *)port->mp_SigTask,1<<port->mp_SigBit);
+		Signal((struct Task *)port->mp_SigTask, (1 << port->mp_SigBit));
 		break;
 
 	    case PA_SOFTINT:
-	    	D(bug("PutMsg: PA_SOFTINT, port 0x%p, msg 0x%p, int %s\n", port, message, ((struct Interrupt *)port->mp_SoftInt)->is_Node.ln_Name));
+	    	D(bug("[EXEC] PutMsg: PA_SOFTINT, port 0x%p, msg 0x%p, int %s\n", port, message, ((struct Interrupt *)port->mp_SoftInt)->is_Node.ln_Name));
 
 		/* Raise a software interrupt */
 		Cause((struct Interrupt *)port->mp_SoftInt);
@@ -101,6 +103,8 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 		break;
 
             case PA_CALL:
+                D(bug("[EXEC] PutMsg: PA_CALL, task 0x%p, port 0x%p\n", port->mp_SigTask, port));
+
                 /* Call the function in mp_SigTask. */
                 AROS_UFC2NR(void, port->mp_SigTask,
                     AROS_UFCA(struct MsgPort *,  port,    D0),

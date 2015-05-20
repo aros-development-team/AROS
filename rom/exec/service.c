@@ -70,12 +70,12 @@ void ServiceTask(struct ExecBase *SysBase)
                 task->tc_State = TS_READY;
 #if defined(__AROSEXEC_SMP__)
                 EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
-                Disable();
+                Forbid();
 #endif
-                Enqueue(&SysBase->TaskReady,&task->tc_Node);
+                Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
                 EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
-                Enable();
+                Permit();
 #endif
                 break;
             }

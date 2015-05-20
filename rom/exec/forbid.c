@@ -10,13 +10,16 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
-#include <exec_platform.h>
 
-/*****************************************************************************/
-#undef  Exec
+#include "exec_intern.h"
+
+#undef Exec
 #ifdef UseExecstubs
 #    define Exec _Exec
 #endif
+
+/*****************************************************************************
+
 
 /*  NAME */
 #include <proto/exec.h>
@@ -72,6 +75,8 @@
 #undef Exec
 
     AROS_LIBFUNC_INIT
+
+    D(bug("[EXEC] Forbid()\n"));
 
     TDNESTCOUNT_INC;
 

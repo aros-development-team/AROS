@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Lock a semaphore.
@@ -59,9 +59,9 @@
     AROS_LIBFUNC_INIT
 
     struct TraceLocation tp = CURRENT_LOCATION("ObtainSemaphore");
-    struct Task *me = FindTask(NULL);
+    struct Task *ThisTask = GET_THIS_TASK;
 
-    InternalObtainSemaphore(sigSem, me, &tp, SysBase);
+    InternalObtainSemaphore(sigSem, ThisTask, &tp, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* ObtainSemaphore */

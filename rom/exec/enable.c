@@ -76,11 +76,13 @@
 
     AROS_LIBFUNC_INIT
 
+    D(bug("[EXEC] Enable()\n"));
+
     IDNESTCOUNT_DEC;
 
     if (KernelBase && (IDNESTCOUNT_GET < 0))
     {
-        D(bug("[Enable] Enabling interrupts\n"));
+        D(bug("[EXEC] Enable: Enabling interrupts\n"));
         KrnSti();
 
         if (KrnIsSuper())

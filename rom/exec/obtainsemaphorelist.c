@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Lock all semaphores in the list at once.
@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
 
     struct SignalSemaphore *ss;
-    struct Task * const me = FindTask(NULL);
+    struct Task * const ThisTask = GET_THIS_TASK;
     WORD failedObtain = 0;
 
     /*
@@ -81,15 +81,15 @@
 	ss->ss_QueueCount++;
 	if(ss->ss_QueueCount != 0)
 	{
-    	    /* sem already locked by me? */
-            if (ss->ss_Owner != me) 
+    	    /* sem already locked by ThisTask? */
+            if (ss->ss_Owner != ThisTask) 
             {
 		/*
 		 *	Locked by someone else, post a wait message. We use the field
 		 *	ss_MultipleLink, which is why this function requires an
 		 *	external arbitrator.
 		 */
-		ss->ss_MultipleLink.sr_Waiter = me;
+		ss->ss_MultipleLink.sr_Waiter = ThisTask;
 		AddTail
 		(
 		    (struct List *)&ss->ss_WaitQueue,
@@ -99,7 +99,7 @@
 	    }
 	    else
 	    {
-	    	/* Already locked by me */
+	    	/* Already locked by ThisTask */
 	    	ss->ss_NestCount++;
 	    }
  	}
@@ -107,7 +107,7 @@
 	{
 	    /* We have it... */
 	    ss->ss_NestCount++;
-	    ss->ss_Owner = me;
+	    ss->ss_Owner = ThisTask;
 	}
     }
 
@@ -117,7 +117,7 @@
 
 	while(ss->ss_Link.ln_Succ != NULL)
 	{
-	    if(ss->ss_Owner != me)
+	    if(ss->ss_Owner != ThisTask)
 	    {
 		/*
 		 *  Somebody else has this one. Wait, then check again.

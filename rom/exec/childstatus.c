@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Find out the status of a child task.
@@ -24,7 +24,7 @@
 	determine whether a particular child task is still running or not.
 
     INPUTS
-	tid	--  The ID of the task to examine. Note that this is _NOT_
+	tid	--  The ID of the task to examine. Note that ThisTask is _NOT_
 		    a task pointer.
 
     RESULT
@@ -47,16 +47,15 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task	    *this;
+    struct Task	    *ThisTask = GET_THIS_TASK;
     struct ETask    *et;
     struct ETask    *child;
     ULONG	     status = CHILD_NOTFOUND;
 
-    this = FindTask(NULL);
-    if ((this->tc_Flags & TF_ETASK) == 0)
+    if ((ThisTask->tc_Flags & TF_ETASK) == 0)
 	return CHILD_NOTNEW;
 
-    et = this->tc_UnionETask.tc_ETask;
+    et = ThisTask->tc_UnionETask.tc_ETask;
 
     /* Sigh... */
     Forbid();

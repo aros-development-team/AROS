@@ -39,6 +39,7 @@ struct IntETask
     struct ETask       iet_ETask;
     APTR                iet_RT;                 /* Structure for resource tracking         */
 #if defined(__AROSEXEC_SMP__)
+    spinlock_t          iet_TaskLock;
     IPTR                iet_CpuNumber;          /* core this task is currently running on  */
     IPTR                iet_CpuAffinity;        /* bitmap of cores this task can run on    */
     spinlock_t          *iet_SpinLock;          /* pointer to spinlock task is spinning on */
