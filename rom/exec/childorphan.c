@@ -32,7 +32,7 @@
 
     INPUTS
 	tid	--  The ID of the task to orphan, or 0 for all tasks. Note
-		    that ThisTask is NOT the pointer to the task.
+		    that it is NOT the pointer to the task.
 
     RESULT
 	Will return 0 on success or CHILD_* on an error.
