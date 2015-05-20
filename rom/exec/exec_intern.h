@@ -24,17 +24,21 @@
 
 #define ALERT_BUFFER_SIZE 2048
 
-/* Internals of this structure are host-specific, we don't know them here */
+/*
+   Internals of this structure are host-specific, we don't know them here
+ */
 struct HostInterface;
 
 struct SupervisorAlertTask
 {
-    struct Task *   sat_Task;                                   /* Task that tries to display supervisor-level alerts           */
-    BOOL            sat_IsAvailable;
-    IPTR            sat_Params[2];
+    struct Task                 *sat_Task;                      /* Task that tries to display supervisor-level alerts           */
+    BOOL                        sat_IsAvailable;
+    IPTR                        sat_Params[2];
 };
 
-/* A private portion of ExecBase */
+/*
+   AROS specific private portion of ExecBase
+ */
 struct IntExecBase
 {
     struct ExecBase             pub;
