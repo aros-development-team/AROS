@@ -29,7 +29,7 @@ struct HostInterface;
 
 struct SupervisorAlertTask
 {
-    struct Task *   sat_Task;                   /* Task that tries to display supervisor-level alerts           */
+    struct Task *   sat_Task;                                   /* Task that tries to display supervisor-level alerts           */
     BOOL            sat_IsAvailable;
     IPTR            sat_Params[2];
 };
@@ -37,48 +37,48 @@ struct SupervisorAlertTask
 /* A private portion of ExecBase */
 struct IntExecBase
 {
-    struct ExecBase pub;
-    struct List ResetHandlers;                  /* Reset handlers list                                          */
-    struct Interrupt ColdResetHandler;          /* Reset handler that causes cold reboot                        */
-    struct Interrupt WarmResetHandler;          /* Reset handler that causes warm reboot                        */
-    struct Interrupt ShutdownHandler;           /* Reset handler that halts CPU                                 */
-    struct MinList AllocMemList;                /* Mungwall allocations list                                    */
-    struct SignalSemaphore MemListSem;          /* Memory list protection semaphore                             */
-    struct SignalSemaphore LowMemSem;           /* Lock for single-threading low memory handlers                */
+    struct ExecBase             pub;
+    struct List                 ResetHandlers;                  /* Reset handlers list                                          */
+    struct Interrupt            ColdResetHandler;               /* Reset handler that causes cold reboot                        */
+    struct Interrupt            WarmResetHandler;               /* Reset handler that causes warm reboot                        */
+    struct Interrupt            ShutdownHandler;                /* Reset handler that halts CPU                                 */
+    struct MinList              AllocMemList;                   /* Mungwall allocations list                                    */
+    struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
+    struct SignalSemaphore      LowMemSem;                      /* Lock for single-threading low memory handlers                */
 #if defined(__AROSEXEC_SMP__)
-    spinlock_t TaskRunningSpinLock;
-    struct List        TaskRunning;             /* Tasks that are running on CPUs                               */
-    spinlock_t TaskSpinningLock;
-    struct List        TaskSpinning;            /* Tasks that are spinning waiting for a lock                   */
-    spinlock_t TaskReadySpinLock;
-    spinlock_t TaskWaitSpinLock;
+    spinlock_t                  TaskRunningSpinLock;
+    struct List                 TaskRunning;                    /* Tasks that are running on CPUs                               */
+    spinlock_t                  TaskSpinningLock;
+    struct List                 TaskSpinning;                   /* Tasks that are spinning waiting for a lock                   */
+    spinlock_t                  TaskReadySpinLock;
+    spinlock_t                  TaskWaitSpinLock;
 #endif
-    APTR   KernelBase;                          /* kernel.resource base                                         */
-    struct Library *DebugBase;                  /* debug.library base                                           */
-    ULONG  PageSize;                            /* Memory page size                                             */
-    ULONG  IntFlags;                            /* Internal flags, see below                                    */
-    struct MsgPort *ServicePort;                /* Message port for service task                                */
-    struct MinList TaskStorageSlots;            /* List of free slots, always one element with next slot        */
-    struct List AllocatorCtxList;               /* List of allocator contexts for system mem headers            */
-    struct Exec_PlatformData PlatformData;      /* Platform-specific stuff                                      */
-    struct SupervisorAlertTask SAT;
-    char   AlertBuffer[ALERT_BUFFER_SIZE];      /* Buffer for alert text                                        */
+    APTR                        KernelBase;                     /* kernel.resource base                                         */
+    struct Library              *DebugBase;                     /* debug.library base                                           */
+    ULONG                       PageSize;                       /* Memory page size                                             */
+    ULONG                       IntFlags;                       /* Internal flags, see below                                    */
+    struct MsgPort              *ServicePort;                   /* Message port for service task                                */
+    struct MinList              TaskStorageSlots;               /* List of free slots, always one element with next slot        */
+    struct List                 AllocatorCtxList;               /* List of allocator contexts for system mem headers            */
+    struct Exec_PlatformData    PlatformData;                   /* Platform-specific stuff                                      */
+    struct SupervisorAlertTask  SAT;
+    char                        AlertBuffer[ALERT_BUFFER_SIZE]; /* Buffer for alert text                                        */
 };
 
-#define PrivExecBase(base) ((struct IntExecBase *)base)
-#define PD(base)   PrivExecBase(base)->PlatformData
-#define KernelBase PrivExecBase(SysBase)->KernelBase
-#define DebugBase  PrivExecBase(SysBase)->DebugBase
+#define PrivExecBase(base)      ((struct IntExecBase *)base)
+#define PD(base)                PrivExecBase(base)->PlatformData
+#define KernelBase              PrivExecBase(SysBase)->KernelBase
+#define DebugBase               PrivExecBase(SysBase)->DebugBase
 
 /* IntFlags */
-#define EXECF_MungWall   0x0001                 /* This flag can't be changed at runtime                        */
-#define EXECF_StackSnoop 0x0002
+#define EXECF_MungWall          0x0001                          /* This flag can't be changed at runtime                        */
+#define EXECF_StackSnoop        0x0002
 
 /* Additional private task states */
-#define TS_SERVICE 128
+#define TS_SERVICE              128
 
 /* Puddle size, in slots. Must be at least 1 */
-#define TASKSTORAGEPUDDLE 16
+#define TASKSTORAGEPUDDLE       16
 
 #if UseLVOs
 extern void __AROS_InitExecBase (void);
