@@ -308,8 +308,10 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskRunningSpinLock);
     NEWLIST(&PrivExecBase(SysBase)->TaskRunning);
+    PrivExecBase(SysBase)->TaskRunning.lh_Type = NT_TASK;
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskSpinningLock);
     NEWLIST(&PrivExecBase(SysBase)->TaskSpinning);
+    PrivExecBase(SysBase)->TaskSpinning.lh_Type = NT_TASK;
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskReadySpinLock);
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #endif
