@@ -241,15 +241,6 @@ void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
          : [fpuflags] "=r" (fpuflags) : [vfpenable] "I" (VFPEnable));
 }
 
-#define ADDTIME(dest, src)			\
-    (dest)->tv_micro += (src)->tv_micro;	\
-    (dest)->tv_secs  += (src)->tv_secs;		\
-    while((dest)->tv_micro > 999999)		\
-    {						\
-	(dest)->tv_secs++;			\
-	(dest)->tv_micro -= 1000000;		\
-    }
-
 void cpu_Switch(regs_t *regs)
 {
     struct Task *task;
