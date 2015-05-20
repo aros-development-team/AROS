@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -78,7 +80,7 @@
 
     AROS_LIBFUNC_INIT
 
-    D(bug("[EXEC] Disable()\n"));
+    D(bug("[Exec] Disable()\n"));
 
     if (KernelBase)
 	KrnCli();
