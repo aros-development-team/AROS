@@ -121,14 +121,20 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
     ThisTask->tc_SigWait   &= ~mask1;
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+    if (ThisTask->tc_UnionETask.tc_ETask)
+    {
+        EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+    }
 #endif
     Disable();
 
     ThisTask->tc_SigRecvd  &= ~mask1;
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    if (ThisTask->tc_UnionETask.tc_ETask)
+    {
+        EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    }
 #endif
     Enable();
 
