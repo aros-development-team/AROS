@@ -41,12 +41,6 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 
     SysBase->lb_TaskResBase = (struct Library *)TaskResBase;
 
-    /*
-        Use Disable/Enable to lock all access to the task list -:
-        the SpinLocks should only be used by the schedular itself, otherwise we
-        may end up with a deadlock.
-    */
-
     TaskResBase->trb_NewAddTask = SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewAddTask, Task, 176));
     TaskResBase->trb_RemTask = SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, AROS_SLIB_ENTRY(RemTask, Task, 48));
 
@@ -55,9 +49,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     */
 #if defined(__AROSEXEC_SMP__)
     listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
-#endif
-    Disable();
-#if defined(__AROSEXEC_SMP__)
+    Forbid();
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, curTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
@@ -68,10 +60,12 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
         }
     }
     KrnSpinUnLock(listLock);
-    Enable();
+    Permit();
     listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
-    Disable();
+    Forbid();
+    // TODO : list TaskSpinning tasks..
 #else
+    Disable();
     if (SysBase->ThisTask)
     {
         if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
@@ -93,9 +87,9 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     }
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(listLock);
-    Enable();
+    Permit();
     listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
-    Disable();
+    Forbid();
 #endif
     ForeachNode(&SysBase->TaskWait, curTask)
     {
@@ -109,8 +103,10 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(listLock);
-#endif
+    Permit();
+#else
     Enable();
+#endif
 
     return TRUE;
 }
