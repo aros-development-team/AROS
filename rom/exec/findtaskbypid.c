@@ -57,11 +57,21 @@
 #if defined(__AROSEXEC_SMP__)
     listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
     Forbid();
-#else
-    Disable();
-#endif
-#if defined(__AROSEXEC_SMP__)
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
+    {
+	et = GetETask(t);
+	if (et != NULL && et->et_UniqueID == id)
+        {
+            EXEC_SPINLOCK_UNLOCK(listLock);
+            Permit();
+	    return t;
+        }
+    }
+    EXEC_SPINLOCK_UNLOCK(listLock);
+    Permit();
+    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
+    Forbid();
+    ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
     {
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
@@ -76,6 +86,7 @@
     listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
     Forbid();
 #else
+    Disable();
     if (GET_THIS_TASK != NULL)
     {
 	et = GetETask(GET_THIS_TASK);

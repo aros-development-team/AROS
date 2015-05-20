@@ -61,16 +61,8 @@
 
     /* Always protect task lists */
 #if defined(__AROSEXEC_SMP__)
-    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
     Forbid();
-	/* Then into the waiting list. */
-    ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskRunning, name);
-    if (ret == NULL)
-    {
-        EXEC_SPINLOCK_UNLOCK(listLock);
-        Permit();
-        listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
-        Forbid();
 #else
     Disable();
 #endif
@@ -90,44 +82,39 @@
 	if (ret == NULL)
 	{
 	    /*
-		Finally test the running task(s). Note that generally
-		you know the name of your own task - so it is close
-		to nonsense to look for it this way.
+		Finally test the running task(s). This is mainly of importance on smp systems.
 	    */
-	    char *s1;
-	    const char *s2 = name;
-
 #if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(listLock);
-            Permit();
             listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
             Forbid();
-            ForeachNode(&PrivExecBase(SysBase)->TaskRunning, ret)
+            ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskRunning, name);
+            if (ret == NULL)
             {
-                s1 = ret->tc_Node.ln_Name;
+                EXEC_SPINLOCK_UNLOCK(listLock);
+                Permit();
+                listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
+                Forbid();
+                ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskSpinning, name);
+            }
 #else
+
+	    char *s1;
+	    const char *s2 = name;
             s1 = GET_THIS_TASK->tc_Node.ln_Name;
-#endif
 	    /* Check as long as the names are identical. */
 	    while (*s1++ == *s2)
 		/* Terminator found? */
 		if (!*s2++)
 		{
 		    /* Got it. */
-#if defined(__AROSEXEC_SMP__)
-#else
 		    ret = GET_THIS_TASK;
-#endif
 		    break;
 		}
-#if defined(__AROSEXEC_SMP__)
-            }
 #endif
         }
     }
 
 #if defined(__AROSEXEC_SMP__)
-    }
     EXEC_SPINLOCK_UNLOCK(listLock);
     Permit();
 #else
