@@ -21,7 +21,7 @@
 
 /*  FUNCTION
 	Wait for either a specific child task, or any child task to finish.
-	If you specify tid = 0, then ThisTask call will return when any child
+	If you specify tid = 0, then the call will return when any child
 	task exits, otherwise it will not return until the requested task
 	finishes.
 
@@ -56,7 +56,7 @@
     EXAMPLE
 
     BUGS
-	Be careful with the return result of ThisTask function.
+	Be careful with the return result of this function.
 
     SEE ALSO
 
@@ -82,9 +82,9 @@
     et = ThisTask->tc_UnionETask.tc_ETask;
 
     /*
-	Scanning ThisTask list is unsafe, I need to Forbid(). Note that the
-	Wait() below will break the Forbid() condition. This is how I need
-	it to be.
+	Scanning the msgport list is unsafe, we need to Forbid().
+           Note that the Wait() below will break the Forbid() condition.
+           This is how we need it to be.
     */
     Forbid();
 
