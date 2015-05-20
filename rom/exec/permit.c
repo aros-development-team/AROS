@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -70,7 +72,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[EXEC] Permit()\n"));
+    D(bug("[Exec] Permit()\n"));
 
     /*
         Task switches are allowed again, if a switch is pending, we
