@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate a signal
@@ -12,6 +12,9 @@
 #include <proto/exec.h>
 
 #include "exec_util.h"
+#if defined(__AROSEXEC_SMP__)
+#include "etask.h"
+#endif
 
 /*****************************************************************************
 
@@ -58,7 +61,7 @@
     AROS_LIBFUNC_INIT
 
     /* Cast signalNum to BYTE for AOS/68k compatibility. Apps may set up only D0.b */
-    return AllocTaskSignal(FindTask(NULL), (BYTE)signalNum, SysBase);
+    return AllocTaskSignal(GET_THIS_TASK, (BYTE)signalNum, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* AllocSignal() */
@@ -117,8 +120,16 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
     ThisTask->tc_SigExcept &= ~mask1;
     ThisTask->tc_SigWait   &= ~mask1;
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+#endif
     Disable();
+
     ThisTask->tc_SigRecvd  &= ~mask1;
+
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+#endif
     Enable();
 
     return signalNum;

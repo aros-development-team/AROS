@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,9 +45,10 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *ThisTask = GET_THIS_TASK;
     struct TaskStorageFreeSlot *tsfs;
     LONG slot;
-    struct IntETask *iet = GetIntETask(FindTask(NULL));
+    struct IntETask *iet = GetIntETask(ThisTask);
 
     if (!iet)
         return 0;
@@ -60,7 +61,7 @@
 
     slot = tsfs->FreeSlot;
 
-    D(bug("[TSS] Task 0x%p (%s): Allocated slot %d\n", FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name, slot));
+    D(bug("[TSS] Task 0x%p (%s): Allocated slot %d\n", ThisTask, ThisTask->tc_Node.ln_Name, slot));
 
     if (GetSucc(tsfs) == NULL)
     {

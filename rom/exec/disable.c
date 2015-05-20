@@ -78,6 +78,8 @@
 
     AROS_LIBFUNC_INIT
 
+    D(bug("[EXEC] Disable()\n"));
+
     if (KernelBase)
 	KrnCli();
 

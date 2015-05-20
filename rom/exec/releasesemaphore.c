@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Release a semaphore.
@@ -61,13 +61,13 @@
     AROS_LIBFUNC_INIT
 
     struct TraceLocation tp = CURRENT_LOCATION("ReleaseSemaphore");
-    struct Task *me = FindTask(NULL);
+    struct Task *ThisTask = GET_THIS_TASK;
 
     /* We can be called from within exec's pre-init code. It's okay. */
-    if (!me)
+    if (!ThisTask)
     	return;
 
-    if (me->tc_State == TS_REMOVED)
+    if (ThisTask->tc_State == TS_REMOVED)
         return;
 
     if (!CheckSemaphore(sigSem, &tp, SysBase))
@@ -87,9 +87,9 @@
 	    semaphore, or not. If we are not, make sure that the
 	    correct Task is calling ReleaseSemaphore()
 	*/
-	
+
 #if CHECK_TASK
-        if (sigSem->ss_Owner != NULL && sigSem->ss_Owner != me)
+        if (sigSem->ss_Owner != NULL && sigSem->ss_Owner != ThisTask)
 	{
 	    /*
 		If it is not, there is a chance that the semaphore

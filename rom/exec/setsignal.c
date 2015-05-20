@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Examine and/or modify the signals of a task.
@@ -10,6 +10,9 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#if defined(__AROSEXEC_SMP__)
+#include "etask.h"
+#endif
 
 /*****************************************************************************
 
@@ -49,19 +52,26 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *ThisTask = GET_THIS_TASK;
     ULONG *sig;
     ULONG old;
 
     /* Protect the signal mask against access by other tasks. */
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+#endif
     Disable();
 
     /* Get address */
-    sig=&GET_THIS_TASK->tc_SigRecvd;
+    sig = &ThisTask->tc_SigRecvd;
 
     /* Change only the bits in 'mask' */
-    old=*sig;
-    *sig=(old&~signalSet)|(newSignals&signalSet);
+    old = *sig;
+    *sig = (old & ~signalSet) | (newSignals & signalSet);
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+#endif
     Enable();
 
     return old;

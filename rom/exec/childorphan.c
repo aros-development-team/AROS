@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Make any children of this task orphans.
+    Desc: Make any children of ThisTask task orphans.
     Lang: english
 */
 #include "exec_intern.h"
@@ -32,7 +32,7 @@
 
     INPUTS
 	tid	--  The ID of the task to orphan, or 0 for all tasks. Note
-		    that this is NOT the pointer to the task.
+		    that ThisTask is NOT the pointer to the task.
 
     RESULT
 	Will return 0 on success or CHILD_* on an error.
@@ -54,14 +54,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *this = FindTask(NULL);
+    struct Task *ThisTask = GET_THIS_TASK;
     struct ETask *et, *child;
 
-    et = GetETask(this);
-    if(et == NULL)
+    et = GetETask(ThisTask);
+    if (et == NULL)
 	return CHILD_NOTNEW;
 
-    if(tid == 0L)
+    if (tid == 0L)
     {
     	Forbid();
 	ForeachNode(&et->et_Children, child)
@@ -79,7 +79,7 @@
     {
     	Forbid();
 	child = FindChild(tid);
-	if(child != NULL)
+	if (child != NULL)
 	{
 	    child->et_Parent = NULL;
 	    Remove((struct Node *)child);

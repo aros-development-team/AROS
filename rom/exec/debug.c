@@ -284,7 +284,7 @@ static char *NextWord(char *s)
 #else
             node = (struct Node *)GET_THIS_TASK;
 #endif
-            kprintf("0x%p T %d %s\n",node, node->ln_Pri, node->ln_Name);
+            kprintf("0x%p T %d %s\n", node, node->ln_Pri, node->ln_Name);
 #if defined(__AROSEXEC_SMP__)
             }
 #endif

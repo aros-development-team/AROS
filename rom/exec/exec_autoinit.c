@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team
+ * Copyright (C) 2015, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *

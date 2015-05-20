@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Semaphore internal handling
@@ -21,10 +21,10 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
     if (KernelBase && KrnIsSuper())
     {
         /* FindTask() is called only here, for speedup */
-        struct Task *me = FindTask(NULL);
+        struct Task *ThisTask = GET_THIS_TASK;
 
         kprintf("%s called in supervisor mode!!!\n"
-                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, me, me->tc_Node.ln_Name);
+                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, ThisTask->tc_Node.ln_Name);
         Exec_ExtAlert(ACPU_PrivErr & ~AT_DeadEnd, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
 
         return FALSE;
@@ -32,10 +32,10 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
 
     if ((sigSem->ss_Link.ln_Type != NT_SIGNALSEM) || (sigSem->ss_WaitQueue.mlh_Tail != NULL))
     {
-        struct Task *me = FindTask(NULL);
+        struct Task *ThisTask = GET_THIS_TASK;
 
         kprintf("%s called on a not initialized semaphore!!!\n"
-                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, me, me->tc_Node.ln_Name);
+                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, ThisTask->tc_Node.ln_Name);
         Exec_ExtAlert(AN_SemCorrupt, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
 
         return FALSE;
@@ -46,21 +46,21 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
 
 void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner, struct TraceLocation *caller, struct ExecBase *SysBase)
 {
-    struct Task *me = FindTask(NULL);
+    struct Task *ThisTask = GET_THIS_TASK;
 
     /*
      * If there's no ThisTask, the function is called from within memory
      * allocator in exec's pre-init code. We are already single-threaded,
      * just return. :)
      */
-    if (!me)
+    if (!ThisTask)
         return;
 
     /*
      * Freeing memory during RemTask(NULL). We are already single-threaded by
      * Forbid(), and waiting isn't possible because task context is being deallocated.
      */
-    if (me->tc_State == TS_REMOVED)
+    if (ThisTask->tc_State == TS_REMOVED)
         return;
 
     if (!CheckSemaphore(sigSem, caller, SysBase))
@@ -88,14 +88,14 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
     /*
      * The semaphore is in use.
      * It could be either shared (ss_Owner == NULL) or it could already be exclusively owned
-     * by me (ss_Owner == me).
+     * by this task (ss_Owner == ThisTask).
      * Exclusive or shared mode of this function is determined by 'owner' parameter.
      * Actually it's pointer to a task which is allowed to share the lock with us.
-     * If it's equal to 'me', we are locking the semaphore in exclusive more. If it's NULL,
+     * If it's equal to 'ThisTask', we are locking the semaphore in exclusive more. If it's NULL,
      * we are locking in shared mode. This helps to optimize code against speed, and remove
      * extra comparisons.
      */
-    else if ((sigSem->ss_Owner == me) || (sigSem->ss_Owner == owner))
+    else if ((sigSem->ss_Owner == ThisTask) || (sigSem->ss_Owner == owner))
     {
         /* Yes, just increase the nesting count */
         sigSem->ss_NestCount++;
@@ -108,7 +108,7 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
          * stack memory.
          */
         struct SemaphoreRequest sr;
-        sr.sr_Waiter = me;
+        sr.sr_Waiter = ThisTask;
 
         if (owner == NULL)
             sr.sr_Waiter = (struct Task *)((IPTR)(sr.sr_Waiter) | SM_SHARED);
@@ -121,7 +121,7 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
         */
 
         /* This must be atomic! */
-        AROS_ATOMIC_AND(me->tc_SigRecvd, ~SIGF_SINGLE);
+        AROS_ATOMIC_AND(ThisTask->tc_SigRecvd, ~SIGF_SINGLE);
 
         AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
 
@@ -138,7 +138,7 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
 
 ULONG InternalAttemptSemaphore(struct SignalSemaphore *sigSem, struct Task *owner, struct TraceLocation *caller, struct ExecBase *SysBase)
 {
-    struct Task *me = FindTask(NULL);
+    struct Task *ThisTask = GET_THIS_TASK;
     ULONG retval = TRUE;
 
     if (!CheckSemaphore(sigSem, caller, SysBase))
@@ -159,9 +159,9 @@ ULONG InternalAttemptSemaphore(struct SignalSemaphore *sigSem, struct Task *owne
         sigSem->ss_Owner = owner;
         sigSem->ss_NestCount++;
     }
-    else if ((sigSem->ss_Owner == me) || (sigSem->ss_Owner == owner))
+    else if ((sigSem->ss_Owner == ThisTask) || (sigSem->ss_Owner == owner))
     {
-        /* The semaphore was owned by me or is shared, just increase the nest count */
+        /* The semaphore was owned by this task, or is shared, just increase the nest count */
         sigSem->ss_NestCount++;
     }
     else

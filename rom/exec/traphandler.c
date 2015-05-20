@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Default trap handler
@@ -20,8 +20,8 @@
  */
 static void Exec_CrashHandler(void)
 {
-    struct Task *task = FindTask(NULL);
-    struct IntETask *iet = GetIntETask(task);
+    struct Task *ThisTask = GET_THIS_TASK;
+    struct IntETask *iet = GetIntETask(ThisTask);
 
     /* Makes Alert() attempting to bring up Intuition requester */
     iet->iet_AlertFlags &= ~AF_Alert;
@@ -67,7 +67,7 @@ void Exec__TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 #endif
 {
-    struct Task *task = GET_THIS_TASK;
+    struct Task *ThisTask = GET_THIS_TASK;
 
     /* Our situation is deadend */
     trapNum |= AT_DeadEnd;
@@ -76,10 +76,10 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
      * We must have a valid ETask in order to be able
      * to display a requester in user mode.
      */
-    if (task && (task->tc_Flags & TF_ETASK) && (task->tc_State != TS_REMOVED))
+    if (ThisTask && (ThisTask->tc_Flags & TF_ETASK) && (ThisTask->tc_State != TS_REMOVED))
     {
         /* Get internal task structure */
-        struct IntETask *iet = GetIntETask(task);
+        struct IntETask *iet = GetIntETask(ThisTask);
 
         if (iet->iet_AlertFlags & AF_Alert)
         {

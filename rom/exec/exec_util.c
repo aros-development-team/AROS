@@ -56,10 +56,11 @@
 
 ******************************************************************************/
 {
+    struct Task *ThisTask = GET_THIS_TASK;
     struct ETask *et;
     struct ETask *thisET;
 
-    thisET = GetETask(FindTask(NULL));
+    thisET = GetETask(ThisTask);
     if (thisET != NULL)
     {
 	ForeachNode (&thisET->et_Children, et)
@@ -96,10 +97,11 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
     task->tc_Flags |= TF_ETASK;
 
 #if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&IntETask(et)->iet_TaskLock);
     IntETask(et)->iet_CpuAffinity = (1 << 0);
 #endif
 
-    et->et_Parent = FindTask(NULL);
+    et->et_Parent = GET_THIS_TASK;
     NEWLIST(&et->et_Children);
 
     /* Initialise the message list */

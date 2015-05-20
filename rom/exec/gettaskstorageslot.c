@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,7 +48,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return TaskGetStorageSlot(FindTask(NULL), id);
+    return TaskGetStorageSlot(GET_THIS_TASK, id);
 
     AROS_LIBFUNC_EXIT
 }

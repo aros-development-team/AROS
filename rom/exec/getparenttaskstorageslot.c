@@ -1,5 +1,5 @@
 /*
-    Copyright © 2014, The AROS Development Team. All rights reserved.
+    Copyright © 2014-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,7 +48,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ETask *et = GetETask(FindTask(NULL));
+    struct Task *ThisTask = GET_THIS_TASK;
+    struct ETask *et = GetETask(ThisTask);
     IPTR result = (IPTR)NULL;
 
     if (!et)

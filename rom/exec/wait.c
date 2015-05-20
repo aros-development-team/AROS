@@ -14,6 +14,9 @@
 #include <proto/kernel.h>
 
 #include "exec_intern.h"
+#if defined(__AROSEXEC_SMP__)
+#include "etask.h"
+#endif
 
 /*****************************************************************************
 
@@ -60,32 +63,32 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *ThisTask = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *task_listlock = NULL;
 #endif
     ULONG rcvd;
-    struct Task *me;
-
-    /* Get pointer to current task - I'll need it very often */
-    me = FindTask(NULL);
 
     D(bug("[Exec] Wait(%08lX)\n", signalSet));
+#if !defined(__AROSEXEC_SMP__)
+    Disable();
+#endif
 
     /* If at least one of the signals is already set do not wait. */
-    while (!(me->tc_SigRecvd & signalSet))
+    while (!(ThisTask->tc_SigRecvd & signalSet))
     {
 	/* Set the wait signal mask */
-	me->tc_SigWait = signalSet;
+	ThisTask->tc_SigWait = signalSet;
 #if defined(__AROSEXEC_SMP__)
-        if (me->tc_State != TS_WAIT)
+        if (ThisTask->tc_State != TS_WAIT)
         {
 #endif
-	D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", me->tc_Node.ln_Name, me));
-        D(bug("[Exec] Task state = %08x\n", me->tc_State));
+	D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", ThisTask->tc_Node.ln_Name, ThisTask));
+        D(bug("[Exec] Task state = %08x\n", ThisTask->tc_State));
 
         /* Protect the task lists against access by other tasks. */
 #if defined(__AROSEXEC_SMP__)
-            switch (me->tc_State)
+            switch (ThisTask->tc_State)
             {
                 case TS_RUN:
                     task_listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
@@ -95,32 +98,30 @@
                     break;
             }
             EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
-#endif
-        Disable();
-#if defined(__AROSEXEC_SMP__)
-            Remove(&me->tc_Node);
+            Forbid();
+            Remove(&ThisTask->tc_Node);
             EXEC_SPINLOCK_UNLOCK(task_listlock);
-            Enable();
+            Permit();
             EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
-            Disable();
+            Forbid();
 #endif
         /*
 	    Clear TDNestCnt (because Switch() will not care about it),
 	    but memorize it first. IDNestCnt is handled by Switch().
 	*/
-	me->tc_TDNestCnt = TDNESTCOUNT_GET;
+	ThisTask->tc_TDNestCnt = TDNESTCOUNT_GET;
 	TDNESTCOUNT_SET(-1);
 
 	/* Move current task to the waiting list. */
-        me->tc_State = TS_WAIT;
-	Enqueue(&SysBase->TaskWait, &me->tc_Node);
+        ThisTask->tc_State = TS_WAIT;
+	Enqueue(&SysBase->TaskWait, &ThisTask->tc_Node);
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
         }
         else
         {
-            Disable();
-            me->tc_TDNestCnt = TDNESTCOUNT_GET;
+            Forbid();
+            ThisTask->tc_TDNestCnt = TDNESTCOUNT_GET;
             TDNESTCOUNT_SET(-1);
         }
 #endif
@@ -128,21 +129,31 @@
 	KrnSwitch();
 
 	/*
-	    OK. Somebody awakened me. This means that either the
+	    OK. Somebody awakened us. This means that either the
 	    signals are there or it's just a finished task exception.
 	    Test again to be sure (see above).
 	*/
 
 	/* Restore TDNestCnt. */
-	TDNESTCOUNT_SET(me->tc_TDNestCnt);
+	TDNESTCOUNT_SET(ThisTask->tc_TDNestCnt);
 
-        Enable();
+#if defined(__AROSEXEC_SMP__)
+        Permit();
+#endif
     }
     /* Get active signals. */
-    rcvd = (me->tc_SigRecvd & signalSet);
+    rcvd = (ThisTask->tc_SigRecvd & signalSet);
 
     /* And clear them. */
-    me->tc_SigRecvd &= ~signalSet;
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+    Disable();
+#endif
+    ThisTask->tc_SigRecvd &= ~signalSet;
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+#endif
+    Enable();
 
     /* All done. */
     return rcvd;

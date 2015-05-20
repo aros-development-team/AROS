@@ -62,6 +62,9 @@
     */
     node->ln_Pred->ln_Succ = node->ln_Succ;
     node->ln_Succ->ln_Pred = node->ln_Pred;
+    node->ln_Succ = NULL;
+    node->ln_Pred = NULL;
+
     AROS_LIBFUNC_EXIT
 } /* Remove */
 
