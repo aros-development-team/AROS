@@ -244,10 +244,8 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
-    Disable();
-#else
-    Forbid();
 #endif
+    Forbid();
 
 #if defined(__AROSEXEC_SMP__)
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
@@ -255,14 +253,27 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
         if (task == t)
         {
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-            Enable();
+            Permit();
             return TRUE;
         }
     }
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-    Enable();
+    Permit();
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
+    Forbid();
+    ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
+    {
+        if (task == t)
+        {
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
+            Permit();
+            return TRUE;
+        }
+    }
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
+    Permit();
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
-    Disable();
+    Forbid();
 #else
     if (task == GET_THIS_TASK)
     {
@@ -277,18 +288,16 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     	{
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
-            Enable();
-#else
-            Permit();
 #endif
+            Permit();
     	    return TRUE;
     	}
     }
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
-    Enable();
+    Permit();
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
-    Disable();
+    Forbid();
 #endif
     ForeachNode(&SysBase->TaskWait, t)
     {
@@ -296,19 +305,15 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     	{
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
-            Enable();
-#else
-            Permit();
 #endif
+            Permit();
     	    return TRUE;
     	}
     }
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
-    Enable();
-#else
-    Permit();
 #endif
+    Permit();
 
     return FALSE;
 }
