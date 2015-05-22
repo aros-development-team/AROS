@@ -167,84 +167,54 @@ struct MUI_ListData
 #define LIST_SHOWDROPMARKS (1<<4)
 #define LIST_QUIET         (1<<5)
 
-/*****************************************************************************************
 
-    NAME
-        MUIA_List_CompareHook
+/****** List.mui/MUIA_List_CompareHook ***************************************
+*
+*   NAME
+*       MUIA_List_CompareHook -- (V4) [IS.], struct Hook *
+*
+*   FUNCTION
+*       The provided hook indicates the sort ordering of two list entries.
+*       The hook receives list-entry data pointers as its second and third
+*       arguments. The hook should return a negative value if the first entry
+*       should be placed before the second entry, a positive value if the
+*       first entry should be placed after the second entry, and zero if the
+*       entries are equal.
+*
+*       In addition to being used internally for sorting operations, this hook
+*       will be called when MUIM_List_Compare is externally invoked.
+*
+*       If this attribute is not specified or is set to NULL, all list entries
+*       must be strings.
+*
+******************************************************************************
+*
+*/
 
-    SYNOPSIS
-        [IS.], struct Hook *
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-        The provided hook indicates the sort ordering of two list entries.
-        The hook receives list-entry data pointers as its second and third
-        arguments. The hook should return a negative value if the first entry
-        should be placed before the second entry, a positive value if the
-        first entry should be placed after the second entry, and zero if the
-        entries are equal.
-
-        In addition to being used internally for sorting operations, this hook
-        will be called when MUIM_List_Compare is externally invoked.
-
-        If this attribute is not specified or is set to NULL, all list entries
-        must be strings.
-
-    NOTES
-        MUI V4
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-        MUIA_List_MultiTestHook
-
-    SYNOPSIS
-        [IS.], struct Hook *
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-        The provided hook indicates whether a particular list entry
-        may be multiselected. The hook receives the list-entry data pointer as
-        its third argument, and returns a Boolean value. If this attribute is
-        not specified or is set to NULL, all list entries are considered
-        multi-selectable.
-
-        Whenever an entry is about to be selected, this hook is called if
-        there are other entries already selected. If the hook returns TRUE,
-        the entry may be multi-selected; if the hook returns FALSE, the entry
-        remains unselected.
-
-        Additionally, if a non-multi-selectable entry has been selected (as
-        the only selected entry in the list), any attempt to select an
-        additional entry will fail.
-
-    NOTES
-        MUI V4
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
+/****** List.mui/MUIA_List_MultiTestHook *************************************
+*
+*   NAME
+*       MUIA_List_MultiTestHook -- (V4) [IS.], struct Hook *
+*
+*   FUNCTION
+*       The provided hook indicates whether a particular list entry
+*       may be multiselected. The hook receives the list-entry data pointer as
+*       its third argument, and returns a Boolean value. If this attribute is
+*       not specified or is set to NULL, all list entries are considered
+*       multi-selectable.
+*
+*       Whenever an entry is about to be selected, this hook is called if
+*       there are other entries already selected. If the hook returns TRUE,
+*       the entry may be multi-selected; if the hook returns FALSE, the entry
+*       remains unselected.
+*
+*       Additionally, if a non-multi-selectable entry has been selected (as
+*       the only selected entry in the list), any attempt to select an
+*       additional entry will fail.
+*
+******************************************************************************
+*
+*/
 
 /**************************************************************************
  Allocate a single list entry, does not initialize it (except the pointer)
@@ -1263,30 +1233,14 @@ IPTR List__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/****i*************************************************************************************
-
-    NAME
-        MUIM_Layout
-
-    SYNOPSIS
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
+/****i* List.mui/MUIM_Layout *************************************************
+*
+*   NAME
+*       MUIM_Layout
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_Layout(struct IClass *cl, Object *obj,
     struct MUIP_Layout *msg)
@@ -1627,33 +1581,20 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     return 0;
 }
 
-/*****************************************************************************************
-
-    NAME
-        MUIM_List_Clear
-
-    SYNOPSIS
-        DoMethod(obj, MUIM_List_Clear);
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-        Removes all entries from the list.
-
-    NOTES
-        MUI V4
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
+/****** List.mui/MUIM_List_Clear *********************************************
+*
+*   NAME
+*       MUIM_List_Clear (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Clear);
+*
+*   FUNCTION
+*       Removes all entries from the list.
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_Clear(struct IClass *cl, Object *obj,
     struct MUIP_List_Clear *msg)
@@ -2213,42 +2154,31 @@ IPTR List__MUIM_Destruct(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/*****************************************************************************************
-
-    NAME
-        MUIM_List_Compare
-
-    SYNOPSIS
-        DoMethod(obj, MUIM_List_Compare, APTR entry1, APTR entry2,
-            LONG sort_type1, LONG sort_type2);
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-        Compare two list entries according to the current comparison hook
-        (MUIA_List_CompareHook).
-
-    INPUTS
-        entry1 - the first entry data.
-        entry2 - the second entry data.
-        sort_type1 - undocumented.
-        sort_type2 - undocumented.
-
-    NOTES
-        MUI V20
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        MUIA_List_CompareHook, MUIM_List_Sort.
-
-    INTERNALS
-
-*****************************************************************************************/
-
+/****** List.mui/MUIM_List_Compare *******************************************
+*
+*   NAME
+*       MUIM_List_Compare (V20)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Compare, APTR entry1, APTR entry2,
+*           LONG sort_type1, LONG sort_type2);
+*
+*   FUNCTION
+*       Compare two list entries according to the current comparison hook
+*       (MUIA_List_CompareHook).
+*
+*   INPUTS
+*       entry1 - the first entry data.
+*       entry2 - the second entry data.
+*       sort_type1 - undocumented.
+*       sort_type2 - undocumented.
+*
+*   SEE ALSO
+*       MUIA_List_CompareHook, MUIM_List_Sort.
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_Compare(struct IClass *cl, Object *obj,
     struct MUIP_List_Compare *msg)
@@ -2339,41 +2269,29 @@ IPTR List__MUIM_DeleteImage(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/*****************************************************************************************
-
-    NAME
-        MUIM_List_Jump
-
-    SYNOPSIS
-        DoMethod(obj, MUIM_List_Jump, LONG pos);
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-        Scrolls the list so that a particular entry is visible.
-
-    INPUTS
-        pos - index of entry that should become visible, or one of these
-            special values:
-                MUIV_List_Jump_Active: show the active entry.
-                MUIV_List_Jump_Top: show the first entry.
-                MUIV_List_Jump_Bottom: show the last entry.
-                MUIV_List_Jump_Up: show the previous hidden entry.
-                MUIV_List_Jump_Down: show the next hidden entry.
-
-    NOTES
-        MUI V4
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
+/****** List.mui/MUIM_List_Jump **********************************************
+*
+*   NAME
+*       MUIM_List_Jump (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Jump, LONG pos);
+*
+*   FUNCTION
+*       Scrolls the list so that a particular entry is visible.
+*
+*   INPUTS
+*       pos - index of entry that should become visible, or one of these
+*           special values:
+*               MUIV_List_Jump_Active: show the active entry.
+*               MUIV_List_Jump_Top: show the first entry.
+*               MUIV_List_Jump_Bottom: show the last entry.
+*               MUIV_List_Jump_Up: show the previous hidden entry.
+*               MUIV_List_Jump_Down: show the next hidden entry.
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
     struct MUIP_List_Jump *msg)
@@ -2429,34 +2347,24 @@ IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/*****************************************************************************************
-
-    NAME
-        MUIM_List_Sort
-
-    SYNOPSIS
-        DoMethod(obj, MUIM_List_Sort);
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-        Sort the list's entries according to the current comparison hook
-        (MUIA_List_CompareHook).
-
-    NOTES
-        MUI V4
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        MUIA_List_CompareHook, MUIM_List_Compare.
-
-    INTERNALS
-
-*****************************************************************************************/
+/****** List.mui/MUIM_List_Sort **********************************************
+*
+*   NAME
+*       MUIM_List_Sort (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Sort);
+*
+*   FUNCTION
+*       Sort the list's entries according to the current comparison hook
+*       (MUIA_List_CompareHook).
+*
+*   SEE ALSO
+*       MUIA_List_CompareHook, MUIM_List_Compare.
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
     struct MUIP_List_Sort *msg)
@@ -2499,44 +2407,32 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/*****************************************************************************************
-
-    NAME
-        MUIM_List_Move
-
-    SYNOPSIS
-        DoMethod(obj, MUIM_List_Move, LONG from, LONG to);
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-        Move a list entry to a new position.
-
-    INPUTS
-        from - the current index of the entry that should be moved, or one of
-            these special values:
-                MUIV_List_Move_Active: the active entry.
-                MUIV_List_Move_Top: the first entry.
-                MUIV_List_Move_Bottom: the last entry.
-        to - the index of the entry's new position, or one of
-            these special values:
-                MUIV_List_Move_Active: the active entry.
-                MUIV_List_Move_Top: the first entry.
-                MUIV_List_Move_Bottom: the last entry.
-
-    NOTES
-        MUI V9
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
+/****** List.mui/MUIM_List_Move **********************************************
+*
+*   NAME
+*       MUIM_List_Move (V9)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Move, LONG from, LONG to);
+*
+*   FUNCTION
+*       Move a list entry to a new position.
+*
+*   INPUTS
+*       from - the current index of the entry that should be moved, or one of
+*           these special values:
+*               MUIV_List_Move_Active: the active entry.
+*               MUIV_List_Move_Top: the first entry.
+*               MUIV_List_Move_Bottom: the last entry.
+*       to - the index of the entry's new position, or one of
+*           these special values:
+*               MUIV_List_Move_Active: the active entry.
+*               MUIV_List_Move_Top: the first entry.
+*               MUIV_List_Move_Bottom: the last entry.
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
     struct MUIP_List_Move *msg)
@@ -2726,29 +2622,14 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/****i*************************************************************************************
-
-    NAME
-        MUIM_DragQuery
-
-    SYNOPSIS
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
+/****i* List.mui/MUIM_DragQuery **********************************************
+*
+*   NAME
+*       MUIM_DragQuery
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_DragQuery(struct IClass *cl, Object *obj,
     struct MUIP_DragQuery *msg)
@@ -2759,29 +2640,15 @@ IPTR List__MUIM_DragQuery(struct IClass *cl, Object *obj,
         return MUIV_DragQuery_Refuse;
 }
 
-/****i************************************************************************************
 
-    NAME
-        MUIM_DragFinish
-
-    SYNOPSIS
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
+/****i* List.mui/MUIM_DragFinish *********************************************
+*
+*   NAME
+*       MUIM_DragFinish
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_DragFinish(struct IClass *cl, Object *obj,
     struct MUIP_DragFinish *msg)
@@ -2793,30 +2660,14 @@ IPTR List__MUIM_DragFinish(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
-
-/****i*************************************************************************************
-
-    NAME
-        MUIM_DragReport
-
-    SYNOPSIS
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
+/****i* List.mui/MUIM_DragReport *********************************************
+*
+*   NAME
+*       MUIM_DragReport
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
     struct MUIP_DragReport *msg)
@@ -2871,29 +2722,15 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/****i*************************************************************************************
 
-    NAME
-        MUIM_DragDrop
-
-    SYNOPSIS
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
+/****i* List.mui/MUIM_DragDrop ***********************************************
+*
+*   NAME
+*       MUIM_DragDrop
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
     struct MUIP_DragDrop *msg)
@@ -2931,29 +2768,15 @@ IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/****i************************************************************************************
 
-    NAME
-        MUIM_CreateDragImage
-
-    SYNOPSIS
-
-    LOCATION
-        List.mui
-
-    FUNCTION
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
+/****i* List.mui/MUIM_CreateDragImage ****************************************
+*
+*   NAME
+*       MUIM_CreateDragImage
+*
+******************************************************************************
+*
+*/
 
 static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
     struct MUIP_CreateDragImage *msg)
