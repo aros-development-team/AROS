@@ -206,7 +206,6 @@ Object *_pass_fl;
 
 void ScanDirTask(void)
 {
-    struct aroscbase *aroscbase = NULL;
     struct ScanDirTaskInfo *info = _pass_info;
     Object *app = _pass_app;
     struct Task *parent = _pass_parent;
@@ -222,10 +221,7 @@ void ScanDirTask(void)
 
         DEBUG_ADDDIR(dprintf("flScanDirTask: dir <%s>\n", info->DirName));
 
-        /* FIXME: Possible thread race conflicts not checked !!! */
-        aroscbase = (struct aroscbase *)OpenLibrary("arosc.library", 0);
-
-    if (aroscbase && (FT_Init_FreeType(&ftlibrary) == 0))
+    if (FT_Init_FreeType(&ftlibrary) == 0)
     {
         DEBUG_ADDDIR(dprintf("flScanDirTask: ftlibrary 0x%x\n", ftlibrary));
 
@@ -326,8 +322,6 @@ void ScanDirTask(void)
     REMOVE(&info->Node);
     FreeVec(info);
     Signal(parent, SIGBREAKF_CTRL_F);
-
-        if (aroscbase) CloseLibrary((struct Library *)aroscbase);
 }
 
 
