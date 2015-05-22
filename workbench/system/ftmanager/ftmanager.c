@@ -25,7 +25,7 @@
 
 #define ARG_TEMPLATE "TTFFONT/A,OUTFONT/A,CODEPAGE"
 
-#define VERSION "$VER: FTManager 1.3 (07.09.2013) ©2011-2013 The AROS Development Team"
+#define VERSION "$VER: FTManager 1.4 (22.5.2015) ©2011-2015 The AROS Development Team"
 
 enum
 {
