@@ -44,6 +44,8 @@ ELF2HUNK_FILES := \
 OTHER_FILES := \
     $(AROS_DIR_ARCH)/aros.hunk.gz \
     Disk.info \
+    README.txt \
+    README.txt.info \
     S/Startup-Sequence
 
 BOOT_SRC_DIR  := $(AROSDIR)
@@ -99,5 +101,13 @@ $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURD
 	@$(MKDIR) -p $(GENDIR)/$(CURDIR)
 	@$(HOST_CC) $(HOST_CFLAGS) $(SRCDIR)/$(CURDIR)/install.c -o $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 
+$(BOOT_DEST_DIR)/README.txt.info: README.txt.info.src \
+		            README.txt.png
+	@$(MKDIR) $(BOOT_DEST_DIR)
+	@$(ILBMTOICON) $^ $@
+
+$(BOOT_DEST_DIR)/README.txt: README.txt
+	@$(MKDIR) $(BOOT_DEST_DIR)
+	@$(CP) $^ $@
 
 %common
