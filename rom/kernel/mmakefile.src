@@ -11,7 +11,13 @@ include $(TOP)/config/make.cfg
 # not to overcomplicate the build. This definition prevents kernel_cpu.h from including host-specific
 # stuff. The name of this definition is legacy, in ancient times exec.library included some private
 # kernel's stuff and needed this.
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -D__AROS_EXEC_LIBRARY__ \
+#
+# The exception to this host-specific rule is 'exec_platform.h',
+# which defines the accessor function to ExecBase task management fields.
+#
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
+                 $(PRIV_EXEC_INCLUDES) \
+                 -D__AROS_EXEC_LIBRARY__ \
 	        -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 
 # Allow to add architecture-specific options
