@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     The code for storing information of functions present in the module
@@ -364,7 +364,8 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
             break;
 
         default:
-            fprintf(stderr, "Internal error: unhandled libcall in writefuncdefs\n");
+            fprintf(stderr, "Internal error:"
+                " unhandled libcall in writefuncprotos\n");
             exit(20);
             break;
         }
@@ -420,7 +421,8 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
             break;
 
         default:
-            fprintf(stderr, "Internal error: unhandled libcall in writefuncdefs\n");
+            fprintf(stderr, "Internal error: "
+                "unhandled libcall in writefuncinternalstubs\n");
             exit(20);
             break;
         }

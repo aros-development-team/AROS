@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AllocNamedObject() - allocate a NamedObject.
@@ -24,7 +24,7 @@
 	struct UtilityBase *, UtilityBase, 38, Utility)
 
 /*  FUNCTION
-	Allocate a new NamedObject and initializes it as requested.
+	Allocates a new NamedObject and initializes it as requested.
 	This object can then be used as an object in a name space.
 	Optionally you give this object a name space, and use it to
 	nest name spaces. You can also allocate some memory which is
@@ -79,17 +79,6 @@
 	FreeNamedObject()
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-	11-08-96    iaint   Reworked for AROS.
-	08-10-96    iaint   Changed to three memory areas after discussion
-			    in AROS-DEV today.
-	18-10-96    iaint   Completely rewrote.
-	04-02-97    iaint   Updated documentation.
-	16-04-01    iaint   Combined the memory for the IntNamedObject and
-			    the name as an optimisation.
 
 *****************************************************************************/
 {

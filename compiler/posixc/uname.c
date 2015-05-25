@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,8 +26,8 @@
         
 /*  FUNCTION
 	Store information about the operating system in the structure pointed 
-	by name.
-	
+	to by name.
+
     INPUTS
 	name - Pointer to utsname structure defined in <sys/utsname.h>.
 
@@ -44,7 +44,7 @@
     SEE ALSO
 	
     INTERNALS
-    	This function is using ArosInquire() function to get information about
+    	This function uses the ArosInquire() function to get information about
     	the operating system.
 
 ******************************************************************************/
