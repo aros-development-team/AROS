@@ -1,7 +1,7 @@
 /*
- Copyright  1995-2014, The AROS Development Team. All rights reserved.
+ Copyright © 1995-2015, The AROS Development Team. All rights reserved.
  $Id$
- 
+
  Desc: Filesystem that accesses an underlying host OS filesystem.
  Lang: english
  */
@@ -1182,8 +1182,8 @@ static void EmulHandler_work(struct ExecBase *SysBase)
     }
 
     /* emul-handler is really a .resource. This causes the problem that the startup code is not put
-     * at the beginning of module, making RunHandler not beeing able to "start" the handler if it
-     * is loaded at later date (for example by "mount home:"). Making the module resident is
+     * at the beginning of module, making RunHandler not being able to "start" the handler if it
+     * is loaded at a later date (for example by "mount home:"). Making the module resident is
      * a workaround for this problem. The full solution would most likely mean separating most of
      * the code to real .resource and then building a thin "real handler" emul-handler on top of
      * that resource.

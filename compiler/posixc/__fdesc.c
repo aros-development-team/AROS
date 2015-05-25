@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     File descriptor handling internals.
@@ -193,7 +193,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     if (openmode == -1)
     {
         errno = EINVAL;
-        D(bug( "__open: exiting with error EINVAL\n"));
+        D(bug( "__open: bad mode, exiting with error EINVAL\n"));
         return -1;
     }
 
@@ -308,7 +308,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
         }
     }
 
-    if (!(fh = Open ((char *)pathname, openmode)) )
+    if (!(fh = Open((char *)pathname, openmode)))
     {
 	ULONG ioerr = IoErr();
 	D(bug("__open: Open ioerr=%d\n", ioerr));
@@ -321,7 +321,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
         goto success;
 
     /* Handle O_TRUNC */
-    if((flags & O_TRUNC) && (flags & (O_RDWR | O_WRONLY)))
+    if ((flags & O_TRUNC) && (flags & (O_RDWR | O_WRONLY)))
     {
 	if(SetFileSize(fh, 0, OFFSET_BEGINNING) != 0)
 	{
@@ -338,7 +338,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     }
 
     /* Handle O_APPEND */
-    if((flags & O_APPEND) && (flags & (O_RDWR | O_WRONLY)))
+    if ((flags & O_APPEND) && (flags & (O_RDWR | O_WRONLY)))
     {
         if(Seek(fh, 0, OFFSET_END) != 0) {
             errno = __stdc_ioerr2errno(IoErr());

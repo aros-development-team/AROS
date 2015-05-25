@@ -97,7 +97,7 @@
     */
     
     if (depth <= 8) {
-    	D(bug("!!! TRYING TO USE WriteLUTPixelArray() ON BITMAP WITH DEPTH < 8\n"));
+    	D(bug("!!! TRYING TO USE WriteLUTPixelArray() ON BITMAP WITH DEPTH <= 8\n"));
     	return 0;
     }
 	
