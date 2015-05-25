@@ -78,6 +78,11 @@ SH_FILES := \
     WaitX
 
 USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -I$(OBJDIR)
+# We compile the core C: programs statically, for two reasons:
+#   * The amiga-m68k boot floppy doesn't have space for stdc.library
+#   * This gives us some possibility of system recovery if LIBS:
+#     is deleted or badly Assign(ed).
+USER_LDFLAGS    := -static
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
@@ -91,8 +96,6 @@ USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -I$(OBJDIR)
 %build_progs mmake=workbench-c \
     files="$(FILES) $(BLFILES)" targetdir=$(AROS_C) \
     uselibs="uuid debug"
-
-USER_LDFLAGS := -static
 
 %build_progs mmake=workbench-c-sh \
     files=$(SH_FILES) targetdir=$(AROS_C) \
