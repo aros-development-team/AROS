@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: FailAt - Set the failure level of a process
@@ -32,6 +32,10 @@
 	    20	- Failure
 
 	The normal value for the return code limit is 10.
+
+    NOTES
+        If this command is called in a script that is executed from another
+        script, the new fail level will be inherited by the parent script.
 
     EXAMPLE
 	If we have a script with the commands
