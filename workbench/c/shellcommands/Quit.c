@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -32,6 +32,8 @@
     RESULT
 
     NOTES
+        If this command is called in a script that is executed from another
+        script, the entire series of nested scripts will stop.
 
     EXAMPLE
 
@@ -40,10 +42,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-
-    21.01.2000  SDuvan   implemented
 
 ******************************************************************************/
 
