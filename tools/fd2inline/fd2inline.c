@@ -74,7 +74,7 @@ typedef unsigned char shortcard;
 
 typedef enum { false, nodef, real_error } Error;
 
-enum { NEW, OLD, STUBS, PROTO, GATESTUBS, GATEPROTO } output_mode=NEW;
+enum { NEW, OLD, STUBS, PROTO, GATESTUBS, GATEPROTO, GENMODULE } output_mode=NEW;
 enum { IX86BE_AMITHLON, AROS, M68K_AMIGAOS, M68K_POS, PPC_POWERUP, PPC_MORPHOS } target = M68K_AMIGAOS;
 
 int Quiet = 0;
@@ -436,6 +436,8 @@ fF_readln(fdFile* obj)
 	    obj->line[0]='\0';
 	    return real_error;
 	 }
+	 if (*low == ' ' && *(low+1) == '*')
+	     return false;
 	 if (low==strpbrk(low, "*#/"))
 	 {
 	    DBP(fprintf(stderr, "in# %s\n", obj->line));
@@ -676,6 +678,8 @@ static shortcard
 fD_RegNum	  (const fdDef* obj);
 int
 fD_cmpName	  (const void* big, const void* small);
+int
+fD_cmpOffset	  (const void* big, const void* small);
 void
 fD_write	  (FILE* outfile, const fdDef* obj);
 static shortcard
@@ -1345,7 +1349,7 @@ fD_adjustargnames(fdDef *obj)
 {
    int parnum;
 
-   if (output_mode!=NEW)
+   if (output_mode!=NEW && output_mode!=GENMODULE)
       return;
 
    /* For #define-base output mode, we have to check if argument names are not
@@ -1547,6 +1551,12 @@ fD_cmpName(const void* big, const void* small) /* for qsort and bsearch */
    return strcmp(fD_GetName(*(fdDef**)big), fD_GetName(*(fdDef**)small));
 }
 
+int
+fD_cmpOffset(const void* big, const void* small) /* for qsort and bsearch */
+{
+   return fD_GetOffset(*(fdDef**)small) - fD_GetOffset(*(fdDef**)big);
+}
+
 const static char *TagExcTable[]=
 {
    "BuildEasyRequestArgs", "BuildEasyRequest",
@@ -1683,7 +1693,7 @@ fD_write(FILE* outfile, const fdDef* obj)
    for (count=d0; count<numregs; count++)
    {
       const char *reg=fD_GetRegStr(obj, count);
-      if (!((output_mode == NEW) && (target == PPC_POWERUP)))
+      if (!((output_mode == NEW || output_mode == GENMODULE) && (target == PPC_POWERUP)))
       {
 	 if (strcmp(reg, "a4")==0 || strcmp(reg, "a5")==0)
 	 {
@@ -1716,7 +1726,34 @@ fD_write(FILE* outfile, const fdDef* obj)
       return;
    }
 
-   if (output_mode==NEW)
+   if (output_mode==GENMODULE)
+   {
+     fprintf(outfile, "%s %s(", rettype, name);
+     for (count=d0; count<numregs; count++)
+     {
+        chtmp=fD_GetProto(obj, count);
+        if (fD_GetFuncParNum(obj)==count)
+           fprintf(outfile, chtmp, fD_GetParam(obj, count));
+        else
+           fprintf(outfile, "%s%s%s", chtmp, (*(chtmp+strlen(chtmp)-1)=='*' ?
+                                              "" : " "), fD_GetParam(obj, count));
+        if (count<numregs-1)
+           fprintf(outfile, ", ");
+     }
+
+     fprintf(outfile,") (");
+     for (count=d0; count<numregs; count++)
+     {
+       chtmp=fD_GetRegStr(obj, count);
+       /* AROS wants the registers in UPPERCASE */
+       while (*chtmp)
+           fprintf(outfile, "%c", toupper(*(chtmp++)));
+       if (count<numregs-1)
+           fprintf(outfile, ", ");
+     }
+     fprintf(outfile, ")\n");
+   }
+   else if (output_mode==NEW)
    {
       fprintf(outfile, "#define %s(", name);
 
@@ -2433,7 +2470,11 @@ fD_write(FILE* outfile, const fdDef* obj)
    if ((tagname=taggedfunction(obj))!=0 &&
        output_mode!=GATESTUBS && output_mode!=GATEPROTO)
    {
-      if (output_mode!=STUBS)
+      if (output_mode==GENMODULE)
+      {
+          /* Nothing to do */
+      }
+      else if (output_mode!=STUBS)
       {
 	 fprintf( outfile,
 		  "#ifndef %sNO_INLINE_STDARG\n"
@@ -2878,6 +2919,8 @@ main(int argc, char** argv)
 		output_mode=GATEPROTO;
 	      else if (strcmp(option+5, "proto")==0)
 		output_mode=PROTO;
+	      else if (strcmp(option+5, "genmodule")==0)
+		output_mode=GENMODULE;
 	    }
 	    else if (strncmp(option, "target=", 7)==0)
 	    {
@@ -2960,7 +3003,7 @@ main(int argc, char** argv)
       return EXIT_FAILURE;
    }
 
-   if (target==M68K_POS && output_mode!=NEW)
+   if (target==M68K_POS && output_mode!=NEW && output_mode!=GENMODULE)
    {
       fprintf(stderr, "Target is not compatible with the mode.\n");
       return EXIT_FAILURE;
@@ -3114,6 +3157,39 @@ main(int argc, char** argv)
 
    if (output_mode==PROTO)
       output_proto(outfile);
+   else if (output_mode==GENMODULE)
+   {
+      long offset = -30;
+      qsort(arrdefs, count, sizeof arrdefs[0], fD_cmpOffset);
+
+      fprintf(outfile,"##begin config\n"
+                      "basename %s\n"
+                      "libbase %s\n"
+                      "##end config\n"
+                      "\n"
+                      "##begin cdef\n"
+                      "##end cdef\n"
+                      "\n"
+                      "##begin functionlist\n"
+                      , BaseName, BaseName);
+                     
+
+      for (count=0; count<FDS && arrdefs[count]; count++)
+      {
+	 DBP(fprintf(stderr, "outputting %ld...\n", count));
+	 long off = fD_GetOffset(arrdefs[count]);
+	 if (off < offset) {
+	        int skip = (offset - off) / 6;
+                fprintf(outfile, ".skip %d\n", skip);
+         }
+         offset = off - 6;
+	 fD_write(outfile, arrdefs[count]);
+	 fD_dtor(arrdefs[count]);
+	 arrdefs[count]=NULL;
+      }
+
+      fprintf(outfile, "##end functionlist\n");
+   }
    else
    {
       if (output_mode==NEW || output_mode==OLD || output_mode==STUBS ||
