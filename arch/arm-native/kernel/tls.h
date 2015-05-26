@@ -7,8 +7,8 @@ typedef struct tls
     void *              *KernelBase;    /* Base of kernel.resource */
     struct Task         *ThisTask;      /* Currently running task on this core */
     ULONG               ScheduleFlags;
-    ULONG               IDNestCnt;
-    ULONG               TDNestCnt;
+    LONG                IDNestCnt;
+    LONG                TDNestCnt;
 } tls_t;
 
 #define TLSSF_Quantum   (1 << 0)

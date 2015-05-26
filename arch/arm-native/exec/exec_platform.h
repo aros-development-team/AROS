@@ -108,7 +108,7 @@ struct Exec_PlatformData
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
         AROS_ATOMIC_DEC(__tls->IDNestCnt); \
     } while(0)
-    #define TDNESTCOUNT_INC \
+#define TDNESTCOUNT_INC \
     do { \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
@@ -161,7 +161,7 @@ struct Exec_PlatformData
     ({ \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
-        ULONG __ret = (__tls->IDNestCnt); \
+        LONG __ret = (__tls->IDNestCnt); \
         __ret;  \
     })
 #define IDNESTCOUNT_SET(val) \
@@ -174,7 +174,7 @@ struct Exec_PlatformData
     ({ \
         tls_t *__tls; \
         asm volatile("mrc p15, 0, %0, c13, c0, 3":"=r"(__tls)); \
-        ULONG __ret = (__tls->TDNestCnt); \
+        LONG __ret = (__tls->TDNestCnt); \
         __ret;  \
     })
 #define TDNESTCOUNT_SET(val) \
