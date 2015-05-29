@@ -323,6 +323,7 @@ STDC_STATIC := \
     strncmp \
     strpbrk \
     strrchr \
+    strspn \
     strstr \
     strtol \
     strtoul \
