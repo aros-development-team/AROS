@@ -18,6 +18,9 @@
 
 
 #ifdef CATCOMP_ARRAY
+#ifndef CATCOMPARRAY
+#define CATCOMPARRAY CatCompArray
+#endif
 #undef CATCOMP_NUMBERS
 #undef CATCOMP_STRINGS
 #define CATCOMP_NUMBERS
@@ -49,13 +52,16 @@
 
 #ifdef CATCOMP_ARRAY
 
+#ifndef HAVE_CATCOMP_ARRAYTYPE
+#define HAVE_CATCOMP_ARRAYTYPE
 struct CatCompArrayType
 {
   LONG   cca_ID;
   STRPTR cca_Str;
 };
+#endif
 
-static const struct CatCompArrayType CatCompArray[] =
+static const struct CatCompArrayType CATCOMPARRAY[] =
 {
   {%i,(STRPTR)%i_STR},
   {0,NULL}
