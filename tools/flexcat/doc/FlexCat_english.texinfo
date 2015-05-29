@@ -910,6 +910,10 @@ a @samp{%} character, which surely rings a bell for C programmers.
 @item %b
 Basename of the catalog description - see @ref{Program start}.
 
+@item %B
+Basename of the catalog description in uppercase, with non
+alphanumeric characters replaced with underscores - see @ref{Program start}.
+
 @item %v
 Version number of the catalog description. Careful here - do not mix
 this up with the version used in the catalog translation.
