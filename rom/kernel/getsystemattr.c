@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -29,6 +29,8 @@
 	Currently defined attributes are:
 
 	  KATTR_Architecture [.G] (char *)        - Name of architecture the kernel built for.
+
+	  KATTR_PeripheralBase [.G] IPTR   - IO Base address for ARM peripherals
 
     INPUTS
 	id - ID of the attribute to get
