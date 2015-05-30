@@ -72,6 +72,10 @@ int main(int argc, char **argv)
         writeskel(cfg);
         break;
 
+    case WRITETHUNK:
+        writethunk(cfg);
+        break;
+
     default:
         fprintf(stderr, "Internal error in main: Unhandled command type\n");
         exit(20);
