@@ -1634,6 +1634,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
   compiler=target nostartup=yes archspecific=no \
+  includedir= libdir= \
   build_abi= build_library=
 
 # We will employ a terrifying, but unavoidable, hack here.
@@ -1736,7 +1737,11 @@ endif
 
 ## include files generation
 ##
+ifneq (%(includedir),)
+BD_INCDIR    := %(includedir)
+else
 BD_INCDIR    := %(prefix)/$(AROS_DIR_INCLUDE)
+endif
 BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
 BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
 
@@ -1792,7 +1797,11 @@ GLOB_MKDIRS += %(objdir)/include
 
 ifeq (%(build_abi),M)
 ## Create FD file
+ifeq (%(includedir),)
 BD_FDDIR := %(prefix)/$(AROS_DIR_DEVELOPMENT)/fd
+else
+BD_FDDIR := %(includedir)/../fd
+endif
 %(mmake)-fd : $(BD_FDDIR)/%(modname)_lib.fd
 
 %rule_genmodule_fd modname="%(modname)" modtype="%(modtype)" \
@@ -1826,15 +1835,21 @@ else
     BD_LIBSUFFIX := .%(modtype)
 endif
 
+ifeq (%(libdir),)
+BD_LIBDIR := %(prefix)/$(AROS_DIR_LIB)
+else
+BD_LIBDIR := %(libdir)
+endif
+
 ifeq (%(build_abi),M)
 BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
 BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
 ifeq ($(strip $(%(modname)_LINKLIBFILES) $(%(modname)_LINKLIBAFILES) %(linklibfiles)),)
     BD_LINKLIB :=
 else
-    BD_LINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(modname)$(BD_LIBSUFFIX).a
+    BD_LINKLIB := $(BD_LIBDIR)/lib%(modname)$(BD_LIBSUFFIX).a
     ifneq (%(modname),%(linklibname))
-        BD_LINKLIB += %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)$(BD_LIBSUFFIX).a
+        BD_LINKLIB += $(BD_LIBDIR)/lib%(linklibname)$(BD_LIBSUFFIX).a
     endif
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
@@ -1844,9 +1859,9 @@ BD_RELLINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBAFILES))
 ifeq ($(strip $(%(modname)_RELLINKLIBFILES) $(%(modname)_RELLINKLIBAFILES) %(linklibfiles)),)
     BD_RELLINKLIB :=
 else
-    BD_RELLINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(modname)_rel$(BD_LIBSUFFIX).a
+    BD_RELLINKLIB := $(BD_LIBDIR)/lib%(modname)_rel$(BD_LIBSUFFIX).a
     ifneq (%(modname),%(linklibname))
-        BD_RELLINKLIB += %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)_rel$(BD_LIBSUFFIX).a
+        BD_RELLINKLIB += $(BD_LIBDIR)/lib%(linklibname)_rel$(BD_LIBSUFFIX).a
     endif
 endif
 BD_RELLINKLIBFILES := $(BD_RELLINKLIBCFILES) $(BD_RELLINKLIBAFILES)
@@ -1943,23 +1958,23 @@ ifeq (%(build_abi),M)
 BD_LINKLIBNAME := $(shell echo %(linklibname) | tr A-Z a-z)
 BD_MODNAME     := $(shell echo %(modname) | tr A-Z a-z)
 ifneq ($(BD_LINKLIB),)
-%rule_link_linklib libname="%(linklibname)$(BD_LIBSUFFIX)" objs=$(BD_LINKLIBOBJS) libdir="%(prefix)/$(AROS_DIR_LIB)"
+%rule_link_linklib libname="%(linklibname)$(BD_LIBSUFFIX)" objs=$(BD_LINKLIBOBJS) libdir="$(BD_LIBDIR)"
 ifneq ($(BD_MODNAME),$(BD_LINKLIBNAME))
-%rule_link_linklib libname="%(modname)$(BD_LIBSUFFIX)" objs=$(BD_LINKLIBOBJS) libdir="%(prefix)/$(AROS_DIR_LIB)"
+%rule_link_linklib libname="%(modname)$(BD_LIBSUFFIX)" objs=$(BD_LINKLIBOBJS) libdir="$(BD_LIBDIR)"
 endif
 
-$(BD_LINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
-GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
+$(BD_LINKLIB) : | $(BD_LIBDIR)
+GLOB_MKDIRS += $(BD_LIBDIR)
 endif
 
 ifneq ($(BD_RELLINKLIB),)
-%rule_link_linklib libname="%(linklibname)_rel$(BD_LIBSUFFIX)" objs=$(BD_RELLINKLIBOBJS) libdir="%(prefix)/$(AROS_DIR_LIB)"
+%rule_link_linklib libname="%(linklibname)_rel$(BD_LIBSUFFIX)" objs=$(BD_RELLINKLIBOBJS) libdir="$(BD_LIBDIR)"
 ifneq ($(BD_MODNAME),$(BD_LINKLIBNAME))
-%rule_link_linklib libname="%(modname)_rel$(BD_LIBSUFFIX)" objs=$(BD_RELLINKLIBOBJS) libdir="%(prefix)/$(AROS_DIR_LIB)"
+%rule_link_linklib libname="%(modname)_rel$(BD_LIBSUFFIX)" objs=$(BD_RELLINKLIBOBJS) libdir="$(BD_LIBDIR)"
 endif
 
-$(BD_RELLINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
-GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
+$(BD_RELLINKLIB) : | $(BD_LIBDIR)
+GLOB_MKDIRS += $(BD_LIBDIR)
 endif
 endif
 
@@ -2031,7 +2046,8 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
-  compiler=target nostartup=yes archspecific=no
+  compiler=target nostartup=yes archspecific=no \
+  includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" conffile="%(conffile)" \
@@ -2042,6 +2058,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
+   includedir="%(includedir)" libdir="%(libdir)" \
    build_abi=M build_library=M
 
 %end
@@ -2058,7 +2075,8 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
-  compiler=target nostartup=yes archspecific=no
+  compiler=target nostartup=yes archspecific=no \
+  includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
   modsuffix="%(modsuffix)" version="%(version)" conffile="%(conffile)" \
@@ -2068,6 +2086,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
   nostartup="%(nostartup)" archspecific="%(archspecific)" \
+  includedir="%(includedir)" libdir="%(libdir)" \
   build_abi=M build_library=
 
 %end
@@ -2082,7 +2101,8 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   uselibs= usehostlibs= \
-  compiler=target nostartup=yes archspecific=no
+  compiler=target nostartup=yes archspecific=no \
+  includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" conffile="%(conffile)" \
@@ -2091,6 +2111,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
+  includedir="%(includedir)" libdir="%(libdir)" \
    build_abi= build_library=M
 
 %end
