@@ -22,6 +22,7 @@ GENMODULE_SRCS := \
     writefunclist.c \
     writefd.c \
     writeskel.c \
+    writethunk.c \
     writegetlibbase.c
 
 GENMODULE_INCS := genmodule.h fileread.h functionhead.h
