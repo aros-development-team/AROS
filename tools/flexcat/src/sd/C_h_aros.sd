@@ -8,8 +8,8 @@
    Do NOT edit by hand!
 ****************************************************************/
 
-#ifndef %B_H
-#define %B_H
+#ifndef %B_STRINGS_H
+#define %B_STRINGS_H
 
 
 #ifndef EXEC_TYPES_H
@@ -88,4 +88,4 @@ static const struct CatCompArrayType CATCOMPARRAY[] =
 /***************************************************************/
 
 
-#endif /* %B_H */
+#endif /* %B_STRINGS_H */
