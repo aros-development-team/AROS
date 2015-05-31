@@ -1365,15 +1365,15 @@ BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(notdir $(TMP_FILES))))
 BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(TMP_FILES))))
 
 BD_CFLAGS    := %(cflags)
-BD_AFLAGS    := %(aflags)
-BD_DFLAGS    := %(dflags)
-BD_LDFLAGS   := %(ldflags)
-
 ifneq (%(includedir),)
 BD_CFLAGS    += -I%(includedir)
+endif
+BD_AFLAGS    := %(aflags)
+ifneq (%(includedir),)
 BD_AFLAGS    += -I%(includedir)
 endif
-
+BD_DFLAGS    := %(dflags)
+BD_LDFLAGS   := %(ldflags)
 ifneq (%(libdir),)
 BD_LDFLAGS   += -L%(libdir)
 endif
