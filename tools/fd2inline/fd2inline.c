@@ -2779,6 +2779,7 @@ printusage(const char* exename)
       "\tgatestubs\t\tLibrary gate stubs\n"
       "\tgateproto\t\tLibrary gate prototypes\n"
       "\tproto\t\t\tBuild proto files (no clib-file required)\n"
+      "\tgenmodule\t\t\tBuild genmodule .conf file\n"
 
       "--target=OS\t\tOS is one of the following: \n"
       "\t*-aros\t\t\tAROS (any CPU)\n"
