@@ -16,9 +16,10 @@ AROS_LH0(cpuid_t, KrnGetCPUCount,
 
     cpuid_t count;
 
-     count =  __arm_arosintern.ARMI_AffinityMask - (( __arm_arosintern.ARMI_AffinityMask >> 1) & 0x55555555);
-     count = (count & 0x33333333) + ((count >> 2) & 0x33333333);
-     return (((count + (count >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
+    count = __arm_arosintern.ARMI_AffinityMask
+        - ((__arm_arosintern.ARMI_AffinityMask >> 1) & 0x55555555);
+    count = (count & 0x33333333) + ((count >> 2) & 0x33333333);
+    return (((count + (count >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 
     return count;
 
