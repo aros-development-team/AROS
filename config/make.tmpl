@@ -1719,6 +1719,9 @@ endif
 # Default values for variables and arguments
 BD_DEFLINKLIBNAME := %(modname)
 BD_DEFDFLAGS := %(cflags)
+ifneq (%(includedir),)
+    BD_DEFDFLAGS += -I%(includedir)
+endif
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 
 ## Create genmodule include Makefile for the module
@@ -2499,7 +2502,7 @@ GLOB_MKDIRS += %(dst)
 #   library header files.
 #
 %define copy_includes mmake=includes-copy includes=$(INCLUDE_FILES) path=. \
-    dir= compiler=target
+    dir= compiler=target includedir=$(AROS_INCLUDES)
 
 ifeq ($(findstring %(compiler),host kernel target),)
 $(error %copy_includes: compiler argument (%(compiler)) has to be host, kernel or target)
@@ -2528,15 +2531,15 @@ $(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)%
 ifeq (%(compiler),target)
 
 ifneq (%(dir),)
-BD_INCL_FILES2 := $(subst %(dir),$(AROS_INCLUDES)/%(path),$(dir %(includes)))
-BD_INCL_FILES2 := $(addprefix $(AROS_INCLUDES)/%(path)/,$(notdir %(includes)))
+BD_INCL_FILES2 := $(subst %(dir),%(includedir)/%(path),$(dir %(includes)))
+BD_INCL_FILES2 := $(addprefix %(includedir)/%(path)/,$(notdir %(includes)))
 else
-BD_INCL_FILES2 := $(addprefix $(AROS_INCLUDES)/%(path)/,%(includes))
+BD_INCL_FILES2 := $(addprefix %(includedir)/%(path)/,%(includes))
 endif
 
 BD_INCL_FILES += $(BD_INCL_FILES2)
 
-$(BD_INCL_FILES2) : $(AROS_INCLUDES)/%(path)/% : $(BD_INC_PATH)%
+$(BD_INCL_FILES2) : %(includedir)/%(path)/% : $(BD_INC_PATH)%
 	@$(CP) $< $@
 endif
 
