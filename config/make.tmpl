@@ -1336,6 +1336,7 @@ BDID := $(BDTARGETID)
     asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
+    includedir= libdir= \
     compiler=target linker=
 
 .PHONY : %(mmake)
@@ -1367,6 +1368,15 @@ BD_CFLAGS    := %(cflags)
 BD_AFLAGS    := %(aflags)
 BD_DFLAGS    := %(dflags)
 BD_LDFLAGS   := %(ldflags)
+
+ifneq (%(includedir),)
+BD_CFLAGS    += -I%(includedir)
+BD_AFLAGS    += -I%(includedir)
+endif
+
+ifneq (%(libdir),)
+BD_LDFLAGS   += -L%(libdir)
+endif
 
 #MM
 %(mmake)-quick : %(mmake)
