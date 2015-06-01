@@ -2155,6 +2155,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
 %define build_linklib mmake=/A libname=/A files= cxxfiles= \
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
+  includedir= \
   cflags=$(CFLAGS) dflags=$(BD_CFLAGS) \
   aflags=$(AFLAGS) compiler=target
 
@@ -2176,6 +2177,9 @@ BD_OBJS       := $(BD_ARCHOBJS) \
 BD_DEPS       := $(patsubst %.o,%.d,$(BD_OBJS))
 
 BD_CFLAGS    := %(cflags)
+ifneq (%(includedir),)
+BD_CFLAGS    += -I%(includedir)
+endif
 BD_AFLAGS    := %(aflags)
 BD_DFLAGS    := %(dflags)
 
