@@ -595,10 +595,10 @@ static BOOL allowed_hunk(BPTR seglist)
      * to OS4 GetSegListInfo() and struct PseudoSegList. This way also runtime
      * generated seglists would be handled properly.
      */
-    UBYTE * ptr = (UBYTE *)BADDR(seglist);
+    UBYTE * ptr = (UBYTE *)BADDR(seglist) + sizeof(BPTR);
 
     /* Allow bitmap fonts */
-    if (ptr[22] == 0x0f && ptr[23] == 0x80)
+    if (ptr[18] == 0x0f && ptr[19] == 0x80)
         return TRUE;
 
     return FALSE;
