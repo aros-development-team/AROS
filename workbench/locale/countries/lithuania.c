@@ -66,12 +66,12 @@ struct IntCountryPrefs lithuaniaPrefs =
         "", SS_NOSPACE, SP_PREC_ALL, CSP_PRECEDES,
 
         /* Mon -ve sign, -ve space sep, -ve sign pos, -ve cs pos */
-        "", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
+        "-", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7SUN
+        CT_7MON
     },
-    "$VER: lithuania.country 44.0 (12.04.2013)",
+    "$VER: lithuania.country 44.1 (06.06.2015)",
     "Lietuva",
     "Countries/Lithuania"
 };

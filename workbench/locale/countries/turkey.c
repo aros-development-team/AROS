@@ -64,9 +64,9 @@ struct IntCountryPrefs turkeyPrefs =
         "-", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
         /* Calendar type */
-        CT_7SUN
+        CT_7MON
     },
-    "$VER: turkey.country 44.0 (12.04.2013)",
+    "$VER: turkey.country 44.1 (06.06.2015)",
     "Türkiye",
     "Countries/Turkey"
 };

@@ -64,9 +64,9 @@ struct IntCountryPrefs brazilPrefs =
         "-", SS_NOSPACE, SP_PREC_ALL, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7MON
+        CT_7SUN
     },
-    "$VER: brazil.country 44.0 (12.04.2013)",
+    "$VER: brazil.country 44.1 (06.06.2015)",
     "Brasil",
     "Countries/Brazil"
 };

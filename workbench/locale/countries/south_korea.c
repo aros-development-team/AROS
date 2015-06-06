@@ -64,9 +64,9 @@ struct IntCountryPrefs south_koreaPrefs =
         "-", SS_SPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
         /* Calendar type */
-        CT_7MON
+        CT_7SUN
     },
-    "$VER: south_korea.country 51.0 (12.04.2013)",
+    "$VER: south_korea.country 51.1 (06.06.2015)",
     "Hanguk",
     "Countries/South_Korea"
 };

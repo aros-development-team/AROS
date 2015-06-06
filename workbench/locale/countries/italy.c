@@ -16,14 +16,8 @@ struct IntCountryPrefs italyPrefs =
         /* Reserved */
         { 0, 0, 0, 0 },
 
-        /* The country codes in the past have been rather inconsistant,
-           sometimes they are 1 character, 2 chars or 3. It would be nice
-           to have some consistency. Maybe use the 3 character name from
-           ISO 3166?
-        */
-
-        /* Country code, telephone code, measuring system */
-        MAKE_ID('I','T','A',0), 39, MS_ISO,
+        /* Country code (licence plate number), telephone code, measuring system */
+        MAKE_ID('I',0,0,0), 39, MS_ISO,
 
         /* Date time format, date format, time format */
         "%q:%M:%S %d/%m/%Y",
@@ -77,9 +71,9 @@ struct IntCountryPrefs italyPrefs =
         "-", SS_SPACE, SP_SUCC_CURR, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7SUN
+        CT_7MON
     },
-    "$VER: italy.country 44.0 (12.04.2013)",
+    "$VER: italy.country 44.1 (06.06.2015)",
     "Italia",
     "Countries/Italy"
 };

@@ -65,9 +65,9 @@ struct IntCountryPrefs new_zealandPrefs =
         "", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7SUN
+        CT_7MON
     },
-    "$VER: new_zealand.country 44.0 (12.04.2013)",
+    "$VER: new_zealand.country 44.1 (06.06.2015)",
     NULL,
     "Countries/New_Zealand"
 };

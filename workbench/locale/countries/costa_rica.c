@@ -64,9 +64,9 @@ struct IntCountryPrefs costa_ricaPrefs =
         "-", SS_SPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
         /* Calendar type */
-        CT_7MON
+        CT_7SUN
     },
-    "$VER: costa_rica.country 51.0 (12.04.2013)",
+    "$VER: costa_rica.country 51.1 (06.06.2015)",
     NULL,
     "Countries/Costa_Rica"
 };
