@@ -71,9 +71,9 @@ struct IntCountryPrefs maltaPrefs =
         "-", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7SUN
+        CT_7MON
     },
-    "$VER: malta.country 51.1 (12.04.2013)",
+    "$VER: malta.country 51.2 (06.06.2015)",
     NULL,
     "Countries/Malta"
 };

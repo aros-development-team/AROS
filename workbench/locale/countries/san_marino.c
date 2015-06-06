@@ -70,9 +70,9 @@ struct IntCountryPrefs san_marinoPrefs =
         "-", SS_SPACE, SP_SUCC_CURR, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7SUN
+        CT_7MON
     },
-    "$VER: san_marino.country 44.0 (12.04.2013)",
+    "$VER: san_marino.country 44.1 (06.06.2015)",
     NULL,
     "Countries/San_Marino"
 };

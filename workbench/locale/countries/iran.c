@@ -63,9 +63,9 @@ struct IntCountryPrefs iranPrefs =
         "-", SS_SPACE, SP_PREC_ALL, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7MON
+        CT_7SAT
     },
-    "$VER: iran.country 44.0 (12.04.2013)",
+    "$VER: iran.country 44.1 (06.06.2015)",
     NULL,
     "Countries/Iran"
 };

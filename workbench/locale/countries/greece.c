@@ -15,14 +15,7 @@ struct IntCountryPrefs greecePrefs =
         /* Reserved */
         { 0, 0, 0, 0 },
 
-        /* The country codes in the past have been rather inconsistant,
-           sometimes they are 1 character, 2 chars or 3. It would be nice
-           to have some consistency. Maybe use the 3 character name from
-           ISO 3166? I (Iain) have a copy of the ISO3166 codes if anyone
-           wants them...
-        */
-
-        /* Country code (left justify), telephone code, measuring system */
+        /* Country code (licence plate number), telephone code, measuring system */
         MAKE_ID('G','R',0,0), 30, MS_ISO,
 
         /* Date time format, date format, time format */
@@ -77,9 +70,9 @@ struct IntCountryPrefs greecePrefs =
         "-", SS_SPACE, SP_SUCC_CURR, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7SUN
+        CT_7MON
     },
-    "$VER: greece.country 44.0 (12.04.2013)",
+    "$VER: greece.country 44.1 (06.06.2015)",
     "Hellas",
     "Countries/Greece"
 };
