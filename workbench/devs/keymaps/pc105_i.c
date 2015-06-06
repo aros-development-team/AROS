@@ -260,8 +260,8 @@ STATIC CONST IPTR lokeymap[] =
 
 STATIC CONST IPTR hikeymap[] =
 {
-    BYTES(' ', ' ', ' ', ' '),	/* 40 */
-    BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
+    BYTES(0xA0, 0xA0, ' ', ' '),/* 40 SPACE */
+    BYTES(8, 8, 8, 8),		/* 41 BACKSPACE */
     STRING(tab_descr),		/* 42 TAB */
     BYTES(13, 13, 13, 13),	/* 43 ENTER */
     BYTES(0, 0, 10, 13),	/* 44 RETURN */
@@ -337,10 +337,10 @@ STATIC CONST UBYTE locapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 08 - 0F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 10 - 17 */
-    SETBITS(1, 1, 1, 0, 0, 0, 0, 0),	/* 18 - 1F */
+    SETBITS(1, 1, 0, 0, 0, 0, 0, 0),	/* 18 - 1F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 20 - 27 */
-    SETBITS(1, 1, 1, 0, 0, 0, 0, 0),	/* 28 - 2F */
+    SETBITS(1, 0, 0, 0, 0, 0, 0, 0),	/* 28 - 2F */
     
     SETBITS(0, 1, 1, 1, 1, 1, 1, 1),	/* 30 - 37 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */

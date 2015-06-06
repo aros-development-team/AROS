@@ -492,7 +492,7 @@ STATIC CONST IPTR lokeymap[] =
 STATIC CONST UBYTE space_descr[] =
 {
     DPF_MOD, 0x4,
-    0, 0XA0,
+    0, 0xA0,
 
     ' ',          '´' /*0xB4*/, '`',          '^',          '~',          '¨' /*0xA8*/, '°' /*0xB0*/,
     '´' /*0xB4*/, '´' /*0xB4*/, '^',          '´' /*0xB4*/, '´' /*0xB4*/, '´' /*0xB4*/, '´' /*0xB4*/,
@@ -501,8 +501,8 @@ STATIC CONST UBYTE space_descr[] =
 
 STATIC CONST IPTR hikeymap[] =
 {
-    DEAD(space_descr),          /* 40 */
-    BYTES(8, 8, 8, 8),          /* 41 BACKSPACE*/
+    DEAD(space_descr),          /* 40 SPACE */
+    BYTES(8, 8, 8, 8),          /* 41 BACKSPACE */
     STRING(tab_descr),          /* 42 TAB */
     BYTES(13, 13, 13, 13),      /* 43 ENTER */
     BYTES(0, 0, 10, 13),        /* 44 RETURN */
