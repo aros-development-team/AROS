@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2011 The AROS Development Team
+ * Copyright © 2007-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -147,6 +147,13 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             if (ioh->first_cluster == 0) {
                 ioh->sector_offset = sector_offset - ioh->first_sector;
                 ioh->cur_sector = ioh->first_sector + sector_offset;
+
+                /* Stop if we've reached the end of the root dir */
+                if (ioh->cur_sector >= ioh->sb->first_rootdir_sector
+                    + ioh->sb->rootdir_sectors) {
+                    RESET_HANDLE(ioh);
+                    return ERROR_OBJECT_NOT_FOUND;
+                }
 
                 D(bug("[fat] adjusted for cluster 0, chunk starts in sector %ld\n", ioh->cur_sector));
             }
