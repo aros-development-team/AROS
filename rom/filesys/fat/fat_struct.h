@@ -2,13 +2,22 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2011 The AROS Development Team
+ * Copyright © 2007-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  *
  * $Id$
  */
+
+struct FATEBPB{
+    UBYTE bs_drvnum;
+    UBYTE bs_reserved1;
+    UBYTE bs_bootsig;
+    ULONG bs_volid;
+    UBYTE bs_vollab[11];
+    UBYTE bs_filsystype[8];
+} __attribute__ ((__packed__));
 
 struct FATBootSector {
     UBYTE bs_jmp_boot[3];
@@ -27,15 +36,7 @@ struct FATBootSector {
     ULONG bpb_total_sectors_32;
 
     union {
-        struct {
-            UBYTE bs_drvnum;
-            UBYTE bs_reserved1;
-            UBYTE bs_bootsig;
-            ULONG bs_volid;
-            UBYTE bs_vollab[11];
-            UBYTE bs_filsystype[8];
-        } __attribute__ ((__packed__)) fat16;
-
+        struct FATEBPB ebpb;
         struct {
             ULONG bpb_fat_size_32;
             UWORD bpb_extflags;
@@ -44,14 +45,9 @@ struct FATBootSector {
             UWORD bpb_fs_info;
             UWORD bpb_back_bootsec;
             UBYTE bpb_reserved[12];
-            UBYTE bs_drvnum;
-            UBYTE bs_reserved1;
-            UBYTE bs_bootsig;
-            ULONG bs_volid;
-            UBYTE bs_vollab[11];
-            UBYTE bs_filsystype[8];
-        } __attribute__ ((__packed__)) fat32;
-    } type;
+            struct FATEBPB ebpb;
+        } __attribute__ ((__packed__)) ebpb32;
+    } ebpbs;
     UBYTE pad[420];
     UBYTE bpb_signature[2];
 } __attribute__ ((__packed__));

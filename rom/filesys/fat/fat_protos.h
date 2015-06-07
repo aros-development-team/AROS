@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2011 The AROS Development Team
+ * Copyright © 2007-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -12,17 +12,6 @@
 
 #ifndef FAT_HANDLER_PROTO_H
 #define FAT_HANDLER_PROTO_H
-
-/* fat */
-LONG ReadFATSuper (struct FSSuper *s);
-void FreeFATSuper(struct FSSuper *s);
-LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
-
-LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume);
-
-void CountFreeClusters(struct FSSuper *sb);
-void AllocCluster(struct FSSuper *sb, ULONG cluster);
-void FreeCluster(struct FSSuper *sb, ULONG cluster);
 
 /* disk.c */
 void ProcessDiskChange (void);
@@ -37,14 +26,14 @@ void UpdateDisk(void);
 void Probe_64bit_support(void);
 ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
 
-/* info.c */
 void FillDiskInfo (struct InfoData *id);
- 
+
 /* packet.c */
 void ProcessPackets(void);
 void ReplyPacket(struct DosPacket *pkt);
 
 /* direntry.c */
+void InitDir(struct FSSuper *sb, ULONG cluster, struct DirEntry *de);
 LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL reuse);
 LONG ReleaseDirHandle(struct DirHandle *dh);
 
@@ -62,6 +51,7 @@ LONG UpdateDirEntry(struct DirEntry *de);
 
 LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de);
 LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr, ULONG cluster, struct DirEntry *de);
+void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster);
 LONG DeleteDirEntry(struct DirEntry *de);
 
 LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib);
@@ -73,9 +63,20 @@ LONG SetDirEntryName(struct DirEntry *de, STRPTR name, ULONG len);
 ULONG NumLongNameEntries(STRPTR name, ULONG len);
 
 /* fat.c */
+LONG ReadFATSuper(struct FSSuper *s);
+void FreeFATSuper(struct FSSuper *s);
+LONG FormatFATVolume(const UBYTE *name, UWORD len);
+LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
+
+LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume);
+
+void CountFreeClusters(struct FSSuper *sb);
+void AllocCluster(struct FSSuper *sb, ULONG cluster);
+void FreeCluster(struct FSSuper *sb, ULONG cluster);
+
 void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds);
 void ConvertAROSDate(struct DateStamp *ds, UWORD *date, UWORD *time);
-LONG SetVolumeName(struct FSSuper *sb, UBYTE *name);
+LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len);
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 
 /* file.c */

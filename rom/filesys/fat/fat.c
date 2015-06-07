@@ -20,6 +20,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+#include <proto/timer.h>
+#include <clib/alib_protos.h>
 
 #include <clib/macros.h>
 
@@ -31,6 +33,27 @@
 
 #define DEBUG DEBUG_MISC
 #include "debug.h"
+
+static const UBYTE default_oem_name[] = "MSWIN4.1";
+static const UBYTE default_filsystype[] = "FAT16   ";
+
+static const ULONG fat16_cluster_thresholds[] =
+{
+    8400,
+    32680,
+    262144,
+    524288,
+    1048576,
+    0xFFFFFFFF
+};
+
+static const ULONG fat32_cluster_thresholds[] =
+{
+    16777216,
+    33554432,
+    67108864,
+    0xFFFFFFFF
+};
 
 /* helper function to get the location of a fat entry for a cluster. it used
  * to be a define until it got too crazy */
@@ -203,11 +226,17 @@ static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val) {
 LONG ReadFATSuper(struct FSSuper *sb ) {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG err;
-    ULONG bsize = de->de_SizeBlock * 4;
+    ULONG bsize = de->de_SizeBlock * 4, total_sectors;
     struct FATBootSector *boot;
+    struct FATEBPB *ebpb;
     struct FATFSInfo *fsinfo;
     BOOL invalid = FALSE;
     ULONG end;
+    LONG i;
+    struct DirHandle dh;
+    struct DirEntry dir_entry;
+    APTR block_ref;
+    UBYTE *fat_block;
 
     D(bug("[fat] reading boot sector\n"));
 
@@ -215,17 +244,23 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     if (!boot)
 	return ERROR_NO_FREE_STORE;
 
+    sb->first_device_sector =
+        de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
+
+    /* Get a preliminary total-sectors value so we don't risk going outside
+     * partition limits */
+    sb->total_sectors =
+        de->de_BlocksPerTrack * de->de_Surfaces * (de->de_HighCyl + 1)
+        - sb->first_device_sector;
+
+    D(bug("[fat] boot sector at sector %ld\n", sb->first_device_sector));
+
     /*
      * Read the boot sector. We go direct because we don't have a cache yet,
      * and can't create one until we know the sector size, which is held in
      * the boot sector. In practice it doesn't matter - we're going to use
      * this once and once only.
      */
-    sb->first_device_sector =
-        de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
-
-    D(bug("[fat] boot sector at sector %ld\n", sb->first_device_sector));
-
     if ((err = AccessDisk(FALSE, sb->first_device_sector, 1, bsize, (UBYTE *)boot)) != 0) {
         D(bug("[fat] couldn't read boot block (%ld)\n", err));
 	FreeMem(boot, bsize);
@@ -258,14 +293,20 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     if (boot->bpb_fat_size_16 != 0)
         sb->fat_size = AROS_LE2WORD(boot->bpb_fat_size_16);
     else
-        sb->fat_size = AROS_LE2LONG(boot->type.fat32.bpb_fat_size_32);
+        sb->fat_size = AROS_LE2LONG(boot->ebpbs.ebpb32.bpb_fat_size_32);
     D(bug("\tFAT Size = %ld\n", sb->fat_size));
 
     if (boot->bpb_total_sectors_16 != 0)
-        sb->total_sectors = AROS_LE2WORD(boot->bpb_total_sectors_16);
+        total_sectors = AROS_LE2WORD(boot->bpb_total_sectors_16);
     else
-        sb->total_sectors = AROS_LE2LONG(boot->bpb_total_sectors_32);
+        total_sectors = AROS_LE2LONG(boot->bpb_total_sectors_32);
     D(bug("\tTotal Sectors = %ld\n", sb->total_sectors));
+
+    /* Check that the boot block's sector count is the same as the
+     * partition's sector count. This stops a resized partition being
+     * mounted before reformatting */
+    if (total_sectors != sb->total_sectors)
+        invalid = TRUE;
 
     sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count) * sizeof(struct FATDirEntry)) + (sb->sectorsize - 1)) >> sb->sectorsize_bits;
     D(bug("\tRootDir Sectors = %ld\n", sb->rootdir_sectors));
@@ -344,6 +385,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->func_get_fat_entry = GetFat32Entry;
         sb->func_set_fat_entry = SetFat32Entry;
     }
+    glob->sb = sb;
 
     /* setup the FAT cache and load the first blocks */
     sb->fat_cachesize = 4096;
@@ -359,27 +401,72 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 
     if (sb->type != 32) { /* FAT 12/16 */
         /* setup volume id */
-        sb->volume_id = AROS_LE2LONG(boot->type.fat16.bs_volid);
+        sb->volume_id = AROS_LE2LONG(boot->ebpbs.ebpb.bs_volid);
 
         /* location of root directory */
         sb->rootdir_cluster = 0;
         sb->rootdir_sector = sb->first_rootdir_sector;
+        ebpb = &boot->ebpbs.ebpb;
     }
     else {
         /* setup volume id */
-        sb->volume_id = AROS_LE2LONG(boot->type.fat32.bs_volid);
+        sb->volume_id = AROS_LE2LONG(boot->ebpbs.ebpb32.ebpb.bs_volid);
  
         /* location of root directory */
-        sb->rootdir_cluster = AROS_LE2LONG(boot->type.fat32.bpb_root_cluster);
+        sb->rootdir_cluster = AROS_LE2LONG(boot->ebpbs.ebpb32.bpb_root_cluster);
         sb->rootdir_sector = 0;
+        ebpb = &boot->ebpbs.ebpb32.ebpb;
     }
 
     D(bug("[fat] rootdir at cluster %ld sector %ld\n", sb->rootdir_cluster, sb->rootdir_sector));
+
+    /* Initialise the root directory if this is a newly formatted volume */
+    if (glob->formatting)
+    {
+        /* Clear all FAT sectors */
+        for (i = 0; i < sb->fat_size * 2; i++) {
+            block_ref = Cache_GetBlock(sb->cache,
+                sb->first_device_sector + sb->first_fat_sector + i,
+                &fat_block);
+            memset(fat_block, 0, bsize);
+            if (i == 0) {
+                /* The first two entries are special */
+                if (sb->type == 32)
+                    *(UQUAD *)fat_block = AROS_QUAD2LE(0x0FFFFFFF0FFFFFF8);
+                else if (sb->type == 16)
+                    *(ULONG *)fat_block = AROS_LONG2LE(0xFFFFFFF8);
+                else
+                    *(ULONG *)fat_block = AROS_LONG2LE(0x00FFFFF8);
+            }
+            Cache_MarkBlockDirty(sb->cache, block_ref);
+            Cache_FreeBlock(sb->cache, block_ref);
+        }
+
+        /* allocate first cluster of the root directory */
+        if (sb->type == 32)
+            AllocCluster(sb, sb->rootdir_cluster);
+
+        /* get a handle on the root directory */
+        InitDirHandle(sb, 0, &dh, FALSE);
+
+        /* clear all entries */
+        for (i = 0; GetDirEntry(&dh, i, &dir_entry) == 0; i++) {
+            memset(&dir_entry.e.entry, 0, sizeof(struct FATDirEntry));
+            UpdateDirEntry(&dir_entry);
+        }
+
+        SetVolumeName(sb, ebpb->bs_vollab, 11);
+
+        ReleaseDirHandle(&dh);
+        glob->formatting = FALSE;
+        D(bug("\tRoot dir created.\n"));
+    }
 
     if (GetVolumeIdentity(sb, &(sb->volume)) != 0) {
         LONG i;
         UBYTE *uu = (void *)&sb->volume_id;
 
+        /* No volume name entry, so construct name from serial number */
         for (i=1; i<10;) {
             int d;
 
@@ -403,7 +490,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     sb->next_cluster = -1;
     if (sb->type == 32) {
         sb->fsinfo_block = Cache_GetBlock(sb->cache, sb->first_device_sector
-            + AROS_LE2WORD(boot->type.fat32.bpb_fs_info), (UBYTE **)&fsinfo);
+            + AROS_LE2WORD(boot->ebpbs.ebpb32.bpb_fs_info), (UBYTE **)&fsinfo);
         if (sb->fsinfo_block != NULL) {
             if (fsinfo->lead_sig == AROS_LONG2LE(FSI_LEAD_SIG)
                 && fsinfo->struct_sig == AROS_LONG2LE(FSI_STRUCT_SIG)
@@ -484,7 +571,181 @@ LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume) {
     return err;
 }
 
-LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
+LONG FormatFATVolume(const UBYTE *name, UWORD len) {
+    struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
+    LONG err;
+    ULONG bsize = de->de_SizeBlock * 4;
+    struct FATBootSector *boot;
+    struct FATEBPB *ebpb;
+    struct FATFSInfo *fsinfo;
+    UWORD type, i, root_entries_count;
+    struct EClockVal eclock;
+    ULONG sectors_per_cluster = 0, sector_count, first_fat_sector,
+        fat_size, root_dir_sectors, first_device_sector, temp1, temp2;
+
+    /* Decide on FAT type based on number of sectors */
+    sector_count = (de->de_HighCyl - de->de_LowCyl + 1)
+        * de->de_Surfaces * de->de_BlocksPerTrack;
+    if (sector_count < 4085)
+        type = 12;
+    else if (sector_count < 1024 * 1024)
+        type = 16;
+    else
+        type = 32;
+
+    D(bug("[fat] writing boot sector\n"));
+
+    /* Decide on cluster size and root dir entries */
+    first_fat_sector = 1;
+    if (type == 12) {
+        if (sector_count == 1440) {
+            sectors_per_cluster = 2;
+            root_entries_count = 112;
+        } else if (sector_count == 2880) {
+            sectors_per_cluster = 1;
+            root_entries_count = 224;
+        } else if (sector_count == 5760) {
+            sectors_per_cluster = 2;
+            root_entries_count = 240;
+        } else {
+            /* We only support some common 3.5" floppy formats */
+            return ERROR_NOT_IMPLEMENTED;
+        }
+    } else if (type == 16) {
+        for (i = 0; fat16_cluster_thresholds[i] < sector_count; i++);
+        sectors_per_cluster = 1 << i;
+        root_entries_count = 512;
+    } else {
+        for (i = 0; fat32_cluster_thresholds[i] < sector_count; i++);
+        sectors_per_cluster = 8 << i;
+        root_entries_count = 0;
+        first_fat_sector = 32;
+    }
+
+    D(bug("\tFirst FAT Sector = %ld\n", first_fat_sector));
+
+    /* Determine FAT size */
+    root_dir_sectors = (root_entries_count * 32 + (bsize - 1)) / bsize;
+    temp1 = sector_count - (first_fat_sector + root_dir_sectors);
+    temp2 = 256 * sectors_per_cluster + 2;
+    if (type == 32)
+        temp2 /= 2;
+    fat_size = (temp1 + temp2 - 1) / temp2;
+
+    boot = AllocMem(bsize, MEMF_CLEAR);
+    if (!boot)
+	return ERROR_NO_FREE_STORE;
+
+    /* Install x86 infinite loop boot code to keep major OSes happy */
+    boot->bs_jmp_boot[0] = 0xEB;
+    boot->bs_jmp_boot[1] = 0xFE;
+    boot->bs_jmp_boot[2] = 0x90;
+
+    CopyMem(default_oem_name, boot->bs_oem_name, 8);
+
+    boot->bpb_bytes_per_sect = AROS_WORD2LE(bsize);
+    boot->bpb_sect_per_clust = sectors_per_cluster;
+
+    boot->bpb_rsvd_sect_count = AROS_WORD2LE(first_fat_sector);
+
+    boot->bpb_num_fats = 2;
+
+    boot->bpb_root_entries_count = AROS_WORD2LE(root_entries_count);
+
+    if (sector_count < 0x10000 && type != 32)
+        boot->bpb_total_sectors_16 = AROS_WORD2LE(sector_count);
+    else
+        boot->bpb_total_sectors_32 = AROS_LONG2LE(sector_count);
+
+    boot->bpb_media = 0xF8;
+
+    boot->bpb_sect_per_track = AROS_WORD2LE(de->de_BlocksPerTrack);
+    boot->bpb_num_heads = AROS_WORD2LE(de->de_Surfaces);
+    boot->bpb_hidden_sect = AROS_LONG2LE(de->de_Reserved);
+
+    if (type == 32) {
+        boot->ebpbs.ebpb32.bpb_fat_size_32 = AROS_LONG2LE(fat_size);
+        boot->ebpbs.ebpb32.bpb_root_cluster = AROS_LONG2LE(2);
+        boot->ebpbs.ebpb32.bpb_fs_info = AROS_WORD2LE(1);
+        boot->ebpbs.ebpb32.bpb_back_bootsec = AROS_WORD2LE(6);
+        ebpb = &boot->ebpbs.ebpb32.ebpb;
+    }
+    else {
+        boot->bpb_fat_size_16 = AROS_WORD2LE(fat_size);
+        ebpb = &boot->ebpbs.ebpb;
+    }
+
+    ebpb->bs_drvnum = 0x80;
+    ebpb->bs_bootsig = 0x29;
+
+    /* Generate a pseudo-random serial number. Not the original algorithm,
+     * but it shouldn't matter */
+    ReadEClock(&eclock);
+    ebpb->bs_volid = FastRand(eclock.ev_lo ^ eclock.ev_hi);
+
+    /* copy volume name in */
+    for (i = 0; i < 11; i++)
+        if (i < len)
+            ebpb->bs_vollab[i] = toupper(name[i]);
+        else
+            ebpb->bs_vollab[i] = ' ';
+
+    CopyMem(default_filsystype, ebpb->bs_filsystype, 8);
+    if (type != 16) {
+        if (type == 32)
+            ebpb->bs_filsystype[3] = '3';
+        ebpb->bs_filsystype[4] = '2';
+    }
+
+    boot->bpb_signature[0] = 0x55;
+    boot->bpb_signature[1] = 0xaa;
+
+    /* Write the boot sector */
+    first_device_sector =
+        de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
+
+    D(bug("[fat] boot sector at sector %ld\n", first_device_sector));
+
+    if ((err = AccessDisk(TRUE, first_device_sector, 1, bsize, (UBYTE *)boot)) != 0) {
+        D(bug("[fat] couldn't write boot block (%ld)\n", err));
+	FreeMem(boot, bsize);
+        return err;
+    }
+
+    /* Write back-up boot sector and FS info sector */
+    if (type == 32) {
+        if ((err = AccessDisk(TRUE, first_device_sector + 6, 1, bsize,
+            (UBYTE *)boot)) != 0) {
+            D(bug("[fat] couldn't write back-up boot block (%ld)\n", err));
+	    FreeMem(boot, bsize);
+            return err;
+        }
+
+        fsinfo = (APTR)boot;
+        memset(fsinfo, 0, bsize);
+
+        fsinfo->lead_sig = AROS_LONG2LE(FSI_LEAD_SIG);
+        fsinfo->struct_sig = AROS_LONG2LE(FSI_STRUCT_SIG);
+        fsinfo->trail_sig = AROS_LONG2LE(FSI_TRAIL_SIG);
+        fsinfo->free_count = AROS_LONG2LE(0xFFFFFFFF);
+        fsinfo->next_free = AROS_LONG2LE(0xFFFFFFFF);
+
+        if ((err = AccessDisk(TRUE, first_device_sector + 1, 1, bsize,
+            (UBYTE *)fsinfo)) != 0) {
+            D(bug("[fat] couldn't write back-up boot block (%ld)\n", err));
+	    FreeMem(boot, bsize);
+            return err;
+        }
+    }
+
+    FreeMem(boot, bsize);
+
+    glob->formatting = TRUE;
+
+    return 0;
+}
+
+LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len) {
     struct DirHandle dh;
     struct DirEntry de;
     LONG err;
@@ -532,18 +793,15 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
     /* create a new volume id entry if there wasn't one */
     if (err != 0) {
         err = AllocDirEntry(&dh, 0, &de);
-        if (err == 0) {
-            memset(&de.e.entry, 0, sizeof(struct FATDirEntry));
-            de.e.entry.attr = ATTR_VOLUME_ID;
-        }
+        if (err == 0)
+            FillDirEntry(&de, ATTR_VOLUME_ID, 0);
     }
 
-    /* copy the name in. name is a BSTR */
+    /* copy the name in */
     if (err == 0) {
-        de.e.entry.name[0] = name[1];
         for (i = 0; i < 11; i++)
-            if (i < name[0])
-                de.e.entry.name[i] = toupper(name[i+1]);
+            if (i < len)
+                de.e.entry.name[i] = toupper(name[i]);
             else
                 de.e.entry.name[i] = ' ';
 
@@ -555,9 +813,9 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
 
     /* copy name to boot block as well, and save */
     if (sb->type == 32)
-        CopyMem(de.e.entry.name, boot->type.fat32.bs_vollab, 11);
+        CopyMem(de.e.entry.name, boot->ebpbs.ebpb32.ebpb.bs_vollab, 11);
     else
-        CopyMem(de.e.entry.name, boot->type.fat16.bs_vollab, 11);
+        CopyMem(de.e.entry.name, boot->ebpbs.ebpb.bs_vollab, 11);
 
     if ((err = AccessDisk(TRUE, sb->first_device_sector, 1, bsize,
         (UBYTE *)boot)) != 0)
@@ -565,8 +823,8 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
     FreeMem(boot, bsize);
 
     /* update name in sb */
-    sb->volume.name[0] = name[0] <= 11 ? name[0] : 11;
-    CopyMem(&name[1], &(sb->volume.name[1]), sb->volume.name[0]);
+    sb->volume.name[0] = len <= 11 ? len : 11;
+    CopyMem(name, &(sb->volume.name[1]), sb->volume.name[0]);
     sb->volume.name[sb->volume.name[0]+1] = '\0';
 
     D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));

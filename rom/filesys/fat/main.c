@@ -36,6 +36,7 @@
 struct DosLibrary *DOSBase;
 struct Library *UtilityBase;
 struct Library *IntuitionBase;
+struct Device *TimerBase;
 
 struct Globals global_data;
 struct Globals *glob = &global_data;
@@ -69,6 +70,8 @@ LONG handler(struct ExecBase *SysBase) {
 
 		    error = InitTimer();
 		    if (!error) {
+                        TimerBase = glob->timereq->tr_node.io_Device;
+
 			InitCharsetTables();
                         if ((error = InitDiskHandler(glob->fssm)) == 0) {
                             ULONG pktsig = 1 << glob->ourport->mp_SigBit;
