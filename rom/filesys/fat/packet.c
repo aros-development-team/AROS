@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2014 The AROS Development Team
+ * Copyright © 2007-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -488,7 +488,7 @@ void ProcessPackets(void) {
 
                             SendEvent(IECLASS_DISKINSERTED);
 
-                            D(bug("\tVolume added successfuly\n"));
+                            D(bug("\tVolume added\n"));
                         }
                         else if (type == ACTION_VOLUME_REMOVE) {
                             RemDosEntry(vol);
@@ -497,7 +497,7 @@ void ProcessPackets(void) {
 
                             SendEvent(IECLASS_DISKREMOVED);
 
-                            D(bug("\tVolume removed successfuly.\n"));
+                            D(bug("\tVolume removed\n"));
                         }
 
                         FreeDosObject(DOS_STDPKT, pkt); /* cleanup */
@@ -521,9 +521,10 @@ void ProcessPackets(void) {
             }
 
             case ACTION_RENAME_DISK: {
-                UBYTE *name = BADDR(pkt->dp_Arg1);
-                
-		D(bug("[FAT] RENAME_DISK: name '"); RawPutChars(AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name)); bug("'\n"));
+
+                D(bug("[FAT] RENAME_DISK: name '");
+                    RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg1),
+                    AROS_BSTR_strlen(pkt->dp_Arg1)); bug("'\n"));
 
                 if (glob->sb->doslist == NULL) {
                     err = glob->disk_inserted ? ERROR_NOT_A_DOS_DISK : ERROR_NO_DISK;
@@ -533,8 +534,41 @@ void ProcessPackets(void) {
                 while (! AttemptLockDosList(LDF_VOLUMES | LDF_WRITE))
                     ProcessPackets();
 
-                err = SetVolumeName(glob->sb, name);
+                err = SetVolumeName(glob->sb, AROS_BSTR_ADDR(pkt->dp_Arg1),
+                    AROS_BSTR_strlen(pkt->dp_Arg1));
                 UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+                if (err != 0)
+                    break;
+
+#ifdef AROS_FAST_BPTR
+                /* ReadFATSuper() sets a null byte after the
+                 * string, so this should be fine */
+                CopyMem(glob->sb->volume.name + 1, glob->sb->doslist->dol_Name,
+                    glob->sb->volume.name[0] + 1);
+#else
+                CopyMem(glob->sb->volume.name, BADDR(glob->sb->doslist->dol_Name),
+                    glob->sb->volume.name[0] + 2);
+#endif
+
+                SendEvent(IECLASS_DISKINSERTED);
+
+                res = DOSTRUE;
+
+                break;
+            }
+
+            case ACTION_FORMAT: {
+                D(bug("[FAT] FORMAT: name '");
+                    RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg1),
+                    AROS_BSTR_strlen(pkt->dp_Arg1)); bug("'\n"));
+
+                if (glob->sb->doslist == NULL) {
+                    err = glob->disk_inserted ? ERROR_NOT_A_DOS_DISK : ERROR_NO_DISK;
+                    break;
+                }
+
+                err = FormatFATVolume(AROS_BSTR_ADDR(pkt->dp_Arg1),
+                    AROS_BSTR_strlen(pkt->dp_Arg1));
                 if (err != 0)
                     break;
 
