@@ -41,18 +41,18 @@ void ProcessPackets(void) {
         switch(pkt->dp_Type) {
             case ACTION_LOCATE_OBJECT: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *lock;
-                UBYTE *path = BADDR(pkt->dp_Arg2);
                 LONG access = pkt->dp_Arg3;
 
 		D(bug("[FAT] LOCATE_OBJECT: lock 0x%08x (dir %ld/%ld) name '", pkt->dp_Arg1,
                       fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
-		RawPutChars(AROS_BSTR_ADDR(path), AROS_BSTR_strlen(path)); bug("' type %s\n",
+		RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg2),
+		      AROS_BSTR_strlen(pkt->dp_Arg2)); bug("' type %s\n",
                       pkt->dp_Arg3 == EXCLUSIVE_LOCK ? "EXCLUSIVE" : "SHARED"));
 
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = OpLockFile(fl, AROS_BSTR_ADDR(path), AROS_BSTR_strlen(path), access, &lock)) == 0)
+                if ((err = OpLockFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), access, &lock)) == 0)
                     res = (IPTR)MKBADDR(lock);
 
                 break;
@@ -187,7 +187,6 @@ void ProcessPackets(void) {
             case ACTION_FINDUPDATE: {
                 struct FileHandle *fh = BADDR(pkt->dp_Arg1);
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg2);
-                UBYTE *path = BADDR(pkt->dp_Arg3);
                 struct ExtFileLock *lock;
 
 	        D(bug("[FAT] %s: lock 0x%08x (dir %ld/%ld) path '",
@@ -196,12 +195,12 @@ void ProcessPackets(void) {
 							  "FINDUPDATE",
 		      pkt->dp_Arg2,
 		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
-		  RawPutChars(AROS_BSTR_ADDR(path), AROS_BSTR_strlen(path)); bug("'\n"));
+		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3)); bug("'\n"));
 
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = OpOpenFile(fl, AROS_BSTR_ADDR(path), AROS_BSTR_strlen(path), pkt->dp_Type, &lock)) != 0)
+                if ((err = OpOpenFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), pkt->dp_Type, &lock)) != 0)
                     break;
 
                 fh->fh_Arg1 = (IPTR)MKBADDR(lock);
@@ -591,17 +590,16 @@ void ProcessPackets(void) {
 
             case ACTION_DELETE_OBJECT: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
-                UBYTE *name = BADDR(pkt->dp_Arg2);
 
 	        D(bug("[FAT] DELETE_OBJECT: lock 0x%08x (dir %ld/%ld) path '",
 		      pkt->dp_Arg1,
 		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
-		  RawPutChars(AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name)); bug("'\n"));
+		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2)); bug("'\n"));
 
                 if ((err = TestLock(fl)))
                     break;
 
-                err = OpDeleteFile(fl, AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name));
+                err = OpDeleteFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2));
                 if (err == 0)
                     res = DOSTRUE;
 
@@ -610,20 +608,19 @@ void ProcessPackets(void) {
 
             case ACTION_RENAME_OBJECT: {
                 struct ExtFileLock *sfl = BADDR(pkt->dp_Arg1), *dfl = BADDR(pkt->dp_Arg3);
-                UBYTE *sname = BADDR(pkt->dp_Arg2), *dname = BADDR(pkt->dp_Arg4);
 
 	        D(bug("[FAT] RENAME_OBJECT: srclock 0x%08x (dir %ld/%ld) name '",
 		      pkt->dp_Arg1,
 		      sfl != NULL ? sfl->gl->dir_cluster : 0, sfl != NULL ? sfl->gl->dir_entry : 0);
-		  RawPutChars(AROS_BSTR_ADDR(sname), AROS_BSTR_strlen(sname)); bug("' destlock 0x%08x (dir %ld/%ld) name '",
+		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2)); bug("' destlock 0x%08x (dir %ld/%ld) name '",
 		      pkt->dp_Arg3,
 		      dfl != NULL ? dfl->gl->dir_cluster : 0, dfl != NULL ? dfl->gl->dir_entry : 0);
-		  RawPutChars(AROS_BSTR_ADDR(dname), AROS_BSTR_strlen(dname)); bug("'\n"));
+		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg4), AROS_BSTR_strlen(pkt->dp_Arg4)); bug("'\n"));
 
                 if ((err = TestLock(sfl)) != 0 || (err = TestLock(dfl)) != 0)
                     break;
 
-                err = OpRenameFile(sfl, AROS_BSTR_ADDR(sname), AROS_BSTR_strlen(sname), dfl, AROS_BSTR_ADDR(dname), AROS_BSTR_strlen(dname));
+                err = OpRenameFile(sfl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), dfl, AROS_BSTR_ADDR(pkt->dp_Arg4), AROS_BSTR_strlen(pkt->dp_Arg4));
                 if (err == 0)
                     res = DOSTRUE;
 
@@ -632,17 +629,16 @@ void ProcessPackets(void) {
 
             case ACTION_CREATE_DIR: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *new;
-                UBYTE *name = BADDR(pkt->dp_Arg2);
 
 	        D(bug("[FAT] CREATE_DIR: lock 0x%08x (dir %ld/%ld) name '",
 		      pkt->dp_Arg1,
 		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
-		  RawPutChars(AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name)); bug("'\n"));
+		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2)); bug("'\n"));
 
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = OpCreateDir(fl, AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name), &new)) == 0)
+                if ((err = OpCreateDir(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), &new)) == 0)
                     res = (IPTR)MKBADDR(new);
 
                 break;
@@ -650,23 +646,21 @@ void ProcessPackets(void) {
 
             case ACTION_SET_PROTECT: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg2);
-                UBYTE *name = BADDR(pkt->dp_Arg3);
                 ULONG prot = pkt->dp_Arg4;
 
 	        D(bug("[FAT] SET_PROTECT: lock 0x%08x (dir %ld/%ld) name '", pkt->dp_Arg2,
 		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
-		  RawPutChars(AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name)); bug("' prot 0x%08x\n", prot));
+		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3)); bug("' prot 0x%08x\n", prot));
                 if ((err = TestLock(fl)))
                     break;
 
-                err = OpSetProtect(fl, AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name), prot);
+                err = OpSetProtect(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), prot);
 
                 break;
             }
 
             case ACTION_SET_DATE: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg2);
-                UBYTE *name = BADDR(pkt->dp_Arg3);
 		struct DateStamp *ds = (struct DateStamp *)pkt->dp_Arg4;
 
 #if defined(DEBUG) && DEBUG != 0
@@ -685,14 +679,14 @@ void ProcessPackets(void) {
 		    D(bug("[FAT] SET_DATE: lock 0x%08x (dir %ld/%ld) name '",
 			  pkt->dp_Arg2,
 			  fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
-		      RawPutChars(AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name)); bug("' ds '%s'\n", datestr));
+		      RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3)); bug("' ds '%s'\n", datestr));
                 }
 #endif
 
                 if ((err = TestLock(fl)))
                     break;
 
-                err = OpSetDate(fl, AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name), ds);
+                err = OpSetDate(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), ds);
 
                 break;
             }
