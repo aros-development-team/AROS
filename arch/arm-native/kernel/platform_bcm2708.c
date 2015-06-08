@@ -340,7 +340,7 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
     *((volatile unsigned int *)(SYSTIMER_CS)) = 1 << timerno;
 
     /* Signal the Exec VBlankServer */
-    if (SysBase && (SysBase->IDNestCnt < 0)) {
+    if (SysBase && (IDNESTCOUNT_GET /*SysBase->IDNestCnt*/ < 0)) {
         core_Cause(INTB_VERTB, 1L << INTB_VERTB);
     }
 
