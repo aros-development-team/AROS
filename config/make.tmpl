@@ -1424,6 +1424,7 @@ GLOB_MKDIRS += $(BD_OBJDIR) $(BD_TARGETDIR)
 %define build_progs mmake=/A files=/A nix=no \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
+    includedir= libdir= \
     uselibs= usehostlibs= usestartup=yes detach=no
 
 .PHONY : %(mmake)
@@ -1437,8 +1438,14 @@ BD_DEPS      := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_FILES)))
 BD_EXES      := $(addprefix $(BD_TARGETDIR)/,$(BD_FILES))
 
 BD_CFLAGS    := %(cflags)
+ifneq (%(includedir),)
+    BD_CFLAGS += -I%(includedir)
+endif
 BD_DFLAGS    := %(dflags)
 BD_LDFLAGS   := %(ldflags)
+ifneq (%(libdir),)
+    BD_LDFLAGS += -L%(libdir)
+endif
 
 #MM
 %(mmake)-quick : %(mmake)
