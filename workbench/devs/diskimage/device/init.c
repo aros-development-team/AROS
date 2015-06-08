@@ -39,7 +39,6 @@ CONST TEXT USED_VAR verstag[] = VERSTAG;
 struct Library *SysBase;
 struct Library *DOSBase;
 struct Library *IntuitionBase;
-struct Library *aroscbase;
 
 static void FreeBaseVars (struct DiskImageBase *libBase);
 static struct DiskImageUnit *InitUnit (struct DiskImageBase *libBase, ULONG unit_number);
@@ -91,9 +90,6 @@ static struct DiskImageBase *LibInit (REG(d0, struct DiskImageBase *libBase),
 
 	if ((DOSBase = libBase->DOSBase = OpenLibrary("dos.library", MIN_OS_VERSION)) &&
 		(libBase->UtilityBase = OpenLibrary("utility.library", MIN_OS_VERSION)) &&
-#ifdef __AROS__
-		(aroscbase = libBase->aroscbase = OpenLibrary("arosc.library", 41)) &&
-#endif
 		(IntuitionBase = libBase->IntuitionBase = OpenLibrary("intuition.library", MIN_OS_VERSION)))
 	{
 		if ((libBase->UnitSemaphore = CreateSemaphore()) &&
@@ -126,9 +122,6 @@ static void FreeBaseVars (struct DiskImageBase *libBase) {
 	DeleteSemaphore(libBase->PluginSemaphore);
 	DeleteSemaphore(libBase->UnitSemaphore);
 	if (libBase->IntuitionBase) CloseLibrary(libBase->IntuitionBase);
-#ifdef __AROS__
-	if (libBase->aroscbase) CloseLibrary(libBase->aroscbase);
-#endif
 	if (libBase->UtilityBase) CloseLibrary(libBase->UtilityBase);
 	if (libBase->DOSBase) CloseLibrary(libBase->DOSBase);
 }
