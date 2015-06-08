@@ -99,7 +99,12 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             cpu_fiq_stack = (uint32_t *)AllocMem(1024*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
             ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4] = (uint32_t)&cpu_fiq_stack[1024-sizeof(IPTR)];
 
+
+#if defined(__AROSEXEC_SMP)
             __tls =  (tls_t *)AllocMem(sizeof(tls_t) + sizeof(struct cpu_ipidata),  MEMF_CLEAR); /* MEMF_PRIVATE */
+#else
+            __tls =  (tls_t *)AllocMem(sizeof(tls_t),  MEMF_CLEAR); /* MEMF_PRIVATE */
+#endif
             __tls->SysBase = _sysBase;
             __tls->KernelBase = _kernelBase;
             __tls->ThisTask = NULL;
