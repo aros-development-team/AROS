@@ -269,10 +269,8 @@ IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
     return (IPTR)FALSE;                                                 \
 }
 
-METHODSTUB(MUIM_Listtree_Open)
 METHODSTUB(MUIM_Listtree_Close)
 METHODSTUB(MUIM_Listtree_SetDropMark)
-METHODSTUB(MUIM_Listtree_FindName)
 
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
 {
@@ -465,4 +463,59 @@ IPTR Listtree__MUIM_List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List
     default:
         return DoMethod(data->nlisttree, MUIM_NList_Redraw, msg->pos);
     }
+}
+
+IPTR Listtree__MUIM_Listtree_Open(struct IClass *cl, Object *obj, struct MUIP_Listtree_Open *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUI_NListtree_TreeNode * tn = NULL, * ln = NULL;
+
+    switch((IPTR)msg->ListNode)
+    {
+    case(MUIV_Listtree_Open_ListNode_Root):
+    case(MUIV_Listtree_Open_ListNode_Parent):
+    case(MUIV_Listtree_Open_ListNode_Active):
+        ln = msg->ListNode;
+        break;
+    default:
+        ln = ((struct MUIS_Listtree_TreeNodeInt *)msg->ListNode)->ref;
+    }
+
+    switch((IPTR)msg->TreeNode)
+    {
+    case(MUIV_Listtree_Open_TreeNode_Head):
+    case(MUIV_Listtree_Open_TreeNode_Tail):
+    case(MUIV_Listtree_Open_TreeNode_Active):
+    case(MUIV_Listtree_Open_TreeNode_All):
+        tn = msg->TreeNode;
+        break;
+    default:
+        tn = ((struct MUIS_Listtree_TreeNodeInt *)msg->TreeNode)->ref;
+    }
+
+    return DoMethod(data->nlisttree, MUIM_NListtree_Open, ln, tn, msg->Flags);
+}
+
+IPTR Listtree__MUIM_Listtree_FindName(struct IClass *cl, Object *obj, struct MUIP_Listtree_FindName *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUI_NListtree_TreeNode * ln = NULL, * found = NULL;
+
+    switch((IPTR)msg->ListNode)
+    {
+    case(MUIV_Listtree_FindName_ListNode_Root):
+    case(MUIV_Listtree_FindName_ListNode_Active):
+        ln = msg->ListNode;
+        break;
+    default:
+        ln = ((struct MUIS_Listtree_TreeNodeInt *)msg->ListNode)->ref;
+    }
+
+    found = (struct MUI_NListtree_TreeNode *) DoMethod(data->nlisttree, MUIM_NListtree_FindName,
+                ln, msg->Name, msg->Flags);
+
+    if (found)
+        return (IPTR)found->tn_User;
+    else
+        return (IPTR)NULL;
 }
