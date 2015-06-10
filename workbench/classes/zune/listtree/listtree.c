@@ -26,6 +26,33 @@ struct MUIS_Listtree_TreeNodeInt
     struct MUI_NListtree_TreeNode *ref;
 };
 
+static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
+{
+    struct opSet setmsg;
+    struct TagItem setti[] = {{0,0},{TAG_DONE, TAG_DONE}};
+
+    IPTR attr           = (IPTR)msg[0];
+    IPTR val            = (IPTR)msg[1];
+    struct IClass * cl  = hook->h_Data;
+
+    setmsg.MethodID         = OM_SET;
+    setmsg.ops_AttrList     = setti;
+    setmsg.ops_GInfo        = NULL;
+
+    switch(attr)
+    {
+    case(MUIA_NListtree_Active):
+        setti[0].ti_Tag     = MUIA_Listtree_Active;
+        setti[0].ti_Data    = (IPTR)((struct MUI_NListtree_TreeNode *)val)->tn_User;
+        break;
+    default:
+        bug("[Listtree] NotifySimulate_Function - unhandled attribute %x\n", attr);
+    }
+
+    /* Super method OM_SET call will go to Notify class and trigger notifications */
+    return DoSuperMethodA(cl, obj, (Msg) &setmsg);
+}
+
 #define NEWHANDLE(attrname)                                         \
     case(attrname):                                                 \
         bug("[Listtree] OM_NEW:%s - unsupported\n", #attrname);     \
@@ -82,6 +109,9 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     data->nlisttree = nlisttree;
+    data->notifysimulatehook.h_Entry        = HookEntry;
+    data->notifysimulatehook.h_SubEntry     = (HOOKFUNC)NotifySimulate_Function;
+    data->notifysimulatehook.h_Data         = cl;
 
     data->pool = CreatePool(MEMF_ANY | MEMF_CLEAR, 16 * 1024, 8 * 1024);
 
@@ -112,6 +142,10 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             bug("[Listtree] OM_NEW: unhandled %x\n", tag->ti_Tag);
         }
     }
+
+    /* Setup notification forwarding */
+    DoMethod(data->nlisttree, MUIM_Notify, MUIA_NListtree_Active, MUIV_EveryTime,
+            obj, 4, MUIM_CallHook, &data->notifysimulatehook, MUIA_NListtree_Active, MUIV_TriggerValue);
 
     return obj;
 }
