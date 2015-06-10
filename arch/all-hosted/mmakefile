@@ -11,4 +11,5 @@ include $(TOP)/config/make.cfg
 #MM			kernel-fs-cdvdfs	\
 #MM			kernel-fs-cdfs		\
 #MM			kernel-fs-sfs		\
+#MM			kernel-fs-fat		\
 #MM			kernel-partition
