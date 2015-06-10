@@ -120,6 +120,8 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         set(data->nlisttree, BATTR, tag->ti_Data);  \
         break;
 
+#define IGNORESET(AATTR)    case(AATTR): break;
+
 IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -134,6 +136,8 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
         FORWARDSET(MUIA_Listtree_Quiet, MUIA_NListtree_Quiet)
+
+        IGNORESET(MUIA_Listview_SelectChange)
 
         SETHANDLE(MUIA_Listtree_Active)
         SETHANDLE(MUIA_Listtree_DoubleClick)
@@ -192,6 +196,7 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     FORWARDGET(MUIA_List_Active, MUIA_NList_Active)
     FORWARDGET(MUIA_Listtree_Active, MUIA_NListtree_Active)
     FORWARDGET(MUIA_Listtree_Quiet, MUIA_NListtree_Quiet)
+    FORWARDGET(MUIA_List_Visible, MUIA_NList_Visible)
 
     GETHANDLE(MUIA_List_VertProp_Entries)
     GETHANDLE(MUIA_List_VertProp_Visible)
@@ -222,10 +227,8 @@ IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
 METHODSTUB(MUIM_Listtree_Rename)
 METHODSTUB(MUIM_Listtree_Open)
 METHODSTUB(MUIM_Listtree_Close)
-METHODSTUB(MUIM_Listtree_TestPos)
 METHODSTUB(MUIM_Listtree_SetDropMark)
 METHODSTUB(MUIM_Listtree_FindName)
-METHODSTUB(MUIM_List_TestPos)
 METHODSTUB(MUIM_Listtree_GetNr)
 
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
@@ -314,4 +317,46 @@ IPTR Listtree__MUIM_Listtree_Remove(struct IClass *cl, Object *obj, struct MUIP_
     bug("[Listtree] MUIM_Listtree_Remove unsupported code path Listnode: %x, Treenode: %x, Flags: %d\n", msg->ListNode, msg->TreeNode, msg->Flags);
 
     return (IPTR)FALSE;
+}
+
+IPTR Listtree__MUIM_List_TestPos(struct IClass *cl, Object *obj, struct MUIP_List_TestPos *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+
+    struct MUI_NList_TestPos_Result res;
+    if (DoMethod(data->nlisttree, MUIM_List_TestPos, msg->x, msg->y, &res))
+    {
+        msg->res->entry     = res.entry;
+        msg->res->column    = res.column;
+        msg->res->flags     = res.flags;
+        msg->res->xoffset   = res.xoffset;
+        msg->res->yoffset   = res.yoffset;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+IPTR Listtree__MUIM_Listtree_TestPos(struct IClass *cl, Object *obj, struct MUIP_Listtree_TestPos *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+
+    struct MUI_NListtree_TestPos_Result res;
+    struct MUIS_Listtree_TestPos_Result * _ret = (struct MUIS_Listtree_TestPos_Result *)msg->Result;
+
+    _ret->tpr_TreeNode = NULL;
+
+    DoMethod(data->nlisttree, MUIM_NListtree_TestPos, msg->X, msg->Y, &res);
+
+    _ret->tpr_Flags     = res.tpr_Type;
+    _ret->tpr_ListEntry = res.tpr_ListEntry;
+    _ret->tpr_ListFlags = res.tpr_ListFlags;
+
+    if (res.tpr_TreeNode != NULL)
+    {
+        _ret->tpr_TreeNode  = res.tpr_TreeNode->tn_User;
+        return TRUE;
+    }
+
+    return FALSE;
 }
