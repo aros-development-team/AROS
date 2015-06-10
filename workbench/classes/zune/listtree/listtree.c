@@ -62,6 +62,10 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
     CONVFIN
 
+    /* TODO:
+     * set up a DestructHook which will call proxy MUIS_Listtree_TreeNode destrhook and
+     * free it afterwards
+     */
     obj = (Object *) DoSuperNewTags(cl, obj, 0,
             Child, nlisttree = (Object *) NListtreeObject,
                                 TAG_MORE, (IPTR)convtags,
@@ -222,7 +226,6 @@ METHODSTUB(MUIM_Listtree_TestPos)
 METHODSTUB(MUIM_Listtree_SetDropMark)
 METHODSTUB(MUIM_Listtree_FindName)
 METHODSTUB(MUIM_List_TestPos)
-METHODSTUB(MUIM_Listtree_Remove)
 METHODSTUB(MUIM_Listtree_GetNr)
 
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
@@ -258,6 +261,8 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
      * add handling for cases where ListNode and PrevNode actually point to Treenode structure
      * The internal TreeNode structure needs to have then the poiter to NListTree node to be
      * able to traslate. The pointer is acquired as return from below DoMethod call
+     *
+     * handle remaining enumeration values
      */
 
     DoMethod(data->nlisttree, MUIM_NListtree_Insert, _return->tn_Name, _return, msg->ListNode,
@@ -277,6 +282,8 @@ IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUI
     /* TEMP */
     /* TODO
      * add handling for cases where Node actually point to Treenode structure
+     *
+     * handle remaining enumeration values
      */
 
     struct MUI_NListtree_TreeNode * tn = (struct MUI_NListtree_TreeNode *) DoMethod(data->nlisttree,
@@ -286,4 +293,25 @@ IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUI
         return (IPTR)tn->tn_User;
     else
         return (IPTR)NULL;
+}
+
+IPTR Listtree__MUIM_Listtree_Remove(struct IClass *cl, Object *obj, struct MUIP_Listtree_Remove *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+
+    /* TODO: handle remaining enumeration values */
+    if ((msg->ListNode == (APTR)MUIV_Listtree_Remove_ListNode_Root) &&
+            ((msg->TreeNode == (APTR)MUIV_Listtree_Remove_TreeNode_Active) ||
+             (msg->TreeNode == (APTR)MUIV_Listtree_Remove_TreeNode_All)))
+    {
+        /* Deallocating of MUIS_Listtree_TreeNode is happening in the DestructHook */
+        return DoMethod(data->nlisttree, MUIM_NListtree_Remove, msg->ListNode, msg->TreeNode, msg->Flags);
+    }
+
+    /* TODO
+     * add handling for cases where ListNode/TreeNode actually point to Treenode structure
+     */
+    bug("[Listtree] MUIM_Listtree_Remove unsupported code path Listnode: %x, Treenode: %x, Flags: %d\n", msg->ListNode, msg->TreeNode, msg->Flags);
+
+    return (IPTR)FALSE;
 }
