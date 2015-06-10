@@ -42,7 +42,6 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->nlisttree = nlisttree;
 
-    NewList((struct List*)&data->nodes);
     data->pool = CreatePool(MEMF_ANY | MEMF_CLEAR, 16 * 1024, 8 * 1024);
 
     /* parse initial taglist */
@@ -169,7 +168,68 @@ METHODSTUB(MUIM_Listtree_TestPos)
 METHODSTUB(MUIM_Listtree_SetDropMark)
 METHODSTUB(MUIM_Listtree_FindName)
 METHODSTUB(MUIM_List_TestPos)
-METHODSTUB(MUIM_Listtree_Insert)
 METHODSTUB(MUIM_Listtree_Remove)
 METHODSTUB(MUIM_Listtree_GetNr)
-METHODSTUB(MUIM_Listtree_GetEntry)
+
+IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUIS_Listtree_TreeNode * _return = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNode));
+
+    if (_return == NULL)
+        return (IPTR)NULL;
+
+    _return->tn_Flags = (UWORD)msg->Flags;
+    if (msg->Name)
+    {
+        LONG len = strlen(msg->Name) + 1;
+        _return->tn_Name = AllocPooled(data->pool, len);
+        CopyMem(msg->Name, _return->tn_Name, len);
+    }
+
+    if (data->constrhook)
+        _return->tn_User = (APTR)CallHookPkt(data->constrhook, data->pool, msg->User);
+    else
+        _return->tn_User = msg->User;
+
+    /* TEMP */
+    if (msg->ListNode != (APTR)MUIV_Listtree_Insert_ListNode_Root)
+        bug("[Listtree] MUIM_Listtree_Insert - unhandled value of ListNode %x\n", msg->ListNode);
+
+    if ((msg->PrevNode != (APTR)MUIV_Listtree_Insert_PrevNode_Tail)
+        && (msg->PrevNode != (APTR)MUIV_Listtree_Insert_PrevNode_Sorted))
+        bug("[Listtree] MUIM_Listtree_Insert - unhandled value of PrevNode %x\n", msg->PrevNode);
+    /* TEMP */
+    /* TODO
+     * add handling for cases where ListNode and PrevNode actually point to Treenode structure
+     * The internal TreeNode structure needs to have then the poiter to NListTree node to be
+     * able to traslate. The pointer is acquired as return from below DoMethod call
+     */
+
+    DoMethod(data->nlisttree, MUIM_NListtree_Insert, _return->tn_Name, _return, msg->ListNode,
+            msg->PrevNode, _return->tn_Flags);
+
+    return (IPTR)_return;
+}
+
+IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetEntry *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+
+    /* TEMP */
+    if ((msg->Node != (APTR)MUIV_Listtree_GetEntry_ListNode_Root)
+        && (msg->Node != (APTR)MUIV_Listtree_GetEntry_ListNode_Active))
+        bug("[Listtree] MUIM_Listtree_GetEntry - unhandled value of Node %x\n", msg->Node);
+    /* TEMP */
+    /* TODO
+     * add handling for cases where Node actually point to Treenode structure
+     */
+
+    struct MUI_NListtree_TreeNode * tn = (struct MUI_NListtree_TreeNode *) DoMethod(data->nlisttree,
+            MUIM_NListtree_GetEntry, msg->Node, msg->Position, msg->Flags);
+
+    if (tn)
+        return (IPTR)tn->tn_User;
+    else
+        return (IPTR)NULL;
+}
