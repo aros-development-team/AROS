@@ -11,6 +11,7 @@
 #include <proto/graphics.h>
 #include <clib/alib_protos.h>
 #include <mui/NListtree_mcc.h>
+#include <mui/NList_mcc.h>
 
 #undef TNF_OPEN
 #undef TNF_LIST
@@ -24,6 +25,16 @@
         bug("[Listtree] OM_NEW:%s - unsupported\n", #attrname);     \
         break;
 
+#define CONV(AATTR, BATTR)                                          \
+    case(AATTR):                                                    \
+        convtags[i].ti_Tag = BATTR;                                 \
+        convtags[i++].ti_Data = tag->ti_Data;                       \
+        break;
+
+#define CONVFIN                     \
+    convtags[i].ti_Tag  = TAG_DONE; \
+    convtags[i].ti_Data = TAG_DONE;
+
 /*** Methods ****************************************************************/
 Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -31,11 +42,31 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tag;
     struct TagItem *tags;
     Object *nlisttree = NULL;
+    struct TagItem convtags[20];
+    LONG i = 0;
+
+    /* Convert tags designated for NListtree */
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    {
+        switch (tag->ti_Tag)
+        {
+        CONV(MUIA_Frame,                    MUIA_Frame)
+        CONV(MUIA_Listtree_Format,          MUIA_NListtree_Format)
+        CONV(MUIA_Listtree_Title,           MUIA_NListtree_Title)
+        CONV(MUIA_Listtree_DragDropSort,    MUIA_NListtree_DragDropSort)
+        CONV(MUIA_List_Title,               MUIA_NList_Title)
+        CONV(MUIA_List_DragSortable,        MUIA_NList_DragSortable)
+//        CONV(MUIA_ContextMenu,              MUIA_ContextMenu) FIXME causes a crash when right clicking
+        CONV(MUIA_List_MinLineHeight,       MUIA_NList_MinLineHeight)
+        }
+    }
+    CONVFIN
 
     obj = (Object *) DoSuperNewTags(cl, obj, 0,
             Child, nlisttree = (Object *) NListtreeObject,
+                                TAG_MORE, (IPTR)convtags,
                                 End,
-            TAG_MORE, (IPTR) msg->ops_AttrList);
+            );
 
     if (!obj) return FALSE;
 
@@ -55,16 +86,18 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Listtree_DestructHook):
             data->destrhook = (struct Hook *)tag->ti_Data;
             break;
+        case(MUIA_List_MinLineHeight):
+        case(MUIA_ContextMenu):
+        case(MUIA_List_DragSortable):
+        case(MUIA_List_Title):
+        case(MUIA_Listtree_DragDropSort):
+        case(MUIA_Listtree_Format):
+        case(MUIA_Listtree_Title):
+        case(MUIA_Frame):
+            /* Forwarded to NListtree */
+            break;
         NEWHANDLE(MUIA_Listtree_DisplayHook)
-        NEWHANDLE(MUIA_Listtree_Title)
-        NEWHANDLE(MUIA_Listtree_Format)
-        NEWHANDLE(MUIA_Listtree_DragDropSort)
         NEWHANDLE(MUIA_Listtree_SortHook)
-        NEWHANDLE(MUIA_Frame)
-        NEWHANDLE(MUIA_List_Title)
-        NEWHANDLE(MUIA_List_DragSortable)
-        NEWHANDLE(MUIA_ContextMenu)
-        NEWHANDLE(MUIA_List_MinLineHeight)
         default:
             bug("[Listtree] OM_NEW: unhandled %x\n", tag->ti_Tag);
         }
