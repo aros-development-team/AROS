@@ -979,6 +979,8 @@ void HorizRepeatBuffer(UBYTE * buf, LONG offy, LONG pen, BOOL tc, struct RastPor
     /* By bringing building the gradient array in the same format as the RastPort BitMap a call
        to WritePixelArray() can be made also faster */
     bufblit = AllocVec(w * h * 3, MEMF_ANY);
+    if (!bufblit)
+        return;
     
     /* Copy one column buffer into blit buffer */
     for (yi = 0; yi < h; yi++)
