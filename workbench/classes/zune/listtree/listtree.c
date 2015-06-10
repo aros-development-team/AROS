@@ -245,10 +245,13 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
     struct MUIS_Listtree_TreeNodeInt * _int = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNodeInt));
-    struct MUIS_Listtree_TreeNode * _return = &_int->base;
+    struct MUIS_Listtree_TreeNode * _return = NULL;
+    struct MUI_NListtree_TreeNode * ln = NULL, * pn = NULL;
 
-    if (_return == NULL)
+    if (_int == NULL)
         return (IPTR)NULL;
+
+    _return =  &_int->base;
 
     _return->tn_Flags = (UWORD)msg->Flags;
     if (msg->Name)
@@ -263,23 +266,30 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
     else
         _return->tn_User = msg->User;
 
-    /* TEMP */
-    if (msg->ListNode != (APTR)MUIV_Listtree_Insert_ListNode_Root)
-        bug("[Listtree] MUIM_Listtree_Insert - unhandled value of ListNode %x\n", msg->ListNode);
+    switch((IPTR)msg->ListNode)
+    {
+    case(MUIV_Listtree_Insert_ListNode_Root):
+    case(MUIV_Listtree_Insert_ListNode_Active):
+        ln = msg->ListNode;
+        break;
+    default:
+        ln = ((struct MUIS_Listtree_TreeNodeInt *)msg->ListNode)->ref;
+    }
 
-    if ((msg->PrevNode != (APTR)MUIV_Listtree_Insert_PrevNode_Tail)
-        && (msg->PrevNode != (APTR)MUIV_Listtree_Insert_PrevNode_Sorted))
-        bug("[Listtree] MUIM_Listtree_Insert - unhandled value of PrevNode %x\n", msg->PrevNode);
-    /* TEMP */
-    /* TODO
-     * add handling for cases where ListNode and PrevNode actually point to Treenode structure
-
-     * handle remaining enumeration values
-     */
+    switch((IPTR)msg->PrevNode)
+    {
+    case(MUIV_Listtree_Insert_PrevNode_Head):
+    case(MUIV_Listtree_Insert_PrevNode_Tail):
+    case(MUIV_Listtree_Insert_PrevNode_Active):
+    case(MUIV_Listtree_Insert_PrevNode_Sorted):
+        pn = msg->PrevNode;
+        break;
+    default:
+        pn = ((struct MUIS_Listtree_TreeNodeInt *)msg->PrevNode)->ref;
+    }
 
     _int->ref = (struct MUI_NListtree_TreeNode *)DoMethod(data->nlisttree,
-                    MUIM_NListtree_Insert, _return->tn_Name, _return, msg->ListNode,
-                    msg->PrevNode, _return->tn_Flags);
+                    MUIM_NListtree_Insert, msg->Name, _return, ln, pn, msg->Flags);
 
     return (IPTR)_return;
 }
