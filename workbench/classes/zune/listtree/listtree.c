@@ -20,6 +20,10 @@
 
 #include <aros/debug.h>
 
+/* Relations:
+ * MUIS_Listtree_Treenode -> MUI_NListtree_Treenode via MUIS_Listtree_TreeNodeInt.ref
+ * MUI_NListtree_Treenode -> MUIS_Listtree_Treenode via MUI_NListtree_Treenode.tn_User
+ */
 struct MUIS_Listtree_TreeNodeInt
 {
     struct MUIS_Listtree_TreeNode base;
@@ -51,6 +55,20 @@ static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
 
     /* Super method OM_SET call will go to Notify class and trigger notifications */
     return DoSuperMethodA(cl, obj, (Msg) &setmsg);
+}
+
+static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_DisplayMessage *msg)
+{
+    struct _temp { STACKED APTR array; STACKED APTR treenode; } t;
+    struct Hook * displayhook = (struct Hook *)hook->h_Data;
+
+    if (!displayhook)
+        return FALSE;
+
+    t.array     = msg->Array;
+    t.treenode  = msg->TreeNode ? msg->TreeNode->tn_User : NULL;
+
+    return CallHookPkt(displayhook, t.array, t.treenode);
 }
 
 #define NEWHANDLE(attrname)                                         \
@@ -126,6 +144,9 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Listtree_DestructHook):
             data->destrhook = (struct Hook *)tag->ti_Data;
             break;
+        case(MUIA_Listtree_DisplayHook):
+            data->displayhook = (struct Hook *)tag->ti_Data;
+            break;
         case(MUIA_List_MinLineHeight):
         case(MUIA_ContextMenu):
         case(MUIA_List_DragSortable):
@@ -136,11 +157,19 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Frame):
             /* Forwarded to NListtree */
             break;
-        NEWHANDLE(MUIA_Listtree_DisplayHook)
         NEWHANDLE(MUIA_Listtree_SortHook)
         default:
             bug("[Listtree] OM_NEW: unhandled %x\n", tag->ti_Tag);
         }
+    }
+
+    /* Setup hook proxies */
+    if (data->displayhook)
+    {
+        data->displayhookproxy.h_Entry      = HookEntry;
+        data->displayhookproxy.h_SubEntry   = (HOOKFUNC)DisplayHook_Proxy;
+        data->displayhookproxy.h_Data       = data->displayhook;
+        nnset(data->nlisttree, MUIA_NListtree_DisplayHook, &data->displayhookproxy);
     }
 
     /* Setup notification forwarding */

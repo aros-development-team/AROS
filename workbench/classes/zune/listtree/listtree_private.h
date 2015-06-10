@@ -15,9 +15,11 @@ struct Listtree_DATA
     APTR pool;
     struct Hook *constrhook;
     struct Hook *destrhook;
+    struct Hook *displayhook;
 
     Object *nlisttree;
     struct Hook notifysimulatehook;
+    struct Hook displayhookproxy;
 
     /*- Protected ----------------------------------------------------------*/
 
