@@ -23,7 +23,7 @@
 #define DEBUG DEBUG_NOTIFY
 #include "debug.h"
 
-void SendNotify(struct NotifyRequest *nr) {
+void SendNotify(struct NotifyRequest *nr, struct Globals *glob) {
     struct NotifyMessage *nm;
 
     D(bug("[fat] notifying for '%s'\n", nr->nr_FullName));
@@ -71,17 +71,19 @@ void SendNotify(struct NotifyRequest *nr) {
 
 /* send a notification for the file referenced by the passed global lock */
 void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl) {
+    struct Globals *glob = sb->glob;
     struct NotifyNode *nn;
 
     D(bug("[fat] notifying for lock (%ld/%ld)\n", gl->dir_cluster, gl->dir_entry));
 
     ForeachNode(&sb->info->notifies, nn)
         if (nn->gl == gl)
-            SendNotify(nn->nr);
+            SendNotify(nn->nr, glob);
 }
 
 /* send a notification for the file referenced by the passed dir entry */
 void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de) {
+    struct Globals *glob = sb->glob;
     struct NotifyNode *nn;
     struct DirHandle sdh;
     struct DirEntry sde;
@@ -95,7 +97,7 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de) {
     ForeachNode(&sb->info->notifies, nn)
         if (nn->gl != NULL) {
             if (nn->gl->dir_cluster == de->cluster && nn->gl->dir_entry == de->index)
-                SendNotify(nn->nr);
+                SendNotify(nn->nr, glob);
         }
 
         else {
@@ -106,14 +108,14 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de) {
                 continue;
 
             if (sde.cluster == de->cluster && sde.index == de->index)
-                SendNotify(nn->nr);
+                SendNotify(nn->nr, glob);
 
             ReleaseDirHandle(&sdh);
         }
 }
 
 /* handle returned notify messages */
-void ProcessNotify(void) {
+void ProcessNotify(struct Globals *glob) {
     struct NotifyMessage *nm;
 
     while ((nm = (struct NotifyMessage *) GetMsg(glob->notifyport)) != NULL)

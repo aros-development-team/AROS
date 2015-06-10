@@ -23,8 +23,10 @@ struct BlockRange
 
 struct Cache
 {
-    ULONG block_count;    /* number of blocks allocated */
-    ULONG block_size;    /* size of a disk block */
+    struct ExecBase *c_SysBase;
+    APTR  priv;         /* Private data sent to 'Access_Disk()' */
+    ULONG block_count;  /* number of blocks allocated */
+    ULONG block_size;   /* size of a disk block */
     ULONG hash_size;    /* size of hash table */
     struct BlockRange **blocks;    /* array of pointers to all blocks */
     struct MinList *hash_table;    /* hash table of all valid cache blocks */
@@ -40,11 +42,14 @@ struct Cache
 
 /* Prototypes */
 
-APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size);
+APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count, ULONG block_size, struct ExecBase *sysbase);
 VOID Cache_DestroyCache(APTR cache);
-APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data);
+APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data, LONG *ioerr);
 VOID Cache_FreeBlock(APTR cache, APTR block);
 VOID Cache_MarkBlockDirty(APTR cache, APTR block);
-BOOL Cache_Flush(APTR cache);
+BOOL Cache_Flush(APTR cache, LONG *ioerr);
+
+/* Called by cache routines */
+ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data, APTR priv);
 
 #endif

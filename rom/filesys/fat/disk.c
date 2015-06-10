@@ -43,7 +43,7 @@
 #define TD_WRITE64 25
 #endif
 
-void FillDiskInfo (struct InfoData *id) {
+void FillDiskInfo (struct InfoData *id, struct Globals *glob) {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
 
     id->id_NumSoftErrors = 0;
@@ -82,7 +82,7 @@ void FillDiskInfo (struct InfoData *id) {
     }
 }
 
-void SendVolumePacket(struct DosList *vol, ULONG action) {
+void SendVolumePacket(struct DosList *vol, ULONG action, struct Globals *glob) {
     struct DosPacket *dospacket;
 
     dospacket = AllocDosObject(DOS_STDPKT, TAG_DONE);
@@ -95,7 +95,7 @@ void SendVolumePacket(struct DosList *vol, ULONG action) {
     PutMsg(glob->ourport, dospacket->dp_Link);
 }
 
-void DoDiskInsert(void) {
+void DoDiskInsert(struct Globals *glob) {
     struct FSSuper *sb;
     ULONG err;
     struct DosList *dl;
@@ -110,6 +110,7 @@ void DoDiskInsert(void) {
     if (glob->sb == NULL && (sb = AllocVecPooled(glob->mempool, sizeof(struct FSSuper)))) {
         memset(sb, 0, sizeof(struct FSSuper));
 
+        sb->glob = glob;
         err = ReadFATSuper(sb);
         if (err == 0) {
 
@@ -231,9 +232,9 @@ void DoDiskInsert(void) {
             glob->last_num = -1;
 
             if (dl != NULL)
-                SendEvent(IECLASS_DISKINSERTED);
+                SendEvent(IECLASS_DISKINSERTED, glob);
             else
-                SendVolumePacket(newvol, ACTION_VOLUME_ADD);
+                SendVolumePacket(newvol, ACTION_VOLUME_ADD, glob);
 
             D(bug("\tDisk successfully initialised\n"));
 
@@ -244,17 +245,18 @@ void DoDiskInsert(void) {
 			 "access to the disk while it is needed!\n"
 			 "In order to prevent data damage access to\n"
 			 "this disk was blocked.\n"
-			 "Please upgrade your device driver.", NULL);
+			 "Please upgrade your device driver.", NULL, glob);
 
         FreeVecPooled(glob->mempool, sb);
     }
 
-    SendEvent(IECLASS_DISKINSERTED);
+    SendEvent(IECLASS_DISKINSERTED, glob);
 
     return;
 }
 
 BOOL AttemptDestroyVolume(struct FSSuper *sb) {
+    struct Globals *glob = sb->glob;
     BOOL destroyed = FALSE;
 
     D(bug("[fat] Attempting to destroy volume\n"));
@@ -268,7 +270,7 @@ BOOL AttemptDestroyVolume(struct FSSuper *sb) {
         else
             Remove((struct Node *)sb);
 
-        SendVolumePacket(sb->doslist, ACTION_VOLUME_REMOVE);
+        SendVolumePacket(sb->doslist, ACTION_VOLUME_REMOVE, glob);
 
         FreeFATSuper(sb);
         FreeVecPooled(glob->mempool, sb);
@@ -278,7 +280,7 @@ BOOL AttemptDestroyVolume(struct FSSuper *sb) {
     return destroyed;
 }
 
-void DoDiskRemove(void) {
+void DoDiskRemove(struct Globals *glob) {
 
     if (glob->sb) {
         struct FSSuper *sb = glob->sb;
@@ -289,12 +291,12 @@ void DoDiskRemove(void) {
             D(bug("\tMoved in-memory super block to spare list. "
                 "Waiting for locks and notifications to be freed\n"));
             AddTail((struct List *)&glob->sblist, (struct Node *)sb);
-            SendEvent(IECLASS_DISKREMOVED);
+            SendEvent(IECLASS_DISKREMOVED, glob);
         }
     }
 }
  
-void ProcessDiskChange(void) {
+void ProcessDiskChange(struct Globals *glob) {
     D(bug("\nGot disk change request\n"));
     
     if (glob->disk_inhibited) {
@@ -312,21 +314,25 @@ void ProcessDiskChange(void) {
         /* Disk has been inserted. */
         D(bug("\tDisk has been inserted\n"));
         glob->disk_inserted = TRUE;
-        DoDiskInsert();
+        DoDiskInsert(glob);
     }
     else {
         /* Disk has been removed. */
         D(bug("\tDisk has been removed\n"));
         glob->disk_inserted = FALSE;
-        DoDiskRemove();
+        DoDiskRemove(glob);
     }
 
     D(bug("Done\n"));
 }
 
-void UpdateDisk(void) {
-    if (glob->sb)
-        Cache_Flush(glob->sb->cache);
+void UpdateDisk(struct Globals *glob) {
+    LONG ioerr;
+
+    if (glob->sb) {
+        Cache_Flush(glob->sb->cache, &ioerr);
+        /* FIXME: Handle IO errors on disk flush! */
+    }
 
     glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
     DoIO((struct IORequest *)glob->diskioreq);
@@ -342,7 +348,7 @@ void UpdateDisk(void) {
 }
 
 /* probe the device to determine 64-bit support */
-void Probe_64bit_support(void) {
+void Probe_64bit_support(struct Globals *glob) {
     struct NSDeviceQueryResult nsd_query;
     UWORD *nsd_cmd;
 
@@ -379,7 +385,8 @@ void Probe_64bit_support(void) {
 }
 
 ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
-    UBYTE *data) {
+    UBYTE *data, APTR priv) {
+    struct Globals *glob = priv;
     UQUAD off;
     ULONG err;
     ULONG start, end;

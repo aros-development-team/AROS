@@ -19,7 +19,7 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-LONG InitTimer(void)
+LONG InitTimer(struct Globals *glob)
 {
     LONG err = ERROR_NO_FREE_STORE;
 
@@ -33,6 +33,7 @@ LONG InitTimer(void)
             else {
                 glob->timer_active = 0;
                 glob->restart_timer = 1;
+                glob->gl_TimerBase = glob->timereq->tr_node.io_Device;
                 D(bug("[fat] Timer ready\n"));
                 return 0;
             }
@@ -43,7 +44,7 @@ LONG InitTimer(void)
     return err;
 }
 
-void CleanupTimer(void)
+void CleanupTimer(struct Globals *glob)
 {
     D(bug("[fat] Cleaning up timer\n"));
     if (glob->timer_active) {
@@ -56,7 +57,7 @@ void CleanupTimer(void)
     DeleteMsgPort(glob->timerport);
 }
 
-void RestartTimer(void)
+void RestartTimer(struct Globals *glob)
 {
     if (glob->timer_active) {
         D(bug("Queuing timer restart\n"));
@@ -71,17 +72,17 @@ void RestartTimer(void)
     }
 }
 
-void HandleTimer(void)
+void HandleTimer(struct Globals *glob)
 {
     WaitIO((struct IORequest *)glob->timereq);
     glob->timer_active = 0;
     if (glob->restart_timer) {
         D(bug("Timer restart queued\n"));
         glob->restart_timer = 0;
-        RestartTimer();
+        RestartTimer(glob);
     } else {
         D(bug("Updating disk\n"));
-        UpdateDisk();
+        UpdateDisk(glob);
     }
 }
 

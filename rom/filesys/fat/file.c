@@ -68,6 +68,7 @@ static void HexDump(unsigned char *buf, int bufsz) {
 
 LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
     UBYTE *data, ULONG *nread) {
+    struct Globals *glob = ioh->sb->glob;
     ULONG sector_offset, byte_offset, cluster_offset, old_sector;
     APTR b;
     ULONG pos, ncopy;
@@ -164,6 +165,8 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
         /* if we don't have the wanted block kicking around, we need to bring it
          * in from the cache */
         if (ioh->block == NULL || ioh->cur_sector != old_sector) {
+            LONG ioerr;
+
             if (ioh->block != NULL) {
                 Cache_FreeBlock(ioh->sb->cache, ioh->block);
                 ioh->block = NULL;
@@ -172,14 +175,14 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
 
             b = Cache_GetBlock(ioh->sb->cache,
-                ioh->sb->first_device_sector + ioh->cur_sector, &p);
+                ioh->sb->first_device_sector + ioh->cur_sector, &p, &ioerr);
             if (b == NULL) {
                 RESET_HANDLE(ioh);
 
                 D(bug("[fat] couldn't load sector, returning error %ld\n",
-                    IoErr()));
+                    ioerr));
 
-                return IoErr();
+                return ioerr;
             }
 
             ioh->block = b;
@@ -217,6 +220,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
 
 LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
     UBYTE *data, ULONG *nwritten) {
+    struct Globals *glob = ioh->sb->glob;
     LONG err = 0;
     ULONG sector_offset, byte_offset, cluster_offset, old_sector;
     struct cache_block *b;
@@ -336,6 +340,8 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
         /* if we don't have the wanted block kicking around, we need to bring it
          * in from the cache */
         if (ioh->block == NULL || ioh->cur_sector != old_sector) {
+            LONG ioerr;
+
             if (ioh->block != NULL) {
                 Cache_FreeBlock(ioh->sb->cache, ioh->block);
                 ioh->block = NULL;
@@ -344,13 +350,13 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
 
             b = Cache_GetBlock(ioh->sb->cache, ioh->sb->first_device_sector
-                + ioh->cur_sector, &p);
+                + ioh->cur_sector, &p, &ioerr);
             if (b == NULL) {
                 RESET_HANDLE(ioh);
 
-                D(bug("[fat] couldn't load sector, returning error %ld\n", err));
+                D(bug("[fat] couldn't load sector, returning error %ld\n", ioerr));
 
-                return IoErr();
+                return ioerr;
             }
 
             ioh->block = b;

@@ -42,8 +42,6 @@
 #define ACTION_VOLUME_ADD 16000
 #define ACTION_VOLUME_REMOVE 16001
 
-extern struct Globals *glob;
-
 #define DEF_POOL_SIZE 65536
 #define DEF_POOL_THRESHOLD DEF_POOL_SIZE
 #define DEF_BUFF_LINES 128
@@ -162,6 +160,8 @@ struct VolumeIdentity {
 
 struct FSSuper {
     struct Node node;
+
+    struct Globals *glob;
     struct DosList *doslist;
 
     struct VolumeInfo *info;
@@ -219,6 +219,12 @@ struct FSSuper {
 };
 
 struct Globals {
+    /* Libraries */
+    struct ExecBase *gl_SysBase;
+    struct DosLibrary *gl_DOSBase;
+    struct Library *gl_UtilityBase;
+    struct Device *gl_TimerBase;
+
     /* mem/task */
     struct Task *ourtask;
     struct MsgPort *ourport;
@@ -258,7 +264,20 @@ struct Globals {
     /* Character sets translation */
     UBYTE from_unicode[65536];
     UWORD to_unicode[256];
+
+    /* Disk chaneg interrupt */
+    struct IntData {
+        struct Interrupt Interrupt;
+        struct ExecBase *SysBase;
+        struct Task *task;
+        ULONG signal;
+    } DiskChangeIntData;
 };
+
+#define DOSBase (glob->gl_DOSBase)
+#define SysBase (glob->gl_SysBase)
+#define UtilityBase (glob->gl_UtilityBase)
+#define TimerBase (glob->gl_TimerBase)
 
 #include "support.h"
 
