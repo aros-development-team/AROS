@@ -111,17 +111,27 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         bug("[Listtree] OM_SET:%s - unsupported\n", #attrname);     \
         break;
 
+#define FORWARDSET(AATTR, BATTR)                    \
+    case(AATTR):                                    \
+        set(data->nlisttree, BATTR, tag->ti_Data);  \
+        break;
+
 IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
     struct TagItem      *tstate = msg->ops_AttrList;
     struct TagItem      *tag;
+
+    if (!data->nlisttree)
+        return DoSuperMethodA(cl, obj, (Msg) msg);
 
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
+        FORWARDSET(MUIA_Listtree_Quiet, MUIA_NListtree_Quiet)
+
         SETHANDLE(MUIA_Listtree_Active)
-        SETHANDLE(MUIA_Listtree_Quiet)
         SETHANDLE(MUIA_Listtree_DoubleClick)
         case MUIB_List | 0x00000010: break;
         case MUIA_Prop_First: break;
@@ -159,15 +169,26 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 #define MUIA_List_VertProp_First  /* PRIV */ \
     MUIA_List_Prop_First       /* PRIV */
 
+#define FORWARDGET(AATTR, BATTR)                            \
+    case(AATTR):                                            \
+        *(msg->opg_Storage) = XGET(data->nlisttree, BATTR); \
+        return TRUE;
+
 IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+
+    if (!data->nlisttree)
+        return FALSE;
+
     switch (msg->opg_AttrID)
     {
-    GETHANDLE(MUIA_Listtree_Active)
-    GETHANDLE(MUIA_Listtree_Quiet)
-    GETHANDLE(MUIA_Listtree_DoubleClick)
-    GETHANDLE(MUIA_List_Active)
-    GETHANDLE(MUIA_Frame)
+    FORWARDGET(MUIA_Frame, MUIA_Frame)
+    FORWARDGET(MUIA_Listtree_DoubleClick, MUIA_NListtree_DoubleClick)
+    FORWARDGET(MUIA_List_Active, MUIA_NList_Active)
+    FORWARDGET(MUIA_Listtree_Active, MUIA_NListtree_Active)
+    FORWARDGET(MUIA_Listtree_Quiet, MUIA_NListtree_Quiet)
+
     GETHANDLE(MUIA_List_VertProp_Entries)
     GETHANDLE(MUIA_List_VertProp_Visible)
     GETHANDLE(MUIA_List_VertProp_First)
