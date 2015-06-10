@@ -323,23 +323,23 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
 IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetEntry *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
-    struct MUI_NListtree_TreeNode * n = NULL;
+    struct MUI_NListtree_TreeNode * tn = NULL, * found = NULL;
 
     switch ((IPTR)msg->Node)
     {
     case(MUIV_Listtree_GetEntry_ListNode_Root):
     case(MUIV_Listtree_GetEntry_ListNode_Active):
-        n = msg->Node;
+        tn = msg->Node;
         break;
     default:
-        n = ((struct MUIS_Listtree_TreeNodeInt *)msg->Node)->ref;
+        tn = ((struct MUIS_Listtree_TreeNodeInt *)msg->Node)->ref;
     }
 
-    struct MUI_NListtree_TreeNode * tn = (struct MUI_NListtree_TreeNode *) DoMethod(data->nlisttree,
-            MUIM_NListtree_GetEntry, n, msg->Position, msg->Flags);
+    found = (struct MUI_NListtree_TreeNode *) DoMethod(data->nlisttree,
+                MUIM_NListtree_GetEntry, tn, msg->Position, msg->Flags);
 
-    if (tn)
-        return (IPTR)tn->tn_User;
+    if (found)
+        return (IPTR)found->tn_User;
     else
         return (IPTR)NULL;
 }
