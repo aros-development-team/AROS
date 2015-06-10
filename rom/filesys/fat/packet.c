@@ -28,7 +28,7 @@
 #define DEBUG DEBUG_PACKETS
 #include "debug.h"
 
-void ProcessPackets(void) {
+void ProcessPackets(struct Globals *glob) {
     struct Message *msg;
     struct DosPacket *pkt;
 
@@ -49,10 +49,10 @@ void ProcessPackets(void) {
 		      AROS_BSTR_strlen(pkt->dp_Arg2)); bug("' type %s\n",
                       pkt->dp_Arg3 == EXCLUSIVE_LOCK ? "EXCLUSIVE" : "SHARED"));
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                if ((err = OpLockFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), access, &lock)) == 0)
+                if ((err = OpLockFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), access, &lock, glob)) == 0)
                     res = (IPTR)MKBADDR(lock);
 
                 break;
@@ -65,7 +65,7 @@ void ProcessPackets(void) {
                       pkt->dp_Arg1,
                       fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
-                OpUnlockFile(fl);
+                OpUnlockFile(fl, glob);
 
                 res = DOSTRUE;
                 break;
@@ -79,10 +79,10 @@ void ProcessPackets(void) {
                       pkt->dp_Arg1,
                       fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                if ((err = OpCopyLock(fl, &lock)) == 0)
+                if ((err = OpCopyLock(fl, &lock, glob)) == 0)
                     res = (IPTR)MKBADDR(lock);
 
                 break;
@@ -96,10 +96,10 @@ void ProcessPackets(void) {
                       pkt->dp_Arg1,
                       fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
                 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
  
-                if ((err = OpLockParent(fl, &lock)) == 0)
+                if ((err = OpLockParent(fl, &lock, glob)) == 0)
                     res = (IPTR)MKBADDR(lock);
 
                 break;
@@ -132,10 +132,10 @@ void ProcessPackets(void) {
                       pkt->dp_Arg1,
                       fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                if ((err = FillFIB(fl, fib)) == 0)
+                if ((err = FillFIB(fl, fib, glob)) == 0)
                     res = DOSTRUE;
 
                 break;
@@ -151,7 +151,7 @@ void ProcessPackets(void) {
                       pkt->dp_Arg1,
                       fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
 		if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh, FALSE)) != 0)
@@ -166,17 +166,17 @@ void ProcessPackets(void) {
                     break;
                 }
 
-                if ((err = LockFile(fl->ioh.first_cluster, dh.cur_index, SHARED_LOCK, &lock)) != 0) {
+                if ((err = LockFile(fl->ioh.first_cluster, dh.cur_index, SHARED_LOCK, &lock, glob)) != 0) {
                     ReleaseDirHandle(&dh);
                     break;
                 }
 
-                if (!(err = FillFIB(lock, fib))) {
+                if (!(err = FillFIB(lock, fib, glob))) {
                     fib->fib_DiskKey = dh.cur_index;
                     res = DOSTRUE;
                 }
 
-                FreeLock(lock);
+                FreeLock(lock, glob);
                 ReleaseDirHandle(&dh);
 
                 break;
@@ -197,10 +197,10 @@ void ProcessPackets(void) {
 		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
 		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3)); bug("'\n"));
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                if ((err = OpOpenFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), pkt->dp_Type, &lock)) != 0)
+                if ((err = OpOpenFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), pkt->dp_Type, &lock, glob)) != 0)
                     break;
 
                 fh->fh_Arg1 = (IPTR)MKBADDR(lock);
@@ -222,12 +222,12 @@ void ProcessPackets(void) {
                       fl->pos,
                       want));
 
-                if ((err = TestLock(fl))) {
+                if ((err = TestLock(fl, glob))) {
                     res = -1;
                     break;
                 }
 
-                if ((err = OpRead(fl, buffer, want, &read)) != 0)
+                if ((err = OpRead(fl, buffer, want, &read, glob)) != 0)
                     res = -1;
                 else
                     res = read;
@@ -246,12 +246,12 @@ void ProcessPackets(void) {
                       fl->pos,
                       want));
 
-                if ((err = TestLock(fl))) {
+                if ((err = TestLock(fl, glob))) {
                     res = -1;
                     break;
                 }
 
-                if ((err = OpWrite(fl, buffer, want, &written)) != 0)
+                if ((err = OpWrite(fl, buffer, want, &written, glob)) != 0)
                     res = -1;
                 else
                     res = written;
@@ -274,7 +274,7 @@ void ProcessPackets(void) {
                       whence == OFFSET_CURRENT   ? "CURRENT"   :
                                                    "(unknown)"));
 
-                if ((err = TestLock(fl))) {
+                if ((err = TestLock(fl, glob))) {
                     res = -1;
                     break;
                 }
@@ -318,12 +318,12 @@ void ProcessPackets(void) {
                       whence == OFFSET_CURRENT   ? "CURRENT"   :
                                                    "(unknown)"));
 
-                if ((err = TestLock(fl))) {
+                if ((err = TestLock(fl, glob))) {
                     res = -1;
                     break;
                 }
 
-                if ((err = OpSetFileSize(fl, offset, whence, &newsize)) != 0)
+                if ((err = OpSetFileSize(fl, offset, whence, &newsize, glob)) != 0)
                     res = -1;
                 else
                     res = newsize;
@@ -338,10 +338,10 @@ void ProcessPackets(void) {
                       pkt->dp_Arg1,
                       fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                FreeLock(fl);
+                FreeLock(fl, glob);
 
                 res = DOSTRUE;
                 break;
@@ -386,7 +386,7 @@ void ProcessPackets(void) {
                     id = BADDR(pkt->dp_Arg1);
                 }
 
-                FillDiskInfo(id);
+                FillDiskInfo(id, glob);
 
                 res = DOSTRUE;
                 break;
@@ -401,12 +401,12 @@ void ProcessPackets(void) {
                 if (inhibit == DOSTRUE) {
                     glob->disk_inhibited++;
                     if (glob->disk_inhibited == 1)
-                        DoDiskRemove();
+                        DoDiskRemove(glob);
                 }
                 else if (glob->disk_inhibited) {
                     glob->disk_inhibited--;
                     if (glob->disk_inhibited == 0)
-                       ProcessDiskChange();
+                       ProcessDiskChange(glob);
                 }
 
                 res = DOSTRUE;
@@ -440,7 +440,7 @@ void ProcessPackets(void) {
 
                 D(bug("\tNothing pending. Shutting down the handler\n"));
 
-                DoDiskRemove(); /* risky, because of async. volume remove, but works */
+                DoDiskRemove(glob); /* risky, because of async. volume remove, but works */
 
                 glob->quit = TRUE;
                 glob->death_packet = pkt;
@@ -485,7 +485,7 @@ void ProcessPackets(void) {
                             AddDosEntry(vol);
                             UnLockDosList(LDF_VOLUMES|LDF_WRITE);
 
-                            SendEvent(IECLASS_DISKINSERTED);
+                            SendEvent(IECLASS_DISKINSERTED, glob);
 
                             D(bug("\tVolume added\n"));
                         }
@@ -494,7 +494,7 @@ void ProcessPackets(void) {
                             DeletePool(vol_info->mem_pool);
                             UnLockDosList(LDF_VOLUMES|LDF_WRITE);
 
-                            SendEvent(IECLASS_DISKREMOVED);
+                            SendEvent(IECLASS_DISKREMOVED, glob);
 
                             D(bug("\tVolume removed\n"));
                         }
@@ -531,7 +531,7 @@ void ProcessPackets(void) {
                 }
 
                 while (! AttemptLockDosList(LDF_VOLUMES | LDF_WRITE))
-                    ProcessPackets();
+                    ProcessPackets(glob);
 
                 err = SetVolumeName(glob->sb, AROS_BSTR_ADDR(pkt->dp_Arg1),
                     AROS_BSTR_strlen(pkt->dp_Arg1));
@@ -549,7 +549,7 @@ void ProcessPackets(void) {
                     glob->sb->volume.name[0] + 2);
 #endif
 
-                SendEvent(IECLASS_DISKINSERTED);
+                SendEvent(IECLASS_DISKINSERTED, glob);
 
                 res = DOSTRUE;
 
@@ -561,27 +561,29 @@ void ProcessPackets(void) {
                     RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg1),
                     AROS_BSTR_strlen(pkt->dp_Arg1)); bug("'\n"));
 
-                if (glob->sb->doslist == NULL) {
+                if (glob->sb && glob->sb->doslist == NULL) {
                     err = glob->disk_inserted ? ERROR_NOT_A_DOS_DISK : ERROR_NO_DISK;
                     break;
                 }
 
                 err = FormatFATVolume(AROS_BSTR_ADDR(pkt->dp_Arg1),
-                    AROS_BSTR_strlen(pkt->dp_Arg1));
+                    AROS_BSTR_strlen(pkt->dp_Arg1), glob);
                 if (err != 0)
                     break;
 
+                if (glob->sb) {
 #ifdef AROS_FAST_BPTR
-                /* ReadFATSuper() sets a null byte after the
-                 * string, so this should be fine */
-                CopyMem(glob->sb->volume.name + 1, glob->sb->doslist->dol_Name,
-                    glob->sb->volume.name[0] + 1);
+                    /* ReadFATSuper() sets a null byte after the
+                     * string, so this should be fine */
+                    CopyMem(glob->sb->volume.name + 1, glob->sb->doslist->dol_Name,
+                        glob->sb->volume.name[0] + 1);
 #else
-                CopyMem(glob->sb->volume.name, BADDR(glob->sb->doslist->dol_Name),
-                    glob->sb->volume.name[0] + 2);
+                    CopyMem(glob->sb->volume.name, BADDR(glob->sb->doslist->dol_Name),
+                        glob->sb->volume.name[0] + 2);
 #endif
+                }
 
-                SendEvent(IECLASS_DISKINSERTED);
+                SendEvent(IECLASS_DISKINSERTED, glob);
 
                 res = DOSTRUE;
 
@@ -596,10 +598,10 @@ void ProcessPackets(void) {
 		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
 		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2)); bug("'\n"));
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                err = OpDeleteFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2));
+                err = OpDeleteFile(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), glob);
                 if (err == 0)
                     res = DOSTRUE;
 
@@ -617,10 +619,10 @@ void ProcessPackets(void) {
 		      dfl != NULL ? dfl->gl->dir_cluster : 0, dfl != NULL ? dfl->gl->dir_entry : 0);
 		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg4), AROS_BSTR_strlen(pkt->dp_Arg4)); bug("'\n"));
 
-                if ((err = TestLock(sfl)) != 0 || (err = TestLock(dfl)) != 0)
+                if ((err = TestLock(sfl, glob)) != 0 || (err = TestLock(dfl, glob)) != 0)
                     break;
 
-                err = OpRenameFile(sfl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), dfl, AROS_BSTR_ADDR(pkt->dp_Arg4), AROS_BSTR_strlen(pkt->dp_Arg4));
+                err = OpRenameFile(sfl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), dfl, AROS_BSTR_ADDR(pkt->dp_Arg4), AROS_BSTR_strlen(pkt->dp_Arg4), glob);
                 if (err == 0)
                     res = DOSTRUE;
 
@@ -635,10 +637,10 @@ void ProcessPackets(void) {
 		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
 		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2)); bug("'\n"));
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                if ((err = OpCreateDir(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), &new)) == 0)
+                if ((err = OpCreateDir(fl, AROS_BSTR_ADDR(pkt->dp_Arg2), AROS_BSTR_strlen(pkt->dp_Arg2), &new, glob)) == 0)
                     res = (IPTR)MKBADDR(new);
 
                 break;
@@ -651,10 +653,10 @@ void ProcessPackets(void) {
 	        D(bug("[FAT] SET_PROTECT: lock 0x%08x (dir %ld/%ld) name '", pkt->dp_Arg2,
 		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
 		  RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3)); bug("' prot 0x%08x\n", prot));
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                err = OpSetProtect(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), prot);
+                err = OpSetProtect(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), prot, glob);
 
                 break;
             }
@@ -683,10 +685,10 @@ void ProcessPackets(void) {
                 }
 #endif
 
-                if ((err = TestLock(fl)))
+                if ((err = TestLock(fl, glob)))
                     break;
 
-                err = OpSetDate(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), ds);
+                err = OpSetDate(fl, AROS_BSTR_ADDR(pkt->dp_Arg3), AROS_BSTR_strlen(pkt->dp_Arg3), ds, glob);
 
                 break;
             }
@@ -696,7 +698,7 @@ void ProcessPackets(void) {
 
                 D(bug("[FAT] ADD_NOTIFY: nr 0x%08x name '%s'\n", nr, nr->nr_FullName));
 
-                err = OpAddNotify(nr);
+                err = OpAddNotify(nr, glob);
 
                 break;
             }
@@ -706,7 +708,7 @@ void ProcessPackets(void) {
 
                 D(bug("[FAT] REMOVE_NOTIFY: nr 0x%08x name '%s'\n", nr, nr->nr_FullName));
 
-                err = OpRemoveNotify(nr);
+                err = OpRemoveNotify(nr, glob);
                 
                 break;
             }
@@ -723,21 +725,24 @@ void ProcessPackets(void) {
             if (!glob->quit) {
                 D(bug("[FAT] replying to packet: result 0x%x, error 0x%x\n",
                     res, err));
-                ReplyPacket(pkt);
+                ReplyPacket(pkt, SysBase);
             }
         }
 
-        RestartTimer();
+        RestartTimer(glob);
     }
 }
 
-void ReplyPacket(struct DosPacket *pkt) {
+#undef SysBase
+
+void ReplyPacket(struct DosPacket *dp, struct ExecBase *SysBase) {
     struct MsgPort *rp;
+    struct Message *mn;
 
-            rp = pkt->dp_Port;
-
-            pkt->dp_Port = glob->ourport;
-
-            PutMsg(rp, pkt->dp_Link);
+    rp = dp->dp_Port;
+    mn = dp->dp_Link;
+    mn->mn_Node.ln_Name = (char *)dp;
+    dp->dp_Port = &((struct Process*)FindTask(NULL))->pr_MsgPort;
+    PutMsg(rp, mn);
 }
 

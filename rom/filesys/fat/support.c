@@ -27,7 +27,7 @@
 
 #include "fat_fs.h"
 
-void SendEvent(LONG event) {
+void SendEvent(LONG event, struct Globals *glob) {
     struct IOStdReq *InputRequest;
     struct MsgPort *InputPort;
     struct InputEvent *ie;
@@ -75,7 +75,7 @@ int ilog2(ULONG data) {
 
 /*-----------------------------------------------------------------------*/
 
-void ErrorMessageArgs(char *fmt, IPTR *ap)
+void ErrorMessageArgs(char *fmt, IPTR *ap, struct Globals *glob)
 {
 	struct IntuitionBase *IntuitionBase;
 

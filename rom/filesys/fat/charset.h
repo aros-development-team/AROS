@@ -1,3 +1,3 @@
-void InitCharsetTables(void);
-BOOL ReadUnicodeTable(STRPTR name);
+void InitCharsetTables(struct Globals *glob);
+BOOL ReadUnicodeTable(struct Globals *glob, STRPTR name);
 

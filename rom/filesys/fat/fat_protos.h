@@ -14,23 +14,22 @@
 #define FAT_HANDLER_PROTO_H
 
 /* disk.c */
-void ProcessDiskChange (void);
-void DoDiskInsert();
+void ProcessDiskChange (struct Globals *glob);
+void DoDiskInsert(struct Globals *glob);
 BOOL AttemptDestroyVolume(struct FSSuper *sb);
-void DoDiskRemove();
-void SendVolumePacket(struct DosList *vol, ULONG action);
+void DoDiskRemove(struct Globals *glob);
+void SendVolumePacket(struct DosList *vol, ULONG action, struct Globals *glob);
 
-LONG InitDiskHandler(struct FileSysStartupMsg *fssm);
-void CleanupDiskHandler(void);
-void UpdateDisk(void);
-void Probe_64bit_support(void);
-ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
+LONG InitDiskHandler(struct Globals *glob);
+void CleanupDiskHandler(struct Globals *glob);
+void UpdateDisk(struct Globals *glob);
+void Probe_64bit_support(struct Globals *glob);
 
-void FillDiskInfo (struct InfoData *id);
+void FillDiskInfo (struct InfoData *id, struct Globals *glob);
 
 /* packet.c */
-void ProcessPackets(void);
-void ReplyPacket(struct DosPacket *pkt);
+void ProcessPackets(struct Globals *glob);
+void ReplyPacket(struct DosPacket *pkt, struct ExecBase *sysbase);
 
 /* direntry.c */
 void InitDir(struct FSSuper *sb, ULONG cluster, struct DirEntry *de);
@@ -54,7 +53,7 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
 void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster);
 LONG DeleteDirEntry(struct DirEntry *de);
 
-LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib);
+LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib, struct Globals *glob);
 
 /* names.c */
 LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len);
@@ -65,7 +64,7 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len);
 /* fat.c */
 LONG ReadFATSuper(struct FSSuper *s);
 void FreeFATSuper(struct FSSuper *s);
-LONG FormatFATVolume(const UBYTE *name, UWORD len);
+LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob);
 LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
 
 LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume);
@@ -74,8 +73,9 @@ void CountFreeClusters(struct FSSuper *sb);
 void AllocCluster(struct FSSuper *sb, ULONG cluster);
 void FreeCluster(struct FSSuper *sb, ULONG cluster);
 
-void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds);
-void ConvertAROSDate(struct DateStamp *ds, UWORD *date, UWORD *time);
+void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds, struct Globals *glob);
+void ConvertSysDate(ULONG secs, UWORD *date, UWORD *time, struct Globals *glob);
+void ConvertDOSDate(struct DateStamp *ds, UWORD *date, UWORD *time, struct Globals *glob);
 LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len);
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 
@@ -84,40 +84,40 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
 LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nwritten);
 
 /* ops.c */
-LONG OpLockFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG access, struct ExtFileLock **filelock);
-void OpUnlockFile(struct ExtFileLock *lock);
-LONG OpCopyLock(struct ExtFileLock *lock, struct ExtFileLock **copy);
-LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent);
-LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG action, struct ExtFileLock **filelock);
-LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen);
-LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, struct ExtFileLock *ddirlock, UBYTE *dname, ULONG dnamelen);
-LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock);
-LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read);
-LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written);
-LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG mode, LONG *newsize);
-LONG OpSetProtect(struct ExtFileLock *lock, UBYTE *name, ULONG namelen, ULONG prot);
-LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct DateStamp *ds);
-LONG OpAddNotify(struct NotifyRequest *nr);
-LONG OpRemoveNotify(struct NotifyRequest *nr);
+LONG OpLockFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG access, struct ExtFileLock **filelock, struct Globals *glob);
+void OpUnlockFile(struct ExtFileLock *lock, struct Globals *glob);
+LONG OpCopyLock(struct ExtFileLock *lock, struct ExtFileLock **copy, struct Globals *glob);
+LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent, struct Globals *glob);
+LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG action, struct ExtFileLock **filelock, struct Globals *glob);
+LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct Globals *glob);
+LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, struct ExtFileLock *ddirlock, UBYTE *dname, ULONG dnamelen, struct Globals *glob);
+LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock, struct Globals *glob);
+LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read, struct Globals *glob);
+LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written, struct Globals *glob);
+LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG mode, LONG *newsize, struct Globals *glob);
+LONG OpSetProtect(struct ExtFileLock *lock, UBYTE *name, ULONG namelen, ULONG prot, struct Globals *glob);
+LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct DateStamp *ds, struct Globals *glob);
+LONG OpAddNotify(struct NotifyRequest *nr, struct Globals *glob);
+LONG OpRemoveNotify(struct NotifyRequest *nr, struct Globals *glob);
 
 /* lock.c */
-LONG TestLock(struct ExtFileLock *fl);
-LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, struct ExtFileLock **lock);
-LONG LockFile(ULONG cluster, ULONG entry, LONG access, struct ExtFileLock **lock);
-LONG LockRoot(LONG access, struct ExtFileLock **lock);
-LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock);
-void FreeLock(struct ExtFileLock *fl);
+LONG TestLock(struct ExtFileLock *fl, struct Globals *glob);
+LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, struct ExtFileLock **lock, struct Globals *glob);
+LONG LockFile(ULONG cluster, ULONG entry, LONG access, struct ExtFileLock **lock, struct Globals *glob);
+LONG LockRoot(LONG access, struct ExtFileLock **lock, struct Globals *glob);
+LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock, struct Globals *glob);
+void FreeLock(struct ExtFileLock *fl, struct Globals *glob);
 
 /* notify.c */
-void SendNotify(struct NotifyRequest *nr);
+void SendNotify(struct NotifyRequest *nr, struct Globals *glob);
 void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl);
 void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de);
-void ProcessNotify(void); 
+void ProcessNotify(struct Globals *glob);
 
 /* timer.c */
-LONG InitTimer(void);
-void CleanupTimer(void);
-void RestartTimer(void);
-void HandleTimer(void);
+LONG InitTimer(struct Globals *glob);
+void CleanupTimer(struct Globals *glob);
+void RestartTimer(struct Globals *glob);
+void HandleTimer(struct Globals *glob);
 
 #endif

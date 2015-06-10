@@ -9,7 +9,9 @@
 #include "fat_fs.h"
 #include "charset.h"
 
-static ULONG readLine(BPTR fh, char *buf, ULONG size)
+#undef DOSBase
+
+static ULONG readLine(struct Library *DOSBase, BPTR fh, char *buf, ULONG size)
 {
   char *c;
 
@@ -28,7 +30,7 @@ static ULONG readLine(BPTR fh, char *buf, ULONG size)
   return TRUE;
 }
 
-void InitCharsetTables(void)
+void InitCharsetTables(struct Globals *glob)
 {
 	int i;
 
@@ -41,9 +43,13 @@ void InitCharsetTables(void)
 }
 
 // Reads a coding table
-BOOL ReadUnicodeTable(STRPTR name)
+BOOL ReadUnicodeTable(struct Globals *glob, STRPTR name)
 {
   BPTR fh;
+  struct Library *DOSBase;
+
+  if (!(DOSBase = OpenLibrary("dos.library", 0)))
+      return FALSE;
 
   fh = Open(name, MODE_OLDFILE);
   if (fh)
@@ -51,7 +57,7 @@ BOOL ReadUnicodeTable(STRPTR name)
       int i, n;
       char buf[512];
 
-      while(readLine(fh, buf, 512*sizeof(char)))
+      while(readLine(DOSBase, fh, buf, 512*sizeof(char)))
       {
 	if(!isdigit(*buf))
           continue;
@@ -92,6 +98,9 @@ BOOL ReadUnicodeTable(STRPTR name)
       }
       Close(fh);
   }
+
+  CloseLibrary(DOSBase);
+
   return fh ? TRUE : FALSE;
 }
 

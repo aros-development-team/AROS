@@ -114,6 +114,7 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
 }
 
 LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
+    struct Globals *glob = short_de->sb->glob;
     UBYTE buf[256];
     int i;
     UBYTE *raw, *c;
@@ -215,6 +216,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
  * that there is room before the entry to store the long filename. if there
  * isn't the whole thing will fail */
 LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
+    struct Globals *glob = short_de->sb->glob;
     UBYTE basis[11];
     ULONG nlong;
     LONG src, dst, i, left, root_end;

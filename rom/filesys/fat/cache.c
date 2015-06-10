@@ -55,8 +55,6 @@
 #include <clib/alib_protos.h>
 
 #include "cache.h"
-#include "fat_fs.h"
-#include "fat_protos.h"
 
 #define RANGE_SHIFT 5
 #define RANGE_SIZE (1 << RANGE_SHIFT)
@@ -67,7 +65,7 @@
    (((BYTE *)(A)) - (IPTR)&((struct BlockRange *)NULL)->node2) : NULL))
 
 
-APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size)
+APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count, ULONG block_size, struct ExecBase *SysBase)
 {
     struct Cache *c;
     ULONG i;
@@ -81,6 +79,8 @@ APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size)
 
     if(success)
     {
+        c->priv = priv;
+        c->c_SysBase = SysBase;
         c->block_size = block_size;
         c->block_count = block_count;
         c->hash_size = hash_size;
@@ -139,9 +139,10 @@ APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size)
 VOID Cache_DestroyCache(APTR cache)
 {
     struct Cache *c = cache;
+    struct ExecBase *SysBase = c->c_SysBase;
     ULONG i;
 
-    Cache_Flush(c);
+    Cache_Flush(c, NULL);
 
     for(i = 0; i < c->block_count; i++)
         FreeVec(c->blocks[i]);
@@ -151,7 +152,7 @@ VOID Cache_DestroyCache(APTR cache)
 }
 
 
-APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
+APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data, LONG *ioerr)
 {
     struct Cache *c = cache;
     struct BlockRange *b = NULL, *b2;
@@ -192,10 +193,14 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
         n = (struct MinNode *)RemHead((struct List *)&c->free_list);
         if(n == NULL)
         {
+            LONG ioerr;
+
             /* No free blocks, so flush dirty list to try and free up some
              * more blocks, then try again */
 
-            Cache_Flush(c);
+            Cache_Flush(c, &ioerr);
+            /* FIXME: Handle IO errors! */
+
             n = (struct MinNode *)RemHead((struct List *)&c->free_list);
         }
 
@@ -206,7 +211,7 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
             /* Read the block from disk */
 
             if((error = AccessDisk(FALSE, blockNum, RANGE_SIZE,
-                c->block_size, b->data)) == 0)
+                c->block_size, b->data, c->priv)) == 0)
             {
                 /* Remove block from its old position in the hash */
 
@@ -236,8 +241,8 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
 
     /* Set data pointer and error, and return cache block handle */
 
-    *data = b->data + data_offset;
-    SetIoErr(error);
+    *data = b ? (b->data + data_offset) : NULL;
+    *ioerr = error;
 
     return b;
 }
@@ -276,7 +281,7 @@ VOID Cache_MarkBlockDirty(APTR cache, APTR block)
 }
 
 
-BOOL Cache_Flush(APTR cache)
+BOOL Cache_Flush(APTR cache, LONG *ioerr)
 {
     struct Cache *c = cache;
     ULONG error = 0;
@@ -289,7 +294,7 @@ BOOL Cache_Flush(APTR cache)
         /* Write dirty block range to disk */
 
         b = NODE2(n);
-        error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size, b->data);
+        error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size, b->data, c->priv);
 
         /* Transfer block range to free list if unused, or put back on dirty
          * list upon an error */
@@ -304,7 +309,7 @@ BOOL Cache_Flush(APTR cache)
             AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
     }
 
-    SetIoErr(error);
+    *ioerr = error;
     return error == 0;
 }
 
