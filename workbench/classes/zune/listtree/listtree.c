@@ -62,7 +62,7 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         CONV(MUIA_Listtree_DragDropSort,    MUIA_NListtree_DragDropSort)
         CONV(MUIA_List_Title,               MUIA_NList_Title)
         CONV(MUIA_List_DragSortable,        MUIA_NList_DragSortable)
-//        CONV(MUIA_ContextMenu,              MUIA_ContextMenu) FIXME causes a crash when right clicking
+//        CONV(MUIA_ContextMenu,              MUIA_ContextMenu) // FIXME causes a crash when right clicking
         CONV(MUIA_List_MinLineHeight,       MUIA_NList_MinLineHeight)
         }
     }
@@ -142,6 +142,7 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
         FORWARDSET(MUIA_Listtree_Quiet, MUIA_NListtree_Quiet)
+        FORWARDSET(MUIA_List_Active, MUIA_NList_Active)
 
         IGNORESET(MUIA_Listview_SelectChange)
 
@@ -239,7 +240,6 @@ METHODSTUB(MUIM_Listtree_Open)
 METHODSTUB(MUIM_Listtree_Close)
 METHODSTUB(MUIM_Listtree_SetDropMark)
 METHODSTUB(MUIM_Listtree_FindName)
-METHODSTUB(MUIM_Listtree_GetNr)
 
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
 {
@@ -287,20 +287,20 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
 IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetEntry *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUI_NListtree_TreeNode * n = NULL;
 
-    /* TEMP */
-    if ((msg->Node != (APTR)MUIV_Listtree_GetEntry_ListNode_Root)
-        && (msg->Node != (APTR)MUIV_Listtree_GetEntry_ListNode_Active))
-        bug("[Listtree] MUIM_Listtree_GetEntry - unhandled value of Node %x\n", msg->Node);
-    /* TEMP */
-    /* TODO
-     * add handling for cases where Node actually point to Treenode structure
-     *
-     * handle remaining enumeration values
-     */
+    switch ((IPTR)msg->Node)
+    {
+    case(MUIV_Listtree_GetEntry_ListNode_Root):
+    case(MUIV_Listtree_GetEntry_ListNode_Active):
+        n = msg->Node;
+        break;
+    default:
+        n = ((struct MUIS_Listtree_TreeNodeInt *)msg->Node)->ref;
+    }
 
     struct MUI_NListtree_TreeNode * tn = (struct MUI_NListtree_TreeNode *) DoMethod(data->nlisttree,
-            MUIM_NListtree_GetEntry, msg->Node, msg->Position, msg->Flags);
+            MUIM_NListtree_GetEntry, n, msg->Position, msg->Flags);
 
     if (tn)
         return (IPTR)tn->tn_User;
@@ -369,4 +369,21 @@ IPTR Listtree__MUIM_Listtree_TestPos(struct IClass *cl, Object *obj, struct MUIP
     }
 
     return FALSE;
+}
+
+IPTR Listtree__MUIM_Listtree_GetNr(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetNr *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUI_NListtree_TreeNode * tn = NULL;
+
+    switch((IPTR)msg->TreeNode)
+    {
+    case(MUIV_Listtree_GetNr_TreeNode_Active):
+        tn = msg->TreeNode;
+        break;
+    default:
+        tn = ((struct MUIS_Listtree_TreeNodeInt *)msg->TreeNode)->ref;
+    }
+
+    return DoMethod(data->nlisttree, MUIM_NListtree_GetNr, tn, msg->Flags);
 }
