@@ -20,6 +20,12 @@
 
 #include <aros/debug.h>
 
+struct MUIS_Listtree_TreeNodeInt
+{
+    struct MUIS_Listtree_TreeNode base;
+    struct MUI_NListtree_TreeNode *ref;
+};
+
 #define NEWHANDLE(attrname)                                         \
     case(attrname):                                                 \
         bug("[Listtree] OM_NEW:%s - unsupported\n", #attrname);     \
@@ -139,7 +145,11 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
         IGNORESET(MUIA_Listview_SelectChange)
 
-        SETHANDLE(MUIA_Listtree_Active)
+        case(MUIA_Listtree_Active):
+            set(data->nlisttree, MUIA_NListtree_Active,
+                    ((struct MUIS_Listtree_TreeNodeInt *)tag->ti_Data)->ref);
+            break;
+
         SETHANDLE(MUIA_Listtree_DoubleClick)
         case MUIB_List | 0x00000010: break;
         case MUIA_Prop_First: break;
@@ -234,7 +244,8 @@ METHODSTUB(MUIM_Listtree_GetNr)
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
-    struct MUIS_Listtree_TreeNode * _return = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNode));
+    struct MUIS_Listtree_TreeNodeInt * _int = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNodeInt));
+    struct MUIS_Listtree_TreeNode * _return = &_int->base;
 
     if (_return == NULL)
         return (IPTR)NULL;
@@ -262,14 +273,13 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
     /* TEMP */
     /* TODO
      * add handling for cases where ListNode and PrevNode actually point to Treenode structure
-     * The internal TreeNode structure needs to have then the poiter to NListTree node to be
-     * able to traslate. The pointer is acquired as return from below DoMethod call
-     *
+
      * handle remaining enumeration values
      */
 
-    DoMethod(data->nlisttree, MUIM_NListtree_Insert, _return->tn_Name, _return, msg->ListNode,
-            msg->PrevNode, _return->tn_Flags);
+    _int->ref = (struct MUI_NListtree_TreeNode *)DoMethod(data->nlisttree,
+                    MUIM_NListtree_Insert, _return->tn_Name, _return, msg->ListNode,
+                    msg->PrevNode, _return->tn_Flags);
 
     return (IPTR)_return;
 }
