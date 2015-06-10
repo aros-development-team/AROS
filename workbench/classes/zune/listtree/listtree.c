@@ -451,3 +451,18 @@ IPTR Listtree__MUIM_Listtree_Rename(struct IClass *cl, Object *obj, struct MUIP_
     else
         return (IPTR)NULL;
 }
+
+IPTR Listtree__MUIM_List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUI_NListtree_TreeNode * entry = msg->entry ?
+            ((struct MUIS_Listtree_TreeNodeInt *)msg->entry)->ref : NULL;
+
+    switch(msg->pos)
+    {
+    case(MUIV_List_Redraw_Entry):
+        return DoMethod(data->nlisttree, MUIM_NList_RedrawEntry, entry);
+    default:
+        return DoMethod(data->nlisttree, MUIM_NList_Redraw, msg->pos);
+    }
+}
