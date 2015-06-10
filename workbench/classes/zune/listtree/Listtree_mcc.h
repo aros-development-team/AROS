@@ -21,9 +21,10 @@
 #define MUIA_Listtree_SortHook             (MUIB_MUI|0x00020010) /* [I..]  struct Hook * */
 
 #define MUIV_Listtree_FindName_ListNode_Root         0
+#define MUIV_Listtree_FindName_ListNode_Active      -2
 
+#define MUIV_Listtree_FindName_Flags_Visible        (1<<14)
 #define MUIV_Listtree_FindName_Flags_SameLevel      (1<<15)
-
 
 #define MUIV_Listtree_GetEntry_Position_Tail        -1
 #define MUIV_Listtree_GetEntry_Position_Active      -2
@@ -31,8 +32,8 @@
 #define MUIV_Listtree_GetEntry_Position_Previous    -4
 #define MUIV_Listtree_GetEntry_Position_Parent      -5
 
-#define MUIV_Listtree_GetEntry_Flags_SameLevel      (1<<15)
 #define MUIV_Listtree_GetEntry_Flags_Visible        (1<<14)
+#define MUIV_Listtree_GetEntry_Flags_SameLevel      (1<<15)
 
 #define MUIV_Listtree_GetEntry_ListNode_Root         0
 #define MUIV_Listtree_GetEntry_ListNode_Active      -2
@@ -56,7 +57,11 @@
 
 #define MUIV_Listtree_Open_ListNode_Root             0
 #define MUIV_Listtree_Open_ListNode_Parent          -1
+#define MUIV_Listtree_Open_ListNode_Active          -2
 
+#define MUIV_Listtree_Open_TreeNode_Head             0
+#define MUIV_Listtree_Open_TreeNode_Tail            -1
+#define MUIV_Listtree_Open_TreeNode_Active          -2
 #define MUIV_Listtree_Open_TreeNode_All             -3
 
 #define MUIV_Listtree_Close_ListNode_Root            0
