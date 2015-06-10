@@ -269,7 +269,6 @@ IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
     return (IPTR)FALSE;                                                 \
 }
 
-METHODSTUB(MUIM_Listtree_Rename)
 METHODSTUB(MUIM_Listtree_Open)
 METHODSTUB(MUIM_Listtree_Close)
 METHODSTUB(MUIM_Listtree_SetDropMark)
@@ -288,13 +287,6 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
     _return =  &_int->base;
 
     _return->tn_Flags = (UWORD)msg->Flags;
-    if (msg->Name)
-    {
-        LONG len = strlen(msg->Name) + 1;
-        _return->tn_Name = AllocPooled(data->pool, len);
-        CopyMem(msg->Name, _return->tn_Name, len);
-    }
-
     if (data->constrhook)
         _return->tn_User = (APTR)CallHookPkt(data->constrhook, data->pool, msg->User);
     else
@@ -324,6 +316,8 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
 
     _int->ref = (struct MUI_NListtree_TreeNode *)DoMethod(data->nlisttree,
                     MUIM_NListtree_Insert, msg->Name, _return, ln, pn, msg->Flags);
+
+    _return->tn_Name = _int->ref->tn_Name;
 
     return (IPTR)_return;
 }
@@ -430,4 +424,30 @@ IPTR Listtree__MUIM_Listtree_GetNr(struct IClass *cl, Object *obj, struct MUIP_L
     }
 
     return DoMethod(data->nlisttree, MUIM_NListtree_GetNr, tn, msg->Flags);
+}
+
+IPTR Listtree__MUIM_Listtree_Rename(struct IClass *cl, Object *obj, struct MUIP_Listtree_Rename *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUI_NListtree_TreeNode * tn = NULL, * renamed = NULL;
+
+    switch((IPTR)msg->TreeNode)
+    {
+    case(MUIV_Listtree_Rename_TreeNode_Active):
+        tn = msg->TreeNode;
+        break;
+    default:
+        tn = ((struct MUIS_Listtree_TreeNodeInt *)msg->TreeNode)->ref;
+    }
+
+    renamed = (struct MUI_NListtree_TreeNode *)DoMethod(data->nlisttree,
+                 MUIM_NListtree_Rename, tn, msg->NewName, msg->Flags);
+
+    if (renamed)
+    {
+        ((struct MUIS_Listtree_TreeNode *)renamed->tn_User)->tn_Name = renamed->tn_Name;
+        return (IPTR)renamed->tn_User;
+    }
+    else
+        return (IPTR)NULL;
 }
