@@ -43,7 +43,7 @@ static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
     {
     case(MUIA_NListtree_Active):
         setti[0].ti_Tag     = MUIA_Listtree_Active;
-        setti[0].ti_Data    = (IPTR)((struct MUI_NListtree_TreeNode *)val)->tn_User;
+        setti[0].ti_Data    = val ? (IPTR)((struct MUI_NListtree_TreeNode *)val)->tn_User : 0;
         break;
     default:
         bug("[Listtree] NotifySimulate_Function - unhandled attribute %x\n", attr);
