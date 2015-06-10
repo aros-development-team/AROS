@@ -17,6 +17,7 @@ struct Listtree_DATA
     struct Hook *destrhook;
 
     Object *nlisttree;
+    struct Hook notifysimulatehook;
 
     /*- Protected ----------------------------------------------------------*/
 
