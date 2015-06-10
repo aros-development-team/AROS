@@ -12,7 +12,6 @@
 struct Listtree_DATA
 {
     /*- Private ------------------------------------------------------------*/
-    struct MinList nodes;
     APTR pool;
     struct Hook *constrhook;
     struct Hook *destrhook;
