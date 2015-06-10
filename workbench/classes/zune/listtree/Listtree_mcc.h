@@ -45,8 +45,11 @@
 #define MUIV_Listtree_Remove_TreeNode_All           -3
 
 #define MUIV_Listtree_Insert_ListNode_Root           0
+#define MUIV_Listtree_Insert_ListNode_Active        -2
 
+#define MUIV_Listtree_Insert_PrevNode_Head           0
 #define MUIV_Listtree_Insert_PrevNode_Tail          -1
+#define MUIV_Listtree_Insert_PrevNode_Active        -2
 #define MUIV_Listtree_Insert_PrevNode_Sorted        -4
 
 #define MUIV_Listtree_Open_ListNode_Root             0
