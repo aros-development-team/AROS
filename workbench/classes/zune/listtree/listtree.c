@@ -548,3 +548,55 @@ IPTR Listtree__MUIM_Listtree_FindName(struct IClass *cl, Object *obj, struct MUI
     else
         return (IPTR)NULL;
 }
+
+struct ListImage
+{
+    struct MinNode  node;
+    Object          *obj;
+};
+
+#define MADF_SETUP             (1<< 28) /* PRIV - zune-specific */
+
+IPTR DoSetupMethod(Object * obj, struct MUI_RenderInfo * info)
+{
+    /* MUI set the correct render info *before* it calls MUIM_Setup so please
+     * only use this function instead of DoMethodA() */
+    muiRenderInfo(obj) = info;
+    return DoMethod(obj, MUIM_Setup, (IPTR) info);
+}
+
+IPTR Listtree__MUIM_List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_CreateImage *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+
+    if (!(_flags(obj) & MADF_SETUP))
+        return 0;
+
+    IPTR _ret = DoMethod(data->nlisttree, MUIM_NList_CreateImage, msg->obj, msg->flags);
+
+    /* There is a use case where an image object created in a Listtree can be passed as O[address]
+     * in the text in the display callback of List. Since Listtree just wraps around NListtree and the
+     * return structures from List_CreateImage and NList_CreateImage are different, this would normally
+     * not work. Luckily, List needs only the msg->obj and it is at the same offset in ListImage and
+     * in structure returned by NList. The case will work as long as this is met.
+     */
+    struct ListImage * li = (struct ListImage *)_ret;
+    if (li->obj != msg->obj)
+        bug("[Listtree] CreateImage condition BROKEN, see comment in code!\n");
+
+    /* Setup the msg->obj as the List is doing */
+    DoMethod(li->obj, MUIM_ConnectParent, (IPTR) obj);
+    DoSetupMethod(li->obj, muiRenderInfo(obj));
+
+    return _ret;
+}
+
+IPTR Listtree__MUIM_List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_DeleteImage *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct ListImage * li = (struct ListImage *)msg->listimg;
+
+    /* DoMethod(li->obj, MUIM_Cleanup); // Called in MUIM_NList_DeleteImage */
+    DoMethod(li->obj, MUIM_DisconnectParent);
+    return DoMethod(data->nlisttree, MUIM_NList_DeleteImage, msg->listimg);
+}
