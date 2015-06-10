@@ -37,6 +37,8 @@
 #define MUIV_Listtree_GetEntry_ListNode_Root         0
 #define MUIV_Listtree_GetEntry_ListNode_Active      -2
 
+#define MUIV_Listtree_GetNr_TreeNode_Active         -2
+
 #define MUIV_Listtree_Remove_ListNode_Root           0
 
 #define MUIV_Listtree_Remove_TreeNode_Active        -2
