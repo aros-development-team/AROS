@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -104,8 +104,11 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Listtree_DoubleClick):
             bug("[Listtree] OM_SET:MUIA_Listtree_DoubleClick - unsupported\n");
             break;
+        default:
+            bug("[Listtree] OM_SET: passing to parent class %x\n", tag->ti_Tag);
         }
     }
+
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
@@ -123,6 +126,8 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     case(MUIA_Listtree_DoubleClick):
         bug("[Listtree] OM_GET:MUIA_Listtree_DoubleClick - unsupported\n");
         break;
+    default:
+        bug("[Listtree] OM_GET: passing to parent class %x\n", msg->opg_AttrID);
     }
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -282,38 +287,16 @@ IPTR Listtree__MUIM_Listtree_Remove(struct IClass *cl, Object *obj, struct MUIP_
     return (IPTR)FALSE;
 }
 
-IPTR Listtree__MUIM_Listtree_Rename(struct IClass *cl, Object *obj, struct MUIP_Listtree_Rename *msg)
-{
-    bug("[Listtree] MUIM_Listtree_Rename unsupported code path Treenode: %x, NewName: %s, Flags: %d\n", msg->TreeNode, msg->NewName, msg->Flags);
-    return (IPTR)FALSE;
+#define METHODSTUB(methodname)                                          \
+IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
+{                                                                       \
+    bug("[Listtree] Usupported : %s \n", methodname);                   \
+    return (IPTR)FALSE;                                                 \
 }
 
-IPTR Listtree__MUIM_Listtree_Open(struct IClass *cl, Object *obj, struct MUIP_Listtree_Open *msg)
-{
-    bug("[Listtree] MUIM_Listtree_Open unsupported code path Listnode: %x, Treenode: %x, Flags: %d\n", msg->ListNode, msg->TreeNode, msg->Flags);
-    return (IPTR)FALSE;
-}
-
-IPTR Listtree__MUIM_Listtree_Close(struct IClass *cl, Object *obj, struct MUIP_Listtree_Close *msg)
-{
-    bug("[Listtree] MUIM_Listtree_Close unsupported code path Listnode: %x, Treenode: %x, Flags: %d\n", msg->ListNode, msg->TreeNode, msg->Flags);
-    return (IPTR)FALSE;
-}
-
-IPTR Listtree__MUIM_Listtree_TestPos(struct IClass *cl, Object *obj, struct MUIP_Listtree_TestPos *msg)
-{
-    bug("[Listtree] MUIM_Listtree_TestPos unsupported code path X: %d, Y: %d\n", msg->X, msg->Y);
-    return (IPTR)FALSE;
-}
-
-IPTR Listtree__MUIM_Listtree_SetDropMark(struct IClass *cl, Object *obj, struct MUIP_Listtree_SetDropMark *msg)
-{
-    bug("[Listtree] MUIM_Listtree_SetDropMark unsupported code path Entry: %d, Values: %d\n", msg->Entry, msg->Values);
-    return (IPTR)FALSE;
-}
-
-IPTR Listtree__MUIM_Listtree_FindName(struct IClass *cl, Object *obj, struct MUIP_Listtree_FindName *msg)
-{
-    bug("[Listtree] MUIM_Listtree_FindName unsupported code path Listnode: %x, Name: %s, Flags: %d\n", msg->ListNode, msg->Name, msg->Flags);
-    return (IPTR)FALSE;
-}
+METHODSTUB(MUIM_Listtree_Rename)
+METHODSTUB(MUIM_Listtree_Open)
+METHODSTUB(MUIM_Listtree_Close)
+METHODSTUB(MUIM_Listtree_TestPos)
+METHODSTUB(MUIM_Listtree_SetDropMark)
+METHODSTUB(MUIM_Listtree_FindName)
