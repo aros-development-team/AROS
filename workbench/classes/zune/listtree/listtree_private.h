@@ -17,6 +17,8 @@ struct Listtree_DATA
     struct Hook *constrhook;
     struct Hook *destrhook;
 
+    Object *nlisttree;
+
     /*- Protected ----------------------------------------------------------*/
 
     /*- Public -------------------------------------------------------------*/

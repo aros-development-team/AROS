@@ -10,25 +10,19 @@
 #include <proto/utility.h>
 #include <proto/graphics.h>
 #include <clib/alib_protos.h>
+#include <mui/NListtree_mcc.h>
 
+#undef TNF_OPEN
+#undef TNF_LIST
 #include "Listtree_mcc.h"
 #include "listtree_private.h"
 
 #include <aros/debug.h>
 
-/* TEMP CODE */
-ULONG Listtree_Active_HookFunc(struct Hook * h, APTR obj, void **msg)
-{
-    APTR active = NULL;
-
-    active = (APTR)DoMethod(obj, MUIM_Listtree_GetEntry, NULL, MUIV_Listtree_GetEntry_Position_Active, 0);
-    set(obj, MUIA_Listtree_Active, active);
-
-    return 0;
-}
-
-static struct Hook _Listtree_Active_Hook;
-/* TEMP CODE */
+#define NEWHANDLE(attrname)                                         \
+    case(attrname):                                                 \
+        bug("[Listtree] OM_NEW:%s - unsupported\n", #attrname);     \
+        break;
 
 /*** Methods ****************************************************************/
 Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -36,11 +30,17 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct Listtree_DATA *data = NULL;
     struct TagItem *tag;
     struct TagItem *tags;
+    Object *nlisttree = NULL;
 
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+    obj = (Object *) DoSuperNewTags(cl, obj, 0,
+            Child, nlisttree = (Object *) NListtreeObject,
+                                End,
+            TAG_MORE, (IPTR) msg->ops_AttrList);
+
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
+    data->nlisttree = nlisttree;
 
     NewList((struct List*)&data->nodes);
     data->pool = CreatePool(MEMF_ANY | MEMF_CLEAR, 16 * 1024, 8 * 1024);
@@ -56,35 +56,28 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Listtree_DestructHook):
             data->destrhook = (struct Hook *)tag->ti_Data;
             break;
-        case(MUIA_Listtree_DisplayHook):
-            bug("[Listtree] OM_NEW:MUIA_Listtree_DisplayHook - unsupported\n");
-            break;
-        case(MUIA_Listtree_Title):
-            bug("[Listtree] OM_NEW:MUIA_Listtree_Title - unsupported\n");
-            break;
-        case(MUIA_Listtree_Format):
-            bug("[Listtree] OM_NEW:MUIA_Listtree_Format - unsupported\n");
-            break;
-        case(MUIA_Listtree_DragDropSort):
-            bug("[Listtree] OM_NEW:MUIA_Listtree_DragDropSort - unsupported\n");
-            break;
-        case(MUIA_Listtree_SortHook):
-            bug("[Listtree] OM_NEW:MUIA_Listtree_SortHook - unsupported\n");
-            break;
+        NEWHANDLE(MUIA_Listtree_DisplayHook)
+        NEWHANDLE(MUIA_Listtree_Title)
+        NEWHANDLE(MUIA_Listtree_Format)
+        NEWHANDLE(MUIA_Listtree_DragDropSort)
+        NEWHANDLE(MUIA_Listtree_SortHook)
+        NEWHANDLE(MUIA_Frame)
+        NEWHANDLE(MUIA_List_Title)
+        NEWHANDLE(MUIA_List_DragSortable)
+        NEWHANDLE(MUIA_ContextMenu)
+        NEWHANDLE(MUIA_List_MinLineHeight)
+        default:
+            bug("[Listtree] OM_NEW: unhandled %x\n", tag->ti_Tag);
         }
     }
 
-    /* TEMP CODE */
-    _Listtree_Active_Hook.h_Entry = HookEntry;
-    _Listtree_Active_Hook.h_SubEntry = (HOOKFUNC)Listtree_Active_HookFunc;
-    _Listtree_Active_Hook.h_Data = NULL;
-
-    DoMethod(obj, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, obj, 2, MUIM_CallHook, (IPTR)&_Listtree_Active_Hook);
-
-    /* TEMP CODE */
-
     return obj;
 }
+
+#define SETHANDLE(attrname)                                         \
+    case(attrname):                                                 \
+        bug("[Listtree] OM_SET:%s - unsupported\n", #attrname);     \
+        break;
 
 IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -95,15 +88,16 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-        case(MUIA_Listtree_Active):
-            bug("[Listtree] OM_SET:MUIA_Listtree_Active - unsupported\n");
-            break;
-        case(MUIA_Listtree_Quiet):
-            bug("[Listtree] OM_SET:MUIA_Listtree_Quiet - unsupported\n");
-            break;
-        case(MUIA_Listtree_DoubleClick):
-            bug("[Listtree] OM_SET:MUIA_Listtree_DoubleClick - unsupported\n");
-            break;
+        SETHANDLE(MUIA_Listtree_Active)
+        SETHANDLE(MUIA_Listtree_Quiet)
+        SETHANDLE(MUIA_Listtree_DoubleClick)
+        case MUIB_List | 0x00000010: break;
+        case MUIA_Prop_First: break;
+        case MUIA_Prop_DoSmooth: break;
+        case MUIA_NoNotify: break;
+        case MUIA_Prop_Entries: break;
+        case MUIA_Prop_Visible: break;
+        case MUIA_Prop_DeltaFactor: break;
         default:
             bug("[Listtree] OM_SET: passing to parent class %x\n", tag->ti_Tag);
         }
@@ -113,19 +107,47 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+#define GETHANDLE(attrname)                                         \
+    case(attrname):                                                 \
+        bug("[Listtree] OM_GET:%s - unsupported\n", #attrname);     \
+        break;
+
+
+#define MUIA_List_Prop_Entries  /* PRIV */ \
+    (MUIB_MUI | 0x0042a8f5)     /* .sg LONG  PRIV */
+#define MUIA_List_Prop_Visible  /* PRIV */ \
+    (MUIB_MUI | 0x004273e9)     /* .sg LONG  PRIV */
+#define MUIA_List_Prop_First    /* PRIV */ \
+    (MUIB_MUI | 0x00429df3)     /* .sg LONG  PRIV */
+
+#define MUIA_List_VertProp_Entries  /* PRIV */ \
+    MUIA_List_Prop_Entries     /* PRIV */
+#define MUIA_List_VertProp_Visible  /* PRIV */ \
+    MUIA_List_Prop_Visible     /* PRIV */
+#define MUIA_List_VertProp_First  /* PRIV */ \
+    MUIA_List_Prop_First       /* PRIV */
+
 IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     switch (msg->opg_AttrID)
     {
-    case(MUIA_Listtree_Active):
-        bug("[Listtree] OM_GET:MUIA_Listtree_Active - unsupported\n");
-        break;
-    case(MUIA_Listtree_Quiet):
-        bug("[Listtree] OM_GET:MUIA_Listtree_Quiet - unsupported\n");
-        break;
-    case(MUIA_Listtree_DoubleClick):
-        bug("[Listtree] OM_GET:MUIA_Listtree_DoubleClick - unsupported\n");
-        break;
+    GETHANDLE(MUIA_Listtree_Active)
+    GETHANDLE(MUIA_Listtree_Quiet)
+    GETHANDLE(MUIA_Listtree_DoubleClick)
+    GETHANDLE(MUIA_List_Active)
+    GETHANDLE(MUIA_Frame)
+    GETHANDLE(MUIA_List_VertProp_Entries)
+    GETHANDLE(MUIA_List_VertProp_Visible)
+    GETHANDLE(MUIA_List_VertProp_First)
+    case MUIA_Disabled: break;
+    case MUIA_Parent: break;
+    case MUIA_Group_ChildList: break;
+    case MUIA_Prop_First: break;
+    case MUIA_Prop_DoSmooth: break;
+    case MUIA_Listview_List: break;
+    case MUIA_Virtgroup_Left: break;
+    case MUIA_Virtgroup_Top: break;
+    case 0x9d510020 /*MUIA_NListview_NList*/: break;
     default:
         bug("[Listtree] OM_GET: passing to parent class %x\n", msg->opg_AttrID);
     }
@@ -133,164 +155,10 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
-IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
-{
-    struct Listtree_DATA *data = INST_DATA(cl, obj);
-    struct MUIS_Listtree_TreeNode * _return = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNode));
-
-    if (_return == NULL)
-        return (IPTR)NULL;
-
-    _return->tn_Flags = (UWORD)msg->Flags;
-    if (msg->Name)
-    {
-        LONG len = strlen(msg->Name) + 1;
-        _return->tn_Name = AllocPooled(data->pool, len);
-        CopyMem(msg->Name, _return->tn_Name, len);
-    }
-
-    if (data->constrhook)
-        _return->tn_User = (APTR)CallHookPkt(data->constrhook, data->pool, msg->User);
-    else
-        _return->tn_User = msg->User;
-
-    AddTail((struct List *)&data->nodes, (struct Node *)_return);
-
-    DoMethod(obj, MUIM_List_InsertSingle, _return->tn_Name, MUIV_List_Insert_Bottom);
-
-    return (IPTR)_return;
-}
-
-IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetEntry *msg)
-{
-    struct Listtree_DATA *data = INST_DATA(cl, obj);
-    struct Node * node = NULL;
-    ULONG counter = 0;
-
-    if (msg->Position == MUIV_Listtree_GetEntry_Position_Active)
-    {
-        IPTR active = 0;
-
-        get(obj, MUIA_List_Active, &active);
-
-        ForeachNode(&data->nodes, node)
-        {
-            if (counter == active)
-                return (IPTR)node;
-            counter++;
-        }
-
-        return (IPTR)NULL;
-    }
-
-    if ((msg->Node == MUIV_Listtree_GetEntry_ListNode_Root) && (msg->Flags & MUIV_Listtree_GetEntry_Flags_SameLevel))
-    {
-        ForeachNode(&data->nodes, node)
-        {
-            if (counter == msg->Position)
-                return (IPTR)node;
-            counter++;
-        }
-
-        return (IPTR)NULL;
-    }
-
-    /* This probably has different "stop" condition than the one with SameLevel flag if in real tree. Since
-     * this is a list, the code is the same
-     */
-    if ((msg->Node == MUIV_Listtree_GetEntry_ListNode_Root) && (msg->Flags == 0))
-    {
-        ForeachNode(&data->nodes, node)
-        {
-            if (counter == msg->Position)
-                return (IPTR)node;
-            counter++;
-        }
-        return (IPTR)NULL;
-    }
-
-    bug("[Listtree] MUIM_Listtree_GetEntry unsupported code path Node: %x, Pos: %d, Flags: %d\n", msg->Node, msg->Position, msg->Flags);
-
-    return (IPTR)NULL;
-}
-
-IPTR Listtree__MUIM_Listtree_GetNr(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetNr *msg)
-{
-    struct Listtree_DATA *data = INST_DATA(cl, obj);
-    struct Node * node = NULL;
-    ULONG counter = 0;
-
-    ForeachNode(&data->nodes, node)
-    {
-        if (msg->TreeNode == node)
-            return counter;
-        counter++;
-    }
-
-    return (IPTR)0;
-}
-
-IPTR Listtree__MUIM_Listtree_Remove(struct IClass *cl, Object *obj, struct MUIP_Listtree_Remove *msg)
-{
-    struct Listtree_DATA *data = INST_DATA(cl, obj);
-    ULONG counter = 0;
-    struct Node *todelete = NULL;
-
-    if (msg->TreeNode == (APTR)MUIV_Listtree_Remove_TreeNode_Active)
-    {
-        IPTR active = 0;
-        struct Node *node;
-
-        get(obj, MUIA_List_Active, &active);
-
-        ForeachNode(&data->nodes, node)
-        {
-            if (counter == active)
-            {
-                todelete = node;
-                break;
-            }
-            counter++;
-        }
-
-        if (todelete)
-        {
-            Remove(todelete);
-            if (data->destrhook)
-                       CallHookPkt(data->destrhook, data->pool, ((struct MUIS_Listtree_TreeNode *)todelete)->tn_User);
-            FreePooled(data->pool, todelete, sizeof(struct MUIS_Listtree_TreeNode));
-            DoMethod(obj, MUIM_List_Remove, MUIV_List_Remove_Active);
-        }
-
-        return (IPTR)TRUE;
-    }
-
-    if (msg->TreeNode == (APTR)MUIV_Listtree_Remove_TreeNode_All)
-    {
-        struct Node *node, *node2;
-
-        ForeachNodeSafe(&data->nodes, node, node2)
-        {
-            Remove(node);
-            if (data->destrhook)
-                CallHookPkt(data->destrhook, data->pool, ((struct MUIS_Listtree_TreeNode *)node)->tn_User);
-            FreePooled(data->pool, node, sizeof(struct MUIS_Listtree_TreeNode));
-        }
-
-        DoMethod(obj, MUIM_List_Clear);
-
-        return (IPTR)TRUE;
-    }
-
-    bug("[Listtree] MUIM_Listtree_Remove unsupported code path Listnode: %x, Treenode: %x, Flags: %d\n", msg->ListNode, msg->TreeNode, msg->Flags);
-
-    return (IPTR)FALSE;
-}
-
 #define METHODSTUB(methodname)                                          \
 IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
 {                                                                       \
-    bug("[Listtree] Usupported : %s \n", methodname);                   \
+    bug("[Listtree] Usupported : %s\n", #methodname);                   \
     return (IPTR)FALSE;                                                 \
 }
 
@@ -300,3 +168,8 @@ METHODSTUB(MUIM_Listtree_Close)
 METHODSTUB(MUIM_Listtree_TestPos)
 METHODSTUB(MUIM_Listtree_SetDropMark)
 METHODSTUB(MUIM_Listtree_FindName)
+METHODSTUB(MUIM_List_TestPos)
+METHODSTUB(MUIM_Listtree_Insert)
+METHODSTUB(MUIM_Listtree_Remove)
+METHODSTUB(MUIM_Listtree_GetNr)
+METHODSTUB(MUIM_Listtree_GetEntry)
