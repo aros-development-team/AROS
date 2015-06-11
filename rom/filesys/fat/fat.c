@@ -87,8 +87,11 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
                 Cache_GetBlock(sb->cache, num + i, &sb->fat_buffers[i], &ioerr);
 
             /* FIXME: Handle IO errors on cache read! */
-            if (sb->fat_blocks[i] == NULL)
+            if (sb->fat_blocks[i] == NULL) {
+                while (i-- != 0)
+                    Cache_FreeBlock(sb->cache, sb->fat_blocks[i]);
                 return NULL;
+            }
         }
 
         /* remember where we are for next time */
