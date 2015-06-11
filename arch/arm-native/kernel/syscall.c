@@ -136,6 +136,12 @@ void handle_syscall(void *regs)
                 break;
             }
 
+            case SC_GETCPUNUMBER:
+            {
+                ((uint32_t *)regs)[0] = GetCPUNumber();
+                break;
+            }
+
             case SC_ISSUPERSTATE:
             {
                 D(bug("[Kernel] ## ISSUPERSTATE... "));
