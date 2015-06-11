@@ -26,6 +26,8 @@
 #include "kernel_scheduler.h"
 #include "kernel_intr.h"
 
+#include "tls.h"
+
 #define D(x)
 #define DSCHED(x)
 #define DREGS(x)
@@ -78,8 +80,8 @@ void cpu_Register()
 #if defined(__AROSEXEC_SMP__)
     tls_t *__tls;
     struct ExecBase *SysBase;
-    struct KernelBase *KernelBase;
 #endif
+    struct KernelBase *KernelBase;
     cpuid_t cpunum = GetCPUNumber();
 
     asm volatile ("mrc p15, 0, %0, c1, c0, 0" : "=r"(tmp));
@@ -114,6 +116,8 @@ void cpu_Register()
         __arm_arosintern.ARMI_InitCore(KernelBase, SysBase);
 
     cpu_BootStrap(__tls->ThisTask, SysBase);
+#else
+    KernelBase = (struct KernelBase *)TLS_GET(KernelBase);
 #endif
 
     bug("[Kernel:%02d] Operational\n", cpunum);
