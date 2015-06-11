@@ -17,7 +17,8 @@ void IdleTask(struct ExecBase *SysBase)
 {
 #if defined(DEBUG)
     struct Task *thisTask = FindTask(NULL);
-    int cpunum = GetCPUNumber();
+    register int cpunum asm("r0");
+    asm volatile ("swi %[swi_no]" : "=r"(cpunum) : [swi_no] "I" (SC_GETCPUNUMBER) : "lr");
 #endif
 
     D(bug("[IDLE:%02d] %s started up\n", cpunum, thisTask->tc_Node.ln_Name));

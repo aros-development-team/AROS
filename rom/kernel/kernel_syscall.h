@@ -25,6 +25,7 @@
 #define SC_RTAS		    0x009
 #define SC_SUPERVISOR	0x00A
 #define SC_CACHECLEARE  0x00B
+#define SC_GETCPUNUMBER 0x00C
 #define SC_REBOOT	    0x100
 
 #endif
