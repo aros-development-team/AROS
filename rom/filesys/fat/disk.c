@@ -121,6 +121,10 @@ void DoDiskInsert(struct Globals *glob) {
                LDF_VOLUMES | LDF_WRITE);
             UnLockDosList(LDF_VOLUMES | LDF_WRITE);
 
+            if (CompareDates(&dl->dol_misc.dol_volume.dol_VolumeDate,
+                &sb->volume.create_time) != 0)
+                dl = NULL;
+
             if (dl != NULL) {
                 dl->dol_Task = glob->ourport;
                 sb->doslist = dl;
