@@ -27,13 +27,24 @@
 
 #include "fat_fs.h"
 #include "fat_protos.h"
-#include "charset.h"
 
 #define DEBUG DEBUG_MISC
 #include "debug.h"
 
 #undef SysBase
 #undef UtilityBase
+
+static void InitCharsetTables(struct Globals *glob)
+{
+	int i;
+
+	for (i = 0; i < 65536; i++)
+	if (i < 256) {
+		glob->from_unicode[i] = i;
+		glob->to_unicode[i] = i;
+	} else
+		glob->from_unicode[i] = '_';
+}
 
 static struct Globals *fat_init(struct Process *proc, struct DosPacket *dp, struct ExecBase *SysBase)
 {
