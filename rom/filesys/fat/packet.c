@@ -561,8 +561,8 @@ void ProcessPackets(struct Globals *glob) {
                     RawPutChars(AROS_BSTR_ADDR(pkt->dp_Arg1),
                     AROS_BSTR_strlen(pkt->dp_Arg1)); bug("'\n"));
 
-                if (glob->sb && glob->sb->doslist == NULL) {
-                    err = glob->disk_inserted ? ERROR_NOT_A_DOS_DISK : ERROR_NO_DISK;
+                if (!glob->disk_inserted) {
+                    err = ERROR_NO_DISK;
                     break;
                 }
 
@@ -570,18 +570,6 @@ void ProcessPackets(struct Globals *glob) {
                     AROS_BSTR_strlen(pkt->dp_Arg1), glob);
                 if (err != 0)
                     break;
-
-                if (glob->sb) {
-#ifdef AROS_FAST_BPTR
-                    /* ReadFATSuper() sets a null byte after the
-                     * string, so this should be fine */
-                    CopyMem(glob->sb->volume.name + 1, glob->sb->doslist->dol_Name,
-                        glob->sb->volume.name[0] + 1);
-#else
-                    CopyMem(glob->sb->volume.name, BADDR(glob->sb->doslist->dol_Name),
-                        glob->sb->volume.name[0] + 2);
-#endif
-                }
 
                 SendEvent(IECLASS_DISKINSERTED, glob);
 
