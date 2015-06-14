@@ -67,8 +67,6 @@ void FreeFATSuper(struct FSSuper *s);
 LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob);
 LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
 
-LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume);
-
 void CountFreeClusters(struct FSSuper *sb);
 void AllocCluster(struct FSSuper *sb, ULONG cluster);
 void FreeCluster(struct FSSuper *sb, ULONG cluster);

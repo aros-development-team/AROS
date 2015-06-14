@@ -55,10 +55,22 @@ static const ULONG fat32_cluster_thresholds[] =
     0xFFFFFFFF
 };
 
+/* 01-01-1981 */
+static const struct DateStamp unset_date_limit =
+{
+    1096,
+    0,
+    0
+};
+
+static LONG GetVolumeIdentity(struct FSSuper *sb,
+    struct VolumeIdentity *volume);
+
 /* helper function to get the location of a fat entry for a cluster. it used
  * to be a define until it got too crazy */
 static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
     UWORD fat_no) {
+    D(struct Globals *glob = sb->glob);
     ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
     ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
     ULONG num;
@@ -127,6 +139,7 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
  * build the word ourselves.
  */
 static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
+    D(struct Globals *glob = sb->glob);
     ULONG offset = n + n/2;
     UWORD val;
 
@@ -162,6 +175,7 @@ static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n) {
 }
 
 static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
+    D(struct Globals *glob = sb->glob);
     APTR b;
     ULONG offset = n + n/2;
     BOOL boundary = FALSE;
@@ -239,7 +253,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     struct Globals *glob = sb->glob;
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG err;
-    ULONG bsize = de->de_SizeBlock * 4, total_sectors;
+    ULONG bsize = de->de_SizeBlock * 4, total_sectors, id;
     struct FATBootSector *boot;
     struct FATEBPB *ebpb;
     struct FATFSInfo *fsinfo;
@@ -500,6 +514,22 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->volume.name[0] = 9;
     }
 
+    /* Many FAT volumes do not have a creation date set, with the result
+     * that two volumes with the same name are likely to be indistinguishable
+     * on the DOS list. To work around this problem, we set the ds_Tick field
+     * of such volumes' dol_VolumeDate timestamp to a pseudo-random value based
+     * on the serial number. Since there are 3000 ticks in a minute, we use an
+     * 11-bit hash value in the range 0 to 2047.
+     */
+    if (CompareDates(&sb->volume.create_time, &unset_date_limit) > 0) {
+        id = sb->volume_id;
+        sb->volume.create_time.ds_Days = 0;
+        sb->volume.create_time.ds_Minute = 0;
+        sb->volume.create_time.ds_Tick = (id >> 22 ^ id >> 11 ^ id) & 0x7FF;
+        D(bug("[FAT] Set hash time to %ld ticks\n",
+            sb->volume.create_time.ds_Tick));
+    }
+
     /* get initial number of free clusters */
     sb->free_clusters = -1;
     sb->next_cluster = -1;
@@ -535,7 +565,8 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     return 0;
 }
 
-LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume) {
+static LONG GetVolumeIdentity(struct FSSuper *sb,
+    struct VolumeIdentity *volume) {
     struct Globals *glob = sb->glob;
     struct DirHandle dh;
     struct DirEntry de;
@@ -863,6 +894,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len) {
 }
 
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
+    D(struct Globals *glob = sb->glob);
     ULONG cluster = 0;
     BOOL found = FALSE;
 
@@ -914,6 +946,7 @@ void FreeFATSuper(struct FSSuper *sb) {
 
 /* see how many unused clusters are available */
 void CountFreeClusters(struct FSSuper *sb) {
+    D(struct Globals *glob = sb->glob);
     ULONG cluster = 0;
     ULONG free = 0;
 
@@ -966,13 +999,19 @@ void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds, struct Globals
 
     D(bug("[fat] converting fat date: year %d month %d day %d hours %d mins %d secs %d\n", year, month, day, hours, mins, secs));
 
-    clock_data.year = 1980 + year;
-    clock_data.month = month;
-    clock_data.mday = day;
-    clock_data.hour = hours;
-    clock_data.min = mins;
-    clock_data.sec = secs << 1;
-    secs = Date2Amiga(&clock_data);
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hours > 23 ||
+        mins > 59 || secs > 29) {
+        D(bug("[fat] invalid fat date: using 01-01-1978 instead\n"));
+        secs = 0;
+    } else {
+        clock_data.year = 1980 + year;
+        clock_data.month = month;
+        clock_data.mday = day;
+        clock_data.hour = hours;
+        clock_data.min = mins;
+        clock_data.sec = secs << 1;
+        secs = Date2Amiga(&clock_data);
+    }
 
     /* calculate days since 1978-01-01 (DOS epoch) */
     ds->ds_Days = secs / (60 * 60 * 24);
