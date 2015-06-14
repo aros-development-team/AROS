@@ -775,6 +775,10 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len) {
     ULONG bsize = dosenv->de_SizeBlock * 4;
     struct FATBootSector *boot;
 
+    /* truncate name if necessary */
+    if (len > FAT_MAX_SHORT_NAME)
+        len = FAT_MAX_SHORT_NAME;
+
     /* read boot block */
     boot = AllocMem(bsize, MEMF_ANY);
     if (!boot)
@@ -820,7 +824,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len) {
 
     /* copy the name in */
     if (err == 0) {
-        for (i = 0; i < 11; i++)
+        for (i = 0; i < FAT_MAX_SHORT_NAME; i++)
             if (i < len)
                 de.e.entry.name[i] = toupper(name[i]);
             else
@@ -834,9 +838,11 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len) {
 
     /* copy name to boot block as well, and save */
     if (sb->type == 32)
-        CopyMem(de.e.entry.name, boot->ebpbs.ebpb32.ebpb.bs_vollab, 11);
+        CopyMem(de.e.entry.name, boot->ebpbs.ebpb32.ebpb.bs_vollab,
+            FAT_MAX_SHORT_NAME);
     else
-        CopyMem(de.e.entry.name, boot->ebpbs.ebpb.bs_vollab, 11);
+        CopyMem(de.e.entry.name, boot->ebpbs.ebpb.bs_vollab,
+            FAT_MAX_SHORT_NAME);
 
     if ((err = AccessDisk(TRUE, sb->first_device_sector, 1, bsize,
         (UBYTE *)boot, glob)) != 0)
@@ -844,9 +850,11 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len) {
     FreeMem(boot, bsize);
 
     /* update name in sb */
-    sb->volume.name[0] = len <= 11 ? len : 11;
-    CopyMem(name, &(sb->volume.name[1]), sb->volume.name[0]);
-    sb->volume.name[sb->volume.name[0]+1] = '\0';
+    sb->volume.name[0] = len;
+    sb->volume.name[1] = toupper(name[0]);
+    for (i = 1; i < len; i++)
+        sb->volume.name[i + 1] = tolower(name[i]);
+    sb->volume.name[len + 1] = '\0';
 
     D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));
 

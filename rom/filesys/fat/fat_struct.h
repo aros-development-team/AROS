@@ -10,12 +10,15 @@
  * $Id$
  */
 
+#define FAT_MAX_SHORT_NAME 11
+#define FAT_MAX_LONG_FILENAME 0xff
+
 struct FATEBPB{
     UBYTE bs_drvnum;
     UBYTE bs_reserved1;
     UBYTE bs_bootsig;
     ULONG bs_volid;
-    UBYTE bs_vollab[11];
+    UBYTE bs_vollab[FAT_MAX_SHORT_NAME];
     UBYTE bs_filsystype[8];
 } __attribute__ ((__packed__));
 
@@ -67,7 +70,7 @@ struct FATFSInfo {
 #define FSI_TRAIL_SIG 0xaa550000
 
 struct FATDirEntry {
-    UBYTE name[11];
+    UBYTE name[FAT_MAX_SHORT_NAME];
     UBYTE attr;
     UBYTE nt_res;
     UBYTE create_time_tenth;
@@ -102,5 +105,3 @@ struct FATLongDirEntry {
     UWORD first_cluster_lo;
     UWORD name3[2];
 } __attribute__ ((__packed__));
-
-#define FAT_MAX_LONG_FILENAME 0xff
