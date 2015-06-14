@@ -549,7 +549,8 @@ void ProcessPackets(struct Globals *glob) {
                     glob->sb->volume.name[0] + 2);
 #endif
 
-                SendEvent(IECLASS_DISKINSERTED, glob);
+                CopyMem(glob->sb->volume.name, glob->sb->info->root_lock.name,
+                    glob->sb->volume.name[0] + 1);
 
                 res = DOSTRUE;
 
