@@ -212,6 +212,16 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
+    /* Setup root node */
+    {
+        struct MUIS_Listtree_TreeNodeInt * _int = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNodeInt));
+        struct MUI_NListtree_TreeNode * root = NULL;
+        root = (struct MUI_NListtree_TreeNode *)DoMethod(data->nlisttree, MUIM_NListtree_GetEntry,
+                                NULL, -15 /* priv -> position root */, 0);
+        root->tn_User = _int;
+        _int->ref = root;
+    }
+
     /* Setup hook proxies */
     if (data->displayhook)
     {
