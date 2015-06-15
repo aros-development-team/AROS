@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 # First try to install arch/cpu specific files if any
 #MM workbench-s : workbench-s-$(ARCH)-$(CPU) workbench-s-setup
 workbench-s : $(AROS_S)/Startup-Sequence $(AROS_S)/Shell-Startup \
-	$(AROS_S)/PCD $(AROS_S)/SPat
+	$(AROS_S)/PCD $(AROS_S)/SPat $(AROS_S)/DPat
 
 $(AROS_S)/Startup-Sequence : Startup-Sequence
 	@$(CP) $^ $@
@@ -16,6 +16,9 @@ $(AROS_S)/PCD : PCD
 	@$(CP) $^ $@
 
 $(AROS_S)/SPat : SPat
+	@$(CP) $^ $@
+
+$(AROS_S)/DPat : DPat
 	@$(CP) $^ $@
 
 #MM
