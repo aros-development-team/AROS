@@ -20,6 +20,43 @@
 
 #include <aros/debug.h>
 
+/* Internal version of NListtree that enables controling the dispatcher */
+#include <aros/symbolsets.h>
+#define ADD2INITCLASSES(symbol, pri) ADD2SET(symbol, CLASSESINIT, pri)
+#define ADD2EXPUNGECLASSES(symbol, pri) ADD2SET(symbol, CLASSESEXPUNGE, pri)
+
+struct NListtreeInt_DATA
+{
+    Object * listtree;
+};
+
+static struct MUI_CustomClass * CL_NListtreeInt;
+
+BOOPSI_DISPATCHER(IPTR, NListtreeInt_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+    }
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+BOOPSI_DISPATCHER_END
+
+static int MCC_NListtreeInt_Startup(struct Library * lib)
+{
+    CL_NListtreeInt = MUI_CreateCustomClass(lib, MUIC_NListtree, NULL, sizeof(struct NListtreeInt_DATA), NListtreeInt_Dispatcher);
+    return CL_NListtreeInt != NULL;
+}
+
+static void MCC_NListtreeInt_Shutdown(struct Library * lib)
+{
+    MUI_DeleteCustomClass(CL_NListtreeInt);
+}
+
+ADD2INITCLASSES(MCC_NListtreeInt_Startup, -1);
+ADD2EXPUNGECLASSES(MCC_NListtreeInt_Shutdown, -1);
+/* Internal version of NListtree that enables controling the dispatcher */
+
 /* Relations:
  * MUIS_Listtree_Treenode -> MUI_NListtree_Treenode via MUIS_Listtree_TreeNodeInt.ref
  * MUI_NListtree_Treenode -> MUIS_Listtree_Treenode via MUI_NListtree_Treenode.tn_User
@@ -129,9 +166,7 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
      * free it afterwards
      */
     obj = (Object *) DoSuperNewTags(cl, obj, 0,
-            Child, nlisttree = (Object *) NListtreeObject,
-                                TAG_MORE, (IPTR)convtags,
-                                End,
+            Child, nlisttree = (Object *) NewObjectA(CL_NListtreeInt->mcc_Class, NULL, convtags),
             TAG_MORE, (IPTR)supertags,
             TAG_DONE);
 
