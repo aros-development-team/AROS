@@ -124,6 +124,10 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
         supertags[i].ti_Tag = AATTR;                                \
         supertags[i++].ti_Data = tag->ti_Data;                      \
         break;
+
+#define SYNC_TREENODE_FLAGS(tn) \
+        ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Flags = tn->tn_Flags;
+
 /*** Methods ****************************************************************/
 Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -427,7 +431,10 @@ IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUI
                 MUIM_NListtree_GetEntry, tn, msg->Position, msg->Flags);
 
     if (found)
+    {
+        SYNC_TREENODE_FLAGS(found);
         return (IPTR)found->tn_User;
+    }
     else
         return (IPTR)NULL;
 }
@@ -488,6 +495,7 @@ IPTR Listtree__MUIM_Listtree_TestPos(struct IClass *cl, Object *obj, struct MUIP
 
     if (res.tpr_TreeNode != NULL)
     {
+        SYNC_TREENODE_FLAGS(res.tpr_TreeNode);
         _ret->tpr_TreeNode  = res.tpr_TreeNode->tn_User;
         return TRUE;
     }
