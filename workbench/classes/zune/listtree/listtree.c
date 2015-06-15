@@ -82,10 +82,11 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
         convtags[i++].ti_Data = tag->ti_Data;                       \
         break;
 
-#define CONVFIN                     \
-    convtags[i].ti_Tag  = TAG_DONE; \
-    convtags[i].ti_Data = TAG_DONE;
-
+#define COPY(AATTR)                                                 \
+    case(AATTR):                                                    \
+        supertags[i].ti_Tag = AATTR;                                \
+        supertags[i++].ti_Data = tag->ti_Data;                      \
+        break;
 /*** Methods ****************************************************************/
 Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -94,10 +95,11 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tags;
     Object *nlisttree = NULL;
     struct TagItem convtags[20];
-    LONG i = 0;
+    struct TagItem supertags[20];
+    LONG i;
 
     /* Convert tags designated for NListtree */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (i = 0, tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
         {
@@ -107,11 +109,20 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         CONV(MUIA_Listtree_DragDropSort,    MUIA_NListtree_DragDropSort)
         CONV(MUIA_List_Title,               MUIA_NList_Title)
         CONV(MUIA_List_DragSortable,        MUIA_NList_DragSortable)
-//        CONV(MUIA_ContextMenu,              MUIA_ContextMenu) // FIXME causes a crash when right clicking
         CONV(MUIA_List_MinLineHeight,       MUIA_NList_MinLineHeight)
         }
     }
-    CONVFIN
+    convtags[i].ti_Tag  = TAG_DONE;
+
+    /* Copy tags designated for super class */
+    for (i = 0, tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    {
+        switch (tag->ti_Tag)
+        {
+        COPY(MUIA_ContextMenu) /* ContextMenuBuild/Choice will be called on child classes of Listtree */
+        }
+    }
+    supertags[i].ti_Tag  = TAG_DONE;
 
     /* TODO:
      * set up a DestructHook which will call proxy MUIS_Listtree_TreeNode destrhook and
@@ -121,7 +132,8 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             Child, nlisttree = (Object *) NListtreeObject,
                                 TAG_MORE, (IPTR)convtags,
                                 End,
-            );
+            TAG_MORE, (IPTR)supertags,
+            TAG_DONE);
 
     if (!obj) return FALSE;
 
@@ -148,7 +160,6 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             data->displayhook = (struct Hook *)tag->ti_Data;
             break;
         case(MUIA_List_MinLineHeight):
-        case(MUIA_ContextMenu):
         case(MUIA_List_DragSortable):
         case(MUIA_List_Title):
         case(MUIA_Listtree_DragDropSort):
@@ -156,6 +167,9 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Listtree_Title):
         case(MUIA_Frame):
             /* Forwarded to NListtree */
+            break;
+        case(MUIA_ContextMenu):
+            /* Forwarded to super class */
             break;
         NEWHANDLE(MUIA_Listtree_SortHook)
         default:
