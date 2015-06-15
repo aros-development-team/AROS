@@ -65,7 +65,12 @@
 #define MUIV_Listtree_Open_TreeNode_All             -3
 
 #define MUIV_Listtree_Close_ListNode_Root            0
+#define MUIV_Listtree_Close_ListNode_Parent         -1
+#define MUIV_Listtree_Close_ListNode_Active         -2
 
+#define MUIV_Listtree_Close_TreeNode_Head            0
+#define MUIV_Listtree_Close_TreeNode_Tail           -1
+#define MUIV_Listtree_Close_TreeNode_Active         -2
 #define MUIV_Listtree_Close_TreeNode_All            -3
 
 #define MUIV_Listtree_SetDropMark_Values_None        0
