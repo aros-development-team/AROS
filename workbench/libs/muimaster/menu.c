@@ -17,6 +17,7 @@
 #include <proto/layers.h>
 
 #include "muimaster_intern.h"
+#include "menu.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -1570,11 +1571,32 @@ void zune_mouse_update(struct ZMenu *zmenu, int left_down)
         HandleMouseClick(&zmenu->mhd, 0);
 }
 
-struct MenuItem *zune_leave_menu(struct ZMenu *zmenu)
+void zune_leave_menu(struct ZMenu *zmenu, struct zlm *res)
 {
     HandleMouseClick(&zmenu->mhd, 1);
 
-    return ItemAddress(zmenu->mhd.menu, zmenu->mhd.firstmenupick);
+    res->item = ItemAddress(zmenu->mhd.menu, zmenu->mhd.firstmenupick);
+
+    if (!res->item)
+    {
+        struct Layer *lay;
+        struct MenuHandlerData *mhd = &zmenu->mhd;
+
+        LockLayerInfo(&mhd->scr->LayerInfo);
+        lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey);
+        UnlockLayerInfo(&mhd->scr->LayerInfo);
+
+        if (lay)
+        {
+            struct Window *win = (struct Window *)lay->Window;
+
+            if (win && (win == mhd->menubarwin)
+                && (mhd->activemenunum != -1))
+            {
+                res->menu = mhd->activemenu;
+            }
+        }
+    }
 }
 
 /* returns the address of the selected menuitem entry */
