@@ -2009,7 +2009,9 @@ static IPTR event_button(Class *cl, Object *obj,
     case MENUUP:
         if (data->mad_ContextZMenu)
         {
-            struct MenuItem *item = zune_leave_menu(data->mad_ContextZMenu);
+            struct zlm res = { NULL, NULL};
+            Object *itemobj = NULL;
+            zune_leave_menu(data->mad_ContextZMenu, &res);
 
             DoMethod(_win(obj), MUIM_Window_RemEventHandler,
                 (IPTR) &data->mad_ehn);
@@ -2017,25 +2019,30 @@ static IPTR event_button(Class *cl, Object *obj,
             DoMethod(_win(obj), MUIM_Window_AddEventHandler,
                 (IPTR) &data->mad_ehn);
 
-            if (item)
+            if (res.item)
             {
-                Object *itemobj = (Object *) GTMENUITEM_USERDATA(item);
+                itemobj = (Object *) GTMENUITEM_USERDATA(res.item);
 
                 /* CHECKME: MUIA_MenuItem_Trigger should probably be set inside
                    MUIM_ContextMenuChoice!? But there I only know about
                    itemobj, not MenuItem itself! */
-                if (item->Flags & CHECKIT)
+                if (res.item->Flags & CHECKIT)
                 {
                     set(itemobj, MUIA_Menuitem_Checked,
-                        ! !(item->Flags & CHECKED));
+                        ! !(res.item->Flags & CHECKED));
 
                 }
 
-                set(itemobj, MUIA_Menuitem_Trigger, item);
-
-                DoMethod(obj, MUIM_ContextMenuChoice, itemobj);
-
+                set(itemobj, MUIA_Menuitem_Trigger, res.item);
             }
+
+            if (res.menu)
+            {
+                itemobj = (Object *) GTMENU_USERDATA(res.menu);
+            }
+
+            if (itemobj)
+                DoMethod(obj, MUIM_ContextMenuChoice, itemobj);
 
             zune_close_menu(data->mad_ContextZMenu);
             data->mad_ContextZMenu = NULL;
