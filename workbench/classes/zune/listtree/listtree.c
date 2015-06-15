@@ -25,6 +25,28 @@
 #define ADD2INITCLASSES(symbol, pri) ADD2SET(symbol, CLASSESINIT, pri)
 #define ADD2EXPUNGECLASSES(symbol, pri) ADD2SET(symbol, CLASSESEXPUNGE, pri)
 
+/* Routing of inherited methods calls:
+ * Some methods are often overriden in child classes of Listree, for example DragReport.
+ * On the other hand, those methods get called as interaction on the NListtree object.
+ * To allow using overriden methods, the following call sequence is implemented:
+ *      NListtreeInt.A          -> Listreee.A
+ *      Listtree.A              -> NListtreeInt.SuperA
+ * In case user inherited code, the call sequence looks as follows
+ *      NListtreeInt.A          -> Listreee-inherited.A
+ *      Listreee-inherited.A    -> Listreee.A
+ *      Listtree.A              -> NListtreeInt.SuperA
+ */
+
+#define MUIA_NListtreeInt_Listtree              0xfec81401UL    /* .s. Object * */
+
+#define MUIM_NListtreeInt_ForwardSuperMethod    0xfec81301UL
+
+struct MUIP_NListtreeInt_ForwardSuperMethod
+{
+  STACKED ULONG MethodID;
+  STACKED Msg msg;
+};
+
 struct NListtreeInt_DATA
 {
     Object * listtree;
@@ -32,10 +54,48 @@ struct NListtreeInt_DATA
 
 static struct MUI_CustomClass * CL_NListtreeInt;
 
+IPTR NListtreeInt__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct NListtreeInt_DATA *data = INST_DATA(cl, obj);
+    struct TagItem      *tstate = msg->ops_AttrList;
+    struct TagItem      *tag;
+
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+        case(MUIA_NListtreeInt_Listtree):
+            data->listtree = (Object *)tag->ti_Data;
+            break;
+        }
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+IPTR NListtreeInt__ForwardListree(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct NListtreeInt_DATA *data = INST_DATA(cl, obj);
+
+    return DoMethodA(data->listtree, msg);
+}
+
+IPTR NListtreeInt__ForwardSuperMethod(struct IClass *cl, Object *obj, struct MUIP_NListtreeInt_ForwardSuperMethod * msg)
+{
+    return DoSuperMethodA(cl, obj, msg->msg);
+}
+
 BOOPSI_DISPATCHER(IPTR, NListtreeInt_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
+    case(OM_SET):  return NListtreeInt__OM_SET(cl, obj, (struct opSet *)msg);
+    case(MUIM_NListtreeInt_ForwardSuperMethod):
+        return NListtreeInt__ForwardSuperMethod(cl, obj, (struct MUIP_NListtreeInt_ForwardSuperMethod *)msg);
+    case(MUIM_DragBegin):
+    case(MUIM_DragFinish):
+    case(MUIM_DragReport):
+        return NListtreeInt__ForwardListree(cl, obj, msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
@@ -215,6 +275,9 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             bug("[Listtree] OM_NEW: unhandled %x\n", tag->ti_Tag);
         }
     }
+
+    /* Setup connection */
+    set(data->nlisttree, MUIA_NListtreeInt_Listtree, obj);
 
     /* Setup root node */
     {
@@ -697,3 +760,15 @@ IPTR Listtree__MUIM_Listtree_Close(struct IClass *cl, Object *obj, struct MUIP_L
 
     return DoMethod(data->nlisttree, MUIM_NListtree_Close, ln, tn, msg->Flags);
 }
+
+#define FORWARDNLISTTREESUPERMETHOD(methodname)                                     \
+IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)               \
+{                                                                                   \
+    struct Listtree_DATA *data = INST_DATA(cl, obj);                                \
+    return DoMethod(data->nlisttree, MUIM_NListtreeInt_ForwardSuperMethod, msg);    \
+}
+
+FORWARDNLISTTREESUPERMETHOD(MUIM_DragBegin)
+FORWARDNLISTTREESUPERMETHOD(MUIM_DragFinish)
+FORWARDNLISTTREESUPERMETHOD(MUIM_DragReport)
+
