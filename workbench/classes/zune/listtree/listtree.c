@@ -85,6 +85,16 @@ IPTR NListtreeInt__ForwardSuperMethod(struct IClass *cl, Object *obj, struct MUI
     return DoSuperMethodA(cl, obj, msg->msg);
 }
 
+IPTR NListtreeInt__DoDrag(struct IClass *cl, Object *obj, struct MUIP_DoDrag * msg)
+{
+    struct NListtreeInt_DATA *data = INST_DATA(cl, obj);
+
+    /* Use the listtree as the dragged object */
+    DoMethod(_win(data->listtree), MUIB_Window | 0x00000003,
+            (IPTR)data->listtree, msg->touchx, msg->touchy, msg->flags);
+    return 0;
+}
+
 BOOPSI_DISPATCHER(IPTR, NListtreeInt_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -92,10 +102,8 @@ BOOPSI_DISPATCHER(IPTR, NListtreeInt_Dispatcher, cl, obj, msg)
     case(OM_SET):  return NListtreeInt__OM_SET(cl, obj, (struct opSet *)msg);
     case(MUIM_NListtreeInt_ForwardSuperMethod):
         return NListtreeInt__ForwardSuperMethod(cl, obj, (struct MUIP_NListtreeInt_ForwardSuperMethod *)msg);
-    case(MUIM_DragBegin):
-    case(MUIM_DragFinish):
-    case(MUIM_DragReport):
-        return NListtreeInt__ForwardListree(cl, obj, msg);
+    case(MUIM_DoDrag):
+        return NListtreeInt__DoDrag(cl, obj, (struct MUIP_DoDrag *)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
@@ -761,14 +769,21 @@ IPTR Listtree__MUIM_Listtree_Close(struct IClass *cl, Object *obj, struct MUIP_L
     return DoMethod(data->nlisttree, MUIM_NListtree_Close, ln, tn, msg->Flags);
 }
 
+IPTR Listtree__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    return DoMethodA(data->nlisttree, (Msg)msg);
+}
+
+IPTR Listtree__MUIM_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    return DoMethodA(data->nlisttree, (Msg)msg);
+}
+
 #define FORWARDNLISTTREESUPERMETHOD(methodname)                                     \
 IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)               \
 {                                                                                   \
     struct Listtree_DATA *data = INST_DATA(cl, obj);                                \
     return DoMethod(data->nlisttree, MUIM_NListtreeInt_ForwardSuperMethod, msg);    \
 }
-
-FORWARDNLISTTREESUPERMETHOD(MUIM_DragBegin)
-FORWARDNLISTTREESUPERMETHOD(MUIM_DragFinish)
-FORWARDNLISTTREESUPERMETHOD(MUIM_DragReport)
-
