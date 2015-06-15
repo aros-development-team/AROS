@@ -15,7 +15,7 @@ struct IntCountryPrefs slovakiaPrefs =
         { 0, 0, 0, 0 },
 
         /* Country code (licence plate number), telephone code, measuring system */
-        MAKE_ID('S','K', 0 , 0 ), 421, MS_ISO,
+        MAKE_ID('S','K',0,0), 421, MS_ISO,
 
         /* Date time format, date format, time format */
         "%A, %e. %B %Y, %H:%M:%S",
@@ -71,7 +71,7 @@ struct IntCountryPrefs slovakiaPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: Slovakia.country 44.0 (12.04.2013)",
+    "$VER: slovakia.country 44.1 (15.06.2015)",
     "Slovensko",
     "Countries/Slovakia"
 };
