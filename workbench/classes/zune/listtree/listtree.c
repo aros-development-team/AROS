@@ -361,7 +361,6 @@ IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
     return (IPTR)FALSE;                                                 \
 }
 
-METHODSTUB(MUIM_Listtree_Close)
 METHODSTUB(MUIM_Listtree_SetDropMark)
 
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
@@ -666,4 +665,35 @@ IPTR Listtree__MUIM_List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP
     /* DoMethod(li->obj, MUIM_Cleanup); // Called in MUIM_NList_DeleteImage */
     DoMethod(li->obj, MUIM_DisconnectParent);
     return DoMethod(data->nlisttree, MUIM_NList_DeleteImage, msg->listimg);
+}
+
+IPTR Listtree__MUIM_Listtree_Close(struct IClass *cl, Object *obj, struct MUIP_Listtree_Close *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUI_NListtree_TreeNode * tn = NULL, * ln = NULL;
+
+    switch((IPTR)msg->ListNode)
+    {
+    case(MUIV_Listtree_Close_ListNode_Root):
+    case(MUIV_Listtree_Close_ListNode_Parent):
+    case(MUIV_Listtree_Close_ListNode_Active):
+        ln = msg->ListNode;
+        break;
+    default:
+        ln = ((struct MUIS_Listtree_TreeNodeInt *)msg->ListNode)->ref;
+    }
+
+    switch((IPTR)msg->TreeNode)
+    {
+    case(MUIV_Listtree_Close_TreeNode_Head):
+    case(MUIV_Listtree_Close_TreeNode_Tail):
+    case(MUIV_Listtree_Close_TreeNode_Active):
+    case(MUIV_Listtree_Close_TreeNode_All):
+        tn = msg->TreeNode;
+        break;
+    default:
+        tn = ((struct MUIS_Listtree_TreeNodeInt *)msg->TreeNode)->ref;
+    }
+
+    return DoMethod(data->nlisttree, MUIM_NListtree_Close, ln, tn, msg->Flags);
 }
