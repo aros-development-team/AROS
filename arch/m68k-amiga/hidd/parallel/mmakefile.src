@@ -1,0 +1,13 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES	:=	ParallelClass ParallelUnitClass
+
+#MM- workbench-devs-amiga-m68k: amiga-m68k-hidd-parallel
+
+USER_LDFLAGS := -static
+
+%build_module mmake=amiga-m68k-hidd-parallel \
+  modname=parallel modtype=hidd \
+  files=$(FILES) \
+  uselibs="hiddstubs"
