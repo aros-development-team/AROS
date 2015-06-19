@@ -84,3 +84,15 @@ diff -ruN gdb-7.9/gdb/configure.tgt gdb-7.9.aros/gdb/configure.tgt
  	# Target: Motorola m68k embedded (e.g. bug monitors)
  	gdb_target_obs="m68k-tdep.o monitor.o dbug-rom.o dsrec.o"
  	;;
+@@ -640,6 +640,11 @@
+ 	gdb_target_obs="vax-tdep.o"
+ 	;;
+ 
++x86_64-*-aros*)
++	# Target: AROS/x86-64
++	gdb_target_obs="amd64-tdep.o i386-tdep.o i387-tdep.o"
++	;;
++
+ x86_64-*-darwin*)
+ 	# Target: Darwin/x86-64
+ 	gdb_target_obs="amd64-tdep.o i386-tdep.o i387-tdep.o \
