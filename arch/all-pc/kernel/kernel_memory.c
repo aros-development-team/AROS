@@ -266,35 +266,7 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
         reg++;
     }
 
-    if ((mh = (struct MemHeader *)GetHead(memList)))
-    {
-        if (IsManagedMem(mh))
-        {
-            struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
-
-            if (mhe->mhe_Alloc)
-                mh = mhe->mhe_Alloc(mhe, sizeof(struct MemHeader), MEMF_CLEAR);
-            else
-                mh = 0;
-        }
-        else
-        {
-            mh = stdAlloc(mh, NULL, sizeof(struct MemHeader), MEMF_CLEAR, NULL, NULL);
-        }
-
-        if (mh)
-        {
-            mh->mh_Node.ln_Name = "Kickstart ROM";
-            mh->mh_Node.ln_Type = NT_MEMORY;
-            mh->mh_Node.ln_Pri  = 0;
-            mh->mh_Attributes   = MEMF_KICK; // |MEMF_PRIVATE
-            mh->mh_Lower        = (APTR)klo;
-            mh->mh_Upper        = (APTR)khi;
-            mh->mh_First        = NULL;
-            mh->mh_Free         = 0;
-            ADDHEAD(memList, mh);
-        }
-    }
+    krnCreateROMHeader("Kickstart ROM", klo, khi);
 }
 
 struct mb_mmap *mmap_FindRegion(IPTR addr, struct mb_mmap *mmap, unsigned long len)
