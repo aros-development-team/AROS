@@ -465,13 +465,8 @@ void kernel_cstart(const struct TagItem *start_msg)
      * Now we can use ACPI information in order to set up advanced things (SMP, APIC, etc).
      * Interrupts are still disabled and we are still supervisor.
      */
-    acpi_Initialize();
 
-    /* Now initialize our interrupt controller (XT-PIC or APIC) */
-    ictl_Initialize();
-
-    /* The last thing to do is to start up secondary CPU cores (if any) */
-    smp_Initialize();
+    PlatformPostInit();
 
     /* Drop privileges down to user mode before calling RTF_COLDSTART */
     D(bug("[Kernel] Leaving supervisor mode\n"));
@@ -486,8 +481,6 @@ void kernel_cstart(const struct TagItem *start_msg)
             "pushq $1f\n\t"
             "iretq\n 1:"
             ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
-
-    D(bug("[Kernel] Done?! Still here?\n"));
 
     /*
      * We are fully done. Run exec.library and the rest.
