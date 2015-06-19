@@ -55,14 +55,13 @@
     ULONG mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
     
     EnterFunc(bug("OOP_DisposeObject(classID=%s)\n",
-    		OCLASS(obj)->ClassNode.ln_Name));
-		
+    		OOP_OCLASS(obj)->ClassNode.ln_Name));
+
     if (obj == NULL) return;
 
     OOP_DoMethod(obj, (OOP_Msg)&mid);
 
-        
     ReturnVoid("OOP_DisposeObject");
-    
+
     AROS_LIBFUNC_EXIT
 } /* OOP_DisposeObject */
