@@ -129,7 +129,7 @@
 	    }
 	}
     }
-    
+
     if (base)
     {
     	/* Increase refcount of bucket */
@@ -137,9 +137,9 @@
     }
 
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
-    
-    ReturnInt ("OOP_ObtainAttrBase", AttrBase, base);
-    
+
+    ReturnInt ("OOP_ObtainAttrBase", OOP_AttrBase, base);
+
     AROS_LIBFUNC_EXIT
 
 } /* OOP_ObtainAttrBase  */

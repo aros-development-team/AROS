@@ -72,8 +72,8 @@
 
 // bug("OOP_NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);    
     EnterFunc(bug("OOP_NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
-    		classPtr, ((classID != NULL) ? classID : "(null)"), tagList));
-    
+    		classPtr, ((classID != (CONST_STRPTR)NULL) ? classID : "(null)"), tagList));
+
     if (!classPtr)
     {
 	/* If a public ID was given, find pointer to class */
@@ -105,7 +105,6 @@
 
     /* Call the New() method of the specified class */
     
-    D(bug("OOP_Coercemethod: %p\n", classPtr->CoerceMethod));
     o = (OOP_Object *)OOP_CoerceMethod(classPtr, (OOP_Object *)classPtr, (OOP_Msg)&p);
 
     /* Release our temporary lock */
