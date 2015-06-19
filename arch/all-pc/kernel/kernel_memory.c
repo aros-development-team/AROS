@@ -16,10 +16,13 @@
 #include <aros/multiboot.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_mmap.h"
+
+#include "memory.h"
 
 #define D(x)
 
@@ -103,9 +106,10 @@ static struct MemChunk *krnAddMemChunk(struct MemHeader **mhPtr, struct MemChunk
 void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct MinList *memList,
                      IPTR klo, IPTR khi, IPTR reserve, const struct MemRegion *reg, ULONG allocator)
 {
+    struct MemHeader *mh;
+
     while (reg->name)
     {
-        struct MemHeader *mh = NULL;
         struct MemChunk *mc  = NULL;
         IPTR phys_start = ~0;
         IPTR cur_start  = reg->start;
@@ -113,7 +117,9 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
         IPTR chunk_end;
         unsigned int chunk_type;
 
-        D(nbug("[MMAP] Processing region 0x%p - 0x%p (%s)...\n", reg->start, reg->end, reg->name));
+        mh = NULL;
+
+        D(nbug("[Kernel:MMAP] Processing region 0x%p - 0x%p (%s)...\n", reg->start, reg->end, reg->name));
 
         do
         {
@@ -185,7 +191,8 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
                      * There is a physical gap in the memory. Add current MemHeader to the list and reset pointers
                      * in order to begin a new one.
                      */
-                    D(nbug("[MMAP] Physical gap   0x%p - 0x%p\n", cur_start, chunk_start));
+                    D(nbug("[Kernel:MMAP] Physical gap   0x%p - 0x%p\n", cur_start, chunk_start));
+                    D(nbug("[Kernel:MMAP] * mh @ 0x%p, region 0x%p - 0x%p\n", mh, mh->mh_Lower, mh->mh_Upper));
 
                     if (allocator == ALLOCATOR_TLSF)
                         mh = krnConvertMemHeaderToTLSF(mh);
@@ -204,7 +211,7 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
                     if (reserve > chunk_start)
                         chunk_start = reserve;
 
-                    D(nbug("[MMAP] Usable   chunk 0x%p - 0x%p\n", chunk_start, chunk_end));
+                    D(nbug("[Kernel:MMAP] Usable   chunk 0x%p - 0x%p\n", chunk_start, chunk_end));
 
                     /*
                      * Now let's add the chunk. However, this is the right place to remember about klo and khi.
@@ -230,7 +237,7 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
                 else if (mh)
                 {
                     /* Just expand physical MemHeader area, but do not add the chunk as free */
-                    D(nbug("[MMAP] Reserved chunk 0x%p - 0x%p\n", chunk_start, chunk_end));
+                    D(nbug("[Kernel:MMAP] Reserved chunk 0x%p - 0x%p\n", chunk_start, chunk_end));
 
                     mh->mh_Upper = (APTR)chunk_end;
                 }
@@ -249,6 +256,7 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
         /* Add the last MemHeader if exists */
         if (mh)
         {
+            D(nbug("[Kernel:MMAP] * mh @ 0x%p,  region 0x%p - 0x%p\n", mh, mh->mh_Lower, mh->mh_Upper));
             if (allocator == ALLOCATOR_TLSF)
                 mh = krnConvertMemHeaderToTLSF(mh);
 
@@ -256,6 +264,36 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
         }
 
         reg++;
+    }
+
+    if ((mh = (struct MemHeader *)GetHead(memList)))
+    {
+        if (IsManagedMem(mh))
+        {
+            struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+
+            if (mhe->mhe_Alloc)
+                mh = mhe->mhe_Alloc(mhe, sizeof(struct MemHeader), MEMF_CLEAR);
+            else
+                mh = 0;
+        }
+        else
+        {
+            mh = stdAlloc(mh, NULL, sizeof(struct MemHeader), MEMF_CLEAR, NULL, NULL);
+        }
+
+        if (mh)
+        {
+            mh->mh_Node.ln_Name = "Kickstart ROM";
+            mh->mh_Node.ln_Type = NT_MEMORY;
+            mh->mh_Node.ln_Pri  = 0;
+            mh->mh_Attributes   = MEMF_KICK; // |MEMF_PRIVATE
+            mh->mh_Lower        = (APTR)klo;
+            mh->mh_Upper        = (APTR)khi;
+            mh->mh_First        = NULL;
+            mh->mh_Free         = 0;
+            ADDHEAD(memList, mh);
+        }
     }
 }
 
