@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Info Cli Command
@@ -380,7 +380,7 @@ BOOL ScanDosList(STRPTR *filter)
         UBYTE  type = ndl->dol_Type;
         UBYTE  name[108];
 
-        /* do not start non-started handlers or open CON: or RAW: windows.. */
+        /* do not start non-started handlers or open CON: or RAW: windows */
         if(type == DLT_DEVICE && !ndl->dol_Task)
             continue;
 
@@ -389,14 +389,14 @@ BOOL ScanDosList(STRPTR *filter)
 
         if((type == DLT_DEVICE) && (myMatchPatternNoCase(strray, name) == FALSE))
         {
-            int i;
+            D(int i);
 
             D(bug("Failure! -- name = %s, strray = %p\n", name, (void *)strray));
 
-            for (i = 0; strray[i] != NULL; i++)
+            D(for (i = 0; strray[i] != NULL; i++)
             {
-                D(bug("Strray %i = %s\n", i, strray[i]));
-            }
+                bug("Strray %i = %s\n", i, strray[i]);
+            })
             
             continue;
         }
@@ -614,7 +614,6 @@ void doInfo()
         }
 
         /* check pattern strings */
-        
         if(devs != NULL)
         {
             STRPTR  *p = devs;
@@ -828,6 +827,7 @@ void doInfo()
                 
                 VLPrintf(DISKSTITLE, "Volumes\n", NULL);
                 
+                /* find the longest volume name */
                 for(MaxLen = 15, idn = head; idn; idn = idn->Next)
                 {
                     if(idn->IsVolume)
@@ -851,6 +851,8 @@ void doInfo()
                             // idn->Task ? GetStrFromCat(MOUNTEDSTR, "[Mounted]") : ""); TODO
                         VLPrintf(VOLNAMEFMTSTR, nfmtstr, args);
                         
+                    if(idn->VolumeDate.ds_Days != 0)
+                    {
                         if(datetimeFmt)
                         {
                             UBYTE datestr[128];
@@ -892,6 +894,7 @@ void doInfo()
                                 VLPrintf(DATEFMTSTR, "created %.3s, %-10s %s", args);
                             }
                         }
+                    }
                         
                         PutStr("\n");
                     }
