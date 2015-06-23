@@ -7,7 +7,7 @@ GLTESTFILES 	    := \
         glsimplerendering \
         glgetprocaddress
 
-EXEDIR      := $(AROSDIR)/Tests/Graphics/GL
+EXEDIR      := $(AROSDIR)/Tests/graphics/gl
 
 #MM- test : test-gl
 
