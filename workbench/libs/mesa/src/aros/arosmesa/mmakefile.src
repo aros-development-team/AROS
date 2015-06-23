@@ -123,12 +123,7 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../.. \
 
 USER_CFLAGS := -ffast-math -DMAPI_MODE_UTIL -DFEATURE_GL=1 \
-                -DAROSMESA_TYPES='"arosmesa_types.h"' \
                 -DMAPI_ABI_HEADER=\"glapi/glapi_mapi_tmp.h\"
-
-##USER_CFLAGS += \
-##                -ffast-math -fomit-frame-pointer \
-##                -ftree-loop-linear -floop-strip-mine -floop-block \
 
 LIB_MESA_SOURCES = \
             $(addprefix mesa/, $(MESA_GALLIUM_SOURCES:.c=)) \
@@ -148,54 +143,6 @@ LIBRARY_SOURCES = \
             $(addprefix ../../, $(LIB_MESA_SOURCES)) \
             $(addprefix ../../, $(AROSMESA_SOURCES)) \
             $(addprefix ../../, $(SHARED_LIB_SOURCES))
-
-LIBRARY_ASM_SOURCES :=
-
-ifeq ($(AROS_TARGET_CPU),i386)
-X86_ASM := yes
-endif
-ifeq ($(AROS_TARGET_CPU),x86_64)
-X86_ASM := yes
-endif
-
-ifeq ($(X86_ASM),yes)
-X86_C_SOURCES = \
-            x86/x86_xform \
-            x86/3dnow \
-            x86/sse \
-            x86/rtasm/x86sse
-
-LIBRARY_SOURCES += $(addprefix ../../mesa/, $(X86_C_SOURCES))
-
-X86_ASM_SOURCES += \
-            x86/common_x86_asm \
-            x86/x86_xform2 \
-            x86/x86_xform3 	\
-            x86/x86_xform4 \
-            x86/x86_cliptest \
-            x86/mmx_blend \
-            x86/3dnow_xform1 \
-            x86/3dnow_xform2 \
-            x86/3dnow_xform3 \
-            x86/3dnow_xform4 \
-            x86/3dnow_normal \
-            x86/sse_xform1 \
-            x86/sse_xform2 \
-            x86/sse_xform3 \
-            x86/sse_xform4 \
-            x86/sse_normal \
-            x86/read_rgba_span_x86
-endif
-
-ifeq ($(AROS_TARGET_CPU),x86_64)
-X86_64_C_SOURCES = \
-            x86-64/x86-64
-
-LIBRARY_SOURCES += $(addprefix ../../mesa/, $(X86_64_C_SOURCES))
-
-X86_64_ASM_SOURCES += \
-            x86-64/xform4
-endif
 
 # #MM- core-linklibs : linklibs-mesa
 
