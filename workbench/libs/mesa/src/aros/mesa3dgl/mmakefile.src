@@ -19,18 +19,18 @@ SHARED_LIB_SOURCES = \
             aros/tls \
 
 MESA3DGL_SOURCES = \
-            aros/arosmesa/mesa3dgl_support \
-            aros/arosmesa/mesa3dgl_gallium \
-            aros/arosmesa/mesa3dgl_init \
-            aros/arosmesa/mesa3dgl_getopenglstatetrackerapi \
-            aros/arosmesa/mesa3dgl_glacreatecontext \
-            aros/arosmesa/mesa3dgl_gladestroycontext \
-            aros/arosmesa/mesa3dgl_glagetconfig \
-            aros/arosmesa/mesa3dgl_glagetcurrentcontext \
-            aros/arosmesa/mesa3dgl_glagetprocaddress \
-            aros/arosmesa/mesa3dgl_glamakecurrent \
-            aros/arosmesa/mesa3dgl_glasetrast \
-            aros/arosmesa/mesa3dgl_glaswapbuffers \
+            aros/mesa3dgl/mesa3dgl_support \
+            aros/mesa3dgl/mesa3dgl_gallium \
+            aros/mesa3dgl/mesa3dgl_init \
+            aros/mesa3dgl/mesa3dgl_getopenglstatetrackerapi \
+            aros/mesa3dgl/mesa3dgl_glacreatecontext \
+            aros/mesa3dgl/mesa3dgl_gladestroycontext \
+            aros/mesa3dgl/mesa3dgl_glagetconfig \
+            aros/mesa3dgl/mesa3dgl_glagetcurrentcontext \
+            aros/mesa3dgl/mesa3dgl_glagetprocaddress \
+            aros/mesa3dgl/mesa3dgl_glamakecurrent \
+            aros/mesa3dgl/mesa3dgl_glasetrast \
+            aros/mesa3dgl/mesa3dgl_glaswapbuffers \
 
 GLSL_LIBGLCPP_SOURCES = \
             glcpp/glcpp-lex.c \

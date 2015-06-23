@@ -15,7 +15,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_support.h"
 #include "mesa3dgl_gallium.h"
 
 static BOOL MESA3DGLSelectColorFormat(enum pipe_format * colorFormat, 

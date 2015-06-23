@@ -13,7 +13,7 @@
 #include <gallium/pipe/p_context.h>
 #include <gallium/pipe/p_screen.h>
 
-#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_support.h"
 #include "mesa3dgl_gallium.h"
 
 /*****************************************************************************

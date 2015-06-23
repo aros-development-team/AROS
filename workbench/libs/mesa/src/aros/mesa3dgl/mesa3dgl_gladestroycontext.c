@@ -9,7 +9,7 @@
 #include <proto/exec.h>
 #include <proto/gallium.h>
 
-#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_support.h"
 #include "mesa3dgl_gallium.h"
 
 /*****************************************************************************

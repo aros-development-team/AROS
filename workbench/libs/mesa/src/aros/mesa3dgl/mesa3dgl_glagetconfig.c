@@ -6,7 +6,7 @@
 #include <proto/exec.h>
 
 #include "mesa3dgl_types.h"
-#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_support.h"
 
 /*****************************************************************************
 
