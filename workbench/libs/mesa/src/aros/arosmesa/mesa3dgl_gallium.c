@@ -1,19 +1,24 @@
 /*
-    Copyright 2009-2014, The AROS Development Team. All rights reserved.
+    Copyright 2009-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_funcs.h"
-#include "arosmesa_funcs_gallium.h"
-#include "main/context.h"
 #include <proto/utility.h>
 #include <proto/exec.h>
+#include <proto/gallium.h>
+
 #include <gallium/pipe/p_screen.h>
 #include <gallium/util/u_inlines.h>
-#include <proto/gallium.h>
+
+#include "main/context.h"
+
+#define DEBUG 1
 #include <aros/debug.h>
 
-static BOOL AROSMesaSelectColorFormat(enum pipe_format * colorFormat, 
+#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_gallium.h"
+
+static BOOL MESA3DGLSelectColorFormat(enum pipe_format * colorFormat, 
     struct pipe_screen * screen, GLint bpp)
 {
     *colorFormat = PIPE_FORMAT_NONE;
@@ -43,7 +48,7 @@ static BOOL AROSMesaSelectColorFormat(enum pipe_format * colorFormat,
     return FALSE;
 }
 
-static BOOL AROSMesaSelectDepthStencilFormat(enum pipe_format * depthStencilFormat, 
+static BOOL MESA3DGLSelectDepthStencilFormat(enum pipe_format * depthStencilFormat, 
     struct pipe_screen * screen, BOOL noDepth, BOOL noStencil)
 {
     /* Defeaul values */
@@ -87,11 +92,11 @@ static BOOL AROSMesaSelectDepthStencilFormat(enum pipe_format * depthStencilForm
     return FALSE;
 }
 
-BOOL AROSMesaFillVisual(struct st_visual * stvis, struct pipe_screen * screen, int bpp, struct TagItem *tagList)
+BOOL MESA3DGLFillVisual(struct st_visual * stvis, struct pipe_screen * screen, int bpp, struct TagItem *tagList)
 {
     BOOL noDepth, noStencil, noAccum;
     
-    D(bug("[AROSMESA] AROSMesaFillVisual\n"));
+    D(bug("[MESA3DGL] MESA3DGLFillVisual\n"));
     
     noStencil   = GetTagData(GLA_NoStencil, GL_FALSE, tagList);
     noAccum     = GetTagData(GLA_NoAccum, GL_FALSE, tagList);
@@ -105,16 +110,16 @@ BOOL AROSMesaFillVisual(struct st_visual * stvis, struct pipe_screen * screen, i
     stvis->buffer_mask = 0;
     
     /* Color buffer */
-    if (!AROSMesaSelectColorFormat(&stvis->color_format, screen, bpp))
+    if (!MESA3DGLSelectColorFormat(&stvis->color_format, screen, bpp))
     {
-        D(bug("[AROSMESA] AROSMesaFillVisual - ERROR - No supported color format found\n"));        
+        D(bug("[MESA3DGL] MESA3DGLFillVisual - ERROR - No supported color format found\n"));        
         return FALSE;
     } 
     
     /* Z-buffer / Stencil buffer */
-    if (!AROSMesaSelectDepthStencilFormat(&stvis->depth_stencil_format, screen, noDepth, noStencil))
+    if (!MESA3DGLSelectDepthStencilFormat(&stvis->depth_stencil_format, screen, noDepth, noStencil))
     {
-        D(bug("[AROSMESA] AROSMesaFillVisual - ERROR - No supported depth/stencil format found\n"));        
+        D(bug("[MESA3DGL] MESA3DGLFillVisual - ERROR - No supported depth/stencil format found\n"));        
         return FALSE;
     }
 
@@ -124,7 +129,7 @@ BOOL AROSMesaFillVisual(struct st_visual * stvis, struct pipe_screen * screen, i
     else
         stvis->accum_format = PIPE_FORMAT_R16G16B16A16_SNORM;
     
-    /* Buffers */ /* AROSMesa uses front buffer as back buffer */
+    /* Buffers */ /* MESA3DGL uses front buffer as back buffer */
     stvis->buffer_mask |= ST_ATTACHMENT_FRONT_LEFT_MASK;
     if (!noDepth || !noStencil)
     stvis->buffer_mask |= ST_ATTACHMENT_DEPTH_STENCIL_MASK;
@@ -132,7 +137,7 @@ BOOL AROSMesaFillVisual(struct st_visual * stvis, struct pipe_screen * screen, i
     return TRUE;
 }
 
-static VOID AROSMesaFrameBufferCreateResource(struct arosmesa_framebuffer * amfb,
+static VOID MESA3DGLFrameBufferCreateResource(struct mesa3dgl_framebuffer * amfb,
     const enum st_attachment_type statt)
 {
     struct pipe_resource templ;
@@ -169,10 +174,10 @@ static VOID AROSMesaFrameBufferCreateResource(struct arosmesa_framebuffer * amfb
     amfb->textures[statt] = amfb->screen->resource_create(amfb->screen, &templ);
 }
 
-static boolean AROSMesaFrameBufferValidate(struct st_framebuffer_iface *stfbi,
+static boolean MESA3DGLFrameBufferValidate(struct st_framebuffer_iface *stfbi,
     const enum st_attachment_type *statts, unsigned count, struct pipe_resource **out)
 {
-    struct arosmesa_framebuffer * amfb = (struct arosmesa_framebuffer *)stfbi;
+    struct mesa3dgl_framebuffer * amfb = (struct mesa3dgl_framebuffer *)stfbi;
     LONG i;
 
     /* Check for resize */
@@ -192,7 +197,7 @@ static boolean AROSMesaFrameBufferValidate(struct st_framebuffer_iface *stfbi,
     {
         if (amfb->textures[statts[i]] == NULL)
         {
-            AROSMesaFrameBufferCreateResource(amfb, statts[i]);
+            MESA3DGLFrameBufferCreateResource(amfb, statts[i]);
             if (statts[i] == ST_ATTACHMENT_FRONT_LEFT)
             {
                 pipe_resource_reference(&amfb->render_resource, amfb->textures[ST_ATTACHMENT_FRONT_LEFT]);
@@ -212,31 +217,31 @@ static boolean AROSMesaFrameBufferValidate(struct st_framebuffer_iface *stfbi,
     return TRUE;
 }
 
-static boolean AROSMesaFrameBufferFlushFront(struct st_framebuffer_iface *stfbi,
+static boolean MESA3DGLFrameBufferFlushFront(struct st_framebuffer_iface *stfbi,
     enum st_attachment_type statt)
 {
     /* No Op */
     return TRUE;
 }
 
-struct arosmesa_framebuffer * AROSMesaNewFrameBuffer(struct arosmesa_context * amesa, struct st_visual * stvis)
+struct mesa3dgl_framebuffer * MESA3DGLNewFrameBuffer(struct mesa3dgl_context * ctx, struct st_visual * stvis)
 {
-    struct arosmesa_framebuffer * framebuffer = 
-        AllocVec(sizeof(struct arosmesa_framebuffer), MEMF_PUBLIC | MEMF_CLEAR);
+    struct mesa3dgl_framebuffer * framebuffer = 
+        AllocVec(sizeof(struct mesa3dgl_framebuffer), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (!framebuffer)
         return NULL;
 
     framebuffer->stvis = *stvis;
     framebuffer->base.visual = &framebuffer->stvis;
-    framebuffer->base.flush_front = AROSMesaFrameBufferFlushFront;
-    framebuffer->base.validate = AROSMesaFrameBufferValidate;
-    framebuffer->screen = amesa->stmanager->screen;
+    framebuffer->base.flush_front = MESA3DGLFrameBufferFlushFront;
+    framebuffer->base.validate = MESA3DGLFrameBufferValidate;
+    framebuffer->screen = ctx->stmanager->screen;
 
     return framebuffer;
 }
 
-VOID AROSMesaFreeFrameBuffer(struct arosmesa_framebuffer * framebuffer)
+VOID MESA3DGLFreeFrameBuffer(struct mesa3dgl_framebuffer * framebuffer)
 {
     if (framebuffer)
     {
@@ -251,21 +256,21 @@ VOID AROSMesaFreeFrameBuffer(struct arosmesa_framebuffer * framebuffer)
     }
 }
 
-VOID AROSMesaCheckAndUpdateBufferSize(struct arosmesa_context * amesa)
+VOID MESA3DGLCheckAndUpdateBufferSize(struct mesa3dgl_context * ctx)
 {
-    AROSMesaRecalculateBufferWidthHeight(amesa);
-    if (amesa->framebuffer->resized)
-        amesa->st->notify_invalid_framebuffer(amesa->st, 
-            (struct st_framebuffer_iface *) amesa->framebuffer);
+    MESA3DGLRecalculateBufferWidthHeight(ctx);
+    if (ctx->framebuffer->resized)
+        ctx->st->notify_invalid_framebuffer(ctx->st, 
+            (struct st_framebuffer_iface *) ctx->framebuffer);
 }
 
-static int AROSMesaStManagerGetParam(struct st_manager *smapi,
+static int MESA3DGLStManagerGetParam(struct st_manager *smapi,
                 enum st_manager_param param)
 {
     return 0;
 }
 
-struct st_manager * AROSMesaNewStManager(struct pipe_screen * pscreen)
+struct st_manager * MESA3DGLNewStManager(struct pipe_screen * pscreen)
 {
     struct st_manager * stmanager = 
         (struct st_manager *)AllocVec(sizeof(struct st_manager), MEMF_PUBLIC | MEMF_CLEAR);
@@ -273,13 +278,13 @@ struct st_manager * AROSMesaNewStManager(struct pipe_screen * pscreen)
     if (stmanager)
     {
         stmanager->screen = pscreen;
-        stmanager->get_param = AROSMesaStManagerGetParam;
+        stmanager->get_param = MESA3DGLStManagerGetParam;
     }
     
     return stmanager;
 }
 
-VOID AROSMesaFreeStManager(struct st_manager * stmanager)
+VOID MESA3DGLFreeStManager(struct st_manager * stmanager)
 {
     if (stmanager)
     {

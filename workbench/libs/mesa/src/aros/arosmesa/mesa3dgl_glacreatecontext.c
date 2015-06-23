@@ -1,16 +1,20 @@
 /*
-    Copyright 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright 2009-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_funcs.h"
-#include "arosmesa_funcs_gallium.h"
-#include <proto/exec.h>
+#define DEBUG 1
 #include <aros/debug.h>
+
+#include <proto/exec.h>
 #include <proto/gallium.h>
+
 #include <gallium/gallium.h>
 #include <gallium/pipe/p_context.h>
 #include <gallium/pipe/p_screen.h>
+
+#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_gallium.h"
 
 /*****************************************************************************
 
@@ -94,69 +98,69 @@
 
 *****************************************************************************/
 {
-    struct arosmesa_context * amesa = NULL;
+    struct mesa3dgl_context * ctx = NULL;
     struct pipe_screen * pscreen = NULL;
     struct st_context_attribs attribs = {0};
 
-    /* Allocate arosmesa_context struct initialized to zeros */
-    if (!(amesa = (struct arosmesa_context *)AllocVec(sizeof(struct arosmesa_context), MEMF_PUBLIC | MEMF_CLEAR)))
+    /* Allocate MESA3DGL context */
+    if (!(ctx = (struct mesa3dgl_context *)AllocVec(sizeof(struct mesa3dgl_context), MEMF_PUBLIC | MEMF_CLEAR)))
     {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR - failed to allocate AROSMesaContext\n"));
+        bug("%s: ERROR - failed to allocate GLAContext\n", __PRETTY_FUNCTION__);
         return NULL;
     }
-    
-    AROSMesaSelectRastPort(amesa, tagList);
-    if (!amesa->visible_rp)
+
+    MESA3DGLSelectRastPort(ctx, tagList);
+    if (!ctx->visible_rp)
     {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR - failed to select visible rastport\n"));
+        bug("%s: ERROR - failed to select visible rastport\n", __PRETTY_FUNCTION__);
         goto error_out;
     }    
-    
-    AROSMesaStandardInit(amesa, tagList);   
+
+    MESA3DGLStandardInit(ctx, tagList);   
 
     pscreen = CreatePipeScreenV(NULL);
     if (!pscreen)
     {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create gallium pipe screen\n"));
+        bug("%s: ERROR -  failed to create gallium pipe screen\n", __PRETTY_FUNCTION__);
         goto error_out;
     }
 
-    if (!(amesa->stmanager = AROSMesaNewStManager(pscreen)))
+    if (!(ctx->stmanager = MESA3DGLNewStManager(pscreen)))
     {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR - failed to create ST Manager\n"));
+        bug("%s: ERROR - failed to create ST Manager\n");
         DestroyPipeScreen(pscreen);
         goto error_out;
     }
 
-    D(bug("[AROSMESA] AROSMesaCreateContext: Filling ST Visual \n"));
-    if (!AROSMesaFillVisual(&amesa->stvis, amesa->stmanager->screen, amesa->BitsPerPixel, tagList))
+    D(bug("[MESA3DGL] %s: Filling ST Visual \n", __PRETTY_FUNCTION__));
+    if (!MESA3DGLFillVisual(&ctx->stvis, ctx->stmanager->screen, ctx->BitsPerPixel, tagList))
     {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to fill ST Visual\n"));
+        bug("%s: ERROR -  failed to fill ST Visual\n", __PRETTY_FUNCTION__);
         goto error_out;
     }
 
     attribs.profile = ST_PROFILE_DEFAULT;
-    attribs.visual = amesa->stvis;
-   
-    amesa->st = glstapi->create_context(glstapi, amesa->stmanager, &attribs, NULL);
-    if (!amesa->st)
-    {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create mesa state tracker context\n"));
-        goto error_out;
-    }
-    
-    amesa->framebuffer = AROSMesaNewFrameBuffer(amesa, &amesa->stvis);
+    attribs.visual = ctx->stvis;
 
-    if (!amesa->framebuffer)
+    ctx->st = glstapi->create_context(glstapi, ctx->stmanager, &attribs, NULL);
+    if (!ctx->st)
     {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create frame buffer\n"));
+        bug("%s: ERROR -  failed to create mesa state tracker context\n", __PRETTY_FUNCTION__);
         goto error_out;
     }
-    
-    return amesa;
+
+    ctx->framebuffer = MESA3DGLNewFrameBuffer(ctx, &ctx->stvis);
+
+    if (!ctx->framebuffer)
+    {
+        bug("%s: ERROR -  failed to create frame buffer\n", __PRETTY_FUNCTION__);
+        goto error_out;
+    }
+
+    return (GLAContext)ctx;
 
 error_out:
-    if (amesa->stmanager) AROSMesaFreeStManager(amesa->stmanager);
-    if (amesa) AROSMesaFreeContext(amesa);
-    return NULL;
+    if (ctx->stmanager) MESA3DGLFreeStManager(ctx->stmanager);
+    if (ctx) MESA3DGLFreeContext(ctx);
+    return (GLAContext)NULL;
 }

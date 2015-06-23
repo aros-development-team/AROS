@@ -1,10 +1,11 @@
 /*
-    Copyright 2014, The AROS Development Team. All rights reserved.
+    Copyright 2014-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_types.h"
 #include <proto/exec.h>
+
+#include "mesa3dgl_types.h"
 
 /*****************************************************************************
 

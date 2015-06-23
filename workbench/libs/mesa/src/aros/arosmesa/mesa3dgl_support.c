@@ -1,18 +1,21 @@
 /*
-    Copyright 2009-2014, The AROS Development Team. All rights reserved.
+    Copyright 2009-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_funcs.h"
+#include <aros/debug.h>
+
 #include <proto/utility.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
+
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
-#include <aros/debug.h>
 
-VOID AROSMesaSelectRastPort(struct arosmesa_context * amesa, struct TagItem * tagList)
+#include "mesa3dgl_funcs.h"
+
+VOID MESA3DGLSelectRastPort(struct mesa3dgl_context * amesa, struct TagItem * tagList)
 {
     amesa->Screen = (struct Screen *)GetTagData(GLA_Screen, 0, tagList);
     amesa->window = (struct Window *)GetTagData(GLA_Window, 0, tagList);
@@ -20,15 +23,15 @@ VOID AROSMesaSelectRastPort(struct arosmesa_context * amesa, struct TagItem * ta
 
     if (amesa->Screen)
     {
-        D(bug("[AROSMESA] AROSMesaSelectRastPort: Screen @ %x\n", amesa->Screen));
+        D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Screen @ %x\n", amesa->Screen));
         if (amesa->window)
         {
-            D(bug("[AROSMESA] AROSMesaSelectRastPort: Window @ %x\n", amesa->window));
+            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Window @ %x\n", amesa->window));
             if (!(amesa->visible_rp))
             {
                 /* Use the windows rastport */
                 amesa->visible_rp = amesa->window->RPort;
-                D(bug("[AROSMESA] AROSMesaSelectRastPort: Windows RastPort @ %x\n", amesa->visible_rp));
+                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows RastPort @ %x\n", amesa->visible_rp));
             }
         }
         else
@@ -37,7 +40,7 @@ VOID AROSMesaSelectRastPort(struct arosmesa_context * amesa, struct TagItem * ta
             {
                 /* Use the screens rastport */
                 amesa->visible_rp = &amesa->Screen->RastPort;
-                D(bug("[AROSMESA] AROSMesaSelectRastPort: Screens RastPort @ %x\n", amesa->visible_rp));
+                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Screens RastPort @ %x\n", amesa->visible_rp));
             }
         }
     }
@@ -46,29 +49,29 @@ VOID AROSMesaSelectRastPort(struct arosmesa_context * amesa, struct TagItem * ta
         /* Not passed a screen */
         if (amesa->window)
         {
-            D(bug("[AROSMESA] AROSMesaSelectRastPort: Window @ %x\n", amesa->window));
+            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Window @ %x\n", amesa->window));
             /* Use the windows Screen */
             amesa->Screen = amesa->window->WScreen;
-            D(bug("[AROSMESA] AROSMesaSelectRastPort: Windows Screen @ %x\n", amesa->Screen));
+            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows Screen @ %x\n", amesa->Screen));
 
             if (!(amesa->visible_rp))
             {
                 /* Use the windows rastport */
                 amesa->visible_rp = amesa->window->RPort;
-                D(bug("[AROSMESA] AROSMesaSelectRastPort: Windows RastPort @ %x\n", amesa->visible_rp));
+                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows RastPort @ %x\n", amesa->visible_rp));
             }
         }
         else
         {
             /* Only Passed A Rastport */
-            D(bug("[AROSMESA] AROSMesaSelectRastPort: Using RastPort only!\n"));
+            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Using RastPort only!\n"));
         }
     }
 
-    D(bug("[AROSMESA] AROSMesaSelectRastPort: Using RastPort @ %x\n", amesa->visible_rp));
+    D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Using RastPort @ %x\n", amesa->visible_rp));
 }
 
-BOOL AROSMesaStandardInit(struct arosmesa_context * amesa, struct TagItem *tagList)
+BOOL MESA3DGLStandardInit(struct mesa3dgl_context * amesa, struct TagItem *tagList)
 {
     LONG requestedwidth = 0, requestedheight = 0;
     LONG requestedright = 0, requestedbottom = 0;
@@ -87,12 +90,12 @@ BOOL AROSMesaStandardInit(struct arosmesa_context * amesa, struct TagItem *tagLi
         }
     }
 
-    D(bug("[AROSMESA] AROSMesaStandardInit(amesa @ %x, taglist @ %x)\n", amesa, tagList));
-    D(bug("[AROSMESA] AROSMesaStandardInit: Using RastPort @ %x\n", amesa->visible_rp));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit(amesa @ %x, taglist @ %x)\n", amesa, tagList));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit: Using RastPort @ %x\n", amesa->visible_rp));
 
     amesa->visible_rp = CloneRastPort(amesa->visible_rp);
 
-    D(bug("[AROSMESA] AROSMesaStandardInit: Cloned RastPort @ %x\n", amesa->visible_rp));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit: Cloned RastPort @ %x\n", amesa->visible_rp));
 
     /* We assume left and top are given or if there is a window, set to border left/top 
        or if there is no window set to 0 */
@@ -143,23 +146,23 @@ BOOL AROSMesaStandardInit(struct arosmesa_context * amesa, struct TagItem *tagLi
     if (amesa->Screen)
         amesa->BitsPerPixel  = GetCyberMapAttr(amesa->Screen->RastPort.BitMap, CYBRMATTR_BPPIX) * 8;
     
-    D(bug("[AROSMESA] AROSMesaStandardInit: Context Base dimensions set -:\n"));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->visible_rp_width        = %d\n", amesa->visible_rp_width));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->visible_rp_height       = %d\n", amesa->visible_rp_height));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->left                    = %d\n", amesa->left));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->right                   = %d\n", amesa->right));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->top                     = %d\n", amesa->top));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->bottom                  = %d\n", amesa->bottom));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit: Context Base dimensions set -:\n"));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->visible_rp_width        = %d\n", amesa->visible_rp_width));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->visible_rp_height       = %d\n", amesa->visible_rp_height));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->left                    = %d\n", amesa->left));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->right                   = %d\n", amesa->right));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->top                     = %d\n", amesa->top));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->bottom                  = %d\n", amesa->bottom));
 
     return TRUE;
 }
 
-VOID AROSMesaRecalculateBufferWidthHeight(struct arosmesa_context * amesa)
+VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * amesa)
 {
     ULONG newwidth = 0;
     ULONG newheight = 0;
     
-    D(bug("[AROSMESA] AROSMesaRecalculateBufferWidthHeight\n"));
+    D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight\n"));
     
     
     amesa->visible_rp_width = 
@@ -179,10 +182,10 @@ VOID AROSMesaRecalculateBufferWidthHeight(struct arosmesa_context * amesa)
     if ((newwidth != amesa->framebuffer->width) || (newheight != amesa->framebuffer->height))
     {
         /* The drawing area size has changed. Buffer must change */
-        D(bug("[AROSMESA] AROSMesaRecalculateBufferWidthHeight: current height    =   %d\n", amesa->framebuffer->height));
-        D(bug("[AROSMESA] AROSMesaRecalculateBufferWidthHeight: current width     =   %d\n", amesa->framebuffer->width));
-        D(bug("[AROSMESA] AROSMesaRecalculateBufferWidthHeight: new height        =   %d\n", newheight));
-        D(bug("[AROSMESA] AROSMesaRecalculateBufferWidthHeight: new width         =   %d\n", newwidth));
+        D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: current height    =   %d\n", amesa->framebuffer->height));
+        D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: current width     =   %d\n", amesa->framebuffer->width));
+        D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: new height        =   %d\n", newheight));
+        D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: new width         =   %d\n", newwidth));
         
         amesa->framebuffer->width = newwidth;
         amesa->framebuffer->height = newheight;
@@ -198,7 +201,7 @@ VOID AROSMesaRecalculateBufferWidthHeight(struct arosmesa_context * amesa)
                 { TAG_DONE }
             };
         
-            D(bug("[AROSMESA] AROSMesaRecalculateBufferWidthHeight: Clipping Rastport to Window's dimensions\n"));
+            D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: Clipping Rastport to Window's dimensions\n"));
 
             /* Clip the rastport to the visible area */
             rastcliprect.MinX = amesa->left;
@@ -210,7 +213,7 @@ VOID AROSMesaRecalculateBufferWidthHeight(struct arosmesa_context * amesa)
     }
 }
 
-VOID AROSMesaFreeContext(struct arosmesa_context * amesa)
+VOID MESA3DGLFreeContext(struct mesa3dgl_context * amesa)
 {
     if (amesa)
     {

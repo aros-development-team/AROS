@@ -1,13 +1,16 @@
 /*
-    Copyright 2009-2014, The AROS Development Team. All rights reserved.
+    Copyright 2009-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_funcs.h"
-#include "arosmesa_funcs_gallium.h"
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/gallium.h>
-#include <aros/debug.h>
+
+#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_gallium.h"
 
 /*****************************************************************************
 
@@ -22,7 +25,7 @@
         Destroys the GL rendering context and frees all resoureces.
 
     INPUTS
-        amesa - pointer to GL rendering context. A NULL pointer will be
+        ctx - pointer to GL rendering context. A NULL pointer will be
                 ignored.
 
     RESULT
@@ -36,31 +39,31 @@
 
 *****************************************************************************/
 {
-    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+    struct mesa3dgl_context * _ctx = (struct mesa3dgl_context *)ctx;
 
-    /* Destroy a AROSMesa context */
-    D(bug("[AROSMESA] AROSMesaDestroyContext(amesa @ %x)\n", amesa));
+    /* Destroy a MESA3DGL context */
+    D(bug("[MESA3DGL] %s(ctx @ %x)\n", __PRETTY_FUNCTION__, ctx));
 
-    if (amesa)
+    if (_ctx)
     {
-        struct st_context_iface * ctx = amesa->st;
+        struct st_context_iface * st_ctx = _ctx->st;
 
-        if (ctx)
+        if (st_ctx)
         {
             struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
 
-            if (cur_ctx == ctx)
+            if (cur_ctx == st_ctx)
             {
                 /* Unbind if current */
-                amesa->st->flush(amesa->st, 0, NULL);
+                _ctx->st->flush(_ctx->st, 0, NULL);
                 glstapi->make_current(glstapi, NULL, NULL, NULL);
             }
 
-            amesa->st->destroy(amesa->st);
-            AROSMesaFreeFrameBuffer(amesa->framebuffer);
-            AROSMesaFreeStManager(amesa->stmanager);
+            _ctx->st->destroy(_ctx->st);
+            MESA3DGLFreeFrameBuffer(_ctx->framebuffer);
+            MESA3DGLFreeStManager(_ctx->stmanager);
             glstapi->destroy(glstapi);
-            AROSMesaFreeContext(amesa);
+            MESA3DGLFreeContext(_ctx);
         }
     }
 }

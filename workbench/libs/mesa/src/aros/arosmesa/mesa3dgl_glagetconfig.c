@@ -1,10 +1,12 @@
 /*
-    Copyright 2011-2014, The AROS Development Team. All rights reserved.
+    Copyright 2011-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_funcs.h"
 #include <proto/exec.h>
+
+#include "mesa3dgl_types.h"
+#include "mesa3dgl_funcs.h"
 
 /*****************************************************************************
 
@@ -40,9 +42,9 @@
 *****************************************************************************/
 {
     LONG depthbits, stencilbits, accumbits, rbbits, gbits, abits;
-    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+    struct mesa3dgl_context *_ctx = (struct mesa3dgl_context *)ctx;
 
-    switch(amesa->stvis.depth_stencil_format)
+    switch(_ctx->stvis.depth_stencil_format)
     {
         case(PIPE_FORMAT_S8_USCALED_Z24_UNORM): depthbits = 24; stencilbits = 8; break;
         case(PIPE_FORMAT_X8Z24_UNORM): depthbits = 24; stencilbits = 0; break;
@@ -51,20 +53,20 @@
         default: depthbits = -1; stencilbits = -1;
     }
 
-    switch(amesa->stvis.accum_format)
+    switch(_ctx->stvis.accum_format)
     {
         case(PIPE_FORMAT_R16G16B16A16_SNORM): accumbits = 16; break;
         default: accumbits = -1;
     }
 
-    switch(amesa->stvis.color_format)
+    switch(_ctx->stvis.color_format)
     {
         case(PIPE_FORMAT_B5G6R5_UNORM): rbbits = 5; gbits = 6; abits = 0; break;
         case(PIPE_FORMAT_B8G8R8A8_UNORM): rbbits = 8; gbits = 8; abits = 8; break;
         default: rbbits = -1; gbits = -1; abits = 1;
     }
 
-    if (amesa)
+    if (_ctx)
     {
         switch(pname)
         {
