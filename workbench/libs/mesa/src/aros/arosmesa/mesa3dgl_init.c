@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,7 +12,7 @@
 /* TODO: Should be moved to LIBBASE */
 struct st_api * glstapi;
 
-LONG AROSMesaInit()
+LONG MESA3DGLInit()
 {
     glstapi = st_gl_api_create();
     if (glstapi)
@@ -22,11 +22,11 @@ LONG AROSMesaInit()
 }
 
 
-VOID AROSMesaExit()
+VOID MESA3DGLExit()
 {
     if (glstapi) glstapi->destroy(glstapi);
 }
 
-ADD2INIT(AROSMesaInit, 5);
-ADD2EXIT(AROSMesaExit, 5);
+ADD2INIT(MESA3DGLInit, 5);
+ADD2EXIT(MESA3DGLExit, 5);
 

@@ -1,14 +1,18 @@
 /*
-    Copyright 2009-2014, The AROS Development Team. All rights reserved.
+    Copyright 2009-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_funcs.h"
-#include "arosmesa_funcs_gallium.h"
 #include <proto/exec.h>
 #include <proto/gallium.h>
+
 #include <gallium/pipe/p_screen.h>
 #include <gallium/util/u_inlines.h>
+
+#include "mesa3dgl_types.h"
+#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_gallium.h"
+
 
 /*****************************************************************************
 
@@ -25,7 +29,7 @@
         double buffer mode.
 
     INPUTS
-        amesa - GL rendering context on which swap is to be performed.
+        ctx - GL rendering context on which swap is to be performed.
 
     RESULT
 
@@ -37,17 +41,17 @@
 
 *****************************************************************************/
 {
-    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+    struct mesa3dgl_context *_ctx = (struct mesa3dgl_context *)ctx;
 
-    if (amesa->framebuffer->render_resource) 
+    if (_ctx->framebuffer->render_resource) 
     {
         /* Flush rendering cache before blitting */
-        amesa->st->flush(amesa->st, ST_FLUSH_FRONT, NULL);
+        _ctx->st->flush(_ctx->st, ST_FLUSH_FRONT, NULL);
 
-        BltPipeResourceRastPort(amesa->framebuffer->render_resource, 0, 0, 
-            amesa->visible_rp, amesa->left, amesa->top, 
-            amesa->framebuffer->width, amesa->framebuffer->height);
+        BltPipeResourceRastPort(_ctx->framebuffer->render_resource, 0, 0, 
+            _ctx->visible_rp, _ctx->left, _ctx->top, 
+            _ctx->framebuffer->width, _ctx->framebuffer->height);
     }
 
-    AROSMesaCheckAndUpdateBufferSize(amesa);
+    MESA3DGLCheckAndUpdateBufferSize(_ctx);
 }

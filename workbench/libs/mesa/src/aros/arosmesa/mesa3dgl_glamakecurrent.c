@@ -1,10 +1,12 @@
 /*
-    Copyright 2009-2014, The AROS Development Team. All rights reserved.
+    Copyright 2009-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_funcs.h"
 #include <proto/exec.h>
+
+#include "mesa3dgl_types.h"
+#include "mesa3dgl_funcs.h"
 
 /*****************************************************************************
 
@@ -19,7 +21,7 @@
         Make the selected GL rendering context active.
 
     INPUTS
-        amesa - GL rendering context to be made active for all following GL
+        ctx - GL rendering context to be made active for all following GL
                 calls.
 
     RESULT
@@ -32,21 +34,21 @@
 
 *****************************************************************************/
 {
-    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+    struct mesa3dgl_context *_ctx = (struct mesa3dgl_context *)ctx;
 
-    if (amesa)
+    if (_ctx)
     {
         struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
-        
-        if (amesa->st != cur_ctx)
+
+        if (_ctx->st != cur_ctx)
         {
             /* Recalculate buffer dimensions */
-            AROSMesaRecalculateBufferWidthHeight(amesa);
+            MESA3DGLRecalculateBufferWidthHeight(_ctx);
 
             /* Attach */
-            glstapi->make_current(glstapi, amesa->st, 
-                &amesa->framebuffer->base, &amesa->framebuffer->base);
-        }            
+            glstapi->make_current(glstapi, _ctx->st, 
+                &_ctx->framebuffer->base, &_ctx->framebuffer->base);
+        }
     }
     else
     {

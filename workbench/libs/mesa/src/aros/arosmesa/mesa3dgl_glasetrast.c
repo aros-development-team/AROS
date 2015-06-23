@@ -1,14 +1,17 @@
 /*
-    Copyright 2011-2014, The AROS Development Team. All rights reserved.
+    Copyright 2011-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "arosmesa_funcs.h"
-#include "arosmesa_funcs_gallium.h"
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
-#include <aros/debug.h>
+
+#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_gallium.h"
 
 /*****************************************************************************
 
@@ -26,6 +29,7 @@
 
     INPUTS
 
+        ctx - 
         tagList - a pointer to tags to be used during creation.
 
     TAGS
@@ -45,9 +49,9 @@
 
 *****************************************************************************/
 {
-    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+    struct mesa3dgl_context * _ctx = (struct mesa3dgl_context *)ctx;
 
-    if (amesa)
+    if (_ctx)
     {
         /* Check if at least one of window, rastport or screen have been passed */
         if ((GetTagData(GLA_Screen, 0, tagList) != 0) ||
@@ -55,18 +59,18 @@
             (GetTagData(GLA_RastPort, 0, tagList) != 0))
         {
             /* If there already is visible_rp, free it */
-            if (amesa->visible_rp)
-                FreeRastPort(amesa->visible_rp);
+            if (_ctx->visible_rp)
+                FreeRastPort(_ctx->visible_rp);
             /* Do standard rast port selection */
-            AROSMesaSelectRastPort(amesa, tagList);
+            MESA3DGLSelectRastPort(_ctx, tagList);
 
             /* Do standard initialization */
-            AROSMesaStandardInit(amesa, tagList); 
+            MESA3DGLStandardInit(_ctx, tagList); 
 
             /* TODO: what to do with visual and framebuffer, if BPP changes, we are in trouble */
 
             /* After the new render target has been attached, invoke framebuffer recalculation */
-            AROSMesaCheckAndUpdateBufferSize(amesa);
+            MESA3DGLCheckAndUpdateBufferSize(_ctx);
         }
     }
 }
