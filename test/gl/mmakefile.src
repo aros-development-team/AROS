@@ -1,0 +1,20 @@
+#   $Id$
+#
+
+include $(TOP)/config/make.cfg
+
+GLTESTFILES 	    := \
+        glsimplerendering \
+        glgetprocaddress
+
+EXEDIR      := $(AROSDIR)/Tests/Graphics/GL
+
+#MM- test : test-gl
+
+#MM test-gl : includes linklibs workbench-libs-gl-includes
+
+%build_progs mmake=test-gl \
+    targetdir=$(EXEDIR) \
+    files="$(GLTESTFILES)" uselibs="GL"
+
+%common
