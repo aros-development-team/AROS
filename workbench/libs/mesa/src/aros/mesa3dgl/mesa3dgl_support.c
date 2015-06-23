@@ -15,50 +15,50 @@
 
 #include "mesa3dgl_support.h"
 
-VOID MESA3DGLSelectRastPort(struct mesa3dgl_context * amesa, struct TagItem * tagList)
+VOID MESA3DGLSelectRastPort(struct mesa3dgl_context * ctx, struct TagItem * tagList)
 {
-    amesa->Screen = (struct Screen *)GetTagData(GLA_Screen, 0, tagList);
-    amesa->window = (struct Window *)GetTagData(GLA_Window, 0, tagList);
-    amesa->visible_rp = (struct RastPort *)GetTagData(GLA_RastPort, 0, tagList);
+    ctx->Screen = (struct Screen *)GetTagData(GLA_Screen, 0, tagList);
+    ctx->window = (struct Window *)GetTagData(GLA_Window, 0, tagList);
+    ctx->visible_rp = (struct RastPort *)GetTagData(GLA_RastPort, 0, tagList);
 
-    if (amesa->Screen)
+    if (ctx->Screen)
     {
-        D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Screen @ %x\n", amesa->Screen));
-        if (amesa->window)
+        D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Screen @ %x\n", ctx->Screen));
+        if (ctx->window)
         {
-            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Window @ %x\n", amesa->window));
-            if (!(amesa->visible_rp))
+            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Window @ %x\n", ctx->window));
+            if (!(ctx->visible_rp))
             {
                 /* Use the windows rastport */
-                amesa->visible_rp = amesa->window->RPort;
-                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows RastPort @ %x\n", amesa->visible_rp));
+                ctx->visible_rp = ctx->window->RPort;
+                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows RastPort @ %x\n", ctx->visible_rp));
             }
         }
         else
         {
-            if (!(amesa->visible_rp))
+            if (!(ctx->visible_rp))
             {
                 /* Use the screens rastport */
-                amesa->visible_rp = &amesa->Screen->RastPort;
-                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Screens RastPort @ %x\n", amesa->visible_rp));
+                ctx->visible_rp = &ctx->Screen->RastPort;
+                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Screens RastPort @ %x\n", ctx->visible_rp));
             }
         }
     }
     else
     {
         /* Not passed a screen */
-        if (amesa->window)
+        if (ctx->window)
         {
-            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Window @ %x\n", amesa->window));
+            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Window @ %x\n", ctx->window));
             /* Use the windows Screen */
-            amesa->Screen = amesa->window->WScreen;
-            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows Screen @ %x\n", amesa->Screen));
+            ctx->Screen = ctx->window->WScreen;
+            D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows Screen @ %x\n", ctx->Screen));
 
-            if (!(amesa->visible_rp))
+            if (!(ctx->visible_rp))
             {
                 /* Use the windows rastport */
-                amesa->visible_rp = amesa->window->RPort;
-                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows RastPort @ %x\n", amesa->visible_rp));
+                ctx->visible_rp = ctx->window->RPort;
+                D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Windows RastPort @ %x\n", ctx->visible_rp));
             }
         }
         else
@@ -68,10 +68,10 @@ VOID MESA3DGLSelectRastPort(struct mesa3dgl_context * amesa, struct TagItem * ta
         }
     }
 
-    D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Using RastPort @ %x\n", amesa->visible_rp));
+    D(bug("[MESA3DGL] MESA3DGLSelectRastPort: Using RastPort @ %x\n", ctx->visible_rp));
 }
 
-BOOL MESA3DGLStandardInit(struct mesa3dgl_context * amesa, struct TagItem *tagList)
+BOOL MESA3DGLStandardInit(struct mesa3dgl_context * ctx, struct TagItem *tagList)
 {
     LONG requestedwidth = 0, requestedheight = 0;
     LONG requestedright = 0, requestedbottom = 0;
@@ -79,28 +79,28 @@ BOOL MESA3DGLStandardInit(struct mesa3dgl_context * amesa, struct TagItem *tagLi
     LONG defaultright = 0, defaultbottom = 0;
 
     /* Set the defaults based on window information */    
-    if (amesa->window)
+    if (ctx->window)
     {
-        if(!(amesa->window->Flags & WFLG_GIMMEZEROZERO))
+        if(!(ctx->window->Flags & WFLG_GIMMEZEROZERO))
         {
-            defaultleft     = amesa->window->BorderLeft;
-            defaulttop      = amesa->window->BorderTop;
-            defaultright    = amesa->window->BorderRight;
-            defaultbottom   = amesa->window->BorderBottom;
+            defaultleft     = ctx->window->BorderLeft;
+            defaulttop      = ctx->window->BorderTop;
+            defaultright    = ctx->window->BorderRight;
+            defaultbottom   = ctx->window->BorderBottom;
         }
     }
 
-    D(bug("[MESA3DGL] MESA3DGLStandardInit(amesa @ %x, taglist @ %x)\n", amesa, tagList));
-    D(bug("[MESA3DGL] MESA3DGLStandardInit: Using RastPort @ %x\n", amesa->visible_rp));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit(ctx @ %x, taglist @ %x)\n", ctx, tagList));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit: Using RastPort @ %x\n", ctx->visible_rp));
 
-    amesa->visible_rp = CloneRastPort(amesa->visible_rp);
+    ctx->visible_rp = CloneRastPort(ctx->visible_rp);
 
-    D(bug("[MESA3DGL] MESA3DGLStandardInit: Cloned RastPort @ %x\n", amesa->visible_rp));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit: Cloned RastPort @ %x\n", ctx->visible_rp));
 
     /* We assume left and top are given or if there is a window, set to border left/top 
        or if there is no window set to 0 */
-    amesa->left = GetTagData(GLA_Left, defaultleft, tagList);
-    amesa->top = GetTagData(GLA_Top, defaulttop, tagList);
+    ctx->left = GetTagData(GLA_Left, defaultleft, tagList);
+    ctx->top = GetTagData(GLA_Top, defaulttop, tagList);
     
     requestedright = GetTagData(GLA_Right, -1, tagList);
     requestedbottom = GetTagData(GLA_Bottom, -1, tagList);
@@ -108,56 +108,56 @@ BOOL MESA3DGLStandardInit(struct mesa3dgl_context * amesa, struct TagItem *tagLi
     requestedheight = GetTagData(GLA_Height, -1 , tagList);
 
     /* Calculate rastport dimensions */
-    amesa->visible_rp_width = 
-        amesa->visible_rp->Layer->bounds.MaxX - amesa->visible_rp->Layer->bounds.MinX + 1;
+    ctx->visible_rp_width = 
+        ctx->visible_rp->Layer->bounds.MaxX - ctx->visible_rp->Layer->bounds.MinX + 1;
 
-    amesa->visible_rp_height = 
-        amesa->visible_rp->Layer->bounds.MaxY - amesa->visible_rp->Layer->bounds.MinY + 1;
+    ctx->visible_rp_height = 
+        ctx->visible_rp->Layer->bounds.MaxY - ctx->visible_rp->Layer->bounds.MinY + 1;
     
     /* right will be either passed or calculated from width or 0 */
-    amesa->right = 0;
+    ctx->right = 0;
     if (requestedright < 0)
     {
         if (requestedwidth >= 0)
         {
-            requestedright = amesa->visible_rp_width - amesa->left - requestedwidth;
+            requestedright = ctx->visible_rp_width - ctx->left - requestedwidth;
             if (requestedright < 0) requestedright = 0;
         }
         else
             requestedright = defaultright; /* Set the default here, not in GetDataData */
     }
-    amesa->right = requestedright;
+    ctx->right = requestedright;
     
     /* bottom will be either passed or calculated from height or 0 */
-    amesa->bottom = 0;
+    ctx->bottom = 0;
     if (requestedbottom < 0)
     {
         if (requestedheight >= 0)
         {
-            requestedbottom = amesa->visible_rp_height - amesa->top - requestedheight;
+            requestedbottom = ctx->visible_rp_height - ctx->top - requestedheight;
             if (requestedbottom < 0) requestedbottom = 0;
         }
         else
             requestedbottom = defaultbottom; /* Set the default here, not in GetDataData */
     }
-    amesa->bottom = requestedbottom;
+    ctx->bottom = requestedbottom;
     
     /* Init screen information */
-    if (amesa->Screen)
-        amesa->BitsPerPixel  = GetCyberMapAttr(amesa->Screen->RastPort.BitMap, CYBRMATTR_BPPIX) * 8;
+    if (ctx->Screen)
+        ctx->BitsPerPixel  = GetCyberMapAttr(ctx->Screen->RastPort.BitMap, CYBRMATTR_BPPIX) * 8;
     
     D(bug("[MESA3DGL] MESA3DGLStandardInit: Context Base dimensions set -:\n"));
-    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->visible_rp_width        = %d\n", amesa->visible_rp_width));
-    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->visible_rp_height       = %d\n", amesa->visible_rp_height));
-    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->left                    = %d\n", amesa->left));
-    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->right                   = %d\n", amesa->right));
-    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->top                     = %d\n", amesa->top));
-    D(bug("[MESA3DGL] MESA3DGLStandardInit:    amesa->bottom                  = %d\n", amesa->bottom));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    ctx->visible_rp_width        = %d\n", ctx->visible_rp_width));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    ctx->visible_rp_height       = %d\n", ctx->visible_rp_height));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    ctx->left                    = %d\n", ctx->left));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    ctx->right                   = %d\n", ctx->right));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    ctx->top                     = %d\n", ctx->top));
+    D(bug("[MESA3DGL] MESA3DGLStandardInit:    ctx->bottom                  = %d\n", ctx->bottom));
 
     return TRUE;
 }
 
-VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * amesa)
+VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * ctx)
 {
     ULONG newwidth = 0;
     ULONG newheight = 0;
@@ -165,33 +165,33 @@ VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * amesa)
     D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight\n"));
     
     
-    amesa->visible_rp_width = 
-        amesa->visible_rp->Layer->bounds.MaxX - amesa->visible_rp->Layer->bounds.MinX + 1;
+    ctx->visible_rp_width = 
+        ctx->visible_rp->Layer->bounds.MaxX - ctx->visible_rp->Layer->bounds.MinX + 1;
 
-    amesa->visible_rp_height = 
-        amesa->visible_rp->Layer->bounds.MaxY - amesa->visible_rp->Layer->bounds.MinY + 1;
+    ctx->visible_rp_height = 
+        ctx->visible_rp->Layer->bounds.MaxY - ctx->visible_rp->Layer->bounds.MinY + 1;
 
 
-    newwidth = amesa->visible_rp_width - amesa->left - amesa->right;
-    newheight = amesa->visible_rp_height - amesa->top - amesa->bottom;
+    newwidth = ctx->visible_rp_width - ctx->left - ctx->right;
+    newheight = ctx->visible_rp_height - ctx->top - ctx->bottom;
     
     if (newwidth < 0) newwidth = 0;
     if (newheight < 0) newheight = 0;
     
     
-    if ((newwidth != amesa->framebuffer->width) || (newheight != amesa->framebuffer->height))
+    if ((newwidth != ctx->framebuffer->width) || (newheight != ctx->framebuffer->height))
     {
         /* The drawing area size has changed. Buffer must change */
-        D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: current height    =   %d\n", amesa->framebuffer->height));
-        D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: current width     =   %d\n", amesa->framebuffer->width));
+        D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: current height    =   %d\n", ctx->framebuffer->height));
+        D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: current width     =   %d\n", ctx->framebuffer->width));
         D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: new height        =   %d\n", newheight));
         D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: new width         =   %d\n", newwidth));
         
-        amesa->framebuffer->width = newwidth;
-        amesa->framebuffer->height = newheight;
-        amesa->framebuffer->resized = TRUE;
+        ctx->framebuffer->width = newwidth;
+        ctx->framebuffer->height = newheight;
+        ctx->framebuffer->resized = TRUE;
         
-        if (amesa->window)
+        if (ctx->window)
         {
             struct Rectangle rastcliprect;
             struct TagItem crptags[] =
@@ -204,19 +204,19 @@ VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * amesa)
             D(bug("[MESA3DGL] MESA3DGLRecalculateBufferWidthHeight: Clipping Rastport to Window's dimensions\n"));
 
             /* Clip the rastport to the visible area */
-            rastcliprect.MinX = amesa->left;
-            rastcliprect.MinY = amesa->top;
-            rastcliprect.MaxX = amesa->left + amesa->framebuffer->width;
-            rastcliprect.MaxY = amesa->top + amesa->framebuffer->height;
-            SetRPAttrsA(amesa->visible_rp, crptags);
+            rastcliprect.MinX = ctx->left;
+            rastcliprect.MinY = ctx->top;
+            rastcliprect.MaxX = ctx->left + ctx->framebuffer->width;
+            rastcliprect.MaxY = ctx->top + ctx->framebuffer->height;
+            SetRPAttrsA(ctx->visible_rp, crptags);
         }
     }
 }
 
-VOID MESA3DGLFreeContext(struct mesa3dgl_context * amesa)
+VOID MESA3DGLFreeContext(struct mesa3dgl_context * ctx)
 {
-    if (amesa)
+    if (ctx)
     {
-        FreeVec(amesa);
+        FreeVec(ctx);
     }
 }
