@@ -12,7 +12,7 @@
 
 #include "main/context.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "mesa3dgl_support.h"
