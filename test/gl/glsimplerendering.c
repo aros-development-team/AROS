@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -232,7 +232,7 @@ static void initextensions()
     glGetUniformLocation    = (PFNGLGETUNIFORMLOCATIONPROC)glAGetProcAddress("glGetUniformLocation");
 }
 
-void initmesa()
+void initgl()
 {
     struct TagItem attributes [ 14 ]; /* 14 should be more than enough :) */
     int i = 0;
@@ -279,7 +279,7 @@ void initmesa()
         finished = TRUE; /* Failure. Stop */
 }
 
-void deinitmesa()
+void deinitgl()
 {
     if (glcont) 
     {
@@ -416,7 +416,7 @@ int main(void)
         if ((pubscreen = LockPubScreen(NULL)) == NULL) return 1;
         
         win = OpenWindowTags(0,
-                            WA_Title, (IPTR)"MesaSimpleRendering",
+                            WA_Title, (IPTR)"GLSimpleRendering",
                             WA_PubScreen, pubscreen,
                             WA_CloseGadget, TRUE,
                             WA_DragBar, TRUE,
@@ -435,7 +435,7 @@ int main(void)
         UnlockPubScreen(NULL, pubscreen);
     }
                    
-    initmesa();
+    initgl();
 //    finished = TRUE;
     while(!finished)
     {
@@ -446,7 +446,7 @@ int main(void)
         {
             /* FPS counting is naive! */
             fpsmicrosecs += 1000000;
-            sprintf(title, "MesaSimpleRendering, FPS: %d", (int)fps);
+            sprintf(title, "GLSimpleRendering, FPS: %d", (int)fps);
             SetWindowTitles(win, title, (UBYTE *)~0L);
             fps = 0;
         }
@@ -462,7 +462,7 @@ int main(void)
 //        if (exitcounter > 0) finished = TRUE;
     }
     
-    deinitmesa();
+    deinitgl();
     
     deinit_timerbase();
       

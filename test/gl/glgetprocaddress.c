@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -44,7 +44,7 @@ void testextensions()
 
 struct Window * win = NULL;
 
-void initmesa()
+void initgl()
 {
     struct TagItem attributes [ 14 ]; /* 14 should be more than enough :) */
     int i = 0;
@@ -69,7 +69,7 @@ void initmesa()
     glAMakeCurrent(glcont);
 }
 
-void deinitmesa()
+void deinitgl()
 {
     glADestroyContext(glcont);
 }
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 {
 
     win = OpenWindowTags(0,
-                WA_Title, (IPTR)"MesaGetProcAddress",
+                WA_Title, (IPTR)"glAGetProcAddress",
                 WA_CloseGadget, TRUE,
                 WA_DragBar, TRUE,
                 WA_DepthGadget, TRUE,
@@ -98,11 +98,11 @@ int main(int argc, char **argv)
                 WA_IDCMP, IDCMP_CLOSEWINDOW,
                 TAG_DONE);
 
-    initmesa();
+    initgl();
 
     testextensions();
 
-    deinitmesa();
+    deinitgl();
 
     CloseWindow(win);
 
