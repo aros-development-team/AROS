@@ -10,7 +10,7 @@
 #include <proto/utility.h>
 #include <proto/graphics.h>
 
-#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_support.h"
 #include "mesa3dgl_gallium.h"
 
 /*****************************************************************************

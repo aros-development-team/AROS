@@ -13,7 +13,7 @@
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
 
-#include "mesa3dgl_funcs.h"
+#include "mesa3dgl_support.h"
 
 VOID MESA3DGLSelectRastPort(struct mesa3dgl_context * amesa, struct TagItem * tagList)
 {
