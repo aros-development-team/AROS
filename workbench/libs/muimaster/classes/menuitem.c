@@ -27,6 +27,16 @@ extern struct Library *MUIMasterBase;
 #define MENUF_ENABLED        (1<<3)
 #define MENUF_TOGGLE         (1<<4)
 
+#define MENUF_MENUSTRIP      (1<<15)
+#define MENUF_MENU           (1<<16)
+#define MENUF_MENUITEM       (1<<17)
+
+#define MUIA_Menuitem_Type   (MUIB_Menuitem | 0x00000001)
+
+#define MUIV_Menuitem_Type_Menustrip    (-1)
+#define MUIV_Menuitem_Type_Menu         (-2)
+#define MUIV_Menuitem_Type_Menuitem     (-3)
+
 struct MUI_MenuitemData
 {
     ULONG flags;
@@ -145,7 +155,7 @@ static struct NewMenu *Menuitem_BuildNewMenu(struct MUI_MenuitemData *data,
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-IPTR Menuitem__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Common__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_MenuitemData *data;
     struct TagItem *tags, *tag;
@@ -172,8 +182,7 @@ IPTR Menuitem__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_Menuitem_CommandString:
-            _handle_bool_tag(data->flags, tag->ti_Data,
-                MENUF_COMMANDSTRING);
+            _handle_bool_tag(data->flags, tag->ti_Data, MENUF_COMMANDSTRING);
             break;
 
         case MUIA_Menu_Enabled:
@@ -199,6 +208,39 @@ IPTR Menuitem__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
         }
     }
+
+    return (IPTR) obj;
+}
+
+IPTR Menuitem__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_MenuitemData *data;
+    obj = (Object *) Common__OM_NEW(cl, obj, msg);
+    data = INST_DATA(cl, obj);
+
+    data->flags |= MENUF_MENUITEM;
+
+    return (IPTR) obj;
+}
+
+IPTR Menu__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_MenuitemData *data;
+    obj = (Object *) Common__OM_NEW(cl, obj, msg);
+    data = INST_DATA(cl, obj);
+
+    data->flags |= MENUF_MENU;
+
+    return (IPTR) obj;
+}
+
+IPTR Menustrip__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_MenuitemData *data;
+    obj = (Object *) Common__OM_NEW(cl, obj, msg);
+    data = INST_DATA(cl, obj);
+
+    data->flags |= MENUF_MENUSTRIP;
 
     return (IPTR) obj;
 }
@@ -370,6 +412,16 @@ IPTR Menuitem__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_Menuitem_Trigger:
         STORE = (IPTR) data->trigger;
         return 1;
+
+    case MUIA_Menuitem_Type:
+        if (data->flags & MENUF_MENUSTRIP)
+            STORE = (IPTR) MUIV_Menuitem_Type_Menustrip;
+        else if(data->flags & MENUF_MENU)
+            STORE = (IPTR) MUIV_Menuitem_Type_Menu;
+        else
+            STORE = (IPTR) MUIV_Menuitem_Type_Menuitem;
+        return 1;
+
     }
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -457,13 +509,10 @@ IPTR Menuitem__MUIM_Update(struct IClass *cl, Object *obj, Msg msg)
     return retval;
 }
 
-
-BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
+IPTR Common_Dispatcher(Class *cl, Object *obj, Msg msg)
 {
     switch (msg->MethodID)
     {
-    case OM_NEW:
-        return Menuitem__OM_NEW(cl, obj, (struct opSet *)msg);
     case OM_DISPOSE:
         return Menuitem__OM_DISPOSE(cl, obj, msg);
     case OM_SET:
@@ -489,8 +538,42 @@ BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
     }
     return DoSuperMethodA(cl, obj, msg);
 }
+
+BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        return Menuitem__OM_NEW(cl, obj, (struct opSet *)msg);
+    }
+
+    return Common_Dispatcher(cl, obj, msg);
+}
 BOOPSI_DISPATCHER_END
 
+BOOPSI_DISPATCHER(IPTR, Menu_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        return Menu__OM_NEW(cl, obj, (struct opSet *)msg);
+    }
+
+    return Common_Dispatcher(cl, obj, msg);
+}
+BOOPSI_DISPATCHER_END
+
+BOOPSI_DISPATCHER(IPTR, Menustrip_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        return Menustrip__OM_NEW(cl, obj, (struct opSet *)msg);
+    }
+
+    return Common_Dispatcher(cl, obj, msg);
+}
+BOOPSI_DISPATCHER_END
 /*
  * Class descriptor.
  */
@@ -510,7 +593,7 @@ const struct __MUIBuiltinClass _MUI_Menu_desc =
     MUIC_Menu,
     MUIC_Family,
     sizeof(struct MUI_MenuitemData),
-    (void *) Menuitem_Dispatcher
+    (void *) Menu_Dispatcher
 };
 
 /*
@@ -521,5 +604,5 @@ const struct __MUIBuiltinClass _MUI_Menustrip_desc =
     MUIC_Menustrip,
     MUIC_Family,
     sizeof(struct MUI_MenuitemData),
-    (void *) Menuitem_Dispatcher
+    (void *) Menustrip_Dispatcher
 };
