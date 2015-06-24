@@ -125,6 +125,19 @@ ADD2INITCLASSES(MCC_NListtreeInt_Startup, -1);
 ADD2EXPUNGECLASSES(MCC_NListtreeInt_Shutdown, -1);
 /* Internal version of NListtree that enables controling the dispatcher */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* Relations:
  * MUIS_Listtree_Treenode -> MUI_NListtree_Treenode via MUIS_Listtree_TreeNodeInt.ref
  * MUI_NListtree_Treenode -> MUIS_Listtree_Treenode via MUI_NListtree_Treenode.tn_User
@@ -134,6 +147,10 @@ struct MUIS_Listtree_TreeNodeInt
     struct MUIS_Listtree_TreeNode base;
     struct MUI_NListtree_TreeNode *ref;
 };
+
+#define SYNC_TREENODE_FLAGS(tn)                                                 \
+   if (tn && tn->tn_User)                                                       \
+      ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Flags = tn->tn_Flags;
 
 static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
 {
@@ -172,16 +189,18 @@ static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
 
 static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_DisplayMessage *msg)
 {
-    struct _temp { STACKED APTR array; STACKED APTR treenode; } t;
     struct Hook * displayhook = (struct Hook *)hook->h_Data;
+    APTR tn = NULL;
 
     if (!displayhook)
-        return FALSE;
+        return 0;
 
-    t.array     = msg->Array;
-    t.treenode  = msg->TreeNode ? msg->TreeNode->tn_User : NULL;
+    SYNC_TREENODE_FLAGS(msg->TreeNode);
 
-    return CallHookPkt(displayhook, t.array, t.treenode);
+    tn  = msg->TreeNode ? msg->TreeNode->tn_User : NULL;
+
+    return CallHookPkt(displayhook, msg->Array, tn);
+}
 }
 
 #define NEWHANDLE(attrname)                                         \
@@ -200,10 +219,6 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
         supertags[i].ti_Tag = AATTR;                                \
         supertags[i++].ti_Data = tag->ti_Data;                      \
         break;
-
-#define SYNC_TREENODE_FLAGS(tn)                                                 \
-   if (tn->tn_User)                                                             \
-      ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Flags = tn->tn_Flags;
 
 #define NOTIFY_FORWARD(AATTR)                                       \
     DoMethod(data->nlisttree, MUIM_Notify, AATTR, MUIV_EveryTime,   \
