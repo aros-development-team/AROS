@@ -101,20 +101,25 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu,
 
         if (depth == 0)
         {
-            menu->nm_Type = NM_TITLE;
-            if (!enabled)
-                menu->nm_Flags |= NM_MENUDISABLED;
+            LONG type = 0;
+            get(child, MUIA_Menuitem_Type, &type);
+
+            if (type == MUIV_Menuitem_Type_Menuitem)
+                /* Depth 0 Menuitems are to become items of current menu, not menus. MUI behavior */
+                menu->nm_Type = NM_ITEM;
+            else
+                menu->nm_Type = NM_TITLE;
         }
         else if (depth == 1)
-        {
             menu->nm_Type = NM_ITEM;
-            if (!enabled)
-                menu->nm_Flags |= NM_ITEMDISABLED;
-        }
         else if (depth == 2)
-        {
             menu->nm_Type = NM_SUB;
-            if (!enabled)
+
+        if (!enabled)
+        {
+            if (menu->nm_Type == NM_TITLE)
+                menu->nm_Flags |= NM_MENUDISABLED;
+            else
                 menu->nm_Flags |= NM_ITEMDISABLED;
         }
 
