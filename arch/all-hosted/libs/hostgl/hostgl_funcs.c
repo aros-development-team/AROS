@@ -10,6 +10,8 @@
 #include <proto/graphics.h>
 #include <proto/oop.h>
 
+#include <hidd/graphics.h>
+
 #include "hostgl_ctx_manager.h"
 #include "hostgl_funcs.h"
 #include "hostgl_support.h"
@@ -148,7 +150,6 @@ VOID HostGL_AllocatePixmap(struct hostgl_context *ctx)
     ctx->glXPixmapBM = AllocBitMap(ctx->framebuffer->width, ctx->framebuffer->height, 0, BMF_MINPLANES, ctx->visible_rp->BitMap);
 
 #define HiddX11BitMapAB ctx->HiddX11BitMapAB
-#define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))
     
     if(ctx->glXPixmapBM)
     {
