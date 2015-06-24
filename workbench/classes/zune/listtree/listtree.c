@@ -193,8 +193,9 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
         supertags[i++].ti_Data = tag->ti_Data;                      \
         break;
 
-#define SYNC_TREENODE_FLAGS(tn) \
-        ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Flags = tn->tn_Flags;
+#define SYNC_TREENODE_FLAGS(tn)                                                 \
+   if (tn->tn_User)                                                             \
+      ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Flags = tn->tn_Flags;
 
 /*** Methods ****************************************************************/
 Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -289,12 +290,10 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* Setup root node */
     {
-        struct MUIS_Listtree_TreeNodeInt * _int = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNodeInt));
-        struct MUI_NListtree_TreeNode * root = NULL;
-        root = (struct MUI_NListtree_TreeNode *)DoMethod(data->nlisttree, MUIM_NListtree_GetEntry,
-                                NULL, -15 /* priv -> position root */, 0);
-        root->tn_User = _int;
-        _int->ref = root;
+        /*
+         * Leave the tn_User of root node as NULL. It is expected that
+         * parent of first level item is returned as NULL in Listtree
+         */
     }
 
     /* Setup hook proxies */
