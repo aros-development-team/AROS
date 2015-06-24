@@ -95,6 +95,21 @@ IPTR NListtreeInt__DoDrag(struct IClass *cl, Object *obj, struct MUIP_DoDrag * m
     return 0;
 }
 
+IPTR NListtreeInt__DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
+{
+    struct NListtreeInt_DATA *data = INST_DATA(cl, obj);
+
+    if (data->listtree == msg->obj)
+    {
+        /* Forward to parent class passing "this" */
+        struct MUIP_DragQuery temp = *msg;
+        temp.obj = obj;
+        return DoSuperMethodA(cl, obj, &temp);
+    }
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+
 BOOPSI_DISPATCHER(IPTR, NListtreeInt_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -104,6 +119,8 @@ BOOPSI_DISPATCHER(IPTR, NListtreeInt_Dispatcher, cl, obj, msg)
         return NListtreeInt__ForwardSuperMethod(cl, obj, (struct MUIP_NListtreeInt_ForwardSuperMethod *)msg);
     case(MUIM_DoDrag):
         return NListtreeInt__DoDrag(cl, obj, (struct MUIP_DoDrag *)msg);
+    case(MUIM_DragQuery):
+        return NListtreeInt__DragQuery(cl, obj, (struct MUIP_DragQuery *)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
