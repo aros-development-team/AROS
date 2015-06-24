@@ -20,6 +20,7 @@ struct Listtree_DATA
     Object *nlisttree;
     struct Hook notifysimulatehook;
     struct Hook displayhookproxy;
+    struct Hook destructhookproxy;
 
     /*- Protected ----------------------------------------------------------*/
 

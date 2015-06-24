@@ -201,6 +201,20 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
 
     return CallHookPkt(displayhook, msg->Array, tn);
 }
+
+static IPTR DestructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_DestructMessage *msg)
+{
+    struct Listtree_DATA * data = (struct Listtree_DATA *)hook->h_Data;
+    struct MUIS_Listtree_TreeNode * tn = (struct MUIS_Listtree_TreeNode *)msg->UserData;
+    if (!data)
+        return 0;
+
+    if (data->destrhook && tn)
+        CallHookPkt(data->destrhook, data->pool, tn->tn_User);
+
+    FreePooled(data->pool, tn, sizeof(struct MUIS_Listtree_TreeNodeInt));
+
+    return 0;
 }
 
 #define NEWHANDLE(attrname)                                         \
@@ -331,6 +345,13 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         data->displayhookproxy.h_SubEntry   = (HOOKFUNC)DisplayHook_Proxy;
         data->displayhookproxy.h_Data       = data->displayhook;
         nnset(data->nlisttree, MUIA_NListtree_DisplayHook, &data->displayhookproxy);
+    }
+    /* Destroy hook is mandatory to free proxy structures */
+    {
+        data->destructhookproxy.h_Entry      = HookEntry;
+        data->destructhookproxy.h_SubEntry   = (HOOKFUNC)DestructHook_Proxy;
+        data->destructhookproxy.h_Data       = data;
+        nnset(data->nlisttree, MUIA_NListtree_DestructHook, &data->destructhookproxy);
     }
 
     /* Setup notification forwarding */
