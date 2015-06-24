@@ -56,7 +56,7 @@ STATIC Object *CreateMenuString(struct NewMenu * newmenu, ULONG flags,
     int i = 0;
     UWORD nmflags;
 
-    Object *menustrip = (Object *) MenuitemObject, End;
+    Object *menustrip = (Object *) MenustripObject, End;
     Object *menu = NULL;
     Object *menuitem = NULL;
 
@@ -69,10 +69,10 @@ STATIC Object *CreateMenuString(struct NewMenu * newmenu, ULONG flags,
 
         if (newmenu[i].nm_Type == NM_TITLE)
         {
-            menu = (Object *)MenuitemObject, 
-                MUIA_Menuitem_Title,   (IPTR)newmenu[i].nm_Label, 
-                MUIA_UserData,         (IPTR)newmenu[i].nm_UserData,
-                MUIA_Menuitem_Enabled, (nmflags & NM_MENUDISABLED) == 0,
+            menu = (Object *)MenuObject,
+                MUIA_Menu_Title,    (IPTR)newmenu[i].nm_Label,
+                MUIA_UserData,      (IPTR)newmenu[i].nm_UserData,
+                MUIA_Menu_Enabled,  (nmflags & NM_MENUDISABLED) == 0,
                 End;
             if (menu)
                 DoMethod(menustrip, MUIM_Family_AddTail, (IPTR) menu);

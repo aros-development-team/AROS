@@ -1760,7 +1760,7 @@ AROS_UFH3(void, lv_click,
                     enableObject(gadgets.buttons[GB_RENAME]);
                     enableObject(gadgets.buttons[GB_DOSENVEC]);
                     enableObject(gadgets.buttons[GB_SWITCHES]);
-		    SetAttrs(part_item, MUIA_Menuitem_Enabled, !partition->table, TAG_DONE);
+		    SetAttrs(part_item, MUIA_Menu_Enabled, !partition->table, TAG_DONE);
                 }
                 else if (iln->ln.ln_Type == LNT_Harddisk)
                 {
@@ -1781,7 +1781,7 @@ AROS_UFH3(void, lv_click,
             disableObject(gadgets.buttons[GB_CREATE_TABLE]);
             disableObject(gadgets.buttons[GB_CHANGE_TYPE]);
             disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
-	    SetAttrs(part_item, MUIA_Menuitem_Enabled, FALSE, TAG_DONE);
+	    SetAttrs(part_item, MUIA_Menu_Enabled, FALSE, TAG_DONE);
             break;
         }
     }
@@ -1825,9 +1825,9 @@ LONG initGUI(void)
                 MUIA_Application_Author     , "Bearly, Ogun, Fats and others at AROS",
                 MUIA_Application_Description, "Partition your disks.",
                 MUIA_Application_Base       , "HDTOOLBOX",
-        MUIA_Application_Menustrip, MenuitemObject,
-            MUIA_Family_Child, MenuitemObject,
-                MUIA_Menuitem_Title, MSG(WORD_MENU_Project),
+        MUIA_Application_Menustrip, MenustripObject,
+            MUIA_Family_Child, MenuObject,
+                MUIA_Menu_Title, MSG(WORD_MENU_Project),
                 MUIA_Family_Child,
                     about_item = MenuitemObject, MUIA_Menuitem_Title, MSG(WORD_MENU_About),
                 End,
@@ -1836,9 +1836,9 @@ LONG initGUI(void)
                 End,
             End,
             MUIA_Family_Child,
-		part_item = MenuitemObject,
-                MUIA_Menuitem_Title, MSG(WORD_MENU_Partition),
-		MUIA_Menuitem_Enabled, FALSE,
+		part_item = MenuObject,
+                MUIA_Menu_Title, MSG(WORD_MENU_Partition),
+		MUIA_Menu_Enabled, FALSE,
                 MUIA_Family_Child,
                     createml_item = MenuitemObject,
 		    MUIA_Menuitem_Title, MSG(WORD_MENU_CreateMountlist),
