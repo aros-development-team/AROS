@@ -791,6 +791,9 @@ IPTR Listtree__MUIM_List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP
     struct Listtree_DATA *data = INST_DATA(cl, obj);
     struct ListImage * li = (struct ListImage *)msg->listimg;
 
+    if (!li)
+        return 0;
+
     /* DoMethod(li->obj, MUIM_Cleanup); // Called in MUIM_NList_DeleteImage */
     DoMethod(li->obj, MUIM_DisconnectParent);
     return DoMethod(data->nlisttree, MUIM_NList_DeleteImage, msg->listimg);
