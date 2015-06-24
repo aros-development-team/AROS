@@ -2235,6 +2235,7 @@ IPTR List__MUIM_CreateImage(struct IClass *cl, Object *obj,
 
     if (!msg->obj)
         return 0;
+
     /* List must be already setup in Setup of your subclass */
     if (!(_flags(obj) & MADF_SETUP))
         return 0;
