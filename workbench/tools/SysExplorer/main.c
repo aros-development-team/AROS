@@ -330,9 +330,9 @@ static BOOL GUIinit()
         MUIA_Application_Base,          (IPTR)APPNAME,
         MUIA_Application_Description,   __(MSG_DESCRIPTION),
 
-        MUIA_Application_Menustrip, (IPTR)(MenuitemObject,
-            MUIA_Family_Child, (IPTR)(MenuitemObject,
-                MUIA_Menuitem_Title, __(MSG_MENU_PROJECT),
+        MUIA_Application_Menustrip, (IPTR)(MenustripObject,
+            MUIA_Family_Child, (IPTR)(MenuObject,
+                MUIA_Menu_Title, __(MSG_MENU_PROJECT),
                 MUIA_Family_Child, (IPTR)(property_menu = MenuitemObject,
                     MUIA_Menuitem_Title, (IPTR)"Properties",
                 End),

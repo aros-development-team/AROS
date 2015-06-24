@@ -334,9 +334,9 @@ void main(void)
     hook_display.h_Entry = (HOOKFUNC)display_function;
     hook_display2.h_Entry = (HOOKFUNC)display2_function;
 
-    context_menu = MenuitemObject,
-	    MUIA_Family_Child, MenuitemObject,
-		MUIA_Menuitem_Title, "Menutest",
+    context_menu = MenustripObject,
+	    MUIA_Family_Child, MenuObject,
+		MUIA_Menu_Title, "Menutest",
 		MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "First Test Entry", End,
 		MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Second Test Entry", End,
 		End,
@@ -347,9 +347,9 @@ void main(void)
     ColorWheelBase = OpenLibrary("gadgets/colorwheel.gadget",0);
 
     app = ApplicationObject,
-	MUIA_Application_Menustrip, MenuitemObject,
-	    MUIA_Family_Child, MenuitemObject,
-	    	MUIA_Menuitem_Title, "Project",
+	MUIA_Application_Menustrip, MenustripObject,
+	    MUIA_Family_Child, MenuObject,
+	    	MUIA_Menu_Title, "Project",
 	    	MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "About...", MUIA_Menuitem_Shortcut, "?", End,
 	    	MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
 	    	MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Quit", MUIA_Menuitem_Shortcut, "Q", End,
