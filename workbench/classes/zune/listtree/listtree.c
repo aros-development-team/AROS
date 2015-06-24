@@ -154,6 +154,14 @@ static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
         setti[0].ti_Tag     = MUIA_Listtree_Active;
         setti[0].ti_Data    = val ? (IPTR)((struct MUI_NListtree_TreeNode *)val)->tn_User : 0;
         break;
+    case(MUIA_NListtree_DoubleClick):
+        setti[0].ti_Tag     = MUIA_Listtree_DoubleClick;
+        setti[0].ti_Data    = val;
+        break;
+    case(MUIA_NListtree_Quiet):
+        setti[0].ti_Tag     = MUIA_Listtree_Quiet;
+        setti[0].ti_Data    = val;
+        break;
     default:
         bug("[Listtree] NotifySimulate_Function - unhandled attribute %x\n", attr);
     }
@@ -196,6 +204,11 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
 #define SYNC_TREENODE_FLAGS(tn)                                                 \
    if (tn->tn_User)                                                             \
       ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Flags = tn->tn_Flags;
+
+#define NOTIFY_FORWARD(AATTR)                                       \
+    DoMethod(data->nlisttree, MUIM_Notify, AATTR, MUIV_EveryTime,   \
+        obj, 4, MUIM_CallHook, &data->notifysimulatehook, AATTR, MUIV_TriggerValue);
+
 
 /*** Methods ****************************************************************/
 Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -306,8 +319,9 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* Setup notification forwarding */
-    DoMethod(data->nlisttree, MUIM_Notify, MUIA_NListtree_Active, MUIV_EveryTime,
-            obj, 4, MUIM_CallHook, &data->notifysimulatehook, MUIA_NListtree_Active, MUIV_TriggerValue);
+    NOTIFY_FORWARD(MUIA_NListtree_Active)
+    NOTIFY_FORWARD(MUIA_NListtree_DoubleClick)
+    NOTIFY_FORWARD(MUIA_NListtree_Quiet)
 
     return obj;
 }
