@@ -362,6 +362,15 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return obj;
 }
 
+IPTR Listtree__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+
+    DeletePool(data->pool);
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+
 #define SETHANDLE(attrname)                                         \
     case(attrname):                                                 \
         bug("[Listtree] OM_SET:%s - unsupported\n", #attrname);     \
