@@ -322,7 +322,7 @@ static BOOL GUIinit()
 	    MUIA_Application_Base,	    (IPTR)APPNAME,
 	    MUIA_Application_Description,   __(MSG_DESCRIPTION),
 
-            MUIA_Application_Menustrip, MenuistripObject,
+            MUIA_Application_Menustrip, MenustripObject,
             	MUIA_Family_Child, MenuObject,
                     MUIA_Menu_Title, __(MSG_MENU_PROJECT),
                     MUIA_Family_Child,
