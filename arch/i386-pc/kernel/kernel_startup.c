@@ -159,7 +159,7 @@ void kernel_cstart(const struct TagItem *msg)
     struct table_desc gdtr;
     struct MinList memList;
     struct MemHeader *mh, *mh2;
-    UWORD *ranges[3];
+    UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
     struct mb_mmap *region;
     char *cmdline = NULL;
     ULONG allocator = ALLOCATOR_TLSF;
@@ -308,15 +308,12 @@ void kernel_cstart(const struct TagItem *msg)
     NEWLIST(&memList);
     mmap_InitMemory(mmap, mmap_len, &memList, kick_start, kick_end, 0x00001000, PC_Memory, allocator);
 
-
-
     /*
      * mmap_InitMemory() adds MemHeaders to the list in the order they were created.
      * I. e. highest addresses are added last.
      * Take highest region in order to create SysBase in it.
      */
     mh = (struct MemHeader *)REMTAIL(&memList);
-
 
     D(bug("[Kernel] Initial MemHeader: 0x%p - 0x%p (%s)\n", mh->mh_Lower, mh->mh_Upper, mh->mh_Node.ln_Name));
 
@@ -345,9 +342,9 @@ void kernel_cstart(const struct TagItem *msg)
 
     ranges[0] = (UWORD *)kick_start;
     ranges[1] = (UWORD *)kick_end;
-    ranges[2] = (UWORD *)-1;
-
     krnPrepareExecBase(ranges, mh, BootMsg);
+
+    krnCreateROMHeader("Kickstart ROM", kick_start, kick_end);
 
     /*
      * Now we have working exec.library memory allocator.

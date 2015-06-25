@@ -265,8 +265,6 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
 
         reg++;
     }
-
-    krnCreateROMHeader("Kickstart ROM", klo, khi);
 }
 
 struct mb_mmap *mmap_FindRegion(IPTR addr, struct mb_mmap *mmap, unsigned long len)
