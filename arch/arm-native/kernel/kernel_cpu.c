@@ -284,11 +284,13 @@ void cpu_Dispatch(regs_t *regs)
 
     DSCHED(bug("[Kernel:%02d] cpu_Dispatch()\n", cpunum));
 
+#if 0
     /* Break Disable() if needed */
     if (IDNESTCOUNT_GET >= 0) {
         IDNESTCOUNT_SET(-1);
-        ((uint32_t *)regs)[13] &= ~0x80;
+        ((uint32_t *)regs)[16] &= ~0x80;
     }
+#endif
 
     while (!(task = core_Dispatch()))
     {
