@@ -2917,7 +2917,7 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 #
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
-    aros_prefix= extraoptions= installoptions= cflags=$(CFLAGS)
+    aros_prefix= extraoptions= installoptions= maketarget= cflags=$(CFLAGS)
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -2965,7 +2965,7 @@ BD_CXXFLAGS := $(subst -Wno-pointer-sign,,$(BD_CFLAGS))
 $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 	if ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
             $(RM)  $(%(mmake)-installflag) && \
-	    $(MAKE) -C $(%(mmake)-pkgdir) && \
+	    $(MAKE) -C $(%(mmake)-pkgdir) %(maketarget) && \
 	    cd $(%(mmake)-pkgdir) && \
 	    cmake %(installoptions) -P cmake_install.cmake && \
 	    $(TOUCH) $@ -r $^; \
