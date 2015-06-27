@@ -134,7 +134,9 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
 
     /*** Allocate and init all cards *******************************************/
 
-    card_base->driverdatas = (struct HDAudioChip **) AllocVec(sizeof(*card_base->driverdatas) * card_base->cards_found, MEMF_PUBLIC);
+    card_base->driverdatas = (struct HDAudioChip **) AllocVec(
+        sizeof(*card_base->driverdatas) * card_base->cards_found,
+        MEMF_PUBLIC | MEMF_CLEAR);
 
     if (card_base->driverdatas == NULL)
     {
