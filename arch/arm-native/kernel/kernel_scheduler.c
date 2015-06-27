@@ -109,9 +109,7 @@ void core_Switch(void)
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
-#endif
         Remove(&task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
 #endif
         task->tc_State = TS_READY;
