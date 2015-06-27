@@ -33,6 +33,7 @@ All Rights Reserved.
 
 
 /* Public functions in main.c */
+static void perform_controller_specific_settings(struct HDAudioChip *card);
 int card_init(struct HDAudioChip *card);
 void card_cleanup(struct HDAudioChip *card);
 static BOOL allocate_corb(struct HDAudioChip *card);
@@ -174,9 +175,10 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
 
     card->iobase  = ahi_pci_get_base_address(0, dev);
     card->length  = ahi_pci_get_base_size(0, dev);
-    card->irq     = ahi_pci_get_irq(dev);
     card->chiprev = inb_config(PCI_REVISION_ID, dev);
     card->model   = inb_config(PCI_SUBSYSTEM_ID, dev);
+
+    perform_controller_specific_settings(card);
 
     ahi_pci_add_intserver(&card->interrupt, dev);
 
@@ -254,12 +256,13 @@ void FreeDriverData(struct HDAudioChip* card, struct DriverBase*  AHIsubBase)
 /* This is the controller specific portion, for fixes to southbridge */
 static void perform_controller_specific_settings(struct HDAudioChip *card)
 {
-    ULONG data;
+    ULONG data, subsystem;
     ULONG mask = (1 << 16) - 1;
 
-    /* Get vendor id */
+    /* Get vendor/product/subsystem IDs */
     data = inl_config(0x0, card->pci_dev);
     D(bug("DEBUG: Controller Vendor ID: %x\n", data));
+    subsystem = inl_config(0x2C, card->pci_dev);
 
     /* NVidia is for all nvidia MCP chipsets, create mask to get rid of device ID */
 
@@ -289,6 +292,15 @@ static void perform_controller_specific_settings(struct HDAudioChip *card)
         data |= 0x01;
         outb_config(0x4C, data, card->pci_dev);
     }
+
+    /* Check for HP Compaq nc6320 laptop */
+    if (subsystem == 0x30aa103c)
+    {
+        D(bug("[HDAudio] HP Compaq nc6320 laptop detected, correcting IRQ\n"));
+        data = inb_config(0x3C, card->pci_dev);
+        if (data == 10)
+            outb_config(0x3C, 11, card->pci_dev);
+    }
 }
 
 int card_init(struct HDAudioChip *card)
@@ -304,8 +316,6 @@ int card_init(struct HDAudioChip *card)
         D(bug("[HDAudio] Reset chip failed\n"));
         return -1;
     }
-
-    perform_controller_specific_settings(card);
 
     // 4.3 Codec discovery: 15 codecs can be connected, bits that are on indicate a codec
     card->codecbits = pci_inw(HD_STATESTS, card);
@@ -1002,7 +1012,8 @@ static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD de
     }
 
     card->dac_nid = 0x2;
-    card->dac_volume_nid = 0x2;
+    card->dac_volume_nids[0] = 0x2;
+    card->dac_volume_count = 1;
     card->adc_nid = 0x8;
         
     card->adc_mixer_nid = 0x23;
@@ -1156,7 +1167,8 @@ static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD de
             card->dac_max_gain = 0;
             card->dac_step_gain = 1.5;
             
-            card->dac_volume_nid = 0xC;
+            card->dac_volume_nids[0] = 0xC;
+            card->dac_volume_count = 1;
             
             send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute PCM at index 0
             send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (1 << 8), card); // unmute monitor mixer at index 1
@@ -1246,7 +1258,8 @@ static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device
     card->dac_nid = 0x10;
     card->adc_nid = 0x12;
     card->adc_mixer_nid = 0x1C;
-    card->dac_volume_nid = 0x10;
+    card->dac_volume_nids[0] = 0x10;
+    card->dac_volume_count = 1;
    
     card->speaker_nid = 0x0D;
     card->headphone_nid = 0x0A;
@@ -1391,12 +1404,33 @@ static UBYTE get_selected_widget(UBYTE nid, struct HDAudioChip *card)
 }
 
 
+/* Adds a widget to the array of volume controlling widgets if it has volume
+ * control */
+static void check_widget_volume(UBYTE nid, struct HDAudioChip *card)
+{
+    ULONG parm;
+
+    parm = get_parameter(nid, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+    D(bug("[HDAudio] NID %xh: Audio widget caps = %lx\n", nid, parm));
+    if (parm & 0x4) // OutAmpPre
+    {
+        D(bug("[HDAudio] NID %xh has volume control\n", nid));
+        card->dac_volume_nids[card->dac_volume_count++] = nid;
+    }
+    else
+    {
+        D(bug("[HDAudio] NID %xh does not have volume control\n", nid));
+    }
+}
+
+
 static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
 {
-    int dac, adc, front, speaker = 0, steps = 0, offset0dB = 0;
+    int dac, adc, front, steps = 0, offset0dB = 0;
     double step_size = 0.25;
-    ULONG parm, widget_caps;
+    ULONG parm, widget_caps, nid;
     UWORD connections, i;
+    UBYTE before_front = 0;
     
     D(bug("[HDAudio] Unknown codec, interrogating chip...\n"));
 
@@ -1412,13 +1446,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
 	
     card->dac_nid = dac;
     
-    parm = get_parameter(dac, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
-    D(bug("[HDAudio] audio widget caps for dac = %lx\n", parm));
-    if (parm & 0x4) // OutAmpPre
-    {
-        card->dac_volume_nid = dac;
-        D(bug("[HDAudio] DAC seems to have volume control\n"));
-    }
+    check_widget_volume(dac, card);
 
     // find FRONT pin
     front = find_widget(card, 4, 0);
@@ -1432,46 +1460,57 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
     {
         send_command_4(card->codecnr, front, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card); // set amplifier gain: unmute output of FRONT
         send_command_12(card->codecnr, front, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+        send_command_12(card->codecnr, front, VERB_SET_CONNECTION_SELECT, 0, card); // use first input
+        check_widget_volume(front, card);
     }
-    
     
     // find SPEAKER
     if (force_speaker_nid > 0)
     {
         D(bug("[HDAudio] Using speaker nid from config file"));
-        speaker = force_speaker_nid;
+        card->speaker_nid = force_speaker_nid;
     }
     else
     {
-        speaker = find_widget(card, 4, 1);
+        card->speaker_nid = find_widget(card, 4, 1);
     }
-    D(bug("[HDAudio] Speaker NID = %xh\n", speaker));
+    D(bug("[HDAudio] Speaker NID = %xh\n", card->speaker_nid));
 	
-    if (speaker == 0)
-    {
-        D(bug("[HDAudio] No speaker pin found, continuing anyway!\n"));
-    }
-        card->speaker_nid = speaker;
-        card->headphone_nid = find_widget(card, 4, 2);
-        
-    D(bug("[HDAudio] Headphone NID = %xh\n", card->headphone_nid));
-        
-    if (speaker != 0)
+    if (card->speaker_nid != 0)
     {
         // check if there is a power amp and if so, enable it
-        if (get_parameter(speaker, VERB_GET_PARMS_PIN_CAPS, card) & PIN_CAPS_EAPD_CAPABLE)
+        if (get_parameter(card->speaker_nid, VERB_GET_PARMS_PIN_CAPS, card) & PIN_CAPS_EAPD_CAPABLE)
         {
             D(bug("[HDAudio] Enabling power amp of speaker\n"));
-            send_command_12(card->codecnr, speaker, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
+            send_command_12(card->codecnr, card->speaker_nid, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
         }
         
         // set amplifier gain: unmute output
-        send_command_4(card->codecnr, speaker, VERB_SET_AMP_GAIN,
+        send_command_4(card->codecnr, card->speaker_nid, VERB_SET_AMP_GAIN,
             OUTPUT_AMP_GAIN | INPUT_AMP_GAIN | AMP_GAIN_LR | 0x0, card);
-    }
 
+            D(bug("[HDAudio] Enabling speaker output\n"));
+            send_command_12(card->codecnr, card->speaker_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+            card->speaker_active = TRUE;
+        send_command_12(card->codecnr, card->speaker_nid, VERB_SET_CONNECTION_SELECT, 0, card); // use first input
+        
+        check_widget_volume(card->speaker_nid, card);
+    }
+    else
+    {
+        D(bug("[HDAudio] No speaker pin found, continuing anyway!\n"));
+    }
+	
+    // Find headphones socket
+        card->headphone_nid = find_widget(card, 4, 2);
+        
+    D(bug("[HDAudio] Headphone NID = %xh\n", card->headphone_nid));
+
+    if (card->headphone_nid != 0)
+    {
         send_command_4(card->codecnr, card->headphone_nid, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card); // set amplifier gain: unmute headphone
         send_command_12(card->codecnr, card->headphone_nid, VERB_SET_PIN_WIDGET_CONTROL, 0xC0, card); // output enabled and headphone enabled
+        send_command_12(card->codecnr, card->headphone_nid, VERB_SET_CONNECTION_SELECT, 0, card); // use first input
         
         // check if there is a power amp and if so, enable it
         if (get_parameter(card->headphone_nid, VERB_GET_PARMS_PIN_CAPS, card) & PIN_CAPS_EAPD_CAPABLE)
@@ -1480,97 +1519,6 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
             send_command_12(card->codecnr, card->headphone_nid, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
         }
         
-    if (speaker != 0)
-    {
-        if (card->headphone_nid != 0 && // headphone NID found and
-            is_jack_connected(card, card->headphone_nid) == FALSE) // no headphone connected -> switch on the speaker
-        {
-            D(bug("[HDAudio] Enabling speaker output\n"));
-            send_command_12(card->codecnr, speaker, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
-            card->speaker_active = TRUE;
-        
-            if (card->dac_volume_nid == 0)
-            {
-                D(bug("[HDAudio] Volume NID has not been set yet, so let's see if the speaker has volume control...\n"));
-                parm = get_parameter(speaker, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
-                D(bug("[HDAudio] Audio widget caps for speaker = %lx\n", parm));
-                if (parm & 0x4) // OutAmpPre
-                {
-                    card->dac_volume_nid = speaker;
-                    D(bug("[HDAudio] Speaker seems to have volume control\n"));
-                }
-                else
-                {
-                    D(bug("[HDAudio] Speaker did not have volume control\n"));
-                }
-            }
-        }
-        else if (card->headphone_nid != 0 && // headphone found NID and
-                 is_jack_connected(card, card->headphone_nid) == TRUE) // headphone connected -> switch off the speaker
-        {
-            D(bug("[HDAudio] Headphone connected: disabling speaker output\n"));
-            //send_command_4(card->codecnr, speaker, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR | (1 << 7), card); // set amplifier gain: mute output
-            send_command_12(card->codecnr, speaker, VERB_SET_PIN_WIDGET_CONTROL, 0x0, card); // output disabled
-        }
-    }
-	
-	
-	   UBYTE before_front = 0;
-    ULONG nid;
-    if (front != 0)
-    {
-        // now the hard part: see if the input of FRONT is equal to the DAC NID
-   	    nid = send_command_12(card->codecnr, front,
-            VERB_GET_CONNECTION_LIST_ENTRY, 0, card);
-            before_front = (UBYTE)nid;
-   	}
-   	else if (speaker != 0)
-   	{
-   	    D(bug("[HDAudio] setting before_front to before speaker\n"));
-   	    if (card->headphone_nid != 0 &&
-            is_jack_connected(card, card->headphone_nid) == FALSE)
-        {
-   	        nid = send_command_12(card->codecnr, speaker, VERB_GET_CONNECTION_LIST_ENTRY, 0, card);
-                before_front = (UBYTE)nid;
-   	    }
-   	    else // use headphone
-   	    {
-   	        nid = send_command_12(card->codecnr, card->headphone_nid, VERB_GET_CONNECTION_LIST_ENTRY, 0, card);
-                before_front = (UBYTE)nid;
-   	    }
-   	}
-	
-  if (before_front != dac)
-	 {
-	    D(bug("[HDAudio] The widget before front (%xh) is not equal to DAC!\n", before_front));
-	    
-	    send_command_4(card->codecnr, before_front, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute PCM at index 0
-	    D(bug("[HDAudio] Let's hope it was a mute that now got unmuted!\n"));
-	    
-	    D(bug("[HDAudio] audio widget caps for before_front= %lx\n", get_parameter(before_front, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card)));
-	    
-	    if (card->dac_volume_nid == 0) // volume NID not set yet
-	    {
-	        D(bug("[HDAudio] Checking if before_front has volume control\n"));
-	        parm = get_parameter(before_front, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
-         if (parm & 0x4) // OutAmpPre
-         {
-             card->dac_volume_nid = before_front;
-             D(bug("[HDAudio] before_front seems to have volume control\n"));
-        }
-        else
-        {
-             D(bug("[HDAudio] Odd, before_front doesn't seem to have volume control\n"));
-        }
-	    }
-	  }
-	  else
-	  {
-	    D(bug("[HDAudio] The widget before front or speaker is equal to DAC.\n"));
-	  }
-	
-    if (card->headphone_nid != 0)
-    {
         // unmute widget before headphone jack if it's not the DAC
    	    nid = send_command_12(card->codecnr, card->headphone_nid,
             VERB_GET_CONNECTION_LIST_ENTRY, 0, card);
@@ -1582,25 +1530,62 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
                     INPUT_AMP_GAIN | AMP_GAIN_LR | i << 8, card);
         }
 
-        send_command_12(card->codecnr, card->headphone_nid,
-            VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+        check_widget_volume(card->headphone_nid, card);
     }
 
-    parm = get_parameter(card->dac_volume_nid, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
-    if ((parm & 0x8) != 0)
-	parm = get_parameter(card->dac_volume_nid, VERB_GET_PARMS_OUTPUT_AMP_CAPS , card);
-    else
-        parm = get_parameter(card->function_group, VERB_GET_PARMS_OUTPUT_AMP_CAPS, card);
-	D(bug("[HDAudio] Output amp caps = %lx\n", parm));
+    // find the node before the front, speaker or HP node
+    if (front != 0)
+        nid = front;
+    else if (card->speaker_nid != 0)
+        nid = card->speaker_nid;
+    else if (card->headphone_nid != 0)
+        nid = card->headphone_nid;
+
+    if (nid != 0)
+        before_front = (UBYTE)send_command_12(card->codecnr, nid,
+            VERB_GET_CONNECTION_LIST_ENTRY, 0, card);
 	
-	step_size = (((parm >> 16) & 0x7F) + 1) * 0.25;
-	steps = ((parm >> 8) & 0x7F);
-	offset0dB = (parm & 0x7F);
+  if (before_front != dac)
+	 {
+	    D(bug("[HDAudio] The widget before front/speaker/HP (%xh) is not equal to DAC!\n", before_front));
+	    
+	    send_command_4(card->codecnr, before_front, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute PCM at index 0
+	    D(bug("[HDAudio] Let's hope it was a mute that now got unmuted!\n"));
+	    
+        check_widget_volume(before_front, card);
+	  }
+	  else
+	  {
+	    D(bug("[HDAudio] The widget before front/speaker/HP is equal to DAC.\n"));
+	  }
 	
-	card->dac_min_gain = -(offset0dB * step_size);
-    card->dac_max_gain = card->dac_min_gain + step_size * steps;
-    card->dac_step_gain = step_size;
-    D(bug("[HDAudio] Gain step size = %lu * 0.25 dB, max gain = %d\n", (((parm >> 16) & 0x7F) + 1), (int) (card->dac_max_gain)));
+    for (i = 0; card->dac_volume_nids[i] != 0; i++)
+    {
+        parm = get_parameter(card->dac_volume_nids[i],
+            VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+        if ((parm & 0x8) != 0)
+            parm = get_parameter(card->dac_volume_nids[i],
+                VERB_GET_PARMS_OUTPUT_AMP_CAPS , card);
+        else
+            parm = get_parameter(card->function_group,
+                VERB_GET_PARMS_OUTPUT_AMP_CAPS, card);
+        D(bug("[HDAudio] NID %xh: Output amp caps = %lx\n", card->dac_volume_nids[i], parm));
+
+        step_size = (((parm >> 16) & 0x7F) + 1) * 0.25;
+        steps = ((parm >> 8) & 0x7F);
+        offset0dB = (parm & 0x7F);
+
+        if (steps != 0)
+        {
+            card->dac_min_gain = -(offset0dB * step_size);
+            card->dac_max_gain = card->dac_min_gain + step_size * steps;
+            card->dac_step_gain = step_size;
+            D(bug("[HDAudio] Gain step size = %lu * 0.25 dB,"
+                " min gain = %d, max gain = %d\n",
+                (((parm >> 16) & 0x7F) + 1), (int) (card->dac_min_gain),
+                (int) (card->dac_max_gain)));
+        }
+    }
 
     // find out the first PCM ADC
     adc = find_widget(card, 1, 0);
@@ -1971,7 +1956,9 @@ void set_dac_gain(struct HDAudioChip *card, double dB)
         dB_steps = 0;
     }
 
-    send_command_4(card->codecnr, card->dac_volume_nid, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR | dB_steps, card);
+    for (i = 0; i < card->dac_volume_count; i++)
+        send_command_4(card->codecnr, card->dac_volume_nids[i],
+            VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR | dB_steps, card);
 }
 
 
@@ -2004,12 +1991,12 @@ BOOL is_jack_connected(struct HDAudioChip *card, UBYTE NID)
     
     if (result & 0x80000000)
     {
-        //bug("jack connected\n");
+        D(bug("[HDAudio] jack connected\n"));
         return TRUE;
     }
     else
     {
-        //bug("jack disconnected\n");
+        D(bug("[HDAudio] jack disconnected\n"));
         return FALSE;
     }
 }

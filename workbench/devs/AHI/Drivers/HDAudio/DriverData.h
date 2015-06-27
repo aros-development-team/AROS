@@ -77,7 +77,6 @@ struct HDAudioChip
     APTR iobase;
     unsigned long length;
     unsigned short model;
-    unsigned int irq; 
     int flip;
     int recflip;
     unsigned char chiprev;
@@ -105,11 +104,11 @@ struct HDAudioChip
     UBYTE adc_nid;
     UBYTE adc_mixer_nid;
     BOOL adc_mixer_is_mux;
-    UBYTE dac_volume_nid;
+    UBYTE dac_volume_nids[10];
+    UBYTE dac_volume_count;
     UBYTE speaker_nid;
     UBYTE headphone_nid;
     BOOL speaker_active;
-    
     
     UBYTE line_in_nid;
     UBYTE mic1_nid;
