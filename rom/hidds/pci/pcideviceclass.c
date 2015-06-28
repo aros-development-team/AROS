@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI device class
@@ -585,10 +585,6 @@ static void dispatch_generic(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
                 *msg->storage = (IPTR)dev->SubsystemID;
                 break;
 
-            case aoHidd_PCIDevice_INTLine:
-                *msg->storage = (IPTR)dev->INTLine;
-                break;
-
             case aoHidd_PCIDevice_IRQLine:
                 *msg->storage = (IPTR)dev->IRQLine;
                 break;
@@ -842,7 +838,6 @@ static const dispatcher_t Dispatcher[num_Hidd_PCIDevice_Attrs] =
     [aoHidd_PCIDevice_SubClass]          = dispatch_generic,
     [aoHidd_PCIDevice_SubsystemVendorID] = dispatch_generic,
     [aoHidd_PCIDevice_SubsystemID]       = dispatch_generic,
-    [aoHidd_PCIDevice_INTLine]           = dispatch_generic,
     [aoHidd_PCIDevice_IRQLine]           = dispatch_generic,
     [aoHidd_PCIDevice_RomBase]           = dispatch_generic,
     [aoHidd_PCIDevice_RomSize]           = dispatch_generic,
@@ -961,6 +956,10 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
             case aoHidd_PCIDevice_InterfaceDesc:
                 *msg->storage = (IPTR)dev->strInterface;
+                break;
+
+            case aoHidd_PCIDevice_INTLine:
+                *msg->storage = getByte(cl, o, PCICS_INT_LINE);
                 break;
 
             case aoHidd_PCIDevice_IRQStatus:
