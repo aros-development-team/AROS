@@ -15,7 +15,7 @@
 #include <proto/popupmenu.h>
 extern struct PopupMenuBase * PopupMenuBase;
 
-	ULONG PM_OpenPopupMenu(
+	IPTR PM_OpenPopupMenu(
 
 /*  SYNOPSIS */
 	struct Window *prevwnd,
