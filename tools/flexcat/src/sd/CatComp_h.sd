@@ -76,7 +76,7 @@ extern struct Library *LocaleBase;
 
 struct %b_ArrayType
 {
-    LONG   cca_ID;
+    IPTR   cca_ID;
     STRPTR cca_Str;
 };
 
@@ -112,9 +112,9 @@ static const char %b_Block[] =
 #ifndef %b_CODE_EXISTS
  #define %b_CODE_EXISTS
 
- STRPTR Get%bString(struct %b_LocaleInfo *li, LONG stringNum)
+ STRPTR Get%bString(struct %b_LocaleInfo *li, IPTR stringNum)
  {
- LONG   *l;
+ IPTR   *l;
  UWORD  *w;
  STRPTR  builtIn;
 
@@ -122,10 +122,10 @@ static const char %b_Block[] =
 
      while (*l != stringNum)
        {
-       w = (UWORD *)((ULONG)l + 4);
-       l = (LONG *)((ULONG)l + (ULONG)*w + 6);
+       w = (UWORD *)((IPTR)l + 4);
+       l = (IPTR *)((IPTR)l + (IPTR)*w + 6);
        }
-     builtIn = (STRPTR)((ULONG)l + 6);
+     builtIn = (STRPTR)((IPTR)l + 6);
 
 // #define %b_XLocaleBase LocaleBase
 // #define LocaleBase li->li_LocaleBase
@@ -142,7 +142,7 @@ static const char %b_Block[] =
 
 #else
 
- STRPTR Get%bString(struct %b_LocaleInfo *li, LONG stringNum);
+ STRPTR Get%bString(struct %b_LocaleInfo *li, IPTR stringNum);
 
 #endif /* %b_CODE_EXISTS */
 

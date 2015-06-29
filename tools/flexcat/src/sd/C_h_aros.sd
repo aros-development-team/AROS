@@ -56,7 +56,7 @@
 #define HAVE_CATCOMP_ARRAYTYPE
 struct CatCompArrayType
 {
-  LONG   cca_ID;
+  IPTR   cca_ID;
   STRPTR cca_Str;
 };
 #endif
