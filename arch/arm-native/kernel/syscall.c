@@ -173,17 +173,14 @@ void handle_syscall(void *regs)
              * Execure core_SysCall only when we will go back to user mode. Default core_SysCall does
              * not check this condition and could execute Cause() handler before IRQ is entirely handled.
              */
-            case SC_CAUSE:
+
+            default:
             {
                 uint32_t mode = (((uint32_t *)regs)[16]) & 0x1f;
                 if (mode == 0x10 || mode == 0x1f)
                     core_SysCall(swi_no, regs);
                 break;
             }
-
-            default:
-                core_SysCall(swi_no, regs);
-                break;
         }
     }
     else
