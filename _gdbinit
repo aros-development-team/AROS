@@ -11,10 +11,7 @@ set follow-fork-mode child
 #         Provides AbsExecBase and SysBase
 #
 define _sysbase_init
-    init-if-undefined $AbsExecBase = 0
-    if $AbsExecBase != 0
-        set $AbsExecBase = (struct IntExecBase *)$AbsExecBase
-    end
+    init-if-undefined $AbsExecBase = *(struct IntExecBase **)&SysBase
 end
 document _sysbase_init
 Initialize $AbsExecBase convenience variables
@@ -24,8 +21,6 @@ define _debug_init
     _sysbase_init
     init-if-undefined $_debug_DebugBase = 0
 
-    # This is the case for ROM debugging - the user must
-    #  'set $AbsExecBase = 4', then this kicks in.
     if $AbsExecBase != 0 && $_debug_DebugBase == 0
         set $_debug_DebugBase = (struct DebugBase *)($AbsExecBase->DebugBase)
     end
