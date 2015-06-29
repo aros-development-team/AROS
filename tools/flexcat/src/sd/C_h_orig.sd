@@ -55,7 +55,7 @@
 
 struct CatCompArrayType
 {
-  LONG   cca_ID;
+  IPTR   cca_ID;
   STRPTR cca_Str;
 };
 
@@ -90,9 +90,9 @@ struct LocaleInfo
 
 #ifdef CATCOMP_CODE
 
-STRPTR GetString(struct LocaleInfo *li, LONG stringNum)
+STRPTR GetString(struct LocaleInfo *li, IPTR stringNum)
 {
-  LONG *l;
+  IPTR *l;
   UWORD *w;
   STRPTR  builtIn;
 
@@ -101,7 +101,7 @@ STRPTR GetString(struct LocaleInfo *li, LONG stringNum)
   while (*l != stringNum)
   {
     w = (UWORD *)((IPTR)l + 4);
-    l = (LONG *)((IPTR)l + (LONG)*w + 6);
+    l = (IPTR *)((IPTR)l + (IPTR)*w + 6);
   }
   builtIn = (STRPTR)((IPTR)l + 6);
 
