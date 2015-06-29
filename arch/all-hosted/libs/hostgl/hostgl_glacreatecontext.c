@@ -229,7 +229,7 @@ error_out:
 #endif
 
     if (ctx->HiddX11BitMapAB)
-        OOP_ReleaseAttrBase(ctx->HiddX11BitMapAB);
+        OOP_ReleaseAttrBase(IID_Hidd_X11BitMap);
 
     if (ctx->framebuffer)
     {
