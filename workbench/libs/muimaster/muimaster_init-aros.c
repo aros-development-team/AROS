@@ -1,23 +1,18 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. 
+    Copyright © 2002-2015, The AROS Development Team. 
     All rights reserved.
     
     $Id$
 */
 
-#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 
 #include <clib/alib_protos.h>
 
 #include "muimaster_intern.h"
-#include "mui.h"
 
 #include <aros/symbolsets.h>
-
-#include <dos/dos.h>
-#include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -36,8 +31,11 @@ static int MUIMasterInit(LIBBASETYPEPTR lh)
     NewList((struct List *)&MUIMB(lh)->BuiltinClasses);
     NewList((struct List *)&MUIMB(lh)->Applications);
 
-    ((struct MUIMasterBase_intern *)MUIMasterBase)->topaz8font =
-        OpenFont(&topaz8Attr);
+    MUIMB(lh)->topaz8font = OpenFont(&topaz8Attr);
+
+    /* Attempt to allocate memory locations corresponding to Notify class's
+     * special values (to avoid clashes) */
+    MUIMB(lh)->SpecialMemory = AllocAbs(4, (APTR)MUIV_TriggerValue);
 
     return TRUE;
 }
@@ -46,8 +44,11 @@ static int MUIMasterExpunge(LIBBASETYPEPTR lh)
 {
     MUIMasterBase = (struct Library *)lh;
     
-    if (((struct MUIMasterBase_intern *)MUIMasterBase)->topaz8font)
-        CloseFont(((struct MUIMasterBase_intern *)MUIMasterBase)->topaz8font);
+    if (MUIMB(lh)->SpecialMemory != NULL)
+        FreeMem(MUIMB(lh)->SpecialMemory, 4);
+
+    if (MUIMB(lh)->topaz8font != NULL)
+        CloseFont(MUIMB(lh)->topaz8font);
 
     return TRUE;
 }
