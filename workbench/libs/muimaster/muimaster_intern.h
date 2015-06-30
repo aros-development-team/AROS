@@ -81,6 +81,7 @@ struct MUIMasterBase_intern
 
     struct TextFont *topaz8font;
     struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
+    APTR SpecialMemory;
 
     struct MinList BuiltinClasses;
     struct MinList Applications;
