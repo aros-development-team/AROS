@@ -3,14 +3,18 @@ Execute S/Test callhooktest
 Execute S/Test convertpixels
 Execute S/Test date2amiga
 Execute S/Test dosvartest
-;Execute S/Test "examine Tests/examine"
+Execute S/Test examine Tests/examine
 Execute S/Test ExNext
 Execute S/Test fileseek
 Execute S/Test filetest
-;Execute S/Test fontinfo
+Execute S/Test fontinfo topaz.font 8
 Execute S/Test frequencies
 Execute S/Test exec/allocmem
-Avail FLUSH
+Execute S/Try Avail FLUSH
+Execute S/Try LibList
+Execute S/Try DevList
+Execute S/Try ResList
+Execute S/Try TaskList
 
 Echo PASSED TO PASSED
 Shutdown
