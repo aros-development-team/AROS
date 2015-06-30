@@ -1,8 +1,9 @@
-.Key PROG
-Echo "TEST: <PROG>" >> Test_Report.txt
-Tests/<PROG> >> Test_Report.txt
+.Key PROG/A,ARGS/F
+Echo "TEST: <PROG> <ARGS>*N" >> Test_Report.txt
+Tests/<PROG> <ARGS> >> Test_Report.txt
 If WARN
     Skip failure
 Else
+    Echo "================================================================================" >> Test_Report.txt
     Echo >> Test_Report.txt
 Endif
