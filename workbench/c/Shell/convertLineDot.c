@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -82,11 +82,11 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
 
 static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
 {
-    LONG error, i, j, len;
+    LONG i, j, len;
     struct SArg *a;
     TEXT t[256];
 
-    /* modify the template to read numbers as strings ! */
+    /* modify the template to read numbers as strings! */
     for (i = 0, j = 0; s[j] != '\0' && s[j] != '\n' && i < sizeof(t); ++j)
     {
 	if (s[j] == '/' && s[j + 1] == 'N')
@@ -104,11 +104,9 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
     if (ss->arg_rd)
         FreeDosObject(DOS_RDARGS, ss->arg_rd);
 
+    memset(ss->arg, 0, sizeof(IPTR) * MAXARGS);
     if ((ss->arg_rd = ReadArgs(t, ss->arg, NULL)) == NULL)
-    {
-	error = IoErr();
-	return error;
-    }
+        return IoErr();
 
     ss->argcount = 0;
 
@@ -143,7 +141,7 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
 	if (arg && !(a->type & (SWITCH | TOGGLE)))
 	    a->len = cliLen(arg);
 
-	if (arg && a->type & NUMERIC) /* verify numbers validity */
+	if (arg && a->type & NUMERIC) /* verify numbers' validity */
 	{
 	    if (a->type & MULTIPLE)
 	    {
