@@ -126,7 +126,7 @@ LONG handler(struct ExecBase *SysBase) {
     glob = fat_init(proc, dp, SysBase);
 
     if (!glob) {
-        D(bug("%s: %b - error %d\n", __func__, dp->dp_Arg1, retval));
+        D(bug("%s: %b - error %d\n", __func__, dp->dp_Arg1, RETURN_FAIL));
         dp->dp_Res1 = DOSFALSE;
         dp->dp_Res2 = ERROR_NO_FREE_STORE;
         ReplyPacket(dp, SysBase);
