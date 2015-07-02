@@ -135,7 +135,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
         if (((block + count) > unit->sdcu_Capacity))
         {
-            bug("[SDCard%02ld] %s: Requested block (%lx;%ld) outside disk range (%lx)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, block, count, unit->sdcu_Capacity);
+            bug("[SDCard%02ld] %s: Requested block (%lx;%ld) outside disk range (%lx)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, (ULONG)block, count, (ULONG)unit->sdcu_Capacity);
             io->io_Error = IOERR_BADADDRESS;
             return;
         }
