@@ -24,7 +24,6 @@
 #define DEBUG_CACHESTATS    0
 #define DEBUG_MISC          0
 
-#include <aros/libcall.h>
 #include <devices/trackdisk.h>
 
 #include "fat_struct.h"
@@ -44,8 +43,6 @@
 
 #define DEF_POOL_SIZE 65536
 #define DEF_POOL_THRESHOLD DEF_POOL_SIZE
-#define DEF_BUFF_LINES 128
-#define DEF_READ_AHEAD 16*1024
 
 
 /* a handle on something, file or directory */
@@ -129,7 +126,7 @@ struct GlobalLock {
 
     UBYTE name[FAT_MAX_LONG_FILENAME];  /* copy of the name (bstr) */
 #if DEBUG_NAMES
-    UBYTE shortname[13];                /* copy of the short name (bstr) */
+    UBYTE shortname[FAT_MAX_SHORT_NAME + 2]; /* copy of the short name (bstr) */
 #endif
 
     struct MinList      locks;          /* list of ExtFileLocks opened on this file */
@@ -154,7 +151,7 @@ struct VolumeInfo {
 };
 
 struct VolumeIdentity {
-    UBYTE               name[32];     /* BCPL string */
+    UBYTE               name[FAT_MAX_SHORT_NAME + 2];     /* BCPL string */
     struct DateStamp    create_time;
 };
 
@@ -265,7 +262,7 @@ struct Globals {
     UBYTE from_unicode[65536];
     UWORD to_unicode[256];
 
-    /* Disk chaneg interrupt */
+    /* Disk change interrupt */
     struct IntData {
         struct Interrupt Interrupt;
         struct ExecBase *SysBase;
