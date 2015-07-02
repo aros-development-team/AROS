@@ -93,10 +93,8 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
             + sb->fat_size * fat_no + (entry_cache_block
             << (sb->fat_cachesize_bits - sb->sectorsize_bits));
         for (i = 0; i < sb->fat_blocks_count; i++) {
-            LONG ioerr;
-
             sb->fat_blocks[i] =
-                Cache_GetBlock(sb->cache, num + i, &sb->fat_buffers[i], &ioerr);
+                Cache_GetBlock(sb->cache, num + i, &sb->fat_buffers[i]);
 
             /* FIXME: Handle IO errors on cache read! */
             if (sb->fat_blocks[i] == NULL) {
@@ -389,7 +387,8 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 	return IOERR_BADADDRESS;
     }
 
-    sb->cache = Cache_CreateCache(glob, 64, 64, sb->sectorsize, SysBase);
+    sb->cache = Cache_CreateCache(glob, 64, 64, sb->sectorsize, SysBase,
+        DOSBase);
 
     if (sb->clusters_count < 4085) {
         D(bug("\tFAT12 filesystem detected\n"));
@@ -452,10 +451,9 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     {
         /* Clear all FAT sectors */
         for (i = 0; i < sb->fat_size * 2; i++) {
-            LONG ioerr;
             block_ref = Cache_GetBlock(sb->cache,
                 sb->first_device_sector + sb->first_fat_sector + i,
-                &fat_block, &ioerr);
+                &fat_block);
             /* FIXME: Handle IO errors on cache read! */
             memset(fat_block, 0, bsize);
             if (i == 0) {
@@ -534,10 +532,8 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     sb->free_clusters = -1;
     sb->next_cluster = -1;
     if (sb->type == 32) {
-        LONG ioerr;
         sb->fsinfo_block = Cache_GetBlock(sb->cache, sb->first_device_sector
-            + AROS_LE2WORD(boot->ebpbs.ebpb32.bpb_fs_info), (UBYTE **)&fsinfo,
-            &ioerr);
+            + AROS_LE2WORD(boot->ebpbs.ebpb32.bpb_fs_info), (UBYTE **)&fsinfo);
         if (sb->fsinfo_block != NULL) {
             if (fsinfo->lead_sig == AROS_LONG2LE(FSI_LEAD_SIG)
                 && fsinfo->struct_sig == AROS_LONG2LE(FSI_STRUCT_SIG)
@@ -1026,18 +1022,12 @@ void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds, struct Globals
 }
 
 void ConvertDOSDate(struct DateStamp *ds, UWORD *date, UWORD *time, struct Globals *glob) {
-    ULONG secs;
+    ULONG year, month, day, hours, mins, secs;
+    struct ClockData clock_data;
 
     /* convert datestamp to seconds since 1978 */
     secs = ds->ds_Days * 60 * 60 * 24 + ds->ds_Minute * 60
         + ds->ds_Tick / TICKS_PER_SECOND;
-
-    ConvertSysDate(secs, date, time, glob);
-}
-
-void ConvertSysDate(ULONG secs, UWORD *date, UWORD *time, struct Globals *glob) {
-    ULONG year, month, day, hours, mins;
-    struct ClockData clock_data;
 
     /* Round up to next even second because of FAT's two-second granularity */
     secs = (secs & ~1) + 2;

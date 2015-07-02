@@ -15,7 +15,6 @@
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/timer.h>
 
 #include <string.h>
 
@@ -462,19 +461,19 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
 
 void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster) {
     struct Globals *glob = de->sb->glob;
-    struct timeval tv;
-
-    GetSysTime(&tv);
+    struct DateStamp ds;
 
     de->e.entry.attr = attr;
     de->e.entry.nt_res = 0;
 
-    ConvertSysDate(tv.tv_secs, &(de->e.entry.create_date),
+    DateStamp(&ds);
+    ConvertDOSDate(&ds, &(de->e.entry.create_date),
         &(de->e.entry.create_time), glob);
     de->e.entry.write_date = de->e.entry.create_date;
     de->e.entry.write_time = de->e.entry.create_time;
     de->e.entry.last_access_date = de->e.entry.create_date;
-    de->e.entry.create_time_tenth = tv.tv_micro / 100000;
+    de->e.entry.create_time_tenth = ds.ds_Tick % (TICKS_PER_SECOND * 2)
+        / (TICKS_PER_SECOND / 10);
 
     de->e.entry.first_cluster_lo = cluster & 0xffff;
     de->e.entry.first_cluster_hi = cluster >> 16;
