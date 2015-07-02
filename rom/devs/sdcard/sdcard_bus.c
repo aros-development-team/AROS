@@ -557,8 +557,6 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
     DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
-    SetSignal(0, 1L << bus->sdcb_CommandSig);
-
     if ((sdDataLen = GetTagData(SDCARD_TAG_DATALEN, 0, CmdTags)) > 0)
     {
         sdDataFlags = GetTagData(SDCARD_TAG_DATAFLAGS, 0, CmdTags);
@@ -634,6 +632,8 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     bus->sdcb_RespListener = CmdTags;
     if (sdDataLen > 0)
         bus->sdcb_DataListener = CmdTags;
+
+    SetSignal(0, 1L << bus->sdcb_CommandSig);
 
     bus->sdcb_IOWriteLong(SDHCI_ARGUMENT, sdArg, bus);
     if ((bus->sdcb_Quirks & AF_Quirk_AtomicTMAndCMD) && (sdcTransMode))
@@ -819,7 +819,7 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
     else
     {
         D(bug("\nNot a Bus task!\n\n"));
-        sdcard_Udelay(10000);
+        sdcard_Udelay(1000);
     }
 
     while (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & mask) {
