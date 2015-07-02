@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Disk cache.
@@ -56,6 +56,9 @@
 
 #include "cache.h"
 
+#define SysBase (c->sys_base)
+#define DOSBase (c->dos_base)
+
 #define RANGE_SHIFT 5
 #define RANGE_SIZE (1 << RANGE_SHIFT)
 #define RANGE_MASK (RANGE_SIZE - 1)
@@ -65,22 +68,25 @@
    (((BYTE *)(A)) - (IPTR)&((struct BlockRange *)NULL)->node2) : NULL))
 
 
-APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count, ULONG block_size, struct ExecBase *SysBase)
+APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
+    ULONG block_size, struct ExecBase *sys_base, struct DosLibrary *dos_base)
 {
-    struct Cache *c;
+    struct Cache _c, *c = &_c;
     ULONG i;
     BOOL success = TRUE;
     struct BlockRange *b;
 
     /* Allocate cache structure */
 
+    c->sys_base = sys_base;
     if((c = AllocVec(sizeof(struct Cache), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
         success = FALSE;
 
     if(success)
     {
         c->priv = priv;
-        c->c_SysBase = SysBase;
+        c->sys_base = sys_base;
+        c->dos_base = dos_base;
         c->block_size = block_size;
         c->block_count = block_count;
         c->hash_size = hash_size;
@@ -139,10 +145,9 @@ APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count, ULONG bloc
 VOID Cache_DestroyCache(APTR cache)
 {
     struct Cache *c = cache;
-    struct ExecBase *SysBase = c->c_SysBase;
     ULONG i;
 
-    Cache_Flush(c, NULL);
+    Cache_Flush(c);
 
     for(i = 0; i < c->block_count; i++)
         FreeVec(c->blocks[i]);
@@ -152,7 +157,7 @@ VOID Cache_DestroyCache(APTR cache)
 }
 
 
-APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data, LONG *ioerr)
+APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
 {
     struct Cache *c = cache;
     struct BlockRange *b = NULL, *b2;
@@ -193,12 +198,10 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data, LONG *ioerr)
         n = (struct MinNode *)RemHead((struct List *)&c->free_list);
         if(n == NULL)
         {
-            LONG ioerr;
-
             /* No free blocks, so flush dirty list to try and free up some
              * more blocks, then try again */
 
-            Cache_Flush(c, &ioerr);
+            Cache_Flush(c);
             /* FIXME: Handle IO errors! */
 
             n = (struct MinNode *)RemHead((struct List *)&c->free_list);
@@ -242,7 +245,7 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data, LONG *ioerr)
     /* Set data pointer and error, and return cache block handle */
 
     *data = b ? (b->data + data_offset) : NULL;
-    *ioerr = error;
+    SetIoErr(error);
 
     return b;
 }
@@ -281,7 +284,7 @@ VOID Cache_MarkBlockDirty(APTR cache, APTR block)
 }
 
 
-BOOL Cache_Flush(APTR cache, LONG *ioerr)
+BOOL Cache_Flush(APTR cache)
 {
     struct Cache *c = cache;
     ULONG error = 0;
@@ -294,7 +297,8 @@ BOOL Cache_Flush(APTR cache, LONG *ioerr)
         /* Write dirty block range to disk */
 
         b = NODE2(n);
-        error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size, b->data, c->priv);
+        error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size, b->data,
+            c->priv);
 
         /* Transfer block range to free list if unused, or put back on dirty
          * list upon an error */
@@ -309,7 +313,7 @@ BOOL Cache_Flush(APTR cache, LONG *ioerr)
             AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
     }
 
-    *ioerr = error;
+    SetIoErr(error);
     return error == 0;
 }
 

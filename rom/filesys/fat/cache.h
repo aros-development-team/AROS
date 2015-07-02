@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Disk cache.
@@ -23,8 +23,9 @@ struct BlockRange
 
 struct Cache
 {
-    struct ExecBase *c_SysBase;
-    APTR  priv;         /* Private data sent to 'Access_Disk()' */
+    struct ExecBase *sys_base;
+    struct DosLibrary *dos_base;
+    APTR  priv;         /* Private data sent to AccessDisk() */
     ULONG block_count;  /* number of blocks allocated */
     ULONG block_size;   /* size of a disk block */
     ULONG hash_size;    /* size of hash table */
@@ -42,14 +43,15 @@ struct Cache
 
 /* Prototypes */
 
-APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count, ULONG block_size, struct ExecBase *sysbase);
+APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
+    ULONG block_size, struct ExecBase *sys_base, struct DosLibrary *dos_base);
 VOID Cache_DestroyCache(APTR cache);
-APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data, LONG *ioerr);
+APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data);
 VOID Cache_FreeBlock(APTR cache, APTR block);
 VOID Cache_MarkBlockDirty(APTR cache, APTR block);
-BOOL Cache_Flush(APTR cache, LONG *ioerr);
+BOOL Cache_Flush(APTR cache);
 
-/* Called by cache routines */
-ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data, APTR priv);
+ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
+    UBYTE *data, APTR priv);
 
 #endif

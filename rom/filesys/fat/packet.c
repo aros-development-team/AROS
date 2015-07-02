@@ -730,7 +730,6 @@ void ReplyPacket(struct DosPacket *dp, struct ExecBase *SysBase) {
 
     rp = dp->dp_Port;
     mn = dp->dp_Link;
-    mn->mn_Node.ln_Name = (char *)dp;
     dp->dp_Port = &((struct Process*)FindTask(NULL))->pr_MsgPort;
     PutMsg(rp, mn);
 }

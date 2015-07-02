@@ -332,10 +332,8 @@ void ProcessDiskChange(struct Globals *glob) {
 }
 
 void UpdateDisk(struct Globals *glob) {
-    LONG ioerr;
-
     if (glob->sb) {
-        Cache_Flush(glob->sb->cache, &ioerr);
+        Cache_Flush(glob->sb->cache);
         /* FIXME: Handle IO errors on disk flush! */
     }
 
