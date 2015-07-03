@@ -412,12 +412,15 @@ static LONG pd_Init(struct PrinterData *pd)
             if (pd->pd_Flags & PDF_NOIO)
                 return 0;
 
+            pd->pd_ior0.pd_p0.io_ParFlags = PARF_SHARED;
             if ((pd->pd_ior0.pd_p0.IOPar.io_Message.mn_ReplyPort=CreateMsgPort())) {
                 if (0 == OpenDevice(devname,
                                     pd->pd_Preferences.DefaultPrtUnit,
                                     (struct IORequest *)&pd->pd_ior0, 0)) {
                     D(bug("%s: open %s %d for io 0\n", __func__, devname, pd->pd_Preferences.DefaultPrtUnit));
                     pd->pd_ior0.pd_p0.IOPar.io_Message.mn_Node.ln_Type = 0;
+
+                    pd->pd_ior1.pd_p1.io_ParFlags = PARF_SHARED;
                     if ((pd->pd_ior1.pd_p1.IOPar.io_Message.mn_ReplyPort=CreateMsgPort())) {
                         if (0 == OpenDevice(devname,
                                             pd->pd_Preferences.DefaultPrtUnit,
