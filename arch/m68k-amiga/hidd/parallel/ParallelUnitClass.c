@@ -31,10 +31,6 @@
 
 #include LC_LIBDEFS_FILE
 
-#undef  SDEBUG
-#undef  DEBUG
-#define SDEBUG 1
-#define DEBUG 1
 #include <aros/debug.h>
 
 void parallelunit_receive_data();
@@ -79,7 +75,9 @@ OOP_Object *AmigaParUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot
 
 	obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 
-	D(bug("%s - an error occurred!\n",__FUNCTION__));
+        if (!obj) {
+            D(bug("%s - an error occurred!\n",__FUNCTION__));
+        }
 
 	ReturnPtr("ParallelUnit::New()", OOP_Object *, obj);
 }

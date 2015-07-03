@@ -19,10 +19,6 @@
 
 #include "parallel_intern.h"
 
-#undef  SDEBUG
-#undef  DEBUG
-#define SDEBUG 1
-#define DEBUG 1
 #include <aros/debug.h>
 
 
