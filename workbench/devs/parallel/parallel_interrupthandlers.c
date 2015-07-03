@@ -13,7 +13,6 @@
 #include <hidd/parallel.h>
 #include "parallel_intern.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 extern struct parallelbase * pubParallelBase;
