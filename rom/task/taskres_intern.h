@@ -15,6 +15,9 @@
 #ifndef EXEC_LISTS_H
 #include <exec/lists.h>
 #endif
+#ifndef EXEC_SEMAPHORES_H
+#include <exec/semaphores.h>
+#endif
 #ifndef UTILITY_UTILITY_H
 #include <utility/utility.h>
 #endif
@@ -25,7 +28,9 @@ struct TaskResBase
     APTR                        trb_KernelBase;
     APTR                        trb_NewAddTask;
     APTR                        trb_RemTask;
+    struct SignalSemaphore      trb_Sem;
     struct List                 trb_TaskList;
+    struct List                 trb_NewTasks;
     struct List                 trb_LockedLists;
     struct Library *            trb_UtilityBase;
 };
@@ -40,6 +45,7 @@ struct TaskListEntry
 struct TaskListPrivate
 {
     struct Node                 tlp_Node;
+    ULONG                       tlp_Flags;
     struct List                 *tlp_Tasks;
     struct TaskListEntry        *tlp_Next;
 };

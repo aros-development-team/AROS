@@ -51,7 +51,44 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TaskListPrivate *taskList, *tltmp;
+    struct Task *thisTask = FindTask(NULL);
+
     D(bug("[TaskRes] UnLockTaskList: flags = $%lx\n", flags));
 
+    ReleaseSemaphore(&TaskResBase->trb_Sem);
+
+    ForeachNodeSafe(&TaskResBase->trb_LockedLists, taskList, tltmp)
+    {
+        if ((taskList->tlp_Node.ln_Name == thisTask) &&
+            (taskList->tlp_Flags == flags))
+        {
+            D(bug("[TaskRes] UnLockTaskList: Releasing TaskList @ 0x%p\n", taskList));
+            Remove(&taskList->tlp_Node);
+            FreeMem(taskList, sizeof(struct TaskListPrivate));
+            break;
+        }
+    }
+
+    /* If we are the last lock holder, do housecleaning */
+    if (IsListEmpty(&TaskResBase->trb_LockedLists))
+    {
+        struct TaskListEntry *taskEntry, *tetmp;
+
+        ForeachNodeSafe(&TaskResBase->trb_TaskList, taskEntry, tetmp)
+        {
+            if (taskEntry->tle_Task == NULL)
+            {
+                D(bug("[TaskRes] RemTask: destroying old taskentry @ 0x%p\n", taskEntry));
+                Remove(&taskEntry->tle_Node);
+                FreeMem(taskEntry, sizeof(struct TaskListEntry));
+            }
+        }
+        ForeachNodeSafe(&TaskResBase->trb_NewTasks, taskEntry, tetmp)
+        {
+            Remove(&taskEntry->tle_Node);
+            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+        }
+    }
     AROS_LIBFUNC_EXIT
 } /* UnLockTaskList */
