@@ -42,8 +42,8 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 
     SysBase->lb_TaskResBase = (struct Library *)TaskResBase;
 
-    TaskResBase->trb_NewAddTask = SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewAddTask, Task, 176));
     TaskResBase->trb_RemTask = SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, AROS_SLIB_ENTRY(RemTask, Task, 48));
+    TaskResBase->trb_NewAddTask = SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewAddTask, Task, 176));
 
     InitSemaphore(&TaskResBase->trb_Sem);
 
