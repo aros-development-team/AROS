@@ -17,25 +17,12 @@
 
 //#include LC_LIBDEFS_FILE
 
-struct Storage_IDFamily *FindIDFamily(char *ID, struct StorageBase_intern *StorageBase)
-{
-    struct Storage_IDFamily *_IDFamiily  = NULL;
-    ForeachNode(&VolumeManagerResourceBase->libb_NameSpaceFamilies, _IDFamiily)
-    {
-        if ((strcmp(_IDFamiily->SIDF_Node.ln_Name, ID)) == 0)
-        {
-            return _IDFamiily;
-        }
-    }
-    return NULL;
-};
-
 int FindFirstDigit(char *inString)
 {
-    int i = 0;
     int inStr_len = strlen(inString);
+    int i = 0;
 
-    for (i = 0; i < strlen; i++)
+    for (i = 0; i < inStr_len; i++)
     {
         if ((inString[i] >= 0x30) && (inString[i] <= 0x39))
             return i;
@@ -43,6 +30,28 @@ int FindFirstDigit(char *inString)
     return -1;
 };
 
+struct Storage_IDFamily *FindIDFamily(char *ID, struct StorageBase_intern *StorageBase)
+{
+    struct Storage_IDFamily *_IDFamiily  = NULL;
+    int firstDigit;
+
+    firstDigit = FindFirstDigit(ID);
+
+    ForeachNode(&StorageBase->libb_NameSpaceFamilies, _IDFamiily)
+    {
+        if (firstDigit == -1)
+        {
+            if ((strcmp(_IDFamiily->SIDF_Node.ln_Name, ID)) == 0)
+                return _IDFamiily;
+        }
+        else
+        {
+            if ((strlen(_IDFamiily->SIDF_Node.ln_Name) == firstDigit) && ((strncmp(_IDFamiily->SIDF_Node.ln_Name, ID, firstDigit)) == 0))
+                return _IDFamiily;
+        }
+    }
+    return NULL;
+};
 
 /*****************************************************************************
 
@@ -82,6 +91,8 @@ int FindFirstDigit(char *inString)
 
     struct Storage_IDFamily *_IDFamiily  = NULL;
     struct Storage_IDNode   *_IDNode = NULL;
+    int firstDigit;
+    ULONG freeValue = 0;
 
     D(bug("[StorageRes] %s('%s')\n", __PRETTY_FUNCTION__, ID));
 
@@ -89,11 +100,12 @@ int FindFirstDigit(char *inString)
     {
         if ((_IDFamiily = AllocVec(sizeof(struct Storage_IDFamily), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
         {
-            NEWLIST(&_IDFamiily->SIDF_IDs);
             int baseNameLength = strlen(ID);
+
+            NEWLIST(&_IDFamiily->SIDF_IDs);
             _IDFamiily->SIDF_Node.ln_Name = AllocVec(baseNameLength + 1, MEMF_CLEAR|MEMF_PUBLIC);
             CopyMem(ID, _IDFamiily->SIDF_Node.ln_Name, baseNameLength);
-            AddTail(&((struct VolumeManagerResourceBase_intern *)VolumeManagerResourceBase)->libb_NameSpaceFamilies, &_IDFamiily->SDNF_Node);
+            AddTail(&((struct StorageBase_intern *)StorageBase)->libb_NameSpaceFamilies, &_IDFamiily->SDNF_Node);
             D(bug("[StorageRes] AllocateID: New FamilyNode @ 0x%p for '%s'\n", _IDFamiily, _IDFamiily->SIDF_Node.ln_Name));
         }
         else
@@ -106,17 +118,18 @@ int FindFirstDigit(char *inString)
     D(bug("[StorageRes] AllocateID: using FamilyNode @ 0x%p (family '%s')\n", _IDFamiily, _IDFamiily->SIDF_Node.ln_Name));
 
     #warning "TODO: We should use locking when manipulating the name list !"
-    ULONG freeValue = 0;
+
     ForeachNode(&_IDFamiily->SIDF_IDs, _IDNode)
     {
         ULONG nodeValue = 0;
-        int firstNameDigit = FindFirstDigit(_IDNode->SIDN_Node.ln_Name);
         int i;
 
-        for (i = 0; i < (strlen(_IDNode->SIDN_Node.ln_Name) - firstNameDigit); i++)
+        firstDigit = FindFirstDigit(_IDNode->SIDN_Node.ln_Name);
+
+        for (i = 0; i < (strlen(_IDNode->SIDN_Node.ln_Name) - firstDigit); i++)
         {
             nodeValue = nodeValue * 10;
-            nodeValue = nodeValue + (_IDNode->SIDN_Node.ln_Name[firstNameDigit + i] - 0x30);
+            nodeValue = nodeValue + (_IDNode->SIDN_Node.ln_Name[firstDigit + i] - 0x30);
         }
         //find the index of the value in the name
         //convert it to a real value
@@ -160,9 +173,9 @@ int FindFirstDigit(char *inString)
         count ++;
         _IDNode->SIDN_Node.ln_Name[baseNameLength + count] = 0x00;
 
-        AddTail(&_IDFamiily->SIDF_IDs, &_IDNode->SDNN_Node);
+        Enqueue(&_IDFamiily->SIDF_IDs, &_IDNode->SDNN_Node);
         D(bug("[StorageRes] AllocateID: Node '%s' Done\n", _IDNode->SIDN_Node.ln_Name));
-        _IDFamiily->SDNF_NameAllocCount ++;
+
         return _IDNode;
     }
 
@@ -174,7 +187,7 @@ int FindFirstDigit(char *inString)
 
 AROS_LH1(BOOL, FreeID,
 	AROS_LHA(struct Storage_IDNode *, _IDNode, A0),
-	APTR *, VolumeManagerResourceBase, 11, Volume)
+	APTR *, StorageBase, 11, Storage)
 
 /*  FUNCTION
 	Free a device/volume ID.
