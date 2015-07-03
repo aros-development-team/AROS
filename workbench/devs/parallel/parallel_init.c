@@ -117,6 +117,7 @@ static int GM_UNIQUENAME(Open)
 )
 {
   struct ParallelUnit * PU = NULL;
+  struct IOExtPar *iopar = (struct IOExtPar *)ioreq;
 
   D(bug("parallel device: Open unit %d\n",unitnum));
 
@@ -144,7 +145,7 @@ static int GM_UNIQUENAME(Open)
       {
         PU->pu_OpenerCount	= 1;
         PU->pu_UnitNum		= unitnum;
-        PU->pu_Flags		= ioreq->io_Flags;
+        PU->pu_Flags		= iopar->io_ParFlags;
         
         /*
         ** Initialize the message ports
