@@ -19,7 +19,4 @@
 
 #include LC_LIBDEFS_FILE
 
-#undef  SDEBUG
-#undef  DEBUG
-#define DEBUG 0
 #include <aros/debug.h>
