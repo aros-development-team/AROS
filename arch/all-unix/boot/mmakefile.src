@@ -40,7 +40,7 @@ $(AROSARCHDIR):
 #MM	kernel-timer     			\
 #MM	kernel-expansion     			\
 #MM	kernel-exec-kobj			\
-#MM	kernel-task			        \
+#MM	kernel-task-kobj			\
 #MM     $(UNIXGFX_HIDD_TARGET)		        \
 #MM     kernel-fs-emul                          \
 #MM	kernel-unixio     			\
@@ -52,7 +52,7 @@ KDEVS	:=
 KLIBS   := exec
 KHNDLRS := 
 KHIDDS  := 
-KRSRCS  := 
+KRSRCS  := task
 
 %link_kickstart mmake=kernel-link-unix file=$(AROSARCHDIR)/kernel \
 	devs=$(KDEVS) handlers=$(KHNDLRS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
