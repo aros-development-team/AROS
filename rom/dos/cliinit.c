@@ -567,12 +567,13 @@ static LONG internalBootCliHandler(void)
     AddBootAssign("SYS:S",                "S", DOSBase);
     AddBootAssign("SYS:Fonts",            "FONTS", DOSBase);
 
-#if !(mc68000)
     /* Let hidds in DRIVERS: directory be found by OpenLibrary */
     if ((lock = Lock("DEVS:Drivers", SHARED_LOCK)) != BNULL) {
         AssignLock("DRIVERS", lock);
         AssignAdd("LIBS", lock);
     }
+
+#if !(mc68000)
     /* 
      * This early assignment prevents Poseidon from asking for ENV:
      * when popup GUI process is initialized and opens muimaster.library.
