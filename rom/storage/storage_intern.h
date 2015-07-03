@@ -8,20 +8,23 @@
 #include LC_LIBDEFS_FILE
 
 struct StorageBase_intern {
-    struct LibHeader   lh;
+    struct LibHeader    lh;
+    struct List         sb_IDs;
+    struct List         sb_Devices;
 };
 
-/* Namespace structures */
-
-struct Storage_IDNode
-{
-    struct Node                                 SIDN_Node;                      /* ln_Name = ID (e.g. "CD0") */
-};
+/* ID Namespace structures */
 
 struct Storage_IDFamily
 {
     struct Node                                 SIDF_Node;                      /* ln_Name = IDBase (e.g "CD") */
     struct List                                 SIDF_IDs;
 };
+
+struct Storage_IDNode
+{
+    struct Node                                 SIDN_Node;                      /* ln_Name = ID (e.g. "CD0") */
+};
+
 
 #endif
