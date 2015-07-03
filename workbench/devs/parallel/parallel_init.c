@@ -34,7 +34,6 @@
 #    include "parallel_intern.h"
 #endif
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -164,7 +163,7 @@ static int GM_UNIQUENAME(Open)
         {
           HIDD_ParallelUnit_Init(PU->pu_Unit, RBF_InterruptHandler, NULL, WBE_InterruptHandler, NULL);
           ioreq->io_Device = (struct Device *)ParallelDevice;
-          ioreq->io_Unit   = (struct Unit *)PU;  
+          ioreq->io_Unit   = (struct Unit *)PU;
 
           /*
           ** put it in the list of open units
@@ -173,6 +172,7 @@ static int GM_UNIQUENAME(Open)
 
           ioreq->io_Error  = 0;
  
+          D(bug("%s: Unit %d opened\n", __func__, unitnum));
           return TRUE;
         }
 
@@ -207,6 +207,7 @@ static int GM_UNIQUENAME(Open)
         ** I don't allow another opener
         */
         ioreq->io_Error = ParErr_DevBusy;
+        D(bug("%s: Unit %d already busy\n", __func__, unitnum));
       }
     }
   }
