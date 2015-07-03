@@ -65,7 +65,8 @@
 
     struct TagItem * Tag = NULL;
     struct Library *UtilityBase = TaskResBase->trb_UtilityBase;
-    
+    struct IntETask *task_et = GetIntETask(task);
+
     /* This is the default implementation */
         
     while ((Tag = NextTagItem(&tagList)) != NULL)
@@ -74,25 +75,37 @@
         {
         case(TaskTag_CPUNumber):
 #if defined(__AROSEXEC_SMP__)
-            *((IPTR *)Tag->ti_Data) = GetIntETask(task)->iet_CpuNumber;
+            *((IPTR *)Tag->ti_Data) = task_et->iet_CpuNumber;
 #else
             *((IPTR *)Tag->ti_Data) = 0;
 #endif
             break;
         case(TaskTag_CPUAffinity):
 #if defined(__AROSEXEC_SMP__)
-            *((IPTR *)Tag->ti_Data) = GetIntETask(task)->iet_CpuAffinity;
+            *((IPTR *)Tag->ti_Data) = task_et->iet_CpuAffinity;
 #else
             *((IPTR *)Tag->ti_Data) = (1 << 0);
 #endif
             break;
         case(TaskTag_CPUTime):
-            ((struct timeval *)Tag->ti_Data)->tv_micro = GetIntETask(task)->iet_CpuTime.tv_micro;
-            ((struct timeval *)Tag->ti_Data)->tv_secs  = GetIntETask(task)->iet_CpuTime.tv_secs;
+            {
+                struct timeval *storeval = (struct timeval *)Tag->ti_Data;
+                if (task_et)
+                {
+                    storeval->tv_micro = task_et->iet_CpuTime.tv_micro;
+                    storeval->tv_secs  = task_et->iet_CpuTime.tv_secs;
+                }
+            }
             break;
         case(TaskTag_StartTime):
-            ((struct timeval *)Tag->ti_Data)->tv_micro = GetIntETask(task)->iet_StartTime.tv_micro;
-            ((struct timeval *)Tag->ti_Data)->tv_secs  = GetIntETask(task)->iet_StartTime.tv_secs;
+            {
+                struct timeval *storeval = (struct timeval *)Tag->ti_Data;
+                if (task_et)
+                {
+                    storeval->tv_micro = task_et->iet_StartTime.tv_micro;
+                    storeval->tv_secs  = task_et->iet_StartTime.tv_secs;
+                }
+            }
             break;
         }
     }

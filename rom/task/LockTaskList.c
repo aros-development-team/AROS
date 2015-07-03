@@ -56,8 +56,16 @@
 
     D(bug("[TaskRes] LockTaskList: flags = $%lx\n", flags));
 
+    if (flags & LTF_WRITE)
+        ObtainSemaphore(&TaskResBase->trb_Sem);
+    else
+        ObtainSemaphoreShared(&TaskResBase->trb_Sem);
+
     if ((taskList = AllocMem(sizeof(struct TaskListPrivate), MEMF_CLEAR)) != NULL)
     {
+        D(bug("[TaskRes] LockTaskList: TaskList @ 0x%p\n", taskList));
+        taskList->tlp_Node.ln_Name = FindTask(NULL);
+        taskList->tlp_Flags = flags;
         taskList->tlp_Tasks = &TaskResBase->trb_TaskList;
         taskList->tlp_Next = (struct TaskListEntry *)GetHead(taskList->tlp_Tasks);
         AddTail(&TaskResBase->trb_LockedLists, &taskList->tlp_Node);

@@ -61,10 +61,45 @@
 
     D(bug("[TaskRes] NextTaskEntry: tlist @ 0x%p, flags = $%lx\n", tlist, flags));
 
-    if (taskList && taskList->tlp_Next)
+    if (taskList)
     {
-        retVal = taskList->tlp_Next->tle_Task;
-        taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
+        if ((taskList->tlp_Flags & ~LTF_WRITE) != 0)
+        {
+            if (taskList->tlp_Flags & LTF_RUNNING)
+            {
+                while (taskList->tlp_Next &&
+                           ((!taskList->tlp_Next->tle_Task) ||
+                            (taskList->tlp_Next->tle_Task->tc_State != TS_RUN)))
+                {
+                     taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
+                }
+            }
+            else if (taskList->tlp_Flags & LTF_READY)
+            {
+                while (taskList->tlp_Next &&
+                           ((!taskList->tlp_Next->tle_Task) ||
+                            (taskList->tlp_Next->tle_Task->tc_State != TS_READY)))
+                {
+                     taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
+                }
+            }
+            else if (taskList->tlp_Flags & LTF_WAITING)
+            {
+                while (taskList->tlp_Next && 
+                          ((!taskList->tlp_Next->tle_Task) ||
+                            (taskList->tlp_Next->tle_Task->tc_State != TS_WAIT) ||
+                            (taskList->tlp_Next->tle_Task->tc_State != TS_SPIN)))
+                {
+                     taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
+                }
+            }
+        }
+
+        if (taskList->tlp_Next)
+        {
+            retVal = taskList->tlp_Next->tle_Task;
+            taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
+        }
     }
 
     return retVal;
