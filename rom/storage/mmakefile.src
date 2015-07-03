@@ -1,0 +1,9 @@
+# $Id: mmakefile.src 39345 2011-06-17 05:55:29Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+STORAGE_FILES := \
+    storage_init
+
+%build_module mmake=kernel-storage \
+  modname=storage modtype=resource \
+  files="$(STORAGE_FILES)"
