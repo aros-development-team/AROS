@@ -1,14 +1,23 @@
 #ifndef STORAGE_INTERN_H
 #define STORAGE_INTERN_H
 
-#include <aros/libcall.h>
-#include <exec/libraries.h>
-#include <libcore/base.h>
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+#ifndef EXEC_LISTS_H
+#include <exec/lists.h>
+#endif
+#ifndef EXEC_NODES_H
+#include <exec/nodes.h>
+#endif
+#ifndef UTILITY_UTILITY_H
+#include <utility/utility.h>
+#endif
 
 #include LC_LIBDEFS_FILE
 
 struct StorageBase_intern {
-    struct LibHeader    lh;
+    struct Library    lh;
     struct List         sb_IDs;
     struct List         sb_Devices;
 };
