@@ -16,10 +16,12 @@ struct Listtree_DATA
     struct Hook *constrhook;
     struct Hook *destrhook;
     struct Hook *displayhook;
+    struct Hook *sorthook;
 
     Object *nlisttree;
     struct Hook notifysimulatehook;
     struct Hook displayhookproxy;
+    struct Hook sorthookproxy;
     struct Hook destructhookproxy;
 
     /*- Protected ----------------------------------------------------------*/

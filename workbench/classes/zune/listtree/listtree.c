@@ -219,6 +219,23 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
     return CallHookPkt(displayhook, msg->Array, tn);
 }
 
+static IPTR SortHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_CompareMessage *msg)
+{
+    struct Hook * sorthook = (struct Hook *)hook->h_Data;
+    APTR tn1 = NULL, tn2 = NULL;
+
+    if (!sorthook)
+        return 0;
+
+    SYNC_TREENODE_FLAGS(msg->TreeNode1);
+    SYNC_TREENODE_FLAGS(msg->TreeNode2);
+
+    tn1 = msg->TreeNode1 ? msg->TreeNode1->tn_User : NULL;
+    tn2 = msg->TreeNode2 ? msg->TreeNode2->tn_User : NULL;
+
+    return CallHookPkt(sorthook, tn1, tn2);
+}
+
 static IPTR DestructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_DestructMessage *msg)
 {
     struct Listtree_DATA * data = (struct Listtree_DATA *)hook->h_Data;
@@ -326,6 +343,9 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Listtree_DisplayHook):
             data->displayhook = (struct Hook *)tag->ti_Data;
             break;
+        case(MUIA_Listtree_SortHook):
+            data->sorthook = (struct Hook *)tag->ti_Data;
+            break;
         case(MUIA_List_MinLineHeight):
         case(MUIA_List_DragSortable):
         case(MUIA_List_Title):
@@ -338,7 +358,6 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_ContextMenu):
             /* Forwarded to super class */
             break;
-        NEWHANDLE(MUIA_Listtree_SortHook)
         default:
             bug("[Listtree] OM_NEW: unhandled %x\n", tag->ti_Tag);
         }
@@ -363,6 +382,14 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         data->displayhookproxy.h_Data       = data->displayhook;
         nnset(data->nlisttree, MUIA_NListtree_DisplayHook, &data->displayhookproxy);
     }
+    if (data->sorthook)
+    {
+        data->sorthookproxy.h_Entry      = HookEntry;
+        data->sorthookproxy.h_SubEntry   = (HOOKFUNC)SortHook_Proxy;
+        data->sorthookproxy.h_Data       = data->sorthook;
+        nnset(data->nlisttree, MUIA_NListtree_CompareHook, &data->sorthookproxy);
+    }
+
     /* Destroy hook is mandatory to free proxy structures */
     {
         data->destructhookproxy.h_Entry      = HookEntry;
