@@ -58,9 +58,6 @@ struct MUI_ListviewData
 static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely);
 
 #define PROP_VERT_FIRST   1
-#define LIST_VERT_FIRST   4
-#define LIST_VERT_VISIBLE 5
-#define LIST_VERT_ENTRIES 6
 
 ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
@@ -76,16 +73,6 @@ ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
     case PROP_VERT_FIRST:
         get(data->vert, MUIA_Prop_First, &val);
         nnset(data->list, MUIA_List_VertProp_First, val);
-        break;
-
-    case LIST_VERT_FIRST:
-        nnset(data->vert, MUIA_Prop_First, val);
-        break;
-    case LIST_VERT_VISIBLE:
-        nnset(data->vert, MUIA_Prop_Visible, val);
-        break;
-    case LIST_VERT_ENTRIES:
-        nnset(data->vert, MUIA_Prop_Entries, val);
         break;
     }
     return 0;
@@ -205,15 +192,15 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
         4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
         MUIV_TriggerValue);
+
+    /* Pass prop object as DestObj (based on code in NList) */
     DoMethod(list, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
-        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->hook, LIST_VERT_FIRST,
-        MUIV_TriggerValue);
+        (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
     DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime,
-        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->hook,
-        LIST_VERT_VISIBLE, MUIV_TriggerValue);
+        (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Visible, MUIV_TriggerValue);
     DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
-        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->hook,
-        LIST_VERT_ENTRIES, MUIV_TriggerValue);
+        (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
+
     DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
         (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
         MUIA_List_Active, MUIV_TriggerValue);
