@@ -41,7 +41,10 @@
 #define MUIV_Listtree_GetNr_TreeNode_Active         -2
 
 #define MUIV_Listtree_Remove_ListNode_Root           0
+#define MUIV_Listtree_Remove_ListNode_Active        -2
 
+#define MUIV_Listtree_Remove_TreeNode_Head           0
+#define MUIV_Listtree_Remove_TreeNode_Tail          -1
 #define MUIV_Listtree_Remove_TreeNode_Active        -2
 #define MUIV_Listtree_Remove_TreeNode_All           -3
 
