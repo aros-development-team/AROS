@@ -614,22 +614,33 @@ IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUI
 IPTR Listtree__MUIM_Listtree_Remove(struct IClass *cl, Object *obj, struct MUIP_Listtree_Remove *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
+    struct MUI_NListtree_TreeNode * tn = NULL, * ln = NULL;
 
-    /* TODO: handle remaining enumeration values */
-    if ((msg->ListNode == (APTR)MUIV_Listtree_Remove_ListNode_Root) &&
-            ((msg->TreeNode == (APTR)MUIV_Listtree_Remove_TreeNode_Active) ||
-             (msg->TreeNode == (APTR)MUIV_Listtree_Remove_TreeNode_All)))
+    switch((IPTR)msg->ListNode)
     {
-        /* Deallocating of MUIS_Listtree_TreeNode is happening in the DestructHook */
-        return DoMethod(data->nlisttree, MUIM_NListtree_Remove, msg->ListNode, msg->TreeNode, msg->Flags);
+    case(MUIV_Listtree_Remove_ListNode_Root):
+    case(MUIV_Listtree_Remove_ListNode_Active):
+        ln = msg->ListNode;
+        break;
+    default:
+        ln = ((struct MUIS_Listtree_TreeNodeInt *)msg->ListNode)->ref;
     }
 
-    /* TODO
-     * add handling for cases where ListNode/TreeNode actually point to Treenode structure
-     */
-    bug("[Listtree] MUIM_Listtree_Remove unsupported code path Listnode: %x, Treenode: %x, Flags: %d\n", msg->ListNode, msg->TreeNode, msg->Flags);
+    switch((IPTR)msg->TreeNode)
+    {
+    case(MUIV_Listtree_Remove_TreeNode_Head):
+    case(MUIV_Listtree_Remove_TreeNode_Tail):
+    case(MUIV_Listtree_Remove_TreeNode_Active):
+    case(MUIV_Listtree_Remove_TreeNode_All):
+        tn = msg->TreeNode;
+        break;
+    default:
+        tn = ((struct MUIS_Listtree_TreeNodeInt *)msg->TreeNode)->ref;
+    }
 
-    return (IPTR)FALSE;
+    /* Deallocating of MUIS_Listtree_TreeNode is happening in the DestructHook */
+    return DoMethod(data->nlisttree, MUIM_NListtree_Remove, ln, tn, msg->Flags);
+
 }
 
 IPTR Listtree__MUIM_List_TestPos(struct IClass *cl, Object *obj, struct MUIP_List_TestPos *msg)
