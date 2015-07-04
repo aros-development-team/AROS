@@ -1631,6 +1631,11 @@ struct MUI_NListtree_TreeNode *GetInsertNodeSorted( struct NListtree_Data *data,
 {
   struct MUI_NListtree_TreeNode *in, *in2 = NULL;
 
+  /*
+  **  <0  -> move to next
+  **  >=0 -> insert here
+  */
+
   if((in = CTN(GetHead((struct List *)&li->ln_List))))
   {
     while((LONG)DoMethod(data->Obj, MUIM_NListtree_Compare, in, tn, 0) < 0)
@@ -1646,7 +1651,7 @@ struct MUI_NListtree_TreeNode *GetInsertNodeSorted( struct NListtree_Data *data,
 
   if ( !in2 )
   {
-    in2 = CTN( INSERT_POS_TAIL );
+    in2 = CTN( INSERT_POS_HEAD );
   }
 
   return( in2 );
@@ -2994,13 +2999,13 @@ MakeStaticHook(_DestructHook, _DestructFunc);
 */
 HOOKPROTONHNONP(_CompareFunc_Head, LONG) //struct MUIP_NListtree_CompareMessage *msg)
 {
-  return( -1 );
+  return( 1 );
 }
 MakeStaticHook(_CompareHook_Head, _CompareFunc_Head);
 
 HOOKPROTONHNONP(_CompareFunc_Tail, LONG) //struct MUIP_NListtree_CompareMessage *msg)
 {
-  return( 1 );
+  return( -1 );
 }
 MakeStaticHook(_CompareHook_Tail, _CompareFunc_Tail);
 
@@ -7191,9 +7196,9 @@ IPTR _NListtree_Insert(struct IClass *cl, Object *obj, struct MUIP_NListtree_Ins
           case MUIV_NListtree_Insert_PrevNode_Sorted:
             in = GetInsertNodeSorted( data, li, tn );
 
-            if ( (IPTR)in == (IPTR)INSERT_POS_TAIL )
+            if ( (IPTR)in == (IPTR)INSERT_POS_HEAD )
             {
-              AddTail( (struct List *)&li->ln_List, (struct Node *)&tn->tn_Node );
+              AddHead( (struct List *)&li->ln_List, (struct Node *)&tn->tn_Node );
             }
             else
             {
