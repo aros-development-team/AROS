@@ -278,6 +278,20 @@ IPTR Listtree__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+#define MUIA_List_Prop_Entries  /* PRIV */ \
+    (MUIB_MUI | 0x0042a8f5)     /* .sg LONG  PRIV */
+#define MUIA_List_Prop_Visible  /* PRIV */ \
+    (MUIB_MUI | 0x004273e9)     /* .sg LONG  PRIV */
+#define MUIA_List_Prop_First    /* PRIV */ \
+    (MUIB_MUI | 0x00429df3)     /* .sg LONG  PRIV */
+
+#define MUIA_List_VertProp_Entries  /* PRIV */ \
+    MUIA_List_Prop_Entries     /* PRIV */
+#define MUIA_List_VertProp_Visible  /* PRIV */ \
+    MUIA_List_Prop_Visible     /* PRIV */
+#define MUIA_List_VertProp_First  /* PRIV */ \
+    MUIA_List_Prop_First       /* PRIV */
+
 #define SETHANDLE(attrname)                                         \
     case(attrname):                                                 \
         bug("[Listtree] OM_SET:%s - unsupported\n", #attrname);     \
@@ -305,6 +319,7 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         {
         FORWARDSET(MUIA_Listtree_Quiet, MUIA_NListtree_Quiet)
         FORWARDSET(MUIA_List_Active, MUIA_NList_Active)
+        FORWARDSET(MUIA_List_Prop_First, MUIA_NList_Prop_First)
 
         IGNORESET(MUIA_Listview_SelectChange)
 
@@ -335,21 +350,6 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         bug("[Listtree] OM_GET:%s - unsupported\n", #attrname);     \
         break;
 
-
-#define MUIA_List_Prop_Entries  /* PRIV */ \
-    (MUIB_MUI | 0x0042a8f5)     /* .sg LONG  PRIV */
-#define MUIA_List_Prop_Visible  /* PRIV */ \
-    (MUIB_MUI | 0x004273e9)     /* .sg LONG  PRIV */
-#define MUIA_List_Prop_First    /* PRIV */ \
-    (MUIB_MUI | 0x00429df3)     /* .sg LONG  PRIV */
-
-#define MUIA_List_VertProp_Entries  /* PRIV */ \
-    MUIA_List_Prop_Entries     /* PRIV */
-#define MUIA_List_VertProp_Visible  /* PRIV */ \
-    MUIA_List_Prop_Visible     /* PRIV */
-#define MUIA_List_VertProp_First  /* PRIV */ \
-    MUIA_List_Prop_First       /* PRIV */
-
 #define FORWARDGET(AATTR, BATTR)                            \
     case(AATTR):                                            \
         *(msg->opg_Storage) = XGET(data->nlisttree, BATTR); \
@@ -370,10 +370,10 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     FORWARDGET(MUIA_Listtree_Active, MUIA_NListtree_Active)
     FORWARDGET(MUIA_Listtree_Quiet, MUIA_NListtree_Quiet)
     FORWARDGET(MUIA_List_Visible, MUIA_NList_Visible)
+    FORWARDGET(MUIA_List_VertProp_First, MUIA_NList_Prop_First)
+    FORWARDGET(MUIA_List_VertProp_Entries, MUIA_NList_Prop_Entries)
+    FORWARDGET(MUIA_List_VertProp_Visible, MUIA_NList_Prop_Visible)
 
-    GETHANDLE(MUIA_List_VertProp_Entries)
-    GETHANDLE(MUIA_List_VertProp_Visible)
-    GETHANDLE(MUIA_List_VertProp_First)
     case MUIA_Disabled: break;
     case MUIA_Parent: break;
     case MUIA_Group_ChildList: break;
@@ -748,21 +748,30 @@ IPTR Listtree__MUIM_Listtree_Close(struct IClass *cl, Object *obj, struct MUIP_L
     return DoMethod(data->nlisttree, MUIM_NListtree_Close, ln, tn, msg->Flags);
 }
 
-IPTR Listtree__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
-{
-    struct Listtree_DATA *data = INST_DATA(cl, obj);
-    return DoMethodA(data->nlisttree, (Msg)msg);
-}
-
-IPTR Listtree__MUIM_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
-{
-    struct Listtree_DATA *data = INST_DATA(cl, obj);
-    return DoMethodA(data->nlisttree, (Msg)msg);
-}
-
 #define FORWARDNLISTTREESUPERMETHOD(methodname)                                     \
-IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)               \
+IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)                \
 {                                                                                   \
     struct Listtree_DATA *data = INST_DATA(cl, obj);                                \
     return DoMethod(data->nlisttree, MUIM_NListtreeInt_ForwardSuperMethod, msg);    \
+}
+
+#define FORWARDNLISTTREEMETHOD(methodname)                                          \
+IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)                \
+{                                                                                   \
+    struct Listtree_DATA *data = INST_DATA(cl, obj);                                \
+    return DoMethodA(data->nlisttree, msg);                                         \
+}
+
+FORWARDNLISTTREEMETHOD(MUIM_CreateDragImage)
+FORWARDNLISTTREEMETHOD(MUIM_DeleteDragImage)
+
+IPTR Listtree__MUIM_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
+{
+    struct Listtree_DATA *data = INST_DATA(cl, obj);
+
+    /* NList expects this notification to be set and uses its content */
+    if (msg->TrigAttr == MUIA_List_Prop_First)
+        DoMethodA(data->nlisttree, msg);
+
+    return DoSuperMethodA(cl, obj, msg);
 }
