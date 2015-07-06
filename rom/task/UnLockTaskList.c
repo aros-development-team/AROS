@@ -60,7 +60,7 @@
 
     ForeachNodeSafe(&TaskResBase->trb_LockedLists, taskList, tltmp)
     {
-        if ((taskList->tlp_Node.ln_Name == thisTask) &&
+        if ((taskList->tlp_Node.ln_Name == (char *)thisTask) &&
             (taskList->tlp_Flags == flags))
         {
             D(bug("[TaskRes] UnLockTaskList: Releasing TaskList @ 0x%p\n", taskList));
