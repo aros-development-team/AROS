@@ -31,8 +31,20 @@ end
 # Case 2: ROM (ie amiga-m68k)
 #         Provides AbsExecBase and SysBase
 #
+# AROSBootstrap does not define 'struct IntExecBase', so we
+# can't use it.
+#
 define _sysbase_init
-    init-if-undefined $AbsExecBase = *(struct IntExecBase **)&SysBase
+    init-if-undefined $AbsExecBase = 0
+    init-if-undefined $SysBase = 0
+    symbol_check AbsExecBase
+    symbol_check SysBase
+    if $SysBase != 0 && $AbsExecBase == 0
+        set $AbsExecBase = $SysBase
+    end
+    if $SysBase == 0 && $AbsExecBase != 0
+        set $SysBase = $AbsExecBase
+    end
 end
 document _sysbase_init
 Initialize $AbsExecBase convenience variables
@@ -40,19 +52,19 @@ end
 
 define _debug_init
     _sysbase_init
+    symbol_check Debug_ModList
+
+    init-if-undefined $Debug_ModList = 0
     init-if-undefined $_debug_DebugBase = 0
 
-    if $AbsExecBase != 0 && $_debug_DebugBase == 0
-        set $_debug_DebugBase = (struct DebugBase *)($AbsExecBase->DebugBase)
-    end
-
-    if $_debug_DebugBase != 0
-        set $_debug_DebugBase = (struct DebugBase *)($_debug_DebugBase)
-        # This is the case for debugging a ROM
-        set $_debug_ModList = &($_debug_DebugBase->db_Modules)
-    else
-        # This is the case for debugging a bootstrap
-        init-if-undefined $_debug_ModList = Debug_ModList
+    if $_debug_DebugBase == 0
+        if $Debug_ModList == 0
+            set $_debug_DebugBase = (struct DebugBase *)($AbsExecBase->DebugBase)
+            # This is the case for debugging a ROM
+            set $_debug_ModList = &($_debug_DebugBase->db_Modules)
+        else
+           set $_debug_ModList = $Debug_ModList
+        end
     end
 end
 document _debug_init
