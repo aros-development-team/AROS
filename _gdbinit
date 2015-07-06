@@ -2,6 +2,27 @@ handle SIGUSR1 pass noprint nostop
 handle SIGUSR2 pass noprint nostop
 set follow-fork-mode child
 
+define log_to_file
+  set logging file $arg0
+  set logging redirect on
+  set logging overwrite $arg1
+  set logging on
+end
+
+define end_log
+  set logging off
+end
+
+# Define $symbol = (type)addr if it exists,  undefined if not
+define symbol_check
+  log_to_file symbol.tmp on
+  p $arg0
+  end_log
+
+  shell sed -i -e '/^[^\$]/d' -e 's/^\$[0-9]* =/set $'$arg0' =/' symbol.tmp
+  source symbol.tmp
+end
+
 # This is a bit tricky, because we have several cases,
 # and gdb has no easy 'is this symbol defined' tests.
 #
@@ -348,17 +369,6 @@ define printtaglist
     printf "TAG_DONE\n"
 end
 document printtaglist
-end
-
-define log_to_file
-  set logging file $arg0
-  set logging redirect on
-  set logging overwrite $arg1
-  set logging on
-end
-
-define end_log
-  set logging off
 end
 
 define loadmod
