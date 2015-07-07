@@ -12,19 +12,15 @@ COMMONTESTFILES := \
     customscreen \
     date2amiga \
     displayalert \
-    dosvartest \
     exceptiontest \
     exceptiontest2 \
     fileseek \
-    filetest \
     fontinfo \
     frequencies \
-    fstest \
     hostcb \
     iffparsewrite \
     ilbmtoc \
     localetest \
-    matchtest \
     modeid \
     monitorclass \
     newmatch \
@@ -39,33 +35,22 @@ COMMONTESTFILES := \
     unixio \
     opendiskfont \
     partition \
-    scantest \
     showvisregion \
     showvisshape \
     sortlayercr \
-    strtodate \
     systemtags \
     systemtagsslave \
-    ExNext \
     randtest \
-    rawtest \
     camdtree \
     mktime \
     rexxsyslibtest \
     printnativekeytable \
     testide \
     simplepng \
-    consolemodes \
-    examine \
     rwverify \
-    setfilesize \
     timeport \
-    minicat \
     time \
-    waitforchar \
-    seektest \
     callhooktest \
-    scanvarstest \
     convertpixels \
     patchrgbconv \
     joystick \
@@ -83,7 +68,6 @@ COMMONTESTFILES := \
 
 SHTESTFILES=\
     pcilist \
-    isfilesystem \
     true
 
 HOSTEDTESTFILES :=  \
