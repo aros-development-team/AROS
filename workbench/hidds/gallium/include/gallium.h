@@ -74,37 +74,37 @@ enum
 
 struct pHidd_Gallium_CreatePipeScreen
 {
-    OOP_MethodID    mID;
+    STACKED OOP_MethodID    mID;
 };
 
 struct pHidd_Gallium_DisplaySurface
 {
-    OOP_MethodID            mID;
-    APTR                    context;
-    struct RastPort         *rastport;
-    ULONG                   left;
-    ULONG                   top;
-    ULONG                   width;
-    ULONG                   height;
-    struct pipe_surface     *surface;
-    ULONG                   absx;
-    ULONG                   absy;
-    ULONG                   relx;
-    ULONG                   rely;
+    STACKED OOP_MethodID            mID;
+    STACKED APTR                    context;
+    STACKED struct RastPort         *rastport;
+    STACKED ULONG                   left;
+    STACKED ULONG                   top;
+    STACKED ULONG                   width;
+    STACKED ULONG                   height;
+    STACKED struct pipe_surface     *surface;
+    STACKED ULONG                   absx;
+    STACKED ULONG                   absy;
+    STACKED ULONG                   relx;
+    STACKED ULONG                   rely;
 };
 
 struct pHidd_Gallium_DisplayResource
 {
-    OOP_MethodID            mID;
-    struct pipe_resource    *resource;
-    ULONG                   srcx;
-    ULONG                   srcy;
+    STACKED OOP_MethodID            mID;
+    STACKED struct pipe_resource    *resource;
+    STACKED ULONG                   srcx;
+    STACKED ULONG                   srcy;
 
-    struct BitMap           *bitmap;
-    ULONG                   dstx;
-    ULONG                   dsty;
-    ULONG                   width;
-    ULONG                   height;
+    STACKED struct BitMap           *bitmap;
+    STACKED ULONG                   dstx;
+    STACKED ULONG                   dsty;
+    STACKED ULONG                   width;
+    STACKED ULONG                   height;
 };
 
 struct HIDDT_WinSys
