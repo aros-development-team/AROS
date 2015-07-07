@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,7 +48,8 @@ int main(void)
             DateStamp(&stamp);
             
             Printf("Calling SetFileDate\n");
-            if(SetFileDate("__TEST__", &stamp)) {
+            if(SetFileDate("__TEST__", &stamp))
+            {
                 if (ExamineFH(fh, fib))
                 { 
                     curr.dat_Stamp = fib->fib_Date;
