@@ -69,12 +69,25 @@ BOOL _ValidateIntVSprite(struct IntVSprite * ivs,
                          struct GfxBase * GfxBase)
 {
 	struct VSprite * vs = ivs->VSprite;
+
+        /* We don't support a depth > 32 currently */
+	if (vs->Depth > 32)
+	    return FALSE;
+
 	/*
 	 * Check whether the ImageData pointer has changed
 	 */
 	if (vs->ImageData != ivs->OrigImageData ||
 	    force_change) {
-		struct BitMap bm;
+	        /* Why the weird struct? Well, if we InitBitMap()
+	         * a Depth > 8 on a plain BitMap, we'll scribble over
+	         * our stack. Therefore we pad one some extra IPTRs
+	         * to the end.
+	         */
+	        struct {
+		        struct BitMap bm;
+		        IPTR planes[32-8];
+                } x = {};
 
 #if 0
 kprintf("%s: Imagedata has changed (old:%p-new:%p)!\n",
@@ -121,7 +134,7 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 		 * Blit the image data from the VSprite into the
 		 * ImageData (BitMap) of the IntVSprite
 		 */
-		InitBitMap(&bm,
+		InitBitMap(&x.bm,
 		           ivs->Depth,
 		           ivs->Width<<4,
 		           ivs->Height);
@@ -129,23 +142,22 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
     	    	{
 		    UBYTE *imagedata = (UBYTE *)vs->ImageData;
 		    WORD  d, shift;
-		    
+
 		    for (d = 0, shift = 1; d < 8; d++, shift *= 2)
 		    {
 		    	if (vs->PlanePick & shift)
 			{
-			    bm.Planes[d] = imagedata;
-			    imagedata += (bm.Rows * bm.BytesPerRow);
+			    x.bm.Planes[d] = imagedata;
+			    imagedata += (x.bm.Rows * x.bm.BytesPerRow);
 			}
 			else
 			{
-			    bm.Planes[d] = (vs->PlaneOnOff & shift) ? (PLANEPTR)-1 : NULL;
+			    x.bm.Planes[d] = (vs->PlaneOnOff & shift) ? (PLANEPTR)-1 : NULL;
 			}
 		    }
-		    
 		}
-		
-		BltBitMap(&bm,
+
+		BltBitMap(&x.bm,
 		          0,
 		          0,
 		          ivs->ImageData,
@@ -156,9 +168,9 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 		          0x0c0,
 		          vs->PlanePick,
 		          NULL);
-			  
+
 	}
-	
+
 	return TRUE;
 }
 
