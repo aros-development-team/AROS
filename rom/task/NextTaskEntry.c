@@ -87,8 +87,8 @@
             {
                 while (taskList->tlp_Next && 
                           ((!taskList->tlp_Next->tle_Task) ||
-                            (taskList->tlp_Next->tle_Task->tc_State != TS_WAIT) ||
-                            (taskList->tlp_Next->tle_Task->tc_State != TS_SPIN)))
+                          !((taskList->tlp_Next->tle_Task->tc_State == TS_WAIT) ||
+                            (taskList->tlp_Next->tle_Task->tc_State == TS_SPIN))))
                 {
                      taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
                 }
