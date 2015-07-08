@@ -118,7 +118,7 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
               , iText->LeftEdge + leftOffset
               , iText->TopEdge + topOffset + rp->Font->tf_Baseline
              );
-        Text (rp, iText->IText, strlen (iText->IText));
+        Text (rp, iText->IText, iText->IText ? strlen (iText->IText) : 0);
 
         if (iText->ITextFont)
         {
