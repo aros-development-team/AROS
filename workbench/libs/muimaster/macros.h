@@ -237,7 +237,7 @@
 
  xxxLabel() is suited for Objects without frame
  xxxLabel1() is suited for objects with a single frame, like buttons
- xxxLabel2() is suited for objects with with double frames, like string gadgets
+ xxxLabel2() is suited for objects with double frames, like string gadgets
 **************************************************************************/
 
 /* Right aligned */
