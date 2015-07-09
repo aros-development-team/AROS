@@ -62,16 +62,16 @@ const STRPTR ___strings[] =
     "Du", "Lu", "Ma", "Mi", "Jo", "Vi", "Sâ",
 
     /* Months of the year */
-    "Ianuarie", "Februarie", "Martie",
-    "Aprilie", "Mai", "Iunie",
-    "Iulie", "August", "Septembrie",
-    "Octombrie", "Noiembrie", "Decembrie",
+    "ianuarie", "februarie", "martie",
+    "aprilie", "mai", "iunie",
+    "iulie", "august", "septembrie",
+    "octombrie", "noiembrie", "decembrie",
 
     /* Abbreviated months of the year */
     "ian", "feb", "mar", "apr", "mai", "lun",
     "iul", "aug", "sep", "oct", "nov", "dec",
 
-    "Desigur", /* Yes, affirmative response */
+    "Da", /* Yes, affirmative response */
     "Nu", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
@@ -89,7 +89,7 @@ const STRPTR ___strings[] =
        Tomorrow - the next day
        Future.
     */
-    "ieri", "astãzi", "mâine", "soartã",
+    "ieri", "astãzi", "mâine", "viitor",
 
     /* Native language name */
     NLANGSTR
