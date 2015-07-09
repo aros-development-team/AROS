@@ -26,28 +26,35 @@
 #define DEBUG DEBUG_DIRENTRY
 #include "debug.h"
 
-LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL reuse) {
+LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
+    BOOL reuse)
+{
     /* dh may or may not be initialised when this is called. if it is, then it
      * probably has a valid cache block that we need to free, but we wouldn't
      * know. we test the superblock pointer to figure out if it's valid or
      * not */
-    if (reuse && (dh->ioh.sb == sb)) {
+    if (reuse && (dh->ioh.sb == sb))
+    {
         D(bug("[fat] reusing directory handle\n"));
-        if (dh->ioh.block != NULL) {
+        if (dh->ioh.block != NULL)
+        {
             Cache_FreeBlock(sb->cache, dh->ioh.block);
             dh->ioh.block = NULL;
         }
     }
-    else {
+    else
+    {
         dh->ioh.sb = sb;
         dh->ioh.block = NULL;
     }
 
-    if (cluster == 0) {
+    if (cluster == 0)
+    {
         dh->ioh.first_cluster = sb->rootdir_cluster;
         dh->ioh.first_sector = sb->rootdir_sector;
     }
-    else {
+    else
+    {
         dh->ioh.first_cluster = cluster;
         dh->ioh.first_sector = 0;
     }
@@ -56,25 +63,33 @@ LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL
     dh->ioh.cur_sector = dh->ioh.first_sector;
     dh->ioh.sector_offset = 0;
 
-    D(bug("[fat] initialised dir handle, first cluster is %ld, first sector is %ld\n", dh->ioh.first_cluster, dh->ioh.first_sector));
+    D(bug("[fat] initialised dir handle, first cluster is %ld,"
+        " first sector is %ld\n", dh->ioh.first_cluster,
+        dh->ioh.first_sector));
 
     return 0;
 }
 
-LONG ReleaseDirHandle(struct DirHandle *dh) {
-    D(bug("[fat] releasing dir handle (cluster %ld)\n", dh->ioh.first_cluster));
+LONG ReleaseDirHandle(struct DirHandle *dh)
+{
+    D(bug("[fat] releasing dir handle (cluster %ld)\n",
+        dh->ioh.first_cluster));
     RESET_DIRHANDLE(dh);
+
     return 0;
 }
 
-LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de) {
+LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de)
+{
     LONG err = 0;
     ULONG nread;
 
-    D(bug("[fat] looking for dir entry %ld in dir starting at cluster %ld\n", index, dh->ioh.first_cluster));
+    D(bug("[fat] looking for dir entry %ld in dir starting at cluster %ld\n",
+        index, dh->ioh.first_cluster));
 
     /* fat dirs are limited to 2^16 entries */
-    if (index >= 0x10000) {
+    if (index >= 0x10000)
+    {
         D(bug("[fat] request for out-of-range index, returning not found\n"));
         return ERROR_OBJECT_NOT_FOUND;
     }
@@ -86,8 +101,10 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de) {
     de->pos = index * sizeof(struct FATDirEntry);
 
     /* get the data directly into the entry */
-    err = ReadFileChunk(&(dh->ioh), de->pos, sizeof(struct FATDirEntry), (UBYTE *) &(de->e.entry), &nread);
-    if (err != 0) {
+    err = ReadFileChunk(&(dh->ioh), de->pos, sizeof(struct FATDirEntry),
+        (UBYTE *) &(de->e.entry), &nread);
+    if (err != 0)
+    {
         D(bug("[fat] dir entry lookup failed\n"));
         return err;
     }
@@ -99,38 +116,47 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de) {
     return 0;
 }
 
-LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
+LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de)
+{
     LONG err;
 
     D(bug("[fat] looking for next entry after index %ld\n", dh->cur_index));
 
     /* cur_index defaults to -1, so this will do the right thing even on a
      * fresh dirhandle */
-    while ((err = GetDirEntry(dh, dh->cur_index + 1, de)) == 0) {
+    while ((err = GetDirEntry(dh, dh->cur_index + 1, de)) == 0)
+    {
         /* end of directory, there is no next entry */
-        if (de->e.entry.name[0] == 0x00) {
-            D(bug("[fat] entry %ld is end-of-directory marker, we're done\n", dh->cur_index));
+        if (de->e.entry.name[0] == 0x00)
+        {
+            D(bug("[fat] entry %ld is end-of-directory marker, we're done\n",
+                dh->cur_index));
             RESET_DIRHANDLE(dh);
             return ERROR_OBJECT_NOT_FOUND;
         }
 
         /* skip unused entries */
-        if (de->e.entry.name[0] == 0xe5) {
+        if (de->e.entry.name[0] == 0xe5)
+        {
             D(bug("[fat] entry %ld is empty, skipping it\n", dh->cur_index));
             continue;
         }
 
         /* this flag will be set for both volume name entries and long
          * filename entries. either way we want to skip them */
-        if (de->e.entry.attr & ATTR_VOLUME_ID) {
-            D(bug("[fat] entry %ld is a volume name or long filename, skipping it\n", dh->cur_index));
+        if (de->e.entry.attr & ATTR_VOLUME_ID)
+        {
+            D(bug("[fat] entry %ld is a volume name or long filename,"
+                " skipping it\n", dh->cur_index));
             continue;
         }
 
         /* ignore the . and .. entries */
-        if (de->e.entry.name[0] == '.' &&
-            ((de->index == 0 && strncmp((char *) de->e.entry.name, ".          ", 11) == 0) ||
-             (de->index == 1 && strncmp((char *) de->e.entry.name, "..         ", 11) == 0))) {
+        if (de->e.entry.name[0] == '.' && ((de->index == 0
+            && strncmp((char *)de->e.entry.name, ".          ", 11) == 0)
+            || (de->index == 1
+            && strncmp((char *)de->e.entry.name, "..         ", 11) == 0)))
+        {
             D(bug("[fat] skipping . or .. entry\n"));
             continue;
         }
@@ -143,14 +169,17 @@ LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
     return err;
 }
 
-LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
+LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
+{
     LONG err = 0;
     ULONG cluster;
 
-    D(bug("[fat] getting parent for directory at cluster %ld\n", dh->ioh.first_cluster));
+    D(bug("[fat] getting parent for directory at cluster %ld\n",
+        dh->ioh.first_cluster));
 
     /* if we're already at the root, then we can't go any further */
-    if (dh->ioh.first_cluster == dh->ioh.sb->rootdir_cluster) {
+    if (dh->ioh.first_cluster == dh->ioh.sb->rootdir_cluster)
+    {
         D(bug("[fat] trying to go up past the root, so entry not found\n"));
         return ERROR_OBJECT_NOT_FOUND;
     }
@@ -161,10 +190,11 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
 
     /* make sure it's actually the parent dir entry */
     if (((de->e.entry.attr & ATTR_DIRECTORY) == 0) ||
-        strncmp((char *) de->e.entry.name, "..         ", 11) != 0) {
+        strncmp((char *)de->e.entry.name, "..         ", 11) != 0)
+    {
         D(bug("[fat] entry index 1 does not have name '..', can't go up\n"));
-        D(bug("[fat] actual name: '%.*s', attrs: 0x%x\n",
-            11, de->e.entry.name, de->e.entry.attr));
+        D(bug("[fat] actual name: '%.*s', attrs: 0x%x\n", 11,
+            de->e.entry.name, de->e.entry.attr));
         return ERROR_OBJECT_NOT_FOUND;
     }
 
@@ -173,8 +203,11 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
 
     /* get handle on grandparent dir so we can find entry with parent's
      * name */
-    if (dh->ioh.first_cluster != dh->ioh.sb->rootdir_cluster) {
-        D(bug("[fat] getting grandparent, first cluster is %ld, root cluster is %ld\n", dh->ioh.first_cluster, dh->ioh.sb->rootdir_cluster));
+    if (dh->ioh.first_cluster != dh->ioh.sb->rootdir_cluster)
+    {
+        D(bug("[fat] getting grandparent, first cluster is %ld,"
+            " root cluster is %ld\n", dh->ioh.first_cluster,
+            dh->ioh.sb->rootdir_cluster));
         cluster = dh->ioh.first_cluster;
         GetDirEntry(dh, 1, de);
         InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh, TRUE);
@@ -186,7 +219,8 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
 }
 
 LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster,
-    struct DirEntry *de) {
+    struct DirEntry *de)
+{
     LONG err;
 
     D(bug("[fat] looking for dir entry with first cluster %lu\n", cluster));
@@ -195,11 +229,13 @@ LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster,
     RESET_DIRHANDLE(dh);
 
     /* loop through the entries until we find a match */
-    while ((err = GetNextDirEntry(dh, de)) == 0) {
-        if (de->e.entry.first_cluster_hi == (cluster >> 16) &&
-            de->e.entry.first_cluster_lo == (cluster & 0xffff)) {
+    while ((err = GetNextDirEntry(dh, de)) == 0)
+    {
+        if (de->e.entry.first_cluster_hi == (cluster >> 16)
+            && de->e.entry.first_cluster_lo == (cluster & 0xffff))
+        {
             D(bug("[fat] matched starting cluster at entry %ld, returning\n",
-                 dh->cur_index));
+                dh->cur_index));
             return 0;
         }
     }
@@ -208,7 +244,9 @@ LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster,
     return err;
 }
 
-LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct DirEntry *de) {
+LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen,
+    struct DirEntry *de)
+{
     UBYTE buf[256];
     ULONG buflen;
     LONG err;
@@ -219,18 +257,25 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct 
     RESET_DIRHANDLE(dh);
 
     /* loop through the entries until we find a match */
-    while ((err = GetNextDirEntry(dh, de)) == 0) {
+    while ((err = GetNextDirEntry(dh, de)) == 0)
+    {
         /* compare with the short name first, since we already have it */
         GetDirEntryShortName(de, buf, &buflen);
-        if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
-            D(bug("[fat] matched short name '%s' at entry %ld, returning\n", buf, dh->cur_index));
+        if (namelen == buflen
+            && strnicmp((char *)name, (char *)buf, buflen) == 0)
+        {
+            D(bug("[fat] matched short name '%s' at entry %ld, returning\n",
+                buf, dh->cur_index));
             return 0;
         }
 
         /* no match, extract the long name and compare with that instead */
         GetDirEntryLongName(de, buf, &buflen);
-        if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
-	    D(bug("[fat] matched long name '%s' at entry %ld, returning\n", buf, dh->cur_index));
+        if (namelen == buflen
+            && strnicmp((char *)name, (char *)buf, buflen) == 0)
+        {
+            D(bug("[fat] matched long name '%s' at entry %ld, returning\n",
+                buf, dh->cur_index));
             return 0;
         }
     }
@@ -238,12 +283,17 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct 
     return err;
 }
 
-LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct DirEntry *de) {
+LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen,
+    struct DirEntry *de)
+{
     LONG err;
     ULONG len, i;
 
-    D(bug("[fat] looking for entry with path '"); RawPutChars(path, pathlen);
-      bug("' from dir at cluster %ld\n", dh->ioh.first_cluster));
+    D(
+        bug("[fat] looking for entry with path '");
+        RawPutChars(path, pathlen);
+        bug("' from dir at cluster %ld\n", dh->ioh.first_cluster);
+    )
 
     /* get back to the start of the dir */
     RESET_DIRHANDLE(dh);
@@ -251,42 +301,52 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
     /* if it starts with a volume specifier (or just a :), remove it and get
      * us back to the root dir */
     for (i = 0; i < pathlen; i++)
-        if (path[i] == ':') {
-            D(bug("[fat] path has volume specifier, moving to the root dir\n"));
+        if (path[i] == ':')
+        {
+            D(bug(
+                "[fat] path has volume specifier, moving to the root dir\n"));
 
-            pathlen -= (i+1);
-            path = &path[i+1];
+            pathlen -= (i + 1);
+            path = &path[i + 1];
 
-	    InitDirHandle(dh->ioh.sb, 0, dh, TRUE);
+            InitDirHandle(dh->ioh.sb, 0, dh, TRUE);
 
-	    /* If we were called with simply ":" as the name we will return
-	       immediately after this, so we prepare a fictional direntry for
-	       such a case.
-	       Note that we fill only fields which are actually used in our handler */
-	    de->cluster = 0;
-	    de->index = -1;			/* WARNING! Dummy index */
-	    de->e.entry.attr = ATTR_DIRECTORY;
-	    de->e.entry.first_cluster_hi = 0;
-	    de->e.entry.first_cluster_lo = 0;
+            /* If we were called with simply ":" as the name we will return
+               immediately after this, so we prepare a fictional direntry for
+               such a case.
+               Note that we fill only fields which are actually used in our handler */
+            de->cluster = 0;
+            de->index = -1;     /* WARNING! Dummy index */
+            de->e.entry.attr = ATTR_DIRECTORY;
+            de->e.entry.first_cluster_hi = 0;
+            de->e.entry.first_cluster_lo = 0;
 
             break;
         }
 
-    D(bug("[fat] now looking for entry with path '"); RawPutChars(path, pathlen);
-      bug("' from dir at cluster %ld\n", dh->ioh.first_cluster));
+    D(
+        bug("[fat] now looking for entry with path '");
+        RawPutChars(path, pathlen);
+        bug("' from dir at cluster %ld\n", dh->ioh.first_cluster);
+    )
 
     /* each time around the loop we find one dir/file in the full path */
-    while (pathlen > 0) {
+    while (pathlen > 0)
+    {
 
         /* zoom forward and find the first dir separator */
         for (len = 0; len < pathlen && path[len] != '/'; len++);
 
-	D(bug("[fat] remaining path is '"); RawPutChars(path, pathlen);
-	  bug("' (%d bytes), current chunk is '", pathlen); RawPutChars(path, len);
-	  bug("' (%d bytes)\n", len));
+        D(
+            bug("[fat] remaining path is '");
+            RawPutChars(path, pathlen);
+            bug("' (%d bytes), current chunk is '", pathlen);
+            RawPutChars(path, len); bug("' (%d bytes)\n", len);
+        )
 
         /* if the first character is a /, then we have to go up a level */
-        if (len == 0) {
+        if (len == 0)
+        {
 
             /* get the parent dir, and bale if we've gone past it (i.e. we are
              * the root) */
@@ -295,7 +355,8 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
         }
 
         /* otherwise, we want to search the current directory for this name */
-        else {
+        else
+        {
             if ((err = GetDirEntryByName(dh, path, len, de)) != 0)
                 return ERROR_OBJECT_NOT_FOUND;
         }
@@ -306,19 +367,23 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
 
         /* a / here is either the path separator or the directory we just went
          * up. either way, we have to ignore it */
-        if (pathlen > 0 && path[0] == '/') {
+        if (pathlen > 0 && path[0] == '/')
+        {
             path++;
             pathlen--;
         }
 
-        if (pathlen > 0) {
+        if (pathlen > 0)
+        {
             /* more to do, so this entry had better be a directory */
-            if (!(de->e.entry.attr & ATTR_DIRECTORY)) {
-                D(bug("[fat] '%.*s' is not a directory, so can't go any further\n", len, path));
+            if (!(de->e.entry.attr & ATTR_DIRECTORY))
+            {
+                D(bug("[fat] '%.*s' is not a directory,"
+                    " so can't go any further\n", len, path));
                 return ERROR_OBJECT_WRONG_TYPE;
             }
 
-	    InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh, TRUE);
+            InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh, TRUE);
         }
     }
 
@@ -327,18 +392,23 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
     return 0;
 }
 
-LONG UpdateDirEntry(struct DirEntry *de) {
+LONG UpdateDirEntry(struct DirEntry *de)
+{
     struct Globals *glob = de->sb->glob;
     struct DirHandle dh;
     LONG err = 0;
     ULONG nwritten;
 
-    D(bug("[fat] writing dir entry %ld in dir starting at cluster %ld\n", de->index, de->cluster));
+    D(bug("[fat] writing dir entry %ld in dir starting at cluster %ld\n",
+        de->index, de->cluster));
 
     InitDirHandle(glob->sb, de->cluster, &dh, FALSE);
 
-    err = WriteFileChunk(&(dh.ioh), de->pos, sizeof(struct FATDirEntry), (UBYTE *) &(de->e.entry), &nwritten);
-    if (err != 0) {
+    err =
+        WriteFileChunk(&(dh.ioh), de->pos, sizeof(struct FATDirEntry),
+        (UBYTE *) &(de->e.entry), &nwritten);
+    if (err != 0)
+    {
         D(bug("[fat] dir entry update failed\n"));
         ReleaseDirHandle(&dh);
         return err;
@@ -349,7 +419,8 @@ LONG UpdateDirEntry(struct DirEntry *de) {
     return 0;
 }
 
-LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de) {
+LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de)
+{
     ULONG nwant;
     LONG err;
     ULONG nfound;
@@ -366,12 +437,14 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de) {
     /* search the directory until we find a large enough gap */
     nfound = 0;
     de->index = -1;
-    while (nfound < nwant) {
-        err = GetDirEntry(dh, de->index+1, de);
+    while (nfound < nwant)
+    {
+        err = GetDirEntry(dh, de->index + 1, de);
 
         /* if we can't get the entry, then we ran off the end, so there's no
          * space left */
-        if (err == ERROR_OBJECT_NOT_FOUND) {
+        if (err == ERROR_OBJECT_NOT_FOUND)
+        {
             D(bug("[fat] ran off the end of the directory, no space left\n"));
             return ERROR_NO_FREE_STORE;
         }
@@ -381,35 +454,43 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de) {
             return err;
 
         /* if it's unused, make a note */
-        if (de->e.entry.name[0] == 0xe5) {
+        if (de->e.entry.name[0] == 0xe5)
+        {
             nfound++;
             continue;
         }
 
         /* if we hit end-of-directory, then we can shortcut it */
-        if (de->e.entry.name[0] == 0x00) {
+        if (de->e.entry.name[0] == 0x00)
+        {
             ULONG last;
 
-            if (de->index + nwant >= 0x10000) {
-                D(bug("[fat] hit end-of-directory marker, but there's not enough room left after it\n"));
+            if (de->index + nwant >= 0x10000)
+            {
+                D(bug("[fat] hit end-of-directory marker,"
+                    " but there's not enough room left after it\n"));
                 return ERROR_NO_FREE_STORE;
             }
 
-            D(bug("[fat] found end-of-directory marker, making space after it\n"));
+            D(bug("[fat] found end-of-directory marker,"
+                " making space after it\n"));
 
             last = de->index + nwant;
-            do {
+            do
+            {
                 if (GetDirEntry(dh, de->index + 1, de) != 0)
                     clusteradded = TRUE;
                 de->e.entry.name[0] = 0x00;
                 UpdateDirEntry(de);
-            } while(de->index != last);
+            }
+            while (de->index != last);
 
             D(bug("[fat] new end-of-directory is entry %ld\n", de->index));
 
             /* clear all remaining entries in any new cluster added */
             if (clusteradded)
-                while (GetDirEntry(dh, de->index + 1, de) == 0) {
+                while (GetDirEntry(dh, de->index + 1, de) == 0)
+                {
                     memset(&de->e.entry, 0, sizeof(struct FATDirEntry));
                     UpdateDirEntry(de);
                 }
@@ -424,17 +505,22 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de) {
         nfound = 0;
     }
 
-    D(bug("[fat] found a gap, base (short name) entry is %ld\n", de->index));
+    D(bug("[fat] found a gap, base (short name) entry is %ld\n",
+        de->index));
     return 0;
 }
 
 LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
-    UBYTE attr, ULONG cluster, struct DirEntry *de) {
+    UBYTE attr, ULONG cluster, struct DirEntry *de)
+{
     ULONG gap;
     LONG err;
 
-    D(bug("[fat] creating dir entry (name '"); RawPutChars(name, namelen);
-      bug("' attr 0x%02x cluster %ld)\n", attr, cluster));
+    D(
+        bug("[fat] creating dir entry (name '");
+        RawPutChars(name, namelen);
+        bug("' attr 0x%02x cluster %ld)\n", attr, cluster);
+    )
 
     /* find out how many extra entries we need for the long name */
     gap = NumLongNameEntries(name, namelen);
@@ -449,8 +535,10 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
 
     SetDirEntryName(de, name, namelen);
 
-    if ((err = UpdateDirEntry(de)) != 0) {
-        D(bug("[fat] couldn't update base directory entry, creation failed\n"));
+    if ((err = UpdateDirEntry(de)) != 0)
+    {
+        D(bug(
+            "[fat] couldn't update base directory entry, creation failed\n"));
         return err;
     }
 
@@ -459,7 +547,8 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
     return 0;
 }
 
-void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster) {
+void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster)
+{
     struct Globals *glob = de->sb->glob;
     struct DateStamp ds;
 
@@ -481,7 +570,8 @@ void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster) {
     de->e.entry.file_size = 0;
 }
 
-LONG DeleteDirEntry(struct DirEntry *de) {
+LONG DeleteDirEntry(struct DirEntry *de)
+{
     struct Globals *glob = de->sb->glob;
     struct DirHandle dh;
     UBYTE checksum;
@@ -504,7 +594,8 @@ LONG DeleteDirEntry(struct DirEntry *de) {
     /* now we loop over the previous entries, looking for matching long name
      * entries and killing them */
     order = 1;
-    while ((err = GetDirEntry(&dh, de->index-1, de)) == 0) {
+    while ((err = GetDirEntry(&dh, de->index - 1, de)) == 0)
+    {
 
         /* see if this is a matching long name entry. if it's not, we're done */
         if (!((de->e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_LONG_NAME) ||
@@ -520,14 +611,16 @@ LONG DeleteDirEntry(struct DirEntry *de) {
         order++;
     }
 
-    D(bug("[fat] deleted %ld long name entries\n", order-1));
+    D(bug("[fat] deleted %ld long name entries\n", order - 1));
 
     ReleaseDirHandle(&dh);
 
     return err;
 }
 
-LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib, struct Globals *glob) {
+LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib,
+    struct Globals *glob)
+{
     struct FSSuper *sb = glob->sb;
     struct GlobalLock *gl = (fl != NULL ? fl->gl : &sb->info->root_lock);
     struct DirHandle dh;
@@ -537,15 +630,18 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib, struct Globals 
 
     D(bug("\tFilling FIB data.\n"));
 
-    if (gl == &sb->info->root_lock) {
+    if (gl == &sb->info->root_lock)
+    {
         D(bug("\t\ttype: root directory\n"));
         fib->fib_DirEntryType = ST_ROOT;
     }
-    else if (gl->attr & ATTR_DIRECTORY) {
+    else if (gl->attr & ATTR_DIRECTORY)
+    {
         D(bug("\t\ttype: directory\n"));
         fib->fib_DirEntryType = ST_USERDIR;
     }
-    else {
+    else
+    {
         D(bug("\t\ttype: file\n"));
         fib->fib_DirEntryType = ST_FILE;
     }
@@ -553,16 +649,20 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib, struct Globals 
     D(bug("\t\tsize: %ld\n", gl->size));
 
     fib->fib_Size = gl->size;
-    fib->fib_NumBlocks = ((gl->size + (sb->clustersize - 1)) >> sb->clustersize_bits) << sb->cluster_sectors_bits;
+    fib->fib_NumBlocks = ((gl->size + (sb->clustersize - 1))
+        >> sb->clustersize_bits) << sb->cluster_sectors_bits;
     fib->fib_EntryType = fib->fib_DirEntryType;
-    fib->fib_DiskKey = 0xfffffffflu; //fl->entry;
+    fib->fib_DiskKey = 0xfffffffflu;    //fl->entry;
 
     if (fib->fib_DirEntryType == ST_ROOT)
-        CopyMem(&sb->volume.create_time, &fib->fib_Date, sizeof(struct DateStamp));
-    else {
-	InitDirHandle(sb, gl->dir_cluster, &dh, FALSE);
+        CopyMem(&sb->volume.create_time, &fib->fib_Date,
+            sizeof(struct DateStamp));
+    else
+    {
+        InitDirHandle(sb, gl->dir_cluster, &dh, FALSE);
         GetDirEntry(&dh, gl->dir_entry, &de);
-        ConvertFATDate(de.e.entry.write_date, de.e.entry.write_time, &fib->fib_Date, glob);
+        ConvertFATDate(de.e.entry.write_date, de.e.entry.write_time,
+            &fib->fib_Date, glob);
         ReleaseDirHandle(&dh);
     }
 
@@ -572,8 +672,10 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib, struct Globals 
     D(bug("\t\tname (len %ld) %s\n", len, fib->fib_FileName + 1));
 
     fib->fib_Protection = 0;
-    if (gl->attr & ATTR_READ_ONLY) fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);
-    if (gl->attr & ATTR_ARCHIVE)   fib->fib_Protection |= FIBF_ARCHIVE;
+    if (gl->attr & ATTR_READ_ONLY)
+        fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);
+    if (gl->attr & ATTR_ARCHIVE)
+        fib->fib_Protection |= FIBF_ARCHIVE;
 
     fib->fib_Comment[0] = 0;
 #if DEBUG_NAMES

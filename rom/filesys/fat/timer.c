@@ -1,7 +1,7 @@
 /*
  * fat-handler - FAT12/16/32 filesystem handler
  *
- * Copyright   2008-2010 The AROS Development Team
+ * Copyright © 2008-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -24,13 +24,18 @@ LONG InitTimer(struct Globals *glob)
     LONG err = ERROR_NO_FREE_STORE;
 
     glob->timerport = CreateMsgPort();
-    if (glob->timerport) {
-        glob->timereq = (struct timerequest *)CreateIORequest(glob->timerport,
+    if (glob->timerport)
+    {
+        glob->timereq =
+            (struct timerequest *)CreateIORequest(glob->timerport,
             sizeof(struct timerequest));
-        if (glob->timereq) {
-            if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)glob->timereq, 0))
+        if (glob->timereq)
+        {
+            if (OpenDevice("timer.device", UNIT_VBLANK,
+                (struct IORequest *)glob->timereq, 0))
                 err = ERROR_DEVICE_NOT_MOUNTED;
-            else {
+            else
+            {
                 glob->timer_active = 0;
                 glob->restart_timer = 1;
                 glob->gl_TimerBase = glob->timereq->tr_node.io_Device;
@@ -47,7 +52,8 @@ LONG InitTimer(struct Globals *glob)
 void CleanupTimer(struct Globals *glob)
 {
     D(bug("[fat] Cleaning up timer\n"));
-    if (glob->timer_active) {
+    if (glob->timer_active)
+    {
         D(bug("[fat] Terminating active request\n"));
         AbortIO((struct IORequest *)glob->timereq);
         WaitIO((struct IORequest *)glob->timereq);
@@ -59,10 +65,13 @@ void CleanupTimer(struct Globals *glob)
 
 void RestartTimer(struct Globals *glob)
 {
-    if (glob->timer_active) {
+    if (glob->timer_active)
+    {
         D(bug("Queuing timer restart\n"));
         glob->restart_timer = 1;
-    } else {
+    }
+    else
+    {
         D(bug("Immediate timer restart\n"));
         glob->timereq->tr_node.io_Command = TR_ADDREQUEST;
         glob->timereq->tr_time.tv_secs = 1;
@@ -76,13 +85,15 @@ void HandleTimer(struct Globals *glob)
 {
     WaitIO((struct IORequest *)glob->timereq);
     glob->timer_active = 0;
-    if (glob->restart_timer) {
+    if (glob->restart_timer)
+    {
         D(bug("Timer restart queued\n"));
         glob->restart_timer = 0;
         RestartTimer(glob);
-    } else {
+    }
+    else
+    {
         D(bug("Updating disk\n"));
         UpdateDisk(glob);
     }
 }
-

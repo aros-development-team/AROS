@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifdef __AROS__
 #include <aros/debug.h>
 #else
@@ -8,8 +13,8 @@
 
 static inline void RawPutChars(const UBYTE *string, int len)
 {
-	while (len--)
-		kputc(*string++);
+    while (len--)
+        kputc(*string++);
 }
 
 #else
@@ -21,4 +26,3 @@ static inline void RawPutChars(const UBYTE *string, int len)
 #define DB2(x)
 #endif
 #endif
-
