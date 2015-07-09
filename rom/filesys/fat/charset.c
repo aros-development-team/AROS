@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <proto/dos.h>
@@ -11,96 +16,101 @@
 
 #undef DOSBase
 
-static ULONG readLine(struct Library *DOSBase, BPTR fh, char *buf, ULONG size)
+static ULONG readLine(struct Library *DOSBase, BPTR fh, char *buf,
+    ULONG size)
 {
-  char *c;
+    char *c;
 
-  if((c = FGets(fh, buf, size)) == NULL)
-    return FALSE;
+    if ((c = FGets(fh, buf, size)) == NULL)
+        return FALSE;
 
-  for(; *c; c++)
-  {
-    if(*c == '\n' || *c == '\r')
+    for (; *c; c++)
     {
-      *c = '\0';
-      break;
+        if (*c == '\n' || *c == '\r')
+        {
+            *c = '\0';
+            break;
+        }
     }
-  }
 
-  return TRUE;
+    return TRUE;
 }
 
 void InitCharsetTables(struct Globals *glob)
 {
-	int i;
+    int i;
 
-	for (i = 0; i < 65536; i++)
-	if (i < 256) {
-		glob->from_unicode[i] = i;
-		glob->to_unicode[i] = i;
-	} else
-		glob->from_unicode[i] = '_';
+    for (i = 0; i < 65536; i++)
+        if (i < 256)
+        {
+            glob->from_unicode[i] = i;
+            glob->to_unicode[i] = i;
+        }
+        else
+            glob->from_unicode[i] = '_';
 }
 
 // Reads a coding table
 BOOL ReadUnicodeTable(struct Globals *glob, STRPTR name)
 {
-  BPTR fh;
-  struct Library *DOSBase;
+    BPTR fh;
+    struct Library *DOSBase;
 
-  if (!(DOSBase = OpenLibrary("dos.library", 0)))
-      return FALSE;
+    if (!(DOSBase = OpenLibrary("dos.library", 0)))
+        return FALSE;
 
-  fh = Open(name, MODE_OLDFILE);
-  if (fh)
-  {
-      int i, n;
-      char buf[512];
+    fh = Open(name, MODE_OLDFILE);
+    if (fh)
+    {
+        int i, n;
+        char buf[512];
 
-      while(readLine(DOSBase, fh, buf, 512*sizeof(char)))
-      {
-	if(!isdigit(*buf))
-          continue;
-        else
+        while (readLine(DOSBase, fh, buf, 512 * sizeof(char)))
         {
-          char *p = buf;
-          int fmt2 = 0;
-
-          if((*p=='=') || (fmt2 = ((*p=='0') || (*(p+1)=='x'))))
-          {
-            p++;
-            p += fmt2;
-
-            i = strtol((const char *)p,(char **)&p,16);
-	    if(i>=0 && i<256)
+            if (!isdigit(*buf))
+                continue;
+            else
             {
-              while(isspace(*p)) p++;
+                char *p = buf;
+                int fmt2 = 0;
 
-              if(!strnicmp(p, "U+", 2))
-              {
-                p += 2;
-		n = strtol((const char *)p,(char **)&p,16);
-              }
-              else
-              {
-		if(*p!='#')
-		  n = strtol((const char *)p,(char **)&p,0);
-		else
-		  n = -1;
-              }
-	      if (n >= 0 && n < 65536) {
-		glob->from_unicode[n] = i;
-		glob->to_unicode[i] = n;
-	      }
+                if ((*p == '=') || (fmt2 = ((*p == '0')
+                    || (*(p + 1) == 'x'))))
+                {
+                    p++;
+                    p += fmt2;
+
+                    i = strtol((const char *)p, (char **)&p, 16);
+                    if (i >= 0 && i < 256)
+                    {
+                        while (isspace(*p))
+                            p++;
+
+                        if (!strnicmp(p, "U+", 2))
+                        {
+                            p += 2;
+                            n = strtol((const char *)p, (char **)&p, 16);
+                        }
+                        else
+                        {
+                            if (*p != '#')
+                                n = strtol((const char *)p, (char **)&p, 0);
+                            else
+                                n = -1;
+                        }
+                        if (n >= 0 && n < 65536)
+                        {
+                            glob->from_unicode[n] = i;
+                            glob->to_unicode[i] = n;
+                        }
+                    }
+                }
             }
-          }
         }
-      }
-      Close(fh);
-  }
+        Close(fh);
+    }
 
-  CloseLibrary(DOSBase);
+    CloseLibrary(DOSBase);
 
-  return fh ? TRUE : FALSE;
+    return fh ? TRUE : FALSE;
 }
-

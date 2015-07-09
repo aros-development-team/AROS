@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2013 The AROS Development Team
+ * Copyright © 2007-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -15,7 +15,7 @@
 #include <dos/dos.h>
 #include <proto/exec.h>
 
-#include <string.h>    
+#include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 
@@ -51,25 +51,32 @@ const UBYTE allowed_ascii[] =
     2, 2, 2, 2, 0, 2, 2, 0
 };
 
-LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
+LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len)
+{
     int i;
     UBYTE *raw, *c;
 
     /* make sure the entry is good */
     raw = de->e.entry.name;
-    if (raw[0] == 0x00 || raw[0] == 0xe5 || raw[0] == 0x20) {
-        D(bug("[fat] entry name has first byte 0x%02x, returning empty short name\n", raw[0]));
+    if (raw[0] == 0x00 || raw[0] == 0xe5 || raw[0] == 0x20)
+    {
+        D(bug("[fat] entry name has first byte 0x%02x,"
+            " returning empty short name\n", raw[0]));
         *name = '\0';
         len = 0;
         return 0;
     }
 
-    D(bug("[fat] extracting short name for name '"); RawPutChars(raw, 11);
-      bug("' (index %ld)\n", de->index));
+    D(
+        bug("[fat] extracting short name for name '");
+        RawPutChars(raw, 11);
+        bug("' (index %ld)\n", de->index);
+    )
 
     /* copy the chars into the return string */
     c = name;
-    for (i = 0; i < 11; i++) {
+    for (i = 0; i < 11; i++)
+    {
         *c = tolower(raw[i]);
 
         /*
@@ -83,11 +90,13 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
          * can't just flick forward in our copying at the first sight of a
          * space, it's technically incorrect.
          */
-        if (i == 7) {
+        if (i == 7)
+        {
             /* backtrack to first non-space. this is safe because the first
              * char won't be space, we checked above */
-            while (*c == 0x20) c--;
-            
+            while (*c == 0x20)
+                c--;
+
             /* forward one and drop in the dot */
             c++;
             *c = '.';
@@ -98,22 +107,31 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
     }
 
     /* remove any trailing spaces, and perhaps a trailing . */
-    while (c[-1] == 0x20) c--;
-    if (c[-1] == '.') c--;
+    while (c[-1] == 0x20)
+        c--;
+    if (c[-1] == '.')
+        c--;
 
     /* apply official hack for Japanese names */
-    if (*name == 0x05) *name = 0xe5;
+    if (*name == 0x05)
+        *name = 0xe5;
 
     /* all done */
     *c = '\0';
     *len = strlen(name);
 
-    D(bug("[fat] extracted short name '"); RawPutChars(name, *len); bug("'\n"));
+    D(
+        bug("[fat] extracted short name '");
+        RawPutChars(name, *len);
+        bug("'\n");
+    )
 
     return 0;
 }
 
-LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
+LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
+    ULONG *len)
+{
     struct Globals *glob = short_de->sb->glob;
     UBYTE buf[256];
     int i;
@@ -127,14 +145,17 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
 
     /* make sure the entry is good */
     raw = short_de->e.entry.name;
-    if (raw[0] == 0x00 || raw[0] == 0xe5 || raw[0] == 0x20) {
-        D(bug("[fat] entry name has first byte 0x%02x, returning empty long name\n", raw[0]));
+    if (raw[0] == 0x00 || raw[0] == 0xe5 || raw[0] == 0x20)
+    {
+        D(bug("[fat] entry name has first byte 0x%02x,"
+            " returning empty long name\n", raw[0]));
         *name = '\0';
         len = 0;
         return 0;
     }
 
-    D(bug("[fat] looking for long name for name '%.11s' (index %ld)\n", raw, short_de->index));
+    D(bug("[fat] looking for long name for name '%.11s' (index %ld)\n", raw,
+        short_de->index));
 
     /* compute the short name checksum. this value is held in every associated
      * long name entry to help us identify it. see FATdoc 1.03 p28 */
@@ -149,8 +170,10 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
     c = buf;
     order = 1;
     index = short_de->index - 1;
-    while (index >= 0) {
-        D(bug("[fat] looking for long name order 0x%02x in entry %ld\n", order, index));
+    while (index >= 0)
+    {
+        D(bug("[fat] looking for long name order 0x%02x in entry %ld\n",
+            order, index));
 
         if ((err = GetDirEntry(&dh, index, &de)) != 0)
             break;
@@ -158,10 +181,13 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
         /* make sure it's valid */
         if (!((de.e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_LONG_NAME) ||
             (de.e.long_entry.order & ~0x40) != order ||
-            de.e.long_entry.checksum != checksum) {
+            de.e.long_entry.checksum != checksum)
+        {
 
-            D(bug("[fat] bad long name entry %ld (attr 0x%02x order 0x%02x checksum 0x%02x)\n",
-                  index, de.e.entry.attr, de.e.long_entry.order, de.e.long_entry.checksum));
+            D(bug("[fat] bad long name entry %ld"
+                " (attr 0x%02x order 0x%02x checksum 0x%02x)\n",
+                index, de.e.entry.attr, de.e.long_entry.order,
+                de.e.long_entry.checksum));
 
             err = ERROR_OBJECT_NOT_FOUND;
             break;
@@ -175,26 +201,30 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
         /* XXX these are in UTF-16, but we're just taking the bottom byte.
          * that works well enough but is still a hack. if our dos ever
          * supports unicode this should be revisited */
-        for (i = 0; i < 5; i++) {
-	    *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name1[i])];
+        for (i = 0; i < 5; i++)
+        {
+            *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name1[i])];
             c++;
         }
-        for (i = 0; i < 6; i++) {
-	    *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name2[i])];
+        for (i = 0; i < 6; i++)
+        {
+            *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name2[i])];
             c++;
         }
-        for (i = 0; i < 2; i++) {
-	    *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name3[i])];
+        for (i = 0; i < 2; i++)
+        {
+            *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name3[i])];
             c++;
         }
 
         /* if this is the last entry, clean up and get us out of here */
-        if (de.e.long_entry.order & 0x40) {
+        if (de.e.long_entry.order & 0x40)
+        {
             *c = 0;
-            *len = strlen((char *) buf);
+            *len = strlen((char *)buf);
             CopyMem(buf, name, *len);
 
-	    D(bug("[fat] extracted long name '%s'\n", buf));
+            D(bug("[fat] extracted long name '%s'\n", buf));
 
             ReleaseDirHandle(&dh);
 
@@ -215,7 +245,8 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
 /* set the name of an entry. this will set the long name too. it assumes
  * that there is room before the entry to store the long filename. if there
  * isn't the whole thing will fail */
-LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
+LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
+{
     struct Globals *glob = short_de->sb->glob;
     UBYTE basis[11];
     ULONG nlong;
@@ -228,15 +259,18 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     UBYTE checksum;
     UBYTE order;
 
-    D(bug("[fat] setting name for entry index %ld to '", short_de->index);
-      RawPutChars(name, len); bug("'\n"));
+    D(
+        bug("[fat] setting name for entry index %ld to '", short_de->index);
+        RawPutChars(name, len);
+        bug("'\n");
+    )
 
     /* discard leading spaces */
-    while(len > 0 && name[0] == ' ')
+    while (len > 0 && name[0] == ' ')
         name++, len--;
 
     /* discard trailing spaces and dots */
-    while(len > 0 && (name[len - 1] == ' ' || name[len - 1] == '.'))
+    while (len > 0 && (name[len - 1] == ' ' || name[len - 1] == '.'))
         len--;
 
     /* check for empty name and reserved names "." and ".." */
@@ -256,7 +290,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
      * take the first eight characters and any three-letter extension and mash
      * them together. FATDoc 1.03 p30-31 outlines a more comprehensive
      * algorithm that handles unicode, but we're not doing unicode yet */
-    
+
     dst = 0;
 
     /* strip off leading periods */
@@ -267,10 +301,14 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
         seq = 1;
 
     /* copy the first eight chars in, ignoring spaces and stopping at period */
-    if (src != len) {
-        while (src < len && dst < 8 && name[src] != '.') {
-            if (name[src] != ' ') {
-                if (allowed_ascii[name[src]] == 1) {
+    if (src != len)
+    {
+        while (src < len && dst < 8 && name[src] != '.')
+        {
+            if (name[src] != ' ')
+            {
+                if (allowed_ascii[name[src]] == 1)
+                {
                     basis[dst] = '_';
                     seq = 1;
                 }
@@ -292,7 +330,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
 
     /* remember the current value of src for the multiple-dot check below */
     root_end = src;
-    
+
     /* pad the rest of the left side with spaces */
     for (; dst < 8; dst++)
         basis[dst] = ' ';
@@ -301,7 +339,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     for (i = len - 1; i >= src && name[i] != '.'; i--);
 
     /* found it */
-    if (i >= src) {
+    if (i >= src)
+    {
         /* if this isn't the same dot we found earlier, then we need a tail */
         if (i != root_end)
             seq = 1;
@@ -310,9 +349,12 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
         src = i + 1;
 
         /* copy it in */
-        while(src < len && dst < 11) {
-            if (name[src] != ' ') {
-                if (allowed_ascii[name[src]] == 1) {
+        while (src < len && dst < 11)
+        {
+            if (name[src] != ' ')
+            {
+                if (allowed_ascii[name[src]] == 1)
+                {
                     basis[dst] = '_';
                     seq = 1;
                 }
@@ -340,16 +382,21 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     /* if the name will require one or more entries, then our basis name is
      * actually some conversion of the real name, and we have to look to make
      * sure it's not in use */
-    if (nlong > 0) {
-        D(bug("[fat] searching for basis name to confirm that it's not in use\n"));
+    if (nlong > 0)
+    {
+        D(bug("[fat] searching for basis name to confirm that"
+            " it's not in use\n"));
 
         /* loop over the entries and compare them with the basis until we find
          * a gap */
-        while (1) {
+        while (1)
+        {
             /* build a new tail if necessary */
-            if (cur != seq) {
+            if (cur != seq)
+            {
                 sprintf(tail, "~%lu", (unsigned long)seq);
-                while (left + strlen(tail) > 8) left--;
+                while (left + strlen(tail) > 8)
+                    left--;
                 CopyMem(tail, &basis[left], strlen(tail));
                 cur = seq;
 
@@ -361,7 +408,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
                 break;
 
             /* abort on any other error */
-            if (err != 0) {
+            if (err != 0)
+            {
                 ReleaseDirHandle(&dh);
                 return err;
             }
@@ -375,9 +423,10 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
 
             /* if we reached the end, then our current basis is in use and we
              * need to generate a new one and start again */
-            if (i == 11) {
+            if (i == 11)
+            {
                 seq++;
-                RESET_DIRHANDLE(&dh)
+                RESET_DIRHANDLE(&dh);
             }
         }
 
@@ -389,8 +438,10 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     CopyMem(basis, short_de->e.entry.name, 11);
 
     /* we can stop here if no long name is required */
-    if (nlong == 0) {
-        D(bug("[fat] copied short name and long name not required, we're done\n"));
+    if (nlong == 0)
+    {
+        D(bug("[fat] copied short name and long name not required,"
+            " we're done\n"));
         ReleaseDirHandle(&dh);
         return 0;
     }
@@ -405,22 +456,28 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     src = 0;
     de.index = short_de->index;
     order = 1;
-    while (src < len) {
+    while (src < len)
+    {
         /* get the previous entry */
-        if ((err = GetDirEntry(&dh, de.index-1, &de)) != 0) {
+        if ((err = GetDirEntry(&dh, de.index - 1, &de)) != 0)
+        {
             ReleaseDirHandle(&dh);
             return err;
         }
 
         /* it must be unused (or end of directory) */
-        if (de.e.entry.name[0] != 0xe5 && de.e.entry.name[0] != 0x00) {
-            D(bug("[fat] index %ld appears to be in use, aborting long name\n", de.index));
+        if (de.e.entry.name[0] != 0xe5 && de.e.entry.name[0] != 0x00)
+        {
+            D(bug("[fat] index %ld appears to be in use, aborting long name\n",
+                de.index));
 
             /* clean up any long name entries we already added */
-            while ((err = GetDirEntry(&dh, de.index+1, &de)) == 0 && 
-                   (de.e.entry.attr & ATTR_LONG_NAME_MASK)) {
+            while ((err = GetDirEntry(&dh, de.index + 1, &de)) == 0 &&
+                (de.e.entry.attr & ATTR_LONG_NAME_MASK))
+            {
                 de.e.entry.name[0] = 0xe5;
-                if ((err = UpdateDirEntry(&de)) != 0) {
+                if ((err = UpdateDirEntry(&de)) != 0)
+                {
                     /* XXX corrupt */
                     ReleaseDirHandle(&dh);
                     return err;
@@ -434,20 +491,23 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
         D(bug("[fat] building long name entry %ld\n", de.index));
 
         /* copy bytes in */
-        for (dst = 0; dst < 5; dst++) {
-	    de.e.long_entry.name1[dst] =
+        for (dst = 0; dst < 5; dst++)
+        {
+            de.e.long_entry.name1[dst] =
                 src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) :
                 (src++ == len ? 0x0000 : 0xffff);
         }
 
-        for (dst = 0; dst < 6; dst++) {
-	    de.e.long_entry.name2[dst] =
+        for (dst = 0; dst < 6; dst++)
+        {
+            de.e.long_entry.name2[dst] =
                 src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) :
                 (src++ == len ? 0x0000 : 0xffff);
         }
 
-        for (dst = 0; dst < 2; dst++) {
-	    de.e.long_entry.name3[dst] =
+        for (dst = 0; dst < 2; dst++)
+        {
+            de.e.long_entry.name3[dst] =
                 src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) :
                 (src++ == len ? 0x0000 : 0xffff);
         }
@@ -466,7 +526,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
         /* write the entry out */
         UpdateDirEntry(&de);
 
-        D(bug("[fat] wrote long name entry %ld order 0x%02x\n", de.index, de.e.long_entry.order));
+        D(bug("[fat] wrote long name entry %ld order 0x%02x\n", de.index,
+            de.e.long_entry.order));
     }
 
     ReleaseDirHandle(&dh);
@@ -481,7 +542,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
 }
 
 /* return the number of long name entries that are required to store this name */
-ULONG NumLongNameEntries(STRPTR name, ULONG len) {
+ULONG NumLongNameEntries(STRPTR name, ULONG len)
+{
 #if UPPERCASE_SHORT_NAMES
     ULONG i, left;
 
@@ -492,10 +554,12 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
 
     /* if the name is standard 8.3 (or less) then we don't need any long name
      * entries - the name can be contained within the standard entry */
-    if (len <= 12) {
+    if (len <= 12)
+    {
         left = 0;
 
-        for (i = 0; i < 8 && i < len; i++) {
+        for (i = 0; i < 8 && i < len; i++)
+        {
             if (name[i] == '.')
                 break;
             if (name[i] != toupper(name[i]))
@@ -508,9 +572,10 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
         if (i == len)
             return 0;
 
-        if (name[i] == '.') {
+        if (name[i] == '.')
+        {
             for (i = 0; i < 3 && left + 1 + i < len; i++)
-                if (name[left+1+i] != toupper(name[left+1+i])
+                if (name[left + 1 + i] != toupper(name[left + 1 + i])
                     || allowed_ascii[name[i]] == 1)
                     break;
 
@@ -520,5 +585,5 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
     }
 #endif
 
-    return ((len-1) / 13) + 1;
+    return ((len - 1) / 13) + 1;
 }

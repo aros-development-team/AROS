@@ -46,7 +46,8 @@
 
 
 /* a handle on something, file or directory */
-struct IOHandle {
+struct IOHandle
+{
     struct FSSuper      *sb;            /* filesystem data */
 
     ULONG               first_cluster;  /* first cluster of this file */
@@ -61,18 +62,20 @@ struct IOHandle {
                                            i.e. cur = sector(cur_cluster) + offset */
 
     APTR block;         /* current block from the cache */
-    UBYTE *data;         /* current data buffer (from cache) */
+    UBYTE *data;        /* current data buffer (from cache) */
 };
 
 /* a handle on a directory */
-struct DirHandle {
+struct DirHandle
+{
     struct IOHandle     ioh;
 
     ULONG               cur_index;      /* last entry returned, for GetNextDirEntry */
 };
 
 /* single directory entry */
-struct DirEntry {
+struct DirEntry
+{
     struct FSSuper      *sb;            /* filesystem data */
 
     ULONG               cluster;        /* cluster the containing directory starts at */
@@ -90,7 +93,8 @@ struct DirEntry {
 
 struct GlobalLock;
 
-struct ExtFileLock {
+struct ExtFileLock
+{
     /* struct FileLock */
     BPTR                fl_Link;
     IPTR                fl_Key;
@@ -111,7 +115,8 @@ struct ExtFileLock {
     struct FSSuper      *sb;            /* pointer to sb, for unlocking when volume is removed */
 };
 
-struct GlobalLock {
+struct GlobalLock
+{
     struct MinNode      node;
 
     ULONG               dir_cluster;    /* first cluster of the directory we're in */
@@ -133,7 +138,8 @@ struct GlobalLock {
 };
 
 /* a node in the list of notification requests */
-struct NotifyNode {
+struct NotifyNode
+{
     struct MinNode          node;
 
     struct GlobalLock       *gl;        /* pointer to global lock if this file is
@@ -142,7 +148,8 @@ struct NotifyNode {
     struct NotifyRequest    *nr;        /* the request that DOS passed us */
 };
 
-struct VolumeInfo {
+struct VolumeInfo
+{
     APTR mem_pool;
     ULONG id;
     struct MinList locks;           /* global locks */
@@ -150,12 +157,14 @@ struct VolumeInfo {
     struct MinList notifies;
 };
 
-struct VolumeIdentity {
+struct VolumeIdentity
+{
     UBYTE               name[FAT_MAX_SHORT_NAME + 2];     /* BCPL string */
     struct DateStamp    create_time;
 };
 
-struct FSSuper {
+struct FSSuper
+{
     struct Node node;
 
     struct Globals *glob;
@@ -164,7 +173,7 @@ struct FSSuper {
     struct VolumeInfo *info;
 
     struct cache *cache;
-    ULONG        first_device_sector;
+    ULONG first_device_sector;
 
     ULONG sectorsize;
     ULONG sectorsize_bits;
@@ -215,7 +224,8 @@ struct FSSuper {
     /* ... */
 };
 
-struct Globals {
+struct Globals
+{
     /* Libraries */
     struct ExecBase *gl_SysBase;
     struct DosLibrary *gl_DOSBase;
@@ -281,37 +291,46 @@ struct Globals {
 /* new definitions as we refactor the code */
 
 /* get the first sector of a cluster */
-#define SECTOR_FROM_CLUSTER(sb,cl) ((ULONG) (((cl-2) << sb->cluster_sectors_bits) + sb->first_data_sector))
+#define SECTOR_FROM_CLUSTER(sb,cl) \
+    ((ULONG) (((cl-2) << sb->cluster_sectors_bits) + sb->first_data_sector))
 
-#define FIRST_FILE_CLUSTER(de)                                       \
-    (AROS_LE2WORD((de)->e.entry.first_cluster_lo) |                  \
+#define FIRST_FILE_CLUSTER(de) \
+    (AROS_LE2WORD((de)->e.entry.first_cluster_lo) | \
      (((ULONG) AROS_LE2WORD((de)->e.entry.first_cluster_hi)) << 16))
 
-#define RESET_HANDLE(ioh)                                          \
-    do {                                                           \
+#define RESET_HANDLE(ioh) \
+    do \
+    { \
         (ioh)->cluster_offset = (ioh)->sector_offset = 0xffffffff; \
-        if ((ioh)->block != NULL) {                                \
-            Cache_FreeBlock((ioh)->sb->cache, (ioh)->block);       \
-            (ioh)->block = NULL;                                   \
-        }                                                          \
-    } while (0);
+        if ((ioh)->block != NULL) \
+        { \
+            Cache_FreeBlock((ioh)->sb->cache, (ioh)->block); \
+            (ioh)->block = NULL; \
+        } \
+    } \
+    while (0);
 
-#define RESET_DIRHANDLE(dh)         \
-    do {                            \
-        RESET_HANDLE(&((dh)->ioh));   \
+#define RESET_DIRHANDLE(dh) \
+    do \
+    { \
+        RESET_HANDLE(&((dh)->ioh)); \
         (dh)->cur_index = 0xffffffff; \
-    } while(0);
+    } \
+    while(0);
 
 #define GET_NEXT_CLUSTER(sb,cl)     (sb->func_get_fat_entry(sb,cl))
 #define SET_NEXT_CLUSTER(sb,cl,val) (sb->func_set_fat_entry(sb,cl,val))
 
-#define CALC_SHORT_NAME_CHECKSUM(name,checksum)                                 \
-    do {                                                                        \
-        ULONG i;                                                                \
-        checksum = 0;                                                           \
-        for (i = 0; i < 11; i++)                                                \
-            checksum = ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + name[i]; \
-    } while(0);
+#define CALC_SHORT_NAME_CHECKSUM(name,checksum) \
+    do \
+    { \
+        ULONG i; \
+        checksum = 0; \
+        for (i = 0; i < 11; i++) \
+            checksum = \
+                ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + name[i]; \
+    } \
+    while(0);
 
 #define LOCKFROMNODE(A) \
     ((struct ExtFileLock *) \

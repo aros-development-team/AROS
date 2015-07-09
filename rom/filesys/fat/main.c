@@ -36,25 +36,34 @@
 
 static void InitCharsetTables(struct Globals *glob)
 {
-	int i;
+    int i;
 
-	for (i = 0; i < 65536; i++)
-	if (i < 256) {
-		glob->from_unicode[i] = i;
-		glob->to_unicode[i] = i;
-	} else
-		glob->from_unicode[i] = '_';
+    for (i = 0; i < 65536; i++)
+    {
+        if (i < 256)
+        {
+            glob->from_unicode[i] = i;
+            glob->to_unicode[i] = i;
+        }
+        else
+            glob->from_unicode[i] = '_';
+    }
 }
 
-static struct Globals *fat_init(struct Process *proc, struct DosPacket *dp, struct ExecBase *SysBase)
+static struct Globals *fat_init(struct Process *proc, struct DosPacket *dp,
+    struct ExecBase *SysBase)
 {
     struct Globals *glob;
 
     glob = AllocVec(sizeof(struct Globals), MEMF_ANY | MEMF_CLEAR);
-    if (glob) {
+    if (glob)
+    {
         glob->gl_SysBase = SysBase;
-        if ((glob->gl_DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0))) {
-            if ((glob->gl_UtilityBase = OpenLibrary("utility.library", 0))) {
+        if ((glob->gl_DOSBase =
+                (struct DosLibrary *)OpenLibrary("dos.library", 0)))
+        {
+            if ((glob->gl_UtilityBase = OpenLibrary("utility.library", 0)))
+            {
                 NEWLIST(&glob->sblist);
                 glob->ourtask = &proc->pr_Task;
                 glob->ourport = &proc->pr_MsgPort;
@@ -62,17 +71,22 @@ static struct Globals *fat_init(struct Process *proc, struct DosPacket *dp, stru
                 glob->devnode = BADDR(dp->dp_Arg3);
 
                 D(bug("\nFATFS: opening libraries.\n"));
-                D(bug("\tFS task: %lx, port %lx\n", glob->ourtask, glob->ourport));
+                D(bug("\tFS task: %lx, port %lx\n", glob->ourtask,
+                    glob->ourport));
 
                 glob->notifyport = CreateMsgPort();
 
                 glob->fssm = BADDR(dp->dp_Arg2);
 
-                if ((glob->mempool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE, DEF_POOL_THRESHOLD))) { 
+                if ((glob->mempool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE,
+                    DEF_POOL_THRESHOLD)))
+                {
                     LONG error = InitTimer(glob);
-                    if (!error) {
+                    if (!error)
+                    {
                         InitCharsetTables(glob);
-                        if ((error = InitDiskHandler(glob)) == 0) {
+                        if ((error = InitDiskHandler(glob)) == 0)
+                        {
                             return glob;
                         }
 
@@ -108,7 +122,8 @@ static void fat_exit(struct Globals *glob)
     FreeVec(glob);
 }
 
-LONG handler(struct ExecBase *SysBase) {
+LONG handler(struct ExecBase *SysBase)
+{
     struct Globals *glob;
     struct Process *proc;
     struct MsgPort *mp;
@@ -125,13 +140,16 @@ LONG handler(struct ExecBase *SysBase) {
 
     glob = fat_init(proc, dp, SysBase);
 
-    if (!glob) {
+    if (!glob)
+    {
         D(bug("%s: %b - error %d\n", __func__, dp->dp_Arg1, RETURN_FAIL));
         dp->dp_Res1 = DOSFALSE;
         dp->dp_Res2 = ERROR_NO_FREE_STORE;
         ReplyPacket(dp, SysBase);
         return RETURN_FAIL;
-    } else {
+    }
+    else
+    {
         ULONG pktsig = 1 << glob->ourport->mp_SigBit;
         ULONG diskchgsig = 1 << glob->diskchgsig_bit;
         ULONG notifysig = 1 << glob->notifyport->mp_SigBit;
@@ -139,7 +157,8 @@ LONG handler(struct ExecBase *SysBase) {
         ULONG mask = pktsig | diskchgsig | notifysig | timersig;
         ULONG sigs;
 
-        D(bug("\tInitiated device: %s\n", AROS_BSTR_ADDR(glob->devnode->dol_Name)));
+        D(bug("\tInitiated device: %s\n",
+            AROS_BSTR_ADDR(glob->devnode->dol_Name)));
 
         glob->devnode->dol_Task = glob->ourport;
 
@@ -151,9 +170,11 @@ LONG handler(struct ExecBase *SysBase) {
 
         D(bug("Handler init finished.\n"));
 
-        ProcessDiskChange(glob); /* insert disk */
+        /* insert disk */
+        ProcessDiskChange(glob);
 
-        while(!glob->quit) {
+        while (!glob->quit)
+        {
             sigs = Wait(mask);
             if (sigs & diskchgsig)
                 ProcessDiskChange(glob);
@@ -179,7 +200,7 @@ LONG handler(struct ExecBase *SysBase) {
     return RETURN_OK;
 }
 
-static AROS_INTH1(DiskChangeIntHandler, struct IntData *,  MyIntData)
+static AROS_INTH1(DiskChangeIntHandler, struct IntData *, MyIntData)
 {
     AROS_INTFUNC_INIT
 
@@ -191,7 +212,8 @@ static AROS_INTH1(DiskChangeIntHandler, struct IntData *,  MyIntData)
     AROS_INTFUNC_EXIT
 }
 
-LONG InitDiskHandler (struct Globals *glob) {
+LONG InitDiskHandler(struct Globals *glob)
+{
     struct FileSysStartupMsg *fssm = glob->fssm;
     LONG err;
     ULONG diskchgintbit, flags;
@@ -203,38 +225,55 @@ LONG InitDiskHandler (struct Globals *glob) {
 
     device = AROS_BSTR_ADDR(fssm->fssm_Device);
 
-    if ((diskchgintbit = AllocSignal(-1)) >= 0) {
+    if ((diskchgintbit = AllocSignal(-1)) >= 0)
+    {
         glob->diskchgsig_bit = diskchgintbit;
 
-        if ((glob->diskport = CreateMsgPort())) {
+        if ((glob->diskport = CreateMsgPort()))
+        {
 
-            if ((glob->diskioreq = CreateIORequest(glob->diskport, sizeof(struct IOExtTD)))) {
-
-                if (OpenDevice(device, unit, (struct IORequest *)glob->diskioreq, flags) == 0) {
+            if ((glob->diskioreq = CreateIORequest(glob->diskport,
+                sizeof(struct IOExtTD))))
+            {
+                if (OpenDevice(device, unit,
+                    (struct IORequest *)glob->diskioreq, flags) == 0)
+                {
                     D(bug("\tDevice successfully opened\n"));
                     Probe_64bit_support(glob);
 
-                    if ((glob->diskchgreq = AllocVec(sizeof(struct IOExtTD), MEMF_PUBLIC))) {
-                        CopyMem(glob->diskioreq, glob->diskchgreq, sizeof(struct IOExtTD));
+                    if ((glob->diskchgreq =
+                        AllocVec(sizeof(struct IOExtTD), MEMF_PUBLIC)))
+                    {
+                        CopyMem(glob->diskioreq, glob->diskchgreq,
+                            sizeof(struct IOExtTD));
 
                         /* fill interrupt data */
                         glob->DiskChangeIntData.SysBase = SysBase;
                         glob->DiskChangeIntData.task = glob->ourtask;
                         glob->DiskChangeIntData.signal = 1 << diskchgintbit;
 
-                        glob->DiskChangeIntData.Interrupt.is_Node.ln_Type = NT_INTERRUPT;
-                        glob->DiskChangeIntData.Interrupt.is_Node.ln_Pri = 0;
-                        glob->DiskChangeIntData.Interrupt.is_Node.ln_Name = "FATFS";
-                        glob->DiskChangeIntData.Interrupt.is_Data = &glob->DiskChangeIntData;
-                        glob->DiskChangeIntData.Interrupt.is_Code = (VOID_FUNC)AROS_ASMSYMNAME(DiskChangeIntHandler);
+                        glob->DiskChangeIntData.Interrupt.is_Node.ln_Type =
+                            NT_INTERRUPT;
+                        glob->DiskChangeIntData.Interrupt.is_Node.ln_Pri =
+                            0;
+                        glob->DiskChangeIntData.Interrupt.is_Node.ln_Name =
+                            "FATFS";
+                        glob->DiskChangeIntData.Interrupt.is_Data =
+                            &glob->DiskChangeIntData;
+                        glob->DiskChangeIntData.Interrupt.is_Code =
+                            (VOID_FUNC)
+                            AROS_ASMSYMNAME(DiskChangeIntHandler);
 
                         /* fill io request data */
-                        glob->diskchgreq->iotd_Req.io_Command = TD_ADDCHANGEINT;
-                        glob->diskchgreq->iotd_Req.io_Data = &glob->DiskChangeIntData.Interrupt;
-                        glob->diskchgreq->iotd_Req.io_Length = sizeof(struct Interrupt);
+                        glob->diskchgreq->iotd_Req.io_Command =
+                            TD_ADDCHANGEINT;
+                        glob->diskchgreq->iotd_Req.io_Data =
+                            &glob->DiskChangeIntData.Interrupt;
+                        glob->diskchgreq->iotd_Req.io_Length =
+                            sizeof(struct Interrupt);
                         glob->diskchgreq->iotd_Req.io_Flags = 0;
 
-                        SendIO((struct IORequest*)glob->diskchgreq);
+                        SendIO((struct IORequest *)glob->diskchgreq);
 
                         D(bug("\tDisk change interrupt handler installed\n"));
 
@@ -270,7 +309,8 @@ LONG InitDiskHandler (struct Globals *glob) {
     return err;
 }
 
-void CleanupDiskHandler(struct Globals *glob) {
+void CleanupDiskHandler(struct Globals *glob)
+{
     D(bug("\tFreeing handler resources:\n"));
 
     /* remove disk change interrupt */
@@ -279,7 +319,7 @@ void CleanupDiskHandler(struct Globals *glob) {
     glob->diskchgreq->iotd_Req.io_Length = sizeof(struct Interrupt);
     glob->diskchgreq->iotd_Req.io_Flags = 0;
 
-    DoIO((struct IORequest*)glob->diskchgreq);
+    DoIO((struct IORequest *)glob->diskchgreq);
     D(bug("\tDisk change interrupt handler removed\n"));
 
     CloseDevice((struct IORequest *)glob->diskioreq);
@@ -290,7 +330,7 @@ void CleanupDiskHandler(struct Globals *glob) {
 
     glob->diskioreq = NULL;
     glob->diskchgreq = NULL;
-    glob->diskport = NULL;    
+    glob->diskport = NULL;
 
     FreeSignal(glob->diskchgsig_bit);
 
