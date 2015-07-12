@@ -64,8 +64,6 @@ void SendEvent(LONG event, struct Globals *glob)
     }
 }
 
-/*-------------------------------------------------------------------------*/
-
 int ilog2(ULONG data)
 {
     int bitoffset = 31;
@@ -83,8 +81,6 @@ int ilog2(ULONG data)
 
     return 0;
 }
-
-/*-----------------------------------------------------------------------*/
 
 void ErrorMessageArgs(char *fmt, IPTR *ap, struct Globals *glob)
 {

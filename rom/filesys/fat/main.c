@@ -170,7 +170,7 @@ LONG handler(struct ExecBase *SysBase)
 
         D(bug("Handler init finished.\n"));
 
-        /* insert disk */
+        /* Insert disk */
         ProcessDiskChange(glob);
 
         while (!glob->quit)
@@ -247,7 +247,7 @@ LONG InitDiskHandler(struct Globals *glob)
                         CopyMem(glob->diskioreq, glob->diskchgreq,
                             sizeof(struct IOExtTD));
 
-                        /* fill interrupt data */
+                        /* Fill interrupt data */
                         glob->DiskChangeIntData.SysBase = SysBase;
                         glob->DiskChangeIntData.task = glob->ourtask;
                         glob->DiskChangeIntData.signal = 1 << diskchgintbit;
@@ -264,7 +264,7 @@ LONG InitDiskHandler(struct Globals *glob)
                             (VOID_FUNC)
                             AROS_ASMSYMNAME(DiskChangeIntHandler);
 
-                        /* fill io request data */
+                        /* Fill I/O request data */
                         glob->diskchgreq->iotd_Req.io_Command =
                             TD_ADDCHANGEINT;
                         glob->diskchgreq->iotd_Req.io_Data =
@@ -313,7 +313,7 @@ void CleanupDiskHandler(struct Globals *glob)
 {
     D(bug("\tFreeing handler resources:\n"));
 
-    /* remove disk change interrupt */
+    /* Remove disk change interrupt */
     glob->diskchgreq->iotd_Req.io_Command = TD_REMCHANGEINT;
     glob->diskchgreq->iotd_Req.io_Data = &glob->DiskChangeIntData.Interrupt;
     glob->diskchgreq->iotd_Req.io_Length = sizeof(struct Interrupt);

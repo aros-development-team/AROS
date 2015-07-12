@@ -25,7 +25,7 @@ struct Cache
 {
     struct ExecBase *sys_base;
     struct DosLibrary *dos_base;
-    APTR  priv;         /* Private data sent to AccessDisk() */
+    APTR  priv;         /* private data sent to AccessDisk() */
     ULONG block_count;  /* number of blocks allocated */
     ULONG block_size;   /* size of a disk block */
     ULONG hash_size;    /* size of hash table */

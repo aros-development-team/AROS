@@ -30,7 +30,7 @@
 
 #include "cache.h"
 
-/* filesystem structures */
+/* Filesystem structures */
 
 #define ID_FAT_DISK 0x46415400UL
 
@@ -45,7 +45,7 @@
 #define DEF_POOL_THRESHOLD DEF_POOL_SIZE
 
 
-/* a handle on something, file or directory */
+/* A handle on something, file or directory */
 struct IOHandle
 {
     struct FSSuper      *sb;            /* filesystem data */
@@ -65,7 +65,7 @@ struct IOHandle
     UBYTE *data;        /* current data buffer (from cache) */
 };
 
-/* a handle on a directory */
+/* A handle on a directory */
 struct DirHandle
 {
     struct IOHandle     ioh;
@@ -73,7 +73,7 @@ struct DirHandle
     ULONG               cur_index;      /* last entry returned, for GetNextDirEntry */
 };
 
-/* single directory entry */
+/* Single directory entry */
 struct DirEntry
 {
     struct FSSuper      *sb;            /* filesystem data */
@@ -137,7 +137,7 @@ struct GlobalLock
     struct MinList      locks;          /* list of ExtFileLocks opened on this file */
 };
 
-/* a node in the list of notification requests */
+/* A node in the list of notification requests */
 struct NotifyNode
 {
     struct MinNode          node;
@@ -288,9 +288,7 @@ struct Globals
 
 #include "support.h"
 
-/* new definitions as we refactor the code */
-
-/* get the first sector of a cluster */
+/* Get the first sector of a cluster */
 #define SECTOR_FROM_CLUSTER(sb,cl) \
     ((ULONG) (((cl-2) << sb->cluster_sectors_bits) + sb->first_data_sector))
 

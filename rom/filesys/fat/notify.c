@@ -29,7 +29,7 @@ void SendNotify(struct NotifyRequest *nr, struct Globals *glob)
 
     D(bug("[fat] notifying for '%s'\n", nr->nr_FullName));
 
-    /* signals are a doddle */
+    /* Signals are a doddle */
     if (nr->nr_Flags & NRF_SEND_SIGNAL)
     {
         D(bug("[fat] sending signal %ld to task 0x%08x\n",
@@ -42,7 +42,7 @@ void SendNotify(struct NotifyRequest *nr, struct Globals *glob)
         return;
     }
 
-    /* if message isn't set, then they screwed up, and there's nothing to do */
+    /* If message isn't set, then they screwed up, and there's nothing to do */
     if (!(nr->nr_Flags & NRF_SEND_MESSAGE))
     {
         D(bug("[fat] weird, request doesn't have SIGNAL or MESSAGE bits set,"
@@ -50,7 +50,7 @@ void SendNotify(struct NotifyRequest *nr, struct Globals *glob)
         return;
     }
 
-    /* don't send if we're supposed to wait for them to reply and there's
+    /* Don't send if we're supposed to wait for them to reply and there are
      * still messages outstanding */
     if (nr->nr_Flags & NRF_WAIT_REPLY && nr->nr_MsgCount > 0)
     {
@@ -59,13 +59,13 @@ void SendNotify(struct NotifyRequest *nr, struct Globals *glob)
         return;
     }
 
-    /* new message */
+    /* New message */
     nr->nr_MsgCount++;
 
     D(bug("[fat] request now has %ld messages outstanding\n",
         nr->nr_MsgCount));
 
-    /* allocate and build the message */
+    /* Allocate and build the message */
     nm = AllocVec(sizeof(struct NotifyMessage), MEMF_PUBLIC | MEMF_CLEAR);
     nm->nm_ExecMessage.mn_ReplyPort = glob->notifyport;
     nm->nm_ExecMessage.mn_Length = sizeof(struct NotifyMessage);
@@ -76,11 +76,11 @@ void SendNotify(struct NotifyRequest *nr, struct Globals *glob)
     D(bug("[fat] sending notify message to port 0x%08x\n",
         nr->nr_stuff.nr_Msg.nr_Port));
 
-    /* send it */
+    /* Send it */
     PutMsg(nr->nr_stuff.nr_Msg.nr_Port, (struct Message *)nm);
 }
 
-/* send a notification for the file referenced by the passed global lock */
+/* Send a notification for the file referenced by the passed global lock */
 void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl)
 {
     struct Globals *glob = sb->glob;
@@ -94,7 +94,7 @@ void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl)
             SendNotify(nn->nr, glob);
 }
 
-/* send a notification for the file referenced by the passed dir entry */
+/* Send a notification for the file referenced by the passed dir entry */
 void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de)
 {
     struct Globals *glob = sb->glob;
@@ -102,8 +102,8 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de)
     struct DirHandle sdh;
     struct DirEntry sde;
 
-    /* Inside the loop we may reuse the dirhandle, so here we explicitly mark it
-       as uninitialised */
+    /* Inside the loop we may reuse the dirhandle, so here we explicitly mark
+       it as uninitialised */
     sdh.ioh.sb = NULL;
 
     D(bug("[fat] notifying for dir entry (%ld/%ld)\n", de->cluster,
@@ -134,7 +134,7 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de)
     }
 }
 
-/* handle returned notify messages */
+/* Handle returned notify messages */
 void ProcessNotify(struct Globals *glob)
 {
     struct NotifyMessage *nm;

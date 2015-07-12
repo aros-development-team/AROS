@@ -82,11 +82,11 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen,
     struct DirEntry de;
     ULONG dir_cluster;
 
-    /* if the name is empty, just duplicate the base lock */
+    /* If the name is empty, just duplicate the base lock */
     if (namelen == 0)
         return CopyLock(fl, lock, glob);
 
-    /* if the base lock is a file, the name must either be empty (handled
+    /* If the base lock is a file, the name must either be empty (handled
      * above) or start with '/' (handled here) */
     if (fl != NULL && !(fl->gl->attr & ATTR_DIRECTORY))
     {
@@ -104,14 +104,14 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen,
             return ERROR_OBJECT_WRONG_TYPE;
     }
 
-    /* the . and .. entries are invisible to the user */
+    /* The . and .. entries are invisible to the user */
     if (name[0] == '.' && (namelen == 1 || (name[1] == '.' && namelen == 2)))
     {
         D(bug("[fat] not allowing access to '.' or '..' entries\n"));
         return ERROR_OBJECT_NOT_FOUND;
     }
 
-    /* get the first cluster of the directory to look for the file in */
+    /* Get the first cluster of the directory to look for the file in */
     if (fl == NULL)
         dir_cluster = 0;
     else if (fl->gl->attr & ATTR_DIRECTORY)
@@ -125,10 +125,10 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen,
         bug("' in dir at cluster %ld\n", dir_cluster);
     )
 
-    /* open the dir */
+    /* Open the dir */
     InitDirHandle(glob->sb, dir_cluster, &dh, FALSE, glob);
 
-    /* look for the entry */
+    /* Look for the entry */
     if ((err = GetDirEntryByPath(&dh, name, namelen, &de, glob)) != 0)
     {
         ReleaseDirHandle(&dh, glob);
@@ -136,7 +136,7 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen,
         return err;
     }
 
-    /* found it, do the locking proper */
+    /* Found it, do the locking proper */
     if (de.e.entry.attr & ATTR_DIRECTORY && FIRST_FILE_CLUSTER(&de)
         <= glob->sb->rootdir_cluster)
         err = LockRoot(access, lock, glob);
@@ -160,7 +160,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
     D(bug("[fat] locking file (%ld/%ld) (%s)\n", dir_cluster, dir_entry,
         access == SHARED_LOCK ? "shared" : "exclusive"));
 
-    /* first see if we already have a global lock for this file */
+    /* First see if we already have a global lock for this file */
     gl = NULL;
     ForeachNode(&glob->sb->info->locks, node)
     {
@@ -172,21 +172,21 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
         }
     }
 
-    /* if we do and we're trying for an exclusive lock, then bail out */
+    /* If we do and we're trying for an exclusive lock, then bail out */
     if (gl != NULL && access == EXCLUSIVE_LOCK)
     {
         D(bug("[fat] can't obtain exclusive lock on already-locked file\n"));
         return ERROR_OBJECT_IN_USE;
     }
 
-    /* allocate space for the lock. we do this first so that we don't go to
+    /* Allocate space for the lock. We do this first so that we don't go to
      * all the effort of setting up the global lock only to have to discard it
      * if the filelock allocation fails */
     if ((fl = AllocVecPooled(glob->sb->info->mem_pool,
         sizeof(struct ExtFileLock))) == NULL)
         return ERROR_NO_FREE_STORE;
 
-    /* if we don't have a global lock we need to build one */
+    /* If we don't have a global lock we need to build one */
     if (gl == NULL)
     {
         if ((gl = AllocVecPooled(glob->sb->info->mem_pool,
@@ -200,7 +200,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
         gl->dir_entry = dir_entry;
         gl->access = access;
 
-        /* gotta fish some stuff out of the dir entry too */
+        /* Gotta fish some stuff out of the dir entry too */
         InitDirHandle(glob->sb, dir_cluster, &dh, FALSE, glob);
         GetDirEntry(&dh, dir_entry, &de, glob);
 
@@ -228,7 +228,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
 
         D(bug("[fat] created new global lock\n"));
 
-        /* look through the notify list. if there's any in there that aren't
+        /* Look through the notify list. If there's any in there that aren't
          * currently attached to a global lock, expand them and if they are
          * for this file, fill them in */
         {
@@ -261,7 +261,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
         }
     }
 
-    /* now set up the file lock */
+    /* Now set up the file lock */
     fl->fl_Link = BNULL;
     fl->fl_Key = 0;
     fl->fl_Access = access;

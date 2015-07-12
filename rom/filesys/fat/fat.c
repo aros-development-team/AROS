@@ -66,7 +66,7 @@ static const struct DateStamp unset_date_limit =
 static LONG GetVolumeIdentity(struct FSSuper *sb,
     struct VolumeIdentity *volume);
 
-/* helper function to get the location of a fat entry for a cluster. it used
+/* Helper function to get the location of a fat entry for a cluster. It used
  * to be a define until it got too crazy */
 static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
     UWORD fat_no)
@@ -77,7 +77,7 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
     ULONG num;
     UWORD i;
 
-    /* if the target cluster is not within the currently loaded chunk of fat,
+    /* If the target cluster is not within the currently loaded chunk of fat,
      * we need to get the right data in */
     if (sb->fat_cache_block != entry_cache_block
         || sb->fat_cache_no != fat_no)
@@ -87,7 +87,7 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
             entry_cache_block << (sb->fat_cachesize_bits -
             sb->sectorsize_bits)));
 
-        /* put the old ones back */
+        /* Put the old ones back */
         if (sb->fat_cache_block != 0xffffffff)
         {
             for (i = 0; i < sb->fat_blocks_count; i++)
@@ -95,7 +95,7 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
             sb->fat_cache_block = 0xffffffff;
         }
 
-        /* load some more */
+        /* Load some more */
         num = sb->first_device_sector + sb->first_fat_sector
             + sb->fat_size * fat_no + (entry_cache_block
             << (sb->fat_cachesize_bits - sb->sectorsize_bits));
@@ -113,17 +113,17 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
             }
         }
 
-        /* remember where we are for next time */
+        /* Remember where we are for next time */
         sb->fat_cache_block = entry_cache_block;
         sb->fat_cache_no = fat_no;
     }
 
-    /* give the block back if they asked for it (needed to mark the block
+    /* Give the block back if they asked for it (needed to mark the block
      * dirty if they're writing) */
     if (rb != NULL)
         *rb = sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits];
 
-    /* compute the pointer location and return it */
+    /* Compute the pointer location and return it */
     return sb->fat_buffers[entry_cache_offset >> sb->sectorsize_bits] +
         (entry_cache_offset & (sb->sectorsize - 1));
 }
@@ -223,8 +223,8 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val)
 
         if (boundary)
         {
-            /* XXX ideally we'd mark both blocks dirty at the same time or
-             * only do it once if they're the same block. unfortunately any 
+            /* XXX: Ideally we'd mark both blocks dirty at the same time or
+             * only do it once if they're the same block. Unfortunately any 
              * old value of b is invalid after a call to GetFatEntryPtr, as
              * it may have swapped the previous cache out. This is probably
              * safe enough. */
@@ -380,19 +380,19 @@ LONG ReadFATSuper(struct FSSuper *sb)
         + sb->rootdir_sectors;
     D(bug("\tFirst Data Sector = %ld\n", sb->first_data_sector));
 
-    /* check if disk is in fact a FAT filesystem */
+    /* Check if disk is in fact a FAT filesystem */
 
-    /* valid sector size: 512, 1024, 2048, 4096 */
+    /* Valid sector size: 512, 1024, 2048, 4096 */
     if (sb->sectorsize != 512 && sb->sectorsize != 1024
         && sb->sectorsize != 2048 && sb->sectorsize != 4096)
         invalid = TRUE;
 
-    /* valid bpb_sect_per_clust: 1, 2, 4, 8, 16, 32, 64, 128 */
+    /* Valid bpb_sect_per_clust: 1, 2, 4, 8, 16, 32, 64, 128 */
     if ((boot->bpb_sect_per_clust & (boot->bpb_sect_per_clust - 1)) != 0
         || boot->bpb_sect_per_clust == 0 || boot->bpb_sect_per_clust > 128)
         invalid = TRUE;
 
-    /* valid cluster size: 512, 1024, 2048, 4096, 8192, 16k, 32k, 64k */
+    /* Valid cluster size: 512, 1024, 2048, 4096, 8192, 16k, 32k, 64k */
     if (sb->clustersize > 64 * 1024)
         invalid = TRUE;
 
@@ -453,7 +453,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
     }
     glob->sb = sb;
 
-    /* setup the FAT cache and load the first blocks */
+    /* Set up the FAT cache and load the first blocks */
     sb->fat_cachesize = 4096;
     sb->fat_cachesize_bits = log2(sb->fat_cachesize);
     sb->fat_cache_block = 0xffffffff;
@@ -467,20 +467,20 @@ LONG ReadFATSuper(struct FSSuper *sb)
 
     if (sb->type != 32)
     {
-        /* setup volume id */
+        /* Set up volume ID */
         sb->volume_id = AROS_LE2LONG(boot->ebpbs.ebpb.bs_volid);
 
-        /* location of root directory */
+        /* Location of root directory */
         sb->rootdir_cluster = 0;
         sb->rootdir_sector = sb->first_rootdir_sector;
         ebpb = &boot->ebpbs.ebpb;
     }
     else
     {
-        /* setup volume id */
+        /* Set up volume ID */
         sb->volume_id = AROS_LE2LONG(boot->ebpbs.ebpb32.ebpb.bs_volid);
 
-        /* location of root directory */
+        /* Location of root directory */
         sb->rootdir_cluster =
             AROS_LE2LONG(boot->ebpbs.ebpb32.bpb_root_cluster);
         sb->rootdir_sector = 0;
@@ -515,14 +515,14 @@ LONG ReadFATSuper(struct FSSuper *sb)
             Cache_FreeBlock(sb->cache, block_ref);
         }
 
-        /* allocate first cluster of the root directory */
+        /* Allocate first cluster of the root directory */
         if (sb->type == 32)
             AllocCluster(sb, sb->rootdir_cluster);
 
-        /* get a handle on the root directory */
+        /* Get a handle on the root directory */
         InitDirHandle(sb, 0, &dh, FALSE, glob);
 
-        /* clear all entries */
+        /* Clear all entries */
         for (i = 0; GetDirEntry(&dh, i, &dir_entry, glob) == 0; i++)
         {
             memset(&dir_entry.e.entry, 0, sizeof(struct FATDirEntry));
@@ -574,11 +574,11 @@ LONG ReadFATSuper(struct FSSuper *sb)
         sb->volume.create_time.ds_Days = 0;
         sb->volume.create_time.ds_Minute = 0;
         sb->volume.create_time.ds_Tick = (id >> 22 ^ id >> 11 ^ id) & 0x7FF;
-        D(bug("[FAT] Set hash time to %ld ticks\n",
+        D(bug("[fat] Set hash time to %ld ticks\n",
             sb->volume.create_time.ds_Tick));
     }
 
-    /* get initial number of free clusters */
+    /* Get initial number of free clusters */
     sb->free_clusters = -1;
     sb->next_cluster = -1;
     if (sb->type == 32)
@@ -628,7 +628,7 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
 
     D(bug("[fat] searching root directory for volume name\n"));
 
-    /* search the directory for the volume id entry. it would've been nice to
+    /* Search the directory for the volume ID entry. It would've been nice to
      * just use GetNextDirEntry but I didn't want a flag or something to tell
      * it not to skip the volume name */
     InitDirHandle(sb, sb->rootdir_cluster, &dh, FALSE, glob);
@@ -636,13 +636,13 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de, glob)) == 0)
     {
 
-        /* match the volume id entry */
+        /* Match the volume ID entry */
         if ((de.e.entry.attr & ATTR_VOLUME_ID_MASK) == ATTR_VOLUME_ID
             && de.e.entry.name[0] != 0xe5)
         {
             D(bug("[fat] found volume id entry %ld\n", dh.cur_index));
 
-            /* copy the name in. volume->name is a BSTR */
+            /* Copy the name in. 'volume->name' is a BSTR */
             volume->name[1] = de.e.entry.name[0];
             for (i = 1; i < FAT_MAX_SHORT_NAME; i++)
             {
@@ -656,7 +656,7 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
             volume->name[i + 2] = '\0';
             volume->name[0] = strlen(&(volume->name[1]));
 
-            /* get the volume creation date too */
+            /* Get the volume creation date too */
             ConvertFATDate(de.e.entry.create_date, de.e.entry.create_time,
                 &volume->create_time, glob);
 
@@ -665,7 +665,7 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
             break;
         }
 
-        /* bail out if we hit the end of the dir */
+        /* Bail out if we hit the end of the dir */
         if (de.e.entry.name[0] == 0x00)
         {
             D(bug("[fat] found end-of-directory marker,"
@@ -806,7 +806,7 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
     ReadEClock(&eclock);
     ebpb->bs_volid = FastRand(eclock.ev_lo ^ eclock.ev_hi);
 
-    /* copy volume name in */
+    /* Copy volume name in */
     for (i = 0; i < FAT_MAX_SHORT_NAME; i++)
         if (i < len)
             ebpb->bs_vollab[i] = toupper(name[i]);
@@ -885,11 +885,11 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     ULONG bsize = dosenv->de_SizeBlock * 4;
     struct FATBootSector *boot;
 
-    /* truncate name if necessary */
+    /* Truncate name if necessary */
     if (len > FAT_MAX_SHORT_NAME)
         len = FAT_MAX_SHORT_NAME;
 
-    /* read boot block */
+    /* Read boot block */
     boot = AllocMem(bsize, MEMF_ANY);
     if (!boot)
         return ERROR_NO_FREE_STORE;
@@ -904,7 +904,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
 
     D(bug("[fat] searching root directory for volume name\n"));
 
-    /* search the directory for the volume id entry. it would've been nice to
+    /* Search the directory for the volume ID entry. It would've been nice to
      * just use GetNextDirEntry but I didn't want a flag or something to tell
      * it not to skip the volume name */
     InitDirHandle(sb, 0, &dh, FALSE, glob);
@@ -912,7 +912,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de, glob)) == 0)
     {
 
-        /* match the volume id entry */
+        /* Match the volume ID entry */
         if ((de.e.entry.attr & ATTR_VOLUME_ID_MASK) == ATTR_VOLUME_ID
             && de.e.entry.name[0] != 0xe5)
         {
@@ -921,7 +921,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
             break;
         }
 
-        /* bail out if we hit the end of the dir */
+        /* Bail out if we hit the end of the dir */
         if (de.e.entry.name[0] == 0x00)
         {
             D(bug("[fat] found end-of-directory marker,"
@@ -931,7 +931,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
         }
     }
 
-    /* create a new volume id entry if there wasn't one */
+    /* Create a new volume ID entry if there wasn't one */
     if (err != 0)
     {
         err = AllocDirEntry(&dh, 0, &de, glob);
@@ -939,7 +939,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
             FillDirEntry(&de, ATTR_VOLUME_ID, 0, glob);
     }
 
-    /* copy the name in */
+    /* Copy the name in */
     if (err == 0)
     {
         for (i = 0; i < FAT_MAX_SHORT_NAME; i++)
@@ -955,7 +955,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
         }
     }
 
-    /* copy name to boot block as well, and save */
+    /* Copy name to boot block as well, and save */
     if (sb->type == 32)
         CopyMem(de.e.entry.name, boot->ebpbs.ebpb32.ebpb.bs_vollab,
             FAT_MAX_SHORT_NAME);
@@ -968,7 +968,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
         D(bug("[fat] couldn't write boot block (%ld)\n", err));
     FreeMem(boot, bsize);
 
-    /* update name in sb */
+    /* Update name in SB */
     sb->volume.name[0] = len;
     sb->volume.name[1] = toupper(name[0]);
     for (i = 1; i < len; i++)
@@ -1033,22 +1033,22 @@ void FreeFATSuper(struct FSSuper *sb)
     sb->fat_blocks = NULL;
 }
 
-/* see how many unused clusters are available */
+/* See how many unused clusters are available */
 void CountFreeClusters(struct FSSuper *sb)
 {
     D(struct Globals *glob = sb->glob);
     ULONG cluster = 0;
     ULONG free = 0;
 
-    /* loop over all the data clusters */
+    /* Loop over all the data clusters */
     for (cluster = 2; cluster < sb->clusters_count + 2; cluster++)
     {
-        /* record the free ones */
+        /* Record the free ones */
         if (GET_NEXT_CLUSTER(sb, cluster) == 0)
             free++;
     }
 
-    /* put the value away for later */
+    /* Put the value away for later */
     sb->free_clusters = free;
 
     D(bug("\tfree clusters: %ld\n", free));
@@ -1083,15 +1083,15 @@ void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds,
     ULONG year, month, day, hours, mins, secs;
     struct ClockData clock_data;
 
-    /* date bits: yyyy yyym mmmd dddd */
-    year = (date & 0xfe00) >> 9;    /* bits 15-9 */
+    /* Date bits: yyyy yyym mmmd dddd */
+    year = (date & 0xfe00) >> 9;    /* Bits 15-9 */
     month = (date & 0x01e0) >> 5;   /* bits 8-5 */
-    day = date & 0x001f;            /* bits 4-0 */
+    day = date & 0x001f;            /* Bits 4-0 */
 
-    /* time bits: hhhh hmmm mmms ssss */
-    hours = (time & 0xf800) >> 11;  /* bits 15-11 */
-    mins = (time & 0x07e0) >> 5;    /* bits 10-5 */
-    secs = time & 0x001f;           /* bits 4-0 */
+    /* Time bits: hhhh hmmm mmms ssss */
+    hours = (time & 0xf800) >> 11;  /* Bits 15-11 */
+    mins = (time & 0x07e0) >> 5;    /* Bits 10-5 */
+    secs = time & 0x001f;           /* Bits 4-0 */
 
     D(bug("[fat] converting fat date: year %d month %d day %d hours %d"
         " mins %d secs %d\n", year, month, day, hours, mins, secs));
@@ -1113,10 +1113,10 @@ void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds,
         secs = Date2Amiga(&clock_data);
     }
 
-    /* calculate days since 1978-01-01 (DOS epoch) */
+    /* Calculate days since 1978-01-01 (DOS epoch) */
     ds->ds_Days = secs / (60 * 60 * 24);
 
-    /* minutes since midnight */
+    /* Minutes since midnight */
     ds->ds_Minute = secs / 60 % (24 * 60);
 
     /* 1/50 sec ticks since last minute */
@@ -1132,17 +1132,17 @@ void ConvertDOSDate(struct DateStamp *ds, UWORD * date, UWORD * time,
     ULONG year, month, day, hours, mins, secs;
     struct ClockData clock_data;
 
-    /* convert datestamp to seconds since 1978 */
+    /* Convert datestamp to seconds since 1978 */
     secs = ds->ds_Days * 60 * 60 * 24 + ds->ds_Minute * 60
         + ds->ds_Tick / TICKS_PER_SECOND;
 
     /* Round up to next even second because of FAT's two-second granularity */
     secs = (secs & ~1) + 2;
 
-    /* convert seconds since 1978 to calendar/time data */
+    /* Convert seconds since 1978 to calendar/time data */
     Amiga2Date(secs, &clock_data);
 
-    /* get values used in FAT dates */
+    /* Get values used in FAT dates */
     year = clock_data.year - 1980;
     month = clock_data.month - 0;
     day = clock_data.mday;
@@ -1150,11 +1150,11 @@ void ConvertDOSDate(struct DateStamp *ds, UWORD * date, UWORD * time,
     mins = clock_data.min;
     secs = clock_data.sec >> 1;
 
-    /* all that remains is to bit-encode the whole lot */
+    /* All that remains is to bit-encode the whole lot */
 
-    /* date bits: yyyy yyym mmmd dddd */
+    /* Date bits: yyyy yyym mmmd dddd */
     *date = (((ULONG) year) << 9) | (((ULONG) month) << 5) | day;
 
-    /* time bits: hhhh hmmm mmms ssss */
+    /* Time bits: hhhh hmmm mmms ssss */
     *time = (((ULONG) hours) << 11) | (((ULONG) mins) << 5) | secs;
 }
