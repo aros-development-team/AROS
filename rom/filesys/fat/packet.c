@@ -178,23 +178,23 @@ void ProcessPackets(struct Globals *glob)
                     break;
 
                 if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh,
-                    FALSE)) != 0)
+                    FALSE, glob)) != 0)
                     break;
 
                 dh.cur_index = fib->fib_DiskKey;
 
-                if ((err = GetNextDirEntry(&dh, &de)) != 0)
+                if ((err = GetNextDirEntry(&dh, &de, glob)) != 0)
                 {
                     if (err == ERROR_OBJECT_NOT_FOUND)
                         err = ERROR_NO_MORE_ENTRIES;
-                    ReleaseDirHandle(&dh);
+                    ReleaseDirHandle(&dh, glob);
                     break;
                 }
 
                 if ((err = LockFile(fl->ioh.first_cluster, dh.cur_index,
                     SHARED_LOCK, &lock, glob)) != 0)
                 {
-                    ReleaseDirHandle(&dh);
+                    ReleaseDirHandle(&dh, glob);
                     break;
                 }
 
@@ -205,7 +205,7 @@ void ProcessPackets(struct Globals *glob)
                 }
 
                 FreeLock(lock, glob);
-                ReleaseDirHandle(&dh);
+                ReleaseDirHandle(&dh, glob);
 
                 break;
             }

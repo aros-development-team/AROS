@@ -520,18 +520,18 @@ LONG ReadFATSuper(struct FSSuper *sb)
             AllocCluster(sb, sb->rootdir_cluster);
 
         /* get a handle on the root directory */
-        InitDirHandle(sb, 0, &dh, FALSE);
+        InitDirHandle(sb, 0, &dh, FALSE, glob);
 
         /* clear all entries */
-        for (i = 0; GetDirEntry(&dh, i, &dir_entry) == 0; i++)
+        for (i = 0; GetDirEntry(&dh, i, &dir_entry, glob) == 0; i++)
         {
             memset(&dir_entry.e.entry, 0, sizeof(struct FATDirEntry));
-            UpdateDirEntry(&dir_entry);
+            UpdateDirEntry(&dir_entry, glob);
         }
 
         SetVolumeName(sb, ebpb->bs_vollab, FAT_MAX_SHORT_NAME);
 
-        ReleaseDirHandle(&dh);
+        ReleaseDirHandle(&dh, glob);
         glob->formatting = FALSE;
         D(bug("\tRoot dir created.\n"));
     }
@@ -631,9 +631,9 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
     /* search the directory for the volume id entry. it would've been nice to
      * just use GetNextDirEntry but I didn't want a flag or something to tell
      * it not to skip the volume name */
-    InitDirHandle(sb, sb->rootdir_cluster, &dh, FALSE);
+    InitDirHandle(sb, sb->rootdir_cluster, &dh, FALSE, glob);
 
-    while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0)
+    while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de, glob)) == 0)
     {
 
         /* match the volume id entry */
@@ -675,7 +675,7 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
         }
     }
 
-    ReleaseDirHandle(&dh);
+    ReleaseDirHandle(&dh, glob);
     return err;
 }
 
@@ -907,9 +907,9 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     /* search the directory for the volume id entry. it would've been nice to
      * just use GetNextDirEntry but I didn't want a flag or something to tell
      * it not to skip the volume name */
-    InitDirHandle(sb, 0, &dh, FALSE);
+    InitDirHandle(sb, 0, &dh, FALSE, glob);
 
-    while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0)
+    while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de, glob)) == 0)
     {
 
         /* match the volume id entry */
@@ -934,9 +934,9 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     /* create a new volume id entry if there wasn't one */
     if (err != 0)
     {
-        err = AllocDirEntry(&dh, 0, &de);
+        err = AllocDirEntry(&dh, 0, &de, glob);
         if (err == 0)
-            FillDirEntry(&de, ATTR_VOLUME_ID, 0);
+            FillDirEntry(&de, ATTR_VOLUME_ID, 0, glob);
     }
 
     /* copy the name in */
@@ -948,7 +948,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
             else
                 de.e.entry.name[i] = ' ';
 
-        if ((err = UpdateDirEntry(&de)) != 0)
+        if ((err = UpdateDirEntry(&de, glob)) != 0)
         {
             D(bug("[fat] couldn't change volume name\n"));
             return err;
@@ -977,7 +977,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
 
     D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));
 
-    ReleaseDirHandle(&dh);
+    ReleaseDirHandle(&dh, glob);
     return err;
 }
 

@@ -32,9 +32,9 @@
 #include "debug.h"
 
 #if DEBUG == 0
-#define DumpLocks(sb)
+#define DumpLocks(sb, glob)
 #else
-void DumpLocks(struct FSSuper *sb)
+static void DumpLocks(struct FSSuper *sb, struct Globals *glob)
 {
     struct GlobalLock *gl;
     ULONG count;
@@ -126,12 +126,12 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen,
     )
 
     /* open the dir */
-    InitDirHandle(glob->sb, dir_cluster, &dh, FALSE);
+    InitDirHandle(glob->sb, dir_cluster, &dh, FALSE, glob);
 
     /* look for the entry */
-    if ((err = GetDirEntryByPath(&dh, name, namelen, &de)) != 0)
+    if ((err = GetDirEntryByPath(&dh, name, namelen, &de, glob)) != 0)
     {
-        ReleaseDirHandle(&dh);
+        ReleaseDirHandle(&dh, glob);
         D(bug("[fat] couldn't get lock\n"));
         return err;
     }
@@ -143,7 +143,7 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen,
     else
         err = LockFile(dh.ioh.first_cluster, de.index, access, lock, glob);
 
-    ReleaseDirHandle(&dh);
+    ReleaseDirHandle(&dh, glob);
 
     return err;
 }
@@ -201,8 +201,8 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
         gl->access = access;
 
         /* gotta fish some stuff out of the dir entry too */
-        InitDirHandle(glob->sb, dir_cluster, &dh, FALSE);
-        GetDirEntry(&dh, dir_entry, &de);
+        InitDirHandle(glob->sb, dir_cluster, &dh, FALSE, glob);
+        GetDirEntry(&dh, dir_entry, &de, glob);
 
         gl->first_cluster = FIRST_FILE_CLUSTER(&de);
         if (gl->first_cluster == 0)
@@ -211,16 +211,16 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
         gl->attr = de.e.entry.attr;
         gl->size = AROS_LE2LONG(de.e.entry.file_size);
 
-        GetDirEntryShortName(&de, &(gl->name[1]), &len);
+        GetDirEntryShortName(&de, &(gl->name[1]), &len, glob);
         gl->name[0] = (UBYTE) len;
         GetDirEntryLongName(&de, &(gl->name[1]), &len);
         gl->name[0] = (UBYTE) len;
 #if DEBUG_NAMES
-        GetDirEntryShortName(&de, &(gl->shortname[1]), &len);
+        GetDirEntryShortName(&de, &(gl->shortname[1]), &len, glob);
         gl->shortname[0] = (UBYTE) len;
 #endif
 
-        ReleaseDirHandle(&dh);
+        ReleaseDirHandle(&dh, glob);
 
         NEWLIST(&gl->locks);
 
@@ -241,11 +241,11 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
                     D(bug("[fat] searching for notify name '%s'\n",
                         nn->nr->nr_FullName));
 
-                    if (InitDirHandle(glob->sb, 0, &dh, TRUE) != 0)
+                    if (InitDirHandle(glob->sb, 0, &dh, TRUE, glob) != 0)
                         continue;
 
                     if (GetDirEntryByPath(&dh, nn->nr->nr_FullName,
-                        strlen(nn->nr->nr_FullName), &de) != 0)
+                        strlen(nn->nr->nr_FullName), &de, glob) != 0)
                         continue;
 
                     if (gl->dir_cluster == de.cluster
@@ -285,7 +285,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
 
     D(bug("[fat] created file lock 0x%08x\n", fl));
 
-    DumpLocks(glob->sb);
+    DumpLocks(glob->sb, glob);
 
     *lock = fl;
     return 0;
@@ -332,7 +332,7 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock, struct Globals *glob)
 
     D(bug("[fat] created root lock 0x%08x\n", fl));
 
-    DumpLocks(glob->sb);
+    DumpLocks(glob->sb, glob);
 
     *lock = fl;
     return 0;
@@ -384,7 +384,7 @@ void FreeLock(struct ExtFileLock *fl, struct Globals *glob)
         D(bug("[fat] freed associated global lock\n"));
     }
 
-    DumpLocks(fl->sb);
+    DumpLocks(fl->sb, glob);
     if (fl->ioh.block != NULL)
         Cache_FreeBlock(fl->sb->cache, fl->ioh.block);
 

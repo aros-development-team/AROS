@@ -51,7 +51,8 @@ const UBYTE allowed_ascii[] =
     2, 2, 2, 2, 0, 2, 2, 0
 };
 
-LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len)
+LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len,
+    struct Globals *glob)
 {
     int i;
     UBYTE *raw, *c;
@@ -164,7 +165,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
     D(bug("[fat] short name checksum is 0x%02x\n", checksum));
 
     /* get a handle on the directory */
-    InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE);
+    InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE, glob);
 
     /* loop over the long name entries */
     c = buf;
@@ -175,7 +176,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
         D(bug("[fat] looking for long name order 0x%02x in entry %ld\n",
             order, index));
 
-        if ((err = GetDirEntry(&dh, index, &de)) != 0)
+        if ((err = GetDirEntry(&dh, index, &de, glob)) != 0)
             break;
 
         /* make sure it's valid */
@@ -226,7 +227,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
 
             D(bug("[fat] extracted long name '%s'\n", buf));
 
-            ReleaseDirHandle(&dh);
+            ReleaseDirHandle(&dh, glob);
 
             return 0;
         }
@@ -235,7 +236,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
         order++;
     }
 
-    ReleaseDirHandle(&dh);
+    ReleaseDirHandle(&dh, glob);
 
     D(bug("[fat] long name construction failed\n"));
 
@@ -377,7 +378,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
     D(bug("[fat] basis name is '%.*s'\n", FAT_MAX_SHORT_NAME, basis));
 
     /* get a fresh handle on the current directory */
-    InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE);
+    InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE, glob);
 
     /* if the name will require one or more entries, then our basis name is
      * actually some conversion of the real name, and we have to look to make
@@ -405,13 +406,14 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
             }
 
             /* get the next entry, and bail if we hit the end of the dir */
-            if ((err = GetNextDirEntry(&dh, &de)) == ERROR_OBJECT_NOT_FOUND)
+            if ((err = GetNextDirEntry(&dh, &de, glob))
+                == ERROR_OBJECT_NOT_FOUND)
                 break;
 
             /* abort on any other error */
             if (err != 0)
             {
-                ReleaseDirHandle(&dh);
+                ReleaseDirHandle(&dh, glob);
                 return err;
             }
 
@@ -445,7 +447,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
     {
         D(bug("[fat] copied short name and long name not required,"
             " we're done\n"));
-        ReleaseDirHandle(&dh);
+        ReleaseDirHandle(&dh, glob);
         return 0;
     }
 
@@ -462,9 +464,9 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
     while (src < len)
     {
         /* get the previous entry */
-        if ((err = GetDirEntry(&dh, de.index - 1, &de)) != 0)
+        if ((err = GetDirEntry(&dh, de.index - 1, &de, glob)) != 0)
         {
-            ReleaseDirHandle(&dh);
+            ReleaseDirHandle(&dh, glob);
             return err;
         }
 
@@ -475,19 +477,19 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
                 de.index));
 
             /* clean up any long name entries we already added */
-            while ((err = GetDirEntry(&dh, de.index + 1, &de)) == 0 &&
-                (de.e.entry.attr & ATTR_LONG_NAME_MASK))
+            while ((err = GetDirEntry(&dh, de.index + 1, &de, glob)) == 0
+                && (de.e.entry.attr & ATTR_LONG_NAME_MASK))
             {
                 de.e.entry.name[0] = 0xe5;
-                if ((err = UpdateDirEntry(&de)) != 0)
+                if ((err = UpdateDirEntry(&de, glob)) != 0)
                 {
                     /* XXX corrupt */
-                    ReleaseDirHandle(&dh);
+                    ReleaseDirHandle(&dh, glob);
                     return err;
                 }
             }
 
-            ReleaseDirHandle(&dh);
+            ReleaseDirHandle(&dh, glob);
             return ERROR_NO_FREE_STORE;
         }
 
@@ -527,13 +529,13 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
             de.e.long_entry.order |= 0x40;
 
         /* write the entry out */
-        UpdateDirEntry(&de);
+        UpdateDirEntry(&de, glob);
 
         D(bug("[fat] wrote long name entry %ld order 0x%02x\n", de.index,
             de.e.long_entry.order));
     }
 
-    ReleaseDirHandle(&dh);
+    ReleaseDirHandle(&dh, glob);
 
     D(bug("[fat] successfully wrote short & long names\n"));
 
