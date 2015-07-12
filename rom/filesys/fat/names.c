@@ -69,13 +69,13 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len)
 
     D(
         bug("[fat] extracting short name for name '");
-        RawPutChars(raw, 11);
+        RawPutChars(raw, FAT_MAX_SHORT_NAME);
         bug("' (index %ld)\n", de->index);
     )
 
     /* copy the chars into the return string */
     c = name;
-    for (i = 0; i < 11; i++)
+    for (i = 0; i < FAT_MAX_SHORT_NAME; i++)
     {
         *c = tolower(raw[i]);
 
@@ -154,8 +154,8 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
         return 0;
     }
 
-    D(bug("[fat] looking for long name for name '%.11s' (index %ld)\n", raw,
-        short_de->index));
+    D(bug("[fat] looking for long name for name '%.*s' (index %ld)\n",
+        FAT_MAX_SHORT_NAME, raw, short_de->index));
 
     /* compute the short name checksum. this value is held in every associated
      * long name entry to help us identify it. see FATdoc 1.03 p28 */
@@ -248,7 +248,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
 LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
 {
     struct Globals *glob = short_de->sb->glob;
-    UBYTE basis[11];
+    UBYTE basis[FAT_MAX_SHORT_NAME];
     ULONG nlong;
     LONG src, dst, i, left, root_end;
     ULONG seq = 0, cur = 0;
@@ -349,7 +349,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
         src = i + 1;
 
         /* copy it in */
-        while (src < len && dst < 11)
+        while (src < len && dst < FAT_MAX_SHORT_NAME)
         {
             if (name[src] != ' ')
             {
@@ -371,10 +371,10 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
     }
 
     /* pad the rest of the right side with spaces */
-    for (; dst < 11; dst++)
+    for (; dst < FAT_MAX_SHORT_NAME; dst++)
         basis[dst] = ' ';
 
-    D(bug("[fat] basis name is '%.11s'\n", basis));
+    D(bug("[fat] basis name is '%.*s'\n", FAT_MAX_SHORT_NAME, basis));
 
     /* get a fresh handle on the current directory */
     InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE);
@@ -400,7 +400,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
                 CopyMem(tail, &basis[left], strlen(tail));
                 cur = seq;
 
-                D(bug("[fat] new basis name is '%.11s'\n", basis));
+                D(bug("[fat] new basis name is '%.*s'\n",
+                    FAT_MAX_SHORT_NAME, basis));
             }
 
             /* get the next entry, and bail if we hit the end of the dir */
@@ -415,27 +416,29 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
             }
 
             /* compare the two names */
-            D(bug("[fat] comparing '%.11s' with '%.11s'\n", basis,
-                de.e.entry.name));
-            for (i = 0; i < 11; i++)
+            D(bug("[fat] comparing '%.*s' with '%.*s'\n",
+                FAT_MAX_SHORT_NAME, basis,
+                FAT_MAX_SHORT_NAME, de.e.entry.name));
+            for (i = 0; i < FAT_MAX_SHORT_NAME; i++)
                 if (de.e.entry.name[i] != basis[i])
                     break;
 
             /* if we reached the end, then our current basis is in use and we
              * need to generate a new one and start again */
-            if (i == 11)
+            if (i == FAT_MAX_SHORT_NAME)
             {
                 seq++;
                 RESET_DIRHANDLE(&dh);
             }
         }
 
-        D(bug("[fat] basis name '%.11s' not in use, using it\n", basis));
+        D(bug("[fat] basis name '%.*s' not in use, using it\n",
+            FAT_MAX_SHORT_NAME, basis));
     }
 
     /* copy the new name into the original entry. we don't write it out -
      * we'll leave that for the caller to do, it's his entry */
-    CopyMem(basis, short_de->e.entry.name, 11);
+    CopyMem(basis, short_de->e.entry.name, FAT_MAX_SHORT_NAME);
 
     /* we can stop here if no long name is required */
     if (nlong == 0)
@@ -554,7 +557,7 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len)
 
     /* if the name is standard 8.3 (or less) then we don't need any long name
      * entries - the name can be contained within the standard entry */
-    if (len <= 12)
+    if (len <= FAT_MAX_SHORT_NAME + 1)
     {
         left = 0;
 

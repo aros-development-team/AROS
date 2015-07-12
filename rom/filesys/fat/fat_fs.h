@@ -326,7 +326,7 @@ struct Globals
     { \
         ULONG i; \
         checksum = 0; \
-        for (i = 0; i < 11; i++) \
+        for (i = 0; i < FAT_MAX_SHORT_NAME; i++) \
             checksum = \
                 ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + name[i]; \
     } \
