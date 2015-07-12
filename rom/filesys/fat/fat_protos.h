@@ -33,28 +33,34 @@ void ReplyPacket(struct DosPacket *pkt, struct ExecBase *sysbase);
 /* direntry.c */
 void InitDir(struct FSSuper *sb, ULONG cluster, struct DirEntry *de);
 LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
-    BOOL reuse);
-LONG ReleaseDirHandle(struct DirHandle *dh);
-LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de);
-LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de);
+    BOOL reuse, struct Globals *glob);
+LONG ReleaseDirHandle(struct DirHandle *dh, struct Globals *glob);
+LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de,
+    struct Globals *glob);
+LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de,
+    struct Globals *glob);
 LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster,
-    struct DirEntry *de);
+    struct DirEntry *de, struct Globals *glob);
 LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen,
-    struct DirEntry *de);
+    struct DirEntry *de, struct Globals *glob);
 LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen,
-    struct DirEntry *de);
-LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de);
-LONG UpdateDirEntry(struct DirEntry *de);
-LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de);
+    struct DirEntry *de, struct Globals *glob);
+LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de,
+    struct Globals *glob);
+LONG UpdateDirEntry(struct DirEntry *de, struct Globals *glob);
+LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
+    struct Globals *glob);
 LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
-    UBYTE attr, ULONG cluster, struct DirEntry *de);
-void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster);
-LONG DeleteDirEntry(struct DirEntry *de);
+    UBYTE attr, ULONG cluster, struct DirEntry *de, struct Globals *glob);
+void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster,
+    struct Globals *glob);
+LONG DeleteDirEntry(struct DirEntry *de, struct Globals *glob);
 LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib,
     struct Globals *glob);
 
 /* names.c */
-LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len);
+LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len,
+    struct Globals *glob);
 LONG GetDirEntryLongName(struct DirEntry *de, STRPTR name, ULONG *len);
 LONG SetDirEntryName(struct DirEntry *de, STRPTR name, ULONG len);
 ULONG NumLongNameEntries(STRPTR name, ULONG len);

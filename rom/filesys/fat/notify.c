@@ -119,17 +119,17 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de)
         }
         else
         {
-            if (InitDirHandle(sb, 0, &sdh, TRUE) != 0)
+            if (InitDirHandle(sb, 0, &sdh, TRUE, glob) != 0)
                 continue;
 
             if (GetDirEntryByPath(&sdh, nn->nr->nr_FullName,
-                strlen(nn->nr->nr_FullName), &sde) != 0)
+                strlen(nn->nr->nr_FullName), &sde, glob) != 0)
                 continue;
 
             if (sde.cluster == de->cluster && sde.index == de->index)
                 SendNotify(nn->nr, glob);
 
-            ReleaseDirHandle(&sdh);
+            ReleaseDirHandle(&sdh, glob);
         }
     }
 }

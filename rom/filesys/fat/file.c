@@ -29,7 +29,7 @@
 
 #define CHUNK 16
 
-static void HexDump(unsigned char *buf, int bufsz)
+static void HexDump(unsigned char *buf, int bufsz, struct Globals *glob)
 {
     int i, j;
     int count;
@@ -69,7 +69,7 @@ static void HexDump(unsigned char *buf, int bufsz)
     }
 }
 #else
-#define HexDump(b,c)
+#define HexDump(b, c, g)
 #endif
 
 LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
@@ -230,7 +230,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
 
 #if defined(DEBUG_DUMP) && DEBUG_DUMP != 0
         D(bug("[fat] dump of last read, %ld bytes:\n", ncopy));
-        HexDump(&(data[pos]), ncopy);
+        HexDump(&(data[pos]), ncopy, glob);
 #endif
 
         pos += ncopy;
@@ -431,7 +431,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
 
 #if defined(DEBUG_DUMP) && DEBUG_DUMP != 0
         D(bug("[fat] dump of last write, %ld bytes:\n", ncopy));
-        HexDump(&(ioh->data[byte_offset]), ncopy);
+        HexDump(&(ioh->data[byte_offset]), ncopy, glob);
 #endif
 
         Cache_MarkBlockDirty(ioh->sb->cache, ioh->block);
