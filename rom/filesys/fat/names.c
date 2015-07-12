@@ -547,46 +547,5 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
 /* return the number of long name entries that are required to store this name */
 ULONG NumLongNameEntries(STRPTR name, ULONG len)
 {
-#if UPPERCASE_SHORT_NAMES
-    ULONG i, left;
-
-    /* XXX because we don't handle unicode this is pretty simple - thirteen
-     * characters per long entry. if we ever support unicode, then this
-     * function will need to be changed to deal with each character and keep a
-     * running total */
-
-    /* if the name is standard 8.3 (or less) then we don't need any long name
-     * entries - the name can be contained within the standard entry */
-    if (len <= FAT_MAX_SHORT_NAME + 1)
-    {
-        left = 0;
-
-        for (i = 0; i < 8 && i < len; i++)
-        {
-            if (name[i] == '.')
-                break;
-            if (name[i] != toupper(name[i]))
-                break;
-            if (allowed_ascii[name[i]] == 1)
-                break;
-            left++;
-        }
-
-        if (i == len)
-            return 0;
-
-        if (name[i] == '.')
-        {
-            for (i = 0; i < 3 && left + 1 + i < len; i++)
-                if (name[left + 1 + i] != toupper(name[left + 1 + i])
-                    || allowed_ascii[name[i]] == 1)
-                    break;
-
-            if (left + 1 + i == len)
-                return 0;
-        }
-    }
-#endif
-
     return ((len - 1) / 13) + 1;
 }
