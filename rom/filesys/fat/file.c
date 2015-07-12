@@ -34,16 +34,16 @@ static void HexDump(unsigned char *buf, int bufsz, struct Globals *glob)
     int i, j;
     int count;
 
-    /* do this in chunks of CHUNK bytes */
+    /* Do this in chunks of CHUNK bytes */
     for (i = 0; i < bufsz; i += CHUNK)
     {
-        /* show the offset */
+        /* Show the offset */
         bug("0x%06x  ", i);
 
-        /* max of CHUNK or remaining bytes */
+        /* Max of CHUNK or remaining bytes */
         count = ((bufsz - i) > CHUNK ? CHUNK : bufsz - i);
 
-        /* show the bytes */
+        /* Show the bytes */
         for (j = 0; j < count; j++)
         {
             if (j == CHUNK / 2)
@@ -51,7 +51,7 @@ static void HexDump(unsigned char *buf, int bufsz, struct Globals *glob)
             bug("%02x ", buf[i + j]);
         }
 
-        /* pad with spaces if less than CHUNK */
+        /* Pad with spaces if less than CHUNK */
         for (j = count; j < CHUNK; j++)
         {
             if (j == CHUNK / 2)
@@ -59,7 +59,7 @@ static void HexDump(unsigned char *buf, int bufsz, struct Globals *glob)
             bug("   ");
         }
 
-        /* divider between hex and ascii */
+        /* Divider between hex and ASCII */
         bug(" ");
 
         for (j = 0; j < count; j++)
@@ -81,18 +81,18 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
     ULONG pos, ncopy;
     UBYTE *p;
 
-    /* files with no data can't be read from */
+    /* Files with no data can't be read from */
     if (ioh->first_cluster == 0xffffffff && nwant > 0)
     {
         D(bug("[fat] file has no first cluster, so nothing to read!\n"));
         return ERROR_OBJECT_NOT_FOUND;
     }
 
-    /* figure out how far into the file to look for the requested data */
+    /* Figure out how far into the file to look for the requested data */
     sector_offset = file_pos >> ioh->sb->sectorsize_bits;
     byte_offset = file_pos & (ioh->sb->sectorsize - 1);
 
-    /* loop until we get all we want */
+    /* Loop until we get all we want */
     pos = 0;
     while (nwant > 0)
     {
@@ -101,14 +101,14 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             " (%ld sectors + %ld bytes into the file)\n",
             nwant, sector_offset, byte_offset));
 
-        /* move clusters if necessary */
+        /* Move clusters if necessary */
         cluster_offset = sector_offset >> ioh->sb->cluster_sectors_bits;
         if (ioh->cluster_offset != cluster_offset
             && ioh->first_cluster != 0)
         {
             ULONG i;
 
-            /* if we're already ahead of the wanted cluster, then we need to
+            /* If we're already ahead of the wanted cluster, then we need to
              * go back to the start of the cluster list */
             if (ioh->cluster_offset > cluster_offset)
             {
@@ -119,14 +119,14 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             D(bug("[fat] moving forward %ld clusters from cluster %ld\n",
                 cluster_offset - ioh->cluster_offset, ioh->cur_cluster));
 
-            /* find it */
+            /* Find it */
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++)
             {
-                /* get the next one */
+                /* Get the next one */
                 ioh->cur_cluster =
                     GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
 
-                /* if it was free (shouldn't happen) or we hit the end of the
+                /* If it was free (shouldn't happen) or we hit the end of the
                  * chain, the requested data isn't here */
                 if (ioh->cur_cluster == 0
                     || ioh->cur_cluster >= ioh->sb->eoc_mark - 7)
@@ -140,33 +140,33 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                 }
             }
 
-            /* remember how far in we are now */
+            /* Remember how far in we are now */
             ioh->cluster_offset = cluster_offset;
 
             D(bug("[fat] moved to cluster %ld\n", ioh->cur_cluster));
 
-            /* reset the sector offset so the sector recalc gets triggered */
+            /* Reset the sector offset so the sector recalc gets triggered */
             ioh->sector_offset = 0xffffffff;
         }
 
-        /* recalculate the sector location if we moved */
+        /* Recalculate the sector location if we moved */
         old_sector = ioh->cur_sector;
         if (ioh->sector_offset !=
             (sector_offset & (ioh->sb->cluster_sectors - 1))
             || ioh->first_cluster == 0)
         {
 
-            /* work out how many sectors in we should be looking */
+            /* Work out how many sectors in we should be looking */
             ioh->sector_offset =
                 sector_offset & (ioh->sb->cluster_sectors - 1);
 
-            /* simple math to find the absolute sector number */
+            /* Simple math to find the absolute sector number */
             ioh->cur_sector = SECTOR_FROM_CLUSTER(ioh->sb, ioh->cur_cluster)
                 + ioh->sector_offset;
 
-            /* if the first cluster is zero, we use sector addressing instead
-             * of clusters. this is a hack to support fat12/16 root dirs, which
-             * live before the data region */
+            /* If the first cluster is zero, we use sector addressing instead
+             * of clusters. this is a hack to support FAT12/16 root dirs,
+             * which live before the data region */
             if (ioh->first_cluster == 0)
             {
                 ioh->sector_offset = sector_offset - ioh->first_sector;
@@ -190,8 +190,8 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                     ioh->sector_offset, ioh->cur_sector));
         }
 
-        /* if we don't have the wanted block kicking around, we need to bring it
-         * in from the cache */
+        /* If we don't have the wanted block kicking around, we need to bring
+         * it in from the cache */
         if (ioh->block == NULL || ioh->cur_sector != old_sector)
         {
             if (ioh->block != NULL)
@@ -222,7 +222,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
         else
             D(bug("[fat] using cached sector %ld\n", ioh->cur_sector));
 
-        /* now copy in the data */
+        /* Now copy in the data */
         ncopy = ioh->sb->sectorsize - byte_offset;
         if (ncopy > nwant)
             ncopy = nwant;
@@ -260,11 +260,11 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
     ULONG pos, ncopy;
     UBYTE *p;
 
-    /* figure out how far into the file to start */
+    /* Figure out how far into the file to start */
     sector_offset = file_pos >> ioh->sb->sectorsize_bits;
     byte_offset = file_pos & (ioh->sb->sectorsize - 1);
 
-    /* loop until we've finished writing */
+    /* Loop until we've finished writing */
     pos = 0;
     while (nwant > 0)
     {
@@ -273,14 +273,14 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             " (%ld sectors + %ld bytes into the file)\n",
             nwant, sector_offset, byte_offset));
 
-        /* move clusters if necessary */
+        /* Move clusters if necessary */
         cluster_offset = sector_offset >> ioh->sb->cluster_sectors_bits;
         if (ioh->cluster_offset != cluster_offset
             && ioh->first_cluster != 0)
         {
             ULONG i;
 
-            /* if we have no first cluster, this is a new file. we allocate
+            /* If we have no first cluster, this is a new file. We allocate
              * the first cluster and then update the ioh */
             if (ioh->first_cluster == 0xffffffff)
             {
@@ -288,22 +288,22 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
 
                 D(bug("[fat] no first cluster, allocating one\n"));
 
-                /* allocate a cluster */
+                /* Allocate a cluster */
                 if ((err = FindFreeCluster(ioh->sb, &cluster)) != 0)
                 {
                     RESET_HANDLE(ioh);
                     return err;
                 }
 
-                /* mark the cluster used */
+                /* Mark the cluster used */
                 AllocCluster(ioh->sb, cluster);
 
-                /* now setup the ioh */
+                /* Now setup the ioh */
                 ioh->first_cluster = cluster;
                 RESET_HANDLE(ioh);
             }
 
-            /* if we're already ahead of the wanted cluster, then we need to
+            /* If we're already ahead of the wanted cluster, then we need to
              * go back to the start of the cluster list */
             if (ioh->cluster_offset > cluster_offset)
             {
@@ -314,14 +314,14 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             D(bug("[fat] moving forward %ld clusters from cluster %ld\n",
                 cluster_offset - ioh->cluster_offset, ioh->cur_cluster));
 
-            /* find it */
+            /* Find it */
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++)
             {
-                /* get the next one */
+                /* Get the next one */
                 ULONG next_cluster =
                     GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
 
-                /* if it was free (shouldn't happen) or we hit the end of the
+                /* If it was free (shouldn't happen) or we hit the end of the
                  * chain, there is no next cluster, so we have to allocate a
                  * new one */
                 if (next_cluster == 0
@@ -336,11 +336,11 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                         return err;
                     }
 
-                    /* link the current cluster to the new one */
+                    /* Link the current cluster to the new one */
                     SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster,
                         next_cluster);
 
-                    /* and mark the new one used */
+                    /* And mark the new one used */
                     AllocCluster(ioh->sb, next_cluster);
 
                     ioh->cur_cluster = next_cluster;
@@ -351,33 +351,33 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                     ioh->cur_cluster = next_cluster;
             }
 
-            /* remember how far in we are now */
+            /* Remember how far in we are now */
             ioh->cluster_offset = cluster_offset;
 
             D(bug("[fat] moved to cluster %ld\n", ioh->cur_cluster));
 
-            /* reset the sector offset so the sector recalc gets triggered */
+            /* Reset the sector offset so the sector recalc gets triggered */
             ioh->sector_offset = 0xffffffff;
         }
 
-        /* recalculate the sector location if we moved */
+        /* Recalculate the sector location if we moved */
         old_sector = ioh->cur_sector;
         if (ioh->sector_offset !=
             (sector_offset & (ioh->sb->cluster_sectors - 1))
             || ioh->first_cluster == 0)
         {
 
-            /* work out how many sectors in we should be looking */
+            /* Work out how many sectors in we should be looking */
             ioh->sector_offset =
                 sector_offset & (ioh->sb->cluster_sectors - 1);
 
-            /* simple math to find the absolute sector number */
+            /* Simple math to find the absolute sector number */
             ioh->cur_sector = SECTOR_FROM_CLUSTER(ioh->sb, ioh->cur_cluster)
                 + ioh->sector_offset;
 
-            /* if the first cluster is zero, we use sector addressing instead
-             * of clusters. this is a hack to support fat12/16 root dirs, which
-             * live before the data region */
+            /* If the first cluster is zero, we use sector addressing instead
+             * of clusters. this is a hack to support FAT12/16 root dirs,
+             * which live before the data region */
             if (ioh->first_cluster == 0)
             {
                 ioh->sector_offset = sector_offset - ioh->first_sector;
@@ -392,8 +392,8 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                     ioh->sector_offset, ioh->cur_sector));
         }
 
-        /* if we don't have the wanted block kicking around, we need to bring it
-         * in from the cache */
+        /* If we don't have the wanted block kicking around, we need to bring
+         * it in from the cache */
         if (ioh->block == NULL || ioh->cur_sector != old_sector)
         {
             if (ioh->block != NULL)
@@ -423,7 +423,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
         else
             D(bug("[fat] using cached sector %ld\n", ioh->cur_sector));
 
-        /* copy our data into the block */
+        /* Copy our data into the block */
         ncopy = ioh->sb->sectorsize - byte_offset;
         if (ncopy > nwant)
             ncopy = nwant;

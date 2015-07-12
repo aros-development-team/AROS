@@ -25,7 +25,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include <string.h>             /* for memset() */
+#include <string.h>
 
 #include "fat_fs.h"
 #include "fat_protos.h"
@@ -145,8 +145,8 @@ void DoDiskInsert(struct Globals *glob)
 
                 vol_info = BADDR(dl->dol_misc.dol_volume.dol_LockList);
 
-#if 0    /* no point until we match volumes by serial number */
-                /* update name */
+#if 0    /* No point until we match volumes by serial number */
+                /* Update name */
 #ifdef AROS_FAST_BPTR
                 /* ReadFATSuper() sets a null byte after the
                  * string, so this should be fine */
@@ -158,7 +158,7 @@ void DoDiskInsert(struct Globals *glob)
 #endif
 #endif
 
-                /* patch locks and notifications to match this handler
+                /* Patch locks and notifications to match this handler
                  * instance */
                 ForeachNode(&vol_info->locks, global_lock)
                 {
@@ -192,7 +192,7 @@ void DoDiskInsert(struct Globals *glob)
             {
                 D(bug("\tCreating new volume.\n"));
 
-                /* create transferable core volume info */
+                /* Create transferable core volume info */
                 pool =
                     CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE,
                     DEF_POOL_THRESHOLD);
@@ -295,7 +295,7 @@ BOOL AttemptDestroyVolume(struct FSSuper *sb)
 
     D(bug("[fat] Attempting to destroy volume\n"));
 
-    /* check if the volume can be removed */
+    /* Check if the volume can be removed */
     if (IsListEmpty(&sb->info->locks) && IsListEmpty(&sb->info->notifies))
     {
         D(bug("\tRemoving volume completely\n"));
@@ -391,7 +391,7 @@ void UpdateDisk(struct Globals *glob)
     }
 }
 
-/* probe the device to determine 64-bit support */
+/* Probe the device to determine 64-bit support */
 void Probe_64bit_support(struct Globals *glob)
 {
     struct NSDeviceQueryResult nsd_query;
@@ -400,7 +400,7 @@ void Probe_64bit_support(struct Globals *glob)
     glob->readcmd = CMD_READ;
     glob->writecmd = CMD_WRITE;
 
-    /* probe TD64 */
+    /* Probe TD64 */
     glob->diskioreq->iotd_Req.io_Command = TD_READ64;
     glob->diskioreq->iotd_Req.io_Offset = 0;
     glob->diskioreq->iotd_Req.io_Length = 0;
@@ -415,7 +415,7 @@ void Probe_64bit_support(struct Globals *glob)
         glob->writecmd = TD_WRITE64;
     }
 
-    /* probe NSD */
+    /* Probe NSD */
     glob->diskioreq->iotd_Req.io_Command = NSCMD_DEVICEQUERY;
     glob->diskioreq->iotd_Req.io_Length =
         sizeof(struct NSDeviceQueryResult);
