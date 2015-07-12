@@ -153,9 +153,11 @@ LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de)
 
         /* ignore the . and .. entries */
         if (de->e.entry.name[0] == '.' && ((de->index == 0
-            && strncmp((char *)de->e.entry.name, ".          ", 11) == 0)
+            && strncmp((char *)de->e.entry.name, ".          ",
+                FAT_MAX_SHORT_NAME) == 0)
             || (de->index == 1
-            && strncmp((char *)de->e.entry.name, "..         ", 11) == 0)))
+            && strncmp((char *)de->e.entry.name, "..         ",
+                FAT_MAX_SHORT_NAME) == 0)))
         {
             D(bug("[fat] skipping . or .. entry\n"));
             continue;
@@ -190,10 +192,11 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
 
     /* make sure it's actually the parent dir entry */
     if (((de->e.entry.attr & ATTR_DIRECTORY) == 0) ||
-        strncmp((char *)de->e.entry.name, "..         ", 11) != 0)
+        strncmp((char *)de->e.entry.name, "..         ", FAT_MAX_SHORT_NAME)
+        != 0)
     {
         D(bug("[fat] entry index 1 does not have name '..', can't go up\n"));
-        D(bug("[fat] actual name: '%.*s', attrs: 0x%x\n", 11,
+        D(bug("[fat] actual name: '%.*s', attrs: 0x%x\n", FAT_MAX_SHORT_NAME,
             de->e.entry.name, de->e.entry.attr));
         return ERROR_OBJECT_NOT_FOUND;
     }

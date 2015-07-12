@@ -529,7 +529,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
             UpdateDirEntry(&dir_entry);
         }
 
-        SetVolumeName(sb, ebpb->bs_vollab, 11);
+        SetVolumeName(sb, ebpb->bs_vollab, FAT_MAX_SHORT_NAME);
 
         ReleaseDirHandle(&dh);
         glob->formatting = FALSE;
@@ -643,10 +643,8 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
             D(bug("[fat] found volume id entry %ld\n", dh.cur_index));
 
             /* copy the name in. volume->name is a BSTR */
-
             volume->name[1] = de.e.entry.name[0];
-
-            for (i = 1; i < 11; i++)
+            for (i = 1; i < FAT_MAX_SHORT_NAME; i++)
             {
                 if (volume->name[i] == ' ')
                     volume->name[i + 1] = de.e.entry.name[i];
@@ -809,7 +807,7 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
     ebpb->bs_volid = FastRand(eclock.ev_lo ^ eclock.ev_hi);
 
     /* copy volume name in */
-    for (i = 0; i < 11; i++)
+    for (i = 0; i < FAT_MAX_SHORT_NAME; i++)
         if (i < len)
             ebpb->bs_vollab[i] = toupper(name[i]);
         else

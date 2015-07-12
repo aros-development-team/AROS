@@ -239,8 +239,8 @@ void DoDiskInsert(struct Globals *glob)
                             (sb->type == 32) ? ID_FAT32_DISK :
                             ID_FAT12_DISK;
 
-                        if ((newvol->dol_Name =
-                            MKBADDR(AllocVecPooled(pool, 13))))
+                        if ((newvol->dol_Name = MKBADDR(
+                            AllocVecPooled(pool, FAT_MAX_SHORT_NAME + 2))))
                         {
 #ifdef AROS_FAST_BPTR
                             /* ReadFATSuper() sets a null byte after the

@@ -723,14 +723,14 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
      * with a different name */
     GetDirEntry(&sdh, 0, &sde);
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
-    CopyMem(".          ", &sde.e.entry.name, 11);
+    CopyMem(".          ", &sde.e.entry.name, FAT_MAX_SHORT_NAME);
     UpdateDirEntry(&sde);
 
     /* create the dot-dot entry. again, a copy, with the cluster pointer setup
      * to point to the parent */
     GetDirEntry(&sdh, 1, &sde);
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
-    CopyMem("..         ", &sde.e.entry.name, 11);
+    CopyMem("..         ", &sde.e.entry.name, FAT_MAX_SHORT_NAME);
     cluster = dh.ioh.first_cluster;
     if (cluster == dh.ioh.sb->rootdir_cluster)
         cluster = 0;
