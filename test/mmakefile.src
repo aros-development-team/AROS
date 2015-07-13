@@ -6,11 +6,9 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    amiga2date \
     amigademo \
     availfonts \
     customscreen \
-    date2amiga \
     displayalert \
     exceptiontest \
     exceptiontest2 \
@@ -50,7 +48,6 @@ COMMONTESTFILES := \
     rwverify \
     timeport \
     time \
-    callhooktest \
     convertpixels \
     patchrgbconv \
     joystick \
@@ -61,7 +58,6 @@ COMMONTESTFILES := \
     fsresource \
     taskstorage \
     mountlist \
-    smult \
     crashtest \
     openlocale \
     pthreadtest

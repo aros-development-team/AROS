@@ -1,5 +1,5 @@
 # default test script for "runtests"
-amiga2date
+utility/amiga2date
 printf_f
 versionlib
 dos/addpart
