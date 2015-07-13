@@ -33,11 +33,11 @@ delete	$PACKAGE/lib
 
 archive $ARCHIVE $PACKAGE
 
-if [ $TESTEXE != "" ]; then
+if [ "$TESTEXE" != "" ]; then
     cd $PACKAGE
     copy $SP/autotest/* S/
     #Xvfb :1
-    DISPLAY=:1 timeout $TESTTIMEOUT $TESTEXE
+    DISPLAY=:1 timeout $TESTTIMEOUT $TESTEXE $TESTARGS
     printfile "Test_Report.txt"
 
     if [ ! -f PASSED ]; then
@@ -45,6 +45,8 @@ if [ $TESTEXE != "" ]; then
         delete $ARCHIVE
         exit 5
     fi
+else
+    printi "Skipping runtime tests."
 fi
 
 cd      $ROOT
