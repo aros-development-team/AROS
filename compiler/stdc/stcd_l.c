@@ -26,11 +26,12 @@
 	lvalue - Pointer to long where the result is saved 
 
     RESULT
-	1 means success. 0 means failure.
+	length of characters converted.
+	>= 1 means success. 0 means failure.
 
     NOTES
 	SAS/C specific
-	
+
     EXAMPLE
 
     BUGS
@@ -49,8 +50,7 @@
     if (s != in)
     {
         *lvalue = l;
-        return 1;
     }
-    else
-        return 0;
+
+    return (s - in);
 } /* stcd_l */
