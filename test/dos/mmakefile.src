@@ -51,7 +51,7 @@ EXEDIR          := $(AROS_TESTS)/dos
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 #MM- test : test-dos test-dos-pure
-#MM- test-quick : test-dos-quick
+#MM- test-quick : test-dos-quick test-dos-pure-quick
 
 #MM test-dos : includes linklibs
 
