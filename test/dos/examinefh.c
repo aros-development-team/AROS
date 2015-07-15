@@ -1,20 +1,22 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <stdio.h>
+#include <string.h>
 
 int main(int argc, char **argv)
 {
     BPTR fh;
+    LONG result = RETURN_OK;
 
     if (argc < 2)
     {
 	printf("Usage: %s <file name>\n", argv[0]);
-	return 1;
+	return RETURN_FAIL;
     }
 
     fh = Open(argv[1], MODE_OLDFILE);
@@ -36,13 +38,23 @@ int main(int argc, char **argv)
 	    }
             else
             {
-                printf("examinefh failed, ioerr = %d\n", (int)IoErr());
+                printf("ExamineFH() failed, ioerr = %d\n", (int)IoErr());
+                result = RETURN_FAIL;
             }
+
+	    if (strcasecmp(fib->fib_FileName, FilePart(argv[1])) != 0)
+            {
+                printf("File name from FIB does not match"
+                    " file name from argument\n");
+                result = RETURN_ERROR;
+            }
+
             FreeDosObject(DOS_FIB, fib);
         }
         else
         {
             printf("couldn't allocate fileinfoblock\n");
+            result = RETURN_FAIL;
         }
 
         Close(fh);
@@ -50,7 +62,8 @@ int main(int argc, char **argv)
     else
     {
         printf("Couldn't open file\n");
+        result = RETURN_FAIL;
     }
 
-    return 0;
+    return result;
 }
