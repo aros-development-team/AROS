@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,17 +50,6 @@ int main(int argc, char **argv) {
     }
 
     Printf("\nyou typed: %s\n", something);
-
-    /* TODO: Switch to cooked mode */
-
-    Printf("in cooked mode with no echoing\n");
-    Printf("type something: ");
-    Flush(out);
-
-    FGets(out, something, 64);
-    *(strchr(something, '\n')) = '\0';
-
-    Printf("you typed: %s\n", something);
 
     SetMode(in, 0);
 
