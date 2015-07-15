@@ -15,8 +15,8 @@ int main(int argc, char **argv)
 
     if (argc < 2)
     {
-	printf("Usage: %s <file name>\n", argv[0]);
-	return RETURN_FAIL;
+        printf("Usage: %s <file name>\n", argv[0]);
+        return RETURN_FAIL;
     }
 
     fh = Open(argv[1], MODE_OLDFILE);
@@ -25,24 +25,25 @@ int main(int argc, char **argv)
     {
         struct FileInfoBlock *fib;
 
-	printf("IsInteractive: %d\n", (int)IsInteractive(fh));
-	
-	fib = AllocDosObject(DOS_FIB, NULL);
+        printf("IsInteractive: %d\n", (int)IsInteractive(fh));
+
+        fib = AllocDosObject(DOS_FIB, NULL);
         if (fib != NULL)
         {
             if (ExamineFH(fh, fib))
             {
                 printf("Got FIB:\n");
-		printf("Filename   = %s\n"    , fib->fib_FileName);
-		printf("Protection = 0x%08X\n", (unsigned)fib->fib_Protection);
-	    }
+                printf("Filename   = %s\n", fib->fib_FileName);
+                printf("Protection = 0x%08X\n",
+                    (unsigned)fib->fib_Protection);
+            }
             else
             {
                 printf("ExamineFH() failed, ioerr = %d\n", (int)IoErr());
                 result = RETURN_FAIL;
             }
 
-	    if (strcasecmp(fib->fib_FileName, FilePart(argv[1])) != 0)
+            if (strcasecmp(fib->fib_FileName, FilePart(argv[1])) != 0)
             {
                 printf("File name from FIB does not match"
                     " file name from argument\n");
