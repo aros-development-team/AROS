@@ -1,15 +1,18 @@
-Execute S/Test utility/amiga2date
-Execute S/Test utility/callhooktest
 Execute S/Test convertpixels
-Execute S/Test utility/date2amiga
+Execute S/Test fileseek
+Execute S/Test fontinfo topaz.font 8
+Execute S/Test frequencies
+
+Execute S/Test exec/allocmem
+
 Execute S/Test dos/dosvartest
 Execute S/Test dos/examine Tests/dos/examine
 Execute S/Test dos/ExNext
-Execute S/Test fileseek
 Execute S/Test dos/filetest
-Execute S/Test fontinfo topaz.font 8
-Execute S/Test frequencies
-Execute S/Test exec/allocmem
+
+Execute S/Test utility/amiga2date
+Execute S/Test utility/callhooktest
+Execute S/Test utility/date2amiga
 
 Execute S/Try Avail FLUSH
 Execute S/Try LibList
