@@ -10,7 +10,6 @@ FILES := \
     dosvartest \
     examine \
     examinefh \
-    examinelock \
     exnext \
     filetest \
     fread \
