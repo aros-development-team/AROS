@@ -4,7 +4,16 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := drawinfoattr gamma pubscreen screenclass screentest scrollerwin 
+FILES := \
+    customscreen \
+    displayalert \
+    drawinfoattr \
+    gamma \
+    monitorclass \
+    pubscreen \
+    screenclass \
+    screentest \
+    scrollerwin 
 
 EXEDIR := $(AROS_TESTS)/intuition
 
