@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,8 +16,8 @@ int main(int argc, char **argv)
 
     if (argc < 3)
     {
-    	printf("Usage: %s <device> [ON|OFF]\n", argv[0]);
-    	return 0;
+        printf("Usage: %s <device> [ON|OFF]\n", argv[0]);
+        return 0;
     }
 
     arg = !stricmp(argv[2], "ON");

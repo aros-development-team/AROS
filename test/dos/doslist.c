@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,13 +18,13 @@ int main(void)
 
     if ((dl_offset != di_offset) || (dl_offset != gen_offset))
     {
-    	bug("Broken DosList alignment.\n");
-    	bug("DosList.dol_Name  : %u bytes\n", gen_offset);
-    	bug("DeviceList.dl_Name: %u bytes\n", dl_offset);
-    	bug("DevInfo.dvi_Name  : %u bytes\n", di_offset);
-    	
-    	return 20;
+        bug("Broken DosList alignment.\n");
+        bug("DosList.dol_Name  : %u bytes\n", gen_offset);
+        bug("DeviceList.dl_Name: %u bytes\n", dl_offset);
+        bug("DevInfo.dvi_Name  : %u bytes\n", di_offset);
+
+        return 20;
     }
     else
-    	return 0;
+        return 0;
 }
