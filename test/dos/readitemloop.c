@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,15 +27,17 @@ int main(void)
     i = 1;
     do
     {
-	res = ReadItem(buf, sizeof(buf), &cs);
+        res = ReadItem(buf, sizeof(buf), &cs);
 
-	Printf("Step %ld, result %ld, buffer %s, CurChr %ld\n", i++, res, buf, cs.CS_CurChr);
-	if (i == 10)
-	{
-	    Printf("ERROR: Unrecoverable loop detected!\n");
-	    break;
-	}
-    } while (res != ITEM_NOTHING);
-    
+        Printf("Step %ld, result %ld, buffer %s, CurChr %ld\n", i++, res,
+            buf, cs.CS_CurChr);
+        if (i == 10)
+        {
+            Printf("ERROR: Unrecoverable loop detected!\n");
+            break;
+        }
+    }
+    while (res != ITEM_NOTHING);
+
     return 0;
 }

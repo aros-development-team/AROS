@@ -44,8 +44,7 @@ AROS_SH0(isfilesystem, 0.0)
             Printf("\n");
     }
 
-
-    return failed ? RETURN_FAIL : RETURN_OK;
+    return failed ? RETURN_ERROR : RETURN_OK;
     AROS_SHCOMMAND_EXIT
 }
 
