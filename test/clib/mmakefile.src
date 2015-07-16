@@ -21,12 +21,14 @@ FILES := \
         getfsstat \
         jmpbuf \
         lseek \
+        mktime \
         mnt_names \
         open \
         opendir \
         pipe \
         raise \
         random \
+        randtest \
         setjmp \
         snprintf \
         sprintf \
@@ -41,6 +43,7 @@ FILES := \
         strtoul \
         strtoull \
         system \
+        time \
         tmpfile \
         uname \
         usleep \

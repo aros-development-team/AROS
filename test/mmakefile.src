@@ -8,8 +8,6 @@ include $(TOP)/config/make.cfg
 COMMONTESTFILES := \
     amigademo \
     availfonts \
-    customscreen \
-    displayalert \
     exceptiontest \
     exceptiontest2 \
     fileseek \
@@ -20,7 +18,6 @@ COMMONTESTFILES := \
     ilbmtoc \
     localetest \
     modeid \
-    monitorclass \
     newmatch \
     keymaptest \
     inquire \
@@ -33,21 +30,14 @@ COMMONTESTFILES := \
     unixio \
     opendiskfont \
     partition \
-    showvisregion \
-    showvisshape \
     sortlayercr \
     systemtags \
     systemtagsslave \
-    randtest \
     camdtree \
-    mktime \
     rexxsyslibtest \
     printnativekeytable \
     testide \
     simplepng \
-    rwverify \
-    timeport \
-    time \
     convertpixels \
     patchrgbconv \
     joystick \
@@ -56,7 +46,6 @@ COMMONTESTFILES := \
     versionlib \
     runtests \
     fsresource \
-    taskstorage \
     mountlist \
     crashtest \
     openlocale \

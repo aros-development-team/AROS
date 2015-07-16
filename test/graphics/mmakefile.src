@@ -14,6 +14,8 @@ FILES := \
     obtainpentest \
     readpixelarray \
     scalepixelarray \
+    showvisregion \
+    showvisshape \
     textbug \
     truecolorpens \
     weightamatch \

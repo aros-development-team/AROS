@@ -30,6 +30,7 @@ FILES := \
     readitem \
     readitemloop \
     runcommand \
+    rwverify \
     scantest \
     scanvarstest \
     seektest \

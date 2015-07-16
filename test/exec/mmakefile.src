@@ -26,8 +26,10 @@ FILES :=		\
     stackswap 		\
     signaltest		\
     supertest		\
+    taskstorage \
     tasktest		\
     tasktest2		\
+    timeport \
     traptest		\
     vblank
 
