@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for console handler. 
@@ -1183,10 +1183,6 @@ void con_read(struct filehandle *fh, struct DosPacket *dp)
         {
             replypkt2(dp, 0, 0);
             fh->flags &= ~FHFLG_EOF;
-        }
-        else if (fh->flags & FHFLG_RAW)
-        {
-            replypkt2(dp, 0, 0);
         }
         else
         {
