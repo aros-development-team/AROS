@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,20 +7,21 @@
 
 int main()
 {
+  TEXT ch;
   BPTR in = Input();
   BPTR out = Output();
 
+  Printf("Enter a character within 9 seconds:\n");
+
   SetMode(in, 1);
 
-  Delay(25);
-
   if (WaitForChar(in, 9000000))
+  {
     FPuts(out, "WaitForChar: char arrived\n");
+    Read(in, &ch, 1); /* Flush the character */
+  }
   else
     FPuts(out, "WaitForChar: timeout\n");
-
-  Flush(in);
-  Flush(out);
 
   SetMode(in, 0);
 
