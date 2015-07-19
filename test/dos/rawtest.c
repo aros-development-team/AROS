@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,11 +11,10 @@
 #define MODE_CON 0
 #define MODE_RAW 1
 
-void SetConsoleMode( LONG mode );
-TEXT GetChar( void );
-void PutChar( TEXT buffer );
-void PutString( STRPTR buffer );
-void Wait4Char( void );
+static void SetConsoleMode( LONG mode );
+static TEXT GetChar( void );
+static void PutChar( TEXT buffer );
+static void PutString( STRPTR buffer );
 
 int main( void )
 {
@@ -25,7 +24,6 @@ int main( void )
 
     while( TRUE )
     {
-        Wait4Char();
         ch = GetChar();
         PutString( " >" );
         PutChar( ch );
@@ -41,12 +39,12 @@ int main( void )
     return 0;
 }
 
-void SetConsoleMode( LONG mode )
+static void SetConsoleMode( LONG mode )
 {
     SetMode( Input() , mode );
 }
 
-TEXT GetChar( void )
+static TEXT GetChar( void )
 {
     TEXT buffer;
 
@@ -55,17 +53,12 @@ TEXT GetChar( void )
     return buffer;
 }
 
-void PutChar( TEXT buffer )
+static void PutChar( TEXT buffer )
 {
     Write( Output() , &buffer , 1 );
 }
 
-void PutString( STRPTR buffer )
+static void PutString( STRPTR buffer )
 {
     Write( Output() , buffer , strlen( buffer ) );
-}
-
-void Wait4Char( void )
-{
-    WaitForChar( Input() , 1000000000 );
 }
