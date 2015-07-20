@@ -10,7 +10,7 @@
 
 int __nocommandline = 1;
 
-/* No newline in the end!!! Important!!! */
+/* No newline in the end! Important! */
 static char text[] = "WORD1 WORD2 WORD3";
 static char buf[256];
 
@@ -18,7 +18,7 @@ int main(void)
 {
     struct CSource cs;
     int i;
-    LONG res;
+    LONG result = RETURN_OK, res;
 
     cs.CS_Buffer = text;
     cs.CS_Length = sizeof(text) - 1;
@@ -34,10 +34,11 @@ int main(void)
         if (i == 10)
         {
             Printf("ERROR: Unrecoverable loop detected!\n");
+            result = RETURN_ERROR;
             break;
         }
     }
     while (res != ITEM_NOTHING);
 
-    return 0;
+    return result;
 }
