@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,6 +34,6 @@ int main()
     free(buffer);
 
     Close(fh);
-    return 0;
+    return filepos == -1 ? RETURN_ERROR : RETURN_OK;
 }
 

@@ -17,6 +17,8 @@ LONG days = 0;
 
 int main(void)
 {
+    LONG result = RETURN_OK;
+
     do
     {
         dt.dat_Stamp.ds_Days = days;
@@ -35,6 +37,7 @@ int main(void)
             printf("Bad results for date \"%s\" (day #%ld). "
                 "StrToDate thought it was day #%ld\n", s, (long)days,
                 (long)dt.dat_Stamp.ds_Days);
+            result = RETURN_ERROR;
         }
 
         days++;
@@ -43,5 +46,5 @@ int main(void)
     while (!CheckSignal(SIGBREAKF_CTRL_C) && (days < 36525));
         /* 2078-01-01: same as 1978 in FORMAT_DOS */
 
-    return 0;
+    return result;
 }
