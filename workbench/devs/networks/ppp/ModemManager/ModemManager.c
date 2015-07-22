@@ -9,6 +9,10 @@
 #include <string.h>
 #include <math.h>
 #include <dos/dos.h>
+#ifdef __MORPHOS__
+#include <dos/dostags.h>
+#define SYS_Error SYS_Output
+#endif
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
 #include <proto/exec.h>
@@ -18,7 +22,20 @@
 #include <proto/graphics.h>
 #include <clib/alib_protos.h>
 #include <proto/muimaster.h>
+#ifdef __MORPHOS__
+#define ClearDynNameServ()
+#define AddDynNameServ(a)
+#define EndDynNameServ()
+LONG XGET(Object * obj, ULONG attribute)
+{
+  LONG x = 0;
+
+  get(obj, attribute, &x);
+  return x;
+}
+#else
 #include <proto/miami.h>
+#endif
 #include <utility/hooks.h>
 #include <libraries/mui.h>
 #include <aros/debug.h>
