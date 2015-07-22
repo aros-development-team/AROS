@@ -32,6 +32,9 @@
 #include <proto/dos.h>
 #ifdef __AROS__
 #include <proto/oop.h>
+#else
+#include <dos/dostags.h>
+#define SYS_Error SYS_Output
 #endif
 #include <proto/timer.h>
 #include <proto/utility.h>

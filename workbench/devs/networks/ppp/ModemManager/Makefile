@@ -7,8 +7,8 @@ CC= gcc
 OBJS= ModemManager.o misc.o
 CFLAGS= -I. -DAROS_ALMOST_COMPATIBLE -O2
 
-ModemManager: $(OBJS)
-	$(CC) -o $@ $(OBJS) -noixemul
+ModemManager: $(OBJS) createrastport.o freerastport.o
+	$(CC) -o $@ $(OBJS) createrastport.o freerastport.o -noixemul
 	strip -R.comment $@
 
 ModemManager.o: ModemManager.c ppp.h misc.h
