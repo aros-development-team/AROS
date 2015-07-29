@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,6 +24,7 @@
  */
 LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, IPTR *args) 
 {
+	LONG answer = 0;
 	char* options[] =
 	{
 		"Cancel",
@@ -43,7 +44,7 @@ LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqTy
 
 	    if (IntuitionBase->FirstScreen != NULL)
 	    {
-		return EasyRequestArgs(NULL,&es,NULL,args);
+		answer = EasyRequestArgs(NULL,&es,NULL,args);
 	    }
 	    CloseLibrary((struct Library *)IntuitionBase);
 	}
@@ -53,7 +54,8 @@ LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqTy
 	    RawDoFmt(string, args, RAWFMTFUNC_SERIAL, NULL);
 	    RawPutChar('\n');
 	}
-	return 0;
+
+	return answer;
 }
 
 LONG showErrorArgs(struct AFSBase *afsbase, IPTR *args)
