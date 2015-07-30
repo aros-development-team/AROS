@@ -278,7 +278,7 @@ void DoDiskInsert(struct Globals *glob)
                 "access to the disk while it is needed!\n"
                 "In order to prevent data damage access to\n"
                 "this disk was blocked.\n"
-                "Please upgrade your device driver.", NULL, glob);
+                "Please upgrade your device driver.", "OK", NULL, glob);
 
         FreeVecPooled(glob->mempool, sb);
     }
@@ -443,17 +443,21 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
     UQUAD off;
     ULONG err;
     ULONG start, end;
+    BOOL retry = TRUE;
+    CONST_STRPTR vol_name = "";
 
 #if DEBUG_CACHESTATS > 1
     ErrorMessage("Accessing %lu sector(s) starting at %lu.\n"
-        "First volume sector is %lu, sector size is %lu.\n", nblocks, num,
-        glob->sb->first_device_sector, block_size);
+        "First volume sector is %lu, sector size is %lu.\n", "OK", nblocks,
+         num, glob->sb->first_device_sector, block_size);
 #endif
 
     /* Adjust parameters if range is partially outside boundaries, or
      * warn user and bale out if completely outside boundaries */
     if (glob->sb)
     {
+        vol_name = glob->sb->volume.name + 1;
+
         start = glob->sb->first_device_sector;
         if (num + nblocks <= glob->sb->first_device_sector)
         {
@@ -465,7 +469,7 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
                     "First volume sector is %lu, sector size is %lu.\n"
                     "Either your disk is damaged or it is a bug in\n"
                     "the handler. Please check your disk and/or\n"
-                    "report this problem to the developers team.",
+                    "report this problem to the developers team.", "OK",
                     (IPTR) (do_write ? "write" : "read"), nblocks, num,
                     glob->sb->first_device_sector, block_size);
             }
@@ -489,7 +493,7 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
                     "Last volume sector is %lu, sector size is %lu.\n"
                     "Either your disk is damaged or it is a bug in\n"
                     "the handler. Please check your disk and/or\n"
-                    "report this problem to the developers team.",
+                    "report this problem to the developers team.", "OK",
                     (IPTR) (do_write ? "write" : "read"), nblocks, num,
                     end - 1, block_size);
             }
@@ -501,18 +505,35 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
 
     off = ((UQUAD) num) * block_size;
 
-    glob->diskioreq->iotd_Req.io_Offset = off & 0xFFFFFFFF;
-    glob->diskioreq->iotd_Req.io_Actual = off >> 32;
+    while (retry)
+    {
+        glob->diskioreq->iotd_Req.io_Offset = off & 0xFFFFFFFF;
+        glob->diskioreq->iotd_Req.io_Actual = off >> 32;
 
-    if (glob->diskioreq->iotd_Req.io_Actual && (glob->readcmd == CMD_READ))
-        return IOERR_BADADDRESS;
+        glob->diskioreq->iotd_Req.io_Length = nblocks * block_size;
+        glob->diskioreq->iotd_Req.io_Data = data;
+        glob->diskioreq->iotd_Req.io_Command =
+            do_write ? glob->writecmd : glob->readcmd;
 
-    glob->diskioreq->iotd_Req.io_Length = nblocks * block_size;
-    glob->diskioreq->iotd_Req.io_Data = data;
-    glob->diskioreq->iotd_Req.io_Command =
-        do_write ? glob->writecmd : glob->readcmd;
+        err = DoIO((struct IORequest *)glob->diskioreq);
 
-    err = DoIO((struct IORequest *)glob->diskioreq);
+        if (err == 0)
+        {
+            if (nblocks > 1)
+                retry = ErrorMessage("Volume %s\nhas a %s error\n"
+                    "in the block range\n%lu to %lu",
+                    "Retry|Cancel", (IPTR)vol_name,
+                    (IPTR)(do_write ? "write" : "read"), num,
+                    num + nblocks - 1);
+            else
+                retry = ErrorMessage("Volume %s\nhas a %s error\n"
+                    "on block %lu",
+                    "Retry|Cancel", (IPTR)vol_name,
+                    (IPTR)(do_write ? "write" : "read"), num);
+        }
+        else
+            retry = FALSE;
+    }
 
     return err;
 }

@@ -17,13 +17,14 @@
 #include <dos/dosextens.h>
 
 void SendEvent(LONG event, struct Globals *glob);
-void ErrorMessageArgs(char *fmt, IPTR *args, struct Globals *glob);
+LONG ErrorMessageArgs(char *fmt, char *options, IPTR *ap,
+    struct Globals *glob);
 
-#define ErrorMessage(fmt, ...) \
-{ \
+#define ErrorMessage(fmt, options, ...) \
+({ \
     IPTR __args[] = {__VA_ARGS__}; \
-    ErrorMessageArgs(fmt, __args, glob); \
-}
+    ErrorMessageArgs(fmt, options, __args, glob); \
+})
 
 int ilog2(ULONG data);
 #define log2 ilog2

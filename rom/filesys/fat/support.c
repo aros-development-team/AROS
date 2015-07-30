@@ -82,9 +82,11 @@ int ilog2(ULONG data)
     return 0;
 }
 
-void ErrorMessageArgs(char *fmt, IPTR *ap, struct Globals *glob)
+LONG ErrorMessageArgs(char *fmt, char *options, IPTR *ap,
+    struct Globals *glob)
 {
     struct IntuitionBase *IntuitionBase;
+    LONG answer = 0;
 
     IntuitionBase =
         (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
@@ -94,13 +96,15 @@ void ErrorMessageArgs(char *fmt, IPTR *ap, struct Globals *glob)
         {
             sizeof(struct EasyStruct),
             0,
-            "FAT filesystem critical error",
+            "FAT filesystem",
             NULL,
-            "Ok"
+            options
         };
 
         es.es_TextFormat = fmt;
-        EasyRequestArgs(NULL, &es, NULL, ap);
+        answer = EasyRequestArgs(NULL, &es, NULL, ap);
         CloseLibrary((struct Library *)IntuitionBase);
     }
+
+    return answer;
 }
