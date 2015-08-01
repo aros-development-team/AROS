@@ -79,9 +79,16 @@
 #define UINTPTR_MAX (4294967295U)
 #endif
 
+#ifndef SIZE_MAX
+#  if __WORDSIZE == 64
+#     define SIZE_MAX  UINT64_MAX
+#  else
+#     define SIZE_MAX  UINT32_MAX
+#  endif
+#endif
+
 /* TODO:
 	    PTRDIFF_MIN, _MAX
-	    SIZE_MAX
 	    WCHAR_MIN, _MAX (must be <= -127 or >= 127)
 	    WINT_MIN, _MAX (must be <= -65535 or >= 65535)
 */
