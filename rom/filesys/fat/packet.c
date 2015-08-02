@@ -452,7 +452,7 @@ void ProcessPackets(struct Globals *glob)
                     if (glob->disk_inhibited == 1)
                         DoDiskRemove(glob);
                 }
-                else if (glob->disk_inhibited)
+                else if (glob->disk_inhibited != 0)
                 {
                     glob->disk_inhibited--;
                     if (glob->disk_inhibited == 0)

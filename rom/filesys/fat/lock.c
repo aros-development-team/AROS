@@ -58,13 +58,13 @@ LONG TestLock(struct ExtFileLock *fl, struct Globals *glob)
 {
     if (fl == 0 && glob->sb == NULL)
     {
-        if (glob->disk_inserted == FALSE)
+        if (!glob->disk_inserted)
             return ERROR_NO_DISK;
         else
             return ERROR_NOT_A_DOS_DISK;
     }
 
-    if (glob->sb == NULL || glob->disk_inhibited
+    if (glob->sb == NULL || glob->disk_inhibited != 0
         || (fl && fl->fl_Volume != MKBADDR(glob->sb->doslist)))
         return ERROR_DEVICE_NOT_MOUNTED;
 

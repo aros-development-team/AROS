@@ -75,7 +75,7 @@ void FillDiskInfo(struct InfoData *id, struct Globals *glob)
 
         id->id_DiskState = ID_VALIDATED;
 
-        if (glob->disk_inhibited)
+        if (glob->disk_inhibited != 0)
             id->id_DiskType = ID_BUSY;
         else if (glob->disk_inserted)
             id->id_DiskType = ID_NOT_REALLY_DOS;        //ID_UNREADABLE_DISK;
@@ -333,7 +333,7 @@ void ProcessDiskChange(struct Globals *glob)
 {
     D(bug("\nGot disk change request\n"));
 
-    if (glob->disk_inhibited)
+    if (glob->disk_inhibited != 0)
     {
         D(bug("Disk is inhibited, ignoring disk change\n"));
         return;

@@ -36,8 +36,8 @@ LONG InitTimer(struct Globals *glob)
                 err = ERROR_DEVICE_NOT_MOUNTED;
             else
             {
-                glob->timer_active = 0;
-                glob->restart_timer = 1;
+                glob->timer_active = FALSE;
+                glob->restart_timer = TRUE;
                 glob->gl_TimerBase = glob->timereq->tr_node.io_Device;
                 D(bug("[fat] Timer ready\n"));
                 return 0;
@@ -68,7 +68,7 @@ void RestartTimer(struct Globals *glob)
     if (glob->timer_active)
     {
         D(bug("Queuing timer restart\n"));
-        glob->restart_timer = 1;
+        glob->restart_timer = TRUE;
     }
     else
     {
@@ -77,7 +77,7 @@ void RestartTimer(struct Globals *glob)
         glob->timereq->tr_time.tv_secs = 1;
         glob->timereq->tr_time.tv_micro = 0;
         SendIO((struct IORequest *)glob->timereq);
-        glob->timer_active = 1;
+        glob->timer_active = TRUE;
     }
 }
 
@@ -88,7 +88,7 @@ void HandleTimer(struct Globals *glob)
     if (glob->restart_timer)
     {
         D(bug("Timer restart queued\n"));
-        glob->restart_timer = 0;
+        glob->restart_timer = FALSE;
         RestartTimer(glob);
     }
     else
