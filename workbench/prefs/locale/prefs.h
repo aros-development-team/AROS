@@ -51,7 +51,6 @@ struct RegionEntry
 struct LanguageEntry
 {
     struct ListviewEntry lve;
-    BOOL                 preferred;
 };
 
 #define CHARACTER_SET_LEN 255

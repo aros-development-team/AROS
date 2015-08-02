@@ -1,5 +1,5 @@
 /*
-   Copyright © 2003-2014, The AROS Development Team. All rights reserved.
+   Copyright © 2003-2015, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -53,53 +53,47 @@ static struct Hook hook_clear;
 
 /*** Helpers *****************************************************************/
 
-STATIC VOID update_language_lists(struct Language_DATA *data)
-{
-    struct LanguageEntry *entry;
-    int a = 0;
-    int p = 0;
-
-    ForeachNode(&language_list, entry)
-    {
-        if(entry->preferred)
-            data->strings_preferred[p++] = entry->lve.node.ln_Name;
-        else
-            data->strings_available[a++] = entry->lve.node.ln_Name;
-    }
-    data->strings_available[a] = NULL;
-    data->strings_preferred[p] = NULL;
-}
-
 STATIC VOID init_language_lists(struct Language_DATA *data)
 {
 
     struct LanguageEntry *entry;
-    int i;
+    LONG i = 0, p = 0, a = 0;
 
     data->nr_languages = 0;
     ForeachNode(&language_list, entry)
     {
-        D(bug("[LocalePrefs-LanguageClass]   language '%s' ('%s')\n", entry->lve.node.ln_Name, entry->lve.realname));
-        entry->preferred = FALSE;
-
-        /* max 10 preferred langs, see prefs/locale.h */
-        for (i = 0; (i < 10) && (entry->preferred == FALSE) && (localeprefs.lp_PreferredLanguages[i][0]); i++)
-        {
-            if (Stricmp(localeprefs.lp_PreferredLanguages[i], entry->lve.realname) == 0)
-            {
-                D(bug("[LocalePrefs-LanguageClass]            %s is preferred\n", entry->lve.realname));
-                entry->preferred = TRUE;
-            }
-        }
         data->nr_languages++;
     }
-
     D(bug("[LocalePrefs-LanguageClass]: nr of languages: %d\n",data->nr_languages));
 
     data->strings_available = AllocVec(sizeof(char *) * (data->nr_languages+1), MEMF_CLEAR);
     data->strings_preferred = AllocVec(sizeof(char *) * (data->nr_languages+1), MEMF_CLEAR);
 
-    update_language_lists(data);
+    ForeachNode(&language_list, entry)
+    {
+        D(bug("[LocalePrefs-LanguageClass]   language '%s' ('%s')\n", entry->lve.node.ln_Name, entry->lve.realname));
+        BOOL preferred = FALSE;
+
+        /* max 10 preferred langs, see prefs/locale.h */
+        for (i = 0; (i < 10) && (localeprefs.lp_PreferredLanguages[i][0]); i++)
+        {
+            if (Stricmp(localeprefs.lp_PreferredLanguages[i], entry->lve.realname) == 0)
+            {
+                D(bug("[LocalePrefs-LanguageClass]            %s is preferred\n", entry->lve.realname));
+                preferred = TRUE;
+                break;
+            }
+        }
+
+        if(preferred)
+            data->strings_preferred[p++] = entry->lve.node.ln_Name;
+        else
+            data->strings_available[a++] = entry->lve.node.ln_Name;
+
+    }
+
+    data->strings_available[a] = NULL;
+    data->strings_preferred[p] = NULL;
 }
 
 /*** Hooks ******************************************************************
@@ -131,8 +125,6 @@ STATIC VOID func_move_to_selected(char* selstr, struct Language_DATA *data)
                 DoMethod(data->preferred,
                         MUIM_List_InsertSingle, entry->lve.node.ln_Name,
                         MUIV_List_Insert_Bottom);
-
-                entry->preferred = TRUE;
                 break;
             }
         }
@@ -220,7 +212,6 @@ AROS_UFH2
                 DoMethod(data->available,
                         MUIM_List_InsertSingle, entry->lve.node.ln_Name,
                         MUIV_List_Insert_Sorted);
-                entry->preferred = FALSE;
             }
         }
         DoMethod(obj, MUIM_List_Remove, MUIV_List_Remove_Active);
@@ -239,20 +230,17 @@ STATIC VOID func_clear(struct Language_DATA *data)
     DoMethod(data->preferred, MUIM_List_Clear);
 
     /* add all old preferred languages again */
-    DoMethod(data->available, MUIM_Group_InitChange);
+    set(data->available, MUIA_List_Quiet, TRUE);
+    DoMethod(data->available, MUIM_List_Clear);
+
     ForeachNode(&language_list, entry)
     {
-        if(entry->preferred)
-        {
-            entry->preferred = FALSE;
-            DoMethod(data->available,
-                    MUIM_List_InsertSingle, entry->lve.node.ln_Name,
-                    MUIV_List_Insert_Bottom);
-        }
+        DoMethod(data->available,
+                MUIM_List_InsertSingle, entry->lve.node.ln_Name,
+                MUIV_List_Insert_Sorted);
     }
-    DoMethod(data->available, MUIM_List_Sort);
-    DoMethod(data->available, MUIM_Group_ExitChange);
 
+    set(data->available, MUIA_List_Quiet, FALSE);
 }
 
 AROS_UFH2(
