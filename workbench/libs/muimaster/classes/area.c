@@ -12,6 +12,7 @@
 #include <graphics/gfxmacros.h>
 #include <intuition/imageclass.h>
 #include <libraries/gadtools.h>
+#include <devices/rawkeycodes.h>
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -2201,6 +2202,11 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                         (IPTR) &data->mad_ehn);
                     handle_release(cl, obj, TRUE /* cancel */ );
                 }
+
+                /* Do not eat wheel movement events */
+                if ((msg->imsg->Code == RAWKEY_NM_WHEEL_UP) || (msg->imsg->Code == RAWKEY_NM_WHEEL_DOWN))
+                    return 0;
+
                 return MUI_EventHandlerRC_Eat;
             }
             break;
