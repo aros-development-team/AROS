@@ -26,14 +26,13 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_ListviewData
 {
-    Object *list, *vert;
-    struct Hook hook;
+    Object *list;
+//    struct Hook hook;
     struct Hook selfnotify_hook;
     BOOL noforward;
     BOOL read_only;
     BOOL select_change;
     IPTR multiselect;
-    IPTR scroller_pos;
     struct MUI_EventHandlerNode ehn;
 
     int mouse_click;            /* see below if mouse is held down */
@@ -59,24 +58,24 @@ static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely);
 
 #define PROP_VERT_FIRST   1
 
-ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
-{
-    struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-    SIPTR type = (SIPTR) msg[0];
-    SIPTR val = (SIPTR) msg[1];
-
-    D(bug("[ListView] List 0x%p, Event %d, value %ld\n", data->list, type,
-            val));
-
-    switch (type)
-    {
-    case PROP_VERT_FIRST:
-        get(data->vert, MUIA_Prop_First, &val);
-        nnset(data->list, MUIA_List_VertProp_First, val);
-        break;
-    }
-    return 0;
-}
+//ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
+//{
+//    struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
+//    SIPTR type = (SIPTR) msg[0];
+//    SIPTR val = (SIPTR) msg[1];
+//
+//    D(bug("[ListView] List 0x%p, Event %d, value %ld\n", data->list, type,
+//            val));
+//
+//    switch (type)
+//    {
+//    case PROP_VERT_FIRST:
+//        get(data->vert, MUIA_Prop_First, &val);
+//        nnset(data->list, MUIA_List_VertProp_First, val);
+//        break;
+//    }
+//    return 0;
+//}
 
 ULONG SelfNotify_Function(struct Hook *hook, APTR obj, void **msg)
 {
@@ -99,22 +98,19 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListviewData *data;
     struct TagItem *tag, *tags;
-    Object *vert;
     Object *list =
         (Object *) GetTagData(MUIA_Listview_List, (IPTR) NULL,
         msg->ops_AttrList);
-    LONG entries = 0, first = 0, visible = 0;
 
     if (!list)
         return (IPTR) NULL;
-
-    vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
 
     obj = (Object *) DoSuperNewTags(cl, obj, NULL,
         MUIA_Group_Horiz, TRUE,
         MUIA_InnerLeft, 0,
         MUIA_InnerRight, 0,
         MUIA_Group_Spacing, 0,
+        Child, list,
         TAG_MORE, msg->ops_AttrList);
 
     if (!obj)
@@ -122,11 +118,10 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     data->list = list;
-    data->vert = vert;
 
-    data->hook.h_Entry = HookEntry;
-    data->hook.h_SubEntry = (HOOKFUNC) Listview_Function;
-    data->hook.h_Data = data;
+//    data->hook.h_Entry = HookEntry;
+//    data->hook.h_SubEntry = (HOOKFUNC) Listview_Function;
+//    data->hook.h_Data = data;
 
     data->selfnotify_hook.h_Entry = HookEntry;
     data->selfnotify_hook.h_SubEntry = (HOOKFUNC) SelfNotify_Function;
@@ -156,50 +151,14 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 data->multiselect = tag->ti_Data;
                 break;
             case MUIA_Listview_ScrollerPos:
-                data->scroller_pos = tag->ti_Data;
+//                data->scroller_pos = tag->ti_Data; FIXME
                 break;
         }
     }
 
-    /* Add list and/or scroller */
-    switch (data->scroller_pos)
-    {
-    case MUIV_Listview_ScrollerPos_None:
-        DoMethod(obj, OM_ADDMEMBER, list);
-        break;
-    case MUIV_Listview_ScrollerPos_Left:
-        DoMethod(obj, OM_ADDMEMBER, vert);
-        DoMethod(obj, OM_ADDMEMBER, list);
-        break;
-    default:
-        DoMethod(obj, OM_ADDMEMBER, list);
-        DoMethod(obj, OM_ADDMEMBER, vert);
-        break;
-    }
-
-    get(list, MUIA_List_VertProp_First, &first);
-    get(list, MUIA_List_VertProp_Visible, &visible);
-    get(list, MUIA_List_VertProp_Entries, &entries);
-
-    D(bug
-        ("[ListView 0x%p] List 0x%p, First %ld, Visible %ld, Entries %ld\n",
-            obj, list, first, visible, entries));
-
-    SetAttrs(data->vert,
-        MUIA_Prop_First, first,
-        MUIA_Prop_Visible, visible, MUIA_Prop_Entries, entries, TAG_DONE);
-
-    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
-        4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
-        MUIV_TriggerValue);
-
-    /* Pass prop object as DestObj (based on code in NList) */
-    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
-        (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime,
-        (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Visible, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
-        (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
+//    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
+//        4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
+//        MUIV_TriggerValue); FIXME
 
     DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
         (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
@@ -585,9 +544,10 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
         case IDCMP_RAWKEY:
             /* Scroll wheel */
-            if (_isinobject(data->vert, msg->imsg->MouseX, msg->imsg->MouseY))
-                delta = 1;
-            else if (_isinobject(list, msg->imsg->MouseX, msg->imsg->MouseY))
+//            if (_isinobject(data->vert, msg->imsg->MouseX, msg->imsg->MouseY))
+//                delta = 1; // FIXME
+//            else
+                if (_isinobject(list, msg->imsg->MouseX, msg->imsg->MouseY))
                 delta = 4;
             else
                 delta = 0;
