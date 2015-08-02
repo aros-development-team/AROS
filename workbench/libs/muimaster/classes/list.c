@@ -159,7 +159,9 @@ struct MUI_ListData
     BOOL prefs_smoothed;
     UWORD prefs_smoothval;
 
+    /* render space handling */
     Object *area;
+    BOOL area_replaced;
 };
 
 #define LIST_ADJUSTWIDTH   (1<<0)
@@ -680,8 +682,14 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->default_compare_hook.h_SubEntry = 0;
     data->compare_hook = &(data->default_compare_hook);
     data->flags = LIST_SHOWDROPMARKS;
+    data->area_replaced = FALSE;
 
-    data->area = RectangleObject, TAG_MORE, (IPTR) rectattrs, End;
+    data->area = (Object *)GetTagData(MUIA_List_ListArea, (IPTR) 0, msg->ops_AttrList);
+
+    if (!data->area)
+        data->area = RectangleObject, TAG_MORE, (IPTR) rectattrs, End;
+    else
+        data->area_replaced = TRUE;
 
     DoMethod(obj, OM_ADDMEMBER, data->area);
 
@@ -1389,11 +1397,15 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     int start, end;
     BOOL scroll_caused_damage = FALSE;
     struct MUI_ImageSpec_intern *highlight;
+    IPTR ret = (IPTR)0;
 
     if (data->flags & LIST_QUIET)
         return 0;
 
-    DoSuperMethodA(cl, obj, (Msg) msg);
+    ret = DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (data->area_replaced)
+        return ret;
 
     /* Calculate the title height */
     if (data->title)

@@ -245,6 +245,8 @@ struct MUIP_List_SelectChange
     (MUIB_List | 0x00000001)   /* ... LONG  PRIV */
 #define MUIA_List_HorizProp_First  /* PRIV */ \
     (MUIB_List | 0x00000002)   /* ... LONG  PRIV */
+#define MUIA_List_ListArea         /* PRIV */ \
+    (MUIB_List | 0x00000003)   /* ... Object *  PRIV */
 
 /* Structure of the List Position Test (MUIM_List_TestPos) */
 struct MUI_List_TestPos_Result
