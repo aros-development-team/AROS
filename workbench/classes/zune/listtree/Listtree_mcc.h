@@ -26,6 +26,7 @@
 #define MUIV_Listtree_FindName_Flags_Visible        (1<<14)
 #define MUIV_Listtree_FindName_Flags_SameLevel      (1<<15)
 
+#define MUIV_Listtree_GetEntry_Position_Head         0
 #define MUIV_Listtree_GetEntry_Position_Tail        -1
 #define MUIV_Listtree_GetEntry_Position_Active      -2
 #define MUIV_Listtree_GetEntry_Position_Next        -3
@@ -40,6 +41,11 @@
 
 #define MUIV_Listtree_GetNr_TreeNode_Active         -2
 
+#define MUIV_Listtree_GetNr_Flags_ListEmpty         (1<<12)
+#define MUIV_Listtree_GetNr_Flags_CountList         (1<<13)
+#define MUIV_Listtree_GetNr_Flags_CountLevel        (1<<14)
+#define MUIV_Listtree_GetNr_Flags_CountAll          (1<<15)
+
 #define MUIV_Listtree_Remove_ListNode_Root           0
 #define MUIV_Listtree_Remove_ListNode_Active        -2
 
@@ -48,7 +54,13 @@
 #define MUIV_Listtree_Remove_TreeNode_Active        -2
 #define MUIV_Listtree_Remove_TreeNode_All           -3
 
+/* #define MUIV_Listtree_Remove_Flags_Visible          (1<<14) Not supported */
+/* #define MUIV_Listtree_Remove_Flags_Nr               (1<<15) Not supported */
+
 #define MUIV_Listtree_Rename_TreeNode_Active        -2
+
+#define MUIV_Listtree_Rename_Flags_User             (1<<8)
+#define MUIV_Listtree_Rename_Flags_NoRefresh        (1<<9)
 
 #define MUIV_Listtree_Insert_ListNode_Root           0
 #define MUIV_Listtree_Insert_ListNode_Active        -2
@@ -57,6 +69,11 @@
 #define MUIV_Listtree_Insert_PrevNode_Tail          -1
 #define MUIV_Listtree_Insert_PrevNode_Active        -2
 #define MUIV_Listtree_Insert_PrevNode_Sorted        -4
+
+#define MUIV_Listtree_Insert_Flags_NextNode      (1<<12)
+#define MUIV_Listtree_Insert_Flags_Active        (1<<13)
+/* #define MUIV_Listtree_Insert_Flags_Visible       (1<<14) Not supported */
+/* #define MUIV_Listtree_Insert_Flags_Nr            (1<<15) Not supported */
 
 #define MUIV_Listtree_Open_ListNode_Root             0
 #define MUIV_Listtree_Open_ListNode_Parent          -1
@@ -67,6 +84,9 @@
 #define MUIV_Listtree_Open_TreeNode_Active          -2
 #define MUIV_Listtree_Open_TreeNode_All             -3
 
+/* #define MUIV_Listtree_Open_Flags_Visible            (1<<14) Not supported */
+/* #define MUIV_Listtree_Open_Flags_Nr                 (1<<15) Not supported */
+
 #define MUIV_Listtree_Close_ListNode_Root            0
 #define MUIV_Listtree_Close_ListNode_Parent         -1
 #define MUIV_Listtree_Close_ListNode_Active         -2
@@ -76,9 +96,16 @@
 #define MUIV_Listtree_Close_TreeNode_Active         -2
 #define MUIV_Listtree_Close_TreeNode_All            -3
 
+/* #define MUIV_Listtree_Close_Flags_Visible           (1<<14) Not supported */
+/* #define MUIV_Listtree_Close_Flags_Nr                (1<<15) Not supported */
+
 #define MUIV_Listtree_SetDropMark_Values_None        0
 
+#define MUIV_Listtree_TestPos_Result_Flags_None      0
+#define MUIV_Listtree_TestPos_Result_Flags_Above     1
+#define MUIV_Listtree_TestPos_Result_Flags_Below     2
 #define MUIV_Listtree_TestPos_Result_Flags_Onto      3
+#define MUIV_Listtree_TestPos_Result_Flags_Sorted    4
 
 
 #define TNF_OPEN   (1<<00)
