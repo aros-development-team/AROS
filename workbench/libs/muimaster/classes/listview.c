@@ -94,22 +94,16 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->selfnotify_hook.h_Data = data;
     data->noforward = FALSE;
 
-    /* parse initial taglist */
+    /* parse initial taglist, forward to list */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
         switch (tag->ti_Tag)
         {
             case MUIA_Listview_DoubleClick:
-//                data->doubleclick = tag->ti_Data != 0; FIXME
-                break;
             case MUIA_Listview_Input:
-//                data->read_only = !tag->ti_Data; FIXME how to pass to list?
-                break;
             case MUIA_Listview_MultiSelect:
-//                data->multiselect = tag->ti_Data; FIXME how to pass to list?
-                break;
             case MUIA_Listview_ScrollerPos:
-//                data->scroller_pos = tag->ti_Data; FIXME
+                set(list, tag->ti_Tag, tag->ti_Data);
                 break;
         }
     }

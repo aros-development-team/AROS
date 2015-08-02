@@ -1219,6 +1219,18 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Listview_SelectChange: /* private set */
             data->select_change = tag->ti_Data != 0;
             break;
+
+        case MUIA_Listview_ScrollerPos: /* private set */
+            data->scroller_pos = tag->ti_Data;
+            break;
+
+        case MUIA_Listview_Input: /* private set */
+            data->read_only = !tag->ti_Data;
+            break;
+
+        case MUIA_Listview_MultiSelect: /* private set */
+            data->multiselect = tag->ti_Data;
+            break;
         }
     }
 
