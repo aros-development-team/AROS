@@ -162,6 +162,11 @@ struct MUI_ListData
     /* render space handling */
     Object *area;
     BOOL area_replaced;
+
+    /* Former Listview members */
+    Object *vert;
+    IPTR scroller_pos;
+
 };
 
 #define LIST_ADJUSTWIDTH   (1<<0)
@@ -644,6 +649,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     APTR *array = NULL;
     LONG new_entries_active = MUIV_List_Active_Off;
     struct TagItem rectattrs[2] = {{TAG_IGNORE, TAG_IGNORE }, {TAG_DONE, TAG_DONE}};
+    Object *vert, *area;
 
     /* search for MUIA_Frame as it has to be passed to rectangle object */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -684,14 +690,16 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->flags = LIST_SHOWDROPMARKS;
     data->area_replaced = FALSE;
 
-    data->area = (Object *)GetTagData(MUIA_List_ListArea, (IPTR) 0, msg->ops_AttrList);
+    area = (Object *)GetTagData(MUIA_List_ListArea, (IPTR) 0, msg->ops_AttrList);
 
-    if (!data->area)
-        data->area = RectangleObject, TAG_MORE, (IPTR) rectattrs, End;
+    if (!area)
+        area = RectangleObject, TAG_MORE, (IPTR) rectattrs, End;
     else
         data->area_replaced = TRUE;
+    data->area = area;
 
-    DoMethod(obj, OM_ADDMEMBER, data->area);
+    vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
+    data->vert = vert;
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -772,7 +780,48 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             _handle_bool_tag(data->flags, tag->ti_Data, LIST_DRAGSORTABLE);
             set(obj, MUIA_Draggable, tag->ti_Data);
             break;
+
+        case MUIA_Listview_ScrollerPos:
+            data->scroller_pos = tag->ti_Data;
+            break;
         }
+    }
+
+    /* Add list and/or scroller */
+    switch (data->scroller_pos)
+    {
+    case MUIV_Listview_ScrollerPos_None:
+        DoMethod(obj, OM_ADDMEMBER, area);
+        break;
+    case MUIV_Listview_ScrollerPos_Left:
+        DoMethod(obj, OM_ADDMEMBER, vert);
+        DoMethod(obj, OM_ADDMEMBER, area);
+        break;
+    default:
+        DoMethod(obj, OM_ADDMEMBER, area);
+        DoMethod(obj, OM_ADDMEMBER, vert);
+        break;
+    }
+
+    if (vert)
+    {
+        LONG entries = 0, first = 0, visible = 0;
+
+        get(obj, MUIA_List_VertProp_First, &first);
+        get(obj, MUIA_List_VertProp_Visible, &visible);
+        get(obj, MUIA_List_VertProp_Entries, &entries);
+
+        SetAttrs(data->vert,
+            MUIA_Prop_First, first,
+            MUIA_Prop_Visible, visible, MUIA_Prop_Entries, entries, TAG_DONE);
+
+        /* Pass prop object as DestObj (based on code in NList) */
+        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
+            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
+        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime,
+            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Visible, MUIV_TriggerValue);
+        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
+            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
     }
 
     if (!data->pool)
