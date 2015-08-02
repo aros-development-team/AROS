@@ -18,6 +18,8 @@
 
 #include <aros/debug.h>
 
+#define MUIA_List_ListArea  (MUIB_List | 0x00000003)
+
 /* Relations:
  * MUIS_Listtree_Treenode -> MUI_NListtree_Treenode via MUIS_Listtree_TreeNodeInt.ref
  * MUI_NListtree_Treenode -> MUIS_Listtree_Treenode via MUI_NListtree_Treenode.tn_User
@@ -173,12 +175,10 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
     supertags[i].ti_Tag  = TAG_DONE;
 
-    /* TODO:
-     * set up a DestructHook which will call proxy MUIS_Listtree_TreeNode destrhook and
-     * free it afterwards
-     */
+    nlisttree = (Object *) NewObjectA(CL_NListtreeInt->mcc_Class, NULL, convtags);
+
     obj = (Object *) DoSuperNewTags(cl, obj, 0,
-            Child, nlisttree = (Object *) NewObjectA(CL_NListtreeInt->mcc_Class, NULL, convtags),
+            MUIA_List_ListArea, nlisttree,
             TAG_MORE, (IPTR)supertags,
             TAG_DONE);
 
@@ -320,6 +320,7 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         FORWARDSET(MUIA_Listtree_Quiet, MUIA_NListtree_Quiet)
         FORWARDSET(MUIA_List_Active, MUIA_NList_Active)
         FORWARDSET(MUIA_List_Prop_First, MUIA_NList_Prop_First)
+        FORWARDSET(MUIA_List_Prop_Visible, MUIA_NList_Prop_Visible)
 
         IGNORESET(MUIA_Listview_SelectChange)
 
@@ -328,8 +329,14 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     ((struct MUIS_Listtree_TreeNodeInt *)tag->ti_Data)->ref);
             break;
 
+        /* Setting MUIA_List_First causes weird behaviour of scroll bar */
+        case(MUIA_List_First):
+            /* set(data->nlisttree, MUIA_NList_First, tag->ti_Data); */ /* Don't set directly */
+            tag->ti_Tag = TAG_IGNORE; /* Don't set via forward via Group(List)->NListtree */
+            break;
+
+
         SETHANDLE(MUIA_Listtree_DoubleClick)
-        case MUIB_List | 0x00000010: break;
         case MUIA_Prop_First: break;
         case MUIA_Prop_DoSmooth: break;
         case MUIA_NoNotify: break;
@@ -772,6 +779,9 @@ IPTR Listtree__MUIM_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *m
     /* NList expects this notification to be set and uses its content */
     if (msg->TrigAttr == MUIA_List_Prop_First)
         DoMethodA(data->nlisttree, msg);
+
+    if (msg->TrigAttr == MUIA_List_First)
+        bug("Listtree.mcc: notifications on MUIA_List_First are not fired!\n");
 
     return DoSuperMethodA(cl, obj, msg);
 }
