@@ -126,14 +126,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
-{
-    return DoSuperMethodA(cl, obj, msg);
-}
-
-/**************************************************************************
  OM_SET
 **************************************************************************/
 IPTR Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -221,8 +213,6 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
         return Listview__OM_GET(cl, obj, (struct opGet *)msg);
     case OM_NEW:
         return Listview__OM_NEW(cl, obj, (struct opSet *)msg);
-    case OM_DISPOSE:
-        return Listview__OM_DISPOSE(cl, obj, msg);
     case MUIM_List_Clear:
     case MUIM_List_CreateImage:
     case MUIM_List_DeleteImage:
