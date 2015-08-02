@@ -20,11 +20,6 @@ struct MUI_ListviewData
 //    struct Hook hook;
     struct Hook selfnotify_hook;
     BOOL noforward;
-    BOOL select_change;
-
-    /* double click */
-    BOOL doubleclick;
-
 };
 
 #define PROP_VERT_FIRST   1
@@ -105,7 +100,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
             case MUIA_Listview_DoubleClick:
-                data->doubleclick = tag->ti_Data != 0;
+//                data->doubleclick = tag->ti_Data != 0; FIXME
                 break;
             case MUIA_Listview_Input:
 //                data->read_only = !tag->ti_Data; FIXME how to pass to list?
@@ -126,6 +121,12 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
         (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
         MUIA_List_Active, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
+        MUIA_Listview_DoubleClick, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_Listview_SelectChange, MUIV_EveryTime,
+        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
+        MUIA_Listview_SelectChange, MUIV_TriggerValue);
 
     return (IPTR) obj;
 }
@@ -172,12 +173,6 @@ IPTR Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             SetAttrs(data->list, MUIA_NoNotify, no_notify, tag->ti_Tag,
                 tag->ti_Data, TAG_DONE);
             break;
-        case MUIA_Listview_DoubleClick:
-            data->doubleclick = tag->ti_Data != 0;
-            break;
-        case MUIA_Listview_SelectChange:
-            data->select_change = tag->ti_Data != 0;
-            break;
         }
     }
 
@@ -209,15 +204,12 @@ IPTR Listview__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_List_Entries:
     case MUIA_List_Quiet:
     case MUIA_Listview_ClickColumn:
-        return GetAttr(msg->opg_AttrID, data->list, msg->opg_Storage);
     case MUIA_Listview_DoubleClick:
-        STORE = data->doubleclick;
-        return 1;
+    case MUIA_Listview_SelectChange:
+        return GetAttr(msg->opg_AttrID, data->list, msg->opg_Storage);
+
     case MUIA_Listview_List:
         STORE = (IPTR) data->list;
-        return 1;
-    case MUIA_Listview_SelectChange:
-        STORE = data->select_change;
         return 1;
     }
 

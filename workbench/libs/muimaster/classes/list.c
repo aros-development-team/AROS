@@ -189,6 +189,10 @@ struct MUI_ListData
     /* user prefs */
     ListviewMulti prefs_multi;
 
+    BOOL select_change;
+    BOOL doubleclick;
+
+
 };
 
 #define MOUSE_CLICK_ENTRY 1     /* on entry clicked */
@@ -825,6 +829,10 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Listview_MultiSelect:
             data->multiselect = tag->ti_Data;
             break;
+
+        case MUIA_Listview_DoubleClick:
+            data->doubleclick = tag->ti_Data != 0;
+            break;
         }
     }
 
@@ -1203,6 +1211,14 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
             }
             break;
+
+        case MUIA_Listview_DoubleClick: /* private set */
+            data->doubleclick = tag->ti_Data != 0;
+            break;
+
+        case MUIA_Listview_SelectChange: /* private set */
+            data->select_change = tag->ti_Data != 0;
+            break;
         }
     }
 
@@ -1259,6 +1275,12 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         return 1;
     case MUIA_Listview_ClickColumn:
         STORE = data->click_column;
+        return 1;
+    case MUIA_Listview_DoubleClick:
+        STORE = data->doubleclick;
+        return 1;
+    case MUIA_Listview_SelectChange:
+        STORE = data->select_change;
         return 1;
     }
 
