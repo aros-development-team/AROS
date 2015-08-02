@@ -161,7 +161,7 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
 {
     struct Cache *c = cache;
     struct BlockRange *b = NULL, *b2;
-    ULONG error = 0, data_offset;
+    LONG error = 0, data_offset;
     struct MinList *l =
         &c->hash_table[(blockNum >> RANGE_SHIFT) & (c->hash_size - 1)];
     struct MinNode *n;
@@ -202,7 +202,6 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
              * more blocks, then try again */
 
             Cache_Flush(c);
-            /* FIXME: Handle IO errors! */
 
             n = (struct MinNode *)RemHead((struct List *)&c->free_list);
         }
@@ -213,8 +212,8 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
 
             /* Read the block from disk */
 
-            if((error = AccessDisk(FALSE, blockNum, RANGE_SIZE,
-                c->block_size, b->data, c->priv)) == 0)
+            if(AccessDisk(FALSE, blockNum, RANGE_SIZE, c->block_size,
+                b->data, c->priv) == 0)
             {
                 /* Remove block from its old position in the hash */
 
@@ -236,6 +235,7 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
                 AddHead((struct List *)&c->free_list,
                     (struct Node *)&b->node2);
                 b = NULL;
+                error = ERROR_UNKNOWN;
             }
         }
         else
@@ -287,7 +287,7 @@ VOID Cache_MarkBlockDirty(APTR cache, APTR block)
 BOOL Cache_Flush(APTR cache)
 {
     struct Cache *c = cache;
-    ULONG error = 0;
+    LONG error = 0, td_error;
     struct MinNode *n;
     struct BlockRange *b;
 
@@ -297,20 +297,24 @@ BOOL Cache_Flush(APTR cache)
         /* Write dirty block range to disk */
 
         b = NODE2(n);
-        error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size, b->data,
-            c->priv);
+        td_error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size,
+            b->data, c->priv);
 
         /* Transfer block range to free list if unused, or put back on dirty
          * list upon an error */
 
-        if(error == 0)
+        if(td_error == 0)
         {
             b->state = BS_VALID;
             if(b->use_count == 0)
-                AddTail((struct List *)&c->free_list, (struct Node *)&b->node2);
+                AddTail((struct List *)&c->free_list,
+                    (struct Node *)&b->node2);
         }
         else
+        {
             AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
+            error = ERROR_UNKNOWN;
+        }
     }
 
     SetIoErr(error);

@@ -220,7 +220,7 @@ struct FSSuper
 
     /* function table */
     ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);
-    void  (*func_set_fat_entry)(struct FSSuper *sb, ULONG n, ULONG val);
+    BOOL (*func_set_fat_entry)(struct FSSuper *sb, ULONG n, ULONG val);
     /* ... */
 };
 
