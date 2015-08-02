@@ -163,12 +163,14 @@ struct MUI_ListData
     /* render space handling */
     Object *area;
     BOOL area_replaced;
+    BOOL area_connected;
 
     /***************************/
     /* Former Listview members */
     /***************************/
 
     Object *vert;
+    BOOL vert_connected;
     IPTR scroller_pos;
     BOOL read_only;
     IPTR multiselect;
@@ -669,7 +671,7 @@ AROS_UFH3S(int, default_compare_func,
 
 #define PROP_VERT_FIRST   1
 
-ULONG List_Function(struct Hook *hook, Object * obj, void **msg)
+static ULONG List_Function(struct Hook *hook, Object * obj, void **msg)
 {
     struct MUI_ListData *data = (struct MUI_ListData *)hook->h_Data;
     SIPTR type = (SIPTR) msg[0];
@@ -685,6 +687,92 @@ ULONG List_Function(struct Hook *hook, Object * obj, void **msg)
     return 0;
 }
 
+/* At entry to this function, data->area is always set, but data->vert may or may not be set */
+static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    BOOL vert_not_used = FALSE;
+
+    /* Disallow any changes after setup, this function should basically a creation-time only */
+    if (_flags(obj) & MADF_SETUP)
+        return;
+
+    /* Remove both objects */
+    if (data->area_connected)
+        DoMethod(obj, OM_REMMEMBER, data->area);
+    if (data->vert_connected)
+        DoMethod(obj, OM_REMMEMBER, data->vert);
+
+    /* Add list and/or scroller */
+    switch (data->scroller_pos)
+    {
+    case MUIV_Listview_ScrollerPos_None:
+        vert_not_used = TRUE;
+        DoMethod(obj, OM_ADDMEMBER, data->area);
+        break;
+    case MUIV_Listview_ScrollerPos_Left:
+        if (!data->vert) data->vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
+        DoMethod(obj, OM_ADDMEMBER, data->vert);
+        DoMethod(obj, OM_ADDMEMBER, data->area);
+        break;
+    default:
+        if (!data->vert) data->vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
+        DoMethod(obj, OM_ADDMEMBER, data->area);
+        DoMethod(obj, OM_ADDMEMBER, data->vert);
+        break;
+    }
+
+    data->area_connected = TRUE;
+
+    /* Handle case where it was decided that vert will not be used */
+    if (vert_not_used)
+    {
+        if (data->vert)
+        {
+            if (data->vert_connected)
+            {
+                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_First, (IPTR) data->vert);
+                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_Visible, (IPTR) data->vert);
+                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_Entries, (IPTR) data->vert);
+                data->vert_connected = FALSE;
+            }
+
+            MUI_DisposeObject(data->vert);
+            data->vert = NULL;
+        }
+    }
+
+    /* If at this point data->vert is not null, it means vert is to be connected */
+    if (data->vert && !data->vert_connected)
+    {
+        LONG entries = 0, first = 0, visible = 0;
+
+        get(obj, MUIA_List_VertProp_First, &first);
+        get(obj, MUIA_List_VertProp_Visible, &visible);
+        get(obj, MUIA_List_VertProp_Entries, &entries);
+
+        SetAttrs(data->vert,
+            MUIA_Prop_First, first,
+            MUIA_Prop_Visible, visible, MUIA_Prop_Entries, entries, TAG_DONE);
+
+
+        DoMethod(data->vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
+            4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
+            MUIV_TriggerValue);
+
+        /* Pass prop object as DestObj (based on code in NList) */
+        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
+            (IPTR) data->vert, 3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
+        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime,
+            (IPTR) data->vert, 3, MUIM_NoNotifySet, MUIA_Prop_Visible, MUIV_TriggerValue);
+        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
+            (IPTR) data->vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
+
+        data->vert_connected = TRUE;
+    }
+
+}
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/
@@ -696,7 +784,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     APTR *array = NULL;
     LONG new_entries_active = MUIV_List_Active_Off;
     struct TagItem rectattrs[2] = {{TAG_IGNORE, TAG_IGNORE }, {TAG_DONE, TAG_DONE}};
-    Object *vert, *area;
+    Object *area;
 
     /* search for MUIA_Frame as it has to be passed to rectangle object */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -736,6 +824,8 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->compare_hook = &(data->default_compare_hook);
     data->flags = LIST_SHOWDROPMARKS;
     data->area_replaced = FALSE;
+    data->area_connected = FALSE;
+    data->vert_connected = FALSE;
 
     data->last_active = -1;
 
@@ -756,9 +846,6 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     else
         data->area_replaced = TRUE;
     data->area = area;
-
-    vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
-    data->vert = vert;
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -858,47 +945,49 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
-    /* Add list and/or scroller */
-    switch (data->scroller_pos)
-    {
-    case MUIV_Listview_ScrollerPos_None:
-        DoMethod(obj, OM_ADDMEMBER, area);
-        break;
-    case MUIV_Listview_ScrollerPos_Left:
-        DoMethod(obj, OM_ADDMEMBER, vert);
-        DoMethod(obj, OM_ADDMEMBER, area);
-        break;
-    default:
-        DoMethod(obj, OM_ADDMEMBER, area);
-        DoMethod(obj, OM_ADDMEMBER, vert);
-        break;
-    }
+//    /* Add list and/or scroller */
+//    switch (data->scroller_pos)
+//    {
+//    case MUIV_Listview_ScrollerPos_None:
+//        DoMethod(obj, OM_ADDMEMBER, area);
+//        break;
+//    case MUIV_Listview_ScrollerPos_Left:
+//        DoMethod(obj, OM_ADDMEMBER, vert);
+//        DoMethod(obj, OM_ADDMEMBER, area);
+//        break;
+//    default:
+//        DoMethod(obj, OM_ADDMEMBER, area);
+//        DoMethod(obj, OM_ADDMEMBER, vert);
+//        break;
+//    }
+//
+//    if (vert)
+//    {
+//        LONG entries = 0, first = 0, visible = 0;
+//
+//        get(obj, MUIA_List_VertProp_First, &first);
+//        get(obj, MUIA_List_VertProp_Visible, &visible);
+//        get(obj, MUIA_List_VertProp_Entries, &entries);
+//
+//        SetAttrs(vert,
+//            MUIA_Prop_First, first,
+//            MUIA_Prop_Visible, visible, MUIA_Prop_Entries, entries, TAG_DONE);
+//
+//
+//        DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
+//            4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
+//            MUIV_TriggerValue);
+//
+//        /* Pass prop object as DestObj (based on code in NList) */
+//        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
+//            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
+//        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime,
+//            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Visible, MUIV_TriggerValue);
+//        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
+//            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
+//    }
 
-    if (vert)
-    {
-        LONG entries = 0, first = 0, visible = 0;
-
-        get(obj, MUIA_List_VertProp_First, &first);
-        get(obj, MUIA_List_VertProp_Visible, &visible);
-        get(obj, MUIA_List_VertProp_Entries, &entries);
-
-        SetAttrs(vert,
-            MUIA_Prop_First, first,
-            MUIA_Prop_Visible, visible, MUIA_Prop_Entries, entries, TAG_DONE);
-
-
-        DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
-            4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
-            MUIV_TriggerValue);
-
-        /* Pass prop object as DestObj (based on code in NList) */
-        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
-            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
-        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime,
-            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Visible, MUIV_TriggerValue);
-        DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
-            (IPTR) vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
-    }
+    List_HandleScrollerPos(cl, obj);
 
     if (!data->pool)
     {
@@ -1249,6 +1338,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_Listview_ScrollerPos: /* private set */
             data->scroller_pos = tag->ti_Data;
+            List_HandleScrollerPos(cl, obj);
             break;
 
         case MUIA_Listview_Input: /* private set */
@@ -3309,7 +3399,7 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 
         case IDCMP_RAWKEY:
             /* Scroll wheel */
-            if (_isinobject(data->vert, msg->imsg->MouseX, msg->imsg->MouseY))
+            if (data->vert && _isinobject(data->vert, msg->imsg->MouseX, msg->imsg->MouseY))
                 delta = 1;
             else if (_isinobject(data->area, msg->imsg->MouseX, msg->imsg->MouseY))
                 delta = 4;
