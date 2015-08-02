@@ -26,6 +26,7 @@
 #include <proto/dos.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "fat_fs.h"
 #include "fat_protos.h"
@@ -273,12 +274,6 @@ void DoDiskInsert(struct Globals *glob)
 
             return;
         }
-        else if (err == IOERR_BADADDRESS)
-            ErrorMessageArgs("Your device does not support 64-bit\n"
-                "access to the disk while it is needed!\n"
-                "In order to prevent data damage access to\n"
-                "this disk was blocked.\n"
-                "Please upgrade your device driver.", "OK", NULL, glob);
 
         FreeVecPooled(glob->mempool, sb);
     }
@@ -372,10 +367,7 @@ void ProcessDiskChange(struct Globals *glob)
 void UpdateDisk(struct Globals *glob)
 {
     if (glob->sb)
-    {
         Cache_Flush(glob->sb->cache);
-        /* FIXME: Handle IO errors on disk flush! */
-    }
 
     glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
     DoIO((struct IORequest *)glob->diskioreq);
@@ -436,7 +428,8 @@ void Probe_64bit_support(struct Globals *glob)
         }
 }
 
-ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
+/* N.B. returns an Exec error code, not a DOS error code! */
+LONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
     UBYTE *data, APTR priv)
 {
     struct Globals *glob = priv;
@@ -444,7 +437,7 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
     ULONG err;
     ULONG start, end;
     BOOL retry = TRUE;
-    CONST_STRPTR vol_name = "";
+    TEXT vol_name[100];
 
 #if DEBUG_CACHESTATS > 1
     ErrorMessage("Accessing %lu sector(s) starting at %lu.\n"
@@ -456,8 +449,6 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
      * warn user and bale out if completely outside boundaries */
     if (glob->sb)
     {
-        vol_name = glob->sb->volume.name + 1;
-
         start = glob->sb->first_device_sector;
         if (num + nblocks <= glob->sb->first_device_sector)
         {
@@ -517,16 +508,23 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
 
         err = DoIO((struct IORequest *)glob->diskioreq);
 
-        if (err == 0)
+        if (err != 0)
         {
+            if (glob->sb && glob->sb->volume.name[0] != '\0')
+                snprintf(vol_name, 100, "Volume %s",
+                    glob->sb->volume.name + 1);
+            else
+                snprintf(vol_name, 100, "Device %s",
+                    AROS_BSTR_ADDR(glob->devnode->dol_Name));
+
             if (nblocks > 1)
-                retry = ErrorMessage("Volume %s\nhas a %s error\n"
+                retry = ErrorMessage("%s\nhas a %s error\n"
                     "in the block range\n%lu to %lu",
                     "Retry|Cancel", (IPTR)vol_name,
                     (IPTR)(do_write ? "write" : "read"), num,
                     num + nblocks - 1);
             else
-                retry = ErrorMessage("Volume %s\nhas a %s error\n"
+                retry = ErrorMessage("%s\nhas a %s error\n"
                     "on block %lu",
                     "Retry|Cancel", (IPTR)vol_name,
                     (IPTR)(do_write ? "write" : "read"), num);

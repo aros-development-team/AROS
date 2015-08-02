@@ -68,7 +68,7 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
 
 /* Helper function to get the location of a fat entry for a cluster. It used
  * to be a define until it got too crazy */
-static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
+static APTR GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
     UWORD fat_no)
 {
     D(struct Globals *glob = sb->glob);
@@ -104,7 +104,6 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
             sb->fat_blocks[i] =
                 Cache_GetBlock(sb->cache, num + i, &sb->fat_buffers[i]);
 
-            /* FIXME: Handle IO errors on cache read! */
             if (sb->fat_blocks[i] == NULL)
             {
                 while (i-- != 0)
@@ -149,17 +148,30 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n)
 {
     D(struct Globals *glob = sb->glob);
     ULONG offset = n + n / 2;
-    UWORD val;
+    UBYTE *p1;
+    UWORD val = 0, *p2;
 
     if ((offset & (sb->sectorsize - 1)) == sb->sectorsize - 1)
     {
         D(bug("[fat] fat12 cluster pair on block boundary, compensating\n"));
 
-        val = *GetFatEntryPtr(sb, offset + 1, NULL, 0) << 8;
-        val |= *GetFatEntryPtr(sb, offset, NULL, 0);
+        p1 = GetFatEntryPtr(sb, offset + 1, NULL, 0);
+        if (p1 != NULL)
+        {
+            val = *p1 << 8;
+            p1 = GetFatEntryPtr(sb, offset, NULL, 0);
+            if (p1 != NULL)
+                val |= *p1;
+            else
+                val = 0;
+        }
     }
     else
-        val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, offset, NULL, 0)));
+    {
+        p2 = GetFatEntryPtr(sb, offset, NULL, 0);
+        if (p2 != NULL)
+            val = AROS_LE2WORD(*p2);
+    }
 
     if (n & 1)
         val >>= 4;
@@ -176,22 +188,34 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n)
  */
 static ULONG GetFat16Entry(struct FSSuper *sb, ULONG n)
 {
-    return AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n << 1, NULL, 0)));
+    UWORD val = 0, *p;
+
+    p = GetFatEntryPtr(sb, n << 1, NULL, 0);
+    if (p != NULL)
+        val = AROS_LE2WORD(*p);
+
+    return val;
 }
 
 static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n)
 {
-    return AROS_LE2LONG(*((ULONG *) GetFatEntryPtr(sb, n << 2, NULL, 0)))
-        & 0x0fffffff;
+    ULONG val = 0, *p;
+
+    p = GetFatEntryPtr(sb, n << 2, NULL, 0);
+    if (p != NULL)
+        val = AROS_LE2LONG(*p) & 0x0fffffff;
+
+    return val;
 }
 
-static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val)
+static BOOL SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val)
 {
     D(struct Globals *glob = sb->glob);
     APTR b;
     ULONG offset = n + n / 2;
-    BOOL boundary = FALSE;
-    UWORD *fat = NULL, newval, i;
+    BOOL success = TRUE, boundary = FALSE;
+    UBYTE *p1;
+    UWORD *p2, newval, i;
 
     for (i = 0; i < sb->fat_count; i++)
     {
@@ -202,79 +226,118 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val)
             D(bug(
                 "[fat] fat12 cluster pair on block boundary, compensating\n"));
 
-            newval = *GetFatEntryPtr(sb, offset + 1, NULL, i) << 8;
-            newval |= *GetFatEntryPtr(sb, offset, NULL, i);
+            p1 = GetFatEntryPtr(sb, offset + 1, NULL, i);
+            if (p1 != NULL)
+            {
+                newval = *p1 << 8;
+                p1 = GetFatEntryPtr(sb, offset, NULL, i);
+                if (p1 != NULL)
+                    newval |= *p1;
+                else
+                    success = FALSE;
+            }
+            else
+                success = FALSE;
         }
         else
         {
-            fat = (UWORD *) GetFatEntryPtr(sb, offset, &b, i);
-            newval = AROS_LE2WORD(*fat);
+            p2 = (UWORD *) GetFatEntryPtr(sb, offset, &b, i);
+            if (p2 != NULL)
+                newval = AROS_LE2WORD(*p2);
+            else
+                success = FALSE;
         }
 
-        if (n & 1)
+        if (success)
         {
-            val <<= 4;
-            newval = (newval & 0xf) | val;
-        }
-        else
-        {
-            newval = (newval & 0xf000) | val;
-        }
+            if (n & 1)
+                newval = (newval & 0xf) | val << 4;
+            else
+                newval = (newval & 0xf000) | val;
 
-        if (boundary)
-        {
-            /* XXX: Ideally we'd mark both blocks dirty at the same time or
-             * only do it once if they're the same block. Unfortunately any 
-             * old value of b is invalid after a call to GetFatEntryPtr, as
-             * it may have swapped the previous cache out. This is probably
-             * safe enough. */
-            *GetFatEntryPtr(sb, offset + 1, &b, i) = newval >> 8;
-            Cache_MarkBlockDirty(sb->cache, b);
-            *GetFatEntryPtr(sb, offset, &b, i) = newval & 0xff;
-            Cache_MarkBlockDirty(sb->cache, b);
-        }
-        else
-        {
-            *fat = AROS_WORD2LE(newval);
-            Cache_MarkBlockDirty(sb->cache, b);
+            if (boundary)
+            {
+                /* XXX: Ideally we'd mark both blocks dirty at the same time or
+                 * only do it once if they're the same block. Unfortunately any 
+                 * old value of b is invalid after a call to GetFatEntryPtr, as
+                 * it may have swapped the previous cache out. This is probably
+                 * safe enough. */
+                p1 = GetFatEntryPtr(sb, offset + 1, &b, i);
+                if (p1 != NULL)
+                {
+                    *p1 = newval >> 8;
+                    Cache_MarkBlockDirty(sb->cache, b);
+                    p1 = GetFatEntryPtr(sb, offset, &b, i);
+                    if (p1 != NULL)
+                    {
+                        *p1 = newval & 0xff;
+                        Cache_MarkBlockDirty(sb->cache, b);
+                    }
+                    else
+                        success = FALSE;
+                }
+                else
+                    success = FALSE;
+            }
+            else
+            {
+                *p2 = AROS_WORD2LE(newval);
+                Cache_MarkBlockDirty(sb->cache, b);
+            }
         }
     }
+
+    return success;
 }
 
-static void SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val)
+static BOOL SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val)
 {
+    BOOL success = TRUE;
     APTR b;
+    UWORD i, *p;
+
+    for (i = 0; i < sb->fat_count; i++)
+    {
+        p = GetFatEntryPtr(sb, n << 1, &b, i);
+        if (p != NULL)
+        {
+            *p = AROS_WORD2LE((UWORD) val);
+            Cache_MarkBlockDirty(sb->cache, b);
+        }
+        else
+            success = FALSE;
+    }
+
+    return success;
+}
+
+static BOOL SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val)
+{
+    BOOL success = TRUE;
+    APTR b;
+    ULONG *p;
     UWORD i;
 
     for (i = 0; i < sb->fat_count; i++)
     {
-        *((UWORD *) GetFatEntryPtr(sb, n << 1, &b, i)) =
-            AROS_WORD2LE((UWORD) val);
-        Cache_MarkBlockDirty(sb->cache, b);
+        p = (ULONG *) GetFatEntryPtr(sb, n << 2, &b, i);
+        if (p != NULL)
+        {
+            *p = (*p & 0xf0000000) | val;
+            Cache_MarkBlockDirty(sb->cache, b);
+        }
+        else
+            success = FALSE;
     }
-}
 
-static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val)
-{
-    APTR b;
-    ULONG *fat;
-    UWORD i;
-
-    for (i = 0; i < sb->fat_count; i++)
-    {
-        fat = (ULONG *) GetFatEntryPtr(sb, n << 2, &b, i);
-
-        *fat = (*fat & 0xf0000000) | val;
-
-        Cache_MarkBlockDirty(sb->cache, b);
-    }
+    return success;
 }
 
 LONG ReadFATSuper(struct FSSuper *sb)
 {
     struct Globals *glob = sb->glob;
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
-    LONG err;
+    LONG err = 0, td_err;
     ULONG bsize = de->de_SizeBlock * 4, total_sectors, id;
     struct FATBootSector *boot;
     struct FATEBPB *ebpb;
@@ -310,12 +373,12 @@ LONG ReadFATSuper(struct FSSuper *sb)
      * the boot sector. In practice it doesn't matter - we're going to use
      * this once and once only.
      */
-    if ((err = AccessDisk(FALSE, sb->first_device_sector, 1, bsize,
+    if ((td_err = AccessDisk(FALSE, sb->first_device_sector, 1, bsize,
         (UBYTE *) boot, glob)) != 0)
     {
-        D(bug("[fat] couldn't read boot block (%ld)\n", err));
+        D(bug("[fat] couldn't read boot block (%ld)\n", td_err));
         FreeMem(boot, bsize);
-        return err;
+        return ERROR_UNKNOWN;
     }
 
     D(bug("\tBoot sector:\n"));
@@ -415,17 +478,31 @@ LONG ReadFATSuper(struct FSSuper *sb)
         FreeMem(boot, bsize);
         return ERROR_NOT_A_DOS_DISK;
     }
+
     end = 0xFFFFFFFF / sb->sectorsize;
     if ((sb->first_device_sector + sb->total_sectors - 1 > end)
         && (glob->readcmd == CMD_READ))
     {
         D(bug("\tDevice is too large\n"));
+        ErrorMessage("Your device driver does not support 64-bit\n"
+            "disk addressing, but it is needed to access\n"
+            "the volume in device %s.\n\n"
+            "In order to prevent data damage, access to\n"
+            "this volume was blocked. Please upgrade\n"
+            "your device driver.", "OK",
+            (IPTR)(AROS_BSTR_ADDR(glob->devnode->dol_Name)));
         FreeMem(boot, bsize);
-        return IOERR_BADADDRESS;
+        return ERROR_UNKNOWN;
     }
 
     sb->cache = Cache_CreateCache(glob, 64, 64, sb->sectorsize, SysBase,
         DOSBase);
+    if (sb->cache == NULL)
+    {
+        err = IoErr();
+        FreeMem(boot, bsize);
+        return err;
+    }
 
     if (sb->clusters_count < 4085)
     {
@@ -451,7 +528,6 @@ LONG ReadFATSuper(struct FSSuper *sb)
         sb->func_get_fat_entry = GetFat32Entry;
         sb->func_set_fat_entry = SetFat32Entry;
     }
-    glob->sb = sb;
 
     /* Set up the FAT cache and load the first blocks */
     sb->fat_cachesize = 4096;
@@ -464,6 +540,15 @@ LONG ReadFATSuper(struct FSSuper *sb)
         sizeof(APTR) * sb->fat_blocks_count);
     sb->fat_buffers = AllocVecPooled(glob->mempool,
         sizeof(APTR) * sb->fat_blocks_count);
+    if (sb->fat_blocks == NULL || sb->fat_buffers == NULL)
+    {
+        err = ERROR_NO_FREE_STORE;
+        FreeVecPooled(glob->mempool, sb->fat_blocks);
+        FreeVecPooled(glob->mempool, sb->fat_buffers);
+        FreeMem(boot, bsize);
+        return err;
+    }
+    glob->sb = sb;
 
     if (sb->type != 32)
     {
@@ -494,46 +579,66 @@ LONG ReadFATSuper(struct FSSuper *sb)
     if (glob->formatting)
     {
         /* Clear all FAT sectors */
-        for (i = 0; i < sb->fat_size * 2; i++)
+        for (i = 0; err == 0 && i < sb->fat_size * 2; i++)
         {
             block_ref = Cache_GetBlock(sb->cache,
                 sb->first_device_sector + sb->first_fat_sector + i,
                 &fat_block);
-            /* FIXME: Handle IO errors on cache read! */
-            memset(fat_block, 0, bsize);
-            if (i == 0)
+            if (block_ref != NULL)
             {
-                /* The first two entries are special */
-                if (sb->type == 32)
-                    *(UQUAD *) fat_block = AROS_QUAD2LE(0x0FFFFFFF0FFFFFF8);
-                else if (sb->type == 16)
-                    *(ULONG *) fat_block = AROS_LONG2LE(0xFFFFFFF8);
-                else
-                    *(ULONG *) fat_block = AROS_LONG2LE(0x00FFFFF8);
+                /* FIXME: Handle IO errors on cache read! */
+                memset(fat_block, 0, bsize);
+                if (i == 0)
+                {
+                    /* The first two entries are special */
+                    if (sb->type == 32)
+                        *(UQUAD *) fat_block =
+                            AROS_QUAD2LE(0x0FFFFFFF0FFFFFF8);
+                    else if (sb->type == 16)
+                        *(ULONG *) fat_block = AROS_LONG2LE(0xFFFFFFF8);
+                    else
+                        *(ULONG *) fat_block = AROS_LONG2LE(0x00FFFFF8);
+                }
+                Cache_MarkBlockDirty(sb->cache, block_ref);
+                Cache_FreeBlock(sb->cache, block_ref);
             }
-            Cache_MarkBlockDirty(sb->cache, block_ref);
-            Cache_FreeBlock(sb->cache, block_ref);
+            else
+                err = IoErr();
         }
 
-        /* Allocate first cluster of the root directory */
-        if (sb->type == 32)
-            AllocCluster(sb, sb->rootdir_cluster);
+        if (err == 0)
+        {
+            /* Allocate first cluster of the root directory */
+            if (sb->type == 32)
+                AllocCluster(sb, sb->rootdir_cluster);
 
-        /* Get a handle on the root directory */
-        InitDirHandle(sb, 0, &dh, FALSE, glob);
+            /* Get a handle on the root directory */
+            InitDirHandle(sb, 0, &dh, FALSE, glob);
+        }
 
-        /* Clear all entries */
-        for (i = 0; GetDirEntry(&dh, i, &dir_entry, glob) == 0; i++)
+        /* Clear all entries in the root directory */
+        for (i = 0; err == 0 && GetDirEntry(&dh, i, &dir_entry, glob) == 0;
+            i++)
         {
             memset(&dir_entry.e.entry, 0, sizeof(struct FATDirEntry));
-            UpdateDirEntry(&dir_entry, glob);
+            err = UpdateDirEntry(&dir_entry, glob);
         }
 
-        SetVolumeName(sb, ebpb->bs_vollab, FAT_MAX_SHORT_NAME);
+        if (err == 0)
+        {
+            err = SetVolumeName(sb, ebpb->bs_vollab, FAT_MAX_SHORT_NAME);
 
-        ReleaseDirHandle(&dh, glob);
-        glob->formatting = FALSE;
-        D(bug("\tRoot dir created.\n"));
+            ReleaseDirHandle(&dh, glob);
+            glob->formatting = FALSE;
+            D(bug("\tRoot dir created.\n"));
+        }
+
+        if (err == 0)
+        {
+            /* Check everything is really written to disk before we proceed */
+            if (!Cache_Flush(sb->cache))
+                err = IoErr();
+        }
     }
 
     if (GetVolumeIdentity(sb, &(sb->volume)) != 0)
@@ -600,21 +705,23 @@ LONG ReadFATSuper(struct FSSuper *sb)
             else
                 Cache_FreeBlock(sb->cache, sb->fsinfo_block);
         }
-        else
-        {
-            /* FIXME: Report IO errors to the user! */
-        }
     }
     if (sb->free_clusters == -1)
         CountFreeClusters(sb);
     if (sb->next_cluster == -1)
         sb->next_cluster = 2;
 
-    D(bug("\tFAT Filesystem successfully detected.\n"));
-    D(bug("\tFree Clusters = %ld\n", sb->free_clusters));
-    D(bug("\tNext Free Cluster = %ld\n", sb->next_cluster));
     FreeMem(boot, bsize);
-    return 0;
+    if (err != 0)
+        FreeFATSuper(sb);
+    else
+    {
+        D(bug("\tFAT Filesystem successfully detected.\n"));
+        D(bug("\tFree Clusters = %ld\n", sb->free_clusters));
+        D(bug("\tNext Free Cluster = %ld\n", sb->next_cluster));
+    }
+
+    return err;
 }
 
 static LONG GetVolumeIdentity(struct FSSuper *sb,
@@ -682,7 +789,7 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
 LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
 {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
-    LONG err;
+    LONG td_err;
     ULONG bsize = de->de_SizeBlock * 4;
     struct FATBootSector *boot;
     struct FATEBPB *ebpb;
@@ -830,23 +937,23 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
 
     D(bug("[fat] boot sector at sector %ld\n", first_device_sector));
 
-    if ((err = AccessDisk(TRUE, first_device_sector, 1, bsize,
+    if ((td_err = AccessDisk(TRUE, first_device_sector, 1, bsize,
         (UBYTE *) boot, glob)) != 0)
     {
-        D(bug("[fat] couldn't write boot block (%ld)\n", err));
+        D(bug("[fat] couldn't write boot block (%ld)\n", td_err));
         FreeMem(boot, bsize);
-        return err;
+        return ERROR_UNKNOWN;
     }
 
     /* Write back-up boot sector and FS info sector */
     if (type == 32)
     {
-        if ((err = AccessDisk(TRUE, first_device_sector + 6, 1, bsize,
+        if ((td_err = AccessDisk(TRUE, first_device_sector + 6, 1, bsize,
             (UBYTE *) boot, glob)) != 0)
         {
-            D(bug("[fat] couldn't write back-up boot block (%ld)\n", err));
+            D(bug("[fat] couldn't write back-up boot block (%ld)\n", td_err));
             FreeMem(boot, bsize);
-            return err;
+            return ERROR_UNKNOWN;
         }
 
         fsinfo = (APTR) boot;
@@ -858,12 +965,12 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
         fsinfo->free_count = AROS_LONG2LE(0xFFFFFFFF);
         fsinfo->next_free = AROS_LONG2LE(0xFFFFFFFF);
 
-        if ((err = AccessDisk(TRUE, first_device_sector + 1, 1, bsize,
+        if ((td_err = AccessDisk(TRUE, first_device_sector + 1, 1, bsize,
             (UBYTE *) fsinfo, glob)) != 0)
         {
-            D(bug("[fat] couldn't write back-up boot block (%ld)\n", err));
+            D(bug("[fat] couldn't write back-up boot block (%ld)\n", td_err));
             FreeMem(boot, bsize);
-            return err;
+            return ERROR_UNKNOWN;
         }
     }
 
@@ -879,7 +986,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     struct Globals *glob = sb->glob;
     struct DirHandle dh;
     struct DirEntry de;
-    LONG err;
+    LONG err, td_err;
     int i;
     struct DosEnvec *dosenv = BADDR(glob->fssm->fssm_Environ);
     ULONG bsize = dosenv->de_SizeBlock * 4;
@@ -894,12 +1001,12 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     if (!boot)
         return ERROR_NO_FREE_STORE;
 
-    if ((err = AccessDisk(FALSE, sb->first_device_sector, 1, bsize,
+    if ((td_err = AccessDisk(FALSE, sb->first_device_sector, 1, bsize,
         (UBYTE *) boot, glob)) != 0)
     {
-        D(bug("[fat] couldn't read boot block (%ld)\n", err));
+        D(bug("[fat] couldn't read boot block (%ld)\n", td_err));
         FreeMem(boot, bsize);
-        return err;
+        return ERROR_UNKNOWN;
     }
 
     D(bug("[fat] searching root directory for volume name\n"));
@@ -963,9 +1070,9 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
         CopyMem(de.e.entry.name, boot->ebpbs.ebpb.bs_vollab,
             FAT_MAX_SHORT_NAME);
 
-    if ((err = AccessDisk(TRUE, sb->first_device_sector, 1, bsize,
-                (UBYTE *) boot, glob)) != 0)
-        D(bug("[fat] couldn't write boot block (%ld)\n", err));
+    if ((td_err = AccessDisk(TRUE, sb->first_device_sector, 1, bsize,
+        (UBYTE *) boot, glob)) != 0)
+        D(bug("[fat] couldn't write boot block (%ld)\n", td_err));
     FreeMem(boot, bsize);
 
     /* Update name in SB */

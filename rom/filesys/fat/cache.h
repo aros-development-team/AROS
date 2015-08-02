@@ -51,7 +51,7 @@ VOID Cache_FreeBlock(APTR cache, APTR block);
 VOID Cache_MarkBlockDirty(APTR cache, APTR block);
 BOOL Cache_Flush(APTR cache);
 
-ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
+LONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
     UBYTE *data, APTR priv);
 
 #endif
