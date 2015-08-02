@@ -574,6 +574,7 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             case MUIA_Virtgroup_Left:
             case MUIA_Virtgroup_Top:
             case MUIA_AppMessage:
+            case MUIA_Timer:
                 tag->ti_Tag = TAG_IGNORE;
                 break;
             case MUIA_Selected:
