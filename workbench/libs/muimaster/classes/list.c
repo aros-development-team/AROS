@@ -10,6 +10,7 @@
 #include <graphics/gfx.h>
 #include <graphics/gfxmacros.h>
 #include <graphics/view.h>
+#include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -163,11 +164,35 @@ struct MUI_ListData
     Object *area;
     BOOL area_replaced;
 
+    /***************************/
     /* Former Listview members */
+    /***************************/
+
     Object *vert;
     IPTR scroller_pos;
+    BOOL read_only;
+    IPTR multiselect;
+
+    /* clicked column */
+    LONG click_column;
+    LONG def_click_column;
+
+    LONG mouse_click;            /* see below if mouse is held down */
+
+    /* double click */
+    ULONG last_secs;
+    ULONG last_mics;
+    ULONG last_active;
+
+    struct MUI_EventHandlerNode ehn;
+
+    /* user prefs */
+    ListviewMulti prefs_multi;
 
 };
+
+#define MOUSE_CLICK_ENTRY 1     /* on entry clicked */
+#define MOUSE_CLICK_TITLE 2     /* on title clicked */
 
 #define LIST_ADJUSTWIDTH   (1<<0)
 #define LIST_ADJUSTHEIGHT  (1<<1)
@@ -690,6 +715,14 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->flags = LIST_SHOWDROPMARKS;
     data->area_replaced = FALSE;
 
+    data->last_active = -1;
+
+    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
+    data->ehn.ehn_Priority = 0;
+    data->ehn.ehn_Flags = 0;
+    data->ehn.ehn_Object = obj;
+    data->ehn.ehn_Class = cl;
+
     area = (Object *)GetTagData(MUIA_List_ListArea, (IPTR) 0, msg->ops_AttrList);
 
     if (!area)
@@ -783,6 +816,14 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_Listview_ScrollerPos:
             data->scroller_pos = tag->ti_Data;
+            break;
+
+        case MUIA_Listview_Input:
+            data->read_only = !tag->ti_Data;
+            break;
+
+        case MUIA_Listview_MultiSelect:
+            data->multiselect = tag->ti_Data;
             break;
         }
     }
@@ -1150,6 +1191,18 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             /* Swallow this so the Area class doesn't redraw us */
             tag->ti_Tag = TAG_IGNORE;
             break;
+
+        case MUIA_Disabled:
+            if (_flags(obj) & MADF_SETUP)
+            {
+                /* Stop listening for events we only listen to when mouse
+                   button is down: we will not be informed of the button
+                   being released */
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
+                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+            }
+            break;
         }
     }
 
@@ -1204,7 +1257,9 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_List_DragSortable:
         STORE = data->flags & LIST_DRAGSORTABLE;
         return 1;
-        break;
+    case MUIA_Listview_ClickColumn:
+        STORE = data->click_column;
+        return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg))
@@ -1239,6 +1294,17 @@ IPTR List__MUIM_Setup(struct IClass *cl, Object *obj,
     data->list_selcur =
         zune_imspec_setup(MUII_ListSelCur, muiRenderInfo(obj));
 
+    data->prefs_multi = muiGlobalInfo(obj)->mgi_Prefs->list_multi;
+    if (data->multiselect == MUIV_Listview_MultiSelect_Default)
+    {
+        if (data->prefs_multi == LISTVIEW_MULTI_SHIFTED)
+            data->multiselect = MUIV_Listview_MultiSelect_Shifted;
+        else
+            data->multiselect = MUIV_Listview_MultiSelect_Always;
+    }
+
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+
     return 1;
 }
 
@@ -1261,6 +1327,9 @@ IPTR List__MUIM_Cleanup(struct IClass *cl, Object *obj,
     zune_imspec_cleanup(data->list_cursor);
     zune_imspec_cleanup(data->list_select);
     zune_imspec_cleanup(data->list_selcur);
+
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
+    data->mouse_click = 0;
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
@@ -2942,6 +3011,307 @@ static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
     return (IPTR) img;
 }
 
+static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely)
+{
+    LONG new, first, entries, visible;
+
+    new = first = XGET(obj, MUIA_List_First);
+    entries = XGET(obj, MUIA_List_Entries);
+    visible = XGET(obj, MUIA_List_Visible);
+
+    new += wheely;
+
+    if (new > entries - visible)
+    {
+        new = entries - visible;
+    }
+
+    if (new < 0)
+    {
+        new = 0;
+    }
+
+    if (new != first)
+    {
+        set(obj, MUIA_List_First, new);
+    }
+}
+
+/**************************************************************************
+ MUIM_HandleEvent
+**************************************************************************/
+IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct MUI_List_TestPos_Result pos;
+    LONG seltype, old_active, new_active, visible, first, last, i;
+    IPTR result = 0;
+    BOOL select = FALSE, clear = FALSE, range_select = FALSE, changing;
+    WORD delta;
+    typeof(msg->muikey) muikey = msg->muikey;
+
+    new_active = old_active = XGET(obj, MUIA_List_Active);
+    visible = XGET(obj, MUIA_List_Visible);
+
+    if (muikey != MUIKEY_NONE)
+    {
+        result = MUI_EventHandlerRC_Eat;
+
+        /* Make keys behave differently in read-only mode */
+        if (data->read_only)
+        {
+            switch (muikey)
+            {
+            case MUIKEY_TOP:
+                muikey = MUIKEY_LINESTART;
+                break;
+
+            case MUIKEY_BOTTOM:
+                muikey = MUIKEY_LINEEND;
+                break;
+
+            case MUIKEY_UP:
+                muikey = MUIKEY_LEFT;
+                break;
+
+            case MUIKEY_DOWN:
+            case MUIKEY_PRESS:
+                muikey = MUIKEY_RIGHT;
+                break;
+            }
+        }
+
+        switch (muikey)
+        {
+        case MUIKEY_TOGGLE:
+            if (data->multiselect != MUIV_Listview_MultiSelect_None
+                && !data->read_only)
+            {
+                select = TRUE;
+                data->click_column = data->def_click_column;
+                new_active = MUIV_List_Active_Down;
+            }
+            else
+            {
+                DoMethod(obj, MUIM_List_Jump, 0);
+                muikey = MUIKEY_NONE;
+            }
+            break;
+
+        case MUIKEY_TOP:
+            new_active = MUIV_List_Active_Top;
+            break;
+
+        case MUIKEY_BOTTOM:
+            new_active = MUIV_List_Active_Bottom;
+            break;
+
+        case MUIKEY_LEFT:
+        case MUIKEY_WORDLEFT:
+            DoMethod(obj, MUIM_List_Jump, MUIV_List_Jump_Up);
+            break;
+
+        case MUIKEY_RIGHT:
+        case MUIKEY_WORDRIGHT:
+            DoMethod(obj, MUIM_List_Jump, MUIV_List_Jump_Down);
+            break;
+
+        case MUIKEY_LINESTART:
+            DoMethod(obj, MUIM_List_Jump, MUIV_List_Jump_Top);
+            break;
+
+        case MUIKEY_LINEEND:
+            DoMethod(obj, MUIM_List_Jump, MUIV_List_Jump_Bottom);
+            break;
+
+        case MUIKEY_UP:
+            new_active = MUIV_List_Active_Up;
+            break;
+
+        case MUIKEY_DOWN:
+            new_active = MUIV_List_Active_Down;
+            break;
+
+        case MUIKEY_PAGEUP:
+            if (data->read_only)
+                DoWheelMove(cl, obj, -visible);
+            else
+                new_active = MUIV_List_Active_PageUp;
+            break;
+
+        case MUIKEY_PAGEDOWN:
+            if (data->read_only)
+                DoWheelMove(cl, obj, visible);
+            else
+                new_active = MUIV_List_Active_PageDown;
+            break;
+
+        default:
+            result = 0;
+        }
+    }
+    else if (msg->imsg)
+    {
+        DoMethod(obj, MUIM_List_TestPos, msg->imsg->MouseX, msg->imsg->MouseY, (IPTR) &pos);
+
+        switch (msg->imsg->Class)
+        {
+        case IDCMP_MOUSEBUTTONS:
+            if (msg->imsg->Code == SELECTDOWN)
+            {
+                if (_isinobject(data->area, msg->imsg->MouseX, msg->imsg->MouseY))
+                {
+                    data->mouse_click = MOUSE_CLICK_ENTRY;
+
+                    if (!data->read_only && pos.entry != -1)
+                    {
+                        new_active = pos.entry;
+
+                        clear = (data->multiselect == MUIV_Listview_MultiSelect_Shifted
+                            && (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0);
+                        seltype = clear ? MUIV_List_Select_On: MUIV_List_Select_Toggle;
+                        select = data->multiselect != MUIV_Listview_MultiSelect_None;
+
+                        /* Handle MUIA_Listview_ClickColumn */
+                        data->click_column = pos.column;
+                        superset(cl, obj, MUIA_Listview_ClickColumn,
+                            data->click_column);
+
+                        /* Handle double clicking */
+                        if (data->last_active == pos.entry
+                            && DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros))
+                        {
+                            set(obj, MUIA_Listview_DoubleClick, TRUE);
+                            data->last_active = -1;
+                            data->last_secs = data->last_mics = 0;
+                        }
+                        else
+                        {
+                            data->last_active = pos.entry;
+                            data->last_secs = msg->imsg->Seconds;
+                            data->last_mics = msg->imsg->Micros;
+                        }
+
+                        /* Look out for mouse movement, timer and
+                           inactive-window events while mouse button is
+                           down */
+                        DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
+                        data->ehn.ehn_Events |= (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS |IDCMP_INACTIVEWINDOW);
+                        DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+                    }
+                }
+            }
+            else
+            {
+                /* Activate object */
+                if (msg->imsg->Code == SELECTUP && data->mouse_click)
+                {
+                    set(_win(obj), MUIA_Window_ActiveObject, (IPTR)obj);
+                    data->mouse_click = 0;
+                }
+
+                /* Restore normal event mask */
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
+                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+            }
+            break;
+
+        case IDCMP_MOUSEMOVE:
+        case IDCMP_INTUITICKS:
+            if (pos.flags & MUI_LPR_ABOVE)
+                new_active = MUIV_List_Active_Up;
+            else if (pos.flags & MUI_LPR_BELOW)
+                new_active = MUIV_List_Active_Down;
+            else
+                new_active = pos.entry;
+
+            select = new_active != old_active && data->multiselect != MUIV_Listview_MultiSelect_None;
+            if (select)
+            {
+                DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active, MUIV_List_Select_Ask, &seltype);
+                range_select = new_active >= 0;
+            }
+
+            break;
+
+        case IDCMP_INACTIVEWINDOW:
+            /* Stop listening for events we only listen to when mouse button is
+               down: we will not be informed of the button being released */
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
+            data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+            break;
+
+        case IDCMP_RAWKEY:
+            /* Scroll wheel */
+            if (_isinobject(data->vert, msg->imsg->MouseX, msg->imsg->MouseY))
+                delta = 1;
+            else if (_isinobject(data->area, msg->imsg->MouseX, msg->imsg->MouseY))
+                delta = 4;
+            else
+                delta = 0;
+
+            if (delta != 0)
+            {
+                switch (msg->imsg->Code)
+                {
+                case RAWKEY_NM_WHEEL_UP:
+                    DoWheelMove(cl, obj, -delta);
+                    break;
+
+                case RAWKEY_NM_WHEEL_DOWN:
+                    DoWheelMove(cl, obj, delta);
+                    break;
+                }
+                result = MUI_EventHandlerRC_Eat;
+            }
+            break;
+        }
+    }
+
+    /* Decide in advance if any selections may change */
+    changing = clear || muikey == MUIKEY_TOGGLE || select;
+
+    /* Change selected and active entries */
+    if (changing)
+        set(obj, MUIA_Listview_SelectChange, TRUE);
+
+    if (clear)
+    {
+        DoMethod(obj, MUIM_List_Select, MUIV_List_Select_All, MUIV_List_Select_Off, NULL);
+    }
+
+    if (muikey == MUIKEY_TOGGLE)
+    {
+        DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active, MUIV_List_Select_Toggle, NULL);
+        select = FALSE;
+    }
+
+    if (new_active != old_active)
+        set(obj, MUIA_List_Active, new_active);
+
+    if (select)
+    {
+        if (range_select)
+        {
+            if (old_active < new_active)
+                first = old_active + 1, last = new_active;
+            else
+                first = new_active, last = old_active - 1;
+            for (i = first; i <= last; i++)
+                DoMethod(obj, MUIM_List_Select, i, seltype, NULL);
+        }
+        else
+            DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active, seltype, NULL);
+    }
+
+    if (changing)
+        set(obj, MUIA_Listview_SelectChange, FALSE);
+
+    return result;
+}
+
 /**************************************************************************
  Dispatcher
 **************************************************************************/
@@ -2962,6 +3332,8 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
         return List__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
     case MUIM_Cleanup:
         return List__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+    case MUIM_HandleEvent:
+        return List__MUIM_HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
     case MUIM_AskMinMax:
         return List__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
     case MUIM_Show:
