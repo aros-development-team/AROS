@@ -158,6 +158,8 @@ struct MUI_ListData
     UWORD prefs_linespacing;
     BOOL prefs_smoothed;
     UWORD prefs_smoothval;
+
+    Object *area;
 };
 
 #define LIST_ADJUSTWIDTH   (1<<0)
@@ -598,14 +600,14 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
     int old_entries_visible = data->entries_visible;
     int old_entries_top_pixel = data->entries_top_pixel;
 
-    data->entries_visible = (_mheight(obj) - data->title_height)
+    data->entries_visible = (_mheight(data->area) - data->title_height)
         / (data->entry_maxheight /* + data->prefs_linespacing */ );
 
     /* Distribute extra vertical space evenly between top and bottom of
      * list */
 
-    data->entries_top_pixel = _mtop(obj) + data->title_height
-        + (_mheight(obj) - data->title_height
+    data->entries_top_pixel = _mtop(data->area) + data->title_height
+        + (_mheight(data->area) - data->title_height
         -
         data->entries_visible *
         (data->entry_maxheight /* + data->prefs_linespacing */ )) / 2;
@@ -639,12 +641,32 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tags;
     APTR *array = NULL;
     LONG new_entries_active = MUIV_List_Active_Off;
+    struct TagItem rectattrs[2] = {{TAG_IGNORE, TAG_IGNORE }, {TAG_DONE, TAG_DONE}};
+
+    /* search for MUIA_Frame as it has to be passed to rectangle object */
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    {
+        if (tag->ti_Tag == MUIA_Frame)
+        {
+            rectattrs[0].ti_Tag = MUIA_Frame;
+            rectattrs[0].ti_Data = tag->ti_Data;
+            tag->ti_Tag = TAG_IGNORE;
+            break;
+        }
+    }
 
     obj = (Object *) DoSuperNewTags(cl, obj, NULL,
+        MUIA_Group_Horiz, TRUE,
+        MUIA_InnerLeft, 0,
+        MUIA_InnerRight, 0,
+        MUIA_Group_Spacing, 0,
         MUIA_Font, MUIV_Font_List,
         MUIA_ShowSelState, FALSE,
         MUIA_InputMode, MUIV_InputMode_RelVerify,
-        MUIA_Background, MUII_ListBack, TAG_MORE, (IPTR) msg->ops_AttrList);
+        MUIA_Background, MUII_ListBack,
+        TAG_MORE, (IPTR) msg->ops_AttrList,
+        TAG_DONE);
+
     if (!obj)
         return FALSE;
 
@@ -658,6 +680,10 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->default_compare_hook.h_SubEntry = 0;
     data->compare_hook = &(data->default_compare_hook);
     data->flags = LIST_SHOWDROPMARKS;
+
+    data->area = RectangleObject, TAG_MORE, (IPTR) rectattrs, End;
+
+    DoMethod(obj, OM_ADDMEMBER, data->area);
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -1330,7 +1356,7 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos,
         return;
 
     DisplayEntry(cl, obj, entry_pos);
-    x1 = _mleft(obj);
+    x1 = _mleft(data->area);
 
     for (col = 0; col < data->columns; col++)
     {
@@ -1384,17 +1410,17 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     if ((msg->flags & MADF_DRAWUPDATE) == 0 || data->update == 1)
     {
-        DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
-            _mwidth(obj), _mheight(obj),
+        DoMethod(obj, MUIM_DrawBackground, _mleft(data->area), _mtop(data->area),
+            _mwidth(data->area), _mheight(data->area),
             0, data->entries_first * data->entry_maxheight, 0);
     }
 
-    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
-        _mwidth(obj), _mheight(obj));
+    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(data->area), _mtop(data->area),
+        _mwidth(data->area), _mheight(data->area));
 
     if ((msg->flags & MADF_DRAWUPDATE) == 0 || data->update == 1)
     {
-        y = _mtop(obj);
+        y = _mtop(data->area);
         /* Draw Title
          */
         if (data->title_height && data->title)
@@ -1402,12 +1428,12 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             List_DrawEntry(cl, obj, ENTRY_TITLE, y);
             y += data->entries[ENTRY_TITLE]->height;
             SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-            Move(_rp(obj), _mleft(obj), y);
-            Draw(_rp(obj), _mright(obj), y);
+            Move(_rp(obj), _mleft(data->area), y);
+            Draw(_rp(obj), _mright(data->area), y);
             SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
             y++;
-            Move(_rp(obj), _mleft(obj), y);
-            Draw(_rp(obj), _mright(obj), y);
+            Move(_rp(obj), _mleft(data->area), y);
+            Draw(_rp(obj), _mright(data->area), y);
         }
     }
 
@@ -1426,8 +1452,8 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                 (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
 
             ScrollRaster(_rp(obj), 0, diffy * data->entry_maxheight,
-                _mleft(obj), y,
-                _mright(obj),
+                _mleft(data->area), y,
+                _mright(data->area),
                 y + data->entry_maxheight * data->entries_visible);
 
             scroll_caused_damage =
@@ -1447,10 +1473,10 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
         top = y;
         bottom = y + (end - start) * data->entry_maxheight;
 
-        DoMethod(obj, MUIM_DrawBackground, _mleft(obj), top,
-            _mwidth(obj), bottom - top + 1,
+        DoMethod(obj, MUIM_DrawBackground, _mleft(data->area), top,
+            _mwidth(data->area), bottom - top + 1,
             0,
-            top - _mtop(obj) + data->entries_first * data->entry_maxheight,
+            top - _mtop(data->area) + data->entries_first * data->entry_maxheight,
             0);
     }
 
@@ -1482,15 +1508,15 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             if (highlight != NULL)
             {
                 zune_imspec_draw(highlight, muiRenderInfo(obj),
-                    _mleft(obj), y, _mwidth(obj), data->entry_maxheight,
+                    _mleft(data->area), y, _mwidth(data->area), data->entry_maxheight,
                     0, y - data->entries_top_pixel, 0);
             }
             else if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2
                 && data->update_pos == entry_pos)
             {
-                DoMethod(obj, MUIM_DrawBackground, _mleft(obj), y,
-                    _mwidth(obj), data->entry_maxheight, 0,
-                    y - _mtop(obj) +
+                DoMethod(obj, MUIM_DrawBackground, _mleft(data->area), y,
+                    _mwidth(data->area), data->entry_maxheight, 0,
+                    y - _mtop(data->area) +
                     data->entries_first * data->entry_maxheight, 0);
             }
 
@@ -1521,9 +1547,9 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
         }
     }
 
-    ULONG x1 = _mleft(obj);
+    ULONG x1 = _mleft(data->area);
     ULONG col;
-    y = _mtop(obj);
+    y = _mtop(data->area);
 
     if (data->title_height && data->title)
     {
@@ -1532,7 +1558,7 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             ULONG halfdelta = data->ci[col].delta / 2;
             x1 += data->ci[col].entries_width + halfdelta;
 
-            if (x1 + (data->ci[col].bar ? BAR_WIDTH : 0) > _mright(obj))
+            if (x1 + (data->ci[col].bar ? BAR_WIDTH : 0) > _mright(data->area))
                 break;
 
             if (data->ci[col].bar)
@@ -1553,24 +1579,24 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
         y += data->entries[ENTRY_TITLE]->height + 1;
     }
 
-    x1 = _mleft(obj);
+    x1 = _mleft(data->area);
 
     for (col = 0; col < data->columns; col++)
     {
         ULONG halfdelta = data->ci[col].delta / 2;
         x1 += data->ci[col].entries_width + halfdelta;
 
-        if (x1 + (data->ci[col].bar ? BAR_WIDTH : 0) > _mright(obj))
+        if (x1 + (data->ci[col].bar ? BAR_WIDTH : 0) > _mright(data->area))
             break;
 
         if (data->ci[col].bar)
         {
             SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
             Move(_rp(obj), x1, y);
-            Draw(_rp(obj), x1, _mbottom(obj));
+            Draw(_rp(obj), x1, _mbottom(data->area));
             SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
             Move(_rp(obj), x1 + 1, y);
-            Draw(_rp(obj), x1 + 1, _mbottom(obj));
+            Draw(_rp(obj), x1 + 1, _mbottom(data->area));
 
             x1 += BAR_WIDTH;
         }
@@ -2564,7 +2590,7 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
     struct MUI_List_TestPos_Result *result = msg->res;
     LONG col = -1, row = -1;
     UWORD flags = 0, i;
-    LONG mx = msg->x - _left(obj);
+    LONG mx = msg->x - _left(data->area);
     LONG entries_visible;
 
     if (data->entries_visible <= data->entries_num)
@@ -2589,7 +2615,7 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
 
     if (mx < 0)
         flags |= MUI_LPR_LEFT;
-    else if (mx >= _width(obj))
+    else if (mx >= _width(data->area))
         flags |= MUI_LPR_RIGHT;
     else
     {
@@ -2706,8 +2732,8 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
             * data->entry_maxheight;
         if (y != data->drop_mark_y)
         {
-            DoMethod(obj, MUIM_DrawBackground, _mleft(obj), data->drop_mark_y,
-                _mwidth(obj), 1, 0, 0, 0);
+            DoMethod(obj, MUIM_DrawBackground, _mleft(data->area), data->drop_mark_y,
+                _mwidth(data->area), 1, 0, 0, 0);
 
             /* Draw new drop mark and store its position */
 
@@ -2715,8 +2741,8 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
                 JAM2);
             old_pattern = rp->LinePtrn;
             SetDrPt(rp, 0xF0F0);
-            Move(rp, _mleft(obj), y);
-            Draw(rp, _mright(obj), y);
+            Move(rp, _mleft(data->area), y);
+            Draw(rp, _mright(data->area), y);
             SetDrPt(rp, old_pattern);
             data->drop_mark_y = y;
         }
@@ -2793,18 +2819,18 @@ static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
     LONG depth;
 
     /* Get info on dragged entry */
-    DoMethod(obj, MUIM_List_TestPos, _left(obj) - msg->touchx,
-        _top(obj) - msg->touchy, (IPTR) &pos);
+    DoMethod(obj, MUIM_List_TestPos, _left(data->area) - msg->touchx,
+        _top(data->area) - msg->touchy, (IPTR) &pos);
     if (pos.entry == -1)
         success = FALSE;
 
     if (success)
     {
         /* Get boundaries of entry */
-        width = _mwidth(obj);
+        width = _mwidth(data->area);
         height = data->entry_maxheight;
-        left = _mleft(obj);
-        top = _top(obj) - msg->touchy
+        left = _mleft(data->area);
+        top = _top(data->area) - msg->touchy
             - (pos.yoffset + data->entry_maxheight / 2);
 
         /* Allocate drag image structure */
