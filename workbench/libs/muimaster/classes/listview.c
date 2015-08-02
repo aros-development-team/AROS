@@ -17,31 +17,9 @@ extern struct Library *MUIMasterBase;
 struct MUI_ListviewData
 {
     Object *list;
-//    struct Hook hook;
     struct Hook selfnotify_hook;
     BOOL noforward;
 };
-
-#define PROP_VERT_FIRST   1
-
-//ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
-//{
-//    struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-//    SIPTR type = (SIPTR) msg[0];
-//    SIPTR val = (SIPTR) msg[1];
-//
-//    D(bug("[ListView] List 0x%p, Event %d, value %ld\n", data->list, type,
-//            val));
-//
-//    switch (type)
-//    {
-//    case PROP_VERT_FIRST:
-//        get(data->vert, MUIA_Prop_First, &val);
-//        nnset(data->list, MUIA_List_VertProp_First, val);
-//        break;
-//    }
-//    return 0;
-//}
 
 ULONG SelfNotify_Function(struct Hook *hook, APTR obj, void **msg)
 {
@@ -85,10 +63,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->list = list;
 
-//    data->hook.h_Entry = HookEntry;
-//    data->hook.h_SubEntry = (HOOKFUNC) Listview_Function;
-//    data->hook.h_Data = data;
-
     data->selfnotify_hook.h_Entry = HookEntry;
     data->selfnotify_hook.h_SubEntry = (HOOKFUNC) SelfNotify_Function;
     data->selfnotify_hook.h_Data = data;
@@ -107,10 +81,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 break;
         }
     }
-
-//    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
-//        4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
-//        MUIV_TriggerValue); FIXME
 
     DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
         (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,

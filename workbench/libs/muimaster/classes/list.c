@@ -192,7 +192,7 @@ struct MUI_ListData
     BOOL select_change;
     BOOL doubleclick;
 
-
+    struct Hook hook;
 };
 
 #define MOUSE_CLICK_ENTRY 1     /* on entry clicked */
@@ -667,6 +667,24 @@ AROS_UFH3S(int, default_compare_func,
     AROS_USERFUNC_EXIT
 }
 
+#define PROP_VERT_FIRST   1
+
+ULONG List_Function(struct Hook *hook, Object * obj, void **msg)
+{
+    struct MUI_ListData *data = (struct MUI_ListData *)hook->h_Data;
+    SIPTR type = (SIPTR) msg[0];
+    SIPTR val = (SIPTR) msg[1];
+
+    switch (type)
+    {
+    case PROP_VERT_FIRST:
+        get(data->vert, MUIA_Prop_First, &val);
+        nnset(obj, MUIA_List_VertProp_First, val);
+        break;
+    }
+    return 0;
+}
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/
@@ -726,6 +744,10 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Flags = 0;
     data->ehn.ehn_Object = obj;
     data->ehn.ehn_Class = cl;
+
+    data->hook.h_Entry = HookEntry;
+    data->hook.h_SubEntry = (HOOKFUNC) List_Function;
+    data->hook.h_Data = data;
 
     area = (Object *)GetTagData(MUIA_List_ListArea, (IPTR) 0, msg->ops_AttrList);
 
@@ -860,9 +882,14 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         get(obj, MUIA_List_VertProp_Visible, &visible);
         get(obj, MUIA_List_VertProp_Entries, &entries);
 
-        SetAttrs(data->vert,
+        SetAttrs(vert,
             MUIA_Prop_First, first,
             MUIA_Prop_Visible, visible, MUIA_Prop_Entries, entries, TAG_DONE);
+
+
+        DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
+            4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
+            MUIV_TriggerValue);
 
         /* Pass prop object as DestObj (based on code in NList) */
         DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
