@@ -2949,7 +2949,7 @@ BOOPSI_DISPATCHER_END
 const struct __MUIBuiltinClass _MUI_List_desc =
 {
     MUIC_List,
-    MUIC_Area,
+    MUIC_Group,
     sizeof(struct MUI_ListData),
     (void *) List_Dispatcher
 };
