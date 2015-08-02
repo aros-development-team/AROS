@@ -390,6 +390,11 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_Virtgroup_Left: break;
     case MUIA_Virtgroup_Top: break;
     case 0x9d510020 /*MUIA_NListview_NList*/: break;
+    case MUIA_Listview_DoubleClick: break;
+    case MUIA_Listview_SelectChange: break;
+    case MUIA_Timer: break;
+    case MUIA_Selected: break;
+
     default:
         bug("[Listtree] OM_GET: passing to parent class %x\n", msg->opg_AttrID);
     }
