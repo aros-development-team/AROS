@@ -34,6 +34,9 @@
 #undef SysBase
 #undef UtilityBase
 
+static LONG InitDiskHandler(struct Globals *glob);
+static void CleanupDiskHandler(struct Globals *glob);
+
 static void InitCharsetTables(struct Globals *glob)
 {
     int i;
@@ -212,7 +215,7 @@ static AROS_INTH1(DiskChangeIntHandler, struct IntData *, MyIntData)
     AROS_INTFUNC_EXIT
 }
 
-LONG InitDiskHandler(struct Globals *glob)
+static LONG InitDiskHandler(struct Globals *glob)
 {
     struct FileSysStartupMsg *fssm = glob->fssm;
     LONG err;
@@ -239,7 +242,7 @@ LONG InitDiskHandler(struct Globals *glob)
                     (struct IORequest *)glob->diskioreq, flags) == 0)
                 {
                     D(bug("\tDevice successfully opened\n"));
-                    Probe_64bit_support(glob);
+                    Probe64BitSupport(glob);
 
                     if ((glob->diskchgreq =
                         AllocVec(sizeof(struct IOExtTD), MEMF_PUBLIC)))
@@ -309,7 +312,7 @@ LONG InitDiskHandler(struct Globals *glob)
     return err;
 }
 
-void CleanupDiskHandler(struct Globals *glob)
+static void CleanupDiskHandler(struct Globals *glob)
 {
     D(bug("\tFreeing handler resources:\n"));
 

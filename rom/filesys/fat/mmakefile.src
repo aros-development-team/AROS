@@ -4,8 +4,8 @@ include $(TOP)/config/make.cfg
 
 USER_LDFLAGS := -static
 
-FILES := cache direntry disk fat file lock main names packet\
- ops support notify timer
+FILES := cache direntry date disk fat file lock main names notify ops packet\
+ support timer volume
 
 #MM- kernel-fs-fat : includes linklibs
 
