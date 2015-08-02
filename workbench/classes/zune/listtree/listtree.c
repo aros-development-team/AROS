@@ -18,7 +18,23 @@
 
 #include <aros/debug.h>
 
-#define MUIA_List_ListArea  (MUIB_List | 0x00000003)
+#define MUIA_List_ListArea      (MUIB_List | 0x00000003)
+
+#define MUIA_List_Prop_Entries  (MUIB_MUI | 0x0042a8f5)     /* .sg LONG  PRIV */
+#define MUIA_List_Prop_Visible  (MUIB_MUI | 0x004273e9)     /* .sg LONG  PRIV */
+#define MUIA_List_Prop_First    (MUIB_MUI | 0x00429df3)     /* .sg LONG  PRIV */
+
+#define MUIA_List_VertProp_Entries  MUIA_List_Prop_Entries     /* PRIV */
+#define MUIA_List_VertProp_Visible  MUIA_List_Prop_Visible     /* PRIV */
+#define MUIA_List_VertProp_First    MUIA_List_Prop_First       /* PRIV */
+
+struct ListImage
+{
+    struct MinNode  node;
+    Object          *obj;
+};
+
+#define MADF_SETUP             (1<< 28) /* PRIV - zune-specific */
 
 /* Relations:
  * MUIS_Listtree_Treenode -> MUI_NListtree_Treenode via MUIS_Listtree_TreeNodeInt.ref
@@ -116,11 +132,6 @@ static IPTR DestructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NList
     return 0;
 }
 
-#define NEWHANDLE(attrname)                                         \
-    case(attrname):                                                 \
-        bug("[Listtree] OM_NEW:%s - unsupported\n", #attrname);     \
-        break;
-
 #define CONV(AATTR, BATTR)                                          \
     case(AATTR):                                                    \
         convtags[i].ti_Tag = BATTR;                                 \
@@ -136,7 +147,6 @@ static IPTR DestructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NList
 #define NOTIFY_FORWARD(AATTR)                                       \
     DoMethod(data->nlisttree, MUIM_Notify, AATTR, MUIV_EveryTime,   \
         obj, 4, MUIM_CallHook, &data->notifysimulatehook, AATTR, MUIV_TriggerValue);
-
 
 /*** Methods ****************************************************************/
 Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -209,6 +219,8 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Listtree_SortHook):
             data->sorthook = (struct Hook *)tag->ti_Data;
             break;
+
+        /* Forwarded to NListtree */
         case(MUIA_List_MinLineHeight):
         case(MUIA_List_DragSortable):
         case(MUIA_List_Title):
@@ -216,11 +228,12 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case(MUIA_Listtree_Format):
         case(MUIA_Listtree_Title):
         case(MUIA_Frame):
-            /* Forwarded to NListtree */
             break;
+
+        /* Forwarded to super class */
         case(MUIA_ContextMenu):
-            /* Forwarded to super class */
             break;
+
         default:
             bug("[Listtree] OM_NEW: unhandled %x\n", tag->ti_Tag);
         }
@@ -278,31 +291,10 @@ IPTR Listtree__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-#define MUIA_List_Prop_Entries  /* PRIV */ \
-    (MUIB_MUI | 0x0042a8f5)     /* .sg LONG  PRIV */
-#define MUIA_List_Prop_Visible  /* PRIV */ \
-    (MUIB_MUI | 0x004273e9)     /* .sg LONG  PRIV */
-#define MUIA_List_Prop_First    /* PRIV */ \
-    (MUIB_MUI | 0x00429df3)     /* .sg LONG  PRIV */
-
-#define MUIA_List_VertProp_Entries  /* PRIV */ \
-    MUIA_List_Prop_Entries     /* PRIV */
-#define MUIA_List_VertProp_Visible  /* PRIV */ \
-    MUIA_List_Prop_Visible     /* PRIV */
-#define MUIA_List_VertProp_First  /* PRIV */ \
-    MUIA_List_Prop_First       /* PRIV */
-
-#define SETHANDLE(attrname)                                         \
-    case(attrname):                                                 \
-        bug("[Listtree] OM_SET:%s - unsupported\n", #attrname);     \
-        break;
-
 #define FORWARDSET(AATTR, BATTR)                    \
     case(AATTR):                                    \
         set(data->nlisttree, BATTR, tag->ti_Data);  \
         break;
-
-#define IGNORESET(AATTR)    case(AATTR): break;
 
 IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -322,8 +314,6 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         FORWARDSET(MUIA_List_Prop_First, MUIA_NList_Prop_First)
         FORWARDSET(MUIA_List_Prop_Visible, MUIA_NList_Prop_Visible)
 
-        IGNORESET(MUIA_Listview_SelectChange)
-
         case(MUIA_Listtree_Active):
             set(data->nlisttree, MUIA_NListtree_Active,
                     ((struct MUIS_Listtree_TreeNodeInt *)tag->ti_Data)->ref);
@@ -336,13 +326,19 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
 
-        SETHANDLE(MUIA_Listtree_DoubleClick)
-        case MUIA_Prop_First: break;
-        case MUIA_Prop_DoSmooth: break;
-        case MUIA_NoNotify: break;
-        case MUIA_Prop_Entries: break;
-        case MUIA_Prop_Visible: break;
-        case MUIA_Prop_DeltaFactor: break;
+        case MUIA_Listtree_DoubleClick:
+        case MUIA_Listview_SelectChange:
+        case MUIA_Prop_First:
+        case MUIA_Prop_DoSmooth:
+        case MUIA_NoNotify:
+        case MUIA_Prop_Entries:
+        case MUIA_Prop_Visible:
+        case MUIA_Prop_DeltaFactor:
+        case MUIA_Timer:
+        case MUIA_Selected:
+        case MUIA_Pressed:
+            break;
+
         default:
             bug("[Listtree] OM_SET: passing to parent class %x\n", tag->ti_Tag);
         }
@@ -351,11 +347,6 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
-
-#define GETHANDLE(attrname)                                         \
-    case(attrname):                                                 \
-        bug("[Listtree] OM_GET:%s - unsupported\n", #attrname);     \
-        break;
 
 #define FORWARDGET(AATTR, BATTR)                            \
     case(AATTR):                                            \
@@ -381,19 +372,20 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     FORWARDGET(MUIA_List_VertProp_Entries, MUIA_NList_Prop_Entries)
     FORWARDGET(MUIA_List_VertProp_Visible, MUIA_NList_Prop_Visible)
 
-    case MUIA_Disabled: break;
-    case MUIA_Parent: break;
-    case MUIA_Group_ChildList: break;
-    case MUIA_Prop_First: break;
-    case MUIA_Prop_DoSmooth: break;
-    case MUIA_Listview_List: break;
-    case MUIA_Virtgroup_Left: break;
-    case MUIA_Virtgroup_Top: break;
-    case 0x9d510020 /*MUIA_NListview_NList*/: break;
-    case MUIA_Listview_DoubleClick: break;
-    case MUIA_Listview_SelectChange: break;
-    case MUIA_Timer: break;
-    case MUIA_Selected: break;
+    case MUIA_Disabled:
+    case MUIA_Parent:
+    case MUIA_Group_ChildList:
+    case MUIA_Prop_First:
+    case MUIA_Prop_DoSmooth:
+    case MUIA_Listview_List:
+    case MUIA_Virtgroup_Left:
+    case MUIA_Virtgroup_Top:
+    case 0x9d510020 /*MUIA_NListview_NList*/:
+    case MUIA_Listview_DoubleClick:
+    case MUIA_Listview_SelectChange:
+    case MUIA_Timer:
+    case MUIA_Selected:
+        break;
 
     default:
         bug("[Listtree] OM_GET: passing to parent class %x\n", msg->opg_AttrID);
@@ -401,15 +393,6 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
-
-#define METHODSTUB(methodname)                                          \
-IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
-{                                                                       \
-    bug("[Listtree] Usupported : %s\n", #methodname);                   \
-    return (IPTR)FALSE;                                                 \
-}
-
-METHODSTUB(MUIM_Listtree_SetDropMark)
 
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
 {
@@ -674,14 +657,6 @@ IPTR Listtree__MUIM_Listtree_FindName(struct IClass *cl, Object *obj, struct MUI
         return (IPTR)NULL;
 }
 
-struct ListImage
-{
-    struct MinNode  node;
-    Object          *obj;
-};
-
-#define MADF_SETUP             (1<< 28) /* PRIV - zune-specific */
-
 IPTR DoSetupMethod(Object * obj, struct MUI_RenderInfo * info)
 {
     /* MUI set the correct render info *before* it calls MUIM_Setup so please
@@ -760,13 +735,6 @@ IPTR Listtree__MUIM_Listtree_Close(struct IClass *cl, Object *obj, struct MUIP_L
     return DoMethod(data->nlisttree, MUIM_NListtree_Close, ln, tn, msg->Flags);
 }
 
-#define FORWARDNLISTTREESUPERMETHOD(methodname)                                     \
-IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)                \
-{                                                                                   \
-    struct Listtree_DATA *data = INST_DATA(cl, obj);                                \
-    return DoMethod(data->nlisttree, MUIM_NListtreeInt_ForwardSuperMethod, msg);    \
-}
-
 #define FORWARDNLISTTREEMETHOD(methodname)                                          \
 IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)                \
 {                                                                                   \
@@ -790,3 +758,12 @@ IPTR Listtree__MUIM_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *m
 
     return DoSuperMethodA(cl, obj, msg);
 }
+
+#define METHODSTUB(methodname)                                          \
+IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
+{                                                                       \
+    bug("[Listtree] Usupported : %s\n", #methodname);                   \
+    return (IPTR)FALSE;                                                 \
+}
+
+METHODSTUB(MUIM_Listtree_SetDropMark)
