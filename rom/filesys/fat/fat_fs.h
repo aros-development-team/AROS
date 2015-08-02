@@ -24,7 +24,8 @@
 #define DEBUG_CACHESTATS    0
 #define DEBUG_MISC          0
 
-#include <devices/trackdisk.h>
+#include <dos/dos.h>
+#include <exec/interrupts.h>
 
 #include "fat_struct.h"
 

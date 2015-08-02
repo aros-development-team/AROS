@@ -15,16 +15,8 @@
 
 /* disk.c */
 void ProcessDiskChange (struct Globals *glob);
-void DoDiskInsert(struct Globals *glob);
-BOOL AttemptDestroyVolume(struct FSSuper *sb);
-void DoDiskRemove(struct Globals *glob);
-void SendVolumePacket(struct DosList *vol, ULONG action,
-    struct Globals *glob);
-LONG InitDiskHandler(struct Globals *glob);
-void CleanupDiskHandler(struct Globals *glob);
 void UpdateDisk(struct Globals *glob);
-void Probe_64bit_support(struct Globals *glob);
-void FillDiskInfo(struct InfoData *id, struct Globals *glob);
+void Probe64BitSupport(struct Globals *glob);
 
 /* packet.c */
 void ProcessPackets(struct Globals *glob);
@@ -66,23 +58,32 @@ LONG SetDirEntryName(struct DirEntry *de, STRPTR name, ULONG len);
 ULONG NumLongNameEntries(STRPTR name, ULONG len);
 
 /* fat.c */
-LONG ReadFATSuper(struct FSSuper *s);
-void FreeFATSuper(struct FSSuper *s);
-LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob);
-LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
-
+ULONG GetFat12Entry(struct FSSuper *sb, ULONG n);
+ULONG GetFat16Entry(struct FSSuper *sb, ULONG n);
+ULONG GetFat32Entry(struct FSSuper *sb, ULONG n);
+BOOL SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val);
+BOOL SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val);
+BOOL SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val);
+LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 void CountFreeClusters(struct FSSuper *sb);
 void AllocCluster(struct FSSuper *sb, ULONG cluster);
 void FreeCluster(struct FSSuper *sb, ULONG cluster);
 
+/* volume.c */
+LONG ReadFATSuper(struct FSSuper *s);
+LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob);
+LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
+LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len);
+void FillDiskInfo(struct InfoData *id, struct Globals *glob);
+void DoDiskInsert(struct Globals *glob);
+BOOL AttemptDestroyVolume(struct FSSuper *sb);
+void DoDiskRemove(struct Globals *glob);
+
+/* date.c */
 void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds,
-    struct Globals *glob);
-void ConvertSysDate(ULONG secs, UWORD *date, UWORD *time,
     struct Globals *glob);
 void ConvertDOSDate(struct DateStamp *ds, UWORD *date, UWORD *time,
     struct Globals *glob);
-LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len);
-LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 
 /* file.c */
 LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
