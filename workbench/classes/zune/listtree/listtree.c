@@ -766,4 +766,5 @@ IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
     return (IPTR)FALSE;                                                 \
 }
 
+/* SetDropMark has no counterpart in NListtree and no documentation */
 METHODSTUB(MUIM_Listtree_SetDropMark)
