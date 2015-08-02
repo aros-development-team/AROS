@@ -1294,6 +1294,9 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_Listview_SelectChange:
         STORE = data->select_change;
         return 1;
+    case MUIA_Listview_List:
+        STORE = (IPTR)obj;
+        return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg))
