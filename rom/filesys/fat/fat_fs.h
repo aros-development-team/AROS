@@ -242,7 +242,7 @@ struct Globals
     /* fs */
     struct DosList *devnode;
     struct FileSysStartupMsg *fssm;
-    LONG quit;
+    BOOL quit;
     struct DosPacket *death_packet;
     BOOL autodetect;
 
@@ -256,16 +256,16 @@ struct Globals
     ULONG last_num;    /* last block number that was outside boundaries */
     UWORD readcmd;
     UWORD writecmd;
-    char timer_active;
-    char restart_timer;
+    BOOL timer_active;
+    BOOL restart_timer;
 
     /* volumes */
     struct FSSuper *sb;    /* current sb */
     struct MinList sblist;   /* sbs with outstanding locks or notifies */
 
     /* disk status */
-    LONG disk_inserted;
     LONG disk_inhibited;
+    BOOL disk_inserted;
     BOOL formatting;
 
     /* Character sets translation */
