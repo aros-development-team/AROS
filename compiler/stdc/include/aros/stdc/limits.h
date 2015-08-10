@@ -1,5 +1,5 @@
 /*
- *  Copyright © 2004-2012 The AROS Developmemt Team. All rights reserved.
+ *  Copyright © 2004-2015 The AROS Developmemt Team. All rights reserved.
  *  $Id$
  *
  *  C99 header file limits.h
