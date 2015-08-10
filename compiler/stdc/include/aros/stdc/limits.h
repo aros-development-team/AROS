@@ -8,8 +8,7 @@
 #ifndef _STDC_LIMITS_H_
 #define _STDC_LIMITS_H_
 
-
-#include <aros/cpu.h> /* For __WORDSIZE */
+#include <stdint.h>
 
 /* Sizes of integer types <limits.h> */
 
@@ -26,11 +25,11 @@
 /* Number of bits for smallest object that is not a bit-field (byte) */
 #define CHAR_BIT	8
 /* minimum value for an object of type signed char */
-#define SCHAR_MIN	(-128)
+#define SCHAR_MIN	INT8_MIN
 /* maximum value for an object of type signed char */
-#define SCHAR_MAX	127
+#define SCHAR_MAX	INT8_MAX
 /* maximum value for an object of type unsigned char */
-#define UCHAR_MAX	255
+#define UCHAR_MAX	UINT8_MAX
 /* minimum value for an object of type char */
 #define CHAR_MIN	SCHAR_MIN
 /* maximum value for an object of type char */
@@ -38,30 +37,30 @@
 /* maximum number of bytes in a multibyte character, for any supported locale */
 #define	MB_LEN_MAX	1	/* At the moment only "C" locale supported */
 /* minimum value for an object of type short int */
-#define SHRT_MIN	(-32768)
+#define SHRT_MIN	INT16_MIN
 /* maximum value for an object of type short int */
-#define SHRT_MAX	32767
+#define SHRT_MAX	INT16_MAX
 /* maximum value for an object of type unsigned short int */
-#define USHRT_MAX	65535
+#define USHRT_MAX	UINT16_MAX
 /* minimum value for an object of type int */
-#define INT_MIN		(-INT_MAX - 1)
+#define INT_MIN		INT32_MIN
 /* maximum value for an object of type int */
-#define INT_MAX		2147483647
+#define INT_MAX		INT32_MAX
 /* maximum value for an object of type unsigned int */
-#define UINT_MAX	4294967295U
+#define UINT_MAX	UINT32_MAX
 /* minimum value for an object of type long int */
 #define LONG_MIN	(-LONG_MAX - 1L)
 /* maximum value for an object of type long int */
 #if __WORDSIZE == 64
-#   define LONG_MAX	9223372036854775807L
+#   define LONG_MAX	INT64_MAX
 #else
-#   define LONG_MAX	2147483647L
+#   define LONG_MAX	INT32_MAX
 #endif
 /* maximum value for an object of type unsigned long int */
 #if __WORDSIZE == 64
-#   define ULONG_MAX    18446744073709551615UL
+#   define ULONG_MAX    UINT64_MAX
 #else
-#   define ULONG_MAX    4294967295UL
+#   define ULONG_MAX    UINT32_MAX
 #endif
 /* minimum value for an object of type long long int */
 #define LLONG_MIN	(-0x7fffffffffffffffLL - 1)
