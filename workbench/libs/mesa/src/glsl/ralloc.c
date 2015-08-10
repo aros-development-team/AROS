@@ -28,10 +28,6 @@
 #include <string.h>
 #include <stdint.h>
 
-#if defined(__AROS__)
-#define SIZE_MAX INT32_MAX
-#endif
-
 #include "ralloc.h"
 
 #ifdef __GNUC__
