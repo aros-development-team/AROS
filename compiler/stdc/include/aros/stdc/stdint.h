@@ -1,6 +1,3 @@
-#ifndef _STDC_STDINT_H_
-#define _STDC_STDINT_H_
-
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
@@ -18,7 +15,8 @@
 
 
 #if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
-
+#ifndef _STDC_STDINT_H_LIMITMACROS
+#define _STDC_STDINT_H_LIMITMACROS
 #define INT8_MIN    (-128)
 #define INT16_MIN   (-32767-1)
 #define INT32_MIN   (-2147483647-1)
@@ -95,8 +93,10 @@
 
 #endif
 
-
+#endif /* _STDC_STDINT_H_LIMITMACROS */
 #if !defined __cplusplus || defined __STDC_CONSTANT_MACROS
+#ifndef _STDC_STDINT_H_CONSTMACROS
+#define _STDC_STDINT_H_CONSTMACROS
 
 /* Signed.  */
 # define INT8_C(c)	c
@@ -133,7 +133,5 @@
 
 /* Maximal unsigned integer (unsigned long long) size */
 # define UINTMAX_MAX     UINT64_MAX
-
+#endif /* #endif /* _STDC_STDINT_H_CONSTMACROS */ */
 #endif /* !__cplusplus || __STDC_CONSTANT_MACROS */
-
-#endif /* _STDC_STDINT_H_ */

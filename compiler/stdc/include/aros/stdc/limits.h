@@ -8,6 +8,9 @@
 #ifndef _STDC_LIMITS_H_
 #define _STDC_LIMITS_H_
 
+#ifdef __cplusplus
+#define __STDC_LIMIT_MACROS
+#endif
 #include <stdint.h>
 
 /* Sizes of integer types <limits.h> */
