@@ -334,11 +334,7 @@ IPTR fbNew(Class *cl, Object *o, struct opSet *msg)
 					ULONG *p = colors, color;
 					for (k = 256; --k >= 0; p += 3)
 					{
-#if (0)
-                                            color  = k * 0x01010101;
-#else
                                             color  = (k << 24) | (k << 16) | (k << 8) | k;
-#endif
                                             p[0] = p[1] =  p[2] = color;
 					}
 					init = TRUE;
