@@ -133,5 +133,5 @@
 
 /* Maximal unsigned integer (unsigned long long) size */
 # define UINTMAX_MAX     UINT64_MAX
-#endif /* #endif /* _STDC_STDINT_H_CONSTMACROS */ */
+#endif /* _STDC_STDINT_H_CONSTMACROS */
 #endif /* !__cplusplus || __STDC_CONSTANT_MACROS */
