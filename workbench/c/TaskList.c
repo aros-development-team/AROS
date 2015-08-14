@@ -234,4 +234,5 @@ int main(void)
         }
         FreeVec(buffer);
     }
+    return 0;
 }
