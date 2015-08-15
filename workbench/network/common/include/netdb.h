@@ -43,6 +43,7 @@
 #ifndef NETDB_H
 #define NETDB_H
 
+#define __BSD_VISIBLE 1
 #include <sys/types.h>
 
 #include <sys/socket.h>     /* for socklen_t */
