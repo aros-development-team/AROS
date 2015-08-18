@@ -13,7 +13,6 @@
 #include <aros/types/intptr_t.h>
 #include <aros/types/uintptr_t.h>
 
-
 #if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
 #ifndef _STDC_STDINT_H_LIMITMACROS
 #define _STDC_STDINT_H_LIMITMACROS
@@ -91,9 +90,9 @@
 	    WINT_MIN, _MAX (must be <= -65535 or >= 65535)
 */
 
-#endif
-
 #endif /* _STDC_STDINT_H_LIMITMACROS */
+#endif /* !__cplusplus || __STDC_LIMIT_MACROS */
+
 #if !defined __cplusplus || defined __STDC_CONSTANT_MACROS
 #ifndef _STDC_STDINT_H_CONSTMACROS
 #define _STDC_STDINT_H_CONSTMACROS
