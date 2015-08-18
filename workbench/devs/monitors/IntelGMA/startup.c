@@ -60,7 +60,7 @@ static const struct OOP_ABDescr attrbases[] =
     {IID_Hidd_PixFmt	    , &HiddPixFmtAttrBase     },
     {IID_Hidd_Sync	    , &HiddSyncAttrBase       },
     {IID_Hidd_Gfx	    , &HiddGfxAttrBase        },
-    {IID_Hidd_IntelG45BitMap, &HiddGMABitMapAttrBase  },
+    {IID_Hidd_BitMap_IntelGMA, &HiddGMABitMapAttrBase  },
     {IID_Hidd_I2C	    , &HiddI2CAttrBase        },
     {IID_Hidd_I2CDevice	    , &HiddI2CDeviceAttrBase  },
     {IID_Hidd_PlanarBM	    , &__IHidd_PlanarBM       },
@@ -69,7 +69,7 @@ static const struct OOP_ABDescr attrbases[] =
     {NULL, NULL }
 };
 
-const TEXT version_string[] = "$VER: IntelGMA 3.11 (18.5.2015)\n";
+const TEXT version_string[] = "$VER: IntelGMA 3.12 (18.8.2015)\n";
 
 extern struct WBStartup *WBenchMsg;
 int __nocommandline = 1;
@@ -98,7 +98,7 @@ int main(void)
      */
     if (success)
     {
-        if (OOP_FindClass(CLID_Hidd_Gfx_IntelG45))
+        if (OOP_FindClass(CLID_Hidd_Gfx_IntelGMA))
         {
             success = FALSE;
             ret = RETURN_OK;
@@ -177,7 +177,7 @@ int main(void)
 	    {aMeta_SuperID	 , (IPTR)CLID_Hidd_Gfx         },
 	    {aMeta_InterfaceDescr, (IPTR)INTELG45_ifdescr      },
 	    {aMeta_InstSize	 , sizeof(struct g45data)      },
-	    {aMeta_ID		 , (IPTR)CLID_Hidd_Gfx_IntelG45},
+	    {aMeta_ID		 , (IPTR)CLID_Hidd_Gfx_IntelGMA},
 	    {TAG_DONE, 0}
 	};
 
@@ -190,6 +190,7 @@ int main(void)
 		{aMeta_SuperID       , (IPTR)CLID_Hidd_BitMap},
 		{aMeta_InterfaceDescr, (IPTR)GMABM_ifdescr   },
 		{aMeta_InstSize      , sizeof(GMABitMap_t)   },
+                {aMeta_ID		 , (IPTR)CLID_Hidd_BitMap_IntelGMA},
 		{TAG_DONE, 0}
 	    };
 

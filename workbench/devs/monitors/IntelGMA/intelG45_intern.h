@@ -19,9 +19,10 @@
 
 #include <stdint.h>
 
-#define CLID_Hidd_Gfx_IntelG45		"IntelGMA"
-#define IID_Hidd_Gfx_IntelG45		"IIntelGMA"
-#define IID_Hidd_IntelG45BitMap		"IIntelBitMap"
+#define CLID_Hidd_Gfx_IntelGMA		"hidd.gfx.intelgma"
+#define IID_Hidd_Gfx_IntelGMA		"hidd.gfx.intelgma"
+#define CLID_Hidd_BitMap_IntelGMA       "hidd.bitmap.intelgma"
+#define IID_Hidd_BitMap_IntelGMA        "hidd.bitmap.intelgma"
 
 extern OOP_AttrBase HiddGMABitMapAttrBase;
 
