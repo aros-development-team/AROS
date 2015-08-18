@@ -3,7 +3,7 @@
     $Id$
 */
 
-#include <exec/types.h>
+#include <exec/memory.h>
 
 #include <proto/dos.h>
 
@@ -11,6 +11,7 @@
 
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <aros/debug.h>
 
@@ -79,7 +80,7 @@ static BOOL computeVendorIndexes(const char *buffer, LONG size)
     LONG i, j;
 
     vi_allocated = 2500;
-    vendor_index = AllocVec(vi_allocated * sizeof(struct vendor_cell), MEMF_ANY);
+    vendor_index = (struct vendor_cell *)AllocVec(vi_allocated * sizeof(struct vendor_cell), MEMF_ANY);
     if (NULL == vendor_index)
 	return FALSE;
 
@@ -206,7 +207,7 @@ void pciids_Open(void)
     memsize = (ULONG)size;
     Seek(fh, 0, OFFSET_BEGINNING);
 
-    mem = AllocVec(memsize, MEMF_ANY);
+    mem = (STRPTR)AllocVec(memsize, MEMF_ANY);
     if (NULL == mem)
 	goto err_mem;
 
