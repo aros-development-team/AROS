@@ -65,7 +65,7 @@ OOP_AttrBase HiddAttrBase;
 static const struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap       , &HiddBitMapAttrBase   },
-    { IID_Hidd_X11BitMap    , &HiddX11BitMapAB      },
+    { IID_Hidd_BitMap_X11    , &HiddX11BitMapAB      },
     { IID_Hidd_Sync         , &HiddSyncAttrBase     },
     { IID_Hidd_PixFmt       , &HiddPixFmtAttrBase   },
     { IID_Hidd_Gfx          , &HiddGfxAttrBase      },

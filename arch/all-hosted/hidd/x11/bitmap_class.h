@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 bitmap class, external definitions
@@ -14,11 +14,12 @@
  * classes, although they don't have a common superclass
  */
 
-#define IID_Hidd_X11BitMap "hidd.bitmap.x11bitmap"
-
 extern OOP_AttrBase HiddX11BitMapAB;
 
 /* extern OOP_AttrBase HiddX11BitMapAB; */
+
+#define CLID_Hidd_BitMap_X11    "hidd.bitmap.x11"
+#define IID_Hidd_BitMap_X11     "hidd.bitmap.x11"
 
 enum
 {
