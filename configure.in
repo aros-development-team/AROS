@@ -1618,7 +1618,16 @@ else
 fi
 
 if test "$gcc_fix_bitfields" = "true" ; then
-    aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+    case "$aros_target_cpu" in
+    *x86_64*)
+        aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
+        aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+        ;;
+    i386)
+        aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
+        aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+        ;;
+    esac
 fi
 
 AC_MSG_CHECKING([whether to enable Objective-C suppport])
