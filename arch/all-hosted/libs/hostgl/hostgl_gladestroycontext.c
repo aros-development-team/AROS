@@ -75,7 +75,7 @@
 #endif
 
         if (_ctx->HiddX11BitMapAB)
-            OOP_ReleaseAttrBase(IID_Hidd_X11BitMap);
+            OOP_ReleaseAttrBase(IID_Hidd_BitMap_X11);
 
         XCALL(XFree, _ctx->framebuffer->fbconfigs);
         FreeVec(_ctx->framebuffer);

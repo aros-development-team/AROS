@@ -122,7 +122,7 @@
         goto error_out;
     }
 
-    ctx->HiddX11BitMapAB = OOP_ObtainAttrBase(IID_Hidd_X11BitMap);
+    ctx->HiddX11BitMapAB = OOP_ObtainAttrBase(IID_Hidd_BitMap_X11);
 
     HostGLSelectRastPort(ctx, tagList);
     if (!ctx->visible_rp)
@@ -229,7 +229,7 @@ error_out:
 #endif
 
     if (ctx->HiddX11BitMapAB)
-        OOP_ReleaseAttrBase(IID_Hidd_X11BitMap);
+        OOP_ReleaseAttrBase(IID_Hidd_BitMap_X11);
 
     if (ctx->framebuffer)
     {
