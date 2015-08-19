@@ -18,8 +18,11 @@
 #include "bitmap.h"
 #include "hardware.h"
 
-#define IID_Hidd_VesaGfx  "hidd.gfx.vesa"
-#define CLID_Hidd_VesaGfx "hidd.gfx.vesa"
+#define IID_Hidd_Gfx_Vesa  "hidd.gfx.vesa"
+#define CLID_Hidd_Gfx_Vesa "hidd.gfx.vesa"
+
+#define CLID_Hidd_BitMap_Vesa        "hidd.bitmap.vesa"
+#define IID_Hidd_BitMap_Vesa         "hidd.bitmap.vesa"
 
 struct VesaGfx_data
 {
