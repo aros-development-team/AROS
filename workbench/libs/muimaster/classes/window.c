@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2014, The AROS Development Team.
+    Copyright  2002-2015, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -110,8 +110,8 @@ struct MUI_WindowData
     struct AppWindow *wd_AppWindow;
 
     Object *wd_Menustrip;       /* The menustrip object which is actually
-                                 * used (either apps or windows or NULL) */
-    Object *wd_ChildMenustrip;  /* If window has an own Menustrip */
+                                 * used (either app's or window's or NULL) */
+    Object *wd_ChildMenustrip;  /* If window has its own Menustrip */
     struct Menu *wd_Menu;       /* the intuition menustrip */
 
     Object *wd_VertProp;
@@ -1676,7 +1676,20 @@ BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
 
             data->wd_Flags |= MUIWF_RESIZING;
             RefreshWindow(oWin, data);
+            superset(OCLASS(oWin), oWin, MUIA_Window_Width, data->wd_Width);
+            superset(OCLASS(oWin), oWin, MUIA_Window_Height, data->wd_Height);
         }
+        if (iWin->LeftEdge != data->wd_X)
+        {
+            data->wd_X = iWin->LeftEdge;
+            superset(OCLASS(oWin), oWin, MUIA_Window_LeftEdge, data->wd_X);
+        }
+        if (iWin->TopEdge != data->wd_Y)
+        {
+            data->wd_Y = iWin->TopEdge;
+            superset(OCLASS(oWin), oWin, MUIA_Window_TopEdge, data->wd_Y);
+        }
+
         is_handled = FALSE;     /* forwardable to area event handlers */
         break;
 
