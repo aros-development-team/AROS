@@ -8699,6 +8699,7 @@ GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
 GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
 GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
 
+gcc_fix_bitfields="false"
 if test "$GCC_VERSION_MAJOR" -gt "4" ; then
     gcc_fix_bitfields="true"
 else
@@ -8710,7 +8711,16 @@ else
 fi
 
 if test "$gcc_fix_bitfields" = "true" ; then
-    aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+    case "$aros_target_cpu" in
+    *x86_64*)
+        aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
+        aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+        ;;
+    i386)
+        aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
+        aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+        ;;
+    esac
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable Objective-C suppport" >&5
