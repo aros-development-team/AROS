@@ -24,12 +24,11 @@
 
 #define D(x)
 
-inline volatile long long RDTSC() {
-   register long long TSC asm("eax");
-   asm volatile (".byte 15, 49" : : : "eax", "edx");
-   return TSC;
+static inline unsigned long long RDTSC() {
+   unsigned long long _tsc;
+   asm volatile (".byte 0x0f, 0x31" : "=A" (_tsc));
+   return _tsc;
 } 
-
 
 void cpu_Dispatch(struct ExceptionContext *regs)
 {
