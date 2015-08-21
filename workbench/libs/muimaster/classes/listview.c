@@ -183,6 +183,9 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
         return Listview__OM_GET(cl, obj, (struct opGet *)msg);
     case OM_NEW:
         return Listview__OM_NEW(cl, obj, (struct opSet *)msg);
+    case MUIM_Notify:
+    case MUIM_KillNotify:
+    case MUIM_KillNotifyObj:
     case MUIM_List_Clear:
     case MUIM_List_CreateImage:
     case MUIM_List_DeleteImage:
