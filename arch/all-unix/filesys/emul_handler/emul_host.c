@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -632,33 +632,45 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
 SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
     off_t res;
-    LONG oldpos = 0;
-    SIPTR error = 0;
+    LONG oldpos = 0, newpos;
+    struct stat st;
 
     DSEEK(bug("[emul] DoSeek(%d, %d, %d)\n", (int)fh->fd, offset, mode));
 
-    switch (mode) {
-    case OFFSET_BEGINNING:
-	mode = SEEK_SET;
-	break;
-
-    case OFFSET_CURRENT:
-	mode = SEEK_CUR;
-	break;
-
-    default:
-	mode = SEEK_END;
-    }
-
     HostLib_Lock();
 
-    res = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
+    res = oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
+    AROS_HOST_BARRIER
+    if (res != -1)
+	res = emulbase->pdata.SysIFace->fstat((int)fh->fd, &st);
     AROS_HOST_BARRIER
 
-    DSEEK(bug("[emul] Original position: %lu\n", (unsigned long)res));
+    DSEEK(bug("[emul] Original position: %lu\n", (unsigned long)oldpos));
+
     if (res != -1)
     {
-        oldpos = res;
+	switch (mode) {
+	case OFFSET_BEGINNING:
+	    newpos = offset;
+	    mode = SEEK_SET;
+	    break;
+
+	case OFFSET_CURRENT:
+	    newpos = offset + res;
+	    mode = SEEK_CUR;
+	    break;
+
+	default:
+	    newpos = offset + st.st_size;
+	    mode = SEEK_END;
+	}
+
+	if (newpos > st.st_size)
+	    res = -1;
+    }
+
+    if (res != -1)
+    {
         res = LSeek((IPTR)fh->fd, offset, mode);
         AROS_HOST_BARRIER
 
@@ -666,14 +678,11 @@ SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULO
     }
 
     if (res == -1)
-    {
     	oldpos = -1;
-	error  = err_u2a(emulbase);
-    }
 
     HostLib_Unlock();
 
-    *err = error;
+    *err = ERROR_SEEK_ERROR;
     return oldpos;
 }
 
