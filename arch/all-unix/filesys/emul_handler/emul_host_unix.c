@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -79,9 +79,11 @@ static const char *libcSymbols[] =
 #ifdef HOST_OS_linux
     "__xstat",
     "__lxstat",
+    "__fxstat",
 #else
     "stat" INODE64_SUFFIX,
     "lstat" INODE64_SUFFIX,
+    "fstat" INODE64_SUFFIX,
 #endif
 #ifndef HOST_OS_android
     "seekdir" UNIX2003_SUFFIX,

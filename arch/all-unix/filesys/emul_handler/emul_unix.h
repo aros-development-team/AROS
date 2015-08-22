@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifdef HOST_LONG_ALIGNED
 #pragma pack(4)
 #endif
@@ -59,11 +64,14 @@ struct LibCInterface
 #ifdef HOST_OS_linux
     int		   (*__xstat)(int ver, char *path, struct stat *buf);
     int		   (*__lxstat)(int ver, const char *path, struct stat *buf);
+    int		   (*__fxstat)(int ver, const int fd, struct stat *buf);
     #define stat(path, buf)  __xstat(_STAT_VER, path, buf)
     #define lstat(path, buf) __lxstat(_STAT_VER, path, buf)
+    #define fstat(fd, buf) __fxstat(_STAT_VER, fd, buf)
 #else
     int		   (*stat)(char *path, struct stat *buf);
     int		   (*lstat)(const char *path, struct stat *buf);
+    int		   (*fstat)(int fd, struct stat *buf);
 #endif
 #ifndef HOST_OS_android
     void	   (*seekdir)(DIR *dirp, long loc);
