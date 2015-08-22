@@ -186,6 +186,12 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
     case MUIM_Notify:
     case MUIM_KillNotify:
     case MUIM_KillNotifyObj:
+        {
+            struct MUI_ListviewData *data = INST_DATA(cl, obj);
+
+            DoMethodA(data->list, msg);
+            break;
+        }
     case MUIM_List_Clear:
     case MUIM_List_CreateImage:
     case MUIM_List_DeleteImage:
