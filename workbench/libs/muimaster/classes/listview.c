@@ -91,6 +91,9 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(list, MUIM_Notify, MUIA_Listview_SelectChange, MUIV_EveryTime,
         (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
         MUIA_Listview_SelectChange, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_Listview_ClickColumn, MUIV_EveryTime,
+        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
+        MUIA_Listview_ClickColumn, MUIV_TriggerValue);
 
     return (IPTR) obj;
 }
