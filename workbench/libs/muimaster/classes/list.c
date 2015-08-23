@@ -842,7 +842,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     area = (Object *)GetTagData(MUIA_List_ListArea, (IPTR) 0, msg->ops_AttrList);
 
     if (!area)
-        area = RectangleObject, TAG_MORE, (IPTR) rectattrs, End;
+        area = RectangleObject, MUIA_FillArea, FALSE, TAG_MORE, (IPTR) rectattrs, End;
     else
         data->area_replaced = TRUE;
     data->area = area;
