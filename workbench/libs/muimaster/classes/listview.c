@@ -17,23 +17,7 @@ extern struct Library *MUIMasterBase;
 struct MUI_ListviewData
 {
     Object *list;
-    struct Hook selfnotify_hook;
-    BOOL noforward;
 };
-
-ULONG SelfNotify_Function(struct Hook *hook, APTR obj, void **msg)
-{
-    struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-    SIPTR attribute = (SIPTR) msg[0];
-    SIPTR value = (SIPTR) msg[1];
-
-    /* This allows avoiding notify loops */
-    data->noforward = TRUE;
-    SetAttrs(obj, MUIA_Group_Forward, FALSE, attribute, value, TAG_DONE);
-    data->noforward = FALSE;
-
-    return 0;
-}
 
 /**************************************************************************
  OM_NEW
@@ -63,11 +47,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->list = list;
 
-    data->selfnotify_hook.h_Entry = HookEntry;
-    data->selfnotify_hook.h_SubEntry = (HOOKFUNC) SelfNotify_Function;
-    data->selfnotify_hook.h_Data = data;
-    data->noforward = FALSE;
-
     /* parse initial taglist, forward to list */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
@@ -82,19 +61,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
-    DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
-        MUIA_List_Active, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
-        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
-        MUIA_Listview_DoubleClick, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, MUIA_Listview_SelectChange, MUIV_EveryTime,
-        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
-        MUIA_Listview_SelectChange, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, MUIA_Listview_ClickColumn, MUIV_EveryTime,
-        (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->selfnotify_hook,
-        MUIA_Listview_ClickColumn, MUIV_TriggerValue);
-
     return (IPTR) obj;
 }
 
@@ -106,11 +72,6 @@ IPTR Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tag, *tags;
     IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
-
-    if (data->noforward)
-    {
-        return DoSuperMethodA(cl, obj, (Msg) msg);
-    }
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
