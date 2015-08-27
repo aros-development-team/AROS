@@ -137,6 +137,75 @@ IPTR Listview__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 #undef STORE
 }
 
+static IPTR RedirectNotify(struct IClass *cl, Object *obj, Msg msg,
+    ULONG attr)
+{
+    struct MUI_ListviewData *data = INST_DATA(cl, obj);
+
+    switch (attr)
+    {
+    case MUIA_List_Active:
+    case MUIA_List_AutoVisible:
+    case MUIA_List_CompareHook:
+    case MUIA_List_ConstructHook:
+    case MUIA_List_DestructHook:
+    case MUIA_List_DisplayHook:
+    case MUIA_List_DragSortable:
+    case MUIA_List_DropMark:
+    case MUIA_List_Entries:
+    case MUIA_List_First:
+    case MUIA_List_Format:
+    case MUIA_List_InsertPosition:
+    case MUIA_List_MultiTestHook:
+    case MUIA_List_Quiet:
+    case MUIA_List_ShowDropMarks:
+    case MUIA_List_Title:
+    case MUIA_List_VertProp_Entries:
+    case MUIA_List_VertProp_First:
+    case MUIA_List_VertProp_Visible:
+    case MUIA_List_Visible:
+    case MUIA_Listview_ClickColumn:
+    case MUIA_Listview_DoubleClick:
+    case MUIA_Listview_SelectChange:
+        return DoMethodA(data->list, msg);
+    }
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+/**************************************************************************
+ MUIM_Notify
+**************************************************************************/
+IPTR Listview__MUIM_Notify(struct IClass *cl, Object *obj,
+    struct MUIP_Notify *msg)
+{
+    if ((IPTR)msg->DestObj == MUIV_Notify_Self)
+        msg->DestObj = obj;
+
+    return RedirectNotify(cl, obj, (Msg) msg, msg->TrigAttr);
+}
+
+/**************************************************************************
+ MUIM_KillNotify
+**************************************************************************/
+IPTR Listview__MUIM_KillNotify(struct IClass *cl, Object *obj,
+    struct MUIP_KillNotify *msg)
+{
+    return RedirectNotify(cl, obj, (Msg) msg, msg->TrigAttr);
+}
+
+/**************************************************************************
+ MUIM_KillNotifyObj
+**************************************************************************/
+IPTR Listview__MUIM_KillNotifyObj(struct IClass *cl, Object *obj,
+    struct MUIP_KillNotifyObj *msg)
+{
+    if ((IPTR)msg->dest == MUIV_Notify_Self)
+        msg->dest = obj;
+
+    return RedirectNotify(cl, obj, (Msg) msg, msg->TrigAttr);
+}
+
 BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -148,14 +217,13 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
     case OM_NEW:
         return Listview__OM_NEW(cl, obj, (struct opSet *)msg);
     case MUIM_Notify:
+        return Listview__MUIM_Notify(cl, obj, (struct MUIP_Notify *)msg);
     case MUIM_KillNotify:
+        return Listview__MUIM_KillNotify(cl, obj,
+            (struct MUIP_KillNotify *)msg);
     case MUIM_KillNotifyObj:
-        {
-            struct MUI_ListviewData *data = INST_DATA(cl, obj);
-
-            DoMethodA(data->list, msg);
-            break;
-        }
+        return Listview__MUIM_KillNotifyObj(cl, obj,
+            (struct MUIP_KillNotifyObj *)msg);
     case MUIM_List_Clear:
     case MUIM_List_CreateImage:
     case MUIM_List_DeleteImage:
