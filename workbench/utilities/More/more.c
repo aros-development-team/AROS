@@ -29,6 +29,8 @@
 #include <proto/utility.h>
 
 #include <setjmp.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "global.h"
 #include "req.h"

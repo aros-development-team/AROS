@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,14 +55,14 @@ static struct NewMenu nm[] =
 void InitMenus(void)
 {
     struct NewMenu *actnm = nm;
-    
+
     for(actnm = nm; actnm->nm_Type != NM_END; actnm++)
     {
         if (actnm->nm_Label != NM_BARLABEL)
         {
             ULONG  id = (IPTR)actnm->nm_Label;
             CONST_STRPTR str = MSG(id);
-            
+
             if (actnm->nm_Type == NM_TITLE)
             {
                 actnm->nm_Label = str;
@@ -71,9 +71,9 @@ void InitMenus(void)
                 if (str[0] != ' ') actnm->nm_CommKey = str;
             }
             actnm->nm_UserData = (APTR)(IPTR)id;
-            
+
         } /* if (actnm->nm_Label != NM_BARLABEL) */
-        
+
     } /* for(actnm = nm; nm->nm_Type != NM_END; nm++) */
 
 }
@@ -84,9 +84,9 @@ void MakeMenus(void)
 {
     menus = CreateMenusA(nm, NULL);
     if (!menus) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
-    
+
     if (!LayoutMenusA(menus, vi, NULL)) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
-    
+
 }
 
 /*********************************************************************************************/
@@ -95,7 +95,7 @@ void KillMenus(void)
 {
     if (win) ClearMenuStrip(win);
     if (menus) FreeMenus(menus);
-    
+
     menus = NULL;
 }
 
@@ -104,20 +104,20 @@ void KillMenus(void)
 STRPTR GetFile(BOOL open)
 {
     static UBYTE         pathbuffer[300];
-    static UBYTE         filebuffer[300];
+    static UBYTE         filebuffer[108];
     struct FileRequester *req;
     STRPTR               retval = NULL;
-    
+
     AslBase = OpenLibrary("asl.library", 39);
     if (AslBase)
     {
-        filebuffer[299] = 0;
-        pathbuffer[299] = 0;
-        
-        strncpy(filebuffer, FilePart(filenamebuffer), 299);
-        strncpy(pathbuffer, filenamebuffer, 299);
+        filebuffer[sizeof filebuffer - 1] = 0;
+        pathbuffer[sizeof pathbuffer - 1] = 0;
+
+        strncpy(filebuffer, FilePart(filenamebuffer), sizeof filebuffer - 1);
+        strncpy(pathbuffer, filenamebuffer, sizeof pathbuffer - 1);
         *(FilePart(pathbuffer)) = 0;
-        
+
         req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText     , open                          ?
                                                                          (IPTR)MSG(MSG_ASL_OPEN_TITLE) :
                                                                          (IPTR)MSG(MSG_ASL_SAVE_TITLE)  ,
@@ -133,21 +133,21 @@ STRPTR GetFile(BOOL open)
         {
             if (AslRequest(req, NULL))
             {
-                strncpy(filebuffer, req->fr_Drawer, 299);
-                AddPart(filebuffer, req->fr_File, 299);
-                
+                strncpy(filebuffer, req->fr_Drawer, sizeof filebuffer - 1);
+                AddPart(filebuffer, req->fr_File, sizeof filebuffer - 1);
+
                 retval = filebuffer;
-                
+
             } /* if (AslRequest(req, NULL) */
-            
+
             FreeAslRequest(req);
-            
+
         } /* if (req) */
-        
+
         CloseLibrary(AslBase);
-        
+
     } /* if (AslBase) */
-    
+
     return retval;
 }
 
@@ -156,16 +156,16 @@ STRPTR GetFile(BOOL open)
 void About(void)
 {
     struct EasyStruct   es;
-    
+
     es.es_StructSize   = sizeof(es);
     es.es_Flags        = 0;
     es.es_Title        = MSG(MSG_ABOUT_TITLE);
     es.es_TextFormat   = MSG(MSG_ABOUT);
     es.es_GadgetFormat = MSG(MSG_CONTINUE);
- 
+
     EasyRequest(win, &es, NULL, (IPTR)VERSION,
                                 (IPTR)REVISION,
-                                (IPTR)DATESTR, 
+                                (IPTR)DATESTR,
                                 (IPTR)"2005-2009",
                                 (IPTR)"AROS Development Team");
 
