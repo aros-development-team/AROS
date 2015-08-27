@@ -20,6 +20,8 @@
 #include <proto/alib.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "global.h"
 #include "req.h"
 
