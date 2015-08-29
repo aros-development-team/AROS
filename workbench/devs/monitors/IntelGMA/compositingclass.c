@@ -190,7 +190,7 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
     bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = modeid;
     bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
     
-    fbbitmap = HIDD_Gfx_NewBitMap(compdata->gfx, bmtags);
+    fbbitmap = HIDD_Gfx_CreateObject(compdata->gfx, SD(OOP_OCLASS(compdata->gfx))->basebm, bmtags);
     if (fbbitmap)
     {
         BOOL ret = HIDD_INTELG45_SwitchToVideoMode(fbbitmap);
@@ -206,7 +206,7 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
 
             /* Dispose the previous screenbitmap */
             if (compdata->screenbitmap)
-                HIDD_Gfx_DisposeBitMap(compdata->gfx, compdata->screenbitmap);
+                OOP_DisposeObject(compdata->screenbitmap);
 
             /* Store bitmap/mode information */ 
             compdata->screenmodeid    = modeid;
@@ -226,7 +226,7 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
         else
         {
             /* Dispose fbbitmap */
-            HIDD_Gfx_DisposeBitMap(compdata->gfx, fbbitmap);
+            OOP_DisposeObject(fbbitmap);
             return FALSE;
         }
     }
@@ -437,7 +437,7 @@ OOP_Object *METHOD(Compositing, Root, New)
         if (compdata->gfx != NULL)
         {
             /* Create GC object that will be used for drawing operations */
-            compdata->gc = HIDD_Gfx_NewGC(compdata->gfx, NULL);
+            compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, SD(cl)->basegc, NULL);
         }
         
         if ((compdata->gfx == NULL) || (compdata->gc == NULL))

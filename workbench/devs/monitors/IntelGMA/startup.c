@@ -170,6 +170,7 @@ int main(void)
             success = FALSE;
     }
 
+    sd.basegc = OOP_FindClass(CLID_Hidd_GC);
     sd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     if (success)
