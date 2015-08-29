@@ -379,7 +379,7 @@ OOP_Object *NV__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
     else
         object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    return object;
 }
 
 OOP_Object *NV__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o,
