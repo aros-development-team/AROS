@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: sm502 gfx Hidd for standalone i386 AROS
@@ -100,6 +100,8 @@ static int PCSM502_Init(LIBBASETYPEPTR LIBBASE)
 
 	return FALSE;
     }
+
+    LIBBASE->vsd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     /* 
      * It is unknown (and no way to know) what hardware part this driver uses.

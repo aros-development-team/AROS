@@ -1,9 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := startup linuxfb_init gfxclass bmclass
-
+USER_LDFLAGS		= -static
 USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+FILES := startup linuxfb_init gfxclass bmclass
 
 %build_module mmake=kernel-hidd-linuxfb \
   modname=linuxfb modtype=hidd \

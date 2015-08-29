@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common data structures of androidgfx.hidd
@@ -15,6 +15,8 @@ struct mouse_data;
 struct agfx_staticdata
 {
     OOP_AttrBase *AttrBases;
+
+    OOP_Class  *basebm;            /* baseclass for CreateObject */
 
     OOP_Class  *gfxclass;
     OOP_Class  *bmclass;

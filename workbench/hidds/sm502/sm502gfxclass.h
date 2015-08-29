@@ -2,7 +2,7 @@
 #define HIDD_SM502GFXCLASS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some SM502Gfx useful data.
@@ -29,6 +29,8 @@ struct SM502Gfx_data
 
 struct SM502Gfx_staticdata
 {
+    OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
+
     OOP_Class 	    	    *sm502gfxclass;
     OOP_Class 	    	    *bmclass;
     OOP_Object      	    *sm502gfxhidd;

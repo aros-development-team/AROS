@@ -130,6 +130,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 
             if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41)) != NULL)
             {
+                LIBBASE->vsd.vcsd_basebm = OOP_FindClass(CLID_Hidd_BitMap);
                 if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, DDRV_BootMode, TRUE, TAG_DONE) == DD_OK)
                 {
                     bug("[VideoCoreGfx] BootMode Display Driver Registered\n");

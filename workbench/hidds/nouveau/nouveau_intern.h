@@ -1,7 +1,7 @@
 #ifndef _NOUVEAU_INTERN_H
 #define _NOUVEAU_INTERN_H
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -159,6 +159,9 @@ struct CardData
 
 struct staticdata
 {
+    OOP_Class       *basebm;            /* baseclass for CreateObject */
+    OOP_Class       *basegallium;            /* baseclass for CreateObject */
+
     OOP_Class       *gfxclass;
     OOP_Class       *bmclass;
     OOP_Class       *i2cclass;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Cocoa Touch display HIDD for AROS
@@ -170,31 +170,41 @@ VOID UIKit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-OOP_Object *UIKit__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *UIKit__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
     struct UIKitBase *base = cl->UserData;
-    HIDDT_ModeID modeid;
-    struct pHidd_Gfx_NewBitMap p;
-    struct TagItem tags[] =
-    {
-	{TAG_IGNORE, 0			},
-	{TAG_MORE  , (IPTR)msg->attrList}
-    };
+    OOP_Object      *object = NULL;
 
-    /* Here we select a class for the bitmap to create */
-    modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    if (modeid != vHidd_ModeID_Invalid)
+    if (msg->cl == base->basebm)
     {
-        tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
-        tags[0].ti_Data = (IPTR)base->bmclass;
+        HIDDT_ModeID modeid;
+        struct pHidd_Gfx_CreateObject p;
+        struct TagItem tags[] =
+        {
+            {TAG_IGNORE, 0			},
+            {TAG_MORE  , (IPTR)msg->attrList}
+        };
 
-	D(bug("[UIKitGfx] ModeID: 0x%08lX, ClassPtr: 0x%p\n", modeid, tags[0].ti_Data));
+        /* Here we select a class for the bitmap to create */
+        modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+        if (modeid != vHidd_ModeID_Invalid)
+        {
+            tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
+            tags[0].ti_Data = (IPTR)base->bmclass;
+
+            D(bug("[UIKitGfx] ModeID: 0x%08lX, ClassPtr: 0x%p\n", modeid, tags[0].ti_Data));
+        }
+
+        p.mID = msg->mID;
+        p.cl = msg->cl;
+        p.attrList = tags;
+
+        object = OOP_DoSuperMethod(cl, o, &p.mID);
     }
+    else
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    p.mID = msg->mID;
-    p.attrList = tags;
-
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, &p.mID);
+    return object;
 }
 
 /****************************************************************************************/

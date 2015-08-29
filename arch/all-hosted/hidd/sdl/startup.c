@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -66,6 +66,7 @@ static int sdl_Startup(struct sdlhidd *xsd)
     OOP_Object *kbd, *ms;
     ULONG err;
 
+    xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
     xsd->mousehidd = NULL;
     D(bug("[SDL] Class initialization OK, creating objects\n"));
 

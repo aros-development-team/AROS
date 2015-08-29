@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VMWare SVGA Hidd initialisation code
@@ -111,6 +111,8 @@ static int VMWareSVGA_Init(LIBBASETYPEPTR LIBBASE)
 
     if (!OOP_ObtainAttrBases(abd))
         goto failure;
+
+    xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     if (xsd->pcihidd == NULL)

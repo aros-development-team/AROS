@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux fbdev gfx HIDD for AROS.
@@ -177,6 +177,8 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                 {
                     struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
 
+                    data->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+
                     data->fbdevinfo.fbdev    = fbdev;
                     data->fbdevinfo.fbtype   = pftags[8].ti_Data;
                     data->fbdevinfo.baseaddr = baseaddr;
@@ -265,60 +267,71 @@ BOOL LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     return OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
-/********** FBGfx::NewBitMap()  ****************************/
-OOP_Object *LinuxFB__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+/********** FBGfx::CreateObject()  ****************************/
+OOP_Object *LinuxFB__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
     struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
-    BOOL fb = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+    OOP_Object      *object = NULL;
 
-    D(bug("[LinuxFB] NewBitMap, framebuffer=%d\n", fb));
-    /*
-     * Our framebuffer is a chunky bitmap at predetermined address.
-     * We don't care about friends etc here, because even if our
-     * class is selected for friend bitmap, it's completely safe
-     * because it will not get FBDevInfo. Storage overhead per
-     * bitmap is extremely small here (just 8 bytes).
-     */
-    if (fb)
+    if (msg->cl == data->basebm)
     {
-        struct TagItem tags[] =
-        {
-            {aHidd_BitMap_ClassPtr        , (IPTR)LSD(cl)->bmclass        },
-            {aHidd_BitMap_BytesPerRow     , data->fbdevinfo.pitch         },
-            {aHidd_ChunkyBM_Buffer        , (IPTR)data->fbdevinfo.baseaddr},
-            {aHidd_LinuxFBBitmap_FBDevInfo, -1                            },
-            {TAG_MORE                     , (IPTR)msg->attrList           }
-        };
-        struct pHidd_Gfx_NewBitMap p =
-        {
-            msg->mID,
-            tags
-        };
+        struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
+        BOOL fb = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
-        if (data->fbdevinfo.fbtype == vHidd_ColorModel_Palette)
+        D(bug("[LinuxFB] CreateObject, framebuffer=%d\n", fb));
+        /*
+         * Our framebuffer is a chunky bitmap at predetermined address.
+         * We don't care about friends etc here, because even if our
+         * class is selected for friend bitmap, it's completely safe
+         * because it will not get FBDevInfo. Storage overhead per
+         * bitmap is extremely small here (just 8 bytes).
+         */
+        if (fb)
         {
-            tags[3].ti_Data = data->fbdevinfo.fbdev;
-        }
-
-        if (data->confd == -1)
-        {
-            /*
-             * Switch console into gfx mode, no more console output
-             * FIXME: How to determine which console is connected to this framebuffer ?
-             */
-            data->confd = Hidd_UnixIO_OpenFile(data->unixio, "/dev/tty0", O_RDWR, 0, NULL);
-            if (data->confd != -1)
+            struct TagItem tags[] =
             {
-                Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDGKBMODE, &data->kbmode, NULL);
-                Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDSETMODE, (void *)KD_GRAPHICS, NULL);
-                Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDSKBMODE, K_RAW, NULL);
+                {aHidd_BitMap_ClassPtr        , (IPTR)LSD(cl)->bmclass        },
+                {aHidd_BitMap_BytesPerRow     , data->fbdevinfo.pitch         },
+                {aHidd_ChunkyBM_Buffer        , (IPTR)data->fbdevinfo.baseaddr},
+                {aHidd_LinuxFBBitmap_FBDevInfo, -1                            },
+                {TAG_MORE                     , (IPTR)msg->attrList           }
+            };
+            struct pHidd_Gfx_CreateObject p =
+            {
+                msg->mID,
+                msg->cl,
+                tags
+            };
+
+            if (data->fbdevinfo.fbtype == vHidd_ColorModel_Palette)
+            {
+                tags[3].ti_Data = data->fbdevinfo.fbdev;
             }
+
+            if (data->confd == -1)
+            {
+                /*
+                 * Switch console into gfx mode, no more console output
+                 * FIXME: How to determine which console is connected to this framebuffer ?
+                 */
+                data->confd = Hidd_UnixIO_OpenFile(data->unixio, "/dev/tty0", O_RDWR, 0, NULL);
+                if (data->confd != -1)
+                {
+                    Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDGKBMODE, &data->kbmode, NULL);
+                    Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDSETMODE, (void *)KD_GRAPHICS, NULL);
+                    Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDSKBMODE, K_RAW, NULL);
+                }
+            }
+
+            object = (OOP_Object *)OOP_DoSuperMethod(cl, o, &p.mID);
         }
-
-        return (OOP_Object *)OOP_DoSuperMethod(cl, o, &p.mID);
+        else
+            object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
+    else
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
+    return object;
 }
 
 BOOL LinuxFB__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamma *msg)

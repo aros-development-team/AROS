@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -783,7 +783,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         if (freebm)
             FreeBitMap(freebm);
         else
-            HIDD_Gfx_DisposeBitMap(compdata->gfx, oldintermedbitmap);
+            OOP_DisposeObject(oldintermedbitmap);
 
         compdata->intermedbitmap = NULL;
     }
@@ -798,7 +798,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         if (freebm)
             FreeBitMap(freebm);
         else
-            HIDD_Gfx_DisposeBitMap(compdata->gfx, olddisplaybitmap);
+            OOP_DisposeObject(olddisplaybitmap);
     }
 
     /* Handled */
@@ -833,7 +833,7 @@ static void HIDDCompositorShowSingle(struct HIDDCompositorData *compdata, OOP_Ob
     {
         /* Be careful with the framebuffer */
         if (compdata->displaybitmap != compdata->fb)
-            HIDD_Gfx_DisposeBitMap(compdata->gfx, compdata->displaybitmap);
+            OOP_DisposeObject(compdata->displaybitmap);
 
         /* This will deactivate us */
         compdata->displaybitmap = NULL;
@@ -983,7 +983,7 @@ OOP_Object *METHOD(Compositor, Root, New)
         if ((compdata->GraphicsBase) && (compdata->gfx != NULL))
         {
             /* Create GC object that will be used for drawing operations */
-            compdata->gc = HIDD_Gfx_NewGC(compdata->gfx, NULL);
+            compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, OOP_FindClass(CLID_Hidd_GC), NULL);
 
             D(bug("[%s] Compositor GC @ %p\n", __PRETTY_FUNCTION__, compdata->gc));
 

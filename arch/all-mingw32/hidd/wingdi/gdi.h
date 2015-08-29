@@ -2,7 +2,7 @@
 #define HIDD_GDI_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the gdi HIDD.
@@ -90,6 +90,8 @@ struct gdi_staticdata
      * outside (see gdi_class.h)
      */
     ULONG                    displaynum;
+    OOP_Class 	    	   *basebm;            /* baseclass for CreateObject */
+
     OOP_Class               *gfxclass;
 
     OOP_Class               *bmclass;

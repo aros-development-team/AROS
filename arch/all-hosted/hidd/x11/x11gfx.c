@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -428,6 +428,9 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         XColor           bg, fg;
         struct gfx_data *data = OOP_INST_DATA(cl, o);
 
+        data->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+        bug("[X11] BitMap class @ 0x%p\n", data->basebm);
+
         LOCK_X11
         data->display   = XSD(cl)->display;
         data->screen    = DefaultScreen( data->display );
@@ -507,51 +510,58 @@ VOID X11Cl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *X11Cl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
-    struct pHidd_Gfx_NewBitMap  p;
-    OOP_Object                  *newbm;
-    HIDDT_ModeID                modeid;
-    struct gfx_data             *data;
-    struct TagItem              tags[] =
-    {
-        { aHidd_X11BitMap_SysDisplay   , 0 }, /* 0 */
-        { aHidd_X11BitMap_SysScreen    , 0 }, /* 1 */
-        { aHidd_X11BitMap_SysCursor    , 0 }, /* 2 */
-        { aHidd_X11BitMap_ColorMap     , 0 }, /* 3 */
-        { aHidd_X11BitMap_VisualClass  , 0 }, /* 4 */
-        { TAG_IGNORE                   , 0 }, /* 5 */
-        { TAG_MORE                     , 0 }  /* 6 */
-    };
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    OOP_Object      *object = NULL;
 
     D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
 
-    data = OOP_INST_DATA(cl, o);
-
-    tags[0].ti_Data = (IPTR)data->display;
-    tags[1].ti_Data = data->screen;
-    tags[2].ti_Data = (IPTR)data->cursor;
-    tags[3].ti_Data = data->colmap;
-    tags[4].ti_Data = XSD(cl)->vi.class;
-    tags[6].ti_Data = (IPTR)msg->attrList;
-
-    /* Displayable bitmap ? */
-    modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-
-    if (modeid != vHidd_ModeID_Invalid)
+    if (msg->cl == data->basebm)
     {
-        /* ModeID supplied, it's for sure X11 bitmap */
-        tags[5].ti_Tag    = aHidd_BitMap_ClassPtr;
-        tags[5].ti_Data    = (IPTR)XSD(cl)->bmclass;
+        struct pHidd_Gfx_CreateObject  p;
+        HIDDT_ModeID                modeid;
+        struct gfx_data             *data;
+        struct TagItem              tags[] =
+        {
+            { aHidd_X11BitMap_SysDisplay   , 0 }, /* 0 */
+            { aHidd_X11BitMap_SysScreen    , 0 }, /* 1 */
+            { aHidd_X11BitMap_SysCursor    , 0 }, /* 2 */
+            { aHidd_X11BitMap_ColorMap     , 0 }, /* 3 */
+            { aHidd_X11BitMap_VisualClass  , 0 }, /* 4 */
+            { TAG_IGNORE                   , 0 }, /* 5 */
+            { TAG_MORE                     , 0 }  /* 6 */
+        };
+
+        data = OOP_INST_DATA(cl, o);
+
+        tags[0].ti_Data = (IPTR)data->display;
+        tags[1].ti_Data = data->screen;
+        tags[2].ti_Data = (IPTR)data->cursor;
+        tags[3].ti_Data = data->colmap;
+        tags[4].ti_Data = XSD(cl)->vi.class;
+        tags[6].ti_Data = (IPTR)msg->attrList;
+
+        /* Displayable bitmap ? */
+        modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+
+        if (modeid != vHidd_ModeID_Invalid)
+        {
+            /* ModeID supplied, it's for sure X11 bitmap */
+            tags[5].ti_Tag    = aHidd_BitMap_ClassPtr;
+            tags[5].ti_Data    = (IPTR)XSD(cl)->bmclass;
+        }
+
+        p.mID = msg->mID;
+        p.cl = msg->cl;
+        p.attrList = tags;
+
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     }
+    else
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    /* !!! IMPORTANT !!! */
-    p.mID = msg->mID;
-    p.attrList = tags;
-
-    newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
-
-    ReturnPtr("X11Gfx::NewBitMap", OOP_Object *, newbm);
+    ReturnPtr("X11Gfx::CreateObject", OOP_Object *, object);
 }
 
 /****************************************************************************************/

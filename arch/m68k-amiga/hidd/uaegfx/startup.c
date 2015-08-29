@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,6 +33,8 @@ static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
 
     if (!GfxBase)
         return FALSE;
+
+    LIBBASE->csd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     if (!Init_UAEGFXClass(LIBBASE)) {
         CloseLibrary(GfxBase);

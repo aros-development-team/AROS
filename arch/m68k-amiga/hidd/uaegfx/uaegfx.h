@@ -35,6 +35,7 @@ struct RTGMode
 
 struct uaegfx_staticdata
 {
+    OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
     OOP_Class 	    	    *gfxclass;
     OOP_Class 	    	    *bmclass;
 

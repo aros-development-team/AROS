@@ -2,7 +2,7 @@
 #define LINUX_INTERN_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux framebuffer hidd for AROS
@@ -78,6 +78,9 @@ struct LinuxFB_data
     /* FBDev info */
     struct FBDevInfo fbdevinfo;
     struct Interrupt resetHandler;
+
+    /* baseclass for CreateObject */
+    OOP_Class *basebm;
 };
 
 /*** Shared data ***/

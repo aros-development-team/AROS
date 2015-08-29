@@ -2,7 +2,7 @@
 #define _ATI_H
 
 /*
-    Copyright � 2004-2007, The AROS Development Team. All rights reserved.
+    Copyright � 2004-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -108,6 +108,8 @@ struct ati_staticdata {
     OOP_Object      *PCIObject;
     OOP_Object      *PCIDevice;
     OOP_Object      *PCIDriver;
+
+    OOP_Class      *basebm;            /* baseclass for CreateObject */
 
     OOP_Class       *AtiClass;
     OOP_Class       *AtiI2C;

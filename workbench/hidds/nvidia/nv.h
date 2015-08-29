@@ -1,7 +1,7 @@
 #ifndef _NV_H
 #define _NV_H
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: private header file
@@ -182,6 +182,8 @@ struct staticdata {
     struct SignalSemaphore  HWLock;	    /* Hardware exclusive semaphore */
     struct SignalSemaphore  MultiBMLock;    /* To lock more than one bitmap at a time */
     APTR		    memPool;
+
+    OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
 
     OOP_Class		    *nvclass;
     OOP_Class		    *onbmclass;

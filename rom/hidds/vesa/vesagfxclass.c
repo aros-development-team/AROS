@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for Vesa.
@@ -87,6 +87,8 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     };
     struct pRoot_New yourmsg;
 
+    EnterFunc(bug("VesaGfx::New()\n"));
+
     /* Protect against some stupid programmer wishing to
        create one more VESA driver */
     if (XSD(cl)->vesagfxhidd)
@@ -110,9 +112,8 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     yourtags[1].ti_Data = (IPTR)msg->attrList;
     yourmsg.mID = msg->mID;
     yourmsg.attrList = yourtags;
-    msg = &yourmsg;
-    EnterFunc(bug("VesaGfx::New()\n"));
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&yourmsg);
     if (o)
     {
 	struct VesaGfx_data *data = OOP_INST_DATA(cl, o);
@@ -152,41 +153,53 @@ VOID PCVesa__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *PCVesa__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *PCVesa__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
-    BOOL displayable;
-    struct TagItem tags[2] =
-    {
-    	{TAG_IGNORE, 0                  },
-    	{TAG_MORE  , (IPTR)msg->attrList}
-    };
-    struct pHidd_Gfx_NewBitMap yourmsg;
+    OOP_Object      *object = NULL;
 
-    EnterFunc(bug("VesaGfx::NewBitMap()\n"));
+    D(bug("[VESA] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[VESA] %s: requested class 0x%p\n", __PRETTY_FUNCTION__, msg->cl));
+    D(bug("[VESA] %s: base bitmap class 0x%p\n", __PRETTY_FUNCTION__, XSD(cl)->basebm));
 
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    if (displayable)
+    if (msg->cl == XSD(cl)->basebm)
     {
-    	/* Only displayable bitmaps are bitmaps of our class */
-	tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
-	tags[0].ti_Data = (IPTR)XSD(cl)->bmclass;
+        BOOL displayable;
+        struct TagItem tags[2] =
+        {
+            {TAG_IGNORE, 0                  },
+            {TAG_MORE  , (IPTR)msg->attrList}
+        };
+        struct pHidd_Gfx_CreateObject p;
+
+        displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+        if (displayable)
+        {
+            /* Only displayable bitmaps are bitmaps of our class */
+            tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
+            tags[0].ti_Data = (IPTR)XSD(cl)->bmclass;
+        }
+        else
+        {
+            /* Non-displayable friends of our bitmaps are plain chunky bitmaps */
+            OOP_Object *friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+
+            if (friend && (OOP_OCLASS(friend) == XSD(cl)->bmclass))
+            {
+                tags[0].ti_Tag  = aHidd_BitMap_ClassID;
+                tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
+            }
+        }
+
+        p.mID = msg->mID;
+        p.cl = msg->cl;
+        p.attrList = tags;
+
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     }
     else
-    {
-	/* Non-displayable friends of our bitmaps are plain chunky bitmaps */
-    	OOP_Object *friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    	if (friend && (OOP_OCLASS(friend) == XSD(cl)->bmclass))
-    	{
-    	    tags[0].ti_Tag  = aHidd_BitMap_ClassID;
-    	    tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
-    	}
-    }
-
-    yourmsg.mID = msg->mID;
-    yourmsg.attrList = tags;
-
-    ReturnPtr("VesaGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, &yourmsg.mID));
+    ReturnPtr("VesaGfx::CreateObject", OOP_Object *, object);
 }
 
 /*********  GfxHidd::Show()  ***************************/

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GDI gfx HIDD for AROS.
@@ -336,55 +336,64 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *GDICl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {  
-    HIDDT_ModeID		 modeid;
-    struct pHidd_Gfx_NewBitMap   p;
-    OOP_Object      	    	*newbm;
-    HIDDT_StdPixFmt		 stdpf;
-    
-    struct gfx_data 	    	*data;
-    struct TagItem  	    	 tags[] =
+    OOP_Object      *object = NULL;
+
+    if (msg->cl == XSD(cl)->basebm)
     {
-    	{ aHidd_GDIBitMap_SysDisplay, 0UL }, /* 0 */
-	{ TAG_IGNORE	    	    , 0UL }, /* 1 */
-	{ TAG_IGNORE		    , 32  }, /* 2 */
-	{ TAG_MORE  	    	    , 0UL }  /* 3 */
-    };
-    
-    EnterFunc(bug("GDIGfx::NewBitMap()\n"));
-    data = OOP_INST_DATA(cl, o);
-    
-    tags[0].ti_Data = (IPTR)data->display;
-    tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
-    tags[3].ti_Data = (IPTR)msg->attrList;
+        HIDDT_ModeID		 modeid;
+        struct pHidd_Gfx_CreateObject   p;
+        HIDDT_StdPixFmt		 stdpf;
 
-    /* Create a GDI bitmap if we have a valid ModeID.
+        struct gfx_data 	    	*data;
+        struct TagItem  	    	 tags[] =
+        {
+            { aHidd_GDIBitMap_SysDisplay, 0UL }, /* 0 */
+            { TAG_IGNORE	    	    , 0UL }, /* 1 */
+            { TAG_IGNORE		    , 32  }, /* 2 */
+            { TAG_MORE  	    	    , 0UL }  /* 3 */
+        };
 
-       Also GDI bitmap can be created if there's no explicit
-       pixelformat specification and a friend bitmap is supplied,
-       which is a GDI bitmap. This is handled in the
-       superclass.
+        EnterFunc(bug("GDIGfx::CreateObject()\n"));
+        data = OOP_INST_DATA(cl, o);
 
-       Some day when AROS learns to deal with several display drivers at once, this check may go
-       away completely. This should really be handled by graphics.library. We do it here only because
-       display bitmap classes are currently private and only drivers themselves know about them.
-    */
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+        tags[0].ti_Data = (IPTR)data->display;
+        tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
+        tags[3].ti_Data = (IPTR)msg->attrList;
 
-    if (modeid != vHidd_ModeID_Invalid) {
-        tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
-	D(bug("[GDI] ModeID: 0x%08lX, ClassPtr: 0x%p\n", modeid, tags[1].ti_Data));
+        /* Create a GDI bitmap if we have a valid ModeID.
+
+           Also GDI bitmap can be created if there's no explicit
+           pixelformat specification and a friend bitmap is supplied,
+           which is a GDI bitmap. This is handled in the
+           superclass.
+
+           Some day when AROS learns to deal with several display drivers at once, this check may go
+           away completely. This should really be handled by graphics.library. We do it here only because
+           display bitmap classes are currently private and only drivers themselves know about them.
+        */
+        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+        stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+
+        if (modeid != vHidd_ModeID_Invalid) {
+            tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
+            D(bug("[GDI] ModeID: 0x%08lX, ClassPtr: 0x%p\n", modeid, tags[1].ti_Data));
+        }
+        /* longword-align planar bitmaps. This is needed for BlitColorExpansion() to work properly. */
+        if (stdpf == vHidd_StdPixFmt_Plane)
+            tags[2].ti_Tag = aHidd_BitMap_Align;
+
+        p.mID = msg->mID;
+        p.cl = msg->cl;
+        p.attrList = tags;
+
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     }
-    /* longword-align planar bitmaps. This is needed for BlitColorExpansion() to work properly. */
-    if (stdpf == vHidd_StdPixFmt_Plane)
-	tags[2].ti_Tag = aHidd_BitMap_Align;
-	    
-    p.mID = msg->mID;
-    p.attrList = tags;
-    newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
-    ReturnPtr("GDIGfx::NewBitMap", OOP_Object *, newbm);
+    else
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    ReturnPtr("GDIGfx::CreateObject", OOP_Object *, object);
 }
 
 /****************************************************************************************/

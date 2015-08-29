@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VGA and compatible cards.
@@ -227,30 +227,41 @@ VOID PCVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     return;
 }
 
-/********** GfxHidd::NewBitMap()  ****************************/
-OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+/********** GfxHidd::CreateObject()  ****************************/
+OOP_Object *PCVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
-    struct TagItem mytags[2];
-    struct pHidd_Gfx_NewBitMap mymsg;
-    HIDDT_ModeID modeid;
-    
-    EnterFunc(bug("VGAGfx::NewBitMap()\n"));
+    OOP_Object      *object = NULL;
 
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    if (vHidd_ModeID_Invalid != modeid) {
-	/* User supplied a valid modeid. We can use our class */
-	mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
-	mytags[0].ti_Data	= (IPTR)XSD(cl)->bmclass;
-	mytags[1].ti_Tag	= TAG_MORE;
-	mytags[1].ti_Data	= (IPTR)msg->attrList;
-	/* Like in Gfx::New() we init a new message struct */
-	mymsg.mID	= msg->mID;
-	mymsg.attrList	= mytags;
-	/* Pass the new message to the superclass */
-	msg = &mymsg;
+    EnterFunc(bug("VGAGfx::CreateObject()\n"));
+
+    if (msg->cl == XSD(cl)->basebm)
+    {
+        struct TagItem mytags[] =
+        {
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+            { TAG_MORE, (IPTR)msg->attrList }
+        };
+
+        struct pHidd_Gfx_CreateObject mymsg;
+        HIDDT_ModeID modeid;
+
+        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+        if (vHidd_ModeID_Invalid != modeid) {
+            /* User supplied a valid modeid. We can use our class */
+            mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
+            mytags[0].ti_Data	= (IPTR)XSD(cl)->bmclass;
+        }
+        /* Like in Gfx::New() we init a new message struct */
+        mymsg.mID	= msg->mID;
+        mymsg.cl	= msg->cl;
+        mymsg.attrList	= mytags;
+
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     }
+    else
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    ReturnPtr("VGAGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
+    ReturnPtr("VGAGfx::CreateObject", OOP_Object *, object);
 }
 
 /*********  GfxHidd::Show()  ***************************/

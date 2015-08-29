@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -250,6 +250,8 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
             sd->mid_CopyLUTMemBox32 = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
             sd->mid_GetImage		= OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_GetImage);
 
+            LIBBASE->sd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
+            
             InitSemaphore(&LIBBASE->sd.HWLock);
             InitSemaphore(&LIBBASE->sd.MultiBMLock);
             InitSemaphore(&LIBBASE->sd.CardMemLock);
