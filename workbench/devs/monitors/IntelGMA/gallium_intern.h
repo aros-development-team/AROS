@@ -13,7 +13,8 @@ struct HIDDGalliumData
  ULONG dummy;
 };
 
-#define IID_Hidd_i915Gallium "hidd.gallium.i915"
+#define CLID_Hidd_Gallium_IntelGMA "hidd.gallium.intelgma"
+#define IID_Hidd_Gallium_IntelGMA "hidd.gallium.ntelgma"
 
 VOID init_aros_winsys();
 BOOL InitGalliumClass();

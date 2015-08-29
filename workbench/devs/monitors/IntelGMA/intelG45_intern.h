@@ -155,6 +155,7 @@ struct g45staticdata
 
 	uint32_t				DDCPort;
 
+    OOP_Class 	    	    *basegc;            /* baseclass for CreateObject */
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
     OOP_Class 	    	    *basegallium;            /* baseclass for CreateObject */
 

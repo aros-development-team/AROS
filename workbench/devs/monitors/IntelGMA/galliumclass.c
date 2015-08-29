@@ -94,7 +94,7 @@ BOOL InitGalliumClass()
                 {aMeta_SuperID   , (IPTR)CLID_Hidd_Gallium },
                 {aMeta_InterfaceDescr, (IPTR)Gallium_ifdescr },
                 {aMeta_InstSize  , sizeof(struct HIDDGalliumData)},
-                {aMeta_ID        , (IPTR)"hidd.gallium.i915"},
+                {aMeta_ID        , (IPTR)CLID_Hidd_Gallium_IntelGMA},
                 {TAG_DONE, 0}
             };
 

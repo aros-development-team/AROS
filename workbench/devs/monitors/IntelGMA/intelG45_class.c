@@ -22,6 +22,7 @@
 
 #include "intelG45_intern.h"
 #include "intelG45_regs.h"
+#include "gallium_intern.h"
 #include "compositing.h"
 
 #define sd ((struct g45staticdata*)SD(cl))
