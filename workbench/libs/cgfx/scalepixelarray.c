@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -118,56 +118,59 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
 
     OOP_GetAttr(HIDD_BM_OBJ(RastPort->BitMap), aHidd_BitMap_GfxHidd,
         (IPTR *)&gfx_hidd);
-    gc = HIDD_Gfx_NewGC(gfx_hidd, gc_tags);
-
-    /* Create two temporary bitmap objects: one the size of the source area
-       and another the size of the destination area */
-
-    bm_tags[0].ti_Data = (IPTR)gfx_hidd;
-    bm_tags[3].ti_Data = GetHIDDRectFmt(SrcFormat, RastPort, CyberGfxBase);
-    tempbm_obj = HIDD_Gfx_NewBitMap(gfx_hidd, bm_tags);
-
-    bm_tags[1].ti_Data = DestW;
-    bm_tags[2].ti_Data = DestH;
-#if 0
-    // FIXME: This doesn't work (X11 and VESA). Should it?
-    bm_tags[3].ti_Tag = aHidd_BitMap_Friend;
-    bm_tags[3].ti_Data = (IPTR)HIDD_BM_OBJ(RastPort->BitMap);
-#endif
-    tempbm2_obj = HIDD_Gfx_NewBitMap(gfx_hidd, bm_tags);
-
-    if (gc != NULL && tempbm_obj != NULL && tempbm2_obj != NULL)
+    gc = HIDD_Gfx_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basegc, gc_tags);
+    if (gc)
     {
-        /* Copy the source array to its temporary bitmap object */
+        /* Create two temporary bitmap objects: one the size of the source area
+           and another the size of the destination area */
 
-        HIDD_BM_PutImage(tempbm_obj, gc, srcRect, SrcMod, 0, 0, SrcW, SrcH,
-            vHidd_StdPixFmt_Native);
+        bm_tags[0].ti_Data = (IPTR)gfx_hidd;
+        bm_tags[3].ti_Data = GetHIDDRectFmt(SrcFormat, RastPort, CyberGfxBase);
+        tempbm_obj = HIDD_Gfx_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basebm, bm_tags);
+        if (tempbm_obj)
+        {
+            bm_tags[1].ti_Data = DestW;
+            bm_tags[2].ti_Data = DestH;
+#if 0
+            // FIXME: This doesn't work (X11 and VESA). Should it?
+            bm_tags[3].ti_Tag = aHidd_BitMap_Friend;
+            bm_tags[3].ti_Data = (IPTR)HIDD_BM_OBJ(RastPort->BitMap);
+#endif
+            tempbm2_obj = HIDD_Gfx_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basebm, bm_tags);
+            if (tempbm2_obj)
+            {
+                /* Copy the source array to its temporary bitmap object */
 
-        /* Scale temporary source bitmap on to temporary destination bitmap */
+                HIDD_BM_PutImage(tempbm_obj, gc, srcRect, SrcMod, 0, 0, SrcW, SrcH,
+                    vHidd_StdPixFmt_Native);
 
-        scale_args.bsa_SrcWidth = SrcW;
-        scale_args.bsa_SrcHeight = SrcH;
-        scale_args.bsa_DestWidth = DestW;
-        scale_args.bsa_DestHeight = DestH;
-        HIDD_BM_BitMapScale(tempbm2_obj, tempbm_obj, tempbm2_obj, &scale_args,
-            gc);
+                /* Scale temporary source bitmap on to temporary destination bitmap */
 
-        /* Render temporary destination bitmap to destination bitmap */
+                scale_args.bsa_SrcWidth = SrcW;
+                scale_args.bsa_SrcHeight = SrcH;
+                scale_args.bsa_DestWidth = DestW;
+                scale_args.bsa_DestHeight = DestH;
+                HIDD_BM_BitMapScale(tempbm2_obj, tempbm_obj, tempbm2_obj, &scale_args,
+                    gc);
 
-        data.srcbm_obj = tempbm2_obj;
-        data.gfx_hidd = gfx_hidd;
-        rr.MinX = DestX;
-        rr.MinY = DestY;
-        rr.MaxX = DestX + DestW - 1;
-        rr.MaxY = DestY + DestH - 1;
-        result = DoRenderFunc(RastPort, NULL, &rr, RenderHook, &data, TRUE);
+                /* Render temporary destination bitmap to destination bitmap */
+
+                data.srcbm_obj = tempbm2_obj;
+                data.gfx_hidd = gfx_hidd;
+                rr.MinX = DestX;
+                rr.MinY = DestY;
+                rr.MaxX = DestX + DestW - 1;
+                rr.MaxY = DestY + DestH - 1;
+                result = DoRenderFunc(RastPort, NULL, &rr, RenderHook, &data, TRUE);
+
+// Discard temporary resources ...
+
+                OOP_DisposeObject(tempbm2_obj);
+            }
+            OOP_DisposeObject(tempbm_obj);
+        }
+        OOP_Gfx_DisposeObject(gc);
     }
-
-    /* Discard temporary resources */
-
-    OOP_DisposeObject(tempbm_obj);
-    OOP_DisposeObject(tempbm2_obj);
-    OOP_DisposeObject(gc);
 
     return result;
 

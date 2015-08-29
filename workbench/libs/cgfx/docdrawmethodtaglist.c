@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -218,36 +218,38 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
 #endif
 
         OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *) & gfxhidd);
-        gc = HIDD_Gfx_NewGC(gfxhidd, gc_tags);
-
-        /* Get the maximum number of lines */
-        while (lines_todo != 0)
+        gc = HIDD_Gfx_CreateObject(gfxhidd, CyberGfxBase->basegc, gc_tags);
+        if (gc)
         {
-            tocopy_h = MIN(lines_todo, max_tocopy_h);
-            msg->cdm_MemPtr = CyberGfxBase->pixel_buf;
-            msg->cdm_BytesPerRow = bytesperrow;
+                /* Get the maximum number of lines */
+                while (lines_todo != 0)
+                {
+                    tocopy_h = MIN(lines_todo, max_tocopy_h);
+                    msg->cdm_MemPtr = CyberGfxBase->pixel_buf;
+                    msg->cdm_BytesPerRow = bytesperrow;
 
-            msg->cdm_BytesPerPix = (UWORD) bytesperpixel;
+                    msg->cdm_BytesPerPix = (UWORD) bytesperpixel;
 
-            LOCK_PIXBUF
-            HIDD_BM_GetImage(dstbm_obj, (UBYTE *) CyberGfxBase->pixel_buf,
-                bytesperrow, rect->MinX, rect->MinY + height - lines_todo,
-                width, lines_todo, data->stdpf);
+                    LOCK_PIXBUF
+                    HIDD_BM_GetImage(dstbm_obj, (UBYTE *) CyberGfxBase->pixel_buf,
+                        bytesperrow, rect->MinX, rect->MinY + height - lines_todo,
+                        width, lines_todo, data->stdpf);
 
-            /* Use the hook to set some pixels */
-            CallHookPkt(data->hook, data->rp, msg);
+                    /* Use the hook to set some pixels */
+                    CallHookPkt(data->hook, data->rp, msg);
 
-            HIDD_BM_PutImage(dstbm_obj, gc,
-                (UBYTE *) CyberGfxBase->pixel_buf, bytesperrow, rect->MinX,
-                rect->MinY + height - lines_todo, width, lines_todo,
-                data->stdpf);
+                    HIDD_BM_PutImage(dstbm_obj, gc,
+                        (UBYTE *) CyberGfxBase->pixel_buf, bytesperrow, rect->MinX,
+                        rect->MinY + height - lines_todo, width, lines_todo,
+                        data->stdpf);
 
-            ULOCK_PIXBUF
+                    ULOCK_PIXBUF
 
-            lines_todo -= tocopy_h;
+                    lines_todo -= tocopy_h;
+                }
+
+                OOP_DisposeObject(gc);
         }
-
-        OOP_DisposeObject(gc);
     }
 
     return width * height;
