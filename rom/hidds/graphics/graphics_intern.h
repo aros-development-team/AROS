@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -140,14 +140,11 @@ struct HIDDGraphicsData
 	/* Framebuffer control stuff */
 	OOP_Object *framebuffer;
 	OOP_Object *shownbm;
-        BYTE        fbmode;
-        struct SignalSemaphore fbsem;
+	BYTE        fbmode;
+	struct SignalSemaphore fbsem;
 
 	/* gc used for stuff like rendering cursor */
 	OOP_Object *gc;
-	
-	/* The mode currently used (obsolete ?)
-	HIDDT_ModeID curmode; */
 };
 
 /* Private gfxhidd methods */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd initialization code.
@@ -28,6 +28,9 @@ static int GFX_Init(LIBBASETYPEPTR LIBBASE)
     struct class_static_data *csd = &LIBBASE->hdg_csd;
     
     EnterFunc(bug("GfxHIDD_Init()\n"));
+
+    D(bug("[HiddGfx] GC class @ 0x%p\n", csd->gcclass));
+    D(bug("[HiddGfx] BitMap class @ 0x%p\n", csd->bitmapclass));
 
     csd->cs_GfxBase = NULL;
     NEWLIST(&csd->pflist);

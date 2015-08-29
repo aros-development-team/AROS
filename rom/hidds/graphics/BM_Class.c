@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics bitmap class implementation.
@@ -53,7 +53,7 @@
 
         Normally this class doesn't need to have public ID. In order to use it the driver
         should pass class pointer as aoHidd_BitMap_ClassPtr value to the graphics base class
-        in its moHidd_Gfx_NewBitMap implementation.
+        in its moHidd_Gfx_CreateObject implementation.
 
         BitMap base class is in C++ terminology a pure virtual
         baseclass. It will not allocate any bitmap data at all;
@@ -63,7 +63,7 @@
         like its size and pixelformat. A pixelformat is an object of private class which
         stores the actual information about the format.
 
-        There are two ways that we can find out the pixfmt in our moHidd_Gfx_NewBitMap
+        There are two ways that we can find out the pixfmt in our moHidd_Gfx_CreateObject
         implementation:
 
         Displayable bitmap -
@@ -411,7 +411,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
         Specify display driver object this bitmap was created with.
 
         Normally the user doesn't have to supply this attribute. Instead you should use
-        driver's moHidd_Gfx_NewBitMap method in order to create bitmaps. In this case
+        driver's moHidd_Gfx_CreateObject method in order to create bitmaps. In this case
         aoHidd_BitMap_GfxHidd attribute will be provided by graphics driver base class
         with the correct value.
 
@@ -426,7 +426,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
     BUGS
 
     SEE ALSO
-        CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
+        CLID_Hidd_Gfx/moHidd_Gfx_CreateObject
 
     INTERNALS
 
@@ -449,8 +449,8 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
 
         Values less than num_Hidd_PseudoStdPixFmt are illegal for this attribute.
 
-        Actually the bitmap class itself ignores this attribute. It is processed by
-        CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap method in order to look up a corresponding
+        The bitmap class itself ignores this attribute. It is processed by
+        CLID_Hidd_Gfx/moHidd_Gfx_CreateObject method in order to look up a corresponding
         pixelformat object in the system's database.
 
     NOTES
@@ -464,7 +464,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
     BUGS
 
     SEE ALSO
-        aoHidd_BitMap_PixFmt, CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
+        aoHidd_BitMap_PixFmt, CLID_Hidd_Gfx/moHidd_Gfx_CreateObject
 
     INTERNALS
         Currently all display drivers omit specifying own bitmap class for bitmaps with this
@@ -497,7 +497,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
 
     NOTES
         This attribute is internally specified during bitmap creation, but it's illegal
-        to do this for the user. NewBitMap method of graphics driver performs an explicit
+        to do this for the user. CreateObject method of graphics driver performs an explicit
         check against this. It's up to graphics base classes to figure out its value.
 
     EXAMPLE
@@ -565,11 +565,11 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
         Explicitly specify bitmap's class pointer.
 
         This attribute is not actually a bitmap's attribute. Your display driver class can
-        supply it to base class' moHidd_Gfx_NewBitMap method in order to select a class on
+        supply it to base class' moHidd_Gfx_CreateObject method in order to select a class on
         which to call OOP_NewObject().
 
         If neither this attribute nor aoHidd_BitMap_ClassID attribute is provided for
-        moHidd_Gfx_NewBitMap, graphics base class will do its best in order to find out the
+        moHidd_Gfx_CreateObject, graphics base class will do its best in order to find out the
         correct class based on aoHidd_StdPixFmt attribute value or friend bitmap.
 
     NOTES
@@ -582,7 +582,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
     BUGS
 
     SEE ALSO
-        aoHidd_BitMap_ClassID, CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
+        aoHidd_BitMap_ClassID, CLID_Hidd_Gfx/moHidd_Gfx_CreateObject
 
     INTERNALS
 
@@ -603,10 +603,10 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
         Explicitly specify bitmap's class ID.
 
         The purpose of this attribute is to let graphics driver base class to select a class
-        on which to call OOP_NewObject() in its moHidd_Gfx_NewBitMap implementation.
+        on which to call OOP_NewObject() in its moHidd_Gfx_CreateObject implementation.
 
         If neither this attribute nor aoHidd_BitMap_ClassPtr attribute is provided for
-        moHidd_Gfx_NewBitMap, graphics base class will do its best in order to find out the
+        moHidd_Gfx_CreateObject, graphics base class will do its best in order to find out the
         correct class based on aoHidd_StdPixFmt attribute value or aoHidd_BitMap_ClassPtr value
         of friend bitmap.
 
@@ -618,7 +618,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
         The pointer to a given class will not be remembered as aoHidd_BitMap_ClassPtr value.
 
     SEE ALSO
-        aoHidd_BitMap_ClassPtr, CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
+        aoHidd_BitMap_ClassPtr, CLID_Hidd_Gfx/moHidd_Gfx_CreateObject
 
     INTERNALS
 
@@ -664,7 +664,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
     FUNCTION
         Specifies that the bitmap is a framebuffer bitmap.
 
-        A detailed description of a framebuffer is given in CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
+        A detailed description of a framebuffer is given in CLID_Hidd_Gfx/moHidd_Gfx_CreateObject
         and in CLID_Hidd_Gfx/moHidd_Gfx_Show documentation.
 
         Specifying this attribute causes also implicit setting of aoHidd_BitMap_Displayable
@@ -965,7 +965,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
         if (!data->gfxhidd)
         {
             D(bug("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n"));
-            D(bug("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n"));
+            D(bug("!!!! The reason for this is that the gfxhidd subclass CreateObject() method\n"));
             D(bug("!!!! has not left it to the baseclass to actually create the object,\n"));
             D(bug("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n"));
 
