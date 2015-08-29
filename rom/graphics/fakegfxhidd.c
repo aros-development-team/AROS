@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -71,6 +71,10 @@ struct gfx_data
     LONG    	    	    curs_maxy;
     struct SignalSemaphore  fbsema;
     BOOL    	    	    backup_done;
+
+    /* baseclasses for CreateObject */
+    OOP_Class *basegc;
+    OOP_Class *basebm;
 };
 
 /******************************************************************************/
@@ -298,6 +302,9 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     memset(data, 0, sizeof (*data));
     InitSemaphore(&data->fbsema);
 
+    data->basegc = OOP_FindClass(CLID_Hidd_GC);
+    data->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+
     /*
      * If this is direct framebuffer driver, we draw our
      * cursor on framebuffer bitmap.
@@ -317,18 +324,18 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{
 	    { TAG_DONE, 0UL }
 	};
-	
-    	data->gc = HIDD_Gfx_NewGC(data->gfxhidd, gctags);
+
+    	data->gc = HIDD_Gfx_CreateObject(data->gfxhidd, data->basegc, gctags);
 	if (NULL != data->gc)
 	{
 	    ok = TRUE;
 	}
     }
-    
+
     if (!ok)
     {
        	OOP_MethodID mid;
-	
+
 	mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	OOP_CoerceMethod(cl, o, (OOP_Msg)&mid);
     }
@@ -369,29 +376,43 @@ static void gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     OOP_DoMethod(data->gfxhidd, (OOP_Msg)msg);
 }
 
-static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+static IPTR gfx_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    /* Is the user about to create a framebuffer ? */
-    BOOL    	     create_fb;
-    struct gfx_data *data;
-    OOP_Object      *realfb;
-    OOP_Object      *ret = NULL;
-    
-    data = OOP_INST_DATA(cl, o);
-    create_fb = (BOOL)GetTagData(data->fakefb_attr, FALSE, msg->attrList);
-    
-    realfb = HIDD_Gfx_NewBitMap(data->gfxhidd, msg->attrList);
-    
-    if (realfb && create_fb)
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+
+    return OOP_DoMethod(data->gfxhidd, msg);
+}
+
+static OOP_Object *gfx_createobject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+{
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    OOP_Object      *object = NULL;
+
+    if (msg->cl == data->basebm)
     {
-    	ret = create_fake_fb(realfb, data, GfxBase);
-	if (!ret)
-	    OOP_DisposeObject(realfb);
+        /* Is the user about to create a framebuffer ? */
+        BOOL    	     create_fb;
+        OOP_Object      *realfb;
+
+        create_fb = (BOOL)GetTagData(data->fakefb_attr, FALSE, msg->attrList);
+
+        realfb = HIDD_Gfx_CreateObject(data->gfxhidd, msg->cl, msg->attrList);
+
+        if (realfb && create_fb)
+        {
+            object = create_fake_fb(realfb, data, GfxBase);
+            if (!object)
+                OOP_DisposeObject(realfb);
+        }
+        else
+            object = realfb;
     }
     else
-    	ret = realfb;
+    {
+        object = (OOP_Object *)gfx_fwd(cl, o, (OOP_Msg)msg);
+    }
 
-    return ret;
+    return object;
 }
 
 static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
@@ -700,15 +721,6 @@ static BOOL gfx_getmaxspritesize(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 	return TRUE;
     } else
 	return FALSE;
-}
-
-static IPTR gfx_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    struct gfx_data *data;
-    
-    data = OOP_INST_DATA(cl, o);
-    
-    return OOP_DoMethod(data->gfxhidd, msg);
 }
 
 /* Private non-virtual method */
@@ -1285,7 +1297,7 @@ static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase)
 	return TRUE;
 
     /* Create new backup bitmap */
-    data->curs_backup = HIDD_Gfx_NewBitMap(data->gfxhidd, bmtags);
+    data->curs_backup = HIDD_Gfx_CreateObject(data->gfxhidd, data->basebm, bmtags);
     D(bug("[FakeGfx] New backup bitmap is 0x%p\n", data->curs_backup));
     if (!data->curs_backup)
 	return FALSE;
@@ -1516,10 +1528,7 @@ static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
     
     struct OOP_MethodDescr gfxhidd_descr[num_Hidd_Gfx_Methods + 1] = 
     {
-        {(IPTR (*)())gfx_fwd	  	   , moHidd_Gfx_NewGC		},
-        {(IPTR (*)())gfx_fwd	  	   , moHidd_Gfx_DisposeGC	},
-        {(IPTR (*)())gfx_newbitmap	   , moHidd_Gfx_NewBitMap	},
-        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeBitMap	},
+        {(IPTR (*)())gfx_createobject	   , moHidd_Gfx_CreateObject	},
         {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryModeIDs	},
         {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_ReleaseModeIDs	},
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CheckMode	},

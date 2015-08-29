@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -175,7 +175,7 @@ static OOP_Object *create_framebuffer(struct monitor_driverdata *mdd, struct Gfx
     } else {
     	/* Create the framebuffer object */
 	fbtags[1].ti_Data = hiddmode;
-	fb = HIDD_Gfx_NewBitMap(mdd->gfxhidd, fbtags);
+	fb = HIDD_Gfx_CreateObject(mdd->gfxhidd, PrivGBase(GfxBase)->basebm, fbtags);
     }
 
     return fb;
