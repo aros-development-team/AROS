@@ -41,6 +41,7 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     if (!OOP_ObtainAttrBases(attrbases))
         return FALSE;
 
+    LIBBASE->sd.basegc = OOP_FindClass(CLID_Hidd_GC);
     LIBBASE->sd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
     LIBBASE->sd.basegallium = OOP_FindClass(CLID_Hidd_Gallium);
 

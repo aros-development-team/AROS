@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -461,7 +461,7 @@ static VOID HIDDCompositorToggleCompositing(struct HIDDCompositorData * compdata
             bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = compdata->screenmodeid;
             bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
 
-            compdata->compositedbitmap = HIDD_Gfx_NewBitMap(compdata->gfx, bmtags);
+            compdata->compositedbitmap = HIDD_Gfx_CreateObject(compdata->gfx, SD(OOP_OCLASS(compdata->gfx))->basebm, bmtags);
         }
         
         /* (c) */
@@ -492,7 +492,7 @@ static VOID HIDDCompositorToggleCompositing(struct HIDDCompositorData * compdata
     /* (a) - disposing of oldcompositorbitmap needs to happen after mode switch 
        since it could have been the current screenbitmap */
     if (oldcompositedbitmap)
-        HIDD_Gfx_DisposeBitMap(compdata->gfx, oldcompositedbitmap);
+        OOP_DisposeObject(oldcompositedbitmap);
 
     /* Handled */
     compdata->modeschanged = FALSE;
@@ -549,7 +549,7 @@ OOP_Object *METHOD(Compositor, Root, New)
             if (compdata->gfx != NULL)
             {
                 /* Create GC object that will be used for drawing operations */
-                compdata->gc = HIDD_Gfx_NewGC(compdata->gfx, NULL);
+                compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, SD(cl)->basegc, NULL);
             }
         }
         
