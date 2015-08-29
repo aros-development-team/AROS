@@ -37,6 +37,8 @@ struct VideoCoreGfx_staticdata {
         struct SignalSemaphore  vcsd_GPUMemLock;
         struct MemHeaderExt     vcsd_GPUMemManage;
 
+        OOP_Class 	    	*vcsd_basebm;            /* baseclass for CreateObject */
+
         OOP_Class               *vcsd_VideoCoreGfxClass;
 	OOP_Object              *vcsd_VideoCoreGfxInstance;
 	OOP_Class               *vcsd_VideoCoreGfxOnBMClass;

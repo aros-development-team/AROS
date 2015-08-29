@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -86,10 +86,9 @@ BOOL InitGalliumClass()
         || sd->ProductID == 0x2993
     ){
         CloseLibrary( OpenLibrary("gallium.library",0)); // ???
-    
+
         if((HiddGalliumAttrBase = OOP_ObtainAttrBase(IID_Hidd_Gallium)))
         {
-    
             struct TagItem Gallium_tags[] =
             {
                 {aMeta_SuperID   , (IPTR)CLID_Hidd_Gallium },
@@ -98,19 +97,21 @@ BOOL InitGalliumClass()
                 {aMeta_ID        , (IPTR)"hidd.gallium.i915"},
                 {TAG_DONE, 0}
             };
-    
+
+            sd->basegallium = OOP_FindClass(CLID_Hidd_Gallium);
+
             sd->galliumclass = OOP_NewObject(NULL, CLID_HiddMeta, Gallium_tags);
             if (sd->galliumclass)
             {
                 sd->galliumclass->UserData = sd;
                 OOP_AddClass(sd->galliumclass);
                 i915MemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);
-    
+
                 init_aros_winsys();
                 bug("i915 gallium init OK\n");
                 return TRUE;
             }
-    
+
             OOP_ReleaseAttrBase(IID_Hidd_Gallium);
         }
     }

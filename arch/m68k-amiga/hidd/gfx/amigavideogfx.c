@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -647,29 +647,41 @@ VOID AmigaVideoCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 }
 
 
-OOP_Object *AmigaVideoCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *AmigaVideoCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {  
-    struct amigavideo_staticdata *csd = CSD(cl);
-    struct Library *UtilityBase = csd->cs_UtilityBase;
-    HIDDT_ModeID		modeid;
-    struct pHidd_Gfx_NewBitMap   newbitmap;
-    struct TagItem tags[2];
-   
-    EnterFunc(bug("AGFX::NewBitMap()\n"));
-    
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    D(bug("modeid=%08x\n", modeid));
-    if (modeid != vHidd_ModeID_Invalid) {
-	tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
-	tags[0].ti_Data = (IPTR)CSD(cl)->amigabmclass;
-	tags[1].ti_Tag = TAG_MORE;
-	tags[1].ti_Data = (IPTR)msg->attrList;
-	newbitmap.mID = msg->mID;
-	newbitmap.attrList = tags;
-	msg = &newbitmap;
-    }
+    OOP_Object      *object = NULL;
 
-    ReturnPtr("AGFX::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
+    EnterFunc(bug("AGFX::CreateObject()\n"));
+
+    if (msg->cl == CSD(cl)->cs_basebm)
+    {
+        struct amigavideo_staticdata *csd = CSD(cl);
+        struct Library *UtilityBase = csd->cs_UtilityBase;
+        HIDDT_ModeID		modeid;
+        struct pHidd_Gfx_CreateObject   p;
+        struct TagItem tags[] =
+        {
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+            { TAG_MORE, (IPTR)msg->attrList }
+        };
+
+        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+        D(bug("modeid=%08x\n", modeid));
+        if (modeid != vHidd_ModeID_Invalid) {
+            tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
+            tags[0].ti_Data = (IPTR)CSD(cl)->amigabmclass;
+
+        }
+        p.mID = msg->mID;
+        p.cl = msg->cl;
+        p.attrList = tags;
+
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
+    }
+    else
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    ReturnPtr("AGFX::CreateObject", OOP_Object *, object);
 }
 
 VOID AmigaVideoCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)

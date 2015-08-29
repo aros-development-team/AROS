@@ -2,7 +2,7 @@
 #define _VMWARESVGA_CLASS_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VMWareSVGA useful data.
@@ -20,6 +20,7 @@
 
 struct VMWareSVGA_staticdata {
 	struct MemHeader mh;
+        OOP_Class *basebm;            /* baseclass for CreateObject */
 	OOP_Class *vmwaresvgaclass;
 	OOP_Class *vmwaresvgaonbmclass;
 	OOP_Class *vmwaresvgaoffbmclass;

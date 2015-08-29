@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: nvidia.hidd initialization
@@ -772,7 +772,9 @@ static int NV_Init(LIBBASETYPEPTR LIBBASE)
 		{ IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
 		{ NULL, NULL }
 	    };
-		
+
+            sd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+
 	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		Find_NV_Card(sd);

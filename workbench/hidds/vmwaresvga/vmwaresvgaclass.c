@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VMWare.
@@ -253,58 +253,72 @@ VOID VMWareSVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *VMWareSVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
-    BOOL displayable;
-    BOOL framebuffer;
-    OOP_Class *classptr = NULL;
-    struct TagItem tags[2];
-    struct pHidd_Gfx_NewBitMap yourmsg;
+    OOP_Object      *object = NULL;
 
-    EnterFunc(bug("VMWareSVGA::NewBitMap()\n"));
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-    if (framebuffer)
-        classptr = XSD(cl)->vmwaresvgaonbmclass;
-    else if (displayable)
-        classptr = XSD(cl)->vmwaresvgaoffbmclass;
-    else
+    EnterFunc(bug("VMWareSVGA::CreateObject()\n"));
+
+    if (msg->cl == XSD(cl)->basebm)
     {
-        HIDDT_ModeID modeid;
-        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-        if (modeid != vHidd_ModeID_Invalid)
+        BOOL displayable;
+        BOOL framebuffer;
+        OOP_Class *classptr = NULL;
+        struct TagItem tags[] =
+        {
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+            { TAG_MORE, (IPTR)msg->attrList }
+        };
+
+        struct pHidd_Gfx_CreateObject yourmsg;
+
+        displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+        framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+        if (framebuffer)
+            classptr = XSD(cl)->vmwaresvgaonbmclass;
+        else if (displayable)
             classptr = XSD(cl)->vmwaresvgaoffbmclass;
         else
         {
-            HIDDT_StdPixFmt stdpf;
-            stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-            if (stdpf == vHidd_StdPixFmt_Unknown)
+            HIDDT_ModeID modeid;
+            modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+            if (modeid != vHidd_ModeID_Invalid)
+                classptr = XSD(cl)->vmwaresvgaoffbmclass;
+            else
             {
-                OOP_Object *friend;
-                friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, (IPTR)NULL, msg->attrList);
-                if (friend != NULL)
+                HIDDT_StdPixFmt stdpf;
+                stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+                if (stdpf == vHidd_StdPixFmt_Unknown)
                 {
-                    OOP_Class *friend_class = NULL;
-                    OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (IPTR *)&friend_class);
-                    if (friend_class == XSD(cl)->vmwaresvgaonbmclass)
+                    OOP_Object *friend;
+                    friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, (IPTR)NULL, msg->attrList);
+                    if (friend != NULL)
                     {
-                        classptr = XSD(cl)->vmwaresvgaoffbmclass;
+                        OOP_Class *friend_class = NULL;
+                        OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (IPTR *)&friend_class);
+                        if (friend_class == XSD(cl)->vmwaresvgaonbmclass)
+                        {
+                            classptr = XSD(cl)->vmwaresvgaoffbmclass;
+                        }
                     }
                 }
             }
         }
-    }
-    if (classptr != NULL)
-    {
-        tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
-        tags[0].ti_Data = (IPTR)classptr;
-        tags[1].ti_Tag = TAG_MORE;
-        tags[1].ti_Data = (IPTR)msg->attrList;
+        if (classptr != NULL)
+        {
+            tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
+            tags[0].ti_Data = (IPTR)classptr;
+        }
         yourmsg.mID = msg->mID;
+        yourmsg.cl = msg->cl;
         yourmsg.attrList = tags;
-        msg = &yourmsg;
+
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&yourmsg);
     }
-    ReturnPtr("VMWareSVGA::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
+    else
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    ReturnPtr("VMWareSVGA::CreateObject", OOP_Object *, object);
 }
 
 VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)

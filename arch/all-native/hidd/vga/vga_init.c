@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: vga gfx Hidd for standalone AROS
@@ -49,7 +49,7 @@ static struct OOP_ABDescr abd[] =
     { IID_Hidd_Gfx,		&HiddGfxAttrBase },
     { IID_Hidd_Sync,		&HiddSyncAttrBase },
     /* Private bases */
-    { IID_Hidd_VGABitMap,	&HiddVGABitMapAB },
+    { IID_Hidd_BitMap_VGA,	&HiddVGABitMapAB },
     { NULL, NULL }
 };
 
@@ -118,6 +118,8 @@ static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
 
 	return FALSE;
     }
+
+    xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     /* 
      * It is unknown (and no way to know) what hardware part this driver uses.

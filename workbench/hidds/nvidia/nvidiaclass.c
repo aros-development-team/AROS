@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NVidia gfx class
@@ -267,106 +267,117 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     return o;
 }
 
-OOP_Object *NV__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
-	    struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *NV__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
+	    struct pHidd_Gfx_CreateObject *msg)
 {
-    BOOL displayable, framebuffer;
-    OOP_Class *classptr = NULL;
-    struct TagItem mytags[2];
-    struct pHidd_Gfx_NewBitMap mymsg;
+    OOP_Object      *object = NULL;
 
-    /* Displayable bitmap ? */
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-
-D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displayable));
-
-    if (framebuffer)
+    if (msg->cl == _sd->basebm)
     {
-	/* If the user asks for a framebuffer map we must ALLWAYS supply a class */
-	classptr = _sd->onbmclass;
-    }
-    else if (displayable)
-    {
-    	classptr = _sd->onbmclass;	//offbmclass;
+        BOOL displayable, framebuffer;
+        OOP_Class *classptr = NULL;
+        struct TagItem mytags[] =
+        {
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+            { TAG_MORE, (IPTR)msg->attrList }
+        };
+
+        struct pHidd_Gfx_CreateObject p;
+
+        /* Displayable bitmap ? */
+        displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+        framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+
+        D(bug("[NVidia] CreateObject: framebuffer=%d, displayable=%d\n", framebuffer, displayable));
+
+        if (framebuffer)
+        {
+            /* If the user asks for a framebuffer map we must ALLWAYS supply a class */
+            classptr = _sd->onbmclass;
+        }
+        else if (displayable)
+        {
+            classptr = _sd->onbmclass;	//offbmclass;
+        }
+        else
+        {
+            HIDDT_ModeID modeid;
+            /*
+                For the non-displayable case we can either supply a class ourselves
+                if we can optimize a certain type of non-displayable bitmaps. Or we
+                can let the superclass create on for us.
+
+                The attributes that might come from the user deciding the bitmap
+                pixel format are:
+                    - aHidd_BitMap_ModeID:	a modeid. create a nondisplayable
+                            bitmap with the size  and pixelformat of a gfxmode.
+                    - aHidd_BitMap_StdPixFmt: a standard pixelformat as described in
+                            hidd/graphics.h
+                    - aHidd_BitMap_Friend: if this is supplied and none of the two above
+                        are supplied, then the pixel format of the created bitmap
+                        will be the same as the one of the friend bitmap.
+
+                These tags are listed in prioritized order, so if
+                the user supplied a ModeID tag, then you should not care about StdPixFmt
+                or Friend. If there is no ModeID, but a StdPixFmt tag supplied,
+                then you should not care about Friend because you have to
+                create the correct pixelformat. And as said above, if only Friend
+                is supplied, you can create a bitmap with same pixelformat as Frien
+            */
+
+
+            modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+            if (vHidd_ModeID_Invalid != modeid) {
+                /* User supplied a valid modeid. We can use our offscreen class */
+                classptr = _sd->offbmclass;
+            } else {
+                /* We may create an offscreen bitmap if the user supplied a friend
+                   bitmap. But we need to check that he did not supplied a StdPixFmt
+                */
+                HIDDT_StdPixFmt stdpf;
+                stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+                if (vHidd_StdPixFmt_Plane == stdpf) {
+                    classptr = _sd->planarbmclass;
+                }
+                else if (vHidd_StdPixFmt_Unknown == stdpf) {
+                    /* No std pixfmt supplied */
+                    OOP_Object *friend;
+
+                    /* Did the user supply a friend bitmap ? */
+                    friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+                    if (NULL != friend) {
+                        OOP_Class *friend_class = NULL;
+                        /* User supplied friend bitmap. Is the friend bitmap a
+                        NVidia Gfx hidd bitmap ? */
+                        OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
+                        if (friend_class == _sd->onbmclass) {
+                            /* Friend was NVidia hidd bitmap. Now we can supply our own class */
+                            classptr = _sd->offbmclass;
+                        }
+                    }
+                }
+            }
+        }
+
+        D(bug("classptr = %p\n", classptr));
+        /* Do we supply our own class ? */
+        if (NULL != classptr) {
+            /* Yes. We must let the superclass not that we do this. This is
+               done through adding a tag in the frot of the taglist */
+            mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
+            mytags[0].ti_Data	= (IPTR)classptr;
+        }
+
+        /* Like in Gfx::New() we init a new message struct */
+        p.mID	= msg->mID;
+        p.cl	= msg->cl;
+        p.attrList	= mytags;
+
+        /* Pass the new message to the superclass */
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     }
     else
-    {
-	HIDDT_ModeID modeid;
-	/*
-	    For the non-displayable case we can either supply a class ourselves
-	    if we can optimize a certain type of non-displayable bitmaps. Or we
-	    can let the superclass create on for us.
-
-	    The attributes that might come from the user deciding the bitmap
-	    pixel format are:
-		- aHidd_BitMap_ModeID:	a modeid. create a nondisplayable
-			bitmap with the size  and pixelformat of a gfxmode.
-		- aHidd_BitMap_StdPixFmt: a standard pixelformat as described in
-			hidd/graphics.h
-		- aHidd_BitMap_Friend: if this is supplied and none of the two above
-		    are supplied, then the pixel format of the created bitmap
-		    will be the same as the one of the friend bitmap.
-
-	    These tags are listed in prioritized order, so if
-	    the user supplied a ModeID tag, then you should not care about StdPixFmt
-	    or Friend. If there is no ModeID, but a StdPixFmt tag supplied,
-	    then you should not care about Friend because you have to
-	    create the correct pixelformat. And as said above, if only Friend
-	    is supplied, you can create a bitmap with same pixelformat as Frien
-	*/
-
-
-	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-	if (vHidd_ModeID_Invalid != modeid) {
-	    /* User supplied a valid modeid. We can use our offscreen class */
-	    classptr = _sd->offbmclass;
-	} else {
-	    /* We may create an offscreen bitmap if the user supplied a friend
-	       bitmap. But we need to check that he did not supplied a StdPixFmt
-	    */
-	    HIDDT_StdPixFmt stdpf;
-	    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-	    if (vHidd_StdPixFmt_Plane == stdpf) {
-		classptr = _sd->planarbmclass;
-	    }
-	    else if (vHidd_StdPixFmt_Unknown == stdpf) {
-		/* No std pixfmt supplied */
-		OOP_Object *friend;
-
-		/* Did the user supply a friend bitmap ? */
-		friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
-		if (NULL != friend) {
-		    OOP_Class *friend_class = NULL;
-		    /* User supplied friend bitmap. Is the friend bitmap a
-		    NVidia Gfx hidd bitmap ? */
-		    OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
-		    if (friend_class == _sd->onbmclass) {
-			/* Friend was NVidia hidd bitmap. Now we can supply our own class */
-			classptr = _sd->offbmclass;
-		    }
-		}
-	    }
-	}
-    }
-
-    D(bug("classptr = %p\n", classptr));
-    /* Do we supply our own class ? */
-    if (NULL != classptr) {
-	/* Yes. We must let the superclass not that we do this. This is
-	   done through adding a tag in the frot of the taglist */
-	mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
-	mytags[0].ti_Data	= (IPTR)classptr;
-	mytags[1].ti_Tag	= TAG_MORE;
-	mytags[1].ti_Data	= (IPTR)msg->attrList;
-
-	/* Like in Gfx::New() we init a new message struct */
-	mymsg.mID	= msg->mID;
-	mymsg.attrList	= mytags;
-
-	/* Pass the new message to the superclass */
-	msg = &mymsg;
-    }
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

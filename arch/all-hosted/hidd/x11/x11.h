@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -234,6 +234,9 @@ struct gfx_data
     int		 depth;
     Colormap	 colmap;
     Cursor	 cursor;
+
+    /* baseclass for CreateObject */
+    OOP_Class *basebm;
 };
 
 #define HOSTCLIPBOARDSTATE_IDLE     	0

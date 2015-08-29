@@ -170,6 +170,8 @@ int main(void)
             success = FALSE;
     }
 
+    sd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
+
     if (success)
     {
 	struct TagItem INTELG45_tags[] =

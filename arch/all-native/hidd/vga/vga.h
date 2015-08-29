@@ -2,7 +2,7 @@
 #define HIDD_VGA_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the vga gfx HIDD.
@@ -27,8 +27,8 @@
 /***** VGA gfx HIDD *******************/
 
 /* IDs */
-#define IID_Hidd_VGAgfx		"hidd.gfx.vga"
-#define CLID_Hidd_VGAgfx	"hidd.gfx.vga"
+#define IID_Hidd_Gfx_VGA		"hidd.gfx.vga"
+#define CLID_Hidd_Gfx_VGA	"hidd.gfx.vga"
 
 /* misc */
 
@@ -51,6 +51,9 @@ struct vga_staticdata
     ULONG		mouseVisible;	/* Is pointer visible flag */
     UBYTE		*mouseShape;	/* Points to pointer shape */
     UBYTE		mouseBase;	/* Pointer base color	   */
+
+    /* baseclass for CreateObject */
+    OOP_Class *basebm;
 };
 
 struct vgabase

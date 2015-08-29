@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -44,6 +44,8 @@ static int uikit_Startup(struct UIKitBase *LIBBASE)
     D(bug("[UIKit] GfxBase 0x%p\n", GfxBase));
     if (!GfxBase)
         return FALSE;
+
+    LIBBASE->basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
 #ifdef NOT_DONE_YET
     /* Add keyboard and mouse driver to the system */

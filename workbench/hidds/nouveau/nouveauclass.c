@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -544,48 +544,61 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
-OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
+OOP_Object * METHOD(Nouveau, Hidd_Gfx, CreateObject)
 {
-    struct pHidd_Gfx_NewBitMap mymsg;
-    HIDDT_ModeID modeid;
-    HIDDT_StdPixFmt stdpf;
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
-    struct TagItem mytags [] =
-    {
-        { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
-        { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
-        { aHidd_BitMap_Nouveau_CompositorHidd, (IPTR)gfxdata->compositor },
-        { TAG_MORE, (IPTR)msg->attrList }
-    };
+    OOP_Object      *object = NULL;
 
-    /* Check if user provided valid ModeID */
-    /* Check for framebuffer - not needed as Nouveau is a NoFramebuffer driver */
-    /* Check for displayable - not needed - displayable has ModeID and we don't
-       distinguish between on-screen and off-screen bitmaps */
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    if (vHidd_ModeID_Invalid != modeid) 
+    if (msg->cl == SD(cl)->basebm)
     {
-        /* User supplied a valid modeid. We can use our bitmap class */
-        mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
-        mytags[0].ti_Data	= (IPTR)SD(cl)->bmclass;
-    } 
+        struct pHidd_Gfx_CreateObject mymsg;
+        HIDDT_ModeID modeid;
+        HIDDT_StdPixFmt stdpf;
 
-    /* Check if bitmap is a planar bitmap */
-    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-    if (vHidd_StdPixFmt_Plane == stdpf)
-    {
-        mytags[1].ti_Tag    = aHidd_BitMap_Align;
-        mytags[1].ti_Data   = 32;
+        struct TagItem mytags [] =
+        {
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
+            { aHidd_BitMap_Nouveau_CompositorHidd, (IPTR)gfxdata->compositor },
+            { TAG_MORE, (IPTR)msg->attrList }
+        };
+
+        /* Check if user provided valid ModeID */
+        /* Check for framebuffer - not needed as Nouveau is a NoFramebuffer driver */
+        /* Check for displayable - not needed - displayable has ModeID and we don't
+           distinguish between on-screen and off-screen bitmaps */
+        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+        if (vHidd_ModeID_Invalid != modeid) 
+        {
+            /* User supplied a valid modeid. We can use our bitmap class */
+            mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
+            mytags[0].ti_Data	= (IPTR)SD(cl)->bmclass;
+        } 
+
+        /* Check if bitmap is a planar bitmap */
+        stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+        if (vHidd_StdPixFmt_Plane == stdpf)
+        {
+            mytags[1].ti_Tag    = aHidd_BitMap_Align;
+            mytags[1].ti_Data   = 32;
+        }
+        
+        /* We init a new message struct */
+        mymsg.mID	= msg->mID;
+        mymsg.cl	= msg->cl;
+        mymsg.attrList	= mytags;
+
+        /* Pass the new message to the superclass */
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     }
-    
-    /* We init a new message struct */
-    mymsg.mID	= msg->mID;
-    mymsg.attrList	= mytags;
+    else if (SD(cl)->basegallium && (msg->cl == SD(cl)->basegallium))
+    {
+        object = OOP_NewObject(NULL, CLID_Hidd_Gallium_Nouveau, msg->attrList);
+    }
+    else
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    /* Pass the new message to the superclass */
-    msg = &mymsg;
-
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    return object;
 }
 
 VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)

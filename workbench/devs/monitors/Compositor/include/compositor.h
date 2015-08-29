@@ -1,12 +1,25 @@
 #ifndef HIDD_COMPOSITOR_H
 #define HIDD_COMPOSITOR_H
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <oop/oop.h>
-#include <hidd/graphics.h>
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
+
+#ifndef HIDD_HIDD_H
+#   include <hidd/hidd.h>
+#endif
+
+#ifndef OOP_OOP_H
+#   include <oop/oop.h>
+#endif
+
+#ifndef HIDD_GRAPHICS
+#   include <hidd/graphics.h>
+#endif
 
 /*
  * Things described here are actually system-internal.

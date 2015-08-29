@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,6 +32,9 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
 
     initcustom(&LIBBASE->csd);
     GfxBase = LIBBASE->csd.cs_GfxBase;
+    
+    LIBBASE->csd.cs_basebm = OOP_FindClass(CLID_Hidd_BitMap);
+    
     Init_AmigaVideoClass(LIBBASE);
     LIBBASE->library.lib_OpenCnt = 1;
 

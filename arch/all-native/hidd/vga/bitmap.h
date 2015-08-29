@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +14,8 @@
    classes, although they don't have a common superclass
 */
 
-#define IID_Hidd_VGABitMap "hidd.bitmap.vgabitmap"
+#define CLID_Hidd_BitMap_VGA "hidd.bitmap.vga"
+#define IID_Hidd_BitMap_VGA "hidd.bitmap.vga"
 
 #define HiddVGABitMapAB __abHidd_VGABitMap
 extern OOP_AttrBase HiddVGABitMapAB;

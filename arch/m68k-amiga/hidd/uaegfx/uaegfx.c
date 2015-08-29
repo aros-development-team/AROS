@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -477,27 +477,38 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 }
 
 /********** GfxHidd::Dispose()  ******************************/
-OOP_Object *UAEGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
-{  
-    struct uaegfx_staticdata *csd = CSD(cl);
-    HIDDT_ModeID		modeid;
-    struct pHidd_Gfx_NewBitMap   newbitmap;
-    struct TagItem tags[2];
-   
-    EnterFunc(bug("UAEGFX::NewBitMap()\n"));
-    
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    if (modeid != vHidd_ModeID_Invalid) {
-	tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
-	tags[0].ti_Data = (IPTR)CSD(cl)->bmclass;
-	tags[1].ti_Tag = TAG_MORE;
-	tags[1].ti_Data = (IPTR)msg->attrList;
-	newbitmap.mID = msg->mID;
-	newbitmap.attrList = tags;
-	msg = &newbitmap;
-    }
+OOP_Object *UAEGFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+{
+    OOP_Object      *object = NULL;
 
-    ReturnPtr("UAEGFX::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
+    EnterFunc(bug("UAEGFX::CreateObject()\n"));
+
+    if (msg->cl == CSD(cl)->basebm)
+    {
+        struct uaegfx_staticdata *csd = CSD(cl);
+        HIDDT_ModeID		modeid;
+        struct pHidd_Gfx_CreateObject   p;
+        struct TagItem tags[] =
+        {
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+            { TAG_MORE, (IPTR)msg->attrList }
+        };
+
+        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+        if (modeid != vHidd_ModeID_Invalid) {
+            tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
+            tags[0].ti_Data = (IPTR)CSD(cl)->bmclass;
+        }
+        p.mID = msg->mID;
+        p.cl = msg->cl;
+        p.attrList = tags;
+
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
+    }
+    else
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    ReturnPtr("UAEGFX::CreateObject", OOP_Object *, object);
 }
 
 VOID UAEGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)

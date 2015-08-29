@@ -666,48 +666,60 @@ void METHOD(INTELG45, Root, Set)
 }
 
 
-OOP_Object * METHOD(INTELG45, Hidd_Gfx, NewBitMap)
+OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
 {
-    struct pHidd_Gfx_NewBitMap mymsg;
-    HIDDT_ModeID modeid;
-    HIDDT_StdPixFmt stdpf;
+    OOP_Object      *object = NULL;
 
-    struct TagItem mytags [] =
+    if (msg->cl == SD(cl)->basebm)
     {
-        { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
-        { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
-        { aHidd_BitMap_IntelG45_CompositingHidd, (IPTR)sd->compositing },
-        { TAG_MORE, (IPTR)msg->attrList }
-    };
+        struct pHidd_Gfx_CreateObject mymsg;
+        HIDDT_ModeID modeid;
+        HIDDT_StdPixFmt stdpf;
 
-    /* Check if user provided valid ModeID */
-    /* Check for framebuffer - not needed as IntelG45 is a NoFramebuffer driver */
-    /* Check for displayable - not needed - displayable has ModeID and we don't
-       distinguish between on-screen and off-screen bitmaps */
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    if (vHidd_ModeID_Invalid != modeid) 
-    {
-        /* User supplied a valid modeid. We can use our bitmap class */
-        mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
-        mytags[0].ti_Data	= (IPTR)SD(cl)->BMClass;
-    } 
+        struct TagItem mytags [] =
+        {
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
+            { aHidd_BitMap_IntelG45_CompositingHidd, (IPTR)sd->compositing },
+            { TAG_MORE, (IPTR)msg->attrList }
+        };
 
-    /* Check if bitmap is a planar bitmap */
-    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-    if (vHidd_StdPixFmt_Plane == stdpf)
-    {
-        mytags[1].ti_Tag    = aHidd_BitMap_Align;
-        mytags[1].ti_Data   = 32;
+        /* Check if user provided valid ModeID */
+        /* Check for framebuffer - not needed as IntelG45 is a NoFramebuffer driver */
+        /* Check for displayable - not needed - displayable has ModeID and we don't
+           distinguish between on-screen and off-screen bitmaps */
+        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+        if (vHidd_ModeID_Invalid != modeid) 
+        {
+            /* User supplied a valid modeid. We can use our bitmap class */
+            mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
+            mytags[0].ti_Data	= (IPTR)SD(cl)->BMClass;
+        } 
+
+        /* Check if bitmap is a planar bitmap */
+        stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+        if (vHidd_StdPixFmt_Plane == stdpf)
+        {
+            mytags[1].ti_Tag    = aHidd_BitMap_Align;
+            mytags[1].ti_Data   = 32;
+        }
+        
+        /* We init a new message struct */
+        mymsg.mID	= msg->mID;
+        mymsg.cl	= msg->cl;
+        mymsg.attrList	= mytags;
+
+        /* Pass the new message to the superclass */
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     }
-    
-    /* We init a new message struct */
-    mymsg.mID	= msg->mID;
-    mymsg.attrList	= mytags;
+    else if (SD(cl)->basegallium && (msg->cl == SD(cl)->basegallium))
+    {
+        object = OOP_NewObject(NULL, CLID_Hidd_Gallium_IntelGMA, msg->attrList);
+    }
+    else
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    /* Pass the new message to the superclass */
-    msg = &mymsg;
-
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    return object;
 }
 
 
@@ -1016,7 +1028,7 @@ static const struct OOP_MethodDescr INTELG45_Root_descr[] =
 static const struct OOP_MethodDescr INTELG45_Hidd_Gfx_descr[] =
 {
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CopyBox         , moHidd_Gfx_CopyBox         },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__NewBitMap       , moHidd_Gfx_NewBitMap       },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CreateObject       , moHidd_Gfx_CreateObject       },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorVisible, moHidd_Gfx_SetCursorVisible},
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorPos    , moHidd_Gfx_SetCursorPos    },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorShape  , moHidd_Gfx_SetCursorShape  },

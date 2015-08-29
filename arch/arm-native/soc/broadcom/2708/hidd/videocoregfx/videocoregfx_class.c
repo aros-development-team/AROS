@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VideoCore Gfx Hidd Class.
@@ -202,42 +202,52 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *MNAME_GFX(NewBitMap)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
-    BOOL displayable;
-    BOOL framebuffer;
-    struct TagItem newbm_tags[2] =
-    {
-    	{TAG_IGNORE, 0                  },
-    	{TAG_MORE  , (IPTR)msg->attrList}
-    };
-    struct pHidd_Gfx_NewBitMap newbm_msg;
+    OOP_Object      *object = NULL;
 
-    EnterFunc(bug("VideoCoreGfx::NewBitMap()\n"));
+    EnterFunc(bug("VideoCoreGfx::CreateObject()\n"));
 
-    displayable = (BOOL)GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    framebuffer = (BOOL)GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-    if (framebuffer)
+    if (msg->cl == )XSD(cl)->vcsd_basebm)
     {
-        D(bug("[VideoCoreGfx] VideoCoreGfx::NewBitMap: Using OnScreenBM\n"));
-        newbm_tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
-        newbm_tags[0].ti_Data = (IPTR)XSD(cl)->vcsd_VideoCoreGfxOnBMClass;
+        BOOL displayable;
+        BOOL framebuffer;
+        struct TagItem newbm_tags[2] =
+        {
+            {TAG_IGNORE, 0                  },
+            {TAG_MORE  , (IPTR)msg->attrList}
+        };
+        struct pHidd_Gfx_CreateObject newbm_msg;
+
+        displayable = (BOOL)GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+        framebuffer = (BOOL)GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+        if (framebuffer)
+        {
+            D(bug("[VideoCoreGfx] VideoCoreGfx::CreateObject: Using OnScreenBM\n"));
+            newbm_tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
+            newbm_tags[0].ti_Data = (IPTR)XSD(cl)->vcsd_VideoCoreGfxOnBMClass;
+        }
+        else
+        {
+            /* Non-displayable friends of our bitmaps are plain chunky bitmaps */
+            OOP_Object *friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+
+            if (displayable || (friend && (OOP_OCLASS(friend) == XSD(cl)->vcsd_VideoCoreGfxOnBMClass)))
+            {
+                D(bug("[VideoCoreGfx] VideoCoreGfx::CreateObject: Using OffScreenBM (ChunkyBM)\n"));
+                newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassID;
+                newbm_tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
+            }
+        }
+
+        newbm_msg.mID = msg->mID;
+        newbm_msg.cl = msg->cl;
+        newbm_msg.attrList = newbm_tags;
+
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&newbm_msg);
     }
     else
-    {
-	/* Non-displayable friends of our bitmaps are plain chunky bitmaps */
-    	OOP_Object *friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    	if (displayable || (friend && (OOP_OCLASS(friend) == XSD(cl)->vcsd_VideoCoreGfxOnBMClass)))
-    	{
-            D(bug("[VideoCoreGfx] VideoCoreGfx::NewBitMap: Using OffScreenBM (ChunkyBM)\n"));
-    	    newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassID;
-    	    newbm_tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
-    	}
-    }
-
-    newbm_msg.mID = msg->mID;
-    newbm_msg.attrList = newbm_tags;
-
-    ReturnPtr("VideoCoreGfx::NewBitMap: Obj", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&newbm_msg));
+    ReturnPtr("VideoCoreGfx::CreateObject: Obj", OOP_Object *, object);
 }

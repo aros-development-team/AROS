@@ -2,7 +2,7 @@
 #define HIDD_VESAGFXCLASS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VesaGfx useful data.
@@ -33,6 +33,8 @@ struct VesaGfx_data
 
 struct VesaGfx_staticdata
 {
+    OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
+    
     OOP_Class 	    	    *vesagfxclass;
     OOP_Class 	    	    *bmclass;
     OOP_Object      	    *vesagfxhidd;

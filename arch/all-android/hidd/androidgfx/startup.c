@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -43,6 +43,8 @@ static int agfx_Startup(LIBBASETYPEPTR LIBBASE)
     D(bug("[AGFX.Startup] GfxBase 0x%p\n", GfxBase));
     if (!GfxBase)
         return FALSE;
+
+    LIBBASE->xsd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     /* Add keyboard and mouse driver to the system */
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);

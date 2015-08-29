@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright (c) 2010 The AROS Development Team. All rights reserved.
+ * Copyright (c) 2010-2015 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -353,35 +353,44 @@ VOID SDLGfx__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 
-OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
-    struct TagItem *msgtags;
-    struct pHidd_Gfx_NewBitMap supermsg;
-    struct gfxdata *data = OOP_INST_DATA(cl, o);
+OOP_Object *SDLGfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg) {
+    OOP_Object      *object = NULL;
 
-    D(bug("[sdl] SDLGfx::NewBitMap, UtilityBase is 0x%p\n", UtilityBase));
+    if (msg->cl == LIBBASE->basebm)
+    {
+        struct TagItem *msgtags;
+        struct pHidd_Gfx_CreateObject supermsg;
+        struct gfxdata *data = OOP_INST_DATA(cl, o);
 
-    if (GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList) != vHidd_ModeID_Invalid) {
-        D(bug("[sdl] bitmap with valid mode, we can handle it\n"));
+        D(bug("[sdl] SDLGfx::CreateObject, UtilityBase is 0x%p\n", UtilityBase));
 
-        msgtags = TAGLIST(
-            aHidd_BitMap_ClassPtr, (IPTR) LIBBASE->bmclass,
-            TAG_MORE,              (IPTR) msg->attrList
-        );
-	D(bug("[sdl] ClassPtr is 0x%p\n", LIBBASE->bmclass));
-    } else
-        msgtags = msg->attrList;
+        if (GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList) != vHidd_ModeID_Invalid) {
+            D(bug("[sdl] bitmap with valid mode, we can handle it\n"));
 
-    supermsg.mID = msg->mID;
-    supermsg.attrList = msgtags;
+            msgtags = TAGLIST(
+                aHidd_BitMap_ClassPtr, (IPTR) LIBBASE->bmclass,
+                TAG_MORE,              (IPTR) msg->attrList
+            );
+            D(bug("[sdl] ClassPtr is 0x%p\n", LIBBASE->bmclass));
+        } else
+            msgtags = msg->attrList;
 
-    D(bug("[sdl] Calling DoSuperMethod()\n"));
-    o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) &supermsg);
+        supermsg.mID = msg->mID;
+        supermsg.cl = msg->cl;
+        supermsg.attrList = msgtags;
 
-    if (GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList))
-        data->framebuffer = o;
+        D(bug("[sdl] Calling DoSuperMethod()\n"));
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) &supermsg);
 
-    D(bug("[sdl] Created bitmap 0x%p\n", o));
-    return o;
+        if (GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList))
+            data->framebuffer = object;
+
+        D(bug("[sdl] Created bitmap 0x%p\n", object));
+    }
+    else
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    return object;
 }
 
 VOID SDLGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg) {
@@ -504,7 +513,7 @@ static struct OOP_MethodDescr SDLGfx_Root_descr[] = {
 #define NUM_SDLGfx_Root_METHODS 4
 
 static struct OOP_MethodDescr SDLGfx_Hidd_Gfx_descr[] = {
-    {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__NewBitMap, moHidd_Gfx_NewBitMap},
+    {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__CreateObject, moHidd_Gfx_CreateObject},
     {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__Show, moHidd_Gfx_Show},
     {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__CopyBox, moHidd_Gfx_CopyBox},
     {NULL, 0}

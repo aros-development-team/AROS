@@ -24,6 +24,8 @@ struct UIKitBase
     APTR		   hostlib;
     struct UIKitInterface *iface;
     struct DisplayMetrics  metrics;
+    OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
+
     OOP_Class		  *gfxclass;
     OOP_Class		  *bmclass;
     OOP_Class		  *mouseclass;
