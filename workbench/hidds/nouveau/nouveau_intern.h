@@ -159,6 +159,7 @@ struct CardData
 
 struct staticdata
 {
+    OOP_Class       *basegc;            /* baseclass for CreateObject */
     OOP_Class       *basebm;            /* baseclass for CreateObject */
     OOP_Class       *basegallium;            /* baseclass for CreateObject */
 
