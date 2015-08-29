@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd class implementation.
@@ -936,214 +936,88 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 /*****************************************************************************************
 
     NAME
-	moHidd_Gfx_NewGC
+	moHidd_Gfx_CreateObject
 
     SYNOPSIS
-        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_NewGC *msg);
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_CreateObject *msg);
 
-	OOP_Object *HIDD_Gfx_NewGC(OOP_Object *gfxHidd, struct TagItem *tagList);
+	OOP_Object *HIDD_Gfx_CreateObject(OOP_Object *gfxHidd, OOP_Class *cl, struct TagItem *tagList);
 
     LOCATION
 	hidd.graphics.graphics
 
     FUNCTION
-	Create a GC (gfx context) object that may be used for rendering
-	into a bitmap.
+	Create a driver specific Gfx Object of the type "classID"
 
     INPUTS
-	gfxHidd - A graphics driver object with which the GC will perform
-	          the rendering operations.
-	tagList - A list of GC attributes. See hidd.graphics.gc class
-	          documentation for their description.
+	gfxHidd - The graphics driver used to create the object.
+	cl - The base OOP_Class of the object to be created.
+	tagList - Object specific attributes.
 
     RESULT
-	gc - pointer to the newly created GC, ready for use for rendering
-	     operations.
+	pointer to the newly created OOP_Object, or NULL on failure.
 
     NOTES
-	A GC object is just a data storage. You may create a subclass of GC if
-	you wish to, however there's usually no need to. Additionally, this may
-	be not future-proof (since GC subclasses can not be interchanged between
-	different drivers. Please avoid using custom GCs.
+           Drivers should query the gfx.hidd, or support class for the base class Ptr that
+           the driver  objects should use. The gfx hidd itself defines the following -:
 
-    EXAMPLE
+	GC
+		A GC object is just used for data storage. It is possible to subclass, however
+		it is not recommended since it may not be future-proof due to the fact
+		GC subclasses can not be interchanged between different drivers.
+		Avoid using custom GCs.
 
-    BUGS
-	At the moment subclassing GCs is not supported because some parts of
-	the operating system create GC objects directly. It is unclear whether
-	subclassing GCs is actually needed.
+	BitMap
 
-    SEE ALSO
-	moHidd_Gfx_DisposeGC
+		Each graphics driver exposes at least one displayable bitmap class.
+		More may be exposed at the drivers discretion to represent nondisplayable bitmaps
+		or other driver specific bitmap types.
 
-    INTERNALS
+		Generally bitmap objects are never created directly. Instead they are created
+		using the HIDD_Gfx_CreateObject() call. An implementation of this method in the
+		driver should examine bitmap attributes supplied and make a decision if the bitmap
+		should be created using the driver's own class or one of the system classes.
 
-*****************************************************************************************/
-
-OOP_Object *GFX__Hidd_Gfx__NewGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewGC *msg)
-{
-    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
-    OOP_Object *gc = NULL;
-
-    EnterFunc(bug("HIDDGfx::NewGC()\n"));
-
-    gc = OOP_NewObject(NULL, CLID_Hidd_GC, msg->attrList);
-
-    ReturnPtr("HIDDGfx::NewGC", OOP_Object *, gc);
-}
-
-/*****************************************************************************************
-
-    NAME
-	moHidd_Gfx_DisposeGC
-
-    SYNOPSIS
-        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisposeGC *msg);
-
-	VOID HIDD_Gfx_DisposeGC(OOP_Object *gfxHidd, OOP_Object *gc)
-
-    LOCATION
-	hidd.graphics.graphics
-
-    FUNCTION
-	Deletes a GC (Graphics Context) object previously created
-	by HIDD_Gfx_NewGC().
-
-	Subclasses do not have to override this method
-	unless they allocate anything additional to a gc object in
-	their HIDD_Gfx_NewGC() implementation.
-
-    INPUTS
-	gfxHidd - A driver object which was used for creating a GC.
-	gc      - Pointer to gc object to delete.
-
-    RESULT
-	None.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	moHidd_Gfx_NewGC
-
-    INTERNALS
-	Basically just does OOP_DisposeObject(gc);
-
-*****************************************************************************************/
-
-VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisposeGC *msg)
-{
-    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
-
-    EnterFunc(bug("HIDDGfx::DisposeGC()\n"));
-
-    if (NULL != msg->gc) OOP_DisposeObject(msg->gc);
-
-    ReturnVoid("HIDDGfx::DisposeGC");
-}
-
-/****************************************************************************************/
-
-#define BMAO(x) aoHidd_BitMap_ ## x
-#define BMAF(x) (1L << aoHidd_BitMap_ ## x)
-
-#define BM_DIMS_AF  (BMAF(Width) | BMAF(Height))
-
-#define SET_TAG(tags, idx, tag, val)	\
-    tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
-
-#define SET_BM_TAG(tags, idx, tag, val)	\
-    SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
-
-#define COPY_BM_TAG(tags, idx, tag, obj)	\
-    tags[idx].ti_Tag = aHidd_BitMap_ ## tag;	\
-    OOP_GetAttr(obj, aHidd_BitMap_ ## tag , &tags[idx].ti_Data)
-
-/*****************************************************************************************
-
-    NAME
-	moHidd_Gfx_NewBitMap
-
-    SYNOPSIS
-        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_NewBitMap *msg);
-
-	OOP_Object *HIDD_Gfx_NewBitMap(OOP_Object *gfxHidd, struct TagItem *tagList);
-
-    LOCATION
-	hidd.graphics.graphics
-
-    FUNCTION
-	Create a bitmap object.
-
-	One graphics driver represents at least one displayable bitmap class.
-	Additionally it may represent more classes (for example some old drivers use
-	a separate class for nondisplayable bitmaps).
-
-	These classes are private to the driver. In order to be able to use them
-	bitmap objects are never created directly. Instead they are created using the
-	HIDD_Gfx_NewBitMap() call. An implementation of this method in the driver
-	should examine bitmap attributes supplied and make a decision if the bitmap
-	should be created using the driver's own class or one of the system classes.
-
-	A typical implementation should pay attention to the following bitmap attributes:
+		A typical implementation should pay attention to the following bitmap attributes:
     
-	aHIDD_BitMap_ModeID - If this attribute is supplied, the bitmap needs to be
+		aHIDD_BitMap_ModeID - If this attribute is supplied, the bitmap needs to be
 			      either displayable by this driver, or be a friend of a
 			      displayable bitmap. A friend bitmap usually repeats the
 			      internal layout of its friend so that the driver may
 			      perform blitting operations quickly.
 
-	aHIDD_BitMap_Displayable - If this attribute is supplied, the bitmap NEEDS to be
+		aHIDD_BitMap_Displayable - If this attribute is supplied, the bitmap NEEDS to be
 			           displayable by this driver. Usually this means that
 			           the bitmap object will contain video hardware state
 			           information. This attribute will always be accompanied
 			           by aHIDD_BitMap_ModeID.
 
-	aHIDD_BitMap_FrameBuffer - The bitmap needs to be a framebuffer bitmap. A
+		aHIDD_BitMap_FrameBuffer - The bitmap needs to be a framebuffer bitmap. A
 			           framebuffer bitmap is necessary for some kinds of
 			           hardware which have a small fixed amount of video
 			           RAM which can hold only one screen at a time. Setting
 			           this attribute requires that a valid ModeID be also set.
 
-	aHIDD_BitMap_Friend - If there's no ModeID supplied, you may wish to check class
+		aHIDD_BitMap_Friend - If there's no ModeID supplied, you may wish to check class
 			      of friend bitmap. This can be useful if your driver uses
 			      different classes for displayable and non-displayable bitmaps.
 			      By default base class will pick up friend's class and use it
 			      for new bitmap if nothing is specified, here you may override
 			      this behavior.
 
-	If your driver wants to specify own class for the bitmap being created,
-	it should prepend an aoHidd_BitMap_ClassPtr attribute to the supplied taglist
-	and pass it to base class. It's not allowed to create bitmap objects directly
-	since they need some more extra information which is added by the base class!
+		If a driver wants to specify a custom class for the bitmap being created,
+		it should pass the aoHidd_BitMap_ClassPtr attribute to the base class.
+		Bitmap objects should not be directly created, otherwise necessary information
+		provided by the base class will be missing.
 
-	This method must be implemented by your subclass. aHIDD_BitMap_ClassPtr or
-	aHIDD_BitMap_ClassID must be provided to the base class for a displayable bitmap!
-
-    INPUTS
-	gfxHidd - The graphics driver object that will provide the bitmap.
-
-	tagList - A list of bitmap attributes. See hidd.graphics.bitmap class
-	          documentation for their descriptions.
-
-    RESULT
-	bm - pointer to the newly created bitmap.
-    
-    NOTES
-        Drivers which do not use framebuffer must always specify own class using either
-        moHidd_BitMap_ClassPtr or moHidd_BitMap_ClassID attribute. Drivers making use of
-        framebuffer may omit this, in this case framebuffer's class will be used for
-        displayable bitmaps.
+		This method must be implemented by the subclass. aHIDD_BitMap_ClassPtr or
+		aHIDD_BitMap_ClassID must be provided to the base class for a displayable bitmap.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	moHidd_Gfx_DisposeBitMap
 
     INTERNALS
 	The base class implementation currently does the folliwing in order to determine
@@ -1160,315 +1034,284 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 	This behavior is subject to change, but will maintain backwards compatibility.
 
 *****************************************************************************************/
-
-OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	      struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *GFX__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
-    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *object = NULL;
 
-    struct TagItem bmtags[] =
+    EnterFunc(bug("HIDDGfx::CreateObject()\n"));
+
+    if (msg->cl == CSD(cl)->gcclass)
     {
-    	{aHidd_BitMap_GfxHidd, 0},	/* 0 */
-    	{aHidd_BitMap_PixFmt , 0},	/* 1 */
-    	{TAG_IGNORE	     , 0},	/* 2 */
-    	{TAG_IGNORE	     , 0},	/* 3 */
-    	{TAG_IGNORE	     , 0},	/* 4 */
-    	{TAG_IGNORE	     , 0},	/* 5 */
-    	{TAG_MORE	     , 0},	/* 6 */
-    };
-    OOP_Object   *bm;
-
-    struct TagItem *tag, *tstate = msg->attrList;
-    ULONG idx;
-
-    STRPTR        classid     = NULL;
-    OOP_Class    *classptr    = NULL;
-    BOOL          displayable = FALSE;
-    BOOL          framebuffer = FALSE;
-    HIDDT_StdPixFmt pixfmt    = vHidd_StdPixFmt_Unknown;
-    OOP_Object   *friend_bm   = NULL;
-    OOP_Object   *sync	      = NULL;
-    OOP_Object   *pf	      = NULL;
-
-    BOOL    	  gotclass   = FALSE;
-    BOOL	  got_width  = FALSE;
-    BOOL	  got_height = FALSE;
-    BOOL	  got_depth  = FALSE;
-
-    while ((tag = NextTagItem(&tstate)))
-    {
-    	if (IS_BITMAP_ATTR(tag->ti_Tag, idx))
-    	{
-    	    switch (idx)
-    	    {
-		case aoHidd_BitMap_Displayable:
-		    displayable = tag->ti_Data;
-		    break;
-	
-		case aoHidd_BitMap_FrameBuffer:
-		    framebuffer = tag->ti_Data;
-		    break;
-	
-		case aoHidd_BitMap_Width:
-		    got_width = TRUE;
-		    break;
-	
-		case aoHidd_BitMap_Height:
-		    got_height = TRUE;
-		    break;
-	
-		case aoHidd_BitMap_Depth:
-		    got_depth = TRUE;
-		    break;
-	
-		case aoHidd_BitMap_ModeID:
-		    /* Make sure it is a valid mode, and retrieve sync/pixelformat data */
-		    if (!HIDD_Gfx_GetMode(o, tag->ti_Data, &sync, &pf))
-		    {
-			D(bug("!!! Gfx::NewBitMap: USER PASSED INVALID MODEID !!!\n"));
-			return NULL;
-		    }
-		    break;
-	
-		case aoHidd_BitMap_Friend:
-		    friend_bm = (OOP_Object *)tag->ti_Data;
-		    break;
-		    
-		case aoHidd_BitMap_PixFmt:
-		    D(bug("!!! Gfx::NewBitMap: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n"));
-		    return NULL;
-	
-		case aoHidd_BitMap_StdPixFmt:
-		    pixfmt = tag->ti_Data;
-		    break;
-	
-		case aoHidd_BitMap_ClassPtr:
-		    classptr = (OOP_Class *)tag->ti_Data;
-		    gotclass = TRUE;
-		    break;
-	
-		case aoHidd_BitMap_ClassID:
-		    classid  = (STRPTR)tag->ti_Data;
-		    gotclass = TRUE;
-		    break;
-	    }
-	}
+        object = OOP_NewObject(NULL, CLID_Hidd_GC, msg->attrList);
     }
-
-    if (friend_bm)
+    else if (msg->cl == CSD(cl)->bitmapclass)
     {
-	/* If we have a friend bitmap, we can inherit some attributes from it */
-    	if (!got_width)
-    	{
-    	    COPY_BM_TAG(bmtags, 2, Width, friend_bm);
-    	    got_width = TRUE;
-    	}
-    	
-    	if (!got_height)
-    	{
-    	    COPY_BM_TAG(bmtags, 3, Height, friend_bm);
-    	    got_height = TRUE;
-    	}
+        struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
 
-    	if (!got_depth)
-	{
-	    COPY_BM_TAG(bmtags, 4, Depth, friend_bm);
-	}
-    }
-
-    if (framebuffer)
-    {
-        /* FrameBuffer implies Displayable */
-	SET_BM_TAG(bmtags, 5, Displayable, TRUE);
-    	displayable = TRUE;
-    }
-    else if (displayable)
-    {
-        /*
-         * Displayable, but not framebuffer (user's screen).
-         * If we are working in framebuffer mode, we treat all such
-         * bitmaps as framebuffer's friends and can inherit its class.
-         */
-        if ((!gotclass) && data->framebuffer && (get_fbmode(cl, o) != vHidd_FrameBuffer_None))
+        struct TagItem bmtags[] =
         {
-            classptr = OOP_OCLASS(data->framebuffer);
-            gotclass = TRUE;
+            {aHidd_BitMap_GfxHidd, 0},	/* 0 */
+            {aHidd_BitMap_PixFmt , 0},	/* 1 */
+            {TAG_IGNORE	     , 0},	/* 2 */
+            {TAG_IGNORE	     , 0},	/* 3 */
+            {TAG_IGNORE	     , 0},	/* 4 */
+            {TAG_IGNORE	     , 0},	/* 5 */
+            {TAG_MORE	     , 0},	/* 6 */
+        };
+        struct TagItem *tag, *tstate = msg->attrList;
+        ULONG idx;
 
-            D(bug("[GFX] Using class 0x%p (%s) for displayable bitmap\n", classptr, classptr->ClassNode.ln_Name));
+        STRPTR        classid     = NULL;
+        OOP_Class    *classptr    = NULL;
+        BOOL          displayable = FALSE;
+        BOOL          framebuffer = FALSE;
+        HIDDT_StdPixFmt pixfmt    = vHidd_StdPixFmt_Unknown;
+        OOP_Object   *friend_bm   = NULL;
+        OOP_Object   *sync	      = NULL;
+        OOP_Object   *pf	      = NULL;
+
+        BOOL    	  gotclass   = FALSE;
+        BOOL	  got_width  = FALSE;
+        BOOL	  got_height = FALSE;
+        BOOL	  got_depth  = FALSE;
+
+#define BMAO(x) aoHidd_BitMap_ ## x
+#define BMAF(x) (1L << aoHidd_BitMap_ ## x)
+
+#define BM_DIMS_AF  (BMAF(Width) | BMAF(Height))
+
+#define SET_TAG(tags, idx, tag, val)	\
+    tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
+
+#define SET_BM_TAG(tags, idx, tag, val)	\
+    SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
+
+#define COPY_BM_TAG(tags, idx, tag, obj)	\
+    tags[idx].ti_Tag = aHidd_BitMap_ ## tag;	\
+    OOP_GetAttr(obj, aHidd_BitMap_ ## tag , &tags[idx].ti_Data)
+
+        while ((tag = NextTagItem(&tstate)))
+        {
+            if (IS_BITMAP_ATTR(tag->ti_Tag, idx))
+            {
+                switch (idx)
+                {
+                    case aoHidd_BitMap_Displayable:
+                        displayable = tag->ti_Data;
+                        break;
+            
+                    case aoHidd_BitMap_FrameBuffer:
+                        framebuffer = tag->ti_Data;
+                        break;
+            
+                    case aoHidd_BitMap_Width:
+                        got_width = TRUE;
+                        break;
+            
+                    case aoHidd_BitMap_Height:
+                        got_height = TRUE;
+                        break;
+            
+                    case aoHidd_BitMap_Depth:
+                        got_depth = TRUE;
+                        break;
+            
+                    case aoHidd_BitMap_ModeID:
+                        /* Make sure it is a valid mode, and retrieve sync/pixelformat data */
+                        if (!HIDD_Gfx_GetMode(o, tag->ti_Data, &sync, &pf))
+                        {
+                            D(bug("!!! Gfx::CreateObject: USER PASSED INVALID MODEID !!!\n"));
+                            return NULL;
+                        }
+                        break;
+            
+                    case aoHidd_BitMap_Friend:
+                        friend_bm = (OOP_Object *)tag->ti_Data;
+                        break;
+                        
+                    case aoHidd_BitMap_PixFmt:
+                        D(bug("!!! Gfx::CreateObject: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n"));
+                        return NULL;
+            
+                    case aoHidd_BitMap_StdPixFmt:
+                        pixfmt = tag->ti_Data;
+                        break;
+            
+                    case aoHidd_BitMap_ClassPtr:
+                        classptr = (OOP_Class *)tag->ti_Data;
+                        gotclass = TRUE;
+                        break;
+            
+                    case aoHidd_BitMap_ClassID:
+                        classid  = (STRPTR)tag->ti_Data;
+                        gotclass = TRUE;
+                        break;
+                }
+            }
         }
+
+        /* If we have a friend bitmap, we can inherit some attributes from it */
+         if (friend_bm)
+        {
+            if (!got_width)
+            {
+                COPY_BM_TAG(bmtags, 2, Width, friend_bm);
+                got_width = TRUE;
+            }
+            
+            if (!got_height)
+            {
+                COPY_BM_TAG(bmtags, 3, Height, friend_bm);
+                got_height = TRUE;
+            }
+
+            if (!got_depth)
+            {
+                COPY_BM_TAG(bmtags, 4, Depth, friend_bm);
+            }
+        }
+
+        if (framebuffer)
+        {
+            /* FrameBuffer implies Displayable */
+            SET_BM_TAG(bmtags, 5, Displayable, TRUE);
+            displayable = TRUE;
+        }
+        else if (displayable)
+        {
+            /*
+             * Displayable, but not framebuffer (user's screen).
+             * If we are working in framebuffer mode, we treat all such
+             * bitmaps as framebuffer's friends and can inherit its class.
+             */
+            if ((!gotclass) && data->framebuffer && (get_fbmode(cl, o) != vHidd_FrameBuffer_None))
+            {
+                classptr = OOP_OCLASS(data->framebuffer);
+                gotclass = TRUE;
+
+                D(bug("[GFX] Using class 0x%p (%s) for displayable bitmap\n", classptr, classptr->ClassNode.ln_Name));
+            }
+        }
+
+        if (displayable)
+        {
+            /* Displayable bitmap. Here we must have ModeID and class. */
+            if (!sync)
+            {
+                D(bug("!!! Gfx::CreateObject: USER HAS NOT PASSED MODEID FOR DISPLAYABLE BITMAP !!!\n"));
+                return NULL;
+            }
+
+            if (!gotclass)
+            {
+                D(bug("!!! Gfx::CreateObject: SUBCLASS DID NOT PASS CLASS FOR DISPLAYABLE BITMAP !!!\n"));
+                return NULL;
+            }
+        }
+        else /* if (!displayable) */
+        {
+            /*
+             * This is an offscreen bitmap and we need to guess its pixelformat.
+             * In order to do this we need one of (in the order of preference):
+             * - ModeID
+             * - StdPixFmt
+             * - Friend
+             */
+
+            if (sync)
+            {
+                /*
+                 * We have alredy got sync for the modeid case.
+                 * Obtain missing size information from it.
+                 */
+                if (!got_width)
+                {
+                    bmtags[2].ti_Tag = aHidd_BitMap_Width;
+                    OOP_GetAttr(sync, aHidd_Sync_HDisp, &bmtags[2].ti_Data);
+                }
+
+                if (!got_height)
+                {
+                    bmtags[3].ti_Tag = aHidd_BitMap_Height;
+                    OOP_GetAttr(sync, aHidd_Sync_VDisp, &bmtags[3].ti_Data);
+                }
+            }
+            else if (pixfmt != vHidd_StdPixFmt_Unknown)
+            {
+                /* Next to look for is StdPixFmt */
+                pf = HIDD_Gfx_GetPixFmt(o, pixfmt);
+                if (NULL == pf)
+                {
+                    D(bug("!!! Gfx::CreateObject(): USER PASSED BOGUS StdPixFmt !!!\n"));
+                    return NULL;
+                }
+            }
+            else if (friend_bm)
+            {
+                /* Last alternative is that the user passed a friend bitmap */
+
+                OOP_GetAttr(friend_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+
+                /*
+                 * Inherit the class from friend bitmap (if not already specified).
+                 * We do it because friend bitmap may be a display HIDD bitmap
+                 */
+                if (!gotclass)
+                {
+                    classptr = OOP_OCLASS(friend_bm);
+                    gotclass  = TRUE;
+
+                    D(bug("[GFX] Friend bitmap is 0x%p has class 0x%p (%s)\n", friend_bm, classptr, classptr->ClassNode.ln_Name));
+                }
+            }
+            else
+            {
+                D(bug("!!! Gfx::CreateObject: INSUFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n"));
+                return NULL;
+            }
+
+            /* Did the subclass provide an offbitmap class for us? */
+            if (!gotclass)
+            {
+                /* Have to find a suitable class ourselves from the pixelformat */
+                HIDDT_BitMapType bmtype;
+
+                OOP_GetAttr(pf, aHidd_PixFmt_BitMapType, &bmtype);
+                switch (bmtype)
+                {
+                    case vHidd_BitMapType_Chunky:
+                        classptr = CSD(cl)->chunkybmclass;
+                        break;
+
+                    case vHidd_BitMapType_Planar:
+                        classptr = CSD(cl)->planarbmclass;
+                        break;
+
+                    default:
+                        D(bug("!!! Gfx::CreateObject: UNKNOWN BITMAPTYPE %d !!!\n", bmtype));
+                        return NULL;
+                }
+                D(bug("[GFX] Bitmap type is %u, using class 0x%p\n", bmtype, classptr));
+
+            } /* if (!gotclass) */
+
+        } /* if (!displayable) */
+
+        /* Set the tags we want to pass to the selected bitmap class */
+        bmtags[0].ti_Data = (IPTR)o;
+        bmtags[1].ti_Data = (IPTR)pf;
+        bmtags[6].ti_Data = (IPTR)msg->attrList;
+
+        object = OOP_NewObject(classptr, classid, bmtags);
+
+        /* Remember the framebuffer. It can be needed for default Show() implementation. */
+        if (framebuffer)
+            data->framebuffer = object;
     }
 
-    if (displayable)
-    {
-	/* Displayable bitmap. Here we must have ModeID and class. */
-	if (!sync)
-	{
-	    D(bug("!!! Gfx::NewBitMap: USER HAS NOT PASSED MODEID FOR DISPLAYABLE BITMAP !!!\n"));
-	    return NULL;
-	}
-
-	if (!gotclass)
-	{
-	    D(bug("!!! Gfx::NewBitMap: SUBCLASS DID NOT PASS CLASS FOR DISPLAYABLE BITMAP !!!\n"));
-	    return NULL;
-	}
-    }
-    else /* if (!displayable) */
-    {
-	/*
-	 * This is an offscreen bitmap and we need to guess its pixelformat.
-	 * In order to do this we need one of (in the order of preference):
-	 * - ModeID
-	 * - StdPixFmt
-	 * - Friend
-	 */
-
-	if (sync)
-	{
-	    /*
-	     * We have alredy got sync for the modeid case.
-	     * Obtain missing size information from it.
-	     */
-	    if (!got_width)
-	    {
-	    	bmtags[2].ti_Tag = aHidd_BitMap_Width;
-	    	OOP_GetAttr(sync, aHidd_Sync_HDisp, &bmtags[2].ti_Data);
-	    }
-
-	    if (!got_height)
-	    {
-		bmtags[3].ti_Tag = aHidd_BitMap_Height;
-	    	OOP_GetAttr(sync, aHidd_Sync_VDisp, &bmtags[3].ti_Data);
-	    }
-	}
-	else if (pixfmt != vHidd_StdPixFmt_Unknown)
-	{
-	    /* Next to look for is StdPixFmt */
-	    pf = HIDD_Gfx_GetPixFmt(o, pixfmt);
-	    if (NULL == pf)
-	    {
-		D(bug("!!! Gfx::NewBitMap(): USER PASSED BOGUS StdPixFmt !!!\n"));
-		return NULL;
-	    }
-	}
-	else if (friend_bm)
-	{
-	    /* Last alternative is that the user passed a friend bitmap */
-
-	    OOP_GetAttr(friend_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-
-	    /*
-	     * Inherit the class from friend bitmap (if not already specified).
-	     * We do it because friend bitmap may be a display HIDD bitmap
-	     */
-	    if (!gotclass)
-	    {
-	    	classptr = OOP_OCLASS(friend_bm);
-	    	gotclass  = TRUE;
-
-		D(bug("[GFX] Friend bitmap is 0x%p has class 0x%p (%s)\n", friend_bm, classptr, classptr->ClassNode.ln_Name));
-	    }
-	}
-	else
-	{
-	    D(bug("!!! Gfx::NewBitMap: INSUFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n"));
-	    return NULL;
-	}
-
-	/* Did the subclass provide an offbitmap class for us? */
-	if (!gotclass)
-	{
-	    /* Have to find a suitable class ourselves from the pixelformat */
-	    HIDDT_BitMapType bmtype;
-
-	    OOP_GetAttr(pf, aHidd_PixFmt_BitMapType, &bmtype);
-	    switch (bmtype)
-	    {
-	        case vHidd_BitMapType_Chunky:
-		    classptr = CSD(cl)->chunkybmclass;
-		    break;
-
-	        case vHidd_BitMapType_Planar:
-		    classptr = CSD(cl)->planarbmclass;
-		    break;
-
-	        default:
-	    	    D(bug("!!! Gfx::NewBitMap: UNKNOWN BITMAPTYPE %d !!!\n", bmtype));
-		    return NULL;
-	    }
-	    D(bug("[GFX] Bitmap type is %u, using class 0x%p\n", bmtype, classptr));
-
-	} /* if (!gotclass) */
-
-    } /* if (!displayable) */
-
-    /* Set the tags we want to pass to the selected bitmap class */
-    bmtags[0].ti_Data = (IPTR)o;
-    bmtags[1].ti_Data = (IPTR)pf;
-    bmtags[6].ti_Data = (IPTR)msg->attrList;
-
-    bm = OOP_NewObject(classptr, classid, bmtags);
-
-    if (framebuffer)
-    {
-    	/* Remember the framebuffer. It can be needed for default Show() implementation. */
-    	data->framebuffer = bm;
-    }
-
-    return bm;
-    
-}
-
-/*****************************************************************************************
-
-    NAME
-	moHidd_Gfx_DisposeBitMap
-	
-    SYNOPSIS
-        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisposeBitMap *msg);
-
-	VOID HIDD_Gfx_DisposeBitMap(OOP_Object *gfxHidd, OOP_Object *bitMap);
-
-    LOCATION
-	hidd.graphics.graphics
-
-    FUNCTION
-	Deletes a bitmap object previously created by HIDD_Gfx_NewBitMap().
-
-	Subclasses do not have to override this method
-	unless they allocate anything additional to a bitmap object in
-	their HIDD_Gfx_NewBitMap() implementation.
-
-    INPUTS
-	gfxHidd - A driver object which was used for creating a bitmap.
-	bitMap  - Pointer to a bitmap object to delete.
-
-    RESULT
-	None.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	moHidd_Gfx_NewBitMap
-
-    INTERNALS
-	Basically just does OOP_DisposeObject(bitMap);
-
-******************************************************************************************/
-
-VOID GFX__Hidd_Gfx__DisposeBitMap(OOP_Class *cl, OOP_Object *o,
-				  struct pHidd_Gfx_DisposeBitMap *msg)
-{
-    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
-
-    if (NULL != msg->bitMap)
-	OOP_DisposeObject(msg->bitMap);
+    ReturnPtr("HIDDGfx::CreateObject", OOP_Object *, object);
 }
 
 /****************************************************************************************/
