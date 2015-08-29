@@ -169,7 +169,7 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
             }
             OOP_DisposeObject(tempbm_obj);
         }
-        OOP_Gfx_DisposeObject(gc);
+        OOP_DisposeObject(gc);
     }
 
     return result;
