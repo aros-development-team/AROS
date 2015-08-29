@@ -34,6 +34,8 @@ static int cgfx_init(struct IntCGFXBase *CyberGfxBase)
     __IHidd_PixFmt  	= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
     __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
     
+    CyberGfxBase->basegc = OOP_FindClass(CLID_Hidd_GC);
+    CyberGfxBase->basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     if (__IHidd_BitMap   &&
         __IHidd_GC       &&

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -53,7 +53,12 @@ struct IntCGFXBase
     OOP_AttrBase    	    hiddPixFmtAttrBase;
     OOP_AttrBase    	    hiddGfxAttrBase;
 
-    ULONG	 	    greytab[256];	/* Grayscale palette for RECTFMT_GREY8 */
+    /* baseclasses for CreateObject */
+    OOP_Class                   *basegc;
+    OOP_Class                   *basebm;
+
+    /* Grayscale palette for RECTFMT_GREY8 */
+    ULONG	 	    greytab[256];
 };
 
 #define GetCGFXBase(base) ((struct IntCGFXBase *)base)
