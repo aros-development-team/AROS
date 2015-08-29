@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new BitMap
@@ -372,7 +372,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
             if (alloc)
             {
-                bm_obj = HIDD_Gfx_NewBitMap(drv->gfxhidd, bm_tags);
+                bm_obj = HIDD_Gfx_CreateObject(drv->gfxhidd, PrivGBase(GfxBase)->basebm, bm_tags);
                 D(bug("[AllocBitMap] Created bitmap object 0x%p\n", bm_obj));
                 if (!bm_obj)
                     ok = FALSE;
@@ -515,7 +515,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                     ReturnPtr("AllocBitMap", struct BitMap *, nbm);
                 }
 
-                HIDD_Gfx_DisposeBitMap(drv->gfxhidd, bm_obj);
+                OOP_DisposeObject(bm_obj);
             } /* if (bitmap object allocated) */
 
             FreeMem(nbm, sizeof (struct BitMap));

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics library
@@ -74,6 +74,9 @@ static int GfxInit(struct GfxBase *LIBBASE)
     LIBBASE->NormalDisplayRows = AROS_DEFAULT_WBHEIGHT;
     LIBBASE->MaxDisplayColumn = AROS_DEFAULT_WBWIDTH;
     LIBBASE->MaxDisplayRow = AROS_DEFAULT_WBHEIGHT;
+
+    PrivGBase(LIBBASE)->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+    bug("[Gfx] BitMap class @ 0x%p\n", PrivGBase(LIBBASE)->basebm);
 
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );

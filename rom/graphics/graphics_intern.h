@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -203,6 +203,9 @@ struct GfxBase_intern
     OOP_MethodID                HiddGfxBase;
     OOP_MethodID                HiddPlanarBMBase;
     OOP_MethodID		HiddCompositorMethodBase;
+
+    /* baseclass for CreateObject */
+    OOP_Class                   *basebm;
 };
 
 

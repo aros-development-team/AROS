@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free the memory occupied by a BitMap.
@@ -77,7 +77,7 @@
         }
 
         if (bmobj)
-            HIDD_Gfx_DisposeBitMap(HIDD_BM_DRVDATA(bm)->gfxhidd, bmobj);
+            OOP_DisposeObject(bmobj);
 
         FreeMem(bm, sizeof (struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES);
     }
