@@ -232,9 +232,9 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, CreateObject)
         }
 
         /* Like in Gfx::New() we init a new message struct */
-        mymsg.mID       = msg->mID;
-        mymsg.cl       = msg->cl;
-        mymsg.attrList  = mytags;
+        p.mID       = msg->mID;
+        p.cl       = msg->cl;
+        p.attrList  = mytags;
 
         /* Pass the new message to the superclass */
         object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
