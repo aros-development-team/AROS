@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -542,7 +542,7 @@ struct IntIntuitionBase
 #endif
     ULONG                   	*IDCMPPool;
 
-    struct IScreenModePrefs 	 ScreenModePrefs;
+    struct IScreenModePrefs 	 *ScreenModePrefs;
     struct IIControlPrefs   	 IControlPrefs;
 #ifdef SKINS
     struct IAction          	*IControlActions;
@@ -622,6 +622,7 @@ struct IntIntuitionBase
     OOP_AttrBase		 HiddGfxAttrBase;
     OOP_AttrBase		 HiddBitMapAttrBase;
     OOP_AttrBase		 HiddPixFmtAttrBase;
+    OOP_AttrBase		 HiddSyncAttrBase;
 
     OOP_MethodID		 ib_HiddGfxBase;
     OOP_MethodID		 ib_HiddBitMapBase;
@@ -1067,6 +1068,7 @@ ULONG TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase);
 ULONG TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase);
 
 /* intuition_misc protos */
+extern void SetDisplayDefaults(struct IntuitionBase * IntuitionBase);
 extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
 Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
     	    	    	  struct DrawInfo *dri, struct IntuitionBase *IntuitionBase);

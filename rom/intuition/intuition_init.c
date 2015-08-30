@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -84,6 +84,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     struct OOP_ABDescr attrbases[] = {
 	{IID_Hidd       , &GetPrivIBase(LIBBASE)->HiddAttrBase      },
 	{IID_Hidd_Gfx   , &GetPrivIBase(LIBBASE)->HiddGfxAttrBase   },
+	{IID_Hidd_Sync   , &GetPrivIBase(LIBBASE)->HiddSyncAttrBase   },
 	{IID_Hidd_BitMap, &GetPrivIBase(LIBBASE)->HiddBitMapAttrBase},
 	{IID_Hidd_PixFmt, &GetPrivIBase(LIBBASE)->HiddPixFmtAttrBase},
 	{NULL           , NULL				             }
