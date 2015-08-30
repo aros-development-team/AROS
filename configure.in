@@ -74,9 +74,9 @@ AC_MSG_RESULT($target_cpu)
 dnl --------------------------------------------------------------------
 dnl Set the default Workbench resolution
 dnl --------------------------------------------------------------------
-aros_default_wbwidth=800
-aros_default_wbheight=600
-aros_default_wbdepth=4
+aros_nominal_width=800
+aros_nominal_height=600
+aros_nominal_depth=4
 
 dnl --------------------------------------------------------------------
 dnl Host Configuration Section
@@ -873,7 +873,7 @@ case "$target_os" in
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
                 aros_kernel_ldflags="-Wl,-melf_i386"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="i386"
                 pci_hidd_target="hidd-pci-linux"
                 android_tool_dir_prefix="x86"
@@ -886,7 +886,7 @@ case "$target_os" in
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
                 aros_config_cflags="$aros_config_cflags -mno-red-zone -fno-omit-frame-pointer"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 pci_hidd_target="hidd-pci-linux"
                 ;;
             *powerpc*)
@@ -894,7 +894,7 @@ case "$target_os" in
                 aros_object_format="elf32ppc"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="ppc"
                 ;;
 # TODO
@@ -906,7 +906,7 @@ case "$target_os" in
                 aros_object_format="elf32ppc"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="ppc"
                 ;;
             *armhf*)
@@ -951,8 +951,8 @@ case "$target_os" in
                     AC_MSG_ERROR("Unsupported CPU for Android -- $target_cpu")
                 fi
 
-                aros_default_wbwidth=320
-                aros_default_wbheight=480
+                aros_nominal_width=320
+                aros_nominal_height=480
                 if test "$aros_android_ndk" = "none"; then
                     dnl Use standalone toolchain, don't adjust paths
                     aros_kernel_cflags="-mandroid"
@@ -997,8 +997,8 @@ case "$target_os" in
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
                 aros_kernel_ldflags="-Wl,-melf_i386"
-                aros_default_wbwidth=640
-                aros_default_wbheight=480
+                aros_nominal_width=640
+                aros_nominal_height=480
                 gcc_target_cpu="i386"
                 ;;
             *x86_64*)
@@ -1011,8 +1011,8 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -mno-red-zone -fno-omit-frame-pointer"
                 aros_kernel_ldflags=""
-                aros_default_wbwidth=640
-                aros_default_wbheight=480
+                aros_nominal_width=640
+                aros_nominal_height=480
                 case "$aros_target_variant" in
                     smp)
                         ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
@@ -1033,8 +1033,8 @@ case "$target_os" in
         aros_flavour="ppcnative"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
         aros_kernel_ldflags=""
-        aros_default_wbwidth=640
-        aros_default_wbheight=480
+        aros_nominal_width=640
+        aros_nominal_height=480
         gcc_target_cpu="ppc"
         ;;
 
@@ -1060,7 +1060,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
                 aros_kernel_ldflags=""
                 aros_macosx_version="10.4"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_kernel_ar_flags="-cr"
@@ -1076,7 +1076,7 @@ case "$target_os" in
                 aros_kernel_cflags="-m64"
                 aros_kernel_ldflags="-m64"
                 aros_target_cflags="-mcmodel=large"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 aros_kernel_ar="ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="ld"
@@ -1092,7 +1092,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
                 aros_kernel_ldflags=""
                 aros_macosx_version="10.0"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="ppc"
                 aros_kernel_ar="ar"
                 aros_kernel_ar_flags="-cr"
@@ -1109,7 +1109,7 @@ case "$target_os" in
                 aros_object_format="armelf_aros"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
                 aros_arch_libs="-laeabi"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="arm"
                 aros_kernel_ar="ar"
                 aros_kernel_ar_flags="-cr"
@@ -1125,8 +1125,8 @@ case "$target_os" in
         case "$aros_target_variant" in
             ios)
                 aros_ios_version="3.0"
-                aros_default_wbwidth=320
-                aros_default_wbheight=480
+                aros_nominal_width=320
+                aros_nominal_height=480
                 aros_ios_sdk="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/SDKs/$aros_ios_platform$aros_sdk_version.sdk"
                 kernel_tool_flags="$target_tool_flags -isysroot $aros_ios_sdk"
                 aros_kernel_includes="-isystem $aros_ios_sdk/usr/include"
@@ -1181,7 +1181,7 @@ case "$target_os" in
                 aros_object_format="elf_i386"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="i386"
                 ;;
             *)
@@ -1222,7 +1222,7 @@ case "$target_os" in
                aros_object_format="elf_i386"
                aros_flavour="emulation"
                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__Solaris__"
-               aros_default_wbdepth=8
+               aros_nominal_depth=8
                gcc_target_cpu="i386"
                ;;
             *sparc*)
@@ -1257,9 +1257,9 @@ case "$target_os" in
         aros_flavour="ppcnative"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
         aros_kernel_ldflags=""
-        aros_default_wbwidth=1024
-        aros_default_wbheight=768
-        aros_default_wbdepth=24
+        aros_nominal_width=1024
+        aros_nominal_height=768
+        aros_nominal_depth=24
         aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
         gcc_target_cpu="powerpc"
         ;;
@@ -1272,8 +1272,8 @@ case "$target_os" in
         aros_flavour="standalone"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
         aros_kernel_ldflags=""
-        aros_default_wbwidth=1024
-        aros_default_wbheight=600
+        aros_nominal_width=1024
+        aros_nominal_height=600
         aros_arch_libs="-laeabi"
         gcc_default_cpu="armv7-a"
         gcc_default_fpu="vfpv3"
@@ -1303,8 +1303,8 @@ case "$target_os" in
         aros_flavour="ppcnative"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
         aros_kernel_ldflags=""
-        aros_default_wbwidth=640
-        aros_default_wbheight=480
+        aros_nominal_width=640
+        aros_nominal_height=480
         aros_config_cflags="$aros_config_cflags -mno-toc -fno-asynchronous-unwind-tables"    
         gcc_target_cpu="powerpc"
         case "$aros_target_variant" in
@@ -1373,9 +1373,9 @@ case "$target_os" in
                 aros_optimization_cflags="$aros_optimization_cflags -Os"
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
-                aros_default_wbwidth=640
-                aros_default_wbheight=256
-                aros_default_wbdepth=2
+                aros_nominal_width=640
+                aros_nominal_height=256
+                aros_nominal_depth=2
                 ;;
             *ppc*)
                 aros_cpu="ppc"
@@ -1401,7 +1401,7 @@ case "$target_os" in
                 aros_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="i386"
 
                 kernel_tool_prefix="i386-mingw32-"
@@ -1411,7 +1411,7 @@ case "$target_os" in
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 kernel_tool_prefix="x86_64-w64-mingw32-"
                 ;;
             *arm*)
@@ -1419,12 +1419,12 @@ case "$target_os" in
                 aros_object_format="armelf_aros"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
                 aros_arch_libs="-laeabi"
-                aros_default_wbdepth=8
+                aros_nominal_depth=8
                 gcc_target_cpu="arm"
                 gcc_default_float_abi="soft"
                 kernel_tool_prefix="arm-mingw32ce-"
-                aros_default_wbwidth=160
-                aros_default_wbheight=160
+                aros_nominal_width=160
+                aros_nominal_height=160
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
@@ -1443,9 +1443,9 @@ case "$target_os" in
                 aros_object_format="m68kelf"
                 aros_flavour="palmnative"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
-                aros_default_wbwidth=160
-                aros_default_wbheight=160
-                aros_default_wbdepth=1
+                aros_nominal_width=160
+                aros_nominal_height=160
+                aros_nominal_depth=1
                 aros_target_ar_flags="cru"
                 aros_compiler_libs="-lgcc1"
                 aros_shared_default=no
@@ -1476,9 +1476,9 @@ case "$target_os" in
                 aros_object_format="m68kelf"
                 aros_flavour="mac68knative"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
-                aros_default_wbwidth=512
-                aros_default_wbheight=384
-                aros_default_wbdepth=8
+                aros_nominal_width=512
+                aros_nominal_height=384
+                aros_nominal_depth=8
                 aros_target_ar_flags="cru"
                 aros_compiler_libs="-lgcc1"
                 aros_shared_default=no
@@ -2364,14 +2364,14 @@ if test "$resolution" = "no" ; then
     resolution="none"
 fi
 if test "$resolution" != "none" ; then
-    aros_default_wbwidth=`echo $resolution | cut -d'x' -f1`
-    aros_default_wbheight=`echo $resolution | cut -d'x' -f2`
-    aros_default_wbdepth=`echo $resolution | cut -d'x' -f3`
+    aros_nominal_width=`echo $resolution | cut -d'x' -f1`
+    aros_nominal_height=`echo $resolution | cut -d'x' -f2`
+    aros_nominal_depth=`echo $resolution | cut -d'x' -f3`
 fi
-AC_MSG_RESULT($aros_default_wbwidth x $aros_default_wbheight x $aros_default_wbdepth)
-aros_cv_default_wbwidth=$aros_default_wbwidth
-aros_cv_default_wbheight=$aros_default_wbheight
-aros_cv_default_wbdepth=$aros_default_wbdepth
+AC_MSG_RESULT($aros_nominal_width x $aros_nominal_height x $aros_nominal_depth)
+aros_cv_nominal_width=$aros_nominal_width
+aros_cv_nominal_height=$aros_nominal_height
+aros_cv_nominal_depth=$aros_nominal_depth
 
 dnl See if the user wants the serial debug output for native flavour
 AC_MSG_CHECKING([if serial debug is enabled])
@@ -2772,9 +2772,9 @@ AC_SUBST(sdl_hidd_target)
 AC_SUBST(pci_hidd_target)
 AC_SUBST(oss_library_target)
 
-AC_SUBST(aros_default_wbwidth)
-AC_SUBST(aros_default_wbheight)
-AC_SUBST(aros_default_wbdepth)
+AC_SUBST(aros_nominal_width)
+AC_SUBST(aros_nominal_height)
+AC_SUBST(aros_nominal_depth)
 AC_SUBST(DO_XSHM_SUPPORT)
 AC_SUBST(DO_VIDMODE_SUPPORT)
 
