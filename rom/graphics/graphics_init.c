@@ -70,10 +70,10 @@ static int GfxInit(struct GfxBase *LIBBASE)
     LIBBASE->HashTableSemaphore = &PrivGBase(GfxBase)->hashtab_sema;
     LIBBASE->ActiViewCprSemaphore = &PrivGBase(GfxBase)->view_sema;
 
-    LIBBASE->NormalDisplayColumns = AROS_DEFAULT_WBWIDTH;
-    LIBBASE->NormalDisplayRows = AROS_DEFAULT_WBHEIGHT;
-    LIBBASE->MaxDisplayColumn = AROS_DEFAULT_WBWIDTH;
-    LIBBASE->MaxDisplayRow = AROS_DEFAULT_WBHEIGHT;
+    LIBBASE->NormalDisplayColumns = AROS_NOMINAL_WIDTH;
+    LIBBASE->NormalDisplayRows = AROS_NOMINAL_HEIGHT;
+    LIBBASE->MaxDisplayColumn = AROS_NOMINAL_WIDTH;
+    LIBBASE->MaxDisplayRow = AROS_NOMINAL_HEIGHT;
 
     PrivGBase(LIBBASE)->basebm = OOP_FindClass(CLID_Hidd_BitMap);
     bug("[Gfx] BitMap class @ 0x%p\n", PrivGBase(LIBBASE)->basebm);
