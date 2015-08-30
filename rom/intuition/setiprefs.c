@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -70,18 +70,16 @@
         
 	case IPREFS_TYPE_SCREENMODE_V37:
 	{
-	    struct IScreenModePrefs old_prefs;
-	    
             DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE_V37\n"));
             if (length > sizeof(struct IScreenModePrefs))
                 length = sizeof(struct IScreenModePrefs);
 	    
-	    if (memcmp(&GetPrivIBase(IntuitionBase)->ScreenModePrefs, data,
+            if (!GetPrivIBase(IntuitionBase)->ScreenModePrefs)
+                GetPrivIBase(IntuitionBase)->ScreenModePrefs = AllocMem(sizeof(struct IScreenModePrefs), MEMF_ANY);
+
+	    if (memcmp(GetPrivIBase(IntuitionBase)->ScreenModePrefs, data,
 	               sizeof(struct IScreenModePrefs)) == 0)
 	        break;
-	    
-	    old_prefs = GetPrivIBase(IntuitionBase)->ScreenModePrefs;
-	    GetPrivIBase(IntuitionBase)->ScreenModePrefs = *(struct IScreenModePrefs *)data;
 
 	    if (GetPrivIBase(IntuitionBase)->WorkBench)
 	    {
@@ -105,18 +103,19 @@
 		}
 		
 		if (closed)
+                {
+                    CopyMem(data, GetPrivIBase(IntuitionBase)->ScreenModePrefs, sizeof(struct IScreenModePrefs *));
 		    /* FIXME: handle the error condition if OpenWorkBench() fails */
 		    /* What to do if OpenWorkBench() fails? Try until it succeeds?
 		       Try for a finite amount of times? Don't try and do nothing 
 		       at all? */
-		    OpenWorkBench();
+		    if (!OpenWorkBench())
+                    {
+                        
+                    }
+                }
 		else
-		{
-		    lock = LockIBase(0);
-                    GetPrivIBase(IntuitionBase)->ScreenModePrefs = old_prefs;
-		    UnlockIBase(lock);
 		    Result = FALSE;
-		}
 		
 		return Result;
 		

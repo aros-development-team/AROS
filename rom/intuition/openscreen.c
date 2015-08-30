@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -320,12 +320,15 @@ static const char THIS_FILE[] = __FILE__;
              * AROS: Use oldstyle ScreenModePrefs structure.
              * CHECKME: Can we merge better ?
              */
-            ns.Width = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width;
-            ns.Height = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height;
-            ns.Depth = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
-            modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID;
+            if (!GetPrivIBase(IntuitionBase)->ScreenModePrefs)
+                SetDisplayDefaults(IntuitionBase);
 
-            if (GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Control & SMF_AUTOSCROLL)
+            ns.Width = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width;
+            ns.Height = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height;
+            ns.Depth = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth;
+            modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID;
+
+            if (GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Control & SMF_AUTOSCROLL)
             {
                 /* need to mark autoscroll */
                 ns.Type |= AUTOSCROLL;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -11,6 +11,7 @@
 #include <proto/layers.h>
 #include <proto/intuition.h>
 #include <proto/cybergraphics.h>
+#include <proto/oop.h>
 #include <clib/macros.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
@@ -23,6 +24,7 @@
 #include <graphics/rpattr.h>
 #include <graphics/gfxmacros.h>
 #include <cybergraphx/cybergraphics.h>
+#include <hidd/graphics.h>
 
 #ifdef SKINS
 #   include "intuition_customize.h"
@@ -48,6 +50,59 @@ extern IPTR HookEntry();
 
 /**********************************************************************************/
 
+void SetDisplayDefaults(struct IntuitionBase * IntuitionBase)
+{
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct MonitorSpec *defmon;
+    BOOL done = FALSE;
+
+    D(bug("[Intuition] %s()\n", __PRETTY_FUNCTION__, defmon));
+
+    if (!GetPrivIBase(IntuitionBase)->ScreenModePrefs)
+        GetPrivIBase(IntuitionBase)->ScreenModePrefs = AllocMem(sizeof(struct IScreenModePrefs), MEMF_ANY);
+
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID  = INVALID_ID;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Control         = 0;
+
+    if ((defmon = OpenMonitor(NULL, INVALID_ID)) != NULL)
+    {
+        OOP_Object *sync = (OOP_Object *)defmon->ms_Object, *drv = NULL;
+
+        D(bug("[Intuition] %s: default monitor @ 0x%p\n", __PRETTY_FUNCTION__, defmon));
+
+        if (sync)
+        {
+            OOP_AttrBase HiddSyncAttrBase = GetPrivIBase(IntuitionBase)->HiddSyncAttrBase;
+            struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
+
+            D(bug("[Intuition] %s: monitor sync obj @ 0x%p\n", __PRETTY_FUNCTION__, sync));
+
+            OOP_GetAttr(sync, aHidd_Sync_GfxHidd, &drv);
+            if (drv)
+            {
+                OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+                UBYTE depth;
+
+                HIDD_Gfx_NominalDimensions(drv,
+                    &GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width,
+                    &GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height,
+                    &depth);
+                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth = depth;
+                done = TRUE;
+            }
+        }
+        CloseMonitor(defmon);
+    }
+    if (!done)
+    {
+        D(bug("[Intuition] %s: using system defaults..\n", __PRETTY_FUNCTION__));
+
+        GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width          = GfxBase->NormalDisplayColumns;
+        GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height         = GfxBase->NormalDisplayRows;
+        GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth          = AROS_NOMINAL_DEPTH;
+    }
+}
+
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 {
 #   ifdef SKINS
@@ -57,16 +112,6 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
         static CONST UWORD DriPens2[NUMDRIPENS] = { 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1};
         static CONST UWORD DriPens4[NUMDRIPENS] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1};
 #   endif /* SKINS */
-    
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID  = INVALID_ID;
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width          = GetPrivIBase(IntuitionBase)->GfxBase->NormalDisplayColumns;
-#ifdef __mc68000
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height         = (GetPrivIBase(IntuitionBase)->GfxBase->DisplayFlags & NTSC) ? 200 : 256;
-#else
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height         = GetPrivIBase(IntuitionBase)->GfxBase->NormalDisplayRows;
-#endif
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth          = AROS_NOMINAL_DEPTH;
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Control         = 0;
 
     /* Default IControl prefs are AROS addition. Keep while backporting. */
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_TimeOut  = 50;

@@ -1,9 +1,10 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
+#define DEBUG 0
 #include <aros/config.h>
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
@@ -107,18 +108,15 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
     else
     {
         /* Open the Workbench screen if we don't have one. */
-
-	WORD  width  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width;
-        WORD  height = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height;
-        WORD  depth  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
-	ULONG modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID;
+	WORD  width, height, depth;
+	ULONG modeid;
 	APTR disphandle;
 
         struct TagItem screenTags[] =
         {
             { SA_Width,                0                  }, /* 0 */
             { SA_Height,               0                  }, /* 1 */
-            { SA_Depth,                depth              }, /* 2 */
+            { SA_Depth,                0              }, /* 2 */
 	    { SA_DisplayID,            0                  }, /* 3 */
             { SA_LikeWorkbench,        TRUE               }, /* 4 */
             { SA_Type,                 WBENCHSCREEN       }, /* 5 */
@@ -128,6 +126,14 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
             { TAG_END,                 0           	  }
         };
 
+        if (!GetPrivIBase(IntuitionBase)->ScreenModePrefs)
+            SetDisplayDefaults(IntuitionBase);
+
+	width  = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width;
+        height = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height;
+        depth  = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth;
+	modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID;
+        
 	D(bug("[OpenWorkbench] Requested size: %dx%d, depth: %d, ModeID: 0x%08lX\n", width, height, depth, modeid));
 
 	/* First check if the specified ModeID exists in the system */
@@ -225,16 +231,16 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
 		depth  = BOUND(0, depth, dim.MaxDepth);
 		D(bug("[OpenWorkbench] Corrected size: %dx%d %dbpp\n", width, height, depth));
 
-		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width  = width;
-		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height = height;
-		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth  = depth;
+		GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width  = width;
+		GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height = height;
+		GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth  = depth;
             }
 
 	    /*
 	     * Remember this ModeID because OpenScreen() with SA_LikeWorkbench set to TRUE
 	     * looks at this field. We MUST have something valid here.
 	     */
-	    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID = modeid;
+	    GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID = modeid;
 
 	    screenTags[0].ti_Data = width;
             screenTags[1].ti_Data = height;
