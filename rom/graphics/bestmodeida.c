@@ -165,23 +165,6 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
     return args->found_id != INVALID_ID;
 }
 
-#ifdef __mc68000
-static void FillNominal(struct GfxBase *GfxBase, struct MatchData *args)
-{
-    struct monitor_driverdata *mdd;
-    /* Detect if we have RTG modes or only chipset modes.
-     * How to do this properly?
-     */
-    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
-         if (mdd->id & mdd->mask) /* Chipset = monitor ID zero */
-            return;
-    }
-    /* Chipset only: set PAL/NTSC defaults */
-    args->nominal_width = GfxBase->NormalDisplayColumns;
-    args->nominal_height = GfxBase->NormalDisplayRows;
-}
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -214,7 +197,7 @@ static void FillNominal(struct GfxBase *GfxBase, struct MatchData *args)
                                               if BIDTAG_ViewPort is passed: vp->RasInfo->BitMap->Depth,
                                               else 1.
 	BIDTAG_NominalWidth (UWORD),
-	BIDTAG_NominalHeight (UWORD)        - Aspect radio. Default:
+	BIDTAG_NominalHeight (UWORD)        - Aspect ratio. Default:
                                               if BIDTAG_SourceID: SourceID NominalDimensionInfo
                                               if BIDTAG_ViewPort: vp->DWidth and vp->DHeight
                                               or 640 x 200.
@@ -263,18 +246,17 @@ static void FillNominal(struct GfxBase *GfxBase, struct MatchData *args)
         1,                /* Depth        */
         INVALID_ID,       /* Monitor ID   */
         NULL,             /* Board name   */
-        640, 480,         /* Nominal size */
+        0, 0,         /* Nominal size */
         0, 0,             /* Desired size */
         INVALID_ID,       /* Found ID     */
         -1,               /* Found depth  */
         -1, -1            /* Found size   */
     };
 
+    bug("[Gfx] %s()\n", __PRETTY_FUNCTION__);
+
     /* Obtain default monitor driver */
     monitor = MonitorFromSpec(GfxBase->default_monitor, GfxBase);
-#ifdef __mc68000
-    FillNominal(GfxBase, &args);
-#endif
 
     /* Get defaults which can be overriden */
     while ((tag = NextTagItem(&tstate)))
@@ -350,6 +332,24 @@ static void FillNominal(struct GfxBase *GfxBase, struct MatchData *args)
 
     /* Exclude flags in MustHave from MustNotHave (CHECKME: if this correct?) */
     args.dipf_mustnothave &= ~args.dipf_musthave;
+
+    if (!args.nominal_width)
+    {
+        bug("[Gfx] %s: obtaining nominal values ...\n", __PRETTY_FUNCTION__);
+
+        if (monitor && monitor->gfxhidd)
+        {
+            bug("[Gfx] %s: querying monitors gfx driver @ 0x%p\n", __PRETTY_FUNCTION__, monitor->gfxhidd);
+            HIDD_Gfx_NominalDimensions(monitor->gfxhidd, &args.nominal_width, &args.nominal_height, &args.depth);
+        }
+        else
+        {
+            //  fallback to hardcoded values..
+            args.nominal_width  = 640;
+            args.nominal_height = 480;
+            args.depth = 1;
+        }
+    }
 
     D(bug("[BestModeIDA] Desired mode: %dx%dx%d, MonitorID 0x%08lX, MustHave 0x%08lX, MustNotHave 0x%08lX\n",
 	  args.desired_width, args.desired_height, args.depth, args.monitorid, args.dipf_musthave, args.dipf_mustnothave));
