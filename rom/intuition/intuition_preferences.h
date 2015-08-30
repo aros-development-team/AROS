@@ -113,9 +113,9 @@ CONST struct Preferences IntuitionDefaultPreferences =
     0,      // PrintDensity
     0,      // PrintXOffset
 
-    AROS_DEFAULT_WBWIDTH,  // wb_Width
-    AROS_DEFAULT_WBHEIGHT, // wb_Height
-    AROS_DEFAULT_WBDEPTH,  // wb_Depth
+    AROS_NOMINAL_WIDTH,  // wb_Width
+    AROS_NOMINAL_HEIGHT, // wb_Height
+    AROS_NOMINAL_DEPTH,  // wb_Depth
 
     0       // ext size
 };

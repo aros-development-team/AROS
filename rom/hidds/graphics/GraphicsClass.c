@@ -16,6 +16,7 @@
 #include <aros/atomic.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
+#include <aros/config.h>
 #include <cybergraphx/cgxvideo.h>
 #include <exec/lists.h>
 #include <oop/static_mid.h>
@@ -969,11 +970,11 @@ VOID GFX__Hidd_Gfx__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd
     EnterFunc(bug("HIDDGfx::NominalDimensions()\n"));
 
     if (msg->width)
-        *(msg->width) = 640;
+        *(msg->width) = AROS_NOMINAL_WIDTH;
     if (msg->height)
-        *(msg->height) = 480;    
+        *(msg->height) = AROS_NOMINAL_HEIGHT;    
     if (msg->depth)
-        *(msg->depth) = 1;
+        *(msg->depth) = AROS_NOMINAL_DEPTH;
 }
 
 /*****************************************************************************************
