@@ -936,6 +936,49 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 /*****************************************************************************************
 
     NAME
+	moHidd_Gfx_NominalDimensions
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_NominalDimensions *msg);
+
+	OOP_Object *HIDD_Gfx_NominalDimensions(OOP_Object *gfxHidd, UWORD *width, UWORD *height, UBYTE *depth);
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+
+    INPUTS
+	gfxHidd - The graphics driver used to create the object.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+VOID GFX__Hidd_Gfx__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NominalDimensions *msg)
+{
+    EnterFunc(bug("HIDDGfx::NominalDimensions()\n"));
+
+    if (msg->width)
+        *(msg->width) = 640;
+    if (msg->height)
+        *(msg->height) = 480;    
+    if (msg->depth)
+        *(msg->depth) = 1;
+}
+
+/*****************************************************************************************
+
+    NAME
 	moHidd_Gfx_CreateObject
 
     SYNOPSIS
