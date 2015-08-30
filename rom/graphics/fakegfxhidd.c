@@ -1516,7 +1516,7 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
 {
     OOP_Class *cl = NULL;
-    
+
     struct OOP_MethodDescr root_descr[num_Root_Methods + 1] =
     {
         {(IPTR (*)())gfx_new	,    	     	moRoot_New	},
@@ -1525,38 +1525,39 @@ static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
         {(IPTR (*)())gfx_fwd	,         	moRoot_Set	},
 	{ NULL	    	    	, 0UL 	    	    	    	}
     };
-    
+
     struct OOP_MethodDescr gfxhidd_descr[num_Hidd_Gfx_Methods + 1] = 
     {
-        {(IPTR (*)())gfx_createobject	   , moHidd_Gfx_CreateObject	},
-        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryModeIDs	},
-        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_ReleaseModeIDs	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CheckMode	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NextModeID	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetMode		},
-	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_GetPixFmt	},
-	{(IPTR (*)())gfx_setcursorshape    , moHidd_Gfx_SetCursorShape	},
-	{(IPTR (*)())gfx_setcursorpos	   , moHidd_Gfx_SetCursorPos	},
-	{(IPTR (*)())gfx_setcursorvisible  , moHidd_Gfx_SetCursorVisible},
-	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_SetMode	    	},
-	{(IPTR (*)())gfx_show	    	   , moHidd_Gfx_Show		},
-	{(IPTR (*)())gfx_copybox    	   , moHidd_Gfx_CopyBox	    	},
-	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_ModeProperties	},
-	{(IPTR (*)())gfx_showviewports	   , moHidd_Gfx_ShowViewPorts	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetSync	    	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetGamma	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_SetGamma	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryHardware3D },
-	{(IPTR (*)())gfx_getmaxspritesize  , moHidd_Gfx_GetMaxSpriteSize},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NewOverlay	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeOverlay	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_MakeViewPort	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CleanViewPort	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_PrepareViewPorts},
-	{(IPTR (*)())gfx_copyboxmasked 	   , moHidd_Gfx_CopyBoxMasked	},
-        {NULL	    	    	    	   , 0UL   	    	    	}
+        {(IPTR (*)())gfx_fwd               , moHidd_Gfx_NominalDimensions	},
+        {(IPTR (*)())gfx_createobject	   , moHidd_Gfx_CreateObject	        },
+        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryModeIDs	        },
+        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_ReleaseModeIDs          },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CheckMode	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NextModeID	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetMode		        },
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_GetPixFmt	                },
+	{(IPTR (*)())gfx_setcursorshape    , moHidd_Gfx_SetCursorShape	        },
+	{(IPTR (*)())gfx_setcursorpos	   , moHidd_Gfx_SetCursorPos	        },
+	{(IPTR (*)())gfx_setcursorvisible  , moHidd_Gfx_SetCursorVisible        },
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_SetMode	    	        },
+	{(IPTR (*)())gfx_show	    	   , moHidd_Gfx_Show		        },
+	{(IPTR (*)())gfx_copybox    	   , moHidd_Gfx_CopyBox	    	        },
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_ModeProperties	        },
+	{(IPTR (*)())gfx_showviewports	   , moHidd_Gfx_ShowViewPorts	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetSync	    	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetGamma	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_SetGamma	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryHardware3D         },
+	{(IPTR (*)())gfx_getmaxspritesize  , moHidd_Gfx_GetMaxSpriteSize        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NewOverlay	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeOverlay	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_MakeViewPort	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CleanViewPort	        },
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_PrepareViewPorts        },
+	{(IPTR (*)())gfx_copyboxmasked 	   , moHidd_Gfx_CopyBoxMasked	        },
+        {NULL	    	    	    	   , 0UL   	    	    	        }
     };
-    
+
     struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr 	, IID_Root  	, num_Root_Methods	},
