@@ -59,13 +59,13 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 #   endif /* SKINS */
     
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID  = INVALID_ID;
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width          = AROS_DEFAULT_WBWIDTH;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width          = GetPrivIBase(IntuitionBase)->GfxBase->NormalDisplayColumns;
 #ifdef __mc68000
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height         = (GetPrivIBase(IntuitionBase)->GfxBase->DisplayFlags & NTSC) ? 200 : 256;
 #else
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height         = AROS_DEFAULT_WBHEIGHT;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height         = GetPrivIBase(IntuitionBase)->GfxBase->NormalDisplayRows;
 #endif
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth          = AROS_DEFAULT_WBDEPTH;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth          = AROS_NOMINAL_DEPTH;
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Control         = 0;
 
     /* Default IControl prefs are AROS addition. Keep while backporting. */

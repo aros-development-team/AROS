@@ -148,16 +148,16 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
 	    /* Specifying -1's here causes BestModeIDA() to fail, fix up the values */
 	    if (width == STDSCREENWIDTH)
 	    {
-	        D(bug("[OpenWorkbench] Using default width %d\n", AROS_DEFAULT_WBWIDTH));
-	        width = AROS_DEFAULT_WBWIDTH;
+	        D(bug("[OpenWorkbench] Using default width %d\n", GfxBase->NormalDisplayColumns));
+	        width = GfxBase->NormalDisplayColumns;
 	    }
 	    if (height == STDSCREENHEIGHT)
 	    {
-	        D(bug("[OpenWorkbench] Using default height %d\n", AROS_DEFAULT_WBHEIGHT));
-	        height = AROS_DEFAULT_WBHEIGHT;
+	        D(bug("[OpenWorkbench] Using default height %d\n", GfxBase->NormalDisplayRows));
+	        height = GfxBase->NormalDisplayRows;
 	    }
 	    if (depth == -1)
-	        depth = AROS_DEFAULT_WBDEPTH;
+	        depth = AROS_NOMINAL_DEPTH;
 
 #ifdef __mc68000
 	    /* FIXME: less hacky RTG detection */
