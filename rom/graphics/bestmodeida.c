@@ -59,7 +59,7 @@ static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchDat
 
         OOP_GetAttr(mdd->gfxhidd, aHidd_Gfx_DriverName, (IPTR *)&name);
         if (strcmp(args->boardname, name)) {
-            D(bug("CYBRBIDTG_BoardName didn't match. '%s' != '%s'\n", args->boardname, name));
+            D(bug("[Gfx] %s: CYBRBIDTG_BoardName didn't match. '%s' != '%s'\n", __PRETTY_FUNCTION__, args->boardname, name));
             return;
         }
     }
@@ -69,7 +69,7 @@ static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchDat
 	UWORD gm_width, gm_height;
 	ULONG modeid = mdd->id | dinfo->id;
 
-	D(bug("[BestModeID] Checking ModeID 0x%08X (0x%08X 0x%08X)... ", modeid, modeid & modemask, modemask));
+	D(bug("[Gfx] %s: Checking ModeID 0x%08X (0x%08X 0x%08X)... ", __PRETTY_FUNCTION__, modeid, modeid & modemask, modemask));
 
     if (args->monitorid != INVALID_ID && (args->monitorid & modemask) != (modeid & modemask))
     {
@@ -335,11 +335,11 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
 
     if (!args.nominal_width)
     {
-        bug("[Gfx] %s: obtaining nominal values ...\n", __PRETTY_FUNCTION__);
+        D(bug("[Gfx] %s: obtaining nominal values ...\n", __PRETTY_FUNCTION__));
 
         if (monitor && monitor->gfxhidd)
         {
-            bug("[Gfx] %s: querying monitors gfx driver @ 0x%p\n", __PRETTY_FUNCTION__, monitor->gfxhidd);
+            D(bug("[Gfx] %s: querying monitors gfx driver @ 0x%p\n", __PRETTY_FUNCTION__, monitor->gfxhidd));
             HIDD_Gfx_NominalDimensions(monitor->gfxhidd, &args.nominal_width, &args.nominal_height, &args.depth);
         }
         else
@@ -351,7 +351,7 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
         }
     }
 
-    D(bug("[BestModeIDA] Desired mode: %dx%dx%d, MonitorID 0x%08lX, MustHave 0x%08lX, MustNotHave 0x%08lX\n",
+    D(bug("[Gfx] %s: Desired mode: %dx%dx%d, MonitorID 0x%08lX, MustHave 0x%08lX, MustNotHave 0x%08lX\n", __PRETTY_FUNCTION__,
 	  args.desired_width, args.desired_height, args.depth, args.monitorid, args.dipf_musthave, args.dipf_mustnothave));
 
     /* OK, now we try to search for a mode that has the supplied charateristics. */
@@ -380,7 +380,7 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 
-    D(bug("[BestModeIDA] Returning mode ID 0x%08lX\n", args.found_id));
+    D(bug("[Gfx] %s: Returning mode ID 0x%08lX\n", __PRETTY_FUNCTION__, args.found_id));
     return args.found_id;
 
     AROS_LIBFUNC_EXIT
