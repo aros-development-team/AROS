@@ -46,6 +46,21 @@ static const ULONG specialmask_aga[] = { 0, EXTRAHALFBRITE_KEY, HAM_KEY, 0xfffff
 
 #define SPECIAL_MODE_MASK (EXTRAHALFBRITE_KEY | HAM_KEY)
 
+VOID AmigaVideoCl__Hidd_Gfx__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NominalDimensions *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *GfxBase = csd->cs_GfxBase;
+
+    DB2(bug("NominalDimensions()\n"));
+
+    if (msg->width)
+        *(msg->width) = GfxBase->NormalDisplayColumns;
+    if (msg->height)
+        *(msg->height) = GfxBase->NormalDisplayRows;
+    if (msg->depth)
+        *(msg->depth) = 1;
+}
+
 ULONG AmigaVideoCl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
 {
     ULONG flags = 0;
