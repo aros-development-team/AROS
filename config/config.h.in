@@ -20,9 +20,9 @@
 
 #define AROS_FLAVOUR                    @aros_flavour_uc@
 
-#define AROS_DEFAULT_WBWIDTH            @aros_default_wbwidth@
-#define AROS_DEFAULT_WBHEIGHT           @aros_default_wbheight@
-#define AROS_DEFAULT_WBDEPTH            @aros_default_wbdepth@
+#define AROS_NOMINAL_WIDTH            @aros_nominal_width@
+#define AROS_NOMINAL_HEIGHT           @aros_nominal_height@
+#define AROS_NOMINAL_DEPTH            @aros_nominal_depth@
 
 #define AROS_SERIAL_DEBUG               @aros_serial_debug@
 
