@@ -884,7 +884,7 @@ VOID CompositorParseConfig(struct HIDDCompositorData *compdata)
     {
         D(bug("[Composit] %s: RDArgs @ 0x%p\n", __PRETTY_FUNCTION__, rdargs));
 
-        if (len = GetVar(COMPOSITOR_PREFS, CompConfig, 1024, GVF_GLOBAL_ONLY) != -1)
+        if ((len = GetVar(COMPOSITOR_PREFS, CompConfig, 1024, GVF_GLOBAL_ONLY)) != -1)
         {
             rdargs->RDA_Source.CS_Buffer = CompConfig;
             rdargs->RDA_Source.CS_Length = len;
