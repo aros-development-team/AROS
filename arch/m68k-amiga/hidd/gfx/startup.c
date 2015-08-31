@@ -25,7 +25,7 @@ int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE);
 static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
 {
     ULONG err;
-    struct Library *GfxBase;
+    struct Library *GfxBase, *OOPBase;
 
  	
     D(bug("************************* AmigaVideo_Init ******************************\n"));
@@ -33,6 +33,8 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
     initcustom(&LIBBASE->csd);
     GfxBase = LIBBASE->csd.cs_GfxBase;
     
+    OOPBase = OpenLibrary("oop.library", 0);
+
     LIBBASE->csd.cs_basebm = OOP_FindClass(CLID_Hidd_BitMap);
     
     Init_AmigaVideoClass(LIBBASE);
@@ -44,7 +46,7 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
 			   DDRV_IDMask      , 0xF0000000,
 			   TAG_DONE);
 
-    CloseLibrary(GfxBase);
+    CloseLibrary(OOPBase);
 
     D(bug("AMIGAGFXHIDD AddDisplayDriver() result: %u\n", err));
     return err ? FALSE : TRUE;

@@ -49,7 +49,7 @@ static const ULONG specialmask_aga[] = { 0, EXTRAHALFBRITE_KEY, HAM_KEY, 0xfffff
 VOID AmigaVideoCl__Hidd_Gfx__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NominalDimensions *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct Library *GfxBase = csd->cs_GfxBase;
+    struct GfxBase *GfxBase = (struct GfxBase *)csd->cs_GfxBase;
 
     DB2(bug("NominalDimensions()\n"));
 
@@ -691,10 +691,10 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, s
         p.cl = msg->cl;
         p.attrList = tags;
 
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     }
     else
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     ReturnPtr("AGFX::CreateObject", OOP_Object *, object);
 }
