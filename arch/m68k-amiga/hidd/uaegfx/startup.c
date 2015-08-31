@@ -28,13 +28,15 @@ static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
     ULONG err;
     struct ExecBase *SysBase = LIBBASE->csd.cs_SysBase;
     struct Library  *GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
- 	
+    struct Library  *OOPBase = OpenLibrary("oop.library", 0);
+
     D(bug("************************* UAEGFX_Init ******************************\n"));
 
     if (!GfxBase)
         return FALSE;
 
     LIBBASE->csd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
+    CloseLibrary(OOPBase);
 
     if (!Init_UAEGFXClass(LIBBASE)) {
         CloseLibrary(GfxBase);

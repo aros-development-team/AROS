@@ -42,7 +42,7 @@ struct NativeChipsetMode
 
 struct amigavideo_staticdata
 {
-    OOP_Class 	    	    *cs_basebm            /* baseclass for CreateObject */
+    OOP_Class 	    	    *cs_basebm;           /* baseclass for CreateObject */
 
     OOP_Class 	    	    *amigagfxclass;
     OOP_Class 	    	    *amigabmclass;
