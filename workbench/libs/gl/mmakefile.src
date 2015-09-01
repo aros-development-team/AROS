@@ -14,6 +14,8 @@ include $(TOP)/config/make.cfg
 #MM workbench-libs-gl-gen-includes : workbench-libs-gl-setup
 #MM workbench-libs-gl-gen-stubs : workbench-libs-gl-gen-includes
 
+#MM- workbench-libs-gl-includes : workbench-libs-gl-includes-copy
+
 #
 # build the pass-through gl.library
 #
@@ -76,8 +78,7 @@ $(GENDIR)/$(CURDIR)/.includes-generated : $(GENMODULE)
 
 INCLUDE_FILES := gla.h
 
-#MM- includes-copy
-%copy_includes path=GL includes=$(INCLUDE_FILES)
+%copy_includes mmake=workbench-libs-gl-includes-copy path=GL includes=$(INCLUDE_FILES)
 
 #MM
 workbench-libs-gl-gen-config: $(GENDIR)/config/gl.config
