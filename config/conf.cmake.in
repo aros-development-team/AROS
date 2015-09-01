@@ -17,4 +17,5 @@ set(CMAKE_CXX_COMPILER_WORKS:INTERNAL TRUE)
 set(CMAKE_MODULE_PATH "@SRCDIR@/config/cmake" ${CMAKE_MODULE_PATH}) # For AROS FindPackage scripts
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Debug|Release|RelWithDebInfo|MinSizeRel")
 set(CMAKE_CROSS_COMPILING ON) # Workaround for http://www.cmake.org/Bug/view.php?id=14075
+set(CMAKE_CROSSCOMPILING ON)
 # set(PKG_CONFIG_EXECUTABLE )
