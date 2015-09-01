@@ -67,17 +67,25 @@ AROS_LH1(void, RemTask,
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *findTask = task;
     struct TaskListEntry *taskEntry, *tmpEntry;
     struct TaskResBase *TaskResBase;
     BOOL removed = FALSE;
 
     TaskResBase = (struct TaskResBase *)SysBase->lb_TaskResBase;
 
-    D(bug("[TaskRes] RemTask(0x%p)\n", task));
+    if (!findTask)
+        findTask = FindTask(NULL);
 
+    D(
+        bug("[TaskRes] RemTask(0x%p)\n", task);
+        if (findTask != task)
+            bug("[TaskRes] Real task @ 0x%p\n", findTask);
+    )
+    
     ForeachNodeSafe(&TaskResBase->trb_NewTasks, taskEntry, tmpEntry)
     {
-        if (taskEntry->tle_Task == task)
+        if (taskEntry->tle_Task == findTask)
         {
             D(bug("[TaskRes] RemTask: destroying new entry @ 0x%p\n", taskEntry));
             Remove(&taskEntry->tle_Node);
@@ -91,7 +99,7 @@ AROS_LH1(void, RemTask,
     {
         ForeachNodeSafe(&TaskResBase->trb_TaskList, taskEntry, tmpEntry)
         {
-            if (taskEntry->tle_Task == task)
+            if (taskEntry->tle_Task == findTask)
             {
                 D(bug("[TaskRes] RemTask: taskentry @ 0x%p for '%s'\n", taskEntry, task->tc_Node.ln_Name));
                 if (IsListEmpty(&TaskResBase->trb_LockedLists))
