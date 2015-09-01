@@ -39,8 +39,8 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-processor  		 \
 #MM			   kernel-task
 
-KRSRCS      := efi hpet
-KRSRCS_ARCH := battclock processor task
+KRSRCS      := efi hpet task
+KRSRCS_ARCH := battclock processor
 KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci
