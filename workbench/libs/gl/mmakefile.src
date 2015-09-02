@@ -78,7 +78,7 @@ $(GENDIR)/$(CURDIR)/.includes-generated : $(GENMODULE)
 
 INCLUDE_FILES := gla.h
 
-%copy_includes mmake=workbench-libs-gl-includes-copy path=GL includes=$(INCLUDE_FILES)
+%copy_includes path=GL includes=$(INCLUDE_FILES)
 
 #MM
 workbench-libs-gl-gen-config: $(GENDIR)/config/gl.config
