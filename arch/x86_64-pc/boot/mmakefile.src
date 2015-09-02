@@ -12,10 +12,10 @@ include $(TOP)/config/make.cfg
 
 # -------- x86_64-pc kernel --------
 
-#MM- kernel-pc-x86_64-kernel: kernel-kernel-kobj kernel-exec-kobj
+#MM- kernel-pc-x86_64-kernel: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
 
 %link_kickstart mmake=kernel-pc-x86_64-kernel file=$(AROSARCHDIR)/kernel \
-	startup=$(KOBJSDIR)/kernel_resource.o libs=exec
+	startup=$(KOBJSDIR)/kernel_resource.o libs=exec res=task
 
 # -------- x86_64-pc board support package --------
 
@@ -36,8 +36,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-hidd-vesa    		 \
 #MM			   kernel-hidd-pci    		 \
 #MM			   kernel-hidd-pci-pcipc    	 \
-#MM			   kernel-processor  		 \
-#MM			   kernel-task
+#MM			   kernel-processor
 
 KRSRCS      := efi hpet task
 KRSRCS_ARCH := battclock processor
