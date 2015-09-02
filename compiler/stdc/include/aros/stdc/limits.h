@@ -50,7 +50,7 @@
 /* maximum value for an object of type unsigned int */
 #define UINT_MAX	4294967295U
 /* minimum value for an object of type long int */
-#define LONG_MIN	(-LONG_MAX - 1L)
+#define LONG_MIN	(-LONG_MAX - 1)
 /* maximum value for an object of type long int */
 #if __WORDSIZE == 64
 #   define LONG_MAX	9223372036854775807LL
