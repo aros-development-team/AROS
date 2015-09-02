@@ -11,7 +11,11 @@
     NAME
 #include <setjmp.h>
 
-	void siglongjmp (jmp_buf env, int val);
+	void siglongjmp (
+
+/*  SYNOPSIS
+	jmp_buf env,
+	int val)
 
     FUNCTION
 	Save the current context so that you can return to it later.
@@ -51,7 +55,7 @@
     BUGS
 
     SEE ALSO
-	setjmp()
+	stdc/setjmp()
 
     INTERNALS
 
