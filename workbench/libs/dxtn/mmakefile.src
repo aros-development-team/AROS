@@ -1,0 +1,6 @@
+#   $Id: mmakefile.src 51057 2015-09-01 00:56:37Z NicJA $
+#
+include $(TOP)/config/make.cfg
+
+%build_module_abi mmake=workbench-libs-dxtn \
+	modname=dxtn modtype=library
