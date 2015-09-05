@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -87,13 +87,16 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     if (XGET(smdata->tasklist, MUIA_List_Active) == 0)
         smdata->sm_TaskSelected = NULL;
 
-    if (firstvis < XGET(smdata->tasklist, MUIA_List_Entries))
+    /* Keep the "pre-refresh" view on List as much as possible */
+    LONG v = (LONG)firstvis;
+    if (firstvis + XGET(smdata->tasklist, MUIA_List_Visible) >= XGET(smdata->tasklist, MUIA_List_Entries))
     {
-        if ((XGET(smdata->tasklist, MUIA_List_Entries) - firstvis) > XGET(smdata->tasklist, MUIA_List_Visible))
-            set(smdata->tasklist, MUIA_List_First, firstvis);
-        else
-            set(smdata->tasklist, MUIA_List_First, (XGET(smdata->tasklist, MUIA_List_Entries) - XGET(smdata->tasklist, MUIA_List_Visible)));
+        v = XGET(smdata->tasklist, MUIA_List_Entries) - XGET(smdata->tasklist, MUIA_List_Visible);
+        if (v < 0) v = 0;
     }
+
+    set(smdata->tasklist, MUIA_List_First, v);
+
     __sprintf(smdata->tasklistinfobuf, "%ld ready, %ld waiting", smdata->sm_TasksReady, smdata->sm_TasksWaiting);
     set(smdata->tasklistinfo, MUIA_Text_Contents, smdata->tasklistinfobuf);
     set(smdata->tasklist, MUIA_List_Quiet, FALSE);
