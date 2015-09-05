@@ -13,11 +13,10 @@
 /* Task information handling*/
 struct TaskInfo
 {
-    struct Node TINode; /* We copy the tasks info into our node, with ln_Name pointing to TaskInfo->Private */
+    struct Node TINode;
     struct Task *Task;
     ULONG TimeCurrent;
     ULONG TimeLast;
-    UBYTE Private; /* MUST ALWAYS BE LAST. HERE NAME WILL BE COPIED */
 };
 
 VOID UpdateTasksInformation(struct SysMonData * smdata)
