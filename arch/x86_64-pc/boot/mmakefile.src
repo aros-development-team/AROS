@@ -38,7 +38,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-hidd-pci-pcipc    	 \
 #MM			   kernel-processor
 
-KRSRCS      := efi hpet task
+KRSRCS      := efi hpet
 KRSRCS_ARCH := battclock processor
 KLIBS       := acpica
 KLIBS_ARCH  := expansion
