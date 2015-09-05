@@ -21,12 +21,11 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-pc-i386-kernel:	\
 #MM     kernel-kernel-kobj	\
-#MM     kernel-exec-kobj
-
-KLIBS   := exec
+#MM     kernel-exec-kobj \
+#MM     kernel-task-kobj
 
 %link_kickstart mmake=kernel-pc-i386-kernel file=$(AROSARCHDIR)/kernel \
-	startup=$(KOBJSDIR)/kernel_resource.o libs=$(KLIBS) \
+	startup=$(KOBJSDIR)/kernel_resource.o libs=exec res=task 
 
 #
 # Board support package
@@ -36,7 +35,6 @@ KLIBS   := exec
 #MM	linklibs			\
 #MM	kernel-battclock    		\
 #MM	kernel-processor    		\
-#MM	kernel-task    		        \
 #MM	kernel-timer    		\
 #MM	kernel-expansion    		\
 #MM	kernel-efi     			\
@@ -54,7 +52,7 @@ KLIBS   := exec
 #MM     kernel-hidd-vga    
 
 KRSRCS      := efi hpet
-KRSRCS_ARCH := battclock processor task
+KRSRCS_ARCH := battclock processor
 KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ahci ata
