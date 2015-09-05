@@ -1292,9 +1292,8 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
                 if (data->entries_num != XGET(obj, MUIA_List_VertProp_Entries))
                     set(obj, MUIA_List_VertProp_Entries, data->entries_num);
-                if (data->vertprop_first !=
-                    XGET(obj, MUIA_List_VertProp_First))
-                    set(obj, MUIA_List_VertProp_First, data->vertprop_first);
+                if (data->entries_first != XGET(obj, MUIA_List_VertProp_First))
+                    set(obj, MUIA_List_VertProp_First, data->entries_first);
             }
             break;
 
