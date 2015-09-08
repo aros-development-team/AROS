@@ -50,6 +50,33 @@ static const TEXT default_accept_chars[] = "aeiou?.";
 static const TEXT default_reject_chars[] = "*?";
 static const ULONG default_color[] = {155 << 24, 180 << 24, 255 << 24};
 static const struct MUI_PenSpec default_penspec = {"m0"};
+static const char *fruits[] = {"Strawberry", "Apple", "Banana", "Orange",
+    "Grapefruit", "Kumquat", "Plum", "Raspberry", "Apricot", "Grape",
+    "Peach", "Lemon", "Lime", "Date", "Pineapple", "Blueberry", "Papaya",
+    "Cranberry", "Gooseberry", "Pear", "Fig", "Coconut", "Melon",
+    "Pumpkin", NULL};
+static const LONG list_active_positions[] =
+{
+    MUIV_List_Active_Top,
+    MUIV_List_Active_Bottom,
+    MUIV_List_Active_Off,
+    MUIV_List_Active_Off,
+    MUIV_List_Active_Off
+};
+static const CONST_STRPTR list_move1_modes[] =
+    {"Index", "Top", "Active", "Bottom", NULL};
+static const CONST_STRPTR list_move2_modes[] =
+    {"Index", "Top", "Active", "Bottom", "Next", "Previous", NULL};
+static const CONST_STRPTR list_jump_modes[] =
+    {"Index", "Top", "Active", "Bottom", "Up", "Down", NULL};
+static const CONST_STRPTR list_insert_modes[] =
+    {"Index", "Top", "Active", "Sorted", "Bottom", NULL};
+static const CONST_STRPTR list_remove_modes[] =
+    {"Index", "First", "Active", "Last", "Selected", NULL};
+static const CONST_STRPTR list_activate_modes[] =
+    {"Index", "Top", "Bottom", "Up", "Down", "Page Up", "Page Down", NULL};
+static const CONST_STRPTR list_select_modes[] =
+    {"Index", "Active", "All", NULL};
 static const TEXT list_format[] = "BAR,BAR,";
 
 enum
@@ -95,6 +122,51 @@ struct
         *accept_all_check;
 }
 string;
+
+struct
+{
+    Object *lists[LIST_COUNT],
+        *index1_string,
+        *index2_string,
+        *title_string,
+        *move1_cycle,
+        *move2_cycle,
+        *jump_cycle,
+        *select_cycle,
+        *insert_cycle,
+        *remove_cycle,
+        *activate_cycle,
+        *sort_button,
+        *clear_button,
+        *enable_button,
+        *reset_button,
+        *select_button,
+        *deselect_button,
+        *toggle_button,
+        *move_button,
+        *exchange_button,
+        *jump_button,
+        *redraw_button,
+        *insert_single_button,
+        *insert_multiple_button,
+        *remove_button,
+        *activate_button,
+        *deactivate_button,
+        *dragsortable_check,
+        *showdropmarks_check,
+        *quiet_check,
+        *autovisible_check,
+        *entries_text,
+        *visible_text,
+        *first_text,
+        *insert_text,
+        *multi_lists[MULTI_LIST_COUNT],
+        *format_string,
+        *column_string,
+        *column_text,
+        *showheadings_check;
+}
+list;
 
 Object *wheel;
 Object *r_slider;
@@ -238,6 +310,243 @@ AROS_UFH0(void, ChangePendisplayPen)
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH0(void, ListMove)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos1, pos2;
+    UWORD i;
+
+    mode = XGET(list.move1_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos1 = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos1 = 1 - mode;
+
+    mode = XGET(list.move2_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos2 = XGET(list.index2_string, MUIA_String_Integer);
+    else
+        pos2 = 1 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Move, pos1, pos2);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListExchange)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos1, pos2;
+    UWORD i;
+
+    mode = XGET(list.move1_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos1 = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos1 = 1 - mode;
+
+    mode = XGET(list.move2_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos2 = XGET(list.index2_string, MUIA_String_Integer);
+    else
+        pos2 = 1 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Exchange, pos1, pos2);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListJump)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.jump_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = 1 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Jump, pos);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListSelect)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.select_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = 0 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Select, pos, MUIV_List_Select_On,
+            NULL);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListDeselect)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.select_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = 0 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Select, pos, MUIV_List_Select_Off,
+            NULL);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListToggle)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.select_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = 0 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Select, pos,
+            MUIV_List_Select_Toggle, NULL);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListRedraw)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.select_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = 0 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Redraw, pos);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListInsertSingle)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.insert_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = 1 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_InsertSingle, "Tomato", pos);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListInsert)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.insert_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = 1 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Insert, fruits, -1, pos);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListRemove)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.remove_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = 1 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        DoMethod(list.lists[i], MUIM_List_Remove, pos);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListActivate)
+{
+    AROS_USERFUNC_INIT
+
+    LONG mode, pos;
+    UWORD i;
+
+    mode = XGET(list.activate_cycle, MUIA_Cycle_Active);
+
+    if (mode == 0)
+        pos = XGET(list.index1_string, MUIA_String_Integer);
+    else
+        pos = -1 - mode;
+
+    for (i = 0; i < LIST_COUNT; i++)
+        SET(list.lists[i], MUIA_List_Active, pos);
+
+    AROS_USERFUNC_EXIT
+}
+
 AROS_UFH3(void, display_function,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(char **, strings, A2),
@@ -264,28 +573,6 @@ AROS_UFH3(void, display_function,
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH3(void, display2_function,
-    AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(char **, strings, A2),
-    AROS_UFHA(struct list_entry *, entry, A1))
-{
-    AROS_USERFUNC_INIT
-
-    static char buf[100];
-
-    if (entry)
-    {
-        sprintf(buf, "line num: %ld  id: %p", (long)*(strings - 1), entry);
-        strings[0] = buf;
-    }
-    else
-    {
-        strings[0] = "Number";
-    }
-
-    AROS_USERFUNC_EXIT
-}
-
 AROS_UFH0(void, save_function)
 {
     AROS_USERFUNC_INIT
@@ -302,18 +589,6 @@ AROS_UFH0(void, save_function)
         Write(fh, text, strlen(text));
         Close(fh);
     }
-
-    AROS_USERFUNC_EXIT
-}
-
-static int id = 1;
-
-AROS_UFH0(void, add_function)
-{
-    AROS_USERFUNC_INIT
-
-    DoMethod(list2, MUIM_List_InsertSingle, id++,
-        MUIV_List_Insert_Bottom);
 
     AROS_USERFUNC_EXIT
 }
@@ -453,15 +728,6 @@ int main(void)
     Object *about_item, *quit_item;
     Object *context_menu;
     Object *popobject, *listview;
-    Object *lists[LIST_COUNT];
-    Object *list_add_button, *list_remove_button, *list_clear_button;
-    Object *dragsortable_check, *showdropmarks_check, *quiet_check;
-    Object *sort_button, *clear_button, *fill_button, *enable_button;
-    Object *multi_lists[MULTI_LIST_COUNT];
-    Object *format_string;
-    Object *column_string;
-    Object *column_text;
-    Object *showheadings_check;
     Object *numerics[NUMERIC_COUNT];
     Object *min_string, *max_string;
     Object *slider_button;
@@ -480,15 +746,10 @@ int main(void)
     static char *color_pages[] =
         {"Palette", "Colors", "Pens", NULL};
     static char *list_pages[] =
-        {"Single Column (1)", "Single Column (2)", "Multicolumn", NULL};
+        {"Single Column", "Multicolumn", NULL};
     static char **radio_entries1 = pages;
     static char *radio_entries2[] =
         {"Paris", "Pataya", "London", "New York", "Reykjavik", NULL};
-    static char *fruits[] = {"Strawberry", "Apple", "Banana", "Orange",
-        "Grapefruit", "Kumquat", "Plum", "Raspberry", "Apricot", "Grape",
-        "Peach", "Lemon", "Lime", "Date", "Pineapple", "Blueberry", "Papaya",
-        "Cranberry", "Gooseberry", "Pear", "Fig", "Coconut", "Melon",
-        "Pumpkin", NULL};
 
     static struct list_entry entry1 = {"Testentry1", "Col2: Entry1"};
     static struct list_entry entry2 = {"Entry2", "Col2: Entry2"};
@@ -505,7 +766,6 @@ int main(void)
     struct Hook hook_slider;
     struct Hook hook_objects;
     struct Hook hook_display;
-    struct Hook hook_display2;
 
     hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
 
@@ -516,7 +776,6 @@ int main(void)
     hook_slider.h_Entry = (HOOKFUNC) slider_function;
     hook_objects.h_Entry = (HOOKFUNC) objects_function;
     hook_display.h_Entry = (HOOKFUNC) display_function;
-    hook_display2.h_Entry = (HOOKFUNC) display2_function;
 
     context_menu = MenustripObject,
         MUIA_Family_Child, MenuObject,
@@ -535,35 +794,38 @@ int main(void)
 
     pendisplay = PendisplayObject, MUIA_Pendisplay_Spec, &default_penspec, End;
 
-    lists[0] = ListviewObject,
+    list.lists[0] = ListviewObject,
         MUIA_Listview_List,
             ListObject,
             InputListFrame,
             MUIA_List_Title, "Fruits",
             MUIA_List_SourceArray, fruits,
-            MUIA_ShortHelp, "Default scroller",
+            MUIA_List_Active, MUIV_List_Active_Top,
+            MUIA_ShortHelp, "Default scroller\nTop entry active",
             End,
         MUIA_Listview_MultiSelect,
             MUIV_Listview_MultiSelect_None,
         MUIA_CycleChain, 1,
         End;
-    lists[1] = ListviewObject,
+    list.lists[1] = ListviewObject,
         MUIA_Listview_List,
             ListObject,
             InputListFrame,
             MUIA_List_SourceArray, fruits,
-            MUIA_ShortHelp, "Left scroller",
+            MUIA_List_Active, MUIV_List_Active_Bottom,
+            MUIA_ShortHelp, "Left scroller\nBottom entry active",
             End,
         MUIA_Listview_ScrollerPos,
             MUIV_Listview_ScrollerPos_Left,
         MUIA_CycleChain, 1,
         End;
-    lists[2] = ListviewObject,
+    list.lists[2] = ListviewObject,
         MUIA_Listview_List,
             ListObject,
             InputListFrame,
             MUIA_List_SourceArray, fruits,
-            MUIA_ShortHelp, "Right scroller",
+            MUIA_List_Active, MUIV_List_Active_Off,
+            MUIA_ShortHelp, "Right scroller\nNo active entry",
             End,
         MUIA_Listview_MultiSelect,
             MUIV_Listview_MultiSelect_Shifted,
@@ -571,12 +833,12 @@ int main(void)
             MUIV_Listview_ScrollerPos_Right,
         MUIA_CycleChain, 1,
         End;
-    lists[3] = ListviewObject,
+    list.lists[3] = ListviewObject,
         MUIA_Listview_List,
             ListObject,
             InputListFrame,
             MUIA_List_SourceArray, fruits,
-            MUIA_ShortHelp, "No scroller",
+            MUIA_ShortHelp, "No scroller\nDefault active entry",
             End,
         MUIA_Listview_MultiSelect,
             MUIV_Listview_MultiSelect_Always,
@@ -584,12 +846,12 @@ int main(void)
             MUIV_Listview_ScrollerPos_None,
         MUIA_CycleChain, 1,
         End;
-    lists[4] = ListviewObject,
+    list.lists[4] = ListviewObject,
         MUIA_Listview_List,
             ListObject,
             ReadListFrame,
             MUIA_List_SourceArray, fruits,
-            MUIA_ShortHelp, "Default scroller",
+            MUIA_ShortHelp, "Default scroller\nDefault active entry",
             End,
         MUIA_Listview_Input, FALSE,
         MUIA_CycleChain, 1,
@@ -795,7 +1057,7 @@ int main(void)
                                         MUIA_String_AdvanceOnCR, TRUE,
                                         MUIA_String_MaxLen, 9,
                                         MUIA_CycleChain, 1,
-                                        MUIA_String_AttachedList, lists[0],
+                                        MUIA_String_AttachedList, list.lists[0],
                                         End,
                                     End,
                                 Child, VGroup, GroupFrameT("Left Aligned"),
@@ -813,7 +1075,7 @@ int main(void)
                                         MUIA_String_Contents,
                                             (IPTR)default_accept_chars,
                                         MUIA_String_BufferPos, 3,
-                                        MUIA_String_AttachedList, lists[0],
+                                        MUIA_String_AttachedList, list.lists[0],
                                         End,
                                     End,
                                 Child, VGroup, GroupFrameT("Right Aligned"),
@@ -828,7 +1090,7 @@ int main(void)
                                         MUIA_String_AdvanceOnCR, TRUE,
                                         MUIA_String_MaxLen, 9,
                                         MUIA_CycleChain, 1,
-                                        MUIA_String_AttachedList, lists[0],
+                                        MUIA_String_AttachedList, list.lists[0],
                                         End,
                                     End,
                                 Child, VGroup, GroupFrameT("Centered"),
@@ -844,7 +1106,7 @@ int main(void)
                                         MUIA_String_MaxLen, 9,
                                         MUIA_CycleChain, 1,
                                         MUIA_String_Integer, 123,
-                                        MUIA_String_AttachedList, lists[0],
+                                        MUIA_String_AttachedList, list.lists[0],
                                         End,
                                     End,
                                 Child, VGroup, GroupFrameT("Secret"),
@@ -860,7 +1122,7 @@ int main(void)
                                         MUIA_String_AdvanceOnCR, TRUE,
                                         MUIA_String_MaxLen, 9,
                                         MUIA_CycleChain, 1,
-                                        MUIA_String_AttachedList, lists[0],
+                                        MUIA_String_AttachedList, list.lists[0],
                                         End,
                                     End,
                                 Child, HGroup, GroupFrameT("Narrow"),
@@ -877,7 +1139,7 @@ int main(void)
                                         MUIA_MaxWidth, 20,
                                         MUIA_String_MaxLen, 9,
                                         MUIA_CycleChain, 1,
-                                        MUIA_String_AttachedList, lists[0],
+                                        MUIA_String_AttachedList, list.lists[0],
                                         End,
                                     Child, HVSpace,
                                     End,
@@ -1147,23 +1409,23 @@ int main(void)
                         Child, VGroup,
                             Child, ColGroup(LIST_COUNT),
                                 Child, VGroup, GroupFrameT("No Multiselect"),
-                                    Child, lists[0],
+                                    Child, list.lists[0],
                                     End,
                                 Child, VGroup,
                                     GroupFrameT("Default Multiselect"),
-                                    Child, lists[1],
+                                    Child, list.lists[1],
                                     End,
                                 Child, VGroup,
                                     GroupFrameT("Shifted Multiselect"),
-                                    Child, lists[2],
+                                    Child, list.lists[2],
                                     End,
                                 Child, VGroup,
                                     GroupFrameT("Unconditional Multiselect"),
-                                    Child, lists[3],
+                                    Child, list.lists[3],
                                     End,
                                 Child, VGroup,
                                     GroupFrameT("Read Only"),
-                                    Child, lists[4],
+                                    Child, list.lists[4],
                                     End,
                                 End,
                             Child, RectangleObject,
@@ -1171,60 +1433,176 @@ int main(void)
                                 MUIA_Rectangle_HBar, TRUE,
                                 MUIA_Rectangle_BarTitle, "List Controls",
                                 End,
-                            Child, HGroup,
-                                Child, sort_button =
-                                    MUI_MakeObject(MUIO_Button, "Sort"),
-                                Child, clear_button =
-                                    MUI_MakeObject(MUIO_Button, "Clear"),
-                                Child, fill_button =
-                                    MUI_MakeObject(MUIO_Button, "Fill"),
-                                Child, enable_button =
-                                    MUI_MakeObject(MUIO_Button, "Enable"),
-                                End,
-                            Child, HGroup,
+                            Child, ColGroup(6),
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Affected index 1:", 0),
+                                Child, list.index1_string =
+                                    StringObject,
+                                    StringFrame,
+                                    MUIA_String_Accept, (IPTR)digits,
+                                    MUIA_String_Integer, 0,
+                                    End,
                                 Child, HGroup,
-                                    Child, dragsortable_check =
+                                    Child, list.dragsortable_check =
                                         MUI_MakeObject(MUIO_Checkmark, NULL),
                                     Child, MUI_MakeObject(MUIO_Label,
                                         "Drag sortable", 0),
                                     Child, HVSpace,
                                     End,
                                 Child, HGroup,
-                                    Child, showdropmarks_check =
+                                    Child, list.showdropmarks_check =
                                         MUI_MakeObject(MUIO_Checkmark, NULL),
                                     Child, MUI_MakeObject(MUIO_Label,
                                         "Show drop marks", 0),
                                     Child, HVSpace,
                                     End,
+                                Child, HVSpace,
+                                Child, HVSpace,
+
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Affected index 2:", 0),
+                                Child, list.index2_string =
+                                    StringObject,
+                                    StringFrame,
+                                    MUIA_String_Accept, (IPTR)digits,
+                                    MUIA_String_Integer, 0,
+                                    End,
                                 Child, HGroup,
-                                    Child, quiet_check =
+                                    Child, list.quiet_check =
                                         MUI_MakeObject(MUIO_Checkmark,NULL),
                                     Child, MUI_MakeObject(MUIO_Label,
                                         "Quiet", 0),
                                     Child, HVSpace,
                                     End,
-                                End,
-                            End,
-                        Child, VGroup,
-                            Child, ListviewObject,
-                                MUIA_Listview_List, list2 = ListObject,
-                                    InputListFrame,
-                                    MUIA_List_DisplayHook, &hook_display2,
+                                Child, HGroup,
+                                    Child, list.autovisible_check =
+                                        MUI_MakeObject(MUIO_Checkmark,NULL),
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Auto visible", 0),
+                                    Child, HVSpace,
                                     End,
-                                End,
-                            Child, HGroup,
-                                Child, list_add_button =
-                                    MUI_MakeObject(MUIO_Button,"_Add"),
-                                Child, list_remove_button =
-                                    MUI_MakeObject(MUIO_Button,"_Remove"),
-                                Child, list_clear_button =
-                                    MUI_MakeObject(MUIO_Button,"_Clear"),
+                                Child, list.reset_button =
+                                    MUI_MakeObject(MUIO_Button, "Reset"),
+                                Child, HVSpace,
+
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Move/exchange mode 1:", 0),
+                                Child, list.move1_cycle = CycleObject,
+                                    ButtonFrame,
+                                    MUIA_Cycle_Entries, list_move1_modes,
+                                    End,
+                                Child, list.move_button =
+                                    MUI_MakeObject(MUIO_Button, "Move"),
+                                Child, list.sort_button =
+                                    MUI_MakeObject(MUIO_Button, "Sort"),
+                                Child, list.enable_button =
+                                    MUI_MakeObject(MUIO_Button, "Enable"),
+                                Child, HVSpace,
+
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Move/exchange mode 2:", 0),
+                                Child, list.move2_cycle = CycleObject,
+                                    ButtonFrame,
+                                    MUIA_Cycle_Entries, list_move2_modes,
+                                    End,
+                                Child, list.exchange_button =
+                                    MUI_MakeObject(MUIO_Button, "Exchange"),
+                                Child, list.redraw_button =
+                                    MUI_MakeObject(MUIO_Button, "Redraw"),
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Title:", 0),
+                                Child, list.title_string =
+                                    StringObject,
+                                    StringFrame,
+                                    MUIA_Disabled, TRUE,
+                                    End,
+
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Jump mode:", 0),
+                                Child, list.jump_cycle = CycleObject,
+                                    ButtonFrame,
+                                    MUIA_Cycle_Entries, list_jump_modes,
+                                    End,
+                                Child, list.jump_button =
+                                    MUI_MakeObject(MUIO_Button, "Jump"),
+                                Child, list.toggle_button =
+                                    MUI_MakeObject(MUIO_Button, "Toggle"),
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Entries:", 0),
+                                Child, list.entries_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
+                                    End,
+
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Select/redraw mode:", 0),
+                                Child, list.select_cycle = CycleObject,
+                                    ButtonFrame,
+                                    MUIA_Cycle_Entries, list_select_modes,
+                                    End,
+                                Child, list.select_button =
+                                    MUI_MakeObject(MUIO_Button, "Select"),
+                                Child, list.deselect_button =
+                                    MUI_MakeObject(MUIO_Button, "Deselect"),
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Visible entries:", 0),
+                                Child, list.visible_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
+                                    End,
+
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Insert mode:", 0),
+                                Child, list.insert_cycle = CycleObject,
+                                    ButtonFrame,
+                                    MUIA_Cycle_Entries, list_insert_modes,
+                                    End,
+                                Child, list.insert_single_button =
+                                    MUI_MakeObject(MUIO_Button, "Insert Single"),
+                                Child, list.insert_multiple_button =
+                                    MUI_MakeObject(MUIO_Button, "Insert Multiple"),
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "First visible index:", 0),
+                                Child, list.first_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
+                                    End,
+
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Remove mode:", 0),
+                                Child, list.remove_cycle = CycleObject,
+                                    ButtonFrame,
+                                    MUIA_Cycle_Entries, list_remove_modes,
+                                    End,
+                                Child, list.remove_button =
+                                    MUI_MakeObject(MUIO_Button, "Remove"),
+                                Child, list.clear_button =
+                                    MUI_MakeObject(MUIO_Button, "Clear"),
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Last insertion index:", 0),
+                                Child, list.insert_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
+                                    End,
+
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Activate mode:", 0),
+                                Child, list.activate_cycle = CycleObject,
+                                    ButtonFrame,
+                                    MUIA_Cycle_Entries, list_activate_modes,
+                                    End,
+                                Child, list.activate_button =
+                                    MUI_MakeObject(MUIO_Button, "Activate"),
+                                Child, list.deactivate_button =
+                                    MUI_MakeObject(MUIO_Button, "Deactivate"),
+                                Child, HVSpace,
+                                Child, HVSpace,
                                 End,
                             End,
                         Child, VGroup,
                             Child, ColGroup(LIST_COUNT / 2),
                                 Child, VGroup, GroupFrameT("Standard Format"),
-                                    Child, multi_lists[0] = ListviewObject,
+                                    Child, list.multi_lists[0] = ListviewObject,
                                         MUIA_Listview_List,
                                             ListObject,
                                             InputListFrame,
@@ -1240,7 +1618,7 @@ int main(void)
                                         End,
                                     End,
                                 Child, VGroup, GroupFrameT("Custom Format"),
-                                    Child, multi_lists[1] = ListviewObject,
+                                    Child, list.multi_lists[1] = ListviewObject,
                                         MUIA_Listview_List,
                                             ListObject,
                                             InputListFrame,
@@ -1263,12 +1641,12 @@ int main(void)
                                 End,
                             Child, HGroup,
                                 Child, MUI_MakeObject(MUIO_Label, "Format:", 0),
-                                Child, format_string = StringObject,
+                                Child, list.format_string = StringObject,
                                     StringFrame,
                                     MUIA_String_Contents, list_format,
                                     MUIA_CycleChain, 1,
                                     End,
-                                Child, showheadings_check =
+                                Child, list.showheadings_check =
                                     MUI_MakeObject(MUIO_Checkmark, NULL),
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Show column headings", 0),
@@ -1276,10 +1654,10 @@ int main(void)
                             Child, HGroup,
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Clicked column:", 0),
-                                Child, column_string = StringObject,
+                                Child, list.column_string = StringObject,
                                     MUIA_ShowMe, FALSE,
                                     End,
-                                Child, column_text = TextObject,
+                                Child, list.column_text = TextObject,
                                     TextFrame,
                                     MUIA_Text_Contents, "N/A",
                                     End,
@@ -1620,7 +1998,7 @@ int main(void)
                     MUIM_Set, MUIA_String_DisplayPos, MUIV_TriggerValue);
                 DoMethod(string.attach_list_check, MUIM_Notify, MUIA_Selected,
                     TRUE, string.strings[i], 3, MUIM_Set,
-                    MUIA_String_AttachedList, lists[0]);
+                    MUIA_String_AttachedList, list.lists[0]);
                 DoMethod(string.attach_list_check, MUIM_Notify, MUIA_Selected,
                     FALSE, string.strings[i], 3, MUIM_Set,
                     MUIA_String_AttachedList, NULL);
@@ -1747,58 +2125,92 @@ int main(void)
             4, MUIM_Pendisplay_SetRGB, 0xffffffff, 0xffffffff, 0);
 
         /* list */
-        set(showdropmarks_check, MUIA_Selected, TRUE);
+        set(list.showdropmarks_check, MUIA_Selected, TRUE);
         for (i = 0; i < LIST_COUNT; i++)
         {
-            DoMethod(lists[i], MUIM_Notify, MUIA_Listview_DoubleClick,
-                MUIV_EveryTime, lists[i], 3, MUIM_Set, MUIA_Disabled, TRUE);
-            DoMethod(sort_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                lists[i], 1, MUIM_List_Sort);
-            DoMethod(clear_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                lists[i], 1, MUIM_List_Clear);
-            DoMethod(fill_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                lists[i], 4, MUIM_List_Insert, fruits, -1,
-                MUIV_List_Insert_Bottom);
-            DoMethod(enable_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                lists[i], 3, MUIM_Set, MUIA_Disabled, FALSE);
-            DoMethod(dragsortable_check, MUIM_Notify, MUIA_Selected,
-                MUIV_EveryTime, lists[i], 3, MUIM_Set,
+            DoMethod(list.lists[i], MUIM_Notify, MUIA_Listview_DoubleClick,
+                MUIV_EveryTime, list.lists[i], 3, MUIM_Set, MUIA_Disabled,
+                TRUE);
+            DoMethod(list.sort_button, MUIM_Notify, MUIA_Pressed, FALSE,
+                list.lists[i], 1, MUIM_List_Sort);
+            DoMethod(list.clear_button, MUIM_Notify, MUIA_Pressed, FALSE,
+                list.lists[i], 1, MUIM_List_Clear);
+            DoMethod(list.deactivate_button, MUIM_Notify, MUIA_Pressed, FALSE,
+                list.lists[i], 3, MUIM_Set, MUIA_List_Active,
+                MUIV_List_Active_Off);
+            DoMethod(list.enable_button, MUIM_Notify, MUIA_Pressed, FALSE,
+                list.lists[i], 3, MUIM_Set, MUIA_Disabled, FALSE);
+            DoMethod(list.reset_button, MUIM_Notify, MUIA_Pressed, FALSE,
+                list.lists[i], 3, MUIM_Set, MUIA_List_Active,
+                list_active_positions[i]);
+            DoMethod(list.dragsortable_check, MUIM_Notify, MUIA_Selected,
+                MUIV_EveryTime, list.lists[i], 3, MUIM_Set,
                 MUIA_List_DragSortable, MUIV_TriggerValue);
-            DoMethod(showdropmarks_check, MUIM_Notify, MUIA_Selected,
-                MUIV_EveryTime, lists[i], 3, MUIM_Set,
+            DoMethod(list.showdropmarks_check, MUIM_Notify, MUIA_Selected,
+                MUIV_EveryTime, list.lists[i], 3, MUIM_Set,
                 MUIA_List_ShowDropMarks, MUIV_TriggerValue);
-            DoMethod(quiet_check, MUIM_Notify, MUIA_Selected,
-                MUIV_EveryTime, lists[i], 3, MUIM_Set, MUIA_List_Quiet,
+            DoMethod(list.quiet_check, MUIM_Notify, MUIA_Selected,
+                MUIV_EveryTime, list.lists[i], 3, MUIM_Set, MUIA_List_Quiet,
                 MUIV_TriggerValue);
+            DoMethod(list.autovisible_check, MUIM_Notify, MUIA_Selected,
+                MUIV_EveryTime, list.lists[i], 3, MUIM_Set,
+                MUIA_List_AutoVisible, MUIV_TriggerValue);
+            DoMethod(list.lists[i], MUIM_Notify, MUIA_List_Entries,
+                MUIV_EveryTime, list.entries_text, 4, MUIM_SetAsString,
+                MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+            DoMethod(list.lists[i], MUIM_Notify, MUIA_List_Visible,
+                MUIV_EveryTime, list.visible_text, 4, MUIM_SetAsString,
+                MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+            DoMethod(list.lists[i], MUIM_Notify, MUIA_List_First,
+                MUIV_EveryTime, list.first_text, 4, MUIM_SetAsString,
+                MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+            DoMethod(list.lists[i], MUIM_Notify, MUIA_List_InsertPosition,
+                MUIV_EveryTime, list.insert_text, 4, MUIM_SetAsString,
+                MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
         }
+        DoMethod(list.move_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListMove);
+        DoMethod(list.exchange_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListExchange);
+        DoMethod(list.jump_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListJump);
+        DoMethod(list.select_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListSelect);
+        DoMethod(list.deselect_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListDeselect);
+        DoMethod(list.toggle_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListToggle);
+        DoMethod(list.redraw_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListRedraw);
+        DoMethod(list.insert_single_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListInsertSingle);
+        DoMethod(list.insert_multiple_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListInsert);
+        DoMethod(list.remove_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListRemove);
+        DoMethod(list.activate_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListActivate);
 
-        set(showheadings_check, MUIA_Selected, TRUE);
-        DoMethod(format_string, MUIM_Notify, MUIA_String_Acknowledge,
-            MUIV_EveryTime, multi_lists[1], 3, MUIM_Set, MUIA_List_Format,
-            MUIV_TriggerValue);
+        set(list.showheadings_check, MUIA_Selected, TRUE);
+        DoMethod(list.format_string, MUIM_Notify, MUIA_String_Acknowledge,
+            MUIV_EveryTime, list.multi_lists[1], 3, MUIM_Set,
+            MUIA_List_Format, MUIV_TriggerValue);
         for (i = 0; i < MULTI_LIST_COUNT; i++)
         {
-            DoMethod(showheadings_check, MUIM_Notify, MUIA_Selected,
-                MUIV_EveryTime, multi_lists[i], 3, MUIM_Set,
+            DoMethod(list.showheadings_check, MUIM_Notify, MUIA_Selected,
+                MUIV_EveryTime, list.multi_lists[i], 3, MUIM_Set,
                 MUIA_List_Title, MUIV_TriggerValue);
-            DoMethod(multi_lists[i], MUIM_Notify, MUIA_Listview_ClickColumn,
-                MUIV_EveryTime, column_string, 3, MUIM_Set,
-                MUIA_String_Integer, MUIV_TriggerValue);
+            DoMethod(list.multi_lists[i], MUIM_Notify,
+                MUIA_Listview_ClickColumn, MUIV_EveryTime,
+                list.column_string, 3, MUIM_Set, MUIA_String_Integer,
+                MUIV_TriggerValue);
         }
-        DoMethod(column_string, MUIM_Notify, MUIA_String_Contents,
-            MUIV_EveryTime, column_text, 3, MUIM_Set, MUIA_Text_Contents,
+        DoMethod(list.column_string, MUIM_Notify, MUIA_String_Contents,
+            MUIV_EveryTime, list.column_text, 3, MUIM_Set, MUIA_Text_Contents,
             MUIV_TriggerValue);
 
         DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
             popobject, 2, MUIM_Popstring_Close, TRUE);
-
-        /* The callbacks of the buttons within the list page */
-        DoMethod(list_add_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3,
-            MUIM_CallHook, &hook_standard, add_function);
-        DoMethod(list_remove_button, MUIM_Notify, MUIA_Pressed, FALSE,
-            list2, 2, MUIM_List_Remove, MUIV_List_Remove_Active);
-        DoMethod(list_clear_button, MUIM_Notify, MUIA_Pressed, FALSE, list2,
-            1, MUIM_List_Clear);
 
         /* numeric */
         for (i = 0; i < NUMERIC_COUNT; i++)
