@@ -835,6 +835,18 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Object = obj;
     data->ehn.ehn_Class = cl;
 
+    /* HACK:
+     * List is a group where part of area is rendered and part is filled with other objects
+     * (inside of List dimensions). One such object is up/down arrow. This object depends
+     * on RelVerify mode to control behaviour. List also has the RelVerify mode. Area super
+     * class in case of both of those objects adds an event handler node with the same priority.
+     * Depending on the sort order, the event handler node of "list" can eat a click event and
+     * up/down arrows stop working. The hack is to decrease the priority of Area event handler
+     * for list to always favor up/down arrow. There are other hacky ways of solving this, but
+     * this seems least evil approach, as this hack is encapsulated in the List class itself.
+     */
+    muiAreaData(obj)->mad_ehn.ehn_Priority--;
+
     data->hook.h_Entry = HookEntry;
     data->hook.h_SubEntry = (HOOKFUNC) List_Function;
     data->hook.h_Data = data;
