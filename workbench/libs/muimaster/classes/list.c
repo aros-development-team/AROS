@@ -256,6 +256,29 @@ struct MUI_ListData
 *
 */
 
+/****** List.mui/MUIA_List_Title *********************************************
+*
+*   NAME
+*       MUIA_List_Title -- (V6) [ISG], char *
+*
+*   FUNCTION
+*       A heading for the list, placed above list entries. A value of NULL
+*       means no title is used. A value of TRUE means that the custom
+*       display hook provides a separate title for each column; the hook
+*       must then provide column titles instead of normal column data when
+*       the entry pointer provided is NULL.
+*
+*   NOTES
+*       If a string is set for this attribute, it is not cached within the
+*       object.
+*
+*   SEE ALSO
+*       MUIA_List_DisplayHook
+*
+******************************************************************************
+*
+*/
+
 /**************************************************************************
  Allocate a single list entry, does not initialize it (except the pointer)
 **************************************************************************/
@@ -986,16 +1009,11 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return 0;
     }
 
-    if (data->title)
+    if (!(data->entries[ENTRY_TITLE] = AllocListEntry(data)))
     {
-        if (!(data->entries[ENTRY_TITLE] = AllocListEntry(data)))
-        {
-            CoerceMethod(cl, obj, OM_DISPOSE);
-            return 0;
-        }
+        CoerceMethod(cl, obj, OM_DISPOSE);
+        return 0;
     }
-    else
-        data->entries[ENTRY_TITLE] = NULL;
 
     if (array)
     {
