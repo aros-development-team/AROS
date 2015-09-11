@@ -236,7 +236,7 @@ IPTR Pendisplay__OM_GET(struct IClass *cl, Object *obj,
                 break;
             }
 
-            if (data->pen != -1)
+            if (data->pen != -1 || intpenspec.p_type == PST_RGB)
                 *store = (IPTR) &data->rgb;
             else
                 return FALSE;
