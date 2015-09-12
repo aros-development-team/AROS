@@ -394,13 +394,11 @@ IPTR Tab__MUIM_Draw(Object *child, struct Title_DATA *data, LONG active)
 
     /* Setting of background causes redraw of object. We use this "feature" */
     if (active == 1)
-    {
         nnset(child, MUIA_Background, data->background);
-    }
     else if (active == 0)
-    {
         nnset(child, MUIA_Background, MUII_BACKGROUND);
-    }
+    else if (active == -1)
+        nnset(child, MUIA_Background, MUII_BACKGROUND);
 
     /* Draw tab frame */
     if (data->location == MUIV_Tabs_Top)
