@@ -1050,7 +1050,53 @@ IPTR Group__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+static struct Region * group_children_clip_region(struct IClass *cl, Object *obj)
+{
+    struct Region * region = NULL;
 
+    region = NewRegion();
+    if (region)
+    {
+        struct MUI_GroupData *data = INST_DATA(cl, obj);
+        struct Rectangle rect;
+        LONG page = -1;
+        struct MinList *ChildList = NULL;
+        Object *cstate;
+        Object *child;
+
+        rect.MinX = _left(obj);
+        rect.MinY = _top(obj);
+        rect.MaxX = _right(obj);
+        rect.MaxY = _bottom(obj);
+
+        OrRectRegion(region, &rect);
+        get(data->family, MUIA_Family_List, &(ChildList));
+        cstate = (Object *) ChildList->mlh_Head;
+        while ((child = NextObject(&cstate)))
+        {
+            if (child != data->titlegroup)
+                ++page;
+
+            if ((data->flags & GROUP_PAGEMODE) && ((page != data->active_page) && (child != data->titlegroup)))
+                continue;
+
+            if ((muiAreaData(child)->mad_Flags & MADF_CANDRAW) && (_width(child) > 0) && (_height(child) > 0))
+            {
+                rect.MinX = MAX(_left(child), _mleft(obj));
+                rect.MinY = MAX(_top(child), _mtop(obj));
+                rect.MaxX = MIN(_right(child), _mright(obj));
+                rect.MaxY = MIN(_bottom(child), _mbottom(obj));
+
+                if ((rect.MaxX >= rect.MinX) && (rect.MaxY >= rect.MinY))
+                {
+                    ClearRectRegion(region, &rect);
+                }
+            }
+        }
+    }
+
+    return region;
+}
 
 /**************************************************************************
  MUIM_Draw - draw the group
@@ -1067,75 +1113,25 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
     struct Region *region = NULL;
     APTR clip = (APTR) - 1;
 
-/*          D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld upd=%d page=%d\n", */
-/*                obj,_left(obj),_top(obj),_right(obj),_bottom(obj), */
-/*                data->update, data->active_page)); */
-/*      D(bug("Group_Draw(%p) msg=0x%08lx flags=0x%08lx\n", */
-/*          obj, msg->flags, _flags(obj))); */
-
     if (data->flags & GROUP_CHANGING)
         return FALSE;
 
-    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw ==
-        WINDOW_REDRAW_WITHOUT_CLEAR)
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
     {
-        region = NewRegion();
-        if (region)
-        {
-            struct Rectangle rect;
-
-            rect.MinX = _left(obj);
-            rect.MinY = _top(obj);
-            rect.MaxX = _right(obj);
-            rect.MaxY = _bottom(obj);
-
-            OrRectRegion(region, &rect);
-            page = -1;
-            get(data->family, MUIA_Family_List, &(ChildList));
-            cstate = (Object *) ChildList->mlh_Head;
-            while ((child = NextObject(&cstate)))
-            {
-                if (child != data->titlegroup)
-                    ++page;
-
-                if ((data->flags & GROUP_PAGEMODE) && ((page != data->active_page)
-                        && (child != data->titlegroup)))
-                    continue;
-
-                if ((muiAreaData(child)->mad_Flags & MADF_CANDRAW)
-                    && (_width(child) > 0) && (_height(child) > 0))
-                {
-                    rect.MinX = MAX(_left(child), _mleft(obj));
-                    rect.MinY = MAX(_top(child), _mtop(obj));
-                    rect.MaxX = MIN(_right(child), _mright(obj));
-                    rect.MaxY = MIN(_bottom(child), _mbottom(obj));
-
-                    if ((rect.MaxX >= rect.MinX)
-                        && (rect.MaxY >= rect.MinY))
-                    {
-                        ClearRectRegion(region, &rect);
-                    }
-                }
-            }
-
-            clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
-
-        }
+        struct Region * r = group_children_clip_region(cl, obj);
+        APTR c = (APTR)-1;
+        if (r)
+            c = MUI_AddClipRegion(muiRenderInfo(obj), r);
 
         DoSuperMethodA(cl, obj, (Msg) msg);
 
-        if (region)
-        {
-            MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-            region = NULL;
-        }
+        if (r)
+            MUI_RemoveClipRegion(muiRenderInfo(obj), c);
     }
     else
     {
         DoSuperMethodA(cl, obj, (Msg) msg);
     }
-/*      D(bug("Group_Draw(%p) (after dsma) msg=0x%08lx flags=0x%08lx\n", */
-/*            obj, msg->flags, _flags(obj))); */
 
     if ((msg->flags & MADF_DRAWUPDATE) && data->update == 1)
     {
