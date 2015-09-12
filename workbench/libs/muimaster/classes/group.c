@@ -1135,6 +1135,15 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
 
     if ((msg->flags & MADF_DRAWUPDATE) && data->update == 1)
     {
+        struct Region * r = NULL;
+        APTR c = (APTR)-1;
+
+        if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+            r = group_children_clip_region(cl, obj);
+
+        if (r)
+            c = MUI_AddClipRegion(muiRenderInfo(obj), r);
+
         /*
          * update is set when changing active page of a page group
          * need to redraw background ourself
@@ -1144,6 +1153,9 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
             _mleft(obj), _mtop(obj), 0);
 
         data->update = 0;
+
+        if (r)
+            MUI_RemoveClipRegion(muiRenderInfo(obj), c);
     }
     else
     {
