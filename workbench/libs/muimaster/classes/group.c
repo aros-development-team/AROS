@@ -1095,10 +1095,10 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
             cstate = (Object *) ChildList->mlh_Head;
             while ((child = NextObject(&cstate)))
             {
-                /*page++; */
-                    /* redraw problem with colorwheel in coloradjust register */
-                if ((data->flags & GROUP_PAGEMODE)
-                    && ((page != data->active_page)
+                if (child != data->titlegroup)
+                    ++page;
+
+                if ((data->flags & GROUP_PAGEMODE) && ((page != data->active_page)
                         && (child != data->titlegroup)))
                     continue;
 
