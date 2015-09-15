@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -105,7 +105,8 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu,
             get(child, MUIA_Menuitem_Type, &type);
 
             if (type == MUIV_Menuitem_Type_Menuitem)
-                /* Depth 0 Menuitems are to become items of current menu, not menus. MUI behavior */
+                /* Depth 0 Menuitems are to become items of current menu,
+                 * not menus. MUI behavior */
                 menu->nm_Type = NM_ITEM;
             else
                 menu->nm_Type = NM_TITLE;

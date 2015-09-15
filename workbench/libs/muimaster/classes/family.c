@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2013, The AROS Development Team.
+    Copyright © 2002-2015, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -197,7 +197,8 @@ IPTR Family__MUIM_AddHead(struct IClass *cl, Object *obj,
             DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
         }
 
-        /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
+        /* Some apps (Odyssey) expect _parent() will work before group tree
+         * is added to application tree */
         muiNotifyData(msg->obj)->mnd_ParentObject = obj;
 
         return TRUE;
@@ -227,7 +228,8 @@ IPTR Family__MUIM_AddTail(struct IClass *cl, Object *obj,
             DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
         }
 
-        /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
+        /* Some apps (Odyssey) expect _parent() will work before group tree
+         * is added to application tree */
         muiNotifyData(msg->obj)->mnd_ParentObject = obj;
 
         return TRUE;
@@ -256,7 +258,8 @@ IPTR Family__MUIM_Insert(struct IClass *cl, Object *obj,
             DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
         }
 
-        /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
+        /* Some apps (Odyssey) expect _parent() will work before group tree
+         * is added to application tree */
         muiNotifyData(msg->obj)->mnd_ParentObject = obj;
 
         return TRUE;

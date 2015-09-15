@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -601,7 +601,8 @@ BOOPSI_DISPATCHER(IPTR, Floattext_Dispatcher, cl, obj, msg)
     case MUIM_Draw:
         return Floattext__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
     case MUIM_Floattext_Append:
-        return Floattext__MUIM_Floattext_Append(cl, obj, (struct MUIP_Floattext_Append *)msg);
+        return Floattext__MUIM_Floattext_Append(cl, obj,
+            (struct MUIP_Floattext_Append *)msg);
 
     default:
         return DoSuperMethodA(cl, obj, msg);

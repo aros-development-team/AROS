@@ -710,13 +710,15 @@ static ULONG List_Function(struct Hook *hook, Object * obj, void **msg)
     return 0;
 }
 
-/* At entry to this function, data->area is always set, but data->vert may or may not be set */
+/* At entry to this function, data->area is always set, but data->vert may
+ * or may not be set */
 static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     BOOL vert_not_used = FALSE;
 
-    /* Disallow any changes after setup, this function should basically a creation-time only */
+    /* Disallow any changes after setup. This function should basically be
+     * creation-time only */
     if (_flags(obj) & MADF_SETUP)
         return;
 
@@ -734,12 +736,14 @@ static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
         DoMethod(obj, OM_ADDMEMBER, data->area);
         break;
     case MUIV_Listview_ScrollerPos_Left:
-        if (!data->vert) data->vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
+        if (!data->vert)
+            data->vert =ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
         DoMethod(obj, OM_ADDMEMBER, data->vert);
         DoMethod(obj, OM_ADDMEMBER, data->area);
         break;
     default:
-        if (!data->vert) data->vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
+        if (!data->vert)
+            data->vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
         DoMethod(obj, OM_ADDMEMBER, data->area);
         DoMethod(obj, OM_ADDMEMBER, data->vert);
         break;
@@ -754,9 +758,12 @@ static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
         {
             if (data->vert_connected)
             {
-                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_First, (IPTR) data->vert);
-                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_Visible, (IPTR) data->vert);
-                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_Entries, (IPTR) data->vert);
+                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_First,
+                    (IPTR) data->vert);
+                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_Visible,
+                    (IPTR) data->vert);
+                DoMethod(obj, MUIM_KillNotifyObj, MUIA_List_VertProp_Entries,
+                    (IPTR) data->vert);
                 data->vert_connected = FALSE;
             }
 
@@ -765,7 +772,8 @@ static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
         }
     }
 
-    /* If at this point data->vert is not null, it means vert is to be connected */
+    /* If at this point data->vert is not null, it means vert is to be
+     * connected */
     if (data->vert && !data->vert_connected)
     {
         LONG entries = 0, first = 0, visible = 0;
@@ -774,26 +782,26 @@ static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
         get(obj, MUIA_List_VertProp_Visible, &visible);
         get(obj, MUIA_List_VertProp_Entries, &entries);
 
-        SetAttrs(data->vert,
-            MUIA_Prop_First, first,
+        SetAttrs(data->vert, MUIA_Prop_First, first,
             MUIA_Prop_Visible, visible, MUIA_Prop_Entries, entries, TAG_DONE);
 
-
-        DoMethod(data->vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
-            4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
+        DoMethod(data->vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime,
+            (IPTR) obj, 4, MUIM_CallHook, (IPTR) &data->hook, PROP_VERT_FIRST,
             MUIV_TriggerValue);
 
         /* Pass prop object as DestObj (based on code in NList) */
         DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
-            (IPTR) data->vert, 3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
+            (IPTR) data->vert, 3, MUIM_NoNotifySet,
+            MUIA_Prop_First, MUIV_TriggerValue);
         DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime,
-            (IPTR) data->vert, 3, MUIM_NoNotifySet, MUIA_Prop_Visible, MUIV_TriggerValue);
+            (IPTR) data->vert, 3, MUIM_NoNotifySet,
+            MUIA_Prop_Visible, MUIV_TriggerValue);
         DoMethod(obj, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
-            (IPTR) data->vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
+            (IPTR) data->vert, 3, MUIM_NoNotifySet,
+            MUIA_Prop_Entries, MUIV_TriggerValue);
 
         data->vert_connected = TRUE;
     }
-
 }
 
 /**************************************************************************
@@ -806,7 +814,8 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tags;
     APTR *array = NULL;
     LONG new_entries_active = MUIV_List_Active_Off;
-    struct TagItem rectattrs[2] = {{TAG_IGNORE, TAG_IGNORE }, {TAG_DONE, TAG_DONE}};
+    struct TagItem rectattrs[2] =
+        {{TAG_IGNORE, TAG_IGNORE }, {TAG_DONE, TAG_DONE}};
     Object *area;
 
     /* search for MUIA_Frame as it has to be passed to rectangle object */
@@ -859,14 +868,17 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Class = cl;
 
     /* HACK:
-     * List is a group where part of area is rendered and part is filled with other objects
-     * (inside of List dimensions). One such object is up/down arrow. This object depends
-     * on RelVerify mode to control behaviour. List also has the RelVerify mode. Area super
-     * class in case of both of those objects adds an event handler node with the same priority.
-     * Depending on the sort order, the event handler node of "list" can eat a click event and
-     * up/down arrows stop working. The hack is to decrease the priority of Area event handler
-     * for list to always favor up/down arrow. There are other hacky ways of solving this, but
-     * this seems least evil approach, as this hack is encapsulated in the List class itself.
+     * List is a group where part of area is rendered and part is filled
+     * with other objects (inside of List dimensions). One such object is
+     * up/down arrow. This object depends on RelVerify mode to control
+     * behaviour. List also has the RelVerify mode. Area super class in case
+     * of both of those objects adds an event handler node with the same
+     * priority. Depending on the sort order, the event handler node of
+     * "list" can eat a click event and up/down arrows stop working. The
+     * hack is to decrease the priority of Area event handler for list to
+     * always favor up/down arrow. There are other hacky ways of solving
+     * this, but this seems least evil approach, as this hack is
+     * encapsulated in the List class itself.
      */
     muiAreaData(obj)->mad_ehn.ehn_Priority--;
 
@@ -874,10 +886,12 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->hook.h_SubEntry = (HOOKFUNC) List_Function;
     data->hook.h_Data = data;
 
-    area = (Object *)GetTagData(MUIA_List_ListArea, (IPTR) 0, msg->ops_AttrList);
+    area = (Object *)GetTagData(MUIA_List_ListArea, (IPTR) 0,
+        msg->ops_AttrList);
 
     if (!area)
-        area = RectangleObject, MUIA_FillArea, FALSE, TAG_MORE, (IPTR) rectattrs, End;
+        area = RectangleObject, MUIA_FillArea, FALSE, TAG_MORE,
+            (IPTR) rectattrs, End;
     else
         data->area_replaced = TRUE;
     data->area = area;
@@ -1309,9 +1323,12 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 /* Stop listening for events we only listen to when mouse
                    button is down: we will not be informed of the button
                    being released */
-                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
-                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
-                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                    (IPTR) &data->ehn);
+                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS
+                    | IDCMP_INACTIVEWINDOW);
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                    (IPTR) &data->ehn);
             }
             break;
 
@@ -1681,13 +1698,13 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     if ((msg->flags & MADF_DRAWUPDATE) == 0 || data->update == 1)
     {
-        DoMethod(obj, MUIM_DrawBackground, _mleft(data->area), _mtop(data->area),
-            _mwidth(data->area), _mheight(data->area),
+        DoMethod(obj, MUIM_DrawBackground, _mleft(data->area),
+            _mtop(data->area), _mwidth(data->area), _mheight(data->area),
             0, data->entries_first * data->entry_maxheight, 0);
     }
 
-    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(data->area), _mtop(data->area),
-        _mwidth(data->area), _mheight(data->area));
+    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(data->area),
+        _mtop(data->area), _mwidth(data->area), _mheight(data->area));
 
     if ((msg->flags & MADF_DRAWUPDATE) == 0 || data->update == 1)
     {
@@ -1745,10 +1762,9 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
         bottom = y + (end - start) * data->entry_maxheight;
 
         DoMethod(obj, MUIM_DrawBackground, _mleft(data->area), top,
-            _mwidth(data->area), bottom - top + 1,
-            0,
-            top - _mtop(data->area) + data->entries_first * data->entry_maxheight,
-            0);
+            _mwidth(data->area), bottom - top + 1, 0,
+            top - _mtop(data->area) + data->entries_first
+            * data->entry_maxheight, 0);
     }
 
     for (entry_pos = start;
@@ -1779,7 +1795,8 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             if (highlight != NULL)
             {
                 zune_imspec_draw(highlight, muiRenderInfo(obj),
-                    _mleft(data->area), y, _mwidth(data->area), data->entry_maxheight,
+                    _mleft(data->area), y, _mwidth(data->area),
+                    data->entry_maxheight,
                     0, y - data->entries_top_pixel, 0);
             }
             else if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2
@@ -3003,8 +3020,8 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
             * data->entry_maxheight;
         if (y != data->drop_mark_y)
         {
-            DoMethod(obj, MUIM_DrawBackground, _mleft(data->area), data->drop_mark_y,
-                _mwidth(data->area), 1, 0, 0, 0);
+            DoMethod(obj, MUIM_DrawBackground, _mleft(data->area),
+                data->drop_mark_y, _mwidth(data->area), 1, 0, 0, 0);
 
             /* Draw new drop mark and store its position */
 
@@ -3181,7 +3198,8 @@ static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely)
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
+    struct MUIP_HandleEvent *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     struct MUI_List_TestPos_Result pos;
@@ -3293,14 +3311,16 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
     }
     else if (msg->imsg)
     {
-        DoMethod(obj, MUIM_List_TestPos, msg->imsg->MouseX, msg->imsg->MouseY, (IPTR) &pos);
+        DoMethod(obj, MUIM_List_TestPos, msg->imsg->MouseX, msg->imsg->MouseY,
+            (IPTR) &pos);
 
         switch (msg->imsg->Class)
         {
         case IDCMP_MOUSEBUTTONS:
             if (msg->imsg->Code == SELECTDOWN)
             {
-                if (_isinobject(data->area, msg->imsg->MouseX, msg->imsg->MouseY))
+                if (_isinobject(data->area, msg->imsg->MouseX,
+                    msg->imsg->MouseY))
                 {
                     data->mouse_click = MOUSE_CLICK_ENTRY;
 
@@ -3308,10 +3328,14 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
                     {
                         new_active = pos.entry;
 
-                        clear = (data->multiselect == MUIV_Listview_MultiSelect_Shifted
-                            && (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0);
-                        seltype = clear ? MUIV_List_Select_On: MUIV_List_Select_Toggle;
-                        select = data->multiselect != MUIV_Listview_MultiSelect_None;
+                        clear = (data->multiselect
+                            == MUIV_Listview_MultiSelect_Shifted
+                            && (msg->imsg->Qualifier
+                            & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0);
+                        seltype = clear ? MUIV_List_Select_On
+                            : MUIV_List_Select_Toggle;
+                        select = data->multiselect
+                            != MUIV_Listview_MultiSelect_None;
 
                         /* Handle MUIA_Listview_ClickColumn */
                         data->click_column = pos.column;
@@ -3320,7 +3344,8 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 
                         /* Handle double clicking */
                         if (data->last_active == pos.entry
-                            && DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros))
+                            && DoubleClick(data->last_secs, data->last_mics,
+                            msg->imsg->Seconds, msg->imsg->Micros))
                         {
                             set(obj, MUIA_Listview_DoubleClick, TRUE);
                             data->last_active = -1;
@@ -3336,9 +3361,12 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
                         /* Look out for mouse movement, timer and
                            inactive-window events while mouse button is
                            down */
-                        DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
-                        data->ehn.ehn_Events |= (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS |IDCMP_INACTIVEWINDOW);
-                        DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+                        DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                            (IPTR) &data->ehn);
+                        data->ehn.ehn_Events |= (IDCMP_MOUSEMOVE
+                            | IDCMP_INTUITICKS |IDCMP_INACTIVEWINDOW);
+                        DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                            (IPTR) &data->ehn);
                     }
                 }
             }
@@ -3352,9 +3380,12 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
                 }
 
                 /* Restore normal event mask */
-                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
-                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
-                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                    (IPTR) &data->ehn);
+                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS
+                    | IDCMP_INACTIVEWINDOW);
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                    (IPTR) &data->ehn);
             }
             break;
 
@@ -3367,10 +3398,12 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
             else
                 new_active = pos.entry;
 
-            select = new_active != old_active && data->multiselect != MUIV_Listview_MultiSelect_None;
+            select = new_active != old_active
+                && data->multiselect != MUIV_Listview_MultiSelect_None;
             if (select)
             {
-                DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active, MUIV_List_Select_Ask, &seltype);
+                DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active,
+                    MUIV_List_Select_Ask, &seltype);
                 range_select = new_active >= 0;
             }
 
@@ -3379,16 +3412,21 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
         case IDCMP_INACTIVEWINDOW:
             /* Stop listening for events we only listen to when mouse button is
                down: we will not be informed of the button being released */
-            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
-            data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
-            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                (IPTR) &data->ehn);
+            data->ehn.ehn_Events &=
+                ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS | IDCMP_INACTIVEWINDOW);
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                (IPTR) &data->ehn);
             break;
 
         case IDCMP_RAWKEY:
             /* Scroll wheel */
-            if (data->vert && _isinobject(data->vert, msg->imsg->MouseX, msg->imsg->MouseY))
+            if (data->vert && _isinobject(data->vert, msg->imsg->MouseX,
+                msg->imsg->MouseY))
                 delta = 1;
-            else if (_isinobject(data->area, msg->imsg->MouseX, msg->imsg->MouseY))
+            else if (_isinobject(data->area, msg->imsg->MouseX,
+                msg->imsg->MouseY))
                 delta = 4;
             else
                 delta = 0;
@@ -3420,12 +3458,14 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 
     if (clear)
     {
-        DoMethod(obj, MUIM_List_Select, MUIV_List_Select_All, MUIV_List_Select_Off, NULL);
+        DoMethod(obj, MUIM_List_Select, MUIV_List_Select_All,
+            MUIV_List_Select_Off, NULL);
     }
 
     if (muikey == MUIKEY_TOGGLE)
     {
-        DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active, MUIV_List_Select_Toggle, NULL);
+        DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active,
+            MUIV_List_Select_Toggle, NULL);
         select = FALSE;
     }
 
@@ -3444,7 +3484,8 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
                 DoMethod(obj, MUIM_List_Select, i, seltype, NULL);
         }
         else
-            DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active, seltype, NULL);
+            DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active,
+                seltype, NULL);
     }
 
     if (changing)

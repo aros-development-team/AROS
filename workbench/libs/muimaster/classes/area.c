@@ -2204,7 +2204,8 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 }
 
                 /* Do not eat wheel movement events */
-                if ((msg->imsg->Code == RAWKEY_NM_WHEEL_UP) || (msg->imsg->Code == RAWKEY_NM_WHEEL_DOWN))
+                if ((msg->imsg->Code == RAWKEY_NM_WHEEL_UP)
+                    || (msg->imsg->Code == RAWKEY_NM_WHEEL_DOWN))
                     return 0;
 
                 return MUI_EventHandlerRC_Eat;

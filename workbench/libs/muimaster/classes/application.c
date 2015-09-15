@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2013, The AROS Development Team.
+    Copyright © 2002-2015, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -1713,7 +1713,7 @@ static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj,
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct MQNode *mq;
     LONG i;
-    IPTR *m = (IPTR *) & msg->count; /* FIXME: breaks on 64-bit BigEndian systems */
+    IPTR *m = (IPTR *) &msg->count; /* FIXME: breaks on 64-bit BigEndian systems */
     LONG count;
 
     count = msg->count & 0xf; /* MUI4 uses count to pass additional info */
@@ -1746,7 +1746,8 @@ static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj,
 static IPTR Application__MUIM_UnpushMethod(struct IClass *cl, Object *obj,
     struct MUIP_Application_UnpushMethod *msg)
 {
-    D(bug("[Application__MUIM_UnpushMethod] dest %p id %p method %u\n", msg->dest, msg->methodid, msg->method));
+    D(bug("[Application__MUIM_UnpushMethod] dest %p id %p method %u\n",
+        msg->dest, msg->methodid, msg->method));
 
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -1756,19 +1757,19 @@ static IPTR Application__MUIM_UnpushMethod(struct IClass *cl, Object *obj,
     ObtainSemaphore(&data->app_MethodSemaphore);
     ForeachNodeSafe(&data->app_MethodQueue, current, next)
     {
-        D(bug("[Application__MUIM_UnpushMethod] examine dest %p id %p method %u\n",
-                current->mq_Dest, current, current->mq_Msg[0]));
-        if (
-               ((msg->dest == NULL) || (msg->dest == current->mq_Dest))
-            && ((msg->methodid == 0) || (msg->methodid == (IPTR)current))   // Method identifier returned by
-                                                                            // MUIM_Application_PushMethod.
+        D(bug("[Application__MUIM_UnpushMethod] examine dest %p id %p "
+            "method %u\n",
+            current->mq_Dest, current, current->mq_Msg[0]));
+        if (((msg->dest == NULL) || (msg->dest == current->mq_Dest))
+            && ((msg->methodid == 0) || (msg->methodid == (IPTR)current))
             && ((msg->method == 0) || (msg->method == current->mq_Msg[0]))
         )
         {
             Remove((struct Node*)current);
             DeleteMQNode(current);
             removed++;
-            D(bug("[Application__MUIM_UnpushMethod] current %p removed\n", current));
+            D(bug("[Application__MUIM_UnpushMethod] current %p removed\n",
+                current));
         }
     }
     ReleaseSemaphore(&data->app_MethodSemaphore);
