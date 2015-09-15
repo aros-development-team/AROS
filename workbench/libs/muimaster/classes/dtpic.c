@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -138,10 +138,12 @@ static void update_alpha(struct Dtpic_DATA *data)
             data->deltaalpha = 0;
         }
     }
-    D(bug("[Dtpic/update_alpha] alpha %d delta %d current %d\n", data->alpha, data->deltaalpha, data->currentalpha));
+    D(bug("[Dtpic/update_alpha] alpha %d delta %d current %d\n",
+        data->alpha, data->deltaalpha, data->currentalpha));
 }
 
-static struct BitMap *clone_bitmap(struct BitMap *from_bm, ULONG operation, ULONG value)
+static struct BitMap *clone_bitmap(struct BitMap *from_bm, ULONG operation,
+    ULONG value)
 {
     if (from_bm == NULL)
         return NULL;
@@ -155,7 +157,8 @@ static struct BitMap *clone_bitmap(struct BitMap *from_bm, ULONG operation, ULON
 
     InitRastPort(&rp);
     to_bm = AllocBitMap(width, height, depth, BMF_MINPLANES, from_bm);
-    D(bug("[clone_bitmap] %p width %d height %d depth %d\n", to_bm, width, height, depth));
+    D(bug("[clone_bitmap] %p width %d height %d depth %d\n", to_bm, width,
+        height, depth));
     if (to_bm)
     {
         rp.BitMap = to_bm;
@@ -221,9 +224,12 @@ IPTR setup_datatype(struct IClass *cl, Object *obj)
 
                             if (data->bm)
                             {
-                                // create BitMaps for selected and highlighted state
-                                data->bm_selected = clone_bitmap(data->bm, POP_DARKEN, 127);
-                                data->bm_highlighted = clone_bitmap(data->bm, POP_BRIGHTEN, 50);
+                                /* create BitMaps for selected and
+                                 * highlighted state */
+                                data->bm_selected =
+                                    clone_bitmap(data->bm, POP_DARKEN, 127);
+                                data->bm_highlighted =
+                                    clone_bitmap(data->bm, POP_BRIGHTEN, 50);
 
                                 return TRUE;
                             }
@@ -535,7 +541,8 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
                 {
                     data->selected = TRUE;
-                    D(bug("selectdown %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY));
+                    D(bug("selectdown %d %d\n", msg->imsg->MouseX,
+                        msg->imsg->MouseY));
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
             }
@@ -544,7 +551,8 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
                 {
                     data->selected = FALSE;
-                    D(bug("selectup %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY));
+                    D(bug("selectup %d %d\n", msg->imsg->MouseX,
+                        msg->imsg->MouseY));
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
             }
@@ -554,7 +562,8 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
             {
                 data->highlighted = TRUE;
-                D(bug("mouse move %d %d\n", msg->imsg->MouseX, msg->imsg->MouseY));
+                D(bug("mouse move %d %d\n", msg->imsg->MouseX,
+                    msg->imsg->MouseY));
             }
             else
             {

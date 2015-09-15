@@ -276,7 +276,8 @@ static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
     if (XGET(obj, MUIA_Disabled))
         nnset(obj, MUIA_Disabled, TRUE);
 
-    /* Some apps (Odyssey) expect _parent() will work before group tree is added to application tree */
+    /* Some apps (Odyssey) expect _parent() will work before group tree is
+     * added to application tree */
     muiNotifyData(msgint->obj)->mnd_ParentObject = obj;
 
     if (_flags(obj) & MADF_SETUP)
@@ -594,7 +595,7 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             Group__MUIM_Hide(cl, obj, NULL);
         data->virt_offx = virt_offx;
         data->virt_offy = virt_offy;
-        /* Relayout ourself, this will also relayout all the children */
+        /* Relayout ourselves. This will also relayout all the children */
         DoMethod(obj, MUIM_Layout);
         if (_flags(obj) & MADF_CANDRAW)
             Group__MUIM_Show(cl, obj, NULL);
@@ -1050,9 +1051,10 @@ IPTR Group__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
-static struct Region * group_children_clip_region(struct IClass *cl, Object *obj)
+static struct Region *group_children_clip_region(struct IClass *cl,
+    Object *obj)
 {
-    struct Region * region = NULL;
+    struct Region *region = NULL;
 
     region = NewRegion();
     if (region)
@@ -1070,17 +1072,19 @@ static struct Region * group_children_clip_region(struct IClass *cl, Object *obj
         rect.MaxY = _bottom(obj);
 
         OrRectRegion(region, &rect);
-        get(data->family, MUIA_Family_List, &(ChildList));
+        get(data->family, MUIA_Family_List, &ChildList);
         cstate = (Object *) ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
             if (child != data->titlegroup)
                 ++page;
 
-            if ((data->flags & GROUP_PAGEMODE) && ((page != data->active_page) && (child != data->titlegroup)))
+            if ((data->flags & GROUP_PAGEMODE) && (page != data->active_page)
+                && (child != data->titlegroup))
                 continue;
 
-            if ((muiAreaData(child)->mad_Flags & MADF_CANDRAW) && (_width(child) > 0) && (_height(child) > 0))
+            if ((muiAreaData(child)->mad_Flags & MADF_CANDRAW)
+                && (_width(child) > 0) && (_height(child) > 0))
             {
                 rect.MinX = MAX(_left(child), _mleft(obj));
                 rect.MinY = MAX(_top(child), _mtop(obj));
@@ -1116,9 +1120,10 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
     if (data->flags & GROUP_CHANGING)
         return FALSE;
 
-    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw
+        == WINDOW_REDRAW_WITHOUT_CLEAR)
     {
-        struct Region * r = group_children_clip_region(cl, obj);
+        struct Region *r = group_children_clip_region(cl, obj);
         APTR c = (APTR)-1;
         if (r)
             c = MUI_AddClipRegion(muiRenderInfo(obj), r);
@@ -1135,10 +1140,11 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
 
     if ((msg->flags & MADF_DRAWUPDATE) && data->update == 1)
     {
-        struct Region * r = NULL;
+        struct Region *r = NULL;
         APTR c = (APTR)-1;
 
-        if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+        if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw
+            == WINDOW_REDRAW_WITHOUT_CLEAR)
             r = group_children_clip_region(cl, obj);
 
         if (r)
@@ -1302,7 +1308,7 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
             ++page;
 
         if ((data->flags & GROUP_PAGEMODE) && ((page != data->active_page)
-                && (child != data->titlegroup)))
+            && (child != data->titlegroup)))
         {
             continue;
         }
