@@ -208,7 +208,7 @@ OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 
     EnterFunc(bug("VideoCoreGfx::CreateObject()\n"));
 
-    if (msg->cl == )XSD(cl)->vcsd_basebm)
+    if (msg->cl == XSD(cl)->vcsd_basebm)
     {
         BOOL displayable;
         BOOL framebuffer;
