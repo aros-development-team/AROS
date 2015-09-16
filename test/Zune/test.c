@@ -55,6 +55,7 @@ static const char *fruits[] = {"Strawberry", "Apple", "Banana", "Orange",
     "Peach", "Lemon", "Lime", "Date", "Pineapple", "Blueberry", "Papaya",
     "Cranberry", "Gooseberry", "Pear", "Fig", "Coconut", "Melon",
     "Pumpkin", NULL};
+static const char *empty[] = {"", "", "", "", "", NULL};
 static const LONG list_active_positions[] =
 {
     MUIV_List_Active_Top,
@@ -126,6 +127,7 @@ string;
 struct
 {
     Object *lists[LIST_COUNT],
+        *list_radios,
         *index1_string,
         *index2_string,
         *title_string,
@@ -165,6 +167,7 @@ struct
         *column_string,
         *column_text,
         *showheadings_check;
+    LONG quiet[LIST_COUNT];
 }
 list;
 
@@ -310,12 +313,133 @@ AROS_UFH0(void, ChangePendisplayPen)
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH0(void, ChangeListTitle)
+{
+    AROS_USERFUNC_INIT
+
+    STRPTR title = NULL;
+    UWORD i;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.lists[i], MUIA_List_Title, &title);
+    FreeVec(title);
+
+    GET(list.title_string, MUIA_String_Contents, &title);
+    if (title[0] == '\0')
+        title = NULL;
+
+    title = StrDup(title);
+
+    SET(list.lists[i], MUIA_List_Title, title);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, UpdateListInfo)
+{
+    AROS_USERFUNC_INIT
+
+    STRPTR title = NULL;
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.lists[i], MUIA_List_DragSortable, &value);
+    NNSET(list.dragsortable_check, MUIA_Selected, value);
+    GET(list.lists[i], MUIA_List_ShowDropMarks, &value);
+    NNSET(list.showdropmarks_check, MUIA_Selected, value);
+    value = list.quiet[i];    // MUIA_List_Quiet is not gettable!
+    NNSET(list.quiet_check, MUIA_Selected, value);
+    GET(list.lists[i], MUIA_List_AutoVisible, &value);
+    NNSET(list.autovisible_check, MUIA_Selected, value);
+
+    GET(list.lists[i], MUIA_List_Title, &title);
+    NNSET(list.title_string, MUIA_String_Contents, title);
+
+    GET(list.lists[i], MUIA_List_Entries, &value);
+    DoMethod(list.entries_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
+    GET(list.lists[i], MUIA_List_Visible, &value);
+    DoMethod(list.visible_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
+    GET(list.lists[i], MUIA_List_First, &value);
+    DoMethod(list.first_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
+    GET(list.lists[i], MUIA_List_InsertPosition, &value);
+    DoMethod(list.insert_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
+
+    AROS_USERFUNC_EXIT
+}
+
+static void ListSetDragSortable(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.dragsortable_check, MUIA_Selected, &value);
+    SET(list.lists[i], MUIA_List_DragSortable, value);
+}
+
+static void ListSetShowDropMarks(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.showdropmarks_check, MUIA_Selected, &value);
+    SET(list.lists[i], MUIA_List_ShowDropMarks, value);
+}
+
+static void ListSetQuiet(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.quiet_check, MUIA_Selected, &value);
+    SET(list.lists[i], MUIA_List_Quiet, value);
+    list.quiet[i] = value;
+}
+
+static void ListSetAutoVisible(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.autovisible_check, MUIA_Selected, &value);
+    SET(list.lists[i], MUIA_List_AutoVisible, value);
+}
+
+AROS_UFH0(void, ListReset)
+{
+    AROS_USERFUNC_INIT
+
+    UWORD i;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    SET(list.lists[i], MUIA_List_Active, list_active_positions[i]);
+
+    AROS_USERFUNC_EXIT
+}
+
 AROS_UFH0(void, ListMove)
 {
     AROS_USERFUNC_INIT
 
     LONG mode, pos1, pos2;
     UWORD i;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
 
     mode = XGET(list.move1_cycle, MUIA_Cycle_Active);
 
@@ -331,8 +455,33 @@ AROS_UFH0(void, ListMove)
     else
         pos2 = 1 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Move, pos1, pos2);
+    DoMethod(list.lists[i], MUIM_List_Move, pos1, pos2);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListSort)
+{
+    AROS_USERFUNC_INIT
+
+    UWORD i;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    DoMethod(list.lists[i], MUIM_List_Sort);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListEnable)
+{
+    AROS_USERFUNC_INIT
+
+    UWORD i;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    SET(list.lists[i], MUIA_Disabled, FALSE);
 
     AROS_USERFUNC_EXIT
 }
@@ -344,6 +493,8 @@ AROS_UFH0(void, ListExchange)
     LONG mode, pos1, pos2;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.move1_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -358,8 +509,7 @@ AROS_UFH0(void, ListExchange)
     else
         pos2 = 1 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Exchange, pos1, pos2);
+    DoMethod(list.lists[i], MUIM_List_Exchange, pos1, pos2);
 
     AROS_USERFUNC_EXIT
 }
@@ -371,6 +521,8 @@ AROS_UFH0(void, ListJump)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.jump_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -378,8 +530,7 @@ AROS_UFH0(void, ListJump)
     else
         pos = 1 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Jump, pos);
+    DoMethod(list.lists[i], MUIM_List_Jump, pos);
 
     AROS_USERFUNC_EXIT
 }
@@ -391,6 +542,8 @@ AROS_UFH0(void, ListSelect)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.select_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -398,9 +551,8 @@ AROS_UFH0(void, ListSelect)
     else
         pos = 0 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Select, pos, MUIV_List_Select_On,
-            NULL);
+    DoMethod(list.lists[i], MUIM_List_Select, pos, MUIV_List_Select_On,
+        NULL);
 
     AROS_USERFUNC_EXIT
 }
@@ -412,6 +564,8 @@ AROS_UFH0(void, ListDeselect)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.select_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -419,9 +573,8 @@ AROS_UFH0(void, ListDeselect)
     else
         pos = 0 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Select, pos, MUIV_List_Select_Off,
-            NULL);
+    DoMethod(list.lists[i], MUIM_List_Select, pos, MUIV_List_Select_Off,
+        NULL);
 
     AROS_USERFUNC_EXIT
 }
@@ -433,6 +586,8 @@ AROS_UFH0(void, ListToggle)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.select_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -440,9 +595,8 @@ AROS_UFH0(void, ListToggle)
     else
         pos = 0 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Select, pos,
-            MUIV_List_Select_Toggle, NULL);
+    DoMethod(list.lists[i], MUIM_List_Select, pos,
+        MUIV_List_Select_Toggle, NULL);
 
     AROS_USERFUNC_EXIT
 }
@@ -454,6 +608,8 @@ AROS_UFH0(void, ListRedraw)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.select_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -461,8 +617,7 @@ AROS_UFH0(void, ListRedraw)
     else
         pos = 0 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Redraw, pos);
+    DoMethod(list.lists[i], MUIM_List_Redraw, pos);
 
     AROS_USERFUNC_EXIT
 }
@@ -474,6 +629,8 @@ AROS_UFH0(void, ListInsertSingle)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.insert_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -481,8 +638,7 @@ AROS_UFH0(void, ListInsertSingle)
     else
         pos = 1 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_InsertSingle, "Tomato", pos);
+    DoMethod(list.lists[i], MUIM_List_InsertSingle, "Tomato", pos);
 
     AROS_USERFUNC_EXIT
 }
@@ -494,6 +650,8 @@ AROS_UFH0(void, ListInsert)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.insert_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -501,8 +659,7 @@ AROS_UFH0(void, ListInsert)
     else
         pos = 1 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Insert, fruits, -1, pos);
+    DoMethod(list.lists[i], MUIM_List_Insert, fruits, -1, pos);
 
     AROS_USERFUNC_EXIT
 }
@@ -514,6 +671,8 @@ AROS_UFH0(void, ListRemove)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.remove_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -521,8 +680,20 @@ AROS_UFH0(void, ListRemove)
     else
         pos = 1 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        DoMethod(list.lists[i], MUIM_List_Remove, pos);
+    DoMethod(list.lists[i], MUIM_List_Remove, pos);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListClear)
+{
+    AROS_USERFUNC_INIT
+
+    UWORD i;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    DoMethod(list.lists[i], MUIM_List_Clear);
 
     AROS_USERFUNC_EXIT
 }
@@ -534,6 +705,8 @@ AROS_UFH0(void, ListActivate)
     LONG mode, pos;
     UWORD i;
 
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
     mode = XGET(list.activate_cycle, MUIA_Cycle_Active);
 
     if (mode == 0)
@@ -541,8 +714,20 @@ AROS_UFH0(void, ListActivate)
     else
         pos = -1 - mode;
 
-    for (i = 0; i < LIST_COUNT; i++)
-        SET(list.lists[i], MUIA_List_Active, pos);
+    SET(list.lists[i], MUIA_List_Active, pos);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH0(void, ListDeactivate)
+{
+    AROS_USERFUNC_INIT
+
+    UWORD i;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    SET(list.lists[i], MUIA_List_Active, MUIV_List_Active_Off);
 
     AROS_USERFUNC_EXIT
 }
@@ -732,6 +917,7 @@ int main(void)
     Object *min_string, *max_string;
     Object *slider_button;
     Object *country_radio[2];
+    CONST_STRPTR title;
     UWORD i;
 
     static char *pages[] =
@@ -794,11 +980,12 @@ int main(void)
 
     pendisplay = PendisplayObject, MUIA_Pendisplay_Spec, &default_penspec, End;
 
+    title = StrDup("Fruits");
     list.lists[0] = ListviewObject,
         MUIA_Listview_List,
             ListObject,
             InputListFrame,
-            MUIA_List_Title, "Fruits",
+            MUIA_List_Title, title,
             MUIA_List_SourceArray, fruits,
             MUIA_List_Active, MUIV_List_Active_Top,
             MUIA_ShortHelp, "Default scroller\nTop entry active",
@@ -1428,6 +1615,20 @@ int main(void)
                                     Child, list.lists[4],
                                     End,
                                 End,
+                            Child, HGroup,
+                                MUIA_Group_HorizSpacing, 0,
+                                Child, RectangleObject,
+                                    MUIA_HorizWeight, 1,
+                                    End,
+                                Child, list.list_radios = RadioObject,
+                                    MUIA_Radio_Entries, empty,
+                                    MUIA_Group_Horiz, TRUE,
+                                    MUIA_HorizWeight, 1000,
+                                    End,
+                                Child, RectangleObject,
+                                    MUIA_HorizWeight, 1,
+                                    End,
+                                End,
                             Child, RectangleObject,
                                 MUIA_VertWeight, 0,
                                 MUIA_Rectangle_HBar, TRUE,
@@ -1514,7 +1715,6 @@ int main(void)
                                 Child, list.title_string =
                                     StringObject,
                                     StringFrame,
-                                    MUIA_Disabled, TRUE,
                                     End,
 
                                 Child, MUI_MakeObject(MUIO_Label,
@@ -2131,30 +2331,6 @@ int main(void)
             DoMethod(list.lists[i], MUIM_Notify, MUIA_Listview_DoubleClick,
                 MUIV_EveryTime, list.lists[i], 3, MUIM_Set, MUIA_Disabled,
                 TRUE);
-            DoMethod(list.sort_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                list.lists[i], 1, MUIM_List_Sort);
-            DoMethod(list.clear_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                list.lists[i], 1, MUIM_List_Clear);
-            DoMethod(list.deactivate_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                list.lists[i], 3, MUIM_Set, MUIA_List_Active,
-                MUIV_List_Active_Off);
-            DoMethod(list.enable_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                list.lists[i], 3, MUIM_Set, MUIA_Disabled, FALSE);
-            DoMethod(list.reset_button, MUIM_Notify, MUIA_Pressed, FALSE,
-                list.lists[i], 3, MUIM_Set, MUIA_List_Active,
-                list_active_positions[i]);
-            DoMethod(list.dragsortable_check, MUIM_Notify, MUIA_Selected,
-                MUIV_EveryTime, list.lists[i], 3, MUIM_Set,
-                MUIA_List_DragSortable, MUIV_TriggerValue);
-            DoMethod(list.showdropmarks_check, MUIM_Notify, MUIA_Selected,
-                MUIV_EveryTime, list.lists[i], 3, MUIM_Set,
-                MUIA_List_ShowDropMarks, MUIV_TriggerValue);
-            DoMethod(list.quiet_check, MUIM_Notify, MUIA_Selected,
-                MUIV_EveryTime, list.lists[i], 3, MUIM_Set, MUIA_List_Quiet,
-                MUIV_TriggerValue);
-            DoMethod(list.autovisible_check, MUIM_Notify, MUIA_Selected,
-                MUIV_EveryTime, list.lists[i], 3, MUIM_Set,
-                MUIA_List_AutoVisible, MUIV_TriggerValue);
             DoMethod(list.lists[i], MUIM_Notify, MUIA_List_Entries,
                 MUIV_EveryTime, list.entries_text, 4, MUIM_SetAsString,
                 MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
@@ -2168,8 +2344,26 @@ int main(void)
                 MUIV_EveryTime, list.insert_text, 4, MUIM_SetAsString,
                 MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
         }
+        DoMethod(list.dragsortable_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ListSetDragSortable);
+        DoMethod(list.showdropmarks_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ListSetShowDropMarks);
+        DoMethod(list.quiet_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ListSetQuiet);
+        DoMethod(list.autovisible_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ListSetAutoVisible);
+        DoMethod(list.reset_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListReset);
         DoMethod(list.move_button, MUIM_Notify, MUIA_Pressed, FALSE,
             app, 3, MUIM_CallHook, &hook_standard, ListMove);
+        DoMethod(list.sort_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListSort);
+        DoMethod(list.enable_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListEnable);
         DoMethod(list.exchange_button, MUIM_Notify, MUIA_Pressed, FALSE,
             app, 3, MUIM_CallHook, &hook_standard, ListExchange);
         DoMethod(list.jump_button, MUIM_Notify, MUIA_Pressed, FALSE,
@@ -2188,8 +2382,18 @@ int main(void)
             app, 3, MUIM_CallHook, &hook_standard, ListInsert);
         DoMethod(list.remove_button, MUIM_Notify, MUIA_Pressed, FALSE,
             app, 3, MUIM_CallHook, &hook_standard, ListRemove);
+        DoMethod(list.clear_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListClear);
         DoMethod(list.activate_button, MUIM_Notify, MUIA_Pressed, FALSE,
             app, 3, MUIM_CallHook, &hook_standard, ListActivate);
+        DoMethod(list.deactivate_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, ListDeactivate);
+        DoMethod(list.title_string, MUIM_Notify, MUIA_String_Acknowledge,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ChangeListTitle);
+        DoMethod(list.list_radios, MUIM_Notify, MUIA_Radio_Active,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            UpdateListInfo);
 
         set(list.showheadings_check, MUIA_Selected, TRUE);
         DoMethod(list.format_string, MUIM_Notify, MUIA_String_Acknowledge,
