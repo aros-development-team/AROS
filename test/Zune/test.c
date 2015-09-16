@@ -106,7 +106,7 @@ struct list_entry
 
 Object *app;
 
-struct
+static struct
 {
     Object *strings[STRING_COUNT],
         *accept_string,
@@ -124,7 +124,7 @@ struct
 }
 string;
 
-struct
+static struct
 {
     Object *lists[LIST_COUNT],
         *list_radios,
@@ -171,23 +171,24 @@ struct
 }
 list;
 
-Object *wheel;
-Object *r_slider;
-Object *g_slider;
-Object *b_slider;
-Object *hue_gauge;
-Object *colorfield, *colorfield2, *colorfield_reset_button, *colorfield_pen;
-Object *coloradjust;
-Object *pendisplay, *pendisplay2, *pendisplay_pen, *pendisplay_spec,
+static Object *wheel;
+static Object *r_slider;
+static Object *g_slider;
+static Object *b_slider;
+static Object *hue_gauge;
+static Object *colorfield, *colorfield2, *colorfield_reset_button,
+    *colorfield_pen;
+static Object *coloradjust;
+static Object *pendisplay, *pendisplay2, *pendisplay_pen, *pendisplay_spec,
     *reference_check, *shine_button, *shadow_button, *yellow_button, *poppen;
-Object *group;
-Object *editor_text;
-Object *filename_string;
-Object *save_button;
-Object *list2;
+static Object *group;
+static Object *editor_text;
+static Object *filename_string;
+static Object *save_button;
+static Object *list2;
 
-Object *drawer_iconlist;
-Object *volume_iconlist;
+static Object *drawer_iconlist;
+static Object *volume_iconlist;
 
 AROS_UFH0(void, repeat_function)
 {
@@ -246,10 +247,8 @@ AROS_UFH0(void, objects_function)
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, about_function)
+static void About(void)
 {
-    AROS_USERFUNC_INIT
-
     static Object *about_wnd;
 
     if (!about_wnd)
@@ -259,14 +258,10 @@ AROS_UFH0(void, about_function)
 
     if (about_wnd)
         set(about_wnd, MUIA_Window_Open, TRUE);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ChangeStringAccept)
+static void ChangeStringAccept(void)
 {
-    AROS_USERFUNC_INIT
-
     STRPTR accept_chars = NULL, reject_chars = NULL;
     BOOL accept_all;
     UWORD i;
@@ -286,37 +281,25 @@ AROS_UFH0(void, ChangeStringAccept)
         SET(string.strings[i], MUIA_String_Accept, accept_chars);
         SET(string.strings[i], MUIA_String_Reject, reject_chars);
     }
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, changepen_function)
+static void ChangePen(void)
 {
-    AROS_USERFUNC_INIT
-
     SIPTR pen = -1;
 
     GET(colorfield_pen, MUIA_String_Integer, &pen);
     if (pen >= 0)
         SET(colorfield, MUIA_Colorfield_Pen, pen);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ChangePendisplayPen)
+static void ChangePendisplayPen(void)
 {
-    AROS_USERFUNC_INIT
-
     DoMethod(pendisplay, MUIM_Pendisplay_SetColormap,
         XGET(pendisplay_pen, MUIA_String_Integer));
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ChangeListTitle)
+static void ChangeListTitle(void)
 {
-    AROS_USERFUNC_INIT
-
     STRPTR title = NULL;
     UWORD i;
 
@@ -332,14 +315,10 @@ AROS_UFH0(void, ChangeListTitle)
     title = StrDup(title);
 
     SET(list.lists[i], MUIA_List_Title, title);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, UpdateListInfo)
+static void UpdateListInfo(void)
 {
-    AROS_USERFUNC_INIT
-
     STRPTR title = NULL;
     UWORD i;
     LONG value = 0;
@@ -370,8 +349,6 @@ AROS_UFH0(void, UpdateListInfo)
     GET(list.lists[i], MUIA_List_InsertPosition, &value);
     DoMethod(list.insert_text, MUIM_SetAsString, MUIA_Text_Contents,
         "%ld", value);
-
-    AROS_USERFUNC_EXIT
 }
 
 static void ListSetDragSortable(void)
@@ -419,23 +396,17 @@ static void ListSetAutoVisible(void)
     SET(list.lists[i], MUIA_List_AutoVisible, value);
 }
 
-AROS_UFH0(void, ListReset)
+static void ListReset(void)
 {
-    AROS_USERFUNC_INIT
-
     UWORD i;
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
 
     SET(list.lists[i], MUIA_List_Active, list_active_positions[i]);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListMove)
+static void ListMove(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos1, pos2;
     UWORD i;
 
@@ -456,40 +427,28 @@ AROS_UFH0(void, ListMove)
         pos2 = 1 - mode;
 
     DoMethod(list.lists[i], MUIM_List_Move, pos1, pos2);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListSort)
+static void ListSort(void)
 {
-    AROS_USERFUNC_INIT
-
     UWORD i;
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
 
     DoMethod(list.lists[i], MUIM_List_Sort);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListEnable)
+static void ListEnable(void)
 {
-    AROS_USERFUNC_INIT
-
     UWORD i;
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
 
     SET(list.lists[i], MUIA_Disabled, FALSE);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListExchange)
+static void ListExchange(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos1, pos2;
     UWORD i;
 
@@ -510,14 +469,10 @@ AROS_UFH0(void, ListExchange)
         pos2 = 1 - mode;
 
     DoMethod(list.lists[i], MUIM_List_Exchange, pos1, pos2);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListJump)
+static void ListJump(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -531,14 +486,10 @@ AROS_UFH0(void, ListJump)
         pos = 1 - mode;
 
     DoMethod(list.lists[i], MUIM_List_Jump, pos);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListSelect)
+static void ListSelect(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -553,14 +504,10 @@ AROS_UFH0(void, ListSelect)
 
     DoMethod(list.lists[i], MUIM_List_Select, pos, MUIV_List_Select_On,
         NULL);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListDeselect)
+static void ListDeselect(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -575,14 +522,10 @@ AROS_UFH0(void, ListDeselect)
 
     DoMethod(list.lists[i], MUIM_List_Select, pos, MUIV_List_Select_Off,
         NULL);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListToggle)
+static void ListToggle(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -597,14 +540,10 @@ AROS_UFH0(void, ListToggle)
 
     DoMethod(list.lists[i], MUIM_List_Select, pos,
         MUIV_List_Select_Toggle, NULL);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListRedraw)
+static void ListRedraw(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -618,14 +557,10 @@ AROS_UFH0(void, ListRedraw)
         pos = 0 - mode;
 
     DoMethod(list.lists[i], MUIM_List_Redraw, pos);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListInsertSingle)
+static void ListInsertSingle(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -639,14 +574,10 @@ AROS_UFH0(void, ListInsertSingle)
         pos = 1 - mode;
 
     DoMethod(list.lists[i], MUIM_List_InsertSingle, "Tomato", pos);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListInsert)
+static void ListInsert(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -660,14 +591,10 @@ AROS_UFH0(void, ListInsert)
         pos = 1 - mode;
 
     DoMethod(list.lists[i], MUIM_List_Insert, fruits, -1, pos);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListRemove)
+static void ListRemove(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -681,27 +608,19 @@ AROS_UFH0(void, ListRemove)
         pos = 1 - mode;
 
     DoMethod(list.lists[i], MUIM_List_Remove, pos);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListClear)
+static void ListClear(void)
 {
-    AROS_USERFUNC_INIT
-
     UWORD i;
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
 
     DoMethod(list.lists[i], MUIM_List_Clear);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListActivate)
+static void ListActivate(void)
 {
-    AROS_USERFUNC_INIT
-
     LONG mode, pos;
     UWORD i;
 
@@ -715,24 +634,18 @@ AROS_UFH0(void, ListActivate)
         pos = -1 - mode;
 
     SET(list.lists[i], MUIA_List_Active, pos);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, ListDeactivate)
+static void ListDeactivate(void)
 {
-    AROS_USERFUNC_INIT
-
     UWORD i;
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
 
     SET(list.lists[i], MUIA_List_Active, MUIV_List_Active_Off);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH3(void, display_function,
+AROS_UFH3(static void, display_function,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(char **, strings, A2),
     AROS_UFHA(struct list_entry *, entry, A1))
@@ -758,10 +671,8 @@ AROS_UFH3(void, display_function,
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, save_function)
+static void Save(void)
 {
-    AROS_USERFUNC_INIT
-
     char *text = (char *)XGET(editor_text, MUIA_String_Contents);
     char *filename = (char *)XGET(filename_string, MUIA_String_Contents);
     BPTR fh;
@@ -774,13 +685,11 @@ AROS_UFH0(void, save_function)
         Write(fh, text, strlen(text));
         Close(fh);
     }
-
-    AROS_USERFUNC_EXIT
 }
 
 #if defined(TEST_ICONLIST)
 /* IconList callbacks */
-void volume_doubleclicked(void)
+static void volume_doubleclicked(void)
 {
     char buf[200];
     struct IconList_Entry *ent = (void *)MUIV_IconList_NextIcon_Start;
@@ -795,7 +704,7 @@ void volume_doubleclicked(void)
     set(drawer_iconlist, MUIA_IconDrawerList_Drawer, buf);
 }
 
-void drawer_doubleclicked(void)
+static void drawer_doubleclicked(void)
 {
     struct IconList_Entry *ent = (void *)MUIV_IconList_NextIcon_Start;
 
@@ -880,7 +789,7 @@ AROS_UFH3S(IPTR, dispatcher,
     AROS_USERFUNC_EXIT
 }
 
-struct MUI_CustomClass *CL_DropText;
+static struct MUI_CustomClass *CL_DropText;
 
 #define DropTextObject BOOPSIOBJMACRO_START(CL_DropText->mcc_Class)
 
@@ -888,7 +797,7 @@ struct MUI_CustomClass *CL_DropText;
 
 static struct Hook hook_standard;
 
-AROS_UFH3(void, hook_func_standard,
+AROS_UFH3S(void, hook_func_standard,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(void *, dummy, A2), AROS_UFHA(void **, funcptr, A1))
 {
@@ -2257,14 +2166,14 @@ int main(void)
             app, 2, MUIM_CallHook, &hook_slider);
 
         DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3,
-            MUIM_CallHook, &hook_standard, save_function);
+            MUIM_CallHook, &hook_standard, Save);
 
         DoMethod(quit_item, MUIM_Notify, MUIA_Menuitem_Trigger,
             MUIV_EveryTime, app, 2, MUIM_Application_ReturnID,
             MUIV_Application_ReturnID_Quit);
         DoMethod(about_item, MUIM_Notify, MUIA_Menuitem_Trigger,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
-            about_function);
+            About);
 
         /* Notifications for color objects */
         DoMethod(colorfield, MUIM_Notify, MUIA_Colorfield_Red,
@@ -2290,7 +2199,7 @@ int main(void)
             MUIA_String_Integer, MUIV_TriggerValue);
         DoMethod(colorfield_pen, MUIM_Notify, MUIA_String_Acknowledge,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
-            changepen_function);
+            ChangePen);
         DoMethod(colorfield_reset_button, MUIM_Notify, MUIA_Pressed, FALSE,
             colorfield, 3, MUIM_Set, MUIA_Colorfield_RGB, default_color);
 
