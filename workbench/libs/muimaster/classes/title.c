@@ -256,14 +256,14 @@ static void DrawTopTab(Object *obj, struct Title_DATA *data, BOOL active,
     x2 += HORIZ_PADDING;
     y2 += 1;
 
+    /* Fill the padding area */
+    DoMethod(obj, MUIM_DrawBackground, x1 , y1, x2 - x1, VERT_PADDING, 0, 0, 0);
+    DoMethod(obj, MUIM_DrawBackground, x1 , y1, HORIZ_PADDING, y2 - y1, 0, 0, 0);
+    DoMethod(obj, MUIM_DrawBackground, x2 - VERT_PADDING + 1, y1, HORIZ_PADDING, y2 - y1, 0, 0, 0);
+    DoMethod(obj, MUIM_DrawBackground, x1, y2, x2 - x1, 1, 0, 0, 0);
+
     if (!active)
     {
-        /* Fill the padding area */
-        SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
-        RectFill(_rp(obj), x1 , y1 , x2, y1 + VERT_PADDING - 1);
-        RectFill(_rp(obj), x1 , y1 + VERT_PADDING - 1, x1 + HORIZ_PADDING - 1, y2);
-        RectFill(_rp(obj), x2 - HORIZ_PADDING + 1, y1 + VERT_PADDING - 1, x2, y2);
-
         /* Clear the rounded edges of an inactive tab with default
          * background */
 
@@ -456,7 +456,7 @@ IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj,
             Tab__MUIM_Draw(child, data, 1);
         else if (tab == data->oldactivetab)
             Tab__MUIM_Draw(child, data, 0);
-        else
+        else if (msg->flags & MADF_DRAWOBJECT)
             Tab__MUIM_Draw(child, data, -1);
 
         tab++;
