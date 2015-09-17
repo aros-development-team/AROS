@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,6 +31,8 @@ extern struct Library *MUIMasterBase;
 #define _isinobj(x,y,obj) (_between(_left(obj),(x),_right (obj)) \
                           && _between(_top(obj) ,(y),_bottom(obj)))
 
+#define VERT_PADDING    (4)
+#define HORIZ_PADDING   (4)
 
 ULONG Tabs_Layout_Function(struct Hook *hook, Object *obj,
     struct MUI_LayoutMsg *lm)
@@ -68,16 +70,15 @@ ULONG Tabs_Layout_Function(struct Hook *hook, Object *obj,
 
             if (data->location == MUIV_Tabs_Top)
             {
-                mintotalwidth =
-                    number_of_children * maxminwidth + (number_of_children -
-                    1) * XGET(obj, MUIA_Group_HorizSpacing);
-                lm->lm_MinMax.MinWidth = lm->lm_MinMax.DefWidth =
-                    mintotalwidth;
-                lm->lm_MinMax.MinHeight = lm->lm_MinMax.DefHeight =
-                    maxminheight + 10;
+                mintotalwidth = number_of_children * maxminwidth +
+                        (number_of_children - 1) * XGET(obj, MUIA_Group_HorizSpacing);
+
+                lm->lm_MinMax.MinWidth = lm->lm_MinMax.DefWidth = mintotalwidth;
                 lm->lm_MinMax.MaxWidth = MUI_MAXMAX;
-                lm->lm_MinMax.MaxHeight = lm->lm_MinMax.DefHeight =
-                    maxminheight + 10;
+
+                lm->lm_MinMax.MinHeight =
+                lm->lm_MinMax.MaxHeight =
+                lm->lm_MinMax.DefHeight = maxminheight + (VERT_PADDING * 2);
             }
             else if (data->location == MUIV_Tabs_Left)
             {
@@ -111,22 +112,21 @@ ULONG Tabs_Layout_Function(struct Hook *hook, Object *obj,
             {
                 WORD horiz_spacing = XGET(obj, MUIA_Group_HorizSpacing);
                 WORD childwidth =
-                    (lm->lm_Layout.Width - (number_of_children -
-                        1) * horiz_spacing) / number_of_children;
-                WORD leftovers =
-                    lm->lm_Layout.Width - (number_of_children -
-                    1) * horiz_spacing - number_of_children * childwidth;
+                        (lm->lm_Layout.Width - ((number_of_children - 1) * horiz_spacing)) / number_of_children;
+
+                WORD leftovers = lm->lm_Layout.Width - ((number_of_children - 1) * horiz_spacing)
+                        - (number_of_children * childwidth);
                 WORD left = 0;
+                WORD cheight = _height(obj) - (VERT_PADDING * 2);
+
                 cstate = lm->lm_Children->mlh_Head;
                 while ((child = NextObject(&cstate)))
                 {
                     WORD cwidth = childwidth;
-                    WORD cheight = _height(obj);
+
                     if (leftovers-- > 0)
                         cwidth++;
-                    if (!MUI_Layout(child, left,
-                            lm->lm_Layout.Height - cheight, cwidth,
-                            cheight - 10, 0))
+                    if (!MUI_Layout(child, left + HORIZ_PADDING, VERT_PADDING, cwidth - (HORIZ_PADDING * 2), cheight , 0))
                         return (FALSE);
 
                     left += cwidth + horiz_spacing;
@@ -245,8 +245,20 @@ IPTR Title__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 static void DrawTopTab(Object *obj, struct Title_DATA *data, BOOL active,
     WORD x1, WORD y1, WORD x2, WORD y2)
 {
+    /* Correct for padding */
+    x1 -= HORIZ_PADDING;
+    y1 -= VERT_PADDING;
+    x2 += HORIZ_PADDING;
+    y2 += 1;
+
     if (!active)
     {
+        /* Fill the padding area */
+        SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
+        RectFill(_rp(obj), x1 , y1 , x2, y1 + VERT_PADDING - 1);
+        RectFill(_rp(obj), x1 , y1 + VERT_PADDING - 1, x1 + HORIZ_PADDING - 1, y2);
+        RectFill(_rp(obj), x2 - HORIZ_PADDING + 1, y1 + VERT_PADDING - 1, x2, y2);
+
         /* Clear the rounded edges of an inactive tab with default
          * background */
 
@@ -392,7 +404,7 @@ IPTR Tab__MUIM_Draw(Object *child, struct Title_DATA *data, LONG active)
     WORD x2 = _right(child);
     WORD y2 = _bottom(child);
 
-    /* Setting of background causes redraw of object. We use this "feature" */
+    /* Setting of background (to a different value!) causes redraw of object. We use this "feature" */
     if (active == 1)
         nnset(child, MUIA_Background, data->background);
     else if (active == 0)
@@ -453,8 +465,8 @@ IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj,
     {
         while (child && (child = NextObject(&cstate)))
         {
-            RectFill(_rp(obj), _left(child) - horiz_spacing, _bottom(child),
-                _left(child) - 1, _bottom(child));
+            RectFill(_rp(obj), _left(child) - horiz_spacing - HORIZ_PADDING, _bottom(child) + 1,
+                _left(child) - 1 - HORIZ_PADDING, _bottom(child) + 1);
         }
     }
     else if (data->location == MUIV_Tabs_Left)
