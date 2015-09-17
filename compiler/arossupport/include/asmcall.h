@@ -105,6 +105,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) /* Function headers for user functions */
 #define AROS_UFH0(t,n) \
     __AROS_UFH_PREFIX t n (void) {
+#define AROS_UFH0S(t,n) \
+    __AROS_UFH_PREFIX static t n (void) {
 #define AROS_UFH1(t,n,a1) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1)\
@@ -137,6 +139,13 @@ typedef unsigned int (*ULONG_FUNC)();
     ) {
 #define AROS_UFH4(t,n,a1,a2,a3,a4) \
     __AROS_UFH_PREFIX t n (\
+    __AROS_UFHA(a1),\
+    __AROS_UFHA(a2),\
+    __AROS_UFHA(a3),\
+    __AROS_UFHA(a4)\
+    ) {
+#define AROS_UFH4S(t,n,a1,a2,a3,a4) \
+    __AROS_UFH_PREFIX static t n (\
     __AROS_UFHA(a1),\
     __AROS_UFHA(a2),\
     __AROS_UFHA(a3),\
