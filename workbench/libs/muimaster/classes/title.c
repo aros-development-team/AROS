@@ -70,8 +70,10 @@ ULONG Tabs_Layout_Function(struct Hook *hook, Object *obj,
 
             if (data->location == MUIV_Tabs_Top)
             {
-                mintotalwidth = number_of_children * maxminwidth +
-                        (number_of_children - 1) * XGET(obj, MUIA_Group_HorizSpacing);
+                WORD horiz_spacing = XGET(obj, MUIA_Group_HorizSpacing);
+
+                mintotalwidth = (number_of_children * maxminwidth) +
+                        ((number_of_children - 1) * horiz_spacing) + horiz_spacing;
 
                 lm->lm_MinMax.MinWidth = lm->lm_MinMax.DefWidth = mintotalwidth;
                 lm->lm_MinMax.MaxWidth = MUI_MAXMAX;
@@ -112,11 +114,14 @@ ULONG Tabs_Layout_Function(struct Hook *hook, Object *obj,
             {
                 WORD horiz_spacing = XGET(obj, MUIA_Group_HorizSpacing);
                 WORD childwidth =
-                        (lm->lm_Layout.Width - ((number_of_children - 1) * horiz_spacing)) / number_of_children;
+                        (lm->lm_Layout.Width - ((number_of_children - 1) * horiz_spacing) - horiz_spacing)
+                        / number_of_children;
 
-                WORD leftovers = lm->lm_Layout.Width - ((number_of_children - 1) * horiz_spacing)
-                        - (number_of_children * childwidth);
-                WORD left = 0;
+                WORD leftovers = lm->lm_Layout.Width -
+                        ((number_of_children - 1) * horiz_spacing) - horiz_spacing -
+                        (number_of_children * childwidth);
+
+                WORD left = horiz_spacing / 2;
                 WORD cheight = _height(obj) - (VERT_PADDING * 2);
 
                 cstate = lm->lm_Children->mlh_Head;
@@ -463,6 +468,9 @@ IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj,
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
     if (data->location == MUIV_Tabs_Top)
     {
+        RectFill(_rp(obj), _left(obj), _bottom(child) + 1, _left(obj) + horiz_spacing / 2, _bottom(child) + 1);
+        RectFill(_rp(obj), _right(obj) - horiz_spacing / 2, _bottom(child) + 1, _right(obj), _bottom(child) + 1);
+
         while (child && (child = NextObject(&cstate)))
         {
             RectFill(_rp(obj), _left(child) - horiz_spacing - HORIZ_PADDING, _bottom(child) + 1,
