@@ -1313,31 +1313,9 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
             continue;
         }
 
-//        msg->flags |= MADF_DRAWOBJECT; /* yup, do not forget */
-
-//        child_rect.MinX = _left(child);
-//        child_rect.MinY = _top(child);
-//        child_rect.MaxX = _right(child);
-//        child_rect.MaxY = _bottom(child);
-/*          g_print("intersect: a=(%d, %d, %d, %d) b=(%d, %d, %d, %d)\n", */
-/*                      group_rect.x, group_rect.y, */
-/*                      group_rect.width, group_rect.height, */
-/*                      child_rect.x, child_rect.y, */
-/*                      child_rect.width, child_rect.height); */
-
-//        if (gdk_rectangle_intersect(&group_rect, &child_rect,
-//                                    &muiRenderInfo(obj)->mri_ClipRect))
-//            DoMethodA(child, (Msg)msg);
-/*          if (((msg->flags & MADF_DRAWUPDATE) && data->update) */
-/*              || (data->flags & GROUP_PAGEMODE)) */
         MUI_Redraw(child, MADF_DRAWOBJECT);
-/*          else */
-/*              MUI_Redraw(child, msg->flags); */
         muiRenderInfo(obj)->mri_ClipRect = group_rect;
-/*        g_print("set back clip to (%d, %d, %d, %d)\n", */
-/*        group_rect.x, group_rect.y, group_rect.width, group_rect.height); */
     }
-/*      D(bug("Group_Draw(%p) end\n", obj)); */
 
     if (data->flags & GROUP_VIRTUAL && region && clip != (APTR) - 1)
     {
