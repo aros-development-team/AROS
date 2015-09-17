@@ -1158,8 +1158,6 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
             _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
             _mleft(obj), _mtop(obj), 0);
 
-        data->update = 0;
-
         if (r)
             MUI_RemoveClipRegion(muiRenderInfo(obj), c);
     }
@@ -1310,6 +1308,16 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
         if ((data->flags & GROUP_PAGEMODE) && ((page != data->active_page)
             && (child != data->titlegroup)))
         {
+            continue;
+        }
+
+        if ((data->flags & GROUP_PAGEMODE) && (child == data->titlegroup)
+            && (msg->flags & MADF_DRAWUPDATE) && (data->update == 1))
+        {
+            /* Do not issue a re-draw to title group during page switch.
+             * The group will re-draw itself due to setting of
+             * MUIA_Group_ActivePage attribute.
+             */
             continue;
         }
 
