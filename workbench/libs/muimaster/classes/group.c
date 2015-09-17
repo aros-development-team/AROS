@@ -820,7 +820,12 @@ IPTR Group__MUIM_ExitChange(struct IClass *cl, Object *obj,
 
     data->flags &= ~GROUP_CHANGING;
 
+#if 0
+    /* Code is invalid. ExitChange needs to re-layout each time (tested
+     * with MUI 3.8 and MUI 4.0 on m68k).
+     * This is temporary change until proper implementaion is in place. */
     if (data->flags & GROUP_CHANGED)
+#endif
     {
         data->flags &= ~GROUP_CHANGED;
 
