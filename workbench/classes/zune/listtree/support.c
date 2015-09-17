@@ -112,6 +112,9 @@ BOOPSI_DISPATCHER(IPTR, NListtreeInt_Dispatcher, cl, obj, msg)
         return NListtreeInt__DoDrag(cl, obj, (struct MUIP_DoDrag *)msg);
     case(MUIM_DragQuery):
         return NListtreeInt__DragQuery(cl, obj, (struct MUIP_DragQuery *)msg);
+    case(MUIM_ContextMenuBuild):
+    case(MUIM_ContextMenuChoice):
+        return NListtreeInt__ForwardListree(cl, obj, msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
