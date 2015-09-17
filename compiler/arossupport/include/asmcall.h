@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -105,21 +105,21 @@ typedef unsigned int (*ULONG_FUNC)();
 #if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) /* Function headers for user functions */
 #define AROS_UFH0(t,n) \
     __AROS_UFH_PREFIX t n (void) {
-#define AROS_UFH1S(t,n,a1) \
-    __AROS_UFH_PREFIX static t n (\
-    __AROS_UFHA(a1)\
-    ) {
 #define AROS_UFH1(t,n,a1) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1)\
     ) {
-#define AROS_UFH2S(t,n,a1,a2) \
+#define AROS_UFH1S(t,n,a1) \
     __AROS_UFH_PREFIX static t n (\
-    __AROS_UFHA(a1),\
-    __AROS_UFHA(a2)\
+    __AROS_UFHA(a1)\
     ) {
 #define AROS_UFH2(t,n,a1,a2) \
     __AROS_UFH_PREFIX t n (\
+    __AROS_UFHA(a1),\
+    __AROS_UFHA(a2)\
+    ) {
+#define AROS_UFH2S(t,n,a1,a2) \
+    __AROS_UFH_PREFIX static t n (\
     __AROS_UFHA(a1),\
     __AROS_UFHA(a2)\
     ) {
