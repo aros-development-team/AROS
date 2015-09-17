@@ -402,7 +402,7 @@ static void DrawLeftTab(Object *obj, struct Title_DATA *data, BOOL active,
 }
 
 /* Drawing code */
-IPTR Tab__MUIM_Draw(Object *child, struct Title_DATA *data, LONG active)
+IPTR Tab__MUIM_Draw(Object *child, struct Title_DATA *data, BOOL active)
 {
     WORD x1 = _left(child);
     WORD y1 = _top(child);
@@ -410,18 +410,16 @@ IPTR Tab__MUIM_Draw(Object *child, struct Title_DATA *data, LONG active)
     WORD y2 = _bottom(child);
 
     /* Setting of background (to a different value!) causes redraw of object. We use this "feature" */
-    if (active == 1)
+    if (active)
         nnset(child, MUIA_Background, data->background);
-    else if (active == 0)
-        nnset(child, MUIA_Background, MUII_BACKGROUND);
-    else if (active == -1)
+    else
         nnset(child, MUIA_Background, MUII_BACKGROUND);
 
     /* Draw tab frame */
     if (data->location == MUIV_Tabs_Top)
-        DrawTopTab(child, data, (active == 1), x1, y1, x2, y2);
+        DrawTopTab(child, data, active, x1, y1, x2, y2);
     else if (data->location == MUIV_Tabs_Left)
-        DrawLeftTab(child, data, (active == 1), x1, y1, x2, y2);
+        DrawLeftTab(child, data, active, x1, y1, x2, y2);
 
     return TRUE;
 }
@@ -453,11 +451,11 @@ IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj,
     while ((child = NextObject(&cstate)))
     {
         if (tab == data->activetab)
-            Tab__MUIM_Draw(child, data, 1);
+            Tab__MUIM_Draw(child, data, TRUE);
         else if (tab == data->oldactivetab)
-            Tab__MUIM_Draw(child, data, 0);
+            Tab__MUIM_Draw(child, data, FALSE);
         else if (msg->flags & MADF_DRAWOBJECT)
-            Tab__MUIM_Draw(child, data, -1);
+            Tab__MUIM_Draw(child, data, FALSE);
 
         tab++;
     }
