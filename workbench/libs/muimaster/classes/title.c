@@ -493,9 +493,6 @@ IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj,
     else
         return FALSE;
 
-    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-    WritePixel(_rp(obj), _right(obj), _bottom(obj));
-
     return TRUE;
 }
 
