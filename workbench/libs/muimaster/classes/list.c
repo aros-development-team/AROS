@@ -231,6 +231,26 @@ struct MUI_ListData
 *
 */
 
+/****** List.mui/MUIA_List_First *********************************************
+*
+*   NAME
+*       MUIA_List_First -- (V4) [..G], LONG
+*
+*   FUNCTION
+*       The index of the first entry that can be seen (assuming nothing
+*       obscures the list) This value of this attribute is -1 when the
+*       list's window is not open.
+*
+*   NOTES
+*       Notification does not occur on this attribute in MUI.
+*
+*   SEE ALSO
+*       MUIA_List_First, MUIA_List_Entries
+*
+******************************************************************************
+*
+*/
+
 /****** List.mui/MUIA_List_MultiTestHook *************************************
 *
 *   NAME
@@ -274,6 +294,26 @@ struct MUI_ListData
 *
 *   SEE ALSO
 *       MUIA_List_DisplayHook
+*
+******************************************************************************
+*
+*/
+
+/****** List.mui/MUIA_List_Visible *******************************************
+*
+*   NAME
+*       MUIA_List_Visible -- (V4) [..G], LONG
+*
+*   FUNCTION
+*       The number of entries that can be seen at once with the list's
+*       current dimensions. This value of this attribute is -1 when the
+*       list's window is not open.
+*
+*   NOTES
+*       Notification does not occur on this attribute in MUI.
+*
+*   SEE ALSO
+*       MUIA_List_First, MUIA_List_Entries
 *
 ******************************************************************************
 *
@@ -661,7 +701,8 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
     int old_entries_visible = data->entries_visible;
     int old_entries_top_pixel = data->entries_top_pixel;
 
-    data->entries_visible = (_mheight(data->area) - data->title_height)
+    data->vertprop_visible = data->entries_visible =
+        (_mheight(data->area) - data->title_height)
         / (data->entry_maxheight /* + data->prefs_linespacing */ );
 
     /* Distribute extra vertical space evenly between top and bottom of
@@ -672,6 +713,12 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
         -
         data->entries_visible *
         (data->entry_maxheight /* + data->prefs_linespacing */ )) / 2;
+
+    if (data->entries_visible != old_entries_visible)
+    {
+        superset(cl, obj, MUIA_List_Visible, data->entries_visible);
+        superset(cl, obj, MUIA_List_VertProp_Visible, data->entries_visible);
+    }
 
     return (old_entries_visible != data->entries_visible)
         || (old_entries_top_pixel != data->entries_top_pixel);
@@ -859,6 +906,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->area_connected = FALSE;
     data->vert_connected = FALSE;
 
+    data->entries_visible = data->vertprop_visible = -1;
     data->last_active = -1;
 
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
@@ -2246,9 +2294,37 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_List_Insert
-**************************************************************************/
+/****** List.mui/MUIM_List_Insert ********************************************
+*
+*   NAME
+*       MUIM_List_Insert (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Insert, APTR *entries, LONG count, LONG pos);
+*
+*   FUNCTION
+*       Adds multiple entries to the list. If a construct hook has been
+*       installed, the results of passing the entries to this hook will be
+*       inserted.
+*
+*   INPUTS
+*       entries - an array of entries to be inserted.
+*       count - the number of entries to insert. A special value of -1 may be
+*           used, indicating that the array of entries is NULL-terminated.
+*       pos - the index at which to insert the new entries. The following
+*           special values can also be used:
+*           MUIV_List_Insert_Top: insert at index 0.
+*           MUIV_List_Insert_Bottom: insert after all existing entries.
+*           MUIV_List_Insert_Active: insert at the index of the active entry
+*               (or at index 0 if there is no active entry).
+*           MUIV_List_Insert_Sorted: keep the list sorted.
+*
+*   SEE ALSO
+*       MUIM_List_Insertsingle, MUIM_List_Remove, MUIA_List_ConstructHook.
+*
+******************************************************************************
+*
+*/
 
 IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
     struct MUIP_List_Insert *msg)
@@ -2352,6 +2428,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
         toinsert++;
         pos++;
     }
+    pos--;
 
     /* Recalculate the number of visible entries */
     if (_flags(obj) & MADF_SETUP)
@@ -2383,13 +2460,41 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
     data->insert_position = pos;
+    superset(cl, obj, MUIA_List_InsertPosition, pos);
 
     return (ULONG) pos;
 }
 
-/**************************************************************************
- MUIM_List_InsertSingle
-**************************************************************************/
+/****** List.mui/MUIM_List_InsertSingle **************************************
+*
+*   NAME
+*       MUIM_List_InsertSingle (V7)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_InsertSingle, APTR entry, LONG pos);
+*
+*   FUNCTION
+*       Adds a single entry to the list. If a construct hook has been
+*       installed, the result of passing the entry to this hook will be
+*       inserted.
+*
+*   INPUTS
+*       entry - the entry to be inserted.
+*       pos - the index at which to insert the new entry. The following
+*           special values can also be used:
+*           MUIV_List_Insert_Top: insert at index 0.
+*           MUIV_List_Insert_Bottom: insert after all existing entries.
+*           MUIV_List_Insert_Active: insert at the index of the active entry
+*               (or at index 0 if there is no active entry).
+*           MUIV_List_Insert_Sorted: keep the list sorted.
+*
+*   SEE ALSO
+*       MUIM_List_Insert, MUIM_List_Remove, MUIA_List_ConstructHook.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_InsertSingle(struct IClass *cl, Object *obj,
     struct MUIP_List_InsertSingle *msg)
 {
