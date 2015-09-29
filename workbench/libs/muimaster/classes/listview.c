@@ -65,41 +65,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
- OM_SET
-**************************************************************************/
-IPTR Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
-{
-    struct TagItem *tag, *tags;
-    IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
-    struct MUI_ListviewData *data = INST_DATA(cl, obj);
-
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
-    {
-        switch (tag->ti_Tag)
-        {
-        case MUIA_List_CompareHook:
-        case MUIA_List_ConstructHook:
-        case MUIA_List_DestructHook:
-        case MUIA_List_DisplayHook:
-        case MUIA_List_VertProp_First:
-        case MUIA_List_Format:
-        case MUIA_List_VertProp_Entries:
-        case MUIA_List_VertProp_Visible:
-        case MUIA_List_Active:
-        case MUIA_List_First:
-        case MUIA_List_Visible:
-        case MUIA_List_Entries:
-        case MUIA_List_Quiet:
-            SetAttrs(data->list, MUIA_NoNotify, no_notify, tag->ti_Tag,
-                tag->ti_Data, TAG_DONE);
-            break;
-        }
-    }
-
-    return DoSuperMethodA(cl, obj, (Msg) msg);
-}
-
-/**************************************************************************
  OM_GET
 **************************************************************************/
 IPTR Listview__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
@@ -210,8 +175,6 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-    case OM_SET:
-        return Listview__OM_SET(cl, obj, (struct opSet *)msg);
     case OM_GET:
         return Listview__OM_GET(cl, obj, (struct opGet *)msg);
     case OM_NEW:
