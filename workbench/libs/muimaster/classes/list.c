@@ -208,6 +208,48 @@ struct MUI_ListData
 #define LIST_QUIET         (1<<5)
 
 
+/****** List.mui/MUIA_List_Active ********************************************
+*
+*   NAME
+*       MUIA_List_Active -- (V4) [ISG], LONG
+*
+*   FUNCTION
+*       The index of the active entry. There can be at most one active entry
+*       in a list. The active entry is highlighted visibly, except for
+*       read-only lists (those whose Listview has MUIA_Listview_Input set to
+*       FALSE). Selecting an entry with the mouse, or moving through the list
+*       with keyboard controls will also change the active entry (again
+*       excepting read-only lists).
+*
+*       When set programmatically through this attribute, some special values
+*       can be used:
+*
+*           MUIV_List_Active_Off
+*           MUIV_List_Active_Top
+*           MUIV_List_Active_Bottom
+*           MUIV_List_Active_Up
+*           MUIV_List_Active_Down
+*           MUIV_List_Active_PageUp
+*           MUIV_List_Active_PageDown
+*
+*       When this attribute is read, either the index of the active entry or
+*       the special value MUIV_List_Active_Off will be returned.
+*
+*       Setting this attribute to a new value will additionally have the same
+*       effect as calling the MUIM_List_Jump method with the specified or
+*       implied index.
+*
+*   NOTES
+*       The concept of an active entry must not be confused with that of a
+*       selected entry.
+*
+*   SEE ALSO
+*       MUIM_List_Jump, MUIM_List_Select, MUIA_Listview_Input
+*
+******************************************************************************
+*
+*/
+
 /****** List.mui/MUIA_List_CompareHook ***************************************
 *
 *   NAME
@@ -1271,7 +1313,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     LONG old = data->entries_active;
                     data->entries_active = new_entries_active;
 
-                    /* Selectchange stuff */
+                    /* SelectChange stuff */
                     if (new_entries_active != -1)
                     {
                         DoMethod(obj, MUIM_List_SelectChange,
@@ -1283,12 +1325,15 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                         DoMethod(obj, MUIM_List_SelectChange,
                             MUIV_List_Active_Off, MUIV_List_Select_Off, 0);
 
-                    data->update = 2;
-                    data->update_pos = old;
-                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-                    data->update = 2;
-                    data->update_pos = data->entries_active;
-                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                    if (!data->read_only)
+                    {
+                        data->update = 2;
+                        data->update_pos = old;
+                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                        data->update = 2;
+                        data->update_pos = data->entries_active;
+                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                    }
 
                     /* Make new active entry visible (if there is one and
                        list is visible) */
@@ -1829,9 +1874,9 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             /* Choose appropriate highlight image */
 
             if (entry_pos == data->entries_active
-                && entry->flags & ENTRY_SELECTED)
+                && (entry->flags & ENTRY_SELECTED) && !data->read_only)
                 highlight = data->list_selcur;
-            else if (entry_pos == data->entries_active)
+            else if (entry_pos == data->entries_active && !data->read_only)
                 highlight = data->list_cursor;
             else if (entry->flags & ENTRY_SELECTED)
                 highlight = data->list_select;
