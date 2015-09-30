@@ -153,6 +153,7 @@ STDC := \
     strlcat \
     strlcpy \
     strlen \
+    strnlen \
     strlwr \
     strncasecmp \
     strncat \
@@ -317,6 +318,7 @@ STDC_STATIC := \
     strlcat \
     strlcpy \
     strlen \
+    strnlen \
     strlwr \
     strncasecmp \
     strncat \
