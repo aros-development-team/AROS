@@ -21,7 +21,7 @@ endif
 HOSTDIR     := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 TOOLDIR     := $(HOSTDIR)/tools
 
-HOSTGENDIR  := $(HOSTDIR)/gen
+HOSTGENDIR  := $(HOSTDIR)/gen/host
 
 # All files corresponding to a specific target go here.
 TARGETDIR   := $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)
