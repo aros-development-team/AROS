@@ -43,4 +43,5 @@ ID	Driver		Author			E-Mail
 38	Trid. 4DWAVE-DX	Marcus Comstedt
 39	ac97/AROS	Michal Schulz		<michal.schulz@gmx.de>
 3E	HDAudio/AROS	Davy Wentzler		<info@audio-evolution.com>
+42	Alsa/AROS	Krzysztof Smiechowicz		<deadwood@wp.pl>
 200	via-ac97/AROS	Davy Wentzler		<info@audio-evolution.com>
