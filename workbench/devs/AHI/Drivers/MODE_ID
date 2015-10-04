@@ -35,10 +35,12 @@ ID	Driver		Author			E-Mail
 30	FM 801		Benjamin Vernoux	<bvernoux@wanadoo.fr>
 31	???/Mediator	Pawel Stypula		<pawelS@elbox.com>
 32	FM 801/AOS4	Davy Wentzler		<info@audio-evolution.com>
-33	AROS/hosted	Martin Blom		<martin@blom.org>
+33	OSS/AROS	Martin Blom		<martin@blom.org>
 34	SB128/AOS4	Ross Vumbaca		<rossv1@optushome.com.au>
 35	CMI8738/AOS4	Davy Wentzler		<info@audio-evolution.com>
 36	ICE1724/AOS4	Davy Wentzler		<info@audio-evolution.com>
 37	ICE1712/AOS4	Davy Wentzler		<info@audio-evolution.com>
 38	Trid. 4DWAVE-DX	Marcus Comstedt
-39	i8x0/AROS	Michal Schulz		<michal.schulz@gmx.de>
+39	ac97/AROS	Michal Schulz		<michal.schulz@gmx.de>
+3E	HDAudio/AROS	Davy Wentzler		<info@audio-evolution.com>
+200	via-ac97/AROS	Davy Wentzler		<info@audio-evolution.com>
