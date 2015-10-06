@@ -69,7 +69,7 @@ static const CONST_STRPTR list_move1_modes[] =
 static const CONST_STRPTR list_move2_modes[] =
     {"Index", "Top", "Active", "Bottom", "Next", "Previous", NULL};
 static const CONST_STRPTR list_jump_modes[] =
-    {"Index", "Top", "Active", "Bottom", "Up", "Down", NULL};
+    {"Index", "Top", "Active", "Bottom", "Down", "Up", NULL};
 static const CONST_STRPTR list_insert_modes[] =
     {"Index", "Top", "Active", "Sorted", "Bottom", NULL};
 static const CONST_STRPTR list_remove_modes[] =
@@ -162,10 +162,12 @@ static struct
         *visible_text,
         *first_text,
         *insert_text,
+        *active_text,
         *multi_lists[MULTI_LIST_COUNT],
         *format_string,
         *column_string,
         *column_text,
+        *def_column_string,
         *showheadings_check;
     LONG quiet[LIST_COUNT];
 }
@@ -348,6 +350,36 @@ static void UpdateListInfo(void)
         "%ld", value);
     GET(list.lists[i], MUIA_List_InsertPosition, &value);
     DoMethod(list.insert_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
+    GET(list.lists[i], MUIA_List_Active, &value);
+    if (value == MUIV_List_Active_Off)
+        SET(list.active_text, MUIA_Text_Contents, "N/A");
+    else
+        DoMethod(list.active_text, MUIM_SetAsString, MUIA_Text_Contents,
+            "%ld", value);
+}
+
+static void ListGetVisible(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.lists[i], MUIA_List_Visible, &value);
+    DoMethod(list.visible_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
+}
+
+static void ListGetFirst(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.lists[i], MUIA_List_First, &value);
+    DoMethod(list.first_text, MUIM_SetAsString, MUIA_Text_Contents,
         "%ld", value);
 }
 
@@ -828,6 +860,7 @@ int main(void)
     Object *country_radio[2];
     CONST_STRPTR title;
     UWORD i;
+    LONG value;
 
     static char *pages[] =
         {"General", "Text", "Boopsi", "Color", "Edit", "List", "Gauges",
@@ -1704,8 +1737,12 @@ int main(void)
                                     MUI_MakeObject(MUIO_Button, "Activate"),
                                 Child, list.deactivate_button =
                                     MUI_MakeObject(MUIO_Button, "Deactivate"),
-                                Child, HVSpace,
-                                Child, HVSpace,
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Active index:", 0),
+                                Child, list.active_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
+                                    End,
                                 End,
                             End,
                         Child, VGroup,
@@ -1723,6 +1760,7 @@ int main(void)
                                             End,
                                         MUIA_Listview_MultiSelect,
                                             MUIV_Listview_MultiSelect_None,
+                                        MUIA_Listview_DefClickColumn, 1,
                                         MUIA_CycleChain, 1,
                                         End,
                                     End,
@@ -1761,6 +1799,14 @@ int main(void)
                                     "Show column headings", 0),
                                 End,
                             Child, HGroup,
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Default clicked column:", 0),
+                                Child, list.def_column_string = StringObject,
+                                    StringFrame,
+                                    MUIA_String_Accept, (IPTR)digits,
+                                    MUIA_String_Integer, -1,
+                                    MUIA_CycleChain, 1,
+                                    End,
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Clicked column:", 0),
                                 Child, list.column_string = StringObject,
@@ -2233,8 +2279,9 @@ int main(void)
         DoMethod(yellow_button, MUIM_Notify, MUIA_Pressed, FALSE, pendisplay,
             4, MUIM_Pendisplay_SetRGB, 0xffffffff, 0xffffffff, 0);
 
-        /* list */
+        /* Notifications and set-up for list objects */
         set(list.showdropmarks_check, MUIA_Selected, TRUE);
+        UpdateListInfo();
         for (i = 0; i < LIST_COUNT; i++)
         {
             DoMethod(list.lists[i], MUIM_Notify, MUIA_Listview_DoubleClick,
@@ -2244,14 +2291,17 @@ int main(void)
                 MUIV_EveryTime, list.entries_text, 4, MUIM_SetAsString,
                 MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
             DoMethod(list.lists[i], MUIM_Notify, MUIA_List_Visible,
-                MUIV_EveryTime, list.visible_text, 4, MUIM_SetAsString,
-                MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+                MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+                ListGetVisible);
             DoMethod(list.lists[i], MUIM_Notify, MUIA_List_First,
-                MUIV_EveryTime, list.first_text, 4, MUIM_SetAsString,
-                MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+                MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+                ListGetFirst);
             DoMethod(list.lists[i], MUIM_Notify, MUIA_List_InsertPosition,
                 MUIV_EveryTime, list.insert_text, 4, MUIM_SetAsString,
                 MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+            DoMethod(list.lists[i], MUIM_Notify, MUIA_List_Active,
+                MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+                UpdateListInfo);
         }
         DoMethod(list.dragsortable_check, MUIM_Notify, MUIA_Selected,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
@@ -2305,6 +2355,8 @@ int main(void)
             UpdateListInfo);
 
         set(list.showheadings_check, MUIA_Selected, TRUE);
+        SET(list.def_column_string, MUIA_String_Integer,
+            XGET(list.multi_lists[0], MUIA_Listview_DefClickColumn));
         DoMethod(list.format_string, MUIM_Notify, MUIA_String_Acknowledge,
             MUIV_EveryTime, list.multi_lists[1], 3, MUIM_Set,
             MUIA_List_Format, MUIV_TriggerValue);
@@ -2313,6 +2365,10 @@ int main(void)
             DoMethod(list.showheadings_check, MUIM_Notify, MUIA_Selected,
                 MUIV_EveryTime, list.multi_lists[i], 3, MUIM_Set,
                 MUIA_List_Title, MUIV_TriggerValue);
+            DoMethod(list.def_column_string, MUIM_Notify,
+                MUIA_String_Integer,
+                MUIV_EveryTime, list.multi_lists[i], 3, MUIM_Set,
+                MUIA_Listview_DefClickColumn, MUIV_TriggerValue);
             DoMethod(list.multi_lists[i], MUIM_Notify,
                 MUIA_Listview_ClickColumn, MUIV_EveryTime,
                 list.column_string, 3, MUIM_Set, MUIA_String_Integer,
@@ -2355,6 +2411,12 @@ int main(void)
             TRUE, drawer_iconlist, 3, MUIM_CallHook, &hook_standard,
             drawer_doubleclicked);
 #endif
+
+        /* automatic tests */
+        get(list.lists[0], MUIA_List_Visible, &value);
+        if (value != -1)
+            printf("MUIA_List_Visible equals %ld before display,"
+                " but it should be -1.\n", (long)value);
 
         set(wnd, MUIA_Window_Open, TRUE);
         set(wnd, MUIA_Window_ScreenTitle, "Zune Test application");
