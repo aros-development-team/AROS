@@ -19,6 +19,40 @@ struct MUI_ListviewData
     Object *list;
 };
 
+/****** Listview.mui/MUIA_Listview_DefClickColumn ****************************
+*
+*   NAME
+*       MUIA_Listview_DefClickColumn -- (V7) [ISG], LONG
+*
+*   FUNCTION
+*       The default value to be returned for MUIA_Listview_ClickColumn when a
+*       list entry is "double clicked" by pressing the "press" key (usually
+*       return/enter). The default default is zero.
+*
+*   SEE ALSO
+*       MUIA_Listview_ClickColumn
+*
+******************************************************************************
+*
+*/
+
+/****** Listview.mui/MUIA_Listview_DoubleClick *******************************
+*
+*   NAME
+*       MUIA_Listview_DoubleClick -- (V4) [I.G], BOOL
+*
+*   FUNCTION
+*       Set to TRUE when a list entry is double-clicked or the "press" key
+*       (usually return/enter) is received.
+*
+*   SEE ALSO
+*       MUIA_Listview_ClickColumn, MUIA_Listview_DefClickColumn,
+*       MUIA_Listview_SelectChange
+*
+******************************************************************************
+*
+*/
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/

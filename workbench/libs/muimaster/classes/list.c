@@ -1081,6 +1081,10 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Listview_DoubleClick:
             data->doubleclick = tag->ti_Data != 0;
             break;
+
+        case MUIA_Listview_DefClickColumn:
+            data->def_click_column = tag->ti_Data;
+            break;
         }
     }
 
@@ -1445,6 +1449,10 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Listview_MultiSelect: /* private set */
             data->multiselect = tag->ti_Data;
             break;
+
+        case MUIA_Listview_DefClickColumn:
+            data->def_click_column = tag->ti_Data;
+            break;
         }
     }
 
@@ -1510,6 +1518,9 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         return 1;
     case MUIA_Listview_List:
         STORE = (IPTR)obj;
+        return 1;
+    case MUIA_Listview_DefClickColumn:
+        STORE = data->def_click_column;
         return 1;
     }
 
@@ -2035,9 +2046,43 @@ IPTR List__MUIM_Clear(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_List_Exchange
-**************************************************************************/
+/****** List.mui/MUIM_List_Exchange ******************************************
+*
+*   NAME
+*       MUIM_List_Exchange (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Exchange, LONG pos1, LONG pos2);
+*
+*   FUNCTION
+*       Exchange two entries' positions.
+*
+*   INPUTS
+*       pos1 - the current index of the first entry that should be moved, or
+*           one of these special values:
+*               MUIV_List_Exchange_Active: the active entry.
+*               MUIV_List_Exchange_Top: the first entry.
+*               MUIV_List_Exchange_Bottom: the last entry.
+*       pos2 - the index of the entry that the first entry should be exchanged
+*           with, or one of these special values:
+*               MUIV_List_Exchange_Active: the active entry.
+*               MUIV_List_Exchange_Top: the first entry.
+*               MUIV_List_Exchange_Bottom: the last entry.
+*               MUIV_List_Exchange_Next: the next entry after pos1.
+*               MUIV_List_Exchange_Previous: the previous entry before pos1.
+*
+*   NOTES
+*       This method will do nothing if either index is greater than the last
+*       index in the list, or if MUIV_List_Exchange_Next or
+*       MUIV_List_Exchange_Previous imply an index outside the list.
+*
+*   SEE ALSO
+*       MUIM_List_Move
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_Exchange(struct IClass *cl, Object *obj,
     struct MUIP_List_Exchange *msg)
 {
@@ -2375,7 +2420,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
     struct MUIP_List_Insert *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos, count, sort;
+    LONG pos, count, sort, active;
 
     count = msg->count;
     sort = 0;
@@ -2421,6 +2466,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
             pos = msg->pos;
         break;
     }
+    data->insert_position = pos;
 
     if (!(SetListSize(data, data->entries_num + count)))
         return ~0;
@@ -2504,8 +2550,14 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
         data->update = 1;
         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
-    data->insert_position = pos;
-    superset(cl, obj, MUIA_List_InsertPosition, pos);
+    superset(cl, obj, MUIA_List_InsertPosition, data->insert_position);
+
+    /* Update index of active entry */
+    if (data->entries_active >= data->insert_position)
+    {
+        active = data->entries_active + count;
+        SET(obj, MUIA_List_Active, active);
+    }
 
     return (ULONG) pos;
 }
@@ -2826,6 +2878,9 @@ IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
 *       Sort the list's entries according to the current comparison hook
 *       (MUIA_List_CompareHook).
 *
+*   NOTES
+*       The active index does not change, so the active entry may do so.
+*
 *   SEE ALSO
 *       MUIA_List_CompareHook, MUIM_List_Compare.
 *
@@ -2896,6 +2951,12 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
 *               MUIV_List_Move_Active: the active entry.
 *               MUIV_List_Move_Top: the first entry.
 *               MUIV_List_Move_Bottom: the last entry.
+*
+*   NOTES
+*       The active index does not change, so the active entry may do so.
+*
+*   SEE ALSO
+*       MUIM_List_Exchange
 *
 ******************************************************************************
 *
@@ -2968,6 +3029,7 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
         data->entries[to] = backup;
     }
 
+#if 0    /* Not done in MUI 3 */
     /* Update index of active entry */
     if (from == data->entries_active)
         data->entries_active = to;
@@ -2975,6 +3037,7 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
         data->entries_active--;
     else if (data->entries_active < from && data->entries_active >= to)
         data->entries_active++;
+#endif
 
     /* Reflect list changes visually */
     data->update = 1;
@@ -3439,6 +3502,13 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
         case MUIKEY_DOWN:
             new_active = MUIV_List_Active_Down;
+            break;
+
+        case MUIKEY_PRESS:
+            data->click_column = data->def_click_column;
+            superset(cl, obj, MUIA_Listview_ClickColumn,
+                data->click_column);
+            set(obj, MUIA_Listview_DoubleClick, TRUE);
             break;
 
         case MUIKEY_PAGEUP:
