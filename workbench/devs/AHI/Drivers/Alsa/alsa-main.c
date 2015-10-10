@@ -75,12 +75,7 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
             struct DriverBase*      AHIsubBase )
 {
   struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
-
-  //TODO
-  // NOTE! A Real sound card driver would allocate *and lock* the
-  // audio hardware here. If this function gets called a second time,
-  // and the hardware is not capable of handling several audio streams
-  // at the same time, return AHISF_ERROR now!
+  ULONG freq = AudioCtrl->ahiac_MixFreq;
 
   AudioCtrl->ahiac_DriverData = AllocVec( sizeof( struct AlsaData ),
          MEMF_CLEAR | MEMF_PUBLIC );
@@ -102,11 +97,23 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
     return AHISF_ERROR;
   }
 
-  return ( AHISF_KNOWHIFI |
-       AHISF_KNOWSTEREO |
-       AHISF_KNOWMULTICHANNEL |
-       AHISF_MIXING |
-       AHISF_TIMING );
+  dd->alsahandle = ALSA_Open();
+
+  if (dd->alsahandle == NULL)
+  {
+    return AHISF_ERROR;
+  }
+
+  if (!ALSA_SetHWParams(dd->alsahandle, &freq))
+  {
+      ALSA_Close(dd->alsahandle);
+      dd->alsahandle = NULL;
+      return AHISF_ERROR;
+  }
+
+  AudioCtrl->ahiac_MixFreq = freq;
+
+  return ( AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING );
 }
 
 
@@ -122,6 +129,7 @@ _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
 
   if( AudioCtrl->ahiac_DriverData != NULL )
   {
+    ALSA_Close(dd->alsahandle);
     FreeSignal( dd->mastersignal );
     FreeVec( AudioCtrl->ahiac_DriverData );
     AudioCtrl->ahiac_DriverData = NULL;

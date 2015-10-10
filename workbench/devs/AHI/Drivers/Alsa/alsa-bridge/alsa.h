@@ -7,3 +7,12 @@
 
 BOOL ALSA_Init();
 VOID ALSA_Cleanup();
+
+APTR ALSA_Open();
+VOID ALSA_Close(APTR handle);
+
+BOOL ALSA_SetHWParams(APTR handle, ULONG * rate);
+
+ULONG ALSA_Write(APTR handle, APTR buffer, ULONG size);
+
+VOID ALSA_Prepare(APTR handle);
