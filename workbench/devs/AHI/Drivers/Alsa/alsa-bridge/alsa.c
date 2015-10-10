@@ -77,5 +77,9 @@ VOID ALSA_Prepare(APTR handle)
 
 LONG ALSA_Avail(APTR handle)
 {
-    return ALSACALL(snd_pcm_avail_update, handle);
+    LONG rc = ALSACALL(snd_pcm_avail_update, handle);
+    if (rc == -EPIPE)
+        rc = ALSA_XRUN;
+
+    return rc;
 }

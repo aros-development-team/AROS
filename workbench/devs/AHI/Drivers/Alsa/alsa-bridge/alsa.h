@@ -5,6 +5,8 @@
 
 #include <exec/types.h>
 
+#define ALSA_XRUN   (-32)
+
 BOOL ALSA_Init();
 VOID ALSA_Cleanup();
 
