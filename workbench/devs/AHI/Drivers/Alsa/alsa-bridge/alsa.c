@@ -49,18 +49,33 @@ BOOL ALSA_SetHWParams(APTR handle, ULONG * rate)
             SND_PCM_FORMAT_S16_LE);
     ALSACALL(snd_pcm_hw_params_set_channels, handle, hw_params, 2);
     r = ALSACALL(snd_pcm_hw_params_set_rate_near, handle, hw_params, rate, &dir);
+    ALSACALL(snd_pcm_hw_params_set_buffer_size, handle, hw_params, 4096);
+
     ALSACALL(snd_pcm_hw_params, handle, hw_params);
     ALSACALL(snd_pcm_hw_params_free, hw_params);
 
     return (r >= 0);
 }
 
-ULONG ALSA_Write(APTR handle, APTR buffer, ULONG size)
+LONG ALSA_Write(APTR handle, APTR buffer, ULONG size)
 {
-    return ALSACALL(snd_pcm_writei, handle, buffer, (snd_pcm_uframes_t)size);
+    LONG rc = ALSACALL(snd_pcm_writei, handle, buffer, (snd_pcm_uframes_t)size);
+
+    if (rc == -EPIPE)
+    {
+        ALSACALL(snd_pcm_prepare, handle);
+        rc = ALSACALL(snd_pcm_writei, handle, buffer, (snd_pcm_uframes_t)size);
+    }
+
+    return rc;
 }
 
 VOID ALSA_Prepare(APTR handle)
 {
     ALSACALL(snd_pcm_prepare, handle);
+}
+
+LONG ALSA_Avail(APTR handle)
+{
+    return ALSACALL(snd_pcm_avail_update, handle);
 }

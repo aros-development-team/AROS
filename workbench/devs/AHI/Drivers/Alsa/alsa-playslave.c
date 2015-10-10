@@ -68,10 +68,21 @@ Slave( struct ExecBase* SysBase )
       }
       else
       {
+        while(TRUE)
+        {
+          LONG avail = ALSA_Avail(dd->alsahandle);
+          if (avail > 1024)
+            break;
+          Delay(1);
+        }
+
+
         CallHookPkt( AudioCtrl->ahiac_PlayerFunc, AudioCtrl, NULL );
         CallHookPkt( AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer );
 
-        LONG l = ALSA_Write(dd->alsahandle, dd->mixbuffer, AudioCtrl->ahiac_BuffSamples);
+        ALSA_Write(dd->alsahandle, dd->mixbuffer, AudioCtrl->ahiac_BuffSamples);
+
+        CallHookA(AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0);
       }
     }
   }
