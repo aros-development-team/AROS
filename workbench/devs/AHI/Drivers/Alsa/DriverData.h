@@ -20,12 +20,16 @@ struct AlsaBase
 struct AlsaData
 {
     struct DriverData   driverdata;
+    UBYTE               flags;
+    UBYTE               pad1;
     BYTE                mastersignal;
     BYTE                slavesignal;
     struct Process*     mastertask;
     struct Process*     slavetask;
     struct AlsaBase*    ahisubbase;
     APTR                mixbuffer;
+
+    APTR                alsahandle;
 };
 
 

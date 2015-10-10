@@ -71,10 +71,7 @@ Slave( struct ExecBase* SysBase )
         CallHookPkt( AudioCtrl->ahiac_PlayerFunc, AudioCtrl, NULL );
         CallHookPkt( AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer );
 
-        // TODO
-        // The mixing buffer is now filled with AudioCtrl->ahiac_BuffSamples
-        // of sample frames (type AudioCtrl->ahiac_BuffType). Send them
-        // to the sound card here.
+        LONG l = ALSA_Write(dd->alsahandle, dd->mixbuffer, AudioCtrl->ahiac_BuffSamples);
       }
     }
   }
