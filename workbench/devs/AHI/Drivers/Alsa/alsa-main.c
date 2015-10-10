@@ -188,7 +188,7 @@ _AHIsub_Start( ULONG                   flags,
     {
       { NP_Entry,     (IPTR) &slaveentry },
       { NP_Name,      (IPTR) LibName     },
-      { NP_Priority,  50                  },
+      { NP_Priority,  127                 },
       { TAG_DONE,     0                   }
     };
 
