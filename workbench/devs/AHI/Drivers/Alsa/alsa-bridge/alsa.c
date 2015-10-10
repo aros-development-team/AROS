@@ -62,10 +62,7 @@ LONG ALSA_Write(APTR handle, APTR buffer, ULONG size)
     LONG rc = ALSACALL(snd_pcm_writei, handle, buffer, (snd_pcm_uframes_t)size);
 
     if (rc == -EPIPE)
-    {
-        ALSACALL(snd_pcm_prepare, handle);
-        rc = ALSACALL(snd_pcm_writei, handle, buffer, (snd_pcm_uframes_t)size);
-    }
+        rc = ALSA_XRUN;
 
     return rc;
 }

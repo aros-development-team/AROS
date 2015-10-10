@@ -103,7 +103,14 @@ Slave( struct ExecBase* SysBase )
             framesptr = dd->mixbuffer;
           }
 
-          written = ALSA_Write(dd->alsahandle, framesptr, min(framesready, framesfree));
+          written = ALSA_Write(dd->alsahandle, framesptr, min(framesready,
+                  framesfree));
+          if (written == ALSA_XRUN)
+          {
+              ALSA_Prepare(dd->alsahandle);
+              written = ALSA_Write(dd->alsahandle, framesptr, min(framesready,
+                      framesfree));
+          }
 
           framesready -= written;
           framesfree  -= written;
