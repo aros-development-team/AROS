@@ -12,6 +12,8 @@
 #include "DriverData.h"
 #include "library.h"
 
+#include "alsa-bridge/alsa.h"
+
 #define dd ((struct AlsaData*) AudioCtrl->ahiac_DriverData)
 
 #define min(a,b) ( (a) < (b) ? (a) : (b) )
@@ -77,6 +79,12 @@ Slave( struct ExecBase* SysBase )
         while(TRUE)
         {
           framesfree = ALSA_Avail(dd->alsahandle);
+          if (framesfree == ALSA_XRUN)
+          {
+              ALSA_Prepare(dd->alsahandle);
+              framesfree = ALSA_Avail(dd->alsahandle);
+          }
+
           if (framesfree > 1024)
             break;
           Delay(1);
