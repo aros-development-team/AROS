@@ -22,10 +22,13 @@ static const char *alsa_func_names[] =
     "snd_pcm_hw_params_set_channels",
     "snd_pcm_hw_params",
     "snd_pcm_prepare",
-    "snd_pcm_writei"
+    "snd_pcm_writei",
+    "snd_pcm_avail_update",
+    "snd_pcm_hw_params_get_buffer_size",
+    "snd_pcm_hw_params_set_buffer_size"
 };
 
-#define ALSA_NUM_FUNCS (12)
+#define ALSA_NUM_FUNCS (sizeof(alsa_func_names) / sizeof(alsa_func_names[0]))
 
 APTR HostLibBase;
 struct alsa_func alsa_func;

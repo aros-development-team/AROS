@@ -13,6 +13,8 @@ VOID ALSA_Close(APTR handle);
 
 BOOL ALSA_SetHWParams(APTR handle, ULONG * rate);
 
-ULONG ALSA_Write(APTR handle, APTR buffer, ULONG size);
+LONG ALSA_Write(APTR handle, APTR buffer, ULONG size);
 
 VOID ALSA_Prepare(APTR handle);
+
+LONG ALSA_Avail(APTR handle);
