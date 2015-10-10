@@ -14,6 +14,8 @@
 
 #define dd ((struct AlsaData*) AudioCtrl->ahiac_DriverData)
 
+#define min(a,b) ( (a) < (b) ? (a) : (b) )
+
 /******************************************************************************
 ** The slave process **********************************************************
 ******************************************************************************/
@@ -42,6 +44,8 @@ Slave( struct ExecBase* SysBase )
   struct AlsaBase*        AlsaBase;
   BOOL                    running;
   ULONG                   signals;
+  LONG                    framesready = 0;
+  APTR                    framesptr = NULL;
 
   AudioCtrl  = (struct AHIAudioCtrlDrv*) FindTask(NULL)->tc_UserData;
   AHIsubBase = (struct DriverBase*) dd->ahisubbase;
@@ -68,21 +72,37 @@ Slave( struct ExecBase* SysBase )
       }
       else
       {
+        LONG framesfree = 0;
+
         while(TRUE)
         {
-          LONG avail = ALSA_Avail(dd->alsahandle);
-          if (avail > 1024)
+          framesfree = ALSA_Avail(dd->alsahandle);
+          if (framesfree > 1024)
             break;
           Delay(1);
         }
 
+        /* Loop until alsa buffer is filled */
+        while (framesfree > 0)
+        {
+          LONG written;
 
-        CallHookPkt( AudioCtrl->ahiac_PlayerFunc, AudioCtrl, NULL );
-        CallHookPkt( AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer );
+          if (framesready == 0)
+          {
+            CallHookPkt(AudioCtrl->ahiac_PlayerFunc, AudioCtrl, NULL );
+            CallHookPkt(AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer );
+            framesready = AudioCtrl->ahiac_BuffSamples;
+            framesptr = dd->mixbuffer;
+          }
 
-        ALSA_Write(dd->alsahandle, dd->mixbuffer, AudioCtrl->ahiac_BuffSamples);
+          written = ALSA_Write(dd->alsahandle, framesptr, min(framesready, framesfree));
 
-        CallHookA(AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0);
+          framesready -= written;
+          framesfree  -= written;
+          framesptr += written * 4;
+
+          CallHookA(AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0);
+        }
       }
     }
   }
