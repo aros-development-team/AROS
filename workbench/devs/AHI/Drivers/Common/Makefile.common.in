@@ -40,7 +40,7 @@ ARFLAGS         = @ARFLAGS@
 SFDC		= @SFDC@
 
 # Do not link drivers with any library by default
-LIBS		= 
+LIBS		+= 
 
 ifeq ($(DEST),)
   DEST := Devs

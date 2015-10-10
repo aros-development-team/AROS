@@ -4,6 +4,8 @@
 #include "library.h"
 #include "DriverData.h"
 
+#include "alsa-bridge/alsa.h"
+
 /******************************************************************************
 ** Custom driver init *********************************************************
 ******************************************************************************/
@@ -21,18 +23,9 @@ DriverInit( struct DriverBase* AHIsubBase )
     return FALSE;
   }
 
-  //TODO
-  // Fail if no hardware is present (this check prevents the audio
-  // modes from being added to the database if the driver cannot be
-  // used).
+  if (!ALSA_Init())
+      return FALSE;
 
-/*
-  if( unable_to_find_hardware )
-  {
-    Req( "No sound card present.\n" );
-    return FALSE;
-  }
-*/
   return TRUE;
 }
 
@@ -45,6 +38,8 @@ VOID
 DriverCleanup( struct DriverBase* AHIsubBase )
 {
   struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
+
+  ALSA_Cleanup();
 
   CloseLibrary( (struct Library*) DOSBase );
 }
