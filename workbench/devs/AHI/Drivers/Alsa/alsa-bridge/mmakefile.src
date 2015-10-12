@@ -3,7 +3,7 @@
 
 -include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-AHI : AHI-linklibs-alsa-bridge
+##MM- workbench-devs-AHI : AHI-linklibs-alsa-bridge
 
 USER_CFLAGS = -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
