@@ -1,0 +1,12 @@
+# $Id: mmakefile.src 49313 2014-08-12 08:35:41Z DizzyOfCRN $
+include $(TOP)/config/make.cfg
+
+FILES := vusbhci_device vusbhci_commands
+
+#MM kernel-usb-vusbhci : linklibs-vusbhci-bridge
+
+%build_module mmake=kernel-usb-vusbhci \
+    modname=vusbhci modtype=device \
+    moduledir=Devs/USBHardware \
+    files="$(FILES)" \
+    uselibs="stdc.static arossupport libusb-bridge"
