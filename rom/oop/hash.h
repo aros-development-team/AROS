@@ -23,6 +23,7 @@
 /* Types of hashtables. Can hash integers or strings */
 #define HT_INTEGER	1
 #define HT_STRING	2
+#define HT_UUID     3
 
 /* structs */
 
@@ -78,6 +79,7 @@ VOID FreeHash(struct HashTable *ht, VOID (*freebucket)(), struct IntOOPBase *OOP
 
 /* The implemntations of hashtable->HashLookup() */
 struct Bucket *HashLookupULONG(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase);
+struct Bucket *HashLookupUUID(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase);
 struct Bucket *HashLookupStr(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase);
 
 /* Copies all the buckets of one hashtable into an other one.
@@ -102,6 +104,7 @@ VOID RemoveBucket(struct  HashTable *ht, struct Bucket *b);
 /* The implemntations of hashtable->CalcHash() */
 ULONG CalcHashStr(struct HashTable *ht, IPTR id);
 ULONG CalcHashULONG(struct HashTable *ht, IPTR id);
+ULONG CalcHashUUID(struct HashTable *ht, IPTR id);
 
 VOID print_table(struct HashTable *ht, struct IntOOPBase *OOPBase);
 #endif /* HASH_H */

@@ -11,6 +11,7 @@
 
 #include <proto/exec.h>
 #include <exec/memory.h>
+#include <libraries/uuid.h>
 #include <stdlib.h>
 
 #undef SDEBUG
@@ -89,6 +90,10 @@ struct HashTable *NewHash(ULONG entries, UBYTE type, struct IntOOPBase *OOPBase)
 	    	ht->Lookup	= HashLookupStr;
 		ht->CalcHash	= CalcHashStr;
 		break;
+
+	    case HT_UUID:
+	        ht->Lookup = HashLookupUUID;
+	        ht->CalcHash = CalcHashUUID;
 	    }
 	
     	
@@ -149,6 +154,27 @@ struct Bucket *HashLookupULONG(struct HashTable *ht, IPTR id, struct IntOOPBase 
     }
     
     ReturnPtr ("HashLookupULONG", struct Bucket *, NULL);
+}
+
+struct Bucket *HashLookupUUID(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase)
+{
+    struct Bucket *b;
+    uuid_t uuid = *(uuid_t *)id;
+
+    EnterFunc(bug("HashLookupUUID(ht=%p, id={%04lx-%02lx-%02lx-%02x%02x-%02x%02x%02x%02x%02x%02x})\n", ht,
+            uuid.time_low, uuid.time_mid, uuid.time_hi_and_version,
+            uuid.clock_seq_hi_and_reserved, uuid.clock_seq_low,
+            uuid.node[5], uuid.node[4], uuid.node[3], uuid.node[2], uuid.node[1], uuid.node[0]));
+
+    /* Function for looking up integers in the table */
+    for (b = ht->Table[CalcHashUUID(ht, id)]; b; b = b->Next)
+    {
+        D(bug("Current bucket: %p of id %p\n", b, b->ID));
+        if (b->ID == id)
+            ReturnPtr ("HashLookupUUID", struct Bucket *, b);
+    }
+
+    ReturnPtr ("HashLookupUUID", struct Bucket *, NULL);
 }
 
 struct Bucket *HashLookupStr(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase)
@@ -268,11 +294,28 @@ VOID RemoveBucket(struct  HashTable *ht, struct Bucket *b)
      
 }
 
-
 ULONG CalcHashULONG(struct HashTable *ht, IPTR id)
 {
     /* Return idx into hashtable for an integer */
     return  (id % HashMask(ht));
+}
+
+ULONG CalcHashUUID(struct HashTable *ht, IPTR id)
+{
+    ULONG val;
+    union {
+        uuid_t uuid;
+        ULONG uval[4];
+    } uuid;
+
+    uuid.uuid = *(uuid_t *)id;
+
+    val = uuid.uval[0];
+    val ^= uuid.uval[1];
+    val ^= uuid.uval[2];
+    val ^= uuid.uval[3];
+
+    return (val & HashSize(ht));
 }
 
 static ULONG CalcHashStr_KR(struct HashTable *ht, IPTR id)
