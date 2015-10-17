@@ -9,6 +9,8 @@
 
 #include <aros/debug.h>
 
+#define LIBASOUND_SOFILE "libasound.so.2"
+
 static const char *alsa_func_names[] =
 {
     "snd_pcm_open",
@@ -66,7 +68,7 @@ BOOL ALSA_HostLib_Init()
     if (!HostLibBase)
         return FALSE;
 
-    libasoundhandle = hostlib_load_so("libasound.so", alsa_func_names,
+    libasoundhandle = hostlib_load_so(LIBASOUND_SOFILE, alsa_func_names,
             ALSA_NUM_FUNCS, (void **)&alsa_func);
 
     if (!libasoundhandle)
