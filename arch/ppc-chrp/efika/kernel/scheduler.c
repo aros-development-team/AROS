@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -195,7 +195,7 @@ void core_Switch(regs_t *regs)
 
 //        wrmsr(rdmsr() | MSR_EE);
 
-        // warning: fixme
+        /* FIXME */
 #if (0)
         /* Task says byebye. Update the CPU Time now. */
         GetIntETask(task)->iet_CpuTime += mftbu() - GetIntETask(task)->iet_private1;
