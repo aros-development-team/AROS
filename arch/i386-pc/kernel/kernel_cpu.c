@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386 native CPU supplementals for task scheduler
@@ -106,7 +106,7 @@ void cpu_Switch(struct ExceptionContext *regs)
     /* Set task's tc_SPReg */
     task->tc_SPReg = (APTR)regs->esp;
 
-    //warning: fixme
+    /* FIXME */
 #if (0)
     GetIntETask(task)->iet_CpuTime += (RDTSC() - GetIntETask(task)->iet_private1);
 #endif
