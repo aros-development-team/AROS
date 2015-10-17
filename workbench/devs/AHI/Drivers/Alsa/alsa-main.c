@@ -73,7 +73,7 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
 
   if (!ALSA_SetHWParams(dd->alsahandle, &freq))
   {
-      ALSA_Close(dd->alsahandle);
+      ALSA_DropAndClose(dd->alsahandle);
       dd->alsahandle = NULL;
       return AHISF_ERROR;
   }
@@ -96,7 +96,7 @@ _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
 
   if( AudioCtrl->ahiac_DriverData != NULL )
   {
-    ALSA_Close(dd->alsahandle);
+    ALSA_DropAndClose(dd->alsahandle);
     FreeSignal( dd->mastersignal );
     FreeVec( AudioCtrl->ahiac_DriverData );
     AudioCtrl->ahiac_DriverData = NULL;

@@ -18,10 +18,11 @@ struct alsa_func
     int (*snd_pcm_hw_params_set_channels)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val);
     int (*snd_pcm_hw_params)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
     int (*snd_pcm_prepare)(snd_pcm_t *pcm);
-    snd_pcm_sframes_t (*snd_pcm_writei)(snd_pcm_t *pcm, const void *buffer, snd_pcm_uframes_t size);
-    snd_pcm_sframes_t (*snd_pcm_avail_update)(snd_pcm_t *pcm);
+    snd_pcm_sframes_t(*snd_pcm_writei)(snd_pcm_t *pcm, const void *buffer, snd_pcm_uframes_t size);
+    snd_pcm_sframes_t(*snd_pcm_avail_update)(snd_pcm_t *pcm);
     int (*snd_pcm_hw_params_get_buffer_size)(const snd_pcm_hw_params_t *params, snd_pcm_uframes_t *val);
-    int (*snd_pcm_hw_params_set_buffer_size) (snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t val);
+    int (*snd_pcm_hw_params_set_buffer_size)(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t val);
+    int (*snd_pcm_drop)(snd_pcm_t *pcm);
 };
 
 extern struct alsa_func alsa_func;
