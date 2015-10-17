@@ -21,46 +21,13 @@ SlaveEntry( void );
 
 PROCGW( static, void,  slaveentry, SlaveEntry );
 
-
-//TODO
-/*  There is probably no reason to support all these frequencies. If,
- *  for example, your hardware is locked at 48 kHz, it's ok to only
- *  present one single mixing/recording frequency to the user. If your
- *  hardware has internal resamples and accept any frequency, select a
- *  few common ones.
- */
-
 static const LONG frequencies[] =
 {
-  5513,        // CD/8
   8000,     // µ- and A-Law (telephone)
-  9600,     // DAT/5
-  10000,    // VHS monaural track
   11025,    // CD/4
-  12000,    // DAT/4
-  14700,    // CD/3
-  16000,    // DAT/3, FM/2
-  17640,    // CD/2.5
-  18900,
-  19200,    // DAT/2.5
-  20000,    // VHS Hi-Fi/Video track
   22050,    // CD/2
-  24000,    // DAT/2
-  27429,    // Highest Paula/OCS frequency
-  29400,    // CD/1.5
-  31968,    // NTSC FM 2-3 pull-down
-  32000,    // DAT/1.5
-  32032,    // NTSC FM 2-3 pull-up
-  33075,
-  37800,
-  44056,    // NTSC CD 2-3 pull-down
   44100,    // CD
-  44144,    // NTSC CD 2-3 pull-up
-  47952,    // NTSC DAT 2-3 pull-down
-  48000,    // DAT
-  48048,    // NTSC DAT 2-3 pull-up
-  88200,    // CD*2
-  96000     // DAT*2
+  48000     // DAT
 };
 
 #define FREQUENCIES (sizeof frequencies / sizeof frequencies[ 0 ])
