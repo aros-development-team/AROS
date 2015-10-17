@@ -28,10 +28,11 @@ APTR ALSA_Open()
     return handle;
 }
 
-VOID ALSA_Close(APTR handle)
+VOID ALSA_DropAndClose(APTR handle)
 {
     if (handle)
     {
+        ALSACALL(snd_pcm_drop, handle);
         ALSACALL(snd_pcm_close, handle);
     }
 }
