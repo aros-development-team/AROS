@@ -67,7 +67,8 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-package-raspi-arm-missing: \
 #MM kernel-battclock
 
-RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/master/boot
+RASPIFW_BRANCH    := 0c2d73d03316420b9e82898c4571205ec537ab82
+RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf
 
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
