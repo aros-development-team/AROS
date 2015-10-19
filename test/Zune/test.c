@@ -845,6 +845,7 @@ AROS_UFH3S(void, hook_func_standard,
 
 int main(void)
 {
+    APTR pool;
     Object *wnd, *second_wnd;
     Object *open_button;
     Object *about_button;
@@ -897,6 +898,8 @@ int main(void)
 
     hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
 
+    pool = CreatePool(MEMF_ANY, 4096, 4096);
+
     MUIMasterBase = (struct Library *)OpenLibrary("muimaster.library", 0);
 
     hook.h_Entry = (HOOKFUNC) repeat_function;
@@ -930,6 +933,7 @@ int main(void)
             MUIA_List_Title, title,
             MUIA_List_SourceArray, fruits,
             MUIA_List_Active, MUIV_List_Active_Top,
+            MUIA_List_PoolThreshSize, 256,
             MUIA_ShortHelp, "Default scroller\nTop entry active",
             End,
         MUIA_Listview_MultiSelect,
@@ -942,6 +946,7 @@ int main(void)
             InputListFrame,
             MUIA_List_SourceArray, fruits,
             MUIA_List_Active, MUIV_List_Active_Bottom,
+            MUIA_List_PoolPuddleSize, 512,
             MUIA_ShortHelp, "Left scroller\nBottom entry active",
             End,
         MUIA_Listview_ScrollerPos,
@@ -954,6 +959,7 @@ int main(void)
             InputListFrame,
             MUIA_List_SourceArray, fruits,
             MUIA_List_Active, MUIV_List_Active_Off,
+            MUIA_List_Pool, pool,
             MUIA_ShortHelp, "Right scroller\nNo active entry",
             End,
         MUIA_Listview_MultiSelect,
@@ -967,6 +973,7 @@ int main(void)
             ListObject,
             InputListFrame,
             MUIA_List_SourceArray, fruits,
+            MUIA_List_Pool, NULL,
             MUIA_ShortHelp, "No scroller\nDefault active entry",
             End,
         MUIA_Listview_MultiSelect,
@@ -1790,7 +1797,6 @@ int main(void)
                                 Child, MUI_MakeObject(MUIO_Label, "Format:", 0),
                                 Child, list.format_string = StringObject,
                                     StringFrame,
-                                    MUIA_String_Contents, list_format,
                                     MUIA_CycleChain, 1,
                                     End,
                                 Child, list.showheadings_check =
@@ -2354,12 +2360,18 @@ int main(void)
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             UpdateListInfo);
 
-        set(list.showheadings_check, MUIA_Selected, TRUE);
+        SET(list.showheadings_check, MUIA_Selected,
+            XGET(list.multi_lists[0], MUIA_List_Title));
+        SET(list.format_string, MUIA_String_Contents,
+            XGET(list.multi_lists[1], MUIA_List_Format));
         SET(list.def_column_string, MUIA_String_Integer,
             XGET(list.multi_lists[0], MUIA_Listview_DefClickColumn));
         DoMethod(list.format_string, MUIM_Notify, MUIA_String_Acknowledge,
             MUIV_EveryTime, list.multi_lists[1], 3, MUIM_Set,
             MUIA_List_Format, MUIV_TriggerValue);
+        DoMethod(list.multi_lists[1], MUIM_Notify, MUIA_List_Format,
+            MUIV_EveryTime, wnd, 3, MUIM_Set,
+            MUIA_Window_ActiveObject, list.format_string);
         for (i = 0; i < MULTI_LIST_COUNT; i++)
         {
             DoMethod(list.showheadings_check, MUIM_Notify, MUIA_Selected,
@@ -2455,5 +2467,8 @@ int main(void)
     MUI_DeleteCustomClass(CL_DropText);
 
     CloseLibrary(MUIMasterBase);
+
+    DeletePool(pool);
+
     return 0;
 }
