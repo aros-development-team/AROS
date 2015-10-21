@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -35,6 +35,7 @@ void AsyncLayouter(void)
     struct LayoutMessage *lm;
     struct DTSpecialInfo *dtsi;
     Object *object;
+    BOOL done = FALSE;
     
     struct Process *MyProc = (struct Process *)FindTask(NULL);
     
@@ -50,17 +51,31 @@ void AsyncLayouter(void)
    
     lm->lm_gplayout.MethodID = DTM_ASYNCLAYOUT;
     
-    do
+    while (!done)
     {
-	dtsi->si_Flags &= ~DTSIF_NEWSIZE;
-	
 	DoMethodA(object, (Msg)&lm->lm_gplayout);
 	
-    } while(dtsi->si_Flags & DTSIF_NEWSIZE);
-   
-    setattrs((struct Library *)dtb, object, DTA_LayoutProc, NULL, TAG_DONE);
-   
-    dtsi->si_Flags &= ~(DTSIF_LAYOUT | DTSIF_NEWSIZE);
+        ObtainSemaphore(&(GPB(dtb)->dtb_Semaphores[SEM_ASYNC]));
+        if (dtsi->si_Flags & DTSIF_NEWSIZE)
+        {
+            /* Ensure the method is only called once more unless there's
+               another request to restart it */
+            dtsi->si_Flags &= ~DTSIF_NEWSIZE;
+
+            /* Ensure Ctrl-C is cleared in case it was set again after the
+               method saw it, or the method finished without seeing it */
+            CheckSignal(SIGBREAKF_CTRL_C);
+        }
+        else
+        {
+            /* Prepare to exit */
+            dtsi->si_Flags &= ~DTSIF_LAYOUT;
+            setattrs((struct Library *)dtb, object, DTA_LayoutProc, NULL,
+                TAG_DONE);
+            done = TRUE;
+        }
+        ReleaseSemaphore(&(GPB(dtb)->dtb_Semaphores[SEM_ASYNC]));
+    }
    
     ReleaseSemaphore(&dtsi->si_Lock);
    
@@ -103,7 +118,7 @@ void AsyncLayouter(void)
 
     Perform an object's DTM_ASYNCLAYOUT method -- doing it asynchronously
     off loads the input.device. The method should exit when a SIGBREAK_CTRL_C
-    is received; this signal means that the data is obsolete and the the
+    is received; this signal means that the data is obsolete and the
     method will be called again.
 
     INPUTS
@@ -122,8 +137,6 @@ void AsyncLayouter(void)
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
