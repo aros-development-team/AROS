@@ -1,6 +1,6 @@
 /*
     Copyright © 2015, The AROS Development Team. All rights reserved.
-    $Id: libusb_device.h 49315 2014-08-12 09:53:29Z DizzyOfCRN $
+    $Id: vusbhci_device.h 49315 2014-08-12 09:53:29Z DizzyOfCRN $
 
     Desc:
     Lang: English
@@ -43,6 +43,8 @@ struct VUSBHCIPort {
     char                         name[256];
     ULONG                        number;
     ULONG                        state;
+    BOOL                         attachment;
+    BOOL                         detachment;
 };
 
 struct VUSBHCIUnit {
@@ -50,6 +52,7 @@ struct VUSBHCIUnit {
     char                         name[256];
     ULONG                        number;
     ULONG                        state;
+    BOOL                         allocated;
 
     struct VUSBHCIRootHub {
         struct List              port_list;

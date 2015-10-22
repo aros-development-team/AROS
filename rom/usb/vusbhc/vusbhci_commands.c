@@ -1,6 +1,6 @@
 /*
     Copyright © 2015, The AROS Development Team. All rights reserved.
-    $Id: libusb_commands.c 49314 2014-08-12 09:46:08Z DizzyOfCRN $
+    $Id: vusbhci_commands.c 49314 2014-08-12 09:46:08Z DizzyOfCRN $
 
     Desc: VUSBHCI USB host controller
     Lang: English

@@ -30,7 +30,54 @@ static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs,
 BOOL libusb_bridge_init();
 VOID libusb_bridge_cleanup();
 
-static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs, void **funcptr) {
+static libusb_device_handle *handle = NULL;
+int done = 0;
+
+int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event event, void *user_data) {
+    bug("[LIBUSB] Hotplug callback event!\n");
+
+    struct libusb_device_descriptor desc;
+    int rc;
+
+    switch(event) {
+
+        case LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED:
+            bug("[LIBUSB]  - Device attached\n");
+            done++;
+
+            rc = LIBUSBCALL(libusb_get_device_descriptor, dev, &desc);
+            if (LIBUSB_SUCCESS != rc) {
+                bug("[LIBUSB] Failed to read device descriptor\n");
+                return 0;
+            }
+
+            bug("Device attach: %04x:%04x\n", desc.idVendor, desc.idProduct);
+
+            LIBUSBCALL(libusb_open, dev, &handle);
+
+        break;
+
+        case LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT:
+            bug("[LIBUSB]  - Device detached\n");
+            done++;
+
+            if(handle != NULL) {
+                LIBUSBCALL(libusb_close, handle);
+                handle = NULL;
+            }
+
+        break;
+
+        default:
+            bug("[LIBUSB]  - Unknown event arrived\n");
+        break;
+
+    }
+
+  return 0;
+}
+
+void *hostlib_load_so(const char *sofile, const char **names, int nfuncs, void **funcptr) {
     void *handle;
     char *err;
     int i;
@@ -58,6 +105,8 @@ static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs,
 
 BOOL libusb_bridge_init() {
 
+    int rc;
+
     HostLibBase = OpenResource("hostlib.resource");
 
     if (!HostLibBase)
@@ -70,9 +119,33 @@ BOOL libusb_bridge_init() {
 
     if(!LIBUSBCALL(libusb_init, NULL)) {
         bug("[LIBUSB] Checking hotplug support of libusb\n");
-        if (LIBUSBCALL(libusb_has_capability, (LIBUSB_CAP_HAS_HOTPLUG))) {
+        if (LIBUSBCALL(libusb_has_capability, LIBUSB_CAP_HAS_HOTPLUG)) {
             bug("[LIBUSB]  - Hotplug supported\n");
-            return TRUE;
+
+            rc = (LIBUSBCALL(libusb_hotplug_register_callback,
+                            NULL,
+                            (LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED|LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
+                            0,
+                            LIBUSB_HOTPLUG_MATCH_ANY,
+                            LIBUSB_HOTPLUG_MATCH_ANY,
+                            LIBUSB_HOTPLUG_MATCH_ANY,
+                            hotplug_callback_event_handler,
+                            NULL,
+                            NULL)
+            );
+
+            if(rc == LIBUSB_SUCCESS) {
+                bug("[LIBUSB]  - Hotplug callback installed rc = %d\n", rc);
+
+                while (done < 2) {
+                    LIBUSBCALL(libusb_handle_events, NULL);
+                }
+
+                return TRUE;
+            }
+
+            bug("[LIBUSB]  - Hotplug callback installation failure! rc = %d\n", rc);
+
         } else {
             bug("[LIBUSB]  - Hotplug not supported, failing...\n");
             LIBUSBCALL(libusb_exit, NULL);
