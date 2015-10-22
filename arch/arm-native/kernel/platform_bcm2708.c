@@ -161,12 +161,12 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 #endif
 }
 
-static unsigned int bcm2807_get_time(void)
+static unsigned int bcm2708_get_time(void)
 {
     return *((volatile unsigned int *)(SYSTIMER_CLO));
 }
 
-static void bcm2807_irq_init(void)
+static void bcm2708_irq_init(void)
 {
     // disable IRQ's
 //    *(volatile unsigned int *)ARMFIQ_CTRL = 0;
@@ -176,7 +176,7 @@ static void bcm2807_irq_init(void)
     *(volatile unsigned int *)GPUIRQ_DIBL1 = ~0;
 }
 
-static void bcm2807_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
+static void bcm2708_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
 {
     int cpu, mbno = 0;
 
@@ -193,7 +193,7 @@ static void bcm2807_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
     }
 }
 
-static void bcm2807_irq_enable(int irq)
+static void bcm2708_irq_enable(int irq)
 {
     int bank = IRQ_BANK(irq);
     unsigned int reg;
@@ -207,7 +207,7 @@ static void bcm2807_irq_enable(int irq)
     DIRQ(bug("[Kernel:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
 }
 
-static void bcm2807_irq_disable(int irq)
+static void bcm2708_irq_disable(int irq)
 {
     int bank = IRQ_BANK(irq);
     unsigned int reg;
@@ -221,7 +221,7 @@ static void bcm2807_irq_disable(int irq)
     DIRQ(bug("[Kernel:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
 }
 
-static void bcm2807_irq_process()
+static void bcm2708_irq_process()
 {
     unsigned int pendingarm, pending0, pending1, irq;
 
@@ -276,7 +276,7 @@ static void bcm2807_irq_process()
     }
 }
 
-static void bcm2807_fiq_process()
+static void bcm2708_fiq_process()
 {
     int cpunum = GetCPUNumber();
     uint32_t fiq, fiq_data;
@@ -444,13 +444,13 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         /*  bcm2836 uses armv7 */
         krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2836_PERIPHYSBASE;
         krnARMImpl->ARMI_InitCore = &bcm2708_init_cpu;
-        krnARMImpl->ARMI_FIQProcess = &bcm2807_fiq_process;
-        krnARMImpl->ARMI_SendIPI = &bcm2807_send_ipi;
+        krnARMImpl->ARMI_FIQProcess = &bcm2708_fiq_process;
+        krnARMImpl->ARMI_SendIPI = &bcm2708_send_ipi;
     }
     else
         krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2835_PERIPHYSBASE;
 
-    krnARMImpl->ARMI_GetTime = &bcm2807_get_time;
+    krnARMImpl->ARMI_GetTime = &bcm2708_get_time;
     krnARMImpl->ARMI_InitTimer = &bcm2708_init_gputimer;
     krnARMImpl->ARMI_LED_Toggle = &bcm2708_toggle_led;
 
@@ -459,10 +459,10 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     if ((krnARMImpl->ARMI_PutChar = bootPutC) != NULL)
             krnARMImpl->ARMI_PutChar(0xFF); // Clear the display
 
-    krnARMImpl->ARMI_IRQInit = &bcm2807_irq_init;
-    krnARMImpl->ARMI_IRQEnable = &bcm2807_irq_enable;
-    krnARMImpl->ARMI_IRQDisable = &bcm2807_irq_disable;
-    krnARMImpl->ARMI_IRQProcess = &bcm2807_irq_process;
+    krnARMImpl->ARMI_IRQInit = &bcm2708_irq_init;
+    krnARMImpl->ARMI_IRQEnable = &bcm2708_irq_enable;
+    krnARMImpl->ARMI_IRQDisable = &bcm2708_irq_disable;
+    krnARMImpl->ARMI_IRQProcess = &bcm2708_irq_process;
 
     krnARMImpl->ARMI_Init = &bcm2708_init;
 
