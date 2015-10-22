@@ -1,6 +1,6 @@
 /*
     Copyright © 2015, The AROS Development Team. All rights reserved.
-    $Id: libusb_device.c 49314 2014-08-12 09:46:08Z DizzyOfCRN $
+    $Id: vusbhci_device.c 49314 2014-08-12 09:46:08Z DizzyOfCRN $
 
     Desc: Virtual USB2OTG USB host controller
     Lang: English
@@ -92,7 +92,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
         Number of units eg. virtual usb controllers.
         Host controller is divided into individual units if it has both usb2.0 and usb3.0 ports
     */
-    if(unitnum<VUSBHCIBase->unit_count) {
+    if(unitnum < VUSBHCIBase->unit_count) {
 
         if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
             mybug(-1, ("[VUSBHCI] Open: Invalid MN_LENGTH!\n"));
@@ -102,9 +102,16 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
         ioreq->iouh_Req.io_Unit = NULL;
 
         ForeachNode(&VUSBHCIBase->unit_list, unit) {
-            mybug(0, ("[VUSBHCI] Open: Opening unit number %d\n", unitnum));
+            mybug(-1, ("[VUSBHCI] Open: Opening unit number %d\n", unitnum));
             if(unit->number == unitnum) {
-                mybug(0, ("        Found unit from node list %s %p\n\n", unit->name, unit));
+                mybug(-1, ("        Found unit from node list %s %p\n\n", unit->name, unit));
+                if(unit->allocated) {
+                    ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
+                    ioreq->iouh_Req.io_Unit = NULL;
+                    mybug(-1, ("        Found unit form node list %s %p -> already in use!\n\n", unit->name, unit));
+                    break;
+                }
+                unit->allocated = TRUE;
                 ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
                 break;
             }
@@ -128,10 +135,30 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
 static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *ioreq) {
     mybug(-1, ("[VUSBHCI] Close: Entering function\n"));
 
+    struct VUSBHCIUnit *unit;
+
+    /*
+        First check to see if the unit is valid before bashing the memory
+        It might be useless to raise any error condition, as no one checks them.
+    */
+    ForeachNode(&VUSBHCIBase->unit_list, unit) {
+        mybug(-1, ("[VUSBHCI] Close: Closing unit %p\n", ioreq->iouh_Req.io_Unit));
+        if(ioreq->iouh_Req.io_Unit == (struct Unit *)unit) {
+            mybug(-1, ("        Found unit from node list %s %p\n\n", unit->name, unit));
+            unit->allocated = FALSE;
+            ioreq->iouh_Req.io_Unit   = (APTR) -1;
+            ioreq->iouh_Req.io_Device = (APTR) -1;
+
+            return TRUE;
+        }
+    }
+
+    ioreq->iouh_Req.io_Error = IOERR_BADADDRESS;
     ioreq->iouh_Req.io_Unit   = (APTR) -1;
     ioreq->iouh_Req.io_Device = (APTR) -1;
 
-    return TRUE;
+    mybug(-1, ("        Bad unit structure in ioreq, nothing done!\n\n"));
+    return FALSE;
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
@@ -273,6 +300,7 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit(ULONG unitnum) {
         unit->number = unitnum;
         unit->node.ln_Name = (STRPTR)&unit->name;
         unit->state = UHSF_SUSPENDED;
+        unit->allocated = FALSE;
 
         NEWLIST(&unit->roothub.port_list);
         NEWLIST(&unit->roothub.io_queue);
