@@ -598,7 +598,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             switch(req)
             {
                 case USR_SET_FEATURE:
-                    if((!idx) && (idx > numports))
+                    if((!idx) || (idx > numports))
                     {
                         KPRINTF(20, ("Port %ld out of range\n", idx));
                         return(UHIOERR_STALL);
@@ -983,7 +983,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     break;
 
                 case USR_CLEAR_FEATURE:
-                    if((!idx) && (idx > numports))
+                    if((!idx) || (idx > numports))
                     {
                         KPRINTF(20, ("Port %ld out of range\n", idx));
                         return(UHIOERR_STALL);
@@ -1217,7 +1217,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     {
                         return(UHIOERR_STALL);
                     }
-                    if((!idx) && (idx > numports))
+                    if((!idx) || (idx > numports))
                     {
                         KPRINTF(20, ("Port %ld out of range\n", idx));
                         return(UHIOERR_STALL);
