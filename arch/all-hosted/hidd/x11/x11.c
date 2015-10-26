@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -57,11 +57,11 @@ VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 
 #define XTASK_NAME "x11hidd task"
 
-/* We need to have highest priotity for this task, because we
- are simulating an interrupt. Ie. an "interrupt handler" called
- but this task should NEVER be interrupted by a task (for example input.device),
- otherwize it will give strange effects, especially in the circular-buffer handling
- in gameport/keyboard. (Writing to the buffer is not atomic even
+/* We need to have highest priority for this task, because we
+ are simulating an interrupt. I.e. an "interrupt handler" called
+ by this task should NEVER be interrupted by a task (for example input.device),
+ otherwise it will give strange effects, especially in the circular-buffer
+ handling in gameport/keyboard. (Writing to the buffer is not atomic even
  from within the IRQ handler!)
 
  Instead of calling
@@ -82,7 +82,7 @@ AROS_INTH1(x11VBlank, struct Task *, task)
 {
     AROS_INTFUNC_INIT
 
-    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+    DB2(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
 
     Signal(task, SIGBREAKF_CTRL_D);
 
@@ -153,11 +153,11 @@ VOID x11task_entry(struct x11task_params *xtpparam)
         struct notify_msg *nmsg;
         ULONG sigs;
 
-        D(bug("[X11] %s: waiting for signals..\n", __PRETTY_FUNCTION__));
+        DB2(bug("[X11] %s: waiting for signals..\n", __PRETTY_FUNCTION__));
 
         sigs = Wait(SIGBREAKF_CTRL_D | notifysig | task_SigKill| hostclipboardmask);
 
-        D(bug("[X11] %s: signal %08x received\n", __PRETTY_FUNCTION__, sigs));
+        DB2(bug("[X11] %s: signal %08x received\n", __PRETTY_FUNCTION__, sigs));
 
         if (sigs & task_SigKill)
         {
@@ -599,7 +599,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                         }
                     }
 
-                    /* Find it in thw window list and mark it as mapped */
+                    /* Find it in the window list and mark it as mapped */
 
                     ForeachNode(&xwindowlist, node)
                     {
