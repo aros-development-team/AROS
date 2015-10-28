@@ -1,6 +1,6 @@
 /*
     Copyright © 2015, The AROS Development Team. All rights reserved.
-    $Id: vusbhci_device.c 49314 2014-08-12 09:46:08Z DizzyOfCRN $
+    $Id$
 
     Desc: Virtual USB host controller
     Lang: English

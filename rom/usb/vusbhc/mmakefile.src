@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 49313 2014-08-12 08:35:41Z DizzyOfCRN $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := vusbhci_device vusbhci_commands
