@@ -56,6 +56,7 @@ struct VUSBHCIUnit {
 
     struct VUSBHCIRootHub {
         struct List              port_list;
+        /* FIXME: Use roothub descriptor exlusively to store this kind of information, use of port_count is redundant */
         ULONG                    port_count;
 
         struct List              io_queue;
