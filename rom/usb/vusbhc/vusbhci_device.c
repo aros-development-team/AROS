@@ -2,7 +2,7 @@
     Copyright © 2015, The AROS Development Team. All rights reserved.
     $Id: vusbhci_device.c 49314 2014-08-12 09:46:08Z DizzyOfCRN $
 
-    Desc: Virtual USB2OTG USB host controller
+    Desc: Virtual USB host controller
     Lang: English
 */
 
@@ -108,7 +108,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
                 if(unit->allocated) {
                     ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
                     ioreq->iouh_Req.io_Unit = NULL;
-                    mybug(-1, ("        Found unit form node list %s %p -> already in use!\n\n", unit->name, unit));
+                    mybug(-1, ("        Found unit from node list %s %p -> already in use!\n\n", unit->name, unit));
                     break;
                 }
                 unit->allocated = TRUE;
@@ -352,7 +352,7 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit(ULONG unitnum) {
         /* This is our root hub hub descriptor */
         unit->roothub.hubdesc.bLength             = sizeof(struct UsbHubDesc);
         unit->roothub.hubdesc.bDescriptorType     = UDT_HUB;
-        unit->roothub.hubdesc.bNbrPorts           = (UBYTE) unit->roothub.port_count;
+        unit->roothub.hubdesc.bNbrPorts           = (UBYTE) unit->roothub.port_count;   //Set below after port creation
         unit->roothub.hubdesc.wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
         unit->roothub.hubdesc.bPwrOn2PwrGood      = 0;
         unit->roothub.hubdesc.bHubContrCurrent    = 1;
@@ -396,6 +396,8 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit(ULONG unitnum) {
                 mybug(0, ("        Unit state: %lx (Error?)\n", unit->state));
                 break;
         } );
+
+        unit->roothub.hubdesc.bNbrPorts = (UBYTE) unit->roothub.port_count;
 
         return unit;
     }

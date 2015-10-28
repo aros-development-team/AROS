@@ -156,25 +156,29 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
         return UHIOERR_BADPARAMS;
     }
 
-    /* Check the request */
+    /*
+        Check the request
+            - In USB terminology, the direction of an endpoint (and transfers to or from them) is based on the host.
+            - Thus, IN always refers to transfers to the host from a device and OUT always refers to transfers from the host to a device.
+    */
     if(bmRequestDirection) {
         mybug_unit(-1, ("Request direction is device to host\n"));
 
         switch(bmRequestType) {
             case URTF_STANDARD:
-                mybug_unit(-1, ("URTF_STANDARD\n"));
+                mybug_unit(-1, ("bmRequestType URTF_STANDARD\n"));
 
                 switch(bmRequestRecipient) {
                     case URTF_DEVICE:
-                        mybug_unit(-1, ("URTF_DEVICE\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_DEVICE\n"));
 
                         switch(bRequest) {
                             case USR_GET_DESCRIPTOR:
-                                mybug_unit(-1, ("USR_GET_DESCRIPTOR\n"));
+                                mybug_unit(-1, ("bRequest USR_GET_DESCRIPTOR\n"));
 
                                 switch( (wValue>>8) ) {
                                     case UDT_DEVICE:
-                                        mybug_unit(-1, ("UDT_DEVICE\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_DEVICE\n"));
                                         mybug_unit(-1, ("GetDeviceDescriptor (%ld)\n", wLength));
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbStdDevDesc)) ? sizeof(struct UsbStdDevDesc) : wLength;
@@ -185,7 +189,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         break;
 
                                     case UDT_CONFIGURATION:
-                                        mybug_unit(-1, ("UDT_CONFIGURATION\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_CONFIGURATION\n"));
                                         mybug_unit(-1, ("GetConfigDescriptor (%ld)\n", wLength));
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct RHConfig)) ? sizeof(struct RHConfig) : wLength;
@@ -198,7 +202,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         break;
 
                                     case UDT_STRING:
-                                        mybug_unit(-1, ("UDT_STRING id %d\n", (wValue & 0xff)));
+                                        mybug_unit(-1, ("wValue>>8 UDT_STRING id %d wLength %d\n", (wValue & 0xff), wLength));
 
                                         if(wLength > 1) {
                                             switch( (wValue & 0xff) ) {
@@ -221,92 +225,88 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                                         mybug_unit(-1, ("Done\n\n"));
                                                         return UHIOERR_NO_ERROR;
                                                     }
-
-                                                    mybug_unit(-1, ("Nothing done\n\n"));
                                                     break;
 
                                                 case 1:
                                                     return cmdGetString(ioreq, "The AROS Development Team.");
-                                                    mybug_unit(-1, ("Done\n\n"));
                                                     break;
 
                                                 case 2:
                                                     return cmdGetString(ioreq, "VUSBHCI root hub");
-                                                    mybug_unit(-1, ("Done\n\n"));
                                                     break;
                                                 case 3:
                                                     return cmdGetString(ioreq, "Standard Config");
-                                                    mybug_unit(-1, ("Done\n\n"));
-                                                    break;
+                                                       break;
 
                                                 case 4:
                                                     return cmdGetString(ioreq, "Hub interface");
-                                                    mybug_unit(-1, ("Done\n\n"));
                                                     break;
 
                                                 default:
                                                     mybug_unit(-1, ("Nothing done\n\n"));
                                                     break;
                                             }
+
+                                            mybug_unit(-1, ("Nothing done\n\n"));
                                         }
 
                                         mybug_unit(-1, ("Nothing done\n\n"));
                                         break;
 
                                     case UDT_INTERFACE:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_INTERFACE\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_INTERFACE\n"));
                                         break;
 
                                     case UDT_ENDPOINT:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_ENDPOINT\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_ENDPOINT\n"));
                                         break;
 
                                     case UDT_DEVICE_QUALIFIER:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_DEVICE_QUALIFIER\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_DEVICE_QUALIFIER\n"));
                                         break;
 
                                     case UDT_OTHERSPEED_QUALIFIER:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_OTHERSPEED_QUALIFIER\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_OTHERSPEED_QUALIFIER\n"));
                                         break;
 
                                     case UDT_INTERFACE_POWER:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_INTERFACE_POWER\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_INTERFACE_POWER\n"));
                                         break;
 
                                     case UDT_OTG:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_OTG\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_OTG\n"));
                                         break;
 
                                     case UDT_DEBUG:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_DEBUG\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_DEBUG\n"));
                                         break;
 
                                     case UDT_INTERFACE_ASSOCIATION:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_INTERFACE_ASSOCIATION\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_INTERFACE_ASSOCIATION\n"));
                                         break;
 
                                     case UDT_SECURITY:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_SECURITY\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_SECURITY\n"));
                                         break;
 
                                     case UDT_ENCRYPTION_TYPE:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_ENCRYPTION_TYPE\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_ENCRYPTION_TYPE\n"));
                                         break;
 
                                     case UDT_BOS:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_BOS\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_BOS\n"));
                                         break;
 
                                     case UDT_DEVICE_CAPABILITY:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_DEVICE_CAPABILITY\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_DEVICE_CAPABILITY\n"));
                                         break;
 
                                     case UDT_WIRELESS_EP_COMP:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: UDT_WIRELESS_EP_COMP\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_WIRELESS_EP_COMP\n"));
                                         break;
 
                                     default:
-                                        mybug_unit(-1, ("cmdControlXFerRootHub: switch( (wValue>>8) ) %ld\n", (wValue>>8)));
+                                        mybug_unit(-1, ("wValue>>8 %ld\n", (wValue>>8)));
                                         mybug_unit(-1, ("Nothing done\n\n"));
                                         break;
 
@@ -316,7 +316,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 break; /* case USR_GET_DESCRIPTOR */
 
                             case USR_GET_STATUS:
-                                mybug_unit(-1, ("USR_GET_STATUS\n"));
+                                mybug_unit(-1, ("bRequest USR_GET_STATUS\n"));
                                 ((UWORD *) ioreq->iouh_Data)[0] = AROS_WORD2LE(U_GSF_SELF_POWERED);
                                 ioreq->iouh_Actual = wLength;
                                 mybug_unit(-1, ("Done\n\n"));
@@ -332,22 +332,22 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                     /* switch(bmRequestRecipient) */
                     case URTF_INTERFACE:
-                        mybug_unit(-1, ("URTF_INTERFACE\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_INTERFACE\n"));
                         break;
 
                     /* switch(bmRequestRecipient) */
                     case URTF_ENDPOINT:
-                        mybug_unit(-1, ("URTF_ENDPOINT\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_ENDPOINT\n"));
                         break;
 
                     /* switch(bmRequestRecipient) */
                     case URTF_OTHER:
-                        mybug_unit(-1, ("URTF_OTHER\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_OTHER\n"));
                         break;
 
                     /* switch(bmRequestRecipient) */
                     default:
-                        mybug_unit(-1, ("Request defaulting %ld\n", bRequest));
+                        mybug_unit(-1, ("bmRequestRecipient %ld (unhandled)\n", bRequest));
                         break;
 
                 } /* switch(bmRequestRecipient) */
@@ -355,15 +355,15 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
             /* switch(bmRequestType) */
             case URTF_CLASS:
-                mybug_unit(-1, ("URTF_CLASS\n"));
+                mybug_unit(-1, ("bmRequestType URTF_CLASS\n"));
 
                 switch(bmRequestRecipient) {
                     case URTF_DEVICE:
-                        mybug_unit(-1, ("URTF_DEVICE\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_DEVICE\n"));
 
                         switch(bRequest) {
                             case USR_GET_STATUS:
-                                mybug_unit(-1, ("USR_GET_STATUS\n"));
+                                mybug_unit(-1, ("bRequest USR_GET_STATUS\n"));
                                 UWORD *mptr = ioreq->iouh_Data;
                                 if(wLength < sizeof(struct UsbHubStatus)) {
                                     break;
@@ -378,12 +378,17 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                             /* switch(bRequest) */
                             case USR_GET_DESCRIPTOR:
-                                mybug_unit(-1, ("cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n"));
+                                mybug_unit(-1, ("bRequest USR_GET_DESCRIPTOR\n"));
 
                                 switch( (wValue>>8) ) {
                                     case UDT_HUB:
-                                        mybug_unit(-1, ("UDT_HUB\n"));
+                                        mybug_unit(-1, ("wValue>>8 UDT_HUB\n"));
                                         mybug_unit(-1, ("GetRootHubDescriptor USB2.0 (%ld)\n", wLength));
+
+                                        if(unit->roothub.port_count) {
+                                            mybug_unit(-1, (" - unit->roothub.port_count %d\n", unit->roothub.port_count));
+                                        }
+
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubDesc)) ? sizeof(struct UsbHubDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.hubdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
@@ -402,14 +407,21 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                     /* switch(bmRequestRecipient) */
                     case URTF_OTHER:
-                        mybug_unit(-1, ("URTF_OTHER\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_OTHER\n"));
 
                         switch(bRequest) {
                             case USR_GET_STATUS:
-                                mybug_unit(-1, ("USR_GET_STATUS\n"));
+                                mybug_unit(-1, ("bRequest USR_GET_STATUS\n"));
+
                                 if(wLength != sizeof(struct UsbPortStatus)) {
                                     mybug_unit(-1, ("Invalid port status structure!\n\n"));
+                                    return(UHIOERR_BADPARAMS);
                                     break;
+                                }
+
+                                if((!wIndex) || (wIndex > unit->roothub.port_count)) {
+                                    mybug_unit(-1, ("Port %ld out of range\n\n", wIndex));
+                                    return(UHIOERR_STALL);
                                 }
 
                                 ForeachNode(&unit->roothub.port_list, port) {
@@ -421,7 +433,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         usbportstatus->wPortStatus = 0;
                                         usbportstatus->wPortChange = 0;
 
-                                        mybug_unit(0, ("Done\n\n"));
+                                        mybug_unit(-1, ("Done\n\n"));
                                         return UHIOERR_NO_ERROR;
                                     }
                                 }
@@ -437,7 +449,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
             /* switch(bmRequestType) */
             case URTF_VENDOR:
-                mybug_unit(0, ("URTF_VENDOR\n"));
+                mybug_unit(0, ("bmRequestType URTF_VENDOR\n"));
                 break;
 
         } /* switch(bmRequestType) */
@@ -447,15 +459,15 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
         switch(bmRequestType) {
             case URTF_STANDARD:
-                mybug_unit(-1, ("cmdControlXFerRootHub: URTF_STANDARD\n"));
+                mybug_unit(-1, ("bmRequestType URTF_STANDARD\n"));
 
                 switch(bmRequestRecipient) {
                     case URTF_DEVICE:
-                        mybug_unit(-1, ("cmdControlXFerRootHub: URTF_DEVICE\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_DEVICE\n"));
 
                         switch(bRequest) {
                             case USR_SET_ADDRESS:
-                                mybug_unit(-1, ("USR_SET_ADDRESS\n"));
+                                mybug_unit(-1, ("bRequest USR_SET_ADDRESS\n"));
                                 unit->roothub.addr = wValue;
                                 ioreq->iouh_Actual = wLength;
                                 mybug_unit(-1, ("Done\n\n"));
@@ -464,7 +476,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                             case USR_SET_CONFIGURATION:
                                 /* We do not have alternative configuration */
-                                mybug_unit(-1, ("USR_SET_CONFIGURATION\n"));
+                                mybug_unit(-1, ("bRequest USR_SET_CONFIGURATION\n"));
                                 ioreq->iouh_Actual = wLength;
                                 mybug_unit(-1, ("Done\n\n"));
                                 return UHIOERR_NO_ERROR;
@@ -476,33 +488,33 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                         break;
 
                     case URTF_INTERFACE:
-                        mybug_unit(-1, ("URTF_INTERFACE\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_INTERFACE\n"));
                         break;
 
                     case URTF_ENDPOINT:
-                        mybug_unit(-1, ("URTF_ENDPOINT\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_ENDPOINT\n"));
                         break;
 
                     case URTF_OTHER:
-                        mybug_unit(-1, ("URTF_OTHER\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_OTHER\n"));
                         break;
 
                 } /* switch(bmRequestRecipient) */
                 break;
 
             case URTF_CLASS:
-                mybug_unit(-1, ("URTF_CLASS\n"));
+                mybug_unit(-1, ("bmRequestType URTF_CLASS\n"));
                 switch(bmRequestRecipient) {
                     case URTF_OTHER:
-                        mybug_unit(-1, ("URTF_OTHER\n"));
+                        mybug_unit(-1, ("bmRequestRecipient URTF_OTHER\n"));
 
                         switch(bRequest) {
                             case USR_SET_FEATURE:
-                                mybug_unit(-1, ("USR_SET_FEATURE\n"));
+                                mybug_unit(-1, ("bRequest USR_SET_FEATURE\n"));
 
                                 switch(wValue) {
                                     case UFS_PORT_POWER:
-                                        mybug_unit(-1, ("UFS_PORT_POWER\n"));
+                                        mybug_unit(-1, ("wValue UFS_PORT_POWER\n"));
 
                                         ForeachNode(&unit->roothub.port_list, port) {
                                             if(port->number == wIndex) {
@@ -535,7 +547,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                 break;
 
             case URTF_VENDOR:
-                mybug_unit(-1, ("URTF_VENDOR\n"));
+                mybug_unit(-1, ("bmRequestType URTF_VENDOR\n"));
                 break;
 
         } /* switch(bmRequestType) */
@@ -660,13 +672,25 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[VUSBHCI] cmdIntXFerRootHub: Entering function\n"));
-    D(struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit);
 
-    if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length))
-    {
-        return(UHIOERR_STALL);
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    struct VUSBHCIPort *port = NULL;
+
+    mybug(-1, ("[VUSBHCI] cmdIntXFerRootHub: Entering function\n"));
+
+
+    if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length)) {
+        return(UHIOERR_BADPARAMS); // was UHIOERR_STALL
     }
+
+    ForeachNode(&unit->roothub.port_list, port) {
+        mybug_unit(-1, ("Port %d named %s at %p\n", port->number, port->name, port));
+//        if(unit->hu_RootPortChanges) {
+//            unit->hu_RootPortChanges = 0;
+//            return(0);
+//        }
+    }
+
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     Disable();
@@ -710,6 +734,8 @@ WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
 WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
     mybug(0, ("[VUSBHCI] cmdGetString: Entering function\n"));
 
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
     UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     struct UsbStdStrDesc *strdesc = (struct UsbStdStrDesc *) ioreq->iouh_Data;
@@ -723,16 +749,17 @@ WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
             ioreq->iouh_Actual += sizeof(strdesc->bString);
             cstring++;
             if(*cstring == 0) {
-                mybug(0, ("[VUSBHCI] cmdGetString: Done\n\n"));
+                mybug_unit(-1, ("cmdGetString: Done\n\n"));
                 return UHIOERR_NO_ERROR;
             }
         }
 
     } else {
         ioreq->iouh_Actual = wLength;
-        mybug(0, ("[VUSBHCI] cmdGetString: Done\n\n"));
+        mybug_unit(-1, ("cmdGetString: Done\n\n"));
         return UHIOERR_NO_ERROR;
     }
 
+    mybug_unit(-1, ("UHIOERR_BADPARAMS = cmdGetString()\n\n"));
     return UHIOERR_BADPARAMS;
 }
