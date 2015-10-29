@@ -1,0 +1,9 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := ps3eye AROS640_pure AROS320_pure
+
+%build_prog mmake=ps3eye progname=ps3eye \
+    files="$(FILES)" targetdir=$(AROS_TESTS)
+
+%common
