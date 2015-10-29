@@ -94,6 +94,106 @@ ULONG bridge_read(struct InstData *data, UWORD reg, UWORD *val) {
 
 }
 
+void freedevice(struct InstData *data) {
+
+    if(data->ps3eye_ep0pipe) {
+        psdFreePipe(data->ps3eye_ep0pipe); // Allowed to be NULL
+        data->ps3eye_ep0pipe = NULL;
+        mybug(-1, ("freedevice released endpoint 0 pipe\n"));
+    }
+
+    if(data->ps3eye_ep1pipe) {
+        psdFreePipe(data->ps3eye_ep1pipe); // Allowed to be NULL
+        data->ps3eye_ep1pipe = NULL;
+        mybug(-1, ("freedevice released endpoint 1 pipe\n"));
+    }
+
+    if(data->pab) {
+        /* CHECKME: Calls releasehook? */
+        psdReleaseAppBinding(data->pab); // Allowed to be NULL
+        data->pab = NULL;
+        data->pd = NULL;
+        mybug(-1, ("freedevice released PS3Eye camera binding\n"));
+    }
+}
+
+AROS_UFH3(void, releasehook, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, pab, A2), AROS_UFHA(struct InstData *, data, A1)) {
+    AROS_USERFUNC_INIT
+
+    mybug(-1,("PSD Dispatcher!\n"));
+
+    freedevice(data);
+
+    AROS_USERFUNC_EXIT
+}
+
+void allocdevice(struct InstData *data) {
+
+    UWORD regval;
+
+    /*
+        Try to find FREE PS3Eye camera (DA_Binding = FALSE)
+    */
+    data->pd = psdFindDevice(NULL, DA_VendorID, 0x1415, DA_ProductID, 0x2000, DA_Binding, FALSE, TAG_END);
+    if(data->pd) {
+        mybug(-1, ("allocdevice found PS3Eye camera\n"));
+
+        data->releasehook.h_Entry = (APTR) releasehook;
+
+        data->pab = psdClaimAppBinding(ABA_Device, data->pd,
+                                       ABA_ReleaseHook, &data->releasehook,
+                                       ABA_UserData, data,
+                                       ABA_ForceRelease, FALSE,
+                                       TAG_END);
+
+        if(data->pab) {
+            mybug(-1, ("allocdevice claimed PS3Eye camera\n"));
+
+            if((data->ps3eye_interface = psdFindInterface(data->pd, NULL, IFA_InterfaceNum, 0, TAG_END))){
+                mybug(-1, ("allocdevice found interface 0\n"));
+
+                if((data->ps3eye_ep0pipe = psdAllocPipe(data->pd, data->ps3eye_epmsgport, NULL))) {
+                    mybug(-1, ("allocdevice allocated endpoint 0 pipe (CONTROL)\n"));
+
+                    if((data->ps3eye_ep1in = psdFindEndpoint(data->ps3eye_interface, NULL, EA_IsIn, TRUE, EA_EndpointNum, 1, EA_TransferType, USEAF_BULK, TAG_END))) {
+                        mybug(-1, ("allocdevice found endpoint 1 (BULK) from interface 0\n"));
+
+                        if((data->ps3eye_ep1pipe = psdAllocPipe(data->pd, data->ps3eye_epmsgport, data->ps3eye_ep1in))) {
+                            mybug(-1, ("allocdevice allocated endpoint 1 pipe (BULK)\n"));
+
+                            /* Turn red led on */
+                            regval = 0x80;
+                            bridge_write(data, 0x21, &regval);
+                            bridge_write(data, 0x23, &regval);
+
+                            UWORD i;
+                            for(i=0;i<0x100;i++) {
+                                bridge_read(data, i, &regval);
+                            }
+
+                            return;
+
+                        } else {
+                            mybug(-1, ("allocdevice failed to allocate endpoint 1 pipe (BULK)\n"));
+                        }
+                    } else {
+                        mybug(-1, ("allocdevice could not find endpoint 1 (BULK) from interface 0\n"));
+                    }
+
+                } else {
+                    mybug(-1, ("allocdevice failed to allocate endpoint 0 pipe (CONTROL)\n"));   
+                }
+
+            }
+
+            psdReleaseAppBinding(data->pab);
+            mybug(-1, ("allocdevice released PS3Eye camera binding\n"));
+
+        } else {
+            mybug(-1, ("allocdevice unable to claim PS3Eye camera\n"));
+        }
+    }
+}
 
 IPTR mNew(Class *cl, Object *obj, struct opSet *msg) {
 	mybug(-1, ("mNew gets called\n"));
@@ -142,6 +242,8 @@ IPTR mDispose(Class *cl, Object *obj, struct opGet *msg) {
 //        data->psdeventhandler = NULL;
 //    }
 
+    freedevice(data);
+
     if(data->ps3eye_epmsgport) {
         DeleteMsgPort(data->ps3eye_epmsgport);
         data->ps3eye_epmsgport = NULL;
@@ -165,7 +267,7 @@ IPTR mSetup(Class *cl, Object *obj, struct MUIP_Setup *msg) {
 
 
 IPTR mCleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg) {
-	mybug(-1, ("mSetup gets called\n"));
+	mybug(-1, ("mCleanup gets called\n"));
 
     struct InstData *data = INST_DATA(cl, obj);
 
@@ -388,106 +490,15 @@ IPTR mDraw(Class *cl, Object *obj, struct MUIP_Draw *msg) {
 //    return TRUE;
 //}
 
-AROS_UFH3(void, releasehook, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR, pab, A2), AROS_UFHA(struct InstData *, data, A1)) {
-    AROS_USERFUNC_INIT
-
-    mybug(-1,("PSD Dispatcher!\n"));
-
-    if(data->ps3eye_ep0pipe) {
-        psdFreePipe(data->ps3eye_ep0pipe); // Allowed to be NULL
-        data->ps3eye_ep0pipe = NULL;
-        mybug(-1, ("releasehook released endpoint 0 pipe\n"));
-    }
-
-    if(data->ps3eye_ep1pipe) {
-        psdFreePipe(data->ps3eye_ep1pipe); // Allowed to be NULL
-        data->ps3eye_ep1pipe = NULL;
-        mybug(-1, ("releasehook released endpoint 1 pipe\n"));
-    }
-
-    if(data->pab) {
-        psdReleaseAppBinding(data->pab); // Allowed to be NULL
-        data->pab = NULL;
-        data->pd = NULL;
-        mybug(-1, ("releasehook released PS3Eye camera binding\n"));
-    }
-
-    AROS_USERFUNC_EXIT
-}
-
 IPTR mTmrEventHandler(Class *cl, Object *obj, Msg msg) {
     mybug(0, ("mTmrEventHandler gets called\n"));
 
     struct InstData *data = INST_DATA(cl, obj);
 
-    UWORD regval;
-
     if(!(data->pab)) {
-        /*
-            Try to find FREE PS3Eye camera (DA_Binding = FALSE)
-        */
-        data->pd = psdFindDevice(NULL, DA_VendorID, 0x1415, DA_ProductID, 0x2000, DA_Binding, FALSE, TAG_END);
-        if(data->pd) {
-            mybug(-1, ("mTmrEventHandler found PS3Eye camera\n"));
-
-            data->releasehook.h_Entry = (APTR) releasehook;
-
-            data->pab = psdClaimAppBinding(ABA_Device, data->pd,
-                                        ABA_ReleaseHook, &data->releasehook,
-                                        ABA_UserData, data,
-                                        ABA_ForceRelease, FALSE,
-                                        TAG_END);
-
-            if(data->pab) {
-                mybug(-1, ("mTmrEventHandler claimed PS3Eye camera\n"));
-
-                if((data->ps3eye_interface = psdFindInterface(data->pd, NULL, IFA_InterfaceNum, 0, TAG_END))){
-                    mybug(-1, ("mTmrEventHandler found interface 0\n"));
-
-                    if((data->ps3eye_ep0pipe = psdAllocPipe(data->pd, data->ps3eye_epmsgport, NULL))) {
-                        mybug(-1, ("mTmrEventHandler allocated endpoint 0 pipe (CONTROL)\n"));
-
-                        if((data->ps3eye_ep1in = psdFindEndpoint(data->ps3eye_interface, NULL, EA_IsIn, TRUE, EA_EndpointNum, 1, EA_TransferType, USEAF_BULK, TAG_END))) {
-                            mybug(-1, ("mTmrEventHandler found endpoint 1 (BULK) from interface 0\n"));
-
-                            if((data->ps3eye_ep1pipe = psdAllocPipe(data->pd, data->ps3eye_epmsgport, data->ps3eye_ep1in))) {
-                                mybug(-1, ("mTmrEventHandler allocated endpoint 1 pipe (BULK)\n"));
-
-                                /* Turn red led on */
-                                regval = 0x80;
-                                bridge_write(data, 0x21, &regval);
-                                bridge_write(data, 0x23, &regval);
-
-                                UWORD i;
-                                for(i=0;i<0x100;i++) {
-                                    bridge_read(data, i, &regval);
-                                }
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-                                return TRUE;
-
-                            } else {
-                                mybug(-1, ("mTmrEventHandler failed to allocate endpoint 1 pipe (BULK)\n"));
-                            }
-                        } else {
-                            mybug(-1, ("mTmrEventHandler could not find endpoint 1 (BULK) from interface 0\n"));
-                        }
-
-                    } else {
-                        mybug(-1, ("mTmrEventHandler failed to allocate endpoint 0 pipe (CONTROL)\n"));   
-                    }
-
-                }
-
-                psdReleaseAppBinding(data->pab);
-                mybug(-1, ("mTmrEventHandler released PS3Eye camera binding\n"));
-
-            } else {
-                mybug(-1, ("mTmrEventHandler unable to claim PS3Eye camera\n"));
-            }
-        }
+        allocdevice(data);
     }
 
-    /* No PS3Eye device or failure */
     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
     return TRUE;
