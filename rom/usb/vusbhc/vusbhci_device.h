@@ -54,6 +54,9 @@ struct VUSBHCIUnit {
     ULONG                        state;
     BOOL                         allocated;
 
+    struct Task                 *handler_task;
+    BOOL                         handler_task_run;
+
     struct VUSBHCIRootHub {
         struct List              port_list;
         /* FIXME: Use roothub descriptor exlusively to store this kind of information, use of port_count is redundant */

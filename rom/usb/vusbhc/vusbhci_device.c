@@ -24,6 +24,7 @@
 #include <devices/usb_hub.h>
 #include <devices/newstyle.h>
 #include <devices/usbhardware.h>
+#include <devices/timer.h>
 
 #include "vusbhci_device.h"
 #include "libusb-bridge/libusb.h"
@@ -32,6 +33,48 @@
 
 struct VUSBHCIUnit *VUSBHCI_AddNewUnit(ULONG unitnum);
 struct VUSBHCIPort *VUSBHCI_AddNewPort(struct VUSBHCIUnit *unit, ULONG portnum);
+
+static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
+    Signal(parent, SIGF_CHILD);
+
+    mybug(-1,("[handler_task] Starting\n"));
+
+    struct timerequest *tr = NULL;
+    struct MsgPort *mp = NULL;
+
+    mp = CreateMsgPort();
+    if (mp) {
+        tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
+        if (tr) {
+            FreeSignal(mp->mp_SigBit);
+            if (!OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)tr, 0)) {
+                /* Allocate a signal within this task context */
+                tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
+                tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
+                /* Specify the request */
+                tr->tr_node.io_Command = TR_ADDREQUEST;
+
+                /* FIXME: Use signals */
+                while(unit->handler_task_run) {
+                    mybug(-1,("[handler_task] Hello...\n"));
+
+                    /* Wait */
+                    tr->tr_time.tv_secs = 1;
+                    tr->tr_time.tv_micro = 0;
+                    DoIO((struct IORequest *)tr);
+                }
+                CloseDevice((struct IORequest *)tr);
+            }
+            DeleteIORequest((struct IORequest *)tr);
+            mp->mp_SigBit = AllocSignal(-1);
+        }
+        DeleteMsgPort(mp);
+    }
+
+    mybug(-1,("[handler_task] Exiting\n"));
+
+    Signal(parent, SIGF_CHILD);
+}
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
     mybug(-1,("[VUSBHCI] Init: Entering function\n"));
@@ -119,6 +162,16 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
 
         if(ioreq->iouh_Req.io_Unit != NULL) {
 
+            /* Create periodic handler task */
+            unit->handler_task_run = TRUE;
+            unit->handler_task = NewCreateTask(TASKTAG_NAME, "libusb handler task",
+                                               TASKTAG_PC, handler_task,
+                                               TASKTAG_ARG1, FindTask(NULL),
+                                               TASKTAG_ARG2, unit,
+                                               TAG_END);
+
+            Wait(SIGF_CHILD);
+
             /* Opened ok! */
             ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
             ioreq->iouh_Req.io_Error				   = 0;
@@ -145,7 +198,12 @@ static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *i
         mybug(-1, ("[VUSBHCI] Close: Closing unit %p\n", ioreq->iouh_Req.io_Unit));
         if(ioreq->iouh_Req.io_Unit == (struct Unit *)unit) {
             mybug(-1, ("        Found unit from node list %s %p\n\n", unit->name, unit));
+
+            unit->handler_task_run = FALSE;
+            Wait(SIGF_CHILD);
+
             unit->allocated = FALSE;
+
             ioreq->iouh_Req.io_Unit   = (APTR) -1;
             ioreq->iouh_Req.io_Device = (APTR) -1;
 
