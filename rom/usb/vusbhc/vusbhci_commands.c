@@ -148,7 +148,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-    struct VUSBHCIPort *port = NULL;
 
     /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
     if(ioreq->iouh_Endpoint != 0) {
@@ -385,10 +384,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         mybug_unit(-1, ("wValue>>8 UDT_HUB\n"));
                                         mybug_unit(-1, ("GetRootHubDescriptor USB2.0 (%ld)\n", wLength));
 
-                                        if(unit->roothub.port_count) {
-                                            mybug_unit(-1, (" - unit->roothub.port_count %d\n", unit->roothub.port_count));
-                                        }
-
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubDesc)) ? sizeof(struct UsbHubDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.hubdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
@@ -419,24 +414,18 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                     break;
                                 }
 
-                                if((!wIndex) || (wIndex > unit->roothub.port_count)) {
+                                if((!wIndex) || (wIndex > unit->roothub.hubdesc.bNbrPorts)) {
                                     mybug_unit(-1, ("Port %ld out of range\n\n", wIndex));
                                     return(UHIOERR_STALL);
                                 }
 
-                                ForeachNode(&unit->roothub.port_list, port) {
-                                    if(port->number == wIndex) {
-                                        mybug_unit(-1, ("Found port %d named %s\n", port->number, port->name));
+                                struct UsbPortStatus *usbportstatus = (struct UsbPortStatus *) ioreq->iouh_Data;
 
-                                        struct UsbPortStatus *usbportstatus = (struct UsbPortStatus *) ioreq->iouh_Data;
+                                usbportstatus->wPortStatus = 0;
+                                usbportstatus->wPortChange = 0;
 
-                                        usbportstatus->wPortStatus = 0;
-                                        usbportstatus->wPortChange = 0;
-
-                                        mybug_unit(-1, ("Done\n\n"));
-                                        return UHIOERR_NO_ERROR;
-                                    }
-                                }
+                                mybug_unit(-1, ("Done\n\n"));
+                                return UHIOERR_NO_ERROR;
 
                                 mybug_unit(-1, ("Port not found!\n\n"));
                                 break;
@@ -516,15 +505,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                     case UFS_PORT_POWER:
                                         mybug_unit(-1, ("wValue UFS_PORT_POWER\n"));
 
-                                        ForeachNode(&unit->roothub.port_list, port) {
-                                            if(port->number == wIndex) {
-                                                mybug_unit(-1, ("Found port %d named %s\n", port->number, port->name));
-                                                mybug_unit(-1, ("Done\n\n"));
-                                                return UHIOERR_NO_ERROR;
-                                            }
+                                        if((!wIndex) || (wIndex > unit->roothub.hubdesc.bNbrPorts)) {
+                                            mybug_unit(-1, ("Port %ld out of range\n\n", wIndex));
+                                            return(UHIOERR_STALL);
                                         }
 
-                                        mybug_unit(-1, ("Port not found!\n\n"));
+                                        mybug_unit(-1, ("Done\n\n"));
+                                        return UHIOERR_NO_ERROR;
                                         break;
 
                                     case UFS_PORT_CONNECTION:
@@ -674,7 +661,6 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-    struct VUSBHCIPort *port = NULL;
 
     mybug(-1, ("[VUSBHCI] cmdIntXFerRootHub: Entering function\n"));
 
@@ -683,14 +669,10 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
         return(UHIOERR_BADPARAMS); // was UHIOERR_STALL
     }
 
-    ForeachNode(&unit->roothub.port_list, port) {
-        mybug_unit(-1, ("Port %d named %s at %p\n", port->number, port->name, port));
 //        if(unit->hu_RootPortChanges) {
 //            unit->hu_RootPortChanges = 0;
 //            return(0);
 //        }
-    }
-
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     Disable();

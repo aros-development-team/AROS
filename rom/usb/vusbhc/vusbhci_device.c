@@ -31,8 +31,7 @@
 
 #include LC_LIBDEFS_FILE
 
-struct VUSBHCIUnit *VUSBHCI_AddNewUnit(ULONG unitnum);
-struct VUSBHCIPort *VUSBHCI_AddNewPort(struct VUSBHCIUnit *unit, ULONG portnum);
+struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void);
 
 static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
     Signal(parent, SIGF_CHILD);
@@ -81,44 +80,12 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
     mybug(-1,("[VUSBHCI] Init: Entering function\n"));
 
-    struct VUSBHCIUnit *unit;
+    VUSBHCIBase->usbunit200 = VUSBHCI_AddNewUnit200();
 
-    NEWLIST(&VUSBHCIBase->unit_list);
-    VUSBHCIBase->unit_count = 0;
-
-    if(!libusb_bridge_init()) {
-        return FALSE;
-    }
-
-    //libusb_bridge_cleanup();
-
-    unit = VUSBHCI_AddNewUnit(VUSBHCIBase->unit_count);
-    if(unit == NULL) {
+    if(VUSBHCIBase->usbunit200 == NULL) {
         mybug(-1, ("[VUSBHCI] Init: Failed to create new USB unit!\n"));
-
-        /*
-            Free previous units if any exists
-        */
-
-        ForeachNode(&VUSBHCIBase->unit_list, unit) {
-            mybug(-1,("[VUSBHCI] Init: Removing unit structure %s at %p\n", unit->node.ln_Name, unit));
-            REMOVE(unit);
-            FreeVec(unit);
-        }
         return FALSE;
-    } else {
-        AddTail(&VUSBHCIBase->unit_list,(struct Node *)unit);
-        VUSBHCIBase->unit_count++;
     }
-
-    D(ForeachNode(&VUSBHCIBase->unit_list, unit) {
-        mybug(-1, ("[VUSBHCI] Init: Created unit %d at %p %s\n", unit->number, unit, unit->name));
-        struct VUSBHCIPort *port;
-        ForeachNode(&unit->roothub.port_list, port) {
-            mybug(-1, ("                      port %d at %p %s\n", port->number, port, port->name));
-        }
-        mybug(-1,("\n"));
-    });
 
     return TRUE;
 }
@@ -133,11 +100,9 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
     ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
     ioreq->iouh_Req.io_Unit = NULL;
 
-    /*
-        Number of units eg. virtual usb controllers.
-        Host controller is divided into individual units if it has both usb2.0 and usb3.0 ports
-    */
-    if(unitnum < VUSBHCIBase->unit_count) {
+    if(unitnum == 0) {
+
+        unit = VUSBHCIBase->usbunit200;
 
         if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
             mybug(-1, ("[VUSBHCI] Open: Invalid MN_LENGTH!\n"));
@@ -146,21 +111,15 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
 
         ioreq->iouh_Req.io_Unit = NULL;
 
-        ForeachNode(&VUSBHCIBase->unit_list, unit) {
-            mybug(-1, ("[VUSBHCI] Open: Opening unit number %d\n", unitnum));
-            if(unit->number == unitnum) {
-                mybug(-1, ("        Found unit from node list %s %p\n\n", unit->name, unit));
-                if(unit->allocated) {
-                    ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
-                    ioreq->iouh_Req.io_Unit = NULL;
-                    mybug(-1, ("        Found unit from node list %s %p -> already in use!\n\n", unit->name, unit));
-                    break;
-                }
-                unit->allocated = TRUE;
-                ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
-                break;
-            }
+        if(unit->allocated) {
+            ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
+            ioreq->iouh_Req.io_Unit = NULL;
+            mybug(-1, ("Unit 0 already in use!\n\n"));
+            return FALSE;
         }
+
+        unit->allocated = TRUE;
+        ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
 
         if(ioreq->iouh_Req.io_Unit != NULL) {
 
@@ -190,27 +149,20 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
 static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *ioreq) {
     mybug(-1, ("[VUSBHCI] Close: Entering function\n"));
 
-    struct VUSBHCIUnit *unit;
+    struct VUSBHCIUnit *unit = ioreq->iouh_Req.io_Unit;
 
-    /*
-        First check to see if the unit is valid before bashing the memory
-        It might be useless to raise any error condition, as no one checks them.
-    */
-    ForeachNode(&VUSBHCIBase->unit_list, unit) {
-        mybug(-1, ("[VUSBHCI] Close: Closing unit %p\n", ioreq->iouh_Req.io_Unit));
-        if(ioreq->iouh_Req.io_Unit == (struct Unit *)unit) {
-            mybug(-1, ("        Found unit from node list %s %p\n\n", unit->name, unit));
+    mybug(-1, ("[VUSBHCI] Close: Closing unit %p\n", ioreq->iouh_Req.io_Unit));
+    if(unit) {
 
-            unit->handler_task_run = FALSE;
-            Wait(SIGF_CHILD);
+        unit->handler_task_run = FALSE;
+        Wait(SIGF_CHILD);
 
-            unit->allocated = FALSE;
+        unit->allocated = FALSE;
 
-            ioreq->iouh_Req.io_Unit   = (APTR) -1;
-            ioreq->iouh_Req.io_Device = (APTR) -1;
+        ioreq->iouh_Req.io_Unit   = (APTR) -1;
+        ioreq->iouh_Req.io_Device = (APTR) -1;
 
-            return TRUE;
-        }
+        return TRUE;
     }
 
     ioreq->iouh_Req.io_Error = IOERR_BADADDRESS;
@@ -346,23 +298,25 @@ AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
     AROS_LIBFUNC_EXIT
 }
 
-struct VUSBHCIUnit *VUSBHCI_AddNewUnit(ULONG unitnum) {
+struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
 
     struct VUSBHCIUnit *unit;
-    struct VUSBHCIPort *port;
 
     unit = AllocVec(sizeof(struct VUSBHCIUnit), MEMF_ANY|MEMF_CLEAR);
+
     if(unit == NULL) {
         mybug(-1, ("[VUSBHCI] VUSBHCI_AddNewUnit: Failed to create new unit structure\n"));
         return NULL;
     } else {
-        unit->node.ln_Type = NT_USER;
-        unit->number = unitnum;
-        unit->node.ln_Name = (STRPTR)&unit->name;
+
+        if(!libusb_bridge_init(unit)) {
+            FreeVec(unit);
+            return NULL;
+        }
+
         unit->state = UHSF_SUSPENDED;
         unit->allocated = FALSE;
 
-        NEWLIST(&unit->roothub.port_list);
         NEWLIST(&unit->roothub.io_queue);
 
         /* This is our root hub device descriptor */
@@ -412,38 +366,14 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit(ULONG unitnum) {
         /* This is our root hub hub descriptor */
         unit->roothub.hubdesc.bLength             = sizeof(struct UsbHubDesc);
         unit->roothub.hubdesc.bDescriptorType     = UDT_HUB;
-        unit->roothub.hubdesc.bNbrPorts           = (UBYTE) unit->roothub.port_count;   //Set below after port creation
+        unit->roothub.hubdesc.bNbrPorts           = 1;
         unit->roothub.hubdesc.wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
         unit->roothub.hubdesc.bPwrOn2PwrGood      = 0;
         unit->roothub.hubdesc.bHubContrCurrent    = 1;
         unit->roothub.hubdesc.DeviceRemovable     = 1;
         unit->roothub.hubdesc.PortPwrCtrlMask     = 0;
 
-        sprintf(unit->name, "VUSBHCI_USB%x%x[%d]", (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>4)&0xf, unit->number);
-
-        port = VUSBHCI_AddNewPort(unit, 0);
-        if(port == NULL) {
-            mybug(-1, ("[VUSBHCI] VUSBHCI_AddNewUnit: Failed to create new port structure\n"));
-
-            /*
-                Free previous ports if any exists and delete this unit
-            */
-
-            ForeachNode(&unit->roothub.port_list, port) {
-                mybug(-1, ("[VUSBHCI] VUSBHCI_AddNewUnit: Removing port structure %s at %p\n", port->node.ln_Name, port));
-                REMOVE(port);
-                FreeVec(port);
-            }
-            FreeVec(unit);
-            return NULL;
-        } else {
-            AddTail(&unit->roothub.port_list,(struct Node *)port);
-            unit->roothub.port_count++;
-        }
-
-        D( mybug(0, ("[VUSBHCI] VUSBHCI_AddNewUnit:\n"));
-        mybug(0, ("        Created new unit numbered %d at %p\n",unit->number, unit));
-        mybug(0, ("        Unit node name %s\n", unit->node.ln_Name));
+        sprintf(unit->name, "VUSBHCI_USB%x%x", (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>4)&0xf);
 
         switch(unit->state) {
             case UHSF_SUSPENDED:
@@ -455,34 +385,10 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit(ULONG unitnum) {
             default:
                 mybug(0, ("        Unit state: %lx (Error?)\n", unit->state));
                 break;
-        } );
-
-        unit->roothub.hubdesc.bNbrPorts = (UBYTE) unit->roothub.port_count;
+        };
 
         return unit;
     }
 }
 
-struct VUSBHCIPort *VUSBHCI_AddNewPort(struct VUSBHCIUnit *unit, ULONG portnum) {
-    struct VUSBHCIPort *port;
-
-    port = AllocVec(sizeof(struct VUSBHCIPort), MEMF_ANY|MEMF_CLEAR);
-    if(port == NULL) {
-        mybug(-1, ("[VUSBHCI] VUSBHCI_AddNewPort: Failed to create new port structure\n"));
-        return NULL;
-    } else {
-        port->node.ln_Type = NT_USER;
-        /* Poseidon treats port number 0 as roothub */
-        port->number = portnum+1;
-
-        sprintf(port->name, "VUSBHCI_USB%x%x[%d:%d]", (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>4)&0xf, unit->number, port->number);
-        port->node.ln_Name = (STRPTR)&port->name;
-    }
-
-    mybug(0, ("[VUSBHCI] VUSBHCI_AddNewPort:\n"));
-    mybug(0, ("        Created new port numbered %d at %p\n",port->number, port));
-    mybug(0, ("        Port node name %s\n", port->node.ln_Name));
-
-    return port;
-}
 

@@ -12,7 +12,6 @@
 #include <aros/macros.h>
 
 #include <proto/exec.h>
-#include <proto/stdc.h>
 #include <proto/arossupport.h>
 
 #include <devices/usb.h>
@@ -38,19 +37,9 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq);
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq);
 WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring);
 
-struct VUSBHCIPort {
-    struct Node                  node;
-    char                         name[256];
-    ULONG                        number;
-    ULONG                        state;
-    BOOL                         attachment;
-    BOOL                         detachment;
-};
-
 struct VUSBHCIUnit {
     struct Node                  node;
     char                         name[256];
-    ULONG                        number;
     ULONG                        state;
     BOOL                         allocated;
 
@@ -58,10 +47,6 @@ struct VUSBHCIUnit {
     BOOL                         handler_task_run;
 
     struct VUSBHCIRootHub {
-        struct List              port_list;
-        /* FIXME: Use roothub descriptor exlusively to store this kind of information, use of port_count is redundant */
-        ULONG                    port_count;
-
         struct List              io_queue;
 
         UWORD                    addr;
@@ -81,11 +66,9 @@ struct VUSBHCIUnit {
 };
 
 struct VUSBHCIBase {
-
     struct Device                device;
-    struct List                  unit_list;
-    ULONG                        unit_count;
-
+    struct VUSBHCIUnit          *usbunit200;
+    struct VUSBHCIUnit          *usbunit300;
 };
 
 #endif /* VUSBHCI_DEVICE_H */
