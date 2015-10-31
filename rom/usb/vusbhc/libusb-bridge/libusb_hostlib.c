@@ -32,7 +32,6 @@ BOOL libusb_bridge_init();
 VOID libusb_bridge_cleanup();
 
 static libusb_device_handle *handle = NULL;
-int done = 0;
 
 int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event event, void *user_data) {
     bug("[LIBUSB] Hotplug callback event!\n");
@@ -49,23 +48,22 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
         case LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED:
             bug("[LIBUSB]  - Device attached\n");
-            done++;
 
-            rc = LIBUSBCALL(libusb_get_device_descriptor, dev, &desc);
-            if (LIBUSB_SUCCESS != rc) {
-                bug("[LIBUSB] Failed to read device descriptor\n");
-                return 0;
+            if(unit->allocated) {
+                rc = LIBUSBCALL(libusb_get_device_descriptor, dev, &desc);
+                if (LIBUSB_SUCCESS != rc) {
+                    bug("[LIBUSB] Failed to read device descriptor\n");
+                    return 0;
+                }
+
+                bug("Device attach: %04x:%04x\n", desc.idVendor, desc.idProduct);
+
+                LIBUSBCALL(libusb_open, dev, &handle);
             }
-
-            bug("Device attach: %04x:%04x\n", desc.idVendor, desc.idProduct);
-
-            LIBUSBCALL(libusb_open, dev, &handle);
-
         break;
 
         case LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT:
             bug("[LIBUSB]  - Device detached\n");
-            done++;
 
             if(handle != NULL) {
                 LIBUSBCALL(libusb_close, handle);
@@ -142,11 +140,6 @@ BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase) {
 
             if(rc == LIBUSB_SUCCESS) {
                 bug("[LIBUSB]  - Hotplug callback installed rc = %d\n", rc);
-
-                //while (done < 2) {
-                //    LIBUSBCALL(libusb_handle_events, NULL);
-                //}
-
                 return TRUE;
             }
 

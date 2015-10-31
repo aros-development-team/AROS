@@ -43,9 +43,6 @@ struct VUSBHCIUnit {
     ULONG                        state;
     BOOL                         allocated;
 
-    struct Task                 *handler_task;
-    BOOL                         handler_task_run;
-
     struct VUSBHCIRootHub {
         struct List              io_queue;
 
@@ -67,6 +64,10 @@ struct VUSBHCIUnit {
 
 struct VUSBHCIBase {
     struct Device                device;
+
+    struct Task                 *handler_task;
+    BOOL                         handler_task_run;
+
     struct VUSBHCIUnit          *usbunit200;
     struct VUSBHCIUnit          *usbunit300;
 };

@@ -33,10 +33,12 @@
 
 struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void);
 
-static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
+static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
     Signal(parent, SIGF_CHILD);
 
     mybug(-1,("[handler_task] Starting\n"));
+
+    struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
 
     struct timerequest *tr = NULL;
     struct MsgPort *mp = NULL;
@@ -54,8 +56,10 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
                 tr->tr_node.io_Command = TR_ADDREQUEST;
 
                 /* FIXME: Use signals */
-                while(unit->handler_task_run) {
-                    mybug(-1,("[handler_task] Hello...\n"));
+                while(VUSBHCIBase->handler_task_run) {
+                    if(unit->allocated) {
+                        mybug(-1,("[handler_task] Hello...\n"));
+                    }
 
                     call_libusb_handler();
 
@@ -83,6 +87,15 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
     if(!libusb_bridge_init(VUSBHCIBase)) {
         return FALSE;
     }
+
+    /* Create periodic handler task */
+    VUSBHCIBase->handler_task_run = TRUE;
+    VUSBHCIBase->handler_task = NewCreateTask(TASKTAG_NAME, "libusb handler task",
+                                              TASKTAG_PC, handler_task,
+                                              TASKTAG_ARG1, FindTask(NULL),
+                                              TASKTAG_ARG2, VUSBHCIBase,
+                                              TAG_END);
+    Wait(SIGF_CHILD);
 
     VUSBHCIBase->usbunit200 = VUSBHCI_AddNewUnit200();
 
@@ -126,17 +139,6 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
         ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
 
         if(ioreq->iouh_Req.io_Unit != NULL) {
-
-            /* Create periodic handler task */
-            unit->handler_task_run = TRUE;
-            unit->handler_task = NewCreateTask(TASKTAG_NAME, "libusb handler task",
-                                               TASKTAG_PC, handler_task,
-                                               TASKTAG_ARG1, FindTask(NULL),
-                                               TASKTAG_ARG2, unit,
-                                               TAG_END);
-
-            Wait(SIGF_CHILD);
-
             /* Opened ok! */
             ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
             ioreq->iouh_Req.io_Error				   = 0;
@@ -153,14 +155,10 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
 static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *ioreq) {
     mybug(-1, ("[VUSBHCI] Close: Entering function\n"));
 
-    struct VUSBHCIUnit *unit = ioreq->iouh_Req.io_Unit;
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *)ioreq->iouh_Req.io_Unit;
 
-    mybug(-1, ("[VUSBHCI] Close: Closing unit %p\n", ioreq->iouh_Req.io_Unit));
+    mybug(-1, ("[VUSBHCI] Close: Closing unit %p\n", unit));
     if(unit) {
-
-        unit->handler_task_run = FALSE;
-        Wait(SIGF_CHILD);
-
         unit->allocated = FALSE;
 
         ioreq->iouh_Req.io_Unit   = (APTR) -1;
@@ -370,20 +368,6 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->roothub.hubdesc.bHubContrCurrent    = 1;
         unit->roothub.hubdesc.DeviceRemovable     = 1;
         unit->roothub.hubdesc.PortPwrCtrlMask     = 0;
-
-        sprintf(unit->name, "VUSBHCI_USB%x%x", (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>4)&0xf);
-
-        switch(unit->state) {
-            case UHSF_SUSPENDED:
-                mybug(0, ("        Unit state: UHSF_SUSPENDED\n"));
-                break;
-            case UHSF_OPERATIONAL:
-                mybug(0, ("        Unit state: UHSF_OPERATIONAL\n"));
-                break;
-            default:
-                mybug(0, ("        Unit state: %lx (Error?)\n", unit->state));
-                break;
-        };
 
         return unit;
     }
