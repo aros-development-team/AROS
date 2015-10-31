@@ -137,9 +137,9 @@ BOOL libusb_bridge_init() {
             if(rc == LIBUSB_SUCCESS) {
                 bug("[LIBUSB]  - Hotplug callback installed rc = %d\n", rc);
 
-                while (done < 2) {
-                    LIBUSBCALL(libusb_handle_events, NULL);
-                }
+                //while (done < 2) {
+                //    LIBUSBCALL(libusb_handle_events, NULL);
+                //}
 
                 return TRUE;
             }
