@@ -6,6 +6,7 @@
 #include <proto/exec.h>
 #include <proto/hostlib.h>
 #include "libusb_hostlib.h"
+#include "../vusbhci_device.h"
 
 #include <aros/debug.h>
 
@@ -103,7 +104,7 @@ void *hostlib_load_so(const char *sofile, const char **names, int nfuncs, void *
     return handle;
 }
 
-BOOL libusb_bridge_init() {
+BOOL libusb_bridge_init(struct VUSBHCIUnit *unit) {
 
     int rc;
 
