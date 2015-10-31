@@ -662,26 +662,28 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug(-1, ("[VUSBHCI] cmdIntXFerRootHub: Entering function\n"));
-
+    mybug_unit(-1, ("Entering function\n"));
 
     if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length)) {
+        mybug_unit(-1, ("UHIOERR_BADPARAMS\n"));
         return(UHIOERR_BADPARAMS); // was UHIOERR_STALL
     }
 
-//        if(unit->hu_RootPortChanges) {
-//            unit->hu_RootPortChanges = 0;
-//            return(0);
-//        }
+    if(unit->roothub.portchange) {
+        mybug_unit(-1, ("Port change\n"));
+        *((UBYTE *) ioreq->iouh_Data) = 1;
+        ioreq->iouh_Actual = 1;
+        unit->roothub.portchange = FALSE;
+        return(0);
+    }
+
+    mybug_unit(-1, ("ioreq added to roothub io_queue\n"));
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     Disable();
     AddTail(&unit->roothub.io_queue, (struct Node *) ioreq);
     Enable();
     return(RC_DONTREPLY);
-
-    //mybug_unit(-1, ("Nothing done!\n\n"));
-    //return RC_DONTREPLY;
 }
 
 
@@ -711,6 +713,32 @@ WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
 
     mybug_unit(-1, ("Nothing done!\n\n"));
     return RC_DONTREPLY;
+}
+
+void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
+    mybug_unit(-1, ("Entering function\n"));
+
+    mybug_unit(-1, ("unit->roothub.portchange = %d\n", unit->roothub.portchange));
+
+    struct IOUsbHWReq *ioreq;
+
+    if(unit->roothub.portchange && unit->roothub.io_queue.lh_Head->ln_Succ) {
+        mybug_unit(-1, ("Port change\n"));
+
+        Disable();
+        ioreq = (struct IOUsbHWReq *) unit->roothub.io_queue.lh_Head;
+        while(((struct Node *) ioreq)->ln_Succ) {
+            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+
+            *((UBYTE *) ioreq->iouh_Data) = 1;
+            ioreq->iouh_Actual = 1;
+
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
+            ioreq = (struct IOUsbHWReq *) unit->roothub.io_queue.lh_Head;
+        }
+        unit->roothub.portchange = FALSE;
+        Enable();
+    }
 }
 
 WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
