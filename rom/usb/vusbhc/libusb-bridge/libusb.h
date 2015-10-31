@@ -5,7 +5,7 @@
 
 #include <exec/types.h>
 
-BOOL libusb_bridge_init(struct VUSBHCIUnit *unit);
+BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase);
 VOID libusb_bridge_cleanup();
 
 int call_libusb_init();

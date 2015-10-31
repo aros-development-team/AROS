@@ -80,6 +80,10 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
     mybug(-1,("[VUSBHCI] Init: Entering function\n"));
 
+    if(!libusb_bridge_init(VUSBHCIBase)) {
+        return FALSE;
+    }
+
     VUSBHCIBase->usbunit200 = VUSBHCI_AddNewUnit200();
 
     if(VUSBHCIBase->usbunit200 == NULL) {
@@ -308,12 +312,6 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         mybug(-1, ("[VUSBHCI] VUSBHCI_AddNewUnit: Failed to create new unit structure\n"));
         return NULL;
     } else {
-
-        if(!libusb_bridge_init(unit)) {
-            FreeVec(unit);
-            return NULL;
-        }
-
         unit->state = UHSF_SUSPENDED;
         unit->allocated = FALSE;
 

@@ -37,6 +37,11 @@ int done = 0;
 int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event event, void *user_data) {
     bug("[LIBUSB] Hotplug callback event!\n");
 
+    struct VUSBHCIBase *VUSBHCIBase = (struct VUSBHCIBase *)user_data;
+    struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
+
+    bug("[LIBUSB] unit->roothub.devdesc.bcdUSB = %02x\n", unit->roothub.devdesc.bcdUSB);
+
     struct libusb_device_descriptor desc;
     int rc;
 
@@ -104,7 +109,7 @@ void *hostlib_load_so(const char *sofile, const char **names, int nfuncs, void *
     return handle;
 }
 
-BOOL libusb_bridge_init(struct VUSBHCIUnit *unit) {
+BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase) {
 
     int rc;
 
@@ -131,7 +136,7 @@ BOOL libusb_bridge_init(struct VUSBHCIUnit *unit) {
                             LIBUSB_HOTPLUG_MATCH_ANY,
                             LIBUSB_HOTPLUG_MATCH_ANY,
                             hotplug_callback_event_handler,
-                            NULL,
+                            (void *)VUSBHCIBase,
                             NULL)
             );
 
