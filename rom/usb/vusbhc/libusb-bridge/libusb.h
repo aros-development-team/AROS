@@ -9,4 +9,4 @@ BOOL libusb_bridge_init();
 VOID libusb_bridge_cleanup();
 
 int call_libusb_init();
-
+void call_libusb_handler();

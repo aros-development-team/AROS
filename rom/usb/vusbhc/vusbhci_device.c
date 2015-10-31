@@ -58,6 +58,8 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
                 while(unit->handler_task_run) {
                     mybug(-1,("[handler_task] Hello...\n"));
 
+                    call_libusb_handler();
+
                     /* Wait */
                     tr->tr_time.tv_secs = 1;
                     tr->tr_time.tv_micro = 0;
