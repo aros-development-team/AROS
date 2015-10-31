@@ -48,6 +48,9 @@ struct VUSBHCIUnit {
 
         UWORD                    addr;
 
+        BOOL                     attached;
+        BOOL                     portchange;
+
         struct UsbStdDevDesc     devdesc;
 
         struct RHConfig {

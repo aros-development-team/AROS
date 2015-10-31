@@ -31,6 +31,8 @@ static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs,
 BOOL libusb_bridge_init();
 VOID libusb_bridge_cleanup();
 
+extern void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit);
+
 static libusb_device_handle *handle = NULL;
 
 int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event event, void *user_data) {
@@ -38,8 +40,6 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
     struct VUSBHCIBase *VUSBHCIBase = (struct VUSBHCIBase *)user_data;
     struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
-
-    bug("[LIBUSB] unit->roothub.devdesc.bcdUSB = %02x\n", unit->roothub.devdesc.bcdUSB);
 
     struct libusb_device_descriptor desc;
     int rc;
@@ -50,6 +50,10 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
             bug("[LIBUSB]  - Device attached\n");
 
             if(unit->allocated) {
+                unit->roothub.attached = TRUE;
+                unit->roothub.portchange = TRUE;
+                uhwCheckRootHubChanges(unit);
+
                 rc = LIBUSBCALL(libusb_get_device_descriptor, dev, &desc);
                 if (LIBUSB_SUCCESS != rc) {
                     bug("[LIBUSB] Failed to read device descriptor\n");
@@ -59,11 +63,18 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
                 bug("Device attach: %04x:%04x\n", desc.idVendor, desc.idProduct);
 
                 LIBUSBCALL(libusb_open, dev, &handle);
+
             }
         break;
 
         case LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT:
             bug("[LIBUSB]  - Device detached\n");
+
+            if(unit->allocated) {
+                unit->roothub.attached = FALSE;
+                unit->roothub.portchange = TRUE;
+                uhwCheckRootHubChanges(unit);
+            }
 
             if(handle != NULL) {
                 LIBUSBCALL(libusb_close, handle);
