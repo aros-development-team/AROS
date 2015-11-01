@@ -67,13 +67,15 @@
 	    DEBUG_SETIPREFS(bug("SetIPrefs: Drag modes: 0x%04lX\n", GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0]));
 
             break;
-        
+
 	case IPREFS_TYPE_SCREENMODE_V37:
 	{
+            BOOL closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
+
             DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE_V37\n"));
             if (length > sizeof(struct IScreenModePrefs))
                 length = sizeof(struct IScreenModePrefs);
-	    
+
             if (!GetPrivIBase(IntuitionBase)->ScreenModePrefs)
                 GetPrivIBase(IntuitionBase)->ScreenModePrefs = AllocMem(sizeof(struct IScreenModePrefs), MEMF_ANY);
 
@@ -81,12 +83,12 @@
 	               sizeof(struct IScreenModePrefs)) == 0)
 	        break;
 
-	    if (GetPrivIBase(IntuitionBase)->WorkBench)
+	    if (!closed)
 	    {
-	        BOOL try = TRUE, closed;
-		
+	        BOOL try = TRUE;
+
 	        UnlockIBase(lock);
-		
+
 		while (try && !(closed = CloseWorkBench()))
 		{
                     struct EasyStruct es =
@@ -101,26 +103,25 @@
 
                     try = EasyRequestArgs(NULL, &es, NULL, NULL) == 1;
 		}
-		
-		if (closed)
+            }
+
+            if (closed)
+            {
+                CopyMem(data, GetPrivIBase(IntuitionBase)->ScreenModePrefs, sizeof(struct IScreenModePrefs));
+
+                if (!OpenWorkBench())
                 {
-                    CopyMem(data, GetPrivIBase(IntuitionBase)->ScreenModePrefs, sizeof(struct IScreenModePrefs *));
-		    /* FIXME: handle the error condition if OpenWorkBench() fails */
-		    /* What to do if OpenWorkBench() fails? Try until it succeeds?
-		       Try for a finite amount of times? Don't try and do nothing 
-		       at all? */
-		    if (!OpenWorkBench())
-                    {
-                        
-                    }
+                    /* FIXME: handle the error condition if OpenWorkBench() fails */
+                    /* What to do if OpenWorkBench() fails? Try until it succeeds?
+                       Try for a finite amount of times? Don't try and do nothing 
+                       at all? */
                 }
-		else
-		    Result = FALSE;
-		
-		return Result;
-		
-	    }
-	    
+            }
+            else
+                Result = FALSE;
+
+            return Result;
+
             break;
 	}
 
