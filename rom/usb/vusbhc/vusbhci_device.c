@@ -38,6 +38,9 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
 
     mybug(-1,("[handler_task] Starting\n"));
 
+    const char animate[4]={'/','-','\\','|'};
+    static ULONG i;
+
     struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
 
     struct timerequest *tr = NULL;
@@ -58,7 +61,8 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                 /* FIXME: Use signals */
                 while(VUSBHCIBase->handler_task_run) {
                     if(unit->allocated) {
-                        mybug(-1,("."));
+                        mybug(-1,("%c\b", animate[i]));
+                        i = (i+1) % 4;
                     }
 
                     call_libusb_handler();
@@ -157,7 +161,8 @@ static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *i
 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *)ioreq->iouh_Req.io_Unit;
 
-    mybug(-1, ("[VUSBHCI] Close: Closing unit %p\n", unit));
+    mybug_unit(-1, ("Closing unit %p\n", unit));
+
     if(unit) {
         unit->allocated = FALSE;
 
@@ -181,7 +186,6 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCIBase *, VUSBHCIBase, 5, VUSBHCI) {
     AROS_LIBFUNC_INIT
-    mybug(-1, ("[VUSBHCI] BeginIO: Entering function\n"));
 
     WORD ret = RC_OK;
 
@@ -189,6 +193,8 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
     ioreq->iouh_Req.io_Error				   = UHIOERR_NO_ERROR;
 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(0, ("Entering function\n"));
 
     if(unit != NULL) {
 
@@ -200,11 +206,11 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
                 mybug_unit(-1, ("CMD_FLUSH\n"));
                 break;
             case UHCMD_QUERYDEVICE:
-                mybug_unit(-1, ("UHCMD_QUERYDEVICE\n"));
+                mybug_unit(0, ("UHCMD_QUERYDEVICE\n"));
                 ret = cmdQueryDevice(ioreq);
                 break;
             case UHCMD_USBRESET:
-                mybug_unit(-1, ("UHCMD_USBRESET\n"));
+                mybug_unit(0, ("UHCMD_USBRESET\n"));
                 ret = cmdUsbReset(ioreq);
                 break;
             case UHCMD_USBRESUME:
@@ -218,18 +224,15 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
                 //ret = cmdUsbOper(ioreq);
                 break;
             case UHCMD_CONTROLXFER:
-                mybug_unit(-1, ("UHCMD_CONTROLXFER unit %p %s\n", unit, unit->name));
                 ret = cmdControlXFer(ioreq);
                 break;
             case UHCMD_BULKXFER:
                 mybug_unit(-1, ("UHCMD_BULKXFER\n"));
                 break;
             case UHCMD_INTXFER:
-                mybug_unit(-1, ("UHCMD_INTXFER unit %p %s\n", unit, unit->name));
                 ret = cmdIntXFer(ioreq);
                 break;
             case UHCMD_ISOXFER:
-                mybug_unit(-1, ("UHCMD_ISOXFER\n"));
                 ret = cmdISOXFer(ioreq);
                 break;
 
@@ -300,6 +303,56 @@ AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
     AROS_LIBFUNC_EXIT
 }
 
+WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(0, ("Entering function\n"));
+
+    struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
+    struct TagItem *tag;
+    ULONG count = 0;
+
+    while((tag = LibNextTagItem(&taglist)) != NULL) {
+        switch (tag->ti_Tag) {
+            case UHA_Manufacturer:
+                *((STRPTR *) tag->ti_Data) = "The AROS Development Team";
+                count++;
+                break;
+            case UHA_Version:
+                *((ULONG *) tag->ti_Data) = VERSION_NUMBER;
+                count++;
+                break;
+            case UHA_Revision:
+                *((ULONG *) tag->ti_Data) = REVISION_NUMBER;
+                count++;
+                break;
+            case UHA_Copyright:
+                *((STRPTR *) tag->ti_Data) ="©2015 The AROS Development Team";
+                count++;
+                break;
+            case UHA_ProductName:
+                *((STRPTR *) tag->ti_Data) ="VUSBHCI Host Controller";
+                count++;
+                break;
+            case UHA_Description:
+                *((STRPTR *) tag->ti_Data) ="Hosted Host Controller Interface (libusb)";
+                count++;
+                break;
+            case UHA_Capabilities:
+                *((ULONG *) tag->ti_Data) = (UHCF_USB20|UHCF_ISO);
+                count++;
+                break;
+            default:
+                break;
+        }
+    }
+
+    mybug_unit(0, ("Done\n\n"));
+
+    ioreq->iouh_Actual = count;
+    return RC_OK;
+}
+
 struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
 
     struct VUSBHCIUnit *unit;
@@ -364,10 +417,15 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->roothub.hubdesc.bDescriptorType     = UDT_HUB;
         unit->roothub.hubdesc.bNbrPorts           = 1;
         unit->roothub.hubdesc.wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
-        unit->roothub.hubdesc.bPwrOn2PwrGood      = 0;
+        unit->roothub.hubdesc.bPwrOn2PwrGood      = 1;
         unit->roothub.hubdesc.bHubContrCurrent    = 1;
-        unit->roothub.hubdesc.DeviceRemovable     = 1;
-        unit->roothub.hubdesc.PortPwrCtrlMask     = 0;
+        unit->roothub.hubdesc.DeviceRemovable     = 0;
+        unit->roothub.hubdesc.PortPwrCtrlMask     = (1<<1);
+
+        //unit->roothub.portstatus.wPortStatus = -1;
+        //unit->roothub.portstatus.wPortChange = -1;
+
+        snprintf(unit->name, 255, "VUSBHCI%02x", unit->roothub.devdesc.bcdUSB);
 
         return unit;
     }
