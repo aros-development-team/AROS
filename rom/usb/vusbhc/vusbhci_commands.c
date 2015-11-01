@@ -114,7 +114,77 @@ D4..0 Recipient
 #define URTF_OTHER            0x03      // target: other
 */
 
-/* Standard Requests */
+/* Standard Requests */ 
+/*
+    SetAddress:
+        bmRequestType   (URTF_OUT|URTF_STANDARD|URTF_DEVICE) 00000000B
+        bRequest        USR_SET_ADDRESS
+        wValue          Device Address
+        wIndex          Zero
+        wLength         Zero
+        Data            None
+*/
+UWORD SetAddress(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+
+    mybug_unit(-1, ("SetAddress (address %d)\n", wValue));
+
+    /* It is a Request Error if wValue, wIndex, or wLength are other than as specified above. */
+    if( (wValue) && (!(wIndex)) && (!(wLength)) ) {
+
+        unit->roothub.addr = wValue;
+        ioreq->iouh_Actual = wLength;
+
+        mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+        return UHIOERR_NO_ERROR;
+    }
+
+    mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
+    return UHIOERR_BADPARAMS;
+}
+
+/*
+    SetConfiguration:
+        bmRequestType   (URTF_OUT|URTF_STANDARD|URTF_DEVICE) 00000000B
+        bRequest        USR_SET_CONFIGURATION
+        wValue          Configuration Value
+        wIndex          Zero
+        wLength         Zero
+        Data            None
+
+    Note:
+        We have only one configuration, but implement some sanity still
+        If more than one configuration is specified we ignore the rest in GetDescriptor(UDT_CONFIGURATION)
+
+*/
+UWORD SetConfiguration(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+
+    mybug_unit(-1, ("SetConfiguration (configuration %d)\n", wValue));
+
+    /* It is a Request Error if wValue, wIndex, or wLength are other than as specified above. */
+    if( (wValue) && (wValue<=unit->roothub.devdesc.bNumConfigurations) && (!(wIndex)) && (!(wLength)) ) {
+
+        ioreq->iouh_Actual = wLength;
+
+        mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+        return UHIOERR_NO_ERROR;
+    }
+
+    mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
+    return UHIOERR_BADPARAMS;
+}
+
 /*
     GetStatus:
 */
@@ -132,7 +202,7 @@ UWORD GetDescriptor(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
-    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    //UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
     UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
@@ -152,13 +222,22 @@ UWORD GetDescriptor(struct IOUsbHWReq *ioreq) {
         break;
 
         case UDT_CONFIGURATION:
-            mybug_unit(-1, ("GetDeviceDescriptor UDT_CONFIGURATION (length %ld)\n", wLength));
+            index = (wValue & 0xff);
 
-            ioreq->iouh_Actual = (wLength > sizeof(struct RHConfig)) ? sizeof(struct RHConfig) : wLength;
-            CopyMem((APTR) &unit->roothub.config, ioreq->iouh_Data, ioreq->iouh_Actual);
+            mybug_unit(-1, ("GetDeviceDescriptor UDT_CONFIGURATION (configuration %d, length %ld)\n",index, wLength));
 
-            mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
-            return UHIOERR_NO_ERROR;
+            if(index == 0) {
+
+                ioreq->iouh_Actual = (wLength > sizeof(struct RHConfig)) ? sizeof(struct RHConfig) : wLength;
+                CopyMem((APTR) &unit->roothub.config, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+                return UHIOERR_NO_ERROR;
+            }
+
+            mybug_unit(-1, ("Our roothub supports only one configuration\n"));
+            mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
+            return UHIOERR_BADPARAMS;
         break;
 
         case UDT_STRING:
@@ -184,6 +263,7 @@ UWORD GetDescriptor(struct IOUsbHWReq *ioreq) {
                         return UHIOERR_NO_ERROR;
                     }
 
+                    mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
                     return UHIOERR_BADPARAMS; //CHECKME: Should we return stall?
                 break;
 
@@ -303,7 +383,7 @@ UWORD GetHubDescriptor(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
-    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    //UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
     UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
@@ -542,6 +622,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
 
 /* Standard Requests */
+        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
+            return(SetAddress(ioreq));
+
+        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
+            return(SetConfiguration(ioreq));
+
         case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_STATUS)):
             return(GetStatus(ioreq));
 
