@@ -61,8 +61,7 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                 /* FIXME: Use signals */
                 while(VUSBHCIBase->handler_task_run) {
                     if(unit->allocated) {
-                        mybug(-1,("%c\b", animate[i]));
-                        i = (i+1) % 4;
+                        mybug(-1,("%c\b", animate[(i++)%4]));
                     }
 
                     call_libusb_handler();
