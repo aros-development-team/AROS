@@ -70,7 +70,7 @@
 
 	case IPREFS_TYPE_SCREENMODE_V37:
 	{
-            BOOL closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
+            BOOL reopen = FALSE, closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
 
             DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE_V37\n"));
             if (length > sizeof(struct IScreenModePrefs))
@@ -86,6 +86,8 @@
 	    if (!closed)
 	    {
 	        BOOL try = TRUE;
+
+                reopen = TRUE;
 
 	        UnlockIBase(lock);
 
@@ -109,7 +111,7 @@
             {
                 CopyMem(data, GetPrivIBase(IntuitionBase)->ScreenModePrefs, sizeof(struct IScreenModePrefs));
 
-                if (!OpenWorkBench())
+                if (reopen && !OpenWorkBench())
                 {
                     /* FIXME: handle the error condition if OpenWorkBench() fails */
                     /* What to do if OpenWorkBench() fails? Try until it succeeds?
