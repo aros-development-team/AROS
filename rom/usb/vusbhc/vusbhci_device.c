@@ -422,8 +422,11 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->roothub.hubdesc.DeviceRemovable     = 0;
         unit->roothub.hubdesc.PortPwrCtrlMask     = (1<<1);
 
-        //unit->roothub.portstatus.wPortStatus = -1;
-        //unit->roothub.portstatus.wPortChange = -1;
+        //unit->roothub.portstatus.wPortStatus = 0;
+        //unit->roothub.portstatus.wPortChange = 0;
+
+        //unit->roothub.hubstatus->wHubStatus = 0;
+        //unit->roothub.hubstatus->wHubChange = 0;
 
         snprintf(unit->name, 255, "VUSBHCI%02x", unit->roothub.devdesc.bcdUSB);
 

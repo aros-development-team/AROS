@@ -58,6 +58,8 @@ struct VUSBHCIUnit {
 
         struct UsbHubDesc        hubdesc;
 
+        struct UsbHubStatus      hubstatus;
+
         struct UsbPortStatus     portstatus;
 
     }                            roothub;
