@@ -5,6 +5,10 @@
 
 #include <proto/exec.h>
 #include <proto/hostlib.h>
+
+#include <devices/usb.h>
+#include <devices/usb_hub.h>
+
 #include "libusb_hostlib.h"
 #include "../vusbhci_device.h"
 
@@ -36,7 +40,7 @@ extern void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit);
 static libusb_device_handle *handle = NULL;
 
 int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event event, void *user_data) {
-    bug("[LIBUSB] Hotplug callback event!\n");
+    bug("\n[LIBUSB] Hotplug callback event!\n");
 
     struct VUSBHCIBase *VUSBHCIBase = (struct VUSBHCIBase *)user_data;
     struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
@@ -50,8 +54,10 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
             bug("[LIBUSB]  - Device attached\n");
 
             if(unit->allocated) {
-                unit->roothub.attached = TRUE;
-                unit->roothub.portchange = TRUE;
+
+                unit->roothub.portstatus.wPortStatus |= UPSF_PORT_CONNECTION;
+                unit->roothub.portstatus.wPortChange |= UPSF_PORT_CONNECTION;
+
                 uhwCheckRootHubChanges(unit);
 
                 rc = LIBUSBCALL(libusb_get_device_descriptor, dev, &desc);
@@ -71,8 +77,10 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
             bug("[LIBUSB]  - Device detached\n");
 
             if(unit->allocated) {
-                unit->roothub.attached = FALSE;
-                unit->roothub.portchange = TRUE;
+
+                unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_CONNECTION;
+                unit->roothub.portstatus.wPortChange |= UPSF_PORT_CONNECTION;
+
                 uhwCheckRootHubChanges(unit);
             }
 

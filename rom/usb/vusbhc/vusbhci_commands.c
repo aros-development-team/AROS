@@ -29,56 +29,6 @@
 
 #include LC_LIBDEFS_FILE
 
-WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[VUSBHCI] cmdQueryDevice: Entering function\n"));
-
-    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-
-    struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
-    struct TagItem *tag;
-    ULONG count = 0;
-
-    while((tag = LibNextTagItem(&taglist)) != NULL) {
-        switch (tag->ti_Tag) {
-            case UHA_Manufacturer:
-                *((STRPTR *) tag->ti_Data) = "The AROS Development Team";
-                count++;
-                break;
-            case UHA_Version:
-                *((ULONG *) tag->ti_Data) = VERSION_NUMBER;
-                count++;
-                break;
-            case UHA_Revision:
-                *((ULONG *) tag->ti_Data) = REVISION_NUMBER;
-                count++;
-                break;
-            case UHA_Copyright:
-                *((STRPTR *) tag->ti_Data) ="©2015 The AROS Development Team";
-                count++;
-                break;
-            case UHA_ProductName:
-                *((STRPTR *) tag->ti_Data) ="VUSBHCI Host Controller";
-                count++;
-                break;
-            case UHA_Description:
-                *((STRPTR *) tag->ti_Data) ="Hosted Host Controller Interface (libusb)";
-                count++;
-                break;
-            case UHA_Capabilities:
-                *((ULONG *) tag->ti_Data) = (UHCF_USB20|UHCF_ISO);
-                count++;
-                break;
-            default:
-                break;
-        }
-    }
-
-    mybug_unit(0, ("Done\n\n"));
-
-    ioreq->iouh_Actual = count;
-    return RC_OK;
-}
-
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
     ioreq->iouh_Req.io_Error = IOERR_ABORTED;
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
@@ -92,9 +42,9 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[VUSBHCI] cmdUsbReset: Entering function\n"));
-
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(0, ("Entering function\n"));
 
     /* We should do a proper reset sequence with a real driver */
     unit->state = UHSF_RESET;
@@ -105,9 +55,9 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[VUSBHCI] cmdControlXFer: Entering function\n"));
-
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
 
     mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
     mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
@@ -135,8 +85,291 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
     return RC_DONTREPLY;
 }
 
+/*
+D7 Data Phase Transfer Direction
+0 = Host to Device
+1 = Device to Host
+D6..5 Type
+0 = Standard
+1 = Class
+2 = Vendor
+3 = Reserved
+D4..0 Recipient
+0 = Device
+1 = Interface
+2 = Endpoint
+3 = Other
+4..31 = Reserved
+
+#define URTF_OUT              0x00      // direction: host to device
+#define URTF_IN               0x80      // direction: device to host 
+
+#define URTF_STANDARD         0x00      // type: usb standard request
+#define URTF_CLASS            0x20      // type: class request
+#define URTF_VENDOR           0x40      // type: vendor specific request
+
+#define URTF_DEVICE           0x00      // target: device
+#define URTF_INTERFACE        0x01      // target: interface
+#define URTF_ENDPOINT         0x02      // target: endpoint
+#define URTF_OTHER            0x03      // target: other
+*/
+
+/* Standard Requests */
+/*
+    GetStatus:
+*/
+UWORD GetStatus(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    while(1);
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    GetDescriptor:
+*/
+UWORD GetDescriptor(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+
+    CONST_STRPTR roothubstring = NULL;
+    CONST_STRPTR roothubstrings[] = {"The AROS Development Team.", "VUSBHCI root hub (USB2.00)", "VUSBHCI root hub (USB3.00)", "Standard Config", "Hub interface" };
+
+    switch((wValue>>8)) {
+        case UDT_DEVICE:
+            mybug_unit(-1, ("GetDeviceDescriptor UDT_DEVICE (length %ld)\n", wLength));
+
+            ioreq->iouh_Actual = (wLength > sizeof(struct UsbStdDevDesc)) ? sizeof(struct UsbStdDevDesc) : wLength;
+            CopyMem((APTR) &unit->roothub.devdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+            mybug_unit(-1, ("Done\n\n"));
+            return UHIOERR_NO_ERROR;
+        break;
+
+        case UDT_STRING:
+            mybug_unit(-1, ("GetStringDescriptor UDT_STRING (index %d)\n", (wValue&0xff)));
+
+            UBYTE index = (wValue & 0xff);
+
+            struct UsbStdStrDesc *strdesc = (struct UsbStdStrDesc *) ioreq->iouh_Data;
+
+            switch(index) {
+                case 0:
+                    if(wLength > 1) {
+                        strdesc->bLength = sizeof(struct UsbStdStrDesc);
+                        strdesc->bDescriptorType = UDT_STRING;
+                        ioreq->iouh_Actual = 2;
+
+                        if(wLength > 3) {
+                            strdesc->bString[0] = AROS_WORD2LE(0x0409); // English (Yankee)
+                            ioreq->iouh_Actual = sizeof(struct UsbStdStrDesc);
+                        }
+
+                        mybug_unit(-1, ("Done\n\n"));
+                        return UHIOERR_NO_ERROR;
+                    }
+
+                    return UHIOERR_BADPARAMS; //CHECKME: Should we return stall?
+                break;
+
+                case 1:
+                    roothubstring = roothubstrings[0];
+                break;
+
+                case 2:
+                    if(unit->roothub.devdesc.bcdUSB == AROS_WORD2LE(0x0200)) {
+                        roothubstring = roothubstrings[1];
+                    } else {
+                        roothubstring = roothubstrings[2];
+                    }
+                break;
+
+                case 3:
+                    roothubstring = roothubstrings[3];
+                break;
+
+                case 4:
+                    roothubstring = roothubstrings[4];
+                break;
+
+                default:
+                    return UHIOERR_BADPARAMS; //CHECKME: Should we return stall?
+            }
+
+            if(wLength > 1) {
+                UBYTE i = strlen(roothubstring);
+
+                strdesc->bLength = (i*sizeof(strdesc->bString))+sizeof(strdesc->bLength)+sizeof(strdesc->bDescriptorType);
+                strdesc->bDescriptorType = UDT_STRING;
+                ioreq->iouh_Actual = 2;
+
+                if(wLength > 3) {
+                    for(i=0; i<wLength; i++) {
+                        strdesc->bString[i] = AROS_WORD2LE((UWORD)roothubstring[i]);
+                    }
+                }
+
+                return UHIOERR_NO_ERROR;
+            }
+
+            return UHIOERR_BADPARAMS; //CHECKME: Should we return stall?
+        break;
+
+    }
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    SetDescriptor:
+*/
+UWORD SetDescriptor(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    while(1);
+
+    return UHIOERR_NO_ERROR;
+}
+
+
+/* Hub Class Requests */
+/*
+    ClearHubFeature:
+        bmRequestType   (URTF_OUT|URTF_CLASS|URTF_DEVICE) 00100000B
+        bRequest        USR_CLEAR_FEATURE
+        wValue          Feature Selector
+        wIndex          Zero
+        wLength         Zero
+        Data            None
+*/
+UWORD ClearHubFeature(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    ClearPortFeature:
+        bmRequestType (URTF_OUT|URTF_CLASS|URTF_OTHER) 00100011B
+        bRequest USR_CLEAR_FEATURE
+        wValue Feature Selector
+        wIndex (Selector|Port)
+        wLength Zero
+        Data None
+*/
+UWORD ClearPortFeature(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    while(1);
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    ClearTTBuffer:
+*/
+UWORD ClearTTBuffer(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    GetHubDescriptor: (URTF_IN|URTF_CLASS|URTF_DEVICE) 10100000B
+*/
+UWORD GetHubDescriptor(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    while(1);
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+*/
+UWORD GetHubStatus(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+*/
+UWORD GetPortStatus(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+*/
+UWORD ResetTT(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+*/
+UWORD SetHubDescriptor(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+*/
+UWORD SetHubFeature(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+*/
+UWORD SetPortFeature(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+*/
+UWORD GetTTState(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+*/
+UWORD StopTT(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    return UHIOERR_NO_ERROR;
+}
+
+
 WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
-    mybug(-1, ("[VUSBHCI] cmdControlXFerRootHub: Entering function\n"));
 
     UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
     UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
@@ -148,6 +381,121 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    D( mybug_unit(-1, ("bmRequestDirection "));
+    switch (bmRequestDirection) {
+        case URTF_IN:
+            mybug(-1, ("URTF_IN\n"));
+            break;
+        case URTF_OUT:
+            mybug(-1, ("URTF_OUT\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bmRequestType "));
+    switch(bmRequestType) {
+        case URTF_STANDARD:
+            mybug(-1, ("URTF_STANDARD\n"));
+            break;
+        case URTF_CLASS:
+            mybug(-1, ("URTF_CLASS\n"));
+            break;
+        case URTF_VENDOR:
+            mybug(-1, ("URTF_VENDOR\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bmRequestRecipient "));
+    switch (bmRequestRecipient) {
+        case URTF_DEVICE:
+            mybug(-1, ("URTF_DEVICE\n"));
+            break;
+        case URTF_INTERFACE:
+            mybug(-1, ("URTF_INTERFACE\n"));
+            break;
+        case URTF_ENDPOINT:
+            mybug(-1, ("URTF_ENDPOINT\n"));
+            break;
+        case URTF_OTHER:
+            mybug(-1, ("URTF_OTHER\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bRequest "));
+    switch(bRequest) {
+        case USR_GET_STATUS:
+            bug("USR_GET_STATUS\n");
+            break;
+        case USR_CLEAR_FEATURE:
+            mybug(-1, ("USR_CLEAR_FEATURE\n"));
+            break;
+        case USR_SET_FEATURE:
+            mybug(-1, ("USR_SET_FEATURE\n"));
+            break;
+        case USR_SET_ADDRESS:
+            mybug(-1, ("USR_SET_ADDRESS\n"));
+            break;
+        case USR_GET_DESCRIPTOR:
+            mybug(-1, ("USR_GET_DESCRIPTOR\n"));
+            break;
+        case USR_SET_DESCRIPTOR:
+            mybug(-1, ("USR_SET_DESCRIPTOR\n"));
+            break;
+        case USR_GET_CONFIGURATION:
+            mybug(-1, ("USR_GET_CONFIGURATION\n"););
+            break;
+        case USR_SET_CONFIGURATION:
+            mybug(-1, ("USR_SET_CONFIGURATION\n"));
+            break;
+        case USR_GET_INTERFACE:
+            mybug(-1, ("USR_GET_INTERFACE\n"));
+            break;
+        case USR_SET_INTERFACE:
+            mybug(-1, ("USR_SET_INTERFACE\n"));
+            break;
+        case USR_SYNCH_FRAME:
+            mybug(-1, ("USR_SYNCH_FRAME\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("wIndex %x\n", wIndex));
+    mybug_unit(-1, ("wValue %x\n", wValue));
+    mybug_unit(-1, ("wLength %d\n", wLength));
+
+
+
+    switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
+
+/* Standard Requests */
+        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_STATUS)):
+            return(GetStatus(ioreq));
+
+        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_DESCRIPTOR)):
+            return(GetDescriptor(ioreq));
+
+        case (((URTF_OUT|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_SET_DESCRIPTOR)):
+            return(SetDescriptor(ioreq));
+
+/* Hub Class Requests */
+        case (((URTF_OUT|URTF_CLASS|URTF_DEVICE)<<16)|(USR_CLEAR_FEATURE)):
+            return(ClearHubFeature(ioreq));
+
+        case (((URTF_OUT|URTF_CLASS|URTF_OTHER)<<16)|(USR_CLEAR_FEATURE)):
+            return(ClearPortFeature(ioreq));
+
+        case (((URTF_IN|URTF_CLASS|URTF_DEVICE)<<16)|(USR_GET_DESCRIPTOR)):
+            return(GetHubDescriptor(ioreq));
+
+        default:
+            break;
+    }
+
+
+
+
+
+
+    mybug_unit(-1, ("Entering function\n"));
 
     /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
     if(ioreq->iouh_Endpoint != 0) {
@@ -370,7 +718,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 *mptr++ = 0;
                                 *mptr++ = 0;
                                 ioreq->iouh_Actual = 4;
-                                //mybug_unit(-1, ("Something done, check me...\n\n"));
+                                mybug_unit(-1, ("Something done, check me...\n\n"));
                                 mybug_unit(-1, ("Done\n\n"));
                                 return UHIOERR_NO_ERROR;
                                 break;
@@ -386,6 +734,10 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubDesc)) ? sizeof(struct UsbHubDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.hubdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                                        //unit->roothub.hubdesc.PortPwrCtrlMask = (1<<1);
+                                        unit->roothub.hubdesc.DeviceRemovable = 0;
+                                        unit->roothub.hubdesc.PortPwrCtrlMask = (1<<(1+2))-2;
 
                                         mybug_unit(-1, ("Done\n\n"));
                                         return UHIOERR_NO_ERROR;
@@ -419,10 +771,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                     return(UHIOERR_STALL);
                                 }
 
-                                struct UsbPortStatus *usbportstatus = (struct UsbPortStatus *) ioreq->iouh_Data;
+                                struct UsbPortStatus *UsbPortStatus = (struct UsbPortStatus *) ioreq->iouh_Data;
 
-                                usbportstatus->wPortStatus = 0;
-                                usbportstatus->wPortChange = 0;
+                                UsbPortStatus->wPortStatus = unit->roothub.portstatus.wPortStatus;
+                                UsbPortStatus->wPortChange = unit->roothub.portstatus.wPortChange;
+
+                                mybug_unit(-1, ("PortStatus %02x\n", UsbPortStatus->wPortStatus));
+                                mybug_unit(-1, ("PortChange %02x\n", UsbPortStatus->wPortChange));
 
                                 mybug_unit(-1, ("Done\n\n"));
                                 return UHIOERR_NO_ERROR;
@@ -528,6 +883,38 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         break;
                                 } /* switch(wValue) */
                                 break;
+
+                            case USR_CLEAR_FEATURE:
+                                mybug_unit(-1, ("bRequest USR_CLEAR_FEATURE\n"));
+
+                                switch(wValue) {
+                                    case UFS_PORT_POWER:
+                                        mybug_unit(-1, ("wValue UFS_PORT_POWER\n"));
+
+                                        if((!wIndex) || (wIndex > unit->roothub.hubdesc.bNbrPorts)) {
+                                            mybug_unit(-1, ("Port %ld out of range\n\n", wIndex));
+                                            return(UHIOERR_STALL);
+                                        }
+
+                                        mybug_unit(-1, ("Done\n\n"));
+                                        return UHIOERR_NO_ERROR;
+                                        break;
+
+                                    case UFS_PORT_CONNECTION:
+                                    case UFS_PORT_ENABLE:
+                                    case UFS_PORT_SUSPEND:
+                                    case UFS_PORT_OVER_CURRENT:
+                                    case UFS_PORT_RESET:
+                                    case UFS_PORT_LOW_SPEED:
+                                    case UFS_C_PORT_CONNECTION:
+                                    case UFS_C_PORT_ENABLE:
+                                    case UFS_C_PORT_SUSPEND:
+                                    case UFS_C_PORT_OVER_CURRENT:
+                                    case UFS_C_PORT_RESET:
+                                        break;
+                                } /* switch(wValue) */
+                                break;
+
                         } /* switch(bRequest) */
                         break;
                 } /* switch(bmRequestRecipient) */
@@ -541,94 +928,14 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     } /* if(bmRequestDirection) */
 
-    D( mybug_unit(-1, ("bmRequestDirection "));
-    switch (bmRequestDirection) {
-        case URTF_IN:
-            mybug(-1, ("URTF_IN\n"));
-            break;
-        case URTF_OUT:
-            mybug(-1, ("URTF_OUT\n"));
-            break;
-    }
-
-    mybug_unit(-1, ("bmRequestType "));
-    switch(bmRequestType) {
-        case URTF_STANDARD:
-            mybug(-1, ("URTF_STANDARD\n"));
-            break;
-        case URTF_CLASS:
-            mybug(-1, ("URTF_CLASS\n"));
-            break;
-        case URTF_VENDOR:
-            mybug(-1, ("URTF_VENDOR\n"));
-            break;
-    }
-
-    mybug_unit(-1, ("bmRequestRecipient "));
-    switch (bmRequestRecipient) {
-        case URTF_DEVICE:
-            mybug(-1, ("URTF_DEVICE\n"));
-            break;
-        case URTF_INTERFACE:
-            mybug(-1, ("URTF_INTERFACE\n"));
-            break;
-        case URTF_ENDPOINT:
-            mybug(-1, ("URTF_ENDPOINT\n"));
-            break;
-        case URTF_OTHER:
-            mybug(-1, ("URTF_OTHER\n"));
-            break;
-    }
-
-    mybug_unit(-1, ("bRequest "));
-    switch(bRequest) {
-        case USR_GET_STATUS:
-            bug("USR_GET_STATUS\n");
-            break;
-        case USR_CLEAR_FEATURE:
-            mybug(-1, ("USR_CLEAR_FEATURE\n"));
-            break;
-        case USR_SET_FEATURE:
-            mybug(-1, ("USR_SET_FEATURE\n"));
-            break;
-        case USR_SET_ADDRESS:
-            mybug(-1, ("USR_SET_ADDRESS\n"));
-            break;
-        case USR_GET_DESCRIPTOR:
-            mybug(-1, ("USR_GET_DESCRIPTOR\n"));
-            break;
-        case USR_SET_DESCRIPTOR:
-            mybug(-1, ("USR_SET_DESCRIPTOR\n"));
-            break;
-        case USR_GET_CONFIGURATION:
-            mybug(-1, ("USR_GET_CONFIGURATION\n"););
-            break;
-        case USR_SET_CONFIGURATION:
-            mybug(-1, ("USR_SET_CONFIGURATION\n"));
-            break;
-        case USR_GET_INTERFACE:
-            mybug(-1, ("USR_GET_INTERFACE\n"));
-            break;
-        case USR_SET_INTERFACE:
-            mybug(-1, ("USR_SET_INTERFACE\n"));
-            break;
-        case USR_SYNCH_FRAME:
-            mybug(-1, ("USR_SYNCH_FRAME\n"));
-            break;
-    }
-
-    mybug_unit(-1, ("wIndex %x\n", wIndex));
-    mybug_unit(-1, ("wValue %x\n", wValue));
-    mybug_unit(-1, ("wLength %d\n", wLength));
-
     mybug_unit(-1, ("Nothing done!\n\n")) );
     return UHIOERR_BADPARAMS;
 }
 
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[VUSBHCI] cmdIntXFer: Entering function\n"));
-
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
 
     mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
     mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
@@ -659,7 +966,6 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
-
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     mybug_unit(-1, ("Entering function\n"));
@@ -669,13 +975,16 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
         return(UHIOERR_BADPARAMS); // was UHIOERR_STALL
     }
 
-    if(unit->roothub.portchange) {
-        mybug_unit(-1, ("Port change\n"));
-        *((UBYTE *) ioreq->iouh_Data) = 1;
+#if 0
+    if(unit->roothub.portstatus.wPortChange) {
+        mybug_unit(-1, ("unit->roothub.portstatus.wPortChange = %02x\n", unit->roothub.portstatus.wPortChange));
+        *((UBYTE *) ioreq->iouh_Data) = unit->roothub.portstatus.wPortChange;
         ioreq->iouh_Actual = 1;
-        unit->roothub.portchange = FALSE;
+        unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_CONNECTION;
+        mybug_unit(-1, ("unit->roothub.portstatus.wPortChange = %02x\n", unit->roothub.portstatus.wPortChange));
         return(0);
     }
+#endif
 
     mybug_unit(-1, ("ioreq added to roothub io_queue\n"));
 
@@ -688,9 +997,9 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
 
 
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
-    mybug(-1, ("[VUSBHCI] cmdISOXFer: Entering function\n"));
-
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
 
     mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
     mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
@@ -718,33 +1027,33 @@ WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
 void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
     mybug_unit(-1, ("Entering function\n"));
 
-    mybug_unit(-1, ("unit->roothub.portchange = %d\n", unit->roothub.portchange));
+    mybug_unit(-1, ("unit->roothub.portchange = %d\n", unit->roothub.portstatus.wPortChange));
 
     struct IOUsbHWReq *ioreq;
 
-    if(unit->roothub.portchange && unit->roothub.io_queue.lh_Head->ln_Succ) {
-        mybug_unit(-1, ("Port change\n"));
+    if(unit->roothub.portstatus.wPortChange && unit->roothub.io_queue.lh_Head->ln_Succ) {
+        mybug_unit(-1, ("Port has changeg\n"));
 
         Disable();
         ioreq = (struct IOUsbHWReq *) unit->roothub.io_queue.lh_Head;
         while(((struct Node *) ioreq)->ln_Succ) {
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
 
-            *((UBYTE *) ioreq->iouh_Data) = 1;
+            *((UBYTE *) ioreq->iouh_Data) = unit->roothub.portstatus.wPortChange;
             ioreq->iouh_Actual = 1;
 
             ReplyMsg(&ioreq->iouh_Req.io_Message);
             ioreq = (struct IOUsbHWReq *) unit->roothub.io_queue.lh_Head;
         }
-        unit->roothub.portchange = FALSE;
+        //unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_CONNECTION;
         Enable();
     }
 }
 
 WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
-    mybug(0, ("[VUSBHCI] cmdGetString: Entering function\n"));
-
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(0, ("Entering function\n"));
 
     UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
