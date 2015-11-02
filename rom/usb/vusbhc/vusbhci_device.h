@@ -50,7 +50,7 @@ struct VUSBHCIUnit {
 
     struct VUSBHCIRootHub {
 
-        struct List              intrxfer_queue;
+        struct List              intrxfer_queue; /* Status Change endpoint */
 
         UWORD                    addr;
 

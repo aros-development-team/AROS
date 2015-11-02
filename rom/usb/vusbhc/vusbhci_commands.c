@@ -292,6 +292,7 @@ UWORD SetDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD 
 
     //while(1);
 
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
     return UHIOERR_NO_ERROR;
 }
 
@@ -454,14 +455,55 @@ UWORD GetPortStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD 
     struct UsbPortStatus *usbportstatus = (struct UsbPortStatus *) ioreq->iouh_Data;
 
     /* Fake connection */
-    unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
-    unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+    //unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+    //unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
 
     /* We have only one port per 'controller' */
     usbportstatus->wPortStatus = unit->roothub.portstatus.wPortStatus;
     usbportstatus->wPortChange = unit->roothub.portstatus.wPortChange;
 
     mybug_unit(-1, ("usbportstatus->wPortStatus %01x\n", usbportstatus->wPortStatus));
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_CONNECTION) {
+        mybug_unit(-1, (" - UPSF_PORT_CONNECTION\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_ENABLE) {
+        mybug_unit(-1, (" - UPSF_PORT_ENABLE\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_SUSPEND) {
+        mybug_unit(-1, (" - UPSF_PORT_SUSPEND\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_OVER_CURRENT) {
+        mybug_unit(-1, (" - UPSF_PORT_OVER_CURRENT\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_RESET) {
+        mybug_unit(-1, (" - UPSF_PORT_RESET\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_POWER) {
+        mybug_unit(-1, (" - UPSF_PORT_POWER\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_LOW_SPEED) {
+        mybug_unit(-1, (" - UPSF_PORT_LOW_SPEED\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_HIGH_SPEED) {
+        mybug_unit(-1, (" - UPSF_PORT_HIGH_SPEED\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_TEST_MODE) {
+        mybug_unit(-1, (" - UPSF_PORT_TEST_MODE\n"));
+    }
+
+    if(usbportstatus->wPortStatus&UPSF_PORT_INDICATOR) {
+        mybug_unit(-1, (" - UPSF_PORT_INDICATOR\n"));
+    }
+
     mybug_unit(-1, ("usbportstatus->wPortChange %01x\n", usbportstatus->wPortChange));
 
     mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
@@ -517,6 +559,7 @@ UWORD SetPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD
         break;
         case 0x01:
             mybug_unit(-1, ("UFS_PORT_ENABLE           0x01\n"));
+            unit->roothub.portstatus.wPortStatus |= UPSF_PORT_ENABLE;
         break;
         case 0x02:
             mybug_unit(-1, ("UFS_PORT_SUSPEND          0x02\n"));
@@ -526,9 +569,11 @@ UWORD SetPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD
         break;
         case 0x04:
             mybug_unit(-1, ("UFS_PORT_RESET            0x04\n"));
+            unit->roothub.portstatus.wPortStatus |= (UPSF_PORT_ENABLE|UPSF_PORT_POWER);
         break;
         case 0x08:
             mybug_unit(-1, ("UFS_PORT_POWER            0x08\n"));
+            unit->roothub.portstatus.wPortStatus |= UPSF_PORT_POWER;
         break;
         case 0x09:
             mybug_unit(-1, ("UFS_PORT_LOW_SPEED        0x09\n"));
@@ -583,12 +628,26 @@ UWORD ClearPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
 
     mybug_unit(-1, ("Clearing feature 0x%02x on port %d\n",wValue, port));
 
+/*
+#define UPSF_PORT_CONNECTION  0x0001
+#define UPSF_PORT_ENABLE      0x0002
+#define UPSF_PORT_SUSPEND     0x0004
+#define UPSF_PORT_OVER_CURRENT 0x0008
+#define UPSF_PORT_RESET       0x0010
+#define UPSF_PORT_POWER       0x0100
+#define UPSF_PORT_LOW_SPEED   0x0200
+#define UPSF_PORT_HIGH_SPEED  0x0400
+#define UPSF_PORT_TEST_MODE   0x0800
+#define UPSF_PORT_INDICATOR   0x1000
+*/
     switch(wValue) {
         case 0x00:
             mybug_unit(-1, ("UFS_PORT_CONNECTION       0x00\n"));
+            unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_CONNECTION;
         break;
         case 0x01:
             mybug_unit(-1, ("UFS_PORT_ENABLE           0x01\n"));
+            unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_ENABLE;
         break;
         case 0x02:
             mybug_unit(-1, ("UFS_PORT_SUSPEND          0x02\n"));
@@ -598,33 +657,42 @@ UWORD ClearPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
         break;
         case 0x04:
             mybug_unit(-1, ("UFS_PORT_RESET            0x04\n"));
+            unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_RESET;
         break;
         case 0x08:
             mybug_unit(-1, ("UFS_PORT_POWER            0x08\n"));
+            unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_POWER;
         break;
         case 0x09:
             mybug_unit(-1, ("UFS_PORT_LOW_SPEED        0x09\n"));
         break;
         case 0x10:
             mybug_unit(-1, ("UFS_C_PORT_CONNECTION     0x10\n"));
+            unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_CONNECTION;
         break;
         case 0x11:
             mybug_unit(-1, ("UFS_C_PORT_ENABLE         0x11\n"));
+            unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_ENABLE;
         break;
         case 0x12:
             mybug_unit(-1, ("UFS_C_PORT_SUSPEND        0x12\n"));
+            unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_SUSPEND;
         break;
         case 0x13:
             mybug_unit(-1, ("UFS_C_PORT_OVER_CURRENT   0x13\n"));
+            unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_OVER_CURRENT;
         break;
         case 0x14:
             mybug_unit(-1, ("UFS_C_PORT_RESET          0x14\n"));
+            unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_RESET;
         break;
         case 0x15:
             mybug_unit(-1, ("UFS_PORT_TEST             0x15\n"));
+            unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_TEST_MODE;
         break;
         case 0x16:
             mybug_unit(-1, ("UFS_PORT_INDICATOR        0x16\n"));
+            unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_INDICATOR;
         break;
     }
 
@@ -962,14 +1030,14 @@ void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
     struct IOUsbHWReq *ioreq;
 
     if(unit->roothub.portstatus.wPortChange && unit->roothub.intrxfer_queue.lh_Head->ln_Succ) {
-        mybug_unit(-1, ("Port has changeg\n"));
+        mybug_unit(-1, ("Port has changeg %x\n", unit->roothub.portstatus.wPortChange));
 
         Disable();
         ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
         while(((struct Node *) ioreq)->ln_Succ) {
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
 
-            *((UBYTE *) ioreq->iouh_Data) = unit->roothub.portstatus.wPortChange;
+            *((UBYTE *) ioreq->iouh_Data) = (1<<1);
             ioreq->iouh_Actual = 1;
 
             ReplyMsg(&ioreq->iouh_Req.io_Message);
