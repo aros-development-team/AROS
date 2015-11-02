@@ -3,6 +3,13 @@
     $Id$
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 1
+
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/hostlib.h>
 
@@ -22,7 +29,8 @@ static const char *libusb_func_names[] = {
     "libusb_handle_events",
     "libusb_get_device_descriptor",
     "libusb_open",
-    "libusb_close"
+    "libusb_close",
+    "libusb_submit_transfer"
 };
 
 #define LIBUSB_NUM_FUNCS (sizeof(libusb_func_names) / sizeof(libusb_func_names[0]))
@@ -40,7 +48,6 @@ extern void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit);
 static libusb_device_handle *handle = NULL;
 
 int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event event, void *user_data) {
-    bug("\n[LIBUSB] Hotplug callback event!\n");
 
     struct VUSBHCIBase *VUSBHCIBase = (struct VUSBHCIBase *)user_data;
     struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
@@ -48,10 +55,12 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
     struct libusb_device_descriptor desc;
     int rc;
 
+    mybug_unit(-1, ("Hotplug callback event!\n"));
+
     switch(event) {
 
         case LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED:
-            bug("[LIBUSB]  - Device attached\n");
+            mybug_unit(-1, ("- Device attached\n"));
 
             if(unit->allocated) {
 
@@ -63,11 +72,11 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
                 rc = LIBUSBCALL(libusb_get_device_descriptor, dev, &desc);
                 if (LIBUSB_SUCCESS != rc) {
-                    bug("[LIBUSB] Failed to read device descriptor\n");
+                    mybug_unit(-1, ("Failed to read device descriptor\n"));
                     return 0;
                 }
 
-                bug("Device attach: %04x:%04x\n", desc.idVendor, desc.idProduct);
+                mybug_unit(-1, ("Device attach: %04x:%04x\n", desc.idVendor, desc.idProduct));
 
                 LIBUSBCALL(libusb_open, dev, &handle);
 
@@ -75,7 +84,7 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
         break;
 
         case LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT:
-            bug("[LIBUSB]  - Device detached\n");
+            mybug_unit(-1, (" - Device detached\n"));
 
             if(unit->allocated) {
 
@@ -93,7 +102,7 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
         break;
 
         default:
-            bug("[LIBUSB]  - Unknown event arrived\n");
+            mybug_unit(-1, (" - Unknown event arrived\n"));
         break;
 
     }
@@ -179,3 +188,114 @@ VOID libusb_bridge_cleanup() {
 
     HostLib_Close(libusbhandle, NULL);
 }
+
+int do_libusb_transfer(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
+    UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
+    UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
+
+    UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
+    UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+
+    switch (ioreq->iouh_Req.io_Command) {
+        case UHCMD_CONTROLXFER:
+            mybug_unit(-1, ("cmdControlXFer\n"));
+        break;
+        case UHCMD_INTXFER:
+            mybug_unit(-1, ("cmdIntXFer\n"));
+        break;
+        case UHCMD_BULKXFER:
+            mybug_unit(-1, ("cmdBulkXFer\n"));
+        break;
+        case UHCMD_ISOXFER:
+            mybug_unit(-1, ("cmdISOXFer\n"));
+        break;
+    }
+
+    mybug_unit(-1, ("bmRequestDirection "));
+    switch (bmRequestDirection) {
+        case URTF_IN:
+            mybug(-1, ("URTF_IN\n"));
+            break;
+        case URTF_OUT:
+            mybug(-1, ("URTF_OUT\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bmRequestType "));
+    switch(bmRequestType) {
+        case URTF_STANDARD:
+            mybug(-1, ("URTF_STANDARD\n"));
+            break;
+        case URTF_CLASS:
+            mybug(-1, ("URTF_CLASS\n"));
+            break;
+        case URTF_VENDOR:
+            mybug(-1, ("URTF_VENDOR\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bmRequestRecipient "));
+    switch (bmRequestRecipient) {
+        case URTF_DEVICE:
+            mybug(-1, ("URTF_DEVICE\n"));
+            break;
+        case URTF_INTERFACE:
+            mybug(-1, ("URTF_INTERFACE\n"));
+            break;
+        case URTF_ENDPOINT:
+            mybug(-1, ("URTF_ENDPOINT\n"));
+            break;
+        case URTF_OTHER:
+            mybug(-1, ("URTF_OTHER\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bRequest "));
+    switch(bRequest) {
+        case USR_GET_STATUS:
+            bug("USR_GET_STATUS\n");
+            break;
+        case USR_CLEAR_FEATURE:
+            mybug(-1, ("USR_CLEAR_FEATURE\n"));
+            break;
+        case USR_SET_FEATURE:
+            mybug(-1, ("USR_SET_FEATURE\n"));
+            break;
+        case USR_SET_ADDRESS:
+            mybug(-1, ("USR_SET_ADDRESS\n"));
+            break;
+        case USR_GET_DESCRIPTOR:
+            mybug(-1, ("USR_GET_DESCRIPTOR\n"));
+            break;
+        case USR_SET_DESCRIPTOR:
+            mybug(-1, ("USR_SET_DESCRIPTOR\n"));
+            break;
+        case USR_GET_CONFIGURATION:
+            mybug(-1, ("USR_GET_CONFIGURATION\n"););
+            break;
+        case USR_SET_CONFIGURATION:
+            mybug(-1, ("USR_SET_CONFIGURATION\n"));
+            break;
+        case USR_GET_INTERFACE:
+            mybug(-1, ("USR_GET_INTERFACE\n"));
+            break;
+        case USR_SET_INTERFACE:
+            mybug(-1, ("USR_SET_INTERFACE\n"));
+            break;
+        case USR_SYNCH_FRAME:
+            mybug(-1, ("USR_SYNCH_FRAME\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("wIndex %x\n", wIndex));
+    mybug_unit(-1, ("wValue %x\n", wValue));
+    mybug_unit(-1, ("wLength %d\n", wLength));
+
+    return 0;    
+}
+

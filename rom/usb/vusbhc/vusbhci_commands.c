@@ -933,19 +933,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
 
     mybug_unit(-1, ("Not a roothub control transfer\n"));
 
-/*
-    Assuming we can use libusb function below to do our control transfer (use respective libusb calls for other methods)
-     - user_data contains our iorequest so we know who to reply when the transfer completes
-
-static void libusb_fill_control_transfer(
-        struct libusb_transfer *transfer,
-        libusb_device_handle *dev_handle,
-        unsigned char *buffer,
-        libusb_transfer_cb_fn callback,
-        void *user_data,
-        unsigned int timeout) 	 	
-
-*/
+    do_libusb_transfer(ioreq);
 
     return RC_DONTREPLY;
 }
