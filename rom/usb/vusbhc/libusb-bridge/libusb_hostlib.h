@@ -23,6 +23,7 @@ struct libusb_func {
         struct libusb_device_descriptor *desc);
     int (*libusb_open)(libusb_device *dev, libusb_device_handle **handle);
     void (*libusb_close)(libusb_device_handle *dev_handle);
+    int (*libusb_submit_transfer)(struct libusb_transfer *transfer);
 };
 
 extern struct libusb_func libusb_func;

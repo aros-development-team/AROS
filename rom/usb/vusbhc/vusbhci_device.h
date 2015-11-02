@@ -37,6 +37,8 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
 WORD cmdBulkXFer(struct IOUsbHWReq *ioreq);
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq);
 
+extern int do_libusb_transfer(struct IOUsbHWReq *ioreq);
+
 struct VUSBHCIUnit {
     struct Node                  node;
     char                         name[256];

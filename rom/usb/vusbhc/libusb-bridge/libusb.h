@@ -8,5 +8,6 @@
 BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase);
 VOID libusb_bridge_cleanup();
 
-int call_libusb_init();
-void call_libusb_handler();
+int call_libusb_init(void);
+void call_libusb_handler(void);
+
