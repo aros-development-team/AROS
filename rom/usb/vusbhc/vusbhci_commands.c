@@ -536,11 +536,11 @@ UWORD SetPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
-    UBYTE index;
+    UBYTE port;
 
-    index = (wValue & 0xff);
+    port = (wIndex & 0xff);
 
-    mybug_unit(-1, ("Setting feature 0x%02x on port %d\n",wValue, index));
+    mybug_unit(-1, ("Setting feature 0x%02x on port %d\n",wValue, port));
 
     switch(wValue) {
         case 0x00:
@@ -608,11 +608,11 @@ UWORD ClearPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
-    UBYTE index;
+    UBYTE port;
 
-    index = (wValue & 0xff);
+    port = (wIndex & 0xff);
 
-    mybug_unit(-1, ("Clearing feature 0x%02x on port %d\n",wValue, index));
+    mybug_unit(-1, ("Clearing feature 0x%02x on port %d\n",wValue, port));
 
     switch(wValue) {
         case 0x00:
