@@ -124,13 +124,9 @@ D4..0 Recipient
         wLength         Zero
         Data            None
 */
-UWORD SetAddress(struct IOUsbHWReq *ioreq) {
+UWORD SetAddress(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
-
-    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     mybug_unit(-1, ("SetAddress (address %d)\n", wValue));
 
@@ -162,13 +158,9 @@ UWORD SetAddress(struct IOUsbHWReq *ioreq) {
         If more than one configuration is specified we ignore the rest in GetDescriptor(UDT_CONFIGURATION)
 
 */
-UWORD SetConfiguration(struct IOUsbHWReq *ioreq) {
+UWORD SetConfiguration(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
-
-    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     mybug_unit(-1, ("SetConfiguration (configuration %d)\n", wValue));
 
@@ -194,7 +186,7 @@ UWORD SetConfiguration(struct IOUsbHWReq *ioreq) {
         wLength Two
         Data None
 */
-UWORD GetStatus(struct IOUsbHWReq *ioreq) {
+UWORD GetStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -205,13 +197,9 @@ UWORD GetStatus(struct IOUsbHWReq *ioreq) {
 /*
     GetDescriptor:
 */
-UWORD GetDescriptor(struct IOUsbHWReq *ioreq) {
+UWORD GetDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
-
-    //UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     CONST_STRPTR roothubstring = NULL;
     CONST_STRPTR roothubstrings[] = {"The AROS Development Team.", "VUSBHCI root hub (USB2.00)", "VUSBHCI root hub (USB3.00)", "Standard Config", "Hub interface" };
@@ -329,7 +317,7 @@ UWORD GetDescriptor(struct IOUsbHWReq *ioreq) {
 /*
     SetDescriptor:
 */
-UWORD SetDescriptor(struct IOUsbHWReq *ioreq) {
+UWORD SetDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -368,7 +356,7 @@ Usb Hub Feature Selectors
 #define UFS_PORT_INDICATOR        0x16
 
 */
-UWORD ClearHubFeature(struct IOUsbHWReq *ioreq) {
+UWORD ClearHubFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -385,7 +373,7 @@ UWORD ClearHubFeature(struct IOUsbHWReq *ioreq) {
         wLength Zero
         Data None
 */
-UWORD SetHubFeature(struct IOUsbHWReq *ioreq) {
+UWORD SetHubFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -396,7 +384,7 @@ UWORD SetHubFeature(struct IOUsbHWReq *ioreq) {
 /*
     ClearTTBuffer:
 */
-UWORD ClearTTBuffer(struct IOUsbHWReq *ioreq) {
+UWORD ClearTTBuffer(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -406,13 +394,9 @@ UWORD ClearTTBuffer(struct IOUsbHWReq *ioreq) {
 /*
     GetHubDescriptor: (URTF_IN|URTF_CLASS|URTF_DEVICE) 10100000B
 */
-UWORD GetHubDescriptor(struct IOUsbHWReq *ioreq) {
+UWORD GetHubDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
-
-    //UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     switch((wValue>>8)) {
         case UDT_HUB:
@@ -457,13 +441,9 @@ UWORD GetHubDescriptor(struct IOUsbHWReq *ioreq) {
         wLength Four
         Data Hub Status and Change Status
 */
-UWORD GetHubStatus(struct IOUsbHWReq *ioreq) {
+UWORD GetHubStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
-
-    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     /* It is a Request Error if wValue, wIndex, or wLength are other than as specified above. */
     if( (!(wValue)) && (!(wIndex)) && (wLength == 4) ) {
@@ -490,13 +470,9 @@ UWORD GetHubStatus(struct IOUsbHWReq *ioreq) {
         wLength Four
         Data Port Status and Change Status
 */
-UWORD GetPortStatus(struct IOUsbHWReq *ioreq) {
+UWORD GetPortStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
-
-    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    //UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    //UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     if( (!wIndex) || (wIndex > unit->roothub.hubdesc.bNbrPorts) ) {
         mybug_unit(-1, ("Port %ld out of range\n", wIndex));
@@ -525,7 +501,7 @@ UWORD GetPortStatus(struct IOUsbHWReq *ioreq) {
 
 /*
 */
-UWORD ResetTT(struct IOUsbHWReq *ioreq) {
+UWORD ResetTT(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -535,7 +511,7 @@ UWORD ResetTT(struct IOUsbHWReq *ioreq) {
 
 /*
 */
-UWORD SetHubDescriptor(struct IOUsbHWReq *ioreq) {
+UWORD SetHubDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -556,13 +532,9 @@ UWORD SetHubDescriptor(struct IOUsbHWReq *ioreq) {
         FIXME: Check valid port range, remove some switches if needed (copy paste from definitions)
 
 */
-UWORD SetPortFeature(struct IOUsbHWReq *ioreq) {
+UWORD SetPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
-
-    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     UBYTE index;
 
@@ -632,13 +604,9 @@ UWORD SetPortFeature(struct IOUsbHWReq *ioreq) {
         FIXME: Check valid port range, remove some switches if needed (copy paste from definitions)
 
 */
-UWORD ClearPortFeature(struct IOUsbHWReq *ioreq) {
+UWORD ClearPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
-
-    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     UBYTE index;
 
@@ -697,7 +665,7 @@ UWORD ClearPortFeature(struct IOUsbHWReq *ioreq) {
 
 /*
 */
-UWORD GetTTState(struct IOUsbHWReq *ioreq) {
+UWORD GetTTState(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -707,7 +675,7 @@ UWORD GetTTState(struct IOUsbHWReq *ioreq) {
 
 /*
 */
-UWORD StopTT(struct IOUsbHWReq *ioreq) {
+UWORD StopTT(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -723,11 +691,65 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
 
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
-    UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
     UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
+    if(ioreq->iouh_Endpoint != 0) {
+        mybug_unit(-1, ("Wrong endpoint number! %ld\n", ioreq->iouh_Endpoint));
+        mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
+        return UHIOERR_BADPARAMS;
+    }
+
+    switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
+
+/* Standard Requests */
+        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
+            return(SetAddress(ioreq, wValue, wIndex, wLength));
+
+        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
+            return(SetConfiguration(ioreq, wValue, wIndex, wLength));
+
+        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_STATUS)):
+            return(GetStatus(ioreq, wValue, wIndex, wLength));
+
+        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_DESCRIPTOR)):
+            return(GetDescriptor(ioreq, wValue, wIndex, wLength));
+
+        case (((URTF_OUT|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_SET_DESCRIPTOR)):
+            return(SetDescriptor(ioreq, wValue, wIndex, wLength));
+
+/* Hub Class Requests */
+        case (((URTF_OUT|URTF_CLASS|URTF_DEVICE)<<16)|(USR_CLEAR_FEATURE)):
+            return(ClearHubFeature(ioreq, wValue, wIndex, wLength));
+
+        case (((URTF_OUT|URTF_CLASS|URTF_DEVICE)<<16)|(USR_SET_FEATURE)):
+            return(SetHubFeature(ioreq, wValue, wIndex, wLength));
+
+        case (((URTF_OUT|URTF_CLASS|URTF_OTHER)<<16)|(USR_CLEAR_FEATURE)):
+            return(ClearPortFeature(ioreq, wValue, wIndex, wLength));
+
+        case (((URTF_OUT|URTF_CLASS|URTF_OTHER)<<16)|(USR_SET_FEATURE)):
+            return(SetPortFeature(ioreq, wValue, wIndex, wLength));
+
+        case (((URTF_IN|URTF_CLASS|URTF_DEVICE)<<16)|(USR_GET_DESCRIPTOR)):
+            return(GetHubDescriptor(ioreq, wValue, wIndex, wLength));
+
+        case ((((URTF_IN|URTF_CLASS|URTF_DEVICE))<<16)|(USR_GET_STATUS)):
+            return(GetHubStatus(ioreq, wValue, wIndex, wLength));
+
+        case ((((URTF_IN|URTF_CLASS|URTF_OTHER))<<16)|(USR_GET_STATUS)):
+            return(GetPortStatus(ioreq, wValue, wIndex, wLength));
+
+//        case (((( X ))<<16)|( X )):
+//            return( X (ioreq));
+
+        default:
+            break;
+    }
 
     D( mybug_unit(-1, ("bmRequestDirection "));
     switch (bmRequestDirection) {
@@ -808,75 +830,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     mybug_unit(-1, ("wIndex %x\n", wIndex));
     mybug_unit(-1, ("wValue %x\n", wValue));
     mybug_unit(-1, ("wLength %d\n", wLength));
-
-
-    /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
-    if(ioreq->iouh_Endpoint != 0) {
-        mybug_unit(-1, ("Wrong endpoint number! %ld\n", ioreq->iouh_Endpoint));
-        mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
-        return UHIOERR_BADPARAMS;
-    }
-
-    switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
-
-/* Standard Requests */
-        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
-            return(SetAddress(ioreq));
-
-        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
-            return(SetConfiguration(ioreq));
-
-        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_STATUS)):
-            return(GetStatus(ioreq));
-
-        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_DESCRIPTOR)):
-            return(GetDescriptor(ioreq));
-
-        case (((URTF_OUT|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_SET_DESCRIPTOR)):
-            return(SetDescriptor(ioreq));
-
-/* Hub Class Requests */
-        case (((URTF_OUT|URTF_CLASS|URTF_DEVICE)<<16)|(USR_CLEAR_FEATURE)):
-            return(ClearHubFeature(ioreq));
-
-        case (((URTF_OUT|URTF_CLASS|URTF_DEVICE)<<16)|(USR_SET_FEATURE)):
-            return(SetHubFeature(ioreq));
-
-        case (((URTF_OUT|URTF_CLASS|URTF_OTHER)<<16)|(USR_CLEAR_FEATURE)):
-            return(ClearPortFeature(ioreq));
-
-        case (((URTF_OUT|URTF_CLASS|URTF_OTHER)<<16)|(USR_SET_FEATURE)):
-            return(SetPortFeature(ioreq));
-
-        case (((URTF_IN|URTF_CLASS|URTF_DEVICE)<<16)|(USR_GET_DESCRIPTOR)):
-            return(GetHubDescriptor(ioreq));
-
-        case ((((URTF_IN|URTF_CLASS|URTF_DEVICE))<<16)|(USR_GET_STATUS)):
-            return(GetHubStatus(ioreq));
-
-        case ((((URTF_IN|URTF_CLASS|URTF_OTHER))<<16)|(USR_GET_STATUS)):
-            return(GetPortStatus(ioreq));
-
-//        case (((( X ))<<16)|( X )):
-//            return( X (ioreq));
-
-        default:
-            break;
-    }
-
-/*
-#define URTF_OUT              0x00      // direction: host to device
-#define URTF_IN               0x80      // direction: device to host
-
-#define URTF_STANDARD         0x00      // type: usb standard request
-#define URTF_CLASS            0x20      // type: class request
-#define URTF_VENDOR           0x40      // type: vendor specific request
-
-#define URTF_DEVICE           0x00      // target: device
-#define URTF_INTERFACE        0x01      // target: interface
-#define URTF_ENDPOINT         0x02      // target: endpoint
-#define URTF_OTHER            0x03      // target: other
-*/
 
     mybug_unit(-1, ("Nothing done!\n\n")) );
     return UHIOERR_BADPARAMS;
