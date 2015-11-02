@@ -225,11 +225,11 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
             case UHCMD_CONTROLXFER:
                 ret = cmdControlXFer(ioreq);
                 break;
-            case UHCMD_BULKXFER:
-                mybug_unit(-1, ("UHCMD_BULKXFER\n"));
-                break;
             case UHCMD_INTXFER:
                 ret = cmdIntXFer(ioreq);
+                break;
+            case UHCMD_BULKXFER:
+                ret = cmdBulkXFer(ioreq);
                 break;
             case UHCMD_ISOXFER:
                 ret = cmdISOXFer(ioreq);
@@ -365,7 +365,12 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->state = UHSF_SUSPENDED;
         unit->allocated = FALSE;
 
-        NEWLIST(&unit->roothub.io_queue);
+        NEWLIST(&unit->ctrlxfer_queue);
+        NEWLIST(&unit->intrxfer_queue);
+        NEWLIST(&unit->bulkxfer_queue);
+        NEWLIST(&unit->isocxfer_queue);
+
+        NEWLIST(&unit->roothub.intrxfer_queue);
 
         /* This is our root hub device descriptor */
         unit->roothub.devdesc.bLength                       = sizeof(struct UsbStdDevDesc);

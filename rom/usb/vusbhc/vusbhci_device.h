@@ -30,12 +30,12 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
 WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
-WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
 WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq);
-WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq);
+WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
+WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
+WORD cmdBulkXFer(struct IOUsbHWReq *ioreq);
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq);
-WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring);
 
 struct VUSBHCIUnit {
     struct Node                  node;
@@ -43,8 +43,14 @@ struct VUSBHCIUnit {
     ULONG                        state;
     BOOL                         allocated;
 
+    struct List                  ctrlxfer_queue;
+    struct List                  intrxfer_queue;
+    struct List                  bulkxfer_queue;
+    struct List                  isocxfer_queue;
+
     struct VUSBHCIRootHub {
-        struct List              io_queue;
+
+        struct List              intrxfer_queue;
 
         UWORD                    addr;
 
