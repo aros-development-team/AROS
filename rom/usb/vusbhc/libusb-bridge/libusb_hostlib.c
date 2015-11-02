@@ -55,7 +55,8 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
             if(unit->allocated) {
 
-                unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+                /* Tell Poseidon it's highspeed, just testing */
+                unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION|UPSF_PORT_HIGH_SPEED);
                 unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
 
                 uhwCheckRootHubChanges(unit);
