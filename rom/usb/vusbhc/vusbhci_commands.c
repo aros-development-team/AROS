@@ -931,8 +931,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         return(cmdControlXFerRootHub(ioreq));
     }
 
-    mybug_unit(-1, ("Not a roothub control transfer\n"));
-
+    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
     do_libusb_transfer(ioreq);
 
     return RC_DONTREPLY;
@@ -966,7 +965,9 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
         return(cmdIntXFerRootHub(ioreq));
     }
 
-    mybug_unit(-1, ("Nothing done!\n\n"));
+    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
+    do_libusb_transfer(ioreq);
+
     return RC_DONTREPLY;
 }
 
@@ -994,7 +995,9 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
         return UHIOERR_USBOFFLINE;
     }
 
-    mybug_unit(-1, ("Nothing done!\n\n"));
+    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
+    do_libusb_transfer(ioreq);
+
     return RC_DONTREPLY;
 }
 
@@ -1022,20 +1025,21 @@ WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
         return UHIOERR_USBOFFLINE;
     }
 
-    mybug_unit(-1, ("Nothing done!\n\n"));
+    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
+    do_libusb_transfer(ioreq);
+
     return RC_DONTREPLY;
 }
 
 void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
     mybug_unit(-1, ("Entering function\n"));
 
-    mybug_unit(-1, ("unit->roothub.portchange = %d\n", unit->roothub.portstatus.wPortChange));
+    mybug_unit(-1, ("usbportstatus->wPortStatus %01x\n", unit->roothub.portstatus.wPortStatus));
+    mybug_unit(-1, ("usbportstatus->wPortChange %01x\n", unit->roothub.portstatus.wPortChange));
 
     struct IOUsbHWReq *ioreq;
 
     if(unit->roothub.portstatus.wPortChange && unit->roothub.intrxfer_queue.lh_Head->ln_Succ) {
-        mybug_unit(-1, ("Port has changeg %x\n", unit->roothub.portstatus.wPortChange));
-
         Disable();
         ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
         while(((struct Node *) ioreq)->ln_Succ) {
@@ -1047,7 +1051,6 @@ void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
             ReplyMsg(&ioreq->iouh_Req.io_Message);
             ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
         }
-        //unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_CONNECTION;
         Enable();
     }
 }
