@@ -390,8 +390,8 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->roothub.config.cfgdesc.wTotalLength           = AROS_WORD2LE(sizeof(struct RHConfig));
         unit->roothub.config.cfgdesc.bNumInterfaces         = 1;
         unit->roothub.config.cfgdesc.bConfigurationValue    = 1;
-        unit->roothub.config.cfgdesc.iConfiguration         = 3;
-        unit->roothub.config.cfgdesc.bmAttributes           = (USCAF_ONE|USCAF_SELF_POWERED);
+        unit->roothub.config.cfgdesc.iConfiguration         = 0; //3;
+        unit->roothub.config.cfgdesc.bmAttributes           = (USCAF_ONE|USCAF_SELF_POWERED|USCAF_REMOTE_WAKEUP);
         unit->roothub.config.cfgdesc.bMaxPower              = 0;
 
         unit->roothub.config.ifdesc.bLength                 = sizeof(struct UsbStdIfDesc);
@@ -402,7 +402,7 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->roothub.config.ifdesc.bInterfaceClass         = HUB_CLASSCODE;
         unit->roothub.config.ifdesc.bInterfaceSubClass      = 0;
         unit->roothub.config.ifdesc.bInterfaceProtocol      = 0;
-        unit->roothub.config.ifdesc.iInterface              = 4;
+        unit->roothub.config.ifdesc.iInterface              = 0; //4;
 
         unit->roothub.config.epdesc.bLength                 = sizeof(struct UsbStdEPDesc);
         unit->roothub.config.epdesc.bDescriptorType         = UDT_ENDPOINT;

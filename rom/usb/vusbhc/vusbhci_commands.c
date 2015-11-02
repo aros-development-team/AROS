@@ -187,11 +187,18 @@ UWORD SetConfiguration(struct IOUsbHWReq *ioreq) {
 
 /*
     GetStatus:
+        bmRequestType (URTF_IN|URTF_STANDARD|URTF_DEVICE) 10000000B
+        bRequest USR_GET_STATUS
+        wValue Zero
+        wIndex Zero
+        wLength Two
+        Data None
 */
 UWORD GetStatus(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
     return UHIOERR_NO_ERROR;
 }
 
@@ -325,7 +332,7 @@ UWORD SetDescriptor(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
-    while(1);
+    //while(1);
 
     return UHIOERR_NO_ERROR;
 }
@@ -361,7 +368,7 @@ UWORD ClearPortFeature(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
-    while(1);
+    //while(1);
 
     return UHIOERR_NO_ERROR;
 }
@@ -455,11 +462,44 @@ UWORD GetHubStatus(struct IOUsbHWReq *ioreq) {
 }
 
 /*
+    GetPortStatus:
+        bmRequestType (URTF_IN|URTF_CLASS|URTF_OTHER) 10100011B
+        bRequest USR_GET_STATUS
+        wValue Zero
+        wIndex Port
+        wLength Four
+        Data Port Status and Change Status
 */
 UWORD GetPortStatus(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
+    UWORD wIndex  = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    //UWORD wValue  = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    //UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+
+    if( (!wIndex) || (wIndex > unit->roothub.hubdesc.bNbrPorts) ) {
+        mybug_unit(-1, ("Port %ld out of range\n", wIndex));
+        mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
+        return UHIOERR_BADPARAMS;
+    }
+
+    /* FIXME: Check wLength */
+
+    struct UsbPortStatus *usbportstatus = (struct UsbPortStatus *) ioreq->iouh_Data;
+
+    /* Fake connection */
+    unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+    unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+
+    /* We have only one port per 'controller' */
+    usbportstatus->wPortStatus = unit->roothub.portstatus.wPortStatus;
+    usbportstatus->wPortChange = unit->roothub.portstatus.wPortChange;
+
+    mybug_unit(-1, ("usbportstatus->wPortStatus %01x\n", usbportstatus->wPortStatus));
+    mybug_unit(-1, ("usbportstatus->wPortChange %01x\n", usbportstatus->wPortChange));
+
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
     return UHIOERR_NO_ERROR;
 }
 
@@ -650,6 +690,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
         case ((((URTF_IN|URTF_CLASS|URTF_DEVICE))<<16)|(USR_GET_STATUS)):
             return(GetHubStatus(ioreq));
 
+        case ((((URTF_IN|URTF_CLASS|URTF_OTHER))<<16)|(USR_GET_STATUS)):
+            return(GetPortStatus(ioreq));
+
 //        case (((( X ))<<16)|( X )):
 //            return( X (ioreq));
 
@@ -657,9 +700,19 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
             break;
     }
 
+/*
+#define URTF_OUT              0x00      // direction: host to device
+#define URTF_IN               0x80      // direction: device to host
 
+#define URTF_STANDARD         0x00      // type: usb standard request
+#define URTF_CLASS            0x20      // type: class request
+#define URTF_VENDOR           0x40      // type: vendor specific request
 
-
+#define URTF_DEVICE           0x00      // target: device
+#define URTF_INTERFACE        0x01      // target: interface
+#define URTF_ENDPOINT         0x02      // target: endpoint
+#define URTF_OTHER            0x03      // target: other
+*/
 
 
     mybug_unit(-1, ("Entering function\n"));

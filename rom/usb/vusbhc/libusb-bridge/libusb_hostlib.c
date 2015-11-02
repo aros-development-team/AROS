@@ -55,8 +55,8 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
             if(unit->allocated) {
 
-                unit->roothub.portstatus.wPortStatus |= UPSF_PORT_CONNECTION;
-                unit->roothub.portstatus.wPortChange |= UPSF_PORT_CONNECTION;
+                unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+                unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
 
                 uhwCheckRootHubChanges(unit);
 
