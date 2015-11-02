@@ -54,37 +54,6 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     return RC_OK;
 }
 
-WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
-    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-
-    mybug_unit(-1, ("Entering function\n"));
-
-    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
-
-    /*
-        Check the status of the controller
-        We might encounter these states:
-        UHSB_OPERATIONAL USB can be used for transfers
-        UHSB_RESUMING    USB is currently resuming
-        UHSB_SUSPENDED   USB is in suspended state
-        UHSB_RESET       USB is just inside a reset phase
-    */
-
-    if(unit->state == UHSF_OPERATIONAL) {
-        mybug_unit(0, ("Unit state is operational\n"));
-    } else {
-        mybug_unit(-1, ("Unit state is not operational!\n"));
-        return UHIOERR_USBOFFLINE;
-    }
-
-    if(ioreq->iouh_DevAddr == unit->roothub.addr) {
-        return(cmdControlXFerRootHub(ioreq));
-    }
-
-    return RC_DONTREPLY;
-}
-
 /*
 D7 Data Phase Transfer Direction
 0 = Host to Device
@@ -835,6 +804,68 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     return UHIOERR_BADPARAMS;
 }
 
+WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
+
+    if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length)) {
+        mybug_unit(-1, ("UHIOERR_BADPARAMS\n"));
+        return(UHIOERR_BADPARAMS); // was UHIOERR_STALL
+    }
+
+#if 0
+    if(unit->roothub.portstatus.wPortChange) {
+        mybug_unit(-1, ("unit->roothub.portstatus.wPortChange = %02x\n", unit->roothub.portstatus.wPortChange));
+        *((UBYTE *) ioreq->iouh_Data) = unit->roothub.portstatus.wPortChange;
+        ioreq->iouh_Actual = 1;
+        unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_CONNECTION;
+        mybug_unit(-1, ("unit->roothub.portstatus.wPortChange = %02x\n", unit->roothub.portstatus.wPortChange));
+        return(0);
+    }
+#endif
+
+    mybug_unit(-1, ("ioreq added to roothub intrxfer_queue\n"));
+
+    ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
+    Disable();
+    AddTail(&unit->roothub.intrxfer_queue, (struct Node *) ioreq);
+    Enable();
+    return(RC_DONTREPLY);
+}
+
+
+WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
+
+    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+
+    /*
+        Check the status of the controller
+        We might encounter these states:
+        UHSB_OPERATIONAL USB can be used for transfers
+        UHSB_RESUMING    USB is currently resuming
+        UHSB_SUSPENDED   USB is in suspended state
+        UHSB_RESET       USB is just inside a reset phase
+    */
+
+    if(unit->state == UHSF_OPERATIONAL) {
+        mybug_unit(0, ("Unit state is operational\n"));
+    } else {
+        mybug_unit(-1, ("Unit state is not operational!\n"));
+        return UHIOERR_USBOFFLINE;
+    }
+
+    if(ioreq->iouh_DevAddr == unit->roothub.addr) {
+        return(cmdControlXFerRootHub(ioreq));
+    }
+
+    return RC_DONTREPLY;
+}
+
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
@@ -860,7 +891,6 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
     }
 
     if(ioreq->iouh_DevAddr == unit->roothub.addr) {
-        mybug_unit(-1, ("Entering cmdIntXFerRootHub\n"));
         return(cmdIntXFerRootHub(ioreq));
     }
 
@@ -868,36 +898,33 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
     return RC_DONTREPLY;
 }
 
-WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
+WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     mybug_unit(-1, ("Entering function\n"));
 
-    if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length)) {
-        mybug_unit(-1, ("UHIOERR_BADPARAMS\n"));
-        return(UHIOERR_BADPARAMS); // was UHIOERR_STALL
+    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+
+    /*
+        Check the status of the controller
+        We might encounter these states:
+        UHSB_OPERATIONAL USB can be used for transfers
+        UHSB_RESUMING    USB is currently resuming
+        UHSB_SUSPENDED   USB is in suspended state
+        UHSB_RESET       USB is just inside a reset phase
+    */
+
+    if(unit->state == UHSF_OPERATIONAL) {
+        mybug_unit(0, ("Unit state is operational\n"));
+    } else {
+        mybug_unit(-1, ("Unit state is not operational!\n"));
+        return UHIOERR_USBOFFLINE;
     }
 
-#if 0
-    if(unit->roothub.portstatus.wPortChange) {
-        mybug_unit(-1, ("unit->roothub.portstatus.wPortChange = %02x\n", unit->roothub.portstatus.wPortChange));
-        *((UBYTE *) ioreq->iouh_Data) = unit->roothub.portstatus.wPortChange;
-        ioreq->iouh_Actual = 1;
-        unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_CONNECTION;
-        mybug_unit(-1, ("unit->roothub.portstatus.wPortChange = %02x\n", unit->roothub.portstatus.wPortChange));
-        return(0);
-    }
-#endif
-
-    mybug_unit(-1, ("ioreq added to roothub io_queue\n"));
-
-    ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
-    Disable();
-    AddTail(&unit->roothub.io_queue, (struct Node *) ioreq);
-    Enable();
-    return(RC_DONTREPLY);
+    mybug_unit(-1, ("Nothing done!\n\n"));
+    return RC_DONTREPLY;
 }
-
 
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
@@ -934,11 +961,11 @@ void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
 
     struct IOUsbHWReq *ioreq;
 
-    if(unit->roothub.portstatus.wPortChange && unit->roothub.io_queue.lh_Head->ln_Succ) {
+    if(unit->roothub.portstatus.wPortChange && unit->roothub.intrxfer_queue.lh_Head->ln_Succ) {
         mybug_unit(-1, ("Port has changeg\n"));
 
         Disable();
-        ioreq = (struct IOUsbHWReq *) unit->roothub.io_queue.lh_Head;
+        ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
         while(((struct Node *) ioreq)->ln_Succ) {
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
 
@@ -946,7 +973,7 @@ void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
             ioreq->iouh_Actual = 1;
 
             ReplyMsg(&ioreq->iouh_Req.io_Message);
-            ioreq = (struct IOUsbHWReq *) unit->roothub.io_queue.lh_Head;
+            ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
         }
         //unit->roothub.portstatus.wPortChange &= ~UPSF_PORT_CONNECTION;
         Enable();
