@@ -62,7 +62,7 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                         mybug(-1,("%c\b", animate[(i++)%4]));
                     }
 
-                    call_libusb_handler();
+                    call_libusb_event_handler();
 
                     /* Wait */
                     tr->tr_time.tv_secs = 1;
