@@ -929,9 +929,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
     }
 
     mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
-    do_libusb_transfer(ioreq);
-
-    return RC_DONTREPLY;
+    return(do_libusb_ctrl_transfer(ioreq));
 }
 
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
@@ -963,7 +961,7 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
     }
 
     mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
-    do_libusb_transfer(ioreq);
+    do_libusb_intr_transfer(ioreq);
 
     return RC_DONTREPLY;
 }
@@ -993,7 +991,7 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
     }
 
     mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
-    do_libusb_transfer(ioreq);
+    do_libusb_bulk_transfer(ioreq);
 
     return RC_DONTREPLY;
 }
@@ -1023,7 +1021,7 @@ WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
     }
 
     mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
-    do_libusb_transfer(ioreq);
+    do_libusb_isoc_transfer(ioreq);
 
     return RC_DONTREPLY;
 }
