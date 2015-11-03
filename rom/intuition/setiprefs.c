@@ -108,21 +108,24 @@
             }
 
             if (closed)
-            {
                 CopyMem(data, GetPrivIBase(IntuitionBase)->ScreenModePrefs, sizeof(struct IScreenModePrefs));
 
-                if (reopen && !OpenWorkBench())
+            if (reopen)
+            {
+                if (closed)
                 {
-                    /* FIXME: handle the error condition if OpenWorkBench() fails */
-                    /* What to do if OpenWorkBench() fails? Try until it succeeds?
-                       Try for a finite amount of times? Don't try and do nothing 
-                       at all? */
+                    if (!OpenWorkBench())
+                    {
+                        /* FIXME: handle the error condition if OpenWorkBench() fails */
+                        /* What to do if OpenWorkBench() fails? Try until it succeeds?
+                           Try for a finite amount of times? Don't try and do nothing 
+                           at all? */
+                    }
                 }
+                else
+                    Result = FALSE;
+                return Result;
             }
-            else
-                Result = FALSE;
-
-            return Result;
 
             break;
 	}
