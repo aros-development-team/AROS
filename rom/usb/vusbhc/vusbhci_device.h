@@ -5,6 +5,7 @@
     Desc:
     Lang: English
 */
+
 #ifndef VUSBHCI_DEVICE_H
 #define VUSBHCI_DEVICE_H
 
@@ -26,22 +27,9 @@
 #define mybug(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
 #define mybug_unit(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug("%s %s: ", unit->name, __FUNCTION__); bug x; } } while (0); } )
 
-BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
-WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
-WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
-WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
-WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq);
-WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq);
-WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
-WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
-WORD cmdBulkXFer(struct IOUsbHWReq *ioreq);
-WORD cmdISOXFer(struct IOUsbHWReq *ioreq);
-
-extern int do_libusb_transfer(struct IOUsbHWReq *ioreq);
-
 struct VUSBHCIUnit {
     struct Node                  node;
-    char                         name[256];
+    CONST_STRPTR                 name;
     ULONG                        state;
     BOOL                         allocated;
 
@@ -80,8 +68,29 @@ struct VUSBHCIBase {
     struct Task                 *handler_task;
     BOOL                         handler_task_run;
 
+    //struct Library              *HostLibBase;
+
     struct VUSBHCIUnit          *usbunit200;
     struct VUSBHCIUnit          *usbunit300;
 };
+
+BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
+WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
+WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
+WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
+WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq);
+WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq);
+WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
+WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
+WORD cmdBulkXFer(struct IOUsbHWReq *ioreq);
+WORD cmdISOXFer(struct IOUsbHWReq *ioreq);
+
+BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase);
+VOID libusb_bridge_cleanup();
+
+int call_libusb_init(void);
+void call_libusb_handler(void);
+
+int do_libusb_transfer(struct IOUsbHWReq *ioreq);
 
 #endif /* VUSBHCI_DEVICE_H */

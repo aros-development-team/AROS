@@ -1,12 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := vusbhci_device vusbhci_commands
+USER_CFLAGS = -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
-#MM kernel-usb-vusbhci : linklibs-vusbhci-bridge
+FILES := vusbhci_device vusbhci_commands vusbhci_bridge
 
 %build_module mmake=kernel-usb-vusbhci \
     modname=vusbhci modtype=device \
     moduledir=Devs/USBHardware \
     files="$(FILES)" \
-    uselibs="stdc.static arossupport libusb-bridge"
+    uselibs="stdc.static"
