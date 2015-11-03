@@ -17,7 +17,6 @@
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
-#include <proto/stdc.h>
 #include <proto/arossupport.h>
 
 #include <devices/usb.h>
@@ -27,7 +26,6 @@
 #include <devices/timer.h>
 
 #include "vusbhci_device.h"
-#include "libusb-bridge/libusb.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -356,6 +354,8 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
 
     struct VUSBHCIUnit *unit;
 
+    static const char name[] = {"[VUSBHCI2.00]"};
+
     unit = AllocVec(sizeof(struct VUSBHCIUnit), MEMF_ANY|MEMF_CLEAR);
 
     if(unit == NULL) {
@@ -432,7 +432,7 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         //unit->roothub.hubstatus->wHubStatus = 0;
         //unit->roothub.hubstatus->wHubChange = 0;
 
-        snprintf(unit->name, 255, "VUSBHCI%02x", unit->roothub.devdesc.bcdUSB);
+        unit->name = name;
 
         return unit;
     }

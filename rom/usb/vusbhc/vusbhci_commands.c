@@ -17,7 +17,6 @@
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
-#include <proto/stdc.h>
 #include <proto/arossupport.h>
 
 #include <devices/usb.h>
@@ -26,8 +25,6 @@
 #include <devices/usbhardware.h>
 
 #include "vusbhci_device.h"
-
-#include LC_LIBDEFS_FILE
 
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
     ioreq->iouh_Req.io_Error = IOERR_ABORTED;

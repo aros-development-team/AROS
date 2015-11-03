@@ -1,7 +1,13 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright Â© 2015, The AROS Development Team. All rights reserved.
     $Id$
+
+    Desc: Virtual USB host controller
+    Lang: English
 */
+
+#ifndef VUSBHCI_BRIDGE_H
+#define VUSBHCI_BRIDGE_H
 
 #include <libusb-1.0/libusb.h>
 
@@ -32,3 +38,5 @@ extern struct libusb_func libusb_func;
 
 BOOL LIBUSB_HostLib_Init();
 VOID LIBUSB_HostLib_Cleanup();
+
+#endif /* VUSBHCI_BRIDGE_H */

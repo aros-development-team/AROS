@@ -1,6 +1,9 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright Â© 2015, The AROS Development Team. All rights reserved.
     $Id$
+
+    Desc: Virtual USB host controller
+    Lang: English
 */
 
 #ifdef DEBUG
@@ -16,10 +19,8 @@
 #include <devices/usb.h>
 #include <devices/usb_hub.h>
 
-#include "libusb_hostlib.h"
-#include "../vusbhci_device.h"
-
-#include <aros/debug.h>
+#include "vusbhci_device.h"
+#include "vusbhci_bridge.h"
 
 static const char *libusb_func_names[] = {
     "libusb_init",
@@ -187,6 +188,14 @@ BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase) {
 VOID libusb_bridge_cleanup() {
 
     HostLib_Close(libusbhandle, NULL);
+}
+
+int call_libusb_init() {
+    return LIBUSBCALL(libusb_init, NULL);
+}
+
+void call_libusb_handler() {
+    LIBUSBCALL(libusb_handle_events, NULL);
 }
 
 int do_libusb_transfer(struct IOUsbHWReq *ioreq) {
