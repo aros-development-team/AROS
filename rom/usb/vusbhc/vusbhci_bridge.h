@@ -11,6 +11,20 @@
 
 #include <libusb-1.0/libusb.h>
 
+static const char *libusb_func_names[] = {
+    "libusb_init",
+    "libusb_exit",
+    "libusb_has_capability",
+    "libusb_hotplug_register_callback",
+    "libusb_handle_events",
+    "libusb_get_device_descriptor",
+    "libusb_open",
+    "libusb_close",
+    "libusb_submit_transfer"
+};
+
+#define LIBUSB_NUM_FUNCS (sizeof(libusb_func_names) / sizeof(libusb_func_names[0]))
+
 struct libusb_func {
     int (*libusb_init)(libusb_context **ctx);
     void (*libusb_exit)(libusb_context *ctx);
@@ -32,11 +46,8 @@ struct libusb_func {
     int (*libusb_submit_transfer)(struct libusb_transfer *transfer);
 };
 
-extern struct libusb_func libusb_func;
+//extern struct libusb_func libusb_func;
 
 #define LIBUSBCALL(func,...) (libusb_func.func(__VA_ARGS__))
-
-BOOL LIBUSB_HostLib_Init();
-VOID LIBUSB_HostLib_Cleanup();
 
 #endif /* VUSBHCI_BRIDGE_H */

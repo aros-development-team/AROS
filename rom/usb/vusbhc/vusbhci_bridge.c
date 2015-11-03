@@ -22,29 +22,10 @@
 #include "vusbhci_device.h"
 #include "vusbhci_bridge.h"
 
-static const char *libusb_func_names[] = {
-    "libusb_init",
-    "libusb_exit",
-    "libusb_has_capability",
-    "libusb_hotplug_register_callback",
-    "libusb_handle_events",
-    "libusb_get_device_descriptor",
-    "libusb_open",
-    "libusb_close",
-    "libusb_submit_transfer"
-};
-
-#define LIBUSB_NUM_FUNCS (sizeof(libusb_func_names) / sizeof(libusb_func_names[0]))
-
 APTR HostLibBase;
 struct libusb_func libusb_func;
-static void * libusbhandle;
 
-static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs, void **funcptr);
-BOOL libusb_bridge_init();
-VOID libusb_bridge_cleanup();
-
-extern void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit);
+static void *libusbhandle;
 
 static libusb_device_handle *handle = NULL;
 
@@ -188,10 +169,6 @@ BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase) {
 VOID libusb_bridge_cleanup() {
 
     HostLib_Close(libusbhandle, NULL);
-}
-
-int call_libusb_init() {
-    return LIBUSBCALL(libusb_init, NULL);
 }
 
 void call_libusb_handler() {

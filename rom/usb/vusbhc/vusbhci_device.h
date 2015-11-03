@@ -84,13 +84,12 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
 WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
 WORD cmdBulkXFer(struct IOUsbHWReq *ioreq);
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq);
+void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit);
+
+void call_libusb_handler(void);
+int do_libusb_transfer(struct IOUsbHWReq *ioreq);
 
 BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase);
 VOID libusb_bridge_cleanup();
-
-int call_libusb_init(void);
-void call_libusb_handler(void);
-
-int do_libusb_transfer(struct IOUsbHWReq *ioreq);
 
 #endif /* VUSBHCI_DEVICE_H */
