@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for X11 hidd.
@@ -130,6 +130,9 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
         XSetWindowAttributes rootattr;
         unsigned long rootmask = 0;
 
+        rootattr.event_mask = FocusChangeMask;
+        rootmask |= CWEventMask;
+
         if (XSD(cl)->options & OPTION_FULLSCREEN)
         {
             rootattr.override_redirect = True;
@@ -253,8 +256,8 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
         /*
          * Now we need to get some message from the X11 task about when
          * the window has been mapped (ie. MapWindow event).
-         * This is because we cannot render into the window until the
-         * it has been mapped.kfind &
+         * This is because we cannot render into the window until
+         * it has been mapped.
          */
 
         port = CreateMsgPort();

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 bitmap class, internal definitions
@@ -30,7 +30,7 @@ struct bitmap_data
     IPTR            width;          /* Cached size, used by Clear method    */
     IPTR            height;
     OOP_Object      *gfxhidd;       /* Cached owner, for ModeID switch    */
-    Drawable        windowdrawable; /* Explic pointer to window drawable for BMDF_FRAMEBUFFER */
+    Drawable        windowdrawable; /* Explicit pointer to window drawable for BMDF_FRAMEBUFFER */
 };
 
 #define BMDF_COLORMAP_ALLOCED   1

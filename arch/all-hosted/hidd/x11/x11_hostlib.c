@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -54,6 +54,7 @@ static const char *x11_func_names[] = {
     "XSetErrorHandler",
     "XSetIOErrorHandler",
     "XSetWMHints",
+    "XGetWMHints",
     "XSetWMNormalHints",
     "XSetWMProtocols",
     "XAutoRepeatOff",
@@ -114,16 +115,17 @@ static const char *x11_func_names[] = {
     "XDefaultScreen",
     "XRootWindow",
     "XAllocClassHint",
-    "XSetClassHint"
+    "XSetClassHint",
+    "XSetInputFocus"
 #if DEBUG_X11_SYNCHRON
     , "XSynchronize"
 #endif
 };
 
 #if DEBUG_X11_SYNCHRON
-#define X11_NUM_FUNCS (81)
+#define X11_NUM_FUNCS (83)
 #else
-#define X11_NUM_FUNCS (80)
+#define X11_NUM_FUNCS (82)
 #endif
 
 

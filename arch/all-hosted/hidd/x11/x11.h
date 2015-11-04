@@ -101,6 +101,7 @@ struct xwinnode
 {
     struct MinNode   node;
     Window	     xwindow;
+    Window	     masterxwindow;
     OOP_Object	    *bmobj; 
     BOOL    	     window_mapped;
 };
@@ -166,8 +167,8 @@ struct x11_staticdata
     void    	    	    *xshm_info;
 #endif    
     
-    /* This window is used as a frien drawable for pixmaps. The window is
-       never mapped, ie. it is never shown onscreen.
+    /* This window is used as a friend drawable for pixmaps. The window is
+       never mapped, i.e. it is never shown onscreen.
     */
     Window  	    	     dummy_window_for_creating_pixmaps;
     
@@ -275,7 +276,7 @@ int X11_Init(struct x11_staticdata *xsd);
 /*
  * This lock has two uses:
  * - Making X calls threadsafe.
- * - In the bitmap class, protecting the bimtap X GC from changes from other tasks
+ * - In the bitmap class, protecting the bitmap X GC from changes from other tasks
  * Since X makes intensive use of malloc(), and can interfere not only with other X calls,
  * but with all other host OS calls, we use global lock provided by hostlib.resource.
  */

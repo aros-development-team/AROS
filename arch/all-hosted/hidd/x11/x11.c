@@ -124,7 +124,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
     notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
 
-    D(bug("[X11] %s: notficiation signal = %08x (bit %d)\n", __PRETTY_FUNCTION__, notifysig, xsd->x11task_notify_port->mp_SigBit));
+    D(bug("[X11] %s: notification signal = %08x (bit %d)\n", __PRETTY_FUNCTION__, notifysig, xsd->x11task_notify_port->mp_SigBit));
 
     NEWLIST(&nmsg_list);
     NEWLIST(&xwindowlist);
@@ -153,7 +153,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
         struct notify_msg *nmsg;
         ULONG sigs;
 
-        DB2(bug("[X11] %s: waiting for signals..\n", __PRETTY_FUNCTION__));
+        DB2(bug("[X11] %s: waiting for signals...\n", __PRETTY_FUNCTION__));
 
         sigs = Wait(SIGBREAKF_CTRL_D | notifysig | task_SigKill| hostclipboardmask);
 
@@ -187,6 +187,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                         if (NULL != node)
                         {
                             node->xwindow = nmsg->xwindow;
+                            node->masterxwindow = nmsg->masterxwindow;
                             node->bmobj = nmsg->bmobj;
                             AddTail((struct List *) &xwindowlist, (struct Node *) node);
                         }
@@ -415,6 +416,23 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                 D(bug("Shutting down AROS\n"));
                 CCALL(raise, SIGINT);
             }
+
+            /* Redirect focus from outer window to inner window. This allows
+             keys to be seen without the mouse hovering over the window */
+            if (event.type == FocusIn)
+            {
+                ForeachNode(&xwindowlist, node)
+                {
+                    if (node->masterxwindow == event.xfocus.window)
+                    {
+                        LOCK_X11
+                        XCALL(XSetInputFocus, xsd->display, node->xwindow,
+                            RevertToParent, CurrentTime);
+                        UNLOCK_X11
+                        break;
+                    }
+                }
+            }
 #endif
 
             ForeachNode(&xwindowlist, node)
@@ -438,6 +456,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                 {
                 case GraphicsExpose:
                     break;
+
                 case Expose:
                     LOCK_X11
                     X11BM_ExposeFB(OOP_INST_DATA(OOP_OCLASS(node->bmobj), node->bmobj), event.xexpose.x,
