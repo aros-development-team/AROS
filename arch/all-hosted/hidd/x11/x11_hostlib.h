@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef X11_HOSTLIB_H
 #define X11_HOSTLIB_H
 
@@ -34,6 +39,7 @@ struct x11_func {
     XErrorHandler (*XSetErrorHandler) ( XErrorHandler );
     XIOErrorHandler (*XSetIOErrorHandler) ( XIOErrorHandler );
     int (*XSetWMHints) ( Display* , Window , XWMHints* );
+    XWMHints * (*XGetWMHints) ( Display* , Window );
     void (*XSetWMNormalHints)(Display *display, Window w, XSizeHints *hints);
     int (*XSetWMProtocols) ( Display* , Window , Atom* , int );
     int (*XAutoRepeatOff) ( Display* );
@@ -95,6 +101,7 @@ struct x11_func {
     Window (*XRootWindow) (Display *, int);
     XClassHint * (*XAllocClassHint) ();
     int (*XSetClassHint) (Display *, Window, XClassHint *);
+    int (*XSetInputFocus) ( Display* , Window , int , Time );
 #if DEBUG_X11_SYNCHRON
     void (*XSynchronize)(Display *, Bool );
 #endif
