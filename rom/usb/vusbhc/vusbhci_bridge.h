@@ -25,6 +25,8 @@ static const char *libusb_func_names[] = {
     "libusb_free_transfer",
     "libusb_handle_events_completed",
     "libusb_control_transfer",
+    "libusb_interrupt_transfer",
+    "libusb_bulk_transfer",
     "libusb_set_auto_detach_kernel_driver"
 };
 
@@ -52,9 +54,19 @@ struct libusb_func {
     struct libusb_transfer * (*libusb_alloc_transfer)(int iso_packets);
     void (*libusb_free_transfer)(struct libusb_transfer *transfer);
     int (*libusb_handle_events_completed)(libusb_context *ctx, int *completed);
+
     int (*libusb_control_transfer)(libusb_device_handle *dev_handle,
 	    uint8_t request_type, uint8_t bRequest, uint16_t wValue, uint16_t wIndex,
 	    unsigned char *data, uint16_t wLength, unsigned int timeout);
+
+    int (*libusb_interrupt_transfer)(libusb_device_handle *dev_handle,
+	    unsigned char endpoint, unsigned char *data, int length,
+	    int *actual_length, unsigned int timeout);
+
+    int (*libusb_bulk_transfer)(libusb_device_handle *dev_handle,
+	    unsigned char endpoint, unsigned char *data, int length,
+	    int *actual_length, unsigned int timeout);
+
     int (*libusb_set_auto_detach_kernel_driver)(libusb_device_handle *dev, int enable);
 
 };

@@ -52,7 +52,7 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
         case LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED:
             mybug_unit(-1, ("- Device attached\n"));
 
-            if(unit->allocated) {
+            if(unit->allocated && (!dev_handle)) {
                 rc = LIBUSBCALL(libusb_get_device_descriptor, dev, &desc);
                 if (LIBUSB_SUCCESS != rc) {
                     mybug_unit(-1, ("Failed to read device descriptor\n"));
@@ -62,6 +62,7 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
                     rc = LIBUSBCALL(libusb_open, dev, &dev_handle);
                     if(dev_handle) {
+                        LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
                         /* Tell Poseidon it's highspeed, just testing */
                         unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION|UPSF_PORT_HIGH_SPEED);
                         unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
@@ -199,39 +200,39 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     rc = LIBUSBCALL(libusb_control_transfer, dev_handle,  bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, wLength, 10);
     mybug_unit(-1, ("libusb_control_transfer rc = %d\n\n", rc));
 
+    if(rc<0) {
+        rc = 0;
+    }
+
     ioreq->iouh_Actual = rc;
+    return UHIOERR_NO_ERROR;
+   
+}
+
+int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    int rc;
+
+    UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+
+    rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, wLength, &ioreq->iouh_Actual, 10);
+    //mybug_unit(-1, ("libusb_control_transfer rc = %d\n\n", rc));
     
     return UHIOERR_NO_ERROR;   
 }
 
-int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
-    //struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-
-    //UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
-    //UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
-    //UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
-
-    //UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
-    //UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    //UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    //UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
-
-    return 0;    
-}
-
 int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
-    //struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    //UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
-    //UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
-    //UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
+    int rc;
 
-    //UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
-    //UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    //UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    //UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+    UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
-    return 0;    
+    rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, wLength, &ioreq->iouh_Actual, 10);
+    //mybug_unit(-1, ("libusb_control_transfer rc = %d\n\n", rc));
+    
+    return UHIOERR_NO_ERROR;   
 }
 
 int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
