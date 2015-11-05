@@ -928,7 +928,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         return(cmdControlXFerRootHub(ioreq));
     }
 
-    mybug_unit(0, ("Sending transfer request to libusb\n\n"));
+    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
     return(do_libusb_ctrl_transfer(ioreq));
 }
 
@@ -960,8 +960,8 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
         return(cmdIntXFerRootHub(ioreq));
     }
 
-    //mybug_unit(0, ("Sending transfer request to libusb\n\n"));
-    //return(do_libusb_intr_transfer(ioreq));
+    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
+    return(do_libusb_intr_transfer(ioreq));
     return(RC_DONTREPLY);
 }
 
@@ -989,8 +989,8 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
         return UHIOERR_USBOFFLINE;
     }
 
-    //mybug_unit(0, ("Sending transfer request to libusb\n\n"));
-    //return(do_libusb_bulk_transfer(ioreq));
+    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
+    return(do_libusb_bulk_transfer(ioreq));
     return(RC_DONTREPLY);
 }
 
