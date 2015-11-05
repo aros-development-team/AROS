@@ -63,8 +63,8 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
                     rc = LIBUSBCALL(libusb_open, dev, &dev_handle);
                     if(dev_handle) {
                         LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
+                        LIBUSBCALL(libusb_set_configuration, dev_handle, 1);
                         LIBUSBCALL(libusb_claim_interface, dev_handle, 0);
-                        LIBUSBCALL(libusb_claim_interface, dev_handle, 1);
 
                         speed = LIBUSBCALL(libusb_get_device_speed, dev);
                         switch(speed) {
@@ -237,8 +237,9 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     }
 
     ioreq->iouh_Actual = rc;
-    return UHIOERR_NO_ERROR;
-   
+
+    mybug_unit(-1, ("Done!\n\n"));
+    return UHIOERR_NO_ERROR;   
 }
 
 /*
@@ -257,26 +258,61 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
 
     rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, wLength, &ioreq->iouh_Actual, 10);
     mybug_unit(-1, ("libusb_interrupt_transfer rc = %d\n\n", rc));
-    
+
+    mybug_unit(-1, ("Done!\n\n"));
     return UHIOERR_NO_ERROR;   
 }
 
-/*
-    FIXME: libusb expects buffer to precede with enough space for setup data (8 bytes or LIBUSB_CONTROL_SETUP_SIZE)
-            - Copy buffer need to be used
-*/
 int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    int rc, transferred = 0;
+    int rc, transferred = 0, i;
+    APTR buffer;
+    UBYTE endpoint = ioreq->iouh_Endpoint;
 
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     mybug_unit(-1, ("wLength %d\n", wLength));
     mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
 
-    rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 10);
-    mybug_unit(-1, ("libusb_bulk_transfer rc = %d\n\n", rc));
+//    if( (ioreq->iouh_SetupData.bmRequestType && URTF_IN) ) {
+        /*
+        This is a hack for massstorage with EP1 being IN and EP2 being OUT, will mess everuthing else
+        for some reason above code tries always OUT transfer, check why
+        */
+      if(endpoint == 1) {
+        mybug_unit(-1, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
+        rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+
+        buffer = ioreq->iouh_Data;
+
+ 	    mybug_unit(-1, ("Bulk data buffer in:\n"));
+ 	    for(i = 0;i < ioreq->iouh_Length; i++) {
+ 		    if(i%8 == 0)
+ 			    bug("\n");
+
+ 		    bug("%02x ", *(UBYTE *)buffer++ );
+ 	    }
+        bug("\n\n");
+    } else {
+        /* LIBUSB_ENDPOINT_OUT = 0*/
+        mybug_unit(-1, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
+
+        buffer = ioreq->iouh_Data;
+
+ 	    mybug_unit(-1, ("Bulk data buffer out:\n"));
+ 	    for(i = 0;i < ioreq->iouh_Length; i++) {
+ 		    if(i%8 == 0)
+ 			    bug("\n");
+
+ 		    bug("%02x ", *(UBYTE *)buffer++ );
+ 	    }
+        bug("\n\n");
+
+        rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+    }
+
+    mybug_unit(-1, ("libusb_bulk_transfer rc = %d, transferred %d\n", rc, transferred));
 
 /*
     0 on success (and populates transferred) 
@@ -288,15 +324,18 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 */
     if(rc<0) {
         rc = 0;
+    } else {
+        if(transferred) {
+            ioreq->iouh_Actual = transferred;
+        }
     }
 
-    ioreq->iouh_Actual = transferred;
+    mybug_unit(-1, ("Done!\n\n"));
     return UHIOERR_NO_ERROR;
-  
 }
 
 int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
-    //struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     //UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
     //UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
@@ -307,5 +346,6 @@ int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
     //UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
     //UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
+    mybug_unit(-1, ("Done!\n\n"));
     return 0;    
 }
