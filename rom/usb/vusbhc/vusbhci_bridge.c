@@ -204,6 +204,10 @@ void call_libusb_event_handler() {
     LIBUSBCALL(libusb_handle_events, NULL);
 }
 
+/*
+    FIXME: libusb expects buffer to precede with enough space for setup data (8 bytes or LIBUSB_CONTROL_SETUP_SIZE)
+            - Copy buffer need to be used
+*/
 int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
@@ -237,6 +241,10 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
    
 }
 
+/*
+    FIXME: libusb expects buffer to precede with enough space for setup data (8 bytes or LIBUSB_CONTROL_SETUP_SIZE)
+            - Copy buffer need to be used
+*/
 int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
@@ -253,20 +261,38 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
     return UHIOERR_NO_ERROR;   
 }
 
+/*
+    FIXME: libusb expects buffer to precede with enough space for setup data (8 bytes or LIBUSB_CONTROL_SETUP_SIZE)
+            - Copy buffer need to be used
+*/
 int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    int rc;
+    int rc, transferred = 0;
 
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     mybug_unit(-1, ("wLength %d\n", wLength));
     mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
 
-    rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, wLength, &ioreq->iouh_Actual, 10);
+    rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 10);
     mybug_unit(-1, ("libusb_bulk_transfer rc = %d\n\n", rc));
-    
-    return UHIOERR_NO_ERROR;   
+
+/*
+    0 on success (and populates transferred) 
+    LIBUSB_ERROR_TIMEOUT if the transfer timed out (and populates transferred) 
+    LIBUSB_ERROR_PIPE if the endpoint halted 
+    LIBUSB_ERROR_OVERFLOW if the device offered more data, see Packets and overflows 
+    LIBUSB_ERROR_NO_DEVICE if the device has been disconnected 
+    another LIBUSB_ERROR code on other failures 
+*/
+    if(rc<0) {
+        rc = 0;
+    }
+
+    ioreq->iouh_Actual = transferred;
+    return UHIOERR_NO_ERROR;
+  
 }
 
 int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
