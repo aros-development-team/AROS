@@ -274,42 +274,43 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 
     mybug_unit(-1, ("wLength %d\n", wLength));
     mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(-1, ("direction %d\n", (ioreq->iouh_Dir)));
 
-//    if( (ioreq->iouh_SetupData.bmRequestType && URTF_IN) ) {
-        /*
-        This is a hack for massstorage with EP1 being IN and EP2 being OUT, will mess everuthing else
-        for some reason above code tries always OUT transfer, check why
-        */
-      if(endpoint == 1) {
-        mybug_unit(-1, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
-        rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+    /*FIXME: fix other endpoint transfer methods */
+    switch(ioreq->iouh_Dir) {
+        case UHDIR_IN:
+            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
+            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
 
-        buffer = ioreq->iouh_Data;
+            buffer = ioreq->iouh_Data;
+#if 0
+ 	        mybug_unit(-1, ("Bulk data buffer in:\n"));
+ 	        for(i = 0;i < ioreq->iouh_Length; i++) {
+ 		        if(i%8 == 0)
+ 			        bug("\n");
 
- 	    mybug_unit(-1, ("Bulk data buffer in:\n"));
- 	    for(i = 0;i < ioreq->iouh_Length; i++) {
- 		    if(i%8 == 0)
- 			    bug("\n");
+ 		        bug("%02x ", *(UBYTE *)buffer++ );
+ 	        }
+            bug("\n\n");
+#endif
+        break;
 
- 		    bug("%02x ", *(UBYTE *)buffer++ );
- 	    }
-        bug("\n\n");
-    } else {
-        /* LIBUSB_ENDPOINT_OUT = 0*/
-        mybug_unit(-1, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
+        case UHDIR_OUT:
+            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
 
-        buffer = ioreq->iouh_Data;
+            buffer = ioreq->iouh_Data;
+#if 0
+ 	        mybug_unit(-1, ("Bulk data buffer in:\n"));
+ 	        for(i = 0;i < ioreq->iouh_Length; i++) {
+ 		        if(i%8 == 0)
+ 			        bug("\n");
 
- 	    mybug_unit(-1, ("Bulk data buffer out:\n"));
- 	    for(i = 0;i < ioreq->iouh_Length; i++) {
- 		    if(i%8 == 0)
- 			    bug("\n");
-
- 		    bug("%02x ", *(UBYTE *)buffer++ );
- 	    }
-        bug("\n\n");
-
-        rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+ 		        bug("%02x ", *(UBYTE *)buffer++ );
+ 	        }
+            bug("\n\n");
+#endif
+            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+        break;
     }
 
     mybug_unit(-1, ("libusb_bulk_transfer rc = %d, transferred %d\n", rc, transferred));
