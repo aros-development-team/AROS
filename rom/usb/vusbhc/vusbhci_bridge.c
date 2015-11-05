@@ -43,7 +43,7 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
     struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
 
     struct libusb_device_descriptor desc;
-    int rc;
+    int rc, speed;
 
     mybug_unit(-1, ("Hotplug callback event!\n"));
 
@@ -63,8 +63,25 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
                     rc = LIBUSBCALL(libusb_open, dev, &dev_handle);
                     if(dev_handle) {
                         LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
-                        /* Tell Poseidon it's highspeed, just testing */
-                        unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION|UPSF_PORT_HIGH_SPEED);
+                        LIBUSBCALL(libusb_claim_interface, dev_handle, 0);
+                        LIBUSBCALL(libusb_claim_interface, dev_handle, 1);
+
+                        speed = LIBUSBCALL(libusb_get_device_speed, dev);
+                        switch(speed) {
+                            case LIBUSB_SPEED_LOW:
+                                unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                            break;
+                            case LIBUSB_SPEED_FULL:
+                                unit->roothub.portstatus.wPortStatus &= ~(AROS_WORD2LE(UPSF_PORT_HIGH_SPEED)|AROS_WORD2LE(UPSF_PORT_LOW_SPEED));
+                            break;
+                            case LIBUSB_SPEED_HIGH:
+                                unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
+                            break;
+                            //case LIBUSB_SPEED_SUPER:
+                            //break;
+                        }
+
+                        unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
                         unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
 
                         uhwCheckRootHubChanges(unit);
@@ -145,6 +162,7 @@ BOOL libusb_bridge_init(struct VUSBHCIBase *VUSBHCIBase) {
         return FALSE;
 
     if(!LIBUSBCALL(libusb_init, NULL)) {
+        LIBUSBCALL(libusb_set_debug, NULL, 1);
         bug("[LIBUSB] Checking hotplug support of libusb\n");
         if (LIBUSBCALL(libusb_has_capability, LIBUSB_CAP_HAS_HOTPLUG)) {
             bug("[LIBUSB]  - Hotplug supported\n");
@@ -193,12 +211,22 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
 
     UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType);
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
-    UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+    UWORD wValue             = (ioreq->iouh_SetupData.wValue);
+    UWORD wIndex             = (ioreq->iouh_SetupData.wIndex);
+    UWORD wLength            = (ioreq->iouh_SetupData.wLength);
 
-    rc = LIBUSBCALL(libusb_control_transfer, dev_handle,  bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, wLength, 10);
-    mybug_unit(-1, ("libusb_control_transfer rc = %d\n\n", rc));
+    switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
+        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
+            mybug_unit(-1, ("Filtering out SET_ADDRESS\n\n"));
+            ioreq->iouh_Actual = ioreq->iouh_Length;
+            return UHIOERR_NO_ERROR;
+        break;
+    }
+
+    mybug_unit(-1, ("wLength %d\n", wLength));
+    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+
+    rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, 10);
 
     if(rc<0) {
         rc = 0;
@@ -216,8 +244,11 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
 
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
+    mybug_unit(-1, ("wLength %d\n", wLength));
+    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+
     rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, wLength, &ioreq->iouh_Actual, 10);
-    //mybug_unit(-1, ("libusb_control_transfer rc = %d\n\n", rc));
+    mybug_unit(-1, ("libusb_interrupt_transfer rc = %d\n\n", rc));
     
     return UHIOERR_NO_ERROR;   
 }
@@ -229,8 +260,11 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
+    mybug_unit(-1, ("wLength %d\n", wLength));
+    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+
     rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, wLength, &ioreq->iouh_Actual, 10);
-    //mybug_unit(-1, ("libusb_control_transfer rc = %d\n\n", rc));
+    mybug_unit(-1, ("libusb_bulk_transfer rc = %d\n\n", rc));
     
     return UHIOERR_NO_ERROR;   
 }

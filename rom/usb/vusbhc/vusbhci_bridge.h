@@ -27,7 +27,10 @@ static const char *libusb_func_names[] = {
     "libusb_control_transfer",
     "libusb_interrupt_transfer",
     "libusb_bulk_transfer",
-    "libusb_set_auto_detach_kernel_driver"
+    "libusb_set_auto_detach_kernel_driver",
+    "libusb_get_device_speed",
+    "libusb_claim_interface",
+    "libusb_set_debug"
 };
 
 #define LIBUSB_NUM_FUNCS (sizeof(libusb_func_names) / sizeof(libusb_func_names[0]))
@@ -69,6 +72,9 @@ struct libusb_func {
 
     int (*libusb_set_auto_detach_kernel_driver)(libusb_device_handle *dev, int enable);
 
+    int (*libusb_get_device_speed)(libusb_device *dev);
+    int (*libusb_claim_interface)(libusb_device_handle *dev, int interface_number);
+    void (*libusb_set_debug)(libusb_context *ctx, int level);
 };
 
 //extern struct libusb_func libusb_func;
