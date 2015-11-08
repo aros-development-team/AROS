@@ -1,4 +1,5 @@
 
+#include <aros/debug.h>
 #include <config.h>
 
 #include "library.h"
@@ -15,6 +16,8 @@ DriverInit( struct DriverBase* AHIsubBase )
 {
   struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
 
+  D(bug("[Alsa]: DriverInit()\n"));
+
   AlsaBase->dosbase = (struct DosLibrary *)OpenLibrary( DOSNAME, 37 );
 
   if( AlsaBase->dosbase == NULL )
@@ -25,6 +28,8 @@ DriverInit( struct DriverBase* AHIsubBase )
 
   if (!ALSA_Init())
       return FALSE;
+
+  D(bug("[Alsa]: DriverInit() completed\n"));
 
   return TRUE;
 }

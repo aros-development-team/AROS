@@ -1,3 +1,4 @@
+#include <aros/debug.h>
 #include <config.h>
 
 #include <devices/ahi.h>
@@ -44,6 +45,8 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
   struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
   ULONG freq = AudioCtrl->ahiac_MixFreq;
 
+  D(bug("[Alsa]: AllocAudio enter\n"));
+
   AudioCtrl->ahiac_DriverData = AllocVec( sizeof( struct AlsaData ),
          MEMF_CLEAR | MEMF_PUBLIC );
 
@@ -68,17 +71,21 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
 
   if (dd->alsahandle == NULL)
   {
+    bug("[Alsa]: Failed opening ALSA\n");
     return AHISF_ERROR;
   }
 
   if (!ALSA_SetHWParams(dd->alsahandle, &freq))
   {
+      bug("[Alsa]: Failed setting ALSA hardware parameters\n");
       ALSA_DropAndClose(dd->alsahandle);
       dd->alsahandle = NULL;
       return AHISF_ERROR;
   }
 
   AudioCtrl->ahiac_MixFreq = freq;
+
+  D(bug("[Alsa]: AllocAudio completed\n"));
 
   return ( AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING );
 }
@@ -164,6 +171,8 @@ _AHIsub_Start( ULONG                   flags,
 
     if( dd->mixbuffer == NULL ) return AHIE_NOMEM;
 
+    D(bug("[Alsa]: AHIsub_Start\n"));
+
     Forbid();
 
     dd->slavetask = CreateNewProc( proctags );
@@ -233,6 +242,7 @@ _AHIsub_Stop( ULONG                   flags,
       {
         Signal( (struct Task*) dd->slavetask,
                 1L << dd->slavesignal );         // Kill him!
+        D(bug("[Alsa]: AHIsub_Stop\n"));
       }
 
       Wait( 1L << dd->mastersignal );            // Wait for slave to die
