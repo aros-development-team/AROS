@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/debug.h>
 #include <config.h>
 
 #include <devices/ahi.h>
@@ -36,6 +37,36 @@ AROS_UFH3(LONG, SlaveEntry,
    AROS_USERFUNC_INIT
    Slave( SysBase );
    AROS_USERFUNC_EXIT
+}
+
+#include <hardware/intbits.h>
+#include <proto/timer.h>
+
+AROS_INTH1(AHITimerTickCode, struct Task *, task)
+{
+    AROS_INTFUNC_INIT
+    Signal(task, SIGBREAKF_CTRL_F);
+    return 0;
+
+    AROS_INTFUNC_EXIT
+}
+
+
+
+static void SmallDelay(struct ExecBase *SysBase)
+{
+    struct Interrupt i;
+
+    i.is_Code         = (APTR)AHITimerTickCode;
+    i.is_Data         = FindTask(0);
+    i.is_Node.ln_Name = "AROS AHI Driver Timer Tick Server";
+    i.is_Node.ln_Pri  = 0;
+    i.is_Node.ln_Type = NT_INTERRUPT;
+
+    SetSignal(0, SIGBREAKF_CTRL_F);
+    AddIntServer(INTB_VERTB, &i);
+    Wait(SIGBREAKF_CTRL_F);
+    RemIntServer(INTB_VERTB, &i);
 }
 
 void
@@ -75,6 +106,7 @@ Slave( struct ExecBase* SysBase )
       else
       {
         LONG framesfree = 0;
+        LONG readcycles = 0;
 
         while(TRUE)
         {
@@ -85,9 +117,13 @@ Slave( struct ExecBase* SysBase )
               framesfree = ALSA_Avail(dd->alsahandle);
           }
 
-          if (framesfree > 1024)
+          if (framesfree >= 64)
+          {
+            readcycles++;
             break;
-          Delay(1);
+          }
+
+          SmallDelay(SysBase);
         }
 
         /* Loop until alsa buffer is filled */
@@ -97,10 +133,14 @@ Slave( struct ExecBase* SysBase )
 
           if (framesready == 0)
           {
+            if (readcycles == 0)
+              break;
+
             CallHookPkt(AudioCtrl->ahiac_PlayerFunc, AudioCtrl, NULL );
             CallHookPkt(AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer );
             framesready = AudioCtrl->ahiac_BuffSamples;
             framesptr = dd->mixbuffer;
+            readcycles--;
           }
 
           written = ALSA_Write(dd->alsahandle, framesptr, min(framesready,
