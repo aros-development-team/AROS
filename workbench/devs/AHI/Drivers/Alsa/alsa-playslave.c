@@ -121,6 +121,8 @@ Slave( struct ExecBase* SysBase )
           if (framesfree >= 64)
           {
             readcycles++;
+            if (framesfree >= AudioCtrl->ahiac_BuffSamples)
+              readcycles++;
             break;
           }
 
