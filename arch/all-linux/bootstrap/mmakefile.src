@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES         := malloc
+FILES         := malloc preboot
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(GENINCDIR)
 
