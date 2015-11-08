@@ -22,9 +22,15 @@
 #include <proto/exec.h>
 #include <sys/types.h>
 
+#include <unistd.h>
+#include <syscall.h>
+
 static int memnest;
-#define MEMLOCK if (SysBase != NULL) Forbid();
-#define MEMUNLOCK if (SysBase != NULL) Permit();
+extern pid_t arostid;
+
+#define THREADID    pid_t thistid = syscall(SYS_gettid);
+#define MEMLOCK     if (SysBase != NULL && thistid == arostid) Forbid();
+#define MEMUNLOCK   if (SysBase != NULL && thistid == arostid) Permit();
 
 extern struct ExecBase *SysBase;
 extern void * __libc_malloc(size_t);
@@ -35,6 +41,7 @@ extern void * __libc_realloc(void * mem, size_t newsize);
 void * malloc(size_t size)
 {
     void *res;
+    THREADID
 
     MEMLOCK
     memnest++;
@@ -47,6 +54,8 @@ void * malloc(size_t size)
 
 void free(void * addr)
 {
+    THREADID
+
     MEMLOCK
     memnest++;
     __libc_free(addr);
@@ -57,6 +66,7 @@ void free(void * addr)
 void * calloc(size_t n, size_t size)
 {
     void *res;
+    THREADID
 
     MEMLOCK
     memnest++;
@@ -70,7 +80,8 @@ void * calloc(size_t n, size_t size)
 void *realloc(void *ptr, size_t size)
 {
     void *res;
-    
+    THREADID
+
     MEMLOCK
     memnest++;
     res = __libc_realloc(ptr, size);

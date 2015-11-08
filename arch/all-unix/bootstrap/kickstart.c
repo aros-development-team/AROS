@@ -58,6 +58,7 @@ int kick(int (*addr)(), struct TagItem *msg)
 
         case 0:
             fprintf(stderr, "[Bootstrap] Entering kernel at %p...\n", addr);
+            Host_PreBoot();
             i = addr(msg, AROS_BOOT_MAGIC);
             exit(i);
         }
