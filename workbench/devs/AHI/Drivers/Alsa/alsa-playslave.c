@@ -113,6 +113,7 @@ Slave( struct ExecBase* SysBase )
           framesfree = ALSA_Avail(dd->alsahandle);
           if (framesfree == ALSA_XRUN)
           {
+              D(bug("[Alsa] ALSA_Avail() == XRUN\n"));
               ALSA_Prepare(dd->alsahandle);
               framesfree = ALSA_Avail(dd->alsahandle);
           }
@@ -147,6 +148,7 @@ Slave( struct ExecBase* SysBase )
                   framesfree));
           if (written == ALSA_XRUN)
           {
+              D(bug("[Alsa] ALSA_Write() == XRUN %d, %d\n", framesfree, framesready));
               ALSA_Prepare(dd->alsahandle);
               written = ALSA_Write(dd->alsahandle, framesptr, min(framesready,
                       framesfree));

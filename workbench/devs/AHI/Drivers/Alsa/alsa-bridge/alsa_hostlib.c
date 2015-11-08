@@ -66,13 +66,19 @@ BOOL ALSA_HostLib_Init()
     HostLibBase = OpenResource("hostlib.resource");
 
     if (!HostLibBase)
+    {
+        D(bug("[ALSA] failed to open hostlib.resource\n"));
         return FALSE;
+    }
 
     libasoundhandle = hostlib_load_so(LIBASOUND_SOFILE, alsa_func_names,
             ALSA_NUM_FUNCS, (void **)&alsa_func);
 
     if (!libasoundhandle)
+    {
+        bug("[ALSA] failed to open "LIBASOUND_SOFILE"\n");
         return FALSE;
+    }
 
     return TRUE;
 }
