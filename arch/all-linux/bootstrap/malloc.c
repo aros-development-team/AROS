@@ -8,6 +8,34 @@
  * This does not work with Android's bionic.
  */
 
+/*
+    Explanation:
+
+    Forbid-locking is  needed because AROS must protect calls to Linux memory
+    allocation functions against reentrancy. Linux malloc's pthread mutex
+    protection (or whatever it uses) will not work, because that one protects
+    Linux thread #1 against other Linux threads. However AROS tasks are all
+    inside the same Linux thread.
+
+    So if AROS task #1 is in the middle of Linux malloc, AROS task #2 may end
+    up doing Linux malloc call as well and when it hits Linux malloc's
+    pthread mutex (or whatever protection), that one will see that lock is being
+    held, but by same thread. If the used Linux locking allows nesting it causes
+    havoc (2 malloc's running at the same time). If it doesn't allow nesting,
+    it will hang.
+
+    The locking is only valid inside the AROS Linux thread. Other threads within
+    AROS process do not need it, because it will be handled by Linux malloc's
+    pthread mutex. Moreover, calling Forbid() from multiple Linux threads will
+    cause the TDNestCnt to become damaged.
+
+    TDNestCnt is "per task" and while other Linux thread calls Forbid() the AROS
+    Linux thread may be running AROS task #1. Then when that other Linux thread
+    does matching Permit(), AROS Linux thread may have already switched to
+    another AROS task. So the effect is like AROS task #1 calling Forbid() and
+    AROS task #2 calling Permit().
+*/
+
 /* TODO:
    This code is compiled with the kernel compiler but calls code
    from exec.library. This can only work if function calling
