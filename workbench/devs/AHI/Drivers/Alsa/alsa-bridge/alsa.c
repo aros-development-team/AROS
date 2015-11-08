@@ -50,7 +50,7 @@ BOOL ALSA_SetHWParams(APTR handle, ULONG * rate)
             SND_PCM_FORMAT_S16_LE);
     ALSACALL(snd_pcm_hw_params_set_channels, handle, hw_params, 2);
     r = ALSACALL(snd_pcm_hw_params_set_rate_near, handle, hw_params, rate, &dir);
-    ALSACALL(snd_pcm_hw_params_set_buffer_size, handle, hw_params, 4096);
+    ALSACALL(snd_pcm_hw_params_set_buffer_size, handle, hw_params, 2048);
 
     ALSACALL(snd_pcm_hw_params, handle, hw_params);
     ALSACALL(snd_pcm_hw_params_free, hw_params);
