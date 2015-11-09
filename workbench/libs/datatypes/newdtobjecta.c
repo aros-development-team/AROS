@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -115,13 +115,14 @@
     struct IFFHandle *iff = NULL;
     Object           *dtobj = NULL;
     UBYTE            *BaseName = NULL;
+    LONG             error = 0;
     
     D(bug("datatypes.library/NewDTObjectA\n"));
 
     if(!(SourceType = GetTagData(DTA_SourceType, DTST_FILE, attrs)))
     {
         D(bug("datatypes.library/NewDTObjectA: Bad DTA_SourceType (or no such tag)\n"));
-	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
+	error = ERROR_REQUIRED_ARG_MISSING;
     }
     else
     {
@@ -148,7 +149,7 @@
 	    case GID_SOUND:      BaseName="sound";             break;
 	    case GID_TEXT:       BaseName="ascii";             break;
 		
-	    default:             SetIoErr(ERROR_BAD_NUMBER);   break;
+	    default:             error = ERROR_BAD_NUMBER;   break;
 	    }
 	}
 	else
@@ -189,7 +190,7 @@
 
 				    ReleaseDataType(DataType);
 				    DataType = NULL;
-				    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+				    error = ERROR_OBJECT_WRONG_TYPE;
 				}
 				else
 				    Handle = (APTR)lock;
@@ -202,13 +203,15 @@
 			    }
 			    
 			} /* if lock aquired */
+			else
+			    error = IoErr();
 			break;
 			
 		    case DTST_CLIPBOARD:
     			D(bug("datatypes.library/NewDTObjectA: SourceType = DTST_CLIPBOARD\n"));
 
 			if(!(iff = AllocIFF()))
-			    SetIoErr(ERROR_NO_FREE_STORE);
+			    error = ERROR_NO_FREE_STORE;
 			else
 			{
     			    D(bug("datatypes.library/NewDTObjectA: AllocIFF okay\n"));
@@ -233,7 +236,7 @@
 
 					    ReleaseDataType(DataType);
 					    DataType = NULL;
-					    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+					    error = ERROR_OBJECT_WRONG_TYPE;
 					}
 					else
 					    Handle = iff;
@@ -281,7 +284,7 @@
 	    strcat(libname, ".datatype");
 	    
 	    if(!(DTClassBase = OpenLibrary(libname, 0)))
-		SetIoErr(DTERROR_UNKNOWN_DATATYPE);
+		error = DTERROR_UNKNOWN_DATATYPE;
 	    else
 	    {
 		struct IClass *DTClass;
@@ -347,11 +350,12 @@
 	
     } /* SourceType okay */
         
-    if(IoErr() == ERROR_OBJECT_NOT_FOUND)
-	SetIoErr(DTERROR_COULDNT_OPEN);
+    if(error == ERROR_OBJECT_NOT_FOUND)
+	error = DTERROR_COULDNT_OPEN;
 
     D(bug("datatypes.library/NewDTObjectA: Done. Returning %x\n", dtobj));
 
+    SetIoErr(error);
     return dtobj;
     
     AROS_LIBFUNC_EXIT
