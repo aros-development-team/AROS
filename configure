@@ -660,7 +660,6 @@ DO_XSHM_SUPPORT
 aros_nominal_depth
 aros_nominal_height
 aros_nominal_width
-oss_library_target
 pci_hidd_target
 sdl_hidd_target
 unixgfx_hidd_target
@@ -14470,15 +14469,6 @@ rm -f core conftest.err conftest.$ac_objext \
         fi
     fi
 
-        ac_fn_c_check_header_mongrel "$LINENO" "sys/soundcard.h" "ac_cv_header_sys_soundcard_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_soundcard_h" = xyes; then :
-
-fi
-
-
-    if test "x-$ac_cv_header_sys_soundcard_h" = "x-yes" ; then
-        oss_library_target=workbench-libs-oss-unix
-    fi
 fi
 
 
@@ -14629,7 +14619,6 @@ fi
 
 
 # Graphics Related
-
 
 
 
