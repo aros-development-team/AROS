@@ -2030,7 +2030,6 @@ IPTR List__MUIM_Clear(struct IClass *cl, Object *obj,
     /* Should never fail when shrinking */
     SetListSize(data, 0);
 
-    
     if (data->confirm_entries_num != data->entries_num)
     {
         SetAttrs(obj, MUIA_List_Entries, 0, MUIA_List_First, 0,
@@ -2198,17 +2197,51 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_List_Remove
-**************************************************************************/
+/****** List.mui/MUIM_List_Remove ********************************************
+*
+*   NAME
+*       MUIM_List_Remove (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Remove, LONG pos);
+*
+*   FUNCTION
+*       Removes entries from the list. If a destruct hook has been
+*       installed, it will be called for the removed entry.
+*
+*   INPUTS
+*       pos - the index of the entry to be removed. The following
+*           special values can also be used:
+*           MUIV_List_Remove_First: remove the first entry.
+*           MUIV_List_Remove_Last: remove the last entry.
+*           MUIV_List_Remove_Active: remove the active entry.
+*           MUIV_List_Remove_Selected: remove all selected entries
+*               (or the active entry if there are no selected entries).
+*
+*   NOTES
+*       When the active entry is removed, the next entry becomes active
+*       (if there is no entry below the active entry, the previous entry
+*       becomes active instead).
+*
+*   SEE ALSO
+*       MUIM_List_Insertsingle, MUIM_List_Insert, MUIA_List_DestructHook.
+*
+******************************************************************************
+*
+* It was not possible to use MUIM_List_NextSelected here because that method
+* may skip entries if entries are removed during an iteration.
+*
+*/
+
 IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
     struct MUIP_List_Remove *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos, cur;
+    LONG pos;
     LONG new_act;
+    UWORD i;
+    BOOL found, done = FALSE;
     struct ListEntry *lentry;
-    //int rem_count = 1;
 
     if (!data->entries_num)
         return 0;
@@ -2228,8 +2261,7 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
         break;
 
     case MUIV_List_Remove_Selected:
-        /* TODO: needs special handling */
-        pos = data->entries_active;
+        pos = 0;
         break;
 
     default:
@@ -2242,26 +2274,59 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
 
     new_act = data->entries_active;
 
-    if (pos == new_act && new_act == data->entries_num - 1)
-        new_act--;              /* might become MUIV_List_Active_Off */
+    while (!done)
+    {
+        if (msg->pos == MUIV_List_Remove_Selected)
+        {
+            /* Find the next selected entry */
+            for (found = FALSE, i = pos;
+                i < data->confirm_entries_num && !found; i++)
+            {
+                if (data->entries[i]->flags & ENTRY_SELECTED)
+                {
+                    pos = i;
+                    found = TRUE;
+                }
+            }
 
-    lentry = data->entries[pos];
-    DoMethod(obj, MUIM_List_Destruct, (IPTR) lentry->data,
-        (IPTR) data->pool);
+            if (!found)
+            {
+                done = TRUE;
 
-    cur = pos + 1;
+                /* If there were no selected entries, remove the active one */
+                if (data->confirm_entries_num == data->entries_num
+                    && data->entries_active != MUIV_List_Active_Off)
+                {
+                    pos = data->entries_active;
+                    found = TRUE;
+                }
+            }
+        }
+        else
+            done = TRUE;
 
-    RemoveListEntries(data, pos, cur - pos);
-    data->confirm_entries_num -= cur - pos;
+        if (found)
+        {
+            lentry = data->entries[pos];
+            DoMethod(obj, MUIM_List_Destruct, (IPTR) lentry->data,
+                (IPTR) data->pool);
+            RemoveListEntries(data, pos, 1);
+            data->confirm_entries_num--;
 
-    /* ensure that the active element is in a valid range */
+            if (pos < new_act)
+                new_act--;
+        }
+    }
+
+    /* ensure that the active element is in a valid range (it might become
+     * MUIV_List_Active_Off (-1), but that's OK) */
     if (new_act >= data->entries_num)
         new_act = data->entries_num - 1;
 
     SetAttrs(obj, MUIA_List_Entries, data->confirm_entries_num,
         (new_act >= pos) || (new_act != data->entries_active) ?
         MUIA_List_Active : TAG_DONE,
-        new_act,   /* Inform only if neccessary (for notify) */
+        new_act,   /* Inform only if necessary (for notify) */
         TAG_DONE);
 
     data->update = 1;
@@ -3046,9 +3111,44 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_List_NextSelected
-**************************************************************************/
+/****** List.mui/MUIM_List_NextSelected **************************************
+*
+*   NAME
+*       MUIM_List_NextSelected (V6)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_NextSelected, LONG *pos);
+*
+*   FUNCTION
+*       Allows iteration through a list's selected entries by providing the
+*       index of the next selected entry after the specified index.
+*
+*   INPUTS
+*       pos - the address of a variable containing the index of the previous
+*           selected entry. The variable must be initialised to the special
+*           value MUIV_List_NextSelected_Start to find the first selected
+*           entry. When this method returns, the variable will contain the
+*           index of the next selected entry, or MUIV_List_NextSelected_End if
+*           there are no more.
+*
+*   NOTES
+*       If there are no selected entries but there is an active entry, the
+*       index of the active entry will be stored (when
+*       MUIV_List_NextSelected_Start is specified).
+*
+*       Some selected entries may be skipped if any entries are removed
+*       between calls to this method during an iteration of a list.
+*
+*       MUIV_List_NextSelected_Start and MUIV_List_NextSelected_End may have
+*       the same numeric value.
+*
+*   SEE ALSO
+*       MUIM_List_Select, MUIM_List_Remove.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_NextSelected(struct IClass *cl, Object *obj,
     struct MUIP_List_NextSelected *msg)
 {
@@ -3073,9 +3173,16 @@ IPTR List__MUIM_NextSelected(struct IClass *cl, Object *obj,
         }
     }
 
-    /* Return index of selected entry, or indicate there are no more */
+    /* Return index of selected or active entry, or indicate there are no
+       more */
     if (!found)
-        pos = MUIV_List_NextSelected_End;
+    {
+        if (*msg->pos == MUIV_List_NextSelected_Start
+            && data->entries_active != MUIV_List_Active_Off)
+            pos = data->entries_active;
+        else
+            pos = MUIV_List_NextSelected_End;
+    }
     *msg->pos = pos;
 
     return TRUE;
