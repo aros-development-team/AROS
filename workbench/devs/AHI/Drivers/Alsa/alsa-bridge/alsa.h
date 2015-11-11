@@ -10,6 +10,11 @@
 BOOL ALSA_Init();
 VOID ALSA_Cleanup();
 
+VOID ALSA_MixerInit(APTR * handle, APTR * elem, LONG * min, LONG * max);
+VOID ALSA_MixerCleanup(APTR handle);
+LONG ALSA_MixerGetVolume(APTR elem);
+VOID ALSA_MixerSetVolume(APTR elem, LONG volume);
+
 APTR ALSA_Open();
 VOID ALSA_DropAndClose(APTR handle);
 

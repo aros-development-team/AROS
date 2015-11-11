@@ -11,6 +11,12 @@ struct AlsaBase
 {
     struct DriverBase driverbase;
     struct DosLibrary*   dosbase;
+
+    /* Mixer properties */
+    APTR    al_MixerHandle;
+    APTR    al_MixerElem;
+    LONG    al_MinVolume;
+    LONG    al_MaxVolume;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct AlsaBase))

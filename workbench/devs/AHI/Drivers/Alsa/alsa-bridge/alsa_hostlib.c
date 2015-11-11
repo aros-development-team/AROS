@@ -29,6 +29,20 @@ static const char *alsa_func_names[] =
     "snd_pcm_hw_params_get_buffer_size",
     "snd_pcm_hw_params_set_buffer_size",
     "snd_pcm_drop",
+
+    "snd_mixer_open",
+    "snd_mixer_close",
+    "snd_mixer_load",
+    "snd_mixer_attach",
+    "snd_mixer_find_selem",
+    "snd_mixer_selem_register",
+    "snd_mixer_selem_id_malloc",
+    "snd_mixer_selem_id_free",
+    "snd_mixer_selem_id_set_index",
+    "snd_mixer_selem_id_set_name",
+    "snd_mixer_selem_get_playback_volume_range",
+    "snd_mixer_selem_get_playback_volume",
+    "snd_mixer_selem_set_playback_volume_all",
 };
 
 #define ALSA_NUM_FUNCS (sizeof(alsa_func_names) / sizeof(alsa_func_names[0]))
