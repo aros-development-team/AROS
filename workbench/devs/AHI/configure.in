@@ -183,6 +183,12 @@ AC_SUBST(HAVE_OSS)
 AC_SUBST(HAVE_ASMIO)
 AC_SUBST(HAVE_OPENPCI)
 
+dnl Check for link libs
+
+AC_CHECK_LIB( alsa-bridge, ALSA_Init, HAVE_ALSA=1, AC_MSG_WARN( "alsa-bridge is missing." ))
+
+AC_SUBST(HAVE_ALSA)
+
 dnl Checks for typedefs, structures, and compiler characteristics.
 
 AC_C_CONST

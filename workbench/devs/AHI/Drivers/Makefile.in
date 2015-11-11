@@ -25,6 +25,7 @@ VPATH		= @srcdir@
 HAVE_OPENPCI	= @HAVE_OPENPCI@
 HAVE_OSS	= @HAVE_OSS@
 HAVE_ASMIO      = @HAVE_ASMIO@
+HAVE_ALSA	= @HAVE_ALSA@
 
 #
 # Targets
@@ -56,6 +57,10 @@ endif
 
 ifeq ($(strip $(host)),powerpc-unknown-amigaos)
 SUBDIRS		+= EMU10kx
+endif
+
+ifneq ($(strip $(HAVE_ALSA)),)
+SUBDIRS		+= Alsa
 endif
 
 all:
