@@ -33,6 +33,63 @@ static const LONG frequencies[] =
 
 #define FREQUENCIES (sizeof frequencies / sizeof frequencies[ 0 ])
 
+static const ULONG table_5bit[] = {
+  0xb53c,
+  0x804e,
+  0x5ad5,
+  0x404e,
+  0x2d86,
+  0x203a,
+  0x16d1,
+  0x1027,
+  0x0b6f,
+  0x0818,
+  0x05bb,
+  0x040f,
+  0x02df,
+  0x0209,
+  0x0171,
+  0x0105,
+  0x00b9,
+  0x0083,
+  0x005d,
+  0x0042,
+  0x002e,
+  0x0021,
+  0x0017,
+  0x0010,
+  0x000c,
+  0x0008,
+  0x0006,
+  0x0004,
+  0x0003,
+  0x0002,
+  0x0001,
+  0x0000
+};
+
+static UWORD LinToLog(ULONG vol)
+{
+  int i;
+
+  if (!vol) return 0x20;
+
+  for (i = 0; i < 32; i++)
+  {
+    if (vol > table_5bit[i])
+    {
+      return i;
+    }
+  }
+  return 0x1f;
+}
+
+static ULONG LogToLin(UWORD i)
+{
+    if (i > 31) return 0x10000;
+    return table_5bit[i];
+}
+
 /******************************************************************************
 ** AHIsub_AllocAudio **********************************************************
 ******************************************************************************/
@@ -335,6 +392,15 @@ _AHIsub_GetAttr( ULONG                   attribute,
     case AHIDB_Output:
       return (IPTR) "Alsa";    // We have only one "output"!
 
+    case AHIDB_MinOutputVolume:
+      return 0x00000;
+
+    case AHIDB_MaxOutputVolume:
+      if (AlsaBase->al_MixerElem)
+        return 0x10000;
+      else
+        return 0x00000;
+
     default:
       return def;
   }
@@ -352,6 +418,28 @@ _AHIsub_HardwareControl( ULONG                   attribute,
              struct DriverBase*      AHIsubBase )
 {
   struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
+
+  switch(attribute)
+  {
+  case AHIC_OutputVolume:
+    if (AlsaBase->al_MixerElem)
+    {
+        LONG val = (0x20 - LinToLog(argument)) * AlsaBase->al_MaxVolume / 0x20;
+        ALSA_MixerSetVolume(AlsaBase->al_MixerElem, (LONG)val);
+    }
+
+    return TRUE;
+
+  case AHIC_OutputVolume_Query:
+    if (AlsaBase->al_MixerElem)
+    {
+      LONG val = ALSA_MixerGetVolume(AlsaBase->al_MixerElem);
+      val = val * 0x20 / AlsaBase->al_MaxVolume;
+      return LogToLin(0x20 - val);
+    }
+
+    return 0;
+  }
 
   return 0;
 }

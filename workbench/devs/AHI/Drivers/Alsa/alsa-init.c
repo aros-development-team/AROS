@@ -29,6 +29,10 @@ DriverInit( struct DriverBase* AHIsubBase )
   if (!ALSA_Init())
       return FALSE;
 
+
+  ALSA_MixerInit(&AlsaBase->al_MixerHandle, &AlsaBase->al_MixerElem,
+          &AlsaBase->al_MinVolume, &AlsaBase->al_MaxVolume);
+
   D(bug("[Alsa]: DriverInit() completed\n"));
 
   return TRUE;
@@ -45,6 +49,9 @@ DriverCleanup( struct DriverBase* AHIsubBase )
   struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
 
   ALSA_Cleanup();
+
+  if (AlsaBase->al_MixerHandle)
+    ALSA_MixerCleanup(AlsaBase->al_MixerHandle);
 
   CloseLibrary( (struct Library*) DOSBase );
 }

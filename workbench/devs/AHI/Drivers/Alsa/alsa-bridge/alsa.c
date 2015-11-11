@@ -6,6 +6,9 @@
 #include "alsa.h"
 #include "alsa_hostlib.h"
 
+#define CARDNAME    "default"
+#define VOLUMENAME  "Master"
+
 BOOL ALSA_Init()
 {
     return ALSA_HostLib_Init();
@@ -16,12 +19,64 @@ VOID ALSA_Cleanup()
     ALSA_HostLib_Cleanup();
 }
 
+VOID ALSA_MixerInit(APTR * handle, APTR * elem, LONG * min, LONG * max)
+{
+    snd_mixer_t * _handle;
+    snd_mixer_selem_id_t * _sid;
+    snd_mixer_elem_t * _elem;
+
+    *handle = NULL;
+    *elem = NULL;
+
+    ALSACALL(snd_mixer_open,&_handle, 0);
+    ALSACALL(snd_mixer_attach,_handle, CARDNAME);
+    ALSACALL(snd_mixer_selem_register,_handle, NULL, NULL);
+    ALSACALL(snd_mixer_load,_handle);
+
+    ALSACALL(snd_mixer_selem_id_malloc,&_sid);
+    ALSACALL(snd_mixer_selem_id_set_index,_sid, 0);
+    ALSACALL(snd_mixer_selem_id_set_name,_sid, VOLUMENAME);
+    _elem = ALSACALL(snd_mixer_find_selem,_handle, _sid);
+
+    if (_elem != NULL)
+    {
+        long a,b;
+        ALSACALL(snd_mixer_selem_get_playback_volume_range,_elem, &a, &b);
+
+        *handle = _handle;
+        *elem   = _elem;
+        *min = (LONG)a;
+        *max = (LONG)b;
+    }
+
+    ALSACALL(snd_mixer_selem_id_free,_sid);
+}
+
+VOID ALSA_MixerCleanup(APTR handle)
+{
+    ALSACALL(snd_mixer_close,handle);
+}
+
+LONG ALSA_MixerGetVolume(APTR elem)
+{
+    long _ret = 0;
+
+    ALSACALL(snd_mixer_selem_get_playback_volume, elem,
+            SND_MIXER_SCHN_FRONT_LEFT, &_ret);
+    return (LONG)_ret;
+}
+
+VOID ALSA_MixerSetVolume(APTR elem, LONG volume)
+{
+    ALSACALL(snd_mixer_selem_set_playback_volume_all, elem, volume);
+}
+
 APTR ALSA_Open()
 {
     snd_pcm_t * handle = NULL;
 
 
-    if (ALSACALL(snd_pcm_open, &handle, "default",
+    if (ALSACALL(snd_pcm_open, &handle, CARDNAME,
             SND_PCM_STREAM_PLAYBACK, 0) < 0)
         return NULL;
 
@@ -39,7 +94,7 @@ VOID ALSA_DropAndClose(APTR handle)
 
 BOOL ALSA_SetHWParams(APTR handle, ULONG * rate)
 {
-    snd_pcm_hw_params_t *hw_params;
+    snd_pcm_hw_params_t * hw_params;
     LONG dir = 0; int r = 0;
 
     ALSACALL(snd_pcm_hw_params_malloc, &hw_params);
