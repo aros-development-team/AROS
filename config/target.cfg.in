@@ -113,7 +113,6 @@ AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
 UNIXGFX_HIDD_TARGET   := @unixgfx_hidd_target@
 SDL_HIDD_TARGET       := @sdl_hidd_target@
 PCI_HIDD_TARGET       := @pci_hidd_target@
-OSS_LIBRARY_TARGET    := @oss_library_target@
 CROSSTOOLS_TARGET     := @crosstools_target@
 OBJC_TARGET           := @objc_target@
 JAVA_TARGET           := @java_target@
