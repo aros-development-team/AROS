@@ -2242,6 +2242,7 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
     UWORD i;
     BOOL found, done = FALSE;
     struct ListEntry *lentry;
+    Tag active_tag = TAG_DONE;
 
     if (!data->entries_num)
         return 0;
@@ -2314,7 +2315,12 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
             data->confirm_entries_num--;
 
             if (pos < new_act)
+            {
                 new_act--;
+                active_tag = MUIA_List_Active;
+            }
+            else if (pos == new_act)
+                active_tag = MUIA_List_Active;
         }
     }
 
@@ -2324,9 +2330,7 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
         new_act = data->entries_num - 1;
 
     SetAttrs(obj, MUIA_List_Entries, data->confirm_entries_num,
-        (new_act >= pos) || (new_act != data->entries_active) ?
-        MUIA_List_Active : TAG_DONE,
-        new_act,   /* Inform only if necessary (for notify) */
+        active_tag, new_act,   /* Inform only if necessary (for notify) */
         TAG_DONE);
 
     data->update = 1;
