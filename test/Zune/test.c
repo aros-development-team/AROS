@@ -73,7 +73,8 @@ static const CONST_STRPTR list_jump_modes[] =
 static const CONST_STRPTR list_insert_modes[] =
     {"Index", "Top", "Active", "Sorted", "Bottom", NULL};
 static const CONST_STRPTR list_remove_modes[] =
-    {"Index", "First", "Active", "Last", "Selected", NULL};
+    {"Index", "First", "Active", "Last", "Selected", "Unsafe Loop",
+    "Safe Loop", NULL};
 static const CONST_STRPTR list_activate_modes[] =
     {"Index", "Top", "Bottom", "Up", "Down", "Page Up", "Page Down", NULL};
 static const CONST_STRPTR list_select_modes[] =
@@ -627,7 +628,7 @@ static void ListInsert(void)
 
 static void ListRemove(void)
 {
-    LONG mode, pos;
+    LONG mode, pos, count, j, *selections;
     UWORD i;
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
@@ -639,7 +640,45 @@ static void ListRemove(void)
     else
         pos = 1 - mode;
 
-    DoMethod(list.lists[i], MUIM_List_Remove, pos);
+    if (mode == 5)
+    {
+        /* Remove selected entries in a loop to test MUIM_List_NextSelected.
+           This doesn't work as expected in MUI or Zune */
+        pos = MUIV_List_NextSelected_Start - 1;
+        while (pos != MUIV_List_NextSelected_End)
+        {
+            if (pos == MUIV_List_NextSelected_Start - 1)
+                pos++;
+            DoMethod(list.lists[i], MUIM_List_NextSelected, (IPTR) &pos);
+            if (pos != MUIV_List_NextSelected_End)
+                DoMethod(list.lists[i], MUIM_List_Remove, pos);
+        }
+    }
+    else if (mode == 6)
+    {
+        /* Remove selected entries safely by first retrieving them with
+           MUIM_List_NextSelected and then removing them one by one */
+        DoMethod(list.lists[i], MUIM_List_Select, MUIV_List_Select_All,
+            MUIV_List_Select_Ask, &count);
+        selections = AllocVec(sizeof(LONG) * count, MEMF_ANY);
+        if (selections != NULL)
+        {
+            pos = MUIV_List_NextSelected_Start;
+            for (j = 0; j < count; j++)
+            {
+                DoMethod(list.lists[i], MUIM_List_NextSelected, (IPTR) &pos);
+                selections[j] = pos;
+            }
+
+            /* We must remove the entries in reverse order; otherwise the
+               later indices will become invalid */
+            while (count > 0)
+                DoMethod(list.lists[i], MUIM_List_Remove, selections[--count]);
+            FreeVec(selections);
+        }
+    }
+    else
+        DoMethod(list.lists[i], MUIM_List_Remove, pos);
 }
 
 static void ListClear(void)
