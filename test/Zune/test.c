@@ -635,11 +635,6 @@ static void ListRemove(void)
 
     mode = XGET(list.remove_cycle, MUIA_Cycle_Active);
 
-    if (mode == 0)
-        pos = XGET(list.index1_string, MUIA_String_Integer);
-    else
-        pos = 1 - mode;
-
     if (mode == 5)
     {
         /* Remove selected entries in a loop to test MUIM_List_NextSelected.
@@ -678,7 +673,13 @@ static void ListRemove(void)
         }
     }
     else
+    {
+        if (mode == 0)
+            pos = XGET(list.index1_string, MUIA_String_Integer);
+        else
+            pos = 1 - mode;
         DoMethod(list.lists[i], MUIM_List_Remove, pos);
+    }
 }
 
 static void ListClear(void)
