@@ -10,7 +10,7 @@
 
     NAME
 
-        Version [<library|device|file>] [<version #>] [<revision #>] [FILE] [FULL] [RES] 
+        Version [<library|device|file>] [<version #>] [<revision #>] [FILE] [FULL] [RES]
 
     SYNOPSIS
 
@@ -23,12 +23,12 @@
     FUNCTION
 
     Prints or checks the version and revision information of a file, library or device.
-      
+
     INPUTS
 
     NAME      -- name of file, library or device to check. If not given it
                  prints version and revision of Kickstart.
-    MD5SUM    -- #FIXME what is that?
+    MD5SUM    -- message-digest computation
     VERSION   -- checks for version and returns error code 5 (warn) if the
                  version of the file is lower.
     REVISION  -- checks for revision and returns error code 5 (warn) if the
@@ -37,10 +37,11 @@
     FULL      -- prints additional information
     RES       -- gets version of resident commands
     ARCH      -- displays architecture information about a file
-    
+
     RESULT
 
     NOTES
+    If the tag contains a trailing space and dollar sign, you may use the Unix command ident.
 
     EXAMPLE
 
@@ -409,7 +410,7 @@ void Transform(register ULONG *buf,register ULONG *in)
 /*==[end md5.c]============================================================*/
 
 
-const TEXT version[] = "$VER: Version 42.2 (22.05.2011)\n";
+const TEXT version[] = "$VER: Version 42.3 (17.11.2015)\n";
 
 static const char ERROR_HEADER[] = "Version";
 
@@ -925,6 +926,7 @@ void printverstring(void)
         {
             const char *arch;
 
+#ifndef NO_ARM
             if (parsedver.pv_arch == EM_ARM)
             {
                 Printf("Architecture: ");
@@ -944,6 +946,7 @@ void printverstring(void)
                 Printf("\n");
             }
             else
+#endif
             {
                 switch (parsedver.pv_arch)
                 {
@@ -1011,6 +1014,8 @@ int makedata(CONST_STRPTR buffer, CONST_STRPTR ptr, int pos)
         for (endp = ptr; *endp != '\0' && *endp != '\r' && *endp != '\n'; endp++)
             ;
         pos = endp - ptr;
+        if (pos && ptr[pos-1] == '$')
+            pos--;
         if (pos)
         {
             parsedver.pv_extrastr = dupstr(ptr, pos);
@@ -1613,6 +1618,7 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh)
     return shnum;
 }
 
+#ifndef NO_ARM
 static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct elfheader *eh)
 {
     struct attrs_section *attrs;
@@ -1764,6 +1770,7 @@ static int arm_read_cpudata(BPTR file, struct elfheader *eh)
 
     return 1;
 }
+#endif
 
 
 /* Retrieve version information from file. Return 0 for success.
@@ -1793,12 +1800,14 @@ int makefilever(CONST_STRPTR name)
                 {
                     if (buffer[0] == 0x7f && buffer[1] == 'E' && buffer[2] == 'L' && buffer[3] == 'F')
                     {
-                        /* It's a ELF file, read machine ID */
+                        /* It's an ELF file, read machine ID */
                         struct elfheader *eh = (struct elfheader *)buffer;
 
                         parsedver.pv_arch = elf_read_word(eh->machine, eh);
+#ifndef NO_ARM
                     	if (parsedver.pv_arch == EM_ARM)
                     	    arm_read_cpudata(file, eh);
+#endif
                     }
                 }
                 else if (len >= 4)
@@ -2277,5 +2286,5 @@ int main (void)
 
         RT_Exit();
 
-        return(error);
+        return error;
 }
