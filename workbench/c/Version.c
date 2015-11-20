@@ -410,7 +410,8 @@ void Transform(register ULONG *buf,register ULONG *in)
 /*==[end md5.c]============================================================*/
 
 
-const TEXT version[] = "$VER: Version 42.3 (17.11.2015)\n";
+const TEXT version[] = "$VER: Version 42.3 (20.11.2015)\n";
+const TEXT ver[] = "$VER:";
 
 static const char ERROR_HEADER[] = "Version";
 
@@ -926,7 +927,6 @@ void printverstring(void)
         {
             const char *arch;
 
-#ifndef NO_ARM
             if (parsedver.pv_arch == EM_ARM)
             {
                 Printf("Architecture: ");
@@ -946,7 +946,6 @@ void printverstring(void)
                 Printf("\n");
             }
             else
-#endif
             {
                 switch (parsedver.pv_arch)
                 {
@@ -1618,7 +1617,6 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh)
     return shnum;
 }
 
-#ifndef NO_ARM
 static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct elfheader *eh)
 {
     struct attrs_section *attrs;
@@ -1770,7 +1768,6 @@ static int arm_read_cpudata(BPTR file, struct elfheader *eh)
 
     return 1;
 }
-#endif
 
 
 /* Retrieve version information from file. Return 0 for success.
@@ -1804,10 +1801,8 @@ int makefilever(CONST_STRPTR name)
                         struct elfheader *eh = (struct elfheader *)buffer;
 
                         parsedver.pv_arch = elf_read_word(eh->machine, eh);
-#ifndef NO_ARM
                     	if (parsedver.pv_arch == EM_ARM)
                     	    arm_read_cpudata(file, eh);
-#endif
                     }
                 }
                 else if (len >= 4)
@@ -1822,7 +1817,7 @@ int makefilever(CONST_STRPTR name)
                 Seek(file, 0, OFFSET_BEGINNING);
             }
 
-            error = findinfile(file, "$VER:", buffer, &len, parsedver.pv_md5sum);
+            error = findinfile(file, ver, buffer, &len, parsedver.pv_md5sum);
             if (error == RETURN_OK)
             {
                 parsedver.pv_flags |= PVF_MD5SUM;
