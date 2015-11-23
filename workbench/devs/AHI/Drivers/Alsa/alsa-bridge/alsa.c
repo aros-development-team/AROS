@@ -3,8 +3,8 @@
     $Id$
 */
 
-#include "alsa.h"
 #include "alsa_hostlib.h"
+#include "alsa.h"
 
 #define CARDNAME    "default"
 #define VOLUMENAME  "Master"

@@ -4,6 +4,7 @@
 */
 
 #include <alsa/asoundlib.h>
+#include <exec/types.h>
 
 struct alsa_func
 {
