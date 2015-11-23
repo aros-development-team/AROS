@@ -3,9 +3,8 @@
     $Id$
 */
 
-#include <proto/exec.h>
-#include <proto/hostlib.h>
 #include "alsa_hostlib.h"
+#include <proto/hostlib.h>
 
 #include <aros/debug.h>
 
