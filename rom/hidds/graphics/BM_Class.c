@@ -4468,9 +4468,9 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
                  * limitations (it can't place cursor beyond bitmap edges). Otherwise Intuition
                  * will provide strange user experience (mouse cursor will disappear)
                  */
-                if (xoffset >= data->displayWidth)
+                if (xoffset >= (WORD)data->displayWidth)
                     xoffset = data->displayWidth - 1;
-                else if (xoffset <= -data->width)
+                else if (xoffset <= (WORD)-data->width)
                     xoffset = -(data->width - 1);
                 xoffset = -xoffset;
                 D(bug("[BitMap] xoffset requested %ld, got %d\n", -tag->ti_Data, xoffset));
@@ -4480,9 +4480,9 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
                 /* Only offsets that ensure at least some of the bitmap is
                    seen are valid */
                 yoffset = tag->ti_Data;
-                if (yoffset >= data->displayHeight)
+                if (yoffset >= (WORD)data->displayHeight)
                     yoffset = data->displayHeight - 1;
-                else if (yoffset <= -data->height)
+                else if (yoffset <= (WORD)-data->height)
                     yoffset = -(data->height - 1);
                 yoffset = -yoffset;
                 D(bug("[BitMap] yoffset requested %ld, got %d\n", -tag->ti_Data, yoffset));
