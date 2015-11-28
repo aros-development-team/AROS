@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for Vesa hidd.
@@ -123,8 +123,8 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
-    IPTR xoffset = data->xoffset;
-    IPTR yoffset = data->yoffset;
+    LONG xoffset = data->xoffset;
+    LONG yoffset = data->yoffset;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
