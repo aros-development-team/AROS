@@ -1015,7 +1015,9 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
                     if (!data->height)
                         data->height = data->displayHeight;
 
-                    D(bug("[BitMap] Bitmap %dx%d, display %dx%d\n", data->width, data->height, data->display.width, data->display.height));
+                    D(bug("[BitMap] Bitmap %dx%d, display %dx%d\n",
+                        data->width, data->height,
+                        data->displayWidth, data->displayHeight));
 
                     if (!data->prot.pixfmt)
                     {
@@ -5168,7 +5170,9 @@ void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem
                             data->display.MaxX = data->displayWidth;
                             data->display.MaxY = data->displayHeight;
 
-                            D(bug("[BitMap] Bitmap %dx%d, display %dx%d\n", data->width, data->height, data->display.width, data->display.height));
+                            D(bug("[BitMap] Bitmap %dx%d, display %dx%d\n",
+                                data->width, data->height,
+                                data->displayWidth, data->displayHeight));
                         }
                     }
                 }
