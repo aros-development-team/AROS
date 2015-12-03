@@ -1577,14 +1577,6 @@ IPTR List__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    struct ListImage *li = List_First(&data->images);
-
-    while (li)
-    {
-        struct ListImage *next = Node_Next(li);
-        DoMethod(obj, MUIM_List_DeleteImage, (IPTR) li);
-        li = next;
-    }
 
     zune_imspec_cleanup(data->list_cursor);
     zune_imspec_cleanup(data->list_select);
