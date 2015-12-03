@@ -9,7 +9,7 @@
 #include "country_locale.h"
 #include <libraries/locale.h>
 
-struct IntCountryPrefs croatiaPrefs =
+struct IntCountryPrefs montenegroPrefs =
 {
     {
         /* Reserved */
