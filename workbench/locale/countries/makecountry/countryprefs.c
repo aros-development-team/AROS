@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2103, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: makecountry code that needs access to AROS structures and types
