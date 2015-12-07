@@ -21,7 +21,7 @@ $(GENINCDIR)/hidd/pci.h: include/pci_hidd.h
 	$(CP) $< $(GENINCDIR)/hidd/pci.h
 
 %fetch mmake=kernel-hidd-pci-ids \
-    archive_origins="http://pciids.sourceforge.net/v2.2/" \
+    archive_origins="http://pciids.sourceforge.net/v2.2/ https://pci-ids.ucw.cz/v2.2/" \
     archive="pci.ids" suffixes="" location=$(AROS_DEVS)
 
 %build_module mmake=kernel-hidd-pci \
