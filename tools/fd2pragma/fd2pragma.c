@@ -975,6 +975,7 @@ static uint32  DoOutputDirect(void *, size_t);
 static uint32  DoOutput(strptr, ...) __attribute__ ((format(printf, 1, 2)));
 #else
 static uint32  DoOutput(strptr, ...);
+#define __attribute__(a)
 #endif
 /* ------------------------------------------------------------------ */
 static struct ShortList *NewItem(struct ShortListRoot *);
@@ -4199,14 +4200,14 @@ static void DoError(uint32 errnum, uint32 line, ...)
   va_start(a, line);
   if (line)
   {
-    printf("%s %ld in line %ld%s: ",
+    printf("%s %lu in line %lu%s: ",
     (Errors[err].Type ? "Warning" : "Error"),
     err, line,
     errnum & ERROFFSET_CLIB ? " of clib file" : "");
   }
   else
   {
-    printf("%s %ld : ", (Errors[err].Type ? "Warning" : "Error"), err);
+    printf("%s %lu : ", (Errors[err].Type ? "Warning" : "Error"), err);
   }
   vprintf(Errors[err].Error, a);
   printf("\n");
