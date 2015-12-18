@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.194 (02.01.2011) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.195 (24.05.2015) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -320,6 +320,8 @@ static const char version[] =
  2.193 18.09.10 : (phx) GLContext type (tinygl).
  2.194 03.01.11 : (mazze) Fix for building it on CYGWIN.
                           Added AROS support in the proto file.
+ 2.195 24.05.15 : (phx) Merge data-register pairs from the FD file for
+        64-bit data types when generating vbcc 68k assembler inlines.
 */
 
 /* A short note, how fd2pragma works.
@@ -558,18 +560,21 @@ static const strptr RegNames[] = {
 "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",
 "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
 "fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7",
+"d0/d1", "d2/d3", "d4/d5", "d6/d7",
 };
 
 static const strptr RegNamesUpper[] = {
 "D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7",
 "A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7",
 "FP0", "FP1", "FP2", "FP3", "FP4", "FP5", "FP6", "FP7",
+"D0/D1", "D2/D3", "D4/D5", "D6/D7",
 };
 
 enum Register_ID {
 REG_D0, REG_D1, REG_D2, REG_D3, REG_D4, REG_D5, REG_D6, REG_D7,
 REG_A0, REG_A1, REG_A2, REG_A3, REG_A4, REG_A5, REG_A6, REG_A7,
-REG_FP0, REG_FP1, REG_FP2, REG_FP3, REG_FP4, REG_FP5, REG_FP6, REG_FP7
+REG_FP0, REG_FP1, REG_FP2, REG_FP3, REG_FP4, REG_FP5, REG_FP6, REG_FP7,
+REG_D0D1, REG_D2D3, REG_D4D5, REG_D6D7
 };
 #define MAXREGPPC       26
 #define MAXREG          24 /* maximum registers of 68K */
@@ -975,7 +980,6 @@ static uint32  DoOutputDirect(void *, size_t);
 static uint32  DoOutput(strptr, ...) __attribute__ ((format(printf, 1, 2)));
 #else
 static uint32  DoOutput(strptr, ...);
-#define __attribute__(a)
 #endif
 /* ------------------------------------------------------------------ */
 static struct ShortList *NewItem(struct ShortListRoot *);
@@ -3922,6 +3926,33 @@ static void FindHeader(void)
   }
 }
 
+/* merge data register pairs for 64-bit argument types */
+static void FindRegPairs(struct AmiPragma *ap, struct ClibData *cd)
+{
+  int i, j, k;
+
+  for(i = 0, j = 0, k = 0; i < ap->CallArgs || j < ap->NumArgs; ++i, ++j)
+  {
+    if(i < ap->CallArgs && (cd->Args[i].Type == CPP_TYPE_DOUBLE ||
+                            cd->Args[i].Type == CPP_TYPE_LONGLONG)
+       && j < ap->NumArgs-1 && ap->Args[j].ArgReg < REG_D7
+       && (ap->Args[j].ArgReg & 1) == 0
+       && ap->Args[j].ArgReg + 1 == ap->Args[j+1].ArgReg)
+    {
+      ap->Args[k++].ArgReg = REG_D0D1 + (ap->Args[j].ArgReg - REG_D0) / 2;
+      ++j;  /* skip next ArgReg */
+    }
+    else if(j < ap->NumArgs)
+      ap->Args[k++].ArgReg = ap->Args[j].ArgReg;
+  }
+
+  ap->NumArgs = k;
+  if (ap->NumArgs != ap->CallArgs)
+    ap->Flags |= AMIPRAGFLAG_ARGCOUNT;
+  else
+    ap->Flags &= ~AMIPRAGFLAG_ARGCOUNT;
+}
+
 /* returns decrement data in bits 0-15 and increment data in bits 16-31 */
 static uint32 GetRegisterData(struct AmiPragma *ap)
 {
@@ -4198,17 +4229,9 @@ static void DoError(uint32 errnum, uint32 line, ...)
     Flags |= FLAG_DIDERROR;
 
   va_start(a, line);
-  if (line)
-  {
-    printf("%s %lu in line %lu%s: ",
-    (Errors[err].Type ? "Warning" : "Error"),
-    err, line,
-    errnum & ERROFFSET_CLIB ? " of clib file" : "");
-  }
-  else
-  {
-    printf("%s %lu : ", (Errors[err].Type ? "Warning" : "Error"), err);
-  }
+  printf((line ? "%s %ld in line %ld%s: " : "%s %ld : "),
+  (Errors[err].Type ? "Warning" : "Error"), err, line,
+  errnum & ERROFFSET_CLIB ? " of clib file" : "");
   vprintf(Errors[err].Error, a);
   printf("\n");
   if(line && Errors[err].Skip)
@@ -4364,7 +4387,7 @@ uint32 FuncAMICALL(struct AmiPragma *ap, uint32 flags, strptr name)
 
   for(i = 0; i < ap->NumArgs; ++i)
   {
-    DoOutput("%s",RegNames[ap->Args[i].ArgReg]);
+    DoOutput(RegNames[ap->Args[i].ArgReg]);
     if(i+1 < ap->NumArgs)
       DoOutput(",");
   }
@@ -4484,7 +4507,7 @@ uint32 FuncAsmText(struct AmiPragma *ap, uint32 flags, strptr name)
         {
           ++offset;
           l ^= 1 << i;
-          DoOutput("%s",RegNamesUpper[i]);
+          DoOutput(RegNamesUpper[i]);
           if(l)
             DoOutput("/");
         }
@@ -4509,7 +4532,7 @@ uint32 FuncAsmText(struct AmiPragma *ap, uint32 flags, strptr name)
       {
         offset += 3;
         l ^= 1 << i;
-        DoOutput("%s",RegNamesUpper[REG_FP0 + i]);
+        DoOutput(RegNamesUpper[REG_FP0 + i]);
         if(l)
           DoOutput("/");
       }
@@ -4656,7 +4679,7 @@ uint32 FuncAsmText(struct AmiPragma *ap, uint32 flags, strptr name)
       if(fregs & (1 << i))
       {
         fregs ^= 1 << i;
-        DoOutput("%s",RegNamesUpper[REG_FP0 + i]);
+        DoOutput(RegNamesUpper[REG_FP0 + i]);
         if(fregs)
           DoOutput("/");
       }
@@ -4684,7 +4707,7 @@ uint32 FuncAsmText(struct AmiPragma *ap, uint32 flags, strptr name)
         if(registers & (1 << i))
         {
           registers ^= 1 << i;
-          DoOutput("%s",RegNamesUpper[i]);
+          DoOutput(RegNamesUpper[i]);
           if(registers)
             DoOutput("/");
         }
@@ -6446,7 +6469,7 @@ uint32 FuncBMAP(struct AmiPragma *ap, uint32 flags, strptr name)
     }
   }
 
-  DoOutput("%s",name);
+  DoOutput(name);
   reg = 0;                      DoOutputDirect(&reg, 1);
   reg = (-ap->Bias)>>8;         DoOutputDirect(&reg, 1);
   reg = -ap->Bias;              DoOutputDirect(&reg, 1);
@@ -6464,10 +6487,13 @@ uint32 FuncVBCCInline(struct AmiPragma *ap, uint32 flags, strptr name)
   strptr c1, c2;
   int32 i, k;
 
-  if(CheckError(ap, AMIPRAGFLAG_ARGCOUNT|AMIPRAGFLAG_PPC))
+  if(!(cd = GetClibFunc(name, ap, flags)))
     return 1;
 
-  if(!(cd = GetClibFunc(name, ap, flags)))
+  /* find register pairs for 64-bit types (long long, double) */
+  FindRegPairs(ap, cd);
+
+  if(CheckError(ap, AMIPRAGFLAG_ARGCOUNT|AMIPRAGFLAG_PPC))
     return 1;
 
   c1 = Flags & FLAG_NEWSYNTAX ? "(" : ""; /*)*/
@@ -6672,8 +6698,8 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
       /* save tag1 and load taglist-pointer */
       DoOutput("\\tstw\\t%s%d,%d(%s1)\\n"
                "\\taddi\\t%s%d,%s1,%d\\n",
-      PPCRegPrefix, (int)k+2, 20+(int)k*4, PPCRegPrefix, PPCRegPrefix,
-      (int)k+2, PPCRegPrefix, 20+(int)k*4);
+      PPCRegPrefix, k+2, 20+k*4, PPCRegPrefix, PPCRegPrefix,
+      k+2, PPCRegPrefix, 20+k*4);
     }
     DoOutput("\\tlwz\\t%s11,_%s(%s2)\\n"
              "\\tlwz\\t%s0,-%d(%s11)\\n"
@@ -6703,8 +6729,8 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
       /* save tag1 and load taglist-pointer */
       DoOutput("\\tstw\\t%s%d,%d(%s1)\\n"
                "\\taddi\\t%s%d,%s1,%d\\n",
-      PPCRegPrefix, (int)k+3, 24+(int)k*4, PPCRegPrefix, PPCRegPrefix,
-      (int)k+3, PPCRegPrefix, 24+(int)k*4);
+      PPCRegPrefix, k+3, 24+k*4, PPCRegPrefix, PPCRegPrefix,
+      k+3, PPCRegPrefix, 24+k*4);
     }
     DoOutput("\\tlwz\\t%s0,-%d(%s3)\\n"
              "\\tmtlr\\t%s0\\n"
@@ -7852,7 +7878,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[1].st_other */
   EndPutM16Inc(data2, SHN_ABS);                                 /* esym[1].st_shndx */
 
-  sprintf((strptr)data+i, "%s.o", name); while(data[i]) { i++;} ; /* get next store space */
+  sprintf((strptr)data+i, "%s.o", name); while(data[i++]) ; /* get next store space */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_size */
@@ -7867,7 +7893,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[3].st_other */
   EndPutM16Inc(data2, 1);                                       /* esym[3].st_shndx - the second entry is program section! */
 
-  sprintf((strptr)data+i, "%s", name); while(data[i]) { i++;} ; /* get next store space */
+  sprintf((strptr)data+i, name); while(data[i++]) ; /* get next store space */
   EndPutM32Inc(data2, i);                                       /* esym[4].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[4].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[4].st_size */
@@ -7875,7 +7901,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[4].st_other */
   EndPutM16Inc(data2, 0);                                       /* esym[4].st_shndx */
 
-  sprintf((strptr)data+i, "PPCCallOS"); while(data[i]) { i++;} ; /* get next store space */
+  sprintf((strptr)data+i, "PPCCallOS"); while(data[i++]) ; /* get next store space */
   if(BaseName)
   {
     EndPutM32Inc(data2, i);                                     /* esym[5].st_name */
@@ -7885,7 +7911,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
     *(data2++) = 0;                                             /* esym[5].st_other */
     EndPutM16/*Inc*/(data2, 0);                                 /* esym[5].st_shndx */
 
-    sprintf((strptr)data+i, "%s", BaseName); while(data[i]) { i++;} ; /* get next store space */
+    sprintf((strptr)data+i, BaseName); while(data[i++]) ; /* get next store space */
   }
   EndPutM32(data3+(3*40)+(5*4), i);                             /* esh[5].sh_size */
   while(i&3) /* long aligned */
@@ -8216,8 +8242,7 @@ uint32 FuncVBCCMorphText(struct AmiPragma *ap, uint32 flags, strptr name)
 
 uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
 {
-  int32 i, j, k=0, size, nrcopyar = 0, stcksize = 16;
-  int basereg __attribute__ ((unused)) = 12;
+  int32 i, j, k=0, size, nrcopyar = 0, stcksize = 16, basereg = 12;
   uint8 *data, *data2, *data3;
   struct ArHeader *arh;
 
@@ -8576,7 +8601,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[1].st_other */
   EndPutM16Inc(data2, SHN_ABS);                                 /* esym[1].st_shndx */
 
-  sprintf((strptr)data+i, "%s.o", name); while(data[i]) { i++;} ; /* get next store space */
+  sprintf((strptr)data+i, "%s.o", name); while(data[i++]) ; /* get next store space */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_size */
@@ -8591,7 +8616,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[3].st_other */
   EndPutM16Inc(data2, 1);                                       /* esym[3].st_shndx - the second entry is program section! */
 
-  sprintf((strptr)data+i, "%s", name); while(data[i]) { i++;} ; /* get next store space */
+  sprintf((strptr)data+i, name); while(data[i++]) ; /* get next store space */
   if(BaseName)
   {
     EndPutM32Inc(data2, i);                                     /* esym[4].st_name */
@@ -8601,7 +8626,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
     *(data2++) = 0;                                             /* esym[4].st_other */
     EndPutM16/*Inc*/(data2, 0);                                 /* esym[4].st_shndx */
 
-    sprintf((strptr)data+i, "%s", BaseName); while(data[i]) { i++;} ; /* get next store space */
+    sprintf((strptr)data+i, BaseName); while(data[i++]) ; /* get next store space */
   }
   EndPutM32(data3+(3*40)+(5*4), i);                             /* esh[5].sh_size */
   while(i&3) /* long aligned */
@@ -10227,10 +10252,7 @@ static uint32 OutClibType(struct CPP_NameType *nt, strptr txt)
       DoOutput(" ("/*)*/);
       for(i = 0; i < nt->FuncPointerDepth; ++i)
         DoOutput("*");
-      if (txt)
-        DoOutput("%s)", txt);
-      else
-        DoOutput(")");
+      DoOutput(/*((*/txt ? "%s)" : ")", txt);
       if(nt->FuncArgs)
         return DoOutputDirect(nt->FuncArgs, nt->ArgsLength);
       else
@@ -10265,10 +10287,7 @@ static uint32 MakeClibType(strptr dest, struct CPP_NameType *nt, strptr txt)
   {
     if(nt->Flags & CPP_FLAG_FUNCTION)
     {
-      if (txt)
-        a += sprintf(a, " (*%s)", txt);
-      else
-        a += sprintf(a, " (*)");
+      a += sprintf(a, (txt ? " (*%s)" : " (*)"), txt);
       if(nt->FuncArgs)
       {
         memcpy(a, nt->FuncArgs, nt->ArgsLength);
@@ -11341,7 +11360,7 @@ static uint32 CreateClib(uint32 callmode)
     }
     DoOutput("**\n**\tC prototypes. For use with 32 bit integers only.\n**\n**\t");
     if(!Copyright || (Copyright && strncmp("Copyright ", Copyright, 10)))
-      DoOutput("Copyright %c %d ", 0xa9, tim->tm_year+1900);
+      DoOutput("Copyright © %d ", tim->tm_year+1900);
     DoOutput("%s\n", Copyright ? Copyright : Flags2 & FLAG2_SYSTEMRELEASE ?
     "Amiga, Inc." : "");
     DoOutput("**\tAll Rights Reserved\n*/\n\n");
@@ -11631,7 +11650,6 @@ static uint32 CreateGenAuto(strptr to, uint32 type)
 static uint32 CreateXML(void)
 {
   struct Include *inc;
-  char *basetypelib;
 
   LastBias = 30;
   DoOutput(
@@ -11639,9 +11657,8 @@ static uint32 CreateXML(void)
   "<!DOCTYPE library SYSTEM \"library.dtd\">\n"
   "<library name=\"%s\" basename=\"%s\" openname=\"%s\"",
   ShortBaseName, BaseName, GetLibraryName());
-  basetypelib = GetBaseTypeLib();
-  if(basetypelib && (strcmp(basetypelib, "Library") != 0))
-    DoOutput(" basetype=\"%s\"", basetypelib);
+  if(GetBaseTypeLib() != "Library")
+    DoOutput(" basetype=\"%s\"", GetBaseTypeLib());
   DoOutput(">\n");
   for(inc = (struct Include *) Includes.First; inc;
   inc = (struct Include *) inc->List.Next)
@@ -12457,6 +12474,11 @@ static uint32 CreateFDFile(void)
 
 #ifdef FD2PRAGMA_READARGS
 #include <proto/dos.h>
+
+/* undefine OS4 HUNKNAME macro */
+#ifdef HUNKNAME
+#undef HUNKNAME
+#endif
 
 #define PARAM   "FROM=INFILE/A,SPECIAL/N,MODE/N,"                       \
                 "TO/K,ABI/K,CLIB/K,COPYRIGHT/K,HEADER/K,HUNKNAME/K,"    \
@@ -13681,4 +13703,3 @@ int main(int argc, char **argv)
 
   return 0;
 }
-
