@@ -188,7 +188,7 @@ STATIC CONST UBYTE hikeymaptypes[] =
 STATIC CONST IPTR lokeymap[] =
 {
     /*---- 1st QWERTY row - 0x00 to 0x0F */
-    BYTES('.' ,'.' ,0x7E,0x60),
+    BYTES(0,   0,   0x7E,0x60),
     BYTES(0xB9,0xA1,'!' ,'1' ),
     BYTES(0xB2,0xB2,'@' ,'2' ),
     BYTES(0xB3,0xB3,'#' ,'3' ),
@@ -197,11 +197,11 @@ STATIC CONST IPTR lokeymap[] =
     BYTES(0xBC,0xBC,'L' ,'l' ),
     BYTES(0xBD,0xBD,'M' ,'m' ),
     BYTES(0xBE,0xBE,'F' ,'f' ),
-    BYTES('.' ,'.' ,'P' ,'p' ),
+    BYTES(0,   0,   'P' ,'p' ),
     BYTES(0xA5,0xA5,'?' ,0x2F),
     BYTES(0xF7,0xD7,'{' ,'[' ),
     BYTES(0xC4,0xE4,'}' ,']' ),
-    BYTES('.' ,'.' ,0x7E,0x60),
+    BYTES(0,   0,   0x7E,0x60),
     BYTES(0,   0,   0,   0  ),
     BYTES('0', '0', '0', '0'),
     /*---- 2nd QWERTY row - 0x10 to 0x1F */
@@ -241,14 +241,14 @@ STATIC CONST IPTR lokeymap[] =
     /*---- 4th QWERTY row - 0x30 to 0x3F */
     BYTES(0x7C,0x5C,0x7C,0x5C),
     BYTES(0xC6,0xE6,'(' ,'9' ),
-    BYTES('.' ,'.' ,')' ,'0' ),
+    BYTES(0,   0,   ')' ,'0' ),
     BYTES(0xA2,0xA9,'X' ,'x' ),
-    BYTES('.' ,'.' ,'<' ,',' ),
+    BYTES(0,   0,   '<' ,',' ),
     BYTES(0x95,0xB7,'I' ,'i' ),
     BYTES(0xD1,0xF1,'N' ,'n' ),
     BYTES(0xB5,0xB5,'W' ,'w' ),
     BYTES(0xC7,0xE7,'V' ,'v' ),
-    BYTES('.' ,'.' ,'G' ,'g' ),
+    BYTES(0,   0,   'G' ,'g' ),
     BYTES(0xBF,0xBF,0x22,0x27),
     BYTES(0,   0,   0,   0  ),
     BYTES(',', '.', ',', '.'),
