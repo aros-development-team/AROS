@@ -415,7 +415,7 @@ STATIC CONST IPTR lokeymap[] =
     DEAD(c_descr),		    	/* 33 */
     BYTES('`', 'v', 'V', 'v'),		/* 34 */
     BYTES('\'','b', 'B', 'b'),		/* 35 */
-    BYTES('N', 'n', 'N', 'n'),		/* 36 */
+    BYTES('¯', '­', 'N', 'n'),		/* 36 */
 
     DEAD(KEY37_descr),		    	/* 37 */    
     BYTES('×', ';', '.', ';'),		/* 38 */
