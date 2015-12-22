@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2015, The AROS Development Team. All rights reserved.
     This file is part of the SystemPrefsWindow class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -77,6 +77,19 @@ Object *MakeMenuitem(CONST_STRPTR text)
     End;
 }
 
+AROS_UFH3(static void, IMsgHook,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct FileRequester *, req, A2),
+    AROS_UFHA(struct IntuiMessage *, imsg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    if (imsg->Class == IDCMP_REFRESHWINDOW)
+        DoMethod(req->fr_UserData, MUIM_Application_CheckRefresh);
+
+    AROS_USERFUNC_EXIT
+}
+
 /*** Methods ****************************************************************/
 Object *SystemPrefsWindow__OM_NEW
 (
@@ -136,6 +149,8 @@ Object *SystemPrefsWindow__OM_NEW
         data = INST_DATA(CLASS, self);
         data->spwd_Catalog = catalog;
         data->spwd_Editor  = editor;
+        data->spwd_IMsgHook.h_Entry = HookEntry;
+        data->spwd_IMsgHook.h_SubEntry = (HOOKFUNC)IMsgHook;
 
         data->spwd_FileRequester = MUI_AllocAslRequestTags
         (
@@ -143,6 +158,7 @@ Object *SystemPrefsWindow__OM_NEW
             ASLFR_RejectIcons,   TRUE,
             ASLFR_InitialDrawer, "SYS:Prefs/Presets",
             ASLFR_DoPatterns,    TRUE,
+            ASLFR_IntuiMsgFunc,  (IPTR)&data->spwd_IMsgHook,
             TAG_DONE
         );
 
@@ -404,6 +420,8 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
         (
             data->spwd_FileRequester,
             ASLFR_TitleText, _(MSG_FILEREQ_IMPORT_TITLE),
+            ASLFR_Window, XGET(self, MUIA_Window_Window),
+            ASLFR_UserData, XGET(self, MUIA_ApplicationObject),
             TAG_DONE
         );
         if (reqOK)
@@ -451,6 +469,8 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Export
             data->spwd_FileRequester,
             ASLFR_TitleText, _(MSG_FILEREQ_EXPORT_TITLE),
             ASLFR_DoSaveMode, TRUE,
+            ASLFR_Window, XGET(self, MUIA_Window_Window),
+            ASLFR_UserData, XGET(self, MUIA_ApplicationObject),
             TAG_DONE
         );
         if (reqOK)
