@@ -165,7 +165,7 @@ OM_ADDMEMBER                              done
 OM_REMMEMBER                              done
 MUIM_Application_AboutMUI                 todo
 MUIM_Application_AddInputHandler          done ?
-MUIM_Application_CheckRefresh             todo (implementable ?)
+MUIM_Application_CheckRefresh             done
 MUIM_Application_GetMenuCheck             OBSOLETE
 MUIM_Application_GetMenuState             OBSOLETE
 MUIM_Application_Input                    OBSOLETE
@@ -2194,6 +2194,73 @@ static IPTR Application__MUIM_Save(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/****** Application.mui/MUIM_Application_CheckRefresh ************************
+*
+*   NAME
+*       MUIM_Application_CheckRefresh (V11)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_Application_CheckRefresh);
+*
+*   FUNCTION
+*       Redraw any damaged portions within all of the application's windows.
+*       This method is normally only used in hooks that handle Intuition 
+*       messages received while modal requesters are open (e.g. ASL file 
+*       requesters). If such a hook is not used, a modal requester may damage
+*       the contents of your application windows when the requester is moved.
+*
+*   NOTES
+*       The object attributes needed for the ASL tags in the example below may
+*       not all have valid values unless the parent window is open. Therefore
+*       the tags should not be passed to MUI_AllocAslRequestTags() in an
+*       OM_NEW method (for example), but should instead be passed to
+*       MUI_AslRequestTags() when the requester is shown.
+*
+*   EXAMPLE
+*
+*       \* A hook function to refresh windows when called from asl.library *\
+*       AROS_UFH3(static void, IMsgHook,
+*           AROS_UFHA(struct Hook *, hook, A0),
+*           AROS_UFHA(struct FileRequester *, req, A2),
+*           AROS_UFHA(struct IntuiMessage *, imsg, A1))
+*       {
+*           AROS_USERFUNC_INIT
+*
+*           if (imsg->Class == IDCMP_REFRESHWINDOW)
+*               DoMethod(req->fr_UserData, MUIM_Application_CheckRefresh);
+*
+*           AROS_USERFUNC_EXIT
+*       }
+*
+*       ...
+*
+*       \* Show the requester *\
+*       MUI_AslRequestTags(ASL_FileRequest, req,
+*           ASLFR_Window, XGET(window, MUIA_Window_Window),
+*           ASLFR_IntuiMsgFunc, (IPTR)hook,
+*           ASLFR_UserData, XGET(window, MUIA_ApplicationObject),
+*           TAG_DONE);
+*
+******************************************************************************
+*
+*/
+
+static IPTR Application__MUIM_CheckRefresh(struct IClass *cl, Object *obj,
+    struct MUIP_Application_CheckRefresh *message)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    struct MinList *children = NULL;
+    Object *cstate;
+    Object *child;
+
+    get(data->app_WindowFamily, MUIA_Family_List, &children);
+    cstate = (Object *) children->mlh_Head;
+    while ((child = NextObject(&cstate)))
+        DoMethod(child, MUIM_Window_Refresh);
+
+    return 0;
+}
+
 /*
  * The class dispatcher
  */
@@ -2253,6 +2320,8 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
         return Application__MUIM_Load(cl, obj, (APTR) msg);
     case MUIM_Application_Save:
         return Application__MUIM_Save(cl, obj, (APTR) msg);
+    case MUIM_Application_CheckRefresh:
+        return Application__MUIM_CheckRefresh(cl, obj, (APTR) msg);
     }
 
     return (DoSuperMethodA(cl, obj, msg));

@@ -1,6 +1,6 @@
 /*
-    Copyright  1999, David Le Corfec.
-    Copyright  2002-2015, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002-2015, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -4360,6 +4360,18 @@ IPTR Window__MUIM_UpdateMenu(struct IClass *cl, Object *obj, Msg msg)
 }
 
 /**************************************************************************
+ MUIM_Window_Refresh
+**************************************************************************/
+IPTR Window__MUIM_Refresh(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    RefreshWindow(obj, data);
+
+    return 1;
+}
+
+/**************************************************************************
 MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
 static IPTR Window__MUIM_Export(struct IClass *cl, Object *obj,
@@ -4452,6 +4464,8 @@ BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
         return Window__MUIM_Snapshot(cl, obj, (APTR) msg);
     case MUIM_Window_UpdateMenu:
         return Window__MUIM_UpdateMenu(cl, obj, (APTR) msg);
+    case MUIM_Window_Refresh:
+        return Window__MUIM_Refresh(cl, obj, (APTR) msg);
     case MUIM_Export:
         return Window__MUIM_Export(cl, obj, (APTR) msg);
     case MUIM_Import:

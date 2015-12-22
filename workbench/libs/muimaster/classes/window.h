@@ -2,8 +2,8 @@
 #define _MUI_CLASSES_WINDOW_H
 
 /*
-    Copyright  1999, David Le Corfec.
-    Copyright  2002-2003, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002-2015, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -107,7 +107,9 @@ struct MUIP_Window_ToFront
 #define MUIM_Window_RemControlCharHandler /* PRIV */ \
     (MUIB_Window | 0x00000006)   /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_UpdateMenu   /* PRIV */ \
-    (MUIB_Window | 0x00000007)   /* Zune: V1, PRIV dont' use it! */
+    (MUIB_Window | 0x00000007)   /* Zune: V1, PRIV don't use it! */
+#define MUIM_Window_Refresh      /* PRIV */ \
+    (MUIB_Window | 0x00000008)   /* Zune: V1, PRIV don't use it! */
 
 struct MUIP_Window_AddControlCharHandler
 {
