@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -533,6 +533,11 @@ static BOOL ReadILBM(Class *cl, Object *o)
 
 	if ( ham )
 	{
+	    /* picture.datatype can't cope with a transparent colour when we
+             * convert a HAM image to an RGB image */
+	    if (bmhd->bmh_Masking == mskHasTransparentColor)
+		bmhd->bmh_Masking = mskNone;
+
 	    if( !ReadRGBPic(cl, o, handle, bmhd, file_bmhd, cn, (UBYTE *)cmap_prop->sp_Data) )
 	    {
 		D(bug("ilbm.datatype error readrgbpic\n"));
