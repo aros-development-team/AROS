@@ -95,6 +95,8 @@ AOS_CallEntry:
 cli_setup:
 	lea.l	BCPL_jsr,%a5
 	lea.l	BCPL_rts,%a6
+	/* Some programs assume A3 = seglist */
+	lea -4(%a4),%a3
 	jsr	(%a4)
 	bra	cleanup
 
