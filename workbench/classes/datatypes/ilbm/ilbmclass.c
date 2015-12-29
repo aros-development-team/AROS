@@ -213,7 +213,7 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
     int		width, height, numplanes, mask, hamrot1, hamrot2;
     LONG    	x, y, p, w16, body_bpr, bodysize;
     ULONG	rgb;
-    UBYTE	r, g, b;
+    UBYTE	r, g, b, hmask, mmask;
     BOOL	compress;
     
     width  = bmhd->bmh_Width;
@@ -247,6 +247,8 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
     
     hamrot1 = 10 - numplanes;
     hamrot2 = numplanes - 2;
+    mmask = 0xff << (numplanes - 6);
+    hmask = ~mmask;
     compress = FALSE;
     switch( file_bmhd->bmh_Compression )
     {
@@ -285,6 +287,8 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 			srcline += body_bpr;
 		    }
 		    // D(bug("ilbm.datatype/ReadRGB: RGB %06lx mask %02x srcline %lx chunky %lx\n", rgb, mask, srcline, chunky));
+
+		    /* Process HAM or RGB data (a color table implies HAM) */
 		    if( coltab )
 		    {
 			rgb >>= 14;
@@ -301,16 +305,16 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 			    case 0x100:
 				*chunky++ = r;
 				*chunky++ = g;
-				*chunky++ = b = rgb & 0x0ff;
+				*chunky++ = b = rgb & mmask | b & hmask;
 				break;
 			    case 0x200:
-				*chunky++ = r = rgb & 0x0ff;
+				*chunky++ = r = rgb & mmask | r & hmask;
 				*chunky++ = g;
 				*chunky++ = b;
 				break;
 			    case 0x300:
 				*chunky++ = r;
-				*chunky++ = g = rgb & 0x0ff;
+				*chunky++ = g = rgb & mmask | g & hmask;
 				*chunky++ = b;
 				break;
 			}
@@ -352,6 +356,31 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 
 /**************************************************************************************************/
 
+static void FixColRegs(ULONG numcolors, UBYTE *srcstart)
+{
+    WORD i;
+    UBYTE n = 0, *src;
+
+    /* Check if all color elements have an empty lower nibble */
+    src = srcstart;
+    for (i = 0; i < numcolors * 3; i++)
+	n |= *src++;
+    src = srcstart;
+
+    /* If so, scale all color elements */
+    if ((n & 0xf) == 0)
+    {
+	for (i = 0; i < numcolors * 3; i++)
+	{
+	    n = *src;
+	    n |= n >> 4;
+	    *src++ = n;
+	}
+    }
+}
+
+/**************************************************************************************************/
+
 static void CopyColRegs(Object *o, ULONG numcolors, UBYTE *srcstart, BOOL ehb)
 {
     struct ColorRegister    *colorregs;
@@ -382,6 +411,8 @@ static void CopyColRegs(Object *o, ULONG numcolors, UBYTE *srcstart, BOOL ehb)
 		    r = *src++;
 		    g = *src++;
 		    b = *src++;
+
+		    /* Halve the brightness on the second (EHB) round */
 		    if( j )
 		    {
 			r >>= 1;
@@ -529,6 +560,7 @@ static BOOL ReadILBM(Class *cl, Object *o)
 	numcolors = cmap_prop->sp_Size / 3;
 	D(bug("ilbm.datatype/ReadILBM: %d bit %d colors\n", (int)file_bmhd->bmh_Depth, numcolors));
 	data = (UBYTE *)cmap_prop->sp_Data;
+	FixColRegs(numcolors, data);
 	CopyColRegs(o, numcolors, data, ehb);
 
 	if ( ham )
