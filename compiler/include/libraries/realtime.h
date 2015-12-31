@@ -34,6 +34,8 @@
 #include <exec/semaphores.h>
 #endif
 
+/* The actual length of a tick is: 1/TICK_FREQ + rtb_TickErr * 1e-9 */
+#define TICK_FREQ 1200
 
 /* A conductor is an abstraction that represent a group of applications
    that want to be syncronized. */
@@ -197,7 +199,6 @@ struct RealTimeBase
     WORD           rtb_TickErr;
 };
 
-/* The actual length of a tick is: 1/TICK_FREQ + rtb_TickErr * 1e-9 */
 
 /* These two are hardware dependent... */
 #define  RealTime_TickErr_Min  -705
