@@ -13,6 +13,9 @@
 #   include <utility/tagitem.h>
 #endif
 
+#define TAPEDECKCLASS	"tapedeck.gadget"
+#define TAPEDECKNAME	"Gadgets/tapedeck.gadget"
+
 #define TDECK_Dummy  	    (TAG_USER    | 0x5000000)
 #define TDECK_Mode   	    (TDECK_Dummy + 0x1      )
 #define TDECK_Paused 	    (TDECK_Dummy + 0x2      )
