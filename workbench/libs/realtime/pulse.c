@@ -130,7 +130,7 @@ AROS_UFH3(void, Pulse,
 			if (player->pl_Hook != NULL)
 			{
 			    // kprintf("Calling hook %p\n", player->pl_Hook);
-			    CallHookA(player->pl_Hook, &timeMsg, player);
+			    CallHookA(player->pl_Hook, player, &timeMsg);
 			}
 			else
 			{
