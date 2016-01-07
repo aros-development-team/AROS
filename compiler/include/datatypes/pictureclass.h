@@ -24,6 +24,14 @@
 
 #define PICTUREDTCLASS          "picture.datatype"
 
+#ifndef __packed
+#ifdef __GNUC__
+#define __packed __attribute__((__packed__))
+#else
+#define __packed
+#endif
+#endif
+
 struct BitMapHeader
 {
     UWORD        bmh_Width;
@@ -39,7 +47,7 @@ struct BitMapHeader
     UBYTE        bmh_YAspect;
     WORD         bmh_PageWidth;
     WORD         bmh_PageHeight;
-};
+} __packed;
 
 struct ColorRegister
 {
