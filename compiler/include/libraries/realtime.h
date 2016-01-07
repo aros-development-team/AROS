@@ -166,16 +166,16 @@ enum { PLAYER_Base = TAG_USER + 64,
 
 struct pmTime
 {
-    ULONG  pmt_Method;                  /* The actual method */
-    ULONG  pmt_Time;
+    STACKED ULONG  pmt_Method;                  /* The actual method */
+    STACKED ULONG  pmt_Time;
 };
 
 /* Structure used by the method PM_STATE. */
 
 struct pmState
 {
-    ULONG  pms_Method;                  /* The actual method */
-    ULONG  pms_OldState;                /* The state previous to the state
+    STACKED ULONG  pms_Method;                  /* The actual method */
+    STACKED ULONG  pms_OldState;                /* The state previous to the state
 					   change */
 };
 
