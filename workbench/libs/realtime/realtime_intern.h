@@ -47,7 +47,7 @@ struct internal_RealTimeBase
     
     ULONG            rtb_Time;
     ULONG            rtb_TimeFrac;
-    UWORD            rtb_Reserved1;
+    UWORD            rtb_Reserved1; //  = Tick frequency.
     WORD             rtb_TickErr;
 
     struct SignalSemaphore rtb_Locks[RT_MAXLOCK];
