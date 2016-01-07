@@ -31,6 +31,14 @@
 
 #define	ANIMATIONDTCLASS	"animation.datatype"
 
+#ifndef __packed
+#ifdef __GNUC__
+#define __packed __attribute__((__packed__))
+#else
+#define __packed
+#endif
+#endif
+
 /* Tags */
 #define	ADTA_Dummy		(DTA_Dummy + 600)
 #define	ADTA_ModeID		PDTA_ModeID
@@ -84,7 +92,7 @@ struct AnimHeader
     UBYTE	 ah_Pad0;
     ULONG	 ah_Flags;
     UBYTE	 ah_Pad[16];
-};
+} __packed;
 
 /* Methods */
 
