@@ -12,6 +12,8 @@
 #include "arossupport.h"
 
 #include <setjmp.h>
+#include <stdio.h>
+#include <string.h>
 
 extern struct NewMenu nm[];
 extern struct NewMenu nmpict[];
@@ -157,10 +159,10 @@ void WinCleanup(void)
 
 void Cleanup(CONST_STRPTR msg)
 {
-    OutputMessage(msg);
-
     struct ScreenNotifyMessage *snmsg;
     
+    OutputMessage(msg);
+
     while (!EndScreenNotify (isnstarted))
         Delay (10);
     
@@ -1452,7 +1454,7 @@ static void HandleAll(void)
                                 case MSG_MEN_TEXT_WORDWRAP:
                                     tdt_text_wordwrap = (item->Flags & CHECKED) ? TRUE : FALSE;
                                     if (tdt_text_wordwrap)
-                                        D(bug("wordwrap enabled\n"));
+                                        D(bug("wordwrap enabled\n"))
                                     else
                                         D(bug("wordwrap disabled\n"));
                                     SetDTAttrs (dto, NULL, NULL,

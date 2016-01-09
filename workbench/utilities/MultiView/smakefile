@@ -3,27 +3,26 @@
 # Fri Jan 19 23:58:18 2001
 #
 
-OBJS= arossupport.o main.o misc.o vars.o locale.o
+OBJS= arossupport.o main.o misc.o vars.o locale.o \
+ARexx/MultiView.o ARexx/MultiView_rxif.o ARexx/MultiView_rxcl.o
+CFLAGS= nostackcheck #cpu=68020 define=MYDEBUG
 
 MultiView: $(OBJS)
-   sc link to $@ $(OBJS) lib lib:debug.lib
+	sc link to $@ $(OBJS) lib lib:debug.lib
+	HunkShort $@ to T:$@
+	copy T:$@ to $@ CLONE
 
 arossupport.o: arossupport.c arossupport.h
-    sc nostackcheck cpu=68020 define=MYDEBUG arossupport.c OBJNAME=$@
 
 main.o: main.c global.h compilerspecific.h debug.h arossupport.h vars.h \
 	strings.h
-    sc nostackcheck cpu=68020 main.c OBJNAME=$@
 
 misc.o: misc.c global.h version.h compilerspecific.h debug.h vars.h \
 	strings.h
-    sc nostackcheck cpu=68020 define=MYDEBUG misc.c OBJNAME=$@
 
 vars.o: vars.c global.h version.h vars.h vars.h strings.h
-    sc nostackcheck cpu=68020 define=MYDEBUG vars.c OBJNAME=$@
 
 locale.o: locale.c strings.h global.h vars.h strings.h
-    sc nostackcheck cpu=68020 define=MYDEBUG locale.c OBJNAME=$@
 
 strings.h: catalogs/multiview.cd
 	catcomp $< cfile $@ noblock nocode
@@ -33,4 +32,8 @@ clean:
 	-delete $(OBJS) MultiView.lnk strings.h
 
 install:
-	catcomp catalogs/multiview.cd catalogs/$(Language).ct CATALOG LOCALE:Catalogs/$(Language)/System/Utilities/multiview.catalog
+	catcomp catalogs/multiview.cd catalogs/$(Language).ct \
+CATALOG LOCALE:Catalogs/$(Language)/System/Utilities/multiview.catalog
+
+archive: clean
+	lha -r u RAM:MultiView // MultiView MultiView.info
