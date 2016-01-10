@@ -1453,10 +1453,12 @@ static void HandleAll(void)
 
                                 case MSG_MEN_TEXT_WORDWRAP:
                                     tdt_text_wordwrap = (item->Flags & CHECKED) ? TRUE : FALSE;
-                                    if (tdt_text_wordwrap)
-                                        D(bug("wordwrap enabled\n"))
-                                    else
-                                        D(bug("wordwrap disabled\n"));
+                                    D(
+                                        if (tdt_text_wordwrap)
+                                            bug("wordwrap enabled\n");
+                                        else
+                                            bug("wordwrap disabled\n");
+                                    )
                                     SetDTAttrs (dto, NULL, NULL,
                                                 TDTA_WordWrap, tdt_text_wordwrap,
                                                 TAG_DONE);
