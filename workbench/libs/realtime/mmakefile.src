@@ -23,6 +23,6 @@ FUNCS := createplayera \
 
 %build_module mmake=workbench-libs-realtime \
     modname=realtime modtype=library \
-    files="realtime_init $(FUNCS) $(FILES)"
+    files="realtime_init realtime_timer $(FUNCS) $(FILES)"
 
 %common
