@@ -338,7 +338,7 @@ void About(void)
     {
         dtver_string[i++] = *sp++;
     }
-    dtver_string[i++] = '\0';
+    dtver_string[i] = '\0';
 
     es.es_StructSize   = sizeof(es);
     es.es_Flags        = 0;

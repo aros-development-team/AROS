@@ -840,7 +840,7 @@ static void MakeWindow(void)
     if (wincoords.MaxX == 0)
         wincoords.MaxX = scr->ViewPort.DWidth;
     if (wincoords.MaxY == 0)
-        wincoords.MaxY = scr->ViewPort.DHeight - scr->BarHeight - 2;
+        wincoords.MaxY = scr->ViewPort.DHeight - scr->BarHeight - 1;
     
     minwidth  = ( (winwidth) && (winwidth < 50) ) ? winwidth : 50;
     minheight = ( (winheight) && (winheight < 50) ) ? winheight : 50;

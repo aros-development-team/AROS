@@ -9,7 +9,7 @@ CFLAGS= nostackcheck #cpu=68020 define=MYDEBUG
 
 MultiView: $(OBJS)
 	sc link to $@ $(OBJS) lib lib:debug.lib
-	HunkShort $@ to T:$@
+	HunkShort $@ T:$@
 	copy T:$@ to $@ CLONE
 
 arossupport.o: arossupport.c arossupport.h
