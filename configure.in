@@ -1337,6 +1337,31 @@ case "$target_os" in
         esac
         ;;
 
+    stm32f7_discovery)
+        aros_flavour="standalone"
+        aros_target_arch="stm32f7_discovery"
+        aros_target_cpu="arm"
+        aros_object_format="armelf_aros"
+        aros_shared_default="no"
+        aros_arch_libs="-laeabi"
+
+        # stm32f7 has DSP opcode support
+        gcc_default_cpu="armv7e-m"
+        # gcc_default_cpu="armv7-m"
+        gcc_default_cpu_tune="cortex-m7"
+        gcc_default_fpu="fpv4-sp-d16"
+        # GCC does not recognize fpv5-sp-d16 which should be the correct one to use, or not...
+        # gcc_default_fpu="fpv5-sp-d16"
+		gcc_default_float_abi="hard"
+        gcc_default_mode="thumb"
+
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
+        aros_config_cflags="$aros_config_cflags -mthumb"
+        aros_config_aflags="$aros_config_aflags -mthumb"
+        aros_kernel_cflags="$aros_kernel_cflags -mthumb"
+        aros_target_cflags="$aros_kernel_cflags -mthumb"
+        ;;
+
     amiga*)
         aros_target_arch="amiga"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
@@ -1666,7 +1691,13 @@ arm*)
     AC_ARG_WITH(float,AC_HELP_STRING([--with-float=<spec>],[Specify floating point ABI (default=$gcc_default_float_abi).]),aros_gcc_float_abi="$withval",aros_gcc_float_abi=$gcc_default_float_abi)
     AC_MSG_RESULT($aros_gcc_float_abi)
 
-    aros_isa_flags="-mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    if test "$gcc_default_mode" = ""; then
+        aros_isa_flags="-marm -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    else
+        # Do not specify -mthumb-interwork as it may add extra code to support arm/thumb interwork
+        aros_isa_flags="-m$gcc_default_mode -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    fi
+
     aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
     aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
     ;;
@@ -2781,6 +2812,7 @@ AC_SUBST(gcc_default_cpu)
 AC_SUBST(gcc_default_cpu_tune)
 AC_SUBST(gcc_default_fpu)
 AC_SUBST(gcc_default_float_abi)
+AC_SUBST(gcc_default_mode)
 
 # Android related
 AC_SUBST(android_tool)
