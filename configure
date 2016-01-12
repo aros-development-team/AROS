@@ -8361,25 +8361,6 @@ case "$target_os" in
         esac
         ;;
 
-    sun4i)
-        aros_flavour="standalone"
-        aros_target_arch="sun4i"
-        aros_target_cpu="arm"
-        aros_object_format="armelf_aros"
-        aros_shared_default="no"
-        aros_arch_libs="-laeabi"
-
-		gcc_default_cpu="armv7-a"
-        gcc_default_fpu="neon"
-        gcc_default_cpu_tune="cortex-a8"
-		gcc_default_float_abi="hard"
-
-        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
-        aros_optimization_cflags=""
-        aros_config_cflags="$aros_config_cflags -mcpu=cortex-a8 -mtune=cortex-a8 -fno-strict-aliasing"
-        aros_config_aflags="$aros_config_aflags -mcpu=cortex-a8 -mtune=cortex-a8 -fno-strict-aliasing"
-        ;;
-
     amiga*)
         aros_target_arch="amiga"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
