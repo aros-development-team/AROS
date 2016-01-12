@@ -8799,7 +8799,7 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_float_abi" >&5
 $as_echo "$aros_gcc_float_abi" >&6; }
 
-    aros_isa_flags="-marm -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    aros_isa_flags="-mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
     aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
     aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
     ;;

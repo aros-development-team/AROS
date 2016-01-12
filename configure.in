@@ -1666,7 +1666,7 @@ arm*)
     AC_ARG_WITH(float,AC_HELP_STRING([--with-float=<spec>],[Specify floating point ABI (default=$gcc_default_float_abi).]),aros_gcc_float_abi="$withval",aros_gcc_float_abi=$gcc_default_float_abi)
     AC_MSG_RESULT($aros_gcc_float_abi)
 
-    aros_isa_flags="-marm -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    aros_isa_flags="-mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
     aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
     aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
     ;;
