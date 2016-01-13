@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2014, The AROS Development Team.
+    Copyright © 2002-2016, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -117,6 +117,7 @@ static const struct MUI_FrameSpec_intern *get_intframe(Object *obj,
     struct MUI_AreaData *data, struct MUI_FrameSpec_intern *tempstore);
 static void set_inner_sizes(Object *obj, struct MUI_AreaData *data);
 static void set_title_sizes(Object *obj, struct MUI_AreaData *data);
+static void handle_release(struct IClass *cl, Object *obj, int cancel);
 
 static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
     const struct MUI_FrameSpec_intern *frame,
@@ -756,6 +757,9 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (change_disable)
     {
+        /* Simulate left mouse button release if the area becomes disabled */
+        if (_flags(obj) & MADF_SETUP)
+            handle_release(cl, obj, TRUE);
         MUI_Redraw(obj, MADF_DRAWOBJECT);
     }
 
@@ -1680,7 +1684,7 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj,
 
 
 /**************************************************************************
-Called to match a MUIM_Setup, when environment is no more available.
+Called to match a MUIM_Setup, when environment is no longer available.
 **************************************************************************/
 static IPTR Area__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
@@ -1854,14 +1858,14 @@ static void handle_press(struct IClass *cl, Object *obj)
     switch (data->mad_InputMode)
     {
     case MUIV_InputMode_RelVerify:
+        SetAttrs(obj, MUIA_Selected, TRUE, MUIA_Pressed, TRUE, TAG_DONE);
         set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
-        if (!data->mad_Timer.ihn_Millis)
+        if (!data->mad_Timer.ihn_Millis && data->mad_DisableCount == 0)
         {
             data->mad_Timer.ihn_Millis = 300;
             DoMethod(_app(obj), MUIM_Application_AddInputHandler,
                 (IPTR) & data->mad_Timer);
         }
-        SetAttrs(obj, MUIA_Selected, TRUE, MUIA_Pressed, TRUE, TAG_DONE);
         break;
 
     case MUIV_InputMode_Immediate:
@@ -1891,6 +1895,13 @@ static void handle_press(struct IClass *cl, Object *obj)
 static void handle_release(struct IClass *cl, Object *obj, int cancel)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
+
+    if (data->mad_ehn.ehn_Events)
+        DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+            (IPTR) &data->mad_ehn);
+    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+        (IPTR) &data->mad_ehn);
 
     if (data->mad_InputMode == MUIV_InputMode_RelVerify)
     {
@@ -1957,15 +1968,6 @@ static IPTR event_button(Class *cl, Object *obj,
 
         if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
         {
-            /* Extra events must have been added by SELECTDOWN case above,
-               so this object is waiting to be unclicked (RelVerify) */
-            DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                (IPTR) &data->mad_ehn);
-            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-            DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                (IPTR) &data->mad_ehn);
-            if (!in)
-                nnset(obj, MUIA_Pressed, FALSE);
             handle_release(cl, obj, FALSE /* cancel */ );
             return MUI_EventHandlerRC_Eat;
         }
@@ -2147,12 +2149,6 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             return MUI_EventHandlerRC_Eat;
 
         case MUIKEY_RELEASE:
-            if (data->mad_ehn.ehn_Events)
-                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                    (IPTR) &data->mad_ehn);
-            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-            DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                (IPTR) &data->mad_ehn);
             handle_release(cl, obj, FALSE /* cancel */ );
             return MUI_EventHandlerRC_Eat;
         }
@@ -2195,11 +2191,6 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 if (msg->imsg->
                     Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
                 {
-                    DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                        (IPTR) &data->mad_ehn);
-                    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-                    DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                        (IPTR) &data->mad_ehn);
                     handle_release(cl, obj, TRUE /* cancel */ );
                 }
 
