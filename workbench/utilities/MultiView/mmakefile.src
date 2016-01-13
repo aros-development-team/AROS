@@ -5,9 +5,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main misc vars locale \
-ARexx/MultiView.o ARexx/MultiView_rxif.o ARexx/MultiView_rxcl.o
-
+FILES := main misc vars locale
 
 EXEDIR := $(AROSDIR)/Utilities
 
