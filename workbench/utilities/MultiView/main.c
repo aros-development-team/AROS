@@ -10,6 +10,7 @@
 #include "compilerspecific.h"
 #include "debug.h"
 #include "arossupport.h"
+#include "ARexx/MultiView.h"
 
 #include <setjmp.h>
 #include <stdio.h>
@@ -73,6 +74,7 @@ static struct libinfo
 static struct TextAttr  textattr;
 static struct TextFont  *font;
 static struct RDArgs    *myargs;
+static struct RexxHost  *host;
 static IPTR             args[NUM_ARGS];
 static UBYTE            fontname[256];
 static WORD             winwidth, winheight;
@@ -184,6 +186,9 @@ void Cleanup(CONST_STRPTR msg)
 
     CloseLibs();
     CleanupLocale();
+
+    if (host)
+        CloseDownARexxHost(host);
 
     longjmp(exit_buf, 0);
 }
@@ -1590,6 +1595,7 @@ int main(int argc, char **argv)
     tdt_text_wordwrap = TRUE;
     separate_screen   = FALSE;
 
+    host = SetupARexxHost("MULTIVIEW.1", NULL);
     InitLocale("System/Utilities/MultiView.catalog", 1);
     InitMenus(nm);
     InitMenus(nmpict);
