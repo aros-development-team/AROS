@@ -287,6 +287,10 @@ STDC_STATIC := \
     math/e_log2  math/e_log2f \
     math/e_log10  math/e_log10f \
     math/e_pow  math/e_powf \
+    math/k_cos \
+    math/k_rem_pio2 \
+    math/k_sin \
+    math/s_cos math/s_floor \
     math/s_scalbn  math/s_scalbnf  \
     math/e_sqrt \
     memchr \
@@ -328,13 +332,14 @@ STDC_STATIC := \
     strrchr \
     strspn \
     strstr \
+    strtod \
     strtol \
     strtoul \
     vsnprintf \
     vsprintf \
     vsscanf
 
-USER_CFLAGS := -DSTDC_STATIC
+USER_CFLAGS := -DSTDC_STATIC -Dlint
 
 # Ugh. These are for the math routines, which have a number of
 # lint issues, that should be fixed.
