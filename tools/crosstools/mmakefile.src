@@ -44,7 +44,7 @@ ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
 GCC_EXTRA_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
 GCC_EXTRA_OPTS += --with-float=$(GCC_DEFAULT_FLOAT_ABI)
 GCC_EXTRA_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
-GCC_EXTRA_OPTS += --with-mode=arm
+GCC_EXTRA_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
 GCC_EXTRA_OPTS += --disable-libunwind-exceptions
 else
 GCC_EXTRA_OPTS += --with-dwarf2
