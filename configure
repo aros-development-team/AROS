@@ -8826,7 +8826,8 @@ fi
 $as_echo "$aros_gcc_float_abi" >&6; }
 
     if test "$gcc_default_mode" = ""; then
-        aros_isa_flags="-marm -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+        $gcc_default_mode="arm"
+        aros_isa_flags="-m$gcc_default_mode -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
     else
         # Do not specify -mthumb-interwork as it may add extra code to support arm/thumb interwork
         aros_isa_flags="-m$gcc_default_mode -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
