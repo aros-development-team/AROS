@@ -6,20 +6,6 @@ DISPATCHERFLAGS struct Library *LibInit ( REGD0 struct ClassBase *cb , REGA0 BPT
 DISPATCHERFLAGS LONG LibOpen ( REGA6 struct ClassBase *cb );
 DISPATCHERFLAGS LONG LibClose ( REGA6 struct ClassBase *cb );
 DISPATCHERFLAGS LONG LibExpunge ( REGA6 struct ClassBase *cb );
-unpack_ilbm_t unpackilbmbody;
-unpack_deltabm_t unpackanimidelta;
-unpack_deltabm_t unpackanimjdelta;
-unpack_delta_t unpacklongdelta;
-unpack_delta_t unpackshortdelta;
-unpack_delta_t unpackbytedelta;
-#if defined(COMMENTED_OUT)
-unpack_delta4_t unpackanim4longdelta;
-unpack_delta4_t unpackanim4worddelta;
-#endif
-unpack_delta_t unpackanim7longdelta;
-unpack_delta_t unpackanim7worddelta;
-unpack_delta_t unpackanim8longdelta;
-unpack_delta_t unpackanim8worddelta;
 
 /* stackswap.c */
 DISPATCHERFLAGS ULONG StackSwapDispatch ( REGA0 struct IClass *cl , REGA2 Object *o , REGA1 Msg msg );
