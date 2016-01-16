@@ -1,0 +1,134 @@
+TITLE:  New OpCode 6 Addition to ANIM IFF Format
+
+	Revision Date: 20.8.91
+
+            Prepared by:
+                         Cryogenic Software
+                         13045 SouthEast Stark St
+                         Suite 144
+                         Portland, OR 97233-1557
+                         Contact:  William J. Coldwell
+
+                  Voice: (503) 254-8147 (11a-4p PDT/PST)
+                   Data: (503) 257-4823 (EMail to SYSOP)
+                 Portal: Cryogenic
+                   UUCP: uunet!m2xenix!percy!cryo!billc
+               Internet: billc@cryo.rain.com
+
+
+1. Introduction
+
+	In 1989, we added support into one of our commercial products to
+	support the Haitex X-Specs glasses.  This documentation will not
+	go into a detailed description of this product.  Contact Haitex
+	for more information concerning the hardware:
+
+                           Haitex Resources, Inc.
+                           Post Office Box 20609
+                           Charleston, SC 29413
+                             Voice: (803) 881-7518
+                               Fax: (803) 881-7522
+                           Contact: Shawn Glisson
+
+	We found that there was not a supported way to display stereo
+	animations using the current IFF ANIM OpCode 5 specification.
+
+	Cryogenic supported OpCode 6 as an internal format in our
+	commercial programs (see below) and provided Public Domain
+	players.  It is our intention at this time, to release this
+	format to other developers wishing to support stereo animations
+	using this OpCode.
+
+	When we first started this project, the current Amiga machines
+	had a 512K of CHIP RAM maximum.  This caused some memory problems
+	with some of the higher resolution stereo animations, since the
+	Quad Buffers were in CHIP RAM for our players.  It was our
+	intention to attempt to do some memory magic to require only
+	two of the four bitmaps to be in CHIP RAM at one time.  It was
+	our feeling that this would have caused the animations to slow
+	down, due to data swapping that may or may not have needed to
+	be done.  By the end of 1989, all development had stopped on
+	OpCode 6.  This left all buffers in CHIP, and the format has
+	remained the same since then.
+
+
+2. OpCode 6 Additions to OpCode 5
+
+	Please refer to the ANIM IFF format submitted by Sparta/Aegis.
+
+	The format is exactly the same as OpCode 5 but is QUAD buffered
+	instead of DOUBLE buffered.  This allows the player to show 2
+	screens at one time for the X-Specs Glasses.  Each picture MUST
+	be viewed for 1/60th of a second, therefore to see a 3-D Picture
+	the viewer can only play ANIMs at 30 frames per second.
+	(2 pictures = 1 frame).
+
+	The IFF file is stored exactly the same except that instead
+	of having each DLTA (delta) modify bitmap two frames back, it
+	modifies the bitmap four frames back.
+
+	Example:
+
+	------------------------
+	|                      |
+	|   BMHD               |
+	|                      |
+	------------------------
+	|   DLTA  (1)          |
+	------------------------
+	|   DLTA  (2)          |
+	------------------------
+	|   DLTA  (3)          |
+	------------------------
+	|   DLTA  (4)          |
+	------------------------
+	|   DLTA  (5)          |
+	------------------------
+	|   DLTA  (6)          |
+	------------------------
+            .
+            .
+            .
+	------------------------
+	|   DLTA  (x)          |
+	------------------------
+
+
+3. Playing OpCode 6 ANIMs
+
+	Four bitmaps are allocated.  Bitmaps 1 and 3 are the left views,
+	and bitmaps 2 and 4 are the right.
+
+	The First bitmap is gets its image from the bitmap in the file
+	(BMHD).  The Second bitmap is a copy of the first with DLTA (1)
+	performed on it.  The Third Bitmap is a copy of the first with
+	DLTA (2) performed on it.  The Fourth Bitmap is a copy of the
+	first with DLTA (3) performed on it.
+
+	We now have the first two 3-D Pictures:
+		One in bitmaps 1 and 2 and the other in bitmaps 3 and 4
+
+	DLTA (6) is used to create the third left view from bitmap 1.
+	DLTA (7) is used to create the third right view from bitmap 2.
+
+	DLTA (8) is used to create the forth left view from bitmap 3.
+	DLTA (9) is used to create the forth right view from bitmap 4.
+
+	NOTE:  This technique requires 4 Loop frames at the end to
+	perform looping.
+
+
+4. Chunk Changes
+
+	In the ANHDChunk structure the only differences between OpCode
+	5 and OpCode 6 are the _Operation_ field which should be set to
+	6, and the _Interleave_ field which should be set to 4.
+
+
+5. Supporting Software
+
+	3-D Professional 1.0+ (Progressive Peripherals and Software)
+	View 1.7 and above (Public Domain) on a Fred Fish Disk
+	MSA: Make Stereo ANIM (internal) Available upon request.
+	PSA: Play Stereo ANIM (internal) Available upon request.
+

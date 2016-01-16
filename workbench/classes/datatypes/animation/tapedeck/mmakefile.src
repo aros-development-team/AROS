@@ -1,0 +1,15 @@
+# $Id: mmakefile.src 49977 2015-01-31 05:19:35Z NicJA $
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS :=
+USER_LDFLAGS := -static
+
+FILES := tapedeckclass
+
+#MM- workbench-datatypes-animation : workbench-gadgets-tapedeck
+#MM workbench-gadgets-tapedeck : includes linklibs
+
+%build_module mmake=workbench-gadgets-tapedeck \
+  modname=tapedeck modtype=gadget \
+  files=$(FILES)
+

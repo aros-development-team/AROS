@@ -1,0 +1,653 @@
+
+/*
+**
+**  $VER: mpegvideo_datatype.guide 1.8 (27.5.97)
+**  mpegvideo.datatype 1.8
+**
+**  documentation
+**
+**  (C) Copyright 1996/1997 by Roland 'Gizzy' Mainz
+**          All Rights Reserved
+**
+*/
+
+===================  mpegvideo.datatype  documentation   ==================
+===========================================================================
+DataTypes class for mpeg video stream animations. Based on the CBM
+datatypes example source/ documents written by David Junod.
+
+===================  Changes since last version (V1.7)   ==================
+===========================================================================
+
+- Added time into to the gauge. Note that the "time-to-go" info will
+  only be useable after 5% upto 10% of the decoded data
+
+- Added partial support for mpeg-2 (MPEG-2 does NOT work yet !),
+  both encoder+decoder.
+
+- Added my own WritePixelArray8 replacement, which operates
+  directly on the fast-mem bitmaps. This saves some internal
+  copies, chipmem buffer for WPA8 etc.
+
+- Added my own scaling routine, replacing
+  graphics.library/BitMapScale (which needs chipmem as temp.
+  buffer).
+  Does not work properly yet.
+
+- Fixed the gauge, which didn't work correctly with large streams
+  (>= 8MB).
+  Fixed.
+
+- The gauge ha now a text info, which shows the remaining time
+  to decode.
+
+- Added experimental stack swapping code. The "Need more stack"-
+  requester has been removed for this reason.
+
+  This also fixes a possible deadlock of "input.device" because
+  the GM_LAYOUT method was running with low stack.
+  Fixed.
+
+- Color table setup now retries color table build with an increased
+  COLORERROR if table (set by LUM_RANGE * CR_RANGE * CB_RANGE) does
+  not fit. This allows any #?_RANGE value.
+
+- Fixed different problems within color setup. Now this should
+  work with a higher quality, and a little bit faster.
+
+- Fixed the descriptor, which din't match all mpeg video streams.
+  Fixed.
+
+- Added floating-point dct and a matching QUALITY option.
+  Systems with __much__ FPU-performace recommened.
+
+===================  Changes since last version (V1.6)   ==================
+===========================================================================
+
+- Now includes a mc68060 version.
+
+- Now supports palette-per-frame-output. If you're using a custom
+  animation player like DBufDTAnim (V1.2 included), you can use this option.
+
+  The PALETTEPERFRAME option used with COLOR or ORDERED dithering creates
+  a new palette for __EACH__ frame, which gives a much better quality.
+
+  Example:
+  DITHER=8 DITHER=COLOR PALETTEPERFRAME LUM_RANGE=32 CR_RANGE=16 CB_RANGE=16
+
+  or
+
+  DITHER=8 DITHER=OREDERED PALETTEPERFRAME LUM_RANGE=32 CR_RANGE=16 CB_RANGE=16
+
+  If you're using the PALETTEPERFRAME option, the limit of 2**depth colors
+  (2**8 == 256; 2**4 == 16 etc.) for the (LUM_RANGE * CR_RANGE * CB_RANGE)
+  cube   does not exists (limitted up to 65536 cube).
+
+- Support for saving (last-minute-note: has been disabled because the
+  distribution size was too large; will only be enabled in the public version
+  again upon request by someone).
+
+- The DICECOLOR output has been mixed into the COLOR dithering and is now
+  obsolete (DICECOLOR was a non-working palette-per-frame-output).
+
+- Implemented random access to frames (e.g you need not to load
+  the whole animation, decodung is done on the fly).
+  (Will be enabled in the public versions ONLY upon request; code is
+  currently under construction, the matching LOADALL switch is currently set 
+  everytimes).
+
+=============================== FAQ =======================================
+===========================================================================
+
+> Does the datatype supports saving in the local class format
+> (MPEG-1 Video Stream) ?
+  Yes, it does. But the code has been disabled. It will be enabled in the
+  public versions only on request.
+
+> I'm using "Executive" and the animation.datatype's display only jumps
+> (no smooth scolling). What should I do ?
+  Try it without "Executive", or mark the following tasks to be not
+  touched by "Executive":
+  AnimationObjectHandler_Load
+  AnimationObjectHandler_Display
+  SoundObjectHandler
+
+> I found a special version for the mc68040 CPU. Is there any 060' special
+> version available ?
+
+  This release now contains a special mc68060-Version, located in the
+  060881/ directory.
+
+> I have a mc68030 processor with 68882 math proccessor. Your distribution
+> contains only a mc68000 vers. using IEEE shared library,
+> a mc68020 vers. using IEEE shared library,
+> a mc68020 vers. using a 6888x FPU,
+> a mc68040 and a mc68060 version.
+> There is not version for me, isn't it ?
+
+  The Version in the 020881/ directory is the right one for you. The mc68030-CPU
+  is backward-compatible to the mc68020/mc68010/mc68000, the FPU is
+  backward-compatible to the 68881 FPU. I didn't include a mc68030-Version
+  because the differences between these combination and the 020881-Version
+  are too small (takes no effect, only wastes the distribution).
+
+  The 000ieee/ and the 020ieee/ version should work on you computer, too, but
+  they're slower than the 68020/68881-Version. The 68040-Version should fail
+  on your computer (silently) without a crash (I've included a safety-check
+  which checks the CPU/FPU-combination).
+
+> Where can I get animation.datatype ?
+
+  The animation.datatype is shipped with the V3.1 OS Release. Maybe,
+  a CD (which includes WB 3.1) contains it.
+  I'm working on a replacement of animation.datatype (my animation.datatype V41),
+  which would be FREEWARE (support for palette-per-frame and more than 8 bit
+  planes).
+
+  But you need not only the "animation.datatype". The animation.datatype requires
+  itself some resources. See "Requirements"-section.
+
+> Could it be possible for the mpeg video datatype to spool from HD
+> dynamically ?
+
+  Yes and no. I wrote the code for this, but in this version I didn't enable it.
+  This code will only be enabled upon REQUEST by someone.
+  Therefore, the LOADALL swicth in the prefs-file is set everytimes.
+
+  Today, use AMIPEG instead.
+
+> I only get black and white output/gray output ) Is this OK ? Or
+> are some prefs to set/edit ?
+
+  Yes, there is a prefs-file, located in "ENV:Classes/DataTypes/mpegvideo.prefs".
+  For a complete description, see "Usage"-section below, and the
+  "mpegvideo.datatype.doc/preferences" section.
+
+> How can I get 256 color or HAM output ?
+  For 256 color output: You need to write an prefs file which contains the
+  following lines: DITHER=ORDERED DEPTH=8 LUM_RANGE=7 CR_RANGE=6 CB_RANGE=6
+
+  HAM output isn't implemnted yet, but
+  palette-per-frame output. If you're using "DBufDTAnim" or "animation.datatype"
+  V41 for playback, you can use this option. The prefs-file looks like this
+  DITHER=ORDERED DEPTH=8 PALETTEPERFRAME LUM_RANGE=32 CR_RANGE=16 CB_RANGE=16
+
+> How can I get 24 bit output ?
+  I wrote the code for this, but in this version I didn't enable it
+  (because the animation.datatype display can't handle it, but custom players
+  like DBufDTAnim does). This code will only be enabled upon REQUEST by
+  someone.
+
+> Even though VT has the capability of using datatypes it doesn't recognize
+> the mpegs and use the mpeg datatype. It does for gifs and jpegs
+
+  VT does (currently) only support picture datatypes (e.g. subclasses of
+  picture.datatype).
+  DataTypes defines different types of input data:
+  - SYSTEM:     System file, such as; directories, binaries, executables etc.
+  - TEXT:       Formatted or unformatted text, such as; ascii, IFF FTXT
+  - DOCUMENT:   Formatted text with graphics or other DataTypes; like AmigaGuide,
+                HTML, SGML
+  - SOUND:      Sound, such as; IFF 8SVX, IFF AIFF, MPEG Audio
+  - INSTRUMENT: Musical instruments used for musical scores; liek Sonix #?.ss
+  - MUSIC:      Musical score, such as; like IFF SMUS, IFF CMUS or mods
+  - PICTURE:    Still picture, such as; IFF ILBM, GIF, jifi (jpeg), PNG, PBM
+  - ANIMATION:  Animated picture (Animations) such; as IFF ANIM, MPEG Video
+  - MOVIE:      Animation with audio track (Movies) such as; IFF FILM, CDXL,
+                MPEG System, AVI
+
+============================ Requirements =================================
+===========================================================================
+- You need at least Kick/WB 3.0.
+| Many people wrote me that they cannot find an "animation.datatype" class.
+| Only the 3.1 release contains it. (Subclasses of) animation.datatype
+| can run under 3.0.
+
+- "datatypes/animation.datatype", >= V39.
+  "animation.datatype 40.7 (28.09.93)" requires itself some libraries/boopsi
+  classes:
+  - "realtime.library", >= V39            - for timing
+  - "gadgets/tapedeck.gadget" (any version) - for the controls
+
+- Much memory (at least 2MB (I think... (test report recommned))
+  (or the "vmm.library" V3.0 from Martin Apel's VMM package.
+  Using the USEVMM switch in the prefs file, bitmaps can be in virtual
+  memory. See autodoc for details.
+  VMM can be found on aminet (aminet/util/misc/vmm_#?.lha), the
+  current version is VMM_V3_3A.LHA on Aminet14-CD.
+  Note: VMM is Shareware !).
+
+- The IEEE versions (#?ieee directories) requires the
+  "mathieeedoubbas.library" (V38 or higher) library in your LIBS: (or
+  something equal) directory.
+
+
+=============================== Misc ======================================
+===========================================================================
+mpegvideo.datatype is a datatype to view mpeg system streams. It's a
+subclass of animation.datatype.
+
+The datatype is very slow during loading. The main idea behind this
+datatype was to create a "realtime" player for mpegs, even on systems with
+small cpus. Because the mpeg fromat needs much cpu power (even a
+SUN SPARC 10 isn't able to decode a mpeg video in realtime), I decided
+to load all frames into memory and then starts to play. This needs much
+memory but allows a "realtime" playback (be carefull with your resulting
+plane depth (DEPTH option is the prefs file), this slows down playback
+speed).
+
+If you want to see the mpeg in the full length, there are two ways:
+1. You can use the vmm support. VMM means "Virtual Memory Manager"
+   (requires a working MMU in your CPU). Using Martin Apel's VMM, you can
+   load big mpegs (in VMM's virtual memory).
+   VMM can be found on the Aminet in the util/misc directory.
+   Note: VMM is Shareware !!
+2. You can use "amipeg", which is able to play mpeg video streams from
+   disk.
+   amipeg can be found on the Aminet in the gfx/show directory.
+
+
+This release was set up for various reasons:
+- First at all, to show that subclasses of animation.datatype aren't magic,
+  hacks or something else. This datatype has been developed conforming
+  to the "animation_dtc.doc" autodoc.
+  The people who said that it's not possible to write a new subclass
+  (except the CBM's IFF ANIM-5 and CDXL ones) are WRONG.
+
+- The people who said that animation.datatype is buggy are WRONG.
+  There are only two non-serious and one serios bug (fixed by my
+  "paranimdtcpatch"). The two non-serious bugs can simply surrounded.
+  All other crashes, hangs etc. are triggered by the CBM subclass ANIM
+  (CDXL not tested yet) and stack overrun problems.
+  INCREASE your stack size!!
+
+- To turn off the bug reports for my internal (and inofficial, non-public)
+  testing releases which are travelling through the networks
+  (delete them NOW !).
+  All bug reports should be related to this (and the following) AMINET-
+  Releases (except you are a BETA-tester).
+
+- To allow mc68000/mc68010 based AMIGA users the taste of real time
+  video, if they have the required memory :-) (assumed, not tested).
+
+- To introduce the series of new animation.datatype subclasses like
+  mpegvideo.datatype   - mpeg video streams
+  mpegsystem.datatype  - mpeg system strams (video + audio)
+  picmovie.datatype    - build animations/movies from single pictures
+                         and sounds
+  anim.datatype        - iff anim-3/-5/-7/-8 datatype
+  film.datatype        - iff LIST FILM anims (interleaved ILBMs/8SVXs)
+  moviesetter.datatype - GoldDisk moviesetter.datatype
+  ssa.datatype         - if any interest...
+
+- To test how much response such a datatype will produce.
+
+====================== Request for comments/help ==========================
+===========================================================================
+1. Who owns the rights on the animation.datatype (source-)code ?
+2. dito. amigaguide.(datatype|library) ?
+3. email address (or something equal) of David N. Junod, who wrote
+   the animation.datatype...
+
+For my address, email etc. see below...
+
+Wanted: Test files:
+These files __MUST__ be packed into a LhA archive (for compression and
+for checksumming. I won't like to search for "phantom" errors caused
+by corrupt files.)
+
+1. Valid IFF LIST FILM files (ILBM's with interleaved 8SVX's)
+   (for film.datatype testing).
+2. CDXL files except "CALLNOW.XL" and "Walk.cdxl".
+3. Small mpeg system streams (mpeg video + audio) (<= 1MB)
+
+Thanks !!
+
+=============================== Usage =====================================
+===========================================================================
+If the datatypes descriptor file was activated, any attempt to load an mpeg
+file using MultiView, AmigaGuide or SwitchWindow will load the entire
+animation.
+NOTE: This may be a long time. Each picture is loaded into memory.
+(I've tested a mpeg video stream from the german news "Tagesschau".)
+
+You may modify the prefs file to get better results in your requested
+screenmode. The preferences file is currently a plane ASCII file with one
+line. The prefs file format is described in the mpegvideo.datatype.doc.
+
+1. Example (for A2024/Vikking grayscale monitors):
+MODEID=266240 LUM_RANGE=4 CR_RANGE=1 CB_RANGE=1 DEPTH=2 DITHER=ORDERED FPS=15
+This means:
+MODEID=266240                     ; Screen mode of A2024 monitor
+LUM_RANGE=4 CR_RANGE=1 CB_RANGE=1 ; Use only luminance (4 gray scales)
+DEPTH=2                           ; 4 colors (max. on A2024 display)
+DITHER=ORDERED                    ; Use ordered dithering
+FPS=15                            ; 15 frames per sec (should be the
+                                  ; maximum on A2024 displays)
+
+BAD: The A2024 monitor isn't very good for fast animations (because of
+    it's panelled display). Use the FPS option to reduce the speed.
+GOOD: Large anims (e.g. a 720x480 video) fits on the screen without any
+    problem.
+
+2. Examples (for color monitors):
+LUM_RANGE=4 CR_RANGE=4 CB_RANGE=4 DITHER=DICECOLOR DICESKIP=40 COLORERROR=25
+This means:
+LUM_RANGE=4 CR_RANGE=4 CB_RANGE=4 ; Set luminance, red and blue components
+                                  ; to the same wheight
+DITHER=DICECOLOR                  ; Use dicecolor dithering
+DICESKIP=40                       ; Accept only the 40-th attempt
+                                  ; to allocate a new color
+COLORERROR=25                     ; Set match error to a value which
+                                  ; means medium high quality
+
+3. Example (for color monitors and a player which supports per-frame-palette
+   changes (like "DBufDTAnim" or animation.datatype V41)):
+
+VERBOSE
+DITHER=COLOR DEPTH=8 PALETTEPERFRAME LUM_RANGE=32 CR_RANGE=16 CB_RANGE=16
+
+This means:
+DITHER=COLOR                         ; color output
+DEPTH=8                              ; 256 colors
+PALETTEPERFRAME                      ; Build a new palette for each frame
+LUM_RANGE=32 CR_RANGE=16 CB_RANGE=16 ; defines a color cube
+
+=========================== Installation ==================================
+===========================================================================
+After unpacking this archive:
+Because this version does not include an Installer script, you have to do
+the installation manually through the shell:
+(There are now special compiled versions for "mpegvideo.datatype". Use the
+directory which matches your configuration, e.g.
+000ieee/ -- mc68000 with IEEE library
+020ieee/ -- mc68020 with IEEE library
+020881/  -- mc68020 with mc68881 fpu
+040881/  -- mc68040 with 881 code set (emulation code ?? -- not tested...).)
+060881/  -- mc68060 with 881 code set (emulation code ?? -- not tested...).)
+
+  - Unpack this archive and copy the "mpegvideo.datatype" to
+    SYS:Classes/DataTypes:
+Copy CLONE FROM mpegvideo.datatype TO SYS:Classes/DataTypes/mpegvideo.datatype
+
+    Then copy the datatypes descriptor into the DEVS:DataTypes directory
+Copy CLONE FROM "MPEG Video(%|.info)" TO DEVS:Datatypes/
+
+================================ BUGS =====================================
+===========================================================================
+- Some mpeg streams crashes the system. I cannot say much about this bug
+  because I've only one file which causes this:
+  "AMINET14:AMINET/PIX/ANIM/ID4.MPG"
+
+- Linking to an animation in an amigaguide.datatype object is currently not
+  possible due a bug in amigaguide.datatype (not all required methods are
+  passed to the animation).
+->IF THERE IS A REQUEST, I will write a patch for amigaguide.datatype to
+  fix this bug !!!
+
+- The datatype descriptor file is not the recommned way to identify a mpeg
+  video stream. It should be replaced by code which do this work.
+
+- "Workbench emulation" sortware like cybergfx etc. is not tested. Reports
+  are __very__ welcome. Note that possible problems belongs to the
+  emulation software, not animation.datatype (which does the rendering and
+  destination remapping). animation.datatype is very well written.
+
+- Please report your working/non-working configuration (very welcome:
+  mc68060 users).
+
+- The new special compiled versions make a test if their code requirements
+  match the system's cpu/fpu.
+  This means: The 040/881 version should fail silently (without a crash) on
+  a 68030. The 020/ieee version should fail on a plane 68000 and so on.
+  This checking code has not been tested yet, but when you cannot open
+  mpegvideo.datatype, you may have the wrong version installed.
+  Use the systems "CPU" or "ShowConfig" tools to check which cpu is
+  installed in your system. Then select the matching datatype and try again.
+
+See mpegvideo.datatype.doc for a complete list of all (removed/fixed
+etc.) bugs.
+
+BUG REPORTS should contain your machine (type, CPU, FPU etc.), additional
+hardware (graphics card and the emulation software) and your used software
+(KICK/WB3.0/3.1, cybergfx etc.)
+
+=============================== TODO ======================================
+===========================================================================
+Following will be implemented in one of the later versions:
+  - Fix some inconsistensies
+
+  - More time to rework this and other public projects
+
+  - To write a "real" #?.guide file (and clean up the docs...)
+
+  - A STARTFRAME/K/N and STOPFRAME/K/N to load, decode and play only a
+    part of the video.
+
+  - Support for mpegsystem.datatype. I decided to rebuild
+    mpegsystem.datatype from scratch. Instead of using an inbuild video
+    and audio decoder, mpegsystem.datatype will be a subclass of
+    mpegvideo.datatype and use the mpegaudio.datatype for the audio
+    decoding.
+
+============================== SOURCE =====================================
+===========================================================================
+Sorry, I've removed the source. I've working on a releaseable form.
+
+See mpegvideo.datatype.doc for additional information.
+
+============================= Copyright ===================================
+===========================================================================
+Sorry, but in the V1.1 release, I've forgotten the COPYRIGHT notice.
+Here it is:
+(Because I don't have the original ones (my code was a mergin of mpeg_play
+1.X, 2.0, I've taken them from the mpeg_play 2.0 distribution).) The main
+work (the mpeg decoder etc.) is based upon mpeg_play 1.xx and 2.0, which
+is...
+
+ Copyright (c) 1992 The Regents of the University of California.
+ All rights reserved.
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose, without fee, and without written agreement is
+ hereby granted, provided that the above copyright notice and the following
+ two paragraphs appear in all copies of this software.
+
+ IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
+ DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+ OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
+ CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+ ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
+ PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+
+
+... and the idct algorithm is based on jrevdct.c (also found in the
+mpeg_play package), which is...
+
+ Copyright (C) 1991, 1992, Thomas G. Lane.
+ This file is part of the Independent JPEG Group's software.
+ For conditions of distribution and use, see the accompanying README file.
+
+ This implementation is based on an algorithm described in
+   C. Loeffler, A. Ligtenberg and G. Moschytz, "Practical Fast 1-D DCT
+   Algorithms with 11 Multiplications", Proc. Int'l. Conf. on Acoustics,
+   Speech, and Signal Processing 1989 (ICASSP '89), pp. 988-991.
+
+... and (at least) all modifications are (C) by Roland Mainz (see below
+for details).
+
+=========================== Future ========================================
+===========================================================================
+I decided to contact the current owners of the animation.datatype code
+(AmigaTech., VisCorp etc.) because I want to do the official future
+development of animation.datatype (and picture.datatype, if possible).
+If there are any comments/ideas, bug reports etc., send them to me.
+
+I'm going to write an article to explain how a subclass of
+animation.datatype, the common pitfalls etc. Don't try this without my
+article. This text will also explain future improvements.
+| Warning: The __current__ behaviour of ADTM_UNLOADFRAME will be slightly
+| changed (in a compatible way for the existing CBM datatypes). Don't use
+| this method for now unless I or CBM says something else.
+
+                       W A N T E D: BUG reports
+
+During meetings, phone calls and newsgroup readings I found out that many
+people are using this datatype (and directory.datatype,
+mpegsystem.datatype etc.), having email access and did NOT report the bugs
+they found.
+>One possible result of the current behaviour would be that I drop this
+>project. -- No response, no future.
+The same belongs to "directory.datatype".
+I don't like to collect the bug reports from %x(/á%$/$ or something
+elsewhere.
+The reason is: Writing good, stable datatypes and their support is a
+TIME-INTENSIVE work and I don't like to work for the black hole.
+If there is enough response, I want to made a new BETA-tester group
+for my projects.
+(May be start in the middle of January 1997...)
+
+Who has a replacement for the WritePixelArray function
+LONG WritePixelArray8( struct RastPort *rp, ULONG xstart, ULONG ystart,
+     ULONG xstop, ULONG ystop, UBYTE *array, struct RastPort *temprp );
+written in PORTABLE ansi-C, which can operate on standard amiga-bitmaps in
+fast-ram ?
+(the temprp parameter and the return value may or may not be present in your
+implementation). Thanks...
+
+
+=========================== My projects ===================================
+===========================================================================
+For those people which like to know on which projects I'm working on,
+here is a cut down of my projects...
+(A ... at the beginning of a line means that I've removed some lines, e.g.
+projects).
+
+Software projects
+
+ENVOY related projects
+   NetInfo...                       NetInfo             ENVOY network information
+...
+   RemoteNetShell...                RemoteNetShell      Shell commands across ENVOY network
+   RemoteRequest...                 RemoteRequest       Messages across ENVOY network
+   Ping...                          Ping                ENVOY ping
+   NetPIPE...                       NetPIPE             ENVOY PIPE filesystem
+   ParMake...                       ParMake             Parallel make (local or accoss ENVOY network)
+   RemoteSCSI.DEVICE                RemoteSCSI.DEVICE   scsi.device export over envoy networks
+   RemoteSerial.device              RemoteSerial.device serial.device export over envoy networs
+   RemoteRequester.service          remoterequester.service Import/Export system requesters using envoy.
+                                                        Usefull with rlogin.service
+...
+   clipboard.service                clipboard.service   Clipboard import/export using envoy
+...
+
+disk related projects
+   NoClick...                       NoClick             Turns trackdisk clicking off
+   Eject...                         Eject               Sends trackdisk EJECT command
+...
+   MakeLink...                      MakeLink            Create filesystem links (soft && hard)
+...
+
+
+misc projects
+   MultiMinClock...                 MultiMinClock       Little multiproject clock
+   Reboot...                        Reboot              Reboot utility
+...
+   ThrowMouse...                    ThrowMouse          Startup icon starter
+   FileChanged...                   FileChanged         Wait for DOS notification
+   WriteClipboard...                WriteClipboard      Write string to clipboard
+...
+   WBInfo...                        WBInfo              Prompt the Workbench Information Requester
+
+mpeg related projects
+...
+   mpeg2decode...                   mpeg2decode         mpeg2decode
+...
+   splitmpeg...                     splitmpeg           splitmpeg amiga port (mpeg system stream demuxer)
+   VideoCD-FS...                    VideoCD-FS          filesystem, which reads video-cd's (old, "while book"),
+                                                        represented in different files (system, video, audio, frames etc.)
+...
+
+datatypes related projects
+   DTMethod...                      DTMethod            Debug datatypes method communication
+...
+   markabletextdtclass...           markabletextdtclass Adds a class to text.datatype to support DTM_SELECT (mark mode)
+   paranimdtcpatch...               paranimdtcpatch     Patch animation.library to allow parallel animations
+   dumpdtanim...                    dumpdtanim          Creates single pictures and sounds from animation.datatype (anim/movies) objects
+...
+   picmovie_datatype...             picmovie_datatype   Create movies using single pictures and samples (movie type)
+   directory_datatype...            directory_datatype  View directories (document type)
+...
+   list.datatype...                 list_datatype       Datatype for IFF LIST files (document type)
+   prop.datatype...                 prop_datatype       Datatype for IFF PROP files (document type)
+   iff.datatype                     iff_datatype        Datatype for unknown IFF files. (document type)
+...
+   mpegvideo_datatype...            mpegvideo_datatype  View mpeg video streams (animation type)
+   mpegaudio_datatype...            mpegaudio_datatype  Hear mpeg audio streams (sound type)
+   mpegsystem_datatype...           mpegsystem_datatype Play mpeg movies (movie type)
+...
+   film.datatype                    film_datatype       Datatype for FILM anims (movie type)
+   moviesetter.datatype...          moviesetter.datatypeDatatype for Gold-Disk moviesetter anims (subclass of animation.datatype)
+...
+
+development related projects
+...
+   NoTraps...                       NoTraps             Disable all trap crashes
+...
+
+big projects
+...
+   SwitchWindow...                  SWP                 OOP Environment
+
+
+The anim.datatype and film.datatype will be released in December 96,
+the ssa.datatype (Thanks to proDAD) will follow.
+
+=========================== Author's Request ==============================
+===========================================================================
+By  releasing  this program I do  not  place any obligations on you,
+feel free to share this program with your  friends (and enemies).
+
+If you want to blame me, report any bugs, or wants a new version
+send your letter to:
+                Roland Mainz
+                Hohenstaufenstraße 8
+                52388 Nörvenich
+                GERMANY
+
+Phone: (+49)(0)2426/901568
+
+EMAIL is also available:
+GISBURN@w-specht.rhein-ruhr.de
+
+If you want to send me attachments larger than 1MB (up to 5MB, more with my
+permission):
+Up to March 1997 I'm reachable using this email address, too:
+Reinhold.A.Mainz@KBV.DE
+
+| Please put your name and address in your mails !
+| German mailers should add their phone numbers.
+| See BUGS section above when submitting bug reports.
+
+Sorry, but I can only look once a week for mails.
+If you don't hear something from me within three weeks, please send your
+mail again (but watch about new releases) (problems with this email port
+are caused by reconfigurations, hackers, network problems etc.).
+
+The  entire  "mpegvideo.datatype"  package  may  be  noncommercially
+redistributed, provided  that  the package  is always  distributed in it's
+complete  form (including it's documentation).  A small copy fee  for media
+costs is okay but any kind of commercial distribution is strictly forbidden!
+Comments  and  suggestions  how  to  improve  this  program  are generally
+appreciated!
+
+Thanks to David Junod, who wrote animation.datatype and the datatypes example
+code, Matt Dillon for his DICE, Olaf 'Olsen' Barthel for his help, ideas and
+some text clips from his documentations, Martin Apel for his VMM package
+(shareware !) and his help.
+
+
