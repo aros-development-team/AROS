@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Find a resident segment.
@@ -8,7 +8,6 @@
 
 #include <aros/debug.h>
 #include "dos_intern.h"
-#include <string.h>
 
 /*****************************************************************************
 
@@ -27,27 +26,37 @@
         struct DosLibrary *, DOSBase, 130, Dos)
 
 /*  FUNCTION
-        Search for a resident segment by name and type. FindSegment() will
-        return the first segment that exactly matches the name and type.
+        Search for a resident segment by name and type (system or user). 
+        The first segment that exactly matches the name and type will be 
+        returned. The name is case insensitive. If the system argument is
+        non-zero, only system segments will be returned (i.e. those that 
+        have a negative seg_UC value); if zero, only user segments will 
+        be returned (i.e. those with a non-negative seg_UC value).
 
-        You can continue searching by specifying the last returned segment
-        as the seg argument.
+        You can continue searching for multiple segments that share the 
+        same name and type by specifying the last returned segment as 
+        the seg argument.
+
+        FindSegment() does no locking of the segment list. You should 
+        lock the list by calling Forbid() before calling FindSegment(), 
+        and unlock the list by calling Permit() once you have finished 
+        calling FindSegment().
+
+        If you wish to prevent a user segment from being unloaded, you 
+        must increment its seg_UC value before unlocking the list. Once 
+        finished with the segment, you must decrement its seg_UC value 
+        under Forbid()/Permit() protection. The seg_UC value of system 
+        segments should never be altered.
 
     INPUTS
-        name            - Name of the segment to search for.
-        seg             - Start search from this point.
-        system          - Search for a system segment.
+        name - Name of the segment to search for.
+        seg  - Start search from this point.
+        system - Search for a system segment.
 
     RESULT
-        Will return the segment structure if a match is found, otherwise
-        will return NULL.
+        A matching segment, or NULL.
 
     NOTES
-        FindSegment() does no locking of the segment list. You should 
-        lock yourself. FindSegment() also does not increment the value
-        of the seg_UC field. If the value of seg_UC > 0, you MUST 
-        perform user counting in order to prevent the segment from being
-        unloaded.
 
     EXAMPLE
 
@@ -76,7 +85,7 @@
             AROS_BSTR_ADDR(MKBADDR(&seg->seg_Name[0]))));
         if
         (
-            (system || (system == FALSE && (seg->seg_UC >=0)))  &&
+            ((system && seg->seg_UC < 0) || (!system && seg->seg_UC >= 0)) &&
             (Stricmp( name, AROS_BSTR_ADDR(MKBADDR(&seg->seg_Name[0]))) == 0)
         )
         {
