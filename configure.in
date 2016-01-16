@@ -1343,7 +1343,6 @@ case "$target_os" in
         aros_target_cpu="arm"
         aros_object_format="armelf_aros"
         aros_shared_default="no"
-        aros_arch_libs="-laeabi"
 
         # stm32f7 has DSP opcode support
         gcc_default_cpu="armv7e-m"
@@ -1356,10 +1355,6 @@ case "$target_os" in
         gcc_default_mode="thumb"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
-        aros_config_cflags="$aros_config_cflags -mthumb"
-        aros_config_aflags="$aros_config_aflags -mthumb"
-        aros_kernel_cflags="$aros_kernel_cflags -mthumb"
-        aros_target_cflags="$aros_kernel_cflags -mthumb"
         ;;
 
     amiga*)
