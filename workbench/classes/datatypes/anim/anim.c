@@ -126,6 +126,7 @@ LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, UL
 {
     const ULONG *lists = (const ULONG *)dlta;
     UWORD numcols = bm->BytesPerRow;
+    UWORD pitch = bm->BytesPerRow;
     UBYTE opptr;
     const UBYTE xormask = (anhd->ah_Flags & ahfXOR) ? 0xFF : 0x00;
     UBYTE *pixels;
@@ -153,7 +154,7 @@ LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, UL
         for (x = 0; x < numcols; x++)
         {
             pixels = (UBYTE *)((IPTR)bm->Planes[p] + x);
-            stop = (UBYTE *)((IPTR)pixels + ((bm->Rows - 1) * bm->BytesPerRow));
+            stop = (UBYTE *)((IPTR)pixels + ((bm->Rows - 1) * pitch));
             BYTE opcount = *ops++;
             while (opcount-- > 0)
             {
@@ -166,7 +167,7 @@ LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, UL
                         if (pixels <= stop)
                         {
                             *pixels = ((*pixels & xormask) ^ *ops);
-                            pixels = (UBYTE *)((IPTR)pixels + bm->BytesPerRow);
+                            pixels = (UBYTE *)((IPTR)pixels + pitch);
                         }
                         ops++;
                     }
@@ -181,7 +182,7 @@ LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, UL
                         if (pixels <= stop)
                         {
                             *pixels = ((*pixels & xormask) ^ fill);
-                            pixels = (UBYTE *)((IPTR)pixels + bm->BytesPerRow);
+                            pixels = (UBYTE *)((IPTR)pixels + pitch);
                         }
                     }
                 }
@@ -306,7 +307,7 @@ LONG unpackanim7worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
             continue;
         }
         const UWORD *data = (const UWORD *)((const UBYTE *)dlta + AROS_BE2LONG(lists[p + 8]));
-        const UBYTE *ops = (const UBYTE *)dlta + opptr;
+        ops = (const UBYTE *)dlta + opptr;
         for (x = 0; x < numcols; ++x)
         {
             pixels = (UWORD *)((IPTR)bm->Planes[p] + (x << 1));
@@ -357,7 +358,7 @@ LONG unpackanim7worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
 }
 
 //ANIM-8
-static const UWORD *Do8short(UWORD *pixel, UWORD *stop, const UWORD *ops, UWORD xormask, int pitch)
+static const UWORD *Do8short(UWORD *pixel, UWORD *stop, const UWORD *ops, UWORD xormask, UWORD pitch)
 {
     UWORD opcount = AROS_BE2WORD(*ops++);
 
@@ -403,8 +404,8 @@ static const UWORD *Do8short(UWORD *pixel, UWORD *stop, const UWORD *ops, UWORD 
 LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *planes = (const ULONG *)dlta;
-    int numcols = bm->BytesPerRow >> 2;
-    int pitch = bm->BytesPerRow;
+    UWORD numcols = bm->BytesPerRow >> 2;
+    UWORD pitch = bm->BytesPerRow;
     BOOL lastisshort = (GetBitMapAttr( bm, BMA_WIDTH) & 16) != 0;
     const ULONG xormask = (anhd->ah_Flags & ahfXOR) ? 0xFFFFFFFF : 0x00;
     UWORD x;
@@ -473,8 +474,8 @@ LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
 LONG unpackanim8worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *planes = (const ULONG *)dlta;
-    int numcols = bm->BytesPerRow >> 1;
-    int pitch = bm->BytesPerRow;
+    UWORD numcols = bm->BytesPerRow >> 1;
+    UWORD pitch = bm->BytesPerRow;
     const UWORD xormask = (anhd->ah_Flags & ahfXOR) ? 0xFFFF : 0x00;
     UWORD x;
     UBYTE p;
@@ -511,39 +512,41 @@ LONG unpackanimidelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta
 LONG unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm )
 {
     UBYTE *pixel, *src;
-    UWORD opmode, op, opcnt, xormask, p, opheight, opwidth, planeoffset;
-    BOOL skip = FALSE;
-    int x,y;
+    UWORD opmode, op, opcnt, opheight, opwidth, planeoffset, xormask;
+    UWORD pitch = bm->BytesPerRow;
+    BOOL dltaend = FALSE;
+    UWORD x,y;
+    UBYTE p;
 
     D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
 
-    while ( dlta < ((IPTR)dlta + dltasize))
+    while ( dlta < (UBYTE *)((IPTR)dlta + dltasize))
     {
-        opmode = AROS_BE2WORD( dlta );
-        dlta += 2;
+        opmode = AROS_BE2WORD(*((UWORD *)dlta) );
+        dlta += sizeof(UWORD);
 
         switch ( opmode )
         {
         case 0:
-            D(bug("[anim.datatype] %s: skip\n", __PRETTY_FUNCTION__));
-            skip = TRUE;
+            D(bug("[anim.datatype] %s: end of dlta\n", __PRETTY_FUNCTION__));
+            dltaend = TRUE;
             break;
 
         case 1:
             D(bug("[anim.datatype] %s: column mode\n", __PRETTY_FUNCTION__));
-            xormask     = AROS_BE2WORD( dlta );
-            opheight    = AROS_BE2WORD( dlta + 2 );
-            opcnt       = AROS_BE2WORD( dlta + 4 );
+            xormask     = AROS_BE2WORD( *((UWORD *)dlta) );
+            opheight    = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 2)) );
+            opcnt       = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 4)) );
             opwidth     = 1;
             dlta        += 6;
             break;
 
         case 2:
             D(bug("[anim.datatype] %s: area mode\n", __PRETTY_FUNCTION__));
-            xormask     = AROS_BE2WORD( dlta );
-            opheight    = AROS_BE2WORD( dlta + 2 );
-            opwidth     = AROS_BE2WORD( dlta + 4 );
-            opcnt       = AROS_BE2WORD( dlta + 6 );
+            xormask     = AROS_BE2WORD( *((UWORD *)dlta) );
+            opheight    = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 2)) );
+            opwidth     = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 4)) );
+            opcnt       = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 6)) );
             dlta        += 8;
             break;
 
@@ -551,26 +554,25 @@ LONG unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta
             return 0;
         }
 
-        if (skip) break;
+        if (dltaend) break;
 
         for ( op = 0; op < opcnt; op++ )
         {
-            planeoffset = AROS_BE2WORD( dlta );
-            dlta += 2;
+            planeoffset = AROS_BE2WORD( *((UWORD *)dlta) );
+            dlta += sizeof(UWORD);
 
             for ( y = 0; y < opheight; y++ )
             {
                 for ( p = 0; p < bm->Depth; p++ )
                 {
-                    pixel = (UBYTE *)((IPTR)bm->Planes[p] + (planeoffset));
-                    src = (UBYTE *)((IPTR)deltabm->Planes[p] + (planeoffset));
+                    pixel = (UBYTE *)((IPTR)bm->Planes[p] + (planeoffset) + (y * pitch));
+                    src = (UBYTE *)((IPTR)deltabm->Planes[p] + (planeoffset) + (y * pitch));
                     for ( x = 0; x < opwidth; x++ )
                     {
                         pixel[ x ] = (src[x] & xormask) ^ *dlta++;
                     }
 
                 }
-                pixel += bm->BytesPerRow;
             }
         }
 
