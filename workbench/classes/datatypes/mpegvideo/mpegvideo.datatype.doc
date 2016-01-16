@@ -1,0 +1,930 @@
+TABLE OF CONTENTS
+
+mpegvideo.datatype/--datasheed--
+mpegvideo.datatype/ADTM_LOADFRAME
+mpegvideo.datatype/ADTM_UNLOADFRAME
+mpegvideo.datatype/OM_DISPOSE
+mpegvideo.datatype/OM_NEW
+mpegvideo.datatype/preferences
+mpevideo.datatype/DTM_WRITE
+mpegvideo.datatype/--datasheed--             mpegvideo.datatype/--datasheed--
+
+   NAME
+       mpegvideo.datatype -- data type for mpeg video streams
+
+   SUPERCLASS
+       animation.datatype
+
+   DESCRIPTION
+       The mpegvideo data type, a sub-class of the animation.datatype, is
+       used to load and play mpeg 1 video streams (Layer I).
+
+   METHODS
+       OM_NEW -- Create a new animation object from a description file. The
+           source may only be a file.
+
+       OM_DISPOSE -- Dispose instance and contents (frames, colormaps etc.),
+           then pass msg to superclass
+
+       OM_UPDATE -- Perform an ICM_CHECKLOOP check, and if succesfull, the
+           method will be executed like OM_SET downstairs.
+
+       OM_SET -- Pass msg to superclass, and if the mpegvideo.datatype
+           instance is the "top instance", call GM_RENDER if retval from
+           superclass was != 0UL.
+
+       ADTM_LOADFRAME -- Fill in struct adtFrame with requested information
+           from internal FrameNode list like bitmap, colormap, samples, etc..
+
+       All other methods are passed unchanged to superclass.
+
+   ATTRIBUTES
+       Following attributes are set by the object and are READ-ONLY for
+       applications:
+       DTA_NominalHoriz        -- same as ADTA_Width
+       DTA_NominalVert         -- same as ADTA_Height
+       DTA_ObjName             -- same as DTA_Name
+       ADTA_Width              -- set by video stream
+       ADTA_Height             -- set by video stream
+       ADTA_Depth              -- set by video stream (or by prefs)
+       ADTA_NumColors          -- set by ADTA_Depth or to the num. of 
+                                  palette entries
+       ADTA_ColorRegisters     -- obj's palette with ADTA_NumColors entries
+       ADTA_CRegs              -- obj's palette with ADTA_NumColors entries
+       ADTA_Frames             -- total number of frames
+       ADTA_FramesPerSecond    -- set by video stream
+       ADTA_ModeID             -- calculated internally or set by prefs
+       ADTA_KeyFrame           -- key frame
+       ADTA_Sample             -- sample (optional, if a sample is attached)
+       ADTA_SampleLength       -- sample length (optional, see ADTA_Sample)
+       ADTA_Period             -- sample period (optional, see ADTA_Sample)
+       ADTA_Volume             -- sample volume (optional, see ADTA_Sample)
+       ADTA_Cycles             -- sample cycle  (optional, see ADTA_Sample)
+
+   BUGS
+       - If the mpeg video stream is not 100% standart conform,
+         the decoder part of this datatype will CRASH your machine.
+         Innocent memory will be overwritten !!
+
+       - If you don't have my "paranimdtcpatch" patch running,
+         animation.datatype (animation.datatype 40.7 (28.09.93)) subclasses
+         will suffer under timing problems when two or more
+         animation.datatype objetcs are playing. I've released a matching
+         patch, DON'T blame me for this bug. Any comments for this problem
+         should be related  to the "paranimdtcpatch" project.
+         "paranimdtcpatch" is available in the aminet
+         ("util/dtype/panimdtcptch012.LhA").
+         NOTE that animation.datatype V41 does NOT require the patch
+         anymore.
+
+       - In large videos, the frames at the end will be played slower than
+         those at the beginning of the file. This is the result of the
+         sequential search internally used (only serious with more than 25000
+         frames (mc68030/50mhz)).
+         Will be fixed.
+
+       - The LOADALL mode does not work perfectly. It sometimes "forgets" to
+         fill some frames during loading.
+
+       - The time code in the NOLODALL mode is slightly wrong (I assume up
+         to +/- 6 frames).
+
+       - The NOPFRAMES and NOBFRAMES options are incompatible with the
+         NOLOADALL mode.
+
+       - CyberGFX 24 bit output mode uses 32 bit ARGB bitmaps, but the A
+         (alpha) byte is not set to 0xFF (visible), instead it is set to 0.
+         The same for 15 bit output mode, where the MSB is a alpha mask bit.
+
+   TODO
+       - better error handling (and error messages)
+
+       - code cleanup
+
+       - bug fixing
+
+       - Writing an amigaguide document
+
+       - EHB
+
+   HISTORY
+       V1.1
+         First (official) public release.
+
+       V1.2
+         Major code cleanup. I decided to rebuild the whole project from
+         scratch instead of releasing my internal V1.8. The reason is that
+         many things coded in it wasn't done with the required care. Now
+         I try to fix this.
+
+         - Sorry, but in the V1.1 release, I've forgotten the COPYRIGHT
+           notice. Because I don't have the original ones (my code was a
+           mergin of mpeg_play 1.X, 2.0, I've taken them from the
+           mpeg_play 2.0 distribution).
+
+         - Implemented the NOPFRAMES and NOBFRAMES switch (for those people
+           who like it).
+
+         - The loader now returns usefull return codes instead of failing
+           silently.
+
+         - Decrased the default depth from 7 to 5 planes. This is a more
+           reliable default value for grayscale mpeg videos (screen or
+           window).
+
+         - Implemented "DICECOLOR" and "ORDERED" dithering.
+           The options COLORERROR and DICESKIP are for fine-tuning
+           speed <--> color output.
+
+         - Introduced MAXFRAME (maximum number of frame to load) and
+           SKIPFRAMES to allow loading of large videos.
+
+         - MODEID option added (for those which don't like the default
+           settings).
+
+         - The datatypes descriptor file was WRONG. Now it should be correct.
+           If not, send me a mail (and if possible, the sample file which
+           won't work (packed with LhA for compression and CHECKSUMMING).
+           (Later versions of the descriptor should use additional code
+           to check the data).
+
+       V1.3
+         - COLOR output implemented.
+
+         - DICECOLOR: Found a bug (?? very strange one ??) in my code which
+           avoids the usage of a frame palette. DICECOLOR was intended
+           to produce high-quality per frame color remapping instead using
+           a global anim palette. Broken (e.g. working, but after a frame is
+           finished, the color table isn't cleared for now...).
+
+         - I found out that the most time is consumed by the WritePixelArray
+           and copy functions. Later versions should contain a custom
+           WritePixelArray replacement which should be able to write directly
+           into FAST-RAM instead of writing into CHIP-RAM and them do a copy
+           into FAST-RAM. This would save __MUCH__ time.
+
+         - Silly mistake: A
+           SetIoErr( 0L ); len = FRead( ..., requested ); sequence returns
+           under various fs IoErr() == (-1L) or something else. The loader
+           then aborts with this error code. (The code worked with RAM: disk,
+           my VideoCD-fs ("white book" mode)) and AMICDROM, but wasn't tested
+           with FFS or something else).
+           The code now uses Read instead of FRead, checks for
+           (len != requested), and only if TRUE IoErr() will be checked for
+           any error.
+
+         - Introduced BUFFER preferences option.
+
+         - A CTRL-D signal send to the loading process now stops the load.
+           This feature was implemented in V1.2, but I forgot to write it
+           down here.
+
+         - The autodoc now has a TOC (table of contents).
+
+         - Support for Martin Apel's VMM (Virtual Memory Manager).
+           (USEVMM switch in prefs file). The bitmaps can now be in virtual
+           memory (the colormaps are traditional allocated by GetColorMap
+           and cannot be in virtual memory (not yet nor in the future !)).
+           The mpegvideo.datatype uses the vmm.library, this allows
+           virtual memory usage even if the vmm.prefs disables virtual memory
+           for all other tasks.
+           NOTE: VMM is Shareware !!
+
+       V1.4
+         - vmm.library is now opened on demand (e.g. the USEVMM switch was
+           set in the prefs file) inside the OM_NEW method.
+           This fixes two problems:
+           First: vmm.library was opened even it wasn't used.
+           Second: OpenLibrary( "vmm.library", ... ) inside the LibInit
+           function caused various problems.
+           vmm.library will be closed by LibExpuge function.
+
+         - Removed serial verbose output. Now, if the VERBOSE switch was set
+           in the prefs file, all verbose output will be printed to
+           "CON://///auto/wait/close/inactive".
+
+         - Set the SC NOOPTIMIZERPEEPHOLE switch for mc68060 support:
+           phase5 said that SAS/C 6.56 has a small bug in the peephole
+           optimizer which may cause trouble with mc68060. The peephole
+           optimizer will be turned on again if I know more details (and
+           a workaround).
+
+         - The product of LUM_RANGE * CR_RANGE * CB_RANGE was limited to
+           a maximum of 512.  LUM_RANGE, CR_RANGE, CB_RANGE can now have
+           any positive value up to 255. A value of 0 is treated as 1,
+           fixing the problem of a possible division by zero.
+
+         - Found a bug in COLOR dithering, which causes quality loss and
+           color disorientation. Fixing this bug will take MUCH time.
+           Not fixed yet.
+
+         - To match the "DataTypes proposal", changes have been made:
+           1. The location of the prefs file is now ENV:Classes/DataTypes/
+              mpegvideo.prefs instead of ENV:DataTypes/mpegvideo.prefs
+           2. Subclasses of mpegvideo.datatype are not supported. Any
+              attempt to create a subclass object of mpegvideo.datatype
+              will be rejected by mpegvideo.datatype.
+
+         - Partial code cleanup. I've implemented partial support for
+           output depths up to 16 bits. Currently, I'm limited to a maximum
+           depth of 8 bitplanes (e.g. 256 colors) for two reasons:
+           First, the system WritePixelArray8 function handles only byte
+           width pen indexes, second, animation.datatype handles only a
+           bitmaps up to 8 planes. Future releases of animation.datatype may
+           handle deeper bitplanes. (Custom players like my DBufDTAnim which
+           are using their own display code are able to display deeper
+           bitmaps yet.)
+
+         - Found out a little problem: When using VMM (swap file) with
+           Enforcer, enforcer hits may block your system (occured on a
+           A2000 Apollo 2030 mc68030 board).
+           Who knows an answer for this problem ?
+
+       V1.5
+         Minor changes to support special compiled versions for 68020+,
+         fpu etc.
+
+         - Implemented the IGNOREERRORS switch, which attempts to ignore any
+           error during loading.
+
+         - Removed some dead code.
+
+       V1.6
+         The datatypes supports now scaling and sound. Sound was implemented
+         for two reasons:
+         1. For those streams which are distributed with a matching sound
+            file.
+         2. I'm reworking mpegsystem.datatype (which can play system streams,
+            e.g. video with interleaved audio). The goal is to implement
+            mpegsystem.datatype as a subclass of mpegvideo.datatype. The
+            audio stream will be parsed using mpegaudio.datatype.
+         Note that mpegvideo.datatype is still a GID_ANIMATION type datatype.
+         The GID_#? idetifiers belongs to the source data, not the
+         modifications done by a datatype code (a mpeg 1 video stream does
+         not contain any audio information, the sound is attached later).
+
+         - Implemented the WIDTH and HEIGHT options in the prefs file to
+           support scaling.
+
+         - Implemented SAMPLE and VOLUME options to support sound.
+
+         - Now uses BestModeID for selecting the screen mode of the
+           animation. The MODEID preference option overides this.
+           The old behavior was to set the ADTA_ModeID attribute only if the
+           MODEID prefs option was set, otherwise the default from
+           animation.datatype was taken (which was everytimes 0).
+
+         - Fixed the FPS preference option. If it was set, the value was got
+           from the depth option instead using the given value.
+
+         - Implemented a processing gauge as requested by Allan Odgaard
+           (Duff@DK-Online.DK) and many other people. The matching
+           NOPROGRESSGAUGE switch disables it. If the input filehandle is a
+           pipe, the gauge may not work properly.
+
+         - Implemented a lowermem limit (MINTOTALMEM option) for those
+           people who wants to see at least the beginning of a big anim
+           (idea by Allan Odgaard (Duff@DK-Online.DK)).
+
+         - Implemented multi-line preferences, supports comments and
+           per-project settings (MATCHPROJECT option). The old preference
+           files/vars are compatible.
+
+         - The stack size for the OM_NEW method is now checked. If the
+           required size (curretly 12kb) isn't available, a requester will
+           notify the user and the method returns an error.
+
+       V1.7
+         - Recompiled with SAS/C 6.57. Switched the peephole optimizer on
+           (see V1.4 bugs).
+
+         - Rewrote the DICECOLOR dithering/remapping code. The DICECOLOR
+           color mode now creates a colormap per frame (animation.datatype
+           40.7 does not support these colormap changes per frame (it's
+           output looks like a color trash). Custom animation players which
+           uses animation.datatype subclasses for loading (like my
+           DBufDTAnim) don't have this problem. animation.datatype V41 will
+           support these colormaps-per-frame.
+
+           I changed the algorithm from a single-pass into a multi-pass
+           operation, which allows the code to run on other output modes
+           like ORDERED or FS (Floyd-Steinberg). A side-effect of this
+           change is that options like COLORERROR and DICESKIP are selected
+           automatically, which is more user-friendly.
+
+           If you want to get the old DICECOLOR output, use
+           DITHER=COLOR PALETTEPERFRAME options.
+
+         - The mpegvideo.datatype uses 24 bit-colors internally and
+           writes 32 bits per (r,b,g) gun. Now the high order bits of each
+           color gun are replicated through the whole INT32.
+
+         - Fixed a bug in the SAMPLE option, which caused possible crashes.
+
+         - Fixed a bug in LibExpunge (didn't check lib_OpenCnt), which is
+           also present in all my other external BOOSI classes (and
+           datatypes).
+           Thanks to Guenter Niki (gniki@informatik.uni-rostok.de) for
+           reporting this bug.
+
+         - Implemented the mpeg saving code (mpeg encoder). Currently,
+           only mpeg-1 streams are written out.
+           (Will be enabled in the public versions ONLY upon request;
+           code is currently under construction).
+
+         - Increased the stack requirements from 12kb up to 16kb, mainly
+           to allow more recursive operations.
+
+         - Implemented random access to frames (e.g you need not to load
+           the whole animation, decoding is done on the fly).
+           (Will be enabled in the public versions ONLY upon request;
+           code is currently under construction,
+           the matching LOADALL switch it set everytimes).
+
+       V1.8
+         - Added partial support for mpeg-2 (MPEG-2 does NOT work yet !),
+           both encoder+decoder.
+
+         - Added my own WritePixelArray8 replacement, which operates
+           directly on the fast-mem bitmaps. This saves some internal
+           copies, chipmem buffer for WPA8 etc.
+
+         - Added my own scaling routine, replacing
+           graphics.library/BitMapScale (which needs chipmem as temp.
+           buffer).
+           Does not work properly yet.
+
+         - Fixed the gauge, which didn't work correctly with large streams
+           (>= 8MB).
+           Fixed.
+
+         - The gauge ha now a text info, which shows the remaining time
+           to decode.
+
+         - Added experimental stack swapping code. The "Need more stack"-
+           requester has been removed for this reason.
+
+           This also fixes a possible deadlock of "input.device" because
+           the GM_LAYOUT method was running with low stack.
+           Fixed.
+
+         - Color table setup now retries color table build with an increased
+           COLORERROR if table (set by LUM_RANGE * CR_RANGE * CB_RANGE) does
+           not fit. This allows any #?_RANGE value.
+
+         - Fixed different problems within color setup. Now this should
+           work with a higher quality, and a little bit faster.
+
+         - Fixed the descriptor, which din't match all mpeg video streams.
+           Fixed.
+
+         - DTM_WRITE should return ERROR_NOT_IMPLEMENTED if DTWM_RAW mode is
+           requested (becuase the encoder has been disabled, e.g. commented
+           out). Now this is correctly done.
+           Fixed.
+
+         - The mc68060-Version now checks for the AFF_68060 (1L<<7) execbase
+           flag instead using the AFF_68040.
+           Fixed.
+
+         - Added QUALITY prefs option and matching float-dct code.
+
+       V1.9
+         - Recompiled with SAS/C 6.58. Should fix some mc68060 related
+           problems.
+
+         - Minor and major housekeeping changes.
+
+         - Added HAM code and HAM dither option as requested by many people.
+           Thanks to Olaf Barthel for his fast HAM conversion code.
+
+         - DTA_ObjName is now set (and equals to DTA_Name).
+
+         - GM_LAYOUT/DTM_PROCLAYOUT code has been removed because
+           animation.datatype class does the same.
+
+         - Removed NOREMAP switch (and matching DTM_FRAMEBOX code) because
+           this was an ugly hack. After all, it seems that MuliView 
+           sets ADTA_Remap to FALSE on it's custom screens, and that
+           using ADTA_Remap == FALSE on a screen which does not have the
+           matching size may cause trouble.
+
+         - ADTA_NumColors is now set to the number of used colors instead
+           of 1UL << anim_depth. This saves some pens when allocating
+           shared pens on shared screens.
+           When palette-per-frames are used, the number of colors equals to
+           1UL << anim_depth again.
+
+         - Moved scaling code before dithering code. It now scales the lum,
+           cr, cb data, which is more usefull when doing ordered or HAM
+           dithering.
+
+         - VMM support seems to be safe...
+
+         - Changed the whole prefs-system. Now the defaults options are more
+           usefull and are adapted correctly to some settings.
+
+         - DITHER option now defaults to HAM, for those people who don't
+           like to edit the prefs-file.
+
+         - Added NOPALETTEPERFRAME/S, PFRAMES/S, BFRAMES/S, NOLOADALL/S,
+           PROGRESSGAUGE/S, NOQUALITY/S switches to support multi-line
+           prefs-files which uses the MATCHPROJECT feature.
+
+         - Internal timing now uses animation.datatype V41
+           ADTA_TicksPerFrame instead of ADTA_FramesPerSecond. This
+           makes timing more precise.
+           (ADTA_TicksPerFrame means 1200 / fps, based on realtime.library's
+           timing model).
+
+         - Increased the decoding the speed a little bit. But this may affect
+           stability if someone feeds a corrupt mpeg file in the datatype.
+           I try to fix the problem...
+
+         - Now uses Peter McGavin's (p.mcgavin@irl.cri.nz) WritePixelArray8
+           code (the C version).
+
+         - Fixed the encoder stack problem.
+
+         - The encoder now has no problems with dynamic frame delays (e.g.
+           alf_Duration field in adtFrame).
+
+         - The SKIP option now uses struct adtFrame -> alf_Duration instead
+           of creating empty frames. This causes that the SKIPFRAMES option
+           works only with animation.datatype V41.
+
+         - Fixed the bug that the last sample might be too long, which
+           caused unallocated memory reads (but only a few bytes) and small
+           clicks at the end of the animation.
+
+         - The startup-code has been rewritten, the code now gurantees that
+           the order of OpenLibrary and CloseLibrary are correct and in a
+           more usefull order.
+
+         - Updated the autodoc a little bit.
+
+       V1.10
+         INTERNAL RELEASE
+
+         - Large code cleanup.
+
+         - If we reach the file end, we now add a end of sequence code
+           manually to avoid any problems if we does not see the end code
+           (this occurs in the NOLOADALL mode in the past...).
+
+         - Removed all remaining parts of "recmpeg". Now I'm allowed to
+           release the source :-)
+
+         - Moved the encoder to the mpegvideo.datatype V2.
+
+         - Moved the YUV -> 24-bit interleaved-planar to
+           mpegvideo.datatype V2.
+
+         - Removed the whole MPEG-2 support. mpegvideo.datatype V2 does this
+           better.
+
+         - Wrote a replacement for the 24 bit planar code (currently
+           non-interleaved).
+
+         - Rewrote the 24/15/16 bit dither code.
+           Should fix some visual problems.
+
+         - Fixed the bug that animation.datatype V41 wasn't detected
+           correctly (the version check didn't match, therefore
+           any V41 related features were not used).
+           Fixed.
+
+         - Added GAMMACORRECT and CHROMACORRECT options.
+
+         - Removed BestModeIDA code because animation.datatype does the
+           same job (better).
+
+         - Fixed the bug that MODEID=0 turns the internal mode selection
+           on instead of using LORES.
+           This also requires a change in the prefs behaviour, the
+           default value for the MODEID option is now "-1".
+           Fixed.
+
+         - Removed all internal accesses to ADTA_BitMapHeader because they
+           are unneccesary (dead code).
+
+         - The VERBOSE output is now turned on if a serious error occurs.
+
+         - If frames are skipped (using the NOPFRAMES or NOBFRAMES option)
+           now the duration of the last frame is increased to get sync
+           with the stream time.
+
+         - Fixed the bug that the total number of frames might be incorrect
+           in rare cases.
+           Fixed.
+
+         - Fixed a bug in the color setup of ORDERED dithering which
+           caused that the values runned from 0 upto 256 (256 == 0 in an
+           UBYTE). Now the color values are correctly running from 0-255.
+           Fixed.
+
+           Fixed the same bug in GRAY dither setup.
+           Fixed.
+
+       V1.11
+         - Enabled the NOLOADALL mode for the public.
+
+         - Small code cleanup to remove some unneccesary parts of code
+           (mainly the obsolete encoder support).
+
+         - Fixed the bug that the depth of a CyberGFX ARGB bitmap must be 32
+           instead of 24.
+           Fixed.
+
+         - Added some safety in CyerGFX LockBitMap handling (which has a bug
+           in tag parsing).
+
+         - Added workaround for NOLOADALL mode that ADTM_LOADFRAME returns
+           1UL instead of NULL if it forgets a frame (to avoid that the
+           playback stops...).
+           Not nice...
+
+         - Fixed a bug in 24bit -> HAM dithering introduced in V1.10.
+           Fixed.
+
+         - Replaced stack swapping code by a "standard module".
+
+         - Increased the "default" buffer size from 4096 up to 16384.
+           This makes the gauge less accurate for small streams, but
+           gives a small speedup when parsing large streams.
+
+   SEE ALSO
+       animation.datatype,
+       mpegsystem.datatype, mpegvideo.datatype
+       picmovie.datatype,
+       paranimdtcpatch
+
+mpegvideo.datatype/ADTM_LOADFRAME           mpegvideo.datatype/ADTM_LOADFRAME
+
+    NAME
+        ADTM_LOADFRAME -- Load frame
+
+    FUNCTION
+        The ADTM_LOADFRAME method is used to obtain the bitmap and timing
+        data of the animation.
+        The given timestamp will be used to find the closest timestamp
+        in the internal FrameNode list. If it was found, the corresponding
+        timing, bitmap, colormap and sound data are stored into the struct
+        adtFrame.
+
+        The mpegvideo.datatype always loads a whole IPPB...I sequence
+        into memory; the sequence stays in memory until all frames of
+        the sequence are unloaded.
+
+    RESULT
+        Returns non-zero if the frame was loaded, 0UL otherwise
+        (Result2 (IoErr()) contains then the cause).
+
+mpegvideo.datatype/ADTM_UNLOADFRAME       mpegvideo.datatype/ADTM_UNLOADFRAME
+
+    NAME
+        ADTM_UNLOADFRAME -- Unload frame contents
+
+    FUNCTION
+        The ADTM_UNLOADFRAME method is used to release the contents of a
+        animation frame.
+
+        This method frees the bitmap data found in adtFrame.
+
+    RESULT
+        Returns always 0UL.
+
+mpegvideo.datatype/OM_DISPOSE                   mpegvideo.datatype/OM_DISPOSE
+
+    NAME
+        OM_DISPOSE -- Delete a mpegvideo.datatype object.
+
+    FUNCTION
+        The OM_DISPOSE method is used to delete an instance of the
+        mpegvideo.datatype class.  This method is passed to the superclass
+        when it has completed.
+        This method frees all frame nodes and their contents (pictures, their
+        colormaps, sounds etc.).
+
+    RESULT
+        The object is deleted. 0UL is returned.
+
+mpegvideo.datatype/OM_NEW                           mpegvideo.datatype/OM_NEW
+
+    NAME
+        OM_NEW -- Create a mpegvideo.datatype object.
+
+    FUNCTION
+        The OM_NEW method is used to create an instance of the
+        mpegvideo.datatype class.  This method is passed to the superclass
+        first. After this, mpegvideo.datatype loads it's preference file
+        (and the sound file, if one was specified), parses the whole video
+        stream, putting pictures into memory.
+        Any fatal error aborts the load, non-serious errors are reported.
+
+        Subclasses of mpegvideo.datatype are not supported. Any attempt to
+        create a subclass object of mpegvideo.datatype will be rejected
+        by this method.
+
+    ATTRIBUTES
+        The following attributes can be specified at creation time.
+
+        DTA_SourceType (ULONG) -- Determinates the type of DTA_Handle
+            attribute. Currently, only a source type of DTST_FILE is
+            supported. If any other type was set in a given DTA_SourceType,
+            OM_NEW will be rejected with result2 == ERROR_OBJECT_WRONG_TYPE.
+            Defaults to DTST_FILE.
+
+        DTA_Handle (BPTR) -- If DTA_SourceType is DTST_FILE, the given file
+            handle will be used as an mpeg video stream to read in.
+
+    RESULT
+        If the object was created a pointer to the object is returned,
+        otherwise NULL is returned.
+
+mpegvideo.datatype/preferences                 mpegvideo.datatype/preferences
+
+   NAME
+       preferences
+
+   DESCRIPTION
+       The "ENV:Classes/DataTypes/mpegvideo.prefs" file contains global
+       settings for the datatype.
+       The preferences file is an ASCII file containing one line where the
+       preferences can be set.
+       It can be superset by a local variable with the same name.
+
+       Each line can contain settings, special settings for some projects
+       can be set using the MATCHPROJECT option.
+       Lines beginning with a '#' or ';' chars are treated as comments.
+       Lines are limitted to 256 chars.
+
+   TEMPLATE
+       MATCHPROJECT/K,MODEID/K/N,WIDTH/K/N,HEIGHT/K/N,DEPTH/K/N,DITHER/K,
+       LUM_RANGE/K/N,CR_RANGE/K/N,CB_RANGE/K/N,COLORERROR/K/N,
+       PALETTEPERFRAME/S,NOPALETTEPERFRAME/S,GAMMACORRECT/K,CHROMACORRECT/K,
+       MAXFRAME/K/N,SKIPFRAMES/K/N,FPS/K/N,PFRAMES/S,NOPFRAMES/S,BFRAMES/S,
+       NOBFRAMES/S,SAMPLE/K,VOLUME/K/N,BUFFER/K/N,LOADALL/S,NOLOADALL/S,
+       USEVMM/S,MINTOTALMEM/K/N,IGNOREERRORS/S,VERBOSE/S,PROGRESSGAUGE/S,
+       NOPROGRESSGAUGE/S,QUALITY/S,NOQUALITY/S
+
+       MATCHPROJECT -- The settings in this line belongs only to this
+           project(s), e.g. if the case-insensitive pattern does not match,
+           this line is ignored.
+           The maximum length of the pattern is 128 chars.
+           Defaults to #?, which matches any project.
+
+       MODEID -- Select screen mode id of datatype (will be stored in
+           ADTA_ModeID). Note that the DOS ReadArgs function used for parsing
+           fetches a SIGNED long. The bit 31 will be represented by minus
+           '-'. (example: "MODEID=266240" sets the mode to the A2024 screen
+           mode id)
+           Defaults to -1, which means: Use the best screenmode available
+           for the given width, height and depth.
+
+       WIDTH -- Set the animation's width. The video will be scaled to this
+           width.
+           Defaults to 0, which means: Use video's width.
+
+       HEIGHT -- Set the animation's height. The video will be scaled to this
+           height.
+           Defaults to 0, which means: Use video's height.
+
+       DEPTH -- depth for the selected scaling mode
+           A value describing the "depth" of the animation.
+           1 upto 8 are valid, under- or overflows will be truncated
+           to the maximum supported.
+           The default depth will be selected by the DITHER mode.
+
+       DITHER -- dither type, one of
+           GRAY            -- grayscale output
+           HAM             -- ham ham6/ham8 etc. (default)
+           EHB             -- extra halfbright                     (n/a)
+           COLOR           -- color output
+           ORDERED         -- ordered dither
+           24BITCHUNKY     -- true color, 24 bit
+           16BITCHUNKY     -- true color, 16 bit
+           24BITPLANAR     -- true color, 24 bit
+
+           GRAY is the grayscale mode.
+               If no depth is given, the depth default to 5 (32 colors).
+
+           HAM (hold-and-modify) mode: Either HAM6 or HAM8, set by the depth
+               option. If no depth is given, this defaults to 6 for OCS/ECS
+               and 8 for AGA/AAA machines.
+               This is the default dither mode if no DITHER option is given.
+
+           EHB (extra halfbright mode):
+               If no depth is given, the depth default to 6 (32/64 colors).
+               not implemented yet
+
+           COLOR remaps the frames into a fixed color space.
+               If no depth is given, the depth default to 8 (256 colors).
+
+           ORDERED uses ordered dithering.
+               If no depth is given, the depth default to 8 (256 colors).
+
+           24BITCHUNKY uses chunkypixel CyberGFX bitmaps
+               Fixed to a depth of 32 (XRGB).
+               Requires at least animation.datatype V41.3.
+
+           16BITCHUNKY uses chunkypixel CyberGFX bitmaps
+               Fixed to a depth of 16 (XRGB).
+               Requires at least animation.datatype V41.3.
+
+           24BITPLANAR uses a planar 24 bit depth bitmap (non-interleaved)
+               Fixed to a depth of 24 (RGB).
+               Requires at least animation.datatype V41.3.
+
+           Defaults to HAM.
+
+       LUM_RANGE -- sets the number of colors assigned to the luminance
+           component when dithering the image.  The product of LUM_RANGE,
+           CR_RANGE and CB_RANGE should be less than the number of colors
+           selected by the DEPTH option.
+           This will only affect ORDERED and COLOR dithering and the base
+           palette of the DICECOLOR remapping.
+           Any value between 1 upto 255 is allowed, 0 is treated as 1.
+
+           Defaults: see DEFAULTS section below
+
+       CR_RANGE -- sets the number of colors assigned to the red component of
+           the chrominace range when dithering the image.  The product of
+           LUM_RANGE, CR_RANGE and CB_RANGE should be less than the number of
+           colors selected by the DEPTH option.
+           This will only affect ORDERED and COLOR dithering and the base
+           palette of the DICECOLOR remapping.
+           Any value between 1 upto 255 is allowed, 0 is treated as 1.
+
+           Defaults: see DEFAULTS section below
+
+       CB_RANGE -- sets the number of colors assigned to the blue component
+           of the chrominace range when dithering the image.  The product of
+           LUM_RANGE, CR_RANGE and CB_RANGE should be less than the number of
+           colors selected by the DEPTH option.
+           This will only affect ORDERED and COLOR dithering and the base
+           palette of the DICECOLOR remapping.
+           Any value between 1 upto 255 is allowed, 0 is treated as 1.
+
+           Defaults: see DEFAULTS section below
+
+       COLORERROR -- Set the error range when allocating colors.
+           The error range is used for color matching
+           (like this: if( ABS( (pixel . red) - (colormap . red) ) +
+                       ABS( <dito. green> ) + ABS( <dito. blue> )
+                       < colorerror ) then use this color index).
+           A low value (0) means high quality remapping and slow remapping,
+           high values (50) means low quality (using less color indexes).
+           The value set here will also affect DICECOLOR remapping, because
+           the search algorithm is the same.
+
+           Defaults to 0.
+
+       PALETTEPERFRAME -- Create a own palette for each frame.
+           __Currently__ a NOP for HAM dithering and always a NOP
+           for all direct-RGB output modes (24BITCHUNKY, 16BITCHUNKY, 
+           24BITPLANAR).
+
+           Note that this option requires animation.datatype V41 to work.
+
+       NOPALETTERPERFRAME -- Turns PALETTEPERFRAME switch off.
+
+       GAMMACORRECT -- Gamma correction value (defined as fixed point
+           number).
+           Defaults to "1.0".
+
+       CHROMACORRECT -- Chroma correction value (defined as fixed point
+           number).
+           Defaults to "1.0".
+
+       MAXFRAME -- Maximum number of frames to load.
+           Defaults to 0, which means: Load all frames.
+
+       SKIPFRAMES -- Load only the n-th frame of an animation.
+           The internal timing (e.g. time code) is not affected, so
+           the FPS value will be correct.
+           Defaults to 0 which means: Skip no frame.
+
+           Note that this option requires animation.datatype V41 to work
+           properly.
+
+       FPS -- frames per second
+           Defaults to 0, which means: overtake fps rate from video stream.
+           Setting the FPS value also affects an attched sound. The period
+           of the sample (e.g. the playback speed) will everytimes as long
+           as the frame is displayed.
+
+       PFRAMES -- Turns off the NOPFRAMES option.
+           Default is on.
+
+       NOPFRAMES -- ignore any type P frames (predicted frames) when loading.
+
+       BFRAMES -- Turns off the NOBFRAMES option.
+           Default is on.
+
+       NOBFRAMES -- ignore any type B frames (bidirectional frames) when
+           loading.
+           Default is off.
+
+       SAMPLE -- Attach the given sample to the animation. The sample will
+           be loaded using datatypes (GID_SOUND).
+           Only one sample can be attached to one video stream, any following
+           attempt to attach the sample will be ignored.
+
+           Default: no sample
+
+       VOLUME -- Volume of the sound when playing.
+           Defaults to 63, which is the maximum. A value greater than 64 will
+           be set to 63.
+
+       BUFFER -- read buffers size. Minimum is 2048, lower values are set to
+           2048.
+           Defaults to 16384.
+
+       LOADALL -- load all frames before displaying it.
+
+       NOLOADALL -- turns off LOADALL switch.
+
+       USEVMM -- Use Martin Apel's vmm.library for bitmaps.
+           The verbose output will tell you if VMM memory will be used or
+           not.
+           This option is useless if CyberGFX bitmaps are used !
+           Default is off.
+
+       NOUSEVMM -- Turn VMM usage for bitmaps off.
+
+       MINTOTALMEM -- Minimum total memory available. If less memory
+           available, abort loading.
+           Defaults to 0, which means: Don't use this option.
+
+       IGNOREERRORS -- Ignore errors while parsing/decoding etc.
+           Usefull if a syntax error or read error (which may occur with
+           some old, buggy CD filesystems) happens.
+           Default is off.
+
+       VERBOSE -- Verbose output. Prints out current frame etc., some
+           statistical information and maybe, debugging infos.
+           Verbose output will be printed in a console window
+           ("CON://///auto/wait/close/inactive/MPEG Video DataType").
+           Default is off.
+
+       PROGRESSGAUGE -- Display a load progress gauge.
+           Default is on.
+
+       NOPROGRESSGAUGE -- Disables the progress gauge which is displayed
+           during loading of the mpeg stream.
+           Default is off.
+
+       QUALITY -- If set, mpegvideo.datatype uses floating-point dct
+           decoding, which results in a better output quality.
+           Default is off.
+
+       NOQUALITY -- Turns QUALITY switch off.
+           Default is on.
+
+   DEFAULTS
+       Defaults for the options are noted above.
+
+       LUM_RANGE, CR_RANGE, CB_RANGE options have defaults based on the
+       depth:
+
+       depth | LUM_RANGE | CR_RANGE | CB_RANGE | comment
+       ------+-----------+----------+----------+----------------------
+          8  |         7 |        6 |       6  | color output
+          7  |         5 |        5 |       5  | color output
+          6  |         4 |        4 |       4  | color output
+          5  |         3 |        3 |       3  | color output
+          4  |        16 |        1 |       1  | grayscale output
+          3  |         8 |        1 |       1  | grayscale output
+          2  |         4 |        1 |       1  | grayscale output
+          1  |         2 |        1 |       1  | black & white output
+
+   NOTE
+       An invalid prefs file line will force the default settings for this
+       line and the VERBOSE option.
+
+   BUGS
+       - Low memory may cause that the prefs file won't be parsed.
+
+       - Lines are limitted to 256 chars
+
+mpevideo.datatype/DTM_WRITE                       mpevideo.datatype/DTM_WRITE
+
+    NAME
+        DTM_WRITE -- Save data
+
+    FUNCTION
+        This method saves the object's contents to disk.
+
+        If dtw_Mode is DTWM_IFF, the method is passed unchanged to the
+        superclass, animation.datatype, which writes a single IFF ILBM
+        picture.
+        The local data format (e.g. dtw_Mode == DTWM_RAW) is currently
+        not supported, this method returns 0UL
+        (and result2 == ERROR_NOT_IMPLEMENTED) in that case.
+
+    RESULT
+        Returns 0 for failure (IoErr() returns result2), non-zero
+        for success.
+
+

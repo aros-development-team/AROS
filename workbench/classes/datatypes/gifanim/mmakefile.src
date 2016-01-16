@@ -1,0 +1,18 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := classbase methods dispatch prefs misc encoder
+#FILES stackswap 
+TESTSDIR := $(AROS_TESTS)/datatypes
+
+#MM- workbench-datatypes-animation : workbench-datatype-gifanim
+#MM workbench-datatype-gifanim : includes linklibs
+
+USER_CFLAGS   := -DDEBUG=0
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-datatype-gifanim \
+    modname=gifanim modtype=datatype \
+    files=$(FILES)
+
+%common

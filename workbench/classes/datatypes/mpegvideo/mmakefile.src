@@ -1,0 +1,20 @@
+#   $Id: mmakefile.src 39981 2011-07-10 18:37:26Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+FILES := classbase dispatch methods mpeg16bit mpegamiga mpegdecoders mpeggdith mpeggray mpegjrevdct mpegfloatdct mpegmain mpegmotionvector mpegordered mpegparseblock mpegutil mpegvideo
+DTDIR 		:= $(AROS_DEVS)/DataTypes
+DESCFILES 		:= MPEGVideo
+
+DTFILES		:= $(foreach f, $(DESCFILES), $(DTDIR)/$(f))
+
+#MM- workbench-datatypes-animation : workbench-datatype-mpegvideo
+#MM workbench-datatype-mpegvideo : includes linklibs
+
+USER_CFLAGS   := -DDEBUG=1
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-datatype-mpegvideo \
+    modname=mpegvideo modtype=datatype \
+    files=$(FILES) uselibs="romhack"
+
+%common
