@@ -2,7 +2,7 @@
     Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: NewStackSwap() - Call a function with swapped stack, x86-64 version
+    Desc: NewStackSwap() - Call a function with swapped stack, ARM version
     Lang: english
 */
 
