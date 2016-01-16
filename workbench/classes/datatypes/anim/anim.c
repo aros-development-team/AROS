@@ -127,7 +127,7 @@ LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, UL
     const ULONG *lists = (const ULONG *)dlta;
     UWORD numcols = bm->BytesPerRow;
     UBYTE opptr;
-    UBYTE mask = 0;
+    const UBYTE xormask = (anhd->ah_Flags & ahfXOR) ? 0xFF : 0x00;
     UBYTE *pixels;
     UBYTE *stop;
     const UBYTE *ops;
@@ -165,7 +165,7 @@ LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, UL
                     {
                         if (pixels <= stop)
                         {
-                            *pixels = ((*pixels & mask) ^ *ops);
+                            *pixels = ((*pixels & xormask) ^ *ops);
                             pixels = (UBYTE *)((IPTR)pixels + bm->BytesPerRow);
                         }
                         ops++;
@@ -180,7 +180,7 @@ LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, UL
                     {
                         if (pixels <= stop)
                         {
-                            *pixels = ((*pixels & mask) ^ fill);
+                            *pixels = ((*pixels & xormask) ^ fill);
                             pixels = (UBYTE *)((IPTR)pixels + bm->BytesPerRow);
                         }
                     }
@@ -206,7 +206,7 @@ LONG unpackanim7longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
     UWORD pitch = bm->BytesPerRow;
     ULONG opptr, dataptr;
     const ULONG *data;
-    ULONG mask = 0;
+    const ULONG xormask = (anhd->ah_Flags & ahfXOR) ? 0xFFFFFFFF : 0x00;
     ULONG *pixels;
     ULONG *stop;
     const UBYTE *ops;
@@ -251,7 +251,7 @@ LONG unpackanim7longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
                     {
                         if (pixels <= stop)
                         {
-                            *pixels = ((*pixels & mask) ^ *data);
+                            *pixels = ((*pixels & xormask) ^ *data);
                             pixels = (ULONG *)((IPTR)pixels + pitch);
                         }
                         data++;
@@ -267,7 +267,7 @@ LONG unpackanim7longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
                     {
                         if (pixels <= stop)
                         {
-                            *pixels = ((*pixels & mask) ^ fill);
+                            *pixels = ((*pixels & xormask) ^ fill);
                             pixels = (ULONG *)((IPTR)pixels + pitch);
                         }
                     }
@@ -289,7 +289,7 @@ LONG unpackanim7worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
     const ULONG *lists = (const ULONG *)dlta;
     UWORD numcols = bm->BytesPerRow >> 1;
     UWORD pitch = bm->BytesPerRow;
-    ULONG mask = 0;
+    const UWORD xormask = (anhd->ah_Flags & ahfXOR) ? 0xFFFF : 0x00;
     UWORD *pixels;
     UWORD *stop;
     const UBYTE *ops;
@@ -323,7 +323,7 @@ LONG unpackanim7worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
                     {
                         if (pixels < stop)
                         {
-                            *pixels = (*pixels & mask) ^ *data;
+                            *pixels = (*pixels & xormask) ^ *data;
                             pixels = (UWORD *)((IPTR)pixels + pitch);
                         }
                         data++;
@@ -339,7 +339,7 @@ LONG unpackanim7worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
                     {
                         if (pixels < stop)
                         {
-                            *pixels = (*pixels & mask) ^ fill;
+                            *pixels = (*pixels & xormask) ^ fill;
                             pixels = (UWORD *)((IPTR)pixels + pitch);
                         }
                     }
@@ -403,10 +403,10 @@ static const UWORD *Do8short(UWORD *pixel, UWORD *stop, const UWORD *ops, UWORD 
 LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *planes = (const ULONG *)dlta;
-    int numcols = (GetBitMapAttr( bm, BMA_WIDTH) + 31) / 32;
+    int numcols = bm->BytesPerRow >> 2;
     int pitch = bm->BytesPerRow;
     BOOL lastisshort = (GetBitMapAttr( bm, BMA_WIDTH) & 16) != 0;
-    const UWORD xormask = (anhd->ah_Operation & acmpXORILBM) ? 0xFF : 0x00;
+    const ULONG xormask = (anhd->ah_Flags & ahfXOR) ? 0xFFFFFFFF : 0x00;
     UWORD x;
     UBYTE p;
 
@@ -422,8 +422,8 @@ LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
         const ULONG *ops = (const ULONG *)dlta + ptr;
         for (x = 0; x < numcols; ++x)
         {
-            ULONG *pixel = (ULONG *)(bm->Planes[p] + x);
-            ULONG *stop = (ULONG *)((UBYTE *)pixel + GetBitMapAttr( bm, BMA_HEIGHT) * pitch);
+            ULONG *pixel = (ULONG *)(bm->Planes[p] + (x << 2));
+            ULONG *stop = (ULONG *)((IPTR)pixel + ((bm->Rows - 1) * pitch));
             if (x == numcols - 1 && lastisshort)
             {
                     Do8short((UWORD *)pixel, (UWORD *)stop, (UWORD *)ops, xormask, pitch / 2);
@@ -441,7 +441,7 @@ LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
                         if (pixel < stop)
                         {
                             *pixel = (*pixel & xormask) ^ *ops;
-                            pixel = (ULONG *)((UBYTE *)pixel + pitch);
+                            pixel = (ULONG *)((IPTR)pixel + pitch);
                         }
                         ops++;
                     }
@@ -455,13 +455,13 @@ LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
                         if (pixel < stop)
                         {
                             *pixel = (*pixel & xormask) ^ fill;
-                            pixel = (ULONG *)((UBYTE *)pixel + pitch);
+                            pixel = (ULONG *)((IPTR)pixel + pitch);
                         }
                     }
                 }
                 else
                 { // Skip op: Skip some rows
-                    pixel = (ULONG *)((UBYTE *)pixel + op * pitch);
+                    pixel = (ULONG *)((IPTR)pixel + (op * pitch));
                 }
             }
         }
@@ -473,9 +473,9 @@ LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
 LONG unpackanim8worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *planes = (const ULONG *)dlta;
-    int numcols = (GetBitMapAttr( bm, BMA_WIDTH) + 15) / 16;
-    int pitch = bm->BytesPerRow / 2;
-    const UWORD xormask = (anhd->ah_Operation & acmpXORILBM) ? 0xFF : 0x00;
+    int numcols = bm->BytesPerRow >> 1;
+    int pitch = bm->BytesPerRow;
+    const UWORD xormask = (anhd->ah_Flags & ahfXOR) ? 0xFFFF : 0x00;
     UWORD x;
     UBYTE p;
 
@@ -488,11 +488,11 @@ LONG unpackanim8worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
         { // No ops for this plane.
             continue;
         }
-        const UWORD *ops = (const UWORD *)dlta + ptr;
+        const UWORD *ops = (const UWORD *)((IPTR)dlta + ptr);
         for (x = 0; x < numcols; ++x)
         {
-            UWORD *pixel = (UWORD *)(bm->Planes[p] + x);
-            UWORD *stop = pixel + GetBitMapAttr( bm, BMA_HEIGHT) * pitch;
+            UWORD *pixel = (UWORD *)((IPTR)bm->Planes[p] + (x << 1));
+            UWORD *stop = (UWORD *)((IPTR)pixel + ((bm->Rows - 1) * pitch));
             ops = Do8short(pixel, stop, ops, xormask, pitch);
         }
     }
@@ -510,6 +510,72 @@ LONG unpackanimidelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta
 // ANIM-J
 LONG unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm )
 {
+    UBYTE *pixel, *src;
+    UWORD opmode, op, opcnt, xormask, p, opheight, opwidth, planeoffset;
+    BOOL skip = FALSE;
+    int x,y;
+
     D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+
+    while ( dlta < ((IPTR)dlta + dltasize))
+    {
+        opmode = AROS_BE2WORD( dlta );
+        dlta += 2;
+
+        switch ( opmode )
+        {
+        case 0:
+            D(bug("[anim.datatype] %s: skip\n", __PRETTY_FUNCTION__));
+            skip = TRUE;
+            break;
+
+        case 1:
+            D(bug("[anim.datatype] %s: column mode\n", __PRETTY_FUNCTION__));
+            xormask     = AROS_BE2WORD( dlta );
+            opheight    = AROS_BE2WORD( dlta + 2 );
+            opcnt       = AROS_BE2WORD( dlta + 4 );
+            opwidth     = 1;
+            dlta        += 6;
+            break;
+
+        case 2:
+            D(bug("[anim.datatype] %s: area mode\n", __PRETTY_FUNCTION__));
+            xormask     = AROS_BE2WORD( dlta );
+            opheight    = AROS_BE2WORD( dlta + 2 );
+            opwidth     = AROS_BE2WORD( dlta + 4 );
+            opcnt       = AROS_BE2WORD( dlta + 6 );
+            dlta        += 8;
+            break;
+
+        default:
+            return 0;
+        }
+
+        if (skip) break;
+
+        for ( op = 0; op < opcnt; op++ )
+        {
+            planeoffset = AROS_BE2WORD( dlta );
+            dlta += 2;
+
+            for ( y = 0; y < opheight; y++ )
+            {
+                for ( p = 0; p < bm->Depth; p++ )
+                {
+                    pixel = (UBYTE *)((IPTR)bm->Planes[p] + (planeoffset));
+                    src = (UBYTE *)((IPTR)deltabm->Planes[p] + (planeoffset));
+                    for ( x = 0; x < opwidth; x++ )
+                    {
+                        pixel[ x ] = (src[x] & xormask) ^ *dlta++;
+                    }
+
+                }
+                pixel += bm->BytesPerRow;
+            }
+        }
+
+        /* skip odd byte */
+        if (( opcnt * opheight * opwidth * bm->Depth ) & 1 ) ++dlta;
+    }
     return 0;
 }

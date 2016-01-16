@@ -2206,6 +2206,12 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
             /* unpack ANIM-J  */
             return( unpackanimjdelta(ah, cb, dlta, dltasize, prevbm, bm ) );
         }
+
+        case acmpAnimI:   /* 'I' */
+        {
+            /* unpack ANIM-I  */
+            return( unpackanimidelta(ah, cb, dlta, dltasize, prevbm, bm ) );
+        }
       }
 
       /* XOR ? */

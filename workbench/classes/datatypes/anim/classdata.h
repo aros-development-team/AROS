@@ -32,6 +32,7 @@
 #define acmpStereoByteDelta (6U)
 #define acmpAnim7           (7U)
 #define acmpAnim8           (8U)
+#define acmpAnimI          (73U)
 #define acmpAnimJ          (74U) /* ascii 'J', Bill Grahams compression format */
 
 /* Animation header flags */

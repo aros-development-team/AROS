@@ -51,6 +51,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o );
 /* ????? */
 
 LONG LoadILBMBody( struct ClassBase *cb, struct BitMap *bm, struct BitMapHeader *bmh, UBYTE *dlta, ULONG dltasize );
+LONG unpackanimidelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm );
 LONG unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm );
 LONG unpacklongdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize );
 LONG unpackshortdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize );
