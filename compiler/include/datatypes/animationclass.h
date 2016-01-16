@@ -77,6 +77,7 @@
 #define ID_ANIM             	MAKE_ID('A','N','I','M')
 #define ID_ANHD             	MAKE_ID('A','N','H','D')
 #define ID_DLTA             	MAKE_ID('D','L','T','A')
+#define ID_SBDY             	MAKE_ID('S','B','D','Y')
 
 struct AnimHeader
 {
