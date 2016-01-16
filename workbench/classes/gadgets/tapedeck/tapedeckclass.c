@@ -315,7 +315,7 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     SetAttrsA((Object *)data->tdd_PosProp, proptags);
     DoMethodA((Object *)data->tdd_PosProp, msg);
 
-    rend_x = (EG(o)->Width - 52) >> 1;
+    rend_x = EG(o)->LeftEdge + ((EG(o)->Width - 50) >> 1);
     rend_y = EG(o)->TopEdge + 4 + ((EG(o)->Height - 11) >> 1);
 
     if (data->tdd_Mode == BUT_REWIND)
