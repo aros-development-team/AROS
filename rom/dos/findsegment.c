@@ -20,7 +20,7 @@
 /*  SYNOPSIS */
         AROS_LHA(CONST_STRPTR    , name, D1),
         AROS_LHA(struct Segment *, seg, D2),
-        AROS_LHA(BOOL            , system, D3),
+        AROS_LHA(LONG            , system, D3),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 130, Dos)
