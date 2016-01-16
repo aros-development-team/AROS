@@ -8,6 +8,7 @@
 #include "global.h"
 #include "version.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "compilerspecific.h"
@@ -18,6 +19,10 @@
 static struct MenuItem * FindMenuItem( struct Menu *menu, ULONG msgid );
 static void ChangeItemState( ULONG msgid, BOOL state );
 static void SetItemChecked( ULONG msgid, BOOL state );
+
+/*********************************************************************************************/
+
+static const char internal_about_tmpl[] = "%s %ld.%ld (%s)\n%s %s\n\n%s %s\n%s %s\n%s %s";
 
 /*********************************************************************************************/
 
@@ -305,8 +310,42 @@ STRPTR GetFileName(ULONG msgtextid)
 
 /*********************************************************************************************/
 
+static struct Library * FindClassBase(char *className)
+{
+    struct Library *lib;
+    Forbid();
+    for(lib=(struct Library *)SysBase->LibList.lh_Head;
+        lib->lib_Node.ln_Succ!=NULL;
+        lib=(struct Library *)lib->lib_Node.ln_Succ)
+    {
+        if((lib->lib_Node.ln_Name) &&
+            !(strncmp(lib->lib_Node.ln_Name, className, strlen(className))))
+        {
+            Permit();
+            return lib;
+        }
+    }
+    Permit();
+    return NULL;
+}
+
+static struct IClass *FindClassSuper(struct IClass *baseClass)
+{
+    struct IClass *tmp = baseClass->cl_Super;
+
+    while ((tmp->cl_Super != NULL) &&
+           (strncmp(tmp->cl_Super->cl_ID, "datatypesclass", 14)))
+    {
+        tmp = tmp->cl_Super;
+    }
+
+    return tmp;
+}
+
 void About(void)
 {
+    struct Library *tmpBase;
+    struct IClass *clSuper;
     struct DataType     *dt = NULL;
     struct EasyStruct   es;
     STRPTR              gid_string = NULL;
@@ -314,7 +353,15 @@ void About(void)
     STRPTR              sp;
     WORD                i;
     UBYTE               dtver_string[100];
-    
+    STRPTR              objclname_string = NULL;
+    UBYTE               objclver_string[100];
+    STRPTR              objsclname_string = NULL;
+    UBYTE               objsclver_string[100];
+
+    GetAttr(DTA_Name, dto, (IPTR *)&name_string);
+    if (name_string)
+        name_string = FilePart(name_string);
+
     if (GetDTAttrs(dto, DTA_DataType, (IPTR)&dt, TAG_DONE))
     {
         if (dt)
@@ -326,33 +373,76 @@ void About(void)
     
     if (!gid_string) gid_string = "";
     if (!name_string) name_string = "";
-    
+
+    /* display version info about datatypes.library */
+    i = 0;
     for(sp = DataTypesBase->lib_IdString;
         (*sp != 0) && ((*sp < '0') || (*sp > '9'));
         sp++)
     {
     }
-      
-    i = 0;
     while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
     {
         dtver_string[i++] = *sp++;
     }
     dtver_string[i] = '\0';
 
+    /* display version info about datatype objects class */
+    i = 0;
+    if ((tmpBase = FindClassBase((char *)OCLASS(dto)->cl_ID)) != NULL)
+    {
+        objclname_string = tmpBase->lib_Node.ln_Name;
+        for(sp = tmpBase->lib_IdString;
+            (*sp != 0) && ((*sp < '0') || (*sp > '9'));
+            sp++)
+        {
+        }
+        while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
+        {
+            objclver_string[i++] = *sp++;
+        }
+    }
+    objclver_string[i]  = '\0';
+
+    /* display version info about datatype objects super class */
+    i = 0;
+    if ((clSuper = FindClassSuper(OCLASS(dto))) != NULL)
+    {
+        if ((tmpBase = FindClassBase((char *)clSuper->cl_ID)) != NULL)
+        {
+            objsclname_string = tmpBase->lib_Node.ln_Name;
+            for(sp = tmpBase->lib_IdString;
+                (*sp != 0) && ((*sp < '0') || (*sp > '9'));
+                sp++)
+            {
+            }
+            while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
+            {
+                objsclver_string[i++] = *sp++;
+            }
+        }
+    }
+    objsclver_string[i]  = '\0';
+
     es.es_StructSize   = sizeof(es);
     es.es_Flags        = 0;
     es.es_Title        = MSG(MSG_ABOUT_TITLE);
-    es.es_TextFormat   = MSG(MSG_ABOUT);
+    es.es_TextFormat   = internal_about_tmpl;
     es.es_GadgetFormat = MSG(MSG_CONTINUE);
  
-    EasyRequest(win, &es, NULL, (IPTR)VERSION,
-                                (IPTR)REVISION,
-                                (IPTR)DATESTR, 
-                                (IPTR)dtver_string,
-                                (IPTR)name_string,
-                                (IPTR)gid_string);
-
+    EasyRequest(win, &es, NULL,
+                (IPTR)es.es_Title,
+                (IPTR)VERSION,
+                (IPTR)REVISION,
+                (IPTR)DATESTR,
+                (IPTR)DataTypesBase->lib_Node.ln_Name,
+                (IPTR)dtver_string,
+                (IPTR)name_string,
+                (IPTR)gid_string,
+                (IPTR)objclname_string,
+                (IPTR)objclver_string,
+                (IPTR)objsclname_string,
+                (IPTR)objsclver_string);
 }
 
 /*********************************************************************************************/
