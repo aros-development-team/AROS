@@ -2192,7 +2192,8 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
         case acmpILBM:    /*  0  */
         {
             /* unpack ILBM BODY */
-            return( LoadILBMBody( cb, unpackbm, bmh, dlta, dltasize ) );
+            return( cb->unpackilbmbody( cb, unpackbm, bmh, dlta, dltasize ) );
+            return( cb->unpackilbmbody( cb, unpackbm, bmh, dlta, dltasize ) );
         }
 
         case acmpXORILBM: /*  1  */
@@ -2204,13 +2205,13 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
         case acmpAnimJ:   /* 'J' */
         {
             /* unpack ANIM-J  */
-            return( unpackanimjdelta(ah, cb, dlta, dltasize, prevbm, bm ) );
+            return( cb->unpackanimjdelta(ah, cb, dlta, dltasize, prevbm, bm ) );
         }
 
         case acmpAnimI:   /* 'I' */
         {
             /* unpack ANIM-I  */
-            return( unpackanimidelta(ah, cb, dlta, dltasize, prevbm, bm ) );
+            return( cb->unpackanimidelta(ah, cb, dlta, dltasize, prevbm, bm ) );
         }
       }
 
@@ -2266,13 +2267,13 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
 
         case acmpLongDelta:         /* 2 */
         {
-            error = unpacklongdelta(ah, unpackbm, dlta, dltasize );
+            error = cb->unpacklongdelta(ah, unpackbm, dlta, dltasize );
         }
             break;
 
         case acmpShortDelta:        /* 3 */
         {
-            error = unpackshortdelta(ah, unpackbm, dlta, dltasize );
+            error = cb->unpackshortdelta(ah, unpackbm, dlta, dltasize );
         }
             break;
 
@@ -2281,11 +2282,11 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
 #ifdef COMMENTED_OUT
             if( (ah -> ah_Flags) & ahfLongData )
             {
-              error = unpackanim4longdelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
+              error = cb->unpackanim4longdelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
             }
             else
             {
-              error = unpackanim4worddelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
+              error = cb->unpackanim4worddelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
             }
 #else
             error_printf( cb, aid, "\adlta: acmpDelta disabled, call author (gisburn@w-specht.rhein-ruhr.de)\n"
@@ -2299,7 +2300,7 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
         case acmpByteDelta:         /* 5 */
         case acmpStereoByteDelta:   /* 6 */
         {
-            error = unpackbytedelta(ah, unpackbm, dlta, dltasize );
+            error = cb->unpackbytedelta(ah, unpackbm, dlta, dltasize );
         }
             break;
 
@@ -2307,11 +2308,11 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
         {
             if( (ah -> ah_Flags) & ahfLongData )
             {
-              error = unpackanim7longdelta(ah, unpackbm, dlta, dltasize );
+              error = cb->unpackanim7longdelta(ah, unpackbm, dlta, dltasize );
             }
             else
             {
-              error = unpackanim7worddelta(ah, unpackbm, dlta, dltasize );
+              error = cb->unpackanim7worddelta(ah, unpackbm, dlta, dltasize );
             }
         }
             break;
@@ -2320,11 +2321,11 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
         {
             if( (ah -> ah_Flags) & ahfLongData )
             {
-              error = unpackanim8longdelta(ah, unpackbm, dlta, dltasize );
+              error = cb->unpackanim8longdelta(ah, unpackbm, dlta, dltasize );
             }
             else
             {
-              error = unpackanim8worddelta(ah, unpackbm, dlta, dltasize );
+              error = cb->unpackanim8worddelta(ah, unpackbm, dlta, dltasize );
             }
         }
             break;

@@ -20,7 +20,7 @@ struct FrameNode;
 
 #define DLTAHDR_SIZE 8
 
-LONG LoadILBMBody( struct ClassBase *cb, struct BitMap *bm, struct BitMapHeader *bmh, UBYTE *data, ULONG len )
+LONG generic_unpackilbmbody( struct ClassBase *cb, struct BitMap *bm, struct BitMapHeader *bmh, UBYTE *data, ULONG len )
 {
     const BYTE *src = (const BYTE *)data;
     //const BYTE *end = src + len;
@@ -95,34 +95,34 @@ LONG LoadILBMBody( struct ClassBase *cb, struct BitMap *bm, struct BitMapHeader 
 //ANIM-1
 
 // ANIM 2
-LONG unpacklongdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
+LONG generic_unpacklongdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
     return 0;
 }
 
 // ANIM 3
-LONG unpackshortdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
+LONG generic_unpackshortdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
     return 0;
 }
 
 //ANIM-4
-LONG unpackanim4longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags )
+LONG generic_unpackanim4longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags )
 {
     D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
     return 0;
 }
 
-LONG unpackanim4worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags )
+LONG generic_unpackanim4worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags )
 {
     D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
     return 0;
 }
 
 //ANIM 5
-LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
+LONG generic_unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *lists = (const ULONG *)dlta;
     UWORD numcols = bm->BytesPerRow;
@@ -200,7 +200,7 @@ LONG unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, UL
 //ANIM-6
 
 //ANIM-7
-LONG unpackanim7longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
+LONG generic_unpackanim7longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *lists = (const ULONG *)dlta;
     UWORD numcols = (bm->BytesPerRow >> 2);
@@ -285,7 +285,7 @@ LONG unpackanim7longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
     return 0;
 }
 
-LONG unpackanim7worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
+LONG generic_unpackanim7worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *lists = (const ULONG *)dlta;
     UWORD numcols = bm->BytesPerRow >> 1;
@@ -401,7 +401,7 @@ static const UWORD *Do8short(UWORD *pixel, UWORD *stop, const UWORD *ops, UWORD 
     return ops;
 }
 
-LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
+LONG generic_unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *planes = (const ULONG *)dlta;
     UWORD numcols = bm->BytesPerRow >> 2;
@@ -471,7 +471,7 @@ LONG unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
     return 0;
 }
 
-LONG unpackanim8worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
+LONG generic_unpackanim8worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize )
 {
     const ULONG *planes = (const ULONG *)dlta;
     UWORD numcols = bm->BytesPerRow >> 1;
@@ -502,14 +502,14 @@ LONG unpackanim8worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlt
 }
 
 //ANIM-I
-LONG unpackanimidelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm )
+LONG generic_unpackanimidelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm )
 {
     D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
     return 0;
 }
 
 // ANIM-J
-LONG unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm )
+LONG generic_unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm )
 {
     UBYTE *pixel, *src;
     UWORD opmode, op, opcnt, opheight, opwidth, planeoffset, xormask;

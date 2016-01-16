@@ -89,22 +89,46 @@
 
 /*****************************************************************************/
 
+typedef LONG (*unpack_ilbm_t)(struct ClassBase *cb, struct BitMap *bm, struct BitMapHeader *bmh, UBYTE *dlta, ULONG dltasize);
+typedef LONG (*unpack_deltabm_t)(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm);
+typedef LONG (*unpack_delta_t)(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize);
+#if defined(COMMENTED_OUT)
+typedef LONG (*unpack_delta4_t)(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags);
+#endif
+
+/*****************************************************************************/
+
 /* Shared library base for a BOOPSI class */
 struct ClassBase
 {
-    struct ClassLibrary     cb_Lib;
+    struct ClassLibrary         cb_Lib;
 #if !defined(__AROS__)
-    struct ExecBase        *cb_SysBase;
-    struct Library         *cb_UtilityBase;
-    struct Library         *cb_DOSBase;
-    struct Library         *cb_IFFParseBase;
-    struct Library         *cb_GfxBase;
-    struct Library         *cb_IntuitionBase;
-    struct Library         *cb_DataTypesBase;
-    struct Library         *cb_SuperClassBase;
-    BPTR                    cb_SegList;
+    struct ExecBase             *cb_SysBase;
+    struct Library              *cb_UtilityBase;
+    struct Library              *cb_DOSBase;
+    struct Library              *cb_IFFParseBase;
+    struct Library              *cb_GfxBase;
+    struct Library              *cb_IntuitionBase;
+    struct Library              *cb_DataTypesBase;
+    struct Library              *cb_SuperClassBase;
+    BPTR                        cb_SegList;
 #endif
-     struct SignalSemaphore  cb_Lock;           /* Access lock */
+    struct SignalSemaphore      cb_Lock;                /* access lock                  */
+
+    unpack_ilbm_t               unpackilbmbody;         /* unpack function hooks ..     */
+    unpack_deltabm_t            unpackanimidelta;
+    unpack_deltabm_t            unpackanimjdelta;
+    unpack_delta_t              unpacklongdelta;
+    unpack_delta_t              unpackshortdelta;
+    unpack_delta_t              unpackbytedelta;
+#if defined(COMMENTED_OUT)
+    unpack_delta4_t             unpackanim4longdelta;
+    unpack_delta4_t             unpackanim4worddelta;
+#endif
+    unpack_delta_t              unpackanim7longdelta;
+    unpack_delta_t              unpackanim7worddelta;
+    unpack_delta_t              unpackanim8longdelta;
+    unpack_delta_t              unpackanim8worddelta;
 };
 
 /*****************************************************************************/
