@@ -2,7 +2,7 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Stubs to call C functions while preserving all registers, x86-64 version
+    Desc: Stubs to call C functions while preserving all registers, ARM version
     Lang: english
 */
 
