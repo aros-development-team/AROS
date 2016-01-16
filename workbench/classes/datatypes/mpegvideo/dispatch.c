@@ -623,30 +623,44 @@ void mysprintf( struct ClassBase *classbase, STRPTR buffer, STRPTR fmt, ... )
 
     RawDoFmt( fmt, args, (void (*))"\x16\xc0\x4e\x75", buffer );
 }
+#endif
+
 
 void verbose_printf( struct MPEGVideoInstData *mvid, STRPTR format, ... )
 {
+    va_list args;
+
     if( mvid -> mvid_VerboseOutput )
     {
-      VFPrintf( (mvid -> mvid_VerboseOutput), format, (APTR)((&format) + 1) );
+        va_start (args, format);
+        VFPrintf( (mvid -> mvid_VerboseOutput), format, (const IPTR *)args);
+        va_end (args);
     }
 }
 
 
 void debug_printf( struct MPEGVideoInstData *mvid, STRPTR format, ... )
 {
+    va_list args;
+
     if( (mvid -> mvid_VerboseOutput) && (mvid -> mvid_DoDebug) )
     {
-      VFPrintf( (mvid -> mvid_VerboseOutput), format, (APTR)((&format) + 1) );
+        va_start (args, format);
+        VFPrintf( (mvid -> mvid_VerboseOutput), format, (const IPTR *)args);
+        va_end (args);
     }
 }
 
 
 void syntax_printf( struct MPEGVideoInstData *mvid, STRPTR format, ... )
 {
+    va_list args;
+
     if( (mvid -> mvid_VerboseOutput) && (mvid -> mvid_DoSyntax) )
     {
-      VFPrintf( (mvid -> mvid_VerboseOutput), format, (APTR)((&format) + 1) );
+        va_start (args, format);
+        VFPrintf( (mvid -> mvid_VerboseOutput), format, (const IPTR *)args);
+        va_end (args);
     }
 }
 
@@ -654,15 +668,17 @@ void syntax_printf( struct MPEGVideoInstData *mvid, STRPTR format, ... )
 void error_printf( struct MPEGVideoInstData *mvid, STRPTR format, ... )
 {
     struct ClassBase *classbase = mvid -> mvid_ClassBase;
+    va_list args;
 
     OpenLogfile( classbase, mvid );
 
     if( mvid -> mvid_VerboseOutput )
     {
-      VFPrintf( (mvid -> mvid_VerboseOutput), format, (APTR)((&format) + 1) );
+        va_start (args, format);
+        VFPrintf( (mvid -> mvid_VerboseOutput), format, (const IPTR *)args);
+        va_end (args);
     }
 }
-#endif
 
 
 static

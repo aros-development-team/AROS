@@ -19,22 +19,14 @@ DISPATCHERFLAGS ULONG Dispatch ( REGA0 struct IClass *cl , REGA2 Object *o , REG
 struct FrameNode *AllocFrameNode ( struct ClassBase * , APTR pool );
 void FreeFrameNode ( struct MPEGVideoInstData *mvid , struct FrameNode *fn );
 struct FrameNode *FindFrameNode ( struct MinList *fnl , ULONG timestamp );
-#if !defined(__AROS__)
-void mysprintf ( struct ClassBase * , STRPTR buffer , STRPTR fmt , ...);
 void verbose_printf ( struct MPEGVideoInstData *mvid , STRPTR format , ...);
 void debug_printf ( struct MPEGVideoInstData *mvid , STRPTR format , ...);
 void syntax_printf ( struct MPEGVideoInstData *mvid , STRPTR format , ...);
 void error_printf ( struct MPEGVideoInstData *mvid , STRPTR format , ...);
+#if !defined(__AROS__)
+void mysprintf ( struct ClassBase * , STRPTR buffer , STRPTR fmt , ...);
 #else
 #define mysprintf(cb,buffer,fmt,...) sprintf (buffer,fmt, __VA_ARGS__)
-#define verbose_printf(mvid,format,...)
-#if DEBUG > 0
-#define debug_printf(mvid,format,...) bug(format, __VA_ARGS__)
-#else
-#define debug_printf(mvid,format,...)
-#endif
-#define syntax_printf(mvid,format,...)
-#define error_printf(mvid,format,...) bug(format, __VA_ARGS__)
 #endif
 
 struct BitMap *AllocFrameBitMap ( struct MPEGVideoInstData *mvid );

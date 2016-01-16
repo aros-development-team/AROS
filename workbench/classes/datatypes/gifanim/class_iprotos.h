@@ -17,13 +17,8 @@ DISPATCHERFLAGS ULONG MyDispatch ( REGA0 struct MyStackSwapStruct *mystk );
 struct IClass *initClass ( struct ClassBase *cb );
 DISPATCHERFLAGS ULONG Dispatch ( REGA0 struct IClass *cl , REGA2 Object *o , REGA1 Msg msg );
 void OpenLogfile ( struct ClassBase *cb , struct GIFAnimInstData *gaid );
-#if !defined(__AROS__)
 void error_printf ( struct ClassBase *cb , struct GIFAnimInstData *gaid , STRPTR format , ...);
 void verbose_printf ( struct ClassBase *cb , struct GIFAnimInstData *gaid , STRPTR format , ...);
-#else
-#define error_printf(cb, gaid, format, ...) bug(format, __VA_ARGS__)
-#define verbose_printf(cb, gaid, format, ...)
-#endif
 
 /* prefs.c */
 void ReadENVPrefs ( struct ClassBase *cb , struct GIFAnimInstData *gaid , struct GIFEncoder *genc );
