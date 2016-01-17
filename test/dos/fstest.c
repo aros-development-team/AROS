@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -65,7 +65,7 @@ int deleteDirContents(char *startpath, int depth, int dnum, int fnum)
         PrintFault(error, NULL);
         return 1;
     }
-    if (ExAll(lock, ead, size, ED_TYPE, eac) != 0)
+    if (ExAll(lock, ead, size, ED_TYPE, eac))
     {
         error = IoErr();
         kprintf("entries = %ld\n", eac->eac_Entries);
@@ -93,7 +93,7 @@ int deleteDirContents(char *startpath, int depth, int dnum, int fnum)
         return 1;
     }
     if (eac->eac_Entries == 0)
-        next = 0;
+        next = NULL;
     else
         next = ead;
     while (next != NULL)
@@ -543,7 +543,7 @@ int main(int argc, char *argv[])
     int isize = 1;              /* initial size in 1024 byte */
     int depth = 10;             /* directory depth */
     int dnum = 6;               /* number of directories per depth */
-    int fnum = 16;              /* number of files per depth (the bigger the files the lesser are created) */
+    int fnum = 16;              /* number of files per depth (the bigger the files the fewer are created) */
     struct InfoData sid;
     struct InfoData mid;
     struct InfoData eid;
