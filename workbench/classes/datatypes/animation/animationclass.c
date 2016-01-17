@@ -1075,12 +1075,6 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     return DoSuperMethodA(cl, o, msg);
 }
 
-IPTR DT_GoActiveMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
-{
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
-    return GMR_MEACTIVE;
-}
-
 IPTR DT_GoInActiveMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
@@ -1091,21 +1085,23 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
 {
     struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
     struct InputEvent *ie = msg->gpi_IEvent;
-    IPTR retval = GMR_NOREUSE;
+    IPTR retval = GMR_MEACTIVE;
     IPTR tdHeight = 0;
 
-    D(bug("[animation.datatype]: %s(%d,%d)\n", __PRETTY_FUNCTION__, msg->gpi_Mouse.X, msg->gpi_Mouse.Y));
+   D(bug("[animation.datatype]: %s(%d,%d)\n", __PRETTY_FUNCTION__, msg->gpi_Mouse.X, msg->gpi_Mouse.Y));
+
+    if (ie->ie_Code == SELECTDOWN)
+    {
+        D(bug("[animation.datatype]: %s: SELECTDOWN\n", __PRETTY_FUNCTION__));
+        g->Flags |= GFLG_SELECTED;
+    }
 
     if (animd->ad_Tapedeck)
         GetAttr(GA_Height, (Object *)animd->ad_Tapedeck, &tdHeight);
 
-    if ((msg->gpi_Mouse.X > 0) &&
-        (msg->gpi_Mouse.Y < animd->ad_RenderWidth) &&
-        (msg->gpi_Mouse.Y > 0) &&
-        (msg->gpi_Mouse.Y < animd->ad_RenderHeight + tdHeight))
-    {
-        retval = GMR_MEACTIVE;
-        if ((animd->ad_Tapedeck) && (msg->gpi_Mouse.Y > animd->ad_RenderHeight))
+        if ((animd->ad_Tapedeck) &&
+            ((((struct Gadget *)animd->ad_Tapedeck)->Flags & GFLG_SELECTED) ||
+            (msg->gpi_Mouse.Y > animd->ad_RenderHeight)))
         {
             D(bug("[animation.datatype]: %s: input event is for the tapedeck ...\n", __PRETTY_FUNCTION__));
 
@@ -1114,6 +1110,12 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
             retval = DoMethodA((Object *)animd->ad_Tapedeck, (Msg)msg);
             msg->gpi_Mouse.Y += animd->ad_RenderHeight;
         }
+
+    if (ie->ie_Code == SELECTUP)
+    {
+        D(bug("[animation.datatype]: %s: SELECTUP\n", __PRETTY_FUNCTION__));
+        g->Flags &= ~GFLG_SELECTED;
+        retval = GMR_NOREUSE;
     }
 
     return retval;
@@ -1132,20 +1134,7 @@ IPTR DT_HitTestMethod(struct IClass *cl, struct Gadget *g, struct gpHitTest *msg
 
     D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
 
-    if ((animd->ad_Tapedeck) && (animd->ad_Flags & ANIMDF_SHOWPANEL))
-    {
-        GetAttr(GA_Height, (Object *)animd->ad_Tapedeck, &gadgetheight);
-    }
-    gadgetheight += animd->ad_RenderHeight;
-
-    if ((msg->gpht_Mouse.X > animd->ad_RenderLeft) &&
-        (msg->gpht_Mouse.X < animd->ad_RenderLeft + animd->ad_RenderWidth) &&
-        (msg->gpht_Mouse.Y > animd->ad_RenderTop) &&
-        (msg->gpht_Mouse.Y < animd->ad_RenderTop + gadgetheight))
-    {
         return GMR_GADGETHIT;
-    }
-    return 0;
 }
 
 IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
