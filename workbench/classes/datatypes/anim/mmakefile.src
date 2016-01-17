@@ -1,8 +1,23 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := classbase dispatch methods anim
-#FILES stackswap 
+ANIMDTFORMATS := \
+        animilbm \
+        anim1 \
+        anim2 \
+        anim3 \
+        anim4 \
+        anim5 \
+        anim6 \
+        anim7 \
+        anim8 \
+        animj \
+        animi
+
+ANIMDTFILES := \
+        classbase \
+        dispatch \
+        methods
 
 DTDIR 		:= $(AROS_DEVS)/DataTypes
 DESCFILES 		:= ANIM
@@ -17,6 +32,6 @@ USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatype-anim \
     modname=anim modtype=datatype \
-    files=$(FILES)
+    files="$(ANIMDTFILES) $(ANIMDTFORMATS)"
 
 %common
