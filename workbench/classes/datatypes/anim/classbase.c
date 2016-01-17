@@ -744,6 +744,7 @@ static int LibInit(struct ClassBase *cb)
 
     /* set up overload'able unpack hooks */
     cb ->unpackilbmbody = (unpack_ilbm_t) generic_unpackilbmbody;
+    cb ->xorbm = (unpack_xor_t) generic_xorbm;
     cb ->unpackanimidelta = (unpack_deltabm_t) generic_unpackanimidelta;
     cb ->unpackanimjdelta = (unpack_deltabm_t) generic_unpackanimjdelta;
     cb ->unpacklongdelta = (unpack_delta_t) generic_unpacklongdelta;

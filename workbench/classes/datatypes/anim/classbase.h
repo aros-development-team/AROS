@@ -90,6 +90,7 @@
 /*****************************************************************************/
 
 typedef LONG (*unpack_ilbm_t)(struct ClassBase *cb, struct BitMap *bm, struct BitMapHeader *bmh, UBYTE *dlta, ULONG dltasize);
+typedef LONG (*unpack_xor_t)(struct AnimHeader *anhd, struct BitMap *bm, struct BitMap *deltabm);
 typedef LONG (*unpack_deltabm_t)(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm);
 typedef LONG (*unpack_delta_t)(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize);
 #if defined(COMMENTED_OUT)
@@ -116,6 +117,7 @@ struct ClassBase
     struct SignalSemaphore      cb_Lock;                /* access lock                  */
 
     unpack_ilbm_t               unpackilbmbody;         /* unpack function hooks ..     */
+    unpack_xor_t                xorbm;
     unpack_deltabm_t            unpackanimidelta;
     unpack_deltabm_t            unpackanimjdelta;
     unpack_delta_t              unpacklongdelta;
