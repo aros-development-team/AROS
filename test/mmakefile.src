@@ -18,7 +18,6 @@ COMMONTESTFILES := \
     ilbmtoc \
     localetest \
     modeid \
-    newmatch \
     keymaptest \
     inquire \
     mathtest \
