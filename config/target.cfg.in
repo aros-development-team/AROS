@@ -104,6 +104,7 @@ TOOLDIR         := $(HOSTDIR)/tools
 GENMF           := $(TOOLDIR)/genmf.py
 ARCH            := $(AROS_TARGET_ARCH)
 CPU             := $(AROS_TARGET_CPU)
+CPU_MODE        := $(AROS_TARGET_CPU_MODE)
 CC		:= $(TARGET_CC)
 AS		:= $(TARGET_AS)
 
