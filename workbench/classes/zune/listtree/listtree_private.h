@@ -23,6 +23,7 @@ struct Listtree_DATA
     struct Hook displayhookproxy;
     struct Hook sorthookproxy;
     struct Hook destructhookproxy;
+    struct Hook constructhookproxy;
 
     /*- Protected ----------------------------------------------------------*/
 

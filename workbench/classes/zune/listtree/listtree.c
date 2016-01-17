@@ -50,6 +50,10 @@ struct MUIS_Listtree_TreeNodeInt
    if (tn && tn->tn_User)                                                       \
       ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Flags = tn->tn_Flags;
 
+#define SYNC_TREENODE_NAME(tn)                                                  \
+   if (tn && tn->tn_User)                                                       \
+      ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Name = tn->tn_Name;
+
 static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
 {
     struct opSet setmsg;
@@ -130,6 +134,26 @@ static IPTR DestructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NList
     FreePooled(data->pool, tn, sizeof(struct MUIS_Listtree_TreeNodeInt));
 
     return 0;
+}
+
+static IPTR ConstructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_ConstructMessage *msg)
+{
+    struct Listtree_DATA * data = (struct Listtree_DATA *)hook->h_Data;
+    struct MUIS_Listtree_TreeNode * tn = NULL;
+    if(!data)
+        return 0;
+
+    tn = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNodeInt));
+
+    if (tn == NULL)
+        return 0;
+
+    if (data->constrhook)
+        tn->tn_User = (APTR)CallHookPkt(data->constrhook, data->pool, msg->UserData);
+    else
+        tn->tn_User = msg->UserData;
+
+    return (IPTR)tn;
 }
 
 #define CONV(AATTR, BATTR)                                          \
@@ -266,6 +290,13 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         nnset(data->nlisttree, MUIA_NListtree_CompareHook, &data->sorthookproxy);
     }
 
+    /* Construct hook is mandatory to allocate proxy structures */
+    {
+        data->constructhookproxy.h_Entry      = HookEntry;
+        data->constructhookproxy.h_SubEntry   = (HOOKFUNC)ConstructHook_Proxy;
+        data->constructhookproxy.h_Data       = data;
+        nnset(data->nlisttree, MUIA_NListtree_ConstructHook, &data->constructhookproxy);
+    }
     /* Destroy hook is mandatory to free proxy structures */
     {
         data->destructhookproxy.h_Entry      = HookEntry;
@@ -286,9 +317,12 @@ IPTR Listtree__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
 
+    IPTR result =  DoSuperMethodA(cl, obj, msg);
+
+    /* Destruct hook called by dispose on NListree will need the pool */
     DeletePool(data->pool);
 
-    return DoSuperMethodA(cl, obj, msg);
+    return result;
 }
 
 #define FORWARDSET(AATTR, BATTR)                    \
@@ -397,20 +431,7 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
-    struct MUIS_Listtree_TreeNodeInt * _int = AllocPooled(data->pool, sizeof(struct MUIS_Listtree_TreeNodeInt));
-    struct MUIS_Listtree_TreeNode * _return = NULL;
-    struct MUI_NListtree_TreeNode * ln = NULL, * pn = NULL;
-
-    if (_int == NULL)
-        return (IPTR)NULL;
-
-    _return =  &_int->base;
-
-    _return->tn_Flags = (UWORD)msg->Flags;
-    if (data->constrhook)
-        _return->tn_User = (APTR)CallHookPkt(data->constrhook, data->pool, msg->User);
-    else
-        _return->tn_User = msg->User;
+    struct MUI_NListtree_TreeNode * ln = NULL, * pn = NULL, * created = NULL;
 
     switch((IPTR)msg->ListNode)
     {
@@ -434,12 +455,18 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
         pn = ((struct MUIS_Listtree_TreeNodeInt *)msg->PrevNode)->ref;
     }
 
-    _int->ref = (struct MUI_NListtree_TreeNode *)DoMethod(data->nlisttree,
-                    MUIM_NListtree_Insert, msg->Name, _return, ln, pn, msg->Flags);
+    created = (struct MUI_NListtree_TreeNode *)DoMethod(data->nlisttree,
+                    MUIM_NListtree_Insert, msg->Name, msg->User, ln, pn, msg->Flags);
 
-    _return->tn_Name = _int->ref->tn_Name;
-
-    return (IPTR)_return;
+    if (created)
+    {
+        SYNC_TREENODE_FLAGS(created);
+        SYNC_TREENODE_NAME(created);
+        ((struct MUIS_Listtree_TreeNodeInt *)created->tn_User)->ref = created;
+        return (IPTR)created->tn_User;
+    }
+    else
+        return (IPTR)NULL;
 }
 
 IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetEntry *msg)
