@@ -1078,19 +1078,45 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 IPTR DT_GoActiveMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
-    return NULL;
+    return GMR_MEACTIVE;
 }
 
 IPTR DT_GoInActiveMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
-    return NULL;
+    return DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 }
 
-IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
-    return NULL;
+    struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
+    struct InputEvent *ie = msg->gpi_IEvent;
+    IPTR retval = GMR_NOREUSE;
+    IPTR tdHeight = 0;
+
+    D(bug("[animation.datatype]: %s(%d,%d)\n", __PRETTY_FUNCTION__, msg->gpi_Mouse.X, msg->gpi_Mouse.Y));
+
+    if (animd->ad_Tapedeck)
+        GetAttr(GA_Height, (Object *)animd->ad_Tapedeck, &tdHeight);
+
+    if ((msg->gpi_Mouse.X > 0) &&
+        (msg->gpi_Mouse.Y < animd->ad_RenderWidth) &&
+        (msg->gpi_Mouse.Y > 0) &&
+        (msg->gpi_Mouse.Y < animd->ad_RenderHeight + tdHeight))
+    {
+        retval = GMR_MEACTIVE;
+        if ((animd->ad_Tapedeck) && (msg->gpi_Mouse.Y > animd->ad_RenderHeight))
+        {
+            D(bug("[animation.datatype]: %s: input event is for the tapedeck ...\n", __PRETTY_FUNCTION__));
+
+            /* pass it to the tapedeck gadget .. */
+            msg->gpi_Mouse.Y -= animd->ad_RenderHeight;
+            retval = DoMethodA((Object *)animd->ad_Tapedeck, (Msg)msg);
+            msg->gpi_Mouse.Y += animd->ad_RenderHeight;
+        }
+    }
+
+    return retval;
 }
 
 IPTR DT_HelpTestMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
@@ -1099,16 +1125,33 @@ IPTR DT_HelpTestMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     return NULL;
 }
 
-IPTR DT_HitTestMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+IPTR DT_HitTestMethod(struct IClass *cl, struct Gadget *g, struct gpHitTest *msg)
 {
+    struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
+    IPTR gadgetheight = 0;
+
     D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
-    return NULL;
+
+    if ((animd->ad_Tapedeck) && (animd->ad_Flags & ANIMDF_SHOWPANEL))
+    {
+        GetAttr(GA_Height, (Object *)animd->ad_Tapedeck, &gadgetheight);
+    }
+    gadgetheight += animd->ad_RenderHeight;
+
+    if ((msg->gpht_Mouse.X > animd->ad_RenderLeft) &&
+        (msg->gpht_Mouse.X < animd->ad_RenderLeft + animd->ad_RenderWidth) &&
+        (msg->gpht_Mouse.Y > animd->ad_RenderTop) &&
+        (msg->gpht_Mouse.Y < animd->ad_RenderTop + gadgetheight))
+    {
+        return GMR_GADGETHIT;
+    }
+    return 0;
 }
 
 IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
-    struct IBox *gadBox;
+    struct IBox *gadBox = NULL;
     IPTR RetVal, totalheight;
 
     D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
@@ -1284,10 +1327,11 @@ IPTR DT_Copy(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     return NULL;
 }
 
-IPTR DT_Trigger(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+IPTR DT_Trigger(struct IClass *cl, struct Gadget *g, struct dtTrigger *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
-    return NULL;
+
+    return DoSuperMethodA (cl, (Object *)g, (Msg)msg);
 }
 
 IPTR DT_Write(struct IClass *cl, struct Gadget *g, struct opSet *msg)
