@@ -36,6 +36,8 @@
 #define IM(o) ((struct Image *)(o))
 #define EG(o) ((struct Gadget *)(o))
 
+#define POSPROP_HEIGHT  4
+
 #include <clib/boopsistubs.h>
 
 static UBYTE templateRewind[] =
@@ -230,6 +232,10 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
         if (tattr) data->font = OpenFont(tattr);
 #endif
 
+        data->tdd_But1Pen = SHADOWPEN;
+        data->tdd_But2Pen = SHADOWPEN;
+        data->tdd_But3Pen = SHADOWPEN;
+
         TapeDeck__OM_SET(cl, o, msg);
 
         pproptags[3].ti_Data = data->tdd_FrameCount;
@@ -272,8 +278,11 @@ IPTR TapeDeck__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
         { IA_Height,    g->Height	},
         { TAG_DONE,     0UL 		}
     };
+    IPTR RetVal;
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
+
+    RetVal = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 
     SetAttrsA((Object *)g->GadgetRender, frametags);
     DoMethodA((Object *)g->GadgetRender, msg);
@@ -282,12 +291,12 @@ IPTR TapeDeck__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
     frametags[2].ti_Tag = GA_Width;
     frametags[2].ti_Data = g->Width - 2;
     frametags[3].ti_Tag = GA_Height;
-    frametags[3].ti_Data = 4;
+    frametags[3].ti_Data = POSPROP_HEIGHT;
 
     SetAttrsA((Object *)data->tdd_PosProp, frametags);
     DoMethodA((Object *)data->tdd_PosProp, msg);
 
-    return 1;
+    return RetVal;
 }
 
 IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
@@ -318,18 +327,14 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     rend_x = EG(o)->LeftEdge + ((EG(o)->Width - 50) >> 1);
     rend_y = EG(o)->TopEdge + 4 + ((EG(o)->Height - 11) >> 1);
 
-    if (data->tdd_Mode == BUT_REWIND)
-        pen = msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHINEPEN];
-    else
-        pen = msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN];
-    SetAPen(msg->gpr_RPort, pen);
+    SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_But1Pen]);
 
     BltTemplate ((void *) templateRewind,
              0, 2,
              msg->gpr_RPort, rend_x, rend_y,
              16, 7);
 
-    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN]);
+    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_But2Pen]);
 
     if (data->tdd_Mode == BUT_PLAY)
     {
@@ -346,18 +351,14 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                  8, 7);
     }
 
-    if (data->tdd_Mode == BUT_FORWARD)
-        pen = msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHINEPEN];
-    else
-        pen = msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN];
-    SetAPen(msg->gpr_RPort, pen);
+    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_But3Pen]);
 
     BltTemplate ((void *) templateFForward,
              0, 2,
              msg->gpr_RPort, rend_x + 34, rend_y,
              16, 7);
 
-    return 1;
+    return (IPTR)TRUE;
 }
 
 /***********************************************************************************/
@@ -390,75 +391,65 @@ IPTR TapeDeck__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     struct RastPort 	*rport;
-    struct TapeDeckData 	*data;
+    struct TapeDeckData 	*data = INST_DATA(cl, o);
+    struct InputEvent *ie = msg->gpi_IEvent;
     IPTR    	    	retval = GMR_MEACTIVE;
 
-    D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
+    bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__);
 
-    data = INST_DATA(cl, o);
-    
-    if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE)
+    if (data->tdd_PosProp)
     {
-        if (msg->gpi_IEvent->ie_Code == SELECTUP)
+        if (msg->gpi_Mouse.Y < POSPROP_HEIGHT)
         {
-            if (G(o)->Flags & GFLG_SELECTED)
-            {
-                *msg->gpi_Termination = 1;
-                retval = GMR_NOREUSE | GMR_VERIFY;
-            } else
-                /* mouse is not over gadget */
-                retval = GMR_NOREUSE;
-		
-/*
-            G(o)->Flags &= ~GFLG_SELECTED;
-	    
-            rport = ObtainGIRPort(msg->gpi_GInfo);
-            if (rport)
-            {
-        	struct gpRender rmsg =
-                    { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE };
-        	DoMethodA(o, (Msg)&rmsg);
-        	ReleaseGIRPort(rport);
-            }*/
+            IPTR proptop = 0;
 
-        } else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
+            D(bug("[tapedeck.gadget]: %s: input event is for the prop gadget ...\n", __PRETTY_FUNCTION__));
+
+            /* pass it to the prop gadget .. */
+            retval = DoMethodA((Object *)data->tdd_PosProp, (Msg)msg);
+            GetAttr(PGA_Top, (Object *)data->tdd_PosProp, &proptop);
+
+            if (proptop != data->tdd_FrameCurrent)
+            {
+                D(bug("[tapedeck.gadget]: %s: position moved ...\n", __PRETTY_FUNCTION__));
+            }
+        }
+        else
         {
-            struct gpHitTest htmsg =
-                { GM_HITTEST, msg->gpi_GInfo,
-                  { msg->gpi_Mouse.X, msg->gpi_Mouse.Y },
-                }, *p_htmsg = &htmsg;
-            if (DoMethodA(o, (Msg)p_htmsg) != GMR_GADGETHIT)
+            if ((msg->gpi_Mouse.Y > ((EG(o)->Height - 11) >> 1)) &&
+                (msg->gpi_Mouse.Y < (EG(o)->Height - ((EG(o)->Height - 11) >> 1))) &&
+                (msg->gpi_Mouse.X > ((EG(o)->Width - 50) >> 1)))
             {
-                if (EG(o)->Flags & GFLG_SELECTED)
+                ULONG offset_x = msg->gpi_Mouse.X - ((EG(o)->Width - 50) >> 1);
+
+                if (offset_x <  16)
                 {
-                    G(o)->Flags &= ~GFLG_SELECTED;
-                    rport = ObtainGIRPort(msg->gpi_GInfo);
-                    if (rport)
-                    {
-                        struct gpRender rmsg =
-                            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE }, *p_rmsg = &rmsg;
-                        DoMethodA(o, (Msg)p_rmsg);
-                        ReleaseGIRPort(rport);
-                    }
+                    D(bug("[tapedeck.gadget]: %s:    <<\n", __PRETTY_FUNCTION__));
+                    if (ie->ie_Code == SELECTDOWN)
+                        data->tdd_But1Pen = SHINEPEN;
+                    else if (ie->ie_Code == SELECTUP)
+                        data->tdd_But1Pen = SHADOWPEN;
                 }
-            } else
-            {
-                if (!(EG(o)->Flags & GFLG_SELECTED))
+                else if ((offset_x > 20) && (offset_x < 29))
                 {
-                    EG(o)->Flags |= GFLG_SELECTED;
-                    rport = ObtainGIRPort(msg->gpi_GInfo);
-                    if (rport)
-                    {
-                        struct gpRender rmsg =
-                            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE }, *p_rmsg = &rmsg;
-                        DoMethodA(o, (Msg)p_rmsg);
-                        ReleaseGIRPort(rport);
-                    }
+                    D(bug("[tapedeck.gadget]: %s:    PLAY/PAUSE\n", __PRETTY_FUNCTION__));
+                    if (ie->ie_Code == SELECTDOWN)
+                        data->tdd_But2Pen = SHINEPEN;
+                    else if (ie->ie_Code == SELECTUP)
+                        data->tdd_But2Pen = SHADOWPEN;
+                }
+                else if ((offset_x > 33) && (offset_x < 50))
+                {
+                    D(bug("[tapedeck.gadget]: %s:    >>\n", __PRETTY_FUNCTION__));
+                    if (ie->ie_Code == SELECTDOWN)
+                        data->tdd_But3Pen = SHINEPEN;
+                    else if (ie->ie_Code == SELECTUP)
+                        data->tdd_But3Pen = SHADOWPEN;
                 }
             }
-        } else if (msg->gpi_IEvent->ie_Code == MENUDOWN)
-            retval = GMR_REUSE;
+        }
     }
+
     return retval;
 }
 
