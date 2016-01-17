@@ -23,7 +23,6 @@ COMMONTESTFILES := \
     mathtest \
     cctest \
     helloworld \
-    oopdemo \
     serialmousetest \
     serialtest \
     unixio \
