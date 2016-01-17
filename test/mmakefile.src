@@ -34,7 +34,6 @@ COMMONTESTFILES := \
     camdtree \
     rexxsyslibtest \
     printnativekeytable \
-    testide \
     simplepng \
     convertpixels \
     patchrgbconv \
