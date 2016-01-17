@@ -1341,6 +1341,7 @@ case "$target_os" in
         aros_flavour="standalone"
         aros_target_arch="stm32f7_discovery"
         aros_target_cpu="arm"
+        aros_target_cpu_mode="thumb2"
         aros_object_format="armelf_aros"
         aros_shared_default="no"
 
@@ -1352,7 +1353,6 @@ case "$target_os" in
         # GCC does not recognize fpv5-sp-d16 which should be the correct one to use, or not...
         # gcc_default_fpu="fpv5-sp-d16"
 		gcc_default_float_abi="hard"
-        gcc_default_mode="thumb"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
         ;;
@@ -1686,13 +1686,37 @@ arm*)
     AC_ARG_WITH(float,AC_HELP_STRING([--with-float=<spec>],[Specify floating point ABI (default=$gcc_default_float_abi).]),aros_gcc_float_abi="$withval",aros_gcc_float_abi=$gcc_default_float_abi)
     AC_MSG_RESULT($aros_gcc_float_abi)
 
-    if test "$gcc_default_mode" = ""; then
-        $gcc_default_mode="arm"
-        aros_isa_flags="-m$gcc_default_mode -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    AC_MSG_CHECKING([Which ARM mode to use])
+    if test "$aros_target_cpu_mode" = ""; then
+        aros_target_cpu_mode="arm32"
+        AC_MSG_RESULT([Defaulting to $aros_target_cpu_mode])
     else
+        AC_MSG_RESULT([$aros_target_cpu_mode])
+    fi
+
+    case "$aros_target_cpu_mode" in
+    arm32)
+        gcc_default_mode="arm"
+        aros_isa_flags="-m$gcc_default_mode -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    ;;
+    arm64)
+        AC_MSG_ERROR([ARM 64-bit mode is unsupported])
+    ;;
+    thumb)
+        AC_MSG_ERROR([Thumb1 16-bit mode is unsupported])
+    ;;
+    thumb1)
+        AC_MSG_ERROR([Thumb1 16-bit mode is unsupported])
+    ;;
+    thumb2)
+        gcc_default_mode="thumb"
         # Do not specify -mthumb-interwork as it may add extra code to support arm/thumb interwork
         aros_isa_flags="-m$gcc_default_mode -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
-    fi
+    ;;
+    *)
+        AC_MSG_ERROR([Unsupported ARM mode specified $aros_target_cpu_mode])
+    ;;
+    esac
 
     aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
     aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
@@ -2699,6 +2723,7 @@ AC_SUBST(aros_target_bootloader)
 AC_SUBST(aros_target_arch)
 AC_SUBST(aros_target_family)
 AC_SUBST(aros_target_cpu)
+AC_SUBST(aros_target_cpu_mode)
 AC_SUBST(aros_target_variant)
 AC_SUBST(aros_target_suffix)
 AC_SUBST(aros_target_ar)

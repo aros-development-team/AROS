@@ -5,11 +5,12 @@
 
 default: all
 
-AROS_HOST_CPU       ?= @aros_host_cpu@
-AROS_HOST_ARCH      ?= @aros_host_arch@
-AROS_TARGET_CPU     ?= @aros_target_cpu@
-AROS_TARGET_ARCH    ?= @aros_target_arch@
-AROS_TARGET_VARIANT ?= @aros_target_variant@
+AROS_HOST_CPU           ?= @aros_host_cpu@
+AROS_HOST_ARCH          ?= @aros_host_arch@
+AROS_TARGET_CPU         ?= @aros_target_cpu@
+AROS_TARGET_CPU_MODE    ?= @aros_target_cpu_mode@
+AROS_TARGET_ARCH        ?= @aros_target_arch@
+AROS_TARGET_VARIANT     ?= @aros_target_variant@
 
 # normally, these variable's should go in mmake.config/globalvarfile
 export AROS_TARGET_BOOTLOADER := @aros_target_bootloader@

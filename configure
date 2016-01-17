@@ -714,6 +714,7 @@ aros_target_ranlib
 aros_target_ar
 aros_target_suffix
 aros_target_variant
+aros_target_cpu_mode
 aros_target_cpu
 aros_target_family
 aros_target_arch
@@ -8366,6 +8367,7 @@ case "$target_os" in
         aros_flavour="standalone"
         aros_target_arch="stm32f7_discovery"
         aros_target_cpu="arm"
+        aros_target_cpu_mode="thumb2"
         aros_object_format="armelf_aros"
         aros_shared_default="no"
 
@@ -8377,7 +8379,6 @@ case "$target_os" in
         # GCC does not recognize fpv5-sp-d16 which should be the correct one to use, or not...
         # gcc_default_fpu="fpv5-sp-d16"
 		gcc_default_float_abi="hard"
-        gcc_default_mode="thumb"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
         ;;
@@ -8820,13 +8821,40 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_float_abi" >&5
 $as_echo "$aros_gcc_float_abi" >&6; }
 
-    if test "$gcc_default_mode" = ""; then
-        $gcc_default_mode="arm"
-        aros_isa_flags="-m$gcc_default_mode -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which ARM mode to use" >&5
+$as_echo_n "checking Which ARM mode to use... " >&6; }
+    if test "$aros_target_cpu_mode" = ""; then
+        aros_target_cpu_mode="arm32"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Defaulting to $aros_target_cpu_mode" >&5
+$as_echo "Defaulting to $aros_target_cpu_mode" >&6; }
     else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_cpu_mode" >&5
+$as_echo "$aros_target_cpu_mode" >&6; }
+    fi
+
+    case "$aros_target_cpu_mode" in
+    arm32)
+        gcc_default_mode="arm"
+        aros_isa_flags="-m$gcc_default_mode -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    ;;
+    arm64)
+        as_fn_error $? "ARM 64-bit mode is unsupported" "$LINENO" 5
+    ;;
+    thumb)
+        as_fn_error $? "Thumb1 16-bit mode is unsupported" "$LINENO" 5
+    ;;
+    thumb1)
+        as_fn_error $? "Thumb1 16-bit mode is unsupported" "$LINENO" 5
+    ;;
+    thumb2)
+        gcc_default_mode="thumb"
         # Do not specify -mthumb-interwork as it may add extra code to support arm/thumb interwork
         aros_isa_flags="-m$gcc_default_mode -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
-    fi
+    ;;
+    *)
+        as_fn_error $? "Unsupported ARM mode specified $aros_target_cpu_mode" "$LINENO" 5
+    ;;
+    esac
 
     aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
     aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
@@ -14551,6 +14579,7 @@ fi
 
 
 # Target Related
+
 
 
 
