@@ -308,7 +308,9 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                        msg->gpr_GInfo->gi_DrInfo);
     }
 
-    SetAttrsA((Object *)data->tdd_PosProp, proptags);
+    if (!(((struct Gadget *)data->tdd_PosProp)->Flags & GFLG_SELECTED))
+        SetAttrsA((Object *)data->tdd_PosProp, proptags);
+
     DoMethodA((Object *)data->tdd_PosProp, msg);
 
     rend_x = EG(o)->LeftEdge + ((EG(o)->Width - 50) >> 1);
