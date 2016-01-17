@@ -122,11 +122,6 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct TapeDeckData *data = INST_DATA(cl, o);
     struct TagItem      *tag, *taglist = msg->ops_AttrList;
-    struct TagItem attrtags[] =
-    {
-        { TAG_IGNORE,   0},
-        { TAG_DONE,     0}
-    };
     BOOL                rerender = FALSE;
     IPTR                result;
 
@@ -215,7 +210,6 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
         { TAG_DONE,             0               }
     };
 
-    struct TextAttr 	*tattr;
     Object  	    	*o;
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -227,14 +221,9 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
         EG(o)->GadgetRender = NewObjectA(NULL, FRAMEICLASS, frametags);
         D(bug("[tapedeck.gadget] %s: frame @ 0x%p\n", __PRETTY_FUNCTION__, EG(o)->GadgetRender));
 
-#if (0)
-        tattr = (struct TextAttr *)GetTagData(GA_TextAttr, (IPTR) NULL, msg->ops_AttrList);
-        if (tattr) data->font = OpenFont(tattr);
-#endif
-
-        data->tdd_But1Pen = SHADOWPEN;
-        data->tdd_But2Pen = SHADOWPEN;
-        data->tdd_But3Pen = SHADOWPEN;
+        data->tdd_ButtonPens[0] = SHADOWPEN;
+        data->tdd_ButtonPens[1] = SHADOWPEN;
+        data->tdd_ButtonPens[2] = SHADOWPEN;
 
         TapeDeck__OM_SET(cl, o, msg);
 
@@ -270,7 +259,6 @@ VOID TapeDeck__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 IPTR TapeDeck__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
 {
     struct TapeDeckData *data = INST_DATA(cl, g);
-    struct IBox *bounds = &msg->gpl_GInfo->gi_Domain;
     struct TagItem  	frametags[] = {
         { GA_Left,      g->LeftEdge     },
         { GA_Top,       g->TopEdge      },
@@ -308,7 +296,6 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         { TAG_DONE,     0UL 		        }
     };
     LONG rend_x, rend_y;
-    LONG pen;
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -317,7 +304,7 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         /* Full redraw: clear and draw border */
         DrawImageState(msg->gpr_RPort, IM(EG(o)->GadgetRender),
                        EG(o)->LeftEdge, EG(o)->TopEdge,
-                       EG(o)->Flags&GFLG_SELECTED?IDS_SELECTED:IDS_NORMAL,
+                       IDS_NORMAL,
                        msg->gpr_GInfo->gi_DrInfo);
     }
 
@@ -327,14 +314,14 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     rend_x = EG(o)->LeftEdge + ((EG(o)->Width - 50) >> 1);
     rend_y = EG(o)->TopEdge + 4 + ((EG(o)->Height - 11) >> 1);
 
-    SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_But1Pen]);
+    SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPens[0]]);
 
     BltTemplate ((void *) templateRewind,
              0, 2,
              msg->gpr_RPort, rend_x, rend_y,
              16, 7);
 
-    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_But2Pen]);
+    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPens[1]]);
 
     if (data->tdd_Mode == BUT_PLAY)
     {
@@ -351,7 +338,7 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                  8, 7);
     }
 
-    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_But3Pen]);
+    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPens[2]]);
 
     BltTemplate ((void *) templateFForward,
              0, 2,
@@ -363,91 +350,136 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
 /***********************************************************************************/
 
-IPTR TapeDeck__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
-{	
-    struct RastPort 	*rport;
-    IPTR    	    	retval;
+IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
+{
+    struct RastPort     *rport;
+    struct TapeDeckData *data = INST_DATA(cl, o);
+    struct InputEvent   *ie = msg->gpi_IEvent;
+    IPTR    	    	retval = GMR_MEACTIVE;
+    BOOL                redraw = FALSE;
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
 
-    EG(o)->Flags |= GFLG_SELECTED;
-
-    rport = ObtainGIRPort(msg->gpi_GInfo);
-    if (rport)
+    if (ie->ie_Code == SELECTDOWN)
     {
-        struct gpRender rmsg =
-            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE }, *p_rmsg = &rmsg;
-        DoMethodA(o, (Msg)p_rmsg);
-        ReleaseGIRPort(rport);
-        retval = GMR_MEACTIVE;
-    } else
+        D(bug("[tapedeck.gadget]: %s: SELECTDOWN\n", __PRETTY_FUNCTION__));
+        EG(o)->Flags |= GFLG_SELECTED;
+    }
+
+    if ((data->tdd_PosProp) &&
+        ((((struct Gadget *)data->tdd_PosProp)->Flags & GFLG_SELECTED) || (msg->gpi_Mouse.Y < POSPROP_HEIGHT)))
+    {
+        IPTR topCurrent;
+
+        D(bug("[tapedeck.gadget]: %s: input event is for the prop gadget ...\n", __PRETTY_FUNCTION__));
+
+        if (ie->ie_Code == SELECTDOWN)
+        {
+            GetAttr (PGA_Top, (Object *)data->tdd_PosProp, &data->tdd_TopLast);
+            data->tdd_ModeLast = data->tdd_Mode;
+            data->tdd_Mode = BUT_FRAME;
+        }
+
+        /* pass it to the prop gadget .. */
+        DoMethodA((Object *)data->tdd_PosProp, (Msg)msg);
+
+        if (data->tdd_Mode == BUT_FRAME)
+        {
+            GetAttr (PGA_Top, (Object *)data->tdd_PosProp, &topCurrent);
+            if (data->tdd_TopLast != topCurrent)
+            {
+                D(bug("[tapedeck.gadget]: %s: position moved ...(%d)\n", __PRETTY_FUNCTION__, topCurrent));
+            }
+            if (ie->ie_Code == SELECTUP)
+                data->tdd_Mode = data->tdd_ModeLast;
+        }
+    }
+
+    if ((msg->gpi_Mouse.Y > ((EG(o)->Height - 11) >> 1)) &&
+            (msg->gpi_Mouse.Y < (EG(o)->Height - ((EG(o)->Height - 11) >> 1))) &&
+            (msg->gpi_Mouse.X > ((EG(o)->Width - 50) >> 1)))
+    {
+        ULONG offset_x = msg->gpi_Mouse.X - ((EG(o)->Width - 50) >> 1);
+
+        if (offset_x <  16)
+        {
+            D(bug("[tapedeck.gadget]: %s:    <<\n", __PRETTY_FUNCTION__));
+            if (ie->ie_Code == SELECTDOWN)
+            {
+                data->tdd_ButtonActive = 1;
+                data->tdd_ButtonPens[0] = SHINEPEN;
+                data->tdd_ModeLast = data->tdd_Mode;
+                data->tdd_Mode = BUT_REWIND;
+                redraw = TRUE;
+            }
+            else if (ie->ie_Code == SELECTUP)
+            {
+                data->tdd_ButtonPens[0] = SHADOWPEN;
+                data->tdd_Mode = data->tdd_ModeLast;
+            }
+        }
+        else if ((offset_x > 20) && (offset_x < 29))
+        {
+            D(bug("[tapedeck.gadget]: %s:    PLAY/PAUSE\n", __PRETTY_FUNCTION__));
+            if (ie->ie_Code == SELECTDOWN)
+            {
+                data->tdd_ButtonActive = 2;
+                data->tdd_ButtonPens[1] = SHINEPEN;
+                redraw = TRUE;
+            }
+            else if (ie->ie_Code == SELECTUP)
+            {
+                data->tdd_ButtonPens[1] = SHADOWPEN;
+                if (data->tdd_Mode != BUT_PLAY)
+                    data->tdd_Mode = BUT_PLAY;
+                else
+                    data->tdd_Mode = BUT_PAUSE;
+            }
+        }
+        else if ((offset_x > 33) && (offset_x < 50))
+        {
+            D(bug("[tapedeck.gadget]: %s:    >>\n", __PRETTY_FUNCTION__));
+            if (ie->ie_Code == SELECTDOWN)
+            {
+                data->tdd_ButtonActive = 3;
+                data->tdd_ButtonPens[2] = SHINEPEN;
+                data->tdd_ModeLast = data->tdd_Mode;
+                data->tdd_Mode = BUT_FORWARD;
+                redraw = TRUE;
+            }
+            else if (ie->ie_Code == SELECTUP)
+            {
+                data->tdd_ButtonPens[2] = SHADOWPEN;
+                data->tdd_Mode = data->tdd_ModeLast;
+            }
+        }
+    }
+
+    if (ie->ie_Code == SELECTUP)
+    {
+        D(bug("[tapedeck.gadget]: %s: SELECTUP\n", __PRETTY_FUNCTION__));
+        if (data->tdd_ButtonActive > 0)
+        {
+            data->tdd_ButtonPens[data->tdd_ButtonActive - 1] = SHADOWPEN;
+            redraw = TRUE;
+        }
+        EG(o)->Flags &= ~GFLG_SELECTED;
+        data->tdd_ButtonActive = 0;
         retval = GMR_NOREUSE;
-   
-    return retval;
-}
+    }
 
-/***********************************************************************************/
-
-IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
-{
-    struct RastPort 	*rport;
-    struct TapeDeckData 	*data = INST_DATA(cl, o);
-    struct InputEvent *ie = msg->gpi_IEvent;
-    IPTR    	    	retval = GMR_MEACTIVE;
-
-    bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__);
-
-    if (data->tdd_PosProp)
+    if ((redraw) &&
+        (rport = ObtainGIRPort (msg->gpi_GInfo)))
     {
-        if (msg->gpi_Mouse.Y < POSPROP_HEIGHT)
-        {
-            IPTR proptop = 0;
+        struct gpRender gpr;
 
-            D(bug("[tapedeck.gadget]: %s: input event is for the prop gadget ...\n", __PRETTY_FUNCTION__));
+        gpr.MethodID   = GM_RENDER;
+        gpr.gpr_GInfo  = msg->gpi_GInfo;
+        gpr.gpr_RPort  = rport;
+        gpr.gpr_Redraw = GREDRAW_REDRAW;
+        DoMethodA (o, &gpr);
 
-            /* pass it to the prop gadget .. */
-            retval = DoMethodA((Object *)data->tdd_PosProp, (Msg)msg);
-            GetAttr(PGA_Top, (Object *)data->tdd_PosProp, &proptop);
-
-            if (proptop != data->tdd_FrameCurrent)
-            {
-                D(bug("[tapedeck.gadget]: %s: position moved ...\n", __PRETTY_FUNCTION__));
-            }
-        }
-        else
-        {
-            if ((msg->gpi_Mouse.Y > ((EG(o)->Height - 11) >> 1)) &&
-                (msg->gpi_Mouse.Y < (EG(o)->Height - ((EG(o)->Height - 11) >> 1))) &&
-                (msg->gpi_Mouse.X > ((EG(o)->Width - 50) >> 1)))
-            {
-                ULONG offset_x = msg->gpi_Mouse.X - ((EG(o)->Width - 50) >> 1);
-
-                if (offset_x <  16)
-                {
-                    D(bug("[tapedeck.gadget]: %s:    <<\n", __PRETTY_FUNCTION__));
-                    if (ie->ie_Code == SELECTDOWN)
-                        data->tdd_But1Pen = SHINEPEN;
-                    else if (ie->ie_Code == SELECTUP)
-                        data->tdd_But1Pen = SHADOWPEN;
-                }
-                else if ((offset_x > 20) && (offset_x < 29))
-                {
-                    D(bug("[tapedeck.gadget]: %s:    PLAY/PAUSE\n", __PRETTY_FUNCTION__));
-                    if (ie->ie_Code == SELECTDOWN)
-                        data->tdd_But2Pen = SHINEPEN;
-                    else if (ie->ie_Code == SELECTUP)
-                        data->tdd_But2Pen = SHADOWPEN;
-                }
-                else if ((offset_x > 33) && (offset_x < 50))
-                {
-                    D(bug("[tapedeck.gadget]: %s:    >>\n", __PRETTY_FUNCTION__));
-                    if (ie->ie_Code == SELECTDOWN)
-                        data->tdd_But3Pen = SHINEPEN;
-                    else if (ie->ie_Code == SELECTUP)
-                        data->tdd_But3Pen = SHADOWPEN;
-                }
-            }
-        }
+        ReleaseGIRPort (rport);
     }
 
     return retval;

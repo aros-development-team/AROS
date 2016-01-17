@@ -50,12 +50,13 @@
 struct TapeDeckData
 {
     struct Gadget               *tdd_PosProp;
+    IPTR                        tdd_TopLast;            // for the input handler
     ULONG                       tdd_Mode;
+    ULONG                       tdd_ModeLast;
     ULONG                       tdd_FrameCount;
     ULONG                       tdd_FrameCurrent;
-    ULONG                       tdd_But1Pen;
-    ULONG                       tdd_But2Pen;
-    ULONG                       tdd_But3Pen;
+    ULONG                       tdd_ButtonPens[3];
+    UBYTE                       tdd_ButtonActive;
 };
 
 #endif /* TAPEDECK_INTERN_H */
