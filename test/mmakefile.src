@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    amigademo \
     availfonts \
     exceptiontest \
     exceptiontest2 \
