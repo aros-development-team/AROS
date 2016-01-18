@@ -6,14 +6,12 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    keymaptest \
     cctest \
     serialmousetest \
     serialtest \
     systemtags \
     systemtagsslave \
     rexxsyslibtest \
-    printnativekeytable \
     simplepng \
     patchrgbconv \
     printf_f \
