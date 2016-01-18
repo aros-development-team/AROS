@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR      := $(AROS_TESTS)/HiddGraphics
+EXEDIR      := $(AROS_TESTS)/hidds/graphics
 
 FILES := hiddmodeid
 
