@@ -35,6 +35,8 @@ EXEDIR := $(AROS_TESTS)/misc
 %build_progs mmake=test-misc \
     files=$(FILES) targetdir=$(EXEDIR) uselibs="pthread"
 
+USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
 %build_progs mmake=test-sh \
     files=$(SHTESTFILES) targetdir=$(EXEDIR) \
     usestartup=no
