@@ -6,8 +6,6 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    exceptiontest \
-    exceptiontest2 \
     fileseek \
     frequencies \
     hostcb \
@@ -40,7 +38,6 @@ COMMONTESTFILES := \
     runtests \
     fsresource \
     mountlist \
-    crashtest \
     openlocale \
     pthreadtest
 

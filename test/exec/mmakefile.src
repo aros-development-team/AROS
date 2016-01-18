@@ -12,8 +12,11 @@ FILES :=		\
     childstatus		\
     childwait		\
     copymem		\
+    crashtest		\
     dumpmem		\
     enqueue		\
+    exceptiontest	\
+    exceptiontest2	\
     messagetest		\
     openlib	 	\
     portsend		\
