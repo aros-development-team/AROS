@@ -36,7 +36,8 @@
 #define IM(o) ((struct Image *)(o))
 #define EG(o) ((struct Gadget *)(o))
 
-#define POSPROP_HEIGHT  4
+#define POSPROP_HEIGHT   4
+#define TDGADGET_HEIGHT  20
 
 #include <clib/boopsistubs.h>
 
@@ -105,7 +106,7 @@ IPTR TapeDeck__OM_GET(Class *cl, Object *o, struct opGet *msg)
             break;
 
         case GA_Height:
-            *msg->opg_Storage = 20;
+            *msg->opg_Storage = TDGADGET_HEIGHT;
             break;
 
 	default:
@@ -152,6 +153,11 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
 		rerender = TRUE;
 		break;
 
+            case GA_Height:
+                D(bug("[tapedeck.gadget] %s: GA_Height - %d (ignored)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                tag->ti_Data = TDGADGET_HEIGHT;
+                break;
+
             D(
             case GA_Left:
                 bug("[tapedeck.gadget] %s: GA_Left - %d\n", __PRETTY_FUNCTION__, tag->ti_Data);
@@ -165,9 +171,7 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
                 bug("[tapedeck.gadget] %s: GA_Width - %d\n", __PRETTY_FUNCTION__, tag->ti_Data);
                 break;
 
-            case GA_Height:
-                bug("[tapedeck.gadget] %s: GA_Height - %d\n", __PRETTY_FUNCTION__, tag->ti_Data);
-                break;
+
             )
         }
     }
