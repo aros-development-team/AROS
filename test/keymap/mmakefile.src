@@ -1,0 +1,18 @@
+# Copyright © 2016, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+ keymaptest \
+ printnativekeytable \
+
+EXEDIR := $(AROS_TESTS)/keymap
+
+#MM- test : test-keymap
+#MM- test-quick : test-keymap-quick
+
+%build_progs mmake=test-keymap \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
