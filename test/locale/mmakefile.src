@@ -1,0 +1,18 @@
+# Copyright © 2016, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+ localetest \
+ openlocale
+
+EXEDIR := $(AROS_TESTS)/locale
+
+#MM- test : test-locale
+#MM- test-quick : test-locale-quick
+
+%build_progs mmake=test-locale \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
