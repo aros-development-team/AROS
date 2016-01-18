@@ -135,7 +135,11 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
     struct TagItem playertags[] =
     {
         { PLAYER_Name,          (IPTR) "animation"      },
+#if (0)
         { PLAYER_Conductor,     (IPTR) "playback"       },
+#else
+        { PLAYER_Conductor,     (IPTR) ~0               },
+#endif
         { PLAYER_Priority,      0                       },
         { PLAYER_Hook,          0                       },
         { TAG_DONE,             0                       }
@@ -1256,7 +1260,6 @@ IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
             }
             else
             {
-                // TODO: Adjust the tapedeck height or hide it?
                 D(bug("[animation.datatype]: %s: tapedeck too big for visible space!\n", __PRETTY_FUNCTION__));
                 animd->ad_Flags &= ~ANIMDF_SHOWPANEL;
             }
