@@ -2,7 +2,7 @@
 #define DATATYPES_PICTURECLASS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Includes for pictureclass
