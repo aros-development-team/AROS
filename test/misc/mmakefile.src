@@ -21,12 +21,20 @@ FILES := \
  unixio \
  versionlib
 
+SHTESTFILES=\
+    pcilist \
+    true
+
 EXEDIR := $(AROS_TESTS)/misc
 
-#MM- test : test-misc
-#MM- test-quick : test-misc-quick
+#MM- test : test-misc test-sh
+#MM- test-quick : test-misc-quick test-sh-quick
 
 %build_progs mmake=test-misc \
     files=$(FILES) targetdir=$(EXEDIR) uselibs="pthread"
+
+%build_progs mmake=test-sh \
+    files=$(SHTESTFILES) targetdir=$(EXEDIR) \
+    usestartup=no
 
 %common
