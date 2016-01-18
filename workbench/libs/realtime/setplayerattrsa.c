@@ -2,11 +2,17 @@
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+# define  DEBUG 0
+# include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/realtime.h>
 #include <exec/lists.h>
 #include "realtime_intern.h"
+
+struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
+				  struct Library *RealTimeBase);
 
 /*****************************************************************************
 
@@ -113,30 +119,53 @@
 	    break;
 
 	case PLAYER_Conductor:
-	    if (tag->ti_Data == (IPTR)NULL)
-	    {
-		player->pl_Source = NULL;
-	    }
-	    else
-	    {
-		struct Conductor *conductor;
 
-		lock = LockRealTime(RT_CONDUCTORS);
-		conductor = FindConductor((STRPTR)tag->ti_Data);
-		UnlockRealTime(lock);
+            D(bug("Found PLAYER_Conductor tag\n"));
 
-		if (conductor == NULL)
-		{
-		    if (error != NULL)
-		    {
-			*error = RTE_NOCONDUCTOR;
-		    }
+            if ((IPTR)tag->ti_Data == -1UL)
+            {
+                player->pl_Source = createConductor(TRUE, error,
+                                                    (STRPTR)tag->ti_Data,
+                                                    RealTimeBase);
+            }
+            else
+            {
+                struct Conductor *cd = FindConductor((STRPTR)tag->ti_Data);
 
+                if (cd == NULL)
+                {
+                    D(bug("Trying to create a public conductor.\n"));
+                    player->pl_Source = createConductor(FALSE, error,
+                                                        (STRPTR)tag->ti_Data,
+                                                        RealTimeBase);
+                }
+                else
+                {
+                    player->pl_Source = cd;
+                }
+            }
+
+            if (player->pl_Source != NULL)
+            {
+                APTR lock;
+
+                lock = LockRealTime(RT_CONDUCTORS);
+                
+                /* Enqueue the player to the conductor list */
+                Enqueue((struct List *)&player->pl_Source->cdt_Players,
+                        (struct Node *)player);
+                
+                UnlockRealTime(lock);
+            }
+            else
+            {
+                if (error != NULL)
+                {
+                    *error = RTE_NOCONDUCTOR;
 		    return FALSE;
-		}
-	    }
-
-	    break;
+                }
+            }
+            break;
 
 	case PLAYER_Ready:
 	    if ((BOOL)tag->ti_Data)
@@ -277,3 +306,52 @@
 
     AROS_LIBFUNC_EXIT
 } /* SetPlayerAttrsA */
+
+struct Conductor *createConductor(BOOL private, LONG *error, STRPTR name,
+				  struct Library *RealTimeBase)
+{
+    struct Conductor *cd = AllocMem(sizeof(struct Conductor), 
+				    MEMF_PUBLIC | MEMF_CLEAR);
+
+    if (cd == NULL)
+    {
+	if (error != NULL)
+	{
+	    *error = RTE_NOMEMORY;
+	}
+
+	return NULL;
+    }
+
+    cd->cdt_Link.ln_Name = name;
+
+    NEWLIST(&cd->cdt_Players);
+    InitSemaphore(&cd->cdt_Lock);
+
+    /* Initialize conductor clock */
+    cd->cdt_ClockTime = GPB(RealTimeBase)->rtb_Time;
+    cd->cdt_StartTime = GPB(RealTimeBase)->rtb_Time;
+
+    /* Conductors are created in 'stopped' mode. To make the clock start
+       running, call SetConductorState(player, CONDSTATE_RUNNING, _); */
+    cd->cdt_State = CONDSTATE_STOPPED;
+
+    if (private)
+    {
+	cd->cdt_Flags |= CONDUCTF_PRIVATE;
+    }
+
+    {
+	/* Add the conductor to the realtime library conductor list */
+	APTR lock;
+
+	lock = LockRealTime(RT_CONDUCTORS);
+	
+	AddTail((struct List *)&GPB(RealTimeBase)->rtb_ConductorList,
+		(struct Node *)cd);
+	
+	UnlockRealTime(lock);
+    }	
+
+    return cd;
+}
