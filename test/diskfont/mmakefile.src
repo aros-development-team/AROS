@@ -1,0 +1,15 @@
+# Copyright © 2016, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := availfonts fontinfo opendiskfont
+EXEDIR          := $(AROS_TESTS)/diskfont
+
+#MM- test : test-diskfont
+#MM- test-quick : test-diskfont-quick
+
+%build_progs mmake=test-diskfont \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
