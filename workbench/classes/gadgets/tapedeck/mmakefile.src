@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 49977 2015-01-31 05:19:35Z NicJA $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DDEBUG=0
