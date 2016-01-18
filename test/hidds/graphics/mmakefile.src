@@ -3,7 +3,10 @@ include $(TOP)/config/make.cfg
 
 EXEDIR      := $(AROS_TESTS)/hidds/graphics
 
-FILES := hiddmodeid
+FILES := \
+ convertpixels \
+ hiddmodeid \
+ modeid
 
 #MM- test : test-hidd-graphics
 #MM test-hidd-graphics : includes linklibs
