@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for oop.library classes. Part of genmodule.
@@ -209,8 +209,8 @@ void writeoopinit(FILE *out, struct classinfo *cl)
     fprintf
     (
         out,
-        "ADD2INITCLASSES(OOP_%s_Startup, %d);\n"
-        "ADD2EXPUNGECLASSES(OOP_%s_Shutdown, %d);\n",
+        "ADD2INITCLASSES(OOP_%s_Startup, %d)\n"
+        "ADD2EXPUNGECLASSES(OOP_%s_Shutdown, %d)\n",
         cl->basename, -cl->initpri,
         cl->basename, -cl->initpri
     );
