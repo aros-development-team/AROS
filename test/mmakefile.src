@@ -6,40 +6,23 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    fileseek \
-    frequencies \
-    hostcb \
-    iffparsewrite \
-    ilbmtoc \
     localetest \
     modeid \
     keymaptest \
-    inquire \
-    mathtest \
     cctest \
-    helloworld \
     serialmousetest \
     serialtest \
-    unixio \
-    partition \
-    sortlayercr \
     systemtags \
     systemtagsslave \
-    camdtree \
     rexxsyslibtest \
     printnativekeytable \
     simplepng \
     convertpixels \
     patchrgbconv \
-    joystick \
-    getcpuinfo \
     printf_f \
-    versionlib \
     runtests \
-    fsresource \
     mountlist \
-    openlocale \
-    pthreadtest
+    openlocale
 
 SHTESTFILES=\
     pcilist \
@@ -61,7 +44,7 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
-    uselibs="coolimagesstatic hiddstubs pthread"
+    uselibs="coolimagesstatic hiddstubs"
 
 %build_progs mmake=test-sh \
     files=$(SHTESTFILES) targetdir=$(EXEDIR) \
