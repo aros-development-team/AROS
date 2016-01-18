@@ -1,9 +1,14 @@
+/*
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <proto/locale.h>
 #include <proto/exec.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "clib/test.h"
+#include "../clib/test.h"
 
 struct LocaleBase * LocaleBase = NULL;
 struct Locale * locale = NULL;

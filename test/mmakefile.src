@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    localetest \
     keymaptest \
     cctest \
     serialmousetest \
@@ -19,8 +18,7 @@ COMMONTESTFILES := \
     patchrgbconv \
     printf_f \
     runtests \
-    mountlist \
-    openlocale
+    mountlist
 
 SHTESTFILES=\
     pcilist \
