@@ -18,10 +18,6 @@ COMMONTESTFILES := \
     runtests \
     mountlist
 
-SHTESTFILES=\
-    pcilist \
-    true
-
 HOSTEDTESTFILES :=  \
     hostlib windebug
 
@@ -30,7 +26,7 @@ EXEDIR := $(AROS_TESTS)
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-#MM- test : test-common test-sh test-clib test-kernel test-exec test-intuition \
+#MM- test : test-common test-clib test-kernel test-exec test-intuition \
 #MM  test-layers test-zune workbench-libs-version test-$(AROS_TARGET_ARCH) test-miscfiles
 
 #MM  test-common : includes workbench-libs-version linklibs
@@ -39,10 +35,6 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
     uselibs="coolimagesstatic hiddstubs"
-
-%build_progs mmake=test-sh \
-    files=$(SHTESTFILES) targetdir=$(EXEDIR) \
-    usestartup=no
 
 %build_progs mmake=test-hosted \
     files=$(HOSTEDTESTFILES) targetdir=$(EXEDIR)
