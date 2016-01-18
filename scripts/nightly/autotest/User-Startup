@@ -1,7 +1,7 @@
-Execute S/Test convertpixels
-Execute S/Test fileseek
+Execute S/Test hidds/graphics/convertpixels
+Execute S/Test misc/fileseek
 Execute S/Test diskfont/fontinfo topaz.font 8
-Execute S/Test frequencies
+Execute S/Test misc/frequencies
 
 Execute S/Test exec/allocmem
 
