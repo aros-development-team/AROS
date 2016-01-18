@@ -101,6 +101,7 @@ struct Animation_Data
     struct Gadget               *ad_Tapedeck;
     ULONG                       ad_BufferTime;         /* (prefs) how many seconds to buffer  */
     ULONG                       ad_BufferStep;         /* (prefs) no of frames to try to load in one go */
+    UBYTE                       ad_PlayerSourceLastState;
 };
 
 struct ProcessPrivate

@@ -1099,22 +1099,33 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
     if (animd->ad_Tapedeck)
         GetAttr(GA_Height, (Object *)animd->ad_Tapedeck, &tdHeight);
 
-        if ((animd->ad_Tapedeck) &&
-            ((((struct Gadget *)animd->ad_Tapedeck)->Flags & GFLG_SELECTED) ||
-            (msg->gpi_Mouse.Y > animd->ad_RenderHeight)))
-        {
-            D(bug("[animation.datatype]: %s: input event is for the tapedeck ...\n", __PRETTY_FUNCTION__));
+    if ((animd->ad_Tapedeck) &&
+        ((((struct Gadget *)animd->ad_Tapedeck)->Flags & GFLG_SELECTED) ||
+        (msg->gpi_Mouse.Y > animd->ad_RenderHeight)))
+    {
+        D(bug("[animation.datatype]: %s: input event is for the tapedeck ...\n", __PRETTY_FUNCTION__));
 
-            /* pass it to the tapedeck gadget .. */
-            msg->gpi_Mouse.Y -= animd->ad_RenderHeight;
-            retval = DoMethodA((Object *)animd->ad_Tapedeck, (Msg)msg);
-            msg->gpi_Mouse.Y += animd->ad_RenderHeight;
+        if (!(((struct Gadget *)animd->ad_Tapedeck)->Flags & GFLG_SELECTED))
+        {
+            if ((animd->ad_PlayerSourceLastState = animd->ad_Player->pl_Source->cdt_State) != CONDSTATE_STOPPED)
+                SetConductorState (animd->ad_Player, CONDSTATE_PAUSED, animd->ad_FrameData.afd_FrameCurrent * animd->ad_TimerData.atd_TicksPerFrame);
         }
+
+        /* pass it to the tapedeck gadget .. */
+        msg->gpi_Mouse.Y -= animd->ad_RenderHeight;
+        retval = DoMethodA((Object *)animd->ad_Tapedeck, (Msg)msg);
+        msg->gpi_Mouse.Y += animd->ad_RenderHeight;
+    }
 
     if (ie->ie_Code == SELECTUP)
     {
         D(bug("[animation.datatype]: %s: SELECTUP\n", __PRETTY_FUNCTION__));
+
         g->Flags &= ~GFLG_SELECTED;
+
+        if (animd->ad_PlayerSourceLastState != CONDSTATE_STOPPED)
+            SetConductorState (animd->ad_Player, animd->ad_PlayerSourceLastState, animd->ad_FrameData.afd_FrameCurrent * animd->ad_TimerData.atd_TicksPerFrame);
+
         retval = GMR_NOREUSE;
     }
 
