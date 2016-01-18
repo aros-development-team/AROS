@@ -7,7 +7,6 @@ include $(TOP)/config/make.cfg
 
 COMMONTESTFILES := \
     localetest \
-    modeid \
     keymaptest \
     cctest \
     serialmousetest \
@@ -17,7 +16,6 @@ COMMONTESTFILES := \
     rexxsyslibtest \
     printnativekeytable \
     simplepng \
-    convertpixels \
     patchrgbconv \
     printf_f \
     runtests \
