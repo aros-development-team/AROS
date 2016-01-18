@@ -41,6 +41,8 @@
 
 #include <clib/boopsistubs.h>
 
+#define TAPEDECK_FLAG_INIT      (TDECK_Dummy + 100-1)
+
 static UBYTE templateRewind[] =
 {
     0x03, 0x03,         // 0000001100000011
@@ -123,7 +125,7 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct TapeDeckData *data = INST_DATA(cl, o);
     struct TagItem      *tag, *taglist = msg->ops_AttrList;
-    BOOL                rerender = FALSE;
+    BOOL                rerender = FALSE, tdinit = FALSE;
     IPTR                result;
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
@@ -134,6 +136,11 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
     {
         switch(tag->ti_Tag)
         {
+            case TAPEDECK_FLAG_INIT:
+                D(bug("[tapedeck.gadget] %s: performing initial setup\n", __PRETTY_FUNCTION__));
+                tdinit = TRUE;
+                break;
+
             case TDECK_Mode:
                 D(bug("[tapedeck.gadget] %s: TDECK_Mode %08x\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 data->tdd_Mode = (ULONG)tag->ti_Data;
@@ -176,7 +183,7 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
         }
     }
 
-    if(rerender)
+    if (!(tdinit) && (rerender))
     {
         struct RastPort *rport;
 
@@ -213,8 +220,14 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
         { IA_FrameType,         FRAME_BUTTON    },
         { TAG_DONE,             0               }
     };
-
+    struct TagItem  	tdinittags[] =
+    {
+        { TAPEDECK_FLAG_INIT,   0                       },
+        { TAG_MORE,             (IPTR)msg->ops_AttrList       },
+        { TAG_DONE,             0                       }
+    };
     Object  	    	*o;
+
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
 
     o = (Object *)DoSuperMethodA(cl, (Object *)rootcl, (Msg)msg);
@@ -229,13 +242,17 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
         data->tdd_ButtonPens[1] = SHADOWPEN;
         data->tdd_ButtonPens[2] = SHADOWPEN;
 
-        TapeDeck__OM_SET(cl, o, msg);
-
         pproptags[3].ti_Data = data->tdd_FrameCount;
         pproptags[4].ti_Data = data->tdd_FrameCurrent;
         data->tdd_PosProp = NewObjectA(NULL, "propgclass", pproptags);
 
         D(bug("[tapedeck.gadget] %s: playback position prop @ 0x%p\n", __PRETTY_FUNCTION__, data->tdd_PosProp));
+
+        if (msg->ops_AttrList)
+        {
+            msg->ops_AttrList = tdinittags;
+            TapeDeck__OM_SET(cl, o, msg);
+        }
     }
 
     return o;
@@ -281,8 +298,7 @@ IPTR TapeDeck__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
 
     frametags[0].ti_Data = g->LeftEdge + 1;
     frametags[2].ti_Tag = GA_Width;
-    GetAttr(GA_Width, (Object *)g, &frametags[2].ti_Data);
-    frametags[2].ti_Data -= 2;
+    frametags[2].ti_Data = g->Width - 2;
     frametags[3].ti_Tag = GA_Height;
     frametags[3].ti_Data = POSPROP_HEIGHT;
 
