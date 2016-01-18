@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Support functions for MUI classes. Part of genmodule.
@@ -184,8 +184,8 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
 //        "    return TRUE;\n"
         "}\n"
         "\n"
-        "ADD2INITCLASSES(MCC_%s_Startup, %d);\n"
-        "ADD2EXPUNGECLASSES(MCC_%s_Shutdown, %d);\n",
+        "ADD2INITCLASSES(MCC_%s_Startup, %d)\n"
+        "ADD2EXPUNGECLASSES(MCC_%s_Shutdown, %d)\n",
         cl->basename, -cl->initpri,
         cl->basename, -cl->initpri
     );

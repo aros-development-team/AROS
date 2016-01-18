@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Support function for generating code for BOOPSI classes. Part of genmodule.
@@ -274,8 +274,8 @@ void writeclassinit(struct config *cfg, FILE *out, struct classinfo *cl)
 //        "    return TRUE;\n"
         "}\n"
         "\n"
-        "ADD2INITCLASSES(BOOPSI_%s_Startup, %d);\n"
-        "ADD2EXPUNGECLASSES(BOOPSI_%s_Shutdown, %d);\n",
+        "ADD2INITCLASSES(BOOPSI_%s_Startup, %d)\n"
+        "ADD2EXPUNGECLASSES(BOOPSI_%s_Shutdown, %d)\n",
         cl->basename,
         cl->basename,
         cl->basename, -cl->initpri,
