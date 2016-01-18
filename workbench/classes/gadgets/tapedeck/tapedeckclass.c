@@ -391,6 +391,7 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             if (data->tdd_TopLast != topCurrent)
             {
                 D(bug("[tapedeck.gadget]: %s: position moved ...(%d)\n", __PRETTY_FUNCTION__, topCurrent));
+                data->tdd_FrameCurrent = topCurrent;
             }
             if (ie->ie_Code == SELECTUP)
                 data->tdd_Mode = data->tdd_ModeLast;
