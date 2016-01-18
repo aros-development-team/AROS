@@ -6,11 +6,9 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    availfonts \
     exceptiontest \
     exceptiontest2 \
     fileseek \
-    fontinfo \
     frequencies \
     hostcb \
     iffparsewrite \
@@ -25,7 +23,6 @@ COMMONTESTFILES := \
     serialmousetest \
     serialtest \
     unixio \
-    opendiskfont \
     partition \
     sortlayercr \
     systemtags \
