@@ -1,0 +1,32 @@
+# Copyright © 2016, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+ camdtree \
+ fileseek \
+ frequencies \
+ fsresource \
+ getcpuinfo \
+ helloworld \
+ hostcb \
+ iffparsewrite \
+ ilbmtoc \
+ inquire \
+ joystick \
+ mathtest \
+ partition \
+ pthreadtest \
+ unixio \
+ versionlib
+
+EXEDIR := $(AROS_TESTS)/misc
+
+#MM- test : test-misc
+#MM- test-quick : test-misc-quick
+
+%build_progs mmake=test-misc \
+    files=$(FILES) targetdir=$(EXEDIR) uselibs="pthread"
+
+%common

@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-FILES := CRList DamageList clippingtest layerstest
+FILES := CRList DamageList clippingtest layerstest sortlayercr
 
 %build_progs mmake=test-layers \
     files=$(FILES) targetdir=$(AROS_TESTS)/layers
