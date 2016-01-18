@@ -281,7 +281,8 @@ IPTR TapeDeck__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
 
     frametags[0].ti_Data = g->LeftEdge + 1;
     frametags[2].ti_Tag = GA_Width;
-    frametags[2].ti_Data = g->Width - 2;
+    GetAttr(GA_Width, (Object *)g, &frametags[2].ti_Data);
+    frametags[2].ti_Data -= 2;
     frametags[3].ti_Tag = GA_Height;
     frametags[3].ti_Data = POSPROP_HEIGHT;
 
