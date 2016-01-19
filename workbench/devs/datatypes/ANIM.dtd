@@ -1,9 +1,9 @@
-# DataType Description for ANIM
+# DataType Description for IFF ANIM Animations
 Name=ANIM
-Version=$VER: Anim 1.12 (12.11.97)
+Version=$VER: Anim 41.8 (19.01.2016)
 BaseName=anim
 Pattern=#?
-Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'A' 'N' 'I' 'M' 'F' 'O' 'R' 'M' ANY ANY ANY ANY 'I' 'L' 'B' 'M' 'B' 'M' 'H' 'D'
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'A' 'N' 'I' 'M' 'F' 'O' 'R' 'M' ANY ANY ANY ANY 'I' 'L' 'B' 'M'
 GroupID=anim
 ID=_anim
 Flags=DTF_IFF
