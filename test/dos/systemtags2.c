@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,7 @@ int main(void)
     
     SystemTags
     (
-        "systemtagsslave", 
+        "systemtags2_slave",
         SYS_Asynch, TRUE,
         SYS_Input,  SYS_DupStream,
         SYS_Output, SYS_DupStream, 

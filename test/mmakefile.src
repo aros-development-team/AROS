@@ -9,8 +9,6 @@ COMMONTESTFILES := \
     cctest \
     serialmousetest \
     serialtest \
-    systemtags \
-    systemtagsslave \
     rexxsyslibtest \
     simplepng \
     printf_f \
