@@ -72,7 +72,7 @@ struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
     struct TagItem *ti;
     IPTR retval;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* We only support DTST_FILE or DTST_RAM as source type */
     if ((ti = FindTagItem( DTA_SourceType, (((struct opSet *)msg) -> ops_AttrList) )) != NULL)
@@ -87,11 +87,11 @@ struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 
     if( retval = DoSuperMethodA( cl, o, msg ) )
     {
-        D(bug("[gifanim.datatype] %s: dtobject @ 0x%p\n", __PRETTY_FUNCTION__, retval));
+        D(bug("[gifanim.datatype] %s: dtobject @ 0x%p\n", __func__, retval));
         /* Load frames... */
         if( !ScanFrames( cb, (Object *)retval ) )
         {
-            D(bug("[gifanim.datatype] %s: failed to scan file\n", __PRETTY_FUNCTION__));
+            D(bug("[gifanim.datatype] %s: failed to scan file\n", __func__));
 
             /* Something went fatally wrong, dispose object */
             CoerceMethod( cl, (Object *)retval, OM_DISPOSE );
@@ -99,7 +99,7 @@ struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
         }
     }
 
-    D(bug("[gifanim.datatype] %s: returning 0x%p\n", __PRETTY_FUNCTION__, retval));
+    D(bug("[gifanim.datatype] %s: returning 0x%p\n", __func__, retval));
 
     return (struct Gadget *)retval;
 }
@@ -129,7 +129,7 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     struct ClassBase        *cb = (struct ClassBase *)(cl -> cl_UserData);
     LONG saved_ioerr = IoErr();
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Wait for any outstanding blitter usage (which may use one of our bitmaps) */
     WaitBlit();
@@ -171,7 +171,7 @@ IPTR DT_FrameBox(struct IClass *cl, Object *o, struct dtFrameBox *msg)
     struct dtFrameBox *dtf = (struct dtFrameBox *)msg;
     IPTR retval;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* pass to superclas first */
     retval = DoSuperMethodA( cl, o, (Msg) msg );
@@ -206,7 +206,7 @@ IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
 #if (0)
     if( DoMethod( o, ICM_CHECKLOOP ) )
@@ -296,7 +296,7 @@ IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *dtw)
     struct ClassBase        *cb = (struct ClassBase *)(cl -> cl_UserData);
     IPTR retval;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Local data format requested ?... */
     if( (dtw -> dtw_Mode) == DTWM_RAW )
@@ -341,7 +341,7 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     LONG              error       = 0L;
     IPTR retval = 0;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     ObtainSemaphore( (&(gaid -> gaid_SigSem)) );
 
@@ -351,7 +351,7 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     if( alf -> alf_UserData )
     {
         /* Copy message contents that we can call ADTM_UNLOADFRAME below */
-        freeframe = *alf;
+        CopyMem( alf, &freeframe, sizeof(struct adtFrame) );
         alf -> alf_UserData = NULL; /* "freeframe" now owns the frame data to free ! */
     }
     else
@@ -681,7 +681,7 @@ IPTR DT_UnLoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     struct GIFAnimInstData *gaid = (struct GIFAnimInstData *)INST_DATA( cl, o );
     struct FrameNode *fn;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Free bitmaps only if we don't cache the whole anim */
     if( (gaid -> gaid_LoadAll) == FALSE )
