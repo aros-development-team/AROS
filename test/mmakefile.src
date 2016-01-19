@@ -13,7 +13,6 @@ COMMONTESTFILES := \
     systemtagsslave \
     rexxsyslibtest \
     simplepng \
-    patchrgbconv \
     printf_f \
     runtests \
     mountlist
