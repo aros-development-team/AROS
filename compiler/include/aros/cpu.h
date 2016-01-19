@@ -1,7 +1,7 @@
 #ifndef AROS_CPU_H
 #define AROS_CPU_H
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     CPU independent version of the <aros/cpu.h> header. This is the one
@@ -40,7 +40,11 @@
 #elif defined __powerpc__
 #   include <aros/ppc/cpu.h>
 #elif defined __arm__
-#	include <aros/arm/cpu.h>
+#   if defined __thumb2__
+#	    include <aros/arm/cpu-thumb2.h>
+#   else
+#	    include <aros/arm/cpu.h>
+#   endif
 #else
 #   error unsupported CPU type
 #endif

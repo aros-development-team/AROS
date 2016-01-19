@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2016, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -22,7 +22,11 @@
 #elif defined __powerpc__
 #   include <aros/ppc/genmodule.h>
 #elif defined __arm__
-#	include <aros/arm/genmodule.h>
+#   if defined __thumb2__
+#	    include <aros/arm/genmodule-thumb2.h>
+#   else
+#	    include <aros/arm/genmodule.h>
+#   endif
 #else
 #   error unsupported CPU type
 #endif
