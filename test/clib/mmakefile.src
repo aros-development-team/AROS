@@ -32,6 +32,7 @@ FILES := \
         setjmp \
         snprintf \
         sprintf \
+        sprintf_f \
         sscanf \
         statfs \
         stpblk \
