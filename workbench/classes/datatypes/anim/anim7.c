@@ -34,19 +34,19 @@ LONG generic_unpackanim7longdelta(struct AnimHeader *anhd, struct BitMap *bm, UB
     UBYTE p;
     UWORD x;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    DFORMATS("[anim.datatype] %s()\n", __func__);
 
-    D(bug("[anim.datatype] %s: dlta @ 0x%p\n", __PRETTY_FUNCTION__, dlta));
-    D(bug("[anim.datatype] %s: lists @ 0x%p\n", __PRETTY_FUNCTION__, lists));
+    DFORMATS("[anim.datatype] %s: dlta @ 0x%p\n", __func__, dlta);
+    DFORMATS("[anim.datatype] %s: lists @ 0x%p\n", __func__, lists);
 
     for (p = 0; p < bm->Depth; p++)
     {
         opptr = AROS_BE2LONG(lists[p]);
-        D(bug("[anim.datatype] %s:   plane #%d @ 0x%p\n", __PRETTY_FUNCTION__, p, bm->Planes[p]));
+        DFORMATS("[anim.datatype] %s:   plane #%d @ 0x%p\n", __func__, p, bm->Planes[p]);
         if ((opptr == 0) || (opptr > dltasize))
         {
             // No ops for this plane or invalid pointer.
-            D(bug("[anim.datatype] %s: no ops/invalid op ptr (0x%08x)\n", __PRETTY_FUNCTION__, opptr));
+            DFORMATS("[anim.datatype] %s: no ops/invalid op ptr (0x%08x)\n", __func__, opptr);
             continue;
         }
 
@@ -117,7 +117,7 @@ LONG generic_unpackanim7worddelta(struct AnimHeader *anhd, struct BitMap *bm, UB
     UBYTE p;
     UWORD x;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    DFORMATS("[anim.datatype] %s()\n", __func__);
 
     for (p = 0; p < bm->Depth; ++p)
     {

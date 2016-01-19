@@ -28,7 +28,7 @@ LONG generic_unpackilbmbody( struct ClassBase *cb, struct BitMap *bm, struct Bit
     UWORD out = 0;
     UWORD y, ofs;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    DFORMATS("[anim.datatype] %s()\n", __func__);
 
     // The mask plane is interleaved after the bitmap planes, so we need to count
     // it as another plane when reading.

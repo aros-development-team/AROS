@@ -24,7 +24,7 @@ static const UWORD *Do8short(UWORD *pixel, UWORD *stop, const UWORD *ops, UWORD 
 {
     UWORD opcount = AROS_BE2WORD(*ops++);
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    DFORMATS("[anim.datatype] %s()\n", __func__);
 
     while (opcount-- > 0)
     {
@@ -73,7 +73,7 @@ LONG generic_unpackanim8longdelta(struct AnimHeader *anhd, struct BitMap *bm, UB
     UWORD x;
     UBYTE p;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    DFORMATS("[anim.datatype] %s()\n", __func__);
 
     for (p = 0; p < bm->Depth; ++p)
     {
@@ -142,7 +142,7 @@ LONG generic_unpackanim8worddelta(struct AnimHeader *anhd, struct BitMap *bm, UB
     UWORD x;
     UBYTE p;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    DFORMATS("[anim.datatype] %s()\n", __func__);
 
     for (p = 0; p < bm->Depth; ++p)
     {

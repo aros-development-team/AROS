@@ -175,6 +175,14 @@ struct ClassBase
 
 /*****************************************************************************/
 
+#if defined(DEBUG)
+#define DFORMATS(...)        bug(__VA_ARGS__)
+#else
+#define DFORMATS(...)
+#endif
+
+/*****************************************************************************/
+
 #if defined(__AROS__)
 #define ABS(x) x
 #define	MIN(a,b) (((a) < (b)) ?	(a) : (b))
