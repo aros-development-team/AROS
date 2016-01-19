@@ -877,14 +877,16 @@ IPTR DT_UnLoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
                 {
                     i = MIN( 1, i );
 
-                    return NULL;
+                    retval = NULL;
+                    break;
                 }
 
                 if( i-- == 0 )
                 {
                     D( kprintf( "pl overflow at %lu\n", (((struct FrameNode *)(alf -> alf_UserData)) -> fn_TimeStamp) ) );
 
-                    return NULL;
+                    retval = NULL;
+                    break;
                 }
             }
         }
