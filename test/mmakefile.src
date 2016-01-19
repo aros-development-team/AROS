@@ -6,8 +6,6 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    serialmousetest \
-    serialtest \
     runtests
 
 HOSTEDTESTFILES :=  \

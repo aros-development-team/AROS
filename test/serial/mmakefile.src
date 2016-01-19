@@ -1,0 +1,18 @@
+# Copyright © 2016, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+ serialmousetest \
+ serialtest
+
+EXEDIR := $(AROS_TESTS)/serial
+
+#MM- test : test-serial
+#MM- test-quick : test-serial-quick
+
+%build_progs mmake=test-serial \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
