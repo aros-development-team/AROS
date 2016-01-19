@@ -29,7 +29,7 @@ LONG generic_unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBY
     UWORD x,y;
     UBYTE p;
 
-    DFORMATS("[anim.datatype] %s()\n", __func__);
+    DFORMATS("[anim.datatype] %s()\n", __func__)
 
     while ( dlta < (UBYTE *)((IPTR)dlta + dltasize))
     {
@@ -39,29 +39,29 @@ LONG generic_unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBY
         switch ( opmode )
         {
         case 0:
-            DFORMATS("[anim.datatype] %s: end of dlta\n", __func__);
+            DFORMATS("[anim.datatype] %s: end of dlta\n", __func__)
             dltaend = TRUE;
             break;
 
         case 1:
-            DFORMATS("[anim.datatype] %s: column mode\n", __func__);
+            DFORMATS("[anim.datatype] %s: column mode\n", __func__)
             xormask     = AROS_BE2WORD( *((UWORD *)dlta) );
-            DFORMATS("[anim.datatype] %s:     xor mask : %04x\n", __func__, xormask);
+            DFORMATS("[anim.datatype] %s:     xor mask : %04x\n", __func__, xormask)
             opheight    = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 2)) );
             opcnt       = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 4)) );
-            DFORMATS("[anim.datatype] %s:     %d operation(s), %d rows\n", __func__, opcnt, opheight);
+            DFORMATS("[anim.datatype] %s:     %d operation(s), %d rows\n", __func__, opcnt, opheight)
             opwidth     = 1;
             dlta        = (UBYTE *)((IPTR)dlta + 6);
             break;
 
         case 2:
-            DFORMATS("[anim.datatype] %s: area mode\n", __func__);
+            DFORMATS("[anim.datatype] %s: area mode\n", __func__)
             xormask     = AROS_BE2WORD( *((UWORD *)dlta) );
-            DFORMATS("[anim.datatype] %s:     xor mask : %04x\n", __func__, xormask);
+            DFORMATS("[anim.datatype] %s:     xor mask : %04x\n", __func__, xormask)
             opheight    = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 2)) );
             opwidth     = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 4)) );
             opcnt       = AROS_BE2WORD( *((UWORD *)((IPTR)dlta + 6)) );
-            DFORMATS("[anim.datatype] %s:     %d operation(s), %dx%d\n", __func__, opcnt, opwidth, opheight);
+            DFORMATS("[anim.datatype] %s:     %d operation(s), %dx%d\n", __func__, opcnt, opwidth, opheight)
             dlta        = (UBYTE *)((IPTR)dlta + 8);
             break;
 
@@ -84,7 +84,10 @@ LONG generic_unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBY
                     src = (UBYTE *)((IPTR)deltabm->Planes[p] + (planeoffset) + (y * pitch));
                     for ( x = 0; x < opwidth; x++ )
                     {
-                        pixel[ x ] = (src[x] & xormask) ^ *dlta;
+                        if (xormask)
+                            pixel[ x ] = src[x] ^ *dlta;
+                        else
+                            pixel[ x ] = src[x];
                         dlta++;
                     }
 

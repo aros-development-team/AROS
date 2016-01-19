@@ -1189,11 +1189,13 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                 /* Create and prepare a new frame node */
                                 if ((fn = AllocFrameNode( cb, (aid -> aid_Pool) ) ) != NULL)
                                 {
-                                    D(bug("[anim.datatype] %s: FrameNode #%d @ 0x%p\n", __func__, timestamp, fn));
                                     AddTail( (struct List *)(&(aid -> aid_FrameList)), (struct Node *)(&(fn -> fn_Node)) );
 
                                     fn -> fn_TimeStamp = timestamp++;
                                     fn -> fn_Frame     = fn -> fn_TimeStamp;
+
+                                    D(bug("[anim.datatype] %s: FrameNode #%d @ 0x%p (%d)\n", __func__, fn -> fn_Frame, fn, fn -> fn_TimeStamp));
+
                                     fn -> fn_PrevFrame = fn;
                                 }
                                 else
@@ -1255,7 +1257,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                   UBYTE *buff;
 
                                   /* Allocate buffer */
-                                  if ((buff = (UBYTE *)AllocPooledVec( cb, (aid -> aid_Pool), ((cn -> cn_Size) + 16UL) ) ) != NULL)
+                                  if ((buff = (UBYTE *)AllocPooledVec( cb, (aid -> aid_Pool), ((cn -> cn_Size) + 16) ) ) != NULL)
                                   {
                                     D(bug("[anim.datatype] %s: buffer @ 0x%p\n", __func__, buff));
                                     /* Load CMAP data */
@@ -1330,7 +1332,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                   if( (fn -> fn_BitMap) == NULL )
                                   {
                                     /* Preload frames only if requested or if this is the key frame (first frame of anim) */
-                                    if( (aid -> aid_LoadAll) || ((fn -> fn_TimeStamp) == 0UL) )
+                                    if( (aid -> aid_LoadAll) || ((fn -> fn_TimeStamp) == 0) )
                                     {
                                       if( animwidth && animheight && animdepth )
                                       {
@@ -1340,14 +1342,14 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
 
                                             D(bug("[anim.datatype] %s: bitmap @ 0x%p\n", __func__, fn -> fn_BitMap));
                                           /* Allocate buffer */
-                                          if ((buff = (UBYTE *)AllocPooledVec( cb, (aid -> aid_Pool), ((cn -> cn_Size) + 32UL) ) ) != NULL)
+                                          if ((buff = (UBYTE *)AllocPooledVec( cb, (aid -> aid_Pool), ((cn -> cn_Size) + 32) ) ) != NULL)
                                           {
                                             struct FrameNode *prevfn;
 
                                               D(bug("[anim.datatype] %s: buffer @ 0x%p\n", __func__, buff));
 
                                             /* Clear buffer to get rid of some problems with corrupted DLTAs */
-                                            memset( (void *)buff, 0, (size_t)((cn -> cn_Size) + 31UL) );
+                                            memset( (void *)buff, 0, (size_t)((cn -> cn_Size) + 31) );
 
                                             /* Get previous frame */
                                             prevfn = fn -> fn_PrevFrame;
@@ -1515,6 +1517,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
               {
                 ULONG duration = (worknode -> fn_AH . ah_RelTime) + shift - 1UL;
 
+                D(bug("[anim.datatype] %s: setting node @ 0x%p to %d:%d:%d\n", __func__, worknode, timestamp, timestamp, duration));
                 worknode -> fn_TimeStamp = timestamp;
                 worknode -> fn_Frame     = timestamp;
                 worknode -> fn_Duration  = duration;
@@ -1703,31 +1706,33 @@ struct FrameNode *AllocFrameNode( struct ClassBase *cb, APTR pool )
 
 struct FrameNode *FindFrameNode( struct MinList *fnl, ULONG timestamp )
 {
-    D(bug("[anim.datatype] %s()\n", __func__));
+    D(bug("[anim.datatype] %s(0x%p : %d)\n", __func__, fnl, timestamp));
 
     if( fnl )
     {
-      struct FrameNode *worknode,
+        struct FrameNode *worknode,
                        *nextnode,
                        *prevnode;
 
-      prevnode = worknode = (struct FrameNode *)(fnl -> mlh_Head);
+        prevnode = worknode = (struct FrameNode *)(fnl -> mlh_Head);
 
-      while ((nextnode = (struct FrameNode *)(worknode -> fn_Node . mln_Succ) ) != NULL)
-      {
-        if( (worknode -> fn_TimeStamp) > timestamp )
+        while ((nextnode = (struct FrameNode *)(worknode -> fn_Node . mln_Succ) ) != NULL)
         {
-          return( prevnode );
+            D(bug("[anim.datatype] %s: worknode 0x%p, prevnode 0x%p\n", __func__, worknode, prevnode));
+            D(bug("[anim.datatype] %s: worknode frame #%d, ts = %d\n", __func__, worknode -> fn_Frame, worknode -> fn_TimeStamp));
+            if( (worknode -> fn_TimeStamp) > timestamp )
+            {
+                return( prevnode );
+            }
+
+            prevnode = worknode;
+            worknode = nextnode;
         }
 
-        prevnode = worknode;
-        worknode = nextnode;
-      }
-
-      if( !IsListEmpty( ((struct List *)fnl) ) )
-      {
-        return( prevnode );
-      }  
+        if( !IsListEmpty( ((struct List *)fnl) ) )
+        {
+            return( prevnode );
+        }  
     }
 
     return( NULL );
