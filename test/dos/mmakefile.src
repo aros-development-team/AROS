@@ -41,6 +41,8 @@ FILES := \
     strtodate \
     systemtags \
     systemtags_slave \
+    systemtags2 \
+    systemtags2_slave \
     waitforchar
 
 PURE_FILES := \
