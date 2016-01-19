@@ -30,7 +30,7 @@
 #include <graphics/text.h>
 #include <graphics/scale.h>
 #include <graphics/gfxbase.h>
-#if !defined(__AROS__)
+#if !defined(__AROS__) && !defined(__MORPHOS__)
 #include <cybergraphics/cybergraphics.h>
 #else
 #include <cybergraphx/cybergraphics.h>

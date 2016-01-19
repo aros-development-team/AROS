@@ -21,8 +21,8 @@
 #include "mpegproto.h"
 
 /* ansi includes */
-#include "math.h"
-#include "limits.h"
+#include <math.h>
+#include <limits.h>
 
 /* local prototypes */
 static void InitStoreFrame( struct MPEGVideoInstData *mvid );

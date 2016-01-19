@@ -19,7 +19,7 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 
-#if !defined(__AROS__)
+#if !defined(__AROS__) && !defined(__MORPHOS__)
 /* amiga prototypes */
 #include <clib/dos_protos.h>
 #include <clib/exec_protos.h>
