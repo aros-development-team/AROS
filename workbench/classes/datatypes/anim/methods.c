@@ -317,7 +317,7 @@ IPTR DT_Start(struct IClass *cl, Object *o, struct adtStart *asa)
     ULONG             timestamp;
     IPTR retval;
 
-    D(bug("[anim.datatype] %s()\n", __func__));
+    D(bug("[anim.datatype] %s(%d)\n", __func__, asa -> asa_Frame));
 
     timestamp = asa -> asa_Frame;
 
@@ -535,6 +535,8 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
 
     ObtainSemaphore( (&(aid -> aid_SigSem)) );
 
+    D(bug("[anim.datatype] %s: sem obtained ..\n", __func__));
+
     /* Like "realloc": Free any given frame here */
     if( alf -> alf_UserData )
     {
@@ -546,12 +548,12 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     }
 
     /* Find frame by timestamp */
-    if ((fn = FindFrameNode( (&(aid -> aid_FrameList)), (alf -> alf_TimeStamp) )) != NULL)
+    if ((fn = FindFrameNode( (&(aid -> aid_FrameList)), (ULONG)(alf -> alf_TimeStamp) )) != NULL)
     {
         LONG error = 0L;
 
         D(bug("[anim.datatype] %s: frame node @ 0x%p\n", __func__, fn));
-        
+
         aid -> aid_CurrFN = fn;
 
         /* Load bitmaps only if we don't cache the whole anim and
@@ -559,9 +561,12 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
          */
         if( ((aid -> aid_LoadAll) == FALSE) && (aid -> aid_FH) )
         {
+             D(bug("[anim.datatype] %s: fh @ 0x%p\n", __func__, aid -> aid_FH));
+
             /* If no bitmap is loaded, load it... */
             if( (fn -> fn_BitMap) == NULL )
             {
+                D(bug("[anim.datatype] %s: need to alloc/load .. \n", __func__));
                 if ((fn -> fn_BitMap = AllocBitMapPooled( cb, (ULONG)(aid -> aid_BMH -> bmh_Width), (ULONG)(aid -> aid_BMH -> bmh_Height), (ULONG)(aid -> aid_BMH -> bmh_Depth), (aid -> aid_FramePool) )) != NULL)
                 {
                     struct FrameNode *worknode = fn;
@@ -569,6 +574,8 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
                     UBYTE            *buff;
                     ULONG             buffsize;
                     BOOL                done = FALSE;
+
+                    D(bug("[anim.datatype] %s: frame bitmap @ 0x%p\n", __func__, fn -> fn_BitMap));
 
                     /* Buffer to fill. Below we try to read some more bytes
                      * (the size value is stored in worknode -> fn_LoadSize)
@@ -582,6 +589,7 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
                      */
 
                     worknode -> fn_LoadSize = worknode -> fn_BMSize;
+                    D(bug("[anim.datatype] %s: loadsize %d\n", __func__, worknode -> fn_LoadSize));
 
                     if( (worknode -> fn_Node . mln_Succ -> mln_Succ) && (aid -> aid_AsyncIO) )
                     {
@@ -594,6 +602,8 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
                     }
 
                     buffsize = worknode -> fn_LoadSize;
+
+                    D(bug("[anim.datatype] %s: buffsize %d\n", __func__, worknode -> fn_LoadSize));
 
                     do
                     {
@@ -631,6 +641,8 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
 
                             worknode = fn;
 
+                            D(bug("[anim.datatype] %s: worknode @ 0x%p\n", __func__, worknode));
+
                             while( current-- )
                             {
                                 worknode = worknode -> fn_PrevFrame;
@@ -638,20 +650,25 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
 
                             if( (worknode -> fn_BitMap) && (worknode != fn) )
                             {
+                                D(bug("[anim.datatype] %s: copying bitmap @ 0x%p\n", __func__, worknode -> fn_BitMap));
+
                                 CopyBitMap( cb, (worknode -> fn_BitMap), (fn -> fn_BitMap) );
+
+                                D(bug("[anim.datatype] %s: worknode @ 0x%p\n", __func__, worknode));
                             }
                             else
                             {
                                 LONG seekdist; /* seeking distance (later Seek result, if Seek'ed) */
 
-                                if (aid -> aid_CurrFilePos == 0)
-                                {
-                                    aid -> aid_CurrFilePos = Seek( (aid -> aid_FH), 0, OFFSET_CURRENT );
-                                    if (aid -> aid_CurrFilePos == 0)
-                                        seekdist = (worknode -> fn_BMOffset);
-                                }
-                                else
-                                    seekdist = ((worknode -> fn_BMOffset) - (aid -> aid_CurrFilePos));
+                                D(bug("[anim.datatype] %s: loading data\n", __func__));
+
+                                seekdist = ((worknode -> fn_BMOffset) - (aid -> aid_CurrFilePos));
+
+                                D(
+                                    bug("[anim.datatype] %s: fh off = %d\n", __func__, aid -> aid_CurrFilePos);
+                                    bug("[anim.datatype] %s: bm off  = %d\n", __func__, worknode -> fn_BMOffset);
+                                    bug("[anim.datatype] %s: seek = %d\n", __func__, seekdist);
+                                )
 
                                 /* Seek needed ? */
                                 if( seekdist != 0L )
@@ -768,7 +785,7 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
             fn -> fn_PostedFree = FALSE;
         }
 
-        retval = ((error)?(0UL):(IPTR)(alf -> alf_BitMap)); /* Result  */
+        retval = ((error)?(0):(IPTR)(alf -> alf_BitMap)); /* Result  */
         SetIoErr( error );                                   /* Result2 */
     }
     else
@@ -778,7 +795,17 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     }
 
     ReleaseSemaphore( (&(aid -> aid_SigSem)) );
-          
+
+    D(
+        if (retval)
+        {
+            bug("[anim.datatype] %s: frame #%d:\n", __func__, alf -> alf_Frame);
+            bug("[anim.datatype] %s:     bitmap @ 0x%p\n", __func__, alf -> alf_BitMap);
+            bug("[anim.datatype] %s:     timestamp %d, duration %d\n", __func__, alf -> alf_TimeStamp, alf -> alf_Duration);
+        }
+        else
+            bug("[anim.datatype] %s: failed (%08x)\n", __func__, retval);
+    )
     return retval;
 }
 

@@ -175,8 +175,8 @@ struct ClassBase
 
 /*****************************************************************************/
 
-#if defined(DEBUG)
-#define DFORMATS(...)        bug(__VA_ARGS__)
+#if DEBUG > 0
+#define DFORMATS(...)        bug(__VA_ARGS__);
 #else
 #define DFORMATS(...)
 #endif

@@ -22,12 +22,12 @@ struct FrameNode;
 // ANIM-4
 LONG generic_unpackanim4longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags )
 {
-    DFORMATS("[anim.datatype] %s()\n", __func__);
+    DFORMATS("[anim.datatype] %s()\n", __func__)
     return 0;
 }
 
 LONG generic_unpackanim4worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags )
 {
-    DFORMATS("[anim.datatype] %s()\n", __func__);
+    DFORMATS("[anim.datatype] %s()\n", __func__)
     return 0;
 }
