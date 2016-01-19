@@ -22,7 +22,7 @@ struct FrameNode;
 // ANIM-1
 LONG generic_xorbm(struct AnimHeader *anhd, struct BitMap *bm, struct BitMap *deltabm )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    DFORMATS("[anim.datatype] %s()\n", __func__);
 
     return 0;
 }

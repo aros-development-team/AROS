@@ -16,6 +16,7 @@
 #endif
 #include <aros/debug.h>
 
+struct ClassBase;
 struct AnimInstData;
 struct FrameNode;
 
@@ -737,7 +738,7 @@ ADD2LIBS("datatypes/animation.datatype", 0, struct Library *, AnimationBase);
 
 static int LibInit(struct ClassBase *cb)
 {
-    bug("[gifanim.datatype] %s()\n", __PRETTY_FUNCTION__);
+    bug("[gifanim.datatype] %s()\n", __func__);
 #endif
 
     InitSemaphore( (&(cb -> cb_Lock)) );
@@ -745,8 +746,6 @@ static int LibInit(struct ClassBase *cb)
     /* set up overload'able unpack hooks */
     cb ->unpackilbmbody = (unpack_ilbm_t) generic_unpackilbmbody;
     cb ->xorbm = (unpack_xor_t) generic_xorbm;
-    cb ->unpackanimidelta = (unpack_deltabm_t) generic_unpackanimidelta;
-    cb ->unpackanimjdelta = (unpack_deltabm_t) generic_unpackanimjdelta;
     cb ->unpacklongdelta = (unpack_delta_t) generic_unpacklongdelta;
     cb ->unpackshortdelta = (unpack_delta_t) generic_unpackshortdelta;
     cb ->unpackbytedelta = (unpack_delta_t) generic_unpackbytedelta;
@@ -758,6 +757,8 @@ static int LibInit(struct ClassBase *cb)
     cb ->unpackanim7worddelta = (unpack_delta_t) generic_unpackanim7worddelta;
     cb ->unpackanim8longdelta = (unpack_delta_t) generic_unpackanim8longdelta;
     cb ->unpackanim8worddelta =  (unpack_delta_t) generic_unpackanim8worddelta;
+    cb ->unpackanimidelta = (unpack_deltabm_t) generic_unpackanimidelta;
+    cb ->unpackanimjdelta = (unpack_deltabm_t) generic_unpackanimjdelta;
 
 #if !defined(__AROS__)
     if( (cb -> cb_SysBase -> LibNode . lib_Version) >= 39UL )

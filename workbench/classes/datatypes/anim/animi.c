@@ -22,6 +22,6 @@ struct FrameNode;
 // ANIM-I
 LONG generic_unpackanimidelta(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    DFORMATS("[anim.datatype] %s()\n", __func__);
     return 0;
 }

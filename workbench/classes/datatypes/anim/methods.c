@@ -15,6 +15,7 @@
 #endif
 #include <aros/debug.h>
 
+struct ClassBase;
 struct AnimInstData;
 struct FrameNode;
 
@@ -76,7 +77,7 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
     struct TagItem *ti;
     IPTR retval;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* We only support DTST_FILE, DTST_CLIPBOARD or DTST_RAM as source type */
     if (( ti = FindTagItem( DTA_SourceType, (((struct opSet *)msg) -> ops_AttrList) )) != NULL)
@@ -133,7 +134,7 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     struct ClassBase     *cb = (struct ClassBase *)(cl -> cl_UserData);
     LONG saved_ioerr = IoErr();
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Get a pointer to our object data */
     struct AnimInstData  *aid = (struct AnimInstData *)INST_DATA( cl, o );
@@ -180,7 +181,7 @@ IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
 #if (0)
     if( DoMethod( o, ICM_CHECKLOOP ) )
@@ -269,7 +270,7 @@ IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *dtw)
     struct ClassBase     *cb = (struct ClassBase *)(cl -> cl_UserData);
     IPTR retval;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Local data format not supported yet... */
     if( (dtw -> dtw_Mode) == DTWM_RAW )
@@ -316,7 +317,7 @@ IPTR DT_Start(struct IClass *cl, Object *o, struct adtStart *asa)
     ULONG             timestamp;
     IPTR retval;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     timestamp = asa -> asa_Frame;
 
@@ -403,7 +404,7 @@ IPTR DT_Pause(struct IClass *cl, Object *o, struct opSet *msg)
     struct AnimInstData  *aid = (struct AnimInstData *)INST_DATA( cl, o );
     IPTR retval;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Pass msg to superclass first ! */
     retval = DoSuperMethodA( cl, o, msg );
@@ -451,7 +452,7 @@ IPTR DT_Stop(struct IClass *cl, Object *o, struct opSet *msg)
     struct AnimInstData  *aid = (struct AnimInstData *)INST_DATA( cl, o );
     IPTR retval;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Pass msg to superclass first ! */
     retval = DoSuperMethodA( cl, o, msg );
@@ -528,9 +529,9 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     struct ClassBase     *cb = (struct ClassBase *)(cl -> cl_UserData);
     struct AnimInstData  *aid = (struct AnimInstData *)INST_DATA( cl, o );
     struct FrameNode *fn;
-    IPTR retval;
+    IPTR retval = 0;
 
-    D(bug("[anim.datatype] %s(%d:%d)\n", __PRETTY_FUNCTION__, alf -> alf_Frame, alf -> alf_TimeStamp));
+    D(bug("[anim.datatype] %s(%d:%d)\n", __func__, alf -> alf_Frame, alf -> alf_TimeStamp));
 
     ObtainSemaphore( (&(aid -> aid_SigSem)) );
 
@@ -549,7 +550,7 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     {
         LONG error = 0L;
 
-        D(bug("[anim.datatype] %s: frame node @ 0x%p\n", __PRETTY_FUNCTION__, fn));
+        D(bug("[anim.datatype] %s: frame node @ 0x%p\n", __func__, fn));
         
         aid -> aid_CurrFN = fn;
 
@@ -623,7 +624,7 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
                     /* Alloc buffer for compressed frame (DLTA) data */
                     if (!(done) && ((buff = (UBYTE *)AllocPooledVec( cb, (aid -> aid_Pool), (buffsize + 32UL) )) != NULL))
                     {
-                        D(bug("[anim.datatype] %s: buffer @ 0x%p (%d + 32 bytes)\n", __PRETTY_FUNCTION__, buff, buffsize));
+                        D(bug("[anim.datatype] %s: buffer @ 0x%p (%d + 32 bytes)\n", __func__, buff, buffsize));
                         do
                         {
                             ULONG current = rollback;
@@ -804,7 +805,7 @@ IPTR DT_UnLoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     struct FrameNode *fn;
     IPTR retval = (IPTR)TRUE;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Free bitmaps only if we don't cache the whole anim */
     if( (aid -> aid_LoadAll) == FALSE )

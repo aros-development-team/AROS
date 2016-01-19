@@ -16,6 +16,7 @@
 #endif
 #include <aros/debug.h>
 
+struct ClassBase;
 struct AnimInstData;
 struct FrameNode;
 
@@ -44,7 +45,7 @@ LONG ifferr2doserr[] =
   DTERROR_INVALID_DATA,       /* IFF syntax error.                            */
   ERROR_OBJECT_WRONG_TYPE,    /* Not an IFF file.                             */
   ERROR_REQUIRED_ARG_MISSING, /* Required call-back hook missing.             */
-  0xDEADDEADUL                /* Return to client.  You should never see this */
+  (LONG)(0xDEADDEADUL)        /* Return to client.  You should never see this */
 };
 
 /*****************************************************************************/
@@ -86,7 +87,7 @@ struct IClass *initClass( struct ClassBase *cb )
 {
     struct IClass *cl;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Create our class... */
     if( cl = MakeClass( ANIMDTCLASS, ANIMATIONDTCLASS, NULL, (ULONG)sizeof( struct AnimInstData ), 0UL ) )
@@ -115,7 +116,7 @@ IPTR Dispatch( REGA0 struct IClass *cl, REGA2 Object *o, REGA1 Msg msg )
     struct AnimInstData  *aid;
     IPTR                 retval = 0UL;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     switch( msg -> MethodID )
     {
@@ -170,7 +171,7 @@ BOOL FreeAbleFrame( struct AnimInstData *aid, struct FrameNode *fn )
 {
     struct FrameNode *currfn = aid -> aid_CurrFN;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Don't free the current nor the previous nor the next bitmap (to avoid problems with delta frames) */
     if( (fn == currfn) ||
@@ -401,7 +402,7 @@ void ReadENVPrefs( struct ClassBase *cb, struct AnimInstData *aid )
     TEXT   varbuff[ 258 ];
     STRPTR var;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if ((var = GetPrefsVar( cb, "Classes/DataTypes/anim.prefs" ) ) != NULL)
     {
@@ -644,7 +645,7 @@ void YouShouldRegister( struct ClassBase *cb, struct AnimInstData *aid )
 #define NUMCHOICES (6)
     ULONG             choices[ NUMCHOICES ];
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Create random values */
     CurrentTime( (&xb), (&xa) );
@@ -713,7 +714,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
     struct AnimInstData *aid   = (struct AnimInstData *)INST_DATA( (cb -> cb_Lib . cl_Class), o );
     LONG                 error = 0L;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Init */
     InitSemaphore( (&(aid -> aid_SigSem)) );
@@ -735,7 +736,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                            maxreltime = 0UL;                /* Minimum ah_RelTime              */
       struct tPoint       *grabpoint  = NULL;               /* Grabbing point of animation     */
 
-        D(bug("[anim.datatype] %s: pool @ 0x%p\n", __PRETTY_FUNCTION__, aid -> aid_Pool));
+        D(bug("[anim.datatype] %s: pool @ 0x%p\n", __func__, aid -> aid_Pool));
 
       /* Prefs defaults */
       aid -> aid_Volume          = 64UL;
@@ -759,10 +760,10 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
       {
         struct IFFHandle *iff = NULL;
 
-        D(bug("[anim.datatype] %s: handle @ 0x%p\n", __PRETTY_FUNCTION__, fh));
-        D(bug("[anim.datatype] %s: name @ 0x%p '%s'\n", __PRETTY_FUNCTION__, aid -> aid_ProjectName, aid -> aid_ProjectName));
-        D(bug("[anim.datatype] %s: bmh @ 0x%p\n", __PRETTY_FUNCTION__, bmh));
-        D(bug("[anim.datatype] %s: grab @ 0x%p\n", __PRETTY_FUNCTION__, grabpoint));
+        D(bug("[anim.datatype] %s: handle @ 0x%p\n", __func__, fh));
+        D(bug("[anim.datatype] %s: name @ 0x%p '%s'\n", __func__, aid -> aid_ProjectName, aid -> aid_ProjectName));
+        D(bug("[anim.datatype] %s: bmh @ 0x%p\n", __func__, bmh));
+        D(bug("[anim.datatype] %s: grab @ 0x%p\n", __func__, grabpoint));
 
         aid -> aid_BMH = bmh; /* Store BitMapHeader */
 
@@ -770,7 +771,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
         {
           case DTST_CLIPBOARD:
           {
-                D(bug("[anim.datatype] %s: DTST_CLIPBOARD\n", __PRETTY_FUNCTION__));
+                D(bug("[anim.datatype] %s: DTST_CLIPBOARD\n", __func__));
 
               aid -> aid_LoadAll = TRUE;
 
@@ -783,14 +784,14 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
               BPTR iff_file_fh;
               BPTR cloned_fh    = BNULL;
 
-            D(bug("[anim.datatype] %s: DTST_FILE\n", __PRETTY_FUNCTION__));
+            D(bug("[anim.datatype] %s: DTST_FILE\n", __func__));
 
               iff = (struct IFFHandle *)fh;
 
               /* Attempt to open file from given stream (allows usage of virtual fs when using datatypes.library V45) */
               iff_file_fh = (BPTR)(iff -> iff_Stream); /* see iffparse.library/InitIFFasDOS autodoc */
 
-            D(bug("[anim.datatype] %s: iff file handle @ 0x%p\n", __PRETTY_FUNCTION__, iff_file_fh));
+            D(bug("[anim.datatype] %s: iff file handle @ 0x%p\n", __func__, iff_file_fh));
 
               if( iff_file_fh )
               {
@@ -835,7 +836,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
 
           case DTST_RAM:
           {
-                D(bug("[anim.datatype] %s: DTST_RAM\n", __PRETTY_FUNCTION__));
+                D(bug("[anim.datatype] %s: DTST_RAM\n", __func__));
 
               /* do nothing */
           }
@@ -902,20 +903,20 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                 {
                   struct ContextNode *cn;
 
-                    D(bug("[anim.datatype] %s: Parsing IFF ... \n", __PRETTY_FUNCTION__));
+                    D(bug("[anim.datatype] %s: Parsing IFF ... \n", __func__));
 
                   if ((error = ParseIFF( iff, IFFPARSE_SCAN ) ) != 0)
                   {
                     /* EOF (End Of File) is no error here... */
                     if( error == IFFERR_EOF )
                     {
-                        D(bug("[anim.datatype] %s: EOF Reached\n", __PRETTY_FUNCTION__, error));
+                        D(bug("[anim.datatype] %s: EOF Reached\n", __func__, error));
                       error = 0L;
                     }
                     D(
                         else
                         {
-                            bug("[anim.datatype] %s: Error! (%08x)\n", __PRETTY_FUNCTION__, error);
+                            bug("[anim.datatype] %s: Error! (%08x)\n", __func__, error);
                         }
                     )
                     break;
@@ -929,7 +930,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                       ULONG poolsize,
                             availmem;
 
-                        D(bug("[anim.datatype] %s: BitMapHeader = %d bytes (struct %d)\n", __PRETTY_FUNCTION__, bmhdprop-> sp_Size, sizeof(struct BitMapHeader)));
+                        D(bug("[anim.datatype] %s: BitMapHeader = %d bytes (struct %d)\n", __func__, bmhdprop-> sp_Size, sizeof(struct BitMapHeader)));
 #if !defined(__AROS__)
                       *bmh = *((struct BitMapHeader *)(bmhdprop -> sp_Data));
 #else
@@ -952,7 +953,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                       animheight = bmh -> bmh_Height;
                       animdepth  = bmh -> bmh_Depth;
 
-                      D(bug("[anim.datatype] %s: anim dimension %dx%dx%d\n", __PRETTY_FUNCTION__, animwidth, animheight, animdepth));
+                      D(bug("[anim.datatype] %s: anim dimension %dx%dx%d\n", __func__, animwidth, animheight, animdepth));
                       availmem = AvailMem( MEMF_PUBLIC );
 
                       /* Create a seperate pool for frames:
@@ -966,7 +967,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                         poolsize /= 2UL;
                       }
 
-                      D(bug("[anim.datatype] %s: pool size = %d\n", __PRETTY_FUNCTION__, poolsize));
+                      D(bug("[anim.datatype] %s: pool size = %d\n", __func__, poolsize));
 
                       
                       /* Create a memory pool for frame bitmaps */
@@ -974,7 +975,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                       {
                         error = ERROR_NO_FREE_STORE;
                       }
-                      D(bug("[anim.datatype] %s: Frame pool @ 0x%p\n", __PRETTY_FUNCTION__, aid -> aid_FramePool));
+                      D(bug("[anim.datatype] %s: Frame pool @ 0x%p\n", __func__, aid -> aid_FramePool));
                     }
                   }
 
@@ -1153,7 +1154,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                     {
                       STRPTR buff;
 
-                      D(bug("[anim.datatype] %s: Name '%s'\n", __PRETTY_FUNCTION__, nameprop -> sp_Data));
+                      D(bug("[anim.datatype] %s: Name '%s'\n", __func__, nameprop -> sp_Data));
                       /* Allocate a temp buffer so that stccpy can add a '\0'-terminator */
                       if ((buff = (STRPTR)AllocVec( ((nameprop -> sp_Size) + 2UL), MEMF_ANY ) ) != NULL)
                       {
@@ -1179,16 +1180,16 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                     {
                       case ID_ILBM:
                       {
-                            D(bug("[anim.datatype] %s: ID_ILBM\n", __PRETTY_FUNCTION__));
+                            D(bug("[anim.datatype] %s: ID_ILBM\n", __func__));
                           switch( (cn -> cn_ID) )
                           {
                             case ID_FORM:
                             {
-                                D(bug("[anim.datatype] %s: ID_FORM\n", __PRETTY_FUNCTION__));
+                                D(bug("[anim.datatype] %s: ID_FORM\n", __func__));
                                 /* Create and prepare a new frame node */
                                 if ((fn = AllocFrameNode( cb, (aid -> aid_Pool) ) ) != NULL)
                                 {
-                                    D(bug("[anim.datatype] %s: FrameNode #%d @ 0x%p\n", __PRETTY_FUNCTION__, timestamp, fn));
+                                    D(bug("[anim.datatype] %s: FrameNode #%d @ 0x%p\n", __func__, timestamp, fn));
                                     AddTail( (struct List *)(&(aid -> aid_FrameList)), (struct Node *)(&(fn -> fn_Node)) );
 
                                     fn -> fn_TimeStamp = timestamp++;
@@ -1205,7 +1206,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
 
                             case ID_ANHD:
                             {
-                                D(bug("[anim.datatype] %s: ID_ANHD\n", __PRETTY_FUNCTION__));
+                                D(bug("[anim.datatype] %s: ID_ANHD\n", __func__));
                                 if( fn )
                                 {
                                   ULONG interleave;
@@ -1238,17 +1239,17 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                     interleave = 2;
                                   }
 
-                                  D(bug("[anim.datatype] %s: interleave = %d\n", __PRETTY_FUNCTION__, interleave));
+                                  D(bug("[anim.datatype] %s: interleave = %d\n", __func__, interleave));
                                   /* Get previous frame */
                                   fn -> fn_PrevFrame = GetPrevFrameNode( fn, interleave );
-                                  D(bug("[anim.datatype] %s: PrevFrame @ 0x%p\n", __PRETTY_FUNCTION__, fn -> fn_PrevFrame));
+                                  D(bug("[anim.datatype] %s: PrevFrame @ 0x%p\n", __func__, fn -> fn_PrevFrame));
                                 }
                             }
                                 break;
 
                             case ID_CMAP:
                             {
-                                D(bug("[anim.datatype] %s: ID_CMAP\n", __PRETTY_FUNCTION__));
+                                D(bug("[anim.datatype] %s: ID_CMAP\n", __func__));
                                 if( fn )
                                 {
                                   UBYTE *buff;
@@ -1256,11 +1257,11 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                   /* Allocate buffer */
                                   if ((buff = (UBYTE *)AllocPooledVec( cb, (aid -> aid_Pool), ((cn -> cn_Size) + 16UL) ) ) != NULL)
                                   {
-                                    D(bug("[anim.datatype] %s: buffer @ 0x%p\n", __PRETTY_FUNCTION__, buff));
+                                    D(bug("[anim.datatype] %s: buffer @ 0x%p\n", __func__, buff));
                                     /* Load CMAP data */
                                     error = ReadChunkBytes( iff, buff, (cn -> cn_Size) );
 
-                                      D(bug("[anim.datatype] %s: read %d bytes\n", __PRETTY_FUNCTION__, error));
+                                      D(bug("[anim.datatype] %s: read %d bytes\n", __func__, error));
                                     /* All read ? */
                                     if( error == (cn -> cn_Size) )
                                     {
@@ -1270,7 +1271,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                       {
                                         if( !CMAP2Object( cb, o, buff, (cn -> cn_Size) ) )
                                         {
-                                            D(bug("[anim.datatype] %s: failed to map colors to object\n", __PRETTY_FUNCTION__));
+                                            D(bug("[anim.datatype] %s: failed to map colors to object\n", __func__));
                                           /* can't alloc object's color table */
                                           error = ERROR_NO_FREE_STORE;
                                         }
@@ -1287,7 +1288,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                         {
                                           if ((fn -> fn_CMap = CMAP2ColorMap( cb, aid, buff, (cn -> cn_Size) ) ) != NULL)
                                           {
-                                            D(bug("[anim.datatype] %s: frame colormap @ 0x%p\n", __PRETTY_FUNCTION__, fn -> fn_CMap));
+                                            D(bug("[anim.datatype] %s: frame colormap @ 0x%p\n", __func__, fn -> fn_CMap));
                                             error = 0L; /* Success ! */
                                             numcmaps++;
                                           }
@@ -1302,7 +1303,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                     D(
                                     else
                                     {
-                                       bug("[anim.datatype] %s: != %d bytes !!!!\n", __PRETTY_FUNCTION__, cn -> cn_Size);
+                                       bug("[anim.datatype] %s: != %d bytes !!!!\n", __func__, cn -> cn_Size);
                                     })
 
                                     FreePooledVec( cb, (aid -> aid_Pool), buff );
@@ -1319,7 +1320,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                             case ID_BODY:
                             case ID_DLTA:
                             {
-                                D(bug("[anim.datatype] %s: ID_BODY/ID_DLTA\n", __PRETTY_FUNCTION__));
+                                D(bug("[anim.datatype] %s: ID_BODY/ID_DLTA\n", __func__));
                                 if( fn )
                                 {
                                   /* Store position of DLTA (pos points to the DLTA ID) */
@@ -1337,20 +1338,20 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                         {
                                           UBYTE *buff;
 
-                                            D(bug("[anim.datatype] %s: bitmap @ 0x%p\n", __PRETTY_FUNCTION__, fn -> fn_BitMap));
+                                            D(bug("[anim.datatype] %s: bitmap @ 0x%p\n", __func__, fn -> fn_BitMap));
                                           /* Allocate buffer */
                                           if ((buff = (UBYTE *)AllocPooledVec( cb, (aid -> aid_Pool), ((cn -> cn_Size) + 32UL) ) ) != NULL)
                                           {
                                             struct FrameNode *prevfn;
 
-                                              D(bug("[anim.datatype] %s: buffer @ 0x%p\n", __PRETTY_FUNCTION__, buff));
+                                              D(bug("[anim.datatype] %s: buffer @ 0x%p\n", __func__, buff));
 
                                             /* Clear buffer to get rid of some problems with corrupted DLTAs */
                                             memset( (void *)buff, 0, (size_t)((cn -> cn_Size) + 31UL) );
 
                                             /* Get previous frame */
                                             prevfn = fn -> fn_PrevFrame;
-                                            D(bug("[anim.datatype] %s: prevfn @ 0x%p, prev->bm @ 0x%p\n", __PRETTY_FUNCTION__, prevfn, prevfn -> fn_BitMap));
+                                            D(bug("[anim.datatype] %s: prevfn @ 0x%p, prev->bm @ 0x%p\n", __func__, prevfn, prevfn -> fn_BitMap));
 
                                             /* Load delta data */
                                             error = ReadChunkBytes( iff, buff, (cn -> cn_Size) );
@@ -1403,7 +1404,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                   /* on error: leave for-loop */
                   if( error )
                   {
-                    D(bug("[anim.datatype] %s: error occured\n", __PRETTY_FUNCTION__));
+                    D(bug("[anim.datatype] %s: error occured\n", __func__));
                     break;
                   }
                 }
@@ -1689,7 +1690,7 @@ struct FrameNode *AllocFrameNode( struct ClassBase *cb, APTR pool )
 {
     struct FrameNode *fn;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if ((fn = (struct FrameNode *)AllocPooled( pool, (ULONG)sizeof( struct FrameNode ) ) ) != NULL)
     {
@@ -1702,7 +1703,7 @@ struct FrameNode *AllocFrameNode( struct ClassBase *cb, APTR pool )
 
 struct FrameNode *FindFrameNode( struct MinList *fnl, ULONG timestamp )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( fnl )
     {
@@ -1735,7 +1736,7 @@ struct FrameNode *FindFrameNode( struct MinList *fnl, ULONG timestamp )
 
 void FreeFrameNodeResources( struct ClassBase *cb, struct MinList *fnl )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( fnl )
     {
@@ -1764,7 +1765,7 @@ void CopyBitMap( struct ClassBase *cb, struct BitMap *bm1, struct BitMap *bm2 )
     ULONG  bpr1 = bm1 -> BytesPerRow;
     ULONG  bpr2 = bm2 -> BytesPerRow;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Same bitmap layout ? */
     if( bpr1 == bpr2 )
@@ -1820,7 +1821,7 @@ void CopyBitMap( struct ClassBase *cb, struct BitMap *bm1, struct BitMap *bm2 )
 static
 void XCopyMem( struct ClassBase *cb, APTR src, APTR dest, ULONG size )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Check if we can use the optimized CopyMemQuick */
     if( (ALIGN_LONG( src ) == src) && (ALIGN_LONG( dest ) == dest) )
@@ -1847,7 +1848,7 @@ void XCopyMem( struct ClassBase *cb, APTR src, APTR dest, ULONG size )
 
 void ClearBitMap( struct BitMap *bm )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( bm )
     {
@@ -1866,7 +1867,7 @@ void ClearBitMap( struct BitMap *bm )
 static
 void XORBitMaps( struct BitMap *op1, struct BitMap *op2 )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( op1 && op2 )
     {
@@ -1916,7 +1917,7 @@ struct BitMap *AllocBitMapPooled( struct ClassBase *cb, ULONG width, ULONG heigh
                    moredepthsize,
                    size;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     planesize       = (ULONG)RASSIZE( ((width + 63UL) & ~63UL), height );
     moredepthsize   = (depth > 8UL)?((depth - 8UL) * sizeof( PLANEPTR )):(0UL);
@@ -1962,7 +1963,7 @@ BOOL CMAP2Object( struct ClassBase *cb, Object *o, UBYTE *rgb, ULONG rgbsize )
     ULONG                *acregs;
     IPTR                 nc;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* file has this many colors (e.g. each color has one byte per R,B,G-gun) */
     nc = rgbsize / 3UL;
@@ -2010,7 +2011,7 @@ struct ColorMap *CMAP2ColorMap( struct ClassBase *cb, struct AnimInstData *aid, 
     ULONG            a_nc   = (1UL << (ULONG)(aid -> aid_BMH -> bmh_Depth)); /* Number of colors in animation */
     ULONG            rgb_nc = rgbsize / 3UL;                                 /* Number of colors in CMAP      */
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Get a colormap which hold all colors */
     if ((cm = GetColorMap( (long)MAX( a_nc, rgb_nc ) ) ) != NULL)
@@ -2043,7 +2044,7 @@ struct ColorMap *CopyColorMap( struct ClassBase *cb, struct ColorMap *src )
 {
     struct ColorMap *dest = NULL;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( src )
     {
@@ -2177,7 +2178,7 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
 {
     LONG error = 0L;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( bm && ah && dlta && dltasize )
     {
@@ -2357,7 +2358,7 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
 static
 void DumpAnimHeader( struct ClassBase *cb, struct AnimInstData *aid, ULONG ti, struct AnimHeader *anhd )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( anhd )
     {
@@ -2407,7 +2408,7 @@ struct FrameNode *GetPrevFrameNode( struct FrameNode *currfn, ULONG interleave )
     struct FrameNode *worknode,
                      *prevnode;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Get previous frame */
     worknode = currfn;
@@ -2427,7 +2428,7 @@ struct FrameNode *GetPrevFrameNode( struct FrameNode *currfn, ULONG interleave )
 
 void OpenLogfile( struct ClassBase *cb, struct AnimInstData *aid )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( (aid -> aid_VerboseOutput) == NULL )
     {
@@ -2486,7 +2487,7 @@ void verbose_printf( struct ClassBase *cb, struct AnimInstData *aid, STRPTR form
 static
 void AttachSample( struct ClassBase *cb, struct AnimInstData *aid )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( aid -> aid_Sample )
     {
@@ -2542,7 +2543,7 @@ ULONG SaveIFFAnim( struct ClassBase *cb, struct IClass *cl, Object *o, struct dt
     ULONG retval = 0UL;
     LONG  error  = 0L;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* A NULL file handle is a nop (GMultiView uses this to test if a datatype supports RAW writing) */
     if( dtw -> dtw_FileHandle )
@@ -2579,9 +2580,15 @@ ULONG SaveIFFAnim( struct ClassBase *cb, struct IClass *cl, Object *o, struct dt
                            *ti;
         struct AnimContext *ac;
         struct IFFHandle   *iff;
-        struct BitMapHeader xbmh   = *bmh;
+        struct BitMapHeader xbmh;
         BOOL                planar       = MAKEBOOL( GetBitMapAttr( keyframe, BMA_FLAGS ) & BMF_STANDARD );
         BOOL                interleaved  = MAKEBOOL( GetBitMapAttr( keyframe, BMA_FLAGS ) & BMF_INTERLEAVED );
+
+#if !defined(__AROS__)
+        xbmh   = *bmh;
+#else
+        CopyMem(bmh, &xbmh, sizeof(struct BitMapHeader));
+#endif
 
         if( planar && (!interleaved) )
         {
@@ -2750,7 +2757,7 @@ struct IFFHandle *CreateDOSIFFHandle( struct ClassBase *cb, BPTR fh )
 {
     struct IFFHandle *iff;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if ((iff = AllocIFF() ) != NULL)
     {
@@ -2768,7 +2775,7 @@ LONG StartIFFAnim3( struct ClassBase *cb, struct AnimInstData *aid, struct IFFHa
 {
     LONG error;
     
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( !(error = OpenIFF( iff, IFFF_WRITE )) )
     {
@@ -2873,7 +2880,7 @@ LONG StartIFFAnim3( struct ClassBase *cb, struct AnimInstData *aid, struct IFFHa
 static
 void EndIFFAnim3( struct ClassBase *cb, struct AnimInstData *aid, struct IFFHandle *iff )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( iff )
     {
@@ -2896,7 +2903,7 @@ LONG WriteIFFAnim3( struct ClassBase *cb, struct IFFHandle *iff, struct AnimCont
 {
     LONG error = 0L;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     for( ;; ) /* not a loop, used as a jump-table */
     {
@@ -2966,7 +2973,7 @@ LONG PutAnim3Delta( struct ClassBase *cb, struct IFFHandle *iff, struct AnimCont
                                                                                 * in compression units (WORD).
                                                                                 */
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     memset( (ac -> ac_WorkBuffer), 0, (size_t)(ac -> ac_WorkBufferSize) );
 
@@ -3052,7 +3059,7 @@ LONG PutILBMCMAP( struct ClassBase *cb, struct IFFHandle *iff, ULONG *cregs, ULO
     ULONG                i;
     struct ColorRegister cm;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if ((error = PushChunk( iff, 0UL, ID_CMAP, IFFSIZE_UNKNOWN ) ) != 0)
       return( error );
@@ -3093,7 +3100,7 @@ LONG PutILBMBody( struct ClassBase *cb, struct IFFHandle *iff, struct BitMap *bi
              iRow;
     BYTE    *planes[ 24 ]; /* array of ptrs to planes & mask */
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     /* Copy the ptrs to bit & mask planes into local array "planes" */
     for( iPlane = 0 ; iPlane < planeCnt; iPlane++ )
@@ -3128,7 +3135,7 @@ struct AnimContext *CreateAnimContext( struct ClassBase *cb, ULONG width, ULONG 
 {
     APTR pool;
 
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if ((pool = CreatePool( (MEMF_PUBLIC | MEMF_CLEAR), 1024UL, 1024UL ) ) != (APTR)NULL)
     {
@@ -3163,7 +3170,7 @@ struct AnimContext *CreateAnimContext( struct ClassBase *cb, ULONG width, ULONG 
 static
 struct BitMap *PrevFrame( struct ClassBase *cb, struct AnimContext *ac )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( ac )
     {
@@ -3178,7 +3185,7 @@ struct BitMap *PrevFrame( struct ClassBase *cb, struct AnimContext *ac )
 static
 void SwapFrames( struct ClassBase *cb, struct AnimContext *ac )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( ac )
     {
@@ -3190,7 +3197,7 @@ void SwapFrames( struct ClassBase *cb, struct AnimContext *ac )
 static
 struct BitMap *CurrFrame( struct ClassBase *cb, struct AnimContext *ac )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( ac )
     {
@@ -3204,7 +3211,7 @@ struct BitMap *CurrFrame( struct ClassBase *cb, struct AnimContext *ac )
 static
 void DeleteAnimContext( struct ClassBase *cb, struct AnimContext *ac )
 {
-    D(bug("[anim.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[anim.datatype] %s()\n", __func__));
 
     if( ac )
     {
