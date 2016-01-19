@@ -51,6 +51,8 @@
 #define	ADTA_Allocated		PDTA_Allocated
 #define	ADTA_NumColors		PDTA_NumColors
 #define	ADTA_NumAlloc		PDTA_NumAlloc
+#define	ADTA_NumSparse		PDTA_NumSparse
+#define	ADTA_SparseTable		PDTA_SparseTable
 #define	ADTA_Remap		PDTA_Remap
 #define	ADTA_Screen		PDTA_Screen
 #define	ADTA_Width		(ADTA_Dummy + 1)
