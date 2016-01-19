@@ -1625,12 +1625,12 @@ void ReadENVPrefs( struct ClassBase *classbase, struct MPEGVideoInstData *mvid )
 
               if( animargs . progressgauge )
               {
-                mvid -> mvid_PR . pr_Max = 0UL;
+                mvid -> mvid_PR . pr_Max = (LONG)0UL;
               }
 
               if( animargs . noprogressgauge )
               {
-                mvid -> mvid_PR . pr_Max = ~(0UL);
+                mvid -> mvid_PR . pr_Max = (LONG)~0UL;
               }
 
               if( animargs . quality )
@@ -1886,7 +1886,7 @@ void UpdateProgressRequester( struct MPEGVideoInstData *mvid )
         fullsec = (ULONG)((double)currsec / (double)(mvid -> mvid_PR . pr_Curr) * (double)(mvid -> mvid_PR . pr_Max));
 
         /* Write buffer */
-        mysprintf( classbase, buffer, "%lu:%02.2lu/%lu:%02.2lu",
+        mysprintf( classbase, buffer, "%lu:%2.2lu/%lu:%2.2lu",
                    (currsec / 60UL), (currsec % 60UL),
                    (fullsec / 60UL), (fullsec % 60UL) );
 
