@@ -56,8 +56,8 @@ extern AROS_UFP3(void, playerProc,
 
 extern void ReadENVPrefs(APTR, APTR);
 
-ADD2LIBS("realtime.library", 0, struct Library *, RealTimeBase);
-ADD2LIBS("gadgets/tapedeck.gadget", 0, struct Library *, TapeDeckBase);
+ADD2LIBS("realtime.library", 0, struct Library *, RealTimeBase)
+ADD2LIBS("gadgets/tapedeck.gadget", 0, struct Library *, TapeDeckBase)
 
 const IPTR SupportedMethods[] =
 {
@@ -145,17 +145,17 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
         { TAG_DONE,             0                       }
     };
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (!animd->ad_Player)
     {
         /* create a realtime player */
-        animd->ad_PlayerHook.h_Entry = (HOOKFUNC)playerHookFunc; 
+        animd->ad_PlayerHook.h_Entry = (unsigned char *)playerHookFunc; 
         animd->ad_PlayerHook.h_Data = animd;
         playertags[3].ti_Data = (IPTR)&animd->ad_PlayerHook;
         animd->ad_Player = CreatePlayerA(playertags);
     }
-    D(bug("[animation.datatype] %s: Realtime Player @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_Player));
+    D(bug("[animation.datatype] %s: Realtime Player @ 0x%p\n", __func__, animd->ad_Player);)
 
     if (!animd->ad_ProcessData)
     {
@@ -215,7 +215,7 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
             Delay (1);
         }
     }
-    D(bug("[animation.datatype] %s: Buffering Process @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_BufferProc));
+    D(bug("[animation.datatype] %s: Buffering Process @ 0x%p\n", __func__, animd->ad_BufferProc);)
 
     if ((animd->ad_ProcessData) && !(animd->ad_PlayerProc))
     {
@@ -236,7 +236,7 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
             Delay (1);
         }
     }
-    D(bug("[animation.datatype] %s: Playback Process @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_PlayerProc));
+    D(bug("[animation.datatype] %s: Playback Process @ 0x%p\n", __func__, animd->ad_PlayerProc);)
 
     return 1;
 }
@@ -246,15 +246,17 @@ IPTR DT_FreePens(struct IClass *cl, struct Gadget *g, Msg msg)
     struct Animation_Data *animd = INST_DATA (cl, g);
     int i;
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if ((animd->ad_ColorData.acd_ColorMap) && (animd->ad_ColorData.acd_NumAlloc > 0))
     {
-        D(bug("[animation.datatype] %s: attempting to free %d pens\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_NumAlloc));
-        D(bug("[animation.datatype] %s: colormap @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_ColorMap));
+        D(
+            bug("[animation.datatype] %s: attempting to free %d pens\n", __func__, animd->ad_ColorData.acd_NumAlloc);
+            bug("[animation.datatype] %s: colormap @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorMap);
+        )
         for (i = animd->ad_ColorData.acd_NumAlloc - 1; i >= 0; i--)
         {
-            D(bug("[animation.datatype] %s: freeing pen %d\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_Allocated[i]));
+            D(bug("[animation.datatype] %s: freeing pen %d\n", __func__, animd->ad_ColorData.acd_Allocated[i]);)
             ReleasePen(animd->ad_ColorData.acd_ColorMap, animd->ad_ColorData.acd_Allocated[i]);
         }
 
@@ -269,7 +271,7 @@ IPTR DT_FreeColorTables(struct IClass *cl, struct Gadget *g, Msg msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (animd->ad_ColorData.acd_ColorRegs)
         FreeMem(animd->ad_ColorData.acd_ColorRegs, 1 + animd->ad_ColorData.acd_NumColors * sizeof (struct ColorRegister));
@@ -294,7 +296,7 @@ IPTR DT_AllocColorTables(struct IClass *cl, struct Gadget *g, struct privAllocCo
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if ((msg->NumColors != animd->ad_ColorData.acd_NumColors) && 
         (animd->ad_ColorData.acd_NumColors > 0))
@@ -305,17 +307,17 @@ IPTR DT_AllocColorTables(struct IClass *cl, struct Gadget *g, struct privAllocCo
     if (animd->ad_ColorData.acd_NumColors > 0)
     {
         animd->ad_ColorData.acd_ColorRegs = AllocMem(1 + animd->ad_ColorData.acd_NumColors * sizeof (struct ColorRegister), MEMF_CLEAR);
-        D(bug("[animation.datatype] %s: ColorRegs @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_ColorRegs));
+        D(bug("[animation.datatype] %s: ColorRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorRegs);)
         animd->ad_ColorData.acd_ColorTable[0] = AllocMem(1 + animd->ad_ColorData.acd_NumColors * sizeof (UBYTE), MEMF_CLEAR); // shared pen table
-        D(bug("[animation.datatype] %s: ColorTable @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_ColorTable[0]));
+        D(bug("[animation.datatype] %s: ColorTable @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorTable[0]);)
         animd->ad_ColorData.acd_ColorTable[1] = AllocMem(1 + animd->ad_ColorData.acd_NumColors * sizeof (UBYTE), MEMF_CLEAR);
-        D(bug("[animation.datatype] %s: ColorTable2 @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_ColorTable[1]));
+        D(bug("[animation.datatype] %s: ColorTable2 @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorTable[1]);)
         animd->ad_ColorData.acd_Allocated = AllocMem(1 + animd->ad_ColorData.acd_NumColors * sizeof (UBYTE), MEMF_CLEAR);
-        D(bug("[animation.datatype] %s: Allocated pens Array @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_Allocated));
+        D(bug("[animation.datatype] %s: Allocated pens Array @ 0x%p\n", __func__, animd->ad_ColorData.acd_Allocated);)
         animd->ad_ColorData.acd_CRegs = AllocMem(1 + animd->ad_ColorData.acd_NumColors * (sizeof (ULONG) * 3), MEMF_CLEAR); // RGB32 triples used with SetRGB32CM
-        D(bug("[animation.datatype] %s: CRegs @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_CRegs));
+        D(bug("[animation.datatype] %s: CRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_CRegs);)
         animd->ad_ColorData.acd_GRegs = AllocMem(1 + animd->ad_ColorData.acd_NumColors * (sizeof (ULONG) * 3), MEMF_CLEAR); // remapped version of ad_ColorData.acd_CRegs
-        D(bug("[animation.datatype] %s: GRegs @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_GRegs));
+        D(bug("[animation.datatype] %s: GRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_GRegs);)
     }
 
     return 1;
@@ -325,7 +327,7 @@ IPTR DT_AllocBuffer(struct IClass *cl, struct Gadget *g, struct privAllocBuffer 
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (animd->ad_FrameBuffer)
         FreeBitMap(animd->ad_FrameBuffer);
@@ -333,8 +335,10 @@ IPTR DT_AllocBuffer(struct IClass *cl, struct Gadget *g, struct privAllocBuffer 
     animd->ad_FrameBuffer = AllocBitMap(animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, msg->Depth,
                                   BMF_CLEAR, msg->Friend);
 
-    D(bug("[animation.datatype] %s: Frame Buffer @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_FrameBuffer));
-    D(bug("[animation.datatype] %s:     %dx%dx%d\n", __PRETTY_FUNCTION__, animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, msg->Depth));
+    D(
+        bug("[animation.datatype] %s: Frame Buffer @ 0x%p\n", __func__, animd->ad_FrameBuffer);
+        bug("[animation.datatype] %s:     %dx%dx%d\n", __func__, animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, msg->Depth);
+    )
 
     return (IPTR)animd->ad_FrameBuffer;
 }
@@ -343,7 +347,7 @@ IPTR DT_RenderBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffe
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (msg->Source)
     {
@@ -392,14 +396,16 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
     ULONG curpen;
     int i, x;
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (animd->ad_Window)
     {
         if ((animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
         {
-            animd->ad_ColorData.acd_ColorMap = animd->ad_Window->WScreen->ViewPort.ColorMap;
-            D(bug("[animation.datatype] %s: colormap @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_ColorMap));
+            if (!(animd->ad_ColorData.acd_ColorMap))
+                animd->ad_ColorData.acd_ColorMap = animd->ad_Window->WScreen->ViewPort.ColorMap;
+
+            D(bug("[animation.datatype] %s: colormap @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorMap);)
 
             for (i = 0; i < animd->ad_ColorData.acd_NumColors; i++)
             {
@@ -412,7 +418,7 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
                 GetRGB32(animd->ad_Window->WScreen->ViewPort.ColorMap,
                     animd->ad_ColorData.acd_Allocated[curpen], 1, &animd->ad_ColorData.acd_GRegs[animd->ad_ColorData.acd_NumAlloc * 3]);
 
-                D(bug("[animation.datatype] %s: bestpen #%d for %02x%02x%02x\n", __PRETTY_FUNCTION__, animd->ad_ColorData.acd_Allocated[curpen], (animd->ad_ColorData.acd_CRegs[i * 3] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 1] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 2] & 0xFF)));
+                D(bug("[animation.datatype] %s: bestpen #%d for %02x%02x%02x\n", __func__, animd->ad_ColorData.acd_Allocated[curpen], (animd->ad_ColorData.acd_CRegs[i * 3] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 1] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 2] & 0xFF));)
 
                 animd->ad_ColorData.acd_ColorTable[0][i] = animd->ad_ColorData.acd_Allocated[curpen];
                 animd->ad_ColorData.acd_ColorTable[1][i] = animd->ad_ColorData.acd_Allocated[curpen];
@@ -429,7 +435,7 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
 
             if ((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8))
             {
-                D(bug("[animation.datatype] %s: remapping HAM%d\n", __PRETTY_FUNCTION__, srcdepth));
+                D(bug("[animation.datatype] %s: remapping HAM%d\n", __func__, srcdepth);)
                 outline = AllocVec(animd->ad_BitMapHeader.bmh_Width << 2, MEMF_ANY);
             }
             else
@@ -543,137 +549,150 @@ IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     switch(msg->opg_AttrID)
     {
     case ADTA_KeyFrame:
-        D(bug("[animation.datatype] %s: ADTA_KeyFrame\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_KeyFrame\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_KeyFrame;
         break;
 
     case ADTA_ModeID:
-        D(bug("[animation.datatype] %s: ADTA_ModeID\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_ModeID\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ModeID;
         break;
 
     case ADTA_Width:
-        D(bug("[animation.datatype] %s: ADTA_Width\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Width\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_BitMapHeader.bmh_Width;
-        D(bug("[animation.datatype] %s:     = %d\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %d\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_Height:
-        D(bug("[animation.datatype] %s: ADTA_Height\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Height\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_BitMapHeader.bmh_Height;
-        D(bug("[animation.datatype] %s:     = %d\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %d\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_Depth:
-        D(bug("[animation.datatype] %s: ADTA_Depth\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Depth\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_BitMapHeader.bmh_Depth;
-        D(bug("[animation.datatype] %s:     = %d\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %d\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_Frames:
-        D(bug("[animation.datatype] %s: ADTA_Frames\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Frames\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_FrameData.afd_Frames;
         break;
 
     case ADTA_Frame:
-        D(bug("[animation.datatype] %s: ADTA_Frame\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Frame\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_FrameData.afd_FrameCurrent;
         break;
 
+    case ADTA_TicksPerFrame:
+        D(bug("[animation.datatype] %s: ADTA_TicksPerFrame\n", __func__);)
+        *msg->opg_Storage = (IPTR) animd->ad_TimerData.atd_TicksPerFrame;
+        break;
+
     case ADTA_FramesPerSecond:
-        D(bug("[animation.datatype] %s: ADTA_FramesPerSecond\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_FramesPerSecond\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_TimerData.atd_FramesPerSec;
         break;
 
     case ADTA_FrameIncrement:
-        D(bug("[animation.datatype] %s: ADTA_FrameIncrement\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_FrameIncrement\n", __func__);)
+        *msg->opg_Storage = (IPTR) 10UL;
         break;
+
     case ADTA_Sample:
-        D(bug("[animation.datatype] %s: ADTA_Sample\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Sample\n", __func__);)
         break;
     case ADTA_SampleLength:
-        D(bug("[animation.datatype] %s: ADTA_SampleLength\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_SampleLength\n", __func__);)
         break;
+
     case ADTA_Period:
-        D(bug("[animation.datatype] %s: ADTA_Period\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Period\n", __func__);)
+        *msg->opg_Storage = (IPTR) 360UL;
         break;
+
     case ADTA_Volume:
-        D(bug("[animation.datatype] %s: ADTA_Volume\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Volume\n", __func__);)
+        *msg->opg_Storage = (IPTR) 64UL;
         break;
+
     case ADTA_Cycles:
-        D(bug("[animation.datatype] %s: ADTA_Cycles\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Cycles\n", __func__);)
+        *msg->opg_Storage = (IPTR) 1UL;
         break;
 
     case ADTA_NumColors:
-        D(bug("[animation.datatype] %s: ADTA_NumColors\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_NumColors\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_NumColors;
-        D(bug("[animation.datatype] %s:     = %d\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %d\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_NumAlloc:
-        D(bug("[animation.datatype] %s: ADTA_NumAlloc\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_NumAlloc\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_NumAlloc;
-        D(bug("[animation.datatype] %s:     = %d\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %d\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_ColorRegisters:
-        D(bug("[animation.datatype] %s: ADTA_ColorRegisters\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_ColorRegisters\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_ColorRegs;
-        D(bug("[animation.datatype] %s:     = %p\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %p\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_ColorTable:
-        D(bug("[animation.datatype] %s: ADTA_ColorTable\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_ColorTable\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_ColorTable[0];
-        D(bug("[animation.datatype] %s:     = %p\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %p\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_ColorTable2:
-        D(bug("[animation.datatype] %s: ADTA_ColorTable2\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_ColorTable2\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_ColorTable[1];
-        D(bug("[animation.datatype] %s:     = %p\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %p\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_Allocated:
-        D(bug("[animation.datatype] %s: ADTA_Allocated\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_Allocated\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_Allocated;
-        D(bug("[animation.datatype] %s:     = %p\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %p\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_CRegs:
-        D(bug("[animation.datatype] %s: ADTA_CRegs\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_CRegs\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_CRegs;
-        D(bug("[animation.datatype] %s:     = %p\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %p\n", __func__, *msg->opg_Storage);)
         break;
 
     case ADTA_GRegs:
-        D(bug("[animation.datatype] %s: ADTA_GRegs\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_GRegs\n", __func__);)
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_GRegs;
-        D(bug("[animation.datatype] %s:     = %p\n", __PRETTY_FUNCTION__, *msg->opg_Storage));
+        D(bug("[animation.datatype] %s:     = %p\n", __func__, *msg->opg_Storage);)
         break;
 
     case PDTA_BitMapHeader:
-        D(bug("[animation.datatype] %s: PDTA_BitMapHeader\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: PDTA_BitMapHeader\n", __func__);)
         *msg->opg_Storage = (IPTR) &animd->ad_BitMapHeader;
         break;
 
     case DTA_TriggerMethods:
-        D(bug("[animation.datatype] %s: DTA_TriggerMethods\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: DTA_TriggerMethods\n", __func__);)
         *msg->opg_Storage = (IPTR) SupportedTriggerMethods;
         break;
 
     case DTA_Methods:
-        D(bug("[animation.datatype] %s: DTA_Methods\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: DTA_Methods\n", __func__);)
         *msg->opg_Storage = (IPTR) SupportedMethods;
         break;
 
     case DTA_ControlPanel:
-        D(bug("[animation.datatype] %s: DTA_ControlPanel\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: DTA_ControlPanel\n", __func__);)
         if ((animd->ad_Tapedeck) && (animd->ad_Flags & ANIMDF_CONTROLPANEL))
             *msg->opg_Storage = (IPTR) TRUE;
         else
@@ -681,33 +700,31 @@ IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
         break;
 
     case DTA_Immediate:
-        D(bug("[animation.datatype] %s: DTA_Immediate\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: DTA_Immediate\n", __func__);)
         if (animd->ad_Flags & ANIMDF_IMMEDIATE)
             *msg->opg_Storage = (IPTR) TRUE;
         else
             *msg->opg_Storage = (IPTR) FALSE;
         break;
 
-    case ADTA_Remap:
-        D(bug("[animation.datatype] %s: ADTA_Remap\n", __PRETTY_FUNCTION__));
-        if (animd->ad_Flags & ANIMDF_REMAP)
-            *msg->opg_Storage = (IPTR) TRUE;
-        else
-            *msg->opg_Storage = (IPTR) FALSE;
-        break;
-
-#if (0)
-    case ADTA_Repeat:
-        D(bug("[animation.datatype] %s: ADTA_Repeat\n", __PRETTY_FUNCTION__));
+    case DTA_Repeat:
+        D(bug("[animation.datatype] %s: DTA_Repeat\n", __func__);)
         if (animd->ad_Flags & ANIMDF_REPEAT)
             *msg->opg_Storage = (IPTR) TRUE;
         else
             *msg->opg_Storage = (IPTR) FALSE;
         break;
 
-    /* NB -: the autodoc isnt clear if we can 'get' these ... */
+    case ADTA_Remap:
+        D(bug("[animation.datatype] %s: ADTA_Remap\n", __func__);)
+        if (animd->ad_Flags & ANIMDF_REMAP)
+            *msg->opg_Storage = (IPTR) TRUE;
+        else
+            *msg->opg_Storage = (IPTR) FALSE;
+        break;
+
     case ADTA_AdaptiveFPS:
-        D(bug("[animation.datatype] %s: ADTA_AdaptiveFPS\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_AdaptiveFPS\n", __func__);)
         if (animd->ad_Flags & ANIMDF_ADAPTFPS)
             *msg->opg_Storage = (IPTR) TRUE;
         else
@@ -715,21 +732,20 @@ IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
         break;
 
     case ADTA_SmartSkip:
-        D(bug("[animation.datatype] %s: ADTA_SmartSkip\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: ADTA_SmartSkip\n", __func__);)
         if (animd->ad_Flags & ANIMDF_SMARTSKIP)
             *msg->opg_Storage = (IPTR) TRUE;
         else
             *msg->opg_Storage = (IPTR) FALSE;
         break;
 
-    case ADTA_OvertakeScreem:
-        D(bug("[animation.datatype] %s: ADTA_OvertakeScreem\n", __PRETTY_FUNCTION__));
+    case ADTA_OvertakeScreen:
+        D(bug("[animation.datatype] %s: ADTA_OvertakeScreen\n", __func__);)
         if (animd->ad_Flags & ANIMDF_ADJUSTPALETTE)
             *msg->opg_Storage = (IPTR) TRUE;
         else
             *msg->opg_Storage = (IPTR) FALSE;
         break;
-#endif
 
     case OBP_Precision:
         *msg->opg_Storage = (IPTR) animd->ad_ColorData.acd_PenPrecison;
@@ -753,23 +769,23 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     };
     struct TagItem *tag;
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     while((tag = NextTagItem(&tstate)) != NULL)
     {
         switch(tag->ti_Tag)
         {
         case ADTA_ModeID:
-            D(bug("[animation.datatype] %s: ADTA_ModeID (%08x)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: ADTA_ModeID (%08x)\n", __func__, tag->ti_Data);)
             animd->ad_ModeID = (IPTR) tag->ti_Data;
             D(
                 if (animd->ad_ModeID & HAM_KEY)
-                    D(bug("[animation.datatype] %s: HAM mode!\n", __PRETTY_FUNCTION__));
+                    D(bug("[animation.datatype] %s: HAM mode!\n", __func__);)
             )
             break;
 
         case ADTA_Width:
-            D(bug("[animation.datatype] %s: ADTA_Width (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: ADTA_Width (%d)\n", __func__, tag->ti_Data);)
             animd->ad_BitMapHeader.bmh_Width = (UWORD) tag->ti_Data;
             attrtags[0].ti_Tag = DTA_NominalHoriz;
             attrtags[0].ti_Data = tag->ti_Data;
@@ -777,7 +793,7 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             break;
 
         case ADTA_Height:
-            D(bug("[animation.datatype] %s: ADTA_Height (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: ADTA_Height (%d)\n", __func__, tag->ti_Data);)
             animd->ad_BitMapHeader.bmh_Height = (UWORD) tag->ti_Data;
             attrtags[0].ti_Tag = DTA_NominalVert;
             if ((animd->ad_Tapedeck) && (animd->ad_Flags & ANIMDF_CONTROLPANEL))
@@ -789,12 +805,12 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             break;
 
         case ADTA_Depth:
-            D(bug("[animation.datatype] %s: ADTA_Depth (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: ADTA_Depth (%d)\n", __func__, tag->ti_Data);)
             animd->ad_BitMapHeader.bmh_Depth = (UBYTE) tag->ti_Data;
             break;
 
         case ADTA_Frames:
-            D(bug("[animation.datatype] %s: ADTA_Frames (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: ADTA_Frames (%d)\n", __func__, tag->ti_Data);)
             animd->ad_FrameData.afd_Frames = (UWORD) tag->ti_Data;
             if (animd->ad_Tapedeck)
             {
@@ -805,17 +821,16 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             break;
 
         case ADTA_KeyFrame:
-            D(bug("[animation.datatype] %s: ADTA_KeyFrame (0x%p)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: ADTA_KeyFrame (0x%p)\n", __func__, tag->ti_Data);)
             animd->ad_KeyFrame = (struct BitMap *) tag->ti_Data;
             break;
 
-        case ADTA_NumColors:
-            D(bug("[animation.datatype] %s: ADTA_NumColors (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
-            DoMethod((Object *)g, PRIVATE_ALLOCCOLORTABLES, tag->ti_Data);
+        case ADTA_TicksPerFrame:
+           D(bug("[animation.datatype] %s: ADTA_TicksPerFrame (%d)\n", __func__, tag->ti_Data);)
             break;
 
         case ADTA_FramesPerSecond:
-            D(bug("[animation.datatype] %s: ADTA_FramesPerSecond (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: ADTA_FramesPerSecond (%d)\n", __func__, tag->ti_Data);)
             animd->ad_TimerData.atd_FramesPerSec = (UWORD) tag->ti_Data;
             if (animd->ad_TimerData.atd_FramesPerSec == 0)
                 animd->ad_TimerData.atd_FramesPerSec = 1;
@@ -828,51 +843,79 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             }
             break;
 
+        case ADTA_FrameIncrement:
+            D(bug("[animation.datatype] %s: ADTA_FrameIncrement (%d)\n", __func__, tag->ti_Data);)
+            break;
+
+        case ADTA_NumColors:
+            D(bug("[animation.datatype] %s: ADTA_NumColors (%d)\n", __func__, tag->ti_Data);)
+            DoMethod((Object *)g, PRIVATE_ALLOCCOLORTABLES, tag->ti_Data);
+            break;
+
+        case ADTA_NumSparse:
+            D(bug("[animation.datatype] %s: ADTA_NumSparse\n", __func__);)
+            break;
+
+        case ADTA_SparseTable:
+            D(bug("[animation.datatype] %s: ADTA_SparseTable\n", __func__);)
+            break;
+
+        case ADTA_Screen:
+            D(bug("[animation.datatype] %s: ADTA_Screen @ 0x%p\n", __func__, tag->ti_Data);)
+            if (tag->ti_Data)
+                animd->ad_ColorData.acd_ColorMap = ((struct Screen *)tag->ti_Data)->ViewPort.ColorMap;
+            break;
+
+        case OBP_Precision:
+            D(bug("[animation.datatype] %s: OBP_Precision %08x\n", __func__, tag->ti_Data);)
+            animd->ad_ColorData.acd_PenPrecison = (ULONG)tag->ti_Data;
+            break;
+
         case SDTA_Sample:
-            D(bug("[animation.datatype] %s: SDTA_Sample\n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: SDTA_Sample\n", __func__);)
             break;
         case SDTA_SampleLength:
-            D(bug("[animation.datatype] %s: SDTA_SampleLength\n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: SDTA_SampleLength (%d)\n", __func__, tag->ti_Data);)
             break;
         case SDTA_Period:
-            D(bug("[animation.datatype] %s: SDTA_Period\n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: SDTA_Period (%d)\n", __func__, tag->ti_Data);)
             break;
         case SDTA_Volume:
-            D(bug("[animation.datatype] %s: SDTA_Volume\n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: SDTA_Volume (%d)\n", __func__, tag->ti_Data);)
             break;
 
         case DTA_TopHoriz:
-            D(bug("[animation.datatype] %s: DTA_TopHoriz (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: DTA_TopHoriz (%d)\n", __func__, tag->ti_Data);)
             animd->ad_HorizTop = (UWORD) tag->ti_Data;
             break;
 
         case DTA_TotalHoriz:
-            D(bug("[animation.datatype] %s: DTA_TotalHoriz (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: DTA_TotalHoriz (%d)\n", __func__, tag->ti_Data);)
             animd->ad_HorizTotal = (UWORD) tag->ti_Data;
             break;
 
         case DTA_VisibleHoriz:
-            D(bug("[animation.datatype] %s: DTA_VisibleHoriz (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: DTA_VisibleHoriz (%d)\n", __func__, tag->ti_Data);)
             animd->ad_HorizVis = (UWORD) tag->ti_Data;
             break;
 
         case DTA_TopVert:
-            D(bug("[animation.datatype] %s: DTA_TopVert (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: DTA_TopVert (%d)\n", __func__, tag->ti_Data);)
             animd->ad_VertTop = (UWORD) tag->ti_Data;
             break;
 
         case DTA_TotalVert:
-            D(bug("[animation.datatype] %s: DTA_TotalVert (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: DTA_TotalVert (%d)\n", __func__, tag->ti_Data);)
             animd->ad_VertTotal = (UWORD) tag->ti_Data;
             break;
 
         case DTA_VisibleVert:
-            D(bug("[animation.datatype] %s: DTA_VisibleVert (%d)\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[animation.datatype] %s: DTA_VisibleVert (%d)\n", __func__, tag->ti_Data);)
             animd->ad_VertVis = (UWORD) tag->ti_Data;
             break;
 
         case DTA_ControlPanel:
-            D(bug("[animation.datatype] %s: DTA_ControlPanel\n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: DTA_ControlPanel\n", __func__);)
             if ((animd->ad_Tapedeck) && (tag->ti_Data))
                 animd->ad_Flags |= ANIMDF_CONTROLPANEL;
             else
@@ -880,32 +923,31 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             break;
 
         case DTA_Immediate:
-            D(bug("[animation.datatype] %s: DTA_Immediate\n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: DTA_Immediate\n", __func__);)
             if (tag->ti_Data)
                 animd->ad_Flags |= ANIMDF_IMMEDIATE;
             else
                 animd->ad_Flags &= ~(ANIMDF_IMMEDIATE);
             break;
 
-        case ADTA_Remap:
-            D(bug("[animation.datatype] %s: ADTA_Remap\n", __PRETTY_FUNCTION__));
-            if (tag->ti_Data)
-                animd->ad_Flags |= ANIMDF_REMAP;
-            else
-                animd->ad_Flags &= ~(ANIMDF_REMAP);
-            break;
-
-#if (0)
-        case ADTA_Repeat:
-            D(bug("[animation.datatype] %s: ADTA_Repeat\n", __PRETTY_FUNCTION__));
+        case DTA_Repeat:
+            D(bug("[animation.datatype] %s: DTA_Repeat\n", __func__);)
             if (tag->ti_Data)
                 animd->ad_Flags |= ANIMDF_REPEAT;
             else
                 animd->ad_Flags &= ~(ANIMDF_REPEAT);
             break;
 
+        case ADTA_Remap:
+            D(bug("[animation.datatype] %s: ADTA_Remap\n", __func__);)
+            if (tag->ti_Data)
+                animd->ad_Flags |= ANIMDF_REMAP;
+            else
+                animd->ad_Flags &= ~(ANIMDF_REMAP);
+            break;
+
         case ADTA_AdaptiveFPS:
-            D(bug("[animation.datatype] %s: ADTA_AdaptiveFPS\n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: ADTA_AdaptiveFPS\n", __func__);)
             if (tag->ti_Data)
                 animd->ad_Flags |= ANIMDF_ADAPTFPS;
             else
@@ -913,23 +955,19 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             break;
 
         case ADTA_SmartSkip:
-            D(bug("[animation.datatype] %s: ADTA_SmartSkip\n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: ADTA_SmartSkip\n", __func__);)
             if (tag->ti_Data)
                 animd->ad_Flags |= ANIMDF_SMARTSKIP;
             else
                 animd->ad_Flags &= ~(ANIMDF_SMARTSKIP);
             break;
 
-        case ADTA_OvertakeScreem:
-            D(bug("[animation.datatype] %s: ADTA_OvertakeScreem\n", __PRETTY_FUNCTION__));
+        case ADTA_OvertakeScreen:
+            D(bug("[animation.datatype] %s: ADTA_OvertakeScreen\n", __func__);)
             if (tag->ti_Data)
                 animd->ad_Flags |= ANIMDF_ADJUSTPALETTE;
             else
                 animd->ad_Flags &= ~(ANIMDF_ADJUSTPALETTE);
-            break;
-#endif
-        case OBP_Precision:
-            animd->ad_ColorData.acd_PenPrecison = (ULONG)tag->ti_Data;
             break;
         }
     }
@@ -949,13 +987,15 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
         { TAG_DONE, 0}
     };
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     g = (struct Gadget *) DoSuperMethodA(cl, o, (Msg) msg);
     if (g)
     {
-        D(bug("[animation.datatype] %s: Created object 0x%p\n", __PRETTY_FUNCTION__, g));
-        D(bug("[animation.datatype] %s: for '%s'\n", __PRETTY_FUNCTION__, OCLASS((Object *)g)->cl_ID));
+        D(
+            bug("[animation.datatype] %s: Created object 0x%p\n", __func__, g);
+            bug("[animation.datatype] %s: for '%s'\n", __func__, OCLASS((Object *)g)->cl_ID);
+        )
         animd = (struct Animation_Data *) INST_DATA(cl, g);
 
         NewList(&animd->ad_FrameData.afd_AnimFrames);
@@ -973,24 +1013,24 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 
         if (msg->ops_AttrList)
         {
-            D(bug("[animation.datatype] %s: Setting attributes.. \n", __PRETTY_FUNCTION__));
+            D(bug("[animation.datatype] %s: Setting attributes.. \n", __func__);)
             DT_SetMethod(cl, g, msg);
         }
 
         ReadENVPrefs(g, animd);
 
-        D(bug("[animation.datatype] %s: Prepare controls.. \n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype] %s: Prepare controls.. \n", __func__);)
 
         /* create a tapedeck gadget */
         if ((animd->ad_Tapedeck = NewObjectA(NULL, "tapedeck.gadget", tdtags)) != NULL)
         {
-            D(bug("[animation.datatype] %s: Tapedeck @ 0x%p\n", __PRETTY_FUNCTION__, animd->ad_Tapedeck));
+            D(bug("[animation.datatype] %s: Tapedeck @ 0x%p\n", __func__, animd->ad_Tapedeck);)
         }
 
         DT_InitPlayer(cl, g, (Msg) msg);
     }
 
-    D(bug("[animation.datatype] %s: returning %p\n", __PRETTY_FUNCTION__, g));
+    D(bug("[animation.datatype] %s: returning %p\n", __func__, g);)
 
     return (IPTR)g;
 }
@@ -999,7 +1039,7 @@ IPTR DT_RemoveDTObject(struct IClass *cl, Object *o, Msg msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, o);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     DoMethod(o, ADTM_STOP);
 
@@ -1029,7 +1069,7 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     struct Animation_Data *animd = INST_DATA (cl, o);
     struct AnimFrame *curFrame = NULL, *lastFrame = NULL;
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (animd->ad_Player)
         DeletePlayer(animd->ad_Player);
@@ -1063,7 +1103,7 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 
     ForeachNodeSafe(&animd->ad_FrameData.afd_AnimFrames, curFrame, lastFrame)
     {
-        D(bug("[animation.datatype] %s: disposing of frame @ 0x%p\n", __PRETTY_FUNCTION__, curFrame));
+        D(bug("[animation.datatype] %s: disposing of frame @ 0x%p\n", __func__, curFrame);)
         Remove(&curFrame->af_Node);
         FreeMem(curFrame, sizeof(struct AnimFrame));
     }
@@ -1081,7 +1121,7 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 
 IPTR DT_GoInActiveMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 }
 
@@ -1094,11 +1134,11 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
     IPTR tdHeight = 0;
     BOOL redraw = FALSE;
 
-   D(bug("[animation.datatype]: %s(%d,%d)\n", __PRETTY_FUNCTION__, msg->gpi_Mouse.X, msg->gpi_Mouse.Y));
+   D(bug("[animation.datatype]: %s(%d,%d)\n", __func__, msg->gpi_Mouse.X, msg->gpi_Mouse.Y);)
 
     if (ie->ie_Code == SELECTDOWN)
     {
-        D(bug("[animation.datatype]: %s: SELECTDOWN\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype]: %s: SELECTDOWN\n", __func__);)
         g->Flags |= GFLG_SELECTED;
     }
 
@@ -1111,7 +1151,7 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
     {
         IPTR tdMode = 0;
 
-        D(bug("[animation.datatype]: %s: input event is for the tapedeck ...\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype]: %s: input event is for the tapedeck ...\n", __func__);)
 
         if ((!(((struct Gadget *)animd->ad_Tapedeck)->Flags & GFLG_SELECTED)) &&
             (ie->ie_Code == SELECTDOWN))
@@ -1149,7 +1189,7 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
 
     if (ie->ie_Code == SELECTUP)
     {
-        D(bug("[animation.datatype]: %s: SELECTUP\n", __PRETTY_FUNCTION__));
+        D(bug("[animation.datatype]: %s: SELECTUP\n", __func__);)
 
         g->Flags &= ~GFLG_SELECTED;
 
@@ -1185,18 +1225,17 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
 
 IPTR DT_HelpTestMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
 
 IPTR DT_HitTestMethod(struct IClass *cl, struct Gadget *g, struct gpHitTest *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
-    IPTR gadgetheight = 0;
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
-        return GMR_GADGETHIT;
+    return GMR_GADGETHIT;
 }
 
 IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
@@ -1205,7 +1244,7 @@ IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
     struct IBox *gadBox = NULL;
     IPTR RetVal, totalheight;
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     animd->ad_Flags |= ANIMDF_LAYOUT;
 
@@ -1244,7 +1283,7 @@ IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 
         GetAttr(GA_Height, (Object *)animd->ad_Tapedeck, (IPTR *)&tdAttrs[3].ti_Data);
         totalheight += tdAttrs[3].ti_Data;
-        D(bug("[animation.datatype]: %s: tapedeck height = %d\n", __PRETTY_FUNCTION__, tdAttrs[3].ti_Data));
+        D(bug("[animation.datatype]: %s: tapedeck height = %d\n", __func__, tdAttrs[3].ti_Data);)
 
         animd->ad_Flags |= ANIMDF_SHOWPANEL;
 
@@ -1260,7 +1299,7 @@ IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
             }
             else
             {
-                D(bug("[animation.datatype]: %s: tapedeck too big for visible space!\n", __PRETTY_FUNCTION__));
+                D(bug("[animation.datatype]: %s: tapedeck too big for visible space!\n", __func__);)
                 animd->ad_Flags &= ~ANIMDF_SHOWPANEL;
             }
         }
@@ -1307,7 +1346,7 @@ IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (!animd->ad_FrameBuffer)
     {
@@ -1355,44 +1394,44 @@ IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 
 IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
 
 IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
 
 IPTR DT_Print(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
 
 IPTR DT_Copy(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
 
 IPTR DT_Trigger(struct IClass *cl, struct Gadget *g, struct dtTrigger *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     return DoSuperMethodA (cl, (Object *)g, (Msg)msg);
 }
 
 IPTR DT_Write(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
 
 IPTR DT_Locate(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
 
@@ -1400,7 +1439,7 @@ IPTR DT_Pause(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (animd->ad_Tapedeck)
     {
@@ -1420,7 +1459,7 @@ IPTR DT_Start(struct IClass *cl, struct Gadget *g, struct adtStart *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (animd->ad_Tapedeck)
     {
@@ -1446,7 +1485,7 @@ IPTR DT_Stop(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if (animd->ad_Tapedeck)
     {
@@ -1464,12 +1503,12 @@ IPTR DT_Stop(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
 IPTR DT_LoadNewFormatFrame(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
 
 IPTR DT_UnLoadNewFormatFrame(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
     return NULL;
 }
