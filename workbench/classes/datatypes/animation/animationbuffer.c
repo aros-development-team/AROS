@@ -136,10 +136,15 @@ AROS_UFH3(void, bufferProc,
                     struct Node *purgeFrame = NULL, *tmpFrame = NULL;
 
                     D(bug("[animation.datatype/BUFFER]: %s: Purging Frames...\n", __func__);)
-                    ForeachNodeSafe(&priv->pp_Data->ad_FrameData.afd_AnimFrames, purgeFrame, tmpFrame)
+                    if (AttemptSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock))
                     {
-                        if (DoFramePurge((struct AnimFrame *)purgeFrame))
-                            priv->pp_BufferLevel--;
+                        D(bug("[animation.datatype/BUFFER]: %s: locked frame list...\n", __func__);)
+                        ForeachNodeSafe(&priv->pp_Data->ad_FrameData.afd_AnimFrames, purgeFrame, tmpFrame)
+                        {
+                            if (DoFramePurge((struct AnimFrame *)purgeFrame))
+                                priv->pp_BufferLevel--;
+                        }
+                        ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
                     }
                 }
 
@@ -152,7 +157,7 @@ AROS_UFH3(void, bufferProc,
                     if (priv->pp_BufferLevel < priv->pp_Data->ad_FrameData.afd_Frames)
                     {
                         if ((curFrame) ||
-                            ((curFrame = AllocMem(sizeof(struct AnimFrame), MEMF_ANY)) != NULL))
+                            ((curFrame = AllocMem(sizeof(struct AnimFrame), MEMF_ANY|MEMF_CLEAR)) != NULL))
                         {
                             D(bug("[animation.datatype/BUFFER]: %s: using AnimFrame @ 0x%p\n", __func__, curFrame);)
 
@@ -160,18 +165,14 @@ AROS_UFH3(void, bufferProc,
 
                             if (lastFrame)
                             {
-                                curFrame->af_Frame.alf_Frame = lastFrame->af_Frame.alf_Frame + 1;
+                                curFrame->af_Frame.alf_Frame = NODEID(lastFrame) + 1;
+                                NODEID(curFrame) = (UWORD) curFrame->af_Frame.alf_Frame;
+#if (0)
                                 curFrame->af_Frame.alf_TimeStamp = lastFrame->af_Frame.alf_TimeStamp + 1;
+#else
+                                curFrame->af_Frame.alf_TimeStamp = curFrame->af_Frame.alf_Frame;
+#endif
                             }
-                            else
-                            {
-                                curFrame->af_Frame.alf_Frame = 0;
-                                curFrame->af_Frame.alf_TimeStamp = 0;
-                            }
-                            curFrame->af_Frame.alf_BitMap = NULL;
-                            curFrame->af_Frame.alf_CMap = NULL;
-                            curFrame->af_Frame.alf_Sample = NULL;
-                            curFrame->af_Frame.alf_UserData = NULL;
 
                             D(bug("[animation.datatype/BUFFER]: %s: Loading Frame #%d\n", __func__, curFrame->af_Frame.alf_Frame);)
 
@@ -180,7 +181,8 @@ AROS_UFH3(void, bufferProc,
                                 priv->pp_BufferLevel++;
                                 D(
                                     bug("[animation.datatype/BUFFER]: %s: Loaded! bitmap @ %p\n", __func__, curFrame->af_Frame.alf_BitMap);
-                                    bug("[animation.datatype/BUFFER]: %s: frame #%d. stamp %d\n", __func__, curFrame->af_Frame.alf_Frame, curFrame->af_Frame.alf_TimeStamp);
+                                    bug("[animation.datatype/BUFFER]: %s:   frame #%d. stamp %d\n", __func__, curFrame->af_Frame.alf_Frame, curFrame->af_Frame.alf_TimeStamp);
+                                    bug("[animation.datatype/BUFFER]: %s:   bitmap @ %p\n", __func__, curFrame->af_Frame.alf_BitMap);
                                 )
                                 ObtainSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
                                 AddTail(&priv->pp_Data->ad_FrameData.afd_AnimFrames, &curFrame->af_Node);
@@ -190,6 +192,11 @@ AROS_UFH3(void, bufferProc,
                                 else
                                     lastFrame =  NULL;
                                 curFrame = NULL;
+                            }
+                            else
+                            {
+                                curFrame->af_Frame.MethodID = ADTM_UNLOADFRAME;
+                                DoMethodA(priv->pp_Object, (Msg)&curFrame->af_Frame);
                             }
                         }
                     }

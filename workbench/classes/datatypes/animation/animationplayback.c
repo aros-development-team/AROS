@@ -111,6 +111,39 @@ BOOL AllocPlaybackSignals(struct ProcessPrivate *priv)
     return FALSE;
 }
 
+struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frameCurrent, UWORD frame)
+{
+    struct AnimFrame *frameFound = NULL;
+
+    DFRAMES("[animation.datatype/PLAY]: %s(0x%p, %d)\n", __PRETTY_FUNCTION__, frameCurrent, frame)
+
+    ObtainSemaphoreShared(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
+
+    if ((!frameCurrent) ||
+        (frame < NODEID(frameCurrent)))
+        frameFound = (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames;
+    else
+        frameFound = frameCurrent;
+
+    while ((frameFound = (struct AnimFrame *)GetSucc(&frameFound->af_Node)) != NULL)
+    {
+        DFRAMES("[animation.datatype/PLAY] %s:   frame #%d @ 0x%p\n", __PRETTY_FUNCTION__, NODEID(frameFound), frameFound)
+        if (NODEID(frameFound) >= frame)
+        {
+            break;
+        }
+    }
+
+    if (!(frameFound))
+        frameFound = frameCurrent;
+
+    DFRAMES("[animation.datatype/PLAY] %s: found 0x%p\n", __PRETTY_FUNCTION__, frameFound)
+
+    ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
+
+    return frameFound;
+}
+
 AROS_UFH3(void, playerProc,
         AROS_UFHA(STRPTR,              argPtr, A0),
         AROS_UFHA(ULONG,               argSize, D0),
@@ -169,31 +202,15 @@ AROS_UFH3(void, playerProc,
 
                     priv->pp_PlayerFlags |= PRIVPROCF_ACTIVE;
 
-                    ObtainSemaphoreShared(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
-
-                    if ((!prevFrame) || (frame == 0))
-                        curFrame = (struct AnimFrame *)GetHead(&priv->pp_Data->ad_FrameData.afd_AnimFrames);
-                    else
-                    {
-                        curFrame = prevFrame;
-                        while ((curFrame = (struct AnimFrame *)GetSucc(&curFrame->af_Node)) != NULL)
-                        {
-                            if (curFrame->af_Frame.alf_Frame == frame)
-                                break;
-                        }
-                        if (!(curFrame))
-                            curFrame = prevFrame;
-                    }
-
-                    ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
+                    curFrame = NextFrame(priv, prevFrame, frame);
 
                     if ((curFrame) && (prevFrame != curFrame) &&
                         (curFrame->af_Frame.alf_BitMap))
                     {
                         rendFrame->Source = curFrame->af_Frame.alf_BitMap;
-                        frame = curFrame->af_Frame.alf_Frame;
+                        frame = NODEID(curFrame);
                         D(bug("[animation.datatype/PLAY]: %s: Rendering Frame @ 0x%p\n", __PRETTY_FUNCTION__, curFrame));
-                        D(bug("[animation.datatype/PLAY]: %s: #%d BitMap @ 0x%p\n", __PRETTY_FUNCTION__, curFrame->af_Frame.alf_Frame, curFrame->af_Frame.alf_BitMap));
+                        D(bug("[animation.datatype/PLAY]: %s: #%d BitMap @ 0x%p\n", __PRETTY_FUNCTION__, NODEID(curFrame), curFrame->af_Frame.alf_BitMap));
                         if (curFrame->af_Frame.alf_CMap)
                         {
                             D(bug("[animation.datatype/PLAY]: %s: Frame CMap @ 0x%p\n", __PRETTY_FUNCTION__, curFrame, curFrame->af_Frame.alf_CMap));
@@ -213,14 +230,11 @@ AROS_UFH3(void, playerProc,
 
                         if ((prevFrame) && (prevFrame->af_Frame.alf_BitMap))
                         {
-                            priv->pp_Data->ad_FrameData.afd_FrameCurrent = prevFrame->af_Frame.alf_Frame;
+                            priv->pp_Data->ad_FrameData.afd_FrameCurrent = NODEID(prevFrame);
                             continue;
                         }
-                        else
-                        {
-                            frame = 0;
-                            rendFrame->Source = priv->pp_Data->ad_KeyFrame;
-                        }
+                        frame = 0;
+                        rendFrame->Source = priv->pp_Data->ad_KeyFrame;
                     }
 
                     priv->pp_Data->ad_FrameData.afd_FrameCurrent = frame;

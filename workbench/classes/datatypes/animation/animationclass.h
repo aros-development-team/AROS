@@ -143,6 +143,9 @@ struct AnimFrame
     struct adtNewFormatFrame    af_Frame;
 };
 
+/* for sanity, we embed the frame number in the ln_type/ln_pri fields */
+#define NODEID(node)  *((UWORD *)(&(node)->af_Node.ln_Type))
+
 #define TAG_PRIVATE             	(ADTA_Dummy + 100)
 #define PRIVATE_INITPLAYER              (TAG_PRIVATE - 1)
 #define PRIVATE_ALLOCCOLORTABLES        (TAG_PRIVATE - 2)
@@ -172,3 +175,9 @@ struct privRenderBuffer
     STACKED ULONG MethodID;
     STACKED struct BitMap *Source;
 };
+
+#if DEBUG > 0
+#define DFRAMES(...) bug(__VA_ARGS__);
+#else
+#define DFRAMES(...)
+#endif
