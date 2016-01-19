@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -681,8 +681,8 @@ static int CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 
             if (text->width > data->ci[j].entries_width)
             {
-                /* This columns width is bigger than the other in the same
-                 * columns, so we store this value
+                /* This entry has a greater width for this column than any
+                 * other entry, so we store this value
                  */
                 data->ci[j].entries_width = text->width;
                 /* column width changed, redraw all entries later */
@@ -1547,8 +1547,6 @@ IPTR List__MUIM_Setup(struct IClass *cl, Object *obj,
     data->prefs_smoothed = muiGlobalInfo(obj)->mgi_Prefs->list_smoothed;
     data->prefs_smoothval = muiGlobalInfo(obj)->mgi_Prefs->list_smoothval;
 
-    CalcWidths(cl, obj);
-
     data->list_cursor =
         zune_imspec_setup(MUII_ListCursor, muiRenderInfo(obj));
     data->list_select =
@@ -1598,6 +1596,7 @@ IPTR List__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
+    CalcWidths(cl, obj);
 
     if ((data->flags & LIST_ADJUSTWIDTH) && (data->entries_num > 0))
     {
