@@ -129,7 +129,7 @@ VidStream *NewVidStream( struct MPEGVideoInstData *mvid, int streambuflen )
       27, 29, 35, 38, 46, 56, 69, 83
     };
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Check for legal buffer length. */
     if( streambuflen < 4 )
@@ -219,7 +219,7 @@ void ResetVidStream( struct MPEGVideoInstData *mvid, VidStream *vid )
 {
     int i;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Initialize pointers to image spaces. */
     vid -> current = vid -> past = vid -> future = NULL;
@@ -265,7 +265,7 @@ PictImage *NewPictImage( struct MPEGVideoInstData *mvid, unsigned int width, uns
     ULONG      dispwidth  = MAX( width,  anim_width  );
     ULONG      dispheight = MAX( height, anim_height );
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Allocate memory space for new structure. */
     new = (PictImage *)mymalloc( mvid, sizeof( PictImage ) );
@@ -321,7 +321,7 @@ PictImage *NewPictImage( struct MPEGVideoInstData *mvid, unsigned int width, uns
 
 void DestroyPictImage( struct MPEGVideoInstData *mvid, PictImage *apictimage )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( apictimage -> luminance )
     {
@@ -385,7 +385,7 @@ VidStream *mpegVidRsrc( struct MPEGVideoInstData *mvid, TimeStamp time_stamp, Vi
   int          i,
                status;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   /* Set global curVidStream to vid_stream. Necessary because bit i/o use
    * curVidStream and are not passed vid_stream. Also set global bitstream
@@ -421,7 +421,7 @@ VidStream *mpegVidRsrc( struct MPEGVideoInstData *mvid, TimeStamp time_stamp, Vi
   {
     case SEQ_END_CODE:
     {
-        D(bug("[mpegvideo.datatype] %s: SEQ_END_CODE\n", __PRETTY_FUNCTION__));
+        D(bug("[mpegvideo.datatype] %s: SEQ_END_CODE\n", __func__));
         /* Display last frame. */
         if( vid_stream -> future )
         {
@@ -440,7 +440,7 @@ VidStream *mpegVidRsrc( struct MPEGVideoInstData *mvid, TimeStamp time_stamp, Vi
 
     case SEQ_START_CODE:
     {
-        D(bug("[mpegvideo.datatype] %s: SEQ_START_CODE\n", __PRETTY_FUNCTION__));
+        D(bug("[mpegvideo.datatype] %s: SEQ_START_CODE\n", __func__));
         /* Sequence start code. Parse sequence header. */
         ParseSeqHead( mvid, vid_stream );
 
@@ -453,7 +453,7 @@ VidStream *mpegVidRsrc( struct MPEGVideoInstData *mvid, TimeStamp time_stamp, Vi
 
     case GOP_START_CODE:
     {
-        D(bug("[mpegvideo.datatype] %s: GOP_START_CODE\n", __PRETTY_FUNCTION__));
+        D(bug("[mpegvideo.datatype] %s: GOP_START_CODE\n", __func__));
         if( mvid -> mvid_IndexScan )
         {
           mvid -> mvid_Last_PIC_SC_Pos = stream_pos( mvid );
@@ -464,7 +464,7 @@ VidStream *mpegVidRsrc( struct MPEGVideoInstData *mvid, TimeStamp time_stamp, Vi
     }
     case PICTURE_START_CODE:
     {
-        D(bug("[mpegvideo.datatype] %s: PICTURE_START_CODE\n", __PRETTY_FUNCTION__));
+        D(bug("[mpegvideo.datatype] %s: PICTURE_START_CODE\n", __func__));
         /* Be sure that we don't overwrite the last GOP position ! */
         if( (data == PICTURE_START_CODE) && (mvid -> mvid_IndexScan) )
         {
@@ -601,7 +601,7 @@ VidStream *mpegVidRsrcScan( struct MPEGVideoInstData *mvid, TimeStamp time_stamp
   ULONG data;
   int   status = 0;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   /* Set global curVidStream to vid_stream. Necessary because bit i/o use
    * curVidStream and are not passed vid_stream. Also set global bitstream
@@ -751,7 +751,7 @@ void ParseSeqHead( struct MPEGVideoInstData *mvid, VidStream *vid_stream )
     ULONG data;
     int   i;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Flush off sequence start code. */
     flush_bits32;
@@ -891,7 +891,7 @@ void ParseGOP( struct MPEGVideoInstData *mvid, VidStream *vid_stream )
 {
     ULONG data;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Flush group of pictures start code. WWWWWWOOOOOOOSSSSSSHHHHH!!! */
     flush_bits32;
@@ -989,7 +989,7 @@ int ParsePicture( struct MPEGVideoInstData *mvid, VidStream *vid_stream, TimeSta
 {
     ULONG data;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Flush header start code. */
     flush_bits32;
@@ -1010,13 +1010,13 @@ int ParsePicture( struct MPEGVideoInstData *mvid, VidStream *vid_stream, TimeSta
 
           mvid -> mvid_Last_I_TYPE_Pos = mvid -> mvid_Last_PIC_SC_Pos;
 
-          debug_printf( mvid, "%s: I_TYPE frame start at %lx\n", __PRETTY_FUNCTION__, (mvid -> mvid_Last_I_TYPE_Pos) );
+          debug_printf( mvid, "%s: I_TYPE frame start at %lx\n", __func__, (mvid -> mvid_Last_I_TYPE_Pos) );
       }
           break;
 
       case B_TYPE:
       {
-          debug_printf( mvid, "%s: B_TYPE  frame found\n", __PRETTY_FUNCTION__);
+          debug_printf( mvid, "%s: B_TYPE  frame found\n", __func__);
 
           if( No_B_Flag  )
           {
@@ -1025,7 +1025,7 @@ int ParsePicture( struct MPEGVideoInstData *mvid, VidStream *vid_stream, TimeSta
 
           if( (vid_stream -> past == NULL) || (vid_stream -> future == NULL) )
           {
-            debug_printf( mvid, "%s: no past or future picture\n", __PRETTY_FUNCTION__);
+            debug_printf( mvid, "%s: no past or future picture\n", __func__);
 
             return( SKIP_PICTURE );
           }
@@ -1034,7 +1034,7 @@ int ParsePicture( struct MPEGVideoInstData *mvid, VidStream *vid_stream, TimeSta
 
       case P_TYPE:
       {
-          debug_printf( mvid, "%s: P_TYPE  frame found\n", __PRETTY_FUNCTION__);
+          debug_printf( mvid, "%s: P_TYPE  frame found\n", __func__);
 
           if( No_P_Flag )
           {
@@ -1043,7 +1043,7 @@ int ParsePicture( struct MPEGVideoInstData *mvid, VidStream *vid_stream, TimeSta
 
           if( vid_stream -> future == NULL )
           {
-            debug_printf( mvid, "%s: no future picture\n", __PRETTY_FUNCTION__);
+            debug_printf( mvid, "%s: no future picture\n", __func__);
 
             return( SKIP_PICTURE );
           }
@@ -1052,13 +1052,13 @@ int ParsePicture( struct MPEGVideoInstData *mvid, VidStream *vid_stream, TimeSta
 
       case D_TYPE:
       {
-          debug_printf( mvid, "%s: D_TYPE  frame found\n", __PRETTY_FUNCTION__);
+          debug_printf( mvid, "%s: D_TYPE  frame found\n", __func__);
       }
           break;
 
       default:
       {
-          debug_printf( mvid, "%s: unknown frame found\n", __PRETTY_FUNCTION__);
+          debug_printf( mvid, "%s: unknown frame found\n", __func__);
       }
           break;
     }
@@ -1158,7 +1158,7 @@ PictImage *LockRingEntry( struct MPEGVideoInstData *mvid, VidStream *vid_stream 
     /* Find a pict image structure in ring buffer not currently locked. */
     int i = 0;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     while( vid_stream -> ring[ i ] -> locked )
     {
@@ -1196,7 +1196,7 @@ void ParseSlice( struct MPEGVideoInstData *mvid, VidStream *vid_stream )
 {
     ULONG data;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Flush slice start code. */
     flush_bits( 24 );
@@ -1275,7 +1275,7 @@ int ParseMacroBlock( struct MPEGVideoInstData *mvid, VidStream *vid_stream )
                mb_motion_back   = FALSE,
                mb_pattern       = FALSE;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   if( vid_stream -> current == NULL )
   {
@@ -1605,7 +1605,7 @@ void ReconIMBlock( struct MPEGVideoInstData *mvid, VidStream *vid_stream, int bn
          rr;
   UBYTE *dest;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   /* Calculate macroblock row and column from address. */
   mb_row = (vid_stream -> mblock . mb_address) / (vid_stream -> mb_width);
@@ -1737,7 +1737,7 @@ void ReconPMBlock( struct MPEGVideoInstData *mvid, VidStream *vid_stream, int bn
       clast         = 0;
 #endif /* LOOSE_MPEG */
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   /* Calculate macroblock row and column from address. */
   mb_row = vid_stream -> mblock.mb_address / vid_stream -> mb_width;
@@ -2253,7 +2253,7 @@ void ReconBMBlock( struct MPEGVideoInstData *mvid, VidStream *vid_stream, int bn
       cfirst        = 0;
 #endif /* LOOSE_MPEG */
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   /* Calculate macroblock row and column from address. */
   mb_row = vid_stream -> mblock . mb_address / vid_stream -> mb_width;
@@ -2683,7 +2683,7 @@ void ReconBiMBlock( struct MPEGVideoInstData *mvid, VidStream *vid_stream, int b
   int illegal_back = 0;
 #endif /* LOOSE_MPEG */
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Calculate macroblock row and column from address. */
   mb_row = vid_stream -> mblock . mb_address / vid_stream -> mb_width;
@@ -2936,7 +2936,7 @@ void ProcessSkippedPFrameMBlocks( struct MPEGVideoInstData *mvid, VidStream *vid
   int addr, row_incr, half_row_incr, crow, ccol;
   int *dest, *src, *dest1, *src1;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   /* Calculate row sizes for luminance and Cr/Cb macroblock areas. */
   row_size = vid_stream->mb_width << 4;
@@ -3079,7 +3079,7 @@ void ProcessSkippedBFrameMBlocks( struct MPEGVideoInstData *mvid, VidStream *vid
   int   ccol                = 0,
         crow                = 0;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   /* Calculate row sizes for luminance and Cr/Cb macroblock areas. */
   row_size      = vid_stream -> mb_width << 4;
@@ -3345,7 +3345,7 @@ void ReconSkippedBlock( struct MPEGVideoInstData *mvid, UBYTE *source, UBYTE *de
   int    rr;
   UBYTE *source2;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   source += ((row + down) * row_size) + col + right;
 
@@ -3559,7 +3559,7 @@ void ReconSkippedBlock( struct MPEGVideoInstData *mvid, UBYTE *source, UBYTE *de
 static
 void DoPictureDisplay( struct MPEGVideoInstData *mvid, VidStream *vid_stream )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Convert to colormap space and dither. */
     DoDitherImage( mvid,
@@ -3634,7 +3634,7 @@ ULONG GetFrameRate( struct MPEGVideoInstData *mvid, VidStream *stream )
     double fps;
     ULONG  ticksperframe;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( ratecode < 16U )
     {

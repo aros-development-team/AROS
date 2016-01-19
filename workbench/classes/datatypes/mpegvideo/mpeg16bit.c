@@ -134,7 +134,7 @@ void InitColorDither( struct MPEGVideoInstData *mvid )
                   CB,
                   i;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* set up pixel masks */
     switch( anim_depth )
@@ -323,7 +323,7 @@ void Color16DitherImage( struct MPEGVideoInstData *mvid, UBYTE *lum, UBYTE *cr, 
     int             cb_b;
     int             cols_2 = cols/2;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     row1 = (unsigned short *)out;
     row2 = row1 + cols_2 + cols_2;
@@ -448,7 +448,7 @@ void Color32DitherImage( struct MPEGVideoInstData *mvid, UBYTE *lum, UBYTE *cr, 
     int            cb_b;
     int            cols_2 = cols / 2;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     row1 = (unsigned int *)out;
     row2 = row1 + cols_2 + cols_2;
@@ -580,7 +580,7 @@ void Twox2Color16DitherImage( struct MPEGVideoInstData *mvid, UBYTE *lum, UBYTE 
     int            cb_b;
     int            cols_2 = cols/2;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     lum2 = lum + cols_2 + cols_2;
 
@@ -716,7 +716,7 @@ void Twox2Color32DitherImage( struct MPEGVideoInstData *mvid, UBYTE *lum, UBYTE 
     int            cb_b;
     int            cols_2 = cols/2;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     lum2 = lum + cols_2 + cols_2;
 

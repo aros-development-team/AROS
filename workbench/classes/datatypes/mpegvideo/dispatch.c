@@ -133,7 +133,7 @@ LONG LoadFrames( struct ClassBase *classbase, Object *o )
     struct MPEGVideoInstData *mvid  = (struct MPEGVideoInstData *)INST_DATA( (classbase -> cb_Lib . cl_Class), o );
     LONG                      error = 0L;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     mvid -> mvid_ClassBase = classbase;
     InitSemaphore( (&(mvid -> mvid_SigSem)) );
@@ -142,7 +142,7 @@ LONG LoadFrames( struct ClassBase *classbase, Object *o )
     /* Create a memory pool for frame nodes */
     if ((mvid -> mvid_Pool = CreatePool( (MEMF_CLEAR | MEMF_PUBLIC), 1024UL, 1024UL ) ) != NULL)
     {
-        D(bug("[mpegvideo.datatype] %s: pool @ 0x%p\n", __PRETTY_FUNCTION__, mvid -> mvid_Pool));
+        D(bug("[mpegvideo.datatype] %s: pool @ 0x%p\n", __func__, mvid -> mvid_Pool));
       /* init state... */
       mvid -> mvid_mpegVidRsrc_first = TRUE;
       mvid -> mvid_IndexScan         = TRUE;
@@ -293,13 +293,13 @@ LONG LoadFrames( struct ClassBase *classbase, Object *o )
             if( anim_depth <= 8UL )
             {
               lum_values = (UBYTE *)mymalloc( mvid, (size_t)(LUM_RANGE * sizeof( UBYTE )) );
-                D(bug("[mpegvideo.datatype] %s: lum_values @ 0x%p\n", __PRETTY_FUNCTION__, lum_values));
+                D(bug("[mpegvideo.datatype] %s: lum_values @ 0x%p\n", __func__, lum_values));
               cr_values  = (UBYTE *)mymalloc( mvid, (size_t)(CR_RANGE  * sizeof( UBYTE )) );
-                D(bug("[mpegvideo.datatype] %s: cr_values @ 0x%p\n", __PRETTY_FUNCTION__, cr_values));
+                D(bug("[mpegvideo.datatype] %s: cr_values @ 0x%p\n", __func__, cr_values));
               cb_values  = (UBYTE *)mymalloc( mvid, (size_t)(CB_RANGE  * sizeof( UBYTE )) );
-                D(bug("[mpegvideo.datatype] %s: cb_values @ 0x%p\n", __PRETTY_FUNCTION__, cb_values));
+                D(bug("[mpegvideo.datatype] %s: cb_values @ 0x%p\n", __func__, cb_values));
               mappixel   =  (LONG *)mymalloc( mvid, (size_t)((MAX( (LUM_RANGE * CR_RANGE * CB_RANGE), 256UL ) + 1UL) * sizeof( LONG )) );
-                D(bug("[mpegvideo.datatype] %s: mappixel @ 0x%p\n", __PRETTY_FUNCTION__, mappixel));
+                D(bug("[mpegvideo.datatype] %s: mappixel @ 0x%p\n", __func__, mappixel));
             }
 
             switch( ditherType )
@@ -533,7 +533,7 @@ LONG LoadFrames( struct ClassBase *classbase, Object *o )
 
 struct FrameNode *AllocFrameNode( struct ClassBase *classbase, APTR pool )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     return( (struct FrameNode *)AllocPooled( pool, (ULONG)sizeof( struct FrameNode ) ) );
 }
@@ -541,7 +541,7 @@ struct FrameNode *AllocFrameNode( struct ClassBase *classbase, APTR pool )
 
 void FreeFrameNode( struct MPEGVideoInstData *mvid, struct FrameNode *fn )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( fn )
     {
@@ -556,7 +556,7 @@ void FreeFrameNode( struct MPEGVideoInstData *mvid, struct FrameNode *fn )
 
 struct FrameNode *FindFrameNode( struct MinList *fnl, ULONG timestamp )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( fnl )
     {
@@ -589,7 +589,7 @@ struct FrameNode *FindFrameNode( struct MinList *fnl, ULONG timestamp )
 
 struct FrameNode *FindNextIFrame( struct FrameNode *fn )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( fn )
     {
@@ -684,7 +684,7 @@ void error_printf( struct MPEGVideoInstData *mvid, STRPTR format, ... )
 static
 void CopyBitMap( struct ClassBase *classbase, struct BitMap *dest, struct BitMap *src, ULONG width, ULONG height )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( dest && src )
     {
@@ -719,7 +719,7 @@ struct BitMap *AllocFastBitMap( struct MPEGVideoInstData *mvid, ULONG width, ULO
                       moredepthsize,
                       size;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     planesize      = (ULONG)RASSIZE( width, height ) + 64UL;
     moredepthsize  = (depth > 8UL)?((depth - 8UL) * sizeof( PLANEPTR )):(0UL);
@@ -768,7 +768,7 @@ struct BitMap *AllocFastBitMap( struct MPEGVideoInstData *mvid, ULONG width, ULO
 
 struct BitMap *AllocFrameBitMap( struct MPEGVideoInstData *mvid )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( mvid -> mvid_UseChunkyMap )
     {
@@ -783,7 +783,7 @@ struct BitMap *AllocFrameBitMap( struct MPEGVideoInstData *mvid )
 
 void FreeFrameBitMap( struct MPEGVideoInstData *mvid, struct BitMap *bm )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( bm )
     {
@@ -1189,7 +1189,7 @@ void ReadENVPrefs( struct ClassBase *classbase, struct MPEGVideoInstData *mvid )
     TEXT   varbuff[ 258 ];
     STRPTR var;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if ((var = GetPrefsVar( classbase, "Classes/DataTypes/mpegvideo.prefs" ) ) != NULL)
     {
@@ -1675,7 +1675,7 @@ void ReadENVPrefs( struct ClassBase *classbase, struct MPEGVideoInstData *mvid )
 static
 void AttachSample( struct MPEGVideoInstData *mvid )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( mvid -> mvid_Sample )
     {
@@ -1746,7 +1746,7 @@ BOOL AttemptOpenVMM( struct MPEGVideoInstData *mvid )
 static
 void OpenLogfile( struct ClassBase *classbase, struct MPEGVideoInstData *mvid )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( (mvid -> mvid_VerboseOutput) == NULL )
     {
@@ -1772,7 +1772,7 @@ void CreateProgressRequester( struct MPEGVideoInstData *mvid )
     struct Screen    *scr           = NULL,
                      *pubscr        = NULL;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Check if progress gauge was disabled by prefs... */
     if( (mvid -> mvid_PR . pr_Max) != ~0UL )
@@ -1839,7 +1839,7 @@ void UpdateProgressRequester( struct MPEGVideoInstData *mvid )
 {
     struct Window    *win;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( (mvid -> mvid_PR . pr_Max) == 0UL )
     {
@@ -1926,7 +1926,7 @@ void UpdateProgressRequester( struct MPEGVideoInstData *mvid )
 static
 void DeleteProgressRequester( struct MPEGVideoInstData *mvid )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( mvid -> mvid_PR . pr_Window )
     {

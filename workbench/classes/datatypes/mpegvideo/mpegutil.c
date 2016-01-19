@@ -111,7 +111,7 @@ void correct_underflow( struct MPEGVideoInstData *mvid )
 {
     int status;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     status = get_more_data( mvid, (curVidStream -> buf_start), (curVidStream -> max_buf_length), (int *)(&bufLength), (unsigned int **)(&bitBuffer) );
 
@@ -192,7 +192,7 @@ char *get_ext_data( struct MPEGVideoInstData *mvid )
     char         *dataPtr;
     unsigned int  data;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Set initial ext data buffer size. */
     size = EXT_BUF_SIZE;
@@ -254,7 +254,7 @@ int next_start_code( struct MPEGVideoInstData *mvid )
   unsigned int data;
   UWORD        state;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
   /* If insufficient buffer length, correct underflow. */
   if( bufLength < SSP )
@@ -326,13 +326,13 @@ int next_start_code( struct MPEGVideoInstData *mvid )
 
       curBits = *bitBuffer << bitOffset;
 
-      D(bug("[mpegvideo.datatype] %s: ok\n", __PRETTY_FUNCTION__));
+      D(bug("[mpegvideo.datatype] %s: ok\n", __func__));
       /* Return success. */
       return( OK );
     }
   }
 
-  D(bug("[mpegvideo.datatype] %s: underflow\n", __PRETTY_FUNCTION__));
+  D(bug("[mpegvideo.datatype] %s: underflow\n", __func__));
   /* Return underflow error. */
   return( UNDERFLOW );
 }
@@ -368,7 +368,7 @@ char *get_extra_bit_info( struct MPEGVideoInstData *mvid )
     char         *dataPtr;
     unsigned int  data;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Get first flag bit. */
     get_bits1( data );

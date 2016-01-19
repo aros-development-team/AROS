@@ -67,9 +67,9 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
     struct TagItem *ti;
     IPTR retval;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
-    D(bug("[mpegvideo.datatype] %s: o @ 0x%p, cl @ 0x%p\n", __PRETTY_FUNCTION__, o, cl));
-    D(bug("[mpegvideo.datatype] %s:OCLASS @ 0x%p\n", __PRETTY_FUNCTION__, OCLASS(o)));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
+    D(bug("[mpegvideo.datatype] %s: o @ 0x%p, cl @ 0x%p\n", __func__, o, cl));
+    D(bug("[mpegvideo.datatype] %s:OCLASS @ 0x%p\n", __func__, OCLASS(o)));
           /* We only support DTST_FILE as DTA_SourceType type */
           if ((ti = FindTagItem( DTA_SourceType, (((struct opSet *)msg) -> ops_AttrList) )) != NULL)
           {
@@ -134,7 +134,7 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     struct MPEGVideoInstData *mvid = (struct MPEGVideoInstData *)INST_DATA( cl, o );
     struct FrameNode *fn;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
           if( (mvid -> mvid_LoadAll) == FALSE )
           {
@@ -173,7 +173,7 @@ IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
 #if (0)
     if( DoMethod( o, ICM_CHECKLOOP ) )
@@ -245,7 +245,7 @@ IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *dtw)
 {
     IPTR retval;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
           /* Local data format not supported yet... */
           if( (dtw -> dtw_Mode) == DTWM_RAW )
@@ -293,7 +293,7 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     LONG              error = 0L;
     IPTR retval;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
           /* Like "realloc": Free any given frame here */
           if( alf -> alf_UserData )

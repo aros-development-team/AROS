@@ -31,7 +31,7 @@ static void WritePixelArray8Fast( struct BitMap *, UBYTE * );
 
 void mpeg_closedown( struct MPEGVideoInstData *mvid )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( mvid -> mvid_MPPool )
     {
@@ -44,7 +44,7 @@ void mpeg_closedown( struct MPEGVideoInstData *mvid )
 static
 void InitStoreFrame( struct MPEGVideoInstData *mvid )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Alloc bitmap as key bitmap */
     if( mvid -> mvid_UseChunkyMap )
@@ -65,7 +65,7 @@ void InitStoreFrame( struct MPEGVideoInstData *mvid )
 
 void StoreFrame( struct MPEGVideoInstData *mvid, UBYTE *data )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* All ready to store the frames ? */
     if( (mvid -> mvid_KeyBitMap) == NULL )
@@ -160,7 +160,7 @@ void AddFrame( struct MPEGVideoInstData *mvid, UBYTE *data, struct ColorMap *cm 
     ULONG             timestamp = totNumFrames++; /* timestamp of this frame */
     struct FrameNode *fn;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Image ? */
     if( data )
@@ -484,7 +484,7 @@ ULONG SearchColor( struct MPEGVideoInstData *mvid, struct ColorRegister *colorta
     const ULONG nc            = *numcolors; /* short cut to (*numcolors) (read only) */
     WORD er, eg, eb;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Check for a color in the specified range */
     for( i = 0UL ; i < nc ; i++, colortable++ )
@@ -529,7 +529,7 @@ void WritePixelArray8Fast( struct BitMap *dest, UBYTE *source )
     ULONG  i;
     ULONG  numcycles = ((dest -> Rows) * (dest -> BytesPerRow)) / sizeof( ULONG );
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Copy plane ptrs */
     for( i = 0UL ; i < (dest -> Depth) ; i++ )
