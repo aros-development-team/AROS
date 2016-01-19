@@ -150,7 +150,7 @@ void ReadENVPrefs(Object *o, struct Animation_Data *animd)
     TEXT   varbuff[ 258 ];
     STRPTR var;
 
-    D(bug("[animation.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     if ((var = GetPrefsVar("Classes/DataTypes/animation.prefs" ) ) != NULL)
     {
@@ -190,13 +190,13 @@ void ReadENVPrefs(Object *o, struct Animation_Data *animd)
 #if (0)
                         noignore = matchstr((animationargs.matchclass), (animd->ad_BaseName));
 #endif
-                        D(bug("[animation.datatype] %s: matched class\n", __PRETTY_FUNCTION__));
+                        D(bug("[animation.datatype] %s: matched class\n", __func__);)
                     }
 
                     if ((animationargs.matchproject) && (animd->ad_BaseName))
                     {
                         noignore = matchstr((animationargs.matchproject), (animd->ad_BaseName));
-                        D(bug("[animation.datatype] %s: matched project\n", __PRETTY_FUNCTION__));
+                        D(bug("[animation.datatype] %s: matched project\n", __func__);)
                     }
 
                     if (noignore)
@@ -204,17 +204,17 @@ void ReadENVPrefs(Object *o, struct Animation_Data *animd)
                         if (animationargs.stack)
                         {
                             animd->ad_ProcStack = *(animationargs.stack);
-                            D(bug("[animation.datatype] %s:   using %d bytes for child process stack(s)\n", __PRETTY_FUNCTION__, animd->ad_ProcStack));
+                            D(bug("[animation.datatype] %s:   using %d bytes for child process stack(s)\n", __func__, animd->ad_ProcStack);)
                         }
                         if (animationargs.bufftime)
                         {
                             animd->ad_BufferTime = (ULONG)*(animationargs.bufftime);
-                            D(bug("[animation.datatype] %s:   buffering %d seconds of frames\n", __PRETTY_FUNCTION__, animd->ad_BufferTime));
+                            D(bug("[animation.datatype] %s:   buffering %d seconds of frames\n", __func__, animd->ad_BufferTime);)
                         }
                         if (animationargs.buffstep)
                         {
                             animd->ad_BufferStep = (ULONG)*(animationargs.buffstep);
-                            D(bug("[animation.datatype] %s:   buffering %d frames at a time\n", __PRETTY_FUNCTION__, animd->ad_BufferStep));
+                            D(bug("[animation.datatype] %s:   buffering %d frames at a time\n", __func__, animd->ad_BufferStep);)
                         }
                     }
 
@@ -227,7 +227,7 @@ void ReadENVPrefs(Object *o, struct Animation_Data *animd)
 
                     Fault(ioerr, "Classes/DataTypes/animation.prefs", errbuff, (LONG)sizeof(errbuff));
 
-                    bug("[animation.datatype] preferences \"%s\" line %lu\n", errbuff, linecount);
+                    D(bug("[animation.datatype] preferences \"%s\" line %lu\n", errbuff, linecount);)
                 }
             }
             prefsline = ++nextprefsline;

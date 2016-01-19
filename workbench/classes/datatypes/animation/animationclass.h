@@ -6,11 +6,14 @@
 #include <graphics/gfx.h>
 #include <datatypes/pictureclass.h>
 #include <datatypes/animationclass.h>
+#include <datatypes/animationclassext.h>
 
 #define	MIN(a,b) (((a) < (b)) ?	(a) : (b))
 #define	MAX(a,b) (((a) > (b)) ?	(a) : (b))
 
-// api flags
+/*
+    api flags
+ */
 #define	ANIMDF_CONTROLPANEL     (1 << 0)
 #define	ANIMDF_IMMEDIATE        (1 << 1)
 #define	ANIMDF_REMAP            (1 << 2)
@@ -18,7 +21,9 @@
 #define	ANIMDF_ADAPTFPS         (1 << 4)
 #define	ANIMDF_SMARTSKIP        (1 << 5)
 #define	ANIMDF_ADJUSTPALETTE    (1 << 6)
-// special flags used by rendering/layout code
+/*
+    special flags used by rendering/layout code
+ */
 #define ANIMDF_LAYOUT           (1 << 29)               
 #define ANIMDF_REMAPPEDPENS     (1 << 30)               
 #define ANIMDF_SHOWPANEL        (1 << 31)
@@ -135,7 +140,7 @@ struct ProcessPrivate
 struct AnimFrame
 {
     struct Node                 af_Node;
-    struct adtFrame             af_Frame;
+    struct adtNewFormatFrame    af_Frame;
 };
 
 #define TAG_PRIVATE             	(ADTA_Dummy + 100)
