@@ -134,7 +134,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
     LONG                    error   = 0L;
     BOOL                    success = FALSE;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     InitSemaphore( (&(gaid -> gaid_SigSem)) );
     NewList( (struct List *)(&(gaid -> gaid_FrameList)) );
@@ -150,7 +150,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                            animdepth;                      /* anim depth                      */
       ULONG                timestamp  = 0UL;               /* timestamp                       */
 
-        D(bug("[gifanim.datatype] %s: pool @ 0x%p\n", __PRETTY_FUNCTION__, gaid -> gaid_Pool));
+        D(bug("[gifanim.datatype] %s: pool @ 0x%p\n", __func__, gaid -> gaid_Pool));
 
       /* Prefs defaults */
       gaid -> gaid_LoadAll = TRUE;              /* The decoder is too slow to allow realtime decoding of a
@@ -172,7 +172,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
         {
           case DTST_FILE:
           {
-              D(bug("[gifanim.datatype] %s: DTST_FILE (0x%p)\n", __PRETTY_FUNCTION__, fh));
+              D(bug("[gifanim.datatype] %s: DTST_FILE (0x%p)\n", __func__, fh));
 
               if( fh )
               {
@@ -212,7 +212,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
 
           case DTST_RAM: /* empty object */
           {
-              D(bug("[gifanim.datatype] %s: DTST_RAM\n", __PRETTY_FUNCTION__));
+              D(bug("[gifanim.datatype] %s: DTST_RAM\n", __func__));
 
               success = TRUE;
           }
@@ -247,7 +247,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
             gifdec -> file                = fh;
             gifdec -> Gif89 . transparent = (UWORD)~0U; /* means: no transparent color */
 
-            D(bug("[gifanim.datatype] %s: checking sig..\n", __PRETTY_FUNCTION__));
+            D(bug("[gifanim.datatype] %s: checking sig..\n", __func__));
 
             /* Read "GIF" indentifer and version */
             if( ReadOK( cb, gifdec, buf, 6 ) )
@@ -257,13 +257,13 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
               {
                 STRPTR version = (STRPTR)(buf + 3);
 
-                  D(bug("[gifanim.datatype] %s: checking gif version..\n", __PRETTY_FUNCTION__));
+                  D(bug("[gifanim.datatype] %s: checking gif version..\n", __func__));
 
                 /* Check if we support this GIF version */
                 if( (!strncmp( version, "87a", 3 )) ||
                     (!strncmp( version, "89a", 3 )) )
                 {
-                        D(bug("[gifanim.datatype]: %s: read gif screen..\n", __PRETTY_FUNCTION__));
+                        D(bug("[gifanim.datatype]: %s: read gif screen..\n", __func__));
 
                   /* Read GIF Screen */
                   if( ReadOK( cb, gifdec, buf, 7 ) )
@@ -283,18 +283,18 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                     animheight = gaid -> gaid_Height       = gifdec -> GifScreen . Height;
                     animdepth  = gaid -> gaid_Depth        = (gaid -> gaid_UseChunkyMap)?(DIRECTRGB_DEPTH):((ULONG)getbase2( (gifdec -> GifScreen . BitPixel) ));
 
-                    D(bug("[gifanim.datatype] %s: %dx%dx%d\n", __PRETTY_FUNCTION__, animwidth, animheight, animdepth));
+                    D(bug("[gifanim.datatype] %s: %dx%dx%d\n", __func__, animwidth, animheight, animdepth));
 
                     /* Global Colormap ? */
                     if( BitSet( buf[ 4 ], LOCALCOLORMAP ) )
                     {
-                        D(bug("[gifanim.datatype]: %s: reading global colormap..\n", __PRETTY_FUNCTION__));
+                        D(bug("[gifanim.datatype]: %s: reading global colormap..\n", __func__));
 
                       numcmaps++;
 
                       if( ReadColorMap( cb, gaid, (gifdec -> GifScreen . BitPixel), (gifdec -> GifScreen . ColorMap) ) )
                       {
-                          D(bug("[gifanim.datatype]: %s:   failed!\n", __PRETTY_FUNCTION__));
+                          D(bug("[gifanim.datatype]: %s:   failed!\n", __func__));
                         error = IoErr();
                         error_printf( cb, gaid, "error %d reading global colormap\n", error);
                       }
@@ -307,7 +307,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
 
                     while (TRUE)
                     {
-                        D(bug("[gifanim.datatype]: %s: reading chunk..\n", __PRETTY_FUNCTION__));
+                        D(bug("[gifanim.datatype]: %s: reading chunk..\n", __func__));
                       /* Read chunk ID char */
                       if( !ReadOK( cb, gifdec, (&c), 1 ) )
                       {
@@ -320,14 +320,14 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                       {
                         case ';': /* GIF terminator ? */
                         {
-                        D(bug("[gifanim.datatype]: %s: ## terminator\n", __PRETTY_FUNCTION__));
+                        D(bug("[gifanim.datatype]: %s: ## terminator\n", __func__));
 
                             goto scandone;
                         }
 
                         case '!': /* Extension ? */
                         {
-                        D(bug("[gifanim.datatype]: %s: ## extension\n", __PRETTY_FUNCTION__));
+                        D(bug("[gifanim.datatype]: %s: ## extension\n", __func__));
 
                             if( ReadOK( cb, gifdec, (&c), 1 ) )
                             {
@@ -349,17 +349,17 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
 
                         case ',': /* Raster data start ? */
                         {
-                        D(bug("[gifanim.datatype]: %s: ## rast data\n", __PRETTY_FUNCTION__));
+                        D(bug("[gifanim.datatype]: %s: ## rast data\n", __func__));
 
                             /* Create an prepare a new frame node */
                             if ((fn = AllocFrameNode( cb, (gaid -> gaid_Pool) )) != NULL)
                             {
-                                D(bug("[gifanim.datatype]: %s:    frame node @ 0x%p\n", __PRETTY_FUNCTION__, fn));
+                                D(bug("[gifanim.datatype]: %s:    frame node @ 0x%p\n", __func__, fn));
                               if( (gaid -> gaid_LoadAll) || (timestamp == 0UL) )
                               {
                                 if( !(fn -> fn_BitMap = AllocFrameBitMap( cb, gaid ) ) )
                                 {
-                                    D(bug("[gifanim.datatype]: %s: failed to allocate bitmap!\n", __PRETTY_FUNCTION__));
+                                    D(bug("[gifanim.datatype]: %s: failed to allocate bitmap!\n", __func__));
                                   error = ERROR_NO_FREE_STORE;
                                 }
 
@@ -371,7 +371,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                 }
                                 else
                                 {
-                                    D(bug("[gifanim.datatype]: %s: failed to allocate chunky data!\n", __PRETTY_FUNCTION__));
+                                    D(bug("[gifanim.datatype]: %s: failed to allocate chunky data!\n", __func__));
                                   error = ERROR_NO_FREE_STORE;
                                 }
                               }
@@ -383,7 +383,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                 /* Get position of bitmap */
                                 fn -> fn_BMOffset = Seek( fh, 0L, OFFSET_CURRENT ); /* BUG: does not check for failure */
 
-                                D(bug("[gifanim.datatype]: %s:    bitmap offset %lu\n", __PRETTY_FUNCTION__, fn->fn_BMOffset));
+                                D(bug("[gifanim.datatype]: %s:    bitmap offset %lu\n", __func__, fn->fn_BMOffset));
 
                                 if( !ReadOK( cb, gifdec, buf, 9 ) )
                                 {
@@ -404,14 +404,14 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
 
                                 if( fn -> fn_ChunkyMap )
                                 {
-                                D(bug("[gifanim.datatype]: %s:    chunky\n", __PRETTY_FUNCTION__));
+                                D(bug("[gifanim.datatype]: %s:    chunky\n", __func__));
 
                                   /* disposal method */
                                   switch( fn -> fn_GIF89aDisposal )
                                   {
                                     case GIF89A_DISPOSE_NOP:
                                     {
-                                        D(bug("[gifanim.datatype]: %s:    GIF89A_DISPOSE_NOP\n", __PRETTY_FUNCTION__));
+                                        D(bug("[gifanim.datatype]: %s:    GIF89A_DISPOSE_NOP\n", __func__));
                                         /* Background not transparent ? */
                                         if( ((fn -> fn_GIF89aTransparent) == ~0U) ||
                                             ((fn -> fn_GIF89aTransparent) != 0U) )
@@ -424,7 +424,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
 
                                     case GIF89A_DISPOSE_NODISPOSE:
                                     {
-                                        D(bug("[gifanim.datatype]: %s:    GIF89A_DISPOSE_NODISPOSE\n", __PRETTY_FUNCTION__));
+                                        D(bug("[gifanim.datatype]: %s:    GIF89A_DISPOSE_NODISPOSE\n", __func__));
                                         /* do not dispose prev image */
 
                                         /* If we have a previous frame, copy it  */
@@ -454,7 +454,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
 
                                     case GIF89A_DISPOSE_RESTOREBACKGROUND:
                                     {
-                                        D(bug("[gifanim.datatype]: %s:    GIF89A_DISPOSE_RESTOREBACKGROUND\n", __PRETTY_FUNCTION__));
+                                        D(bug("[gifanim.datatype]: %s:    GIF89A_DISPOSE_RESTOREBACKGROUND\n", __func__));
                                         /* Background not transparent ? */
                                         if( ((fn -> fn_GIF89aTransparent) == ~0U) ||
                                             ((fn -> fn_GIF89aTransparent) != (gaid -> gaid_GIFDec . GifScreen . Background)) )
@@ -467,7 +467,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
 
                                     case GIF89A_DISPOSE_RESTOREPREVIOUS:
                                     {
-                                        D(bug("[gifanim.datatype]: %s:    GIF89A_DISPOSE_RESTOREPREVIOUS\n", __PRETTY_FUNCTION__));
+                                        D(bug("[gifanim.datatype]: %s:    GIF89A_DISPOSE_RESTOREPREVIOUS\n", __func__));
                                         /* restore previous image  */
 
                                         /* If we have a previous frame, copy it  */
@@ -501,7 +501,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                 /* Save transparent color (if we have one) */
                                 if( ((fn -> fn_GIF89aTransparent) != ~0U) && (timestamp != 0UL) )
                                 {
-                                    D(bug("[gifanim.datatype]: %s:    save transp\n", __PRETTY_FUNCTION__));
+                                    D(bug("[gifanim.datatype]: %s:    save transp\n", __func__));
                                   savedTransparentColor = localColorMap[ (fn -> fn_GIF89aTransparent) ];
                                 }
 
@@ -514,7 +514,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                 }
                                 else
                                 {
-                                    D(bug("[gifanim.datatype]: %s:    reading colormap...\n", __PRETTY_FUNCTION__));
+                                    D(bug("[gifanim.datatype]: %s:    reading colormap...\n", __func__));
                                   numcmaps++;
 
                                   if( ReadColorMap( cb, gaid, bitPixel, localColorMap ) )
@@ -528,7 +528,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                 /* Restore transparent color (if we have one) */
                                 if( (fn -> fn_GIF89aTransparent) != ~0U )
                                 {
-                                    D(bug("[gifanim.datatype]: %s:    restore transp\n", __PRETTY_FUNCTION__));
+                                    D(bug("[gifanim.datatype]: %s:    restore transp\n", __func__));
                                   localColorMap[ (fn -> fn_GIF89aTransparent) ] = savedTransparentColor;
                                 }
 
@@ -539,7 +539,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                   {
                                     if( !CMAP2Object( cb, o, (UBYTE *)localColorMap, (ULONG)(bitPixel * 3UL) ) )
                                     {
-                                        D(bug("[gifanim.datatype]: %s: failed to allocate object cmap!\n", __PRETTY_FUNCTION__));
+                                        D(bug("[gifanim.datatype]: %s: failed to allocate object cmap!\n", __func__));
                                       /* can't alloc object's color table */
                                       error = ERROR_NO_FREE_STORE;
                                     }
@@ -548,17 +548,17 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                   /* Create a palette-per-frame colormap here */
                                   if( !(fn -> fn_CMap = CMAP2ColorMap( cb, (1UL << (ULONG)(gaid -> gaid_Depth)), (UBYTE *)localColorMap, (ULONG)(bitPixel * 3UL) )) )
                                   {
-                                      D(bug("[gifanim.datatype]: %s: failed to allocate frame cmap!\n", __PRETTY_FUNCTION__));
+                                      D(bug("[gifanim.datatype]: %s: failed to allocate frame cmap!\n", __func__));
                                     /* can't alloc colormap */
                                     error = ERROR_NO_FREE_STORE;
                                   }
                                 }
 
-                                D(bug("[gifanim.datatype]: %s:    copying colormap\n", __PRETTY_FUNCTION__));
+                                D(bug("[gifanim.datatype]: %s:    copying colormap\n", __func__));
                                 /* Copy colormap for 24 bit output */
                                 memcpy( (void *)(fn -> fn_ColorMap), (void *)localColorMap, (size_t)(sizeof( struct ColorRegister ) * bitPixel) );
 
-                                D(bug("[gifanim.datatype]: %s:    reading image ...\n", __PRETTY_FUNCTION__));
+                                D(bug("[gifanim.datatype]: %s:    reading image ...\n", __func__));
                                 (void)ReadImage( cb, gaid,
                                                  (fn -> fn_ChunkyMap),
                                                  (UWORD)animwidth,
@@ -573,11 +573,11 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                 /* Get size of bitmap (curr_pos - start_of_bm) */
                                 fn -> fn_BMSize = Seek( fh, 0L, OFFSET_CURRENT ) - (fn -> fn_BMOffset); /* BUG: does not check for failure */
 
-                                D(bug("[gifanim.datatype]: %s:    bitmap = %d bytes\n", __PRETTY_FUNCTION__, fn->fn_BMSize));
+                                D(bug("[gifanim.datatype]: %s:    bitmap = %d bytes\n", __func__, fn->fn_BMSize));
 
                                 if( fn -> fn_BitMap )
                                 {
-                                    D(bug("[gifanim.datatype]: %s:    rendering to bitmap @ 0x%p\n", __PRETTY_FUNCTION__, fn->fn_BitMap));
+                                    D(bug("[gifanim.datatype]: %s:    rendering to bitmap @ 0x%p\n", __func__, fn->fn_BitMap));
                                   if( gaid -> gaid_UseChunkyMap )
                                   {
                                     WriteRGBPixelArray8( cb, (fn -> fn_BitMap), animwidth, animheight, (fn -> fn_ColorMap), (fn -> fn_ChunkyMap) );
@@ -604,7 +604,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                                 fn -> fn_Frame     = timestamp;
                                 fn -> fn_Duration  = duration;
 
-                                D(bug("[gifanim.datatype]: %s:    %08p:%08p\n", __PRETTY_FUNCTION__, fn->fn_TimeStamp, fn->fn_Duration));
+                                D(bug("[gifanim.datatype]: %s:    %08p:%08p\n", __func__, fn->fn_TimeStamp, fn->fn_Duration));
 
                                 AddTail( (struct List *)(&(gaid -> gaid_FrameList)), (struct Node *)(&(fn -> fn_Node)) );
 
@@ -636,13 +636,13 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                       /* on error break */
                       if( error )
                       {
-                          D(bug("[gifanim.datatype]: %s: ERROR!\n", __PRETTY_FUNCTION__));
+                          D(bug("[gifanim.datatype]: %s: ERROR!\n", __func__));
                         break;
                       }
                     }
 
 scandone:
-                    D(bug("[gifanim.datatype]: %s: scan done\n", __PRETTY_FUNCTION__));
+                    D(bug("[gifanim.datatype]: %s: scan done\n", __func__));
 
                     /* Any frames ? */
                     if( timestamp && (error == 0L) && numcmaps )
@@ -920,7 +920,7 @@ struct FrameNode *AllocFrameNode( struct ClassBase *cb, APTR pool )
 {
     struct FrameNode *fn;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if ((fn = (struct FrameNode *)AllocPooled( pool, (ULONG)sizeof( struct FrameNode ) ) ) != NULL)
     {
@@ -934,7 +934,7 @@ struct FrameNode *AllocFrameNode( struct ClassBase *cb, APTR pool )
 struct FrameNode *FindFrameNode( struct MinList *fnl, ULONG timestamp )
 {
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if( fnl )
     {
@@ -969,7 +969,7 @@ void FreeFrameNodeResources( struct ClassBase *cb, struct GIFAnimInstData *gaid 
 {
     struct FrameNode *worknode;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
 /* The follwoing was used for debugging */
 /* #define FREE_LIST_IN_REVERSE_ORDER 1 */
@@ -1005,7 +1005,7 @@ void FreeFrameNodeResources( struct ClassBase *cb, struct GIFAnimInstData *gaid 
 
 struct BitMap *AllocFrameBitMap( struct ClassBase *cb, struct GIFAnimInstData *gaid )
 {
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if( gaid -> gaid_UseChunkyMap )
     {
@@ -1021,7 +1021,7 @@ struct BitMap *AllocFrameBitMap( struct ClassBase *cb, struct GIFAnimInstData *g
 
 void FreeFrameBitMap( struct ClassBase *cb, struct GIFAnimInstData *gaid, struct BitMap *bm )
 {
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if( bm )
     {
@@ -1046,7 +1046,7 @@ struct BitMap *AllocBitMapPooled( struct ClassBase *cb, ULONG width, ULONG heigh
     ULONG          planesize,
                    size;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     planesize = (ULONG)RASSIZE( width, height ) + 16UL;
     size      = ((ULONG)sizeof( struct BitMap )) + (planesize * depth) + width;
@@ -1087,7 +1087,7 @@ struct BitMap *AllocBitMapPooled( struct ClassBase *cb, ULONG width, ULONG heigh
 
 void OpenLogfile( struct ClassBase *cb, struct GIFAnimInstData *gaid )
 {
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if( ((gaid -> gaid_VerboseOutput) == NULL) || ((gaid -> gaid_VerboseOutput) == (APTR)-1L) )
     {
@@ -1139,7 +1139,7 @@ void verbose_printf( struct ClassBase *cb, struct GIFAnimInstData *gaid, STRPTR 
 static
 void AttachSample( struct ClassBase *cb, struct GIFAnimInstData *gaid )
 {
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if( gaid -> gaid_Sample )
     {
@@ -1194,7 +1194,7 @@ void AttachSample( struct ClassBase *cb, struct GIFAnimInstData *gaid )
 static
 BOOL ReadColorMap( struct ClassBase *cb, struct GIFAnimInstData *gaid, UWORD numcolors, struct ColorRegister *color )
 {
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     return( (BOOL)(!ReadOK( cb, (&(gaid -> gaid_GIFDec)), color, (ULONG)(GIFCMAPENTRYSIZE * numcolors) )) );
 }
@@ -1208,7 +1208,7 @@ int DoExtension( struct ClassBase *cb, Object *o, struct GIFAnimInstData *gaid, 
     STRPTR             str;
     int                count;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     switch( (int)label )
     {
@@ -1402,7 +1402,7 @@ int GetDataBlock( struct ClassBase *cb, struct GIFAnimInstData *gaid, UBYTE *buf
     struct GIFDecoder *gifdec = (&(gaid -> gaid_GIFDec));
     UBYTE              count;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if( !ReadOK( cb, gifdec, &count, 1 ) )
     {
@@ -1633,7 +1633,7 @@ int ReadImage( struct ClassBase *cb, struct GIFAnimInstData *gaid, UBYTE *image,
     struct GIFDecoder *gifdec = (&(gaid -> gaid_GIFDec)); /* shortcut */
     UBYTE              c;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Initialize the Compression routines */
     if( !ReadOK( cb, gifdec, &c, 1 ) )
@@ -1644,7 +1644,7 @@ int ReadImage( struct ClassBase *cb, struct GIFAnimInstData *gaid, UBYTE *image,
     /* If this is an "uninteresting picture" ignore it. */
     if( ignore )
     {
-      D(bug("[gifanim.datatype]: %s: skipping gif image...\n", __PRETTY_FUNCTION__ ) );
+      D(bug("[gifanim.datatype]: %s: skipping gif image...\n", __func__ ) );
 
       /* Loop until end of raster data */
       while(TRUE)
@@ -1657,7 +1657,7 @@ int ReadImage( struct ClassBase *cb, struct GIFAnimInstData *gaid, UBYTE *image,
 
         if( c == 0 )
         {
-          D(bug("[gifanim.datatype]: %s: gif image done\n", __PRETTY_FUNCTION__ ) );
+          D(bug("[gifanim.datatype]: %s: gif image done\n", __func__ ) );
           break;
         }
 
@@ -1679,7 +1679,7 @@ int ReadImage( struct ClassBase *cb, struct GIFAnimInstData *gaid, UBYTE *image,
       if( LWZReadByte( cb, gaid, TRUE, c ) < 0 )
         error_printf( cb, gaid, "error (<%d) reading image\n", 0);
 
-      D(bug("[gifanim.datatype]: %s: reading %lx %ld.%ld / %ld by %ld%s GIF image\n", __PRETTY_FUNCTION__, image, left, top, len, height, interlace ? " interlaced" : "" ) );
+      D(bug("[gifanim.datatype]: %s: reading %lx %ld.%ld / %ld by %ld%s GIF image\n", __func__, image, left, top, len, height, interlace ? " interlaced" : "" ) );
 
       while( (v = LWZReadByte( cb, gaid, FALSE, c )) >= 0 )
       {
@@ -1752,7 +1752,7 @@ struct FrameNode *GetPrevFrameNode( struct FrameNode *currfn, ULONG interleave )
     struct FrameNode *worknode,
                      *prevnode;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Get previous frame */
     worknode = currfn;
@@ -1783,12 +1783,12 @@ void WriteDeltaPixelArray8Fast( struct BitMap *dest, UBYTE *source, UBYTE *prev 
              ULONG  numcycles  = ((dest -> Rows) * (dest -> BytesPerRow)) / sizeof( ULONG ),
                     i;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Copy plane ptrs */
     for( i = 0UL ; i < (dest -> Depth) ; i++ )
     {
-        D(bug("[gifanim.datatype] %s: plane %d @ 0x%p\n", __PRETTY_FUNCTION__, i, dest -> Planes[ i ]));
+        D(bug("[gifanim.datatype] %s: plane %d @ 0x%p\n", __func__, i, dest -> Planes[ i ]));
       plane[ i ] = (ULONG *)(dest -> Planes[ i ]);
     }
 

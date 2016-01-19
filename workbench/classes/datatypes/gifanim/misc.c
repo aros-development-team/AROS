@@ -90,7 +90,7 @@ BOOL CMAP2Object( struct ClassBase *cb, Object *o, UBYTE *rgb, ULONG rgbsize )
     ULONG                *acregs;
     IPTR                 nc;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* file has this many colors (e.g. each color has one byte per R,B,G-gun) */
     nc = rgbsize / 3UL;
@@ -104,8 +104,8 @@ BOOL CMAP2Object( struct ClassBase *cb, Object *o, UBYTE *rgb, ULONG rgbsize )
                     ADTA_NumColors,      (&nc),
                     TAG_DONE ) == 3 )
     {
-        D(bug("[gifanim.datatype] %s: got cmap attribs\n", __PRETTY_FUNCTION__));
-        D(bug("[gifanim.datatype] %s: colorregisters @ 0x%p, cregs @ 0x%p for %d colors\n", __PRETTY_FUNCTION__, acm, acregs, nc));
+        D(bug("[gifanim.datatype] %s: got cmap attribs\n", __func__));
+        D(bug("[gifanim.datatype] %s: colorregisters @ 0x%p, cregs @ 0x%p for %d colors\n", __func__, acm, acregs, nc));
 
       /* All valid ? */
       if( acm && acregs && nc )
@@ -142,7 +142,7 @@ struct ColorMap *CMAP2ColorMap( struct ClassBase *cb, ULONG anumcolors, UBYTE *r
     ULONG            a_nc   = anumcolors;     /* Number of colors in animation */
     ULONG            rgb_nc = rgbsize / 3UL;  /* Number of colors in CMAP      */
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Get a colormap which hold all colors */
     if ((cm = GetColorMap( (long)MAX( a_nc, rgb_nc ) )) != NULL)
@@ -176,7 +176,7 @@ struct ColorMap *CopyColorMap( struct ClassBase *cb, struct ColorMap *src )
 {
     struct ColorMap *dest = NULL;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if( src )
     {
@@ -213,7 +213,7 @@ void WriteRGBPixelArray8( struct ClassBase *cb, struct BitMap *bm, ULONG animwid
     register ULONG           x,
                              y;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Set up the temp. rastport */
     InitRastPort( (&rp) );
@@ -273,7 +273,7 @@ void CopyBitMapPlanar( struct ClassBase *cb, struct BitMap *bm1, struct BitMap *
     ULONG  bpr1 = bm1 -> BytesPerRow;
     ULONG  bpr2 = bm2 -> BytesPerRow;
 
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Same bitmap layout ? */
     if( bpr1 == bpr2 )
@@ -324,7 +324,7 @@ void CopyBitMapPlanar( struct ClassBase *cb, struct BitMap *bm1, struct BitMap *
 static
 void CopyBitMapSystem( struct ClassBase *cb, struct BitMap *bm1, struct BitMap *bm2, ULONG width, ULONG height )
 {
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     /* Assumption: If a non-planar bitmap occurs BltBitMap should be able
      * to blit it into a planar one
@@ -337,7 +337,7 @@ void CopyBitMapSystem( struct ClassBase *cb, struct BitMap *bm1, struct BitMap *
 
 void CopyBitMap( struct ClassBase *cb, struct BitMap *dest, struct BitMap *src, ULONG width, ULONG height )
 {
-    D(bug("[gifanim.datatype]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[gifanim.datatype]: %s()\n", __func__));
 
     if( dest && src )
     {
