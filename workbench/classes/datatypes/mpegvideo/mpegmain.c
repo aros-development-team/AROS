@@ -74,11 +74,11 @@ int get_more_data( struct MPEGVideoInstData *mvid, unsigned int *buf_start, int 
     UBYTE *buffer,
           *mark;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     if( EOF_flag )
     {
-        D(bug("[mpegvideo.datatype] %s: reached end of file\n", __PRETTY_FUNCTION__));
+        D(bug("[mpegvideo.datatype] %s: reached end of file\n", __func__));
       return( 0 );
     }
 
@@ -111,7 +111,7 @@ int get_more_data( struct MPEGVideoInstData *mvid, unsigned int *buf_start, int 
     mvid -> mvid_ReadMarkPos = Seek( (mvid -> input), 0L, OFFSET_CURRENT );
     mvid -> mvid_ReadMark    = mark;
 
-    D(bug("[mpegvideo.datatype] %s: ReadMarkPos = %d\n", __PRETTY_FUNCTION__, mvid->mvid_ReadMarkPos));
+    D(bug("[mpegvideo.datatype] %s: ReadMarkPos = %d\n", __func__, mvid->mvid_ReadMarkPos));
 
     num_read = Read( (mvid -> input), mark, request );
 
@@ -129,7 +129,7 @@ int get_more_data( struct MPEGVideoInstData *mvid, unsigned int *buf_start, int 
       }
     }
 
-    D(bug("[mpegvideo.datatype] %s: updating requestor...\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s: updating requestor...\n", __func__));
 
     /* Update progress gauge... */
     mvid -> mvid_PR . pr_Curr += num_read;
@@ -189,7 +189,7 @@ int get_more_data( struct MPEGVideoInstData *mvid, unsigned int *buf_start, int 
 
 void loadvideo( struct MPEGVideoInstData *mvid )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Get file size, update progress gauge */
     (void)Seek( (mvid -> input), 0L, OFFSET_END );
@@ -198,7 +198,7 @@ void loadvideo( struct MPEGVideoInstData *mvid )
 
     /* Create new video stream context */
     mvid -> mvid_VidStream = NewVidStream( mvid, (int)(mvid -> mvid_BufLength) );
-    D(bug("[mpegvideo.datatype] %s: VidStream context @ 0x%p\n", __PRETTY_FUNCTION__, mvid -> mvid_VidStream));
+    D(bug("[mpegvideo.datatype] %s: VidStream context @ 0x%p\n", __func__, mvid -> mvid_VidStream));
 
     /* Get initial information about the stream */
     mpegVidRsrc( mvid, 0, (mvid -> mvid_VidStream) );
@@ -273,7 +273,7 @@ void DoDitherImage( struct MPEGVideoInstData *mvid, UBYTE *l, UBYTE *Cr, UBYTE *
           *sCr = NULL,
           *sCb = NULL;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     /* Scale ? */
     if( (video_width != anim_width) || (video_height != anim_height) )
@@ -326,7 +326,7 @@ void DoDitherImage( struct MPEGVideoInstData *mvid, UBYTE *l, UBYTE *Cr, UBYTE *
 
 void myexit( struct MPEGVideoInstData *mvid, long retval, long retval2 )
 {
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     mvid -> mvid_retval  = retval;
     mvid -> mvid_retval2 = retval2;
@@ -341,7 +341,7 @@ void ChunkyScale( UBYTE *dest, ULONG destwidth, ULONG destheight, UBYTE *source,
     ULONG x,
           y;
 
-    D(bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
     for( y = 0UL ; y < destheight ; y++ )
     {

@@ -612,7 +612,7 @@ ADD2LIBS("datatypes/animation.datatype", 0, struct Library *, AnimationBase);
 
 static int LibInit(struct ClassBase *classbase)
 {
-    bug("[mpegvideo.datatype] %s()\n", __PRETTY_FUNCTION__);
+    bug("[mpegvideo.datatype] %s()\n", __func__);
 #endif
     
     InitSemaphore( (&(classbase -> cb_Lock)) );

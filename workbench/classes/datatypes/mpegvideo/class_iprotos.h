@@ -26,7 +26,7 @@ void error_printf ( struct MPEGVideoInstData *mvid , STRPTR format , ...);
 #if !defined(__AROS__)
 void mysprintf ( struct ClassBase * , STRPTR buffer , STRPTR fmt , ...);
 #else
-#define mysprintf(cb,buffer,fmt,...) sprintf (buffer,fmt, __VA_ARGS__)
+#define mysprintf(cb,buffer,fmt,...) sprintf(buffer,fmt, __VA_ARGS__)
 #endif
 
 struct BitMap *AllocFrameBitMap ( struct MPEGVideoInstData *mvid );
