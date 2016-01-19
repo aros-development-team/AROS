@@ -35,6 +35,6 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 %build_progs mmake=test-hosted \
     files=$(HOSTEDTESTFILES) targetdir=$(EXEDIR)
 
-%copy_files_q mmake=test-miscfiles files="testscript openlocale.prefs" dst=$(EXEDIR)
+%copy_files_q mmake=test-miscfiles files="testscript" dst=$(EXEDIR)
 
 %common
