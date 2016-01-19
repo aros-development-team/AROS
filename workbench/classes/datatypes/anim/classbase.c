@@ -734,7 +734,7 @@ struct Library *LibInit( REGD0 struct ClassBase *cb, REGA0 BPTR seglist, REGA6 s
     cb -> cb_SysBase = sysbase;
 #else
 /* Open superclass */
-ADD2LIBS("datatypes/animation.datatype", 0, struct Library *, AnimationBase);
+ADD2LIBS("datatypes/animation.datatype", 0, struct Library *, AnimationBase)
 
 static int LibInit(struct ClassBase *cb)
 {
@@ -921,5 +921,5 @@ LONG LibExpunge( REGA6 struct ClassBase *cb )
     return( (LONG)seg );
 }
 #else
-ADD2INITLIB(LibInit, 0);
+ADD2INITLIB(LibInit, 0)
 #endif
