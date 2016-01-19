@@ -11,8 +11,11 @@ EXEDIR := $(AROS_TESTS)/locale
 
 #MM- test : test-locale
 #MM- test-quick : test-locale-quick
+#MM  test-locale : test-locale-miscfiles
 
 %build_progs mmake=test-locale \
     files=$(FILES) targetdir=$(EXEDIR)
+
+%copy_files_q mmake=test-locale-miscfiles files="openlocale.prefs" dst=$(EXEDIR)
 
 %common
