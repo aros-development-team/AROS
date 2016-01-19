@@ -6,14 +6,9 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    cctest \
     serialmousetest \
     serialtest \
-    rexxsyslibtest \
-    simplepng \
-    printf_f \
-    runtests \
-    mountlist
+    runtests
 
 HOSTEDTESTFILES :=  \
     hostlib windebug
