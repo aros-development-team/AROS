@@ -1,6 +1,6 @@
 /*
 **
-**  $VER: methods.c 1.12 (12.11.97)
+** $Id:$
 **  anim.datatype 1.12
 **
 **  DataTypes class method implementations

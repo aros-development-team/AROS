@@ -1,7 +1,7 @@
 
 /*
 **
-**  $VER: classbase.c 1.12 (12.11.97)
+** $Id:$
 **  anim.datatype 1.12
 **
 **  Library routines for a DataTypes class
