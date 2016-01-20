@@ -2,7 +2,7 @@
 
 /*
 **
-**  $VER: asyncio.c 1.10 (4.8.97)
+** $Id:$
 **  anim.datatype 1.10
 **
 **  Async I/O for anim.datatype

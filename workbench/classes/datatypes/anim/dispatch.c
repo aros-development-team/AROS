@@ -1,7 +1,7 @@
 
 /*
 **
-**  $VER: dispatch.c 1.12 (12.11.97)
+** $Id:$
 **  anim.datatype 1.12
 **
 **  Dispatch routine for a DataTypes class

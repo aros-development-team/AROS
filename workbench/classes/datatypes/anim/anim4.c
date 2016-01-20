@@ -1,8 +1,8 @@
 
 /*
 **
-**  $VER: anim.c 1.12 (12.11.97)
-**  anim.datatype 1.12
+** $Id:$
+**  anim.datatype 41.8
 **
 */
 
