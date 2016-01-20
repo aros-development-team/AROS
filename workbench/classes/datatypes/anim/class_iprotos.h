@@ -1,3 +1,9 @@
+/*
+**
+** $Id:$
+**  anim.datatype 1.12
+**
+*/
 
 /* classbase.c */
 DISPATCHERFLAGS struct IClass *ObtainAnimEngine ( REGA6 struct ClassBase *cb );

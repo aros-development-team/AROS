@@ -1,11 +1,9 @@
-
-
 #ifndef CLASSDATA_H
 #define CLASSDATA_H 1
 
 /*
 **
-**  $VER: classdata.h 1.11 (24.9.97)
+** $Id:$
 **  anim.datatype 1.11
 **
 **  anim class data
@@ -177,5 +175,3 @@ struct AnimContext
 
 
 #endif /* !CLASSDATA_H */
-
-
