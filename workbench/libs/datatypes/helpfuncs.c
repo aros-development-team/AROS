@@ -331,8 +331,12 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
 		cur->DT.dtn_Node1.ln_Succ;
 		cur = (struct CompoundDataType *)cur->DT.dtn_Node1.ln_Succ)
 	{
-	    if(CheckSize >= cur->DTH.dth_MaskLen)
-	    {
+            if (!(cur->DTH.dth_MaskLen) && (cur->Function)
+            {
+                found = (cur->Function)(dthc);
+            }
+            else if(CheckSize >= cur->DTH.dth_MaskLen)
+            {
 		WORD *msk = cur->DTH.dth_Mask;
 		UBYTE *cmp = CheckArray;
 		UWORD count;
