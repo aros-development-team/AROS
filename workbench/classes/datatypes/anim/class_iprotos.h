@@ -60,10 +60,8 @@ LONG generic_unpacklongdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *
 /* anim3.c */
 LONG generic_unpackshortdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize );
 /* anim4.c */
-#if defined(COMMENTED_OUT)
 LONG generic_unpackanim4longdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags );
 LONG generic_unpackanim4worddelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags );
-#endif
 /* anim5.c */
 LONG generic_unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize );
 /* anim7.c */

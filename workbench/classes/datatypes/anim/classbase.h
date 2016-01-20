@@ -92,9 +92,7 @@ typedef LONG (*unpack_ilbm_t)(struct ClassBase *cb, struct BitMap *bm, struct Bi
 typedef LONG (*unpack_xor_t)(struct AnimHeader *anhd, struct BitMap *bm, struct BitMap *deltabm);
 typedef LONG (*unpack_deltabm_t)(struct AnimHeader *anhd, struct ClassBase *cb, UBYTE *dlta, ULONG dltasize, struct BitMap *deltabm, struct BitMap *bm);
 typedef LONG (*unpack_delta_t)(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize);
-#if defined(COMMENTED_OUT)
 typedef LONG (*unpack_delta4_t)(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *dlta, ULONG dltasize, ULONG flags);
-#endif
 
 /*****************************************************************************/
 
@@ -122,10 +120,8 @@ struct ClassBase
     unpack_delta_t              unpacklongdelta;
     unpack_delta_t              unpackshortdelta;
     unpack_delta_t              unpackbytedelta;
-#if defined(COMMENTED_OUT)
     unpack_delta4_t             unpackanim4longdelta;
     unpack_delta4_t             unpackanim4worddelta;
-#endif
     unpack_delta_t              unpackanim7longdelta;
     unpack_delta_t              unpackanim7worddelta;
     unpack_delta_t              unpackanim8longdelta;
