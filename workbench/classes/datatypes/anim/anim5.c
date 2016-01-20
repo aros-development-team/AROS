@@ -86,7 +86,7 @@ LONG generic_unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *
                 }
                 else
                 { // Skip op: Skip some rows
-                    pixels = (UBYTE *)((IPTR)pixels + (op * bm->BytesPerRow));
+                    pixels = (UBYTE *)((IPTR)pixels + (op * pitch));
                 }
             }
         }
