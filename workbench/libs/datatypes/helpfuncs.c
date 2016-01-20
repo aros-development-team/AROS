@@ -331,7 +331,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
 		cur->DT.dtn_Node1.ln_Succ;
 		cur = (struct CompoundDataType *)cur->DT.dtn_Node1.ln_Succ)
 	{
-            if (!(cur->DTH.dth_MaskLen) && (cur->Function)
+            if (!(cur->DTH.dth_MaskLen) && (cur->Function))
             {
                 found = (cur->Function)(dthc);
             }
