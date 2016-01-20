@@ -2199,7 +2199,6 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
         {
             /* unpack ILBM BODY */
             return( cb->unpackilbmbody( cb, unpackbm, bmh, dlta, dltasize ) );
-            return( cb->unpackilbmbody( cb, unpackbm, bmh, dlta, dltasize ) );
         }
 
         case acmpXORILBM: /*  1  */
@@ -2285,7 +2284,6 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
 
         case acmpDelta:             /*  4 */
         {
-#ifdef COMMENTED_OUT
             if( (ah -> ah_Flags) & ahfLongData )
             {
               error = cb->unpackanim4longdelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
@@ -2294,12 +2292,6 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
             {
               error = cb->unpackanim4worddelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
             }
-#else
-            error_printf( cb, aid, "\adlta: acmpDelta disabled, call author (gisburn@w-specht.rhein-ruhr.de)\n"
-                                   "immediately. If you are this FIRST user who send me a VALID IFF ANIM-4 compressed animation\n"
-                                   "you'll get $%d US-Dollar !!\n THIS IS NO JOKE !!\n", 10);
-            error = ERROR_NOT_IMPLEMENTED;
-#endif /* COMMENTED_OUT */
         }
             break;
 

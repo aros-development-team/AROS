@@ -749,10 +749,8 @@ static int LibInit(struct ClassBase *cb)
     cb ->unpacklongdelta = (unpack_delta_t) generic_unpacklongdelta;
     cb ->unpackshortdelta = (unpack_delta_t) generic_unpackshortdelta;
     cb ->unpackbytedelta = (unpack_delta_t) generic_unpackbytedelta;
-#if defined(COMMENTED_OUT)
     cb ->unpackanim4longdelta = (unpack_delta4_t) generic_unpackanim4longdelta;
     cb ->unpackanim4worddelta = (unpack_delta4_t) generic_unpackanim4worddelta;
-#endif
     cb ->unpackanim7longdelta = (unpack_delta_t) generic_unpackanim7longdelta;
     cb ->unpackanim7worddelta = (unpack_delta_t) generic_unpackanim7worddelta;
     cb ->unpackanim8longdelta = (unpack_delta_t) generic_unpackanim8longdelta;
