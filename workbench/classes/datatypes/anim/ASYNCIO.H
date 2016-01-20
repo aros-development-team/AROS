@@ -1,4 +1,3 @@
-
 #ifndef ASYNCIO_H
 #define ASYNCIO_H
 
@@ -37,5 +36,3 @@ typedef struct AsyncFile
 /*****************************************************************************/
 
 #endif /* ASYNCIO_H */
-
-

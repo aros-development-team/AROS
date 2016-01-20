@@ -1,10 +1,9 @@
-
 #ifndef CLASSBASE_H
 #define CLASSBASE_H 1
 
 /*
 **
-**  $VER: classbase.h 1.12 (12.11.97)
+** $Id:$
 **  anim.datatype 1.12
 **
 **  Header file for DataTypes class
@@ -243,5 +242,3 @@ __stdargs void kprintf( STRPTR, ... );
 #include "class_iprotos.h"
 
 #endif /* !CLASSBASE_H */
-
-

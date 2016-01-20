@@ -1,3 +1,9 @@
+/*
+**
+** $Id:$
+**  anim.datatype 1.12
+**
+*/
 
 extern IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg);
 extern IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg);
