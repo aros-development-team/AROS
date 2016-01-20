@@ -87,7 +87,7 @@ LONG generic_unpackanimjdelta(struct AnimHeader *anhd, struct ClassBase *cb, UBY
                         if (xormask)
                             pixel[ x ] = src[x] ^ *dlta;
                         else
-                            pixel[ x ] = src[x];
+                            pixel[ x ] = *dlta;
                         dlta++;
                     }
 
