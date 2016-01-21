@@ -82,5 +82,7 @@
 
     TDNESTCOUNT_INC;
 
+    D(bug("[Exec] Forbid: TDNESTCOUNT = %d\n", TDNESTCOUNT_GET));
+
     AROS_LIBFUNC_EXIT
 } /* Forbid() */

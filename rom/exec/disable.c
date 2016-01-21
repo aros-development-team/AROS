@@ -87,5 +87,7 @@
 
     IDNESTCOUNT_INC;
 
+    D(bug("[Exec] Disable: IDNESTCOUNT = %d\n", IDNESTCOUNT_GET));
+
     AROS_LIBFUNC_EXIT
 } /* Disable() */
