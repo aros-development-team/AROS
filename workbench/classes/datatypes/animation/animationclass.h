@@ -35,6 +35,7 @@ BOOL ProcEnabled(struct ProcessPrivate *priv, volatile ULONG *flags, ULONG flag)
 
 struct AnimColor_Data
 {
+    struct SignalSemaphore      acd_PenLock;
     struct ColorMap             *acd_ColorMap;
     struct ColorRegister        *acd_ColorRegs;
     ULONG			*acd_CRegs;
