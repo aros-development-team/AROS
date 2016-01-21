@@ -116,7 +116,7 @@ static BOOL ReadBitMapPic(Class *cl, Object *o, struct IFFHandle *handle, struct
     if (file_bmhd->bmh_Masking == mskHasMask) totdepth++;
     
     w16      = (bmhd->bmh_Width + 15) & ~15;
-    body_bpr = w16 / 8;
+    body_bpr = (w16 >> 3);
 
     p = body_cn->cn_Size;
     if ((file_bmhd->bmh_Compression == cmpByteRun1))
@@ -220,7 +220,7 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
     height = bmhd->bmh_Height;
     numplanes = bmhd->bmh_Depth;
     w16      = (width + 15) & ~15;
-    body_bpr = w16 / 8;
+    body_bpr = (w16 >> 3);
     bodysize = body_cn->cn_Size;
 
     p = bodysize + width * 3;
@@ -508,11 +508,11 @@ static BOOL ReadILBM(Class *cl, Object *o)
     }
 
     file_bmhd = (struct FileBitMapHeader *)bmhd_prop->sp_Data;
-    bmhd->bmh_Width  	  = bmhd->bmh_PageWidth  = file_bmhd->bmh_Width [0] * 256 + file_bmhd->bmh_Width [1];
-    bmhd->bmh_Height 	  = bmhd->bmh_PageHeight = file_bmhd->bmh_Height[0] * 256 + file_bmhd->bmh_Height[1];
+    bmhd->bmh_Width  	  = bmhd->bmh_PageWidth  = (file_bmhd->bmh_Width [0] << 8) + file_bmhd->bmh_Width [1];
+    bmhd->bmh_Height 	  = bmhd->bmh_PageHeight = (file_bmhd->bmh_Height[0] << 8) + file_bmhd->bmh_Height[1];
     bmhd->bmh_Depth  	  = file_bmhd->bmh_Depth;
     bmhd->bmh_Masking 	  = file_bmhd->bmh_Masking;
-    bmhd->bmh_Transparent = file_bmhd->bmh_Transparent[0] * 256 + file_bmhd->bmh_Transparent[1];
+    bmhd->bmh_Transparent = (file_bmhd->bmh_Transparent[0] << 8) + file_bmhd->bmh_Transparent[1];
     
     {
     	IPTR name = (IPTR) NULL;
