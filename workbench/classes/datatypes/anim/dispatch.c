@@ -1322,10 +1322,12 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                             case ID_BODY:
                             case ID_DLTA:
                             {
-                                D(bug("[anim.datatype] %s: ID_BODY/ID_DLTA\n", __func__));
+                                D(
+                                    bug("[anim.datatype] %s: %s\n", __func__, (cn -> cn_ID == ID_BODY) ? "ID_BODY" : "ID_DLTA");
+                                )
                                 if( fn )
                                 {
-                                  /* Store position of DLTA (pos points to the DLTA ID) */
+                                  /* Store position of DLTA */
                                   fn -> fn_BMOffset = Seek((BPTR)iff->iff_Stream, 0, OFFSET_CURRENT);
                                   fn -> fn_BMSize   = cn -> cn_Size;
                                    
@@ -1350,6 +1352,9 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
 
                                             /* Clear buffer to get rid of some problems with corrupted DLTAs */
                                             memset( (void *)buff, 0, (size_t)((cn -> cn_Size) + 31) );
+
+                                              if ((fn -> fn_TimeStamp == 0) && (fn -> fn_AH . ah_Operation != acmpILBM))
+                                                  ClearBitMap( fn -> fn_BitMap );
 
                                             /* Get previous frame */
                                             prevfn = fn -> fn_PrevFrame;
@@ -1915,7 +1920,7 @@ void XORBitMaps( struct BitMap *op1, struct BitMap *op2 )
 }
 
 
-struct BitMap *AllocBitMapPooled( struct ClassBase *cb, ULONG width, ULONG height, ULONG depth, APTR pool )
+struct BitMap *AllocBitMapPooled( struct ClassBase *cb, ULONG width, ULONG height, ULONG depth, APTR pool)
 {
     struct BitMap *bm;
     ULONG          planesize,
@@ -2187,165 +2192,165 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
 
     if( bm && ah && dlta && dltasize )
     {
-      struct BitMap       *unpackbm = bm,
+        struct BitMap       *unpackbm = bm,
                           *tempbm   = NULL;
-      struct BitMapHeader *bmh      = aid -> aid_BMH;
-      BOOL                 DoXOR;
+        struct BitMapHeader *bmh      = aid -> aid_BMH;
+        BOOL                 DoXOR;
 
-      /* Handle acmpILBM, acmpXORILBM and acmpAnimJ explicitly */
-      switch( ah -> ah_Operation )
-      {
-        case acmpILBM:    /*  0  */
+        /* Handle acmpILBM, acmpXORILBM and acmpAnimJ explicitly */
+        switch( ah -> ah_Operation )
         {
-            /* unpack ILBM BODY */
-            return( cb->unpackilbmbody( cb, unpackbm, bmh, dlta, dltasize ) );
+            case acmpILBM:    /*  0  */
+                {
+                    /* unpack ILBM BODY */
+                    return( cb->unpackilbmbody( cb, unpackbm, bmh, dlta, dltasize ) );
+                }
+
+            case acmpXORILBM: /*  1  */
+            {
+                error_printf( cb, aid, "\adlta: acmpXORILBM (ANIM-%d) disabled, call author immediately\n", ah->ah_Operation);
+                return( ERROR_NOT_IMPLEMENTED );
+            }
+
+            case acmpAnimJ:   /* 'J' */
+            {
+                /* unpack ANIM-J  */
+                return( cb->unpackanimjdelta(ah, cb, dlta, dltasize, prevbm, bm ) );
+            }
+
+            case acmpAnimI:   /* 'I' */
+            {
+                /* unpack ANIM-I  */
+                return( cb->unpackanimidelta(ah, cb, dlta, dltasize, prevbm, bm ) );
+            }
         }
 
-        case acmpXORILBM: /*  1  */
+        /* XOR ? */
+        DoXOR = ((ah -> ah_Flags) & ahfXOR);
+
+        if( !DoXOR )
         {
-            error_printf( cb, aid, "\adlta: acmpXORILBM (ANIM-%d) disabled, call author immediately\n", ah->ah_Operation);
-            return( ERROR_NOT_IMPLEMENTED );
+            if( (aid -> aid_NoDPaintBrushPatch) == FALSE )
+            {
+                /* DPaint anim brush (compatibility hack) */
+                if( ((ah -> ah_Operation) == acmpByteDelta) && ((ah -> ah_Interleave) == 1U) )
+                {
+                    DoXOR = TRUE;
+                }
+            }
         }
 
-        case acmpAnimJ:   /* 'J' */
+        /* Prepare XOR (see below) */
+        if( DoXOR && prevbm )
         {
-            /* unpack ANIM-J  */
-            return( cb->unpackanimjdelta(ah, cb, dlta, dltasize, prevbm, bm ) );
-        }
+            if( prevbm == bm )
+            {
+                if( !(tempbm = AllocBitMapPooled( cb, (ULONG)(aid -> aid_BMH -> bmh_Width), (ULONG)(aid -> aid_BMH -> bmh_Height), (ULONG)(aid -> aid_BMH -> bmh_Depth), (aid -> aid_FramePool) )) )
+                {
+                    return( ERROR_NO_FREE_STORE );
+                }
 
-        case acmpAnimI:   /* 'I' */
-        {
-            /* unpack ANIM-I  */
-            return( cb->unpackanimidelta(ah, cb, dlta, dltasize, prevbm, bm ) );
-        }
-      }
+                unpackbm = prevbm = tempbm;
+            }
 
-      /* XOR ? */
-      DoXOR = ((ah -> ah_Flags) & ahfXOR);
-
-      if( !DoXOR )
-      {
-        if( (aid -> aid_NoDPaintBrushPatch) == FALSE )
-        {
-          /* DPaint anim brush (compatibility hack) */
-          if( ((ah -> ah_Operation) == acmpByteDelta) && ((ah -> ah_Interleave) == 1U) )
-          {
-            DoXOR = TRUE;
-          }
-        }
-      }
-
-      /* Prepare XOR (see below) */
-      if( DoXOR && prevbm )
-      {
-        if( prevbm == bm )
-        {
-          if( !(tempbm = AllocBitMapPooled( cb, (ULONG)(aid -> aid_BMH -> bmh_Width), (ULONG)(aid -> aid_BMH -> bmh_Height), (ULONG)(aid -> aid_BMH -> bmh_Depth), (aid -> aid_FramePool) )) )
-          {
-            return( ERROR_NO_FREE_STORE );
-          }
-
-          unpackbm = prevbm = tempbm;
-        }
-
-        ClearBitMap( unpackbm );
-      }
-      else
-      {
-        if( prevbm )
-        {
-          if( prevbm != bm )
-          {
-            CopyBitMap( cb, prevbm, bm );
-          }
+            ClearBitMap( unpackbm );
         }
         else
         {
-          ClearBitMap( bm );
-        }
-      }
-
-      /* dispatch compression type, second attempt */
-      switch( ah -> ah_Operation )
-      {
-        /* acmpILBM, acmpXORILBM and acmpAnimJ have been processed above */
-
-        case acmpLongDelta:         /* 2 */
-        {
-            error = cb->unpacklongdelta(ah, unpackbm, dlta, dltasize );
-        }
-            break;
-
-        case acmpShortDelta:        /* 3 */
-        {
-            error = cb->unpackshortdelta(ah, unpackbm, dlta, dltasize );
-        }
-            break;
-
-        case acmpDelta:             /*  4 */
-        {
-            if( (ah -> ah_Flags) & ahfLongData )
+            if( prevbm )
             {
-              error = cb->unpackanim4longdelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
+                if( prevbm != bm )
+                {
+                    CopyBitMap( cb, prevbm, bm );
+                }
             }
             else
             {
-              error = cb->unpackanim4worddelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
+                ClearBitMap( bm );
             }
         }
-            break;
 
-        case acmpByteDelta:         /* 5 */
-        case acmpStereoByteDelta:   /* 6 */
+        /* dispatch compression type, second attempt */
+        switch( ah -> ah_Operation )
         {
-            error = cb->unpackbytedelta(ah, unpackbm, dlta, dltasize );
-        }
-            break;
+            /* acmpILBM, acmpXORILBM and acmpAnimJ have been processed above */
 
-        case acmpAnim7:             /* 7 */
+            case acmpLongDelta:         /* 2 */
+                {
+                    error = cb->unpacklongdelta(ah, unpackbm, dlta, dltasize );
+                }
+                break;
+
+            case acmpShortDelta:        /* 3 */
+                {
+                    error = cb->unpackshortdelta(ah, unpackbm, dlta, dltasize );
+                }
+                break;
+
+            case acmpDelta:             /*  4 */
+                {
+                    if( (ah -> ah_Flags) & ahfLongData )
+                    {
+                        error = cb->unpackanim4longdelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
+                    }
+                    else
+                    {
+                        error = cb->unpackanim4worddelta(ah, unpackbm, dlta, dltasize, (ah -> ah_Flags) );
+                    }
+                }
+                break;
+
+            case acmpByteDelta:         /* 5 */
+            case acmpStereoByteDelta:   /* 6 */
+                {
+                    error = cb->unpackbytedelta(ah, unpackbm, dlta, dltasize );
+                }
+                break;
+
+            case acmpAnim7:             /* 7 */
+                {
+                    if( (ah -> ah_Flags) & ahfLongData )
+                    {
+                        error = cb->unpackanim7longdelta(ah, unpackbm, dlta, dltasize );
+                    }
+                    else
+                    {
+                        error = cb->unpackanim7worddelta(ah, unpackbm, dlta, dltasize );
+                    }
+                }
+                break;
+
+            case acmpAnim8:             /* 8 */
+                {
+                    if( (ah -> ah_Flags) & ahfLongData )
+                    {
+                        error = cb->unpackanim8longdelta(ah, unpackbm, dlta, dltasize );
+                    }
+                    else
+                    {
+                        error = cb->unpackanim8worddelta(ah, unpackbm, dlta, dltasize );
+                    }
+                }
+                break;
+
+            default:                    /* unknown.. */
+                {
+                    error_printf( cb, aid, "\adlta: anim compression %ld not implemented yet\n", (long)(ah -> ah_Operation) );
+                    error = ERROR_NOT_IMPLEMENTED;
+                }
+                break;
+        }
+
+        /* Handle XOR (see above) */
+        if( DoXOR && prevbm )
         {
-            if( (ah -> ah_Flags) & ahfLongData )
-            {
-              error = cb->unpackanim7longdelta(ah, unpackbm, dlta, dltasize );
-            }
-            else
-            {
-              error = cb->unpackanim7worddelta(ah, unpackbm, dlta, dltasize );
-            }
+            XORBitMaps( bm, prevbm );
         }
-            break;
 
-        case acmpAnim8:             /* 8 */
+        if( tempbm )
         {
-            if( (ah -> ah_Flags) & ahfLongData )
-            {
-              error = cb->unpackanim8longdelta(ah, unpackbm, dlta, dltasize );
-            }
-            else
-            {
-              error = cb->unpackanim8worddelta(ah, unpackbm, dlta, dltasize );
-            }
+            FreePooledVec( cb, (aid -> aid_FramePool), tempbm );
         }
-            break;
-
-        default:                    /* 'l' */
-        {
-            error_printf( cb, aid, "\adlta: anim compression %ld not implemented yet\n", (long)(ah -> ah_Operation) );
-            error = ERROR_NOT_IMPLEMENTED;
-        }
-            break;
-      }
-
-      /* Handle XOR (see above) */
-      if( DoXOR && prevbm )
-      {
-        XORBitMaps( bm, prevbm );
-      }
-
-      if( tempbm )
-      {
-        FreePooledVec( cb, (aid -> aid_FramePool), tempbm );
-      }
     }
 
     return( error );
