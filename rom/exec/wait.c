@@ -69,7 +69,7 @@
 #endif
     ULONG rcvd;
 
-    D(bug("[Exec] Wait(%08lX)\n", signalSet));
+    D(bug("[Exec] Wait(%08lX)\n", signalSet);)
 #if !defined(__AROSEXEC_SMP__)
     Disable();
 #endif
@@ -83,8 +83,8 @@
         if (ThisTask->tc_State != TS_WAIT)
         {
 #endif
-	D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", ThisTask->tc_Node.ln_Name, ThisTask));
-        D(bug("[Exec] Task state = %08x\n", ThisTask->tc_State));
+	D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", ThisTask->tc_Node.ln_Name, ThisTask);)
+        D(bug("[Exec] Task state = %08x\n", ThisTask->tc_State);)
 
         /* Protect the task lists against access by other tasks. */
 #if defined(__AROSEXEC_SMP__)

@@ -29,7 +29,7 @@ void ServiceTask(struct ExecBase *SysBase)
 
         while ((task = (struct Task *)GetMsg(PrivExecBase(SysBase)->ServicePort)))
         {
-            D(bug("[exec] Service request for task 0x%p, state %d\n", task, task->tc_State));
+            D(bug("[exec] Service request for task 0x%p, state %d\n", task, task->tc_State);)
 
             /*
              * If we ever need to use TSS here, we'll need to explicitly check its size here.

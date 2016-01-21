@@ -52,17 +52,17 @@
     struct ETask *et = GetETask(GET_THIS_TASK);
     IPTR *ts;
 
-    D(bug("SetTaskStorage: %p: Set TaskStorageSlot %d to %p\n", et, id, (APTR)value));
+    D(bug("SetTaskStorage: %p: Set TaskStorageSlot %d to %p\n", et, id, (APTR)value);)
 
     if (!et) {
         /* Only ETasks can do this */
-        D(bug("SetTaskStorage: Not an ETask!\n"));
+        D(bug("SetTaskStorage: Not an ETask!\n");)
         return FALSE;
     }
 
     /* Valid ID? */
     if (id < 1) {
-        D(bug("SetTaskStorage: Invalid ID %d\n", id));
+        D(bug("SetTaskStorage: Invalid ID %d\n", id);)
         return FALSE;
     }
 
@@ -72,7 +72,7 @@
         ULONG slots = ((id + TASKSTORAGEPUDDLE) / TASKSTORAGEPUDDLE) * TASKSTORAGEPUDDLE;
         ts = AllocMem(slots * sizeof(ts[0]), MEMF_ANY | MEMF_CLEAR);
         if (ts == NULL) {
-            D(bug("SetTaskStorage: Can't allocate %d slots\n", slots));
+            D(bug("SetTaskStorage: Can't allocate %d slots\n", slots);)
             return FALSE;
         }
 
@@ -87,7 +87,7 @@
 
         newts = AllocMem(newslots * sizeof(ts[0]), MEMF_ANY);
         if (newts == NULL) {
-            D(bug("SetTaskStorage: Can't allocate %d new slots\n", newslots));
+            D(bug("SetTaskStorage: Can't allocate %d new slots\n", newslots);)
             return FALSE;
         }
 

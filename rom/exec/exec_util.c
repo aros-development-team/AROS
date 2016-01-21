@@ -89,7 +89,7 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
         AllocMem(sizeof(struct IntETask), MEMF_PUBLIC | MEMF_CLEAR);
 
     D(bug("[EXEC:ETask] Init: Allocated ETask @ 0x%p, %d bytes for Task @ %p\n",
-        et, sizeof(struct IntETask), task));
+        et, sizeof(struct IntETask), task);)
 
     task->tc_UnionETask.tc_ETask = et;
     if (!et)
@@ -163,7 +163,7 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
     if(!et)
 	return;
 
-    D(bug("[EXEC:ETask] Cleanup: Task @ 0x%p, ETask @ 0x%p\n", task, et));
+    D(bug("[EXEC:ETask] Cleanup: Task @ 0x%p, ETask @ 0x%p\n", task, et);)
 
     Forbid();
 
@@ -229,7 +229,7 @@ Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 #endif
     D(bug("[EXEC:ETask] Expunge: Freeing ETask @ 0x%p, TS @ 0x%p, size=%d\n",
           et, ts, ts ? (ULONG)ts[__TS_FIRSTSLOT] : 0
-    ));
+    );)
     FreeMem(et, sizeof(struct IntETask));
     if (ts)
         FreeMem(ts, ts[__TS_FIRSTSLOT] * sizeof(ts[0]));

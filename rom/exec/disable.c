@@ -80,14 +80,14 @@
 
     AROS_LIBFUNC_INIT
 
-    D(bug("[Exec] Disable()\n"));
+    D(bug("[Exec] Disable()\n");)
 
     if (KernelBase)
 	KrnCli();
 
     IDNESTCOUNT_INC;
 
-    D(bug("[Exec] Disable: IDNESTCOUNT = %d\n", IDNESTCOUNT_GET));
+    D(bug("[Exec] Disable: IDNESTCOUNT = %d\n", IDNESTCOUNT_GET);)
 
     AROS_LIBFUNC_EXIT
 } /* Disable() */

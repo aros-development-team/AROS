@@ -61,7 +61,7 @@
 
     slot = tsfs->FreeSlot;
 
-    D(bug("[TSS] Task 0x%p (%s): Allocated slot %d\n", ThisTask, ThisTask->tc_Node.ln_Name, slot));
+    D(bug("[TSS] Task 0x%p (%s): Allocated slot %d\n", ThisTask, ThisTask->tc_Node.ln_Name, slot);)
 
     if (GetSucc(tsfs) == NULL)
     {

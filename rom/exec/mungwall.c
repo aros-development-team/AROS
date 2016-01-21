@@ -31,7 +31,7 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
     {
     	struct MungwallHeader *header = res;
 
-	D(bug("[MungWall] Allocated %u bytes at 0x%p\n", origSize, res + MUNGWALL_BLOCK_SHIFT));
+	D(bug("[MungWall] Allocated %u bytes at 0x%p\n", origSize, res + MUNGWALL_BLOCK_SHIFT);)
 
 	/*
 	 * Build pre-wall starting from header, and up to MUNGWALL_BLOCK_SHIFT.
@@ -184,7 +184,7 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
     {
 	struct MungwallHeader *header;
 
-	D(bug("[MungWall] Freeing %u bytes at 0x%p\n", byteSize, memoryBlock));
+	D(bug("[MungWall] Freeing %u bytes at 0x%p\n", byteSize, memoryBlock);)
 
 	/* Align size and block to the requirements (needed because of AllocAbs) */
 	byteSize += (IPTR)memoryBlock & (MEMCHUNK_TOTAL - 1);
@@ -241,13 +241,13 @@ void MungWall_Scan(APTR pool, struct TraceLocation *loc, struct ExecBase *SysBas
 	struct MungwallHeader 	*allocnode;
 	struct MungwallHeader	*tmp;
 
-	DSCAN(bug("[Mungwall] Scan(), caller %s, SysBase 0x%p\n", function, SysBase));
+	DSCAN(bug("[Mungwall] Scan(), caller %s, SysBase 0x%p\n", function, SysBase);)
 
 	Forbid();
 
 	ForeachNodeSafe(&PrivExecBase(SysBase)->AllocMemList, allocnode, tmp)
 	{
-	    DSCAN(bug("[Mungwall] allocnode 0x%p, next 0x%p, %s(%lu)\n", allocnode, tmp, allocnode->mwh_AllocFunc, allocnode->mwh_allocsize));
+	    DSCAN(bug("[Mungwall] allocnode 0x%p, next 0x%p, %s(%lu)\n", allocnode, tmp, allocnode->mwh_AllocFunc, allocnode->mwh_allocsize);)
 
 	    if (pool && (allocnode->mwh_pool == pool))
 	    {

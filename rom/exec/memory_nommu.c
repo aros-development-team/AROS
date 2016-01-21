@@ -268,15 +268,15 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
     struct MemHeader *mh;
     ULONG physFlags = attributes & MEMF_PHYSICAL_MASK;
 
-    D(bug("[MM] nommu_AvailMem(0x%08X)\n", attributes));
-    D(bug("[MM] physical memory flags: 0x%08X\n", physFlags));
+    D(bug("[MM] nommu_AvailMem(0x%08X)\n", attributes);)
+    D(bug("[MM] physical memory flags: 0x%08X\n", physFlags);)
 
     /* Nobody else should access the memory lists now. */
     MEM_LOCK_SHARED;
 
     ForeachNode(&SysBase->MemList, mh)
     {
-        D(bug("[MM] Checking MemHeader 0x%p\n", mh));
+        D(bug("[MM] Checking MemHeader 0x%p\n", mh);)
 
         /*
          * The current memheader is OK if there's no bit in the
@@ -284,7 +284,7 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
          */
         if (physFlags & ~mh->mh_Attributes)
         {
-            D(bug("[MM] Skipping (mh_Attributes = 0x%08X\n", mh->mh_Attributes));
+            D(bug("[MM] Skipping (mh_Attributes = 0x%08X\n", mh->mh_Attributes);)
             continue;
         }
 
