@@ -82,40 +82,46 @@
 
     IDNESTCOUNT_DEC;
 
-    if (KernelBase && (IDNESTCOUNT_GET < 0))
+    D(bug("[Exec] Enable: IDNESTCOUNT = %d\n", IDNESTCOUNT_GET));
+
+    if (KernelBase)
     {
-        D(bug("[Exec] Enable: Enabling interrupts\n"));
-        KrnSti();
-
-        if (KrnIsSuper())
+        if (IDNESTCOUNT_GET < 0)
         {
+            D(bug("[Exec] Enable: Enabling interrupts\n"));
+
+            KrnSti();
+
             /* The following stuff is not safe to call from within supervisor mode */
-            return;
-        }
+            if (!KrnIsSuper())
+            {
+                /*
+                 * There's no dff09c like thing in x86 native which would allow
+                 * us to set delayed (mark it as pending but it gets triggered
+                 * only once interrupts are enabled again) software interrupt,
+                 * so we check it manually here in Enable(), similar to Permit().
+                 */
+                if (SysBase->SysFlags & SFF_SoftInt)
+                {
+                    /*
+                     * First we react on SFF_SoftInt by issuing KrnCause() call. This triggers
+                     * the complete interrupt processing code in kernel, which implies also
+                     * rescheduling if became necessary.
+                     */
+                    D(bug("[Exec] Enable: causing softints\n"));
+                    KrnCause();
+                }
 
-        /*
-         * There's no dff09c like thing in x86 native which would allow
-         * us to set delayed (mark it as pending but it gets triggered
-         * only once interrupts are enabled again) software interrupt,
-         * so we check it manually here in Enable(), similar to Permit().
-         */
-        if (SysBase->SysFlags & SFF_SoftInt)
-        {
-            /*
-             * First we react on SFF_SoftInt by issuing KrnCause() call. This triggers
-             * the complete interrupt processing code in kernel, which implies also
-             * rescheduling if became necessary.
-             */
-            KrnCause();
-        }
-
-        if ((TDNESTCOUNT_GET < 0) && FLAG_SCHEDSWITCH_ISSET)
-        {
-            /*
-             * If SFF_SoftInt hasn't been set, we have a chance that task switching
-             * is enabled and pending. We need to trigger it here in such a case.
-             */
-            KrnSchedule();        
+                if ((TDNESTCOUNT_GET < 0) && FLAG_SCHEDSWITCH_ISSET)
+                {
+                    /*
+                     * If SFF_SoftInt hasn't been set, we have a chance that task switching
+                     * is enabled and pending. We need to trigger it here in such a case.
+                     */
+                    D(bug("[Exec] Enable: rescheduling\n"));
+                    KrnSchedule();
+                }
+            }
         }
     }
 

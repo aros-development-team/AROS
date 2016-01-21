@@ -75,22 +75,28 @@
     D(bug("[Exec] Permit()\n"));
 
     /*
-        Task switches are allowed again, if a switch is pending, we
-        should allow it.
+     * Task switches are allowed again, if a switch is pending, we
+     * should allow it.
      */
     TDNESTCOUNT_DEC;
 
-    if(    ( TDNESTCOUNT_GET < 0 )
-        && ( IDNESTCOUNT_GET < 0 )
-        && ( FLAG_SCHEDSWITCH_ISSET ) )
+    D(bug("[Exec] Permit: TDNESTCOUNT = %d\n", TDNESTCOUNT_GET));
+
+    if (KernelBase && !KrnIsSuper())
     {
-        /* Haha, you re-enabled multitasking, only to have the rug
-           pulled out from under you feet :)
+        if(    ( TDNESTCOUNT_GET < 0 )
+            && ( IDNESTCOUNT_GET < 0 )
+            && ( FLAG_SCHEDSWITCH_ISSET ) )
+        {
+            /*
+             * Haha, you re-enabled multitasking, only to have the rug
+             * pulled out from under you feet :)
 
-           Clear the Switch() pending flag.
-         */
-
-        if (KernelBase && !KrnIsSuper()) KrnSchedule();
+             * Clear the Switch() pending flag.
+             */
+            D(bug("[Exec] Permit: rescheduling\n"));
+            KrnSchedule();
+        }
     }
 
     AROS_LIBFUNC_EXIT
