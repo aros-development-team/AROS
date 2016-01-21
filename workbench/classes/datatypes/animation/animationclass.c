@@ -343,9 +343,9 @@ IPTR DT_AllocColorTables(struct IClass *cl, struct Gadget *g, struct privAllocCo
         D(bug("[animation.datatype] %s: CRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_CRegs);)
         animd->ad_ColorData.acd_GRegs = AllocMem((1 + needcolors) * (sizeof (ULONG) * 3), MEMF_CLEAR);                    // remapped version of ad_ColorData.acd_CRegs
         D(bug("[animation.datatype] %s: GRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_GRegs);)
-
-        animd->ad_ColorData.acd_NumColors = msg->NumColors;
     }
+
+    animd->ad_ColorData.acd_NumColors = msg->NumColors;
 
     return 1;
 }
