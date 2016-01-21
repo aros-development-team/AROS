@@ -166,6 +166,7 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
         animd->ad_ProcessData->pp_Data = animd;
 
         InitSemaphore(&animd->ad_FrameData.afd_AnimFramesLock);
+        InitSemaphore(&animd->ad_ColorData.acd_PenLock);
 
         animd->ad_ProcessData->pp_PlayerFlags = 0;
         animd->ad_ProcessData->pp_BufferFlags = 0;
@@ -254,14 +255,15 @@ IPTR DT_FreePens(struct IClass *cl, struct Gadget *g, Msg msg)
             bug("[animation.datatype] %s: attempting to free %d pens\n", __func__, animd->ad_ColorData.acd_NumAlloc);
             bug("[animation.datatype] %s: colormap @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorMap);
         )
+        ObtainSemaphore(&animd->ad_ColorData.acd_PenLock);
         for (i = animd->ad_ColorData.acd_NumAlloc - 1; i >= 0; i--)
         {
             D(bug("[animation.datatype] %s: freeing pen %d\n", __func__, animd->ad_ColorData.acd_Allocated[i]);)
             ReleasePen(animd->ad_ColorData.acd_ColorMap, animd->ad_ColorData.acd_Allocated[i]);
         }
-
         animd->ad_ColorData.acd_NumAlloc = 0;
         animd->ad_Flags &= ~ANIMDF_REMAPPEDPENS;
+        ReleaseSemaphore(&animd->ad_ColorData.acd_PenLock);
     }
 
     return 1;
@@ -429,6 +431,8 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
     {
         if ((animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
         {
+            ObtainSemaphore(&animd->ad_ColorData.acd_PenLock);
+
             animd->ad_Flags |= ANIMDF_REMAPPEDPENS;
 
             if (!(animd->ad_ColorData.acd_ColorMap))
@@ -452,7 +456,7 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
                 animd->ad_ColorData.acd_ColorTable[0][i] = animd->ad_ColorData.acd_Allocated[curpen];
                 animd->ad_ColorData.acd_ColorTable[1][i] = animd->ad_ColorData.acd_Allocated[curpen];
             }
-
+            ReleaseSemaphore(&animd->ad_ColorData.acd_PenLock);
         }
 
         // remap the source ..
