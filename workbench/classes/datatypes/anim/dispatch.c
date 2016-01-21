@@ -1935,7 +1935,7 @@ struct BitMap *AllocBitMapPooled( struct ClassBase *cb, ULONG width, ULONG heigh
 
       InitBitMap( bm, depth, width, height );
 
-      plane = ALIGN_QUADLONG( (PLANEPTR)(bm + 1) ); /* First plane follows struct BitMap */
+      plane = (PLANEPTR)ALIGN_QUADLONG( ((IPTR)bm + sizeof( struct BitMap )) ); /* First plane follows struct BitMap */
 
       /* Set up plane data */
       pl = 0U;
@@ -1945,7 +1945,7 @@ struct BitMap *AllocBitMapPooled( struct ClassBase *cb, ULONG width, ULONG heigh
       {
         bm -> Planes[ pl ] = plane;
 
-        plane = ALIGN_QUADLONG( (PLANEPTR)(((UBYTE *)plane) + planesize) );
+        plane = (PLANEPTR)ALIGN_QUADLONG( ((IPTR)plane + planesize) );
         pl++;
       }
 
