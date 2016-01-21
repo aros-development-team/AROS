@@ -78,17 +78,17 @@
 
     AROS_LIBFUNC_INIT
 
-    D(bug("[Exec] Enable()\n"));
+    D(bug("[Exec] Enable()\n");)
 
     IDNESTCOUNT_DEC;
 
-    D(bug("[Exec] Enable: IDNESTCOUNT = %d\n", IDNESTCOUNT_GET));
+    D(bug("[Exec] Enable: IDNESTCOUNT = %d\n", IDNESTCOUNT_GET);)
 
     if (KernelBase)
     {
         if (IDNESTCOUNT_GET < 0)
         {
-            D(bug("[Exec] Enable: Enabling interrupts\n"));
+            D(bug("[Exec] Enable: Enabling interrupts\n");)
 
             KrnSti();
 
@@ -108,7 +108,7 @@
                      * the complete interrupt processing code in kernel, which implies also
                      * rescheduling if became necessary.
                      */
-                    D(bug("[Exec] Enable: causing softints\n"));
+                    D(bug("[Exec] Enable: causing softints\n");)
                     KrnCause();
                 }
 
@@ -118,7 +118,7 @@
                      * If SFF_SoftInt hasn't been set, we have a chance that task switching
                      * is enabled and pending. We need to trigger it here in such a case.
                      */
-                    D(bug("[Exec] Enable: rescheduling\n"));
+                    D(bug("[Exec] Enable: rescheduling\n");)
                     KrnSchedule();
                 }
             }

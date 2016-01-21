@@ -84,7 +84,7 @@
     struct TraceLocation loc = CURRENT_LOCATION("AllocMem");
 
     D(if (SysBase->DebugAROSBase))
-    D(bug("Call AllocMem (%d, %08x)\n", byteSize, requirements));
+    D(bug("Call AllocMem (%d, %08x)\n", byteSize, requirements);)
 
     /* 0-sized allocation results in returning NULL (API guarantee) */
     if(!byteSize)
@@ -130,7 +130,9 @@
 
 #if DEBUG
     if (SysBase->DebugAROSBase)
-    bug("AllocMem result: 0x%p\n", res);
+    {
+        bug("AllocMem result: 0x%p\n", res);
+    }
 #endif
     return res;
     

@@ -209,7 +209,7 @@
         task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri &&
         GET_THIS_TASK->tc_State == TS_RUN)
     {
-        D(bug("[AddTask] Rescheduling...\n"));
+        D(bug("[AddTask] Rescheduling...\n");)
 
         /* Reschedule() will take care about disabled task switching automatically */
         Reschedule();

@@ -89,7 +89,7 @@
         /* Yes. Set the exception flag. */
         task->tc_Flags |= TF_EXCEPT;
 
-        D(bug("[Exec] Signal: TF_EXCEPT set\n"));
+        D(bug("[Exec] Signal: TF_EXCEPT set\n");)
 
         /* 
                 if the target task is running (called from within interrupt handler),
@@ -97,7 +97,7 @@
             */
         if (task->tc_State == TS_RUN)
         {
-            D(bug("[Exec] Signal: signaling running task\n"));
+            D(bug("[Exec] Signal: signaling running task\n");)
 #if defined(__AROSEXEC_SMP__)
             if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum)
             {
@@ -108,7 +108,7 @@
             }
             else
             {
-                D(bug("[Exec] Signal:\n"));
+                D(bug("[Exec] Signal:\n");)
             }
 #else
             Enable();
@@ -126,7 +126,7 @@
     if ((task->tc_State == TS_WAIT) &&
        (task->tc_SigRecvd & (task->tc_SigWait | task->tc_SigExcept)))
     {
-        D(bug("[Exec] Signal: signaling waiting task\n"));
+        D(bug("[Exec] Signal: signaling waiting task\n");)
 
         /* Yes. Move it to the ready list. */
 #if defined(__AROSEXEC_SMP__)
@@ -170,7 +170,7 @@
     Enable();
 #endif
 
-    D(bug("[Exec] Signal: 0x%p finished signal processing\n", task));
+    D(bug("[Exec] Signal: 0x%p finished signal processing\n", task);)
 
     AROS_LIBFUNC_EXIT
 }

@@ -69,7 +69,7 @@
 
     D(bug("SaveTaskStorage: taskstorage=%x, size=%d, tsout=%x\n",
           taskstorage, size, tsout
-    ));
+    );)
 
     return tsout;
 

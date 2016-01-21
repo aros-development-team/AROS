@@ -58,17 +58,17 @@ IPTR TaskGetStorageSlot(struct Task * t, LONG id)
     struct ETask *et = GetETask(t);
     IPTR *ts;
 
-    D(bug("TaskGetStorageSlot: %p: Get TaskGetStorageSlot %d\n", et, id));
+    D(bug("TaskGetStorageSlot: %p: Get TaskGetStorageSlot %d\n", et, id);)
 
     if (!et) {
         /* Only ETasks can do this */
-        D(bug("TaskGetStorageSlot: Not an ETask!\n"));
+        D(bug("TaskGetStorageSlot: Not an ETask!\n");)
         return (IPTR)NULL;
     }
 
     ts = et->et_TaskStorage;
     if (ts == NULL || ts[__TS_FIRSTSLOT] <= id) {
-        D(bug("TaskGetStorageSlot: ID %d was not set!\n", id));
+        D(bug("TaskGetStorageSlot: ID %d was not set!\n", id);)
         return (IPTR)NULL;
     }
 

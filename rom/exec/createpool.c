@@ -86,8 +86,8 @@
     if (align < 4095)
         align = 4095;
 
-    D(bug("[exec] CreatePool(0x%08X, %u, %u)\n", requirements, puddleSize, threshSize));
-    
+    D(bug("[exec] CreatePool(0x%08X, %u, %u)\n", requirements, puddleSize, threshSize);)
+
     /*
      * puddleSize needs to include MEMHEADER_TOTAL, allocator context size and one pointer.
      * This is because our puddles must be able to accommodate an allocation
@@ -104,11 +104,11 @@
 
     /* Then round puddleSize up to be a multiple of page size. */
     puddleSize = (puddleSize + align) & ~align;
-    D(bug("[CreatePool] Aligned puddle size: %u (0x%08X)\n", puddleSize, puddleSize));
+    D(bug("[CreatePool] Aligned puddle size: %u (0x%08X)\n", puddleSize, puddleSize);)
 
     /* Allocate the first puddle. It will contain pool header. */
     firstPuddle = AllocMemHeader(puddleSize, requirements, &tp, SysBase);
-    D(bug("[CreatePool] Initial puddle 0x%p\n", firstPuddle));
+    D(bug("[CreatePool] Initial puddle 0x%p\n", firstPuddle);)
 
     if (firstPuddle)
     {
@@ -122,7 +122,7 @@
          * header's address as poolbase + MEMHEADER_TOTAL.
          */
         pool = Allocate(firstPuddle, poolstruct_size);
-        D(bug("[CreatePool] Pool header 0x%p (size %u)\n", pool, poolstruct_size));
+        D(bug("[CreatePool] Pool header 0x%p (size %u)\n", pool, poolstruct_size);)
 
         /* Initialize pool header */
         NEWLIST((struct List *)&pool->pool.PuddleList);
@@ -141,7 +141,7 @@
          */
         if (IsManagedMem(firstPuddle))
         {
-            D(bug("Managed pool\n"));
+            D(bug("Managed pool\n");)
             /*
              * Just link the pool structure at the ln_Name - we will need that
              * for the semaphore

@@ -65,7 +65,7 @@
 #endif
     BYTE old;
 
-    D(bug("[Exec] SetTaskPri(0x%p, %d)\n", task, priority));
+    D(bug("[Exec] SetTaskPri(0x%p, %d)\n", task, priority);)
 
     /* Always Disable() when doing something with task lists. */
 #if defined(__AROSEXEC_SMP__)

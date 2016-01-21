@@ -188,7 +188,7 @@
 	    sigSem->ss_QueueCount = -1;
 
 	    D(bug("ReleaseSemaphore(): No tasks - ss_NestCount == %ld\n",
-		sigSem->ss_NestCount));
+		sigSem->ss_NestCount);)
 	}
     }
     else if(sigSem->ss_NestCount < 0)

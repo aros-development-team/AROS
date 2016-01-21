@@ -62,7 +62,7 @@
     {
         if (IDNESTCOUNT_GET < 0)             /* And interrupts enabled */
         {
-            D(bug("[Reschedule] Calling scheduler, KernelBase 0x%p\n", KernelBase));
+            D(bug("[Reschedule] Calling scheduler, KernelBase 0x%p\n", KernelBase);)
             KrnSchedule();                      /* Call scheduler */
         }
         else if (!switchpending)
