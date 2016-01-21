@@ -35,7 +35,6 @@ void FreePooledVec ( struct ClassBase *cb , APTR pool , APTR mem );
 #else
 #define mysprintf(cb,buffer,fmt,...) sprintf(buffer,fmt, __VA_ARGS__)
 #define AllocPooledVec(cb, pool, size) AllocVecPooled(pool, size)
-#define AllocPooledVec(cb, pool, size) AllocVecPooled(pool, size)
 #define FreePooledVec(cb, pool, mem) FreeVecPooled(pool, mem)
 #endif
 BOOL CMAP2Object ( struct ClassBase *cb , Object *o , UBYTE *rgb , ULONG rgbsize );
