@@ -36,7 +36,7 @@
 #define IM(o) ((struct Image *)(o))
 #define EG(o) ((struct Gadget *)(o))
 
-#define POSPROP_HEIGHT   4
+#define POSPROP_HEIGHT   5
 #define TDGADGET_HEIGHT  20
 
 #include <clib/boopsistubs.h>
@@ -190,7 +190,7 @@ IPTR TapeDeck__OM_SET(Class *cl, Object *o, struct opSet *msg)
         rport = ObtainGIRPort(msg->ops_GInfo);
         if(rport)
         {
-            DoMethod(o, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rport, GREDRAW_UPDATE);
+            DoMethod(o, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rport, GREDRAW_REDRAW);
             ReleaseGIRPort(rport);
             result = FALSE;
         }
@@ -238,9 +238,9 @@ Object *TapeDeck__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
         EG(o)->GadgetRender = NewObjectA(NULL, FRAMEICLASS, frametags);
         D(bug("[tapedeck.gadget] %s: frame @ 0x%p\n", __PRETTY_FUNCTION__, EG(o)->GadgetRender));
 
-        data->tdd_ButtonPens[0] = SHADOWPEN;
-        data->tdd_ButtonPens[1] = SHADOWPEN;
-        data->tdd_ButtonPens[2] = SHADOWPEN;
+        data->tdd_ButtonPen[0] = SHADOWPEN;
+        data->tdd_ButtonPen[1] = SHADOWPEN;
+        data->tdd_ButtonPen[2] = SHADOWPEN;
 
         pproptags[3].ti_Data = data->tdd_FrameCount;
         pproptags[4].ti_Data = data->tdd_FrameCurrent;
@@ -317,10 +317,11 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         { TAG_DONE,     0UL 		        }
     };
     LONG rend_x, rend_y;
+    IPTR propTop;
 
     D(bug("[tapedeck.gadget]: %s()\n", __PRETTY_FUNCTION__));
 
-    if (EG(o)->GadgetRender)
+    if ((msg->gpr_Redraw != GREDRAW_UPDATE) && (EG(o)->GadgetRender))
     {
         /* Full redraw: clear and draw border */
         DrawImageState(msg->gpr_RPort, IM(EG(o)->GadgetRender),
@@ -329,44 +330,73 @@ IPTR TapeDeck__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                        msg->gpr_GInfo->gi_DrInfo);
     }
 
-    if (!(((struct Gadget *)data->tdd_PosProp)->Flags & GFLG_SELECTED))
+    GetAttr (PGA_Top, (Object *)data->tdd_PosProp, &propTop);
+    if (propTop != data->tdd_FrameCurrent)
+    {
         SetAttrsA((Object *)data->tdd_PosProp, proptags);
-
-    DoMethodA((Object *)data->tdd_PosProp, msg);
+        SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
+        RectFill(msg->gpr_RPort,
+            EG(o)->LeftEdge + 2, EG(o)->TopEdge + 1,
+            EG(o)->LeftEdge + EG(o)->Width - 2, EG(o)->TopEdge + POSPROP_HEIGHT);
+    }
+    DoMethodA((Object *)data->tdd_PosProp, (Msg)msg);
 
     rend_x = EG(o)->LeftEdge + ((EG(o)->Width - 50) >> 1);
     rend_y = EG(o)->TopEdge + 4 + ((EG(o)->Height - 11) >> 1);
 
-    SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPens[0]]);
-
-    BltTemplate ((void *) templateRewind,
-             0, 2,
-             msg->gpr_RPort, rend_x, rend_y,
-             16, 7);
-
-    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPens[1]]);
-
-    if (data->tdd_Mode == BUT_PLAY)
+    if ((msg->gpr_Redraw != GREDRAW_UPDATE) || (data->tdd_ButtonPen[0] != data->tdd_LastPen[0]))
     {
-        BltTemplate ((void *) templatePause,
-                 0, 1,
-                 msg->gpr_RPort, rend_x + 21, rend_y,
-                 8, 7);
-    }
-    else
-    {
-        BltTemplate ((void *) templatePlay,
-                 0, 1,
-                 msg->gpr_RPort, rend_x + 21, rend_y,
-                 8, 7);
+        SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPen[0]]);
+
+        BltTemplate ((void *) templateRewind,
+                 0, 2,
+                 msg->gpr_RPort, rend_x, rend_y,
+                 16, 7);
+
+        data->tdd_LastPen[0] = data->tdd_ButtonPen[0];
     }
 
-    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPens[2]]);
+    if ((msg->gpr_Redraw != GREDRAW_UPDATE) || (data->tdd_ButtonPen[1] != data->tdd_LastPen[1]))
+    {
+        if (data->tdd_Mode != data->tdd_ModeLast)
+        {
+            SetAPen(msg->gpr_RPort,  msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
+            RectFill(msg->gpr_RPort,
+                rend_x + 21, rend_y,
+                rend_x + 28, rend_y + 6);
+        }
 
-    BltTemplate ((void *) templateFForward,
-             0, 2,
-             msg->gpr_RPort, rend_x + 34, rend_y,
-             16, 7);
+        SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPen[1]]);
+
+        if (data->tdd_Mode == BUT_PLAY)
+        {
+            BltTemplate ((void *) templatePause,
+                     0, 1,
+                     msg->gpr_RPort, rend_x + 21, rend_y,
+                     8, 7);
+        }
+        else
+        {
+            BltTemplate ((void *) templatePlay,
+                     0, 1,
+                     msg->gpr_RPort, rend_x + 21, rend_y,
+                     8, 7);
+        }
+
+        data->tdd_LastPen[1] = data->tdd_ButtonPen[1];
+    }
+
+    if ((msg->gpr_Redraw != GREDRAW_UPDATE) || (data->tdd_ButtonPen[2] != data->tdd_LastPen[2]))
+    {
+        SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->tdd_ButtonPen[2]]);
+
+        BltTemplate ((void *) templateFForward,
+                 0, 2,
+                 msg->gpr_RPort, rend_x + 34, rend_y,
+                 16, 7);
+
+        data->tdd_LastPen[2] = data->tdd_ButtonPen[2];
+    }
 
     return (IPTR)TRUE;
 }
@@ -431,14 +461,14 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             if (ie->ie_Code == SELECTDOWN)
             {
                 data->tdd_ButtonActive = 1;
-                data->tdd_ButtonPens[0] = SHINEPEN;
+                data->tdd_ButtonPen[0] = SHINEPEN;
                 data->tdd_ModeLast = data->tdd_Mode;
                 data->tdd_Mode = BUT_REWIND;
                 redraw = TRUE;
             }
             else if (ie->ie_Code == SELECTUP)
             {
-                data->tdd_ButtonPens[0] = SHADOWPEN;
+                data->tdd_ButtonPen[0] = SHADOWPEN;
                 data->tdd_Mode = data->tdd_ModeLast;
             }
         }
@@ -448,12 +478,13 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             if (ie->ie_Code == SELECTDOWN)
             {
                 data->tdd_ButtonActive = 2;
-                data->tdd_ButtonPens[1] = SHINEPEN;
+                data->tdd_ButtonPen[1] = SHINEPEN;
                 redraw = TRUE;
             }
             else if (ie->ie_Code == SELECTUP)
             {
-                data->tdd_ButtonPens[1] = SHADOWPEN;
+                data->tdd_ButtonPen[1] = SHADOWPEN;
+                data->tdd_ModeLast = data->tdd_Mode;
                 if (data->tdd_Mode != BUT_PLAY)
                     data->tdd_Mode = BUT_PLAY;
                 else
@@ -466,14 +497,14 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             if (ie->ie_Code == SELECTDOWN)
             {
                 data->tdd_ButtonActive = 3;
-                data->tdd_ButtonPens[2] = SHINEPEN;
+                data->tdd_ButtonPen[2] = SHINEPEN;
                 data->tdd_ModeLast = data->tdd_Mode;
                 data->tdd_Mode = BUT_FORWARD;
                 redraw = TRUE;
             }
             else if (ie->ie_Code == SELECTUP)
             {
-                data->tdd_ButtonPens[2] = SHADOWPEN;
+                data->tdd_ButtonPen[2] = SHADOWPEN;
                 data->tdd_Mode = data->tdd_ModeLast;
             }
         }
@@ -484,7 +515,7 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
         D(bug("[tapedeck.gadget]: %s: SELECTUP\n", __PRETTY_FUNCTION__));
         if (data->tdd_ButtonActive > 0)
         {
-            data->tdd_ButtonPens[data->tdd_ButtonActive - 1] = SHADOWPEN;
+            data->tdd_ButtonPen[data->tdd_ButtonActive - 1] = SHADOWPEN;
             redraw = TRUE;
         }
         EG(o)->Flags &= ~GFLG_SELECTED;
@@ -500,7 +531,7 @@ IPTR TapeDeck__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
         gpr.MethodID   = GM_RENDER;
         gpr.gpr_GInfo  = msg->gpi_GInfo;
         gpr.gpr_RPort  = rport;
-        gpr.gpr_Redraw = GREDRAW_REDRAW;
+        gpr.gpr_Redraw = GREDRAW_UPDATE;
         DoMethodA (o, &gpr);
 
         ReleaseGIRPort (rport);
