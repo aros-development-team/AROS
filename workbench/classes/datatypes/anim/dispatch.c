@@ -855,7 +855,8 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
         {
           if( iff )
           {
-            struct StoredProperty *bmhdprop       = NULL, /* ILBM BMHD (struct BitMapHeader)        */
+            struct StoredProperty *svxprop       = NULL, /* 8SVX VHDR*/
+                                  *bmhdprop       = NULL, /* ILBM BMHD (struct BitMapHeader)        */
                                   *camgprop       = NULL, /* ILBM CAMG (amiga view mode id)         */
                                   *grabprop       = NULL, /* ILBM GRAB (grabbing point)             */
                                   *dpanprop       = NULL, /* DPaint DPAN chunk                      */
@@ -865,10 +866,11 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                   *fverprop       = NULL, /* Generic IFF FVER (version) chunk       */
                                   *nameprop       = NULL; /* Generic IFF NAME (name) chunk          */
 
-#define NUM_PROPCHUNKS (9L)
+#define NUM_PROPCHUNKS (10L)
             const
             LONG propchunks[ (NUM_PROPCHUNKS * 2) ] =
             {
+              ID_8SVX, ID_VHDR,
               ID_ILBM, ID_BMHD,
               ID_ILBM, ID_CAMG,
               ID_ILBM, ID_GRAB,
@@ -882,7 +884,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
 
             if( !(error = PropChunks( iff, (LONG *)propchunks, NUM_PROPCHUNKS )) )
             {
-#define NUM_STOPCHUNKS (5L)
+#define NUM_STOPCHUNKS (6L)
               const
               LONG stopchunks[ (NUM_STOPCHUNKS * 2) ] =
               {
@@ -890,7 +892,8 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                 ID_ILBM, ID_ANHD,
                 ID_ILBM, ID_CMAP,
                 ID_ILBM, ID_BODY,
-                ID_ILBM, ID_DLTA
+                ID_ILBM, ID_DLTA,
+                ID_ILBM, ID_SBDY
               };
 
               if( !(error = StopChunks( iff, (LONG *)stopchunks, NUM_STOPCHUNKS )) )
@@ -920,6 +923,14 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                         }
                     )
                     break;
+                  }
+
+                  if (svxprop == NULL)
+                  {
+                      if ((svxprop = FindProp( iff, ID_8SVX, ID_VHDR ) ) != NULL)
+                      {
+                          bug("[anim.datatype] %s: 8svx header\n", __func__);
+                      }
                   }
 
                   /* bmhd header loaded ? */
@@ -1317,6 +1328,19 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                   }
                                 }
                             }
+                                break;
+
+                            case ID_SBDY:
+                                bug("[anim.datatype] %s: ID_SBDY\n", __func__);
+                                if( fn )
+                                {
+                                    if ((fn->fn_Sample = (UBYTE *)AllocPooledVec( cb, (aid -> aid_Pool), ((cn -> cn_Size)) ) ) != NULL)
+                                    {
+                                        error = ReadChunkBytes( iff, fn->fn_Sample, (cn -> cn_Size) );
+                                        fn->fn_SampleLength = cn -> cn_Size;
+                                        D(bug("[anim.datatype] %s: read %d bytes into buffer @ 0x%p\n", __func__, fn->fn_SampleLength, fn->fn_Sample);)
+                                    }
+                                }
                                 break;
 
                             case ID_BODY:
@@ -1865,7 +1889,7 @@ void ClearBitMap( struct BitMap *bm )
       ULONG planesize = (ULONG)(bm -> BytesPerRow) * (ULONG)(bm -> Rows);
       UWORD i;
 
-      for( i = 0U ; i < (bm -> Depth) ; i++ )
+      for( i = 0 ; i < (bm -> Depth) ; i++ )
       {
         memset( (bm -> Planes[ i ]), 0, (size_t)planesize );
       }
