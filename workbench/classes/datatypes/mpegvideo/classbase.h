@@ -190,10 +190,10 @@ struct ClassBase
 #define INTDIVR( x, y ) (((x) + ((y) / 2)) / (y))
 
 /* Align memory on 4 byte boundary */
-#define ALIGN_LONG( mem ) ((APTR)((((ULONG)(mem)) + 3UL) & ~3UL))
+#define ALIGN_LONG( mem ) ((APTR)((((IPTR)(mem)) + 3UL) & ~3UL))
 
 /* Align memory on 16 byte boundary */
-#define ALIGN_QUADLONG( mem ) ((APTR)((((ULONG)(mem)) + 15UL) & ~15UL))
+#define ALIGN_QUADLONG( mem ) ((APTR)((((IPTR)(mem)) + 15UL) & ~15UL))
 
 /* Following ptr */
 #define MEMORY_FOLLOWING( ptr )     ((void *)((ptr) + 1))
@@ -212,8 +212,8 @@ struct ClassBase
 /* Exclude tag item */
 #define XTAG( expr, tagid ) ((Tag)((expr)?(tagid):(TAG_IGNORE)))
 
-/* Get data from pointer only if it is NOT NULL (and cast data to ULONG) */
-#define XPTRDATA( x ) ((ULONG)((x)?(*(x)):(0UL)))
+/* Get data from pointer only if it is NOT NULL (and cast data to IPTR) */
+#define XPTRDATA( x ) ((IPTR)((x)?(*(x)):(0UL)))
 
 /* Boolean conversion */
 #define MAKEBOOL( x ) ((BOOL)((x) != 0))
