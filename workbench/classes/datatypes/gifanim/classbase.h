@@ -180,11 +180,11 @@ struct ClassBase
 /* Exclude tag item */
 #define XTAG( expr, tagid ) ((Tag)((expr)?(tagid):(TAG_IGNORE)))
 
-/* Get data from pointer only if it is NOT NULL (and cast data to ULONG) */
-#define XPTRDATA( x ) ((ULONG)((x)?(*(x)):(0UL)))
+/* Get data from pointer only if it is NOT NULL (and cast data to IPTR) */
+#define XPTRDATA( x ) ((IPTR)((x)?(*(x)):(0UL)))
 
 /* Boolean conversion */
-#define MAKEBOOL( x ) ((BOOL)((x) != NULL))
+#define MAKEBOOL( x ) ((BOOL)((x) != 0))
 
 /*****************************************************************************/
 /* CyberGFX related stuff */
