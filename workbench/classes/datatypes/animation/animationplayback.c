@@ -56,6 +56,7 @@ AROS_UFH3(ULONG, playerHookFunc,
 	    break;
 
 	case PM_SHUTTLE:
+            bug("[animation.datatype] %s: PM_SHUTTLE\n", __PRETTY_FUNCTION__);
             doTick = TRUE;
 	    break;
 
@@ -228,7 +229,7 @@ AROS_UFH3(void, playerProc,
                             SetTaskPri((struct Task *)priv->pp_Data->ad_PlayerProc, -2);
                         }
 
-                        if ((prevFrame) && (prevFrame->af_Frame.alf_BitMap))
+                        if ((prevFrame) && (prevFrame->af_Frame.alf_BitMap) && (NODEID(prevFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1)))
                         {
                             priv->pp_Data->ad_FrameData.afd_FrameCurrent = NODEID(prevFrame);
                             continue;
@@ -258,7 +259,7 @@ AROS_UFH3(void, playerProc,
                         gprMsg.MethodID   = GM_RENDER;
                         gprMsg.gpr_RPort  = priv->pp_Data->ad_Window->RPort;
                         gprMsg.gpr_GInfo  = NULL;
-                        gprMsg.gpr_Redraw = 0;
+                        gprMsg.gpr_Redraw = GREDRAW_UPDATE;
                         DoGadgetMethodA((struct Gadget *)priv->pp_Object, priv->pp_Data->ad_Window, NULL, (Msg)&gprMsg);
                     }
                     prevFrame = curFrame;
