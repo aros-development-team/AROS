@@ -422,14 +422,17 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
         { TAG_DONE,             0                       }
     };
     UBYTE *tmpline, *outline;
+    UBYTE buffdepth;
     ULONG curpen;
     int i, x;
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
+    buffdepth = (UBYTE)GetBitMapAttr(animd->ad_FrameBuffer, BMA_DEPTH);
+
     if (animd->ad_Window)
     {
-        if ((animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
+        if ((buffdepth <= 8) && (animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
         {
             ObtainSemaphore(&animd->ad_ColorData.acd_PenLock);
 
@@ -455,6 +458,11 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
 
                 animd->ad_ColorData.acd_ColorTable[0][i] = animd->ad_ColorData.acd_Allocated[curpen];
                 animd->ad_ColorData.acd_ColorTable[1][i] = animd->ad_ColorData.acd_Allocated[curpen];
+                
+                if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
+                {
+                    bug("[animation.datatype] %s: allocating halfbrite pen %d\n", __func__, i + 32);
+                }
             }
             ReleaseSemaphore(&animd->ad_ColorData.acd_PenLock);
         }
@@ -462,13 +470,17 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
         // remap the source ..
         if (animd->ad_FrameBuffer && ((tmpline = AllocVec(animd->ad_BitMapHeader.bmh_Width, MEMF_ANY)) != NULL))
         {
-            UBYTE srcdepth, buffdepth;
+            UBYTE srcdepth;
             srcdepth = (UBYTE)GetBitMapAttr(msg->Source, BMA_DEPTH);
-            buffdepth = (UBYTE)GetBitMapAttr(animd->ad_FrameBuffer, BMA_DEPTH);
 
-            if ((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8))
+            if (((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8)) || (buffdepth > 8))
             {
-                D(bug("[animation.datatype] %s: remapping HAM%d\n", __func__, srcdepth);)
+                D(
+                    if (animd->ad_ModeID & HAM_KEY)
+                        bug("[animation.datatype] %s: remapping HAM%d\n", __func__, srcdepth);
+                    else
+                        bug("[animation.datatype] %s: remapping to %dbit\n", __func__, buffdepth);
+                )
                 outline = AllocVec((animd->ad_BitMapHeader.bmh_Width << 2), MEMF_ANY);
             }
             else
@@ -560,10 +572,21 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
                             for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
                             {
                                 curpen = tmpline[x];
-                                outline[x] = animd->ad_ColorData.acd_ColorTable[1][curpen];
+                                if (buffdepth <= 8)
+                                    outline[x] = animd->ad_ColorData.acd_ColorTable[1][curpen];
+                                else
+                                {
+                                    outline[x * 4] = 0;
+                                    outline[x * 4 + 1] = (animd->ad_ColorData.acd_CRegs[curpen * 3] & 0xFF);
+                                    outline[x * 4 + 2] = (animd->ad_ColorData.acd_CRegs[curpen * 3 + 1] & 0xFF);
+                                    outline[x * 4 + 3] = (animd->ad_ColorData.acd_CRegs[curpen * 3 + 2] & 0xFF);
+                                }
                             }
 
-                            WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
+                            if (buffdepth <= 8)
+                                WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
+                            else
+                                WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
                         }
                     }
 
@@ -817,6 +840,8 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             D(
                 if (animd->ad_ModeID & HAM_KEY)
                     D(bug("[animation.datatype] %s: HAM mode!\n", __func__);)
+                else if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
+                    D(bug("[animation.datatype] %s: EHB mode!\n", __func__);)
             )
             break;
 
@@ -1044,7 +1069,7 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
         animd->ad_TimerData.atd_TicksPerFrame = ANIMPLAYER_TICKFREQ / animd->ad_TimerData.atd_FramesPerSec;
         animd->ad_ColorData.acd_PenPrecison = PRECISION_IMAGE;
         animd->ad_ProcStack = 8192;
-        animd->ad_BufferStep = 2; // Try to load 2 frames at a time
+        animd->ad_BufferStep = 4; // Try to load 4 frames at a time
         animd->ad_BufferTime = 3;
 
         if (msg->ops_AttrList)
@@ -1217,6 +1242,7 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
             GetAttr(TDECK_CurrentFrame, (Object *)animd->ad_Tapedeck, &tdFrame);
             if (tdFrame != animd->ad_FrameData.afd_FrameCurrent)
             {
+                animd->ad_PlayerSourceLastState = CONDSTATE_LOCATE;
                 animd->ad_FrameData.afd_FrameCurrent = tdFrame;
                 redraw = TRUE;
             }
@@ -1231,7 +1257,8 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
 
         if (animd->ad_PlayerSourceLastState != CONDSTATE_STOPPED)
         {
-            if (animd->ad_PlayerSourceLastState == CONDSTATE_RUNNING)
+            if ((animd->ad_PlayerSourceLastState == CONDSTATE_RUNNING) ||
+                (animd->ad_PlayerSourceLastState == CONDSTATE_LOCATE))
             {
                 Signal((struct Task *)animd->ad_BufferProc, (1 << animd->ad_ProcessData->pp_BufferEnable));
                 Signal((struct Task *)animd->ad_PlayerProc, (1 << animd->ad_ProcessData->pp_PlaybackEnable));
