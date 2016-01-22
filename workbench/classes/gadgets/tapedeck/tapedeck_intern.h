@@ -55,7 +55,8 @@ struct TapeDeckData
     ULONG                       tdd_ModeLast;
     ULONG                       tdd_FrameCount;
     ULONG                       tdd_FrameCurrent;
-    ULONG                       tdd_ButtonPens[3];
+    ULONG                       tdd_ButtonPen[3];
+    ULONG                       tdd_LastPen[3];
     UBYTE                       tdd_ButtonActive;
 };
 
