@@ -81,7 +81,7 @@ const STRPTR ___strings[] =
     "AM", "PM",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "", "-",
 
     /* Open and close quotes */
     "\"", "\"",
