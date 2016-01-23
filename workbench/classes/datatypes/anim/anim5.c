@@ -25,7 +25,7 @@ LONG generic_unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *
     const ULONG *lists = (const ULONG *)dlta;
     UWORD numcols = bm->BytesPerRow;
     UWORD pitch = bm->BytesPerRow;
-    UBYTE opptr;
+    ULONG opptr;
     const UBYTE xormask = (anhd->ah_Flags & ahfXOR) ? 0xFF : 0x00;
     UBYTE *pixels;
     UBYTE *stop;
@@ -72,8 +72,13 @@ LONG generic_unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *
                 }
                 else if (op == 0)
                 { // Same op: copy one entry to several rows
-                    UBYTE cnt = *ops++;
-                    UBYTE fill = *ops++;
+                    UBYTE cnt;
+                    UBYTE fill;
+
+                    cnt = *ops;
+                    ops++;
+                    fill = *ops;
+                    ops++;
 
                     while (cnt-- > 0)
                     {
