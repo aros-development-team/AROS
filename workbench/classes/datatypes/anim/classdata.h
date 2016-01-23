@@ -71,8 +71,13 @@ struct DPAnimChunk
 {
     UWORD dpan_Version;
     UWORD dpan_nframes;
-    ULONG dpan_flags;
-#define dpan_FPS dpan_flags
+    union {
+        ULONG dpan_flags;
+        struct {
+            UBYTE dpan_FPS;
+            UBYTE dpan_Pad[3];
+        };
+    };
 };
 
 /*****************************************************************************/
