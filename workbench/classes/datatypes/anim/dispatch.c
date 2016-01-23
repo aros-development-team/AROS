@@ -1039,10 +1039,10 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                       if( (aid -> aid_FPS) == 0UL )
                       {
                         struct DPAnimChunk *dpan = (struct DPAnimChunk *)(dpanprop -> sp_Data);
-                        
-                        if( AROS_BE2LONG(dpan -> dpan_FPS) <= 60UL )
+
+                        if (dpan -> dpan_FPS <= 60 )
                         {
-                          aid -> aid_FPS = AROS_BE2LONG(dpan -> dpan_FPS);
+                          aid -> aid_FPS = dpan -> dpan_FPS;
 
                           verbose_printf( cb, aid, "DPAN found, FPS set to %lu\n", (aid -> aid_FPS) );
                         }
@@ -1631,7 +1631,7 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                   {
                     ULONG adaptive;
 
-                    aid -> aid_FPS = 10UL; /* should be 60 (e.g. 1/60 sec per frame) */
+                    aid -> aid_FPS = 15UL;
 
                     if( GetDTAttrs( o, ADTA_AdaptiveFPS, (&adaptive), TAG_DONE ) == 1UL )
                     {
