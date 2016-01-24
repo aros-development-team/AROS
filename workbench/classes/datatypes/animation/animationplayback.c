@@ -32,7 +32,9 @@ AROS_UFH3(ULONG, playerHookFunc,
     AROS_USERFUNC_INIT
  
     struct Animation_Data *animd = (struct Animation_Data *)hook->h_Data;
-    BOOL doTick = FALSE, doLoad = TRUE;
+    BOOL doTick = FALSE;
+    IPTR buffSigs = 0;
+
 #if (0)
     D(bug("[animation.datatype]: %s(%08x)\n", __PRETTY_FUNCTION__, msg->pmt_Method));
 #endif
@@ -42,9 +44,6 @@ AROS_UFH3(ULONG, playerHookFunc,
 	case PM_TICK:
             animd->ad_TimerData.atd_Tick++;
 
-            if (animd->ad_ProcessData->pp_BufferLevel < animd->ad_ProcessData->pp_BufferFrames)
-                doLoad = TRUE;
-
             if (animd->ad_TimerData.atd_Tick >= animd->ad_TimerData.atd_TicksPerFrame)
             {
                 animd->ad_TimerData.atd_Tick = 0;
@@ -53,6 +52,12 @@ AROS_UFH3(ULONG, playerHookFunc,
                     animd->ad_FrameData.afd_FrameCurrent = 0;
                 doTick = TRUE;
             }
+            if (animd->ad_TimerData.atd_Tick == 0)
+            {
+                if (animd->ad_ProcessData->pp_BufferPurge != -1)
+                    buffSigs |= (1 << animd->ad_ProcessData->pp_BufferPurge);
+            }
+
 	    break;
 
 	case PM_SHUTTLE:
@@ -65,10 +70,8 @@ AROS_UFH3(ULONG, playerHookFunc,
 	    break;
     }
 
-#if (0)
-    if (doLoad && (animd->ad_BufferProc) && (animd->ad_ProcessData->pp_BufferFill != -1))
-        Signal((struct Task *)animd->ad_BufferProc, (1 << animd->ad_ProcessData->pp_BufferFill));
-#endif
+    if (buffSigs && (animd->ad_BufferProc))
+        Signal((struct Task *)animd->ad_BufferProc, buffSigs);
     if (doTick && (animd->ad_PlayerProc) && (animd->ad_ProcessData->pp_PlaybackTick != -1))
         Signal((struct Task *)animd->ad_PlayerProc, (1 << animd->ad_ProcessData->pp_PlaybackTick));
 
@@ -112,16 +115,16 @@ BOOL AllocPlaybackSignals(struct ProcessPrivate *priv)
     return FALSE;
 }
 
-struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frameCurrent, UWORD frame)
+struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frameCurrent, UWORD *frame)
 {
     struct AnimFrame *frameFound = NULL;
 
-    DFRAMES("[animation.datatype/PLAY]: %s(0x%p, %d)\n", __PRETTY_FUNCTION__, frameCurrent, frame)
+    DFRAMES("[animation.datatype/PLAY]: %s(0x%p, %d)\n", __PRETTY_FUNCTION__, frameCurrent, *frame)
 
     ObtainSemaphoreShared(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
 
     if ((!frameCurrent) ||
-        (frame < NODEID(frameCurrent)))
+        (*frame < NODEID(frameCurrent)))
         frameFound = (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames;
     else
         frameFound = frameCurrent;
@@ -129,14 +132,32 @@ struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frame
     while ((frameFound = (struct AnimFrame *)GetSucc(&frameFound->af_Node)) != NULL)
     {
         DFRAMES("[animation.datatype/PLAY] %s:   frame #%d @ 0x%p\n", __PRETTY_FUNCTION__, NODEID(frameFound), frameFound)
-        if (NODEID(frameFound) >= frame)
+        if (NODEID(frameFound) >= *frame)
         {
             break;
         }
     }
 
-    if (!(frameFound))
-        frameFound = frameCurrent;
+    if ((frameFound) && (frameCurrent != frameFound) &&
+        (NODEID(frameFound) <= *frame))
+    {
+        priv->pp_Data->ad_FrameData.afd_FrameCurrent = NODEID(frameFound);
+    }
+    else
+    {
+        if ((frameCurrent) && (NODEID(frameCurrent) < (priv->pp_Data->ad_FrameData.afd_Frames - 1)))
+        {
+            frameFound = frameCurrent;
+            priv->pp_Data->ad_FrameData.afd_FrameCurrent = NODEID(frameCurrent);
+        }
+        else
+        {
+            frameFound = NULL;
+            priv->pp_Data->ad_FrameData.afd_FrameCurrent = 0;
+        }
+    }
+
+    *frame = priv->pp_Data->ad_FrameData.afd_FrameCurrent;
 
     DFRAMES("[animation.datatype/PLAY] %s: found 0x%p\n", __PRETTY_FUNCTION__, frameFound)
 
@@ -171,6 +192,7 @@ AROS_UFH3(void, playerProc,
         D(bug("[animation.datatype/PLAY] %s: private data @ 0x%p\n", __PRETTY_FUNCTION__, priv));
         D(bug("[animation.datatype/PLAY] %s: dt obj @ 0x%p, instance data @ 0x%p\n", __PRETTY_FUNCTION__, priv->pp_Object, priv->pp_Data));
 
+        priv->pp_PlaybackFrame = NULL;
         priv->pp_PlayerFlags |= PRIVPROCF_RUNNING;
 
         if (AllocPlaybackSignals(priv))
@@ -203,44 +225,39 @@ AROS_UFH3(void, playerProc,
 
                     priv->pp_PlayerFlags |= PRIVPROCF_ACTIVE;
 
-                    curFrame = NextFrame(priv, prevFrame, frame);
+                    curFrame = NextFrame(priv, priv->pp_PlaybackFrame, &frame);
 
-                    if ((curFrame) && (prevFrame != curFrame) &&
-                        (curFrame->af_Frame.alf_BitMap))
-                    {
-                        rendFrame->Source = curFrame->af_Frame.alf_BitMap;
-                        frame = NODEID(curFrame);
-                        D(bug("[animation.datatype/PLAY]: %s: Rendering Frame @ 0x%p\n", __PRETTY_FUNCTION__, curFrame));
-                        D(bug("[animation.datatype/PLAY]: %s: #%d BitMap @ 0x%p\n", __PRETTY_FUNCTION__, NODEID(curFrame), curFrame->af_Frame.alf_BitMap));
-                        if (curFrame->af_Frame.alf_CMap)
-                        {
-                            D(bug("[animation.datatype/PLAY]: %s: Frame CMap @ 0x%p\n", __PRETTY_FUNCTION__, curFrame, curFrame->af_Frame.alf_CMap));
-                            DoMethod(priv->pp_Object, PRIVATE_FREEPENS);
-                            GetRGB32(curFrame->af_Frame.alf_CMap, 0UL,
-                                (curFrame->af_Frame.alf_CMap->Count < priv->pp_Data->ad_ColorData.acd_NumColors) ? curFrame->af_Frame.alf_CMap->Count : priv->pp_Data->ad_ColorData.acd_NumColors,
-                                priv->pp_Data->ad_ColorData.acd_CRegs);
-                        }
-                    }
-                    else
+                    if (!(curFrame) || (priv->pp_PlaybackFrame == curFrame))
                     {
                         if ((priv->pp_Data->ad_BufferProc) && (priv->pp_BufferFill != -1))
                         {
+                            ObtainSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
+                            if ((curFrame) && (NODEID(curFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1)))
+                                priv->pp_BufferFirst = curFrame;
+                            else
+                                priv->pp_BufferFirst = NULL;
+                            ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
+
                             Signal((struct Task *)priv->pp_Data->ad_BufferProc, (1 << priv->pp_BufferFill));
                             SetTaskPri((struct Task *)priv->pp_Data->ad_PlayerProc, -2);
                         }
-
-                        if ((prevFrame) && (prevFrame->af_Frame.alf_BitMap) && (NODEID(prevFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1)))
-                        {
-                            priv->pp_Data->ad_FrameData.afd_FrameCurrent = NODEID(prevFrame);
-                            continue;
-                        }
-                        frame = 0;
-                        rendFrame->Source = priv->pp_Data->ad_KeyFrame;
+                        continue;
                     }
 
-                    priv->pp_Data->ad_FrameData.afd_FrameCurrent = frame;
-
                     // frame has changed ... render it ..
+                    D(bug("[animation.datatype/PLAY]: %s: Rendering Frame #%d\n", __PRETTY_FUNCTION__, frame));
+
+                    rendFrame->Source = curFrame->af_Frame.alf_BitMap;
+                    D(bug("[animation.datatype/PLAY]: %s: #%d BitMap @ 0x%p\n", __PRETTY_FUNCTION__, NODEID(curFrame), curFrame->af_Frame.alf_BitMap));
+                    if (curFrame->af_Frame.alf_CMap)
+                    {
+                        D(bug("[animation.datatype/PLAY]: %s: Frame CMap @ 0x%p\n", __PRETTY_FUNCTION__, curFrame, curFrame->af_Frame.alf_CMap));
+                        DoMethod(priv->pp_Object, PRIVATE_FREEPENS);
+                        GetRGB32(curFrame->af_Frame.alf_CMap, 0UL,
+                            (curFrame->af_Frame.alf_CMap->Count < priv->pp_Data->ad_ColorData.acd_NumColors) ? curFrame->af_Frame.alf_CMap->Count : priv->pp_Data->ad_ColorData.acd_NumColors,
+                            priv->pp_Data->ad_ColorData.acd_CRegs);
+                    }
+
                     DoMethodA(priv->pp_Object, (Msg)&gprMsg);
 
                     if ((priv->pp_Data->ad_Window) && !(priv->pp_Data->ad_Flags & ANIMDF_LAYOUT))
@@ -262,8 +279,7 @@ AROS_UFH3(void, playerProc,
                         gprMsg.gpr_Redraw = GREDRAW_UPDATE;
                         DoGadgetMethodA((struct Gadget *)priv->pp_Object, priv->pp_Data->ad_Window, NULL, (Msg)&gprMsg);
                     }
-                    prevFrame = curFrame;
-                    Signal((struct Task *)priv->pp_Data->ad_BufferProc, (1 << priv->pp_BufferPurge));
+                    priv->pp_PlaybackFrame = curFrame;
                 }
             }
             FreePlaybackSignals(priv);

@@ -172,7 +172,6 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
         animd->ad_ProcessData->pp_BufferFlags = 0;
 
         animd->ad_ProcessData->pp_BufferFrames = animd->ad_BufferTime * animd->ad_TimerData.atd_FramesPerSec;
-        animd->ad_ProcessData->pp_BufferLevel = 0;
 
         animd->ad_ProcessData->pp_BufferEnable = -1;
         animd->ad_ProcessData->pp_BufferDisable = -1;
@@ -891,12 +890,13 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             break;
 
         case ADTA_FramesPerSecond:
-            D(bug("[animation.datatype] %s: ADTA_FramesPerSecond (%d)\n", __func__, tag->ti_Data);)
+            D(bug("[animation.datatype] %s: ADTA_FramesPerSecond (%d)\n", __func__, tag->ti_Data));
             animd->ad_TimerData.atd_FramesPerSec = (UWORD) tag->ti_Data;
             if (animd->ad_TimerData.atd_FramesPerSec == 0)
                 animd->ad_TimerData.atd_FramesPerSec = 1;
             else if (animd->ad_TimerData.atd_FramesPerSec > 60)
                 animd->ad_TimerData.atd_FramesPerSec = 60;
+            D(bug("[animation.datatype] %s: = %d\n", __func__, animd->ad_TimerData.atd_FramesPerSec));
             animd->ad_TimerData.atd_TicksPerFrame = (ANIMPLAYER_TICKFREQ / animd->ad_TimerData.atd_FramesPerSec);
             if (animd->ad_ProcessData)
             {

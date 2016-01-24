@@ -110,6 +110,16 @@ struct Animation_Data
     UBYTE                       ad_PlayerSourceLastState;
 };
 
+/* our nodes used to play the anim! */
+struct AnimFrame
+{
+    struct Node                 af_Node;
+    struct adtNewFormatFrame    af_Frame;
+};
+
+/* for sanity, we embed the frame number in the ln_type/ln_pri fields */
+#define NODEID(node)  *((UWORD *)(&((struct AnimFrame *)node)->af_Node.ln_Type))
+
 struct ProcessPrivate
 {
     Object                      *pp_Object;
@@ -120,6 +130,8 @@ struct ProcessPrivate
     volatile ULONG              pp_BufferFlags;
     ULONG                       pp_BufferFrames;       /* no of frames to buffer in total       */
     ULONG                       pp_BufferLevel;        /* no of frames buffered                 */
+    struct AnimFrame            *pp_BufferFirst;
+    struct AnimFrame            *pp_PlaybackFrame;
 
     ULONG                       pp_BufferSigMask;
     UBYTE                       pp_BufferEnable;
@@ -136,16 +148,6 @@ struct ProcessPrivate
 #define PRIVPROCF_ENABLED       (1 << 0)
 #define PRIVPROCF_RUNNING       (1 << 1)
 #define PRIVPROCF_ACTIVE        (1 << 2)
-
-/* our nodes used to play the anim! */
-struct AnimFrame
-{
-    struct Node                 af_Node;
-    struct adtNewFormatFrame    af_Frame;
-};
-
-/* for sanity, we embed the frame number in the ln_type/ln_pri fields */
-#define NODEID(node)  *((UWORD *)(&(node)->af_Node.ln_Type))
 
 #define TAG_PRIVATE             	(ADTA_Dummy + 100)
 #define PRIVATE_INITPLAYER              (TAG_PRIVATE - 1)
