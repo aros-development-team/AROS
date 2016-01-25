@@ -58,7 +58,6 @@ static                 void                 YouShouldRegister( struct ClassBase 
 static                 BOOL                 matchstr( struct ClassBase *, STRPTR, STRPTR );
 static                 struct FrameNode    *AllocFrameNode( struct ClassBase *, APTR );
 static                 void                 XCopyMem( struct ClassBase *, APTR, APTR, ULONG );
-static                 void                 XORBitMaps( struct BitMap *, struct BitMap * );
 static                 void                 DumpAnimHeader( struct ClassBase *, struct AnimInstData *, ULONG, struct AnimHeader * );
 static                 struct FrameNode    *GetPrevFrameNode( struct FrameNode *, ULONG );
 static                 void                 AttachSample( struct ClassBase *, struct AnimInstData * );
@@ -1897,53 +1896,6 @@ void ClearBitMap( struct BitMap *bm )
 }
 
 
-/* XOR Bitmaps op1 ^= op2 */
-static
-void XORBitMaps( struct BitMap *op1, struct BitMap *op2 )
-{
-    D(bug("[anim.datatype] %s()\n", __func__));
-
-    if( op1 && op2 )
-    {
-               ULONG  planesize = (ULONG)(op1 -> BytesPerRow) * (ULONG)(op1 -> Rows);
-               ULONG  missing;
-               ULONG  i;
-      register ULONG  j;
-      register ULONG *op1p, /* op1 planes */
-                     *op2p; /* op2 planes */
-
-      planesize = planesize / sizeof( ULONG ); /* op1p and op2p are ULONGs, not BYTES... */
-      missing   = planesize % sizeof( ULONG ); /* missing bytes */
-
-      for( i = 0U ; i < (op1 -> Depth) ; i++ )
-      {
-        j = planesize;
-
-        op1p = (ULONG *)(op1 -> Planes[ i ]);
-        op2p = (ULONG *)(op2 -> Planes[ i ]);
-
-        while( j-- )
-        {
-          *op1p++ ^= *op2p++;
-        }
-
-        if( missing )
-        {
-          register UBYTE *op1px = (UBYTE *)op1p;
-          register UBYTE *op2px = (UBYTE *)op2p;
-
-          j = missing;
-
-          while( j-- )
-          {
-            *op1px++ ^= *op2px++;
-          }
-        }
-      }
-    }
-}
-
-
 struct BitMap *AllocBitMapPooled( struct ClassBase *cb, ULONG width, ULONG height, ULONG depth, APTR pool)
 {
     struct BitMap *bm;
@@ -2231,10 +2183,16 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
                 }
 
             case acmpXORILBM: /*  1  */
-            {
-                error_printf( cb, aid, "\adlta: acmpXORILBM (ANIM-%d) disabled, call author immediately\n", ah->ah_Operation);
-                return( ERROR_NOT_IMPLEMENTED );
-            }
+                {
+                    LONG retval;
+                    /* unpack ILBM BODY */
+                    if ((retval = cb->unpackilbmbody( cb, unpackbm, bmh, dlta, dltasize )) == 0)
+                    {
+                        /* XOR against previous frame */
+                        retval = cb->xorbm( cb, unpackbm, prevbm );
+                    }
+                    return ( retval );
+                }
 
             case acmpAnimJ:   /* 'J' */
             {
@@ -2368,7 +2326,7 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
         /* Handle XOR (see above) */
         if( DoXOR && prevbm )
         {
-            XORBitMaps( bm, prevbm );
+            cb->xorbm( cb, bm, prevbm );
         }
 
         if( tempbm )

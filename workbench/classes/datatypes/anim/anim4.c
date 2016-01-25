@@ -4,6 +4,10 @@
 ** $Id:$
 **  anim.datatype 41.8
 **
+** These are "generic" software implementations of the unpacking code
+** and are meant for reference. Arch specific "optimised" versions should be set
+** in the class init code (see classbase.c)
+**
 */
 
 #ifndef DEBUG
@@ -37,8 +41,10 @@ LONG generic_unpackanim4longdelta(struct AnimHeader *anhd, struct BitMap *bm, UB
 
         while (*planeptr != 0xFFFF)
         {
-            pixels = (ULONG *)((IPTR)bm->Planes[p] + *planeptr++);
-            count = *planeptr++;
+            pixels = (ULONG *)((IPTR)bm->Planes[p] + AROS_BE2WORD(*planeptr));
+            planeptr++;
+            count = AROS_BE2WORD(*planeptr);
+            planeptr++;
             if (count < 0)
             {
                 for (x = count; x < 0; x++)
@@ -79,8 +85,10 @@ LONG generic_unpackanim4worddelta(struct AnimHeader *anhd, struct BitMap *bm, UB
 
         while (*planeptr != 0xFFFF)
         {
-            pixels = (UWORD *)((IPTR)bm->Planes[p] + *planeptr++);
-            count = *planeptr++;
+            pixels = (UWORD *)((IPTR)bm->Planes[p] + AROS_BE2WORD(*planeptr));
+            planeptr++;
+            count = AROS_BE2WORD(*planeptr);
+            planeptr++;
             if (count < 0)
             {
                 for (x = count; x < 0; x++)
