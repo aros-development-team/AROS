@@ -21,6 +21,8 @@ extern struct MUI_CustomClass *GenericWindow_CLASS;
 extern struct MUI_CustomClass *ATAWindow_CLASS;
 extern struct MUI_CustomClass *ATAUnitWindow_CLASS;
 extern struct MUI_CustomClass *DevicePage_CLASS;
+extern struct MUI_CustomClass *GfxWindow_CLASS;
+extern struct MUI_CustomClass *MonitorWindow_CLASS;
 
 /*** Macros *****************************************************************/
 #define DevicePageObject BOOPSIOBJMACRO_START(DevicePage_CLASS->mcc_Class)

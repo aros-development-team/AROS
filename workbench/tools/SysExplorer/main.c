@@ -3,11 +3,15 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/memory.h>
-#include <hidd/ata.h>
 #include <hidd/hidd.h>
+#include <hidd/system.h>
+#include <hidd/graphics.h>
+#include <hidd/storage.h>
 #include <libraries/asl.h>
 #include <mui/NListtree_mcc.h>
 #include <mui/NListview_mcc.h>
@@ -29,79 +33,36 @@
 #include "locale.h"
 #include "classes.h"
 
-#include <aros/debug.h>
+#include "enums.h"
 
 #define APPNAME "SysExplorer"
 #define VERSION "SysExplorer 0.2"
 
-struct ObjectUserData
-{
-    OOP_Object *obj;
-    struct MUI_CustomClass *winClass;
-    Object *win;
-};
-
-struct InsertObjectMsg
-{
-    OOP_Object *obj;
-    struct MUI_CustomClass *winClass;
-};
-
-struct ClassHandlers
-{
-    CONST_STRPTR classID;
-    struct MUI_CustomClass **muiClass;
-    void (*enumFunc)(OOP_Object *obj, struct MUI_NListtree_TreeNode *parent);
-};
-
-static const struct ClassHandlers *FindClassHandler(OOP_Object *obj);
-
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
-static Object *app, *main_window, *property_window, *hidd_tree;
+static Object *app, *main_window, *property_window;
 static Object *property_menu, *expand_menu, *collapse_menu, *quit_menu;
+Object *hidd_tree;
 
 OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HWAttrBase;
-OOP_AttrBase HiddATABusAB;
-OOP_AttrBase HiddATAUnitAB;
 
 const struct OOP_ABDescr abd[] =
 {
-    {IID_Hidd        , &HiddAttrBase },
-    {IID_HW          , &HWAttrBase   },
-    {IID_Hidd_ATABus , &HiddATABusAB },
-    {IID_Hidd_ATAUnit, &HiddATAUnitAB},
-    {NULL            , NULL          }
+    {IID_Hidd        ,  &HiddAttrBase },
+    {IID_HW          ,  &HWAttrBase   },
+    {NULL            ,  NULL          }
 };
 
-/* Here we have enumerators for different device and subsystem classes */
-
-static void addATAUnit(OOP_Object *dev, ULONG attrID, struct MUI_NListtree_TreeNode *parent)
-{
-    OOP_Object *unit = NULL;
-
-    OOP_GetAttr(dev, attrID, (IPTR *)&unit);
-    if (unit)
-    {
-        struct InsertObjectMsg msg =
-        {
-            .obj      = unit,
-            .winClass = ATAUnitWindow_CLASS
-        };
-        CONST_STRPTR name;
-
-        OOP_GetAttr(unit, aHidd_ATAUnit_Model, (IPTR *)&name);
-        DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
-                 parent, MUIV_NListtree_Insert_PrevNode_Tail, 0);
-    }
-}
-
-static void ataUnitsEnum(OOP_Object *dev, struct MUI_NListtree_TreeNode *parent)
-{
-    addATAUnit(dev, aHidd_ATABus_Master, parent);
-    addATAUnit(dev, aHidd_ATABus_Slave , parent);
-}
+/*
+ * This lists contains handlers for known public classes.
+ * It specifies information window class, as well as function
+ * to enumerate children objects for the class.
+ *
+ * For proper operation CLIDs in this list should
+ * be sorted from subclasses to superclasses.
+ */
+struct List seClassHandlers;
 
 AROS_UFH3S(BOOL, enumFunc,
     AROS_UFHA(struct Hook *, h,  A0),
@@ -110,6 +71,7 @@ AROS_UFH3S(BOOL, enumFunc,
 {
     AROS_USERFUNC_INIT
 
+    BOOL objValid = TRUE;
     CONST_STRPTR name = NULL;
     struct MUI_NListtree_TreeNode *tn;
     ULONG flags = 0;
@@ -118,12 +80,7 @@ AROS_UFH3S(BOOL, enumFunc,
         .obj = obj,
         .winClass = NULL
     };
-    const struct ClassHandlers *clHandlers = FindClassHandler(obj);
-
-    /* This is either HW or HIDD subclass */
-    OOP_GetAttr(obj, aHW_ClassName, (IPTR *)&name);
-    if (!name)
-        OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
+    struct ClassHandlerNode *clHandlers = FindObjectHandler(obj, h->h_Data);
 
     if (clHandlers)
     {
@@ -131,60 +88,73 @@ AROS_UFH3S(BOOL, enumFunc,
             msg.winClass = *(clHandlers->muiClass);
         if (clHandlers->enumFunc)
             flags = TNF_LIST|TNF_OPEN;
+        if (clHandlers->validFunc)
+            objValid = clHandlers->validFunc(obj, &flags);
     }
 
-    tn = (APTR)DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
-                        parent, MUIV_NListtree_Insert_PrevNode_Tail, flags);
-    D(bug("Inserted TreeNode 0x%p <%s> UserData 0x%p\n", tn, tn->tn_Name, tn->tn_User));
+    if (objValid)
+    {
+        /* This is either HW or HIDD subclass */
+        OOP_GetAttr(obj, aHW_ClassName, (IPTR *)&name);
+        if (!name)
+            OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
 
-    /* If we have enumerator for this class, call it now */
-    if (clHandlers && clHandlers->enumFunc)
-        clHandlers->enumFunc(obj, tn);
+        tn = (APTR)DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
+                            parent, MUIV_NListtree_Insert_PrevNode_Sorted, flags);
+        D(bug("Inserted TreeNode 0x%p <%s> UserData 0x%p\n", tn, tn->tn_Name, tn->tn_User));
 
+        /* If we have enumerator for this class, call it now */
+        if (clHandlers && clHandlers->enumFunc && (flags & TNF_LIST))
+            clHandlers->enumFunc(obj, tn);
+    }
     return FALSE; /* Continue enumeration */
 
     AROS_USERFUNC_EXIT
 }
 
-static const struct Hook enum_hook =
+static struct Hook enum_hook =
 {
-    .h_Entry = enumFunc
+    .h_Entry = enumFunc,
+    .h_Data = &seClassHandlers
 };
 
-static void hwEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn)
+void hwEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn)
 {
-    HW_EnumDrivers(obj, (struct Hook *)&enum_hook, tn);
+    HW_EnumDrivers(obj, &enum_hook, tn);
 }
 
-/*
- * This table lists handlers for known public classes.
- * It specifies information window class, as well as function
- * to enumerate children objects for the class.
- *
- * For proper operation CLIDs in this table should
- * be sorted from subclasses to superclasses.
- */
-static const struct ClassHandlers classHandlers[] =
+struct ClassHandlerNode *FindClassHandler(CONST_STRPTR classid, struct List *_handlers)
 {
-    {CLID_HW_Root    , &ComputerWindow_CLASS, hwEnum      },
-    {CLID_HW         , NULL                 , hwEnum      },
-    {CLID_Hidd_ATABus, &ATAWindow_CLASS     , ataUnitsEnum},
-    {CLID_Hidd       , &GenericWindow_CLASS , NULL        },
-    {NULL            , NULL                 , NULL        }
-};
-
-static const struct ClassHandlers *FindClassHandler(OOP_Object *obj)
-{
-    unsigned int i;
+    struct ClassHandlerNode *curHandler;
  
-    for (i = 0; classHandlers[i].classID; i++)
+    ForeachNode(_handlers, curHandler)
+    {
+        if (!strncmp(classid, curHandler->ch_Node.ln_Name, strlen(classid)))
+        {
+            bug("[SysExplorer] Returning class '%s'\n", curHandler->ch_Node.ln_Name);
+            return curHandler;
+        }
+    }
+    return NULL;
+}
+
+struct ClassHandlerNode *FindObjectHandler(OOP_Object *obj, struct List *_handlers)
+{
+    struct ClassHandlerNode *curHandler;
+ 
+    ForeachNode(_handlers, curHandler)
     {
         OOP_Class *cl;
+        bug("[SysExplorer]    class '%s'\n", curHandler->ch_Node.ln_Name);
 
         for (cl = OOP_OCLASS(obj); cl ; cl = cl->superclass)
         {
-            if (!strcmp(cl->ClassNode.ln_Name, classHandlers[i].classID))
-                return &classHandlers[i];
+            bug("[SysExplorer]        obj '%s'\n", cl->ClassNode.ln_Name);
+            if (!strncmp(cl->ClassNode.ln_Name, curHandler->ch_Node.ln_Name, strlen(curHandler->ch_Node.ln_Name)))
+            {
+                bug("[SysExplorer] Returning obj class '%s'\n", curHandler->ch_Node.ln_Name);
+                return curHandler;
+            }
         }
     }
     return NULL;
@@ -442,3 +412,55 @@ int main(void)
     Locale_Deinitialize();
     return 0;
 }
+
+BOOL RegisterClassHandler(CONST_STRPTR classid, BYTE pri, struct MUI_CustomClass ** customwinclass, CLASS_ENUMFUNC enumfunc, CLASS_VALIDFUNC validfunc)
+{
+    struct ClassHandlerNode *newClass;
+    BOOL add = TRUE;
+    if ((newClass = FindClassHandler(classid, &seClassHandlers)))
+    {
+        if (newClass->enumFunc != hwEnum)
+            return FALSE;
+
+        bug("[SysExplorer] Updating '%s'..\n", classid);
+        add = FALSE;
+    }
+
+    if (add)
+    {
+        bug("[SysExplorer] Registering '%s'..\n", classid);
+        newClass = AllocMem(sizeof(struct ClassHandlerNode), MEMF_CLEAR);
+    }
+
+    if (newClass)
+    {
+        newClass->ch_Node.ln_Name = (char *)classid;
+        newClass->ch_Node.ln_Pri = pri;
+        newClass->muiClass = customwinclass;
+        newClass->enumFunc = enumfunc;
+        newClass->validFunc = validfunc;
+
+        if (add)
+            Enqueue(&seClassHandlers, &newClass->ch_Node);
+
+        return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL sysexplorer_init(void)
+{
+    bug("[SysExplorer] Initialising..\n");
+    NEWLIST(&seClassHandlers);
+
+    RegisterClassHandler(CLID_Hidd_Storage, 90, NULL, hwEnum, NULL);
+    RegisterClassHandler(CLID_Hidd_Gfx, 60, NULL, hwEnum, NULL);
+    RegisterClassHandler(CLID_Hidd_System, 30, NULL, hwEnum, NULL);
+    RegisterClassHandler(CLID_HW_Root, 0, &ComputerWindow_CLASS,  hwEnum, NULL);
+    RegisterClassHandler(CLID_HW, -30, NULL, hwEnum, NULL);
+    RegisterClassHandler(CLID_Hidd, -60, &GenericWindow_CLASS, NULL, NULL);
+
+    return TRUE;
+}
+
+ADD2INIT(sysexplorer_init, 0);
