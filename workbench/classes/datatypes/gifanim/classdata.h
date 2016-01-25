@@ -133,6 +133,9 @@ struct GIFDecoder
 /* gifanim.datatype class instance data */
 struct GIFAnimInstData
 {
+    struct DataType     *gaid_dt;
+    char                        *gaid_VerStr;
+
     /* Misc */
     struct SignalSemaphore  gaid_SigSem;          /* Instance data lock                      */
     UWORD                   gaid_Pad0;
