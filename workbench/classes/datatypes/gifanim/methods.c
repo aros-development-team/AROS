@@ -155,6 +155,13 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
         Close(gaid->gaid_VerboseOutput);
     }
 
+
+    if (gaid->gaid_dt)
+    {
+        FreeMem(gaid->gaid_dt, sizeof(struct DataType) + sizeof(struct DataTypeHeader));
+    }
+    FreeVec(gaid->gaid_VerStr);
+
     /* Dispose object */
     DoSuperMethodA( cl, o, msg );
 
@@ -201,6 +208,58 @@ IPTR DT_FrameBox(struct IClass *cl, Object *o, struct dtFrameBox *msg)
     }
     return retval;
 }
+
+
+IPTR DT_GetMethod(struct IClass *cl, Object *o, struct opGet *msg)
+{
+    struct GIFAnimInstData  *gaid = (struct GIFAnimInstData *)INST_DATA( cl, o );
+    IPTR retval = (IPTR)TRUE;
+
+    D(bug("[gifanim.datatype] %s()\n", __func__));
+
+    switch(msg->opg_AttrID)
+    {
+    case DTA_DataType:
+        {
+            struct DataType     *dt = NULL;
+            struct opGet        superGet;
+
+            D(bug("[gifanim.datatype] %s: DTA_DataType\n", __func__);)
+
+            superGet.MethodID = OM_GET;
+            superGet.opg_AttrID = msg->opg_AttrID;
+            superGet.opg_Storage = &dt;
+            DoSuperMethodA (cl, o, (Msg) &superGet);
+
+            D(bug("[gifanim.datatype] %s: DataType @ 0x%p\n", __func__, dt);)
+
+            if ((dt) && !(gaid->gaid_dt))
+            {
+                if ((gaid->gaid_dt = AllocMem(sizeof(struct DataType) + sizeof(struct DataTypeHeader), MEMF_ANY)) != NULL)
+                {
+                    CopyMem(dt, gaid->gaid_dt, sizeof(struct DataType));
+                    gaid->gaid_dt->dtn_Header = (struct DataTypeHeader *)((IPTR)gaid->gaid_dt + sizeof(struct DataType));
+                    CopyMem(dt->dtn_Header, gaid->gaid_dt->dtn_Header, sizeof(struct DataTypeHeader));
+                    gaid->gaid_dt->dtn_Header->dth_Name = gaid->gaid_VerStr;
+                }
+            }
+
+            if (gaid->gaid_dt)
+                *msg->opg_Storage = (IPTR) gaid->gaid_dt;
+            else if (dt)
+                *msg->opg_Storage = (IPTR) dt;
+            else
+                *msg->opg_Storage = (IPTR) NULL;
+        }
+        break;
+
+    default:
+        return DoSuperMethodA (cl, o, (Msg) msg);
+    }
+
+    return retval;
+}
+
 
 IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {

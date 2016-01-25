@@ -249,13 +249,17 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
 
             D(bug("[gifanim.datatype] %s: checking sig..\n", __func__));
 
+            gaid->gaid_VerStr = AllocVec(7, MEMF_ANY);
+
             /* Read "GIF" indentifer and version */
-            if( ReadOK( cb, gifdec, buf, 6 ) )
+            if( ReadOK( cb, gifdec, gaid->gaid_VerStr, 6 ) )
             {
+                gaid->gaid_VerStr[6] = 0;
+
               /* Is there the GIF signature ? */
-              if( !strncmp( (char *)buf, "GIF", 3 ) )
+              if( !strncmp( gaid->gaid_VerStr, "GIF", 3 ) )
               {
-                STRPTR version = (STRPTR)(buf + 3);
+                STRPTR version = (STRPTR)(gaid->gaid_VerStr + 3);
 
                   D(bug("[gifanim.datatype] %s: checking gif version..\n", __func__));
 
@@ -264,6 +268,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
                     (!strncmp( version, "89a", 3 )) )
                 {
                         D(bug("[gifanim.datatype]: %s: read gif screen..\n", __func__));
+                
 
                   /* Read GIF Screen */
                   if( ReadOK( cb, gifdec, buf, 7 ) )
