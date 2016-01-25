@@ -17,6 +17,7 @@
 #include <exec/memory.h>
 #include <exec/nodes.h>
 #include <hidd/hidd.h>
+#include <hidd/storage.h>
 #include <utility/utility.h>
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
@@ -126,7 +127,7 @@ static CONST_STRPTR const attrBaseIDs[] =
 */
 static int ata_init(struct ataBase *ATABase)
 {
-    OOP_Object *hwRoot;
+    OOP_Object *storageRoot;
     struct BootLoaderBase	*BootLoaderBase;
 
     D(bug("[ATA--] ata_init: ata.device Initialization\n"));
@@ -152,11 +153,13 @@ static int ata_init(struct ataBase *ATABase)
     if (OOP_ObtainMethodBasesArray(&ATABase->hwMethodBase, &attrBaseIDs[ATA_METHOD_ID_START]))
         return FALSE;
 
-    hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-    if (!hwRoot)
+    storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
+    if (!storageRoot)
+        storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+    if (!storageRoot)
         return FALSE;
 
-    if (!HW_AddDriver(hwRoot, ATABase->ataClass, NULL))
+    if (!HW_AddDriver(storageRoot, ATABase->ataClass, NULL))
         return FALSE;
 
     /* Set default ata.device config options */
@@ -241,14 +244,14 @@ static int ata_expunge(struct ataBase *ATABase)
     if (ATABase->ataObj)
     {
         /*
-         * CLID_HWRoot is a singletone, you can get it as many times as
+         * CLID_Hidd_Storage is a singletone, you can get it as many times as
          * you want. Here we save up some space in struct ataBase by
-         * obtaining hwRoot object only when we need it. This happens
+         * obtaining storageRoot object only when we need it. This happens
          * rarely, so small performance loss is OK here.
          */
-        OOP_Object *hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+        OOP_Object *storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
 
-        if (HW_RemoveDriver(hwRoot, ATABase->ataObj))
+        if (HW_RemoveDriver(storageRoot, ATABase->ataObj))
         {
             /* Destroy our singletone */
             OOP_MethodID disp_msg = OOP_GetMethodID(IID_Root, moRoot_Dispose);

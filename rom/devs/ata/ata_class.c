@@ -20,7 +20,7 @@ OOP_Object *ATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
         struct TagItem new_tags[] =
         {
-            {aHW_ClassName, (IPTR)"IDE"},
+            {aHW_ClassName, (IPTR)"IDE Controller"},
             {TAG_DONE     , 0          }
         };
         struct pRoot_New new_msg =
