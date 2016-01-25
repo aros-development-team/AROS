@@ -1,0 +1,4 @@
+#$Id$
+include $(TOP)/config/make.cfg
+
+#MM- kernel-hidd-base : kernel-hidd-storage kernel-hidd-system
