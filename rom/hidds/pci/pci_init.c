@@ -18,6 +18,7 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <aros/debug.h>
+#include <hidd/system.h>
 
 #include "pci.h"
 
@@ -50,7 +51,10 @@ static int PCI_Init(struct pcibase *LIBBASE)
     if (LIBBASE->psd.hiddPCIAB && LIBBASE->psd.hiddPCIDeviceAB &&
         LIBBASE->psd.hiddPCIDriverAB && LIBBASE->psd.hwAttrBase)
     {
-        OOP_Object *root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+        OOP_Object *root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
+
+        if (!root)
+            root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
 
         InitSemaphore(&LIBBASE->psd.dev_lock);
         NEWLIST(&LIBBASE->psd.devices);
