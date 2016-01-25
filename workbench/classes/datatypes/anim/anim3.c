@@ -34,16 +34,16 @@ LONG generic_unpackshortdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE 
     UWORD cnt;
     UBYTE p;
 
-    bug("[anim.datatype] %s()\n", __func__);
+    DFORMATS("[anim.datatype] %s()\n", __func__)
 
     for (p = 0; p < bm->Depth; p++)
     {
         opptr = AROS_BE2LONG(lists[p]);
-        bug("[anim.datatype] %s:   plane #%d @ 0x%p\n", __func__, p, bm->Planes[p]);
+        DFORMATS("[anim.datatype] %s:   plane #%d @ 0x%p\n", __func__, p, bm->Planes[p])
         if ((opptr == 0) || (opptr > dltasize))
         {
             // No ops for this plane or invalid pointer.
-            bug("[anim.datatype] %s: no ops/invalid op ptr (0x%08x)\n", __func__, opptr);
+            DFORMATS("[anim.datatype] %s: no ops/invalid op ptr (0x%08x)\n", __func__, opptr)
             continue;
         }
         ops = (const UWORD *)((IPTR)dlta + opptr);
