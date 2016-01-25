@@ -35,12 +35,26 @@
     attrs  --  the attributes to get terminated with TAG_DONE; each Tag's
                data element should contain the address of the respective
 	       storage element; may be NULL
+	       
+	       <base attribs>
+               
+	       DTA_DataType (#1)
+	       DTA_ObjName
+	       DTA_ObjAuthor
+	       DTA_ObjAnnotation
+	       DTA_ObjCopyright
+	       DTA_ObjVersion
+	       DTA_ObjectID
 
     RESULT
 
     The number of attributes obtained.
 
     NOTES
+
+    (#1) - On AROS, the "DataType" an object returns may be a clone of
+           the real entry, so that the subclass can overide
+           subformat information.
 
     EXAMPLE
 
