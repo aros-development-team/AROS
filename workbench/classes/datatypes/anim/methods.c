@@ -168,6 +168,11 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
         Close( (aid -> aid_VerboseOutput) );
     }
 
+    if (aid->aid_dt)
+    {
+        FreeMem(aid->aid_dt, sizeof(struct DataType) + sizeof(struct DataTypeHeader));
+    }
+
     /* Dispose object */
     DoSuperMethodA( cl, o, msg );
 
@@ -176,6 +181,93 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     return 1;
 }
 
+IPTR DT_GetMethod(struct IClass *cl, Object *o, struct opGet *msg)
+{
+    struct AnimInstData  *aid = (struct AnimInstData *)INST_DATA( cl, o );
+    IPTR retval = (IPTR)TRUE;
+
+    D(bug("[anim.datatype] %s()\n", __func__));
+
+    switch(msg->opg_AttrID)
+    {
+    case DTA_DataType:
+        {
+            struct DataType     *dt = NULL;
+            struct opGet        superGet;
+
+            D(bug("[anim.datatype] %s: DTA_DataType\n", __func__);)
+
+            superGet.MethodID = OM_GET;
+            superGet.opg_AttrID = msg->opg_AttrID;
+            superGet.opg_Storage = &dt;
+            DoSuperMethodA (cl, o, (Msg) &superGet);
+
+            D(bug("[anim.datatype] %s: DataType @ 0x%p\n", __func__, dt);)
+
+            if ((dt) && !(aid->aid_dt))
+            {
+                if ((aid->aid_dt = AllocMem(sizeof(struct DataType) + sizeof(struct DataTypeHeader), MEMF_ANY)) != NULL)
+                {
+                    CopyMem(dt, aid->aid_dt, sizeof(struct DataType));
+                    aid->aid_dt->dtn_Header = (struct DataTypeHeader *)((IPTR)aid->aid_dt + sizeof(struct DataType));
+                    CopyMem(dt->dtn_Header, aid->aid_dt->dtn_Header, sizeof(struct DataTypeHeader));
+                    switch (aid->aid_AnimMode)
+                    {
+                        case acmpILBM:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-0";
+                            break;
+                        case acmpXORILBM:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-1";
+                            break;
+                        case acmpLongDelta:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-2";
+                            break;
+                        case acmpShortDelta:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-3";
+                            break;
+                        case acmpDelta:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-4";
+                            break;
+                        case acmpByteDelta:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-5";
+                            break;
+                        case acmpStereoByteDelta:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-6";
+                            break;
+                        case acmpAnim7:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-7";
+                            break;
+                        case acmpAnim8:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-8";
+                            break;
+                        case acmpAnimJ:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-J";
+                            break;
+                        case acmpAnimI:
+                            aid->aid_dt->dtn_Header->dth_Name = "ANIM-I";
+                            break;
+                        default:
+                            aid->aid_dt->dtn_Header->dth_Name = "Unknown ANIM";
+                            break;
+                    }
+                }
+            }
+
+            if (aid->aid_dt)
+                *msg->opg_Storage = (IPTR) aid->aid_dt;
+            else if (dt)
+                *msg->opg_Storage = (IPTR) dt;
+            else
+                *msg->opg_Storage = (IPTR) NULL;
+        }
+        break;
+
+    default:
+        return DoSuperMethodA (cl, o, (Msg) msg);
+    }
+
+    return retval;
+}
 
 IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
