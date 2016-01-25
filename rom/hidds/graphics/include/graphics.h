@@ -532,6 +532,15 @@ enum
 
 #define CLID_Hidd_Gfx IID_Hidd_Gfx
 
+enum
+{
+    vHidd_Gfx_MemTotal,
+    vHidd_Gfx_MemFree,
+    vHidd_Gfx_MemAddressableTotal,                         //
+    vHidd_Gfx_MemAddressableFree,
+    vHidd_Gfx_MemClock,                                         //video card's memory clock in Hz
+};
+
 /* Compatability types */
 #define pHidd_Gfx_Gamma pHidd_Gfx_GetGamma
 
