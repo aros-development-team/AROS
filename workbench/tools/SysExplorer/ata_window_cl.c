@@ -1,16 +1,11 @@
 /*
-    Copyright (C) 2013, The AROS Development Team.
+    Copyright (C) 2013-2016, The AROS Development Team.
     $Id$
 */
 
-#define MUIMASTER_YES_INLINE_STDARG
+#include <aros/debug.h>
 
-#include <exec/memory.h>
-#include <hidd/ata.h>
-#include <libraries/mui.h>
-#include <mui/NFloattext_mcc.h>
-#include <utility/tagitem.h>
-#include <utility/hooks.h>
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <proto/alib.h>
 #include <proto/exec.h>
@@ -18,17 +13,23 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
+#include <exec/memory.h>
+#include <libraries/mui.h>
+#include <zune/customclasses.h>
+#include <mui/NFloattext_mcc.h>
+#include <utility/tagitem.h>
+#include <utility/hooks.h>
+
+#include <hidd/ata.h>
+
+#include "locale.h"
+#include "classes.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "classes.h"
-#include "cpuspecific.h"
-#include "locale.h"
-
-#include <aros/debug.h>
-
-#include <zune/customclasses.h>
+extern OOP_AttrBase HiddATABusAB;
 
 /*** Instance Data **********************************************************/
 struct ATAWindow_DATA
