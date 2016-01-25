@@ -190,6 +190,7 @@ IPTR DT_GetMethod(struct IClass *cl, Object *o, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
+#if defined(__AROS__)
     case DTA_DataType:
         {
             struct DataType     *dt = NULL;
@@ -261,7 +262,7 @@ IPTR DT_GetMethod(struct IClass *cl, Object *o, struct opGet *msg)
                 *msg->opg_Storage = (IPTR) NULL;
         }
         break;
-
+#endif
     default:
         return DoSuperMethodA (cl, o, (Msg) msg);
     }
