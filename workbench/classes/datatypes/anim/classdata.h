@@ -85,9 +85,22 @@ struct DPAnimChunk
 /* anim.datatype class instance data */
 struct AnimInstData
 {
+    struct DataType     *aid_dt;
+
+    /* Disk-loading section */
+#ifdef DOASYNCIO
+    struct AsyncFile       *aid_FH;
+#else
+    BPTR                    aid_FH;
+#endif /* DOASYNCIO */
+    LONG                    aid_CurrFilePos;
+
     /* Misc */
     struct SignalSemaphore  aid_SigSem;             /* Instance data lock                      */
-    UWORD                   aid_Pad0;
+
+    UBYTE                   aid_AnimMode;
+    UBYTE                   aid_AnimFeat;
+
     APTR                    aid_Pool;               /* pool for misc things */
     APTR                    aid_FramePool;          /* pool for animation bitmaps */
     struct BitMapHeader    *aid_BMH;                /* Short cut to animation.datatype's bitmapheader */
@@ -97,6 +110,13 @@ struct AnimInstData
     struct FrameNode       *aid_CurrFN;             /* Last framenode obtained using ADTM_LOADFRAME */
     STRPTR                  aid_ProjectName;        /* Shortcut to DTA_Name                    */
     BPTR                    aid_VerboseOutput;      /* Verbose output                          */
+
+    /* Sample stuff */
+    BYTE                   *aid_Sample;             /* global sample */
+    ULONG                   aid_SampleLength;       /* length of global sample */
+    ULONG                   aid_Period;             /* period */
+    ULONG                   aid_Volume;             /* volume */
+    ULONG                   aid_SamplesPerFrame;    /* samples per frame; Set by prefs to override own calculations */
 
     /* Prefs */
     ULONG                   aid_ModeID;
@@ -108,20 +128,6 @@ struct AnimInstData
     BOOL                    aid_Registered;         /* Shareware payed ? */
     ULONG                   aid_FPS;                /* fps of stream (maybe modified by prefs) */
 
-    /* Sample stuff */
-    BYTE                   *aid_Sample;             /* global sample */
-    ULONG                   aid_SampleLength;       /* length of global sample */
-    ULONG                   aid_Period;             /* period */
-    ULONG                   aid_Volume;             /* volume */
-    ULONG                   aid_SamplesPerFrame;    /* samples per frame; Set by prefs to override own calculations */
-
-    /* Disk-loading section */
-#ifdef DOASYNCIO
-    struct AsyncFile       *aid_FH;
-#else
-    BPTR                    aid_FH;
-#endif /* DOASYNCIO */
-    LONG                    aid_CurrFilePos;
 };
 
 

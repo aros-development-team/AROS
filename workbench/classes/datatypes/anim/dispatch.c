@@ -1236,6 +1236,8 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
                                 fn->fn_AH.ah_AbsTime = AROS_BE2LONG(fn->fn_AH.ah_AbsTime);
                                 fn->fn_AH.ah_RelTime = AROS_BE2LONG(fn->fn_AH.ah_RelTime);
                                 fn->fn_AH.ah_Flags = AROS_BE2LONG(fn->fn_AH.ah_Flags);
+                                if (aid->aid_AnimMode == 0)
+                                    aid->aid_AnimMode = fn->fn_AH.ah_Operation;
 #endif
                                   DumpAnimHeader( cb, aid, (fn -> fn_TimeStamp), (&(fn -> fn_AH)) );
 
