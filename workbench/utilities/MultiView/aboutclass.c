@@ -13,13 +13,32 @@ void aboutfmt_Picture(char *fmtbuff)
 
 void about_Picture(Object *picture, char *details[])
 {
-    details[0] = "";
-    details[1] = "";
-    details[2] = "";
+    struct BitMapHeader *pictBMH;
+    IPTR        pictCols;
+
+    if (GetDTAttrs(dto,
+        PDTA_BitMapHeader, &pictBMH,
+        PDTA_NumColors, &pictCols, TAG_DONE))
+    {
+        details[0] = AllocVec(36, MEMF_ANY);
+        sprintf(details[0], "     Dimensions:  %dx%dx%d", pictBMH->bmh_Width, pictBMH->bmh_Height, pictBMH->bmh_Depth);
+        details[1] = AllocVec(24, MEMF_ANY);
+        if (pictCols > 0)
+            sprintf(details[1], "     Colors:  %d", (int)pictCols);
+        else if (pictBMH->bmh_Depth > 24)
+            strcpy(details[1], "     Deepcolor");
+        else if (pictBMH->bmh_Depth > 16)
+            strcpy(details[1], "     Truecolor");
+        else
+            strcpy(details[1], "     Hi-color");
+        details[2] = "";
+    }
 }
 
 void about_PicDisp(char *details[])
 {
+    FreeVec(details[0]);
+    FreeVec(details[1]);
 }
 
 void aboutfmt_Animation(char *fmtbuff)
