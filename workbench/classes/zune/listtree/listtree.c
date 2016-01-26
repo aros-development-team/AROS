@@ -317,10 +317,12 @@ IPTR Listtree__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
 
+    APTR pool = data->pool;
     IPTR result =  DoSuperMethodA(cl, obj, msg);
 
-    /* Destruct hook called by dispose on NListree will need the pool */
-    DeletePool(data->pool);
+    /* Destruct hook called by dispose on NListree will need the pool,
+     * so destroy it only after super dispose is called */
+    DeletePool(pool);
 
     return result;
 }
