@@ -361,7 +361,7 @@ static char *versToStr(char *version)
     stringBuff[i] = '\0';
 
     tmp = AllocVec(i + 1, MEMF_ANY);
-    CopyMem(stringBuff, tmp, i);
+    CopyMem(stringBuff, tmp, i + 1);
 
     return tmp;
 }
