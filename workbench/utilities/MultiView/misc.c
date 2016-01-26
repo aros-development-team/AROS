@@ -354,7 +354,7 @@ static char *versToStr(char *version)
         sp++)
     {
     }
-    while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
+    while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (*(sp-1) !=')') && (i < 99))
     {
         stringBuff[i++] = *sp++;
     }
