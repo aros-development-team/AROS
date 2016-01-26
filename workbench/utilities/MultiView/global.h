@@ -196,8 +196,8 @@ struct DTClassInfo
     CLASS_TEMPLATEFUNC aboutTemplate;
     CLASS_ABOUTFUNC     aboutFunc;
     CLASS_ABOUTDISPOSE aboutDispose;
-    IPTR                templen;
-    IPTR                entries;
+    IPTR                templen;                /* how many UBYTE our EasyRequest template needs        */
+    IPTR                entries;                /* how many elements we need to store for our template  */
 };
 
 struct DTClassInfo *FindClassInfo(ULONG classid);
