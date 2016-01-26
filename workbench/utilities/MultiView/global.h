@@ -106,6 +106,10 @@
 #include <datatypes/pictureclass.h>
 #endif
 
+#ifndef DATATYPES_ANIMATIONCLASS_H
+#include <datatypes/animationclass.h>
+#endif
+
 #ifndef DATATYPES_TEXTCLASS_H
 #include <datatypes/textclass.h>
 #endif
@@ -179,6 +183,24 @@ typedef const unsigned char *CONST_STRPTR;
 #ifndef PROTO_WB_H
 #include <proto/wb.h>
 #endif
+
+/*********************************************************************************************/
+
+typedef void (*CLASS_TEMPLATEFUNC)(char *buff);
+typedef void (*CLASS_ABOUTFUNC)(Object *obj, char *details[]);
+typedef void (*CLASS_ABOUTDISPOSE)(char *details[]);
+
+struct DTClassInfo
+{
+    ULONG               classID;
+    CLASS_TEMPLATEFUNC aboutTemplate;
+    CLASS_ABOUTFUNC     aboutFunc;
+    CLASS_ABOUTDISPOSE aboutDispose;
+    IPTR                templen;
+    IPTR                entries;
+};
+
+struct DTClassInfo *FindClassInfo(ULONG classid);
 
 /*********************************************************************************************/
 

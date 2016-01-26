@@ -5,7 +5,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main misc vars locale
+FILES := main misc aboutclass vars locale
 
 EXEDIR := $(AROSDIR)/Utilities
 
