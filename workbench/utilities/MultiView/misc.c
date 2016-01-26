@@ -342,107 +342,122 @@ static struct IClass *FindClassSuper(struct IClass *baseClass)
     return tmp;
 }
 
-void About(void)
+static char *versToStr(char *version)
 {
-    struct Library *tmpBase;
-    struct IClass *clSuper;
-    struct DataType     *dt = NULL;
-    struct EasyStruct   es;
-    STRPTR              gid_string = NULL;
-    STRPTR              name_string = NULL;
+    UBYTE  stringBuff[100];
+    char *tmp;
     STRPTR              sp;
-    WORD                i;
-    UBYTE               dtver_string[100];
-    STRPTR              objclname_string = NULL;
-    UBYTE               objclver_string[100];
-    STRPTR              objsclname_string = NULL;
-    UBYTE               objsclver_string[100];
+    WORD                i = 0;
 
-    GetAttr(DTA_Name, dto, (IPTR *)&name_string);
-    if (name_string)
-        name_string = FilePart(name_string);
-
-    if (GetDTAttrs(dto, DTA_DataType, (IPTR)&dt, TAG_DONE))
-    {
-        if (dt)
-        {
-            gid_string = (STRPTR) GetDTString(dt->dtn_Header->dth_GroupID);
-            name_string = dt->dtn_Header->dth_Name;
-        }
-    }
-    
-    if (!gid_string) gid_string = "";
-    if (!name_string) name_string = "";
-
-    /* display version info about datatypes.library */
-    i = 0;
-    for(sp = DataTypesBase->lib_IdString;
+    for(sp = version;
         (*sp != 0) && ((*sp < '0') || (*sp > '9'));
         sp++)
     {
     }
     while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
     {
-        dtver_string[i++] = *sp++;
+        stringBuff[i++] = *sp++;
     }
-    dtver_string[i] = '\0';
+    stringBuff[i] = '\0';
+
+    tmp = AllocVec(i + 1, MEMF_ANY);
+    CopyMem(stringBuff, tmp, strlen(stringBuff));
+
+    return tmp;
+}
+
+void About(void)
+{
+    struct Library *tmpBase;
+    struct IClass *clSuper;
+    struct DataType     *dt = NULL;
+    struct EasyStruct   es;
+    struct DTClassInfo *classInfo;
+    char *fmtTemplate;
+    int                         count = 12, tmplLen;
+    IPTR                *abouttxt;
+
+    WORD                i = 0;
+
+    tmplLen = strlen(internal_about_tmpl);
+    
+    if ((classInfo = FindClassInfo(dto_subclass_gid)) != NULL)
+    {
+        i += classInfo->templen + 1;
+        count += classInfo->entries;
+    }
+
+    fmtTemplate = AllocVec(tmplLen + i + 1, MEMF_ANY);
+    CopyMem(internal_about_tmpl, fmtTemplate, tmplLen);
+    if (classInfo)
+    {
+        fmtTemplate[tmplLen++] = '\n';
+        classInfo->aboutTemplate(&fmtTemplate[tmplLen]);
+    }
+    es.es_TextFormat = fmtTemplate;
+
+    abouttxt = AllocVec(count * sizeof(IPTR), MEMF_ANY);
+
+    GetAttr(DTA_Name, dto, (IPTR *)&abouttxt[6]);
+    if (abouttxt[6])
+        abouttxt[6] = (IPTR)FilePart((CONST_STRPTR)abouttxt[6]);
+
+    if (GetDTAttrs(dto, DTA_DataType, (IPTR)&dt, TAG_DONE))
+    {
+        if (dt)
+        {
+            abouttxt[7] = (IPTR) GetDTString(dt->dtn_Header->dth_GroupID);
+            abouttxt[6] = (IPTR) dt->dtn_Header->dth_Name;
+        }
+    }
+    
+    if (!abouttxt[7]) abouttxt[7] = (IPTR)"";
+    if (!abouttxt[6]) abouttxt[6] = (IPTR)"";
+
+    /* display version info about datatypes.library */
+    abouttxt[5] = (IPTR) versToStr(DataTypesBase->lib_IdString);
 
     /* display version info about datatype objects class */
-    i = 0;
     if ((tmpBase = FindClassBase((char *)OCLASS(dto)->cl_ID)) != NULL)
     {
-        objclname_string = tmpBase->lib_Node.ln_Name;
-        for(sp = tmpBase->lib_IdString;
-            (*sp != 0) && ((*sp < '0') || (*sp > '9'));
-            sp++)
-        {
-        }
-        while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
-        {
-            objclver_string[i++] = *sp++;
-        }
+        abouttxt[8] = (IPTR) tmpBase->lib_Node.ln_Name;
+        abouttxt[9] = (IPTR) versToStr(tmpBase->lib_IdString);
     }
-    objclver_string[i]  = '\0';
 
     /* display version info about datatype objects super class */
-    i = 0;
     if ((clSuper = FindClassSuper(OCLASS(dto))) != NULL)
     {
         if ((tmpBase = FindClassBase((char *)clSuper->cl_ID)) != NULL)
         {
-            objsclname_string = tmpBase->lib_Node.ln_Name;
-            for(sp = tmpBase->lib_IdString;
-                (*sp != 0) && ((*sp < '0') || (*sp > '9'));
-                sp++)
-            {
-            }
-            while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
-            {
-                objsclver_string[i++] = *sp++;
-            }
+            abouttxt[10] = (IPTR) tmpBase->lib_Node.ln_Name;
+            abouttxt[11] = (IPTR) versToStr(tmpBase->lib_IdString);
         }
     }
-    objsclver_string[i]  = '\0';
 
     es.es_StructSize   = sizeof(es);
     es.es_Flags        = 0;
     es.es_Title        = MSG(MSG_ABOUT_TITLE);
-    es.es_TextFormat   = internal_about_tmpl;
     es.es_GadgetFormat = MSG(MSG_CONTINUE);
  
-    EasyRequest(win, &es, NULL,
-                (IPTR)es.es_Title,
-                (IPTR)VERSION,
-                (IPTR)REVISION,
-                (IPTR)DATESTR,
-                (IPTR)DataTypesBase->lib_Node.ln_Name,
-                (IPTR)dtver_string,
-                (IPTR)name_string,
-                (IPTR)gid_string,
-                (IPTR)objclname_string,
-                (IPTR)objclver_string,
-                (IPTR)objsclname_string,
-                (IPTR)objsclver_string);
+    abouttxt[0]   = (IPTR) es.es_Title;
+    abouttxt[1]   = VERSION;
+    abouttxt[2]   = REVISION;
+    abouttxt[3]   = (IPTR) DATESTR;
+    abouttxt[4]   = (IPTR)DataTypesBase->lib_Node.ln_Name;
+
+    if (classInfo)
+        classInfo->aboutFunc(dto, (char **)&abouttxt[12]);
+
+    EasyRequestArgs(win, &es, NULL, abouttxt);
+  
+    if (classInfo)
+        classInfo->aboutDispose((char **)&abouttxt[12]);
+
+    FreeVec(fmtTemplate);
+    FreeVec((APTR)abouttxt[5]);
+    FreeVec((APTR)abouttxt[9]);
+    FreeVec((APTR)abouttxt[11]);
+    FreeVec(abouttxt);
 }
 
 /*********************************************************************************************/
