@@ -364,7 +364,7 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
     ULONG curpen;
     int i;
 
-    bug("[animation.datatype]: %s()\n", __func__);
+    D(bug("[animation.datatype]: %s()\n", __func__);)
 
     /* TODO: We need to merge the colors so we get a good average to use! */
     if (msg->Frame->af_Frame.alf_CMap)
@@ -416,7 +416,7 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
                     
                     if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
                     {
-                        bug("[animation.datatype] %s: allocating halfbrite pen %d\n", __func__, i + 32);
+                        D(bug("[animation.datatype] %s: allocating halfbrite pen %d\n", __func__, i + 32);)
                         if ((curpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors)
                         {
                             animd->ad_ColorData.acd_Allocated[curpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
