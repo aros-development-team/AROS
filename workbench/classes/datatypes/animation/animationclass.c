@@ -290,7 +290,7 @@ IPTR DT_FreeColorTables(struct IClass *cl, struct Gadget *g, Msg msg)
     }
     if (animd->ad_ColorData.acd_ColorTable[1])
     {
-        FreeMem(animd->ad_ColorData.acd_ColorTable[1], (1 + animd->ad_ColorData.acd_NumColors) * sizeof (UBYTE));
+        FreeMem(animd->ad_ColorData.acd_ColorTable[1], (1 + needcolors) * sizeof (UBYTE));
         animd->ad_ColorData.acd_ColorTable[1] = NULL;
     }
     if (animd->ad_ColorData.acd_Allocated)
@@ -336,7 +336,7 @@ IPTR DT_AllocColorTables(struct IClass *cl, struct Gadget *g, struct privAllocCo
         D(bug("[animation.datatype] %s: ColorRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorRegs);)
         animd->ad_ColorData.acd_ColorTable[0] = AllocMem((1 + msg->NumColors) * sizeof (UBYTE), MEMF_CLEAR);              // shared pen table
         D(bug("[animation.datatype] %s: ColorTable @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorTable[0]);)
-        animd->ad_ColorData.acd_ColorTable[1] = AllocMem((1 + msg->NumColors) * sizeof (UBYTE), MEMF_CLEAR);
+        animd->ad_ColorData.acd_ColorTable[1] = AllocMem((1 + needcolors) * sizeof (UBYTE), MEMF_CLEAR);
         D(bug("[animation.datatype] %s: ColorTable2 @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorTable[1]);)
         animd->ad_ColorData.acd_Allocated = AllocMem((1 + needcolors) * sizeof (UBYTE), MEMF_CLEAR);
         D(bug("[animation.datatype] %s: Allocated pens Array @ 0x%p\n", __func__, animd->ad_ColorData.acd_Allocated);)
@@ -351,42 +351,155 @@ IPTR DT_AllocColorTables(struct IClass *cl, struct Gadget *g, struct privAllocCo
     return 1;
 }
 
+
+IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *msg)
+{
+    struct Animation_Data *animd = INST_DATA (cl, g);
+    struct TagItem bestpenTags[] =
+    {
+        { OBP_Precision,        animd->ad_ColorData.acd_PenPrecison     },
+        { TAG_DONE,             0                                       }
+    };
+    UBYTE buffdepth;
+    ULONG curpen;
+    int i;
+
+    bug("[animation.datatype]: %s()\n", __func__);
+
+    /* TODO: We need to merge the colors so we get a good average to use! */
+    if (msg->Frame->af_Frame.alf_CMap)
+    {
+        if (animd->ad_Flags & ANIMDF_REMAPPEDPENS)
+            DoMethod((Object *)g, PRIVATE_FREEPENS);
+
+        GetRGB32(msg->Frame->af_Frame.alf_CMap, 0UL,
+            (msg->Frame->af_Frame.alf_CMap->Count < animd->ad_ColorData.acd_NumColors) ? msg->Frame->af_Frame.alf_CMap->Count : animd->ad_ColorData.acd_NumColors,
+            animd->ad_ColorData.acd_CRegs);
+    }
+
+    if (animd->ad_Window)
+    {
+        if ((animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
+        {
+            UWORD numcolors = animd->ad_ColorData.acd_NumColors;
+
+            if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
+                numcolors <<= 1;
+
+            buffdepth = (UBYTE)GetBitMapAttr(animd->ad_CacheBM, BMA_DEPTH);
+
+            ObtainSemaphore(&animd->ad_ColorData.acd_PenLock);
+
+            animd->ad_Flags |= ANIMDF_REMAPPEDPENS;
+
+            if (!(animd->ad_ColorData.acd_ColorMap))
+                animd->ad_ColorData.acd_ColorMap = animd->ad_Window->WScreen->ViewPort.ColorMap;
+
+            D(bug("[animation.datatype] %s: colormap @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorMap);)
+
+            for (i = 0; i < animd->ad_ColorData.acd_NumColors; i++)
+            {
+                if ((buffdepth <= 8) && ((curpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors))
+                {
+                    animd->ad_ColorData.acd_Allocated[curpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
+                        animd->ad_ColorData.acd_CRegs[i * 3], animd->ad_ColorData.acd_CRegs[i * 3 + 1], animd->ad_ColorData.acd_CRegs[i * 3 + 2],
+                        bestpenTags);
+
+                    // get the actual color components for the pen.
+                    GetRGB32(animd->ad_Window->WScreen->ViewPort.ColorMap,
+                        animd->ad_ColorData.acd_Allocated[curpen], 1, &animd->ad_ColorData.acd_GRegs[curpen * 3]);
+
+                    D(bug("[animation.datatype] %s: bestpen #%d for %02x%02x%02x\n", __func__, animd->ad_ColorData.acd_Allocated[curpen], (animd->ad_ColorData.acd_CRegs[i * 3] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 1] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 2] & 0xFF));)
+
+                    animd->ad_ColorData.acd_ColorTable[0][i] = animd->ad_ColorData.acd_Allocated[curpen];
+                    animd->ad_ColorData.acd_ColorTable[1][i] = animd->ad_ColorData.acd_Allocated[curpen];
+                    
+                    if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
+                    {
+                        bug("[animation.datatype] %s: allocating halfbrite pen %d\n", __func__, i + 32);
+                        if ((curpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors)
+                        {
+                            animd->ad_ColorData.acd_Allocated[curpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
+                                animd->ad_ColorData.acd_CRegs[i * 3] >> 1, animd->ad_ColorData.acd_CRegs[i * 3 + 1] >> 1, animd->ad_ColorData.acd_CRegs[i * 3 + 2] >> 1,
+                                bestpenTags);
+                            // get the actual color components for the pen.
+                            GetRGB32(animd->ad_Window->WScreen->ViewPort.ColorMap,
+                                animd->ad_ColorData.acd_Allocated[curpen], 1, &animd->ad_ColorData.acd_GRegs[curpen * 3]);
+                             animd->ad_ColorData.acd_ColorTable[1][i + 32] = animd->ad_ColorData.acd_Allocated[curpen];
+                        }
+                        else
+                        {
+                            bug("[animation.datatype] %s: out of pen storage\n");
+                        }
+                    }
+                }
+                else
+                {
+                    if (animd->ad_ColorData.acd_NumAlloc >= numcolors)
+                    {
+                        bug("[animation.datatype] %s: out of pen storage\n");
+                    }
+                    else
+                    {
+                        animd->ad_ColorData.acd_GRegs[i * 3] = animd->ad_ColorData.acd_CRegs[i * 3];
+                        animd->ad_ColorData.acd_GRegs[i * 3 + 1] = animd->ad_ColorData.acd_CRegs[i * 3  +1];
+                        animd->ad_ColorData.acd_GRegs[i * 3 + 2] = animd->ad_ColorData.acd_CRegs[i * 3 + 2];
+                        if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
+                        {
+                            animd->ad_ColorData.acd_GRegs[(i + 32) * 3] = animd->ad_ColorData.acd_CRegs[i * 3] >> 1;
+                            animd->ad_ColorData.acd_GRegs[(i + 32) * 3 + 1] = animd->ad_ColorData.acd_CRegs[i * 3  +1] >> 1;
+                            animd->ad_ColorData.acd_GRegs[(i + 32) * 3 + 2] = animd->ad_ColorData.acd_CRegs[i * 3 + 2] >> 1;
+                        }
+                    }
+                }
+            }
+            ReleaseSemaphore(&animd->ad_ColorData.acd_PenLock);
+        }
+    }
+    return 0;
+}
+
 IPTR DT_AllocBuffer(struct IClass *cl, struct Gadget *g, struct privAllocBuffer *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
-    if (animd->ad_FrameBuffer)
-        FreeBitMap(animd->ad_FrameBuffer);
+    if (animd->ad_CacheBM)
+        FreeBitMap(animd->ad_CacheBM);
 
-    animd->ad_FrameBuffer = AllocBitMap(animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, msg->Depth,
+    animd->ad_CacheBM = AllocBitMap(animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, msg->Depth,
                                   BMF_CLEAR, msg->Friend);
 
     D(
-        bug("[animation.datatype] %s: Frame Buffer @ 0x%p\n", __func__, animd->ad_FrameBuffer);
+        bug("[animation.datatype] %s: Cache BM @ 0x%p\n", __func__, animd->ad_CacheBM);
         bug("[animation.datatype] %s:     %dx%dx%d\n", __func__, animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, msg->Depth);
     )
 
-    return (IPTR)animd->ad_FrameBuffer;
+    return (IPTR)animd->ad_CacheBM;
 }
 
-IPTR DT_RenderBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer *msg)
+IPTR DT_RenderFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
-    if (msg->Source)
+    if ((msg->Frame) && (msg->Target))
     {
         if ((animd->ad_ColorData.acd_NumColors > 0) && (animd->ad_Flags & ANIMDF_REMAP))
         {
-            DoMethod((Object *)g, PRIVATE_REMAPBUFFER, msg->Source);
+            DoMethod((Object *)g, PRIVATE_REMAPFRAME, msg->Frame, msg->Target);
         }
         else
-            BltBitMap(msg->Source, 0, 0, animd->ad_FrameBuffer, 0, 0, animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, 0xC0, 0xFF, NULL);
+        {
+            struct BitMap *sourceBM = (struct BitMap *)msg->Frame->af_CacheBM;
+            if (!sourceBM)
+                sourceBM = msg->Frame->af_Frame.alf_BitMap;
+            BltBitMap(sourceBM, 0, 0, msg->Target, 0, 0, animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, 0xC0, 0xFF, NULL);
+        }
     }
-    
+
     return (IPTR)1;
 }
 
@@ -411,15 +524,10 @@ UBYTE HAMColor(UBYTE depth, UBYTE pen, UBYTE val)
     return (val & 0x3) | (HAMComponent(depth, pen) << 2);
 }
 
-IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer *msg)
+IPTR DT_RemapFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame *msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
     struct RastPort *remapRP, *targetRP;
-    struct TagItem bestpenTags[] =
-    {
-        { OBP_Precision,        animd->ad_ColorData.acd_PenPrecison   },
-        { TAG_DONE,             0                       }
-    };
     UBYTE *tmpline, *outline;
     UBYTE buffdepth;
     ULONG curpen;
@@ -427,185 +535,149 @@ IPTR DT_RemapBuffer(struct IClass *cl, struct Gadget *g, struct privRenderBuffer
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
-    buffdepth = (UBYTE)GetBitMapAttr(animd->ad_FrameBuffer, BMA_DEPTH);
+    buffdepth = (UBYTE)GetBitMapAttr(msg->Target, BMA_DEPTH);
 
-    if (animd->ad_Window)
+    // remap the frame bitmap ..
+    if (msg->Target && ((tmpline = AllocVec(animd->ad_BitMapHeader.bmh_Width, MEMF_ANY)) != NULL))
     {
-        if ((buffdepth <= 8) && (animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
+        UBYTE srcdepth;
+        srcdepth = (UBYTE)GetBitMapAttr(msg->Frame->af_Frame.alf_BitMap, BMA_DEPTH);
+
+        if (((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8)) || (buffdepth > 8))
         {
-            ObtainSemaphore(&animd->ad_ColorData.acd_PenLock);
-
-            animd->ad_Flags |= ANIMDF_REMAPPEDPENS;
-
-            if (!(animd->ad_ColorData.acd_ColorMap))
-                animd->ad_ColorData.acd_ColorMap = animd->ad_Window->WScreen->ViewPort.ColorMap;
-
-            D(bug("[animation.datatype] %s: colormap @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorMap);)
-
-            for (i = 0; i < animd->ad_ColorData.acd_NumColors; i++)
-            {
-                curpen = animd->ad_ColorData.acd_NumAlloc++;
-                animd->ad_ColorData.acd_Allocated[curpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
-                    animd->ad_ColorData.acd_CRegs[i * 3], animd->ad_ColorData.acd_CRegs[i * 3 + 1], animd->ad_ColorData.acd_CRegs[i * 3 + 2],
-                    bestpenTags);
-
-                // get the actual color components for the pen.
-                GetRGB32(animd->ad_Window->WScreen->ViewPort.ColorMap,
-                    animd->ad_ColorData.acd_Allocated[curpen], 1, &animd->ad_ColorData.acd_GRegs[animd->ad_ColorData.acd_NumAlloc * 3]);
-
-                D(bug("[animation.datatype] %s: bestpen #%d for %02x%02x%02x\n", __func__, animd->ad_ColorData.acd_Allocated[curpen], (animd->ad_ColorData.acd_CRegs[i * 3] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 1] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 2] & 0xFF));)
-
-                animd->ad_ColorData.acd_ColorTable[0][i] = animd->ad_ColorData.acd_Allocated[curpen];
-                animd->ad_ColorData.acd_ColorTable[1][i] = animd->ad_ColorData.acd_Allocated[curpen];
-                
-                if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
-                {
-                    bug("[animation.datatype] %s: allocating halfbrite pen %d\n", __func__, i + 32);
-                }
-            }
-            ReleaseSemaphore(&animd->ad_ColorData.acd_PenLock);
+            D(
+                if (animd->ad_ModeID & HAM_KEY)
+                    bug("[animation.datatype] %s: remapping HAM%d\n", __func__, srcdepth);
+                else
+                    bug("[animation.datatype] %s: remapping to %dbit\n", __func__, buffdepth);
+            )
+            outline = AllocVec((animd->ad_BitMapHeader.bmh_Width << 2), MEMF_ANY);
         }
+        else
+            outline = tmpline;
 
-        // remap the source ..
-        if (animd->ad_FrameBuffer && ((tmpline = AllocVec(animd->ad_BitMapHeader.bmh_Width, MEMF_ANY)) != NULL))
+        if ((remapRP = CreateRastPort()) != NULL)
         {
-            UBYTE srcdepth;
-            srcdepth = (UBYTE)GetBitMapAttr(msg->Source, BMA_DEPTH);
-
-            if (((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8)) || (buffdepth > 8))
+            if ((targetRP = CreateRastPort()) != NULL)
             {
-                D(
-                    if (animd->ad_ModeID & HAM_KEY)
-                        bug("[animation.datatype] %s: remapping HAM%d\n", __func__, srcdepth);
-                    else
-                        bug("[animation.datatype] %s: remapping to %dbit\n", __func__, buffdepth);
-                )
-                outline = AllocVec((animd->ad_BitMapHeader.bmh_Width << 2), MEMF_ANY);
-            }
-            else
-                outline = tmpline;
+                remapRP->BitMap = msg->Frame->af_Frame.alf_BitMap;
+                targetRP->BitMap = msg->Target;
 
-            if ((remapRP = CreateRastPort()) != NULL)
-            {
-                if ((targetRP = CreateRastPort()) != NULL)
+                for(i = 0; i < animd->ad_BitMapHeader.bmh_Height; i++)
                 {
-                    remapRP->BitMap = msg->Source;
-                    targetRP->BitMap = animd->ad_FrameBuffer;
-
-                    for(i = 0; i < animd->ad_BitMapHeader.bmh_Height; i++)
+                    if ((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8))
                     {
-                        if ((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8))
+                        UBYTE hamr = 0, hamg = 0, hamb = 0;
+
+                        for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
                         {
-                            UBYTE hamr = 0, hamg = 0, hamb = 0;
+                            BOOL compose = TRUE;
+                            ULONG mask = 1 << (7 - (x & 7));
+                            UBYTE p;
 
-                            for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
+                            tmpline[x] = 0;
+                            for (p = 0; p < srcdepth; p++)
                             {
-                                BOOL compose = TRUE;
-                                ULONG mask = 1 << (7 - (x & 7));
-                                UBYTE p;
+                                UBYTE *planedata = (UBYTE *)msg->Frame->af_Frame.alf_BitMap->Planes[p];
+                                ULONG offset = (i * animd->ad_BitMapHeader.bmh_Width) + x;
 
-                                tmpline[x] = 0;
-                                for (p = 0; p < srcdepth; p++)
-                                {
-                                    UBYTE *planedata = (UBYTE *)msg->Source->Planes[p];
-                                    ULONG offset = (i * animd->ad_BitMapHeader.bmh_Width) + x;
-
-                                    if ((planedata) && (planedata[offset / 8 ] & mask))
-                                        tmpline[x] |=  (1 << p);
-                                }
-
-                                curpen = tmpline[x];
-                                if (HAMFlag(srcdepth, curpen) == 0)
-                                {
-                                    curpen = HAMComponent(srcdepth, curpen);
-                                    if (buffdepth <= 8)
-                                    {
-                                        compose = FALSE;
-                                        outline[x] = animd->ad_ColorData.acd_ColorTable[1][curpen];
-                                    }
-                                    hamr = (animd->ad_ColorData.acd_CRegs[curpen * 3] & 0xFF);
-                                    hamg = (animd->ad_ColorData.acd_CRegs[curpen * 3 + 1] & 0xFF);
-                                    hamb = (animd->ad_ColorData.acd_CRegs[curpen * 3 + 2] & 0xFF);
-                                }
-                                else if (HAMFlag(srcdepth, curpen) == 1)
-                                {
-                                    //modify blue..
-                                    hamb = HAMColor(srcdepth, curpen, hamb);
-                                }
-                                else if (HAMFlag(srcdepth, curpen) == 2)
-                                {
-                                    // modify red
-                                    hamr = HAMColor(srcdepth, curpen, hamr);
-                                }
-                                else if (HAMFlag(srcdepth, curpen) == 3)
-                                {
-                                    //modify green
-                                    hamg = HAMColor(srcdepth, curpen, hamg);
-                                }
-
-                                if (compose)
-                                {
-                                    if (buffdepth <= 8)
-                                    {
-                                        // TODO: Map pixel color
-                                        outline[x] = 0;
-                                    }
-                                    else
-                                    {
-                                        outline[x * 4] = 0;
-                                        outline[x * 4 + 1] = hamr;
-                                        outline[x * 4 + 2] = hamg;
-                                        outline[x * 4 + 3] = hamb;
-                                    }
-                                }
+                                if ((planedata) && (planedata[offset / 8 ] & mask))
+                                    tmpline[x] |=  (1 << p);
                             }
-                            if (buffdepth <= 8)
-                                WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
-                            else
-                                WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
-                        }
-                        else
-                        {
-                            ReadPixelLine8(remapRP,0,i,animd->ad_BitMapHeader.bmh_Width,tmpline,NULL);
 
-                            for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
+                            curpen = tmpline[x];
+                            if (HAMFlag(srcdepth, curpen) == 0)
                             {
-                                curpen = tmpline[x];
+                                curpen = HAMComponent(srcdepth, curpen);
                                 if (buffdepth <= 8)
+                                {
+                                    compose = FALSE;
                                     outline[x] = animd->ad_ColorData.acd_ColorTable[1][curpen];
+                                }
+                                hamr = (animd->ad_ColorData.acd_GRegs[curpen * 3] & 0xFF);
+                                hamg = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 1] & 0xFF);
+                                hamb = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 2] & 0xFF);
+                            }
+                            else if (HAMFlag(srcdepth, curpen) == 1)
+                            {
+                                //modify blue..
+                                hamb = HAMColor(srcdepth, curpen, hamb);
+                            }
+                            else if (HAMFlag(srcdepth, curpen) == 2)
+                            {
+                                // modify red
+                                hamr = HAMColor(srcdepth, curpen, hamr);
+                            }
+                            else if (HAMFlag(srcdepth, curpen) == 3)
+                            {
+                                //modify green
+                                hamg = HAMColor(srcdepth, curpen, hamg);
+                            }
+
+                            if (compose)
+                            {
+                                if (buffdepth <= 8)
+                                {
+                                    // TODO: Map pixel color
+                                    outline[x] = 0;
+                                }
                                 else
                                 {
                                     outline[x * 4] = 0;
-                                    outline[x * 4 + 1] = (animd->ad_ColorData.acd_CRegs[curpen * 3] & 0xFF);
-                                    outline[x * 4 + 2] = (animd->ad_ColorData.acd_CRegs[curpen * 3 + 1] & 0xFF);
-                                    outline[x * 4 + 3] = (animd->ad_ColorData.acd_CRegs[curpen * 3 + 2] & 0xFF);
+                                    outline[x * 4 + 1] = hamr;
+                                    outline[x * 4 + 2] = hamg;
+                                    outline[x * 4 + 3] = hamb;
                                 }
                             }
-
-                            if (buffdepth <= 8)
-                                WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
-                            else
-                                WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
                         }
+                        if (buffdepth <= 8)
+                            WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
+                        else
+                            WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
                     }
+                    else
+                    {
+                        ReadPixelLine8(remapRP,0,i,animd->ad_BitMapHeader.bmh_Width,tmpline,NULL);
 
-                    FreeRastPort(targetRP);
+                        for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
+                        {
+                            curpen = tmpline[x];
+                            if (buffdepth <= 8)
+                                outline[x] = animd->ad_ColorData.acd_ColorTable[1][curpen];
+                            else
+                            {
+                                outline[x * 4] = 0;
+                                outline[x * 4 + 1] = (animd->ad_ColorData.acd_GRegs[curpen * 3] & 0xFF);
+                                outline[x * 4 + 2] = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 1] & 0xFF);
+                                outline[x * 4 + 3] = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 2] & 0xFF);
+                            }
+                        }
+
+                        if (buffdepth <= 8)
+                            WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
+                        else
+                            WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
+                    }
                 }
-                FreeRastPort(remapRP);
+                targetRP->BitMap = NULL;
+                FreeRastPort(targetRP);
             }
-
-            if (outline != tmpline)
-                FreeVec(outline);
-            FreeVec(tmpline);
+            remapRP->BitMap = NULL;
+            FreeRastPort(remapRP);
         }
+
+        if (outline != tmpline)
+            FreeVec(outline);
+        FreeVec(tmpline);
     }
+
     return 1;
 }
 
 /*** PUBLIC METHODS ***/
 IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 {
-    struct Animation_Data *animd = INST_DATA (cl, g);
+    struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
@@ -613,7 +685,9 @@ IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
     {
     case ADTA_KeyFrame:
         D(bug("[animation.datatype] %s: ADTA_KeyFrame\n", __func__);)
-        *msg->opg_Storage = (IPTR) animd->ad_KeyFrame;
+        *msg->opg_Storage = (IPTR) NULL;
+        if (animd->ad_KeyFrame)
+            *msg->opg_Storage = (IPTR) animd->ad_KeyFrame->af_Frame.alf_BitMap;
         break;
 
     case ADTA_ModeID:
@@ -882,7 +956,9 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
         case ADTA_KeyFrame:
             D(bug("[animation.datatype] %s: ADTA_KeyFrame (0x%p)\n", __func__, tag->ti_Data);)
-            animd->ad_KeyFrame = (struct BitMap *) tag->ti_Data;
+            if (!(animd->ad_KeyFrame))
+                animd->ad_KeyFrame = AllocMem(sizeof(struct AnimFrame), MEMF_ANY|MEMF_CLEAR);
+            animd->ad_KeyFrame->af_Frame.alf_BitMap = (struct BitMap *) tag->ti_Data;
             break;
 
         case ADTA_TicksPerFrame:
@@ -1171,8 +1247,8 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 
     DoMethod(o, PRIVATE_FREECOLORTABLES);
 
-    if (animd->ad_FrameBuffer)
-        FreeBitMap(animd->ad_FrameBuffer);
+    if (animd->ad_CacheBM)
+        FreeBitMap(animd->ad_CacheBM);
 
     if (animd->ad_Tapedeck)
         DisposeObject (animd->ad_Tapedeck);
@@ -1289,13 +1365,12 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
 IPTR DT_HelpTestMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
+
     return NULL;
 }
 
 IPTR DT_HitTestMethod(struct IClass *cl, struct Gadget *g, struct gpHitTest *msg)
 {
-    struct Animation_Data *animd = INST_DATA (cl, (Object *)g);
-
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
     return GMR_GADGETHIT;
@@ -1411,7 +1486,7 @@ IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
-    if (!animd->ad_FrameBuffer)
+    if (!animd->ad_CacheBM)
     {
         IPTR bmdepth;
 
@@ -1423,15 +1498,18 @@ IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 
         if (animd->ad_KeyFrame)
         {
-            DoMethod((Object *)g, PRIVATE_RENDERBUFFER, animd->ad_KeyFrame);
+            bug("[animation.datatype] %s: rendering keyframe\n", __func__);
+            DoMethod((Object *)g, PRIVATE_MAPFRAMEPENS, animd->ad_KeyFrame);
+            DoMethod((Object *)g, PRIVATE_RENDERFRAME, animd->ad_KeyFrame, animd->ad_CacheBM);
+            animd->ad_FrameBM =  animd->ad_KeyFrame->af_Frame.alf_BitMap;
         }
     }
 
     LockLayer(0, msg->gpr_GInfo->gi_Window->WLayer);
 
-    if (animd->ad_FrameBuffer)
+    if (animd->ad_FrameBM)
     {
-        BltBitMapRastPort(animd->ad_FrameBuffer,
+        BltBitMapRastPort(animd->ad_FrameBM,
             animd->ad_HorizTop, animd->ad_VertTop,
             msg->gpr_RPort,
             animd->ad_RenderLeft, animd->ad_RenderTop, animd->ad_RenderWidth, animd->ad_RenderHeight, 0xC0);

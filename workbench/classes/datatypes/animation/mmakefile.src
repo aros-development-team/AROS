@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := animationclass animationbuffer animationplayback animationsave animationprefs
+FILES := animationclass animationbuffer animationframe animationplayback animationsave animationprefs
 
 #MM- workbench-datatypes-animation : workbench-datatype-animation
 #MM workbench-datatype-animation : includes linklibs

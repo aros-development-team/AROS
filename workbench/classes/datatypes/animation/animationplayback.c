@@ -217,9 +217,6 @@ AROS_UFH3(void, playerProc,
 
                 if ((priv->pp_PlayerFlags & PRIVPROCF_ENABLED) && (signal & (1 << priv->pp_PlaybackTick)))
                 {
-                    struct privRenderBuffer *rendFrame = (struct privRenderBuffer *)&gprMsg;
-                    rendFrame->MethodID = PRIVATE_RENDERBUFFER;
-
                     frame = priv->pp_Data->ad_FrameData.afd_FrameCurrent;
                     D(bug("[animation.datatype/PLAY]: %s: TICK (frame %d)\n", __PRETTY_FUNCTION__, frame));
 
@@ -245,39 +242,33 @@ AROS_UFH3(void, playerProc,
                     }
 
                     // frame has changed ... render it ..
-                    D(bug("[animation.datatype/PLAY]: %s: Rendering Frame #%d\n", __PRETTY_FUNCTION__, frame));
-
-                    rendFrame->Source = curFrame->af_Frame.alf_BitMap;
-                    D(bug("[animation.datatype/PLAY]: %s: #%d BitMap @ 0x%p\n", __PRETTY_FUNCTION__, NODEID(curFrame), curFrame->af_Frame.alf_BitMap));
-                    if (curFrame->af_Frame.alf_CMap)
+                    if (curFrame->af_CacheBM)
                     {
-                        D(bug("[animation.datatype/PLAY]: %s: Frame CMap @ 0x%p\n", __PRETTY_FUNCTION__, curFrame, curFrame->af_Frame.alf_CMap));
-                        DoMethod(priv->pp_Object, PRIVATE_FREEPENS);
-                        GetRGB32(curFrame->af_Frame.alf_CMap, 0UL,
-                            (curFrame->af_Frame.alf_CMap->Count < priv->pp_Data->ad_ColorData.acd_NumColors) ? curFrame->af_Frame.alf_CMap->Count : priv->pp_Data->ad_ColorData.acd_NumColors,
-                            priv->pp_Data->ad_ColorData.acd_CRegs);
-                    }
+                        D(bug("[animation.datatype/PLAY]: %s: Rendering Frame #%d\n", __PRETTY_FUNCTION__,  NODEID(curFrame)));
+                        D(bug("[animation.datatype/PLAY]: %s:      BitMap @ 0x%p\n", __PRETTY_FUNCTION__, curFrame->af_CacheBM));
 
-                    DoMethodA(priv->pp_Object, (Msg)&gprMsg);
+                        if ((priv->pp_Data->ad_FrameBM = curFrame->af_CacheBM) == NULL)
+                            priv->pp_Data->ad_FrameBM = curFrame->af_Frame.alf_BitMap;
 
-                    if ((priv->pp_Data->ad_Window) && !(priv->pp_Data->ad_Flags & ANIMDF_LAYOUT))
-                    {
-                        if (priv->pp_Data->ad_Tapedeck)
+                        if ((priv->pp_Data->ad_Window) && !(priv->pp_Data->ad_Flags & ANIMDF_LAYOUT))
                         {
-                            // update the tapedeck gadget..
-                            attrtags[0].ti_Tag = TDECK_CurrentFrame;
-                            attrtags[0].ti_Data = frame;
-                            attrtags[1].ti_Tag = TAG_IGNORE;
+                            if (priv->pp_Data->ad_Tapedeck)
+                            {
+                                // update the tapedeck gadget..
+                                attrtags[0].ti_Tag = TDECK_CurrentFrame;
+                                attrtags[0].ti_Data = frame;
+                                attrtags[1].ti_Tag = TAG_IGNORE;
 
-                            SetAttrsA((Object *)priv->pp_Data->ad_Tapedeck, attrtags);
+                                SetAttrsA((Object *)priv->pp_Data->ad_Tapedeck, attrtags);
+                            }
+
+                            // tell the top level gadget to redraw...
+                            gprMsg.MethodID   = GM_RENDER;
+                            gprMsg.gpr_RPort  = priv->pp_Data->ad_Window->RPort;
+                            gprMsg.gpr_GInfo  = NULL;
+                            gprMsg.gpr_Redraw = GREDRAW_UPDATE;
+                            DoGadgetMethodA((struct Gadget *)priv->pp_Object, priv->pp_Data->ad_Window, NULL, (Msg)&gprMsg);
                         }
-                        D(bug("[animation.datatype/PLAY]: %s: Asking DTObj to render..\n", __PRETTY_FUNCTION__));
-                        // tell the top level gadget to redraw...
-                        gprMsg.MethodID   = GM_RENDER;
-                        gprMsg.gpr_RPort  = priv->pp_Data->ad_Window->RPort;
-                        gprMsg.gpr_GInfo  = NULL;
-                        gprMsg.gpr_Redraw = GREDRAW_UPDATE;
-                        DoGadgetMethodA((struct Gadget *)priv->pp_Object, priv->pp_Data->ad_Window, NULL, (Msg)&gprMsg);
                     }
                     priv->pp_PlaybackFrame = curFrame;
                 }
