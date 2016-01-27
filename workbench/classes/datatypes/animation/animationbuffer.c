@@ -69,7 +69,7 @@ struct AnimFrame *NextToBuffer(struct ProcessPrivate *priv, struct AnimFrame *ne
     struct AnimFrame *startFrame, *prevFrame;
     BOOL loop = FALSE;
 
-    DFRAMES("[animation.datatype/PLAY]: %s()\n", __PRETTY_FUNCTION__)
+    DFRAMES("[animation.datatype/BUFFER]: %s()\n", __PRETTY_FUNCTION__)
 
     newFrame->af_Frame.MethodID = ADTM_LOADFRAME;
 
