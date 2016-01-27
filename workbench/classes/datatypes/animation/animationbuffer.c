@@ -115,7 +115,8 @@ BOOL DoFramePurge(struct Animation_Data *animd, struct AnimFrame *purgeFrame)
 {
     UWORD dispplayedframe = animd->ad_FrameData.afd_FrameCurrent;
 
-    if ((purgeFrame != animd->ad_ProcessData->pp_PlaybackFrame) &&
+    if ((purgeFrame->af_Frame.alf_BitMap != animd->ad_FrameBM) &&
+        (purgeFrame != animd->ad_ProcessData->pp_PlaybackFrame) &&
         (purgeFrame != animd->ad_ProcessData->pp_BufferFirst) &&
         (NODEID(purgeFrame) != dispplayedframe) &&
         (NODEID(purgeFrame) != 0))
@@ -210,7 +211,7 @@ AROS_UFH3(void, bufferProc,
                         D(bug("[animation.datatype/BUFFER]: %s: locked frame list...\n", __func__);)
                         ForeachNodeSafe(&priv->pp_Data->ad_FrameData.afd_AnimFrames, purgeFrame, tmpFrame)
                         {
-                            if ((purgeFrame != priv->pp_BufferFirst) && (DoFramePurge(priv->pp_Data, (struct AnimFrame *)purgeFrame)))
+                            if (DoFramePurge(priv->pp_Data, (struct AnimFrame *)purgeFrame))
                             {
                                 D(bug("[animation.datatype/BUFFER]: %s: unloading frame #%d\n", __func__, NODEID(purgeFrame));)
 
