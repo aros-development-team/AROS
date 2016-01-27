@@ -1,0 +1,53 @@
+/*
+    Copyright © 2016, The AROS Development	Team. All rights reserved.
+    $Id$
+*/
+
+#ifndef DEBUG
+#   define DEBUG 0
+#endif
+#include <aros/debug.h>
+
+#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include "animationclass.h"
+
+/*
+ *  converts/remaps a frame to a bitmap suitable for display..
+ */
+
+void cacheFrame(struct Animation_Data *animd, struct AnimFrame *frame)
+{
+    struct privRenderFrame rendFrameMsg;
+    
+    DFRAMES("[animation.datatype/PLAY]: %s()\n", __PRETTY_FUNCTION__)
+
+    if (frame->af_Frame.alf_CMap)
+    {
+        D(bug("[animation.datatype/PLAY]: %s:      CMap @ 0x%p\n", __PRETTY_FUNCTION__, frame, frame->af_Frame.alf_CMap));
+        rendFrameMsg.MethodID = PRIVATE_MAPFRAMEPENS;
+        rendFrameMsg.Frame = frame;
+        DoMethodA(animd->ad_ProcessData->pp_Object, (Msg)&rendFrameMsg);
+    }
+
+    rendFrameMsg.MethodID = PRIVATE_RENDERFRAME;
+    rendFrameMsg.Frame = frame;
+    if ((rendFrameMsg.Target = (struct BitMap *)frame->af_CacheBM) == NULL)
+    {
+        frame->af_CacheBM = (char *)AllocBitMap(animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, 24,
+                                  BMF_CLEAR, animd->ad_CacheBM);
+        rendFrameMsg.Target = (struct BitMap *)frame->af_CacheBM;
+        DFRAMES("[animation.datatype/PLAY]: %s: allocated frame cache bm @ 0x%p (friend @ 0x%p)\n", __PRETTY_FUNCTION__, frame->af_CacheBM, animd->ad_CacheBM)
+    }
+    DoMethodA(animd->ad_ProcessData->pp_Object, (Msg)&rendFrameMsg);
+}
+
+void freeFrame(struct Animation_Data *animd, struct AnimFrame *frame)
+{
+    DFRAMES("[animation.datatype/PLAY]: %s()\n", __PRETTY_FUNCTION__)
+    if (frame->af_CacheBM)
+        FreeBitMap((struct BitMap *)frame->af_CacheBM);
+}

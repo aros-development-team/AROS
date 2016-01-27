@@ -31,7 +31,11 @@
 #define ANIMPLAYER_TICKFREQ     ((struct RealTimeBase *)RealTimeBase)->rtb_Reserved1
 
 struct ProcessPrivate;
-BOOL ProcEnabled(struct ProcessPrivate *priv, volatile ULONG *flags, ULONG flag);
+struct Animation_Data;
+struct AnimFrame;
+BOOL ProcEnabled(struct ProcessPrivate *, volatile ULONG *, ULONG);
+void cacheFrame(struct Animation_Data *, struct AnimFrame *);
+void freeFrame(struct Animation_Data *, struct AnimFrame *);
 
 struct AnimColor_Data
 {
@@ -67,6 +71,18 @@ struct AnimTimer_Data
     UWORD                       atd_Tick;
 };
 
+/* our nodes used to play the anim! */
+struct AnimFrame
+{
+    struct Node                 af_Node;
+#define af_CacheBM af_Node.ln_Name
+    struct adtNewFormatFrame    af_Frame;
+};
+
+/* for sanity, we embed the frame number in the ln_type/ln_pri fields */
+#define NODEID(node)  *((UWORD *)(&((struct AnimFrame *)node)->af_Node.ln_Type))
+
+
 struct Animation_Data
 {
     ULONG                       ad_Flags;               /* object control flags                 */
@@ -77,8 +93,9 @@ struct Animation_Data
     struct AnimFrame_Data       ad_FrameData;
     struct AnimTimer_Data       ad_TimerData;
 
-    struct BitMap               *ad_FrameBuffer;        /* currently displayed frame            */
-    struct BitMap               *ad_KeyFrame;           /* animations key (first) frame         */
+    struct BitMap               *ad_FrameBM;        /* currently displayed frame            */
+    struct BitMap               *ad_CacheBM;        /* .. */
+    struct AnimFrame            *ad_KeyFrame;       /* animations key (first) frame         */
 
     UWORD                       ad_VertTop;             /* Y offset of visible rectangle        */
     UWORD                       ad_VertTotal;           
@@ -109,16 +126,6 @@ struct Animation_Data
     ULONG                       ad_BufferStep;         /* (prefs) no of frames to try to load in one go */
     UBYTE                       ad_PlayerSourceLastState;
 };
-
-/* our nodes used to play the anim! */
-struct AnimFrame
-{
-    struct Node                 af_Node;
-    struct adtNewFormatFrame    af_Frame;
-};
-
-/* for sanity, we embed the frame number in the ln_type/ln_pri fields */
-#define NODEID(node)  *((UWORD *)(&((struct AnimFrame *)node)->af_Node.ln_Type))
 
 struct ProcessPrivate
 {
@@ -152,11 +159,12 @@ struct ProcessPrivate
 #define TAG_PRIVATE             	(ADTA_Dummy + 100)
 #define PRIVATE_INITPLAYER              (TAG_PRIVATE - 1)
 #define PRIVATE_ALLOCCOLORTABLES        (TAG_PRIVATE - 2)
-#define PRIVATE_FREECOLORTABLES         (TAG_PRIVATE - 3) 
-#define PRIVATE_FREEPENS                (TAG_PRIVATE - 4)             
-#define PRIVATE_ALLOCBUFFER             (TAG_PRIVATE - 5)
-#define PRIVATE_RENDERBUFFER            (TAG_PRIVATE - 6)
-#define PRIVATE_REMAPBUFFER             (TAG_PRIVATE - 7)
+#define PRIVATE_MAPFRAMEPENS            (TAG_PRIVATE - 3)     
+#define PRIVATE_FREECOLORTABLES         (TAG_PRIVATE - 4) 
+#define PRIVATE_FREEPENS                (TAG_PRIVATE - 5)             
+#define PRIVATE_ALLOCBUFFER             (TAG_PRIVATE - 6)
+#define PRIVATE_RENDERFRAME             (TAG_PRIVATE - 7)
+#define PRIVATE_REMAPFRAME              (TAG_PRIVATE - 8)
 
 struct privAllocColorTables
 {
@@ -164,6 +172,11 @@ struct privAllocColorTables
     STACKED ULONG NumColors;
 };
 
+struct privMapFramePens
+{
+    STACKED ULONG MethodID;
+    STACKED struct AnimFrame *Frame;
+};
 
 struct privAllocBuffer
 {
@@ -172,11 +185,11 @@ struct privAllocBuffer
     STACKED UBYTE Depth;
 };
 
-
-struct privRenderBuffer
+struct privRenderFrame
 {
     STACKED ULONG MethodID;
-    STACKED struct BitMap *Source;
+    STACKED struct AnimFrame *Frame;
+    STACKED struct BitMap *Target;
 };
 
 #if DEBUG > 0

@@ -214,6 +214,8 @@ AROS_UFH3(void, bufferProc,
                             {
                                 D(bug("[animation.datatype/BUFFER]: %s: unloading frame #%d\n", __func__, NODEID(purgeFrame));)
 
+                                freeFrame(priv->pp_Data, purgeFrame);
+
                                 purgeFrame->af_Frame.MethodID = ADTM_UNLOADFRAME;
                                 DoMethodA(priv->pp_Object, (Msg)&purgeFrame->af_Frame);
 
@@ -269,6 +271,9 @@ AROS_UFH3(void, bufferProc,
                                         priv->pp_BufferFirst =  NULL;
                                 }
                                 ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
+
+                                cacheFrame(priv->pp_Data, curFrame);
+
                                 curFrame = NULL;
                             }
                             else
