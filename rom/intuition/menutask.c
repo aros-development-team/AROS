@@ -1023,7 +1023,11 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
 
     if (menu->MenuName)
         len = strlen(menu->MenuName);
-    
+    else
+    {
+        bug("Intuition: MenuEntry with missing string @ 0x%p\n", menu);
+    }
+
     if(mhd->menubarwin)
     {
         rp = mhd->menubarwin->RPort;
