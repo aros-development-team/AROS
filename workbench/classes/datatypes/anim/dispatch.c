@@ -508,9 +508,9 @@ void ReadENVPrefs( struct ClassBase *cb, struct AnimInstData *aid )
 
                 if( so = NewDTObject( (animargs . sample), DTA_GroupID, GID_SOUND, TAG_DONE ) )
                 {
-                  BYTE  *sample;
-                  ULONG  length;
-                  ULONG  period;
+                  BYTE  *sample = NULL;
+                  IPTR  length = 0;
+                  IPTR  period = 0;
 
                   /* Get sample data from object */
                   if( GetDTAttrs( so, SDTA_Sample,       (&sample),
@@ -723,9 +723,9 @@ LONG LoadFrames( struct ClassBase *cb, Object *o )
     /* Create a memory pool for frame nodes and delta buffers */
     if ((aid -> aid_Pool = CreatePool( MEMF_PUBLIC, 16384UL, 16384UL ) ) != NULL)
     {
-      APTR                 fh;                              /* handle (IFF stream handle)      */
+      BPTR                 fh = BNULL;                              /* handle (IFF stream handle)      */
       IPTR                sourcetype;                      /* type of stream (either DTST_FILE or DTST_CLIPBOARD */
-      struct BitMapHeader *bmh;                             /* obj's bitmapheader              */
+      struct BitMapHeader *bmh = NULL;                             /* obj's bitmapheader              */
       ULONG                modeid     = (ULONG)INVALID_ID;  /* anim view mode                  */
       ULONG                animwidth  = 0UL,                /* anim width                      */
                            animheight = 0UL,                /* anim height                     */
@@ -2536,18 +2536,18 @@ ULONG SaveIFFAnim( struct ClassBase *cb, struct IClass *cl, Object *o, struct dt
     {
       struct AnimInstData *aid = (struct AnimInstData *)INST_DATA( cl, o );
 
-      struct BitMapHeader *bmh;
-      IPTR                modeid;
-      ULONG               *cregs;
-      IPTR                numcolors;
+      struct BitMapHeader *bmh = NULL;
+      IPTR                modeid = 0;
+      ULONG               *cregs = NULL;
+      IPTR                numcolors = 0;
       IPTR                startframe = 0UL,
                            numframes  = 0UL,
                            framestep  = 1UL;
       IPTR                fps = 0UL;
-      struct BitMap       *keyframe;
-      IPTR                animwidth,
-                           animheight,
-                           animdepth;
+      struct BitMap       *keyframe = NULL;
+      IPTR                animwidth = 0,
+                           animheight = 0,
+                           animdepth = 0;
 
       if( GetDTAttrs( o, ADTA_BitMapHeader,     (&bmh),
                          ADTA_ModeID,           (&modeid),
