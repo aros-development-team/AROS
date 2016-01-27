@@ -174,7 +174,7 @@ AROS_UFH3(void, playerProc,
     AROS_USERFUNC_INIT
 
     struct ProcessPrivate *priv = FindTask(NULL)->tc_UserData;
-    struct AnimFrame *curFrame = NULL, *prevFrame = NULL;
+    struct AnimFrame *curFrame = NULL;
     struct gpRender gprMsg;
     struct TagItem attrtags[] =
     {
@@ -247,7 +247,7 @@ AROS_UFH3(void, playerProc,
                         D(bug("[animation.datatype/PLAY]: %s: Rendering Frame #%d\n", __PRETTY_FUNCTION__,  NODEID(curFrame)));
                         D(bug("[animation.datatype/PLAY]: %s:      BitMap @ 0x%p\n", __PRETTY_FUNCTION__, curFrame->af_CacheBM));
 
-                        if ((priv->pp_Data->ad_FrameBM = curFrame->af_CacheBM) == NULL)
+                        if ((priv->pp_Data->ad_FrameBM = (struct BitMap *)curFrame->af_CacheBM) == NULL)
                             priv->pp_Data->ad_FrameBM = curFrame->af_Frame.alf_BitMap;
 
                         if ((priv->pp_Data->ad_Window) && !(priv->pp_Data->ad_Flags & ANIMDF_LAYOUT))
