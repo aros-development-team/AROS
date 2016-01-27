@@ -229,7 +229,7 @@ IPTR DT_GetMethod(struct IClass *cl, Object *o, struct opGet *msg)
 
             superGet.MethodID = OM_GET;
             superGet.opg_AttrID = msg->opg_AttrID;
-            superGet.opg_Storage = &dt;
+            superGet.opg_Storage = (IPTR *)&dt;
             DoSuperMethodA (cl, o, (Msg) &superGet);
 
             D(bug("[gifanim.datatype] %s: DataType @ 0x%p\n", __func__, dt);)
