@@ -369,6 +369,8 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
     /* TODO: We need to merge the colors so we get a good average to use! */
     if (msg->Frame->af_Frame.alf_CMap)
     {
+        D(bug("[animation.datatype]: %s: loading frame colormap\n", __func__);)
+
         if (animd->ad_Flags & ANIMDF_REMAPPEDPENS)
             DoMethod((Object *)g, PRIVATE_FREEPENS);
 
@@ -441,6 +443,8 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
                     }
                     else
                     {
+                        animd->ad_ColorData.acd_ColorTable[0][i] = i;
+                        animd->ad_ColorData.acd_ColorTable[1][i] = i;
                         animd->ad_ColorData.acd_GRegs[i * 3] = animd->ad_ColorData.acd_CRegs[i * 3];
                         animd->ad_ColorData.acd_GRegs[i * 3 + 1] = animd->ad_ColorData.acd_CRegs[i * 3  +1];
                         animd->ad_ColorData.acd_GRegs[i * 3 + 2] = animd->ad_ColorData.acd_CRegs[i * 3 + 2];
