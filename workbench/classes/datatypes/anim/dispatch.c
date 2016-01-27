@@ -2191,7 +2191,7 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
                     if ((retval = cb->unpackilbmbody( cb, unpackbm, bmh, dlta, dltasize )) == 0)
                     {
                         /* XOR against previous frame */
-                        retval = cb->xorbm( cb, unpackbm, prevbm );
+                        retval = cb->xorbm( ah, unpackbm, prevbm );
                     }
                     return ( retval );
                 }
@@ -2328,7 +2328,7 @@ LONG DrawDLTA( struct ClassBase *cb, struct AnimInstData *aid, struct BitMap *pr
         /* Handle XOR (see above) */
         if( DoXOR && prevbm )
         {
-            cb->xorbm( cb, bm, prevbm );
+            cb->xorbm( ah, bm, prevbm );
         }
 
         if( tempbm )
