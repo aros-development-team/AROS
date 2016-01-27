@@ -200,7 +200,7 @@ IPTR DT_GetMethod(struct IClass *cl, Object *o, struct opGet *msg)
 
             superGet.MethodID = OM_GET;
             superGet.opg_AttrID = msg->opg_AttrID;
-            superGet.opg_Storage = &dt;
+            superGet.opg_Storage = (IPTR *)&dt;
             DoSuperMethodA (cl, o, (Msg) &superGet);
 
             D(bug("[anim.datatype] %s: DataType @ 0x%p\n", __func__, dt);)
@@ -997,7 +997,7 @@ IPTR DT_UnLoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
                 {
                     i = MIN( 1, i );
 
-                    retval = NULL;
+                    retval = 0;
                     break;
                 }
 
@@ -1005,7 +1005,7 @@ IPTR DT_UnLoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
                 {
                     D( kprintf( "pl overflow at %lu\n", (((struct FrameNode *)(alf -> alf_UserData)) -> fn_TimeStamp) ) );
 
-                    retval = NULL;
+                    retval = 0;
                     break;
                 }
             }
