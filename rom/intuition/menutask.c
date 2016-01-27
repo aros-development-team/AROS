@@ -634,7 +634,8 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
         }
         else
         {
-            if (!MENUS_UNDERMOUSE(IntuitionBase)) y1++;
+            if (!MENUS_UNDERMOUSE(IntuitionBase))
+                y1++;
 
             SetDrMd(rp, JAM1);
             SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLPEN : BACKGROUNDPEN]);
@@ -1017,9 +1018,12 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
 {
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort *rp;
-    WORD len = strlen(menu->MenuName);
+    WORD len = 0;
     WORD x, y;
 
+    if (menu->MenuName)
+        len = strlen(menu->MenuName);
+    
     if(mhd->menubarwin)
     {
         rp = mhd->menubarwin->RPort;
@@ -1045,17 +1049,20 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
             y = mhd->scr->BarVBorder + ((mhd->scr->BarHeight - rp->Font->tf_YSize) / 2);
         }
 
-        if (MENUS_AMIGALOOK(IntuitionBase))
+        if (menu->MenuName)
         {
-            SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
-        }
-        else
-        {
-            SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN]);
-        }
+            if (MENUS_AMIGALOOK(IntuitionBase))
+            {
+                SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
+            }
+            else
+            {
+                SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN]);
+            }
 
-        Move(rp, x, y + rp->TxBaseline);
-        Text(rp, menu->MenuName, len);
+            Move(rp, x, y + rp->TxBaseline);
+            Text(rp, menu->MenuName, len);
+        }
 
         if (MENUS_UNDERMOUSE(IntuitionBase))
         {
@@ -1076,7 +1083,7 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
             {
                 x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - 1;
             }
-            else
+            else if (menu->MenuName)
             {
                 x2 = x + TextLength(rp, menu->MenuName, len) - 1;
             }
