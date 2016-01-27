@@ -89,17 +89,17 @@ ULONG SaveGIFAnim( struct ClassBase *cb, struct IClass *cl, Object *o, struct dt
     {
       struct GIFAnimInstData *gaid = (struct GIFAnimInstData *)INST_DATA( cl, o );
 
-      ULONG                 modeid;
-      struct ColorRegister *cm;
-      ULONG                 numcolors;
-      ULONG                 startframe = 0UL,
+      IPTR                 modeid = 0;
+      struct ColorRegister *cm = NULL;
+      IPTR                 numcolors = 0;
+      IPTR                 startframe = 0UL,
                             numframes  = 0UL,
                             framestep  = 1UL;
-      ULONG                 tpf        = 0UL;
-      ULONG                 animwidth,
-                            animheight,
-                            animdepth;
-      struct BitMap        *keyframe;
+      IPTR                 tpf        = 0UL;
+      IPTR                 animwidth = 0,
+                            animheight = 0,
+                            animdepth = 0;
+      struct BitMap        *keyframe = NULL;
 
       if( GetDTAttrs( o, ADTA_ModeID,           (&modeid),
                          ADTA_ColorRegisters,   (&cm),
@@ -506,7 +506,7 @@ BOOL GIFEncode( struct GIFEncoder *genc, struct GIFAnimInstData *gaid,
 
       while ((ti = NextTagItem( (&tstate) ) ) != NULL)
       {
-        STRPTR string,
+        STRPTR string = NULL,
                label = (STRPTR)(ti -> ti_Data);
 
         (void)GetDTAttrs( (genc -> object), (ti -> ti_Tag), (&string), TAG_DONE );
