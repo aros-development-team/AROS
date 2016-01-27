@@ -1501,7 +1501,7 @@ IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 
         if (animd->ad_KeyFrame)
         {
-            bug("[animation.datatype] %s: rendering keyframe\n", __func__);
+            D(bug("[animation.datatype] %s: rendering keyframe\n", __func__);)
             DoMethod((Object *)g, PRIVATE_MAPFRAMEPENS, animd->ad_KeyFrame);
             DoMethod((Object *)g, PRIVATE_RENDERFRAME, animd->ad_KeyFrame, animd->ad_CacheBM);
             animd->ad_FrameBM =  animd->ad_KeyFrame->af_Frame.alf_BitMap;
