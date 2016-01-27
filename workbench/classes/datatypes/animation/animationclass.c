@@ -360,9 +360,8 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
         { OBP_Precision,        animd->ad_ColorData.acd_PenPrecison     },
         { TAG_DONE,             0                                       }
     };
+    ULONG mappedpen, color;
     UBYTE buffdepth;
-    ULONG curpen;
-    int i;
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
@@ -399,35 +398,35 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
 
             D(bug("[animation.datatype] %s: colormap @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorMap);)
 
-            for (i = 0; i < animd->ad_ColorData.acd_NumColors; i++)
+            for (color = 0; color < animd->ad_ColorData.acd_NumColors; color++)
             {
-                if ((buffdepth <= 8) && ((curpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors))
+                if ((buffdepth <= 8) && ((mappedpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors))
                 {
-                    animd->ad_ColorData.acd_Allocated[curpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
-                        animd->ad_ColorData.acd_CRegs[i * 3], animd->ad_ColorData.acd_CRegs[i * 3 + 1], animd->ad_ColorData.acd_CRegs[i * 3 + 2],
+                    animd->ad_ColorData.acd_Allocated[mappedpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
+                        animd->ad_ColorData.acd_CRegs[color * 3], animd->ad_ColorData.acd_CRegs[color * 3 + 1], animd->ad_ColorData.acd_CRegs[color * 3 + 2],
                         bestpenTags);
 
                     // get the actual color components for the pen.
                     GetRGB32(animd->ad_Window->WScreen->ViewPort.ColorMap,
-                        animd->ad_ColorData.acd_Allocated[curpen], 1, &animd->ad_ColorData.acd_GRegs[curpen * 3]);
+                        animd->ad_ColorData.acd_Allocated[mappedpen], 1, &animd->ad_ColorData.acd_GRegs[mappedpen * 3]);
 
-                    D(bug("[animation.datatype] %s: bestpen #%d for %02x%02x%02x\n", __func__, animd->ad_ColorData.acd_Allocated[curpen], (animd->ad_ColorData.acd_CRegs[i * 3] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 1] & 0xFF), (animd->ad_ColorData.acd_CRegs[i * 3 + 2] & 0xFF));)
+                    D(bug("[animation.datatype] %s: bestpen #%d for %02x%02x%02x\n", __func__, animd->ad_ColorData.acd_Allocated[mappedpen], (animd->ad_ColorData.acd_CRegs[color * 3] & 0xFF), (animd->ad_ColorData.acd_CRegs[color * 3 + 1] & 0xFF), (animd->ad_ColorData.acd_CRegs[color * 3 + 2] & 0xFF));)
 
-                    animd->ad_ColorData.acd_ColorTable[0][i] = animd->ad_ColorData.acd_Allocated[curpen];
-                    animd->ad_ColorData.acd_ColorTable[1][i] = animd->ad_ColorData.acd_Allocated[curpen];
+                    animd->ad_ColorData.acd_ColorTable[0][color] = animd->ad_ColorData.acd_Allocated[mappedpen];
+                    animd->ad_ColorData.acd_ColorTable[1][color] = animd->ad_ColorData.acd_Allocated[mappedpen];
                     
                     if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
                     {
-                        D(bug("[animation.datatype] %s: allocating halfbrite pen %d\n", __func__, i + 32);)
-                        if ((curpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors)
+                        D(bug("[animation.datatype] %s: allocating halfbrite pen %d\n", __func__, color + 32);)
+                        if ((mappedpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors)
                         {
-                            animd->ad_ColorData.acd_Allocated[curpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
-                                animd->ad_ColorData.acd_CRegs[i * 3] >> 1, animd->ad_ColorData.acd_CRegs[i * 3 + 1] >> 1, animd->ad_ColorData.acd_CRegs[i * 3 + 2] >> 1,
+                            animd->ad_ColorData.acd_Allocated[mappedpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
+                                animd->ad_ColorData.acd_CRegs[color * 3] >> 1, animd->ad_ColorData.acd_CRegs[color * 3 + 1] >> 1, animd->ad_ColorData.acd_CRegs[color * 3 + 2] >> 1,
                                 bestpenTags);
                             // get the actual color components for the pen.
                             GetRGB32(animd->ad_Window->WScreen->ViewPort.ColorMap,
-                                animd->ad_ColorData.acd_Allocated[curpen], 1, &animd->ad_ColorData.acd_GRegs[curpen * 3]);
-                             animd->ad_ColorData.acd_ColorTable[1][i + 32] = animd->ad_ColorData.acd_Allocated[curpen];
+                                animd->ad_ColorData.acd_Allocated[mappedpen], 1, &animd->ad_ColorData.acd_GRegs[mappedpen * 3]);
+                             animd->ad_ColorData.acd_ColorTable[1][color + 32] = animd->ad_ColorData.acd_Allocated[mappedpen];
                         }
                         else
                         {
@@ -443,16 +442,16 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
                     }
                     else
                     {
-                        animd->ad_ColorData.acd_ColorTable[0][i] = i;
-                        animd->ad_ColorData.acd_ColorTable[1][i] = i;
-                        animd->ad_ColorData.acd_GRegs[i * 3] = animd->ad_ColorData.acd_CRegs[i * 3];
-                        animd->ad_ColorData.acd_GRegs[i * 3 + 1] = animd->ad_ColorData.acd_CRegs[i * 3  +1];
-                        animd->ad_ColorData.acd_GRegs[i * 3 + 2] = animd->ad_ColorData.acd_CRegs[i * 3 + 2];
+                        animd->ad_ColorData.acd_ColorTable[0][color] = color;
+                        animd->ad_ColorData.acd_ColorTable[1][color] = color;
+                        animd->ad_ColorData.acd_GRegs[color * 3] = animd->ad_ColorData.acd_CRegs[color * 3];
+                        animd->ad_ColorData.acd_GRegs[color * 3 + 1] = animd->ad_ColorData.acd_CRegs[color * 3  +1];
+                        animd->ad_ColorData.acd_GRegs[color * 3 + 2] = animd->ad_ColorData.acd_CRegs[color * 3 + 2];
                         if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
                         {
-                            animd->ad_ColorData.acd_GRegs[(i + 32) * 3] = animd->ad_ColorData.acd_CRegs[i * 3] >> 1;
-                            animd->ad_ColorData.acd_GRegs[(i + 32) * 3 + 1] = animd->ad_ColorData.acd_CRegs[i * 3  +1] >> 1;
-                            animd->ad_ColorData.acd_GRegs[(i + 32) * 3 + 2] = animd->ad_ColorData.acd_CRegs[i * 3 + 2] >> 1;
+                            animd->ad_ColorData.acd_GRegs[(color + 32) * 3] = animd->ad_ColorData.acd_CRegs[color * 3] >> 1;
+                            animd->ad_ColorData.acd_GRegs[(color + 32) * 3 + 1] = animd->ad_ColorData.acd_CRegs[color * 3  +1] >> 1;
+                            animd->ad_ColorData.acd_GRegs[(color + 32) * 3 + 2] = animd->ad_ColorData.acd_CRegs[color * 3 + 2] >> 1;
                         }
                     }
                 }
