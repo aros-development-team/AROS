@@ -142,8 +142,8 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
     /* Create a memory pool for frame nodes */
     if ((gaid -> gaid_Pool = CreatePool( MEMF_PUBLIC, 8192UL, 8192UL ) ) != NULL)
     {
-      BPTR                 fh;                             /* handle (file handle)      */
-      IPTR                 sourcetype;                     /* type of stream (either DTST_FILE or DTST_RAM) */
+      BPTR                 fh = BNULL;                             /* handle (file handle)      */
+      IPTR                 sourcetype = 0;                     /* type of stream (either DTST_FILE or DTST_RAM) */
       ULONG                modeid /*= (ULONG)INVALID_ID*/; /* anim view mode                  */
       ULONG                animwidth,                      /* anim width                      */
                            animheight,                     /* anim height                     */
@@ -1323,13 +1323,13 @@ int DoExtension( struct ClassBase *cb, Object *o, struct GIFAnimInstData *gaid, 
 
       case 0xfe:              /* Comment Extension */
       {
-          STRPTR annotation;
+          STRPTR annotation = NULL;
 
           /* Get all comment extension chunks, and append them on the DTA_ObjAnnotation string we've created before */
           while( (count = GetDataBlock( cb, gaid, buf )), ((count != 0) && (count != -1)) )
           {
             ULONG  size;
-            STRPTR oldannotation;
+            STRPTR oldannotation = NULL;
 
             buf[ 255 ] = '\0'; /* terminate explicitly */
 

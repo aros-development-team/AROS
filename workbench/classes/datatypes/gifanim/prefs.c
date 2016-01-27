@@ -417,9 +417,9 @@ void ReadENVPrefs( struct ClassBase *cb, struct GIFAnimInstData *gaid, struct GI
 
                   if ((so = NewDTObject( (gifanimargs . sample), DTA_GroupID, GID_SOUND, TAG_DONE ) ) != NULL)
                   {
-                    BYTE  *sample;
-                    ULONG  length;
-                    ULONG  period;
+                    BYTE  *sample = NULL;
+                    IPTR  length = 0;
+                    IPTR  period = 0;
 
                     /* Get sample data from object */
                     if( GetDTAttrs( so, SDTA_Sample,       (&sample),

@@ -86,8 +86,8 @@ void IBMPC2ISOLatin1( STRPTR ibmpc, STRPTR isolatin1 )
 /* copy a given IFF CMAP chunk into a picture.datatype or animation.datatype object */
 BOOL CMAP2Object( struct ClassBase *cb, Object *o, UBYTE *rgb, ULONG rgbsize )
 {
-    struct ColorRegister *acm;
-    ULONG                *acregs;
+    struct ColorRegister *acm = NULL;
+    ULONG                *acregs = NULL;
     IPTR                 nc;
 
     D(bug("[gifanim.datatype]: %s()\n", __func__));
