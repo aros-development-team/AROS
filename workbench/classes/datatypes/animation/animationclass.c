@@ -164,7 +164,7 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
         animd->ad_ProcessData = AllocMem(sizeof(struct ProcessPrivate), MEMF_ANY);
         animd->ad_ProcessData->pp_Object = (Object *)g;
         animd->ad_ProcessData->pp_Data = animd;
-
+        
         InitSemaphore(&animd->ad_FrameData.afd_AnimFramesLock);
         InitSemaphore(&animd->ad_ColorData.acd_PenLock);
 
@@ -271,21 +271,28 @@ IPTR DT_FreePens(struct IClass *cl, struct Gadget *g, Msg msg)
 IPTR DT_FreeColorTables(struct IClass *cl, struct Gadget *g, Msg msg)
 {
     struct Animation_Data *animd = INST_DATA (cl, g);
-    UWORD needcolors = animd->ad_ColorData.acd_NumColors;
+    UWORD havecolors, needcolors;
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
+    havecolors = needcolors = animd->ad_ColorData.acd_NumColors;
+    
     if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
-        needcolors <<= 1;
+    {
+        if (needcolors < 64)
+            needcolors = 64;
+        if (havecolors > 32)
+            havecolors = 32;
+    }
 
     if (animd->ad_ColorData.acd_ColorRegs)
     {
-        FreeMem(animd->ad_ColorData.acd_ColorRegs, (1 + animd->ad_ColorData.acd_NumColors) * sizeof (struct ColorRegister));
+        FreeMem(animd->ad_ColorData.acd_ColorRegs, (1 + havecolors) * sizeof (struct ColorRegister));
         animd->ad_ColorData.acd_ColorRegs = NULL;
     }
     if (animd->ad_ColorData.acd_ColorTable[0])
     {
-        FreeMem(animd->ad_ColorData.acd_ColorTable[0], (1 + animd->ad_ColorData.acd_NumColors) * sizeof (UBYTE));
+        FreeMem(animd->ad_ColorData.acd_ColorTable[0], (1 + havecolors) * sizeof (UBYTE));
         animd->ad_ColorData.acd_ColorTable[0] = NULL;
     }
     if (animd->ad_ColorData.acd_ColorTable[1])
@@ -301,7 +308,7 @@ IPTR DT_FreeColorTables(struct IClass *cl, struct Gadget *g, Msg msg)
     }
     if (animd->ad_ColorData.acd_CRegs)
     {
-        FreeMem(animd->ad_ColorData.acd_CRegs, (1 + animd->ad_ColorData.acd_NumColors) * (sizeof (ULONG) * 3));
+        FreeMem(animd->ad_ColorData.acd_CRegs, (1 + havecolors) * (sizeof (ULONG) * 3));
         animd->ad_ColorData.acd_CRegs = NULL;
     }
     if (animd->ad_ColorData.acd_GRegs)
@@ -327,22 +334,29 @@ IPTR DT_AllocColorTables(struct IClass *cl, struct Gadget *g, struct privAllocCo
 
     if (msg->NumColors > 0)
     {
-        UWORD needcolors = msg->NumColors;
+        UWORD havecolors, needcolors;
+
+        havecolors = needcolors = msg->NumColors;
 
         if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
-            needcolors <<= 1;
+        {
+            if (needcolors < 64)
+                needcolors = 64;
+            if (havecolors > 32)
+                havecolors = 32;
+        }
 
-        animd->ad_ColorData.acd_ColorRegs = AllocMem((1 + msg->NumColors) * sizeof (struct ColorRegister), MEMF_CLEAR);
+        animd->ad_ColorData.acd_ColorRegs = AllocMem((1 + havecolors) * sizeof (struct ColorRegister), MEMF_CLEAR);
         D(bug("[animation.datatype] %s: ColorRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorRegs);)
-        animd->ad_ColorData.acd_ColorTable[0] = AllocMem((1 + msg->NumColors) * sizeof (UBYTE), MEMF_CLEAR);              // shared pen table
+        animd->ad_ColorData.acd_ColorTable[0] = AllocMem((1 + havecolors) * sizeof (UBYTE), MEMF_CLEAR);                // shared pen table
         D(bug("[animation.datatype] %s: ColorTable @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorTable[0]);)
         animd->ad_ColorData.acd_ColorTable[1] = AllocMem((1 + needcolors) * sizeof (UBYTE), MEMF_CLEAR);
         D(bug("[animation.datatype] %s: ColorTable2 @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorTable[1]);)
         animd->ad_ColorData.acd_Allocated = AllocMem((1 + needcolors) * sizeof (UBYTE), MEMF_CLEAR);
         D(bug("[animation.datatype] %s: Allocated pens Array @ 0x%p\n", __func__, animd->ad_ColorData.acd_Allocated);)
-        animd->ad_ColorData.acd_CRegs = AllocMem((1 + msg->NumColors) * (sizeof (ULONG) * 3), MEMF_CLEAR);                // RGB32 triples used with SetRGB32CM
+        animd->ad_ColorData.acd_CRegs = AllocMem((1 + havecolors) * (sizeof (ULONG) * 3), MEMF_CLEAR);                  // RGB32 triples used with SetRGB32CM
         D(bug("[animation.datatype] %s: CRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_CRegs);)
-        animd->ad_ColorData.acd_GRegs = AllocMem((1 + needcolors) * (sizeof (ULONG) * 3), MEMF_CLEAR);                    // remapped version of ad_ColorData.acd_CRegs
+        animd->ad_ColorData.acd_GRegs = AllocMem((1 + needcolors) * (sizeof (ULONG) * 3), MEMF_CLEAR);                  // remapped version of ad_ColorData.acd_CRegs
         D(bug("[animation.datatype] %s: GRegs @ 0x%p\n", __func__, animd->ad_ColorData.acd_GRegs);)
     }
 
@@ -378,36 +392,44 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
             animd->ad_ColorData.acd_CRegs);
     }
 
-    if (animd->ad_Window)
+
+    if ((animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
     {
-        if ((animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
+        UWORD havecolors, needcolors;
+
+        havecolors = needcolors = animd->ad_ColorData.acd_NumColors;
+
+        if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
         {
-            UWORD numcolors = animd->ad_ColorData.acd_NumColors;
+            if (needcolors < 64)
+                needcolors = 64;
+            if (havecolors > 32)
+                havecolors = 32;
+        }
 
-            if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
-                numcolors <<= 1;
+        buffdepth = (UBYTE)GetBitMapAttr(animd->ad_CacheBM, BMA_DEPTH);
 
-            buffdepth = (UBYTE)GetBitMapAttr(animd->ad_CacheBM, BMA_DEPTH);
+        ObtainSemaphore(&animd->ad_ColorData.acd_PenLock);
 
-            ObtainSemaphore(&animd->ad_ColorData.acd_PenLock);
+        animd->ad_Flags |= ANIMDF_REMAPPEDPENS;
 
-            animd->ad_Flags |= ANIMDF_REMAPPEDPENS;
+        if ((animd->ad_Window) && !(animd->ad_ColorData.acd_ColorMap))
+            animd->ad_ColorData.acd_ColorMap = animd->ad_Window->WScreen->ViewPort.ColorMap;
 
-            if (!(animd->ad_ColorData.acd_ColorMap))
-                animd->ad_ColorData.acd_ColorMap = animd->ad_Window->WScreen->ViewPort.ColorMap;
+        D(bug("[animation.datatype] %s: colormap @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorMap);)
 
-            D(bug("[animation.datatype] %s: colormap @ 0x%p\n", __func__, animd->ad_ColorData.acd_ColorMap);)
-
-            for (color = 0; color < animd->ad_ColorData.acd_NumColors; color++)
+        for (color = 0; color < havecolors; color++)
+        {
+            if ((buffdepth <= 8) && ((mappedpen = animd->ad_ColorData.acd_NumAlloc++) < needcolors))
             {
-                if ((buffdepth <= 8) && ((mappedpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors))
+                if (animd->ad_ColorData.acd_ColorMap)
                 {
                     animd->ad_ColorData.acd_Allocated[mappedpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
                         animd->ad_ColorData.acd_CRegs[color * 3], animd->ad_ColorData.acd_CRegs[color * 3 + 1], animd->ad_ColorData.acd_CRegs[color * 3 + 2],
                         bestpenTags);
 
                     // get the actual color components for the pen.
-                    GetRGB32(animd->ad_Window->WScreen->ViewPort.ColorMap,
+                    GetRGB32(animd->ad_ColorData.acd_ColorMap,
                         animd->ad_ColorData.acd_Allocated[mappedpen], 1, &animd->ad_ColorData.acd_GRegs[mappedpen * 3]);
 
                     D(bug("[animation.datatype] %s: bestpen #%d for %02x%02x%02x\n", __func__, animd->ad_ColorData.acd_Allocated[mappedpen], (animd->ad_ColorData.acd_CRegs[color * 3] & 0xFF), (animd->ad_ColorData.acd_CRegs[color * 3 + 1] & 0xFF), (animd->ad_ColorData.acd_CRegs[color * 3 + 2] & 0xFF));)
@@ -418,46 +440,50 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
                     if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
                     {
                         D(bug("[animation.datatype] %s: allocating halfbrite pen %d\n", __func__, color + 32);)
-                        if ((mappedpen = animd->ad_ColorData.acd_NumAlloc++) < numcolors)
+                        if ((mappedpen = animd->ad_ColorData.acd_NumAlloc++) < needcolors)
                         {
                             animd->ad_ColorData.acd_Allocated[mappedpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
                                 animd->ad_ColorData.acd_CRegs[color * 3] >> 1, animd->ad_ColorData.acd_CRegs[color * 3 + 1] >> 1, animd->ad_ColorData.acd_CRegs[color * 3 + 2] >> 1,
                                 bestpenTags);
                             // get the actual color components for the pen.
-                            GetRGB32(animd->ad_Window->WScreen->ViewPort.ColorMap,
+                            GetRGB32(animd->ad_ColorData.acd_ColorMap,
                                 animd->ad_ColorData.acd_Allocated[mappedpen], 1, &animd->ad_ColorData.acd_GRegs[mappedpen * 3]);
                              animd->ad_ColorData.acd_ColorTable[1][color + 32] = animd->ad_ColorData.acd_Allocated[mappedpen];
                         }
                         else
                         {
-                            bug("[animation.datatype] %s: out of pen storage\n");
+                            bug("[animation.datatype] %s: ERROR: out of pen storage\n");
                         }
                     }
                 }
                 else
                 {
-                    if (animd->ad_ColorData.acd_NumAlloc >= numcolors)
+                    bug("[animation.datatype] %s: ERROR: no colormap to remap against\n");
+                }
+            }
+            else
+            {
+                if (animd->ad_ColorData.acd_NumAlloc >= needcolors)
+                {
+                    bug("[animation.datatype] %s: ERROR: out of pen storage\n");
+                }
+                else
+                {
+                    animd->ad_ColorData.acd_ColorTable[0][color] = color;
+                    animd->ad_ColorData.acd_ColorTable[1][color] = color;
+                    animd->ad_ColorData.acd_GRegs[color * 3] = animd->ad_ColorData.acd_CRegs[color * 3];
+                    animd->ad_ColorData.acd_GRegs[color * 3 + 1] = animd->ad_ColorData.acd_CRegs[color * 3  +1];
+                    animd->ad_ColorData.acd_GRegs[color * 3 + 2] = animd->ad_ColorData.acd_CRegs[color * 3 + 2];
+                    if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
                     {
-                        bug("[animation.datatype] %s: out of pen storage\n");
-                    }
-                    else
-                    {
-                        animd->ad_ColorData.acd_ColorTable[0][color] = color;
-                        animd->ad_ColorData.acd_ColorTable[1][color] = color;
-                        animd->ad_ColorData.acd_GRegs[color * 3] = animd->ad_ColorData.acd_CRegs[color * 3];
-                        animd->ad_ColorData.acd_GRegs[color * 3 + 1] = animd->ad_ColorData.acd_CRegs[color * 3  +1];
-                        animd->ad_ColorData.acd_GRegs[color * 3 + 2] = animd->ad_ColorData.acd_CRegs[color * 3 + 2];
-                        if (animd->ad_ModeID & EXTRAHALFBRITE_KEY)
-                        {
-                            animd->ad_ColorData.acd_GRegs[(color + 32) * 3] = animd->ad_ColorData.acd_CRegs[color * 3] >> 1;
-                            animd->ad_ColorData.acd_GRegs[(color + 32) * 3 + 1] = animd->ad_ColorData.acd_CRegs[color * 3  +1] >> 1;
-                            animd->ad_ColorData.acd_GRegs[(color + 32) * 3 + 2] = animd->ad_ColorData.acd_CRegs[color * 3 + 2] >> 1;
-                        }
+                        animd->ad_ColorData.acd_GRegs[(color + 32) * 3] = animd->ad_ColorData.acd_CRegs[color * 3] >> 1;
+                        animd->ad_ColorData.acd_GRegs[(color + 32) * 3 + 1] = animd->ad_ColorData.acd_CRegs[color * 3  +1] >> 1;
+                        animd->ad_ColorData.acd_GRegs[(color + 32) * 3 + 2] = animd->ad_ColorData.acd_CRegs[color * 3 + 2] >> 1;
                     }
                 }
             }
-            ReleaseSemaphore(&animd->ad_ColorData.acd_PenLock);
         }
+        ReleaseSemaphore(&animd->ad_ColorData.acd_PenLock);
     }
     return 0;
 }
@@ -903,6 +929,7 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
         { TAG_DONE,     0}
     };
     struct TagItem *tag;
+    IPTR allocpens = 0;
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
@@ -989,7 +1016,7 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
         case ADTA_NumColors:
             D(bug("[animation.datatype] %s: ADTA_NumColors (%d)\n", __func__, tag->ti_Data);)
-            DoMethod((Object *)g, PRIVATE_ALLOCCOLORTABLES, tag->ti_Data);
+            allocpens = tag->ti_Data;
             break;
 
         case ADTA_NumSparse:
@@ -1110,6 +1137,15 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
                 animd->ad_Flags &= ~(ANIMDF_ADJUSTPALETTE);
             break;
         }
+    }
+
+    if (allocpens > 0)
+    {
+        /*
+         * we allocate pens now since the ModeID may
+         * have been changed after the number of colors
+         */
+        DoMethod((Object *)g, PRIVATE_ALLOCCOLORTABLES, allocpens);
     }
 
     return (DoSuperMethodA (cl, g, (Msg) msg));
