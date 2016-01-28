@@ -40,38 +40,36 @@ LONG generic_unpackshortdelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE 
     {
         opptr = AROS_BE2LONG(lists[p]);
         DFORMATS("[anim.datatype] %s:   plane #%d @ 0x%p\n", __func__, p, bm->Planes[p])
-        if ((opptr == 0) || (opptr > dltasize))
+        if ((opptr != 0) && (opptr < dltasize))
         {
-            // No ops for this plane or invalid pointer.
-            DFORMATS("[anim.datatype] %s: no ops/invalid op ptr (0x%08x)\n", __func__, opptr)
-            continue;
-        }
-        ops = (const UWORD *)((IPTR)dlta + opptr);
-        pixels = (UWORD *)bm->Planes[p];
-        stop = (UWORD *)((IPTR)pixels + (bm->Rows  * bm->BytesPerRow));
-        while ((offset = AROS_BE2WORD(*ops)) != (WORD)-1)
-        {
-            ops++;
-
-            if (offset > (WORD)-1)
+            ops = (const UWORD *)((IPTR)dlta + opptr);
+            pixels = (UWORD *)((IPTR)bm->Planes[p]);
+            stop = (UWORD *)((IPTR)pixels + (bm->Rows * bm->BytesPerRow));
+            while (*ops  != 0xFFFF)
             {
-                pixels = (UWORD *)((IPTR)pixels + (offset << 1));
-                cnt = 1;
-            }
-            else
-            {
-                pixels = (UWORD *)((IPTR)pixels - ((offset + 2) << 1));
-                cnt = AROS_BE2WORD(*ops);
+                offset = AROS_BE2WORD(*ops);
                 ops++;
-            }
 
-            while (cnt-- > 0)
-            {
-                if (pixels < stop)
-                    *pixels = *ops;
+                if (offset >= 0)
+                {
+                    if ((pixels = (UWORD *)((IPTR)pixels + (offset << 1))) <= stop)
+                        *pixels = *ops;
+                    ops++;
+                }
+                else
+                {
+                    pixels = (UWORD *)((IPTR)pixels - ((offset + 2) << 1));
+                    cnt = AROS_BE2WORD(*ops);
+                    ops++;
 
-                pixels++;
-                ops++;
+                    while (cnt-- > 0)
+                    {
+                        pixels++;
+                        if (pixels <= stop)
+                            *pixels = *ops;
+                        ops++;
+                    }
+                }
             }
         }
     }
