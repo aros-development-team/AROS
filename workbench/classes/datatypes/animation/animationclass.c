@@ -410,8 +410,6 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
 
         ObtainSemaphore(&animd->ad_ColorData.acd_PenLock);
 
-        animd->ad_Flags |= ANIMDF_REMAPPEDPENS;
-
         if ((animd->ad_Window) && !(animd->ad_ColorData.acd_ColorMap))
             animd->ad_ColorData.acd_ColorMap = animd->ad_Window->WScreen->ViewPort.ColorMap;
 
@@ -423,6 +421,9 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
             {
                 if (animd->ad_ColorData.acd_ColorMap)
                 {
+
+                    animd->ad_Flags |= ANIMDF_REMAPPEDPENS;
+
                     animd->ad_ColorData.acd_Allocated[mappedpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
                         animd->ad_ColorData.acd_CRegs[color * 3], animd->ad_ColorData.acd_CRegs[color * 3 + 1], animd->ad_ColorData.acd_CRegs[color * 3 + 2],
                         bestpenTags);
