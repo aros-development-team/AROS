@@ -155,8 +155,8 @@ LONG generic_unpackanim8worddelta(struct AnimHeader *anhd, struct BitMap *bm, UB
     UWORD numcols = bm->BytesPerRow >> 1;
     UWORD pitch = bm->BytesPerRow;
     const UWORD xormask = (anhd->ah_Flags & ahfXOR) ? 0xFFFF : 0x00;
-    const UWORD *ops, *pixel, *stop;
-    UWORD x;
+    const UWORD *ops;
+    UWORD x, *pixel, *stop;
     UBYTE p;
 
     DFORMATS("[anim.datatype] %s()\n", __func__)

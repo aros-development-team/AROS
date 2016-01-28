@@ -31,10 +31,9 @@ LONG generic_unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *
     UWORD pitch = bm->BytesPerRow;
     ULONG opptr;
     const UBYTE xormask = (anhd->ah_Flags & ahfXOR) ? 0xFF : 0x00;
-    UBYTE *pixels;
-    UBYTE *stop;
+    UBYTE *pixels, *stop;
     const UBYTE *ops;
-    UBYTE p;
+    UBYTE p, opcount, op, cnt, fill;
     UWORD x;
 
     DFORMATS("[anim.datatype] %s()\n", __func__)
@@ -57,13 +56,13 @@ LONG generic_unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *
         {
             pixels = (UBYTE *)((IPTR)bm->Planes[p] + x);
             stop = (UBYTE *)((IPTR)pixels + ((bm->Rows - 1) * pitch));
-            BYTE opcount = *ops++;
+            opcount = *ops++;
             while (opcount-- > 0)
             {
-                UBYTE op = *ops++;
+                op = *ops++;
                 if (op & 0x80)
                 { // Uniq op: copy data literally
-                    UBYTE cnt = op & 0x7F;
+                    cnt = op & 0x7F;
                     while (cnt-- > 0)
                     {
                         if (pixels <= stop)
@@ -76,9 +75,6 @@ LONG generic_unpackbytedelta(struct AnimHeader *anhd, struct BitMap *bm, UBYTE *
                 }
                 else if (op == 0)
                 { // Same op: copy one entry to several rows
-                    UBYTE cnt;
-                    UBYTE fill;
-
                     cnt = *ops;
                     ops++;
                     fill = *ops;
