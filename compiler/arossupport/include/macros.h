@@ -238,7 +238,7 @@
 	    : AROS_SWAP_WORDS_QUAD_CPU(q)     \
     )
 #else
-#   define AROS_SWAP_WORDS_QUAD(l) AROS_SWAP_WORDS_QUAD_CPU(l)
+#   define AROS_SWAP_WORDS_QUAD(q) AROS_SWAP_WORDS_QUAD_CPU(q)
 #endif
 
 #if !defined(AROS_SWAP_LONGS_QUAD_CPU)
