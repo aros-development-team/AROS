@@ -738,7 +738,7 @@ ADD2LIBS("datatypes/animation.datatype", 0, struct Library *, AnimationBase)
 
 static int LibInit(struct ClassBase *cb)
 {
-    bug("[gifanim.datatype] %s()\n", __func__);
+    D(bug("[anim.datatype] %s()\n", __func__);)
 #endif
 
     InitSemaphore( (&(cb -> cb_Lock)) );
