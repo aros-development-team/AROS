@@ -387,11 +387,10 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
         if (animd->ad_Flags & ANIMDF_REMAPPEDPENS)
             DoMethod((Object *)g, PRIVATE_FREEPENS);
 
-        GetRGB32(msg->Frame->af_Frame.alf_CMap, 0UL,
+        GetRGB32(msg->Frame->af_Frame.alf_CMap, 0,
             (msg->Frame->af_Frame.alf_CMap->Count < animd->ad_ColorData.acd_NumColors) ? msg->Frame->af_Frame.alf_CMap->Count : animd->ad_ColorData.acd_NumColors,
             animd->ad_ColorData.acd_CRegs);
     }
-
 
     if ((animd->ad_ColorData.acd_NumColors > 0) && !(animd->ad_Flags & ANIMDF_REMAPPEDPENS))
     {
@@ -558,18 +557,16 @@ IPTR DT_RemapFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame *
     struct Animation_Data *animd = INST_DATA (cl, g);
     struct RastPort *remapRP, *targetRP;
     UBYTE *tmpline, *outline;
-    UBYTE buffdepth;
+    UBYTE buffdepth, srcdepth;
     ULONG curpen;
     int i, x;
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
-    buffdepth = (UBYTE)GetBitMapAttr(msg->Target, BMA_DEPTH);
-
     // remap the frame bitmap ..
     if (msg->Target && ((tmpline = AllocVec(animd->ad_BitMapHeader.bmh_Width, MEMF_ANY)) != NULL))
     {
-        UBYTE srcdepth;
+        buffdepth = (UBYTE)GetBitMapAttr(msg->Target, BMA_DEPTH);
         srcdepth = (UBYTE)GetBitMapAttr(msg->Frame->af_Frame.alf_BitMap, BMA_DEPTH);
 
         if (((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8)) || (buffdepth > 8))
@@ -765,6 +762,10 @@ IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
     case ADTA_FrameIncrement:
         D(bug("[animation.datatype] %s: ADTA_FrameIncrement\n", __func__);)
         *msg->opg_Storage = (IPTR) 10UL;
+        break;
+
+    case ADTA_NumPrefetchFrames:
+        *msg->opg_Storage = (IPTR) animd->ad_ProcessData->pp_BufferFrames;
         break;
 
     case ADTA_Sample:
@@ -992,7 +993,8 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
             break;
 
         case ADTA_TicksPerFrame:
-           D(bug("[animation.datatype] %s: ADTA_TicksPerFrame (%d)\n", __func__, tag->ti_Data);)
+            D(bug("[animation.datatype] %s: ADTA_TicksPerFrame (%d)\n", __func__, tag->ti_Data);)
+            animd->ad_TimerData.atd_TicksPerFrame = tag->ti_Data;
             break;
 
         case ADTA_FramesPerSecond:
@@ -1004,14 +1006,15 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
                 animd->ad_TimerData.atd_FramesPerSec = 60;
             D(bug("[animation.datatype] %s: = %d\n", __func__, animd->ad_TimerData.atd_FramesPerSec));
             animd->ad_TimerData.atd_TicksPerFrame = (ANIMPLAYER_TICKFREQ / animd->ad_TimerData.atd_FramesPerSec);
-            if (animd->ad_ProcessData)
-            {
-                animd->ad_ProcessData->pp_BufferFrames = animd->ad_BufferTime * animd->ad_TimerData.atd_FramesPerSec;
-            }
             break;
 
         case ADTA_FrameIncrement:
             D(bug("[animation.datatype] %s: ADTA_FrameIncrement (%d)\n", __func__, tag->ti_Data);)
+            break;
+
+        case ADTA_NumPrefetchFrames:
+            D(bug("[animation.datatype] %s: ADTA_NumPrefetchFrames (%d)\n", __func__, tag->ti_Data);)
+            animd->ad_ProcessData->pp_BufferFrames = tag->ti_Data;
             break;
 
         case ADTA_NumColors:
@@ -1173,12 +1176,14 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
             bug("[animation.datatype] %s: for '%s'\n", __func__, OCLASS((Object *)g)->cl_ID);
         )
         animd = (struct Animation_Data *) INST_DATA(cl, g);
+        memset(animd, 0 , sizeof(struct Animation_Data));
 
         NewList(&animd->ad_FrameData.afd_AnimFrames);
+        D(bug("[animation.datatype] %s: FrameList @ 0x%p\n", __func__, &animd->ad_FrameData.afd_AnimFrames);)
 
         animd->ad_Flags = ANIMDF_CONTROLPANEL|ANIMDF_REMAP;
 #if (1)
-        animd->ad_Flags |= ANIMDF_IMMEDIATE;
+        animd->ad_Flags |= (ANIMDF_REPEAT|ANIMDF_IMMEDIATE);
 #endif
         animd->ad_TimerData.atd_FramesPerSec = 60;
         animd->ad_TimerData.atd_TicksPerFrame = ANIMPLAYER_TICKFREQ / animd->ad_TimerData.atd_FramesPerSec;

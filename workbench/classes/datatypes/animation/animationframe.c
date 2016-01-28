@@ -50,5 +50,8 @@ void freeFrame(struct Animation_Data *animd, struct AnimFrame *frame)
 {
     DFRAMES("[animation.datatype/CACHE]: %s()\n", __PRETTY_FUNCTION__)
     if (frame->af_CacheBM)
+    {
         FreeBitMap((struct BitMap *)frame->af_CacheBM);
+        frame->af_CacheBM = NULL;
+    }
 }
