@@ -642,7 +642,7 @@ SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULO
     res = oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
     AROS_HOST_BARRIER
     if (res != -1)
-	res = emulbase->pdata.SysIFace->fstat((int)fh->fd, &st);
+	res = emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st);
     AROS_HOST_BARRIER
 
     DSEEK(bug("[emul] Original position: %lu\n", (unsigned long)oldpos));
