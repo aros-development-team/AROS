@@ -8,8 +8,11 @@
 
 /* HISTORY:  28.01.2001  SDuvan  --  Implemented */
 
-
+#ifndef DEBUG
+#define DEBUG 0
+#endif
 #include <aros/debug.h>
+
 #include <aros/asmcall.h>
 #include <dos/dos.h>
 #include <proto/realtime.h>
@@ -40,7 +43,7 @@ AROS_UFH3(void, Pulse,
 
     APTR lock;
 
-    kprintf("Pulse task entered (%p)\n", FindTask(NULL));
+    D(bug("Pulse task entered (%p)\n", FindTask(NULL));)
 
     while (TRUE)
     {
