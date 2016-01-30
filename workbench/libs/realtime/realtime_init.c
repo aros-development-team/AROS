@@ -8,6 +8,11 @@
 
 /* HISTORY:      25.06.99   SDuvan  Began implementing... */
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+#include <aros/debug.h>
+
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <proto/exec.h>
@@ -18,9 +23,6 @@
 #include "realtime_intern.h"
 #include LC_LIBDEFS_FILE
 
-#undef DEBUG
-#define DEBUG 1
-#include <aros/debug.h>
 
 BOOL AllocTimer(struct internal_RealTimeBase *RealTimeBase);
 void FreeTimer(struct internal_RealTimeBase *RealTimeBase);
@@ -43,7 +45,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 	return FALSE;
     }
 
-    D(bug("[realtime.library] initialized\n"));
+    D(bug("[realtime.library] initialized\n");)
 
     return TRUE;
 }
