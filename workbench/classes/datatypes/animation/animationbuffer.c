@@ -152,7 +152,7 @@ AROS_UFH3(void, bufferProc,
     struct Task *thisTask = FindTask(NULL);
     struct ProcessPrivate *priv = thisTask->tc_UserData;
     struct AnimFrame *curFrame = NULL, *startFrame;
-    ULONG signal, bufferstep;
+    ULONG signal, playbacksig, bufferstep;
 
     D(bug("[animation.datatype/BUFFER]: %s()\n", __func__);)
 
@@ -177,6 +177,7 @@ AROS_UFH3(void, bufferProc,
             while (TRUE)
             {
                 priv->pp_BufferFlags &= ~PRIVPROCF_ACTIVE;
+                playbacksig = 0;
 
                 if ((priv->pp_BufferFlags & PRIVPROCF_ENABLED) &&
                     ((bufferstep >= 1) || (priv->pp_BufferLevel < priv->pp_BufferFrames)) &&
@@ -251,6 +252,9 @@ AROS_UFH3(void, bufferProc,
 
                             if (!(priv->pp_BufferFirst) && (priv->pp_BufferSpecific != -1))
                             {
+                                 if (priv->pp_PlaybackSync != -1)
+                                    playbacksig |=  (1 << priv->pp_PlaybackSync);
+
                                 curFrame->af_Frame.alf_Frame = priv->pp_BufferSpecific;
                                 priv->pp_BufferSpecific = -1;
 
@@ -325,7 +329,12 @@ AROS_UFH3(void, bufferProc,
                     if (bufferstep > 0)
                         bufferstep--;
 
-                    SetTaskPri((struct Task *)priv->pp_Data->ad_PlayerProc, 0);
+                    if (priv->pp_Data->ad_PlayerProc)
+                    {
+                        SetTaskPri((struct Task *)priv->pp_Data->ad_PlayerProc, 0);
+                        if (playbacksig) 
+                            Signal((struct Task *)priv->pp_Data->ad_PlayerProc, playbacksig);
+                    }
                 }
             }
             FreeBufferSignals(priv);
