@@ -24,11 +24,11 @@ void cacheFrame(struct Animation_Data *animd, struct AnimFrame *frame)
 {
     struct privRenderFrame rendFrameMsg;
     
-    DFRAMES("[animation.datatype/CACHE]: %s()\n", __PRETTY_FUNCTION__)
+    DFRAMES("[animation.datatype/CACHE]: %s()\n", __func__)
 
     if (frame->af_Frame.alf_CMap)
     {
-        DFRAMES("[animation.datatype/CACHE]: %s:      CMap @ 0x%p\n", __PRETTY_FUNCTION__, frame->af_Frame.alf_CMap)
+        DFRAMES("[animation.datatype/CACHE]: %s:      CMap @ 0x%p\n", __func__, frame->af_Frame.alf_CMap)
         rendFrameMsg.MethodID = PRIVATE_MAPFRAMEPENS;
         rendFrameMsg.Frame = frame;
         DoMethodA(animd->ad_ProcessData->pp_Object, (Msg)&rendFrameMsg);
@@ -41,14 +41,14 @@ void cacheFrame(struct Animation_Data *animd, struct AnimFrame *frame)
         frame->af_CacheBM = (char *)AllocBitMap(animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, 24,
                                   BMF_CLEAR, animd->ad_CacheBM);
         rendFrameMsg.Target = (struct BitMap *)frame->af_CacheBM;
-        DFRAMES("[animation.datatype/CACHE]: %s: allocated frame cache bm @ 0x%p (friend @ 0x%p)\n", __PRETTY_FUNCTION__, frame->af_CacheBM, animd->ad_CacheBM)
+        DFRAMES("[animation.datatype/CACHE]: %s: allocated frame cache bm @ 0x%p (friend @ 0x%p)\n", __func__, frame->af_CacheBM, animd->ad_CacheBM)
     }
     DoMethodA(animd->ad_ProcessData->pp_Object, (Msg)&rendFrameMsg);
 }
 
 void freeFrame(struct Animation_Data *animd, struct AnimFrame *frame)
 {
-    DFRAMES("[animation.datatype/CACHE]: %s()\n", __PRETTY_FUNCTION__)
+    DFRAMES("[animation.datatype/CACHE]: %s()\n", __func__)
     if (frame->af_CacheBM)
     {
         FreeBitMap((struct BitMap *)frame->af_CacheBM);

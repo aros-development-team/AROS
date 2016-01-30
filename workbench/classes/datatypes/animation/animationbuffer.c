@@ -69,7 +69,7 @@ struct AnimFrame *NextToBuffer(struct ProcessPrivate *priv, struct AnimFrame *ne
     struct AnimFrame *startFrame, *prevFrame;
     BOOL loop = FALSE;
 
-    DFRAMES("[animation.datatype/BUFFER]: %s()\n", __PRETTY_FUNCTION__)
+    DFRAMES("[animation.datatype/BUFFER]: %s()\n", __func__)
 
     ObtainSemaphoreShared(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
 
