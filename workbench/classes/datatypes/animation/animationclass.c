@@ -762,7 +762,7 @@ IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 
     case ADTA_FrameIncrement:
         D(bug("[animation.datatype] %s: ADTA_FrameIncrement\n", __func__);)
-        *msg->opg_Storage = (IPTR) 10UL;
+        *msg->opg_Storage = (IPTR) animd->ad_FrameData.afd_FramesStep;
         break;
 
     case ADTA_NumPrefetchFrames:
@@ -1011,6 +1011,7 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
         case ADTA_FrameIncrement:
             D(bug("[animation.datatype] %s: ADTA_FrameIncrement (%d)\n", __func__, tag->ti_Data);)
+            animd->ad_FrameData.afd_FramesStep = tag->ti_Data;
             break;
 
         case ADTA_NumPrefetchFrames:
@@ -1188,6 +1189,7 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 #endif
         animd->ad_TimerData.atd_FramesPerSec = 60;
         animd->ad_TimerData.atd_TicksPerFrame = ANIMPLAYER_TICKFREQ / animd->ad_TimerData.atd_FramesPerSec;
+        animd->ad_FrameData.afd_FramesStep= 10;
         animd->ad_ColorData.acd_PenPrecison = PRECISION_IMAGE;
         animd->ad_ProcStack = 8192;
         animd->ad_BufferStep = 4; // Try to load 4 frames at a time
@@ -1361,8 +1363,20 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
             ((ie->ie_Class == IECLASS_TIMER) ||
             ((ie->ie_Class == IECLASS_RAWMOUSE) && ((ie->ie_Code == SELECTUP) || (ie->ie_Code == SELECTDOWN)))))
         {
-            IPTR tdFrame =0;
+            IPTR tdFrame = 0;
+
             GetAttr(TDECK_CurrentFrame, (Object *)animd->ad_Tapedeck, &tdFrame);
+
+            if (tdMode == BUT_REWIND)
+                tdFrame -= animd->ad_FrameData.afd_FramesStep;
+            else if (tdMode == BUT_FORWARD)
+                tdFrame += animd->ad_FrameData.afd_FramesStep;
+
+            if (tdFrame < 0)
+                tdFrame = 0;
+            if (tdFrame >= animd->ad_FrameData.afd_Frames)
+                tdFrame = animd->ad_FrameData.afd_Frames - 1;
+
             if (tdFrame != animd->ad_FrameData.afd_FrameCurrent)
             {
                 condstate = CONDSTATE_SHUTTLE;
