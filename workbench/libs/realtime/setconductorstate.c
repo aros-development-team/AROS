@@ -102,11 +102,11 @@
 	    /* Filter out QUIET players? */
 	    if (pl->pl_Hook != NULL)
 	    {
-		CallHookA(pl->pl_Hook, &stateMsg, player);
+		CallHookA(pl->pl_Hook, player, &stateMsg);
 	    }
 	}
     }
-    
+
     switch (state)
     {
     case CONDSTATE_PAUSED:
@@ -199,7 +199,7 @@
 	    else
 	    {
 		timeMsg.pmt_Method = PM_POSITION;
-		CallHookA(maestro->pl_Hook, &timeMsg, player);
+		CallHookA(maestro->pl_Hook, player, &timeMsg);
 	    }
 	    
 	    break;
@@ -220,7 +220,7 @@
 	{
 	    if (pl->pl_Hook != NULL)
 	    {
-		CallHookA(pl->pl_Hook, &timeMsg, player);
+		CallHookA(pl->pl_Hook, player, &timeMsg);
 	    }
 	}
 	
