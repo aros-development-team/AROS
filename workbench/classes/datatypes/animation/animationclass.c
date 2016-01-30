@@ -1315,6 +1315,7 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
     IPTR retval = GMR_MEACTIVE;
     IPTR tdHeight = 0;
     BOOL redraw = FALSE;
+    ULONG condstate = 0;
 
    D(bug("[animation.datatype]: %s(%d,%d)\n", __func__, msg->gpi_Mouse.X, msg->gpi_Mouse.Y);)
 
@@ -1336,7 +1337,7 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
         D(bug("[animation.datatype]: %s: input event is for the tapedeck ...\n", __func__);)
 
         if ((!(((struct Gadget *)animd->ad_Tapedeck)->Flags & GFLG_SELECTED)) &&
-            (ie->ie_Code == SELECTDOWN))
+            ((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == SELECTDOWN)))
         {
             if ((animd->ad_PlayerSourceLastState = animd->ad_Player->pl_Source->cdt_State) != CONDSTATE_STOPPED)
                 SetConductorState (animd->ad_Player, CONDSTATE_PAUSED, animd->ad_FrameData.afd_FrameCurrent * animd->ad_TimerData.atd_TicksPerFrame);
@@ -1348,50 +1349,52 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
         msg->gpi_Mouse.Y += animd->ad_RenderHeight;
 
         GetAttr(TDECK_Mode, (Object *)animd->ad_Tapedeck, &tdMode);
-        if (ie->ie_Code == SELECTUP)
+        if ((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == SELECTUP))
         {
             if ((tdMode == BUT_PLAY) && (animd->ad_PlayerSourceLastState != CONDSTATE_RUNNING))
                 animd->ad_PlayerSourceLastState = CONDSTATE_RUNNING;
             if ((tdMode == BUT_PAUSE) && (animd->ad_PlayerSourceLastState != CONDSTATE_PAUSED))
                 animd->ad_PlayerSourceLastState = CONDSTATE_PAUSED;
         }
-        if ((ie->ie_Code == SELECTUP) ||
-            ((ie->ie_Code == SELECTDOWN) &&
-            ((tdMode == BUT_FRAME) || (tdMode == BUT_REWIND) || (tdMode == BUT_FORWARD))))
+
+        if (((tdMode == BUT_FRAME) || (tdMode == BUT_REWIND) || (tdMode == BUT_FORWARD)) &&
+            ((ie->ie_Class == IECLASS_TIMER) ||
+            ((ie->ie_Class == IECLASS_RAWMOUSE) && ((ie->ie_Code == SELECTUP) || (ie->ie_Code == SELECTDOWN)))))
         {
             IPTR tdFrame =0;
             GetAttr(TDECK_CurrentFrame, (Object *)animd->ad_Tapedeck, &tdFrame);
             if (tdFrame != animd->ad_FrameData.afd_FrameCurrent)
             {
-                animd->ad_PlayerSourceLastState = CONDSTATE_LOCATE;
+                condstate = CONDSTATE_SHUTTLE;
                 animd->ad_FrameData.afd_FrameCurrent = tdFrame;
                 redraw = TRUE;
             }
         }
     }
 
-    if (ie->ie_Code == SELECTUP)
+    if ((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == SELECTUP))
     {
         D(bug("[animation.datatype]: %s: SELECTUP\n", __func__);)
 
         g->Flags &= ~GFLG_SELECTED;
-
-        if (animd->ad_PlayerSourceLastState != CONDSTATE_STOPPED)
-        {
-            if ((animd->ad_PlayerSourceLastState == CONDSTATE_RUNNING) ||
-                (animd->ad_PlayerSourceLastState == CONDSTATE_LOCATE))
-            {
-                Signal((struct Task *)animd->ad_BufferProc, (1 << animd->ad_ProcessData->pp_BufferEnable));
-                Signal((struct Task *)animd->ad_PlayerProc, (1 << animd->ad_ProcessData->pp_PlaybackEnable));
-            }
-            SetConductorState (animd->ad_Player, animd->ad_PlayerSourceLastState, animd->ad_FrameData.afd_FrameCurrent * animd->ad_TimerData.atd_TicksPerFrame);
-        }
-
         retval = GMR_NOREUSE;
+        condstate = animd->ad_PlayerSourceLastState;
+    }
+
+    if (condstate)
+    {
+        D(bug("[animation.datatype]: %s: updating conductor...\n", __func__);)
+        if ((condstate == CONDSTATE_RUNNING) ||
+            (condstate == CONDSTATE_SHUTTLE))
+        {
+            Signal((struct Task *)animd->ad_BufferProc, (1 << animd->ad_ProcessData->pp_BufferEnable));
+            Signal((struct Task *)animd->ad_PlayerProc, (1 << animd->ad_ProcessData->pp_PlaybackEnable));
+        }
+        SetConductorState(animd->ad_Player, condstate, animd->ad_FrameData.afd_FrameCurrent * animd->ad_TimerData.atd_TicksPerFrame);
     }
 
     if ((redraw) &&
-        (rport = ObtainGIRPort (msg->gpi_GInfo)))
+        (rport = ObtainGIRPort(msg->gpi_GInfo)))
     {
         struct gpRender gpr;
 
@@ -1399,9 +1402,9 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
         gpr.gpr_GInfo  = msg->gpi_GInfo;
         gpr.gpr_RPort  = rport;
         gpr.gpr_Redraw = GREDRAW_REDRAW;
-        DoMethodA ((Object *)g, &gpr);
+        DoMethodA((Object *)g, &gpr);
 
-        ReleaseGIRPort (rport);
+        ReleaseGIRPort(rport);
     }
 
     return retval;

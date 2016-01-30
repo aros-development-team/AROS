@@ -32,11 +32,11 @@ AROS_UFH3(ULONG, playerHookFunc,
     AROS_USERFUNC_INIT
  
     struct Animation_Data *animd = (struct Animation_Data *)hook->h_Data;
-    BOOL doTick = FALSE;
     IPTR buffSigs = 0, playbacksigs = 0;
 
 #if (0)
-    D(bug("[animation.datatype]: %s(%08x)\n", __PRETTY_FUNCTION__, msg->pmt_Method);)
+    // only enable if you like spam.
+    bug("[animation.datatype]: %s(%08x)\n", __PRETTY_FUNCTION__, msg->pmt_Method);
 #endif
 
     switch (msg->pmt_Method)
@@ -71,12 +71,14 @@ AROS_UFH3(ULONG, playerHookFunc,
 	    break;
 
 	case PM_SHUTTLE:
-            bug("[animation.datatype] %s: PM_SHUTTLE\n", __PRETTY_FUNCTION__);
-            doTick = TRUE;
+            D(bug("[animation.datatype] %s: PM_SHUTTLE\n", __PRETTY_FUNCTION__);)
+            animd->ad_FrameData.afd_FrameCurrent = msg->pmt_Time/animd->ad_TimerData.atd_TicksPerFrame;
+            animd->ad_TimerData.atd_Tick = 0;
+            if (animd->ad_ProcessData->pp_PlaybackSync != -1)
+                playbacksigs |=  (1 << animd->ad_ProcessData->pp_PlaybackSync);
 	    break;
 
 	case PM_STATE:
-            doTick = TRUE;
 	    break;
     }
 
