@@ -16,11 +16,13 @@
  */
 #define	ANIMDF_CONTROLPANEL     (1 << 0)
 #define	ANIMDF_IMMEDIATE        (1 << 1)
-#define	ANIMDF_REMAP            (1 << 2)
-#define	ANIMDF_REPEAT           (1 << 3)
-#define	ANIMDF_ADAPTFPS         (1 << 4)
-#define	ANIMDF_SMARTSKIP        (1 << 5)
-#define	ANIMDF_ADJUSTPALETTE    (1 << 6)
+#define	ANIMDF_REPEAT           (1 << 2)
+#define	ANIMDF_REMAP            (1 << 3)
+#define	ANIMDF_ADJUSTPALETTE    (1 << 4)
+#define	ANIMDF_ADAPTFPS         (1 << 5)
+#define	ANIMDF_FRAMESKIP        (1 << 6)
+#define	ANIMDF_SMARTSKIP        (1 << 7)
+
 /*
     special flags used by rendering/layout code
  */
@@ -137,7 +139,8 @@ struct ProcessPrivate
     volatile ULONG              pp_BufferFlags;
     ULONG                       pp_BufferFrames;       /* no of frames to buffer in total       */
     ULONG                       pp_BufferLevel;        /* no of frames buffered                 */
-    struct AnimFrame            *pp_BufferFirst;
+    IPTR                        pp_BufferSpecific;     /* specific frame to load                */
+    struct AnimFrame            *pp_BufferFirst;       /* starting point to load from           */
     struct AnimFrame            *pp_PlaybackFrame;
 
     ULONG                       pp_BufferSigMask;
@@ -149,12 +152,14 @@ struct ProcessPrivate
     ULONG                       pp_PlaybackSigMask;
     UBYTE                       pp_PlaybackEnable;
     UBYTE                       pp_PlaybackDisable;
-    UBYTE                       pp_PlaybackTick;          /* signal frames needs to change */
+    UBYTE                       pp_PlaybackTick;          /* signal frames needs to change      */
+    UBYTE                       pp_PlaybackSync;          /* signal position changed            */
 };
 
 #define PRIVPROCF_ENABLED       (1 << 0)
 #define PRIVPROCF_RUNNING       (1 << 1)
 #define PRIVPROCF_ACTIVE        (1 << 2)
+#define PRIVPROCF_BUSY          (1 << 3)
 
 #define TAG_PRIVATE             	(ADTA_Dummy + 100)
 #define PRIVATE_INITPLAYER              (TAG_PRIVATE - 1)

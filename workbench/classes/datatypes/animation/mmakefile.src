@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := animationclass animationbuffer animationframe animationplayback animationsave animationprefs
 
 #MM- workbench-datatypes-animation : workbench-datatype-animation
-#MM workbench-datatype-animation : includes linklibs
+#MM workbench-datatype-animation : includes linklibs workbench-datatype-animation-envarc
 
 USER_CFLAGS   := -DDEBUG=0
 USER_LDFLAGS := -static
@@ -13,3 +13,7 @@ USER_LDFLAGS := -static
     modname=animation modtype=datatype \
     files=$(FILES)
 
+#MM
+workbench-datatype-animation-envarc:
+	@$(MKDIR) $(AROS_ENVARC)/Classes/DataTypes
+	@$(ECHO) "NOSKIP" > $(AROS_ENVARC)/Classes/DataTypes/animation.prefs
