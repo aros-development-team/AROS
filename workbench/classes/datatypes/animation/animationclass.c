@@ -109,7 +109,7 @@ struct DTMethod SupportedTriggerMethods[] =
     { NULL,                     NULL,                   0               },
 };
 
-char *GenTaskName(char *basename, char*taskname)
+char *GenTaskName(char *basename, char *taskname)
 {
     int namLen, id = 0;
     char *newName;
@@ -198,6 +198,7 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
 
     if ((animd->ad_ProcessData) && !(animd->ad_BufferProc))
     {
+        // buffer proc gets 2x as much stack as playback since that is where the work happens
         animd->ad_BufferProc = CreateNewProcTags(
                             NP_Entry,           (IPTR)bufferProc,
                             NP_Name,            (IPTR)animd->ad_ProcessData->pp_BufferingName,
@@ -208,7 +209,7 @@ IPTR DT_InitPlayer(struct IClass *cl, struct Gadget *g, Msg msg)
                             NP_Output,          Output (),
                             NP_CloseOutput,     FALSE,
                             NP_UserData,        (IPTR)animd->ad_ProcessData,
-                            NP_StackSize,       animd->ad_ProcStack,
+                            NP_StackSize,       (animd->ad_ProcStack << 1),
                             TAG_DONE);
         while (!(animd->ad_ProcessData->pp_BufferFlags & PRIVPROCF_RUNNING))
         {
@@ -421,7 +422,6 @@ IPTR DT_MapPens(struct IClass *cl, struct Gadget *g, struct privMapFramePens *ms
             {
                 if (animd->ad_ColorData.acd_ColorMap)
                 {
-
                     animd->ad_Flags |= ANIMDF_REMAPPEDPENS;
 
                     animd->ad_ColorData.acd_Allocated[mappedpen] = ObtainBestPenA(animd->ad_ColorData.acd_ColorMap,
@@ -1182,7 +1182,7 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
         NewList(&animd->ad_FrameData.afd_AnimFrames);
         D(bug("[animation.datatype] %s: FrameList @ 0x%p\n", __func__, &animd->ad_FrameData.afd_AnimFrames);)
 
-        animd->ad_Flags = ANIMDF_CONTROLPANEL|ANIMDF_REMAP;
+        animd->ad_Flags = ANIMDF_CONTROLPANEL|ANIMDF_REMAP|ANIMDF_FRAMESKIP;
 #if (1)
         animd->ad_Flags |= (ANIMDF_REPEAT|ANIMDF_IMMEDIATE);
 #endif

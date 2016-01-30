@@ -33,7 +33,7 @@ AROS_UFH3(ULONG, playerHookFunc,
  
     struct Animation_Data *animd = (struct Animation_Data *)hook->h_Data;
     BOOL doTick = FALSE;
-    IPTR buffSigs = 0;
+    IPTR buffSigs = 0, playbacksigs = 0;
 
 #if (0)
     D(bug("[animation.datatype]: %s(%08x)\n", __PRETTY_FUNCTION__, msg->pmt_Method);)
@@ -47,22 +47,27 @@ AROS_UFH3(ULONG, playerHookFunc,
             if (animd->ad_TimerData.atd_Tick >= animd->ad_TimerData.atd_TicksPerFrame)
             {
                 animd->ad_TimerData.atd_Tick = 0;
-                animd->ad_FrameData.afd_FrameCurrent++;
-                if (animd->ad_FrameData.afd_FrameCurrent >= animd->ad_FrameData.afd_Frames)
+                // increment the frame counter if we are supposed to...
+                if (!(animd->ad_ProcessData->pp_PlayerFlags & PRIVPROCF_BUSY) || (animd->ad_Flags & ANIMDF_FRAMESKIP))
                 {
-                    if (animd->ad_Flags & ANIMDF_REPEAT)
-                        animd->ad_FrameData.afd_FrameCurrent = 0;
-                    else
-                        animd->ad_FrameData.afd_FrameCurrent = animd->ad_FrameData.afd_Frames - 1;
+                    animd->ad_FrameData.afd_FrameCurrent++;
+                    if (animd->ad_FrameData.afd_FrameCurrent >= animd->ad_FrameData.afd_Frames)
+                    {
+                        if (animd->ad_Flags & ANIMDF_REPEAT)
+                            animd->ad_FrameData.afd_FrameCurrent = 1;
+                        else
+                            animd->ad_FrameData.afd_FrameCurrent = animd->ad_FrameData.afd_Frames - 1;
+                    }
                 }
-                doTick = TRUE;
+                if (animd->ad_ProcessData->pp_PlaybackTick != -1)
+                    playbacksigs |=  (1 << animd->ad_ProcessData->pp_PlaybackTick);
             }
             if (animd->ad_TimerData.atd_Tick == 0)
             {
+                // flush unused buffers...
                 if (animd->ad_ProcessData->pp_BufferPurge != -1)
                     buffSigs |= (1 << animd->ad_ProcessData->pp_BufferPurge);
             }
-
 	    break;
 
 	case PM_SHUTTLE:
@@ -77,8 +82,8 @@ AROS_UFH3(ULONG, playerHookFunc,
 
     if (buffSigs && (animd->ad_BufferProc))
         Signal((struct Task *)animd->ad_BufferProc, buffSigs);
-    if (doTick && (animd->ad_PlayerProc) && (animd->ad_ProcessData->pp_PlaybackTick != -1))
-        Signal((struct Task *)animd->ad_PlayerProc, (1 << animd->ad_ProcessData->pp_PlaybackTick));
+    if (playbacksigs && (animd->ad_PlayerProc))
+        Signal((struct Task *)animd->ad_PlayerProc, playbacksigs);
 
     return 0;
 
@@ -108,12 +113,16 @@ BOOL AllocPlaybackSignals(struct ProcessPrivate *priv)
             if ((priv->pp_PlaybackTick = AllocSignal(-1)) != -1)
             {
                 D(bug("[animation.datatype/PLAY]: %s: allocated tick signal (%x)\n", __PRETTY_FUNCTION__, priv->pp_PlaybackTick);)
+                if ((priv->pp_PlaybackSync = AllocSignal(-1)) != -1)
+                {
+                    D(bug("[animation.datatype/PLAY]: %s: allocated sync signal (%x)\n", __PRETTY_FUNCTION__, priv->pp_PlaybackSync);)
 
-                priv->pp_PlaybackSigMask = (1 << priv->pp_PlaybackEnable) | (1 << priv->pp_PlaybackDisable) | (1 << priv->pp_PlaybackTick);
+                    priv->pp_PlaybackSigMask = (1 << priv->pp_PlaybackEnable) | (1 << priv->pp_PlaybackDisable) | (1 << priv->pp_PlaybackTick) | (1 << priv->pp_PlaybackSync);
 
-                D(bug("[animation.datatype/PLAY]: %s: signal mask (%x)\n", __PRETTY_FUNCTION__, priv->pp_PlaybackSigMask);)
+                    D(bug("[animation.datatype/PLAY]: %s: signal mask (%x)\n", __PRETTY_FUNCTION__, priv->pp_PlaybackSigMask);)
 
-                return TRUE;
+                    return TRUE;
+                }
             }
         }
     }
@@ -158,12 +167,12 @@ struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frame
     {
         frameFound = NULL;
 
-        if (!(priv->pp_Data->ad_Flags & ANIMDF_SMARTSKIP))
+        if (!(priv->pp_Data->ad_Flags & ANIMDF_FRAMESKIP))
         {
             if ((frameFirst) && (NODEID(frameFirst) == (NODEID(frameCurrent) + 1)))
                 frameFound = frameFirst;
         }
-        else if (framePrev)
+        else if ((framePrev) && (NODEID(framePrev) > 0))
             frameFound = framePrev;
 
         if (!(frameFound) &&
@@ -206,7 +215,7 @@ AROS_UFH3(void, playerProc,
         { TAG_DONE,     0}
     };
     UWORD frame = 0;
-    ULONG signal;
+    ULONG signal, buffsigs;
 
     D(bug("[animation.datatype/PLAY]: %s()\n", __PRETTY_FUNCTION__);)
 
@@ -235,44 +244,57 @@ AROS_UFH3(void, playerProc,
                 if (signal & SIGBREAKF_CTRL_C)
                     break;
 
+                priv->pp_PlayerFlags |= PRIVPROCF_ACTIVE;
+
                 if (signal & (1 << priv->pp_PlaybackEnable))
                     priv->pp_PlayerFlags |= PRIVPROCF_ENABLED;
                 else if (signal & (1 << priv->pp_PlaybackDisable))
                     priv->pp_PlayerFlags &= ~PRIVPROCF_ENABLED;
 
-                if ((priv->pp_PlayerFlags & PRIVPROCF_ENABLED) && (signal & (1 << priv->pp_PlaybackTick)))
+                if ((priv->pp_PlayerFlags & PRIVPROCF_ENABLED) && ((signal & ((1 << priv->pp_PlaybackTick)|(1 << priv->pp_PlaybackSync))) != 0))
                 {
-                    BOOL doBuffering = FALSE;
-
+                    priv->pp_PlayerFlags |= PRIVPROCF_BUSY;
                     frame = priv->pp_Data->ad_FrameData.afd_FrameCurrent;
-                    D(bug("[animation.datatype/PLAY]: %s: TICK (frame %d)\n", __PRETTY_FUNCTION__, frame);)
+                    buffsigs = 0;
 
-                    priv->pp_PlayerFlags |= PRIVPROCF_ACTIVE;
+                    DFRAMES("[animation.datatype/PLAY] %s: Frame #%d\n", __PRETTY_FUNCTION__, frame)
 
                     curFrame = NextFrame(priv, priv->pp_PlaybackFrame, &frame);
 
                     if ((priv->pp_BufferFrames > priv->pp_BufferLevel) &&
                         (priv->pp_BufferLevel < priv->pp_Data->ad_FrameData.afd_Frames))
-                        doBuffering = TRUE;
+                    {
+                        buffsigs |= (1 << priv->pp_BufferFill);
+                    }
 
                     if (!(curFrame))
                     {
                         ObtainSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
-                        if ((priv->pp_PlaybackFrame) && (NODEID(priv->pp_PlaybackFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1)))
+                        if ((signal & (1 << priv->pp_PlaybackSync)) ||
+                            (priv->pp_Data->ad_Flags & ANIMDF_FRAMESKIP))
+                        {
+                            priv->pp_BufferSpecific = frame;
+                        }
+
+                        if ((priv->pp_PlaybackFrame) &&
+                            ((NODEID(priv->pp_PlaybackFrame) < frame) ||
+                            (!(priv->pp_Data->ad_Flags & ANIMDF_FRAMESKIP) && (NODEID(priv->pp_PlaybackFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1)))))
+                        {
                             priv->pp_BufferFirst = priv->pp_PlaybackFrame;
-                        else
+                        }
+                        else if (priv->pp_Data->ad_Flags & ANIMDF_FRAMESKIP)
                             priv->pp_BufferFirst = NULL;
+
                         ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
 
-                        doBuffering = TRUE;
+                        buffsigs |= ((1 << priv->pp_BufferPurge) | (1 << priv->pp_BufferFill));
                     }
 
-                    if ((doBuffering) &&
-                        (priv->pp_Data->ad_BufferProc) &&
-                        (priv->pp_BufferFill != -1))
+                    if ((buffsigs) && (priv->pp_Data->ad_BufferProc))
                     {
-                        Signal((struct Task *)priv->pp_Data->ad_BufferProc, (1 << priv->pp_BufferFill));
-                        SetTaskPri((struct Task *)priv->pp_Data->ad_PlayerProc, -2);
+                        Signal((struct Task *)priv->pp_Data->ad_BufferProc, buffsigs);
+                        if (buffsigs & (1 << priv->pp_BufferPurge))
+                            SetTaskPri((struct Task *)priv->pp_Data->ad_PlayerProc, -2);
                     }
 
                     // frame has changed ... render it ..
@@ -282,6 +304,8 @@ AROS_UFH3(void, playerProc,
                             bug("[animation.datatype/PLAY]: %s: Rendering Frame #%d\n", __PRETTY_FUNCTION__,  NODEID(curFrame));
                             bug("[animation.datatype/PLAY]: %s:      BitMap @ 0x%p\n", __PRETTY_FUNCTION__, curFrame->af_CacheBM);
                         )
+
+                        priv->pp_PlayerFlags &= ~PRIVPROCF_BUSY;
 
                         if ((priv->pp_Data->ad_Window) && !(priv->pp_Data->ad_Flags & ANIMDF_LAYOUT))
                         {
@@ -303,7 +327,6 @@ AROS_UFH3(void, playerProc,
                             DoGadgetMethodA((struct Gadget *)priv->pp_Object, priv->pp_Data->ad_Window, NULL, (Msg)&gprMsg);
                         }
                     }
-
                 }
             }
             FreePlaybackSignals(priv);

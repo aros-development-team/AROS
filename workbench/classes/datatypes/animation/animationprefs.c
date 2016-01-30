@@ -44,7 +44,7 @@ static BOOL  matchstr(STRPTR, STRPTR);
 *       Lines are limitted to 256 chars.
 *
 *   TEMPLATE
-*       MATCHCLASS/K,MATCHPROJECT/K,STACK/K/N,BUFFERTIME/K/N,BUFFERSTEP/K/N
+*       MATCHCLASS/K,MATCHPROJECT/K,STACK/K/N,BUFFERTIME/K/N,BUFFERSTEP/K/N,NOSKIP/S
 *
 *       MATCHCLASS -- settings in this line will only affect matching
 *           classes, e.g. if the case-insensitive pattern does not match,
@@ -64,6 +64,8 @@ static BOOL  matchstr(STRPTR, STRPTR);
 *       BUFFERTIME -- specify the number of seconds of playback to buffer.
 *
 *       BUFFERSTEP -- specify the number of frames to buffer at one time.
+*
+*      NOSKIP - dont skip frames to keep up with the FPS.
 *
 *   NOTE
 *
@@ -145,6 +147,7 @@ void ReadENVPrefs(Object *o, struct Animation_Data *animd)
         IPTR    *stack;
         IPTR    *bufftime;
         IPTR    *buffstep;
+        IPTR    noskip;
     } animationargs;
 
     TEXT   varbuff[ 258 ];
@@ -181,7 +184,8 @@ void ReadENVPrefs(Object *o, struct Animation_Data *animd)
                         "MATCHPROJECT/K,"
                         "STACK/K/N,"
                         "BUFFERTIME/K/N,"
-                        "BUFFERSTEP/K/N", (IPTR *)(&animationargs), (&envvarrda)))
+                        "BUFFERSTEP/K/N,"
+                        "NOSKIP/S", (IPTR *)(&animationargs), (&envvarrda)))
                 {
                     BOOL noignore = TRUE;
 
@@ -204,7 +208,7 @@ void ReadENVPrefs(Object *o, struct Animation_Data *animd)
                         if (animationargs.stack)
                         {
                             animd->ad_ProcStack = *(animationargs.stack);
-                            D(bug("[animation.datatype] %s:   using %d bytes for child process stack(s)\n", __func__, animd->ad_ProcStack);)
+                            D(bug("[animation.datatype] %s:   using %d bytes for playback stack (%d for buffering)\n", __func__, animd->ad_ProcStack, (1 << animd->ad_ProcStack));)
                         }
                         if (animationargs.bufftime)
                         {
@@ -215,6 +219,11 @@ void ReadENVPrefs(Object *o, struct Animation_Data *animd)
                         {
                             animd->ad_BufferStep = (ULONG)*(animationargs.buffstep);
                             D(bug("[animation.datatype] %s:   buffering %d frames at a time\n", __func__, animd->ad_BufferStep);)
+                        }
+                        if (animationargs.noskip)
+                        {
+                            D(bug("[animation.datatype] %s:   turning frame-skip off\n", __func__);)
+                            animd->ad_Flags &= ~ANIMDF_FRAMESKIP;
                         }
                     }
 
