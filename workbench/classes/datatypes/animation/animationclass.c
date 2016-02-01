@@ -1258,6 +1258,16 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     if (animd->ad_Player)
         DeletePlayer(animd->ad_Player);
 
+    if (animd->ad_PlayerProc)
+    {
+        Signal((struct Task *)animd->ad_PlayerProc, SIGBREAKF_CTRL_C);
+
+        while (animd->ad_ProcessData->pp_PlayerFlags & PRIVPROCF_RUNNING)
+        {
+            Delay (1);
+        }
+    }
+
     if (animd->ad_BufferProc)
     {
         Signal((struct Task *)animd->ad_BufferProc, SIGBREAKF_CTRL_C);
@@ -1268,15 +1278,6 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
         }
     }
 
-    if (animd->ad_PlayerProc)
-    {
-        Signal((struct Task *)animd->ad_PlayerProc, SIGBREAKF_CTRL_C);
-
-        while (animd->ad_ProcessData->pp_PlayerFlags & PRIVPROCF_RUNNING)
-        {
-            Delay (1);
-        }
-    }
 
     if (animd->ad_ProcessData)
     {

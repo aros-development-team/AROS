@@ -71,8 +71,6 @@ struct AnimFrame *NextToBuffer(struct ProcessPrivate *priv, struct AnimFrame *ne
 
     DFRAMES("[animation.datatype/BUFFER]: %s()\n", __func__)
 
-    ObtainSemaphoreShared(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
-
     if ((startFrame = priv->pp_BufferFirst) == NULL)
         prevFrame = (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames;
     else
@@ -102,13 +100,14 @@ findprevframe:
         newFrame->af_Frame.alf_Frame = NODEID(prevFrame) + 1;
     }
     else
+    {
+        startFrame = NULL;
         newFrame->af_Frame.alf_Frame = 0;
+    }
 
     NODEID(newFrame) = (UWORD) newFrame->af_Frame.alf_Frame;
     newFrame->af_Frame.alf_TimeStamp = newFrame->af_Frame.alf_Frame;
     priv->pp_BufferFirst = startFrame;
-
-    ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
 
     return startFrame;
 }
@@ -135,6 +134,36 @@ BOOL DoFramePurge(struct Animation_Data *animd, struct AnimFrame *purgeFrame)
             
     }
     return FALSE;
+}
+
+void PurgeFrames(struct Animation_Data *animd, BOOL flush)
+{
+    struct AnimFrame *purgeFrame = NULL, *tmpFrame = NULL;
+
+    DFRAMES("[animation.datatype/BUFFER]: %s()\n", __func__)
+    if (AttemptSemaphore(&animd->ad_FrameData.afd_AnimFramesLock))
+    {
+        D(bug("[animation.datatype/BUFFER]: %s: locked frame list...\n", __func__);)
+        ForeachNodeSafe(&animd->ad_FrameData.afd_AnimFrames, purgeFrame, tmpFrame)
+        {
+            if ((flush) || DoFramePurge(animd, (struct AnimFrame *)purgeFrame))
+            {
+                D(bug("[animation.datatype/BUFFER]: %s: unloading frame #%d\n", __func__, NODEID(purgeFrame));)
+
+                freeFrame(animd, purgeFrame);
+
+                purgeFrame->af_Frame.MethodID = ADTM_UNLOADFRAME;
+                DoMethodA(animd->ad_ProcessData->pp_Object, (Msg)&purgeFrame->af_Frame);
+
+                D(bug("[animation.datatype/BUFFER]: %s: freeing frame @0x%p\n", __func__, purgeFrame);)
+                Remove(&purgeFrame->af_Node);
+                FreeMem(purgeFrame, sizeof(struct AnimFrame));
+
+                animd->ad_ProcessData->pp_BufferLevel--;
+            }
+        }
+        ReleaseSemaphore(&animd->ad_FrameData.afd_AnimFramesLock);
+    }
 }
 
 /*
@@ -201,38 +230,16 @@ AROS_UFH3(void, bufferProc,
                 if (signal & (1 << priv->pp_BufferEnable))
                     priv->pp_BufferFlags |= PRIVPROCF_ENABLED;
                 else if (signal & (1 << priv->pp_BufferDisable))
+                {
+                    PurgeFrames(priv->pp_Data, TRUE);
                     priv->pp_BufferFlags &= ~PRIVPROCF_ENABLED;
+                }
 
                 if ((priv->pp_BufferFlags & PRIVPROCF_ENABLED) &&
                     (signal & (1 <<priv->pp_BufferPurge)) &&
                     (priv->pp_BufferFrames < priv->pp_Data->ad_FrameData.afd_Frames))
                 {
-                    struct AnimFrame *purgeFrame = NULL, *tmpFrame = NULL;
-
-                    D(bug("[animation.datatype/BUFFER]: %s: Purging Frames...\n", __func__);)
-                    if (AttemptSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock))
-                    {
-                        D(bug("[animation.datatype/BUFFER]: %s: locked frame list...\n", __func__);)
-                        ForeachNodeSafe(&priv->pp_Data->ad_FrameData.afd_AnimFrames, purgeFrame, tmpFrame)
-                        {
-                            if (DoFramePurge(priv->pp_Data, (struct AnimFrame *)purgeFrame))
-                            {
-                                D(bug("[animation.datatype/BUFFER]: %s: unloading frame #%d\n", __func__, NODEID(purgeFrame));)
-
-                                freeFrame(priv->pp_Data, purgeFrame);
-
-                                purgeFrame->af_Frame.MethodID = ADTM_UNLOADFRAME;
-                                DoMethodA(priv->pp_Object, (Msg)&purgeFrame->af_Frame);
-
-                                D(bug("[animation.datatype/BUFFER]: %s: freeing frame @0x%p\n", __func__, purgeFrame);)
-                                Remove(&purgeFrame->af_Node);
-                                FreeMem(purgeFrame, sizeof(struct AnimFrame));
-
-                                priv->pp_BufferLevel--;
-                            }
-                        }
-                        ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
-                    }
+                    PurgeFrames(priv->pp_Data, FALSE);
                 }
 
                 if ((priv->pp_BufferFlags & PRIVPROCF_ENABLED) &&
@@ -250,6 +257,7 @@ AROS_UFH3(void, bufferProc,
                         {
                             curFrame->af_Frame.MethodID = ADTM_LOADFRAME;
 
+                            ObtainSemaphoreShared(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
                             if (!(priv->pp_BufferFirst) && (priv->pp_BufferSpecific != -1))
                             {
                                  if (priv->pp_PlaybackSync != -1)
@@ -257,20 +265,19 @@ AROS_UFH3(void, bufferProc,
 
                                 curFrame->af_Frame.alf_Frame = priv->pp_BufferSpecific;
                                 priv->pp_BufferSpecific = -1;
-
-                                ObtainSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
                                 startFrame = (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames;
                                 while ((startFrame->af_Node.ln_Succ) &&
                                     (startFrame->af_Node.ln_Succ->ln_Succ) &&
-                                    (NODEID(startFrame->af_Node.ln_Succ) < priv->pp_BufferSpecific))
+                                    ((startFrame == (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames) ||
+                                    (NODEID(startFrame->af_Node.ln_Succ) < priv->pp_BufferSpecific)))
                                 {
                                     startFrame = (struct AnimFrame *)startFrame->af_Node.ln_Succ;
                                 }
 
                                 if (startFrame == (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames)
                                     startFrame = NULL;
+
                                 priv->pp_BufferFirst = startFrame;
-                                ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
 
                                 NODEID(curFrame) = (UWORD) curFrame->af_Frame.alf_Frame;
                                 curFrame->af_Frame.alf_TimeStamp = curFrame->af_Frame.alf_Frame;
@@ -279,6 +286,7 @@ AROS_UFH3(void, bufferProc,
                             {
                                 startFrame = NextToBuffer(priv, curFrame);
                             }
+                            ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
 
                             D(
                                 bug("[animation.datatype/BUFFER]: %s: Loading Frame #%d (AnimFrame @ 0x%p)\n", __func__, curFrame->af_Frame.alf_Frame, curFrame);
@@ -298,6 +306,7 @@ AROS_UFH3(void, bufferProc,
                                 Insert(&priv->pp_Data->ad_FrameData.afd_AnimFrames, &curFrame->af_Node, &startFrame->af_Node);
                                 if (startFrame == priv->pp_BufferFirst)
                                 {
+                                    priv->pp_BufferSpecific = -1;
                                     if (NODEID(curFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1))
                                     {
                                         priv->pp_BufferFirst =  curFrame;
@@ -339,6 +348,7 @@ AROS_UFH3(void, bufferProc,
             }
             FreeBufferSignals(priv);
         }
+
         priv->pp_BufferFlags &= ~PRIVPROCF_RUNNING;
         priv->pp_Data->ad_BufferProc = NULL;
     }
