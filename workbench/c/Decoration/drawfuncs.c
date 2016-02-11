@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2014, The AROS Development Team.
+    Copyright © 2011-2016, The AROS Development Team.
     $Id$
 */
 
@@ -19,6 +19,8 @@
 #include <math.h>
 
 #include "drawfuncs.h"
+
+#define DECOR_USELINEBUFF
 
 #if AROS_BIG_ENDIAN
 #define GET_A(rgb) ((rgb >> 24) & 0xff)
@@ -1089,58 +1091,85 @@ AROS_UFH3(void, RectShadeFunc,
     AROS_USERFUNC_INIT
 
     struct ShadeData *data = h->h_Data;
+#if defined(DECOR_USELINEBUFF)
+    ULONG       *outline = NULL;
+    UWORD       width = 1 + msg->MaxX - msg->MinX;
+#endif
     ULONG       color;
+
     HIDDT_Color col;
     APTR        bm_handle;
     int         px, py, x, y;
 
-    bm_handle = LockBitMapTags(rp->BitMap,
+#if defined(DECOR_USELINEBUFF)
+    if (width > 1)
+        outline = AllocMem((width << 2), MEMF_ANY);
+    else
+#endif
+        bm_handle = LockBitMapTags(rp->BitMap,
                     TAG_END);
 
-    for (px = msg->MinX; px < (msg->MaxX + 1); px++)
+    for (py = msg->MinY; py <= msg->MaxY; py++)
     {
-        x = (px - rp->Layer->bounds.MinX) % data->ni->w;
-        for (py = msg->MinY; py < (msg->MaxY + 1); py++)
+        y = (py - rp->Layer->bounds.MinY) % data->ni->h;
+
+        for (px = msg->MinX; px <= msg->MaxX; px++)
         {
-            y = (py - rp->Layer->bounds.MinY) % data->ni->h;
+            x = (px - rp->Layer->bounds.MinX) % data->ni->w;
 
             color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
 
-            if (bm_handle)
+#if defined(DECOR_USELINEBUFF)
+            if (outline)
             {
-                col.alpha = (HIDDT_ColComp) GET_A(color) << 8;
-                col.red = (HIDDT_ColComp) GET_R(color) << 8;
-                col.green = (HIDDT_ColComp) GET_G(color) << 8;
-                col.blue = (HIDDT_ColComp) GET_B(color) << 8;
-
-                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
+                outline[px - msg->MinX] = color;
             }
             else
-            {
-                WriteRGBPixel(rp, px + msg->OffsetX - msg->MinX, py + msg->OffsetY - msg->MinY, color);
-            }
+#endif
+                if (bm_handle)
+                {
+                    col.alpha = (HIDDT_ColComp) GET_A(color) << 8;
+                    col.red = (HIDDT_ColComp) GET_R(color) << 8;
+                    col.green = (HIDDT_ColComp) GET_G(color) << 8;
+                    col.blue = (HIDDT_ColComp) GET_B(color) << 8;
+
+                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
+                }
+                else
+                {
+                    WriteRGBPixel(rp, px + msg->OffsetX - msg->MinX, py + msg->OffsetY - msg->MinY, color);
+                }
         }
+#if defined(DECOR_USELINEBUFF)
+        if (outline)
+            WritePixelArray(outline, 0, 0, width, rp, msg->OffsetX, py + msg->OffsetY - msg->MinY, width, 1, RECTFMT_ARGB);
+#endif
     }
 
-    if (bm_handle)
-    {
-        struct RectList bm_rectlist;
-        struct TagItem bm_ultags[3] =
+#if defined(DECOR_USELINEBUFF)
+    if (outline)
+         FreeMem(outline, (width << 2));
+    else
+#endif
+        if (bm_handle)
         {
-            {UBMI_REALLYUNLOCK, TRUE                },
-            {UBMI_UPDATERECTS,  (IPTR)&bm_rectlist  },
-            {TAG_DONE, 0                            }
-        };
+            struct RectList bm_rectlist;
+            struct TagItem bm_ultags[3] =
+            {
+                {UBMI_REALLYUNLOCK, TRUE                },
+                {UBMI_UPDATERECTS,  (IPTR)&bm_rectlist  },
+                {TAG_DONE, 0                            }
+            };
 
-        bm_rectlist.rl_num = 1;
-        bm_rectlist.rl_next = (struct RectList *)0;
-        bm_rectlist.rl_rect.MinX = msg->MinX;
-        bm_rectlist.rl_rect.MinY = msg->MinY;
-        bm_rectlist.rl_rect.MaxX = msg->MaxX;
-        bm_rectlist.rl_rect.MaxY = msg->MaxY;
+            bm_rectlist.rl_num = 1;
+            bm_rectlist.rl_next = (struct RectList *)0;
+            bm_rectlist.rl_rect.MinX = msg->MinX;
+            bm_rectlist.rl_rect.MinY = msg->MinY;
+            bm_rectlist.rl_rect.MaxX = msg->MaxX;
+            bm_rectlist.rl_rect.MaxY = msg->MaxY;
 
-        UnLockBitMapTagList(bm_handle, bm_ultags);
-    }
+            UnLockBitMapTagList(bm_handle, bm_ultags);
+        }
 
     AROS_USERFUNC_EXIT
 }
