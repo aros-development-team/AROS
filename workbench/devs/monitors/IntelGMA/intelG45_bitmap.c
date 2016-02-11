@@ -1054,24 +1054,29 @@ static inline int do_alpha(int a, int v)
 	return ((tmp << 8) + tmp + 32768) >> 16;
 }
 
+/*
+    the BLT engine (the blitter) can not do alpha blending,
+    however we may utilise the 3d engine in future ..
+*/
 VOID METHOD(GMABM, Hidd_BitMap, PutAlphaImage)
 {
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+    IPTR VideoData;
 
     LOCK_BITMAP
 
-    IPTR VideoData = bm->framebuffer;
+    VideoData = bm->framebuffer;
 
-    if (bm->fbgfx)
+    if ((bm->fbgfx) && ((bm->bpp == 2) || (bm->bpp == 4)))
     {
-    	ULONG x_add = (msg->modulo - msg->width * 4) >> 2;
+        ULONG *pixarray, *pasrc = (ULONG *)msg->pixels;
+        ULONG srcpix, x, y = msg->y;
+        LONG src_red, src_green, src_blue, src_alpha;
+        LONG dst_red, dst_green, dst_blue;
     	UWORD height = msg->height;
     	UWORD bw = msg->width;
-        ULONG *pixarray = (ULONG *)msg->pixels;
-        ULONG y = msg->y;
-        ULONG x;
 
-		/* We're not going to use the 2D engine now. Therefore, flush the chip */
+        /* Since we wont use the BLT engine now, flush the chip */
         LOCK_HW
         DO_FLUSH();
         UNLOCK_HW
@@ -1081,161 +1086,131 @@ VOID METHOD(GMABM, Hidd_BitMap, PutAlphaImage)
          */
         if (bm->bpp == 4)
         {
-        	while(height--)
-        	{
-                ULONG *xbuf = (ULONG *)(sd->Card.Framebuffer + VideoData + y * bm->pitch);
-        		xbuf += msg->x;
+            ULONG       *xbuf = (ULONG *)(VideoData + sd->Card.Framebuffer + (msg->x << 2) + (y * bm->pitch));
+            ULONG       destpix;
 
-        		for (x=0; x < bw; x++)
-        		{
-        			ULONG       destpix;
-        			ULONG       srcpix;
-        			LONG        src_red, src_green, src_blue, src_alpha;
-        			LONG        dst_red, dst_green, dst_blue;
-
-					/* Read RGBA pixel from input array */
-        			srcpix = *pixarray++;
+            while(height--)
+            {
+                pixarray = pasrc;
+                for (x=0; x < bw; x++)
+                {
+                    /* Read RGBA pixel from input array */
+                    srcpix = *pixarray++;
 #if AROS_BIG_ENDIAN
-        			src_red   = (srcpix & 0x00FF0000) >> 16;
-        			src_green = (srcpix & 0x0000FF00) >> 8;
-        			src_blue  = (srcpix & 0x000000FF);
-        			src_alpha = (srcpix & 0xFF000000) >> 24;
+                    src_red   = (srcpix & 0x00FF0000) >> 16;
+                    src_green = (srcpix & 0x0000FF00) >> 8;
+                    src_blue  = (srcpix & 0x000000FF);
+                    src_alpha = (srcpix & 0xFF000000) >> 24;
 #else
-        			src_red   = (srcpix & 0x0000FF00) >> 8;
-        			src_green = (srcpix & 0x00FF0000) >> 16;
-        			src_blue  = (srcpix & 0xFF000000) >> 24;
-        			src_alpha = (srcpix & 0x000000FF);
+                    src_red   = (srcpix & 0x0000FF00) >> 8;
+                    src_green = (srcpix & 0x00FF0000) >> 16;
+                    src_blue  = (srcpix & 0xFF000000) >> 24;
+                    src_alpha = (srcpix & 0x000000FF);
 #endif
+                    /*
+                     * If the pixel is Opaque (alpha=0), skip unnecessary
+                     * reads and writes to VRAM.
+                     */
+                    if (src_alpha != 0)
+                    {
+                        if (src_alpha == 0xff)
+                        {
+                            /* Fully Transparent, just copy the source pixel */
+                            dst_red = src_red;
+                            dst_green = src_green;
+                            dst_blue = src_blue;
+                        }
+                        else
+                        {
+                            /* Alpha blend the source and destination pixels */
+                            destpix = xbuf[x];
+//#if AROS_BIG_ENDIAN
+//                            dst_red   = (destpix & 0x0000FF00) >> 8;
+//                            dst_green = (destpix & 0x00FF0000) >> 16;
+//                            dst_blue  = (destpix & 0xFF000000) >> 24;
+//#else
+                            dst_red   = (destpix & 0x00FF0000) >> 16;
+                            dst_green = (destpix & 0x0000FF00) >> 8;
+                            dst_blue  = (destpix & 0x000000FF);
+//#endif
 
-        			/*
-        			 * If alpha=0, do not change the destination pixel at all.
-        			 * This saves us unnecessary reads and writes to VRAM.
-        			 */
-					if (src_alpha != 0)
-					{
-						/*
-						 * Full opacity. Do not read the destination pixel, as
-						 * it's value does not matter anyway.
-						 */
-						if (src_alpha == 0xff)
-						{
-							dst_red = src_red;
-							dst_green = src_green;
-							dst_blue = src_blue;
-						}
-						else
-						{
-							/*
-							 * Alpha blending with source and destination pixels.
-							 * Get destination.
-							 */
-							destpix = xbuf[x];
+                            dst_red   += do_alpha(src_alpha, src_red - dst_red);
+                            dst_green += do_alpha(src_alpha, src_green - dst_green);
+                            dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
 
-//					#if AROS_BIG_ENDIAN
-//							dst_red   = (destpix & 0x0000FF00) >> 8;
-//							dst_green = (destpix & 0x00FF0000) >> 16;
-//							dst_blue  = (destpix & 0xFF000000) >> 24;
-//					#else
-							dst_red   = (destpix & 0x00FF0000) >> 16;
-							dst_green = (destpix & 0x0000FF00) >> 8;
-							dst_blue  = (destpix & 0x000000FF);
-//					#endif
+                        }
+//#if AROS_BIG_ENDIAN
+//                        destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
+//#else
+                        destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+//#endif
+                        /* Store the new pixel */
+                        xbuf[x] = destpix;
+                    }
+                }
 
-							dst_red   += do_alpha(src_alpha, src_red - dst_red);
-							dst_green += do_alpha(src_alpha, src_green - dst_green);
-							dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
-
-						}
-
-//					#if AROS_BIG_ENDIAN
-//                    destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
-//                #else
-						destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
-//                #endif
-
-						/* Store the new pixel */
-						xbuf[x] = destpix;
-					}
-        		}
-
-        		y++;
-        		pixarray += x_add;
-        	}
-        }
-        /* 2bpp cases... */
-        else if (bm->bpp == 2)
-        {
-        	while(height--)
-        	{
-        		UWORD *xbuf = (UWORD *)(sd->Card.Framebuffer + VideoData + y * bm->pitch);
-        		xbuf += msg->x;
-
-        		for (x=0; x < bw; x++)
-        		{
-        			UWORD       destpix;
-        			ULONG       srcpix;
-        			LONG        src_red, src_green, src_blue, src_alpha;
-        			LONG        dst_red, dst_green, dst_blue;
-
-        			srcpix = *pixarray++;
-#if AROS_BIG_ENDIAN
-        			src_red   = (srcpix & 0x00FF0000) >> 16;
-        			src_green = (srcpix & 0x0000FF00) >> 8;
-        			src_blue  = (srcpix & 0x000000FF);
-        			src_alpha = (srcpix & 0xFF000000) >> 24;
-#else
-        			src_red   = (srcpix & 0x0000FF00) >> 8;
-        			src_green = (srcpix & 0x00FF0000) >> 16;
-        			src_blue  = (srcpix & 0xFF000000) >> 24;
-        			src_alpha = (srcpix & 0x000000FF);
-#endif
-
-        			/*
-        			 * If alpha=0, do not change the destination pixel at all.
-        			 * This saves us unnecessary reads and writes to VRAM.
-        			 */
-        			if (src_alpha != 0)
-        			{
-        				/*
-        				 * Full opacity. Do not read the destination pixel, as
-        				 * it's value does not matter anyway.
-        				 */
-        				if (src_alpha == 0xff)
-        				{
-        					dst_red = src_red;
-        					dst_green = src_green;
-        					dst_blue = src_blue;
-        				}
-        				else
-        				{
-        					/*
-        					 * Alpha blending with source and destination pixels.
-        					 * Get destination.
-        					 */
-
-        					destpix = xbuf[x];
-
-        					dst_red   = (destpix & 0x0000F800) >> 8;
-        					dst_green = (destpix & 0x000007e0) >> 3;
-        					dst_blue  = (destpix & 0x0000001f) << 3;
-
-        					dst_red   += do_alpha(src_alpha, src_red - dst_red);
-        					dst_green += do_alpha(src_alpha, src_green - dst_green);
-        					dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
-        				}
-
-        				destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-
-        				xbuf[x] = destpix;
-        			}
-        		}
-
-        		y++;
-        		pixarray += x_add;
-        	}
+                y++;
+                pasrc = (ULONG *)((IPTR)pasrc + msg->modulo);
+                xbuf = (ULONG *)((IPTR)xbuf + bm->pitch);
+            }
         }
         else
-        	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        {
+            UWORD *xbuf = (UWORD *)(VideoData + sd->Card.Framebuffer + (msg->x << 1) + (y * bm->pitch));
+            UWORD       destpix;
+
+            while(height--)
+            {
+                pixarray = pasrc;
+                for (x=0; x < bw; x++)
+                {
+                    srcpix = *pixarray++;
+#if AROS_BIG_ENDIAN
+                    src_red   = (srcpix & 0x00FF0000) >> 16;
+                    src_green = (srcpix & 0x0000FF00) >> 8;
+                    src_blue  = (srcpix & 0x000000FF);
+                    src_alpha = (srcpix & 0xFF000000) >> 24;
+#else
+                    src_red   = (srcpix & 0x0000FF00) >> 8;
+                    src_green = (srcpix & 0x00FF0000) >> 16;
+                    src_blue  = (srcpix & 0xFF000000) >> 24;
+                    src_alpha = (srcpix & 0x000000FF);
+#endif
+                    /* If Opaque, skip unnecessary reads and writes to VRAM. */
+                    if (src_alpha != 0)
+                    {
+                        if (src_alpha == 0xff)
+                        {
+                            /* Fully Transparent */
+                            dst_red = src_red;
+                            dst_green = src_green;
+                            dst_blue = src_blue;
+                        }
+                        else
+                        {
+                            /* Alpha blend */
+
+                            destpix = xbuf[x];
+
+                            dst_red   = (destpix & 0x0000F800) >> 8;
+                            dst_green = (destpix & 0x000007e0) >> 3;
+                            dst_blue  = (destpix & 0x0000001f) << 3;
+
+                            dst_red   += do_alpha(src_alpha, src_red - dst_red);
+                            dst_green += do_alpha(src_alpha, src_green - dst_green);
+                            dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
+                        }
+
+                        destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
+
+                        xbuf[x] = destpix;
+                    }
+                }
+                y++;
+                pasrc = (ULONG *)((IPTR)pasrc + msg->modulo);
+                xbuf = (UWORD *)((IPTR)xbuf + bm->pitch);
+            }
+        }
     }
     else
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
