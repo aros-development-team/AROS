@@ -53,7 +53,7 @@
     NOTES
 
     (#1) - On AROS, the "DataType" an object returns may be a clone of
-           the real entry, so that the subclass can overide
+           the real entry, so that the subclass can override
            subformat information.
 
     EXAMPLE
