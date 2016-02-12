@@ -211,7 +211,7 @@ ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
-IPTR TapeDispatcher(struct IClass *cl, Object *obj, Msg msg)
+BOOPSI_DISPATCHER(IPTR, TapeDispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -226,6 +226,7 @@ IPTR TapeDispatcher(struct IClass *cl, Object *obj, Msg msg)
     }
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 static Class *make_tape_class(void)
 {
@@ -518,7 +519,7 @@ IPTR mAddCalcKey(struct IClass *cl, Object *obj, struct MUIMP_CalcKey *msg)
     return (IPTR) obj;
 }
 
-IPTR CalculatorDispatcher(struct IClass *cl, Object *obj, Msg msg)
+BOOPSI_DISPATCHER(IPTR, CalculatorDispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -528,6 +529,7 @@ IPTR CalculatorDispatcher(struct IClass *cl, Object *obj, Msg msg)
     }
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 static Class *make_calculator_class(void)
 {
