@@ -2,7 +2,7 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
+    Desc: Change your input preferences
     Lang: English
 */
 
@@ -40,7 +40,6 @@ struct List         keymap_list;
 
 static const struct nameexp layout_expansion_table[] =
 {
-    {"al"   , "Albanian"            , "Countries/Albania"       },
     {"usa"  , "American"	    , "Countries/United_States" },
     {"usa0" , "American"	    , "Countries/United_States" },
     {"us"   , "American"	    , "Countries/United_States" },
@@ -64,7 +63,7 @@ static const struct nameexp layout_expansion_table[] =
     {"irl"  , "English Ireland"     , "Countries/Ireland"       },
     {"e"    , "Español"             , "Countries/Spain"         },
     {"sp"   , "Español no deadkeys" , "Countries/Spain"         },
-    {"est"  , "Estonian"            , "Countries/Estonia"       },
+    {"est"  , "Eesti"               , "Countries/Estonia"       },
     {"fin"  , "Finnish"             , "Countries/Finland"       },
     {"f"    , "Français"            , "Countries/France"        },
     {"gr"   , "Hellenic"            , "Countries/Greece"        },
@@ -72,16 +71,18 @@ static const struct nameexp layout_expansion_table[] =
     {"is"   , "Íslenska"            , "Countries/Iceland"       },
     {"i"    , "Italiana"            , "Countries/Italy"         },
     {"la"   , "Latin American"      , "Misc/Unknown"            },
-    {"lv"   , "Latvian"             , "Countries/Latvia"        },
-    {"lt"   , "Lithuanian"          , "Countries/Lithuania"     },
+    {"lv"   , "Latvijas"            , "Countries/Latvia"        },
+    {"lt"   , "Lietuvos"            , "Countries/Lithuania"     },
     {"h"    , "Magyar"              , "Countries/Hungary"       },
     {"n"    , "Norsk"               , "Countries/Norway"        },
     {"pl"   , "Polski"              , "Countries/Poland"        },
     {"p"    , "Português"           , "Countries/Portugal"      },
+    {"ro"   , "Românesc"            , "Countries/Romania"       },
     {"rus"  , "Russian"             , "Countries/Russia"        },
-    {"ch2"  , "Suisse"              , "Countries/Switzerland"   },
-    {"sk"   , "Slovak"              , "Countries/Slovakia"      },
     {"ch1"  , "Schweizer"           , "Countries/Switzerland"   },
+    {"al"   , "Shqip"               , "Countries/Albania"       },
+    {"sk"   , "Slovak"              , "Countries/Slovakia"      },
+    {"ch2"  , "Suisse"              , "Countries/Switzerland"   },
     {"s"    , "Svenskt"             , "Countries/Sweden"        },
     {"tr"   , "Türkçe"              , "Countries/Turkey"        },
     {"ua"   , "Ukranian"            , "Countries/Ukraine"       },
