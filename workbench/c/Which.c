@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Find the whereabouts of an executable file or directory
+    Desc: Find the whereabouts of an executable file
     Lang: English
 */
 
@@ -22,8 +22,8 @@
 
     FUNCTION
 
-        Find and print the location of a specific program or directory.
-        Resident programs are marked as RESIDENT if they are not
+        Find and print the location of a specific program.
+        Resident programs are marked as RES if they are not
         internal resident in which case they are marked as INTERNAL.
 
         Which searches the resident list, the current directory,
@@ -33,7 +33,7 @@
 
     INPUTS
 
-        FILE   --  the command/directory to search for
+        FILE   --  the command to search for
         NORES  --  don't include resident programs in the search
         RES    --  consider resident programs only
         ALL    --  find all locations of the FILE. This may cause the
@@ -58,9 +58,6 @@
 
     HISTORY
 
-        09.02.1998  SDuvan  --  implemented
-        11.11.2000  SDuvan  --  rewrote most of the code and added 
-                                correct path support
 
 ******************************************************************************/
 
@@ -73,7 +70,7 @@
 
 #define  ARG_COUNT  4    /* Number of ReadArgs() arguments */
 
-const TEXT version[] = "$VER: Which 41.1 (7.9.1999)";
+const TEXT version[] = "$VER: Which 41.2 (13.2.2016)";
 
 /* NOTE: For now, compatibility to the Amiga Which command is kept, but
          I think that the restriction to only executable files should be
@@ -83,25 +80,25 @@ const TEXT version[] = "$VER: Which 41.1 (7.9.1999)";
 /*
  * Check the resident list for the command 'name'.
  */
-BOOL FindResidentCommand(STRPTR name);
+static BOOL FindResidentCommand(STRPTR name);
 
 
 /*
  * Check the paths for the command 'name'.
  */
-BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib);
+static BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib);
 
 
 /*
  * Check the C: multiassign for the command 'name'.
  */
-BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib);
+static BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib);
 
 
 /*
  * Look in the current directory for the command 'name'.
  */
-BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib);
+static BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib);
 
 
 /*
@@ -109,7 +106,7 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib);
  * was not enough memory to allocate the string. This string should be
  * freed using FreeVec().
  */
-STRPTR GetFullPath(BPTR lock);
+static STRPTR GetFullPath(BPTR lock);
 
 
 int __nocommandline;
@@ -182,7 +179,7 @@ int main(void)
 
 /* NOTE: The filesystemtask stuff is only necessary for this to work
          correctly on AmigaOS. AROS doesn't use this concept. */
-BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
+static BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 {
     BOOL            found = FALSE;    /* Object found? */
     struct DevProc *dp = NULL;        /* For GetDeviceProc() call */
@@ -217,7 +214,7 @@ BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 }
 
 
-BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
+static BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 {
     BOOL  found;                /* Have we found the 'file' yet? */
     BPTR  oldCurDir;		/* Space to store the current dir */
@@ -255,7 +252,7 @@ BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 }
 
 
-BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
+static BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 {
     BPTR    lock;                     /* Lock on 'name' */
     BOOL    found = FALSE;            /* For return value purposes */
@@ -287,12 +284,6 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 			found = TRUE;
 		    }
 		}
-		else
-		{
-		    /* Directories are always printed */
-		    Printf("%s\n", pathName);
-		    found = TRUE;
-		}
 
 		FreeVec(pathName); /* Free memory holding the full path name */
 	    }
@@ -305,7 +296,7 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 }
 
 
-STRPTR GetFullPath(BPTR lock)
+static STRPTR GetFullPath(BPTR lock)
 {
     UBYTE  *buf;           /* Pointer to the memory allocated for the string */
     ULONG   size;          /* Holder of the (growing) size of the string */
@@ -329,7 +320,7 @@ STRPTR GetFullPath(BPTR lock)
 }
 
 
-BOOL FindResidentCommand(STRPTR name)
+static BOOL FindResidentCommand(STRPTR name)
 {
     BOOL   found = FALSE;          /* For return value purposes */
     struct Segment *seg;           /* Holder of segment if 'name' is a
