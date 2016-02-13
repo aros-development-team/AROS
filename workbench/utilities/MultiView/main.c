@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1175,6 +1175,11 @@ static void HandleAll(void)
                             
                         case 8: /* Backspace */
                             if (dto_supports_retrace) DoTrigger(STM_RETRACE);
+                            else ScrollTo(CURSORUP, IEQUALIFIER_LSHIFT);
+                            break;
+
+                        case ' ':
+                            ScrollTo(CURSORDOWN, IEQUALIFIER_LSHIFT);
                             break;
 
                         case '>':

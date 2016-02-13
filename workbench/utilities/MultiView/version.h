@@ -8,6 +8,6 @@
 
 
 #define VERSION         1
-#define REVISION        5
-#define DATESTR         "16.01.2016"
-#define VERSIONSTR      "$VER: MultiView 1.5 (" DATESTR ")"
+#define REVISION        6
+#define DATESTR         "13.02.2016"
+#define VERSIONSTR      "$VER: MultiView 1.6 (" DATESTR ")"
