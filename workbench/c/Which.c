@@ -118,59 +118,59 @@ int main(void)
 
     struct RDArgs *rda;           /* ReadArgs standard struct */
     BOOL   found = FALSE;         /* Indicates whether we've found a file
-				     or not -- used for ALL ReadArgs() tag. */
+                                     or not -- used for ALL ReadArgs() tag. */
     int    error = RETURN_WARN;     /* Error value to return */
 
     struct FileInfoBlock *fib;    /* Used in Examine(). Allocated at top level
-				     to skip multiple calls to
-				     AllocDosObject() / FreeDosObject */
+                                     to skip multiple calls to
+                                     AllocDosObject() / FreeDosObject */
     
     if((rda = ReadArgs("FILE/A,NORES/S,RES/S,ALL/S", args, NULL)) != NULL)
     {
-	BOOL    noRes    = (BOOL)args[1];   /* Don't check resident commands */
-	BOOL    resOnly  = (BOOL)args[2];   /* Check resident commands only */
-	BOOL    checkAll = (BOOL)args[3];   /* Check for multiple occurances */
+        BOOL    noRes    = (BOOL)args[1];   /* Don't check resident commands */
+        BOOL    resOnly  = (BOOL)args[2];   /* Check resident commands only */
+        BOOL    checkAll = (BOOL)args[3];   /* Check for multiple occurances */
 
-	STRPTR  commandName = (STRPTR)args[0];     /* Command to look for */
+        STRPTR  commandName = (STRPTR)args[0];     /* Command to look for */
 
-	fib = AllocDosObject(DOS_FIB, NULL);
-	
-	if(fib != NULL)
-	{
-	    if(!noRes)
-	    {
-		/* Check resident lists */
-		found |= FindResidentCommand(commandName);
-//		Printf("Resident list\n");
-	    }
+        fib = AllocDosObject(DOS_FIB, NULL);
+        
+        if(fib != NULL)
+        {
+            if(!noRes)
+            {
+                /* Check resident lists */
+                found |= FindResidentCommand(commandName);
+                D(bug("Resident list\n"));
+            }
 
-	    if(!found && !resOnly)
-	    {
-		/* Check all available paths */
-		found |= FindCommandinPath(commandName, checkAll, fib);
-//		Printf("Path\n");
-	    }
+            if(!found && !resOnly)
+            {
+                /* Check all available paths */
+                found |= FindCommandinPath(commandName, checkAll, fib);
+                D(bug("Path\n"));
+            }
 
-	    if(!found && !resOnly)
-	    {
-		/* Check C: multiassign */
-		found |= FindCommandinC(commandName, checkAll, fib);
-//		Printf("C:\n");
-	    }
-	    if (found)
-	    {
-		error = RETURN_OK;
-	    }
-	
-	    FreeDosObject(DOS_FIB, fib);
-	}
+            if(!found && !resOnly)
+            {
+                /* Check C: multiassign */
+                found |= FindCommandinC(commandName, checkAll, fib);
+                D(bug("C:\n"));
+            }
+            if (found)
+            {
+                error = RETURN_OK;
+            }
+        
+            FreeDosObject(DOS_FIB, fib);
+        }
 
-	FreeArgs(rda);
+        FreeArgs(rda);
     }
     else
     {
-	PrintFault(IoErr(), "Which");
-	error = RETURN_FAIL;
+        PrintFault(IoErr(), "Which");
+        error = RETURN_FAIL;
     }
     
     return error;
@@ -190,20 +190,20 @@ static BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib
        or rather, it isn't in the C: directory or we found it in
        FindCommandinPath(). */
     if(FilePart(name) != name)
-	return FALSE;
+        return FALSE;
     
     oldCurDir = CurrentDir(BNULL);     /* Just to save the old current dir... */
     // oldFST    = GetFileSysTask();  /* ... and the filesystem task */
     
     while(((dp = GetDeviceProc("C:", dp)) != NULL) && (!found || checkAll))
     {
-	// SetFileSysTask(dp2->dvp_Port);
-	CurrentDir(dp->dvp_Lock);
-	found |= CheckDirectory(name, fib);
-	
-	/* Is this a multi assign? */
-	if(!(dp->dvp_Flags & DVPF_ASSIGN))
-	    break;
+        // SetFileSysTask(dp2->dvp_Port);
+        CurrentDir(dp->dvp_Lock);
+        found |= CheckDirectory(name, fib);
+        
+        /* Is this a multi assign? */
+        if(!(dp->dvp_Flags & DVPF_ASSIGN))
+            break;
     }
     
     // SetFileSysTask(oldFST);
@@ -217,33 +217,33 @@ static BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib
 static BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 {
     BOOL  found;                /* Have we found the 'file' yet? */
-    BPTR  oldCurDir;		/* Space to store the current dir */
+    BPTR  oldCurDir;            /* Space to store the current dir */
     BPTR *paths;                /* Loop variable */
 
     struct CommandLineInterface *cli = Cli();
-//  Printf("checkAll = %ld\n", checkAll);
+    D(bug("checkAll = %ld\n", checkAll));
     /* Can this happen at all? */
     if(cli == NULL)
-	return FALSE;
+        return FALSE;
 
     /* Check the current directory */
-//  Printf("Calling CheckDirectory()\n");
+    D(bug("Calling CheckDirectory()\n"));
     found = CheckDirectory(name, fib);
 
     oldCurDir = CurrentDir(BNULL);
 
     /* Check all paths */
     paths = (BPTR *)BADDR(cli->cli_CommandDir);
-//  Printf("paths = 0x%08lx\n", paths);
+    D(bug("paths = 0x%08lx\n", paths));
 
     while((!found || checkAll) && (paths != NULL))
     {
-	CurrentDir(paths[1]);
+        CurrentDir(paths[1]);
 
-//	Printf("Calling CheckDirectory()\n");
-	found |= CheckDirectory(name, fib);
-	
-	paths = (BPTR *)BADDR(paths[0]);    /* Go on with the next path */
+        D(bug("Calling CheckDirectory()\n"));
+        found |= CheckDirectory(name, fib);
+        
+        paths = (BPTR *)BADDR(paths[0]);    /* Go on with the next path */
     }
 
     CurrentDir(oldCurDir);
@@ -260,36 +260,36 @@ static BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 
     lock = Lock(name, SHARED_LOCK);
 
-//  Printf("Locked command %s\n", name);
+    D(bug("Locked command %s\n", name));
     
     if(lock != BNULL)
     {
-//	Printf("Calling Examine()\n");
+        D(bug("Calling Examine()\n"));
 
-	if(Examine(lock, fib) == DOSTRUE)
-	{
-//	    Printf("Calling GetFullPath()\n");
+        if(Examine(lock, fib) == DOSTRUE)
+        {
+            D(bug("Calling GetFullPath()\n"));
 
-	    pathName = GetFullPath(lock);
+            pathName = GetFullPath(lock);
 
-	    if(pathName != NULL)
-	    {	    
-		/* File or directory? */
-		if(fib->fib_DirEntryType < 0)
-		{
-		    /* FIBF_EXECUTE is active low! */
-		    if(!(fib->fib_Protection & FIBF_EXECUTE))
-		    {
-			Printf("%s\n", pathName);
-			found = TRUE;
-		    }
-		}
+            if(pathName != NULL)
+            {
+                /* File or directory? */
+                if(fib->fib_DirEntryType < 0)
+                {
+                    /* FIBF_EXECUTE is active low! */
+                    if(!(fib->fib_Protection & FIBF_EXECUTE))
+                    {
+                        Printf("%s\n", pathName);
+                        found = TRUE;
+                    }
+                }
 
-		FreeVec(pathName); /* Free memory holding the full path name */
-	    }
-	}
-	
-	UnLock(lock);
+                FreeVec(pathName); /* Free memory holding the full path name */
+            }
+        }
+        
+        UnLock(lock);
     }
 
     return found;
@@ -303,17 +303,17 @@ static STRPTR GetFullPath(BPTR lock)
 
     for(size = 512; ; size += 512)
     {
-	buf = AllocVec(size, MEMF_ANY);
+        buf = AllocVec(size, MEMF_ANY);
 
-	if(buf == NULL)
-	    break;
+        if(buf == NULL)
+            break;
 
-	if(NameFromLock(lock, buf, size))
-	{
-	    return (STRPTR)buf;
-	}
+        if(NameFromLock(lock, buf, size))
+        {
+            return (STRPTR)buf;
+        }
 
-	FreeVec(buf);
+        FreeVec(buf);
     }
 
     return NULL;
@@ -324,7 +324,7 @@ static BOOL FindResidentCommand(STRPTR name)
 {
     BOOL   found = FALSE;          /* For return value purposes */
     struct Segment *seg;           /* Holder of segment if 'name' is a
-				      resident command */
+                                      resident command */
         
     /* Look in both system and normal list. Or rather, in the normal list
        ONLY if it wasn't found in the system list. This is what the Amiga
@@ -334,23 +334,23 @@ static BOOL FindResidentCommand(STRPTR name)
         first by the Shell? */
     if((seg = FindSegment(name, NULL, TRUE)) == NULL)
     {
-	seg = FindSegment(name, NULL, FALSE);
+        seg = FindSegment(name, NULL, FALSE);
     }
     
     if(seg != NULL)
     {
-	found = TRUE;
-	
-	if(seg->seg_UC == CMD_INTERNAL)
-	{
-	    Printf("INTERNAL %s\n", name);
-	}
-	else if(seg->seg_UC == CMD_DISABLED)
-	{
-	    Printf("INTERNAL %s ;(DISABLED)\n", name);
-	}
-	else
-	    Printf("RES %s\n", name);
+        found = TRUE;
+        
+        if(seg->seg_UC == CMD_INTERNAL)
+        {
+            Printf("INTERNAL %s\n", name);
+        }
+        else if(seg->seg_UC == CMD_DISABLED)
+        {
+            Printf("INTERNAL %s ;(DISABLED)\n", name);
+        }
+        else
+            Printf("RES %s\n", name);
     }
     
     return found;
