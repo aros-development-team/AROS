@@ -45,6 +45,15 @@
 
     NOTES
 
+        For compatibility reasons these cases are handled specially:
+        
+        Absolute path:
+            Prints the expanded path if it exists and is a file 
+            and no RES argument is given.
+            
+        Path which ends with a ':':
+            Prints the expanded path if it exists and no RES argument is given.
+
     EXAMPLE
 
     BUGS
@@ -61,6 +70,7 @@
 
 ******************************************************************************/
 
+#define DEBUG 1
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -70,7 +80,7 @@
 
 #define  ARG_COUNT  4    /* Number of ReadArgs() arguments */
 
-const TEXT version[] = "$VER: Which 41.2 (13.2.2016)";
+const TEXT version[] = "$VER: Which 41.2 (14.2.2016)";
 
 /* NOTE: For now, compatibility to the Amiga Which command is kept, but
          I think that the restriction to only executable files should be
@@ -90,6 +100,13 @@ static BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *
 
 
 /*
+ * Handle absolute path for the command 'name'.
+ */
+
+static BOOL FindCommandInAbsolutePath(STRPTR name, TEXT *colon, struct FileInfoBlock *fib);
+
+
+/*
  * Check the C: multiassign for the command 'name'.
  */
 static BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib);
@@ -98,7 +115,7 @@ static BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib
 /*
  * Look in the current directory for the command 'name'.
  */
-static BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib);
+static BOOL CheckDirectory(STRPTR name, BOOL directory, struct FileInfoBlock *fib);
 
 
 /*
@@ -133,30 +150,42 @@ int main(void)
 
         STRPTR  commandName = (STRPTR)args[0];     /* Command to look for */
 
+        TEXT *colon;
+
         fib = AllocDosObject(DOS_FIB, NULL);
         
         if(fib != NULL)
         {
-            if(!noRes)
+            if (!resOnly && (colon = strchr(commandName, ':')))
             {
-                /* Check resident lists */
-                found |= FindResidentCommand(commandName);
-                D(bug("Resident list\n"));
+                /* Check for absolute path */
+                found |= FindCommandInAbsolutePath(commandName, colon, fib);
+                D(bug("Absolute path\n"));                
+            }
+            else
+            {
+                if(!found && !noRes)
+                {
+                    /* Check resident lists */
+                    found |= FindResidentCommand(commandName);
+                    D(bug("Resident list\n"));
+                }
+
+                if(!found && !resOnly)
+                {
+                    /* Check all available paths */
+                    found |= FindCommandinPath(commandName, checkAll, fib);
+                    D(bug("Path\n"));
+                }
+
+                if(!found && !resOnly)
+                {
+                    /* Check C: multiassign */
+                    found |= FindCommandinC(commandName, checkAll, fib);
+                    D(bug("C:\n"));
+                }
             }
 
-            if(!found && !resOnly)
-            {
-                /* Check all available paths */
-                found |= FindCommandinPath(commandName, checkAll, fib);
-                D(bug("Path\n"));
-            }
-
-            if(!found && !resOnly)
-            {
-                /* Check C: multiassign */
-                found |= FindCommandinC(commandName, checkAll, fib);
-                D(bug("C:\n"));
-            }
             if (found)
             {
                 error = RETURN_OK;
@@ -199,7 +228,7 @@ static BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib
     {
         // SetFileSysTask(dp2->dvp_Port);
         CurrentDir(dp->dvp_Lock);
-        found |= CheckDirectory(name, fib);
+        found |= CheckDirectory(name, FALSE, fib);
         
         /* Is this a multi assign? */
         if(!(dp->dvp_Flags & DVPF_ASSIGN))
@@ -228,7 +257,7 @@ static BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *
 
     /* Check the current directory */
     D(bug("Calling CheckDirectory()\n"));
-    found = CheckDirectory(name, fib);
+    found = CheckDirectory(name, FALSE, fib);
 
     oldCurDir = CurrentDir(BNULL);
 
@@ -241,7 +270,7 @@ static BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *
         CurrentDir(paths[1]);
 
         D(bug("Calling CheckDirectory()\n"));
-        found |= CheckDirectory(name, fib);
+        found |= CheckDirectory(name, FALSE, fib);
         
         paths = (BPTR *)BADDR(paths[0]);    /* Go on with the next path */
     }
@@ -252,7 +281,30 @@ static BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *
 }
 
 
-static BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
+static BOOL FindCommandInAbsolutePath(STRPTR name, TEXT *colon, struct FileInfoBlock *fib)
+{
+    BOOL  found;                /* Have we found the 'file' yet? */
+
+    if (*(colon + 1) == '\0')
+    {
+        /* In case path ends with ':' we print the directory */
+        D(bug("Path ends with ':'\n"));
+        /* Check the current directory */
+        D(bug("Calling CheckDirectory()\n"));
+        found = CheckDirectory(name, TRUE, fib);
+    }
+    else
+    {
+        /* Check the current directory */
+        D(bug("Calling CheckDirectory()\n"));
+        found = CheckDirectory(name, FALSE, fib);
+    }
+
+    return found;
+}
+
+
+static BOOL CheckDirectory(STRPTR name, BOOL directory, struct FileInfoBlock *fib)
 {
     BPTR    lock;                     /* Lock on 'name' */
     BOOL    found = FALSE;            /* For return value purposes */
@@ -283,6 +335,11 @@ static BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
                         Printf("%s\n", pathName);
                         found = TRUE;
                     }
+                }
+                else if (directory)
+                {
+                    Printf("%s\n", pathName);
+                    found = TRUE;
                 }
 
                 FreeVec(pathName); /* Free memory holding the full path name */
