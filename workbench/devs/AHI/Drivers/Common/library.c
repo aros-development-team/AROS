@@ -16,6 +16,8 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
+#define DRIVER_LIBSTUB
+
 #include "gatestubs.h"
 #include "library.h"
 
@@ -309,6 +311,7 @@ ReqA( const char*        text,
       APTR               args,
       struct DriverBase* AHIsubBase )
 {
+  struct IntuitionBase *IntuitionBase = AHIsubBase->intuitionbase;
   struct EasyStruct es = 
   {
     sizeof (struct EasyStruct),
@@ -434,28 +437,28 @@ _LibInit( struct DriverBase* AHIsubBase,
   AHIsubBase->intuitionbase = (struct IntuitionBase *)OpenLibrary( INTUITIONNAME, 37 );
   AHIsubBase->utilitybase   = (struct UtilityBase *)OpenLibrary( UTILITYNAME, 37 );
 
-  if( IntuitionBase == NULL )
+  if( AHIsubBase->intuitionbase == NULL )
   {
     Alert( AN_Unknown|AG_OpenLib|AO_Intuition );
     goto error;
   }
   
 #ifdef __AMIGAOS4__
-  if ((IIntuition = (struct IntuitionIFace *) GetInterface((struct Library*) IntuitionBase, "main", 1, NULL)) == NULL)
+  if ((IIntuition = (struct IntuitionIFace *) GetInterface((struct Library*) AHIsubBase->intuitionbase, "main", 1, NULL)) == NULL)
   {
     Alert( AN_Unknown|AG_OpenLib|AO_Intuition );
     goto error;
   }
 #endif
 
-  if( UtilityBase == NULL )
+  if( AHIsubBase->utilitybase == NULL )
   {
     Req( "Unable to open 'utility.library' version 37.\n" );
     goto error;
   }
 
 #ifdef __AMIGAOS4__
-  if ((IUtility = (struct UtilityIFace *) GetInterface((struct Library*) UtilityBase, "main", 1, NULL)) == NULL)
+  if ((IUtility = (struct UtilityIFace *) GetInterface((struct Library*) AHIsubBase->utilitybase, "main", 1, NULL)) == NULL)
   {
     Req("Couldn't open IUtility interface!\n");
     goto error;
@@ -518,8 +521,8 @@ _LibExpunge( struct DriverBase* AHIsubBase )
 #endif
     
     /* Close libraries */
-    CloseLibrary(&IntuitionBase->LibNode );
-    CloseLibrary(&UtilityBase->ub_LibNode );
+    CloseLibrary(&AHIsubBase->intuitionbase->LibNode );
+    CloseLibrary(&AHIsubBase->utilitybase->ub_LibNode );
 
 #ifdef __AROS__
     set_call_funcs(SETNAME(EXIT), -1, 0);
