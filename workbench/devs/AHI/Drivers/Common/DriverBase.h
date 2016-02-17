@@ -34,8 +34,10 @@ struct DriverBase
 # define SysBase      (AHIsubBase->execbase)
 #endif
 
+#if !defined(DRIVER_LIBSTUB)
 #define IntuitionBase ((struct IntuitionBase*) AHIsubBase->intuitionbase)
 #define UtilityBase   ((struct UtilityBase*)   AHIsubBase->utilitybase)
+#endif
 
 #ifdef __AMIGAOS4__
 # ifndef DRIVER_NEEDS_GLOBAL_EXECBASE
