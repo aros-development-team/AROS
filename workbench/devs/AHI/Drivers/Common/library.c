@@ -431,8 +431,8 @@ _LibInit( struct DriverBase* AHIsubBase,
   AHIsubBase->library.lib_IdString     = (STRPTR) LibIDString;
   AHIsubBase->seglist                  = seglist;
 
-  AHIsubBase->intuitionbase = OpenLibrary( INTUITIONNAME, 37 );
-  AHIsubBase->utilitybase   = OpenLibrary( UTILITYNAME, 37 );
+  AHIsubBase->intuitionbase = (struct IntuitionBase *)OpenLibrary( INTUITIONNAME, 37 );
+  AHIsubBase->utilitybase   = (struct UtilityBase *)OpenLibrary( UTILITYNAME, 37 );
 
   if( IntuitionBase == NULL )
   {
