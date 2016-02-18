@@ -26,11 +26,7 @@ KERNEL_LD	:= @aros_kernel_ld@
 GENMAP		:= @aros_target_genmap@
 TARGET_OBJCOPY	:= @aros_target_objcopy@
 
-ifeq ($(DEBUG),yes)
-TARGET_STRIP	:= @NOP@
-else
-TARGET_STRIP	:= @aros_target_strip@ @aros_target_strip_flags@
-endif
+TARGET_DEF_STRIP	:= @aros_target_strip@ @aros_target_strip_flags@
 
 TARGET_OBJDUMP	:= @aros_target_objdump@
 KERNEL_RESCOMP  := @aros_kernel_rescomp@
@@ -124,12 +120,11 @@ JAVA_TARGET           := @java_target@
 # since they depend on the AROS C Library
 AROS_TARGET_TOOLCHAIN := @aros_target_toolchain@
 
-HOST_X11_CFLAGS := $(addprefix -I,@aros_host_x11_includes@)
-HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@) -lX11
+HOST_X11_BASE_CFLAGS := @aros_host_x11_includes@
+HOST_X11_BASE_LIBS   := @aros_host_x11_libdirs@ X11
+
 HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
 HOST_SDL_LIBS   := @aros_host_sdl_libs@
-
-SDL_CFLAGS      := @SDL_CFLAGS@
 
 # DBUS flags
 ENABLE_DBUS	:= @ENABLE_DBUS@
@@ -138,35 +133,6 @@ DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
 
 # MMU flags
 USE_MMU		:= @aros_enable_mmu@
-
-# Kernel private includes, in order of precedence:
-ifneq (,$(findstring $(ARCH),raspi))
-TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/kernel
-else
-TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
-endif
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
-ifneq ($(FAMILY),)
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
-endif
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
-                        -I$(SRCDIR)/rom/kernel
-
-# Exec private includes, in order of precedence:
-ifneq (,$(findstring $(ARCH),raspi))
-TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/exec
-else
-TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
-endif
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/exec
-ifneq ($(FAMILY),)
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
-endif
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/exec \
-                      -I$(SRCDIR)/rom/exec
-
-PRIV_KERNEL_INCLUDES := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
-PRIV_EXEC_INCLUDES := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)
 
 # Android
 AROS_ANDROID_ANTAPK := @aros_android_antapk@
