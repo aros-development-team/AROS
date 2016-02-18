@@ -1044,6 +1044,7 @@ void tlsf_add_memory(struct MemHeaderExt *mhe, void *memory, IPTR size)
         D(nbug("[Kernel:TLSF] %s:  total_size=%08x\n", __PRETTY_FUNCTION__, tlsf->total_size));
 
         /* adjust the memheader if necessary */
+#if 0
         if (memory < mhe->mhe_MemHeader.mh_Lower)
         {
             if ((memory + size) >= mhe->mhe_MemHeader.mh_Lower)
@@ -1060,6 +1061,9 @@ void tlsf_add_memory(struct MemHeaderExt *mhe, void *memory, IPTR size)
                 mhe->mhe_MemHeader.mh_Free += size;
             mhe->mhe_MemHeader.mh_Upper = memory + size;
         }
+#endif
+
+        mhe->mhe_MemHeader.mh_Free += size;
 
         /* Add the initialized memory */
         tlsf_freevec(mhe, b->mem);
