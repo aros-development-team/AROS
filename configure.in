@@ -2930,6 +2930,7 @@ AC_CONFIG_FILES(
     ${aros_geninc_dir}/config.h:config/config.h.in
     ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in
     ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in
+    ${aros_targetcfg_dir}/build.cfg:config/build.cfg.in
     mmake.config
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
