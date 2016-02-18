@@ -50,9 +50,14 @@ getvar (struct List * varlist, const char * varname)
     {
 	return env_val;
     }
-    if (!quiet)
-	printf("[MMAKE] Variable %s doesn't exist\n", varname);
-    sprintf (buffer, "?$(%s)", varname);
+    if (!strncmp(varname, "OPT_", 4))
+        buffer[0] = '\0';
+    else
+    {
+        if (!quiet)
+            printf("[MMAKE] Variable %s doesn't exist\n", varname);
+        sprintf (buffer, "?$(%s)", varname);
+    }
     return buffer;
 }
 
