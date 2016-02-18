@@ -110,3 +110,21 @@ USE_MMU		:= @aros_enable_mmu@
 
 # Android
 AROS_ANDROID_ANTAPK := @aros_android_antapk@
+
+# Optional components
+
+# Defined as 'yes' if we can build our own toolchain.
+# This is a prerequisite for ObjectiveC and C++ support,
+# since they depend on the AROS C Library
+AROS_TARGET_TOOLCHAIN := @aros_target_toolchain@
+
+# Bootloader to use on platforms that support it
+AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
+
+PCI_HIDD_TARGET       := @pci_hidd_target@
+CROSSTOOLS_TARGET     := @crosstools_target@
+OBJC_TARGET           := @objc_target@
+JAVA_TARGET           := @java_target@
+UNIXGFX_HIDD_TARGET          := @unixgfx_hidd_target@
+SDL_HIDD_TARGET          := @sdl_hidd_target@
+ENABLE_DBUS	:= @ENABLE_DBUS@

@@ -1,41 +1,21 @@
 # Optional components
 
-# Bootloader to use on platforms that support it
-AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
-
-PCI_HIDD_TARGET       := @pci_hidd_target@
-CROSSTOOLS_TARGET     := @crosstools_target@
-OBJC_TARGET           := @objc_target@
-JAVA_TARGET           := @java_target@
-
-# Defined as 'yes' if we can build our own toolchain.
-# This is a prerequisite for ObjectiveC and C++ support,
-# since they depend on the AROS C Library
-AROS_TARGET_TOOLCHAIN := @aros_target_toolchain@
-
 # DBUS flags
-ENABLE_DBUS	:= @ENABLE_DBUS@
 DBUS_CFLAGS	:= @DBUS_CFLAGS@
 DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
 
-ifeq (@unixgfx_hidd_target@,kernel-x11gfx)
-UNIXGFX_HIDD_TARGET          := @unixgfx_hidd_target@
+ifeq ($(UNIXGFX_HIDD_TARGET),kernel-x11gfx)
 HOST_X11_CFLAGS := $(addprefix -I, @aros_host_x11_includes@)
 HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@ X11)
 endif
 
 ifeq (@sdl_hidd_target@,kernel-hidd-sdl)
-SDL_HIDD_TARGET          := @sdl_hidd_target@
 HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
 HOST_SDL_LIBS   := @aros_host_sdl_libs@
 endif
 
-ifeq (@unixgfx_hidd_target@,kernel-hidd-androidgfx)
-UNIXGFX_HIDD_TARGET      := @unixgfx_hidd_target@
-endif
-
 ifeq ($(DEBUG),yes)
-TARGET_STRIP	:=
+TARGET_STRIP	:= @NOP@
 else
 TARGET_STRIP	:= $(TARGET_DEF_STRIP)
 endif
