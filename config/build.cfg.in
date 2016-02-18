@@ -18,20 +18,20 @@ ENABLE_DBUS	:= @ENABLE_DBUS@
 DBUS_CFLAGS	:= @DBUS_CFLAGS@
 DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
 
-ifeq (@host_x_gfx@,yes)
-HOST_X11_GFX          := @host_x_gfx@
+ifeq (@unixgfx_hidd_target@,kernel-x11gfx)
+UNIXGFX_HIDD_TARGET          := @unixgfx_hidd_target@
 HOST_X11_CFLAGS := $(addprefix -I, @aros_host_x11_includes@)
 HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@ X11)
 endif
 
-ifeq (@host_sdl_gfx@,yes)
-HOST_SDL_GFX          := @host_sdl_gfx@
+ifeq (@sdl_hidd_target@,kernel-hidd-sdl)
+SDL_HIDD_TARGET          := @sdl_hidd_target@
 HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
 HOST_SDL_LIBS   := @aros_host_sdl_libs@
 endif
 
-ifeq (@host_android_gfx@,yes)
-HOST_ANDROID_GFX      := @host_android_gfx@
+ifeq (@unixgfx_hidd_target@,kernel-hidd-androidgfx)
+UNIXGFX_HIDD_TARGET      := @unixgfx_hidd_target@
 endif
 
 ifeq ($(DEBUG),yes)
