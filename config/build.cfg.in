@@ -1,0 +1,73 @@
+# Optional components
+
+# Bootloader to use on platforms that support it
+AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
+
+PCI_HIDD_TARGET       := @pci_hidd_target@
+CROSSTOOLS_TARGET     := @crosstools_target@
+OBJC_TARGET           := @objc_target@
+JAVA_TARGET           := @java_target@
+
+# Defined as 'yes' if we can build our own toolchain.
+# This is a prerequisite for ObjectiveC and C++ support,
+# since they depend on the AROS C Library
+AROS_TARGET_TOOLCHAIN := @aros_target_toolchain@
+
+# DBUS flags
+ENABLE_DBUS	:= @ENABLE_DBUS@
+DBUS_CFLAGS	:= @DBUS_CFLAGS@
+DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
+
+ifeq (@host_x_gfx@,yes)
+HOST_X11_GFX          := @host_x_gfx@
+HOST_X11_CFLAGS := $(addprefix -I, @aros_host_x11_includes@)
+HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@ X11)
+endif
+
+ifeq (@host_sdl_gfx@,yes)
+HOST_SDL_GFX          := @host_sdl_gfx@
+HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
+HOST_SDL_LIBS   := @aros_host_sdl_libs@
+endif
+
+ifeq (@host_android_gfx@,yes)
+HOST_ANDROID_GFX      := @host_android_gfx@
+endif
+
+ifeq ($(DEBUG),yes)
+TARGET_STRIP	:=
+else
+TARGET_STRIP	:= $(TARGET_DEF_STRIP)
+endif
+
+KERNEL_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(KERNEL_CFLAGS)))
+TARGET_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TARGET_CFLAGS)))
+
+# Kernel private includes, in order of precedence:
+ifneq (,$(findstring $(ARCH),raspi))
+TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/kernel
+else
+TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
+endif
+TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+ifneq ($(FAMILY),)
+TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
+endif
+TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
+                        -I$(SRCDIR)/rom/kernel
+
+# Exec private includes, in order of precedence:
+ifneq (,$(findstring $(ARCH),raspi))
+TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/exec
+else
+TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
+endif
+TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/exec
+ifneq ($(FAMILY),)
+TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
+endif
+TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/exec \
+                      -I$(SRCDIR)/rom/exec
+
+PRIV_KERNEL_INCLUDES := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
+PRIV_EXEC_INCLUDES := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)

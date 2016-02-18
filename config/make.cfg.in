@@ -17,48 +17,6 @@ AROS_TARGET_SUFFIX=
 AROS_TARGET_PLATFORM := $(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 endif
 
-ifeq ($(DEBUG),yes)
-TARGET_STRIP	:=
-else
-TARGET_STRIP	:= $(TARGET_DEF_STRIP)
-endif
-
-KERNEL_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(KERNEL_CFLAGS)))
-TARGET_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TARGET_CFLAGS)))
-
-HOST_X11_CFLAGS := $(addprefix -I,$(HOST_X11_BASE_CFLAGS))
-HOST_X11_LIBS   := $(addprefix -L,$(HOST_X11_BASE_LIBS))
-
-# Kernel private includes, in order of precedence:
-ifneq (,$(findstring $(ARCH),raspi))
-TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/kernel
-else
-TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
-endif
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
-ifneq ($(FAMILY),)
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
-endif
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
-                        -I$(SRCDIR)/rom/kernel
-
-# Exec private includes, in order of precedence:
-ifneq (,$(findstring $(ARCH),raspi))
-TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/exec
-else
-TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
-endif
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/exec
-ifneq ($(FAMILY),)
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
-endif
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/exec \
-                      -I$(SRCDIR)/rom/exec
-
-
-PRIV_KERNEL_INCLUDES := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
-PRIV_EXEC_INCLUDES := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)
-
 # All files corresponding to a specific host go here.
 HOSTDIR     := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 TOOLDIR     := $(HOSTDIR)/tools
@@ -73,9 +31,11 @@ GENDIR      := $(TARGETDIR)/gen
 -include $(GENDIR)/config/make.defaults
 -include $(GENDIR)/config/make.opts
 
-# target.cfg *must* come before host.cfg
+# target.cfg *must* come before host.cfg,
+# and both must come before build.cfg
 include $(GENDIR)/config/target.cfg
 include $(HOSTGENDIR)/config/host.cfg
+include $(GENDIR)/config/build.cfg
 
 # Cross tools installation directory.
 CROSSTOOLSDIR        := @AROS_CROSSTOOLSDIR@
