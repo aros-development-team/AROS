@@ -6,7 +6,7 @@ DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
 
 ifeq ($(UNIXGFX_HIDD_TARGET),kernel-x11gfx)
 HOST_X11_CFLAGS := $(addprefix -I, @aros_host_x11_includes@)
-HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@ X11)
+HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@) -lX11
 endif
 
 ifeq (@sdl_hidd_target@,kernel-hidd-sdl)
