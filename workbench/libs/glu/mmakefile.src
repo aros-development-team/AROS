@@ -126,7 +126,9 @@ USER_INCLUDES := \
             -I$(top_srcdir)/src/libnurbs/internals \
             -I$(top_srcdir)/src/libnurbs/nurbtess
 
-USER_CFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
+GLU_COMMONFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
+USER_CFLAGS := $(GLU_COMMONFLAGS)
+USER_CXXFLAGS := $(GLU_COMMONFLAGS)
 
 CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
