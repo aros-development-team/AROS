@@ -357,7 +357,7 @@ $(TMP_TARGETBASE).d : %(basename).c
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile_cxx basename=/A cxxflags=$(CXXFLAGS) dflags= targetdir= compiler=target
+%define rule_compile_cxx basename=/A cxxflags=$(CXXFLAGS) dxxflags= targetdir= compiler=target
 
 ifneq (%(basename),)
 
@@ -417,9 +417,9 @@ ifeq (%(dflags),)
   endif
 else
   ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(dflags)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(dxxflags)
   else
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dxxflags)
   endif
 endif
 $(TMP_TARGETBASE).d : %(basename).cpp
@@ -622,7 +622,7 @@ $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
-%define rule_compile_cxx_multi basenames=/A cxxflags=$(CXXFLAGS) dflags= \
+%define rule_compile_cxx_multi basenames=/A cxxflags=$(CXXFLAGS) dxxflags= \
     targetdir= compiler=target
 
 # Adjust compiler flags to suit C++
@@ -678,13 +678,13 @@ ifeq (%(compiler),kernel)
   TMP_CXXIQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
-ifeq (%(dflags),)
-  TMP_CXXDFLAGS:=$(TMP_CXXFLAGS)
+ifeq (%(dxxflags),)
+  TMP_DXXFLAGS:=$(TMP_CXXFLAGS)
 else
-  ifeq (%(dflags),%(cxxflags))
-    TMP_CXXDFLAGS:=$(TMP_CXXFLAGS)
+  ifeq (%(dxxflags),%(cxxflags))
+    TMP_DXXFLAGS:=$(TMP_CXXFLAGS)
   else
-    TMP_CXXDFLAGS:=%(dflags)
+    TMP_DXXFLAGS:=%(dxxflags)
   endif
 endif
 
@@ -693,7 +693,7 @@ define cxx_multi_recipe_template
  	%compile_q cmd=$(TMP_CXXCMD) opt=$(TMP_CXXFLAGS) iquote=$(TMP_CXXIQUOTE) iquote_end=$(TMP_CXXIQUOTE_END) from=$(2) to=$(1).o
 
  $(1).d : $(2)
- 	%mkdepend_q cc=$(TMP_CXXCMD) flags=$(TMP_CXXDFLAGS) from=$(2) to=$(1).d
+ 	%mkdepend_q cc=$(TMP_CXXCMD) flags=$(TMP_DXXFLAGS) from=$(2) to=$(1).d
 endef
 ifeq (%(targetdir),)
   $(foreach TMP_CXXFILE,$(TMP_CXXFILES),$(eval $(call cxx_multi_recipe_template,$(notdir $(basename $(TMP_CXXFILE))),$(TMP_CXXFILE))))
@@ -1332,7 +1332,7 @@ BDID := $(BDTARGETID)
 %define build_prog mmake=/A progname=/A files=$(BD_PROGNAME) cxxfiles= \
     objcfiles= \
     asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
-    cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
+    cflags=$(CFLAGS) dflags=$(BD_CFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_CXXFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
     includedir= libdir= \
     compiler=target linker=
@@ -1373,6 +1373,7 @@ ifneq (%(includedir),)
 BD_AFLAGS    += -I%(includedir)
 endif
 BD_DFLAGS    := %(dflags)
+BD_DXXFLAGS := %(dxxflags)
 BD_LDFLAGS   := %(ldflags)
 ifneq (%(libdir),)
 BD_LDFLAGS   += -L%(libdir)
@@ -1386,7 +1387,7 @@ endif
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
 %rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir=$(BD_OBJDIR) \
-    cxxflags=$(BD_CXXFLAGS) dflags=$(BD_DFLAGS) compiler="%(compiler)"
+    cxxflags=$(BD_CXXFLAGS) dxxflags=$(BD_DXXFLAGS) compiler="%(compiler)"
 %rule_compile_objc_multi basenames=$(BD_OBJCFILES) targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler="%(compiler)"
 %rule_compile_multi basenames=$(BD_NARCHFILES) targetdir=$(BD_OBJDIR) \
@@ -1514,6 +1515,7 @@ endif
 # Default values for variables and arguments
 BD_DEFLINKLIBNAME := %(modname)
 BD_DEFDFLAGS := %(cflags)
+BD_DEFDXXFLAGS := %(dxxflags)
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 BD_MODDIR := %(moduledir)
 ifeq ($(BD_MODDIR),)
@@ -1647,7 +1649,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 %define build_module_core mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
   files="$(basename $(call WILDCARD, *.c))" \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
-  linklibfiles= linklibobjs= cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) dflags=$(BD_DEFDFLAGS) \
+  linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_DEFDXXFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
   compiler=target nostartup=yes archspecific=no \
@@ -1726,8 +1728,10 @@ endif
 # Default values for variables and arguments
 BD_DEFLINKLIBNAME := %(modname)
 BD_DEFDFLAGS := %(cflags)
+BD_DEFDXXFLAGS := %(cxxflags)
 ifneq (%(includedir),)
     BD_DEFDFLAGS += -I%(includedir)
+    BD_DEFDXXFLAGS += -I%(includedir)
 endif
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 
@@ -1853,6 +1857,7 @@ BD_CFLAGS     += -I%(includedir)
 BD_CXXFLAGS += -I%(includedir)
 endif
 BD_DFLAGS     := %(dflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_DFLAGS)
+BD_DXXFLAGS := %(dxxflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_DXXFLAGS)
 
 ifeq (%(modtype),library)
     BD_LIBSUFFIX := 
@@ -1898,7 +1903,7 @@ BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) \
 
 %rule_compile_cxx_multi \
     basenames=$(BD_CXXFILES) targetdir="%(objdir)" \
-    cxxflags=$(BD_CXXFLAGS) dflags=$(BD_DFLAGS) \
+    cxxflags=$(BD_CXXFLAGS) dxxflags=$(BD_DXXFLAGS) \
     compiler="%(compiler)"
 %rule_compile_multi \
     basenames=$(BD_CCFILES) targetdir="%(objdir)" \
@@ -2068,7 +2073,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 %define build_module mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
   files="$(basename $(call WILDCARD, *.c))" \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
-  linklibfiles= linklibobjs= cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) dflags=$(BD_DEFDFLAGS) \
+  linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_DEFDXXFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
   compiler=target nostartup=yes archspecific=no \
@@ -2079,7 +2084,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
    files="%(files)" cxxfiles="%(cxxfiles)" \
    linklibname="%(linklibname)" \
    linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
-   cflags="%(cflags)" cxxflags="%(cxxflags)" dflags="%(dflags)" \
+   cflags="%(cflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
@@ -2097,7 +2102,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # This is used when for plugins or classes with the same API, but no actual
 # implementation here.
 %define build_module_abi mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
-  linklibfiles= linklibobjs= cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) dflags=$(BD_DEFDFLAGS) \
+  linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_DEFDXXFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
   compiler=target nostartup=yes archspecific=no \
@@ -2107,7 +2112,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   modsuffix="%(modsuffix)" version="%(version)" conffile="%(conffile)" \
   linklibname="%(linklibname)" \
   linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
-  cflags="%(cflags)" cxxflags="%(cxxflags)" dflags="%(dflags)" \
+  cflags="%(cflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
   objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
   nostartup="%(nostartup)" archspecific="%(archspecific)" \
@@ -2123,7 +2128,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 %define build_module_library mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
   files="$(basename $(call WILDCARD, *.c))" \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
-  cflags=$(CFLAGS) cxxflags="$(CXXFLAGS)" dflags=$(BD_DEFDFLAGS) \
+  cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) cxxflags="$(CXXFLAGS)" dxxflags="$(BD_DEFDXXFLAGS)" \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   uselibs= usehostlibs= \
   compiler=target nostartup=yes archspecific=no \
@@ -2132,7 +2137,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" conffile="%(conffile)" \
    files="%(files)" cxxfiles="%(cxxfiles)" \
-   cflags="%(cflags)" cxxflags="%(cxxflags)" dflags="%(dflags)" \
+   cflags="%(cflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
@@ -2165,7 +2170,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 %define build_linklib mmake=/A libname=/A files= cxxfiles= \
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
   includedir= \
-  cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) dflags=$(BD_CFLAGS) \
+  cflags=$(CFLAGS) dflags=$(BD_CFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_CXXFLAGS) \
   aflags=$(AFLAGS) compiler=target
 
 # assign and generate the local variables used in this macro
@@ -2193,6 +2198,7 @@ BD_CXXFLAGS += -I%(includedir)
 endif
 BD_AFLAGS    := %(aflags)
 BD_DFLAGS    := %(dflags)
+BD_DXXFLAGS := %(dxxflags)
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
 
@@ -2205,7 +2211,7 @@ BD_DFLAGS    := %(dflags)
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 
 %rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir="%(objdir)" \
-    compiler="%(compiler)" cxxflags=$(BD_CXXFLAGS) dflags=$(BD_DFLAGS)
+    compiler="%(compiler)" cxxflags=$(BD_CXXFLAGS) dxxflags=$(BD_DXXFLAGS)
 %rule_compile_multi basenames=$(BD_FILES) targetdir="%(objdir)" \
     compiler="%(compiler)" cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 %rule_assemble basename=% targetdir="%(objdir)" \
