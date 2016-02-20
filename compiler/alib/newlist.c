@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize a list
@@ -42,17 +42,12 @@
 
     INTERNALS
 
-    HISTORY
-	28.11.96 digulla written
-
 ******************************************************************************/
 {
     NEWLIST(list);
 } /* NewList */
 
 #ifdef TEST
-#include <stdio.h>
-
 int main (int argc, char ** argv)
 {
     struct List list;

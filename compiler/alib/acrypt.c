@@ -34,14 +34,12 @@
 #define ACrypt __ACrypt
 
 #include <exec/types.h>
-#include <string.h>
 #include <clib/alib_protos.h>
 
 #undef ACrypt
 
 /****************************************************************************/
 
-//#include "debug.h"
 #include <aros/debug.h>
 
 /****************************************************************************/

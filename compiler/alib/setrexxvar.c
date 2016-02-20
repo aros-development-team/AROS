@@ -1,17 +1,18 @@
 /*
-        Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/rexxsyslib.h>
 #include <rexx/storage.h>
 #include <rexx/errors.h>
 
-#include <string.h>
+#include "alib_intern.h"
 
 /*****************************************************************************
 
@@ -25,16 +26,16 @@
         ULONG length)
 
 /*  FUNCTION
-        Set a the value of the name rexx variable.
+        Set the value of the named Rexx variable.
 
     INPUTS
-        msg - A rexx message generated from a running rexx script
+        msg - A Rexx message generated from a running Rexx script
         varname - The name of the variable to set the value
         value - a pointer to the beginning of the value to set
         length - the length of the value argument
 
     RESULT
-        0 when succes, otherwise a rexx error value is returned.
+        0 when success, otherwise a Rexx error value is returned.
 
     NOTES
 
@@ -46,7 +47,7 @@
         CheckRexxMsg(), GetRexxVar()
 
     INTERNALS
-        This function creates a rexx message that is sent to the AREXX
+        This function creates a Rexx message that is sent to the AREXX
         port with a RXSETVAR command.
 
 
@@ -80,7 +81,7 @@
     msg2->rm_Private1 = msg->rm_Private1;
     msg2->rm_Private2 = msg->rm_Private2;
     msg2->rm_Action = RXSETVAR | 2;
-    msg2->rm_Args[0] = (IPTR)CreateArgstring(varname, strlen(varname));
+    msg2->rm_Args[0] = (IPTR)CreateArgstring(varname, STRLEN(varname));
     msg2->rm_Args[1] = (IPTR)CreateArgstring(value, length);
     if (msg2->rm_Args[0]==0 || msg2->rm_Args[1]==0) goto cleanup;
     
