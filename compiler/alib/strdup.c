@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     AllocVec-based string duplication.
@@ -7,7 +7,6 @@
 
 #include "alib_intern.h"
 #include <exec/memory.h>
-#include <string.h>
 
 /*****************************************************************************
 
@@ -51,7 +50,7 @@
 
     if (str == NULL) return NULL;
     
-    len = strlen(str);
+    len = STRLEN(str);
     dup = AllocVec(len + 1, MEMF_PUBLIC);
     if (dup != NULL) CopyMem(str, dup, len + 1);
     

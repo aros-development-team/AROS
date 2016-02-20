@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,6 +9,7 @@
 
 #include <dos/dosextens.h>
 #include <proto/icon.h>
+#include <proto/dos.h>
 #include <stdlib.h>
 
 extern struct Library *IconBase;
@@ -48,16 +49,15 @@ extern struct Library *IconBase;
 	The Amiga documentation says "requires that dos.library V36 or
 	higher is opened". I can't see why.
 
-    HISTORY
-	29.04.98  SDuvan  implemented
-
 *****************************************************************************/
 {
     STRPTR  match;
+    LONG result = defaultval;
 
     if((match = FindToolType(tt, entry)) == NULL)
 	return defaultval;
 
-    return atoi(match);
+    StrToLong(match, &result);
+    return result;
     
 } /* ArgArrayInt */
