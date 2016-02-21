@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main fileof diskfont function AvailFonts()
@@ -156,7 +156,11 @@ STATIC struct BufferInfo *BufferInfoCreate(STRPTR buffer, LONG bufBytes, BOOL ta
     if (retval != NULL)
     {
 	retval->afh = (struct AvailFontsHeader *)buffer;
-	retval->afh->afh_NumEntries = 0;
+        /* FIXME: what if bufBytes < sizeof (struct AvailFontsHeader) ? */
+        if (buffer != NULL)
+        {
+            retval->afh->afh_NumEntries = 0;
+        }
 	retval->space = bufBytes-sizeof(struct AvailFontsHeader);
 	if (tagged)
 	    retval->u.taf = (struct TAvailFonts *)(retval->afh+1);
