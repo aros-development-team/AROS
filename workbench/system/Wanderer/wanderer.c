@@ -925,7 +925,7 @@ MakeStaticHook(Hook_BackdropFunc,Wanderer__HookFunc_BackdropFunc);
 ///
 /******** code from workbench/c/Info.c *******************/
 ///fmtlarge()
-static void fmtlarge(UBYTE *buf, ULONG num)
+static void fmtlarge(UBYTE *buf, IPTR num)
 {
     UQUAD d;
     const UBYTE *ch;
@@ -942,24 +942,24 @@ static void fmtlarge(UBYTE *buf, ULONG num)
     if (num >= 0x40000000)
     {
         array.val = num >> 30;
-        d = ((UQUAD)num * 10 + 0x20000000) / 0x40000000;
-        array.dec = d % 10;
+        d = ((UQUAD)num * 100 + 0x20000000) / 0x40000000;
+        array.dec = d % 100;
         //ch = 'G';
         ch = _(MSG_MEM_G);
     }
     else if (num >= 0x100000)
     {
         array.val = num >> 20;
-        d = ((UQUAD)num * 10 + 0x80000) / 0x100000;
-        array.dec = d % 10;
+        d = ((UQUAD)num * 100 + 0x80000) / 0x100000;
+        array.dec = d % 100;
         //ch = 'M';
         ch = _(MSG_MEM_M);
     }
     else if (num >= 0x400)
     {
         array.val = num >> 10;
-        d = (num * 10 + 0x200) / 0x400;
-        array.dec = d % 10;
+        d = (num * 100 + 0x200) / 0x400;
+        array.dec = d % 100;
         //ch = 'K';
         ch = _(MSG_MEM_K);
     }
@@ -972,12 +972,12 @@ static void fmtlarge(UBYTE *buf, ULONG num)
                 ch = _(MSG_MEM_B);
     }
 
-    if (!array.dec && (d > array.val * 10))
+    if (!array.dec && (d > array.val * 100))
     {
         array.val++;
     }
 
-    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+    RawDoFmt(array.dec ? "%lu.%02lu" : "%lu", &array, NULL, buf);
     while (*buf) { buf++; }
     *buf++ = *ch;
     *buf   = '\0';
@@ -988,8 +988,8 @@ static void fmtlarge(UBYTE *buf, ULONG num)
 STRPTR GetScreenTitle(VOID)
 {
     static TEXT         title[256];
-    UBYTE               chip[10], fast[10];
-    ULONG               __availMem;
+    UBYTE               chip[14], fast[14];
+    IPTR                __availMem;
 
     __availMem = AvailMem(MEMF_CHIP);
     fmtlarge(chip, __availMem);
