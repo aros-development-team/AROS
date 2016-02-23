@@ -33,10 +33,10 @@
 
     INPUTS
 
-        LABEL  --  The label to skip to.  
+        LABEL  --  The label to skip to.
 
-	BACK   --  Specify this if the label appears before the Skip statement
-	           in the script file.
+        BACK   --  Specify this if the label appears before the Skip statement
+                   in the script file.
 
     RESULT
 
@@ -74,75 +74,76 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
     BOOL                  labelFound = FALSE;
 
 
-    if(cli == NULL || cli->cli_CurrentInput == cli->cli_StandardInput)
+    if (cli == NULL || cli->cli_CurrentInput == cli->cli_StandardInput)
     {
-	PrintFault(ERROR_SCRIPT_ONLY, "Skip");
+        PrintFault(ERROR_SCRIPT_ONLY, "Skip");
 
-	return RETURN_FAIL;
+        return RETURN_FAIL;
     }
 
     {
-	char  buffer[256];
-	int   a = 0;
-	LONG  status;
-	BOOL  quit = FALSE;
+        char  buffer[256];
+        int   a = 0;
+        LONG  status;
+        BOOL  quit = FALSE;
 
-	SelectInput(cli->cli_CurrentInput);
+        SelectInput(cli->cli_CurrentInput);
 
-	if (SHArg(BACK))
-	{
-	    Flush(Input());
-	    Seek(Input(), 0, OFFSET_BEGINNING);
-	}
+        if (SHArg(BACK))
+        {
+            Flush(Input());
+            Seek(Input(), 0, OFFSET_BEGINNING);
+        }
 
-	while (!quit)
-	{
-	    status = ReadItem(buffer, sizeof(buffer), NULL);
+        while (!quit)
+        {
+            status = ReadItem(buffer, sizeof(buffer), NULL);
 
-	    if (status == ITEM_ERROR)
-	    {
-		break;
-	    }
+            if (status == ITEM_ERROR)
+            {
+                break;
+            }
 
-	    if (status != ITEM_NOTHING) {
-		switch (FindArg("LAB,ENDSKIP", buffer))
-		{
-		    case 0:
-			if (SHArg(LABEL) != NULL)
-			{
-			    ReadItem(buffer, sizeof(buffer), NULL);
+            if (status != ITEM_NOTHING)
+            {
+                switch (FindArg("LAB,ENDSKIP", buffer))
+                {
+                    case 0:
+                        if (SHArg(LABEL) != NULL)
+                        {
+                            ReadItem(buffer, sizeof(buffer), NULL);
 
-			    if (FindArg(SHArg(LABEL), buffer) == 0)
-			    {
-				quit = TRUE;
-				labelFound = TRUE;
-			    }
-			}
-			break;
+                            if (FindArg(SHArg(LABEL), buffer) == 0)
+                            {
+                                quit = TRUE;
+                                labelFound = TRUE;
+                            }
+                        }
+                        break;
 
-		    case 1:
-			quit = TRUE;
-			break;
-		}
-	    }
+                    case 1:
+                        quit = TRUE;
+                        break;
+                }
+            }
 
-	    /* Skip to the next line */
-	    do
-	    {
-	        a = FGetC(Input());
-	    } while (a != '\n' && a != ENDSTREAMCH);
+            /* Skip to the next line */
+            do
+            {
+                a = FGetC(Input());
+            } while (a != '\n' && a != ENDSTREAMCH);
 
-	    if (a == ENDSTREAMCH)
-		break;
-	}
+            if (a == ENDSTREAMCH)
+                break;
+        }
     }
 
     if (!labelFound && SHArg(LABEL) != NULL)
     {
-	SetIoErr(ERROR_OBJECT_NOT_FOUND);
-	PrintFault(ERROR_OBJECT_NOT_FOUND, "Skip");
+        SetIoErr(ERROR_OBJECT_NOT_FOUND);
+        PrintFault(ERROR_OBJECT_NOT_FOUND, "Skip");
 
-	return RETURN_FAIL;
+        return RETURN_FAIL;
     }
 
     return RETURN_OK;
