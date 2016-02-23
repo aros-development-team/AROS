@@ -1343,13 +1343,17 @@ struct MemHeader * krnConvertMemHeaderToTLSF(struct MemHeader * source)
     struct MemChunk * mc = source->mh_First->mc_Next;
     APTR mh = source->mh_First;
     IPTR fsize = source->mh_First->mc_Bytes;
-
+    APTR mhUpper = source->mh_Upper;	// Cache the mh_Upper value
     if (source->mh_Attributes & MEMF_MANAGED)
         return NULL;
 
     /* First chunk will host the mem header */
     krnCreateTLSFMemHeader(source->mh_Node.ln_Name, source->mh_Node.ln_Pri, mh, fsize,
             source->mh_Attributes);
+
+    /* Restore cached mh_Upper value (informative field, only) */
+    ((struct MemHeaderExt *)mh)->mhe_MemHeader.mh_Upper = mhUpper;
+
     /* source->mh_First is destroyed beyond this point */
 
     /* Add remaining chunks */
