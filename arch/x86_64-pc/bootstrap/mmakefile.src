@@ -5,11 +5,12 @@ include $(TOP)/config/make.cfg
 
 MAINDIR := arch/all-pc/bootstrap
 
+CFLAGS32 := $(filter-out -mcmodel=large,$(CFLAGS))
 USER_CFLAGS := -m32 -I $(SRCDIR)/$(MAINDIR) -isystem $(SRCDIR)/bootstrap/include \
                -I$(GENDIR)/include
 
 %build_archspecific \
 	mainmmake=kernel-bootstrap-pc maindir=$(MAINDIR) arch=x86_64 \
-	files=cpu compiler=kernel
+	cflags="$(CFLAGS32) $(USER_CFLAGS)" files=cpu compiler=kernel
 
 %common

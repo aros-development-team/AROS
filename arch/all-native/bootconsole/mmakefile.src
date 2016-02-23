@@ -19,9 +19,9 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 
 %build_linklib mmake=linklibs-bootconsole libname=bootconsole files="$(FILES)" libdir=$(GENDIR)/lib
 
-USER_CFLAGS := -m32
+CFLAGS32 := $(filter-out -mcmodel=large,$(CFLAGS))
 
 %build_linklib mmake=linklibs-bootconsole32 libname=bootconsole files="$(FILES)" \
-	       objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
+	       cflags="-m32 $(CFLAGS32)" objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
 
 %common
