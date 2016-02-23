@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -22,8 +22,14 @@
 
     FUNCTION
 
-        Skip commands in a script file until a certain label (declared with
-	Lab) or an EndSkip command is reached.
+        Jump to a new position in a script. If a label is specified, control 
+        goes to the first Lab command found that has the same label. If no 
+        label is specified, control goes to the first EndSkip command found.
+
+        If the BACK switch is given, the search for a matching Lab or 
+        EndSkip command starts at the beginning of the script; otherwise the 
+        search starts at the Skip command. If a matching Lab/EndSkip is not 
+        found, an error is returned.
 
     INPUTS
 
@@ -35,6 +41,7 @@
     RESULT
 
     NOTES
+        This command can only be used in scripts.
 
     EXAMPLE
 
@@ -45,11 +52,6 @@
        Lab, EndSkip
 
     INTERNALS
-
-    HISTORY
-
-    09.03.2009  OTigreat  41.2  Let's find Lab even after an empty line
-    14.01.2000  SDuvan    41.1  Implemented
 
 ******************************************************************************/
 
@@ -129,6 +131,9 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
 	    {
 	        a = FGetC(Input());
 	    } while (a != '\n' && a != ENDSTREAMCH);
+
+	    if (a == ENDSTREAMCH)
+		break;
 	}
     }
 
