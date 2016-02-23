@@ -4,24 +4,34 @@
 */
 
 #include <asm/cpu.h>
-
+#include <exec/types.h>
 #include "kernel_base.h"
 #include "kernel_bootmem.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "apic.h"
 
-#define D(x)
-#define DMMU(x)
+#define D(x) x
+#define DMMU(x) x
 
-void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
+void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate, IPTR memtop)
 {
     unsigned int i;
     struct PML4E *PML4;
     struct PDPE  *PDP;
     struct PDE2M *PDE;
 
-    D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first 4GB area\n"));
+    /*
+     * how many PDE entries shall be created? Detault is 2048 (4GB), unless more RAM
+     * is available...
+     */
+    int pde_page_count = 2048;
+
+    /* Does RAM exceed 4GB? adjust amount of PDE pages */
+    if (((memtop + (1 << 21) - 1) >> 21) > pde_page_count)
+        pde_page_count = (memtop + (1 << 21) - 1) >> 21;
+
+    D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first %dMB area\n", pde_page_count << 1));
 
     if (!__KernBootPrivate->PML4)
     {
@@ -31,7 +41,7 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
 	 */
     	__KernBootPrivate->PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
     	__KernBootPrivate->PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
-    	__KernBootPrivate->PDE  = krnAllocBootMemAligned(sizeof(struct PDE2M) * 512 * 4, PAGE_SIZE);
+    	__KernBootPrivate->PDE  = krnAllocBootMemAligned(sizeof(struct PDE2M) * pde_page_count, PAGE_SIZE);
     	__KernBootPrivate->PTE  = krnAllocBootMemAligned(sizeof(struct PTE)   * 512 * 32, PAGE_SIZE);
 
     	D(bug("[Kernel] Allocated PML4 0x%p, PDP 0x%p, PDE 0x%p PTE 0x%p\n", __KernBootPrivate->PML4, __KernBootPrivate->PDP, __KernBootPrivate->PDE, __KernBootPrivate->PTE));
@@ -55,6 +65,50 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
     PML4[0].avail = 0;
     PML4[0].base_high = ((unsigned long)PDP >> 32) & 0x000FFFFF;
 
+    for (i = 0; i < pde_page_count; i++)
+    {
+        /* For every 512th page create the directory entry */
+        if ((i % 512) == 0)
+        {
+            IPTR pdes = (IPTR)&PDE[i];
+            int idx = i / 512;
+
+            /* Set the PDP entry up and point to the PDE table */
+            PDP[idx].p  = 1;
+            PDP[idx].rw = 1;
+            PDP[idx].us = 1;
+            PDP[idx].pwt= 0;
+            PDP[idx].pcd= 0;
+            PDP[idx].a  = 0;
+            PDP[idx].mbz= 0;
+            PDP[idx].base_low = (unsigned long)pdes >> 12;
+
+            PDP[idx].nx = 0;
+            PDP[idx].avail = 0;
+            PDP[idx].base_high = ((unsigned long)pdes >> 32) & 0x000FFFFF;
+        }
+
+        /* Set PDE entries - use 2MB memory pages, with full supervisor and user access */
+        unsigned long base = (((IPTR)i) << 21);
+
+        PDE[i].p  = 1;
+        PDE[i].rw = 1;
+        PDE[i].us = 1;
+        PDE[i].pwt= 0;  // 1
+        PDE[i].pcd= 0;  // 1
+        PDE[i].a  = 0;
+        PDE[i].d  = 0;
+        PDE[i].g  = 0;
+        PDE[i].pat= 0;
+        PDE[i].ps = 1;
+        PDE[i].base_low = base >> 13;
+
+        PDE[i].avail = 0;
+        PDE[i].nx = 0;
+        PDE[i].base_high = (base >> 32) & 0x000FFFFF;
+    }
+
+#if 0
     /* PDP Entries. There are four of them used in order to define 2048 pages of 2MB each. */
     for (i = 0; i < 4; i++)
     {
@@ -97,6 +151,7 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
             pdes[j].base_high = (base >> 32) & 0x000FFFFF;
         }
     }
+#endif
 
     __KernBootPrivate->used_page = 0;
 

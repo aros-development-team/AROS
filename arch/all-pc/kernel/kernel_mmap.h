@@ -18,3 +18,4 @@ void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *me
 		     IPTR klo, IPTR khi, IPTR reserve, const struct MemRegion *reg, ULONG allocator);
 struct mb_mmap *mmap_FindRegion(IPTR addr, struct mb_mmap *mmap, unsigned long len);
 BOOL mmap_ValidateRegion(unsigned long addr, unsigned long len, struct mb_mmap *mmap, unsigned long mmap_len);
+IPTR mmap_LargestAddress(struct mb_mmap *mmap, unsigned long len);
