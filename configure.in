@@ -1009,7 +1009,7 @@ case "$target_os" in
                 fi
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
-                aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -mno-red-zone -fno-omit-frame-pointer"
+                aros_config_cflags="$aros_config_cflags -mcmodel=large -fno-asynchronous-unwind-tables -mno-red-zone -fno-omit-frame-pointer"
                 aros_kernel_ldflags=""
                 aros_nominal_width=640
                 aros_nominal_height=480
