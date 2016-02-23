@@ -51,15 +51,8 @@ static const struct MemRegion PC_Memory[] =
      * So, is it okay to assume actually 32-bit memory for MEMF_31BIT? Are there anything which really imposes
      * 31-bit limit? AllocEntry() issue doesn't count...
      */
-    {0x001000000, 0x0FFFFFFFF, "32-bit memory" ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT		},
-    /*
-     * FIXME: Our MMU mapping supports only 4GB address space.
-     * We can't enable more right now because lots of RAM would be required for MMU tables,
-     * and it will be irrational to reserve so large boot-time region (AROS will fail to boot
-     * up on systems with relatively small amount of RAM).
-     * MMU structures need to be allocated dynamically from a working memory. Waiting for Michal's
-     * page allocator to implement this...
-    {0x080000000, -1         , "Upper memory"  , 10, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP                         }, */
+    {0x001000000, 0x080000000, "31-bit memory" ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT		},
+    {0x080000000, -1,          "High memory"   , 10, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST				},
     {0          , 0          , NULL            ,  0, 0                                                                  }
 };
 
@@ -154,6 +147,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     IPTR mmap_len = 0;
     IPTR addr = 0;
     IPTR klo  = 0;
+    IPTR memtop = 0;
     struct TagItem *tag;
     UBYTE _APICID;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
@@ -306,10 +300,11 @@ void kernel_cstart(const struct TagItem *start_msg)
     _APICID = core_APIC_GetID(__KernBootPrivate->_APICBase);
     D(bug("[Kernel] kernel_cstart: launching on BSP APIC ID %d, base @ %p\n", _APICID, __KernBootPrivate->_APICBase));
 
+    memtop = mmap_LargestAddress(mmap, mmap_len);
     /* Set TSS, GDT, LDT and MMU up */
     core_CPUSetup(_APICID, __KernBootPrivate->SystemStack);
     core_SetupIDT(__KernBootPrivate);
-    core_SetupMMU(__KernBootPrivate);
+    core_SetupMMU(__KernBootPrivate, memtop);
 
     /*
      * Here we ended all boot-time allocations.

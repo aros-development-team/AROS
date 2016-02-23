@@ -24,7 +24,7 @@
 
 #include "memory.h"
 
-#define D(x)
+#define D(x) x
 
 /*
  * Append a single chunk to a MemHeader.
@@ -312,4 +312,27 @@ BOOL mmap_ValidateRegion(unsigned long addr, unsigned long len, struct mb_mmap *
 
     }
     return FALSE;
+}
+
+IPTR mmap_LargestAddress(struct mb_mmap *mmap, unsigned long len)
+{
+    IPTR top = 0;
+
+    while(len >= sizeof(struct mb_mmap))
+    {
+        if (mmap->type == MMAP_TYPE_RAM)
+        {
+            D(bug("type %02x ", mmap->type));
+            if (top < (mmap->addr + mmap->len))
+                top = mmap->addr + mmap->len;
+
+            D(bug("base %p end %p\n", mmap->addr, mmap->addr + mmap->len - 1));
+        }
+
+        /* Go to the next chunk */
+        len -= mmap->size + 4;
+        mmap = (struct mb_mmap *)(mmap->size + (IPTR)mmap + 4);
+    }
+
+    return top;
 }

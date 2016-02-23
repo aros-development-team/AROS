@@ -58,7 +58,7 @@ void kernel_cstart(const struct TagItem *msg);
 /** CPU Functions **/
 void core_SetupIDT(struct KernBootPrivate *);
 void core_SetupGDT(struct KernBootPrivate *);
-void core_SetupMMU(struct KernBootPrivate *);
+void core_SetupMMU(struct KernBootPrivate *, IPTR memtop);
 void core_CPUSetup(UBYTE, IPTR);
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
