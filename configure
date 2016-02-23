@@ -7919,7 +7919,7 @@ case "$target_os" in
                 aros_object_format="elf_x86_64"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
-                aros_config_cflags="$aros_config_cflags -mno-red-zone -fno-omit-frame-pointer"
+                aros_config_cflags="$aros_config_cflags -mcmodel=large -mno-red-zone -fno-omit-frame-pointer"
                 aros_nominal_depth=8
                 pci_hidd_target="hidd-pci-linux"
                 ;;
