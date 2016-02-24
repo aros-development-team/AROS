@@ -1102,9 +1102,10 @@ AROS_UFH3(void, RectShadeFunc,
     int         px, py, x, y;
 
 #if defined(DECOR_USELINEBUFF)
-    if (width > 1)
+    if (width > 1) {
         outline = AllocMem((width << 2), MEMF_ANY);
-    else
+        bm_handle = NULL;
+    } else
 #endif
         bm_handle = LockBitMapTags(rp->BitMap,
                     TAG_END);
