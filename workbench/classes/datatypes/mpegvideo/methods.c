@@ -65,7 +65,7 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
     struct ClassBase     *classbase = (struct ClassBase *)(cl -> cl_UserData);
     struct TagItem *ti;
-    IPTR retval;
+    IPTR retval = 0;
 
     D(bug("[mpegvideo.datatype] %s()\n", __func__));
     D(bug("[mpegvideo.datatype] %s: o @ 0x%p, cl @ 0x%p\n", __func__, o, cl));
@@ -77,7 +77,7 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
             {
               SetIoErr( ERROR_OBJECT_WRONG_TYPE );
 
-              return NULL;
+              return (IPTR)NULL;
             }
           }
 
@@ -86,7 +86,7 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
            */
           if( o == (Object *)cl )
           {
-            if( retval = DoSuperMethodA( cl, o, msg ) )
+            if( ( retval = DoSuperMethodA( cl, o, msg ) ) )
             {
               LONG error;
 
@@ -183,7 +183,7 @@ IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
 #endif
 
           /* Pass the attributes to the animation class and force a refresh if we need it */
-          if( retval = DoSuperMethodA( cl, o, msg ) )
+          if( ( retval = DoSuperMethodA( cl, o, msg ) ) )
           {
 /* The following statement is commented out because mpegvideo.datatype does not allow
  * subclasses. Thus, the following statement is NOP unless subclasses are supported...
@@ -243,7 +243,7 @@ IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
 */
 IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *dtw)
 {
-    IPTR retval;
+    IPTR retval = 0;
 
     D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
@@ -291,7 +291,7 @@ IPTR DT_LoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
     struct MPEGVideoInstData *mvid = (struct MPEGVideoInstData *)INST_DATA( cl, o );
     struct FrameNode *fn;
     LONG              error = 0L;
-    IPTR retval;
+    IPTR retval = 0;
 
     D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
