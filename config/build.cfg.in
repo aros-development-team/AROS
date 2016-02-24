@@ -4,12 +4,12 @@
 DBUS_CFLAGS	:= @DBUS_CFLAGS@
 DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
 
-ifeq ($(UNIXGFX_HIDD_TARGET),kernel-x11gfx)
+ifeq ($(OPT_HOST_X11GFX),yes)
 HOST_X11_CFLAGS := $(addprefix -I, @aros_host_x11_includes@)
 HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@) -lX11
 endif
 
-ifeq (@sdl_hidd_target@,kernel-hidd-sdl)
+ifeq ($(OPT_HOST_SDLGFX),yes)
 HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
 HOST_SDL_LIBS   := @aros_host_sdl_libs@
 endif
