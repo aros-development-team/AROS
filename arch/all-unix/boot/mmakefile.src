@@ -41,7 +41,9 @@ $(AROSARCHDIR):
 #MM	kernel-expansion     			\
 #MM	kernel-exec-kobj			\
 #MM	kernel-task-kobj			\
-#MM     $(UNIXGFX_HIDD_TARGET)		        \
+#MM     hidd-x11gfx-$(OPT_HOST_X11GFX)	        \
+#MM     hidd-sdlgfx-$(OPT_HOST_SDLGFX)	        \
+#MM     hidd-androidgfx-$(OPT_HOST_ANDROIDGFX)     \
 #MM     kernel-fs-emul                          \
 #MM	kernel-unixio     			\
 #MM	linklibs
