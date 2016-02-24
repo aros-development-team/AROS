@@ -659,8 +659,6 @@ ifeq (%(compiler),host)
   TMP_CXXCMD:=$(HOST_CXX)
   TMP_CXXIQUOTE:=$(HOST_IQUOTE)
   TMP_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
-else
-  TMP_CXXFLAGS := -fno-rtti -fno-exceptions -fno-check-new $(TMP_CXXFLAGS) -isystem $(AROS_DEVELOPMENT)/include
 endif
 ifeq (%(compiler),target)
   BD_LINK ?= $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
