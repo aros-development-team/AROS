@@ -238,7 +238,7 @@ BOOL ScanFrames( struct ClassBase *cb, Object *o )
             struct FrameNode     *fn;
             ULONG                 numcmaps                         = 0UL; /* number of created cmaps */
             UBYTE                 buf[ 16 ];
-            struct ColorRegister  localColorMap[ MAXCOLORMAPSIZE ] = { 0 };
+            struct ColorRegister  localColorMap[ MAXCOLORMAPSIZE ] = { { 0 } };
             struct ColorRegister  savedTransparentColor            = { 0 };
             UBYTE                 c;
             BOOL                  useGlobalColormap;
@@ -1094,7 +1094,7 @@ void OpenLogfile( struct ClassBase *cb, struct GIFAnimInstData *gaid )
 {
     D(bug("[gifanim.datatype]: %s()\n", __func__));
 
-    if( ((gaid -> gaid_VerboseOutput) == NULL) || ((gaid -> gaid_VerboseOutput) == (APTR)-1L) )
+    if( ((gaid -> gaid_VerboseOutput) == BNULL) || ((gaid -> gaid_VerboseOutput) == (BPTR)-1L) )
     {
       STRPTR confile;
 

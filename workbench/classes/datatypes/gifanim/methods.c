@@ -85,7 +85,7 @@ struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
         }
     }
 
-    if( retval = DoSuperMethodA( cl, o, msg ) )
+    if( ( retval = DoSuperMethodA( cl, o, msg ) ) )
     {
         D(bug("[gifanim.datatype] %s: dtobject @ 0x%p\n", __func__, retval));
         /* Load frames... */
@@ -150,7 +150,7 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     }
 
     /* Close verbose output file */
-    if ((gaid->gaid_VerboseOutput) && (gaid->gaid_VerboseOutput != (APTR)-1L))
+    if ((gaid->gaid_VerboseOutput) && (gaid->gaid_VerboseOutput != (BPTR)-1L))
     {
         Close(gaid->gaid_VerboseOutput);
     }
@@ -168,7 +168,7 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
     /* Restore Result2 */
     SetIoErr( saved_ioerr );
 
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_FrameBox(struct IClass *cl, Object *o, struct dtFrameBox *msg)
@@ -276,7 +276,7 @@ IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
 #endif
 
     /* Pass the attributes to the animation class and force a refresh if we need it */
-    if( retval = DoSuperMethodA( cl, o, msg ) )
+    if( ( retval = DoSuperMethodA( cl, o, msg ) ) )
     {
         /* Top instance ? */
         if( OCLASS( o ) == cl )
@@ -770,5 +770,5 @@ IPTR DT_UnLoadFrame(struct IClass *cl, Object *o, struct adtFrame *alf)
 
     /* The frame has been freed ! */
     alf -> alf_UserData = NULL;
-    return NULL;
+    return (IPTR)NULL;
 }
