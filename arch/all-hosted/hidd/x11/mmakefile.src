@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 DISK_FILES  := disk_startup
 DISK_EXEDIR := $(AROS_DEVS)/Monitors
 
+#MM- hidd-x11gfx-yes : kernel-x11gfx
 #MM devs-monitors-x11 : iconset-$(AROS_TARGET_ICONSET)-x11
 
 %build_prog mmake=devs-monitors-x11 \
@@ -38,7 +39,7 @@ FILES	   := startup x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap \
 
 %build_module mmake=kernel-x11gfx \
   modname=x11gfx modtype=hidd version=$(AROS_TARGET_PLATFORM) \
-  files=$(FILES) uselibs="hiddstubs" archspecific=yes
+  files=$(FILES) uselibs="hiddstubs"
 
 #MM x11keymaptable
 x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE) $(X11KEYMAPTABLE_ALT_FILE) $(X11KEYMAPTABLE_ALT_NB_FILE)
