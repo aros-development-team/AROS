@@ -88,7 +88,7 @@ IPTR DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
         {
             SetIoErr( ERROR_OBJECT_WRONG_TYPE );
 
-            return NULL;
+            return (IPTR)NULL;
         }
     }
 
@@ -283,7 +283,7 @@ IPTR DT_SetMethod(struct IClass *cl, Object *o, struct opSet *msg)
     }
 #endif
     /* Pass the attributes to the animation class and force a refresh if we need it */
-    if( retval = DoSuperMethodA( cl, o, msg ) )
+    if( ( retval = DoSuperMethodA( cl, o, msg ) ) )
     {
         /* Top instance ? */
         if( OCLASS( o ) == cl )
