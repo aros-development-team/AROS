@@ -145,7 +145,7 @@ struct DTClassInfo DTClassAbout[] =
     { GID_ANIMATION, aboutfmt_Animation, about_Animation, about_AnimDisp, 10, 3 },
     { GID_SOUND, aboutfmt_Sample, about_Sample, about_SampDisp, 10, 3 },
     { ID_BINARY, aboutfmt_Binary, about_Binary, about_BinDisp, 10, 3 },
-    { NULL }
+    { 0 }
 };
 
 struct DTClassInfo *FindClassInfo(ULONG classid)
