@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- hidd-androidgfx-yes : kernel-hidd-androidgfx
+
 USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 FILES := startup agfx abitmap akbd amouse server
