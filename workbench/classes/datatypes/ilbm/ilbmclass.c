@@ -305,16 +305,16 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 			    case 0x100:
 				*chunky++ = r;
 				*chunky++ = g;
-				*chunky++ = b = rgb & mmask | b & hmask;
+				*chunky++ = b = (rgb & mmask) | (b & hmask);
 				break;
 			    case 0x200:
-				*chunky++ = r = rgb & mmask | r & hmask;
+				*chunky++ = r = (rgb & mmask) | (r & hmask);
 				*chunky++ = g;
 				*chunky++ = b;
 				break;
 			    case 0x300:
 				*chunky++ = r;
-				*chunky++ = g = rgb & mmask | g & hmask;
+				*chunky++ = g = (rgb & mmask) | (g & hmask);
 				*chunky++ = b;
 				break;
 			}
