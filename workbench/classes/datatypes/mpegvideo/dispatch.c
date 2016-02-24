@@ -1509,7 +1509,7 @@ void ReadENVPrefs( struct ClassBase *classbase, struct MPEGVideoInstData *mvid )
 
                 verbose_printf( mvid, "loading sample \"%s\"...\n", (animargs . sample) );
 
-                if( so = NewDTObject( (animargs . sample), DTA_GroupID, GID_SOUND, TAG_DONE ) )
+                if( ( so = NewDTObject( (animargs . sample), DTA_GroupID, GID_SOUND, TAG_DONE ) ) )
                 {
                   BYTE *sample;
                   ULONG length;
@@ -1748,7 +1748,7 @@ void OpenLogfile( struct ClassBase *classbase, struct MPEGVideoInstData *mvid )
 {
     D(bug("[mpegvideo.datatype] %s()\n", __func__));
 
-    if( (mvid -> mvid_VerboseOutput) == NULL )
+    if( (mvid -> mvid_VerboseOutput) == BNULL )
     {
       STRPTR confile;
 
@@ -1801,7 +1801,7 @@ void CreateProgressRequester( struct MPEGVideoInstData *mvid )
           width  =  MAX( (font -> tf_XSize), 8 ) * 42UL;
           height = (MAX( (font -> tf_YSize), 8 ) * 5UL) / 3UL;
 
-          if( mvid -> mvid_PR . pr_Window = OpenWindowTags( NULL, WA_InnerWidth,                    width,
+          if( (mvid -> mvid_PR . pr_Window = OpenWindowTags( NULL, WA_InnerWidth,                    width,
                                                                   WA_InnerHeight,                   height,
                                                                   WA_MinWidth,                      (width / 2UL),
                                                                   WA_MinHeight,                     0UL, /* overtake value calculated by WA_InnerHeight */
@@ -1817,7 +1817,7 @@ void CreateProgressRequester( struct MPEGVideoInstData *mvid )
                                                                   WA_ScreenTitle,                   (mvid -> mvid_ProjectName),
                                                                   XTAG( scr,    WA_CustomScreen ),  scr,
                                                                   XTAG( pubscr, WA_PubScreen    ),  pubscr,
-                                                                  TAG_DONE ) )
+                                                                  TAG_DONE ) ) )
           {
             ULONG dummy;
 

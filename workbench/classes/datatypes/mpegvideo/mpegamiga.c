@@ -245,11 +245,11 @@ void AddFrame( struct MPEGVideoInstData *mvid, UBYTE *data, struct ColorMap *cm 
                       ULONG  bpr    = 0UL,  /* be safe ! (CyberGFX has some problems with tag parsing...) */
                              height = 0UL;  /* be safe ! (CyberGFX has some problems with tag parsing...) */
 
-                      if( handle = LockBitMapTags( (fn -> fn_BitMap),
+                      if( ( handle = LockBitMapTags( (fn -> fn_BitMap),
                                                    LBMI_BASEADDRESS, (&plane),
                                                    LBMI_BYTESPERROW, (&bpr),
                                                    LBMI_HEIGHT,      (&height),
-                                                   TAG_DONE ) )
+                                                   TAG_DONE ) ) )
                       {
                         CopyMem( data, plane, (bpr * height) );
 

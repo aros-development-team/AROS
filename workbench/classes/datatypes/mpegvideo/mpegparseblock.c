@@ -390,7 +390,7 @@ end:
 
 void ParseAwayBlock( struct MPEGVideoInstData *mvid, int n )
 {
-  unsigned int diff;
+  unsigned int __unused diff;
   unsigned int size,
                run;
   int          level;
