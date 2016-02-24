@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Avail CLI command
@@ -64,7 +64,7 @@
 #include <utility/tagitem.h>
 #include <string.h>
 
-const TEXT version[] = "$VER: Avail 42.1 (8.12.2007)\n";
+const TEXT version[] = "$VER: Avail 42.2 (24.2.2016)\n";
 
 
 #define  ARG_TEMPLATE  "CHIP/S,FAST/S,TOTAL/S,FLUSH/S,H=HUMAN/S"
@@ -240,21 +240,21 @@ void fmtlarge(UBYTE *buf, ULONG num)
     if (num >= 1073741824)
     {
         array.val = num >> 30;
-        d = ((UQUAD)num * 10 + 536870912) / 1073741824;
+        d = ((UQUAD)num * 100 + 536870912) / 1073741824;
         array.dec = d % 10;
         ch = 'G';
     }
     else if (num >= 1048576)
     {
         array.val = num >> 20;
-        d = ((UQUAD)num * 10 + 524288) / 1048576;
+        d = ((UQUAD)num * 100 + 524288) / 1048576;
         array.dec = d % 10;
         ch = 'M';
     }
     else if (num >= 1024)
     {
         array.val = num >> 10;
-        d = (num * 10 + 512) / 1024;
+        d = (num * 100 + 512) / 1024;
         array.dec = d % 10;
         ch = 'K';
     }
@@ -266,12 +266,12 @@ void fmtlarge(UBYTE *buf, ULONG num)
         ch = 'B';
     }
 
-    if (!array.dec && (d > array.val * 10))
+    if (!array.dec && (d > array.val * 100))
     {
         array.val++;
     }
 
-    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+    RawDoFmt(array.dec ? "%iu.%02iu" : "%iu", &array, NULL, buf);
     while (*buf) { buf++; }
     *buf++ = ch;
     *buf   = '\0';
@@ -286,13 +286,13 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
     if (head)
     {
         LONG len = 16 - strlen(head);
-        RawDoFmt(aHuman ? "%%%lds" : "%%%ldlu", &len, NULL, buf);
+        RawDoFmt(aHuman ? "%%%lds" : "%%%ldiu", &len, NULL, buf);
         fmt = buf;
         PutStr(head);
     }
     else
     {
-        fmt = aHuman ? "%9s" : "%9lu";
+        fmt = aHuman ? "%9s" : "%9iu";
     }
 
     if (aHuman)
@@ -322,7 +322,7 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
     {
         if (num == 1)
         {
-            res = VPrintf("%lu", (IPTR *)array);
+            res = VPrintf("%iu", (IPTR *)array);
         }
         else
         {
@@ -332,7 +332,7 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
                 if (res < 0)
                     break;
 
-                fmt = " %9lu";
+                fmt = " %9iu";
                 array++;
             }
         }
