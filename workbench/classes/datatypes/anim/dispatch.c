@@ -506,7 +506,7 @@ void ReadENVPrefs( struct ClassBase *cb, struct AnimInstData *aid )
 
                 verbose_printf( cb, aid, "loading sample \"%s\"...\n", (animargs . sample) );
 
-                if( so = NewDTObject( (animargs . sample), DTA_GroupID, GID_SOUND, TAG_DONE ) )
+                if( (so = NewDTObject( (animargs . sample), DTA_GroupID, GID_SOUND, TAG_DONE ) ) )
                 {
                   BYTE  *sample = NULL;
                   IPTR  length = 0;
@@ -2416,7 +2416,7 @@ void OpenLogfile( struct ClassBase *cb, struct AnimInstData *aid )
 {
     D(bug("[anim.datatype] %s()\n", __func__));
 
-    if( (aid -> aid_VerboseOutput) == NULL )
+    if( (aid -> aid_VerboseOutput) == BNULL )
     {
       STRPTR confile;
 
