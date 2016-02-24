@@ -1429,7 +1429,7 @@ IPTR DT_HelpTestMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_HitTestMethod(struct IClass *cl, struct Gadget *g, struct gpHitTest *msg)
@@ -1599,25 +1599,25 @@ IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_Print(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_Copy(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_Trigger(struct IClass *cl, struct Gadget *g, struct dtTrigger *msg)
@@ -1630,13 +1630,13 @@ IPTR DT_Trigger(struct IClass *cl, struct Gadget *g, struct dtTrigger *msg)
 IPTR DT_Write(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_Locate(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_Pause(struct IClass *cl, struct Gadget *g, struct opSet *msg)
@@ -1656,7 +1656,7 @@ IPTR DT_Pause(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     }
     SetConductorState (animd->ad_Player, CONDSTATE_PAUSED, animd->ad_FrameData.afd_FrameCurrent * animd->ad_TimerData.atd_TicksPerFrame);
 
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_Start(struct IClass *cl, struct Gadget *g, struct adtStart *msg)
@@ -1682,7 +1682,7 @@ IPTR DT_Start(struct IClass *cl, struct Gadget *g, struct adtStart *msg)
         Signal((struct Task *)animd->ad_PlayerProc, (1 << animd->ad_ProcessData->pp_PlaybackEnable));
     }
 
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_Stop(struct IClass *cl, struct Gadget *g, struct opSet *msg)
@@ -1702,17 +1702,17 @@ IPTR DT_Stop(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     }
     SetConductorState(animd->ad_Player, CONDSTATE_STOPPED, 0);
 
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_LoadNewFormatFrame(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
-    return NULL;
+    return (IPTR)NULL;
 }
 
 IPTR DT_UnLoadNewFormatFrame(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     D(bug("[animation.datatype]: %s()\n", __func__);)
-    return NULL;
+    return (IPTR)NULL;
 }
