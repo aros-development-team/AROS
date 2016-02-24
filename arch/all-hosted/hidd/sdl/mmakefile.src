@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 #MM- hidd-sdlgfx-yes : kernel-hidd-sdl
 
 FILES  := startup sdl_hostlib sdl_init event keymap gfxclass bmclass mouseclass kbdclass
-EXEDIR := $(AROSDIR)/Storage/Monitors
+EXEDIR := $(AROS_DEVS)/Monitors
 
 %build_prog mmake=kernel-hidd-sdl \
   progname=SDL targetdir=$(EXEDIR) \
