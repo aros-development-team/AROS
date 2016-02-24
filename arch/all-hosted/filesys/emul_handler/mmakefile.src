@@ -6,7 +6,7 @@ ifneq ($(FAMILY),)
 endif
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
-USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/filesys/emul_handler $(FAMILY_INCLUDES) -I$(SRCDIR)/$(CURDIR)
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/filesys/emul_handler $(FAMILY_INCLUDES) -I$(SRCDIR)/$(CURDIR) -iquote $(SRCDIR)/rom/expansion -iquote $(SRCDIR)/rom/dosboot
 USER_LDFLAGS := -static
 
 FILES	      := emul_init emul_handler filenames emul_host

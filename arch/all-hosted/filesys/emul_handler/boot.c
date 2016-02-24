@@ -21,6 +21,9 @@
 
 #include "emul_intern.h"
 
+#include "expansion_intern.h"
+#include "bootflags.h"
+
 #undef GfxBase
 
 static const UBYTE version[];
@@ -57,10 +60,43 @@ AROS_UFH3(APTR, EmulBoot,
     struct emulbase *EmulBase;
     struct GfxBase *GfxBase;
     struct DosLibrary *DOSBase;
+    struct Library *ExpansionBase;
     struct MsgPort *emulport;
     struct Process *me;
     struct FileHandle *fh_stdin, *fh_stdout;
     LONG rc;
+
+    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+
+    ExpansionBase = OpenLibrary("expansion.library", 0);
+    if (ExpansionBase)
+    {
+        ULONG BootFlags = IntExpBase(ExpansionBase)->BootFlags;
+        if (!(BootFlags & BF_NO_DISPLAY_DRIVERS))
+        {
+            if (DOSBase)
+            {
+                BPTR seg = LoadSeg("C:AROSMonDrvs");
+                if (seg != BNULL)
+                {
+                    STRPTR args = "NOCOMPOSITION";
+                    BPTR oldin, oldout;
+
+                    oldin = SelectInput(Open("NIL:", MODE_OLDFILE));
+                    oldout= SelectOutput(Open("NIL:", MODE_NEWFILE));
+                    RunCommand(seg, AROS_STACKSIZE, args, strlen(args));
+                    SelectInput(oldin);
+                    SelectOutput(oldout);
+
+                    /* We don't care about the return code */
+                    UnLoadSeg(seg);
+                }
+                /* make sure the boot process doesnt try to load the drivers again.. */
+                IntExpBase(ExpansionBase)->BootFlags = BootFlags | BF_NO_DISPLAY_DRIVERS;
+            }
+        }
+        CloseLibrary(ExpansionBase);
+    }
 
      /*
      * This actually checks if we have at least one display mode in the database.
@@ -75,6 +111,8 @@ AROS_UFH3(APTR, EmulBoot,
 	CloseLibrary((APTR)GfxBase);
 	if (displayid != INVALID_ID)
 	{
+            if (DOSBase)
+                CloseLibrary((APTR)DOSBase);
 	    /* Everything is ok, continue booting */
 	    return NULL;
 	}
@@ -85,13 +123,12 @@ AROS_UFH3(APTR, EmulBoot,
      * A failure in the following code causes dos.library to continue booting.
      * Without display drivers this will end up in AN_SysScrn alert.
      */
+    if (!DOSBase)
+    	return NULL;
+
     EmulBase = OpenResource("emul-handler");
     if (!EmulBase)
 	return NULL;
-
-    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
-    if (!DOSBase)
-    	return NULL;
 
     emulport = DeviceProc("EMU");
     if (!emulport)
