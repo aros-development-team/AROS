@@ -369,6 +369,11 @@ APTR InternalFormatString(const struct Locale * locale,
                  */
                 switch (fmtTemplate[template_pos])
                 {
+                case 'i':
+                    /* IPTR-sized type, can be mixed with %d, %u or %x */
+                    datasize = sizeof(IPTR);
+                    template_pos++;
+                    break;
 #if USE_QUADFMT
                 case 'L':
                     datasize = sizeof(UQUAD);
