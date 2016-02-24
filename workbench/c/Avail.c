@@ -56,6 +56,7 @@
 
 ******************************************************************************/
 
+#include <aros/cpu.h> // for __WORDSIZE
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -66,6 +67,13 @@
 
 const TEXT version[] = "$VER: Avail 42.2 (24.2.2016)\n";
 
+#if (__WORDSIZE == 64)
+#define AVAIL_ARCHSTR   "%9s"
+#define AVAIL_ARCHVAL   "%9iu"
+#else
+#define AVAIL_ARCHSTR   "%12s"
+#define AVAIL_ARCHVAL   "%12iu"
+#endif
 
 #define  ARG_TEMPLATE  "CHIP/S,FAST/S,TOTAL/S,FLUSH/S,H=HUMAN/S"
 
@@ -79,7 +87,7 @@ enum
     NOOFARGS
 };
 
-LONG printm(CONST_STRPTR head, ULONG *array, LONG num);
+LONG printm(CONST_STRPTR head, IPTR *array, LONG num);
 
 int __nocommandline = 1;
 
@@ -133,7 +141,7 @@ int main(void)
             typeCount++;
         }
 
-	ULONG chip[4], fast[4], total[4];
+	IPTR chip[4], fast[4], total[4];
 
 	if (typeCount > 1)
 	{
@@ -223,39 +231,39 @@ int main(void)
 }
 
 static
-void fmtlarge(UBYTE *buf, ULONG num)
+void fmtlarge(UBYTE *buf, IPTR num)
 {
     UQUAD d;
     UBYTE ch;
     struct
     {
-        ULONG val;
-        LONG  dec;
+        IPTR val;
+        IPTR  dec;
     } array =
     {
         num,
         0
     };
 
-    if (num >= 1073741824)
+    if (num >= 0x40000000)
     {
         array.val = num >> 30;
-        d = ((UQUAD)num * 100 + 536870912) / 1073741824;
-        array.dec = d % 10;
+        d = ((UQUAD)num * 100 + 0x20000000) / 0x40000000;
+        array.dec = d % 100;
         ch = 'G';
     }
-    else if (num >= 1048576)
+    else if (num >= 0x100000)
     {
         array.val = num >> 20;
-        d = ((UQUAD)num * 100 + 524288) / 1048576;
-        array.dec = d % 10;
+        d = ((UQUAD)num * 100 + 0x80000) / 0x100000;
+        array.dec = d % 100;
         ch = 'M';
     }
-    else if (num >= 1024)
+    else if (num >= 0x400)
     {
         array.val = num >> 10;
-        d = (num * 100 + 512) / 1024;
-        array.dec = d % 10;
+        d = (num * 100 + 0x200) / 0x400;
+        array.dec = d % 100;
         ch = 'K';
     }
     else
@@ -277,7 +285,7 @@ void fmtlarge(UBYTE *buf, ULONG num)
     *buf   = '\0';
 }
 
-LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
+LONG printm(CONST_STRPTR head, IPTR *array, LONG num)
 {
     LONG res = -1;
     CONST_STRPTR fmt;
@@ -285,14 +293,14 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
 
     if (head)
     {
-        LONG len = 16 - strlen(head);
+        IPTR len = 16 - strlen(head);
         RawDoFmt(aHuman ? "%%%lds" : "%%%ldiu", &len, NULL, buf);
         fmt = buf;
         PutStr(head);
     }
     else
     {
-        fmt = aHuman ? "%9s" : "%9iu";
+        fmt = aHuman ? AVAIL_ARCHSTR : AVAIL_ARCHVAL;
     }
 
     if (aHuman)
@@ -313,7 +321,7 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
                 if (res < 0)
                     break;
 
-                fmt = " %9s";
+                fmt = " " AVAIL_ARCHSTR;
                 array++;
             }
         }
@@ -332,7 +340,7 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
                 if (res < 0)
                     break;
 
-                fmt = " %9iu";
+                fmt = " " AVAIL_ARCHVAL;
                 array++;
             }
         }
