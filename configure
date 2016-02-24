@@ -662,8 +662,9 @@ aros_nominal_depth
 aros_nominal_height
 aros_nominal_width
 pci_hidd_target
-sdl_hidd_target
-unixgfx_hidd_target
+host_android_gfx
+host_sdl_gfx
+host_x_gfx
 aros_cflags_format_security
 aros_cflags_strict_overflow
 aros_cflags_enum_compare
@@ -752,6 +753,10 @@ aros_arch
 SDL_LIBS
 SDL_CFLAGS
 SDL_CONFIG
+X_EXTRA_LIBS
+X_LIBS
+X_PRE_LIBS
+X_CFLAGS
 XMKMF
 aros_cflags_iquote_end
 aros_cflags_iquote
@@ -7257,6 +7262,10 @@ ignore_undefined_symbols=""
 # Check for X11 by default
 need_x11="auto"
 
+host_x_gfx=no
+host_sdl_gfx=no
+host_android_gfx=no
+
 #-----------------------------------------------------------------------------
 
 #
@@ -8000,7 +8009,7 @@ case "$target_os" in
                     aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
                 fi
                 need_x11=no
-                unixgfx_hidd_target=kernel-hidd-androidgfx
+                host_android_gfx=yes
                 # Disable implicit PIC mode
                 aros_target_cflags="$aros_target_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
@@ -14047,7 +14056,7 @@ fi
             fi
 
         else
-                        unixgfx_hidd_target=kernel-x11gfx
+            host_x_gfx=yes
             ENABLE_X11=1
 
                         # Check whether --enable-x11_shm was given.
@@ -14237,6 +14246,7 @@ fi
 
         if test "x-$sdl_hidd" != "x-no" ; then
 
+                SDL_VERSION=1.2.5
 
 # Check whether --with-sdl-prefix was given.
 if test "${with_sdl_prefix+set}" = set; then :
@@ -14320,7 +14330,7 @@ fi
 
 
   PATH="$as_save_PATH"
-  min_sdl_version=1.2.10
+  min_sdl_version=$SDL_VERSION
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for SDL - version >= $min_sdl_version" >&5
 $as_echo_n "checking for SDL - version >= $min_sdl_version... " >&6; }
   no_sdl=""
@@ -14500,9 +14510,9 @@ rm -f core conftest.err conftest.$ac_objext \
             fi
 
         else
-                        sdl_hidd_target=kernel-hidd-sdl
-            aros_host_sdl_cflags=SDL_CFLAGS
-            aros_host_sdl_libs=SDL_LIBS
+                        host_sdl_gfx=yes
+            aros_host_sdl_cflags=$SDL_CFLAGS
+            aros_host_sdl_libs=$SDL_LIBS
         fi
     fi
 
@@ -14656,7 +14666,8 @@ fi
 
 
 
-# Graphics Related
+# Hosted Graphics Related
+
 
 
 
@@ -15558,6 +15569,7 @@ do
     "${aros_geninc_dir}/config.h") CONFIG_FILES="$CONFIG_FILES ${aros_geninc_dir}/config.h:config/config.h.in" ;;
     "${aros_hostcfg_dir}/host.cfg") CONFIG_FILES="$CONFIG_FILES ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in" ;;
     "${aros_targetcfg_dir}/target.cfg") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in" ;;
+    "${aros_targetcfg_dir}/build.cfg") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/build.cfg:config/build.cfg.in" ;;
     "mmake.config") CONFIG_FILES="$CONFIG_FILES mmake.config" ;;
     "${aros_targetcfg_dir}/make.defaults") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in" ;;
     "${aros_tools_dir}/genmf.py") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;

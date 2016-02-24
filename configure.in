@@ -561,6 +561,10 @@ ignore_undefined_symbols=""
 # Check for X11 by default
 need_x11="auto"
 
+host_x_gfx=no
+host_sdl_gfx=no
+host_android_gfx=no
+
 #-----------------------------------------------------------------------------
 
 #
@@ -970,7 +974,7 @@ case "$target_os" in
                     aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
                 fi
                 need_x11=no
-                unixgfx_hidd_target=kernel-hidd-androidgfx
+                host_android_gfx=yes
                 # Disable implicit PIC mode
                 aros_target_cflags="$aros_target_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
@@ -2530,7 +2534,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         
         else
             dnl found it, setup the metatarget
-            unixgfx_hidd_target=kernel-x11gfx
+            host_x_gfx=yes
             ENABLE_X11=1
 
             dnl setup shared memory extensions
@@ -2630,7 +2634,9 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
     if test "x-$sdl_hidd" != "x-no" ; then
 
         dnl find sdl
-        AM_PATH_SDL([1.2.10], have_sdl="yes", have_sdl="no")
+        SDL_VERSION=1.2.5
+        AM_PATH_SDL($SDL_VERSION, [have_sdl="yes"],
+            [have_sdl="no"])
 
         if test "x-$have_sdl" != "x-yes" ; then
 
@@ -2641,10 +2647,10 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
             fi
 
         else
-            dnl found it, set up the metatarget
-            sdl_hidd_target=kernel-hidd-sdl
-            aros_host_sdl_cflags=SDL_CFLAGS
-            aros_host_sdl_libs=SDL_LIBS
+            dnl found it, enable the build
+            host_sdl_gfx=yes
+            aros_host_sdl_cflags=$SDL_CFLAGS
+            aros_host_sdl_libs=$SDL_LIBS
         fi
     fi
 
@@ -2794,9 +2800,11 @@ AC_SUBST(aros_cflags_enum_compare)
 AC_SUBST(aros_cflags_strict_overflow)
 AC_SUBST(aros_cflags_format_security)
 
-# Graphics Related
-AC_SUBST(unixgfx_hidd_target)
-AC_SUBST(sdl_hidd_target)
+# Hosted Graphics Related
+AC_SUBST(host_x_gfx)
+AC_SUBST(host_sdl_gfx)
+AC_SUBST(host_android_gfx)
+
 AC_SUBST(pci_hidd_target)
 
 AC_SUBST(aros_nominal_width)
