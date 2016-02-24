@@ -128,7 +128,7 @@ USER_INCLUDES := \
 
 GLU_COMMONFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
 USER_CFLAGS := $(GLU_COMMONFLAGS)
-USER_CXXFLAGS := $(GLU_COMMONFLAGS)
+USER_CXXFLAGS := $(GLU_COMMONFLAGS) -fno-rtti
 
 CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
