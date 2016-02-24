@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 # On native AROS this stuff has to be resident, so we provide 'FS' kickstart package.
 # See arch/all-native/mmakefile.src.
 
-#MM- workbench-hosted:  $(SDL_HIDD_TARGET)	\
+#MM- workbench-hosted: \
 #MM			kernel-fs-afs		\
 #MM			kernel-fs-cdvdfs	\
 #MM			kernel-fs-cdfs		\
