@@ -66,6 +66,7 @@ static const struct nameexp layout_expansion_table[] =
     {"est"  , "Eesti"               , "Countries/Estonia"       },
     {"fin"  , "Finnish"             , "Countries/Finland"       },
     {"f"    , "Français"            , "Countries/France"        },
+    {"il"   , "Hebrew"              , "Countries/Israel"        },
     {"gr"   , "Hellenic"            , "Countries/Greece"        },
     {"hr"   , "Hrvatski"            , "Countries/Croatia"       },
     {"is"   , "Íslenska"            , "Countries/Iceland"       },
