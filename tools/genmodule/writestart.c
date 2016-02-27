@@ -620,7 +620,7 @@ static void writeresident(FILE *out, struct config *cfg)
         );
     }
     fprintf(out,
-            "struct Resident const GM_UNIQUENAME(ROMTag) =\n"
+            "__section(\".text.romtag\") struct Resident const GM_UNIQUENAME(ROMTag) =\n"
             "{\n"
             "    RTC_MATCHWORD,\n"
             "    (struct Resident *)&GM_UNIQUENAME(ROMTag),\n"
@@ -664,7 +664,7 @@ static void writeresident(FILE *out, struct config *cfg)
                 "    (APTR)&GM_UNIQUENAME(InitTable)\n"
                 "};\n"
                 "\n"
-                "static struct InitTable\n"
+                "__section(\".text.romtag\") static struct InitTable\n"
                 "{\n"
                 "    IPTR              Size;\n"
                 "    const APTR       *FuncTable;\n"
@@ -685,9 +685,9 @@ static void writeresident(FILE *out, struct config *cfg)
 
     fprintf(out,
             "\n"
-            "const char GM_UNIQUENAME(LibName)[] = MOD_NAME_STRING;\n"
-            "const char GM_UNIQUENAME(LibID)[] = VERSION_STRING;\n"
-            "const char GM_UNIQUENAME(Copyright)[] = COPYRIGHT_STRING;\n"
+            "__section(\".text.romtag\") const char GM_UNIQUENAME(LibName)[] = MOD_NAME_STRING;\n"
+            "__section(\".text.romtag\") const char GM_UNIQUENAME(LibID)[] = VERSION_STRING;\n"
+            "__section(\".text.romtag\") const char GM_UNIQUENAME(Copyright)[] = COPYRIGHT_STRING;\n"
             "\n"
     );
 }
@@ -1507,7 +1507,7 @@ writefunctable(FILE *out,
     {
         fprintf(out,
                 "\n"
-                "const APTR GM_UNIQUENAME(FuncTable)[]=\n"
+                "__section(\".text.romtag\") const APTR GM_UNIQUENAME(FuncTable)[]=\n"
                 "{\n"
         );
         if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
