@@ -1090,6 +1090,8 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
             else if (menu->MenuName)
             {
                 x2 = x + TextLength(rp, menu->MenuName, len) - 1;
+            } else {
+                x2 = x + TextLength(rp, " ", 1) - 1;
             }
 
             RenderDisabledPattern(rp, x, y, x2, y2, mhd, IntuitionBase);
