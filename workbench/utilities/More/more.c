@@ -137,9 +137,9 @@ static UWORD            tabsize = DEFAULT_TABSIZE;
 
 static WORD             fontwidth, fontheight, borderleft, bordertop;
 static WORD             shinepen, shadowpen, bgpen, textpen;
-static WORD             borderright, borderbottom, visiblex, visibley;
-static WORD             fontbaseline, textstartx, textstarty, textendx, textendy;
-static WORD             textwidth, textheight, viewstartx, viewstarty;
+static LONG             borderright, borderbottom, visiblex, visibley;
+static LONG             fontbaseline, textstartx, textstarty, textendx, textendy;
+static LONG             textwidth, textheight, viewstartx, viewstarty;
 static WORD             winwidth, winheight;
 
 static ULONG            winmask, msgmask;
