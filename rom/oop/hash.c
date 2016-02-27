@@ -159,7 +159,7 @@ struct Bucket *HashLookupULONG(struct HashTable *ht, IPTR id, struct IntOOPBase 
 struct Bucket *HashLookupUUID(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase)
 {
     struct Bucket *b;
-    uuid_t uuid = *(uuid_t *)id;
+    EnterFunc(uuid_t uuid = *(uuid_t *)id);
 
     EnterFunc(bug("HashLookupUUID(ht=%p, id={%04lx-%02lx-%02lx-%02x%02x-%02x%02x%02x%02x%02x%02x})\n", ht,
             uuid.time_low, uuid.time_mid, uuid.time_hi_and_version,
