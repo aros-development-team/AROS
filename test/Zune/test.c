@@ -188,10 +188,11 @@ static Object *group;
 static Object *editor_text;
 static Object *filename_string;
 static Object *save_button;
-static Object *list2;
 
+#if defined(TEST_ICONLIST)
 static Object *drawer_iconlist;
 static Object *volume_iconlist;
+#endif
 
 AROS_UFH0(void, repeat_function)
 {
@@ -773,7 +774,6 @@ static void volume_doubleclicked(void)
 
     strcpy(buf, ent->label);
     strcat(buf, ":");
-    set(drawer_iconlist, MUIA_IconDrawerList_Drawer, buf);
 }
 
 static void drawer_doubleclicked(void)
@@ -901,7 +901,7 @@ int main(void)
     Object *country_radio[2];
     CONST_STRPTR title;
     UWORD i;
-    LONG value;
+    LONG value = 0;
 
     static char *pages[] =
         {"General", "Text", "Boopsi", "Color", "Edit", "List", "Gauges",
