@@ -72,12 +72,13 @@
  
 	       Return      --  Goto the next file or directory.
 	       E/ENTER     --  Enters a directory.
+	       B/BACK      --  Go back one directory level.
 	       DEL/DELETE  --  Delete a file or an empty directory.
-	       C/COM       --  Let the file or directory be the input of
+               T/TYPE      --  Display content of a file.
+               C/COM       --  Let the file or directory be the input of
 	                       a DOS command (which specified after the C or
 			       COM or specified separately later).
 	       Q/QUIT      --  Quit interactive mode.
-	       B/BACK      --  Go back one directory level.
  
     RESULT
  
@@ -87,16 +88,13 @@
  
     BUGS
  
+    Interactive mode isn't fully working. It only walks stepwise
+    through the directory.
+
     SEE ALSO
  
     INTERNALS
- 
-    HISTORY
- 
-    XY.11.2000  SDuvan  added pattern matching support and support for
-                        FILES/S, DIRS/S and OPT/K and some support for
-			INTER/S. Complete interactive support is still missing.
- 
+
 ******************************************************************************/
 
 struct table
@@ -130,21 +128,24 @@ int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
              struct ExAllControl *eac, struct table *dirs,
              struct table *files);
 
+static
+TEXT* getLine(CONST_STRPTR prompt, TEXT *buffer, LONG buflen);
 
-#define  INTERARG_TEMPLATE  "E=ENTER/S,B=BACK/S,DEL=DELETE/S,Q=QUIT/S,C=COM/S,COMMAND"
+#define  INTERARG_TEMPLATE  "E=ENTER/S,B=BACK/S,T=TYPE/S,DEL=DELETE/S,Q=QUIT/S,C=COM/S,COMMAND"
 
 enum
 {
     INTERARG_ENTER = 0,
     INTERARG_BACK,
     INTERARG_DELETE,
+    INTERARG_TYPE,
     INTERARG_QUIT,
     INTERARG_COM,
     INTERARG_COMMAND,
     NOOFINTERARGS
 };
 
-AROS_SH6(Dir, 50.9,
+AROS_SH6(Dir, 50.10,
         AROS_SHA(CONST_STRPTR, ,DIR  ,    , NULL),
         AROS_SHA(CONST_STRPTR, ,OPT  , /K , NULL),
         AROS_SHA(BOOL,         ,ALL  , /S , FALSE),
@@ -221,7 +222,6 @@ AROS_SH6(Dir, 50.9,
         dirs  = TRUE;
     }
 
-
     if (iswild == 1)
     {
         error = doPatternDir(dir, all, dirs, files, inter);
@@ -254,6 +254,7 @@ AROS_SH6(Dir, 50.9,
 
     AROS_SHCOMMAND_EXIT
 }
+
 
 static
 int AddEntry(struct table *table, char *entry)
@@ -337,59 +338,68 @@ void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter)
 }
 
 
-
 static
 void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter)
 {
-    if(doIt)
+    if (doIt)
     {
         showline(format, args);
 
-#if 0
-        if(inter)
+        if (inter)
         {
-            struct ReadArgs *rda;
-
-            IPTR  interArgs[NOOFINTERARGS] = { (IPTR)FALSE,
-                                               (IPTR)FALSE,
-                                               (IPTR)FALSE,
-                                               (IPTR)FALSE,
-                                               (IPTR)FALSE,
-                                               NULL };
-
-            rda = ReadArgs(INTERARG_TEMPLATE, interArgs, NULL);
-
-            if (rda != NULL)
+            struct RDArgs *inter_rdargs = AllocDosObject(DOS_RDARGS, NULL);
+            if (inter_rdargs)
             {
-                if (interArgs[ARG_ENTER])
+                IPTR  interArgs[NOOFINTERARGS] = { (IPTR)FALSE,
+                                                   (IPTR)FALSE,
+                                                   (IPTR)FALSE,
+                                                   (IPTR)FALSE,
+                                                   (IPTR)FALSE,
+                                                   (IPTR)FALSE,
+                                                   (IPTR)NULL };
+                TEXT buffer[80];
+                memset(inter_rdargs, 0, sizeof *inter_rdargs);
+                
+                if (getLine(" ? ", buffer, sizeof buffer))
                 {
-                    return c_Enter;
+                    inter_rdargs->RDA_Source.CS_Buffer = buffer;
+                    inter_rdargs->RDA_Source.CS_Length = sizeof buffer;
+
+                    if (ReadArgs(INTERARG_TEMPLATE, interArgs, inter_rdargs))
+                    {
+#if 0
+                        if (interArgs[ARG_ENTER])
+                        {
+                            return c_Enter;
+                        }
+                        else if (interArgs[ARG_BACK])
+                        {
+                            return c_Back;
+                        }
+                        else if (interArgs[ARG_DELETE])
+                        {
+                            return c_Delete;
+                        }
+                        else if (interArgs[ARG_QUIT])
+                        {
+                            return c_Quit;
+                        }
+                        else if (interArgs[ARG_COM])
+                        {
+                            return c_Com;
+                        }
+                        else if (interArgs[ARG_COMMAND] != NULL)
+                        {
+                            command =
+                                return c_Command;
+                        }
+#endif
+                        FreeArgs(inter_rdargs);
+                    }
                 }
-                else if (interArgs[ARG_BACK])
-                {
-                    return c_Back;
-                }
-                else if (interArgs[ARG_DELETE])
-                {
-                    return c_Delete;
-                }
-                else if (interArgs[ARG_QUIT])
-                {
-                    return c_Quit;
-                }
-                else if (interArgs[ARG_COM])
-                {
-                    return c_Com;
-                }
-                else if (interArgs[ARG_COMMAND] != NULL)
-                {
-                    command =
-                        return c_Command;
-                }
+                FreeDosObject(DOS_RDARGS, inter_rdargs);
             }
         }
-#endif
-
     }
 }
 
@@ -405,6 +415,7 @@ void showline(char *fmt, IPTR *args)
     VPrintf(fmt, args);
 }
 
+
 // Returns TRUE if all lines shown, FALSE if broken by SIGBREAKF_CTRL_C
 static
 BOOL showfiles(struct table *files, BOOL inter)
@@ -414,21 +425,40 @@ BOOL showfiles(struct table *files, BOOL inter)
 
     qsort(files->entries, files->num, sizeof(char *),compare_strings);
 
-    for (t = 0; t < files->num; t += 2)
+    if (inter)
     {
-        argv[0] = (IPTR)(files->entries[t]);
-        argv[1] = (IPTR)(t + 1 < files->num ? files->entries[t+1] : "");
-
-        if (SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+        for (t = 0; t < files->num; t++)
         {
-            SetIoErr(ERROR_BREAK);
-            return FALSE;
-        }
+            argv[0] = (IPTR)(files->entries[t]);
 
-        maybeShowlineCR("  %-32.s %s", argv, TRUE, inter);
+            if (SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+            {
+                SetIoErr(ERROR_BREAK);
+                return FALSE;
+            }
+
+            maybeShowlineCR("  %s", argv, TRUE, inter);
+        }
+    }
+    else
+    {
+        for (t = 0; t < files->num; t += 2)
+        {
+            argv[0] = (IPTR)(files->entries[t]);
+            argv[1] = (IPTR)(t + 1 < files->num ? files->entries[t+1] : "");
+
+            if (SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+            {
+                SetIoErr(ERROR_BREAK);
+                return FALSE;
+            }
+
+            maybeShowlineCR("  %-32.s %s", argv, TRUE, inter);
+        }
     }
     return TRUE;
 }
+
 
 static
 BOOL showdir(char *dirName, BOOL inter)
@@ -437,6 +467,7 @@ BOOL showdir(char *dirName, BOOL inter)
     maybeShowlineCR("%s (dir)", argv, TRUE, inter);
     return TRUE;
 }
+
 
 static
 LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
@@ -532,8 +563,6 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
 
     return error;
 }
-
-
 
 
 static
@@ -778,4 +807,16 @@ int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
     while((loop) && (error == RETURN_OK));
 
     return error;
+}
+
+
+static
+TEXT* getLine(CONST_STRPTR prompt, TEXT *buffer, LONG buflen)
+{
+    if (prompt)
+    {
+        PutStr(prompt);
+    }
+    Flush(Output());
+    return FGets(Input(), buffer, buflen);
 }
