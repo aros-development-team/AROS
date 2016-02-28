@@ -11,7 +11,7 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: SysMon 1.1 (09.18.2011) ©2011 The AROS Development Team"
+#define VERSION "$VER: SysMon 1.2 (28.02.2016) ©2011-2016 The AROS Development Team"
 
 AROS_UFH3(VOID, tasklistrefreshbuttonfunction,
     AROS_UFHA(struct Hook *, h, A0),
@@ -56,7 +56,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
         MUIA_Application_Title, __(MSG_APP_NAME),
         MUIA_Application_Version, (IPTR) VERSION,
         MUIA_Application_Author, (IPTR) "Krzysztof Smiechowicz",
-        MUIA_Application_Copyright, (IPTR)"©2011-2013, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"©2011-2016, The AROS Development Team",
         MUIA_Application_Base, (IPTR)"SYSMON",
         MUIA_Application_Description, __(MSG_APP_TITLE),
         SubWindow, 
@@ -71,7 +71,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                             Child, ListviewObject, 
                                 MUIA_Listview_List, smdata->tasklist = ListObject,
                                     ReadListFrame,
-                                    MUIA_List_Format, "MIW=50 BAR,BAR,",
+                                    MUIA_List_Format, "MIW=50 BAR,BAR P=\033r,",
                                     MUIA_List_ConstructHook, &smdata->tasklistconstructhook,
                                     MUIA_List_DestructHook, &smdata->tasklistdestructhook,
                                     MUIA_List_DisplayHook, &smdata->tasklistdisplayhook,
