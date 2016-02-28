@@ -1,14 +1,24 @@
 /*
-    Copyright 2010-2015, The AROS Development Team. All rights reserved.
+    Copyright 2010-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <exec/execbase.h>
+#include <resources/task.h>
 #include <clib/alib_protos.h>
+
+#include <proto/task.h>
+#include <proto/dos.h>
 
 #include "locale.h"
 
 #include "sysmon_intern.h"
+
+//#define DEBUG 1
+#include <aros/debug.h>
+
+
+APTR TaskResBase = NULL;
 
 /* Task information handling*/
 struct TaskInfo
@@ -24,6 +34,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     struct Task * task;
     IPTR firstvis = 0, entryid = 0;
     struct Task *selected = smdata->sm_TaskSelected;
+    struct TaskList *systasklist;
 
     set(smdata->tasklist, MUIA_List_Quiet, TRUE);
 
@@ -35,53 +46,39 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     smdata->sm_TasksReady = 0;
     smdata->sm_TaskTotalRuntime = 0;
 
+#if 0
     /* We are unlikely to dissapear and this code still run .. so dont disable yet */
     if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, smdata->sm_Task, MUIV_List_Insert_Bottom)) == 0)
     {
         return;
     }
+#endif
     if (smdata->sm_Task == selected)
     {
         set(smdata->tasklist, MUIA_List_Active, entryid);
     }
 
-    /* Now disable multitasking and get the rest of the tasks .. */
-    Disable();
-    for (task = (struct Task *)SysBase->TaskReady.lh_Head;
-        task->tc_Node.ln_Succ != NULL;
-        task = (struct Task *)task->tc_Node.ln_Succ)
+    systasklist = LockTaskList(0);
+    while ((task = NextTaskEntry(systasklist, 0)) != NULL)
     {
-        if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)) == 0)
+        D(bug("[SysMon] task %s state %d\n", task->tc_Node.ln_Name, task->tc_State));
+        
+        if (task->tc_State == TS_READY)
         {
-            Enable();
-            return;
+            smdata->sm_TasksReady++;
         }
+        if (task->tc_State == TS_WAIT)
+        {
+            smdata->sm_TasksWaiting++;
+        }
+
+        entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom);
         if (task == selected)
         {
             set(smdata->tasklist, MUIA_List_Active, entryid);
         }
-
-        smdata->sm_TasksReady++;
     }
-
-    for (task = (struct Task *)SysBase->TaskWait.lh_Head;
-        task->tc_Node.ln_Succ != NULL;
-        task = (struct Task *)task->tc_Node.ln_Succ)
-    {
-        if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)) == 0)
-        {
-            Enable();
-            return;
-        }
-        if (task == selected)
-        {
-            set(smdata->tasklist, MUIA_List_Active, entryid);
-        }
-
-        smdata->sm_TasksWaiting++;
-    }
-
-    Enable();
+    UnLockTaskList(0);
 
     if (XGET(smdata->tasklist, MUIA_List_Active) == 0)
         smdata->sm_TaskSelected = NULL;
@@ -192,6 +189,13 @@ AROS_UFH3(VOID, TasksListDisplayFunction,
 
 static BOOL InitTasks(struct SysMonData *smdata)
 {
+    TaskResBase = OpenResource("task.resource");
+    if (TaskResBase == NULL)
+    {
+        FPuts(Output(), "Can't open task.resource\n");
+        return FALSE;
+    }
+
     smdata->sm_Task = FindTask(NULL);
     NewList(&smdata->sm_TaskList);
 
