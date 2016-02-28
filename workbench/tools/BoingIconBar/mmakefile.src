@@ -19,7 +19,7 @@ USER_CFLAGS := -fno-strict-aliasing
 
 %build_prog mmake=workbench-tools-iconbar \
     progname=BoingIconBar targetdir=$(AROS_TOOLS) \
-    files=$(FILES)
+    files=$(FILES) detach=yes
 
 %copy_dir_recursive mmake=workbench-tools-iconbar-gfx \
 	src=$(BIBGFX) dst=$(AROS_IMAGES)/$(BIBGFX)
