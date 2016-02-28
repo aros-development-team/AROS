@@ -1105,7 +1105,7 @@ static void CheckMousePosition(void)
 {
     // noisy: D(bug("[IconBar] Mouse current position: Y=%d\n", Screen_struct->MouseY));
 
-    if((Screen_struct->MouseY == ScreenHeight - 1) &&
+    if((Screen_struct->MouseY > ScreenHeight - 8) &&
         Window_Open == FALSE &&
         Screen_struct->MouseX > BeginningWindow &&
         Screen_struct->MouseX < EndingWindow)
@@ -1121,7 +1121,7 @@ static void CheckMousePosition(void)
     //     even in static mode  - but it doesn't work because this code is checked
     //     only in static=0 mode
 
-    else if ((Screen_struct->MouseY == ScreenHeight - 1) &&
+    else if ((Screen_struct->MouseY > ScreenHeight - 8) &&
         Window_Open == TRUE &&
         Screen_struct->MouseX > BeginningWindow &&
         Screen_struct->MouseX < EndingWindow)
