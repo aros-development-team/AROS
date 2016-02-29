@@ -125,6 +125,8 @@ USER_INCLUDES := \
 USER_CFLAGS := -ffast-math -DMAPI_MODE_UTIL -DFEATURE_GL=1 \
                 -DMAPI_ABI_HEADER=\"glapi/glapi_mapi_tmp.h\"
 
+USER_CXXFLAGS := -fno-rtti -fno-exceptions
+
 MESAGL_CORE_SOURCES = \
             $(addprefix mesa/, $(MESA_GALLIUM_SOURCES:.c=)) \
             $(addprefix mapi/mapi/, $(MAPI_UTIL_SOURCES:.c=)) \
