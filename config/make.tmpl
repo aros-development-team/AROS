@@ -2928,7 +2928,7 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 #
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
-    aros_prefix= extraoptions= installoptions= maketarget= cflags=$(CFLAGS)
+    aros_prefix= extraoptions= installoptions= maketarget= cflags=$(CFLAGS) cxxflags=$(CXXFLAGS)
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -2960,7 +2960,7 @@ endif
 %(mmake)-installflag := $(%(mmake)-pkgdir)/.installed
 
 BD_CFLAGS := %(cflags)
-BD_CXXFLAGS := $(subst -Wno-pointer-sign,,$(BD_CFLAGS))
+BD_CXXFLAGS := %(cxxflags)
 
 %(mmake)-cmake_opts  := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
 
