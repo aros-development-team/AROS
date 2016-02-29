@@ -58,6 +58,7 @@
 #include <datatypes/datatypes.h>
 #include <datatypes/pictureclass.h>
 #include <devices/rawkeycodes.h>
+#include <aros/detach.h>
 #include <dos/dos.h>
 
 #include "locale.h"
@@ -325,6 +326,8 @@ int main(int argc, char *argv[])
         OpenMainWindow();
         FirstOpening = FALSE;
     }
+
+    Detach();
 
     // ---- main loop
 
