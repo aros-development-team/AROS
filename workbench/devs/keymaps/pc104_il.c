@@ -1,3 +1,4 @@
+// https://upload.wikimedia.org/wikipedia/en/8/8a/Hebrew_keyboard_layout.png
 /*
     Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
@@ -58,8 +59,8 @@ STATIC CONST UBYTE lokeymaptypes[] =
     V,		/* 17 i */
     V,		/* 18 o */
     V,		/* 19 p */
-    S,		/* 1A */
-    S|A,	/* 1B */
+    D|S,	/* 1A */
+    D|S,	/* 1B */
     S|A,	/* 1C */
     S|A,	/* 1D */
     S|A,	/* 1E */
@@ -96,6 +97,30 @@ STATIC CONST UBYTE lokeymaptypes[] =
     N,		/* 3D */
     N,		/* 3E */
     N,		/* 3F */
+};
+
+STATIC CONST UBYTE rlm_descr[] =
+{
+    0, ']',
+    0, '}',
+    0, '[',
+    0, '{',
+    0, 0xFE,
+    0, 0x1B,
+    0, 0x9B,
+    0, 0x9B
+};
+
+STATIC CONST UBYTE lrm_descr[] =
+{
+    0, '[',
+    0, '{',
+    0, ']',
+    0, '}',
+    0, 0xFD,
+    0, 0x1D,
+    0, 0x9D,
+    0, 0x9D
 };
 
 STATIC CONST UBYTE hikeymaptypes[] =
@@ -213,8 +238,8 @@ STATIC CONST IPTR lokeymap[] =
     BYTES('Ó', 'ó', 'O',0xED),		/* 18 */
     BYTES('P', 'p', 'P',0xF4),		/* 19 */
 
-    BYTES('{', '[', '}', ']'),		/* 1A */
-    BYTES('}', ']', '{', '['),		/* 1B */
+    DEAD(rlm_descr),			/* 1A */
+    DEAD(lrm_descr),			/* 1B */
     BYTES(0, 0, 0, 0),			/* 1C undefined */
     BYTES('1', '1', '1', '1'),		/* 1D NUM 1*/
     BYTES('2', '2', '2', '2'),		/* 1E NUM 2*/
