@@ -495,7 +495,7 @@ static int relocate
         struct symbol sym;
         ULONG offset;
         ULONG shindex;
-        ULONG hunk = 0;
+        ULONG shid = 0;
         ULONG value = 0;
         const char *symname;
 
@@ -548,11 +548,11 @@ static int relocate
                 return 0;
 
             case SHN_ABS:
-		hunk = ~0; value = sym.value;
+		shid = ~0; value = sym.value;
                 break;
 
   	    default:
-		hunk = shindex;
+		shid = shindex;
 		value = sym.value;
 		break;
  	}
@@ -574,6 +574,7 @@ static int relocate
                 break;
 
             case R_68k_NONE:
+                shid = ~0;
                 break;
 
             default:
@@ -582,13 +583,13 @@ static int relocate
 		return 0;
         }
 
-	D(bug("[ELF2HUNK]   Hunk %d, offset 0x%x: base 0x%x\n", (int)hunk, (int)offset, (int)value));
+	D(bug("[ELF2HUNK]   shid %d, offset 0x%x: base 0x%x\n", (int)shid, (int)offset, (int)value));
         *(ULONG *)(h->data + offset) = htonl(value + ntohl(*(ULONG *)(h->data + offset)));
-        if (hunk == ~0) {
+        if (shid == ~0) {
     	    h->relocs--;
     	    continue;
         }
-        hrel->shid = hunk;
+        hrel->shid = shid;
         hrel->offset = offset;
         hrel->symbol = symname;
         hrel++;
