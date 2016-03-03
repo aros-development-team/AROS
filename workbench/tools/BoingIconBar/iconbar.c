@@ -51,6 +51,8 @@
 #include <devices/rawkeycodes.h>
 #include <aros/detach.h>
 
+#include "locale.h"
+
 //#define DEBUG 1
 #include <aros/debug.h>
 
@@ -458,7 +460,7 @@ static int ReadPrefs(void)
             EndingWindow = (ScreenWidth>>1) + (WindowWidth>>1);
             CurrentLevel= 0;
 
-            sprintf(Levels_Struct[LevelCounter].Level_Name, "Settings");
+            sprintf(Levels_Struct[LevelCounter].Level_Name, _(MSG_MENU_SETTINGS));
             sprintf(Names.IText, "%s", Levels_Struct[LevelCounter].Level_Name);
             DlugoscTekstu = IntuiTextLength(&Names);
             if(DlugoscTekstu > Lenght)
