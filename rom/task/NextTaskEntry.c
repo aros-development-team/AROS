@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-        LockTaskList(), UnLockTaskList().
+        LockTaskList(), UnLockTaskList()
 
     INTERNALS
 

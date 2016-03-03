@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-        LockTaskList(), NextTaskEntry().
+        LockTaskList(), NextTaskEntry()
 
     INTERNALS
 

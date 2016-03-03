@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-        UnLockTaskList(), NextTaskEntry().
+        UnLockTaskList(), NextTaskEntry()
 
     INTERNALS
 
