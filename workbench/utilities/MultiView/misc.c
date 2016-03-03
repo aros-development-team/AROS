@@ -8,7 +8,6 @@
 #include "global.h"
 #include "version.h"
 
-#include <stdio.h>
 #include <string.h>
 
 #include "compilerspecific.h"
@@ -310,23 +309,15 @@ STRPTR GetFileName(ULONG msgtextid)
 
 /*********************************************************************************************/
 
-static struct Library * FindClassBase(char *className)
+static struct Library * FindClassBase(CONST_STRPTR className)
 {
     struct Library *lib;
+
     Forbid();
-    for(lib=(struct Library *)SysBase->LibList.lh_Head;
-        lib->lib_Node.ln_Succ!=NULL;
-        lib=(struct Library *)lib->lib_Node.ln_Succ)
-    {
-        if((lib->lib_Node.ln_Name) &&
-            !(strncmp(lib->lib_Node.ln_Name, className, strlen(className))))
-        {
-            Permit();
-            return lib;
-        }
-    }
+    lib = (struct Library *)FindName(&SysBase->LibList, className);
     Permit();
-    return NULL;
+
+    return lib;
 }
 
 static struct IClass *FindClassSuper(struct IClass *baseClass)
@@ -376,7 +367,6 @@ void About(void)
     char *fmtTemplate;
     int                         count = 12, tmplLen;
     IPTR                *abouttxt;
-
     WORD                i = 0;
 
     tmplLen = strlen(internal_about_tmpl);
@@ -388,7 +378,7 @@ void About(void)
     }
 
     fmtTemplate = AllocVec(tmplLen + i + 1, MEMF_ANY);
-    CopyMem(internal_about_tmpl, fmtTemplate, tmplLen);
+    CopyMem(internal_about_tmpl, fmtTemplate, tmplLen + 1);
     if (classInfo)
     {
         fmtTemplate[tmplLen++] = '\n';
@@ -417,17 +407,17 @@ void About(void)
     /* display version info about datatypes.library */
     abouttxt[5] = (IPTR) versToStr(DataTypesBase->lib_IdString);
 
-    /* display version info about datatype objects class */
-    if ((tmpBase = FindClassBase((char *)OCLASS(dto)->cl_ID)) != NULL)
+    /* display version info about datatype object's class */
+    if ((tmpBase = FindClassBase(OCLASS(dto)->cl_ID)) != NULL)
     {
         abouttxt[8] = (IPTR) tmpBase->lib_Node.ln_Name;
         abouttxt[9] = (IPTR) versToStr(tmpBase->lib_IdString);
     }
 
-    /* display version info about datatype objects super class */
+    /* display version info about datatype object's superclass */
     if ((clSuper = FindClassSuper(OCLASS(dto))) != NULL)
     {
-        if ((tmpBase = FindClassBase((char *)clSuper->cl_ID)) != NULL)
+        if ((tmpBase = FindClassBase(clSuper->cl_ID)) != NULL)
         {
             abouttxt[10] = (IPTR) tmpBase->lib_Node.ln_Name;
             abouttxt[11] = (IPTR) versToStr(tmpBase->lib_IdString);
