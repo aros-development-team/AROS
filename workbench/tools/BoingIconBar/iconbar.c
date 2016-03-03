@@ -72,51 +72,43 @@
 #define BIB_PREFS "ENV:Iconbar.prefs"
 
 
-BOOL BiB_Exit=FALSE, Icon_Remap=FALSE, PositionMenuOK=FALSE, Image=FALSE;   // <--- Try disabling "Image=FALSE" as seems not used at all 
-BOOL Window_Active=FALSE, Window_Open=FALSE, MenuWindow_Open=FALSE, FirstOpening=TRUE;
+static BOOL BiB_Exit=FALSE, Icon_Remap=FALSE, PositionMenuOK=FALSE; 
+static BOOL Window_Active=FALSE, Window_Open=FALSE, MenuWindow_Open=FALSE, FirstOpening=TRUE;
 
-// --- New variables
-
-BOOL B_Labels=FALSE;
-char IT_Labels[100];  // <- buffor for label
+static BOOL B_Labels=FALSE;
+static char IT_Labels[100];  // buffer for label
 
 // -----------
 
-int WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
-int ImageWidth, ImageHeight, Static=0, Position, OldPosition;           // <---  ...also: ImageWidth, ImageHeight not used at all 
-int IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon, Spacing=5;
-int Lenght, BeginningWindow, EndingWindow, Window_Max_X, Window_Max_Y;
-char MovingTable[8]={0, 4, 7, 9, 10, 9, 7, 4};
-char version[]="$VER: BoingIconBar 1.9 (27.09.2011) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
-char Background_name[256], BufferList[20];   // <-- nazwa_podkladu not used at all , but might be interesting to implement 
-ULONG WindowMask=0, MenuMask=0, WindowSignal;
+static int WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
+static int Static=0, Position, OldPosition; 
+static int IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon, Spacing=5;
+static int Lenght, BeginningWindow, EndingWindow, Window_Max_X, Window_Max_Y;
+static char MovingTable[8]={0, 4, 7, 9, 10, 9, 7, 4};
+char version[]="$VER: BoingIconBar 1.10 (03.03.2016) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
+static char BufferList[20]; 
+static ULONG WindowMask=0, MenuMask=0, WindowSignal;
 
-IPTR args[]={ (LONG)&Spacing, (LONG)&Static, 0, 0 };
+static IPTR args[]={ (LONG)&Spacing, (LONG)&Static, 0, 0 };
 
-struct DiskObject *Icon[SUM_ICON]; 
+static struct DiskObject *Icon[SUM_ICON]; 
 
-struct Library *IconBase    = NULL,
-               *WBStartBase = NULL,
-               *DiskfontBase = NULL; // <- base of diskfont library
+static struct Window *Window_struct, *MenuWindow_struct;    //  really bad 
+static struct Screen *Screen_struct;                       //   _struct names , change them ASAP 
 
-struct Window *Window_struct, *MenuWindow_struct;    //  really bad 
-struct Screen *Screen_struct;                       //   _struct names , change them ASAP 
-
-struct BitMap *BMP_Buffer, *BMP_DoubleBuffer;
-struct RastPort RP_Buffer, RP_DoubleBuffer;
+static struct BitMap *BMP_Buffer, *BMP_DoubleBuffer;
+static struct RastPort RP_Buffer, RP_DoubleBuffer;
 
 // struct of  icons
 
-// ----- Add two new members: IK_Label_Length and IK_Label
-
-struct Icon_Struct {
+static struct Icon_Struct {
                 int    Icon_Height;     // height icon
                 int    Icon_Width;      // width icon
                 int    Icon_PositionX;  // X position on main window
                 int    Icon_PositionY;  // Y position on main window
                 int    Icon_Status;     // status of icon: normal or selected
-                BOOL   Icon_OK;         // everithing OK with icon
-                char   Icon_Path[255];  // name to path of ikon
+                BOOL   Icon_OK;         // everything OK with icon
+                char   Icon_Path[255];  // name to path of icon
                 int    IK_Label_Length; // length of label under icon in chars 
                 STRPTR IK_Label;        // icon label
 
@@ -124,7 +116,7 @@ struct Icon_Struct {
 
 // struct of submenu
 
-struct Level_Struct {
+static struct Level_Struct {
                  char Level_Name[20];   // name submenu - level name 
                  int  Beginning;        // first icon on menu
                  int  WindowPos_X;      // X position main window
@@ -133,23 +125,23 @@ struct Level_Struct {
 
 // ---  Define labels fonts
 
-struct TextFont *TF_XHelvetica;
+static struct TextFont *TF_XHelvetica;
 //struct TextAttr XHelvetica = {"XHelvetica.font", 9, 0, FPF_DISKFONT};
-struct TextAttr XHelvetica = {"arial.font", 9, 0, FPF_DISKFONT};
+static struct TextAttr XHelvetica = {"arial.font", 9, 0, FPF_DISKFONT};
 
 // --------------------
 
-struct TextAttr Topaz8 = {"topaz.font",8,0,FPF_ROMFONT};
+static struct TextAttr Topaz8 = {"topaz.font",8,0,FPF_ROMFONT};
 
-struct IntuiText Names  = {1, 0, JAM1, 0, 0, &Topaz8,     BufferList, NULL};
-struct IntuiText Labels = {1, 0, JAM1, 0, 0, &XHelvetica, IT_Labels,  NULL};
+static struct IntuiText Names  = {1, 0, JAM1, 0, 0, &Topaz8,     BufferList, NULL};
+static struct IntuiText Labels = {1, 0, JAM1, 0, 0, &XHelvetica, IT_Labels,  NULL};
 
 //  background pictures
 
-Object *picture[3];
-struct BitMap *bm[3];
+static Object *picture[3];
+static struct BitMap *bm[3];
 
-struct Struct_BackgroundData {
+static struct Struct_BackgroundData {
                        int Width; // width
                        int Height;  // height
                       } BackgroundData[3];
@@ -180,12 +172,11 @@ static void IconLabel(void);  // <- add label to icon
 
 int main(int argc, char *argv[])
 {
-    int x, outt=FALSE;
+    int x;
 
     struct IntuiMessage *KomIDCMP,KopiaIDCMP;
     struct RDArgs *rda=NULL;
     struct DiskObject *dob=NULL;
-    BPTR out;
 
     //LJ --- trying to use StartNotify()
 
@@ -206,182 +197,159 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if(IconBase=OpenLibrary("icon.library", 44))
+    if (argc) // reading command line parameters 
     {
-        if (argc) // reading command line parameters 
+        if (!(rda = ReadArgs(TEMPLATE, args, NULL)))
         {
-            if (!(rda = ReadArgs(TEMPLATE, args, NULL)))
-            {
-                PrintFault(IoErr(), argv[0]);
-                return 10;
-            }
+            PrintFault(IoErr(), argv[0]);
+            return 10;
+        }
 
-            if (args[ARG_AUTOREMAP])
+        if (args[ARG_AUTOREMAP])
+            Icon_Remap = TRUE;
+
+        if (args[ARG_NAMES])
+            B_Labels = TRUE;
+    }
+    else
+    {   //reading ToolTypes parameters 
+        struct WBStartup *wbs=(struct WBStartup*)argv;
+        struct WBArg *wba=&wbs->sm_ArgList[wbs->sm_NumArgs-1];
+        BPTR oldcd;
+
+        if (!(*wba->wa_Name))
+            return 10;
+
+        oldcd=CurrentDir(wba->wa_Lock);
+        if ((dob=GetDiskObjectNew(wba->wa_Name)))
+        {
+            char *str;
+
+            if ((str=FindToolType(dob->do_ToolTypes, "SPACE")))
+                *(ULONG*)args[ARG_SPACE]=(ULONG)atoi(str);
+
+            if ((str=FindToolType(dob->do_ToolTypes, "STATIC")))
+                *(ULONG*)args[ARG_STATIC]=(ULONG)atoi(str);
+
+            if ((str=FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
                 Icon_Remap = TRUE;
 
-            if (args[ARG_NAMES])
+            if ((str=FindToolType(dob->do_ToolTypes, "NAMES")))
                 B_Labels = TRUE;
-
-            out=Output();
         }
-        else
-        {   //reading ToolTypes parameters 
-            struct WBStartup *wbs=(struct WBStartup*)argv;
-            struct WBArg *wba=&wbs->sm_ArgList[wbs->sm_NumArgs-1];
-            BPTR oldcd;
 
-            if (!(*wba->wa_Name))
-                return 10;
+        CurrentDir(oldcd);
+    }
 
-            oldcd=CurrentDir(wba->wa_Lock);
-            if ((dob=GetDiskObjectNew(wba->wa_Name)))
+    Spacing = *(LONG*)args[ARG_SPACE];
+    Static = *(LONG*)args[ARG_STATIC];
+
+    if (rda)
+        FreeArgs(rda);
+    if (dob)
+        FreeDiskObject(dob);
+
+    Detach(); // must be done after ReadArgs()
+
+    D(bug("[IconBar] space %d static %d autoremap %d names %d\n", Spacing, Static, Icon_Remap, B_Labels));
+
+    // ------ Opening font if parameter NAMES is active
+
+    if(B_Labels == TRUE)
+    {
+        if((TF_XHelvetica = OpenDiskFont(&XHelvetica)) == NULL)
+        {
+            B_Labels = FALSE;
+            puts("No Arial 9 font\n");
+        }
+    }
+
+    // ------------------------------
+
+    if(ReadPrefs())
+    {
+        LoadBackground();
+        if(Static)
+        {
+            Delay(Static * 50);
+            OpenMainWindow();
+            FirstOpening = FALSE;
+        }
+
+        // ---- main loop
+
+        while (BiB_Exit==FALSE)
+        {
+
+            if (GetMsg(BIBport) != NULL)
             {
-                char *str;
-
-                if ((str=FindToolType(dob->do_ToolTypes, "SPACE")))
-                    *(ULONG*)args[ARG_SPACE]=(ULONG)atoi(str);
-
-                if ((str=FindToolType(dob->do_ToolTypes, "STATIC")))
-                    *(ULONG*)args[ARG_STATIC]=(ULONG)atoi(str);
-
-                if ((str=FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
-                    Icon_Remap = TRUE;
-
-                if ((str=FindToolType(dob->do_ToolTypes, "NAMES")))
-                    B_Labels = TRUE;
+                Reload();
             }
 
-            CurrentDir(oldcd);
-            outt=TRUE;
-        }
 
-        if (out || outt)
-        {
-            Spacing = *(LONG*)args[ARG_SPACE];
-            Static = *(LONG*)args[ARG_STATIC];
-        }
-        if (rda)
-            FreeArgs(rda);
-        if (dob)
-            FreeDiskObject(dob);
-
-        Detach(); // must be done after ReadArgs()
-
-        D(bug("[IconBar] space %d static %d autoremap %d names %d\n", Spacing, Static, Icon_Remap, B_Labels));
-
-        // ------ Opening diskfont.library and font if parameter NAMES is active
-
-        if(B_Labels == TRUE)
-        {
-            if(DiskfontBase=OpenLibrary("diskfont.library",0))
+            if(Window_Open || MenuWindow_Open)
             {
-                if((TF_XHelvetica = OpenDiskFont(&XHelvetica)) == NULL)
+                WindowSignal = Wait(WindowMask | MenuMask);
+
+                if(WindowSignal & WindowMask)
                 {
-                    B_Labels = FALSE;
-                    puts("No XHelvetica 9 font\n");
+                    while(KomIDCMP=GT_GetIMsg(Window_struct->UserPort))
+                    {
+                        CopyMem(KomIDCMP,&KopiaIDCMP,sizeof(struct IntuiMessage));
+                        GT_ReplyIMsg(KomIDCMP);
+                        Decode_IDCMP(&KopiaIDCMP);
+                    }
+
+                    if(!(Static) && Window_Active == FALSE)
+                        CloseMainWindow();
+                }
+
+                if(WindowSignal & MenuMask)
+                {
+                    while(KomIDCMP=GT_GetIMsg(MenuWindow_struct->UserPort))
+                    {
+                        CopyMem(KomIDCMP,&KopiaIDCMP,sizeof(struct IntuiMessage));
+                        GT_ReplyIMsg(KomIDCMP);
+                        Decode_IDCMP2(&KopiaIDCMP);
+                    }
+
+                    if(MenuWindow_Open == FALSE)
+                        CloseMenuWindow();
                 }
             }
             else
             {
-                B_Labels = FALSE;
-                puts("Can't open the diskfont.library\n");
+                Delay(50);
+                CheckMousePosition();
             }
         }
-        // ------------------------------
+        // ---- end of main loop
 
-        if(ReadPrefs())
+        CloseMainWindow();
+
+        for(x=0; x<SUM_ICON; x++)
         {
-            LoadBackground();
-            if(Static)
+            if(Icon[x] != NULL)
             {
-                Delay(Static * 50);
-                OpenMainWindow();
-                FirstOpening = FALSE;
-            }
-
-            // ---- main loop
-
-            while (BiB_Exit==FALSE)
-            {
-
-                if (GetMsg(BIBport) != NULL)
-                {
-                    Reload();
-                }
-
-
-                if(Window_Open || MenuWindow_Open)
-                {
-                    WindowSignal = Wait(WindowMask | MenuMask);
-
-                    if(WindowSignal & WindowMask)
-                    {
-                        while(KomIDCMP=GT_GetIMsg(Window_struct->UserPort))
-                        {
-                            CopyMem(KomIDCMP,&KopiaIDCMP,sizeof(struct IntuiMessage));
-                            GT_ReplyIMsg(KomIDCMP);
-                            Decode_IDCMP(&KopiaIDCMP);
-                        }
-
-                        if(!(Static) && Window_Active == FALSE)
-                            CloseMainWindow();
-                    }
-
-                    if(WindowSignal & MenuMask)
-                    {
-                        while(KomIDCMP=GT_GetIMsg(MenuWindow_struct->UserPort))
-                        {
-                            CopyMem(KomIDCMP,&KopiaIDCMP,sizeof(struct IntuiMessage));
-                            GT_ReplyIMsg(KomIDCMP);
-                            Decode_IDCMP2(&KopiaIDCMP);
-                        }
-
-                        if(MenuWindow_Open == FALSE)
-                            CloseMenuWindow();
-                    }
-                }
-                else
-                {
-                    Delay(50);
-                    CheckMousePosition();
-                }
-            }
-            // ---- end of main loop
-
-            CloseMainWindow();
-
-            for(x=0; x<SUM_ICON; x++)
-            {
-                if(Icon[x] != NULL)
-                {
-                    FreeDiskObject(Icon[x]);
-                }
-            }
-
-            if(BMP_Buffer)
-                FreeBitMap(BMP_Buffer);
-            if(BMP_DoubleBuffer)
-                FreeBitMap(BMP_DoubleBuffer);
-
-            for(x=0; x<3; x++)
-            {
-                if(picture[x]) DisposeDTObject(picture[x]);
+                FreeDiskObject(Icon[x]);
             }
         }
-        else
-            printf("No prefs\n");
+
+        if(BMP_Buffer)
+            FreeBitMap(BMP_Buffer);
+        if(BMP_DoubleBuffer)
+            FreeBitMap(BMP_DoubleBuffer);
+
+        for(x=0; x<3; x++)
+        {
+            if(picture[x]) DisposeDTObject(picture[x]);
+        }
     }
     else
-        printf("Can't open icon.library 44+\n");
+        printf("No prefs\n");
 
     if(TF_XHelvetica)
         CloseFont(TF_XHelvetica);
-    if(DiskfontBase)
-        CloseLibrary(DiskfontBase);
-    if(IconBase)
-        CloseLibrary(IconBase);
-    if(WBStartBase)
-        CloseLibrary(WBStartBase);
 
     return 0;
 }
@@ -510,9 +478,9 @@ static void LoadBackground(void)
 {
     int x;
 
-    STRPTR nazwy[3] = {"PROGDIR:bibgfx/left",
-        "PROGDIR:bibgfx/middle",
-        "PROGDIR:bibgfx/right"};
+    STRPTR nazwy[3] = {"Images:bibgfx/left",
+        "Images:bibgfx/middle",
+        "Images:bibgfx/right"};
 
     for(x=0; x<3; x++)
     {
@@ -1300,7 +1268,7 @@ static void Launch_Program(char *Program)
 
 static void Settings(void)
 {
-    OpenWorkbenchObject("SYS:Prefs/BiBPrefs", TAG_DONE);
+    OpenWorkbenchObject("SYS:Prefs/BoingIconBar", TAG_DONE);
 }
 
 
@@ -1330,8 +1298,6 @@ static void Reload(void)
         FreeBitMap(BMP_Buffer);
     if(BMP_DoubleBuffer)
         FreeBitMap(BMP_DoubleBuffer);
-
-    OpenWorkbenchObject("SYS:Prefs/BoingIconBar", TAG_DONE);
 
     if(ReadPrefs() == FALSE)
     {
