@@ -7,20 +7,6 @@
 // AROS PORT by LuKeJerry (at) gmail.com                    //
 //   -- translated to ENG from 26-09-2011                   //
 //                                                          //
-//   -- last update: 27-09-2011                             //
-//                                                          //
-//                                                          //
-// - Issues: When removing one icon from BiB,               //
-//           FreeDiskObject removes twice the               //
-//           last icon - crash for memory freed twice       //
-//     ==> Fixed with a Icon[x]=NULL; to force NULLing      //
-//         the Icon[x] pointer                              //
-//                                                          //
-//                                                          //
-// - New features: Even in static mode, put BiB window      //
-//                 active when mouse cursor goes to very    //
-//                 bottom of screen                         //
-//                                                          //
 //////////////////////////////////////////////////////////////
 
 
@@ -151,10 +137,10 @@ static struct Struct_BackgroundData {
 
 
 // functions
-static int  ReadPrefs(void);   // load prefs
+static BOOL ReadPrefs(void);   // load prefs
 static void LoadBackground(void);  //load background pictures
-static void SetWindowParameters(void);   // check window sizes
-static void Decode_IDCMP(struct IntuiMessage *KomIDCMP);  //  decode IDCMP main signals
+static BOOL SetWindowParameters(void);   // check window sizes
+static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP);  // decode IDCMP main signals
 static void Change_State(int Zeruj);  // change icon state
 static void Insert_Icon(int Tryb, int NrIkony);  // draw icon
 static void Blink_Icon(int NrIkony); // blink the icon
@@ -164,96 +150,134 @@ static void CheckMousePosition(void);  // check mouse position
 static void Show_Selected_Level(void);  // change the submenu
 static void OpenMenuWindow(void); // open menu window
 static void CloseMenuWindow(void);  // close menu window
-static void Decode_IDCMP2(struct IntuiMessage *KomIDCMP);  // decode IDCMP menu signals
+static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP);  // decode IDCMP menu signals
 static void Launch_Program(char *Program);  // start the chosed program
 static void Settings(void);  // open the prefs program
 static void Reload(void); // reload the BiB
-static void IconLabel(void);  // <- add label to icon
+static void IconLabel(void);  // add label to icon
  
 // -------------
 
 int main(int argc, char *argv[])
 {
+    LONG retval = RETURN_OK;
+
     int x;
 
     struct IntuiMessage *KomIDCMP,KopiaIDCMP;
     struct RDArgs *rda=NULL;
     struct DiskObject *dob=NULL;
-
-    //LJ --- trying to use StartNotify()
-
-    struct NotifyRequest *nr;
-    struct MsgPort *BIBport;
-
-    BIBport = CreateMsgPort();
-
-    nr = AllocMem(sizeof(struct NotifyRequest), MEMF_CLEAR);
-    nr->nr_Name = BIB_PREFS;
-    nr->nr_Flags = NRF_SEND_MESSAGE;
-    nr->nr_stuff.nr_Signal.nr_Task = FindTask(NULL);
-    nr->nr_stuff.nr_Msg.nr_Port = BIBport;
-
-    if (StartNotify(nr) == DOSFALSE)
-    {
-        printf("StartNotify failed: %ld\n", (long)IoErr());
-        return 0;
-    }
+    struct NotifyRequest *NotRequest = NULL;
+    struct MsgPort *BIBport = NULL;
 
     if (argc) // reading command line parameters 
     {
         if (!(rda = ReadArgs(TEMPLATE, args, NULL)))
         {
             PrintFault(IoErr(), argv[0]);
-            return 10;
+            retval = RETURN_ERROR;
+            goto bailout;
         }
 
         if (args[ARG_AUTOREMAP])
+        {
             Icon_Remap = TRUE;
+        }
 
         if (args[ARG_NAMES])
+        {
             B_Labels = TRUE;
+        }
+
+        if (args[ARG_SPACE])
+        {
+            Spacing = *(LONG*)args[ARG_SPACE];
+        }
+
+        if (args[ARG_STATIC])
+        {
+            Static = *(LONG*)args[ARG_STATIC];
+        }
     }
     else
     {   //reading ToolTypes parameters 
+        struct WBArg *wba;
         struct WBStartup *wbs=(struct WBStartup*)argv;
-        struct WBArg *wba=&wbs->sm_ArgList[wbs->sm_NumArgs-1];
         BPTR oldcd;
 
-        if (!(*wba->wa_Name))
-            return 10;
-
-        oldcd=CurrentDir(wba->wa_Lock);
-        if ((dob=GetDiskObjectNew(wba->wa_Name)))
+        if (wbs && wbs->sm_NumArgs > 0)
         {
-            char *str;
+            wba = &wbs->sm_ArgList[0];
+            if (wba && wba->wa_Lock && wba->wa_Name)
+            {
+                oldcd=CurrentDir(wba->wa_Lock);
+                if ((dob=GetDiskObjectNew(wba->wa_Name)))
+                {
+                    char *str;
 
-            if ((str=FindToolType(dob->do_ToolTypes, "SPACE")))
-                *(ULONG*)args[ARG_SPACE]=(ULONG)atoi(str);
+                    if ((str=FindToolType(dob->do_ToolTypes, "SPACE")))
+                        Spacing = (ULONG)atoi(str);
 
-            if ((str=FindToolType(dob->do_ToolTypes, "STATIC")))
-                *(ULONG*)args[ARG_STATIC]=(ULONG)atoi(str);
+                    if ((str=FindToolType(dob->do_ToolTypes, "STATIC")))
+                        Static = (ULONG)atoi(str);
 
-            if ((str=FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
-                Icon_Remap = TRUE;
+                    if ((str=FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
+                        Icon_Remap = TRUE;
 
-            if ((str=FindToolType(dob->do_ToolTypes, "NAMES")))
-                B_Labels = TRUE;
+                    if ((str=FindToolType(dob->do_ToolTypes, "NAMES")))
+                        B_Labels = TRUE;
+                }
+                CurrentDir(oldcd);
+            }
         }
-
-        CurrentDir(oldcd);
     }
 
-    Spacing = *(LONG*)args[ARG_SPACE];
-    Static = *(LONG*)args[ARG_STATIC];
-
     if (rda)
+    {
         FreeArgs(rda);
+        rda = NULL;
+    }
     if (dob)
+    {
         FreeDiskObject(dob);
+        dob = NULL;
+    }
 
     Detach(); // must be done after ReadArgs()
 
     D(bug("[IconBar] space %d static %d autoremap %d names %d\n", Spacing, Static, Icon_Remap, B_Labels));
+
+    // start notification on prefs file
+    BIBport = CreateMsgPort();
+    if (BIBport)
+    {
+        NotRequest = AllocVec(sizeof(struct NotifyRequest), MEMF_CLEAR);
+        if (NotRequest)
+        {
+            NotRequest->nr_Name = BIB_PREFS;
+            NotRequest->nr_Flags = NRF_SEND_MESSAGE;
+            NotRequest->nr_stuff.nr_Msg.nr_Port = BIBport;
+
+            if (StartNotify(NotRequest) == DOSFALSE)
+            {
+                printf("StartNotify failed: %ld\n", (long)IoErr());
+                retval = RETURN_ERROR;
+                goto bailout;
+            }
+        }
+        else
+        {
+            puts("Can't allocate NotifyRequest");
+            retval = RETURN_ERROR;
+            goto bailout;
+        }
+    }
+    else
+    {
+        puts("Can't create MsgPort for notification");
+        retval = RETURN_ERROR;
+        goto bailout;
+    }
 
     // ------ Opening font if parameter NAMES is active
 
@@ -262,7 +286,7 @@ int main(int argc, char *argv[])
         if((TF_XHelvetica = OpenDiskFont(&XHelvetica)) == NULL)
         {
             B_Labels = FALSE;
-            puts("No Arial 9 font\n");
+            puts("No Arial 9 font. Labelling disabled\n");
         }
     }
 
@@ -299,7 +323,7 @@ int main(int argc, char *argv[])
                     {
                         CopyMem(KomIDCMP,&KopiaIDCMP,sizeof(struct IntuiMessage));
                         GT_ReplyIMsg(KomIDCMP);
-                        Decode_IDCMP(&KopiaIDCMP);
+                        Decode_Toolbar_IDCMP(&KopiaIDCMP);
                     }
 
                     if(!(Static) && Window_Active == FALSE)
@@ -312,7 +336,7 @@ int main(int argc, char *argv[])
                     {
                         CopyMem(KomIDCMP,&KopiaIDCMP,sizeof(struct IntuiMessage));
                         GT_ReplyIMsg(KomIDCMP);
-                        Decode_IDCMP2(&KopiaIDCMP);
+                        Decode_Menu_IDCMP(&KopiaIDCMP);
                     }
 
                     if(MenuWindow_Open == FALSE)
@@ -326,38 +350,53 @@ int main(int argc, char *argv[])
             }
         }
         // ---- end of main loop
-
-        CloseMainWindow();
-
-        for(x=0; x<SUM_ICON; x++)
-        {
-            if(Icon[x] != NULL)
-            {
-                FreeDiskObject(Icon[x]);
-            }
-        }
-
-        if(BMP_Buffer)
-            FreeBitMap(BMP_Buffer);
-        if(BMP_DoubleBuffer)
-            FreeBitMap(BMP_DoubleBuffer);
-
-        for(x=0; x<3; x++)
-        {
-            if(picture[x]) DisposeDTObject(picture[x]);
-        }
     }
     else
+    {
         printf("No prefs\n");
+        retval = RETURN_ERROR;
+    }
+    
+bailout:
+    CloseMainWindow();
+
+    EndNotify(NotRequest); // replies all pending messages
+    FreeVec(NotRequest);
+
+    if (BIBport)
+        DeleteMsgPort(BIBport);
+    
+    for(x=0; x<SUM_ICON; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            FreeDiskObject(Icon[x]);
+        }
+    }
+
+    if(BMP_Buffer)
+        FreeBitMap(BMP_Buffer);
+    if(BMP_DoubleBuffer)
+        FreeBitMap(BMP_DoubleBuffer);
+
+    for(x=0; x<3; x++)
+    {
+        if(picture[x])
+            DisposeDTObject(picture[x]);
+    }
 
     if(TF_XHelvetica)
         CloseFont(TF_XHelvetica);
+    if (rda)
+        FreeArgs(rda);
+    if (dob)
+        FreeDiskObject(dob);
 
-    return 0;
+    return retval;
 }
 
 
-static int ReadPrefs(void)
+static BOOL ReadPrefs(void)
 {
     BPTR Prefs;
     int x, DlugoscTekstu, IloscZnakow;
@@ -451,7 +490,11 @@ static int ReadPrefs(void)
             UnlockPubScreen(NULL, Screen_struct);
 
             Levels_Struct[LevelCounter].Beginning = IconCounter;
-            SetWindowParameters();
+            if (SetWindowParameters() == FALSE)
+            {
+                puts("Failed to set window parameters");
+                return FALSE;
+            }
 
             IconCounter = Levels_Struct[1].Beginning;
             WindowWidth = Levels_Struct[0].WindowPos_X;
@@ -460,17 +503,26 @@ static int ReadPrefs(void)
             EndingWindow = (ScreenWidth>>1) + (WindowWidth>>1);
             CurrentLevel= 0;
 
+            // add Settings menu entry
             sprintf(Levels_Struct[LevelCounter].Level_Name, _(MSG_MENU_SETTINGS));
             sprintf(Names.IText, "%s", Levels_Struct[LevelCounter].Level_Name);
             DlugoscTekstu = IntuiTextLength(&Names);
             if(DlugoscTekstu > Lenght)
                 Lenght = DlugoscTekstu;
-
             LevelCounter++;
-            Lenght = Lenght + 10;
+
+            // add Quit menu entry
+            sprintf(Levels_Struct[LevelCounter].Level_Name, _(MSG_MENU_QUIT));
+            sprintf(Names.IText, "%s", Levels_Struct[LevelCounter].Level_Name);
+            DlugoscTekstu = IntuiTextLength(&Names);
+            if(DlugoscTekstu > Lenght)
+                Lenght = DlugoscTekstu;
+            LevelCounter++;
+
+            Lenght += 10;
         }
         else
-            printf("problem z odczytem parametrow ekranu\n");
+            puts("Can't lock public screen");
     }
     return Icons_Struct[0].Icon_OK;
 }
@@ -508,7 +560,7 @@ static void LoadBackground(void)
 }
 
 
-static void SetWindowParameters(void)
+static BOOL SetWindowParameters(void)
 {
     int x, y, z;
 
@@ -614,6 +666,11 @@ static void SetWindowParameters(void)
             BMF_MINPLANES|BMF_CLEAR,
             Screen_struct->RastPort.BitMap);
 
+        if (BMP_Buffer == NULL)
+        {
+            return FALSE;
+        }
+
         InitRastPort(&RP_Buffer);
         RP_Buffer.BitMap = BMP_Buffer;
         RP_Buffer.Layer = NULL;
@@ -624,6 +681,10 @@ static void SetWindowParameters(void)
             BMA_DEPTH),
             BMF_MINPLANES|BMF_CLEAR,
             Screen_struct->RastPort.BitMap);
+        if (BMP_DoubleBuffer == NULL)
+        {
+            return FALSE;
+        }
 
         InitRastPort(&RP_DoubleBuffer);
         RP_DoubleBuffer.BitMap = BMP_DoubleBuffer;
@@ -631,18 +692,16 @@ static void SetWindowParameters(void)
 
         UnlockPubScreen(NULL,Screen_struct);
     }
+    return TRUE;
 }
 
 
-static void Decode_IDCMP(struct IntuiMessage *KomIDCMP)
+static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
 {
     int x;
 
-    // LJ: Temporary disabled mouse cases in function Decode_IDCMP
     switch(KomIDCMP->Class)
     {
-    // -------- This is no more nesesery
-
         case IDCMP_CLOSEWINDOW:
             BiB_Exit = TRUE;
             break;
@@ -751,7 +810,7 @@ static void Decode_IDCMP(struct IntuiMessage *KomIDCMP)
                 case 0x51:
                 case RAWKEY_NM_WHEEL_DOWN:
                     CurrentLevel++;
-                    if(CurrentLevel == (LevelCounter -1 ))
+                    if(CurrentLevel == (LevelCounter - 2 ))
                         CurrentLevel = 0;
                     Show_Selected_Level();
                     break;
@@ -760,7 +819,7 @@ static void Decode_IDCMP(struct IntuiMessage *KomIDCMP)
                 case RAWKEY_NM_WHEEL_UP:
                     CurrentLevel--;
                     if(CurrentLevel < 0)
-                        CurrentLevel = LevelCounter - 2;
+                        CurrentLevel = LevelCounter - 3;
                     Show_Selected_Level();
                     break; 
 
@@ -1132,13 +1191,14 @@ static void OpenMenuWindow(void)
         Draw(MenuWindow_struct->RPort, 0, 0);
         Draw(MenuWindow_struct->RPort, Lenght, 0);
 
+        // draw bar
         SetAPen(MenuWindow_struct->RPort, 1);
-        Move(MenuWindow_struct->RPort, 0, (LevelCounter - 1) << 4);
-        Draw(MenuWindow_struct->RPort, Lenght - 1, (LevelCounter - 1) << 4);
+        Move(MenuWindow_struct->RPort, 0, (LevelCounter - 2) << 4);
+        Draw(MenuWindow_struct->RPort, Lenght - 1, (LevelCounter - 2) << 4);
 
         SetAPen(MenuWindow_struct->RPort, 2);
-        Move(MenuWindow_struct->RPort, 0, ((LevelCounter - 1) << 4) + 1);
-        Draw(MenuWindow_struct->RPort, Lenght - 1, ((LevelCounter - 1) << 4) + 1);
+        Move(MenuWindow_struct->RPort, 0, ((LevelCounter - 2) << 4) + 1);
+        Draw(MenuWindow_struct->RPort, Lenght - 1, ((LevelCounter - 2) << 4) + 1);
 
         for(x=0; x<LevelCounter; x++)
         {
@@ -1170,6 +1230,10 @@ static void CloseMenuWindow(void)
     {
         if(Position == (LevelCounter - 1))
         {
+            BiB_Exit = TRUE;
+        }
+        else if(Position == (LevelCounter - 2))
+        {
             Settings();
         }
         else
@@ -1181,7 +1245,7 @@ static void CloseMenuWindow(void)
 }
 
 
-static void Decode_IDCMP2(struct IntuiMessage *KomIDCMP)
+static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP)
 {
     int x, kolA, kolB, dluG, x4;
 

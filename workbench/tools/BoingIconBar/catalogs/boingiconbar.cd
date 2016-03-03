@@ -10,3 +10,6 @@ Start Programs from Toolbar
 MSG_MENU_SETTINGS (//)
 Settings
 ;
+MSG_MENU_QUIT (//)
+Quit
+;
