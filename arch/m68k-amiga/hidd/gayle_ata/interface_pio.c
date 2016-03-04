@@ -6,6 +6,7 @@
     Lang: English
 */
 #include <aros/debug.h>
+#include <hardware/ata.h> 
 
 #define DIO(x)
 #define DDATA(x)
@@ -17,8 +18,15 @@ static void ata_out(struct pio_data *data, UBYTE val, UWORD offset)
     volatile UBYTE *addr;
     addr = data->port;
     addr[offset * 4] = val;
+    if (offset != 0) {
+        /* Do a read-after-write to the error port,
+         * to make sure the command is flushed.
+         */
+        (void)addr[ata_Error * 4];
+    }
     DIO(bug("%p REG %d <- %02X\n", addr, offset, val));
 }
+
 static UBYTE ata_in(struct pio_data *data, UWORD offset)
 {
     volatile UBYTE *addr;
