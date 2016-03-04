@@ -822,11 +822,13 @@ struct P96RTGmode
 
 static const struct P96RTGmode rtgmodes[] =
 {
-	{  320, 240, 1, 16000000,  416, 260, 0, 0, 40,  5,  16, 1, GMF_HPOLARITY | GMF_VPOLARITY | GMF_DOUBLESCAN },
-	{  640, 480, 3, 31000000,  832, 520, 0, 0, 48,  9,  80, 3, GMF_HPOLARITY | GMF_VPOLARITY },
-	{  800, 600, 4, 40100000, 1056, 620, 0, 0, 56,  1, 112, 2, 0 },
-	{ 1024, 768, 5, 65000000, 1344, 806, 0, 0, 88,  3,  88, 6, GMF_HPOLARITY | GMF_VPOLARITY },
-	{ 0 }
+        {  320, 240, 1,  13020000,  408, 262, 0, 0, 32,  5,  24,  1, GMF_HPOLARITY | GMF_VPOLARITY | GMF_DOUBLESCAN },
+        {  640, 480, 3,  25060000,  800, 525, 0, 0, 40, 11,  88,  2, GMF_HPOLARITY | GMF_VPOLARITY },
+        {  800, 600, 4,  32010000, 1024, 625, 0, 0, 56,  1,  40,  2, 0 },
+        { 1024, 768, 5,  64430000, 1336, 800, 0, 0, 48,  4, 112,  5, GMF_HPOLARITY | GMF_VPOLARITY },
+        { 1152, 900, 6,  85010000, 1496, 973, 0, 0, 48,  5,  40,  4, GMF_HPOLARITY | GMF_VPOLARITY },
+        { 1440, 900, 7, 106360000, 1904, 932, 0, 0, 80,  0,   0, 10, GMF_HPOLARITY | GMF_VPOLARITY },
+        { 0 }
 };
 /* real RTG only */
 static BOOL PopulateModeInfo(struct uaegfx_staticdata *csd, struct LibResolution *res, const struct P96RTGmode *mode)
