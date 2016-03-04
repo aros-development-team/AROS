@@ -101,7 +101,7 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
                         D(bug("[sdl] got keyboard event, sending to keyboard hidd\n"));
 
                         if (LIBBASE->kbdhidd)
-                            Hidd_SDLMouse_HandleEvent(LIBBASE->kbdhidd, &e[i]);
+                            Hidd_SDLKbd_HandleEvent(LIBBASE->kbdhidd, &e[i]);
 
                         break;
                 }
@@ -112,46 +112,23 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
 
 int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
     struct Task *task;
-    APTR stack;
     ULONG sync;
 
     D(bug("[sdl] creating event loop task\n"));
 
-    if ((task = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
-        D(bug("[sdl] couldn't allocate task memory\n"));
-        return FALSE;
-    }
-
-    if ((stack = AllocMem(AROS_STACKSIZE, MEMF_PUBLIC)) == NULL) {
-        D(bug("[sdl] couldn't allocate task stack memory\n"));
-        FreeMem(task, sizeof(struct Task));
-        return FALSE;
-    }
-
-    task->tc_Node.ln_Type = NT_TASK;
-    task->tc_Node.ln_Name = "sdl.hidd event task";
-    task->tc_Node.ln_Pri  = 50;
-
-    NEWLIST(&task->tc_MemEntry);
-
-    task->tc_SPLower = stack;
-    task->tc_SPUpper = (UBYTE *) stack + AROS_STACKSIZE;
-
-#if AROS_STACK_GROWS_DOWNWARDS
-    task->tc_SPReg = (UBYTE *) task->tc_SPUpper - SP_OFFSET;
-#else
-    task->tc_SPReg = (UBYTE *) task->tc_SPLower + SP_OFFSET;
-#endif
-
     sync = SIGF_BLIT;
     SetSignal(0, sync);
 
-    if (NewAddTask(task, sdl_event_task, NULL, TAGLIST(TASKTAG_ARG1, (IPTR)FindTask(NULL),
-                                                       TASKTAG_ARG2, (IPTR)sync,
-                                                       TASKTAG_ARG3, (IPTR)LIBBASE)) == NULL) {
+    if ((task = NewCreateTask(TASKTAG_PC, sdl_event_task,
+        TASKTAG_STACKSIZE, AROS_STACKSIZE,
+        TASKTAG_NAME, "sdl.hidd event task",
+        TASKTAG_PRI, 50,
+        TASKTAG_ARG1, (IPTR)FindTask(NULL),
+        TASKTAG_ARG2, (IPTR)sync,
+        TASKTAG_ARG3, (IPTR)LIBBASE,
+        TAG_DONE)) == NULL)
+    {
         D(bug("[sdl] new task creation failed\n"));
-        FreeMem(stack, AROS_STACKSIZE);
-        FreeMem(task, sizeof(struct Task));
         return FALSE;
     }
 
