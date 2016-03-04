@@ -80,7 +80,7 @@ struct pHidd_SDLKbd_HandleEvent {
     SDL_Event *e;
 };
 
-VOID Hidd_SDLMouse_HandleEvent(OOP_Object *o, SDL_Event *e);
+VOID Hidd_SDLKbd_HandleEvent(OOP_Object *o, SDL_Event *e);
 
 struct sdlhidd
 {
