@@ -7,5 +7,5 @@ EXEDIR := $(AROS_DEVS)/Monitors
 
 %build_prog mmake=kernel-hidd-sdl \
   progname=SDL targetdir=$(EXEDIR) \
-  files=$(FILES) cflags="$(CFLAGS) $(SDL_CFLAGS)" \
+  files=$(FILES) cflags="$(CFLAGS) $(HOST_SDL_CFLAGS)" \
   uselibs="hiddstubs"
