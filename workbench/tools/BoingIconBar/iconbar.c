@@ -77,7 +77,7 @@ char version[]="$VER: BoingIconBar 1.10 (03.03.2016) by Robert 'Phibrizzo' Krajc
 static char BufferList[20]; 
 static ULONG WindowMask=0, MenuMask=0, WindowSignal;
 
-static IPTR args[]={ (LONG)&Spacing, (LONG)&Static, 0, 0 };
+static IPTR args[]={ (IPTR)&Spacing, (IPTR)&Static, 0, 0 };
 
 static struct DiskObject *Icon[SUM_ICON]; 
 
