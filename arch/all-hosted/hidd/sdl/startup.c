@@ -68,7 +68,6 @@ static int sdl_Startup(struct sdlhidd *xsd)
     OOP_Object *msdriver = NULL;
     ULONG err;
 
-    /* Now proceed to adding display modes */
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
     if (!GfxBase)
         return FALSE;
@@ -111,7 +110,8 @@ static int sdl_Startup(struct sdlhidd *xsd)
     else
     {
         /*
-         * SDL is a singletone by design, so we can't create many SDL displays.
+         * Now proceed to adding display modes ..
+         * SDL is currently a singletone by design,
          * So only one object!
          */
         err = AddDisplayDriverA(xsd->gfxclass, NULL, NULL);
