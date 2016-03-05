@@ -9,12 +9,12 @@ include $(TOP)/config/make.cfg
 #MM- core-linklibs : linklibs-gl
 
 #MM- linklibs-gl : workbench-libs-gl-linklib workbench-libs-gl-linklib-rel
-#MM workbench-libs-gl-linklib : workbench-libs-gl-gen-stubs
-#MM workbench-libs-gl-linklib-rel : workbench-libs-gl-gen-stubs
+#MM workbench-libs-gl-linklib : workbench-libs-gl-includes workbench-libs-gl-gen-stubs 
+#MM workbench-libs-gl-linklib-rel : workbench-libs-gl-includes workbench-libs-gl-gen-stubs
 #MM workbench-libs-gl-gen-includes : workbench-libs-gl-setup
 #MM workbench-libs-gl-gen-stubs : workbench-libs-gl-gen-includes
 
-#MM- workbench-libs-gl-includes : workbench-libs-gl-includes-copy
+#MM- workbench-libs-gl-includes : workbench-libs-gl-setup workbench-libs-gl-includes-copy
 
 #
 # build the pass-through gl.library
