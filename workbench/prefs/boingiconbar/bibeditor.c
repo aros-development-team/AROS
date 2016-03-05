@@ -463,7 +463,10 @@ STATIC CONST_STRPTR AllocExpandPath(CONST_STRPTR path, CONST_STRPTR file)
     if ((result = AllocVec(BIB_MAX_PATH, MEMF_ANY | MEMF_CLEAR)) != NULL)
     {
         strlcpy(result, path, BIB_MAX_PATH);
-        AddPart(result, file, BIB_MAX_PATH);
+        if (file && (*file != '\0'))
+        {
+            AddPart(result, file, BIB_MAX_PATH);
+        }
         if (strchr(result, ':') == NULL) // relative path
         {
             if ((lock = Lock(result, ACCESS_READ)) != BNULL)
