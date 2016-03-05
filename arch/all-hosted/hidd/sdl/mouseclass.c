@@ -36,17 +36,19 @@ OOP_Object *SDLMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
     D(bug("[sdl] SDLMouse::New\n"));
 
-    if ((o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) msg)) == NULL) {
-        D(bug("[sdl] supermethod failed, bailing out\n"));
+    if (xsd.mousehidd)
         return NULL;
+
+    if ((o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) msg)) != NULL)
+    {
+        mousedata = OOP_INST_DATA(cl, o);
+
+        mousedata->callback = (APTR)GetTagData(aHidd_Mouse_IrqHandler, 0, msg->attrList);
+        mousedata->callbackdata = (APTR)GetTagData(aHidd_Mouse_IrqHandlerData, 0, msg->attrList);
+
+        D(bug("[sdl] created mouse hidd, callback 0x%08x, data 0x%08x\n", mousedata->callback, mousedata->callbackdata));
+        xsd.mousehidd = o;
     }
-
-    mousedata = OOP_INST_DATA(cl, o);
-
-    mousedata->callback = (APTR)GetTagData(aHidd_Mouse_IrqHandler, 0, msg->attrList);
-    mousedata->callbackdata = (APTR)GetTagData(aHidd_Mouse_IrqHandlerData, 0, msg->attrList);
-
-    D(bug("[sdl] created mouse hidd, callback 0x%08x, data 0x%08x\n", mousedata->callback, mousedata->callbackdata));
 
     return (OOP_Object *) o;
 }
