@@ -216,10 +216,10 @@ int main(int argc, char *argv[])
                     char *str;
 
                     if ((str=FindToolType(dob->do_ToolTypes, "SPACE")))
-                        Spacing = (ULONG)atoi(str);
+                        Spacing = atoi(str);
 
                     if ((str=FindToolType(dob->do_ToolTypes, "STATIC")))
-                        Static = (ULONG)atoi(str);
+                        Static = atoi(str);
 
                     if ((str=FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
                         Icon_Remap = TRUE;
@@ -543,7 +543,7 @@ static void LoadBackground(void)
             PDTA_Remap, TRUE,
             PDTA_DestMode, PMODE_V43,
             OBP_Precision, PRECISION_IMAGE,
-            PDTA_Screen, (ULONG)Screen_struct,
+            PDTA_Screen, (IPTR)Screen_struct,
             TAG_END);
 
         if(picture[x])
@@ -551,9 +551,9 @@ static void LoadBackground(void)
             DoDTMethod (picture[x], NULL, NULL, DTM_PROCLAYOUT, NULL, DTSIF_NEWSIZE);
 
             GetDTAttrs (picture[x],
-                PDTA_DestBitMap,  (LONG)&bm[x],
-                DTA_NominalHoriz, (LONG)&BackgroundData[x].Width,
-                DTA_NominalVert,  (LONG)&BackgroundData[x].Height,
+                PDTA_DestBitMap,  (IPTR)&bm[x],
+                DTA_NominalHoriz, (IPTR)&BackgroundData[x].Width,
+                DTA_NominalVert,  (IPTR)&BackgroundData[x].Height,
                 TAG_END);
         }
     }
