@@ -1,5 +1,5 @@
 // News: Labeling Icons
-// Version of BiB based on 1.0.2 6LONG8K 26.10.2013 source
+// Version of BiB based on 1.0.2 68K 26.10.2013 source
 // New features added by Phibrizzo 
 
 //////////////////////////////////////////////////////////////
@@ -772,14 +772,14 @@ static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
         case IDCMP_RAWKEY:
             switch(KomIDCMP->Code)
             {
-                case 0x45:
+                case RAWKEY_ESCAPE:
                     if((KomIDCMP->Qualifier) & IEQUALIFIER_LSHIFT)
                     {
                         BiB_Exit = TRUE;
                     }
                     break;
 
-                case 0x50:
+                case RAWKEY_F1:
                     for(x=0; x<SUM_ICON; x++)
                     {
                         if(Icon[x] != NULL)
@@ -807,7 +807,7 @@ static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
                     }
                     break;
 
-                case 0x51:
+                case RAWKEY_F2:
                 case RAWKEY_NM_WHEEL_DOWN:
                     CurrentLevel++;
                     if(CurrentLevel == (LevelCounter - 2 ))
@@ -815,7 +815,7 @@ static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
                     Show_Selected_Level();
                     break;
 
-                case 0x52:
+                case RAWKEY_F3:
                 case RAWKEY_NM_WHEEL_UP:
                     CurrentLevel--;
                     if(CurrentLevel < 0)
@@ -823,7 +823,7 @@ static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
                     Show_Selected_Level();
                     break; 
 
-                case 0x53:
+                case RAWKEY_F4:
                     Settings();
                     break;
             }
