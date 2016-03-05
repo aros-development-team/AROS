@@ -36,17 +36,20 @@ OOP_Object *SDLKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     D(bug("[sdl] SDLKbd::New\n"));
 
-    if ((o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) msg)) == NULL) {
-        D(bug("[sdl] supermethod failed, bailing out\n"));
+    /* we only support one instance ..*/
+    if (xsd.kbdhidd)
         return NULL;
+
+    if ((o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) msg)) != NULL)
+    {
+        kbddata = OOP_INST_DATA(cl, o);
+
+        kbddata->callback = (APTR)GetTagData(aHidd_Kbd_IrqHandler, 0, msg->attrList);
+        kbddata->callbackdata = (APTR)GetTagData(aHidd_Kbd_IrqHandlerData, 0, msg->attrList);
+
+        D(bug("[sdl] created keyboard hidd, callback 0x%08x, data 0x%08x\n", kbddata->callback, kbddata->callbackdata));
+        xsd.kbdhidd = o;
     }
-
-    kbddata = OOP_INST_DATA(cl, o);
-
-    kbddata->callback = (APTR)GetTagData(aHidd_Kbd_IrqHandler, 0, msg->attrList);
-    kbddata->callbackdata = (APTR)GetTagData(aHidd_Kbd_IrqHandlerData, 0, msg->attrList);
-
-    D(bug("[sdl] created keyboard hidd, callback 0x%08x, data 0x%08x\n", kbddata->callback, kbddata->callbackdata));
 
     return (OOP_Object *) o;
 }

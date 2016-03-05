@@ -63,8 +63,15 @@ struct sdlhidd xsd = {NULL};
 static int sdl_Startup(struct sdlhidd *xsd)
 {
     struct GfxBase *GfxBase;
-    OOP_Object *kbd, *ms;
+    OOP_Object *kbd, *ms = NULL;
+    OOP_Object *kbdriver = NULL;
+    OOP_Object *msdriver = NULL;
     ULONG err;
+
+    /* Now proceed to adding display modes */
+    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
+    if (!GfxBase)
+        return FALSE;
 
     xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
     xsd->mousehidd = NULL;
@@ -75,34 +82,43 @@ static int sdl_Startup(struct sdlhidd *xsd)
     if (kbd) {
         ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
 	if (ms) {
-            xsd->kbdhidd = HIDD_Kbd_AddHardwareDriver(kbd, xsd->kbdclass, NULL);
-	    if (xsd->kbdhidd) {
-		xsd->mousehidd = HIDD_Mouse_AddHardwareDriver(ms, xsd->mouseclass, NULL);
-		D(bug("[SDL] Mouse driver object 0x%p\n", xsd->mousehidd));
-		if (!xsd->mousehidd)
-		    HIDD_Kbd_RemHardwareDriver(kbd, xsd->mousehidd);
+            kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, xsd->kbdclass, NULL);
+            D(bug("[SDL] Keyboard driver object 0x%p\n", kbdriver));
+	    if (kbdriver) {
+		msdriver = HIDD_Mouse_AddHardwareDriver(ms, xsd->mouseclass, NULL);
+		D(bug("[SDL] Mouse driver object 0x%p\n", msdriver));
 	    }
-	    OOP_DisposeObject(ms);
+	    
 	}    
-	OOP_DisposeObject(kbd);
     }
 
     /* If we got no input, we can't work, fail */
-    if (!xsd->mousehidd)
-        return FALSE;
+    if (!msdriver)
+    {
+        err = -1;
 
-    /* Now proceed to adding display modes */
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
-    if (!GfxBase)
-        return FALSE;
+        if (kbdriver)
+            HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
 
-    /*
-     * SDL is a singletone by design, so we can't create many SDL displays.
-     * So only one object!
-     */
-    err = AddDisplayDriverA(xsd->gfxclass, NULL, NULL);
+        if (ms)
+            OOP_DisposeObject(ms);
+
+        if (kbd)
+            OOP_DisposeObject(kbd);
+
+        return FALSE;
+    }
+    else
+    {
+        /*
+         * SDL is a singletone by design, so we can't create many SDL displays.
+         * So only one object!
+         */
+        err = AddDisplayDriverA(xsd->gfxclass, NULL, NULL);
+    }
 
     CloseLibrary(&GfxBase->LibNode);
+
     return err ? FALSE : TRUE;
 }
 
