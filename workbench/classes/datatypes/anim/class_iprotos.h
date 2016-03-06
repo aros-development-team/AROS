@@ -33,7 +33,25 @@ void mysprintf ( struct ClassBase *cb , STRPTR buffer , STRPTR fmt , ...);
 APTR AllocPooledVec ( struct ClassBase *cb , APTR pool , ULONG memsize );
 void FreePooledVec ( struct ClassBase *cb , APTR pool , APTR mem );
 #else
-#define mysprintf(cb,buffer,fmt,...) sprintf(buffer,fmt, __VA_ARGS__)
+#define mysprintf(cb, buffer, fmt, ...) sprintf(buffer, fmt, __VA_ARGS__)
+#define error_printf(cb, aid, fmt, ...) \
+{ \
+    IPTR errargs[] = {__VA_ARGS__}; \
+    OpenLogfile( cb, aid ); \
+    if (aid -> aid_VerboseOutput) \
+    { \
+        VFPrintf( (aid -> aid_VerboseOutput), fmt, errargs); \
+    } \
+}
+
+#define verbose_printf(cb, aid, fmt, ... ) \
+{ \
+    IPTR pargs[] = {__VA_ARGS__}; \
+    if (aid -> aid_VerboseOutput) \
+    { \
+        VFPrintf( (aid -> aid_VerboseOutput), fmt, pargs); \
+    } \
+}
 #define AllocPooledVec(cb, pool, size) AllocVecPooled(pool, size)
 #define FreePooledVec(cb, pool, mem) FreeVecPooled(pool, mem)
 #endif
