@@ -283,9 +283,7 @@ void find_mcps(void)
 
                                 mcclib = NULL;
                                 
-                                pe->mcp_namebuffer[0] = 27;
-                                pe->mcp_namebuffer[1] = '3';
-                                strncpy(pe->mcp_namebuffer + 2, mcp->mcc_Class->cl_ID, sizeof(pe->mcp_namebuffer) - 3);
+                                strncpy(pe->mcp_namebuffer, mcp->mcc_Class->cl_ID, sizeof(pe->mcp_namebuffer) - 1);
                                 
                                 if ((sp = strrchr(pe->mcp_namebuffer, '.')))
                                     *sp = '\0';
