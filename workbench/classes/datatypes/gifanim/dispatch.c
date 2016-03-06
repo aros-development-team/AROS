@@ -1110,7 +1110,7 @@ void OpenLogfile( struct ClassBase *cb, struct GIFAnimInstData *gaid )
     }
 }
 
-
+#if !defined(__AROS__)
 void error_printf( struct ClassBase *cb, struct GIFAnimInstData *gaid, STRPTR format, ... )
 {
     va_list args;
@@ -1140,6 +1140,7 @@ void verbose_printf( struct ClassBase *cb, struct GIFAnimInstData *gaid, STRPTR 
         va_end (args);
     }
 }
+#endif
 
 static
 void AttachSample( struct ClassBase *cb, struct GIFAnimInstData *gaid )
