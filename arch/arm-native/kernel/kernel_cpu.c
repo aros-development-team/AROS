@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -250,11 +250,10 @@ void cpu_Switch(regs_t *regs)
     struct Task *task;
     UQUAD timeCur;
     struct timeval timeVal;
-#if defined(__AROSEXEC_SMP__) || defined(DEBUG)
-    cpuid_t cpunum = GetCPUNumber();
-#endif
-
-    DSCHED(bug("[Kernel:%02d] cpu_Switch()\n", cpunum));
+    DSCHED(
+        cpuid_t cpunum = GetCPUNumber();
+        bug("[Kernel:%02d] cpu_Switch()\n", cpunum);
+    )
 
     task = GET_THIS_TASK;
 
@@ -276,13 +275,11 @@ void cpu_Switch(regs_t *regs)
 
 void cpu_Dispatch(regs_t *regs)
 {
-#if defined(__AROSEXEC_SMP__) || defined(DEBUG)
-    cpuid_t cpunum = GetCPUNumber();
-#endif
-
     struct Task *task;
-
-    DSCHED(bug("[Kernel:%02d] cpu_Dispatch()\n", cpunum));
+    DSCHED(
+        cpuid_t cpunum = GetCPUNumber();
+        bug("[Kernel:%02d] cpu_Dispatch()\n", cpunum);
+    )
 
 #if 0
     /* Break Disable() if needed */
