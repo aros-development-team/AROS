@@ -486,7 +486,7 @@ IPTR ConfigToGadgets(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, s
   {
     if(*((ULONG *)cfg_data) != CONFIG_VERSION)
     {
-      if(MUI_Request(NULL, NULL, 0L, tr(MSG_WarnConfigVersion_Title), tr(MSG_ResetAbort), tr(MSG_WarnConfigVersion), NULL) == 1)
+      if(MUI_Request(NULL, NULL, 0L, tr(MSG_WarnConfigVersion_Title), tr(MSG_ResetAbort), tr(MSG_WarnConfigVersion)) == 1)
       {
         // reset the keybindings to their default values.
         ImportKeys(data, NULL);

@@ -379,7 +379,7 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
 
   if(hotkeystringOk == FALSE)
   {
-    MUI_Request(NULL, NULL, 0L, tr(MSG_WarnHotkeyString_Title), tr(MSG_Ok), tr(MSG_WarnHotkeyString), NULL);
+    MUI_Request(NULL, NULL, 0L, tr(MSG_WarnHotkeyString_Title), tr(MSG_Ok), tr(MSG_WarnHotkeyString));
 
     RETURN(NULL);
     return NULL;
