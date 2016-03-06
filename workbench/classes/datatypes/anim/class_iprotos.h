@@ -47,7 +47,7 @@ void FreePooledVec ( struct ClassBase *cb , APTR pool , APTR mem );
 #define verbose_printf(cb, aid, fmt, ... ) \
 { \
     IPTR pargs[] = {__VA_ARGS__}; \
-    if (aid -> aid_VerboseOutput) \
+    if( (aid -> aid_VerboseOutput) && ((aid -> aid_VerboseOutput) != (BPTR)-1L) ) \
     { \
         VFPrintf( (aid -> aid_VerboseOutput), fmt, pargs); \
     } \
