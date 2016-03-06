@@ -2361,8 +2361,9 @@ void DumpAnimHeader( struct ClassBase *cb, struct AnimInstData *aid, ULONG ti, s
         case acmpStereoByteDelta:   verbose_printf( cb, aid, "Operation StereoByteDelta" );       break;
         case acmpAnim7:             verbose_printf( cb, aid, "Operation Anim7" );                 break;
         case acmpAnim8:             verbose_printf( cb, aid, "Operation Anim8" );                 break;
+        case acmpAnimI:             verbose_printf( cb, aid, "Operation AnimI" );                 break;
         case acmpAnimJ:             verbose_printf( cb, aid, "Operation AnimJ" );                 break;
-        default:                    verbose_printf( cb, aid, "Operation <unknown compression>" ); break;
+        default:                    verbose_printf( cb, aid, "Operation %02x <unknown compression>", anhd->ah_Operation); break;
       }
 
       verbose_printf( cb, aid, " AbsTime %3lu RelTime %3lu Interleave %3lu", (anhd -> ah_AbsTime), (anhd -> ah_RelTime), (ULONG)(anhd -> ah_Interleave) );
@@ -2441,7 +2442,7 @@ void mysprintf( struct ClassBase *cb, STRPTR buffer, STRPTR fmt, ... )
 
     RawDoFmt( fmt, args, (void (*))"\x16\xc0\x4e\x75", buffer );
 }
-#endif
+
 
 void error_printf( struct ClassBase *cb, struct AnimInstData *aid, STRPTR format, ... )
 {
@@ -2449,7 +2450,7 @@ void error_printf( struct ClassBase *cb, struct AnimInstData *aid, STRPTR format
 
     OpenLogfile( cb, aid );
 
-    if( aid -> aid_VerboseOutput )
+    if (aid -> aid_VerboseOutput)
     {
         va_start (args, format);
         VFPrintf( (aid -> aid_VerboseOutput), format, (const IPTR *)args);
@@ -2462,13 +2463,20 @@ void verbose_printf( struct ClassBase *cb, struct AnimInstData *aid, STRPTR form
 {
     va_list args;
 
-    if( aid -> aid_VerboseOutput )
+    if (aid -> aid_VerboseOutput)
     {
         va_start (args, format);
         VFPrintf( (aid -> aid_VerboseOutput), format, (const IPTR *)args);
         va_end (args);
     }
+    D(
+        else
+        {
+            vkprintf(format, args);
+        }
+    )
 }
+#endif
 
 static
 void AttachSample( struct ClassBase *cb, struct AnimInstData *aid )
