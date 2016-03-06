@@ -283,7 +283,8 @@ void cpu_Dispatch(regs_t *regs)
     )
 #else
     DSCHED(
-        bug("[Kernel:00] cpu_Dispatch()\n");
+        cpuid_t cpunum = GetCPUNumber();
+        bug("[Kernel:%02d] cpu_Dispatch()\n", cpunum);
     )
 #endif
 
