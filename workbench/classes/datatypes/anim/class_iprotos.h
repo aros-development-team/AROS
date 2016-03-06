@@ -5,6 +5,10 @@
 **
 */
 
+#if defined(__AROS__)
+#include <aros/preprocessor/variadic/cast2iptr.hpp>
+#endif
+
 /* classbase.c */
 DISPATCHERFLAGS struct IClass *ObtainAnimEngine ( REGA6 struct ClassBase *cb );
 #if !defined(__AROS__)
@@ -36,20 +40,20 @@ void FreePooledVec ( struct ClassBase *cb , APTR pool , APTR mem );
 #define mysprintf(cb, buffer, fmt, ...) sprintf(buffer, fmt, __VA_ARGS__)
 #define error_printf(cb, aid, fmt, ...) \
 { \
-    IPTR errargs[] = {__VA_ARGS__}; \
-    OpenLogfile( cb, aid ); \
-    if (aid -> aid_VerboseOutput) \
+    IPTR errargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    OpenLogfile( (cb), (aid) ); \
+    if ((aid) -> aid_VerboseOutput) \
     { \
-        VFPrintf( (aid -> aid_VerboseOutput), fmt, errargs); \
+        VFPrintf( ((aid) -> aid_VerboseOutput), (fmt), errargs); \
     } \
 }
 
 #define verbose_printf(cb, aid, fmt, ... ) \
 { \
-    IPTR pargs[] = {__VA_ARGS__}; \
-    if( (aid -> aid_VerboseOutput) && ((aid -> aid_VerboseOutput) != (BPTR)-1L) ) \
+    IPTR pargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    if( ((aid) -> aid_VerboseOutput) && (((aid) -> aid_VerboseOutput) != (BPTR)-1L) ) \
     { \
-        VFPrintf( (aid -> aid_VerboseOutput), fmt, pargs); \
+        VFPrintf( ((aid) -> aid_VerboseOutput), (fmt), pargs); \
     } \
 }
 #define AllocPooledVec(cb, pool, size) AllocVecPooled(pool, size)
