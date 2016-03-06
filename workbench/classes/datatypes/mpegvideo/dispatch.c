@@ -40,7 +40,6 @@
 static STRPTR            GetPrefsVar( struct ClassBase *, STRPTR );
 static BOOL              matchstr( struct ClassBase *, STRPTR, STRPTR );
 static void              ReadENVPrefs( struct ClassBase *, struct MPEGVideoInstData * );
-static void              OpenLogfile( struct ClassBase *, struct MPEGVideoInstData * );
 #if !defined(__AROS__)
 static BOOL              AttemptOpenVMM( struct MPEGVideoInstData * );
 #endif
@@ -623,7 +622,6 @@ void mysprintf( struct ClassBase *classbase, STRPTR buffer, STRPTR fmt, ... )
 
     RawDoFmt( fmt, args, (void (*))"\x16\xc0\x4e\x75", buffer );
 }
-#endif
 
 
 void verbose_printf( struct MPEGVideoInstData *mvid, STRPTR format, ... )
@@ -679,7 +677,7 @@ void error_printf( struct MPEGVideoInstData *mvid, STRPTR format, ... )
         va_end (args);
     }
 }
-
+#endif
 
 static
 void CopyBitMap( struct ClassBase *classbase, struct BitMap *dest, struct BitMap *src, ULONG width, ULONG height )
@@ -1743,7 +1741,6 @@ BOOL AttemptOpenVMM( struct MPEGVideoInstData *mvid )
 }
 #endif
 
-static
 void OpenLogfile( struct ClassBase *classbase, struct MPEGVideoInstData *mvid )
 {
     D(bug("[mpegvideo.datatype] %s()\n", __func__));

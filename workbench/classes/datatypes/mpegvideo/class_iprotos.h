@@ -1,4 +1,9 @@
 
+#if defined(__AROS__)
+#include <aros/preprocessor/variadic/cast2iptr.hpp>
+#endif
+
+
 /* classbase.c */
 DISPATCHERFLAGS struct IClass *ObtainMPEGVideoEngine ( REGA6 struct ClassBase * );
 #if !defined(__AROS__)
@@ -26,7 +31,41 @@ void error_printf ( struct MPEGVideoInstData *mvid , STRPTR format , ...);
 #if !defined(__AROS__)
 void mysprintf ( struct ClassBase * , STRPTR buffer , STRPTR fmt , ...);
 #else
+void OpenLogfile( struct ClassBase *, struct MPEGVideoInstData *);
 #define mysprintf(cb,buffer,fmt,...) sprintf(buffer,fmt, __VA_ARGS__)
+#define verbose_printf(mvid, fmt, ... ) \
+{ \
+    if( ((mvid) -> mvid_VerboseOutput) && (((mvid) -> mvid_VerboseOutput) != (BPTR)-1L) ) \
+    { \
+        IPTR pargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+        VFPrintf( ((mvid) -> mvid_VerboseOutput), (fmt), pargs); \
+    } \
+}
+#define debug_printf(mvid, fmt, ... ) \
+{ \
+    if( ((mvid) -> mvid_DoDebug) && ((mvid) -> mvid_VerboseOutput) && (((mvid) -> mvid_VerboseOutput) != (BPTR)-1L) ) \
+    { \
+        IPTR pargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+        VFPrintf( ((mvid) -> mvid_VerboseOutput), (fmt), pargs); \
+    } \
+}
+#define syntax_printf(mvid, fmt, ... ) \
+{ \
+    if( ((mvid) -> mvid_DoSyntax) && ((mvid) -> mvid_VerboseOutput) && (((mvid) -> mvid_VerboseOutput) != (BPTR)-1L) ) \
+    { \
+        IPTR pargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+        VFPrintf( ((mvid) -> mvid_VerboseOutput), (fmt), pargs); \
+    } \
+}
+#define error_printf(mvid, fmt, ...) \
+{ \
+    IPTR errargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    OpenLogfile( classbase, (mvid) ); \
+    if ((mvid) -> mvid_VerboseOutput) \
+    { \
+        VFPrintf( ((mvid) -> mvid_VerboseOutput), (fmt), errargs); \
+    } \
+}
 #endif
 
 struct BitMap *AllocFrameBitMap ( struct MPEGVideoInstData *mvid );
