@@ -276,10 +276,16 @@ void cpu_Switch(regs_t *regs)
 void cpu_Dispatch(regs_t *regs)
 {
     struct Task *task;
+#if defined(__AROSEXEC_SMP__)
+    cpuid_t cpunum = GetCPUNumber();
     DSCHED(
-        cpuid_t cpunum = GetCPUNumber();
         bug("[Kernel:%02d] cpu_Dispatch()\n", cpunum);
     )
+#else
+    DSCHED(
+        bug("[Kernel:00] cpu_Dispatch()\n");
+    )
+#endif
 
 #if 0
     /* Break Disable() if needed */
