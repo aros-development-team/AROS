@@ -73,7 +73,7 @@ struct LocaleBase *LocaleBase = NULL;
 struct LocaleIFace *ILocale = NULL;
 #endif
 
-#if !defined(__MORPHOS__)
+#if !defined(__MORPHOS__) && !defined(__AROS__)
 static BOOL nbitmapCanHandleRawData;
 #endif
 
@@ -91,7 +91,7 @@ static VOID ClassExpunge(UNUSED struct Library *base);
 
 #include "icon.h"
 
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 #include <mui/Rawimage_mcc.h>
 #else
 #include <mui/NBitmap_mcc.h>
@@ -101,7 +101,7 @@ static Object *get_prefs_image(void)
 {
   Object *obj;
 
-  #if !defined(__MORPHOS__)
+  #if !defined(__MORPHOS__) && !defined(__AROS__)
   if(nbitmapCanHandleRawData == TRUE)
   {
     obj = NBitmapObject,
@@ -159,7 +159,7 @@ static BOOL ClassInit(UNUSED struct Library *base)
     // open the TextEditor.mcp catalog
     OpenCat();
 
-    #if !defined(__MORPHOS__)
+    #if !defined(__MORPHOS__) && !defined(__AROS__)
     {
       struct Library *nbitmapMcc;
 

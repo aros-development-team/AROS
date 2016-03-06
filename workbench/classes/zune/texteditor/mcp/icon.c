@@ -20,7 +20,7 @@
 
 ***************************************************************************/
 
-#if !defined(__MORPHOS__)
+#if !defined(__MORPHOS__) && !defined(__AROS__)
 // uncompressed ARGB data
 const unsigned long icon32[] = {
 	0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff, 0x00ff00ff,
@@ -48,7 +48,7 @@ const unsigned long icon32[] = {
 // bzip2 compressed ARGB data
 const unsigned char icon32[] =
 {
-#if defined(__PPC__)
+#if defined(__PPC__) || defined(__AROS__)
 	0x00, 0x00, 0x00, 0x18,
 	0x00, 0x00, 0x00, 0x14,
 	'B', 'Z', '2', '\0',
