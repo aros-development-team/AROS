@@ -334,7 +334,7 @@ void InitConfig(struct IClass *cl, Object *obj)
                                           "\n"
                                           "The keybindings of this object will be temporarly\n"
                                           "set to the default. Please visit the MUI preferences\n"
-                                          "of TextEditor.mcc to permanently update the keybindings.") == 1)
+                                          "of TextEditor.mcc to permanently update the keybindings.", NULL) == 1)
       {
         loadDefaultKeys = TRUE;
       }
