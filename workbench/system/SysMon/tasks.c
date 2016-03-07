@@ -47,7 +47,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     smdata->sm_TaskTotalRuntime = 0;
 
 #if 0
-    /* We are unlikely to dissapear and this code still run .. so dont disable yet */
+    /* We are unlikely to disappear and this code still run... so don't disable yet */
     if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, smdata->sm_Task, MUIV_List_Insert_Bottom)) == 0)
     {
         return;

@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2012-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     This file defines the private part of PosixCBase.
@@ -80,8 +80,8 @@ struct PosixCIntBase
 
 /* When a program is started with the exec functions and from vfork,
    this is indicated in the flags of the library.
-   This way the child can use the parent arosc library during its initialization
-   phase */
+   This way the child can use the parent posixc.library during its
+   initialization phase */
 #define EXEC_PARENT 0x00000001
 #define VFORK_PARENT 0x00000002
 

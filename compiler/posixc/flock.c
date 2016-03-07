@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     4.4BSD function flock().
@@ -266,7 +266,7 @@ int __init_flocks(struct PosixCIntBase *PosixCBase)
 }
 
 /* This function is called once before root libbase would be freed.
-   This function will be called when no other program has arosc.library open
+   This function will be called when no other program has posixc.library open
    so no protection should be needed.
 */
 void __unlock_flocks(struct PosixCIntBase *PosixCBase)

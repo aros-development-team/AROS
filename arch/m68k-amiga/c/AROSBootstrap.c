@@ -457,7 +457,7 @@ static BOOL initDataPool(void)
 }
 
 /* Define these here for zlib so that we don't
- * pull in arosc.library.
+ * pull in stdc.library.
  *
  * We can't use AllocVec, since it's only
  * been around since KS v36
