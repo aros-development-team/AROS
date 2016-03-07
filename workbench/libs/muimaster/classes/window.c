@@ -138,6 +138,7 @@ struct MUI_WindowData
     LONG wd_YStore;
 
     WORD wd_SleepCount;         /* MUIA_Window_Sleep nests */
+    struct IClass *wd_Class;
 };
 
 #ifndef WFLG_SIZEGADGET
@@ -1676,18 +1677,26 @@ BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
 
             data->wd_Flags |= MUIWF_RESIZING;
             RefreshWindow(oWin, data);
-            superset(OCLASS(oWin), oWin, MUIA_Window_Width, data->wd_Width);
-            superset(OCLASS(oWin), oWin, MUIA_Window_Height, data->wd_Height);
+            
+            /* Use wd_Class below instead of OCLASS(oWin), because otherwise if oWin is an
+               instance of a subclass of window class, then superset will go to window class's
+               OM_SET where MUIA_window_Width|Height for some reason are always set to 0. This has
+               the side effect that after the first window resize all future window moves(!) too
+               are interpreted as "window size was changed" (if check above returns TRUE even if
+               window size did not change) */
+            superset(data->wd_Class, oWin, MUIA_Window_Width, data->wd_Width);
+            superset(data->wd_Class, oWin, MUIA_Window_Height, data->wd_Height);
+            
         }
         if (iWin->LeftEdge != data->wd_X)
         {
             data->wd_X = iWin->LeftEdge;
-            superset(OCLASS(oWin), oWin, MUIA_Window_LeftEdge, data->wd_X);
+            superset(data->wd_Class, oWin, MUIA_Window_LeftEdge, data->wd_X);
         }
         if (iWin->TopEdge != data->wd_Y)
         {
             data->wd_Y = iWin->TopEdge;
-            superset(OCLASS(oWin), oWin, MUIA_Window_TopEdge, data->wd_Y);
+            superset(data->wd_Class, oWin, MUIA_Window_TopEdge, data->wd_Y);
         }
 
         is_handled = FALSE;     /* forwardable to area event handlers */
@@ -2764,6 +2773,7 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     /* Initial local instance data */
     data = INST_DATA(cl, obj);
 
+    data->wd_Class = cl;
     data->wd_MemoryPool = CreatePool(0, 4096, 2048);
     if (NULL == data->wd_MemoryPool)
     {
