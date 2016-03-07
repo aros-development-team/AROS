@@ -31,7 +31,7 @@
 #define acmpAnim7           (7U)
 #define acmpAnim8           (8U)
 #define acmpAnimI          (73U)
-#define acmpAnimJ          (74U) /* ascii 'J', Bill Grahams compression format */
+#define acmpAnimJ          (74U) /* ascii 'J', Bill Graham's compression format */
 
 /* Animation header flags */
 #define ahfLongData         (1U << 0U)

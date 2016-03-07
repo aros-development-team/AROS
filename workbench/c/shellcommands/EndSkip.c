@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -34,15 +34,11 @@
 
     SEE ALSO
 
-        Skip, Label
+        Skip, Lab
 
     INTERNALS
 
-        This command is quite similar to EndIf...
-
-    HISTORY
-
-    14.01.2000  SDuvan   implemented
+        This command is quite similar to EndIf.
 
 ******************************************************************************/
 

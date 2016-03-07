@@ -2,7 +2,7 @@
 #define DOS_EXALL_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ExAll() handling.
@@ -75,7 +75,7 @@ struct ExAllData32
    lower numbers, too. If you specify for example ED_SIZE, you will get
    information about name, type and the size of a file. Note that all
    filehandlers must handle all types up to ED_OWNER. If they do not support
-   a type, they must return ERROR_WRONG_NUMBER (see <dos/dos.h>). Currently
+   a type, they must return ERROR_BAD_NUMBER (see <dos/dos.h>). Currently
    that means, if a value higher than ED_OWNER is specified, filehandlers
    must fail with this error. */
 #define ED_NAME       1 /* Filename. */
