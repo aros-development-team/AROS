@@ -18,10 +18,13 @@
 	sigset_t *set)
 
 /*  FUNCTION
+        Initialise the signal set
 
     INPUTS
+        Set to initialise
 
     RESULT
+        "0" for success, "-1" for failure (errno contains error)
 
     NOTES
 
