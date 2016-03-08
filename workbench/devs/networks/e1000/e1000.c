@@ -979,28 +979,29 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
     unsigned int i;
 
     i = rx_ring->next_to_use;
-    buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 
-    while (cleaned_count--) {
-	    if ((buffer_info->buffer = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+    while (cleaned_count--)
     {
-	D(
-	    bug("[%s] %s: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, buffer_info->buffer, unit->rx_buffer_len);
-	    if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)buffer_info->buffer)) == NULL)
-	    {
-		bug("[%s] %s: Failed to Map Buffer %d for DMA!!\n", unit->e1ku_name, __PRETTY_FUNCTION__, i);
-	    }
-	    bug("[%s] %s: Buffer %d DMA @ %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, buffer_info->dma);
-	)
+        buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 
-	rx_desc = E1000_RX_DESC(rx_ring, i);
-//    		rx_desc->buffer_addr = cpu_to_le64(buffer_info->dma);
-	rx_desc->buffer_addr = (IPTR)buffer_info->dma;
-    }
+        if ((buffer_info->buffer = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+        {
+            D(
+                bug("[%s] %s: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, buffer_info->buffer, unit->rx_buffer_len);
+                if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)buffer_info->buffer)) == NULL)
+                {
+                    bug("[%s] %s: Failed to Map Buffer %d for DMA!!\n", unit->e1ku_name, __PRETTY_FUNCTION__, i);
+                }
+                bug("[%s] %s: Buffer %d DMA @ %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, buffer_info->dma);
+            )
 
-    if (++i == rx_ring->count)
-	i = 0;
-	buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
+            rx_desc = E1000_RX_DESC(rx_ring, i);
+    //    		rx_desc->buffer_addr = cpu_to_le64(buffer_info->dma);
+            rx_desc->buffer_addr = (IPTR)buffer_info->dma;
+        }
+
+        if (++i == rx_ring->count)
+            i = 0;
     }
 
     if (rx_ring->next_to_use != i) {
