@@ -380,17 +380,29 @@ int init_gui(void)
     char titlebuf[255];
     
     main_page_entries[ 0].name = (char *)_(MSG_DSC_SYSTEM);
+    main_page_entries[ 0].mcp_image = systemclass_get_icon();
     main_page_entries[ 1].name = (char *)_(MSG_DSC_WINDOWS);
+    main_page_entries[ 1].mcp_image = windowsclass_get_icon();
     main_page_entries[ 2].name = (char *)_(MSG_DSC_GROUPS);
+    main_page_entries[ 2].mcp_image = groupsclass_get_icon();
     main_page_entries[ 3].name = (char *)_(MSG_DSC_BUTTONS);
+    main_page_entries[ 3].mcp_image = buttonsclass_get_icon();
     main_page_entries[ 4].name = (char *)_(MSG_DSC_CYCLES);
+    main_page_entries[ 4].mcp_image = cyclesclass_get_icon();
     main_page_entries[ 5].name = (char *)_(MSG_DSC_SLIDERS);
+    main_page_entries[ 5].mcp_image = slidersclass_get_icon();
     main_page_entries[ 6].name = (char *)_(MSG_DSC_SCROLLBARS);
+    main_page_entries[ 6].mcp_image = scrollbarsclass_get_icon();
     main_page_entries[ 7].name = (char *)_(MSG_DSC_LISTVIEWS);
+    main_page_entries[ 7].mcp_image = listviewsclass_get_icon();
     main_page_entries[ 8].name = (char *)_(MSG_DSC_STRINGS);
+    main_page_entries[ 8].mcp_image = stringsclass_get_icon();
     main_page_entries[ 9].name = (char *)_(MSG_DSC_NAVIGATION);
+    main_page_entries[ 9].mcp_image = navigationclass_get_icon();
     main_page_entries[10].name = (char *)_(MSG_DSC_SPECIAL);
+    main_page_entries[10].mcp_image = specialclass_get_icon();
     main_page_entries[11].name = (char *)_(MSG_DSC_FRAMES);
+    main_page_entries[11].mcp_image = framesclass_get_icon();
 
     main_cancel_pressed_hook.h_Entry = HookEntry;
     main_cancel_pressed_hook.h_SubEntry = (HOOKFUNC)main_cancel_pressed;

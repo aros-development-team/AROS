@@ -13,4 +13,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_Navigation_desc;
 
+Object *navigationclass_get_icon(void);
+
 #endif

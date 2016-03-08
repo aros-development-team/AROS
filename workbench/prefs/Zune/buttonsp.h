@@ -13,4 +13,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_Buttons_desc;
 
+Object *buttonsclass_get_icon(void);
+
 #endif

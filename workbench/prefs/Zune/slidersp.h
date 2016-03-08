@@ -13,4 +13,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_Sliders_desc;
 
+Object *slidersclass_get_icon(void);
+
 #endif
