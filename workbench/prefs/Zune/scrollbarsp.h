@@ -13,4 +13,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_Scrollbars_desc;
 
+Object *scrollbarsclass_get_icon(void);
+
 #endif

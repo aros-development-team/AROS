@@ -13,4 +13,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_Cycles_desc;
 
+Object *cyclesclass_get_icon(void);
+
 #endif

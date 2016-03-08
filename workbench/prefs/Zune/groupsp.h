@@ -13,4 +13,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_Groups_desc;
 
+Object *groupsclass_get_icon(void);
+
 #endif

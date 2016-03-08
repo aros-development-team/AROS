@@ -13,4 +13,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_Frames_desc;
 
+Object *framesclass_get_icon(void);
+
 #endif

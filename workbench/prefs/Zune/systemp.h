@@ -11,4 +11,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_System_desc;
 
+Object *systemclass_get_icon(void);
+
 #endif

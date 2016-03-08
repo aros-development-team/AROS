@@ -13,4 +13,6 @@
 
 extern const struct __MUIBuiltinClass _MUIP_Listviews_desc;
 
+Object *listviewsclass_get_icon(void);
+
 #endif
