@@ -15,7 +15,7 @@ oldCC:=$(CC)
 include $(SRCDIR)/$(CURDIR)/public/$(CPU)-elf.inc
 CC:=$(oldCC)
 
-USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
+USER_CFLAGS += -Wno-shift-overflow -I$(SRCDIR)/$(CURDIR)
 
 %build_linklib mmake=workbench-devs-networks-atheros5000-hal libname="athhal" \
  files="$(basename $(HAL_SRCS))"
