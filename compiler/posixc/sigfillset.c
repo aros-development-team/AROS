@@ -6,6 +6,7 @@
 */
 
 #include <string.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -35,6 +36,7 @@
     SEE ALSO
 
     INTERNALS
+        POSIX.1-2001. 
 
 ******************************************************************************/
 {
@@ -42,6 +44,8 @@
         memset(&set->__val, 0xff, sizeof(set->__val));
         return 0;
     }
+
+    errno = EFAULT;
 
     return -1; /* return failure */
 } /* sigfillset */
