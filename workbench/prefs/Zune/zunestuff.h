@@ -22,7 +22,7 @@ struct page_entry
     char *name;
     struct MUI_CustomClass *cl; /* The class pointer,  maybe NULL */
     Object *group;  /* The group which should be is displayed, maybe NULL */
-    Object *mcp_image;  /* Result of MCC_Query(2) */
+    Object *mcp_icon;  /* Result of MCC_Query(2) or xxxclass_get_image () */
     APTR mcp_listimage; /* mcp_image translated to list image */
     const struct __MUIBuiltinClass *desc;
     struct Library *mcp_library;

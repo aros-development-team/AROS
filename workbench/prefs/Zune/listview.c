@@ -67,13 +67,13 @@ IPTR ClassListview__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Se
         if (!entry)
             break;
 
-        if (entry->mcp_image)
+        if (entry->mcp_icon)
         {
             entry->mcp_listimage =
-                (APTR)DoMethod(data->list, MUIM_List_CreateImage, entry->mcp_image, 0);
+                (APTR)DoMethod(data->list, MUIM_List_CreateImage, entry->mcp_icon, 0);
         }
         D(bug("listview setup image %p listimage %p\n",
-            entry->mcp_image, entry->mcp_listimage));
+            entry->mcp_icon, entry->mcp_listimage));
     }
     return 1;
 }

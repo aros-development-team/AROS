@@ -278,8 +278,8 @@ void find_mcps(void)
                                 
                                 pe->cl = mcp;
                                 pe->mcp_library = mcclib;
-                                pe->mcp_image = (Object *)MCC_Query(2); /* Get MCP image */
-                                D(bug("[Zune Prefs/find_mcps] image %p\n", pe->mcp_image));
+                                pe->mcp_icon = (Object *)MCC_Query(2); /* Get MCP image */
+                                D(bug("[Zune Prefs/find_mcps] image %p\n", pe->mcp_icon));
 
                                 mcclib = NULL;
                                 
@@ -361,6 +361,9 @@ void deinit_gui(void)
             MUI_DeleteCustomClass(main_page_entries[i].cl);
             main_page_entries[i].cl = NULL;
         }
+        /* Dispose the icons which were created by MUI_Query for extenal classes
+           and xxxclass_get_icon() for internal classes */
+        DisposeObject(main_page_entries[i].mcp_icon);
     }
 
     if (main_page_group_displayed != main_page_space)
@@ -380,29 +383,29 @@ int init_gui(void)
     char titlebuf[255];
     
     main_page_entries[ 0].name = (char *)_(MSG_DSC_SYSTEM);
-    main_page_entries[ 0].mcp_image = systemclass_get_icon();
+    main_page_entries[ 0].mcp_icon = systemclass_get_icon();
     main_page_entries[ 1].name = (char *)_(MSG_DSC_WINDOWS);
-    main_page_entries[ 1].mcp_image = windowsclass_get_icon();
+    main_page_entries[ 1].mcp_icon = windowsclass_get_icon();
     main_page_entries[ 2].name = (char *)_(MSG_DSC_GROUPS);
-    main_page_entries[ 2].mcp_image = groupsclass_get_icon();
+    main_page_entries[ 2].mcp_icon = groupsclass_get_icon();
     main_page_entries[ 3].name = (char *)_(MSG_DSC_BUTTONS);
-    main_page_entries[ 3].mcp_image = buttonsclass_get_icon();
+    main_page_entries[ 3].mcp_icon = buttonsclass_get_icon();
     main_page_entries[ 4].name = (char *)_(MSG_DSC_CYCLES);
-    main_page_entries[ 4].mcp_image = cyclesclass_get_icon();
+    main_page_entries[ 4].mcp_icon = cyclesclass_get_icon();
     main_page_entries[ 5].name = (char *)_(MSG_DSC_SLIDERS);
-    main_page_entries[ 5].mcp_image = slidersclass_get_icon();
+    main_page_entries[ 5].mcp_icon = slidersclass_get_icon();
     main_page_entries[ 6].name = (char *)_(MSG_DSC_SCROLLBARS);
-    main_page_entries[ 6].mcp_image = scrollbarsclass_get_icon();
+    main_page_entries[ 6].mcp_icon = scrollbarsclass_get_icon();
     main_page_entries[ 7].name = (char *)_(MSG_DSC_LISTVIEWS);
-    main_page_entries[ 7].mcp_image = listviewsclass_get_icon();
+    main_page_entries[ 7].mcp_icon = listviewsclass_get_icon();
     main_page_entries[ 8].name = (char *)_(MSG_DSC_STRINGS);
-    main_page_entries[ 8].mcp_image = stringsclass_get_icon();
+    main_page_entries[ 8].mcp_icon = stringsclass_get_icon();
     main_page_entries[ 9].name = (char *)_(MSG_DSC_NAVIGATION);
-    main_page_entries[ 9].mcp_image = navigationclass_get_icon();
+    main_page_entries[ 9].mcp_icon = navigationclass_get_icon();
     main_page_entries[10].name = (char *)_(MSG_DSC_SPECIAL);
-    main_page_entries[10].mcp_image = specialclass_get_icon();
+    main_page_entries[10].mcp_icon = specialclass_get_icon();
     main_page_entries[11].name = (char *)_(MSG_DSC_FRAMES);
-    main_page_entries[11].mcp_image = framesclass_get_icon();
+    main_page_entries[11].mcp_icon = framesclass_get_icon();
 
     main_cancel_pressed_hook.h_Entry = HookEntry;
     main_cancel_pressed_hook.h_SubEntry = (HOOKFUNC)main_cancel_pressed;
