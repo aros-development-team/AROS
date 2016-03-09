@@ -15,6 +15,7 @@
 struct bm_data
 {
     struct MinNode node;
+    struct SignalSemaphore bmLock;
     OOP_Object	    	*pixfmtobj;	/* Cached pixelformat object */
     OOP_Object	    	*gfxhidd;	/* Cached driver object */
     ULONG rgbformat;
