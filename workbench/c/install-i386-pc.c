@@ -201,7 +201,7 @@ D(bug("[install-i386] nsdCheck(%x)\n", volume));
 				{
 					if (*cmdcheck == NSCMD_TD_READ64)
 						volume->readcmd = NSCMD_TD_READ64;
-					if (*cmdcheck == NSCMD_TD_WRITE64);
+					if (*cmdcheck == NSCMD_TD_WRITE64)
 						volume->writecmd = NSCMD_TD_WRITE64;
 				}
 				if (
