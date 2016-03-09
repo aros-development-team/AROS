@@ -22,10 +22,18 @@
 #ifdef __i386__
 #define PC eip
 #define FP ebp
+#if __GNUC__ > 4 || \
+              (__GNUC__ == 4 && (__GNUC_MINOR__ > 6 ))
+#define CALLER_FRAME NULL
+#endif
 #endif
 #ifdef __x86_64__
 #define PC rip
 #define FP rbp
+#if __GNUC__ > 4 || \
+              (__GNUC__ == 4 && (__GNUC_MINOR__ > 6 ))
+#define CALLER_FRAME NULL
+#endif
 #endif
 #ifdef __mc68000__
 #define PC pc
