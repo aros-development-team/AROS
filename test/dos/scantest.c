@@ -69,5 +69,5 @@ int main(int argc, char *argv[])
   else
     printf("no such directory/assign!\n");
 
-    return 0;
+  return 0;
 }
