@@ -124,8 +124,5 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 
         UNLOCK_REFRESH(screen);
     }
-
-
 #endif
-
-};
+}
