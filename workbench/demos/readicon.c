@@ -18,7 +18,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 
-static const char version[] = "$VER: readicon 41.2 (5.9.1997)\n";
+static const char version[] __attribute__((used)) = "$VER: readicon 41.2 (5.9.1997)\n";
 
 #define IM(x)       ((struct Image *)x)
 
