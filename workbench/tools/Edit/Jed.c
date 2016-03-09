@@ -271,8 +271,14 @@ void dispatch_events()
 					/* Adjust mouse position */
 					x = (msgbuf.MouseX-gui.left) / XSIZE;
 					y = (msgbuf.MouseY-gui.top) / YSIZE;
-					if(x < 0) x =  0; if(x >= gui.nbcol)  x = gui.nbcol-1;
-					if(y < 0) y = -1; if(y >  gui.nbline) y = gui.nbline;
+					if(x < 0)
+                                            x =  0;
+                                        if(x >= gui.nbcol)
+                                            x = gui.nbcol-1;
+					if(y < 0)
+                                            y = -1;
+                                        if(y >  gui.nbline)
+                                            y = gui.nbline;
 					edit->nbrwc = (x += edit->left_pos);
 					y += (LONG)edit->top_line;
 					if( x != edit->ccp.xc || y != edit->ccp.yc )

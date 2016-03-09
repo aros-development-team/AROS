@@ -410,7 +410,12 @@ WORD load_file( LoadFileArgs *args )
 					/* *p = '\n';   Removed to preserve MS-DOS/Windows CRLF end-of-line chars */ 
 					new->stream = q;
 					args->nblines++;
-					if(args->eol == MSDOS_EOL && p[1]=='\n') p++,i++; q = p+1;
+					if(args->eol == MSDOS_EOL && p[1]=='\n')
+                                        {
+                                            p++;
+                                            i++;
+                                        }
+                                        q = p+1;
 					if(NULL == (new = new_line(new))) {
 						err = ERR_NOMEM; break;
 					}

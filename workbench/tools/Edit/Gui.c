@@ -585,7 +585,9 @@ void CloseMainWnd(BOOL CloseScr)
 		if( Menu ) ClearMenuStrip(Wnd);
 
 		CloseWindow(Wnd); Wnd=NULL;
-		if( Prop ) free_prop(Prop); Prop=NULL;
+		if( Prop )
+                    free_prop(Prop);
+                Prop=NULL;
 	}
 	if(Menu) FreeMenus(Menu), Menu=NULL;
 	if(Vi)   FreeVisualInfo(Vi), Vi=NULL;

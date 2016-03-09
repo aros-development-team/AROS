@@ -259,7 +259,9 @@ Project save_projects(Project active, char close)
 		{
 			cur = p; close_project(p);
 			p = p->next; FreeVec(cur);
-			if(active == cur) active = p; nb = 0;
+			if(active == cur)
+                            active = p;
+                        nb = 0;
 		}
 		else p=p->next;
 	}

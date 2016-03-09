@@ -200,8 +200,14 @@ BOOL add_block(JBuf jb, LINE *ln, ULONG pos, STRPTR string, ULONG lg, LONG *buf)
 			if( isf ) goto insln;
 			if(ln->next) {
 				ln=ln->next; insln: lg = find_nbc(ln, pos);
-				if( !insert_str(jb, ln,lg,string,str-string) ) return FALSE;
-				if( isf ) buf[1]--,isf=0; buf[0]=lg+str-string;
+				if( !insert_str(jb, ln,lg,string,str-string) )
+                                    return FALSE;
+				if( isf )
+                                {
+                                    buf[1]--;
+                                    isf=0;
+                                }
+                                buf[0]=lg+str-string;
 			}	else {
 				/* Not enough lines, creates one */
 				LINE *new;
