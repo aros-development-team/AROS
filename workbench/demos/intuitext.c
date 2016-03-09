@@ -45,7 +45,7 @@ responsibility is assumed.
 
 #include <stdio.h>
 
-static const char version[] = "$VER: intuitext 41.1 (14.3.1997)\n";
+static const char version[] __attribute__((used)) = "$VER: intuitext 41.1 (14.3.1997)\n";
 
 #ifdef __AROS__
 #ifdef __chip
