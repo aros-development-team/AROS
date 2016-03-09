@@ -55,9 +55,10 @@ static struct segment * FindSegmentInModule(void *addr, module_t *mod)
 
 static struct segment * FindSegment(void *addr, struct Library *DebugBase)
 {
+    struct DebugBase *debugBase = DBGBASE(DebugBase);
     module_t * mod;
 
-    ForeachNode(&DBGBASE(DebugBase)->db_Modules, mod)
+    ForeachNode(&debugBase->db_Modules, mod)
     {
         DSEGS(bug("[Debug] Checking module 0x%p - 0x%p, %s\n", mod->m_lowest, mod->m_highest, mod->m_name));
 

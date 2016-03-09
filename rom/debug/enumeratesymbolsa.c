@@ -53,17 +53,18 @@ static void EnumerateModules(struct Hook * handler, struct Library * DebugBase);
 {
     AROS_LIBFUNC_INIT
 
+    struct DebugBase *debugBase = DBGBASE(DebugBase);
     BOOL super;
 
     /* We can be called in supervisor mode. No semaphores in the case! */
     super = KrnIsSuper();
     if (!super)
-        ObtainSemaphoreShared(&DBGBASE(DebugBase)->db_ModSem);
+        ObtainSemaphoreShared(&debugBase->db_ModSem);
 
     EnumerateModules(handler, DebugBase);
 
     if (!super)
-        ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+        ReleaseSemaphore(&debugBase->db_ModSem);
 
     AROS_LIBFUNC_EXIT
 }
@@ -84,9 +85,10 @@ static inline void callhook(struct Hook * handler, CONST_STRPTR modname, CONST_S
 
 static void EnumerateModules(struct Hook * handler, struct Library * DebugBase)
 {
+    struct DebugBase *debugBase = DBGBASE(DebugBase);
     module_t *mod;
 
-    ForeachNode(&DBGBASE(DebugBase)->db_Modules, mod)
+    ForeachNode(&debugBase->db_Modules, mod)
     {
         dbg_sym_t *sym = mod->m_symbols;
         ULONG i;
