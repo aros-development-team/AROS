@@ -368,7 +368,7 @@ typedef struct
     UBYTE             colExp;
 } HIDDT_GC_Intern;
 
-#define GCINT(gc)           ((HIDDT_GC_Intern *)gc)
+#define GCINT(gc)           ((HIDDT_GC_Intern *)(gc))
 #define GC_FG(gc)           (GCINT(gc)->fg)
 #define GC_BG(gc)           (GCINT(gc)->bg)
 #define GC_DRMD(gc)         (GCINT(gc)->drMode)
