@@ -105,8 +105,11 @@ void *new_action( UWORD size )
 		if(NULL == (new = (Macro) AllocVec(sizeof(*new), MEMF_CLEAR)))
 			return NULL;
 
-		if(LastChunk) LastChunk->next = new;
-		else MacCur = new;  LastChunk = new;
+		if(LastChunk)
+                    LastChunk->next = new;
+		else
+                    MacCur = new;
+                LastChunk = new;
 		new->usage = size;
 		return new->data;
 	}

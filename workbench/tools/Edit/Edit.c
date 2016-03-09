@@ -45,7 +45,14 @@ BYTE move_stream_selection(Project p, LONG xn, LONG yn)
 	/* Vertical autoscroll ? */
 	ret = (yn<p->top_line ? 2 : (yn>=(LONG)(p->top_line+gui.nbline) ? 1 : 0));
 
-	if(yn<0) yn=0; if(yn>=p->max_lines) yn=p->max_lines-1,ret=0;
+	if(yn<0)
+            yn=0;
+        if(yn>=p->max_lines)
+        {
+            yn=p->max_lines-1;
+            ret=0;
+        }
+
 	yline=p->ccp.yc; ln=p->ccp.cline;
 	/* top_line may changed */
 	y=(yline-p->top_line)*YSIZE+gui.topcurs;
@@ -140,7 +147,13 @@ BYTE move_column_selection(Project p, LONG xn, LONG yn)
 	if(p->left_pos+gui.nbcol > left_pos+nbcol)
 		gui.nbcol = left_pos+nbcol-p->left_pos;
 
-	if(yn<0) yn=0; if(yn>=p->max_lines) yn=p->max_lines-1,ret=0;
+	if(yn<0)
+            yn=0;
+        if(yn>=p->max_lines)
+        {
+            yn=p->max_lines-1;
+            ret=0;
+        }
 	yline=p->ccp.yc; ln=p->ccp.cline;
 	/* top_line may changed */
 	y=(yline-p->top_line)*YSIZE+gui.topcurs;
@@ -373,14 +386,18 @@ void indent_by(Project p, UBYTE ch, BYTE method)
 			}
 		reg_group_by(&p->undo);
 		move_selection = move_stream_selection; 
-		if(p->nbc==0) goto redraw; goto refresh;
+		if(p->nbc==0)
+                    goto redraw;
+                goto refresh;
 	}
 
 	/* Should we add or remove the char? */
 	if(method == -1) {
 		if(p->edited->size > 0 && p->edited->stream[0]==ch) {
 			rem_chars(&p->undo,p->edited,0,0); 
-			if(p->nbc==0) goto redraw; goto refresh;
+			if(p->nbc==0)
+                            goto redraw;
+                        goto refresh;
 		} else return;
 	}
 
@@ -494,7 +511,10 @@ void mark_all(Project p)
 	RP->Mask       = gui.selmask;
 
 	/* Set lines before those displayed */
-	for(nb=p->top_line; nb--; ln->flags=WHOLESEL, ln=ln->next);
+	for(nb=p->top_line; nb--; ln=ln->next)
+        {
+            ln->flags=WHOLESEL;
+        }
 
 	/* Set and refresh displayed lines */
 	{	register LINE *last = ln;
@@ -502,7 +522,10 @@ void mark_all(Project p)
 			ln->flags=WHOLESEL, Move(RP,gui.left,y),write_text(p,ln);
 
 		/* Set lines after those displayed */
-		for(; ln; ln->flags=WHOLESEL, last=ln, ln=ln->next);
+		for(; ln; last=ln, ln=ln->next)
+                {
+                    ln->flags=WHOLESEL;
+                }
 		p->ccp.line = last;
 	}
 	inv_curs(p,TRUE);
