@@ -549,26 +549,16 @@ enum
 #define IS_HIDD_BM(bitmap) ((bitmap)->pad == HIDD_BM_PAD_MAGIC)
 
 #define HIDD_BM_EXTRAPLANES       8
-#if (1)
-#define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[8+0]))
-#define HIDD_BM_DRVDATA(bitmap)   (*(struct monitor_driverdata **)&((bitmap)->Planes[8+1]))
-#define HIDD_BM_COLMAP(bitmap)	  (*(OOP_Object **)&((bitmap)->Planes[8+2]))
-#define HIDD_BM_COLMOD(bitmap)    (*(HIDDT_ColorModel *)&((bitmap)->Planes[8+3]))
-#define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[8+4]))
-#define HIDD_BM_REALDEPTH(bitmap) (*(LONG *)&((bitmap)->Planes[8+5]))
-#define HIDD_BM_FLAGS(bitmap)	  (*(ULONG *)&((bitmap)->Planes[8+6]))
-#define HIDD_BM_HIDDMODE(bitmap)  (*(HIDDT_ModeID *)&((bitmap)->Planes[8+7]))
-#else
 struct HiddBitMapPlaneData
 {
-    OOP_Object *HBMPD_Object;
-    struct monitor_driverdata *HBMPD_DriverData;
-    OOP_Object *HBMPD_ColMap;
-    IPTR HBMPD_ColMod;
-    HIDDT_Pixel *HBMPD_PixTab;
-    IPTR HBMPD_RealDepth;
-    IPTR HBMPD_Flags;
-    IPTR HBMPD_HiddMode;
+    STACKED OOP_Object *HBMPD_Object;
+    STACKED struct monitor_driverdata *HBMPD_DriverData;
+    STACKED OOP_Object *HBMPD_ColMap;
+    STACKED HIDDT_ColorModel HBMPD_ColMod;
+    STACKED HIDDT_Pixel *HBMPD_PixTab;
+    STACKED LONG HBMPD_RealDepth;
+    STACKED ULONG HBMPD_Flags;
+    STACKED HIDDT_ModeID HBMPD_HiddMode;
 };
 
 #define HIDD_BM_OBJ(bitmap)       (((struct HiddBitMapPlaneData *)&(bitmap)->Planes[HIDD_BM_EXTRAPLANES])->HBMPD_Object)
@@ -579,6 +569,5 @@ struct HiddBitMapPlaneData
 #define HIDD_BM_REALDEPTH(bitmap) (((struct HiddBitMapPlaneData *)&(bitmap)->Planes[HIDD_BM_EXTRAPLANES])->HBMPD_RealDepth)
 #define HIDD_BM_FLAGS(bitmap)	  (((struct HiddBitMapPlaneData *)&(bitmap)->Planes[HIDD_BM_EXTRAPLANES])->HBMPD_Flags)
 #define HIDD_BM_HIDDMODE(bitmap)  (((struct HiddBitMapPlaneData *)&(bitmap)->Planes[HIDD_BM_EXTRAPLANES])->HBMPD_HiddMode)
-#endif
 
 #endif /* HIDD_GRAPHICS_H */
