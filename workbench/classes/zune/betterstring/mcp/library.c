@@ -72,7 +72,7 @@ struct LocaleBase *LocaleBase = NULL;
 struct LocaleIFace *ILocale = NULL;
 #endif
 
-#if !defined(__MORPHOS__)
+#if !defined(__MORPHOS__) && !defined(__AROS__)
 static BOOL nbitmapCanHandleRawData;
 #endif
 
