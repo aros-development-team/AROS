@@ -43,7 +43,10 @@ static APTR allocrtgvrambitmap(struct uaegfx_staticdata *csd, struct bm_data *bm
     SetMemoryMode(csd, RGBFB_CLUT);
     vmem = Allocate(csd->vmem, bm->memsize);
     SetMemoryMode(csd, bm->rgbformat);
-    DVRAM(bug("BM %p (%dx%dx%d %d): %p,%d VRAM allocated.\n", bm, bm->width, bm->height, bm->bytesperpixel, bm->bytesperline, vmem, bm->memsize));
+    if (vmem)
+    {
+        DVRAM(bug("BM %p (%dx%dx%d %d): %p,%d bytes VRAM allocated.\n", bm, bm->width, bm->height, bm->bytesperpixel*8, bm->bytesperline, vmem, bm->memsize));
+    }
     return vmem;
 }
 
@@ -77,7 +80,7 @@ static BOOL movebitmaptofram(struct uaegfx_staticdata *csd, struct bm_data *bm)
 	csd->fram_used += bm->memsize;
 	ok = TRUE;
    }
-   DVRAM(bug("BM %p: moved to RAM %p:%d. VRAM=%d\n", bm, bm->VideoData, bm->memsize, csd->vram_used));
+   DVRAM(bug("BM %p: %d x %d moved to RAM %p:%d. VRAM=%d\n", bm, bm->width, bm->height, bm->VideoData, bm->memsize, csd->vram_used));
    return ok;
 }
 
@@ -122,7 +125,7 @@ static BOOL movethisbitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *
 	bm->VideoData = vmem;
 	bm->invram = TRUE;
 	csd->vram_used += bm->memsize;
-	DVRAM(bug("BM %p: %p:%d moved back to VRAM\n", bm, bm->VideoData, bm->memsize));
+	DVRAM(bug("BM %p: %p:%d (%d x %d) moved back to VRAM\n", bm, bm->VideoData, bm->memsize, bm->width, bm->height));
 	return TRUE;
     }
     return FALSE;
@@ -189,11 +192,14 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
     o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
+    {
     	return NULL;
-	
+    }
+    
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof  (*data));
-
+    InitSemaphore(&data->bmLock);
+    
     WaitBlitter(csd);
 
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
@@ -928,8 +934,77 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 	    v = InvertRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
 	}
     }
-    if (!v)
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    
+    if (v) return;
+
+    switch(mode)
+    {
+        case vHidd_GC_DrawMode_Copy:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+		    HIDD_BM_FillMemRect8(o,
+	    	    	    		 data->VideoData,
+	    	    	    		 msg->minX,
+					 msg->minY,
+					 msg->maxX,
+					 msg->maxY,
+					 data->bytesperline,
+					 fg);
+		    break;
+		    
+		case 2:
+		    HIDD_BM_FillMemRect16(o,
+	    	    	    		 data->VideoData,
+	    	    	    		 msg->minX,
+					 msg->minY,
+					 msg->maxX,
+					 msg->maxY,
+					 data->bytesperline,
+					 fg);
+		    break;
+	    
+	    	case 3:
+		    HIDD_BM_FillMemRect24(o,
+	    	    	    		 data->VideoData,
+	    	    	    		 msg->minX,
+					 msg->minY,
+					 msg->maxX,
+					 msg->maxY,
+					 data->bytesperline,
+					 fg);
+		    break;
+		
+	    	case 4:
+		    HIDD_BM_FillMemRect32(o,
+	    	    	    		 data->VideoData,
+	    	    	    		 msg->minX,
+					 msg->minY,
+					 msg->maxX,
+					 msg->maxY,
+					 data->bytesperline,
+					 fg);
+		    break;
+		
+	    }
+	    break;
+    
+	case vHidd_GC_DrawMode_Invert:
+	    HIDD_BM_InvertMemRect(o,
+	    	    	    	 data->VideoData,
+	    	    	    	 msg->minX * data->bytesperpixel,
+				 msg->minY,
+				 msg->maxX * data->bytesperpixel + data->bytesperpixel - 1,
+				 msg->maxY,
+				 data->bytesperline);
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    } /* switch(mode) */
+
 }
 
 /****************************************************************************************/
@@ -952,29 +1027,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 	msg->x, msg->y, msg->width, msg->height,
 	msg->pattern, msg->patternsrcx, msg->patternsrcy, fg, bg, msg->patternheight));
 
-    if (msg->mask || msg->patterndepth > 1) {
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	return;
-    }
-
-    maybeputinvram(csd, data);
-    if (data->invram) {
-	makerenderinfo(csd, &ri, data);
-	if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
-	     drawmode = JAM1;
-	else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
-	     drawmode = COMPLEMENT;
-	else
-	    drawmode = JAM2;
-	if (msg->invertpattern)
-	     drawmode |= INVERSVID;
-
-	pat.Memory = msg->pattern;
-	pat.XOffset = msg->patternsrcx;
-	pat.YOffset = msg->patternsrcy;
-	pat.FgPen = fg;
-	pat.BgPen = bg;
-	pat.DrawMode = drawmode;
+    if ((msg->mask == NULL) && (msg->patterndepth == 1))
+    {
 	switch (msg->patternheight)
 	{
 	    case 1:
@@ -1008,13 +1062,128 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 	    pat.Size = 0xff;
 	}
 
-	if (pat.Size <= 8) {
-	    v = BlitPattern(csd, &ri, &pat, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+	if (pat.Size <= 8)
+        {
+            maybeputinvram(csd, data);
+            
+            if (data->invram)
+            {
+	        makerenderinfo(csd, &ri, data);
+	        if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
+	             drawmode = JAM1;
+	        else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+	             drawmode = COMPLEMENT;
+	        else
+	            drawmode = JAM2;
+	        if (msg->invertpattern)
+	             drawmode |= INVERSVID;
+
+	        pat.Memory = msg->pattern;
+	        pat.XOffset = msg->patternsrcx;
+	        pat.YOffset = msg->patternsrcy;
+	        pat.FgPen = fg;
+	        pat.BgPen = bg;
+	        pat.DrawMode = drawmode;
+            
+                v = BlitPattern(csd, &ri, &pat, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+            }
 	}
     }
 
-    if (!v)
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (v) return;
+    
+    switch(data->bytesperpixel)
+    {
+	case 1:
+	    HIDD_BM_PutMemPattern8(o,
+	    	    	    	   msg->gc,
+				   msg->pattern,
+				   msg->patternsrcx,
+				   msg->patternsrcy,
+				   msg->patternheight,
+				   msg->patterndepth,
+				   msg->patternlut,
+				   msg->invertpattern,
+				   msg->mask,
+				   msg->maskmodulo,
+				   msg->masksrcx,
+				   data->VideoData,
+				   data->bytesperline,
+				   msg->x,
+				   msg->y,
+				   msg->width,
+				   msg->height);
+	    break;
+
+	case 2:
+	    HIDD_BM_PutMemPattern16(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->VideoData,
+				    data->bytesperline,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
+	    break;
+
+	case 3:
+	    HIDD_BM_PutMemPattern24(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->VideoData,
+				    data->bytesperline,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
+	    break;
+
+	case 4:
+	    HIDD_BM_PutMemPattern32(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->VideoData,
+				    data->bytesperline,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
+	    break;
+
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	    break;
+	    
+    } /* switch(data->bytesperpixel) */
+
 }
 
 /****************************************************************************************/
@@ -1051,8 +1220,77 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 	tmpl.BgPen = bg;
 	v = BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
     }
-    if (!v)
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    
+    if (v) return;
+
+    switch(data->bytesperpixel)
+    {
+	case 1:
+	    HIDD_BM_PutMemTemplate8(o,
+	    	    	    	    msg->gc,
+				    msg->masktemplate,
+				    msg->modulo,
+				    msg->srcx,
+				    data->VideoData,
+				    data->bytesperline,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->inverttemplate);
+	    break;
+
+	case 2:
+	    HIDD_BM_PutMemTemplate16(o,
+	    	    	    	     msg->gc,
+				     msg->masktemplate,
+				     msg->modulo,
+				     msg->srcx,
+				     data->VideoData,
+				     data->bytesperline,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	case 3:
+	    HIDD_BM_PutMemTemplate24(o,
+	    	    	    	     msg->gc,
+				     msg->masktemplate,
+				     msg->modulo,
+				     msg->srcx,
+				     data->VideoData,
+				     data->bytesperline,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	case 4:
+	    HIDD_BM_PutMemTemplate32(o,
+	    	    	    	     msg->gc,
+				     msg->masktemplate,
+				     msg->modulo,
+				     msg->srcx,
+				     data->VideoData,
+				     data->bytesperline,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	    break;
+	    
+    } /* switch(data->bytesperpixel) */
+    
 }
 
 
