@@ -51,10 +51,11 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
 
 static OOP_Object *InsertDevice(OOP_Class *cl, ULONG *highBus, struct TagItem *devtags)
 {
+    struct pcibase *pciBase = (struct pcibase *)cl->UserData;
     OOP_Object *pcidev;
     IPTR bridge, subbus;
 
-    pcidev = OOP_NewObject(PSD(cl)->pciDeviceClass, NULL, devtags);
+    pcidev = OOP_NewObject(pciBase->psd.pciDeviceClass, NULL, devtags);
     if (pcidev)
     {
         OOP_GetAttr(pcidev, aHidd_PCIDevice_isBridge, &bridge);
@@ -69,9 +70,9 @@ static OOP_Object *InsertDevice(OOP_Class *cl, ULONG *highBus, struct TagItem *d
          * Device class is our private and derived from rootclass.
          * This makes casting to struct Node * safe.
          */
-        ObtainSemaphore(&PSD(cl)->dev_lock);
-        ADDTAIL(&PSD(cl)->devices, pcidev);
-        ReleaseSemaphore(&PSD(cl)->dev_lock);
+        ObtainSemaphore(&pciBase->psd.dev_lock);
+        ADDTAIL(&pciBase->psd.devices, pcidev);
+        ReleaseSemaphore(&pciBase->psd.dev_lock);
     }
     return pcidev;
 }
@@ -225,6 +226,7 @@ static const UBYTE attrTable[] =
 
 void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDevices *msg)
 {
+    struct pcibase *pciBase = (struct pcibase *)cl->UserData;
     struct TagItem *tstate = (struct TagItem *)msg->requirements;
     struct TagItem *tag;
     IPTR matchVal[sizeof(attrTable)];
@@ -247,10 +249,10 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
     }
 
     /* Lock devices list for shared use */
-    ObtainSemaphoreShared(&PSD(cl)->dev_lock);
+    ObtainSemaphoreShared(&pciBase->psd.dev_lock);
 
     /* For every device in the system... */
-    ForeachNode(&PSD(cl)->devices, dev)
+    ForeachNode(&pciBase->psd.devices, dev)
     {
         /* check the requirements with its properties */
         ok = TRUE;
@@ -261,7 +263,7 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
             {
                 IPTR value;
 
-                OOP_GetAttr(dev, PSD(cl)->hiddPCIDeviceAB + attrTable[i], &value);
+                OOP_GetAttr(dev, pciBase->psd.hiddPCIDeviceAB + attrTable[i], &value);
                 ok &= (value == matchVal[i]);
             }
         }
@@ -273,11 +275,12 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
         }
     }
 
-    ReleaseSemaphore(&PSD(cl)->dev_lock);
+    ReleaseSemaphore(&pciBase->psd.dev_lock);
 }
 
 BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver *msg)
 {
+    struct pcibase *pciBase = (struct pcibase *)cl->UserData;
     OOP_Object *dev, *next, *drv;
     IPTR disallow = 0;
 
@@ -291,7 +294,7 @@ BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver
      * Well, in the latter case we actually could remove our driver, but
      * i believe this is extremely rare situation.
      */
-    if (!AttemptSemaphore(&PSD(cl)->dev_lock))
+    if (!AttemptSemaphore(&pciBase->psd.dev_lock))
         return FALSE;
 
     /*
@@ -310,7 +313,7 @@ BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver
      * about devices list being updated. With this notification we can
      * have full hotplug support.
      */
-    ForeachNode(&PSD(cl)->devices, dev)
+    ForeachNode(&pciBase->psd.devices, dev)
     {
         OOP_GetAttr(dev, aHidd_PCIDevice_Driver, (IPTR *)&drv);
         if (drv == msg->driverObject)
@@ -324,18 +327,18 @@ BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver
 
     if (disallow)
     {
-        ReleaseSemaphore(&PSD(cl)->dev_lock);
+        ReleaseSemaphore(&pciBase->psd.dev_lock);
         D(bug("[PCI] PCI::RemoveDriver() failed, driver in use\n"));
         return FALSE;
     }
 
-    ForeachNodeSafe(&PSD(cl)->devices, dev, next)
+    ForeachNodeSafe(&pciBase->psd.devices, dev, next)
     {
         REMOVE(dev);
         OOP_DisposeObject(dev);
     }
 
-    ReleaseSemaphore(&PSD(cl)->dev_lock);
+    ReleaseSemaphore(&pciBase->psd.dev_lock);
     D(bug("[PCI] PCI::RemHardwareDriver() succeeded\n"));
     return OOP_DoSuperMethod(cl, o, &msg->mID);
 }
@@ -481,7 +484,8 @@ BOOL PCI__Hidd_PCI__RemHardwareDriver(OOP_Class *cl, OOP_Object *o,
 
 OOP_Object *PCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct pci_staticdata *psd = PSD(cl);
+    struct pcibase *pciBase = (struct pcibase *)cl->UserData;
+    struct pci_staticdata *psd = &pciBase->psd;
     
     if (!psd->pciObject)
     {
