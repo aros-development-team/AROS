@@ -167,7 +167,7 @@ struct PopupMenu *PM_FindSortedInsertPoint(struct PopupMenu *pm, struct PopupMen
         while(pm) {
                 if(PM_String_Compare(pm->Title, fm->Title) < 0)
                 	return prev;
-        		prev=pm;
+                prev=pm;
                 pm=pm->Next;
         }
         return NULL;
