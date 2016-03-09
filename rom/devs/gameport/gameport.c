@@ -765,8 +765,10 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
     return moreevents;
 }
 
+#if (0)
 /****************************************************************************************/
 
 static const char end = 0;
 
 /****************************************************************************************/
+#endif
