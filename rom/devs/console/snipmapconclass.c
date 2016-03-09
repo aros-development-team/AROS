@@ -32,8 +32,9 @@ struct snipmapcondata
     ULONG start_selection_y;
 };
 
+#ifdef ConsoleDevice
 #undef ConsoleDevice
-#define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
+#endif
 
 /***********  SnipMapCon::New()  **********************/
 
@@ -78,6 +79,8 @@ static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 
 static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
 {
+    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
+
     /* if conclip is running, insert <CSI> "0 v" and we're done.
      * The console.handler will be responsible for the actual paste.
      */
