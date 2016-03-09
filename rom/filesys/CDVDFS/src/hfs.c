@@ -272,7 +272,7 @@ int pos;
 	if (p_leaf->leaf_rec.name_length > 30)
 	{
 		p_leaf->leaf_rec.name_length = 30;
-		p_leaf->leaf_rec.name[30] = 0;
+		*((char *)&p_leaf->leaf_rec.name[0] + 30) = '\0';
 	}
 
 	return TRUE;
@@ -394,7 +394,7 @@ t_ulong next_node;
 	if (p_leaf->leaf_rec.name_length > 30)
 	{
 		p_leaf->leaf_rec.name_length = 30;
-		p_leaf->leaf_rec.name[30] = 0;
+		*((char *)&p_leaf->leaf_rec.name[0] + 30) = '\0';
 	}
 
 	return TRUE;
