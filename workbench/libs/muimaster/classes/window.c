@@ -2475,7 +2475,7 @@ static Object *GetFirstActiveObject(struct MUI_WindowData *data)
 {
     ASSERT_VALID_PTR(data);
 
-    if (!IsListEmpty((struct List *)&data->wd_CycleChain))
+    if (!IsListEmpty(&data->wd_CycleChain))
         return ((struct ObjNode *)data->wd_CycleChain.mlh_Head)->obj;
     else
         return NULL;
@@ -2485,7 +2485,7 @@ static Object *GetLastActiveObject(struct MUI_WindowData *data)
 {
     ASSERT_VALID_PTR(data);
 
-    if (!IsListEmpty((struct List *)&data->wd_CycleChain))
+    if (!IsListEmpty(&data->wd_CycleChain))
         return ((struct ObjNode *)data->wd_CycleChain.mlh_TailPred)->obj;
     else
         return NULL;
@@ -4043,7 +4043,7 @@ IPTR Window__MUIM_AllocGadgetID(struct IClass *cl, Object *obj,
         int id;
         struct MinNode *mn;
 
-        if (IsListEmpty((struct List *)&data->wd_IDList))
+        if (IsListEmpty(&data->wd_IDList))
         {
             newnode->id = 1;
             AddHead((struct List *)&data->wd_IDList,

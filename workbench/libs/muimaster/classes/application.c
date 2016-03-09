@@ -295,11 +295,12 @@ static BOOL application_do_pushed_method(struct MUI_ApplicationData *data)
 static Object *find_application_by_base(struct IClass *cl, Object *obj,
     STRPTR base)
 {
+    struct MUIMasterBase_intern *intZuneBase = (struct MUIMasterBase_intern *)MUIMasterBase;
     struct TrackingNode *tn;
     Object *retval = NULL;
 
-    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-    ForeachNode(&MUIMB(MUIMasterBase)->Applications, tn)
+    ObtainSemaphore(&intZuneBase->ZuneSemaphore);
+    ForeachNode(&intZuneBase->Applications, tn)
     {
         STRPTR tn_base = "";
 
@@ -311,7 +312,7 @@ static Object *find_application_by_base(struct IClass *cl, Object *obj,
             break;
         }
     }
-    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+    ReleaseSemaphore(&intZuneBase->ZuneSemaphore);
 
     return retval;
 }

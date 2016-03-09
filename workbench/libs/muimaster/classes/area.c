@@ -106,12 +106,14 @@ Area.mui/MUIM_Setup                 done
 Area.mui/MUIM_Show                  done
 */
 
+#if (0)
 static const int __version = 1;
 static const int __revision = 1;
 
-//#ifdef DEBUG
-//static STRPTR zune_area_to_string (Object *area);
-//#endif
+#ifdef DEBUG
+static STRPTR zune_area_to_string (Object *area);
+#endif
+#endif
 
 static const struct MUI_FrameSpec_intern *get_intframe(Object *obj,
     struct MUI_AreaData *data, struct MUI_FrameSpec_intern *tempstore);
