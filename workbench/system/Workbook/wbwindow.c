@@ -242,7 +242,7 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
 	wbwi->wbwiObject = iobj;
 
 	/* Insert in Alpha order */
-	ForeachNode((struct List *)&my->IconList, tmp) {
+	ForeachNode(&my->IconList, tmp) {
 	    if (wbwiIconCmp(cl, obj, tmp->wbwiObject, wbwi->wbwiObject) == 0) {
 	        DisposeObject(iobj);
 	        return;
@@ -462,7 +462,7 @@ static void wbRescan(Class *cl, Object *obj)
     }
 
     /* Display the new icons */
-    ForeachNode((struct List *)&my->IconList, wbwi)
+    ForeachNode(&my->IconList, wbwi)
         DoMethod(my->Set, OM_ADDMEMBER, wbwi->wbwiObject);
 
     /* Adjust the scrolling regions */
