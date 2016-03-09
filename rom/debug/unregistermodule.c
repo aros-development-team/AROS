@@ -101,10 +101,11 @@ static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
 
 static module_t * FindModule(BPTR segList, struct Library * DebugBase)
 {
+    struct DebugBase *debugBase = DBGBASE(DebugBase);
     module_t *mod;
     LONG i;
 
-    ForeachNode(&DBGBASE(DebugBase)->db_Modules, mod)
+    ForeachNode(&debugBase->db_Modules, mod)
     {
        for (i = 0; i < mod->m_segcnt; i++)
        {
