@@ -77,7 +77,7 @@ void SetDisplayDefaults(struct IntuitionBase * IntuitionBase)
 
             D(bug("[Intuition] %s: monitor sync obj @ 0x%p\n", __PRETTY_FUNCTION__, sync));
 
-            OOP_GetAttr(sync, aHidd_Sync_GfxHidd, &drv);
+            OOP_GetAttr(sync, aHidd_Sync_GfxHidd, (IPTR *)&drv);
             if (drv)
             {
                 OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
