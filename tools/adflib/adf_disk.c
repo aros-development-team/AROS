@@ -133,7 +133,8 @@ struct Volume* adfMount( struct Device *dev, int nPart, BOOL readOnly )
     struct bBootBlock boot;
     struct Volume* vol;
 
-    if (dev==NULL || nPart<nPart || nPart >= dev->nVol) {
+    if (dev==NULL || nPart >= dev->nVol) // removed "|| nPart<nPart " .... nonsense comparison?
+    {
         (*adfEnv.eFct)("adfMount : invalid parameter(s)");
         return NULL;
     }
