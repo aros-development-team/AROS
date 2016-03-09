@@ -145,11 +145,14 @@ CONST struct Scroll ScrollBar = {
 };
 
 
+#ifdef ConsoleDevice
 #undef ConsoleDevice
-#define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
+#endif
 
+#ifdef GfxBase
 #undef GfxBase
-#define GfxBase (((struct charmapcondata *)INST_DATA(cl, o))->ccd_GfxBase)
+#endif
+//#define GfxBase (((struct charmapcondata *)INST_DATA(cl, o))->ccd_GfxBase)
 
 static VOID charmapcon_refresh(Class *cl, Object *o, LONG off);
 
@@ -157,6 +160,7 @@ static VOID charmapcon_refresh(Class *cl, Object *o, LONG off);
 static VOID charmapcon_add_prop(Class *cl, Object *o)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
+    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
     struct Scroll *pg;
     struct Image *dummy;
     struct Window *win = CU(o)->cu_Window;
@@ -270,6 +274,7 @@ static VOID charmapcon_add_prop(Class *cl, Object *o)
 static VOID charmapcon_adj_prop(Class *cl, Object *o)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
+    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
     struct Window *w = CU(o)->cu_Window;
     ULONG VertBody, VertPot;
 
@@ -303,6 +308,7 @@ static VOID charmapcon_adj_prop(Class *cl, Object *o)
 void charmapcon_free_prop(Class *cl, Object *o)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
+    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
     struct Window *win = CU(o)->cu_Window;
 
     if (data->prop)
@@ -541,6 +547,7 @@ static VOID charmap_scroll_down(Class *cl, Object *o, ULONG y)
 static VOID charmapcon_scroll_to(Class *cl, Object *o, ULONG y)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->ccd_GfxBase;
     struct Window *w = CU(o)->cu_Window;
     struct RastPort *rp = w->RPort;
     LONG off = data->scrollback_pos - y;
@@ -755,6 +762,7 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
     struct Window *w = CU(o)->cu_Window;
     struct RastPort *rp = w->RPort;
     struct charmapcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->ccd_GfxBase;
 
     if (fromLine < CHAR_YMIN(o))
         fromLine = CHAR_YMIN(o);
@@ -1042,6 +1050,7 @@ struct ConClipData
 static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
+    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
     struct MsgPort replyport, *port;
     struct SGWork sgw;
     struct MyEditHookMsg msg;
