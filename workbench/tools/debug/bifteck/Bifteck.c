@@ -36,8 +36,9 @@ static TEXT GetLogChar(struct LogData *data, struct LogBlock **block,
 
 const TEXT template[] = "TO/K";
 const TEXT version_string[] = "$VER: Bifteck 41.2 (30.8.2012)";
+#if (0)
 static const TEXT data_name[] = "bifteck";
-
+#endif
 
 LONG main(VOID)
 {
