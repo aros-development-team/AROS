@@ -25,7 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static const char version[] = "$VER: avltest.c 45.0 (25.2.2008)\n";
+static const char version[] __attribute__((used)) = "$VER: avltest.c 45.0 (25.2.2008)\n";
 
 #define MAX(x, y) ((x)>(y) ? (x) : (y))
 #define RCOUNT (100000)
