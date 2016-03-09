@@ -2721,7 +2721,7 @@ struct MUI_NListtree_TreeNode *CreateChildStructure( struct NListtree_Data *data
 
     if(isFlagSet(orignode->ln_Flags, TNF_LIST))
     {
-      if ( !IsListEmpty( (struct List *)&orignode->ln_List ) )
+      if ( !IsListEmpty( &orignode->ln_List ) )
       {
         struct MUI_NListtree_ListNode *ln = CLN( &orignode->ln_List );
         LONG i;
@@ -2837,11 +2837,12 @@ static void InsertTreeImages( struct NListtree_Data *data, struct MUI_NListtree_
 
 static void InsertImage( struct NListtree_Data *data, struct MUI_NListtree_TreeNode *otn )
 {
+  struct MUI_NListtree_ListNode *ln = CLN( otn );
   LONG x1 = -1;
 
   InsertTreeImages( data, otn, otn, 0 );
 
-  if((isFlagSet(otn->tn_Flags, TNF_LIST) && isFlagClear(otn->tn_Flags, TNF_NOSIGN)) && ( !IsListEmpty( (struct List *)&(CLN( otn ))->ln_List ) || isFlagClear(data->Flags, NLTF_EMPTYNODES)))
+  if((isFlagSet(otn->tn_Flags, TNF_LIST) && isFlagClear(otn->tn_Flags, TNF_NOSIGN)) && ( !IsListEmpty( &ln->ln_List ) || isFlagClear(data->Flags, NLTF_EMPTYNODES)))
   {
     if(isFlagSet(otn->tn_Flags, TNF_OPEN))
     {
@@ -9220,6 +9221,7 @@ IPTR _NListtree_GetNr(struct IClass *cl, Object *obj, struct MUIP_NListtree_GetN
 {
   struct NListtree_Data *data = INST_DATA(cl, obj);
   struct MUI_NListtree_TreeNode *tn;
+  struct MUI_NListtree_ListNode *pln;
   struct MUI_NListtree_ListNode *ln;
   IPTR ret = 0;
   LONG pos = 0;
@@ -9236,23 +9238,24 @@ IPTR _NListtree_GetNr(struct IClass *cl, Object *obj, struct MUIP_NListtree_GetN
   else
     tn = msg->TreeNode;
 
-  ln = CLN( GetParent( tn ) );
+  ln = CLN( tn );
+  pln = CLN( GetParent( tn ) );
 
   if(isFlagSet(msg->Flags, MUIV_NListtree_GetNr_Flag_ListEmpty))
   {
     if(isFlagSet(tn->tn_Flags, TNF_LIST))
-      ret = IsListEmpty( ((struct List *)&CLN(tn)->ln_List) );
+      ret = IsListEmpty( (&ln->ln_List) );
   }
 
   else if(isFlagSet(msg->Flags, MUIV_NListtree_GetNr_Flag_CountList))
   {
     if(isFlagSet(tn->tn_Flags, TNF_LIST))
-      ret = CLN(tn)->ln_Table.tb_Entries;
+      ret = ln->ln_Table.tb_Entries;
   }
 
-  else if(ln && isFlagSet(msg->Flags, MUIV_NListtree_GetNr_Flag_CountLevel))
+  else if(pln && isFlagSet(msg->Flags, MUIV_NListtree_GetNr_Flag_CountLevel))
   {
-    ret = ln->ln_Table.tb_Entries;
+    ret = pln->ln_Table.tb_Entries;
   }
 
   else if(isFlagSet(msg->Flags, MUIV_NListtree_GetNr_Flag_CountAll))

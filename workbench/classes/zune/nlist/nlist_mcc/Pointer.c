@@ -142,6 +142,7 @@ static const ULONG selectPointer[] =
 #endif
 #endif
 
+#if !defined(__AROS__)
 static const UWORD sizePointer[] =
 {
 //plane1    plane2
@@ -206,7 +207,7 @@ static const UWORD selectPointer[] =
 
   0x0000,   0x0000
 };
-
+#endif
 #endif // __amigaos4__
 
 // Classic bitmap data for the pointers. These will be used for OS4 aswell,

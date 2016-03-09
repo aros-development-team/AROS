@@ -119,6 +119,7 @@ static const ULONG vertSizePointer[] =
 #endif
 #endif
 
+#if !defined(__AROS__)
 static const UWORD horizSizePointer[] =
 {
 //plane1    plane2
@@ -168,6 +169,7 @@ static const UWORD vertSizePointer[] =
 
   0x0000,   0x0000
 };
+#endif
 
 #endif // __amigaos4__
 
