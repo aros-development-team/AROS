@@ -52,17 +52,18 @@ extern IPTR HookEntry();
 
 void SetDisplayDefaults(struct IntuitionBase * IntuitionBase)
 {
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
     struct MonitorSpec *defmon;
     BOOL done = FALSE;
 
     D(bug("[Intuition] %s()\n", __PRETTY_FUNCTION__, defmon));
 
-    if (!GetPrivIBase(IntuitionBase)->ScreenModePrefs)
-        GetPrivIBase(IntuitionBase)->ScreenModePrefs = AllocMem(sizeof(struct IScreenModePrefs), MEMF_ANY);
+    if (!_intuitionBase->ScreenModePrefs)
+        _intuitionBase->ScreenModePrefs = AllocMem(sizeof(struct IScreenModePrefs), MEMF_ANY);
 
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID  = INVALID_ID;
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Control         = 0;
+    _intuitionBase->ScreenModePrefs->smp_DisplayID  = INVALID_ID;
+    _intuitionBase->ScreenModePrefs->smp_Control         = 0;
 
     if ((defmon = OpenMonitor(NULL, INVALID_ID)) != NULL)
     {
@@ -72,22 +73,22 @@ void SetDisplayDefaults(struct IntuitionBase * IntuitionBase)
 
         if (sync)
         {
-            OOP_AttrBase HiddSyncAttrBase = GetPrivIBase(IntuitionBase)->HiddSyncAttrBase;
-            struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
+            OOP_AttrBase HiddSyncAttrBase = _intuitionBase->HiddSyncAttrBase;
+            struct Library *OOPBase = _intuitionBase->OOPBase;
 
             D(bug("[Intuition] %s: monitor sync obj @ 0x%p\n", __PRETTY_FUNCTION__, sync));
 
             OOP_GetAttr(sync, aHidd_Sync_GfxHidd, (IPTR *)&drv);
             if (drv)
             {
-                OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+                OOP_MethodID HiddGfxBase = _intuitionBase->ib_HiddGfxBase;
                 UBYTE depth;
 
                 HIDD_Gfx_NominalDimensions(drv,
-                    &GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width,
-                    &GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height,
+                    &_intuitionBase->ScreenModePrefs->smp_Width,
+                    &_intuitionBase->ScreenModePrefs->smp_Height,
                     &depth);
-                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth = depth;
+                _intuitionBase->ScreenModePrefs->smp_Depth = depth;
                 done = TRUE;
             }
         }
@@ -97,14 +98,15 @@ void SetDisplayDefaults(struct IntuitionBase * IntuitionBase)
     {
         D(bug("[Intuition] %s: using system defaults..\n", __PRETTY_FUNCTION__));
 
-        GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width          = GfxBase->NormalDisplayColumns;
-        GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height         = GfxBase->NormalDisplayRows;
-        GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth          = AROS_NOMINAL_DEPTH;
+        _intuitionBase->ScreenModePrefs->smp_Width          = GfxBase->NormalDisplayColumns;
+        _intuitionBase->ScreenModePrefs->smp_Height         = GfxBase->NormalDisplayRows;
+        _intuitionBase->ScreenModePrefs->smp_Depth          = AROS_NOMINAL_DEPTH;
     }
 }
 
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 {
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
 #   ifdef SKINS
         static CONST UWORD DriPens2[NUMDRIPENS] = { 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1 , 1 , 0};
         static CONST UWORD DriPens4[NUMDRIPENS] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1 , 2 , 1};
@@ -114,36 +116,36 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 #   endif /* SKINS */
 
     /* Default IControl prefs are AROS addition. Keep while backporting. */
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_TimeOut  = 50;
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags    = ICF_3DMENUS |
+    _intuitionBase->IControlPrefs.ic_TimeOut  = 50;
+    _intuitionBase->IControlPrefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
+    _intuitionBase->IControlPrefs.ic_Flags    = ICF_3DMENUS |
                                                                                          ICF_OFFSCREENLAYERS |
                                                              ICF_AVOIDWINBORDERERASE |
                                                                          ICF_MODEPROMOTE | 
                                                                          ICF_MENUSNAP |
                                                              ICF_STRGAD_FILTER |
                                                              ICF_COERCE_LACE;
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_WBtoFront   = 'N';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_FrontToBack = 'M';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue     = 'V';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse    = 'B';  
+    _intuitionBase->IControlPrefs.ic_WBtoFront   = 'N';
+    _intuitionBase->IControlPrefs.ic_FrontToBack = 'M';
+    _intuitionBase->IControlPrefs.ic_ReqTrue     = 'V';
+    _intuitionBase->IControlPrefs.ic_ReqFalse    = 'B';  
 
 
     /*
      * Mouse default.
      */
-    GetPrivIBase(IntuitionBase)->DefaultPreferences.PointerTicks = 2;
+    _intuitionBase->DefaultPreferences.PointerTicks = 2;
 
     CopyMem(&IntuitionDefaultPreferences,
-                &GetPrivIBase(IntuitionBase)->DefaultPreferences,
+                &_intuitionBase->DefaultPreferences,
                 sizeof(struct Preferences));
-    CopyMem(&GetPrivIBase(IntuitionBase)->DefaultPreferences,
-            &GetPrivIBase(IntuitionBase)->ActivePreferences,
+    CopyMem(&_intuitionBase->DefaultPreferences,
+            &_intuitionBase->ActivePreferences,
             sizeof(struct Preferences));
 
-    CopyMem(DriPens2, GetPrivIBase(IntuitionBase)->DriPens2, sizeof(DriPens2));
-    CopyMem(DriPens4, GetPrivIBase(IntuitionBase)->DriPens4, sizeof(DriPens4));
-    CopyMem(DriPens4, GetPrivIBase(IntuitionBase)->DriPens8, sizeof(DriPens4));
+    CopyMem(DriPens2, _intuitionBase->DriPens2, sizeof(DriPens2));
+    CopyMem(DriPens4, _intuitionBase->DriPens4, sizeof(DriPens4));
+    CopyMem(DriPens4, _intuitionBase->DriPens8, sizeof(DriPens4));
 }
 
 /**********************************************************************************/
@@ -151,7 +153,8 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
                    struct IntuitionBase * IntuitionBase)
 {
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
 
     if ((x2 >= x1) && (y2 >= y1))
     {
@@ -584,8 +587,9 @@ VOID KillWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
 void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
+    struct LayersBase *LayersBase = _intuitionBase->LayersBase;
     BOOL  front = TRUE;
     ULONG backdrop = LAYERBACKDROP;
     WORD  ypos = 0;
@@ -660,7 +664,8 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 
 void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
-    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);    
+    struct LayersBase *LayersBase = _intuitionBase->LayersBase;
 
     if (scr->BarLayer)
     {
@@ -680,9 +685,9 @@ void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 
 void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase)
 {
-
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
+    struct LayersBase *LayersBase = _intuitionBase->LayersBase;
     struct RastPort *rp;
 
     D(bug("[intuition] RenderScreenBar()\n"));
@@ -964,6 +969,7 @@ LONG CalcResourceHash(APTR resource)
 
 void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase)
 {
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
     struct HashNode *hn = NULL;
     LONG                 hash;
     ULONG                ilock;
@@ -990,7 +996,7 @@ void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *
     hn->resource = resource;
             
     ilock = LockIBase(0);
-    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->ResourceList[hash], (struct Node *)hn);
+    AddTail((struct List *)&_intuitionBase->ResourceList[hash], (struct Node *)hn);
     UnlockIBase(ilock);
 }
 
@@ -1030,6 +1036,7 @@ void RemoveResourceFromList(APTR resource, UWORD resourcetype, struct IntuitionB
 
 BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase)
 {
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
     struct HashNode *hn = NULL;
     LONG                 hash;
     ULONG                ilock;
@@ -1038,9 +1045,9 @@ BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *I
     hash = CalcResourceHash(resource);
     
     ilock = LockIBase(0);
-    ForeachNode((struct List *)&GetPrivIBase(IntuitionBase)->ResourceList[hash], hn)
+    ForeachNode(&_intuitionBase->ResourceList[hash], hn)
     {
-            if ((hn->resource == resource) && (hn->type == resourcetype))
+        if ((hn->resource == resource) && (hn->type == resourcetype))
         {
             exists = TRUE;
             break;
@@ -1053,7 +1060,8 @@ BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *I
 
 void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase)
 {
-    ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    ObtainSemaphoreShared(&_intuitionBase->ScreenNotificationListLock);
 
     struct ScreenNotifyMessage *msg;
     struct ReplyPort *reply;
@@ -1063,9 +1071,9 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
 
     BOOL ignorescreen = FALSE;
 
-    if (!IsListEmpty(&GetPrivIBase(IntuitionBase)->ScreenNotificationList))
+    if (!IsListEmpty(&_intuitionBase->ScreenNotificationList))
     {
-        node = GetPrivIBase(IntuitionBase)->ScreenNotificationList.lh_Head;
+        node = _intuitionBase->ScreenNotificationList.lh_Head;
         for (; node->ln_Succ; node = node->ln_Succ)
         {
             sn = (struct IntScreenNotify *) node;
@@ -1128,7 +1136,7 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
                         }
                         else
                         {
-                            msg->snm_Message.mn_ReplyPort = GetPrivIBase(IntuitionBase)->ScreenNotifyReplyPort;
+                            msg->snm_Message.mn_ReplyPort = _intuitionBase->ScreenNotifyReplyPort;
 
                             PutMsg(sn->port, (struct Message *) msg);
                         }
@@ -1154,7 +1162,7 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
             }
         }        
     }
-    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
+    ReleaseSemaphore(&_intuitionBase->ScreenNotificationListLock);
 }
 
 void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *IntuitionBase)
@@ -1172,7 +1180,8 @@ AROS_UFH3(BOOL, DefaultWindowShapeFunc,
     AROS_USERFUNC_INIT
 
     struct IntuitionBase    *IntuitionBase = (struct IntuitionBase *)hook->h_Data;
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
     struct Window               *win = (struct Window *)hook->h_SubEntry;
     struct Region               *shape;
     struct wdpWindowShape    shapemsg;

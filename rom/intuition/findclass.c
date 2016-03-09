@@ -54,6 +54,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct IntIntuitionBase *intuitionBase = GetPrivIBase(IntuitionBase);
     Class * classPtr = NULL;
 
     DEBUG_FINDCLASS(dprintf("FindClass: ClassID <%s>\n",
@@ -67,10 +68,10 @@
     D(bug("class to find: \"%s\"\n", classID));
 
     /* Lock the list */
-    ObtainSemaphoreShared (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    ObtainSemaphoreShared (&intuitionBase->ClassListLock);
 
     /* Search for the class */
-    ForeachNode (&GetPrivIBase(IntuitionBase)->ClassList, classPtr)
+    ForeachNode (&intuitionBase->ClassList, classPtr)
     {
         D(bug("+\"%s\"\n", classPtr->cl_ID));
         if (!strcmp (classPtr->cl_ID, classID))
@@ -82,7 +83,7 @@
 
 found:
     /* Unlock list */
-    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    ReleaseSemaphore (&intuitionBase->ClassListLock);
 
     DEBUG_FINDCLASS(dprintf("FindClass: return 0x%lx\n", classPtr));
 

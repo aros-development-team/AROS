@@ -181,11 +181,13 @@ void * memclr(APTR, ULONG);
 #define MENUS_BACKFILL  TRUE
 
 #define MENUS_AMIGALOOK(base)  ((GetPrivIBase(base)->IControlPrefs.ic_Flags & ICF_3DMENUS) == 0)
+
 /* --- Values --- */
 #define MENULOOK_3D            0
 #define MENULOOK_CLASSIC       1
 
 #define MENUS_UNDERMOUSE(base) (GetPrivIBase(base)->IControlPrefs.ic_Flags & ICF_POPUPMENUS)
+#define MENUS_TITLEPULL(base)  ((GetPrivIBase(base)->IControlPrefs.ic_Flags & ICF_PULLDOWNTITLEMENUS) != 0)
 
 #define AVOID_WINBORDERERASE(base) \
                                (GetPrivIBase(base)->IControlPrefs.ic_Flags & ICF_AVOIDWINBORDERERASE)
@@ -806,8 +808,8 @@ struct IntIntuiMessage
 
 #define IW(window)  	    	((struct IntWindow *) (window))    
 
-#define GetPubIBase(ib)     	((struct IntuitionBase *)ib)
-#define GetPrivIBase(ib)    	((struct IntIntuitionBase *)ib)
+#define GetPubIBase(ib)     	((struct IntuitionBase *)(ib))
+#define GetPrivIBase(ib)    	((struct IntIntuitionBase *)(ib))
 #define IBase                   GetPrivIBase(IntuitionBase)
 
 /* FIXME: Remove these #define xxxBase hacks
