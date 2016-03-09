@@ -211,7 +211,7 @@ typedef struct UtilityBase *UtilityBase_t;
 	strcpy(&dest[1], src);
 #endif
 
-static const int __nocommandline;
+static const int __nocommandline __attribute__((used));
 const TEXT version[] = "\0$VER: " PROGNAME " 50.14 (" ADATE ")";
 
 ULONG CheckDevice(char *name);
