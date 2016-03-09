@@ -98,7 +98,7 @@ IPTR ModelClass__OM_UPDATE(Class *cl, Object *o, struct opUpdate *msg)
     
     /* send OM_UPDATE to all members without mapping the tags! */
 
-    if (!IsListEmpty((struct List *)&data->memberlist))
+    if (!IsListEmpty(&data->memberlist))
     {
 	STACKULONG method = ICM_CHECKLOOP;
 

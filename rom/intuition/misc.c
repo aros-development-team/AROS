@@ -21,7 +21,8 @@
 
 void MySetPointerPos(struct IntuitionBase *IntuitionBase)
 {
-    Object *mon = GetPrivIBase(IntuitionBase)->ActiveMonitor;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    Object *mon = _intuitionBase->ActiveMonitor;
 
     if (mon)
 	DoMethod(mon, MM_SetPointerPos, IntuitionBase->MouseX, IntuitionBase->MouseY);
@@ -29,10 +30,10 @@ void MySetPointerPos(struct IntuitionBase *IntuitionBase)
 
 BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
 {
-
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
     Object *mon;
     struct SharedPointer *pointer = NULL;
-    Object *obj = GetPrivIBase(IntuitionBase)->DefaultPointer;
+    Object *obj = _intuitionBase->DefaultPointer;
     BOOL res = TRUE;
 
     if (obj)
@@ -41,9 +42,9 @@ BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
     if (!pointer)
 	return TRUE;
 
-    ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+    ObtainSemaphoreShared(&_intuitionBase->MonitorListSem);
 
-    ForeachNode(&GetPrivIBase(IntuitionBase)->MonitorList, mon) {
+    ForeachNode(&_intuitionBase->MonitorList, mon) {
 	if (!FindFirstScreen(mon, IntuitionBase)) {
 	    D(bug("[ResetPointer] Setting default pointer for monitor 0x%p\n", mon));
 	    if (!DoMethod(mon, MM_SetPointerShape, pointer))
@@ -51,7 +52,7 @@ BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
 	}
     }
 
-    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+    ReleaseSemaphore(&_intuitionBase->MonitorListSem);
 
     D(bug("[ResetPointer] Returning %d\n", res));
     return res;
@@ -59,7 +60,8 @@ BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
 
 void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *IntuitionBase)
 {
-    Object *oldmonitor = GetPrivIBase(IntuitionBase)->ActiveMonitor;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    Object *oldmonitor = _intuitionBase->ActiveMonitor;
 
     D(bug("ActivateMonitor(0x%p), old monitor 0x%p\n", newmonitor, oldmonitor));
     /* Do not bother if switching to the same monitor */
@@ -69,7 +71,7 @@ void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *I
     if (oldmonitor)
 	SetAttrs(oldmonitor, MA_PointerVisible, FALSE, TAG_DONE);
 
-    GetPrivIBase(IntuitionBase)->ActiveMonitor = newmonitor;
+    _intuitionBase->ActiveMonitor = newmonitor;
     if (newmonitor) {
 	struct Screen *scr = FindFirstScreen(newmonitor, IntuitionBase);
 	UWORD DWidth, DHeight;
@@ -120,7 +122,8 @@ struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionB
 
 struct RastPort *MyCreateRastPort(struct IntuitionBase *IntuitionBase)
 {
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
     struct RastPort *newrp = AllocMem(sizeof(*newrp), MEMF_PUBLIC);
     
     if (newrp)
@@ -200,7 +203,8 @@ BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
 struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
                                 struct TextFont **fontptr)
 {
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
     struct TextFont *ret = NULL, *font;
 
     /* Atomically lock the font before, so it can't go away
@@ -238,6 +242,7 @@ struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
 Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
     const UWORD *source, int xOffset, int yOffset, int width, int height)
 {
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
     struct TagItem pointertags[] = {
         {POINTERA_BitMap      , (IPTR)source},
         {POINTERA_XOffset     , xOffset      },
@@ -248,7 +253,7 @@ Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
         {TAG_DONE                            }
     };
 
-    return NewObjectA(GetPrivIBase(IntuitionBase)->pointerclass, NULL, pointertags);
+    return NewObjectA(_intuitionBase->pointerclass, NULL, pointertags);
 }
 
 Object *MakePointerFromPrefs(struct IntuitionBase *IntuitionBase, struct Preferences *prefs)
@@ -312,7 +317,8 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
 
 void SetPointerColors(struct IntuitionBase *IntuitionBase)
 {
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
     struct Color32 *p;
     int     	   k;
     ULONG   	   lock = LockIBase(0);
@@ -321,7 +327,7 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
 
     DEBUG_POINTER(dprintf("SetPointerColors()\n");)
 
-    p = GetPrivIBase(IntuitionBase)->Colors;
+    p = _intuitionBase->Colors;
 
     if (scr)
     {
@@ -374,7 +380,8 @@ void ObtainSharedPointer(struct SharedPointer *pointer,
 void ReleaseSharedPointer(struct SharedPointer *pointer,
                           struct IntuitionBase *IntuitionBase)
 {
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct GfxBase *GfxBase = _intuitionBase->GfxBase;
     ULONG lock = LockIBase(0);
     if (--pointer->ref_count == 0)
     {
