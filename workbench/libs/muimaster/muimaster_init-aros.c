@@ -53,5 +53,5 @@ static int MUIMasterExpunge(LIBBASETYPEPTR lh)
     return TRUE;
 }
 
-ADD2INITLIB(MUIMasterInit, 0);
-ADD2EXPUNGELIB(MUIMasterExpunge, 0);
+ADD2INITLIB(MUIMasterInit, 0)
+ADD2EXPUNGELIB(MUIMasterExpunge, 0)
