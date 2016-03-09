@@ -214,9 +214,9 @@ BOOL CmdDie(struct Handler *handler)
    LONG error = 0;
 
    root_dir = handler->root_dir;
-   if(IsListEmpty((struct List *)&root_dir->elements)
-      && IsListEmpty((struct List *)&handler->notifications)
-      && IsListEmpty((struct List *)&root_dir->notifications)
+   if(IsListEmpty(&root_dir->elements)
+      && IsListEmpty(&handler->notifications)
+      && IsListEmpty(&root_dir->notifications)
       && root_dir->lock->lock_count == 1)
       DeleteHandler(handler);
    else
