@@ -166,7 +166,13 @@
 		    if (rp->Flags & RPF_NO_PENS)
 		    {
 		    	/* Remap pixel value back from bitmap's format to ARGB8888 */
-		    	HIDDT_Pixel pixval = (tag->ti_Tag == RPTAG_FgColor) ? RP_FGCOLOR(rp) : RP_BGCOLOR(rp);
+                        HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
+		    	HIDDT_Pixel pixval;
+
+                        if (tag->ti_Tag == RPTAG_FgColor) 
+                            pixval = _gc->fg;
+                        else
+                            pixval = _gc->bg;
 
 			HIDD_BM_UnmapPixel(HIDD_BM_OBJ(rp->BitMap), pixval, &col);
 		    }
