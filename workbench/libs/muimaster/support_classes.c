@@ -130,11 +130,12 @@ Class *ZUNE_GetExternalClass(ClassID classname,
 }
 
 /**************************************************************************/
-static Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *mb)
+static Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
 {
+    struct MUIMasterBase_intern *intZuneBase = (struct MUIMasterBase_intern *)MUIMasterBase;
     Class *cl = NULL, *cl2;
 
-    ForeachNode(&MUIMB(mb)->BuiltinClasses, cl2)
+    ForeachNode(&intZuneBase->BuiltinClasses, cl2)
     {
         if (!strcmp(cl2->cl_ID, classid))
         {
