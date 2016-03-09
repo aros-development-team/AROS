@@ -58,7 +58,7 @@ void printNode(struct MidiNode *midinode,int level,int maxlevel){
 
 	if(level+1==maxlevel) return;
 
-	if( ! (IsListEmpty((struct List *)&midinode->mi_OutLinks))){
+	if( ! (IsListEmpty(&midinode->mi_OutLinks))){
 		printSpaces(level);
 		printf("  -OutLinks:\n");
 		node=midinode->mi_OutLinks.mlh_Head;
@@ -68,7 +68,7 @@ void printNode(struct MidiNode *midinode,int level,int maxlevel){
 		}
 	}
 
-	if( ! (IsListEmpty((struct List *)&midinode->mi_InLinks))){
+	if( ! (IsListEmpty(&midinode->mi_InLinks))){
 		printSpaces(level);
 		printf("  -InLinks:\n");
 		node=midinode->mi_InLinks.mlh_Head;
