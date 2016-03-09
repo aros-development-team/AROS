@@ -249,6 +249,9 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
     NEWLIST(&csd->rtglist);
     NEWLIST(&csd->bitmaplist);
+    InitSemaphore(&csd->HWLock);
+    InitSemaphore(&csd->MultiBMLock);
+    
     supportedformats = gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats);
     rescnt = 0;
     ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
@@ -671,15 +674,111 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 {
     struct uaegfx_staticdata *csd = CSD(cl);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-    struct bm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
-    struct bm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+    struct bm_data *sdata = NULL;
+    struct bm_data *ddata = NULL;
     struct RenderInfo risrc, ridst;
 
-    WaitBlitter(csd);
-    if (sdata->rgbformat != ddata->rgbformat || !sdata->invram || !ddata->invram) {
+    if (OOP_OCLASS(msg->src) == csd->bmclass) sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+    if (OOP_OCLASS(msg->dest) == csd->bmclass) ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+    
+    if (!sdata || !ddata)
+    {
+        //kprintf("==== copybox: unknown bitmap %p %p\n", sdata, ddata);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+
+    if (sdata->rgbformat != ddata->rgbformat) {
+        //kprintf("==== ocpybox: format mismatch %d %d\n", sdata->rgbformat, ddata->rgbformat);
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     	return;
     }
+
+    WaitBlitter(csd);
+    if (!sdata->invram || !ddata->invram)
+    {
+        /* Blit from VRAM to RAM or from RAM to VRAM */
+        
+#if 0
+        kprintf("== VRAM <-> RAM blit bpp %d\n", sdata->bytesperpixel);
+        kprintf("%p to %p %d,%d -> %d,%d  %d x %d  modulo %d %d\n",
+        sdata->VideoData, ddata->VideoData,
+        msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height,
+        sdata->bytesperline,
+        ddata->bytesperline);
+#endif
+        
+        if (mode == vHidd_GC_DrawMode_Copy)
+        {
+            switch(sdata->bytesperpixel)
+	    {
+	        case 1:
+	    	    HIDD_BM_CopyMemBox8(msg->dest,
+		    	    	        sdata->VideoData,
+				        msg->srcX,
+				        msg->srcY,
+				        ddata->VideoData,
+				        msg->destX,
+				        msg->destY,
+				        msg->width,
+				        msg->height,
+				        sdata->bytesperline,
+				        ddata->bytesperline);
+		    break;
+
+	        case 2:
+	    	    HIDD_BM_CopyMemBox16(msg->dest,
+		    	    	        sdata->VideoData,
+				        msg->srcX,
+				        msg->srcY,
+				        ddata->VideoData,
+				        msg->destX,
+				        msg->destY,
+				        msg->width,
+				        msg->height,
+				        sdata->bytesperline,
+				        ddata->bytesperline);
+		    break;
+
+	        case 3:
+	    	    HIDD_BM_CopyMemBox24(msg->dest,
+		    	    	        sdata->VideoData,
+				        msg->srcX,
+				        msg->srcY,
+				        ddata->VideoData,
+				        msg->destX,
+				        msg->destY,
+				        msg->width,
+				        msg->height,
+				        sdata->bytesperline,
+				        ddata->bytesperline);
+		    break;
+
+	        case 4:
+	    	    HIDD_BM_CopyMemBox32(msg->dest,
+		    	    	        sdata->VideoData,
+				        msg->srcX,
+				        msg->srcY,
+				        ddata->VideoData,
+				        msg->destX,
+				        msg->destY,
+				        msg->width,
+				        msg->height,
+				        sdata->bytesperline,
+				        ddata->bytesperline);
+		    break;
+
+    	    } /* switch(data->bytesperpix) */
+            
+            return;
+        
+        }
+        
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+
+    }
+    
     makerenderinfo(csd, &risrc, sdata);
     makerenderinfo(csd, &ridst, ddata);
     if (!BlitRectNoMaskComplete(csd, &risrc, &ridst,
@@ -1072,7 +1171,15 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     DRTG(bug("hardware sprite: %d\n", csd->hardwaresprite));
 
     csd->vram_start = (UBYTE*)gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);
+
+
+#if 1
     csd->vram_size = gl(csd->boardinfo + PSSO_BoardInfo_MemorySize);
+#else
+    /* REMOVEME: 4MB hack (used for easier debug of vram <-> ram swapping) !!!!*/
+    csd->vram_size = 4 * 1024 * 1024; /* gl(csd->boardinfo + PSSO_BoardInfo_MemorySize); */
+    /* REMOVEME: 4MB Hack (used for easier debug of vram <-> ram swapping) !!!!*/
+#endif
 
     DRTG(bug("P96RTG VRAM found at %08x size %08x\n", csd->vram_start, csd->vram_size));
     mc = (struct MemChunk*)csd->vram_start;
