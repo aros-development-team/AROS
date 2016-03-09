@@ -765,7 +765,7 @@ void doInfo()
                                 // y = ((struct DeviceList *)BADDR(id->id_VolumeNode))->dl_DiskType;
                                 
                                 // if(!y)
-                                    y = id->id_DiskType;
+                                y = id->id_DiskType;
                                 
                                 if((idn->DosType & ID_DOS_DISK) != ID_DOS_DISK)
                                     y = idn->DosType;
