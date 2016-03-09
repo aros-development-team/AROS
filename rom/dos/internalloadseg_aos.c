@@ -276,9 +276,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
           goto end;
 
-          count = AROS_BE2LONG(count);
+        count = AROS_BE2LONG(count);
 
-          D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
+        D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
           segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, count*4));
 
         if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
