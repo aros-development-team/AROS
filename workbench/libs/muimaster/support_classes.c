@@ -231,7 +231,9 @@ Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library * mb)
             ZUNE_AddBuiltinClass(cl, mb);
 
             /* Increase the reference counter */
-            cl->cl_Dispatcher.h_Data++;
+            char *count = cl->cl_Dispatcher.h_Data;
+            count++;
+            cl->cl_Dispatcher.h_Data = count;
         }
     }
 
