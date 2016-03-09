@@ -1053,22 +1053,28 @@ void PCIDev__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
                     break;
 
                 case aoHidd_PCIDevice_MemoryBase:
-                    if (dev->isBridge) setWord(cl, o, PCIBR_MEMBASE, tag->ti_Data >> 16); break;
+                    if (dev->isBridge) setWord(cl, o, PCIBR_MEMBASE, tag->ti_Data >> 16);
+                    break;
 
                 case aoHidd_PCIDevice_MemoryLimit:
-                    if (dev->isBridge) setWord(cl, o, PCIBR_MEMLIMIT, tag->ti_Data >> 16); break;
+                    if (dev->isBridge) setWord(cl, o, PCIBR_MEMLIMIT, tag->ti_Data >> 16);
+                    break;
  
                 case aoHidd_PCIDevice_PrefetchableBase:
-                    if (dev->isBridge) setWord(cl, o, PCIBR_PREFETCHBASE, tag->ti_Data >> 16); break;
+                    if (dev->isBridge) setWord(cl, o, PCIBR_PREFETCHBASE, tag->ti_Data >> 16);
+                    break;
 
                 case aoHidd_PCIDevice_PrefetchableLimit:
-                    if (dev->isBridge) setWord(cl, o, PCIBR_PREFETCHLIMIT, tag->ti_Data >> 16); break;
+                    if (dev->isBridge) setWord(cl, o, PCIBR_PREFETCHLIMIT, tag->ti_Data >> 16);
+                    break;
         
                 case aoHidd_PCIDevice_IOBase:
-                    if (dev->isBridge) setByte(cl, o, PCIBR_IOBASE, tag->ti_Data >> 8); break;
+                    if (dev->isBridge) setByte(cl, o, PCIBR_IOBASE, tag->ti_Data >> 8);
+                    break;
 
                 case aoHidd_PCIDevice_IOLimit:
-                    if (dev->isBridge) setByte(cl, o, PCIBR_IOLIMIT, tag->ti_Data >> 8); break;
+                    if (dev->isBridge) setByte(cl, o, PCIBR_IOLIMIT, tag->ti_Data >> 8);
+                    break;
 
                 case aoHidd_PCIDevice_isIO:
                     {
