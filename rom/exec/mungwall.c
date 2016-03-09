@@ -236,7 +236,8 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
  */
 void MungWall_Scan(APTR pool, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
-    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
+    struct IntExecBase *sysBase =  PrivExecBase(SysBase);
+    if (sysBase->IntFlags & EXECF_MungWall)
     {
 	struct MungwallHeader 	*allocnode;
 	struct MungwallHeader	*tmp;
@@ -245,7 +246,7 @@ void MungWall_Scan(APTR pool, struct TraceLocation *loc, struct ExecBase *SysBas
 
 	Forbid();
 
-	ForeachNodeSafe(&PrivExecBase(SysBase)->AllocMemList, allocnode, tmp)
+	ForeachNodeSafe(&sysBase->AllocMemList, allocnode, tmp)
 	{
 	    DSCAN(bug("[Mungwall] allocnode 0x%p, next 0x%p, %s(%lu)\n", allocnode, tmp, allocnode->mwh_AllocFunc, allocnode->mwh_allocsize);)
 
