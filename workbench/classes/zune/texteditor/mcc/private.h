@@ -668,7 +668,7 @@ void MoveList(struct List *to, struct List *from);
 #define RemLastLine(lines)      (struct line_node *)RemTail((struct List *)(lines))
 #define MoveLines(to, from)     MoveList((struct List *)(to), (struct List *)(from))
 #define InitLines(lines)        NewList((struct List *)(lines))
-#define ContainsLines(lines)    (IsListEmpty((struct List *)(lines)) == FALSE)
+#define ContainsLines(lines)    (IsListEmpty((lines)) == FALSE)
 
 #if defined(DEBUG)
 void DumpLine(struct line_node *line);
