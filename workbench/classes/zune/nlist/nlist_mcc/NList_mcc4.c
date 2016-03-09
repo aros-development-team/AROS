@@ -955,10 +955,14 @@ static WORD AddSpaceInfos(struct NLData *data,WORD column,WORD ni1)
         numinfo++;
       }
       else
+      {
         ni++; afinfo = &data->aff_infos[ni];
+      }
     }
     else
+    {
       ni++; afinfo = &data->aff_infos[ni];
+    }
   }
   return (numinfo);
 }
