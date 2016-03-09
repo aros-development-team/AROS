@@ -40,7 +40,7 @@
 #endif
 #define bug	kprintf
 
-static const char version[] = "$VER: demowin 41.1 (14.3.1997)\n";
+static const char version[] __attribute__((used)) = "$VER: demowin 41.1 (14.3.1997)\n";
 
 struct Device *ConsoleDevice;
 struct IntuitionBase *IntuitionBase;
