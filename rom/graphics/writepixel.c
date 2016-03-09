@@ -65,7 +65,10 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
     FIX_GFXCOORD(y);
 
     if ((rp->Flags & RPF_NO_PENS) != 0)
-        pix = RP_FGCOLOR(rp);
+    {
+        HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
+        pix = _gc->fg;
+    }
     else
         pix = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
 
