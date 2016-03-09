@@ -3713,13 +3713,13 @@ png_image_read_direct(png_voidp argument)
                filler = 255;
 
 #           ifdef PNG_FORMAT_AFIRST_SUPPORTED
-               if (format & PNG_FORMAT_FLAG_AFIRST)
-               {
-                  where = PNG_FILLER_BEFORE;
-                  change &= ~PNG_FORMAT_FLAG_AFIRST;
-               }
+            if (format & PNG_FORMAT_FLAG_AFIRST)
+            {
+               where = PNG_FILLER_BEFORE;
+               change &= ~PNG_FORMAT_FLAG_AFIRST;
+            }
 
-               else
+            else
 #           endif
                where = PNG_FILLER_AFTER;
 
@@ -3830,26 +3830,26 @@ png_image_read_direct(png_voidp argument)
          info_format |= PNG_FORMAT_FLAG_LINEAR;
 
 #     ifdef PNG_FORMAT_BGR_SUPPORTED
-         if (png_ptr->transformations & PNG_BGR)
-            info_format |= PNG_FORMAT_FLAG_BGR;
+      if (png_ptr->transformations & PNG_BGR)
+         info_format |= PNG_FORMAT_FLAG_BGR;
 #     endif
 
 #     ifdef PNG_FORMAT_AFIRST_SUPPORTED
-         if (do_local_background == 2)
-         {
-            if (format & PNG_FORMAT_FLAG_AFIRST)
-               info_format |= PNG_FORMAT_FLAG_AFIRST;
-         }
-
-         if ((png_ptr->transformations & PNG_SWAP_ALPHA) != 0 ||
-            ((png_ptr->transformations & PNG_ADD_ALPHA) != 0 &&
-            (png_ptr->flags & PNG_FLAG_FILLER_AFTER) == 0))
-         {
-            if (do_local_background == 2)
-               png_error(png_ptr, "unexpected alpha swap transformation");
-
+      if (do_local_background == 2)
+      {
+         if (format & PNG_FORMAT_FLAG_AFIRST)
             info_format |= PNG_FORMAT_FLAG_AFIRST;
-         }
+      }
+
+      if ((png_ptr->transformations & PNG_SWAP_ALPHA) != 0 ||
+         ((png_ptr->transformations & PNG_ADD_ALPHA) != 0 &&
+         (png_ptr->flags & PNG_FLAG_FILLER_AFTER) == 0))
+      {
+         if (do_local_background == 2)
+            png_error(png_ptr, "unexpected alpha swap transformation");
+
+         info_format |= PNG_FORMAT_FLAG_AFIRST;
+      }
 #     endif
 
       /* This is actually an internal error. */
