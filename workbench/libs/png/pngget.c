@@ -1100,7 +1100,7 @@ png_get_compression_buffer_size(png_const_structrp png_ptr)
       return 0;
 
 #  ifdef PNG_WRITE_SUPPORTED
-      if (png_ptr->mode & PNG_IS_READ_STRUCT)
+   if (png_ptr->mode & PNG_IS_READ_STRUCT)
 #  endif
    {
 #     ifdef PNG_SEQUENTIAL_READ_SUPPORTED
