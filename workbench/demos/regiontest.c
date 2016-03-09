@@ -14,7 +14,7 @@ struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 struct Window *win;
 
-static const char version[] = "$VER: regiontest 41.1 (14.3.1997)\n";
+static const char version[] __attribute__((used)) = "$VER: regiontest 41.1 (14.3.1997)\n";
 
 void doall(void);
 
