@@ -30,7 +30,7 @@
 #define APPNAME "ScreenGrabber"
 #define VERSION "ScreenGrabber 0.4 (29.06.2006)"
 
-static const char version[] = "$VER: " VERSION " ©2006 AROS Dev Team";
+static const char version[] __attribute__((used)) = "$VER: " VERSION " ©2006 AROS Dev Team";
 
 static Object *app, *MainWindow, *ScreenList, *FilenameString, *SaveButton, *RefreshButton, *GrabButton;
 static Object *Size, *Title, *DefTitle, *Pause, *Hide, *Progress;
