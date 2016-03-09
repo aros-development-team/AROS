@@ -449,10 +449,10 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 	return;
 
 #ifdef MORPHOS_AG_EXTENSION
-	PrepareAGExtension(td);
-	/* if sub-class setup wrong vert unit adjust here at least to font height */
-	if (fonty < td->font->tf_YSize)
-            fonty = td->font->tf_YSize;
+    PrepareAGExtension(td);
+    /* if sub-class setup wrong vert unit adjust here at least to font height */
+    if (fonty < td->font->tf_YSize)
+        fonty = td->font->tf_YSize;
 #endif
 
     if (td->use_vert_diff)
@@ -758,10 +758,10 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 	return;
 
 #ifdef MORPHOS_AG_EXTENSION
-	PrepareAGExtension(td);
-	/* if sub-class setup wrong vert unit adjust here at least to font height */
-	if (fonty < td->font->tf_YSize)
-            fonty = td->font->tf_YSize;
+    PrepareAGExtension(td);
+    /* if sub-class setup wrong vert unit adjust here at least to font height */
+    if (fonty < td->font->tf_YSize)
+        fonty = td->font->tf_YSize;
 #endif
 
     rect.MinX = td->left;
