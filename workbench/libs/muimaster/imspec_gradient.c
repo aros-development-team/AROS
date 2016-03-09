@@ -501,9 +501,12 @@ VOID zune_gradient_drawfast(struct MUI_ImageSpec_intern *spec,
         return;
     }
     if (mode == 1)
-        return FillPixelArrayGradientRelative(rp, abs_l, abs_t, abs_r,
+    {
+        FillPixelArrayGradientRelative(rp, abs_l, abs_t, abs_r,
             abs_b, x1, y1, x2 - x1 + 1, y2 - y1 + 1, start_rgb, end_rgb,
             spec->u.gradient.angle, xoff, yoff);
+        return;
+    }
 
     switch (spec->u.gradient.angle)
     {
