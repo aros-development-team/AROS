@@ -109,7 +109,7 @@ void adfVolumeInfo(struct Volume *vol)
         printf("Read/Write\n");
  	
     /* created */
-	adfDays2Date(root.coDays, &year, &month, &days);
+    adfDays2Date(root.coDays, &year, &month, &days);
     printf ("created %d/%02d/%02d %ld:%02ld:%02ld\n",days,month,year,
 	    (long)root.coMins/60,(long)root.coMins%60,(long)root.coTicks/50);	
 	adfDays2Date(root.days, &year, &month, &days);
