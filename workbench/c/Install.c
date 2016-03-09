@@ -380,7 +380,7 @@ UWORD *cmdcheck;
 				{
 					if (*cmdcheck == NSCMD_TD_READ64)
 						volume->readcommand = NSCMD_TD_READ64;
-					if (*cmdcheck == NSCMD_TD_WRITE64);
+					if (*cmdcheck == NSCMD_TD_WRITE64)
 						volume->writecommand = NSCMD_TD_WRITE64;
 				}
 				if (
