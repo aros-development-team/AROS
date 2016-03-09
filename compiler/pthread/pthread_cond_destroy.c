@@ -35,7 +35,7 @@ int pthread_cond_destroy(pthread_cond_t *cond)
     if (AttemptSemaphore(&cond->semaphore) == FALSE)
         return EBUSY;
 
-    if (!IsListEmpty((struct List *)&cond->waiters))
+    if (!IsListEmpty(&cond->waiters))
     {
         ReleaseSemaphore(&cond->semaphore);
         return EBUSY;
