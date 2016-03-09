@@ -148,4 +148,4 @@
     UNLOCKWINDOWLAYERS(window);
 #endif
     AROS_LIBFUNC_EXIT
-};
+}
