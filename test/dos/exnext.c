@@ -23,7 +23,7 @@
 #define ARG_TEMPLATE    "DIRECTORY"
 #define TOTAL_ARGS      1
 
-static const char version[] = "$VER: ExNext 41.1 (30.01.2000)\n";
+static const char version[] __attribute__((used)) = "$VER: ExNext 41.1 (30.01.2000)\n";
 
 int main(int argc, char *argv[])
 {
