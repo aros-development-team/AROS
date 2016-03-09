@@ -159,7 +159,7 @@ static struct IntuiText *displayalert_makebody(STRPTR string, struct TextAttr *f
 	    else
 		req = buildsysreq_intern(NULL, buf, body, &postext, &negtext, 0, 640, height, IntuitionBase);
 
-		if (req)
+            if (req)
 	    {
 		while ((ret = sysreqhandler_intern(req, NULL, TRUE, IntuitionBase)) == -2);
 		freesysreq_intern(req, IntuitionBase);
