@@ -961,7 +961,7 @@ void patches_init(void)
     int i;
     for (i=0; i<PATCH_last; i++)
     {
-        if (patches[i].newfunc);
+        if (patches[i].newfunc)
         {
             Forbid();
             patches[i].oldfunc = SetFunction(libbases[patches[i].libidx], patches[i].lvo, patches[i].newfunc);
