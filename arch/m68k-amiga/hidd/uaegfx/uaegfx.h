@@ -87,6 +87,9 @@ struct uaegfx_staticdata
 	struct ViewPort *viewport;
     void (*acb)(void *data, void *bm);
     APTR acbdata;
+    
+    struct SignalSemaphore HWLock;
+    struct SignalSemaphore MultiBMLock;
 };
 
 struct UAEGFXclbase
