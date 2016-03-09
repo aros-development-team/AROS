@@ -130,7 +130,7 @@
 static const int __abox__ = 1;
 static const char version[] = "\0$VER: Assign unofficial 50.9 (18.10.07) © AROS" ;
 #else
-static const char version[] = "\0$VER: Assign 50.9 (18.10.07) © AROS" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.9 (18.10.07) © AROS" ;
 #endif
 
 struct localdata
