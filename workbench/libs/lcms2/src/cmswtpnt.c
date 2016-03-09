@@ -63,9 +63,7 @@ cmsBool  CMSEXPORT cmsWhitePointFromTemp(cmsCIExyY* WhitePoint, cmsFloat64Number
     {
         x = -4.6070*(1E9/T3) + 2.9678*(1E6/T2) + 0.09911*(1E3/T) + 0.244063;
     }
-    else
-        // or for correlated color temperature (T) between 7000K and 25000K:
-
+    else // or for correlated color temperature (T) between 7000K and 25000K:
         if (T > 7000.0 && T <= 25000.0)
         {
             x = -2.0064*(1E9/T3) + 1.9018*(1E6/T2) + 0.24748*(1E3/T) + 0.237040;
@@ -75,20 +73,20 @@ cmsBool  CMSEXPORT cmsWhitePointFromTemp(cmsCIExyY* WhitePoint, cmsFloat64Number
             return FALSE;
         }
 
-        // Obtain y(x)
+    // Obtain y(x)
 
-        y = -3.000*(x*x) + 2.870*x - 0.275;
+    y = -3.000*(x*x) + 2.870*x - 0.275;
 
-        // wave factors (not used, but here for futures extensions)
+    // wave factors (not used, but here for futures extensions)
 
-        // M1 = (-1.3515 - 1.7703*x + 5.9114 *y)/(0.0241 + 0.2562*x - 0.7341*y);
-        // M2 = (0.0300 - 31.4424*x + 30.0717*y)/(0.0241 + 0.2562*x - 0.7341*y);
+    // M1 = (-1.3515 - 1.7703*x + 5.9114 *y)/(0.0241 + 0.2562*x - 0.7341*y);
+    // M2 = (0.0300 - 31.4424*x + 30.0717*y)/(0.0241 + 0.2562*x - 0.7341*y);
 
-        WhitePoint -> x = x;
-        WhitePoint -> y = y;
-        WhitePoint -> Y = 1.0;
+    WhitePoint -> x = x;
+    WhitePoint -> y = y;
+    WhitePoint -> Y = 1.0;
 
-        return TRUE;
+    return TRUE;
 }
 
 
