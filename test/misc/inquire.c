@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 
-static const char version[]= "$VER: inquire 41.1 (29.3.1997)\n\r";
+static const char version[] __attribute__((used)) = "$VER: inquire 41.1 (29.3.1997)\n\r";
 
 struct Library *ArosBase;
 
