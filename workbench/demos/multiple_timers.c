@@ -146,5 +146,5 @@ if ((TimerMP = CreatePort(0,0)))
 else
     printf("\nError: Could not CreatePort\n");
 
-    return 0;
+return 0;
 }
