@@ -7,7 +7,7 @@
 */
 #include <stdio.h>
 
-static const char version[] = "$VER: helloworld 41.1 (14.3.1997)\n";
+static const char version[] __attribute__((used)) = "$VER: helloworld 41.1 (14.3.1997)\n";
 
 int main (int argc, char ** argv)
 {
