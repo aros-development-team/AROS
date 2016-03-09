@@ -11,11 +11,43 @@ include $(TOP)/config/make.cfg
 LINKLIBFILES := pthread sched semaphore
 LIBRARYFILES := 
 
+PTHREADFUNCS :=  \
+    pthread_create \
+    pthread_cancel \
+    pthread_equal \
+    pthread_join \
+    pthread_self \
+    pthread_suspend_np \
+    pthread_continue_np \
+    pthread_setcancelstate \
+    pthread_setcanceltype \
+    pthread_attr_destroy \
+    pthread_attr_init \
+    pthread_attr_setstacksize \
+    pthread_cond_destroy \
+    pthread_cond_init \
+    pthread_cond_signal \
+    pthread_cond_timedwait \
+    pthread_mutex_init \
+    pthread_mutex_destroy \
+    pthread_mutex_lock \
+    pthread_mutex_unlock \
+    pthread_mutexattr_destroy \
+    pthread_mutexattr_init \
+    pthread_mutexattr_settype \
+    pthread_exit \
+    pthread_getspecific \
+    pthread_setspecific \
+    pthread_key_create \
+    pthread_cond_broadcast \
+    pthread_cond_wait \
+    pthread_mutex_trylock
+
 #%build_module mmake=compiler-pthread \
 #    modname=pthread modtype=library \
-#    files=$(LIBRARYFILES) \
+#    files="$(LIBRARYFILES) $(PTHREADFUNCS)" \
 #    linklibfiles=$(LINKLIBFILES)
 
 %build_linklib mmake=linklibs-pthread \
     libname=pthread \
-    files=$(LINKLIBFILES)
+    files="$(LINKLIBFILES) $(PTHREADFUNCS)"
