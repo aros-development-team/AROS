@@ -629,8 +629,8 @@ void main_open_menu(void)
 {
     static char dirpart[500]="ENVARC:Zune",filepart[500],filename[1000];
 
-    if (aslfilerequest ("Load a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename, prefstags));
-    {   
+    if (aslfilerequest ("Load a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename, prefstags))
+    {
         Object *configdata;
 
         configdata = MUI_NewObject(MUIC_Configdata,
@@ -711,7 +711,7 @@ void main_saveas_menu(void)
 {
     static char dirpart[500]="ENVARC:Zune",filepart[500],filename[1000];
 
-    if (aslfilerequest("Save a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename, prefstags));
+    if (aslfilerequest("Save a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename, prefstags))
     {   
         Object *configdata;
 
