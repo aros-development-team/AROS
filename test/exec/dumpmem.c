@@ -72,7 +72,7 @@ static int HexDump(const UBYTE *data, ULONG count)
     return RETURN_OK;
 } /* HexDump */
 
-static const char version[] = "$VER: dumpmem 45.1 (10.4.2014)\n";
+static const char version[] __attribute__((used)) = "$VER: dumpmem 45.1 (10.4.2014)\n";
 
 #define ARG_TEMPLATE "ADDRESS/A,SIZE/N/A,SERIAL/S,QUIET/S"
 
