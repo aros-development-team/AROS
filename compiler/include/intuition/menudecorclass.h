@@ -74,7 +74,7 @@ struct mdpDrawSysImage
 
 struct mdpGetMenuSpaces
 {
-    STACKED LONG        MethodID;
+    STACKED ULONG        MethodID;
     STACKED BYTE        mdp_TrueColor;
     STACKED LONG        mdp_InnerLeft;      /* Out */
     STACKED LONG        mdp_InnerTop;     /* Out */
@@ -110,7 +110,7 @@ struct mdpDrawBackground
 
 struct mdpInitMenu
 {
-    STACKED LONG            MethodID;
+    STACKED ULONG            MethodID;
     STACKED BYTE            mdp_TrueColor;
     STACKED struct RastPort *mdp_RPort;
     STACKED struct Screen   *mdp_Screen;
@@ -125,7 +125,7 @@ struct mdpInitMenu
 
 struct mdpExitMenu
 {
-    STACKED LONG        MethodID;
+    STACKED ULONG        MethodID;
     STACKED BYTE        mdp_TrueColor;
     STACKED IPTR        mdp_UserBuffer;
     
