@@ -110,7 +110,7 @@ int compare(struct sorted_data * sd1,
                            sd1->data+col,
                            sd2->data+col,
                            1,
-                           SC_COLLATE2))); 
+                           SC_COLLATE2)))
           break;
       }
       else
