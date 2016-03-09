@@ -255,7 +255,7 @@ BOOL AttemptDeleteObject(struct Handler *handler, struct Object *object,
 
       object_type = ((struct Node *)object)->ln_Pri;
       if(object_type == ST_USERDIR && object->hard_link.mln_Succ == NULL
-         && !IsListEmpty((struct List *)&object->elements))
+         && !IsListEmpty(&object->elements))
          error = ERROR_DIRECTORY_NOT_EMPTY;
 
       /* Ensure the object either isn't in use or is only a link */
