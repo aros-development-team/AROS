@@ -64,7 +64,7 @@ CONST struct Preferences IntuitionDefaultPreferences =
     0,      // ViewInitX
     0,      // ViewINitY
 
-    MOUSE_ACCEL,      // EnableCLI
+    (BOOL)MOUSE_ACCEL,      // EnableCLI
 
     0,      // PointerType
     {
