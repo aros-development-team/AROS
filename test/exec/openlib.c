@@ -25,7 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static const char version[] = "$VER: openlib.c 45.0 (16.1.2004)\n";
+static const char version[] __attribute__((used)) = "$VER: openlib.c 45.0 (16.1.2004)\n";
 
 #define ARG_TEMPLATE "LIBRARY/A,DIRTY/S"
 
