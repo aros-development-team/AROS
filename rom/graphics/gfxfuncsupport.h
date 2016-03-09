@@ -109,7 +109,7 @@ do                                  \
  * longreserved[1] - Embedded hidd.graphics.gc object starts here
  */
 
-#define RP_GC(rp)	    ((APTR)&((rp)->longreserved[1]))
+#define RP_GC(rp)	    (&((rp)->longreserved[1]))
 #define RP_FGCOLOR(rp)	    GC_FG(RP_GC(rp))
 #define RP_BGCOLOR(rp)	    GC_BG(RP_GC(rp))
 
@@ -132,7 +132,7 @@ struct render_special_info
     struct BitMap *curbm;
 };
 
-#define RSI(x) ((struct render_special_info *)x)
+#define RSI(x) ((struct render_special_info *)(x))
 
 /* A Pointer to this struct is stored in each RastPort->longreserved[0] */
 
