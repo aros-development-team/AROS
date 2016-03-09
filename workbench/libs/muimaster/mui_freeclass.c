@@ -54,8 +54,9 @@
     if (cl->cl_Flags & CLF_INLIST)
     {
         Class *super = cl->cl_Super;
+        char *count = (char *)cl->cl_Dispatcher.h_Data;
 
-        if (--cl->cl_Dispatcher.h_Data == 0)
+        if (--count == 0)
         {
               ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
 
@@ -71,9 +72,10 @@
                 ZUNE_AddBuiltinClass(cl, MUIMasterBase);
 
                 /* And also increase the reference counter again */
-                cl->cl_Dispatcher.h_Data++;
+                count++;
             }
         }
+        cl->cl_Dispatcher.h_Data = count;
 
         ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     }
