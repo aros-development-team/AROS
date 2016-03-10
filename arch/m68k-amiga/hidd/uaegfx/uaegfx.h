@@ -106,6 +106,12 @@ struct UAEGFXclbase
 #define SysBase         (csd->cs_SysBase)
 #define OOPBase         (csd->cs_OOPBase)
 
+#define LOCK_HW         {ObtainSemaphore(&(csd)->HWLock);}
+#define UNLOCK_HW       {ReleaseSemaphore(&(csd)->HWLock);}
+
+#define LOCK_MULTI_BITMAP   {ObtainSemaphore(&(csd)->MultiBMLock);}
+#define UNLOCK_MULTI_BITMAP {ReleaseSemaphore(&(csd)->MultiBMLock);}
+
 /* Private instance data for Gfx hidd class */
 struct gfx_data
 {
