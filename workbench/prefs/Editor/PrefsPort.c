@@ -120,7 +120,9 @@ void handle_port( void )
 			case CMD_SHOW: setup_guipref(); break;
 			case CMD_KILL:
 				/* Close preference tool only if it's associated to jano */
-				if( !ConfigFile ) close_prefwnd(0); break;
+				if( !ConfigFile )
+                                    close_prefwnd(0);
+				break;
 		}
 		ReplyMsg((struct Message *)msg);
 	}
