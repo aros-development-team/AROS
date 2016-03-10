@@ -176,7 +176,7 @@ FILE *popen(const char *cmd, const char *mode)
        passed in the startup message.
     */
     child = CreateNewProcTags(
-        NP_Entry,   (Tag) childprocess,
+        NP_Entry,   (IPTR) childprocess,
         NP_Input,   Input(),
         NP_Output,  Output(),
         NP_CloseInput,  FALSE,
