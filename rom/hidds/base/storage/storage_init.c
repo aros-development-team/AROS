@@ -42,8 +42,9 @@ static int Storage_Init(LIBBASETYPEPTR LIBBASE)
 static int Storage_Expunge(LIBBASETYPEPTR LIBBASE)
 {
     struct class_static_data *csd = &LIBBASE->hsi_csd;
+#if (0)
     struct Library *OOPBase = csd->cs_OOPBase;
-    
+#endif
     D(bug("[HiddStorage] %s(csd=%p)\n", __PRETTY_FUNCTION__, csd));
     
     return TRUE;
