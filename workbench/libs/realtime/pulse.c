@@ -77,7 +77,7 @@ AROS_UFH3(void, Pulse,
 
 	lock = LockRealTime(RT_CONDUCTORS);
 
-	ForeachNode(&GPB(RealTimeBase)->rtb_ConductorList, conductor)
+	ForeachNode(&RealTimeBase->rtb_ConductorList, conductor)
 	{
 	    if (conductor->cdt_State == CONDSTATE_RUNNING)
 	    {
