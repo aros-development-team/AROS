@@ -32,16 +32,16 @@ __END_DECLS
 #endif
 
 /* constants for Tag.ti_Tag, control tag values */
-#define TAG_DONE   (0L)   /* terminates array of TagItems. ti_Data unused */
-#define TAG_END    (0L)   /* synonym for TAG_DONE                         */
-#define TAG_IGNORE (1L)   /* ignore this item, not end of array           */
-#define TAG_MORE   (2L)   /* ti_Data is pointer to another array of TagItems
+#define TAG_DONE   (0UL)   /* terminates array of TagItems. ti_Data unused */
+#define TAG_END    (0UL)   /* synonym for TAG_DONE                         */
+#define TAG_IGNORE (1UL)   /* ignore this item, not end of array           */
+#define TAG_MORE   (2UL)   /* ti_Data is pointer to another array of TagItems
 			     note that this tag terminates the current array */
-#define TAG_SKIP   (3L)   /* skip this and the next ti_Data items         */
+#define TAG_SKIP   (3UL)   /* skip this and the next ti_Data items         */
 
 /* What separates user tags from system tags */
-#define TAG_USER    ((STACKULONG)(1L<<31))
-#define TAG_OS	    (16L)   /* The first tag used by the OS */
+#define TAG_USER    ((STACKULONG)(1UL<<31))
+#define TAG_OS	    (16UL)   /* The first tag used by the OS */
 
 /* Tag-Offsets for the OS */
 #define DOS_TAGBASE	    (TAG_OS)        /* Reserve 16k tags for DOS */
