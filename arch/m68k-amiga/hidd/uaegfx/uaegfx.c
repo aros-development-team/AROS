@@ -694,6 +694,11 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     	return;
     }
 
+    LOCK_MULTI_BITMAP
+    LOCK_BITMAP(sdata)
+    LOCK_BITMAP(ddata)
+    UNLOCK_MULTI_BITMAP
+
     WaitBlitter(csd);
     if (!sdata->invram || !ddata->invram)
     {
@@ -770,21 +775,27 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
     	    } /* switch(data->bytesperpix) */
             
-            return;
-        
+        } /* if (mode == vHidd_GC_DrawMode_Copy) */
+        else
+        {
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
-        
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        return;
+    } /* if (!sdata->invram || !ddata->invram) */
+    else
+    {
 
+        makerenderinfo(csd, &risrc, sdata);
+        makerenderinfo(csd, &ridst, ddata);
+        
+        if (!BlitRectNoMaskComplete(csd, &risrc, &ridst,
+    	    msg->srcX, msg->srcY, msg->destX, msg->destY,
+    	    msg->width, msg->height, modetable[mode], sdata->rgbformat))
+    	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
-    makerenderinfo(csd, &risrc, sdata);
-    makerenderinfo(csd, &ridst, ddata);
-    if (!BlitRectNoMaskComplete(csd, &risrc, &ridst,
-    	msg->srcX, msg->srcY, msg->destX, msg->destY,
-    	msg->width, msg->height, modetable[mode], sdata->rgbformat))
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    UNLOCK_BITMAP(sdata)
+    UNLOCK_BITMAP(ddata)
+
 }
 
 BOOL UAEGFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
