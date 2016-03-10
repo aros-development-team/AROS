@@ -72,10 +72,10 @@ static VOID UnitTask(struct ExecBase *sys_base);
 UWORD ReadMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
    struct DevBase *base);
 
-
+#if !defined(__AROS__)
 static const UBYTE broadcast_address[] =
    {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-
+#endif
 
 #ifdef __AROS__
 #undef AddTask
