@@ -254,6 +254,11 @@
         WBENCHSCREEN,   /* Type */
         NULL        	/* Extension (taglist) */
     };
+    struct TagItem tags[2] =
+    {
+        {WA_AutoAdjust, TRUE 	},
+        {TAG_END,       0       }
+    };
     struct Window       *window;
 
     DEBUG_OPENWINDOWTAGLIST(dprintf("OpenWindowTagList: NewWindow 0x%lx TagList 0x%lx\n",
@@ -276,12 +281,6 @@
     }
     else
     {
-        struct TagItem tags[2] =
-        {
-            {WA_AutoAdjust  ,  TRUE 	},
-            {TAG_END	    ,       0}
-        };
-
         nw.Extension = tags;
         nw.Flags |= WFLG_NW_EXTENDED;
 
