@@ -4,7 +4,9 @@
  * details.  THERE IS ABSOLUTELY NO WARRANTY FOR THIS SOFTWARE.
  */
 
+#if !defined(__AROS__)
 static char const	ident[] = "$Header: /cvsroot/sox/sox/src/gsm/gsm_create.c,v 1.1 2001/11/14 03:31:26 cbagwell Exp $";
+#endif
 
 #include <string.h>
 #include <stdlib.h>
