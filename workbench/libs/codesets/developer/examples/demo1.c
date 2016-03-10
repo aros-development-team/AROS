@@ -427,8 +427,8 @@ meditorLoad(struct IClass *cl,Object *obj,struct MUIP_Editor_Load *msg)
                                     codeset = CodesetsFindA(cname,NULL);
 
                                     /* Convert */
-                                    str = CodesetsUTF8ToStr(CSA_Source,        (Tag)buf,
-                                                            CSA_SourceCodeset, (Tag)codeset,
+                                    str = CodesetsUTF8ToStr(CSA_Source,        (IPTR)buf,
+                                                            CSA_SourceCodeset, (IPTR)codeset,
                                                             TAG_DONE);
                                     if (str)
                                     {
@@ -484,9 +484,9 @@ meditorSave(struct IClass *cl, Object *obj, UNUSED Msg msg)
         codeset = CodesetsFindA(cname,NULL);
 
         /* Convert text as utf8 */
-        if((utf8 = CodesetsUTF8Create(CSA_Source,         (Tag)text,
-                                      CSA_SourceCodeset,  (Tag)codeset,
-                                      CSA_DestLenPtr,     (Tag)&dlen,
+        if((utf8 = CodesetsUTF8Create(CSA_Source,         (IPTR)text,
+                                      CSA_SourceCodeset,  (IPTR)codeset,
+                                      CSA_DestLenPtr,     (IPTR)&dlen,
                                       TAG_DONE)))
         {
             /* Save converted text to a file */
