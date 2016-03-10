@@ -12,7 +12,7 @@ struct TagItem *LibNextTagItem(struct TagItem **tagListPtr)
 
     while(1)
     {
-        switch((*tagListPtr)->ti_Tag)
+        switch((ULONG)((*tagListPtr)->ti_Tag))
         {
             case TAG_MORE:
                 if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
