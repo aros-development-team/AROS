@@ -418,10 +418,14 @@ BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
     struct uaegfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
 
+    LOCK_BITMAP(data)
+    
+#if 0
     if (!data->invram) {
 	if (!movebitmaptovram(csd, data))
 	    return FALSE;
     }
+#endif
 
     *msg->addressReturn = data->VideoData;
     *msg->widthReturn = data->width;
@@ -430,13 +434,17 @@ BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
     *msg->bankSizeReturn = *msg->memSizeReturn = data->bytesperline * data->height;
     data->locked++;
     WaitBlitter(csd);
+    
     return TRUE;
 }
 
 VOID UAEGFXBitmap__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
 {
+    struct uaegfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     data->locked--;
+    
+    UNLOCK_BITMAP(data)
 }
 
 BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
@@ -468,6 +476,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     HIDDT_Pixel       pixel = msg->pixel;
     UBYTE   	      *mem;
     
+    LOCK_BITMAP(data)
+    
     WaitBlitter(csd);
     offset = (msg->x * data->bytesperpixel) + (msg->y * data->bytesperline);
     mem = data->VideoData + offset;
@@ -493,6 +503,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 	    break;
     }
     
+    UNLOCK_BITMAP(data)
+    
     return;
 }
 
@@ -506,6 +518,8 @@ ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
     HIDDT_Pixel     	 pixel = 0;
     ULONG   	    	 offset;
     UBYTE   	    	*mem;
+    
+    LOCK_BITMAP(data)
     
     WaitBlitter(csd);
     offset = (msg->x * data->bytesperpixel)  +(msg->y * data->bytesperline);
@@ -531,6 +545,8 @@ ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 	    
     }
     
+    UNLOCK_BITMAP(data)
+    
     return pixel;
 }
 
@@ -552,6 +568,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_BITMAP(data)
+    
     WaitBlitter(csd);
     switch(msg->pixFmt)
     {
@@ -687,7 +705,9 @@ VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
 	    }		
 	    break;
 	    
-    } /* switch(msg->pixFmt) */	    
+    } /* switch(msg->pixFmt) */
+    
+    UNLOCK_BITMAP(data)
 }
 
 /****************************************************************************************/
@@ -698,6 +718,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_BITMAP(data)
+    
     WaitBlitter(csd);
     switch(msg->pixFmt)
     {
@@ -833,7 +855,9 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 	    }
 	    break;
 	    
-    } /* switch(msg->pixFmt) */	    
+    } /* switch(msg->pixFmt) */	  
+    
+    UNLOCK_BITMAP(data)  
 }
 
 /****************************************************************************************/
@@ -844,6 +868,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_BITMAP(data)
+    
     WaitBlitter(csd);
     switch(data->bytesperpixel)
     {
@@ -896,7 +922,9 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	    break;
 
-    } /* switch(data->bytesperpix) */	    
+    } /* switch(data->bytesperpix) */	 
+    
+    UNLOCK_BITMAP(data)   
 }
 
 /****************************************************************************************/
@@ -921,6 +949,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     struct RenderInfo ri;
     BOOL v = FALSE;
 
+    LOCK_BITMAP(data)
+    
     WaitBlitter(csd);
     maybeputinvram(csd, data);
     if (data->invram) {
@@ -935,9 +965,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 	}
     }
     
-    if (v) return;
-
-    switch(mode)
+    if (!v) switch(mode)
     {
         case vHidd_GC_DrawMode_Copy:
 	    switch(data->bytesperpixel)
@@ -1004,6 +1032,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 	    break;
 	    
     } /* switch(mode) */
+    
+    UNLOCK_BITMAP(data)
 
 }
 
@@ -1020,6 +1050,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     struct RenderInfo ri;
     UBYTE drawmode;
     BOOL v = FALSE;
+    
+    LOCK_BITMAP(data)
     
     WaitBlitter(csd);
 
@@ -1090,9 +1122,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 	}
     }
 
-    if (v) return;
-    
-    switch(data->bytesperpixel)
+    if (!v) switch(data->bytesperpixel)
     {
 	case 1:
 	    HIDD_BM_PutMemPattern8(o,
@@ -1183,6 +1213,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     	    break;
 	    
     } /* switch(data->bytesperpixel) */
+    
+    UNLOCK_BITMAP(data)
 
 }
 
@@ -1199,6 +1231,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     UBYTE drawmode;
     BOOL v = FALSE;
     
+    LOCK_BITMAP(data)
+    
     WaitBlitter(csd);
     maybeputinvram(csd, data);
     if (data->invram) {
@@ -1212,18 +1246,18 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 	if (msg->inverttemplate)
 	     drawmode |= INVERSVID;
 
-	tmpl.Memory = msg->masktemplate;
+        /* tmpl.XOffset has only UBYTE size so we must fix params up [1] [2] */
+        
+	tmpl.Memory = msg->masktemplate + ((msg->srcx / 8) & ~1); /* [1] */
 	tmpl.BytesPerRow = msg->modulo;
-	tmpl.XOffset = msg->srcx;
+	tmpl.XOffset = msg->srcx & 0XF; /* [2] */
 	tmpl.DrawMode = drawmode;
 	tmpl.FgPen = fg;
 	tmpl.BgPen = bg;
 	v = BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
     }
     
-    if (v) return;
-
-    switch(data->bytesperpixel)
+    if (!v) switch(data->bytesperpixel)
     {
 	case 1:
 	    HIDD_BM_PutMemTemplate8(o,
@@ -1290,6 +1324,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     	    break;
 	    
     } /* switch(data->bytesperpixel) */
+    
+    UNLOCK_BITMAP(data)
     
 }
 

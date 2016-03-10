@@ -30,4 +30,7 @@ struct bm_data
     WORD locked;
 };
 
+#define LOCK_BITMAP(data)   {ObtainSemaphore(&(data)->bmLock);}
+#define UNLOCK_BITMAP(data) {ReleaseSemaphore(&(data)->bmLock);}
+
 #endif
