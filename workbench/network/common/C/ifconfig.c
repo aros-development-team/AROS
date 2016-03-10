@@ -1188,9 +1188,10 @@ in_status(force)
 		if (errno != EADDRNOTAVAIL)
 			warn("SIOCGIFNETMASK");
 		(void) memset(&ifr.ifr_addr, 0, sizeof(ifr.ifr_addr));
-	} else
-		netmask.sin_addr =
-		    ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr;
+	} else {
+		struct sockaddr_in *nm_sin = (struct sockaddr_in *)&ifr.ifr_addr;
+		netmask.sin_addr = nm_sin->sin_addr;
+        }
 	if (flags & IFF_POINTOPOINT) {
 		if (IoctlSocket(s, SIOCGIFDSTADDR, (caddr_t)&ifr) < 0) {
 			if (errno == EADDRNOTAVAIL)
