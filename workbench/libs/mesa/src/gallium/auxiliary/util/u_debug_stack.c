@@ -51,7 +51,7 @@ debug_backtrace_capture(struct debug_stack_frame *backtrace,
 #if defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86)
    __asm__ __volatile__("mov (%%ebp),%0": "=r" (frame_pointer));
    frame_pointer = (const void **)frame_pointer[0];
-#elif defined(PIPE_CC_GCC)
+#elif defined(PIPE_CC_GCC) && (0)
    frame_pointer = ((const void **)__builtin_frame_address(1));
 #elif defined(PIPE_CC_MSVC) && defined(PIPE_ARCH_X86)
    __asm {
