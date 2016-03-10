@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-static const char copyright[] =
+static const char copyright[] __attribute__((used)) =
 "$VER: logger v1.0"
 "Copyright (c) 1983, 1993 The Regents of the University of California.  All rights reserved.\n"
 "Copygigjt (c) 2005 - 2006 Pavel Fedin";
