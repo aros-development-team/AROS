@@ -7019,7 +7019,7 @@ AROS_LH0(void, psdParseCfg,
             psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Delaying further execution by %ld second(s) (boot delay).",
                                ps->ps_GlobalCfg->pgc_BootDelay);
-            if(ps->ps_GlobalCfg->pgc_BootDelay >= 1);
+            if(ps->ps_GlobalCfg->pgc_BootDelay >= 1)
             {
                 psdDelayMS((ps->ps_GlobalCfg->pgc_BootDelay-1)*1000);
             }
