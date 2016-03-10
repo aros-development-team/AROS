@@ -46,7 +46,7 @@
  * IF IBM IS APPRISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
-#if !defined(LINT) && !defined(CODECENTER)
+#if !defined(LINT) && !defined(CODECENTER) && !defined(__AROS__)
 static const char rcsid[] = "$Id$";
 #endif /* not lint */
 
