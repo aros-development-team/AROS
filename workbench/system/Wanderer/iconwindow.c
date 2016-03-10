@@ -946,7 +946,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         {
         case MUIA_Window_Screen:
             D(bug("[Wanderer:IconWindow] %s: MUIA_Window_Screen [screen @ %p]\n", __PRETTY_FUNCTION__, tag->ti_Data));
-            data->iwd_Screen = (struct Screen *) tag->ti_Tag;
+            data->iwd_Screen = (struct Screen *) tag->ti_Data;
             break;
 
         case MUIA_ShowMe:
