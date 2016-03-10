@@ -386,17 +386,17 @@ static void trace_connect_input (trace_type_t *ttype,
 			(ntohs (remote.sin_port) ==
 			 lp -> connect_list -> addresses [i].port))
 			lp -> state = omapi_connection_connected;
-			lp -> remote_addr = remote;
-			lp -> remote_addr.sin_family = AF_INET;
+		    lp -> remote_addr = remote;
+		    lp -> remote_addr.sin_family = AF_INET;
 #if defined (HAVE_SIN_LEN)
-			lp -> remote_addr.sin_len = sizeof remote;
+		    lp -> remote_addr.sin_len = sizeof remote;
 #endif
-			omapi_addr_list_dereference (&lp -> connect_list, MDL);
-			lp -> index = connect_index;
-			status = omapi_signal_in ((omapi_object_t *)lp,
+		    omapi_addr_list_dereference (&lp -> connect_list, MDL);
+		    lp -> index = connect_index;
+		    status = omapi_signal_in ((omapi_object_t *)lp,
 						  "connect");
-			omapi_connection_dereference (&lp, MDL);
-			return;
+		    omapi_connection_dereference (&lp, MDL);
+		    return;
 		}
 	} omapi_array_foreach_end (omapi_connections,
 				   omapi_connection_object_t, lp);
