@@ -1,4 +1,4 @@
-#ifndef LINT
+#if !defined(LINT) && !defined(__AROS__)
 static const char rcsid[] = "$Header: /cvsroot/unmorphos/ezTCP/dhcp/dst/prandom.c,v 1.1.1.1 2005/12/07 10:50:33 sonic_amiga Exp $";
 #endif
 /*

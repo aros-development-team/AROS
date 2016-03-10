@@ -1,5 +1,6 @@
+#if !defined(__AROS__)
 static const char rcsid[] = "$Header: /cvsroot/unmorphos/ezTCP/dhcp/dst/dst_support.c,v 1.1.1.1 2005/12/07 10:50:33 sonic_amiga Exp $";
-
+#endif
 
 /*
  * Portions Copyright (c) 1995-1998 by Trusted Information Systems, Inc.
