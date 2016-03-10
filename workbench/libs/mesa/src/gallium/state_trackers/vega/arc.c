@@ -41,8 +41,9 @@
 
 #define DEBUG_ARCS 0
 
+#if !defined(__AROS__)
 static const VGfloat two_pi = M_PI * 2;
-
+#endif
 
 static const double coeffs3Low[2][4][4] = {
    {
