@@ -53,7 +53,7 @@
 	struct MidiLink *midilink;
 
 	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
-		if( ! (IsListEmpty((struct List *)&midinode->mi_OutLinks))){
+		if( ! (IsListEmpty(&midinode->mi_OutLinks))){
 			node=midinode->mi_OutLinks.mlh_Head;
 			while(node->mln_Succ!=NULL){
 				temp=node->mln_Succ;
@@ -67,7 +67,7 @@
 				node=temp;
 			}
 		}
-		if( ! (IsListEmpty((struct List *)&midinode->mi_InLinks))){
+		if( ! (IsListEmpty(&midinode->mi_InLinks))){
 			node=midinode->mi_InLinks.mlh_Head;
 			while(node->mln_Succ!=NULL){
 				temp=node->mln_Succ;
