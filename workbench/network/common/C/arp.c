@@ -35,7 +35,7 @@
  * Cleaned up code, fixed close() bug.
  */
 
-static const char version[] = "$VER: arp 3.2 (12.09.2005) "
+static const char version[] __attribute__((used)) = "$VER: arp 3.2 (12.09.2005) "
   "Copyright © 2005 Pavel Fedin <sonic_amiga@rambler.ru>\n"
   "Copyright © 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>\n"
   "Helsinki University of Technology, Finland.\n"
