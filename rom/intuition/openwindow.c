@@ -188,10 +188,10 @@ WFLG_WINDOWACTIVE )
         {
             /* ASSERT_VALID_PTR_ROMOK(tag); */
 
-            DEBUG_OPENWINDOW(dprintf("OpenWindow: Tag 0x%08lx 0x%08lx\n",
-                         tag->ti_Tag, tag->ti_Data));
+            DEBUG_OPENWINDOW(dprintf("OpenWindow: Tag 0x%08lx 0x%p\n",
+                         (ULONG)tag->ti_Tag, tag->ti_Data));
 
-            switch (tag->ti_Tag)
+            switch ((ULONG)tag->ti_Tag)
             {
             case WA_Left:
                 nw.LeftEdge     = tag->ti_Data;
