@@ -92,7 +92,7 @@ void action(void)
 	    
 	    while((tag = NextTagItem(&tstate)))
 	    {
-	    	printf(" {%08x,%p}\n", tag->ti_Tag, (void *)tag->ti_Data);
+	    	printf(" {%08x,%p}\n", (unsigned)tag->ti_Tag, (void *)tag->ti_Data);
 	    }
 	}
 }
