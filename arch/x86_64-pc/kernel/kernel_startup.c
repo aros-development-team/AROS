@@ -402,7 +402,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     ranges[1] = (UWORD *)kick_highest;
     krnPrepareExecBase(ranges, mh, BootMsg);
 
-    krnCreateROMHeader("Kickstart ROM", klo, kick_highest);
+    krnCreateROMHeader("Kickstart ROM", (APTR)klo, (APTR)kick_highest);
 
     /*
      * Now we have working exec.library memory allocator.
