@@ -2,6 +2,8 @@
 
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := -D__NOLIBBASE__
+
 USER_LDFLAGS := -static
 
 FILES := cache direntry date disk fat file lock main names notify ops packet\
