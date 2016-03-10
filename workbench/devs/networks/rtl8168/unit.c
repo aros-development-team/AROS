@@ -430,9 +430,9 @@ RTLD(bug("[%s] output queue full!. Stopping [count = %d, NUM_TX_DESC = %d\n", un
     else
 	unit->rtl8168u_request_ports[WRITE_QUEUE]->mp_Flags = PA_IGNORE;
 
-	return FALSE;
+    return FALSE;
 
-	AROS_INTFUNC_EXIT;
+    AROS_INTFUNC_EXIT;
 }
 
 /*
