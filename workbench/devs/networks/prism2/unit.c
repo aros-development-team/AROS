@@ -121,7 +121,9 @@ static UPINT StrLen(const TEXT *s);
 
 static const UBYTE snap_template[] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00};
 static const UBYTE scan_params[] = {0xff, 0x3f, 0x01, 0x00, 0x00, 0x00};
- static const TEXT options_name[] = "Prism 2 options";
+#if !defined(__AROS__)
+static const TEXT options_name[] = "Prism 2 options";
+#endif
 static const TEXT h1_firmware_file_name[] = "DEVS:Firmware/HermesI";
 static const TEXT h2_firmware_file_name[] = "DEVS:Firmware/HermesII";
 static const TEXT h25_firmware_file_name[] = "DEVS:Firmware/HermesII.5";
