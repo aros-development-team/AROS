@@ -79,10 +79,10 @@ int main(int argc, char **argv)
           {
             fread(buf, BUF_SIZE-1, 1, f);
             fclose(f);
-            destbuf = CodesetsConvertStr(CSA_SourceCodeset, (Tag)srcCodeset,
-                                         CSA_DestCodeset, (Tag)destCodeset,
-                                         CSA_Source, (Tag)buf,
-                                         CSA_DestLenPtr, (Tag)&destlen,
+            destbuf = CodesetsConvertStr(CSA_SourceCodeset, (IPTR)srcCodeset,
+                                         CSA_DestCodeset, (IPTR)destCodeset,
+                                         CSA_Source, (IPTR)buf,
+                                         CSA_DestLenPtr, (IPTR)&destlen,
                                          TAG_DONE);
             if (destbuf)
             {
