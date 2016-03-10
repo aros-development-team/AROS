@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 
                 if(WindowSignal & WindowMask)
                 {
-                    while(KomIDCMP=GT_GetIMsg(MainWindow->UserPort))
+                    while((KomIDCMP=GT_GetIMsg(MainWindow->UserPort)))
                     {
                         CopyMem(KomIDCMP,&CopyIDCMP,sizeof(struct IntuiMessage));
                         GT_ReplyIMsg(KomIDCMP);
@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
 
                 if(WindowSignal & MenuMask)
                 {
-                    while(KomIDCMP=GT_GetIMsg(MenuWindow->UserPort))
+                    while((KomIDCMP=GT_GetIMsg(MenuWindow->UserPort)))
                     {
                         CopyMem(KomIDCMP,&CopyIDCMP,sizeof(struct IntuiMessage));
                         GT_ReplyIMsg(KomIDCMP);
@@ -417,7 +417,7 @@ static BOOL ReadPrefs(void)
             return FALSE;
         }
 
-        if(MyScreen=LockPubScreen(NULL))
+        if((MyScreen=LockPubScreen(NULL)))
         {
             while(FGets(Prefs, Icons[IconCounter].Icon_Path, 255) )    //&& IconCounter < SUM_ICON)
             {
@@ -444,9 +444,9 @@ static BOOL ReadPrefs(void)
                 }
                 else
                 {
-                    if(Icon[IconCounter] = GetIconTags(Icons[IconCounter].Icon_Path,
+                    if((Icon[IconCounter] = GetIconTags(Icons[IconCounter].Icon_Path,
                         ICONGETA_RemapIcon, FALSE,
-                        TAG_DONE))
+                        TAG_DONE)))
                     {
                         IconControl(Icon[IconCounter],
                             ICONCTRLA_GetWidth, &Icons[IconCounter].Icon_Width,
@@ -657,7 +657,7 @@ static BOOL SetWindowParameters(void)
             Window_Max_Y = Levels[y].WindowPos_Y;
     }
 
-    if(MyScreen=LockPubScreen(NULL))
+    if((MyScreen=LockPubScreen(NULL)))
     {
         BMP_Buffer = AllocBitMap(Window_Max_X,
             Window_Max_Y,
@@ -942,7 +942,7 @@ static BOOL OpenMainWindow(void)
 {
     LONG x, y, a;
 
-    if(MyScreen=LockPubScreen(NULL))
+    if((MyScreen=LockPubScreen(NULL)))
     {
         BltBitMapRastPort(MyScreen->RastPort.BitMap,
             ScreenWidth / 2 - WindowWidth / 2,
@@ -1035,7 +1035,7 @@ static BOOL OpenMainWindow(void)
             }
         }
 
-        if(MainWindow=OpenWindowTags(NULL,
+        if((MainWindow=OpenWindowTags(NULL,
             WA_Left, BeginningWindow,
             WA_Top, ScreenHeight - WindowHeight,
             WA_InnerWidth,  WindowWidth,
@@ -1056,7 +1056,7 @@ static BOOL OpenMainWindow(void)
             IDCMP_MOUSEMOVE|
             IDCMP_INTUITICKS|
             IDCMP_MOUSEBUTTONS,
-            TAG_END))
+            TAG_END)))
         {
             WindowMask = 1 << MainWindow->UserPort->mp_SigBit;
 
@@ -1165,7 +1165,7 @@ static void OpenMenuWindow(void)
 {
     LONG x;
 
-    if(MenuWindow = OpenWindowTags(NULL,
+    if((MenuWindow = OpenWindowTags(NULL,
                             WA_Left, MyScreen->MouseX,
                             WA_Top, MyScreen->MouseY,
                             WA_InnerWidth, Lenght + 1,
@@ -1179,7 +1179,7 @@ static void OpenMenuWindow(void)
                             WA_Flags,WFLG_ACTIVATE|
                             WFLG_RMBTRAP|
                             WFLG_SMART_REFRESH,
-                            TAG_END))
+                            TAG_END)))
     {
         MenuMask = 1 << MenuWindow->UserPort->mp_SigBit;
 
