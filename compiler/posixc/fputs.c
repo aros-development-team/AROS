@@ -52,7 +52,9 @@
 	return EOF;
     }
 
+#if (0)
     if (!str) str = "(null)";
+#endif
 
     if (FPuts(fdesc->fcb->handle, str) == -1)
     {
