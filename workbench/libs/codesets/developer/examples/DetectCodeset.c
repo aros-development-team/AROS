@@ -54,11 +54,11 @@ int main(void)
   if((CodesetsBase = OpenLibrary(CODESETSNAME,CODESETSVER)) &&
       GETINTERFACE(ICodesets, CodesetsBase))
   {
-    ULONG errNum = 0;
+    IPTR errNum = 0;
     struct codeset *cs;
 
-    if((cs = CodesetsFindBest(CSA_Source, (Tag)ISO8859_1_STR,
-                              CSA_ErrPtr, (Tag)&errNum,
+    if((cs = CodesetsFindBest(CSA_Source, (IPTR)ISO8859_1_STR,
+                              CSA_ErrPtr, (IPTR)&errNum,
                               TAG_DONE)))
     {
       printf("Identified ISO8859_1_STR as %s with %d of %d errors\n", cs->name, (int)errNum, (int)strlen(ISO8859_1_STR));
@@ -66,8 +66,8 @@ int main(void)
     else
       printf("couldn't identify ISO8859_1_STR!\n");
 
-    if((cs = CodesetsFindBest(CSA_Source, (Tag)CP1251_STR,
-                              CSA_ErrPtr, (Tag)&errNum,
+    if((cs = CodesetsFindBest(CSA_Source, (IPTR)CP1251_STR,
+                              CSA_ErrPtr, (IPTR)&errNum,
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {
@@ -76,8 +76,8 @@ int main(void)
     else
       printf("couldn't identify CP1251_STR!\n");
 
-    if((cs = CodesetsFindBest(CSA_Source, (Tag)ASCII_STR,
-                              CSA_ErrPtr, (Tag)&errNum,
+    if((cs = CodesetsFindBest(CSA_Source, (IPTR)ASCII_STR,
+                              CSA_ErrPtr, (IPTR)&errNum,
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {
@@ -86,8 +86,8 @@ int main(void)
     else
       printf("couldn't identify ASCII_STR!\n");
 
-    if((cs = CodesetsFindBest(CSA_Source, (Tag)KOI8R_STR,
-                              CSA_ErrPtr, (Tag)&errNum,
+    if((cs = CodesetsFindBest(CSA_Source, (IPTR)KOI8R_STR,
+                              CSA_ErrPtr, (IPTR)&errNum,
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {

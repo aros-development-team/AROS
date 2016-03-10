@@ -55,8 +55,8 @@ int main(int argc,char **argv)
         {
             ULONG r;
 
-            r = CodesetsDecodeB64(CSA_B64SourceFile, (Tag)argv[1],
-                                  CSA_B64DestFile,   (Tag)argv[2],
+            r = CodesetsDecodeB64(CSA_B64SourceFile, (IPTR)argv[1],
+                                  CSA_B64DestFile,   (IPTR)argv[2],
                                   TAG_DONE);
             printf("Res %d\n", (int)r);
 
