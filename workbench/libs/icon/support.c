@@ -538,7 +538,7 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
     hash = CalcIconHash(dobj);
     
     ObtainSemaphoreShared(&IconBase->iconlistlock);
-    ForeachNode((struct List *)&IconBase->iconlists[hash], icon)
+    ForeachNode(&IconBase->iconlists[hash], icon)
     {
         i++;
     	if (dobj == &icon->ni_DiskObject)
