@@ -21,7 +21,9 @@
 #define SCSI_BUFSIZE 2048
 
 #ifdef __GNUC__
+#ifndef __packed
 #define __packed    __attribute__((packed))
+#endif
 #else
 #define __packed
 #endif
