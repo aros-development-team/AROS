@@ -370,7 +370,7 @@ void FreeLock(struct ExtFileLock *fl, struct Globals *glob)
 
     REMOVE(&fl->node);
 
-    if (IsListEmpty((struct List *)&fl->gl->locks))
+    if (IsListEmpty(&fl->gl->locks))
     {
         REMOVE(fl->gl);
 
