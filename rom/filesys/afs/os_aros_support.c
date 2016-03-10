@@ -445,7 +445,7 @@ UWORD *cmdcheck;
 				{
 					if (*cmdcheck == NSCMD_TD_READ64)
 						volume->ioh.cmdread = NSCMD_TD_READ64;
-					if (*cmdcheck == NSCMD_TD_WRITE64);
+					if (*cmdcheck == NSCMD_TD_WRITE64)
 						volume->ioh.cmdwrite = NSCMD_TD_WRITE64;
 					if (*cmdcheck == NSCMD_TD_SEEK64)
 						volume->ioh.cmdseek = NSCMD_TD_SEEK64;
