@@ -782,8 +782,11 @@ newroute(argc, argv)
 	(void) printf("%s %s %s: gateway %s", cmd, ishost? "host" : "net",
 		dest, gateway);
 	if (attempts > 1 && ret == 0)
+        {
+            struct sockaddr_in *route_sin = (struct sockaddr_in *)&route.rt_gateway;
 	    (void) printf(" (%s)",
-		Inet_NtoA(((struct sockaddr_in *)&route.rt_gateway)->sin_addr.s_addr));
+		Inet_NtoA(route_sin->sin_addr.s_addr));
+        }
 	if (ret == 0)
 		(void) printf("\n");
 	else {
