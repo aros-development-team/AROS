@@ -20,12 +20,12 @@
 
 #define SCSI_BUFSIZE 2048
 
-#ifdef __GNUC__
 #ifndef __packed
-#define __packed    __attribute__((packed))
-#endif
+#ifdef __GNUC__
+#define __packed __attribute__((__packed__))
 #else
 #define __packed
+#endif
 #endif
 
 typedef struct CDROM {
