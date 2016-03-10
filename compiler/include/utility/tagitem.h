@@ -20,8 +20,8 @@ typedef STACKULONG Tag;
 
 struct TagItem
 {
-    Tag       ti_Tag;  /* What is this ? */
-    STACKIPTR ti_Data; /* Tag-specific data */
+    Tag       ti_Tag;  /* Tag ID                */
+    STACKIPTR ti_Data; /* Tag-specific data     */
 };
 
 #ifdef AROS_SLOWSTACKTAGS
