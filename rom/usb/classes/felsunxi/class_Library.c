@@ -13,7 +13,7 @@
 
 #include "felsunxi_intern.h"
 
-static const STRPTR libname = MOD_NAME_STRING;
+static const STRPTR libname __unused = MOD_NAME_STRING;
 
 static int libInit(LIBBASETYPEPTR LIBBASE) {
     mybug(0,("FELSunxi libInit\n"));
