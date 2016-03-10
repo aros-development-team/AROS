@@ -664,11 +664,13 @@ D(bug("%s: PCN32_TX_End_Int: TxRing packet unused ..??\n", unit->pcnu_name));
    AROS_INTFUNC_EXIT
 }
 
+#if (0)
 /*
  * Maximum number of loops until we assume that a bit in the irq mask
  * is stuck. Overridable with module param.
  */
 static const int max_interrupt_work = 5;
+#endif
 
 /*
  * Handle timeouts and other strange cases
@@ -1009,7 +1011,7 @@ D(bug("[pcnet32] PCN32_Schedular: Process shutdown.\n"));
                         struct IOSana2Req *io;
 
                         /* Handle incoming transactions */
-                        while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL);
+                        while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL)
                         {
 D(bug("[pcnet32] PCN32_Schedular: Handle incomming transaction.\n"));
                             ObtainSemaphore(&dev->pcnu_unit_lock);
@@ -1240,15 +1242,15 @@ D(bug("%s: ERROR - Unsupported Chipset (unknown revision)\n", unit->pcnu_name));
                              success = FALSE;
                           }
 #if defined(DEBUG)
-D(bug("%s: Found %s chipset based NIC\n", unit->pcnu_name, unit->pcnu_pcnet_chipname));
-if (unit->pcnu_pcnet_supported & support_fdx)
-   D(bug("%s: Chip Supports Full Duplex\n", unit->pcnu_name));
-if (unit->pcnu_pcnet_supported & support_mii)
-   D(bug("%s: Chip Supports MII\n", unit->pcnu_name));
-if (unit->pcnu_pcnet_supported & support_fset)
-   D(bug("%s: Chip Supports FSET\n", unit->pcnu_name));
-if (unit->pcnu_pcnet_supported & support_ltint)
-   D(bug("%s: Chip Supports LTINT\n", unit->pcnu_name));
+                          D(bug("%s: Found %s chipset based NIC\n", unit->pcnu_name, unit->pcnu_pcnet_chipname));
+                          if (unit->pcnu_pcnet_supported & support_fdx)
+                             D(bug("%s: Chip Supports Full Duplex\n", unit->pcnu_name));
+                          if (unit->pcnu_pcnet_supported & support_mii)
+                             D(bug("%s: Chip Supports MII\n", unit->pcnu_name));
+                          if (unit->pcnu_pcnet_supported & support_fset)
+                             D(bug("%s: Chip Supports FSET\n", unit->pcnu_name));
+                          if (unit->pcnu_pcnet_supported & support_ltint)
+                             D(bug("%s: Chip Supports LTINT\n", unit->pcnu_name));
 #endif
 
                           if (((unit->pcnu_pcnet_chiprevision +1) & 0xfffe) == 0x2624)
