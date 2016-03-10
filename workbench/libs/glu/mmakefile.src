@@ -126,7 +126,7 @@ USER_INCLUDES := \
             -I$(top_srcdir)/src/libnurbs/internals \
             -I$(top_srcdir)/src/libnurbs/nurbtess
 
-GLU_COMMONFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
+GLU_COMMONFLAGS := -Wno-nonnull-compare -Wno-misleading-indentation -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
 USER_CFLAGS := $(GLU_COMMONFLAGS)
 USER_CXXFLAGS := $(GLU_COMMONFLAGS) -fno-rtti
 
