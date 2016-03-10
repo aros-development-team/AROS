@@ -35,8 +35,6 @@ struct contentsBuffer
 
 /****************************************************************************************/
 
-#define TFC(node) ((struct TFontContents *)(&node->fc))
-
 /*****************************************************************************
 
     NAME */
@@ -102,6 +100,7 @@ struct contentsBuffer
 
     struct FileInfoBlock      *fib;
     struct FontContentsHeader *ret = NULL;
+    struct TFontContents *tfc;
 
     (void) DiskfontBase;
 
@@ -206,11 +205,12 @@ struct contentsBuffer
 		    nTags++;
 		}
 		nTags++;	/* Include TAG_DONE */
-		
-		TFC(cNode)->tfc_TagCount = nTags;
+	
+                tfc = (struct TFontContents *)(&cNode->fc);
+		tfc->tfc_TagCount = nTags;
 		fch.fch_FileID = TFCH_ID;
 		
-		tPtr = (struct TagItem *)((IPTR)&(TFC(cNode)->tfc_TagCount) + 2 - nTags*sizeof(struct TagItem));
+		tPtr = (struct TagItem *)((IPTR)&(tfc->tfc_TagCount) + 2 - nTags*sizeof(struct TagItem));
 		
 		ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
 		
