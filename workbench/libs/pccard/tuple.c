@@ -393,13 +393,13 @@ static const Tag string_array_tags[]=
    TAG_END
 };
 
-
+#if !defined(__AROS__)
 static const Tag sublist_array_tags[]=
 {
    PCCARD_RegionLists,
    TAG_END
 };
-
+#endif
 
 static const UBYTE region_speeds[]=
 {
