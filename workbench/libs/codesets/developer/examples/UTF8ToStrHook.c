@@ -81,9 +81,9 @@ int main(int argc,char **argv)
         // sequences.
         if(CodesetsIsValidUTF8(str))
         {
-          CodesetsUTF8ToStr(CSA_Source,   (Tag)str,
+          CodesetsUTF8ToStr(CSA_Source,   (IPTR)str,
                             CSA_DestLen,  32,
-                            CSA_DestHook, (Tag)&destHook,
+                            CSA_DestHook, (IPTR)&destHook,
                             TAG_DONE);
         }
         else
