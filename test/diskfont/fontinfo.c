@@ -159,7 +159,7 @@ static void openfont(void)
 	printf("  taglist:\n");
 	while((tag = NextTagItem(&tstate)))
 	{
-	    printf("    {0x%08lx,0x%08lx}\n", tag->ti_Tag, tag->ti_Data);
+            printf("    {%08x,%p}\n", tag->ti_Tag, (void *)tag->ti_Data);
 	}
 	
 	dpivalue = GetTagData(TA_DeviceDPI, 0, extension);
