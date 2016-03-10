@@ -30,7 +30,7 @@ static ULONG blttemplate_render(APTR btr_data, WORD srcx, WORD srcy,
     struct bt_render_data *btrd = btr_data;
     WORD   	    	   width  = rect->MaxX - rect->MinX + 1;
     WORD		   height = rect->MaxY - rect->MinY + 1;
-    UBYTE		   x = srcx + btrd->srcx;
+    WORD		   x = srcx + btrd->srcx;
     UBYTE   	    	  *template = btrd->template + btrd->modulo * srcy;
     
     HIDD_BM_PutTemplate(dstbm_obj, dst_gc, template, btrd->modulo,
