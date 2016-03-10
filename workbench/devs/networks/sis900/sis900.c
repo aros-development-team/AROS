@@ -1227,9 +1227,9 @@ D(bug("[%s]: set_rx_mode()\n", unit->sis900u_name));
 /* TODO: Fix multicast settings */
 	//if (unit->sis900u_ifflags & IFF_PROMISC) {
 		// Accept any kinds of packets
-		rx_mode = RFPromiscuous;
-		for (i = 0; i < table_entries; i++)
-			mc_filter[i] = 0xffff;
+	rx_mode = RFPromiscuous;
+	for (i = 0; i < table_entries; i++)
+		mc_filter[i] = 0xffff;
 	/*} else if ((unit->mc_count > multicast_filter_limit) ||
 		   (unit->sis900u_ifflags & IFF_ALLMULTI)) {
 		// too many multicast addresses or accept all multicast packet
