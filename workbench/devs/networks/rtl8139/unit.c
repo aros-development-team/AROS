@@ -819,7 +819,7 @@ RTLD(bug("[%s] RTL8139_Schedular: Process shutdown.\n", taskSelf->tc_Node.ln_Nam
 						struct IOSana2Req *io;
 
 						/* Handle incoming transactions */
-						while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL);
+						while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL)
 						{
 RTLD(bug("[%s] RTL8139_Schedular: Handle incomming transaction.\n", taskSelf->tc_Node.ln_Name))
 							ObtainSemaphore(&unit->rtl8139u_unit_lock);
