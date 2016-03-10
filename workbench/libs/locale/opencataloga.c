@@ -62,6 +62,7 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
 {
     AROS_LIBFUNC_INIT
 
+    struct IntLocaleBase *_localeBase = IntLB(LocaleBase);
     struct Locale *def_locale = NULL;
     struct IntCatalog *catalog = NULL;
     char *language;
@@ -144,13 +145,13 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
          */
 
         DEBUG_OPENCATALOG(dprintf("OpenCatalogA: CatalogLock 0x%lx\n",
-                &IntLB(LocaleBase)->lb_CatalogLock));
+                &_localeBase->lb_CatalogLock));
 
-        ObtainSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+        ObtainSemaphore(&_localeBase->lb_CatalogLock);
 
         DEBUG_OPENCATALOG(dprintf("OpenCatalogA: search cached Catalog\n"));
 
-        ForeachNode(&IntLB(LocaleBase)->lb_CatalogList, catalog)
+        ForeachNode(&_localeBase->lb_CatalogList, catalog)
         {
             if (catalog->ic_Name &&
                 catalog->ic_Catalog.cat_Language &&
@@ -160,7 +161,7 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
                 DEBUG_OPENCATALOG(dprintf
                     ("OpenCatalogA: found Catalog 0x%lx\n", catalog));
                 catalog->ic_UseCount++;
-                ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+                ReleaseSemaphore(&_localeBase->lb_CatalogLock);
 
                 if (def_locale)
                 {
@@ -176,7 +177,7 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
         }
         DEBUG_OPENCATALOG(dprintf("OpenCatalogA: found none\n"));
 
-        ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+        ReleaseSemaphore(&_localeBase->lb_CatalogLock);
 
         /* Clear error condition before we start. */
         SetIoErr(0);
@@ -283,10 +284,10 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
                     }
 
                     /* Connect this catalog to the list of catalogs */
-                    ObtainSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
-                    AddHead((struct List *)&IntLB(LocaleBase)->
+                    ObtainSemaphore(&_localeBase->lb_CatalogLock);
+                    AddHead((struct List *)&_localeBase->
                         lb_CatalogList, &catalog->ic_Catalog.cat_Link);
-                    ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+                    ReleaseSemaphore(&_localeBase->lb_CatalogLock);
 
                     CloseIFF(iff);
                     Close((BPTR) iff->iff_Stream);
