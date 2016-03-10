@@ -173,7 +173,6 @@ IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 
 IPTR DT_FrameBox(struct IClass *cl, Object *o, struct dtFrameBox *msg)
 {
-    struct ClassBase        *cb = (struct ClassBase *)(cl -> cl_UserData);
     struct GIFAnimInstData *gaid = (struct GIFAnimInstData *)INST_DATA( cl, o );
     struct dtFrameBox *dtf = (struct dtFrameBox *)msg;
     IPTR retval;
