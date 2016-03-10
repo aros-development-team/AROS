@@ -20,7 +20,7 @@ USER_LDFLAGS := -static
 # ACPICA debugging options
 #ACPICA_SOURCES +=  \
 #       $(call WILDCARD, ../../source/components/disassembler/*.c)
-#USER_CFLAGS += -Wno-strict-aliasing -DACPI_DEBUG_OUTPUT=1 -DACPI_DISASSEMBLER=1
+#USER_CFLAGS += -DACPI_DEBUG_OUTPUT=1 -DACPI_DISASSEMBLER=1
 
 # AROS Glue code debugging options
 #USER_CFLAGS += -DDEBUG=1
