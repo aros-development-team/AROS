@@ -13,7 +13,7 @@
  * Last modified: Mon Oct 17 12:25:13 2005 sonic
  */
 
-static const char version[] = "$VER: resolve 4.0 (17.10.2005)\n"
+static const char version[] __attribute__((used)) = "$VER: resolve 4.0 (17.10.2005)\n"
 "Copyright © 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>\n"
 "Helsinki University of Technology, Finland.\n"
 "Copyright © 2005 Pavel Fedin <sonic_amiga@rambler.ru";
