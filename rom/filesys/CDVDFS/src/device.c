@@ -907,7 +907,7 @@ openbreak:
 		}
 		break;
 		case ACTION_FREE_LOCK:      /* Lock      Bool */
-			if (packet->dp_Arg1);
+			if (packet->dp_Arg1)
 				cdunlock((LOCK *)BADDR(packet->dp_Arg1));
 			break;
 		case ACTION_CURRENT_VOLUME: /* FHArg1    DevList */
