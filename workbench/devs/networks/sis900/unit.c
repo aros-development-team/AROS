@@ -765,7 +765,7 @@ D(bug("%s SiS900_Schedular: Process shutdown.\n", unit->sis900u_name));
                         struct IOSana2Req *io;
 
                         /* Handle incoming transactions */
-                        while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL);
+                        while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL)
                         {
 D(bug("%s SiS900_Schedular: Handle incomming transaction.\n", unit->sis900u_name));
                             ObtainSemaphore(&unit->sis900u_unit_lock);
