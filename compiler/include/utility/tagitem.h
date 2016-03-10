@@ -16,13 +16,13 @@
 #   include <stdarg.h>
 #endif
 
-typedef STACKULONG Tag;
+typedef ULONG Tag;
 
 struct TagItem
 {
-    Tag       ti_Tag;  /* Tag ID                */
-    STACKIPTR ti_Data; /* Tag-specific data     */
-};
+    Tag         ti_Tag __attribute__((aligned(sizeof(IPTR))));   /* Tag ID                */
+    IPTR        ti_Data __attribute__((aligned(sizeof(IPTR))));  /* Tag-specific data     */
+} __attribute__((packed));
 
 #ifdef AROS_SLOWSTACKTAGS
 __BEGIN_DECLS
