@@ -26,7 +26,7 @@
  * <viraj_bais@ccm.fm.intel.com>
  */
 
-#if !defined(lint) && !defined(SABER)
+#if !defined(lint) && !defined(SABER) && !defined(__AROS__)
 static const char rcsid[] = "$Id$";
 #endif /* not lint */
 
