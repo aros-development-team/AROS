@@ -79,7 +79,7 @@ UWORD *cmdcheck;
             {
                if (*cmdcheck == NSCMD_TD_READ64)
                   root->bd->cmdread = NSCMD_TD_READ64;
-               if (*cmdcheck == NSCMD_TD_WRITE64);
+               if (*cmdcheck == NSCMD_TD_WRITE64)
                   root->bd->cmdwrite = NSCMD_TD_WRITE64;
             }
          }
