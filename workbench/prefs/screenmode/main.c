@@ -24,7 +24,7 @@
 #define COPYRIGHT "Copyright © 1995-2014, The AROS Development Team"
 
 static const char vers[] = VERSION;
-static const char version[] = "$VER: " VERSION "\n";
+static const char version[] __attribute__((used)) = "$VER: " VERSION "\n";
 
 
 int main(int argc, char **argv)
