@@ -21,7 +21,7 @@
  *   http://www.isc.org/
  */
 
-#ifndef lint
+#if !defined(lint) && !defined(__AROS__)
 static const char rcsid[] = "$Id$";
 #endif
 

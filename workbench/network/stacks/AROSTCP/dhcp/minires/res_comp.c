@@ -74,7 +74,7 @@
  *   http://www.isc.org/
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
+#if defined(LIBC_SCCS) && !defined(lint) && !defined(__AROS__)
 static const char sccsid[] = "@(#)res_comp.c	8.1 (Berkeley) 6/4/93";
 static const char rcsid[] = "$Id$";
 #endif /* LIBC_SCCS and not lint */
