@@ -1257,45 +1257,45 @@ D(bug("%s: ERROR - Unsupported Chipset (unknown revision)\n", unit->pcnu_name));
                           {
                              i = unit->read_csr(unit->pcnu_BaseMem, 80) & 0x0c00;      /* Check tx_start_pt */
 #if defined(DEBUG)
-D(bug("%s:    tx_start_pt(0x%hX):", unit->pcnu_name, i));
-switch(i >> 10)
-{
-case 0:
-D(bug("  20 bytes,"));
-break;
-case 1:
-D(bug("  64 bytes,"));
-break;
-case 2:
-D(bug(" 128 bytes,"));
-break;
-case 3:
-D(bug("~220 bytes,"));
-break;
-}
+                             D(bug("%s:    tx_start_pt(0x%hX):", unit->pcnu_name, i));
+                             switch(i >> 10)
+                             {
+                             case 0:
+                                D(bug("  20 bytes,"));
+                                break;
+                             case 1:
+                                D(bug("  64 bytes,"));
+                                break;
+                             case 2:
+                                D(bug(" 128 bytes,"));
+                                break;
+                             case 3:
+                                D(bug("~220 bytes,"));
+                                break;
+                             }
 #endif
                              i = unit->read_bcr(unit->pcnu_BaseMem, 18);      /* Check burst/bus control */
 #if defined(DEBUG)
-D(bug(" BCR18(%hX):", i & 0xffff));
-if (i & (1 << 5))
-   D(bug("BurstWrEn "));
-if (i & (1 << 6))
-   D(bug("BurstRdEn "));
-if (i & (1 << 7))
-   D(bug("32bitIO "));
-if (i & (1 << 11))
-   D(bug("NoUFlow "));
+                             D(bug(" BCR18(%hX):", i & 0xffff));
+                             if (i & (1 << 5))
+                                D(bug("BurstWrEn "));
+                             if (i & (1 << 6))
+                                D(bug("BurstRdEn "));
+                             if (i & (1 << 7))
+                                D(bug("32bitIO "));
+                             if (i & (1 << 11))
+                                D(bug("NoUFlow "));
 #endif
                              i = unit->read_bcr(unit->pcnu_BaseMem, 25);
-D(bug("    SRAMSIZE=0x%hX,", i << 8));
+                             D(bug("    SRAMSIZE=0x%hX,", i << 8));
                              i = unit->read_bcr(unit->pcnu_BaseMem, 26);
-D(bug(" SRAM_BND=0x%hX,", i << 8));
+                             D(bug(" SRAM_BND=0x%hX,", i << 8));
                              i = unit->read_bcr(unit->pcnu_BaseMem, 27);
 #if defined(DEBUG)
-if (i & (1 << 14))
-   D(bug("LowLatRx"));
+                             if (i & (1 << 14))
+                                D(bug("LowLatRx"));
 #endif
-D(bug("\n"));
+                             D(bug("\n"));
                           }
                        }
                     }
@@ -1317,19 +1317,21 @@ D(bug("\n"));
                         ReplyMsg(msg);
                         DeleteMsgPort(LIBBASE->pcnb_syncport);
 
-D(bug("[pcnet32] Unit up and running\n"));
+                        D(bug("[pcnet32] Unit up and running\n"));
 
                         return unit;
                     }
                     else
                     {
-D(bug("%s: ERRORS occured during Device setup - ABORTING\n", unit->pcnu_name));
+                       D(bug("%s: ERRORS occured during Device setup - ABORTING\n", unit->pcnu_name));
                     }
                 }
             }
         }
         else
-D(bug("[pcnet32] PANIC! Couldn't get MMIO area. Aborting\n"));
+        {
+           D(bug("[pcnet32] PANIC! Couldn't get MMIO area. Aborting\n"));
+        }
     }
     DeleteUnit(PCNet32Base, unit);	
     return NULL;
