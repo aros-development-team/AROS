@@ -217,6 +217,7 @@ static AROS_INTH1(DiskChangeIntHandler, struct IntData *, MyIntData)
 
 static LONG InitDiskHandler(struct Globals *glob)
 {
+    struct ExecBase *SysBase = glob->gl_SysBase;
     struct FileSysStartupMsg *fssm = glob->fssm;
     LONG err;
     ULONG diskchgintbit, flags;
@@ -314,6 +315,8 @@ static LONG InitDiskHandler(struct Globals *glob)
 
 static void CleanupDiskHandler(struct Globals *glob)
 {
+    struct ExecBase *SysBase = glob->gl_SysBase;
+
     D(bug("\tFreeing handler resources:\n"));
 
     /* Remove disk change interrupt */
