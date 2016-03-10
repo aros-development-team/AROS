@@ -276,11 +276,11 @@ ULONG ASM SAVEDS GetString (
 		/* RTGS_BackFill == RTGL_BackFill */
 		case RTGL_BackFill:		if (mode == ENTER_NUMBER || mode == ENTER_STRING)
 						    glob->nowinbackfill = !tagdata;
-						    break;
+						break;
 		/* RTGS_TextFmt == RTGL_TextFmt */
 		case RTGL_TextFmt:		if (mode == ENTER_NUMBER || mode == ENTER_STRING)
 						    glob->textfmt = (char *)tagdata;
-						    break;
+						break;
 		/* RTGS_TextFmtArgs == RTGL_TextFmtArgs */
 		case RTGL_TextFmtArgs:		textfmtargs = (APTR)tagdata; break;
 		case RTGS_AllowEmpty:		glob->allowempty = tagdata; break;
