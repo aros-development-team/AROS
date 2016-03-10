@@ -12,7 +12,7 @@ struct TagItem *LibFindTagItem(Tag tagValue, const struct TagItem *tagList)
 
     while ((tag = LibNextTagItem(&tstate)))
     {
-	if (tag->ti_Tag == tagValue)
+	if ((ULONG)tag->ti_Tag == (ULONG)tagValue)
 	    return tag;
     }
 
