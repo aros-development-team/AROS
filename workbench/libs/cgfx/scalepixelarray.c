@@ -23,6 +23,19 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
     struct GfxBase *GfxBase);
 
+/* Terrifying bad hack to work around a GCC issue with AROS_LH10 macros.
+ *
+ * On gcc v4 on m68k, we get a register spill during certain optimization
+ * levels, due to the AROS_LH10() macro using so many registers.
+ *
+ * This 'hack' thunks the register call to a stack call, so that the gcc
+ * optimizer has more registers to play with. It must have global scope
+ * (not 'static') so that it doesn't fold into the regcall routine.
+ *
+ * On non-regcall systems, this will, at worst, convert to a 'JMP internal_ScalePixelArray' with no stack manipulation.
+ */
+LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, UWORD DestX, UWORD DestY, UWORD DestW, UWORD DestH, UBYTE SrcFormat);
+
 /*****************************************************************************
 
     NAME */
@@ -80,6 +93,13 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
 {
     AROS_LIBFUNC_INIT
 
+    return internal_ScalePixelArray(srcRect, SrcW, SrcH, SrcMod, RastPort, DestX, DestY, DestW, DestH, SrcFormat);
+
+    AROS_LIBFUNC_EXIT
+}
+
+LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, UWORD DestX, UWORD DestY, UWORD DestW, UWORD DestH, UBYTE SrcFormat)
+{
     ULONG result = 0;
     struct render_data data;
     struct Rectangle rr;
@@ -173,8 +193,6 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     }
 
     return result;
-
-    AROS_LIBFUNC_EXIT
 } /* ScalePixelArray */
 
 static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
