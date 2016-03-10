@@ -3260,7 +3260,7 @@ Action_DiskInfo(
 		id->id_BytesPerBlock	= 512;
 		id->id_DiskType			= ID_DOS_DISK;
 		id->id_VolumeNode		= MKBADDR(VolumeNode);
-		id->id_InUse			= NOT (IsListEmpty((struct List *)&FileList) && IsListEmpty((struct List *)&LockList));
+		id->id_InUse			= NOT (IsListEmpty(&FileList) && IsListEmpty(&LockList));
 
 		if(id->id_NumBlocks == 0)
 			id->id_NumBlocks = 1;
@@ -5571,7 +5571,7 @@ HandleFileSystem(VOID)
 					case ACTION_DIE:
 
 						SHOWMSG("ACTION_DIE");
-						if(IsListEmpty((struct List *)&FileList) && IsListEmpty((struct List *)&LockList))
+						if(IsListEmpty(&FileList) && IsListEmpty(&LockList))
 						{
 							SHOWMSG("no locks or files pending; quitting");
 
@@ -5880,7 +5880,7 @@ HandleFileSystem(VOID)
 
 		if(Quit)
 		{
-			if(IsListEmpty((struct List *)&FileList) && IsListEmpty((struct List *)&LockList))
+			if(IsListEmpty(&FileList) && IsListEmpty(&LockList))
 			{
 				SHOWMSG("no locks or files pending; quitting");
 				done = TRUE;
