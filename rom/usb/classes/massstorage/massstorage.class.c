@@ -2277,6 +2277,7 @@ LONG nStartStop(struct NepClassMS *ncm, struct IOStdReq *ioreq)
 LONG nRead64Emul(struct NepClassMS *ncm, struct IOStdReq *ioreq)
 {
     UBYTE cmd10[10];
+    ULONG *cmd10sb = (ULONG *)&cmd10[2];
     UBYTE sensedata[18];
     ULONG dataoffset = 0;
     ULONG dataremain = ioreq->io_Length;
@@ -2338,7 +2339,7 @@ LONG nRead64Emul(struct NepClassMS *ncm, struct IOStdReq *ioreq)
             scsicmd.scsi_SenseLength = 18;
             cmd10[0] = SCSI_DA_READ_10;
             cmd10[1] = 0;
-            *((ULONG *) (&cmd10[2])) = AROS_LONG2BE(startblock);
+            *cmd10sb = AROS_LONG2BE(startblock);
             cmd10[6] = 0;
             cmd10[7] = 0;
             cmd10[8] = 1;
@@ -2361,7 +2362,7 @@ LONG nRead64Emul(struct NepClassMS *ncm, struct IOStdReq *ioreq)
             scsicmd.scsi_SenseLength = 18;
             cmd10[0] = SCSI_DA_READ_10;
             cmd10[1] = 0;
-            *((ULONG *) (&cmd10[2])) = AROS_LONG2BE(startblock);
+            *cmd10sb = AROS_LONG2BE(startblock);
             cmd10[6] = 0;
             cmd10[7] = datalen>>(ncm->ncm_BlockShift+8);
             cmd10[8] = datalen>>ncm->ncm_BlockShift;
@@ -2385,6 +2386,7 @@ LONG nRead64Emul(struct NepClassMS *ncm, struct IOStdReq *ioreq)
 LONG nWrite64Emul(struct NepClassMS *ncm, struct IOStdReq *ioreq)
 {
     UBYTE cmd10[10];
+    ULONG *cmd10sb = (ULONG *)&cmd10[2];
     UBYTE sensedata[18];
     ULONG dataoffset = 0;
     ULONG dataremain = ioreq->io_Length;
@@ -2446,7 +2448,7 @@ LONG nWrite64Emul(struct NepClassMS *ncm, struct IOStdReq *ioreq)
             scsicmd.scsi_SenseLength = 18;
             cmd10[0] = SCSI_DA_READ_10;
             cmd10[1] = 0;
-            *((ULONG *) (&cmd10[2])) = AROS_LONG2BE(startblock);
+            *cmd10sb = AROS_LONG2BE(startblock);
             cmd10[6] = 0;
             cmd10[7] = 0;
             cmd10[8] = 1;
@@ -2489,7 +2491,7 @@ LONG nWrite64Emul(struct NepClassMS *ncm, struct IOStdReq *ioreq)
             scsicmd.scsi_SenseLength = 18;
             cmd10[0] = SCSI_DA_WRITE_10;
             cmd10[1] = 0;
-            *((ULONG *) (&cmd10[2])) = AROS_LONG2BE(startblock);
+            *cmd10sb = AROS_LONG2BE(startblock);
             cmd10[6] = 0;
             cmd10[7] = datalen>>(ncm->ncm_BlockShift+8);
             cmd10[8] = datalen>>ncm->ncm_BlockShift;
@@ -2582,13 +2584,15 @@ LONG nRead64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
         scsicmd.scsi_SenseLength = 18;
         if(startblockhigh)
         {
+            ULONG *cmd16sbh = (ULONG *)&cmd16[2];
+            ULONG *cmd16sbl = (ULONG *)&cmd16[6];
             // Arithmetics for >2 TB needed
             scsicmd.scsi_Command = cmd16;
             scsicmd.scsi_CmdLength = 16;
             cmd16[0] = SCSI_DA_READ_16;
             cmd16[1] = 0;
-            *((ULONG *) (&cmd16[2])) = AROS_LONG2BE(startblockhigh);
-            *((ULONG *) (&cmd16[6])) = AROS_LONG2BE(startblock);
+            *cmd16sbh = AROS_LONG2BE(startblockhigh);
+            *cmd16sbl = AROS_LONG2BE(startblock);
             cmd16[10] = datalen>>(ncm->ncm_BlockShift+24);
             cmd16[11] = datalen>>(ncm->ncm_BlockShift+16);
             cmd16[12] = datalen>>(ncm->ncm_BlockShift+8);
@@ -2596,11 +2600,12 @@ LONG nRead64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
             cmd16[14] = 0;
             cmd16[15] = 0;
         } else {
+            ULONG *cmd10sb = (ULONG *)&cmd10[2];
             scsicmd.scsi_Command = cmd10;
             scsicmd.scsi_CmdLength = 10;
             cmd10[0] = SCSI_DA_READ_10;
             cmd10[1] = 0;
-            *((ULONG *) (&cmd10[2])) = AROS_LONG2BE(startblock);
+            *cmd10sb = AROS_LONG2BE(startblock);
             cmd10[6] = 0;
             cmd10[7] = datalen>>(ncm->ncm_BlockShift+8);
             cmd10[8] = datalen>>ncm->ncm_BlockShift;
@@ -2630,6 +2635,7 @@ LONG nRead64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
 LONG nSeek64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
 {
     UBYTE cmd10[10];
+    ULONG *cmd10sb = (ULONG *)&cmd10[2];
     UBYTE sensedata[18];
     struct SCSICmd scsicmd;
     ULONG startblock;
@@ -2662,7 +2668,7 @@ LONG nSeek64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
     scsicmd.scsi_SenseLength = 18;
     cmd10[0] = SCSI_DA_SEEK_10;
     cmd10[1] = 0;
-    *((ULONG *) (&cmd10[2])) = AROS_LONG2BE(startblock);
+    *cmd10sb = AROS_LONG2BE(startblock);
     cmd10[6] = 0;
     cmd10[7] = 0;
     cmd10[8] = 0;
@@ -2748,13 +2754,15 @@ LONG nWrite64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
         scsicmd.scsi_SenseLength = 18;
         if(startblockhigh)
         {
+            ULONG *cmd16sbh = (ULONG *)&cmd16[2];
+            ULONG *cmd16sbl = (ULONG *)&cmd16[6];
             // Arithmetics for >2 TB needed
             scsicmd.scsi_Command = cmd16;
             scsicmd.scsi_CmdLength = 16;
             cmd16[0] = SCSI_DA_WRITE_16;
             cmd16[1] = 0;
-            *((ULONG *) (&cmd16[2])) = AROS_LONG2BE(startblockhigh);
-            *((ULONG *) (&cmd16[6])) = AROS_LONG2BE(startblock);
+            *cmd16sbh = AROS_LONG2BE(startblockhigh);
+            *cmd16sbl = AROS_LONG2BE(startblock);
             cmd16[10] = datalen>>(ncm->ncm_BlockShift+24);
             cmd16[11] = datalen>>(ncm->ncm_BlockShift+16);
             cmd16[12] = datalen>>(ncm->ncm_BlockShift+8);
@@ -2762,11 +2770,12 @@ LONG nWrite64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
             cmd16[14] = 0;
             cmd16[15] = 0;
         } else {
+            ULONG *cmd10sb = (ULONG *)&cmd10[2];
             scsicmd.scsi_Command = cmd10;
             scsicmd.scsi_CmdLength = 10;
             cmd10[0] = SCSI_DA_WRITE_10;
             cmd10[1] = 0;
-            *((ULONG *) (&cmd10[2])) = AROS_LONG2BE(startblock);
+            *cmd10sb = AROS_LONG2BE(startblock);
             cmd10[6] = 0;
             cmd10[7] = datalen>>(ncm->ncm_BlockShift+8);
             cmd10[8] = datalen>>ncm->ncm_BlockShift;
