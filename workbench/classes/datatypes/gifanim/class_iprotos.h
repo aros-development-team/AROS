@@ -52,6 +52,7 @@ void FreePooledVec ( struct ClassBase *cb , APTR pool , APTR mem );
 #define verbose_printf(cb, gaid, fmt, ... ) \
 { \
     IPTR pargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    (void)cb; /* Unused */\
     if( ((gaid) -> gaid_VerboseOutput) && (((gaid) -> gaid_VerboseOutput) != (BPTR)-1L) ) \
     { \
         VFPrintf( ((gaid) -> gaid_VerboseOutput), (fmt), pargs); \
