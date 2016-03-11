@@ -183,7 +183,7 @@ LONG UnitControlA (REG(d0, ULONG unit_num), REG(a0, struct TagItem *tags),
 }
 
 static const struct TagItem unmount_tags[] = {
-	{ DITAG_Filename,	(Tag)NULL },
+	{ DITAG_Filename,	(IPTR)NULL },
 	{ TAG_END }
 };
 
