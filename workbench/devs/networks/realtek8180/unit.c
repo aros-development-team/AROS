@@ -83,9 +83,10 @@ static VOID UnitTask(struct ExecBase *sys_base);
 
 
 static const UBYTE snap_template[] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00};
+#if !defined(__AROS__)
 static const UBYTE broadcast_address[] =
    {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-
+#endif
 
 #ifdef __amigaos4__
 #undef AddTask
