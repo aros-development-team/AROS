@@ -373,48 +373,66 @@ in_control(so, cmd, data, ifp)
 	switch (cmd) {
 
 	case SIOCGIFADDR:
-		*((struct sockaddr_in *)&ifr->ifr_addr) = ia->ia_addr;
+                {
+                    struct sockaddr_in *ifr_saddr = (struct sockaddr_in *)&ifr->ifr_addr;
+                    *ifr_saddr = ia->ia_addr;
+                }
 		break;
 
 	case SIOCGIFBRDADDR:
-		if ((ifp->if_flags & IFF_BROADCAST) == 0)
-			return (EINVAL);
-		*((struct sockaddr_in *)&ifr->ifr_dstaddr) = ia->ia_broadaddr;
+                {
+                    struct sockaddr_in *ifrdst_saddr = (struct sockaddr_in *)&ifr->ifr_dstaddr;
+                    if ((ifp->if_flags & IFF_BROADCAST) == 0)
+                            return (EINVAL);
+                    *ifrdst_saddr = ia->ia_broadaddr;
+                }
 		break;
 
 	case SIOCGIFDSTADDR:
-		if ((ifp->if_flags & IFF_POINTOPOINT) == 0)
-			return (EINVAL);
-		*((struct sockaddr_in *)&ifr->ifr_dstaddr) = ia->ia_dstaddr;
+                {
+                    struct sockaddr_in *ifrdst_saddr = (struct sockaddr_in *)&ifr->ifr_dstaddr;
+                    if ((ifp->if_flags & IFF_POINTOPOINT) == 0)
+                            return (EINVAL);
+                    *ifrdst_saddr = ia->ia_dstaddr;
+                }
 		break;
 
 	case SIOCGIFNETMASK:
-		*((struct sockaddr_in *)&ifr->ifr_addr) = ia->ia_sockmask;
+                {
+                    struct sockaddr_in *ifr_saddr = (struct sockaddr_in *)&ifr->ifr_addr;
+                    *ifr_saddr = ia->ia_sockmask;
+                }
 		break;
 
 	case SIOCSIFDSTADDR:
-		if ((ifp->if_flags & IFF_POINTOPOINT) == 0)
-			return (EINVAL);
-		oldaddr = ia->ia_dstaddr;
-		ia->ia_dstaddr = *(struct sockaddr_in *)&ifr->ifr_dstaddr;
-		if (ifp->if_ioctl &&
-		    (error = (*ifp->if_ioctl)(ifp, SIOCSIFDSTADDR, (caddr_t)ia))) {
-			ia->ia_dstaddr = oldaddr;
-			return (error);
-		}
-		if (ia->ia_flags & IFA_ROUTE) {
-			ia->ia_ifa.ifa_dstaddr = (struct sockaddr *)&oldaddr;
-			rtinit(&(ia->ia_ifa), (int)RTM_DELETE, RTF_HOST);
-			ia->ia_ifa.ifa_dstaddr =
-					(struct sockaddr *)&ia->ia_dstaddr;
-			rtinit(&(ia->ia_ifa), (int)RTM_ADD, RTF_HOST|RTF_UP);
-		}
+                {
+                    struct sockaddr_in *ifrdst_saddr = (struct sockaddr_in *)&ifr->ifr_dstaddr;
+                    if ((ifp->if_flags & IFF_POINTOPOINT) == 0)
+                            return (EINVAL);
+                    oldaddr = ia->ia_dstaddr;
+                    ia->ia_dstaddr = *ifrdst_saddr;
+                    if (ifp->if_ioctl &&
+                        (error = (*ifp->if_ioctl)(ifp, SIOCSIFDSTADDR, (caddr_t)ia))) {
+                            ia->ia_dstaddr = oldaddr;
+                            return (error);
+                    }
+                    if (ia->ia_flags & IFA_ROUTE) {
+                            ia->ia_ifa.ifa_dstaddr = (struct sockaddr *)&oldaddr;
+                            rtinit(&(ia->ia_ifa), (int)RTM_DELETE, RTF_HOST);
+                            ia->ia_ifa.ifa_dstaddr =
+                                            (struct sockaddr *)&ia->ia_dstaddr;
+                            rtinit(&(ia->ia_ifa), (int)RTM_ADD, RTF_HOST|RTF_UP);
+                    }
+                }
 		break;
 
 	case SIOCSIFBRDADDR:
-		if ((ifp->if_flags & IFF_BROADCAST) == 0)
-			return (EINVAL);
-		ia->ia_broadaddr = *(struct sockaddr_in *)&ifr->ifr_broadaddr;
+                {
+                    struct sockaddr_in *ifrbrd_saddr = (struct sockaddr_in *)&ifr->ifr_broadaddr;
+                    if ((ifp->if_flags & IFF_BROADCAST) == 0)
+                            return (EINVAL);
+                    ia->ia_broadaddr = *ifrbrd_saddr;
+                }
 		break;
 
 	case SIOCSIFADDR:
