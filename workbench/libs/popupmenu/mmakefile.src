@@ -2,6 +2,8 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS :=-D__UTILITY_STDLIBBASE__
+# For m68k --with-paranoia
+USER_CFLAGS += -Wno-frame-address
 USER_LDFLAGS := -static
 
 FILES :=  pm \
