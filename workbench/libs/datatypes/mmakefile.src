@@ -2,6 +2,8 @@
 include $(TOP)/config/make.cfg
 
 USER_LDFLAGS := -static
+# For m68k --with-paranoia
+USER_CFLAGS := -Wno-frame-address
 
 FILES := helpfuncs class classfuncs
 FUNCS := adddtobject \
