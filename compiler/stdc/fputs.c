@@ -54,9 +54,7 @@
     if ((stream->flags & __STDCIO_STDIO_APPEND))
         Seek(stream->fh, 0, OFFSET_END);
 
-#if (0)
     if (!str) str = "(null)";
-#endif
 
     if (FPuts(stream->fh, str) == -1)
     {
