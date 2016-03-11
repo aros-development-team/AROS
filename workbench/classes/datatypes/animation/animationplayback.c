@@ -142,7 +142,7 @@ struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frame
     ObtainSemaphoreShared(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
 
     if ((!frameCurrent) ||
-        (*frame < NODEID(frameCurrent)))
+        (*frame < GetNODEID(frameCurrent)))
         frameCurrent = frameFound = (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames;
     else
         frameFound = frameCurrent;
@@ -151,11 +151,11 @@ struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frame
     {
         frameFound = (struct AnimFrame *)frameFound->af_Node.ln_Succ;
 
-        DFRAMES("[animation.datatype/PLAY] %s:   frame #%d @ 0x%p\n", __func__, NODEID(frameFound), frameFound)
+        DFRAMES("[animation.datatype/PLAY] %s:   frame #%d @ 0x%p\n", __func__, GetNODEID(frameFound), frameFound)
         if (!frameFirst)
             frameFirst = frameFound;
 
-        if (NODEID(frameFound) >= *frame)
+        if (GetNODEID(frameFound) >= *frame)
         {
             break;
         }
@@ -165,27 +165,27 @@ struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frame
     if (!(frameFound) ||
         (frameCurrent == frameFound) ||
         (frameFound == (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames) ||
-        (NODEID(frameFound) > *frame))
+        (GetNODEID(frameFound) > *frame))
     {
         frameFound = NULL;
 
         if (!(priv->pp_Data->ad_Flags & ANIMDF_FRAMESKIP))
         {
-            if ((frameFirst) && (NODEID(frameFirst) == (NODEID(frameCurrent) + 1)))
+            if ((frameFirst) && (GetNODEID(frameFirst) == (GetNODEID(frameCurrent) + 1)))
                 frameFound = frameFirst;
         }
-        else if ((framePrev) && (NODEID(framePrev) > 0))
+        else if ((framePrev) && (GetNODEID(framePrev) > 0))
             frameFound = framePrev;
 
         if (!(frameFound) &&
             (frameCurrent) &&
-            (NODEID(frameCurrent) < priv->pp_Data->ad_FrameData.afd_Frames))
+            (GetNODEID(frameCurrent) < priv->pp_Data->ad_FrameData.afd_Frames))
             frameFound = frameCurrent;
     }
 
     if (frameFound)
     {
-        frameID = NODEID(frameFound);
+        frameID = GetNODEID(frameFound);
         if (frameFound != frameCurrent)
             priv->pp_PlaybackFrame = frameFound;
         else
@@ -279,8 +279,8 @@ AROS_UFH3(void, playerProc,
                         }
 
                         if ((priv->pp_PlaybackFrame) &&
-                            ((NODEID(priv->pp_PlaybackFrame) < frame) ||
-                            (!(priv->pp_Data->ad_Flags & ANIMDF_FRAMESKIP) && (NODEID(priv->pp_PlaybackFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1)))))
+                            ((GetNODEID(priv->pp_PlaybackFrame) < frame) ||
+                            (!(priv->pp_Data->ad_Flags & ANIMDF_FRAMESKIP) && (GetNODEID(priv->pp_PlaybackFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1)))))
                         {
                             priv->pp_BufferFirst = priv->pp_PlaybackFrame;
                         }
@@ -303,7 +303,7 @@ AROS_UFH3(void, playerProc,
                     if ((curFrame) && ((priv->pp_Data->ad_FrameBM = (struct BitMap *)curFrame->af_CacheBM) != NULL))
                     {
                         D(
-                            bug("[animation.datatype/PLAY]: %s: Rendering Frame #%d\n", __func__,  NODEID(curFrame));
+                            bug("[animation.datatype/PLAY]: %s: Rendering Frame #%d\n", __func__,  GetNODEID(curFrame));
                             bug("[animation.datatype/PLAY]: %s:      BitMap @ 0x%p\n", __func__, curFrame->af_CacheBM);
                         )
 
@@ -315,7 +315,7 @@ AROS_UFH3(void, playerProc,
                             {
                                 // update the tapedeck gadget..
                                 attrtags[0].ti_Tag = TDECK_CurrentFrame;
-                                attrtags[0].ti_Data = NODEID(curFrame);
+                                attrtags[0].ti_Data = GetNODEID(curFrame);
                                 attrtags[1].ti_Tag = TAG_IGNORE;
 
                                 SetAttrsA((Object *)priv->pp_Data->ad_Tapedeck, attrtags);
