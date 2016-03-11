@@ -691,7 +691,8 @@ D(bug("[AROSTCP](amiga_netdb.c) addrtent()\n"));
   
   if (rdargs = ReadArgs(ROUTE_TEMPLATE, Args, rdargs)) {
     if (!(strcmp(strupr((APTR)Args[KRT_DEST]), "DEFAULT"))){
-      ((struct sockaddr_in *)&route.rt_dst)->sin_addr.s_addr = 0;
+      struct sockaddr_in *rodst_saddr = (struct sockaddr_in *)&route.rt_dst;
+      rodst_saddr->sin_addr.s_addr = 0;
       route.rt_dst.sa_family = AF_INET;
       route.rt_dst.sa_len = sizeof(struct sockaddr_in);
     } else {
