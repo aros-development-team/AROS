@@ -489,10 +489,10 @@ tcp_rtlookup(inp)
 	if (rt == NULL || !(rt->rt_flags & RTF_UP)) {
 		/* No route yet, so try to acquire one */
 		if (inp->inp_faddr.s_addr != INADDR_ANY) {
+                        struct sockaddr_in *rodst_saddr = (struct sockaddr_in *)&ro->ro_dst;
 			ro->ro_dst.sa_family = AF_INET;
 			ro->ro_dst.sa_len = sizeof(ro->ro_dst);
-			((struct sockaddr_in *) &ro->ro_dst)->sin_addr =
-				inp->inp_faddr;
+			rodst_saddr->sin_addr = inp->inp_faddr;
 			rtalloc(ro);
 			rt = ro->ro_rt;
 		}
