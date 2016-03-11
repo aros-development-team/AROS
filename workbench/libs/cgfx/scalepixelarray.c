@@ -34,7 +34,7 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
  *
  * On non-regcall systems, this will, at worst, convert to a 'JMP internal_ScalePixelArray' with no stack manipulation.
  */
-LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, UWORD DestX, UWORD DestY, UWORD DestW, UWORD DestH, UBYTE SrcFormat);
+LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, UWORD DestX, UWORD DestY, UWORD DestW, UWORD DestH, UBYTE SrcFormat, struct Library *CyberGfxBase);
 
 /*****************************************************************************
 
@@ -93,12 +93,12 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
 {
     AROS_LIBFUNC_INIT
 
-    return internal_ScalePixelArray(srcRect, SrcW, SrcH, SrcMod, RastPort, DestX, DestY, DestW, DestH, SrcFormat);
+    return internal_ScalePixelArray(srcRect, SrcW, SrcH, SrcMod, RastPort, DestX, DestY, DestW, DestH, SrcFormat, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 }
 
-LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, UWORD DestX, UWORD DestY, UWORD DestW, UWORD DestH, UBYTE SrcFormat)
+LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, UWORD DestX, UWORD DestY, UWORD DestW, UWORD DestH, UBYTE SrcFormat, struct Library *CyberGfxBase)
 {
     ULONG result = 0;
     struct render_data data;
