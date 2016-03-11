@@ -407,10 +407,12 @@ getroutes(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 
   /* cstat_rtree_print */
   for (pr = mem; routes-- > 0 ; pr++) {
+    struct sockaddr_in *prdst_saddr = (struct sockaddr_in *)&pr->pr_dest;
+    struct sockaddr_in *prvia_saddr = (struct sockaddr_in *)&pr->pr_via;
     csprintf(res, "%02lx %08lx %08lx ",
 	     pr->pr_dest.sa_family,
-	     ((struct sockaddr_in *)&pr->pr_dest)->sin_addr.s_addr,
-	     ((struct sockaddr_in *)&pr->pr_via)->sin_addr.s_addr);
+	     prdst_saddr->sin_addr.s_addr,
+	     prvia_saddr->sin_addr.s_addr);
     cstat_rtflags(res, "%-8.8s ", pr->pr_flags);
     csprintf(res, "%04lx %08lx ", pr->pr_refcnt, pr->pr_use);
     if (pr->pr_ifp) {
