@@ -107,7 +107,7 @@ APTR CPC_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 	struct CPC *image = NULL;
 	UBYTE buf[22];
 	ULONG *ptr;
-	UWORD tracks;
+	UWORD tracks, *tracksize_ptr = (UWORD *)&buf[2];
 	ULONG track_offs, track_size;
 
 	if (Read(file, buf, 8) != 8) {
@@ -135,7 +135,7 @@ APTR CPC_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 	image->cylinders = buf[0];
 	image->heads = buf[1];
 	image->tracks = image->cylinders * image->heads;
-	image->track_size = track_size = rle16(&buf[2]);
+	image->track_size = track_size = rle16(tracksize_ptr);
 
 	if (!image->tracks || !image->heads || image->track_size < 256) {
 		error = ERROR_BAD_NUMBER;
