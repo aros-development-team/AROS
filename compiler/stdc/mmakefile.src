@@ -260,7 +260,7 @@ USER_LDFLAGS := -nostdc -noposixc
 
 # Ugh. These are for the math routines, which have a number of
 # lint issues.
-USER_CFLAGS += -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
+USER_CFLAGS += -Wno-nonnull-compare -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
 
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
@@ -343,7 +343,7 @@ USER_CFLAGS := -DSTDC_STATIC -Dlint
 
 # Ugh. These are for the math routines, which have a number of
 # lint issues, that should be fixed.
-USER_CFLAGS += -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
+USER_CFLAGS += -Wno-nonnull-compare -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
 
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
