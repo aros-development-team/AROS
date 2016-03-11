@@ -364,7 +364,8 @@ rtioctl(req, data)
 				in_sockmaskof(dst_in->sin_addr, &icmpmask);
 				netmask = (struct sockaddr *)&icmpmask;
 #else
-				in_sockmaskof(((struct sockaddr_in *)&entry->rt_dst)->sin_addr, (struct sockaddr_in *)&netmask);
+                                struct sockaddr_in *dst_saddr = (struct sockaddr_in *)&entry->rt_dst;
+				in_sockmaskof(dst_saddr->sin_addr, (struct sockaddr_in *)&netmask);
 #endif
 			}
 			break;
