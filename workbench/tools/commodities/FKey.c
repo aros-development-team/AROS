@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,6 +17,8 @@
 #include <workbench/workbench.h>
 #include <devices/inputevent.h>
 #include <aros/asmcall.h>
+#include <rexx/storage.h>
+#include <rexx/errors.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -28,6 +30,7 @@
 #include <proto/alib.h>
 #include <proto/icon.h>
 #include <proto/utility.h>
+#include <proto/rexxsyslib.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,9 +48,9 @@
 /*********************************************************************************************/
 
 #define VERSION         1
-#define REVISION        6
-#define DATESTR         "14.01.2012"
-#define VERSIONSTR      "$VER: FKey 1.6 (" DATESTR ")"
+#define REVISION        7
+#define DATESTR         "12.03.2016"
+#define VERSIONSTR      "$VER: FKey 1.7 (" DATESTR ")"
 
 /*********************************************************************************************/
 
@@ -151,6 +154,7 @@ static void SaveSettings(void);
 static WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext);
 static void StringToKey(void);
 static struct DiskObject *disko;
+static void ExecuteArexx(struct KeyInfo  *ki);
 
 /*********************************************************************************************/
 
@@ -783,6 +787,92 @@ static void CmdToKey(void)
 
 /*********************************************************************************************/
 
+static void ExecuteArexx(struct KeyInfo  *ki)
+{
+    struct RexxMsg *msg = NULL;
+    struct MsgPort *rexxport = NULL, *replyport = NULL;
+    BPTR out;
+    BOOL closestdout = FALSE;
+    struct RexxMsg *reply;
+
+    if (ki->param == NULL)
+    {
+        return;
+    }
+
+    out = ErrorOutput();
+    if (out == BNULL)
+    {
+        out = Output();
+    }
+    
+    rexxport = FindPort("REXX");
+    if (rexxport == NULL)
+    {
+        if (SystemTags("RexxMast", SYS_Asynch, TRUE,
+                SYS_Input, BNULL, SYS_Output, BNULL,
+                TAG_DONE
+            ) >= 0
+           )
+        {
+            SystemTags("WaitForPort REXX", TAG_DONE);
+        }
+    }
+    rexxport = FindPort("REXX");
+    if (rexxport == NULL)
+    {
+	FPuts(out, "Could not start RexxMast; no Rexx interpreter seems to be installed\n");
+	goto cleanup;
+    }
+    
+    replyport = CreatePort(NULL, 0);
+    if (replyport == NULL)
+    {
+	FPuts(out, "Could not create a port\n");
+	goto cleanup;
+    }
+    
+    msg = CreateRexxMsg(replyport, NULL, NULL);
+    if (msg == NULL)
+    {
+	FPuts(out, "Could not create RexxMsg\n");
+	goto cleanup;
+    }
+    msg->rm_Action = RXCOMM | RXFF_RESULT;
+    msg->rm_Stdin = Input();
+    Flush(msg->rm_Stdin); /* Remove command line arguments */
+    msg->rm_Stdout = Output();
+    
+    out = msg->rm_Stdout = Open("CON:////RX Output/CLOSE/WAIT/AUTO", MODE_READWRITE);
+    closestdout = TRUE;
+
+    msg->rm_Args[0] = (IPTR)CreateArgstring(ki->param, strlen(ki->param));
+    msg->rm_Action |= 1;
+
+    PutMsg(rexxport, (struct Message *)msg);
+    do {
+        reply = (struct RexxMsg *)WaitPort(replyport);
+    } while (reply != msg);
+
+    if (msg->rm_Result1 != RC_OK)
+    {
+        FPrintf(out, "Error executing script %ld/%ld\n",
+                msg->rm_Result1, msg->rm_Result2
+        );
+    }
+    ClearRexxMsg(msg, msg->rm_Action & RXARGMASK);
+
+cleanup:
+    if (closestdout)
+        Close(msg->rm_Stdout);
+    if (msg)
+	DeleteRexxMsg(msg);
+    if (replyport)
+	DeletePort(replyport);
+}
+
+/*********************************************************************************************/
+
 static void HandleAction(void)
 {
     struct KeyInfo  *ki;
@@ -921,6 +1011,7 @@ static void HandleAction(void)
             break;
 
         case ACTION_RUN_AREXX:
+            ExecuteArexx(ki);
             break;
 
     } /* switch(ki->action) */
