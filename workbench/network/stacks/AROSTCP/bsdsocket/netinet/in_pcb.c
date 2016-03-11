@@ -209,6 +209,7 @@ in_pcbladdr(inp, nam, plocal_sin)
 	}
 	if (inp->inp_laddr.s_addr == INADDR_ANY) {
 		register struct route *ro;
+                struct sockaddr_in *rodst_saddr;
 
 		ia = (struct in_ifaddr *)0;
 		/*
@@ -216,8 +217,10 @@ in_pcbladdr(inp, nam, plocal_sin)
 		 * our src addr is taken from the i/f, else punt.
 		 */
 		ro = &inp->inp_route;
+                rodst_saddr = (struct sockaddr_in *)&ro->ro_dst;
+
 		if (ro->ro_rt &&
-		    (satosin(&ro->ro_dst)->sin_addr.s_addr !=
+		    (rodst_saddr->sin_addr.s_addr !=
 			sin->sin_addr.s_addr ||
 		    inp->inp_socket->so_options & SO_DONTROUTE)) {
 			RTFREE(ro->ro_rt);
@@ -229,8 +232,7 @@ in_pcbladdr(inp, nam, plocal_sin)
 			/* No route yet, so try to acquire one */
 			ro->ro_dst.sa_family = AF_INET;
 			ro->ro_dst.sa_len = sizeof(struct sockaddr_in);
-			((struct sockaddr_in *) &ro->ro_dst)->sin_addr =
-				sin->sin_addr;
+			rodst_saddr->sin_addr = sin->sin_addr;
 			rtalloc(ro);
 		}
 		/*
