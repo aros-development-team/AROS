@@ -97,46 +97,60 @@
 #endif
 
 /* 3. Macros for making things more efficient */
+#ifndef __noreturn
 #if __GNUC_PREREQ(2,5)
 #   define __noreturn  __attribute__((__noreturn__))
 #else
 #   define __noreturn
 #endif
+#endif
 
+#ifndef __noeffect
 #if __GNUC_PREREQ(2,5) && !(__GNUC_PREREQ(2,6) && defined __cplusplus)
 #   define __noeffect  __attribute__((__const__))
 #else
 #   define __noeffect
 #endif
+#endif
 
-#if __GNUC_PREREQ(2,7)
+#ifndef __unused
+# if __GNUC_PREREQ(2,7)
 #    define __unused   __attribute__((__unused__))
-#else
+# else
 #    define __unused
+# endif
 #endif
 
-#if __GNUC_PREREQ(3,3)
+#ifndef __used
+# if __GNUC_PREREQ(3,3)
 #    define __used   __attribute__((__used__))
-#else
+# else
 #    define __used __unused
+# endif
 #endif
 
+#ifndef __pure
 #if __GNUC_PREREQ(2,96)
 #    define __pure     __attribute__((__pure__))
 #else
 #    define __pure
 #endif
+#endif
 
+#ifndef __const
 #if __GNUC_PREREQ(2,5)
 #    define __const     __attribute__((__const__))
 #else
 #    define __const
 #endif
+#endif
 
+#ifndef __mayalias
 #if __GNUC_PREREQ(3,3)
 #    define __mayalias  __attribute__((__may_alias__))
 #else
 #    define __mayalias
+#endif
 #endif
 
 #define __pure2 __const
