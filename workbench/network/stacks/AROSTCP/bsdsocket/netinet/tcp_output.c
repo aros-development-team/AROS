@@ -370,13 +370,17 @@ send:
 		 * do this if our peer understands T/TCP.
 		 */
 		case 0:
-			opt[optlen++] = TCPOPT_NOP;
-			opt[optlen++] = TCPOPT_NOP;
-			opt[optlen++] = TCPOPT_CC;
-			opt[optlen++] = TCPOLEN_CC;
-			*(u_int32_t *)&opt[optlen] = htonl(tp->cc_send);
+                        {
+                            u_int32_t *opt_ptr;
+                            opt[optlen++] = TCPOPT_NOP;
+                            opt[optlen++] = TCPOPT_NOP;
+                            opt[optlen++] = TCPOPT_CC;
+                            opt[optlen++] = TCPOLEN_CC;
+                            opt_ptr = (u_int32_t *)&opt[optlen];
+                            *opt_ptr = htonl(tp->cc_send);
 
-			optlen += 4;
+                            optlen += 4;
+                        }
 			break;
 
 		/*
@@ -384,20 +388,24 @@ send:
 		 * CC or CC.new.
 		 */
 		case TH_SYN:
-			opt[optlen++] = TCPOPT_NOP;
-			opt[optlen++] = TCPOPT_NOP;
+                        {
+                            u_int32_t *opt_ptr;
+                            opt[optlen++] = TCPOPT_NOP;
+                            opt[optlen++] = TCPOPT_NOP;
 
-			if (taop->tao_ccsent != 0 &&
-			    CC_GEQ(tp->cc_send, taop->tao_ccsent)) {
-				opt[optlen++] = TCPOPT_CC;
-				taop->tao_ccsent = tp->cc_send;
-			} else {
-				opt[optlen++] = TCPOPT_CCNEW;
-				taop->tao_ccsent = 0;
-			}
-			opt[optlen++] = TCPOLEN_CC;
-			*(u_int32_t *)&opt[optlen] = htonl(tp->cc_send);
- 			optlen += 4;
+                            if (taop->tao_ccsent != 0 &&
+                                CC_GEQ(tp->cc_send, taop->tao_ccsent)) {
+                                    opt[optlen++] = TCPOPT_CC;
+                                    taop->tao_ccsent = tp->cc_send;
+                            } else {
+                                    opt[optlen++] = TCPOPT_CCNEW;
+                                    taop->tao_ccsent = 0;
+                            }
+                            opt[optlen++] = TCPOLEN_CC;
+                            opt_ptr = (u_int32_t *)&opt[optlen];
+                            *opt_ptr = htonl(tp->cc_send);
+                            optlen += 4;
+                        }
 			break;
 
 		/*
@@ -405,22 +413,25 @@ send:
 		 * CC from our peer.
 		 */
 		case (TH_SYN|TH_ACK):
-			if (tp->t_flags & TF_RCVD_CC) {
-				opt[optlen++] = TCPOPT_NOP;
-				opt[optlen++] = TCPOPT_NOP;
-				opt[optlen++] = TCPOPT_CC;
-				opt[optlen++] = TCPOLEN_CC;
-				*(u_int32_t *)&opt[optlen] =
-					htonl(tp->cc_send);
-				optlen += 4;
-				opt[optlen++] = TCPOPT_NOP;
-				opt[optlen++] = TCPOPT_NOP;
-				opt[optlen++] = TCPOPT_CCECHO;
-				opt[optlen++] = TCPOLEN_CC;
-				*(u_int32_t *)&opt[optlen] =
-					htonl(tp->cc_recv);
-				optlen += 4;
-			}
+                        {
+                            u_int32_t *opt_ptr;
+                            if (tp->t_flags & TF_RCVD_CC) {
+                                    opt[optlen++] = TCPOPT_NOP;
+                                    opt[optlen++] = TCPOPT_NOP;
+                                    opt[optlen++] = TCPOPT_CC;
+                                    opt[optlen++] = TCPOLEN_CC;
+                                    opt_ptr = (u_int32_t *)&opt[optlen];
+                                    *opt_ptr = htonl(tp->cc_send);
+                                    optlen += 4;
+                                    opt[optlen++] = TCPOPT_NOP;
+                                    opt[optlen++] = TCPOPT_NOP;
+                                    opt[optlen++] = TCPOPT_CCECHO;
+                                    opt[optlen++] = TCPOLEN_CC;
+                                    opt_ptr = (u_int32_t *)&opt[optlen];
+                                    *opt_ptr = htonl(tp->cc_recv);
+                                    optlen += 4;
+                            }
+                        }
 			break;
 		}
  	}
