@@ -106,6 +106,7 @@ static void enable_mmu030(ULONG *levela)
 {
     asm volatile (
     	".chip 68030\n"
+	"move.l %%a5,%%a4\n"
 	"move.l	%0,%%d0\n"
 	"move.l 4.w,%%a6\n"
 	"lea	.esuper030(%%pc),%%a5\n"
@@ -142,12 +143,15 @@ static void enable_mmu030(ULONG *levela)
 	"addq.l	#8,%%a7\n"
 	"rte\n"
 	"0:\n"
-	: : "m" (levela) : "d0", "d1", "a5", "a6");
+	"move.l %%a4,%%a5\n"
+	: : "m" (levela) : "d0", "d1", "a4", "a6");
 }
+
 static void disable_mmu030(void)
 {
     asm volatile (
     	".chip 68030\n"
+	"move.l %%a5,%%a4\n"
 	"move.l 4.w,%%a6\n"
 	"lea	.dsuper030(%%pc),%%a5\n"
 	"jsr	-0x1e(%%a6)\n"
@@ -162,12 +166,15 @@ static void disable_mmu030(void)
 	"addq.l	#4,%%a7\n"
 	"rte\n"
 	"0:\n"
-	: : : "d0", "d1", "a5", "a6");
+	"move.l %%a4,%%a5\n"
+	: : : "d0", "d1", "a4", "a6");
 }
+
 static void enable_mmu040(ULONG *levela, UBYTE cpu060, UBYTE *zeropagedescriptor)
 {
     asm volatile (
     	".chip 68060\n"
+	"move.l %%a5,%%a4\n"
 	"move.l	%0,%%d0\n"
 	"move.b	%1,%%d1\n"
 	"move.l %2,%%a1\n"
@@ -208,13 +215,15 @@ static void enable_mmu040(ULONG *levela, UBYTE cpu060, UBYTE *zeropagedescriptor
 	"movec	%%d1,%%dtt1\n"
     	"rte\n"
     	"0:\n"
-	: : "m" (levela), "m" (cpu060), "m" (zeropagedescriptor) : "d0", "d1", "a1", "a5", "a6");
+	"move.l %%a4,%%a5\n"
+	: : "m" (levela), "m" (cpu060), "m" (zeropagedescriptor) : "d0", "d1", "a1", "a4", "a6");
 }
 
 static void disable_mmu040(void)
 {
     asm volatile (
     	".chip 68060\n"
+	"move.l %%a5,%%a4\n"
 	"move.l 4.w,%%a6\n"
 	"lea	.dsuper040(%%pc),%%a5\n"
 	"jsr	-0x1e(%%a6)\n"
@@ -228,18 +237,21 @@ static void disable_mmu040(void)
 	"pflusha\n"
 	"rte\n"
 	"0:\n"
-	: : : "d0", "d1", "a5", "a6");
+	"move.l %%a4,%%a5\n"
+	: : : "d0", "d1", "a4", "a6");
 }
 
 void enable_mmu(struct KernelBase *kb)
 {
 	if (!kb->kb_PlatformData->mmu_type)
 		return;
+
 	if (kb->kb_PlatformData->mmu_type == MMU030)
 		enable_mmu030(kb->kb_PlatformData->MMU_Level_A);
 	else
 		enable_mmu040(kb->kb_PlatformData->MMU_Level_A, kb->kb_PlatformData->mmu_type == MMU060, kb->kb_PlatformData->zeropagedescriptor);
 }
+
 void disable_mmu(struct KernelBase *kb)
 {
 	if (!kb->kb_PlatformData->mmu_type)
