@@ -106,10 +106,10 @@ static size_t strfnumb(char *s, size_t maxsize, signed int places, size_t value)
 ******************************************************************************/
 {
     size_t size = 0, tmp;
-    
-    if (timeptr == NULL)// removed "format == NULL"
+
+    if (format == NULL || timeptr == NULL)
         return 0;
-    
+
     while (*format)
     {
         if (*format == '%')
