@@ -1096,8 +1096,8 @@ int _ShowPartsOfLayer(struct Layer * l,
    * according to the clipregion
    */
 
-if (show_region == l->VisibleRegion)
-  kprintf("ERROR - same regions!! %s\n",__FUNCTION__);
+ if (show_region == l->VisibleRegion)
+   kprintf("ERROR - same regions!! %s\n",__FUNCTION__);
 
   clipregion = InstallClipRegion(l, NULL);
 
