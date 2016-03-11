@@ -217,6 +217,7 @@ POSIXC_COMMON := \
 
 USER_LDFLAGS := -noposixc
 POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(POSIXC_COMMON))))
+USER_CFLAGS += -Wno-nonnull-compare 
 
 %build_module mmake=compiler-posixc \
     modname=posixc modtype=library \
