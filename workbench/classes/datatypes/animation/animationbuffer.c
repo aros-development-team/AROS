@@ -79,12 +79,12 @@ struct AnimFrame *NextToBuffer(struct ProcessPrivate *priv, struct AnimFrame *ne
 findprevframe:
     while ((prevFrame->af_Node.ln_Succ) && (prevFrame->af_Node.ln_Succ->ln_Succ) && 
                 ((prevFrame == (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames) ||
-                 (NODEID(prevFrame->af_Node.ln_Succ) == (NODEID(prevFrame) + 1))))
+                 (GetNODEID((struct AnimFrame *)prevFrame->af_Node.ln_Succ) == (GetNODEID(prevFrame) + 1))))
     {
         prevFrame = (struct AnimFrame *)prevFrame->af_Node.ln_Succ;
     }
 
-    if (NODEID(prevFrame) == (priv->pp_Data->ad_FrameData.afd_Frames - 1))
+    if (GetNODEID(prevFrame) == (priv->pp_Data->ad_FrameData.afd_Frames - 1))
     {
         prevFrame = (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames;
         if (!loop)
@@ -97,7 +97,7 @@ findprevframe:
     if (prevFrame != (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames)
     {
         startFrame = prevFrame;
-        newFrame->af_Frame.alf_Frame = NODEID(prevFrame) + 1;
+        newFrame->af_Frame.alf_Frame = GetNODEID(prevFrame) + 1;
     }
     else
     {
@@ -105,7 +105,7 @@ findprevframe:
         newFrame->af_Frame.alf_Frame = 0;
     }
 
-    NODEID(newFrame) = (UWORD) newFrame->af_Frame.alf_Frame;
+    SetNODEID(newFrame, (UWORD) newFrame->af_Frame.alf_Frame);
     newFrame->af_Frame.alf_TimeStamp = newFrame->af_Frame.alf_Frame;
     priv->pp_BufferFirst = startFrame;
 
@@ -119,14 +119,14 @@ BOOL DoFramePurge(struct Animation_Data *animd, struct AnimFrame *purgeFrame)
     if ((purgeFrame->af_Frame.alf_BitMap != animd->ad_FrameBM) &&
         (purgeFrame != animd->ad_ProcessData->pp_PlaybackFrame) &&
         (purgeFrame != animd->ad_ProcessData->pp_BufferFirst) &&
-        (NODEID(purgeFrame) != dispplayedframe) &&
-        (NODEID(purgeFrame) != 0))
+        (GetNODEID(purgeFrame) != dispplayedframe) &&
+        (GetNODEID(purgeFrame) != 0))
     {
-        if ((NODEID(purgeFrame) > (dispplayedframe + animd->ad_ProcessData->pp_BufferFrames)) ||
-            (NODEID(purgeFrame) < dispplayedframe))
+        if ((GetNODEID(purgeFrame) > (dispplayedframe + animd->ad_ProcessData->pp_BufferFrames)) ||
+            (GetNODEID(purgeFrame) < dispplayedframe))
         {
             if ((dispplayedframe > (animd->ad_FrameData.afd_Frames -  animd->ad_ProcessData->pp_BufferFrames)) &&
-                (NODEID(purgeFrame) < (animd->ad_ProcessData->pp_BufferFrames - (animd->ad_FrameData.afd_Frames - dispplayedframe))))
+                (GetNODEID(purgeFrame) < (animd->ad_ProcessData->pp_BufferFrames - (animd->ad_FrameData.afd_Frames - dispplayedframe))))
                 return FALSE;
 
             return TRUE;
@@ -148,7 +148,7 @@ void PurgeFrames(struct Animation_Data *animd, BOOL flush)
         {
             if ((flush) || DoFramePurge(animd, (struct AnimFrame *)purgeFrame))
             {
-                D(bug("[animation.datatype/BUFFER]: %s: unloading frame #%d\n", __func__, NODEID(purgeFrame));)
+                D(bug("[animation.datatype/BUFFER]: %s: unloading frame #%d\n", __func__, GetNODEID(purgeFrame));)
 
                 freeFrame(animd, purgeFrame);
 
@@ -269,7 +269,7 @@ AROS_UFH3(void, bufferProc,
                                 while ((startFrame->af_Node.ln_Succ) &&
                                     (startFrame->af_Node.ln_Succ->ln_Succ) &&
                                     ((startFrame == (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames) ||
-                                    (NODEID(startFrame->af_Node.ln_Succ) < priv->pp_BufferSpecific)))
+                                    (GetNODEID((struct AnimFrame *)startFrame->af_Node.ln_Succ) < priv->pp_BufferSpecific)))
                                 {
                                     startFrame = (struct AnimFrame *)startFrame->af_Node.ln_Succ;
                                 }
@@ -279,7 +279,7 @@ AROS_UFH3(void, bufferProc,
 
                                 priv->pp_BufferFirst = startFrame;
 
-                                NODEID(curFrame) = (UWORD) curFrame->af_Frame.alf_Frame;
+                                SetNODEID(curFrame, (UWORD) curFrame->af_Frame.alf_Frame);
                                 curFrame->af_Frame.alf_TimeStamp = curFrame->af_Frame.alf_Frame;
                             }
                             else
@@ -307,18 +307,18 @@ AROS_UFH3(void, bufferProc,
                                 if (startFrame == priv->pp_BufferFirst)
                                 {
                                     priv->pp_BufferSpecific = -1;
-                                    if (NODEID(curFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1))
+                                    if (GetNODEID(curFrame) < (priv->pp_Data->ad_FrameData.afd_Frames - 1))
                                     {
                                         priv->pp_BufferFirst =  curFrame;
                                         while ((priv->pp_BufferFirst->af_Node.ln_Succ) &&
                                             (priv->pp_BufferFirst->af_Node.ln_Succ->ln_Succ) &&
-                                            (NODEID(priv->pp_BufferFirst->af_Node.ln_Succ) == (NODEID(priv->pp_BufferFirst) + 1)))
+                                            (GetNODEID((struct AnimFrame *)priv->pp_BufferFirst->af_Node.ln_Succ) == (GetNODEID(priv->pp_BufferFirst) + 1)))
                                         {
                                             priv->pp_BufferFirst = (struct AnimFrame *)priv->pp_BufferFirst->af_Node.ln_Succ;
                                         }
                                     }
                                     if ((priv->pp_BufferFirst) &&
-                                        (NODEID(priv->pp_BufferFirst) == (priv->pp_Data->ad_FrameData.afd_Frames - 1)))
+                                        (GetNODEID(priv->pp_BufferFirst) == (priv->pp_Data->ad_FrameData.afd_Frames - 1)))
                                         priv->pp_BufferFirst =  NULL;
                                 }
                                 ReleaseSemaphore(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);

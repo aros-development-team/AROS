@@ -82,8 +82,15 @@ struct AnimFrame
 };
 
 /* for sanity, we embed the frame number in the ln_type/ln_pri fields */
-#define NODEID(node)  *((UWORD *)(&((struct AnimFrame *)node)->af_Node.ln_Type))
+static inline UWORD GetNODEID(struct AnimFrame *node) {
+    UWORD *id_ptr = (UWORD *)&node->af_Node.ln_Type;
+    return *id_ptr;
+}
 
+static inline void SetNODEID(struct AnimFrame *node, UWORD id) {
+    UWORD *id_ptr = (UWORD *)&node->af_Node.ln_Type;
+    *id_ptr = id;
+}
 
 struct Animation_Data
 {
