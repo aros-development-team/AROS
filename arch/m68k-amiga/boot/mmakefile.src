@@ -217,7 +217,8 @@ $(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/
 clean ::
 	-$(RM) $(TESTS)
 
-USER_CFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
+USER_CFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+               -fno-delete-null-pointer-checks
 USER_AFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 
 $(KOBJSDIR)/%.o : %.c
