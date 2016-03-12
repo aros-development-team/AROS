@@ -3038,12 +3038,18 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 		for(x = startX; x != endX; x += deltaX)
 		{
 		    register HIDDT_Pixel pix;
-		    register HIDDT_Color *col;
+		    HIDDT_Color col;
 		    
 		    pix = HIDD_BM_GetPixel(src, srcX + x, srcY + y);
-		    col = &ctab[pix];
+		    col = ctab[pix];
+
+                    /*
+                     * !!!! HIDD_BM_MapColor() pokes pixval of the passed HIDDT_Color,
+                     * so if the address of the entry in the colormap is passed, the colormap
+                     * itself will be modified, if we pass "&ctab[pix]" to HIDD_BM_MapColor() !!!!
+                     */
 	
-		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, col);
+		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
 		    HIDD_BM_DrawPixel(msg->dest, gc, destX + x, destY + y);
 		    
 		}
@@ -3274,7 +3280,16 @@ IPTR GFX__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHidd_G
 			    	 * and pixfmt is a bitmap's property.
 			    	 * graphics.library has pixlut attached to a BitMap structure (using HIDD_BM_PIXTAB() macro).
 			    	 */
-				pix = HIDD_BM_MapColor(msg->dest, &ctab[pix]);
+                                 
+                                /*
+                                 * !!!! HIDD_BM_MapColor() pokes pixval of the passed HIDDT_Color,
+                                 * so if the address of the entry in the colormap is passed, the colormap
+                                 * itself will be modified, if we pass "&ctab[pix]" to HIDD_BM_MapColor() !!!!
+                                 */
+                                 
+                                HIDDT_Color col = ctab[pix];
+
+				pix = HIDD_BM_MapColor(msg->dest, &col);
 			    }
 
 			    *destpixelbuf = pix;
