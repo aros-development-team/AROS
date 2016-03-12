@@ -22,7 +22,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$TARGET --enable-target-variant=$VARIANT --enable-ccache --enable-build-type=nightly
+execute ./configure --target=$TARGET --enable-target-variant=$VARIANT --enable-ccache --with-paranoia --enable-build-type=nightly
 make
 
 DISTFILE=$BASENAME-$BUILDTARGET.tar.gz
