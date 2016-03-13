@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 FILES  := fd2pragma
 EXEDIR := $(AROS_CONTRIB)/Development/Build
-NOWARN_FLAGS := -Wno-format
+NOWARN_FLAGS := -Wno-format -Wno-unused-but-set-variable
 USER_CFLAGS := $(NOWARN_FLAGS) -DFD2PRAGMA_READARGS -DFD2PRAGMA_AMIGA
 
 %build_prog mmake=tools-fd2pragma files=$(FILES) \
