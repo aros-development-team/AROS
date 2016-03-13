@@ -71,7 +71,7 @@ static char 	     	    *filename;
 static FILE 	     	    *file;
 static unsigned char 	    *filebuffer, *body, *planarbuffer, *chunkybuffer;
 static unsigned char	    *planarbuffer_packed, *chunkybuffer_packed;
-static long 	     	    filesize, bodysize, bodysize_packed;
+static LONG 	     	    filesize, bodysize, bodysize_packed;
 static long 	     	    filepos;
 static struct BitMapHeader  bmh;
 static LONG 	    	    cmapentries, totdepth, bpr;
@@ -574,7 +574,7 @@ static void packdata(void)
     fprintf(stderr, "Starting packing\n"); 
        
     success = pack_byterun1(chunkybuffer, chunkybuffer_packed,
-            	    	    chunkysize, chunkysize, bodysize_packed);
+            	    	    chunkysize, chunkysize, &bodysize_packed);
 			    
     fprintf(stderr, "Done packing. Success = %d\n", success);    
     if (!success)
