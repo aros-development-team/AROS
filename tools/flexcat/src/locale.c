@@ -121,6 +121,6 @@ void LocalizeStringArray(STRPTR *Array)
 
    for(x = Array; *x != NULL; x++)
    {
-      *x = strdup(FlexCat_Strings[(int)*x].Str);
+      *x = strdup(FlexCat_Strings[(IPTR)*x].Str);
    }
 }
