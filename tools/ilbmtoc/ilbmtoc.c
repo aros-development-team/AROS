@@ -574,7 +574,7 @@ static void packdata(void)
     fprintf(stderr, "Starting packing\n"); 
        
     success = pack_byterun1(chunkybuffer, chunkybuffer_packed,
-            	    	    chunkysize, chunkysize, &bodysize_packed);
+            	    	    chunkysize, chunkysize, bodysize_packed);
 			    
     fprintf(stderr, "Done packing. Success = %d\n", success);    
     if (!success)
