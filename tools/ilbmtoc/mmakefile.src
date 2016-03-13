@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 
 FILES := ilbmtoc
 EXEDIR := $(AROS_CONTRIB)/Development/Build
+NOWARN_FLAGS := -Wno-format
+USER_CFLAGS := $(NOWARN_FLAGS)
 
 %build_prog mmake=tools-ilbmtoc \
     progname=ilbmtoc targetdir=$(EXEDIR) \
