@@ -251,7 +251,7 @@ static int ata_expunge(struct ataBase *ATABase)
          */
         OOP_Object *storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
 
-        if (HW_RemoveDriver(storageRoot, ATABase->ataObj))
+        if (storageRoot && HW_RemoveDriver(storageRoot, ATABase->ataObj))
         {
             /* Destroy our singletone */
             OOP_MethodID disp_msg = OOP_GetMethodID(IID_Root, moRoot_Dispose);
