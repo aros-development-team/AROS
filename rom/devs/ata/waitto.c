@@ -18,7 +18,7 @@ ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
 {
     ULONG sig = 1 << tmr->io_Message.mn_ReplyPort->mp_SigBit;
 
-    D(struct Node *t = FindTask(NULL));
+    D(struct Node *t = (struct Node *)FindTask(NULL));
     D(bug("[ATA  ] Timed wait %lds %ldu (task='%s')\n", secs, micro,
         t->ln_Name));
 
