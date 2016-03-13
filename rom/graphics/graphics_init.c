@@ -76,7 +76,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
     LIBBASE->MaxDisplayRow = AROS_NOMINAL_HEIGHT;
 
     PrivGBase(LIBBASE)->basebm = OOP_FindClass(CLID_Hidd_BitMap);
-    bug("[Gfx] BitMap class @ 0x%p\n", PrivGBase(LIBBASE)->basebm);
+    D(bug("[Gfx] BitMap class @ 0x%p\n", PrivGBase(LIBBASE)->basebm));
 
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );

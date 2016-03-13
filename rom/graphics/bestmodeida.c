@@ -253,7 +253,7 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
         -1, -1            /* Found size   */
     };
 
-    bug("[Gfx] %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[Gfx] %s()\n", __PRETTY_FUNCTION__));
 
     /* Obtain default monitor driver */
     monitor = MonitorFromSpec(GfxBase->default_monitor, GfxBase);
