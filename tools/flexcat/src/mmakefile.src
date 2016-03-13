@@ -26,7 +26,8 @@ FILES := \
     openlibs
 
 EXEDIR := $(AROS_CONTRIB)/Development/FlexCat
-USER_CFLAGS := -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
+NOWARN_FLAGS := -Wno-format
+USER_CFLAGS := $(NOWARN_FLAGS) -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
 
 %build_prog mmake=tools-flexcat-bin files=$(FILES) \
     progname=flexcat targetdir=$(EXEDIR)
