@@ -556,6 +556,8 @@ enum ABI {ABI_M68K, ABI_PPC, ABI_PPC2, ABI_PPC0};
 #define FDFILEEXTENSION  "_lib.fd"
 #define SFDFILEEXTENSION "_lib.sfd"
 
+static const strptr libstring = "Library";
+
 static const strptr RegNames[] = {
 "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",
 "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
@@ -1982,7 +1984,7 @@ static strptr GetBaseTypeLib(void)
       return Proto_LibTypes[i].StructureName;
     }
   }
-  return "Library";
+  return libstring;
 }
 
 static strptr GetLibraryName(void)
@@ -11657,7 +11659,7 @@ static uint32 CreateXML(void)
   "<!DOCTYPE library SYSTEM \"library.dtd\">\n"
   "<library name=\"%s\" basename=\"%s\" openname=\"%s\"",
   ShortBaseName, BaseName, GetLibraryName());
-  if(GetBaseTypeLib() != "Library")
+  if(GetBaseTypeLib() != libstring)
     DoOutput(" basetype=\"%s\"", GetBaseTypeLib());
   DoOutput(">\n");
   for(inc = (struct Include *) Includes.First; inc;
