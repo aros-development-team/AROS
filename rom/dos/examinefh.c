@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: dos.library function ExamineFH().
@@ -20,7 +20,7 @@
         AROS_LH2(BOOL, ExamineFH,
 
 /*  SYNOPSIS */
-        AROS_LHA(BPTR,                   lock, D1),
+        AROS_LHA(BPTR,                   fh, D1),
         AROS_LHA(struct FileInfoBlock *, fib,  D2),
 
 /*  LOCATION */
@@ -47,11 +47,12 @@
     AROS_LIBFUNC_INIT
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh = BADDR(lock);
+    struct FileHandle *handle = BADDR(fh);
     BOOL ret;
 
-    D(bug("[ExamineFH] fh=%x fib=%x\n", fh, fib));
-    ret = dopacket2(DOSBase, NULL, fh->fh_Type, ACTION_EXAMINE_FH, fh->fh_Arg1, MKBADDR(fib));
+    D(bug("[ExamineFH] handle=%x fib=%x\n", handle, fib));
+    ret = dopacket2(DOSBase, NULL, handle->fh_Type, ACTION_EXAMINE_FH,
+        handle->fh_Arg1, MKBADDR(fib));
     if (ret) {
         fixfib(fib);
         D(bug("[ExamineFH] '%s'\n", fib->fib_FileName));
