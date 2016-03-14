@@ -19,8 +19,8 @@ MECHO	    ?= echo
 # influences makecountry which uses libiconv. MacPorts libiconv has different ABI
 # from system's one, this causes conflicts.
 ifeq ($(AROS_HOST_ARCH),darwin)
-    HOST_CFLAGS  += -isystem /opt/local/include
-    HOST_LDFLAGS += -L/opt/local/lib/
+    HOST_CFLAGS  += -isystem /opt/local/include -isystem /usr/local/include
+    HOST_LDFLAGS += -L/opt/local/lib/ -L/usr/local/lib
 endif
 
 ifeq ($(AROS_HOST_ARCH),mingw32)
