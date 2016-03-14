@@ -3,7 +3,7 @@
 
 /*
 **
-** $Id:$
+** $Id$
 **  anim.datatype 1.11
 **
 **  anim class data
