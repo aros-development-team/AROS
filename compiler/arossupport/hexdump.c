@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prints a hexdump of a memory region
@@ -22,8 +22,8 @@
 	ULONG	     count)
 
 /*  FUNCTION
-	Prints a hexdump of the data beginning at data. The format
-	is liks this:
+	Prints a hexdump of the data beginning at 'data'. The format
+	is like this:
 
 	xxxxxxxx: dddddddd dddddddd dddddddd dddddddd aaaaaaaaaaaaaaaa
 
@@ -51,9 +51,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	05-12-96    digulla created
 
 ******************************************************************************/
 {
@@ -84,8 +81,8 @@
 	    	UBYTE c = ((UBYTE *)data)[t-i];
 
 		/*
-		 * isprint() introduces depencency on arosc.library, which prevents
-		 * using this function from within KS code.
+		 * isprint() introduces dependency on stdc.library, which
+		 * prevents using this function from within KS code.
 		 */
 	    	if ((c > 0x1F) && (c < 0x7E))
 		    kprintf ("%c", c);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,14 +42,11 @@ const ULONG m68k_string_sprintf = 0x16c04e75;
 
     INTERNALS
 
-    HISTORY
-	07.01.2000  SDuvan  implemented
-
 *****************************************************************************/
 {
 #ifdef __mc68000
     /* Special case for m68k, so that we are AmigaOS 1.x/2.x compliant
-     * New programs should be using snprintf() from arosc.library
+     * New programs should be using snprintf() from stdc.library
      */
     RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string_sprintf, buffer);
 #else
