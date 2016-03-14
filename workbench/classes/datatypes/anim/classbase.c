@@ -1,7 +1,7 @@
 
 /*
 **
-** $Id:$
+** $Id$
 **  anim.datatype 1.12
 **
 **  Library routines for a DataTypes class

@@ -1,7 +1,7 @@
 
 /*
 **
-** $Id:$
+** $Id$
 **  anim.datatype 1.12
 **
 **  Dispatch routine for a DataTypes class

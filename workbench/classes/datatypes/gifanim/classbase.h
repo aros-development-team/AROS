@@ -35,7 +35,7 @@
 #include <graphics/text.h>
 #include <graphics/scale.h>
 #include <cybergraphx/cybergraphics.h>
-#include <intuition/classes.h>  /* must be $Id: classes.h,v 40.0 94/02/15 17:46:35 davidj Exp Locker: davidj $ */
+#include <intuition/classes.h>  /* must have Id tag "classes.h,v 40.0 94/02/15 17:46:35 davidj Exp Locker: davidj" */
 #include <intuition/classusr.h>
 #include <intuition/cghooks.h>
 #include <intuition/icclass.h>
