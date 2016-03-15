@@ -32,6 +32,7 @@
 #define AROS_SLOWSTACKTAGS      1
 #define AROS_SLOWSTACKMETHODS   1
 #define AROS_SLOWSTACKHOOKS     1
+#define AROS_SLOWSTACKFORMAT    1
 
 #define AROS_32BIT_TYPE         int
 #define AROS_64BIT_TYPE         long

@@ -16,147 +16,40 @@
 #include <aros/asmcall.h>
 #include "locale_intern.h"
 
+#include <clib/alib_protos.h>
+
 #include <aros/debug.h>
 
-#if USE_QUADFMT
 typedef QUAD FMTLARGESTTYPE;
 typedef UQUAD UFMTLARGESTTYPE;
-#else /* USE_QUADFMT */
-typedef LONG FMTLARGESTTYPE;
-typedef ULONG UFMTLARGESTTYPE;
-#endif /* USE_QUADFMT */
 
 static const UBYTE hexarray[] = "0123456789abcdef";
 static const UBYTE HEXarray[] = "0123456789ABCDEF";
 
-static inline APTR stream_addr(APTR *args, ULONG len)
-{
-    APTR ret = *args;
-
-    /* LONG data are actually IPTR-aligned */
-    *args += (len == sizeof(ULONG)) ? sizeof(IPTR) : len;
-    return ret;
-}
-
-/* The stuff below is based on old gcc includes (where you can actually read how
-   varargs work) and ABI documentation.
-   It works in the same way as traditional va_arg() except it fetches
-   pointers to arguments, not arguments themselves (since on 32-bit machines
-   argument values may be larger than pointers). */
-
-#if defined(__PPC__)
-
-static inline APTR va_addr(va_list args, ULONG len)
-{
-    APTR ret;
-
-    if (len == sizeof(UQUAD))
-    {
-        /* On PPC UQUAD is aligned. and occupies 2 registers (plus may waste one more for alignment) */
-        if (args->gpr < 7)
-        {
-            ULONG *regsave = (ULONG *)args->reg_save_area;
-
-            args->gpr += args->gpr & 1;
-            ret = &regsave[args->gpr];
-            args->gpr += 2;
-        }
-        else
-        {
-            args->gpr = 8;
-            ret = (APTR)(((IPTR)(args->overflow_arg_area + 7)) & ~7);
-            args->overflow_arg_area = ret + sizeof(UQUAD);
-        }
-    }
-    else
-    {
-        if (args->gpr < 8)
-        {
-            ULONG *regsave = (ULONG *)args->reg_save_area;
-
-            ret = &regsave[args->gpr++];
-        }
-        else
-        {
-            ret = args->overflow_arg_area;
-            args->overflow_arg_area += sizeof(ULONG);
-        }
-    }
-    return ret;
-}
-
-#elif defined(__x86_64__)
-
-static inline APTR va_addr(va_list args, ULONG len)
-{
-    APTR ret;
-
-    if (args->gp_offset < 48)
-    {
-        ret = args->reg_save_area + args->gp_offset;
-        args->gp_offset += sizeof(IPTR);
-    }
-    else
-    {
-        ret = args->overflow_arg_area;
-        args->overflow_arg_area += sizeof(IPTR);
-    }
-    return ret;
-}
-
-#elif defined(__arm__)
-
-#define va_addr(args, len) stream_addr(&args.__ap, len)
-#define is_va_list(ap) ap.__ap
-#define null_va_list(ap) va_list ap = {NULL}
-
-#else
-
-/*
- * It is OK to reuse stream_addr() here because for C-style varargs
- * 'len' will never be 2 (see default data size condition below)
- */
-#define va_addr(args, len) stream_addr((APTR *)&args, len)
-
-#endif
-
-#ifndef is_va_list
-
-#define is_va_list(ap) ap
-#define null_va_list(ap) void *ap = NULL
-
-#endif
-
 APTR InternalFormatString(const struct Locale * locale,
     CONST_STRPTR fmtTemplate, CONST_APTR dataStream,
-    const struct Hook * putCharFunc, va_list VaListStream)
+    ULONG *indexStream, const struct Hook * putCharFunc)
 {
     enum
     { OUTPUT = 0,
         FOUND_FORMAT
     } state;
 
+#define ARG(x)  ((CONST_APTR)((IPTR)dataStream + indexStream[(x) - 1]))
+
     ULONG template_pos;
     BOOL end;
     ULONG max_argpos;
     ULONG arg_counter;
-    BOOL scanning;
-
-#define INDICES 256
-    IPTR indices[INDICES];
 
     if (!fmtTemplate)
-        return (APTR) dataStream;
+        return (APTR)dataStream;
 
     template_pos = 0;           /* Current position in the template string */
     state = OUTPUT;             /* current state of parsing */
     end = FALSE;
-    max_argpos = 0;
+    max_argpos = 1;
     arg_counter = 0;
-    scanning = TRUE;            /* The first time I will go through
-                                   and determine the width of the data in the dataStream */
-
-    memset(indices, sizeof(APTR), sizeof(indices));
 
     while (!end)
     {
@@ -175,55 +68,17 @@ APTR InternalFormatString(const struct Locale * locale,
             /*
              ** Call the hook for this character
              */
-            if (!scanning)
-            {
-                AROS_UFC3NR(VOID, putCharFunc->h_Entry,
-                    AROS_UFCA(const struct Hook *, putCharFunc, A0),
-                    AROS_UFCA(const struct Locale *, locale, A2),
-                    AROS_UFCA(UBYTE, fmtTemplate[template_pos], A1));
-            }
+            AROS_UFC3NR(VOID, putCharFunc->h_Entry,
+                AROS_UFCA(const struct Hook *, putCharFunc, A0),
+                AROS_UFCA(const struct Locale *, locale, A2),
+                AROS_UFCA(UBYTE, fmtTemplate[template_pos], A1));
 
             /*
              ** End of template string? -> End of this function.
              */
             if (fmtTemplate[template_pos] == '\0')
             {
-                if (scanning)
-                {
-                    /*
-                     ** The scanning phase is over. Next time we do the output.
-                     */
-                    int i;
-                    scanning = FALSE;
-                    template_pos = 0;
-                    arg_counter = 0;
-
-                    /*
-                     ** prepare the indices array
-                     */
-                    if (is_va_list(VaListStream))
-                    {
-                        for (i = 0; i <= max_argpos; i++)
-                            indices[i] =
-                                (IPTR) va_addr(VaListStream, indices[i]);
-                    }
-                    else
-                    {
-                        for (i = 0; i <= max_argpos; i++)
-                            indices[i] =
-                                (IPTR) stream_addr((APTR *) & dataStream,
-                                indices[i]);
-                    }
-
-                }
-                else
-                {
-                    /*
-                     ** We already went through the output phase. So this is
-                     ** the end of it.
-                     */
-                    end = TRUE;
-                }
+                end = TRUE;
             }
             else
                 template_pos++;
@@ -244,13 +99,10 @@ APTR InternalFormatString(const struct Locale * locale,
              */
             if (fmtTemplate[template_pos] == '%')
             {
-                if (!scanning)
-                {
-                    AROS_UFC3NR(VOID, putCharFunc->h_Entry,
-                        AROS_UFCA(const struct Hook *, putCharFunc, A0),
-                        AROS_UFCA(const struct Locale *, locale, A2),
+                AROS_UFC3NR(VOID, putCharFunc->h_Entry,
+                    AROS_UFCA(const struct Hook *, putCharFunc, A0),
+                    AROS_UFCA(const struct Locale *, locale, A2),
                         AROS_UFCA(UBYTE, fmtTemplate[template_pos], A1));
-                }
                 template_pos++;
                 arg_counter--;  //stegerg
             }
@@ -374,31 +226,23 @@ APTR InternalFormatString(const struct Locale * locale,
                     datasize = sizeof(IPTR);
                     template_pos++;
                     break;
-#if USE_QUADFMT
                 case 'L':
                     datasize = sizeof(UQUAD);
                     template_pos++;
                     break;
-#endif /* USE_QUADFMT */
-
                 case 'l':
                     template_pos++;
-#if USE_QUADFMT
                     if (fmtTemplate[template_pos] == 'l')
                     {
                         datasize = sizeof(UQUAD);
                         template_pos++;
                     }
                     else
-#endif /* USE_QUADFMT */
                         datasize = sizeof(ULONG);
                     break;
 
                 default:
-                    /* For C-style varargs default size is ULONG, single 'l' is effectively ignored */
-                    datasize =
-                        is_va_list(VaListStream) ? sizeof(ULONG) :
-                        sizeof(UWORD);
+                    datasize = sizeof(UWORD);
                     break;
                 }
 
@@ -412,9 +256,8 @@ APTR InternalFormatString(const struct Locale * locale,
                      ** Important parameters:
                      ** arg_pos, left, buflen, limit
                      */
-                    if (!scanning)
                     {
-                        BSTR s = (BSTR) * (UBYTE **) indices[arg_pos - 1];
+                        BSTR s = (BSTR) * (UBYTE **) ARG(arg_pos);
 
                         if (s != (BSTR) BNULL)
                         {
@@ -432,8 +275,6 @@ APTR InternalFormatString(const struct Locale * locale,
                             buflen = limit;
 #endif /* !USE_GLOBALLIMIT */
                     }
-                    else
-                        indices[arg_pos - 1] = sizeof(BPTR);
                     break;
 
                 case 'd':      /* signed decimal */
@@ -441,22 +282,18 @@ APTR InternalFormatString(const struct Locale * locale,
 
                     minus = fmtTemplate[template_pos] == 'd';
 
-                    if (!scanning)
                     {
                         switch (datasize)
                         {
-#if USE_QUADFMT
                         case 8:
-                            tmp = *(UQUAD *) indices[arg_pos - 1];
+                            tmp = *(UQUAD *) ARG(arg_pos);
                             //buffer = &buf[16+1];
                             minus *= (FMTLARGESTTYPE) tmp < 0;
                             if (minus)
                                 tmp = -tmp;
                             break;
-#endif /* USE_QUADFMT */
-
                         case 4:
-                            tmp = *(ULONG *) indices[arg_pos - 1];
+                            tmp = *(ULONG *) ARG(arg_pos);
                             //buffer = &buf[8+1];
                             minus *= (LONG) tmp < 0;
                             if (minus)
@@ -464,7 +301,7 @@ APTR InternalFormatString(const struct Locale * locale,
                             break;
 
                         default:       /* 2 */
-                            tmp = *(UWORD *) indices[arg_pos - 1];
+                            tmp = *(UWORD *) ARG(arg_pos);
                             //buffer = &buf[4+1];
                             minus *= (WORD) tmp < 0;
                             if (minus)
@@ -488,13 +325,10 @@ APTR InternalFormatString(const struct Locale * locale,
                         }
 
                     }
-                    else
-                        indices[arg_pos - 1] = datasize;
                     break;
 
                 case 'D':      /* signed decimal with locale's formatting conventions */
                 case 'U':      /* unsigned decimal with locale's formatting conventions */
-                    if (!scanning)
                     {
                         UBYTE groupsize;
                         ULONG group_index = 0;
@@ -503,24 +337,21 @@ APTR InternalFormatString(const struct Locale * locale,
 
                         switch (datasize)
                         {
-#if USE_QUADFMT
                         case 8:
-                            tmp = *(UQUAD *) indices[arg_pos - 1];
+                            tmp = *(UQUAD *) ARG(arg_pos);
                             minus *= (FMTLARGESTTYPE) tmp < 0;
                             if (minus)
                                 tmp = -tmp;
                             break;
-#endif /* USE_QUADFMT */
-
                         case 4:
-                            tmp = *(ULONG *) indices[arg_pos - 1];
+                            tmp = *(ULONG *) ARG(arg_pos);
                             minus *= (LONG) tmp < 0;
                             if (minus)
                                 tmp = (ULONG) - tmp;
                             break;
 
                         default:       /* 2 */
-                            tmp = *(UWORD *) indices[arg_pos - 1];
+                            tmp = *(UWORD *) ARG(arg_pos);
                             minus *= (WORD) tmp < 0;
                             if (minus)
                                 tmp = (UWORD) - tmp;
@@ -577,8 +408,6 @@ APTR InternalFormatString(const struct Locale * locale,
                             buflen++;
                         }
                     }
-                    else
-                        indices[arg_pos - 1] = datasize;
                     break;
 
                 case 'p':      /* lower case pointer string */
@@ -591,26 +420,22 @@ APTR InternalFormatString(const struct Locale * locale,
                 case 'x':      /* upper case hexadecimal string */
                 case 'X':      /* lower case hexadecimal string */
 
-                    if (!scanning)
                     {
                         const UBYTE *hexa;
 
                         switch (datasize)
                         {
-#if USE_QUADFMT
                         case 8:
-                            tmp = *(UQUAD *) indices[arg_pos - 1];
+                            tmp = *(UQUAD *) ARG(arg_pos);
                             //buffer = &buf[16+1];
                             break;
-#endif /* USE_QUADFMT */
-
                         case 4:
-                            tmp = *(ULONG *) indices[arg_pos - 1];
+                            tmp = *(ULONG *) ARG(arg_pos);
                             //buffer = &buf[8+1];
                             break;
 
                         default:       /* 2 */
-                            tmp = *(UWORD *) indices[arg_pos - 1];
+                            tmp = *(UWORD *) ARG(arg_pos);
                             //buffer = &buf[4+1];
                             break;
                         }
@@ -629,15 +454,12 @@ APTR InternalFormatString(const struct Locale * locale,
                         }
                         while (tmp);
                     }
-                    else
-                        indices[arg_pos - 1] = datasize;
                     break;
 
                 case 's':      /* NULL terminated string */
                     {
-                        if (!scanning)
                         {
-                            buffer = *(UBYTE **) indices[arg_pos - 1];
+                            buffer = *(UBYTE **) ARG(arg_pos);
 
                             /*
                              * RawDoFmt() in original AmigaOS(tm) formats NULL pointers as empty strings,
@@ -653,56 +475,43 @@ APTR InternalFormatString(const struct Locale * locale,
                                 buflen = limit;
 #endif /* !USE_GLOBALLIMIT */
                         }
-                        else
-                            indices[arg_pos - 1] = sizeof(UBYTE *);     /* the pointer has 4 bytes */
                     }
                     break;
 
                 case 'c':      /* Character */
-                    if (!scanning)
                     {
                         switch (datasize)
                         {
-#if USE_QUADFMT
                         case 8:
                             buf[0] =
-                                (UBYTE) * (UQUAD *) indices[arg_pos - 1];
+                                (UBYTE) * (UQUAD *) ARG(arg_pos);
                             break;
-#endif /* USE_QUADFMT */
-
                         case 4:
                             buf[0] =
-                                (UBYTE) * (ULONG *) indices[arg_pos - 1];
+                                (UBYTE) * (ULONG *) ARG(arg_pos);
                             break;
 
                         default:       /* 2 */
                             buf[0] =
-                                (UBYTE) * (WORD *) indices[arg_pos - 1];
+                                (UBYTE) * (WORD *) ARG(arg_pos);
                             break;
                         }
 
                         buflen = 1;
                     }
-                    else
-                        indices[arg_pos - 1] = datasize;
                     break;
 
                 default:
                     /* Ignore the faulty '%' */
 
-                    if (!scanning)
-                    {
-                        buf[0] = fmtTemplate[template_pos];
-                        width = 1;
-                        buflen = 1;
-                    }
-
+                    buf[0] = fmtTemplate[template_pos];
+                    width = 1;
+                    buflen = 1;
                     arg_pos = --arg_counter;
                     break;
                 }
 
 
-                if (!scanning)
                 {
                     int i;
 
@@ -758,7 +567,7 @@ APTR InternalFormatString(const struct Locale * locale,
         }
     }
 
-    return (APTR) indices[max_argpos];
+    return (APTR)ARG(max_argpos);
 }
 
 /*****************************************************************************
@@ -796,11 +605,16 @@ APTR InternalFormatString(const struct Locale * locale,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    ULONG *indices;
+    ULONG indexSize = 0;
 
-    null_va_list(vaListStream);
+    /* Generate the indexes for the provided datastream */
+    GetDataStreamFromFormat(fmtTemplate, 0, NULL, NULL, NULL, &indexSize);
+    indices = alloca(indexSize);
+    GetDataStreamFromFormat(fmtTemplate, 0, NULL, NULL, indices, &indexSize);
 
-    return InternalFormatString(locale, fmtTemplate, dataStream,
-        putCharFunc, vaListStream);
+    return InternalFormatString(locale, fmtTemplate,
+                                dataStream, indices, putCharFunc);
 
     AROS_LIBFUNC_EXIT
 }

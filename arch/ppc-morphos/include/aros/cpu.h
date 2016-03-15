@@ -41,6 +41,7 @@
 #define AROS_SLOWSTACKTAGS      1
 #define AROS_SLOWSTACKMETHODS   1
 #define AROS_SLOWSTACKHOOKS     1
+#define AROS_SLOWSTACKFORMAT    1
 
 /* types and limits for sig_atomic_t */
 #define AROS_SIG_ATOMIC_T       int

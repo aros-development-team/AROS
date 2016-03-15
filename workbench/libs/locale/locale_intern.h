@@ -44,12 +44,6 @@
 
 #define USE_GLOBALLIMIT                 1
 
-/* [New]FormatString: Should formatting routine support 64bit formatting
-   %L<type> and %ll<type>. 1 = yes. 0 = no. Current implementation use
-   QUAD and UQUAD types. */
-
-#define USE_QUADFMT                     1
-
 struct IntLocaleBase
 {
     struct LocaleBase                   lb_LocaleBase;
@@ -170,7 +164,7 @@ void InstallPatches(void);
 
 APTR InternalFormatString(const struct Locale *locale,
     CONST_STRPTR fmtTemplate, CONST_APTR dataStream,
-    const struct Hook *putCharFunc, va_list VaListStream);
+    ULONG *indexStream, const struct Hook *putCharFunc);
 
 extern const struct Locale defLocale;
 

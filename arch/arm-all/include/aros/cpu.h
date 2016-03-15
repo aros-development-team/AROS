@@ -56,6 +56,7 @@ typedef	unsigned int	cpumask_t;
 #define AROS_SLOWSTACKTAGS      1
 #define AROS_SLOWSTACKMETHODS   1
 #define AROS_SLOWSTACKHOOKS     1
+#define AROS_SLOWSTACKFORMAT    1
 
 #define AROS_32BIT_TYPE         int
 

@@ -245,6 +245,39 @@ AROS_UFP3(IPTR, HookEntry,
 #   define AROS_NR_SLOWSTACKHOOKS_POST
 #endif /* AROS_SLOWSTACKHOOKS */
 
+#include <stdarg.h>
+
+void GetDataStreamFromFormat(CONST_STRPTR format, va_list args,
+                             APTR dataStream,  ULONG *dataSize,
+                             ULONG *indexStream, ULONG *indexSize);
+
+#ifdef AROS_SLOWSTACKFORMAT
+#   define AROS_SLOWSTACKFORMAT_PRE(format) {   \
+    va_list _args;                      	\
+    APTR    _data;  				\
+    ULONG  _datasize = 0;                       \
+    ULONG * _index; 				\
+    ULONG  _indexsize = 0;                      \
+					        \
+    GetDataStreamFromFormat (format, 0, NULL, NULL, NULL, &_indexsize); \
+    _index = alloca(_indexsize);                  \
+    GetDataStreamFromFormat (format, 0, NULL, &_datasize, &_index, &_indexsize); \
+    _data = alloca(_datasize);                  \
+    va_start(_args, format);                    \
+    GetDataStreamFromFormat (format, _args, _data, &_datasize, &_index, &_indexsize); \
+    va_end (_args);
+
+#   define AROS_SLOWSTACKFORMAT_ARG(format) _data
+
+#   define AROS_SLOWSTACKFORMAT_POST		\
+    }
+#else
+#   define AROS_SLOWSTACKFORMAT_PRE(format)
+#   define AROS_SLOWSTACKFORMAT_ARG(format) ((IPTR*)(&(format)+1))
+#   define AROS_SLOWSTACKFORMAT_POST
+#endif /* AROS_SLOWSTACKFORMAT */
+
+
 /* Rexx support */
 BOOL CheckRexxMsg(struct RexxMsg *);
 LONG SetRexxVar(struct RexxMsg *, CONST_STRPTR var, char *value, ULONG length);
