@@ -39,8 +39,7 @@ struct Data
   UWORD  e;
   UWORD  f;
   ULONG  g;
-  
-};
+} __packed;
 
 void formatstring_test(struct Locale * locale)
 {
@@ -49,8 +48,8 @@ void formatstring_test(struct Locale * locale)
   char local[]      = {"Locale"};
   char welcomes[]   = {"welcomes"};
   char you[]        = {"you"};
-  
-  struct Data dataStream = 
+
+  struct Data dataStream =
   {  hello,
      local,
      welcomes,
@@ -58,10 +57,10 @@ void formatstring_test(struct Locale * locale)
      1000,
      20000,
      0x1234ABCD};
-  
+
   myhook.h_Entry = (APTR)printchar;
 
-  printf("Doing a simple FormatString test!\n");  
+  printf("Doing a simple FormatString test!\n");
 
   /*
   ** Just a simple test for FormatString
@@ -79,12 +78,12 @@ void formatdate_test(struct Locale * locale)
 
   myhook.h_Entry = (APTR)printchar;
 
-  printf("Doing a simple FormatDate test!\n");  
+  printf("Doing a simple FormatDate test!\n");
 
   /*
   ** Just a simple test for FormatString
   */
-  
+
   cdata.sec   = 30;
   cdata.min   = 59;
   cdata.hour  = 8;
@@ -92,14 +91,14 @@ void formatdate_test(struct Locale * locale)
   cdata.month = 1;
   cdata.year  = 2000;
   cdata.wday  = 0; // don't care
-  
+
   seconds = Date2Amiga(&cdata);
   date.ds_Days = seconds / 86400;
   seconds = seconds % 86400;
   date.ds_Minute = seconds / 60;
   seconds = seconds % 60;
   date.ds_Tick = seconds * 50;
-  
+
   FormatDate(locale, "24hour style (leading 0s): %H\n", &date, &myhook);
   FormatDate(locale, "12hour style (leading 0s): %I\n", &date, &myhook);
   FormatDate(locale, "24hour style: %q\n", &date, &myhook);
@@ -116,14 +115,14 @@ void formatdate_test(struct Locale * locale)
   cdata.month = 7;
   cdata.year  = 2000;
   cdata.wday  = 0; // don't care
-  
+
   seconds = Date2Amiga(&cdata);
   date.ds_Days = seconds / 86400;
   seconds = seconds % 86400;
   date.ds_Minute = seconds / 60;
   seconds = seconds % 60;
   date.ds_Tick = seconds * 50;
-  
+
   FormatDate(locale, "24hour style (leading 0s): %H\n", &date, &myhook);
   FormatDate(locale, "12hour style (leading 0s): %I\n", &date, &myhook);
   FormatDate(locale, "24hour style: %q\n", &date, &myhook);
@@ -132,14 +131,14 @@ void formatdate_test(struct Locale * locale)
   FormatDate(locale, "%%H:%%M:%%S style (T): %T\n", &date, &myhook);
   FormatDate(locale, "%%H:%%M:%%S style (X): %X\n", &date, &myhook);
 
-  printf("\n");  
+  printf("\n");
   FormatDate(locale, "%%a %%b %%d %%h:%%m:%%s %%y style: %c\n", &date, &myhook);
   FormatDate(locale, "%%a %%b %%e %%T %%Z %%Y style: %C\n", &date, &myhook);
   FormatDate(locale, "%%m/%%d/%%y style: %D\n", &date, &myhook);
 
   FormatDate(locale, "Week number - Sunday first day of week: %U\n", &date, &myhook);
   FormatDate(locale, "Week number - Monday first day of week: %W\n", &date, &myhook);
-  
+
 }
 
 
@@ -147,16 +146,16 @@ void getstringtest(struct Locale * locale)
 {
   struct Catalog * cat;
   char catname[256];
-  
+
   printf("Please enter name of catalog: ");
   scanf("%s",catname);
-   
+
   cat = OpenCatalogA(locale,catname,NULL);
   if (cat)
   {
     int i = 0;
     while (i < 65535)
-    { 
+    {
       CONST_STRPTR str = GetCatalogStr(cat, i, NULL);
       if (str)
         printf("ID: %d - string : %s\n",i,str);
@@ -171,16 +170,16 @@ void getstringtest(struct Locale * locale)
 int main(void)
 {
   LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library",0);
-  UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library",0);  
-  
+  UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library",0);
+
   if (LocaleBase)
   {
     struct Locale * locale;
-    locale = OpenLocale(NULL); 
+    locale = OpenLocale(NULL);
     formatstring_test(locale);
     formatdate_test(locale);
     getstringtest(locale);
-    
+
     if (locale) CloseLocale(locale);
   }
   else

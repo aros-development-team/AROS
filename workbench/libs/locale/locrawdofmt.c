@@ -16,7 +16,9 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 #include <stdarg.h>
+#include <alloca.h>
 
+#include <clib/alib_protos.h>
 
 AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -206,6 +208,23 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     AROS_LIBFUNC_INIT
 
     struct Hook hook;
+    ULONG *iStream;
+    APTR dStream;
+    ULONG iSize = 0, dSize = 0;
+
+    /* Scan to determine the location of the positional arguments */
+    GetDataStreamFromFormat(FormatString, 0, NULL, NULL,
+                            NULL, &iSize);
+    iStream = alloca(iSize);
+
+    /* Scan to determine the size of the repacked datastream */
+    GetDataStreamFromFormat(FormatString, 0, NULL, &dSize,
+                            iStream, &iSize);
+    dStream = alloca(dSize);
+
+    /* Repack the va_list into the datastream */
+    GetDataStreamFromFormat(FormatString, DataStream, dStream, &dSize,
+                            iStream, &iSize);
 
     hook.h_Entry =
         (HOOKFUNC) AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc_SysV);
@@ -215,7 +234,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     REPLACEMENT_LOCK;
 
     InternalFormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
-        (STRPTR) FormatString, NULL, &hook, DataStream);
+        (STRPTR) FormatString, dStream, iStream, &hook);
 
     REPLACEMENT_UNLOCK;
 

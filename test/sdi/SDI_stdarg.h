@@ -101,7 +101,7 @@
 #else
   #define VA_LIST             va_list
   #define VA_START(va, start) va_start((va), (start))
-  #define VA_ARG(va, type)    (type)(va)
+  #define VA_ARG(va, type)    va_arg(va, type)
   #define VA_END(va)          va_end((va))
 #endif
 
