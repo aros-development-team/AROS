@@ -48,6 +48,7 @@ asm("   .section .aros.startup      \n"
 "       cps     #0x13               \n" /* Should be in SVC (supervisor) mode already, but just incase.. */
 "       ldr     sp, tmp_stack_ptr   \n"
 "       b       boot                \n"
+"       .section .text              \n"
 
 ".string \"$VER: arosraspi.img v40.45 (" __DATE__ ")\"" "\n\t\n\t"
 );
