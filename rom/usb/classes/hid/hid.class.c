@@ -7352,13 +7352,18 @@ BOOL nSendKeyString(struct NepHidBase *nh, STRPTR str)
 /* /// "nEasyRequest()" */
 LONG nEasyRequest(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, ...)
 {
-    // FIXME needs to use correct varargs version
-    return(nEasyRequestA(nh, body, gadgets, (ULONG *) (&gadgets + 1)));
+    LONG ret;
+
+    AROS_SLOWSTACKFORMAT_PRE(gadgets);
+    ret = nEasyRequestA(nh, body, gadgets, AROS_SLOWSTACKFORMAT_ARG(gadgets));
+    AROS_SLOWSTACKFORMAT_POST(gadgets);
+
+    return ret;
 }
 /* \\\ */
 
 /* /// "nEasyRequestA()" */
-LONG nEasyRequestA(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, ULONG *params)
+LONG nEasyRequestA(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, RAWARG params)
 {
     struct EasyStruct es;
     es.es_StructSize = sizeof(struct EasyStruct);

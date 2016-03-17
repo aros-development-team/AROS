@@ -23,7 +23,6 @@ struct Library *DiskfontBase;
 int main(int argc, char ** argv)
 {
     ULONG afshortage = 0;
-    IPTR  pargs[5];
 
     struct AvailFontsHeader *afh;
     struct AvailFonts *afptr;
@@ -57,21 +56,19 @@ int main(int argc, char ** argv)
 	/* Print some info about the fonts */
 	UWORD count;
 
-	pargs[0] = afh->afh_NumEntries;
-	VPrintf("Number of fonts found: %ld\n", pargs);
+	Printf("Number of fonts found: %ld\n", (ULONG)afh->afh_NumEntries);
 
 	/* Get pointer to the first AvailFonts item */
 	afptr = (struct AvailFonts*)&afh[1];
 
 	for (count = afh->afh_NumEntries; count; count --)
 	{
-	    pargs[0] = afptr->af_Type;
-	    pargs[1] = (IPTR)afptr->af_Attr.ta_Name;
-	    pargs[2] = afptr->af_Attr.ta_YSize;
-    	    pargs[3] = afptr->af_Attr.ta_Style;
-	    pargs[4] = afptr->af_Attr.ta_Flags;
-	    
-	    VPrintf ("[%ld] Font name: %-30.s Font YSize: %ld  Style: 0x%lx  Flags 0x%lx\n", pargs);
+	    Printf ("[%ld] Font name: %-30.s Font YSize: %ld  Style: 0x%lx  Flags 0x%lx\n",
+	            (ULONG)afptr->af_Type, afptr->af_Attr.ta_Name, 
+	            (ULONG)afptr->af_Attr.ta_YSize,
+	            (ULONG)afptr->af_Attr.ta_Style,
+	            (ULONG)afptr->af_Attr.ta_Flags);
+
 
 	    afptr ++;
 	}

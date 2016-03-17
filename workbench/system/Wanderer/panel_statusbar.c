@@ -108,8 +108,8 @@ static void FmtSizeToString(UBYTE *buf, ULONG num)
   const UBYTE *ch;
   struct
   {
-    IPTR val;
-    IPTR  dec;
+    ULONG val;
+    ULONG dec;
   } array =
   {
     num,
@@ -154,7 +154,7 @@ static void FmtSizeToString(UBYTE *buf, ULONG num)
     array.val++;
   }
 
-  RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+  RawDoFmt(array.dec ? "%lu.%lu" : "%lu", (RAWARG)&array, NULL, buf);
 
   while (*buf)
   {

@@ -247,10 +247,12 @@ CONST_STRPTR GetStrFromCat(ULONG id, CONST_STRPTR def)
 }
 
 
-void VLPrintf(ULONG id, CONST_STRPTR def, const IPTR* argarray)
+void VLPrintf(ULONG id, CONST_STRPTR def, ...)
 {
-    def = GetStrFromCat(id, def);
-    VPrintf(def, (IPTR *)argarray);
+    CONST_STRPTR format = GetStrFromCat(id, def);
+    AROS_SLOWSTACKFORMAT_PRE_USING(def, format);
+    VPrintf(format, AROS_SLOWSTACKFORMAT_ARG(def));
+    AROS_SLOWSTACKFORMAT_POST(def);
 }
 
 

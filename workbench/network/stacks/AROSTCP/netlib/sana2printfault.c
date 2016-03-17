@@ -45,31 +45,24 @@ Sana2PrintFault(const char *banner, struct IOSana2Req *ios2)
 {
   register WORD err = ios2->ios2_Req.io_Error;
   register ULONG werr = ios2->ios2_WireError;
-  IPTR args[3];
-  char * format;
-
-  args[0] = (IPTR)banner; 
+  CONST_STRPTR serr;
 
   if (err >= sana2io_nerr || -err > io_nerr) {
-    args[1] = (IPTR)io_errlist[0];
+    serr = io_errlist[0];
   } else { 
     if (err < 0) 
-      args[1] = (IPTR)io_errlist[-err];
+      serr = io_errlist[-err];
     else 
-      args[1] = (IPTR)sana2io_errlist[err];
-  }
-  if (werr == 0 || werr >= sana2wire_nerr) {
-    if (banner != NULL)
-      format = "%s: %s\n";
-    else
-      format = "%s\n";
-  } else {
-    if (banner != NULL)
-      format = "%s: %s (%s)\n";
-    else
-      format = "%s (%s)\n";
-    args[2] = (IPTR)sana2wire_errlist[werr];
+      serr = sana2io_errlist[err];
   }
 
-  VPrintf(format, banner != NULL ? args : args + 1);
+  if (banner)
+      Printf("%s: ", banner);
+
+  if (werr == 0 || werr >= sana2wire_nerr) {
+      Printf("%s\n", serr);
+  } else {
+      Printf("%s (%s)\n", serr, sana2wire_errlist[werr]);
+  }
+
 }

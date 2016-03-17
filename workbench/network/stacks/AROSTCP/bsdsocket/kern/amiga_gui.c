@@ -355,7 +355,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_set_interface_state()\n"));
 	}
 }
 
-void error_requestArgs(STRPTR Text, IPTR *ap)
+void error_request(STRPTR Text, ...)
 {
 	struct EasyStruct es = {
 		sizeof(struct EasyStruct),
@@ -366,6 +366,8 @@ void error_requestArgs(STRPTR Text, IPTR *ap)
 	};
 
 	es.es_TextFormat = Text;
-	EasyRequestArgs(NULL, &es, NULL, ap);
+	AROS_SLOWSTACKFORMAT_PRE(Text);
+	EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(Text));
+	AROS_SLOWSTACKFORMAT_POST(Text);
 }
 

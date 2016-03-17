@@ -1029,7 +1029,7 @@ AROS_LH4(void, psdSafeRawDoFmtA,
          AROS_LHA(STRPTR, buf, A0),
          AROS_LHA(ULONG, len, D0),
          AROS_LHA(CONST_STRPTR, fmtstr, A1),
-         AROS_LHA(IPTR *, fmtdata, A2),
+         AROS_LHA(RAWARG, fmtdata, A2),
          LIBBASETYPEPTR, ps, 42, psd)
 {
     AROS_LIBFUNC_INIT
@@ -1064,7 +1064,7 @@ AROS_UFH2(void, pPutChar,
 /* /// "psdCopyStrFmtA()" */
 AROS_LH2(STRPTR, psdCopyStrFmtA,
          AROS_LHA(CONST_STRPTR, fmtstr, A0),
-         AROS_LHA(IPTR *, fmtdata, A1),
+         AROS_LHA(RAWARG, fmtdata, A1),
          LIBBASETYPEPTR, ps, 68, psd)
 {
     AROS_LIBFUNC_INIT
@@ -5381,7 +5381,7 @@ AROS_LH4(struct PsdErrorMsg *, psdAddErrorMsgA,
          AROS_LHA(UWORD, level, D0),
          AROS_LHA(STRPTR, origin, A0),
          AROS_LHA(STRPTR, fmtstr, A1),
-         AROS_LHA(IPTR *, fmtdata, A2),
+         AROS_LHA(RAWARG, fmtdata, A2),
          LIBBASETYPEPTR, ps, 40, psd)
 {
     AROS_LIBFUNC_INIT

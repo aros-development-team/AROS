@@ -84,7 +84,7 @@ AROS_SHAH(LONG *, , RCLIM,/N, NULL, "The new return code limit"))
     /* Write current fail level */
     if (SHArg(RCLIM) == NULL)
     {
-	VPrintf("Fail limit: %ld\n", (IPTR *)&cli->cli_FailLevel);
+	Printf("Fail limit: %ld\n", cli->cli_FailLevel);
     }
     /* Set new fail level */
     else

@@ -487,7 +487,7 @@ struct TextData
     struct Gadget   	*parentgadget;
     Object 		*frame;
     STRPTR 		format;
-    IPTR 		toprint;
+    IPTR  	        toprint;
     UBYTE 		frontpen;
     UBYTE 		backpen;
     UBYTE 		justification;

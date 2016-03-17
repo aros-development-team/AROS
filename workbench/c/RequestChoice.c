@@ -147,7 +147,6 @@ int Do_RequestChoice(STRPTR   Title,
     STRPTR              GadgetText;
     STRPTR              BodyText;
     LONG                Result;
-    IPTR                args[1];
     int                 Return_Value;
 
     Return_Value     = RETURN_OK;
@@ -180,9 +179,7 @@ int Do_RequestChoice(STRPTR   Title,
         Result = EasyRequestArgs(Scr->FirstWindow, &ChoiceES, NULL, NULL);
         if (Result != -1)
         {
-            args[0] = (IPTR)Result;
-
-            VPrintf("%ld\n", args);
+            Printf("%ld\n", Result);
         }
         else
         {

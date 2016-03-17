@@ -19,6 +19,7 @@
 #include <aros/debug.h>
 #include <proto/dos.h>
 
+#include "error.h"
 #include "afshandler.h"
 
 #define OS_BE2LONG AROS_BE2LONG
@@ -50,29 +51,30 @@ struct IOHandle {
 
 enum showReqType;
 
-LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, IPTR *args);
-LONG showErrorArgs(struct AFSBase *afsbase, IPTR *args);
+LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, RAWARG args);
+LONG showError(struct AFSBase *afsbase, ULONG error, ...);
 
-#define showText(afsbase,  ...)                                                  \
-({                                                                               \
-    IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };                   \
-    ULONG ret = showPtrArgsText(afsbase, (STRPTR)args[0], Req_Cancel, &args[1]); \
-    ret;                                                                         \
-})
+static inline LONG showText(struct AFSBase *afsbase, const char *format, ...)
+{
+    LONG ret;
 
-#define showRetriableError(afsbase, ...)                                              \
-({                                                                                    \
-    IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };                        \
-    ULONG ret = showPtrArgsText(afsbase, (STRPTR)args[0], Req_RetryCancel, &args[1]); \
-    ret;                                                                              \
-})
+    AROS_SLOWSTACKFORMAT_PRE(format);
+    ret = showPtrArgsText(afsbase, format, Req_Cancel, AROS_SLOWSTACKFORMAT_ARG(format));
+    AROS_SLOWSTACKFORMAT_POST(format);
 
-#define showError(afsbase, ...)                                \
-({                                                             \
-    IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-    ULONG ret = showErrorArgs(afsbase, args);                  \
-    ret;                                                       \
-})
+    return ret;
+}
+
+static inline LONG showRetriableError(struct AFSBase *afsbase, const char *format, ...)
+{
+    LONG ret;
+
+    AROS_SLOWSTACKFORMAT_PRE(format);
+    ret = showPtrArgsText(afsbase, format, Req_RetryCancel, AROS_SLOWSTACKFORMAT_ARG(format));
+    AROS_SLOWSTACKFORMAT_POST(format);
+
+    return ret;
+}
 
 void checkDeviceFlags(struct AFSBase *);
 void motorOff(struct AFSBase *afsbase, struct IOHandle *ioh);

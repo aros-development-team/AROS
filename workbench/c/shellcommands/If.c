@@ -98,6 +98,8 @@
 
 static BOOL doeval(STRPTR arg1, STRPTR arg2, BYTE op, IPTR numeric, APTR DOSBase, APTR UtilityBase);
 
+#undef NOT      /* In case <intuition/intuition.h> got included */
+
 AROS_SH10(If, 41.1,
 AROS_SHA(BOOL, ,NOT,/S, FALSE),
 AROS_SHA(BOOL, ,WARN,/S,FALSE),

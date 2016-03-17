@@ -356,7 +356,8 @@ IPTR GTText__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 	}
 	else /* NUMERIC_KIND or label of SLIDER_KIND */
 	{
-	    RawDoFmt(data->format, &(data->toprint), (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
+	    ULONG value = data->toprint;
+	    RawDoFmt(data->format, (RAWARG)&value, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
 	}
 
 	D(bug("Text formatted into: %s\n", textbuf));

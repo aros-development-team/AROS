@@ -79,7 +79,7 @@ AROS_SHA(STRPTR, ,PROMPT,/A,NULL))
 
     while (ready == 0)
     {
-	VPrintf("%s ", (IPTR *)&SHArg(PROMPT));
+	Printf("%s ", SHArg(PROMPT));
 	Flush(Output());
 	
         if (FGets(Input(), buffer, 100) == (STRPTR)buffer)

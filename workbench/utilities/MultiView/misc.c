@@ -21,7 +21,12 @@ static void SetItemChecked( ULONG msgid, BOOL state );
 
 /*********************************************************************************************/
 
+#ifdef __AROS__
+/* NOTE: AROS uses '%id' for IPTR arrays */
+static const char internal_about_tmpl[] = "%s %id.%id (%s)\n%s %s\n\n%s %s\n%s %s\n%s %s";
+#else
 static const char internal_about_tmpl[] = "%s %ld.%ld (%s)\n%s %s\n\n%s %s\n%s %s\n%s %s";
+#endif
 
 /*********************************************************************************************/
 
@@ -438,7 +443,7 @@ void About(void)
     if (classInfo)
         classInfo->aboutFunc(dto, (char **)&abouttxt[12]);
 
-    EasyRequestArgs(win, &es, NULL, abouttxt);
+    EasyRequestArgs(win, &es, NULL, (RAWARG)abouttxt);
   
     if (classInfo)
         classInfo->aboutDispose((char **)&abouttxt[12]);

@@ -25,10 +25,13 @@ int main(void)
     int result = 0;
     char buf[256];
     ULONG count = 0;
-    IPTR args[] =
-    {
-	(IPTR)"one",
-	(IPTR)"two",
+    struct {
+        CONST_STRPTR one;
+        CONST_STRPTR two;
+        ULONG three,four,five,size;
+    } __packed args = {
+	"one",
+	"two",
 	3,
 	4,
 	5,
@@ -57,13 +60,13 @@ int main(void)
      * not ULONG, for 64 bit compatibility.
      */
     printf("Checking RawDoFmt...\n");
-    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu", args, (APTR)RAWFMTFUNC_COUNT, &count);
+    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu", (RAWARG)&args, (APTR)RAWFMTFUNC_COUNT, &count);
     printf("Count is %u\n", (unsigned)count);
     TEST(count == 41)
-    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu", args, (APTR)RAWFMTFUNC_STRING, buf);
+    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu", (RAWARG)&args, (APTR)RAWFMTFUNC_STRING, buf);
     printf("Formatted string is: %s\n", buf);
     TEST(!strcmp(buf, "one plus two will be 3, next are 4, 5, 6"))
-    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu\n", args, (APTR)RAWFMTFUNC_SERIAL, NULL);
+    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu\n", (RAWARG)&args, (APTR)RAWFMTFUNC_SERIAL, NULL);
     printf("Serial output done\n");
 
     /* Now check correct sign interpretation. Specifier is intentionally %d, not %u! */
@@ -72,10 +75,10 @@ int main(void)
     TEST(!strcmp(buf, "This should be positive: 40960"))
 
      /* Don't depend on endianess, sign-extend on 64 bits */
-    args[0] = (SIPTR)0xA0A0A0A0;
+    args.three = 0xA0A0A0A0;
 
     /* Intentionally %d with no 'l'! UWORD argument! */
-    RawDoFmt("This should be negative: %d", args, (APTR)RAWFMTFUNC_STRING, buf);
+    RawDoFmt("This should be negative: %d", (RAWARG)&args.three, (APTR)RAWFMTFUNC_STRING, buf);
     printf("RawDoFmt sign test: %s\n", buf);
     TEST(!strncmp(buf, "This should be negative: -", 26))
 

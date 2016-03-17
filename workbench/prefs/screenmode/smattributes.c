@@ -122,27 +122,27 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
                 {
                     TEXT buffer[128];
-                    IPTR val;
+                    ULONG val;
 
                     val = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
-                    RawDoFmt("%ld", &val, RAWFMTFUNC_STRING, buffer);
+                    RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
                     set(data->objVisibleW, MUIA_Text_Contents, buffer);
                     val = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
-                    RawDoFmt("%ld", &val, RAWFMTFUNC_STRING, buffer);
+                    RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
                     set(data->objVisibleH, MUIA_Text_Contents, buffer);
 
-                    RawDoFmt("%d", &dim.MinRasterWidth, RAWFMTFUNC_STRING, buffer);
+                    RawDoFmt("%d", (RAWARG)&dim.MinRasterWidth, RAWFMTFUNC_STRING, buffer);
                     set(data->objMinimumW, MUIA_Text_Contents, buffer);
-                    RawDoFmt("%d", &dim.MinRasterHeight, RAWFMTFUNC_STRING, buffer);
+                    RawDoFmt("%d", (RAWARG)&dim.MinRasterHeight, RAWFMTFUNC_STRING, buffer);
                     set(data->objMinimumH, MUIA_Text_Contents, buffer);
 
-                    RawDoFmt("%d", &dim.MaxRasterWidth, RAWFMTFUNC_STRING, buffer);
+                    RawDoFmt("%d", (RAWARG)&dim.MaxRasterWidth, RAWFMTFUNC_STRING, buffer);
                     set(data->objMaximumW, MUIA_Text_Contents, buffer);
-                    RawDoFmt("%d", &dim.MaxRasterHeight, RAWFMTFUNC_STRING, buffer);
+                    RawDoFmt("%d", (RAWARG)&dim.MaxRasterHeight, RAWFMTFUNC_STRING, buffer);
                     set(data->objMaximumH, MUIA_Text_Contents, buffer);
 
                     val = 1 << (dim.MaxDepth > 24 ? 24 : dim.MaxDepth);
-                    RawDoFmt("%ld", &val, RAWFMTFUNC_STRING, buffer);
+                    RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
                     set(data->objMaximumColors, MUIA_Text_Contents, buffer);
                 }
                 

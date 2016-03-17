@@ -159,14 +159,13 @@ static int removeAssign(struct localdata *ld, STRPTR name);
 static STRPTR GetFullPath(struct localdata *ld, BPTR lock);
 
 static void _DeferPutStr(struct localdata *ld, CONST_STRPTR str);
-static void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, IPTR *args);
+static void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, ...);
 static void _DeferFlush(struct localdata *ld, BPTR fh);
 
 #define DeferPutStr(str) _DeferPutStr(ld,str)
 #define DeferPrintf(fmt,...) \
   DEBUG_ASSIGN(kprintf(fmt, __VA_ARGS__);) \
-  do { IPTR __args[] = {0 , AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };  \
-      _DeferVPrintf(ld, fmt, __args + 1); } while (0)
+      _DeferVPrintf(ld, fmt, __VA_ARGS__);
 #define DeferFlush(fh) _DeferFlush(ld,fh)
 
 
@@ -873,9 +872,11 @@ const struct EmulLibEntry deferputch_gate =
 #endif
 
 static
-void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, IPTR *args)
+void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, ...)
 {
-	RawDoFmt(fmt, args, (void (*)(void))AROS_ASMSYMNAME(deferputch_gate), ld);
+    AROS_SLOWSTACKFORMAT_PRE(fmt);
+    RawDoFmt(fmt, AROS_SLOWSTACKFORMAT_ARG(fmt), (void (*)(void))AROS_ASMSYMNAME(deferputch_gate), ld);
+    AROS_SLOWSTACKFORMAT_POST(fmt);
 }
 
 static

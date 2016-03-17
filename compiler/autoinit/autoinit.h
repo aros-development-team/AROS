@@ -19,8 +19,8 @@ __BEGIN_DECLS
    To make it always open a requester define a global variable like this:
 
        const int __forceerrorrequester = 1;  */
-void ___showerror(char *format, const IPTR *, struct ExecBase *sysBase);
-#define __showerror(f,p) ___showerror(f,p,SysBase)
+void ___showerror(struct ExecBase *sysBase, const char *format, ...);
+#define __showerror(f,...) ___showerror(SysBase,f,__VA_ARGS__)
 
 __END_DECLS
 

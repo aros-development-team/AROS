@@ -117,11 +117,11 @@ static
 LONG doDir(CONST_STRPTR dir, BOOL all, BOOL dirs, BOOL files, BOOL inter);
 
 static
-void showline(char *fmt, IPTR *args);
+void showline(char *fmt, RAWARG args);
 static
-void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter);
+void maybeShowline(char *format, RAWARG args, BOOL doIt, BOOL inter);
 static
-void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter);
+void maybeShowlineCR(char *format, RAWARG args, BOOL doIt, BOOL inter);
 
 static
 int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
@@ -327,7 +327,7 @@ int compare_strings(const void * s1, const void * s2)
 
 
 static
-void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter)
+void maybeShowlineCR(char *format, RAWARG args, BOOL doIt, BOOL inter)
 {
     maybeShowline(format, args, doIt, inter);
 
@@ -339,7 +339,7 @@ void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter)
 
 
 static
-void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter)
+void maybeShowline(char *format, RAWARG args, BOOL doIt, BOOL inter)
 {
     if (doIt)
     {
@@ -405,7 +405,7 @@ void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter)
 
 
 static
-void showline(char *fmt, IPTR *args)
+void showline(char *fmt, RAWARG args)
 {
     int t;
 
@@ -420,7 +420,7 @@ void showline(char *fmt, IPTR *args)
 static
 BOOL showfiles(struct table *files, BOOL inter)
 {
-    IPTR argv[2];
+    CONST_STRPTR argv[2];
     ULONG t;
 
     qsort(files->entries, files->num, sizeof(char *),compare_strings);
@@ -429,7 +429,7 @@ BOOL showfiles(struct table *files, BOOL inter)
     {
         for (t = 0; t < files->num; t++)
         {
-            argv[0] = (IPTR)(files->entries[t]);
+            argv[0] = files->entries[t];
 
             if (SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
             {
@@ -437,15 +437,15 @@ BOOL showfiles(struct table *files, BOOL inter)
                 return FALSE;
             }
 
-            maybeShowlineCR("  %s", argv, TRUE, inter);
+            maybeShowlineCR("  %s", (RAWARG)argv, TRUE, inter);
         }
     }
     else
     {
         for (t = 0; t < files->num; t += 2)
         {
-            argv[0] = (IPTR)(files->entries[t]);
-            argv[1] = (IPTR)(t + 1 < files->num ? files->entries[t+1] : "");
+            argv[0] = files->entries[t];
+            argv[1] = t + 1 < files->num ? files->entries[t+1] : "";
 
             if (SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
             {
@@ -453,7 +453,7 @@ BOOL showfiles(struct table *files, BOOL inter)
                 return FALSE;
             }
 
-            maybeShowlineCR("  %-32.s %s", argv, TRUE, inter);
+            maybeShowlineCR("  %-32.s %s", (RAWARG)argv, TRUE, inter);
         }
     }
     return TRUE;
@@ -463,8 +463,7 @@ BOOL showfiles(struct table *files, BOOL inter)
 static
 BOOL showdir(char *dirName, BOOL inter)
 {
-    IPTR argv[1] = {(IPTR)dirName};
-    maybeShowlineCR("%s (dir)", argv, TRUE, inter);
+    maybeShowlineCR("%s (dir)", (RAWARG)&dirName, TRUE, inter);
     return TRUE;
 }
 

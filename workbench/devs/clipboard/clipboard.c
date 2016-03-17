@@ -92,8 +92,12 @@ AROS_UFH2(void, putchr,
 
 /****************************************************************************************/
 
-#define cb_sprintf(CBBase, buffer, format, ...) \
-({ IPTR  _args[]={__VA_ARGS__}; APTR bufptr = buffer; RawDoFmt(format, _args, (VOID_FUNC)AROS_ASMSYMNAME(putchr), &bufptr); })
+static inline void cb_sprintf(LIBBASETYPEPTR CBBase, char *buffer, const char *format, ...)
+{
+    AROS_SLOWSTACKFORMAT_PRE(format);
+    RawDoFmt(format, AROS_SLOWSTACKFORMAT_ARG(format), (VOID_FUNC)AROS_ASMSYMNAME(putchr), &buffer);
+    AROS_SLOWSTACKFORMAT_POST(format);
+}
 
 #else
 
@@ -228,7 +232,7 @@ static int GM_UNIQUENAME(Open)
 
 	    /* Construct clipboard unit filename. */
 	    cb_sprintf(CBBase, CBUn->cu_clipFilename, "%s%lu", (IPTR)CBBase->cb_ClipDir,
-		       (IPTR)unitnum);
+		       (ULONG)unitnum);
 
 	    CBUn->cu_Satisfy.sm_Unit = unitnum;
 		

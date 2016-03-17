@@ -324,12 +324,13 @@ static AROS_UFH2(void, ps_PPutC,
     AROS_USERFUNC_EXIT
 }
 
-#define ps_PWrite(fmt, ...) \
-    do { \
-        IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-        RawDoFmt(fmt, args, (VOID_FUNC)ps_PPutC, NULL); \
-        PFLUSH(); \
-    } while (0);
+static inline void ps_PWrite(const char *fmt, ...)
+{
+    AROS_SLOWSTACKFORMAT_PRE(fmt);
+    RawDoFmt(fmt, AROS_SLOWSTACKFORMAT_ARG(fmt), (VOID_FUNC)ps_PPutC, NULL);
+    AROS_SLOWSTACKFORMAT_POST(fmt);
+    PFLUSH();
+}
 
 #ifdef __mc68000
 #define STRING_FUNC     (VOID (*)())"\x16\xC0\x4E\x75"
@@ -337,11 +338,12 @@ static AROS_UFH2(void, ps_PPutC,
 #define STRING_FUNC     RAWFMTFUNC_STRING
 #endif
 
-#define ps_VWrite(buf, fmt, ...) \
-    do { \
-        IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-        RawDoFmt(fmt, args, STRING_FUNC, buf); \
-    } while (0);
+static inline void ps_VWrite(char *buf, const char *fmt, ...)
+{
+    AROS_SLOWSTACKFORMAT_PRE(fmt);
+    RawDoFmt(fmt, AROS_SLOWSTACKFORMAT_ARG(fmt), STRING_FUNC, buf);
+    AROS_SLOWSTACKFORMAT_POST(fmt);
+}
 
 CONST TEXT ps_PageHeader[] =
         "%s\n"  /* Optional formfeed */
@@ -892,7 +894,7 @@ static LONG ps_RenderClose(SIPTR error, ULONG flags)
         /* Restore to text context - the text location
          * has already been moved to after the raster
          */
-        ps_PWrite("grestore (\n",);
+        ps_PWrite("grestore (\n");
         FreeMem(PD->pd_PrintBuf, ps_PrintBufLen * 8 + 1);
         PD->pd_PrintBuf=NULL;
         ps_PrintBufLen=0;

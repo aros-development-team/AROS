@@ -35,7 +35,9 @@ AROS_UFH2(void, __putChr,
 
 void my_sprintf(struct Library *RexxSupportBase, UBYTE *buffer, UBYTE *format, ...)
 {
-    RawDoFmt(format, &format+1, (VOID_FUNC)__putChr, &buffer);
+    AROS_SLOWSTACKFORMAT_PRE(format);
+    RawDoFmt(format, AROS_SLOWSTACKFORMAT_ARG(format), (VOID_FUNC)__putChr, &buffer);
+    AROS_SLOWSTACKFORMAT_POST(format);
 }
 
 LONG rxsupp_statef(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)

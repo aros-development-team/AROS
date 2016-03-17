@@ -17,7 +17,7 @@
 /*  SYNOPSIS */
 	CONST_STRPTR format,
 	va_list args,
-	APTR dataStream, ULONG *dataSize,
+	RAWARG dataStream, ULONG *dataSize,
 	ULONG *indexStream, ULONG *indexSize)
 
 /*  FUNCTION

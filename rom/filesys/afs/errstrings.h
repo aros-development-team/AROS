@@ -44,7 +44,7 @@ const struct showReqStruct
                         "Please select what to do.", Req_ContinueCancel },
                 {"Volume\n%s\nis write protected", Req_RetryCancel },
                 {NULL, Req_Cancel },  // Error has already been reported.
-                {"Unknown error", Req_Cancel}
+                {"Unknown error %lu", Req_Cancel}
         };
 /*
  * This array can be accessed with an enum of error codes. These

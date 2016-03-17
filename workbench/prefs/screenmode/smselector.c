@@ -66,10 +66,10 @@ AROS_UFHA(STRPTR, entry, A1))
     {
         ULONG *ids_array = hook->h_Data;
         ULONG num = (ULONG)(IPTR)array[-1];
-        IPTR modeid = ids_array[num];
+        ULONG modeid = ids_array[num];
         static char modeid_str[9];
     
-        RawDoFmt("%08lx", &modeid, RAWFMTFUNC_STRING, modeid_str);
+        RawDoFmt("%08lx", (RAWARG)&modeid, RAWFMTFUNC_STRING, modeid_str);
         array[0] = modeid_str;
         array[1] = entry;
     }

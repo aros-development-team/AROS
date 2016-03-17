@@ -19,7 +19,7 @@
         AROS_LHA(struct Window     *, window, A0),
         AROS_LHA(struct EasyStruct *, easyStruct, A1),
         AROS_LHA(ULONG             *, IDCMP_ptr, A2),
-        AROS_LHA(APTR               , argList, A3),
+        AROS_LHA(RAWARG             , argList, A3),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 98, Intuition)

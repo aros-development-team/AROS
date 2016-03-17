@@ -61,7 +61,7 @@ AROS_UFH3(static void, symbolhandler,
 {
     AROS_USERFUNC_INIT
 
-    FPrintf(hook->h_Data, "S|%s|%s|0x%p|0x%p\n", message->si_ModuleName, message->si_SymbolName,
+    FPrintf((BPTR)hook->h_Data, "S|%s|%s|0x%p|0x%p\n", message->si_ModuleName, message->si_SymbolName,
             message->si_SymbolStart, message->si_SymbolEnd);
 
     AROS_USERFUNC_EXIT

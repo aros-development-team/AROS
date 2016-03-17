@@ -124,7 +124,6 @@ int main(void)
 					       NULL, NULL, NULL, NULL,
 					       NULL, NULL };
     int                   Return_Value = RETURN_OK;
-    IPTR                  DisplayArgs[1];
     char                 *Buffer;
     BOOL                  Success;
     int                   i;
@@ -173,8 +172,7 @@ int main(void)
 
                         if(Success != FALSE)
                         {
-                            DisplayArgs[0] = (IPTR)Buffer;
-                            VPrintf("\"%s\"\n", DisplayArgs);
+                            Printf("\"%s\"\n", Buffer);
                         }
                     }
                     else
@@ -191,8 +189,7 @@ int main(void)
 
                             if(Success != FALSE)
                             {
-                                DisplayArgs[0] = (IPTR)Buffer;
-                                VPrintf("\"%s\" ", DisplayArgs);
+                                Printf("\"%s\" ", Buffer);
                             }
                         }    
 			

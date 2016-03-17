@@ -9,6 +9,7 @@
 
 #define USE_BOOPSI_STUBS
 
+#include <proto/alib.h>
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <clib/boopsistubs.h>

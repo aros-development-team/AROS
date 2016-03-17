@@ -136,15 +136,10 @@ int main(void)
                            "------------------------------------------------------------\n");
 	    for(devs2=buffer;devs2<devs;devs2++)
 	    {
-		IPTR args[6];
-		args[0] = (IPTR)devs2->address;
-		args[1] = (IPTR)devs2->version;
-                args[2] = (IPTR)devs2->revision;
-		args[3] = (IPTR)devs2->opencnt;
-                args[4] = (IPTR)devs2->flags;
-		args[5] = (IPTR)devs2->name;
-
-		VPrintf("0x%08.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n", args);
+		Printf("0x%08.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
+		        devs2->address, devs2->version,
+		        devs2->revision, devs2->opencnt,
+		        devs2->flags, devs2->name);
                 if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 {
                         error = RETURN_FAIL;

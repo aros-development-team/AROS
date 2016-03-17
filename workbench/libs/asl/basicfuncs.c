@@ -1039,6 +1039,9 @@ AROS_UFH2 (void, puttostr,
 
 /*****************************************************************************************/
 
+/* This is used for printing out fib_Size, which is why
+ * is takes a IPTR instead of a ULONG
+ */
 char *PooledUIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase)
 {
     char buffer[30];
@@ -1048,7 +1051,7 @@ char *PooledUIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBa
 
     /* Create the text */
 
-    RawDoFmt("%lu", &value, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
+    RawDoFmt("%iu", (RAWARG)&value, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
 
     len = strlen(buffer) + 1;
 

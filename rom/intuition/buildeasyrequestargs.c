@@ -44,8 +44,8 @@ struct reqdims
 
 /**********************************************************************************************/
 
-static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,CONST_STRPTR labeltext, APTR args, struct IntuitionBase *IntuitionBase);
-static STRPTR buildeasyreq_formattext(CONST_STRPTR textformat, APTR args, APTR *nextargptr, struct IntuitionBase *IntuitionBase);
+static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,CONST_STRPTR labeltext, RAWARG args, struct IntuitionBase *IntuitionBase);
+static STRPTR buildeasyreq_formattext(CONST_STRPTR textformat, RAWARG args, RAWARG *nextargptr, struct IntuitionBase *IntuitionBase);
 static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
                                        struct Screen *scr,
                                        STRPTR formattedtext,
@@ -75,7 +75,7 @@ static int charsinstring(CONST_STRPTR string, char c);
         AROS_LHA(struct Window     *, RefWindow, A0),
         AROS_LHA(struct EasyStruct *, easyStruct, A1),
         AROS_LHA(ULONG              , IDCMP, D0),
-        AROS_LHA(APTR               , Args, A3),
+        AROS_LHA(RAWARG             , Args, A3),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 99, Intuition)
@@ -124,7 +124,7 @@ static int charsinstring(CONST_STRPTR string, char c);
     STRPTR                  	*gadgetlabels;
     struct                  	 reqdims dims;
     struct IntRequestUserData	*requserdata;
-    APTR    	    	    	 nextarg;
+    RAWARG  	    	    	 nextarg;
     
     DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: window 0x%p easystruct 0x%p IDCMPFlags 0x08%x args 0x%p\n",
                                    RefWindow, easyStruct, IDCMP, Args));
@@ -348,7 +348,7 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 /* create an array of gadgetlabels */
 static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
                                        CONST_STRPTR labeltext,
-				       APTR args,
+				       RAWARG args,
                                        struct IntuitionBase *IntuitionBase)
 {
     STRPTR  *gadgetlabels;
@@ -402,8 +402,8 @@ static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
 
 /* format the supplied text string by using the supplied args */
 static STRPTR buildeasyreq_formattext(CONST_STRPTR textformat,
-                                      APTR args,
-				      APTR *nextargptr,
+                                      RAWARG args,
+				      RAWARG *nextargptr,
                                       struct IntuitionBase *IntuitionBase)
 {
     STRPTR buffer;

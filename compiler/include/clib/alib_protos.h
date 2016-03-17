@@ -249,36 +249,38 @@ AROS_UFP3(IPTR, HookEntry,
 #include <stdarg.h>
 
 void GetDataStreamFromFormat(CONST_STRPTR format, va_list args,
-                             APTR dataStream,  ULONG *dataSize,
+                             RAWARG dataStream,  ULONG *dataSize,
                              ULONG *indexStream, ULONG *indexSize);
 
 #ifdef AROS_SLOWSTACKFORMAT
-#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) {   \
-    va_list _args;                      	\
-    APTR    _data;  				\
-    ULONG  _datasize = 0;                       \
-    ULONG * _index; 				\
-    ULONG  _indexsize = 0;                      \
-					        \
-    GetDataStreamFromFormat (format, 0, NULL, NULL, NULL, &_indexsize); \
-    _index = alloca(_indexsize);                  \
-    GetDataStreamFromFormat (format, 0, NULL, &_datasize, _index, &_indexsize); \
-    _data = alloca(_datasize);                  \
-    va_start(_args, last);                      \
+#include <aros/posixc/alloca.h>
+
+#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) {                            \
+    va_list _args;                      	                                     \
+    RAWARG  _data;  				                                     \
+    ULONG  _datasize = 0;                                                            \
+    ULONG * _index; 				                                     \
+    ULONG  _indexsize = 0;                                                           \
+					                                             \
+    va_start(_args, last);                                                           \
+    GetDataStreamFromFormat (format, _args, NULL, NULL, NULL, &_indexsize);          \
+    _index = (ULONG *)alloca(_indexsize);                                            \
+    GetDataStreamFromFormat (format, _args, NULL, &_datasize, _index, &_indexsize);  \
+    _data = (RAWARG)alloca(_datasize);                                               \
     GetDataStreamFromFormat (format, _args, _data, &_datasize, _index, &_indexsize); \
     va_end (_args);
 
-#   define AROS_SLOWSTACKFORMAT_PRE(format) \
+#   define AROS_SLOWSTACKFORMAT_PRE(format)                                          \
         AROS_SLOWSTACKFORMAT_PRE_USING(format, format)
-#   define AROS_SLOWSTACKFORMAT_ARG(format) _data
-
-#   define AROS_SLOWSTACKFORMAT_POST(format)		\
+#   define AROS_SLOWSTACKFORMAT_ARG(format)                                          \
+        _data
+#   define AROS_SLOWSTACKFORMAT_POST(format)		                             \
     }
 #else
-#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format)
-#   define AROS_SLOWSTACKFORMAT_PRE(format)
-#   define AROS_SLOWSTACKFORMAT_ARG(format) ((IPTR*)(&(format)+1))
-#   define AROS_SLOWSTACKFORMAT_POST(format)
+#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) { RAWARG _data = (RAWARG)(&(format)+1)
+#   define AROS_SLOWSTACKFORMAT_PRE(format) AROS_SLOWSTACKFORMAT_PRE_USING(format, format)
+#   define AROS_SLOWSTACKFORMAT_ARG(format) _data
+#   define AROS_SLOWSTACKFORMAT_POST(format) }
 #endif /* AROS_SLOWSTACKFORMAT */
 
 

@@ -12,15 +12,16 @@
 
 int main (int argc, char ** argv)
 {
-    IPTR vec[3] = {1, 2, 0};
+    ULONG vec[3] = {1, 2, 0};
+    VOID *parent;
 
     vec[2] = DummyAdd(vec[0], vec[1]);
 
-    VPrintf((STRPTR)"%ld+%ld=%ld\n",vec);
+    Printf("%ld+%ld=%ld\n",vec[0], vec[1], vec[2]);
 
-    vec[0] = (IPTR)PertaskGetParentBase();
+    parent = PertaskGetParentBase();
 
-    VPrintf((STRPTR)"ParentBase = %ld\n",vec);
+    Printf("ParentBase = %p\n",parent);
 
     Printf("104 205 306 407:\n");
     DummyPrint4(101, 202, 303, 404);

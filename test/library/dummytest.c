@@ -16,21 +16,13 @@ int main (int argc, char ** argv)
 
     if(DummyBase!=NULL)
     {
-	IPTR vec[3];
-
 	c=add(a,b);
 
 	d=asl(a,b);
 
-	vec[0]=a;
-	vec[1]=b;
-	vec[2]=c;
-	VPrintf((STRPTR)"%ld+%ld=%ld\n",vec);
+	Printf((STRPTR)"%ld+%ld=%ld\n", a, b, c);
 
-	vec[0]=a;
-	vec[1]=b;
-	vec[2]=d;
-	VPrintf((STRPTR)"%ld<<%ld=%ld\n",vec);
+	Printf((STRPTR)"%ld<<%ld=%ld\n", a, b, d);
 
 	CloseLibrary((struct Library *)DummyBase);
     }

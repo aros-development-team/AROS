@@ -307,7 +307,7 @@ LONG askSave(STRPTR name)
 
     sprintf(yesno, "%s|%s|%s", MSG_STD(YESSTR), MSG(WORD_All), MSG_STD(NOSTR));
     es.es_GadgetFormat = yesno;
-    return EasyRequestArgs(0, &es, 0, &name);
+    return EasyRequestArgs(0, &es, 0, (RAWARG)&name);
 }
 
 
@@ -1299,30 +1299,32 @@ AROS_UFH3(void, createml_function,
 		if (file)
 		{
 		    struct DiskObject *icon;
-		    IPTR args[20];
+		    CONST_STRPTR args[2];
+		    ULONG argu[18];
 		    struct FileSysEntry *fse;
     		    ULONG startcyl = GetStartCyl(partition);
 
-		    args[ 0] = (IPTR)"";
-		    args[ 1] = (IPTR)partition->ph->bd->ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name;
-		    args[ 2] = ((struct HDNode *)partition->root)->unit;
-		    args[ 3] = partition->de.de_SizeBlock * 4;  /* block size in longs */
-		    args[ 4] = partition->de.de_Surfaces;
-		    args[ 5] = partition->de.de_SectorPerBlock;
-		    args[ 6] = partition->de.de_BlocksPerTrack;
-		    args[ 7] = partition->de.de_Reserved;
-		    args[ 8] = partition->de.de_PreAlloc;
-		    args[ 9] = partition->de.de_Interleave;
-		    args[10] = partition->de.de_MaxTransfer;
-		    args[11] = partition->de.de_Mask;
-		    args[12] = partition->de.de_LowCyl  + startcyl;
-		    args[13] = partition->de.de_HighCyl + startcyl;
-		    args[14] = partition->de.de_NumBuffers;
-		    args[15] = partition->de.de_BufMemType;
-		    args[16] = 16384;
-		    args[17] = 0;
-		    args[18] = -1;
-		    args[19] = partition->de.de_DosType;
+		    args[ 0] = "";
+		    args[ 1] = partition->ph->bd->ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name;
+
+		    argu[ 0] = ((struct HDNode *)partition->root)->unit;
+		    argu[ 1] = partition->de.de_SizeBlock * 4;  /* block size in longs */
+		    argu[ 2] = partition->de.de_Surfaces;
+		    argu[ 3] = partition->de.de_SectorPerBlock;
+		    argu[ 4] = partition->de.de_BlocksPerTrack;
+		    argu[ 5] = partition->de.de_Reserved;
+		    argu[ 6] = partition->de.de_PreAlloc;
+		    argu[ 7] = partition->de.de_Interleave;
+		    argu[ 8] = partition->de.de_MaxTransfer;
+		    argu[ 9] = partition->de.de_Mask;
+		    argu[10] = partition->de.de_LowCyl  + startcyl;
+		    argu[11] = partition->de.de_HighCyl + startcyl;
+		    argu[12] = partition->de.de_NumBuffers;
+		    argu[13] = partition->de.de_BufMemType;
+		    argu[14] = 16384;
+		    argu[15] = 0;
+		    argu[16] = -1;
+		    argu[17] = partition->de.de_DosType;
 
 		    /*
 		     * Some things can be fetched only from FileSystem.resource.
@@ -1332,21 +1334,22 @@ AROS_UFH3(void, createml_function,
 		    if (fse)
 		    {
 		    	if (fse->fse_PatchFlags & FSEF_HANDLER)
-		    	    args[0] = (IPTR)AROS_BSTR_ADDR(fse->fse_Handler);
+		    	    args[0] = AROS_BSTR_ADDR(fse->fse_Handler);
 
 		    	if (fse->fse_PatchFlags & FSEF_STACKSIZE)
-		    	    args[16] = fse->fse_StackSize;
+		    	    argu[14] = fse->fse_StackSize;
 
 		    	if (fse->fse_PatchFlags & FSEF_PRIORITY)
-		    	    args[17] = fse->fse_Priority;
+		    	    argu[15] = fse->fse_Priority;
 
 		    	if (fse->fse_PatchFlags & FSEF_GLOBALVEC)
-		    	    args[18] = (IPTR)fse->fse_GlobalVec;
+		    	    argu[16] = (ULONG)(IPTR)fse->fse_GlobalVec;
 		    }
 
 		    VFPrintf(file, "FileSystem       = %s\n"
-				  "Device           = %s\n"
-				  "Unit             = %ld\n"
+				  "Device           = %s\n",
+				  (RAWARG)args);
+		    VFPrintf(file,"Unit             = %ld\n"
 				  "BlockSize        = %ld\n"
 				  "Surfaces         = %ld\n"
 				  "SectorsPerBlock  = %ld\n"
@@ -1365,7 +1368,7 @@ AROS_UFH3(void, createml_function,
 				  "GlobVec          = %ld\n"
 				  "DosType          = 0x%08lx\n"
 				  "Activate         = 1\n",
-			     args);
+			     (RAWARG)argu);
 
 		    Close(file);
 		    

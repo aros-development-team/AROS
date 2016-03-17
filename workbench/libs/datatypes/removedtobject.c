@@ -7,6 +7,7 @@
 */
 
 #define USE_BOOPSI_STUBS
+#include <proto/alib.h>
 #include <intuition/intuition.h>
 #include <intuition/classusr.h>
 #include <datatypes/datatypesclass.h>

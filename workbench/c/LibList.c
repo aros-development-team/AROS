@@ -139,15 +139,12 @@ int main(void)
                            "------------------------------------------------------------\n");
 	    for(libs2=buffer;libs2<libs;libs2++)
 	    {
-		IPTR args[6];
-		args[0] = (IPTR)libs2->address;
-		args[1] = (IPTR)libs2->version;
-                args[2] = (IPTR)libs2->revision;
-		args[3] = (IPTR)libs2->opencnt;
-                args[4] = (IPTR)libs2->flags;
-		args[5] = (IPTR)libs2->name;
-
-		VPrintf("0x%08.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n", args);
+		Printf("0x%08.ix\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
+		        libs2->address, (ULONG)libs2->version,
+		        (ULONG)libs2->revision,
+		        (ULONG)libs2->opencnt,
+		        (ULONG)libs2->flags,
+		        libs2->name);
                 if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 {
                     error = RETURN_FAIL;

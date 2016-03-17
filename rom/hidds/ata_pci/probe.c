@@ -375,7 +375,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 IPTR dmaBase = DMABase ? DMABase + (x << 3) : 0;
                 STRPTR name = (char *)probedbus + sizeof(struct ata_ProbedBus);
 
-                RawDoFmt("PCI %s %s channel", str, RAWFMTFUNC_STRING, name);
+                RawDoFmt("PCI %s %s channel", (RAWARG)str, RAWFMTFUNC_STRING, name);
 
                 probedbus->atapb_Node.ln_Name = name;
                 probedbus->atapb_Node.ln_Type = basePri;

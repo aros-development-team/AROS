@@ -46,12 +46,7 @@ int _set_open_libraries_list(const void * const list[], struct ExecBase *SysBase
 
 	if (!do_not_fail && *set->baseptr == NULL)
 	{
-	    const IPTR args[] = {version, (IPTR)set->name};
-	    __showerror
-	    (
-	        "Could not open version %ld or higher of library \"%s\".",
-	        args
-	    );
+	    __showerror("Could not open version %ld or higher of library \"%s\".", version, set->name);
 
 	    return 0;
 	}
@@ -106,12 +101,7 @@ int _set_open_rellibraries_list(APTR base, const void * const list[], struct Exe
 
 	if (!do_not_fail && *baseptr == NULL)
 	{
-	    const IPTR args[]= {version, (IPTR)set->name};
-	    __showerror
-	    (
-	        "Could not open version %ld or higher of library \"%s\".",
-	        args
-	    );
+	    __showerror("Could not open version %ld or higher of library \"%s\".", version, set->name);
 
 	    return 0;
 	}
