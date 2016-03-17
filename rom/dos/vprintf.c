@@ -26,7 +26,7 @@ AROS_UFP2(void, vfp_hook,
 
 /*  SYNOPSIS */
         AROS_LHA(CONST_STRPTR, format,   D1),
-        AROS_LHA(IPTR *,       argarray, D2),
+        AROS_LHA(RAWARG,       argarray, D2),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 159, Dos)

@@ -28,11 +28,13 @@ static AROS_UFH2(IPTR, RawPutc,
     AROS_USERFUNC_EXIT
 }
 
-void ___showerror(char *format, const IPTR *args, struct ExecBase *SysBase)
+void ___showerror(struct ExecBase *SysBase, const char *format, ...)
 {
     struct IntuitionBase *IntuitionBase;
     struct DosLibrary *DOSBase = NULL;
     const char *name = FindTask(NULL)->tc_Node.ln_Name;
+
+    AROS_SLOWSTACKFORMAT_PRE(format);
 
     if
     (
@@ -48,10 +50,7 @@ void ___showerror(char *format, const IPTR *args, struct ExecBase *SysBase)
             PutStr(": ");
 	}
 
-        if (args)
-            VPrintf(format, (IPTR*)args);
-        else
-            PutStr(format);
+        VPrintf(format, AROS_SLOWSTACKFORMAT_ARG(format));
 
         PutStr("\n");
 
@@ -68,20 +67,21 @@ void ___showerror(char *format, const IPTR *args, struct ExecBase *SysBase)
 	    "Exit"
 	};
 
-	EasyRequestArgs(NULL, &es, NULL, (APTR)args);
+	EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(format));
 
 	CloseLibrary((struct Library *)IntuitionBase);
     }
     else
     {
         if (name) {
-            IPTR args[] = { (IPTR)name };
-            RawDoFmt("%s: ", (APTR)args, (VOID_FUNC)RawPutc, SysBase);
+            RawDoFmt("%s: ", (RAWARG)&name, (VOID_FUNC)RawPutc, SysBase);
         }
 
-        RawDoFmt(format, (APTR)args, (VOID_FUNC)RawPutc, SysBase);
+        RawDoFmt(format, AROS_SLOWSTACKFORMAT_ARG(format), (VOID_FUNC)RawPutc, SysBase);
         RawPutChar('\n');
     }
+
+    AROS_SLOWSTACKFORMAT_POST(format);
 
     CloseLibrary((struct Library *)DOSBase);
 }

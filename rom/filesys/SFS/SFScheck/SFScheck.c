@@ -203,7 +203,7 @@ LONG main() {
             }
           }
           else {
-            VPrintf("Unknown device %s\n", (IPTR *)&arglist.device);
+            Printf("Unknown device %s\n", arglist.device);
             UnLockDosList(LDF_DEVICES|LDF_READ);
           }
 
@@ -1001,13 +1001,11 @@ UBYTE *tostring(UBYTE *fmt, ... ) {
   UBYTE *buf;
 
   if((buf=AllocVec(200,MEMF_CLEAR))!=0) {
-    ULONG *args;
+    AROS_SLOWSTACKFORMAT_PRE(fmt);
 
-    args=(ULONG *)&fmt;
-    args++;
+    RawDoFmt(fmt,AROS_SLOWSTACKFORMAT_ARG(fmt),RAWFMTFUNC_STRING,buf);
 
-    RawDoFmt(fmt,args,(void (*)())"\x16\xC0\x4E\x75",buf);
-
+    AROS_SLOWSTACKFORMAT_POST(fmt);
     return(buf);
   }
   else {
@@ -1019,7 +1017,9 @@ UBYTE *tostring(UBYTE *fmt, ... ) {
 
 BOOL error(UBYTE *fmt, ... ) {
 
-  VPrintf(fmt,((IPTR *)&fmt)+1);
+  AROS_SLOWSTACKFORMAT_PRE(fmt);
+  VPrintf(fmt,AROS_SLOWSTACKFORMAT_ARG(fmt));
+  AROS_SLOWSTACKFORMAT_POST(fmt);
 
   errors++;
 

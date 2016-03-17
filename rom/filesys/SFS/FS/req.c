@@ -12,18 +12,23 @@
 
 void dreqArgs(UBYTE *fmt, APTR params)
 {
-  APTR args[4];
   UBYTE *fmt2;
 
   if(globals->debugreqs!=FALSE) {
-    args[0]=AROS_BSTR_ADDR(globals->devnode->dn_Name);
-    args[1]=AROS_BSTR_ADDR(globals->startupmsg->fssm_Device);
-    args[2]=(APTR)globals->startupmsg->fssm_Unit;
-    args[3]=fmt;
+    struct {
+        CONST_STRPTR name, device;
+        ULONG unit;
+        CONST_STRPTR fmt;
+    } __packed args = {
+        AROS_BSTR_ADDR(globals->devnode->dn_Name),
+        AROS_BSTR_ADDR(globals->startupmsg->fssm_Device),
+        globals->startupmsg->fssm_Unit,
+        (CONST_STRPTR)fmt
+    };
 
     if((fmt2=AllocVec(strlen(fmt)+100,0))!=0) {
       _DEBUG(("\nREQUESTER\n\n"));
-      RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s",args,putChFunc,fmt2);
+      RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s",(RAWARG)&args,putChFunc,fmt2);
 
       if (requestArgs(PROGRAMNAME, fmt2, "Continue|No more requesters", params) == 0)
         globals->debugreqs=FALSE;
@@ -37,8 +42,14 @@ void dreqArgs(UBYTE *fmt, APTR params)
 
 LONG reqArgs(UBYTE *fmt, UBYTE *gads, APTR params)
 {
-  APTR args[5];
-  APTR *arg=args;
+  struct {
+      CONST_STRPTR dl;
+      CONST_STRPTR dn;
+      CONST_STRPTR device;
+      ULONG unit;
+      CONST_STRPTR fmt;
+  } __packed args;
+
   UBYTE *fmt2;
   LONG gadget=0;
 
@@ -55,21 +66,21 @@ LONG reqArgs(UBYTE *fmt, UBYTE *gads, APTR params)
      VolumeNode. */
 
   if(globals->volumenode!=0) {
-    *arg++=AROS_BSTR_ADDR(globals->volumenode->dl_Name);
+    args.dl=AROS_BSTR_ADDR(globals->volumenode->dl_Name);
   }
 
-  *arg++=AROS_BSTR_ADDR(globals->devnode->dn_Name);
-  *arg++=AROS_BSTR_ADDR(globals->startupmsg->fssm_Device);
-  *arg++=(APTR)globals->startupmsg->fssm_Unit;
-  *arg=fmt;
+  args.dn=AROS_BSTR_ADDR(globals->devnode->dn_Name);
+  args.device=AROS_BSTR_ADDR(globals->startupmsg->fssm_Device);
+  args.unit=globals->startupmsg->fssm_Unit;
+  args.fmt=fmt;
 
   if((fmt2=AllocVec(strlen(fmt)+100,0))!=0) {
 
     if(globals->volumenode!=0) {
-      RawDoFmt("Volume '%s' (%s: %s, unit %ld)\n\n%s",args,putChFunc,fmt2);
+      RawDoFmt("Volume '%s' (%s: %s, unit %ld)\n\n%s",(RAWARG)&args.dl,putChFunc,fmt2);
     }
     else {
-      RawDoFmt("Device %s: (%s, unit %ld)\n\n%s",args,putChFunc,fmt2);
+      RawDoFmt("Device %s: (%s, unit %ld)\n\n%s",(RAWARG)&args.dn,putChFunc,fmt2);
     }
 
     gadget = requestArgs(PROGRAMNAME " request", fmt2, gads, params);
@@ -83,16 +94,22 @@ LONG reqArgs(UBYTE *fmt, UBYTE *gads, APTR params)
 
 LONG req_unusualArgs(UBYTE *fmt, APTR params)
 {
-  APTR args[5];
+  struct {
+      CONST_STRPTR dn;
+      CONST_STRPTR device;
+      ULONG unit;
+      CONST_STRPTR fmt;
+      CONST_STRPTR msg;
+  } __packed args;
   UBYTE *fmt2;
   LONG gadget=0;
 
   /* Simple requester function. */
-  args[0]=AROS_BSTR_ADDR(globals->devnode->dn_Name);
-  args[1]=AROS_BSTR_ADDR(globals->startupmsg->fssm_Device);
-  args[2]=(APTR)globals->startupmsg->fssm_Unit;
-  args[3]=fmt;
-  args[4]="This is a safety check requester, which should\n"\
+  args.dn=AROS_BSTR_ADDR(globals->devnode->dn_Name);
+  args.device=AROS_BSTR_ADDR(globals->startupmsg->fssm_Device);
+  args.unit=globals->startupmsg->fssm_Unit;
+  args.fmt=fmt;
+  args.msg="This is a safety check requester, which should\n"\
                  "never appear under normal conditions.  Please\n"\
                  "notify the author about the error above and if\n"\
                  "possible under what circumstances it appeared.\n\n"\
@@ -101,7 +118,7 @@ LONG req_unusualArgs(UBYTE *fmt, APTR params)
 
   if((fmt2=AllocVec(strlen(fmt)+400,0))!=0) {
 
-    RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s\n\n%s",args,putChFunc,fmt2);
+    RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s\n\n%s",(RAWARG)&args,putChFunc,fmt2);
     gadget = requestArgs(PROGRAMNAME " request", fmt2, "Continue", params);
     FreeVec(fmt2);
   }

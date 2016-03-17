@@ -178,7 +178,7 @@ static BOOL CheckArch(struct unixio_base *data, STRPTR Component, STRPTR MyArch)
         	"Ok",
 	    };
 
-	    EasyRequestArgs(NULL, &es, NULL, (IPTR *)arg);
+	    EasyRequestArgs(NULL, &es, NULL, (RAWARG)arg);
 
 	    CloseLibrary(&IntuitionBase->LibNode);
 	}

@@ -327,7 +327,6 @@ int main(void)
 						// sorted list points to DT.dtn_Node2 ....
 						struct CompoundDataType *cdt;
 						struct DataTypeHeader *dth;
-						STRPTR argarray[2];
 
 						if(CheckSignal(SIGBREAKF_CTRL_C))
 						{
@@ -338,10 +337,8 @@ int main(void)
 						cdt=(struct CompoundDataType *)(node-1);
 						dth=cdt->DT.dtn_Header;
 
-						argarray[0] = dth->dth_BaseName;
-						argarray[1] = dth->dth_Name;
 
-						VPrintf("%s, \"%s\"\n", (IPTR *)argarray);
+						Printf("%s, \"%s\"\n", dth->dth_BaseName, dth->dth_Name);
 						node = node->ln_Succ;
 					}
 				}

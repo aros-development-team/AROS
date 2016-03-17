@@ -139,7 +139,7 @@ LONG main() {
           }
         }
         else {
-          VPrintf("Unknown device %s\n",&arglist.device);
+          Printf("Unknown device %s\n",arglist.device);
           UnLockDosList(LDF_DEVICES|LDF_READ);
         }
 

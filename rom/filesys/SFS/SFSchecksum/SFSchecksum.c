@@ -29,7 +29,7 @@ LONG main() {
 
   if((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39))!=0) {
     if((readarg=ReadArgs(template,(LONG *)&arglist,0))!=0) {
-      UBYTE *buffer;
+      ULONG *buffer;
       ULONG blockno=0;
 
       if(arglist.blockno!=0) {
@@ -46,14 +46,14 @@ LONG main() {
             ULONG old;
 
             if(Read(fh, buffer, *arglist.blocksize)==*arglist.blocksize) {
-              old=*((ULONG *)(buffer+4));
+              old=AROS_BE2LONG(buffer[1]);
 
               setchecksum(buffer);
 
-              VPrintf("Block is of type 0x%08lx;", buffer);
-              VPrintf(" ownblock is 0x%08lx\n", buffer + 8);
-              VPrintf("Checksum for this block was 0x%08lx",&old);
-              VPrintf(" but should be 0x%08lx\n",buffer+4);
+              Printf("Block is of type 0x%08lx;", AROS_BE2LONG(buffer[0]));
+              Printf(" ownblock is 0x%08lx\n", AROS_BE2LONG(buffer[2]));
+              Printf("Checksum for this block was 0x%08lx",old);
+              Printf(" but should be 0x%08lx\n",AROS_BE2LONG(buffer[1]));
             }
             else {
               PutStr("End of file reached.\n");

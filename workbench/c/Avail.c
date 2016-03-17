@@ -279,7 +279,7 @@ void fmtlarge(UBYTE *buf, IPTR num)
         array.val++;
     }
 
-    RawDoFmt(array.dec ? "%iu.%02iu" : "%iu", &array, NULL, buf);
+    RawDoFmt(array.dec ? "%iu.%02iu" : "%iu", (RAWARG)&array, NULL, buf);
     while (*buf) { buf++; }
     *buf++ = ch;
     *buf   = '\0';
@@ -293,8 +293,8 @@ LONG printm(CONST_STRPTR head, IPTR *array, LONG num)
 
     if (head)
     {
-        IPTR len = 16 - strlen(head);
-        RawDoFmt(aHuman ? "%%%lds" : "%%%ldiu", &len, NULL, buf);
+        ULONG len = 16 - strlen(head);
+        RawDoFmt(aHuman ? "%%%lds" : "%%%ldiu", (RAWARG)&len, NULL, buf);
         fmt = buf;
         PutStr(head);
     }
@@ -317,7 +317,7 @@ LONG printm(CONST_STRPTR head, IPTR *array, LONG num)
                 UBYTE tmp[10];
 
                 fmtlarge(tmp, *array);
-                res = Printf(fmt, (IPTR) tmp);
+                res = Printf(fmt, tmp);
                 if (res < 0)
                     break;
 
@@ -330,13 +330,13 @@ LONG printm(CONST_STRPTR head, IPTR *array, LONG num)
     {
         if (num == 1)
         {
-            res = VPrintf("%iu", (IPTR *)array);
+            res = VPrintf("%iu", (RAWARG)array);
         }
         else
         {
             while (num--)
             {
-                res = VPrintf(fmt, (IPTR *)array);
+                res = VPrintf(fmt, (RAWARG)array);
                 if (res < 0)
                     break;
 

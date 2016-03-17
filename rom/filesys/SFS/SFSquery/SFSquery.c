@@ -125,7 +125,7 @@ LONG main() {
         }
       }
       else {
-        VPrintf("Couldn't find device '%s:'.\n",(IPTR *)&arglist.name);
+        Printf("Couldn't find device '%s:'.\n",arglist.name);
         UnLockDosList(LDF_DEVICES|LDF_READ);
       }
 

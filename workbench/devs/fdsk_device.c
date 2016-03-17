@@ -542,7 +542,7 @@ AROS_UFH3(LONG, unitentry,
     win = me->pr_WindowPtr;
     me->pr_WindowPtr = (APTR) -1;
 
-    (void)RawDoFmt("FDSK:Unit%ld", &unit->unitnum, (VOID_FUNC)putchr, &ptr);
+    RawDoFmt("FDSK:Unit%ld", (RAWARG)&unit->unitnum, (VOID_FUNC)putchr, &ptr);
 
     D(bug("[FDSK%02ld] Trying to open \"%s\" ...\n", unit->unitnum, buf));
 

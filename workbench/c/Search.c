@@ -280,8 +280,7 @@ int main(void)
 			    {
 				WriteChars(spaces, MARGIN + INDENT * indent +
 					   DIR_MARGIN);
-				text = (TEXT *)&(anchor->ap_Info.fib_FileName);
-				VPrintf("%s (dir)\n", (IPTR *)&text);
+				Printf("%s (dir)\n", &anchor->ap_Info.fib_FileName[0]);
 			    }
 
 			    if(args[ARG_ALL] || (anchor->ap_Flags & APF_DODIR))
@@ -329,8 +328,7 @@ int main(void)
 			    else if(!args[ARG_QUIET] && print_names)
 			    {
 				WriteChars(spaces, MARGIN + INDENT*indent);
-				text = (TEXT *)&(anchor->ap_Info.fib_FileName);
-				VPrintf("%s..\n", (IPTR *)&text);
+				Printf("%s..\n", &anchor->ap_Info.fib_FileName[0]);
 			    }
 			    
 			    found = FindString(anchor, args, pattern, locale,
@@ -556,7 +554,7 @@ BOOL FindString(struct AnchorPath *anchor, IPTR *args, TEXT *pattern,
 			    else
 			    {
 				if(!args[ARG_NONUM])
-				    VPrintf("%6lu ", (IPTR *)&line_count);
+				    Printf("%6lu ", line_count);
 				
 				/* Replace invisible characters with dots */
 				
@@ -566,7 +564,7 @@ BOOL FindString(struct AnchorPath *anchor, IPTR *args, TEXT *pattern,
 					*r = '.';
 				}
 				
-				VPrintf("%s\n", (IPTR *)&line);
+				Printf("%s\n", line);
                                 if (args[ARG_LINES])
                                 {
                                     lines_to_show =

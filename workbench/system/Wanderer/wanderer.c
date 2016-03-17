@@ -931,8 +931,8 @@ static void fmtlarge(UBYTE *buf, IPTR num)
     const UBYTE *ch;
     struct
     {
-        IPTR val;
-        IPTR  dec;
+        ULONG val;
+        ULONG dec;
     } array =
     {
         num,
@@ -977,7 +977,7 @@ static void fmtlarge(UBYTE *buf, IPTR num)
         array.val++;
     }
 
-    RawDoFmt(array.dec ? "%lu.%02lu" : "%lu", &array, NULL, buf);
+    RawDoFmt(array.dec ? "%lu.%02lu" : "%lu", (RAWARG)&array, NULL, buf);
     while (*buf) { buf++; }
     *buf++ = *ch;
     *buf   = '\0';

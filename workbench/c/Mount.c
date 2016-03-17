@@ -223,14 +223,8 @@ void preparefile(STRPTR buf, LONG size);
 LONG parsemountfile(IPTR *params, STRPTR buf, LONG size);
 LONG parsemountlist(IPTR *params, STRPTR name, STRPTR buf, LONG	size);
 LONG mount(IPTR	*params, STRPTR	name);
-void ShowErrorArgs(STRPTR name, char *s, IPTR *ap);
-void ShowFault(LONG code, char *s, ...);
-
-#define ShowError(name, s, ...)	\
-{				\
-    IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-    ShowErrorArgs(name, s, __args);	\
-}
+void ShowError(STRPTR name, const char *s, ...);
+void ShowFault(LONG code, const char *s, ...);
 
 struct DosLibrary *DOSBase;
 struct IntuitionBase *IntuitionBase;
@@ -1848,15 +1842,17 @@ LONG mount(IPTR	*params, STRPTR	name)
     return error;
 }
 
-void ShowErrorArgs(STRPTR name, char *s, IPTR *ap)
+void ShowError(STRPTR name, const char *s, ...)
 {
+    AROS_SLOWSTACKFORMAT_PRE(s);
+
     NewRawDoFmt("Error mounting '%s'", RAWFMTFUNC_STRING, txtBuf, name);
 
     if (IsCli)
     {
 	PutStr(txtBuf);
 	PutStr(": ");
-	VPrintf(s, ap);
+	VPrintf(s, AROS_SLOWSTACKFORMAT_ARG(s));
 	PutStr("\n");
     }
     else
@@ -1873,13 +1869,15 @@ void ShowErrorArgs(STRPTR name, char *s, IPTR *ap)
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
 	if (IntuitionBase)
 	{
-	    EasyRequestArgs(NULL, &es, NULL, ap);
+	    EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(s));
 	    CloseLibrary((struct Library *)IntuitionBase);
 	}
     }
+
+    AROS_SLOWSTACKFORMAT_POST(s);
 }
 
-void ShowFault(LONG code, char *s, ...)
+void ShowFault(LONG code, const char *s, ...)
 {
 	char buf[256];
 	va_list ap;

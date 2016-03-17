@@ -59,14 +59,14 @@ struct PrinterMessage {
 #define TASK_PRINTERDATA(pd)   \
     struct PrinterData *pd =(struct PrinterData *)FindTask(NULL)->tc_UserData; \
     if (pd == NULL ||                                                   \
-        pd->pd_Device.dd_Device.lib_Node.ln_Type != NT_DEVICE ||       \
-        pd->pd_Device.dd_Device.lib_IdString != driverID) {            \
+        pd->pd_Device.dd_Device.lib_Node.ln_Type != NT_DEVICE ||        \
+        pd->pd_Device.dd_Device.lib_IdString != driverID) {             \
         struct Library *IntuitionBase;                                  \
-        if ((IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) { \
-            IPTR args[] = { (IPTR)FindTask(NULL)->tc_Node.ln_Name,      \
-                            (IPTR)__func__ };                           \
+        if ((IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {\
+            CONST_STRPTR args[] = { FindTask(NULL)->tc_Node.ln_Name,    \
+                                    __func__ };                         \
             EasyRequestArgs(NULL, (struct EasyStruct *)&driverMisuse,   \
-                            0, args);                                   \
+                            0, (RAWARG)&args[0]);                       \
             CloseLibrary(IntuitionBase);                                \
         }                                                               \
         return IOERR_NOCMD; \

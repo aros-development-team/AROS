@@ -69,7 +69,7 @@ PUTCHARPROTO( SPrintf_DoChar, char c, struct SPrintfStream *s  )
 **
 */
 
-ULONG SPrintf( char *format, char *target, IPTR *args )
+ULONG SPrintf( char *format, char *target, RAWARG args )
 {
     struct SPrintfStream s;
 
@@ -89,12 +89,12 @@ ULONG SPrintf( char *format, char *target, IPTR *args )
 int main(void)
 {
     char buf[0x80]; /* storage for keeping the SPrintf result string */
-    IPTR args[2];  /* storage for keeping the SPrintf arguments */
+    CONST_STRPTR args[2];  /* storage for keeping the SPrintf arguments */
 
-    args[0] = (IPTR) "result";
-    args[1] = (IPTR) "PUTCHARPROTO macro";
+    args[0] = "result";
+    args[1] = "PUTCHARPROTO macro";
 
-    SPrintf("I am the %s of using SPrintf() with the new %s!", buf, args);
+    SPrintf("I am the %s of using SPrintf() with the new %s!", buf, (RAWARG)args);
 
     printf("%s\n", buf); /* just a simple printf to output and add the \n */
 

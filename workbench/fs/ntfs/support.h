@@ -16,15 +16,9 @@
 #include <dos/dosextens.h>
 
 void SendEvent(LONG event);
-void ErrorMessageArgs(char *fmt, IPTR *args);
+void ErrorMessage(CONST_STRPTR fmt, ...);
 APTR _AllocVecPooled(APTR mem_pool, ULONG size);
 void _FreeVecPooled(APTR mem_pool, APTR vecaddr);
-
-#define ErrorMessage(fmt, ...)		\
-{					\
-    IPTR __args[] = {__VA_ARGS__};	\
-    ErrorMessageArgs(fmt, __args);	\
-}
 
 //#define log2 ilog2
 

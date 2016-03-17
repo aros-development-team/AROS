@@ -334,7 +334,7 @@ static BOOL CheckArch(const char *Component, const char *MyArch, const char *Sys
                 "Ok",
             };
 
-            EasyRequestArgs(NULL, &es, NULL, (IPTR *)arg);
+            EasyRequestArgs(NULL, &es, NULL, (RAWARG)arg);
 
             CloseLibrary(&IntuitionBase->LibNode);
         }

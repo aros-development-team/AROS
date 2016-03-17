@@ -14,6 +14,7 @@
 #include <exec/rawfmt.h>
 #include <intuition/intuition.h>
 
+#include "os.h"
 #include "error.h"
 #include "errstrings.h"
 #include "baseredef.h"
@@ -22,7 +23,7 @@
 /*
  * displays requester on screen or puts text to the debug buffer
  */
-LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, IPTR *args) 
+LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, RAWARG args) 
 {
 	LONG answer = 0;
 	char* options[] =
@@ -58,16 +59,21 @@ LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqTy
 	return answer;
 }
 
-LONG showErrorArgs(struct AFSBase *afsbase, IPTR *args)
+LONG showError(struct AFSBase *afsbase, ULONG error, ...)
 {
-    ULONG error = args[0];
+    LONG ret;
 
     if (error == ERR_ALREADY_PRINTED)
-	return 0;
+        ret = 0;
     else if (error >= ERR_UNKNOWN)
-	return showPtrArgsText(afsbase, texts[ERR_UNKNOWN].text, texts[ERR_UNKNOWN].type, args);
-    else
-	return showPtrArgsText(afsbase, texts[error].text, texts[error].type, &args[1]);
+        ret = showPtrArgsText(afsbase, texts[ERR_UNKNOWN].text, texts[ERR_UNKNOWN].type, (RAWARG)&error);
+    else {
+        AROS_SLOWSTACKFORMAT_PRE_USING(error, texts[error].text);
+        ret = showPtrArgsText(afsbase, texts[error].text, texts[error].type, AROS_SLOWSTACKFORMAT_ARG(error));
+        AROS_SLOWSTACKFORMAT_POST(error);
+    }
+
+    return ret;
 }
 
 

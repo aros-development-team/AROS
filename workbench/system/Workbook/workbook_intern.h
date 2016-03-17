@@ -57,25 +57,6 @@ extern struct ExecBase *SysBase;
 #include <string.h>
 #include <proto/exec.h>
 
-static inline STRPTR StrDup(CONST_STRPTR str)
-{
-    STRPTR cp;
-    int len;
-   
-    if (str == NULL)
-    	return NULL;
-
-    len = strlen(str) + 1;
-
-    cp = AllocVec(len, MEMF_ANY);
-    if (cp == NULL)
-    	return NULL;
-
-    CopyMem(str, cp, len);
-
-    return cp;
-}
-
 struct Region *wbClipWindow(struct WorkbookBase *wb, struct Window *win);
 void wbUnclipWindow(struct WorkbookBase *wb, struct Window *win, struct Region *clip);
 

@@ -1102,7 +1102,7 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     if (name) if (name[0])
     {
-D(bug("[ASL] delete() name = '%s'\n", &name));
+D(bug("[ASL] delete() name = '%s'\n", name));
         struct EasyStruct es;
 
         es.es_StructSize   = sizeof(es);
@@ -1111,7 +1111,7 @@ D(bug("[ASL] delete() name = '%s'\n", &name));
         es.es_TextFormat   = GetString(MSG_FILEREQ_DELETE_MSG     , GetIR(ifreq)->ir_Catalog, AslBase);
         es.es_GadgetFormat = GetString(MSG_FILEREQ_DELETE_OKCANCEL, GetIR(ifreq)->ir_Catalog, AslBase);
 
-        if (EasyRequestArgs(ld->ld_Window, &es, NULL, &name) == 1)
+        if (EasyRequestArgs(ld->ld_Window, &es, NULL, (RAWARG)&name) == 1)
         {
             if (DeleteFile(name) && !(udata->Flags & FRFLG_SHOWING_VOLUMES))
             {
@@ -1293,7 +1293,7 @@ void FRDropFromDifferentDrawersRequester(struct LayoutData *ld, struct AslBase_i
     es.es_TextFormat   = GetString(MSG_FILEREQ_FOREIGNER_MSG  , GetIR(ifreq)->ir_Catalog, AslBase);
     es.es_GadgetFormat = GetString(MSG_FILEREQ_FOREIGNER_OK   , GetIR(ifreq)->ir_Catalog, AslBase);
 
-    EasyRequestArgs(ld->ld_Window, &es, NULL, &ld->ld_ForeignerFiles);
+    EasyRequestArgs(ld->ld_Window, &es, NULL, (RAWARG)&ld->ld_ForeignerFiles);
 }
 
 /*****************************************************************************************/

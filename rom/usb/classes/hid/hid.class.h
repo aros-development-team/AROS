@@ -99,7 +99,7 @@ struct NepHidSound * nLoadSound(struct NepHidBase *nh, STRPTR name);
 BOOL nPlaySound(struct NepHidBase *nh, struct NepHidAction *nha);
 void nFreeSound(struct NepHidBase *nh, struct NepHidSound *nhs);
 
-LONG nEasyRequestA(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, ULONG *params);
+LONG nEasyRequestA(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, RAWARG params);
 
 // FIXME
 LONG nEasyRequest(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, ...);

@@ -63,7 +63,7 @@ ULONG eclock;
 
 struct task
 {
-    STRPTR name;
+    CONST_STRPTR name;
     APTR address;
     WORD type;
     WORD state;
@@ -209,25 +209,18 @@ int main(void)
             {
             	ULONG time;
 
-                IPTR args[10];
-                args[0] = (IPTR)tasks2->address;
-                args[1] = (IPTR)((tasks2->type == NT_TASK) ? "task" :
-                	       (tasks2->type == NT_PROCESS) ? "process" : "CLI" );
-                args[2] = tasks2->pri;
-                args[3] = (IPTR)((tasks2->state == TS_RUN) ? "running" :
-                	       (tasks2->state == TS_READY) ? "ready" : "waiting" );
-
                 time = tasks2->cputime.tv_secs;
-                args[6] = time % 60;
-                time /= 60;
-                args[5] = time % 60;
-                time /= 60;
-                args[4] = time % 60;
+                Printf("0x%08.ix\t%s\t%ld\t%s\t%02ld:%02ld:%02ld\t%id\t%id\t%s\n",
+                        tasks2->address,
+                        (tasks2->type == NT_TASK) ? "task" :
+                        (tasks2->type == NT_PROCESS) ? "process" : "CLI",
+                        (ULONG)tasks2->pri,
+                        (tasks2->state == TS_RUN) ? "running" :
+                        (tasks2->state == TS_READY) ? "ready" : "waiting",
+                        time % 60, (time / 60) % 60, (time / 60 / 60) % 60,
+                        tasks2->stacksize, tasks2->stackused,
+                        (tasks2->name != NULL) ? tasks2->name : (CONST_STRPTR)"(null)");
 
-                args[7] = tasks2->stacksize;
-                args[8] = tasks2->stackused;
-                args[9] = (tasks2->name != NULL) ? (IPTR)tasks2->name : 0;
-                VPrintf("0x%08.lx\t%s\t%ld\t%s\t%02ld:%02ld:%02ld\t%ld\t%ld\t%s\n", args);
             }
             FreeVec(buffer);
             return 0;

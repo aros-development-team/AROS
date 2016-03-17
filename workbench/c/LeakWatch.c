@@ -132,7 +132,7 @@ struct OpenedResourceNode {
 /* All resources that LeakWatch handles. */
 struct TrackedResources {
     struct List opened;   /* List of OpenedResourceNode */
-    ULONG       freeMem;  /* total free memory */
+    IPTR        freeMem;  /* total free memory */
 };
 
 struct ModifiedResource {
@@ -493,10 +493,7 @@ static void DeleteResourcesState(struct TrackedResources *rs)
 
 void DisplayResourcesState(const struct TrackedResources *rs, int pagelines)
 {
-    /* FIXME */
     struct OpenedResourceNode *orn;
-    IPTR tmp[4];
-    IPTR mem[1];
     int currentlines;
 
     if (!rs)
@@ -504,8 +501,7 @@ void DisplayResourcesState(const struct TrackedResources *rs, int pagelines)
 
     FPuts(Output(), "LeakWatch snapshot:\n");
 
-    mem[0] = rs->freeMem;
-    VFPrintf(Output(), " Free memory : %ld bytes\n", mem);
+    FPrintf(Output(), " Free memory : %id bytes\n", rs->freeMem);
 
     FPuts(Output(), " Opened resources:\n");
     currentlines = 3;
@@ -513,11 +509,6 @@ void DisplayResourcesState(const struct TrackedResources *rs, int pagelines)
         orn->node.ln_Succ!=NULL;
         orn=(struct OpenedResourceNode *)orn->node.ln_Succ)
     {
-	tmp[0] = (IPTR)orn->type;
-	tmp[1] = (IPTR)orn->name;
-	tmp[2] = (IPTR)orn->addr;
-	tmp[3] = (IPTR)orn->count;
-	
 	if (currentlines >= (pagelines - 2))
 	{
 	    ULONG buf;
@@ -527,7 +518,8 @@ void DisplayResourcesState(const struct TrackedResources *rs, int pagelines)
 	    Read(Input(), &buf, 1);
 	    Flush(Input());
 	}
-	VFPrintf(Output(), " %s: %s (0x%lx) : %lu\n", tmp);
+	FPrintf(Output(), " %s: %s (0x%ix) : %lu\n",
+	        orn->type, orn->name, orn->addr, orn->count);
 	currentlines++;
     }
     FPuts(Output(), "-- end of state\n");
@@ -605,16 +597,11 @@ static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
 
 static void DisplayStateDiff(const struct ResourceDiff *rd, int pagelines)
 {
-    /* FIXME */
-    IPTR mem[2];
-    IPTR modified[5];
     struct ModifiedResource *mr;
     int currentlines;
 
     FPuts(Output(), "LeakWatch report:\n");
-    mem[0] = rd->memLost;
-    mem[1] = (IPTR)((rd->memLost > 1) ? "s" : "");
-    VFPrintf(Output(), " Memory lost : %ld byte%s\n", mem);
+    FPrintf(Output(), " Memory lost : %ld byte%s\n", rd->memLost, (rd->memLost > 1) ? "s" : "");
 
     FPuts(Output(), " Open count:\n");
     currentlines = 3;
@@ -622,12 +609,6 @@ static void DisplayStateDiff(const struct ResourceDiff *rd, int pagelines)
 	mr->node.ln_Succ!=NULL;
 	mr=(struct ModifiedResource *)mr->node.ln_Succ)
     {
-	modified[0] = (IPTR)mr->type;
-	modified[1] = (IPTR)mr->name;
-	modified[2] = (IPTR)mr->addr;
-	modified[3] = mr->before_count;
-	modified[4] = mr->after_count;
-	
 	if (currentlines >= (pagelines - 2))
 	{
 	    ULONG buf;
@@ -637,7 +618,9 @@ static void DisplayStateDiff(const struct ResourceDiff *rd, int pagelines)
 	    Read(Input(), &buf, 1);
 	    Flush(Input());
 	}
-	VFPrintf(Output(), " %s: %s (0x%lx) : %lu -> %lu\n", modified);
+	FPrintf(Output(), " %s: %s (0x%ix) : %lu -> %lu\n",
+	        mr->type, mr->name, mr->addr, mr->before_count,
+	        mr->after_count);
 	currentlines++;
     }
 

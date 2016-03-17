@@ -7,7 +7,7 @@
 */
 
 /* Prevent 'timeval redefinition' error */
-#define _AROS_TYPES_TIMEVAL_S_H_
+#define timeval timeval_AROS
 
 #include <aros/debug.h>
 #include <proto/exec.h>

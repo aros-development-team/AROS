@@ -706,7 +706,7 @@ IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj,
     LONG txt_len;
 
     txt_len = 0;
-    RawDoFmt(msg->format, (ULONG *) & msg->val,
+    RawDoFmt(msg->format, (RAWARG)&msg->val,
         (VOID_FUNC) AROS_ASMSYMNAME(len_func), &txt_len);
 
 /*  D(bug("Notify_SetAsString: fmt=%s, txtlen=%d\n", msg->format, txt_len)); */
@@ -716,7 +716,7 @@ IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj,
 
     {
         STRPTR txtptr = txt;
-        RawDoFmt(msg->format, (ULONG *) & msg->val,
+        RawDoFmt(msg->format, (RAWARG)&msg->val,
             (VOID_FUNC) AROS_ASMSYMNAME(cpy_func), &txtptr);
     }
 

@@ -66,8 +66,7 @@ AROS_SHA(LONG *, , SIZE,/N,NULL))
     {
 	LONG currentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 	
-	VPrintf("Current stack size is %ld bytes\n",
-		(IPTR *)&currentstack);
+	Printf("Current stack size is %ld bytes\n", currentstack);
     }
     /* Set new stack size */
     else

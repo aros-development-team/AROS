@@ -178,6 +178,11 @@
     typedef UBYTE BYTEBITS;
 #endif
 
+#ifndef __typedef_RAWARG
+#   define __typedef_RAWARG     /* Type of 'datastream' of RawDoFmt */
+    typedef struct RAWARG_s { } *RAWARG;
+#endif
+
 /*************************************
  ***** Some useful definitions	 *****
  *************************************/

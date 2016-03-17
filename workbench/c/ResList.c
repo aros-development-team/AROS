@@ -127,11 +127,7 @@ int main(void)
                            "------------------------------------------------------------\n");
 	    for(ress2=buffer;ress2<ress;ress2++)
 	    {
-		IPTR args[2];
-		args[0] = (IPTR)ress2->address;
-		args[1] = (IPTR)ress2->name;
-
-		VPrintf("0x%08.lx\t%s\n", args);
+		Printf("0x%08.ix\t%s\n", ress2->address, ress2->name);
 	    }
 	    FreeVec(buffer);
             return 0; 

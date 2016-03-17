@@ -292,26 +292,22 @@ int Do_Filenote(struct AnchorPath *a,
 void PrintFileName(struct AnchorPath *a, LONG t)
 {
     int i;
-    IPTR args[2];
 
-    args[0] = (IPTR)FilePart(&a->ap_Buf[0]);
-    args[1] = (IPTR)NULL;
-
-    VPrintf("   ", NULL);
+    Printf("   ");
 
     for (i = 0; i != t; i++)
     {
-        VPrintf("  ", NULL);
+        Printf("  ");
     }
 
-    VPrintf("%s", args);
+    Printf("%s", FilePart(&a->ap_Buf[0]));
 
     if (a->ap_Info.fib_DirEntryType > 0)
     {
-        VPrintf(" (dir)", NULL);
+        Printf(" (dir)");
     }
 
-    VPrintf("...Done\n", NULL);
+    Printf("...Done\n");
 
 } /* PrintFileName */
 

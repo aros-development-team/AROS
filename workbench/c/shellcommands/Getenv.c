@@ -73,8 +73,6 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
     LONG            Var_Length;
     char            Var_Value[BUFFER_SIZE];
-    IPTR            Display_Args[1];
-
 
     Var_Length = GetVar(SHArg(NAME),
            &Var_Value[0],
@@ -84,8 +82,7 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
     if (Var_Length != -1)
     {
-        Display_Args[0] = (IPTR)Var_Value;
-        VPrintf("%s\n", Display_Args);
+        Printf("%s\n", Var_Value);
 
 	return RETURN_OK;
     }

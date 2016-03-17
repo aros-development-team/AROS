@@ -27,7 +27,9 @@ AROS_UFH2(void, dt_putchr,
 void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 		 UBYTE *format, ...)
 {
-    RawDoFmt(format, &format+1, (VOID_FUNC)dt_putchr, &buffer);
+    AROS_SLOWSTACKFORMAT_PRE(format);
+    RawDoFmt(format, AROS_SLOWSTACKFORMAT_ARG(format), (VOID_FUNC)dt_putchr, &buffer);
+    AROS_SLOWSTACKFORMAT_POST(format);
 }
 
 

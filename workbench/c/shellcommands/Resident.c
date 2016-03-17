@@ -267,15 +267,15 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
                 isbreak = TRUE;
             if (!isbreak) {
                 if (n->data[1] == CMD_SYSTEM)
-                    VPrintf("%-30s SYSTEM\n", n->data);
+                    Printf("%-30s SYSTEM\n", (CONST_STRPTR)n->data[0]);
                 else
                 if (n->data[1] == CMD_INTERNAL)
-                    VPrintf("%-30s INTERNAL\n", n->data);
+                    Printf("%-30s INTERNAL\n", (CONST_STRPTR)n->data[0]);
                 else
                 if (n->data[1] == CMD_DISABLED)
-                    VPrintf("%-30s DISABLED\n", n->data);
+                    Printf("%-30s DISABLED\n", (CONST_STRPTR)n->data[0]);
                 else
-                    VPrintf("%-30s %-ld\n", n->data);
+                    Printf("%-30s %-ld\n", (CONST_STRPTR)n->data[0], (ULONG)n->data[1]);
             }
             FreeVec((APTR)n->data[0]);
             FreeVec(n);
@@ -292,7 +292,7 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
     AROS_SHCOMMAND_EXIT
 }
 
-static STRPTR StrDup(struct ExecBase *SysBase, STRPTR str)
+static STRPTR myStrDup(struct ExecBase *SysBase, STRPTR str)
 {
     size_t len = strlen(str)+1;
     STRPTR ret = (STRPTR) AllocVec(len, MEMF_ANY);
@@ -313,7 +313,7 @@ static struct SegNode *NewSegNode(struct ExecBase *SysBase, STRPTR name,
 
     if (sn)
     {
-        sn->data[0] = (IPTR) StrDup(SysBase, name);
+        sn->data[0] = (IPTR) myStrDup(SysBase, name);
 	if (sn->data[0])
 	{
  	    sn->data[1] = uc;

@@ -312,7 +312,7 @@ int main(int argc,char **argv)
          error_requester.es_TextFormat = (STRPTR)"%s";
          error_requester.es_GadgetFormat = (STRPTR)"Cancel";
 
-         EasyRequestArgs(NULL, &error_requester, NULL, &error_buffer);
+         EasyRequestArgs(NULL, &error_requester, NULL, (RAWARG)&error_buffer);
       }
       else
       {

@@ -49,7 +49,7 @@ int main()
 		    };
 
                     if((errorcode=DoPkt(msgport, ACTION_SFS_QUERY, (SIPTR)&tags, 0, 0, 0, 0))!=DOSFALSE) {
-                        STACKULONG lines,readahead;
+                        ULONG lines,readahead;
 
                         lines=tags[0].ti_Data;
                         readahead=tags[1].ti_Data;
@@ -66,8 +66,8 @@ int main()
                             readahead=*arglist.readahead;
                         }
 
-                        VPrintf("Setting cache to %ld lines ", &lines);
-                        VPrintf("of %ld bytes and copyback mode ", &readahead);
+                        Printf("Setting cache to %ld lines ", lines);
+                        Printf("of %ld bytes and copyback mode ", readahead);
                         if(copyback!=0) {
                             PutStr("enabled.\n");
                         }
@@ -92,8 +92,8 @@ int main()
 		    };
 
                     if((errorcode=DoPkt(msgport, ACTION_SFS_QUERY, (SIPTR)&tags, 0, 0, 0, 0))!=DOSFALSE) {
-                        VPrintf("Current cache settings: %ld lines,", &tags[0].ti_Data);
-                        VPrintf(" %ld bytes readahead, ", &tags[1].ti_Data);
+                        Printf("Current cache settings: %ld lines,", (ULONG)tags[0].ti_Data);
+                        Printf(" %ld bytes readahead, ", (ULONG)tags[1].ti_Data);
                         if(tags[2].ti_Data==0) {
                             PutStr("no copyback.\n");
                         }
@@ -104,7 +104,7 @@ int main()
                 }
             }
             else {
-                VPrintf("Couldn't find device '%s:'.\n",(IPTR *)&arglist.name);
+                Printf("Couldn't find device '%s:'.\n",arglist.name);
                 UnLockDosList(LDF_DEVICES|LDF_READ);
             }
 

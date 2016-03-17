@@ -36,6 +36,7 @@
 #include <dos/filehandler.h>
 
 #include <exec/memory.h>
+#include <exec/rawfmt.h>
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <graphics/rpattr.h>
@@ -354,8 +355,8 @@ static void FmtSizeToString(UBYTE *buf, ULONG num)
     const UBYTE       *ch;
     struct
     {
-        IPTR    val;
-        IPTR    dec;
+        ULONG    val;
+        ULONG    dec;
     } array =
     {
         num,
@@ -400,7 +401,7 @@ static void FmtSizeToString(UBYTE *buf, ULONG num)
         array.val++;
     }
 
-    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", (RAWARG)&array, RAWFMTFUNC_STRING, buf);
 
     while (*buf)
     {

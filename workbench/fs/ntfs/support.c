@@ -20,11 +20,13 @@
 
 #include <proto/intuition.h>
 #include <proto/exec.h>
+#include <proto/alib.h>
 
 #include <stdarg.h>
 #include <string.h>
 
 #include "ntfs_fs.h"
+#include "support.h"
 
 #include "debug.h"
 
@@ -76,7 +78,7 @@ int ilog2(ULONG data) {
 
 /*-----------------------------------------------------------------------*/
 
-void ErrorMessageArgs(char *fmt, IPTR *ap)
+void ErrorMessage(CONST_STRPTR fmt, ...)
 {
 	struct IntuitionBase *IntuitionBase;
 
@@ -91,7 +93,9 @@ void ErrorMessageArgs(char *fmt, IPTR *ap)
 		};
 
 		es.es_TextFormat = fmt;
-		EasyRequestArgs(NULL, &es, NULL, ap);
+		AROS_SLOWSTACKFORMAT_PRE(fmt);
+		EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(fmt));
+		AROS_SLOWSTACKFORMAT_POST(fmt);
 		CloseLibrary((struct Library *)IntuitionBase);
 	}
 }

@@ -111,8 +111,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
     if (!from)
     {
-        IPTR data[] = { (IPTR)SHArg(NAME) };
-        VFPrintf(ces, "EXECUTE: can't open %s\n", data);
+        FPrintf(ces, "EXECUTE: can't open %s\n", SHArg(NAME));
         PrintFault(IoErr(), NULL);
         if (extraargs)
             FreeVec(extraargs);

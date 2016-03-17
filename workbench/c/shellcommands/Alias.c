@@ -89,7 +89,6 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
     struct Process  *AliasProc;
     struct LocalVar *AliasNode;
     char             Buffer[BUFFER_SIZE];
-    IPTR             OutArgs[3];
     int              Return_Value = RETURN_OK;
     BOOL             Success;
     LONG             VarLength;
@@ -114,9 +113,7 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
             }
             else
             {
-                OutArgs[0] = (IPTR)&Buffer[0];
-                OutArgs[1] = (IPTR)NULL;
-                VPrintf("%s\n", &OutArgs[0]);
+                Printf("%s\n", Buffer);
             }
         }
         else
@@ -154,10 +151,7 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
 
 		     Buffer2[VarLength] = 0;
 
-		     OutArgs[0] = (IPTR)AliasNode->lv_Node.ln_Name;
-		     OutArgs[1] = (IPTR)&Buffer2[0];
-		     OutArgs[2] = (IPTR)NULL;
-		     VPrintf("%-20s\t%-20s\n", &OutArgs[0]);
+		     Printf("%-20s\t%-20s\n", AliasNode->lv_Node.ln_Name, Buffer2);
 		}
 	    }
 	}

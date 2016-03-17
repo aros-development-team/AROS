@@ -21,6 +21,7 @@
 
 #include <proto/intuition.h>
 #include <proto/exec.h>
+#include <proto/alib.h>
 
 #include <stdarg.h>
 #include <string.h>
@@ -82,11 +83,12 @@ int ilog2(ULONG data)
     return 0;
 }
 
-LONG ErrorMessageArgs(char *fmt, char *options, IPTR *ap,
-    struct Globals *glob)
+LONG ErrorMessageArgs(struct Globals *glob, char *options, CONST_STRPTR format, ...)
 {
     struct IntuitionBase *IntuitionBase;
     LONG answer = 0;
+    
+    AROS_SLOWSTACKFORMAT_PRE(format);
 
     IntuitionBase =
         (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
@@ -101,10 +103,12 @@ LONG ErrorMessageArgs(char *fmt, char *options, IPTR *ap,
             options
         };
 
-        es.es_TextFormat = fmt;
-        answer = EasyRequestArgs(NULL, &es, NULL, ap);
+        es.es_TextFormat = format;
+        answer = EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(format));
         CloseLibrary((struct Library *)IntuitionBase);
     }
+
+    AROS_SLOWSTACKFORMAT_POST(format);
 
     return answer;
 }

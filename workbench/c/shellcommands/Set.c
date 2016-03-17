@@ -83,7 +83,6 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
 
     struct Process  * SetProc;
     struct LocalVar * SetNode;
-    IPTR              OutArgs[3];
     LONG              VarLength;
     char              Buffer1[BUFFER_SIZE];
     char              Buffer2[BUFFER_SIZE];
@@ -136,10 +135,7 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
 
                     Buffer2[VarLength] = 0;
 
-		    OutArgs[0] = (IPTR)SetNode->lv_Node.ln_Name;
-                    OutArgs[1] = (IPTR)&Buffer2[0];
-                    OutArgs[2] = (IPTR)NULL;
-                    VPrintf("%-20s\t%-20s\n", &OutArgs[0]);
+                    Printf("%-20s\t%-20s\n", SetNode->lv_Node.ln_Name, Buffer2);
                 }
             }
         }

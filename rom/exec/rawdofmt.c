@@ -414,11 +414,11 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 
     NAME */
 
-	AROS_LH4I(APTR,RawDoFmt,
+	AROS_LH4I(RAWARG,RawDoFmt,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, FormatString, A0),
-	AROS_LHA(APTR,         DataStream,   A1),
+	AROS_LHA(RAWARG,       DataStream,   A1),
 	AROS_LHA(VOID_FUNC,    PutChProc,    A2),
 	AROS_LHA(APTR,         PutChData,    A3),
 
@@ -541,7 +541,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 
     null_va_list(vaListStream);
 
-    return InternalRawDoFmt(FormatString, DataStream, PutChProc, PutChData, vaListStream);
+    return InternalRawDoFmt(FormatString, (APTR)DataStream, PutChProc, PutChData, vaListStream);
 
     AROS_LIBFUNC_EXIT
 } /* RawDoFmt */

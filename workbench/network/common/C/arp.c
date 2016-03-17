@@ -547,14 +547,13 @@ sana_print(const u_char *cp, int len)
 {
   char format[] = 
     "%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx:%lx";
-  int i; long o[16];
+  int i; ULONG o[16];
 
   if (len) {
     format[4*len - 1] = '\0';
     for (i = 0; i < len; i++)
       o[i] = cp[i];
-//    vprintf(format, (va_list)o);
-    VPrintf(format, o);
+    VPrintf(format, (RAWARG)o);
   }
 }
 

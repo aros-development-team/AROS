@@ -11,8 +11,6 @@
  */
 
 
-#include "os.h"
-
 /*
  * The various error codes, that can be used as index in texts[], below.
  */
