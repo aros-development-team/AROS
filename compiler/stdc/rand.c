@@ -45,7 +45,7 @@
 
     StdCBase->srand_seed = StdCBase->srand_seed * 1103515245 + 12345;
 
-    return StdCBase->srand_seed % RAND_MAX;
+    return ((StdCBase->srand_seed >> 16) % RAND_MAX);
 } /* rand */
 
 
