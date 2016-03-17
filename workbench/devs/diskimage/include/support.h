@@ -85,19 +85,21 @@ void FreeVecPooled(APTR pool, APTR mem);
 #endif
 
 /* asprintf_os3.s / asprintf_aros.c */
+#ifdef __AROS__
+void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...);
+STRPTR ASPrintf (CONST_STRPTR fmt, ...);
+void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, RAWARG args);
+STRPTR VASPrintf (CONST_STRPTR fmt, RAWARG args);
+#else
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...);
 VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...);
-#ifdef __AROS__
-void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, VA_LIST args);
-STRPTR VASPrintf (CONST_STRPTR fmt, VA_LIST args);
-#else
 void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, CONST_APTR args);
 STRPTR VASPrintf (CONST_STRPTR fmt, CONST_APTR args);
 #endif
 
 /* asprintfpooled_aros.c */
-VARARGS68K STRPTR ASPrintfPooled (APTR pool, CONST_STRPTR fmt, ...);
-STRPTR VASPrintfPooled (APTR pool, CONST_STRPTR fmt, VA_LIST args);
+STRPTR ASPrintfPooled (APTR pool, CONST_STRPTR fmt, ...);
+STRPTR VASPrintfPooled (APTR pool, CONST_STRPTR fmt, RAWARG args);
 
 /* checklib.c */
 BOOL CheckLib (struct Library *lib, ULONG ver, ULONG rev);
