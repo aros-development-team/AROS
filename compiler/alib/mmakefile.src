@@ -59,6 +59,7 @@ FILES	:= \
     extendfonttags \
     fastrand \
     freeievents \
+    getdatastreamfromformat \
     getdtattrs \
     getextsprite \
     getrexxvar \

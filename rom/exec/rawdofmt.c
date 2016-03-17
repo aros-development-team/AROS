@@ -84,15 +84,20 @@
 ({                                       	\
     IPTR res;					\
     						\
-    if (sizeof(type) <= sizeof(short))		\
+    if (sizeof(type) <= sizeof(UWORD))		\
     {						\
-    	res = *(short *)DataStream	;	\
-    	DataStream = (short *)DataStream + 1;	\
+    	res = *(UWORD *)DataStream	;	\
+    	DataStream = (UWORD *)DataStream + 1;	\
     }						\
-    else if (sizeof(type) <= sizeof(long))	\
+    else if (sizeof(type) <= sizeof(ULONG))	\
     {						\
-    	res = *(long *)DataStream;		\
-    	DataStream = (long *)DataStream + 1;	\
+    	res = *(ULONG *)DataStream;		\
+    	DataStream = (ULONG *)DataStream + 1;	\
+    }						\
+    else if (sizeof(type) <= sizeof(IPTR))	\
+    {						\
+    	res = *(IPTR *)DataStream;		\
+    	DataStream = (IPTR *)DataStream + 1;	\
     }						\
     (type)res;					\
 })
@@ -493,7 +498,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     EXAMPLE
 	Build a sprintf style function:
 
-	    __stackparm void my_sprintf(UBYTE *buffer, UBYTE *format, ...);
+	    void my_sprintf(UBYTE *buffer, UBYTE *format, ...);
 
 	    static void callback(UBYTE chr __reg(d0), UBYTE **data __reg(a3))
 	    {
@@ -502,11 +507,13 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 
 	    void my_sprintf(UBYTE *buffer, UBYTE *format, ...)
 	    {
-	        RawDoFmt(format, &format+1, &callback, &buffer);
+	        AROS_SLOWSTACKFORMAT_PRE(format)
+	        RawDoFmt(format, AROS_SLOWSTACKFORMAT_ARG(format), &callback, &buffer);
+	        AROS_SLOWSTACKFORMAT_POST(format)
             }
 
-	The above example uses __stackparm attribute in the function
-	prototype in order to make sure that arguments are all passed on
+	The above example uses AROS_SLOWSTACKFORMAT_* macros in the function
+	in order to make sure that arguments are all passed on
 	the stack on all architectures. The alternative is to use
 	VNewRawDoFmt() function which takes va_list instead of array
 	DataStream.
