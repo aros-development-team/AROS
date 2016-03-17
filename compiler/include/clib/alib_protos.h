@@ -58,6 +58,7 @@ void DeletePort (struct MsgPort * mp);
 #endif
 
 /* Extra */
+extern ULONG RangeSeed;
 ULONG RangeRand (ULONG maxValue);
 ULONG FastRand (ULONG seed);
 LONG TimeDelay (LONG unit, ULONG secs, ULONG microsecs);
