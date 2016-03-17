@@ -276,7 +276,7 @@ Svuota cestino
 ; Empty trash
 ;
 MSG_MEN_PUT_AWAY
-Sul desktop
+Riponi
 ; Put away
 ;
 MSG_MEN_SC_PUT_AWAY
@@ -284,7 +284,7 @@ P
 ; P
 ;
 MSG_MEN_LEAVE_OUT
-Riponi
+Sul desktop
 ; Leave out
 ;
 MSG_MEN_SC_LEAVE_OUT
