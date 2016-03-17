@@ -69,7 +69,7 @@ void MergeSortList(struct MinList *l, int (*compare)(struct MinNode *n1, struct 
 
 /* Commodities */
 CxObj  *HotKey (STRPTR description, struct MsgPort *port, LONG id);
-VOID    FreeIEvents (volatile struct InputEvent *events);
+VOID    FreeIEvents (struct InputEvent *events);
 UBYTE **ArgArrayInit(ULONG argc, UBYTE **argv);
 VOID    ArgArrayDone(VOID);
 LONG    ArgInt(UBYTE **tt, STRPTR entry, LONG defaultVal);
@@ -79,7 +79,7 @@ struct  InputEvent *InvertStringForwd(STRPTR str, struct KeyMap *km);
 
 /* Graphics */
 #ifndef ObtainBestPen
-LONG ObtainBestPen( struct ColorMap * cm, LONG R, LONG G, LONG B, ULONG tag1, ...) __stackparm;
+LONG ObtainBestPen( struct ColorMap * cm, ULONG R, ULONG G, ULONG B, Tag tag1, ...) __stackparm;
 #endif
 
 #ifndef GetRPAttrs
