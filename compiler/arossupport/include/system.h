@@ -97,6 +97,12 @@
 #endif
 
 /* 3. Macros for making things more efficient */
+#ifndef __packed
+#if __GNUC_PREREQ(2,5)
+#   define __packed __attribute__((__packed__))
+#endif
+#endif
+
 #ifndef __noreturn
 #if __GNUC_PREREQ(2,5)
 #   define __noreturn  __attribute__((__noreturn__))
