@@ -24,7 +24,7 @@
 	ULONG G,
 	ULONG B,
 	Tag tag1,
-	... )
+	... ) __stackparm
 
 /*  FUNCTION
         This is the varargs version of graphics.library/ObtainBestPenA().
