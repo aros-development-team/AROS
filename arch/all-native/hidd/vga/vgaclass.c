@@ -256,10 +256,10 @@ OOP_Object *PCVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct p
         mymsg.cl	= msg->cl;
         mymsg.attrList	= mytags;
 
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     }
     else
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     ReturnPtr("VGAGfx::CreateObject", OOP_Object *, object);
 }

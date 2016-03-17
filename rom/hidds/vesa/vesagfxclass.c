@@ -194,10 +194,10 @@ OOP_Object *PCVesa__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct 
         p.cl = msg->cl;
         p.attrList = tags;
 
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     }
     else
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     ReturnPtr("VesaGfx::CreateObject", OOP_Object *, object);
 }
