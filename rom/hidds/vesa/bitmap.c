@@ -123,8 +123,8 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
-    LONG xoffset = data->xoffset;
-    LONG yoffset = data->yoffset;
+    IPTR xoffset = data->xoffset;
+    IPTR yoffset = data->yoffset;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
