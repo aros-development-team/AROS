@@ -374,10 +374,10 @@ OOP_Object *NV__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
         p.attrList	= mytags;
 
         /* Pass the new message to the superclass */
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     }
     else
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     return object;
 }
