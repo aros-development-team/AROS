@@ -211,14 +211,19 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     ULONG *iStream;
     APTR dStream;
     ULONG iSize = 0, dSize = 0;
+#ifdef __arm__
+    va_list nullarg = {};
+#else
+    va_list nullarg = 0;
+#endif
 
     /* Scan to determine the location of the positional arguments */
-    GetDataStreamFromFormat(FormatString, 0, NULL, NULL,
+    GetDataStreamFromFormat(FormatString, nullarg, NULL, NULL,
                             NULL, &iSize);
     iStream = alloca(iSize);
 
     /* Scan to determine the size of the repacked datastream */
-    GetDataStreamFromFormat(FormatString, 0, NULL, &dSize,
+    GetDataStreamFromFormat(FormatString, nullarg, NULL, &dSize,
                             iStream, &iSize);
     dStream = alloca(dSize);
 
