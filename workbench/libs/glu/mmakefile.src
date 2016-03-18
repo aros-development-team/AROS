@@ -126,9 +126,10 @@ USER_INCLUDES := \
             -I$(top_srcdir)/src/libnurbs/internals \
             -I$(top_srcdir)/src/libnurbs/nurbtess
 
-GLU_COMMONFLAGS := -Wno-nonnull-compare -Wno-misleading-indentation -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
-USER_CFLAGS := $(GLU_COMMONFLAGS)
-USER_CXXFLAGS := $(GLU_COMMONFLAGS) -fno-rtti
+NOWARN_FLAGS := -Wno-nonnull-compare -Wno-misleading-indentation -Wno-uninitialized
+GLU_COMMONFLAGS := -fno-asynchronous-unwind-tables -fno-exceptions  -DLIBRARYBUILD
+USER_CFLAGS := $(GLU_COMMONFLAGS) $(NOWARN_FLAGS)
+USER_CXXFLAGS := $(GLU_COMMONFLAGS) -fno-rtti $(NOWARN_FLAGS)
 
 CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
