@@ -5,11 +5,6 @@
 #ifndef __MATHIEEEDOUBTRANS_INTERN_H__
 #define __MATHIEEEDOUBTRANS_INTERN_H__
 
-/* the following line is necessary so that the function headers are
-   created correctly and the functions can be compiled properly */
-
-#define double QUAD
-
 /* This is a short file that contains a few things every mathieeedoubtrans
    function needs */
 
@@ -37,6 +32,13 @@
 #   include <aros/mathieee64bitdefines.h>
 #endif
 
+/* the following line is necessary so that the function headers are
+   created correctly and the functions can be compiled properly */
+
+#ifdef double
+#undef double
+#endif
+#define double QUAD
 
 /*
     This is the MathIeeeDoubTransBase structure. It is documented here because
