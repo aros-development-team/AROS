@@ -27,7 +27,7 @@ FUNCS := \
     ieeedptieee
 
 
-#MM- workbench-libs-mathieeedoubtrans : includes
+#MM workbench-libs-mathieeedoubtrans : includes
 
 # gcc 4.6.2 - work around optimizer issue (out of spill registers)
 ifeq ($(AROS_TARGET_CPU),m68k)
