@@ -90,16 +90,19 @@
   #define VA_START(va, start) va_startlinear((va), (start))
   #define VA_ARG(va, type)    va_getlinearva((va), type)
   #define VA_END(va)          va_end((va))
+  #define VA_COPY(dst, src)   (dst)=(src)
 #elif defined(__MORPHOS__)
   #define VA_LIST             va_list
   #define VA_START(va, start) va_start((va), (start))
   #define VA_ARG(va, type)    (va)->overflow_arg_area
   #define VA_END(va)          va_end((va))
+  #define VA_COPY(dst, src)   (dst)=(src)
 #else
   #define VA_LIST             va_list
   #define VA_START(va, start) va_start((va), (start))
   #define VA_ARG(va, type)    va_arg(va, type)
   #define VA_END(va)          va_end((va))
+  #define VA_COPY(dst, src)   va_copy(dst, src)
 #endif
 
 #endif /* SDI_STDARG_H */
