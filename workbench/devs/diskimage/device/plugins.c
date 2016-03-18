@@ -169,7 +169,7 @@ static ULONG InitPlugins (struct DiskImageBase *libBase, struct DiskImagePluginT
 			plugin->SegList = seglist;
 			plugin->RefCount = &plugin_table->RefCount;
 			if (!plugin->plugin_Init || Plugin_Init(plugin, plugin_data)) {
-				if (plugin_table->RefCount == -1UL) {
+				if (plugin_table->RefCount == (ULONG)-1) {
 					plugin->Flags |= PLUGIN_FLAG_BUILTIN;
 				} else {
 					plugin_table->RefCount++;

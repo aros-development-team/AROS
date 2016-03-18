@@ -584,7 +584,7 @@ void IconifyWindow (ULONG window_id) {
 
 void SetWindowBusy (ULONG window_id, ULONG busy) {
 	if (Gui.initialised) {
-		if (window_id == -1UL) {
+		if (window_id == (ULONG)-1) {
 			SetWindowBusy(WID_MAIN, busy);
 			SetWindowBusy(WID_PLUGINS, busy);
 		} else {

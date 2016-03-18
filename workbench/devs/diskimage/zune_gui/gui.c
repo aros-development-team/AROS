@@ -294,7 +294,7 @@ void CleanupGUI (void) {
 
 void SetWindowBusy (ULONG wnd_id, ULONG busy) {
 	if (Gui.initialised) {
-		if (wnd_id == -1UL) {
+		if (wnd_id == (ULONG)-1) {
 			SetWindowBusy(WID_MAIN, busy);
 			SetWindowBusy(WID_PLUGINS, busy);
 			SetWindowBusy(WID_ABOUT, busy);
