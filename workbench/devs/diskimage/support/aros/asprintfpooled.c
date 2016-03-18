@@ -27,7 +27,7 @@
 #include "support.h"
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
-#include <proto/alib.h>
+#include <SDI_stdarg.h>
 
 typedef struct {
 	STRPTR Target;
@@ -36,18 +36,26 @@ typedef struct {
 
 void SNPrintfPutCh(SNPrintfStream * s, UBYTE c);
 
-STRPTR ASPrintfPooled (APTR pool, CONST_STRPTR fmt, ...) {
+VARARGS68K STRPTR ASPrintfPooled (APTR pool, CONST_STRPTR fmt, ...) {
+	VA_LIST args;
 	STRPTR res;
-	AROS_SLOWSTACKFORMAT_PRE(fmt);
-	res = VASPrintfPooled(pool, fmt, AROS_SLOWSTACKFORMAT_ARG(fmt));
-	AROS_SLOWSTACKFORMAT_POST(fmt);
+	VA_START(args, fmt);
+	res = VASPrintfPooled(pool, fmt, args);
+	VA_END(args);
 	return res;
 }
 
-STRPTR VASPrintfPooled (APTR pool, CONST_STRPTR fmt, RAWARG args) {
+STRPTR VASPrintfPooled (APTR pool, CONST_STRPTR fmt, VA_LIST args) {
 	STRPTR buf;
 	ULONG len = 0;
-	VNewRawDoFmt(fmt, RAWFMTFUNC_COUNT, &len, args);
+	VA_LIST copy;
+
+	/* We must copy the VA_LIST, as it be altered in place
+	 */
+	VA_COPY(copy, args);
+	VNewRawDoFmt(fmt, RAWFMTFUNC_COUNT, &len, copy);
+	VA_END(copy);
+
 	buf = AllocVecPooled(pool, len);
 	if (buf) {
 		SNPrintfStream s = { buf, len };
