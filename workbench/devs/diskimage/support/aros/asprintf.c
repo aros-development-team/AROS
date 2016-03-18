@@ -27,7 +27,7 @@
 #include "support.h"
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
-#include <proto/alib.h>
+#include <SDI_stdarg.h>
 
 typedef struct {
 	STRPTR Target;
@@ -46,29 +46,38 @@ void SNPrintfPutCh(SNPrintfStream * s, UBYTE c)
 	}
 }
 
-void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...) {
-	AROS_SLOWSTACKFORMAT_PRE(fmt);
-	VSNPrintf(buf, len, fmt, AROS_SLOWSTACKFORMAT_ARG(fmt));
-	AROS_SLOWSTACKFORMAT_POST(fmt);
+VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...) {
+	VA_LIST args;
+	VA_START(args, fmt);
+	VSNPrintf(buf, len, fmt, args);
+	VA_END(args);
 }
 
-STRPTR ASPrintf (CONST_STRPTR fmt, ...) {
+VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...) {
+	VA_LIST args;
 	STRPTR res;
-	AROS_SLOWSTACKFORMAT_PRE(fmt);
-	res = VASPrintf(fmt, AROS_SLOWSTACKFORMAT_ARG(fmt));
-	AROS_SLOWSTACKFORMAT_POST(fmt);
+	VA_START(args, fmt);
+	res = VASPrintf(fmt, args);
+	VA_END(args);
 	return res;
 }
 
-void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, RAWARG args) {
+void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, VA_LIST args) {
 	SNPrintfStream s = { buf, len };
 	VNewRawDoFmt(fmt, (VOID_FUNC)SNPrintfPutCh, &s, args);
 }
 
-STRPTR VASPrintf (CONST_STRPTR fmt, RAWARG args) {
+STRPTR VASPrintf (CONST_STRPTR fmt, VA_LIST args) {
 	STRPTR buf;
 	ULONG len = 0;
+	VA_LIST copy;
+
+	/* We must copy the VA_LIST, as it be altered in place
+	 */
+	VA_COPY(copy, args);
 	VNewRawDoFmt(fmt, RAWFMTFUNC_COUNT, &len, args);
+	VA_END(copy);
+
 	buf = AllocVec(len, MEMF_ANY);
 	if (buf) {
 		SNPrintfStream s = { buf, len };
