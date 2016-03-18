@@ -7,36 +7,40 @@ INCSUBDIRS :=	aros				\
 		aros/preprocessor/variadic	\
 		aros/types			\
 		asm				\
-        	bluetooth \
-	        c++ \
-		c++/exec \
-		clib \
-		datatypes \
-		devices \
-		diskfont \
-		dos \
-		exec \
-		gadgets \
-		graphics \
-		hardware \
-		hardware/cpu \
-		hardware/efi \
-		hardware/pic \
-		hidd \
-		intuition \
-	        irda \
-	        libcore				\
-		libraries \
-		midi \
-		pragmas \
-		prefs \
-		proto \
-		resources \
-		rexx \
-		SDI \
-        scsi \
-		utility \
+		bluetooth			\
+		c++				\
+		c++/exec			\
+		clib				\
+		datatypes			\
+		devices				\
+		diskfont			\
+		dos				\
+		exec				\
+		gadgets				\
+		graphics			\
+		hardware			\
+		hardware/cpu			\
+		hardware/efi			\
+		hardware/pic			\
+		hidd				\
+		intuition			\
+		irda				\
+		libcore				\
+		libraries			\
+		midi				\
+		pragmas				\
+		prefs				\
+		proto				\
+		resources			\
+		rexx				\
+		SDI				\
+		scsi				\
+		utility				\
 		workbench
+
+# clib & proto are handled above.
+INCEMPTYDIRS := defines				\
+		inline
 
 INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)) $(wildcard *.h)
 ARCHINCDIR    := $(SRCDIR)/arch/$(CPU)-$(ARCH)/include/
@@ -44,8 +48,8 @@ ARCH_INCLUDES := $(subst $(ARCHINCDIR),,$(foreach d,$(addprefix $(ARCHINCDIR),$(
 INCLUDES      := $(filter-out $(ARCH_INCLUDES),$(INCLUDES))
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
-INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
-                 $(foreach dir,$(INCSUBDIRS),$(GENINCDIR)/$(dir))
+INCL_DIRS     := $(foreach dir,$(INCSUBDIRS) $(INCEMPTYDIRS),$(AROS_INCLUDES)/$(dir)) \
+                 $(foreach dir,$(INCSUBDIRS) $(INCEMPTYDIRS),$(GENINCDIR)/$(dir))
 
 #MM- includes : includes-generate
 #MM- includes-generate : includes-generate-deps
