@@ -34,7 +34,7 @@ typedef struct {
 	ULONG TargetSize;
 } SNPrintfStream;
 
-void SNPrintfPutCh(SNPrintfStream * s, UBYTE c)
+SNPrintfStream *SNPrintfPutCh(SNPrintfStream * s, UBYTE c)
 {
 	if (s->TargetSize > 0) {
 		if (s->TargetSize > 1) {
@@ -44,6 +44,8 @@ void SNPrintfPutCh(SNPrintfStream * s, UBYTE c)
 		}
 		s->TargetSize--;
 	}
+
+	return s;
 }
 
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...) {
