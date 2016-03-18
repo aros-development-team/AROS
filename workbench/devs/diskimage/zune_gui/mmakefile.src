@@ -10,7 +10,9 @@ DIGFX  := digfx
 CFILES := locale main gui drivelist pluginlist driveops requesters images
 
 USER_CFLAGS := -DGUI -DCATCOMP_NUMBERS
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
+USER_INCLUDES := -I$(AROS_INCLUDES)/SDI \
+                 -I$(SRCDIR)/$(CURDIR)/include \
+                 -I$(SRCDIR)/$(CURDIR)/../include
 
 %build_prog mmake=workbench-devs-diskimage-gui progname=DiskImageGUI files=$(CFILES) \
     targetdir=$(AROS_SYSTEM) uselibs="diskimagesupport"
