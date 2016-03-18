@@ -607,11 +607,16 @@ APTR InternalFormatString(const struct Locale * locale,
     AROS_LIBFUNC_INIT
     ULONG *indices;
     ULONG indexSize = 0;
+#ifdef __arm__
+    va_list nullarg = {};
+#else
+    va_list nullarg = 0;
+#endif
 
     /* Generate the indexes for the provided datastream */
-    GetDataStreamFromFormat(fmtTemplate, 0, NULL, NULL, NULL, &indexSize);
+    GetDataStreamFromFormat(fmtTemplate, nullarg, NULL, NULL, NULL, &indexSize);
     indices = alloca(indexSize);
-    GetDataStreamFromFormat(fmtTemplate, 0, NULL, NULL, indices, &indexSize);
+    GetDataStreamFromFormat(fmtTemplate, nullarg, NULL, NULL, indices, &indexSize);
 
     return InternalFormatString(locale, fmtTemplate,
                                 dataStream, indices, putCharFunc);
