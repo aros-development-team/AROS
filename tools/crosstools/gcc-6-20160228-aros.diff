@@ -159,7 +159,7 @@ diff -ruN gcc-6-20160228/gcc/config/arm/aros.h gcc-6-20160228.aros/gcc/config/ar
 +#endif
 +
 +#undef SUBTARGET_CPP_SPEC
-+#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:-isystem %R/include%{!nostdc:%{!noposixc: -isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc}}"
++#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
 +
 +#undef  SUBTARGET_EXTRA_LINK_SPEC
 +#define SUBTARGET_EXTRA_LINK_SPEC " -m " TARGET_LINKER_EMULATION
@@ -284,13 +284,13 @@ diff -ruN gcc-6-20160228/gcc/config/aros.h gcc-6-20160228.aros/gcc/config/aros.h
 +    { GPLUSPLUS_INCLUDE_DIR, "G++", 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 }, \
 +    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 1 }, \
 +    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 }, \
-+    { NATIVE_SYSTEM_HEADER_DIR, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 0 }, \
 +    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
++    { NATIVE_SYSTEM_HEADER_DIR, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 0 }, \
 +    { 0, 0, 0, 0, 0, 0 } \
 +};
 +
 +#undef CPP_SPEC
-+#define CPP_SPEC "%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc:-isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc} -isystem %R/include}"
++#define CPP_SPEC "%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc:-idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
 +
 +/* This is for -profile to use -lc_p instead of -lc.  */
 +#ifndef CC1_SPEC
