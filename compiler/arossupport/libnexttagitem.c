@@ -17,9 +17,8 @@ struct TagItem *LibNextTagItem(struct TagItem **tagListPtr)
             case TAG_MORE:
                 if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
                     return NULL;
-                continue;
             case TAG_IGNORE:
-                break;
+                continue;
 
             case TAG_END:
                 (*tagListPtr) = 0;
