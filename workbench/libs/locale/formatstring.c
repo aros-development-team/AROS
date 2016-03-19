@@ -607,7 +607,7 @@ APTR InternalFormatString(const struct Locale * locale,
     AROS_LIBFUNC_INIT
     ULONG *indices;
     ULONG indexSize = 0;
-#ifdef __arm__
+#if defined(__arm__) || defined(__x86_64__)
     va_list nullarg = {};
 #else
     va_list nullarg = 0;
