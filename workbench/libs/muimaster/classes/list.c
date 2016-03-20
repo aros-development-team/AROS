@@ -2295,7 +2295,10 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
             }
         }
         else
+        {
             done = TRUE;
+            found = TRUE;
+        }
 
         if (found)
         {
