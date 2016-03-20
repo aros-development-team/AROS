@@ -665,11 +665,6 @@ pci_hidd_target
 host_android_gfx
 host_sdl_gfx
 host_x_gfx
-aros_cflags_format_security
-aros_cflags_strict_overflow
-aros_cflags_enum_compare
-aros_cflags_array_bounds
-aros_cflags_unused_but_set_variable
 crosstools_cxx_target
 crosstools_target
 aros_isa_flags
@@ -13438,160 +13433,6 @@ if test "x-$use_no_stack_protector" = "x-yes" ; then
     aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
 fi
 
-
-#-----------------------------------------------------------------------------
-
-# Check if the target compiler supports some options used for delinting:
-#  -Wunused-but-set-variable
-#  -Warray-bounds
-#  -Wenum-compare
-#  -Wstrict-overflow
-#  -Wformat-security
-
-if test "x-$crosstools" != "x-yes"; then
-    if test "$orig_target_cc" != "$aros_kernel_cc"; then
-        CC="$orig_target_cc"
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
-$as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
-    CFLAGS=-Wunused-but-set-variable
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  aros_unused_but_set_variable="yes"
-else
-  aros_unused_but_set_variable="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_but_set_variable" >&5
-$as_echo "$aros_unused_but_set_variable" >&6; }
-    if test "x-$aros_unused_but_set_variable" = "x-yes" ; then
-        aros_cflags_unused_but_set_variable=-Wno-unused-but-set-variable
-    fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Warray-bounds" >&5
-$as_echo_n "checking whether ${CC} accepts -Warray-bounds... " >&6; }
-    CFLAGS=-Warray-bounds
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  aros_array_bounds="yes"
-else
-  aros_array_bounds="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_array_bounds" >&5
-$as_echo "$aros_array_bounds" >&6; }
-    if test "x-$aros_array_bounds" = "x-yes" ; then
-        aros_cflags_array_bounds=-Wno-array-bounds
-    fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wenum-compare" >&5
-$as_echo_n "checking whether ${CC} accepts -Wenum-compare... " >&6; }
-    CFLAGS=-Wenum-compare
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  aros_enum_compare="yes"
-else
-  aros_enum_compare="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_enum_compare" >&5
-$as_echo "$aros_enum_compare" >&6; }
-    if test "x-$aros_enum_compare" = "x-yes" ; then
-        aros_cflags_enum_compare=-Wno-enum-compare
-    fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstrict-overflow" >&5
-$as_echo_n "checking whether ${CC} accepts -Wstrict-overflow... " >&6; }
-    CFLAGS=-Wstrict-overflow
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  aros_strict_overflow="yes"
-else
-  aros_strict_overflow="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_strict_overflow" >&5
-$as_echo "$aros_strict_overflow" >&6; }
-    if test "x-$aros_strict_overflow" = "x-yes" ; then
-        aros_cflags_strict_overflow=-Wno-strict-overflow
-    fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wformat-security" >&5
-$as_echo_n "checking whether ${CC} accepts -Wformat-security... " >&6; }
-    CFLAGS=-Wformat-security
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  aros_format_security="yes"
-else
-  aros_format_security="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_format_security" >&5
-$as_echo "$aros_format_security" >&6; }
-    if test "x-$aros_format_security" = "x-yes" ; then
-        aros_cflags_format_security=-Wno-format-security
-    fi
-else
-    # We do not know which gcc version we are going to build and what we need to know
-    # here is different for different versions so this will be set later during the
-    # build of crosstools.
-    aros_cflags_unused_but_set_variable=@aros_cflags_unused_but_set_variable@
-    aros_cflags_array_bounds=@aros_cflags_array_bounds@
-    aros_cflags_enum_compare=@aros_cflags_enum_compare@
-    aros_cflags_strict_overflow=@aros_cflags_strict_overflow@
-    aros_cflags_format_security=@aros_cflags_format_security@
-fi
-
 #-----------------------------------------------------------------------------
 
 # Check if we can explicitly choose older version of symbol hashing
@@ -14652,13 +14493,6 @@ fi
 
 
 
-
-
-
-
-
-
-# Delinting target compiler flags
 
 
 
