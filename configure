@@ -745,6 +745,7 @@ AROS_CROSSTOOLSDIR
 SRCDIR
 AROS_BUILDDIR_UNIX
 AROS_BUILDDIR
+aros_build_host
 aros_target_toolchain
 aros_flavour_uc
 aros_flavour
@@ -753,10 +754,6 @@ aros_arch
 SDL_LIBS
 SDL_CFLAGS
 SDL_CONFIG
-X_EXTRA_LIBS
-X_LIBS
-X_PRE_LIBS
-X_CFLAGS
 XMKMF
 aros_cflags_iquote_end
 aros_cflags_iquote
@@ -4397,6 +4394,7 @@ fi
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
 
+aros_build_host=$host
 aros_host_cpp="$CPP"
 aros_host_cc="$CC"
 aros_host_cxx="$CXX"
@@ -14056,7 +14054,7 @@ fi
             fi
 
         else
-            host_x_gfx=yes
+                        host_x_gfx=yes
             ENABLE_X11=1
 
                         # Check whether --enable-x11_shm was given.
@@ -14557,6 +14555,7 @@ fi
 
 
 
+
 # Compatability with other Amiga-like operation systems
 
 
@@ -14667,6 +14666,7 @@ fi
 
 
 # Hosted Graphics Related
+
 
 
 
