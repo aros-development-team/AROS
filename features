@@ -584,12 +584,20 @@ PACKAGE_URL=
 ac_unique_file="mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_parentheses
+aros_cflags_format
+aros_cflags_implicit_function_declaration
+aros_cflags_maybe_uninitialized
+aros_cflags_uninitialized
+aros_cflags_unused_variable
+aros_cflags_unused_value
 aros_cflags_nonnull_compare
 aros_cflags_misleading_indentation
 aros_cflags_format_security
 aros_cflags_strict_overflow
 aros_cflags_enum_compare
 aros_cflags_array_bounds
+aros_cflags_strict_aliasing
 aros_cflags_unused_but_set_variable
 CPP
 ac_ct_CC
@@ -3370,10 +3378,20 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 
 # Check if the target compiler supports some options used for delinting:
 #  -Wunused-but-set-variable
+#  -Wstrict-aliasing
 #  -Warray-bounds
 #  -Wenum-compare
 #  -Wstrict-overflow
 #  -Wformat-security
+#  -Wmisleading-indentation
+#  -Wnonnull-compare
+#  -Wunused-value
+#  -Wunused-variable
+#  -Wuninitialized
+#  -Wmaybe-uninitialized
+#  -Wimplicit-function-declaration
+#  -Wno-format
+#  -Wno-parentheses
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
@@ -3400,6 +3418,32 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_unused_but_set_variable" >&6; }
 if test "x-$aros_unused_but_set_variable" = "x-yes" ; then
     aros_cflags_unused_but_set_variable=-Wno-unused-but-set-variable
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstrict-aliasing" >&5
+$as_echo_n "checking whether ${CC} accepts -Wstrict-aliasing... " >&6; }
+CFLAGS=-Wstrict-aliasing
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_strict_aliasing="yes"
+else
+  aros_strict_aliasing="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_strict_aliasing" >&5
+$as_echo "$aros_strict_aliasing" >&6; }
+if test "x-$aros_strict_aliasing" = "x-yes" ; then
+    aros_cflags_strict_aliasing=-Wno-strict-aliasing
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Warray-bounds" >&5
@@ -3557,6 +3601,196 @@ $as_echo "$aros_nonnull_compare" >&6; }
 if test "x-$aros_nonnull_compare" = "x-yes" ; then
     aros_cflags_nonnull_compare=-Wno-nonnull-compare
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-value" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunused-value... " >&6; }
+CFLAGS=-Wunused-value
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unused_value="yes"
+else
+  aros_unused_value="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_value" >&5
+$as_echo "$aros_unused_value" >&6; }
+if test "x-$aros_unused_value" = "x-yes" ; then
+    aros_cflags_unused_value=-Wno-unused-value
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-variable" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunused-variable... " >&6; }
+CFLAGS=-Wunused-variable
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unused_variable="yes"
+else
+  aros_unused_variable="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_variable" >&5
+$as_echo "$aros_unused_variable" >&6; }
+if test "x-$aros_unused_variable" = "x-yes" ; then
+    aros_cflags_unused_variable=-Wno-unused-variable
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wuninitialized" >&5
+$as_echo_n "checking whether ${CC} accepts -Wuninitialized... " >&6; }
+CFLAGS=-Wuninitialized
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_uninitialized="yes"
+else
+  aros_uninitialized="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_uninitialized" >&5
+$as_echo "$aros_uninitialized" >&6; }
+if test "x-$aros_uninitialized" = "x-yes" ; then
+    aros_cflags_uninitialized=-Wno-uninitialized
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wmaybe-uninitialized" >&5
+$as_echo_n "checking whether ${CC} accepts -Wmaybe-uninitialized... " >&6; }
+CFLAGS=-Wmaybe-uninitialized
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_maybe_uninitialized="yes"
+else
+  aros_maybe_uninitialized="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_maybe_uninitialized" >&5
+$as_echo "$aros_maybe_uninitialized" >&6; }
+if test "x-$aros_maybe_uninitialized" = "x-yes" ; then
+    aros_cflags_maybe_uninitialized=-Wno-maybe-uninitialized
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wimplicit-function-declaration" >&5
+$as_echo_n "checking whether ${CC} accepts -Wimplicit-function-declaration... " >&6; }
+CFLAGS=-Wimplicit-function-declaration
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_implicit_function_declaration="yes"
+else
+  aros_implicit_function_declaration="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_implicit_function_declaration" >&5
+$as_echo "$aros_implicit_function_declaration" >&6; }
+if test "x-$aros_implicit_function_declaration" = "x-yes" ; then
+    aros_cflags_implicit_function_declaration=-Wno-implicit-function-declaration
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wformat" >&5
+$as_echo_n "checking whether ${CC} accepts -Wformat... " >&6; }
+CFLAGS=-Wformat
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_format="yes"
+else
+  aros_format="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_format" >&5
+$as_echo "$aros_format" >&6; }
+if test "x-$aros_format" = "x-yes" ; then
+    aros_cflags_format=-Wno-format
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wparentheses" >&5
+$as_echo_n "checking whether ${CC} accepts -Wparentheses... " >&6; }
+CFLAGS=-Wparentheses
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_parentheses="yes"
+else
+  aros_parentheses="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_parentheses" >&5
+$as_echo "$aros_parentheses" >&6; }
+if test "x-$aros_parentheses" = "x-yes" ; then
+    aros_cflags_parentheses=-Wno-parentheses
+fi
+
+
+
+
+
+
+
+
 
 
 
