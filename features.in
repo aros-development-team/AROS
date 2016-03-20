@@ -44,10 +44,20 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 
 # Check if the target compiler supports some options used for delinting:
 #  -Wunused-but-set-variable
+#  -Wstrict-aliasing
 #  -Warray-bounds
 #  -Wenum-compare
 #  -Wstrict-overflow
 #  -Wformat-security
+#  -Wmisleading-indentation
+#  -Wnonnull-compare
+#  -Wunused-value
+#  -Wunused-variable
+#  -Wuninitialized
+#  -Wmaybe-uninitialized
+#  -Wimplicit-function-declaration
+#  -Wno-format
+#  -Wno-parentheses
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -55,6 +65,14 @@ AC_TRY_COMPILE(,, aros_unused_but_set_variable="yes", aros_unused_but_set_variab
 AC_MSG_RESULT($aros_unused_but_set_variable)
 if test "x-$aros_unused_but_set_variable" = "x-yes" ; then
     aros_cflags_unused_but_set_variable=-Wno-unused-but-set-variable
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-aliasing])
+CFLAGS=-Wstrict-aliasing
+AC_TRY_COMPILE(,, aros_strict_aliasing="yes", aros_strict_aliasing="no")
+AC_MSG_RESULT($aros_strict_aliasing)
+if test "x-$aros_strict_aliasing" = "x-yes" ; then
+    aros_cflags_strict_aliasing=-Wno-strict-aliasing
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Warray-bounds])
@@ -105,13 +123,77 @@ if test "x-$aros_nonnull_compare" = "x-yes" ; then
     aros_cflags_nonnull_compare=-Wno-nonnull-compare
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-value])
+CFLAGS=-Wunused-value
+AC_TRY_COMPILE(,, aros_unused_value="yes", aros_unused_value="no")
+AC_MSG_RESULT($aros_unused_value)
+if test "x-$aros_unused_value" = "x-yes" ; then
+    aros_cflags_unused_value=-Wno-unused-value
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-variable])
+CFLAGS=-Wunused-variable
+AC_TRY_COMPILE(,, aros_unused_variable="yes", aros_unused_variable="no")
+AC_MSG_RESULT($aros_unused_variable)
+if test "x-$aros_unused_variable" = "x-yes" ; then
+    aros_cflags_unused_variable=-Wno-unused-variable
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wuninitialized])
+CFLAGS=-Wuninitialized
+AC_TRY_COMPILE(,, aros_uninitialized="yes", aros_uninitialized="no")
+AC_MSG_RESULT($aros_uninitialized)
+if test "x-$aros_uninitialized" = "x-yes" ; then
+    aros_cflags_uninitialized=-Wno-uninitialized
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wmaybe-uninitialized])
+CFLAGS=-Wmaybe-uninitialized
+AC_TRY_COMPILE(,, aros_maybe_uninitialized="yes", aros_maybe_uninitialized="no")
+AC_MSG_RESULT($aros_maybe_uninitialized)
+if test "x-$aros_maybe_uninitialized" = "x-yes" ; then
+    aros_cflags_maybe_uninitialized=-Wno-maybe-uninitialized
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-function-declaration])
+CFLAGS=-Wimplicit-function-declaration
+AC_TRY_COMPILE(,, aros_implicit_function_declaration="yes", aros_implicit_function_declaration="no")
+AC_MSG_RESULT($aros_implicit_function_declaration)
+if test "x-$aros_implicit_function_declaration" = "x-yes" ; then
+    aros_cflags_implicit_function_declaration=-Wno-implicit-function-declaration
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat])
+CFLAGS=-Wformat
+AC_TRY_COMPILE(,, aros_format="yes", aros_format="no")
+AC_MSG_RESULT($aros_format)
+if test "x-$aros_format" = "x-yes" ; then
+    aros_cflags_format=-Wno-format
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wparentheses])
+CFLAGS=-Wparentheses
+AC_TRY_COMPILE(,, aros_parentheses="yes", aros_parentheses="no")
+AC_MSG_RESULT($aros_parentheses)
+if test "x-$aros_parentheses" = "x-yes" ; then
+    aros_cflags_parentheses=-Wno-parentheses
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
+AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
 AC_SUBST(aros_cflags_enum_compare)
 AC_SUBST(aros_cflags_strict_overflow)
 AC_SUBST(aros_cflags_format_security)
 AC_SUBST(aros_cflags_misleading_indentation)
 AC_SUBST(aros_cflags_nonnull_compare)
+AC_SUBST(aros_cflags_unused_value)
+AC_SUBST(aros_cflags_unused_variable)
+AC_SUBST(aros_cflags_uninitialized)
+AC_SUBST(aros_cflags_maybe_uninitialized)
+AC_SUBST(aros_cflags_implicit_function_declaration)
+AC_SUBST(aros_cflags_format)
+AC_SUBST(aros_cflags_parentheses)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
