@@ -1,0 +1,9 @@
+# Disable compiler warning flags
+
+NOWARN_UNUSED_BUT_SET_VARIABLE := @aros_cflags_unused_but_set_variable@
+NOWARN_ARRAY_BOUNDS            := @aros_cflags_array_bounds@
+NOWARN_ENUM_COMPARE            := @aros_cflags_enum_compare@
+NOWARN_STRICT_OVERFLOW         := @aros_cflags_strict_overflow@
+NOWARN_FORMAT_SECURITY         := @aros_cflags_format_security@
+NOWARN_MISLEADING_INDENTATION  := @aros_cflags_misleading_indentation@
+NOWARN_NONNULL_COMPARE         := @aros_cflags_nonnull_compare@
