@@ -1,0 +1,125 @@
+dnl Copyright © 1997-2016, The AROS Development Team. All rights reserved.
+dnl $Id$
+dnl
+dnl Desc: Autoconf source for target compiler feature detection
+dnl Lang: english 
+
+# Note: After file changes, generate features anew and commit _both_ files.
+-------------------------
+
+AC_INIT(mmakefile)
+AC_PREREQ(2.61)
+AC_CONFIG_AUX_DIR(scripts/autoconf)
+
+# Don't know where else to put this...
+AC_MSG_CHECKING([building AROS in])
+AROS_BUILDDIR=`${PWDCMD-pwd}`
+AROS_BUILDDIR_UNIX=${PWD}
+AC_MSG_RESULT($AROS_BUILDDIR)
+
+AC_MSG_CHECKING([AROS source in])
+srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
+SRCDIR=${srcpwd}
+AC_MSG_RESULT($SRCDIR)
+
+# The first step is to find the binaries.
+# Check for our compiler.
+# Due to a bug in autoconf check for c++ compiler first.
+# For mor info see, http://osdir.com/ml/bug-autoconf-gnu/2010-05/msg00001.html.
+AC_PROG_CXX
+AC_PROG_CC
+AC_PROG_CC_STDC
+AC_PROG_CPP
+
+AC_MSG_CHECKING([target config location])
+AC_ARG_WITH(config-dir,AC_HELP_STRING([--with-config-dir=VERSION],[Location of generated target config files]),targetcfg_dir="$withval",targetcfg_dir="")
+if test "$targetcfg_dir" = ""; then
+    if test "${crosstools}" = "no"; then
+      if test "x$aros_toolchain_install" != "x"; then
+          CROSS_GCC_VERSION
+      fi
+    fi
+    if test "$targetcfg_dir" = ""; then
+        aros_targetcfg_dir="$default_gcc_version"
+    fi
+else
+    aros_targetcfg_dir="$targetcfg_dir"
+fi
+AC_MSG_RESULT($aros_targetcfg_dir)
+
+#-----------------------------------------------------------------------------
+
+# Check if the target compiler supports some options used for delinting:
+#  -Wunused-but-set-variable
+#  -Warray-bounds
+#  -Wenum-compare
+#  -Wstrict-overflow
+#  -Wformat-security
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
+CFLAGS=-Wunused-but-set-variable
+AC_TRY_COMPILE(,, aros_unused_but_set_variable="yes", aros_unused_but_set_variable="no")
+AC_MSG_RESULT($aros_unused_but_set_variable)
+if test "x-$aros_unused_but_set_variable" = "x-yes" ; then
+    aros_cflags_unused_but_set_variable=-Wno-unused-but-set-variable
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Warray-bounds])
+CFLAGS=-Warray-bounds
+AC_TRY_COMPILE(,, aros_array_bounds="yes", aros_array_bounds="no")
+AC_MSG_RESULT($aros_array_bounds)
+if test "x-$aros_array_bounds" = "x-yes" ; then
+    aros_cflags_array_bounds=-Wno-array-bounds
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wenum-compare])
+CFLAGS=-Wenum-compare
+AC_TRY_COMPILE(,, aros_enum_compare="yes", aros_enum_compare="no")
+AC_MSG_RESULT($aros_enum_compare)
+if test "x-$aros_enum_compare" = "x-yes" ; then
+    aros_cflags_enum_compare=-Wno-enum-compare
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-overflow])
+CFLAGS=-Wstrict-overflow
+AC_TRY_COMPILE(,, aros_strict_overflow="yes", aros_strict_overflow="no")
+AC_MSG_RESULT($aros_strict_overflow)
+if test "x-$aros_strict_overflow" = "x-yes" ; then
+    aros_cflags_strict_overflow=-Wno-strict-overflow
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-security])
+CFLAGS=-Wformat-security
+AC_TRY_COMPILE(,, aros_format_security="yes", aros_format_security="no")
+AC_MSG_RESULT($aros_format_security)
+if test "x-$aros_format_security" = "x-yes" ; then
+    aros_cflags_format_security=-Wno-format-security
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wmisleading-indentation])
+CFLAGS=-Wmisleading-indentation
+AC_TRY_COMPILE(,, aros_misleading_indentation="yes", aros_misleading_indentation="no")
+AC_MSG_RESULT($aros_misleading_indentation)
+if test "x-$aros_misleading_indentation" = "x-yes" ; then
+    aros_cflags_misleading_indentation=-Wno-misleading-indentation
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wnonnull-compare])
+CFLAGS=-Wnonnull-compare
+AC_TRY_COMPILE(,, aros_nonnull_compare="yes", aros_nonnull_compare="no")
+AC_MSG_RESULT($aros_nonnull_compare)
+if test "x-$aros_nonnull_compare" = "x-yes" ; then
+    aros_cflags_nonnull_compare=-Wno-nonnull-compare
+fi
+
+AC_SUBST(aros_cflags_unused_but_set_variable)
+AC_SUBST(aros_cflags_array_bounds)
+AC_SUBST(aros_cflags_enum_compare)
+AC_SUBST(aros_cflags_strict_overflow)
+AC_SUBST(aros_cflags_format_security)
+AC_SUBST(aros_cflags_misleading_indentation)
+AC_SUBST(aros_cflags_nonnull_compare)
+
+AC_CONFIG_FILES(
+    ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
+)
