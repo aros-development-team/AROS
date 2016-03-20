@@ -34,14 +34,7 @@ AC_PROG_CPP
 AC_MSG_CHECKING([target config location])
 AC_ARG_WITH(config-dir,AC_HELP_STRING([--with-config-dir=VERSION],[Location of generated target config files]),targetcfg_dir="$withval",targetcfg_dir="")
 if test "$targetcfg_dir" = ""; then
-    if test "${crosstools}" = "no"; then
-      if test "x$aros_toolchain_install" != "x"; then
-          CROSS_GCC_VERSION
-      fi
-    fi
-    if test "$targetcfg_dir" = ""; then
-        aros_targetcfg_dir="$default_gcc_version"
-    fi
+    AC_MSG_ERROR([missing config directory!])
 else
     aros_targetcfg_dir="$targetcfg_dir"
 fi
@@ -123,3 +116,5 @@ AC_SUBST(aros_cflags_nonnull_compare)
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
 )
+
+AC_OUTPUT
