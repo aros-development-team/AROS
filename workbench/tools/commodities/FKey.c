@@ -337,21 +337,35 @@ static void GetArguments(int argc, char **argv)
 }
 
 /*********************************************************************************************/
-
-static APTR keylist_construct_func(struct Hook *hook, APTR pool, struct KeyInfo *ki)
+AROS_UFH3(
+    APTR, keylist_construct_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR,             pool,   A2),
+    AROS_UFHA(struct KeyInfo *, ki,     A1)
+)
 {
+    AROS_USERFUNC_INIT
+
     struct KeyInfo *new;
 
     new = AllocPooled(pool, sizeof(*ki));
     if (new) *new = *ki;
 
     return new;
+
+    AROS_USERFUNC_EXIT
 }
 
 /*********************************************************************************************/
-
-static void keylist_destruct_func(struct Hook *hook, APTR pool, struct KeyInfo *ki)
+AROS_UFH3(
+    void, keylist_destruct_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR,             pool,   A2),
+    AROS_UFHA(struct KeyInfo *, ki,     A1)
+)
 {
+    AROS_USERFUNC_INIT
+
     if (ki)
     {
         if (ki->filter) DeleteCxObjAll(ki->filter);
@@ -359,19 +373,37 @@ static void keylist_destruct_func(struct Hook *hook, APTR pool, struct KeyInfo *
                 
         FreePooled(pool, ki, sizeof(*ki));
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 /*********************************************************************************************/
 
-static void keylist_disp_func(struct Hook *hook, char **array, struct KeyInfo *ki)
+AROS_UFH3(
+    void, keylist_disp_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(char **,          array,  A2),
+    AROS_UFHA(struct KeyInfo *, ki,     A1)
+)
 {
+    AROS_USERFUNC_INIT
+
     *array = ki->descr;
+
+    AROS_USERFUNC_EXIT
 }
 
 /*********************************************************************************************/
 
-static void broker_func(struct Hook *hook, Object *obj, CxMsg *msg)
+AROS_UFH3(
+    void, broker_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(Object *,         obj,    A2),
+    AROS_UFHA(CxMsg *,          msg,    A1)
+)
 {
+    AROS_USERFUNC_INIT
+
     D(bug("FKey: broker_func called\n"));
     if (CxMsgType(msg) == CXM_COMMAND)
     {
@@ -384,6 +416,8 @@ static void broker_func(struct Hook *hook, Object *obj, CxMsg *msg)
             set(wnd, MUIA_Window_Open, FALSE);
         }
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 /*** show_func ************************************************************/
@@ -540,18 +574,10 @@ static void MakeGUI(void)
         cmdarray[i] = MSG((IPTR) cmdarray[i]);
     }
 
-    keylist_construct_hook.h_Entry = HookEntry;
-    keylist_construct_hook.h_SubEntry = (HOOKFUNC)keylist_construct_func;
-
-    keylist_destruct_hook.h_Entry = HookEntry;
-    keylist_destruct_hook.h_SubEntry = (HOOKFUNC)keylist_destruct_func;
-
-    keylist_disp_hook.h_Entry = HookEntry;
-    keylist_disp_hook.h_SubEntry = (HOOKFUNC)keylist_disp_func;
-
-    broker_hook.h_Entry = HookEntry;
-    broker_hook.h_SubEntry = (HOOKFUNC)broker_func;
-
+    keylist_construct_hook.h_Entry = (HOOKFUNC)keylist_construct_func;
+    keylist_destruct_hook.h_Entry = (HOOKFUNC)keylist_destruct_func;
+    keylist_disp_hook.h_Entry = (HOOKFUNC)keylist_disp_func;
+    broker_hook.h_Entry = (HOOKFUNC)broker_func;
     show_hook.h_Entry = (HOOKFUNC)show_func;
     newkey_hook.h_Entry = (HOOKFUNC)newkey_func;
     delkey_hook.h_Entry = (HOOKFUNC)delkey_func;
