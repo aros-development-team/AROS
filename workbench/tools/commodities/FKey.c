@@ -49,7 +49,7 @@
 
 #define VERSION         1
 #define REVISION        7
-#define DATESTR         "12.03.2016"
+#define DATESTR         "20.03.2016"
 #define VERSIONSTR      "$VER: FKey 1.7 (" DATESTR ")"
 
 /*********************************************************************************************/
@@ -75,14 +75,6 @@
 #define ACTION_INSERT_TEXT   6
 #define ACTION_RUN_PROG      7
 #define ACTION_RUN_AREXX     8
-
-#define RETURNID_NEWKEY      1
-#define RETURNID_DELKEY      2
-#define RETURNID_STRINGACK   3
-#define RETURNID_LVACK       4
-#define RETURNID_CMDACK      5
-#define RETURNID_SAVE        6
-#define RETURNID_DOUBLESTART 7
 
 /*********************************************************************************************/
 
@@ -111,6 +103,12 @@ static struct Task      *maintask;
 static struct Hook       keylist_construct_hook, keylist_destruct_hook, keylist_disp_hook;
 static struct Hook       broker_hook;
 static struct Hook       show_hook;
+static struct Hook       newkey_hook;
+static struct Hook       delkey_hook;
+static struct Hook       stringack_hook;
+static struct Hook       lvack_hook;
+static struct Hook       cmdack_hook;
+static struct Hook       save_hook;
 static struct MsgPort   *brokermp;
 static struct Catalog   *catalog;
 static struct RDArgs    *myargs;
@@ -420,6 +418,101 @@ AROS_UFH2S(void, custom_func,
     AROS_USERFUNC_EXIT
 }
     
+/*********************************************************************************************/
+
+AROS_UFH3S(
+    void, newkey_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(Object *,         obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    NewKey();
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3S(
+    void, delkey_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(Object *,         obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    DelKey();
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3S(
+    void, stringack_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(Object *,         obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    StringToKey();
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3S(
+    void, lvack_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(Object *,         obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    ListToString();
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3S(
+    void, cmdack_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(Object *,         obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    CmdToKey();
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3S(
+    void, save_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(Object *,         obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    SaveSettings();
+
+    AROS_USERFUNC_EXIT
+}
 
 /*********************************************************************************************/
 
@@ -460,6 +553,12 @@ static void MakeGUI(void)
     broker_hook.h_SubEntry = (HOOKFUNC)broker_func;
 
     show_hook.h_Entry = (HOOKFUNC)show_func;
+    newkey_hook.h_Entry = (HOOKFUNC)newkey_func;
+    delkey_hook.h_Entry = (HOOKFUNC)delkey_func;
+    stringack_hook.h_Entry = (HOOKFUNC)stringack_func;
+    lvack_hook.h_Entry = (HOOKFUNC)lvack_func;
+    cmdack_hook.h_Entry = (HOOKFUNC)cmdack_func;
+    save_hook.h_Entry = (HOOKFUNC)save_func;
 
     menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
 
@@ -571,26 +670,25 @@ static void MakeGUI(void)
 
     set(liststr, MUIA_String_AttachedList, (IPTR)list);
 
-    DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_DOUBLESTART);
+    DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE, (IPTR) app, 2, MUIM_CallHook, &show_hook);
     
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_HIDE, (IPTR) wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_ICONIFY, (IPTR) app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_SAVE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_SAVE, (IPTR) app, 2, MUIM_CallHook, &save_hook);
 
     DoMethod(cmdcycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR)cmdpage, 3, MUIM_Set, MUIA_Group_ActivePage, MUIV_TriggerValue);
-    DoMethod(cmdcycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_CMDACK);
-    DoMethod(newkey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_NEWKEY);
-    DoMethod(delkey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_DELKEY);
-    DoMethod(savekey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
-    DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_LVACK);
-    DoMethod(liststr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_STRINGACK);
-    DoMethod(insertstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_CMDACK);
-    DoMethod(runprogstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_CMDACK);
-    DoMethod(runarexxstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_CMDACK);
-
+    DoMethod(cmdcycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &cmdack_hook);
+    DoMethod(newkey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_CallHook, &newkey_hook);
+    DoMethod(delkey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_CallHook, &delkey_hook);
+    DoMethod(savekey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_CallHook, &save_hook);
+    DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &lvack_hook);
+    DoMethod(liststr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &stringack_hook);
+    DoMethod(insertstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &cmdack_hook);
+    DoMethod(runprogstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &cmdack_hook);
+    DoMethod(runarexxstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &cmdack_hook);
 }
 
 /*********************************************************************************************/
@@ -1365,7 +1463,6 @@ static void LoadSettings(void)
 static void HandleAll(void)
 {
     ULONG sigs = 0;
-    LONG  returnid;
     IPTR  num_list_entries = 0;
 
     get(list, MUIA_List_Entries, &num_list_entries);
@@ -1378,55 +1475,25 @@ static void HandleAll(void)
         set(wnd, MUIA_Window_Open, FALSE);
     }
 
-    for(;;)
+    while (DoMethod(app,MUIM_Application_NewInput,&sigs) !=MUIV_Application_ReturnID_Quit)
     {
-        returnid = (LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs);
-
-        if (returnid == MUIV_Application_ReturnID_Quit) break;
-
-        switch(returnid)
-        {
-            case RETURNID_NEWKEY:
-                NewKey();
-                break;
-                
-            case RETURNID_DELKEY:
-                DelKey();
-                break;
-                
-            case RETURNID_LVACK:
-                ListToString();
-                break;
-                
-            case RETURNID_STRINGACK:
-                StringToKey();
-                break;
-                
-            case RETURNID_CMDACK:
-                CmdToKey();
-                break;
-                
-            case RETURNID_SAVE:
-                SaveSettings();
-                break;
-                
-            case RETURNID_DOUBLESTART:
-                CallHookPkt(&show_hook, NULL, NULL);
-                break;
-        }
-
         if (sigs)
         {
             sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F);
-            if (sigs & SIGBREAKF_CTRL_C) break;
-            if (sigs & SIGBREAKF_CTRL_E) HandleAction();
+            if (sigs & SIGBREAKF_CTRL_C)
+            {
+                break;
+            }
+            if (sigs & SIGBREAKF_CTRL_E)
+            {
+                HandleAction();
+            }
             if (sigs & SIGBREAKF_CTRL_F)
             {
                 CallHookPkt(&show_hook, NULL, NULL);
             }
         }
     }
-
 }
 
 /*********************************************************************************************/
