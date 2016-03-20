@@ -103,6 +103,7 @@ AROS_PROG(MMAKE,mmake)
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
 
+aros_build_host=$host
 aros_host_cpp="$CPP"
 aros_host_cc="$CC"
 aros_host_cxx="$CXX"
@@ -2685,6 +2686,7 @@ AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
 AC_SUBST(aros_target_toolchain)
+AC_SUBST(aros_build_host)
 AC_SUBST(AROS_BUILDDIR)
 AC_SUBST(AROS_BUILDDIR_UNIX)
 AC_SUBST(SRCDIR)
