@@ -584,6 +584,7 @@ PACKAGE_URL=
 ac_unique_file="mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_pointer_sign
 aros_cflags_logical_not_parentheses
 aros_cflags_bool_compare
 aros_cflags_incompatible_pointer_types
@@ -2664,6 +2665,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -Wno-incompatible-pointer-types
 #  -Wno-bool-compare
 #  -Wno-logical-not-parentheses
+#  -Wno-pointer-sign
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
@@ -3653,6 +3655,33 @@ $as_echo "$aros_logical_not_parentheses" >&6; }
 if test "x-$aros_logical_not_parentheses" = "x-yes" ; then
     aros_cflags_logical_not_parentheses=-Wno-logical-not-parentheses
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wpointer-sign" >&5
+$as_echo_n "checking whether ${CC} accepts -Wpointer-sign... " >&6; }
+CFLAGS=-Wpointer-sign
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_pointer_sign="yes"
+else
+  aros_pointer_sign="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_pointer_sign" >&5
+$as_echo "$aros_pointer_sign" >&6; }
+if test "x-$aros_pointer_sign" = "x-yes" ; then
+    aros_cflags_pointer_sign=-Wno-pointer-sign
+fi
+
 
 
 

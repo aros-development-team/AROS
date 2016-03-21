@@ -77,6 +77,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wno-incompatible-pointer-types
 #  -Wno-bool-compare
 #  -Wno-logical-not-parentheses
+#  -Wno-pointer-sign
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -382,6 +383,14 @@ if test "x-$aros_logical_not_parentheses" = "x-yes" ; then
     aros_cflags_logical_not_parentheses=-Wno-logical-not-parentheses
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wpointer-sign])
+CFLAGS=-Wpointer-sign
+AC_TRY_COMPILE(,, aros_pointer_sign="yes", aros_pointer_sign="no")
+AC_MSG_RESULT($aros_pointer_sign)
+if test "x-$aros_pointer_sign" = "x-yes" ; then
+    aros_cflags_pointer_sign=-Wno-pointer-sign
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
@@ -419,6 +428,7 @@ AC_SUBST(aros_cflags_comment)
 AC_SUBST(aros_cflags_incompatible_pointer_types)
 AC_SUBST(aros_cflags_bool_compare)
 AC_SUBST(aros_cflags_logical_not_parentheses)
+AC_SUBST(aros_cflags_pointer_sign)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
