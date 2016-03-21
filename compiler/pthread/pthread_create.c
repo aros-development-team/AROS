@@ -102,10 +102,20 @@ static void StarterFunc(void)
     }
     ReleaseSemaphore(&tls_sem);
 
-    // tell the parent thread that we are done
-    Forbid();
-    inf->finished = TRUE;
-    Signal(inf->parent, SIGF_PARENT);
+    if (!inf->detached)
+    {
+        // tell the parent thread that we are done
+        Forbid();
+        inf->finished = TRUE;
+        Signal(inf->parent, SIGF_PARENT);
+    }
+    else
+    {
+        // no one is waiting for us, do the clean up
+        ObtainSemaphore(&thread_sem);
+        memset(inf, 0, sizeof(ThreadInfo));
+        ReleaseSemaphore(&thread_sem);
+    }
 }
 
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *), void *arg)

@@ -79,6 +79,7 @@ typedef struct
     int cancelstate;
     int canceltype;
     int canceled;
+    int detached;
 } ThreadInfo;
 
 extern ThreadInfo threads[PTHREAD_THREADS_MAX];
