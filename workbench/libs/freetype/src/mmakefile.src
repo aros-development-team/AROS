@@ -1,6 +1,7 @@
 # $Id$
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 FT2FILES := \
     autofit/autofit \
@@ -56,9 +57,9 @@ SHFILES := \
 
 USER_INCLUDES := -I. -I$(SRCDIR)/$(CURDIR)/../include $(addprefix -I,$(DIRS))
 
-USER_CFLAGS += -DFT2_BUILD_LIBRARY
 # Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
-USER_CFLAGS += -Wno-error
+NOWARN_FLAGS := -Wno-error
+USER_CFLAGS += $(NOWARN_FLAGS) -DFT2_BUILD_LIBRARY
 
 #MM- workbench-libs : workbench-libs-freetype-module
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes

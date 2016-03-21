@@ -1,5 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- workbench-libs-freetype-demos : \
 #MM      workbench-libs-freetype-demos-ftstring \
@@ -16,9 +17,9 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES		:= -I$(SRCDIR)/$(CURDIR)/../graph -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/../../src/base -I$(SRCDIR)/$(CURDIR)/../../config
 
-USER_CFLAGS += -Wno-switch
 # Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
-USER_CFLAGS += -Wno-error
+NOWARN_FLAGS := $(NOWARN_SWITCH) -Wno-error
+USER_CFLAGS += $(NOWARN_FLAGS)
 
 %build_prog mmake=workbench-libs-freetype-demos-ftstring \
     progname=ftstring targetdir=$(AROSDIR)/Demos/FreeType \
