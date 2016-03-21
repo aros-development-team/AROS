@@ -22,14 +22,10 @@ srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 SRCDIR=${srcpwd}
 AC_MSG_RESULT($SRCDIR)
 
+NOLINKFLAGS="-nostdlib -nostartfiles"
+LDFLAGS=$NOLINKFLAGS
 # The first step is to find the binaries.
-# Check for our compiler.
-# Due to a bug in autoconf check for c++ compiler first.
-# For mor info see, http://osdir.com/ml/bug-autoconf-gnu/2010-05/msg00001.html.
-AC_PROG_CXX
 AC_PROG_CC
-AC_PROG_CC_STDC
-AC_PROG_CPP
 
 AC_MSG_CHECKING([target config location])
 AC_ARG_WITH(config-dir,AC_HELP_STRING([--with-config-dir=VERSION],[Location of generated target config files]),targetcfg_dir="$withval",targetcfg_dir="")
