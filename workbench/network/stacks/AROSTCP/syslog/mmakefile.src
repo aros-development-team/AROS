@@ -3,12 +3,14 @@
 # Makefile for SysLog
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 FILES  := main hooks colorlist str
 
 EXEDIR := $(AROS_SYSTEM)/Network/AROSTCP
 
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -D__BSD_VISIBLE=1
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS) -D__BSD_VISIBLE=1
  
 ##MM- contrib : aros-tcpip-apps-syslog
 
