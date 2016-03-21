@@ -1,6 +1,7 @@
 # $Id$
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- tools-flexcat : tools-flexcat-bin tools-flexcat-sd tools-flexcat-locale
 #MM tools-flexcat-bin : includes linklibs
@@ -26,7 +27,7 @@ FILES := \
     openlibs
 
 EXEDIR := $(AROS_CONTRIB)/Development/FlexCat
-NOWARN_FLAGS := -Wno-format
+NOWARN_FLAGS := $(NOWARN_FORMAT)
 USER_CFLAGS := $(NOWARN_FLAGS) -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
 
 %build_prog mmake=tools-flexcat-bin files=$(FILES) \
