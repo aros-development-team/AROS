@@ -55,29 +55,30 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wuninitialized
 #  -Wmaybe-uninitialized
 #  -Wimplicit-function-declaration
-#  -Wno-format
-#  -Wno-parentheses
-#  -Wno-char-subscripts
-#  -Wno-endif-labels
-#  -Wno-format-contains-nul
-#  -Wno-implicit-int
-#  -Wno-aggressive-loop-optimizations
-#  -Wno-cpp
-#  -Wno-switch
-#  -Wno-discarded-qualifiers
-#  -Wno-sequence-point
-#  -Wno-unknown-pragmas
-#  -Wno-discarded-array-qualifiers
-#  -Wno-int-conversion
-#  -Wno-int-to-pointer-cast
-#  -Wno-pointer-to-int-cast
-#  -Wno-unused-const-variable
-#  -Wno-write-strings 
-#  -Wno-comment
-#  -Wno-incompatible-pointer-types
-#  -Wno-bool-compare
-#  -Wno-logical-not-parentheses
-#  -Wno-pointer-sign
+#  -Wformat
+#  -Wparentheses
+#  -Wchar-subscripts
+#  -Wendif-labels
+#  -Wformat-contains-nul
+#  -Wimplicit-int
+#  -Waggressive-loop-optimizations
+#  -Wcpp
+#  -Wswitch
+#  -Wdiscarded-qualifiers
+#  -Wsequence-point
+#  -Wunknown-pragmas
+#  -Wdiscarded-array-qualifiers
+#  -Wint-conversion
+#  -Wint-to-pointer-cast
+#  -Wpointer-to-int-cast
+#  -Wunused-const-variable
+#  -Wwrite-strings 
+#  -Wcomment
+#  -Wincompatible-pointer-types
+#  -Wbool-compare
+#  -Wlogical-not-parentheses
+#  -Wpointer-sign
+#  -Wshift-overflow
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -391,6 +392,14 @@ if test "x-$aros_pointer_sign" = "x-yes" ; then
     aros_cflags_pointer_sign=-Wno-pointer-sign
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wshift-overflow])
+CFLAGS=-Wshift-overflow
+AC_TRY_COMPILE(,, aros_shift_overflow="yes", aros_shift_overflow="no")
+AC_MSG_RESULT($aros_shift_overflow)
+if test "x-$aros_shift_overflow" = "x-yes" ; then
+    aros_cflags_shift_overflow=-Wno-shift-overflow
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
@@ -429,6 +438,7 @@ AC_SUBST(aros_cflags_incompatible_pointer_types)
 AC_SUBST(aros_cflags_bool_compare)
 AC_SUBST(aros_cflags_logical_not_parentheses)
 AC_SUBST(aros_cflags_pointer_sign)
+AC_SUBST(aros_cflags_shift_overflow)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in

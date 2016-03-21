@@ -584,6 +584,7 @@ PACKAGE_URL=
 ac_unique_file="mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_shift_overflow
 aros_cflags_pointer_sign
 aros_cflags_logical_not_parentheses
 aros_cflags_bool_compare
@@ -2643,29 +2644,30 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -Wuninitialized
 #  -Wmaybe-uninitialized
 #  -Wimplicit-function-declaration
-#  -Wno-format
-#  -Wno-parentheses
-#  -Wno-char-subscripts
-#  -Wno-endif-labels
-#  -Wno-format-contains-nul
-#  -Wno-implicit-int
-#  -Wno-aggressive-loop-optimizations
-#  -Wno-cpp
-#  -Wno-switch
-#  -Wno-discarded-qualifiers
-#  -Wno-sequence-point
-#  -Wno-unknown-pragmas
-#  -Wno-discarded-array-qualifiers
-#  -Wno-int-conversion
-#  -Wno-int-to-pointer-cast
-#  -Wno-pointer-to-int-cast
-#  -Wno-unused-const-variable
-#  -Wno-write-strings
-#  -Wno-comment
-#  -Wno-incompatible-pointer-types
-#  -Wno-bool-compare
-#  -Wno-logical-not-parentheses
-#  -Wno-pointer-sign
+#  -Wformat
+#  -Wparentheses
+#  -Wchar-subscripts
+#  -Wendif-labels
+#  -Wformat-contains-nul
+#  -Wimplicit-int
+#  -Waggressive-loop-optimizations
+#  -Wcpp
+#  -Wswitch
+#  -Wdiscarded-qualifiers
+#  -Wsequence-point
+#  -Wunknown-pragmas
+#  -Wdiscarded-array-qualifiers
+#  -Wint-conversion
+#  -Wint-to-pointer-cast
+#  -Wpointer-to-int-cast
+#  -Wunused-const-variable
+#  -Wwrite-strings
+#  -Wcomment
+#  -Wincompatible-pointer-types
+#  -Wbool-compare
+#  -Wlogical-not-parentheses
+#  -Wpointer-sign
+#  -Wshift-overflow
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
@@ -3681,6 +3683,33 @@ $as_echo "$aros_pointer_sign" >&6; }
 if test "x-$aros_pointer_sign" = "x-yes" ; then
     aros_cflags_pointer_sign=-Wno-pointer-sign
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wshift-overflow" >&5
+$as_echo_n "checking whether ${CC} accepts -Wshift-overflow... " >&6; }
+CFLAGS=-Wshift-overflow
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_shift_overflow="yes"
+else
+  aros_shift_overflow="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_shift_overflow" >&5
+$as_echo "$aros_shift_overflow" >&6; }
+if test "x-$aros_shift_overflow" = "x-yes" ; then
+    aros_cflags_shift_overflow=-Wno-shift-overflow
+fi
+
 
 
 
