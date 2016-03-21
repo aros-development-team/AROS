@@ -1,4 +1,5 @@
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- AROS : compiler-posixc
 
@@ -215,9 +216,10 @@ POSIXC_COMMON := \
 
 #MM- core-linklibs : linklibs-posixc
 
+NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
+USER_CFLAGS += $(NOWARN_FLAGS)
 USER_LDFLAGS := -noposixc
 POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(POSIXC_COMMON))))
-USER_CFLAGS += -Wno-nonnull-compare 
 
 %build_module mmake=compiler-posixc \
     modname=posixc modtype=library \
