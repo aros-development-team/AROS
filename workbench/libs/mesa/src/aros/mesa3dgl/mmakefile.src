@@ -4,6 +4,7 @@
 #
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 include $(SRCDIR)/$(CURDIR)/../../mesa/sources.mak
 include $(SRCDIR)/$(CURDIR)/../../mapi/glapi/sources.mak
@@ -122,7 +123,8 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../aros \
             -I$(SRCDIR)/$(CURDIR)/../.. \
 
-GLCOMMON_FLAGS := -Wno-unused-const-variable -Wno-strict-aliasing \
+NOWARN_FLAGS := $(NOWARN_UNUSED_CONST_VARIABLE) $(NOWARN_STRICT_ALIASING)
+GLCOMMON_FLAGS := $(NOWARN_FLAGS) \
                 -ffast-math -DMAPI_MODE_UTIL -DFEATURE_GL=1 \
                 -DMAPI_ABI_HEADER=\"glapi/glapi_mapi_tmp.h\"
 USER_CFLAGS := $(GLCOMMON_FLAGS)
