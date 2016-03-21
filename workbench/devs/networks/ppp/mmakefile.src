@@ -1,7 +1,8 @@
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
-USER_CFLAGS := \
-	 -Wno-parentheses 
+NOWARN_FLAGS := $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
 USER_LDFLAGS := -static
 
 FILES := init handler ppp serial
