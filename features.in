@@ -79,6 +79,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wlogical-not-parentheses
 #  -Wpointer-sign
 #  -Wshift-overflow
+#  -Wframe-address
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -400,6 +401,14 @@ if test "x-$aros_shift_overflow" = "x-yes" ; then
     aros_cflags_shift_overflow=-Wno-shift-overflow
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wframe-address])
+CFLAGS=-Wframe-address
+AC_TRY_COMPILE(,, aros_frame_address="yes", aros_frame_address="no")
+AC_MSG_RESULT($aros_frame_address)
+if test "x-$aros_frame_address" = "x-yes" ; then
+    aros_cflags_frame_address=-Wno-frame-address
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
@@ -439,6 +448,7 @@ AC_SUBST(aros_cflags_bool_compare)
 AC_SUBST(aros_cflags_logical_not_parentheses)
 AC_SUBST(aros_cflags_pointer_sign)
 AC_SUBST(aros_cflags_shift_overflow)
+AC_SUBST(aros_cflags_frame_address)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in

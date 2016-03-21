@@ -584,6 +584,7 @@ PACKAGE_URL=
 ac_unique_file="mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_frame_address
 aros_cflags_shift_overflow
 aros_cflags_pointer_sign
 aros_cflags_logical_not_parentheses
@@ -2668,6 +2669,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -Wlogical-not-parentheses
 #  -Wpointer-sign
 #  -Wshift-overflow
+#  -Wframe-address
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
@@ -3709,6 +3711,33 @@ $as_echo "$aros_shift_overflow" >&6; }
 if test "x-$aros_shift_overflow" = "x-yes" ; then
     aros_cflags_shift_overflow=-Wno-shift-overflow
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wframe-address" >&5
+$as_echo_n "checking whether ${CC} accepts -Wframe-address... " >&6; }
+CFLAGS=-Wframe-address
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_frame_address="yes"
+else
+  aros_frame_address="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_frame_address" >&5
+$as_echo "$aros_frame_address" >&6; }
+if test "x-$aros_frame_address" = "x-yes" ; then
+    aros_cflags_frame_address=-Wno-frame-address
+fi
+
 
 
 
