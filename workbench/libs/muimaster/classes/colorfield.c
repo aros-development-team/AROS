@@ -168,6 +168,7 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
     struct opSet *msg)
 {
     struct Colorfield_DATA *data;
+    struct opSet supMsg;
     struct TagItem *tags;
     struct TagItem *tag;
     ULONG *rgb;
@@ -231,9 +232,11 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
     extra_tags[1].ti_Data = data->rgb[1];
     extra_tags[2].ti_Data = data->rgb[2];
     extra_tags[3].ti_Data = (IPTR) data->rgb;
-    msg->ops_AttrList = extra_tags;
-
-    retval = DoSuperMethodA(cl, obj, (Msg) msg);
+    supMsg.MethodID = msg->MethodID;
+    supMsg.ops_AttrList = extra_tags;
+    supMsg.ops_GInfo = msg->ops_GInfo;
+    
+    retval = DoSuperMethodA(cl, obj, (Msg) &supMsg);
 
     if (newcol && (_flags(obj) & MADF_SETUP)
         && !(data->flags & FLAG_NO_PEN))
