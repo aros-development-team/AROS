@@ -1,5 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 ################################################################################
 # Vega                                                                         #
@@ -61,8 +62,9 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega \
             -I$(GENDIR)/$(CURDIR) \
 
-USER_CFLAGS := -ffast-math -DMAPI_ABI_HEADER=\"vgapi_tmp.h\" -DVEGA_VERSION_STRING=\"\"
-USER_CFLAGS += -Wno-strict-aliasing
+NOWARN_FLAGS := $(NOWARN_STRICT_ALIASING)
+USER_CFLAGS := $(NOWARN_FLAGS) \
+        -ffast-math -DMAPI_ABI_HEADER=\"vgapi_tmp.h\" -DVEGA_VERSION_STRING=\"\"
 
 #MM
 workbench-libs-vega-generated : $(GENDIR)/$(CURDIR)/api_tmp.h $(GENDIR)/$(CURDIR)/vgapi_tmp.h
