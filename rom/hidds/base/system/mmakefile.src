@@ -1,13 +1,14 @@
 #$Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 FILES       := \
                 system_init \
                 system_class
 
-USER_CFLAGS      := -DAROS_USE_OOP
-USER_CFLAGS      += -Wno-parentheses
-USER_CFLAGS      += -D__OOP_NOLIBBASE__ \
+NOWARN_FLAGS := $(NOWARN_PARENTHESES)
+USER_CFLAGS      := $(NOWARN_FLAGS) -DAROS_USE_OOP \
+                    -D__OOP_NOLIBBASE__ \
                     -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
 
