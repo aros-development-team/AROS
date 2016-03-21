@@ -613,6 +613,7 @@ aros_cflags_format
 aros_cflags_implicit_function_declaration
 aros_cflags_maybe_uninitialized
 aros_cflags_uninitialized
+aros_cflags_unused_function
 aros_cflags_unused_variable
 aros_cflags_unused_value
 aros_cflags_unused
@@ -3765,6 +3766,7 @@ $as_echo "$aros_deprecated_declarations" >&6; }
 if test "x-$aros_deprecated_declarations" = "x-yes" ; then
     aros_cflags_deprecated_declarations=-Wno-deprecated-declarations
 fi
+
 
 
 
