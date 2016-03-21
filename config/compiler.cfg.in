@@ -40,3 +40,4 @@ NOWARN_STRICT_PROTOTYPES       := @aros_cflags_strict_prototypes@
 NOWARN_UNUSED                  := @aros_cflags_unused@
 NOWARN_POINTER_SIGN            := @ aros_cflags_pointer_sign@
 NOWARN_SHIFT_OVERFLOW          := @aros_cflags_shift_overflow@
+NOWARN_FRAME_ADDRESS           := @aros_cflags_frame_address@
