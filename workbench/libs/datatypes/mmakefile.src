@@ -1,9 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 USER_LDFLAGS := -static
 # For m68k --with-paranoia
-USER_CFLAGS := -Wno-frame-address
+NOWARN_FLAGS := $(NOWARN_FRAME_ADDRESS)
+USER_CFLAGS := $(NOWARN_FLAGS)
 
 FILES := helpfuncs class classfuncs
 FUNCS := adddtobject \
