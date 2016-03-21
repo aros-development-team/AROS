@@ -1,5 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 ACPICA_INCLUDE := ../../source/include
 
@@ -14,7 +15,8 @@ ACPICA_SOURCES := \
        $(call WILDCARD, ../../source/components/resources/*.c) \
        $(call WILDCARD, ../../source/components/namespace/*.c)
 
-USER_CFLAGS := -Wno-strict-aliasing
+NOWARN_FLAGS := $(NOWARN_STRICT_ALIASING)
+USER_CFLAGS := $(NOWARN_FLAGS)
 USER_LDFLAGS := -static
 
 # ACPICA debugging options
