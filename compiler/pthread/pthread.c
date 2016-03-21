@@ -768,9 +768,18 @@ AROS_UFH3S(ULONG, CancelHandler,
 
 int pthread_detach(pthread_t thread)
 {
-    D(bug("%s(%u) not implemented\n", __FUNCTION__, thread));
+    ThreadInfo *inf;
 
-    return ESRCH;
+    D(bug("%s(%u, %p)\n", __FUNCTION__, thread, value_ptr));
+
+    inf = GetThreadInfo(thread);
+
+    if (inf == NULL)
+        return ESRCH;
+
+    inf->detached = TRUE;
+
+    return 0;
 }
 
 void pthread_testcancel(void)
@@ -839,6 +848,26 @@ int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param
         return ESRCH;
 
     SetTaskPri(inf->task, param->sched_priority);
+
+    return 0;
+}
+
+int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *param)
+{
+    ThreadInfo *inf;
+
+    D(bug("%s(%u, %d, %p)\n", __FUNCTION__, thread, policy, param));
+
+    if ((param == NULL) || (policy == NULL))
+        return EINVAL;
+
+    inf = GetThreadInfo(thread);
+
+    if (inf == NULL)
+        return ESRCH;
+
+    param->sched_priority = inf->task->tc_Node.ln_Pri;
+    *policy = 1;
 
     return 0;
 }
