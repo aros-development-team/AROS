@@ -584,6 +584,16 @@ PACKAGE_URL=
 ac_unique_file="mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_logical_not_parentheses
+aros_cflags_bool_compare
+aros_cflags_incompatible_pointer_types
+aros_cflags_comment
+aros_cflags_write_strings
+aros_cflags_unused_const_variable
+aros_cflags_pointer_to_int_cast
+aros_cflags_int_to_pointer_cast
+aros_cflags_int_conversion
+aros_cflags_discarded_array_qualifiers
 aros_cflags_unknown_pragmas
 aros_cflags_sequence_point
 aros_cflags_discarded_qualifiers
@@ -3413,6 +3423,16 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -Wno-discarded-qualifiers
 #  -Wno-sequence-point
 #  -Wno-unknown-pragmas
+#  -Wno-discarded-array-qualifiers
+#  -Wno-int-conversion
+#  -Wno-int-to-pointer-cast
+#  -Wno-pointer-to-int-cast
+#  -Wno-unused-const-variable
+#  -Wno-write-strings
+#  -Wno-comment
+#  -Wno-incompatible-pointer-types
+#  -Wno-bool-compare
+#  -Wno-logical-not-parentheses
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
@@ -4065,7 +4085,6 @@ if test "x-$aros_sequence_point" = "x-yes" ; then
     aros_cflags_sequence_point=-Wno-sequence-point
 fi
 
--Wno-unknown-pragmas
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunknown-pragmas" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunknown-pragmas... " >&6; }
 CFLAGS=-Wunknown-pragmas
@@ -4091,6 +4110,276 @@ $as_echo "$aros_unknown_pragmas" >&6; }
 if test "x-$aros_unknown_pragmas" = "x-yes" ; then
     aros_cflags_unknown_pragmas=-Wno-unknown-pragmas
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wdiscarded-array-qualifiers" >&5
+$as_echo_n "checking whether ${CC} accepts -Wdiscarded-array-qualifiers... " >&6; }
+CFLAGS=-Wdiscarded-array-qualifiers
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_discarded_array_qualifiers="yes"
+else
+  aros_discarded_array_qualifiers="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_discarded_array_qualifiers" >&5
+$as_echo "$aros_discarded_array_qualifiers" >&6; }
+if test "x-$aros_discarded_array_qualifiers" = "x-yes" ; then
+    aros_cflags_discarded_array_qualifiers=-Wno-discarded-array-qualifiers
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wint-conversion" >&5
+$as_echo_n "checking whether ${CC} accepts -Wint-conversion... " >&6; }
+CFLAGS=-Wint-conversion
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_int_conversion="yes"
+else
+  aros_int_conversion="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_int_conversion" >&5
+$as_echo "$aros_int_conversion" >&6; }
+if test "x-$aros_int_conversion" = "x-yes" ; then
+    aros_cflags_int_conversion=-Wno-int-conversion
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wint-to-pointer-cast" >&5
+$as_echo_n "checking whether ${CC} accepts -Wint-to-pointer-cast... " >&6; }
+CFLAGS=-Wint-to-pointer-cast
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_int_to_pointer_cast="yes"
+else
+  aros_int_to_pointer_cast="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_int_to_pointer_cast" >&5
+$as_echo "$aros_int_to_pointer_cast" >&6; }
+if test "x-$aros_int_to_pointer_cast" = "x-yes" ; then
+    aros_cflags_int_to_pointer_cast=-Wno-int-to-pointer-cast
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wpointer-to-int-cast" >&5
+$as_echo_n "checking whether ${CC} accepts -Wpointer-to-int-cast... " >&6; }
+CFLAGS=-Wpointer-to-int-cast
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_pointer_to_int_cast="yes"
+else
+  aros_pointer_to_int_cast="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_pointer_to_int_cast" >&5
+$as_echo "$aros_pointer_to_int_cast" >&6; }
+if test "x-$aros_pointer_to_int_cast" = "x-yes" ; then
+    aros_cflags_pointer_to_int_cast=-Wno-pointer-to-int-cast
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-const-variable" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunused-const-variable... " >&6; }
+CFLAGS=-Wunused-const-variable
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unused_const_variable="yes"
+else
+  aros_unused_const_variable="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_const_variable" >&5
+$as_echo "$aros_unused_const_variable" >&6; }
+if test "x-$aros_unused_const_variable" = "x-yes" ; then
+    aros_cflags_unused_const_variable=-Wno-unused-const-variable
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wwrite-strings" >&5
+$as_echo_n "checking whether ${CC} accepts -Wwrite-strings... " >&6; }
+CFLAGS=-Wwrite-strings
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_write_strings="yes"
+else
+  aros_write_strings="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_write_strings" >&5
+$as_echo "$aros_write_strings" >&6; }
+if test "x-$aros_write_strings" = "x-yes" ; then
+    aros_cflags_write_strings=-Wno-write-strings
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wcomment" >&5
+$as_echo_n "checking whether ${CC} accepts -Wcomment... " >&6; }
+CFLAGS=-Wcomment
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_comment="yes"
+else
+  aros_comment="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_comment" >&5
+$as_echo "$aros_comment" >&6; }
+if test "x-$aros_comment" = "x-yes" ; then
+    aros_cflags_comment=-Wno-comment
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wincompatible-pointer-types" >&5
+$as_echo_n "checking whether ${CC} accepts -Wincompatible-pointer-types... " >&6; }
+CFLAGS=-Wincompatible-pointer-types
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_incompatible_pointer_types="yes"
+else
+  aros_incompatible_pointer_types="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_incompatible_pointer_types" >&5
+$as_echo "$aros_incompatible_pointer_types" >&6; }
+if test "x-$aros_incompatible_pointer_types" = "x-yes" ; then
+    aros_cflags_incompatible_pointer_types=-Wno-incompatible-pointer-types
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wbool-compare" >&5
+$as_echo_n "checking whether ${CC} accepts -Wbool-compare... " >&6; }
+CFLAGS=-Wbool-compare
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_bool_compare="yes"
+else
+  aros_bool_compare="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_bool_compare" >&5
+$as_echo "$aros_bool_compare" >&6; }
+if test "x-$aros_bool_compare" = "x-yes" ; then
+    aros_cflags_bool_compare=-Wno-bool-compare
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wlogical-not-parentheses" >&5
+$as_echo_n "checking whether ${CC} accepts -Wlogical-not-parentheses... " >&6; }
+CFLAGS=-Wlogical-not-parentheses
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_logical_not_parentheses="yes"
+else
+  aros_logical_not_parentheses="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_logical_not_parentheses" >&5
+$as_echo "$aros_logical_not_parentheses" >&6; }
+if test "x-$aros_logical_not_parentheses" = "x-yes" ; then
+    aros_cflags_logical_not_parentheses=-Wno-logical-not-parentheses
+fi
+
+
+
+
+
+
+
+
+
+
 
 
 

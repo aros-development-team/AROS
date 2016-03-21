@@ -69,6 +69,16 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wno-discarded-qualifiers
 #  -Wno-sequence-point
 #  -Wno-unknown-pragmas
+#  -Wno-discarded-array-qualifiers
+#  -Wno-int-conversion
+#  -Wno-int-to-pointer-cast
+#  -Wno-pointer-to-int-cast
+#  -Wno-unused-const-variable
+#  -Wno-write-strings 
+#  -Wno-comment
+#  -Wno-incompatible-pointer-types
+#  -Wno-bool-compare
+#  -Wno-logical-not-parentheses
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -270,13 +280,92 @@ if test "x-$aros_sequence_point" = "x-yes" ; then
     aros_cflags_sequence_point=-Wno-sequence-point
 fi
 
--Wno-unknown-pragmas
 AC_MSG_CHECKING([whether ${CC} accepts -Wunknown-pragmas])
 CFLAGS=-Wunknown-pragmas
 AC_TRY_COMPILE(,, aros_unknown_pragmas="yes", aros_unknown_pragmas="no")
 AC_MSG_RESULT($aros_unknown_pragmas)
 if test "x-$aros_unknown_pragmas" = "x-yes" ; then
     aros_cflags_unknown_pragmas=-Wno-unknown-pragmas
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wdiscarded-array-qualifiers])
+CFLAGS=-Wdiscarded-array-qualifiers
+AC_TRY_COMPILE(,, aros_discarded_array_qualifiers="yes", aros_discarded_array_qualifiers="no")
+AC_MSG_RESULT($aros_discarded_array_qualifiers)
+if test "x-$aros_discarded_array_qualifiers" = "x-yes" ; then
+    aros_cflags_discarded_array_qualifiers=-Wno-discarded-array-qualifiers
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wint-conversion])
+CFLAGS=-Wint-conversion
+AC_TRY_COMPILE(,, aros_int_conversion="yes", aros_int_conversion="no")
+AC_MSG_RESULT($aros_int_conversion)
+if test "x-$aros_int_conversion" = "x-yes" ; then
+    aros_cflags_int_conversion=-Wno-int-conversion
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wint-to-pointer-cast])
+CFLAGS=-Wint-to-pointer-cast
+AC_TRY_COMPILE(,, aros_int_to_pointer_cast="yes", aros_int_to_pointer_cast="no")
+AC_MSG_RESULT($aros_int_to_pointer_cast)
+if test "x-$aros_int_to_pointer_cast" = "x-yes" ; then
+    aros_cflags_int_to_pointer_cast=-Wno-int-to-pointer-cast
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wpointer-to-int-cast])
+CFLAGS=-Wpointer-to-int-cast
+AC_TRY_COMPILE(,, aros_pointer_to_int_cast="yes", aros_pointer_to_int_cast="no")
+AC_MSG_RESULT($aros_pointer_to_int_cast)
+if test "x-$aros_pointer_to_int_cast" = "x-yes" ; then
+    aros_cflags_pointer_to_int_cast=-Wno-pointer-to-int-cast
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-const-variable])
+CFLAGS=-Wunused-const-variable
+AC_TRY_COMPILE(,, aros_unused_const_variable="yes", aros_unused_const_variable="no")
+AC_MSG_RESULT($aros_unused_const_variable)
+if test "x-$aros_unused_const_variable" = "x-yes" ; then
+    aros_cflags_unused_const_variable=-Wno-unused-const-variable
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wwrite-strings])
+CFLAGS=-Wwrite-strings
+AC_TRY_COMPILE(,, aros_write_strings="yes", aros_write_strings="no")
+AC_MSG_RESULT($aros_write_strings)
+if test "x-$aros_write_strings" = "x-yes" ; then
+    aros_cflags_write_strings=-Wno-write-strings
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wcomment])
+CFLAGS=-Wcomment
+AC_TRY_COMPILE(,, aros_comment="yes", aros_comment="no")
+AC_MSG_RESULT($aros_comment)
+if test "x-$aros_comment" = "x-yes" ; then
+    aros_cflags_comment=-Wno-comment
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wincompatible-pointer-types])
+CFLAGS=-Wincompatible-pointer-types
+AC_TRY_COMPILE(,, aros_incompatible_pointer_types="yes", aros_incompatible_pointer_types="no")
+AC_MSG_RESULT($aros_incompatible_pointer_types)
+if test "x-$aros_incompatible_pointer_types" = "x-yes" ; then
+    aros_cflags_incompatible_pointer_types=-Wno-incompatible-pointer-types
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wbool-compare])
+CFLAGS=-Wbool-compare
+AC_TRY_COMPILE(,, aros_bool_compare="yes", aros_bool_compare="no")
+AC_MSG_RESULT($aros_bool_compare)
+if test "x-$aros_bool_compare" = "x-yes" ; then
+    aros_cflags_bool_compare=-Wno-bool-compare
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wlogical-not-parentheses])
+CFLAGS=-Wlogical-not-parentheses
+AC_TRY_COMPILE(,, aros_logical_not_parentheses="yes", aros_logical_not_parentheses="no")
+AC_MSG_RESULT($aros_logical_not_parentheses)
+if test "x-$aros_logical_not_parentheses" = "x-yes" ; then
+    aros_cflags_logical_not_parentheses=-Wno-logical-not-parentheses
 fi
 
 AC_SUBST(aros_cflags_unused_but_set_variable)
@@ -304,6 +393,16 @@ AC_SUBST(aros_cflags_switch)
 AC_SUBST(aros_cflags_discarded_qualifiers)
 AC_SUBST(aros_cflags_sequence_point)
 AC_SUBST(aros_cflags_unknown_pragmas)
+AC_SUBST(aros_cflags_discarded_array_qualifiers)
+AC_SUBST(aros_cflags_int_conversion)
+AC_SUBST(aros_cflags_int_to_pointer_cast)
+AC_SUBST(aros_cflags_pointer_to_int_cast)
+AC_SUBST(aros_cflags_unused_const_variable)
+AC_SUBST(aros_cflags_write_strings)
+AC_SUBST(aros_cflags_comment)
+AC_SUBST(aros_cflags_incompatible_pointer_types)
+AC_SUBST(aros_cflags_bool_compare)
+AC_SUBST(aros_cflags_logical_not_parentheses)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
