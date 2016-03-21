@@ -1,9 +1,11 @@
 # $Id$
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 USER_INCLUDES := -isystem ../netinclude/
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -DAMITCP_NEW_NAMES -DSOCKETBASE_IN_CONTEXT -DUSERGROUPBASE_IN_CONTEXT \
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS) -DAMITCP_NEW_NAMES -DSOCKETBASE_IN_CONTEXT -DUSERGROUPBASE_IN_CONTEXT \
         -D__BSD_VISIBLE=1
 
 #MM- linklibs: arostcp-linklibs
