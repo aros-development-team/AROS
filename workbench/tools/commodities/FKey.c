@@ -120,7 +120,13 @@ static UBYTE             s[257];
 
 /*********************************************************************************************/
 
-static void broker_func(struct Hook *hook, Object *obj, CxMsg *msg);
+static AROS_UFP3(
+    void, broker_func,
+    AROS_UFPA(struct Hook *,    hook,   A0),
+    AROS_UFPA(Object *,         obj,    A2),
+    AROS_UFPA(CxMsg *,          msg,    A1)
+);
+
 static UBYTE *BuildToolType(struct KeyInfo *ki);
 static UBYTE **BuildToolTypes(UBYTE **src_ttypes);
 static void Cleanup(CONST_STRPTR msg);
@@ -136,9 +142,27 @@ static void HandleAll(void);
 static void InitCX(void);
 static void InitLocale(STRPTR catname, ULONG version);
 static void InitMenus(void);
-static APTR keylist_construct_func(struct Hook *hook, APTR pool, struct KeyInfo *ki);
-static void keylist_destruct_func(struct Hook *hook, APTR pool, struct KeyInfo *ki);
-static void keylist_disp_func(struct Hook *hook, char **array, struct KeyInfo *ki);
+static AROS_UFP3(
+    APTR, keylist_construct_func,
+    AROS_UFPA(struct Hook *,    hook,   A0),
+    AROS_UFPA(APTR,             pool,   A2),
+    AROS_UFPA(struct KeyInfo *, ki,     A1)
+);
+
+static AROS_UFP3(
+    void, keylist_destruct_func,
+    AROS_UFPA(struct Hook *,    hook,   A0),
+    AROS_UFPA(APTR,             pool,   A2),
+    AROS_UFPA(struct KeyInfo *, ki,     A1)
+);
+
+static AROS_UFP3(
+    void, keylist_disp_func,
+    AROS_UFPA(struct Hook *,    hook,   A0),
+    AROS_UFPA(char **,          array,  A2),
+    AROS_UFPA(struct KeyInfo *, ki,     A1)
+);
+
 static void KillCX(void);
 static void KillGUI(void);
 static void ListToString(void);
@@ -337,7 +361,7 @@ static void GetArguments(int argc, char **argv)
 }
 
 /*********************************************************************************************/
-AROS_UFH3(
+static AROS_UFH3(
     APTR, keylist_construct_func,
     AROS_UFHA(struct Hook *,    hook,   A0),
     AROS_UFHA(APTR,             pool,   A2),
@@ -357,7 +381,7 @@ AROS_UFH3(
 }
 
 /*********************************************************************************************/
-AROS_UFH3(
+static AROS_UFH3(
     void, keylist_destruct_func,
     AROS_UFHA(struct Hook *,    hook,   A0),
     AROS_UFHA(APTR,             pool,   A2),
@@ -379,7 +403,7 @@ AROS_UFH3(
 
 /*********************************************************************************************/
 
-AROS_UFH3(
+static AROS_UFH3(
     void, keylist_disp_func,
     AROS_UFHA(struct Hook *,    hook,   A0),
     AROS_UFHA(char **,          array,  A2),
@@ -395,7 +419,7 @@ AROS_UFH3(
 
 /*********************************************************************************************/
 
-AROS_UFH3(
+static AROS_UFH3(
     void, broker_func,
     AROS_UFHA(struct Hook *,    hook,   A0),
     AROS_UFHA(Object *,         obj,    A2),
