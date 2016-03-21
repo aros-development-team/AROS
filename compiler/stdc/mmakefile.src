@@ -1,4 +1,5 @@
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- AROS : compiler-stdc compiler-stdcio
 
@@ -255,12 +256,12 @@ STDCIO_COMMON := \
 
 STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(STDC_COMMON))))
 
-USER_CFLAGS := -noposixc -Dlint '-D__FBSDID(x)='
-USER_LDFLAGS := -nostdc -noposixc
-
 # Ugh. These are for the math routines, which have a number of
-# lint issues.
-USER_CFLAGS += -Wno-nonnull-compare -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
+# lint issues, that should be fixed.
+NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
+
+USER_CFLAGS := $(NOWARN_FLAGS) -noposixc -Dlint '-D__FBSDID(x)='
+USER_LDFLAGS := -nostdc -noposixc
 
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
@@ -339,11 +340,7 @@ STDC_STATIC := \
     vsprintf \
     vsscanf
 
-USER_CFLAGS := -DSTDC_STATIC -Dlint
-
-# Ugh. These are for the math routines, which have a number of
-# lint issues, that should be fixed.
-USER_CFLAGS += -Wno-nonnull-compare -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
+USER_CFLAGS := $(NOWARN_FLAGS) -DSTDC_STATIC -Dlint
 
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
