@@ -1,11 +1,12 @@
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- contrib-development : tools-ilbmtoc
 #MM tools-ilbmtoc : includes linklibs
 
 FILES := ilbmtoc
 EXEDIR := $(AROS_CONTRIB)/Development/Build
-NOWARN_FLAGS := -Wno-format
+NOWARN_FLAGS := $(NOWARN_FORMAT)
 USER_CFLAGS := $(NOWARN_FLAGS)
 
 %build_prog mmake=tools-ilbmtoc \
