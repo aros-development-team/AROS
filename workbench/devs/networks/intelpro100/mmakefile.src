@@ -1,7 +1,9 @@
 #   $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
 
 %build_prog mmake=workbench-devs-networks-intelpro100 \
     progname="intelpro100.device" \
