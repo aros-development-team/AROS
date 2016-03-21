@@ -1,8 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 FILES := pci buffer chip roothub dev cmd debug
-USER_CFLAGS := -Wno-parentheses
+
+NOWANR_FLAGS := $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWANR_FLAGS)
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
 
