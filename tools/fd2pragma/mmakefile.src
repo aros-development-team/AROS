@@ -1,11 +1,12 @@
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- contrib-development : tools-fd2pragma
 #MM tools-fd2pragma : includes linklibs
 
 FILES  := fd2pragma
 EXEDIR := $(AROS_CONTRIB)/Development/Build
-NOWARN_FLAGS := -Wno-format -Wno-unused-but-set-variable
+NOWARN_FLAGS := $(NOWARN_FORMAT) $(NOWARN_UNUSED_BUT_SET_VARIABLE)
 USER_CFLAGS := $(NOWARN_FLAGS) -DFD2PRAGMA_READARGS -DFD2PRAGMA_AMIGA
 
 %build_prog mmake=tools-fd2pragma files=$(FILES) \
