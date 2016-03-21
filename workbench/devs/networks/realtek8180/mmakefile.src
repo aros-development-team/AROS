@@ -1,9 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- workbench-devs-networks-realtek8180-pc: workbench-devs-networks-realtek8180
 
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
 
 %build_prog mmake=workbench-devs-networks-realtek8180 \
     progname="realtek8180.device" \
