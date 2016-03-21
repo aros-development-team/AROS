@@ -102,10 +102,7 @@ gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
 #MM- tools-crosstools-ppc    : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-arm    : tools-crosstools-gcc crosstools-gcc
 
-#MM- crosstools-gcc: core-linklibs
-
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
-#MM                        compiler-includes compiler-clib-includes \
 #MM                        tools-crosstools-gmp \
 #MM                        tools-crosstools-isl \
 #MM                        tools-crosstools-mpfr \
@@ -212,11 +209,6 @@ tools-crosstools-gcc :
 	fi
 	@$(IF) $(TEST) -f $(gcc-installflag); then \
 	    $(SED) -i -e "s|@aros_target_cc_path@|$(GCC_PATH)|g" $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld ; \
-	    $(SED) -i -e "s|@aros_cflags_unused_but_set_variable@|$(GCC_UNUSED_BUT_SET_VARIABLE)|g" $(GENDIR)/config/target.cfg ; \
-	    $(SED) -i -e "s|@aros_cflags_array_bounds@|$(GCC_ARRAY_BOUNDS)|g" $(GENDIR)/config/target.cfg ; \
-	    $(SED) -i -e "s|@aros_cflags_enum_compare@|$(GCC_ENUM_COMPARE)|g" $(GENDIR)/config/target.cfg ; \
-	    $(SED) -i -e "s|@aros_cflags_format_security@|-Wno-format-security|g" $(GENDIR)/config/target.cfg ; \
-	    $(SED) -i -e "s|@aros_cflags_strict_overflow@|-Wno-strict-overflow|g" $(GENDIR)/config/target.cfg ; \
 	fi
 
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
