@@ -2,6 +2,7 @@
 # $Id$
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM- AHI-quick : workbench-devs-AHI-quick
 
@@ -14,6 +15,8 @@ include $(TOP)/config/make.cfg
 
 EXEDIR := $(AROSDIR)
 
+NOWARN_FLAGS := $(NOWARN_POINTER_SIGN)
+
 %build_with_configure mmake=workbench-devs-AHI prefix=$(EXEDIR) \
     extraoptions="--with-os-includedir=$(AROS_INCLUDES)" \
-    extracflags="-Wno-pointer-sign"
+    extracflags="$(NOWARN_FLAGS)"
