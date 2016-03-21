@@ -2,10 +2,9 @@
 include $(TOP)/config/make.cfg
 -include $(GENDIR)/config/compiler.cfg
 
-USER_CFLAGS :=-D__UTILITY_STDLIBBASE__
 # For m68k --with-paranoia
 NOWARN_FLAGS := $(NOWARN_FRAME_ADDRESS)
-USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CFLAGS := -D__UTILITY_STDLIBBASE__ $(NOWARN_FLAGS)
 USER_LDFLAGS := -static
 
 FILES :=  pm \
