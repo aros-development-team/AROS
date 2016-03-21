@@ -584,6 +584,7 @@ PACKAGE_URL=
 ac_unique_file="mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_deprecated_declarations
 aros_cflags_frame_address
 aros_cflags_shift_overflow
 aros_cflags_pointer_sign
@@ -2670,6 +2671,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -Wpointer-sign
 #  -Wshift-overflow
 #  -Wframe-address
+#  -Wdeprecated-declarations
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
@@ -3737,6 +3739,33 @@ $as_echo "$aros_frame_address" >&6; }
 if test "x-$aros_frame_address" = "x-yes" ; then
     aros_cflags_frame_address=-Wno-frame-address
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wdeprecated-declarations" >&5
+$as_echo_n "checking whether ${CC} accepts -Wdeprecated-declarations... " >&6; }
+CFLAGS=-Wdeprecated-declarations
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_deprecated_declarations="yes"
+else
+  aros_deprecated_declarations="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_deprecated_declarations" >&5
+$as_echo "$aros_deprecated_declarations" >&6; }
+if test "x-$aros_deprecated_declarations" = "x-yes" ; then
+    aros_cflags_deprecated_declarations=-Wno-deprecated-declarations
+fi
+
 
 
 
