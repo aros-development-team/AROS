@@ -1,5 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #MM workbench-libs-png : workbench-libs-z
 
@@ -7,7 +8,8 @@ FILES := png pngerror \
 	pngget pngmem pngpread pngread pngrio pngrtran pngrutil \
 	pngset pngtrans pngwio pngwrite pngwtran pngwutil
 
-USER_CFLAGS := -Wno-deprecated-declarations
+NOWARN_FLAGS := $(NOWARN_DEPRECATED_DECLARATIONS) $(NOWARN_IMPLICIT_FUNCTION_DECL)
+USER_CFLAGS := $(NOWARN_FLAGS)
 
 #MM- core-linklibs : linklibs-png
 
@@ -18,7 +20,7 @@ USER_CFLAGS := -Wno-deprecated-declarations
 
 #MM- linklibs: linklibs-png-nostdio
 
-USER_CFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_tIME -Wno-implicit-function-declaration
+USER_CFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_tIME
 
 %build_linklib mmake=linklibs-png-nostdio libname=png_nostdio \
 	files=$(FILES) objdir=$(OBJDIR)/no_stdio
