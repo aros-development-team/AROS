@@ -1,5 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 #
 # Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
@@ -159,9 +160,8 @@ api: $(API_O)
 STACK_NAME := AROSTCP
 
 USER_INCLUDES :=  -idirafter $(SRCDIR)/$(CURDIR) -idirafter $(SRCDIR)/$(CURDIR)/protos
-USER_CFLAGS := \
-	-Wno-uninitialized -Wno-parentheses \
-	-Wno-implicit-function-declaration -DAMITCP -DKERNEL \
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS) -DAMITCP -DKERNEL \
 	-DDIRECTED_BROADCAST -D__BSD_VISIBLE=1
 
 #MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-bsdsocket
