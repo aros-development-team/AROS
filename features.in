@@ -59,6 +59,16 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wimplicit-function-declaration
 #  -Wno-format
 #  -Wno-parentheses
+#  -Wno-char-subscripts
+#  -Wno-endif-labels
+#  -Wno-format-contains-nul
+#  -Wno-implicit-int
+#  -Wno-aggressive-loop-optimizations
+#  -Wno-cpp
+#  -Wno-switch
+#  -Wno-discarded-qualifiers
+#  -Wno-sequence-point
+#  -Wno-unknown-pragmas
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -188,6 +198,87 @@ if test "x-$aros_parentheses" = "x-yes" ; then
     aros_cflags_parentheses=-Wno-parentheses
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wchar-subscripts])
+CFLAGS=-Wchar-subscripts
+AC_TRY_COMPILE(,, aros_char_subscripts="yes", aros_char_subscripts="no")
+AC_MSG_RESULT($aros_char_subscripts)
+if test "x-$aros_char_subscripts" = "x-yes" ; then
+    aros_cflags_char_subscripts=-Wno-char-subscripts
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wendif-labels])
+CFLAGS=-Wendif-labels
+AC_TRY_COMPILE(,, aros_endif_labels="yes", aros_endif_labels="no")
+AC_MSG_RESULT($aros_endif_labels)
+if test "x-$aros_endif_labels" = "x-yes" ; then
+    aros_cflags_endif_labels=-Wno-endif-labels
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-contains-nul])
+CFLAGS=-Wformat-contains-nul
+AC_TRY_COMPILE(,, aros_format_contains_nul="yes", aros_format_contains_nul="no")
+AC_MSG_RESULT($aros_format_contains_nul)
+if test "x-$aros_format_contains_nul" = "x-yes" ; then
+    aros_cflags_format_contains_nul=-Wno-format-contains-nul
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-int])
+CFLAGS=-Wimplicit-int
+AC_TRY_COMPILE(,, aros_implicit_int="yes", aros_implicit_int="no")
+AC_MSG_RESULT($aros_implicit_int)
+if test "x-$aros_implicit_int" = "x-yes" ; then
+    aros_cflags_implicit_int=-Wno-implicit-int
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Waggressive-loop-optimizations])
+CFLAGS=-Waggressive-loop-optimizations
+AC_TRY_COMPILE(,, aros_aggressive_loop_optimizations="yes", aros_aggressive_loop_optimizations="no")
+AC_MSG_RESULT($aros_aggressive_loop_optimizations)
+if test "x-$aros_aggressive_loop_optimizations" = "x-yes" ; then
+    aros_cflags_aggressive_loop_optimizations=-Wno-aggressive-loop-optimizations
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wcpp])
+CFLAGS=-Wcpp
+AC_TRY_COMPILE(,, aros_cpp="yes", aros_cpp="no")
+AC_MSG_RESULT($aros_cpp)
+if test "x-$aros_cpp" = "x-yes" ; then
+    aros_cflags_cpp=-Wno-cpp
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wswitch])
+CFLAGS=-Wswitch
+AC_TRY_COMPILE(,, aros_switch="yes", aros_switch="no")
+AC_MSG_RESULT($aros_switch)
+if test "x-$aros_switch" = "x-yes" ; then
+    aros_cflags_switch=-Wno-switch
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wdiscarded-qualifiers])
+CFLAGS=-Wdiscarded-qualifiers
+AC_TRY_COMPILE(,, aros_discarded_qualifiers="yes", aros_discarded_qualifiers="no")
+AC_MSG_RESULT($aros_discarded_qualifiers)
+if test "x-$aros_discarded_qualifiers" = "x-yes" ; then
+    aros_cflags_discarded_qualifiers=-Wno-discarded-qualifiers
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wsequence-point])
+CFLAGS=-Wsequence-point
+AC_TRY_COMPILE(,, aros_sequence_point="yes", aros_sequence_point="no")
+AC_MSG_RESULT($aros_sequence_point)
+if test "x-$aros_sequence_point" = "x-yes" ; then
+    aros_cflags_sequence_point=-Wno-sequence-point
+fi
+
+-Wno-unknown-pragmas
+AC_MSG_CHECKING([whether ${CC} accepts -Wunknown-pragmas])
+CFLAGS=-Wunknown-pragmas
+AC_TRY_COMPILE(,, aros_unknown_pragmas="yes", aros_unknown_pragmas="no")
+AC_MSG_RESULT($aros_unknown_pragmas)
+if test "x-$aros_unknown_pragmas" = "x-yes" ; then
+    aros_cflags_unknown_pragmas=-Wno-unknown-pragmas
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
@@ -203,6 +294,16 @@ AC_SUBST(aros_cflags_maybe_uninitialized)
 AC_SUBST(aros_cflags_implicit_function_declaration)
 AC_SUBST(aros_cflags_format)
 AC_SUBST(aros_cflags_parentheses)
+AC_SUBST(aros_cflags_char_subscripts)
+AC_SUBST(aros_cflags_endif_labels)
+AC_SUBST(aros_cflags_format_contains_nul)
+AC_SUBST(aros_cflags_implicit_int)
+AC_SUBST(aros_cflags_aggressive_loop_optimizations)
+AC_SUBST(aros_cflags_cpp)
+AC_SUBST(aros_cflags_switch)
+AC_SUBST(aros_cflags_discarded_qualifiers)
+AC_SUBST(aros_cflags_sequence_point)
+AC_SUBST(aros_cflags_unknown_pragmas)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in

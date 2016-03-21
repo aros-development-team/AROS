@@ -584,6 +584,16 @@ PACKAGE_URL=
 ac_unique_file="mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_unknown_pragmas
+aros_cflags_sequence_point
+aros_cflags_discarded_qualifiers
+aros_cflags_switch
+aros_cflags_cpp
+aros_cflags_aggressive_loop_optimizations
+aros_cflags_implicit_int
+aros_cflags_format_contains_nul
+aros_cflags_endif_labels
+aros_cflags_char_subscripts
 aros_cflags_parentheses
 aros_cflags_format
 aros_cflags_implicit_function_declaration
@@ -3393,6 +3403,16 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -Wimplicit-function-declaration
 #  -Wno-format
 #  -Wno-parentheses
+#  -Wno-char-subscripts
+#  -Wno-endif-labels
+#  -Wno-format-contains-nul
+#  -Wno-implicit-int
+#  -Wno-aggressive-loop-optimizations
+#  -Wno-cpp
+#  -Wno-switch
+#  -Wno-discarded-qualifiers
+#  -Wno-sequence-point
+#  -Wno-unknown-pragmas
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
@@ -3810,6 +3830,277 @@ $as_echo "$aros_parentheses" >&6; }
 if test "x-$aros_parentheses" = "x-yes" ; then
     aros_cflags_parentheses=-Wno-parentheses
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wchar-subscripts" >&5
+$as_echo_n "checking whether ${CC} accepts -Wchar-subscripts... " >&6; }
+CFLAGS=-Wchar-subscripts
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_char_subscripts="yes"
+else
+  aros_char_subscripts="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_char_subscripts" >&5
+$as_echo "$aros_char_subscripts" >&6; }
+if test "x-$aros_char_subscripts" = "x-yes" ; then
+    aros_cflags_char_subscripts=-Wno-char-subscripts
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wendif-labels" >&5
+$as_echo_n "checking whether ${CC} accepts -Wendif-labels... " >&6; }
+CFLAGS=-Wendif-labels
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_endif_labels="yes"
+else
+  aros_endif_labels="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_endif_labels" >&5
+$as_echo "$aros_endif_labels" >&6; }
+if test "x-$aros_endif_labels" = "x-yes" ; then
+    aros_cflags_endif_labels=-Wno-endif-labels
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wformat-contains-nul" >&5
+$as_echo_n "checking whether ${CC} accepts -Wformat-contains-nul... " >&6; }
+CFLAGS=-Wformat-contains-nul
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_format_contains_nul="yes"
+else
+  aros_format_contains_nul="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_format_contains_nul" >&5
+$as_echo "$aros_format_contains_nul" >&6; }
+if test "x-$aros_format_contains_nul" = "x-yes" ; then
+    aros_cflags_format_contains_nul=-Wno-format-contains-nul
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wimplicit-int" >&5
+$as_echo_n "checking whether ${CC} accepts -Wimplicit-int... " >&6; }
+CFLAGS=-Wimplicit-int
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_implicit_int="yes"
+else
+  aros_implicit_int="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_implicit_int" >&5
+$as_echo "$aros_implicit_int" >&6; }
+if test "x-$aros_implicit_int" = "x-yes" ; then
+    aros_cflags_implicit_int=-Wno-implicit-int
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Waggressive-loop-optimizations" >&5
+$as_echo_n "checking whether ${CC} accepts -Waggressive-loop-optimizations... " >&6; }
+CFLAGS=-Waggressive-loop-optimizations
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_aggressive_loop_optimizations="yes"
+else
+  aros_aggressive_loop_optimizations="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_aggressive_loop_optimizations" >&5
+$as_echo "$aros_aggressive_loop_optimizations" >&6; }
+if test "x-$aros_aggressive_loop_optimizations" = "x-yes" ; then
+    aros_cflags_aggressive_loop_optimizations=-Wno-aggressive-loop-optimizations
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wcpp" >&5
+$as_echo_n "checking whether ${CC} accepts -Wcpp... " >&6; }
+CFLAGS=-Wcpp
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_cpp="yes"
+else
+  aros_cpp="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_cpp" >&5
+$as_echo "$aros_cpp" >&6; }
+if test "x-$aros_cpp" = "x-yes" ; then
+    aros_cflags_cpp=-Wno-cpp
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wswitch" >&5
+$as_echo_n "checking whether ${CC} accepts -Wswitch... " >&6; }
+CFLAGS=-Wswitch
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_switch="yes"
+else
+  aros_switch="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_switch" >&5
+$as_echo "$aros_switch" >&6; }
+if test "x-$aros_switch" = "x-yes" ; then
+    aros_cflags_switch=-Wno-switch
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wdiscarded-qualifiers" >&5
+$as_echo_n "checking whether ${CC} accepts -Wdiscarded-qualifiers... " >&6; }
+CFLAGS=-Wdiscarded-qualifiers
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_discarded_qualifiers="yes"
+else
+  aros_discarded_qualifiers="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_discarded_qualifiers" >&5
+$as_echo "$aros_discarded_qualifiers" >&6; }
+if test "x-$aros_discarded_qualifiers" = "x-yes" ; then
+    aros_cflags_discarded_qualifiers=-Wno-discarded-qualifiers
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wsequence-point" >&5
+$as_echo_n "checking whether ${CC} accepts -Wsequence-point... " >&6; }
+CFLAGS=-Wsequence-point
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_sequence_point="yes"
+else
+  aros_sequence_point="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_sequence_point" >&5
+$as_echo "$aros_sequence_point" >&6; }
+if test "x-$aros_sequence_point" = "x-yes" ; then
+    aros_cflags_sequence_point=-Wno-sequence-point
+fi
+
+-Wno-unknown-pragmas
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunknown-pragmas" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunknown-pragmas... " >&6; }
+CFLAGS=-Wunknown-pragmas
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unknown_pragmas="yes"
+else
+  aros_unknown_pragmas="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unknown_pragmas" >&5
+$as_echo "$aros_unknown_pragmas" >&6; }
+if test "x-$aros_unknown_pragmas" = "x-yes" ; then
+    aros_cflags_unknown_pragmas=-Wno-unknown-pragmas
+fi
+
+
+
+
+
+
+
+
+
+
 
 
 
