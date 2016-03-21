@@ -2,6 +2,7 @@
 # $Id$
 
 include $(TOP)/config/make.cfg
+-include $(GENDIR)/config/compiler.cfg
 
 ifeq ($(CPU),ppc)
 CPU=powerpc-be
@@ -15,7 +16,8 @@ oldCC:=$(CC)
 include $(SRCDIR)/$(CURDIR)/public/$(CPU)-elf.inc
 CC:=$(oldCC)
 
-USER_CFLAGS += -Wno-shift-overflow -I$(SRCDIR)/$(CURDIR)
+NOWARN_FLAGS := $(NOWARN_SHIFT_OVERFLOW)
+USER_CFLAGS += $(NOWARN_FLAGS) -I$(SRCDIR)/$(CURDIR)
 
 %build_linklib mmake=workbench-devs-networks-atheros5000-hal libname="athhal" \
  files="$(basename $(HAL_SRCS))"
