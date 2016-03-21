@@ -611,10 +611,12 @@ aros_cflags_maybe_uninitialized
 aros_cflags_uninitialized
 aros_cflags_unused_variable
 aros_cflags_unused_value
+aros_cflags_unused
 aros_cflags_nonnull_compare
 aros_cflags_misleading_indentation
 aros_cflags_format_security
 aros_cflags_strict_overflow
+aros_cflags_strict_prototypes
 aros_cflags_enum_compare
 aros_cflags_array_bounds
 aros_cflags_strict_aliasing
@@ -2628,10 +2630,12 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -Wstrict-aliasing
 #  -Warray-bounds
 #  -Wenum-compare
+#  -Wstrict-prototypes
 #  -Wstrict-overflow
 #  -Wformat-security
 #  -Wmisleading-indentation
 #  -Wnonnull-compare
+#  -Wunused
 #  -Wunused-value
 #  -Wunused-variable
 #  -Wunused-function
@@ -2766,6 +2770,32 @@ if test "x-$aros_enum_compare" = "x-yes" ; then
     aros_cflags_enum_compare=-Wno-enum-compare
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstrict-prototypes" >&5
+$as_echo_n "checking whether ${CC} accepts -Wstrict-prototypes... " >&6; }
+CFLAGS=-Wstrict-prototypes
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_strict_prototypes="yes"
+else
+  aros_strict_prototypes="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_strict_prototypes" >&5
+$as_echo "$aros_strict_prototypes" >&6; }
+if test "x-$aros_strict_prototypes" = "x-yes" ; then
+    aros_cflags_strict_prototypes=-Wno-strict-prototypes
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstrict-overflow" >&5
 $as_echo_n "checking whether ${CC} accepts -Wstrict-overflow... " >&6; }
 CFLAGS=-Wstrict-overflow
@@ -2868,6 +2898,32 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_nonnull_compare" >&6; }
 if test "x-$aros_nonnull_compare" = "x-yes" ; then
     aros_cflags_nonnull_compare=-Wno-nonnull-compare
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunused... " >&6; }
+CFLAGS=-Wunused
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unused="yes"
+else
+  aros_unused="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused" >&5
+$as_echo "$aros_unused" >&6; }
+if test "x-$aros_unused" = "x-yes" ; then
+    aros_cflags_unused=-Wno-unused
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-value" >&5
@@ -3597,6 +3653,8 @@ $as_echo "$aros_logical_not_parentheses" >&6; }
 if test "x-$aros_logical_not_parentheses" = "x-yes" ; then
     aros_cflags_logical_not_parentheses=-Wno-logical-not-parentheses
 fi
+
+
 
 
 

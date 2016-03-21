@@ -43,10 +43,12 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wstrict-aliasing
 #  -Warray-bounds
 #  -Wenum-compare
+#  -Wstrict-prototypes
 #  -Wstrict-overflow
 #  -Wformat-security
 #  -Wmisleading-indentation
 #  -Wnonnull-compare
+#  -Wunused
 #  -Wunused-value
 #  -Wunused-variable
 #  -Wunused-function
@@ -108,6 +110,14 @@ if test "x-$aros_enum_compare" = "x-yes" ; then
     aros_cflags_enum_compare=-Wno-enum-compare
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-prototypes])
+CFLAGS=-Wstrict-prototypes
+AC_TRY_COMPILE(,, aros_strict_prototypes="yes", aros_strict_prototypes="no")
+AC_MSG_RESULT($aros_strict_prototypes)
+if test "x-$aros_strict_prototypes" = "x-yes" ; then
+    aros_cflags_strict_prototypes=-Wno-strict-prototypes
+fi
+
 AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-overflow])
 CFLAGS=-Wstrict-overflow
 AC_TRY_COMPILE(,, aros_strict_overflow="yes", aros_strict_overflow="no")
@@ -138,6 +148,14 @@ AC_TRY_COMPILE(,, aros_nonnull_compare="yes", aros_nonnull_compare="no")
 AC_MSG_RESULT($aros_nonnull_compare)
 if test "x-$aros_nonnull_compare" = "x-yes" ; then
     aros_cflags_nonnull_compare=-Wno-nonnull-compare
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused])
+CFLAGS=-Wunused
+AC_TRY_COMPILE(,, aros_unused="yes", aros_unused="no")
+AC_MSG_RESULT($aros_unused)
+if test "x-$aros_unused" = "x-yes" ; then
+    aros_cflags_unused=-Wno-unused
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-value])
@@ -368,10 +386,12 @@ AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
 AC_SUBST(aros_cflags_enum_compare)
+AC_SUBST(aros_cflags_strict_prototypes)
 AC_SUBST(aros_cflags_strict_overflow)
 AC_SUBST(aros_cflags_format_security)
 AC_SUBST(aros_cflags_misleading_indentation)
 AC_SUBST(aros_cflags_nonnull_compare)
+AC_SUBST(aros_cflags_unused)
 AC_SUBST(aros_cflags_unused_value)
 AC_SUBST(aros_cflags_unused_variable)
 AC_SUBST(aros_cflags_uninitialized)
