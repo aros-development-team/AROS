@@ -42,7 +42,7 @@ static int STDARGS VARARGS68K MySPrintf(char *buf, char *fmt, ...)
 	VA_LIST args;
 
 	VA_START(args, fmt);
-	RawDoFmt(fmt, VA_ARG(args, void *), NULL, buf);
+	vsprintf(buf, fmt, args);
 	VA_END(args);
 
 	return(strlen(buf));
