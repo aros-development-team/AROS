@@ -114,7 +114,7 @@ LIBPROTO(Uppercase, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *txt))
   return txt;
 }
 
-LIBPROTO(SPrintfA, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *buf), REG(a1, char *format), REG(a2, APTR args))
+LIBPROTO(SPrintfA, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *buf), REG(a1, char *format), REG(a2, RAWARG args))
 {
   RawDoFmt(format, args, NULL, buf);
 

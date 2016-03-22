@@ -64,12 +64,12 @@ AROS_LH1(char *, Uppercase,
 }
 
 char *
-SPrintfA(char * ___buf, char * ___format, APTR ___args);
+SPrintfA(char * ___buf, char * ___format, RAWARG ___args);
 
 AROS_LH3(char *, SPrintfA,
     AROS_LHA(char *, ___buf, A0),
     AROS_LHA(char *, ___format, A1),
-    AROS_LHA(APTR, ___args, A2),
+    AROS_LHA(RAWARG, ___args, A2),
     struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB
 )
 {
