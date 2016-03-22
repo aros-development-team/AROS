@@ -47,3 +47,5 @@ NOWARN_DEPRECATED_DECLARATIONS := @aros_cflags_deprecated_declarations@
 NOWARN_ATTRIBUTES              := @aros_cflags_attributes@
 NOWARN_UNUSED_LOCAL_TYPEDEFS   := @aros_cflags_unused_local_typedefs@
 NOWARN_MISSING_BRACES          := @aros_cflags_missing_braces@
+NOWARN_CONVERSION_NULL         := @aros_cflags_conversion_null@
+NOWARN_NARROWING               := @aros_cflags_narrowing@

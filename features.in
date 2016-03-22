@@ -86,6 +86,8 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Woverflow
 #  -Wunused-local-typedefs
 #  -Wmissing-braces
+#  -Wconversion-null
+#  -Wnarrowing
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -463,6 +465,22 @@ if test "x-$aros_missing_braces" = "x-yes" ; then
     aros_cflags_missing_braces=-Wno-missing-braces
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wconversion-null])
+CFLAGS=-Wconversion-null
+AC_TRY_COMPILE(,, aros_conversion_null="yes", aros_conversion_null="no")
+AC_MSG_RESULT($aros_conversion_null)
+if test "x-$aros_conversion_null" = "x-yes" ; then
+    aros_cflags_conversion_null=-Wno-conversion-null
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wnarrowing])
+CFLAGS=-Wnarrowing
+AC_TRY_COMPILE(,, aros_narrowing="yes", aros_narrowing="no")
+AC_MSG_RESULT($aros_narrowing)
+if test "x-$aros_narrowing" = "x-yes" ; then
+    aros_cflags_narrowing=-Wno-narrowing
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
@@ -510,6 +528,8 @@ AC_SUBST(aros_cflags_attributes)
 AC_SUBST(aros_cflags_overflow)
 AC_SUBST(aros_cflags_unused_local_typedefs)
 AC_SUBST(aros_cflags_missing_braces)
+AC_SUBST(aros_cflags_conversion_null)
+AC_SUBST(aros_cflags_narrowing)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
