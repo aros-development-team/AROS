@@ -237,7 +237,6 @@ VOID ParseCommonTags
         } /* switch (tag->ti_Tag) */
 
     } /* while ((tag = NextTagItem(&tstate)) != NULL) */
-    return;
 }
 
 /*****************************************************************************************/
@@ -299,8 +298,6 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
         FreeMem(ld, sizeof (struct LayoutData));
     }
-
-    return;
 }
 
 /*****************************************************************************************/
@@ -537,7 +534,6 @@ STATIC VOID FreeFontPrefs(struct FontPrefs *fp, struct AslBase_intern *AslBase)
     FreeVec(fp->fp_TextAttr.ta_Name);
     FreeMem(fp, sizeof (struct FontPrefs));
 
-    return;
 }
 
 #endif
@@ -861,7 +857,6 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
             break;
 
     }
-    return;
 }
 
 /*****************************************************************************************/
