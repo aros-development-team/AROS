@@ -82,6 +82,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wframe-address
 #  -Wdeprecated-declarations
 #  -Wsign-compare
+#  -Wattributes
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -427,6 +428,14 @@ if test "x-$aros_sign_compare" = "x-yes" ; then
     aros_cflags_sign_compare=-Wno-sign-compare
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wattributes])
+CFLAGS=-Wattributes
+AC_TRY_COMPILE(,, aros_attributes="yes", aros_attributes="no")
+AC_MSG_RESULT($aros_attributes)
+if test "x-$aros_attributes" = "x-yes" ; then
+    aros_cflags_attributes=-Wno-attributes
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
@@ -470,6 +479,7 @@ AC_SUBST(aros_cflags_shift_overflow)
 AC_SUBST(aros_cflags_frame_address)
 AC_SUBST(aros_cflags_deprecated_declarations)
 AC_SUBST(aros_cflags_sign_compare)
+AC_SUBST(aros_cflags_attributes)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
