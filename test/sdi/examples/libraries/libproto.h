@@ -28,7 +28,7 @@ LIBPROTO(SayHelloOS4, char *, REG(a6, UNUSED __BASE_OR_IFACE));
 LIBPROTO(SayHelloOS3, char *, REG(a6, UNUSED __BASE_OR_IFACE));
 LIBPROTO(SayHelloMOS, char *, REG(a6, UNUSED __BASE_OR_IFACE));
 LIBPROTO(Uppercase, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *txt));
-LIBPROTO(SPrintfA, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *buf), REG(a1, char *format), REG(a2, APTR args));
+LIBPROTO(SPrintfA, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *buf), REG(a1, char *format), REG(a2, RAWARG args));
 LIBPROTOVA(SPrintf, char *, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *buf), REG(a1, char *format), ...);
 
 #if defined(__AROS__)
@@ -39,7 +39,7 @@ AROS_LD1(char *, Uppercase, AROS_LDA(char *, txt, A0), struct LibraryHeader *, _
 AROS_LD3(char *, SPrintfA,
     AROS_LDA(char *, buf, A0),
     AROS_LDA(char *, format, A1),
-    AROS_LDA(APTR, args, A1),
+    AROS_LDA(RAWARG, args, A1),
     struct LibraryHeader *, __BASE_OR_IFACE_VAR, 0, LIBSTUB);
 #endif
 

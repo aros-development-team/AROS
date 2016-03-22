@@ -41,9 +41,20 @@
 	struct Library *, (___base), 9, Example)
 
 #ifndef NO_INLINE_VARARGS
+#include <proto/alib.h>
+struct Library;
+
 #define SPrintf(___buf, ___format, ___args, ...) __SPrintf_WB(EXAMPLE_BASE_NAME, ___buf, ___format, ___args, ## __VA_ARGS__)
-#define __SPrintf_WB(___base, ___buf, ___format, ___args, ...) \
-	({IPTR _message[] = { (IPTR) ___args, ## __VA_ARGS__ }; __SPrintfA_WB((___base), (___buf), (___format), (APTR) _message); })
+static inline char *__SPrintf_WB(struct Library *___base, char *___buf, char *___format, ...)
+{
+    char *ret;
+
+    AROS_SLOWSTACKFORMAT_PRE(___format);
+    ret = __SPrintfA_WB(___base, ___buf, ___format, AROS_SLOWSTACKFORMAT_ARG(___format));
+    AROS_SLOWSTACKFORMAT_POST(___format);
+
+    return ret;
+}
 #endif /* !NO_INLINE_VARARGS */
 
 #endif /* !_INLINE_EXAMPLE_H */
