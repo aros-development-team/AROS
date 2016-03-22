@@ -254,7 +254,7 @@ BOOPSI_DISPATCHER(IPTR, Radio_Dispatcher, cl, obj, msg)
     case MUIM_Export:
         return Radio__MUIM_Export(cl, obj, (struct MUIP_Export *) msg);
     case MUIM_Import:
-        return Radio__MUIM_Import(cl, obj, (struct MUIP_Export *) msg);
+        return Radio__MUIM_Import(cl, obj, (struct MUIP_Import *) msg);
     default:
         return DoSuperMethodA(cl, obj, msg);
     }
