@@ -103,6 +103,7 @@ IPTR Pendisplay__OM_SET(struct IClass *cl, Object *obj,
     struct Pendisplay_DATA *data;
     struct TagItem *tags;
     struct TagItem *tag;
+    struct opSet supMsg;
     BOOL newcol = FALSE;
     IPTR retval;
     struct TagItem extra_tags[] = {{TAG_IGNORE, 0}, {TAG_IGNORE, 0},
@@ -190,7 +191,11 @@ IPTR Pendisplay__OM_SET(struct IClass *cl, Object *obj,
         extra_tags[0].ti_Data = data->pen & 0xffff;
         extra_tags[1].ti_Data = (IPTR) &data->rgb;
         extra_tags[2].ti_Data = (IPTR) &data->penspec;
-        msg->ops_AttrList = extra_tags;
+        
+        supMsg.MethodID = msg->MethodID;
+        supMsg.ops_AttrList = extra_tags;
+        supMsg.ops_GInfo = msg->ops_GInfo;
+        msg = &supMsg;
     }
 
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
