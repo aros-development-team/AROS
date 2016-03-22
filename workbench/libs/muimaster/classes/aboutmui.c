@@ -66,7 +66,7 @@ static const ULONG colors[] =
     0x8E8E8E8E, 0xB6B6B6B6, 0xE4E4E4E4,
 };
 
-static const unsigned char body[] =
+static const UBYTE body[] =
 {
     0x0D, 0x0F, 0xC1, 0xFF, 0xFF, 0xFE, 0x21, 0x25, 
     0x13, 0xFF, 0xFF, 0xFC, 0x1F, 0x8F, 0xFF, 0x01, 
@@ -905,7 +905,7 @@ IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tag, *tags;
     static const char about_text[] = "Zune, a MUI clone\n"
 	"\nCompiled on " __DATE__
-	"\nCopyright (C) 2002-2014, The AROS Development Team.";
+	"\nCopyright (C) 2002-2016, The AROS Development Team.";
 
     obj = (Object *) DoSuperNewTags
     (
