@@ -85,6 +85,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wattributes
 #  -Woverflow
 #  -Wunused-local-typedefs
+#  -Wmissing-braces
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -454,6 +455,14 @@ if test "x-$aros_unused_local_typedefs" = "x-yes" ; then
     aros_cflags_unused_local_typedefs=-Wno-unused-local-typedefs
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wmissing-braces])
+CFLAGS=-Wmissing-braces
+AC_TRY_COMPILE(,, aros_missing_braces="yes", aros_missing_braces="no")
+AC_MSG_RESULT($aros_missing_braces)
+if test "x-$aros_missing_braces" = "x-yes" ; then
+    aros_cflags_missing_braces=-Wno-missing-braces
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
@@ -500,6 +509,7 @@ AC_SUBST(aros_cflags_sign_compare)
 AC_SUBST(aros_cflags_attributes)
 AC_SUBST(aros_cflags_overflow)
 AC_SUBST(aros_cflags_unused_local_typedefs)
+AC_SUBST(aros_cflags_missing_braces)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
