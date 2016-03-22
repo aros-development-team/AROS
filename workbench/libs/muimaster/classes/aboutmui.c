@@ -30,7 +30,7 @@ extern struct Library *MUIMasterBase;
 
 
 #if USE_INTERNAL_IMAGE
-static const unsigned long colors[] =
+static const ULONG colors[] =
 {
     0xECECECEC, 0xF5F5F5F5, 0xFEFEFEFE,
     0x83838383, 0xB4B4B4B4, 0xF3F3F3F3,
