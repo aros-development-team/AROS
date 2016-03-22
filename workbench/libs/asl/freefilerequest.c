@@ -49,7 +49,5 @@
 
     FreeAslRequest(fileReq);
 
-    return;
-
     AROS_LIBFUNC_EXIT
 } /* FreeFileRequest */

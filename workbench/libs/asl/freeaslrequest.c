@@ -68,10 +68,7 @@
         ReleaseSemaphore( &(ASLB(AslBase)->ReqListSem) );
 
         FreeMem(reqnode, sizeof (struct ReqNode));
-
     }
-
-    return;
 
     AROS_LIBFUNC_EXIT
 } /* FreeAslRequest */

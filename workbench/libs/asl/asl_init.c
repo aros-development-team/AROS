@@ -240,8 +240,6 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
     bzero(&(reqinfo->GadgetryHook), sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry      = (void *)AROS_ASMSYMNAME(SMTagHook);
     reqinfo->GadgetryHook.h_Entry       = (void *)AROS_ASMSYMNAME(SMGadgetryHook);
-
-    return;
 }
 
 /*****************************************************************************************/
