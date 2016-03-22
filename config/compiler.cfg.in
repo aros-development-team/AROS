@@ -7,6 +7,7 @@ NOWARN_ENUM_COMPARE            := @aros_cflags_enum_compare@
 NOWARN_BOOL_COMPARE            := @aros_cflags_bool_compare@
 NOWARN_SIGN_COMPARE            := @aros_cflags_sign_compare@
 NOWARN_NONNULL_COMPARE         := @aros_cflags_nonnull_compare@
+NOWARN_OVERFLOW                := @aros_cflags_overflow@
 NOWARN_STRICT_OVERFLOW         := @aros_cflags_strict_overflow@
 NOWARN_FORMAT_SECURITY         := @aros_cflags_format_security@
 NOWARN_MISLEADING_INDENTATION  := @aros_cflags_misleading_indentation@
