@@ -160,8 +160,9 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_CycleData *data;
     struct TagItem *tag, *tags;
-    LONG l;
+    struct opSet supMsg;
     BOOL noforward = TRUE;
+    LONG l;
 
     data = INST_DATA(cl, obj);
 
@@ -212,18 +213,15 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (noforward)
     {
-        struct opSet ops = *msg;
         struct TagItem tags[] = {
-            {MUIA_Group_Forward, FALSE},
-            {TAG_MORE, 0}
+            {MUIA_Group_Forward,        FALSE                   },
+            {TAG_MORE,                  (IPTR)msg->ops_AttrList }
         };
+        supMsg.MethodID = msg->MethodID;
+        supMsg.ops_AttrList = tags;
+        supMsg.ops_GInfo = msg->ops_GInfo;
 
-        /* Zune must also be compilable with SAS C on Amiga */
-        tags[1].ti_Data = (IPTR) msg->ops_AttrList;
-
-        ops.ops_AttrList = tags;
-
-        return DoSuperMethodA(cl, obj, (Msg) & ops);
+        return DoSuperMethodA(cl, obj, (Msg) & supMsg);
     }
     else
     {
