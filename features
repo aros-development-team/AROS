@@ -584,6 +584,7 @@ PACKAGE_URL=
 ac_unique_file="mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_unused_local_typedefs
 aros_cflags_overflow
 aros_cflags_attributes
 aros_cflags_sign_compare
@@ -2679,6 +2680,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -Wsign-compare
 #  -Wattributes
 #  -Woverflow
+#  -Wunused-local-typedefs
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
@@ -3850,6 +3852,33 @@ $as_echo "$aros_overflow" >&6; }
 if test "x-$aros_overflow" = "x-yes" ; then
     aros_cflags_overflow=-Wno-overflow
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-local-typedefs" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunused-local-typedefs... " >&6; }
+CFLAGS=-Wunused-local-typedefs
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unused_local_typedefs="yes"
+else
+  aros_unused_local_typedefs="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_local_typedefs" >&5
+$as_echo "$aros_unused_local_typedefs" >&6; }
+if test "x-$aros_unused_local_typedefs" = "x-yes" ; then
+    aros_cflags_unused_local_typedefs=-Wno-unused-local-typedefs
+fi
+
 
 
 
