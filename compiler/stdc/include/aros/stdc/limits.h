@@ -8,8 +8,18 @@
 #ifndef _STDC_LIMITS_H_
 #define _STDC_LIMITS_H_
 
-
 #include <aros/cpu.h> /* For __WORDSIZE */
+
+#define _LITTLE_ENDIAN  0x41424344UL
+#define LITTLE_ENDIAN   _LITTLE_ENDIAN
+#define _BIG_ENDIAN     0x44434241UL
+#define BIG_ENDIAN      _BIG_ENDIAN
+#if AROS_BIG_ENDIAN
+# define _BYTE_ORDER    0x44434241UL
+#else
+# define _BYTE_ORDER    0x41424344UL
+#endif
+# define BYTE_ORDER     _BYTE_ORDER
 
 /* Sizes of integer types <limits.h> */
 
