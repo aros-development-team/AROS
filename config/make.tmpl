@@ -278,6 +278,8 @@ GLOB_MKDIRS += %(dirs)
 #   it is put in the same directory as the .c file
 %define rule_compile basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target
 
+BD_NIXFLAG ?= -nix
+
 ifeq (%(targetdir),)
   TMP_TARGETBASE := %(basename)
 else
@@ -328,13 +330,13 @@ $(TMP_TARGETBASE).o : %(basename).c
 
 ifeq (%(dflags),)
   ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(cflags)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) %(cflags)
   else
     $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
   endif
 else
   ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(dflags)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) %(dflags)
   else
     $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
   endif
@@ -360,7 +362,7 @@ $(TMP_TARGETBASE).d : %(basename).c
 %define rule_compile_cxx basename=/A cxxflags=$(CXXFLAGS) dxxflags= targetdir= compiler=target
 
 ifneq (%(basename),)
-
+BD_NIXFLAG ?= -nix
 ifeq (%(targetdir),)
   TMP_TARGETBASE := %(basename)
 else
@@ -411,13 +413,13 @@ $(TMP_TARGETBASE).o : %(basename).cpp
 
 ifeq (%(dflags),)
   ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix $(TMP_CXXFLAGS)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) $(TMP_CXXFLAGS)
   else
     $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(TMP_CXXFLAGS)
   endif
 else
   ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(dxxflags)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) %(dxxflags)
   else
     $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dxxflags)
   endif
@@ -446,7 +448,7 @@ endif
 %define rule_compile_objc basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target
 
 ifneq (%(basename),)
-
+BD_NIXFLAG ?= -nix
 ifeq (%(targetdir),)
   TMP_TARGETBASE := %(basename)
 else
@@ -505,13 +507,13 @@ $(TMP_TARGETBASE).o : %(basename).m
 
 ifeq (%(dflags),)
   ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix $(TMP_OBJCFLAGS)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) $(TMP_OBJCFLAGS)
   else
     $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(TMP_OBJCFLAGS)
   endif
 else
   ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(dflags)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) %(dflags)
   else
     $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
   endif
@@ -2705,8 +2707,10 @@ else
     %(mmake)-aros_prefix := $(%(mmake)-prefix)
 endif
 
+BD_NIXFLAG ?= -nix
+
 ifeq (%(nix),yes)
-    %(mmake)-nix    := -nix
+    %(mmake)-nix    := $(BD_NIXFLAG)
     %(mmake)-volpfx := /
     %(mmake)-volsfx := /
     
@@ -2788,7 +2792,7 @@ ifeq (%(compiler),host)
         CXXCPP="$(HOST_CPP)" \
         CC="$(HOST_CC) $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
         CXX="$(HOST_CXX) $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
-        LDFLAGS="-L$(CROSSTOOLSDIR)/lib" \
+        LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)" \
         TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
         TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)" \
@@ -2804,7 +2808,7 @@ ifeq (%(compiler),target)
         CXXCPP="$(TARGET_CPP) $(TARGET_SYSROOT)" \
         CC="$(TARGET_CC) $(TARGET_SYSROOT) -I$(AROS_DEVELOPMENT)/include"\
         CXX="$(TARGET_CXX) $(TARGET_SYSROOT) -I$(AROS_DEVELOPMENT)/include"\
-        LDFLAGS="-L$(AROS_DEVELOPMENT)/lib" \
+        LDFLAGS="-L$(AROS_DEVELOPMENT)/lib $(USER_LDFLAGS)" \
         AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" RANLIB="$(RANLIB)" AR="$(AR_PLAIN)" STRIP="$(STRIP_PLAIN)"\
         TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"\
