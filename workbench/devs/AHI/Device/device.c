@@ -405,7 +405,7 @@ _DevClose ( struct AHIRequest* ioreq,
 
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
-    KPrintF("CloseDevice(0x%P)\n", ioreq);
+    KPrintF("CloseDevice(0x%P)\n", (IPTR)ioreq);
 
     if( ioreq->ahir_Private[1] != (IPTR) ioreq )
     {
@@ -581,7 +581,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
              struct AHIBase *AHIBase )
 {
   struct IFFHandle *iff;
-  struct StoredProperty *prhd,*ahig;
+  struct StoredProperty *ahig;
   struct CollectionItem *ci;
   ULONG *mode;
 
@@ -624,7 +624,6 @@ ReadConfig ( struct AHIDevUnit *iounit,
         {
           if(ParseIFF(iff,IFFPARSE_SCAN) == IFFERR_EOC)
           {
-            prhd=FindProp(iff,ID_PREF,ID_PRHD);
             ahig=FindProp(iff,ID_PREF,ID_AHIG);
             
             if(ahig)
@@ -792,22 +791,22 @@ AllocHardware ( struct AHIDevUnit *iounit,
 
   /* Allocate the hardware */
   iounit->AudioCtrl = AHI_AllocAudio(
-      AHIA_AudioID,       iounit->AudioMode,
-      AHIA_MixFreq,       iounit->Frequency,
-      AHIA_Channels,      iounit->Channels,
+      AHIA_AudioID,       (IPTR)iounit->AudioMode,
+      AHIA_MixFreq,       (IPTR)iounit->Frequency,
+      AHIA_Channels,      (IPTR)iounit->Channels,
       AHIA_Sounds,        MAXSOUNDS,
-      AHIA_PlayerFunc,    &iounit->PlayerHook,
-      AHIA_RecordFunc,    &iounit->RecordHook,
-      AHIA_SoundFunc,     &iounit->SoundHook,
+      AHIA_PlayerFunc,    (IPTR)&iounit->PlayerHook,
+      AHIA_RecordFunc,    (IPTR)&iounit->RecordHook,
+      AHIA_SoundFunc,     (IPTR)&iounit->SoundHook,
       TAG_DONE);
 
   if(iounit->AudioCtrl != NULL)
   {
     /* Full duplex? */
     AHI_GetAudioAttrs(AHI_INVALID_ID,iounit->AudioCtrl,
-      AHIDB_FullDuplex, &fullduplex,
-      AHIDB_Stereo,     &stereo,
-      AHIDB_Panning,    &panning,
+      AHIDB_FullDuplex, (IPTR)&fullduplex,
+      AHIDB_Stereo,     (IPTR)&stereo,
+      AHIDB_Panning,    (IPTR)&panning,
       TAG_DONE);
     iounit->FullDuplex   = fullduplex;
     iounit->PseudoStereo = stereo && !panning;

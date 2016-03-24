@@ -2,8 +2,6 @@
 #include <aros/debug.h>
 #include <asm/io.h>
 
-#include <config.h>
-
 #include <devices/ahi.h>
 #include <libraries/ahi_sub.h>
 
@@ -24,7 +22,7 @@ void Slave( struct ExecBase* SysBase );
 
 #include <aros/asmcall.h>
 
-AROS_UFH3(LONG, SlaveEntry,
+AROS_UFH3(void, SlaveEntry,
 	  AROS_UFHA(STRPTR, argPtr, A0),
 	  AROS_UFHA(ULONG, argSize, D0),
 	  AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -105,11 +103,11 @@ D(bug("SR=%04x CR=%04x CIV=%02x LVI=%02x\n", inw(ac97Base->dmabase + ac97Base->o
 	i = AudioCtrl->ahiac_BuffSamples << 1;
     i <<= ac97Base->size_shift; /* For SIS 7012 size must be in bytes */
 	j = tail;
-	buff = dd->mixbuffer;
+	buff = (IPTR)dd->mixbuffer;
 
 	while (i > 0)
 	{
-	    ac97Base->PCM_out[j].sample_address = buff;
+	    ac97Base->PCM_out[j].sample_address = (APTR)buff;
 	    ac97Base->PCM_out[j].sample_size = (i > 65532) ? 65532 : i;
 	    
 	    i -= ac97Base->PCM_out[j].sample_size;

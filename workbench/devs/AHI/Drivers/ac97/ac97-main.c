@@ -2,8 +2,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include <config.h>
-
 #include <devices/ahi.h>
 #include <dos/dostags.h>
 #include <exec/memory.h>
@@ -130,7 +128,7 @@ D(bug("AHI: AllocAudio: dd=%08x\n", dd));
 	dd->irq.is_Node.ln_Type = NT_INTERRUPT;
 	dd->irq.is_Node.ln_Pri = 0;
 	dd->irq.is_Node.ln_Name = "AHI Int";
-	dd->irq.is_Code = play_int;
+	dd->irq.is_Code = (APTR)play_int;
 	dd->irq.is_Data = AudioCtrl;
 
 	AddIntServer(INTB_KERNEL + ac97Base->irq_num, &dd->irq);
@@ -191,8 +189,6 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Disable();
@@ -207,8 +203,6 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Enable();
@@ -301,8 +295,6 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
-
   // Empty function
 }
 
@@ -316,8 +308,6 @@ _AHIsub_Stop( ULONG                   flags,
 	      struct AHIAudioCtrlDrv* AudioCtrl,
 	      struct DriverBase*      AHIsubBase )
 {
-  struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
-
   if( flags & AHISF_PLAY )
   {
     if( dd->slavetask != NULL )
@@ -354,7 +344,6 @@ _AHIsub_GetAttr( ULONG                   attribute,
 		 struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
   size_t i;
 
   switch( attribute )

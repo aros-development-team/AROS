@@ -19,4 +19,4 @@ NOWARN_FLAGS := $(NOWARN_POINTER_SIGN)
 
 %build_with_configure mmake=workbench-devs-AHI prefix=$(EXEDIR) \
     extraoptions="--with-os-includedir=$(AROS_INCLUDES)" \
-    extracflags="$(NOWARN_FLAGS)"
+    extracflags="-$(NOWARN_FLAGS) -fno-builtin-floor"

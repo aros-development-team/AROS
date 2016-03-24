@@ -51,7 +51,6 @@ void AddResetHandler(struct SB128_DATA *card);
 
 void micro_delay(unsigned int val)
 {
-  struct Device*              TimerBase = NULL;
   struct timerequest*         TimerIO = NULL;
   struct MsgPort *            replymp;
 
@@ -62,7 +61,7 @@ void micro_delay(unsigned int val)
     return;
   }
 
-  TimerIO = (struct TimeRequest *)CreateIORequest(replymp, sizeof(struct timerequest));
+  TimerIO = (struct timerequest *)CreateIORequest(replymp, sizeof(struct timerequest));
 
   if (TimerIO == NULL)
   {
@@ -74,10 +73,6 @@ void micro_delay(unsigned int val)
   {
     DebugPrintF("SB128: Unable to open 'timer.device'.\n");
     return;
-  }
-  else
-  {
-    TimerBase = (struct Device *)TimerIO->tr_node.io_Device;
   }
   
   TimerIO->tr_node.io_Command = TR_ADDREQUEST;
@@ -96,7 +91,6 @@ void micro_delay(unsigned int val)
 
 unsigned long src_ready(struct SB128_DATA *card)
 {
-  struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   unsigned int i;
   unsigned long r;
 
@@ -115,7 +109,6 @@ unsigned long src_ready(struct SB128_DATA *card)
 
 void src_write(struct SB128_DATA *card, unsigned short addr, unsigned short data)
 {
-  struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   unsigned long r;
 
 //  ObtainSemaphore(&card->sb128_semaphore);
@@ -132,8 +125,6 @@ void src_write(struct SB128_DATA *card, unsigned short addr, unsigned short data
 
 unsigned short src_read(struct SB128_DATA *card, unsigned short addr)
 {
-  struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-
   //There may be ES137x bugs that require accomodating in this section.
   
   unsigned long r;
@@ -428,7 +419,6 @@ void ak4531_ac97_write(struct SB128_DATA *card, unsigned short reg, unsigned sho
 
 void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val)
 {
-  struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   unsigned long i, r;
 
   /* Take hold of the hardware semaphore */
@@ -514,7 +504,6 @@ void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val
 
 unsigned short codec_read(struct SB128_DATA *card, unsigned short reg)
 {
-  struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   unsigned long i, r;
   unsigned short val;
 
@@ -600,8 +589,6 @@ unsigned short codec_read(struct SB128_DATA *card, unsigned short reg)
 
 void rate_set_adc(struct SB128_DATA *card, unsigned long rate)
 {
-  struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-  
   unsigned long n, truncm, freq;
 
   //ObtainSemaphore(&card->sb128_semaphore);
@@ -651,8 +638,6 @@ void rate_set_adc(struct SB128_DATA *card, unsigned long rate)
 
 void rate_set_dac2(struct SB128_DATA *card, unsigned long rate)
 {
-  struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-
   unsigned long freq, r;
  
   //ObtainSemaphore(&card->sb128_semaphore);
@@ -700,10 +685,8 @@ struct SB128_DATA*
 AllocDriverData( struct PCIDevice *    dev,
 		 struct DriverBase* AHIsubBase )
 {
-  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
   struct SB128_DATA* card;
   UWORD command_word;
-  int i;
 
     bug("[SB128]: %s()\n", __PRETTY_FUNCTION__);
 
@@ -1229,6 +1212,7 @@ void pci_free_consistent(void* addr)
     FreeVec(addr);
 }
 
+#if !defined(__AROS__)
 static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct SB128_DATA *card)
 {
   struct PCIDevice *dev = card->pci_dev;
@@ -1248,7 +1232,6 @@ static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBa
   return 0UL;
 }
 
-#if !defined(__AROS__)
 void AddResetHandler(struct SB128_DATA *card)
 {
   static struct Interrupt interrupt;

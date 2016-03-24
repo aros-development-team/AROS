@@ -85,7 +85,7 @@ MyKPrintFArgs( UBYTE*           fmt,
 # define INTGW(q,t,n,f) \
     INTGW_##t(q,n,f)
 # define PROCGW(q,t,n,f)						\
-    q t n();                    \
+    t n();                    \
     asm(".weak " #n "\n"        \
         "\t.set " #n "," #f     \
     );

@@ -43,7 +43,9 @@ int emu10k1_addxmgr_alloc(u32 size, struct emu10k1_card *card)
 	u16 *pagetable = card->emupagetable;
 	u16 index = 0;
 	u16 numpages;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	/* Convert bytes to pages */
 	numpages = (size / EMUPAGESIZE) + ((size % EMUPAGESIZE) ? 1 : 0);
@@ -88,7 +90,9 @@ void emu10k1_addxmgr_free(struct emu10k1_card *card, int index)
 {
 	u16 *pagetable = card->emupagetable;
 	u16 origsize = 0;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	spin_lock_irqsave(&card->lock, flags);
 

@@ -174,7 +174,7 @@ LONG IndexToFrequency( struct Gadget *gad, WORD level )
   {
     AHI_GetAudioAttrs( id, NULL,
                        AHIDB_FrequencyArg, level,
-                       AHIDB_Frequency,    &freq,
+                       AHIDB_Frequency,    (IPTR)&freq,
                        TAG_DONE );
   }
   else
@@ -218,7 +218,7 @@ static void FillReqStruct(struct AHIAudioModeRequesterExt *req, struct TagItem *
 //  req->Req.ahiam_InfoHeight=GetTagData(AHIR_InitialInfoHeight,req->Req.ahiam_InfoHeight,tags);
   req->FilterTags=(struct TagItem *)GetTagData(AHIR_FilterTags,(IPTR)req->FilterTags,tags);
   req->FilterFunc=(struct Hook *)GetTagData(AHIR_FilterFunc,(IPTR)req->FilterFunc,tags);
-  req->Flags=PackBoolTags(req->Flags,tags,reqboolmap);
+  req->Flags=PackBoolTags(req->Flags,tags,(struct TagItem *)reqboolmap);
 }
 
 
@@ -409,10 +409,10 @@ static void GetSliderAttrs(struct AHIAudioModeRequesterExt *req, LONG *levels, L
   *level=0;
   
   AHI_GetAudioAttrs(req->tempAudioID, NULL,
-      AHIDB_Frequencies,  levels,
+      AHIDB_Frequencies,  (IPTR)levels,
       AHIDB_IndexArg,     (req->tempAudioID == AHI_DEFAULT_ID ? 
                               AHIBase->ahib_Frequency : req->tempFrequency),
-      AHIDB_Index,        level,
+      AHIDB_Index,        (IPTR)level,
       TAG_DONE);
 
   if(*level >= *levels)
@@ -420,7 +420,7 @@ static void GetSliderAttrs(struct AHIAudioModeRequesterExt *req, LONG *levels, L
 
   AHI_GetAudioAttrs(req->tempAudioID, NULL,
       AHIDB_FrequencyArg, *level,
-      AHIDB_Frequency,    &req->tempFrequency,
+      AHIDB_Frequency,    (IPTR)&req->tempFrequency,
       TAG_DONE);
 }
 
@@ -767,7 +767,7 @@ static BOOL HandleReq( struct AHIAudioModeRequesterExt *req )
             sliderlevel=sliderlevels-1;
           AHI_GetAudioAttrs(req->tempAudioID, NULL,
               AHIDB_FrequencyArg,sliderlevel,
-              AHIDB_Frequency, &req->tempFrequency,
+              AHIDB_Frequency, (IPTR)&req->tempFrequency,
               TAG_DONE);
           SetSelected(req,FALSE);
           break;
@@ -778,7 +778,7 @@ static BOOL HandleReq( struct AHIAudioModeRequesterExt *req )
             sliderlevel=0;
           AHI_GetAudioAttrs(req->tempAudioID, NULL,
               AHIDB_FrequencyArg,sliderlevel,
-              AHIDB_Frequency, &req->tempFrequency,
+              AHIDB_Frequency, (IPTR)&req->tempFrequency,
               TAG_DONE);
           SetSelected(req,FALSE);
           break;
@@ -797,7 +797,7 @@ static BOOL HandleReq( struct AHIAudioModeRequesterExt *req )
         case FREQSLIDER:
           AHI_GetAudioAttrs(req->tempAudioID, NULL,
               AHIDB_FrequencyArg,code,
-              AHIDB_Frequency, &req->tempFrequency,
+              AHIDB_Frequency, (IPTR)&req->tempFrequency,
               TAG_DONE);
           break;
         case LISTVIEW:
@@ -983,16 +983,16 @@ static void UpdateInfoWindow( struct AHIAudioModeRequesterExt *req )
   if(req->InfoWindow)
   {
     AHI_GetAudioAttrs(id, NULL,
-      AHIDB_MultiChannel, &multichannel,
-      AHIDB_Stereo,       &stereo,
-      AHIDB_Panning,      &pan,
-      AHIDB_HiFi,         &hifi,
-      AHIDB_Record,       &record,
-      AHIDB_FullDuplex,   &fullduplex,
-      AHIDB_Bits,         &bits,
-      AHIDB_MaxChannels,  &channels,
-      AHIDB_MinMixFreq,   &minmix,
-      AHIDB_MaxMixFreq,   &maxmix,
+      AHIDB_MultiChannel, (IPTR)&multichannel,
+      AHIDB_Stereo,       (IPTR)&stereo,
+      AHIDB_Panning,      (IPTR)&pan,
+      AHIDB_HiFi,         (IPTR)&hifi,
+      AHIDB_Record,       (IPTR)&record,
+      AHIDB_FullDuplex,   (IPTR)&fullduplex,
+      AHIDB_Bits,         (IPTR)&bits,
+      AHIDB_MaxChannels,  (IPTR)&channels,
+      AHIDB_MinMixFreq,   (IPTR)&minmix,
+      AHIDB_MaxMixFreq,   (IPTR)&maxmix,
       TAG_DONE);
 
     GT_SetGadgetAttrs(req->InfoListViewGadget, req->InfoWindow, NULL,
@@ -1014,7 +1014,7 @@ static void UpdateInfoWindow( struct AHIAudioModeRequesterExt *req )
         id);
     AddTail((struct List *) &req->InfoList,(struct Node *) &req->AttrNodes[i]);
     Sprintf(req->AttrNodes[i++].text, GetString(msgReqInfoResolution, req->Catalog),
-        bits, GetString((multichannel ? msgReqInfoMultiChannel : (stereo ?
+        bits, (IPTR)GetString((multichannel ? msgReqInfoMultiChannel : (stereo ?
           (pan ? msgReqInfoStereoPan : msgReqInfoStereo) :
           msgReqInfoMono)), req->Catalog));
     AddTail((struct List *) &req->InfoList,(struct Node *) &req->AttrNodes[i]);
@@ -1148,7 +1148,7 @@ _AHI_AllocAudioRequestA( struct TagItem* tags,
 
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
-    KPrintF("=>0x%P\n", req);
+    KPrintF("=>0x%P\n", (IPTR)req);
   }
 
   return (struct AHIAudioModeRequester *) req;
@@ -1404,7 +1404,7 @@ _AHI_AudioRequestA( struct AHIAudioModeRequester* req_in,
 #endif
 	    AHI_GetAudioAttrs(id, NULL,
 		    AHIDB_BufferLen,80,
-		    AHIDB_Name, node->node.ln_Name,
+		    AHIDB_Name, (IPTR)node->node.ln_Name,
 		    TAG_DONE);
 	    // Insert node alphabetically
 	    for(node2=(struct IDnode *)req->list->mlh_Head;node2->node.ln_Succ;node2=(struct IDnode *) node2->node.ln_Succ)
@@ -1677,7 +1677,7 @@ _AHI_AudioRequestA( struct AHIAudioModeRequester* req_in,
 
     if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
     {
-	KPrintF("=>%s\n",rc ? "TRUE" : "FALSE" );
+	KPrintF("=>%s\n", (IPTR)(rc ? "TRUE" : "FALSE"));
     }
     return (ULONG) rc;
 }

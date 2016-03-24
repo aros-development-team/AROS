@@ -404,7 +404,6 @@ _AHI_AddAudioMode( struct TagItem* DBtags,
       rc = TRUE;
     }
 
-unlock:
     UnlockDatabase(audiodb);
   }
 
@@ -661,7 +660,7 @@ AddModeFile ( UBYTE *filename )
   {
     { AHIDB_Driver,         0 },
     { AHIDB_Data,           0 },
-    { AHIDB_DriverBaseName, (IS_MORPHOS ? "MOSSYS:DEVS/AHI" : "DEVS:AHI") },
+    { AHIDB_DriverBaseName, (IPTR)(IS_MORPHOS ? "MOSSYS:DEVS/AHI" : "DEVS:AHI") },
     { TAG_MORE,             0 }
   };
   ULONG rc=FALSE;
@@ -703,11 +702,10 @@ AddModeFile ( UBYTE *filename )
               if( name->sp_Size <= 0 )
               {
                 Req( "%s:\nAUDN chunk has illegal size: %ld.", 
-                     filename, name->sp_Size );
+                     (IPTR)filename, name->sp_Size );
               }
               else
               {
-                LONG   i;
                 STRPTR s;
 
                 // Make sure string is NUL-terminated
@@ -726,7 +724,7 @@ AddModeFile ( UBYTE *filename )
                 if( !rc )
                 {
                   Req( "%s:\nAUDN chunk is not NUL-terminated.", 
-                       filename );
+                       (IPTR)filename );
                 }
               }
 
@@ -778,7 +776,7 @@ AddModeFile ( UBYTE *filename )
               if( name->sp_Size <= 0 )
               {
                 Req( "%s:\nAUDD chunk has illegal size: %ld.", 
-                     filename, name->sp_Size );
+                     (IPTR)filename, name->sp_Size );
 
                 rc = FALSE;
               }
@@ -799,7 +797,7 @@ AddModeFile ( UBYTE *filename )
 		
                 if(tag->ti_Tag & (AHI_TagBaseR ^ AHI_TagBase))
                 {
-                  tag->ti_Data += ci->ci_Data;
+                  tag->ti_Data += (IPTR)ci->ci_Data;
                 }
                
                 rc = FALSE;
@@ -814,11 +812,10 @@ AddModeFile ( UBYTE *filename )
                         tag->ti_Data >= (IPTR) ci->ci_Data + ci->ci_Size )
                     {
                       Req( "%s:\nAUDM chunk contains an invalid string.", 
-                           filename );
+                           (IPTR)filename );
                     }
                     else
                     {
-                      LONG   i;
                       STRPTR s;
                       
                       // Make sure string is NUL-terminated
@@ -846,7 +843,7 @@ AddModeFile ( UBYTE *filename )
                 if( !rc )
                 {
                   Req( "%s:\nAUDM chunk contains a string that is not "
-                       "NUL-terminated.", filename  );
+                       "NUL-terminated.", (IPTR)filename );
                 }
               }
 

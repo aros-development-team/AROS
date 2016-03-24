@@ -49,11 +49,7 @@ ULONG
 CardInterrupt( struct HDAudioChip* card )
 #endif
 {
-    struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-    struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
-    struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-
-    ULONG intreq, status;
+    ULONG intreq;
     LONG  handled = 0;
     UBYTE rirb_status;
     int i;
@@ -64,7 +60,7 @@ CardInterrupt( struct HDAudioChip* card )
     {       
         if (intreq & 0x3fffffff) // stream interrupt
         {
-            ULONG position;
+//            ULONG position;
             BOOL playback = FALSE;
             BOOL recording = FALSE;
             
@@ -104,7 +100,7 @@ CardInterrupt( struct HDAudioChip* card )
             if (playback)
             {
               //  bug("PB\n");
-                position = pci_inl(card->streams[card->nr_of_input_streams].sd_reg_offset + HD_SD_OFFSET_LINKPOS, card);
+//                position = pci_inl(card->streams[card->nr_of_input_streams].sd_reg_offset + HD_SD_OFFSET_LINKPOS, card);
 
                 if (card->flip == 1) //position <= card->current_bytesize + 64)
                 {
@@ -131,7 +127,7 @@ CardInterrupt( struct HDAudioChip* card )
 
             if (recording)
             {
-                position = pci_inl(card->streams[0].sd_reg_offset + HD_SD_OFFSET_LINKPOS, card);
+//                position = pci_inl(card->streams[0].sd_reg_offset + HD_SD_OFFSET_LINKPOS, card);
 
                 if (card->recflip == 1) //position <= card->current_record_bytesize + 64)
                 {
@@ -215,9 +211,8 @@ PlaybackInterrupt( struct HDAudioChip* card )
     {
         BOOL   skip_mix;
 
-        WORD*  src;
         int    i;
-        LONG* srclong, *dstlong, left, right;
+        LONG* srclong, *dstlong;
         int frames = card->current_frames;
 
         skip_mix = CallHookPkt(AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0);  
@@ -274,8 +269,12 @@ RecordInterrupt( struct HDAudioChip* card )
 {
     struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
     struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
+#ifdef __AMIGAOS4__
     int i = 0;
     int frames = card->current_record_bytesize / 2;
+     WORD *src = card->current_record_buffer;
+     WORD* dst = card->current_record_buffer;
+#endif
     
     struct AHIRecordMessage rm =
     {
@@ -283,9 +282,6 @@ RecordInterrupt( struct HDAudioChip* card )
         card->current_record_buffer,
         RECORD_BUFFER_SAMPLES
     };
-
-     WORD *src = card->current_record_buffer;
-     WORD* dst = card->current_record_buffer;
 
 #ifdef __AMIGAOS4__
      while( i < frames )

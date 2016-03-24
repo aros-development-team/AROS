@@ -99,6 +99,7 @@ static const ULONG SPDIF_Frequencies[ SPDIF_FREQUENCIES ] =
     192000
 };
 
+#if 0
 static const ULONG SPDIF_FrequencyBits[ SPDIF_FREQUENCIES ] =
 {
     3,
@@ -109,6 +110,7 @@ static const ULONG SPDIF_FrequencyBits[ SPDIF_FREQUENCIES ] =
     7,
     6
 };
+#endif
 
 
 
@@ -583,10 +585,10 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
+  /*struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
 
-  /*card->current_frames = AudioCtrl->ahiac_BuffSamples;
+  card->current_frames = AudioCtrl->ahiac_BuffSamples;
 
   if( AudioCtrl->ahiac_Flags & AHIACF_STEREO )
   {
@@ -608,14 +610,11 @@ _AHIsub_Stop( ULONG                   flags,
 	      struct AHIAudioCtrlDrv* AudioCtrl,
 	      struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
-  struct PCIDevice *dev = card->pci_dev;
   unsigned char RMASK = MT_RDMA0_MASK;
 
   if( flags & AHISF_PLAY && card->is_playing)
   {
-    unsigned short play_ctl, j;
     card->is_playing= FALSE;
     
     ClearMask8(card, card->mtbase, MT_DMA_CONTROL, MT_PDMA0_START | MT_PDMA4_START);
@@ -639,8 +638,6 @@ _AHIsub_Stop( ULONG                   flags,
   
   if( flags & AHISF_RECORD && card->is_recording)
   {
-    unsigned short rec_ctl, val;
-
     card->is_recording = FALSE;
     if ((card->SubType == PHASE28 && card->input >= 2) ||
         (card->SubType == JULIA && card->input >= 2) ||
@@ -845,7 +842,6 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 			 struct AHIAudioCtrlDrv* AudioCtrl,
 			 struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
 
   switch( attribute )

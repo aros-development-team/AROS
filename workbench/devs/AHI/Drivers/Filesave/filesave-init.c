@@ -27,8 +27,8 @@ DriverInit( struct DriverBase* AHIsubBase )
 {
   struct FilesaveBase* FilesaveBase = (struct FilesaveBase*) AHIsubBase;
 
-  FilesaveBase->dosbase = OpenLibrary( DOSNAME, 37 );
-  FilesaveBase->gfxbase = OpenLibrary( GRAPHICSNAME, 37 );
+  FilesaveBase->dosbase = (struct DosLibrary *)OpenLibrary( DOSNAME, 37 );
+  FilesaveBase->gfxbase = (APTR)OpenLibrary( GRAPHICSNAME, 37 );
   FilesaveBase->aslbase = OpenLibrary( AslName, 37);
   FilesaveBase->dtsbase = OpenLibrary( "datatypes.library" ,39 );
 
@@ -115,8 +115,8 @@ DriverCleanup( struct DriverBase* AHIsubBase )
   DropInterface( (struct Interface *) IDataTypes);
 #endif
 
-  CloseLibrary( FilesaveBase->dosbase );
-  CloseLibrary( FilesaveBase->gfxbase );
-  CloseLibrary( FilesaveBase->aslbase );
-  CloseLibrary( FilesaveBase->dtsbase );
+  CloseLibrary( (APTR)FilesaveBase->dosbase );
+  CloseLibrary( (APTR)FilesaveBase->gfxbase );
+  CloseLibrary( (APTR)FilesaveBase->aslbase );
+  CloseLibrary( (APTR)FilesaveBase->dtsbase );
 }

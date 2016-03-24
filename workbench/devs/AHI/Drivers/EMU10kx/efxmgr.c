@@ -82,7 +82,9 @@ int emu10k1_find_control_gpr(struct patch_manager *mgr, const char *patch_name, 
 
 void emu10k1_set_control_gpr(struct emu10k1_card *card, int addr, s32 val, int flag)
 {
+#ifndef AHI
 	struct patch_manager *mgr = &card->mgr;
+#endif
 
 	DPD(2, "emu10k1_set_control_gpr(): %d %x\n", addr, val);
 
@@ -189,9 +191,10 @@ void emu10k1_voldecr_irqhandler(struct emu10k1_card *card)
 
 void emu10k1_set_volume_gpr(struct emu10k1_card *card, int addr, s32 vol, int scale)
 {
+#ifndef AHI
 	struct patch_manager *mgr = &card->mgr;
 	unsigned long flags;
-
+#endif
 
 	static const s32 log2lin[4] ={           //  attenuation (dB)
 		0x7fffffff,                      //       0.0         

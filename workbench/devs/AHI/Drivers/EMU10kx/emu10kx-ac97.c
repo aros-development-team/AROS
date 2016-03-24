@@ -97,7 +97,9 @@ AC97GetFunc( struct Hook*           hook,
 
   if (msg->Register >= emu10kx_dsp_first &&
       msg->Register < emu10kx_dsp_last) {
+#if 0
     ULONG reg = dsp_register[msg->Register - emu10kx_dsp_first];
+#endif
 
     // Reading is not supported yet ...
     return ~0UL;

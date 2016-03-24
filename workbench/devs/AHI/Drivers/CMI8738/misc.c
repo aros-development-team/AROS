@@ -52,7 +52,6 @@ void AddResetHandler(struct CMI8738_DATA *card);
 
 void micro_delay(unsigned int val)
 {
-  struct Device*              TimerBase = NULL;
   struct timerequest*         TimerIO = NULL;
   struct MsgPort *            replymp;
 
@@ -75,10 +74,6 @@ void micro_delay(unsigned int val)
     {
         DebugPrintF("Unable to open 'timer.device'.\n");
         return; 
-    }
-    else
-    {
-        TimerBase = (struct Device *) TimerIO->tr_node.io_Device;
     }
     
     TimerIO->tr_node.io_Command = TR_ADDREQUEST; /* Add a request.   */
@@ -150,11 +145,12 @@ struct CMI8738_DATA*
 AllocDriverData( struct PCIDevice *dev,
 		 struct DriverBase* AHIsubBase )
 {
-    struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
     struct CMI8738_DATA* card;
     UWORD command_word;
     ULONG  chipvers;
+#ifndef __AROS__
     int i, v;
+#endif
     unsigned char byte;
 
     bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
@@ -374,8 +370,6 @@ FreeDriverData( struct CMI8738_DATA* card,
 int card_init(struct CMI8738_DATA *card)
 {
     struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-    unsigned short cod;
-    unsigned long val;
 
     bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
 
@@ -646,6 +640,7 @@ void pci_free_consistent(void* addr)
     FreeVec(addr);
 }
 
+#if !defined(__AROS__)
 static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct CMI8738_DATA *card)
 {
     struct PCIDevice *dev = card->pci_dev;
@@ -658,7 +653,6 @@ static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBa
     return 0UL;
 }
 
-#if !defined(__AROS__)
 void AddResetHandler(struct CMI8738_DATA *card)
 {
     static struct Interrupt interrupt;

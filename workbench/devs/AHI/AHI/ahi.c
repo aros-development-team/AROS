@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
   char pubscreen[32];
 
   if(argc) {
-    rdargs=ReadArgs( TEMPLATE , (LONG *) &args, NULL);
+    rdargs=ReadArgs( TEMPLATE , (SIPTR *) &args, NULL);
     SaveIcons  = FALSE;
   }
   else {
@@ -437,7 +437,6 @@ void NewMode(int selectedmode) {
 void FillUnit() {
   struct UnitNode *unit = NULL;
   struct ModeNode *mode = NULL;
-  ULONG id;
   double db;
 
   unit = (struct UnitNode *) GetNode(state.UnitSelected, UnitList);

@@ -327,7 +327,7 @@ static void GUINewMode(void)
   if( buffer != NULL )
   {
     sprintf( buffer,"0x%08lx\n%s\n%s\n%s\nDevs:AHI/%s.audio\n%s\n%s",
-      getAudioMode(),
+      (unsigned long)getAudioMode(),
       arg1,
       arg2,
       arg3,

@@ -13,7 +13,7 @@ DriverInit( struct DriverBase* AHIsubBase )
 {
   struct VoidBase* VoidBase = (struct VoidBase*) AHIsubBase;
 
-  VoidBase->dosbase = OpenLibrary( DOSNAME, 37 );
+  VoidBase->dosbase = (struct DosLibrary *)OpenLibrary( DOSNAME, 37 );
 
   if( VoidBase->dosbase == NULL )
   {

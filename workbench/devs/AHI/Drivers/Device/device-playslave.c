@@ -56,7 +56,6 @@ Slave( struct ExecBase* SysBase )
 {
   struct AHIAudioCtrlDrv* AudioCtrl;
   struct DriverBase*      AHIsubBase;
-  struct DeviceBase* DeviceBase;
   BOOL                    running;
   ULONG                   signals;
 
@@ -64,7 +63,6 @@ Slave( struct ExecBase* SysBase )
    * is inside AHIsubBase! */
   AudioCtrl  = (struct AHIAudioCtrlDrv*) FindTask(NULL)->tc_UserData;
   AHIsubBase = (struct DriverBase*) dd->ahisubbase;
-  DeviceBase = (struct DeviceBase*) AHIsubBase;
 
   dd->slavesignal = AllocSignal( -1 );
 
@@ -235,5 +233,5 @@ Slave( struct ExecBase* SysBase )
 
   dd->slavetask = NULL;
 
-  // Multitaking will resume when we are dead.
+  // Multitasking will resume when we are dead.
 }

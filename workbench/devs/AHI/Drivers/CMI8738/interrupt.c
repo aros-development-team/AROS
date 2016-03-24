@@ -24,7 +24,6 @@ The Original Code is written by Davy Wentzler.
 #include "misc.h"
 #include "pci_wrapper.h"
 #ifdef __AROS__
-#define DEBUG 1
 #include <aros/debug.h>
 #define DebugPrintF bug
 #endif
@@ -46,7 +45,6 @@ LONG
 CardInterrupt( struct CMI8738_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
   struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
 
   ULONG intreq;

@@ -122,8 +122,6 @@ void
 _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
 		   struct DriverBase*      AHIsubBase )
 {
-  struct VoidBase* VoidBase = (struct VoidBase*) AHIsubBase;
-
   if( AudioCtrl->ahiac_DriverData != NULL )
   {
     FreeSignal( dd->mastersignal );
@@ -141,8 +139,6 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct VoidBase* VoidBase = (struct VoidBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Forbid();
@@ -157,8 +153,6 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct VoidBase* VoidBase = (struct VoidBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Permit();
@@ -237,8 +231,6 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct VoidBase* VoidBase = (struct VoidBase*) AHIsubBase;
-
   // Empty function
 }
 
@@ -252,8 +244,6 @@ _AHIsub_Stop( ULONG                   flags,
 	      struct AHIAudioCtrlDrv* AudioCtrl,
 	      struct DriverBase*      AHIsubBase )
 {
-  struct VoidBase* VoidBase = (struct VoidBase*) AHIsubBase;
-
   if( flags & AHISF_PLAY )
   {
     if( dd->slavetask != NULL )
@@ -290,7 +280,6 @@ _AHIsub_GetAttr( ULONG                   attribute,
 		 struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct VoidBase* VoidBase = (struct VoidBase*) AHIsubBase;
   size_t i;
 
   switch( attribute )
@@ -370,7 +359,5 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 			 struct AHIAudioCtrlDrv* AudioCtrl,
 			 struct DriverBase*      AHIsubBase )
 {
-  struct VoidBase* VoidBase = (struct VoidBase*) AHIsubBase;
-
   return 0;
 }

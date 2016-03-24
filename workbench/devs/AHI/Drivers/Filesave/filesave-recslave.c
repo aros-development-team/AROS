@@ -92,8 +92,8 @@ static void RecSlave( struct ExecBase* SysBase )
     
     struct TagItem attrtags[] =
     {
-      { SDTA_Sample,       &samples },
-      { SDTA_SampleLength, &length  },
+      { SDTA_Sample,       (IPTR)&samples },
+      { SDTA_SampleLength, (IPTR)&length  },
       { TAG_DONE,          0                }
     };
     

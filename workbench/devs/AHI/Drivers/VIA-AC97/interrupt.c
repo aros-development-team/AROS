@@ -1,6 +1,6 @@
 /*
     Copyright © 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,8 +20,6 @@
 
 #define min(a,b) ((a)<(b)?(a):(b))
 
-static int z = 0;
-
 /******************************************************************************
 ** Hardware interrupt handler *************************************************
 ******************************************************************************/
@@ -34,13 +32,11 @@ LONG CardInterrupt(struct ExceptionContext *pContext,
 LONG CardInterrupt(struct CardData* card)
 #endif
 {
-  struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
 #ifdef __amigaos4__
   struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
 #endif
 
-  ULONG intreq, status;
+  ULONG intreq;
   LONG  handled = 0;
 
   intreq = pci_inl(VIA_REG_SGD_SHADOW, card);

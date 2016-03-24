@@ -42,8 +42,6 @@ LONG
 CardInterrupt( struct SB128_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
-  struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
 
   ULONG intreq;
   LONG  handled = 0;
@@ -97,7 +95,6 @@ CardInterrupt( struct SB128_DATA* card )
          Cause( &card->record_interrupt );
       }
     }
-    exit:
     handled = 1;
     
   }
@@ -115,7 +112,6 @@ PlaybackInterrupt( struct SB128_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
-  struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
 
   if( card->mix_buffer != NULL && card->current_buffer != NULL )
   {
@@ -181,7 +177,6 @@ RecordInterrupt( struct SB128_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
-  struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
 
   struct AHIRecordMessage rm =
   {
@@ -190,8 +185,10 @@ RecordInterrupt( struct SB128_DATA* card )
     RECORD_BUFFER_SAMPLES
   };
 
+#ifdef __AMIGAOS4__
   int   i   = 0, shorts = card->current_record_bytesize / 2;
   WORD* ptr = card->current_record_buffer;
+#endif
 
   //Invalidate cache so that data read from DMA buffer is correct - Articia hack
   CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
@@ -204,7 +201,6 @@ RecordInterrupt( struct SB128_DATA* card )
     ++i;
     ++ptr;
   }
-#else
 #endif
 
   CallHookPkt( AudioCtrl->ahiac_SamplerFunc, (Object*) AudioCtrl, &rm );

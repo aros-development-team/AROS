@@ -35,7 +35,9 @@ extern const UWORD InputBits[];
 int emu10k1_init(struct emu10k1_card *card);
 void emu10k1_cleanup(struct emu10k1_card *card);
 
+#ifdef __AMIGAOS4__
 static void AddResetHandler(struct EMU10kxData* dd);
+#endif
 
 /******************************************************************************
 ** DriverData allocation ******************************************************
@@ -54,7 +56,6 @@ struct EMU10kxData*
 AllocDriverData( APTR               dev,
 		 struct DriverBase* AHIsubBase )
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
   struct EMU10kxData* dd;
   UWORD               command_word;
 
@@ -73,19 +74,19 @@ AllocDriverData( APTR               dev,
   dd->interrupt.is_Node.ln_Type = INTERRUPT_NODE_TYPE;
   dd->interrupt.is_Node.ln_Pri  = 0;
   dd->interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  dd->interrupt.is_Code         = emu10kxinterrupt;
+  dd->interrupt.is_Code         = (APTR) emu10kxinterrupt;
   dd->interrupt.is_Data         = (APTR) dd;
 
   dd->playback_interrupt.is_Node.ln_Type = INTERRUPT_NODE_TYPE;
   dd->playback_interrupt.is_Node.ln_Pri  = 0;
   dd->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  dd->playback_interrupt.is_Code         = playbackinterrupt;
+  dd->playback_interrupt.is_Code         = (APTR) playbackinterrupt;
   dd->playback_interrupt.is_Data         = (APTR) dd;
 
   dd->record_interrupt.is_Node.ln_Type = INTERRUPT_NODE_TYPE;
   dd->record_interrupt.is_Node.ln_Pri  = 0;
   dd->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  dd->record_interrupt.is_Code         = recordinterrupt;
+  dd->record_interrupt.is_Code         = (APTR) recordinterrupt;
   dd->record_interrupt.is_Data         = (APTR) dd;
   
   dd->card.pci_dev = dev;

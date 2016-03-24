@@ -207,8 +207,6 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Disable();
@@ -223,8 +221,6 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Enable();
@@ -240,7 +236,6 @@ _AHIsub_Start( ULONG                   flags,
 	       struct AHIAudioCtrlDrv* AudioCtrl,
 	       struct DriverBase*      AHIsubBase )
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
   struct EMU10kxData* dd = (struct EMU10kxData*) AudioCtrl->ahiac_DriverData;
 
   /* Stop playback/recording, free old buffers (if any) */
@@ -553,7 +548,6 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
   struct EMU10kxData* dd = (struct EMU10kxData*) AudioCtrl->ahiac_DriverData;
 
   dd->current_length = AudioCtrl->ahiac_BuffSamples;
@@ -578,7 +572,6 @@ _AHIsub_Stop( ULONG                   flags,
 	      struct AHIAudioCtrlDrv* AudioCtrl,
 	      struct DriverBase*      AHIsubBase )
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
   struct EMU10kxData* dd = (struct EMU10kxData*) AudioCtrl->ahiac_DriverData;
 
   if( flags & AHISF_PLAY )
@@ -664,7 +657,6 @@ _AHIsub_GetAttr( ULONG                   attribute,
 		 struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
   int i;
 
   switch( attribute )
@@ -778,7 +770,6 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 			 struct AHIAudioCtrlDrv* AudioCtrl,
 			 struct DriverBase*      AHIsubBase )
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
   struct EMU10kxData* dd = (struct EMU10kxData*) AudioCtrl->ahiac_DriverData;
 
   switch( attribute )

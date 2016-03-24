@@ -214,7 +214,7 @@ AHIReleaseSemaphore( struct SignalSemaphore* sigSem )
     if( sigSem->ss_QueueCount >= 0
 	&& sigSem->ss_WaitQueue.mlh_Head->mln_Succ != NULL )
     {
-      struct SemaphoreRequest *sr, *srn;
+      struct SemaphoreRequest *sr;
       struct SemaphoreMessage *sm;
       sr = (struct SemaphoreRequest *)sigSem->ss_WaitQueue.mlh_Head;
 

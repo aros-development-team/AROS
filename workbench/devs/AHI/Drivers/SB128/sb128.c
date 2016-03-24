@@ -111,7 +111,7 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
 
   int   card_num;
   ULONG ret;
-  int   i, freq = 9;
+  int   i;
 
   card_num = ( GetTagData( AHIDB_AudioID, 0, taglist) & 0x0000f000 ) >> 12;
   
@@ -125,7 +125,6 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
   {
     struct SB128_DATA* card;
     BOOL in_use;
-    struct PCIDevice *dev;
 
     card  = SB128Base->driverdatas[ card_num ];
     AudioCtrl->ahiac_DriverData = card;
@@ -143,29 +142,18 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
       return AHISF_ERROR;
     }
     
-    dev = card->pci_dev;
     card->playback_interrupt_enabled = FALSE;
     card->record_interrupt_enabled = FALSE;
     /* Clears playback/record interrupts */
     pci_outl((pci_inl(SB128_SCON, card)) & SB128_IRQ_MASK, SB128_SCON, card);
    
-   for( i = 1; i < FREQUENCIES; i++ )
-   {
+    for( i = 1; i < FREQUENCIES; i++ )
+    {
       if( (ULONG) Frequencies[ i ] > AudioCtrl->ahiac_MixFreq )
       {
-         if ( ( AudioCtrl->ahiac_MixFreq - (LONG) Frequencies[ i - 1 ] ) < ( (LONG) Frequencies[ i ] - AudioCtrl->ahiac_MixFreq ) )
-         {
-            freq = i-1;
-            break;
-         }
-         else
-         {
-            freq = i;
-            break;
-         }
+        break;
       }
-   }
-   
+    }
   }
 
   ret = AHISF_KNOWHIFI | AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING;
@@ -219,8 +207,6 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
-
   /* V6 drivers do not have to preserve all registers */
 
   Disable();
@@ -235,8 +221,6 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
-
   /* V6 drivers do not have to preserve all registers */
 
   Enable();
@@ -252,13 +236,10 @@ _AHIsub_Start( ULONG                   flags,
 	       struct AHIAudioCtrlDrv* AudioCtrl,
 	       struct DriverBase*      AHIsubBase )
 {
-  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
   struct SB128_DATA* card = (struct SB128_DATA*) AudioCtrl->ahiac_DriverData;
-  struct PCIDevice *dev = card->pci_dev;
   unsigned long PlayCtrlFlags = 0, RecCtrlFlags = 0;
   ULONG dma_buffer_size = 0;
   int i, freqbit = 9;
-  unsigned long scon = 0;
   APTR stack;
 
   for( i = 0; i < FREQUENCIES; ++i )
@@ -274,9 +255,7 @@ _AHIsub_Start( ULONG                   flags,
   {
     
     ULONG dma_sample_frame_size;
-    int i;
-    short *a;
-    unsigned short cod, ChannelsFlag;
+    unsigned short ChannelsFlag;
 
     ChannelsFlag = 0;
     
@@ -357,8 +336,6 @@ _AHIsub_Start( ULONG                   flags,
 
   if( flags & AHISF_RECORD )
   {
-    UWORD mask;
-
     card->current_record_bytesize = RECORD_BUFFER_SAMPLES * 4;
 
     /* Allocate a new recording buffer (page aligned!) */
@@ -446,7 +423,6 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
   struct SB128_DATA* card = (struct SB128_DATA*) AudioCtrl->ahiac_DriverData;
 
   card->current_frames = AudioCtrl->ahiac_BuffSamples;
@@ -471,10 +447,7 @@ _AHIsub_Stop( ULONG                   flags,
 	      struct AHIAudioCtrlDrv* AudioCtrl,
 	      struct DriverBase*      AHIsubBase )
 {
-  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
   struct SB128_DATA* card = (struct SB128_DATA*) AudioCtrl->ahiac_DriverData;
-  struct PCIDevice *dev = card->pci_dev;
-
 
   if( flags & AHISF_PLAY )
   {
@@ -505,7 +478,7 @@ _AHIsub_Stop( ULONG                   flags,
 
   if( flags & AHISF_RECORD )
   {
-    unsigned long rec_ctl, val;
+    unsigned long rec_ctl;
 
     rec_ctl = pci_inl(SB128_CONTROL, card);
     rec_ctl &= ~(CTRL_ADC_EN);
@@ -549,9 +522,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
 		 struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
   int i;
-
 
   switch( attribute )
   {
@@ -671,7 +642,6 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 			 struct AHIAudioCtrlDrv* AudioCtrl,
 			 struct DriverBase*      AHIsubBase )
 {
-  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
   struct SB128_DATA* card = (struct SB128_DATA*) AudioCtrl->ahiac_DriverData;
 
   switch( attribute )

@@ -33,8 +33,6 @@ static BOOL inthandler_added;
 
 BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
 {
-  struct EMU10kxBase* EMU10kxBase = (struct EMU10kxBase*) AHIsubBase;
-
   KPrintF("== ahi_pci_init 1\n");
   OOPBase = OpenLibrary(AROSOOP_NAME, 0);
   if (OOPBase)
