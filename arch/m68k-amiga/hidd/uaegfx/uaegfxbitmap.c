@@ -37,6 +37,16 @@
 #include "uaegfxbitmap.h"
 #include "uaertg.h"
 
+/* LOCK_BITMAP_MULTI:
+
+  swap bitmap between RAM <-> VRAM allowed only if this lock is held
+ 
+  the bitmap being swapped must also get LOCK_BITMAP lock, otherwise
+  gfx functions (done by other tasks) could render into wrong place while
+  bitmap is moved around.
+
+*/
+  
 static APTR allocrtgvrambitmap(struct uaegfx_staticdata *csd, struct bm_data *bm)
 {
     APTR vmem;
@@ -53,12 +63,15 @@ static APTR allocrtgvrambitmap(struct uaegfx_staticdata *csd, struct bm_data *bm
 static void freertgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm)
 {
     DVRAM(bug("BM %p: freeing %p:%d from %s\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM"));
-    if (bm->invram) {
+    if (bm->invram)
+    {
 	SetMemoryMode(csd, RGBFB_CLUT);
 	Deallocate(csd->vmem, bm->VideoData, bm->memsize);
 	SetMemoryMode(csd, bm->rgbformat);
 	csd->vram_used -= bm->memsize;
-    } else if (bm->VideoData) {
+    }
+    else if (bm->VideoData)
+    {
     	FreeMem(bm->VideoData, bm->memsize);
     	csd->fram_used -= bm->memsize;
     }
@@ -71,29 +84,53 @@ static BOOL movebitmaptofram(struct uaegfx_staticdata *csd, struct bm_data *bm)
     BOOL ok = FALSE;
     APTR vmem;
 
-    vmem = AllocMem(bm->memsize, MEMF_ANY);
-    if (vmem) {
-	SetMemoryMode(csd, bm->rgbformat);
-	CopyMemQuick(bm->VideoData, vmem, bm->memsize);
-	freertgbitmap(csd, bm);
-	bm->VideoData = vmem;
-	csd->fram_used += bm->memsize;
-	ok = TRUE;
-   }
-   DVRAM(bug("BM %p: %d x %d moved to RAM %p:%d. VRAM=%d\n", bm, bm->width, bm->height, bm->VideoData, bm->memsize, csd->vram_used));
+    /* TRYLOCK here as we are in wrong locking order (could deadlock):
+    
+      LOCK_BITMAP_MULTI -> LOCK_HW -> [...] <- UNLOCK_HW <- UNLOCK_BITMAP_MULTI
+      (Correct locking order is: LOCK_BM_MULTI -> LOCK_BM -> LOCK_HW)
+      
+      Alternative would be to always lock all (swappable) bitmaps during bitmap
+      allocation/freeing routines. */
+      
+      
+    if (TRYLOCK_BITMAP(bm))
+    {
+        vmem = AllocMem(bm->memsize, MEMF_ANY);
+        if (vmem)
+        {
+	    SetMemoryMode(csd, bm->rgbformat);
+	    CopyMemQuick(bm->VideoData, vmem, bm->memsize);
+	    freertgbitmap(csd, bm);
+	    bm->VideoData = vmem;
+            bm->invram = FALSE;
+	    csd->fram_used += bm->memsize;
+	    ok = TRUE;
+       }
+       DVRAM(bug("BM %p: %d x %d moved to RAM %p:%d. VRAM=%d\n", bm, bm->width, bm->height, bm->VideoData, bm->memsize, csd->vram_used));
+       
+       UNLOCK_BITMAP(bm)
+    }
+    
    return ok;
 }
 
 static BOOL allocrtgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm, BOOL usevram)
 {
     bm->memsize = (bm->bytesperline * bm->height + 7) & ~7;
-    if (!(bm->VideoData = allocrtgvrambitmap(csd, bm))) {
-    	if (usevram && bm->memsize < csd->vram_size) {
+    
+    if (!(bm->VideoData = allocrtgvrambitmap(csd, bm)))
+    {
+    	if (usevram && bm->memsize < csd->vram_size)
+        {
     	     struct bm_data *bmnode;
-	     ForeachNode(&csd->bitmaplist, bmnode) {
-		if (bmnode != bm && bmnode->invram && !bmnode->locked) {
-		    if (movebitmaptofram(csd, bmnode)) {
-			if ((bm->VideoData = allocrtgvrambitmap(csd, bm))) {
+	     ForeachNode(&csd->bitmaplist, bmnode)
+             {
+		if (bmnode != bm && bmnode->invram && !bmnode->locked)
+                {
+		    if (movebitmaptofram(csd, bmnode))
+                    {
+			if ((bm->VideoData = allocrtgvrambitmap(csd, bm)))
+                        {
 			    csd->vram_used += bm->memsize;
 			    bm->invram = TRUE;
 			    break;
@@ -102,23 +139,38 @@ static BOOL allocrtgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm, BO
     		}
     	     }
 	}
-	if (!bm->VideoData) {
+        
+	if (!bm->VideoData)
+        {
 	    bm->VideoData = AllocMem(bm->memsize, MEMF_ANY);
 	    if (bm->VideoData)
+            {
 		csd->fram_used += bm->memsize;
+            }
 	}
-    } else {
+    }
+    else
+    {
 	csd->vram_used += bm->memsize;
 	bm->invram = TRUE;
     }
     DVRAM(bug("BM %p: %p,%d bytes allocated from %s. VRAM=%d\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM", csd->vram_used));
+
+    //if (bm->VideoData != NULL)
+    //{
+    //    int i;
+    //
+    //    for(i = 0; i < bm->memsize; i++) bm->VideoData[i] = 0xFF;
+    //}
+
     return bm->VideoData != NULL;
 }
 
 static BOOL movethisbitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *bm)
 {
     APTR vmem = allocrtgvrambitmap(csd, bm);
-    if (vmem) {
+    if (vmem)
+    {
 	SetMemoryMode(csd, bm->rgbformat);
 	CopyMemQuick(bm->VideoData, vmem, bm->memsize);
 	freertgbitmap(csd, bm);
@@ -137,20 +189,29 @@ static BOOL movebitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *bm)
  
      if (bm->invram)
 	return TRUE;
+        
      DVRAM(bug("BM %p: %p,%d needs to be in VRAM...\n", bm, bm->VideoData, bm->memsize));
-     ForeachNode(&csd->bitmaplist, bmnode) {
-	if (bmnode != bm && bmnode->invram && !bmnode->locked) {
-	    if (movebitmaptofram(csd, bmnode)) {
-	    	if (movethisbitmaptovram(csd, bm)) {
+     
+     ForeachNode(&csd->bitmaplist, bmnode)
+     {
+	if (bmnode != bm && bmnode->invram && !bmnode->locked)
+        {
+	    if (movebitmaptofram(csd, bmnode))
+            {
+	    	if (movethisbitmaptovram(csd, bm))
+                {
 		    return TRUE;
 		}
 	    }
 	}
      }
+     
      DVRAM(bug("-> not enough memory, VRAM=%d\n", csd->vram_used));
+     
      return FALSE;
 }
 
+#if 0
 static BOOL maybeputinvram(struct uaegfx_staticdata *csd, struct bm_data *bm)
 {
     if (bm->invram)
@@ -159,6 +220,7 @@ static BOOL maybeputinvram(struct uaegfx_staticdata *csd, struct bm_data *bm)
 	return FALSE;
     return movethisbitmaptovram(csd, bm);
 }
+#endif
 
 static void hidescreen(struct uaegfx_staticdata *csd, struct bm_data *bm)
 {
@@ -200,8 +262,6 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     memset(data, 0, sizeof  (*data));
     InitSemaphore(&data->bmLock);
     
-    WaitBlitter(csd);
-
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
@@ -216,9 +276,18 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->width = width;
     data->height = height;
     data->bytesperpixel = multi;
+    
+    LOCK_MULTI_BITMAP
+    
+    LOCK_HW /* alloc routines call SetMemoryMode */
+    WaitBlitter(csd); /* in case bitmaps are swapped between RAM <-> VRAM during allocation */
     allocrtgbitmap(csd, data, TRUE);
+    UNLOCK_HW
+    
     AddTail(&csd->bitmaplist, (struct Node*)&data->node);
  
+    UNLOCK_MULTI_BITMAP
+    
     tags[0].ti_Tag = aHidd_BitMap_BytesPerRow;
     tags[0].ti_Data = data->bytesperline;
     tags[1].ti_Tag = TAG_DONE;
@@ -247,16 +316,28 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct bm_data    *data;
     
     data = OOP_INST_DATA(cl, o);
+    
+    LOCK_HW
     WaitBlitter(csd);
     
     DB2(bug("UAEGFXBitmap__Root__Dispose %x bm=%x (%p,%d)\n", o, data, data->VideoData, data->memsize));
     if (csd->disp == data)
     	hidescreen(csd, data);
 
+    UNLOCK_HW
+
     FreeVec(data->palette);
-    freertgbitmap(csd, data);
-    Remove((struct Node*)&data->node);
     
+    LOCK_MULTI_BITMAP
+    
+    LOCK_HW /* free functions call SetMemoryMode */
+    freertgbitmap(csd, data);
+    UNLOCK_HW
+    
+    Remove((struct Node*)&data->node);
+
+    UNLOCK_MULTI_BITMAP
+
     OOP_DoSuperMethod(cl, o, msg);
 }
 
@@ -279,6 +360,9 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
             switch(idx)
             {
 	        case aoHidd_BitMap_Visible:
+                LOCK_MULTI_BITMAP
+                LOCK_BITMAP(data)
+                LOCK_HW
 	        if (tag->ti_Data) {
 	     	    OOP_Object *gfxhidd, *sync, *pf;
     		    IPTR modeid = vHidd_ModeID_Invalid;
@@ -304,7 +388,35 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 			dwidth, dheight, depth, width, height, data->rgbformat));
 
 		    if (!data->invram)
-		    	movebitmaptovram(csd, data);
+                    {
+                        WaitBlitter(csd); /* in case other bitmaps are swapped from VRAM to RAM */
+		    	if (!movebitmaptovram(csd, data))
+                        {
+                            struct bm_data *bmnode;
+                            
+                            /* Second try. Now lock all bitmaps first. UNLOCK_HW first, to ensure
+                               correct locking order: multibm -> bm -> hw */
+                            
+                            UNLOCK_HW
+                            
+                            ForeachNode(&csd->bitmaplist, bmnode)
+                            {
+                                if (bmnode != data) LOCK_BITMAP(bmnode)
+                            }
+
+                            LOCK_HW                            
+                            WaitBlitter(csd); /* in case other bitmaps are swapped from VRAM to RAM */
+                            movebitmaptovram(csd, data); /* shouldn't fail this time. If it does we are screwed ... */                          
+                            UNLOCK_HW
+                                                        
+                            ForeachNode(&csd->bitmaplist, bmnode)
+                            {
+                                if (bmnode != data) UNLOCK_BITMAP(bmnode)
+                            }                            
+                            
+                            LOCK_HW
+                        }
+                    }
 
 		    csd->dwidth = dwidth;
 		    csd->dheight = dheight;
@@ -331,6 +443,10 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		} else {
 		    hidescreen(csd, data);
 		}
+                UNLOCK_HW
+                UNLOCK_BITMAP(data)
+                UNLOCK_MULTI_BITMAP
+                
 		break;
 		case aoHidd_BitMap_LeftEdge:
 		    if (data->leftedge != tag->ti_Data) {
@@ -433,7 +549,10 @@ BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
     /* undocumented, just a guess.. */
     *msg->bankSizeReturn = *msg->memSizeReturn = data->bytesperline * data->height;
     data->locked++;
+    
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
     
     return TRUE;
 }
@@ -455,15 +574,21 @@ BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
     	return FALSE;
+        
+    LOCK_HW
+    
     WaitBlitter(csd);
     clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
     for (i = msg->firstColor, j = 0; j < msg->numColors; i++, j++) {
         clut[i * 3 + 0] = msg->colors[j].red >> 8;
         clut[i * 3 + 1] = msg->colors[j].green >> 8;
         clut[i * 3 + 2] = msg->colors[j].blue >> 8;
-	//bug("%d %02x%02x%02x\n", i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8);
+        //bug("UAESET color %d %02x%02x%02x\n", i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8);
     }
     SetColorArray(csd, msg->firstColor, msg->numColors);
+    
+    UNLOCK_HW
+    
     return TRUE;
 }
 
@@ -478,7 +603,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     
     LOCK_BITMAP(data)
     
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     offset = (msg->x * data->bytesperpixel) + (msg->y * data->bytesperline);
     mem = data->VideoData + offset;
     
@@ -521,7 +649,10 @@ ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
     
     LOCK_BITMAP(data)
     
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     offset = (msg->x * data->bytesperpixel)  +(msg->y * data->bytesperline);
     mem = data->VideoData + offset;
     
@@ -557,7 +688,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 {
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -570,7 +704,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
 
     LOCK_BITMAP(data)
     
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     switch(msg->pixFmt)
     {
     	case vHidd_StdPixFmt_Native:
@@ -719,8 +856,11 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     struct uaegfx_staticdata *csd = CSD(cl);
 
     LOCK_BITMAP(data)
-    
+
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     switch(msg->pixFmt)
     {
     	case vHidd_StdPixFmt_Native:
@@ -870,7 +1010,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 
     LOCK_BITMAP(data)
     
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     switch(data->bytesperpixel)
     {
 	case 2:
@@ -934,7 +1077,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 {
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -951,10 +1097,18 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 
     LOCK_BITMAP(data)
     
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+#if 0    
     maybeputinvram(csd, data);
+#endif
+
     if (data->invram) {
 	makerenderinfo(csd, &ri, data);
+        
+        LOCK_HW
+        
 	if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
     	    ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
 	    v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff, data->rgbformat);
@@ -963,6 +1117,8 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 	} else if (mode == vHidd_GC_DrawMode_Invert) {
 	    v = InvertRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
 	}
+        
+        UNLOCK_HW
     }
     
     if (!v) switch(mode)
@@ -1053,8 +1209,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     
     LOCK_BITMAP(data)
     
+    LOCK_HW
     WaitBlitter(csd);
-
+    UNLOCK_HW
+    
     DB2(bug("blitpattern(%d,%d)(%d,%d)(%x,%d,%d,%d,%d,%d)\n",
 	msg->x, msg->y, msg->width, msg->height,
 	msg->pattern, msg->patternsrcx, msg->patternsrcy, fg, bg, msg->patternheight));
@@ -1096,8 +1254,9 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 
 	if (pat.Size <= 8)
         {
+#if 0        
             maybeputinvram(csd, data);
-            
+#endif
             if (data->invram)
             {
 	        makerenderinfo(csd, &ri, data);
@@ -1117,7 +1276,11 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 	        pat.BgPen = bg;
 	        pat.DrawMode = drawmode;
             
+                LOCK_HW
+                
                 v = BlitPattern(csd, &ri, &pat, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+                
+                UNLOCK_HW
             }
 	}
     }
@@ -1233,8 +1396,14 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     
     LOCK_BITMAP(data)
     
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
+#if 0
     maybeputinvram(csd, data);
+#endif
+
     if (data->invram) {
 	makerenderinfo(csd, &ri, data);
 	if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
@@ -1254,7 +1423,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 	tmpl.DrawMode = drawmode;
 	tmpl.FgPen = fg;
 	tmpl.BgPen = bg;
+        
+        LOCK_HW
 	v = BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+        UNLOCK_HW
     }
     
     if (!v) switch(data->bytesperpixel)
@@ -1336,7 +1508,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct 
 {
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -1347,7 +1522,10 @@ BOOL UAEGFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 {
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -1358,6 +1536,9 @@ BOOL UAEGFXBitmap__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
 {
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
