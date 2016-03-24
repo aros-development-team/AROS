@@ -203,10 +203,11 @@ static const struct RTGFormat formats[] =
     { RGBFB_B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0, FALSE },
     { RGBFB_R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_R5G5B5PC,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, TRUE },
-    { RGBFB_R5G6B5PC,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, TRUE },
     { RGBFB_R5G5B5,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, FALSE },
     { RGBFB_R5G6B5,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, FALSE },
+
+    { RGBFB_R5G5B5PC,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, TRUE },
+    { RGBFB_R5G6B5PC,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, TRUE },
 /*
     { RGBFB_B5G5R5PC,	0x0000003e, 0x000007c0, 0x0000f800, 0x00000000, 26, 21, 16,  0, TRUE },
     { RGBFB_B5G6R5PC,	0x0000001f, 0x000007e0, 0x0000f800, 0x00000000, 27, 21, 16,  0, TRUE },
@@ -253,6 +254,8 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     InitSemaphore(&csd->MultiBMLock);
     
     supportedformats = gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats);
+    //kprintf("====== SUPPORTED FORMATS: 0x%x\n", supportedformats);
+    
     rescnt = 0;
     ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
         rescnt++;
@@ -370,7 +373,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	pflist[j].ti_Tag = aHidd_PixFmt_BitMapType;
      	pflist[j].ti_Data = vHidd_BitMapType_Chunky;
     	j++;
-    	pflist[j].ti_Tag = aoHidd_PixFmt_SwapPixelBytes;
+    	pflist[j].ti_Tag = aHidd_PixFmt_SwapPixelBytes;
      	pflist[j].ti_Data = formats[l].endianswap;
     	j++;
      	pflist[j].ti_Tag = TAG_DONE;
@@ -621,9 +624,14 @@ static void doshow(struct uaegfx_staticdata *csd, OOP_Object *bm, struct ViewPor
    	IPTR tags[] = {aHidd_BitMap_Visible, FALSE, TAG_DONE};
         OOP_SetAttrs(bm, (struct TagItem *)tags);
     } else {
+    
+        LOCK_HW
+        
     	/* no display */
     	SetDisplay(csd, FALSE);
     	SetSwitch(csd, FALSE);
+        
+        UNLOCK_HW
     }
 }
 
@@ -683,13 +691,16 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     
     if (!sdata || !ddata)
     {
-        //kprintf("==== copybox: unknown bitmap %p %p\n", sdata, ddata);
+        //kprintf("==== copybox: unknown bitmap %p %p drawmode %d\n", sdata, ddata, mode);
+        //if (!sdata) kprintf("  src: %s\n", OOP_OCLASS(msg->src)->ClassNode.ln_Name ? OOP_OCLASS(msg->src)->ClassNode.ln_Name : "unknown");
+        //if (!ddata) kprintf("  dst: %s\n", OOP_OCLASS(msg->dest)->ClassNode.ln_Name ? OOP_OCLASS(msg->dest)->ClassNode.ln_Name : "unknown");
+         
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         return;
     }
 
     if (sdata->rgbformat != ddata->rgbformat) {
-        //kprintf("==== ocpybox: format mismatch %d %d\n", sdata->rgbformat, ddata->rgbformat);
+        //kprintf("==== ocpybox: format mismatch %d %d drawmode %d\n", sdata->rgbformat, ddata->rgbformat, mode);
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     	return;
     }
@@ -699,7 +710,10 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     LOCK_BITMAP(ddata)
     UNLOCK_MULTI_BITMAP
 
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     if (!sdata->invram || !ddata->invram)
     {
         /* Blit from VRAM to RAM or from RAM to VRAM */
@@ -778,19 +792,28 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
         } /* if (mode == vHidd_GC_DrawMode_Copy) */
         else
         {
+            //if (mode == vHidd_GC_DrawMode_Clear) kprintf(" clear blit %d x %d done by superclass\n", msg->width, msg->height);
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     } /* if (!sdata->invram || !ddata->invram) */
     else
     {
+        //if (mode == vHidd_GC_DrawMode_Clear) kprintf(" clear blit %d x %d done by me\n", msg->width, msg->height);
 
         makerenderinfo(csd, &risrc, sdata);
         makerenderinfo(csd, &ridst, ddata);
         
+        LOCK_HW
+        
         if (!BlitRectNoMaskComplete(csd, &risrc, &ridst,
     	    msg->srcX, msg->srcY, msg->destX, msg->destY,
     	    msg->width, msg->height, modetable[mode], sdata->rgbformat))
+        {
+            //kprintf("== unhandled blit %d x %d drawmode %d. super must help\n", msg->width, msg->height, mode);
     	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        }
+        
+        UNLOCK_HW
     }
     
     UNLOCK_BITMAP(sdata)
@@ -802,7 +825,10 @@ BOOL UAEGFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHid
 {
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    LOCK_HW
     WaitBlitter(csd);
+    UNLOCK_HW
+    
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -818,6 +844,9 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
     OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (IPTR*)&cm);
+    
+    LOCK_HW
+    
     if (cm) {
 	for (i = 0; i < 3; i++) {
 	    HIDDT_Color c;
@@ -835,6 +864,8 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
         pp(csd->boardinfo + PSSO_BoardInfo_MouseImage, p);
     	if (!p) {
     	    Permit();
+            
+            UNLOCK_HW
     	    return FALSE;
     	}
         csd->sprite_width = width;
@@ -873,21 +904,31 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     }
     Permit();
     SetSpriteImage(csd);
+    
+    UNLOCK_HW
+    
     return TRUE;
 }
                              
 BOOL UAEGFXCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
+    
+    LOCK_HW
     pw(csd->boardinfo + PSSO_BoardInfo_MouseX, msg->x + (BYTE)csd->boardinfo[PSSO_BoardInfo_MouseXOffset]);
     pw(csd->boardinfo + PSSO_BoardInfo_MouseY, msg->y + (BYTE)csd->boardinfo[PSSO_BoardInfo_MouseYOffset]);
     SetSpritePosition(csd);
+    UNLOCK_HW
+    
     return TRUE;
 }
 VOID UAEGFXCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
+    
+    LOCK_HW
     SetSprite(csd, msg->visible);
+    UNLOCK_HW
 }
 
 BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CheckMode *msg)
