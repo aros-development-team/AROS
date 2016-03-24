@@ -107,6 +107,8 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
     WORD    	     	 srcx, srcy;    
     LONG    	     	 pixwritten = 0;
 
+    if ((rr->MaxX < rr->MinX) || (rr->MaxY < rr->MinY)) return 0;
+    
     if (NULL != src)
     {
         srcx = src->x;
