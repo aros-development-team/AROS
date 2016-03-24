@@ -285,10 +285,13 @@ struct GadToolsBase_intern
 
 /* extended intuimsg as used by GT_GetIMsg, GT_FilterIMsg, ... */
 
+struct GT_ContextGadget;
+
 struct GT_IntuiMessage
 {
     struct ExtIntuiMessage 	imsg;
     struct IntuiMessage 	* origmsg;
+    struct GT_ContextGadget     * contextgad;
     BOOL 			wasalloced;
 };
 
@@ -317,6 +320,8 @@ struct GT_ContextGadget
     ULONG 			getattrtag;
     ULONG 			setattrtag;
     WORD 			scrollticker;
+    BOOL                        gtmsg_used;
+    BOOL                        killme;
 };
 
 struct GT_GenericGadget

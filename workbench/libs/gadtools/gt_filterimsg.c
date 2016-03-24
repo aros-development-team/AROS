@@ -91,14 +91,27 @@
     
     if (contextgad)
     {
-	rc = &contextgad->gtmsg;
-	
+        if (contextgad->gtmsg_used == FALSE)
+        {
+            contextgad->gtmsg_used = TRUE;
+
+	    rc = &contextgad->gtmsg;
+            /* rc->wasalloced = FALSE; */
+        }
+        else
+        {
+	    rc = AllocMem(sizeof(struct GT_IntuiMessage),MEMF_PUBLIC | MEMF_CLEAR);
+            if (!rc) return NULL;
+            
+            rc->wasalloced = TRUE;
+        }
+
 	/* copy imsg into extended gt intuimessage */
-	
-	rc->imsg = *(struct ExtIntuiMessage *)imsg;
+
+        rc->imsg = *(struct ExtIntuiMessage *)imsg;
 	rc->origmsg = imsg;
-	/* rc->wasalloced = FALSE; */
-	
+        rc->contextgad = contextgad;
+               
 	switch(imsg->Class)
 	{
 	    case IDCMP_GADGETDOWN:
@@ -380,6 +393,7 @@
 	   by GT_ReplyMsg) relies on this extended structure */
 	
 	D(bug("FilterIMsg: no context gadget\n"));
+
 	rc = AllocMem(sizeof(struct GT_IntuiMessage),MEMF_PUBLIC | MEMF_CLEAR);
 	if (rc)
 	{

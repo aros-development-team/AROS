@@ -73,16 +73,32 @@
 	    } /* if ((glist->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) */
 	    else
 	    {
-	        if ( (((struct GT_ContextGadget *)glist)->magic  == CONTEXT_MAGIC) &&
-		     (((struct GT_ContextGadget *)glist)->magic2 == CONTEXT_MAGIC2) )
+                struct GT_ContextGadget *contextgad = (struct GT_ContextGadget *)glist;
+                struct GT_GenericGadget *genericgad = (struct GT_GenericGadget *)glist;
+                
+	        if ( (contextgad->magic  == CONTEXT_MAGIC) &&
+		     (contextgad->magic2 == CONTEXT_MAGIC2) )
 		{
 		    /* This is a GadTools Context Gadget */
 		    
-		    DEBUG_FREEGADGETS(dprintf("FreeGadgets: free context 0x%lx\n", glist));
-		    FreeMem(glist, sizeof(struct GT_ContextGadget));
+                    if (contextgad->gtmsg_used)
+                    {
+                        /* App is calling FreeGadgets() while still holding unreplied GT Messages.
+                           Delay killing of context gad because the gtmsg is embedded in it.
+                           Kill will happen in GT_PostFilterImsg() */
+
+ 		        DEBUG_FREEGADGETS(dprintf("FreeGadgets: delaying freeing of context 0x%lx\n", glist));
+
+                        contextgad->killme = TRUE;
+                    }
+                    else
+                    {
+ 		        DEBUG_FREEGADGETS(dprintf("FreeGadgets: free context 0x%lx\n", glist));
+		        FreeMem(glist, sizeof(struct GT_ContextGadget));
+                    }
 		}
-		else if ( (((struct GT_GenericGadget *)glist)->magic  == GENERIC_MAGIC) &&
-			  (((struct GT_GenericGadget *)glist)->magic2 == GENERIC_MAGIC2) )
+		else if ( (genericgad->magic  == GENERIC_MAGIC) &&
+			  (genericgad->magic2 == GENERIC_MAGIC2) )
 		{
 		    /* This is a GadTools Generic Kind Gadget */
 		    

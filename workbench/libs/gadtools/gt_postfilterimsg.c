@@ -71,6 +71,18 @@
 	{
 	    FreeMem(gtmsg, sizeof(struct GT_IntuiMessage));
 	}
+        else /* if (gtmsg == &gtmsg->contextgad->gtmsg) */
+        {
+            gtmsg->contextgad->gtmsg_used = FALSE;
+            
+            if (gtmsg->contextgad->killme)
+            {
+                /* FreeGadgets() was called while some msg was still unreplied. So
+                   killing of contextgad was delayed until it is safe to do so. */
+
+                FreeMem(gtmsg->contextgad, sizeof(struct GT_ContextGadget));
+            }
+        }
     }
     else
     {
