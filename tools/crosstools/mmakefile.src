@@ -28,6 +28,8 @@ BINUTILS_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
 BINUTILS_EXTRA_OPTS += --disable-werror
 
 GCC_VERSION     = $(TARGET_GCC_VER)
+$(eval UNUSEDREMAINDER := $$$(GCC_VERSION))
+GCC_VERSION_MAJOR := $(subst $(UNUSEDREMAINDER),,$(GCC_VERSION))
 
 GCC_LANGUAGES:=c,c++
 ifneq (no-objc,$(OBJC_TARGET))
@@ -47,6 +49,15 @@ GCC_EXTRA_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
 GCC_EXTRA_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
 GCC_EXTRA_OPTS += --disable-libunwind-exceptions
 else
+# If we are building GCC >= 5, for x86 targets, enable libmpx
+ifeq ($(shell test $(GCC_VERSION_MAJOR) -gt 4; echo $$?),0)
+ifeq ($(AROS_TARGET_CPU),i386)
+GCC_EXTRA_OPTS += --enable-libmpx
+endif
+ifeq ($(AROS_TARGET_CPU),x86_64)
+GCC_EXTRA_OPTS += --enable-libmpx
+endif
+endif
 GCC_EXTRA_OPTS += --with-dwarf2
 endif
 
@@ -70,9 +81,6 @@ GCC_EXTRA_OPTS += --disable-build-with-cxx
 GCC_EXTRA_OPTS += --disable-build-poststage1-with-cxx
 
 GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
-GCC_UNUSED_BUT_SET_VARIABLE := -Wno-unused-but-set-variable
-GCC_ARRAY_BOUNDS            := -Wno-array-bounds
-GCC_ENUM_COMPARE            := -Wno-enum-compare
 
 GDB_VERSION=7.9
 
