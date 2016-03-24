@@ -66,6 +66,7 @@
         %l<cdDuUxX>     LONG                    LONG
         %ll<cdDuUxX>    QUAD                    QUAD
         %i<cdDuUxX>     IPTR                    IPTR
+        %%              -                       -
 
     EXAMPLE
 
@@ -106,6 +107,12 @@
                 iflags = 0;
             }
         } else {
+            /* Ignore '%%' */
+            if (*format == '%') {
+                in_format = FALSE;
+                continue;
+            }
+
             /* Ignore non-argument characters */
             if ((*format >= '0' && *format <= '9')) {
                 argpos = (argpos * 10) + (*format - '0');
