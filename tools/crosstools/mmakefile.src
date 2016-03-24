@@ -50,14 +50,14 @@ GCC_EXTRA_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
 GCC_EXTRA_OPTS += --disable-libunwind-exceptions
 else
 # If we are building GCC >= 5, for x86 targets, enable libmpx
-ifeq ($(shell test $(GCC_VERSION_MAJOR) -gt 4; echo $$?),0)
-ifeq ($(AROS_TARGET_CPU),i386)
-GCC_EXTRA_OPTS += --enable-libmpx
-endif
-ifeq ($(AROS_TARGET_CPU),x86_64)
-GCC_EXTRA_OPTS += --enable-libmpx
-endif
-endif
+# ifeq ($(shell test $(GCC_VERSION_MAJOR) -gt 4; echo $$?),0)
+# ifeq ($(AROS_TARGET_CPU),i386)
+# GCC_EXTRA_OPTS += --enable-libmpx
+# endif
+# ifeq ($(AROS_TARGET_CPU),x86_64)
+# GCC_EXTRA_OPTS += --enable-libmpx
+# endif
+# endif
 GCC_EXTRA_OPTS += --with-dwarf2
 endif
 
