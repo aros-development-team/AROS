@@ -84,7 +84,7 @@ _DevBeginIO( struct AHIRequest* ioreq,
 {
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
-    KPrintF("BeginIO(0x%P)\n", ioreq);
+    KPrintF("BeginIO(0x%P)\n", (IPTR)ioreq);
   }
 
   ioreq->ahir_Std.io_Message.mn_Node.ln_Type = NT_MESSAGE;
@@ -133,7 +133,7 @@ _DevAbortIO( struct AHIRequest* ioreq,
   
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
-    KPrintF("AbortIO(0x%P)", ioreq);
+    KPrintF("AbortIO(0x%P)", (IPTR)ioreq);
   }
 
   iounit = (struct AHIDevUnit *) ioreq->ahir_Std.io_Unit;
@@ -779,7 +779,7 @@ ReadCmd ( struct AHIRequest *ioreq,
   if(iounit->IsRecording)
   {
     AHI_ControlAudio(iounit->AudioCtrl,
-        AHIC_MixFreq_Query, &mixfreq,
+        AHIC_MixFreq_Query, (IPTR)&mixfreq,
         TAG_DONE);
 
     /* Initialize ahir_Frequency for the assembler record routines */

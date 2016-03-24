@@ -99,9 +99,7 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
     else
     {
         BOOL in_use;
-        struct PCIDevice *dev;
         struct HDAudioChip *card;
-        unsigned short uval;
 
         card  = card_base->driverdatas[card_num];
         AudioCtrl->ahiac_DriverData = card;
@@ -119,8 +117,6 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
             return AHISF_ERROR;
         }
     
-        dev = card->pci_dev;
-        
         //bug("AudioCtrl->ahiac_MixFreq = %lu\n", AudioCtrl->ahiac_MixFreq);
         if (AudioCtrl->ahiac_MixFreq < card->frequencies[0].frequency)
             AudioCtrl->ahiac_MixFreq = card->frequencies[0].frequency;
@@ -196,8 +192,6 @@ void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv* AudioCtrl,
 void _AHIsub_Disable(struct AHIAudioCtrlDrv* AudioCtrl,
                      struct DriverBase* AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
-
     // V6 drivers do not have to preserve all registers
 
     Disable();
@@ -211,8 +205,6 @@ void _AHIsub_Disable(struct AHIAudioCtrlDrv* AudioCtrl,
 void _AHIsub_Enable(struct AHIAudioCtrlDrv* AudioCtrl,
                     struct DriverBase* AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
-
     // V6 drivers do not have to preserve all registers
 
     Enable();
@@ -227,23 +219,14 @@ ULONG _AHIsub_Start(ULONG flags,
                     struct AHIAudioCtrlDrv* AudioCtrl,
                     struct DriverBase* AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
     struct HDAudioChip* card = (struct HDAudioChip*) AudioCtrl->ahiac_DriverData;
-    struct PCIDevice *dev = card->pci_dev;
-    UWORD PlayCtrlFlags = 0, RecCtrlFlags = 0;
     ULONG dma_buffer_size = 0;
-    int i;
-    unsigned short uval;
-    UBYTE input_streams = 0;
     struct Stream *input_stream = &(card->streams[0]);
     struct Stream *output_stream = &(card->streams[card->nr_of_input_streams]);
-    UBYTE old_rirb_wp;
 
     if (flags & AHISF_PLAY)
     {
         ULONG dma_sample_frame_size;
-        int i;
-        unsigned short cod, ChannelsFlag = 0;
         
         detect_headphone_change(card);
 
@@ -398,7 +381,6 @@ void _AHIsub_Update(ULONG flags,
                     struct AHIAudioCtrlDrv* AudioCtrl,
                     struct DriverBase* AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
     struct HDAudioChip* card = (struct HDAudioChip*) AudioCtrl->ahiac_DriverData;
 
     card->current_frames = AudioCtrl->ahiac_BuffSamples;
@@ -422,12 +404,8 @@ void _AHIsub_Stop(ULONG flags,
                   struct AHIAudioCtrlDrv* AudioCtrl,
                   struct DriverBase* AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
     struct HDAudioChip* card = (struct HDAudioChip*) AudioCtrl->ahiac_DriverData;
-    struct PCIDevice *dev = card->pci_dev;
 
-    unsigned char val;
-    
     //bug("Stop\n");
 
     if ((flags & AHISF_PLAY) && card->is_playing)
@@ -531,7 +509,7 @@ LONG _AHIsub_GetAttr(ULONG attribute,
           return (LONG) "Davy Wentzler";
 
         case AHIDB_Copyright:
-          return (LONG) "(C) 2010 Stephen Jones, (C) 2010-2011 The AROS Dev Team";
+          return (LONG) "(C) 2010 Stephen Jones, (C) 2010-2016 The AROS Dev Team";
 
         case AHIDB_Version:
           return (LONG) LibIDString;

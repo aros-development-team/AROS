@@ -48,8 +48,6 @@ static ULONG get_response(struct HDAudioChip *card);
 static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device);
 static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device);
 static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device);
-static void write_default_pin_config(UBYTE nid, ULONG data,
-    struct HDAudioChip *card);
 static void set_gpio(UBYTE mask, struct HDAudioChip *card);
 static BOOL interrogate_unknown_chip(struct HDAudioChip *card);
 static UBYTE find_widget(struct HDAudioChip *card, UBYTE type, UBYTE pin_type);
@@ -119,11 +117,8 @@ void micro_delay(unsigned int val)
 
 struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
     struct HDAudioChip* card;
     UWORD command_word;
-    int i;
-    unsigned short uval;
     BOOL success = TRUE;
 
     card = (struct HDAudioChip *) AllocVec(sizeof(struct HDAudioChip), MEMF_PUBLIC | MEMF_CLEAR);
@@ -305,10 +300,6 @@ static void perform_controller_specific_settings(struct HDAudioChip *card)
 
 int card_init(struct HDAudioChip *card)
 {
-    struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-    UWORD uwval;
-    unsigned char pval, byt;
-    long *ptr;
     int i;
 
     if (reset_chip(card) == FALSE)
@@ -390,8 +381,6 @@ static BOOL reset_chip(struct HDAudioChip *card)
 {
     int counter = 0;
     UBYTE ubval = 0;
-    UWORD uwval = 0;
-    int count;
     UBYTE tcsel;
 
     /*
@@ -495,13 +484,7 @@ void codec_discovery(struct HDAudioChip *card)
 
             if (AUDIO_WIDGET_CAPS(widget_caps) == 0x4) // pin complex
             {
-                ULONG config_default = 0;
-
                 D(bug("[HDAudio] PIN: caps = %lx\n", get_parameter(NID, VERB_GET_PARMS_PIN_CAPS, card)));
-                config_default = send_command_12(card->codecnr, NID, VERB_GET_CONFIG_DEFAULT, 0, card);
-
-                D(bug("[HDAudio] PIN: Config default = %lx\n", config_default));
-
                 D(bug("[HDAudio] PIN: Connected = %s\n", is_jack_connected(card, NID) ? "TRUE" : "FALSE"));
             }
 
@@ -571,7 +554,6 @@ static BOOL power_up_all_nodes(struct HDAudioChip *card)
             ULONG subnode_count_response = get_parameter(starting_node + i, VERB_GET_PARMS_NODE_COUNT, card);
             UBYTE subnode_count = subnode_count_response & 0xFF;
             UBYTE sub_starting_node = (subnode_count_response >> 16) & 0xFF;
-            ULONG connections = 0;
 
             audio_found = TRUE;
             card->function_group = starting_node + i;
@@ -954,7 +936,6 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
 {
     BOOL configured = FALSE;
     ULONG vendor_device_id = get_parameter(0x0, VERB_GET_PARMS_VENDOR_DEVICE, card); // get vendor and device ID from root node
-    UBYTE old;
     UWORD vendor = (vendor_device_id >> 16);
     UWORD device = (vendor_device_id & 0xFFFF);
     
@@ -979,7 +960,7 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
     {
         configured = perform_via_specific_settings(card, device);
     }    
-    else if (vendor == 0x111d || vendor == 0x8384 && forceQuery == FALSE) // IDT
+    else if (vendor == 0x111d || (vendor == 0x8384 && forceQuery == FALSE)) // IDT
     {
         configured = perform_idt_specific_settings(card, device);
     }
@@ -1316,19 +1297,6 @@ static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device
 }
 
 
-static void write_default_pin_config(UBYTE nid, ULONG data,
-    struct HDAudioChip *card)
-{
-    UWORD i;
-
-    for (i = 0; i < 4; i++)
-    {
-        send_command_12(card->codecnr, nid, 0x71c + i, (UBYTE)data, card);
-        data >>= 8;
-    }
-}
-
-
 static void update_gpio(UBYTE mask, BOOL on, struct HDAudioChip *card)
 {
     ULONG gpio_data, gpio_enable, gpio_dir;
@@ -1540,6 +1508,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
         nid = card->speaker_nid;
     else if (card->headphone_nid != 0)
         nid = card->headphone_nid;
+    else nid = 0;
 
     if (nid != 0)
         before_front = (UBYTE)send_command_12(card->codecnr, nid,
@@ -1856,7 +1825,9 @@ static void set_frequency_info(struct Freq *freq, UWORD bitnr)
 
 void set_monitor_volumes(struct HDAudioChip *card, double dB)
 {
+#if 0
     int i;
+#endif
     int dB_steps = (int) ((dB + 34.5) / 1.5);
 
     if (dB_steps < 0)
@@ -1927,7 +1898,6 @@ void set_adc_input(struct HDAudioChip *card)
 
 void set_adc_gain(struct HDAudioChip *card, double dB)
 {
-    int i;
     int dB_steps = (int) ( (dB - card->adc_min_gain) / card->adc_step_gain);
 
     if (dB_steps < 0)

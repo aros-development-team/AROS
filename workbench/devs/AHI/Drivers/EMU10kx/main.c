@@ -558,8 +558,10 @@ static int __devinit fx_init(struct emu10k1_card *card)
 {
 	struct patch_manager *mgr = &card->mgr;
 	struct dsp_patch *patch;
+#ifndef AHI
 	struct dsp_rpatch *rpatch;
 	s32 left, right;
+#endif
 	int i;
 	u32 pc = 0;
 	u32 patch_n=0;

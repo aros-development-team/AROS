@@ -172,7 +172,9 @@ int emu10k1_voice_alloc(struct emu10k1_card *card, struct emu_voice *voice)
 {
 	u8 *voicetable = card->voicetable;
 	int i;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	DPF(2, "emu10k1_voice_alloc()\n");
 
@@ -218,7 +220,9 @@ void emu10k1_voice_free(struct emu_voice *voice)
 {
 	struct emu10k1_card *card = voice->card;
 	int i;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	DPF(2, "emu10k1_voice_free()\n");
 

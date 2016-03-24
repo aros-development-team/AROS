@@ -186,7 +186,9 @@ u8 sumVolumeToAttenuation(u32 value)
 ********************************************/
 void emu10k1_writefn0(struct emu10k1_card *card, u32 reg, u32 data)
 {
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	if (reg & 0xff000000) {
 		u32 mask;
@@ -213,7 +215,9 @@ void emu10k1_writefn0(struct emu10k1_card *card, u32 reg, u32 data)
 
 void emu10k1_writefn0_2(struct emu10k1_card *card, u32 reg, u32 data, int size)
 {
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	spin_lock_irqsave(&card->lock, flags);
 
@@ -232,7 +236,9 @@ void emu10k1_writefn0_2(struct emu10k1_card *card, u32 reg, u32 data, int size)
 u32 emu10k1_readfn0(struct emu10k1_card * card, u32 reg)
 {
 	u32 val;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	if (reg & 0xff000000) {
 		u32 mask;
@@ -258,7 +264,9 @@ u32 emu10k1_readfn0(struct emu10k1_card * card, u32 reg)
 
 void emu10k1_timer_set(struct emu10k1_card * card, u16 data)
 {
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	spin_lock_irqsave(&card->lock, flags);
 	outw(data & TIMER_RATE_MASK, card->iobase + TIMER);
@@ -274,7 +282,9 @@ void emu10k1_timer_set(struct emu10k1_card * card, u16 data)
 void sblive_writeptr(struct emu10k1_card *card, u32 reg, u32 channel, u32 data)
 {
 	u32 regptr;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	regptr = ((reg << 16) & A_PTR_ADDRESS_MASK) | (channel & PTR_CHANNELNUM_MASK);
 
@@ -305,7 +315,9 @@ void sblive_writeptr_tag(struct emu10k1_card *card, u32 channel, ...)
 {
 	va_list args;
 
+#ifndef AHI
 	unsigned long flags;
+#endif
         u32 reg;
 
 	va_start(args, channel);
@@ -336,7 +348,9 @@ void sblive_writeptr_tag(struct emu10k1_card *card, u32 channel, ...)
 u32 sblive_readptr(struct emu10k1_card * card, u32 reg, u32 channel)
 {
 	u32 regptr, val;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	regptr = ((reg << 16) & A_PTR_ADDRESS_MASK) | (channel & PTR_CHANNELNUM_MASK);
 
@@ -367,7 +381,9 @@ u32 sblive_readptr(struct emu10k1_card * card, u32 reg, u32 channel)
 void emu10k1_irq_enable(struct emu10k1_card *card, u32 irq_mask)
 {
 	u32 val;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	DPF(2,"emu10k1_irq_enable()\n");
 
@@ -381,7 +397,9 @@ void emu10k1_irq_enable(struct emu10k1_card *card, u32 irq_mask)
 void emu10k1_irq_disable(struct emu10k1_card *card, u32 irq_mask)
 {
         u32 val;
+#ifndef AHI
         unsigned long flags;
+#endif
 
         DPF(2,"emu10k1_irq_disable()\n");
 
@@ -440,7 +458,9 @@ u16 emu10k1_ac97_read(struct ac97_codec *codec, u8 reg)
 {
 	struct emu10k1_card *card = codec->private_data;
 	u16 data;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	spin_lock_irqsave(&card->lock, flags);
 
@@ -473,7 +493,9 @@ void emu10k1_ac97_write(struct ac97_codec *codec, u8 reg, u16 value)
 u16 emu10k1_readac97(struct emu10k1_card *card, u8 reg)
 {
 	u16 data;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	spin_lock_irqsave(&card->lock, flags);
 
@@ -487,7 +509,9 @@ u16 emu10k1_readac97(struct emu10k1_card *card, u8 reg)
 
 void emu10k1_writeac97(struct emu10k1_card *card, u8 reg, u16 value)
 {
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	spin_lock_irqsave(&card->lock, flags);
 
@@ -506,7 +530,9 @@ void emu10k1_writeac97(struct emu10k1_card *card, u8 reg, u16 value)
 
 int emu10k1_mpu_write_data(struct emu10k1_card *card, u8 data)
 {
+#ifndef AHI
 	unsigned long flags;
+#endif
 	int ret;
 
 	if (card->is_audigy) {
@@ -532,7 +558,9 @@ int emu10k1_mpu_write_data(struct emu10k1_card *card, u8 data)
 
 int emu10k1_mpu_read_data(struct emu10k1_card *card, u8 * data)
 {
+#ifndef AHI
 	unsigned long flags;
+#endif
 	int ret;
 
 	if (card->is_audigy) {
@@ -559,7 +587,9 @@ int emu10k1_mpu_read_data(struct emu10k1_card *card, u8 * data)
 int emu10k1_mpu_reset(struct emu10k1_card *card)
 {
 	u8 status;
+#ifndef AHI
 	unsigned long flags;
+#endif
 
 	DPF(2, "emu10k1_mpu_reset()\n");
 	if (card->is_audigy) {

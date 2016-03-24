@@ -44,7 +44,7 @@ BYTE                  AHIDevice     = -1;
 struct AHIIFace      *IAHI          = NULL;
 #endif
 
-static const char version[] = "$VER: AddAudioModes " VERS "\n\r";
+const char version[] = "$VER: AddAudioModes " VERS "\n\r";
 
 #define AHIVERSION 4
 
@@ -148,7 +148,7 @@ main( void )
     return RETURN_FAIL;
   }
 
-  rdargs = ReadArgs( TEMPLATE , (LONG *) &args, NULL );
+  rdargs = ReadArgs( TEMPLATE , (SIPTR *) &args, NULL );
 
   if( rdargs != NULL )
   {

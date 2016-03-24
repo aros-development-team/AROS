@@ -69,7 +69,7 @@ DriverInit( struct DriverBase* ahisubbase )
 
     NewList(&foundCards);
 
-  DOSBase  = OpenLibrary( DOSNAME, 37 );
+  DOSBase  = (struct DosLibrary *)OpenLibrary( DOSNAME, 37 );
 
   if( DOSBase == NULL )
   {
@@ -135,7 +135,7 @@ DriverInit( struct DriverBase* ahisubbase )
             ++SB128Base->cards_found;
 
             devTmp = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-            devTmp->ln_Name = dev;
+            devTmp->ln_Name = (APTR)dev;
             AddTail(&foundCards, devTmp);
         }
     }
@@ -198,7 +198,7 @@ DriverInit( struct DriverBase* ahisubbase )
     {
         Remove(devTmp);
 
-        dev = devTmp->ln_Name;
+        dev = (struct PCIDevice *)devTmp->ln_Name;
         D(bug("[SB128] %s: Preparing card #%d pci obj @ 0x%p\n", __PRETTY_FUNCTION__, card_no, dev));
         SB128Base->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
         

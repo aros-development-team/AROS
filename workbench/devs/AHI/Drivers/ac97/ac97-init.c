@@ -2,8 +2,6 @@
 #include <aros/debug.h>
 #include <asm/io.h>
 
-#include <config.h>
-
 #include "library.h"
 #include "DriverData.h"
 
@@ -70,7 +68,7 @@ static AROS_UFH3(void, Enumerator,
 {
     AROS_USERFUNC_INIT
 
-    ULONG VendorID,ProductID;
+    IPTR VendorID, ProductID, value;
     int i;
 
     OOP_GetAttr(device, aHidd_PCIDevice_ProductID, &ProductID);
@@ -96,9 +94,12 @@ static AROS_UFH3(void, Enumerator,
 
 	    OOP_SetAttrs(device, (struct TagItem *)&attrs);
 
-	    OOP_GetAttr(device, aHidd_PCIDevice_Base0, &ac97Base->mixerbase);
-	    OOP_GetAttr(device, aHidd_PCIDevice_Base1, &ac97Base->dmabase);
-	    OOP_GetAttr(device, aHidd_PCIDevice_INTLine, &ac97Base->irq_num);
+	    OOP_GetAttr(device, aHidd_PCIDevice_Base0, &value);
+	    ac97Base->mixerbase = (ULONG)value;
+	    OOP_GetAttr(device, aHidd_PCIDevice_Base1, &value);
+	    ac97Base->dmabase = (ULONG)value;
+	    OOP_GetAttr(device, aHidd_PCIDevice_INTLine, &value);
+	    ac97Base->irq_num = (ULONG)value;
 
 	    D(bug("[ac97] Mixer IO base %x\n", ac97Base->mixerbase));
     	D(bug("[ac97] DMA IO base %x\n", ac97Base->dmabase));
@@ -140,7 +141,7 @@ static AROS_UFH3(void, Enumerator,
 		D(bug("[ac97] reg %02x = %04x\n", i, ac97Base->mixer_get_reg(ac97Base, i)));
 	    }
 */
-	    outl(ac97Base->PCM_out, ac97Base->dmabase + PO_BDBAR);
+	    outl((ULONG)ac97Base->PCM_out, ac97Base->dmabase + PO_BDBAR);
 	    
 	    D(bug("[ac97] PO_BDBAR=%08x\n", inl(ac97Base->dmabase + PO_BDBAR)));
 	    D(bug("[ac97] PO_REGS=%08x\n", inl(ac97Base->dmabase + PO_CIV)));
@@ -166,7 +167,7 @@ BOOL DriverInit( struct DriverBase* AHIsubBase )
 
     if(DOSBase)
     {
-	ac97Base->oopbase = OpenLibrary(AROSOOP_NAME, 0);
+	ac97Base->oopbase = (APTR)OpenLibrary(AROSOOP_NAME, 0);
 	if (OOPBase)
 	{
 	    __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);

@@ -85,7 +85,6 @@ CloseCAMDPort( struct Hook*         hook,
 	       struct EMU10kxBase*  EMU10kxBase,
 	       struct CloseMessage* msg )
 {
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) EMU10kxBase;
   struct EMU10kxData* dd         = EMU10kxBase->driverdatas[ msg->PortNum ];
 
   emu10k1_irq_disable( &dd->card, INTE_MIDIRXENABLE );
@@ -108,9 +107,7 @@ ActivateCAMDXmit( struct Hook*            hook,
 		  struct EMU10kxBase*     EMU10kxBase,
 		  struct ActivateMessage* msg )
 {
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) EMU10kxBase;
   struct EMU10kxData* dd         = EMU10kxBase->driverdatas[ msg->PortNum ];
-  ULONG               b;
 
 //  KPrintF( "ActivateCAMDXmit(%08lx)\n", msg->PortNum );
 

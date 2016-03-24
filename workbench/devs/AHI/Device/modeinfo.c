@@ -92,19 +92,19 @@ Fixed DizzyTestAudioID(ULONG id, struct TagItem *tags )
   }
 
   AHI_GetAudioAttrs( id, NULL,
-                     AHIDB_Volume,       &volume,
-                     AHIDB_Stereo,       &stereo,
-                     AHIDB_Panning,      &panning,
-                     AHIDB_MultiChannel, &multichannel,
-                     AHIDB_HiFi,         &hifi,
-                     AHIDB_PingPong,     &pingpong,
-                     AHIDB_Record,       &record,
-                     AHIDB_Bits,         &bits,
-                     AHIDB_MaxChannels,  &channels,
-                     AHIDB_MinMixFreq,   &minmix,
-                     AHIDB_MaxMixFreq,   &maxmix,
-                     AHIDB_Realtime,     &realtime,
-                     AHIDB_FullDuplex,   &fullduplex,
+                     AHIDB_Volume,       (IPTR)&volume,
+                     AHIDB_Stereo,       (IPTR)&stereo,
+                     AHIDB_Panning,      (IPTR)&panning,
+                     AHIDB_MultiChannel, (IPTR)&multichannel,
+                     AHIDB_HiFi,         (IPTR)&hifi,
+                     AHIDB_PingPong,     (IPTR)&pingpong,
+                     AHIDB_Record,       (IPTR)&record,
+                     AHIDB_Bits,         (IPTR)&bits,
+                     AHIDB_MaxChannels,  (IPTR)&channels,
+                     AHIDB_MinMixFreq,   (IPTR)&minmix,
+                     AHIDB_MaxMixFreq,   (IPTR)&maxmix,
+                     AHIDB_Realtime,     (IPTR)&realtime,
+                     AHIDB_FullDuplex,   (IPTR)&fullduplex,
                      TAG_DONE );
 
   tstate = tags;
@@ -587,7 +587,7 @@ _AHI_GetAudioAttrsA( ULONG                    id,
 
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH)
   {
-    KPrintF("=>%s\n", rc ? "TRUE" : "FALSE" );
+    KPrintF("=>%s\n", (IPTR) (rc ? "TRUE" : "FALSE"));
   }
 
   return (ULONG) rc;

@@ -22,7 +22,7 @@ void Slave( struct ExecBase* SysBase );
 
 #include <aros/asmcall.h>
 
-AROS_UFH3(LONG, SlaveEntry,
+AROS_UFH3(void, SlaveEntry,
 	  AROS_UFHA(STRPTR, argPtr, A0),
 	  AROS_UFHA(ULONG, argSize, D0),
 	  AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -47,7 +47,6 @@ Slave( struct ExecBase* SysBase )
 {
   struct AHIAudioCtrlDrv* AudioCtrl;
   struct DriverBase*      AHIsubBase;
-  struct VoidBase*        VoidBase;
   BOOL                    running;
   ULONG                   signals;
 
@@ -55,7 +54,6 @@ Slave( struct ExecBase* SysBase )
    * is inside AHIsubBase! */
   AudioCtrl  = (struct AHIAudioCtrlDrv*) FindTask(NULL)->tc_UserData;
   AHIsubBase = (struct DriverBase*) dd->ahisubbase;
-  VoidBase   = (struct VoidBase*) AHIsubBase;
 
   dd->slavesignal = AllocSignal( -1 );
 

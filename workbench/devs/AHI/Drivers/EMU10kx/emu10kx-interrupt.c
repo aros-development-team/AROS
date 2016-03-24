@@ -194,9 +194,8 @@ PlaybackInterrupt( struct EMU10kxData* dd )
     BOOL   skip_mix;
 
     WORD*  src;
-    size_t skip;
     size_t samples;
-    int    i, s;
+    int    s;
     
     skip_mix = CallHookA( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );
 
@@ -428,8 +427,10 @@ RecordInterrupt( struct EMU10kxData* dd )
     RECORD_BUFFER_SAMPLES / 2
   };
 
+#ifdef WORDS_BIGENDIAN
   int   i   = 0;
   WORD* ptr = dd->current_record_buffer;
+#endif
 
 #ifndef __AMIGAOS4__
   // As OS4 can do invalidate only, we don't need to do flushing here.

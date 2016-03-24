@@ -296,7 +296,6 @@ AddLong71( ADDARGS )
   int      i;
   LONG     startpoint, endpoint = 0; // Make compiler happy
   LONG     lastpoint;
-  LONG     scale_mono = ( ScaleLeft + ScaleRight ) / 2;
 
   lastpoint = 0;                      // 0 doesn't affect the StopAtZero code
   
@@ -414,15 +413,9 @@ Add7171( ADDARGS71 )
   LONG     endpointSL = 0, endpointSR  = 0; // Make compiler happy
   LONG     endpointC  = 0, endpointLFE = 0; // Make compiler happy
   LONG     lastpointL,  lastpointR;
-  LONG     lastpointRL, lastpointRR;
-  LONG     lastpointSL, lastpointSR;
-  LONG     lastpointC,  lastpointLFE;
   LONG     scale_mono = ( ScaleLeft + ScaleRight ) / 2;
 
   lastpointL  = lastpointR   = 0;        // 0 doesn't affect the StopAtZero code
-  lastpointRL = lastpointRR  = 0;        // 0 doesn't affect the StopAtZero code
-  lastpointSL = lastpointSR  = 0;        // 0 doesn't affect the StopAtZero code
-  lastpointC  = lastpointLFE = 0;        // 0 doesn't affect the StopAtZero code
 
   for( i = 0; i < Samples; i++)
   {
@@ -477,12 +470,6 @@ Add7171( ADDARGS71 )
 
     lastpointL   = startpointL;
     lastpointR   = startpointR;
-    lastpointRL  = startpointRL;
-    lastpointRR  = startpointRR;
-    lastpointSL  = startpointSL;
-    lastpointSR  = startpointSR;
-    lastpointC   = startpointC;
-    lastpointLFE = startpointLFE;
 
     *dst++ += (LONG) ( ( (LONGLONG) ScaleLeft  * startpointL   ) >> 16 );
     *dst++ += (LONG) ( ( (LONGLONG) ScaleRight * startpointR   ) >> 16 );
@@ -759,7 +746,6 @@ AddLong71B( ADDARGS )
   int      i;
   LONG     startpoint, endpoint = 0; // Make compiler happy
   LONG     lastpoint;
-  LONG     scale_mono = ( ScaleLeft + ScaleRight ) / 2;
 
   lastpoint = 0;                      // 0 doesn't affect the StopAtZero code
   
@@ -877,15 +863,9 @@ Add7171B( ADDARGS71 )
   LONG     endpointSL = 0, endpointSR  = 0; // Make compiler happy
   LONG     endpointC  = 0, endpointLFE = 0; // Make compiler happy
   LONG     lastpointL,  lastpointR;
-  LONG     lastpointRL, lastpointRR;
-  LONG     lastpointSL, lastpointSR;
-  LONG     lastpointC,  lastpointLFE;
   LONG     scale_mono = ( ScaleLeft + ScaleRight ) / 2;
 
   lastpointL  = lastpointR   = 0;        // 0 doesn't affect the StopAtZero code
-  lastpointRL = lastpointRR  = 0;        // 0 doesn't affect the StopAtZero code
-  lastpointSL = lastpointSR  = 0;        // 0 doesn't affect the StopAtZero code
-  lastpointC  = lastpointLFE = 0;        // 0 doesn't affect the StopAtZero code
 
   for( i = 0; i < Samples; i++)
   {
@@ -940,12 +920,6 @@ Add7171B( ADDARGS71 )
 
     lastpointL   = startpointL;
     lastpointR   = startpointR;
-    lastpointRL  = startpointRL;
-    lastpointRR  = startpointRR;
-    lastpointSL  = startpointSL;
-    lastpointSR  = startpointSR;
-    lastpointC   = startpointC;
-    lastpointLFE = startpointLFE;
 
     *dst++ += (LONG) ( ( (LONGLONG) ScaleLeft  * startpointL   ) >> 16 );
     *dst++ += (LONG) ( ( (LONGLONG) ScaleRight * startpointR   ) >> 16 );

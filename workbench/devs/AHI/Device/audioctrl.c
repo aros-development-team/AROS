@@ -231,7 +231,8 @@ CreateAudioCtrl(struct TagItem *tags)
       {
         char driver_name[128];
 
-        audioctrl->ac.ahiac_Flags=PackBoolTags(GetTagData(AHIDB_Flags,0,dbtags),dbtags,boolmap);
+        audioctrl->ac.ahiac_Flags=PackBoolTags(GetTagData(AHIDB_Flags,0,
+            dbtags),dbtags,(struct TagItem *)boolmap);
 
         if(AHIBase->ahib_Flags & AHIBF_CLIPPING)
         {

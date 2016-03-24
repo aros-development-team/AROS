@@ -1,6 +1,6 @@
 /*
     Copyright © 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -58,7 +58,7 @@ struct MsgPort *replymp = NULL;
 void AddResetHandler(struct CardData *card);
 
 static const unsigned long IO_PWR_MANAGEMENT = 0xdd00;
-static const unsigned long IO_HW_MONITOR = 0xec00;
+//static const unsigned long IO_HW_MONITOR = 0xec00;
 static const unsigned long IO_SGD = 0xdc00;
 static const unsigned long IO_FM = 0xe000;
 static const unsigned long IO_MIDI = 0xe400;
@@ -125,11 +125,7 @@ struct CardData*
 AllocDriverData( struct PCIDevice *    dev,
 		 struct DriverBase* AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* dd;
-  UWORD               command_word;
-  int i;
-  unsigned short uval;
 
   // FIXME: This should be non-cachable, DMA-able memory
   dd = AllocVec( sizeof( *dd ), MEMF_PUBLIC | MEMF_CLEAR );
@@ -156,7 +152,7 @@ AllocDriverData( struct PCIDevice *    dev,
   dd->playback_interrupt.is_Node.ln_Pri  = 0;
   dd->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
 #ifdef __AROS__
-  dd->playback_interrupt.is_Code         = playbackinterrupt;
+  dd->playback_interrupt.is_Code         = (APTR)playbackinterrupt;
 #else
   dd->playback_interrupt.is_Code         = PlaybackInterrupt;
 #endif
@@ -166,7 +162,7 @@ AllocDriverData( struct PCIDevice *    dev,
   dd->record_interrupt.is_Node.ln_Pri  = 0;
   dd->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
 #ifdef __AROS__
-  dd->record_interrupt.is_Code         = recordinterrupt;
+  dd->record_interrupt.is_Code         = (APTR)recordinterrupt;
 #else
   dd->record_interrupt.is_Code         = RecordInterrupt;
 #endif
@@ -291,8 +287,6 @@ FreeDriverData( struct CardData* dd,
 
 void channel_reset(struct CardData *card)
 {
-    struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-    
         pci_outb(VIA_REG_CTRL_TERMINATE /*| VIA_REG_CTRL_RESET*/, VIA_REG_OFFSET_CONTROL, card);
         pci_inb(VIA_REG_OFFSET_CONTROL, card);
         udelay(50);
@@ -361,10 +355,12 @@ BOOL ac97_reset( struct PCIDevice *via686b_audio)
 int card_init(struct CardData *card)
 {
    struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
+#if 0
    unsigned short cod, uval;
    unsigned char pval, byt;
    long *ptr;
    int teller = 0;
+#endif
    ULONG val;
    struct PCIDevice *via686b_ACPI;
    BOOL 			aclink	= FALSE;
@@ -391,9 +387,9 @@ int card_init(struct CardData *card)
 
    if (via686b_ACPI)
    {
+#ifdef __amigaos4__
       BOOL lock;
 
-#ifdef __amigaos4__
       lock = via686b_ACPI->Lock( PCI_LOCK_SHARED );
       if (lock == FALSE)
       {
@@ -796,8 +792,6 @@ static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBa
 static ULONG ResetHandler(struct CardData *card)
 #endif
 {
-    struct PCIDevice *dev = card->pci_dev;
-    
     unsigned char val = VIA_REG_CTRL_TERMINATE;
     
     pci_outb(val, VIA_REG_OFFSET_CONTROL, card);
