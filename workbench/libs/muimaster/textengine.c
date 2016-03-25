@@ -331,6 +331,7 @@ static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
             zc->text = t;
             zune_text_chunk_new(zc);
             zc->text_start = t + 1;
+            break;
         }
     case 'O':                  /* pointer from List_CreateImage */
         {
