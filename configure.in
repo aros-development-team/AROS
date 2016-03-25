@@ -86,12 +86,29 @@ dnl The idea here is to find out all the information we need about the
 dnl host. This means things like tools for building directory structures,
 dnl copying files around and the like.
 
+default_c_compilers="gcc clang cc"
+AC_ARG_WITH(c-compiler,AC_HELP_STRING([--with-c-compiler=VERSION],[Use specified c compiler for building AROS]),use_c_compiler="$withval",use_c_compiler="")
+if test "$use_c_compiler" = ""; then
+    host_c_compilers="$default_c_compilers"
+else
+    host_c_compilers="$use_c_compiler"
+fi
+
+default_cxx_compilers="g++ clang++ c++"
+AC_ARG_WITH(cxx-compiler,AC_HELP_STRING([--with-cxx-compiler=VERSION],[Use specified c++ compiler building AROS]),use_cxx_compiler="$withval",use_cxx_compiler="")
+if test "$use_cxx_compiler" = ""; then
+        host_cxx_compilers="$default_cxx_compilers"
+else
+    host_cxx_compilers="$use_cxx_compiler"
+fi
+
+
 # The first step is to find the host binaries.
 # Check for a compiler.
 # Due to a bug in autoconf check for c++ compiler first.
 # For mor info see, http://osdir.com/ml/bug-autoconf-gnu/2010-05/msg00001.html.
-AC_PROG_CXX([g++ clang++ c++])
-AC_PROG_CC([gcc clang cc])
+AC_PROG_CXX([${host_cxx_compilers}])
+AC_PROG_CC([${host_c_compilers}])
 AC_PROG_CC_STDC
 AC_PROG_CPP
 
