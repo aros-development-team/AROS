@@ -107,10 +107,15 @@ AROS_ANDROID_ANTAPK := @aros_android_antapk@
 
 # Optional components
 
+
+
 # Defined as 'yes' if we can build our own toolchain.
 # This is a prerequisite for ObjectiveC and C++ support,
 # since they depend on the AROS C Library
 AROS_TARGET_TOOLCHAIN := @aros_target_toolchain@
+
+# The toolchain family to build
+AROS_TOOLCHAIN := @aros_toolchain@
 
 # Bootloader to use on platforms that support it
 AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
