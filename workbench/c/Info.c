@@ -508,13 +508,11 @@ void PrintNum(ULONG num)
             }
         }
 
-        IPTR args[] = {num, x, fmt};
-        VLPrintf(BIGNUMFMT, "%5ld.%ld%lc", args);
+        VLPrintf(BIGNUMFMT, "%5ld.%ld%lc", num, x, fmt);
     } 
     else 
     {
-        IPTR args[] = { num };
-        VLPrintf(SMALLNUMFMT, "%7ldK", args);
+        VLPrintf(SMALLNUMFMT, "%7ldK", num);
     }
 }
 
@@ -686,13 +684,13 @@ void doInfo()
 
                             D(bug("Printing device\n"));
                             
-                            VLPrintf(~0, nfmtstr, (IPTR*) &unit);
-                            VLPrintf(DEVTITLE, "    Size    Used    Free Full Errs   State    Type    Name\n", NULL);
+                            VLPrintf(~0, nfmtstr, unit);
+                            VLPrintf(DEVTITLE, "    Size    Used    Free Full Errs   State    Type    Name\n");
                             
                             first = FALSE;
                         }
                         
-                        VLPrintf(~0, nfmtstr, (IPTR*) &name);
+                        VLPrintf(~0, nfmtstr, name);
 
                         D(bug("Locking \"%s\"\n", name));
                         lock = Lock(name, SHARED_LOCK);
@@ -735,11 +733,11 @@ void doInfo()
                             D(bug("Got info on %s\n", name));
 
                             if (id->id_DiskType == ID_NO_DISK_PRESENT) {
-                                VLPrintf(~0, " No disk present\n", NULL);
+                                VLPrintf(~0, " No disk present\n");
                             } else if (id->id_DiskType == ID_NOT_REALLY_DOS) {
-                                VLPrintf(~0, " Not a DOS disk\n", NULL);
+                                VLPrintf(~0, " Not a DOS disk\n");
                             } else if (id->id_DiskType == ID_UNREADABLE_DISK) {
-                                VLPrintf(~0, " Unreadable disk\n", NULL);
+                                VLPrintf(~0, " Unreadable disk\n");
                             } else {
                                 x = ComputeKBytes(id->id_NumBlocks, id->id_BytesPerBlock);
                                 y = ComputeKBytes(id->id_NumBlocksUsed, id->id_BytesPerBlock);
@@ -773,34 +771,29 @@ void doInfo()
                                     y = idn->DosType;
 
                                 {
-                                    IPTR args[] = {
-                                    x,
-                                    id->id_NumSoftErrors,
-                                    ((id->id_DiskState >= ID_WRITE_PROTECTED) && (id->id_DiskState <= ID_VALIDATED)) ?
-                                    (IPTR) dstate[id->id_DiskState - ID_WRITE_PROTECTED] : (IPTR) "",
-                                    (IPTR) GetFSysStr(y),
-                                    (IPTR) name};
-                                     VLPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n", args);
+                                     VLPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n",
+                                              x, id->id_NumSoftErrors,
+                                              ((id->id_DiskState >= ID_WRITE_PROTECTED) && (id->id_DiskState <= ID_VALIDATED)) ? (const char *)dstate[id->id_DiskState - ID_WRITE_PROTECTED] : (const char *)"",
+                                              GetFSysStr(y),
+                                              name);
                                 }
 
                                 if(blocks)
                                 {
-                                    IPTR args[] = {
-                                        id->id_NumBlocks,
-                                        id->id_NumBlocksUsed,
-                                        id->id_NumBlocks-id->id_NumBlocksUsed,
-                                        id->id_BytesPerBlock};
                                     VLPrintf(BLOCKSSTR,
                                             "\nTotal blocks: %-10ld  Blocks used: %ld\n"
                                             " Blocks free: %-10ld    Blocksize: %ld\n",
-                                            args);
+                                            id->id_NumBlocks,
+                                            id->id_NumBlocksUsed,
+                                            id->id_NumBlocks-id->id_NumBlocksUsed,
+                                            id->id_BytesPerBlock);
                                 }
                             }
                         }
                         else
                         {
                             D(bug("Info failure\n"));
-                            VLPrintf(~0, "\n", NULL);
+                            VLPrintf(~0, "\n");
                         }
                             
                         {
@@ -813,7 +806,7 @@ void doInfo()
                             
                             if (err && showall)
                             {
-                                VLPrintf(~0, nfmtstr, (IPTR*) &name);
+                                VLPrintf(~0, nfmtstr, name);
                                 PrintFault(err, NULL);
                             }
                         }
@@ -827,7 +820,7 @@ void doInfo()
                 if(!first)
                     PutStr("\n");
                 
-                VLPrintf(DISKSTITLE, "Volumes\n", NULL);
+                VLPrintf(DISKSTITLE, "Volumes\n");
                 
                 /* find the longest volume name */
                 for(MaxLen = 15, idn = head; idn; idn = idn->Next)
@@ -847,11 +840,8 @@ void doInfo()
                 {
                     if(idn->IsVolume)
                     {
-                        IPTR args[] = {
-                            (IPTR) idn->Name,
-                            (IPTR) GetStrFromCat(MOUNTEDSTR, "[Mounted]")};
-                            // idn->Task ? GetStrFromCat(MOUNTEDSTR, "[Mounted]") : ""); TODO
-                        VLPrintf(VOLNAMEFMTSTR, nfmtstr, args);
+                        VLPrintf(VOLNAMEFMTSTR, nfmtstr, idn->Name,
+                                                idn->Task ? (const char *)GetStrFromCat(MOUNTEDSTR, "[Mounted]") : (const char *)"");
                         
                     if(idn->VolumeDate.ds_Days != 0)
                     {
@@ -892,8 +882,7 @@ void doInfo()
                                     DateToStr(&dt);
                                 }
                                 
-                                IPTR args[] = {(IPTR) StrDay, (IPTR) StrDate, (IPTR) StrTime};
-                                VLPrintf(DATEFMTSTR, "created %.3s, %-10s %s", args);
+                                VLPrintf(DATEFMTSTR, "created %.3s, %-10s %s", StrDay, StrDate, StrTime);
                             }
                         }
                     }
