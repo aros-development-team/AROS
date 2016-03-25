@@ -1,1 +1,2 @@
 SET(AROS 1)
+SET(AMIGA 1)
