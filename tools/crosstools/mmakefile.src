@@ -102,13 +102,13 @@ gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_
 icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
 gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
 
-#MM- tools-crosstools : tools-crosstools-$(AROS_TARGET_CPU)
+#MM- tools-crosstools : tools-crosstools-$(AROS_TOOLCHAIN)-$(AROS_TARGET_CPU)
 
-#MM- tools-crosstools-m68k   : tools-crosstools-gcc crosstools-gcc
-#MM- tools-crosstools-i386   : tools-crosstools-gcc crosstools-gcc
-#MM- tools-crosstools-x86_64 : tools-crosstools-gcc crosstools-gcc
-#MM- tools-crosstools-ppc    : tools-crosstools-gcc crosstools-gcc
-#MM- tools-crosstools-arm    : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-m68k   : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-i386   : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-x86_64 : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-ppc    : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-arm    : tools-crosstools-gcc crosstools-gcc
 
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
 #MM                        tools-crosstools-gmp \
