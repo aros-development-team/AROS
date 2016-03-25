@@ -8860,7 +8860,7 @@ else
     # Note that 'normally', aros_kernel_* overrides will be
     # empty, unless specified in the per-arch sections above.
     if test "x$aros_kernel_cpp" = "x"; then
-        aros_kernel_cpp=${kernel_tool_prefix}cpp
+        aros_kernel_cpp=${kernel_tool_prefix}${CPP}
     fi
 
 if test "$aros_kernel_cpp${kernel_tool_version}" = ""; then
@@ -9039,7 +9039,7 @@ fi
     as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
     if test "x$aros_kernel_cc" = "x"; then
-        aros_kernel_cc=${kernel_tool_prefix}gcc
+        aros_kernel_cc=${kernel_tool_prefix}${CC}
     fi
 
 if test "$aros_kernel_cc${kernel_tool_version}" = ""; then
@@ -9218,7 +9218,7 @@ fi
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
     if test "x$aros_kernel_cxx" = "x"; then
-        aros_kernel_cxx=${kernel_tool_prefix}g++
+        aros_kernel_cxx=${kernel_tool_prefix}${CXX}
     fi
 
 if test "$aros_kernel_cxx${kernel_tool_version}" = ""; then

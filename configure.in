@@ -1895,17 +1895,17 @@ else
     # Note that 'normally', aros_kernel_* overrides will be
     # empty, unless specified in the per-arch sections above.
     if test "x$aros_kernel_cpp" = "x"; then
-        aros_kernel_cpp=${kernel_tool_prefix}cpp
+        aros_kernel_cpp=${kernel_tool_prefix}${CPP}
     fi
     AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp${kernel_tool_version})
     AROS_REQUIRED(cpp,$aros_kernel_cpp)
     if test "x$aros_kernel_cc" = "x"; then
-        aros_kernel_cc=${kernel_tool_prefix}gcc
+        aros_kernel_cc=${kernel_tool_prefix}${CC}
     fi
     AROS_TOOL_KERNEL(aros_kernel_cc,cc,$aros_kernel_cc${kernel_tool_version})
     AROS_REQUIRED(cc,$aros_kernel_cc)
     if test "x$aros_kernel_cxx" = "x"; then
-        aros_kernel_cxx=${kernel_tool_prefix}g++
+        aros_kernel_cxx=${kernel_tool_prefix}${CXX}
     fi
     AROS_TOOL_KERNEL(aros_kernel_cxx,cxx,$aros_kernel_cxx${kernel_tool_version})
     # If it's set, make sure it's really there
