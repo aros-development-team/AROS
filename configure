@@ -756,6 +756,7 @@ kernel_cflags_iquote_end
 kernel_cflags_iquote
 host_cflags_iquote_end
 host_cflags_iquote
+aros_toolchain
 aros_target_nostdlib_ldflags
 aros_target_detach_ldflags
 aros_target_nix_ldflags
@@ -894,6 +895,7 @@ ac_user_opts='
 enable_option_checking
 with_c_compiler
 with_cxx_compiler
+with_toolchain
 enable_build_type
 enable_debug
 enable_distcc
@@ -1617,6 +1619,8 @@ Optional Packages:
                           Use specified c compiler for building AROS
   --with-cxx-compiler=VERSION
                           Use specified c++ compiler building AROS
+  --with-toolchain=family Which toolchain family to crosscompile with
+                          (defaults to gnu)
   --with-kernel-gcc-version=VERSION
                           Use gcc-VERSION for building bootstrap
   --with-optimization=FLAGS
@@ -4230,6 +4234,19 @@ $as_echo "no" >&6; }
 fi
 
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Which toolchain family to use ..." >&5
+$as_echo_n "checking Which toolchain family to use ...... " >&6; }
+
+# Check whether --with-toolchain was given.
+if test "${with_toolchain+set}" = set; then :
+  withval=$with_toolchain; aros_toolchain="$withval"
+else
+  aros_toolchain="gnu"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_toolchain" >&5
+$as_echo "$aros_toolchain" >&6; }
 
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
@@ -12987,13 +13004,14 @@ aros_target_nostdlib_ldflags=-nostdlib
 
 
 # Target tools
+
 if test "$aros_target_toolchain" != "yes"; then
     prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
     if test "$GCC" = "yes"; then
         aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
     fi
 else
-    # We do not know which gcc version we are going to build and what we need to know
+    # We do not know which c compiler version we are going to build and what we need to know
     # here is different for different versions so this will be set later during the
     # build of crosstools.
     prefix="$AROS_CROSSTOOLSDIR/${aros_target_cpu}-aros-"
