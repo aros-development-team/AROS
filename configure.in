@@ -117,6 +117,10 @@ AC_CHECK_PROGS(AWK,[gawk nawk])
 AROS_REQUIRED(gawk,$AWK)
 AROS_PROG(MMAKE,mmake)
 
+AC_MSG_CHECKING([Which toolchain family to use ...])
+AC_ARG_WITH(toolchain,AC_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="gnu")
+AC_MSG_RESULT($aros_toolchain)
+
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
 
@@ -2107,13 +2111,14 @@ AC_SUBST(aros_target_detach_ldflags,-detach)
 AC_SUBST(aros_target_nostdlib_ldflags,-nostdlib)
 
 # Target tools
+AC_SUBST(aros_toolchain)
 if test "$aros_target_toolchain" != "yes"; then
     prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
     if test "$GCC" = "yes"; then
         aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
     fi
 else
-    # We do not know which gcc version we are going to build and what we need to know
+    # We do not know which c compiler version we are going to build and what we need to know
     # here is different for different versions so this will be set later during the
     # build of crosstools.
     prefix="$AROS_CROSSTOOLSDIR/${aros_target_cpu}-aros-"
