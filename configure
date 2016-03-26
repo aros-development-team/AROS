@@ -2768,9 +2768,10 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
-# Default version of gnu tools to use
+# Default versions for the gnu tools we build
 default_gcc_version="4.6.4"
 default_binutils_version="2.23.2"
+toolchain_needs_sysroot=no
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -4250,6 +4251,7 @@ $as_echo "$aros_toolchain" >&6; }
 
 case "$aros_toolchain" in
     *llvm*)
+        toolchain_needs_sysroot=yes
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
         toolchain_cpp_preprocessor="clang"
@@ -8503,7 +8505,7 @@ else
     AROS_CROSSTOOLSDIR="$aros_toolchain_install"
     PATH="$AROS_CROSSTOOLSDIR:$PATH"
     if test "$crosstools_guess" = "no" ; then
-        aros_config_sysroot="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development"
+        toolchain_needs_sysroot=yes
 
         if test "x-$aros_flavour" != "x-emulation" -a "x-$aros_flavour" != "x-emulcompat" ; then
             aros_kernel_sysroot = $aros_config_sysroot
@@ -8512,6 +8514,14 @@ else
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
 $as_echo "$AROS_CROSSTOOLSDIR" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking If we need to use --sysroot" >&5
+$as_echo_n "checking If we need to use --sysroot... " >&6; }
+if test "$toolchain_needs_sysroot" = "yes" ; then
+    aros_config_sysroot="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $toolchain_needs_sysroot" >&5
+$as_echo "$toolchain_needs_sysroot" >&6; }
 
 #-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target binutils version to use" >&5
