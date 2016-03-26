@@ -1205,6 +1205,13 @@ int main(void)
                                 "This is a text object\n\33lLeft \33bbold\33n\n"
                                 "\33rRight",
                             End,
+                        Child, TextObject,
+                            TextFrame,
+                            /* Test for a bug with pen specifications as reported here:
+                               https://sourceforge.net/p/aros/bugs/487/
+                            */
+                            MUIA_Text_Contents, "This is a \33P[3]text \33P[]object \33P[1]with pen specifications",
+                            End,
                         Child, RectangleObject,
                             MUIA_VertWeight, 0,
                                 /* Seems to be not supported properly as orginal MUI
