@@ -306,6 +306,8 @@ crosstools-llvm-prerequisites :
 
 #MM- tools-crosstools-llvm-i386   : crosstools-llvm-quick
 #MM- tools-crosstools-llvm-x86_64 : crosstools-llvm-quick
+#MM- tools-crosstools-llvm-ppc    : crosstools-llvm-quick
+#MM- tools-crosstools-llvm-arm    : crosstools-llvm-quick
 
 #MM crosstools-llvm-quick : crosstools-llvm-prerequisites
 
