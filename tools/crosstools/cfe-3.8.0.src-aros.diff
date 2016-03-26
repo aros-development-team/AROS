@@ -1,0 +1,29 @@
+diff -ruN cfe-3.8.0.src/lib/Frontend/InitHeaderSearch.cpp cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp
+--- cfe-3.8.0.src/lib/Frontend/InitHeaderSearch.cpp	2015-12-30 03:40:23.000000000 +0000
++++ cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2016-03-26 05:57:38.334509717 +0000
+@@ -210,6 +210,7 @@
+ 
+   if (HSOpts.UseStandardSystemIncludes) {
+     switch (os) {
++    case llvm::Triple::AROS:
+     case llvm::Triple::CloudABI:
+     case llvm::Triple::FreeBSD:
+     case llvm::Triple::NetBSD:
+@@ -255,6 +256,9 @@
+   }
+ 
+   switch (os) {
++  case llvm::Triple::AROS: {
++    break;
++  }
+   case llvm::Triple::Linux:
+     llvm_unreachable("Include management is handled in the driver.");
+ 
+@@ -317,6 +321,7 @@
+   }
+ 
+   switch (os) {
++  case llvm::Triple::AROS:
+   case llvm::Triple::CloudABI:
+   case llvm::Triple::RTEMS:
+   case llvm::Triple::NaCl:
