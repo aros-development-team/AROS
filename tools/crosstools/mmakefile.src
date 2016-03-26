@@ -1,5 +1,7 @@
 include $(TOP)/config/make.cfg
 
+LN ?= ln
+
 GMP_VERSION=6.0.0a
 ISL_VERSION=0.14
 MPFR_VERSION=3.1.2
@@ -259,3 +261,54 @@ tools-crosstools-gdb :
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
         extraoptions="$(GDB_EXTRA_OPTS)"
+
+
+#
+# LLVM toolchain
+#
+
+LLVM_VERSION      :=3.8.0
+LLVM_REPOSITORY   := http://llvm.org/releases/$(LLVM_VERSION)
+LLVM_ARCHBASE     := llvm-$(LLVM_VERSION).src
+CLANG_ARCHBASE    := cfe-$(LLVM_VERSION).src
+
+LLVM_TARGETS      := "X86;ARM;PowerPC"
+LLVM_HOST         := "$(AROS_TARGET_CPU)"
+
+LLVM_CMAKETARGET  :=
+LLVM_CMAKEOPTIONS := -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) -DLLVM_TARGET_ARCH=$(LLVM_HOST) 
+
+%fetch mmake=crosstools-clang-fetch archive=$(CLANG_ARCHBASE)  \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/clang
+
+%create_patch mmake=crosstools-clang-create-patch \
+    archive=$(CLANG_ARCHBASE) suffixes="tar.xz" \
+    destination=$(HOSTDIR)/Ports/host/clang
+
+%fetch mmake=crosstools-llvm-fetch archive=$(LLVM_ARCHBASE) \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm
+
+%create_patch mmake=crosstools-llvm-create-patch \
+    archive=$(LLVM_ARCHBASE) suffixes="tar.xz" \
+    destination=$(HOSTDIR)/Ports/host/llvm
+
+#MM crosstools-llvm-fetch : crosstools-clang-fetch
+
+#MM crosstools-llvm-prerequisites : setup crosstools-llvm-fetch
+
+#MM
+crosstools-llvm-prerequisites :
+	@$(IF) ! $(TEST) -d $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)/tools/clang ; then \
+	    $(LN) -s  $(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE) $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)/tools/clang ; \
+	fi
+
+#MM- tools-crosstools-llvm-i386   : crosstools-llvm-quick
+#MM- tools-crosstools-llvm-x86_64 : crosstools-llvm-quick
+
+#MM crosstools-llvm-quick : crosstools-llvm-prerequisites
+
+%build_with_cmake mmake=crosstools-llvm package=llvm srcdir=$(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE) \
+    	prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
+	extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host
