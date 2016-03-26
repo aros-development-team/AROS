@@ -2951,7 +2951,7 @@ ifeq (%(compiler),host)
     BD_LDFLAGS   := -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)
     BD_CFLAGS := $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include
     BD_CXXFLAGS := $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include
-    %(mmake)-cmake_opts  := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_COMPILER="$(HOST_CC)" -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
+    %(mmake)-cmake_opts  := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(HOST_CC)" -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
     ifeq (%(package),)
         %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)
     else
