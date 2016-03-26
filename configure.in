@@ -121,6 +121,26 @@ AC_MSG_CHECKING([Which toolchain family to use ...])
 AC_ARG_WITH(toolchain,AC_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="gnu")
 AC_MSG_RESULT($aros_toolchain)
 
+case "$aros_toolchain" in
+    *llvm*)
+        toolchain_c_compiler="clang"
+        toolchain_cxx_compiler="clang++"
+        toolchain_cpp_preprocessor="clang"
+        ;;
+    *gnu*)
+        toolchain_c_compiler="gcc"
+        toolchain_cxx_compiler="g++"
+        toolchain_cpp_preprocessor="cpp"
+        ;;
+    *)
+        AC_MSG_WARN("Unknown toolchain family!")
+        toolchain_c_compiler="cc"
+        toolchain_cxx_compiler="c++"
+        toolchain_cpp_preprocessor="cpp"
+        ;;
+esac
+
+
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
 
@@ -1603,7 +1623,7 @@ AC_MSG_RESULT($target_binutils_version)
 AC_DEFUN([CROSS_GCC_VERSION], [
   target_gcc_version=""
   AC_CACHE_CHECK([gcc version],[ax_cv_gcc_version],[
-    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}cpp -dumpversion`"
+    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor} -dumpversion`"
     AS_IF([test "x$ax_cv_gcc_version" = "x"],[
       ax_cv_gcc_version=""
     ])
@@ -1962,9 +1982,9 @@ if test "$aros_target_toolchain" = "yes"; then
     AC_MSG_RESULT([$target_tool_prefix])
     # We are building AROS crosstools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
-    orig_target_cc="${tmp_tool_prefix}gcc${target_tool_version}"
-    orig_target_cxx="${tmp_tool_prefix}g++${target_tool_version}"
-    orig_target_cpp="${tmp_tool_prefix}cpp"
+    orig_target_cc="${tmp_tool_prefix}${toolchain_c_compiler}${target_tool_version}"
+    orig_target_cxx="${tmp_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}"
+    orig_target_cpp="${tmp_tool_prefix}${toolchain_cpp_preprocessor}"
     orig_target_ld="${tmp_tool_prefix}ld"
     orig_target_as="${tmp_tool_prefix}as"
     orig_target_ar="${tmp_tool_prefix}ar"
@@ -1981,11 +2001,11 @@ else
 
     AC_MSG_RESULT([$aros_tool_prefix])
     # We are *not* building AROS crosstools - use the AROS or ELF tools
-    AROS_TOOL_TARGET(orig_target_cpp,cpp,${aros_tool_prefix}cpp${target_tool_version})
+    AROS_TOOL_TARGET(orig_target_cpp,cpp,${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version})
     AROS_REQUIRED(cpp,$orig_target_cpp)
-    AROS_TOOL_TARGET(orig_target_cc,gcc,${aros_tool_prefix}gcc${target_tool_version})
+    AROS_TOOL_TARGET(orig_target_cc,gcc,${aros_tool_prefix}${toolchain_c_compiler}${target_tool_version})
     AROS_REQUIRED(cc,$orig_target_cc)
-    AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}g++${target_tool_version})
+    AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}${toolchain_cxx_compiler}${target_tool_version})
     AROS_REQUIRED(cxx,$orig_target_cxx)
     AROS_TOOL_TARGET(orig_target_ld,gcc,${aros_tool_prefix}ld)
     AROS_REQUIRED(ld,$orig_target_ld)
@@ -2124,9 +2144,9 @@ else
     prefix="$AROS_CROSSTOOLSDIR/${aros_target_cpu}-aros-"
     aros_target_cc_path=@aros_target_cc_path@
 fi
-aros_target_cpp="${prefix}cpp"
-aros_target_cc="${prefix}gcc"
-aros_target_cxx="${prefix}g++"
+aros_target_cpp="${prefix}${toolchain_cpp_preprocessor}"
+aros_target_cc="${prefix}${toolchain_c_compiler}"
+aros_target_cxx="${prefix}${toolchain_cxx_compiler}"
 aros_target_as="${prefix}as"
 aros_target_ld="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld"
 aros_target_ar="${prefix}ar $aros_target_ar_flags"
@@ -2240,7 +2260,7 @@ if test "$crosstools" != "yes"; then
     fi
     AC_MSG_RESULT($aros_target_cc_includes)
 else
-    # We do not know which gcc version we are going to build and what we need to know
+    # We do not know which c compiler version we are going to build and what we need to know
     # here is different for different versions so this will be set later during the
     # build of crosstools.
     aros_target_cc_includes=@aros_target_cc_includes@
@@ -2258,7 +2278,7 @@ AC_MSG_CHECKING([whether ${CC} accepts -iquote])
 if test "x-$crosstools" != "x-yes"; then
     AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
 else
-    # we do know it is supported for the smallest version of gcc we are going to build
+    # we do know it is supported for the smallest version of ${toolchain_c_compiler} we are going to build
     # we assume it's also supported by later versions
     has_iquote=yes
 fi
@@ -2631,7 +2651,7 @@ fi
 AC_MSG_RESULT($dbus)
 
 if test "$use_kernel_cc_wrapper" = "yes" ; then
-    aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc"
+    aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}"
 fi
 
 dnl --------------------------------------------------------------------
@@ -2970,7 +2990,7 @@ if test "${aros_target_toolchain}" = "no"; then
             mkdir -p $prefix
             prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
 
-            chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-cpp
+            chmod a+x ${prefix2}-${toolchain_c_compiler} ${prefix2}-${toolchain_cxx_compiler} ${prefix2}-${toolchain_cpp_preprocessor}
         ],
         [
             aros_host_exe_suffix=${aros_host_exe_suffix}
@@ -2982,9 +3002,9 @@ if test "${aros_target_toolchain}" = "no"; then
     )
     AC_CONFIG_FILES(
         ${aros_targetcfg_dir}/specs:config/specs.in
-        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in
-        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
-        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cpp_preprocessor}:scripts/aros-${toolchain_cpp_preprocessor}.in
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_c_compiler}:scripts/aros-${toolchain_c_compiler}.in
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cxx_compiler}:scripts/aros-${toolchain_cxx_compiler}.in
     )
 fi
 
