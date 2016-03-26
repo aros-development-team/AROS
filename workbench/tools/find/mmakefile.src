@@ -1,0 +1,24 @@
+# $Id$
+# Makefile to make Unarc tool.
+
+include $(TOP)/config/make.cfg
+
+FILES  := main locale findgroup_class
+EXEDIR := $(AROS_TOOLS)
+IMAGES := selected unselected
+
+#MM- workbench-tools : workbench-tools-find
+
+#MM workbench-tools-find : \
+#MM    includes linklibs \
+#MM    workbench-tools-find-catalogs
+
+##MM    contrib-pack-unarc-images
+
+%build_prog mmake=workbench-tools-find \
+    progname=Find targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+# %copy_files_q mmake=workbench-tools-find-images files=$(IMAGES) src=images dst=$(EXEDIR)/Images
+
+%common
