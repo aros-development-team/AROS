@@ -309,7 +309,7 @@ crosstools-llvm-prerequisites :
 #MM- tools-crosstools-llvm-ppc    : crosstools-llvm-quick
 #MM- tools-crosstools-llvm-arm    : crosstools-llvm-quick
 
-#MM crosstools-llvm-quick : crosstools-llvm-prerequisites
+#MM- crosstools-llvm-quick : crosstools-llvm-prerequisites
 
 %build_with_cmake mmake=crosstools-llvm package=llvm srcdir=$(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE) \
     	prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
