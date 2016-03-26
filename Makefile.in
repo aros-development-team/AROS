@@ -56,9 +56,14 @@ else
 	@$(NOP)
 endif
 
+$(TOP)/.features : crosstools $(SRCDIR)/features
+	@$(IF) ! $(TEST) -f $@ ; then
+	    @$(ECHO) "Querying target compiler features..."
+	    @cd $(TOP) ; CC="$(TARGET_CC) $(TARGET_SYSROOT) -I$(AROS_DEVELOPMENT)/include" CFLAGS="$(TARGET_CFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" CPP="$(TARGET_CPP) $(TARGET_SYSROOT)" CXX="$(TARGET_CXX) $(TARGET_SYSROOT) -I$(AROS_DEVELOPMENT)/include" CXXFLAGS=" $(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" $(SRCDIR)/features  --host=$(AROS_BUILD_HOST) --with-config-dir=$(GENDIR)/config
+	    
+	fi
+
 features : crosstools
-	@$(ECHO) Querying target compiler features...
-	@cd $(TOP) ; CC="$(TARGET_CC) $(TARGET_SYSROOT) -I$(AROS_DEVELOPMENT)/include" CFLAGS="$(TARGET_CFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" CPP="$(TARGET_CPP) $(TARGET_SYSROOT)" CXX="$(TARGET_CXX) $(TARGET_SYSROOT) -I$(AROS_DEVELOPMENT)/include" CXXFLAGS=" $(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" $(SRCDIR)/features  --host=$(AROS_BUILD_HOST) --with-config-dir=$(GENDIR)/config
 
 $(TOOLLIB) : $(wildcard $(SRCDIR)/tools/toollib/*.[ch])
 	@$(ECHO) Building toollib...
