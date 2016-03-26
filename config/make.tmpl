@@ -2932,7 +2932,7 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 #
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
-    aros_prefix= extraoptions= installoptions= maketarget= \
+    aros_prefix= extraoptions= installoptions= maketarget= compiler=target \
     cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) ldflags=$(LDFLAGS)
 
 ifneq (%(prefix),)
@@ -2947,28 +2947,37 @@ else
     %(mmake)-aros_prefix := $(%(mmake)-prefix)
 endif
 
-ifneq (%(gendir),)
+ifeq (%(compiler),host)
+    BD_LDFLAGS   := -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)
+    BD_CFLAGS := $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include
+    BD_CXXFLAGS := $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include
+    %(mmake)-cmake_opts  := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_COMPILER="$(HOST_CC)" -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
     ifeq (%(package),)
-        %(mmake)-pkgdir := %(gendir)/$(CURDIR)
+        %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)
     else
-        %(mmake)-pkgdir := %(gendir)/$(CURDIR)/%(package)
+        %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)/%(package)
     endif
 else
+    BD_LDFLAGS   := %(ldflags)
+    BD_CFLAGS := %(cflags)
+    BD_CXXFLAGS := %(cxxflags)
+    %(mmake)-cmake_opts  := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)" -DCMAKE_EXE_LINKER_FLAGS="$(BD_LDFLAGS)"
     ifeq (%(package),)
         %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
     else
         %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)/%(package)
     endif
 endif
+ifneq (%(gendir),)
+    ifeq (%(package),)
+        %(mmake)-pkgdir := %(gendir)/$(CURDIR)
+    else
+        %(mmake)-pkgdir := %(gendir)/$(CURDIR)/%(package)
+    endif
+endif
 
 %(mmake)-cmakeflag := $(%(mmake)-pkgdir)/.cmake
 %(mmake)-installflag := $(%(mmake)-pkgdir)/.installed
-
-BD_LDFLAGS   := %(ldflags)
-BD_CFLAGS := %(cflags)
-BD_CXXFLAGS := %(cxxflags)
-
-%(mmake)-cmake_opts  := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)" -DCMAKE_EXE_LINKER_FLAGS="$(BD_LDFLAGS)"
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
