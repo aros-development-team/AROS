@@ -1,0 +1,26 @@
+MSG_AppDescription (//)
+File search tool
+;
+MSG_AppCopyright (//)
+Copyright \xa9 2016 The AROS Development Team
+;
+MSG_WI_TITLE (//)
+Find
+;
+MSG_OK (//)
+OK
+;
+; Error messages
+;
+MSG_ERR (//)
+Error
+;
+MSG_ERR_NO_APPLICATION (//)
+Can't create application
+;
+MSG_ERR_READARGS (//)
+Can't read commandline arguments
+;
+MSG_ERR_NO_MEM (//)
+Out of memory
+;
