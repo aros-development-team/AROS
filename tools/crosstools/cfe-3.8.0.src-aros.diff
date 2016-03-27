@@ -1,6 +1,6 @@
 diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/include/clang/Driver/Options.td
 --- cfe-3.8.0.src/include/clang/Driver/Options.td	2016-01-06 21:27:42.000000000 +0000
-+++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-27 04:40:25.813258567 +0100
++++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-27 20:11:20.013386508 +0100
 @@ -1630,6 +1630,8 @@
  def no_cpp_precomp : Flag<["-"], "no-cpp-precomp">, Group<clang_ignored_f_Group>;
  def no_integrated_cpp : Flag<["-", "--"], "no-integrated-cpp">, Flags<[DriverOption]>;
@@ -10,7 +10,19 @@ diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/inclu
  def no__dead__strip__inits__and__terms : Flag<["-"], "no_dead_strip_inits_and_terms">;
  def nobuiltininc : Flag<["-"], "nobuiltininc">, Flags<[CC1Option]>,
    HelpText<"Disable builtin #include directories">;
-@@ -1660,6 +1662,7 @@
+@@ -1640,9 +1642,11 @@
+ def nolibc : Flag<["-"], "nolibc">;
+ def nomultidefs : Flag<["-"], "nomultidefs">;
+ def nopie : Flag<["-"], "nopie">;
++def noposixc : Flag<["-"], "noposixc">, Alias<no_posixc>;
+ def noprebind : Flag<["-"], "noprebind">;
+ def noseglinkedit : Flag<["-"], "noseglinkedit">;
+ def nostartfiles : Flag<["-"], "nostartfiles">;
++def nostdc : Flag<["-"], "nostdc">, Alias<no_stdc>;
+ def nostdinc : Flag<["-"], "nostdinc">;
+ def nostdlibinc : Flag<["-"], "nostdlibinc">;
+ def nostdincxx : Flag<["-"], "nostdinc++">, Flags<[CC1Option]>,
+@@ -1660,6 +1664,7 @@
  def pg : Flag<["-"], "pg">, HelpText<"Enable mcount instrumentation">, Flags<[CC1Option]>;
  def pipe : Flag<["-", "--"], "pipe">,
    HelpText<"Use pipes between commands, when possible">;
@@ -18,7 +30,7 @@ diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/inclu
  def prebind__all__twolevel__modules : Flag<["-"], "prebind_all_twolevel_modules">;
  def prebind : Flag<["-"], "prebind">;
  def preload : Flag<["-"], "preload">;
-@@ -1728,6 +1731,7 @@
+@@ -1728,6 +1733,7 @@
  def static_libgcc : Flag<["-"], "static-libgcc">;
  def static_libstdcxx : Flag<["-"], "static-libstdc++">;
  def static : Flag<["-", "--"], "static">, Flags<[NoArgumentUnused]>;
