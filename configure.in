@@ -129,17 +129,41 @@ case "$aros_toolchain" in
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
         toolchain_cpp_preprocessor="clang"
+        toolchain_ld="llvm-ld"
+        toolchain_as="llvm-as"
+        toolchain_ar="llvm-ar"
+        toolchain_ranlib="llvm-ranlib"
+        toolchain_nm="llvm-nm"
+        toolchain_strip="llvm-strip"
+        toolchain_objcopy="llvm-objcopy"
+        toolchain_objdump="llvm-objdump"
         ;;
     *gnu*)
         toolchain_c_compiler="gcc"
         toolchain_cxx_compiler="g++"
         toolchain_cpp_preprocessor="cpp"
+        toolchain_ld="ld"
+        toolchain_as="as"
+        toolchain_ar="ar"
+        toolchain_ranlib="ranlib"
+        toolchain_nm="nm"
+        toolchain_strip="strip"
+        toolchain_objcopy="objcopy"
+        toolchain_objdump="objdump"
         ;;
     *)
         AC_MSG_WARN("Unknown toolchain family!")
         toolchain_c_compiler="cc"
         toolchain_cxx_compiler="c++"
         toolchain_cpp_preprocessor="cpp"
+        toolchain_ld="ld"
+        toolchain_as="as"
+        toolchain_ar="ar"
+        toolchain_ranlib="ranlib"
+        toolchain_nm="nm"
+        toolchain_strip="strip"
+        toolchain_objcopy="objcopy"
+        toolchain_objdump="objdump"
         ;;
 esac
 
@@ -1999,14 +2023,14 @@ if test "$aros_target_toolchain" = "yes"; then
     orig_target_cc="${tmp_tool_prefix}${toolchain_c_compiler}${target_tool_version}"
     orig_target_cxx="${tmp_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}"
     orig_target_cpp="${tmp_tool_prefix}${toolchain_cpp_preprocessor}"
-    orig_target_ld="${tmp_tool_prefix}ld"
-    orig_target_as="${tmp_tool_prefix}as"
-    orig_target_ar="${tmp_tool_prefix}ar"
-    orig_target_ranlib="${tmp_tool_prefix}ranlib"
-    orig_target_nm="${tmp_tool_prefix}nm"
-    orig_target_strip="${tmp_tool_prefix}strip"
-    orig_target_objcopy="${tmp_tool_prefix}objcopy"
-    orig_target_objdump="${tmp_tool_prefix}objdump"
+    orig_target_ld="${tmp_tool_prefix}${toolchain_ld}"
+    orig_target_as="${tmp_tool_prefix}${toolchain_as}"
+    orig_target_ar="${tmp_tool_prefix}${toolchain_ar}"
+    orig_target_ranlib="${tmp_tool_prefix}${toolchain_ranlib}"
+    orig_target_nm="${tmp_tool_prefix}${toolchain_nm}"
+    orig_target_strip="${tmp_tool_prefix}${toolchain_strip}"
+    orig_target_objcopy="${tmp_tool_prefix}${toolchain_objcopy}"
+    orig_target_objdump="${tmp_tool_prefix}${toolchain_objdump}"
 else
     # Determine whether AROS or ELF tools should be used
     if test "$aros_tool_prefix" = "none"; then
@@ -2021,21 +2045,21 @@ else
     AROS_REQUIRED(cc,$orig_target_cc)
     AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}${toolchain_cxx_compiler}${target_tool_version})
     AROS_REQUIRED(cxx,$orig_target_cxx)
-    AROS_TOOL_TARGET(orig_target_ld,gcc,${aros_tool_prefix}ld)
+    AROS_TOOL_TARGET(orig_target_ld,gcc,${aros_tool_prefix}${toolchain_ld})
     AROS_REQUIRED(ld,$orig_target_ld)
-    AROS_TOOL_TARGET(orig_target_as,as,${aros_tool_prefix}as)
+    AROS_TOOL_TARGET(orig_target_as,as,aros_tool_prefix}${toolchain_as})
     AROS_REQUIRED(as,$orig_target_as)
-    AROS_TOOL_TARGET(orig_target_ar,ar,${aros_tool_prefix}ar)
+    AROS_TOOL_TARGET(orig_target_ar,ar,${aros_tool_prefix}${toolchain_ar})
     AROS_REQUIRED(ar,$orig_target_ar)
-    AROS_TOOL_TARGET(orig_target_ranlib,ar,${aros_tool_prefix}ranlib)
+    AROS_TOOL_TARGET(orig_target_ranlib,ar,${aros_tool_prefix}${toolchain_ranlib})
     AROS_REQUIRED(ranlib,$orig_target_ranlib)
-    AROS_TOOL_TARGET(orig_target_nm,nm,${aros_tool_prefix}nm)
+    AROS_TOOL_TARGET(orig_target_nm,nm,${aros_tool_prefix}${toolchain_nm})
     AROS_REQUIRED(nm,$orig_target_nm)
-    AROS_TOOL_TARGET(orig_target_strip,strip,${aros_tool_prefix}strip)
+    AROS_TOOL_TARGET(orig_target_strip,strip,${aros_tool_prefix}${toolchain_strip})
     AROS_REQUIRED(strip,$orig_target_strip)
-    AROS_TOOL_TARGET(orig_target_objcopy,objcopy,${aros_tool_prefix}objcopy)
+    AROS_TOOL_TARGET(orig_target_objcopy,objcopy,${aros_tool_prefix}${toolchain_objcopy})
     AROS_REQUIRED(objcopy,$orig_target_objcopy)
-    AROS_TOOL_TARGET(orig_target_objdump,objdump,${aros_tool_prefix}objdump)
+    AROS_TOOL_TARGET(orig_target_objdump,objdump,${aros_tool_prefix}${toolchain_objdump})
     AROS_REQUIRED(objdump,$orig_target_objdump)
 fi
 
@@ -2145,16 +2169,16 @@ fi
 aros_target_cpp="${prefix}${toolchain_cpp_preprocessor}"
 aros_target_cc="${prefix}${toolchain_c_compiler}"
 aros_target_cxx="${prefix}${toolchain_cxx_compiler}"
-aros_target_as="${prefix}as"
-aros_target_ld="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld"
+aros_target_as="${prefix}${toolchain_as}"
+aros_target_ld="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_ld}"
 aros_target_ar="${prefix}ar $aros_target_ar_flags"
-aros_target_objcopy="${prefix}objcopy"
-aros_target_objdump="${prefix}objdump"
-aros_target_ranlib="${prefix}ranlib $aros_target_ranlib_flags"
-aros_target_nm="${prefix}nm $aros_target_nm_flags"
-aros_target_strip="${prefix}strip"
-aros_plain_nm="${prefix}nm"
-aros_plain_ar="${prefix}ar"
+aros_target_objcopy="${prefix}${toolchain_objcopy}"
+aros_target_objdump="${prefix}${toolchain_objdump}"
+aros_target_ranlib="${prefix}${toolchain_ranlib} $aros_target_ranlib_flags"
+aros_target_nm="${prefix}${toolchain_nm} $aros_target_nm_flags"
+aros_target_strip="${prefix}${toolchain_strip}"
+aros_plain_nm="${prefix}${toolchain_nm}"
+aros_plain_ar="${prefix}${toolchain_ar}"
 
 AC_ARG_ENABLE(includes,
 AC_HELP_STRING([--enable-includes=dir],[Alternative system include directory]),
