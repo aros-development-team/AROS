@@ -179,6 +179,18 @@ MSG_MEN_ICON
 Iconen
 ; Icon
 ;
+MSG_MEN_FIND
+Zoek...
+; Find...
+;
+MSG_MEN_SC_FIND
+F
+; F
+;
+MSG_MEN_SC_FIND
+F
+; F
+;
 MSG_MEN_OPEN
 Open
 ; Open

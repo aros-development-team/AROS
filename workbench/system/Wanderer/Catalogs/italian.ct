@@ -183,6 +183,14 @@ MSG_MEN_ICON
 Icona
 ; Icon
 ;
+MSG_MEN_FIND
+Cerca...
+; Find...
+;
+MSG_MEN_SC_FIND
+F
+; F
+;
 MSG_MEN_OPEN
 Apri
 ; Open
