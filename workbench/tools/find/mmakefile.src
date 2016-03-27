@@ -19,6 +19,4 @@ IMAGES := selected unselected
     progname=Find targetdir=$(EXEDIR) \
     files=$(FILES)
 
-# %copy_files_q mmake=workbench-tools-find-images files=$(IMAGES) src=images dst=$(EXEDIR)/Images
-
 %common

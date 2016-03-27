@@ -10,11 +10,12 @@
 #include <libraries/mui.h>
 
 /*** Identifier base ********************************************************/
-#define MUIB_FindGroup                 (TAG_USER | 0x10000000)
+#define MUIB_FindGroup                  (TAG_USER | 0x10000000)
 
 /*** Attributes *************************************************************/
-//#define MUIA_UnarcGroup_Archive         (MUIB_UnarcGroup | 0)
-//#define MUIA_UnarcGroup_Destination     (MUIB_UnarcGroup | 1)
+#define MUIA_FindGroup_Path             (MUIB_FindGroup | 0)
+#define MUIA_FindGroup_Pattern          (MUIB_FindGroup | 1)
+#define MUIA_FindGroup_Contents         (MUIB_FindGroup | 2)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *FindGroup_CLASS;

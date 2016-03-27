@@ -48,6 +48,49 @@ struct Listentry
 static struct Hook list_display_hook, list_constr_hook, list_destr_hook;
 
 
+static void display_message(CONST_STRPTR str, ...)
+{
+    AROS_SLOWSTACKFORMAT_PRE(str);
+    if (str)
+    {
+        struct EasyStruct es =
+        {
+            sizeof(struct EasyStruct), 0,
+            _(MSG_ERR), str, _(MSG_OK)
+        };
+        EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(str));
+    }
+    AROS_SLOWSTACKFORMAT_POST(str);
+}
+
+// =======================================================================================
+
+static BOOL checkfile(struct FileInfoBlock *fib, STRPTR pattern, STRPTR content)
+{
+    D(bug("[Find::checkfile] name %s pattern %s content %s\n", fib->fib_FileName, pattern, content));
+
+    if (fib->fib_DirEntryType > 0) // ignore directories
+    {
+        return FALSE;
+    }
+
+    if ((pattern[0] == '\0') || MatchPatternNoCase(pattern, fib->fib_FileName))
+    {
+        if (content && (content[0] != '\0'))
+        {
+            // TODO: implement
+            D(bug("[Find::checkfile] content search\n"));
+        }
+        else
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+// =======================================================================================
+
 AROS_UFH3(APTR, list_constr_func,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(APTR, pool, A2),
@@ -73,6 +116,7 @@ AROS_UFH3(APTR, list_constr_func,
     AROS_USERFUNC_EXIT
 }
 
+// =======================================================================================
 
 AROS_UFH3(void, list_destr_func,
     AROS_UFHA(struct Hook *, h, A0),
@@ -87,6 +131,7 @@ AROS_UFH3(void, list_destr_func,
     AROS_USERFUNC_EXIT
 }
 
+// =======================================================================================
 
 AROS_UFH3S(LONG, list_display_func,
     AROS_UFHA(struct Hook *, h, A0),
@@ -149,6 +194,8 @@ AROS_UFH3S(LONG, list_display_func,
     AROS_USERFUNC_EXIT
 }
 
+// =======================================================================================
+
 AROS_UFH3S(void, search_func,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, obj, A2),
@@ -162,21 +209,24 @@ AROS_UFH3S(void, search_func,
 
     struct AnchorPath *anchorpath;
     LONG error;
-    BPTR dirlock;
-    BPTR oldlock = (BPTR)-1;
+    ULONG destlen;
+    STRPTR destpattern;
 
     STRPTR path = (STRPTR)XGET(data->str_path, MUIA_String_Contents);
-    STRPTR pattern = (STRPTR)XGET(data->str_pattern, MUIA_String_Contents);
+    STRPTR srcpattern = (STRPTR)XGET(data->str_pattern, MUIA_String_Contents);
     STRPTR content = (STRPTR)XGET(data->str_contents, MUIA_String_Contents);
 
-    dirlock = Lock(path, SHARED_LOCK);
-    if (dirlock == 0)
+    destlen = strlen(srcpattern) * 2 + 2;
+    destpattern = AllocVec(destlen, MEMF_ANY);
+    if (destpattern)
     {
-        puts("Can't lock directory"); // TODO: requester
-        return;
+        if (ParsePatternNoCase(srcpattern, destpattern, destlen) < 0) // error
+        {
+            display_message("Can't parse pattern");
+            FreeVec(destpattern);
+            return;
+        }
     }
-
-    oldlock = CurrentDir(dirlock);
 
     SET(data->btn_start, MUIA_Disabled, TRUE);
     SET(data->btn_stop, MUIA_Disabled, FALSE);
@@ -188,7 +238,7 @@ AROS_UFH3S(void, search_func,
         anchorpath->ap_Strlen = PATHNAMESIZE;
         //anchorpath->ap_BreakBits = SIGBREAKF_CTRL_C;
         anchorpath->ap_Flags = APF_DODIR;
-        if ((error = MatchFirst(pattern, anchorpath)) == 0)
+        if ((error = MatchFirst(path, anchorpath)) == 0)
         {
             do
             {
@@ -199,7 +249,8 @@ AROS_UFH3S(void, search_func,
                 else
                 {
                     struct Listentry entry;
-                    if (anchorpath->ap_Info.fib_DirEntryType < 0) // only files
+                    D(bug("found %s\n", anchorpath->ap_Info.fib_FileName));
+                    if (checkfile(&anchorpath->ap_Info, destpattern, content))
                     {
                         entry.fullname = anchorpath->ap_Buf;
                         entry.fib = anchorpath->ap_Info;
@@ -213,7 +264,9 @@ AROS_UFH3S(void, search_func,
         MatchEnd(anchorpath);
 
         if (error != ERROR_NO_MORE_ENTRIES)
-            PrintFault(error, NULL);
+        {
+            display_message("Error code %s", error);
+        }
 
         FreeMem(anchorpath, sizeof(struct AnchorPath) + PATHNAMESIZE);
     }
@@ -222,14 +275,12 @@ AROS_UFH3S(void, search_func,
     SET(data->btn_stop, MUIA_Disabled, TRUE);
     SET(data->txt_status, MUIA_Text_Contents, "");
 
-    if (oldlock != (BPTR)-1)
-    {
-        CurrentDir(oldlock);
-    }
+    FreeVec(destpattern);
 
     AROS_USERFUNC_EXIT
 }
 
+// =======================================================================================
 
 AROS_UFH3S(void, openwbobj_func,
     AROS_UFHA(struct Hook *, h, A0),
@@ -242,16 +293,46 @@ AROS_UFH3S(void, openwbobj_func,
 
     // struct FindGroup_DATA *data = h->h_Data;
     struct Listentry *entry;
-    
+    BPTR filelock = (BPTR)-1;
+    BPTR parentdirlock = (BPTR)-1;
+    BPTR olddirlock = (BPTR)-1;
+
     DoMethod(obj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &entry);
     if (entry)
     {
+        D(bug("[Find::openwbobj_func] name %s\n", entry->fullname));
+        
+        // trying to change directory to file's parent directory
+        filelock = Lock(entry->fullname, SHARED_LOCK);
+        if (filelock)
+        {
+            parentdirlock = ParentDir(filelock);
+            olddirlock = CurrentDir(parentdirlock);
+        }
+
+        D(bug("[Find::openwbobj_func] file %p parent %p olddir %p\n", filelock, parentdirlock, olddirlock));
+
+        // execute program even if directory change failed
         OpenWorkbenchObject(entry->fullname, TAG_DONE);
+
+        if (olddirlock != (BPTR)-1)
+        {
+            CurrentDir(olddirlock);
+        }
+        if (parentdirlock != (BPTR)-1)
+        {
+            UnLock(parentdirlock);
+        }
+        if (filelock != (BPTR)-1)
+        {
+            UnLock(filelock);
+        }
     }
 
     AROS_USERFUNC_EXIT
 }
 
+// =======================================================================================
 
 Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
@@ -259,6 +340,34 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object *btn_start, *btn_stop;
     Object *lst_result;
     Object *txt_status;
+    STRPTR path = NULL;
+    STRPTR pattern = NULL;
+    STRPTR contents = NULL;
+
+    struct TagItem *tstate = message->ops_AttrList;
+    struct TagItem *tag = NULL;
+
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+            case MUIA_FindGroup_Path:
+                path = (STRPTR)tag->ti_Data;
+                break;
+
+            case MUIA_FindGroup_Pattern:
+                pattern = (STRPTR)tag->ti_Data;
+                break;
+
+            case MUIA_FindGroup_Contents:
+                contents = (STRPTR)tag->ti_Data;
+                break;
+        }
+    }
+
+    if (path == NULL) path = "SYS:";
+    if (pattern == NULL) pattern = "";
+    if (contents == NULL) contents = "";
 
     list_constr_hook.h_Entry = (HOOKFUNC)list_constr_func;
     list_destr_hook.h_Entry = (HOOKFUNC)list_destr_func;
@@ -278,17 +387,19 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         ASLFR_TitleText, "Path",
                         MUIA_Popstring_String, str_path = StringObject,
                             StringFrame,
-                            MUIA_String_Contents, "SYS:",
+                            MUIA_String_Contents, path,
                         End,
                     MUIA_Popstring_Button, PopButton(MUII_PopFile),
                     End,
                     Child, Label("Pattern"),
                     Child, str_pattern = StringObject,
                         StringFrame,
+                        MUIA_String_Contents, pattern,
                     End,
                     Child, Label("Contents"),
                     Child, str_contents = StringObject,
                         StringFrame,
+                        MUIA_String_Contents, contents,
                     End,                    
                 End,
                 Child, lst_result = ListviewObject,
@@ -354,6 +465,7 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     return self;
 }
 
+// =======================================================================================
 
 ZUNE_CUSTOMCLASS_1
 (
