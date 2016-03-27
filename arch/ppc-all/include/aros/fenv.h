@@ -96,6 +96,7 @@ union __fpscr {
 	} __bits;
 };
 
+#ifndef STDC_NOINLINE
 static __inline int
 feclearexcept(int __excepts)
 {
@@ -221,9 +222,11 @@ feupdateenv(const fenv_t *__envp)
 	__mtfsf(__r.__d);
 	return (0);
 }
+#endif /* !STDC_NOINLINE */
 
 #if __BSD_VISIBLE
 
+#ifndef STDC_NOINLINE
 static __inline int
 feenableexcept(int __mask)
 {
@@ -258,6 +261,7 @@ fegetexcept(void)
 	__mffs(&__r.__d);
 	return ((__r.__bits.__reg & _ENABLE_MASK) << _FPUSW_SHIFT);
 }
+#endif /* !STDC_NOINLINE */
 
 #endif /* __BSD_VISIBLE */
 

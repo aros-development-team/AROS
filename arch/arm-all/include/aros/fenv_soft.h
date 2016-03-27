@@ -35,6 +35,7 @@ __BEGIN_DECLS
 /* Default floating-point environment */
 extern const fenv_t __fe_dfl_env;
 
+#ifndef STDC_NOINLINE
 /* FIXME: Should we actually do anything here or not ? */
 
 static __inline int feclearexcept(int __excepts)
@@ -93,9 +94,10 @@ static __inline int feupdateenv(const fenv_t *__envp)
 {
     return 0;
 }
+#endif /* !STDC_NOINLINE */
 
 #if __BSD_VISIBLE
-
+#ifndef STDC_NOINLINE
 static __inline int feenableexcept(int __mask)
 {
     return 0;
@@ -110,6 +112,7 @@ static __inline int fegetexcept(void)
 {
     return 0;
 }
+#endif /* !STDC_NOINLINE */
 
 #endif /* __BSD_VISIBLE */
 
