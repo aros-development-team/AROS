@@ -3,5 +3,8 @@ TODO
 
 - implement content search
 - implement interruption by "Stop" button
+- add (by buttons or context menu) options like
+  display, delete, copy etc. for the selected file
 - sort result alphabetically
+- test if NList is better than List
 - finish localization
