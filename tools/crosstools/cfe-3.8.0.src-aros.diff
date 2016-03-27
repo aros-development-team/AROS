@@ -1,6 +1,6 @@
 diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/include/clang/Driver/Options.td
 --- cfe-3.8.0.src/include/clang/Driver/Options.td	2016-01-06 21:27:42.000000000 +0000
-+++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-27 03:05:31.919030000 +0100
++++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-27 04:40:25.813258567 +0100
 @@ -1630,6 +1630,8 @@
  def no_cpp_precomp : Flag<["-"], "no-cpp-precomp">, Group<clang_ignored_f_Group>;
  def no_integrated_cpp : Flag<["-", "--"], "no-integrated-cpp">, Flags<[DriverOption]>;
@@ -28,8 +28,8 @@ diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/inclu
    Group<CompileOnly_Group>, HelpText<"Language standard to compile for">;
 diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp
 --- cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp	1970-01-01 01:00:00.000000000 +0100
-+++ cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp	2016-03-27 03:21:57.929559000 +0100
-@@ -0,0 +1,114 @@
++++ cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp	2016-03-27 18:30:04.259971623 +0100
+@@ -0,0 +1,117 @@
 +//===--- AROSToolChain.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -110,7 +110,10 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
 +                                     llvm::opt::ArgStringList &CC1Args) const {
 +  CC1Args.push_back("-D__AROS__");
-+//  CC1Args.push_back("+ptx42");
++  CC1Args.push_back("-D__AMIGA__");
++  CC1Args.push_back("-D_AMIGA");
++  CC1Args.push_back("-D__ELF__");
++  CC1Args.push_back("-Dsystem=posix");
 +}
 +
 +
@@ -146,7 +149,7 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +}
 diff -ruN cfe-3.8.0.src/lib/Driver/CMakeLists.txt cfe-3.8.0.src.aros/lib/Driver/CMakeLists.txt
 --- cfe-3.8.0.src/lib/Driver/CMakeLists.txt	2015-07-02 05:45:27.000000000 +0100
-+++ cfe-3.8.0.src.aros/lib/Driver/CMakeLists.txt	2016-03-26 18:45:33.922378000 +0000
++++ cfe-3.8.0.src.aros/lib/Driver/CMakeLists.txt	2016-03-27 04:40:25.813258567 +0100
 @@ -5,6 +5,7 @@
  
  add_clang_library(clangDriver
@@ -157,7 +160,7 @@ diff -ruN cfe-3.8.0.src/lib/Driver/CMakeLists.txt cfe-3.8.0.src.aros/lib/Driver/
    Driver.cpp
 diff -ruN cfe-3.8.0.src/lib/Driver/Driver.cpp cfe-3.8.0.src.aros/lib/Driver/Driver.cpp
 --- cfe-3.8.0.src/lib/Driver/Driver.cpp	2016-01-11 23:27:13.000000000 +0000
-+++ cfe-3.8.0.src.aros/lib/Driver/Driver.cpp	2016-03-26 22:17:19.588508000 +0000
++++ cfe-3.8.0.src.aros/lib/Driver/Driver.cpp	2016-03-27 04:40:25.814258579 +0100
 @@ -2206,6 +2206,9 @@
    ToolChain *&TC = ToolChains[Target.str()];
    if (!TC) {
@@ -170,7 +173,7 @@ diff -ruN cfe-3.8.0.src/lib/Driver/Driver.cpp cfe-3.8.0.src.aros/lib/Driver/Driv
        break;
 diff -ruN cfe-3.8.0.src/lib/Driver/ToolChains.h cfe-3.8.0.src.aros/lib/Driver/ToolChains.h
 --- cfe-3.8.0.src/lib/Driver/ToolChains.h	2016-02-16 19:56:48.000000000 +0000
-+++ cfe-3.8.0.src.aros/lib/Driver/ToolChains.h	2016-03-26 22:12:41.048180000 +0000
++++ cfe-3.8.0.src.aros/lib/Driver/ToolChains.h	2016-03-27 04:40:25.814258579 +0100
 @@ -350,6 +350,31 @@
    /// }
  };
@@ -205,7 +208,7 @@ diff -ruN cfe-3.8.0.src/lib/Driver/ToolChains.h cfe-3.8.0.src.aros/lib/Driver/To
  public:
 diff -ruN cfe-3.8.0.src/lib/Frontend/InitHeaderSearch.cpp cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp
 --- cfe-3.8.0.src/lib/Frontend/InitHeaderSearch.cpp	2015-12-30 03:40:23.000000000 +0000
-+++ cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2016-03-26 18:47:40.168869000 +0000
++++ cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2016-03-27 04:40:25.815258591 +0100
 @@ -210,6 +210,7 @@
  
    if (HSOpts.UseStandardSystemIncludes) {
