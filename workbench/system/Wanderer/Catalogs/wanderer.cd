@@ -134,6 +134,12 @@ Drawers first
 MSG_MEN_ICON (//)
 Icon
 ;
+MSG_MEN_FIND (//)
+Find...
+;
+MSG_MEN_SC_FIND (//)
+F
+;
 MSG_MEN_OPEN (//)
 Open
 ;

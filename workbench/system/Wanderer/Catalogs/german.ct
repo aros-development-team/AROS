@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 2.0 (05.01.2012)
+## version $VER: wanderer.catalog 3.0 (27.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -182,6 +182,14 @@ Schubladen zuerst
 MSG_MEN_ICON
 Piktogramm
 ; Icon
+;
+MSG_MEN_FIND
+Suchen...
+; Find...
+;
+MSG_MEN_SC_FIND
+F
+; F
 ;
 MSG_MEN_OPEN
 Öffnen
