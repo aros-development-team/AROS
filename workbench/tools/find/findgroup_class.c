@@ -12,8 +12,8 @@
 #include <proto/alib.h>
 
 #include <libraries/mui.h>
-//#include <mui/NList_mcc.h>
-//#include <mui/NListview_mcc.h>
+#include <mui/NList_mcc.h>
+#include <mui/NListview_mcc.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -45,7 +45,7 @@ struct Listentry
     struct FileInfoBlock fib;
 };
 
-static struct Hook list_display_hook, list_constr_hook, list_destr_hook;
+static struct Hook list_display_hook, list_constr_hook, list_destr_hook, list_compare_hook;
 
 // =======================================================================================
 
@@ -206,6 +206,20 @@ AROS_UFH3S(LONG, list_display_func,
 
 // =======================================================================================
 
+AROS_UFH3(LONG, list_compare_func,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct Listentry *, li1, A2),
+    AROS_UFHA(struct Listentry *, li2, A1))
+{
+    AROS_USERFUNC_INIT
+
+    return stricmp(li2->fullname, li1->fullname);
+
+    AROS_USERFUNC_EXIT
+}
+
+// =======================================================================================
+
 AROS_UFH3S(void, search_func,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, obj, A2),
@@ -241,7 +255,7 @@ AROS_UFH3S(void, search_func,
     SET(data->btn_start, MUIA_Disabled, TRUE);
     SET(data->btn_stop, MUIA_Disabled, FALSE);
     SET(data->txt_status, MUIA_Text_Contents, "Searching...");
-    DoMethod(data->lst_result, MUIM_List_Clear);
+    DoMethod(data->lst_result, MUIM_NList_Clear);
 
     if (anchorpath = AllocMem(sizeof(struct AnchorPath) + PATHNAMESIZE, MEMF_CLEAR))
     {
@@ -264,7 +278,7 @@ AROS_UFH3S(void, search_func,
                     {
                         entry.fullname = anchorpath->ap_Buf;
                         entry.fib = anchorpath->ap_Info;
-                        DoMethod(data->lst_result, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
+                        DoMethod(data->lst_result, MUIM_NList_InsertSingle, &entry, MUIV_NList_Insert_Sorted);
                     }
                     anchorpath->ap_Flags = APF_DODIR;
                 }
@@ -307,7 +321,7 @@ AROS_UFH3S(void, openwbobj_func,
     BPTR parentdirlock = (BPTR)-1;
     BPTR olddirlock = (BPTR)-1;
 
-    DoMethod(obj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &entry);
+    DoMethod(obj, MUIM_NList_GetEntry, MUIV_List_GetEntry_Active, &entry);
     if (entry)
     {
         D(bug("[Find::openwbobj_func] name %s\n", entry->fullname));
@@ -382,6 +396,7 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     list_constr_hook.h_Entry = (HOOKFUNC)list_constr_func;
     list_destr_hook.h_Entry = (HOOKFUNC)list_destr_func;
     list_display_hook.h_Entry = (HOOKFUNC)list_display_func;
+    list_compare_hook.h_Entry = (HOOKFUNC)list_compare_func;
 
 
     self = (Object *) DoSuperNewTags
@@ -412,14 +427,15 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_String_Contents, contents,
                     End,                    
                 End,
-                Child, lst_result = ListviewObject,
-                    MUIA_Listview_List, ListObject,
-                        MUIA_List_Format, "BAR,P=\33r BAR,BAR,BAR,BAR,",
-                        MUIA_List_Title, TRUE,
+                Child, lst_result = NListviewObject,
+                    MUIA_NListview_NList, NListObject,
+                        MUIA_NList_Format, "BAR,P=\33r BAR,BAR,BAR,BAR,",
+                        MUIA_NList_Title, TRUE,
                         MUIA_Frame, MUIV_Frame_InputList,
-                        MUIA_List_DisplayHook, &list_display_hook,
-                        MUIA_List_ConstructHook, &list_constr_hook,
-                        MUIA_List_DestructHook, &list_destr_hook,
+                        MUIA_NList_DisplayHook, &list_display_hook,
+                        MUIA_NList_ConstructHook, &list_constr_hook,
+                        MUIA_NList_DestructHook, &list_destr_hook,
+                        MUIA_NList_CompareHook, &list_compare_hook,
                     End,
                 End,
                 Child, txt_status = TextObject,
@@ -468,7 +484,7 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod
         (
-            data->lst_result, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            data->lst_result, MUIM_Notify, MUIA_NList_DoubleClick, MUIV_EveryTime,
             self, 2, MUIM_CallHook, &data->openwbobj_hook
         );
     }
