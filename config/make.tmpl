@@ -3113,8 +3113,11 @@ else
     %(mmake)-srcdir := %(archive)
 endif
 
+#MM- %(mmake) : %(mmake)-diff
+#MM- %(mmake)-quick : %(mmake)-diff
+
 #MM
-%(mmake):
+%(mmake)-diff:
 	@$(FETCH) -a %(archive) -s "%(suffixes)" -l $(PORTSSOURCEDIR) -d %(destination)/tmp ; \
 	$(MV) %(destination)/$(%(mmake)-srcdir) %(destination)/tmp/$(%(mmake)-srcdir).aros ; \
 	cd %(destination)/tmp ; \
