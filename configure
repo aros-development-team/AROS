@@ -4253,10 +4253,10 @@ $as_echo "$aros_toolchain" >&6; }
 
 case "$aros_toolchain" in
     *llvm*)
-        toolchain_needs_sysroot=yes
+        # toolchain_needs_sysroot=yes
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
-        toolchain_cpp_preprocessor="clang"
+        toolchain_cpp_preprocessor="clang -E"
         toolchain_ld="llvm-ld"
         toolchain_as="llvm-as"
         toolchain_ar="llvm-ar"
