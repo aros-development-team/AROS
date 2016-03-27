@@ -110,6 +110,7 @@ fi
 # For mor info see, http://osdir.com/ml/bug-autoconf-gnu/2010-05/msg00001.html.
 AC_PROG_CXX([${host_cxx_compilers}])
 AC_PROG_CC([${host_c_compilers}])
+aros_host_def_cc="$CC"
 AC_PROG_CC_STDC
 AC_PROG_CPP
 
@@ -209,7 +210,7 @@ host_cc_elf=yes
 case "$host_os" in
     aros*)
         aros_host_arch="aros"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         case "$host_cpu" in
             *i?86*)
                 aros_host_cpu="i386"
@@ -229,7 +230,7 @@ case "$host_os" in
 
     linux*)
         aros_host_arch="linux"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         android_build_os="linux-x86"
         android_tool="android"
         default_android_sdk="/opt/android-sdk-linux_x86"
@@ -257,7 +258,7 @@ case "$host_os" in
         ;;
 
     freebsd*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe -I/usr/local/include"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe -I/usr/local/include"
         aros_host_make="gmake"
         aros_host_arch="freebsd"
         aros_host_cpu="i386"
@@ -279,7 +280,7 @@ case "$host_os" in
         ;;
 
     darwin*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_arch="darwin"
         host_cc_elf=no
         if [[ -z ${SED+x} ]]; then SED="gsed"; fi
@@ -307,7 +308,7 @@ case "$host_os" in
         ;;
 
     dragonfly*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_make="gmake"
         aros_host_arch="dragonfly"
         case $host_cpu in
@@ -325,7 +326,7 @@ case "$host_os" in
         ;;
 
     netbsd*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_make="gmake"
         aros_host_arch="netbsd"
         case "$host_cpu" in
@@ -344,7 +345,7 @@ case "$host_os" in
         ;;
 
     openbsd*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_make="gmake"
         aros_host_arch="openbsd"
         case "$host_cpu" in
@@ -360,7 +361,7 @@ case "$host_os" in
         
     solaris*)
         aros_host_arch="solaris"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         case "$host_cpu" in
             *i?86*)
                 aros_host_cpu="i386"
@@ -405,7 +406,7 @@ case "$host_os" in
 
     cygwin*)
         aros_host_arch="cygwin"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         host_cc_elf=no
         android_build_os="windows"
         android_tool="android.bat"
@@ -424,7 +425,7 @@ case "$host_os" in
 
     mingw32*)
         aros_host_arch="mingw32"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         host_cc_elf=no
         android_build_os="windows"
         android_tool="android.bat"
@@ -2677,6 +2678,7 @@ AC_SUBST(aros_host_strip)
 AC_SUBST(aros_host_arch)
 AC_SUBST(aros_host_cpu)
 AC_SUBST(aros_host_cpp)
+AC_SUBST(aros_host_def_cc)
 AC_SUBST(aros_host_cc)
 AC_SUBST(aros_host_cxx)
 AC_SUBST(aros_host_ar)
