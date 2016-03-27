@@ -14,7 +14,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/System/Wanderer.catalog"
-#define CATALOG_VERSION  2
+#define CATALOG_VERSION  3
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;

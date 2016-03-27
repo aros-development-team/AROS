@@ -110,6 +110,7 @@ Object                  *FindMenuitem(Object* strip, int id);
 Object                  *Wanderer__Func_CreateWandererIntuitionMenu(BOOL isRoot, BOOL useBackdrop);
 void                    wanderer_menufunc_window_update(void);
 void                    wanderer_menufunc_window_cleanup(void);
+void                    wanderer_menufunc_window_find(void);
 void                    execute_open_with_command(BPTR cd, STRPTR contents);
 void                    DisposeCopyDisplay(struct MUIDisplayObjects *d);
 BOOL                    CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d);
@@ -1064,6 +1065,8 @@ enum
     MEN_WINDOW_SORT_TOPDRAWERS,
     MEN_WINDOW_SORT_GROUP,
 
+    MEN_WINDOW_FIND,
+
     MEN_ICON_OPEN,
     MEN_ICON_RENAME,
     MEN_ICON_INFORMATION,
@@ -1158,6 +1161,45 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     }
 }
 ///
+
+///wanderer_menufunc_window_find()
+void wanderer_menufunc_window_find(void)
+{
+#if 0
+    Object *win = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Location );
+    Object *actwindow = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object *wbwindow = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
+    BPTR lock;
+
+D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, dr));
+
+    if (actwindow == wbwindow)
+    {
+        /* This check is necessary because WorkbenchWindow has path RAM: */
+D(bug("[Wanderer] %s: Can't call WBNewDrawer for WorkbenchWindow\n", __PRETTY_FUNCTION__));
+        return;
+    }
+    if ( XGET(actwindow, MUIA_Window_Open) == FALSE )
+    {
+D(bug("[Wanderer] %s: Can't call WBNewDrawer: the active window isn't open\n", __PRETTY_FUNCTION__));
+        return;
+    }
+
+    lock = Lock(dr, ACCESS_READ);
+#endif
+
+    OpenWorkbenchObject
+      (
+        "SYS:Tools/Find",
+        // WBOPENA_ArgLock, (IPTR) lock,
+        // WBOPENA_ArgName, 0,
+        TAG_DONE
+      );
+    //UnLock(lock);
+}
+///
+
 
 ///wanderer_menufunc_window_newdrawer()
 void wanderer_menufunc_window_newdrawer(STRPTR *cdptr)
@@ -3010,6 +3052,9 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
     DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, MUIA_Menuitem_Trigger,
                                 wanderer_menufunc_window_sort_topdrawers, strip);
 
+    DoMenuNotify(strip, MEN_WINDOW_FIND, MUIA_Menuitem_Trigger,
+                                wanderer_menufunc_window_find, strip);
+
     DoMenuNotify(strip, MEN_ICON_OPEN, MUIA_Menuitem_Trigger,
                                 wanderer_menufunc_icon_open, NULL);
     DoMenuNotify(strip, MEN_ICON_RENAME, MUIA_Menuitem_Trigger,
@@ -3879,6 +3924,8 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                     {NM_SUB,    _(MSG_MEN_REVERSE),     NULL                    , CHECKIT|MENUTOGGLE                    , 0, (APTR) MEN_WINDOW_SORT_REVERSE },
                     {NM_SUB,    _(MSG_MEN_DRWFRST),     NULL                    , CHECKIT|MENUTOGGLE|NM_ITEMDISABLED    , 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS },
                     {NM_SUB,    _(MSG_MEN_GROUPICONS),  NULL                    , CHECKIT|MENUTOGGLE|NM_ITEMDISABLED    , 0, (APTR) MEN_WINDOW_SORT_GROUP },
+                {NM_ITEM,       NM_BARLABEL },
+                {NM_ITEM,       _(MSG_MEN_FIND),        _(MSG_MEN_SC_FIND)      , 0                                     , 0, (APTR) MEN_WINDOW_FIND },
             {NM_TITLE,          _(MSG_MEN_ICON),        NULL                    , 0 },
                 {NM_ITEM,       _(MSG_MEN_OPEN),        _(MSG_MEN_SC_OPEN)      , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_OPEN },
                 {NM_ITEM,       _(MSG_MEN_RENAME),      _(MSG_MEN_SC_RENAME)    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_RENAME },
@@ -3941,6 +3988,8 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                     {NM_SUB,    _(MSG_MEN_REVERSE),     NULL                    , CHECKIT|MENUTOGGLE                    , 0, (APTR) MEN_WINDOW_SORT_REVERSE },
                     {NM_SUB,    _(MSG_MEN_DRWFRST),     NULL                    , CHECKIT|MENUTOGGLE|CHECKED            , 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS },
                     {NM_SUB,    _(MSG_MEN_GROUPICONS),  NULL                    , CHECKIT|MENUTOGGLE|NM_ITEMDISABLED    , 0, (APTR) MEN_WINDOW_SORT_GROUP },
+                {NM_ITEM,       NM_BARLABEL },
+                {NM_ITEM,       _(MSG_MEN_FIND),        _(MSG_MEN_SC_FIND)      , 0                                     , 0, (APTR) MEN_WINDOW_FIND },
             {NM_TITLE,          _(MSG_MEN_ICON),        NULL                    , 0 },
                 {NM_ITEM,       _(MSG_MEN_OPEN),        _(MSG_MEN_SC_OPEN)      , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_OPEN },
                 {NM_ITEM,       _(MSG_MEN_RENAME),      _(MSG_MEN_SC_RENAME)    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_RENAME },
