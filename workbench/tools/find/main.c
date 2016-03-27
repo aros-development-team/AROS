@@ -18,45 +18,30 @@
 #include "findgroup_class.h"
 #include "locale.h"
 
-#if 0
-#define ARGTEMPLATE "ARCHIVE,DESTINATION,PUBSCREEN/K"
-
+#define ARGTEMPLATE "PATH,PATTERN,CONTENTS"
 
 enum
 {
-    ARG_ARCHIVE,
-    ARG_DESTINATION,
-    ARG_PUBSCREEN,
+    ARG_PATH,
+    ARG_PATTERN,
+    ARG_CONTENTS,
     ARG_COUNT
 };
-
-#endif
 
 static void cleanup_exit(CONST_STRPTR str);
 
 static Object *app, *win;
-static struct DiskObject *dobj, *dobj2 = NULL;
+static struct DiskObject *dobj;
 static struct RDArgs *rda;
-#if 0
 static IPTR args[ARG_COUNT];
-static BPTR olddir = (BPTR)-1;
-#endif
 
 int main(int argc, char **argv)
 {
-    STRPTR archive = NULL, temp = NULL;
-    STRPTR destination = NULL;
-    STRPTR pubscreen = NULL;
+    STRPTR path = NULL;
+    STRPTR pattern = NULL;
+    STRPTR contents = NULL;
 
-    STRPTR *toolarray, *toolarray2;
-#if 0
     dobj = GetDiskObject("PROGDIR:Find");
-    if (dobj)
-    {
-        toolarray = dobj->do_ToolTypes;
-        archive = FindToolType(toolarray, "ARCHIVE");
-        destination = FindToolType(toolarray, "DESTINATION");
-    }
 
     if (argc) // started from CLI
     {
@@ -65,32 +50,11 @@ int main(int argc, char **argv)
         {
             cleanup_exit(_(MSG_ERR_READARGS));
         }
-        archive = (STRPTR)args[ARG_ARCHIVE];
-        destination = (STRPTR)args[ARG_DESTINATION];
-        pubscreen = (STRPTR)args[ARG_PUBSCREEN];
+        path = (STRPTR)args[ARG_PATH];
+        pattern = (STRPTR)args[ARG_PATTERN];
+        contents = (STRPTR)args[ARG_CONTENTS];
     }
-    else // started from Wanderer
-    {
-        struct WBStartup *wbmsg = (struct WBStartup *)argv;
-        struct WBArg *wbarg = wbmsg->sm_ArgList;
 
-        // started as default tool from an archive's icon
-        if (wbmsg->sm_NumArgs > 1 && wbarg[1].wa_Lock)
-        {
-            olddir = CurrentDir(wbarg[1].wa_Lock);
-            archive = wbarg[1].wa_Name;
-            dobj2 = GetDiskObject(archive);
-            if (dobj2)
-            {
-                toolarray2 = dobj2->do_ToolTypes;
-                destination = FindToolType(toolarray2, "DESTINATION");
-                temp = FindToolType(toolarray2, "ARCHIVE");
-                if (temp)
-                    archive = temp;
-            }
-        }
-    }
-#endif
     app = ApplicationObject,
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Base, (IPTR)"FIND",
@@ -103,6 +67,9 @@ int main(int argc, char **argv)
             MUIA_Window_Title, __(MSG_WI_TITLE),
             MUIA_Window_ID, MAKE_ID('F', 'I', 'N', 'D'),
             WindowContents, (IPTR)(FindGroupObject,
+                MUIA_FindGroup_Path, (IPTR)path,
+                MUIA_FindGroup_Pattern, (IPTR)pattern,
+                MUIA_FindGroup_Contents, (IPTR)contents,
             End),
         End),
     End;
@@ -135,10 +102,7 @@ static void cleanup_exit(CONST_STRPTR str)
         EasyRequestArgs(NULL, &es, NULL, NULL);
     }
     MUI_DisposeObject(app);
-#if 0
+
     if (dobj) FreeDiskObject(dobj);
-    if (dobj2) FreeDiskObject(dobj2);
     if (rda) FreeArgs(rda);
-    if (olddir != (BPTR)-1) CurrentDir(olddir);
-#endif
 }
