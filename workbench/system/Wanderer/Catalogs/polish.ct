@@ -182,6 +182,14 @@ MSG_MEN_ICON
 Ikonka
 ; Icon
 ;
+MSG_MEN_FIND
+Znajd¼...
+; Find...
+;
+MSG_MEN_SC_FIND
+F
+; F
+;
 MSG_MEN_OPEN
 Otwórz
 ; Open
