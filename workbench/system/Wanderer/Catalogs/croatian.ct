@@ -183,6 +183,14 @@ MSG_MEN_ICON
 Ikona
 ; Icon
 ;
+MSG_MEN_FIND
+Pronaði...
+; Find...
+;
+MSG_MEN_SC_FIND
+F
+; F
+;
 MSG_MEN_OPEN
 Otvori
 ; Open
