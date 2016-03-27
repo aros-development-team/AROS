@@ -65,6 +65,7 @@ extern const fenv_t	__fe_dfl_env;
 #define __rfs(__fpscr)	asm volatile("fmrx  %0, fpscr" : "=r"(*(__fpscr)))
 #define __wfs(__fpscr)	asm volatile("fmxr  fpscr, %0" :: "r"(__fpscr))
 
+#ifndef STDC_NOINLINE
 static __inline int
 feclearexcept(int __excepts)
 {
@@ -179,9 +180,11 @@ feupdateenv(const fenv_t *__envp)
 	feraiseexcept(__fpsr & FE_ALL_EXCEPT);
 	return (0);
 }
+#endif /* !STDC_NOINLINE */
 
 #if __BSD_VISIBLE
 
+#ifndef STDC_NOINLINE
 static __inline int
 feenableexcept(int __mask)
 {
@@ -212,6 +215,7 @@ fegetexcept(void)
 	__rfs(&__fpsr);
 	return ((__fpsr & _ENABLE_MASK) >> _FPUSW_SHIFT);
 }
+#endif /* !STDC_NOINLINE */
 
 #endif /* __BSD_VISIBLE */
 

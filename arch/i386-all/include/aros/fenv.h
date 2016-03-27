@@ -110,6 +110,7 @@ extern const fenv_t	__fe_dfl_env;
 #define	__ldmxcsr(__csr)	__asm __volatile("ldmxcsr %0" : : "m" (__csr))
 #define	__stmxcsr(__csr)	__asm __volatile("stmxcsr %0" : "=m" (*(__csr)))
 
+#ifndef STDC_NOINLINE
 static __inline int
 feclearexcept(int __excepts)
 {
@@ -145,10 +146,12 @@ fegetexceptflag(fexcept_t *__flagp, int __excepts)
 	*__flagp = (__mxcsr | __status) & __excepts;
 	return (0);
 }
+#endif /* !STDC_NOINLINE */
 
 int fesetexceptflag(const fexcept_t *__flagp, int __excepts);
 int feraiseexcept(int __excepts);
 
+#ifndef STDC_NOINLINE
 static __inline int
 fetestexcept(int __excepts)
 {
@@ -200,10 +203,12 @@ fesetround(int __round)
 
 	return (0);
 }
+#endif /* !STDC_NOINLINE */
 
 int fegetenv(fenv_t *__envp);
 int feholdexcept(fenv_t *__envp);
 
+#ifndef STDC_NOINLINE
 static __inline int
 fesetenv(const fenv_t *__envp)
 {
@@ -225,6 +230,7 @@ fesetenv(const fenv_t *__envp)
 		__ldmxcsr(__mxcsr);
 	return (0);
 }
+#endif /* !STDC_NOINLINE */
 
 int feupdateenv(const fenv_t *__envp);
 
@@ -233,6 +239,7 @@ int feupdateenv(const fenv_t *__envp);
 int feenableexcept(int __mask);
 int fedisableexcept(int __mask);
 
+#ifndef STDC_NOINLINE
 static __inline int
 fegetexcept(void)
 {
@@ -245,6 +252,7 @@ fegetexcept(void)
 	__fnstcw(&__control);
 	return (~__control & FE_ALL_EXCEPT);
 }
+#endif /* !STDC_NOINLINE */
 
 #endif /* __BSD_VISIBLE */
 
