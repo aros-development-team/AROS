@@ -47,6 +47,7 @@ struct Listentry
 
 static struct Hook list_display_hook, list_constr_hook, list_destr_hook;
 
+// =======================================================================================
 
 static void display_message(CONST_STRPTR str, ...)
 {
@@ -61,6 +62,15 @@ static void display_message(CONST_STRPTR str, ...)
         EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(str));
     }
     AROS_SLOWSTACKFORMAT_POST(str);
+}
+
+// =======================================================================================
+
+static void display_doserror(ULONG error)
+{
+    TEXT buffer[255];
+    Fault(error, NULL, buffer, sizeof buffer);
+    display_message("%s", buffer);
 }
 
 // =======================================================================================
@@ -265,7 +275,7 @@ AROS_UFH3S(void, search_func,
 
         if (error != ERROR_NO_MORE_ENTRIES)
         {
-            display_message("Error code %s", error);
+            display_doserror(error);
         }
 
         FreeMem(anchorpath, sizeof(struct AnchorPath) + PATHNAMESIZE);
