@@ -170,7 +170,7 @@ struct config
     struct stringlist *forcelist;
 
     /* Code to add to the generated files */
-    struct stringlist *cdeflines, *cdefprivatelines, *startuplines;
+    struct stringlist *cdeflines, *cdefprivatelines, *stubprivatelines, *startuplines;
 
     /* device specific data */
     char *beginiofunc, *abortiofunc;

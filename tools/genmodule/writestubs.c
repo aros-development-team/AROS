@@ -119,6 +119,9 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
     }
     freeBanner(banner);
 
+    for (linelistit = cfg->stubprivatelines; linelistit!=NULL; linelistit = linelistit->next)
+        fprintf(out, "%s\n", linelistit->s);
+
     if (!(cfg->options & OPTION_NOINCLUDES))
     {
         if (is_rel)

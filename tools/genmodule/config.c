@@ -370,6 +370,7 @@ static char *readsections(struct config *, struct classinfo *cl, struct interfac
 static void readsectionconfig(struct config *, struct classinfo *cl, struct interfaceinfo *in, int inclass);
 static void readsectioncdef(struct config *);
 static void readsectioncdefprivate(struct config *);
+static void readsectionstubprivate(struct config *);
 static void readsectionstartup(struct config *);
 static void readsectionfunctionlist(const char *type, struct functionhead **funclistptr, unsigned int firstlvo, int isattribute, enum libcall def_libcall);
 static void readsectionclass_methodlist(struct classinfo *);
@@ -476,7 +477,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
         {
             static char *parts[] =
             {
-                "config", "cdefprivate", "cdef", "startup", "functionlist", "methodlist", "class", "handler", "interface", "attributelist", "cfunctionlist"
+                "config", "cdefprivate", "cdef", "stubprivate", "startup", "functionlist", "methodlist", "class", "handler", "interface", "attributelist", "cfunctionlist"
             };
             const unsigned int nums = sizeof(parts)/sizeof(char *);
             unsigned int partnum;
@@ -525,13 +526,19 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
                 readsectioncdef(cfg);
                 break;
 
-            case 4: /* startup */
+            case 4: /* stubprivate */
+                if (inclass)
+                    exitfileerror(20, "stubprivate section not allowed in class section\n");
+                readsectionstubprivate(cfg);
+                break;
+
+            case 5: /* startup */
                 if (inclass)
                     exitfileerror(20, "startup section not allowed in class section\n");
                 readsectionstartup(cfg);
                 break;
 
-            case 5: /* functionlist */
+            case 6: /* functionlist */
                 if (inclass)
                     exitfileerror(20, "functionlist section not allow in class section\n");
                 if (cfg->basename==NULL)
@@ -541,7 +548,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
                 cfg->intcfg |= CFG_NOREADFUNCS;
                 break;
 
-            case 6: /* methodlist */
+            case 7: /* methodlist */
                 if (cl == NULL && in == NULL)
                     exitfileerror(20, "methodlist section when not in a class or interface\n");
                 if (cl)
@@ -551,33 +558,37 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
                 cfg->intcfg |= CFG_NOREADFUNCS;
                 break;
 
-            case 7: /* class */
+            case 8: /* class */
                 if (inclass)
                     exitfileerror(20, "class section may not be in nested\n");
                 readsectionclass(cfg);
                 break;
-            case 8: /* handler */
+
+            case 9: /* handler */
                 readsectionhandler(cfg);
                 break;
-            case 9: /* interface */
+
+            case 10: /* interface */
                 if (inclass)
                     exitfileerror(20, "interface section may not be nested\n");
                 readsectioninterface(cfg);
                 break;
-            case 10: /* attributelist */
+
+            case 11: /* attributelist */
                 if (!in)
                     exitfileerror(20, "attributelist only valid in interface sections\n");
                 readsectionfunctionlist("attributelist", &in->attributelist, 0, 1, INVALID);
                 break;
-        case 11: /* cfunctionlist */
-            if (inclass)
-                exitfileerror(20, "cfunctionlist section not allow in class section\n");
-                    if (cfg->basename==NULL)
-                        exitfileerror(20, "section cfunctionlist has to come after section config\n");
 
-            readsectionfunctionlist("cfunctionlist", &cfg->funclist, cfg->firstlvo, 0, REGISTER);
-            cfg->intcfg |= CFG_NOREADFUNCS;
-            break;
+            case 12: /* cfunctionlist */
+                if (inclass)
+                    exitfileerror(20, "cfunctionlist section not allow in class section\n");
+                        if (cfg->basename==NULL)
+                            exitfileerror(20, "section cfunctionlist has to come after section config\n");
+
+                readsectionfunctionlist("cfunctionlist", &cfg->funclist, cfg->firstlvo, 0, REGISTER);
+                cfg->intcfg |= CFG_NOREADFUNCS;
+                break;
             }
         }
         else if (strlen(line)!=0)
@@ -1389,6 +1400,44 @@ static void readsectioncdef(struct config *cfg)
     }
 }
 
+
+static void readsectionstubprivate(struct config *cfg)
+{
+    int atend = 0;
+    char *line, *s;
+
+    while (!atend)
+    {
+        line = readline();
+        if (line==NULL)
+            exitfileerror(20, "unexptected end of file in section stubprivate\n");
+
+        if (strncmp(line, "##", 2)!=0)
+        {
+            slist_append(&cfg->stubprivatelines, line);
+        }
+        else
+        {
+            s = line+2;
+            while (isspace(*s)) s++;
+            if (strncmp(s, "end", 3)!=0)
+                exitfileerror(20, "\"##end stubprivate\" expected\n");
+
+            s += 3;
+            while (isspace(*s)) s++;
+            if (strncmp(s, "stubprivate", 11)!=0)
+                exitfileerror(20, "\"##end stubprivate\" expected\n");
+
+            s += 11;
+            while (isspace(*s)) s++;
+            if (*s!='\0')
+                exitfileerror(20, "unexpected character at position %d\n");
+
+            atend = 1;
+        }
+    }
+}
+
 static void readsectioncdefprivate(struct config *cfg)
 {
     int atend = 0;
@@ -1398,7 +1447,7 @@ static void readsectioncdefprivate(struct config *cfg)
     {
         line = readline();
         if (line==NULL)
-            exitfileerror(20, "unexptected end of file in section cdef\n");
+            exitfileerror(20, "unexptected end of file in section cdefprivate\n");
 
         if (strncmp(line, "##", 2)!=0)
         {
