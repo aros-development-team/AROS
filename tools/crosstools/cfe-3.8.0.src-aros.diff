@@ -1,16 +1,23 @@
 diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/include/clang/Driver/Options.td
 --- cfe-3.8.0.src/include/clang/Driver/Options.td	2016-01-06 21:27:42.000000000 +0000
-+++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-27 20:11:20.013386508 +0100
-@@ -1630,6 +1630,8 @@
++++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-27 23:29:11.860918136 +0100
+@@ -1625,11 +1625,15 @@
+ def multiply__defined__unused : Separate<["-"], "multiply_defined_unused">;
+ def multiply__defined : Separate<["-"], "multiply_defined">;
+ def mwarn_nonportable_cfstrings : Flag<["-"], "mwarn-nonportable-cfstrings">, Group<m_Group>;
++def nix : Flag<["-"], "nix">;
+ def no_canonical_prefixes : Flag<["-"], "no-canonical-prefixes">, Flags<[HelpHidden]>,
+   HelpText<"Use relative instead of canonical paths">;
  def no_cpp_precomp : Flag<["-"], "no-cpp-precomp">, Group<clang_ignored_f_Group>;
  def no_integrated_cpp : Flag<["-", "--"], "no-integrated-cpp">, Flags<[DriverOption]>;
  def no_pedantic : Flag<["-", "--"], "no-pedantic">, Group<pedantic_Group>;
 +def no_posixc : Flag<["-"], "no-posixc">;
 +def no_stdc : Flag<["-"], "no-stdc">;
++def no_sysbase : Flag<["-"], "no_sysbase">;
  def no__dead__strip__inits__and__terms : Flag<["-"], "no_dead_strip_inits_and_terms">;
  def nobuiltininc : Flag<["-"], "nobuiltininc">, Flags<[CC1Option]>,
    HelpText<"Disable builtin #include directories">;
-@@ -1640,9 +1642,11 @@
+@@ -1640,14 +1644,17 @@
  def nolibc : Flag<["-"], "nolibc">;
  def nomultidefs : Flag<["-"], "nomultidefs">;
  def nopie : Flag<["-"], "nopie">;
@@ -22,7 +29,13 @@ diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/inclu
  def nostdinc : Flag<["-"], "nostdinc">;
  def nostdlibinc : Flag<["-"], "nostdlibinc">;
  def nostdincxx : Flag<["-"], "nostdinc++">, Flags<[CC1Option]>,
-@@ -1660,6 +1664,7 @@
+   HelpText<"Disable standard #include directories for the C++ standard library">;
+ def nostdlib : Flag<["-"], "nostdlib">;
++def nosysbase : Flag<["-"], "nosysbase">, Alias<no_sysbase>;
+ def object : Flag<["-"], "object">;
+ def o : JoinedOrSeparate<["-"], "o">, Flags<[DriverOption, RenderAsInput, CC1Option, CC1AsOption]>,
+   HelpText<"Write output to <file>">, MetaVarName<"<file>">;
+@@ -1660,6 +1667,7 @@
  def pg : Flag<["-"], "pg">, HelpText<"Enable mcount instrumentation">, Flags<[CC1Option]>;
  def pipe : Flag<["-", "--"], "pipe">,
    HelpText<"Use pipes between commands, when possible">;
@@ -30,7 +43,7 @@ diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/inclu
  def prebind__all__twolevel__modules : Flag<["-"], "prebind_all_twolevel_modules">;
  def prebind : Flag<["-"], "prebind">;
  def preload : Flag<["-"], "preload">;
-@@ -1728,6 +1733,7 @@
+@@ -1728,6 +1736,7 @@
  def static_libgcc : Flag<["-"], "static-libgcc">;
  def static_libstdcxx : Flag<["-"], "static-libstdc++">;
  def static : Flag<["-", "--"], "static">, Flags<[NoArgumentUnused]>;
