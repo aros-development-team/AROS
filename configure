@@ -730,6 +730,7 @@ aros_host_cflags
 aros_host_make
 aros_host_cxx
 aros_host_cc
+aros_host_def_cc
 aros_host_cpp
 aros_host_cpu
 aros_host_arch
@@ -3722,6 +3723,7 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+aros_host_def_cc="$CC"
    case $ac_cv_prog_cc_stdc in #(
   no) :
     ac_cv_prog_cc_c99=no; ac_cv_prog_cc_c89=no ;; #(
@@ -4591,7 +4593,7 @@ host_cc_elf=yes
 case "$host_os" in
     aros*)
         aros_host_arch="aros"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         case "$host_cpu" in
             *i?86*)
                 aros_host_cpu="i386"
@@ -4612,7 +4614,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
     linux*)
         aros_host_arch="linux"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         android_build_os="linux-x86"
         android_tool="android"
         default_android_sdk="/opt/android-sdk-linux_x86"
@@ -4641,7 +4643,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         ;;
 
     freebsd*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe -I/usr/local/include"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe -I/usr/local/include"
         aros_host_make="gmake"
         aros_host_arch="freebsd"
         aros_host_cpu="i386"
@@ -4661,7 +4663,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         ;;
 
     darwin*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_arch="darwin"
         host_cc_elf=no
         if [ -z ${SED+x} ]; then SED="gsed"; fi
@@ -4690,7 +4692,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for Darwin host -- $host_cpu\"" >&2;}
         ;;
 
     dragonfly*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_make="gmake"
         aros_host_arch="dragonfly"
         case $host_cpu in
@@ -4709,7 +4711,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         ;;
 
     netbsd*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_make="gmake"
         aros_host_arch="netbsd"
         case "$host_cpu" in
@@ -4729,7 +4731,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         ;;
 
     openbsd*)
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_make="gmake"
         aros_host_arch="openbsd"
         case "$host_cpu" in
@@ -4746,7 +4748,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
     solaris*)
         aros_host_arch="solaris"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         case "$host_cpu" in
             *i?86*)
                 aros_host_cpu="i386"
@@ -4793,7 +4795,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
     cygwin*)
         aros_host_arch="cygwin"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         host_cc_elf=no
         android_build_os="windows"
         android_tool="android.bat"
@@ -4813,7 +4815,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
     mingw32*)
         aros_host_arch="mingw32"
-        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         host_cc_elf=no
         android_build_os="windows"
         android_tool="android.bat"
@@ -14266,6 +14268,7 @@ fi
 
 
 # Host related
+
 
 
 
