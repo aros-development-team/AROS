@@ -594,7 +594,7 @@ dnl The target configuration section is responsible for setting up all
 dnl the paths for includes, and tools required to build AROS to some
 dnl particular target.
 
-aros_config_cflags="-Wall -Werror-implicit-function-declaration -Wno-parentheses"
+aros_config_cflags="-Wall -Werror-implicit-function-declaration"
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
@@ -2775,6 +2775,7 @@ AC_SUBST(aros_shared_aflags)
 AC_SUBST(aros_shared_ldflags)
 
 AC_SUBST(aros_config_sysroot)
+AC_SUBST([aros_nowarn_flags], ['$(NOWARN_POINTER_SIGN) $(NOWARN_PARENTHESES)'])
 AC_SUBST(aros_config_cflags)
 AC_SUBST(aros_config_aflags)
 AC_SUBST(aros_config_ldflags)

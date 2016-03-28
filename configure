@@ -683,6 +683,7 @@ aros_kernel_sysroot
 aros_config_ldflags
 aros_config_aflags
 aros_config_cflags
+aros_nowarn_flags
 aros_config_sysroot
 aros_shared_ldflags
 aros_shared_aflags
@@ -7130,7 +7131,7 @@ rm -f conftest.mmap conftest.txt
 
 
 
-aros_config_cflags="-Wall -Werror-implicit-function-declaration -Wno-parentheses"
+aros_config_cflags="-Wall -Werror-implicit-function-declaration"
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
@@ -14369,6 +14370,8 @@ fi
 
 
 
+
+aros_nowarn_flags='$(NOWARN_POINTER_SIGN) $(NOWARN_PARENTHESES)'
 
 
 
