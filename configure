@@ -1627,7 +1627,7 @@ Optional Packages:
                           Use gcc-VERSION for building bootstrap
   --with-optimization=FLAGS
                           Use optimization flags FLAGS (default=-O2).
-  --with-paranoia=FLAGS   CC flags to enable paranoia
+  --with-paranoia=FLAGS   compiler warning flags to enable for paranoia
   --with-xcode=PATH       Specify XCode path for iOS targets
                           (default=/Developer).
   --with-sdk-version=VERSION
@@ -1657,7 +1657,7 @@ Optional Packages:
   --with-binutils-version=VERSION
                           Use binutils-VERSION for building AROS
   --with-gcc-version=VERSION
-                          Use gcc-VERSION for building AROS
+                          Compile gcc-VERSION for AROS
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_default_fpu).
   --with-float=<spec>     Specify floating point ABI
@@ -2773,7 +2773,6 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 # Default versions for the gnu tools we build
 default_gcc_version="4.6.4"
 default_binutils_version="2.23.2"
-toolchain_needs_sysroot=no
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -4237,65 +4236,6 @@ else
 $as_echo "no" >&6; }
 fi
 
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Which toolchain family to use ..." >&5
-$as_echo_n "checking Which toolchain family to use ...... " >&6; }
-
-# Check whether --with-toolchain was given.
-if test "${with_toolchain+set}" = set; then :
-  withval=$with_toolchain; aros_toolchain="$withval"
-else
-  aros_toolchain="gnu"
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_toolchain" >&5
-$as_echo "$aros_toolchain" >&6; }
-
-case "$aros_toolchain" in
-    *llvm*)
-        # toolchain_needs_sysroot=yes
-        toolchain_c_compiler="clang"
-        toolchain_cxx_compiler="clang++"
-        toolchain_cpp_preprocessor="clang -E"
-        toolchain_ld="llvm-ld"
-        toolchain_as="llvm-as"
-        toolchain_ar="llvm-ar"
-        toolchain_ranlib="llvm-ranlib"
-        toolchain_nm="llvm-nm"
-        toolchain_strip="true"
-        toolchain_objcopy="llvm-objcopy"
-        toolchain_objdump="llvm-objdump"
-        ;;
-    *gnu*)
-        toolchain_c_compiler="gcc"
-        toolchain_cxx_compiler="g++"
-        toolchain_cpp_preprocessor="cpp"
-        toolchain_ld="ld"
-        toolchain_as="as"
-        toolchain_ar="ar"
-        toolchain_ranlib="ranlib"
-        toolchain_nm="nm"
-        toolchain_strip="strip"
-        toolchain_objcopy="objcopy"
-        toolchain_objdump="objdump"
-        ;;
-    *)
-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"Unknown toolchain family!\"" >&5
-$as_echo "$as_me: WARNING: \"Unknown toolchain family!\"" >&2;}
-        toolchain_c_compiler="cc"
-        toolchain_cxx_compiler="c++"
-        toolchain_cpp_preprocessor="cpp"
-        toolchain_ld="ld"
-        toolchain_as="as"
-        toolchain_ar="ar"
-        toolchain_ranlib="ranlib"
-        toolchain_nm="nm"
-        toolchain_strip="strip"
-        toolchain_objcopy="objcopy"
-        toolchain_objdump="objdump"
-        ;;
-esac
 
 
 # Perform some default variable assignments. Note all of these will be
@@ -7129,48 +7069,6 @@ fi
 rm -f conftest.mmap conftest.txt
 
 
-
-
-aros_config_cflags="-Wall -Werror-implicit-function-declaration"
-aros_config_aflags="-Wall -x assembler-with-cpp -c"
-aros_config_ldflags=""
-
-aros_shared_default=yes
-
-aros_shared_cflags="-fPIC"
-aros_shared_aflags=""
-aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-aros_kernel_ldflags="-Wl,-rpath,./lib"
-
-aros_kernel_ar_flags="cr"
-aros_target_ar_flags="cr"
-aros_target_nm_flags="-C -ul"
-aros_target_strip_flags="--strip-unneeded -R.comment"
-
-aros_compiler_libs=
-aros_arch_libs=
-
-aros_target_genmap="-Wl,-Map -Xlinker"
-
-# Native flavour stuff
-aros_serial_debug="0"
-
-# Palm native flavour stuff
-aros_palm_debug_hack="0"
-
-# Unix flavour stuff
-aros_nesting_supervisor="0"
-
-# Collect-aros stuff: "-ius" to ignore undefined symbols
-ignore_undefined_symbols=""
-
-# Check for X11 by default
-need_x11="auto"
-
-host_x_gfx=no
-host_sdl_gfx=no
-host_android_gfx=no
-
 #-----------------------------------------------------------------------------
 
 #
@@ -7286,10 +7184,115 @@ if test "x-$use_gnu89_inline" = "x-yes" ; then
 fi
 CFLAGS="$save_cflags"
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Performing target configuration..." >&5
+$as_echo "$as_me: Performing target configuration..." >&6;}
+
+
+toolchain_needs_sysroot=no
+
+aros_config_cflags="-Wall -Werror-implicit-function-declaration"
+aros_config_aflags="-Wall -x assembler-with-cpp -c"
+aros_config_ldflags=""
+
+aros_shared_default=yes
+
+aros_shared_cflags="-fPIC"
+aros_shared_aflags=""
+aros_shared_ldflags="-Wl,-rpath,./lib -shared"
+aros_kernel_ldflags="-Wl,-rpath,./lib"
+
+aros_kernel_ar_flags="cr"
+aros_target_ar_flags="cr"
+aros_target_nm_flags="-C -ul"
+aros_target_strip_flags="--strip-unneeded -R.comment"
+
+aros_compiler_libs=
+aros_arch_libs=
+
+aros_target_genmap="-Wl,-Map -Xlinker"
+
+# Native flavour stuff
+aros_serial_debug="0"
+
+# Palm native flavour stuff
+aros_palm_debug_hack="0"
+
+# Unix flavour stuff
+aros_nesting_supervisor="0"
+
+# Collect-aros stuff: "-ius" to ignore undefined symbols
+ignore_undefined_symbols=""
+
+# Check for X11 by default
+need_x11="auto"
+
+host_x_gfx=no
+host_sdl_gfx=no
+host_android_gfx=no
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Which toolchain family to use ..." >&5
+$as_echo_n "checking Which toolchain family to use ...... " >&6; }
+
+# Check whether --with-toolchain was given.
+if test "${with_toolchain+set}" = set; then :
+  withval=$with_toolchain; aros_toolchain="$withval"
+else
+  aros_toolchain="gnu"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_toolchain" >&5
+$as_echo "$aros_toolchain" >&6; }
+
+case "$aros_toolchain" in
+    *llvm*)
+        # toolchain_needs_sysroot=yes
+        toolchain_c_compiler="clang"
+        toolchain_cxx_compiler="clang++"
+        toolchain_cpp_preprocessor="clang -E"
+        toolchain_ld="lld"
+        toolchain_as="llvm-as"
+        toolchain_ar="llvm-ar"
+        toolchain_ranlib="llvm-ranlib"
+        toolchain_nm="llvm-nm"
+        toolchain_strip="true"
+        toolchain_objcopy="llvm-objcopy"
+        toolchain_objdump="llvm-objdump"
+        ;;
+    *gnu*)
+        toolchain_c_compiler="gcc"
+        toolchain_cxx_compiler="g++"
+        toolchain_cpp_preprocessor="cpp"
+        toolchain_ld="ld"
+        toolchain_as="as"
+        toolchain_ar="ar"
+        toolchain_ranlib="ranlib"
+        toolchain_nm="nm"
+        toolchain_strip="strip"
+        toolchain_objcopy="objcopy"
+        toolchain_objdump="objdump"
+        ;;
+    *)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"Unknown toolchain family!\"" >&5
+$as_echo "$as_me: WARNING: \"Unknown toolchain family!\"" >&2;}
+        toolchain_c_compiler="cc"
+        toolchain_cxx_compiler="c++"
+        toolchain_cpp_preprocessor="cpp"
+        toolchain_ld="ld"
+        toolchain_as="as"
+        toolchain_ar="ar"
+        toolchain_ranlib="ranlib"
+        toolchain_nm="nm"
+        toolchain_strip="strip"
+        toolchain_objcopy="objcopy"
+        toolchain_objdump="objdump"
+        ;;
+esac
+
 #-----------------------------------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for type of build" >&5
-$as_echo_n "checking for type of build... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which type of build to do" >&5
+$as_echo_n "checking which type of build to do... " >&6; }
 # Check whether --enable-build_type was given.
 if test "${enable_build_type+set}" = set; then :
   enableval=$enable_build_type; build_type=$enableval
@@ -7535,8 +7538,8 @@ aros_optimization_cflags="$optimization"
 $as_echo "$optimization" >&6; }
 
 #-----------------------------------------------------------------------------
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what paranoia flags to use" >&5
-$as_echo_n "checking what paranoia flags to use... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which paranoia flags to use" >&5
+$as_echo_n "checking which paranoia flags to use... " >&6; }
 
 # Check whether --with-paranoia was given.
 if test "${with_paranoia+set}" = set; then :
@@ -7547,11 +7550,13 @@ fi
 
 if test "$paranoia_flags" = "default"; then
         paranoia_flags=""
+        msg_result="none"
 else if test "$paranoia_flags" = "yes"; then
         paranoia_flags="-Wall -Werror"
+        msg_result="$paranoia_flags"
 fi fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $paranoia_flags" >&5
-$as_echo "$paranoia_flags" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
+$as_echo "$msg_result" >&6; }
 aros_config_cflags="$aros_config_cflags $paranoia_flags"
 
 #-----------------------------------------------------------------------------
@@ -8551,8 +8556,10 @@ fi
 $as_echo "$toolchain_needs_sysroot" >&6; }
 
 #-----------------------------------------------------------------------------
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target binutils version to use" >&5
+if test "$aros_toolchain" = "gnu" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target binutils version to use" >&5
 $as_echo_n "checking what specific target binutils version to use... " >&6; }
+fi
 
 # Check whether --with-binutils-version was given.
 if test "${with_binutils_version+set}" = set; then :
@@ -8566,16 +8573,20 @@ if test "$use_binutils_version" = ""; then
 else
     target_binutils_version="$use_binutils_version"
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_binutils_version" >&5
+if test "$aros_toolchain" = "gnu" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_binutils_version" >&5
 $as_echo "$target_binutils_version" >&6; }
+fi
 
 
 # Helper to identify gcc version
 
 
 #-----------------------------------------------------------------------------
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target gcc version to use" >&5
+if test "$aros_toolchain" = "gnu" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target gcc version to use" >&5
 $as_echo_n "checking what specific target gcc version to use... " >&6; }
+fi
 
 # Check whether --with-gcc-version was given.
 if test "${with_gcc_version+set}" = set; then :
@@ -8616,8 +8627,10 @@ $as_echo "$ax_cv_gcc_version" >&6; }
 else
     target_gcc_version="$use_gcc_version"
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5
+if test "$aros_toolchain" = "gnu" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5
 $as_echo "$target_gcc_version" >&6; }
+fi
 
 GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
 GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
@@ -10935,8 +10948,13 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking which target tools to use" >&5
 $as_echo_n "checking which target tools to use... " >&6; }
 if test "$aros_target_toolchain" = "yes"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_tool_prefix" >&5
-$as_echo "$target_tool_prefix" >&6; }
+    if test "$aros_toolchain" = "llvm" ; then
+        msg_result="llvm"
+    else
+        msg_result=$target_tool_prefix
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
+$as_echo "$msg_result" >&6; }
     # We are building AROS crosstools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
     orig_target_cc="${tmp_tool_prefix}${toolchain_c_compiler}${target_tool_version}"
@@ -13395,8 +13413,8 @@ aros_cv_nominal_width=$aros_nominal_width
 aros_cv_nominal_height=$aros_nominal_height
 aros_cv_nominal_depth=$aros_nominal_depth
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if serial debug is enabled" >&5
-$as_echo_n "checking if serial debug is enabled... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether serial debug is enabled" >&5
+$as_echo_n "checking whether serial debug is enabled... " >&6; }
 
 # Check whether --with-serial-debug was given.
 if test "${with_serial_debug+set}" = set; then :
@@ -13426,8 +13444,8 @@ else
 $as_echo "no" >&6; }
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if palm debug hack is enabled" >&5
-$as_echo_n "checking if palm debug hack is enabled... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether palm debug hack is enabled" >&5
+$as_echo_n "checking whether palm debug hack is enabled... " >&6; }
 # Check whether --enable-palm_debug_hack was given.
 if test "${enable_palm_debug_hack+set}" = set; then :
   enableval=$enable_palm_debug_hack; palm_debug_hack="yes"
@@ -13441,8 +13459,8 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $palm_debug_hack" >&5
 $as_echo "$palm_debug_hack" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if usb3.0 code is enabled" >&5
-$as_echo_n "checking if usb3.0 code is enabled... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether usb3.0 code is enabled" >&5
+$as_echo_n "checking whether usb3.0 code is enabled... " >&6; }
 # Check whether --enable-usb30_code was given.
 if test "${enable_usb30_code+set}" = set; then :
   enableval=$enable_usb30_code; usb30_code="yes"
@@ -13457,8 +13475,8 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $usb30_code" >&5
 $as_echo "$usb30_code" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if nesting supervisor support is enabled" >&5
-$as_echo_n "checking if nesting supervisor support is enabled... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether nesting supervisor support is enabled" >&5
+$as_echo_n "checking whether nesting supervisor support is enabled... " >&6; }
 # Check whether --enable-nesting_supervisor was given.
 if test "${enable_nesting_supervisor+set}" = set; then :
   enableval=$enable_nesting_supervisor; nesting_supervisor="yes"
@@ -13473,8 +13491,8 @@ fi
 $as_echo "$nesting_supervisor" >&6; }
 
 if test "$aros_enable_mmu" = "" ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if MMU support is enabled" >&5
-$as_echo_n "checking if MMU support is enabled... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether MMU support is enabled" >&5
+$as_echo_n "checking whether MMU support is enabled... " >&6; }
         # Check whether --enable-mmu was given.
 if test "${enable_mmu+set}" = set; then :
   enableval=$enable_mmu; aros_enable_mmu=$enableval
@@ -14250,8 +14268,8 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if building of dbus.library is enabled" >&5
-$as_echo_n "checking if building of dbus.library is enabled... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether building of dbus.library is enabled" >&5
+$as_echo_n "checking whether building of dbus.library is enabled... " >&6; }
 # Check whether --enable-dbus was given.
 if test "${enable_dbus+set}" = set; then :
   enableval=$enable_dbus; dbus="yes"

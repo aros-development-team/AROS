@@ -25,7 +25,6 @@ AC_CANONICAL_HOST
 # Default versions for the gnu tools we build
 default_gcc_version="4.6.4"
 default_binutils_version="2.23.2"
-toolchain_needs_sysroot=no
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -118,55 +117,6 @@ AC_PROG_CPP
 AC_CHECK_PROGS(AWK,[gawk nawk])
 AROS_REQUIRED(gawk,$AWK)
 AROS_PROG(MMAKE,mmake)
-
-AC_MSG_CHECKING([Which toolchain family to use ...])
-AC_ARG_WITH(toolchain,AC_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="gnu")
-AC_MSG_RESULT($aros_toolchain)
-
-case "$aros_toolchain" in
-    *llvm*)
-        # toolchain_needs_sysroot=yes
-        toolchain_c_compiler="clang"
-        toolchain_cxx_compiler="clang++"
-        toolchain_cpp_preprocessor="clang -E"
-        toolchain_ld="llvm-ld"
-        toolchain_as="llvm-as"
-        toolchain_ar="llvm-ar"
-        toolchain_ranlib="llvm-ranlib"
-        toolchain_nm="llvm-nm"
-        toolchain_strip="true"
-        toolchain_objcopy="llvm-objcopy"
-        toolchain_objdump="llvm-objdump"
-        ;;
-    *gnu*)
-        toolchain_c_compiler="gcc"
-        toolchain_cxx_compiler="g++"
-        toolchain_cpp_preprocessor="cpp"
-        toolchain_ld="ld"
-        toolchain_as="as"
-        toolchain_ar="ar"
-        toolchain_ranlib="ranlib"
-        toolchain_nm="nm"
-        toolchain_strip="strip"
-        toolchain_objcopy="objcopy"
-        toolchain_objdump="objdump"
-        ;;
-    *)
-        AC_MSG_WARN("Unknown toolchain family!")
-        toolchain_c_compiler="cc"
-        toolchain_cxx_compiler="c++"
-        toolchain_cpp_preprocessor="cpp"
-        toolchain_ld="ld"
-        toolchain_as="as"
-        toolchain_ar="ar"
-        toolchain_ranlib="ranlib"
-        toolchain_nm="nm"
-        toolchain_strip="strip"
-        toolchain_objcopy="objcopy"
-        toolchain_objdump="objdump"
-        ;;
-esac
-
 
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
@@ -585,55 +535,6 @@ AC_CHECK_FUNCS([getpagesize kqueue statfs statvfs \
 
 AC_FUNC_MMAP
 
-
-dnl --------------------------------------------------------------------
-dnl Target Configuration Section
-dnl --------------------------------------------------------------------
-dnl
-dnl The target configuration section is responsible for setting up all
-dnl the paths for includes, and tools required to build AROS to some
-dnl particular target.
-
-aros_config_cflags="-Wall -Werror-implicit-function-declaration"
-aros_config_aflags="-Wall -x assembler-with-cpp -c"
-aros_config_ldflags=""
-
-aros_shared_default=yes
-
-aros_shared_cflags="-fPIC"
-aros_shared_aflags=""
-aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-aros_kernel_ldflags="-Wl,-rpath,./lib"
-
-aros_kernel_ar_flags="cr"
-aros_target_ar_flags="cr"
-aros_target_nm_flags="-C -ul"
-aros_target_strip_flags="--strip-unneeded -R.comment"
-
-aros_compiler_libs=
-aros_arch_libs=
-
-aros_target_genmap="-Wl,-Map -Xlinker"
-
-# Native flavour stuff
-aros_serial_debug="0"
-
-# Palm native flavour stuff
-aros_palm_debug_hack="0"
-
-# Unix flavour stuff
-aros_nesting_supervisor="0"
-
-# Collect-aros stuff: "-ius" to ignore undefined symbols
-ignore_undefined_symbols=""
-
-# Check for X11 by default
-need_x11="auto"
-
-host_x_gfx=no
-host_sdl_gfx=no
-host_android_gfx=no
-
 #-----------------------------------------------------------------------------
 
 #
@@ -695,9 +596,110 @@ if test "x-$use_gnu89_inline" = "x-yes" ; then
 fi
 CFLAGS="$save_cflags"
 
+AC_MSG_NOTICE([Performing target configuration...])
+
+dnl --------------------------------------------------------------------
+dnl Target Configuration Section
+dnl --------------------------------------------------------------------
+dnl
+dnl The target configuration section is responsible for setting up all
+dnl the paths for includes, and tools required to build AROS to some
+dnl particular target.
+
+toolchain_needs_sysroot=no
+
+aros_config_cflags="-Wall -Werror-implicit-function-declaration"
+aros_config_aflags="-Wall -x assembler-with-cpp -c"
+aros_config_ldflags=""
+
+aros_shared_default=yes
+
+aros_shared_cflags="-fPIC"
+aros_shared_aflags=""
+aros_shared_ldflags="-Wl,-rpath,./lib -shared"
+aros_kernel_ldflags="-Wl,-rpath,./lib"
+
+aros_kernel_ar_flags="cr"
+aros_target_ar_flags="cr"
+aros_target_nm_flags="-C -ul"
+aros_target_strip_flags="--strip-unneeded -R.comment"
+
+aros_compiler_libs=
+aros_arch_libs=
+
+aros_target_genmap="-Wl,-Map -Xlinker"
+
+# Native flavour stuff
+aros_serial_debug="0"
+
+# Palm native flavour stuff
+aros_palm_debug_hack="0"
+
+# Unix flavour stuff
+aros_nesting_supervisor="0"
+
+# Collect-aros stuff: "-ius" to ignore undefined symbols
+ignore_undefined_symbols=""
+
+# Check for X11 by default
+need_x11="auto"
+
+host_x_gfx=no
+host_sdl_gfx=no
+host_android_gfx=no
+
+
+AC_MSG_CHECKING([Which toolchain family to use ...])
+AC_ARG_WITH(toolchain,AC_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="gnu")
+AC_MSG_RESULT($aros_toolchain)
+
+case "$aros_toolchain" in
+    *llvm*)
+        # toolchain_needs_sysroot=yes
+        toolchain_c_compiler="clang"
+        toolchain_cxx_compiler="clang++"
+        toolchain_cpp_preprocessor="clang -E"
+        toolchain_ld="lld"
+        toolchain_as="llvm-as"
+        toolchain_ar="llvm-ar"
+        toolchain_ranlib="llvm-ranlib"
+        toolchain_nm="llvm-nm"
+        toolchain_strip="true"
+        toolchain_objcopy="llvm-objcopy"
+        toolchain_objdump="llvm-objdump"
+        ;;
+    *gnu*)
+        toolchain_c_compiler="gcc"
+        toolchain_cxx_compiler="g++"
+        toolchain_cpp_preprocessor="cpp"
+        toolchain_ld="ld"
+        toolchain_as="as"
+        toolchain_ar="ar"
+        toolchain_ranlib="ranlib"
+        toolchain_nm="nm"
+        toolchain_strip="strip"
+        toolchain_objcopy="objcopy"
+        toolchain_objdump="objdump"
+        ;;
+    *)
+        AC_MSG_WARN("Unknown toolchain family!")
+        toolchain_c_compiler="cc"
+        toolchain_cxx_compiler="c++"
+        toolchain_cpp_preprocessor="cpp"
+        toolchain_ld="ld"
+        toolchain_as="as"
+        toolchain_ar="ar"
+        toolchain_ranlib="ranlib"
+        toolchain_nm="nm"
+        toolchain_strip="strip"
+        toolchain_objcopy="objcopy"
+        toolchain_objdump="objdump"
+        ;;
+esac
+
 #-----------------------------------------------------------------------------
 
-AC_MSG_CHECKING([for type of build])
+AC_MSG_CHECKING([which type of build to do])
 AC_ARG_ENABLE(build_type,AC_HELP_STRING([--enable-build-type=TYPE],[Select the build type. Available types are: personal, nightly, snapshot, milestone, release. Do NOT use this option unless you know what you are doing! (default=personal)]),build_type=$enableval,build_type="personal")
 
 if test "$build_type" = "nightly"; then
@@ -820,14 +822,16 @@ aros_optimization_cflags="$optimization"
 AC_MSG_RESULT($optimization)
 
 #-----------------------------------------------------------------------------
-AC_MSG_CHECKING([what paranoia flags to use])
-AC_ARG_WITH(paranoia,AC_HELP_STRING([--with-paranoia=FLAGS],[CC flags to enable paranoia]),[paranoia_flags="$withval"],[paranoia_flags="default"])
+AC_MSG_CHECKING([which paranoia flags to use])
+AC_ARG_WITH(paranoia,AC_HELP_STRING([--with-paranoia=FLAGS],[compiler warning flags to enable for paranoia]),[paranoia_flags="$withval"],[paranoia_flags="default"])
 if test "$paranoia_flags" = "default"; then
         paranoia_flags=""
+        msg_result="none"
 else if test "$paranoia_flags" = "yes"; then
         paranoia_flags="-Wall -Werror"
+        msg_result="$paranoia_flags"
 fi fi
-AC_MSG_RESULT($paranoia_flags)
+AC_MSG_RESULT($msg_result)
 aros_config_cflags="$aros_config_cflags $paranoia_flags"
 
 #-----------------------------------------------------------------------------
@@ -1642,14 +1646,18 @@ fi
 AC_MSG_RESULT($toolchain_needs_sysroot)
 
 #-----------------------------------------------------------------------------
-AC_MSG_CHECKING([what specific target binutils version to use])
+if test "$aros_toolchain" = "gnu" ; then
+    AC_MSG_CHECKING([what specific target binutils version to use])
+fi
 AC_ARG_WITH(binutils-version,AC_HELP_STRING([--with-binutils-version=VERSION],[Use binutils-VERSION for building AROS]),use_binutils_version="$withval",use_binutils_version="")
 if test "$use_binutils_version" = ""; then
         target_binutils_version="$default_binutils_version"
 else
     target_binutils_version="$use_binutils_version"
 fi
-AC_MSG_RESULT($target_binutils_version)
+if test "$aros_toolchain" = "gnu" ; then
+    AC_MSG_RESULT($target_binutils_version)
+fi
 
 
 # Helper to identify gcc version
@@ -1666,8 +1674,10 @@ AC_DEFUN([CROSS_GCC_VERSION], [
 ])
 
 #-----------------------------------------------------------------------------
-AC_MSG_CHECKING([what specific target gcc version to use])
-AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-gcc-version=VERSION],[Use gcc-VERSION for building AROS]),use_gcc_version="$withval",use_gcc_version="")
+if test "$aros_toolchain" = "gnu" ; then
+    AC_MSG_CHECKING([what specific target gcc version to use])
+fi
+AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-gcc-version=VERSION],[Compile gcc-VERSION for AROS]),use_gcc_version="$withval",use_gcc_version="")
 if test "$use_gcc_version" = ""; then
     if test "${crosstools}" = "no"; then
       if test "x$aros_toolchain_install" != "x"; then
@@ -1680,7 +1690,9 @@ if test "$use_gcc_version" = ""; then
 else
     target_gcc_version="$use_gcc_version"
 fi
-AC_MSG_RESULT($target_gcc_version)
+if test "$aros_toolchain" = "gnu" ; then
+    AC_MSG_RESULT($target_gcc_version)
+fi
 
 GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
 GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
@@ -2017,7 +2029,12 @@ fi
 
 AC_MSG_CHECKING([which target tools to use])
 if test "$aros_target_toolchain" = "yes"; then
-    AC_MSG_RESULT([$target_tool_prefix])
+    if test "$aros_toolchain" = "llvm" ; then
+        msg_result="llvm"
+    else
+        msg_result=$target_tool_prefix
+    fi
+    AC_MSG_RESULT([$msg_result])
     # We are building AROS crosstools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
     orig_target_cc="${tmp_tool_prefix}${toolchain_c_compiler}${target_tool_version}"
@@ -2411,7 +2428,7 @@ aros_cv_nominal_height=$aros_nominal_height
 aros_cv_nominal_depth=$aros_nominal_depth
 
 dnl See if the user wants the serial debug output for native flavour
-AC_MSG_CHECKING([if serial debug is enabled])
+AC_MSG_CHECKING([whether serial debug is enabled])
 AC_ARG_WITH(serial-debug,AC_HELP_STRING([--with-serial-debug],[Enable serial debug output in native (default=no)]),serial_debug=$withval,serial_debug=none)
 if test "$aros_serial_debug" = 0 ; then
     serial_debug_forced=""
@@ -2433,7 +2450,7 @@ else
 fi
 
 dnl See if the user wants the palm debug output hack for palm native flavour
-AC_MSG_CHECKING([if palm debug hack is enabled])
+AC_MSG_CHECKING([whether palm debug hack is enabled])
 AC_ARG_ENABLE(palm_debug_hack,AC_HELP_STRING([--enable-palm-debug-hack],[Enable palm debug output hack in palm native (default=no)]),palm_debug_hack="yes",palm_debug_hack="no")
 if test "$palm_debug_hack" = "yes" ; then
     aros_palm_debug_hack="1"
@@ -2441,7 +2458,7 @@ fi
 AC_MSG_RESULT($palm_debug_hack)
 
 dnl See if dev wants the usb3.0 code
-AC_MSG_CHECKING([if usb3.0 code is enabled])
+AC_MSG_CHECKING([whether usb3.0 code is enabled])
 AC_ARG_ENABLE(usb30_code,AC_HELP_STRING([--enable-usb30-code],[Enable usb3.0 code (default=no)]),usb30_code="yes",usb30_code="no")
 if test "$usb30_code" = "yes" ; then
     aros_config_cflags="$aros_config_cflags -DAROS_USB30_CODE"
@@ -2450,7 +2467,7 @@ fi
 AC_MSG_RESULT($usb30_code)
 
 dnl See if the user wants nesting supervisor activated for unix flavour
-AC_MSG_CHECKING([if nesting supervisor support is enabled])
+AC_MSG_CHECKING([whether nesting supervisor support is enabled])
 AC_ARG_ENABLE(nesting_supervisor,AC_HELP_STRING([--enable-nesting-supervisor],[Enable nesting supervisor support in unix (default=no)]),nesting_supervisor="yes",nesting_supervisor="no")
 if test "$nesting_supervisor" = "yes" ; then
     aros_nesting_supervisor="1"
@@ -2461,7 +2478,7 @@ dnl See if the user wants to disable MMU support
 dnl This can be overriden on per-target basis,
 dnl set $aros_enable_mmu to "yes" or "no" to do this
 if test "$aros_enable_mmu" = "" ; then
-    AC_MSG_CHECKING([if MMU support is enabled])
+    AC_MSG_CHECKING([whether MMU support is enabled])
     dnl Enabled by default
     AC_ARG_ENABLE(mmu,AC_HELP_STRING([--disable-mmu],[Disable MMU support (default=enabled)]),aros_enable_mmu=$enableval,aros_enable_mmu="yes")
     if test "$aros_enable_mmu" = "" ; then
@@ -2659,7 +2676,7 @@ fi
 
 
 dnl See if the user wants dbus.library
-AC_MSG_CHECKING([if building of dbus.library is enabled])
+AC_MSG_CHECKING([whether building of dbus.library is enabled])
 AC_ARG_ENABLE(dbus,AC_HELP_STRING([--enable-dbus],[Enable DBUS support via dbus.library (default=no)]),dbus="yes",dbus="no")
 if test "$dbus" = "yes" ; then
     ENABLE_DBUS=1
