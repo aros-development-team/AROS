@@ -491,8 +491,12 @@ AROS_REQUIRED(patch,$PATCH)
 
 AM_PATH_PYTHON(2.5)
 
+AC_CHECK_LIB(png16, png_read_png, libpng=png16, 
+     AC_CHECK_LIB(png, png_read_png, libpng=png))
+
 AC_CHECK_LIB(png, png_read_png)
 AROS_REQUIRED(libpng, $ac_cv_lib_png_png_read_png)
+AC_SUBST(libpng)
 
 AC_SUBST(FOR, for)
 AC_SUBST(IF, if)
