@@ -3,7 +3,7 @@
 #
 # Makefile to make MultiView.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := main misc aboutclass vars locale
 

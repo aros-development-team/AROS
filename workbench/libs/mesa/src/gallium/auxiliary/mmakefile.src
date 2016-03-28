@@ -3,7 +3,7 @@
 #   Generate libgalliumauxiliary.a
 #
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 #MM linklibs-galliumauxiliary : includes linklibs-galliumauxiliary-generated
 

@@ -2,7 +2,7 @@
 #
 #   Makefile to make Boot prefs program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := main args booteditor locale
 EXEDIR := $(AROSDIR)/Prefs

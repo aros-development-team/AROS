@@ -2,7 +2,7 @@
 #
 # Makefile for Zune step by step examples
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES  := \
     HelloZune \

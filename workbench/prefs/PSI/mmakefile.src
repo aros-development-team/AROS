@@ -2,7 +2,7 @@
 #
 #   Makefile for Public Screen Inspector
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := psi displayidinfo_class displayidlist_class editpanel_class editwindow_class \
          mainwindow_class screenlist_class screenpanel_class syspenfield_class

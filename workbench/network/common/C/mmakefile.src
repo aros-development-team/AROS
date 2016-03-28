@@ -1,6 +1,6 @@
 #   $Id$
-include $(TOP)/config/make.cfg
--include $(GENDIR)/config/compiler.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
 USER_CFLAGS := $(NOWARN_FLAGS) -D__BSD_VISIBLE=1

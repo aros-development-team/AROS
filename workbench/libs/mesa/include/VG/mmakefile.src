@@ -1,5 +1,6 @@
 #   $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 INCLUDE_FILES := openvg.h vgext.h vgplatform.h vgu.h
 

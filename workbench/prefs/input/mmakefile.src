@@ -2,7 +2,7 @@
 #
 # Makefile to build Input Prefs program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES       := main args keymap locale misc ipeditor prefs stringify
 EXEDIR      := $(AROS_PREFS)

@@ -2,7 +2,7 @@
 #
 #   Makefile to make Network prefs program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES 	    := main args netpeditor prefsdata locale misc
 EXEDIR      := $(AROSDIR)/Prefs

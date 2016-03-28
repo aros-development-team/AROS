@@ -1,7 +1,7 @@
 # Copyright © 2004, 2013, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 SUBDIRS := Zune SYS SYS/Packages DiskImage
 FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(call WILDCARD, $(dir)/*)))

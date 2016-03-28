@@ -1,5 +1,6 @@
 #$Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 FILES:= uuid_compare uuid_namespace uuid_parse uuid_pack uuid_clear \
 	uuid_copy uuid_generate

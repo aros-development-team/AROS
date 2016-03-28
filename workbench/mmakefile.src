@@ -1,6 +1,6 @@
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 # The workbench target points back to config/$(ARCH)/mmakefile:
 #MM- workbench : workbench-$(ARCH)-$(CPU)

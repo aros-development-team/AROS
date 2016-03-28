@@ -1,5 +1,7 @@
 # $Id$
 
+include $(SRCDIR)/config/aros.cfg
+
 #MM- workbench-classes-complete : \
 #MM         workbench-gadgets-complete \
 #MM	    workbench-datatypes-complete

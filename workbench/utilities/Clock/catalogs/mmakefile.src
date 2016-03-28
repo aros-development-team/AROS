@@ -1,7 +1,7 @@
 # Copyright © 2003, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 %build_catalogs mmake=workbench-utilities-clock-catalogs \
                 name=Clock subdir=System/Utilities

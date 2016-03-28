@@ -2,7 +2,7 @@
 #
 #   Makefile for the Workbench:Tools directory.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := Calculator GraphicDump InitPrinter PrintFiles WiMP
 

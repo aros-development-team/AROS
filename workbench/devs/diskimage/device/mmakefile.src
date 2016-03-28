@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM workbench-devs-diskimage-device : includes linklibs workbench-devs-diskimage-support \
 #MM workbench-devs-diskimage-prefs workbench-devs-diskimage-device-catalogs workbench-libs-expat

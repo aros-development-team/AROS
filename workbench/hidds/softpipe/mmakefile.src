@@ -1,6 +1,6 @@
 #   $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-hidds : hidd-softpipe-$(AROS_TARGET_TOOLCHAIN)
 #MM- hidd-softpipe-yes : hidd-softpipe

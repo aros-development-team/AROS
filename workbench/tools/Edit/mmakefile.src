@@ -2,7 +2,7 @@
 #
 # Makefile to make JanoEditor.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := ClipLoc Cursor DiskIO Edit Events Gui Jed \
     	 Macros Memory Prefs Print Project Search UndoRedo \

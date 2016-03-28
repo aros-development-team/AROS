@@ -1,6 +1,6 @@
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 ifneq ($(AROS_TARGET_VARIANT),tiny)
 MAKE_BUILTIN_ABOUTMUI      := no
