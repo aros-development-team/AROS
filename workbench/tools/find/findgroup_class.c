@@ -62,28 +62,82 @@ static void display_doserror(Object *app, ULONG error)
 
 // =======================================================================================
 
-static BOOL checkfile(struct FileInfoBlock *fib, STRPTR pattern, STRPTR content)
+static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern, STRPTR content)
 {
-    D(bug("[Find::checkfile] name %s pattern %s content %s\n", fib->fib_FileName, pattern, content));
+    D(bug("[Find::checkfile] name %s pattern %s content %s\n", anchorpath->ap_Info.fib_FileName, pattern, content));
 
-    if (fib->fib_DirEntryType > 0) // ignore directories
+    LONG retval = FALSE;
+
+    if (anchorpath->ap_Info.fib_DirEntryType > 0) // ignore directories
     {
         return FALSE;
     }
 
-    if ((pattern[0] == '\0') || MatchPatternNoCase(pattern, fib->fib_FileName))
+    if ((pattern[0] == '\0') || MatchPatternNoCase(pattern, anchorpath->ap_Info.fib_FileName))
     {
         if (content && (content[0] != '\0'))
         {
-            // TODO: implement
             D(bug("[Find::checkfile] content search\n"));
+
+            BPTR fh;
+            LONG searchlen = strlen(content);
+            LONG textlen = anchorpath->ap_Info.fib_Size;
+            TEXT *text, *oldtext;
+            LONG i;
+
+            fh = Open(anchorpath->ap_Buf, MODE_OLDFILE);
+            if (fh)
+            {
+                text = oldtext = AllocVec(textlen, MEMF_ANY);
+                if (text)
+                {
+                    if (Read(fh, text, textlen) == textlen)
+                    {
+                        textlen -= searchlen;
+                        while (textlen >= 0)
+                        {
+                            for(i = 0; i < searchlen; i++)
+                            {
+                                if (ToUpper(text[i]) != ToUpper(content[i]))
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (i == searchlen)
+                            {
+                                retval = TRUE;
+                                break;
+                            }
+                            text++;
+                            textlen--;
+                        }
+                    }
+                    else
+                    {
+                        // Read() failed
+                        display_doserror(app, IoErr());
+                    }
+                    FreeVec(oldtext);
+                }
+                else
+                {
+                    MUI_Request(app, NULL, 0, "Find", "OK", "Error:\nCan't allocate memory.");
+                }
+                Close(fh);
+            }
+            else
+            {
+                // Open() failed
+                display_doserror(app, IoErr());
+            }
         }
         else
         {
-            return TRUE;
+            retval = TRUE;
         }
     }
-    return FALSE;
+    return retval;
 }
 
 // =======================================================================================
@@ -249,6 +303,7 @@ AROS_UFH3S(void, search_func,
         anchorpath->ap_Strlen = PATHNAMESIZE;
         //anchorpath->ap_BreakBits = SIGBREAKF_CTRL_C;
         anchorpath->ap_Flags = APF_DODIR;
+
         if ((error = MatchFirst(path, anchorpath)) == 0)
         {
             do
@@ -260,8 +315,8 @@ AROS_UFH3S(void, search_func,
                 else
                 {
                     struct Listentry entry;
-                    D(bug("found %s\n", anchorpath->ap_Info.fib_FileName));
-                    if (checkfile(&anchorpath->ap_Info, destpattern, content))
+                    D(bug("found %s\n", anchorpath->ap_Buf));
+                    if (checkfile(_app(obj), anchorpath, destpattern, content))
                     {
                         entry.fullname = anchorpath->ap_Buf;
                         entry.fib = anchorpath->ap_Info;
@@ -590,7 +645,6 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->activeentry_hook.h_Data = data;
 
         SET(data->btn_stop, MUIA_Disabled, TRUE);
-        SET(data->str_contents, MUIA_Disabled, TRUE);
         SET(data->btn_open, MUIA_Disabled, TRUE);
         SET(data->btn_view, MUIA_Disabled, TRUE);
         SET(data->btn_delete, MUIA_Disabled, TRUE);

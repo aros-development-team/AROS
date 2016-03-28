@@ -61,7 +61,7 @@ int main(int argc, char **argv)
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Base, (IPTR)"FIND",
         MUIA_Application_Title, (IPTR)"Find",
-        MUIA_Application_Version, (IPTR)"$VER: Find 1.0 (26.03.2016)",
+        MUIA_Application_Version, (IPTR)"$VER: Find 1.0 (28.03.2016)",
         MUIA_Application_Copyright, __(MSG_AppCopyright),
         MUIA_Application_Description, __(MSG_AppDescription),
         MUIA_Application_DiskObject, (IPTR)dobj,
