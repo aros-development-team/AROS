@@ -194,7 +194,7 @@ AROS_UFH3S(LONG, list_display_func,
     if (li)
     {
         static TEXT protbuf[8], sizebuf[20];
-        static TEXT datebuf[10], timebuf[10];
+        static TEXT datebuf[20], timebuf[20];
         struct DateTime dt;
 
         // Protection bits
@@ -562,6 +562,7 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Popstring_String, str_path = StringObject,
                             StringFrame,
                             MUIA_String_Contents, path,
+                            MUIA_CycleChain, 1,
                         End,
                     MUIA_Popstring_Button, PopButton(MUII_PopFile),
                     End,
@@ -569,11 +570,13 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, str_pattern = StringObject,
                         StringFrame,
                         MUIA_String_Contents, pattern,
+                        MUIA_CycleChain, 1,
                     End,
                     Child, Label("Contents"),
                     Child, str_contents = StringObject,
                         StringFrame,
                         MUIA_String_Contents, contents,
+                        MUIA_CycleChain, 1,
                     End,                    
                 End,
                 Child, lst_result = NListviewObject,
