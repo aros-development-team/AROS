@@ -2,7 +2,7 @@
 
 #   AROS metamakefile for openurl
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES:= libinit \
         init    \
