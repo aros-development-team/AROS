@@ -6,6 +6,8 @@
 
 -include $(TOP)/config/make.cfg
 
+LIBPNG ?= png
+
 USER_CFLAGS := -Wall -Wunused -O2
 
 HOST_CC	    ?= $(CC)
@@ -30,7 +32,7 @@ endif
 # sure to have the i386 build tools for your distribution
 # installed (including libz-dev:i386 and libpng-dev:i386
 # or their equivalents).
-EXTRALIBS1 := -lpng -lz
+EXTRALIBS1 := -l$(LIBPNG) -lz
 
 all : $(ILBMTOICON) $(INFOINFO)
 
