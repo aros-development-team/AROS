@@ -50,7 +50,7 @@ getvar (struct List * varlist, const char * varname)
     {
 	return env_val;
     }
-    if (!strncmp(varname, "OPT_", 4))
+    if ((!strncmp(varname, "OPT_", 4)) || (!strncmp(varname, "NOWARN_", 7)))
         buffer[0] = '\0';
     else
     {
