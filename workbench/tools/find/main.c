@@ -15,6 +15,8 @@
 #include <libraries/mui.h>
 #include <workbench/startup.h>
 
+#include <stdlib.h>
+
 #include "findgroup_class.h"
 #include "locale.h"
 
@@ -84,7 +86,15 @@ int main(int argc, char **argv)
     );
 
     SET(win, MUIA_Window_Open, TRUE);
-    DoMethod(app, MUIM_Application_Execute);
+    if (XGET(win, MUIA_Window_Open))
+    {
+        DoMethod(app, MUIM_Application_Execute);
+    }
+    else
+    {
+        MUI_Request(app, NULL, 0, "Find", "OK", "Error:\nCan't open window.");
+    }
+
     cleanup_exit(NULL);
     return 0;
 }
@@ -105,4 +115,5 @@ static void cleanup_exit(CONST_STRPTR str)
 
     if (dobj) FreeDiskObject(dobj);
     if (rda) FreeArgs(rda);
+    exit(0);
 }
