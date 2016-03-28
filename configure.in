@@ -134,7 +134,7 @@ case "$aros_toolchain" in
         toolchain_ar="llvm-ar"
         toolchain_ranlib="llvm-ranlib"
         toolchain_nm="llvm-nm"
-        toolchain_strip="llvm-strip"
+        toolchain_strip="true"
         toolchain_objcopy="llvm-objcopy"
         toolchain_objdump="llvm-objdump"
         ;;
