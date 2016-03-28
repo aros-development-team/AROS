@@ -799,6 +799,7 @@ CMP
 TEST
 IF
 FOR
+libpng
 pkgpyexecdir
 pyexecdir
 pkgpythondir
@@ -1879,52 +1880,6 @@ fi
   as_fn_set_status $ac_retval
 
 } # ac_fn_c_try_cpp
-
-# ac_fn_c_try_link LINENO
-# -----------------------
-# Try to link conftest.$ac_ext, and return whether this succeeded.
-ac_fn_c_try_link ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  rm -f conftest.$ac_objext conftest$ac_exeext
-  if { { ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_link") 2>conftest.err
-  ac_status=$?
-  if test -s conftest.err; then
-    grep -v '^ *+' conftest.err >conftest.er1
-    cat conftest.er1 >&5
-    mv -f conftest.er1 conftest.err
-  fi
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext && {
-	 test "$cross_compiling" = yes ||
-	 test -x conftest$ac_exeext
-       }; then :
-  ac_retval=0
-else
-  $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_retval=1
-fi
-  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
-  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
-  # interfere with the next link command; also delete a directory that is
-  # left behind by Apple's compiler.  We do this before executing the actions.
-  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  as_fn_set_status $ac_retval
-
-} # ac_fn_c_try_link
 
 # ac_fn_c_check_header_mongrel LINENO HEADER VAR INCLUDES
 # -------------------------------------------------------
@@ -4197,7 +4152,14 @@ fi
   test -n "$AWK" && break
 done
 
+req_avail=yes
 if test "$AWK" = ""; then
+    req_avail=no
+fi
+if test "$AWK" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "gawk is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "mmake", so it can be a program name with args.
@@ -4330,7 +4292,14 @@ fi
 
 
 fi
+req_avail=yes
 if test "$aros_host_ld" = ""; then
+    req_avail=no
+fi
+if test "$aros_host_ld" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 aros_host_make="make"
@@ -4521,10 +4490,24 @@ fi
 done
 
 
+req_avail=yes
 if test "$aros_host_aclocal" = ""; then
+    req_avail=no
+fi
+if test "$aros_host_aclocal" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "aclocal/aclocal19/aclocal-1.9 is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+req_avail=yes
 if test "$aros_host_automake" = ""; then
+    req_avail=no
+fi
+if test "$aros_host_automake" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "automake/automake19/automake-1.9 is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -4861,7 +4844,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$aros_host_ar" = ""; then
+    req_avail=no
+fi
+if test "$aros_host_ar" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ar is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "ranlib", so it can be a program name with args.
@@ -4901,7 +4891,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$aros_host_ranlib" = ""; then
+    req_avail=no
+fi
+if test "$aros_host_ranlib" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ranlib is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "strip", so it can be a program name with args.
@@ -4941,7 +4938,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$aros_host_strip" = ""; then
+    req_avail=no
+fi
+if test "$aros_host_strip" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "strip is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -4982,7 +4986,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$RM" = ""; then
+    req_avail=no
+fi
+if test "$RM" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "rm is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "cp", so it can be a program name with args.
@@ -5022,7 +5033,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$CP" = ""; then
+    req_avail=no
+fi
+if test "$CP" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "cp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "mv", so it can be a program name with args.
@@ -5062,7 +5080,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$MV" = ""; then
+    req_avail=no
+fi
+if test "$MV" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "mv is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "echo", so it can be a program name with args.
@@ -5102,7 +5127,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$ECHO" = ""; then
+    req_avail=no
+fi
+if test "$ECHO" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "echo is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "mkdir", so it can be a program name with args.
@@ -5142,7 +5174,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$MKDIR" = ""; then
+    req_avail=no
+fi
+if test "$MKDIR" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "mkdir is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "touch", so it can be a program name with args.
@@ -5182,7 +5221,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$TOUCH" = ""; then
+    req_avail=no
+fi
+if test "$TOUCH" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "touch is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "sort", so it can be a program name with args.
@@ -5222,7 +5268,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$SORT" = ""; then
+    req_avail=no
+fi
+if test "$SORT" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "sort is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "uniq", so it can be a program name with args.
@@ -5262,7 +5315,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$UNIQ" = ""; then
+    req_avail=no
+fi
+if test "$UNIQ" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "uniq is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "true", so it can be a program name with args.
@@ -5302,7 +5362,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$NOP" = ""; then
+    req_avail=no
+fi
+if test "$NOP" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "true is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "cat", so it can be a program name with args.
@@ -5342,7 +5409,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$CAT" = ""; then
+    req_avail=no
+fi
+if test "$CAT" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "cat is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "bison", so it can be a program name with args.
@@ -5382,7 +5456,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$BISON" = ""; then
+    req_avail=no
+fi
+if test "$BISON" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "bison is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "flex", so it can be a program name with args.
@@ -5422,7 +5503,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$FLEX" = ""; then
+    req_avail=no
+fi
+if test "$FLEX" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "flex is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "pngtopnm", so it can be a program name with args.
@@ -5462,7 +5550,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$PNGTOPNM" = ""; then
+    req_avail=no
+fi
+if test "$PNGTOPNM" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "pngtopnm is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "ppmtoilbm", so it can be a program name with args.
@@ -5502,7 +5597,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$PPMTOILBM" = ""; then
+    req_avail=no
+fi
+if test "$PPMTOILBM" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ppmtoilbm is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "sed", so it can be a program name with args.
@@ -5542,7 +5644,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$SED" = ""; then
+    req_avail=no
+fi
+if test "$SED" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "sed is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "chmod", so it can be a program name with args.
@@ -5582,7 +5691,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$CHMOD" = ""; then
+    req_avail=no
+fi
+if test "$CHMOD" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "chmod is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 # Extract the first word of "patch", so it can be a program name with args.
@@ -5622,7 +5738,14 @@ $as_echo "no" >&6; }
 fi
 
 
+req_avail=yes
 if test "$PATCH" = ""; then
+    req_avail=no
+fi
+if test "$PATCH" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "patch is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -5888,6 +6011,134 @@ $as_echo "$am_cv_python_pyexecdir" >&6; }
 
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng16" >&5
+$as_echo_n "checking for png_read_png in -lpng16... " >&6; }
+if ${ac_cv_lib_png16_png_read_png+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpng16  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char png_read_png ();
+int
+main ()
+{
+return png_read_png ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_png16_png_read_png=yes
+else
+  ac_cv_lib_png16_png_read_png=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_png16_png_read_png" >&5
+$as_echo "$ac_cv_lib_png16_png_read_png" >&6; }
+if test "x$ac_cv_lib_png16_png_read_png" = xyes; then :
+  libpng=png16
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng" >&5
+$as_echo_n "checking for png_read_png in -lpng... " >&6; }
+if ${ac_cv_lib_png_png_read_png+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpng  $LIBS"
+
+
+# ac_fn_c_try_link LINENO
+# -----------------------
+# Try to link conftest.$ac_ext, and return whether this succeeded.
+ac_fn_c_try_link ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  rm -f conftest.$ac_objext conftest$ac_exeext
+  if { { ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_link") 2>conftest.err
+  ac_status=$?
+  if test -s conftest.err; then
+    grep -v '^ *+' conftest.err >conftest.er1
+    cat conftest.er1 >&5
+    mv -f conftest.er1 conftest.err
+  fi
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 test -x conftest$ac_exeext
+       }; then :
+  ac_retval=0
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_retval=1
+fi
+  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
+  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
+  # interfere with the next link command; also delete a directory that is
+  # left behind by Apple's compiler.  We do this before executing the actions.
+  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_try_link
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char png_read_png ();
+int
+main ()
+{
+return png_read_png ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_png_png_read_png=yes
+else
+  ac_cv_lib_png_png_read_png=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_png_png_read_png" >&5
+$as_echo "$ac_cv_lib_png_png_read_png" >&6; }
+if test "x$ac_cv_lib_png_png_read_png" = xyes; then :
+  libpng=png
+fi
+
+fi
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng" >&5
 $as_echo_n "checking for png_read_png in -lpng... " >&6; }
@@ -5934,9 +6185,17 @@ _ACEOF
 
 fi
 
+req_avail=yes
 if test "$ac_cv_lib_png_png_read_png" = ""; then
+    req_avail=no
+fi
+if test "$ac_cv_lib_png_png_read_png" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "libpng is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+
 
 FOR=for
 
@@ -7710,7 +7969,14 @@ $as_echo "no" >&6; }
 fi
 
 
-    if test "$android_tool" = ""; then
+    req_avail=yes
+if test "$android_tool" = ""; then
+    req_avail=no
+fi
+if test "$android_tool" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "android is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -9167,7 +9433,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_cpp" = ""; then
+    req_avail=yes
+if test "$aros_kernel_cpp" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_cpp" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
     if test "x$aros_kernel_cc" = "x"; then
@@ -9346,7 +9619,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_cc" = ""; then
+    req_avail=yes
+if test "$aros_kernel_cc" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_cc" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
     if test "x$aros_kernel_cxx" = "x"; then
@@ -9527,7 +9807,14 @@ fi
 
     # If it's set, make sure it's really there
     if test "x$aros_kernel_cxx" != "x" ; then
-        if test "$aros_kernel_cxx" = ""; then
+        req_avail=yes
+if test "$aros_kernel_cxx" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_cxx" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "cxx is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
     fi
@@ -9704,7 +9991,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_ld" = ""; then
+    req_avail=yes
+if test "$aros_kernel_ld" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_ld" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -9880,7 +10174,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_as" = ""; then
+    req_avail=yes
+if test "$aros_kernel_as" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_as" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "as is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -10056,7 +10357,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_ar" = ""; then
+    req_avail=yes
+if test "$aros_kernel_ar" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_ar" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ar is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -10232,7 +10540,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_ranlib" = ""; then
+    req_avail=yes
+if test "$aros_kernel_ranlib" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_ranlib" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ranlib is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -10408,7 +10723,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_nm" = ""; then
+    req_avail=yes
+if test "$aros_kernel_nm" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_nm" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "nm is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -10584,7 +10906,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_strip" = ""; then
+    req_avail=yes
+if test "$aros_kernel_strip" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_strip" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "strip is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -10938,10 +11267,24 @@ fi
 fi
 
     if test "x${crosstools}" != "xyes" ; then
-        if test "$aros_kernel_objcopy" = ""; then
+        req_avail=yes
+if test "$aros_kernel_objcopy" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_objcopy" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
-        if test "$aros_kernel_objdump" = ""; then
+        req_avail=yes
+if test "$aros_kernel_objdump" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_objdump" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "objdump is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
     fi
@@ -11152,7 +11495,14 @@ fi
 
 fi
 
-    if test "$orig_target_cpp" = ""; then
+    req_avail=yes
+if test "$orig_target_cpp" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_cpp" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -11328,7 +11678,14 @@ fi
 
 fi
 
-    if test "$orig_target_cc" = ""; then
+    req_avail=yes
+if test "$orig_target_cc" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_cc" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -11504,7 +11861,14 @@ fi
 
 fi
 
-    if test "$orig_target_cxx" = ""; then
+    req_avail=yes
+if test "$orig_target_cxx" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_cxx" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "cxx is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -11680,7 +12044,14 @@ fi
 
 fi
 
-    if test "$orig_target_ld" = ""; then
+    req_avail=yes
+if test "$orig_target_ld" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_ld" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -11856,7 +12227,14 @@ fi
 
 fi
 
-    if test "$orig_target_as" = ""; then
+    req_avail=yes
+if test "$orig_target_as" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_as" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "as is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -12032,7 +12410,14 @@ fi
 
 fi
 
-    if test "$orig_target_ar" = ""; then
+    req_avail=yes
+if test "$orig_target_ar" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_ar" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ar is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -12208,7 +12593,14 @@ fi
 
 fi
 
-    if test "$orig_target_ranlib" = ""; then
+    req_avail=yes
+if test "$orig_target_ranlib" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_ranlib" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "ranlib is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -12384,7 +12776,14 @@ fi
 
 fi
 
-    if test "$orig_target_nm" = ""; then
+    req_avail=yes
+if test "$orig_target_nm" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_nm" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "nm is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -12560,7 +12959,14 @@ fi
 
 fi
 
-    if test "$orig_target_strip" = ""; then
+    req_avail=yes
+if test "$orig_target_strip" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_strip" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "strip is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -12736,7 +13142,14 @@ fi
 
 fi
 
-    if test "$orig_target_objcopy" = ""; then
+    req_avail=yes
+if test "$orig_target_objcopy" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_objcopy" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
@@ -12912,7 +13325,14 @@ fi
 
 fi
 
-    if test "$orig_target_objdump" = ""; then
+    req_avail=yes
+if test "$orig_target_objdump" = ""; then
+    req_avail=no
+fi
+if test "$orig_target_objdump" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "objdump is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 fi
@@ -12998,7 +13418,14 @@ $as_echo "no" >&6; }
 fi
 
 
-    if test "$aros_kernel_rescomp" = ""; then
+    req_avail=yes
+if test "$aros_kernel_rescomp" = ""; then
+    req_avail=no
+fi
+if test "$aros_kernel_rescomp" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     as_fn_error $? "$rescomp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 fi
