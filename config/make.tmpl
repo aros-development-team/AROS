@@ -2795,29 +2795,49 @@ ifeq (%(compiler),host)
         CXX="$(HOST_CXX)" \
         CXXFLAGS="$(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
         LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)" \
-        TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
-        TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
-        TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)" \
-        TARGET_NM="$(NM_PLAIN)" TARGET_OBJCOPY="$(TARGET_OBJCOPY)"
+        TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
+        TARGET_CFLAGS="$(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
+        TARGET_CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT)" \
+        TARGET_CXXFLAGS="$(KERNEL_CXXFLAGS) $(%(mmake)-s_flag)" \
+        TARGET_AS="$(TARGET_AS)" \
+        OBJCOPY="$(OBJCOPY)" \
+        TARGET_RANLIB="$(RANLIB)" \
+        TARGET_STRIP="$(STRIP_PLAIN)" \
+        TARGET_NM="$(NM_PLAIN)" \
+        TARGET_OBJCOPY="$(TARGET_OBJCOPY)"
 endif
 ifeq (%(compiler),target)
     CONFIG_ENV := %(config_env_extra) \
         PKG_CONFIG_LIBDIR="$(AROS_DEVELOPMENT)/lib/pkgconfig" \
         PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)" \
-        CFLAGS=" $(TARGET_CFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
-        CXXFLAGS=" $(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         CPP="$(TARGET_CPP) $(TARGET_SYSROOT)" \
         CXXCPP="$(TARGET_CPP) $(TARGET_SYSROOT)" \
-        CC="$(TARGET_CC) $(TARGET_SYSROOT) -I$(AROS_DEVELOPMENT)/include"\
-        CXX="$(TARGET_CXX) $(TARGET_SYSROOT) -I$(AROS_DEVELOPMENT)/include"\
+        CC="$(TARGET_CC) $(TARGET_SYSROOT)" \
+        CFLAGS=" $(TARGET_CFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+        CXX="$(TARGET_CXX) $(TARGET_SYSROOT)" \
+        CXXFLAGS=" $(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         LDFLAGS="-L$(AROS_DEVELOPMENT)/lib $(USER_LDFLAGS)" \
-        AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" RANLIB="$(RANLIB)" AR="$(AR_PLAIN)" STRIP="$(STRIP_PLAIN)"\
-        TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
-        TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"\
-        TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)"\
+        AS="$(TARGET_AS)" \
+        CC_FOR_BUILD="$(HOST_DEF_CC)" \
+        CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" \
+        CXX_FOR_BUILD="$(HOST_CXX)" \
+        CXXFLAGS_FOR_BUILD="$(HOST_CXXFLAGS)" \
+        RANLIB="$(RANLIB)" \
+        AR="$(AR_PLAIN)" \
+        STRIP="$(STRIP_PLAIN)" \
+        TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
+        TARGET_CFLAGS="$(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
+        TARGET_CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT)" \
+        TARGET_CXXFLAGS="$(KERNEL_CXXFLAGS) $(%(mmake)-s_flag)" \
+        TARGET_AS="$(TARGET_AS)" \
+        OBJCOPY="$(OBJCOPY)" \
+        TARGET_RANLIB="$(RANLIB)" \
+        TARGET_STRIP="$(STRIP_PLAIN)"\
         TARGET_NM="$(NM_PLAIN)" \
-        CC_FOR_TARGET="$(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
-        CXX_FOR_TARGET="$(TARGET_CXX) $(TARGET_SYSROOT) $(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib -I$(AROS_DEVELOPMENT)/include %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
+        CC_FOR_TARGET="$(TARGET_CC) $(TARGET_SYSROOT)" \
+        CFLAGS_FOR_TARGET="$(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+        CXX_FOR_TARGET="$(TARGET_CXX) $(TARGET_SYSROOT)" \
+        CXXFLAGS_FOR_TARGET="$(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
         --target=$(AROS_TARGET_CPU)-aros\
@@ -2828,12 +2848,18 @@ ifeq (%(compiler),kernel)
     CONFIG_ENV := %(config_env_extra) \
         CPP="$(KERNEL_CPP)" \
         CXXCPP="$(KERNEL_CPP)" \
-        CFLAGS="%(extracflags) $(%(mmake)-s_flag)" \
-        CXXFLAGS="%(extracxxflags) $(%(mmake)-s_flag)" \
-        CC="$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)"\
-        CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)"\
-        AS="$(KERNEL_AS)" CC_FOR_BUILD="$(HOST_CC)" CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" RANLIB="$(RANLIB)"\
-        TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)" \
+        CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
+        CFLAGS="$(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)" \
+        CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT)" \
+        CXXFLAGS="$(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag)" \
+        AS="$(KERNEL_AS)" \
+        CC_FOR_BUILD="$(HOST_DEF_CC)" \
+        CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" \
+        CXX_FOR_BUILD="$(HOST_CXX)" \
+        CXXFLAGS_FOR_BUILD="$(HOST_CXXFLAGS)" \
+        RANLIB="$(RANLIB)" \
+        TARGET_RANLIB="$(RANLIB)" \
+        TARGET_STRIP="$(STRIP_PLAIN)" \
         TARGET_NM="$(NM_PLAIN)"
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
