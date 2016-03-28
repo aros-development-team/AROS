@@ -8630,34 +8630,34 @@ fi
 if test "$aros_toolchain" = "gnu" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5
 $as_echo "$target_gcc_version" >&6; }
-fi
 
-GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
-GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
-GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
+    GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
+    GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
+    GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
 
-gcc_fix_bitfields="false"
-if test "$GCC_VERSION_MAJOR" -gt "4" ; then
-    gcc_fix_bitfields="true"
-else
-    if test "$GCC_VERSION_MAJOR" -gt "3" ; then
-        if test "$GCC_VERSION_MINOR" -gt "6" ; then
-            gcc_fix_bitfields="true"
+    gcc_fix_bitfields="false"
+    if test "$GCC_VERSION_MAJOR" -gt "4" ; then
+        gcc_fix_bitfields="true"
+    else
+        if test "$GCC_VERSION_MAJOR" -gt "3" ; then
+            if test "$GCC_VERSION_MINOR" -gt "6" ; then
+                gcc_fix_bitfields="true"
+            fi
         fi
     fi
-fi
 
-if test "$gcc_fix_bitfields" = "true" ; then
-    case "$aros_target_cpu" in
-    *x86_64*)
-        aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
-        aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
-        ;;
-    i386)
-        aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
-        aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
-        ;;
-    esac
+    if test "$gcc_fix_bitfields" = "true" ; then
+        case "$aros_target_cpu" in
+        *x86_64*)
+            aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
+            aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+            ;;
+        i386)
+            aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
+            aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+            ;;
+        esac
+    fi
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable Objective-C suppport" >&5
@@ -8976,10 +8976,12 @@ elif test "$aros_toolchain" = "llvm" ; then
     target_tool_prefix="bin/"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which kernel tools" >&5
+if test "$kernel_tool_prefix" != "" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which kernel tools" >&5
 $as_echo_n "checking which kernel tools... " >&6; }
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_tool_prefix" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_tool_prefix" >&5
 $as_echo "$kernel_tool_prefix" >&6; };
+fi
 
 if test "$kernel_tool_prefix" = "none" ; then
         if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then

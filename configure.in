@@ -1692,34 +1692,34 @@ else
 fi
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_RESULT($target_gcc_version)
-fi
 
-GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
-GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
-GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
+    GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
+    GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
+    GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
 
-gcc_fix_bitfields="false"
-if test "$GCC_VERSION_MAJOR" -gt "4" ; then
-    gcc_fix_bitfields="true"
-else
-    if test "$GCC_VERSION_MAJOR" -gt "3" ; then
-        if test "$GCC_VERSION_MINOR" -gt "6" ; then
-            gcc_fix_bitfields="true"
+    gcc_fix_bitfields="false"
+    if test "$GCC_VERSION_MAJOR" -gt "4" ; then
+        gcc_fix_bitfields="true"
+    else
+        if test "$GCC_VERSION_MAJOR" -gt "3" ; then
+            if test "$GCC_VERSION_MINOR" -gt "6" ; then
+                gcc_fix_bitfields="true"
+            fi
         fi
     fi
-fi
 
-if test "$gcc_fix_bitfields" = "true" ; then
-    case "$aros_target_cpu" in
-    *x86_64*)
-        aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
-        aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
-        ;;
-    i386)
-        aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
-        aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
-        ;;
-    esac
+    if test "$gcc_fix_bitfields" = "true" ; then
+        case "$aros_target_cpu" in
+        *x86_64*)
+            aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
+            aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+            ;;
+        i386)
+            aros_kernel_cflags="$aros_kernel_cflags -mno-ms-bitfields"
+            aros_target_cflags="$aros_target_cflags -mno-ms-bitfields"
+            ;;
+        esac
+    fi
 fi
 
 AC_MSG_CHECKING([whether to enable Objective-C suppport])
@@ -1973,8 +1973,10 @@ elif test "$aros_toolchain" = "llvm" ; then
     target_tool_prefix="bin/"
 fi
 
-AC_MSG_CHECKING([which kernel tools])
-AC_MSG_RESULT([$kernel_tool_prefix]);
+if test "$kernel_tool_prefix" != "" ; then
+    AC_MSG_CHECKING([which kernel tools])
+    AC_MSG_RESULT([$kernel_tool_prefix]);
+fi
 
 if test "$kernel_tool_prefix" = "none" ; then
     dnl ELF wrapper can be used only for native bootstrap
