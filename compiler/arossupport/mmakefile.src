@@ -2,7 +2,8 @@
 #
 #   Generate the AROS support library, libarossupport.a
 #
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 FILES	:= \
     calcchecksum \
