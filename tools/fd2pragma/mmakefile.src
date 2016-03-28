@@ -1,5 +1,4 @@
-include $(TOP)/config/make.cfg
--include $(GENDIR)/config/compiler.cfg
+include $(SRCDIR)/config/aros.cfg
 
 #MM- contrib-development : tools-fd2pragma
 #MM tools-fd2pragma : includes linklibs

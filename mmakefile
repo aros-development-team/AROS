@@ -1,7 +1,7 @@
 # Copyright © 1995-2012, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 #MM AROS : clean-errors AROS-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) AROS-$(ARCH)-$(CPU) test
 AROS : checkerr
