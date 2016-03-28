@@ -55,6 +55,8 @@ PPMTOILBM   	:= @PPMTOILBM@
 SED		:= @SED@
 CHMOD		:= @CHMOD@
 
+HOST_LIBPNG     := @libpng@
+
 # Android-specific
 ANDROID		:= @android_tool@
 ANT		:= @ant@
