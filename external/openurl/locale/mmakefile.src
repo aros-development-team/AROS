@@ -2,7 +2,7 @@
 #
 #   Makefile for the OpenURL catalogs of openurl.library
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR := $(AROS_CATALOGS)
 LANGUAGES := $(basename $(notdir $(call WILDCARD,$(SRCDIR)/$(CURDIR)/*.po)))
