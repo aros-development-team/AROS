@@ -7,7 +7,14 @@ dnl Checks if var is defined, and aborts otherwise. name is just for
 dnl presentation to the user.
 dnl
 AC_DEFUN([AROS_REQUIRED],
-[if test "$2" = ""; then
+[req_avail=yes
+if test "$2" = ""; then
+    req_avail=no
+fi
+if test "$2" = "no"; then
+    req_avail=no
+fi
+if test "$req_avail" = "no"; then
     AC_MSG_ERROR([$1 is required to build AROS. Please install and run configure again.])
 fi])
 
