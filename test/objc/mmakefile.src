@@ -5,7 +5,7 @@
 # 
 #  Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
 # 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 EXEDIR := $(AROS_TESTS)/objc
 

@@ -2,7 +2,7 @@
 #
 #   Makefile for AROS C Library Tests
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := \
         all-tests \

@@ -1,6 +1,6 @@
 # Makefile for loaddesktop program
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES	:= loaddesktop
 EXEDIR := $(AROS_TESTS)/desktop
