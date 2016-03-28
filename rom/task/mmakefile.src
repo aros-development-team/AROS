@@ -1,6 +1,7 @@
 # Copyright © 2015, The AROS Development Team. All rights reserved.
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM kernel-task-kobj: includes
 #MM kernel-task: includes

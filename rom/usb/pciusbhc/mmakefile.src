@@ -1,5 +1,4 @@
 #   $Id$
-include $(TOP)/config/make.cfg
 
 #MM- kernel-usb-pciusbhc : kernel-usb-pciuhci
 #MM- kernel-usb-pciusbhc-kobj : kernel-usb-pciuhci-kobj

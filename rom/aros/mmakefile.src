@@ -2,8 +2,7 @@
 #
 #   Generate aros.library
 #
-include $(TOP)/config/make.cfg
-
+include $(SRCDIR)/config/aros.cfg
 
 #MM- kernel-aros : linklibs kernel-aros-create-abi-file
 #MM- kernel-aros-kobj : linklibs kernel-aros-create-abi-file
