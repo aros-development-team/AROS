@@ -1,11 +1,10 @@
 # $Id$
-# Makefile to make Unarc tool.
+# Makefile to make Find tool.
 
 include $(SRCDIR)/config/aros.cfg
 
 FILES  := main locale findgroup_class
 EXEDIR := $(AROS_TOOLS)
-IMAGES := selected unselected
 
 #MM- workbench-tools : workbench-tools-find
 
