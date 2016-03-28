@@ -1,7 +1,7 @@
 # Copyright © 2004-2011, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 #MM- bootdisk : boot bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- bootdisk-quick : bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
