@@ -50,33 +50,14 @@ struct Listentry
 
 static struct Hook list_display_hook, list_constr_hook, list_destr_hook, list_compare_hook;
 
-// =======================================================================================
-
-static LONG display_message(CONST_STRPTR buttons, CONST_STRPTR str, ...)
-{
-    LONG result;
-
-    AROS_SLOWSTACKFORMAT_PRE(str);
-    if (str)
-    {
-        struct EasyStruct es =
-        {
-            sizeof(struct EasyStruct), 0,
-            "Find", str, buttons
-        };
-        result = EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(str));
-    }
-    AROS_SLOWSTACKFORMAT_POST(str);
-    return result;
-}
 
 // =======================================================================================
 
-static void display_doserror(ULONG error)
+static void display_doserror(Object *app, ULONG error)
 {
     TEXT buffer[255];
     Fault(error, NULL, buffer, sizeof buffer);
-    display_message("OK", "%s", buffer);
+    MUI_Request(app, NULL, 0, "Find", "OK", "DOS Error:\n%s", buffer);
 }
 
 // =======================================================================================
@@ -252,7 +233,7 @@ AROS_UFH3S(void, search_func,
     {
         if (ParsePatternNoCase(srcpattern, destpattern, destlen) < 0) // error
         {
-            display_message("OK", "Can't parse pattern");
+            MUI_Request(_app(obj), _win(obj), 0, "Find", "OK", "Error:\nCan't parse pattern.");
             FreeVec(destpattern);
             return;
         }
@@ -295,7 +276,7 @@ AROS_UFH3S(void, search_func,
 
         if (error != ERROR_NO_MORE_ENTRIES)
         {
-            display_doserror(error);
+            display_doserror(_app(obj), error);
         }
 
         FreeMem(anchorpath, sizeof(struct AnchorPath) + PATHNAMESIZE);
@@ -343,7 +324,10 @@ AROS_UFH3S(void, openwbobj_func,
         D(bug("[Find::openwbobj_func] file %p parent %p olddir %p\n", filelock, parentdirlock, olddirlock));
 
         // execute program even if directory change failed
-        OpenWorkbenchObject(entry->fullname, TAG_DONE);
+        if (OpenWorkbenchObject(entry->fullname, TAG_DONE) == FALSE)
+        {
+            MUI_Request(_app(obj), _win(obj), 0, "Find", "OK", "Error:\nCan't open file\n\"%s\".", entry->fullname);
+        }
 
         if (olddirlock != (BPTR)-1)
         {
@@ -382,7 +366,7 @@ AROS_UFH3S(void, view_func,
     if (entry)
     {
         D(bug("[Find::view_func] viewing %s\n", entry->fullname));
-        con = Open("CON:////Command Output/CLOSE/AUTO/WAIT", MODE_OLDFILE);
+        con = Open("CON:////Find Output/CLOSE/AUTO/WAIT", MODE_OLDFILE);
         snprintf(command, sizeof command, "SYS:Utilities/Multiview \"%s\"", entry->fullname);
         if (SystemTags(command, 
             SYS_Asynch, TRUE,
@@ -391,8 +375,8 @@ AROS_UFH3S(void, view_func,
             SYS_Error, NULL,
             TAG_DONE) == -1)
         {
-            // an error occured, we must close con: ourselves
-            Close(con);
+            display_doserror(_app(obj), IoErr());
+            Close(con); // an error occured, we must close con: ourselves
         }
     }
 
@@ -416,7 +400,8 @@ AROS_UFH3S(void, delete_func,
     DoMethod(obj, MUIM_NList_GetEntry, MUIV_NList_GetEntry_Active, &entry);
     if (entry)
     {
-        if (display_message("YES|NO", "Do you really want to delete file\n'%s'?", entry->fullname))
+        if (MUI_Request(_app(obj), _win(obj), 0, "Find",
+            "Yes|No", "Do you really want to delete file\n\"%s\"?", entry->fullname))
         {
             D(bug("[Find::delete_func] trying to delete %s\n", entry->fullname));
             if (DeleteFile(entry->fullname))
@@ -426,7 +411,7 @@ AROS_UFH3S(void, delete_func,
             }
             else
             {
-                display_message("OK", "Can't delete file\n'%s'.", entry->fullname);
+                display_doserror(_app(obj), IoErr());
             }
         }
     }
