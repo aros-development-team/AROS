@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM- arch-common-grub2-host : grub2-host-quick grub2-efi-host-quick 
 #MM  grub2-iso-setup        : grub2-host-quick grub2-efi-host-quick grub2-aros-quick

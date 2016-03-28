@@ -1,5 +1,6 @@
 #   $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 # FIXME: This file was converted to the %build_module_macro without testing
 # on the build on a real PPC/prep system. Other directories in the arch/ppc

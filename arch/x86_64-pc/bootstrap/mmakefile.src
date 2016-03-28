@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM kernel-bootstrap-pc-x86_64: linklibs-stdc-static32 linklibs-bootconsole32 linklibs-bootstrap32
 

@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 %build_archspecific \
   mainmmake=hidd-radeon maindir=workbench/hidds/radeon \

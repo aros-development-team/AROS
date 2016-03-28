@@ -1,4 +1,4 @@
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 APP_DIRS  := res src
 APP_FILES := .classpath .project build.properties AndroidManifest.xml

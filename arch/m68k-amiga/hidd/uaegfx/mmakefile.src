@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 USER_CFLAGS := -D__OOP_NOATTRBASES__ -D__GRAPHICS_NOHIDDBASE__ \
 	       -D__UTILITY_NOLIBBASE__ -D__GRAPHICS_NOLIBBASE__ \

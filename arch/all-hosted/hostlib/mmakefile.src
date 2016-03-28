@@ -1,4 +1,4 @@
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 USER_CFLAGS := -DHOST_OS_$(ARCH) -I$(SRCDIR)/arch/all-$(ARCH)/kernel
 ifneq ($(FAMILY),)

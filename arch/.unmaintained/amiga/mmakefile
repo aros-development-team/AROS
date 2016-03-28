@@ -1,5 +1,7 @@
 # $Id$
 
+include $(SRCDIR)/config/aros.cfg
+
 # removed targets "setup" and "includes" because they are already listed
 # in compiler/mmakefile
 #MM- AROS-amiga : compiler arosboot kernel workbench utilities demos games

@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 # Current %copy_includes implementation will strip pathname from $(INCLUDE_FILES)
 # before substitution. This is not entirely correct.

@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM- kernel-kernel-linux-i386 : kernel-$(AROS_TARGET_VARIANT)-sigcore kernel-linux-sigcore
 

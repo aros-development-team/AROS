@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 

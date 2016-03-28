@@ -1,7 +1,8 @@
-include $(TOP)/config/make.cfg
 #
 # Rules to create AROS Kernel for amiga-m68k
 #
+
+include $(SRCDIR)/config/aros.cfg
 
 Q ?= @
 

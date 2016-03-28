@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 FILES := platform_init coldreboot shutdowna
 # swapcontext() and friends are not implemented on ARM Linux and are totally missing on Android

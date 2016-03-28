@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 FILES := timer_init abortio beginio readeclock lowlevel getsystime common_init ticks initcustom
 
