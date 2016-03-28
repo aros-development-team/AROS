@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 FILES := pcixhci_device pcixhci_discover pcixhci_commands pcixhci_controller pcixhci_misc
 

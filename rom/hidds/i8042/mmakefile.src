@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 FILES := startup kbd_init kbdclass mouseclass kbd_common drv_ps2
 

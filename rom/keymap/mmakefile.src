@@ -2,7 +2,8 @@
 #
 #   Makefile for building keymap.library
 #
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM- core-linklibs : linklibs-keymap
 

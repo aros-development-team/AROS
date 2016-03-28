@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
          gadgetclass gadgets imageclass inputhandler propgadgets propgclass \

@@ -1,5 +1,6 @@
 #$Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 FILES := class_init probe bus_class interface_pio interface_dma
 

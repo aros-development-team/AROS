@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 SVNREV        := $(shell $(SRCDIR)/scripts/svnrev.sh $(SRCDIR))
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)

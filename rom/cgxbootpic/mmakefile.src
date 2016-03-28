@@ -2,7 +2,7 @@
 #
 #   Generate cgxbootpic.library
 #
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 BOOTPIC_IMAGE := bootpic
 
