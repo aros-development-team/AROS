@@ -1,7 +1,7 @@
 # $Id$
 # Makefile to make Unarc tool.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES  := main locale findgroup_class
 EXEDIR := $(AROS_TOOLS)

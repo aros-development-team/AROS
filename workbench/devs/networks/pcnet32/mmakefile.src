@@ -1,5 +1,6 @@
 #   $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-devs-networks-pcnet32-i386 : workbench-devs-networks-pcnet32-x86
 #MM- workbench-devs-networks-pcnet32-x86_64 : workbench-devs-networks-pcnet32-x86

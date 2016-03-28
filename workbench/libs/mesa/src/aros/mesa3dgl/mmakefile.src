@@ -3,8 +3,7 @@
 #   Generate libGL.a
 #
 
-include $(TOP)/config/make.cfg
--include $(GENDIR)/config/compiler.cfg
+include $(SRCDIR)/config/aros.cfg
 
 include $(SRCDIR)/$(CURDIR)/../../mesa/sources.mak
 include $(SRCDIR)/$(CURDIR)/../../mapi/glapi/sources.mak

@@ -2,7 +2,7 @@
 #
 #   Makefile for the Workbench:System directory.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES	:= \
     FixFonts \

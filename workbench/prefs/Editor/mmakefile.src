@@ -2,7 +2,7 @@
 #
 # Makefile to make JanoEditor Prefs Program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := JanoPrefs PrefsPort Prefs Prefs_Strings SampleEd Utils
 

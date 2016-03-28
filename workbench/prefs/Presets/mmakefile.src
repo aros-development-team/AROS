@@ -2,7 +2,7 @@
 #
 # Makefile to copy Prefs/Presets.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR := $(AROS_PREFS)/Presets
 

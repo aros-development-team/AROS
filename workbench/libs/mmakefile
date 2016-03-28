@@ -1,5 +1,7 @@
 # $Id$
 
+include $(SRCDIR)/config/aros.cfg
+
 # The workbench-libs target points back to config/$(ARCH)/mmakefile:
 #MM- workbench-libs : workbench-libs-$(ARCH)-$(CPU)
 

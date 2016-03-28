@@ -1,7 +1,7 @@
 # Copyright © 2013, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 %build_catalogs mmake=workbench-prefs-appearance-catalogs \
                 name=Appearance subdir=System/Prefs

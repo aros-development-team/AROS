@@ -2,7 +2,7 @@
 #
 # Makefile to build Unpack program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES 	    := unpack gui package bzip2 file support
 EXEDIR      := $(AROS_C)

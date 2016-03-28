@@ -2,7 +2,7 @@
 #
 #   Makefile for the Workbench:Tools/Commodities directory.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES	:= \
     AutoPoint \

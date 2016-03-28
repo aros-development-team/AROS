@@ -1,6 +1,6 @@
 # Copyright © 2004, The AROS Development Team. All rights reserved.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 %build_catalogs mmake=workbench-c-loadresource-catalogs \
                 name=LoadResource subdir=System/C

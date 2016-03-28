@@ -1,5 +1,6 @@
 #   $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 KEYMAPS := \
     pc104_il pc104_usa pc104_usa2 \

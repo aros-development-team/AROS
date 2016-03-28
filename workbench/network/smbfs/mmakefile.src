@@ -1,8 +1,4 @@
 # $Id$
 
-include $(TOP)/config/make.cfg
-
 #MM- workbench-network : workbench-network-smbfs
 #MM- workbench-network-smbfs : workbench-network-smbfs-client workbench-network-smbfs-docs
-
-%common

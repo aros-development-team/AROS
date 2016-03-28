@@ -2,7 +2,7 @@
 #
 #   Makefile to make icontrol prefs program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES 	    := main args icontroleditor locale misc prefs
 EXEDIR      := $(AROSDIR)/Prefs

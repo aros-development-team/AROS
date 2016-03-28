@@ -1,7 +1,7 @@
 #   $Id$
 #
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES	:= main locale memory video processor tasks timer
 EXEDIR	:= $(AROSDIR)/System

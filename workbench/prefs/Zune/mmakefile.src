@@ -2,7 +2,7 @@
 #
 # Makefile for Zune prefs program
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES  := zune listview zunestuff windowp buttonsp groupsp cyclesp slidersp \
 scrollbarsp listviewsp stringsp specialp navigationp framesp locale \

@@ -1,7 +1,7 @@
 # Copyright © 2003-2013, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-locale : workbench-locale-help workbench-locale-help-cpy1 workbench-locale-help-cpy2 \
 #MM	workbench-locale-help-gendoc

@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 INCLUDES      := $(call WILDCARD, *.h arpa/*.h bsdsocket/*.h clib/*.h defines/*.h libraries/*.h net/*.h netinet/*.h proto/*.h sys/*.h)
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))

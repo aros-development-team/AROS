@@ -1,7 +1,7 @@
 # $Id$
 # Makefile to make Serial prefs program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := main locale bibeditor prefs args misc
 

@@ -1,5 +1,4 @@
 #   $Id$
-include $(TOP)/config/make.cfg
 
 #MM- workbench-classes-zune : workbench-classes-zune-texteditor
 

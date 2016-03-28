@@ -2,7 +2,7 @@
 #
 #   Makefile to make IPrefs.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := main vars patches misc \
 	 localeprefs fontprefs screenmodeprefs serialprefs inputprefs \

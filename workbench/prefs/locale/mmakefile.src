@@ -2,7 +2,7 @@
 #
 #   Makefile to make Locale prefs program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES 	    := main args misc locale languagelist \
                page_language page_region page_timezone prefs registertab

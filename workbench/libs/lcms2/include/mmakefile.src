@@ -2,7 +2,8 @@
 #
 #   Copy headers of lcms2
 #
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 INCLUDE_FILES := lcms2.h lcms2_plugin.h
 

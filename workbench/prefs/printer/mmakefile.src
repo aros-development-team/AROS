@@ -1,7 +1,7 @@
 # $Id$
 # Makefile to make Printer prefs program.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := main locale editor prefs args misc
 
