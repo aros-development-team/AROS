@@ -1,6 +1,7 @@
 TODO
 ====
 
-- implement content search
 - implement interruption by "Stop" button
+- add "Open parent directory"
+- add "Icon information"
 - finish localization
