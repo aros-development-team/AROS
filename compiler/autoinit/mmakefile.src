@@ -2,7 +2,8 @@
 #
 #   Generate the libautoinit.a
 #
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 # list of automatically linked libs - included by the gcc spec file.
 AUTOFILE := \

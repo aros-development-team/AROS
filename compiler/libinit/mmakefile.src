@@ -2,7 +2,8 @@
 #
 #   Generate liblibinit.a
 #
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM- core-linklibs : linklibs-libinit
 #MM- linklibs: linklibs-libinit
