@@ -3,7 +3,7 @@
 # just for building the grub2 utils
 # in prevision to use grub-mkimage in InstallAROS
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 ##MM- AROS-pc-$(CPU) : grub2-aros-quick
 #MM- arch-common-grub2 : grub2-aros-quick

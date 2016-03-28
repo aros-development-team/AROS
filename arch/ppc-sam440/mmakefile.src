@@ -1,8 +1,8 @@
-include $(TOP)/config/make.cfg
-
 #
 # Rules to create AROS for sam440-ppc
 #
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM- AROS-sam440-ppc : kernel-sam440-ppc software-sam440-ppc
 

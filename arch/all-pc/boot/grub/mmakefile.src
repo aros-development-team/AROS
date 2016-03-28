@@ -1,7 +1,7 @@
 # Copyright © 2004-2014, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 ifneq ($(AROS_TARGET_VARIANT),tiny)
 GRUBOPTS += --enable-affs

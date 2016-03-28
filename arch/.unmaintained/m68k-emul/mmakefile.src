@@ -1,8 +1,8 @@
 # $Id$
-TOP=../..
+
+include $(SRCDIR)/config/aros.cfg
 CURDIR=config/m68k-emul
 
-include $(TOP)/config/make.cfg
 GENINC		:= $(TOOLDIR)/geninc-m68k-emul$(HOST_EXE_SUFFIX)
 
 SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec

@@ -1,8 +1,8 @@
-include $(TOP)/config/make.cfg
-
 #
 # Rules to create AROS for amiga-m68k
 #
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM- distfiles-amiga-m68k : bootdisk bootiso
 

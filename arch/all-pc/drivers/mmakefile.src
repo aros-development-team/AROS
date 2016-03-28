@@ -1,5 +1,4 @@
 # $Id$
-include $(TOP)/config/make.cfg
 
 #
 # Rules to create Support drivers for pc

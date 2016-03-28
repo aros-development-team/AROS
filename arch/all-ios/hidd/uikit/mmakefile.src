@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM kernel-hidd-uikit: kernel-hidd-uikit-native
 #MM kernel-hidd-uikit-quick: kernel-hidd-uikit-native

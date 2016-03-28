@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 %build_module mmake=kernel-mbox-bcm2708 	\
   modname=mbox modtype=resource		\

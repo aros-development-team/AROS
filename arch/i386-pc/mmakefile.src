@@ -1,5 +1,3 @@
 # $Id$
 
-include $(TOP)/config/make.cfg
-
 #MM- distfiles-pc-i386 : bootiso

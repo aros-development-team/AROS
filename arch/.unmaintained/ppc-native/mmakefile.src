@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 GENINC		:= $(TOOLDIR)/geninc-ppc-native$(HOST_EXE_SUFFIX)
 OS_INCLUDES	:= -I$(GENINCDIR)

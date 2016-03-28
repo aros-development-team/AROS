@@ -1,5 +1,3 @@
-include $(TOP)/config/make.cfg
-
 # For hosted AROS we build disk-based versions of our filesystems and partition.library
 # in order to provide a way to mount disk images or real hard drives using fdsk.device
 # or hostdisk.device.

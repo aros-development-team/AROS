@@ -2,7 +2,8 @@
 #
 #   Generate the amiga.lib library (normally called libamiga.a).
 #
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 # Font. Can be different, if someone wants to.
 FONT   := font8x14

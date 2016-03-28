@@ -1,6 +1,6 @@
-include $(TOP)/config/make.cfg
-
 # -------- Bootstrap part --------
+
+include $(SRCDIR)/config/aros.cfg
 
 #MM boot-unix: kernel-bootstrap-hosted
 

@@ -2,7 +2,8 @@
 #
 #   AEABI support for ARM CPU's
 #
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 # TODO: Move this into the gcc source code ?
 #MM- compiler-stdc-arm : includes-asm_h-arm linklibs-aeabi-arm

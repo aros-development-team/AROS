@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(TOP)/workbench/hidds/graphics
 %build_module_macro mmake=kernel-pp-m68k-gfx \

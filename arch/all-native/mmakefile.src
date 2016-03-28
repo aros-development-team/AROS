@@ -1,4 +1,4 @@
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 # 'fs' package includes necessary filesystems and partition.
 # These include filesystems and dos starter

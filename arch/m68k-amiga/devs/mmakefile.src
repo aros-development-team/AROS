@@ -1,5 +1,4 @@
 # $Id$
-include $(TOP)/config/make.cfg
 
 #MM- kernel-amiga-m68k-devs : \
 #MM    kernel-amiga-m68k-trackdisk-kobj \

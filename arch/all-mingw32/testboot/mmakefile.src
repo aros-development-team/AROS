@@ -2,7 +2,7 @@
 #
 #   Makefile to make test boot module.
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES  := testboot
 EXEDIR := $(AROSDIR)/boot

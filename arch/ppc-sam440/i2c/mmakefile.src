@@ -1,5 +1,6 @@
 # $Id$
-include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/config/aros.cfg
 
 %build_module mmake=hidd-i2c-amcc440 \
   modname=i2c-amcc440 modtype=hidd \
