@@ -1,0 +1,19 @@
+# $Id$
+# Makefile to make Find tool.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := main locale findgroup_class
+EXEDIR := $(AROS_SYSTEM)
+
+#MM- workbench-system : workbench-system-find
+
+#MM workbench-system-find : \
+#MM    includes linklibs \
+#MM    workbench-system-find-catalogs
+
+%build_prog mmake=workbench-system-find \
+    progname=Find targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common
