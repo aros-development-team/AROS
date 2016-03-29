@@ -33,7 +33,7 @@ KERNEL_RESCOMP  := @aros_kernel_rescomp@
 
 TARGET_SYSROOT	:= @aros_config_sysroot@
 KERNEL_SYSROOT	:= @aros_kernel_sysroot@
-CONFIG_CFLAGS	:= @aros_config_cflags@ @aros_nowarn_flags@
+CONFIG_CFLAGS	= @aros_config_cflags@ @aros_nowarn_flags@
 CONFIG_AFLAGS	:= @aros_config_aflags@
 CONFIG_LDFLAGS	:= @aros_config_ldflags@
 SHARED_CFLAGS	:= @aros_shared_cflags@
