@@ -33,7 +33,7 @@ struct FindGroup_DATA
     Object *btn_start, *btn_stop, *btn_open, *btn_view, *btn_delete;
     Object *lst_result;
     Object *txt_status;
-    struct Hook search_hook;
+    Object *scanproc;
     struct Hook openwbobj_hook;
     struct Hook view_hook;
     struct Hook delete_hook;
@@ -64,7 +64,9 @@ static void display_doserror(Object *app, ULONG error)
 
 static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern, STRPTR content)
 {
-    D(bug("[Find::checkfile] name %s pattern %s content %s\n", anchorpath->ap_Info.fib_FileName, pattern, content));
+    //D(bug("[Find::checkfile] name %s pattern %s content %s\n", anchorpath->ap_Info.fib_FileName, pattern, content));
+
+    // warning: this function is called from a sub process
 
     LONG retval = FALSE;
 
@@ -77,7 +79,7 @@ static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern
     {
         if (content && (content[0] != '\0'))
         {
-            D(bug("[Find::checkfile] content search\n"));
+            //D(bug("[Find::checkfile] content search\n"));
 
             BPTR fh;
             LONG searchlen = strlen(content);
@@ -116,20 +118,22 @@ static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern
                     else
                     {
                         // Read() failed
-                        display_doserror(app, IoErr());
+                        // app must be NULL to avoid deadlocks
+                        display_doserror(NULL, IoErr());
                     }
                     FreeVec(oldtext);
                 }
                 else
                 {
-                    MUI_Request(app, NULL, 0, "Find", "OK", "Error:\nCan't allocate memory.");
+                    MUI_Request(NULL, NULL, 0, "Find", "OK", "Error:\nCan't allocate memory.");
                 }
                 Close(fh);
             }
             else
             {
                 // Open() failed
-                display_doserror(app, IoErr());
+                // app must be NULL to avoid deadlocks
+                display_doserror(NULL, IoErr());
             }
         }
         else
@@ -259,92 +263,6 @@ AROS_UFH3(LONG, list_compare_func,
     AROS_USERFUNC_EXIT
 }
 
-// =======================================================================================
-
-AROS_UFH3S(void, search_func,
-    AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(APTR, msg, A1))
-{
-    AROS_USERFUNC_INIT
-
-    D(bug("[Find::search_func] called\n"));
-
-    struct FindGroup_DATA *data = h->h_Data;
-
-    struct AnchorPath *anchorpath;
-    LONG error;
-    ULONG destlen;
-    STRPTR destpattern;
-
-    STRPTR path = (STRPTR)XGET(data->str_path, MUIA_String_Contents);
-    STRPTR srcpattern = (STRPTR)XGET(data->str_pattern, MUIA_String_Contents);
-    STRPTR content = (STRPTR)XGET(data->str_contents, MUIA_String_Contents);
-
-    destlen = strlen(srcpattern) * 2 + 2;
-    destpattern = AllocVec(destlen, MEMF_ANY);
-    if (destpattern)
-    {
-        if (ParsePatternNoCase(srcpattern, destpattern, destlen) < 0) // error
-        {
-            MUI_Request(_app(obj), _win(obj), 0, "Find", "OK", "Error:\nCan't parse pattern.");
-            FreeVec(destpattern);
-            return;
-        }
-    }
-
-    SET(data->btn_start, MUIA_Disabled, TRUE);
-    SET(data->btn_stop, MUIA_Disabled, FALSE);
-    SET(data->txt_status, MUIA_Text_Contents, "Searching...");
-    DoMethod(data->lst_result, MUIM_NList_Clear);
-
-    if (anchorpath = AllocMem(sizeof(struct AnchorPath) + PATHNAMESIZE, MEMF_CLEAR))
-    {
-        anchorpath->ap_Strlen = PATHNAMESIZE;
-        //anchorpath->ap_BreakBits = SIGBREAKF_CTRL_C;
-        anchorpath->ap_Flags = APF_DODIR;
-
-        if ((error = MatchFirst(path, anchorpath)) == 0)
-        {
-            do
-            {
-                if (anchorpath->ap_Flags & APF_DIDDIR)
-                {
-                    anchorpath->ap_Flags &= ~(APF_DODIR | APF_DIDDIR);
-                }
-                else
-                {
-                    struct Listentry entry;
-                    D(bug("found %s\n", anchorpath->ap_Buf));
-                    if (checkfile(_app(obj), anchorpath, destpattern, content))
-                    {
-                        entry.fullname = anchorpath->ap_Buf;
-                        entry.fib = anchorpath->ap_Info;
-                        DoMethod(data->lst_result, MUIM_NList_InsertSingle, &entry, MUIV_NList_Insert_Sorted);
-                    }
-                    anchorpath->ap_Flags = APF_DODIR;
-                }
-            } while ((error = MatchNext(anchorpath)) == 0);
-        }
-
-        MatchEnd(anchorpath);
-
-        if (error != ERROR_NO_MORE_ENTRIES)
-        {
-            display_doserror(_app(obj), error);
-        }
-
-        FreeMem(anchorpath, sizeof(struct AnchorPath) + PATHNAMESIZE);
-    }
-    
-    SET(data->btn_start, MUIA_Disabled, FALSE);
-    SET(data->btn_stop, MUIA_Disabled, TRUE);
-    SET(data->txt_status, MUIA_Text_Contents, "");
-
-    FreeVec(destpattern);
-
-    AROS_USERFUNC_EXIT
-}
 
 // =======================================================================================
 
@@ -624,6 +542,13 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         struct FindGroup_DATA *data = INST_DATA(CLASS, self);
 
+        data->scanproc = MUI_NewObject(MUIC_Process,
+            MUIA_Process_SourceClass , CLASS,
+            MUIA_Process_SourceObject, self,
+            MUIA_Process_Priority    , -1,
+            MUIA_Process_AutoLaunch  , FALSE,
+            TAG_DONE);
+
         data->str_path          = str_path;
         data->str_pattern       = str_pattern;
         data->str_contents      = str_contents;
@@ -634,9 +559,6 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->btn_delete        = btn_delete;
         data->lst_result        = lst_result;
         data->txt_status        = txt_status;
-
-        data->search_hook.h_Entry = (HOOKFUNC)search_func;
-        data->search_hook.h_Data = data;
 
         data->openwbobj_hook.h_Entry = (HOOKFUNC)openwbobj_func;
         data->openwbobj_hook.h_Data = data;
@@ -650,7 +572,6 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->activeentry_hook.h_Entry = (HOOKFUNC)activeentry_func;
         data->activeentry_hook.h_Data = data;
 
-        SET(data->btn_stop, MUIA_Disabled, TRUE);
         SET(data->btn_open, MUIA_Disabled, TRUE);
         SET(data->btn_view, MUIA_Disabled, TRUE);
         SET(data->btn_delete, MUIA_Disabled, TRUE);
@@ -658,7 +579,13 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         DoMethod
         (
             data->btn_start, MUIM_Notify, MUIA_Pressed, FALSE,
-            self, 2, MUIM_CallHook, &data->search_hook
+            self, 1, MUIM_FindGroup_Start
+        );
+
+        DoMethod
+        (
+            data->btn_stop, MUIM_Notify, MUIA_Pressed, FALSE,
+            self, 1, MUIM_FindGroup_Stop
         );
 
         DoMethod
@@ -696,8 +623,174 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 // =======================================================================================
 
-ZUNE_CUSTOMCLASS_1
+IPTR FindGroup__OM_DISPOSE(Class *CLASS, Object *self, Msg msg)
+{
+    struct FindGroup_DATA *data = INST_DATA(CLASS, self);
+    MUI_DisposeObject(data->scanproc);
+    return DoSuperMethodA(CLASS, self, msg);
+}
+
+// =======================================================================================
+
+IPTR FindGroup__MUIM_Cleanup(Class *CLASS, Object *self, Msg msg)
+{
+    struct FindGroup_DATA *data = INST_DATA(CLASS, self);
+
+    DoMethod(data->scanproc, MUIM_Process_Kill, 0);
+
+    return DoSuperMethodA(CLASS, self, msg);
+}
+
+// =======================================================================================
+
+IPTR FindGroup__MUIM_Process_Process(Class *CLASS, Object *self, struct MUIP_Process_Process *msg)
+{
+    // this is our sub process
+
+    D(bug("[Find::search process] called\n"));
+
+    struct FindGroup_DATA *data = INST_DATA(CLASS, self);
+
+    struct AnchorPath *anchorpath;
+    LONG error;
+    ULONG destlen;
+    STRPTR destpattern;
+    ULONG methodid1 = 0, methodid2 = 0;
+
+    STRPTR path = (STRPTR)XGET(data->str_path, MUIA_String_Contents);
+    STRPTR srcpattern = (STRPTR)XGET(data->str_pattern, MUIA_String_Contents);
+    STRPTR content = (STRPTR)XGET(data->str_contents, MUIA_String_Contents);
+
+    destlen = strlen(srcpattern) * 2 + 2;
+    destpattern = AllocVec(destlen, MEMF_ANY);
+    if (destpattern)
+    {
+        if (ParsePatternNoCase(srcpattern, destpattern, destlen) < 0) // error
+        {
+            // app must be NULL to avoid deadlocks
+            MUI_Request(NULL, NULL, 0, "Find", "OK", "Error:\nCan't parse pattern.");
+            FreeVec(destpattern);
+            return 0;
+        }
+    }
+
+    // we must use PushMethod because we are in a sub process
+    methodid1 = DoMethod(_app(self), MUIM_Application_PushMethod,  data->lst_result, 1, MUIM_NList_Clear);
+
+    if (anchorpath = AllocMem(sizeof(struct AnchorPath) + PATHNAMESIZE, MEMF_CLEAR))
+    {
+        anchorpath->ap_Strlen = PATHNAMESIZE;
+        anchorpath->ap_Flags = APF_DODIR;
+
+        if ((error = MatchFirst(path, anchorpath)) == 0)
+        {
+            do
+            {
+                if (*msg->kill)
+                {
+                    // process stopped by user
+                    break;
+                }
+
+                if (anchorpath->ap_Flags & APF_DIDDIR)
+                {
+                    anchorpath->ap_Flags &= ~(APF_DODIR | APF_DIDDIR);
+                }
+                else
+                {
+                    struct Listentry *entry;
+                    //D(bug("found %s\n", anchorpath->ap_Buf));
+                    if (checkfile(_app(self), anchorpath, destpattern, content))
+                    {
+                        entry = AllocVec(sizeof (struct Listentry), MEMF_CLEAR);
+                        if (entry)
+                        {
+                            entry->fullname = StrDup(anchorpath->ap_Buf);
+                            CopyMem(&anchorpath->ap_Info, &entry->fib,  sizeof (entry->fib));
+
+                            // we must use PushMethod because we are in a sub process
+                            methodid2 = DoMethod(_app(self), MUIM_Application_PushMethod,
+                                self, 2, MUIM_FindGroup_AddEntry, entry);
+                            if (!methodid2)
+                            {
+                                FreeVec(entry->fullname);
+                                FreeVec(entry);
+                            }
+                        }
+                    }
+                    anchorpath->ap_Flags = APF_DODIR;
+                }
+            } while ((error = MatchNext(anchorpath)) == 0);
+        }
+
+        MatchEnd(anchorpath);
+
+        if (!*msg->kill && error != ERROR_NO_MORE_ENTRIES)
+        {
+            // app must be NULL to avoid deadlocks
+            display_doserror(NULL, error);
+        }
+
+        FreeMem(anchorpath, sizeof(struct AnchorPath) + PATHNAMESIZE);
+    }
+    
+    FreeVec(destpattern);
+
+    // prevent method execution after task has been killed
+    DoMethod(_app(self), MUIM_Application_UnpushMethod, self, methodid1, 0);
+    DoMethod(_app(self), MUIM_Application_UnpushMethod, self, methodid2, 0);
+
+    return 0;
+}
+
+// =======================================================================================
+
+IPTR FindGroup__MUIM_FindGroup_Start(Class *CLASS, Object *self, Msg msg)
+{
+    struct FindGroup_DATA *data = INST_DATA(CLASS, self);
+
+    DoMethod(data->scanproc, MUIM_Process_Launch);
+
+    return 0;
+}
+
+// =======================================================================================
+
+IPTR FindGroup__MUIM_FindGroup_Stop(Class *CLASS, Object *self, Msg msg)
+{
+    struct FindGroup_DATA *data = INST_DATA(CLASS, self);
+
+    DoMethod(data->scanproc, MUIM_Process_Kill, 4);
+
+    return 0;
+}
+
+// =======================================================================================
+
+IPTR FindGroup__MUIM_FindGroup_AddEntry(Class *CLASS, Object *self, struct MUIP_FindGroup_AddEntry *msg)
+{
+    D(bug("[Find::MUIM_FindGroup_AddEntry] started\n"));
+    struct FindGroup_DATA *data = INST_DATA(CLASS, self);
+
+    DoMethod(data->lst_result, MUIM_List_InsertSingle, msg->entry, MUIV_List_Insert_Sorted);
+    
+    // we were called with PushMethod. After inserting the entry we can release the data
+    FreeVec(msg->entry->fullname);
+    FreeVec(msg->entry);
+
+    return TRUE;
+}
+
+// =======================================================================================
+
+ZUNE_CUSTOMCLASS_7
 (
     FindGroup, NULL, MUIC_Group, NULL,
-    OM_NEW,          struct opSet *
+    OM_NEW,                     struct opSet *,
+    OM_DISPOSE,                 Msg,
+    MUIM_Cleanup,               Msg,
+    MUIM_Process_Process,       struct MUIP_Process_Process *,
+    MUIM_FindGroup_Start,       Msg,
+    MUIM_FindGroup_Stop,        Msg,
+    MUIM_FindGroup_AddEntry,    struct MUIP_FindGroup_AddEntry *
 );

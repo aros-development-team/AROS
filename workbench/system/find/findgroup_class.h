@@ -17,6 +17,19 @@
 #define MUIA_FindGroup_Pattern          (MUIB_FindGroup | 1)
 #define MUIA_FindGroup_Contents         (MUIB_FindGroup | 2)
 
+/*** Methods ****************************************************************/
+#define MUIM_FindGroup_Start            (MUIB_FindGroup | 0)
+#define MUIM_FindGroup_Stop             (MUIB_FindGroup | 1)
+#define MUIM_FindGroup_AddEntry         (MUIB_FindGroup | 2)
+
+/*** Messages ***************************************************************/
+
+struct MUIP_FindGroup_AddEntry
+{
+    STACKED ULONG MethodID;
+    STACKED struct Listentry *entry;
+};
+
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *FindGroup_CLASS;
 
