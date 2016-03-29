@@ -88,6 +88,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -Wmissing-braces
 #  -Wconversion-null
 #  -Wnarrowing
+#  -Wvolatile-register-var
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -481,6 +482,14 @@ if test "x-$aros_narrowing" = "x-yes" ; then
     aros_cflags_narrowing=-Wno-narrowing
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wvolatile-register-var])
+CFLAGS=-Wvolatile-register-var
+AC_TRY_COMPILE(,, aros_volatile_register_var="yes", aros_volatile_register_var="no")
+AC_MSG_RESULT($aros_volatile_register_var)
+if test "x-$aros_volatile_register_var" = "x-yes" ; then
+    aros_cflags_volatile_register_var=-Wno-volatile-register-var
+fi
+
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
@@ -530,6 +539,7 @@ AC_SUBST(aros_cflags_unused_local_typedefs)
 AC_SUBST(aros_cflags_missing_braces)
 AC_SUBST(aros_cflags_conversion_null)
 AC_SUBST(aros_cflags_narrowing)
+AC_SUBST(aros_cflags_volatile_register_var)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
