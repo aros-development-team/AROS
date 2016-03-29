@@ -36,6 +36,9 @@ static void my_process(void)
     struct Task *thistask = FindTask(NULL);
     struct Process_DATA *data = thistask->tc_UserData;
 
+    D(bug("[Process.mui::my_process] data %p sourceclass %p sourceobject %p\n",
+        data, data->sourceclass, data->sourceobject));
+
     if (data->sourceclass)
     {
         CoerceMethod(data->sourceclass, data->sourceobject,
@@ -211,6 +214,8 @@ IPTR Process__MUIM_Process_Launch(struct IClass *cl, Object *obj,
         };
 
         data->task = CreateNewProc(tags);
+
+        data->kill = 0;
     }
 
     return (IPTR) TRUE;
