@@ -197,7 +197,7 @@ CONFIG_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function
 
 # compiler and assembler flags are set depending upon the directory
 CFLAGS      = $(USER_INCLUDES) $(CONFIG_CFLAGS) $(USER_CFLAGS)
-CXXFLAGS      = $(USER_INCLUDES) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS)
+CXXFLAGS    = $(USER_INCLUDES) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS)
 AFLAGS	    = $(USER_AFLAGS) $(CONFIG_AFLAGS)
 LDFLAGS     = $(USER_LDFLAGS) $(CONFIG_LDFLAGS)
 
