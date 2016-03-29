@@ -22,7 +22,7 @@ endif
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
-%define compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)" opt=$(CFLAGS) from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
+%define compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)" opt="$(TARGET_CFLAGS) $(CFLAGS)" from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 	@$(ECHO) "Compiling  $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))"
 	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -289,15 +289,22 @@ endif
 # Adjust compiler flags to suit C
 TMP_CFLAGS := %(cflags)
 TMP_CFLAGS := $(subst -fpermissive,, $(TMP_CFLAGS))
-
+ifeq (%(dflags),)
+  TMP_DFLAGS := %(cflags)
+else
+  TMP_DFLAGS := %(dflags)
+endif
+ 
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
 BD_LINK ?= $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(TARGET_CFLAGS) $(TMP_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(TARGET_CFLAGS) $(TMP_DFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
@@ -308,6 +315,8 @@ BD_LINK ?= $(HOST_CC) $(HOST_LDFLAGS)
 BD_STRIP ?= $(HOST_STRIP)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
+$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(HOST_CFLAGS) $(TMP_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(HOST_CFLAGS) $(TMP_DFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
@@ -316,8 +325,10 @@ endif
 ifeq (%(compiler),kernel)
 BD_LINK ?= $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(KERNEL_CFLAGS) $(TMP_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(KERNEL_CFLAGS) $(TMP_DFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -326,20 +337,10 @@ endif
 
 $(TMP_TARGETBASE).o : CFLAGS := $(TMP_CFLAGS)
 $(TMP_TARGETBASE).o : %(basename).c
-	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(TMP_CMD) opt=$(TMP_CFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
-ifeq (%(dflags),)
-  ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) %(cflags)
-  else
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
-  endif
-else
-  ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) %(dflags)
-  else
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
-  endif
+ifeq (%(nix),yes)
+  $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) $(TMP_DFLAGS)
 endif
 $(TMP_TARGETBASE).d : %(basename).c
 	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
@@ -371,6 +372,11 @@ endif
 
 # Adjust compiler flags to suit C++
 TMP_CXXFLAGS := %(cxxflags)
+ifeq (%(dxxflags),)
+  TMP_DXXFLAGS := %(cxxflags)
+else
+  TMP_DXXFLAGS := %(dxxflags)
+endif
 
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
@@ -378,8 +384,10 @@ endif
 ifeq (%(compiler),target)
 BD_LINK ?= $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(AROS_CXX) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(AROS_CXX) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(TARGET_CXXFLAGS) $(TMP_CXXFLAGS)
+$(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(TARGET_CXXFLAGS) $(TMP_DXXFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
@@ -390,6 +398,8 @@ BD_LINK ?= $(HOST_CXX) $(HOST_LDFLAGS)
 BD_STRIP ?= $(HOST_STRIP)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CXX)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CXX)
+$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(HOST_CXXFLAGS) $(TMP_CXXFLAGS)
+$(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(HOST_CXXFLAGS) $(TMP_DXXFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
@@ -399,33 +409,25 @@ ifeq (%(compiler),kernel)
 KERNEL_CXX ?= $(KERNEL_CC)
 BD_LINK ?= $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(KERNEL_CFLAGS) $(TMP_CXXFLAGS)
+$(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(KERNEL_CFLAGS) $(TMP_DXXFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
-$(TMP_TARGETBASE).o : CFLAGS := $(TMP_CXXFLAGS)
+$(TMP_TARGETBASE).o : CXXFLAGS := $(TMP_CXXFLAGS)
 $(TMP_TARGETBASE).o : %(basename).cpp
-	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(TMP_CMD) opt=$(TMP_CXXFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
-ifeq (%(dflags),)
-  ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) $(TMP_CXXFLAGS)
-  else
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(TMP_CXXFLAGS)
-  endif
-else
-  ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) %(dxxflags)
-  else
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dxxflags)
-  endif
+ifeq (%(nix),yes)
+  $(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(BD_NIXFLAG) $(TMP_DXXFLAGS)
 endif
 $(TMP_TARGETBASE).d : %(basename).cpp
-	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
+	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DXXFLAGS)
 
 endif
 
@@ -459,6 +461,11 @@ endif
 TMP_OBJCFLAGS := %(cflags)
 TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPMENT)/include
 TMP_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_OBJCFLAGS)))
+ifeq (%(dflags),)
+  TMP_OBJCDFLAGS := %(cflags)
+else
+  TMP_OBJCDFLAGS := %(dflags)
+endif
 
 # Define the use of cross compiler
 ifeq ($(TARGET_OBJC),)
@@ -473,8 +480,10 @@ endif
 ifeq (%(compiler),target)
 BD_LINK ?= $(TMP_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(TMP_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(TMP_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TMP_CC) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TMP_CC) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(TARGET_CFLAGS) $(TMP_OBJCFLAGS)
+$(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(TARGET_CFLAGS) $(TMP_OBJCDFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
@@ -485,6 +494,8 @@ BD_LINK ?= $(HOST_CC) $(HOST_LDFLAGS)
 BD_STRIP ?= $(HOST_STRIP)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
+$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(HOST_CFLAGS) $(TMP_OBJCFLAGS)
+$(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(HOST_CFLAGS) $(TMP_OBJCDFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
@@ -493,8 +504,10 @@ endif
 ifeq (%(compiler),kernel)
 BD_LINK ?= $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(KERNEL_CFLAGS) $(TMP_OBJCFLAGS)
+$(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(KERNEL_CFLAGS) $(TMP_OBJCDFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -503,23 +516,13 @@ endif
 
 $(TMP_TARGETBASE).o : CFLAGS := $(TMP_OBJCFLAGS)
 $(TMP_TARGETBASE).o : %(basename).m
-	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(TMP_CMD) opt=$(TMP_OBJCFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
-ifeq (%(dflags),)
-  ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) $(TMP_OBJCFLAGS)
-  else
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(TMP_OBJCFLAGS)
-  endif
-else
-  ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) %(dflags)
-  else
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
-  endif
+ifeq (%(nix),yes)
+  $(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(BD_NIXFLAG) $(TMP_OBJCDFLAGS)
 endif
 $(TMP_TARGETBASE).d : %(basename).m
-	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
+	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_OBJCDFLAGS)
 
 endif
 
@@ -568,13 +571,22 @@ endif
 
 endif
 
+TMP_CFLAGS := %(cflags)
+ifeq (%(dflags),)
+  TMP_DFLAGS := %(cflags)
+else
+  TMP_DFLAGS := %(dflags)
+endif
+
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
 BD_LINK ?= $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC) $(TARGET_SYSROOT)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(TARGET_CFLAGS) $(TMP_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_DFLAGS:=$(TARGET_CFLAGS) $(TMP_DFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -582,28 +594,27 @@ ifeq (%(compiler),host)
 BD_LINK ?= $(HOST_CC) $(HOST_LDFLAGS)
 BD_STRIP ?= $(HOST_STRIP)
 $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CC)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(HOST_CFLAGS) $(TMP_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_DFLAGS:=$(HOST_CFLAGS) $(TMP_DFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
 BD_LINK ?= $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(KERNEL_CFLAGS) $(TMP_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_DFLAGS:=$(KERNEL_CFLAGS) $(TMP_DFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
-$(TMP_TARGETS) : CFLAGS := %(cflags)
+$(TMP_TARGETS) : CFLAGS := %(TMP_CFLAGS)
 $(TMP_TARGETS) : $(TMP_WILDCARD).o : %.c
-	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(CMD) opt=$(TMP_CFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
-ifeq (%(dflags),)
-$(TMP_DTARGETS) : DFLAGS:=%(cflags)
-else
-$(TMP_DTARGETS) : DFLAGS:=%(dflags)
-endif
 $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
-	%mkdepend_q cc=$(CMD) flags=$(DFLAGS)
+	%mkdepend_q cc=$(CMD) flags=$(TMP_DFLAGS)
 %end
 #------------------------------------------------------------------------------
 
@@ -627,9 +638,6 @@ $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
 %define rule_compile_cxx_multi basenames=/A cxxflags=$(CXXFLAGS) dxxflags= \
     targetdir= compiler=target
 
-# Adjust compiler flags to suit C++
-TMP_CXXFLAGS := %(cxxflags)
-
 TMP_CXXABSBASENAMES := $(foreach TMP_CXXBASE,%(basenames),$(if $(filter /%,$(TMP_CXXBASE)),$(TMP_CXXBASE),$(abspath $(SRCDIR)/$(CURDIR)/$(TMP_CXXBASE))))
 
 ifneq ($(TMP_CXXABSBASENAMES),)
@@ -652,6 +660,14 @@ else
   $(TMP_CXXTARGETS) $(TMP_CXXDTARGETS) : | $(TMP_CXXFILES)
 endif
 
+# Adjust compiler flags to suit C++
+TMP_CXXFLAGS := %(cxxflags)
+ifeq (%(dxxflags),)
+  TMP_DXXFLAGS := %(cxxflags)
+else
+  TMP_DXXFLAGS := %(dxxflags)
+endif
+
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
@@ -659,13 +675,17 @@ ifeq (%(compiler),host)
   BD_LINK ?= $(HOST_CXX) $(HOST_LDFLAGS)
   BD_STRIP ?= $(HOST_STRIP)
   TMP_CXXCMD:=$(HOST_CXX)
+  TMP_CXXFLAGS := $(HOST_CXXFLAGS) $(TMP_CXXFLAGS)
+  TMP_DXXFLAGS := $(HOST_CXXFLAGS) $(TMP_DXXFLAGS)
   TMP_CXXIQUOTE:=$(HOST_IQUOTE)
   TMP_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),target)
   BD_LINK ?= $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
   BD_STRIP ?= $(TARGET_STRIP)
-  TMP_CXXCMD:=$(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_CXXFLAGS)
+  TMP_CXXCMD:=$(AROS_CXX) $(TARGET_SYSROOT)
+  TMP_CXXFLAGS := $(TARGET_CXXFLAGS) $(TMP_CXXFLAGS)
+  TMP_DXXFLAGS := $(TARGET_CXXFLAGS) $(TMP_DXXFLAGS)
   TMP_CXXIQUOTE:=$(CFLAGS_IQUOTE)
   TMP_CXXIQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -673,19 +693,11 @@ ifeq (%(compiler),kernel)
   KERNEL_CXX ?= $(KERNEL_CC)
   BD_LINK ?= $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
   BD_STRIP ?= $(ECHO) >/dev/null
-  TMP_CXXCMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_CXXFLAGS)
+  TMP_CXXCMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT)
+  TMP_CXXFLAGS := $(KERNEL_CXXFLAGS) $(TMP_CXXFLAGS)
+  TMP_DXXFLAGS := $(KERNEL_CXXFLAGS) $(TMP_DXXFLAGS)
   TMP_CXXIQUOTE:=$(KERNEL_IQUOTE)
   TMP_CXXIQUOTE_END:=$(KERNEL_IQUOTE_END)
-endif
-
-ifeq (%(dxxflags),)
-  TMP_DXXFLAGS:=$(TMP_CXXFLAGS)
-else
-  ifeq (%(dxxflags),%(cxxflags))
-    TMP_DXXFLAGS:=$(TMP_CXXFLAGS)
-  else
-    TMP_DXXFLAGS:=%(dxxflags)
-  endif
 endif
 
 define cxx_multi_recipe_template
@@ -727,11 +739,6 @@ endif
 
 ifneq (%(basenames),)
 
-# Adjust compiler flags to suit ObjC
-TMP_OBJCFLAGS := %(cflags)
-TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPMENT)/include
-TMP_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_OBJCFLAGS)))
-
 ifeq (%(targetdir),)
   TMP_TARGETS := $(addsuffix .o,%(basenames))
   TMP_DTARGETS := $(addsuffix .d,%(basenames))
@@ -761,13 +768,25 @@ else
   TMP_CC := $(TARGET_OBJC)
 endif
 
+# Adjust compiler flags to suit ObjC
+TMP_OBJCFLAGS := %(cflags)
+TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPMENT)/include
+TMP_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_OBJCFLAGS)))
+ifeq (%(dflags),)
+  TMP_OBJCDFLAGS := %(cflags)
+else
+  TMP_OBJCDFLAGS := %(dflags)
+endif
+
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
   BD_LINK ?= $(TMP_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
   BD_STRIP ?= $(TARGET_STRIP)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(TARGET_SYSROOT)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(TARGET_CFLAGS) $(TMP_OBJCFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCDFLAGS:=$(TARGET_CFLAGS) $(TMP_OBJCDFLAGS)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -775,6 +794,8 @@ ifeq (%(compiler),host)
   BD_LINK ?= $(HOST_OBJC) $(HOST_LDFLAGS)
   BD_STRIP ?= $(HOST_STRIP)
   $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_OBJC)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(HOST_CFLAGS) $(TMP_OBJCFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCDFLAGS:=$(HOST_CFLAGS) $(TMP_OBJCDFLAGS)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
@@ -782,24 +803,17 @@ ifeq (%(compiler),kernel)
   KERNEL_OBJC ?= $(KERNEL_CC)
   BD_LINK ?= $(KERNEL_OBJC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
   BD_STRIP ?= $(ECHO) >/dev/null
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_OBJC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_OBJC) $(KERNEL_SYSROOT)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(KERNEL_CFLAGS) $(TMP_OBJCFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCDFLAGS:=$(KERNEL_CFLAGS) $(TMP_OBJCDFLAGS)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
 $(TMP_TARGETS) : CFLAGS := $(TMP_OBJCFLAGS)
 $(TMP_TARGETS) : $(TMP_WILDCARD).o : %.m
-	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(CMD) opt=$(TMP_OBJCFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
-ifeq (%(dflags),)
-  $(TMP_DTARGETS) : DFLAGS:=$(TMP_OBJCFLAGS)
-else
-  ifeq (%(dflags),%(cflags))
-    $(TMP_DTARGETS) : DFLAGS:=$(TMP_OBJCFLAGS)
-  else
-    $(TMP_DTARGETS) : DFLAGS:=%(dflags)
-  endif
-endif
 $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.m
 	%mkdepend_q cc=$(CMD) flags=$(DFLAGS)
 
