@@ -608,6 +608,8 @@ dnl The target configuration section is responsible for setting up all
 dnl the paths for includes, and tools required to build AROS to some
 dnl particular target.
 
+aros_nowarn_flags="NOWARN_POINTER_SIGN NOWARN_PARENTHESES"
+
 toolchain_needs_sysroot=no
 
 aros_config_cflags="-Wall -Werror-implicit-function-declaration"
@@ -1449,7 +1451,8 @@ case "$target_os" in
                 aros_object_format="m68kelf"
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
-                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -Wno-volatile-register-var -DNOLIBINLINE"
+                aros_nowarn_flags="$aros_nowarn_flags NOWARN_VOLATILE_REGISTER_VAR"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -DNOLIBINLINE"
                 aros_optimization_cflags="$aros_optimization_cflags -Os"
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
@@ -2796,7 +2799,7 @@ AC_SUBST(aros_shared_aflags)
 AC_SUBST(aros_shared_ldflags)
 
 AC_SUBST(aros_config_sysroot)
-AC_SUBST([aros_nowarn_flags], ['$(NOWARN_POINTER_SIGN) $(NOWARN_PARENTHESES)'])
+AC_SUBST(aros_nowarn_flags)
 AC_SUBST(aros_config_cflags)
 AC_SUBST(aros_config_aflags)
 AC_SUBST(aros_config_ldflags)
