@@ -1984,7 +1984,7 @@ attemptlock:
 
                     UnLock(parent);
                 }
-                if ((char *)file != entry->ile_IconEntry->ie_IconNode.ln_Name)
+                if ((STRPTR)file != entry->ile_IconEntry->ie_IconNode.ln_Name)
                 {
                     FreeVec(file);
                 }

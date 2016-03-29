@@ -133,7 +133,8 @@ static void CheckTaskStack(struct Task *task)
     
     out("Task %x (%25s) Stack Size =%6d, Left =%6d, Used %s%6d%s\n",
                 task,
-                task->tc_Node.ln_Name ? task->tc_Node.ln_Name : "<NONAME>",
+                task->tc_Node.ln_Name ?
+                        (const char *)task->tc_Node.ln_Name : "<NONAME>",
                 stacksize,
                 unusedstack,
                 ((stacksize - unusedstack) < stacksize) ? "=" : ">",

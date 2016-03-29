@@ -288,7 +288,7 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
                     (ULONG)(IPTR)cdev->cd_BoardAddr,
                     (ULONG)(IPTR)cdev->cd_BoardAddr+cdev->cd_BoardSize-1,
                     (cdev->cd_Flags & CDF_CONFIGME) ?
-                     "(unbound)" : node->ln_Name);
+                     "(unbound)" : (const char *)node->ln_Name);
         }
         ReleaseConfigBinding();
         CloseLibrary(IconBase);

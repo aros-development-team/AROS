@@ -57,7 +57,7 @@ static void debugRAM(void)
 	ForeachNode(&SysBase->MemList, mh) {
 		bug("%08x: %08x - %08x %08x %d '%s'\n",
 			mh, mh->mh_Lower, mh->mh_Upper, mh->mh_Attributes,
-			mh->mh_Node.ln_Pri, mh->mh_Node.ln_Name ? mh->mh_Node.ln_Name : "<null>");
+			mh->mh_Node.ln_Pri, mh->mh_Node.ln_Name ? (const char *)mh->mh_Node.ln_Name : "<null>");
 	}
 }
 )

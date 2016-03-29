@@ -160,7 +160,7 @@ HOOKPROTO(panelToolBar__HookFunc_LocationStringFunc, void, APTR *obj, APTR param
     /* Only change dir if it is a valid directory/volume */
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
             return;
 
         GET(panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIA_String_Contents, &str);
@@ -238,7 +238,7 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
 
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
             return 0;
 
 // FIXME: this is never freed
@@ -308,7 +308,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
             return 0;
 
         panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate;
-        panelToolBarPrivate->iwp_Node.ln_Name = (char *)extension_Name;
+        panelToolBarPrivate->iwp_Node.ln_Name = (STRPTR)extension_Name;
 
         /* Create the "ToolBar" panel object .. */
         panel_ToolBar = MUI_NewObject(MUIC_Group,
@@ -451,7 +451,7 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, Msg msg)
 
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
             return 0;
         
         if (panelToolBar__PrefsNotificationObject)
@@ -487,7 +487,7 @@ IPTR panelToolBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
             return rv;
 
         switch (message->opg_AttrID)
@@ -513,7 +513,7 @@ IPTR panelToolBar__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
             return rv;
 
         while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
@@ -540,7 +540,7 @@ IPTR panelToolBar__Init()
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
     panelToolBar__Extension.iwe_Node.ln_Pri = PANELTOOLBAR_PRIORITY;
-    panelToolBar__Extension.iwe_Node.ln_Name = (char *)extension_Name;
+    panelToolBar__Extension.iwe_Node.ln_Name = (STRPTR)extension_Name;
     panelToolBar__Extension.iwe_Setup = panelToolBar__Setup;
     panelToolBar__Extension.iwe_Cleanup = panelToolBar__Cleanup;
     panelToolBar__Extension.iwe_Set = panelToolBar__OM_SET;

@@ -132,7 +132,10 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
             UNLOCKWINDOW;
 
             dprintf("CloseScreen: task %p (%s) attempted a bogus CloseScreen(%p) !\n",
-                    caller,(char*) (caller->tc_Node.ln_Name ? caller->tc_Node.ln_Name : ""),screen);
+                    caller,
+                    caller->tc_Node.ln_Name ?
+                        (const char *)caller->tc_Node.ln_Name : "",
+                    screen);
 
             ReturnBool("closescreen",FALSE);
         }
