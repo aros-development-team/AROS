@@ -1191,7 +1191,7 @@ D(bug("[Wanderer] %s: Can't call WBNewDrawer: the active window isn't open\n", _
 
     OpenWorkbenchObject
       (
-        "SYS:Tools/Find",
+        "SYS:System/Find",
         // WBOPENA_ArgLock, (IPTR) lock,
         // WBOPENA_ArgName, 0,
         TAG_DONE
