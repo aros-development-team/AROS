@@ -81,7 +81,7 @@ STATIC VOID SortInNode(struct List *list, struct Node *node)
 
 /*********************************************************************************************/
 
-char *GetAROSRegionAttribs(struct AnchorPath *ap, char **regionNamePtr)
+char *GetAROSRegionAttribs(struct AnchorPath *ap, STRPTR *regionNamePtr)
 {
     char                *lockFlag = NULL;
     struct IFFHandle    *iff;
@@ -136,7 +136,7 @@ char *GetAROSRegionAttribs(struct AnchorPath *ap, char **regionNamePtr)
     return lockFlag;
 }
 
-char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
+char *GetAROSLanguageAttribs(struct AnchorPath *ap, STRPTR *languageNamePtr)
 {
     BPTR fileHandle;
     char tmpbuff[32];

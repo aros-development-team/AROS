@@ -550,7 +550,9 @@ int main (int argc, char ** argv)
     OpenDevice ("console.device", -1, (struct IORequest *)&cioreq, 0);
     ConsoleDevice = cioreq.io_Device;
     printf ("Opening console.device=%p (%s)\n", ConsoleDevice,
-	ConsoleDevice && ConsoleDevice->dd_Library.lib_Node.ln_Name ? ConsoleDevice->dd_Library.lib_Node.ln_Name : "(NULL)");
+	ConsoleDevice && ConsoleDevice->dd_Library.lib_Node.ln_Name ?
+	        (const char *)ConsoleDevice->dd_Library.lib_Node.ln_Name :
+	        "(NULL)");
 
     if (!ConsoleDevice)
     {
