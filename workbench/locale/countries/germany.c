@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Deutschland (Germany)
@@ -31,8 +31,8 @@ struct IntCountryPrefs germanyPrefs =
         "%H:%M:%S",
 
         /* Short datetime, short date, short time formats */
-        "%d.%m.%y %H:%M:%S",
-        "%d.%m.%y",
+        "%d.%m.%Y %H:%M:%S",
+        "%d.%m.%Y",
         "%H:%M:%S",
 
         /* Decimal point, group separator, frac group separator */
