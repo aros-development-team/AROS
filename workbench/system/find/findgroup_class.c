@@ -30,13 +30,13 @@
 struct FindGroup_DATA
 {
     Object *str_path, *str_pattern, *str_contents;
-    Object *btn_start, *btn_stop, *btn_open, *btn_view, *btn_delete;
+    Object *btn_start, *btn_stop, *btn_open, *btn_view, *btn_parent;
     Object *lst_result;
     Object *txt_status;
     Object *scanproc;
     struct Hook openwbobj_hook;
     struct Hook view_hook;
-    struct Hook delete_hook;
+    struct Hook parent_hook;
     struct Hook activeentry_hook;
 };
 
@@ -358,34 +358,42 @@ AROS_UFH3S(void, view_func,
 
 // =======================================================================================
 
-AROS_UFH3S(void, delete_func,
+AROS_UFH3S(void, parent_func,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, obj, A2),
     AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
 
-    D(bug("[Find::delete_func] called\n"));
+    D(bug("[Find::parent_func] called\n"));
 
-    struct FindGroup_DATA *data = h->h_Data;
+    // struct FindGroup_DATA *data = h->h_Data;
     struct Listentry *entry;
+    BPTR filelock;
+    BPTR parentdirlock;
+    TEXT buffer[PATHNAMESIZE];
 
     DoMethod(obj, MUIM_NList_GetEntry, MUIV_NList_GetEntry_Active, &entry);
     if (entry)
     {
-        if (MUI_Request(_app(obj), _win(obj), 0, "Find",
-            "Yes|No", "Do you really want to delete file\n\"%s\"?", entry->fullname))
+        D(bug("[Find::parent_func] name %s\n", entry->fullname));
+
+        filelock = Lock(entry->fullname, SHARED_LOCK);
+        if (filelock)
         {
-            D(bug("[Find::delete_func] trying to delete %s\n", entry->fullname));
-            if (DeleteFile(entry->fullname))
+            parentdirlock = ParentDir(filelock);
+            if (NameFromLock(parentdirlock, buffer, PATHNAMESIZE))
             {
-                // if successfully deleted, remove it from list, too.
-                DoMethod(data->lst_result, MUIM_NList_Remove, MUIV_NList_Remove_Active);
+                D(bug("[Find::parent_func] parent %s\n", buffer));
+
+                if (OpenWorkbenchObject(buffer, TAG_DONE) == FALSE)
+                {
+                    MUI_Request(_app(obj), _win(obj), 0, "Find", "OK",
+                        "Error:\nCan't open directory\n\"%s\".", buffer);
+                }
             }
-            else
-            {
-                display_doserror(_app(obj), IoErr());
-            }
+            UnLock(parentdirlock);
+            UnLock(filelock);
         }
     }
 
@@ -411,13 +419,13 @@ AROS_UFH3S(void, activeentry_func,
     {
         SET(data->btn_open, MUIA_Disabled, TRUE);
         SET(data->btn_view, MUIA_Disabled, TRUE);
-        SET(data->btn_delete, MUIA_Disabled, TRUE);
+        SET(data->btn_parent, MUIA_Disabled, TRUE);
     }
     else
     {
         SET(data->btn_open, MUIA_Disabled, FALSE);
         SET(data->btn_view, MUIA_Disabled, FALSE);
-        SET(data->btn_delete, MUIA_Disabled, FALSE);
+        SET(data->btn_parent, MUIA_Disabled, FALSE);
     }
 
     AROS_USERFUNC_EXIT
@@ -428,7 +436,7 @@ AROS_UFH3S(void, activeentry_func,
 Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object *str_path, *str_pattern, *str_contents;
-    Object *btn_start, *btn_stop, *btn_open, *btn_view, *btn_delete;
+    Object *btn_start, *btn_stop, *btn_open, *btn_view, *btn_parent;
     Object *lst_result;
     Object *txt_status;
     STRPTR path = NULL;
@@ -526,7 +534,7 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, HVSpace,
                     Child, btn_view = SimpleButton("View"),
                     Child, HVSpace,
-                    Child, btn_delete = SimpleButton("Delete"),
+                    Child, btn_parent = SimpleButton("Drawer"),
                     Child, HVSpace,
                 End,
                 Child, txt_status = TextObject,
@@ -556,7 +564,7 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->btn_stop          = btn_stop;
         data->btn_open          = btn_open;
         data->btn_view          = btn_view;
-        data->btn_delete        = btn_delete;
+        data->btn_parent        = btn_parent;
         data->lst_result        = lst_result;
         data->txt_status        = txt_status;
 
@@ -566,15 +574,15 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->view_hook.h_Entry = (HOOKFUNC)view_func;
         data->view_hook.h_Data = data;
 
-        data->delete_hook.h_Entry = (HOOKFUNC)delete_func;
-        data->delete_hook.h_Data = data;
+        data->parent_hook.h_Entry = (HOOKFUNC)parent_func;
+        data->parent_hook.h_Data = data;
 
         data->activeentry_hook.h_Entry = (HOOKFUNC)activeentry_func;
         data->activeentry_hook.h_Data = data;
 
         SET(data->btn_open, MUIA_Disabled, TRUE);
         SET(data->btn_view, MUIA_Disabled, TRUE);
-        SET(data->btn_delete, MUIA_Disabled, TRUE);
+        SET(data->btn_parent, MUIA_Disabled, TRUE);
 
         DoMethod
         (
@@ -602,8 +610,8 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod
         (
-            data->btn_delete, MUIM_Notify, MUIA_Pressed, FALSE,
-            self, 2, MUIM_CallHook, &data->delete_hook
+            data->btn_parent, MUIM_Notify, MUIA_Pressed, FALSE,
+            self, 2, MUIM_CallHook, &data->parent_hook
         );
 
         DoMethod
