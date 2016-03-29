@@ -195,8 +195,8 @@ IPTR flDispose(Class *cl, Object *o, Msg msg)
 
 struct MUIP_FontList_AddDir
 {
-    ULONG MethodID;
-    STRPTR DirName;
+    STACKED ULONG MethodID;
+    STACKED STRPTR DirName;
 };
 
 struct ScanDirTaskInfo *_pass_info;
@@ -364,8 +364,8 @@ ULONG flAddDir(Class *cl, Object *o, struct MUIP_FontList_AddDir *msg)
 
 struct MUIP_FontList_AddEntry
 {
-    ULONG   MethodID;
-    struct MUIS_FontList_Entry *Entry;
+    STACKED ULONG   MethodID;
+    STACKED struct MUIS_FontList_Entry *Entry;
 };
 
 ULONG flAddEntry(Class *cl, Object *o, struct MUIP_FontList_AddEntry *msg)
