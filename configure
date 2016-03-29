@@ -7403,6 +7403,8 @@ CFLAGS="$save_cflags"
 $as_echo "$as_me: Performing target configuration..." >&6;}
 
 
+aros_nowarn_flags="NOWARN_POINTER_SIGN NOWARN_PARENTHESES"
+
 toolchain_needs_sysroot=no
 
 aros_config_cflags="-Wall -Werror-implicit-function-declaration"
@@ -8541,7 +8543,8 @@ fi
                 aros_object_format="m68kelf"
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
-                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -Wno-volatile-register-var -DNOLIBINLINE"
+                aros_nowarn_flags="$aros_nowarn_flags NOWARN_VOLATILE_REGISTER_VAR"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -DNOLIBINLINE"
                 aros_optimization_cflags="$aros_optimization_cflags -Os"
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
@@ -14774,7 +14777,6 @@ fi
 
 
 
-aros_nowarn_flags='$(NOWARN_POINTER_SIGN) $(NOWARN_PARENTHESES)'
 
 
 
