@@ -77,7 +77,7 @@ MSG_DESCRIPTION (//)
 Disk Formatting Utility
 ;
 MSG_COPYRIGHT (//)
-Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+Copyright \xa9 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
 ;
 MSG_AUTHOR (//)
 Ben Hutchings, Pavel Fedin, The AROS Development Team

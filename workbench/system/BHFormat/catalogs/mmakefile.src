@@ -3,5 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=
+# other catalogs need update to version 2
+
 %build_catalogs mmake=workbench-system-format-catalogs \
-                name=Format subdir=System/System
+    catalogs=$(CATALOGS) \
+    name=Format subdir=System/System
