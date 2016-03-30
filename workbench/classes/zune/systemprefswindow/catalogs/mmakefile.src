@@ -3,6 +3,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=czech french german
+# other catalogs need update to version 2
+
 %build_catalogs mmake=workbench-classes-zune-systemprefswindow-catalogs \
-                name=SystemPrefsWindow subdir=System/Classes/Zune
+    catalogs=$(CATALOGS) \
+    name=SystemPrefsWindow subdir=System/Classes/Zune
 
