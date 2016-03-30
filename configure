@@ -8086,6 +8086,19 @@ case "$target_os" in
                 aros_nominal_depth=8
                 gcc_target_cpu="ppc"
                 ;;
+            *aarch64*)
+                aros_target_cpu="aarch64"
+                target_cpu="aarch64"
+                aros_object_format="elf_aarch64"
+                aros_flavour="emulation"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
+                gcc_target_cpu="aarch64"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-omit-frame-pointer"
+                aros_config_aflags="$aros_config_aflags -fno-strict-aliasing"
+                aros_arch_libs="-laeabi"
+                gcc_default_float_abi="hard"
+                kernel_tool_prefix="aarch64-linux-gnueabihf-"
+                ;;
             *armhf*)
                 aros_target_cpu="arm"
                 target_cpu="arm"
@@ -8486,19 +8499,38 @@ case "$target_os" in
     r*pi)
         aros_flavour="standalone"
         aros_target_arch="raspi"
-        aros_target_cpu="arm"
-        aros_object_format="armelf_aros"
+
         aros_shared_default="no"
         aros_arch_libs="-laeabi"
-
-        gcc_default_cpu="armv6zk"
-        gcc_default_cpu_tune="arm1176jzf-s"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
         aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_config_aflags="$aros_config_aflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_kernel_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        case "$target_cpu" in
+            *aarch64*)
+                aros_target_cpu="aarch64"
+                gcc_default_cpu="aarch64"
+                aros_object_format="elf_aarch64"
+                ;;
+            *armhf*)
+                aros_target_cpu="arm"
+                gcc_default_cpu="armv6zk"
+                gcc_default_cpu_tune="arm1176jzf-s"
+                aros_object_format="armelf_aros"
+                ;;
+            *arm*)
+                aros_target_cpu="arm"
+                gcc_default_cpu="armv6zk"
+                gcc_default_cpu_tune="arm1176jzf-s"
+                aros_object_format="armelf_aros"
+                ;;
+            *)
+                as_fn_error $? "\"Unknown CPU for RasPi $target_cpu\"" "$LINENO" 5
+                ;;
+        esac
+
         case "$aros_target_variant" in
             smp)
                 ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
