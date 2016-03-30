@@ -1,7 +1,11 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2016, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=croatian czech french german italian polish german
+# other catalogs need update to version 2
+
 %build_catalogs mmake=workbench-system-snoopy-catalogs \
-                name=Snoopy subdir=System/System
+    catalogs=$(CATALOGS) \
+    name=Snoopy subdir=System/System
