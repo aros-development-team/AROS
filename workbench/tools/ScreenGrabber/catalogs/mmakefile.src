@@ -3,5 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=croatian czech french german polish portuguese russian spanish
+# other catalogs need update to version 2
+
 %build_catalogs mmake=workbench-tools-screengrabber-catalogs \
-                name=ScreenGrabber subdir=System/Tools
+    catalogs=$(CATALOGS) \
+    name=ScreenGrabber subdir=System/Tools
