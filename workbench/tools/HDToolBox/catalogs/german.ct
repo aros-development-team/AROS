@@ -1,127 +1,177 @@
-## version $VER: hdtoolbox.catalog 1.0 (11.08.2002)
-## codeset 0
+## version $VER: hdtoolbox.catalog 2.0 (30.03.2016)
 ## language deutsch
+## codeset 0
+;
 ;
 WORD_Active
 Aktiv
+; Active
 ;
 WORD_AddEntry
 Hinzufügen
+; Add Entry
 ;
 WORD_All
 Alle
+; All
 ;
 WORD_Automount
 Autoanmelden
+; Automount
 ;
 WORD_Bootable
 Bootfähig
+; Bootable
 ;
 WORD_BootPri
 Bootpriorität
+; Boot Priority
 ;
 WORD_Cancel
 Abbrechen
+; Cancel
 ;
 WORD_Changed
 Geändert
+; Changed
 ;
 WORD_Change_Type
 Typ ändern
+; Change Type
 ;
 WORD_Create_Table
 Tabelle erstellen
+; Create Table
 ;
 WORD_Devices
 Geräte
+; Devices
 ;
 WORD_DosEnvec
 DosEnvec
+; DosEnvec
 ;
 WORD_Exit
 Beenden
+; Exit
 ;
 WORD_Geometry
 Geometrie
+; Geometry
 ;
 WORD_Name
 Name
+; Name
 ;
 WORD_Switches
 Schalter
-;
-WORD_Parent
-Mutterverzeichnis
+; Switches
 ;
 WORD_Ok
 Ok
+; Ok
+;
+WORD_Parent
+Mutterverzeichnis
+; Parent
 ;
 WORD_Partitions
 Partitionen
+; Partitions
 ;
 WORD_Partition_Table
 Partitionstabelle
+; Partition Table
 ;
 WORD_Partition_Table_Type
 Partitionstabellentyp
+; Partition Table Type
 ;
 WORD_Partition_Type
 Partitionstyp
+; Partition Type
 ;
 WORD_RemoveEntry
 Entfernen
+; Remove Entry
 ;
 WORD_Rename
 Namen ändern
+; Rename
 ;
 WORD_Resize_Move
 Größe ändern/Verschieben
+; Resize/Move
 ;
 WORD_Save_Changes
 Änderungnen speichern
+; Save Changes
 ;
 WORD_Size
 Größe
+; Size
 ;
 WORD_Unit
 Einheit
+; Unit
 ;
 WORD_Units
 Einheiten
+; Units
 ;
 WORD_Unknown
 Unbekannt
+; Unknown
 ;
 WORD_MENU_Project
 Projekt
+; Project
 ;
 WORD_MENU_About
 Über
+; About
 ;
 WORD_MENU_Quit
 Beenden
+; Quit
 ;
 MSG_ASK_SAVE
 Alle Daten auf modifizierten Partitionen werden zerstört!\nBist du dir sicher die Änderungen der Partitionstabelle '%s' zu speichern?
+; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
 ;
 MSG_NO_MEMORY
 Nicht genug Speicher vorhanden
+; Not enough memory
 ;
 MSG_PARTITION_TABLE_FULL
 Partitionstabelle voll
+; Partition table full
 ;
 MSG_Select_Empty_Area
 Wähle eine freien Bereich
+; Select empty area
 ;
 MSG_Select_Partition_Resize_Move
 Wähle eine Partition und ändere die Größe bzw. bewege sie
+; Select a partition and resize/move it
 ;
 MSG_Welcome
 Willkommen zum Partitionierungswerkzeug
+; Welcome to the partitioning tool
 ;
 MSG_WriteTableError
 Fehler beim Schreiben der Partitionstabelle
+; Error while writing partition table
 ;
 MSG_CreateTableError
 Fehler beim Erstellen der Partitionstabelle
+; Error while creating partition table
+;
+WORD_MENU_Partition
+Partition
+; Partition
+;
+WORD_MENU_CreateMountlist
+Erzeuge Mountliste...
+; Create mountlist...
 ;

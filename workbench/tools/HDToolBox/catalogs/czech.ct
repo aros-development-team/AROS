@@ -1,4 +1,4 @@
-## version $VER: HDToolBox.catalog 1.4 (12.1.2012)
+## version $VER: HDToolBox.catalog 2.0 (30.03.2016)
 ## language czech
 ## codeset 5
 ;
@@ -128,7 +128,7 @@ Projekt
 ; Project
 ;
 WORD_MENU_About
-O programu...
+O programu
 ; About
 ;
 WORD_MENU_Quit
@@ -140,7 +140,7 @@ Ve¹kerá data na zmìnìných oddílech budou ztracena!\nOpravdu chcete zapsat proved
 ; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
 ;
 MSG_NO_MEMORY
-Není dostatek volné pamìti! 
+Není dostatek volné pamìti!
 ; Not enough memory
 ;
 MSG_PARTITION_TABLE_FULL
