@@ -2804,10 +2804,13 @@ ifeq (%(compiler),host)
     CONFIG_ENV := %(config_env_extra) \
         CPP="$(HOST_CPP)" \
         CXXCPP="$(HOST_CPP)" \
-        CC="$(HOST_DEF_CC)" \
-        CFLAGS_FOR_BUILD="$(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
-        CXX="$(HOST_CXX)" \
-        CXXFLAGS_FOR_BUILD="$(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
+        # NB: We need to pass in our crosstoolsdir, but cannot set CLFAGS since it
+        # confused configure scripts. We also cannot pass it via _FOR_BUILD
+        # since that wont get picked up during configure.
+        # We also cannot pass in the compiler including std flags so we need to use
+        # the "plain" host compiler.
+        CC="$(HOST_DEF_CC) $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
+        CXX="$(HOST_CXX) $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
         LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)" \
         TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
         TARGET_CFLAGS="$(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
