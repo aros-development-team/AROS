@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,7 +15,7 @@
 #include <mui/NList_mcc.h>
 #include <mui/NListview_mcc.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 #include <zune/customclasses.h>
 
@@ -57,14 +57,14 @@ static void display_doserror(Object *app, ULONG error)
 {
     TEXT buffer[255];
     Fault(error, NULL, buffer, sizeof buffer);
-    MUI_Request(app, NULL, 0, "Find", "OK", "DOS Error:\n%s", buffer);
+    MUI_Request(app, NULL, 0, _(MSG_APP_TITLE), _(MSG_OK), _(MSG_ERR_DOS), buffer);
 }
 
 // =======================================================================================
 
 static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern, STRPTR content)
 {
-    //D(bug("[Find::checkfile] name %s pattern %s content %s\n", anchorpath->ap_Info.fib_FileName, pattern, content));
+    D(bug("[Find::checkfile] name %s pattern %s content %s\n", anchorpath->ap_Info.fib_FileName, pattern, content));
 
     // warning: this function is called from a sub process
 
@@ -79,7 +79,7 @@ static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern
     {
         if (content && (content[0] != '\0'))
         {
-            //D(bug("[Find::checkfile] content search\n"));
+            D(bug("[Find::checkfile] content search\n"));
 
             BPTR fh;
             LONG searchlen = strlen(content);
@@ -125,7 +125,7 @@ static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern
                 }
                 else
                 {
-                    MUI_Request(NULL, NULL, 0, "Find", "OK", "Error:\nCan't allocate memory.");
+                    MUI_Request(NULL, NULL, 0, _(MSG_APP_TITLE), _(MSG_OK), _(MSG_ERR_NO_MEM));
                 }
                 Close(fh);
             }
@@ -236,12 +236,12 @@ AROS_UFH3S(LONG, list_display_func,
     }
     else
     {
-        *array++ = "Full Path";
-        *array++ = "Size";
-        *array++ = "Attributes";
-        *array++ = "Date";
-        *array++ = "Time";
-        *array++ = "Comment";
+        *array++ = (STRPTR)_(MSG_LST_FULLPATH);
+        *array++ = (STRPTR)_(MSG_LST_SIZE);
+        *array++ = (STRPTR)_(MSG_LST_ATTRIBUTES);
+        *array++ = (STRPTR)_(MSG_LST_DATE);
+        *array++ = (STRPTR)_(MSG_LST_TIME);
+        *array++ = (STRPTR)_(MSG_LST_COMMENT);
     }
 
     return 0;
@@ -299,7 +299,7 @@ AROS_UFH3S(void, openwbobj_func,
         // execute program even if directory change failed
         if (OpenWorkbenchObject(entry->fullname, TAG_DONE) == FALSE)
         {
-            MUI_Request(_app(obj), _win(obj), 0, "Find", "OK", "Error:\nCan't open file\n\"%s\".", entry->fullname);
+            MUI_Request(_app(obj), _win(obj), 0, _(MSG_APP_TITLE), _(MSG_OK), _(MSG_ERR_NO_FILE), entry->fullname);
         }
 
         if (olddirlock != (BPTR)-1)
@@ -388,8 +388,8 @@ AROS_UFH3S(void, parent_func,
 
                 if (OpenWorkbenchObject(buffer, TAG_DONE) == FALSE)
                 {
-                    MUI_Request(_app(obj), _win(obj), 0, "Find", "OK",
-                        "Error:\nCan't open directory\n\"%s\".", buffer);
+                    MUI_Request(_app(obj), _win(obj), 0, _(MSG_APP_TITLE), _(MSG_OK),
+                        _(MSG_ERR_NO_DIR), buffer);
                 }
             }
             UnLock(parentdirlock);
@@ -483,10 +483,10 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     GroupFrame,
                     Child, ColGroup(2),
                         GroupFrame,
-                        Child, Label("Path"),
+                        Child, Label(_(MSG_LBL_PATH)),
                         Child, PopaslObject,
                             MUIA_Popasl_Type , ASL_FileRequest,
-                            ASLFR_TitleText, "Path",
+                            ASLFR_TitleText, _(MSG_LBL_PATH),
                             MUIA_Popstring_String, str_path = StringObject,
                                 StringFrame,
                                 MUIA_String_Contents, path,
@@ -494,13 +494,13 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             End,
                             MUIA_Popstring_Button, PopButton(MUII_PopFile),
                         End,
-                        Child, Label("Pattern"),
+                        Child, Label(_(MSG_LBL_PATTERN)),
                         Child, str_pattern = StringObject,
                             StringFrame,
                             MUIA_String_Contents, pattern,
                             MUIA_CycleChain, 1,
                         End,
-                        Child, Label("Contents"),
+                        Child, Label(_(MSG_LBL_CONTENTS)),
                         Child, str_contents = StringObject,
                             StringFrame,
                             MUIA_String_Contents, contents,
@@ -510,9 +510,9 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, HGroup,
                         GroupFrame,
                         Child, HVSpace,
-                        Child, btn_start = SimpleButton("Start"),
+                        Child, btn_start = SimpleButton(_(MSG_BTN_START)),
                         Child, HVSpace,
-                        Child, btn_stop = SimpleButton("Stop"),
+                        Child, btn_stop = SimpleButton(_(MSG_BTN_STOP)),
                         Child, HVSpace,
                     End,
                 End,
@@ -530,11 +530,11 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, HGroup,
                     GroupFrame,
                     Child, HVSpace,
-                    Child, btn_open = SimpleButton("Open"),
+                    Child, btn_open = SimpleButton(_(MSG_BTN_OPEN)),
                     Child, HVSpace,
-                    Child, btn_view = SimpleButton("View"),
+                    Child, btn_view = SimpleButton(_(MSG_BTN_VIEW)),
                     Child, HVSpace,
-                    Child, btn_parent = SimpleButton("Drawer"),
+                    Child, btn_parent = SimpleButton(_(MSG_BTN_DRAWER)),
                     Child, HVSpace,
                 End,
                 Child, txt_status = TextObject,
@@ -550,6 +550,7 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         struct FindGroup_DATA *data = INST_DATA(CLASS, self);
 
+        // embed the process object
         data->scanproc = MUI_NewObject(MUIC_Process,
             MUIA_Process_SourceClass , CLASS,
             MUIA_Process_SourceObject, self,
@@ -676,7 +677,7 @@ IPTR FindGroup__MUIM_Process_Process(Class *CLASS, Object *self, struct MUIP_Pro
         if (ParsePatternNoCase(srcpattern, destpattern, destlen) < 0) // error
         {
             // app must be NULL to avoid deadlocks
-            MUI_Request(NULL, NULL, 0, "Find", "OK", "Error:\nCan't parse pattern.");
+            MUI_Request(NULL, NULL, 0, _(MSG_APP_TITLE), _(MSG_OK), _(MSG_ERR_PATTERN));
             FreeVec(destpattern);
             return 0;
         }
@@ -707,7 +708,7 @@ IPTR FindGroup__MUIM_Process_Process(Class *CLASS, Object *self, struct MUIP_Pro
                 else
                 {
                     struct Listentry *entry;
-                    //D(bug("found %s\n", anchorpath->ap_Buf));
+                    D(bug("found %s\n", anchorpath->ap_Buf));
                     if (checkfile(_app(self), anchorpath, destpattern, content))
                     {
                         entry = AllocVec(sizeof (struct Listentry), MEMF_CLEAR);

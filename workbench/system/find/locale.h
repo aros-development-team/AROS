@@ -2,7 +2,7 @@
 #define _LOCALE_H_
 
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
