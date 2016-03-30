@@ -385,7 +385,7 @@ void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
                    psi->psi_LockSem->pls_Node.ln_Name,
                    psi->psi_LockSem->pls_ExclLockCount,
                    psi->psi_LockSem->pls_SharedLockCount,
-                   psi->psi_LockSem->pls_Owner ? psi->psi_LockSem->pls_Owner->tc_Node.ln_Name : "None");
+                   psi->psi_LockSem->pls_Owner ? (const char *)psi->psi_LockSem->pls_Owner->tc_Node.ln_Name : "None");
 
     prl = (struct PsdReadLock *) psi->psi_LockSem->pls_WaitQueue.lh_Head;
     while(prl->prl_Node.ln_Succ)
