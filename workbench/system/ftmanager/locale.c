@@ -1,8 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    This file is part of the About program, which is distributed under
-    the terms of version 2 of the GNU General Public License.
-    
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +11,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/System/FTManager.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  1
 
 /*** Variables **************************************************************/
 static struct Catalog *catalog;

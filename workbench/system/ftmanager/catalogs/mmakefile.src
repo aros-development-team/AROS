@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=french
+
 %build_catalogs mmake=workbench-system-ftmanager-catalogs \
-                name=FTManager subdir=System/System
+    catalogs=$(CATALOGS) \
+    name=FTManager subdir=System/System
