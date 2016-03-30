@@ -1,4 +1,4 @@
-## version $VER: More.catalog 1.4 (23.12.2009)
+## version $VER: More.catalog 2.0 (30.03.2016)
 ## language hrvatski
 ## codeset 5
 ;
@@ -76,7 +76,7 @@ Navigacija
 ; Navigation
 ;
 MSG_MEN_NAVIGATION_FIND
-F\0Tra¾i
+F\0Tra¾i...
 ; F\0Find...
 ;
 MSG_MEN_NAVIGATION_FIND_NEXT
@@ -96,7 +96,7 @@ Izaberite Datoteku koju ®elite Otvoriti
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
-Izaberite Datoteku u koju ®elite Spremiti 
+Izaberite Datoteku u koju ®elite Spremiti
 ; Select File to Save to
 ;
 MSG_ABOUT

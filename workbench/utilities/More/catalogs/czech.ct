@@ -1,4 +1,4 @@
-## version $VER: More.catalog 1.5 (28.1.2010)
+## version $VER: More.catalog 2.0 (30.03.2016)
 ## language czech
 ## codeset 5
 ;
@@ -112,7 +112,7 @@ Pokraèovat
 ; Continue
 ;
 MSG_JUMP_TITLE
-Pøejít na øádek
+Pøejít na øádek...
 ; Go to Line ...
 ;
 MSG_FIND_TITLE
