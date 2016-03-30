@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 2.1 (05.01.2012)
+## version $VER: wanderer.catalog 3.0 (30.03.2016)
 ## language français
 ## codeset 0
 ;
@@ -202,7 +202,7 @@ Fixe
 ; Fixed
 ;
 MSG_LABELLINELENGTH
-Longueur maximale d'une ligne
+Longueur maximale d'une ligne...
 ; Max. Label line length...
 ;
 MSG_USEMULTILINELABELS
@@ -214,11 +214,11 @@ Ne montrer que l'icone active
 ; Only show for Focus(ed) Icon
 ;
 MSG_NDISPLAYLINES
-Nombre de lignes à afficher
+Nombre de lignes à afficher...
 ; No. of lines to display...
 ;
 MSG_TILEMODEOPTIONS
-Options de grille
+Options de grille...
 ; Tile Mode Options...
 ;
 MSG_SCALEMODEOPTIONS
@@ -226,11 +226,11 @@ Options de mise à l'échelle...
 ; Scale Mode Options...
 ;
 MSG_ADVANCEDOPTIONS
-Options avancées
+Options avancées...
 ; Advanced Options...
 ;
 MSG_BACKGROUNDOPTIONS
-Options de fond
+Options de fond...
 ; Background Options...
 ;
 MSG_DRAWMODE

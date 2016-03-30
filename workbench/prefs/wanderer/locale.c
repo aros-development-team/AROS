@@ -13,7 +13,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Prefs/Wanderer.catalog"
-#define CATALOG_VERSION  2
+#define CATALOG_VERSION  3
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
@@ -25,11 +25,11 @@ CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
-    return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } 
     else 
     {
-    return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
