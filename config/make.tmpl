@@ -2801,14 +2801,14 @@ endif
 
 # Set up build environment, and options for configure script
 ifeq (%(compiler),host)
+    # NB: We need to pass in our crosstoolsdir, but cannot set CLFAGS since it
+    # confused configure scripts. We also cannot pass it via _FOR_BUILD
+    # since that wont get picked up during configure.
+    # We also cannot pass in the compiler including std flags so we need to use
+    # the "plain" host compiler.
     CONFIG_ENV := %(config_env_extra) \
         CPP="$(HOST_CPP)" \
         CXXCPP="$(HOST_CPP)" \
-        # NB: We need to pass in our crosstoolsdir, but cannot set CLFAGS since it
-        # confused configure scripts. We also cannot pass it via _FOR_BUILD
-        # since that wont get picked up during configure.
-        # We also cannot pass in the compiler including std flags so we need to use
-        # the "plain" host compiler.
         CC="$(HOST_DEF_CC) $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
         CXX="$(HOST_CXX) $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
         LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)" \
