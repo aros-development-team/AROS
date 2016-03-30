@@ -1,4 +1,4 @@
-## version $VER: wbnewdrawer.catalog 1.1 (03.01.2010)
+## version $VER: wbnewdrawer.catalog 2.0 (30.03.2016)
 ## language hrvatski
 ## codeset 0
 ;
@@ -68,7 +68,7 @@ Potrebno je 2 argumenta!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Neispravan directory lock! 
+Neispravan directory lock!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
