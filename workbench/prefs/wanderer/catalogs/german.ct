@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 2.0 (24.09.2010)
+## version $VER: wanderer.catalog 3.0 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -264,4 +264,56 @@ _Benutzen
 MSG_CANCEL
 _Abbrechen
 ; C_ancel
+;
+MSG_LABELSPREFS
+Verhalten der Beschriftungen
+; Labels look and feel
+;
+MSG_ADVANCEDBACKGROUND
+Hintergrund
+; Background
+;
+MSG_ADVANCEDICONS
+Piktogramme
+; Icons
+;
+MSG_ADVANCEDLABELS
+Beschriftungen
+; Labels
+;
+MSG_ICONSORTMODE_BYNAME
+Nach Name
+; By name
+;
+MSG_ICONSORTMODE_BYDATE
+Nach Datum
+; By date
+;
+MSG_ICONSORTMODE_BYSIZE
+Nach Größe
+; By size
+;
+MSG_DEFAULT_ICONSORTMODE
+Voreingestellte Sortierreihenfolge
+; Default sort order
+;
+MSG_ICON_AUTOSORT_ENABLED
+Automatische Sortierung eingestellt
+; Autosorting enabled
+;
+MSG_ICON_DRAG_TRANSPARENT
+Verwende Transparenz beim Verschieben von Piktogrammen
+; Use transparency when draging icons
+;
+MSG_DEFAULT_ICONVIEWMODE
+Voreingestellter Anzeigemodus
+; Default view mode
+;
+MSG_ICONVIEWMODE_ALL
+Alle Dateien
+; All files
+;
+MSG_ICONVIEWMODE_ICONS
+Nur Piktogramme
+; Icons only
 ;

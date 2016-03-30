@@ -1,4 +1,4 @@
-## version $VER: Wanderer.catalog 2.2 (7.2.2012)
+## version $VER: Wanderer.catalog 3.0 (30.03.2016)
 ## language czech
 ## codeset 5
 ;
@@ -150,11 +150,11 @@ Odstup svisle:
 ; Y Offset :
 ;
 MSG_ICONLABELFONT
-Písmo pro popis
+Písmo pro popis...
 ; Icon Label Font...
 ;
 MSG_ICONINFOFONT
-Písmo pro informace
+Písmo pro informace...
 ; Icon Info Font...
 ;
 MSG_HORIZSPACINGICON
@@ -202,7 +202,7 @@ Pevný
 ; Fixed
 ;
 MSG_LABELLINELENGTH
-Max. délka popisu
+Max. délka popisu...
 ; Max. Label line length...
 ;
 MSG_USEMULTILINELABELS
@@ -214,23 +214,23 @@ Zobrazit pouze vybrané
 ; Only show for Focus(ed) Icon
 ;
 MSG_NDISPLAYLINES
-Poèet zobrazených øádkù
+Poèet zobrazených øádkù...
 ; No. of lines to display...
 ;
 MSG_TILEMODEOPTIONS
-Mo¾nosti
+Mo¾nosti...
 ; Tile Mode Options...
 ;
 MSG_SCALEMODEOPTIONS
-Mo¾nosti
+Mo¾nosti...
 ; Scale Mode Options...
 ;
 MSG_ADVANCEDOPTIONS
-Pøehled vlastností
+Pøehled vlastností...
 ; Advanced Options...
 ;
 MSG_BACKGROUNDOPTIONS
-Pozadí na plo¹e
+Pozadí na plo¹e...
 ; Background Options...
 ;
 MSG_DRAWMODE
@@ -254,7 +254,7 @@ Titulek obrazovky
 ; Wanderer ScreenTitle
 ;
 MSG_ADVANCED
-Vlastnosti...
+Vlastnosti
 ; Advanced
 ;
 MSG_USE
