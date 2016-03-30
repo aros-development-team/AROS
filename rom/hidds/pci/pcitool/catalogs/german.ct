@@ -1,4 +1,4 @@
-## version $VER: pcitool.catalog 1.1 (21.5.2010)
+## version $VER: pcitool.catalog 2.0 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -29,141 +29,157 @@ FEHLER
 ;
 MSG_DRIVER_INFO
 Treiber Information
-;Driver info
+; Driver info
 ;
 MSG_DRIVER_NAME
 Treibername:
-;Driver name:
+; Driver name:
 ;
 MSG_DIRECT_BUS
 Direkt Bus:
-;Direct bus:
+; Direct bus:
 ;
 MSG_HARDWARE_INFO
 Hardware Information:
-;Hardware info:
+; Hardware info:
 ;
 MSG_PCI_DEVICE_INFO
 PCI-Geräte Information
-;PCI device info
+; PCI device info
 ;
 MSG_DEVICE_DESCRIPTION
 Beschreibung:
-;Description:
+; Description:
 ;
 MSG_VENDORNAME
 Herstellername:
-;VendorID:
+; Vendor Name:
 ;
 MSG_PRODUCTNAME
 Produktname:
-;ProductID:
+; Product Name:
 ;
 MSG_SUBSYSTEM
 Subsystem:
-;Subsystem:
+; Subsystem:
 ;
 MSG_VENDORID
 Herstellernr.:
-;VendorID:
+; VendorID:
 ;
 MSG_PRODUCTID
 Produktnr.:
-;ProductID:
+; ProductID:
 ;
 MSG_REVISIONID
 Revisionsnr.:
-;RevisionID:
+; RevisionID:
 ;
 MSG_INTERFACE
 Schnittstelle:
-;Interface:
+; Interface:
 ;
 MSG_CLASS
 Klasse:
-;Class:
+; Class:
 ;
 MSG_SUBCLASS
 Unterklasse:
-;Subclass:
+; Subclass:
 ;
 MSG_IRQ
 IRQ:
-;IRQ:
+; IRQ:
 ;
 MSG_ROM_BASE
 ROM Basis:
-;ROM Base
+; ROM Base:
 ;
 MSG_ROM_SIZE
 ROM Größe:
-;ROM Size:
+; ROM Size:
 ;
 MSG_BRIDGE
 Bridge für Bus %d (ISA %saktiv, VGA %saktiv)
-;Bridge handles bus %d (ISA %senabled, VGA %senabled)
+; Bridge handles bus %d (ISA %senabled, VGA %senabled)
 ;
 MSG_MEMORY_RANGE
 Speicherbereich von %08x bis %08x
-;Memory ranges from %08x to %08x
+; Memory ranges from %08x to %08x
 ;
 MSG_PREFETCHABLE_MEMORY
 Prefetchbarer Speicher von %08x bis %08x
-;Prefetchable ranges memory from %08x to %08x
+; Prefetchable ranges memory from %08x to %08x
 ;
 MSG_IO_RANGE
 E/A von %04x bis %04x
-;IO ranges from %04x to %04x
+; IO ranges from %04x to %04x
 ;
 MSG_IO_MSG
 E/A: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
-;IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
+; IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
 ;
 MSG_IO
 E/A
-;I/O
+; I/O
 ;
 MSG_MEMORY
 Speicher
-;Memory
+; Memory
 ;
 MSG_PREFETCHABLE
 Prefetchbar
-;Prefetchable
+; Prefetchable Memory
 ;
 MSG_YES
 ja
-;yes
+; yes
 ;
 MSG_NO
 nein
-;no
+; no
 ;
 MSG_NA
 n.v.
-;N/A
+; N/A
 ;
 MSG_NOT
 in
-;not
+; not
 ;
 MSG_SIZE4
-%s%s bei 0x%04x (Größe 0x%04x)
-;%s%s at 0x%04x (size 0x%04x)
+%s bei 0x%04x (Größe 0x%04x)
+; %s at 0x%04x (size 0x%04x)
 ;
 MSG_SIZE8
-%s%s bei 0x%08x (Größe 0x%08x)
-;%s%s at 0x%08x (size 0x%08x)
+%s bei 0x%08x (Größe 0x%08x)
+; %s at 0x%08x (size 0x%08x)
 ;
-MSG_SAVETORAMDISK 
+MSG_SAVETORAMDISK
 Speichere Geräte Informationen nach RAM Disk
-;Save Device Information to RAM Disk
+; Save Device Information to RAM Disk
 ;
-MSG_SAVEALLTORAMDISK 
+MSG_SAVEALLTORAMDISK
 Speichere alle Geräteinformationen nach RAM Disk
-;Save complete PCI Information to RAM Disk
+; Save complete PCI Information to RAM Disk
 ;
 MSG_UNUSED
 unbenutzt
-;--unused--
+; --unused--
+;
+MSG_IO_BASE
+I/O-Basis:
+; I/O base:
+;
+MSG_OWNER
+Benutzt von:
+; Used by:
+;
+MSG_PCIE_DEVICE_INFO
+PCIe-Geräteinformation
+; PCIe device info
+;
+MSG_PCIE_SERIAL_NUMBER
+PCIe Seriennummer
+; PCIe Serial Number
 ;
