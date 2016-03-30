@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=
+
 %build_catalogs mmake=workbench-tools-sysexplorer-catalogs \
-                name=SysExplorer subdir=System/Tools/
+    catalogs=$(CATALOGS) \
+    name=SysExplorer subdir=System/Tools/
