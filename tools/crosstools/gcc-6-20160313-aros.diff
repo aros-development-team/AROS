@@ -91,7 +91,7 @@ diff -ruN gcc-6-20160313/fixincludes/configure.ac gcc-6-20160313.aros/fixinclude
 diff -ruN gcc-6-20160313/gcc/config/aarch64/aros.h gcc-6-20160313.aros/gcc/config/aarch64/aros.h
 --- gcc-6-20160313/gcc/config/aarch64/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-6-20160313.aros/gcc/config/aarch64/aros.h	2016-03-30 12:04:49.763705461 +0100
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,63 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
 +   Free Software Foundation, Inc.
@@ -120,7 +120,6 @@ diff -ruN gcc-6-20160313/gcc/config/aarch64/aros.h gcc-6-20160313.aros/gcc/confi
 +#define TARGET_OS_CPP_BUILTINS() 		\
 +  do 						\
 +    {						\
-+      TARGET_BPABI_CPP_BUILTINS();		\
 +	builtin_define_std ("AROS");		\
 +       builtin_define ("AMIGA");               \
 +       builtin_define ("_AMIGA");              \
@@ -132,14 +131,6 @@ diff -ruN gcc-6-20160313/gcc/config/aarch64/aros.h gcc-6-20160313.aros/gcc/confi
 +	  }					\
 +    }						\
 +  while (false)
-+
-+/* We default to a softfp ABI so that we are compatible
-+   with the Linux EABI (as used by the linker).  */
-+#undef  TARGET_DEFAULT_FLOAT_ABI
-+#define TARGET_DEFAULT_FLOAT_ABI ARM_FLOAT_ABI_SOFTFP
-+
-+#define AARCH64_ABI_DEFAULT AARCH64_ABI_LP64
-+#define TARGET_DATA_MODEL 1
 +
 +/* TARGET_BIG_ENDIAN_DEFAULT is set in
 +   config.gcc for big endian configurations.  */
@@ -164,8 +155,6 @@ diff -ruN gcc-6-20160313/gcc/config/aarch64/aros.h gcc-6-20160313.aros/gcc/confi
 +#undef LIBGCC_SPEC
 +#define LIBGCC_SPEC "-lgcc"
 +
-+/* FIXME: AROS doesn't support dw2 unwinding yet.  */
-+#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-6-20160313/gcc/config/aarch64/t-aros gcc-6-20160313.aros/gcc/config/aarch64/t-aros
 --- gcc-6-20160313/gcc/config/aarch64/t-aros	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-6-20160313.aros/gcc/config/aarch64/t-aros	2016-03-30 12:04:49.763705461 +0100
@@ -846,7 +835,7 @@ diff -ruN gcc-6-20160313/gcc/config.build gcc-6-20160313.aros/gcc/config.build
      build_install_headers_dir=install-headers-cpio
 diff -ruN gcc-6-20160313/gcc/config.gcc gcc-6-20160313.aros/gcc/config.gcc
 --- gcc-6-20160313/gcc/config.gcc	2016-03-02 09:53:05.000000000 +0000
-+++ gcc-6-20160313.aros/gcc/config.gcc	2016-03-30 12:42:04.141022547 +0100
++++ gcc-6-20160313.aros/gcc/config.gcc	2016-03-30 12:04:49.763705461 +0100
 @@ -798,6 +798,15 @@
        ;;
    esac
@@ -863,20 +852,19 @@ diff -ruN gcc-6-20160313/gcc/config.gcc gcc-6-20160313.aros/gcc/config.gcc
  *-*-openbsd*)
    tmake_file="t-openbsd"
    case ${enable_threads} in
-@@ -907,6 +916,12 @@
+@@ -907,6 +916,11 @@
  esac
  
  case ${target} in
 +aarch64*-*-aros*)
-+	tm_file="dbxelf.h elfos.h aros.h aarch64/aarch64-elf.h aarch64/aros.h"
++	tm_file="${tm_file} dbxelf.h elfos.h aarch64/aarch64-elf.h aros.h aarch64/aros.h"
 +	tmake_file="${tmake_file} aarch64/t-aarch64 aarch64/t-aros t-aros"
 +	xm_file="xm-aros.h"
-+	use_gcc_stdint=wrap
 +	;;
  aarch64*-*-elf | aarch64*-*-rtems*)
  	tm_file="${tm_file} dbxelf.h elfos.h newlib-stdint.h"
  	tm_file="${tm_file} aarch64/aarch64-elf.h aarch64/aarch64-elf-raw.h"
-@@ -993,6 +1008,16 @@
+@@ -993,6 +1007,16 @@
  	tm_file="${tm_file} vms/vms.h alpha/vms.h"
  	tmake_file="${tmake_file} alpha/t-vms"
  	;;
@@ -893,7 +881,7 @@ diff -ruN gcc-6-20160313/gcc/config.gcc gcc-6-20160313.aros/gcc/config.gcc
  arc*-*-elf*)
  	extra_headers="arc-simd.h"
  	tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file}"
-@@ -1594,6 +1619,16 @@
+@@ -1594,6 +1618,16 @@
  	done
  	TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's/^,//'`
  	;;
@@ -910,7 +898,7 @@ diff -ruN gcc-6-20160313/gcc/config.gcc gcc-6-20160313.aros/gcc/config.gcc
  i[34567]86-pc-msdosdjgpp*)
  	xm_file=i386/xm-djgpp.h
  	tm_file="dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h i386/djgpp-stdint.h"
-@@ -1891,6 +1926,16 @@
+@@ -1891,6 +1925,16 @@
  		thread_file='posix'
  	fi
  	;;
@@ -927,7 +915,7 @@ diff -ruN gcc-6-20160313/gcc/config.gcc gcc-6-20160313.aros/gcc/config.gcc
  m68k-*-elf* | fido-*-elf*)
  	case ${target} in
  	fido-*-elf*)
-@@ -2391,6 +2436,13 @@
+@@ -2391,6 +2435,13 @@
  	extra_options="${extra_options} rs6000/sysv4.opt"
  	tmake_file="${tmake_file} rs6000/t-fprules rs6000/t-rtems rs6000/t-ppccomm"
  	;;
