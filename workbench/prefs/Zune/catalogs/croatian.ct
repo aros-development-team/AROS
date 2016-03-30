@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 1.7 (26.12.2009)
+## version $VER: Zune.catalog 2.0 (30.03.2016)
 ## language hrvatski
 ## codeset 0
 ;
@@ -14,7 +14,7 @@ Podloga:
 ; Background:
 ;
 MSG_BACKGROUND_PRESSED
-Podloga u\npritisnutom stanje: 
+Podloga u\npritisnutom stanje:
 ; Background in\npressed state:
 ;
 MSG_TEXT_BUTTONS
@@ -54,7 +54,7 @@ Radio Dugma
 ; Radio Buttons
 ;
 MSG_RADIOBUTTON
-Radiodugme 
+Radiodugme
 ; Radiobutton
 ;
 MSG_LOOK
@@ -650,7 +650,7 @@ Primjer Niz Gadgeta
 ; windowp.c
 ;----------
 MSG_FORGET_ON_EXIT
-zaboravi na izlazu 
+zaboravi na izlazu
 ; forget on exit
 ;
 MSG_REMEMBER_ON_EXIT
