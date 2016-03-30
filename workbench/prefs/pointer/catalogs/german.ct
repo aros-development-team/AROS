@@ -1,6 +1,6 @@
-## version $VER: pointer.catalog 1.0 (30.12.2010)
-## codeset 0
+## version $VER: pointer.catalog 2.0 (30.03.2016)
 ## language deutsch
+## codeset 0
 ;
 MSG_WINTITLE
 Mauszeiger-Einstellungen (Pointer)
@@ -8,11 +8,11 @@ Mauszeiger-Einstellungen (Pointer)
 ;
 MSG_OK
 OK
-; Ok
+; OK
 ;
 MSG_HOTSPOT
 Aktiver Punkt
-; Hotspot
+;  Hotspot
 ;
 MSG_ALPHA
 Transparenz
