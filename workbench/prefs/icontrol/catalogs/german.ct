@@ -1,4 +1,4 @@
-## version $VER: icontrolprefs.catalog 2.0 (05.09.2010)
+## version $VER: icontrolprefs.catalog 2.1 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -86,4 +86,8 @@ Tastenkombination zum Verschieben
 MSG_MENUS_STICKY
 Klebend
 ; Sticky
+;
+MSG_MENUS_TITLEPOPUP
+Pull-Down über Bildschirmtitel
+; Pull-Down on Screen Title
 ;
