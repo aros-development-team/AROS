@@ -1,4 +1,4 @@
-## version $VER: networkprefs.catalog 4.0 (22.3.2012)
+## version $VER: networkprefs.catalog 4.1 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -56,11 +56,19 @@ Hostname
 ;
 MSG_HOST_NAMES
 Hostnamen
-; Host Name
+; Host Name and Aliases
 ;
 MSG_DOMAIN_NAME
 Domänenname
-; Domain Name
+; Domain/Workgroup
+;
+MSG_SERIAL_DEVICE
+Serielles Gerät
+; Serial Device
+;
+MSG_UNIT_NUMBER
+Einheit
+; Unit
 ;
 MSG_IP_MODE_MANUAL
 Manuell
@@ -68,7 +76,7 @@ Manuell
 ;
 MSG_IP_MODE_DHCP
 Hole Adresse von DHCP
-; Get address from DHCP
+; Automatic
 ;
 MSG_ENC_NONE
 Ohne
@@ -120,11 +128,19 @@ IPv4-Konfiguration
 ;
 MSG_TAB_COMPUTER_NAMES
 Computernamen
-; Computer Name
+; Local Host Entries
 ;
 MSG_TAB_WIRELESS
 Drahtlosnetzwerks
-; Wireless
+; Wireless Networks
+;
+MSG_TAB_MOBILE
+Mobiles Breitband-Netzwerk
+; Mobile Broadband
+;
+MSG_TAB_SERVERS
+Eingerichtete Shares
+; Mounted Shares
 ;
 MSG_AUTOSTART_STACK
 Starte Netzwerk beim Booten des Systems
@@ -141,6 +157,10 @@ Neustart des Netzwerks fehlgeschlagen
 MSG_ERR_NOT_RESTARTED_WIRELESS
 Neustart des drahtloses Netzwerks fehlgeschlagen
 ; Failed to restart wireless networking
+;
+MSG_ERR_NOT_RESTARTED_MOBILE
+Neustart des Modemmanagers fehlgeschlagen
+; Failed to restart ModemManager
 ;
 MSG_BUTTON_OK
 OK
@@ -170,6 +190,10 @@ MSG_ERROR_TITLE
 Fehler
 ; Error
 ;
+MSG_WARNING_TITLE
+Warnung
+; Warning
+;
 MSG_ERR_NOT_SAVED_PREFS
 Netzwerk-Voreinstellungen konnten\nnicht in %s gespeichert werden
 ; Network preferences not saved to %s
@@ -177,6 +201,10 @@ Netzwerk-Voreinstellungen konnten\nnicht in %s gespeichert werden
 MSG_ERR_NOT_COPIED_FILES
 Zusätzliche Dateien konnten nicht\nnach %s kopiert werden
 ; Additional files not copied to %s
+;
+MSG_WARN_MULTIPLE_IFACES
+DHCP arbeitet nicht zuverlässig, wenn mehrere Schnittstellen eingestellt wurden
+; DHCP does not work reliably when multiple interfaces are configured
 ;
 MSG_INFO_TITLE
 Information
@@ -190,25 +218,17 @@ MSG_IFWINDOW_TITLE
 Schnittstelle
 ; Interface
 ;
+MSG_HOSTWINDOW_TITLE
+Hostname(n)
+; Host Name(s)
+;
 MSG_NETWINDOW_TITLE
 Drahtloses Netzwerk
 ; Wireless Network
 ;
-MSG_TAB_MOBILE
-Mobiles Breitband-Netzwerk
-; Mobile Broadband
-;
-MSG_TAB_SERVERS
-
-; File Servers
-;
-MSG_SERIAL_DEVICE
-Serielles Gerät
-; Serial Device
-;
-MSG_UNIT_NUMBER
-Einheit
-; Unit
+MSG_SERVERWINDOW_TITLE
+Share einrichten
+; Mount Share
 ;
 MSG_USERNAME
 Benutzername
@@ -217,4 +237,20 @@ Benutzername
 MSG_PASSWORD
 Passwort
 ; Password
+;
+MSG_WORKGROUP
+Domäne/Arbeitsgruppe
+; Domain/Workgroup
+;
+MSG_SERVICE
+Share-Name
+; Share Name
+;
+MSG_SERVICE_TYPES
+Serviceart
+; Service Type
+;
+MSG_SERVICETYPE_CIFS
+CIFS/SMB
+; CIFS/SMB
 ;

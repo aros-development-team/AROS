@@ -3,5 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=german
+# other catalogs need update to version 4
+
 %build_catalogs mmake=workbench-prefs-network-catalogs \
-                name=Network subdir=System/Prefs
+    catalogs=$(CATALOGS) \
+    name=Network subdir=System/Prefs
