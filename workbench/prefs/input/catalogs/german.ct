@@ -1,4 +1,4 @@
-## version $VER: inputprefs.catalog 1.1 (25.9.2007)
+## version $VER: inputprefs.catalog 2.0 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -138,4 +138,28 @@ Normal
 MSG_GAD_MOUSE_SPEED_FAST
 Schnell
 ; Fast
+;
+MSG_GAD_KEY_DEF
+Voreinstellung
+; Default
+;
+MSG_GAD_KEY_ALT
+Alternative
+; Alternate
+;
+MSG_GAD_KEY_SET
+Einstellen
+; Set
+;
+MSG_GAD_KEY_SWITCH
+Anordnung umschalten
+; Layout switching
+;
+MSG_GAD_KEY_SWITCH_ENABLE
+Aktiv
+; Enabled
+;
+MSG_GAD_KEY_SWITCH_KEY
+Hotkey
+; Hotkey
 ;
