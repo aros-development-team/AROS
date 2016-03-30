@@ -2805,9 +2805,9 @@ ifeq (%(compiler),host)
         CPP="$(HOST_CPP)" \
         CXXCPP="$(HOST_CPP)" \
         CC="$(HOST_DEF_CC)" \
-        CFLAGS="$(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
+        CFLAGS_FOR_BUILD="$(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
         CXX="$(HOST_CXX)" \
-        CXXFLAGS="$(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
+        CXXFLAGS_FOR_BUILD="$(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
         LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)" \
         TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
         TARGET_CFLAGS="$(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
