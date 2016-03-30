@@ -3,5 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=croatian czech danish german polish
+# other catalogs need update to version 2
+
 %build_catalogs mmake=workbench-utilities-more-catalogs \
-                name=More subdir=System/Utilities
+    catalogs=$(CATALOGS) \
+    name=More subdir=System/Utilities

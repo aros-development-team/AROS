@@ -1649,7 +1649,7 @@ int main(int argc, char **argv)
     if (rc)
         return rc;
 
-    InitLocale("System/Utilities/More.catalog", 1);
+    InitLocale("System/Utilities/More.catalog", 2);
     InitMenus();
     GetArguments(argc, argv);
     OpenLibs();
