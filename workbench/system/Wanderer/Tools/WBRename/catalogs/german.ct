@@ -1,4 +1,4 @@
-## version $VER: deutsch.catalog 1.3 (22.12.2010)
+## version $VER: deutsch.catalog 2.0 (30.3.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -13,19 +13,19 @@ Benennt Dateien und Schubladen um
 ;
 MSG_COPYRIGHT
 Copyright (C) AROS Dev Team
-; ©2006, AROS Dev Team
+; \xa92012, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
 Umbenennen
 ; Rename
 ;
 MSG_LINE
-Geben Sie einen neuen Namen ein
-; Enter a new name for:
+Geben Sie einen neuen Namen für '%s' ein
+; Enter a new name for: '%s'
 ;
 MSG_NAME
-\33bNeuer Name:\33n 
-; \33bNew name:\33n 
+\33bNeuer Name:\33n
+; \33bNew name: \33n
 ;
 MSG_OK
 _OK
