@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 
     D(bug("[HDToolBox] main()\n"));
 
-    InitLocale("System/Tools/HDToolBox.catalog", 1);
+    InitLocale("System/Tools/HDToolBox.catalog", 2);
     device = argc > 1 ? argv[1] : NULL;
     if ((error=initEnv(device))==ERR_NONE)
     {
