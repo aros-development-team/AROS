@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=croatian czech danish finnish french german italian polish portuguese russian spanish
+
 %build_catalogs mmake=workbench-prefs-editor-catalogs \
-                name=EditorPrefs subdir=System/Prefs
+    catalogs=$(CATALOGS) \
+    name=EditorPrefs subdir=System/Prefs
