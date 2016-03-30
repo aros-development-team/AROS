@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=
+
 %build_catalogs mmake=workbench-prefs-boot-catalogs \
-                name=Boot subdir=System/Prefs
+    catalogs=$(CATALOGS) \
+    name=Boot subdir=System/Prefs
