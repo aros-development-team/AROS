@@ -1,4 +1,4 @@
-## version $VER: Snoopy.catalog 2.0 (14.5.2008)
+## version $VER: Snoopy.catalog 2.1 (30.03.2016)
 ## language czech
 ## codeset 5
 ;
@@ -184,6 +184,6 @@ verze %ld
 ; Version %ld
 ;
 MSG_SIZE
-velikost %s
+velikost %d
 ; Size %d
 ;

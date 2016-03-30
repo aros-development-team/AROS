@@ -1,4 +1,4 @@
-## version $VER: Snoopy.catalog 2.0 (23.12.2009)
+## version $VER: Snoopy.catalog 2.1 (30.03.2016)
 ## language hrvatski
 ## codeset 5
 ;
@@ -137,7 +137,7 @@ Ukloni|zadr¾i
 ;
 MSG_ASK_REMOVE
 Ukloni Snoopy proces?\n\
-Ovo mo¾e biti opasno za sustav ukoliko je drugi zadatak zakrpan Snoopy-jem. 
+Ovo mo¾e biti opasno za sustav ukoliko je drugi zadatak zakrpan Snoopy-jem.
 ; Do you really want to remove the Snoopy process?\n\
 ; This can be quite dangerous when another task has patched Snoopy's patches.
 ;
