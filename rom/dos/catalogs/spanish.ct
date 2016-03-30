@@ -48,7 +48,7 @@ biblioteca residente inválida
 ;
 MSG_ERROR_NO_DEFAULT_DIR
 error 201
-; error 201
+; no default directory
 ;
 MSG_ERROR_OBJECT_IN_USE
 el objeto está en uso
