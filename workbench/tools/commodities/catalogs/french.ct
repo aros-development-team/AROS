@@ -9,9 +9,11 @@ Impossible d'ouvrir %s V%ld !\n
 ;
 MSG_CANT_OPEN_INPUTDEVICE
 Impossible d'ouvrir 'input.device'
+; Can't open 'input.device'
 ;
 MSG_CANT_OPEN_CLIPDEVICE
 Impossible d'ouvrir 'clipboard.device'
+; Can't open 'clipboard.device'
 ;
 MSG_CANT_LOCK_SCR
 Impossible de verrouiller l'écran public !\n
@@ -47,6 +49,7 @@ Impossible de créer un port de message !\n
 ;
 MSG_CANT_ALLOCATE_SIGNAL
 Impossible d'allouer un signal !\n
+; Can't allocate signal!\n
 ;
 MSG_CANT_CREATE_BROKER
 Impossible de créer un objet CxBroker !\n
@@ -66,13 +69,18 @@ Projet
 ;
 MSG_MEN_PROJECT_HIDE
 H\0Cacher
+; H\0Hide
 ;
 MSG_MEN_PROJECT_ICONIFY
 I\0Iconifier
+; I\0Iconify
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Quitter
 ; Q\0Quit
+;
+; ===============================================
+; EXCHANGE
 ;
 MSG_EXCHANGE_CXNAME
 Exchange
@@ -87,8 +95,8 @@ Contrôle les Utilités système
 ; Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE
-Exchange
-; Exchange
+Exchange: Hot Key = <%s>
+; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
 Utilités disponibles
@@ -118,6 +126,9 @@ MSG_EXCHANGE_CYCLE_INACTIVE
 Inactive
 ; Inactive
 ;
+; ===============================================
+; BLANKER
+;
 MSG_BLANKER_CXNAME
 Blanker
 ; Blanker
@@ -129,6 +140,9 @@ Economiseur d'écran système
 MSG_BLANKER_CXDESCR
 Eteind l'écran si inactif
 ; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
 ;
 MSG_CLICK2FNT_CXNAME
 ClickToFront
@@ -142,17 +156,23 @@ MSG_CLICK2FNT_CXDESCR
 Cliquer amène la fenêtre devant
 ; Click windows to front
 ;
+; ===============================================
+; OPAQUE
+;
 MSG_OPAQUE_CXNAME
 Opaque
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
 Fenêtres opaques
-; Opaque windows
+; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
 Rend opaque le fond des fenêtres
 ; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
 ;
 MSG_AUTOPOINT_CXNAME
 AutoPoint
@@ -160,11 +180,14 @@ AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
 Auto-focus
-; Automatic window activator
+; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
 Active la fenêtre sous la souris
 ; Activates the window under the mouse
+;
+; ===============================================
+; STARTMENU
 ;
 MSG_STARTMENU_CXNAME
 StartMenu
@@ -178,6 +201,9 @@ MSG_STARTMENU_CXDESCR
 Menu lanceur d'applications
 ; Program launch commodity
 ;
+; ===============================================
+; FKEY
+;
 MSG_FKEY_CXNAME
 FKey
 ; FKey
@@ -188,7 +214,7 @@ Fonctions et touches:
 ;
 MSG_FKEY_CXDESCR
 Attache des fonctions aux touches
-; Attach Special Functions To Keys
+; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
 FKey: Touche = <%s>
@@ -208,6 +234,7 @@ _Effacer la touche
 ;
 MSG_FKEY_SAVE_KEY
 Sauver les touches définies
+; Save Defined Keys
 ;
 MSG_FKEY_COMMAND
 Commande
@@ -239,6 +266,7 @@ Alterner la taille de fenêtre
 ;
 MSG_FKEY_CMD_RESCUE_WIN
 Restaurer la fenêtre
+; Rescue Window
 ;
 MSG_FKEY_CMD_INSERT_TEXT
 Insérer un texte
@@ -256,6 +284,9 @@ MSG_FKEY_MEN_PROJECT_SAVE
 S\0Sauver les touches définies
 ; S\0Save Defined Keys
 ;
+; ===============================================
+; NOCAPSLOCK
+;
 MSG_NOCAPSLOCK_CXNAME
 NoCapsLock
 ; NoCapsLock
@@ -268,39 +299,60 @@ MSG_NOCAPSLOCK_CXDESCR
 Bloque le verrouillage majuscule
 ; Renders the CAPS LOCK key ineffective
 ;
+; ===============================================
+; DepthMenu
+;
 MSG_DEPTHMENU_CXNAME
 DepthMenu
+; DepthMenu
 ;
 MSG_DEPTHMENU_CXTITLE
 DepthMenu :
+; DepthMenu:
 ;
 MSG_DEPTHMENU_CXDESCR
 Menu popup pour la profondeur d'écran
+; Popup menu for depth gadgets
+;
+; ===============================================
+; AltKeyQ
 ;
 MSG_ALTKEYQ_CXNAME
 AltKeyQ
+; AltKeyQ
 ;
 MSG_ALTKEYQ_CXTITLE
 Insertion de caractères
+; Character input by number
 ;
 MSG_ALTKEYQ_CXDESCR
 Usage de la touche Alt comme MSDOS
+; MS-DOS Style Alt key usage
+;
+; ===============================================
+; ASCIITable
 ;
 MSG_ASCIITABLE_CXNAME
 ASCIITable
+; ASCIITable
 ;
 MSG_ASCIITABLE_CXTITLE
 Table ASCII :
+; ASCIITable:
 ;
 MSG_ASCIITABLE_CXDESCR
 Choisir les touches
+; Select keys from a GUI
 ;
 MSG_ASCIITABLE_WINTITLE
 Table ASCII : Touche = <%s>
+; ASCIITable: Hot Key = <%s>
 ;
 MSG_ASCIITABLE_GAD_COPY
 Copier
+; Copy
 ;
 MSG_ASCIITABLE_GAD_CLEAR
 Effacer
+; Clear
 ;
