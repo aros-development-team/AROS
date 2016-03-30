@@ -1595,7 +1595,7 @@ int main(int argc, char **argv)
     tdt_text_wordwrap = TRUE;
     separate_screen   = FALSE;
 
-    InitLocale("System/Utilities/MultiView.catalog", 1);
+    InitLocale("System/Utilities/MultiView.catalog", 2);
     InitMenus(nm);
     InitMenus(nmpict);
     InitMenus(nmtext);

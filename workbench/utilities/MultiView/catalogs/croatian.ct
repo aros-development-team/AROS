@@ -1,4 +1,4 @@
-## version $VER: multiview.catalog 1.0 (23.12.2009)
+## version $VER: multiview.catalog 2.0 (30.03.2016)
 ## language hrvatski
 ## codeset 5
 ;
@@ -180,7 +180,7 @@ MSG_MEN_TEXT_SEARCH_NEXT
 ;  \0Search for next
 ;
 MSG_ASL_OPEN_TITLE
-Izaberite Datoteku koju ®elite Otvoriti 
+Izaberite Datoteku koju ®elite Otvoriti
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
