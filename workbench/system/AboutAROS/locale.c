@@ -14,7 +14,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/System/About.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  2
 
 /*** Variables **************************************************************/
 static struct Catalog *catalog;
