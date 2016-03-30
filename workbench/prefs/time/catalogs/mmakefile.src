@@ -3,4 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-%build_catalogs mmake=workbench-prefs-time-catalogs name=Time subdir=System/Prefs
+CATALOGS:=croatian czech danish finnish french german hungarian italian polish portuguese russian spanish
+
+%build_catalogs mmake=workbench-prefs-time-catalogs \
+    catalogs=$(CATALOGS) \
+    name=Time subdir=System/Prefs
