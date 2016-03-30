@@ -993,7 +993,7 @@ case "$target_os" in
             *aarch64*)
                 aros_target_cpu="aarch64"
                 target_cpu="aarch64"
-                aros_object_format="elf_aarch64"
+                aros_object_format="aarch64elf_aros"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
                 gcc_target_cpu="aarch64"
@@ -1424,7 +1424,7 @@ case "$target_os" in
             *aarch64*)
                 aros_target_cpu="aarch64"
                 gcc_default_cpu="aarch64"
-                aros_object_format="elf_aarch64"
+                aros_object_format="aarch64elf_aros"
                 ;;
             *armhf*)
                 aros_target_cpu="arm"
