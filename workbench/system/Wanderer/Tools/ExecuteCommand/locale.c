@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/System/Wanderer/Tools/ExecuteCommand.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  2
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
