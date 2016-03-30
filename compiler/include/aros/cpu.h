@@ -39,6 +39,8 @@
 #   include <aros/morphos/cpu.h>
 #elif defined __powerpc__
 #   include <aros/ppc/cpu.h>
+#elif defined __aarch64__ 
+#   include <aros/aarch64/cpu.h>
 #elif defined __arm__
 #   if defined __thumb2__
 #	    include <aros/arm/cpu-thumb2.h>
