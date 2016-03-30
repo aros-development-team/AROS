@@ -10,7 +10,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Prefs/Printer.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  1
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
