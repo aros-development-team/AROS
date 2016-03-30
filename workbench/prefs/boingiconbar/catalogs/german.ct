@@ -1,4 +1,4 @@
-## version $VER: BIBPrefs.catalog 1.0 (05.05.2012)
+## version $VER: BIBPrefs.catalog 2.0 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -42,4 +42,8 @@ Programm hinzufügen
 MSG_DEL_P
 Programm entfernen
 ; Del program
+;
+MSG_OK
+Ok
+; OK
 ;
