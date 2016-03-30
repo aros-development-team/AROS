@@ -7,11 +7,11 @@ Projet
 ; Project
 ;
 MSG_MENU_PROJECT_OPEN
-Ouvrir
+Ouvrir...
 ; Open...
 ;
 MSG_MENU_PROJECT_APPEND
-Ajouter
+Ajouter...
 ; Append...
 ;
 MSG_MENU_PROJECT_SAVEAS
@@ -19,7 +19,7 @@ Sauver comme...
 ; Save As...
 ;
 MSG_MENU_PROJECT_ABOUT
-A propos
+A propos...
 ; About...
 ;
 MSG_MENU_PROJECT_QUIT
@@ -191,7 +191,7 @@ Ouvrir derrière
 ; Open Be_hind
 ;
 MSG_LABEL_SYSTEMDEFAULT
-Réglage s_ystème par défaut 
+Réglage s_ystème par défaut
 ; S_ystem Default
 ;
 MSG_LABEL_AUTOCLOSE
@@ -223,7 +223,7 @@ Visible :
 ; Visible:
 ;
 MSG_LABEL_MINIMUM
-Minimum : 
+Minimum :
 ; Minimum:
 ;
 MSG_LABEL_MAXIMUM
@@ -239,7 +239,7 @@ Vitesse de rafraichissement :
 ; Scanrate:
 ;
 MSG_LABEL_SCANLINE
-Ligne de balayage : 
+Ligne de balayage :
 ; Scanline:
 ;
 MSG_CLI_SCREENOPENED
@@ -351,7 +351,7 @@ Détail des blocs
 ; Barblock
 ;
 MSG_SYSPEN_BARTRIM
-Détail des barres 
+Détail des barres
 ; Bartrim
 ;
 MSG_PALPRES_TITLE
@@ -459,7 +459,7 @@ L'écran défile quand la souris\ntouche les bords.
 ; The screen scrolls when\nthe mouse hits its borders.
 ;
 MSG_HELP_NODRAG
-L'écran est indéplaçable. 
+L'écran est indéplaçable.
 ; The screen\nis undraggable.
 ;
 MSG_HELP_EXCLUSIVE
@@ -467,7 +467,7 @@ L'écran ne peut partager son\naffichage avec les autres.
 ; The screen cannot share\nits display with others.
 ;
 MSG_HELP_INTERLEAVED
-Le bitmap de l'écran est\nalloué en mode entrelacé. 
+Le bitmap de l'écran est\nalloué en mode entrelacé.
 ; The screen's bitmap is allocated\nin interleaved mode.
 ;
 MSG_HELP_BEHIND
@@ -479,7 +479,7 @@ L'écran devient l'écran\nsystème par défaut.
 ; The screen becomes the\nsystem's default screen.
 ;
 MSG_HELP_AUTOCLOSE
-L'écran se ferme quand la\ndernière fenêtre est fermée. 
+L'écran se ferme quand la\ndernière fenêtre est fermée.
 ; The screen closes when\nthe last window is closed.
 ;
 MSG_HELP_CLOSEGADGET
