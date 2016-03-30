@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=german
+
 %build_catalogs mmake=workbench-system-find-catalogs \
-            name=Find subdir=System/System
+    catalogs=$(CATALOGS) \
+    name=Find subdir=System/System
