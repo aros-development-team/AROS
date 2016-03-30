@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=czech danish finnish french german hungarian italian polish russian spanish swedish
+
 %build_catalogs mmake=workbench-classes-zune-aboutwindow-catalogs \
-                name=AboutWindow subdir=System/Classes/Zune
+    catalogs=$(CATALOGS) \
+    name=AboutWindow subdir=System/Classes/Zune
