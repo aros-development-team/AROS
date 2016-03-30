@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 3.0 (27.03.2016)
+## version $VER: wanderer.catalog 3.1 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -392,15 +392,15 @@ in Schublade
 ; located in
 ;
 MSG_NOFILEACCESS_E
-nicht zugreifen
+nicht zugreifen 
 ;  
 ;
 MSG_NODRAWERACCESS_S
-Auf die Schublade  
+Auf die Schublade
 ; Can't access drawer
 ;
 MSG_NODRAWERACCESS_E
-kann nicht zugegriffen werden
+kann nicht zugegriffen werden 
 ;  
 ;
 MSG_REQU_FILEUNPROTECT_S
