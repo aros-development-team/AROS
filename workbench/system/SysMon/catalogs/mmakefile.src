@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=french
+
 %build_catalogs mmake=workbench-system-sysmon-catalogs \
-                name=SysMon subdir=System/System
+    catalogs=$(CATALOGS) \
+    name=SysMon subdir=System/System
