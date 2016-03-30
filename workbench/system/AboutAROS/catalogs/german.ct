@@ -1,4 +1,4 @@
-## version $VER: About.catalog 1.2 (29.12.2011)
+## version $VER: About.catalog 2.0 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -29,7 +29,7 @@ Ausgabe
 ;
 MSG_COPYRIGHT
 Copyright © 1995-2016, The AROS Development Team. Alle Rechte vorbehalten.
-; Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+; Copyright \xa9 1995-2016, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Veröffentlicht gemäß den Richtlinien der
@@ -142,3 +142,4 @@ Datatypes
 MSG_SECTION_TESTING
 Testen
 ; Testing
+;
