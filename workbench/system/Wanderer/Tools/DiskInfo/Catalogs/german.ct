@@ -1,4 +1,4 @@
-## version $VER: diskinfo.catalog 1.4 (22.12.2010)
+## version $VER: diskinfo.catalog 2.0 (30.03.2016)
 ## language deutsch
 ## codeset 0
 ;
@@ -45,7 +45,7 @@ Olivier Adam
 ;
 MSG_COPYRIGHT
 Copyright (C) AROS Dev Team
-; ©2006-2009 AROS Dev Team
+; \xa92006-2009 AROS Dev Team
 ;
 MSG_USED
 Benutzt
