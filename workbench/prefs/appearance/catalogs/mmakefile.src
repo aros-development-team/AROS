@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=
+
 %build_catalogs mmake=workbench-prefs-appearance-catalogs \
-                name=Appearance subdir=System/Prefs
+    catalogs=$(CATALOGS) \
+    name=Appearance subdir=System/Prefs
