@@ -46,7 +46,7 @@ Printaj
 ; Print
 ;
 MSG_INFORMATION
-Informacije
+Informacije...
 ; Information...
 ;
 MSG_CLOSE
@@ -226,7 +226,7 @@ Opæe postavke...
 ; General preferences...
 ;
 MSG_LOADPREFS
-Uèitaj postavke
+Uèitaj postavke...
 ; Load preferences..
 ;
 MSG_SAVEPREFS
@@ -285,7 +285,7 @@ Objekt je mapa!
 ; Object is a directory!
 ;
 ERR_READCLIP
-Nepotpuna operacije èitanja 
+Nepotpuna operacije èitanja
 ; Read operation incomplete
 ;
 ERR_NOBRACKET
@@ -309,7 +309,7 @@ Nesipravan format datoteke postavki.
 ; Bad preference file format.
 ;
 ERR_FILEMODIFIED
-%s je izmjenjen.\nSigurno ¾elite zatvoriti?  
+%s je izmjenjen.\nSigurno ¾elite zatvoriti?
 ; %s has been modified.\nAre you sure want to close it?
 ;
 ERR_SLC

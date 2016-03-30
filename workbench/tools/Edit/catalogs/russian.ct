@@ -33,7 +33,7 @@ MSG_PRINTFILE
 Печать
 ;
 MSG_INFORMATION
-Информация
+Информация...
 ;
 MSG_CLOSE
 Закрыть
@@ -161,7 +161,7 @@ MSG_ENVTITLE
 Окружение
 ;
 MSG_SCRMODE
-Режим экрана
+Режим экрана...
 ;
 MSG_FONTS
 Шрифты...
@@ -173,7 +173,7 @@ MSG_LOADPREFS
 Загрузить настройки...
 ;
 MSG_SAVEPREFS
-Сохранить настройки...
+Сохранить настройки
 ;
 MSG_SAVEPREFSAS
 Сохранить настройки как...
