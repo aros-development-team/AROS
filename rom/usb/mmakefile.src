@@ -21,6 +21,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM      kernel-usb-shellapps \
 #MM      kernel-usb-trident
 
+#MM- kernel-usb-amiga-m68k : kernel-usb-nopci
+
 # Clean up
 #MM- kernel-usb-clean : \
 #MM      kernel-usb-poseidon-clean \
