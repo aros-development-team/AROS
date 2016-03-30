@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=french german
+
 %build_catalogs mmake=workbench-tools-iconbar-catalogs \
-                name=BoingIconBar subdir=System/Tools
+    catalogs=$(CATALOGS) \
+    name=BoingIconBar subdir=System/Tools
