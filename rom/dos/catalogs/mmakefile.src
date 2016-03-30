@@ -5,5 +5,9 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench : workbench-libs-dos-catalogs
 
+CATALOGS:= czech danish french german italian norwegian \
+    polish russian spanish swedish
+
 %build_catalogs mmake=workbench-libs-dos-catalogs \
-                name=dos subdir=System/Libs
+    catalogs=$(CATALOGS) \
+    name=dos subdir=System/Libs

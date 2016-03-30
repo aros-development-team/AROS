@@ -2,8 +2,6 @@
 ## language dansk
 ## codeset 0
 ;
-; initial translation by Kristian Poul Herkild
-;
 MSG_ERROR_NO_FREE_STORE
 utilstrækkelig hukommelse tilgængelig
 ; not enough memory available
@@ -163,7 +161,6 @@ objektet er lænket
 MSG_ERROR_BAD_HUNK
 ugyldig filhunk
 ; bad loadfile hunk
-; better translation needed - behøver bedre oversættelse
 ;
 MSG_ERROR_NOT_IMPLEMENTED
 funktionen er ikke implementeret

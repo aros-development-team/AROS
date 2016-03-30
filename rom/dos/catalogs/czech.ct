@@ -48,7 +48,7 @@ chyba rezidentní knihovny
 ;
 MSG_ERROR_NO_DEFAULT_DIR
 neplatný výchozí adresáø
-; error 201
+; no default directory
 ;
 MSG_ERROR_OBJECT_IN_USE
 objekt je ji¾ pou¾íván
