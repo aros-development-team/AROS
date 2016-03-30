@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=
+
 %build_catalogs mmake=arostcp-libs-muimiamipanel-catalogs \
-                name=MUI.MiamiPanel subdir=System/System
+    catalogs=$(CATALOGS) \
+    name=MUI.MiamiPanel subdir=System/System
