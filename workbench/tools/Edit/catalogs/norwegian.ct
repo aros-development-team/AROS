@@ -208,7 +208,7 @@ ERR_NOBRACKET
 Ingen parentes under cursor!
 ;
 ERR_NOT_FOUND
-Kunne ikke finne mønsteret '%s' 
+Kunne ikke finne mønsteret '%s'
 ;
 ERR_LOADFONT
 Kunne ikke åpne font!

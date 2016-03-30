@@ -215,7 +215,7 @@ static APTR catalog = NULL;
 /*** Localise all strings of the program ***/
 void InitLocale(void)
 {
-	if( (catalog = (APTR) OpenCatalogA(NULL, "System/Tools/Editor.catalog", NULL)) )
+	if( (catalog = (APTR) OpenCatalog(NULL, "System/Tools/Editor.catalog", OC_Version, 1, TAG_DONE)) )
 	{
 		WORD n;
 		/* Translate menu strings */

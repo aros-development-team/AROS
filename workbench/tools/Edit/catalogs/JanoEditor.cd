@@ -171,7 +171,7 @@ MSG_PREFS (//)
 General preferences...
 ;
 MSG_LOADPREFS (//)
-Load preferences..
+Load preferences...
 ;
 MSG_SAVEPREFS (//)
 Save preferences
@@ -267,7 +267,7 @@ MSG_ABOUT (//)
 Information
 ;
 MSG_FORMATINFO (//)
-%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+%s\nDesigned by T.Pierron and C.Guillaume \xa9 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
 ;
 MSG_CONTINUE (//)
 Continue
