@@ -7,7 +7,7 @@ Projekt
 ; Project
 ;
 MSG_MENU_PROJECT_OPEN
-Otvori..
+Otvori...
 ; Open...
 ;
 MSG_MENU_PROJECT_APPEND
@@ -47,7 +47,7 @@ MUI...
 ; MUI...
 ;
 MSG_MENU_COLORS
-Boje...
+Boje
 ; Colors
 ;
 MSG_MENU_COLORS_PRESETS
@@ -95,7 +95,7 @@ Izbri¹i
 ; _Delete
 ;
 MSG_BUTTON_EDIT
-Uredi
+Uredi...
 ; _Edit...
 ;
 MSG_BUTTON_OPEN
@@ -343,7 +343,7 @@ Istaknuto
 ; Highlight
 ;
 MSG_SYSPEN_BARDETAIL
-
+Bardetail
 ; Bardetail
 ;
 MSG_SYSPEN_BARBLOCK
@@ -455,7 +455,7 @@ Datatype slika kori¹tena\nkao pozadinska slika.
 ; Datatype picture used\nas background pattern.
 ;
 MSG_HELP_AUTOSCROLL
-Pomicanje zaslona kad\nmi¹ dotakne okvir zaslona. 
+Pomicanje zaslona kad\nmi¹ dotakne okvir zaslona.
 ; The screen scrolls when\nthe mouse hits its borders.
 ;
 MSG_HELP_NODRAG
@@ -463,7 +463,7 @@ Zaslon nije moguæe povuæi.
 ; The screen\nis undraggable.
 ;
 MSG_HELP_EXCLUSIVE
-Zaslon ne mo¾e djeliti\nprikaz sa drugima. 
+Zaslon ne mo¾e djeliti\nprikaz sa drugima.
 ; The screen cannot share\nits display with others.
 ;
 MSG_HELP_INTERLEAVED
@@ -495,7 +495,7 @@ Informacije o trenutnom\nmodu prikaza.
 ; Information about the\ncurrent display mode.
 ;
 MSG_HELP_OVERSCAN
-Pode¹avanje Overscan velièine 
+Pode¹avanje Overscan velièine
 ; Overscan size adjustment.
 ;
 MSG_HELP_WIDTH
@@ -571,10 +571,10 @@ Izaði i spremi\npromjene na disk.
 ; Exit and save\nchanges to disk.
 ;
 MSG_HELP_USE
-Izaði i spremi\npromjene za trenutnu 
+Izaði i spremi\npromjene za trenutnu
 ; Exit and save changes\nfor current seansu.
 ;
 MSG_HELP_CANCEL
-Izaði i\n\33bodbaci\33n promjene. 
+Izaði i\n\33bodbaci\33n promjene.
 ; Exit and\n\33bdiscard\33n changes.
 ;
