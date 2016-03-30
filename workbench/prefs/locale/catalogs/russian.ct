@@ -1,4 +1,4 @@
-## version $VER: Locale.catalog 1.0 (12.08.2006)
+## version $VER: Locale.catalog 2.0 (30.03.2016)
 ## codeset 2104
 ## language russian
 ;
@@ -42,7 +42,7 @@ MSG_MEN_EDIT
 Правка
 ;
 MSG_MEN_EDIT_DEFAULT
-Н\0Сброс настроек 
+Н\0Сброс настроек
 ;
 MSG_MEN_EDIT_LASTSAVED
 П\0Последние сохраненные
