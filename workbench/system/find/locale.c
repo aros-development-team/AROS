@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,8 +11,8 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "Find.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_NAME     "System/System/Find.catalog"
+#define CATALOG_VERSION  1
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
