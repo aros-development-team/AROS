@@ -1,4 +1,4 @@
-## version $VER: Input.catalog 1.1 (10.11.2011)
+## version $VER: Input.catalog 2.0 (30.03.2016)
 ## language français
 ## codeset 0
 ;
@@ -8,7 +8,7 @@ Impossible de créer l'objet application.
 ; Can't create application object.
 ;
 MSG_CANT_CREATE_REQ
-Impossible d'ouvrir le requêteur de création de fichier ! 
+Impossible d'ouvrir le requêteur de création de fichier !
 ; Can't open create filerequester!
 ;
 MSG_CANT_CREATE_CONTEXT
@@ -20,7 +20,7 @@ Impossible d'ouvrir le flux IFF !
 ; Can't open IFF stream!
 ;
 MSG_CANT_WRITE_PREFFILE
-Impossible d'écrire les préférences ! 
+Impossible d'écrire les préférences !
 ; Can't write preferences!
 ;
 MSG_CANT_READ_PREFFILE
