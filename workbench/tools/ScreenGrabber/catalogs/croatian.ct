@@ -1,4 +1,4 @@
-## version $VER: ScreenGrabber.catalog 1.3 (27.12.2009)
+## version $VER: ScreenGrabber.catalog 2.0 (30.03.2016)
 ## language hrvatski
 ## codeset 5
 ;
@@ -28,7 +28,7 @@ Postavljeni naslov
 ; Default title
 ;
 MSG_GRABBING_OPTIONS
-Opcije 
+Opcije
 ; Grabbing options
 ;
 MSG_DELAY
