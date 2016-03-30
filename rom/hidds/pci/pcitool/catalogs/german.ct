@@ -164,11 +164,11 @@ Speichere alle Geräteinformationen nach RAM Disk
 ; Save complete PCI Information to RAM Disk
 ;
 MSG_UNUSED
-unbenutzt
+--unbenutzt--
 ; --unused--
 ;
 MSG_IO_BASE
-I/O-Basis:
+E/A-Basis:
 ; I/O base:
 ;
 MSG_OWNER
@@ -176,7 +176,7 @@ Benutzt von:
 ; Used by:
 ;
 MSG_PCIE_DEVICE_INFO
-PCIe-Geräteinformation
+PCIe-Geräte Information
 ; PCIe device info
 ;
 MSG_PCIE_SERIAL_NUMBER
