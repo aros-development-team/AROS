@@ -23,7 +23,6 @@ void akm4xxx_write(struct CardData *card, struct akm_codec *codec, int chip, uns
    unsigned int tmp;
    int idx;
    unsigned int addrdata = 0;
-   struct PCIDevice *dev = card->pci_dev;
    unsigned long base = card->iobase;
 
    if (codec->newflag)
@@ -100,7 +99,6 @@ void akm4xxx_write_new(struct CardData *card, struct akm_codec *priv, int chip, 
    unsigned int tmp;
    int idx;
    unsigned int addrdata = 0;
-   struct PCIDevice *dev = card->pci_dev;
    unsigned long base = card->iobase;
 
    //DEBUGPRINTF("AKM: %x, %x\n", addr, data);
@@ -318,7 +316,10 @@ void Init_akm4xxx(struct CardData *card, struct akm_codec *codec)
 		return;
 	}
    
-	//for (chip = 0; chip < num_chips; chip++) {
+#if 1
+num_chips = 1;
+#endif
+	for (chip = 0; chip < num_chips; chip++) {
 		ptr = inits;
 		while (*ptr != 0xff) {
 			reg = *ptr++;
@@ -326,7 +327,7 @@ void Init_akm4xxx(struct CardData *card, struct akm_codec *codec)
 			akm4xxx_write(card, codec, 0, reg, data);
          MicroDelay(5);
 		}
-	//}
+	}
 }
 
 #define AK_GET_CHIP(val)		(((val) >> 8) & 0xff)

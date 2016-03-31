@@ -205,7 +205,7 @@ CreateAudioCtrl(struct TagItem *tags)
       audioctrl->ac.ahiac_MixFreq = AHIBase->ahib_Frequency;
 
     if(audioctrl->ac.ahiac_PlayerFunc == NULL)
-      audioctrl->ac.ahiac_PlayerFunc=&DefPlayerHook;
+      audioctrl->ac.ahiac_PlayerFunc=(struct Hook *)&DefPlayerHook;
 
     if(audioctrl->ac.ahiac_PlayerFreq == 0)
       audioctrl->ac.ahiac_PlayerFreq = DEFPLAYERFREQ;

@@ -14,8 +14,6 @@
 
 static void Revo51_Start(struct CardData *card)
 {
-	unsigned char mask;
-
 	SaveGPIO(card->pci_dev, card);
 }
 

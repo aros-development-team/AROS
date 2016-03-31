@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2014, Davy Wentzler. All rights reserved.
+    Copyright © 2004-2014, Davy Wentzler. All rights reserved.
     $Id$
 */
 
@@ -83,7 +83,7 @@ static const STRPTR Inputs[ INPUTS ] =
   "Line 3 - 4",
   "Line 5 - 6",
   "Line 7 - 8",
-  "S/PDIF",
+//  "S/PDIF",
 };
 
 
@@ -103,7 +103,7 @@ static const STRPTR Outputs[ OUTPUTS ] =
   "Line 3 - 4",
   "Line 5 - 6",
   "Line 7 - 8",
-  "S/PDIF",
+//  "S/PDIF",
 };
 
 #define OUTPUTS_2496 1
@@ -137,7 +137,7 @@ static const STRPTR Inputs_Delta66[ INPUTS_DELTA66 ] =
 {
   "Line 1 - 2",
   "Line 3 - 4",
-  "S/PDIF"
+//  "S/PDIF"
 };
 
 #define OUTPUTS_DELTA66 1
@@ -161,7 +161,7 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
 
   int   card_num;
   ULONG ret;
-  int   i, freq = 9;
+  int   i;
 
   card_num = ( GetTagData( AHIDB_AudioID, 0, taglist) & 0x0000f000 ) >> 12;
   
@@ -176,7 +176,6 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
   {
     struct CardData* card;
     BOOL in_use;
-    struct PCIDevice *dev;
 
     card  = CardBase->driverdatas[ card_num ];
     AudioCtrl->ahiac_DriverData = card;
@@ -194,27 +193,8 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
       return AHISF_ERROR;
     }
     
-    dev = card->pci_dev;
     card->playback_interrupt_enabled = FALSE;
     card->record_interrupt_enabled = FALSE;
-    
-   for( i = 1; i < FREQUENCIES; i++ )
-   {
-      if( (ULONG) Frequencies[ i ] > AudioCtrl->ahiac_MixFreq )
-      {
-         if ( ( AudioCtrl->ahiac_MixFreq - (LONG) Frequencies[ i - 1 ] ) < ( (LONG) Frequencies[ i ] - AudioCtrl->ahiac_MixFreq ) )
-         {
-            freq = i-1;
-            break;
-         }
-         else
-         {
-            freq = i;
-            break;
-         }
-      }
-   }
-   
   }
 
   ret = AHISF_KNOWHIFI | AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING;
@@ -268,8 +248,6 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Disable();
@@ -284,8 +262,6 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Enable();
@@ -301,7 +277,6 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
 
   card->current_frames = AudioCtrl->ahiac_BuffSamples;
@@ -326,13 +301,9 @@ _AHIsub_Start( ULONG                   flags,
 	       struct AHIAudioCtrlDrv* AudioCtrl,
 	       struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
-  struct PCIDevice *dev = card->pci_dev;
-  UWORD PlayCtrlFlags = 0, RecCtrlFlags = 0;
   ULONG dma_buffer_size = 0;
   int i, freqbit = 9;
-  APTR stack;
 
   /* Stop playback/recording, free old buffers (if any) */
   //IAHIsub->AHIsub_Stop( flags, AudioCtrl );
@@ -350,9 +321,6 @@ _AHIsub_Start( ULONG                   flags,
   {
     
     ULONG dma_sample_frame_size;
-    int i;
-    short *a;
-    unsigned short cod, ChannelsFlag = 0;
 
     /* Update cached/syncronized variables */
 
@@ -492,9 +460,7 @@ _AHIsub_Stop( ULONG                   flags,
 	      struct AHIAudioCtrlDrv* AudioCtrl,
 	      struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
-  struct PCIDevice *dev = card->pci_dev;
 
   if( (flags & AHISF_PLAY) && card->is_playing == TRUE)
   {
@@ -521,8 +487,6 @@ _AHIsub_Stop( ULONG                   flags,
   
   if( (flags & AHISF_RECORD) && card->is_recording == TRUE)
   {
-    unsigned short rec_ctl, val;
-
     card->is_recording = FALSE;
     
     //DebugPrintF("STOPPING REC\n");
@@ -727,9 +691,9 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 			 struct AHIAudioCtrlDrv* AudioCtrl,
 			 struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
 #if 0
+  struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
+
   switch( attribute )
   {
     case AHIC_MonitorVolume:

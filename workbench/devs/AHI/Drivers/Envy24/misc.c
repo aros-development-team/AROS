@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2014, Davy Wentzler. All rights reserved.
+    Copyright © 2004-2014, Davy Wentzler. All rights reserved.
     $Id$
 */
 
@@ -167,10 +167,8 @@ struct CardData*
 AllocDriverData( struct PCIDevice *    dev,
 		 struct DriverBase* AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card;
   UWORD command_word;
-  int i;
 
   card = AllocVec( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
 
@@ -191,13 +189,13 @@ AllocDriverData( struct PCIDevice *    dev,
   card->playback_interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
   card->playback_interrupt.is_Node.ln_Pri  = 0;
   card->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  card->playback_interrupt.is_Code         = PlaybackInterrupt;
+  card->playback_interrupt.is_Code         = (APTR) PlaybackInterrupt;
   card->playback_interrupt.is_Data         = (APTR) card;
 
   card->record_interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
   card->record_interrupt.is_Node.ln_Pri  = 0;
   card->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  card->record_interrupt.is_Code         = RecordInterrupt;
+  card->record_interrupt.is_Code         = (APTR) RecordInterrupt;
   card->record_interrupt.is_Data         = (APTR) card;
 
   card->pci_dev = dev;
@@ -288,10 +286,8 @@ FreeDriverData( struct CardData* card,
 int card_init(struct CardData *card, struct DriverBase* AHIsubBase)
 {
     struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-    unsigned short cod;
     int i;
-    unsigned int tmp;
-    unsigned char b, eeprom[128];
+    unsigned char eeprom[128];
     
     pci_outb(CCI_PRO_POWER_DOWN, CCS_ENVY_INDEX, card);
     pci_outb(0xFF, CCS_ENVY_DATA, card);
@@ -314,7 +310,7 @@ int card_init(struct CardData *card, struct DriverBase* AHIsubBase)
     
     if (pci_inb(CCS_I2C_STATUS, card) & 0x80)
     {
-        int version, size;
+        int size;
         unsigned long subvendor = 0;
         
         for (i = 0; i < 4; i++)
@@ -353,7 +349,7 @@ int card_init(struct CardData *card, struct DriverBase* AHIsubBase)
         }
         
         size = read_i2c(dev, card, 4);
-        version = read_i2c(dev, card, 5);
+//        read_i2c(dev, card, 5);
         
         //DebugPrintF("EEPROM size = %ld, version = %ld\n", size, version);
         size -= 6; // including bytes 0 - 5

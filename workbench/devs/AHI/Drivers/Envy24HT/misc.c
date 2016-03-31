@@ -75,8 +75,6 @@ static unsigned char inits_ak4358[] = {
 
 void revo_i2s_mclk_changed(struct CardData *card)
 {
-    struct PCIDevice *dev = card->pci_dev;
-
 	/* assert PRST# to converters; MT05 bit 7 */
 	OUTBYTE(card->mtbase + MT_AC97_CMD_STATUS, INBYTE(card->mtbase + MT_AC97_CMD_STATUS) | 0x80);
 	MicroDelay(5);
@@ -224,7 +222,6 @@ void WriteI2C(struct PCIDevice *dev, struct CardData *card, unsigned chip_addres
 void update_spdif_bits(struct CardData *card, unsigned short val)
 {
 	unsigned char cbit, disabled;
-    struct PCIDevice *dev = card->pci_dev;
 
 	cbit = INBYTE(card->iobase + CCS_SPDIF_CONFIG); // get S/PDIF status
 	disabled = cbit & ~CCS_SPDIF_INTEGRATED; // status without enabled bit set
@@ -244,8 +241,6 @@ void update_spdif_bits(struct CardData *card, unsigned short val)
 void update_spdif_rate(struct CardData *card, unsigned short rate)
 {
 	unsigned short val, nval;
-	unsigned long flags;
-    struct PCIDevice *dev = card->pci_dev;
 
 	nval = val = INWORD(card->mtbase + MT_SPDIF_TRANSMIT);
 	nval &= ~(7 << 12);
@@ -261,7 +256,6 @@ void update_spdif_rate(struct CardData *card, unsigned short rate)
 
 static void aureon_spi_write(struct CardData *card, unsigned long base, unsigned int cs, unsigned int data, int bits)
 {
-    struct PCIDevice *dev = card->pci_dev;
 	unsigned int tmp;
 	int i;
 
@@ -404,16 +398,6 @@ int aureon_ac97_init(struct CardData *card, unsigned long base)
 
 
 
-/*
- * get the current register value of WM codec
- */
-static unsigned short wm_get(struct PCIDevice *dev, unsigned long base, int reg)
-{
-//	reg <<= 1;
-//	return ((unsigned short)ice->akm[0].images[reg] << 8) | ice->akm[0].images[reg + 1];
-return 0;
-}
-
 void wm_put(struct CardData *card, unsigned long base, unsigned short reg, unsigned short val)
 {
 	aureon_spi_write(card, base, AUREON_WM_CS, (reg << 9) | (val & 0x1ff), 16);
@@ -496,10 +480,8 @@ INTGW( static, ULONG, cardinterrupt,  CardInterrupt );
 
 struct CardData* AllocDriverData(struct PCIDevice *dev, struct DriverBase* AHIsubBase)
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card;
   UWORD command_word;
-  int i;
 
   card = ALLOCVEC( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
 
@@ -551,8 +533,8 @@ struct CardData* AllocDriverData(struct PCIDevice *dev, struct DriverBase* AHIsu
   card->pci_master_enabled = TRUE;
 
 
-  card->iobase  = ahi_pci_get_base_address(0, dev);
-  card->mtbase  = ahi_pci_get_base_address(1, dev);
+  card->iobase  = (unsigned long)ahi_pci_get_base_address(0, dev);
+  card->mtbase  = (unsigned long)ahi_pci_get_base_address(1, dev);
   card->irq     = ahi_pci_get_irq(dev);
   card->chiprev = READCONFIGBYTE( PCI_REVISION_ID);
   card->model   = READCONFIGWORD( PCI_SUBSYSTEM_ID);
@@ -734,10 +716,8 @@ static unsigned short wm_inits_Phase28[] = {
 int card_init(struct CardData *card)
 {
     struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
-    unsigned short cod;
     int i;
-    unsigned int tmp, eepromsize;
-    unsigned char eeprom[128];
+    unsigned int tmp;
 
     OUTBYTE(card->mtbase + MT_AC97_CMD_STATUS, MT_AC97_RESET); // tbd
     MicroDelay(5);
@@ -1045,8 +1025,6 @@ int card_init(struct CardData *card)
     }
     else if (card->SubType == PHASE22)
     {
-        unsigned int tmp;
-        
         card->RevoFrontCodec = ALLOCVEC(sizeof(struct akm_codec), MEMF_ANY);
         card->RevoFrontCodec->caddr = 2;
         card->RevoFrontCodec->csmask = 1 << 10;
