@@ -30,9 +30,6 @@ char *REGARGS GetStr (struct Catalog *cat, char *idstr)
 
 /****************************************************************************************/
 
-//ULONG catalogtags[] = { OC_Version, 38, TAG_END };
-#define catalogtags	NULL
-
 #undef ThisProcess
 #define ThisProcess()		((struct Process *)FindTask(NULL))
 
@@ -52,7 +49,7 @@ struct Catalog *REGARGS RT_OpenCatalog (struct Locale *locale)
 
     oldwinptr = proc->pr_WindowPtr;
     proc->pr_WindowPtr = (APTR)-1;
-    cat = OpenCatalogA (locale, "System/Libs/reqtools.catalog", (struct TagItem *)catalogtags);
+    cat = OpenCatalog (locale, "System/Libs/reqtools.catalog", OC_Version, 39, TAG_DONE);
     proc->pr_WindowPtr = oldwinptr;
 
     return (cat);

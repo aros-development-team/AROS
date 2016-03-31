@@ -6,7 +6,7 @@
 ;
 ;******************
 ;
-## version $VER: reqtools.catalog 38.7 (2.1.94)
+## version $VER: reqtools.catalog 39 (31.03.2016)
 ## codeset 0
 ## language svenska
 ;
@@ -117,7 +117,7 @@ MSG_ALL
 A_lla
 ;
 MSG_MATCH
-Mot_svara..
+Mot_svara...
 ;
 MSG_CLEAR
 _Rensa

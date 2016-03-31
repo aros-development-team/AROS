@@ -4,7 +4,7 @@
 ;
 ;******************
 ;
-## version $VER: reqtools.catalog 38.4 (27.11.96)
+## version $VER: reqtools.catalog 39 (31.03.2016)
 ## codeset 0
 ## language srpski
 ;
@@ -109,7 +109,7 @@ MSG_ALL
 _Sve
 ;
 MSG_MATCH
-_Match..
+_Match...
 ;
 MSG_CLEAR
 _Niçta

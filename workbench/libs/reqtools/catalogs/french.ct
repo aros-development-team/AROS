@@ -1,7 +1,7 @@
 ;
 ; by Georges 'Melkor' Goncalves
 ;
-## version $VER: ReqTools.catalog 38.4 (11.12.95)
+## version $VER: ReqTools.catalog 39 (31.03.2016)
 ## codeset 0
 ## language français
 ;
@@ -22,11 +22,11 @@ _Dernier|_Annuler
 ; _Last|_Cancel
 ;
 MSG_REQUEST
-Requête...
+Requête
 ; Request
 ;
 MSG_INFORMATION
-Information...
+Information
 ; Information
 ;
 MSG_MIN_FMT
