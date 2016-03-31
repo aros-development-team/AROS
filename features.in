@@ -11,19 +11,12 @@ AC_INIT(mmakefile)
 AC_PREREQ(2.61)
 AC_CONFIG_AUX_DIR(scripts/autoconf)
 
-# Don't know where else to put this...
-AC_MSG_CHECKING([building AROS in])
 AROS_BUILDDIR=`${PWDCMD-pwd}`
 AROS_BUILDDIR_UNIX=${PWD}
-AC_MSG_RESULT($AROS_BUILDDIR)
 
-AC_MSG_CHECKING([AROS source in])
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 SRCDIR=${srcpwd}
-AC_MSG_RESULT($SRCDIR)
 
-NOLINKFLAGS="-nostdlib -nostartfiles"
-LDFLAGS=$NOLINKFLAGS
 # The first step is to find the binaries.
 AC_PROG_CC
 
