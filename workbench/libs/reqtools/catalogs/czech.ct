@@ -1,4 +1,4 @@
-## version $VER: reqtools.catalog 2.12 (28.11.2007)
+## version $VER: reqtools.catalog 39 (31.03.2016)
 ## language czech
 ## codeset 0
 ;
@@ -13,7 +13,7 @@
 ;
 ; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- _OK 
+ _OK
 ;  _Ok
 ;
 MSG_CANCEL
@@ -42,15 +42,15 @@ Informace
 ;
 ; Note: there are two spaces around the next three strings!
 MSG_MIN_FMT
- Min: %ld 
+ Min: %ld
 ;  Min: %ld
 ;
 MSG_MAX_FMT
- Max: %ld 
+ Max: %ld
 ;  Max: %ld
 ;
 MSG_MIN_MAX_FMT
- Min: %ld, Max: %ld 
+ Min: %ld, Max: %ld
 ;  Min: %ld, Max: %ld
 ;
 MSG_TOO_SMALL
@@ -120,7 +120,7 @@ Nesprávný adresáø!
 ; Directory error!
 ;
 MSG_MATCH_WINTITLE
-Zadání masky
+Zadání masky...
 ; Match...
 ;
 MSG_DRAWER

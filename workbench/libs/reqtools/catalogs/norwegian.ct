@@ -6,7 +6,7 @@
 ;
 ;******************
 ;
-## version $VER: reqtools.catalog 38.3 (16.1.96)
+## version $VER: reqtools.catalog 39 (31.03.2016)
 ## codeset 0
 ## language norsk
 ;
@@ -111,7 +111,7 @@ MSG_ALL
 A_lle
 ;
 MSG_MATCH
-Filt_er..
+Filt_er...
 ;
 MSG_CLEAR
 _Rydd

@@ -6,7 +6,7 @@
 ;
 ;******************
 ;
-## version $VER: reqtools.catalog 38.1387 (15.1.97)
+## version $VER: reqtools.catalog 39 (31.03.2016)
 ## codeset 0
 ## language suomi
 ;
@@ -14,7 +14,7 @@
 ;
 ; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- _Ok 
+_Ok
 ;
 MSG_CANCEL
 _Peru
@@ -110,7 +110,7 @@ MSG_ALL
 K_aikki
 ;
 MSG_MATCH
-Va_litse..
+Va_litse...
 ;
 MSG_CLEAR
 T_yhjennä

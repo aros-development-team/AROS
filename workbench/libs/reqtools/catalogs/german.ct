@@ -4,7 +4,7 @@
 ;
 ;******************
 ;
-## version $VER: reqtools.catalog 38.4 (2.1.94)
+## version $VER: reqtools.catalog 39 (31.03.2016)
 ## codeset 0
 ## language deutsch
 ;
@@ -109,7 +109,7 @@ MSG_ALL
 All_e
 ;
 MSG_MATCH
-M_uster..
+M_uster...
 ;
 MSG_CLEAR
 _Keine

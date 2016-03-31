@@ -8,7 +8,7 @@
 ;
 ;******************
 ;
-## version $VER: reqtools.catalog 38.8 (16.12.95)
+## version $VER: reqtools.catalog 39 (31.03.2016)
 ## codeset 0
 ## language italiano
 ;
@@ -101,7 +101,7 @@ MSG_ALL
 T_utti
 ;
 MSG_MATCH
-_Multi..
+_Multi...
 ;
 MSG_CLEAR
 _Cancella

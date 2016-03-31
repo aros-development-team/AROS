@@ -6,7 +6,7 @@
 ;
 ;******************
 ;
-## version $VER: reqtools.catalog 38.4 (2.1.94) by Jesper Juul
+## version $VER: reqtools.catalog 39 (31.03.2016) by Jesper Juul
 ## codeset 0
 ## language dansk
 ;
@@ -111,7 +111,7 @@ MSG_ALL
 A_lle
 ;
 MSG_MATCH
-Filt_er..
+Filt_er...
 ;
 MSG_CLEAR
 I_ngen

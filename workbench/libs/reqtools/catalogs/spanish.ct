@@ -6,7 +6,7 @@
 ;
 ;******************
 ;
-## version $VER: reqtools.catalog 38.3 (2.1.94)
+## version $VER: reqtools.catalog 39 (31.03.2016)
 ## codeset 0
 ## language español
 ;
@@ -112,7 +112,7 @@ MSG_ALL
 To_do
 ;
 MSG_MATCH
-_Patrón..
+_Patrón...
 ;
 MSG_CLEAR
 _Borrar
