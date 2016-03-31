@@ -1810,23 +1810,12 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-# Don't know where else to put this...
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking building AROS in" >&5
-$as_echo_n "checking building AROS in... " >&6; }
 AROS_BUILDDIR=`${PWDCMD-pwd}`
 AROS_BUILDDIR_UNIX=${PWD}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_BUILDDIR" >&5
-$as_echo "$AROS_BUILDDIR" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking AROS source in" >&5
-$as_echo_n "checking AROS source in... " >&6; }
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 SRCDIR=${srcpwd}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $SRCDIR" >&5
-$as_echo "$SRCDIR" >&6; }
 
-NOLINKFLAGS="-nostdlib -nostartfiles"
-LDFLAGS=$NOLINKFLAGS
 # The first step is to find the binaries.
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
