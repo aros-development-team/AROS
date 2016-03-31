@@ -1,9 +1,0 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
-# $Id$
-
-include $(SRCDIR)/config/aros.cfg
-
-ICONS := Palette
-
-%build_icons mmake=workbench-prefs-palette-icons \
-             icons=$(ICONS) dir=$(AROSDIR)/Prefs
