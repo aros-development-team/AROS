@@ -146,14 +146,6 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
     card->record_interrupt_enabled = FALSE;
     /* Clears playback/record interrupts */
     pci_outl((pci_inl(SB128_SCON, card)) & SB128_IRQ_MASK, SB128_SCON, card);
-   
-    for( i = 1; i < FREQUENCIES; i++ )
-    {
-      if( (ULONG) Frequencies[ i ] > AudioCtrl->ahiac_MixFreq )
-      {
-        break;
-      }
-    }
   }
 
   ret = AHISF_KNOWHIFI | AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING;

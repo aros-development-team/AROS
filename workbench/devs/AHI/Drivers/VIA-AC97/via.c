@@ -398,15 +398,6 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
     
     card->playback_interrupt_enabled = FALSE;
     card->record_interrupt_enabled = FALSE;
-    
-   for( i = 1; i < FREQUENCIES; i++ )
-   {
-      if( (ULONG) Frequencies[ i ] > AudioCtrl->ahiac_MixFreq )
-      {
-         break;
-      }
-   }
-   
   }
 
   ret = AHISF_KNOWHIFI | AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING;

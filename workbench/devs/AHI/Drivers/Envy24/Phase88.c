@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2014, Davy Wentzler. All rights reserved.
+    Copyright © 2004-2014, Davy Wentzler. All rights reserved.
     $Id$
 */
 
@@ -17,8 +17,6 @@
 
 static void Phase88_Start(struct CardData *card)
 {
-	unsigned char mask;
-
 	SaveGPIOStatus(card);
 
    WriteCCI(card, CCI_GPIO_DIR, card->gpio_dir | PHASE88_RW); // prepare for write

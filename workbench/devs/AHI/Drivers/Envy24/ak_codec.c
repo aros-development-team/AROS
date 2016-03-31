@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2014, Davy Wentzler. All rights reserved.
+    Copyright © 2004-2014, Davy Wentzler. All rights reserved.
     $Id$
 */
 
@@ -28,8 +28,6 @@ void akm4xxx_write(struct CardData *card, struct akm_codec *priv, int chip, unsi
     unsigned int tmp;
     int idx;
     unsigned int addrdata = 0;
-    struct PCIDevice *dev = card->pci_dev;
-    unsigned long base = card->iobase;
 
     tmp = snd_ice1712_gpio_read(ice);
 	tmp |= priv->add_flags;
@@ -92,8 +90,6 @@ void akm4xxx_write_old(struct CardData *card, struct akm_codec *codec, int chip,
     unsigned char tmp;
 	int idx;
 	unsigned int addrdata = 0;
-    struct PCIDevice *dev = card->pci_dev;
-    unsigned long base = card->iobase;
 
     //IExec->DebugPrintF("m = %x, %x, data = %x\n", dev->InByte(base + 0x1F), dev->InWord(base + 0x16), data);
 

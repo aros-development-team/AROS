@@ -39,8 +39,6 @@ CardInterrupt( struct CardData* card )
 #endif
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
-  struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
 
   unsigned char intreq;
   LONG  handled = 0;
@@ -148,15 +146,12 @@ PlaybackInterrupt( struct CardData* card )
 #endif
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
   
   if( card->mix_buffer != NULL && card->current_buffer != NULL && card->is_playing)
   {
     BOOL   skip_mix;
 
     WORD*  src;
-    size_t skip;
-    size_t samples;
     int    i;
     LONG* srclong, *dstlong, *spdif_dstlong, left, right;
     int frames = card->current_frames;
@@ -172,9 +167,6 @@ PlaybackInterrupt( struct CardData* card )
     }
     
     /* Now translate and transfer to the DMA buffer */
-
-    skip    = ( AudioCtrl->ahiac_Flags & AHIACF_HIFI ) ? 2 : 1;
-    samples = card->current_bytesize >> 1;
 
     src     = card->mix_buffer;
     
@@ -271,7 +263,6 @@ RecordInterrupt( struct CardData* card )
 #endif
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
   int   i   = 0, frames = card->current_record_bytesize_32bit / 4;
 
   if (card->input_is_24bits)

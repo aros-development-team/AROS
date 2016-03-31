@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -179,11 +179,7 @@ ULONG ahi_pci_mem_map(APTR addr, APTR dev);
 
 #ifdef __AROS__
 #include <aros/debug.h>
-#if DEBUG
 #define DebugPrintF bug
-#else
-#define DebugPrintF
-#endif
 #define NT_EXTINTERRUPT NT_INTERRUPT
 #endif
 

@@ -1,5 +1,6 @@
 /*
-    Copyright ï¿½ 2004-2014, Davy Wentzler. All rights reserved.
+    Copyright © 2004-2014, Davy Wentzler. All rights reserved.
+    Copyright © 2014-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,7 +29,6 @@ AROS_INTH1(CardInterrupt, struct CardData *, card)
   AROS_INTFUNC_INIT
 
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
 
   unsigned char intreq;
   LONG  handled = 0;
@@ -131,9 +131,6 @@ AROS_INTH1(PlaybackInterrupt, struct CardData *, card)
     BOOL   skip_mix;
 
     WORD*  src;
-    WORD*  dst;
-    size_t skip;
-    size_t samples;
     int    i;
     LONG *srclong, *dstlong, left, right;
     int frames = card->current_frames;
@@ -150,11 +147,7 @@ AROS_INTH1(PlaybackInterrupt, struct CardData *, card)
     
     /* Now translate and transfer to the DMA buffer */
 
-    skip    = ( AudioCtrl->ahiac_Flags & AHIACF_HIFI ) ? 2 : 1;
-    samples = card->current_bytesize >> 1;
-
     src     = card->mix_buffer;
-    dst     = card->current_buffer;
     srclong = (LONG*) card->mix_buffer;
     dstlong = (LONG*) card->current_buffer;
 
@@ -199,6 +192,8 @@ AROS_INTH1(PlaybackInterrupt, struct CardData *, card)
   }
 
   card->playback_interrupt_enabled = TRUE;
+
+  return FALSE;
 
   AROS_INTFUNC_EXIT
 }
@@ -279,6 +274,8 @@ AROS_INTH1(RecordInterrupt, struct CardData *, card)
   CacheClearE( card->current_record_buffer_32bit, card->current_record_bytesize_32bit, CACRF_ClearD);
 
   card->record_interrupt_enabled = TRUE;
+
+  return FALSE;
 
   AROS_INTFUNC_EXIT
 }

@@ -179,7 +179,7 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
 
   int   card_num;
   ULONG ret;
-  int   i, freq = 9;
+  int   i;
 
   card_num = ( GETTAGDATA( AHIDB_AudioID, 0, taglist) & 0x0000f000 ) >> 12;
   
@@ -194,7 +194,6 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
   {
     struct CardData* card;
     BOOL in_use;
-    struct PCIDevice *dev;
 
     card  = CardBase->driverdatas[ card_num ];
     AudioCtrl->ahiac_DriverData = card;
@@ -212,27 +211,8 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
       return AHISF_ERROR;
     }
     
-    dev = card->pci_dev;
     card->playback_interrupt_enabled = FALSE;
     card->record_interrupt_enabled = FALSE;
-    
-   for( i = 1; i < FREQUENCIES; i++ )
-   {
-      if( (ULONG) Frequencies[ i ] > AudioCtrl->ahiac_MixFreq )
-      {
-         if ( ( AudioCtrl->ahiac_MixFreq - (LONG) Frequencies[ i - 1 ] ) < ( (LONG) Frequencies[ i ] - AudioCtrl->ahiac_MixFreq ) )
-         {
-            freq = i-1;
-            break;
-         }
-         else
-         {
-            freq = i;
-            break;
-         }
-      }
-   }
-   
   }
 
   ret = AHISF_KNOWHIFI | AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING;
@@ -286,8 +266,6 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
 #ifdef __amigaos4__
@@ -306,8 +284,6 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
 #ifdef __amigaos4__
@@ -328,16 +304,14 @@ _AHIsub_Start( ULONG                   flags,
 	       struct AHIAudioCtrlDrv* AudioCtrl,
 	       struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
-  struct PCIDevice *dev = card->pci_dev;
-  UWORD PlayCtrlFlags = 0, RecCtrlFlags = 0;
   ULONG dma_buffer_size = 0;
-  int i, freqbit = 9, SPDIF_freqbit = -1;
+  int i, freqbit = 9;
   BOOL SPDIF = FALSE;
   unsigned char RMASK = MT_RDMA0_MASK;
+#ifdef __amigaos4__
   APTR stack;
-
+#endif
 
   /* Stop playback/recording, free old buffers (if any) */
   //IAHIsub->AHIsub_Stop( flags, AudioCtrl );
@@ -355,7 +329,6 @@ _AHIsub_Start( ULONG                   flags,
   {
     if( AudioCtrl->ahiac_MixFreq == SPDIF_Frequencies[ i ] )
     {
-      SPDIF_freqbit = i;
       SPDIF = TRUE;
       break;
     }
@@ -369,10 +342,6 @@ _AHIsub_Start( ULONG                   flags,
   {
     
     ULONG dma_sample_frame_size;
-    int i;
-    short *a;
-    unsigned short cod, ChannelsFlag = 0;
-    
 
     /* Allocate a new mixing buffer. Note: The buffer must be cleared, since
        it might not be filled by the mixer software interrupt because of
@@ -425,14 +394,17 @@ _AHIsub_Start( ULONG                   flags,
     card->spdif_out_buffer_phys = IMMU->GetPhysicalAddress(card->spdif_out_buffer);
     IExec->UserState(stack);
 #elif __MORPHOS__
-    card->playback_buffer_phys = ahi_pci_logic_to_physic_addr(card->playback_buffer, dev);
-    card->spdif_out_buffer_phys = ahi_pci_logic_to_physic_addr(card->spdif_out_buffer, dev);
+    card->playback_buffer_phys =
+        ahi_pci_logic_to_physic_addr(card->playback_buffer, card->pci_dev);
+    card->spdif_out_buffer_phys =
+        ahi_pci_logic_to_physic_addr(card->spdif_out_buffer, card->pci_dev);
 #else
     card->playback_buffer_phys = card->playback_buffer;
     card->spdif_out_buffer_phys = card->spdif_out_buffer; // if SPDIF were false, this pointer wouldn't get initialized, which might mean trouble in the IRQ
 #endif
 
-    OUTLONG(card->mtbase + MT_DMAI_PB_ADDRESS, card->playback_buffer_phys);
+    OUTLONG(card->mtbase + MT_DMAI_PB_ADDRESS,
+      (ULONG)card->playback_buffer_phys);
     
     //kprintf("card->playback_buffer_phys = %lx, virt = %lx\n", card->playback_buffer_phys, card->playback_buffer);
     //DEBUGPRINTF("addr = %lx, %lx\n", card->playback_buffer_phys, INLONG(card->mtbase + MT_DMAI_PB_ADDRESS));
@@ -453,7 +425,8 @@ _AHIsub_Start( ULONG                   flags,
     
        WriteMask8(card, card->iobase, CCS_SPDIF_CONFIG, CCS_SPDIF_INTEGRATED); // enable
     
-       OUTLONG(card->mtbase + MT_PDMA4_ADDRESS, card->spdif_out_buffer_phys);
+       OUTLONG(card->mtbase + MT_PDMA4_ADDRESS,
+          (ULONG)card->spdif_out_buffer_phys);
        OUTWORD(card->mtbase + MT_PDMA4_LENGTH, (dma_buffer_size ) / 4 - 1);
        OUTWORD(card->mtbase + MT_PDMA4_INTLEN, (dma_buffer_size / 2) / 4 - 1);
        
@@ -506,7 +479,8 @@ _AHIsub_Start( ULONG                   flags,
     card->record_buffer_32bit_phys = IMMU->GetPhysicalAddress(card->record_buffer_32bit);
     IExec->UserState(stack);
 #elif __MORPHOS__
-    card->record_buffer_32bit_phys = ahi_pci_logic_to_physic_addr(card->record_buffer_32bit, dev);
+    card->record_buffer_32bit_phys =
+        ahi_pci_logic_to_physic_addr(card->record_buffer_32bit, card->pci_dev);
 #else
     card->record_buffer_32bit_phys = card->record_buffer_32bit;
 #endif
@@ -538,7 +512,7 @@ _AHIsub_Start( ULONG                   flags,
    if( flags & AHISF_PLAY )
    {
       unsigned char start = MT_PDMA0_START;
-      int i;
+      /*int i;*/
       
       if (SPDIF)
       {

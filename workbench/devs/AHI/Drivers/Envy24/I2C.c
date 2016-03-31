@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2014, Davy Wentzler. All rights reserved.
+    Copyright © 2004-2014, Davy Wentzler. All rights reserved.
     $Id$
 */
 
@@ -80,15 +80,6 @@ static void I2C_bit_direction(struct CardData *card, int clock, int data)
 static void I2C_bit_set(struct CardData *card, int clock, int data)
 {
 	card->bit_ops->Write_CLK_SDA(card, clock, data);
-}
-
-
-static int I2C_bit_clock(struct CardData *card)
-{
-	if (card->bit_ops->GetClock)
-		return card->bit_ops->GetClock(card);
-
-	return 0;
 }
 
 
