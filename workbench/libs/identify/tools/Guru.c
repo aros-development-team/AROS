@@ -54,7 +54,7 @@ static TEXT buf_spec[BUFSIZE];
 #include "strings.h"
 
 #define CATALOG_NAME     "System/C/IdentifyTools.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  1
 
 static struct Catalog 	*catalog;
 

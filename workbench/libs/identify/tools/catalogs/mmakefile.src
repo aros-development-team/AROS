@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=french german
+
 %build_catalogs mmake=workbench-libs-identify-tools-catalogs \
-                name=IdentifyTools subdir=System/C
+    catalogs=$(CATALOGS) \
+    name=IdentifyTools subdir=System/C
