@@ -8,7 +8,7 @@
 ;
 ;**************************
 ;
-## version $VER: reqtoolsprefs.catalog 38.8 (25.1.97)
+## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
 ## codeset 0
 ## language deutsch
 ;
@@ -44,9 +44,8 @@ Abbrechen
 MSG_ABORT
 Abbruch
 ;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- Ok 
+Ok
 ;
 ; * 2.7 *
 ;

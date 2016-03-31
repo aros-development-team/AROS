@@ -1,4 +1,4 @@
-## version $VER: reqtoolsprefs.catalog 2.12 (28.12.2009)
+## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
 ## language hrvatski
 ## codeset 0
 ;
@@ -252,7 +252,7 @@ Va¹a verzija reqtools.library ne\npodr¾ava postavke!
 MSG_ALL_PREFS_NOT_SUPPORTED
 UPOZORENJE: Va¹a verzija editora postavki ne\n\
 podr¾ava sve postavke od reqtools.library\n\
-koju imate instaliranu! 
+koju imate instaliranu!
 ; WARNING: This version of the preference editor\n\
 ; doesn't support all the preferences of the\n\
 ; reqtools.library you've got installed!
@@ -286,7 +286,7 @@ Ne mogu otvoriti prozor!
 ; Couldn't open window!
 ;
 MSG_ERROR_ACCESSING_FILE
-Gre¹ka pri otvaranju datoteke\n%s,\n%s 
+Gre¹ka pri otvaranju datoteke\n%s,\n%s
 ; Error accessing file\n%s,\n%s
 ;
 MSG_READ_ERROR
