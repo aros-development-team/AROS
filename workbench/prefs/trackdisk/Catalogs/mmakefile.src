@@ -3,5 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+CATALOGS:=croatian czech danish french german italian polish portuguese russian spanish
+
 %build_catalogs mmake=workbench-prefs-trackdisk-catalogs \
-                name=Trackdisk subdir=System/Prefs
+    catalogs=$(CATALOGS) \
+    name=Trackdisk subdir=System/Prefs
