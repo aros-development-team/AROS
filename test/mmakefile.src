@@ -8,7 +8,7 @@ COMMONTESTFILES := \
     runtests
 
 HOSTEDTESTFILES :=  \
-    hostlib windebug
+    windebug
 
 EXEDIR := $(AROS_TESTS)
 

@@ -12,6 +12,7 @@ FILES := \
  getcpuinfo \
  helloworld \
  hostcb \
+ hostlib \
  iffparsewrite \
  ilbmtoc \
  inquire \
