@@ -63,6 +63,7 @@ $(TOP)/.features : crosstools $(SRCDIR)/features
 	fi
 
 features : $(TOP)/.features
+	@$(NOP)
 
 $(TOOLLIB) : $(wildcard $(SRCDIR)/tools/toollib/*.[ch])
 	@$(ECHO) Building toollib...
