@@ -13,7 +13,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Prefs/ReqTools.catalog"
-#define CATALOG_VERSION  38
+#define CATALOG_VERSION  39
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;

@@ -36,9 +36,8 @@ Cancel
 MSG_ABORT (//)
 Abort
 ;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK (//)
- Ok
+Ok
 ;
 ; * 2.7 *
 ;
