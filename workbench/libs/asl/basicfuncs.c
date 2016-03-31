@@ -402,7 +402,7 @@ struct LayoutData *AllocCommon
         struct TagItem tags[] =
         {
             {OC_BuiltInLanguage , (IPTR)"english"},
-            {OC_Version         , 0              },
+            {OC_Version         , 2              },
             {TAG_DONE                            }
         };
 

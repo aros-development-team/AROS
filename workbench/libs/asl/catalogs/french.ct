@@ -1,4 +1,4 @@
-## version $VER: asl.catalog 1.1 (23.12.2011)
+## version $VER: asl.catalog 2.0 (31.03.2016)
 ## codeset 0
 ## language français
 ;
@@ -126,7 +126,7 @@ M\0Nom suivant
 ; N\0Next Name
 ;
 MSG_FILEREQ_MEN_CONTROL_RESTORE
-R\0Revenir à l'initiale 
+R\0Revenir à l'initiale
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT

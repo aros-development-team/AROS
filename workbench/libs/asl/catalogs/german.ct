@@ -1,6 +1,6 @@
-## version $VER: asl.catalog 1.0 (12.03.2001)
-## codeset 0
+## version $VER: asl.catalog 2.0 (31.03.2016)
 ## language deutsch
+## codeset 0
 ;
 MSG_FILEREQ_TITLE
 Datei auswählen
@@ -56,6 +56,24 @@ Ok zum Löschen von\n\
 MSG_FILEREQ_DELETE_OKCANCEL
 Löschen|Abbrechen
 ; Delete|Cancel
+;
+MSG_FILEREQ_FOREIGNER_TITLE
+Piktogramme aus verschiedenen Ordnern fallen gelassen
+; Icons dropped from different drawers
+;
+MSG_FILEREQ_FOREIGNER_MSG
+Warnung: Die Piktogramme, die gerade fallen gelassen\n\
+wurden, kommen nicht alle aus der selben Schublade.\n\
+Der Requester konnte folgende Dateien nicht verarbeiten:\n\
+%s
+; Warning: The icons that have just been dropped\n\
+; do not all come from the same drawer.\n\
+; The requester could not handle the following files:\n\
+; %s
+;
+MSG_FILEREQ_FOREIGNER_OK
+OK
+; OK
 ;
 MSG_FILEREQ_RENAME_TITLE
 Umbenennen
@@ -187,6 +205,7 @@ MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
 ;
 MSG_MODEREQ_TITLE
 Bildschirmmodus auswählen
+; Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
 Ok
