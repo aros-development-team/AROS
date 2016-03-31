@@ -1,5 +1,5 @@
-#ifndef AROS_ARM_CPU_H
-#define AROS_ARM_CPU_H
+#ifndef AROS_AARCH64_CPU_H
+#define AROS_AARCH64_CPU_H
 
 /*
     Copyright © 2016, The AROS Development Team. All rights reserved.
@@ -165,4 +165,4 @@ extern void _aros_not_implemented ();
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
 
-#endif /* AROS_ARM_CPU_H */
+#endif /* AROS_AARCH64_CPU_H */
