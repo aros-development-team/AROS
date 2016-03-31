@@ -17,6 +17,8 @@ AROS_BUILDDIR_UNIX=${PWD}
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 SRCDIR=${srcpwd}
 
+NOLINKFLAGS="-nostdlib -nostartfiles"
+ LDFLAGS=$NOLINKFLAGS
 # The first step is to find the binaries.
 AC_PROG_CC
 

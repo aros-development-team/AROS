@@ -1816,6 +1816,8 @@ AROS_BUILDDIR_UNIX=${PWD}
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 SRCDIR=${srcpwd}
 
+NOLINKFLAGS="-nostdlib -nostartfiles"
+ LDFLAGS=$NOLINKFLAGS
 # The first step is to find the binaries.
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
