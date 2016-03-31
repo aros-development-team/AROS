@@ -1,10 +1,10 @@
-## version $VER: Font.catalog 1.3 (22.12.2009)
+## version $VER: Font.catalog 2.0 (30.03.2016)
 ## language croatian
 ## codeset 5
 ;
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
-Ne mogu stvoriti objekt aplikacije. 
+Ne mogu stvoriti objekt aplikacije.
 ; Can't create application object.
 ;
 MSG_CANT_CREATE_REQ
@@ -20,7 +20,7 @@ Ne mogu otvoriti IFF tok!
 ; Can't open IFF stream!
 ;
 MSG_CANT_WRITE_PREFFILE
-Ne mogu zapisati postavke! 
+Ne mogu zapisati postavke!
 ; Can't write preferences!
 ;
 MSG_CANT_READ_PREFFILE
