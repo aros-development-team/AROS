@@ -12,7 +12,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/C/LoadResource.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  2
 
 /*** Variables **************************************************************/
 static struct Catalog *catalog;
