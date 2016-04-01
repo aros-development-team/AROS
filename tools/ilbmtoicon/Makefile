@@ -18,18 +18,21 @@ ILBMTOICON  ?= ilbmtoicon
 INFOINFO    ?= infoinfo  
 MECHO	    ?= echo
 
+# linking of i386 on x86_64 doesn't work unless you make
+# sure to have the i386 build tools for your distribution
+# installed (including libz-dev:i386 and libpng-dev:i386
+# or their equivalents).
+
+EXTRALIBS1 := -lz
+
 ifneq ($(LIBPNG_INCLUDES),)
     HOST_CFLAGS  += $(LIBPNG_INCLUDES)
 endif
 ifneq ($(LIBPNG_LIB),)
     HOST_LDFLAGS += $(LIBPNG_LIB)
+else
+    EXTRALIBS1 := $(LIBPNG) $(EXTRALIBS1)
 endif
-
-# linking of i386 on x86_64 doesn't work unless you make
-# sure to have the i386 build tools for your distribution
-# installed (including libz-dev:i386 and libpng-dev:i386
-# or their equivalents).
-EXTRALIBS1 := -l$(LIBPNG) -lz
 
 all : $(ILBMTOICON) $(INFOINFO)
 
