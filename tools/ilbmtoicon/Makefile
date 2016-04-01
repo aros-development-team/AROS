@@ -7,6 +7,8 @@
 -include $(TOP)/config/make.cfg
 
 LIBPNG ?= png
+LIBPNG_INCLUDES ?=
+LIBPNG_LIB ?= 
 
 USER_CFLAGS := -Wall -Wunused -O2
 
@@ -16,18 +18,13 @@ ILBMTOICON  ?= ilbmtoicon
 INFOINFO    ?= infoinfo  
 MECHO	    ?= echo
 
-# Use libpng from MacPorts on MacOS X.
-# We don't add these includes in configure script because doing so
-# influences makecountry which uses libiconv. MacPorts libiconv has different ABI
-# from system's one, this causes conflicts.
-ifeq ($(AROS_HOST_ARCH),darwin)
-    HOST_CFLAGS  += -isystem /opt/local/include -isystem /opt/pkg/include -isystem /usr/local/include
-    HOST_LDFLAGS += -L/opt/local/lib/ -L/opt/pkg/lib/ -L/usr/local/lib
+ifneq ($(LIBPNG_INCLUDES),)
+    HOST_CFLAGS  += $(LIBPNG_INCLUDES)
+endif
+ifneq ($(LIBPNG_LIB),)
+    HOST_LDFLAGS += $(LIBPNG_LIB)
 endif
 
-ifeq ($(AROS_HOST_ARCH),mingw32)
-    EXTRALIBS2 := -lws2_32
-endif
 # linking of i386 on x86_64 doesn't work unless you make
 # sure to have the i386 build tools for your distribution
 # installed (including libz-dev:i386 and libpng-dev:i386
@@ -43,7 +40,7 @@ $(ILBMTOICON) : ilbmtoicon.c
 
 $(INFOINFO) : infoinfo.c
 	@$(ECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ $(EXTRALIBS2)
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@
 	@$(HOST_STRIP) $@
 
 clean:
