@@ -799,6 +799,8 @@ CMP
 TEST
 IF
 FOR
+libpng_incdir
+libpng_libextra
 libpng
 pkgpyexecdir
 pyexecdir
@@ -4815,6 +4817,8 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         android_tool="android.bat"
         default_android_sdk="/c/android-sdk-windows-1.6_r1"
 
+        libpng_libextra="-lws2_32"
+
         case "$host_cpu" in
         *i?86*)
 
@@ -6097,7 +6101,12 @@ $as_echo "$ac_cv_lib_png_png_read_png" >&6; }
 if test "x$ac_cv_lib_png_png_read_png" = xyes; then :
   libpng="png"
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng16" >&5
+  libpng="no"
+fi
+
+if test "$libpng" = "no" ; then
+    if test "$host_os" = "darwin" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng16" >&5
 $as_echo_n "checking for png_read_png in -lpng16... " >&6; }
 if ${ac_cv_lib_png16_png_read_png+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6139,8 +6148,309 @@ else
   libpng="no"
 fi
 
+        if test "$libpng" = "no" ; then
+                        save_ldlags="$LDFLAGS"
+            LDFLAGS="-L/usr/local/lib/ $LDFLAGS"
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng" >&5
+$as_echo_n "checking for png_read_png in -lpng... " >&6; }
+if ${ac_cv_lib_png_png_read_png+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpng  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char png_read_png ();
+int
+main ()
+{
+return png_read_png ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_png_png_read_png=yes
+else
+  ac_cv_lib_png_png_read_png=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_png_png_read_png" >&5
+$as_echo "$ac_cv_lib_png_png_read_png" >&6; }
+if test "x$ac_cv_lib_png_png_read_png" = xyes; then :
+  libpng="png"
+else
+  libpng="no"
 fi
 
+            if test "$libpng" != "no" ; then
+                libpng_libextra="-L/usr/local/lib/"
+                libpng_incdir="-isystem /usr/local/include"
+            fi
+            LDFLAGS="$save_ldlags"
+            if test "$libpng" = "no" ; then
+                LDFLAGS="-L/usr/local/lib/ $LDFLAGS"
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng16" >&5
+$as_echo_n "checking for png_read_png in -lpng16... " >&6; }
+if ${ac_cv_lib_png16_png_read_png+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpng16  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char png_read_png ();
+int
+main ()
+{
+return png_read_png ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_png16_png_read_png=yes
+else
+  ac_cv_lib_png16_png_read_png=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_png16_png_read_png" >&5
+$as_echo "$ac_cv_lib_png16_png_read_png" >&6; }
+if test "x$ac_cv_lib_png16_png_read_png" = xyes; then :
+  libpng="png16"
+else
+  libpng="no"
+fi
+
+                if test "$libpng" != "no" ; then
+                    libpng_libextra="-L/usr/local/lib/"
+                    libpng_incdir="-isystem /usr/local/include"
+                fi
+                LDFLAGS="$save_ldlags"
+            fi
+                        if test "$libpng" = "no" ; then
+                LDFLAGS="-L/opt/local/lib/ $LDFLAGS"
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng" >&5
+$as_echo_n "checking for png_read_png in -lpng... " >&6; }
+if ${ac_cv_lib_png_png_read_png+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpng  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char png_read_png ();
+int
+main ()
+{
+return png_read_png ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_png_png_read_png=yes
+else
+  ac_cv_lib_png_png_read_png=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_png_png_read_png" >&5
+$as_echo "$ac_cv_lib_png_png_read_png" >&6; }
+if test "x$ac_cv_lib_png_png_read_png" = xyes; then :
+  libpng="png"
+else
+  libpng="no"
+fi
+
+                if test "$libpng" != "no" ; then
+                    libpng_libextra="-L/opt/local/lib/"
+                    libpng_incdir="-isystem /opt/local/include"
+                fi
+                LDFLAGS="$save_ldlags"
+            fi
+            if test "$libpng" = "no" ; then
+                LDFLAGS="-L/opt/local/lib/ $LDFLAGS"
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng16" >&5
+$as_echo_n "checking for png_read_png in -lpng16... " >&6; }
+if ${ac_cv_lib_png16_png_read_png+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpng16  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char png_read_png ();
+int
+main ()
+{
+return png_read_png ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_png16_png_read_png=yes
+else
+  ac_cv_lib_png16_png_read_png=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_png16_png_read_png" >&5
+$as_echo "$ac_cv_lib_png16_png_read_png" >&6; }
+if test "x$ac_cv_lib_png16_png_read_png" = xyes; then :
+  libpng="png16"
+else
+  libpng="no"
+fi
+
+                if test "$libpng" != "no" ; then
+                    libpng_libextra="-L/opt/local/lib/"
+                    libpng_incdir="-isystem /opt/local/include"
+                fi
+                LDFLAGS="$save_ldlags"
+            fi
+                        if test "$libpng" = "no" ; then
+                LDFLAGS="-L/opt/pkg/lib/ $LDFLAGS"
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng" >&5
+$as_echo_n "checking for png_read_png in -lpng... " >&6; }
+if ${ac_cv_lib_png_png_read_png+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpng  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char png_read_png ();
+int
+main ()
+{
+return png_read_png ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_png_png_read_png=yes
+else
+  ac_cv_lib_png_png_read_png=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_png_png_read_png" >&5
+$as_echo "$ac_cv_lib_png_png_read_png" >&6; }
+if test "x$ac_cv_lib_png_png_read_png" = xyes; then :
+  libpng="png"
+else
+  libpng="no"
+fi
+
+                if test "$libpng" != "no" ; then
+                    libpng_libextra="-L/opt/pkg/lib/"
+                    libpng_incdir="-isystem /opt/pkg/include"
+                fi
+                LDFLAGS="$save_ldlags"
+            fi
+            if test "$libpng" = "no" ; then
+                LDFLAGS="-L/opt/pkg/lib/ $LDFLAGS"
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for png_read_png in -lpng16" >&5
+$as_echo_n "checking for png_read_png in -lpng16... " >&6; }
+if ${ac_cv_lib_png16_png_read_png+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpng16  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char png_read_png ();
+int
+main ()
+{
+return png_read_png ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_png16_png_read_png=yes
+else
+  ac_cv_lib_png16_png_read_png=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_png16_png_read_png" >&5
+$as_echo "$ac_cv_lib_png16_png_read_png" >&6; }
+if test "x$ac_cv_lib_png16_png_read_png" = xyes; then :
+  libpng="png16"
+else
+  libpng="no"
+fi
+
+                if test "$libpng" != "no" ; then
+                    libpng_libextra="-L/opt/pkg/lib/"
+                    libpng_incdir="-isystem /opt/pkg/include"
+                fi
+                LDFLAGS="$save_ldlags"
+            fi
+        fi
+    fi
+fi
 req_avail=yes
 if test "$libpng" = ""; then
     req_avail=no
@@ -6151,6 +6461,8 @@ fi
 if test "$req_avail" = "no"; then
     as_fn_error $? "libpng is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+
+
 
 
 FOR=for
