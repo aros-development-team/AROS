@@ -939,7 +939,7 @@ AROS_UFH3(void, NF_Scheduler,
                         struct IOSana2Req *io;
 
                         /* Handle incoming transactions */
-                        while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL);
+                        while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL)
                         {
                             ObtainSemaphore(&dev->unit_lock);
                             handle_request(LIBBASE, io);
