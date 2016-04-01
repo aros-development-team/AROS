@@ -1,3 +1,7 @@
+# -iquote support
+CFLAGS_IQUOTE                   := @aros_cflags_iquote@
+CFLAGS_IQUOTE_END               := @aros_cflags_iquote_end@
+
 # Disable compiler warning flags
 
 NOWARN_UNUSED_BUT_SET_VARIABLE := @aros_cflags_unused_but_set_variable@
