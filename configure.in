@@ -570,14 +570,6 @@ AC_FUNC_MMAP
 # protection, and if it does we disable it in AROS_CONFIG_CFLAGS. This should
 # work on all platforms.
 #
-# For the "cross" compiler we clear the "ssp_default" spec in config/specs.in
-# (this is done unconditionally, as it should have no effect on compilers
-# without the stack protection feature). This may be specific to the way that
-# Ubuntu enables the feature, so may not work everywhere. My specs-fu isn't
-# strong enough to disable it in a generic way though, so we'll live with it
-# until another vendor ships GCC with it enabled in a different way, and deal
-# with it then.
-#
 
 AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
 save_cflags="$CFLAGS"
@@ -617,6 +609,22 @@ if test "x-$use_gnu89_inline" = "x-yes" ; then
     gnu89_inline="-fgnu89-inline"
 fi
 CFLAGS="$save_cflags"
+
+#
+# For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
+# On GCC >= 4.0 -iquote should be used
+#
+AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+CFLAGS="$CFLAGS -iquote."
+AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+AC_MSG_RESULT($has_iquote)
+if test "x-$has_iquote" = "x-yes" ; then
+    host_cflags_iquote=-iquote
+    host_cflags_iquote_end=
+else
+    host_cflags_iquote=-I
+    host_cflags_iquote_end=-I-
+fi
 
 AC_MSG_NOTICE([Performing target configuration...])
 
@@ -2385,22 +2393,6 @@ fi
 save_cc="$CC"
 save_cflags="$CFLAGS"
 CFLAGS="-iquote."
-AC_MSG_CHECKING([whether ${CC} accepts -iquote])
-if test "x-$crosstools" != "x-yes"; then
-    AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
-else
-    # we do know it is supported for the smallest version of ${toolchain_c_compiler} we are going to build
-    # we assume it's also supported by later versions
-    has_iquote=yes
-fi
-AC_MSG_RESULT($has_iquote)
-if test "x-$has_iquote" = "x-yes" ; then
-    host_cflags_iquote=-iquote
-    host_cflags_iquote_end=
-else
-    host_cflags_iquote=-I
-    host_cflags_iquote_end=-I-
-fi
 kernel_cflags_iquote=$host_cflags_iquote
 kernel_cflags_iquote_end=$host_cflags_iquote_end
 if test "x-$cross_compiling" = "x-yes"; then
@@ -2429,27 +2421,6 @@ if test "x-$cross_compiling" = "x-yes"; then
     else
         kernel_cflags_iquote=-I
         kernel_cflags_iquote_end=-I-
-    fi
-fi
-aros_cflags_iquote=$kernel_cflags_iquote
-aros_cflags_iquote_end=$kernel_cflags_iquote_end
-if test "$orig_target_cc" != "$aros_kernel_cc"; then
-    CC="$orig_target_cc"
-    AC_MSG_CHECKING([whether ${CC} accepts -iquote])
-    if test "x-$crosstools" != "x-yes"; then
-        AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
-    else
-        # we do know it is supported for the smallest version of gcc we are going to build
-        # we assume it's also supported by later versions
-        has_iquote=yes
-    fi
-    AC_MSG_RESULT($has_iquote)
-    if test "x-$has_iquote" = "x-yes" ; then
-        aros_cflags_iquote=-iquote
-        aros_cflags_iquote_end=
-    else
-        aros_cflags_iquote=-I
-        aros_cflags_iquote_end=-I-
     fi
 fi
 if test "x-$use_no_stack_protector" = "x-yes" ; then
