@@ -7783,8 +7783,13 @@ else
   kernel_tool_version=""
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_tool_version" >&5
-$as_echo "$kernel_tool_version" >&6; }
+if test "$kernel_tool_version" != "" ; then
+    msg_result=$kernel_tool_version
+else
+    msg_result="default"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
+$as_echo "$msg_result" >&6; }
 
 #-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what optimization flags to use" >&5
