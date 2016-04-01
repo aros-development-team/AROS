@@ -54,10 +54,10 @@ enum
 struct ListEntry
 {
     APTR data;
-    LONG *widths; /* Widths of the columns */
-    LONG width;   /* Line width */
-    LONG height;  /* Line height */
-    WORD flags;   /* see below */
+    LONG width;    /* Line width */
+    LONG height;   /* Line height */
+    WORD flags;    /* see below */
+    LONG widths[]; /* Widths of the columns */
 };
 
 #define ENTRY_SELECTED   (1<<0)
@@ -366,28 +366,18 @@ struct MUI_ListData
 **************************************************************************/
 static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 {
-    ULONG *mem;
     struct ListEntry *le;
-    int size = sizeof(struct ListEntry) + sizeof(LONG) * data->columns + 4;
-                                                               /* sizeinfo */
-    LONG j;
+    /* what happens, if data->columns is later increased by MUIA_List_Format? */
+    IPTR size = sizeof(struct ListEntry) + sizeof(LONG) * (data->columns + 1);
 
-    mem = AllocPooled(data->pool, size);
-    if (!mem)
-        return NULL;
-    D(bug("List AllocListEntry %p, %ld bytes\n", mem, size));
-
-    mem[0] = size;              /* Save the size */
-    le = (struct ListEntry *)(mem + 1);
-    le->widths = (LONG *) (le + 1);
-
-    /* Initialize fields */
-    le->height = 0;
-    le->width = 0;
-    le->flags = 0;
-    for (j = 0; j < data->columns; j++)
-        le->widths[j] = 0;
-
+    le = (struct ListEntry *) AllocVecPooled(data->pool, size);
+    D(bug("List AllocListEntry %p, %ld bytes\n", le, size));
+    if(le)
+    {
+        /* possible, that we have an external pool, which does not have 
+           MEMF_CLEAR set.. */
+        memset(le, 0, size);
+    }
     return le;
 }
 
@@ -397,9 +387,8 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 static void FreeListEntry(struct MUI_ListData *data,
     struct ListEntry *entry)
 {
-    ULONG *mem = ((ULONG *) entry) - 1;
-    D(bug("FreeListEntry %p size=%ld\n", mem, mem[0]));
-    FreePooled(data->pool, mem, mem[0]);
+    D(bug("FreeListEntry %p\n", entry));
+    FreeVecPooled(data->pool, entry);
 }
 
 /**************************************************************************
