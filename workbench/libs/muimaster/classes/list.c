@@ -130,6 +130,7 @@ struct MUI_ListData
     LONG columns;               /* Number of columns the list has */
     struct ColumnInfo *ci;
     STRPTR *preparses;
+    STRPTR *strings_mem;        /* safe pointer to allocated memory for strings[] */
     STRPTR *strings;            /* the strings for the display function, one
                                  * more than needed (for the entry position) */
 
@@ -468,9 +469,10 @@ static void FreeListFormat(struct MUI_ListData *data)
     }
     FreeVec(data->preparses);
     data->preparses = NULL;
-    if (data->strings)
+    if (data->strings_mem)
     {
-        FreeVec(data->strings - 1);
+        FreeVec(data->strings_mem);
+        data->strings_mem = NULL;
         data->strings = NULL;
     }
     data->columns = 0;
@@ -508,11 +510,12 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
             AllocVec((new_columns + 10) * sizeof(STRPTR), 0)))
         return 0;
 
-    if (!(data->strings = AllocVec((new_columns + 1 + 10)
+    if (!(data->strings_mem = AllocVec((new_columns + 1 + 10)
         * sizeof(STRPTR), 0)))    /* hold enough space also for the entry pos,
                                    * used by orginal MUI and also some
                                    * security space */
         return 0;
+    data->strings=data->strings_mem;
 
     if (!(data->ci = AllocVec(new_columns * sizeof(struct ColumnInfo), 0)))
         return 0;
