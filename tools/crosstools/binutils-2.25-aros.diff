@@ -164,9 +164,9 @@ diff -ruN binutils-2.25/ld/configure.tgt binutils-2.25.aros/ld/configure.tgt
  			;;
 diff -ruN binutils-2.25/ld/emulparams/aarch64elf_aros.sh binutils-2.25.aros/ld/emulparams/aarch64elf_aros.sh
 --- binutils-2.25/ld/emulparams/aarch64elf_aros.sh	1970-01-01 01:00:00.000000000 +0100
-+++ binutils-2.25.aros/ld/emulparams/aarch64elf_aros.sh	2014-10-14 08:32:02.000000000 +0100
++++ binutils-2.25.aros/ld/emulparams/aarch64elf_aros.sh	2016-04-01 07:58:51.909224114 +0100
 @@ -0,0 +1 @@
-+. ${srcdir}/emulparams/aarch64elfb.sh
++. ${srcdir}/emulparams/aarch64elf.sh
 diff -ruN binutils-2.25/ld/emulparams/aarch64elfb_aros.sh binutils-2.25.aros/ld/emulparams/aarch64elfb_aros.sh
 --- binutils-2.25/ld/emulparams/aarch64elfb_aros.sh	1970-01-01 01:00:00.000000000 +0100
 +++ binutils-2.25.aros/ld/emulparams/aarch64elfb_aros.sh	2014-10-14 08:32:02.000000000 +0100
