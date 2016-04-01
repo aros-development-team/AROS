@@ -194,7 +194,7 @@ HOOKPROTO(panelStatusBar__HookFunc_UpdateStatusFunc, void, APTR *obj, APTR param
     /* Only change dir if it is a valid directory/volume */
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelStatusBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return;
 
         struct List *iconList = NULL;
@@ -302,7 +302,7 @@ static IPTR panelStatusBar__PrefsSetup(Class *CLASS, Object *self, struct opSet 
 
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelStatusBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
 
 // FIXME: this is never freed
@@ -366,7 +366,7 @@ static IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *mess
             return 0;
 
         panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate;
-        panelStatusBarPrivate->iwp_Node.ln_Name = (STRPTR)extension_Name;
+        panelStatusBarPrivate->iwp_Node.ln_Name = (char *)extension_Name;
 
         /* Create the "StatusBar" panel object .. */
         panel_StatusBar = MUI_NewObject(MUIC_Group,
@@ -478,7 +478,7 @@ static IPTR panelStatusBar__Cleanup(Class *CLASS, Object *self, Msg msg)
 
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelStatusBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
 
         if (panelStatusBar__PrefsNotificationObject)
@@ -507,7 +507,7 @@ static IPTR panelStatusBar__OM_GET(Class *CLASS, Object *self, struct opGet *mes
 
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelStatusBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return rv;
 
         switch (message->opg_AttrID)
@@ -533,7 +533,7 @@ static IPTR panelStatusBar__OM_SET(Class *CLASS, Object *self, struct opSet *mes
 
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelStatusBarPrivate->iwp_Node.ln_Name != (STRPTR)extension_Name)
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return rv;
 
         while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
@@ -587,7 +587,7 @@ IPTR panelStatusBar__Init()
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 
     panelStatusBar__Extension.iwe_Node.ln_Pri = PANELSTATUSBAR_PRIORITY;
-    panelStatusBar__Extension.iwe_Node.ln_Name = (STRPTR)extension_Name;
+    panelStatusBar__Extension.iwe_Node.ln_Name = (char *)extension_Name;
     panelStatusBar__Extension.iwe_Setup = panelStatusBar__Setup;
     panelStatusBar__Extension.iwe_Cleanup = panelStatusBar__Cleanup;
     panelStatusBar__Extension.iwe_Set = panelStatusBar__OM_SET;
