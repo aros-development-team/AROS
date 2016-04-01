@@ -634,6 +634,8 @@ aros_cflags_enum_compare
 aros_cflags_array_bounds
 aros_cflags_strict_aliasing
 aros_cflags_unused_but_set_variable
+aros_cflags_iquote_end
+aros_cflags_iquote
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -2629,7 +2631,42 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 
 #-----------------------------------------------------------------------------
 
-# Check if the target compiler supports some options used for delinting:
+# Check if the target compiler supports some features:
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
+$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
+CFLAGS="-iquote."
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  has_iquote="yes"
+else
+  has_iquote="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_iquote" >&5
+$as_echo "$has_iquote" >&6; }
+if test "x-$has_iquote" = "x-yes" ; then
+    aros_cflags_iquote=-iquote
+    aros_cflags_iquote_end=
+else
+    aros_cflags_iquote=-I
+    aros_cflags_iquote_end=-I-
+fi
+
+#-----------------------------------------------------------------------------
+
+# Check if the target compiler supports some options used for de-linting:
 #  -Wunused-but-set-variable
 #  -Wstrict-aliasing
 #  -Warray-bounds
@@ -2684,7 +2721,6 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-but-set-variable... " >&6; }
 CFLAGS=-Wunused-but-set-variable
-
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3981,6 +4017,9 @@ $as_echo "$aros_volatile_register_var" >&6; }
 if test "x-$aros_volatile_register_var" = "x-yes" ; then
     aros_cflags_volatile_register_var=-Wno-volatile-register-var
 fi
+
+
+
 
 
 

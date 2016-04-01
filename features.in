@@ -33,7 +33,23 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 
 #-----------------------------------------------------------------------------
 
-# Check if the target compiler supports some options used for delinting:
+# Check if the target compiler supports some features:
+
+AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+CFLAGS="-iquote."
+AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+AC_MSG_RESULT($has_iquote)
+if test "x-$has_iquote" = "x-yes" ; then
+    aros_cflags_iquote=-iquote
+    aros_cflags_iquote_end=
+else
+    aros_cflags_iquote=-I
+    aros_cflags_iquote_end=-I-
+fi
+
+#-----------------------------------------------------------------------------
+
+# Check if the target compiler supports some options used for de-linting:
 #  -Wunused-but-set-variable
 #  -Wstrict-aliasing
 #  -Warray-bounds
@@ -484,6 +500,9 @@ AC_MSG_RESULT($aros_volatile_register_var)
 if test "x-$aros_volatile_register_var" = "x-yes" ; then
     aros_cflags_volatile_register_var=-Wno-volatile-register-var
 fi
+
+AC_SUBST(aros_cflags_iquote)
+AC_SUBST(aros_cflags_iquote_end)
 
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
