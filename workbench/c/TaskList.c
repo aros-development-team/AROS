@@ -43,6 +43,8 @@
 
 ******************************************************************************/
 
+int __nocommandline;
+
 #include <exec/memory.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
@@ -179,8 +181,6 @@ static int fillbuffer(struct task **buffer, IPTR size)
 
     return 1;
 }
-
-int __nocommandline;
 
 int main(void)
 {
