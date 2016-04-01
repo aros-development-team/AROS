@@ -8813,13 +8813,9 @@ case "$target_os" in
         aros_target_arch="raspi"
 
         aros_shared_default="no"
-        aros_arch_libs="-laeabi"
 
-        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
-        aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_config_aflags="$aros_config_aflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_kernel_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__"
+
         case "$target_cpu" in
             *aarch64*)
                 aros_target_cpu="aarch64"
@@ -8831,17 +8827,34 @@ case "$target_os" in
                 gcc_default_cpu="armv6zk"
                 gcc_default_cpu_tune="arm1176jzf-s"
                 aros_object_format="armelf_aros"
+                aros_config_cflags="$aros_config_cflags -marm"
+                aros_config_aflags="$aros_config_aflags -marm"
+                aros_kernel_cflags="$aros_kernel_cflags -marm"
+                aros_target_cflags="$aros_kernel_cflags -marm"
+                aros_target_mkdep="$aros_target_mkdep -Darm"
+                aros_arch_libs="-laeabi"
                 ;;
             *arm*)
                 aros_target_cpu="arm"
                 gcc_default_cpu="armv6zk"
                 gcc_default_cpu_tune="arm1176jzf-s"
                 aros_object_format="armelf_aros"
+                aros_config_cflags="$aros_config_cflags -marm"
+                aros_config_aflags="$aros_config_aflags -marm"
+                aros_kernel_cflags="$aros_kernel_cflags -marm"
+                aros_target_cflags="$aros_kernel_cflags -marm"
+                aros_target_mkdep="$aros_target_mkdep -Darm"
+                aros_arch_libs="-laeabi"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for RasPi $target_cpu\"" "$LINENO" 5
                 ;;
         esac
+
+        aros_config_cflags="$aros_config_cflags -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_config_aflags="$aros_config_aflags -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_kernel_cflags="$aros_kernel_cflags -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_target_cflags="$aros_kernel_cflags -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
 
         case "$aros_target_variant" in
             smp)
