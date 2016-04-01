@@ -25,6 +25,8 @@
 #include <aros/m68k/cpucontext.h>
 #elif defined __powerpc__
 #include <aros/ppc/cpucontext.h>
+#elif defined __aarch64__
+#include <aros/aarch64/cpucontext.h>
 #elif defined __arm__
 #include <aros/arm/cpucontext.h>
 #else
