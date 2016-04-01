@@ -2451,8 +2451,6 @@ AC_SUBST(host_cflags_iquote)
 AC_SUBST(host_cflags_iquote_end)
 AC_SUBST(kernel_cflags_iquote)
 AC_SUBST(kernel_cflags_iquote_end)
-AC_SUBST(aros_cflags_iquote)
-AC_SUBST(aros_cflags_iquote_end)
 
 
 dnl Check if user specified --with-resolution=XRESxYRESxDEPTH

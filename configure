@@ -752,8 +752,6 @@ SDL_LIBS
 SDL_CFLAGS
 SDL_CONFIG
 XMKMF
-aros_cflags_iquote_end
-aros_cflags_iquote
 kernel_cflags_iquote_end
 kernel_cflags_iquote
 host_cflags_iquote_end
@@ -13795,8 +13793,6 @@ if test "x-$use_hash_style" = "x-yes" ; then
 fi
 CC="$save_cc"
 CFLAGS="$save_cflags"
-
-
 
 
 
