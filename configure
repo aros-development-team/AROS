@@ -7325,14 +7325,6 @@ rm -f conftest.mmap conftest.txt
 # protection, and if it does we disable it in AROS_CONFIG_CFLAGS. This should
 # work on all platforms.
 #
-# For the "cross" compiler we clear the "ssp_default" spec in config/specs.in
-# (this is done unconditionally, as it should have no effect on compilers
-# without the stack protection feature). This may be specific to the way that
-# Ubuntu enables the feature, so may not work everywhere. My specs-fu isn't
-# strong enough to disable it in a generic way though, so we'll live with it
-# until another vendor ships GCC with it enabled in a different way, and deal
-# with it then.
-#
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-stack-protector" >&5
 $as_echo_n "checking whether ${CC} accepts -fno-stack-protector... " >&6; }
@@ -7426,6 +7418,40 @@ if test "x-$use_gnu89_inline" = "x-yes" ; then
     gnu89_inline="-fgnu89-inline"
 fi
 CFLAGS="$save_cflags"
+
+#
+# For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
+# On GCC >= 4.0 -iquote should be used
+#
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
+$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
+CFLAGS="$CFLAGS -iquote."
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  has_iquote="yes"
+else
+  has_iquote="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_iquote" >&5
+$as_echo "$has_iquote" >&6; }
+if test "x-$has_iquote" = "x-yes" ; then
+    host_cflags_iquote=-iquote
+    host_cflags_iquote_end=
+else
+    host_cflags_iquote=-I
+    host_cflags_iquote_end=-I-
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Performing target configuration..." >&5
 $as_echo "$as_me: Performing target configuration..." >&6;}
@@ -13661,40 +13687,6 @@ fi
 save_cc="$CC"
 save_cflags="$CFLAGS"
 CFLAGS="-iquote."
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
-$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
-if test "x-$crosstools" != "x-yes"; then
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  has_iquote="yes"
-else
-  has_iquote="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-else
-    # we do know it is supported for the smallest version of ${toolchain_c_compiler} we are going to build
-    # we assume it's also supported by later versions
-    has_iquote=yes
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_iquote" >&5
-$as_echo "$has_iquote" >&6; }
-if test "x-$has_iquote" = "x-yes" ; then
-    host_cflags_iquote=-iquote
-    host_cflags_iquote_end=
-else
-    host_cflags_iquote=-I
-    host_cflags_iquote_end=-I-
-fi
 kernel_cflags_iquote=$host_cflags_iquote
 kernel_cflags_iquote_end=$host_cflags_iquote_end
 if test "x-$cross_compiling" = "x-yes"; then
@@ -13759,45 +13751,6 @@ $as_echo "$has_iquote" >&6; }
     else
         kernel_cflags_iquote=-I
         kernel_cflags_iquote_end=-I-
-    fi
-fi
-aros_cflags_iquote=$kernel_cflags_iquote
-aros_cflags_iquote_end=$kernel_cflags_iquote_end
-if test "$orig_target_cc" != "$aros_kernel_cc"; then
-    CC="$orig_target_cc"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
-$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
-    if test "x-$crosstools" != "x-yes"; then
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  has_iquote="yes"
-else
-  has_iquote="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    else
-        # we do know it is supported for the smallest version of gcc we are going to build
-        # we assume it's also supported by later versions
-        has_iquote=yes
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_iquote" >&5
-$as_echo "$has_iquote" >&6; }
-    if test "x-$has_iquote" = "x-yes" ; then
-        aros_cflags_iquote=-iquote
-        aros_cflags_iquote_end=
-    else
-        aros_cflags_iquote=-I
-        aros_cflags_iquote_end=-I-
     fi
 fi
 if test "x-$use_no_stack_protector" = "x-yes" ; then
