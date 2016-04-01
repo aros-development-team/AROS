@@ -1,6 +1,9 @@
 # Fixup some things ...
 
 ifeq ($(AROS_HOST_ARCH),darwin)
+# We don't allow these includes/libdirs because doing so
+# influences makecountry which uses libiconv. MacPorts
+# libiconv has different ABI from system's one which causes conflicts.
 HOST_CFLAGS := $(subst -I/usr/local/include/,, $(subst -I/usr/local/include,, $(subst -I/opt/local/include,, $(subst -I/opt/local/include,, $(subst -I/opt/pkg/include,, $(subst -I/opt/pkg/include,, $(HOST_CFLAGS)))))))
 HOST_LDFLAGS   := $(subst -L/usr/local/lib/,, $(subst -L/usr/local/lib,, $(subst -L/opt/local/lib,, $(subst -L/opt/local/lib,, $(subst -L/opt/pkg/lib,, $(subst -L/opt/pkg/lib,, $(HOST_LDFLAGS)))))))
 endif
