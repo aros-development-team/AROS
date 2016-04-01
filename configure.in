@@ -837,7 +837,12 @@ fi
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what specific host gcc version to use])
 AC_ARG_WITH(kernel-gcc-version,AC_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use gcc-VERSION for building bootstrap]),kernel_tool_version="$withval",kernel_tool_version="")
-AC_MSG_RESULT($kernel_tool_version)
+if test "$kernel_tool_version" != "" ; then
+    msg_result=$kernel_tool_version
+else
+    msg_result="default"
+fi
+AC_MSG_RESULT($msg_result)
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what optimization flags to use])
