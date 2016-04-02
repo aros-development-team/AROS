@@ -17,8 +17,8 @@ DBUS_CFLAGS	:= @DBUS_CFLAGS@
 DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
 
 ifeq ($(OPT_HOST_X11GFX),yes)
-HOST_X11_CFLAGS := $(addprefix -I, @aros_host_x11_includes@)
-HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@) -lX11
+HOST_X11_CFLAGS := @aros_host_x11_cflags@
+HOST_X11_LDFLAGS   := @aros_host_x11_ldflags@
 endif
 
 ifeq ($(OPT_HOST_SDLGFX),yes)
