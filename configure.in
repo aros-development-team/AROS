@@ -2576,18 +2576,8 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
 
         dnl find x11 stuff
         AC_PATH_X
+        AC_PATH_XTRA
 
-        x_cflags=
-        for path in $x_libraries
-        do
-            x_cflags="$x_cflags -L$path"
-        done
-
-        for path in $x_includes
-        do
-            x_cflags="$x_cflags -I$path"
-        done
-        
         if test "x-$no_x" = "x-yes" ; then
 
             dnl didn't find it
@@ -2600,6 +2590,9 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
             dnl found it, setup the metatarget
             host_x_gfx=yes
             ENABLE_X11=1
+
+            aros_host_x11_cflags="$X_CFLAGS"
+            aros_host_x11_ldflags="$X_LIBS  -lX11"
 
             dnl setup shared memory extensions
             AC_ARG_ENABLE(x11_shm, AC_HELP_STRING([--enable-x11-shm],
@@ -2625,9 +2618,12 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
 
                     dnl make sure X libs have shm functions
                     save_cflags="$CFLAGS"
-                    CFLAGS="$CFLAGS $x_cflags"
+                    save_ldflags="$LDFLAGS"
+                    CFLAGS="$CFLAGS $X_CFLAGS"
+                    LDFLAGS="$LDFLAGS $X_LIBS"
                     AC_CHECK_LIB(Xext, XShmQueryExtension, have_xshm=yes)
                     CFLAGS="$save_cflags"
+                    LDFLAGS="$save_ldflags"
                 fi
             fi
 
@@ -2661,9 +2657,12 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
 
                 dnl make sure X libs have vidmode functions
                 save_cflags="$CFLAGS"
-                CFLAGS="$CFLAGS $x_cflags"
+                save_ldflags="$LDFLAGS"
+                CFLAGS="$CFLAGS $X_CFLAGS"
+                LDFLAGS="$LDFLAGS $X_LIBS"
                 AC_CHECK_LIB(Xxf86vm, XF86VidModeQueryExtension, have_vidmode=yes)
                 CFLAGS="$save_cflags"
+                LDFLAGS="$save_ldflags"
             fi
 
             dnl detection done, prepare output
@@ -2678,11 +2677,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 DO_VIDMODE_SUPPORT="0"
             fi
         fi
-
-        aros_host_x11_includes=$x_includes 
-        aros_host_x11_libdirs=$x_libraries
     fi
-
 
     dnl sdl hidd
     AC_ARG_ENABLE(sdl_hidd, AC_HELP_STRING([--enable-sdl-hidd],
@@ -2873,8 +2868,8 @@ AC_SUBST(aros_nominal_depth)
 AC_SUBST(DO_XSHM_SUPPORT)
 AC_SUBST(DO_VIDMODE_SUPPORT)
 
-AC_SUBST(aros_host_x11_includes)
-AC_SUBST(aros_host_x11_libdirs)
+AC_SUBST(aros_host_x11_cflags)
+AC_SUBST(aros_host_x11_ldflags)
 AC_SUBST(aros_host_sdl_cflags)
 AC_SUBST(aros_host_sdl_libs)
 
