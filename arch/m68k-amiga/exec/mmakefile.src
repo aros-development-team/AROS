@@ -5,7 +5,6 @@ include $(SRCDIR)/config/aros.cfg
 CFILES          := coldreboot moveexecbase shutdowna exec_globals
 AFILES		:= enable disable readgayle
 
-#MM kernel-exec : kernel-exec-amiga-m68k
 #MM kernel-exec-amiga-m68k : \
 #MM     kernel-kernel-amiga-m68k-includes \
 #MM     kernel-exec-includes \
