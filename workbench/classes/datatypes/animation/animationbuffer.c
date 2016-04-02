@@ -115,18 +115,18 @@ findprevframe:
 BOOL DoFramePurge(struct Animation_Data *animd, struct AnimFrame *purgeFrame)
 {
     UWORD dispplayedframe = animd->ad_FrameData.afd_FrameCurrent;
-
-    if ((purgeFrame->af_Frame.alf_BitMap != animd->ad_FrameBM) &&
+    UWORD pfID = GetNODEID(purgeFrame);
+    if ((((struct BitMap *)(purgeFrame->af_CacheBM)) != animd->ad_FrameBM) &&
         (purgeFrame != animd->ad_ProcessData->pp_PlaybackFrame) &&
         (purgeFrame != animd->ad_ProcessData->pp_BufferFirst) &&
-        (GetNODEID(purgeFrame) != dispplayedframe) &&
-        (GetNODEID(purgeFrame) != 0))
+        (pfID != dispplayedframe) &&
+        (pfID != 0))
     {
-        if ((GetNODEID(purgeFrame) > (dispplayedframe + animd->ad_ProcessData->pp_BufferFrames)) ||
-            (GetNODEID(purgeFrame) < dispplayedframe))
+        if ((pfID > (dispplayedframe + animd->ad_ProcessData->pp_BufferFrames)) ||
+            (pfID < dispplayedframe))
         {
             if ((dispplayedframe > (animd->ad_FrameData.afd_Frames -  animd->ad_ProcessData->pp_BufferFrames)) &&
-                (GetNODEID(purgeFrame) < (animd->ad_ProcessData->pp_BufferFrames - (animd->ad_FrameData.afd_Frames - dispplayedframe))))
+                (pfID < (animd->ad_ProcessData->pp_BufferFrames - (animd->ad_FrameData.afd_Frames - dispplayedframe))))
                 return FALSE;
 
             return TRUE;
