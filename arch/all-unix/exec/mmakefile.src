@@ -3,6 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES := platform_init coldreboot shutdowna
+
 # swapcontext() and friends are not implemented on ARM Linux and are totally missing on Android
 ifneq ($(AROS_TARGET_CPU), arm)
 ifneq ($(AROS_TARGET_VARIANT), android)
@@ -17,7 +18,11 @@ endif
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 		 -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
-		 -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+		 -DHOST_OS_$(ARCH)
+
+ifneq ($(AROS_TARGET_VARIANT),)
+USER_INCLUDES := -DHOST_OS_$(AROS_TARGET_VARIANT)
+endif
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
