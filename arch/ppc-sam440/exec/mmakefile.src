@@ -7,7 +7,6 @@ CFILES          := \
         cachepostdma cachepredma supervisor superstate userstate \
         coldreboot
 
-#MM kernel-exec : kernel-exec-sam440-ppc
 #MM kernel-exec-sam440-ppc : kernel-kernel-ppc-includes kernel-exec-includes kernel-kernel-includes
 
 USER_CFLAGS     := $(PRIV_EXEC_INCLUDES)
