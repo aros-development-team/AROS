@@ -1362,7 +1362,7 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
 
         if (((tdMode == BUT_FRAME) || (tdMode == BUT_REWIND) || (tdMode == BUT_FORWARD)) &&
             ((ie->ie_Class == IECLASS_TIMER) ||
-            ((ie->ie_Class == IECLASS_RAWMOUSE) && ((ie->ie_Code == SELECTUP) || (ie->ie_Code == SELECTDOWN)))))
+            ((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == SELECTDOWN))))
         {
             IPTR tdFrame = 0;
 
@@ -1376,7 +1376,7 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
             if (tdFrame < 0)
                 tdFrame = 0;
             if (tdFrame >= animd->ad_FrameData.afd_Frames)
-                tdFrame = animd->ad_FrameData.afd_Frames - 1;
+                tdFrame -= animd->ad_FrameData.afd_Frames;
 
             if (tdFrame != animd->ad_FrameData.afd_FrameCurrent)
             {
@@ -1384,6 +1384,11 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
                 animd->ad_FrameData.afd_FrameCurrent = tdFrame;
                 redraw = TRUE;
             }
+        }
+        else if (((tdMode == BUT_FRAME) || (tdMode == BUT_REWIND) || (tdMode == BUT_FORWARD)) &&
+            ((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == SELECTUP)))
+        {
+                redraw = TRUE;
         }
     }
 
