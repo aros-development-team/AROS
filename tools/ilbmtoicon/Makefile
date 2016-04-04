@@ -6,9 +6,9 @@
 
 -include $(TOP)/config/make.cfg
 
-LIBPNG ?= png
-LIBPNG_INCLUDES ?=
-LIBPNG_LIB ?= 
+HOST_LIBPNG ?= -Lpng
+HOST_LIBPNG_INCLUDES ?=
+HOST_LIBPNG_LIBEXTRA ?= 
 
 USER_CFLAGS := -Wall -Wunused -O2
 
@@ -25,13 +25,13 @@ MECHO	    ?= echo
 
 EXTRALIBS1 := -lz
 
-ifneq ($(LIBPNG_INCLUDES),)
-    HOST_CFLAGS  += $(LIBPNG_INCLUDES)
+ifneq ($(HOST_LIBPNG_INCLUDES),)
+    HOST_CFLAGS  += $(HOST_LIBPNG_INCLUDES)
 endif
-ifneq ($(LIBPNG_LIB),)
-    HOST_LDFLAGS += $(LIBPNG_LIB)
+ifneq ($(HOST_LIBPNG_LIBEXTRA),)
+    HOST_LDFLAGS += $(HOST_LIBPNG_LIBEXTRA)
 else
-    EXTRALIBS1 := $(LIBPNG) $(EXTRALIBS1)
+    EXTRALIBS1 := $(HOST_LIBPNG) $(EXTRALIBS1)
 endif
 
 all : $(ILBMTOICON) $(INFOINFO)
