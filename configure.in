@@ -254,6 +254,7 @@ case "$host_os" in
         ;;
 
     darwin*)
+        AC_CHECK_FILE (/usr/include/stddef.h,, AC_MSG_ERROR([XCode incorrectly configured!\n please run 'xcode-select --install' before\nre-running configure]))
         aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_arch="darwin"
         host_cc_elf=no
