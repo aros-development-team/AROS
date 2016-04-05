@@ -49,6 +49,7 @@ struct sdl_funcs
 extern struct sdl_funcs sdl_funcs;
 
 #define SDL_SOFILE "libSDL.so"
+#define SDL_DYLIBFILE "libSDL.dylib"
 #define SDL_DLLFILE "SDL.dll"
 
 #define S(name, ...) \
