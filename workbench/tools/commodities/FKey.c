@@ -19,6 +19,7 @@
 #include <aros/asmcall.h>
 #include <rexx/storage.h>
 #include <rexx/errors.h>
+#include <mui/HotkeyString_mcc.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -48,9 +49,9 @@
 /*********************************************************************************************/
 
 #define VERSION         1
-#define REVISION        7
-#define DATESTR         "20.03.2016"
-#define VERSIONSTR      "$VER: FKey 1.7 (" DATESTR ")"
+#define REVISION        8
+#define DATESTR         "05.04.2016"
+#define VERSIONSTR      "$VER: FKey 1.8 (" DATESTR ")"
 
 /*********************************************************************************************/
 
@@ -78,13 +79,17 @@
 
 /*********************************************************************************************/
 
+#define MAXPARAMLEN          256
+
+/*********************************************************************************************/
+
 struct KeyInfo
 {
     struct InputEvent *translist;
     CxObj             *filter, *trans, *custom;    
     WORD               action;
     char               descr[80];
-    char               param[256];
+    char               param[MAXPARAMLEN + 1];
 };
 
 /*********************************************************************************************/
@@ -96,7 +101,7 @@ static LONG              cx_pri = 0;
 static BOOL              cx_popup = FALSE;
 
 static CxObj            *broker, *activated_custom_cobj;
-static Object           *app, *wnd, *cmdcycle, *list, *liststr;
+static Object           *app, *wnd, *cmdcycle, *list, *liststr, *recordkey;
 static Object           *insertstr, *runprogstr, *runarexxstr;
 static Object           *cmdpage;
 static struct Task      *maintask;
@@ -105,10 +110,10 @@ static struct Hook       broker_hook;
 static struct Hook       show_hook;
 static struct Hook       newkey_hook;
 static struct Hook       delkey_hook;
-static struct Hook       stringack_hook;
 static struct Hook       lvack_hook;
 static struct Hook       cmdack_hook;
 static struct Hook       save_hook;
+static struct Hook       recordkey_hook;
 static struct MsgPort   *brokermp;
 static struct Catalog   *catalog;
 static struct RDArgs    *myargs;
@@ -412,7 +417,41 @@ static AROS_UFH3(
 {
     AROS_USERFUNC_INIT
 
-    *array = ki->descr;
+    *array++ = ki->descr;
+    switch (ki->action)
+    {
+        case ACTION_CYCLE_WIN:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_CYCLE_WIN);
+            break;
+        case ACTION_CYCLE_SCR:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_CYCLE_SCR);
+            break;
+        case ACTION_ENLARGE_WIN:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_ENLARGE_WIN);
+            break;
+        case ACTION_SHRINK_WIN:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_SHRINK_WIN);
+            break;
+        case ACTION_TOGGLE_WIN:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_TOGGLE_WIN_SIZE);
+            break;
+        case ACTION_RESCUE_WIN:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_RESCUE_WIN);
+            break;
+        case ACTION_INSERT_TEXT:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_INSERT_TEXT);
+            break;
+        case ACTION_RUN_PROG:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_RUN_PROG);
+            break;
+        case ACTION_RUN_AREXX:
+            *array = (STRPTR)MSG(MSG_FKEY_CMD_RUN_AREXX);
+            break;
+        default:
+            // shouldn't happen
+            *array = "";
+            break;
+    }
 
     AROS_USERFUNC_EXIT
 }
@@ -511,7 +550,7 @@ AROS_UFH3S(
 /*********************************************************************************************/
 
 AROS_UFH3S(
-    void, stringack_func,
+    void, recordkey_func,
     AROS_UFHA(struct Hook *,    hook,   A0),
     AROS_UFHA(Object *,         obj,    A2),
     AROS_UFHA(APTR,             param,  A1)
@@ -519,7 +558,17 @@ AROS_UFH3S(
 {
     AROS_USERFUNC_INIT
 
-    StringToKey();
+    if (XGET(obj, MUIA_Pressed))
+    {
+        set(liststr, MUIA_Disabled, FALSE);
+        set(_win(obj), MUIA_Window_ActiveObject, liststr); 
+    }
+    else
+    {
+        StringToKey();
+        set(liststr, MUIA_Disabled, TRUE);
+        set(_win(obj), MUIA_Window_ActiveObject, list); 
+    }
 
     AROS_USERFUNC_EXIT
 }
@@ -536,6 +585,14 @@ AROS_UFH3S(
     AROS_USERFUNC_INIT
 
     ListToString();
+    if (XGET(list, MUIA_List_Active) == MUIV_List_Active_Off)
+    {
+        set(recordkey, MUIA_Disabled, TRUE);
+    }
+    else
+    {
+        set(recordkey, MUIA_Disabled, FALSE);
+    }
 
     AROS_USERFUNC_EXIT
 }
@@ -552,6 +609,7 @@ AROS_UFH3S(
     AROS_USERFUNC_INIT
 
     CmdToKey();
+    DoMethod(list, MUIM_List_Redraw, MUIV_List_Redraw_All);
 
     AROS_USERFUNC_EXIT
 }
@@ -605,10 +663,10 @@ static void MakeGUI(void)
     show_hook.h_Entry = (HOOKFUNC)show_func;
     newkey_hook.h_Entry = (HOOKFUNC)newkey_func;
     delkey_hook.h_Entry = (HOOKFUNC)delkey_func;
-    stringack_hook.h_Entry = (HOOKFUNC)stringack_func;
     lvack_hook.h_Entry = (HOOKFUNC)lvack_func;
     cmdack_hook.h_Entry = (HOOKFUNC)cmdack_func;
     save_hook.h_Entry = (HOOKFUNC)save_func;
+    recordkey_hook.h_Entry = (HOOKFUNC)recordkey_func;
 
     menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
 
@@ -617,7 +675,7 @@ static void MakeGUI(void)
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR)MSG(MSG_FKEY_CXNAME),
         MUIA_Application_Version, (IPTR)VERSIONSTR,
-        MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2012, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2016, The AROS Development Team",
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, (IPTR)MSG(MSG_FKEY_CXDESCR),
         MUIA_Application_BrokerPri, cx_pri,
@@ -640,11 +698,27 @@ static void MakeGUI(void)
                                 MUIA_List_ConstructHook, (IPTR)&keylist_construct_hook,
                                 MUIA_List_DestructHook, (IPTR)&keylist_destruct_hook,
                                 MUIA_List_DisplayHook, (IPTR)&keylist_disp_hook,
+                                MUIA_List_Format, "BAR,",
                             End,
                         End,
-                        Child, liststr = StringObject,
-                            MUIA_Disabled, TRUE,
-                            StringFrame,
+                        Child, HGroup,
+                            GroupFrame,
+                            Child, recordkey = TextObject,
+                                ButtonFrame,
+                                MUIA_Font, MUIV_Font_Button,
+                                MUIA_Text_HiCharIdx, '_',
+                                MUIA_Text_Contents, "Record",
+                                MUIA_Text_PreParse, "\33c",
+                                MUIA_InputMode, MUIV_InputMode_Toggle,
+                                MUIA_Background, MUII_ButtonBack,
+                                MUIA_Weight, 0,
+                                MUIA_CycleChain, 1,
+                                MUIA_Disabled, TRUE,
+                            End,
+                            Child, liststr = HotkeyStringObject,
+                                MUIA_Disabled, TRUE,
+                                StringFrame,
+                            End,
                         End,
                     End,
                     Child, HGroup,
@@ -663,14 +737,23 @@ static void MakeGUI(void)
                         Child, HVSpace, /* shrink win */
                         Child, HVSpace, /* Toggle win */
                         Child, HVSpace, /* rescue win */
-                        Child, insertstr = StringObject, StringFrame, End, /* Insert text */
+                        Child, insertstr = StringObject,
+                            StringFrame,
+                            MUIA_String_MaxLen, MAXPARAMLEN,
+                        End, /* Insert text */
                         Child, PopaslObject, /* Run prog */
-                            MUIA_Popstring_String, runprogstr = StringObject, StringFrame, End,
+                            MUIA_Popstring_String, runprogstr = StringObject,
+                                StringFrame,
+                                MUIA_String_MaxLen, MAXPARAMLEN,
+                            End,
                             MUIA_Popstring_Button, PopButton(MUII_PopFile),
                             ASLFR_RejectIcons, TRUE,
                         End,
                         Child, PopaslObject, /* Run AREXX */
-                            MUIA_Popstring_String, runarexxstr = StringObject, StringFrame, End,
+                            MUIA_Popstring_String, runarexxstr = StringObject,
+                                StringFrame,
+                                MUIA_String_MaxLen, MAXPARAMLEN,
+                            End,
                             MUIA_Popstring_Button, PopButton(MUII_PopFile),
                             ASLFR_RejectIcons, TRUE,
                         End,
@@ -683,11 +766,7 @@ static void MakeGUI(void)
         
     if (!app)
     {
-    #if 1
         Cleanup(NULL); /* Make no noise. Is ugly if FKey is double-started. */
-    #else
-        Cleanup(MSG(MSG_CANT_CREATE_GADGET));
-    #endif
     }
 
     get(app, MUIA_Application_Broker, &broker);
@@ -718,8 +797,6 @@ static void MakeGUI(void)
 
     }
 
-    set(liststr, MUIA_String_AttachedList, (IPTR)list);
-
     DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE, (IPTR) app, 2, MUIM_CallHook, &show_hook);
     
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
@@ -734,8 +811,9 @@ static void MakeGUI(void)
     DoMethod(newkey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_CallHook, &newkey_hook);
     DoMethod(delkey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_CallHook, &delkey_hook);
     DoMethod(savekey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_CallHook, &save_hook);
+    DoMethod(recordkey, MUIM_Notify, MUIA_Pressed, MUIV_EveryTime, (IPTR)recordkey, 2, MUIM_CallHook, &recordkey_hook);
+
     DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &lvack_hook);
-    DoMethod(liststr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &stringack_hook);
     DoMethod(insertstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &cmdack_hook);
     DoMethod(runprogstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &cmdack_hook);
     DoMethod(runarexxstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook, &cmdack_hook);
@@ -849,7 +927,7 @@ static void NewKey(void)
     DoMethod(list, MUIM_List_InsertSingle, (IPTR)&ki, MUIV_List_Insert_Bottom);
     nnset(list, MUIA_List_Active, MUIV_List_Active_Bottom);
     nnset(liststr, MUIA_String_Contents, "");
-    nnset(liststr, MUIA_Disabled, FALSE);
+    nnset(recordkey, MUIA_Disabled, FALSE);
     set(wnd, MUIA_Window_ActiveObject, (IPTR)liststr);
 
     RethinkAction();
@@ -870,7 +948,7 @@ static void DelKey(void)
         if (!ki)
         {
             nnset(liststr, MUIA_String_Contents, (IPTR)"");
-            nnset(liststr, MUIA_Disabled, TRUE);
+            nnset(recordkey, MUIA_Disabled, TRUE);
             
             ListToString();
         }
@@ -904,7 +982,6 @@ static void ListToString(void)
     DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&ki);
     if (!ki) return;
 
-    nnset(liststr, MUIA_Disabled, FALSE);
     nnset(liststr, MUIA_String_Contents, ki->descr);
 
     switch(ki->action)
