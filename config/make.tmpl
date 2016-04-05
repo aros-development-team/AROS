@@ -887,7 +887,7 @@ endif
 #   it is put in the same directory as the .c file. When targetdir is not
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
-%define rule_assemble_multi cmd=$(BD_ASSEMBLER) basenames=/A aflags=$(AFLAGS) targetdir= suffix=.s
+%define rule_assemble_multi cmd="$(CC) $(TARGET_SYSROOT)"  basenames=/A aflags=$(AFLAGS) targetdir= suffix=.s
 
 ifeq (%(targetdir),)
 TMP_TARGETS := $(addsuffix .o,%(basenames))
@@ -910,7 +910,9 @@ endif
 
 endif
 
-$(TMP_TARGETS) : TMP_CMD:=%(cmd)
+BD_ASSEMBLER ?= %(cmd)
+
+$(TMP_TARGETS) : TMP_CMD:= $(BD_ASSEMBLER)
 
 $(TMP_TARGETS) : AFLAGS := %(aflags)
 $(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
@@ -1404,7 +1406,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler="%(compiler)"
 %rule_compile_multi basenames=$(BD_NARCHFILES) targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler="%(compiler)"
-%rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
+%rule_assemble_multi cmd=$(BD_ASSEMBLER) basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
     aflags=$(BD_AFLAGS)
 
 %rule_link_prog prog=$(BD_TARGETDIR)/$(BD_PROGNAME) \
@@ -1928,7 +1930,7 @@ BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) \
 
 ifneq ($(BD_LINKLIBAFILES),)
 %rule_assemble_multi \
-    basenames="$(BD_LINKLIBAFILES) $(BD_RELLINKLIBAFILES)" targetdir="%(objdir)" suffix=.S
+    cmd=$(BD_ASSEMBLER) basenames="$(BD_LINKLIBAFILES) $(BD_RELLINKLIBAFILES)" targetdir="%(objdir)" suffix=.S
 endif
 
 ## Linking
