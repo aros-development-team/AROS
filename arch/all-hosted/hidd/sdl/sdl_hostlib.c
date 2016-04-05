@@ -101,6 +101,8 @@ int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE)
 
     if (!strcmp(arch, "mingw32-i386")) 
         LibraryFile = SDL_DLLFILE;
+    else if (!strncmp(arch, "darwin", 6))
+        LibraryFile = SDL_DYLIBFILE;
 
     if ((LIBBASE->sdl_handle = sdl_hostlib_load_so(LibraryFile, sdl_func_names, (void **) &sdl_funcs)) == NULL)
         return FALSE;
