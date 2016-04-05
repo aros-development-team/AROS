@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -58,7 +58,7 @@ int __nocommandline;
 
 #include <resources/task.h>
 
-const TEXT version[] = "$VER: tasklist 42.0 (02.5.2015)\n";
+const TEXT version[] = "$VER: TaskList 42.1 (5.4.2016)\n";
 
 APTR TaskResBase = NULL;
 ULONG eclock;
@@ -189,8 +189,8 @@ int main(void)
 
     TaskResBase = OpenResource("task.resource");
     if (!TaskResBase) {
-        FPuts(Output(),"Can't open task.resource\n");
-        return 20;
+        PutStr("Can't open task.resource\n");
+        return RETURN_FAIL;
     }
 
     for(size = 2048; ; size += 2048)
@@ -198,13 +198,13 @@ int main(void)
         buffer = AllocVec(size, MEMF_ANY);
         if (buffer == NULL)
         {
-            FPuts(Output(),"Not Enough memory for task buffer\n");
-            return 20;
+            PutStr("Not enough memory for task buffer\n");
+            return RETURN_FAIL;
         }
         tasks = buffer;
         if (fillbuffer(&tasks, size))
         {
-            FPuts(Output(), "Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
+            PutStr("Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
             for (tasks2 = buffer; tasks2 < tasks; tasks2++)
             {
             	ULONG time;
@@ -223,9 +223,9 @@ int main(void)
 
             }
             FreeVec(buffer);
-            return 0;
+            return RETURN_OK;
         }
         FreeVec(buffer);
     }
-    return 0;
+    return RETURN_OK;
 }
