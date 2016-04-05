@@ -46,24 +46,29 @@
 
 #define LIBBASE (&xsd)
 
-static SDL_Surface *icon;
+
 static void load_icon(LIBBASETYPEPTR SDLGfxBase) {
     unsigned char *data, *pixel;
     int i;
 
-    icon = SP(SDL_CreateRGBSurface, SDL_SWSURFACE, icon_width, icon_height, 24, icon_red_mask, icon_green_mask, icon_blue_mask, 0);
+    // already loaded?
+    if (SDLGfxBase->icon)
+        return;
 
-    LOCK(icon);
+    if ((SDLGfxBase->icon = SP(SDL_CreateRGBSurface, SDL_SWSURFACE, icon_width, icon_height, 24, icon_red_mask, icon_green_mask, icon_blue_mask, 0)) != NULL)
+    {
+        LOCK(SDLGfxBase->icon);
 
-    data = icon_header_data;
-    pixel = icon->pixels;
+        data = icon_header_data;
+        pixel = SDLGfxBase->icon->pixels;
 
-    for (i = 0; i < icon_width * icon_height; i++) {
-        ICON_HEADER_PIXEL(data, pixel);
-        pixel += 3;
+        for (i = 0; i < icon_width * icon_height; i++) {
+            ICON_HEADER_PIXEL(data, pixel);
+            pixel += 3;
+        }
+
+        UNLOCK(SDLGfxBase->icon);
     }
-
-    UNLOCK(icon);
 }
 
 #define SDLGfxBase ((LIBBASETYPEPTR) cl->UserData)
@@ -113,11 +118,13 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         if (!LIBBASE->use_hwsurface)
             D(bug("[sdl] hardware surface not available, using software surface instead\n"));
 
-        if (icon == NULL) {
+        if (LIBBASE->icon == NULL) {
             D(bug("[sdl] loading window icon\n"));
             load_icon((LIBBASETYPEPTR) cl->UserData);
-            SV(SDL_WM_SetIcon, icon, NULL);
         }
+
+        if (LIBBASE->icon)
+            SV(SDL_WM_SetIcon, LIBBASE->icon, NULL);
 
         s = SP(SDL_SetVideoMode, width, height, depth,
                                 (LIBBASE->use_hwsurface  ? SDL_HWSURFACE | SDL_HWPALETTE : SDL_SWSURFACE) |
