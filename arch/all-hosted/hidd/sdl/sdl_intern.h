@@ -86,6 +86,8 @@ struct sdlhidd
 {
     APTR                    sdl_handle;
 
+    SDL_Surface         *icon;
+
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
 
     OOP_Class               *gfxclass;
