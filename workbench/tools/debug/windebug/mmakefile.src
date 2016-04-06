@@ -1,0 +1,13 @@
+#   $Id$
+#
+#   Makefile for WinDebug.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+
+%build_prog mmake=workbench-tools \
+    progname=WinDebug targetdir=$(AROSDIR)/Tools/Debug \
+    files=windebug
+
+%common

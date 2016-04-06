@@ -7,9 +7,6 @@ include $(SRCDIR)/config/aros.cfg
 COMMONTESTFILES := \
     runtests
 
-HOSTEDTESTFILES :=  \
-    windebug
-
 EXEDIR := $(AROS_TESTS)
 
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
@@ -23,9 +20,6 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
     uselibs="coolimagesstatic hiddstubs"
-
-%build_progs mmake=test-hosted \
-    files=$(HOSTEDTESTFILES) targetdir=$(EXEDIR)
 
 %copy_files_q mmake=test-miscfiles files="testscript" dst=$(EXEDIR)
 
