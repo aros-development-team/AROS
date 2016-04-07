@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -191,28 +191,27 @@ struct Task *core_Dispatch(void)
     if ((!newtask) && (task) && (task->tc_State != TS_WAIT))
         newtask = task;
 
-    if ((newtask) &&
-        (newtask->tc_State == TS_READY) ||
-        (newtask->tc_State == TS_RUN))
+    if (newtask != NULL)
     {
-        DSCHED(bug("[Kernel:%02d] Preparing to run '%s' @ 0x%p\n", cpunum, newtask->tc_Node.ln_Name, newtask));
+        if (newtask->tc_State == TS_READY || newtask->tc_State == TS_RUN)
+        {
+            DSCHED(bug("[Kernel:%02d] Preparing to run '%s' @ 0x%p\n",
+                cpunum, newtask->tc_Node.ln_Name, newtask));
 
-        SysBase->DispCount++;
-        IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
-        SET_THIS_TASK(newtask);
-        SysBase->Elapsed   = SysBase->Quantum;
-        FLAG_SCHEDQUANTUM_CLEAR;
+            SysBase->DispCount++;
+            IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
+            SET_THIS_TASK(newtask);
+            SysBase->Elapsed = SysBase->Quantum;
+            FLAG_SCHEDQUANTUM_CLEAR;
 
-        /* Check the stack of the task we are about to launch. */
-        if ((newtask->tc_SPReg <= newtask->tc_SPLower) ||
-             (newtask->tc_SPReg > newtask->tc_SPUpper))
-            newtask->tc_State     = TS_WAIT;
-        else
-            newtask->tc_State     = TS_RUN;
-    }
+            /* Check the stack of the task we are about to launch. */
+            if ((newtask->tc_SPReg <= newtask->tc_SPLower) ||
+                (newtask->tc_SPReg > newtask->tc_SPUpper))
+                newtask->tc_State     = TS_WAIT;
+            else
+                newtask->tc_State     = TS_RUN;
+        }
 
-    if (newtask)
-    {
         BOOL launchtask = TRUE;
 #if defined(__AROSEXEC_SMP__)
         if (newtask->tc_State == TS_SPIN)
@@ -240,7 +239,7 @@ struct Task *core_Dispatch(void)
 
         if (!launchtask)
         {
-            /* if the new task shouldnt run - force a reschedule.. */
+            /* if the new task shouldn't run - force a reschedule */
             DSCHED(bug("[Kernel:%02d] Skipping '%s' @ 0x%p (state %08x)\n", cpunum, newtask->tc_Node.ln_Name, newtask, newtask->tc_State));
 
             core_Switch();
@@ -262,7 +261,7 @@ struct Task *core_Dispatch(void)
          */
         SysBase->IdleCount++;
         FLAG_SCHEDSWITCH_SET;
-    } 
+    }
 
     return newtask;
 }
