@@ -277,10 +277,24 @@ void GetDataStreamFromFormat(CONST_STRPTR format, va_list args,
 #   define AROS_SLOWSTACKFORMAT_POST(format)		                             \
     }
 #else
-#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) { RAWARG _data = (RAWARG)(&(format)+1)
-#   define AROS_SLOWSTACKFORMAT_PRE(format) AROS_SLOWSTACKFORMAT_PRE_USING(format, format)
-#   define AROS_SLOWSTACKFORMAT_ARG(format) _data
-#   define AROS_SLOWSTACKFORMAT_POST(format) }
+/* We 'mark' functions that use these macros as non-inlineable
+ * to gcc to using the va_start()/va_end() macro pairs.
+ *
+ * This prevents the optimizer from breaking the '&(last)+1'
+ * trick to access the datastream after the last argument.
+ */
+#include <stdarg.h>
+#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) { \
+        va_list _list; \
+        RAWARG _data = (RAWARG)(&(last)+1); \
+        va_start(_list, last);
+#   define AROS_SLOWSTACKFORMAT_PRE(format) \
+        AROS_SLOWSTACKFORMAT_PRE_USING(format, format)
+#   define AROS_SLOWSTACKFORMAT_ARG(format) \
+        _data
+#   define AROS_SLOWSTACKFORMAT_POST(format) \
+        va_end(_list); \
+        }
 #endif /* AROS_SLOWSTACKFORMAT */
 
 
