@@ -50,6 +50,7 @@ fi
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some options used for de-linting:
+#  -Wunknown-warning-option
 #  -Wunused-but-set-variable
 #  -Wstrict-aliasing
 #  -Warray-bounds
@@ -100,6 +101,14 @@ fi
 #  -Wconversion-null
 #  -Wnarrowing
 #  -Wvolatile-register-var
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunknown-warning-option])
+CFLAGS=-Wunknown-warning-option
+AC_TRY_COMPILE(,, aros_unknown_warning_option="yes", aros_unknown_warning_option="no")
+AC_MSG_RESULT($aros_unknown_warning_option)
+if test "x-$aros_unknown_warning_option" = "x-yes" ; then
+    aros_cflags_unknown_warning_option=-Wno-unknown-warning-option
+fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
 CFLAGS=-Wunused-but-set-variable
@@ -504,6 +513,7 @@ fi
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 
+AC_SUBST(aros_cflags_unknown_warning_option)
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
 AC_SUBST(aros_cflags_array_bounds)
