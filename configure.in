@@ -641,7 +641,7 @@ dnl The target configuration section is responsible for setting up all
 dnl the paths for includes, and tools required to build AROS to some
 dnl particular target.
 
-aros_nowarn_flags="NOWARN_POINTER_SIGN NOWARN_PARENTHESES"
+aros_nowarn_flags="NOWARN_UNKNOWN_WARNING_OPTION NOWARN_POINTER_SIGN NOWARN_PARENTHESES"
 
 toolchain_needs_sysroot=no
 
