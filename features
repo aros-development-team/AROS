@@ -635,6 +635,7 @@ aros_cflags_array_bounds
 aros_cflags_strict_aliasing
 aros_cflags_unused_but_set_variable
 aros_cflags_unknown_warning_option
+aros_cflags_unused_command_line_argument
 aros_cflags_iquote_end
 aros_cflags_iquote
 OBJEXT
@@ -2668,6 +2669,7 @@ fi
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some options used for de-linting:
+#  -Wunused-command-line-argument
 #  -Wunknown-warning-option
 #  -Wunused-but-set-variable
 #  -Wstrict-aliasing
@@ -2719,6 +2721,32 @@ fi
 #  -Wconversion-null
 #  -Wnarrowing
 #  -Wvolatile-register-var
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-command-line-argument" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunused-command-line-argument... " >&6; }
+CFLAGS=-Wunused-command-line-argument
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unused_command_line_argument="yes"
+else
+  aros_unused_command_line_argument="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_command_line_argument" >&5
+$as_echo "$aros_unused_command_line_argument" >&6; }
+if test "x-$aros_unused_command_line_argument" = "x-yes" ; then
+    aros_cflags_unused_command_line_argument=-Wno-unused-command-line-argument
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunknown-warning-option" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunknown-warning-option... " >&6; }
@@ -4045,6 +4073,7 @@ $as_echo "$aros_volatile_register_var" >&6; }
 if test "x-$aros_volatile_register_var" = "x-yes" ; then
     aros_cflags_volatile_register_var=-Wno-volatile-register-var
 fi
+
 
 
 

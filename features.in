@@ -50,6 +50,7 @@ fi
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some options used for de-linting:
+#  -Wunused-command-line-argument
 #  -Wunknown-warning-option
 #  -Wunused-but-set-variable
 #  -Wstrict-aliasing
@@ -101,6 +102,14 @@ fi
 #  -Wconversion-null
 #  -Wnarrowing
 #  -Wvolatile-register-var
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-command-line-argument])
+CFLAGS=-Wunused-command-line-argument
+AC_TRY_COMPILE(,, aros_unused_command_line_argument="yes", aros_unused_command_line_argument="no")
+AC_MSG_RESULT($aros_unused_command_line_argument)
+if test "x-$aros_unused_command_line_argument" = "x-yes" ; then
+    aros_cflags_unused_command_line_argument=-Wno-unused-command-line-argument
+fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunknown-warning-option])
 CFLAGS=-Wunknown-warning-option
@@ -513,6 +522,7 @@ fi
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 
+AC_SUBST(aros_cflags_unused_command_line_argument)
 AC_SUBST(aros_cflags_unknown_warning_option)
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_strict_aliasing)
