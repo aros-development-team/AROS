@@ -4,6 +4,8 @@ CFLAGS_IQUOTE_END               := @aros_cflags_iquote_end@
 
 # Disable compiler warning flags
 
+NOWARN_UNKNOWN_WARNING_OPTION := @aros_cflags_unknown_warning_option@
+
 NOWARN_UNUSED_BUT_SET_VARIABLE := @aros_cflags_unused_but_set_variable@
 NOWARN_STRICT_ALIASING         := @aros_cflags_strict_aliasing@
 NOWARN_ARRAY_BOUNDS            := @aros_cflags_array_bounds@
