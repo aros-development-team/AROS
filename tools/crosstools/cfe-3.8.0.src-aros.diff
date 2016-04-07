@@ -1,6 +1,6 @@
 diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/include/clang/Driver/Options.td
 --- cfe-3.8.0.src/include/clang/Driver/Options.td	2016-01-06 21:27:42.000000000 +0000
-+++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-27 23:53:26.565229236 +0100
++++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-30 04:30:00.432186294 +0100
 @@ -1625,11 +1625,15 @@
  def multiply__defined__unused : Separate<["-"], "multiply_defined_unused">;
  def multiply__defined : Separate<["-"], "multiply_defined">;
@@ -53,8 +53,8 @@ diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/inclu
    Group<CompileOnly_Group>, HelpText<"Language standard to compile for">;
 diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp
 --- cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp	1970-01-01 01:00:00.000000000 +0100
-+++ cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp	2016-03-27 18:30:04.259971623 +0100
-@@ -0,0 +1,117 @@
++++ cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp	2016-04-06 01:51:03.199944026 +0100
+@@ -0,0 +1,130 @@
 +//===--- AROSToolChain.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -172,9 +172,22 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +    break;
 +  }
 +}
++
++void AROSToolChain::
++addStartObjectFileArgs(const llvm::opt::ArgList &Args,
++                                    llvm::opt::ArgStringList &CmdArgs) const {
++  // Derived from startfile spec.
++  CmdArgs.push_back("-lstartup.o");
++//  if (Args.hasArg(options::OPT_detach)) {
++//        CmdArgs.push_back("-ldetach.o");
++//  }
++  if (Args.hasArg(options::OPT_nix)) {
++        CmdArgs.push_back("-lnixmain.o");
++  }
++}
 diff -ruN cfe-3.8.0.src/lib/Driver/CMakeLists.txt cfe-3.8.0.src.aros/lib/Driver/CMakeLists.txt
 --- cfe-3.8.0.src/lib/Driver/CMakeLists.txt	2015-07-02 05:45:27.000000000 +0100
-+++ cfe-3.8.0.src.aros/lib/Driver/CMakeLists.txt	2016-03-27 04:40:25.813258567 +0100
++++ cfe-3.8.0.src.aros/lib/Driver/CMakeLists.txt	2016-03-30 04:30:00.448186485 +0100
 @@ -5,6 +5,7 @@
  
  add_clang_library(clangDriver
@@ -185,7 +198,7 @@ diff -ruN cfe-3.8.0.src/lib/Driver/CMakeLists.txt cfe-3.8.0.src.aros/lib/Driver/
    Driver.cpp
 diff -ruN cfe-3.8.0.src/lib/Driver/Driver.cpp cfe-3.8.0.src.aros/lib/Driver/Driver.cpp
 --- cfe-3.8.0.src/lib/Driver/Driver.cpp	2016-01-11 23:27:13.000000000 +0000
-+++ cfe-3.8.0.src.aros/lib/Driver/Driver.cpp	2016-03-27 04:40:25.814258579 +0100
++++ cfe-3.8.0.src.aros/lib/Driver/Driver.cpp	2016-03-30 04:30:00.449186497 +0100
 @@ -2206,6 +2206,9 @@
    ToolChain *&TC = ToolChains[Target.str()];
    if (!TC) {
@@ -198,8 +211,8 @@ diff -ruN cfe-3.8.0.src/lib/Driver/Driver.cpp cfe-3.8.0.src.aros/lib/Driver/Driv
        break;
 diff -ruN cfe-3.8.0.src/lib/Driver/ToolChains.h cfe-3.8.0.src.aros/lib/Driver/ToolChains.h
 --- cfe-3.8.0.src/lib/Driver/ToolChains.h	2016-02-16 19:56:48.000000000 +0000
-+++ cfe-3.8.0.src.aros/lib/Driver/ToolChains.h	2016-03-27 04:40:25.814258579 +0100
-@@ -350,6 +350,31 @@
++++ cfe-3.8.0.src.aros/lib/Driver/ToolChains.h	2016-04-06 01:50:07.437270177 +0100
+@@ -350,6 +350,34 @@
    /// }
  };
  
@@ -220,6 +233,9 @@ diff -ruN cfe-3.8.0.src/lib/Driver/ToolChains.h cfe-3.8.0.src.aros/lib/Driver/To
 +  void AddCXXStdlibLibArgs(const llvm::opt::ArgList &Args,
 +                           llvm::opt::ArgStringList &CmdArgs) const override;
 +
++  void addStartObjectFileArgs(const llvm::opt::ArgList &Args,
++                              llvm::opt::ArgStringList &CmdArgs) const;
++
 +private:
 +  void
 +  AddAROSSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
@@ -233,7 +249,7 @@ diff -ruN cfe-3.8.0.src/lib/Driver/ToolChains.h cfe-3.8.0.src.aros/lib/Driver/To
  public:
 diff -ruN cfe-3.8.0.src/lib/Frontend/InitHeaderSearch.cpp cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp
 --- cfe-3.8.0.src/lib/Frontend/InitHeaderSearch.cpp	2015-12-30 03:40:23.000000000 +0000
-+++ cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2016-03-27 04:40:25.815258591 +0100
++++ cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2016-03-30 04:30:00.450186509 +0100
 @@ -210,6 +210,7 @@
  
    if (HSOpts.UseStandardSystemIncludes) {
