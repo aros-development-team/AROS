@@ -60,7 +60,7 @@ USER_INCLUDES := -I. -I$(SRCDIR)/$(CURDIR)/../include $(addprefix -I,$(DIRS))
 NOWARN_FLAGS := -Wno-error
 USER_CFLAGS += $(NOWARN_FLAGS) -DFT2_BUILD_LIBRARY
 
-#MM- workbench-libs : workbench-libs-freetype-module
+#MM- workbench-libs : workbench-libs-freetype-module workbench-libs-freetype-pkgconfig
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 
@@ -70,3 +70,18 @@ USER_CFLAGS += $(NOWARN_FLAGS) -DFT2_BUILD_LIBRARY
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
     modtype=library files="$(SHFILES) $(FT2FILES)" uselibs="stdc"
 
+#MM
+workbench-libs-freetype-pkgconfig : $(AROS_LIB)/pkgconfig/freetype2.pc
+
+$(AROS_LIB)/pkgconfig/freetype2.pc : $(SRCDIR)/$(CURDIR)/../builds/unix/freetype2.in
+	%mkdir_q dir=$(AROS_LIB)/pkgconfig
+	@$(SED) -e 's|%FT2_EXTRA_LIBS%||' \
+	       -e 's|%LIBBZ2%||' \
+	       -e 's|%LIBZ%|-lz|' \
+	       -e 's|%build_libtool_libs%|$(build_libtool_libs)|' \
+	       -e 's|%exec_prefix%|$${prefix}|' \
+	       -e 's|%ft_version%|2.5.0|' \
+	       -e 's|%includedir%|$${prefix}/include|' \
+	       -e 's|%libdir%|$(AROS_LIB)|' \
+	       -e 's|%prefix%|/Development|' \
+	       $< >$@
