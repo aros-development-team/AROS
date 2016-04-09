@@ -1599,7 +1599,7 @@ Optional Features:
   --enable-ccache         Use ccache as a front end to the compiler
                           (default=no).
   --enable-target-variant=NAME
-                          Enable a specific target variant(default=none)
+                          Enable a specific target variant (default=none)
   --enable-amigaos-compliance=VERSION
                           Enforce userspace AmigaOS compliance to a specific
                           KickStart version (default=none).
@@ -1635,7 +1635,9 @@ Optional Packages:
                           Use gcc-VERSION for building bootstrap
   --with-optimization=FLAGS
                           Use optimization flags FLAGS (default=-O2).
-  --with-paranoia=FLAGS   compiler warning flags to enable for paranoia
+  --with-paranoia=(yes|no|FLAGS)
+                          Specific compiler warning FLAGS to enable for
+                          paranoia builds (default=-Wall -Werror)
   --with-xcode=PATH       Specify XCode path for iOS targets
                           (default=/Developer).
   --with-sdk-version=VERSION
@@ -7839,6 +7841,7 @@ aros_optimization_cflags="$optimization"
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $optimization" >&5
 $as_echo "$optimization" >&6; }
 
+paranoia_default=yes
 #-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking which paranoia flags to use" >&5
 $as_echo_n "checking which paranoia flags to use... " >&6; }
@@ -7847,16 +7850,18 @@ $as_echo_n "checking which paranoia flags to use... " >&6; }
 if test "${with_paranoia+set}" = set; then :
   withval=$with_paranoia; paranoia_flags="$withval"
 else
-  paranoia_flags="default"
+  paranoia_flags="$paranoia_default"
 fi
 
-if test "$paranoia_flags" = "default"; then
+if test "$paranoia_flags" = "no"; then
         paranoia_flags=""
         msg_result="none"
-else if test "$paranoia_flags" = "yes"; then
+else
+    if test "$paranoia_flags" = "yes"; then
         paranoia_flags="-Wall -Werror"
-        msg_result="$paranoia_flags"
-fi fi
+    fi
+    msg_result="$paranoia_flags"
+fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
 $as_echo "$msg_result" >&6; }
 aros_config_cflags="$aros_config_cflags $paranoia_flags"
