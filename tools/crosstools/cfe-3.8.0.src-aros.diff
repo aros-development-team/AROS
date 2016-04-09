@@ -1,23 +1,31 @@
 diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/include/clang/Driver/Options.td
 --- cfe-3.8.0.src/include/clang/Driver/Options.td	2016-01-06 21:27:42.000000000 +0000
-+++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-03-30 04:30:00.432186294 +0100
-@@ -1625,11 +1625,15 @@
++++ cfe-3.8.0.src.aros/include/clang/Driver/Options.td	2016-04-09 05:41:44.164577499 +0100
+@@ -388,6 +388,7 @@
+   HelpText<"Filename to write DOT-formatted header dependencies to">;
+ def module_dependency_dir : Separate<["-"], "module-dependency-dir">,
+   Flags<[CC1Option]>, HelpText<"Directory to dump module dependencies to">;
++def detach : Flag<["-"], "detach">, Flags<[DriverOption,NoArgumentUnused]>;
+ def dumpmachine : Flag<["-"], "dumpmachine">;
+ def dumpspecs : Flag<["-"], "dumpspecs">, Flags<[Unsupported]>;
+ def dumpversion : Flag<["-"], "dumpversion">;
+@@ -1625,11 +1626,15 @@
  def multiply__defined__unused : Separate<["-"], "multiply_defined_unused">;
  def multiply__defined : Separate<["-"], "multiply_defined">;
  def mwarn_nonportable_cfstrings : Flag<["-"], "mwarn-nonportable-cfstrings">, Group<m_Group>;
-+def nix : Flag<["-"], "nix">, Flags<[DriverOption]>;
++def nix : Flag<["-"], "nix">, Flags<[DriverOption,NoArgumentUnused]>;
  def no_canonical_prefixes : Flag<["-"], "no-canonical-prefixes">, Flags<[HelpHidden]>,
    HelpText<"Use relative instead of canonical paths">;
  def no_cpp_precomp : Flag<["-"], "no-cpp-precomp">, Group<clang_ignored_f_Group>;
  def no_integrated_cpp : Flag<["-", "--"], "no-integrated-cpp">, Flags<[DriverOption]>;
  def no_pedantic : Flag<["-", "--"], "no-pedantic">, Group<pedantic_Group>;
-+def no_posixc : Flag<["-"], "no-posixc">, Flags<[DriverOption]>;
-+def no_stdc : Flag<["-"], "no-stdc">, Flags<[DriverOption]>;
-+def no_sysbase : Flag<["-"], "no_sysbase">, Flags<[DriverOption]>;
++def no_posixc : Flag<["-"], "no-posixc">, Flags<[DriverOption,NoArgumentUnused]>;
++def no_stdc : Flag<["-"], "no-stdc">, Flags<[DriverOption,NoArgumentUnused]>;
++def no_sysbase : Flag<["-"], "no_sysbase">, Flags<[DriverOption,NoArgumentUnused]>;
  def no__dead__strip__inits__and__terms : Flag<["-"], "no_dead_strip_inits_and_terms">;
  def nobuiltininc : Flag<["-"], "nobuiltininc">, Flags<[CC1Option]>,
    HelpText<"Disable builtin #include directories">;
-@@ -1640,14 +1644,17 @@
+@@ -1640,14 +1645,17 @@
  def nolibc : Flag<["-"], "nolibc">;
  def nomultidefs : Flag<["-"], "nomultidefs">;
  def nopie : Flag<["-"], "nopie">;
@@ -35,26 +43,26 @@ diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/inclu
  def object : Flag<["-"], "object">;
  def o : JoinedOrSeparate<["-"], "o">, Flags<[DriverOption, RenderAsInput, CC1Option, CC1AsOption]>,
    HelpText<"Write output to <file>">, MetaVarName<"<file>">;
-@@ -1660,6 +1667,7 @@
+@@ -1660,6 +1668,7 @@
  def pg : Flag<["-"], "pg">, HelpText<"Enable mcount instrumentation">, Flags<[CC1Option]>;
  def pipe : Flag<["-", "--"], "pipe">,
    HelpText<"Use pipes between commands, when possible">;
-+def posixc : Flag<["-"], "posixc">, Flags<[DriverOption]>;
++def posixc : Flag<["-"], "posixc">, Flags<[DriverOption,NoArgumentUnused]>;
  def prebind__all__twolevel__modules : Flag<["-"], "prebind_all_twolevel_modules">;
  def prebind : Flag<["-"], "prebind">;
  def preload : Flag<["-"], "preload">;
-@@ -1728,6 +1736,7 @@
+@@ -1728,6 +1737,7 @@
  def static_libgcc : Flag<["-"], "static-libgcc">;
  def static_libstdcxx : Flag<["-"], "static-libstdc++">;
  def static : Flag<["-", "--"], "static">, Flags<[NoArgumentUnused]>;
-+def stdc : Flag<["-"], "stdc">, Flags<[DriverOption]>;
++def stdc : Flag<["-"], "stdc">, Flags<[DriverOption,NoArgumentUnused]>;
  def std_default_EQ : Joined<["-"], "std-default=">;
  def std_EQ : Joined<["-", "--"], "std=">, Flags<[CC1Option]>,
    Group<CompileOnly_Group>, HelpText<"Language standard to compile for">;
 diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp
 --- cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp	1970-01-01 01:00:00.000000000 +0100
-+++ cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp	2016-04-06 01:51:03.199944026 +0100
-@@ -0,0 +1,130 @@
++++ cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp	2016-04-09 06:32:45.899728500 +0100
+@@ -0,0 +1,150 @@
 +//===--- AROSToolChain.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -79,6 +87,9 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +  if (GetCXXStdlibType(Args) == ToolChain::CST_Libstdcxx) {
 +
 +  }
++
++  // Use LLD by default.
++  DefaultLinker = "lld";
 +}
 +
 +#if (0)
@@ -165,10 +176,10 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +                    llvm::opt::ArgStringList &CC1Args) const {
 +  switch (GetCXXStdlibType(DriverArgs)) {
 +  case ToolChain::CST_Libcxx:
-+//    CC1Args.push_back("-lc++");
++    CC1Args.push_back("-lc++");
 +    break;
 +  case ToolChain::CST_Libstdcxx:
-+//    CC1Args.push_back("-lstdc++");
++    CC1Args.push_back("-lstdc++");
 +    break;
 +  }
 +}
@@ -176,14 +187,31 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +void AROSToolChain::
 +addStartObjectFileArgs(const llvm::opt::ArgList &Args,
 +                                    llvm::opt::ArgStringList &CmdArgs) const {
++  if (Args.hasArg(options::OPT_nostartfiles))
++    return;
++
++  const Driver &D = getDriver();
++  const std::string &SysRoot = D.SysRoot;
++  SmallString<128> LibPath(SysRoot);
++  llvm::sys::path::append(LibPath, "lib/");
++
 +  // Derived from startfile spec.
-+  CmdArgs.push_back("-lstartup.o");
-+//  if (Args.hasArg(options::OPT_detach)) {
-+//        CmdArgs.push_back("-ldetach.o");
-+//  }
-+  if (Args.hasArg(options::OPT_nix)) {
-+        CmdArgs.push_back("-lnixmain.o");
++  CmdArgs.push_back(Args.MakeArgString(LibPath + "startup.o"));
++  if (Args.hasArg(options::OPT_detach)) {
++	CmdArgs.push_back(Args.MakeArgString(LibPath + "detach.o"));
 +  }
++  if (Args.hasArg(options::OPT_nix)) {
++	CmdArgs.push_back(Args.MakeArgString(LibPath + "nixmain.o"));
++  }
++}
++
++
++Tool *AROSToolChain::buildAssembler() const {
++  return new tools::AROS::Assembler(*this);
++}
++
++Tool *AROSToolChain::buildLinker() const {
++  return new tools::AROS::Linker(*this);
 +}
 diff -ruN cfe-3.8.0.src/lib/Driver/CMakeLists.txt cfe-3.8.0.src.aros/lib/Driver/CMakeLists.txt
 --- cfe-3.8.0.src/lib/Driver/CMakeLists.txt	2015-07-02 05:45:27.000000000 +0100
@@ -211,8 +239,8 @@ diff -ruN cfe-3.8.0.src/lib/Driver/Driver.cpp cfe-3.8.0.src.aros/lib/Driver/Driv
        break;
 diff -ruN cfe-3.8.0.src/lib/Driver/ToolChains.h cfe-3.8.0.src.aros/lib/Driver/ToolChains.h
 --- cfe-3.8.0.src/lib/Driver/ToolChains.h	2016-02-16 19:56:48.000000000 +0000
-+++ cfe-3.8.0.src.aros/lib/Driver/ToolChains.h	2016-04-06 01:50:07.437270177 +0100
-@@ -350,6 +350,34 @@
++++ cfe-3.8.0.src.aros/lib/Driver/ToolChains.h	2016-04-09 05:26:47.644569258 +0100
+@@ -350,6 +350,37 @@
    /// }
  };
  
@@ -241,12 +269,199 @@ diff -ruN cfe-3.8.0.src/lib/Driver/ToolChains.h cfe-3.8.0.src.aros/lib/Driver/To
 +  AddAROSSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
 +                            llvm::opt::ArgStringList &CC1Args) const;
 +
++protected:
++  Tool *buildAssembler() const override;
++  Tool *buildLinker() const override;
 +};
 +
 +
  /// Darwin - The base Darwin tool chain.
  class LLVM_LIBRARY_VISIBILITY Darwin : public MachO {
  public:
+diff -ruN cfe-3.8.0.src/lib/Driver/Tools.cpp cfe-3.8.0.src.aros/lib/Driver/Tools.cpp
+--- cfe-3.8.0.src/lib/Driver/Tools.cpp	2016-02-12 22:51:41.000000000 +0000
++++ cfe-3.8.0.src.aros/lib/Driver/Tools.cpp	2016-04-09 06:37:10.743164748 +0100
+@@ -6814,6 +6814,132 @@
+   return Args.MakeArgString(Res + ".d");
+ }
+ 
++void AROS::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
++                                        const InputInfo &Output,
++                                        const InputInfoList &Inputs,
++                                        const ArgList &Args,
++                                        const char *LinkingOutput) const {
++  claimNoWarnArgs(Args);
++  ArgStringList CmdArgs;
++
++  CmdArgs.push_back("-o");
++  CmdArgs.push_back(Output.getFilename());
++
++  for (const auto &II : Inputs)
++    CmdArgs.push_back(II.getFilename());
++
++  const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
++  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
++}
++
++void AROS::Linker::ConstructJob(Compilation &C, const JobAction &JA,
++                                     const InputInfo &Output,
++                                     const InputInfoList &Inputs,
++                                     const ArgList &Args,
++                                     const char *LinkingOutput) const {
++	const toolchains::AROSToolChain &AROSTC = static_cast<const toolchains::AROSToolChain &>(getToolChain());
++  const char *Exec = Args.MakeArgString(AROSTC.GetLinkerPath());
++  const Driver &D = AROSTC.getDriver();
++	const std::string &SysRoot = D.SysRoot;
++	ArgStringList CmdArgs;
++
++  if (llvm::sys::path::filename(Exec) == "lld") {
++    CmdArgs.push_back("-flavor");
++    CmdArgs.push_back("gnu");
++		if (!D.SysRoot.empty())
++			CmdArgs.push_back(Args.MakeArgString("--sysroot=" + SysRoot));
++  }
++
++  // When building 32-bit code on AROS/pc64, we have to explicitly
++  // instruct ld in the base system to link 32-bit code.
++  if (AROSTC.getArch() == llvm::Triple::x86) {
++    CmdArgs.push_back("-m");
++    CmdArgs.push_back("elf_i386");
++  }
++
++  if (Output.isFilename()) {
++    CmdArgs.push_back("-o");
++    CmdArgs.push_back(Output.getFilename());
++  } else {
++    assert(Output.isNothing() && "Invalid output.");
++  }
++
++  AROSTC.addStartObjectFileArgs(Args, CmdArgs);
++
++  Args.AddAllArgs(CmdArgs,
++                  {options::OPT_L, options::OPT_T_Group, options::OPT_e});
++
++  AddLinkerInputs(AROSTC, Inputs, Args, CmdArgs);
++
++  if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
++    SmallString<128> LibPath(SysRoot);
++    llvm::sys::path::append(LibPath, "lib");
++    CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
++
++    if (D.CCCIsCXX()) {
++      AROSTC.AddCXXStdlibLibArgs(Args, CmdArgs);
++      CmdArgs.push_back("-lpthread");
++    }
++
++		CmdArgs.push_back("--start-group");
++		CmdArgs.push_back("-lmui");
++		CmdArgs.push_back("-larossupport");
++		CmdArgs.push_back("-lamiga");
++		if (!Args.hasArg(options::OPT_nostartfiles)) {
++			if (!Args.hasArg(options::OPT_static)) {
++		if (!Args.hasArg(options::OPT_no_stdc)) {
++			if (!Args.hasArg(options::OPT_no_posixc)) {
++				CmdArgs.push_back("-lposixc");
++			}
++			CmdArgs.push_back("-lstdcio");
++			CmdArgs.push_back("-lstdc");
++				 }
++			 }
++			 else
++			 {
++		if (!Args.hasArg(options::OPT_no_stdc)) {
++			CmdArgs.push_back("-lstdc.static");
++		}
++			 }
++		}
++		CmdArgs.push_back("-lcodesets");
++		CmdArgs.push_back("-lkeymap");
++		CmdArgs.push_back("-lexpansion");
++		CmdArgs.push_back("-lcommodities");
++		CmdArgs.push_back("-ldiskfont");
++		CmdArgs.push_back("-lasl");
++		CmdArgs.push_back("-lmuimaster");
++		CmdArgs.push_back("-ldatatypes");
++		CmdArgs.push_back("-lcybergraphics");
++		CmdArgs.push_back("-lworkbench");
++		CmdArgs.push_back("-licon");
++		CmdArgs.push_back("-lintuition");
++		CmdArgs.push_back("-lgadtools");
++		CmdArgs.push_back("-llayers");
++		CmdArgs.push_back("-laros");
++		CmdArgs.push_back("-lpartition");
++		CmdArgs.push_back("-liffparse");
++		CmdArgs.push_back("-lgraphics");
++		CmdArgs.push_back("-llocale");
++		CmdArgs.push_back("-ldos");
++		CmdArgs.push_back("-lutility");
++		CmdArgs.push_back("-loop");
++		if (!Args.hasArg(options::OPT_nosysbase)) {
++			CmdArgs.push_back("-lexec");
++		}
++		CmdArgs.push_back("-lautoinit");
++		CmdArgs.push_back("-llibinit");
++		if (!Args.hasArg(options::OPT_nostartfiles)) {
++			if (!Args.hasArg(options::OPT_static)) {
++				CmdArgs.push_back("-lstdc.static");
++			}
++		}
++		CmdArgs.push_back("--end-group");
++  }
++
++  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
++}
++
+ void cloudabi::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+                                     const InputInfo &Output,
+                                     const InputInfoList &Inputs,
+diff -ruN cfe-3.8.0.src/lib/Driver/Tools.h cfe-3.8.0.src.aros/lib/Driver/Tools.h
+--- cfe-3.8.0.src/lib/Driver/Tools.h	2016-01-08 15:14:31.000000000 +0000
++++ cfe-3.8.0.src.aros/lib/Driver/Tools.h	2016-04-09 05:25:04.263234238 +0100
+@@ -27,6 +27,7 @@
+ class Driver;
+ 
+ namespace toolchains {
++class AROSToolChain;
+ class MachO;
+ }
+ 
+@@ -308,6 +309,36 @@
+ bool hasPPCAbiArg(const llvm::opt::ArgList &Args, const char *Value);
+ } // end namespace ppc
+ 
++
++/// AROS -- 
++namespace AROS {
++class LLVM_LIBRARY_VISIBILITY Assembler : public GnuTool {
++public:
++  Assembler(const ToolChain &TC)
++      : GnuTool("AROS::Assembler", "assembler", TC) {}
++
++  bool hasIntegratedCPP() const override { return false; }
++
++  void ConstructJob(Compilation &C, const JobAction &JA,
++                    const InputInfo &Output, const InputInfoList &Inputs,
++                    const llvm::opt::ArgList &TCArgs,
++                    const char *LinkingOutput) const override;
++};
++
++class LLVM_LIBRARY_VISIBILITY Linker : public GnuTool {
++public:
++  Linker(const ToolChain &TC) : GnuTool("AROS::Linker", "linker", TC) {}
++
++  bool hasIntegratedCPP() const override { return false; }
++  bool isLinkJob() const override { return true; }
++
++  void ConstructJob(Compilation &C, const JobAction &JA,
++                    const InputInfo &Output, const InputInfoList &Inputs,
++                    const llvm::opt::ArgList &TCArgs,
++                    const char *LinkingOutput) const override;
++};
++} // end namespace AROS
++
+ /// cloudabi -- Directly call GNU Binutils linker
+ namespace cloudabi {
+ class LLVM_LIBRARY_VISIBILITY Linker : public GnuTool {
 diff -ruN cfe-3.8.0.src/lib/Frontend/InitHeaderSearch.cpp cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp
 --- cfe-3.8.0.src/lib/Frontend/InitHeaderSearch.cpp	2015-12-30 03:40:23.000000000 +0000
 +++ cfe-3.8.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2016-03-30 04:30:00.450186509 +0100
