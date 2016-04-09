@@ -61,8 +61,8 @@ diff -ruN cfe-3.8.0.src/include/clang/Driver/Options.td cfe-3.8.0.src.aros/inclu
    Group<CompileOnly_Group>, HelpText<"Language standard to compile for">;
 diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp
 --- cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp	1970-01-01 01:00:00.000000000 +0100
-+++ cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp	2016-04-09 06:32:45.899728500 +0100
-@@ -0,0 +1,150 @@
++++ cfe-3.8.0.src.aros/lib/Driver/AROSToolChain.cpp	2016-04-09 07:41:03.281079459 +0100
+@@ -0,0 +1,153 @@
 +//===--- AROSToolChain.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -89,7 +89,7 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +  }
 +
 +  // Use LLD by default.
-+  DefaultLinker = "lld";
++//  DefaultLinker = "lld";
 +}
 +
 +#if (0)
@@ -146,8 +146,11 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
 +                                     llvm::opt::ArgStringList &CC1Args) const {
 +  CC1Args.push_back("-D__AROS__");
++  CC1Args.push_back("-D__AROS");
++  CC1Args.push_back("-DAROS");
 +  CC1Args.push_back("-D__AMIGA__");
 +  CC1Args.push_back("-D_AMIGA");
++  CC1Args.push_back("-DAMIGA");
 +  CC1Args.push_back("-D__ELF__");
 +  CC1Args.push_back("-Dsystem=posix");
 +}
