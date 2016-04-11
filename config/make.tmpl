@@ -1349,7 +1349,7 @@ BDID := $(BDTARGETID)
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_CXXFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
     includedir= libdir= \
-    compiler=target linker= lto=yes
+    compiler=target linker= lto=$(TARGET_LTO)
 
 .PHONY : %(mmake)
 
@@ -1446,7 +1446,7 @@ GLOB_MKDIRS += $(BD_OBJDIR) $(BD_TARGETDIR)
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     includedir= libdir= \
-    uselibs= usehostlibs= usestartup=yes detach=no lto=yes
+    uselibs= usehostlibs= usestartup=yes detach=no lto=$(TARGET_LTO)
 
 .PHONY : %(mmake)
 
