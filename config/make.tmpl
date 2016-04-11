@@ -1378,6 +1378,10 @@ BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(TMP_FILES))))
 
 BD_CFLAGS    := %(cflags)
 BD_CXXFLAGS := %(cxxflags)
+ifeq (%(compiler),target)
+BD_CFLAGS    := $(CFLAGS_LTO) $(BD_CFLAGS)
+BD_CXXFLAGS := $(CFLAGS_LTO) $(BD_CXXFLAGS)
+endif
 ifneq (%(includedir),)
 BD_CFLAGS    += -I%(includedir)
 BD_CXXFLAGS += -I%(includedir)
@@ -1453,6 +1457,9 @@ BD_DEPS      := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_FILES)))
 BD_EXES      := $(addprefix $(BD_TARGETDIR)/,$(BD_FILES))
 
 BD_CFLAGS    := %(cflags)
+ifeq (%(compiler),target)
+    BD_CFLAGS    := $(CFLAGS_LTO) $(BD_CFLAGS)
+endif
 ifneq (%(includedir),)
     BD_CFLAGS += -I%(includedir)
 endif
@@ -1866,6 +1873,10 @@ BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
 BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CFLAGS)
 BD_CXXFLAGS := %(cxxflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CXXFLAGS)
+# ifeq (%(compiler),target)
+# BD_CFLAGS    := $(CFLAGS_LTO) $(BD_CFLAGS)
+# BD_CXXFLAGS := $(CFLAGS_LTO) $(BD_CXXFLAGS)
+# endif
 ifneq (%(includedir),)
 BD_CFLAGS     += -I%(includedir)
 BD_CXXFLAGS += -I%(includedir)
