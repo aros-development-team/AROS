@@ -34,6 +34,42 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some features:
+#  -flto
+#  -floop-block
+#  -floop-interchange
+#  -floop-strip-mine
+
+AC_MSG_CHECKING([whether ${CC} accepts -flto])
+CFLAGS=-flto
+AC_TRY_COMPILE(,, aros_lto="yes", aros_lto="no")
+AC_MSG_RESULT($aros_lto)
+if test "x-$aros_lto" = "x-yes" ; then
+    aros_cflags_lto=-flto
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -floop-block])
+CFLAGS=-floop-block
+AC_TRY_COMPILE(,, aros_loop_block="yes", aros_loop_block="no")
+AC_MSG_RESULT($aros_loop_block)
+if test "x-$aros_loop_block" = "x-yes" ; then
+    aros_cflags_loop_block=-floop-block
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -floop-interchange])
+CFLAGS=-floop-interchange
+AC_TRY_COMPILE(,, aros_loop_interchange="yes", aros_loop_interchange="no")
+AC_MSG_RESULT($aros_loop_interchange)
+if test "x-$aros_loop_interchange" = "x-yes" ; then
+    aros_cflags_loop_interchange=-floop-interchange
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -floop-strip-mine])
+CFLAGS=-floop-strip-mine
+AC_TRY_COMPILE(,, aros_loop_strip_mine="yes", aros_loop_strip_mine="no")
+AC_MSG_RESULT($aros_loop_strip_mine)
+if test "x-$aros_loop_strip_mine" = "x-yes" ; then
+    aros_cflags_loop_strip_mine=-floop-strip-mine
+fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
 CFLAGS="-iquote."
@@ -518,6 +554,11 @@ AC_MSG_RESULT($aros_volatile_register_var)
 if test "x-$aros_volatile_register_var" = "x-yes" ; then
     aros_cflags_volatile_register_var=-Wno-volatile-register-var
 fi
+
+AC_SUBST(aros_cflags_lto)
+AC_SUBST(aros_cflags_loop_block)
+AC_SUBST(aros_cflags_loop_interchange)
+AC_SUBST(aros_cflags_loop_strip_mine)
 
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
