@@ -1349,7 +1349,7 @@ BDID := $(BDTARGETID)
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_CXXFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
     includedir= libdir= \
-    compiler=target linker=
+    compiler=target linker= lto=yes
 
 .PHONY : %(mmake)
 
@@ -1378,9 +1378,11 @@ BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(TMP_FILES))))
 
 BD_CFLAGS    := %(cflags)
 BD_CXXFLAGS := %(cxxflags)
+ifeq (%(lto),yes)
 ifeq (%(compiler),target)
 BD_CFLAGS    := $(CFLAGS_LTO) $(BD_CFLAGS)
 BD_CXXFLAGS := $(CFLAGS_LTO) $(BD_CXXFLAGS)
+endif
 endif
 ifneq (%(includedir),)
 BD_CFLAGS    += -I%(includedir)
@@ -1444,7 +1446,7 @@ GLOB_MKDIRS += $(BD_OBJDIR) $(BD_TARGETDIR)
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     includedir= libdir= \
-    uselibs= usehostlibs= usestartup=yes detach=no
+    uselibs= usehostlibs= usestartup=yes detach=no lto=yes
 
 .PHONY : %(mmake)
 
@@ -1457,8 +1459,10 @@ BD_DEPS      := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_FILES)))
 BD_EXES      := $(addprefix $(BD_TARGETDIR)/,$(BD_FILES))
 
 BD_CFLAGS    := %(cflags)
+ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-    BD_CFLAGS    := $(CFLAGS_LTO) $(BD_CFLAGS)
+BD_CFLAGS    := $(CFLAGS_LTO) $(BD_CFLAGS)
+endif
 endif
 ifneq (%(includedir),)
     BD_CFLAGS += -I%(includedir)
