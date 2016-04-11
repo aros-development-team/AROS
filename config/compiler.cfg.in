@@ -1,3 +1,10 @@
+# LTO/Graphite optimization flags
+
+CFLAGS_LTO                              := @aros_cflags_lto@
+CFLAGS_LOOP_BLOCK                       := @aros_cflags_loop_block@
+CFLAGS_LOOP_INTERCHANGE                 := @aros_cflags_loop_interchange@
+CFLAGS_LOOP_STRIP_MINE                  := @aros_cflags_loop_strip_mine@
+
 # -iquote support
 CFLAGS_IQUOTE                           := @aros_cflags_iquote@
 CFLAGS_IQUOTE_END                       := @aros_cflags_iquote_end@
