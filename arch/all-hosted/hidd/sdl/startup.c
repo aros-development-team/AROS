@@ -214,6 +214,7 @@ int main(void)
 		    {TAG_DONE            , 0                      }
 		};
 
+                xsd.gfxclass->UserData = &xsd;
 		xsd.bmclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLBitMap_tags);
 	        if (xsd.bmclass) {
 		    struct TagItem SDLMouse_tags[] = {
@@ -223,6 +224,7 @@ int main(void)
 			{TAG_DONE            , 0                       }
 		    };
 
+                    xsd.bmclass->UserData = &xsd;
 		    xsd.mouseclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLMouse_tags);
 		    if (xsd.mouseclass) {
 			struct TagItem SDLKbd_tags[] = {
@@ -232,8 +234,11 @@ int main(void)
 			    {TAG_DONE            , 0                     }
 			};
 
+                        xsd.mouseclass->UserData = &xsd;
 			xsd.kbdclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLKbd_tags);
 			if (xsd.kbdclass) {
+                            xsd.kbdclass->UserData = &xsd;
+
 			    /* Init internal stuff */
 			    sdl_keymap_init(&xsd);
 			    if (sdl_event_init(&xsd)) {
