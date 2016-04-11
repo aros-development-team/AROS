@@ -2849,7 +2849,7 @@ ifeq (%(compiler),target)
         TARGET_AS="$(TARGET_AS)" \
         OBJCOPY="$(OBJCOPY)" \
         TARGET_RANLIB="$(RANLIB)" \
-        TARGET_STRIP="$(STRIP_PLAIN)"\
+        TARGET_STRIP="$(STRIP_PLAIN)" \
         TARGET_NM="$(NM_PLAIN)" \
         CC_FOR_TARGET="$(TARGET_CC) $(TARGET_SYSROOT)" \
         CFLAGS_FOR_TARGET="$(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
