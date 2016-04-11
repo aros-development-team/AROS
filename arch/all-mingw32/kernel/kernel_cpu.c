@@ -47,11 +47,12 @@ static void cpu_Exception()
     struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
     char nestCnt = task->tc_IDNestCnt;
     char ContextSave[KernelBase->kb_ContextSize];
+    struct ExceptionContext *csPtr = (struct ExceptionContext *)ContextSave;
 
     DEXCEPT(bug("[KRN] Entered exception, task 0x%p, IDNestCnt %d\n", task, SysBase->IDNestCnt));
     /* Save original context */
     CopyMem(ctx, ContextSave, sizeof(struct AROSCPUContext));
-    COPY_FPU(ctx, (struct ExceptionContext *)ContextSave);
+    COPY_FPU(ctx, csPtr);
 
     /* Call exec exception processing */
     Exception();
