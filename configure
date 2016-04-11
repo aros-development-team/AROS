@@ -669,6 +669,7 @@ crosstools_cxx_target
 crosstools_target
 aros_isa_flags
 aros_optimization_cflags
+aros_config_lto
 aros_target_strip_flags
 aros_target_genmap
 aros_debug_ldflags
@@ -912,6 +913,7 @@ enable_ccache
 with_kernel_gcc_version
 with_optimization
 with_paranoia
+enable_lto
 enable_target_variant
 with_xcode
 with_sdk_version
@@ -1598,6 +1600,8 @@ Optional Features:
                           (default=no).
   --enable-ccache         Use ccache as a front end to the compiler
                           (default=no).
+  --enable-lto=yes|no     Enable link time optimizations if the target
+                          compiler supports them (default=yes)
   --enable-target-variant=NAME
                           Enable a specific target variant (default=none)
   --enable-amigaos-compliance=VERSION
@@ -7865,6 +7869,21 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
 $as_echo "$msg_result" >&6; }
 aros_config_cflags="$aros_config_cflags $paranoia_flags"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if we should enable link time optimizations (LTO)" >&5
+$as_echo_n "checking if we should enable link time optimizations (LTO)... " >&6; }
+# Check whether --enable-lto was given.
+if test "${enable_lto+set}" = set; then :
+  enableval=$enable_lto; aros_config_lto="$enableval"
+else
+  aros_config_lto="yes"
+fi
+
+if test "$aros_config_lto" != "yes"; then
+    aros_config_lto="no"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_config_lto" >&5
+$as_echo "$aros_config_lto" >&6; }
 
 #-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what target variant to enable" >&5
@@ -15272,6 +15291,7 @@ fi
 
 
 # Target Related
+
 
 
 
