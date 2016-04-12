@@ -9373,8 +9373,15 @@ else
     if test "x$aros_kernel_cpp" = "x"; then
         aros_kernel_cpp=${kernel_tool_prefix}${CPP}
     fi
+    if test "${kernel_tool_version}" != ""; then
+    if test "$aros_kernel_cpp" != ""; then
+        ac_prog_args=`expr "X$aros_kernel_cpp" : '[^ ]* \(.*\)'`
+        ac_prog_cmd=`expr "X$aros_kernel_cpp" : '^\S*'`
+        aros_kernel_cpp="$ac_prog_cmd$${kernel_tool_version} $ac_prog_args"
+    fi
+fi
 
-if test "$aros_kernel_cpp${kernel_tool_version}" = ""; then
+if test "$aros_kernel_cpp" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${kernel_tool_prefix}cpp", so it can be a program name with args.
 set dummy ${kernel_tool_prefix}cpp; ac_word=$2
@@ -9504,9 +9511,9 @@ fi
 fi
     fi
 else
-    ac_tool_optarg=`expr "X$aros_kernel_cpp${kernel_tool_version}" : '[^ ]* \(.*\)'`
-    # Extract the first word of "$aros_kernel_cpp${kernel_tool_version}", so it can be a program name with args.
-set dummy $aros_kernel_cpp${kernel_tool_version}; ac_word=$2
+    ac_tool_optarg=`expr "X$aros_kernel_cpp" : '[^ ]* \(.*\)'`
+    # Extract the first word of "$aros_kernel_cpp", so it can be a program name with args.
+set dummy $aros_kernel_cpp; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cpp+:} false; then :
@@ -9558,11 +9565,19 @@ fi
 if test "$req_avail" = "no"; then
     as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+
     if test "x$aros_kernel_cc" = "x"; then
         aros_kernel_cc=${kernel_tool_prefix}${CC}
     fi
+    if test "${kernel_tool_version}" != ""; then
+    if test "$aros_kernel_cc" != ""; then
+        ac_prog_args=`expr "X$aros_kernel_cc" : '[^ ]* \(.*\)'`
+        ac_prog_cmd=`expr "X$aros_kernel_cc" : '^\S*'`
+        aros_kernel_cc="$ac_prog_cmd$${kernel_tool_version} $ac_prog_args"
+    fi
+fi
 
-if test "$aros_kernel_cc${kernel_tool_version}" = ""; then
+if test "$aros_kernel_cc" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${kernel_tool_prefix}cc", so it can be a program name with args.
 set dummy ${kernel_tool_prefix}cc; ac_word=$2
@@ -9692,9 +9707,9 @@ fi
 fi
     fi
 else
-    ac_tool_optarg=`expr "X$aros_kernel_cc${kernel_tool_version}" : '[^ ]* \(.*\)'`
-    # Extract the first word of "$aros_kernel_cc${kernel_tool_version}", so it can be a program name with args.
-set dummy $aros_kernel_cc${kernel_tool_version}; ac_word=$2
+    ac_tool_optarg=`expr "X$aros_kernel_cc" : '[^ ]* \(.*\)'`
+    # Extract the first word of "$aros_kernel_cc", so it can be a program name with args.
+set dummy $aros_kernel_cc; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cc+:} false; then :
@@ -9746,11 +9761,19 @@ fi
 if test "$req_avail" = "no"; then
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+
     if test "x$aros_kernel_cxx" = "x"; then
         aros_kernel_cxx=${kernel_tool_prefix}${CXX}
     fi
+    if test "${kernel_tool_version}" != ""; then
+    if test "$aros_kernel_cxx" != ""; then
+        ac_prog_args=`expr "X$aros_kernel_cxx" : '[^ ]* \(.*\)'`
+        ac_prog_cmd=`expr "X$aros_kernel_cxx" : '^\S*'`
+        aros_kernel_cxx="$ac_prog_cmd$${kernel_tool_version} $ac_prog_args"
+    fi
+fi
 
-if test "$aros_kernel_cxx${kernel_tool_version}" = ""; then
+if test "$aros_kernel_cxx" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${kernel_tool_prefix}cxx", so it can be a program name with args.
 set dummy ${kernel_tool_prefix}cxx; ac_word=$2
@@ -9880,9 +9903,9 @@ fi
 fi
     fi
 else
-    ac_tool_optarg=`expr "X$aros_kernel_cxx${kernel_tool_version}" : '[^ ]* \(.*\)'`
-    # Extract the first word of "$aros_kernel_cxx${kernel_tool_version}", so it can be a program name with args.
-set dummy $aros_kernel_cxx${kernel_tool_version}; ac_word=$2
+    ac_tool_optarg=`expr "X$aros_kernel_cxx" : '[^ ]* \(.*\)'`
+    # Extract the first word of "$aros_kernel_cxx", so it can be a program name with args.
+set dummy $aros_kernel_cxx; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cxx+:} false; then :
