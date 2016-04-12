@@ -49,23 +49,39 @@ if test "$[$1]" = ""; then
     AC_PATH_PROG([$1],[$2])
 fi])
 
+dnl AROS_TOOL(var,prog,prefix,override)
+dnl This is common code for AROS_PROG and AROS_KERNEL
+dnl
+AC_DEFUN([AROS_TOOL],
+[if test "$4" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        AC_PATH_PROG([$1],[$3][$2])
+    else
+        AROS_TOOL_CCPATH($1, $2)
+    fi
+else
+    ac_tool_optarg=`expr "X$4" : '[[^ ]]* \(.*\)'`
+    AC_PATH_PROG($1, $4)
+    $1="[$]$1 $ac_tool_optarg"
+fi])
+
+dnl AROS_KERNEL_TARGET(var,prog,override)
+dnl This is effectively the same as AROS_PROG, but adds the appropriate
+dnl arch prefix when cross compiling. 
+dnl
+AC_DEFUN([AROS_TOOL_KERNEL],
+[
+    AROS_TOOL([$1],[$2].[${kernel_tool_prefix}],[$3])
+])
+
+
 dnl AROS_TOOL_TARGET(var,prog,override)
 dnl This is effectively the same as AROS_PROG, but adds the appropriate
 dnl arch prefix when cross compiling. 
 dnl
 AC_DEFUN([AROS_TOOL_TARGET],
 [
-if test "$3" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        AC_PATH_PROG([$1],${target_tool_prefix}[$2])
-    else
-        AROS_TOOL_CCPATH($1, $2)
-    fi
-else
-    ac_tool_optarg=`expr "X$3" : '[[^ ]]* \(.*\)'`
-    AC_PATH_PROG($1, $3)
-    $1="[$]$1 $ac_tool_optarg"
-fi
+    AROS_TOOL([$1],[$2].[${target_tool_prefix}],[$3])
 ])
 
 dnl AROS_KERNEL_TARGET(var,prog,override)
