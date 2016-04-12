@@ -1,7 +1,7 @@
-BINUTILS_DEPS=$(SRCDIR)/tools/crosstools/binutils-$(TARGET_BINUTILS_VER)-aros.diff
-GMP_DEPS=
-ISL_DEPS=
-MPFR_DEPS=
-MPC_DEPS=
-GCC_DEPS=$(SRCDIR)/tools/crosstools/gcc-$(TARGET_GCC_VER)-aros.diff
+BINUTILS_DEPS=$(SRCDIR)/tools/crosstools/binutils-$(TARGET_BINUTILS_VER)-aros.diff $(CROSSTOOLSDIR)/.installflag-binutils-$(TARGET_BINUTILS_VER)-$(AROS_TARGET_CPU)
+GMP_DEPS=$(CROSSTOOLSDIR)/.installflag-gmp-$(GMP_VERSION)
+ISL_DEPS=$(CROSSTOOLSDIR)/.installflag-isl-$(ISL_VERSION)
+MPFR_DEPS=$(CROSSTOOLSDIR)/.installflag-mpfr-$(MPFR_VERSION)
+MPC_DEPS=$(CROSSTOOLSDIR)/.installflag-mpc-$(MPC_VERSION)
+GCC_DEPS=$(SRCDIR)/tools/crosstools/gcc-$(TARGET_GCC_VER)-aros.diff $(CROSSTOOLSDIR)/.installflag-gcc-$(TARGET_GCC_VER)-$(AROS_TARGET_CPU)
 AROS_TOOLCHAIN_DEPS=$(BINUTILS_DEPS) $(GMP_DEPS) $(ISL_DEPS) $(MPFR_DEPS) $(MPC_DEPS) $(GCC_DEPS)
