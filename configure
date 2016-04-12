@@ -9504,6 +9504,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_cpp${kernel_tool_version}" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_cpp${kernel_tool_version}", so it can be a program name with args.
 set dummy $aros_kernel_cpp${kernel_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -9544,6 +9545,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_cpp="$aros_kernel_cpp $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -9690,6 +9692,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_cc${kernel_tool_version}" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_cc${kernel_tool_version}", so it can be a program name with args.
 set dummy $aros_kernel_cc${kernel_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -9730,6 +9733,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_cc="$aros_kernel_cc $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -9876,6 +9880,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_cxx${kernel_tool_version}" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_cxx${kernel_tool_version}", so it can be a program name with args.
 set dummy $aros_kernel_cxx${kernel_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -9916,6 +9921,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_cxx="$aros_kernel_cxx $ac_tool_optarg"
 fi
 
     # If it's set, make sure it's really there
@@ -10062,6 +10068,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_ld" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_ld", so it can be a program name with args.
 set dummy $aros_kernel_ld; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -10102,6 +10109,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_ld="$aros_kernel_ld $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -10245,6 +10253,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_as" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_as", so it can be a program name with args.
 set dummy $aros_kernel_as; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -10285,6 +10294,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_as="$aros_kernel_as $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -10428,6 +10438,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_ar" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_ar", so it can be a program name with args.
 set dummy $aros_kernel_ar; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -10468,6 +10479,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_ar="$aros_kernel_ar $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -10611,6 +10623,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_ranlib" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_ranlib", so it can be a program name with args.
 set dummy $aros_kernel_ranlib; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -10651,6 +10664,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_ranlib="$aros_kernel_ranlib $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -10794,6 +10808,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_nm" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_nm", so it can be a program name with args.
 set dummy $aros_kernel_nm; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -10834,6 +10849,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_nm="$aros_kernel_nm $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -10977,6 +10993,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_strip" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_strip", so it can be a program name with args.
 set dummy $aros_kernel_strip; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -11017,6 +11034,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_strip="$aros_kernel_strip $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -11164,6 +11182,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_objcopy" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_objcopy", so it can be a program name with args.
 set dummy $aros_kernel_objcopy; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -11204,6 +11223,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_objcopy="$aros_kernel_objcopy $ac_tool_optarg"
 fi
 
 
@@ -11337,6 +11357,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X$aros_kernel_objdump" : '[^ ]* \(.*\)'`
     # Extract the first word of "$aros_kernel_objdump", so it can be a program name with args.
 set dummy $aros_kernel_objdump; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -11377,6 +11398,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    aros_kernel_objdump="$aros_kernel_objdump $ac_tool_optarg"
 fi
 
     if test "x${crosstools}" != "xyes" ; then
@@ -11566,6 +11588,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -11606,6 +11629,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_cpp="$orig_target_cpp $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -11749,6 +11773,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_c_compiler}${target_tool_version}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_c_compiler}${target_tool_version}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_c_compiler}${target_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -11789,6 +11814,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_cc="$orig_target_cc $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -11932,6 +11958,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -11972,6 +11999,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_cxx="$orig_target_cxx $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -12115,6 +12143,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_ld}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_ld}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_ld}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -12155,6 +12184,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_ld="$orig_target_ld $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -12298,6 +12328,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "Xaros_tool_prefix}${toolchain_as}" : '[^ ]* \(.*\)'`
     # Extract the first word of "aros_tool_prefix}${toolchain_as}", so it can be a program name with args.
 set dummy aros_tool_prefix}${toolchain_as}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -12338,6 +12369,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_as="$orig_target_as $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -12481,6 +12513,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_ar}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_ar}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_ar}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -12521,6 +12554,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_ar="$orig_target_ar $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -12664,6 +12698,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_ranlib}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_ranlib}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_ranlib}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -12704,6 +12739,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_ranlib="$orig_target_ranlib $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -12847,6 +12883,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_nm}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_nm}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_nm}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -12887,6 +12924,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_nm="$orig_target_nm $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -13030,6 +13068,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_strip}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_strip}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_strip}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -13070,6 +13109,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_strip="$orig_target_strip $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -13213,6 +13253,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_objcopy}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_objcopy}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_objcopy}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -13253,6 +13294,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_objcopy="$orig_target_objcopy $ac_tool_optarg"
 fi
 
     req_avail=yes
@@ -13396,6 +13438,7 @@ fi
 fi
     fi
 else
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_objdump}" : '[^ ]* \(.*\)'`
     # Extract the first word of "${aros_tool_prefix}${toolchain_objdump}", so it can be a program name with args.
 set dummy ${aros_tool_prefix}${toolchain_objdump}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -13436,6 +13479,7 @@ $as_echo "no" >&6; }
 fi
 
 
+    orig_target_objdump="$orig_target_objdump $ac_tool_optarg"
 fi
 
     req_avail=yes

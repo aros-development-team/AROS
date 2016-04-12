@@ -50,7 +50,9 @@ if test "$3" = ""; then
         AROS_TOOL_CCPATH($1, $2)
     fi
 else
+    ac_tool_optarg=`expr "X$3" : '[[^ ]]* \(.*\)'`
     AC_PATH_PROG($1, $3)
+    $1="[$]$1 $ac_tool_optarg"
 fi
 ])
 
@@ -67,7 +69,9 @@ if test "$3" = ""; then
         AROS_TOOL_CCPATH($1, $2)
     fi
 else
+    ac_tool_optarg=`expr "X$3" : '[[^ ]]* \(.*\)'`
     AC_PATH_PROG($1, $3)
+    $1="[$]$1 $ac_tool_optarg"
 fi
 ])
 
