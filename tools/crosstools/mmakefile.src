@@ -1,5 +1,5 @@
 include $(SRCDIR)/config/aros.cfg
-include $(SRCDIR)/$(CURDIR)/$(AROS_TOOLCHAIN).cfg
+-include $(SRCDIR)/$(CURDIR)/$(AROS_TOOLCHAIN).cfg
 
 LN ?= ln
 
