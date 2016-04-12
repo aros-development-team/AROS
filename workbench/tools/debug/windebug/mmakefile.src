@@ -4,7 +4,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+NOWARN_FLAGS := $(NOWARN_FORMAT) $(NOWARN_ATTRIBUTES)
+USER_CFLAGS := $(NOWARN_FLAGS) \
+        -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 %build_prog mmake=workbench-tools \
     progname=WinDebug targetdir=$(AROSDIR)/Tools/Debug \
