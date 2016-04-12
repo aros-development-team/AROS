@@ -22,9 +22,10 @@ TOP := @AROS_BUILDDIR@
 SRCDIR := @SRCDIR@
 include $(TOP)/config/make.cfg
 ifneq ($(CROSSTOOLS_TARGET),)
--include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg
--include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps
+include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg
+include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps
 CROSSTOOLS_BUILDFLAG:=$(CROSSTOOLSDIR)/.installflag-crosstools
+AROS_TOOLCHAIN_DEPS:=$(AROS_TOOLCHAIN_DEPS) $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps $(SRCDIR)/tools/crosstools/mmakefile.src
 else
 CROSSTOOLS_BUILDFLAG:=
 endif
