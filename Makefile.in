@@ -21,6 +21,8 @@ export AROS_GUI_THEME := @aros_target_guitheme@
 TOP := @AROS_BUILDDIR@
 SRCDIR := @SRCDIR@
 include $(TOP)/config/make.cfg
+-include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg
+-include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps
 
 MMAKE_OPTIONS ?= --srcdir=$(SRCDIR) --builddir=$(TOP)
 ifneq (,$(findstring s,$(MAKEFLAGS)))
