@@ -25,6 +25,18 @@ dnl
 AC_DEFUN([AROS_PROG],
 [AC_CHECK_PROG([$1],[$2],[$2 $3])])
 
+dnl AROS_BUILDCMD(var,prog,ext)
+dnl appends the cmd part of prog with ext
+dnl
+AC_DEFUN([AROS_BUILDCMD],
+[if test "$3" != ""; then
+    if test "$2" != ""; then
+        ac_prog_args=`expr "X$2" : '[[^ ]]* \(.*\)'`
+        ac_prog_cmd=`expr "X$2" : '^\S*'`
+        $1="$ac_prog_cmd[$]$3 $ac_prog_args"
+    fi
+fi])
+
 dnl AROS_TOOL_CCPATH(var,prog)
 dnl This will first look for the tool in the CC path and then in the
 dnl normal path (CC path only supported for gcc at the moment)
