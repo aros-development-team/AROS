@@ -101,6 +101,7 @@ fi
 #  -Wunused-value
 #  -Wunused-variable
 #  -Wunused-function
+#  -Wunused-parameter
 #  -Wuninitialized
 #  -Wmaybe-uninitialized
 #  -Wimplicit-function-declaration
@@ -257,6 +258,14 @@ AC_TRY_COMPILE(,, aros_unused_function="yes", aros_unused_function="no")
 AC_MSG_RESULT($aros_unused_function)
 if test "x-$aros_unused_function" = "x-yes" ; then
     aros_cflags_unused_function=-Wno-unused-function
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-parameter])
+CFLAGS=-Wunused-parameter
+AC_TRY_COMPILE(,, aros_unused_parameter="yes", aros_unused_parameter="no")
+AC_MSG_RESULT($aros_unused_parameter)
+if test "x-$aros_unused_parameter" = "x-yes" ; then
+    aros_cflags_unused_parameter=-Wno-unused-parameter
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wuninitialized])
@@ -578,6 +587,7 @@ AC_SUBST(aros_cflags_unused)
 AC_SUBST(aros_cflags_unused_value)
 AC_SUBST(aros_cflags_unused_variable)
 AC_SUBST(aros_cflags_unused_function)
+AC_SUBST(aros_cflags_unused_parameter)
 AC_SUBST(aros_cflags_uninitialized)
 AC_SUBST(aros_cflags_maybe_uninitialized)
 AC_SUBST(aros_cflags_implicit_function_declaration)
