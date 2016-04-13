@@ -61,8 +61,7 @@ tools : makedirs mmake $(TOOLLIB) $(GENMF) $(ARCHTOOL) $(ELF2HUNK) \
 # rebuild the crosstools if we are reconfigured, or its dependencies change.
 $(CROSSTOOLSDIR)/.installflag-crosstools : $(TOP)/config.status $(AROS_TOOLCHAIN_DEPS) tools
 	@+$(IF) ! $(TEST) -f $@ ; then \
-	    $(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$(CROSSTOOLS_TARGET) ; \
-            $(TOUCH) $@ ; \
+	    $(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$(CROSSTOOLS_TARGET) && $(TOUCH) $@ ; \
 	fi
 
 crosstools : tools $(CROSSTOOLS_BUILDFLAG)
