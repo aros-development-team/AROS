@@ -621,6 +621,7 @@ aros_cflags_format
 aros_cflags_implicit_function_declaration
 aros_cflags_maybe_uninitialized
 aros_cflags_uninitialized
+aros_cflags_unused_parameter
 aros_cflags_unused_function
 aros_cflags_unused_variable
 aros_cflags_unused_value
@@ -2796,6 +2797,7 @@ fi
 #  -Wunused-value
 #  -Wunused-variable
 #  -Wunused-function
+#  -Wunused-parameter
 #  -Wuninitialized
 #  -Wmaybe-uninitialized
 #  -Wimplicit-function-declaration
@@ -3222,6 +3224,32 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_unused_function" >&6; }
 if test "x-$aros_unused_function" = "x-yes" ; then
     aros_cflags_unused_function=-Wno-unused-function
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-parameter" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunused-parameter... " >&6; }
+CFLAGS=-Wunused-parameter
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unused_parameter="yes"
+else
+  aros_unused_parameter="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_parameter" >&5
+$as_echo "$aros_unused_parameter" >&6; }
+if test "x-$aros_unused_parameter" = "x-yes" ; then
+    aros_cflags_unused_parameter=-Wno-unused-parameter
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wuninitialized" >&5
@@ -4185,6 +4213,7 @@ $as_echo "$aros_volatile_register_var" >&6; }
 if test "x-$aros_volatile_register_var" = "x-yes" ; then
     aros_cflags_volatile_register_var=-Wno-volatile-register-var
 fi
+
 
 
 
