@@ -29,6 +29,7 @@ NOWARN_UNUSED                           := @aros_cflags_unused@
 NOWARN_UNUSED_VALUE                     := @aros_cflags_unused_value@
 NOWARN_UNUSED_VARIABLE                  := @aros_cflags_unused_variable@
 NOWARN_UNUSED_FUNCTION                  := @aros_cflags_unused_function@
+NOWARN_UNUSED_PARAMETER                 := @aros_cflags_unused_parameter@
 NOWARN_IMPLICIT_FUNCTION_DECL           := @aros_cflags_implicit_function_declaration@
 NOWARN_UNINITIALIZED                    := @aros_cflags_uninitialized@
 NOWARN_MAYBE_UNINITIALIZED              := @aros_cflags_maybe_uninitialized@
