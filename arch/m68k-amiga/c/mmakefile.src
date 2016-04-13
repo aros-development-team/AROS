@@ -60,7 +60,7 @@ CFILES	      := AROSBootstrap
 
 %build_prog mmake=workbench-c-m68k-arosbootstrap progname=AROSBootstrap \
     files=$(CFILES) targetdir=$(AROSARCHDIR) \
-    usestartup=no uselibs="loadseg z.static"
+    usestartup=no uselibs="loadseg z.static" lto=no
 
 CFILES	      := mmudump
 
