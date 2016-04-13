@@ -56,10 +56,11 @@ tools : makedirs mmake $(TOOLLIB) $(GENMF) $(ARCHTOOL) $(ELF2HUNK) \
 	$(ILBMTOC) $(ILBMTOICON) $(INFOINFO) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
 	$(FD2INLINE) $(FD2PRAGMA) $(SFDC) $(SETREV)
+	@$(NOP)
 
 # rebuild the crosstools if we are reconfigured, or its dependencies change.
-$(CROSSTOOLSDIR)/.installflag-crosstools : $(TOP)/config.status $(AROS_TOOLCHAIN_DEPS)
-	@$(IF) ! $(TEST) -f $@ ; then \
+$(CROSSTOOLSDIR)/.installflag-crosstools : $(TOP)/config.status $(AROS_TOOLCHAIN_DEPS) tools
+	@+$(IF) ! $(TEST) -f $@ ; then \
 	    $(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$(CROSSTOOLS_TARGET) ; \
             $(TOUCH) $@ ; \
 	fi
@@ -144,6 +145,7 @@ $(SETREV) : $(SRCDIR)/tools/setrev/setrev.c
 # because it is sort-of an external package as well.
 
 mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
+	@$(NOP)
 
 $(SRCDIR)/tools/MetaMake/configure : $(SRCDIR)/tools/MetaMake/configure.in
 	@$(ECHO) Building MetaMake...
