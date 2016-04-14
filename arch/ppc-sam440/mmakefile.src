@@ -11,7 +11,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-sam440-ppc : workbench-complete workbench
 
-#MM- AROS-complete-sam440-ppc : AROS-sam440-ppc contrib
+#MM- AROS-complete-sam440-ppc : AROS-sam440-ppc
 
 #MM- includes-sam440-ppc : includes-common-i386 includes-copy-sam440-ppc includes-copy
 
