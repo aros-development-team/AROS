@@ -208,7 +208,10 @@ int wpa_supplicant_scard_init(struct wpa_supplicant *wpa_s,
 			      struct wpa_ssid *ssid)
 {
 #ifdef IEEE8021X_EAPOL
-	int aka = 0, sim = 0, type;
+	int aka = 0, sim = 0;
+#ifdef PCSC_FUNCS
+	int type;
+#endif
 
 	if (ssid->eap.pcsc == NULL || wpa_s->scard != NULL)
 		return 0;
@@ -243,6 +246,7 @@ int wpa_supplicant_scard_init(struct wpa_supplicant *wpa_s,
 
 	wpa_printf(MSG_DEBUG, "Selected network is configured to use SIM "
 		   "(sim=%d aka=%d) - initialize PCSC", sim, aka);
+#ifdef PCSC_FUNCS
 	if (sim && aka)
 		type = SCARD_TRY_BOTH;
 	else if (aka)
@@ -251,6 +255,9 @@ int wpa_supplicant_scard_init(struct wpa_supplicant *wpa_s,
 		type = SCARD_GSM_SIM_ONLY;
 
 	wpa_s->scard = scard_init(type);
+#else
+	wpa_s->scard = NULL;
+#endif /* PCSC_FUNCS */
 	if (wpa_s->scard == NULL) {
 		wpa_printf(MSG_WARNING, "Failed to initialize SIM "
 			   "(pcsc-lite)");

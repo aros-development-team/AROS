@@ -1329,7 +1329,7 @@ static void ieee80211_bss_info(struct wpa_supplicant *wpa_s,
 {
 	struct ieee802_11_elems elems;
 	size_t baselen;
-	int channel, invalid = 0, clen;
+	int channel, /*invalid = 0,*/ clen;
 	struct ieee80211_sta_bss *bss;
 	u64 timestamp;
 	u8 *pos, *ie_pos;
@@ -1375,8 +1375,12 @@ static void ieee80211_bss_info(struct wpa_supplicant *wpa_s,
 
 	ie_pos = mgmt->u.beacon.variable;
 	ie_len = len - baselen;
+#if 0
 	if (ieee802_11_parse_elems(ie_pos, ie_len, &elems, 0) == ParseFailed)
 		invalid = 1;
+#else
+	ieee802_11_parse_elems(ie_pos, ie_len, &elems, 0);
+#endif
 
 #if 0 /* FIX */
 	if (local->conf.mode == IW_MODE_ADHOC && elems.supp_rates &&
