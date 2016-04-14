@@ -1,5 +1,8 @@
+#ifndef AHI_Drivers_Alsa_bridge_alsa_h
+#define AHI_Drivers_Alsa_bridge_alsa_h
+
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,3 +28,5 @@ LONG ALSA_Write(APTR handle, APTR buffer, ULONG size);
 VOID ALSA_Prepare(APTR handle);
 
 LONG ALSA_Avail(APTR handle);
+
+#endif

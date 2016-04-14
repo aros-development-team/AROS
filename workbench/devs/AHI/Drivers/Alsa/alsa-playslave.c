@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,6 +36,7 @@ AROS_UFH3(LONG, SlaveEntry,
 {
    AROS_USERFUNC_INIT
    Slave( SysBase );
+   return 0;
    AROS_USERFUNC_EXIT
 }
 
@@ -74,7 +75,6 @@ Slave( struct ExecBase* SysBase )
 {
   struct AHIAudioCtrlDrv* AudioCtrl;
   struct DriverBase*      AHIsubBase;
-  struct AlsaBase*        AlsaBase;
   BOOL                    running;
   ULONG                   signals;
   LONG                    framesready = 0;
@@ -82,8 +82,6 @@ Slave( struct ExecBase* SysBase )
 
   AudioCtrl  = (struct AHIAudioCtrlDrv*) FindTask(NULL)->tc_UserData;
   AHIsubBase = (struct DriverBase*) dd->ahisubbase;
-  AlsaBase   = (struct AlsaBase*) AHIsubBase;
-
   dd->slavesignal = AllocSignal( -1 );
 
   if( dd->slavesignal != -1 )

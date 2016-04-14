@@ -14,6 +14,7 @@
 
 #include "library.h"
 #include "DriverData.h"
+#include "alsa-bridge/alsa.h"
 
 #define dd ((struct AlsaData*) AudioCtrl->ahiac_DriverData)
 
@@ -156,8 +157,6 @@ void
 _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
            struct DriverBase*      AHIsubBase )
 {
-  struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
-
   if( AudioCtrl->ahiac_DriverData != NULL )
   {
     ALSA_DropAndClose(dd->alsahandle);
@@ -176,8 +175,6 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
          struct DriverBase*      AHIsubBase )
 {
-  struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Forbid();
@@ -192,8 +189,6 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
         struct DriverBase*      AHIsubBase )
 {
-  struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
-
   // V6 drivers do not have to preserve all registers
 
   Permit();
@@ -274,8 +269,6 @@ _AHIsub_Update( ULONG                   flags,
         struct AHIAudioCtrlDrv* AudioCtrl,
         struct DriverBase*      AHIsubBase )
 {
-  struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
-
   // Empty function
 }
 
@@ -289,8 +282,6 @@ _AHIsub_Stop( ULONG                   flags,
           struct AHIAudioCtrlDrv* AudioCtrl,
           struct DriverBase*      AHIsubBase )
 {
-  struct AlsaBase* AlsaBase = (struct AlsaBase*) AHIsubBase;
-
   if( flags & AHISF_PLAY )
   {
     if( dd->slavetask != NULL )
