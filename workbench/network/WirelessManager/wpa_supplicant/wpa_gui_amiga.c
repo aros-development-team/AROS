@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - MUI GUI
- * Copyright (c) 2012-2015, Neil Cafferkey
+ * Copyright (c) 2012-2016, Neil Cafferkey
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -129,12 +129,9 @@ static IPTR ConnectFunc(struct Hook *hook, Object * caller, void *data)
 
     /* Look for an existing configuration for this network */
     struct wpa_ssid *ssid = wpa_sup->conf->ssid;
-    struct wpa_ssid *ls_ssid = NULL;
     while (ssid != NULL
         && os_strncmp(ssid->ssid, entry[0], ssid->ssid_len) != 0)
     {
-        if (os_strncmp(ssid->ssid, "linksys_", ssid->ssid_len) == 0)
-            ls_ssid = ssid;
         ssid = ssid->next;
     }
 
