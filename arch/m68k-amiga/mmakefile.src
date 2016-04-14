@@ -13,7 +13,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-amiga-m68k : workbench-complete workbench
 
-#MM- AROS-complete-amiga-m68k : AROS-amiga-m68k contrib
+#MM- AROS-complete-amiga-m68k : AROS-amiga-m68k
 
 #MM- includes-amiga-m68k : includes-common-i386 includes-copy-amiga-m68k includes-copy
 
