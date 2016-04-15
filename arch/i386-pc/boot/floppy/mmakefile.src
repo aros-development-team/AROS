@@ -68,7 +68,7 @@ BOOT_TAR_EXECUTABLES := \
     Prefs/Time \
     System/About System/FixFonts \
     System/Wanderer/Wanderer \
-    System/Wanderer/Tools/Delete System/Wanderer/Tools/DiskInfo \
+    System/Wanderer/Tools/DiskInfo \
     System/Wanderer/Tools/ExecuteCommand \
     System/Wanderer/Tools/ExecuteStartup \
     System/Wanderer/Tools/Info System/Wanderer/Tools/WBNewDrawer \
