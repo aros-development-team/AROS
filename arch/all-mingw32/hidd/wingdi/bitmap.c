@@ -476,7 +476,7 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     OOP_Object  *friend = NULL, *pixfmt;
-    APTR         display, my_dc, my_bitmap;
+    APTR         display, my_dc, my_bitmap = NULL;
     APTR         orig_bitmap = NULL;
     ULONG        width, height;
     HIDDT_ModeID modeid;
