@@ -88,7 +88,7 @@ BOOT_TAR_ICONS := \
     System.info \
     System/FixFonts.info \
     System/Wanderer/Wanderer.info \
-    System/Wanderer/Tools/Delete.info System/Wanderer/Tools/DiskInfo.info \
+    System/Wanderer/Tools/DiskInfo.info \
     System/Wanderer/Tools/ExecuteCommand.info System/Wanderer/Tools/Info.info \
     System/Wanderer/Tools/WBNewDrawer.info System/Wanderer/Tools/WBRename.info \
     Tools.info \
