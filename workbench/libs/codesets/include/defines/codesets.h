@@ -8,7 +8,11 @@
 #ifdef __HAVE_IPTR_ATTR__
 typedef APTR _sfdc_vararg __attribute__((iptr));
 #else
+#ifdef __AROS__
+typedef IPTR _sfdc_vararg;
+#else
 typedef ULONG _sfdc_vararg;
+#endif
 #endif /* __HAVE_IPTR_ATTR__ */
 #endif /* _SFDC_VARARG_DEFINED */
 
