@@ -3245,7 +3245,7 @@ endif
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target install_target=install \
     version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= package_repo= patch=no patch_repo= \
     prefix= aros_prefix= extraoptions= extracflags= extracxxflags= preconfigure= postconfigure= postinstall= \
-    config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no
+    config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no gnuflags=yes
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
@@ -3317,7 +3317,7 @@ endif
      config_env_extra="%(config_env_extra)" install_env="%(install_env)" use_build_env="%(use_build_env)" \
      nix="%(nix)" nix_dir_layout="%(nix_dir_layout)" prefix=$(%(mmake)-prefix) \
      aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
-     %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)"
+     %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" gnuflags=%(gnuflags)
 
 .PHONY : %(mmake)-%(subpackage)-make-package %(mmake)-%(subpackage)-create-patch
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
