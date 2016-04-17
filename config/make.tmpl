@@ -2722,7 +2722,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
     aros_prefix= extraoptions= extracflags= extracxxflags= nix_dir_layout= nix=no compiler=target \
     install_target=install preconfigure= postconfigure= postinstall= \
-    config_env_extra= install_env= use_build_env=no
+    config_env_extra= install_env= use_build_env=no gnuflags=yes
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -2870,11 +2870,13 @@ ifeq (%(compiler),target)
         CFLAGS_FOR_TARGET="$(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         CXX_FOR_TARGET="$(TARGET_CXX) $(TARGET_SYSROOT)" \
         CXXFLAGS_FOR_TARGET="$(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
+ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
         --target=$(AROS_TARGET_CPU)-aros\
         --disable-nls\
         --without-x --without-pic --disable-shared
+endif
 endif
 ifeq (%(compiler),kernel)
     CONFIG_ENV := %(config_env_extra) \
@@ -2893,10 +2895,12 @@ ifeq (%(compiler),kernel)
         TARGET_RANLIB="$(RANLIB)" \
         TARGET_STRIP="$(STRIP_PLAIN)" \
         TARGET_NM="$(NM_PLAIN)"
+ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
         --target=$(AROS_TARGET_CPU)-aros --disable-nls\
         --without-x --without-pic --disable-shared
+endif
 endif
 
 ifeq (%(use_build_env),yes)
