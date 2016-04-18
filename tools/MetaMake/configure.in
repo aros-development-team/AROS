@@ -54,6 +54,7 @@ AC_CHECK_FUNCS(getcwd strdup strndup strerror)
 
 AC_SUBST(host_os)
 AC_SUBST(mmake_objdir)
+AC_SUBST(METAMAKE_BUILDDIR)
 AC_SUBST(METAMAKE_SRCDIR)
 
 AM_CONFIG_HEADER(config.h)
