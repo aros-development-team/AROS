@@ -3302,6 +3302,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_maybe_uninitialized" >&6; }
 if test "x-$aros_maybe_uninitialized" = "x-yes" ; then
     aros_cflags_maybe_uninitialized=-Wno-maybe-uninitialized
+else
+    aros_cflags_maybe_uninitialized=$aros_cflags_uninitialized
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wimplicit-function-declaration" >&5

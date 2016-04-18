@@ -282,6 +282,8 @@ AC_TRY_COMPILE(,, aros_maybe_uninitialized="yes", aros_maybe_uninitialized="no")
 AC_MSG_RESULT($aros_maybe_uninitialized)
 if test "x-$aros_maybe_uninitialized" = "x-yes" ; then
     aros_cflags_maybe_uninitialized=-Wno-maybe-uninitialized
+else
+    aros_cflags_maybe_uninitialized=$aros_cflags_uninitialized
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-function-declaration])
