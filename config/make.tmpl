@@ -25,16 +25,16 @@ endif
 %define compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)" opt="$(TARGET_CFLAGS) $(CFLAGS)" from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 	@$(ECHO) "Compiling  $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))"
 	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
-	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
-		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
-	    else \
-		$(NOP) ; \
-	    fi ; \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
 	else \
-	    $(ECHO) "Compile failed: %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" 1>&2 ; \
-	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
-	    exit 1 ; \
+		$(ECHO) "Compile failed: %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
 	fi
 %end
 #------------------------------------------------------------------------------
@@ -45,16 +45,16 @@ endif
 %define assemble_q cmd="$(CC) $(TARGET_SYSROOT)" opt=$(AFLAGS) from=$< to=$@
 	@$(ECHO) "Assembling $(notdir %(from))..."
 	@$(IF) %(cmd) %(opt) %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
-	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "$(notdir %(from)): %(cmd) %(opt) %(from) -o %(to)" >> $(GENDIR)/errors ; \
-		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
-	    else \
-		$(NOP) ; \
-	    fi ; \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$(notdir %(from)): %(cmd) %(opt) %(from) -o %(to)" >> $(GENDIR)/errors ; \
+			$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
 	else \
-	    $(ECHO) "Assemble failed: %(cmd) %(opt) %(from) -o %(to)" 1>&2 ; \
-	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
-	    exit 1 ; \
+		$(ECHO) "Assemble failed: %(cmd) %(opt) %(from) -o %(to)" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
 	fi
 %end
 #-------------------------------------------------------------------------
@@ -62,21 +62,24 @@ endif
 
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
-%define link_q cmd="$(AROS_CC) $(TARGET_SYSROOT)" opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP)
-	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,%(to))..."
-	@$(IF) %(cmd) %(from) -o %(to) %(opt) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+%define link_q cmd="$(AROS_CC) $(TARGET_SYSROOT)" opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP) objdir=$(GENDIR)/$(CURDIR)
+	@$(eval LINKTARGET=%(to))
+	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$(LINKTARGET))..."
+	@$(eval LINKTMPFILE=%(objdir)/$(notdir $(LINKTARGET)))
+	@$(IF) %(cmd) %(from) -o $(LINKTMPFILE) %(opt) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-				$(ECHO) "%(to): %(cmd) %(from) -o %(to) %(opt) %(libs)" >> $(GENDIR)/errors ; \
+				$(ECHO) "$(LINKTARGET): %(cmd) %(from) -o $(LINKTARGET) %(opt) %(libs)" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	   	else \
 			$(NOP) ; \
-    		fi ; \
+		fi ; \
+		$(CP) $(LINKTMPFILE) $(LINKTARGET) ; \
 	else \
-	    $(ECHO) "Link failed: %(cmd) %(from) -o %(to) %(opt) %(libs)" 1>&2 ; \
-	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
-	    exit 1 ; \
+		$(ECHO) "Link failed: %(cmd) %(from) -o $(LINKTARGET) %(opt) %(libs)" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
 	fi; \
-	%(strip) %(to)
+	%(strip) $(LINKTARGET)
 %end
 #------------------------------------------------------------------------------
 
@@ -87,16 +90,16 @@ endif
 #
 %define link_module_q cmd="$(AROS_CC) $(TARGET_SYSROOT)" err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
-	@if %(cmd) $(NOSTARTUP_LDFLAGS) \
-	    $(GENMAP) %(objdir)/%(module).map \
-	    %(objs) %(libs) %(ldflags) %(endtag) \
-	    -o $@ 2>&1 > %(objdir)/%(err); \
+	@$(IF) %(cmd) $(NOSTARTUP_LDFLAGS) \
+		$(GENMAP) %(objdir)/%(module).map \
+		%(objs) %(libs) %(ldflags) %(endtag) \
+		-o $@ 2>&1 > %(objdir)/%(err); \
 	then \
-	    cat %(objdir)/%(err); \
+		cat %(objdir)/%(err); \
 	else \
-	    echo "%(cmd) $(NOSTARTUP_LDFLAGS) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(ldflags) %(endtag) -o $@"; \
-	    cat %(objdir)/%(err); \
-	    exit 1; \
+		echo "%(cmd) $(NOSTARTUP_LDFLAGS) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(ldflags) %(endtag) -o $@"; \
+		cat %(objdir)/%(err); \
+		exit 1; \
 	fi
 
 	@if $(TEST) ! -s %(objdir)/%(err) ; then $(RM) %(objdir)/%(err) ; fi
@@ -924,7 +927,7 @@ $(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
 #------------------------------------------------------------------------------
 # Link %(objs) to %(prog) using the libraries in %(uselibs)
 %define rule_link_prog prog=/A objs=/A ldflags=$(LDFLAGS) uselibs= \
-    usehostlibs= usestartup=yes detach=no nix=no cmd="$(AROS_CC) $(TARGET_SYSROOT)" strip=$(TARGET_STRIP)
+    usehostlibs= usestartup=yes detach=no nix=no cmd="$(AROS_CC) $(TARGET_SYSROOT)" strip=$(TARGET_STRIP) objdir=$(GENDIR)/$(CURDIR)
 
 TMP_EXTRA_LDFLAGS := 
 TMP_EXTRA_LIBS :=
@@ -964,7 +967,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 %(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
 %(prog) : LIBS := $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
 %(prog) : %(objs) $(TMP_DEPLIBS)
-	%link_q cmd="%(cmd)" strip="%(strip)" from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS)
+	%link_q cmd="%(cmd)" strip="%(strip)" from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS) objdir=%(objdir)
 %end
 #------------------------------------------------------------------------------
 
@@ -1008,7 +1011,7 @@ TMP_PROGS := $(addprefix %(targetdir)/,%(progs))
 $(TMP_PROGS) : LDFLAGS:= %(ldflags) $(TMP_EXTRA_LDFLAGS)
 $(TMP_PROGS) : LIBS:= $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
 $(TMP_PROGS) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLIBS)
-	%link_q cmd="%(cmd)" strip="%(strip)" from=$< opt=$(LDFLAGS) libs=$(LIBS)
+	%link_q cmd="%(cmd)" strip="%(strip)" from=$< opt=$(LDFLAGS) libs=$(LIBS) objdir=%(objdir)
 %end
 #------------------------------------------------------------------------------
 
@@ -1419,7 +1422,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
     objs="$(BD_OBJS) $(BD_ARCHOBJS) $(USER_OBJS)" ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
-    cmd=$(BD_LINK) strip=$(BD_STRIP)
+    cmd=$(BD_LINK) strip=$(BD_STRIP) objdir=$(BD_OBJDIR)
 
 endif
 
@@ -1488,7 +1491,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
     ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" \
-     cmd=$(BD_LINK) strip=$(BD_STRIP)
+     cmd=$(BD_LINK) strip=$(BD_STRIP) objdir=$(BD_OBJDIR)
 
 endif
 
