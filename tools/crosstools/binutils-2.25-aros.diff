@@ -176,7 +176,7 @@ diff -ruN binutils-2.25/ld/emulparams/armelf_aros.sh binutils-2.25.aros/ld/emulp
 --- binutils-2.25/ld/emulparams/armelf_aros.sh	1970-01-01 01:00:00.000000000 +0100
 +++ binutils-2.25.aros/ld/emulparams/armelf_aros.sh	2014-10-14 08:32:02.000000000 +0100
 @@ -0,0 +1 @@
-+. ${srcdir}/emulparams/aarch64linux.sh
++. ${srcdir}/emulparams/armelf_linux_eabi.sh
 diff -ruN binutils-2.25/ld/emulparams/armelfb_aros.sh binutils-2.25.aros/ld/emulparams/armelfb_aros.sh
 --- binutils-2.25/ld/emulparams/armelfb_aros.sh	1970-01-01 01:00:00.000000000 +0100
 +++ binutils-2.25.aros/ld/emulparams/armelfb_aros.sh	2014-10-14 08:32:02.000000000 +0100
