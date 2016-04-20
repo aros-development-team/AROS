@@ -454,8 +454,11 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, Msg msg)
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
+#if (0)
+    // we cant free this here since it will be used again!
     if (extension_PrefsData && (extension_PrefsData != strTrue))
         FreeVec(extension_PrefsData);
+#endif
 
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
