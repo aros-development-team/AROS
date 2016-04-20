@@ -2,7 +2,7 @@
 #define _POSIXC_ERRNO_H_
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file errno.h
@@ -68,7 +68,6 @@
 #define	EDESTADDRREQ	39		/* Destination address required */
 #define	EPROCLIM	67		/* Too many processes */
 #define	EUSERS		68		/* Too many users */
-#define	EDQUOT		69		/* Disc quota exceeded */
 #define	EDQUOT		69		/* Disc quota exceeded */
 #define	EFAULT		14		/* Bad address */
 #define	EFBIG		27		/* File too large */
