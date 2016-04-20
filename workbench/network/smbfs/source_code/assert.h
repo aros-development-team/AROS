@@ -1,11 +1,11 @@
 /*
  * $Id$
  *
- * :ts=8
+ * :ts=4
  *
  * SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
  *
- * Copyright (C) 2000-2009 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
+ * Copyright (C) 2000-2016 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,48 +66,48 @@
  void _SETPROGRAMNAME(char *name);
  void _INDENT(void);
 
- #define ASSERT(x)		_ASSERT((int)(x),#x,__FILE__,__LINE__,__FUNC__)
- #define ENTER()		_ENTER(__FILE__,__LINE__,__FUNC__)
- #define LEAVE()		_LEAVE(__FILE__,__LINE__,__FUNC__)
- #define RETURN(r)		_RETURN(__FILE__,__LINE__,__FUNC__,(unsigned long)r)
+ #define ASSERT(x)			_ASSERT((int)(x),#x,__FILE__,__LINE__,__FUNC__)
+ #define ENTER()			_ENTER(__FILE__,__LINE__,__FUNC__)
+ #define LEAVE()			_LEAVE(__FILE__,__LINE__,__FUNC__)
+ #define RETURN(r)			_RETURN(__FILE__,__LINE__,__FUNC__,(unsigned long)r)
  #define SHOWVALUE(v)		_SHOWVALUE((ULONG)v,sizeof(v),#v,__FILE__,__LINE__)
  #define SHOWPOINTER(p)		_SHOWPOINTER(p,#p,__FILE__,__LINE__)
  #define SHOWSTRING(s)		_SHOWSTRING(s,#s,__FILE__,__LINE__)
- #define SHOWMSG(s)		_SHOWMSG(s,__FILE__,__LINE__)
- #define D(s)			do { _DPRINTF_HEADER(__FILE__,__LINE__); _DPRINTF s; } while(0)
+ #define SHOWMSG(s)			_SHOWMSG(s,__FILE__,__LINE__)
+ #define D(s)				do { _DPRINTF_HEADER(__FILE__,__LINE__); _DPRINTF s; } while(0)
  #define PRINTHEADER()		_DPRINTF_HEADER(__FILE__,__LINE__)
- #define PRINTF(s)		_DLOG s
- #define LOG(s)			do { _DPRINTF_HEADER(__FILE__,__LINE__); _DLOG("<%s()>:",__FUNC__); _DLOG s; } while(0)
+ #define PRINTF(s)			_DLOG s
+ #define LOG(s)				do { _DPRINTF_HEADER(__FILE__,__LINE__); _DLOG("<%s()>:",__FUNC__); _DLOG s; } while(0)
  #define SETDEBUGLEVEL(l)	_SETDEBUGLEVEL(l)
  #define PUSHDEBUGLEVEL(l)	_PUSHDEBUGLEVEL(l)
  #define POPDEBUGLEVEL()	_POPDEBUGLEVEL()
  #define SETPROGRAMNAME(n)	_SETPROGRAMNAME(n)
  #define GETDEBUGLEVEL()	_GETDEBUGLEVEL()
- #define INDENT()		_INDENT()
+ #define INDENT()			_INDENT()
 
  extern int __debug_level;
 
  #undef DEBUG
  #define DEBUG 1
 #else
- #define ASSERT(x)		((void)0)
- #define ENTER()		((void)0)
- #define LEAVE()		((void)0)
- #define RETURN(r)		((void)0)
+ #define ASSERT(x)			((void)0)
+ #define ENTER()			((void)0)
+ #define LEAVE()			((void)0)
+ #define RETURN(r)			((void)0)
  #define SHOWVALUE(v)		((void)0)
  #define SHOWPOINTER(p)		((void)0)
  #define SHOWSTRING(s)		((void)0)
- #define SHOWMSG(s)		((void)0)
- #define D(s)			((void)0)
+ #define SHOWMSG(s)			((void)0)
+ #define D(s)				((void)0)
  #define PRINTHEADER()		((void)0)
- #define PRINTF(s)		((void)0)
- #define LOG(s)			((void)0)
+ #define PRINTF(s)			((void)0)
+ #define LOG(s)				((void)0)
  #define SETDEBUGLEVEL(l)	((void)0)
  #define PUSHDEBUGLEVEL(l)	((void)0)
  #define POPDEBUGLEVEL()	((void)0)
  #define SETPROGRAMNAME(n)	((void)0)
  #define GETDEBUGLEVEL()	(0)
- #define INDENT()		((void)0)
+ #define INDENT()			((void)0)
 
  #ifdef DEBUG
  #undef DEBUG

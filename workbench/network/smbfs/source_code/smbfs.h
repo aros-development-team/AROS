@@ -5,7 +5,7 @@
  *
  * SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
  *
- * Copyright (C) 2000-2009 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
+ * Copyright (C) 2000-2016 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,7 @@
 #define ASM __asm
 #define REG(r,p) register __##r p
 #define INLINE __inline
+#define STDARGS __stdargs
 #endif /* __SASC */
 
 #if defined(__GNUC__)
@@ -65,6 +66,7 @@
 #define ASM
 #define REG(r,p) p __asm(#r)
 #define INLINE __inline__
+#define STDARGS
 #endif /* __GNUC__ */
 
 /****************************************************************************/
@@ -134,9 +136,7 @@ extern VOID GMTime(time_t seconds,struct tm * tm);
     kprintf("[SMB] "); \
     kprintf(__VA_ARGS__); \
     kprintf("\n"); } while (0)
-#define SPrintf(buf, fmt, ...) do { \
-    IPTR vargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-    VSPrintf(buf, fmt, vargs); } while (0)
+#define SPrintf(buf, ...) sprintf(buf, __VA_ARGS__)
 #else
 extern VOID VARARGS68K ReportError(STRPTR fmt,...);
 extern VOID VARARGS68K SPrintf(STRPTR buffer, STRPTR formatString,...);

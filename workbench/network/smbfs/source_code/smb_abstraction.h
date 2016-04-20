@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * :ts=8
+ * :ts=4
  *
  * Name: smb_abstraction.h
  * Description: Interface to the smb abstraction layer.
@@ -27,26 +27,25 @@ struct smb_server;
 
 typedef struct smba_connect_parameters
 {
-  char server_ipname[64];
-  char service[64];
-  char *server_name;
-  char *client_name;
-  char *username;
-  char *password;
-  int max_xmit;
+	char server_ipname[64];
+	char service[64];
+	char *server_name;
+	char *client_name;
+	char *username;
+	char *password;
 } smba_connect_parameters_t;
 
 typedef struct smba_stat
 {
-  unsigned is_dir:1;
-  unsigned is_wp:1;
-  unsigned is_hidden:1;
-  unsigned is_system:1;
-  unsigned is_archive:1;
-  int size;
-  long atime;
-  long ctime;
-  long mtime;
+	unsigned is_dir:1;
+	unsigned is_wp:1;
+	unsigned is_hidden:1;
+	unsigned is_system:1;
+	unsigned is_archive:1;
+	int size;
+	long atime;
+	long ctime;
+	long mtime;
 } smba_stat_t;
 
 /****************************************************************************/
@@ -76,7 +75,7 @@ int smba_rmdir(smba_server_t *s, char *path);
 int smba_rename(smba_server_t *s, char *from, char *to);
 int smba_statfs(smba_server_t *s, long *bsize, long *blocks, long *bfree);
 void smb_invalidate_all_inodes(struct smb_server *server);
-int smba_start(char *service, char *opt_workgroup, char *opt_username, char *opt_password, char *opt_clientname, char *opt_servername, int opt_cachesize, smba_server_t **result);
+int smba_start(char *service, char *opt_workgroup, char *opt_username, char *opt_password, char *opt_clientname, char *opt_servername, int opt_cachesize, int opt_max_transmit, int opt_raw_smb, smba_server_t **result);
 void smba_disconnect(smba_server_t *server);
 int smba_get_dircache_size(struct smba_server * server);
 int smba_change_dircache_size(struct smba_server * server,int cache_size);

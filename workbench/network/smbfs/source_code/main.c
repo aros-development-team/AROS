@@ -5,8 +5,8 @@
  *
  * SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
  *
- * Copyright (C) 2000-2009 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
- * Copyright (C) 2011-2014, The AROS Development Team
+ * Copyright (C) 2000-2016 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
+ * Copyright (C) 2011-2014,2016, The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,21 +23,24 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/*
+ * cpr smbfs.debug domain=workgroup user=olsen password=... volume=olsen //felix/olsen
+ * cpr smbfs.debug dumpsmb user=guest volume=amiga //windows7-amiga/Users/Public
+ * copy "amiga:Public/Documents/Amiga Files/Shared/dir/Windows-Export/LP2NRFP.h" ram:
+ * smbfs.debug user=guest volume=sicherung //192.168.1.76/sicherung-smb
+ */
+
 #include "smbfs.h"
 
 /****************************************************************************/
 
 #include "smb_abstraction.h"
+#include "utf-8-iso-8859-1-conversion.h"
+#include "dump_smb.h"
 
 /****************************************************************************/
 
 #include <smb/smb.h>
-
-/****************************************************************************/
-
-#if defined(__amigaos4__) && !defined(Flush)
-#define Flush(fh) FFlush(fh)
-#endif /* __amigaos4__ && !Flush */
 
 /****************************************************************************/
 
@@ -67,9 +70,10 @@
 #if !defined(__AROS__)
 #include "smbfs_rev.h"
 STRPTR Version = VERSTAG;
+#else
+CONST TEXT HandlerName[] = "smb-handler";
 #endif /* __AROS__ */
 
-CONST TEXT HandlerName[] = "smb-handler";
 
 /****************************************************************************/
 
@@ -153,9 +157,6 @@ STRPTR amitcp_strerror(int error);
 STRPTR host_strerror(int error);
 LONG CompareNames(STRPTR a, STRPTR b);
 VOID StringToUpper(STRPTR s);
-#ifndef __AROS__
-VOID VARARGS68K ReportError(STRPTR fmt, ...);
-#endif
 VOID FreeMemory(APTR address);
 APTR AllocateMemory(ULONG size);
 LONG GetTimeZoneDelta(VOID);
@@ -163,6 +164,7 @@ ULONG GetCurrentTime(VOID);
 VOID GMTime(time_t seconds, struct tm *tm);
 time_t MakeTime(const struct tm *const tm);
 #ifndef __AROS__
+VOID VARARGS68K ReportError(STRPTR fmt, ...);
 VOID VARARGS68K SPrintf(STRPTR buffer, STRPTR formatString, ...);
 #endif
 int BroadcastNameQuery(char *name, char *scope, UBYTE *address);
@@ -172,8 +174,13 @@ int BroadcastNameQuery(char *name, char *scope, UBYTE *address);
 INLINE STATIC BOOL ReallyRemoveDosEntry(struct DosList *entry);
 INLINE STATIC LONG BuildFullName(STRPTR parent_name, STRPTR name, STRPTR *result_ptr, LONG *result_size_ptr);
 INLINE STATIC VOID TranslateCName(UBYTE *name, UBYTE *map);
-INLINE STATIC VOID ConvertCString(LONG max_len, APTR bstring, STRPTR cstring);
+INLINE STATIC VOID ConvertCString(APTR bstring, LONG max_len, STRPTR cstring, LONG len);
 STATIC VOID DisplayErrorList(VOID);
+#if !defined(__AROS__)
+STATIC VOID AddError(STRPTR fmt, APTR args);
+STATIC LONG CVSPrintf(STRPTR format_string, APTR args);
+STATIC VOID VSPrintf(STRPTR buffer, STRPTR formatString, APTR args);
+#endif
 STATIC VOID SendDiskChange(ULONG class);
 STATIC struct FileNode *FindFileNode(STRPTR name, struct FileNode *skip);
 STATIC struct LockNode *FindLockNode(STRPTR name, struct LockNode *skip);
@@ -184,7 +191,7 @@ STATIC LONG MapErrnoToIoErr(int error);
 STATIC VOID TranslateBName(UBYTE *name, UBYTE *map);
 STATIC VOID Cleanup(VOID);
 STATIC BOOL Setup(STRPTR opt_password, BOOL opt_changecase, LONG *opt_time_zone_offset, LONG *opt_dst_offset, STRPTR translation_file);
-STATIC BOOL AddVolume(STRPTR service, STRPTR workgroup, STRPTR username, STRPTR opt_password, STRPTR opt_clientname, STRPTR opt_servername, int opt_cachesize, STRPTR device_name, STRPTR volume_name);
+STATIC BOOL AddVolume(STRPTR device_name, STRPTR volume_name, STRPTR service, STRPTR workgroup, STRPTR username, STRPTR opt_password, STRPTR opt_clientname, STRPTR opt_servername, int opt_cachesize, int opt_max_transmit, BOOL opt_raw_smb);
 STATIC VOID ConvertBString(LONG max_len, STRPTR cstring, APTR bstring);
 STATIC BOOL Action_Startup(struct FileSysStartupMsg *fssm, struct DosList *device_node, SIPTR *error_ptr);
 STATIC BPTR Action_Parent(struct FileLock *parent, SIPTR *error_ptr);
@@ -220,7 +227,6 @@ STATIC LONG Action_MoreCache(LONG buffer_delta, SIPTR *error_ptr);
 STATIC LONG Action_SetComment(struct FileLock *parent, APTR bcpl_name, APTR bcpl_comment, SIPTR *error_ptr);
 STATIC LONG Action_LockRecord(struct FileNode *fn, LONG offset, LONG length, LONG mode, ULONG timeout, SIPTR *error_ptr);
 STATIC LONG Action_FreeRecord(struct FileNode *fn, LONG offset, LONG length, SIPTR *error_ptr);
-STATIC VOID StartReconnectTimer(VOID);
 STATIC VOID HandleFileSystem(VOID);
 
 /****************************************************************************/
@@ -257,8 +263,7 @@ struct IconIFace *			IIcon;
 
 /****************************************************************************/
 
-STATIC struct timerequest	TimerRequest;
-STATIC BOOL					TimerActive;
+struct timerequest			TimerRequest;
 
 /****************************************************************************/
 
@@ -276,6 +281,7 @@ int							h_errno;
 /****************************************************************************/
 
 STATIC struct DosList *		DeviceNode;
+STATIC BOOL					DeviceNodeAdded;
 STATIC struct DosList *		VolumeNode;
 STATIC BOOL					VolumeNodeAdded;
 STATIC struct MsgPort *		FileSystemPort;
@@ -286,6 +292,7 @@ STATIC BOOL					Quit;
 STATIC BOOL					Quiet;
 STATIC BOOL					CaseSensitive;
 STATIC BOOL					OmitHidden;
+STATIC BOOL					TranslateUTF8;
 
 STATIC LONG					DSTOffset;
 STATIC LONG					TimeZoneOffset;
@@ -324,14 +331,18 @@ struct
 	KEY		DeviceName;
 	KEY		VolumeName;
 	NUMBER	CacheSize;
+	NUMBER	MaxTransmit;
 	NUMBER	DebugLevel;
 	NUMBER	TimeZoneOffset;
 	NUMBER	DSTOffset;
+	SWITCH	NetBIOSTransport;
+	SWITCH	DumpSMB;
+	SWITCH	UTF8;
 	KEY		TranslationFile;
 	KEY		Service;
 } args;
 
-CONST TEXT control_template[] =
+STRPTR cmd_template =
 	"DOMAIN=WORKGROUP/K,"
 	"USER=USERNAME/K,"
 	"PASSWORD/K,"
@@ -344,9 +355,13 @@ CONST TEXT control_template[] =
 	"DEVICE=DEVICENAME/K,"
 	"VOLUME=VOLUMENAME/K,"
 	"CACHE=CACHESIZE/N/K,"
+	"MAXTRANSMIT/N/K,"
 	"DEBUGLEVEL=DEBUG/N/K,"
 	"TZ=TIMEZONEOFFSET/N/K,"
 	"DST=DSTOFFSET/N/K,"
+	"NETBIOS/S,"
+	"DUMPSMB/S,"
+	"UTF8/S,"
 	"TRANSLATE=TRANSLATIONFILE/K,"
 	"SERVICE/A";
 
@@ -359,11 +374,11 @@ LONG _start(VOID)
 #if !defined(__AROS__)
 	SysBase = (struct Library *)AbsExecBase;
 
-	#if defined(__amigaos4__)
-	{
+		#if defined(__amigaos4__)
+		{
 		IExec = (struct ExecIFace *)((struct ExecBase *)SysBase)->MainInterface;
-	}
-	#endif /* __amigaos4__ */
+				}
+		#endif /* __amigaos4__ */
 #endif
 
 	FileSystemPort = &((*(struct Process *)FindTask(NULL)).pr_MsgPort);
@@ -373,13 +388,13 @@ LONG _start(VOID)
 
 	/* Open the libraries we need and check
 	 * whether we could get them.
-	 */
+		 */
 	DOSBase = OpenLibrary("dos.library",0);
 
 	#if defined(__amigaos4__)
-	{
-		if(DOSBase != NULL)
 		{
+		if(DOSBase != NULL)
+			{
 			IDOS = (struct DOSIFace *)GetInterface(DOSBase, "main", 1, 0);
 			if(IDOS == NULL)
 			{
@@ -387,31 +402,31 @@ LONG _start(VOID)
 				DOSBase = NULL;
 			}
 		}
-	}
+			}
 	#endif /* __amigaos4__ */
 
 	UtilityBase = OpenLibrary("utility.library",37);
 
 	#if defined(__amigaos4__)
-	{
+		{
 		if(UtilityBase != NULL)
 		{
 			IUtility = (struct UtilityIFace *)GetInterface(UtilityBase, "main", 1, 0);
 			if(IUtility == NULL)
-			{
+		{
 				CloseLibrary(UtilityBase);
 				UtilityBase = NULL;
+		}
 			}
 		}
-	}
 	#endif /* __amigaos4__ */
 
 	if(UtilityBase == NULL || DOSBase == NULL || DOSBase->lib_Version < MINIMUM_OS_VERSION)
-		goto out;
+				goto out;
 
 	/* This needs to be set up properly for ReportError()
 	 * to work.
-	 */
+			 */
 	NewList((struct List *)&ErrorList);
 
 		if(Locale != NULL)
@@ -644,6 +659,88 @@ DisplayErrorList(VOID)
 	IntuitionBase = NULL;
 }
 
+#if !defined(__AROS__)
+/* Add another error message to the list; the messages are
+ * collected so that they may be displayed together when
+ * necessary.
+ */
+STATIC VOID
+AddError(STRPTR fmt,APTR args)
+{
+	LONG len;
+
+	len = CVSPrintf(fmt,args);
+	if(len > 0)
+	{
+		struct MinNode * mn;
+
+		mn = AllocVec(sizeof(*mn) + len,MEMF_ANY|MEMF_PUBLIC);
+		if(mn != NULL)
+		{
+			STRPTR msg = (STRPTR)(mn + 1);
+
+			VSPrintf(msg,fmt,args);
+
+			AddTail((struct List *)&ErrorList,(struct Node *)mn);
+		}
+	}
+}
+
+/****************************************************************************/
+/* Report an error that has occured; if the program was not launched
+ * from Shell, error messages will be accumulated for later display.
+ */
+VOID VARARGS68K
+ReportError(STRPTR fmt,...)
+{
+	if(NOT Quiet)
+	{
+		va_list args;
+
+		if(WBStartup != NULL)
+		{
+			#if defined(__amigaos4__)
+			{
+				va_startlinear(args,fmt);
+				AddError(fmt,va_getlinearva(args,APTR));
+				va_end(args);
+			}
+			#else
+			{
+				va_start(args,fmt);
+				AddError(fmt,args);
+				va_end(args);
+			}
+			#endif /* __amigaos4__ */
+		}
+		else
+		{
+			UBYTE program_name[MAX_FILENAME_LEN];
+
+			GetProgramName(program_name,sizeof(program_name));
+
+			LocalPrintf("%s: ",FilePart(program_name));
+
+			#if defined(__amigaos4__)
+			{
+				va_startlinear(args,fmt);
+				VPrintf(fmt,va_getlinearva(args,APTR));
+				va_end(args);
+			}
+			#else
+			{
+				va_start(args,fmt);
+				VPrintf(fmt,args);
+				va_end(args);
+			}
+			#endif /* __amigaos4__ */
+
+			LocalPrintf("\n");
+		}
+	}
+}
+#endif
+
 /****************************************************************************/
 
 /* Release memory allocated from the global pool. */
@@ -796,8 +893,80 @@ MakeTime(const struct tm * const tm)
 
 /****************************************************************************/
 
+#if !defined(__AROS__)
+struct FormatContext
+{
+	UBYTE *	fc_Buffer;
+	LONG	fc_Size;
+};
+
+/****************************************************************************/
+
+STATIC VOID ASM
+CountChar(REG(a3,struct FormatContext * fc))
+{
+	fc->fc_Size++;
+}
+
+/* Count the number of characters SPrintf() would put into a string. */
+STATIC LONG
+CVSPrintf(STRPTR format_string,APTR args)
+{
+	struct FormatContext fc;
+
+	fc.fc_Size = 0;
+
+	RawDoFmt((STRPTR)format_string,args,(VOID (*)())CountChar,&fc);
+
+	return(fc.fc_Size);
+}
+
+/****************************************************************************/
+
+STATIC VOID ASM
+StuffChar(REG(d0,UBYTE c),REG(a3,struct FormatContext * fc))
+{
+	(*fc->fc_Buffer++) = c;
+}
+
+STATIC VOID
+VSPrintf(STRPTR buffer, STRPTR formatString, APTR args)
+{
+	struct FormatContext fc;
+
+	fc.fc_Buffer = buffer;
+
+	RawDoFmt(formatString,args,(VOID (*)())StuffChar,&fc);
+}
+
+/****************************************************************************/
+
+/* Format a string for output. */
+VOID VARARGS68K
+SPrintf(STRPTR buffer, STRPTR formatString,...)
+{
+	va_list varArgs;
+
+	#if defined(__amigaos4__)
+	{
+		va_startlinear(varArgs,formatString);
+		VSPrintf(buffer,formatString,va_getlinearva(varArgs,APTR));
+		va_end(varArgs);
+	}
+	#else
+	{
+		va_start(varArgs,formatString);
+		VSPrintf(buffer,formatString,varArgs);
+		va_end(varArgs);
+	}
+	#endif /* __amigaos4__ */
+}
+#endif
+
+/****************************************************************************/
+
 /* NetBIOS broadcast name query code courtesy of Christopher R. Hertel.
- * Thanks much, Chris!
+ * Thanks very much, Chris!
  */
 struct addr_entry
 {
@@ -935,7 +1104,7 @@ BroadcastNameQuery(char *name, char *scope, UBYTE *address)
 
 	s = getservbyname("netbios-ns","udp");
 	if(s != NULL)
-		sox.sin_port = htons(s->s_port);
+		sox.sin_port = s->s_port;
 	else
 		sox.sin_port = htons(137);
 
@@ -1276,10 +1445,8 @@ MapErrnoToIoErr(int error)
 		{ E2BIG,			ERROR_TOO_MANY_ARGS },			/* Argument list too long */
 		{ EBADF,			ERROR_INVALID_LOCK },			/* Bad file descriptor */
 		{ ENOMEM,			ERROR_NO_FREE_STORE },			/* Cannot allocate memory */
-		{ EACCES,			ERROR_OBJECT_IN_USE },			/* Permission denied */
-#ifdef ENOTBLK
+		{ EACCES,			ERROR_OBJECT_NOT_FOUND},		/* Permission denied */
 		{ ENOTBLK,			ERROR_OBJECT_WRONG_TYPE },		/* Block device required */
-#endif
 		{ EBUSY,			ERROR_OBJECT_IN_USE },			/* Device busy */
 		{ EEXIST,			ERROR_OBJECT_EXISTS },			/* File exists */
 		{ EXDEV,			ERROR_NOT_IMPLEMENTED },		/* Cross-device link */
@@ -1319,9 +1486,7 @@ MapErrnoToIoErr(int error)
 		{ EHOSTUNREACH,		ERROR_OBJECT_NOT_FOUND },		/* No route to host */
 		{ ENOTEMPTY,		ERROR_DIRECTORY_NOT_EMPTY },	/* Directory not empty */
 		{ EPROCLIM,			ERROR_TASK_TABLE_FULL },		/* Too many processes */
-#ifdef EUSERS
 		{ EUSERS,			ERROR_TASK_TABLE_FULL },		/* Too many users */
-#endif
 		{ EDQUOT,			ERROR_DISK_FULL },				/* Disc quota exceeded */
 		{ ENOLCK,			ERROR_NOT_IMPLEMENTED },		/* no locks available */
 		{ -1,				-1 }
@@ -1356,23 +1521,20 @@ MapErrnoToIoErr(int error)
 INLINE STATIC VOID
 TranslateBName(UBYTE * name,UBYTE * map)
 {
-	if(TranslateNames)
-	{
-		LONG len;
-		UBYTE c;
+	LONG len;
+	UBYTE c;
 
 #if !defined(N__AROS__)
-		len = (*name++);
+	len = (*name++);
 #else
 		len = AROS_BSTR_strlen(name);
 		name = AROS_BSTR_ADDR(name);
 #endif
-		while(len-- > 0)
-		{
-			c = (*name);
+	while(len-- > 0)
+	{
+		c = (*name);
 
-			(*name++) = map[c];
-		}
+		(*name++) = map[c];
 	}
 }
 
@@ -1380,13 +1542,10 @@ TranslateBName(UBYTE * name,UBYTE * map)
 INLINE STATIC VOID
 TranslateCName(UBYTE * name,UBYTE * map)
 {
-	if(TranslateNames)
-	{
-		UBYTE c;
+	UBYTE c;
 
-		while((c = (*name)) != '\0')
-			(*name++) = map[c];
-	}
+	while((c = (*name)) != '\0')
+		(*name++) = map[c];
 }
 
 /****************************************************************************/
@@ -1447,14 +1606,13 @@ Cleanup(VOID)
 	ENTER();
 
 	/* If any errors have cropped up, display them now before
-	 * call it quits.
+	 * we call it quits.
 	 */
 	DisplayErrorList();
 
 	if(Parameters != NULL)
 	{
 		FreeArgs(Parameters);
-		FreeDosObject(DOS_RDARGS, Parameters);
 		Parameters = NULL;
 	}
 
@@ -1472,8 +1630,16 @@ Cleanup(VOID)
 
 	if(DeviceNode != NULL)
 	{
-		if(ReallyRemoveDosEntry(DeviceNode))
+		if(DeviceNodeAdded)
+		{
+			if(ReallyRemoveDosEntry(DeviceNode))
+				FreeDosEntry(DeviceNode);
+		}
+		else
+		{
 			FreeDosEntry(DeviceNode);
+		}
+
 		DeviceNode = NULL;
 	}
 
@@ -1501,6 +1667,9 @@ Cleanup(VOID)
 		/* Return all queued packets; there should be none, though. */
 		while((mn = GetMsg(FileSystemPort)) != NULL)
 			ReplyPkt((struct DosPacket *)mn->mn_Node.ln_Name,DOSFALSE,ERROR_ACTION_NOT_KNOWN);
+
+		DeleteMsgPort(FileSystemPort);
+		FileSystemPort = NULL;
 	}
 
 	if(WBStartup == NULL && send_disk_change)
@@ -1518,11 +1687,6 @@ Cleanup(VOID)
 
 	if(TimerBase != NULL)
 	{
-		if(TimerActive)
-		{
-			AbortIO((struct IORequest *)&TimerRequest);
-			WaitIO((struct IORequest *)&TimerRequest);
-		}
 		CloseDevice((struct IORequest *)&TimerRequest);
 		TimerBase = NULL;
 	}
@@ -1541,22 +1705,6 @@ Cleanup(VOID)
 	{
 		CloseLibrary(SocketBase);
 		SocketBase = NULL;
-	}
-
-	#if defined(__amigaos4__)
-	{
-		if(IUtility != NULL)
-		{
-			DropInterface((struct Interface *)IUtility);
-			IUtility = NULL;
-		}
-	}
-	#endif /* __amigaos4__ */
-
-	if(UtilityBase != NULL)
-	{
-		CloseLibrary(UtilityBase);
-		UtilityBase = NULL;
 	}
 
 	#if defined(__amigaos4__)
@@ -1601,28 +1749,6 @@ Cleanup(VOID)
 	{
 		DeletePool(MemoryPool);
 		MemoryPool = NULL;
-	}
-
-	#if defined(__amigaos4__)
-	{
-		if(IDOS != NULL)
-		{
-			DropInterface((struct Interface *)IDOS);
-			IDOS = NULL;
-		}
-	}
-	#endif /* __amigaos4__ */
-
-	if(DOSBase != NULL)
-	{
-		CloseLibrary(DOSBase);
-		DOSBase = NULL;
-	}
-
-	if(WBStartup != NULL)
-	{
-		Forbid();
-		ReplyMsg((struct Message *)WBStartup);
 	}
 
 	LEAVE();
@@ -1684,7 +1810,6 @@ Setup(
 		DSTOffset = -60 * (*opt_dst_offset);
 
 	memset(&TimerRequest,0,sizeof(TimerRequest));
-	TimerActive = FALSE;
 
 	if(OpenDevice(TIMERNAME,UNIT_VBLANK,(struct IORequest *)&TimerRequest,0) != OK)
 	{
@@ -1810,6 +1935,8 @@ Setup(
 /* Make connection to server and make a volume for it. */
 STATIC BOOL
 AddVolume(
+	STRPTR	device_name,
+	STRPTR	volume_name,
 	STRPTR	service,
 	STRPTR	workgroup,
 	STRPTR 	username,
@@ -1817,24 +1944,100 @@ AddVolume(
 	STRPTR	opt_clientname,
 	STRPTR	opt_servername,
 	int		opt_cachesize,
-	STRPTR	device_name,
-	STRPTR	volume_name)
+	int		opt_max_transmit,
+	BOOL	opt_raw_smb)
 {
 	BOOL result = FALSE;
+	struct DosList * dl;
 	int error = OK;
 	STRPTR actual_volume_name;
 	LONG actual_volume_name_len;
 	UBYTE name[MAX_FILENAME_LEN];
-	LONG i;
+	BOOL device_exists = FALSE;
+	LONG len,i;
 
 	ENTER();
 
-	error = smba_start(service,workgroup,username,opt_password,opt_clientname,opt_servername,opt_cachesize,&ServerData);
+	error = smba_start(service,workgroup,username,opt_password,opt_clientname,opt_servername,opt_cachesize,opt_max_transmit,opt_raw_smb,&ServerData);
 	if(error < 0)
+		goto out;
+
+	/* If a device name was provided, check whether it is
+	 * well-formed.
+	 */
+	if(device_name != NULL)
 	{
-		StartReconnectTimer();
+		len = strlen(device_name);
+		if(len > 255)
+			len = 255;
+
+		for(i = 0 ; i < len ; i++)
+		{
+			if(device_name[i] == '/')
+			{
+				ReportError("Device name '%s' cannot be used with AmigaDOS.",device_name);
+				goto out;
+			}
+		}
+
+		/* Lose any trailing colon characters. */
+		for(i = len-1 ; i >= 0 ; i--)
+		{
+			if(device_name[i] == ':')
+				len = i;
+		}
+
+		if(len == 0)
+		{
+			ReportError("Device name '%s' cannot be used with AmigaDOS.",device_name);
+			goto out;
+		}
+
+		memcpy(name,device_name,len);
+		name[len] = '\0';
+
+		dl = LockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+
+		if(FindDosEntry(dl,name,LDF_DEVICES) != NULL)
+			device_exists = TRUE;
+	}
+	else
+	{
+		dl = LockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+
+		/* Find a unique device name. */
+		for(i = 0 ; i < 100 ; i++)
+		{
+			SPrintf(name,"SMBFS%ld",(long)i);
+
+			device_exists = (BOOL)(FindDosEntry(dl,name,LDF_DEVICES) != NULL);
+			if(NOT device_exists)
+			{
+				device_name = name;
+				break;
+			}
+		}
+	}
+
+	if(device_exists)
+	{
+		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+
+		ReportError("Device name '%s:' is already taken.",device_name);
 		goto out;
 	}
+
+	/* Finally, create the device node. */
+	DeviceNode = MakeDosEntry(name,DLT_DEVICE);
+	if(DeviceNode == NULL)
+	{
+		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+
+		ReportError("Could not create device node.");
+		goto out;
+	}
+
+	DeviceNode->dol_Task = FileSystemPort;
 
 	/* Examine the volume name; make sure that it is
 	 * well-formed.
@@ -1852,6 +2055,8 @@ AddVolume(
 	{
 		if(actual_volume_name[i] == '/')
 		{
+			UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+
 			ReportError("Volume name '%s' cannot be used with AmigaDOS.",actual_volume_name);
 			goto out;
 		}
@@ -1866,6 +2071,8 @@ AddVolume(
 
 	if(actual_volume_name_len == 0)
 	{
+		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+
 		ReportError("Volume name '%s' cannot be used with AmigaDOS.",actual_volume_name);
 		goto out;
 	}
@@ -1877,6 +2084,8 @@ AddVolume(
 	VolumeNode = MakeDosEntry(name,DLT_VOLUME);
 	if(VolumeNode == NULL)
 	{
+		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+
 		ReportError("Could not create volume node.");
 		goto out;
 	}
@@ -1885,6 +2094,13 @@ AddVolume(
 	DateStamp(&VolumeNode->dol_misc.dol_volume.dol_VolumeDate);
 	VolumeNode->dol_misc.dol_volume.dol_DiskType = ID_DOS_DISK;
 
+	if(DeviceNode != NULL)
+	{
+		AddDosEntry(DeviceNode);
+
+		DeviceNodeAdded = TRUE;
+	}
+
 	/* Note: we always need the volume node to make some file
 	 *       system operations safe (e.g. Lock()), but we may
 	 *       not always need to make it visible.
@@ -1892,8 +2108,12 @@ AddVolume(
 	if(volume_name != NULL && VolumeNode != NULL)
 	{
  		AddDosEntry(VolumeNode);
+
 		VolumeNodeAdded = TRUE;
 	}
+
+	/* And that concludes the mounting operation. */
+	UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
 
 	/* Tell Workbench and friends to update their volume lists. */
 	if(VolumeNodeAdded)
@@ -1908,7 +2128,6 @@ AddVolume(
 }
 
 /****************************************************************************/
-
 
 /* Convert a BCPL string into a standard NUL terminated 'C' string. */
 INLINE STATIC VOID
@@ -1932,9 +2151,8 @@ ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 
 /* Convert a NUL terminated 'C' string into a BCPL string. */
 INLINE STATIC VOID
-ConvertCString(LONG max_len, APTR bstring, STRPTR cstring)
+ConvertCString(APTR bstring,LONG max_len,STRPTR cstring,LONG len)
 {
-	LONG len = strlen(cstring);
 	STRPTR to = bstring;
 
 	if(len > max_len-1)
@@ -2148,12 +2366,14 @@ Action_Startup(
 	struct DosList *			device_node,
 	SIPTR *						error_ptr)
 {
-	UBYTE *control;
 	LONG cache_size = 0;
+	LONG max_transmit = -1;
 	char env_workgroup_name[17];
-	char env_service_name[17];
 	char env_user_name[64];
 	char env_password[64];
+
+	UBYTE *control;
+	char env_service_name[17];
 
 	BOOL result = DOSTRUE;
 	LONG error = 0;
@@ -2172,7 +2392,7 @@ Action_Startup(
 		((struct DosEnvec *)BADDR(fssm->fssm_Environ))->de_Control;
 	Parameters->RDA_Source.CS_Buffer = control;
 	Parameters->RDA_Source.CS_Length = strlen(control);
-	Parameters = ReadArgs(control_template,(IPTR *)&args,Parameters);
+	Parameters = ReadArgs(cmd_template,(IPTR *)&args,Parameters);
 	if(Parameters == NULL)
 	{
 		goto out;
@@ -2207,7 +2427,7 @@ Action_Startup(
 	}
 
 	if(args.Service == NULL)
-	{
+		{
 		if(GetVar("smbfs_service",env_service_name,sizeof(env_service_name),0) > 0 ||
 		   GetVar("smbfs_share",env_service_name,sizeof(env_service_name),0) > 0)
 		{
@@ -2223,6 +2443,9 @@ Action_Startup(
 	if(args.CacheSize != NULL)
 		cache_size = (*args.CacheSize);
 
+	if(args.MaxTransmit != NULL)
+		max_transmit = (*args.MaxTransmit);
+
 	/* Use the default if no user name is given. */
 	if(args.UserName == NULL)
 		args.UserName = "GUEST";
@@ -2235,14 +2458,27 @@ Action_Startup(
 	if(args.DeviceName == NULL && args.VolumeName == NULL)
 		args.DeviceName = "SMBFS";
 
+	/* UTF8 file name translation disables code-page based translation. */
+	if(args.UTF8)
+		args.TranslationFile = NULL;
+
 	CaseSensitive = (BOOL)args.CaseSensitive;
 	OmitHidden = (BOOL)args.OmitHidden;
+	TranslateUTF8 = (BOOL)args.UTF8;
 
 	/* Configure the debugging options. */
 	if(args.DebugLevel != NULL)
 		SETDEBUGLEVEL(*args.DebugLevel);
 	else
 		SETDEBUGLEVEL(0);
+
+	/* Enable SMB packet decoding, but only if not started from Workbench. */
+	#if defined(DUMP_SMB)
+	{
+		if(args.DumpSMB)
+			control_smb_dump(TRUE);
+	}
+	#endif /* DUMP_SMB */
 
 	D(("%s (%s)",VERS,DATE));
 
@@ -2254,15 +2490,18 @@ Action_Startup(
 		args.TranslationFile))
 	{
 		AddVolume(
-		args.Service,
-		args.Workgroup,
-		args.UserName,
-		args.Password,
-		args.ClientName,
-		args.ServerName,
-		cache_size,
-		args.DeviceName,
-		args.VolumeName);
+                    args.DeviceName,
+                    args.VolumeName,
+                    args.Service,
+                    args.Workgroup,
+                    args.UserName,
+                    args.Password,
+                    args.ClientName,
+                    args.ServerName,
+                    cache_size,
+                    max_transmit,
+                    !args.NetBIOSTransport	/* Use raw SMB transport instead of NetBIOS transport? */
+                  );
 	}
 	else
 	{
@@ -2432,8 +2671,42 @@ Action_DeleteObject(
 		parent_name = NULL;
 	}
 
+	/* Name string, as given in the DOS packet, is in
+	 * BCPL format and needs to be converted into
+	 * 'C' format.
+	 */
 	ConvertBString(sizeof(name),name,bcpl_name);
-	TranslateCName(name,A2M);
+
+	/* Translate the Amiga file name into UTF-8 encoded form? */
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		/* Figure out how long the UTF-8 version will become. */
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		
+		/* Encoding error occured, or the resulting name is longer than the buffer will hold? */
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		/* Repeat the encoding process, writing the result to the
+		 * replacement name buffer now.
+		 */
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		/* Copy it back to the conversion buffer (which is not terribly efficient, though). */
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	/* Translate the Amiga file name using a translation table? */
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	error = BuildFullName(parent_name,name,&full_name,&full_name_size);
 	if(error != OK)
@@ -2554,6 +2827,7 @@ Action_DeleteObject(
 
 	FreeMemory(full_name);
 	FreeMemory(full_parent_name);
+
 	if(file != NULL)
 		smba_close(file);
 
@@ -2605,7 +2879,28 @@ Action_CreateDir(
 	}
 
 	ConvertBString(sizeof(name),name,bcpl_name);
-	TranslateCName(name,A2M);
+
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	error = BuildFullName(parent_name,name,&full_name,&full_name_size);
 	if(error != OK)
@@ -2741,7 +3036,28 @@ Action_LocateObject(
 	}
 
 	ConvertBString(sizeof(name),name,bcpl_name);
-	TranslateCName(name,A2M);
+
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	if(IsReservedName(FilePart(name)))
 	{
@@ -2757,10 +3073,7 @@ Action_LocateObject(
 	 * My pleasure.
 	 */
 	if(full_name == NULL)
-	{
-		error = ERROR_OBJECT_NOT_FOUND;
 		goto out;
-	}
 
 	ln = AllocateMemory(sizeof(*ln));
 	if(ln == NULL)
@@ -2923,6 +3236,7 @@ Action_FreeLock(
 	ln = (struct LockNode *)lock->fl_Key;
 
 	Remove((struct Node *)ln);
+
 	smba_close(ln->ln_File);
 	FreeMemory(ln->ln_FullName);
 	FreeMemory(ln);
@@ -3027,7 +3341,28 @@ Action_SetProtect(
 	}
 
 	ConvertBString(sizeof(name),name,bcpl_name);
-	TranslateCName(name,A2M);
+
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	error = BuildFullName(parent_name,name,&full_name,&full_name_size);
 	if(error != OK)
@@ -3090,6 +3425,7 @@ Action_SetProtect(
  out:
 
 	FreeMemory(full_name);
+
 	if(file != NULL)
 		smba_close(file);
 
@@ -3142,7 +3478,28 @@ Action_RenameObject(
 	}
 
 	ConvertBString(sizeof(name),name,source_bcpl_name);
-	TranslateCName(name,A2M);
+
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	error = BuildFullName(parent_name,name,&full_source_name,&full_source_name_size);
 	if(error != OK)
@@ -3167,7 +3524,28 @@ Action_RenameObject(
 	}
 
 	ConvertBString(sizeof(name),name,destination_bcpl_name);
-	TranslateCName(name,A2M);
+
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	error = BuildFullName(parent_name,name,&full_destination_name,&full_destination_name_size);
 	if(error != OK)
@@ -3306,7 +3684,10 @@ Action_Info(
 
 	SHOWVALUE(lock);
 
-	if(lock == NULL || lock->fl_Volume != MKBADDR(VolumeNode))
+	/* We need to check if the lock matches the volume node. However,
+	 * a NULL lock is valid, too.
+	 */
+	if(lock != NULL && lock->fl_Volume != MKBADDR(VolumeNode))
 	{
 		SHOWMSG("volume node does not match");
 
@@ -3345,8 +3726,8 @@ Action_ExamineObject(
 #if !defined(__AROS__)
 		STRPTR volume_name = BADDR(VolumeNode->dol_Name);
 		LONG len = volume_name[0];
-	    
-		memcpy(fib->fib_FileName+1, volume_name + 1, len);
+
+		memcpy(fib->fib_FileName+1,volume_name+1,len);
 		fib->fib_FileName[0] = len;
 #else
 		STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
@@ -3396,7 +3777,7 @@ Action_ExamineObject(
 			STRPTR volume_name = BADDR(VolumeNode->dol_Name);
 			LONG len = volume_name[0];
 
-			memcpy(fib->fib_FileName+1, volume_name + 1, len);
+			memcpy(fib->fib_FileName+1,volume_name+1,len);
 			fib->fib_FileName[0] = len;
 #else
 			STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
@@ -3416,10 +3797,13 @@ Action_ExamineObject(
 		else
 		{
 			STRPTR name;
+			LONG name_len;
 			LONG i;
 
 			name = ln->ln_FullName;
-			for(i = strlen(name)-1 ; i >= 0 ; i--)
+			name_len = strlen(name);
+
+			for(i = name_len-1 ; i >= 0 ; i--)
 			{
 				if(name[i] == SMB_PATH_SEPARATOR)
 				{
@@ -3429,14 +3813,52 @@ Action_ExamineObject(
 			}
 
 			/* Just checking: will the name fit? */
-			if(strlen(name) >= sizeof(fib->fib_FileName))
+			if(name_len >= sizeof(fib->fib_FileName))
 			{
 				error = ERROR_INVALID_COMPONENT_NAME;
 				goto out;
 			}
 
-			ConvertCString(sizeof(fib->fib_FileName),fib->fib_FileName,name);
-			TranslateBName(fib->fib_FileName,M2A);
+			/* Translate the name of the file/directory from UTF-8
+			 * into AmigaOS ISO 8859-1 (ISO Latin 1) encoding?
+			 */
+			if(TranslateUTF8)
+			{
+				UBYTE decoded_name[MAX_FILENAME_LEN];
+				int decoded_name_len;
+
+				/* Try to decode the file file, translating it into ISO 8859-1 format. */
+				decoded_name_len = decode_utf8_as_iso8859_1_string(name,name_len,NULL,0);
+				
+				/* Decoding error occured, or the decoded name would be longer than
+				 * buffer would allow?
+				 */
+				if(decoded_name_len < 0 || decoded_name_len >= MAX_FILENAME_LEN)
+				{
+					error = ERROR_INVALID_COMPONENT_NAME;
+					goto out;
+				}
+
+				/* Decode the name for real. */
+				decoded_name_len = decode_utf8_as_iso8859_1_string(name,name_len,decoded_name,sizeof(decoded_name));
+
+				/* Store the decoded name in the form expected
+				 * by dos.library (which will then translate it again).
+				 */
+				fib->fib_FileName[0] = decoded_name_len;
+				memcpy(&fib->fib_FileName[1],decoded_name,decoded_name_len);
+			}
+			else
+			{
+				/* Store the file/directory name in the form expected
+				 * by dos.library.
+				 */
+				ConvertCString(fib->fib_FileName,sizeof(fib->fib_FileName),name,name_len);
+
+				/* If necessary, translate the name to Amiga format using a mapping table. */
+				if(TranslateNames)
+					TranslateBName(fib->fib_FileName,M2A);
+			}
 
 			fib->fib_DirEntryType	= st.is_dir ? ST_USERDIR : ST_FILE;
 			fib->fib_EntryType		= fib->fib_DirEntryType;
@@ -3521,7 +3943,9 @@ dir_scan_callback_func_exnext(
 	int						eof,
 	smba_stat_t *			st)
 {
-	int result;
+	int result = 0;
+	LONG name_len;
+	LONG seconds;
 
 	ENTER();
 
@@ -3533,46 +3957,64 @@ dir_scan_callback_func_exnext(
 	/* Skip file and drawer names that we wouldn't be
 	 * able to handle in the first place.
 	 */
-	if(NameIsAcceptable((STRPTR)name,sizeof(fib->fib_FileName)) && NOT (st->is_hidden && OmitHidden))
+	if(!NameIsAcceptable((STRPTR)name,sizeof(fib->fib_FileName)) || (st->is_hidden && OmitHidden))
+		goto out;
+
+	name_len = strlen(name);
+
+	if(TranslateUTF8)
 	{
-		LONG seconds;
+		UBYTE decoded_name[MAX_FILENAME_LEN];
+		int decoded_name_len;
 
-		ConvertCString(sizeof(fib->fib_FileName),fib->fib_FileName,name);
-		TranslateBName(fib->fib_FileName,M2A);
+		decoded_name_len = decode_utf8_as_iso8859_1_string(name,name_len,NULL,0);
+		if(decoded_name_len < 0 || decoded_name_len >= MAX_FILENAME_LEN)
+			goto out;
 
-		fib->fib_DirEntryType	= st->is_dir ? ST_USERDIR : ST_FILE;
-		fib->fib_EntryType		= fib->fib_DirEntryType;
-		fib->fib_NumBlocks		= (st->size + 511) / 512;
-		fib->fib_Size			= st->size;
-		fib->fib_Protection		= FIBF_OTR_READ|FIBF_OTR_EXECUTE|FIBF_OTR_WRITE|FIBF_OTR_DELETE|
-								  FIBF_GRP_READ|FIBF_GRP_EXECUTE|FIBF_GRP_WRITE|FIBF_GRP_DELETE;
+		decoded_name_len = decode_utf8_as_iso8859_1_string(name,name_len,decoded_name,sizeof(decoded_name));
 
-		if(st->is_wp)
-			fib->fib_Protection ^= (FIBF_OTR_WRITE|FIBF_OTR_DELETE|FIBF_GRP_WRITE|FIBF_GRP_DELETE|FIBF_WRITE|FIBF_DELETE);
-
-		/* Careful: the 'archive' attribute has exactly the opposite
-		 *          meaning in the Amiga and the SMB worlds.
-		 */
-		if(NOT st->is_archive)
-			fib->fib_Protection |= FIBF_ARCHIVE;
-
-		if(st->is_system)
-			fib->fib_Protection |= FIBF_PURE;
-
-		seconds = st->mtime - UNIX_TIME_OFFSET - GetTimeZoneDelta();
-		if(seconds < 0)
-			seconds = 0;
-
-		fib->fib_Date.ds_Days	= (seconds / (24 * 60 * 60));
-		fib->fib_Date.ds_Minute	= (seconds % (24 * 60 * 60)) / 60;
-		fib->fib_Date.ds_Tick	= (seconds % 60) * TICKS_PER_SECOND;
-
-		result = 1;
+		fib->fib_FileName[0] = decoded_name_len;
+		memcpy(&fib->fib_FileName[1],decoded_name,decoded_name_len);
 	}
 	else
 	{
-		result = 0;
+		ConvertCString(fib->fib_FileName,sizeof(fib->fib_FileName),name,name_len);
+
+		if(TranslateNames)
+			TranslateBName(fib->fib_FileName,M2A);
 	}
+
+	fib->fib_DirEntryType	= st->is_dir ? ST_USERDIR : ST_FILE;
+	fib->fib_EntryType		= fib->fib_DirEntryType;
+	fib->fib_NumBlocks		= (st->size + 511) / 512;
+	fib->fib_Size			= st->size;
+	fib->fib_Protection		= FIBF_OTR_READ|FIBF_OTR_EXECUTE|FIBF_OTR_WRITE|FIBF_OTR_DELETE|
+							  FIBF_GRP_READ|FIBF_GRP_EXECUTE|FIBF_GRP_WRITE|FIBF_GRP_DELETE;
+
+	if(st->is_wp)
+		fib->fib_Protection ^= (FIBF_OTR_WRITE|FIBF_OTR_DELETE|FIBF_GRP_WRITE|FIBF_GRP_DELETE|FIBF_WRITE|FIBF_DELETE);
+
+	/* Careful: the 'archive' attribute has exactly the opposite
+	 *          meaning in the Amiga and the SMB worlds.
+	 */
+	if(NOT st->is_archive)
+		fib->fib_Protection |= FIBF_ARCHIVE;
+
+	if(st->is_system)
+		fib->fib_Protection |= FIBF_PURE;
+
+	/* If modification time is 0 use creation time instead (cyfm 2009-03-18). */
+	seconds = (st->mtime == 0 ? st->ctime : st->mtime) - UNIX_TIME_OFFSET - GetTimeZoneDelta();
+	if(seconds < 0)
+		seconds = 0;
+
+	fib->fib_Date.ds_Days	= (seconds / (24 * 60 * 60));
+	fib->fib_Date.ds_Minute	= (seconds % (24 * 60 * 60)) / 60;
+	fib->fib_Date.ds_Tick	= (seconds % 60) * TICKS_PER_SECOND;
+
+	result = 1;
+
+ out:
 
 	fib->fib_DiskKey = eof ? -1 : nextpos;
 
@@ -3693,6 +4135,8 @@ dir_scan_callback_func_exall(
 	int						eof,
 	smba_stat_t *			st)
 {
+	UBYTE decoded_name[MAX_FILENAME_LEN];
+	BOOL ignore_this_entry = FALSE;
 	int result = 0;
 
 	ENTER();
@@ -3702,10 +4146,35 @@ dir_scan_callback_func_exall(
 		st->is_dir,st->is_wp,st->is_hidden,st->size));
 	D(("   nextpos=%ld eof=%ld",nextpos,eof));
 
+	/* If necessary, translate the name of the file first, so that we
+	 * can decide early on whether or not it should show up in a
+	 * directory listing. This filters out, for example, files using
+	 * characters which are not usable on the Amiga because they fall
+	 * outside the 8 bit character set used.
+	 */
+	if(TranslateUTF8)
+	{
+		LONG name_len = strlen(name);
+		int decoded_name_len;
+
+		decoded_name_len = decode_utf8_as_iso8859_1_string(name,name_len,NULL,0);
+		if(decoded_name_len < 0 || decoded_name_len >= MAX_FILENAME_LEN)
+		{
+			ignore_this_entry = TRUE;
+		}
+		else
+		{
+			decode_utf8_as_iso8859_1_string(name,name_len,decoded_name,sizeof(decoded_name));
+
+			/* Use the decoded replacement name. */
+			name = decoded_name;
+		}	
+	}
+
 	/* Skip file and drawer names that we wouldn't be
 	 * able to handle in the first place.
 	 */
-	if(NameIsAcceptable((STRPTR)name,MAX_FILENAME_LEN) && NOT (st->is_hidden && OmitHidden))
+	if(!ignore_this_entry && NameIsAcceptable((STRPTR)name,MAX_FILENAME_LEN) && NOT (st->is_hidden && OmitHidden))
 	{
 		struct ExAllData * ed;
 		ULONG size;
@@ -3744,7 +4213,8 @@ dir_scan_callback_func_exall(
 		ed->ed_Name = (STRPTR)(((IPTR)ed) + ec->ec_MinSize);
 		strcpy(ed->ed_Name,name);
 
-		TranslateCName(ed->ed_Name,M2A);
+		if(!TranslateUTF8 && TranslateNames)
+			TranslateCName(ed->ed_Name,M2A);
 
 		if(type >= ED_TYPE)
 			ed->ed_Type = st->is_dir ? ST_USERDIR : ST_FILE;
@@ -3774,7 +4244,8 @@ dir_scan_callback_func_exall(
 		{
 			LONG seconds;
 
-			seconds = st->mtime - UNIX_TIME_OFFSET - GetTimeZoneDelta();
+			/* If modification time is 0 use creation time instead (cyfm 2009-03-18). */
+			seconds = (st->mtime == 0 ? st->ctime : st->mtime) - UNIX_TIME_OFFSET - GetTimeZoneDelta();
 			if(seconds < 0)
 				seconds = 0;
 
@@ -4072,10 +4543,7 @@ Action_Find(
 	struct FileNode * fn = NULL;
 	STRPTR parent_name;
 	UBYTE name[MAX_FILENAME_LEN];
-	BOOL file_exists = FALSE;
 	BOOL create_new_file;
-	smba_file_t * file = NULL;
-	smba_stat_t st;
 	LONG error;
 
 	ENTER();
@@ -4109,7 +4577,28 @@ Action_Find(
 	}
 
 	ConvertBString(sizeof(name),name,bcpl_name);
-	TranslateCName(name,A2M);
+
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	if(IsReservedName(FilePart(name)))
 	{
@@ -4147,19 +4636,6 @@ Action_Find(
 
 	SHOWSTRING(full_name);
 
-	if(smba_open(ServerData,full_name,full_name_size,&file) == OK &&
-	   smba_getattr(file,&st) == OK)
-	{
-		file_exists = TRUE;
-		if(st.is_dir)
-		{
-			error = ERROR_OBJECT_WRONG_TYPE;
-			goto out;
-		}
-	}
-	if(file != NULL)
-		smba_close(file);
-
 	if(action == ACTION_FINDOUTPUT)
 	{
 		/* Definitely create a new file. */
@@ -4172,7 +4648,11 @@ Action_Find(
 	}
 	else if (action == ACTION_FINDUPDATE)
 	{
-		if(file_exists)
+		smba_file_t * file = NULL;
+		smba_stat_t st;
+
+		if(smba_open(ServerData,full_name,full_name_size,&file) == OK &&
+		   smba_getattr(file,&st) == OK)
 		{
 			/* File apparently opens Ok and information on it
 			 * is available, don't try to replace it.
@@ -4189,6 +4669,9 @@ Action_Find(
 			 */
 			create_new_file = TRUE;
 		}
+
+		if(file != NULL)
+			smba_close(file);
 	}
 	else
 	{
@@ -4200,6 +4683,7 @@ Action_Find(
 	/* Create a new file? */
 	if(create_new_file)
 	{
+		smba_stat_t st;
 		smba_file_t * dir;
 		STRPTR base_name;
 		LONG i;
@@ -4684,7 +5168,28 @@ Action_SetDate(
 	}
 
 	ConvertBString(sizeof(name),name,bcpl_name);
-	TranslateCName(name,A2M);
+
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	error = BuildFullName(parent_name,name,&full_name,&full_name_size);
 	if(error != OK)
@@ -4732,6 +5237,7 @@ Action_SetDate(
  out:
 
 	FreeMemory(full_name);
+
 	if(file != NULL)
 		smba_close(file);
 
@@ -4754,6 +5260,7 @@ Action_ExamineFH(
 	LONG error;
 	LONG seconds;
 	STRPTR name;
+	LONG name_len;
 	LONG i;
 
 	ENTER();
@@ -4766,7 +5273,9 @@ Action_ExamineFH(
 	}
 
 	name = fn->fn_FullName;
-	for(i = strlen(name)-1 ; i >= 0 ; i--)
+	name_len = strlen(name);
+
+	for(i = name_len ; i >= 0 ; i--)
 	{
 		if(name[i] == SMB_PATH_SEPARATOR)
 		{
@@ -4776,7 +5285,7 @@ Action_ExamineFH(
 	}
 
 	/* Just checking: will the name fit? */
-	if(strlen(name) >= sizeof(fib->fib_FileName))
+	if(name_len >= sizeof(fib->fib_FileName))
 	{
 		error = ERROR_INVALID_COMPONENT_NAME;
 		goto out;
@@ -4784,8 +5293,30 @@ Action_ExamineFH(
 
 	memset(fib,0,sizeof(*fib));
 
-	ConvertCString(sizeof(fib->fib_FileName),fib->fib_FileName,name);
-	TranslateBName(fib->fib_FileName,M2A);
+	if(TranslateUTF8)
+	{
+		UBYTE decoded_name[MAX_FILENAME_LEN];
+		int decoded_name_len;
+
+		decoded_name_len = decode_utf8_as_iso8859_1_string(name,name_len,NULL,0);
+		if(decoded_name_len < 0 || decoded_name_len >= MAX_FILENAME_LEN)
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		decoded_name_len = decode_utf8_as_iso8859_1_string(name,name_len,decoded_name,sizeof(decoded_name));
+
+		fib->fib_FileName[0] = decoded_name_len;
+		memcpy(&fib->fib_FileName[1],decoded_name,decoded_name_len);
+	}
+	else
+	{
+		ConvertCString(fib->fib_FileName,sizeof(fib->fib_FileName),name,name_len);
+
+		if(TranslateNames)
+			TranslateBName(fib->fib_FileName,M2A);
+	}
 
 	fib->fib_DirEntryType	= ST_FILE;
 	fib->fib_EntryType		= ST_FILE;
@@ -4808,7 +5339,8 @@ Action_ExamineFH(
 	if(st.is_system)
 		fib->fib_Protection |= FIBF_PURE;
 
-	seconds = st.mtime - UNIX_TIME_OFFSET - GetTimeZoneDelta();
+	/* If modification time is 0 use creation time instead (cyfm 2009-03-18). */
+	seconds = (st.mtime == 0 ? st.ctime : st.mtime) - UNIX_TIME_OFFSET - GetTimeZoneDelta();
 	if(seconds < 0)
 		seconds = 0;
 
@@ -5341,7 +5873,28 @@ Action_SetComment(
 	}
 
 	ConvertBString(sizeof(name),name,bcpl_name);
-	TranslateCName(name,A2M);
+
+	if (TranslateUTF8)
+	{
+		UBYTE encoded_name[MAX_FILENAME_LEN];
+		int encoded_name_len;
+		LONG name_len = strlen(name);
+
+		encoded_name_len = encode_iso8859_1_as_utf8_string(name,name_len,NULL,0);
+		if(encoded_name_len < 0 || encoded_name_len >= sizeof(name))
+		{
+			error = ERROR_INVALID_COMPONENT_NAME;
+			goto out;
+		}
+
+		encode_iso8859_1_as_utf8_string(name,name_len,encoded_name,sizeof(encoded_name));
+
+		strlcpy(name,encoded_name,sizeof(name));
+	}
+	else if (TranslateNames)
+	{
+		TranslateCName(name,A2M);
+	}
 
 	error = BuildFullName(parent_name,name,&full_name,&full_name_size);
 	if(error != OK)
@@ -5379,6 +5932,7 @@ Action_SetComment(
  out:
 
 	FreeMemory(full_name);
+
 	if(file != NULL)
 		smba_close(file);
 
@@ -5428,7 +5982,7 @@ Action_LockRecord (
 	if (timeout > 0)
 	{
 		if (timeout > 214748364)
-			timeout = ~0;	/* wait forever */
+			timeout = ~0UL;	/* wait forever */
 		else
 			timeout *= 20;	/* milliseconds instead of Ticks */
 	}
@@ -5489,23 +6043,11 @@ Action_FreeRecord (
 /****************************************************************************/
 
 STATIC VOID
-StartReconnectTimer(VOID)
-{
-	/* Set up delay for next try */
-	TimerRequest.tr_node.io_Command = TR_ADDREQUEST;
-	TimerRequest.tr_node.io_Message.mn_ReplyPort = FileSystemPort;
-	TimerRequest.tr_time.tv_secs = 2;
-	TimerRequest.tr_time.tv_micro = 0;
-	SendIO((struct IORequest *)&TimerRequest);
-	TimerActive = TRUE;
-}
-
-/****************************************************************************/
-
-STATIC VOID
 HandleFileSystem(VOID)
 {
+	struct Process * this_process = (struct Process *)FindTask(NULL);
 	BOOL sign_off = FALSE;
+	BYTE old_priority;
 	ULONG signals;
 	BOOL done;
 
@@ -5513,7 +6055,19 @@ HandleFileSystem(VOID)
 
 	DisplayErrorList();
 	Quiet = TRUE;
+
 	done = FALSE;
+
+	/* Raise the Task priority of the file system to 10
+	 * unless it already is running at priority 10 or higher.
+	 */
+	Forbid();
+
+	old_priority = this_process->pr_Task.tc_Node.ln_Pri;
+	if(old_priority < 10)
+		SetTaskPri((struct Task *)this_process, 10);
+	
+	Permit();
 
 	do
 	{
@@ -5529,15 +6083,19 @@ HandleFileSystem(VOID)
 			{
 				dp = (struct DosPacket *)mn->mn_Node.ln_Name;
 
-				D(("got packet (%ld); sender '%s'\n",dp->dp_Action,((struct Node *)dp->dp_Port->mp_SigTask)->ln_Name));
+				D(("got packet; sender '%s'",((struct Node *)dp->dp_Port->mp_SigTask)->ln_Name));
 
 				res2 = 0;
 
-
 				if (mn->mn_Node.ln_Type == NT_REPLYMSG)
 				{
-					TimerActive = FALSE;
+                                        LONG max_transmit = -1;
+                                    	if(args.MaxTransmit != NULL)
+                                            max_transmit = (*args.MaxTransmit);
+
 					AddVolume(
+						args.DeviceName,
+						args.VolumeName,
 						args.Service,
 						args.Workgroup,
 						args.UserName,
@@ -5545,8 +6103,9 @@ HandleFileSystem(VOID)
 						args.ClientName,
 						args.ServerName,
 						(args.CacheSize != NULL) ? *args.CacheSize : 0,
-						args.DeviceName,
-						args.VolumeName);
+						max_transmit,
+						!args.NetBIOSTransport	/* Use raw SMB transport instead of NetBIOS transport? */
+					  );
 					continue;
 				}
 				if(!VolumeNodeAdded && dp->dp_Action != ACTION_STARTUP)
@@ -5816,19 +6375,23 @@ HandleFileSystem(VOID)
 
 					case ACTION_LOCK_RECORD:
 						/* FileHandle->fh_Arg1,position,length,mode,time-out -> Bool */
-						res1 =  Action_LockRecord((struct FileNode *)dp->dp_Arg1,dp->dp_Arg2,dp->dp_Arg3,dp->dp_Arg4,(ULONG)dp->dp_Arg5,&res2);
+						res1 = Action_LockRecord((struct FileNode *)dp->dp_Arg1,dp->dp_Arg2,dp->dp_Arg3,dp->dp_Arg4,(ULONG)dp->dp_Arg5,&res2);
 						break;
 
 					case ACTION_FREE_RECORD:
 						/* FileHandle->fh_Arg1,position,length -> Bool */
-						res1 =  Action_FreeRecord((struct FileNode *)dp->dp_Arg1,dp->dp_Arg2,dp->dp_Arg3,&res2);
+						res1 = Action_FreeRecord((struct FileNode *)dp->dp_Arg1,dp->dp_Arg2,dp->dp_Arg3,&res2);
 						break;
 
 					default:
 
 						D(("Anything goes: dp->dp_Action=%ld (0x%lx)",dp->dp_Action,dp->dp_Action));
 
-						res1 = DOSFALSE;
+						/* Return -1 for ACTION_READ_LINK, for which DOSFALSE (= 0)
+						 * would otherwise be a valid response. Bug fix contributed
+						 * by Harry 'Piru' Sintonen.
+						 */
+						res1 = (dp->dp_Action == ACTION_READ_LINK) ? -1 : DOSFALSE;
 						res2 = ERROR_ACTION_NOT_KNOWN;
 
 						break;
@@ -5892,6 +6455,16 @@ HandleFileSystem(VOID)
 		}
 	}
 	while(NOT done);
+
+	/* Restore the priority of the file system, unless the priority
+	 * has already been changed.
+	 */
+	Forbid();
+	
+	if(old_priority < 10 && this_process->pr_Task.tc_Node.ln_Pri == 10)
+		SetTaskPri((struct Task *)this_process, old_priority);
+	
+	Permit();
 
 	if(sign_off)
 		LocalPrintf("stopped.\n");
