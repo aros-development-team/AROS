@@ -5982,7 +5982,7 @@ Action_LockRecord (
 	if (timeout > 0)
 	{
 		if (timeout > 214748364)
-			timeout = ~0UL;	/* wait forever */
+			timeout = ~0;	/* wait forever */
 		else
 			timeout *= 20;	/* milliseconds instead of Ticks */
 	}
