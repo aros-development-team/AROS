@@ -244,7 +244,6 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
         if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
 
-// FIXME: this is never freed
         extension_PrefsData = (STRPTR)AllocVec(TOOLBAR_PREFSSIZE, MEMF_CLEAR);
         if (extension_PrefsData == NULL)
         {
@@ -454,6 +453,9 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, Msg msg)
     struct panel_ToolBar_DATA *panelToolBarPrivate;
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (extension_PrefsData && (extension_PrefsData != strTrue))
+        FreeVec(extension_PrefsData);
 
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
