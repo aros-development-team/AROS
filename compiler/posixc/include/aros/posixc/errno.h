@@ -66,6 +66,9 @@
 #define	ECONNRESET	54		/* Connection reset by peer */
 #define	EDEADLK		11		/* Resource deadlock avoided */
 #define	EDESTADDRREQ	39		/* Destination address required */
+#define	EPROCLIM	67		/* Too many processes */
+#define	EUSERS		68		/* Too many users */
+#define	EDQUOT		69		/* Disc quota exceeded */
 #define	EDQUOT		69		/* Disc quota exceeded */
 #define	EFAULT		14		/* Bad address */
 #define	EFBIG		27		/* File too large */
