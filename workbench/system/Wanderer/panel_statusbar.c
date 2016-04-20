@@ -481,8 +481,11 @@ static IPTR panelStatusBar__Cleanup(Class *CLASS, Object *self, Msg msg)
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 
+#if (0)
+    // we cant free this here since it will be used again!
     if (extension_PrefsData && (extension_PrefsData != strTrue))
         FreeVec(extension_PrefsData);
+#endif
 
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
