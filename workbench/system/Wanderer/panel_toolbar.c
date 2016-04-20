@@ -74,6 +74,7 @@ extern struct List                     iconwindow_Extensions;
 
 static CONST_STRPTR                     extension_Name = "IconWindow ToolBar Extension";
 static CONST_STRPTR                     extension_PrefsFile = "ENV:SYS/Wanderer/toolbar.prefs";
+static CONST_STRPTR                     strTrue = "True";
 static STRPTR                           extension_PrefsData;
 static struct iconWindow_Extension      panelToolBar__Extension;
 struct List                             panelToolBar__ToolBars;
@@ -208,7 +209,7 @@ IPTR panelToolBar__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg
     if (GetVar(extension_PrefsFile, extension_PrefsData, TOOLBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
     {
         D(bug("[IW.toolbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
-        if ((strcasecmp(extension_PrefsData, "True")) == 0)
+        if ((strcasecmp(extension_PrefsData, strTrue)) == 0)
         {
             SET(panelToolBar__PrefsNotificationObject, MUIA_ShowMe, TRUE);
         }
@@ -236,15 +237,20 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
+    extension_PrefsData = (STRPTR)strTrue;
+
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
         if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
 
 // FIXME: this is never freed
-        extension_PrefsData = AllocVec(TOOLBAR_PREFSSIZE, MEMF_CLEAR);
+        extension_PrefsData = (STRPTR)AllocVec(TOOLBAR_PREFSSIZE, MEMF_CLEAR);
         if (extension_PrefsData == NULL)
+        {
+            extension_PrefsData = (STRPTR)strTrue;
             return 0;
+        }
 
         /* Setup notification on prefs file --------------------------------*/
         struct Wanderer_FSHandler *_prefsNotifyHandler = NULL;
@@ -424,7 +430,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
                     (IPTR)data->iwd_TopPanel.iwp_PanelContainerObj, 3, MUIM_Set, MUIA_ShowMe, MUIV_TriggerValue
                   );
 
-                if ((strcasecmp(extension_PrefsData, "True")) == 0)
+                if ((strcasecmp(extension_PrefsData, strTrue)) == 0)
                 {
                     SET(data->iwd_TopPanel.iwp_PanelContainerObj, MUIA_ShowMe, TRUE);
                 }
