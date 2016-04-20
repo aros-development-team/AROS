@@ -73,6 +73,7 @@ extern struct List                     iconwindow_Extensions;
 
 static CONST_STRPTR                     extension_Name = "IconWindow StatusBar Extension";
 static CONST_STRPTR                     extension_PrefsFile = "ENV:SYS/Wanderer/statusbar.prefs";
+static CONST_STRPTR                     strTrue = "True";
 static STRPTR                           extension_PrefsData;
 static struct iconWindow_Extension      panelStatusBar__Extension;
 static struct List                      panelStatusBar__StatusBars;
@@ -274,7 +275,7 @@ static IPTR panelStatusBar__HandleFSUpdate(Object *WandererObj, struct NotifyMes
     if (GetVar(extension_PrefsFile, extension_PrefsData, STATUSBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
     {
         D(bug("[IW.statusbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
-        if ((strcasecmp(extension_PrefsData, "True")) == 0)
+        if ((strcasecmp(extension_PrefsData, strTrue)) == 0)
         {
             SET(panelStatusBar__PrefsNotificationObject, MUIA_ShowMe, TRUE);
         }
@@ -300,15 +301,19 @@ static IPTR panelStatusBar__PrefsSetup(Class *CLASS, Object *self, struct opSet 
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 
+    extension_PrefsData = (STRPTR)strTrue;
+
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != NULL)
     {
         if (panelStatusBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
 
-// FIXME: this is never freed
-        extension_PrefsData = AllocVec(STATUSBAR_PREFSSIZE, MEMF_CLEAR);
+        extension_PrefsData = (STRPTR)AllocVec(STATUSBAR_PREFSSIZE, MEMF_CLEAR);
         if (extension_PrefsData == NULL)
+        {
+            extension_PrefsData = (STRPTR)strTrue;
             return 0;
+        }
 
         /* Setup notification on prefs file --------------------------------*/
         struct Wanderer_FSHandler *_prefsNotifyHandler = NULL;
@@ -451,7 +456,7 @@ static IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *mess
                     (IPTR)data->iwd_BottomPanel.iwp_PanelContainerObj, 3, MUIM_Set, MUIA_ShowMe, MUIV_TriggerValue
                   );
 
-                if ((strcasecmp(extension_PrefsData, "True")) == 0)
+                if ((strcasecmp(extension_PrefsData, strTrue)) == 0)
                 {
                     SET(data->iwd_BottomPanel.iwp_PanelContainerObj, MUIA_ShowMe, TRUE);
                 }
@@ -475,6 +480,9 @@ static IPTR panelStatusBar__Cleanup(Class *CLASS, Object *self, Msg msg)
     struct panel_StatusBar_DATA *panelStatusBarPrivate;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (extension_PrefsData && (extension_PrefsData != strTrue))
+        FreeVec(extension_PrefsData);
 
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
