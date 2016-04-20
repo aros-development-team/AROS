@@ -1,13 +1,13 @@
 /*
  * $Id$
  *
- * :ts=8
+ * :ts=4
  *
  * smb_fs.h
  *
  * Copyright (C) 1995 by Paal-Kr. Engstad and Volker Lendecke
- * Modified for use with AmigaOS by Olaf Barthel <olsen@sourcery.han.de>
- * Modified for supporting SMBlockingX packets by Peter Riede <Noster-Riede@T-Online.de>
+ * Modified for use with AmigaOS by Olaf Barthel <obarthel -at- gmx -dot- net>
+ * Modified for supporting SMBlockingX packets by Peter Riede <Noster-Riede -at- T-Online -dot- de>
  */
 
 #ifndef _LINUX_SMB_FS_H
@@ -20,15 +20,15 @@
 
 #include <netinet/in.h>
 
-#define SMB_HEADER_LEN   37     /* includes everything up to, but not
-                                   including smb_bcc */
+#define SMB_HEADER_LEN 37	/* includes everything up to, but not
+							   including smb_bcc */
 
 /* This structure is used to pass the arguments to smb_proc_lockingX
  */
 struct smb_lkrng
 {
-	off_t	offset;						/* offset to first byte to be (un)locked */
-	long len;							/* bytesize of the block */
+	off_t	offset;		/* offset to first byte to be (un)locked */
+	long 	len;		/* bytesize of the block */
 };
 
 /* Macros to get at offsets within smb_lkrng and smb_unlkrng
@@ -36,19 +36,19 @@ struct smb_lkrng
    due to possible differences in structure packing
    on different machines/compilers. */
 
-#define SMB_LPID_OFFSET(indx) (10 * (indx))
-#define SMB_LKOFF_OFFSET(indx) ( 2 + (10 * (indx)))
-#define SMB_LKLEN_OFFSET(indx) ( 6 + (10 * (indx)))
-#define SMB_LARGE_LKOFF_OFFSET_HIGH(indx) (4 + (20 * (indx)))
-#define SMB_LARGE_LKOFF_OFFSET_LOW(indx) (8 + (20 * (indx)))
-#define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
-#define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
+#define SMB_LPID_OFFSET(indx)				(10 * (indx))
+#define SMB_LKOFF_OFFSET(indx)				( 2 + (10 * (indx)))
+#define SMB_LKLEN_OFFSET(indx)				( 6 + (10 * (indx)))
+#define SMB_LARGE_LKOFF_OFFSET_HIGH(indx)	(4 + (20 * (indx)))
+#define SMB_LARGE_LKOFF_OFFSET_LOW(indx)	(8 + (20 * (indx)))
+#define SMB_LARGE_LKLEN_OFFSET_HIGH(indx)	(12 + (20 * (indx)))
+#define SMB_LARGE_LKLEN_OFFSET_LOW(indx)	(16 + (20 * (indx)))
 
 /*****************************************************************************/
 
 /* proc.c */
 byte *smb_encode_smb_length(byte *p, dword len);
-dword smb_len(byte *packet);
+dword smb_len(const byte *packet);
 int smb_proc_open(struct smb_server *server, const char *pathname, int len, struct smb_dirent *entry);
 int smb_proc_close(struct smb_server *server, word fileid, dword mtime);
 int smb_proc_read(struct smb_server *server, struct smb_dirent *finfo, off_t offset, long count, char *data, int fs);
@@ -72,6 +72,7 @@ int smb_proc_dskattr (struct smb_server *server, struct smb_dskattr *attr);
 int smb_proc_connect(struct smb_server *server);
 
 /* sock.c */
+int smb_receive (struct smb_server *server, int sock_fd);
 int smb_catch_keepalive(struct smb_server *server);
 int smb_dont_catch_keepalive(struct smb_server *server);
 int smb_release(struct smb_server *server);

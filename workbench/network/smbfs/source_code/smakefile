@@ -1,7 +1,5 @@
 #
-# $Id: smakefile,v 1.4 2009/04/14 11:32:51 obarthel Exp $
-#
-# :ts=8
+# :ts=4
 #
 # SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
 #
@@ -58,21 +56,25 @@ VERSION = 1
  OPTIMIZE =	optimize opttime optinline optinlocal optschedule
  CPU =		any
 #CPU =		060
- DEBUG =	line
-#DEBUG =	symbolflush noopt define=DEBUG
+#DEBUG =	line
+ DEBUG =	symbolflush noopt define=DEBUG define=DUMP_SMB
 
 ###############################################################################
 
-CFLAGS =	idlen=64 comnest streq strmerge nostkchk \
-		$(OPTIMIZE) cpu=$(CPU) debug=$(DEBUG) data=faronly \
-		params=register idir=netinclude idir=include \
-		ignore=306 gst=system_headers.gst
+CFLAGS = \
+	idlen=64 comnest streq strmerge nostkchk \
+	$(OPTIMIZE) cpu=$(CPU) debug=$(DEBUG) code=far data=faronly \
+	params=register idir=netinclude idir=include \
+	ignore=306 gst=system_headers.gst
 
-LFLAGS =	smallcode smalldata noicons batch
+LFLAGS = \
+	noicons batch
 
 ###############################################################################
 
-OBJS = main.o proc.o smb_abstraction.o sock.o crypt.o quad_math.o
+OBJS = \
+	main.o proc.o smb_abstraction.o sock.o crypt.o quad_math.o dump_smb.o \
+	utf-8-iso-8859-1-conversion.o swap_stack_and_call.o
 
 ###############################################################################
 
@@ -101,11 +103,14 @@ system_headers.gst: system_headers.h system_headers.c
 
 assert.o : assert.c
 crypt.o : crypt.c system_headers.h assert.h smbfs.h
-main.o : main.c system_headers.h assert.h smbfs.h smb_abstraction.h smbfs_rev.h
+main.o : main.c system_headers.h assert.h smbfs.h smb_abstraction.h smbfs_rev.h dump_smb.h utf-8-iso-8859-1-conversion.h
 proc.o : proc.c system_headers.h assert.h smbfs.h quad_math.h
 quad_math.o : quad_math.c quad_math.h
 smb_abstraction.o : smb_abstraction.c system_headers.h assert.h smbfs.h smb_abstraction.h
-sock.o : sock.c system_headers.h assert.h smbfs.h smb_abstraction.h
+sock.o : sock.c system_headers.h assert.h smbfs.h smb_abstraction.h dump_smb.h
+dump_smb.o : dump_smb.c system_headers.h assert.h smbfs.h dump_smb.h quad_math.h
+utf-8-iso-8859-1-conversion.o : utf-8-iso-8859-1-conversion.c utf-8-iso-8859-1-conversion.h
+swap_stack_and_call.o : swap_stack_and_call.asm
 
 ###############################################################################
 

@@ -10,7 +10,9 @@ FILES = \
     smb_abstraction \
     sock \
     crypt \
-    errno
+    errno \
+    utf-8-iso-8859-1-conversion \
+    dump_smb
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
 USER_CFLAGS := $(NOWARN_FLAGS) \
