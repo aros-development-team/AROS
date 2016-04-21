@@ -1,7 +1,10 @@
 # default test script for "runtests"
-utility/amiga2date
-printf_f
+
 misc/versionlib
+utility/amiga2date
 dos/addpart
+
+# clib tests ..
+clib/sprintf_f
 clib/abort
 clib/exit
