@@ -589,14 +589,14 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, CreateObject)
         mymsg.attrList	= mytags;
 
         /* Pass the new message to the superclass */
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     }
     else if (SD(cl)->basegallium && (msg->cl == SD(cl)->basegallium))
     {
         object = OOP_NewObject(NULL, CLID_Hidd_Gallium_Nouveau, msg->attrList);
     }
     else
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     return object;
 }
