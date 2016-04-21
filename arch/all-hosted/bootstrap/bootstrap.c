@@ -330,7 +330,7 @@ int bootstrap(int argc, char ** argv)
         return -1;
     }
     fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (",
-              (void *)(IPTR)MemoryMap[0].addr, (void *)(IPTR)MemoryMap[0].addr + MemoryMap[0].len;
+              (void *)(IPTR)MemoryMap[0].addr, (void *)(IPTR)MemoryMap[0].addr + MemoryMap[0].len);
 #if (__WORDSIZE == 64)
     fprintf(stderr, "%llu bytes)\n", (unsigned long long)MemoryMap[0].len);
 #else
