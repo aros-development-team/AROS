@@ -329,8 +329,13 @@ int bootstrap(int argc, char ** argv)
         DisplayError("[Bootstrap] Failed to allocate %iMB of RAM for AROS: %08x %s\n", memSize, err, strerror(err));
         return -1;
     }
-    fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (%llu bytes)\n",
-              (void *)(IPTR)MemoryMap[0].addr, (void *)(IPTR)MemoryMap[0].addr + MemoryMap[0].len, (unsigned long long)MemoryMap[0].len);
+    fprintf(stderr, "[Bootstrap] RAM memory block allocated: %p - %p (",
+              (void *)(IPTR)MemoryMap[0].addr, (void *)(IPTR)MemoryMap[0].addr + MemoryMap[0].len;
+#if (__WORDSIZE == 64)
+    fprintf(stderr, "%llu bytes)\n", (unsigned long long)MemoryMap[0].len);
+#else
+    fprintf(stderr, "%u bytes)\n", MemoryMap[0].len);
+#endif
 
     if (!GetKernelSize(FirstELF, &ro_size, &rw_size, &bss_size))
         return -1;
