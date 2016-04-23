@@ -12,11 +12,11 @@ NOWARN_FLAGS := $(NOWARN_DEPRECATED_DECLARATIONS) $(NOWARN_IMPLICIT_FUNCTION_DEC
 USER_CFLAGS := $(NOWARN_FLAGS)
 
 #MM- core-linklibs : linklibs-png
+#MM- linklibs-png : workbench-libs-png-pkgconfig
 
 %build_module mmake=workbench-libs-png \
     modname=png modtype=library \
     files="$(FILES)" linklibname="png"
-
 
 #MM- linklibs: linklibs-png-nostdio
 
@@ -24,6 +24,21 @@ USER_CFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_TIME
 
 %build_linklib mmake=linklibs-png-nostdio libname=png_nostdio \
 	files=$(FILES) objdir=$(OBJDIR)/no_stdio
+
+#MM
+workbench-libs-png-pkgconfig : $(AROS_LIB)/pkgconfig/libpng.pc
+
+$(AROS_LIB)/pkgconfig/libpng.pc : $(SRCDIR)/$(CURDIR)/libpng.pc.in $(SRCDIR)/$(CURDIR)/mmakefile.src
+	%mkdir_q dir=$(AROS_LIB)/pkgconfig
+	@$(SED) -e 's|@exec_prefix@|$${prefix}|' \
+	       -e 's|@includedir@/libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@|$${prefix}/include|' \
+	       -e 's|-lpng@PNGLIB_MAJOR@@PNGLIB_MINOR@|-lpng|' \
+	       -e 's|@libdir@|$(AROS_LIB)|' \
+	       -e 's|@prefix@|/Development|' \
+	       -e 's|@LIBS@||' \
+	       -e 's|@PNGLIB_VERSION@|1.6.3|' \
+	       -e 's| -I$${includedir}||' \
+	       $< >$@
 
 #MM includes-copy
 INCLUDE_FILES := png.h pngconf.h pnglibconf.h
