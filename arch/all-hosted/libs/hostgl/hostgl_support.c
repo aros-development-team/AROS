@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/utility.h>
