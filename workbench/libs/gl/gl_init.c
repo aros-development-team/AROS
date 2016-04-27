@@ -219,6 +219,8 @@ static AROS_UFH3(struct Library *, GM_UNIQUENAME(LibInit),
         sizeof(struct SignalSemaphore) + sizeof(struct NotifyRequest));
     InitSemaphore(&GLB(base)->glb_Sem);
 
+    GetGLVar(base);
+
     SetupGLVarNotification(base);
 
     // return the library base as success
