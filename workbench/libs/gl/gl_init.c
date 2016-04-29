@@ -1,5 +1,5 @@
 /*
-    Copyright 2015, The AROS Development Team. All rights reserved.
+    Copyright 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -181,7 +181,7 @@ void SetupGLVarNotification(struct Library *base)
 
         if (GLB(base)->glb_Notify.nr_stuff.nr_Msg.nr_Port && !GLB(base)->glb_Notify.nr_FullName)
         {
-            GLB(base)->glb_Notify.nr_Flags		        = NRF_SEND_MESSAGE|NRB_NOTIFY_INITIAL;
+            GLB(base)->glb_Notify.nr_Flags = NRF_SEND_MESSAGE | NRF_NOTIFY_INITIAL;
             StartNotify(&GLB(base)->glb_Notify);
             D(bug("[GL] %s: Started FS Notification for '%s'\n", __PRETTY_FUNCTION__, GLB(base)->glb_Notify.nr_FullName));
         }
@@ -218,10 +218,6 @@ static AROS_UFH3(struct Library *, GM_UNIQUENAME(LibInit),
     memset(&GLB(base)->glb_Sem, 0,
         sizeof(struct SignalSemaphore) + sizeof(struct NotifyRequest));
     InitSemaphore(&GLB(base)->glb_Sem);
-
-    // TODO: the following line is a workaround for a bug in
-    // the notification system.
-    GetGLVar(base);
 
     SetupGLVarNotification(base);
 
