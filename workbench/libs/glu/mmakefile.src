@@ -14,7 +14,8 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- includes-copy : workbench-libs-glu-includes
 
-REPOSITORIES = ftp://ftp.freedesktop.org/pub/mesa/glu/
+REPOSITORIES = ftp://ftp.freedesktop.org/pub/mesa/glu/ \
+ ftp://ftp.embeddedarm.com/mirror/yocto/
 ARCHBASE := glu-9.0.0
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
 
