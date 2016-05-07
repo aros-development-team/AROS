@@ -74,3 +74,6 @@ CFG_BS_DIRECTORY=nightly/
 
 #-- Parallel execution -------------------------------------------------------
 CFG_MAKE_JOBS=1
+
+# Whether to use common ports sources directory
+CFG_PORTSSOURCES_ENABLE=no
