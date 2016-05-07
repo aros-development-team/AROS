@@ -33,7 +33,7 @@ void resetcustom(struct amigavideo_staticdata *data)
     custom->fmode = 0x0000;
     custom->bplcon0 = 0x0200;
     custom->bplcon1 = 0x0000;
-    custom->bplcon2 = 0x0000;
+    custom->bplcon2 = 0x0024;
     custom->bplcon3 = 0x0c00;
     custom->bplcon4 = 0x0011;
     custom->vposw = 0x8000;
