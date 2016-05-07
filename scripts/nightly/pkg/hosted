@@ -19,7 +19,7 @@ delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET $BUILDEXTRAOPTS --enable-ccache --with-paranoia --enable-build-type=nightly
+execute ./configure --target=$BUILDTARGET $BUILDEXTRAOPTS --enable-ccache --with-paranoia --enable-build-type=nightly $PORTSSOURCESOPT
 make    -j $MAKE_JOBS
 make    -j $MAKE_JOBS default-x11keymaptable
 
