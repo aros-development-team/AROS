@@ -9,3 +9,4 @@ CFG_DS_KEY=/home/aros/.ssh/id_dsa.aros-nightly-upload
 CFG_BACKUP_ENABLE=no
 
 CFG_MAKE_JOBS=3
+CFG_PORTSSOURCES_ENABLE=yes
