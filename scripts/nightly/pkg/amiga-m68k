@@ -19,7 +19,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
 export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
-execute ./configure --target=$BUILDTARGET --enable-ccache --with-paranoia --enable-build-type=nightly --with-serial-debug
+execute ./configure --target=$BUILDTARGET --enable-ccache --with-paranoia --enable-build-type=nightly --with-serial-debug $PORTSSOURCESOPT
 make
 make    distfiles
 

@@ -14,7 +14,7 @@ copy    $SOURCE_AROS    $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --enable-build-type=nightly
+execute ./configure --enable-build-type=nightly $PORTSSOURCESOPT
 make    tools mmake development-binutils development-gcc development-collect-aros
 
 cd      $BUILD_BASE/AROS/bin/$HOST_OS-$HOST_CPU/AROS
