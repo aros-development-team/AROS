@@ -1601,7 +1601,7 @@ Optional Features:
   --enable-ccache         Use ccache as a front end to the compiler
                           (default=no).
   --enable-lto=yes|no     Enable link time optimizations if the target
-                          compiler supports them (default=no)
+                          compiler supports them (default=yes)
   --enable-target-variant=NAME
                           Enable a specific target variant (default=none)
   --enable-amigaos-compliance=VERSION
@@ -7876,7 +7876,7 @@ $as_echo_n "checking if we should enable link time optimizations (LTO)... " >&6;
 if test "${enable_lto+set}" = set; then :
   enableval=$enable_lto; aros_config_lto="$enableval"
 else
-  aros_config_lto="no"
+  aros_config_lto="yes"
 fi
 
 if test "$aros_config_lto" != "yes"; then
