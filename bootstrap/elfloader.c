@@ -17,6 +17,9 @@
  */
 static inline int Strcmp(const char *a, const char *b) { return strcmp(a, b); }
 
+#undef __pure2
+#undef __deprecated
+
 #include <dos/elf.h>
 #include <libraries/debug.h>
 
