@@ -337,6 +337,8 @@ IPTR UXIO__Hidd_UnixIO__RecvPacket(OOP_Class *cl, OOP_Object *o, struct pHidd_Un
                 break;
 
         } while((err == EINTR) || (err == EAGAIN));
+#else
+        (void)pd;
 #endif /* HOST_OS_linux */
 
         if (user)
@@ -431,6 +433,8 @@ IPTR UXIO__Hidd_UnixIO__SendPacket(OOP_Class *cl, OOP_Object *o, struct pHidd_Un
                 break;
 
         } while((retval < 1) && ((err == EINTR) || (err == EAGAIN) || (err == 0)));
+#else
+        (void)pd;
 #endif /* HOST_OS_linux */
 
         if (user)
