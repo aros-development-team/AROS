@@ -80,7 +80,7 @@ do {						\
 #endif 
 
 #define GLOBAL_SIGNAL_INIT(sighandler) \
-	static void sighandler ## _gate (int sig, int code, ucontext_t *sc) \
+	static void sighandler ## _gate (int sig, siginfo_t *info, void *sc) \
 	{						     \
 	    sighandler(sig, sc);		             \
 	}
