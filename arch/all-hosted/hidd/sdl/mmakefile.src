@@ -3,7 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- hidd-sdlgfx-yes : kernel-hidd-sdl
 
 FILES  := startup sdl_hostlib sdl_init event keymap gfxclass bmclass mouseclass kbdclass
-EXEDIR := $(AROS_DEVS)/Monitors
+EXEDIR := $(AROSDIR)/Storage/Monitors
 
 %build_prog mmake=kernel-hidd-sdl \
   progname=SDL targetdir=$(EXEDIR) \
