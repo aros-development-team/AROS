@@ -77,3 +77,7 @@ CFG_MAKE_JOBS=1
 
 # Whether to use common ports sources directory
 CFG_PORTSSOURCES_ENABLE=no
+
+# Which package to use to build toolchain that will be used for other builds in this configuration
+# Allowed: none (disable), <crosstools package name> (enable)
+CFG_PREBUILD_TOOLCHAIN_PACKAGE=none

@@ -34,6 +34,12 @@ if [ $? != 0 ]; then
     exit 5
 fi
 
+#-- Pre-build crosstools -----------------------------------------------------
+if [ "$CFG_PREBUILD_TOOLCHAIN_PACKAGE" != "none" ]; then
+    # Place the package indicated as crosstools as first package
+    CFG_PACKAGES=($CFG_PREBUILD_TOOLCHAIN_PACKAGE ${CFG_PACKAGES[@]})
+fi
+
 #-- Build packages -----------------------------------------------------------
 failed=()
 succeeded=()
