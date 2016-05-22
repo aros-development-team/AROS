@@ -1,0 +1,6 @@
+#!/bin/zsh
+# Creates AROS/pc-x86_64 crosstools packages.
+
+BUILDTARGET=pc-x86_64
+
+source $SP/pkg/crosstools

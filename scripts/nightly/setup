@@ -21,6 +21,7 @@ ARCHIVE_ROOT=$ROOT/Archive
 ARCHIVE_BASE=$ARCHIVE_ROOT/$VERSION
 
 PORTSSOURCES_ROOT=$ROOT/PortsSources
+TOOLCHAIN_BASE=$BUILD_BASE/Toolchain
 
 # Setup log paths
 LOG_BASE=$ARCHIVE_BASE/logs/$CFG_NAME
@@ -65,11 +66,20 @@ export CC=$CFG_CC
 export PYTHON=$CFG_PYTHON
 MAKE_JOBS=$CFG_MAKE_JOBS
 PORTSSOURCESOPT=""
+AROSTOOLCHAININSTALLOPT=""
+AROSTOOLCHAINOPT=""
 
 # Enable --with-portssources ?
 if [[ "$CFG_PORTSSOURCES_ENABLE" == "yes" ]]; then
     PORTSSOURCESOPT="--with-portssources=$PORTSSOURCES_ROOT"
 fi
+
+# Enable --with-aros-toolchain ?
+if [[ "$CFG_PREBUILD_TOOLCHAIN_PACKAGE" != "none" ]]; then
+    AROSTOOLCHAININSTALLOPT="--with-aros-toolchain-install=$TOOLCHAIN_BASE"
+    AROSTOOLCHAINOPT="--with-aros-toolchain=yes"
+fi
+
 
 # Initial setup, if requested
 if [[ $1 == "initial" ]]; then
