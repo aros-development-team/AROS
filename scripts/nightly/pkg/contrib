@@ -15,7 +15,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly $PORTSSOURCESOPT
+execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT $AROSTOOLCHAINOPT
 make    -j $MAKE_JOBS tools mmake contrib
 
 PACKAGE=$BASENAME-$BUILDTARGET-contrib
