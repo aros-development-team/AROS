@@ -1451,6 +1451,7 @@ GLOB_MKDIRS += $(BD_OBJDIR) $(BD_TARGETDIR)
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     includedir= libdir= \
+    compiler=target \
     uselibs= usehostlibs= usestartup=yes detach=no lto=$(TARGET_LTO)
 
 .PHONY : %(mmake)
@@ -1486,7 +1487,7 @@ endif
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile_multi basenames=$(BD_FILES) targetdir=$(BD_OBJDIR) \
-    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
+    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler="%(compiler)"
 
 %rule_link_progs progs=$(BD_FILES) nix="%(nix)" \
     targetdir=$(BD_TARGETDIR) objdir=$(BD_OBJDIR) \
