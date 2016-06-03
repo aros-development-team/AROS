@@ -53,7 +53,7 @@ RETCODE adfInstallBootBlock(struct Volume *vol, unsigned char* code)
  */
 BOOL isSectNumValid(struct Volume *vol, SECTNUM nSect)
 {
-    return( 0<=nSect && nSect < vol->totalBlocks);
+    return( nSect < vol->totalBlocks);
 }	
 	
 
