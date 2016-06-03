@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
   if(NewChunk(IH, MAKE_ID('A','U','T','H')))
   {
-   WriteChunkData(IH, "Jörg Dietrich", 13);
+   WriteChunkData(IH, "Joerg Dietrich", 13);
    EndChunk(IH);
   }
 
