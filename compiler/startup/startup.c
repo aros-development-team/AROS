@@ -20,7 +20,7 @@
 #include <aros/startup.h>
 
 struct DosLibrary *DOSBase;
-extern const LONG const __aros_libreq_DOSBase __attribute__((weak));
+extern const LONG __aros_libreq_DOSBase __attribute__((weak));
 
 THIS_PROGRAM_HANDLES_SYMBOLSET(PROGRAM_ENTRIES)
 
