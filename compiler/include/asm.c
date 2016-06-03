@@ -22,25 +22,25 @@
 
     /* m68k relative addresses must *not* start with a '#' */
 #define DEFINE(sym, val) \
-    asm volatile("\n#define " #sym " %c0 ": : "i" (val))
+    asm volatile("\n.asciz \"#define " #sym " %c0 \"": : "i" (val))
 #else
 #define DEFINE(sym, val) \
-    asm volatile("\n#define " #sym " %0 ": : "i" (val))
+    asm volatile("\n.asciz \"#define " #sym " %0 \"": : "i" (val))
 #endif
 
 #define FuncOffset(x)       (long)__AROS_GETJUMPVEC(0,x)
 
 int main(void) {
-    asm volatile("\n/* Macros */" ::);
+    asm volatile("\n.asciz \"/* Macros */\"\n" ::);
 
-    asm volatile("\n#define AROS_CSYMNAME(n)       n\n" ::);
-    asm volatile("\n#define AROS_CDEFNAME(n)       n\n" ::);
-    asm volatile("\n#define AROS_SLIB_ENTRY(n,s,o)   s ## _ ## o ## _ ## n\n" ::);
+    asm volatile("\n.asciz \"#define AROS_CSYMNAME(n)       n\"\n" ::);
+    asm volatile("\n.asciz \"#define AROS_CDEFNAME(n)       n\"\n" ::);
+    asm volatile("\n.asciz \"#define AROS_SLIB_ENTRY(n,s,o)   s ## _ ## o ## _ ## n\"\n" ::);
     
-    asm volatile("\n#define _FUNCTION(n)           .type   n,@function" ::);
-    asm volatile("\n#define _ALIGNMENT             .balign %0" :: "i" (AROS_WORSTALIGN));
+    asm volatile("\n.asciz \"#define _FUNCTION(n)           .type   n,@function\"" ::);
+    asm volatile("\n.asciz \"#define _ALIGNMENT             .balign %0\"" :: "i" (AROS_WORSTALIGN));
 
-    asm volatile("\n/* ExecBase */" ::);
+    asm volatile("\n.asciz \"/* ExecBase */\"" ::);
     DEFINE(AttnResched   , offsetof (struct ExecBase, AttnResched));
     DEFINE(AttnFlags     , offsetof (struct ExecBase, AttnFlags));
     DEFINE(IDNestCnt     , offsetof (struct ExecBase, IDNestCnt));
@@ -54,7 +54,7 @@ int main(void) {
     DEFINE(Elapsed       , offsetof (struct ExecBase, Elapsed));
     DEFINE(SysStkUpper   , offsetof (struct ExecBase, SysStkUpper));
 
-    asm volatile("\n/* struct Task */" ::);
+    asm volatile("\n.asciz \"/* struct Task */\"" ::);
     DEFINE(tc_State      , offsetof (struct Task, tc_State));
     DEFINE(tc_Flags      , offsetof (struct Task, tc_Flags));
     DEFINE(tc_ExceptCode , offsetof (struct Task, tc_ExceptCode));
@@ -69,10 +69,10 @@ int main(void) {
     DEFINE(tc_IDNestCnt  , offsetof (struct Task, tc_IDNestCnt));
     DEFINE(tc_ETask      , offsetof (struct Task, tc_UnionETask.tc_ETask));
 
-    asm volatile("\n/* struct ETask */" ::);
+    asm volatile("\n.asciz \"/* struct ETask */\"" ::);
     DEFINE(et_TaskStorage, offsetof (struct ETask, et_TaskStorage));
 
-    asm volatile("\n/* struct Process */" ::);
+    asm volatile("\n.asciz \"/* struct Process */\"" ::);
     DEFINE(pr_CES        , offsetof (struct Process, pr_CES));
     DEFINE(pr_CIS        , offsetof (struct Process, pr_CIS));
     DEFINE(pr_CLI        , offsetof (struct Process, pr_CLI));
@@ -86,13 +86,13 @@ int main(void) {
     DEFINE(pr_SegList    , offsetof (struct Process, pr_SegList));
     DEFINE(pr_WindowPtr  , offsetof (struct Process, pr_WindowPtr));
 
-    asm volatile("\n/* struct DosBase */" ::);
+    asm volatile("\n.asciz \"/* struct DosBase */\"" ::);
     DEFINE(dl_Root         , offsetof (struct DosLibrary, dl_Root));
     DEFINE(dl_TimeReq      , offsetof (struct DosLibrary, dl_TimeReq));
     DEFINE(dl_UtilityBase  , offsetof (struct DosLibrary, dl_UtilityBase));
     DEFINE(dl_IntuitionBase, offsetof (struct DosLibrary, dl_IntuitionBase));
 
-    asm volatile("\n/* struct DosPacket */" ::);
+    asm volatile("\n.asciz \"/* struct DosPacket */\"" ::);
     DEFINE(dp_Link       , offsetof (struct DosPacket, dp_Link));
     DEFINE(dp_Port       , offsetof (struct DosPacket, dp_Port));
     DEFINE(dp_Type       , offsetof (struct DosPacket, dp_Type));
@@ -106,7 +106,7 @@ int main(void) {
     DEFINE(dp_Arg6       , offsetof (struct DosPacket, dp_Arg6));
     DEFINE(dp_Arg7       , offsetof (struct DosPacket, dp_Arg7));
 
-    asm volatile("\n/* struct FileHandle */" ::);
+    asm volatile("\n.asciz \"/* struct FileHandle */\"" ::);
     DEFINE(fh_Flags      , offsetof (struct FileHandle, fh_Flags));
     DEFINE(fh_Interactive, offsetof (struct FileHandle, fh_Interactive));
     DEFINE(fh_Type       , offsetof (struct FileHandle, fh_Type ));
@@ -114,7 +114,7 @@ int main(void) {
     DEFINE(fh_Pos        , offsetof (struct FileHandle, fh_Pos  ));
     DEFINE(fh_End        , offsetof (struct FileHandle, fh_End  ));
 
-    asm volatile("\n/* struct IORequest */" ::);
+    asm volatile("\n.asciz \"/* struct IORequest */\"" ::);
     DEFINE(io_Message    , offsetof (struct IORequest, io_Message));
     DEFINE(io_Device     , offsetof (struct IORequest, io_Device ));
     DEFINE(io_Unit       , offsetof (struct IORequest, io_Unit   ));
@@ -122,21 +122,21 @@ int main(void) {
     DEFINE(io_Flags      , offsetof (struct IORequest, io_Flags  ));
     DEFINE(io_Error      , offsetof (struct IORequest, io_Error  ));
 
-    asm volatile("\n/* struct timerequest */" ::);
+    asm volatile("\n.asciz \"/* struct timerequest */\"" ::);
     DEFINE(tr_time       , offsetof (struct timerequest, tr_time ));
 
-    asm volatile("\n/* struct MsgPort */" ::);
+    asm volatile("\n.asciz \"/* struct MsgPort */\"" ::);
     DEFINE(mp_SigTask    , offsetof (struct MsgPort, mp_SigTask));
 
-    asm volatile("\n/* struct StackSwapStruct */" ::);
+    asm volatile("\n.asciz \"/* struct StackSwapStruct */\"" ::);
     DEFINE(stk_Lower     , offsetof (struct StackSwapStruct, stk_Lower));
     DEFINE(stk_Upper     , offsetof (struct StackSwapStruct, stk_Upper));
     DEFINE(stk_Pointer   , offsetof (struct StackSwapStruct, stk_Pointer));
 
-    asm volatile("\n/* struct Layer */" ::);
+    asm volatile("\n.asciz \"/* struct Layer */\"" ::);
     DEFINE(ly_Lock       , offsetof (struct Layer, Lock));
 
-    asm volatile("\n/* Task Flags */" ::);
+    asm volatile("\n.asciz \"/* Task Flags */\"" ::);
     DEFINE(TS_RUN        , TS_RUN);
     DEFINE(TS_READY      , TS_READY);
     DEFINE(TF_STACKCHK   , TF_STACKCHK);
@@ -144,10 +144,10 @@ int main(void) {
     DEFINE(TF_SWITCH     , TF_SWITCH);
     DEFINE(TF_LAUNCH     , TF_LAUNCH);
 
-    asm volatile("\n/* Exec Flags */" ::);
+    asm volatile("\n.asciz \"/* Exec Flags */\"" ::);
     DEFINE(AFF_FPU       , AFF_FPU);
 
-    asm volatile("\n/* Exec functions */" ::);
+    asm volatile("\n.asciz \"/* Exec functions */\"" ::);
     DEFINE(Supervisor    , FuncOffset (5));
     DEFINE(Reschedule    , FuncOffset (8));
     DEFINE(Switch        , FuncOffset (9));
@@ -163,7 +163,7 @@ int main(void) {
     DEFINE(AttemptSemaphore, FuncOffset (96));
     DEFINE(StackSwap     , FuncOffset (122));
 
-    asm volatile("\n/* Constants */" ::);
+    asm volatile("\n.asciz \"/* Constants */\"" ::);
     DEFINE(AT_DeadEnd    , AT_DeadEnd);
     DEFINE(AN_StackProbe , AN_StackProbe);
 
@@ -175,7 +175,7 @@ int main(void) {
     DEFINE(lh_Head       , offsetof (struct List, lh_Head));
     DEFINE(lh_TailPred   , offsetof (struct List, lh_TailPred));
 
-    asm volatile("\n/* CPU context */" ::);
+    asm volatile("\n.asciz \"/* CPU context */\"" ::);
 #ifdef __x86_64__
     DEFINE(ECF_SEGMENTS, ECF_SEGMENTS);
 
@@ -203,10 +203,10 @@ int main(void) {
 #endif
 
 #ifdef UseExecstubs
-    asm volatile("\n#define UseExecstubs 1" ::);
+    asm volatile("\n.asciz \"#define UseExecstubs 1\"" ::);
 #endif
 
-    asm volatile("\n/* jmp_buf */" ::);
+    asm volatile("\n.asciz \"/* jmp_buf */\"" ::);
     DEFINE(jmpbuf_SIZEOF, sizeof(jmp_buf));
     DEFINE(retaddr, offsetof(struct __jmp_buf, retaddr));
 
