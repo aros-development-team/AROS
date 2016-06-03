@@ -89,7 +89,7 @@ diff -ruN cfe-3.8.0.src/lib/Driver/AROSToolChain.cpp cfe-3.8.0.src.aros/lib/Driv
 +  }
 +
 +  // Use LLD by default.
-+//  DefaultLinker = "lld";
++  DefaultLinker = "lld";
 +}
 +
 +#if (0)
