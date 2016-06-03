@@ -718,7 +718,7 @@ static void writehandler(FILE *out, struct config *cfg)
     fprintf(out,
            "\n"
            "LONG %s(struct ExecBase *sysBase);\n"
-           "extern const LONG const __aros_libreq_SysBase __attribute__((weak));\n"
+           "extern const LONG __aros_libreq_SysBase __attribute__((weak));\n"
            "\n"
            "__startup AROS_PROCH(GM_UNIQUENAME(Handler), argptr, argsize, SysBase)\n"
            "{\n"
@@ -892,7 +892,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
         writehandler(out, cfg);
 
     fprintf(out,
-            "extern const LONG const __aros_libreq_SysBase __attribute__((weak));\n"
+            "extern const LONG __aros_libreq_SysBase __attribute__((weak));\n"
             "\n"
             "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
             "    AROS_UFHA(LIBBASETYPEPTR, LIBBASE, D0),\n"
