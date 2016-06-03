@@ -649,7 +649,7 @@ RETCODE adfReadDataBlock(struct Volume *vol, SECTNUM nSect, void *data)
             (*adfEnv.wFct)("adfReadDataBlock : invalid checksum");
         if (dBlock->type!=T_DATA)
             (*adfEnv.wFct)("adfReadDataBlock : id T_DATA not found");
-        if (dBlock->dataSize<0 || dBlock->dataSize>488)
+        if (dBlock->dataSize>488)
             (*adfEnv.wFct)("adfReadDataBlock : dataSize incorrect");
         if ( !isSectNumValid(vol,dBlock->headerKey) )
 			(*adfEnv.wFct)("adfReadDataBlock : headerKey out of range");
@@ -717,7 +717,7 @@ RETCODE adfReadFileExtBlock(struct Volume *vol, SECTNUM nSect, struct bFileExtBl
         (*adfEnv.wFct)("adfReadFileExtBlock : stype  ST_FILE not found");
     if (fext->headerKey!=nSect)
         (*adfEnv.wFct)("adfReadFileExtBlock : headerKey!=nSect");
-    if (fext->highSeq<0 || fext->highSeq>MAX_DATABLK)
+    if (fext->highSeq>MAX_DATABLK)
         (*adfEnv.wFct)("adfReadFileExtBlock : highSeq out of range");
     if ( !isSectNumValid(vol, fext->parent) ) 
         (*adfEnv.wFct)("adfReadFileExtBlock : parent out of range");
