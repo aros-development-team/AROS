@@ -99,7 +99,7 @@ $(OBJDIR)/asm.s : asm.c | $(OBJDIR)
 
 $(GENINCDIR)/aros/$(CPU)/asm.h : $(OBJDIR)/asm.s | $(GENINCDIR)/aros/$(AROS_TARGET_CPU)
 	@$(ECHO) Generating $@...
-	@grep "^[/#][*d]" $< | sed s/[$$]//g >$@
+	grep ".asci" $< | cut -d'"' -f2 | sed 's/\$$//g' >$@
 
 $(OBJDIR) :
 	@$(MKDIR) $@
