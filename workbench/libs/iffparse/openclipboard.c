@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,10 +26,10 @@
 
 
     INPUTS
-	unitNumber  - a clipboard device unit number (usually PRIMARY_CLIP).
+	unitNumber - a clipboard device unit number (usually PRIMARY_CLIP).
 
     RESULT
-	ch	    -  pointer to ClipboarHandle struct or NULL if unsuccessfull.
+	ch -  pointer to ClipboardHandle struct or NULL if unsuccessful.
 
     NOTES
 

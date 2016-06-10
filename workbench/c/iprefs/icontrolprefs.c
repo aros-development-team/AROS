@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -85,7 +85,7 @@ void IControlPrefs_Handler(STRPTR filename)
 
 	    icontrolprefs = LoadChunk(iff, 0, MEMF_ANY);
 	    if (icontrolprefs) {
-    	    	D(bug("IControlPrefs_Handler: ID_ICTL chunk succesfully loaded.\n"));
+    	    	D(bug("IControlPrefs_Handler: ID_ICTL chunk successfully loaded.\n"));
     	    	SetIControlPrefs(icontrolprefs);
 		FreeVec(icontrolprefs);		
 	    }

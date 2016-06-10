@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReadBattClock() function.
@@ -91,7 +91,7 @@ AROS_LH0(ULONG, ReadBattClock,
     			}
     			D(bug("\n"));
 
-    			/* Ok, let's hope data was successfuly read from RTC. Convert it to ClockDate structure */
+    			/* Ok, let's hope data was successfully read from RTC. Convert it to ClockDate structure */
     			date.year = 2000 + (data[6] & 0xf) + 10*(data[6] >> 4);
     			date.month = (data[5] & 0xf) + (data[5] >> 4)*10;
     			date.mday = (data[4] & 0xf) + (data[4] >> 4)*10;

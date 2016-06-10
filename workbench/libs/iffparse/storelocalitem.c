@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,7 @@
 	position  -  IFFSLI_ROOT, IFFSLI_PROP or IFFSLI_TOP.
 
     RESULT
-	error	  -  0 if succesfull, IFFERR_#? otherwise.
+	error	  -  0 if successful, IFFERR_#? otherwise.
 
     NOTES
 

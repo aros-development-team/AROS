@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel IA-32 APIC driver.
@@ -287,7 +287,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
 	 * On my machine (macmini 3,1, as OS X system profiler says), the core starts up from first
 	 * attempt. The second attempt ends up in error (according to the documentation, the STARTUP
 	 * can be accepted only once, while the core in RESET or INIT state, and first STARTUP, if
-	 * succesful, brings the core out of this state).
+	 * successful, brings the core out of this state).
 	 * Here we try to detect this condition. If the core accepted STARTUP, we suggest that it has
 	 * started up, and break the loop.
 	 * A topic at osdev.org forum (http://forum.osdev.org/viewtopic.php?f=1&t=23018)

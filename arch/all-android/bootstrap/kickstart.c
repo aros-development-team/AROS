@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -82,7 +82,7 @@ static void childHandler(int sig)
 /*
  * Just remember arguments and return with zero returncode.
  * This will signal to Java side that preparation (Load() method)
- * completed succesfully. Next Java side can execute Kick() method
+ * completed successfully. Next Java side can execute Kick() method
  * in order to actually run AROS.
  * This separation helps to implement warm restart. Kick() can be executed
  * multiple times.
@@ -99,7 +99,7 @@ int kick(int (*addr)(), struct TagItem *msg)
  * The actual kicker.
  * Similar to generic UNIX one, but uses SIGCHILD handler instead of waitpid()
  * in order to detect when AROS exits.
- * When this method succesfully exits, a display pipe server is run on Java side.
+ * When this method successfully exits, a display pipe server is run on Java side.
  */
 int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobject readfd, jobject writefd)
 {

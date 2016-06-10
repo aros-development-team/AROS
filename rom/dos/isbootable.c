@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Can this disk boot on your architecture?
@@ -45,7 +45,7 @@ BOOL __dos_IsBootable(struct DosLibrary * DOSBase, BPTR lock)
 #endif
     }
 
-    D(bug("[__dos_IsBootable] Opened succesfully\n"));
+    D(bug("[__dos_IsBootable] Opened successfully\n"));
 
     abfile_fib = AllocDosObject(DOS_FIB, NULL);
     if (abfile_fib)

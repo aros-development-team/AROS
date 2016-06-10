@@ -1,6 +1,6 @@
 /*
-     Copyright 2010, The AROS Development Team. All rights reserved.
-     $Id$
+    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 /*
@@ -1292,7 +1292,7 @@ VOID _ADCMD_LOCK(struct IOAudio *audioio, ETASK *eta)
 
             if (channel->eu_allockey == audioio->ioa_AllocKey)
             {
-                final |= 1 << chan; // Ok for this unit the command is successfull.
+                final |= 1 << chan; // Ok for this unit the command is successful.
 
                 // ????????????????????????????????????????????????
 
@@ -1366,7 +1366,7 @@ VOID _ADCMD_FINISH(struct IOAudio *audioio, ETASK *eta)
 
             if (channel->eu_allockey == audioio->ioa_AllocKey)
             {
-                final |= 1 << chan; // Ok for this unit the command is successfull.
+                final |= 1 << chan; // Ok for this unit the command is successful.
 
                 // ????????????????????????????????????????????????
 
@@ -1430,7 +1430,7 @@ VOID _ADCMD_PERVOL(struct IOAudio *audioio, ETASK *eta)
             channel = eta->et_units[chan];
             if (channel->eu_allockey == audioio->ioa_AllocKey)
             {
-                final |= 1 << chan; // Ok for this unit the command is successfull.
+                final |= 1 << chan; // Ok for this unit the command is successful.
                 UnitAHIPerVol(channel, audioio);
             }
             else
@@ -1658,7 +1658,7 @@ VOID _CMD_START(struct IOAudio *audioio, ETASK *eta)
 
             if (channel->eu_allockey == audioio->ioa_AllocKey)
             {
-                final |= 1 << chan; // Ok for this unit the command is successfull.
+                final |= 1 << chan; // Ok for this unit the command is successful.
                 channel->eu_status &= ~UNIT_STOP; // The unit now is ready.
                 StartWaiting(channel, eta);
             }
@@ -1731,7 +1731,7 @@ VOID _CMD_STOP(struct IOAudio *audioio, ETASK *eta)
 
             if (channel->eu_allockey == audioio->ioa_AllocKey)
             {
-                final |= 1 << chan; // Ok for this unit the command is successfull.
+                final |= 1 << chan; // Ok for this unit the command is successful.
                 channel->eu_status |= UNIT_STOP; // The unit now is stopped.
 
                 // stop the output if there is.
@@ -2232,7 +2232,7 @@ VOID _CMD_CLEAR(struct IOAudio *audioio, ETASK *eta)
 
             if (channel->eu_allockey == audioio->ioa_AllocKey)
             {
-                final |= 1 << chan; // Ok for this unit the command is successfull.
+                final |= 1 << chan; // Ok for this unit the command is successful.
             }
             else
             {
@@ -2296,7 +2296,7 @@ VOID _CMD_UPDATE(struct IOAudio *audioio, ETASK *eta)
 
             if (channel->eu_allockey == audioio->ioa_AllocKey)
             {
-                final |= 1 << chan; // Ok for this unit the command is successfull.
+                final |= 1 << chan; // Ok for this unit the command is successful.
             }
             else
             {
@@ -2361,7 +2361,7 @@ VOID _ADCMD_SETPREC(struct IOAudio *audioio, ETASK *eta)
 
             if (channel->eu_allockey == audioio->ioa_AllocKey)
             {
-                final |= 1 << chan; // Ok for this unit the command is successfull.
+                final |= 1 << chan; // Ok for this unit the command is successful.
                 channel->eu_pri
                         = audioio->ioa_Request.io_Message.mn_Node.ln_Pri; // Ok, for this unit change the priority.
             }

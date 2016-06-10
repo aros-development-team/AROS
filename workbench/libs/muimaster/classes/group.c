@@ -1,6 +1,6 @@
 /*
-    Copyright  1999, David Le Corfec.
-    Copyright  2002-2015, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002-2016, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -2322,7 +2322,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj,
     Object *cstate;
     Object *child;
     ULONG total_weight;
-    WORD remainder;    /* must converge to 0 to succesfully end layout */
+    WORD remainder;    /* must converge to 0 to successfully end layout */
     WORD total_size;
     WORD total_size_backup;
     WORD total_init_size;       /* total size of the ideally sized children */

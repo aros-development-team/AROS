@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function gets().
@@ -27,7 +27,7 @@
 	buffer - Write characters into this buffer
 
     RESULT
-	buffer when succesfull. NULL in case of an error or when EOF without any
+	buffer when successful. NULL in case of an error or when EOF without any
         characters read. In the latter case buffer array is unchanged.
 
     NOTES

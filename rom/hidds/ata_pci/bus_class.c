@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -330,7 +330,7 @@ BOOL PCIATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
      * it was disabled because it is complete rubbish. According
      * to specifications, these bits in DMA status register are
      * informational only, and they are set by machine's firmware
-     * if it has succesfully configured the drive for DMA operations.
+     * if it has successfully configured the drive for DMA operations.
      * Actually, we should modify controller's timing registers here.
      * The problem is that these registers are non-standard, and
      * different controllers have them completely different.

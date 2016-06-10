@@ -2001,7 +2001,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
     fi
 else
     dnl For a native build we only care if our host_cc can produce static ELF files. If so, we can use
-    dnl it as kernel_cc. If not, (e. g. we are on Windows or Darwin), we need a crosscompiler.
+    dnl it as kernel_cc. If not, (e.g. we are on Windows or Darwin), we need a crosscompiler.
     if test "$host_cc_elf" = "no" ; then
         cross_compiling=yes
     fi

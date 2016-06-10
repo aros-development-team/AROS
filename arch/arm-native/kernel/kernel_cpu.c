@@ -94,8 +94,8 @@ void cpu_Register()
 #if defined(__AROSEXEC_SMP__)
     __tls = TLS_PTR_GET();
 
-    /* Now we are ready to boostrap and launch the schedular */
-    bug("[Kernel:%02d] Boostrapping..\n", cpunum);
+    /* Now we are ready to bootstrap and launch the scheduler */
+    bug("[Kernel:%02d] Bootstrapping...\n", cpunum);
 
     asm volatile ("mrs %0, cpsr" :"=r"(tmp));
     bug("[Kernel:%02d] CPSR=%08x\n", cpunum, tmp);

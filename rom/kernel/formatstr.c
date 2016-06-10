@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -42,7 +42,7 @@
 	It is expected to return 1 on success and 0 on failure.
 
     RESULT
-	Number of succesfully printed characters
+	Number of successfully printed characters
 
     NOTES
 

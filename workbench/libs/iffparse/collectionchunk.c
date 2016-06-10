@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,7 +36,7 @@
 	id    -  IFF chunk id identifier for chunk to collect.
 
     RESULT
-	error - 0 if successfulle. IFFERR_#? elsewise.
+	error - 0 if successful. IFFERR_#? otherwise.
 
     NOTES
 

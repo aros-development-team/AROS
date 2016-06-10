@@ -54,8 +54,8 @@ static LONG GetHex(const char *src)
 ///
 /// GetQP()
 /************************************************************************
- Convert a =XX string to it's value (into *val). Returns TRUE if
- conversion was successfull in that case *src_ptr will advanved as well.
+ Convert a =XX string to its value (into *val). Returns TRUE if
+ conversion was successful; in that case *src_ptr will be advanced as well.
 *************************************************************************/
 static BOOL GetQP(const char **src_ptr, unsigned char *val)
 {

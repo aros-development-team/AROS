@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -193,7 +193,7 @@ static UPINT GetOwner(struct LibBase *base, PCIBoard *board)
                    ti_Data set to NULL will be skipped.
 
     RESULT
-        Number of succesfully processed tags.
+        Number of successfully processed tags.
 
     NOTES
         AROS implementation of prometheus.library is a wrapper on top of

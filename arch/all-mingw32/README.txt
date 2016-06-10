@@ -23,7 +23,7 @@ f) libiconv plus development files (only for MinGW - for building makecountry).
 needs to be fixed): build system CPU should be different from i386. Otherwise configure suggests native build
 and attempts to use host's gcc as a kernel compiler (one that builds a bootstrap and helper DLLs). Of course
 it won't work. For cross-compiling you need the same toolset as for native build, plus Mingw32-targetted
-crosscompiler. Currently cross-build is succesfully performed on Linux/x86-64 using native gcc v4.1.2 and
+crosscompiler. Currently cross-build is successfully performed on Linux/x86-64 using native gcc v4.1.2 and
 both crosscompilers v4.2.2 (built from vanilla source tree).
 
  2. RUNNING

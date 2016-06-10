@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI configuration mechanism 2 access functions
@@ -78,7 +78,7 @@ static BOOL ProbeMech1(struct pci_staticdata *psd)
 
         if (SanityCheck(psd))
         {
-            /* Succesfully detected exit */
+            /* Successfully detected exit */
             return TRUE;
         }
     }

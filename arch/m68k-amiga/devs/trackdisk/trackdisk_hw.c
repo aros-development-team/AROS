@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Intel HW floppy stuff
+    Desc: Amiga HW floppy stuff
     Lang: English
 */
 
@@ -487,7 +487,7 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
                 continue; // corrupt sector number
             }
             if (tdb->td_sectorbits & (1 << trackoffs)) {
-                // skip sector if it has already been succesfully decoded and copied
+                // skip sector if it has already been successfully decoded and copied
                 raw = rawnext;
                 continue;
             }

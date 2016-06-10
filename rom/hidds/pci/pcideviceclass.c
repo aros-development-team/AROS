@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI device class
@@ -207,7 +207,7 @@ VOID PCIDev__Hidd_PCIDevice__WriteConfigLong(OOP_Class *cl, OOP_Object *o, struc
         interrupt - Interrupt structure to add.
 
     RESULT
-        TRUE it succesful or FALSE on failure.
+        TRUE it successful or FALSE on failure.
 
     NOTES
 

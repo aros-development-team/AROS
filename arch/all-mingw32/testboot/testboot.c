@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,7 +22,7 @@ int __startup start(const struct TagItem *tags)
     if (!hif)
         return -1;
 
-    KPrintf(hif, "Test module succesfully started\n");
+    KPrintf(hif, "Test module successfully started\n");
     KPrintf(hif, "Taglist at 0x%p:\n", tags);
 
     while ((tag = LibNextTagItem((struct TagItem **)&tags)))

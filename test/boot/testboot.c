@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,7 +21,7 @@ void __startup start(struct TagItem *tags)
 
     con_InitTagList(tags);
 
-    kprintf("Test module succesfully started\n");
+    kprintf("Test module successfully started\n");
 
     kprintf("Taglist at 0x%p:\n", tags);
     for (; tags->ti_Tag != TAG_DONE; tags++)

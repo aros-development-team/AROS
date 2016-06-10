@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display an alert.
@@ -184,7 +184,7 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
     Enable();
 
     /*
-     * We succesfully displayed an alert in supervisor mode.
+     * We successfully displayed an alert in supervisor mode.
      * Clear alert status by clearing respective fields in ETask.
      */
     if (iet)

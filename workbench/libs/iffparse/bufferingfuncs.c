@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Funtions needed for buffering writes.
@@ -225,7 +225,7 @@ LONG WriteToBuffer( struct BufferList *buflist, UBYTE *mem, LONG size,
     }  /* End of while */
 
     /* If we have reached here, we can be sure that bytes written == size
-       (everything has been succesfull) */
+       (everything has been successful) */
 
     /* Update some stuff */
     buflist->bl_CurrentNode	 = bufnode;

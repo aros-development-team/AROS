@@ -2,7 +2,7 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for amiga.lib
@@ -278,7 +278,7 @@ void GetDataStreamFromFormat(CONST_STRPTR format, va_list args,
     }
 #else
 /* We 'mark' functions that use these macros as non-inlineable
- * to gcc to using the va_start()/va_end() macro pairs.
+ * to gcc by using the va_start()/va_end() macro pairs.
  *
  * This prevents the optimizer from breaking the '&(last)+1'
  * trick to access the datastream after the last argument.

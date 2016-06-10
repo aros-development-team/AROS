@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -233,7 +233,7 @@ OOP_Object *HW__HW__AddDriver(OOP_Class *cl, OOP_Object *o,
 	driver - A pointer to a driver object, returned by HW_AddDriver().
 
     RESULT
-	TRUE if removal succesful or FALSE upon failure.
+	TRUE if removal successful or FALSE upon failure.
 
     NOTES
         The base class returns FALSE only if the driver is not registered
@@ -385,7 +385,7 @@ void HW__HW__EnumDrivers(OOP_Class *cl, OOP_Object *o, struct pHW_EnumDrivers *m
         driverObject - Device driver object.
 
     RESULT
-	TRUE if setup completed succesfully and FALSE in case of error.
+	TRUE if setup completed successfully and FALSE in case of error.
         If this method returns error, the driver object will be disposed
         and moHW_AddDriver method will fail.
 

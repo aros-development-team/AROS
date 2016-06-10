@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright © 2012 The AROS Development Team
+ * Copyright © 2012-2016 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -608,7 +608,7 @@ void ProcessPackets(void) {
 
                             SendEvent(IECLASS_DISKINSERTED);
 
-                            D(bug("[NTFS] %s: \tVolume added successfuly\n", __PRETTY_FUNCTION__));
+                            D(bug("[NTFS] %s: \tVolume added successfully\n", __PRETTY_FUNCTION__));
                         }
                         else if (type == ACTION_VOLUME_REMOVE) {
                             RemDosEntry(vol);
@@ -617,7 +617,7 @@ void ProcessPackets(void) {
 
                             SendEvent(IECLASS_DISKREMOVED);
 
-                            D(bug("[NTFS] %s: \tVolume removed successfuly.\n", __PRETTY_FUNCTION__));
+                            D(bug("[NTFS] %s: \tVolume removed successfully.\n", __PRETTY_FUNCTION__));
                         }
 
                         FreeDosObject(DOS_STDPKT, pkt); /* cleanup */

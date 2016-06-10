@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -51,7 +51,7 @@ AROS_UFH3(struct DummyBase *,LIB_init,
     DummyBase->library.lib_Revision = 0;
     DummyBase->library.lib_IdString = "dummy.library";
 
-    D(bug("dummy.library: Init succesfull\n"));
+    D(bug("dummy.library: Init successful\n"));
     return DummyBase;
     
     AROS_USERFUNC_EXIT

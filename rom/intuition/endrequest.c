@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -74,7 +74,7 @@ static VOID int_endrequest(struct EndRequestActionMsg *msg,
 
     DoSyncAction((APTR)int_endrequest, &msg.msg, IntuitionBase);
 
-    DEBUG_REQUEST(dprintf("EndRequest: removed succesfuly\n"));
+    DEBUG_REQUEST(dprintf("EndRequest: removed successfully\n"));
 
     AROS_LIBFUNC_EXIT
 } /* EndRequest */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,7 @@
 	size  -  size of the new chunk. May be IFFSIZE_UNKNOWN.
 
     RESULT
-	error  -  0 if successfull, IFFERR_#? otherwize.
+	error  -  0 if successful, IFFERR_#? otherwise.
 
     NOTES
 

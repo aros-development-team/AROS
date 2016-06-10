@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -39,7 +39,7 @@
 	args   - A list of arguments
 
     RESULT
-	Number of succesfully printed characters
+	Number of successfully printed characters
 
     NOTES
 

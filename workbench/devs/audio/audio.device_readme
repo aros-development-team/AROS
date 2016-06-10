@@ -233,7 +233,7 @@ To do
 -----
 
 1) Some commands as ADCMD_WAITCYCLE had never been tested by external apps (is very rare they are
-used). They have been tested succesfully under the audio.device own test program only.
+used). They have been tested successfully under the audio.device own test program only.
 2) The device's init function probably touchs some register it shouldn't. Some programs (ADoom for
 example) at first audio.device opening, stops forever after had opened the device. I think is due
 to a stack or register problem. I am inquiring.
@@ -337,7 +337,7 @@ Fixxed the NT_MESSAGE IOAudio node-type problem in BeginIO() so now most program
 CheckIO() now work (ADoom). Fixxed a bug in ADCMD_ALLOCATE when the task asks for a particular
 channel key just known. Rewritten ADCMD_PERVOL even if actually it does nothing special more
 than null. Added in this doc a program compatibility list. Tested with 12 channels and 4 programs
-at 4 channels for each succesfully (only one didn't exit!).   
+at 4 channels for each successfully (only one didn't exit!).   
 
 (51.6 - 22.3.2003)
 Rewritten totally the system which manages lists. Verified, under Samplitude Opus, the CMD_STOP
@@ -360,7 +360,7 @@ initializing for better performance.
 Third release. Added some code for the REAL mode. The slave task actually is a process allowing
 to open the ahi.device. The system opens AHI if it founds it. If not it swaps into FAKE mode.  
 Actually is ready to work in REAL mode. Moreover the device was tested with 8 channels and two
-programs asking both for 4 channels. The test was successfull but in this release the number of
+programs asking both for 4 channels. The test was successful but in this release the number of
 channels was brought to 4 maximum again. The whole is still GCC 68K compiled without any
 optimizations. Under MorphOS all the hits to Ramlib are disappear (there were some not allowed 
 memory accesses). 

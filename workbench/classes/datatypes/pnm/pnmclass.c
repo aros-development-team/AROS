@@ -1,5 +1,5 @@
 /*
-	Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+	Copyright © 1995-2016, The AROS Development Team. All rights reserved.
 	$Id$
 */
 
@@ -114,7 +114,7 @@ static BOOL LoadPNM(struct IClass *cl, Object *o)
 	
 	// Read file header
 	Seek(FileHandle, 0, OFFSET_BEGINNING);
-	D(bug("pnm.datatype/LoadPNM(): Seek successfull\n"));
+	D(bug("pnm.datatype/LoadPNM(): Seek successful\n"));
 
 	if(!FGets(FileHandle, LineBuffer, 128))
 	{
@@ -234,7 +234,7 @@ static BOOL LoadPNM(struct IClass *cl, Object *o)
 		MaxVal = 1;
 	}
 
-	D(bug("pnm.datatype/LoadPNM(): Header successfull read\n"));
+	D(bug("pnm.datatype/LoadPNM(): Header successfully read\n"));
 	// end of header
 
 	bmhd->bmh_Width  = Width;

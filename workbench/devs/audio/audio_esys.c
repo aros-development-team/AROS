@@ -1,5 +1,5 @@
 /*
-     Copyright 2010, The AROS Development Team. All rights reserved.
+     Copyright 2010-2016, The AROS Development Team. All rights reserved.
      $Id$
  */
 
@@ -19,7 +19,7 @@
  *  InitSLAVE
  * -----------
  *
- * Initializes the slave process. Return 1 for successfull, 0 if fails.
+ * Initializes the slave process. Returns 1 if successful, 0 if failed.
  *
  */
 

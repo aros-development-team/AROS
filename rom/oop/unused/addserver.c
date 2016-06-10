@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a server to the list of public servers
@@ -37,7 +37,7 @@
 	serverID - ID that identifies the server.
 
     RESULT
-    	TRUE if successfull, FALSE otherwise.
+    	TRUE if successful, FALSE otherwise.
 
     NOTES
     	Probably not a good API. Implemented
