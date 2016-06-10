@@ -854,7 +854,7 @@ D(bug("[%s] CreateUnit: Warning: The NVM Checksum Is Not Valid!\n", unit->e1ku_n
             }
             else
             {
-                D(bug("[%s] CreateUnit: NVM Checksum validated succesfully\n", unit->e1ku_name));
+                D(bug("[%s] CreateUnit: NVM Checksum validated successfully\n", unit->e1ku_name));
             }
     
             /* copy the MAC address out of the NVM */

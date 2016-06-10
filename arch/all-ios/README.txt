@@ -1,7 +1,7 @@
  1. INTRODUCTION.
 
  This is Apple iOS-hosted port of AROS. Currently it's incomplete and under development.
- i386 architecture support is complete and the port succesfully runs in iPhone Simulator.
+ i386 architecture support is complete and the port successfully runs in iPhone Simulator.
 Support for ARM architecture is still in progress. ARM iOS puts some limitations on application's behavior so
 running AROS under iOS is slightly more complex task than running it on ARM Linux. Currently ARM versions boots
 up to the point where it runs contents of DEVS:Monitors directory. The first loaded binary crashes because of

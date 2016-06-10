@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2016, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -568,8 +568,8 @@ scandirnode (struct DirNode * node, const char * mfname, struct List * ignoredir
 
 		/* Add file to newsubdirs if it is a directory and it has not to be ignored
 		 */
-		st.st_mode = 0; /* This makes us to ignore the file if it can't be stat()'ed.
-				   This lets us to succesfully skip Unicode-named files under Windows */
+		st.st_mode = 0; /* This makes us ignore the file if it can't be stat()'ed.
+				   This lets us successfully skip Unicode-named files under Windows */
 		stat (dirent->d_name, &st);
 
 		if (S_ISDIR (st.st_mode)

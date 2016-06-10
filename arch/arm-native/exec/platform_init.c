@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -103,7 +103,7 @@ AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
 
     struct Task *thisTask = GET_THIS_TASK;
 
-    /* tell the schedular that the task is waiting on a spinlock */
+    /* tell the scheduler that the task is waiting on a spinlock */
     thisTask->tc_State = TS_SPIN;
     GetIntETask(thisTask)->iet_SpinLock = thisLock;
 
@@ -136,7 +136,7 @@ int Exec_ARMCPUSMPInit(struct ExecBase *SysBase)
 {
     int cpu, thiscpu = KrnGetCPUNumber();
 
-    /* setup the task spinning hook */
+    /* set up the task spinning hook */
     Exec_TaskSpinLockFailHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockFailFunc;
 
     D(bug("[Exec] %s: Task SpinLock Fail hook @ 0x%p initialised (func @ 0x%p)\n", __PRETTY_FUNCTION__, &Exec_TaskSpinLockFailHook, Exec_TaskSpinLockFailHook.h_Entry));

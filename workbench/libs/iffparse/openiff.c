@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,7 +35,7 @@
 
 
     RESULT
-	error -  0 if successfull, IFFERR_#? elsewise.
+	error -  0 if successful, IFFERR_#? elsewise.
 
     NOTES
 	 This function tells the custom stream handler to initialize

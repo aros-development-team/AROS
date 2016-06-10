@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -51,7 +51,7 @@
 	mode - IFFPARSE_SCAN, IFFPARSE_STEP or IFFPARSE_RAWSTEP.
 
     RESULT
-	0 if successfull or IFFERR_#?
+	0 if successful or IFFERR_#?
 
     NOTES
 

@@ -831,7 +831,7 @@ NList.mcc/MUIM_NList_UseImage
     FUNCTION
         Same function as List.mui/MUIA_List_DropMark.
 
-        After a successfull drop operation, this attribute holds
+        After a successful drop operation, this attribute holds
         the position where we should insert the new entry(ies).
 
     SEE ALSO
@@ -845,7 +845,7 @@ NList.mcc/MUIM_NList_UseImage
         Same function as MUIA_NList_DropMark but will return the
         current DropMark type instead of the DropMark entry number.
 
-        After a successfull drop operation, this attribute holds
+        After a successful drop operation, this attribute holds
         the type of dropmark which where drawn.
 
     SEE ALSO

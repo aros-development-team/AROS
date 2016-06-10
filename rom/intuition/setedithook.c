@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -20,11 +20,11 @@
         struct IntuitionBase *, IntuitionBase, 82, Intuition)
 
 /*  FUNCTION
-        Sets the global (default) string editing hook of intuition
+        Sets the global (default) string editing hook of Intuition
         string gadgets.
 
     INPUTS
-        The stringgagdget editing hook to replace the old one.
+        The string gadget editing hook to replace the old one.
 
     RESULT
         The old edit hook.

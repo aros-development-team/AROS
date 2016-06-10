@@ -33,13 +33,13 @@
 *       ID          - ID of the chunk
 *
 *   RESULT
-*       Success     - TRUE when chunk-header is succesfully written,
+*       Success     - TRUE when chunk-header is successfully written,
 *                     otherwise FALSE
 *
 *   EXAMPLE
 *
 *   NOTES
-*       Chunks startet with NewChunk() must be finished with EndChunk()
+*       Chunks started with NewChunk() must be finished with EndChunk()
 *       to correct the internal chunk-size.
 *
 *   BUGS

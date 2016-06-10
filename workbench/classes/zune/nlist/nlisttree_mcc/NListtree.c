@@ -4133,7 +4133,7 @@ MakeStaticHook(_FindUserDataHook_PointerCompare, _FindUserDataFunc_PointerCompar
 *
 *   FUNCTION
 *
-* After a successfull drop operation, this value holds the position
+* After a successful drop operation, this value holds the position
 * relative to the value of MUIA_NListtree_DropTarget/DropTargetPos.
 *
 *
@@ -4160,7 +4160,7 @@ MakeStaticHook(_FindUserDataHook_PointerCompare, _FindUserDataFunc_PointerCompar
 *
 *   FUNCTION
 *
-* After a successfull drop operation, this value holds the entry where
+* After a successful drop operation, this value holds the entry where
 * the entry was dropped. The relative position (above etc.) can be
 * obtained by reading the attribute MUIA_NListtree_DropType.
 *
@@ -4188,7 +4188,7 @@ MakeStaticHook(_FindUserDataHook_PointerCompare, _FindUserDataFunc_PointerCompar
 *
 *   FUNCTION
 *
-* After a successfull drop operation, this value holds the integer
+* After a successful drop operation, this value holds the integer
 * position of the entry where the dragged entry was dropped. The
 * entry itself can be obtained by reading MUIA_NListtree_DropTarget,
 * the relative position (above etc.) can be obtained by reading the

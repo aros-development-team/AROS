@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -802,8 +802,8 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct pHidd
         	      data - User data (specified in handlerData member of uioInterrupt structure)
 
     RESULT
-	Zero if interrupt was succesfully installed and UNIX errno value if there was en error
-	during setting up the filedescriptor.
+	Zero if interrupt was successfully installed and UNIX errno value if
+	there was an error during setting up the filedescriptor.
 
     NOTES
 

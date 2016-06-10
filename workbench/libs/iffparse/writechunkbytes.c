@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,7 +32,7 @@
 
     RESULT
 	actual	  -  (positive) number of bytes actually written.
-		    (negative) IFFERR_#? indicating unsuccesfull write.
+		    (negative) IFFERR_#? indicating unsuccessful write.
     NOTES
 
     EXAMPLE

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Cocoa Touch display HIDD for AROS
@@ -306,7 +306,7 @@ static int UIKit_Init(struct UIKitBase *base)
     	return FALSE;
     }
 
-    D(bug("[UIKit] Native library loaded succesfully\n"));
+    D(bug("[UIKit] Native library loaded successfully\n"));
 
     HostLib_Lock();
 

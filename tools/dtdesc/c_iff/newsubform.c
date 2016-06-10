@@ -35,7 +35,7 @@
 *       Type        - type of the sub-FORM
 *
 *   RESULT
-*       Success     - TRUE when the FORM-header is succesfully written,
+*       Success     - TRUE when the FORM-header is successfully written,
 *                     otherwise FALSE
 *
 *   EXAMPLE

@@ -41,7 +41,7 @@ the problem and implement correct AROS_HOST_BARRIER macro (similar to ARM versio
  ARM version makes sense only for iOS variant (using
 --enable-target-variant=ios switch). iOS port is incomplete and is described separately.
 
- Building on Mac is verified to be succesful using MacOS X v10.6 (Snow 
+ Building on Mac is verified to be successful using MacOS X v10.6 (Snow 
 Leopard), + gcc 4.2.1 (bundled with Xcode) + aros-binutils v2.20.1
 + aros-gcc v4.4.2. Cross-compilation on non-Mac should be possible provided that
 you get Darwin-targetted crosstoolchain up and running. I haven't tried this.

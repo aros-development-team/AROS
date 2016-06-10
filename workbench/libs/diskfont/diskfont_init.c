@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Diskfont initialization code.
@@ -51,7 +51,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->memint.is_Node.ln_Pri = 1; /* Just above RamLib */
     AddMemHandler(&LIBBASE->memint);
     
-    D(bug("diskfont.library initialized succesfully\n"));
+    D(bug("diskfont.library initialized successfully\n"));
 
     return TRUE;
 }

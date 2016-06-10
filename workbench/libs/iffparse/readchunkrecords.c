@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,8 +33,7 @@
 
     RESULT
 	actual -   (positive) the actual number of whole records read.
-		  (negative) IFFERR_#? error code if not succesfull.
-
+		  (negative) IFFERR_#? error code if not successful.
 
     NOTES
 

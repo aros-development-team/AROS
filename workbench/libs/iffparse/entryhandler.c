@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,7 +42,7 @@
 		    your handler function.
 
     RESULT
-	error - 0 If successfull, IFFERR_#? elsewise.
+	error - 0 If successful, IFFERR_#? otherwise.
 
     NOTES
 

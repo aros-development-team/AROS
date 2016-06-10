@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -217,7 +217,7 @@ static BOOL dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
 	 * Workbench floppy bootblocks return a pointer to dos.library init routine,
 	 * and it needs SysBase in A6.
 	 * We don't close boot screen and libraries here. We will close them after
-	 * dos.library is succesfully initialized, using a second RTF_AFTERDOS ROMTag.
+	 * dos.library is successfully initialized, using a second RTF_AFTERDOS ROMTag.
 	 * This is needed because dos.library contains the second part of "bootable"
 	 * test, trying to mount a filesystem and read the volume.
 	 * We hope it won't do any harm for NDOS game disks.

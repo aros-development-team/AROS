@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -61,7 +61,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 
     if ((bsctx = KrnCreateContext()) == NULL)
     {
-        bug("[Kernel:%02d] FATAL : Failed to create the boostrap Task context\n", cpunum);
+        bug("[Kernel:%02d] FATAL : Failed to create the bootstrap Task context\n", cpunum);
         FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
         FreeMem(ml, bstaskmlsize);
@@ -84,7 +84,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     /* Create a ETask structure and attach CPU context */
     if (!Exec_InitETask(bstask, SysBase))
     {
-        bug("[Kernel:%02d] FATAL : Failed to initialize boostrap ETask\n", cpunum);
+        bug("[Kernel:%02d] FATAL : Failed to initialize bootstrap ETask\n", cpunum);
         FreeVec(bstask->tc_Node.ln_Name);
         FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
@@ -93,7 +93,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     }
     bstask->tc_UnionETask.tc_ETask->et_RegFrame = bsctx;
 
-    /* the boostrap can only run on this cpu */
+    /* the bootstrap can only run on this CPU */
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpunum;
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = (1 << cpunum);
 

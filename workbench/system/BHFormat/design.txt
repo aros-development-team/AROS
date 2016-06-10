@@ -97,7 +97,7 @@ Attempt to read a cylinder of the disk and compare it with the data
 previously written.  Return TRUE if reading is successful and the data
 read matches what was written, FALSE otherwise.  bFormatCylinder must
 have been called previously, and the last call must have specified the
-same cylinder and been succesful.
+same cylinder and been successful.
 
 void FreeDosDevice(void)
 
