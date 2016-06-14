@@ -6700,8 +6700,8 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
       /* save tag1 and load taglist-pointer */
       DoOutput("\\tstw\\t%s%d,%d(%s1)\\n"
                "\\taddi\\t%s%d,%s1,%d\\n",
-      PPCRegPrefix, k+2, 20+k*4, PPCRegPrefix, PPCRegPrefix,
-      k+2, PPCRegPrefix, 20+k*4);
+      PPCRegPrefix, (int)(k+2), (int)(20+k*4), PPCRegPrefix, PPCRegPrefix,
+      (int)(k+2), PPCRegPrefix, (int)(20+k*4));
     }
     DoOutput("\\tlwz\\t%s11,_%s(%s2)\\n"
              "\\tlwz\\t%s0,-%d(%s11)\\n"
@@ -6731,8 +6731,8 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
       /* save tag1 and load taglist-pointer */
       DoOutput("\\tstw\\t%s%d,%d(%s1)\\n"
                "\\taddi\\t%s%d,%s1,%d\\n",
-      PPCRegPrefix, k+3, 24+k*4, PPCRegPrefix, PPCRegPrefix,
-      k+3, PPCRegPrefix, 24+k*4);
+      PPCRegPrefix, (int)(k+3), (int)(24+k*4), PPCRegPrefix, PPCRegPrefix,
+      (int)(k+3), PPCRegPrefix, (int)(24+k*4));
     }
     DoOutput("\\tlwz\\t%s0,-%d(%s3)\\n"
              "\\tmtlr\\t%s0\\n"
