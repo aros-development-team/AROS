@@ -7,9 +7,9 @@ dnl Lang: english
 # Note: After file changes, generate features anew and commit _both_ files.
 -------------------------
 
-AC_INIT(mmakefile)
+AC_INIT(../mmakefile)
 AC_PREREQ(2.61)
-AC_CONFIG_AUX_DIR(scripts/autoconf)
+AC_CONFIG_AUX_DIR(../scripts/autoconf)
 
 AROS_BUILDDIR=`${PWDCMD-pwd}`
 AROS_BUILDDIR_UNIX=${PWD}
@@ -629,7 +629,7 @@ AC_SUBST(aros_cflags_narrowing)
 AC_SUBST(aros_cflags_volatile_register_var)
 
 AC_CONFIG_FILES(
-    ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in
+    ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
 )
 
 AC_OUTPUT

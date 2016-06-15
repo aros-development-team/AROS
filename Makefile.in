@@ -67,13 +67,13 @@ $(CROSSTOOLSDIR)/.installflag-crosstools : $(TOP)/config.status $(AROS_TOOLCHAIN
 crosstools : tools $(CROSSTOOLS_BUILDFLAG)
 	@$(NOP)
 
-$(TOP)/features.status : $(SRCDIR)/features $(CROSSTOOLS_BUILDFLAG)
+$(TOP)/config/features.status : $(SRCDIR)/config/features $(CROSSTOOLS_BUILDFLAG)
 	@$(IF) ! $(TEST) -f $@ ; then \
 	    $(ECHO) "Querying target compiler features..." ; \
-	    cd $(TOP) ; CC="$(TARGET_CC) $(TARGET_SYSROOT)" CFLAGS="$(TARGET_CFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" CPP="$(TARGET_CPP) $(TARGET_SYSROOT)" CXX="$(TARGET_CXX) $(TARGET_SYSROOT)" CXXFLAGS=" $(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" CONFIG_STATUS="features.status" $(SRCDIR)/features  --host=$(AROS_BUILD_HOST) --with-config-dir=$(GENDIR)/config ; \
+	    cd $(TOP)/config ; CC="$(TARGET_CC) $(TARGET_SYSROOT)" CFLAGS="$(TARGET_CFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" CPP="$(TARGET_CPP) $(TARGET_SYSROOT)" CXX="$(TARGET_CXX) $(TARGET_SYSROOT)" CXXFLAGS=" $(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" CONFIG_STATUS="features.status" $(SRCDIR)/config/features  --host=$(AROS_BUILD_HOST) --with-config-dir=$(GENDIR)/config ; \
 	fi
 
-features : crosstools $(TOP)/features.status
+features : crosstools $(TOP)/config/features.status
 	@$(NOP)
 
 $(TOOLLIB) : $(wildcard $(SRCDIR)/tools/toollib/*.[ch])
