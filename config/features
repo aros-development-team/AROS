@@ -581,7 +581,7 @@ PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 PACKAGE_URL=
 
-ac_unique_file="mmakefile"
+ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 aros_cflags_volatile_register_var
@@ -1790,7 +1790,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 ac_aux_dir=
-for ac_dir in scripts/autoconf "$srcdir"/scripts/autoconf; do
+for ac_dir in ../scripts/autoconf "$srcdir"/../scripts/autoconf; do
   if test -f "$ac_dir/install-sh"; then
     ac_aux_dir=$ac_dir
     ac_install_sh="$ac_aux_dir/install-sh -c"
@@ -1806,7 +1806,7 @@ for ac_dir in scripts/autoconf "$srcdir"/scripts/autoconf; do
   fi
 done
 if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in scripts/autoconf \"$srcdir\"/scripts/autoconf" "$LINENO" 5
+  as_fn_error $? "cannot find install-sh, install.sh, or shtool in ../scripts/autoconf \"$srcdir\"/../scripts/autoconf" "$LINENO" 5
 fi
 
 # These three variables are undocumented and unsupported,
@@ -4278,7 +4278,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in"
+ac_config_files="$ac_config_files ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in"
 
 
 cat >confcache <<\_ACEOF
@@ -4986,7 +4986,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "${aros_targetcfg_dir}/compiler.cfg") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/compiler.cfg:config/compiler.cfg.in" ;;
+    "${aros_targetcfg_dir}/compiler.cfg") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
