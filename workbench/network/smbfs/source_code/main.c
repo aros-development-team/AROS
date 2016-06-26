@@ -1668,7 +1668,10 @@ Cleanup(VOID)
 		while((mn = GetMsg(FileSystemPort)) != NULL)
 			ReplyPkt((struct DosPacket *)mn->mn_Node.ln_Name,DOSFALSE,ERROR_ACTION_NOT_KNOWN);
 
+#if !defined(__AROS__)
+		/* AROS codes use message port from file system process */
 		DeleteMsgPort(FileSystemPort);
+#endif
 		FileSystemPort = NULL;
 	}
 
