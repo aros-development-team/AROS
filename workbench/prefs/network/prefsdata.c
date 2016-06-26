@@ -1479,6 +1479,7 @@ static BOOL ReadServer(struct Server *server, BPTR file, LONG size)
     /* Extract needed control parameters */
     if (success)
     {
+        STRPTR p;
         service = FilePart((STRPTR)control_args[ARG_SERVICE]);
         SetServerService(server, service);
         service--;
@@ -1486,9 +1487,12 @@ static BOOL ReadServer(struct Server *server, BPTR file, LONG size)
         host = (STRPTR)control_args[ARG_SERVICE] + 2;
         SetServerHost(server, host);
 
-        SetServerUser(server, (STRPTR)control_args[ARG_USERNAME]);
-        SetServerGroup(server, (STRPTR)control_args[ARG_WORKGROUP]);
-        SetServerPass(server, (STRPTR)control_args[ARG_PASSWORD]);
+        p = (STRPTR)control_args[ARG_USERNAME];
+        SetServerUser(server, (p != NULL ? p : (STRPTR)""));
+        p = (STRPTR)control_args[ARG_WORKGROUP];
+        SetServerGroup(server, (p != NULL ? p : (STRPTR)""));
+        p = (STRPTR)control_args[ARG_PASSWORD];
+        SetServerPass(server, (p != NULL ? p : (STRPTR)""));
     }
 
     if (control_rdargs != NULL)
