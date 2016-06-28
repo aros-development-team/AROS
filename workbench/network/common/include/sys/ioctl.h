@@ -2,7 +2,7 @@
 #define _SYS_IOCTL_H
 
 /*
-    Copyright © 2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -43,6 +43,14 @@
 
 #include <sys/types.h>
 
+struct winsize
+{
+    unsigned short int ws_row;
+    unsigned short int ws_col;
+    unsigned short int ws_xpixel;
+    unsigned short int ws_ypixel;
+};
+
 __BEGIN_DECLS
 int ioctl(int fd, int request, ...);
 __END_DECLS
@@ -72,6 +80,11 @@ __END_DECLS
 #define	_IOW(g,n,t)	_IOC(IOC_IN,	(g), (n), sizeof(t))
 /* this should be _IORW, but stdio got there first */
 #define	_IOWR(g,n,t)	_IOC(IOC_INOUT,	(g), (n), sizeof(t))
+
+/* 
+ * Console I/O controls
+ */
+#define TIOCGWINSZ  _IOR('t', 104, struct winsize)  /* get window size */
 
 /* 
  * File I/O controls
