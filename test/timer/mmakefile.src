@@ -1,0 +1,20 @@
+#   $Id$
+#
+#   Makefile for AROS timer.device tests
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+    getsystime
+
+EXEDIR := $(AROS_TESTS)/timer
+
+#MM test-timer : includes linklibs
+
+#MM- test : test-timer
+#MM- test-quick : test-timer-quick
+
+%build_progs mmake=test-timer \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
