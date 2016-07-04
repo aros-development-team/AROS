@@ -33,7 +33,7 @@
         1       - error 
 
     NOTES
-        Will return success, if *any* of the changes were successfull.
+        Will return success, if *any* of the changes were successful.
 
     EXAMPLE
 
