@@ -6,8 +6,6 @@
 #include "test.h"
 #include <stdio.h>
 #include <string.h>
-#include <proto/dos.h>
-#include <aros/debug.h>
 
 #define TESTNUMBER1         11
 #define TESTNUMBER1STRLEN   2
