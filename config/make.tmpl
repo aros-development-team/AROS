@@ -919,7 +919,7 @@ $(TMP_TARGETS) : TMP_CMD:= $(BD_ASSEMBLER)
 
 $(TMP_TARGETS) : AFLAGS := %(aflags)
 $(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
-	%assemble_q cmd=$(TMP_CMD) opt=$(AFLAGS)
+	%assemble_q cmd=$(TMP_CMD)
 %end
 #------------------------------------------------------------------------------
 
@@ -2199,8 +2199,8 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - objdir is where the .o are generated. Defaults to $(GENDIR)/$(CURDIR)
 # - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
 # - cflags are the flags to compile the source (default $(CFLAGS))
-# - dflags are the flags use during makedepend (default equal to cflags)
-# - aflags are the flags use during assembling (default $(AFLAGS))
+# - dflags are the flags used during makedepend (default equal to cflags)
+# - aflags are the flags used during assembling (default $(AFLAGS))
 # - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
 %define build_linklib mmake=/A libname=/A files= cxxfiles= \
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
@@ -2494,9 +2494,9 @@ $(BD_ASMOBJS$(BDID)) : AFLAGS:=%(aflags)
 
 ifeq ($(TARGET),$(BD_TARGET))
 $(BD_OBJDIR$(BDID))/%.o : %.s
-	%assemble_q opt=$(AFLAGS)
+	%assemble_q
 $(BD_OBJDIR$(BDID))/%.o : %.S
-	%assemble_q opt=$(AFLAGS)
+	%assemble_q
 endif
 
 %include_deps depstargets=$(BD_TARGET) deps=$(BD_DEPS$(BDID))
@@ -2822,9 +2822,9 @@ endif
 
 # Set up build environment, and options for configure script
 ifeq (%(compiler),host)
-    # NB: We need to pass in our crosstoolsdir, but cannot set CLFAGS since it
+    # NB: We need to pass in our crosstoolsdir, but cannot set CFLAGS since it
     # confused configure scripts. We also cannot pass it via _FOR_BUILD
-    # since that wont get picked up during configure.
+    # since that won't get picked up during configure.
     # We also cannot pass in the compiler including std flags so we need to use
     # the "plain" host compiler.
     CONFIG_ENV := %(config_env_extra) \
