@@ -84,6 +84,7 @@ __END_DECLS
 /* 
  * Console I/O controls
  */
+#define TIOCSWINSZ  _IOW('t', 103, struct winsize)  /* set window size */
 #define TIOCGWINSZ  _IOR('t', 104, struct winsize)  /* get window size */
 
 /* 
