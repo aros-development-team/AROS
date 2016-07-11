@@ -74,6 +74,7 @@ extern struct IntCountryPrefs
     spainPrefs,
     swedenPrefs,
     switzerlandPrefs,
+    taiwanPrefs,
     turkeyPrefs,
     ukrainePrefs,
     united_kingdomPrefs,
