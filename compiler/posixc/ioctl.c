@@ -57,7 +57,7 @@ static int fill_consize(APTR fd, struct winsize *ws)
 {
     struct ConUnit *console_unit = NULL;
     struct InfoData *info_data;
-    APTR action_disk_info_arg;
+    BPTR action_disk_info_arg;
     void *console = ((struct FileHandle *) BADDR(fd))->fh_Type;
 
     if(!console)
@@ -179,9 +179,9 @@ static int fill_consize(APTR fd, struct winsize *ws)
 
     switch(fd)
     {
-        case STDIN_FILENO:  desc=Input();
+        case STDIN_FILENO:  desc=BADDR(Input());
            break;
-        case STDOUT_FILENO: desc=Output();
+        case STDOUT_FILENO: desc=BADDR(Output());
            break;
         default:
            desc=__getfdesc(fd); /* FIXME: is this correct? why does it not work for STDOUT/STDIN? */
