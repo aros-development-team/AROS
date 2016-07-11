@@ -140,6 +140,7 @@ struct CountryEntry CountryArray[] =
     { "spain"		, &spainPrefs		},
     { "sweden"		, &swedenPrefs		},
     { "switzerland"	, &switzerlandPrefs	},
+    { "taiwan"		, &taiwanPrefs		},
     { "turkey"		, &turkeyPrefs		},
     { "ukraine"		, &ukrainePrefs		},
     { "united_kingdom"	, &united_kingdomPrefs	},
