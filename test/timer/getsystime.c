@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     if (argc == 2)
         secs = atoi(argv[1]);
 
-    printf("Waiting %u seconds\n", secs);
+    printf("Waiting %u seconds\n", (unsigned int)secs);
 
     if (TimerMP = CreatePort(NULL, 0))
     {
@@ -44,8 +44,8 @@ int main(int argc, char **argv)
 
                 SubTime(&t2, &t1);
                 printf("result %u secs %u micros\n", 
-                    t2.tv_secs,
-                    t2.tv_micro);
+                    (unsigned int)t2.tv_secs,
+                    (unsigned int)t2.tv_micro);
                 CloseDevice((struct IORequest *)TimerIO);
             }
             DeleteExtIO((struct IORequest *)TimerIO);
