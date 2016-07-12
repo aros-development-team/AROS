@@ -16,7 +16,7 @@
 
 #include "__fdesc.h"
 
-static int send_action_packet(struct MsgPort *port, APTR arg)
+static int send_action_packet(struct MsgPort *port, BPTR arg)
 {
     struct MsgPort *replyport;
     struct StandardPacket *packet;
