@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: File Identifier/starter
@@ -67,10 +67,11 @@ typedef unsigned long IPTR;
 #define ErrorOutput() Output()
 #endif
 
-#define ERROR_HEADER "Identify"
+#define PROG_NAME "Identify"
+static const TEXT prog_name[] = PROG_NAME;
 
-const TEXT version_string[] = "$VER: " ERROR_HEADER " 41.1 (02.02.2012)";
-const TEXT template[] = "FILE/M/A,VERBOSE/S";
+const TEXT version_string[] = "$VER: " PROG_NAME " 41.2 (14.7.2016)";
+static const TEXT template[] = "FILE/M/A,VERBOSE/S";
 
 enum
 {
@@ -80,8 +81,7 @@ enum
 };
 
 /*** Prototypes *************************************************************/
-int          identify(CONST_STRPTR filename, BOOL verbose);
-CONST_STRPTR gid2string(ULONG gid);
+static LONG identify(CONST_STRPTR filename, BOOL verbose);
 
 /*** Functions **************************************************************/
 int main(void)
@@ -106,14 +106,14 @@ int main(void)
     }
     else
     {
-        PrintFault(IoErr(), ERROR_HEADER);
+        PrintFault(IoErr(), prog_name);
         rc = RETURN_FAIL;
     }
 
     return rc;
 }
 
-int identify(CONST_STRPTR filename, BOOL verbose)
+static LONG identify(CONST_STRPTR filename, BOOL verbose)
 {
     int  rc   = RETURN_OK;
     BPTR lock = Lock(filename, ACCESS_READ);
@@ -130,7 +130,7 @@ int identify(CONST_STRPTR filename, BOOL verbose)
                 Printf
                 (
                     "%s:\t%s/%s\n", 
-                    filename, gid2string(dth->dth_GroupID), dth->dth_Name
+                    filename, GetDTString(dth->dth_GroupID), dth->dth_Name
                 );
             }
             else
@@ -143,15 +143,18 @@ int identify(CONST_STRPTR filename, BOOL verbose)
                     "File:        %s\n"
                     "Type:        %s/%s\t(GID: %.4s, ID: %.4s)\n"
                     "DT Basename: %s\n\n",
-                    filename, gid2string(dth->dth_GroupID), dth->dth_Name,
+                    filename, GetDTString(dth->dth_GroupID), dth->dth_Name,
                     (CONST_STRPTR) &gid, (CONST_STRPTR) &id,
                     dth->dth_BaseName
                 );
             }
+
+            ReleaseDataType(dt);
         }
         else
         {
-            FPrintf(ErrorOutput(), ERROR_HEADER": Could not obtain datatype for file.\n");
+            FPrintf(ErrorOutput(),
+                PROG_NAME ": Could not obtain datatype for file.\n");
             rc = RETURN_FAIL;
         }
 
@@ -159,26 +162,9 @@ int identify(CONST_STRPTR filename, BOOL verbose)
     }
     else
     {
-        PrintFault(IoErr(), ERROR_HEADER);
+        PrintFault(IoErr(), prog_name);
         rc = RETURN_FAIL;
     }
 
     return rc;
-}
-
-CONST_STRPTR gid2string(ULONG gid)
-{
-    switch (gid)
-    {
-        case GID_SYSTEM:     return "System";
-        case GID_TEXT:       return "Text";
-        case GID_DOCUMENT:   return "Document";
-        case GID_SOUND:      return "Sound";
-        case GID_INSTRUMENT: return "Instrument";
-        case GID_MUSIC:      return "Music";
-        case GID_PICTURE:    return "Picture";
-        case GID_ANIMATION:  return "Animation";
-        case GID_MOVIE:      return "Movie";
-        default:             return NULL;
-    }
 }
