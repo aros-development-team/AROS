@@ -124,14 +124,11 @@ static LONG identify(CONST_STRPTR filename, BOOL verbose)
         if (dt != NULL)
         {
             struct DataTypeHeader *dth = dt->dtn_Header;
-            
+            CONST_STRPTR gid_str = GetDTString(dth->dth_GroupID);
+
             if (!verbose)
             {
-                Printf
-                (
-                    "%s:\t%s/%s\n", 
-                    filename, GetDTString(dth->dth_GroupID), dth->dth_Name
-                );
+                Printf("%s:\t%s/%s\n", filename, gid_str, dth->dth_Name);
             }
             else
             {   
@@ -143,7 +140,7 @@ static LONG identify(CONST_STRPTR filename, BOOL verbose)
                     "File:        %s\n"
                     "Type:        %s/%s\t(GID: %.4s, ID: %.4s)\n"
                     "DT Basename: %s\n\n",
-                    filename, GetDTString(dth->dth_GroupID), dth->dth_Name,
+                    filename, gid_str, dth->dth_Name,
                     (CONST_STRPTR) &gid, (CONST_STRPTR) &id,
                     dth->dth_BaseName
                 );
