@@ -580,7 +580,7 @@ APTR InternalFormatString(const struct Locale * locale,
 /*  SYNOPSIS */
         AROS_LHA(const struct Locale *, locale, A0),
         AROS_LHA(CONST_STRPTR, fmtTemplate, A1),
-        AROS_LHA(CONST_APTR, dataStream, A2),
+        AROS_LHA(RAWARG, dataStream, A2),
         AROS_LHA(const struct Hook *, putCharFunc, A3),
 
 /*  LOCATION */
