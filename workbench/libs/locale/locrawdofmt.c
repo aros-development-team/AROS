@@ -103,7 +103,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
 
 /*  SYNOPSIS */
         AROS_LHA(CONST_STRPTR, FormatString, A0),
-        AROS_LHA(APTR        , DataStream, A1),
+        AROS_LHA(RAWARG      , DataStream, A1),
         AROS_LHA(VOID_FUNC   , PutChProc, A2),
         AROS_LHA(APTR        , PutChData, A3),
 
