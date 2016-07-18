@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write inline/modulename.h. Part of genmodule.
@@ -80,7 +80,7 @@ void writeincinline(struct config *cfg)
                 else if (strcmp(funclistit->name + strlen(funclistit->name) - 7, "TagList") == 0)
                 {
                     isvararg = 1;
-                    /* TagList has to be changed in Tags at the end of the functionname */
+                    /* TagList has to be changed to Tags at the end of the functionname */
                     varargname = strdup(funclistit->name);
                     varargname[strlen(funclistit->name)-4] = 's';
                     varargname[strlen(funclistit->name)-3] = '\0';
@@ -92,6 +92,8 @@ void writeincinline(struct config *cfg)
                     isvararg = 1;
                     varargname = strdup(funclistit->name);
                     varargname[strlen(funclistit->name)-4] = '\0';
+                    if (arglistit && strncmp(arglistit->arg, "RAWARG", 6) == 0)
+                        isvararg = 3;
                 }
                 else if ((funclistit->name[0] == 'V') &&  (strncmp(arglistit->arg, "va_list", 7) == 0))
                 {
