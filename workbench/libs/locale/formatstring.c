@@ -39,7 +39,7 @@ APTR InternalFormatString(const struct Locale * locale,
 
     ULONG template_pos;
     BOOL end;
-    ULONG max_argpos;
+    ULONG max_argpos, max_argpos_datasize;
     ULONG arg_counter;
 
     if (!fmtTemplate)
@@ -50,6 +50,7 @@ APTR InternalFormatString(const struct Locale * locale,
     end = FALSE;
     max_argpos = 1;
     arg_counter = 0;
+    max_argpos_datasize = 0;
 
     while (!end)
     {
@@ -257,6 +258,7 @@ APTR InternalFormatString(const struct Locale * locale,
                      ** arg_pos, left, buflen, limit
                      */
                     {
+                        datasize = sizeof(IPTR);
                         BSTR s = (BSTR) * (UBYTE **) ARG(arg_pos);
 
                         if (s != (BSTR) BNULL)
@@ -458,6 +460,7 @@ APTR InternalFormatString(const struct Locale * locale,
 
                 case 's':      /* NULL terminated string */
                     {
+                        datasize = sizeof(IPTR);
                         {
                             buffer = *(UBYTE **) ARG(arg_pos);
 
@@ -559,7 +562,10 @@ APTR InternalFormatString(const struct Locale * locale,
                 template_pos++;
 
                 if (arg_pos > max_argpos)
+                {
                     max_argpos = arg_pos;
+                    max_argpos_datasize = datasize;
+                }
 
             }
             state = OUTPUT;
@@ -567,7 +573,7 @@ APTR InternalFormatString(const struct Locale * locale,
         }
     }
 
-    return (APTR)ARG(max_argpos);
+    return (APTR)(ARG(max_argpos) + max_argpos_datasize);
 }
 
 /*****************************************************************************
