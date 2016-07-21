@@ -94,8 +94,6 @@ void writeincdefines(struct config *cfg)
                     isvararg = 1;
                     varargname = strdup(funclistit->name);
                     varargname[strlen(funclistit->name)-4] = '\0';
-                    if (arglistit && strncmp(arglistit->arg, "RAWARG",6) == 0)
-                        isvararg = 3;
                 }
                 else if ((funclistit->name[0] == 'V') &&  (strncmp(arglistit->arg, "va_list", 7) == 0))
                 {
