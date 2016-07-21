@@ -57,7 +57,7 @@ struct IntCountryPrefs canadaPrefs =
         /* Int CS, this is the ISO 4217 symbol, followed by the character to
            separate that symbol from the rest of the money. (\x00 for none).
         */
-        "CDN",
+        "CAD",
 
         /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
         "", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
@@ -68,7 +68,7 @@ struct IntCountryPrefs canadaPrefs =
         /* Calendar type */
         CT_7SUN
     },
-    "$VER: canada.country 44.0 (12.04.2013)",
+    "$VER: canada.country 44.1 (21.07.2016)",
     NULL,
     "Countries/Canada"
 };
