@@ -16,13 +16,7 @@ struct IntCountryPrefs united_statesPrefs =
         /* Reserved */
         { 0, 0, 0, 0 },
 
-        /* The country codes in the past have been rather inconsistant,
-           sometimes they are 1 character, 2 chars or 3. It would be nice
-           to have some consistency. Maybe use the 3 character name from
-           ISO 3166?
-        */
-
-        /* Country code, telephone code, measuring system */
+        /* Country code (licence plate number), telephone code, measuring system */
         MAKE_ID('U','S','A',0), 1, MS_AMERICAN,
 
         /* Date time format, date format, time format */
