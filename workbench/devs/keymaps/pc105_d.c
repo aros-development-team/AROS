@@ -459,7 +459,7 @@ STATIC CONST IPTR lokeymap[] =
     DEAD(h_descr),                      /* 25 */
     DEAD(j_descr),                      /* 26 */
     DEAD(k_descr),                      /* 27 */
-    BYTES('£', '£', 'L', 'l'),          /* 28 */
+    BYTES('£', '@', 'L', 'l'),          /* 28 Apple fix */
     
     BYTES(':', ';', 'Ö', 'ö'),          /* 29 */
     BYTES('"', '\'', 'Ä', 'ä'),         /* 2A */
