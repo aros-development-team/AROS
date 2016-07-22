@@ -2310,12 +2310,15 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
         }
     }
 
-    /* ensure that the active element is in a valid range (it might become
+    /* Update entries count prior to range check */
+    SetAttrs(obj, MUIA_List_Entries, data->confirm_entries_num, TAG_DONE);
+
+    /* Ensure that the active element is in a valid range (it might become
      * MUIV_List_Active_Off (-1), but that's OK) */
     if (new_act >= data->entries_num)
         new_act = data->entries_num - 1;
 
-    SetAttrs(obj, MUIA_List_Entries, data->confirm_entries_num,
+    SetAttrs(obj,
         active_tag, new_act,   /* Inform only if necessary (for notify) */
         TAG_DONE);
 
