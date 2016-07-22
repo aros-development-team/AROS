@@ -22,6 +22,8 @@ void ProcessPixelArrayBrightnessFunc(struct RastPort *opRast, struct Rectangle *
     LONG x, y;
     ULONG color;
     LONG alpha, red, green, blue;
+    LONG width, height;
+    ULONG * buffer, *ptr;
 
     if (GetBitMapAttr(opRast->BitMap, BMA_DEPTH) < 15)
     {
@@ -29,11 +31,17 @@ void ProcessPixelArrayBrightnessFunc(struct RastPort *opRast, struct Rectangle *
         return;
     }
 
-    for(x = opRect->MinX; x <= opRect->MaxX; x++)
+    width  = opRect->MaxX - opRect->MinX + 1;
+    height = opRect->MaxY - opRect->MinY + 1;
+
+    ptr = buffer = AllocMem(width * height * 4, MEMF_ANY);
+    ReadPixelArray(buffer, 0, 0, width * 4, opRast, opRect->MinX, opRect->MinY, width, height, RECTFMT_ARGB);
+
+    for (y = 0; y < height; y++)
     {
-        for (y = opRect->MinY; y <= opRect->MaxY; y++)
+        for(x = 0; x < width; x++)
         {
-            color = ReadRGBPixel(opRast, x, y);
+            color = *ptr;
 
             alpha = (color & 0xff);
             red   = (color & 0xff00) >> 8;
@@ -63,7 +71,11 @@ void ProcessPixelArrayBrightnessFunc(struct RastPort *opRast, struct Rectangle *
 
             color = alpha | (red << 8) | (green << 16) | (blue << 24);
 
-            WriteRGBPixel(opRast, x, y, color);
+            *ptr = color;
+            ptr++;
         }
     }
+
+    WritePixelArray(buffer, 0, 0, width * 4, opRast, opRect->MinX, opRect->MinY, width, height, RECTFMT_ARGB);
+    FreeMem(buffer, width * height * 4);
 }
