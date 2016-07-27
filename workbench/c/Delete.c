@@ -87,7 +87,7 @@ enum
 /* Maximum file path length */
 #define MAX_PATH_LEN    2048
 
-const TEXT version[] = "$VER: Delete 41.2 (6.1.2000)\n";
+const TEXT version[] = "$VER: Delete 41.3 (27.7.2016)\n";
 static char cmdname[] = "Delete";
 
 
@@ -230,8 +230,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 		MatchEnd(ap);
 		UnLockDosList(LDF_ALL | LDF_READ);
 		
-		if (!(quiet))
-                    Printf("%s is a device and cannot be deleted\n", files[i]);
+		Printf("%s is a device and cannot be deleted\n", files[i]);
 		
 		return RETURN_FAIL;
 	    }
@@ -257,12 +256,9 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                 /* Try to delete the file or directory */
                 if (!DeleteFile(name))
                 {
-                    if (!quiet)
-                    {
-                        LONG ioerr = IoErr();
-                        Printf("%s  Not Deleted", (IPTR)name);
-                        PrintFault(ioerr, "");
-                    }
+                    LONG ioerr = IoErr();
+                    Printf("%s  Not Deleted", (IPTR)name);
+                    PrintFault(ioerr, "");
                 }
                 else
                 {
@@ -323,11 +319,8 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                     SetProtection(ap->ap_Buf, 0);
                 else
                 {
-                    if (!quiet)
-                    {
-                        Printf("%s  Not Deleted", (IPTR)ap->ap_Buf);
-                        PrintFault(ERROR_DELETE_PROTECTED, "");
-                    }
+                    Printf("%s  Not Deleted", (IPTR)ap->ap_Buf);
+                    PrintFault(ERROR_DELETE_PROTECTED, "");
                     deleteit = FALSE;
                 }
             }
@@ -340,11 +333,12 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
             /* Try to delete the file or directory */
             if (!DeleteFile(name))
             {
-                if (!quiet)
+                LONG ioerr = IoErr();
+                Printf("%s  Not Deleted", (IPTR)name);
+                PrintFault(ioerr, "");
+                if (ioerr == ERROR_DISK_WRITE_PROTECTED)
                 {
-                    LONG ioerr = IoErr();
-                    Printf("%s  Not Deleted", (IPTR)name);
-                    PrintFault(ioerr, "");
+                    return RETURN_FAIL;
                 }
             }
             else
@@ -352,7 +346,6 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                 deletedfile = TRUE;
                 if (!quiet)
                 {
-                    
                     Printf("%s  Deleted\n", (IPTR)name);
                 }
             }
@@ -370,10 +363,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
     if (!deletedfile)
     {
-        if (!quiet)
-        {
-            PutStr("No file to delete\n");
-        }
+        PutStr("No file to delete\n");
         return RETURN_WARN;
     }
     return RETURN_OK;
