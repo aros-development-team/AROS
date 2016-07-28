@@ -262,7 +262,7 @@ void cpu_Switch(regs_t *regs)
 
     if (__arm_arosintern.ARMI_GetTime)
     {
-        /* Update the task's CPU time .. */
+        /* Update the task's CPU time */
         timeCur = __arm_arosintern.ARMI_GetTime() - IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
         timeVal.tv_secs = timeCur / 1000000;
         timeVal.tv_micro = timeCur % 1000000;

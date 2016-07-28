@@ -1,11 +1,11 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __EXEC_PLATFORM_H
 #define __EXEC_PLATFORM_H
 
-// needed to determine if this is an smp build..
+// needed to determine if this is an smp build
 #include <aros/config.h>
 
 #if defined(__AROSEXEC_SMP__)

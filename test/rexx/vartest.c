@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -62,7 +62,7 @@ int main(void)
     puts("Message is from the rexx interpreter");
     if (GetRexxVar(msg, "A", &value) != RC_OK)
     {
-	puts("Error during retreival of value !!");
+	puts("Error during retrieval of value!");
     }
     else
     {
