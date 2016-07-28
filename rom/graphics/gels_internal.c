@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal function for improved gels handling.
@@ -81,7 +81,7 @@ BOOL _ValidateIntVSprite(struct IntVSprite * ivs,
 	    force_change) {
 	        /* Why the weird struct? Well, if we InitBitMap()
 	         * a Depth > 8 on a plain BitMap, we'll scribble over
-	         * our stack. Therefore we pad one some extra IPTRs
+	         * our stack. Therefore we pad on some extra IPTRs
 	         * to the end.
 	         */
 	        struct {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -229,7 +229,7 @@ void handleException(struct ExceptionContext *regs, unsigned long error_code, un
 	/*
 	 * Scheduler can be called only from within user mode.
 	 * Every task has ss register initialized to a valid segment descriptor.\
-	 * The descriptor itself isn't used by x86-64, however when a privilege
+	 * The descriptor itself isn't used by x86; however when a privilege
 	 * level switch occurs upon an interrupt, ss is reset to zero. Old ss value
 	 * is always pushed to stack as part of interrupt context.
 	 * We rely on this in order to determine which CPL we are returning to.

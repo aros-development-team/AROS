@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -276,7 +276,7 @@ static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
     int i;
     BOOL donotify = FALSE;
 
-    /* is it the good attribute ? */
+    /* is it the good attribute? */
     if (tag->ti_Tag != nnode->nn_TrigAttr)
         return;
 
