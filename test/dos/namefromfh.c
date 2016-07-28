@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,7 +19,7 @@ int main(void)
         }
         else
         {
-            printf("namefromlock failed. ioerr = %ld\n", IoErr());
+            printf("namefromfh failed. I/O error = %ld\n", IoErr());
         }
         
         Close(fh);
@@ -29,7 +29,6 @@ int main(void)
     {
         printf("couldn't create file\n");
     }
-    
 
     return 0;
 }
