@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Try to lock a sempahore.
@@ -31,7 +31,7 @@
 	returns false instead.
 
     INPUTS
-	sigSem - Pointer so semaphore structure.
+	sigSem - Pointer to semaphore structure.
 
     RESULT
 	TRUE if the semaphore could be obtained, FALSE otherwise.

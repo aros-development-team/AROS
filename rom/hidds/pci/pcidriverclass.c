@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Base PCI driver class
@@ -43,8 +43,8 @@ OOP_Object *PCIDrv__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 ULONG PCIDrv__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
     struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
-    /* Wheeeee! Someone has forgotten to reimplement the ReadConfigLong!! */
-    bug("[PCIDriver] Alert! PCIDriver::ReadConfigLong() unimplemented!!!\n");
+    /* Wheeeee! Someone has forgotten to reimplement ReadConfigLong! */
+    bug("[PCIDriver] Alert! PCIDriver::ReadConfigLong() unimplemented!\n");
     return 0xffffffff;
 }
 
@@ -57,21 +57,21 @@ ULONG PCIDrv__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
 void PCIDrv__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_WriteConfigLong *msg)
 {
-    /* Wheeeee! Someone has forgotten to reimplement the WriteConfigLong!! */
-    bug("[PCIDriver] Alert! PCIDriver::WriteConfigLong() unimplemented!!!\n");
+    /* Wheeeee! Someone has forgotten to reimplement WriteConfigLong! */
+    bug("[PCIDriver] Alert! PCIDriver::WriteConfigLong() unimplemented!\n");
 }
 
 /*
     IPTR PCIDriver::HasExtendedConfiguration(bus, dev, sub)
 
-    This does not need to be implemented in the driver, in that case
+    This does not need to be implemented in the driver; in that case
     ECAM access method is not used and extended configuration is unavailable.
 */
 IPTR PCIDrv__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_HasExtendedConfig *msg)
 {
-    /* Wheeeee! Someone has forgotten to reimplement the HasExtendedConfig!! */
-    bug("[PCIDriver] Alert! PCIDriver::HasExtendedConfig() unimplemented!!!\n");
+    /* Wheeeee! Someone has forgotten to reimplement HasExtendedConfig! */
+    bug("[PCIDriver] Alert! PCIDriver::HasExtendedConfig() unimplemented!\n");
     return (IPTR)NULL;
 }
 
@@ -83,9 +83,9 @@ IPTR PCIDrv__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
     VOID  PCIDriver::WriteConfigWord()
     VOID  PCIDriver::WriteConfigByte()
 
-    *MAY* be implemented in driver class, but *DOESN'T HAVE TO*. I wrote small
+    *MAY* be implemented in driver class, but *DON'T HAVE TO BE*. I wrote small
     wrappers here using ReadConfigLong and WriteConfigLong in order to simplify
-    developing of PCI drivers and reducing their size.
+    development of PCI drivers and reduce their size.
 */
 
 UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
@@ -144,7 +144,7 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
 /*
     PCIDriver::CPUtoPCI() converts the address as seen by CPU into the
     address seen by the PCI bus. Do not reimplement this function, if
-    CPU and PCI address spaces are equal on the machine you're writting
+    CPU and PCI address spaces are equal on the machine you're writing a
     driver for
 */
 APTR PCIDrv__Hidd_PCIDriver__CPUtoPCI(OOP_Class *cl, OOP_Object *o,
@@ -180,9 +180,9 @@ APTR PCIDrv__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_MapPCI *msg)
 {
     /*
-     * Generic driver in case of DirecAccess PCI bus.
+     * Generic driver in case of DirectAccess PCI bus.
      * Our memory space is already mapped, but we may still need
-     * to perform physical to virtual translation (in case if our
+     * to perform physical to virtual translation (in case our
      * system uses virtual addressing).
      */
     struct DrvInstData *instance = (struct DrvInstData *)OOP_INST_DATA(cl, o);

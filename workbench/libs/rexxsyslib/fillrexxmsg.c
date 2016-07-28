@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -32,14 +32,14 @@
         msgptr - RexxMsg to create the RexxArgs for.
         count  - The number of ARGs in the rm_Args structure field that is
                  filled with a value and has to be converted.
-        mask   - Bit 0-count from this mask indicate wether the value in
-                 rm_Args is a string or a number. When the bit is cleared the
-                 value is a pointer to a string. When it is set it is treated
-                 as a signed number.
+        mask   - Bits 0 to 'count' from this mask indicate whether the
+                 corresponding value in rm_Args is a string or a number. When
+                 the bit is cleared the value is a pointer to a string. When
+                 it is set it is treated as a signed integer.
 
     RESULT
         Returns TRUE if succeeded, FALSE otherwise. When FALSE is returned all
-        memory already allocated will be Freed before returning.
+        memory already allocated will be freed before returning.
 
     NOTES
 

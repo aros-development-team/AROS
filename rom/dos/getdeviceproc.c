@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
@@ -96,7 +96,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 
     ASSERT_VALID_PROCESS(pr);
 
-    /* if they passed us the result of a previous call, then they're wanted to
+    /* if they passed us the result of a previous call, then they want to
      * loop over the targets of a multidirectory assign */
     if (dp != NULL) {
 
