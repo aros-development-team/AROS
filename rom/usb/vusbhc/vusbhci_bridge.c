@@ -221,14 +221,14 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
 
     switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
         case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
-            mybug_unit(-1, ("Filtering out SET_ADDRESS\n\n"));
+            mybug_unit(0, ("Filtering out SET_ADDRESS\n\n"));
             ioreq->iouh_Actual = ioreq->iouh_Length;
             return UHIOERR_NO_ERROR;
         break;
     }
 
-    mybug_unit(-1, ("wLength %d\n", wLength));
-    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(0, ("wLength %d\n", wLength));
+    mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
 
     rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, 10);
 
@@ -238,82 +238,33 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
 
     ioreq->iouh_Actual = rc;
 
-    mybug_unit(-1, ("Done!\n\n"));
+    mybug_unit(0, ("Done!\n\n"));
     return UHIOERR_NO_ERROR;   
 }
 
-/*
-    FIXME: libusb expects buffer to precede with enough space for setup data (8 bytes or LIBUSB_CONTROL_SETUP_SIZE)
-            - Copy buffer need to be used
-*/
 int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    int rc;
-
-    UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
-
-    mybug_unit(-1, ("wLength %d\n", wLength));
-    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
-
-    rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, ioreq->iouh_Endpoint, ioreq->iouh_Data, wLength, &ioreq->iouh_Actual, 10);
-    mybug_unit(-1, ("libusb_interrupt_transfer rc = %d\n\n", rc));
-
-    mybug_unit(-1, ("Done!\n\n"));
-    return UHIOERR_NO_ERROR;   
-}
-
-int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
-    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-
-    int rc, transferred = 0, i;
-    APTR buffer;
+    int rc = 0, transferred = 0;
     UBYTE endpoint = ioreq->iouh_Endpoint;
 
-    UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
-
-    mybug_unit(-1, ("wLength %d\n", wLength));
-    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
-    mybug_unit(-1, ("direction %d\n", (ioreq->iouh_Dir)));
+    mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(0, ("direction %d\n", (ioreq->iouh_Dir)));
 
     /*FIXME: fix other endpoint transfer methods */
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
-            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
-            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
-
-            buffer = ioreq->iouh_Data;
-#if 0
- 	        mybug_unit(-1, ("Bulk data buffer in:\n"));
- 	        for(i = 0;i < ioreq->iouh_Length; i++) {
- 		        if(i%8 == 0)
- 			        bug("\n");
-
- 		        bug("%02x ", *(UBYTE *)buffer++ );
- 	        }
-            bug("\n\n");
-#endif
+            mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
+            rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
         break;
 
         case UHDIR_OUT:
-            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
-
-            buffer = ioreq->iouh_Data;
-#if 0
- 	        mybug_unit(-1, ("Bulk data buffer in:\n"));
- 	        for(i = 0;i < ioreq->iouh_Length; i++) {
- 		        if(i%8 == 0)
- 			        bug("\n");
-
- 		        bug("%02x ", *(UBYTE *)buffer++ );
- 	        }
-            bug("\n\n");
-#endif
-            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+            mybug_unit(0, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
+            rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
         break;
     }
 
-    mybug_unit(-1, ("libusb_bulk_transfer rc = %d, transferred %d\n", rc, transferred));
+    mybug_unit(0, ("libusb_interrupt_transfer rc = %d, transferred %d\n", rc, transferred));
 
 /*
     0 on success (and populates transferred) 
@@ -331,7 +282,51 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
         }
     }
 
-    mybug_unit(-1, ("Done!\n\n"));
+    mybug_unit(0, ("Done!\n\n"));
+    return UHIOERR_NO_ERROR;  
+}
+
+int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    int rc = 0, transferred = 0;
+    UBYTE endpoint = ioreq->iouh_Endpoint;
+
+    mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(0, ("direction %d\n", (ioreq->iouh_Dir)));
+
+    /*FIXME: fix other endpoint transfer methods */
+    switch(ioreq->iouh_Dir) {
+        case UHDIR_IN:
+            mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
+            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+        break;
+
+        case UHDIR_OUT:
+            mybug_unit(0, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
+            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+        break;
+    }
+
+    mybug_unit(0, ("libusb_bulk_transfer rc = %d, transferred %d\n", rc, transferred));
+
+/*
+    0 on success (and populates transferred) 
+    LIBUSB_ERROR_TIMEOUT if the transfer timed out (and populates transferred) 
+    LIBUSB_ERROR_PIPE if the endpoint halted 
+    LIBUSB_ERROR_OVERFLOW if the device offered more data, see Packets and overflows 
+    LIBUSB_ERROR_NO_DEVICE if the device has been disconnected 
+    another LIBUSB_ERROR code on other failures 
+*/
+    if(rc<0) {
+        rc = 0;
+    } else {
+        if(transferred) {
+            ioreq->iouh_Actual = transferred;
+        }
+    }
+
+    mybug_unit(0, ("Done!\n\n"));
     return UHIOERR_NO_ERROR;
 }
 
