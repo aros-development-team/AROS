@@ -256,6 +256,7 @@ struct aos_machine *draw_vs_aos_machine( void )
    unsigned i;
    float inv = 1.0f/255.0f;
    float f255 = 255.0f;
+   unsigned *mint;
 
    machine = align_malloc(sizeof(struct aos_machine), 16);
    if (!machine)
@@ -264,7 +265,8 @@ struct aos_machine *draw_vs_aos_machine( void )
    memset(machine, 0, sizeof(*machine));
 
    ASSIGN_4V(machine->internal[IMM_SWZ],       1.0f,  -1.0f,  0.0f, 1.0f);
-   *(unsigned *)&machine->internal[IMM_SWZ][3] = 0xffffffff;
+   mint = (unsigned *)&machine->internal[IMM_SWZ][3];
+   *mint = 0xffffffff;
 
    ASSIGN_4V(machine->internal[IMM_ONES],      1.0f,  1.0f,  1.0f,  1.0f);
    ASSIGN_4V(machine->internal[IMM_NEGS],     -1.0f, -1.0f, -1.0f, -1.0f);
