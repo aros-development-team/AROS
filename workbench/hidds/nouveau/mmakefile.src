@@ -126,7 +126,7 @@ USER_INCLUDES := \
                 -I$(DRM_PATH)/libdrm/nouveau                \
                 -I$(XF86_NOUVEAU_PATH)                      \
 
-NOWARN_FLAGS := $(NOWARN_UNINITIALIZED)
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING)
 USER_CFLAGS := $(NOWARN_FLAGS) -std=gnu99
 
 %build_module mmake=hidd-nouveau \
