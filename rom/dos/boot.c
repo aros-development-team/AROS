@@ -2,7 +2,7 @@
     Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Boot your operating system.
+    Desc: Implements AROS's generic/amiga-like boot sequence.
     Lang: english
 */
 
@@ -72,12 +72,18 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
     /*  We have been created as a process by DOS, we should now
         try and boot the system. */
 
-    D(bug("[__dos_Boot] generic boot sequence, BootFlags 0x%08X Flags 0x%02X\n", BootFlags, Flags));
+    D(
+        bug("[DOS] %s: ** starting generic boot sequence\n", __func__);
+        bug("[DOS] %s: BootFlags 0x%08X Flags 0x%02X\n", __func__, BootFlags, Flags);
+        bug("[DOS] %s: DOSBase @ 0x%p\n", __func__, DOSBase);
+      )
 
     /* m68000 uses this to get the default colors and
      * cursors for Workbench
      */
     load_system_configuration(DOSBase);
+
+    D(bug("[DOS] %s: system config loaded\n", __func__);)
 
     /*
      * If needed, run the display drivers loader.
@@ -88,9 +94,11 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
     if ((BootFlags & (BF_NO_DISPLAY_DRIVERS | BF_NO_COMPOSITION)) != (BF_NO_DISPLAY_DRIVERS | BF_NO_COMPOSITION))
     {
         /* Check that it exists first... */
-        BPTR seg = LoadSeg("C:AROSMonDrvs");
+        BPTR seg;
 
-        if (seg != BNULL)
+        D(bug("[DOS] %s: initialising displays\n", __func__);)
+
+        if ((seg = LoadSeg("C:AROSMonDrvs")) != BNULL)
         {
             STRPTR args = "";
             BPTR oldin, oldout;
@@ -104,7 +112,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
             else if (BootFlags & BF_NO_DISPLAY_DRIVERS)
                 args = "ONLYCOMPOSITION\n";
 
-            D(bug("[__dos_Boot] Running AROSMonDrvs %s\n", args));
+            D(bug("[DOS] %s: Running AROSMonDrvs %s\n", __func__, args));
 
             /* RunCommand needs a valid Input() handle
              * for passing in its arguments.
@@ -120,7 +128,10 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
         }
     }
 
+    D(bug("[DOS] %s: preparing console\n", __func__);)
+
     if (BootFlags & BF_EMERGENCY_CONSOLE) {
+        D(bug("[DOS] %s:     (emergency console)\n", __func__);)
         BootFlags |= BF_NO_STARTUP_SEQUENCE;
         cis = Open("ECON:", MODE_OLDFILE);
     }
@@ -134,9 +145,11 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                          "Licensed under the AROS Public License.\n"
                          "Version SVN" SVNREV ", built on " ISODATE ".\n";
 
+        D(bug("[DOS] %s:  handle @ 0x%p (0x%p)\n", __func__, cis, cos);)
+
         if (cos) {
             BPTR cas = BNULL;
-            
+
             if (!(BootFlags & BF_NO_STARTUP_SEQUENCE))
                 cas = Open("S:Startup-Sequence", MODE_OLDFILE);
 
@@ -149,7 +162,9 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
             } else {
                 FPuts(cos, C);
             }
-            
+
+            D(bug("[DOS] %s: initialising CLI\n", __func__);)
+
             if (SystemTags(NULL,
                            NP_Name, "Initial CLI",
                            SYS_Background, FALSE,
@@ -158,21 +173,26 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                            SYS_Output, cos,
                            SYS_ScriptInput, cas,
                            TAG_END) == -1) {
+                D(bug("[DOS] %s:  .. failed!\n", __func__);)
                 Alert(AT_DeadEnd | AN_BootStrap);
             }
+
             Close(cis);
-            {   /* Do not flush cos (show banner) if we got this far, we don't want to
-                 * see shell window quickly opening and then immediately closing at
-                 * the end of startup-sequence.
-                 *
-                 * There has to be less hacky way..
-                 */
-                struct FileHandle *fh = ((struct FileHandle*)BADDR(cos));
-                fh->fh_Flags &= ~0x80000000;
-            }
+#if (1)
+            /* Do not flush cos (show banner) if we got this far, we don't want to
+             * see shell window quickly opening and then immediately closing at
+             * the end of startup-sequence.
+             *
+             * There has to be less hacky way..
+             */
+            struct FileHandle *fh = ((struct FileHandle*)BADDR(cos));
+            fh->fh_Flags &= ~0x80000000;
+#endif
             Close(cos);
             /* NOTE: 'cas' will already have been closed by the Shell */
         }
-    } else
+    } else {
+        D(bug("[DOS] %s:  .. failed!\n", __func__);)
         Alert(AN_NoWindow);
+    }
 }
