@@ -112,7 +112,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
             else if (BootFlags & BF_NO_DISPLAY_DRIVERS)
                 args = "ONLYCOMPOSITION\n";
 
-            D(bug("[DOS] %s: Running AROSMonDrvs %s\n", __func__, args));
+            D(bug("[DOS] %s: Running AROSMonDrvs %s\n", __func__, args);)
 
             /* RunCommand needs a valid Input() handle
              * for passing in its arguments.
