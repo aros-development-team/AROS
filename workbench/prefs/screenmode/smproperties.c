@@ -272,7 +272,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                         width = data->DefWidth;
                     else
                     {
-                        GetAttr(MUIA_Numeric_Value, data->objWidth, &val);
+                        GetAttr(MUIA_String_Integer, data->objWidth, &val);
                         width = AdjustWidth((LONG)val, data);
                     }
 
