@@ -95,10 +95,12 @@ static void swapvbr(APTR vbr)
 {
 	asm volatile (
 	".chip 68010\n"
+	"move.l %%a5,-(%%sp)\n"
 	"move.l	%0,%%d0\n"
 	"move.l 4.w,%%a6\n"
 	"lea	newvbr(%%pc),%%a5\n"
 	"jsr	-0x1e(%%a6)\n"
+	"move.l (%%sp)+,%%a5\n"
 	"bra.s	0f\n"
 	"newvbr:\n"
 	"movec	%%d0,%%vbr\n"
@@ -218,8 +220,6 @@ static AROS_UFH3 (APTR, Init,
 
 	D(bug("Initializing MMU setup\n"));
 
-	Disable();
-
 	vbrpage = AllocPagesAligned(1);
 	if (vbrpage) {
 		/* Move VBR to Fast RAM */
@@ -318,11 +318,9 @@ static AROS_UFH3 (APTR, Init,
 
 	//debug_mmu(KernelBase);
 
-   	CacheClearU();
+	CacheClearU();
 	enable_mmu(KernelBase);
 	
-	Enable();
-
 	AROS_USERFUNC_EXIT
 
 	return NULL;
