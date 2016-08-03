@@ -584,6 +584,7 @@ PACKAGE_URL=
 ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_sizeof_pointer_memaccess
 aros_cflags_volatile_register_var
 aros_cflags_narrowing
 aros_cflags_conversion_null
@@ -2835,6 +2836,7 @@ fi
 #  -Wconversion-null
 #  -Wnarrowing
 #  -Wvolatile-register-var
+#  -Wsizeof-pointer-memaccess
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-command-line-argument" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-command-line-argument... " >&6; }
@@ -4215,6 +4217,33 @@ $as_echo "$aros_volatile_register_var" >&6; }
 if test "x-$aros_volatile_register_var" = "x-yes" ; then
     aros_cflags_volatile_register_var=-Wno-volatile-register-var
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wsizeof-pointer-memaccess" >&5
+$as_echo_n "checking whether ${CC} accepts -Wsizeof-pointer-memaccess... " >&6; }
+CFLAGS=-Wsizeof-pointer-memaccess
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_sizeof_pointer_memaccess="yes"
+else
+  aros_sizeof_pointer_memaccess="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_sizeof_pointer_memaccess" >&5
+$as_echo "$aros_sizeof_pointer_memaccess" >&6; }
+if test "x-$aros_sizeof_pointer_memaccess" = "x-yes" ; then
+    aros_cflags_sizeof_pointer_memaccess=-Wno-sizeof-pointer-memaccess
+fi
+
 
 
 

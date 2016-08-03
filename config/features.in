@@ -139,6 +139,7 @@ fi
 #  -Wconversion-null
 #  -Wnarrowing
 #  -Wvolatile-register-var
+#  -Wsizeof-pointer-memaccess
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-command-line-argument])
 CFLAGS=-Wunused-command-line-argument
@@ -566,6 +567,14 @@ if test "x-$aros_volatile_register_var" = "x-yes" ; then
     aros_cflags_volatile_register_var=-Wno-volatile-register-var
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wsizeof-pointer-memaccess])
+CFLAGS=-Wsizeof-pointer-memaccess
+AC_TRY_COMPILE(,, aros_sizeof_pointer_memaccess="yes", aros_sizeof_pointer_memaccess="no")
+AC_MSG_RESULT($aros_sizeof_pointer_memaccess)
+if test "x-$aros_sizeof_pointer_memaccess" = "x-yes" ; then
+    aros_cflags_sizeof_pointer_memaccess=-Wno-sizeof-pointer-memaccess
+fi
+
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_loop_block)
 AC_SUBST(aros_cflags_loop_interchange)
@@ -627,6 +636,7 @@ AC_SUBST(aros_cflags_missing_braces)
 AC_SUBST(aros_cflags_conversion_null)
 AC_SUBST(aros_cflags_narrowing)
 AC_SUBST(aros_cflags_volatile_register_var)
+AC_SUBST(aros_cflags_sizeof_pointer_memaccess)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
