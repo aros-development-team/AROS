@@ -200,7 +200,7 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
     return 1;
 }
 
-static int load_hunk
+static int __attribute__ ((noinline)) load_hunk
 (
     BPTR                 file,
     BPTR               **next_hunk_ptr,
