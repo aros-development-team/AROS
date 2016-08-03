@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-##MM- workbench-tools : workbench-tools-sysexplorer
+#MM- workbench-tools : workbench-tools-sysexplorer
 
 FILES       := \
         main \
