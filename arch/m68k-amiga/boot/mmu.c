@@ -95,9 +95,9 @@ static void swapvbr(APTR vbr)
 {
 	asm volatile (
 	".chip 68010\n"
-	"move.l %%a5,-(%%sp)\n"
 	"move.l	%0,%%d0\n"
 	"move.l 4.w,%%a6\n"
+	"move.l %%a5,-(%%sp)\n"
 	"lea	newvbr(%%pc),%%a5\n"
 	"jsr	-0x1e(%%a6)\n"
 	"move.l (%%sp)+,%%a5\n"
