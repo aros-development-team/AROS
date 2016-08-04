@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
   {
     int i;
     char *file;
-    int versionseen, version;
+    int versionseen, version = 0;
     time_t currenttime = time(NULL);
     struct tm *localtm = localtime(&currenttime);
 
