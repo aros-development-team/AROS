@@ -348,7 +348,7 @@ D(bug("[AROSTCP](amiga_syscalls.c) UL_connect(%ld, sockaddr_in, %ld)\n", s, name
 #endif
   
   DSYSCALLS(__log(LOG_DEBUG, "connect(%ld, sockaddr_in, %ld) called", s, namelen);)
-  DSYSCALLS(dump_sockaddr_in((struct sockaddr_in *)s, libPtr);)
+  DSYSCALLS(dump_sockaddr_in((struct sockaddr_in *) name, libPtr);)
   return __connect(s, name, namelen, libPtr);
   AROS_LIBFUNC_EXIT
 }
