@@ -2,7 +2,7 @@
 #define CLIB_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>
@@ -20,7 +20,7 @@ AROS_LP3(int, socket,
 AROS_LP3(int, bind,
          AROS_LPA(int, s, D0),
          AROS_LPA(struct sockaddr *, name, A0),
-         AROS_LPA(int, namelen, D1),
+         AROS_LPA(socklen_t, namelen, D1),
          LIBBASETYPEPTR, SocketBase, 6, BSDSocket
 );
 AROS_LP2(int, listen,
@@ -37,7 +37,7 @@ AROS_LP3(int, accept,
 AROS_LP3(int, connect,
          AROS_LPA(int, s, D0),
          AROS_LPA(struct sockaddr *, name, A0),
-         AROS_LPA(int, namelen, D1),
+         AROS_LPA(socklen_t, namelen, D1),
          LIBBASETYPEPTR, SocketBase, 9, BSDSocket
 );
 AROS_LP6(int, sendto,
@@ -46,7 +46,7 @@ AROS_LP6(int, sendto,
          AROS_LPA(int, len, D1),
          AROS_LPA(int, flags, D2),
          AROS_LPA(const struct sockaddr *, to, A1),
-         AROS_LPA(int, tolen, D3),
+         AROS_LPA(socklen_t, tolen, D3),
          LIBBASETYPEPTR, SocketBase, 10, BSDSocket
 );
 AROS_LP4(int, send,
@@ -62,7 +62,7 @@ AROS_LP6(int, recvfrom,
          AROS_LPA(int, len, D1),
          AROS_LPA(int, flags, D2),
          AROS_LPA(struct sockaddr *, from, A1),
-         AROS_LPA(int *, fromlen, A2),
+         AROS_LPA(socklen_t *, fromlen, A2),
          LIBBASETYPEPTR, SocketBase, 12, BSDSocket
 );
 AROS_LP4(int, recv,
@@ -82,7 +82,7 @@ AROS_LP5(int, setsockopt,
          AROS_LPA(int, level, D1),
          AROS_LPA(int, optname, D2),
          AROS_LPA(void *, optval, A0),
-         AROS_LPA(int, optlen, D3),
+         AROS_LPA(socklen_t, optlen, D3),
          LIBBASETYPEPTR, SocketBase, 15, BSDSocket
 );
 AROS_LP5(int, getsockopt,
@@ -90,19 +90,19 @@ AROS_LP5(int, getsockopt,
          AROS_LPA(int, level, D1),
          AROS_LPA(int, optname, D2),
          AROS_LPA(void *, optval, A0),
-         AROS_LPA(void *, optlen, A1),
+         AROS_LPA(socklen_t *, optlen, A1),
          LIBBASETYPEPTR, SocketBase, 16, BSDSocket
 );
 AROS_LP3(int, getsockname,
          AROS_LPA(int, s, D0),
          AROS_LPA(struct sockaddr *, name, A0),
-         AROS_LPA(int *, namelen, A1),
+         AROS_LPA(socklen_t *, namelen, A1),
          LIBBASETYPEPTR, SocketBase, 17, BSDSocket
 );
 AROS_LP3(int, getpeername,
          AROS_LPA(int, s, D0),
          AROS_LPA(struct sockaddr *, name, A0),
-         AROS_LPA(int *, namelen, A1),
+         AROS_LPA(socklen_t *, namelen, A1),
          LIBBASETYPEPTR, SocketBase, 18, BSDSocket
 );
 AROS_LP3(int, IoctlSocket,
