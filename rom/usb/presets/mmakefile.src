@@ -1,0 +1,14 @@
+# $Id: mmakefile.src 52302 2016-03-28 03:42:13Z NicJA $
+#
+# Makefile to copy Prefs/Presets.
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR := $(AROS_PREFS)/Presets
+
+#MM- kernel-usb : \
+#MM      kernel-usb-presets
+
+%copy_dir_recursive mmake=kernel-usb-presets dst=$(TARGETDIR)
+
+%common
