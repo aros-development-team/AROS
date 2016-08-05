@@ -2,7 +2,7 @@
 #define DEFINES_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -28,7 +28,7 @@
         AROS_LC3(int, bind, \
                   AROS_LCA(int,(__arg1),D0), \
                   AROS_LCA(struct sockaddr *,(__arg2),A0), \
-                  AROS_LCA(int,(__arg3),D1), \
+                  AROS_LCA(socklen_t,(__arg3),D1), \
         struct Library *, (__SocketBase), 6, BSDSocket)
 
 #define bind(arg1, arg2, arg3) \
@@ -57,7 +57,7 @@
         AROS_LC3(int, connect, \
                   AROS_LCA(int,(__arg1),D0), \
                   AROS_LCA(struct sockaddr *,(__arg2),A0), \
-                  AROS_LCA(int,(__arg3),D1), \
+                  AROS_LCA(socklen_t,(__arg3),D1), \
         struct Library *, (__SocketBase), 9, BSDSocket)
 
 #define connect(arg1, arg2, arg3) \
@@ -70,7 +70,7 @@
                   AROS_LCA(int,(__arg3),D1), \
                   AROS_LCA(int,(__arg4),D2), \
                   AROS_LCA(const struct sockaddr *,(__arg5),A1), \
-                  AROS_LCA(int,(__arg6),D3), \
+                  AROS_LCA(socklen_t,(__arg6),D3), \
         struct Library *, (__SocketBase), 10, BSDSocket)
 
 #define sendto(arg1, arg2, arg3, arg4, arg5, arg6) \
@@ -94,7 +94,7 @@
                   AROS_LCA(int,(__arg3),D1), \
                   AROS_LCA(int,(__arg4),D2), \
                   AROS_LCA(struct sockaddr *,(__arg5),A1), \
-                  AROS_LCA(int *,(__arg6),A2), \
+                  AROS_LCA(socklen_t *,(__arg6),A2), \
         struct Library *, (__SocketBase), 12, BSDSocket)
 
 #define recvfrom(arg1, arg2, arg3, arg4, arg5, arg6) \
@@ -126,7 +126,7 @@
                   AROS_LCA(int,(__arg2),D1), \
                   AROS_LCA(int,(__arg3),D2), \
                   AROS_LCA(void *,(__arg4),A0), \
-                  AROS_LCA(int,(__arg5),D3), \
+                  AROS_LCA(socklen_t,(__arg5),D3), \
         struct Library *, (__SocketBase), 15, BSDSocket)
 
 #define setsockopt(arg1, arg2, arg3, arg4, arg5) \
@@ -138,7 +138,7 @@
                   AROS_LCA(int,(__arg2),D1), \
                   AROS_LCA(int,(__arg3),D2), \
                   AROS_LCA(void *,(__arg4),A0), \
-                  AROS_LCA(void *,(__arg5),A1), \
+                  AROS_LCA(socklen_t *,(__arg5),A1), \
         struct Library *, (__SocketBase), 16, BSDSocket)
 
 #define getsockopt(arg1, arg2, arg3, arg4, arg5) \
@@ -148,7 +148,7 @@
         AROS_LC3(int, getsockname, \
                   AROS_LCA(int,(__arg1),D0), \
                   AROS_LCA(struct sockaddr *,(__arg2),A0), \
-                  AROS_LCA(int *,(__arg3),A1), \
+                  AROS_LCA(socklen_t *,(__arg3),A1), \
         struct Library *, (__SocketBase), 17, BSDSocket)
 
 #define getsockname(arg1, arg2, arg3) \
@@ -158,7 +158,7 @@
         AROS_LC3(int, getpeername, \
                   AROS_LCA(int,(__arg1),D0), \
                   AROS_LCA(struct sockaddr *,(__arg2),A0), \
-                  AROS_LCA(int *,(__arg3),A1), \
+                  AROS_LCA(socklen_t *,(__arg3),A1), \
         struct Library *, (__SocketBase), 18, BSDSocket)
 
 #define getpeername(arg1, arg2, arg3) \
@@ -804,4 +804,4 @@
     __inet_aton_WB(SocketBase, (arg1), (arg2))
 
 #endif /* __CONFIG_ROADSHOW__ */
-#endif /* DEFINES_BSDSOCKET_PROTOS_H*/
+#endif /* DEFINES_BSDSOCKET_PROTOS_H */
