@@ -5,14 +5,12 @@
     MakeDir CLI command.
 */
 
-#include <exec/memory.h>
-#include <exec/execbase.h>
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-const TEXT version[] = "$VER: MakeDir 42.6 (3.4.2014)\n";
+const TEXT version[] = "$VER: MakeDir 42.7 (7.8.2016)\n";
 
 /******************************************************************************
 
@@ -95,14 +93,11 @@ int main(void)
                 else
 		    lock = CreateDir(name[i]);
 
-		/* The AmigaDOS semantics are quite strange here. When it is
-		   impossible to create a certain directory, MakeDir goes on
-		   to try to create the rest of the specified directories and
-		   returns the LAST return value for the operation. */
 		if(lock != BNULL)
 		{
 		    UnLock(lock);
-		    result = RETURN_OK;
+		    if (result != RETURN_ERROR)
+			result = RETURN_OK;
 		}
 		else
 		{
