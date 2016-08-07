@@ -113,7 +113,10 @@ int main(void)
 	FreeArgs(rda);
     }
     else
-	result = RETURN_FAIL;
+	{
+	    error = ERROR_REQUIRED_ARG_MISSING;
+	    result = RETURN_FAIL;
+	}
 
     if(result != RETURN_OK)
 	PrintFault(error, "MakeDir");
