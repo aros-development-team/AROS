@@ -719,7 +719,8 @@ static void CalcWidths(struct IClass *cl, Object *obj)
     }
 
     for (j = 0; j < data->columns; j++)
-        data->entries_maxwidth += data->ci[j].entries_width;
+        data->entries_maxwidth += data->ci[j].entries_width
+            + data->ci[j].delta + (data->ci[j].bar ? BAR_WIDTH : 0);
 
     if (!data->entry_maxheight)
         data->entry_maxheight = 1;
@@ -1593,8 +1594,8 @@ IPTR List__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     if ((data->flags & LIST_ADJUSTWIDTH) && (data->entries_num > 0))
     {
         msg->MinMaxInfo->MinWidth += data->entries_maxwidth;
-        msg->MinMaxInfo->DefWidth += data->entries_maxwidth;
-        msg->MinMaxInfo->MaxWidth += data->entries_maxwidth;
+        msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
+        msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
     }
     else
     {
@@ -1608,8 +1609,8 @@ IPTR List__MUIM_AskMinMax(struct IClass *cl, Object *obj,
         if (data->flags & LIST_ADJUSTHEIGHT)
         {
             msg->MinMaxInfo->MinHeight += data->entries_totalheight;
-            msg->MinMaxInfo->DefHeight += data->entries_totalheight;
-            msg->MinMaxInfo->MaxHeight += data->entries_totalheight;
+            msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+            msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
         }
         else
         {
@@ -1625,8 +1626,9 @@ IPTR List__MUIM_AskMinMax(struct IClass *cl, Object *obj,
         msg->MinMaxInfo->DefHeight += 96;
         msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
     }
-    D(bug("List %p minheigh=%d, line maxh=%d\n",
+    D(bug("List %p minheight=%d, line maxh=%d\n",
             obj, msg->MinMaxInfo->MinHeight, data->entry_maxheight));
+
     return TRUE;
 }
 
