@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2015, The AROS Development Team.
+    Copyright © 2002-2016, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -974,6 +974,7 @@ int main(void)
             MUIA_List_SourceArray, fruits,
             MUIA_List_Active, MUIV_List_Active_Top,
             MUIA_List_PoolThreshSize, 256,
+            MUIA_List_DragSortable, TRUE,
             MUIA_ShortHelp, "Default scroller\nTop entry active",
             End,
         MUIA_Listview_MultiSelect,
@@ -1027,6 +1028,7 @@ int main(void)
             ListObject,
             ReadListFrame,
             MUIA_List_SourceArray, fruits,
+            MUIA_List_MinLineHeight, 20,
             MUIA_ShortHelp, "Default scroller\nDefault active entry",
             End,
         MUIA_Listview_Input, FALSE,
