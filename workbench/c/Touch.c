@@ -49,7 +49,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
-const TEXT version[] = "$VER: Touch 41.1 (7.9.1999)";
+const TEXT version[] = "$VER: Touch 41.2 (8.8.2016)";
 
 int __nocommandline;
 
@@ -64,17 +64,20 @@ int main(void)
 
         /* Attempt to update the file's date stamp */
         if (SetFileDate((CONST_STRPTR)args[0], DateStamp(&ds))) {
+            FreeArgs(rda);
             return RETURN_OK;
         } else {
             /* Attempt to create the file, if needed */
             BPTR fh = Open((STRPTR)args[0], MODE_NEWFILE);
             if (fh) {
                 Close(fh);
+                FreeArgs(rda);
                 return RETURN_OK;
             }
         }
-
-        PrintFault(IoErr(), NULL);
+        FreeArgs(rda);
    }
+
+   PrintFault(IoErr(), NULL);
    return RETURN_FAIL;
 }
