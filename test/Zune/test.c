@@ -1813,6 +1813,7 @@ int main(void)
                                             MUIA_List_Format, list_format,
                                             MUIA_List_SourceArray, entries,
                                             MUIA_List_Title, TRUE,
+                                            MUIA_List_AdjustWidth, TRUE,
                                             End,
                                         MUIA_Listview_MultiSelect,
                                             MUIV_Listview_MultiSelect_None,
@@ -1830,11 +1831,13 @@ int main(void)
                                             MUIA_List_Format, list_format,
                                             MUIA_List_SourceArray, entries,
                                             MUIA_List_Title, TRUE,
+                                            MUIA_List_AdjustHeight, TRUE,
                                             End,
                                         MUIA_Listview_MultiSelect,
                                             MUIV_Listview_MultiSelect_None,
                                         MUIA_CycleChain, 1,
                                         End,
+                                    Child, HVSpace,
                                     End,
                                 End,
                             Child, RectangleObject,
@@ -2478,6 +2481,10 @@ int main(void)
         if (value != -1)
             printf("MUIA_List_Visible equals %ld before display,"
                 " but it should be -1.\n", (long)value);
+        get(list.multi_lists[0], MUIA_Listview_ClickColumn, &value);
+        if (value != 0)
+            printf("MUIA_Listview_ClickColumn equals %ld before display,"
+                " but it should be 0.\n", (long)value);
 
         set(wnd, MUIA_Window_Open, TRUE);
         set(wnd, MUIA_Window_ScreenTitle, "Zune Test application");
