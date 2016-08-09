@@ -66,3 +66,4 @@ NOWARN_CONVERSION_NULL                  := @aros_cflags_conversion_null@
 NOWARN_NARROWING                        := @aros_cflags_narrowing@
 NOWARN_VOLATILE_REGISTER_VAR            := @aros_cflags_volatile_register_var@
 NOWARN_SIZEOF_POINTER_MEMACCESS         := @aros_cflags_sizeof_pointer_memaccess@
+NOWARN_RETURN_TYPE                      := @aros_cflags_return_type@

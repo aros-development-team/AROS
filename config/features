@@ -584,6 +584,7 @@ PACKAGE_URL=
 ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_cflags_return_type
 aros_cflags_sizeof_pointer_memaccess
 aros_cflags_volatile_register_var
 aros_cflags_narrowing
@@ -2837,6 +2838,7 @@ fi
 #  -Wnarrowing
 #  -Wvolatile-register-var
 #  -Wsizeof-pointer-memaccess
+#  -Wreturn-type
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-command-line-argument" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-command-line-argument... " >&6; }
@@ -4243,6 +4245,33 @@ $as_echo "$aros_sizeof_pointer_memaccess" >&6; }
 if test "x-$aros_sizeof_pointer_memaccess" = "x-yes" ; then
     aros_cflags_sizeof_pointer_memaccess=-Wno-sizeof-pointer-memaccess
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wreturn-type" >&5
+$as_echo_n "checking whether ${CC} accepts -Wreturn-type... " >&6; }
+CFLAGS=-Wreturn-type
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_return_type="yes"
+else
+  aros_return_type="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_return_type" >&5
+$as_echo "$aros_return_type" >&6; }
+if test "x-$aros_return_type" = "x-yes" ; then
+    aros_cflags_return_type=-Wno-return-type
+fi
+
 
 
 
