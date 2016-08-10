@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,7 +39,7 @@ struct MUI_ListviewData
 /****** Listview.mui/MUIA_Listview_DoubleClick *******************************
 *
 *   NAME
-*       MUIA_Listview_DoubleClick -- (V4) [I.G], BOOL
+*       MUIA_Listview_DoubleClick -- (V4) [..G], BOOL
 *
 *   FUNCTION
 *       Set to TRUE when a list entry is double-clicked or the "press" key
@@ -86,7 +86,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_Listview_DoubleClick:
             case MUIA_Listview_Input:
             case MUIA_Listview_MultiSelect:
             case MUIA_Listview_ScrollerPos:
