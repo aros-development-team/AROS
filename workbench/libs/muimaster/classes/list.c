@@ -1071,10 +1071,6 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             data->multiselect = tag->ti_Data;
             break;
 
-        case MUIA_Listview_DoubleClick:
-            data->doubleclick = tag->ti_Data != 0;
-            break;
-
         case MUIA_Listview_DefClickColumn:
             data->def_click_column = tag->ti_Data;
             break;
