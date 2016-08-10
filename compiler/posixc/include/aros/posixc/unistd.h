@@ -415,7 +415,7 @@ ssize_t readlink(const char * restrict path, char * restrict buf, size_t bufsize
 /* NOTIMPL ssize_t readlinkat(int, const char *restrict, char *restrict, size_t); */
 int rmdir(const char *path);
 /* NOTIMPL int setegid(gid_t egid); */
-/* NOTIMPL int seteuid(uid_t euid); */
+int seteuid(uid_t euid);
 int setgid(gid_t gid);
 /* NOTIMPL int setpgid(pid_t pid, pid_t pgrp); */
 /* NOTIMPL int setpgrp(pid_t pid, pid_t pgrp); */

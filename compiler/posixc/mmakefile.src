@@ -143,6 +143,7 @@ POSIXC := \
     seekdir \
     setbuf \
     setenv \
+    seteuid \
     setgid \
     setgrent \
     setpwent \
