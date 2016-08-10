@@ -1,39 +1,43 @@
 /*
-    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function geteuid().
 */
+
+#include "__posixc_intbase.h"
 
 /*****************************************************************************
 
     NAME */
 #include <unistd.h>
 
-	uid_t geteuid(
+        uid_t geteuid(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	
+
     INPUTS
-	
+
     RESULT
-	
+
     NOTES
-        Always returns 0 for the moment.
 
     EXAMPLE
 
     BUGS
-    	
+
     SEE ALSO
-    	getuid()
+        getuid()
         
     INTERNALS
 
 ******************************************************************************/
 {
-    return 0;
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    return PosixCBase->euid;
 } /* geteuid() */

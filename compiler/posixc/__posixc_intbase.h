@@ -74,6 +74,10 @@ struct PosixCIntBase
 
     /* __stdio.c */
     struct MinList stdio_files;
+
+    /* setuid.c/getuid.c */
+    uid_t uid; /* Real user id of process */
+    uid_t euid; /* Effective user id of process */
 };
 
 /* flags; values of flags are power of two so they can be ORed together */
