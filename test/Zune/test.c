@@ -105,7 +105,7 @@ struct list_entry
     char *column2;
 };
 
-Object *app;
+Object *app, *wnd;
 
 static struct
 {
@@ -377,10 +377,14 @@ static void ListGetFirst(void)
 {
     UWORD i;
     LONG value = 0;
+    Object *real_list;
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
 
-    GET(list.lists[i], MUIA_List_First, &value);
+    /* We fetch the Listview's list here to provide test coverage for that
+       attribute. Please don't optimise */
+    real_list = (Object *)XGET(list.lists[i], MUIA_Listview_List);
+    GET(real_list, MUIA_List_First, &value);
     DoMethod(list.first_text, MUIM_SetAsString, MUIA_Text_Contents,
         "%ld", value);
 }
@@ -718,6 +722,15 @@ static void ListDeactivate(void)
     SET(list.lists[i], MUIA_List_Active, MUIV_List_Active_Off);
 }
 
+static void CheckListDoubleClick(void)
+{
+    LONG value = -1;
+
+    GET(list.multi_lists[1], MUIA_Listview_DoubleClick, &value);
+    MUI_Request(app, wnd, 0, "Test", "OK",
+        "MUIA_Listview_Doubleclick = %ld", value);
+}
+
 AROS_UFH3(static void, display_function,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(char **, strings, A2),
@@ -886,7 +899,7 @@ AROS_UFH3S(void, hook_func_standard,
 int main(void)
 {
     APTR pool;
-    Object *wnd, *second_wnd;
+    Object *second_wnd;
     Object *open_button;
     Object *about_button;
     Object *quit_button;
@@ -979,6 +992,7 @@ int main(void)
             End,
         MUIA_Listview_MultiSelect,
             MUIV_Listview_MultiSelect_None,
+        MUIA_Listview_DoubleClick, TRUE,
         MUIA_CycleChain, 1,
         End;
     list.lists[1] = ListviewObject,
@@ -2441,6 +2455,9 @@ int main(void)
         DoMethod(list.column_string, MUIM_Notify, MUIA_String_Contents,
             MUIV_EveryTime, list.column_text, 3, MUIM_Set, MUIA_Text_Contents,
             MUIV_TriggerValue);
+        DoMethod(list.multi_lists[1], MUIM_Notify, MUIA_Listview_DoubleClick,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            CheckListDoubleClick);
 
         DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
             popobject, 2, MUIM_Popstring_Close, TRUE);
@@ -2484,6 +2501,10 @@ int main(void)
         get(list.multi_lists[0], MUIA_Listview_ClickColumn, &value);
         if (value != 0)
             printf("MUIA_Listview_ClickColumn equals %ld before display,"
+                " but it should be 0.\n", (long)value);
+        get(list.lists[0], MUIA_Listview_DoubleClick, &value);
+        if (value != 0)
+            printf("MUIA_Listview_DoubleClick equals %ld before display,"
                 " but it should be 0.\n", (long)value);
 
         set(wnd, MUIA_Window_Open, TRUE);
