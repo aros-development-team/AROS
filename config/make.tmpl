@@ -2854,7 +2854,7 @@ ifeq (%(compiler),target)
         CFLAGS=" $(TARGET_CFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         CXX="$(TARGET_CXX) $(TARGET_SYSROOT)" \
         CXXFLAGS=" $(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
-        LDFLAGS="-L$(AROS_DEVELOPMENT)/lib $(USER_LDFLAGS)" \
+        LDFLAGS="-L$(AROS_DEVELOPMENT)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         AS="$(TARGET_AS)" \
         CC_FOR_BUILD="$(HOST_DEF_CC)" \
         CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" \
