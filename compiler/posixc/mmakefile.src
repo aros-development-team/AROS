@@ -14,6 +14,7 @@ POSIXC := \
     __get_default_file \
     __rand48 \
     __stat \
+    __usergrp \
     __upath \
     __vfork \
     access \
