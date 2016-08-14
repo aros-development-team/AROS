@@ -141,6 +141,7 @@ fi
 #  -Wvolatile-register-var
 #  -Wsizeof-pointer-memaccess
 #  -Wreturn-type
+#  -Wformat-zero-length
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-command-line-argument])
 CFLAGS=-Wunused-command-line-argument
@@ -584,6 +585,14 @@ if test "x-$aros_return_type" = "x-yes" ; then
     aros_cflags_return_type=-Wno-return-type
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-zero-length])
+CFLAGS=-Wformat-zero-length
+AC_TRY_COMPILE(,, aros_format_zero_length="yes", aros_format_zero_length="no")
+AC_MSG_RESULT($aros_format_zero_length)
+if test "x-$aros_format_zero_length" = "x-yes" ; then
+    aros_cflags_format_zero_length=-Wno-format-zero-length
+fi
+
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_loop_block)
 AC_SUBST(aros_cflags_loop_interchange)
@@ -647,6 +656,7 @@ AC_SUBST(aros_cflags_narrowing)
 AC_SUBST(aros_cflags_volatile_register_var)
 AC_SUBST(aros_cflags_sizeof_pointer_memaccess)
 AC_SUBST(aros_cflags_return_type)
+AC_SUBST(aros_cflags_format_zero_length)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
