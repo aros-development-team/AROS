@@ -13,12 +13,12 @@
 #include <termios.h>
 #include <errno.h>
 
-	int tcsetattr(
+    int tcsetattr(
 
 /*  SYNOPSIS */
-	int fd,
-	int opt,
-	const struct termios *t)
+        int fd,
+        int opt,
+        const struct termios *t)
 
 /*  FUNCTION
         Set terminal attributes.

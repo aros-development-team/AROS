@@ -17,24 +17,24 @@
     NAME */
 #include <unistd.h>
 
-	ssize_t read (
+        ssize_t read (
 
 /*  SYNOPSIS */
-	int    fd,
-	void * buf,
-	size_t count)
+        int    fd,
+        void * buf,
+        size_t count)
 
 /*  FUNCTION
-	Read an amount of bytes from a file descriptor.
+        Read an amount of bytes from a file descriptor.
 
     INPUTS
-	fd - The file descriptor to read from
-	buf - The buffer to read the bytes into
-	count - Read this many bytes.
+        fd - The file descriptor to read from
+        buf - The buffer to read the bytes into
+        count - Read this many bytes.
 
     RESULT
-	The number of characters read (may range from 0 when the file
-	descriptor contains no more characters to count) or -1 on error.
+        The number of characters read (may range from 0 when the file
+        descriptor contains no more characters to count) or -1 on error.
 
     NOTES
 
@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-	open(), read(), fread()
+        open(), read(), fread()
 
     INTERNALS
 
@@ -54,20 +54,20 @@
 
     if (!fdesc)
     {
-	errno = EBADF;
-	return -1;
+        errno = EBADF;
+        return -1;
     }
 
     if(fdesc->fcb->privflags & _FCB_ISDIR)
     {
-	errno = EISDIR;
-	return -1;
+        errno = EISDIR;
+        return -1;
     }
 
     cnt = Read (fdesc->fcb->handle, buf, count);
 
     if (cnt == -1)
-	errno = __stdc_ioerr2errno (IoErr ());
+        errno = __stdc_ioerr2errno (IoErr ());
 
     return cnt;
 } /* read */
