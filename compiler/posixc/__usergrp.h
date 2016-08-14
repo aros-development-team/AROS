@@ -6,20 +6,8 @@
     $Id$
 */
 
-#include <aros/types/gid_t.h>
-#include <aros/types/uid_t.h>
+#include <pwd.h>
 
-struct userrecord
-{
-    char  *ur_name;    /* Username */
-    uid_t  ur_uid;     /* Read User ID */
-    gid_t  ur_gid;     /* Group ID */
-    char  *ur_dir;     /* Home directory  */
-    char  *ur_shell;   /* Shell */
-    char  *ur_passwd;  /* Password */
-    char  *ur_gecos;   /* Real name */
-};
-
-extern struct userrecord _user;
+void __fill_passwd(struct passwd *);
 
 #endif /* ___USERGRP_H */

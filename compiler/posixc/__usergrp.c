@@ -13,24 +13,27 @@
 
 #include "__usergrp.h"
 
-#define FIRST_UID   1000
-#define FIRST_GID   1000
+#define USER_UID    1000
+#define USER_GID    1000
+#define USER_NAME   "aros"
+#define USER_SHELL  "sh"
+#define USER_DIR    "/home"
 
-struct userrecord _user =
+void __fill_passwd(struct passwd *pwd)
 {
-    "aros",
-    FIRST_UID,
-    FIRST_GID,
-    "/home",
-    "sh",
-    "aros",
-    "AROS"
-};
+    pwd->pw_name     = USER_NAME;
+    pwd->pw_uid      = USER_UID;
+    pwd->pw_gid      = USER_GID;
+    pwd->pw_dir      = USER_DIR;
+    pwd->pw_shell    = USER_SHELL;
+    pwd->pw_passwd   = USER_NAME;
+    pwd->pw_gecos    = USER_NAME;
+}
 
 int __init_usergrp(struct PosixCIntBase *PosixCIntBase)
 {
-    PosixCIntBase->uid      = _user.ur_uid;
-    PosixCIntBase->euid     = _user.ur_uid;
+    PosixCIntBase->uid      = USER_UID;
+    PosixCIntBase->euid     = USER_UID;
 
     return 1;
 }
