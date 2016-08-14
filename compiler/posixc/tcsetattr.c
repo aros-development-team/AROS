@@ -3,7 +3,9 @@
     $Id$
 */
 
+#include <proto/dos.h>
 
+#include "__fdesc.h"
 
 /*****************************************************************************
 
@@ -29,16 +31,16 @@
         t       - struct termios containing the requested changes
 
     RESULT
-        0       - success
-        1       - error 
+         0      - success
+        -1      - error
 
     NOTES
         Will return success, if *any* of the changes were successful.
+        Currently supports only ICANON flag
 
     EXAMPLE
 
     BUGS
-        Not implemented.
 
     SEE ALSO
         ioctl()
@@ -47,6 +49,27 @@
 
 ******************************************************************************/
 {
-    /* TODO: Implement tcsetattr() */
+    fdesc *fdesc = __getfdesc(fd);
+
+    if (!fdesc)
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    if (IsInteractive(fdesc->fcb->handle))
+    {
+        if (t->c_lflag & ICANON)
+        {
+            SetMode(fdesc->fcb->handle, 0);
+            fdesc->fcb->privflags &= ~_FCB_CONSOLERAW;
+        }
+        else
+        {
+            SetMode(fdesc->fcb->handle, 1);
+            fdesc->fcb->privflags |= _FCB_CONSOLERAW;
+        }
+    }
+
     return 0;
 }
