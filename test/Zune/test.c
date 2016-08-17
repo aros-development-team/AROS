@@ -731,6 +731,43 @@ static void CheckListDoubleClick(void)
         "MUIA_Listview_Doubleclick = %ld", value);
 }
 
+AROS_UFH3(static APTR, ListConstructHook,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(APTR, pool, A2),
+    AROS_UFHA(IPTR, n, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct list_entry *entry;
+
+    entry = AllocPooled(pool, sizeof(struct list_entry) + 40);
+
+    if (entry != NULL)
+    {
+        entry->column1 = (char *)(entry + 1);
+        entry->column2 = entry->column1 + 20;
+        sprintf(entry->column1, "Entry%ld", (long)n);
+        sprintf(entry->column2, "Col2: Entry%ld", (long)n);
+    }
+
+    return entry;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(static void, ListDestructHook,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(APTR, pool, A2),
+    AROS_UFHA(struct list_entry *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreePooled(pool, entry, sizeof(struct list_entry) + 40);
+    printf("List item destroyed\n");
+
+    AROS_USERFUNC_EXIT
+}
+
 AROS_UFH3(static void, display_function,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(char **, strings, A2),
@@ -933,21 +970,13 @@ int main(void)
     static char *radio_entries2[] =
         {"Paris", "Pataya", "London", "New York", "Reykjavik", NULL};
 
-    static struct list_entry entry1 = {"Testentry1", "Col2: Entry1"};
-    static struct list_entry entry2 = {"Entry2", "Col2: Entry2"};
-    static struct list_entry entry3 = {"Entry3", "Col2: Entry3"};
-    static struct list_entry entry4 = {"Entry4", "Col2: Entry4"};
-    static struct list_entry entry5 = {"Entry5", "Col2: Entry5"};
-    static struct list_entry entry6 = {"Entry6", "Col2: Entry6"};
-
-    static struct list_entry *entries[] =
-        {&entry1, &entry2, &entry3, &entry4, &entry5, &entry6, NULL};
+    static IPTR entries[] = {1, 2, 3, 4, 5, 6, (IPTR)NULL};
 
     struct Hook hook;
     struct Hook hook_wheel;
     struct Hook hook_slider;
     struct Hook hook_objects;
-    struct Hook hook_display;
+    struct Hook hook_construct, hook_destruct, hook_display;
 
     hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
 
@@ -959,6 +988,8 @@ int main(void)
     hook_wheel.h_Entry = (HOOKFUNC) wheel_function;
     hook_slider.h_Entry = (HOOKFUNC) slider_function;
     hook_objects.h_Entry = (HOOKFUNC) objects_function;
+    hook_construct.h_Entry = (HOOKFUNC) ListConstructHook;
+    hook_destruct.h_Entry = (HOOKFUNC) ListDestructHook;
     hook_display.h_Entry = (HOOKFUNC) display_function;
 
     context_menu = MenustripObject,
@@ -1190,6 +1221,10 @@ int main(void)
                                 Child, listview = ListviewObject,
                                     MUIA_Listview_List, ListObject,
                                         InputListFrame,
+                                        MUIA_List_ConstructHook,
+                                            &hook_construct,
+                                        MUIA_List_DestructHook,
+                                            &hook_destruct,
                                         MUIA_List_DisplayHook, &hook_display,
                                         MUIA_List_Format, ",,",
                                         MUIA_List_SourceArray, entries,
@@ -1822,6 +1857,10 @@ int main(void)
                                         MUIA_Listview_List,
                                             ListObject,
                                             InputListFrame,
+                                            MUIA_List_ConstructHook,
+                                                &hook_construct,
+                                            MUIA_List_DestructHook,
+                                                &hook_destruct,
                                             MUIA_List_DisplayHook,
                                                 &hook_display,
                                             MUIA_List_Format, list_format,
@@ -1840,6 +1879,10 @@ int main(void)
                                         MUIA_Listview_List,
                                             ListObject,
                                             InputListFrame,
+                                            MUIA_List_ConstructHook,
+                                                &hook_construct,
+                                            MUIA_List_DestructHook,
+                                                &hook_destruct,
                                             MUIA_List_DisplayHook,
                                                 &hook_display,
                                             MUIA_List_Format, list_format,
