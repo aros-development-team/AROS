@@ -274,6 +274,75 @@ struct MUI_ListData
 *
 */
 
+/****** List.mui/MUIA_List_ConstructHook *************************************
+*
+*   NAME
+*       MUIA_List_ConstructHook -- (V4) [IS.], struct Hook *
+*
+*   FUNCTION
+*       The provided hook creates a list entry. Whenever a data item is added
+*       to the list, it is the result of this hook that is really added.
+
+*       The hook receives the list's memory pool as its second argument and
+*       the data item for the entry as its third argument. The memory pool may
+*       be used for allocating memory for the new entry if desired. The hook
+*       should return the new data entry, or NULL if an error occurred.
+*
+*       If this attribute is not specified or is set to NULL, all list entries
+*       must be strings (which must continue to exist for the lifetime of the
+*       list).
+*
+*       If you want string entries to be duplicated within the list, so that
+*       they do not have to be preserved externally, a built-in hook for this
+*       purpose can be used by providing the special value
+*       MUIV_List_ConstructHook_String.
+*
+*       Whenever this attribute is specified, a matching hook must be
+*       specified for the MUIA_ListDestructHook attribute.
+*
+*   SEE ALSO
+*       MUIA_List_DestructHook
+*
+******************************************************************************
+*
+*/
+
+/****** List.mui/MUIA_List_DestructHook **************************************
+*
+*   NAME
+*       MUIA_List_DestructHook -- (V4) [IS.], struct Hook *
+*
+*   FUNCTION
+*       The provided hook destroys a list entry, and is called whenever a data
+*       item is removed from the list. It can be used to deallocate any
+*       resources for the entry that were allocated by the hook specified for
+*       MUIA_List_ConstructHook.
+*
+*       The hook receives the list's memory pool as its second argument and
+*       the list entry to be destroyed as its third argument. The hook should
+*       have no return value.
+*
+*       If this attribute is not specified or is set to NULL, all list entries
+*       must be strings (which must continue to exist for the lifetime of the
+*       list).
+*
+*       If you want string entries to be duplicated within the list, so that
+*       they do not have to be preserved externally, a built-in hook for this
+*       purpose can be used by providing the special value
+*       MUIV_List_ConstructHook_String.
+*
+*       This attribute must only be specified when a matching hook has been
+*       specified for the MUIA_List_ConstructHook attribute. If you specified
+*       MUIV_List_ConstructHook_String for MUIA_List_ConstructHook, you must
+*       specify MUIV_List_DestructHook_String for this attribute.
+*
+*   SEE ALSO
+*       MUIA_List_ConstructHook
+*
+******************************************************************************
+*
+*/
+
 /****** List.mui/MUIA_List_First *********************************************
 *
 *   NAME
