@@ -170,7 +170,8 @@ static struct
         *column_text,
         *def_column_string,
         *showheadings_check;
-    LONG quiet[LIST_COUNT];
+    LONG quiet[LIST_COUNT],
+        destruct_count;
 }
 list;
 
@@ -763,7 +764,7 @@ AROS_UFH3(static void, ListDestructHook,
     AROS_USERFUNC_INIT
 
     FreePooled(pool, entry, sizeof(struct list_entry) + 40);
-    printf("List item destroyed\n");
+    list.destruct_count++;
 
     AROS_USERFUNC_EXIT
 }
@@ -991,6 +992,7 @@ int main(void)
     hook_construct.h_Entry = (HOOKFUNC) ListConstructHook;
     hook_destruct.h_Entry = (HOOKFUNC) ListDestructHook;
     hook_display.h_Entry = (HOOKFUNC) display_function;
+    list.destruct_count = 0;
 
     context_menu = MenustripObject,
         MUIA_Family_Child, MenuObject,
@@ -1879,14 +1881,9 @@ int main(void)
                                         MUIA_Listview_List,
                                             ListObject,
                                             InputListFrame,
-                                            MUIA_List_ConstructHook,
-                                                &hook_construct,
-                                            MUIA_List_DestructHook,
-                                                &hook_destruct,
                                             MUIA_List_DisplayHook,
                                                 &hook_display,
                                             MUIA_List_Format, list_format,
-                                            MUIA_List_SourceArray, entries,
                                             MUIA_List_Title, TRUE,
                                             MUIA_List_AdjustHeight, TRUE,
                                             End,
@@ -2501,6 +2498,10 @@ int main(void)
         DoMethod(list.multi_lists[1], MUIM_Notify, MUIA_Listview_DoubleClick,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             CheckListDoubleClick);
+        SET(list.multi_lists[1], MUIA_List_ConstructHook, &hook_construct);
+        SET(list.multi_lists[1], MUIA_List_DestructHook, &hook_destruct);
+        DoMethod(list.multi_lists[1], MUIM_List_Insert, entries, -1,
+            MUIV_List_Insert_Top);
 
         DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
             popobject, 2, MUIM_Popstring_Close, TRUE);
@@ -2585,6 +2586,12 @@ int main(void)
         MUI_DisposeObject(context_menu);
     CloseLibrary(ColorWheelBase);
     MUI_DeleteCustomClass(CL_DropText);
+
+    /* automatic tests */
+    if (list.destruct_count != 18)
+        printf("The hook installed through MUIA_List_DestructHook has been"
+            " called %ld times, but should have been called 18 times.\n",
+            (long)list.destruct_count);
 
     CloseLibrary(MUIMasterBase);
 
