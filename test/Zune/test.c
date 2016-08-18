@@ -1057,6 +1057,7 @@ int main(void)
             MUIA_List_SourceArray, fruits,
             MUIA_List_Active, MUIV_List_Active_Bottom,
             MUIA_List_PoolPuddleSize, 512,
+            MUIA_List_AutoVisible, TRUE,
             MUIA_ShortHelp,
                 "Left scroller\nBottom entry active\nSorted alphabetically",
             End,
@@ -1100,9 +1101,10 @@ int main(void)
             ListObject,
             ReadListFrame,
             MUIA_List_SourceArray, fruits,
+            MUIA_List_Active, MUIV_List_Active_Bottom,
             MUIA_List_MinLineHeight, 20,
             MUIA_ShortHelp,
-                "Default scroller\nDefault active entry\nSorted by length",
+                "Default scroller\nBottom entry active\nSorted by length",
             End,
         MUIA_Listview_Input, FALSE,
         MUIA_CycleChain, 1,
@@ -1907,8 +1909,6 @@ int main(void)
                                         MUIA_Listview_List,
                                             ListObject,
                                             InputListFrame,
-                                            MUIA_List_DisplayHook,
-                                                &hook_display,
                                             MUIA_List_Format, list_format,
                                             MUIA_List_Title, TRUE,
                                             MUIA_List_AdjustHeight, TRUE,
@@ -2492,6 +2492,7 @@ int main(void)
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             UpdateListInfo);
         SET(list.lists[4], MUIA_List_CompareHook, &hook_compare);
+        SET(list.lists[4], MUIA_List_AutoVisible, TRUE);
 
         SET(list.showheadings_check, MUIA_Selected,
             XGET(list.multi_lists[0], MUIA_List_Title));
@@ -2527,6 +2528,7 @@ int main(void)
             CheckListDoubleClick);
         SET(list.multi_lists[1], MUIA_List_ConstructHook, &hook_construct);
         SET(list.multi_lists[1], MUIA_List_DestructHook, &hook_destruct);
+        SET(list.multi_lists[1], MUIA_List_DisplayHook, &hook_display);
         DoMethod(list.multi_lists[1], MUIM_List_Insert, entries, -1,
             MUIV_List_Insert_Top);
 
