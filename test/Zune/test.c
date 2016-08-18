@@ -303,6 +303,24 @@ static void ChangePendisplayPen(void)
         XGET(pendisplay_pen, MUIA_String_Integer));
 }
 
+AROS_UFH3(static IPTR, ListCompareHook,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(CONST_STRPTR, str1, A2),
+    AROS_UFHA(CONST_STRPTR, str2, A1))
+{
+    AROS_USERFUNC_INIT
+
+    IPTR len1, len2;
+
+    len1 = strlen(str1);
+    len2 = strlen(str2);
+
+    /* Indicate which string is shorter */
+    return len2 - len1;
+
+    AROS_USERFUNC_EXIT
+}
+
 static void ChangeListTitle(void)
 {
     STRPTR title = NULL;
@@ -977,6 +995,7 @@ int main(void)
     struct Hook hook_wheel;
     struct Hook hook_slider;
     struct Hook hook_objects;
+    struct Hook hook_compare;
     struct Hook hook_construct, hook_destruct, hook_display;
 
     hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
@@ -989,6 +1008,7 @@ int main(void)
     hook_wheel.h_Entry = (HOOKFUNC) wheel_function;
     hook_slider.h_Entry = (HOOKFUNC) slider_function;
     hook_objects.h_Entry = (HOOKFUNC) objects_function;
+    hook_compare.h_Entry = (HOOKFUNC) ListCompareHook;
     hook_construct.h_Entry = (HOOKFUNC) ListConstructHook;
     hook_destruct.h_Entry = (HOOKFUNC) ListDestructHook;
     hook_display.h_Entry = (HOOKFUNC) display_function;
@@ -1021,7 +1041,9 @@ int main(void)
             MUIA_List_Active, MUIV_List_Active_Top,
             MUIA_List_PoolThreshSize, 256,
             MUIA_List_DragSortable, TRUE,
-            MUIA_ShortHelp, "Default scroller\nTop entry active",
+            MUIA_List_CompareHook, &hook_compare,
+            MUIA_ShortHelp,
+                "Default scroller\nTop entry active\nSorted by length",
             End,
         MUIA_Listview_MultiSelect,
             MUIV_Listview_MultiSelect_None,
@@ -1035,7 +1057,8 @@ int main(void)
             MUIA_List_SourceArray, fruits,
             MUIA_List_Active, MUIV_List_Active_Bottom,
             MUIA_List_PoolPuddleSize, 512,
-            MUIA_ShortHelp, "Left scroller\nBottom entry active",
+            MUIA_ShortHelp,
+                "Left scroller\nBottom entry active\nSorted alphabetically",
             End,
         MUIA_Listview_ScrollerPos,
             MUIV_Listview_ScrollerPos_Left,
@@ -1048,7 +1071,8 @@ int main(void)
             MUIA_List_SourceArray, fruits,
             MUIA_List_Active, MUIV_List_Active_Off,
             MUIA_List_Pool, pool,
-            MUIA_ShortHelp, "Right scroller\nNo active entry",
+            MUIA_ShortHelp,
+                "Right scroller\nNo active entry\nSorted alphabetically",
             End,
         MUIA_Listview_MultiSelect,
             MUIV_Listview_MultiSelect_Shifted,
@@ -1062,7 +1086,8 @@ int main(void)
             InputListFrame,
             MUIA_List_SourceArray, fruits,
             MUIA_List_Pool, NULL,
-            MUIA_ShortHelp, "No scroller\nDefault active entry",
+            MUIA_ShortHelp,
+                "No scroller\nDefault active entry\nSorted alphabetically",
             End,
         MUIA_Listview_MultiSelect,
             MUIV_Listview_MultiSelect_Always,
@@ -1076,7 +1101,8 @@ int main(void)
             ReadListFrame,
             MUIA_List_SourceArray, fruits,
             MUIA_List_MinLineHeight, 20,
-            MUIA_ShortHelp, "Default scroller\nDefault active entry",
+            MUIA_ShortHelp,
+                "Default scroller\nDefault active entry\nSorted by length",
             End,
         MUIA_Listview_Input, FALSE,
         MUIA_CycleChain, 1,
@@ -2465,6 +2491,7 @@ int main(void)
         DoMethod(list.list_radios, MUIM_Notify, MUIA_Radio_Active,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             UpdateListInfo);
+        SET(list.lists[4], MUIA_List_CompareHook, &hook_compare);
 
         SET(list.showheadings_check, MUIA_Selected,
             XGET(list.multi_lists[0], MUIA_List_Title));
