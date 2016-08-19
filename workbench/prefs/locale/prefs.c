@@ -158,6 +158,7 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
                         FreeVecPooled(mempool, *languageNamePtr);
                         *languageNamePtr = AllocVecPooled(mempool, i + 2);
                         CopyMem(tmpbuff, *languageNamePtr, i + 1);
+                        Close(fileHandle);
                         D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName (A) '%s'\n", *languageNamePtr));
                         return *languageNamePtr;
                     }
@@ -186,6 +187,7 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
                                     FreeVecPooled(mempool, *languageNamePtr);
                                     *languageNamePtr = AllocVecPooled(mempool, i + 2);
                                     CopyMem(tmpbuff, *languageNamePtr, i + 1);
+                                    Close(fileHandle);
                                     D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName (B) '%s'\n", *languageNamePtr));
                                     return *languageNamePtr;
                                 }
