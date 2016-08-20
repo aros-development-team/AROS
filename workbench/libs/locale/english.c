@@ -728,7 +728,7 @@ const UWORD __code_table_ctype[ __CODE_TABLE_SIZE] =
         /* 220 Capital U dieresis   */  iAlpha | iGraph | iPrint | iUpper,
         /* 221 Capital Y acute      */  iAlpha | iGraph | iPrint | iUpper,
         /* 222 Capital Thorn        */  iAlpha | iGraph | iPrint | iUpper,
-        /* 223 Ringel-s             */  iAlpha | iGraph | iLower | iPrint | iUpper,
+        /* 223 Ringel-s             */  iAlpha | iGraph | iLower | iPrint,
 
         /* 224 Small a grave        */  iAlpha | iGraph | iLower | iPrint,
         /* 225 Small a acute        */  iAlpha | iGraph | iLower | iPrint,
@@ -1456,8 +1456,8 @@ const CONST_STRPTR __language_strings[] =
     "pm",
 
     /* Soft and hard hyphens: */
-    "-",  /* Soft; */
-    "-",  /* Hard; */
+    "\xad",  /* Soft; */
+    "-",     /* Hard; */
 
     /* Open and close quotes */
     "\"",
@@ -1473,4 +1473,3 @@ const CONST_STRPTR __language_strings[] =
 
 /* This is the end-of-ROMtag marker. */
 const char end=0;
-
