@@ -103,7 +103,7 @@ BOOL _getnum(LONG numchars,
     ULONG c;
     LONG day = 0, month = 0, hour = 0, min = 0, sec = 0;
     LONG year = 1978;
-    BOOL leap, ampm = FALSE, checkEOF = TRUE;
+    BOOL leap, am = FALSE, pm = FALSE, checkEOF = TRUE;
     if ((fmtTemplate == NULL)
         || (getCharFunc == NULL)
         || (locale == NULL) || (*fmtTemplate == '\0'))
@@ -257,7 +257,7 @@ BOOL _getnum(LONG numchars,
 
                 /* hour 24-hr style */
             case 'H':
-                ampm = FALSE;
+                am = pm = FALSE;
                 c = GetChar();
                 if (!get2num(&hour))
                     return FALSE;
@@ -270,7 +270,7 @@ BOOL _getnum(LONG numchars,
                 c = GetChar();
                 if (!get2num(&hour))
                     return FALSE;
-                if (hour > 11)
+                if ((hour > 12) || (hour == 0))
                     return FALSE;
                 break;
 
@@ -325,7 +325,8 @@ BOOL _getnum(LONG numchars,
                         return FALSE;
 
                     /* Check whether we got AM or PM */
-                    ampm = pmOk;
+                    am = amOk;
+                    pm = pmOk;
 
                     if (*fmtTemplate)
                         fmtTemplate++;
@@ -435,7 +436,9 @@ BOOL _getnum(LONG numchars,
         date->ds_Days = day;
 
         date->ds_Minute = hour * 60 + min;
-        if ((hour < 12) && ampm)
+        if ((hour == 12) && am)
+            date->ds_Minute -= 720;
+        if ((hour < 12) && pm)
             date->ds_Minute += 720;
         date->ds_Tick = sec * TICKS_PER_SECOND;
     }
