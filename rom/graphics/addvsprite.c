@@ -68,13 +68,16 @@
 	   list of VSprites which is connected to the GelsInfo which was
 	   previously found in the rastport */
 
-	while (JOIN_XY_COORDS(CurVSprite->NextVSprite->X, CurVSprite->NextVSprite->Y) < Koord)
+	while ((CurVSprite->NextVSprite) && (JOIN_XY_COORDS(CurVSprite->NextVSprite->X, CurVSprite->NextVSprite->Y) < Koord))
 		CurVSprite = CurVSprite->NextVSprite;
 
 	/* insert the new VSprite *after* CurVSprite */
 
-	CurVSprite -> NextVSprite -> PrevVSprite = vs;
-	vs -> NextVSprite = CurVSprite -> NextVSprite;
+        if (CurVSprite -> NextVSprite)
+        {
+            CurVSprite -> NextVSprite -> PrevVSprite = vs;
+            vs -> NextVSprite = CurVSprite -> NextVSprite;
+        }
 	vs -> PrevVSprite = CurVSprite;
 	CurVSprite -> NextVSprite = vs;
 
