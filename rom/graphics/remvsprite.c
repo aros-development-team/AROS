@@ -55,8 +55,9 @@
 	struct VSprite * Current;
 
 	/* unlink this VSprite */
-	vs -> NextVSprite -> PrevVSprite = vs -> PrevVSprite;
-	vs -> PrevVSprite -> NextVSprite = vs -> NextVSprite;
+        if (vs -> NextVSprite)
+            vs -> NextVSprite -> PrevVSprite = vs -> PrevVSprite;
+        vs -> PrevVSprite -> NextVSprite = vs -> NextVSprite;
 
 	/* look for the head of this list of gels */
 	Head = vs;
@@ -67,7 +68,7 @@
 	Current = Head;
 
 	while (Current != NULL) {
-		if (Current -> IntVSprite -> DrawPath == vs) {
+		if ((Current -> IntVSprite) && (Current -> IntVSprite -> DrawPath == vs)) {
 			Current -> IntVSprite -> DrawPath = vs -> IntVSprite -> DrawPath;
 			break;
 		} else
@@ -86,9 +87,10 @@
 	/*
 	 * Are only the head and the tail VSprite left?
 	 */
-	if (NULL == Head->NextVSprite->NextVSprite) {
+	if ((Head) && ((!Head->NextVSprite) || (NULL == Head->NextVSprite->NextVSprite))) {
 		_DeleteIntVSprite(Head,GfxBase);
-		_DeleteIntVSprite(Head->NextVSprite,GfxBase);
+                if (Head->NextVSprite)
+                    _DeleteIntVSprite(Head->NextVSprite,GfxBase);
 	}
 
 	AROS_LIBFUNC_EXIT
