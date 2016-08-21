@@ -136,11 +136,19 @@
 				                    rp, 
 				                    FALSE,
 				                    GfxBase);
-				
+
 				/* FIXME: Wrong minterm is used.
 				 * Need to implement mintern '0xe0'.
 				 */
-				BltBitMapRastPort(CurVSprite->IntVSprite->ImageData,
+                            
+#if (0)
+#define VS_MINTERM      0x0e0
+#else
+/* should be 0xe0! */
+#define VS_MINTERM      0x0c0
+#endif
+                                if ((CurVSprite->VSBob) && (CurVSprite->VSBob->ImageShadow))
+                                    BltMaskBitMapRastPort(CurVSprite->IntVSprite->ImageData,
 				                  0,
 		                  		  0,
 				                  rp,
@@ -148,7 +156,20 @@
 				                  CurVSprite->Y,
 				                  CurVSprite->Width << 4,
 				                  CurVSprite->Height,
-				                  0x0c0 /* should be 0xe0! */);
+				                  VS_MINTERM,
+                                                  (PLANEPTR)CurVSprite->VSBob->ImageShadow);
+                                else
+                                    BltBitMapRastPort(CurVSprite->IntVSprite->ImageData,
+				                  0,
+		                  		  0,
+				                  rp,
+				                  CurVSprite->X,
+				                  CurVSprite->Y,
+				                  CurVSprite->Width << 4,
+				                  CurVSprite->Height,
+				                  VS_MINTERM );
+                                
+#undef VS_MINTERM
 				/*
 				 * I will need to know the vsprite's coordinates
 				 * that it has now the next time as well for clearing
