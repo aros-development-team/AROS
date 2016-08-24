@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to parse the command line options and the module config file for
@@ -55,7 +55,7 @@ freeBanner(char *banner)
 
 const static char usage[] =
     "\n"
-    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-v versionextra]\n"
+    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-l library-stub gendir] [-v versionextra]\n"
     "       {writefiles|writemakefile|writeincludes|writelibdefs|writefunclist|writefd|writeskel|writethunk} modname modtype\n"
 ;
 
@@ -105,7 +105,7 @@ struct config *initconfig(int argc, char **argv)
 
     memset(cfg, 0, sizeof(struct config));
 
-    while ((c = getopt(argc, argv, ":c:s:d:v:")) != -1)
+    while ((c = getopt(argc, argv, ":c:s:d:l:v:")) != -1)
     {
         if (c == ':')
         {
@@ -128,6 +128,12 @@ struct config *initconfig(int argc, char **argv)
             /* Remove / at end if present */
             if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
             cfg->gendir = optarg;
+            break;
+
+        case 'l':
+            /* Remove / at end if present */
+            if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
+            cfg->libgendir = optarg;
             break;
 
         case 'v':
@@ -184,6 +190,7 @@ struct config *initconfig(int argc, char **argv)
         exit(20);
     }
 
+    
     cfg->modulename = argv[optind+1];
     cfg->modulenameupper = strdup(cfg->modulename);
     for (s=cfg->modulenameupper; *s!='\0'; *s = toupper(*s), s++) {
@@ -277,6 +284,9 @@ struct config *initconfig(int argc, char **argv)
 
         if (cfg->gendir == NULL)
             cfg->gendir = ".";
+        
+        if (cfg->libgendir == NULL)
+            cfg->libgendir = cfg->gendir;
     }
 
     readconfig(cfg);

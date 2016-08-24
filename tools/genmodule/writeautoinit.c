@@ -13,7 +13,7 @@ void writeautoinit(struct config *cfg, int is_rel)
     char line[256], *banner;
     struct stringlist *linelistit;
 
-    snprintf(line, 255, "%s/%s_%sautoinit.c", cfg->gendir, cfg->modulename, is_rel ? "rel" : "");
+    snprintf(line, 255, "%s/%s_%sautoinit.c", cfg->libgendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
 
     if (out==NULL)
