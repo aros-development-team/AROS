@@ -1,8 +1,8 @@
 MSG_NAME (//)
 Boot Preferences
 ;
-MSG_DESCRIPTION (//)
-Boot preferences
+MSG_DESCRIPTION (//40)
+Manage boot preferences
 ;
 MSG_GFX (//)
 Graphics
