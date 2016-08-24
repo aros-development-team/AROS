@@ -1,9 +1,9 @@
 ## version $VER: boot.catalog 1.0 (18.03.2016)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 MSG_NAME
-Nastavení vlastností startu
+Nastavení vlastností startu (Boot setting)
 ; Boot Preferences
 ;
 MSG_DESCRIPTION
