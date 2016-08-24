@@ -1201,13 +1201,15 @@ $(TMP_TARGET) : $(TMP_DEPS)
 # Generate the support files for compiling a module. This includes include
 # files and source files. This rule has to be preceeded by
 # %rule_genmodule_makefile
-%define rule_genmodule_files modname=/A modtype=/A modsuffix= targetdir= \
+%define rule_genmodule_files modname=/A modtype=/A modsuffix= targetdir= stubdir= \
     conffile=
 
-TMP_TARGETS := $(%(modname)_STARTFILES) $(%(modname)_ENDFILES) \
-	       $(%(modname)_LINKLIBFILES) $(%(modname)_RELLINKLIBFILES)
-TMP_TARGETS := $(addsuffix .c,$(TMP_TARGETS)) \
+TMP_GENTARGETS := $(%(modname)_STARTFILES) $(%(modname)_ENDFILES)
+TMP_STUBTARGETS := $(%(modname)_LINKLIBFILES) $(%(modname)_RELLINKLIBFILES)
+TMP_GENTARGETS := $(addsuffix .c,$(TMP_GENTARGETS))
+TMP_STUBTARGETS := $(addsuffix .c,$(TMP_STUBTARGETS)) \
                $(addsuffix .S, $(%(modname)_LINKLIBAFILES) $(%(modname)_RELLINKLIBAFILES))
+
 
 TMP_DEPS := $(GENMODULE)
 TMP_OPTS :=
@@ -1230,8 +1232,22 @@ endif
 ifneq (%(targetdir),)
     TMP_OPTS += -d %(targetdir)
     TMP_TARGETDIR := $(shell echo %(targetdir) | sed 's/^\(.\):\//\/\1\//')
-    TMP_TARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_TARGETS))
+    TMP_GENTARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_GENTARGETS))
 endif
+ifneq (%(stubdir),)
+    TMP_OPTS += -l %(stubdir)
+    TMP_STUBTARGETDIR := $(shell echo %(stubdir) | sed 's/^\(.\):\//\/\1\//')
+    TMP_STUBTARGETS := $(addprefix $(TMP_STUBTARGETDIR)/,$(TMP_STUBTARGETS))
+else
+ifneq (%(targetdir),)
+    TMP_STUBTARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_STUBTARGETS))
+endif
+endif
+
+TMP_TARGETS := $(TMP_GENTARGETS) $(TMP_STUBTARGETS)
+TMP_TARGETDIRS := $(dir $(TMP_TARGETS))
+$(TMP_TARGETS) : | $(TMP_TARGETDIRS)
+GLOB_MKDIRS += $(TMP_TARGETDIRS)
 
 $(TMP_TARGETS) : OPTS := $(TMP_OPTS)
 $(TMP_TARGETS) : MODNAME := %(modname)
@@ -1846,7 +1862,7 @@ GLOB_MKDIRS += %(objdir)/include
 ## Extra genmodule src files generation
 ## 
 %rule_genmodule_files modname="%(modname)" modtype="%(modtype)" \
-		      modsuffix="%(modsuffix)" targetdir="%(objdir)" \
+		      modsuffix="%(modsuffix)" targetdir="%(objdir)" stubdir="%(objdir)/linklib" \
 		      conffile="%(conffile)"
 
 
@@ -1872,14 +1888,20 @@ endif
 BD_FILES      := %(files)
 BD_CXXFILES := %(cxxfiles)
 
+BD_LIBFILES := %(linklibfiles)
+
 BD_FDIRS      := $(sort $(dir $(BD_FILES)))
 
 BD_STARTFILES := $(addprefix %(objdir)/,$(%(modname)_STARTFILES))
 BD_ENDFILES   := $(addprefix %(objdir)/,$(%(modname)_ENDFILES))
 
 BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
+BD_LIBARCHOBJS   := $(wildcard %(objdir)/linklib/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
+BD_LIBARCHFILES  := $(basename $(notdir $(BD_LIBARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
+BD_NLIBARCHFILES := $(filter-out $(BD_LIBARCHFILES),$(BD_LIBFILES))
+BD_ARCHNLIBFILES := $(filter-out $(BD_LIBFILES),$(BD_LIBARCHFILES))
 
 BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CFLAGS)
 BD_CXXFLAGS := %(cxxflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CXXFLAGS)
@@ -1907,9 +1929,9 @@ BD_LIBDIR := %(libdir)
 endif
 
 ifeq (%(build_abi),M)
-BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
-BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
-ifeq ($(strip $(%(modname)_LINKLIBFILES) $(%(modname)_LINKLIBAFILES) %(linklibfiles)),)
+BD_LINKLIBCFILES := $(addprefix %(objdir)/linklib/,$(%(modname)_LINKLIBFILES))
+BD_LINKLIBAFILES := $(addprefix %(objdir)/linklib/,$(%(modname)_LINKLIBAFILES))
+ifeq ($(strip $(%(modname)_LINKLIBFILES) $(%(modname)_LINKLIBAFILES) %(linklibfiles) $(BD_ARCHNLIBFILES)),)
     BD_LINKLIB :=
 else
     BD_LINKLIB := $(BD_LIBDIR)/lib%(modname)$(BD_LIBSUFFIX).a
@@ -1919,9 +1941,9 @@ else
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
-BD_RELLINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBFILES))
-BD_RELLINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBAFILES))
-ifeq ($(strip $(%(modname)_RELLINKLIBFILES) $(%(modname)_RELLINKLIBAFILES) %(linklibfiles)),)
+BD_RELLINKLIBCFILES := $(addprefix %(objdir)/linklib/,$(%(modname)_RELLINKLIBFILES))
+BD_RELLINKLIBAFILES := $(addprefix %(objdir)/linklib/,$(%(modname)_RELLINKLIBAFILES))
+ifeq ($(strip $(%(modname)_RELLINKLIBFILES) $(%(modname)_RELLINKLIBAFILES) %(linklibfiles) $(BD_ARCHNLIBFILES)),)
     BD_RELLINKLIB :=
 else
     BD_RELLINKLIB := $(BD_LIBDIR)/lib%(modname)_rel$(BD_LIBSUFFIX).a
@@ -1932,9 +1954,18 @@ endif
 BD_RELLINKLIBFILES := $(BD_RELLINKLIBCFILES) $(BD_RELLINKLIBAFILES)
 endif
 
-BD_CCFILES := $(BD_NARCHFILES) %(linklibfiles)
-BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) \
-    $(BD_RELLINKLIBCFILES)
+BD_ENDOBJS    := $(addsuffix .o,$(BD_ENDFILES))
+BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/linklib/,$(notdir $(BD_NLIBARCHFILES))) $(addprefix %(objdir)/linklib/arch/,$(notdir $(BD_ARCHNLIBFILES))) $(BD_LINKLIBFILES)) \
+                 %(linklibobjs)
+BD_RELLINKLIBOBJS := $(addsuffix .o,$(addprefix %(objdir)/linklib/,$(notdir $(BD_NLIBARCHFILES))) $(addprefix %(objdir)/linklib/arch/,$(notdir $(BD_ARCHNLIBFILES))) $(BD_RELLINKLIBFILES)) \
+                 %(linklibobjs)
+$(BD_LINKLIBFILES) $(BD_RELLINKLIBFILES) : | %(objdir)/linklib
+$(BD_LINKLIBOBJS) $(BD_RELLINKLIBOBJS) : | %(objdir)/linklib
+GLOB_MKDIRS += %(objdir)/linklib
+
+BD_CCFILES := $(BD_NARCHFILES)
+BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES)
+BD_LINKLIBCCFILES := $(BD_NLIBARCHFILES) $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFILES)
 
 %rule_compile_cxx_multi \
     basenames=$(BD_CXXFILES) targetdir="%(objdir)" \
@@ -1948,10 +1979,14 @@ BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) \
     basenames=$(BD_TARGETCCFILES) targetdir="%(objdir)" \
     cflags="$(BD_CFLAGS) -D__AROS__" dflags=$(BD_DFLAGS) \
     compiler="%(compiler)"
+%rule_compile_multi \
+    basenames=$(BD_LINKLIBCCFILES) targetdir="%(objdir)/linklib" \
+    cflags="$(BD_CFLAGS) -D__AROS__" dflags=$(BD_DFLAGS) \
+    compiler="%(compiler)"
 
 ifneq ($(BD_LINKLIBAFILES),)
 %rule_assemble_multi \
-    cmd=$(BD_ASSEMBLER) basenames="$(BD_LINKLIBAFILES) $(BD_RELLINKLIBAFILES)" targetdir="%(objdir)" suffix=.S
+    cmd=$(BD_ASSEMBLER) basenames="$(BD_LINKLIBAFILES) $(BD_RELLINKLIBAFILES)" targetdir="%(objdir)/linklib" suffix=.S
 endif
 
 ## Linking
@@ -1994,13 +2029,6 @@ ifneq (%(modtype),handler)
 BD_STARTOBJS  := $(addsuffix .o,$(addprefix $(GENDIR)/,$(RESIDENT_BEGIN)))
 endif
 endif
-
-BD_ENDOBJS    := $(addsuffix .o,$(BD_ENDFILES))
-BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_LINKLIBFILES)) \
-                 %(linklibobjs)
-BD_RELLINKLIBOBJS \
-              := $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_RELLINKLIBFILES)) \
-                 %(linklibobjs)
 
 # Under Windows con* is a reserved name, it refers to console. Files with such names can't be created.
 # This breaks con-handler build. Here we work around this
@@ -2066,11 +2094,11 @@ endif
 
 ## Dependency fine-tuning
 ##
-BD_DEPS := $(addprefix %(objdir)/,$(notdir $(BD_CCFILES:=.d) $(BD_TARGETCCFILES:=.d) $(BD_CXXFILES:=.d)))
+BD_DEPS := $(addprefix %(objdir)/,$(notdir $(BD_CCFILES:=.d) $(BD_TARGETCCFILES:=.d) $(BD_CXXFILES:=.d))) $(addprefix %(objdir)/linklib/,$(notdir $(BD_LINKLIBCCFILES:=.d)))
 
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick" deps=$(BD_DEPS)
 
-$(BD_OBJS) $(BD_DEPS) : | %(objdir)
+$(BD_OBJS) $(BD_DEPS) : | %(objdir) %(objdir)/linklib
 $(BD_MODULE) : | %(prefix)/%(moduledir)
 $(BD_KOBJ)   : | $(KOBJSDIR)
 GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)
@@ -2392,11 +2420,15 @@ GLOB_MKDIRS += %(dir)
 # - aflags: the flags used during assembling
 # - compiler: (host, kernel or target) specifies which compiler to use. By default
 #   the target compiler is used
-%define build_archspecific files= asmfiles= mainmmake=/A maindir=/A arch=/A \
+%define build_archspecific files= cxxfiles= asmfiles= linklibfiles= linklibobjs= mainmmake=/A maindir=/A arch=/A \
 cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) compiler=target modulename=
 
-ifeq (%(files) %(asmfiles),)
+ifeq (%(files) %(linklibfiles) %(linklibobjs) %(asmfiles),)
   $(error no files or asmfiles given)
+endif
+
+ifneq (%(cxxfiles),)
+  $(error cxx support is TODO)
 endif
 
 %buildid targets="%(mainmmake)-%(arch)"
@@ -2420,10 +2452,13 @@ endif
 #MM %(mainmmake)-%(arch) : %(mainmmake)-includes
 
 BD_OBJDIR$(BDID)  := $(GENDIR)/%(maindir)/arch
-BD_COBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files))))
+BD_LIBOBJDIR$(BDID)  := $(GENDIR)/%(maindir)/linklib/arch
+BD_FILEOBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files)))) $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(cxxfiles))))
+BD_LINKLIBOBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_LIBOBJDIR$(BDID))/,$(notdir %(linklibfiles))))
+BD_LINKLIBARCHOBJS$(BDID)   := $(addprefix $(BD_LIBOBJDIR$(BDID))/,$(notdir %(linklibobjs)))
 BD_ASMOBJS$(BDID) := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(asmfiles))))
-BD_OBJS$(BDID)    := $(BD_COBJS$(BDID)) $(BD_ASMOBJS$(BDID))
-BD_DEPS$(BDID)    := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files))))
+BD_OBJS$(BDID)    := $(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) $(BD_ASMOBJS$(BDID))
+BD_DEPS$(BDID)    := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files)))) $(addsuffix .d,$(addprefix $(BD_LIBOBJDIR$(BDID))/,$(notdir %(linklibfiles))))
 
 ifneq (%(modulename),)
 BD_DEFLIBDEFSINC$(BDID) := -include $(GENDIR)/%(maindir)/include/%(modulename)_deflibdefs.h
@@ -2439,12 +2474,13 @@ endif
 ifeq ($(TARGET),$(BD_TARGET))
 TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(files)))
+vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(linklibfiles)))
 vpath %.s $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
 vpath %.S $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
 endif
 
-$(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID))
-GLOB_MKDIRS += $(BD_OBJDIR$(BDID))
+$(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))
+GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))
 
 #MM
 %(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
@@ -2456,26 +2492,28 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_CFLAGS)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(HOST_CC)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(HOST_IQUOTE)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_CFLAGS)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 ifneq (%(modulename),)
-$(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) $(BD_DEFLIBDEFSINC$(BDID))
+$(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) $(BD_DEFLIBDEFSINC$(BDID))
 else
-$(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
+$(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
 endif
 ifeq ($(TARGET),$(BD_TARGET))
+$(BD_LIBOBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
+	%compile_q cmd=$(TMP_CMD) opt=$(TMP_CFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 $(BD_OBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
 	%compile_q cmd=$(TMP_CMD) opt=$(TMP_CFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 endif
@@ -2486,6 +2524,9 @@ else
 $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
 endif
 ifeq ($(TARGET),$(BD_TARGET))
+$(BD_LIBOBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
+	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
+
 $(BD_OBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
 	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
 endif
