@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write module stubs. Part of genmodule.
@@ -38,7 +38,7 @@ void writestubs(struct config *cfg, int is_rel)
         if (funclistit->lvo >= cfg->firstlvo && funclistit->libcall == STACK)
         {
 
-            snprintf(line, 255, "%s/%s_%s_%sstub.c", cfg->gendir, cfg->modulename, funclistit->name, is_rel ? "rel" : "");
+            snprintf(line, 255, "%s/%s_%s_%sstub.c", cfg->libgendir, cfg->modulename, funclistit->name, is_rel ? "rel" : "");
             out = fopen(line, "w");
 
             if (out == NULL)
@@ -55,7 +55,7 @@ void writestubs(struct config *cfg, int is_rel)
     }
 
     /* Build REGCALL - all stusb in one object file */
-    snprintf(line, 255, "%s/%s_regcall_%sstubs.c", cfg->gendir, cfg->modulename, is_rel ? "rel" : "");
+    snprintf(line, 255, "%s/%s_regcall_%sstubs.c", cfg->libgendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
 
     if (out == NULL)

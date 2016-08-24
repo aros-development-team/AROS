@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
 
     Desc: Define the C structure for storing the command line options and the
           module config data
@@ -120,7 +120,7 @@ struct handlerinfo {
 struct config
 {
     /* members that store filename and paths derived from argv */
-    char *conffile, *gendir, *genincdir;
+    char *conffile, *gendir, *libgendir, *genincdir;
 
     /* The name and type of the module */
     char *modulename, *modulenameupper;

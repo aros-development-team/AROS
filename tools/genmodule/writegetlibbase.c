@@ -13,7 +13,7 @@ void writegetlibbase(struct config *cfg, int is_rel)
     char line[256], *banner;
 
     snprintf(line, 255, "%s/%s_%sgetlibbase.c",
-             cfg->gendir, cfg->modulename, is_rel ? "rel" : ""
+             cfg->libgendir, cfg->modulename, is_rel ? "rel" : ""
     );
     out = fopen(line, "w");
 
