@@ -1,0 +1,49 @@
+## version $VER: bibprefs.catalog 2.0 (18.03.2016)
+## language czech
+## codeset 5
+;
+;
+MSG_APP
+BIBNastavení
+; BIBPrefs
+;
+MSG_DESCRIPTION
+BoingIconBar (nastavení)
+; BoingIconBar Preferences
+;
+MSG_TITLE
+BoingIconBar (nastavení)
+; BoingIconBar Preferences
+;
+MSG_DOCK
+\33cLi¹ta
+; \33cDock
+;
+MSG_ADD_DOCK
+Pøidat
+; Add
+;
+MSG_DEL_DOCK
+Odebrat
+; Delete
+;
+MSG_SAVE
+Ulo¾it
+; Save
+;
+MSG_PROGRAMS
+\33cProgramy
+; \33cPrograms
+;
+MSG_ADD_P
+Pøidat program
+; Add program
+;
+MSG_DEL_P
+Odebrat program
+; Del program
+;
+MSG_OK
+Ok
+; OK
+;
