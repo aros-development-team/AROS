@@ -1,0 +1,40 @@
+## version $VER: pointer.catalog 2.0 (16.03.2015)
+## language czech
+## codeset 0
+;
+MSG_WINTITLE
+Nastavení ukazatele my¹i
+; Pointer Preferences
+;
+MSG_OK
+Ok
+; OK
+;
+MSG_HOTSPOT
+Vrchol
+;  Hotspot
+;
+MSG_ALPHA
+Prùhlednost
+; Alpha
+;
+MSG_FILENAME
+Soubor
+; Filename
+;
+MSG_TYPE
+Typ
+; Type
+;
+MSG_TYPE_NORMAL
+Standardní
+; Normal
+;
+MSG_TYPE_BUSY
+Zaneprázdnìný
+; Busy
+;
+MSG_SETVIEW
+Nastavit / ukázat
+; Set / View
+;
