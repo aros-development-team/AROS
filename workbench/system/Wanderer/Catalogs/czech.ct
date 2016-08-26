@@ -1,4 +1,4 @@
-## version $VER: Wanderer.catalog 2.1 (10.3.2012)
+## version $VER: Wanderer.catalog 3.0 (26.8.2016)
 ## language czech
 ## codeset 5
 ;
@@ -182,14 +182,6 @@ Adresáøe jako první
 MSG_MEN_ICON
 Ikony
 ; Icon
-;
-MSG_MEN_FIND
-Hledat...
-; Find...
-;
-MSG_MEN_SC_FIND
-F
-; F
 ;
 MSG_MEN_OPEN
 Otevøít
