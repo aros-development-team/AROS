@@ -207,6 +207,9 @@ void call_libusb_event_handler() {
 /*
     FIXME: libusb expects buffer to precede with enough space for setup data (8 bytes or LIBUSB_CONTROL_SETUP_SIZE)
             - Copy buffer need to be used
+
+    IGNORE or CHECKME: LIBUSB_xxx_SETUP_SIZE is needed for asynchronous use of libusb
+
 */
 int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
@@ -230,7 +233,7 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     mybug_unit(0, ("wLength %d\n", wLength));
     mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
 
-    rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, 10);
+    rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_NakTimeout);
 
     if(rc<0) {
         rc = 0;
@@ -251,16 +254,15 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
     mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
     mybug_unit(0, ("direction %d\n", (ioreq->iouh_Dir)));
 
-    /*FIXME: fix other endpoint transfer methods */
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
             mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
-            rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+            rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, ioreq->iouh_NakTimeout);
         break;
 
         case UHDIR_OUT:
             mybug_unit(0, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
-            rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+            rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, ioreq->iouh_NakTimeout);
         break;
     }
 
@@ -295,16 +297,15 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
     mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
     mybug_unit(0, ("direction %d\n", (ioreq->iouh_Dir)));
 
-    /*FIXME: fix other endpoint transfer methods */
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
             mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
-            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, ioreq->iouh_NakTimeout);
         break;
 
         case UHDIR_OUT:
             mybug_unit(0, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
-            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, 0);
+            rc = LIBUSBCALL(libusb_bulk_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, ioreq->iouh_NakTimeout);
         break;
     }
 
