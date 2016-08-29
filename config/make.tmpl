@@ -1238,6 +1238,7 @@ ifneq (%(stubdir),)
     TMP_OPTS += -l %(stubdir)
     TMP_STUBTARGETDIR := $(shell echo %(stubdir) | sed 's/^\(.\):\//\/\1\//')
     TMP_STUBTARGETS := $(addprefix $(TMP_STUBTARGETDIR)/,$(TMP_STUBTARGETS))
+    TMP_TARGETDIRS += %(stubdir)
 else
 ifneq (%(targetdir),)
     TMP_STUBTARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_STUBTARGETS))
@@ -1245,9 +1246,9 @@ endif
 endif
 
 TMP_TARGETS := $(TMP_GENTARGETS) $(TMP_STUBTARGETS)
-TMP_TARGETDIRS := $(dir $(TMP_TARGETS))
+ifneq ($(TMP_TARGETDIRS),)
 $(TMP_TARGETS) : | $(TMP_TARGETDIRS)
-GLOB_MKDIRS += $(TMP_TARGETDIRS)
+endif
 
 $(TMP_TARGETS) : OPTS := $(TMP_OPTS)
 $(TMP_TARGETS) : MODNAME := %(modname)
@@ -1865,6 +1866,7 @@ GLOB_MKDIRS += %(objdir)/include
 		      modsuffix="%(modsuffix)" targetdir="%(objdir)" stubdir="%(objdir)/linklib" \
 		      conffile="%(conffile)"
 
+GLOB_MKDIRS += %(objdir)/linklib
 
 ifeq (%(build_abi),M)
 ## Create FD file
@@ -1961,7 +1963,6 @@ BD_RELLINKLIBOBJS := $(addsuffix .o,$(addprefix %(objdir)/linklib/,$(notdir $(BD
                  %(linklibobjs)
 $(BD_LINKLIBFILES) $(BD_RELLINKLIBFILES) : | %(objdir)/linklib
 $(BD_LINKLIBOBJS) $(BD_RELLINKLIBOBJS) : | %(objdir)/linklib
-GLOB_MKDIRS += %(objdir)/linklib
 
 BD_CCFILES := $(BD_NARCHFILES)
 BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES)
