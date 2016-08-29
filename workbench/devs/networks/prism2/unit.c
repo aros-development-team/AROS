@@ -806,8 +806,9 @@ VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base)
 
       if(unit->firmware_type == INTERSIL_FIRMWARE)
       {
-         *(UWORD *)(unit->bssid + ETH_ADDRESSSIZE) =
-            MakeLEWord(unit->channel);
+         typedef union { UBYTE b[2]; UWORD w;} BW;
+         BW *p = (BW*)(unit->bssid + ETH_ADDRESSSIZE);
+         p->w = MakeLEWord(unit->channel);
          P2SetData(unit, P2_REC_JOIN, unit->bssid, ETH_ADDRESSSIZE + 2,
             base);
       }
