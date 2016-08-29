@@ -1961,9 +1961,7 @@ BD_RELLINKLIBOBJS := $(addsuffix .o,$(addprefix %(objdir)/linklib/,$(notdir $(BD
                  %(linklibobjs)
 $(BD_LINKLIBFILES) $(BD_RELLINKLIBFILES) : | %(objdir)/linklib
 $(BD_LINKLIBOBJS) $(BD_RELLINKLIBOBJS) : | %(objdir)/linklib
-ifeq ($(findstring %(objdir)/linklib,$(GLOB_MKDIRS)),)
-    GLOB_MKDIRS += %(objdir)/linklib
-endif
+GLOB_MKDIRS += %(objdir)/linklib
 
 BD_CCFILES := $(BD_NARCHFILES)
 BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES)
