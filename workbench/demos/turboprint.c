@@ -125,7 +125,11 @@ if ((GfxBase = (struct GfxBase*)OpenLibrary("graphics.library",37)))
 					// element "pd_OldStack"
 
 					PD = (struct PrinterData *)PIO->iodrp.io_Device;
-					TP_Installed = ( ((ULONG *)(PD->pd_OldStk))[2] == TPMATCHWORD);
+					{
+					typedef union {UBYTE b[4]; ULONG l;} BL;
+					BL *p = (BL*)(PD->pd_OldStk + (2 * sizeof(ULONG)));
+					TP_Installed = (p->l == TPMATCHWORD) ? TRUE : FALSE;
+					}
 
 					TPVersion = PIO->iodrp.io_Device->dd_Library.lib_Version;
 
