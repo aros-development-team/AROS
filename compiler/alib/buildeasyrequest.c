@@ -1,28 +1,27 @@
 /*
-    Copyright � 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of BuildEasyRequestArgs() (intuition.library)
     Lang: english
 */
+
 #include <stdarg.h>
+#include "easystruct_util.h"
+#include <proto/intuition.h>
+#include <proto/alib.h>
 
 /*****************************************************************************
 
     NAME */
-#define NO_INLINE_STDARG /* turn off inline def */
-#include <proto/exec.h>
-#include <proto/intuition.h>
-#include <intuition/intuition.h>
-#include <exec/memory.h>
 
-	struct Window * BuildEasyRequest (
+    struct Window * BuildEasyRequest (
 
 /*  SYNOPSIS */
-	struct Window	  * RefWindow,
-	struct EasyStruct * easyStruct,
-	ULONG		    IDCMP,
-	...)
+    struct Window       *RefWindow,
+    struct EasyStruct   *easyStruct,
+    ULONG               IDCMP,
+    ...)
 
 /*  FUNCTION
 
@@ -37,63 +36,19 @@
     BUGS
 
     SEE ALSO
-	intuition.library/BuildEasyRequestArgs()
 
     INTERNALS
 
 *****************************************************************************/
 {
-    va_list args;
-    struct Window * rc;
-    const char *ptr;
-    int argcnt = 0;
-    IPTR *argtable = NULL;
+    struct Window * retval;
+    STRPTR format = CreateFormatStringFromEasyStruct(easyStruct);
 
-    for (ptr = easyStruct->es_TextFormat; *ptr; ptr++)
-    {
-    	if (*ptr == '%')
-    	{
-    		if (ptr[1] == '%')
-    		{
-    			ptr++;
-    			continue;
-    		}
+    AROS_SLOWSTACKFORMAT_PRE_USING(IDCMP, format);
+    retval = BuildEasyRequestArgs(RefWindow, easyStruct, IDCMP, AROS_SLOWSTACKFORMAT_ARG(format));
+    AROS_SLOWSTACKFORMAT_POST(format);
 
-    		argcnt++;
-    	}
-    }
+    FreeFormatString(format);
 
-    for (ptr = easyStruct->es_GadgetFormat; *ptr; ptr++)
-    {
-    	if (*ptr == '%')
-    	{
-    		if (ptr[1] == '%')
-    		{
-    			ptr++;
-    			continue;
-    		}
-
-    		argcnt++;
-    	}
-    }
-
-    if (argcnt)
-    {
-    	va_start (args, IDCMP);
-
-    	int i;
-
-    	argtable = AllocVec(sizeof(IPTR)*argcnt, MEMF_PUBLIC);
-
-    	for (i=0; i < argcnt; i++)
-    		argtable[i] = va_arg(args, IPTR);
-
-    	va_end (args);
-    }
-
-    rc = BuildEasyRequestArgs (RefWindow, easyStruct, IDCMP, (APTR)argtable);
-
-    FreeVec(argtable);
-
-    return rc;
+    return retval;
 } /* BuildEasyRequest */
