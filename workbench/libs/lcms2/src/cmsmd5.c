@@ -241,8 +241,14 @@ void MD5finish(cmsProfileID* ProfileID,  cmsHANDLE Handle)
     }
     byteReverse(ctx->in, 14);
 
-    ((cmsUInt32Number *) ctx->in)[14] = ctx->bits[0];
-    ((cmsUInt32Number *) ctx->in)[15] = ctx->bits[1];
+    {
+    typedef union{cmsUInt8Number b[4]; cmsUInt32Number l;} BL;
+    BL* pp;
+    pp = (BL*)(ctx->in + (14 * sizeof(cmsUInt32Number)));
+    pp->l = ctx->bits[0];
+    pp = (BL*)(ctx->in + (15 * sizeof(cmsUInt32Number)));
+    pp->l = ctx->bits[1];
+    }
 
     MD5_Transform(ctx->buf, (cmsUInt32Number *) ctx->in);
 
