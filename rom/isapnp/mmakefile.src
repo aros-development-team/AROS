@@ -2,7 +2,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES       := controller devices init pnp pnp_iterators pnp_structs end
 
-NOWARN_FLAGS := $(NOWARN_UNUSED)
+NOWARN_FLAGS := $(NOWARN_UNUSED) $(NOWARN_UNUSED_PARAMETER)
 USER_CFLAGS := -W -Wall -Wstrict-prototypes -fstrict-aliasing  $(NOWARN_FLAGS) -I$(GENDIR)/$(CURDIR)
 USER_LDFLAGS := -static
 
