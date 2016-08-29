@@ -548,17 +548,23 @@ endif
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
-%define rule_compile_multi basenames=/A cflags=$(CFLAGS) dflags= targetdir= \
+%define rule_compile_multi basenames=/A cflags=$(CFLAGS) dflags= srcdir= targetdir= \
     compiler=target
+
+ifeq (%(srcdir),)
+TMP_SRCWILDCARD := %
+else
+TMP_SRCWILDCARD := %(srcdir)/%
+endif
 
 ifeq (%(targetdir),)
 TMP_TARGETS := $(addsuffix .o,%(basenames))
 TMP_DTARGETS := $(addsuffix .d,%(basenames))
-TMP_WILDCARD := %
+TMP_TGTWILDCARD := %
 else
 TMP_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(notdir %(basenames))))
 TMP_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,$(notdir %(basenames))))
-TMP_WILDCARD := %(targetdir)/%
+TMP_TGTWILDCARD := %(targetdir)/%
 
 # Be sure that all .c files are generated
 $(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .c,%(basenames))
@@ -616,10 +622,10 @@ $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
 $(TMP_TARGETS) : CFLAGS := %(TMP_CFLAGS)
-$(TMP_TARGETS) : $(TMP_WILDCARD).o : %.c
+$(TMP_TARGETS) : $(TMP_TGTWILDCARD).o : $(TMP_SRCWILDCARD).c
 	%compile_q cmd=$(CMD) opt=$(TMP_CFLAGS) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
-$(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
+$(TMP_DTARGETS) : $(TMP_TGTWILDCARD).d : $(TMP_SRCWILDCARD).c
 	%mkdepend_q cc=$(CMD) flags=$(TMP_DFLAGS)
 %end
 #------------------------------------------------------------------------------
@@ -1967,6 +1973,7 @@ $(BD_LINKLIBOBJS) $(BD_RELLINKLIBOBJS) : | %(objdir)/linklib
 BD_CCFILES := $(BD_NARCHFILES)
 BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES)
 BD_LINKLIBCCFILES := $(BD_NLIBARCHFILES) $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFILES)
+BD_LINKLIBCCGENFILES := $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFILES)
 
 %rule_compile_cxx_multi \
     basenames=$(BD_CXXFILES) targetdir="%(objdir)" \
@@ -1981,7 +1988,11 @@ BD_LINKLIBCCFILES := $(BD_NLIBARCHFILES) $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFIL
     cflags="$(BD_CFLAGS) -D__AROS__" dflags=$(BD_DFLAGS) \
     compiler="%(compiler)"
 %rule_compile_multi \
-    basenames=$(BD_LINKLIBCCFILES) targetdir="%(objdir)/linklib" \
+    basenames=$(BD_NLIBARCHFILES) targetdir="%(objdir)/linklib" \
+    cflags="$(BD_CFLAGS) -D__AROS__" dflags=$(BD_DFLAGS) \
+    compiler="%(compiler)"
+%rule_compile_multi \
+    basenames=$(BD_LINKLIBCCGENFILES) srcdir="%(objdir)/linklib" targetdir="%(objdir)/linklib" \
     cflags="$(BD_CFLAGS) -D__AROS__" dflags=$(BD_DFLAGS) \
     compiler="%(compiler)"
 
