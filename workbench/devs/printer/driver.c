@@ -550,7 +550,11 @@ static LONG pd_DriverTask(VOID)
      *
      * So the assumption is that this ULONG is in native endian format.
      */
-    ((ULONG *)(pd->pd_OldStk))[2] = TPMATCHWORD;
+    {
+    typedef union { UBYTE b[4]; ULONG l; } BL;
+    BL *p = (BL*)(pd->pd_OldStk + (2 * sizeof(ULONG)));
+    p->l = TPMATCHWORD;
+    }
 
 
     D(bug("%s: Replying with %d\n", __func__, ret));
