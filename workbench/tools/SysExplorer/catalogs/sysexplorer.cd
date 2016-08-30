@@ -11,6 +11,15 @@ System and hardware information tool
 MSG_MENU_PROJECT (//)
 Project
 ;
+MSG_MENU_PROPERTIES (//)
+Properties
+;
+MSG_MENU_EXPANDALL (//)
+Expand All
+;
+MSG_MENU_COLLAPSEALL (//)
+Collapse All
+;
 MSG_MENU_QUIT (//)
 Quit
 ;
