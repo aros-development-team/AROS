@@ -62,8 +62,33 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
                     rc = LIBUSBCALL(libusb_open, dev, &dev_handle);
                     if(dev_handle) {
-                        LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
-                        LIBUSBCALL(libusb_set_configuration, dev_handle, 1);
+
+                        LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 0);
+
+                        if ( LIBUSBCALL(libusb_kernel_driver_active, dev_handle, 0) ) {
+                            mybug_unit(-1, ("Kernel driver active\n"));
+                            if ( (LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, 0) == 0) ) {
+                                mybug_unit(-1, ("Kernel driver detached\n"));
+                            } else {
+                                mybug_unit(-1, ("Kernel driver NOT detached\n"));
+                            }
+                        } else {
+                            mybug_unit(-1, ("Kernel driver doesn't appear to be active\n"));
+                        }
+
+                        /* Check again for debug purposes */
+                        if ( LIBUSBCALL(libusb_kernel_driver_active, dev_handle, 0) ) {
+                            mybug_unit(-1, ("Kernel driver active\n"));
+                            if ( (LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, 0) == 0) ) {
+                                mybug_unit(-1, ("Kernel driver detached\n"));
+                            } else {
+                                mybug_unit(-1, ("Kernel driver NOT detached\n"));
+                            }
+                        } else {
+                            mybug_unit(-1, ("Kernel driver doesn't appear to be active\n"));
+                        }
+
+                        LIBUSBCALL(libusb_set_configuration, dev_handle, 0);
                         LIBUSBCALL(libusb_claim_interface, dev_handle, 0);
 
                         speed = LIBUSBCALL(libusb_get_device_speed, dev);
@@ -223,11 +248,23 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     UWORD wLength            = (ioreq->iouh_SetupData.wLength);
 
     switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
+
+        FIXME: Keep track on device address (what poseidon thinks the address is and what Linux think it is)
+
         case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
-            mybug_unit(0, ("Filtering out SET_ADDRESS\n\n"));
+            mybug_unit(-1, ("Filtering out SET_ADDRESS\n\n"));
             ioreq->iouh_Actual = ioreq->iouh_Length;
             return UHIOERR_NO_ERROR;
         break;
+
+        FIXME: Parse messages related to configurations and use related libusb calls directly
+
+        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
+            mybug_unit(-1, ("Filtering out SET_CONFIGURATION\n\n"));
+            ioreq->iouh_Actual = ioreq->iouh_Length;
+            return UHIOERR_NO_ERROR;
+        break;
+
     }
 
     mybug_unit(0, ("wLength %d\n", wLength));
@@ -251,31 +288,81 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
     int rc = 0, transferred = 0;
     UBYTE endpoint = ioreq->iouh_Endpoint;
 
-    mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
-    mybug_unit(0, ("direction %d\n", (ioreq->iouh_Dir)));
+    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(-1, ("direction %d\n", (ioreq->iouh_Dir)));
 
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
-            mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
+            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (IN)(%x)\n", endpoint, (endpoint|LIBUSB_ENDPOINT_IN)));
             rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, ioreq->iouh_NakTimeout);
         break;
 
         case UHDIR_OUT:
-            mybug_unit(0, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
+            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (OUT)(%x)\n", endpoint, (endpoint|LIBUSB_ENDPOINT_OUT)));
             rc = LIBUSBCALL(libusb_interrupt_transfer, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT), (UBYTE *)ioreq->iouh_Data, ioreq->iouh_Length, &transferred, ioreq->iouh_NakTimeout);
         break;
     }
 
-    mybug_unit(0, ("libusb_interrupt_transfer rc = %d, transferred %d\n", rc, transferred));
+    mybug_unit(-1, ("libusb_interrupt_transfer rc = %d, transferred %d\n", rc, transferred));
 
-/*
-    0 on success (and populates transferred) 
-    LIBUSB_ERROR_TIMEOUT if the transfer timed out (and populates transferred) 
-    LIBUSB_ERROR_PIPE if the endpoint halted 
-    LIBUSB_ERROR_OVERFLOW if the device offered more data, see Packets and overflows 
-    LIBUSB_ERROR_NO_DEVICE if the device has been disconnected 
-    another LIBUSB_ERROR code on other failures 
-*/
+    switch(rc) {
+	    case LIBUSB_SUCCESS:
+	        mybug_unit(-1, ("Success (no error)\n"));
+        break;
+
+	    case LIBUSB_ERROR_IO:
+	        mybug_unit(-1, ("Input/output error\n"));
+        break;
+
+	    case LIBUSB_ERROR_INVALID_PARAM:
+	        mybug_unit(-1, ("Invalid parameter\n"));
+        break;
+
+	    case LIBUSB_ERROR_ACCESS:
+	        mybug_unit(-1, ("Access denied (insufficient permissions)\n"));
+        break;
+
+	    case LIBUSB_ERROR_NO_DEVICE:
+	        mybug_unit(-1, ("No such device (it may have been disconnected)\n"));
+        break;
+
+	    case LIBUSB_ERROR_NOT_FOUND:
+	        mybug_unit(-1, ("Entity not found\n"));
+        break;
+
+	    case LIBUSB_ERROR_BUSY:
+	        mybug_unit(-1, ("Resource busy\n"));
+        break;
+
+	    case LIBUSB_ERROR_TIMEOUT:
+	        mybug_unit(-1, ("Operation timed out\n"));
+        break;
+
+	    case LIBUSB_ERROR_OVERFLOW:
+	        mybug_unit(-1, ("Overflow\n"));
+        break;
+
+	    case LIBUSB_ERROR_PIPE:
+	        mybug_unit(-1, ("Pipe error */\n"));
+        break;
+
+	    case LIBUSB_ERROR_INTERRUPTED:
+	        mybug_unit(-1, ("System call interrupted (perhaps due to signal)\n"));
+        break;
+
+	    case LIBUSB_ERROR_NO_MEM:
+	        mybug_unit(-1, ("Insufficient memory\n"));
+        break;
+
+	    case LIBUSB_ERROR_NOT_SUPPORTED:
+	        mybug_unit(-1, ("Operation not supported or unimplemented on this platform\n"));
+        break;
+
+	    case LIBUSB_ERROR_OTHER:
+	        mybug_unit(-1, ("Other error\n"));
+        break;
+    }
+
     if(rc<0) {
         rc = 0;
     } else {
@@ -284,7 +371,7 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
         }
     }
 
-    mybug_unit(0, ("Done!\n\n"));
+    mybug_unit(-1, ("Done!\n\n"));
     return UHIOERR_NO_ERROR;  
 }
 

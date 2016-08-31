@@ -903,10 +903,10 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
 WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(0, ("Entering function\n"));
+    mybug_unit(-1, ("Entering function\n"));
 
-    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -928,7 +928,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         return(cmdControlXFerRootHub(ioreq));
     }
 
-    mybug_unit(0, ("Sending transfer request to libusb\n"));
+    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
     return(do_libusb_ctrl_transfer(ioreq));
 }
 
@@ -960,9 +960,8 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
         return(cmdIntXFerRootHub(ioreq));
     }
 
-    mybug_unit(0, ("Sending transfer request to libusb\n"));
+    mybug_unit(-1, ("Sending transfer request to libusb\n"));
     return(do_libusb_intr_transfer(ioreq));
-    return(RC_DONTREPLY);
 }
 
 WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
@@ -991,7 +990,6 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
 
     mybug_unit(0, ("Sending transfer request to libusb\n"));
     return(do_libusb_bulk_transfer(ioreq));
-    return(RC_DONTREPLY);
 }
 
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
