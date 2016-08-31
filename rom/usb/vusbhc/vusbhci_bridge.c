@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Virtual USB host controller
@@ -249,7 +249,7 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
 
     switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
 
-        FIXME: Keep track on device address (what poseidon thinks the address is and what Linux think it is)
+        /* FIXME: Keep track on device address (what poseidon thinks the address is and what Linux think it is) */
 
         case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
             mybug_unit(-1, ("Filtering out SET_ADDRESS\n\n"));
@@ -257,7 +257,7 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
             return UHIOERR_NO_ERROR;
         break;
 
-        FIXME: Parse messages related to configurations and use related libusb calls directly
+        /* FIXME: Parse messages related to configurations and use related libusb calls directly */
 
         case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
             mybug_unit(-1, ("Filtering out SET_CONFIGURATION\n\n"));

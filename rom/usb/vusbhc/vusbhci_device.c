@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Virtual USB host controller
@@ -324,7 +324,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_Copyright:
-                *((STRPTR *) tag->ti_Data) ="©2015 The AROS Development Team";
+                *((STRPTR *) tag->ti_Data) ="©2015-2016 The AROS Development Team";
                 count++;
                 break;
             case UHA_ProductName:

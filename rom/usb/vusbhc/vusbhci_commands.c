@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VUSBHCI USB host controller
