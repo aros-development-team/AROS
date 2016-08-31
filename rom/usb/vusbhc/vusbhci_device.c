@@ -65,8 +65,8 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                     call_libusb_event_handler();
 
                     /* Wait */
-                    tr->tr_time.tv_secs = 1;
-                    tr->tr_time.tv_micro = 0;
+                    tr->tr_time.tv_secs = 0;
+                    tr->tr_time.tv_micro = 5000;
                     DoIO((struct IORequest *)tr);
                 }
                 CloseDevice((struct IORequest *)tr);
