@@ -46,6 +46,7 @@
 #define NUMERIC_MAX 100
 
 static const TEXT digits[] = "-0123456789";
+static const TEXT vowels[] = "aeiou";
 static const TEXT default_accept_chars[] = "aeiou?.";
 static const TEXT default_reject_chars[] = "*?";
 static const ULONG default_color[] = {155 << 24, 180 << 24, 255 << 24};
@@ -157,6 +158,7 @@ static struct
         *deactivate_button,
         *dragsortable_check,
         *showdropmarks_check,
+        *multitest_check,
         *quiet_check,
         *autovisible_check,
         *entries_text,
@@ -171,7 +173,8 @@ static struct
         *def_column_string,
         *showheadings_check;
     LONG quiet[LIST_COUNT],
-        destruct_count;
+        destruct_count,
+        has_multitest[LIST_COUNT];
 }
 list;
 
@@ -189,6 +192,13 @@ static Object *group;
 static Object *editor_text;
 static Object *filename_string;
 static Object *save_button;
+static struct Hook hook_standard;
+static struct Hook hook;
+static struct Hook hook_wheel;
+static struct Hook hook_slider;
+static struct Hook hook_objects;
+static struct Hook hook_compare, hook_multitest;
+static struct Hook hook_construct, hook_destruct, hook_display;
 
 #if defined(TEST_ICONLIST)
 static Object *drawer_iconlist;
@@ -321,6 +331,19 @@ AROS_UFH3(static IPTR, ListCompareHook,
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3(static IPTR, ListMultiTestHook,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(APTR, unused, A2),
+    AROS_UFHA(CONST_STRPTR, str, A1))
+{
+    AROS_USERFUNC_INIT
+
+    /* Indicate whether the string doesn't begin with a vowel */
+    return strchr(vowels, tolower(str[0])) == NULL;
+
+    AROS_USERFUNC_EXIT
+}
+
 static void ChangeListTitle(void)
 {
     STRPTR title = NULL;
@@ -352,6 +375,8 @@ static void UpdateListInfo(void)
     NNSET(list.dragsortable_check, MUIA_Selected, value);
     GET(list.lists[i], MUIA_List_ShowDropMarks, &value);
     NNSET(list.showdropmarks_check, MUIA_Selected, value);
+    value = list.has_multitest[i];    // MUIA_List_MultiTestHook isn't gettable!
+    NNSET(list.multitest_check, MUIA_Selected, value);
     value = list.quiet[i];    // MUIA_List_Quiet is not gettable!
     NNSET(list.quiet_check, MUIA_Selected, value);
     GET(list.lists[i], MUIA_List_AutoVisible, &value);
@@ -428,6 +453,18 @@ static void ListSetShowDropMarks(void)
 
     GET(list.showdropmarks_check, MUIA_Selected, &value);
     SET(list.lists[i], MUIA_List_ShowDropMarks, value);
+}
+
+static void ListSetMultiTest(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.multitest_check, MUIA_Selected, &value);
+    SET(list.lists[i], MUIA_List_MultiTestHook, value ? &hook_multitest : NULL);
+    list.has_multitest[i] = value;
 }
 
 static void ListSetQuiet(void)
@@ -936,8 +973,6 @@ static struct MUI_CustomClass *CL_DropText;
 
 /* Main prog */
 
-static struct Hook hook_standard;
-
 AROS_UFH3S(void, hook_func_standard,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(void *, dummy, A2), AROS_UFHA(void **, funcptr, A1))
@@ -991,13 +1026,6 @@ int main(void)
 
     static IPTR entries[] = {1, 2, 3, 4, 5, 6, (IPTR)NULL};
 
-    struct Hook hook;
-    struct Hook hook_wheel;
-    struct Hook hook_slider;
-    struct Hook hook_objects;
-    struct Hook hook_compare;
-    struct Hook hook_construct, hook_destruct, hook_display;
-
     hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
 
     pool = CreatePool(MEMF_ANY, 4096, 4096);
@@ -1009,10 +1037,12 @@ int main(void)
     hook_slider.h_Entry = (HOOKFUNC) slider_function;
     hook_objects.h_Entry = (HOOKFUNC) objects_function;
     hook_compare.h_Entry = (HOOKFUNC) ListCompareHook;
+    hook_multitest.h_Entry = (HOOKFUNC) ListMultiTestHook;
     hook_construct.h_Entry = (HOOKFUNC) ListConstructHook;
     hook_destruct.h_Entry = (HOOKFUNC) ListDestructHook;
     hook_display.h_Entry = (HOOKFUNC) display_function;
     list.destruct_count = 0;
+    list.has_multitest[3] = TRUE;
 
     context_menu = MenustripObject,
         MUIA_Family_Child, MenuObject,
@@ -1087,6 +1117,7 @@ int main(void)
             InputListFrame,
             MUIA_List_SourceArray, fruits,
             MUIA_List_Pool, NULL,
+            MUIA_List_MultiTestHook, &hook_multitest,
             MUIA_ShortHelp,
                 "No scroller\nDefault active entry\nSorted alphabetically",
             End,
@@ -1734,7 +1765,13 @@ int main(void)
                                         "Show drop marks", 0),
                                     Child, HVSpace,
                                     End,
-                                Child, HVSpace,
+                                Child, HGroup,
+                                    Child, list.multitest_check =
+                                        MUI_MakeObject(MUIO_Checkmark,NULL),
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Filter multiselect", 0),
+                                    Child, HVSpace,
+                                    End,
                                 Child, HVSpace,
 
                                 Child, MUI_MakeObject(MUIO_Label,
@@ -2447,6 +2484,9 @@ int main(void)
         DoMethod(list.showdropmarks_check, MUIM_Notify, MUIA_Selected,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             ListSetShowDropMarks);
+        DoMethod(list.multitest_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ListSetMultiTest);
         DoMethod(list.quiet_check, MUIM_Notify, MUIA_Selected,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             ListSetQuiet);
