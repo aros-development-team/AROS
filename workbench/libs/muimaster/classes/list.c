@@ -194,6 +194,7 @@ struct MUI_ListData
 
     BOOL select_change;
     BOOL doubleclick;
+    LONG seltype;
 
     struct Hook hook;
 };
@@ -246,6 +247,22 @@ struct MUI_ListData
 *
 *   SEE ALSO
 *       MUIM_List_Jump, MUIM_List_Select, MUIA_Listview_Input
+*
+******************************************************************************
+*
+*/
+
+/****** List.mui/MUIA_List_AutoVisible ***************************************
+*
+*   NAME
+*       MUIA_List_Visible -- (V11) [ISG], BOOL
+*
+*   FUNCTION
+*       When this attribute is set to true, the active entry will be in the
+*       visible portion of the list whenever the list is unhidden.
+*
+*   SEE ALSO
+*       MUIA_List_Active
 *
 ******************************************************************************
 *
@@ -2395,15 +2412,56 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_List_Select
-**************************************************************************/
+/****** List.mui/MUIM_List_Select ********************************************
+*
+*   NAME
+*       MUIM_List_Select (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Select, LONG pos, LONG seltype, LONG *state);
+*
+*   FUNCTION
+*       Selects or deselects entries in the list and/or enquires about their
+*       current selection state. If a multiselection test hook has been
+*       installed via MUIA_List_MultiTestHook, it will be called to validate
+*       the requested selection.
+*
+*       This method may also be used to count the number of selected entries
+*       (see below).
+*
+*   INPUTS
+*       pos - the index of the entry to be selected. The following
+*           special values can also be used:
+*           MUIV_List_Select_Active: Select the active entry.
+*           MUIV_List_Select_All: Select all entries.
+*       seltype - the new selection state; one of the following:
+*           MUIV_List_Select_Off: Select the entry.
+*           MUIV_List_Select_On: Deselect the entry.
+*           MUIV_List_Select_Toggle: Switch to the alternate selection state.
+*           MUIV_List_Select_Ask: Do not change the selection state, just
+*               retrieve the current state. If 'pos' is MUIV_List_Select_All,
+*               the number of selected entries will be retrieved instead (V9).
+*       state - a pointer in which to fill in the previous selection state
+*           (either MUIV_List_Select_On or MUIV_List_Select_Off) or the
+*           number of selected entries. May be NULL.
+*
+*   NOTES
+*       If pos is MUIV_List_Select_All and seltype is not
+*       MUIV_List_Select_Ask, the value filled in 'state' is undefined.
+*
+*   SEE ALSO
+*       MUIA_List_Active, MUIA_List_MultiTestHook.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     struct MUIP_List_Select *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos, i, count, selcount=0, state=0;
-    BOOL multi_allowed = TRUE, new_select_state = FALSE;
+    LONG pos, i, count, selcount = 0, state = 0;
+    BOOL multi_allowed = TRUE, new_multi_allowed, new_select_state = FALSE;
 
     /* Establish the range of entries affected */
     switch (msg->pos)
@@ -2431,16 +2489,19 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
 
     if (msg->seltype != MUIV_List_Select_Ask && data->multi_test_hook != NULL)
     {
-        /* Disallow selection of an additional entry if there is a currently
-           selected entry that is not multi-selectable (in such case there
-           will only be one entry currently selected, so no need to iterate) */
-        i = MUIV_List_NextSelected_Start;
-        DoMethod(obj, MUIM_List_NextSelected, (IPTR) &i);
-        if (i != MUIV_List_NextSelected_End)
-            selcount++;
-        if (data->multi_test_hook != NULL && selcount != 0)
-            multi_allowed = CallHookPkt(data->multi_test_hook, NULL,
-                data->entries[i]->data);
+        /* Count selected entries and disallow selection of additional
+           entries if there is a currently selected entry that is not
+           multi-selectable */
+        for (i = 0; i < data->entries_num && multi_allowed; i++)
+        {
+            if (data->entries[i]->flags & ENTRY_SELECTED)
+            {
+                selcount++;
+                if (data->multi_test_hook != NULL && selcount == 1)
+                    multi_allowed = CallHookPkt(data->multi_test_hook, NULL,
+                        data->entries[i]->data);
+            }
+        }
     }
 
     /* Change or check state of each entry in the range */
@@ -2469,17 +2530,36 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
 
         if (msg->seltype != MUIV_List_Select_Ask)
         {
-            /* Disallow selection if entry is not multi-selectable and
-             * there are already selected entries */
-            if (data->multi_test_hook != NULL && new_select_state)
-                new_select_state = multi_allowed && (selcount == 0 ||
-                    CallHookPkt(data->multi_test_hook, NULL,
-                        data->entries[i]->data));
+            if (new_select_state && !state)
+            {
+                /* Check if there is potential to select an additional entry */
+                if (multi_allowed || selcount == 0)
+                {
+                    /* Check if the entry to be selected is multi-selectable */
+                    if (data->multi_test_hook != NULL)
+                        new_multi_allowed = CallHookPkt(data->multi_test_hook,
+                            NULL, data->entries[i]->data);
+                    else
+                        new_multi_allowed = TRUE;
 
-            if (new_select_state)
-                data->entries[i]->flags |= ENTRY_SELECTED;
-            else
+                    /* Check if the entry to be selected can be selected at
+                       the same time as the already selected entries */
+                    if (new_multi_allowed || selcount == 0)
+                    {
+                        /* Select the entry and update the selection count
+                           and flag */
+                        data->entries[i]->flags |= ENTRY_SELECTED;
+                        selcount++;
+
+                        multi_allowed = new_multi_allowed;
+                    }
+                }
+            }
+            else if (!new_select_state && state)
+            {
                 data->entries[i]->flags &= ~ENTRY_SELECTED;
+                    selcount--;
+            }
         }
     }
 
@@ -2535,7 +2615,7 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
 *           MUIV_List_Insert_Sorted: keep the list sorted.
 *
 *   SEE ALSO
-*       MUIM_List_Insertsingle, MUIM_List_Remove, MUIA_List_ConstructHook.
+*       MUIM_List_InsertSingle, MUIM_List_Remove, MUIA_List_ConstructHook.
 *
 ******************************************************************************
 *
@@ -3583,7 +3663,8 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     struct MUI_List_TestPos_Result pos;
-    LONG seltype, old_active, new_active, visible, first, last, i;
+    LONG seltype = MUIV_List_Select_On, old_active, new_active, visible,
+        first, last, i;
     IPTR result = 0;
     BOOL select = FALSE, clear = FALSE, range_select = FALSE, changing;
     WORD delta;
@@ -3789,8 +3870,7 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 && data->multiselect != MUIV_Listview_MultiSelect_None;
             if (select)
             {
-                DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active,
-                    MUIV_List_Select_Ask, &seltype);
+                seltype = data->seltype;
                 range_select = new_active >= 0;
             }
 
@@ -3871,8 +3951,12 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 DoMethod(obj, MUIM_List_Select, i, seltype, NULL);
         }
         else
+        {
             DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active,
                 seltype, NULL);
+            DoMethod(obj, MUIM_List_Select, MUIV_List_Select_Active,
+                MUIV_List_Select_Ask, &data->seltype);
+        }
     }
 
     if (changing)
