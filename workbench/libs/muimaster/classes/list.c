@@ -2804,9 +2804,31 @@ IPTR List__MUIM_InsertSingle(struct IClass *cl, Object *obj,
         msg->pos);
 }
 
-/**************************************************************************
- MUIM_List_GetEntry
-**************************************************************************/
+/****** List.mui/MUIM_List_GetEntry ******************************************
+*
+*   NAME
+*       MUIM_List_GetEntry (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_GetEntry, LONG pos, APTR *entry);
+*
+*   FUNCTION
+*       Retrieves an entry from the list. If the requested entry position is
+*       invalid, the entry will be NULL.
+*
+*   INPUTS
+*       pos - the index of the entry to get, or the special value
+*           MUIV_List_GetEntry_Active to get the active entry.
+*       entry - a pointer to a variable in which to store a pointer to the
+*           entry data.
+*
+*   SEE ALSO
+*       MUIM_List_Insert, MUIM_List_InsertSingle, MUIM_List_Remove.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_GetEntry(struct IClass *cl, Object *obj,
     struct MUIP_List_GetEntry *msg)
 {
