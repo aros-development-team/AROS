@@ -199,6 +199,7 @@ static struct Hook hook_slider;
 static struct Hook hook_objects;
 static struct Hook hook_compare, hook_multitest;
 static struct Hook hook_construct, hook_destruct, hook_display;
+static struct Hook hook_objstr;
 
 #if defined(TEST_ICONLIST)
 static Object *drawer_iconlist;
@@ -273,6 +274,30 @@ static void About(void)
 
     if (about_wnd)
         set(about_wnd, MUIA_Window_Open, TRUE);
+}
+
+AROS_UFH3(static void, ObjStrHook,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, group, A2),
+    AROS_UFHA(Object *, str, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct List *child_list = NULL;
+    Object *child, *list;
+    struct list_entry *entry;
+
+    /* Find the listview object within its group */
+    GET(group, MUIA_Group_ChildList, &child_list);
+    child = (APTR)child_list->lh_Head;
+    NextObject(&child);
+    list = NextObject(&child);
+
+    /* Copy one of the selected entry's fields to the string gadget */
+    DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &entry);
+    SET(str, MUIA_String_Contents, entry->column1);
+
+    AROS_USERFUNC_EXIT
 }
 
 static void ChangeStringAccept(void)
@@ -1027,6 +1052,7 @@ int main(void)
     static IPTR entries[] = {1, 2, 3, 4, 5, 6, (IPTR)NULL};
 
     hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
+    hook_objstr.h_Entry = (HOOKFUNC) ObjStrHook;
 
     pool = CreatePool(MEMF_ANY, 4096, 4096);
 
@@ -1293,6 +1319,7 @@ int main(void)
                                         End,
                                     End,
                                 End,
+                            MUIA_Popobject_ObjStrHook, &hook_objstr,
                             End,
                         Child, CycleObject,
                             ButtonFrame,
