@@ -167,14 +167,17 @@ static struct
         *insert_text,
         *active_text,
         *multi_lists[MULTI_LIST_COUNT],
+        *colorfield,
         *format_string,
         *column_string,
         *column_text,
         *def_column_string,
-        *showheadings_check;
+        *showheadings_check,
+        *showimage_check;
     LONG quiet[LIST_COUNT],
         destruct_count,
         has_multitest[LIST_COUNT];
+    IPTR image;
 }
 list;
 
@@ -741,6 +744,8 @@ static void ListRemove(void)
            MUIM_List_NextSelected and then removing them one by one */
         DoMethod(list.lists[i], MUIM_List_Select, MUIV_List_Select_All,
             MUIV_List_Select_Ask, &count);
+        if (count == 0)
+            count = 1;    /* There may still be an active entry */
         selections = AllocVec(sizeof(LONG) * count, MEMF_ANY);
         if (selections != NULL)
         {
@@ -860,7 +865,11 @@ AROS_UFH3(static void, display_function,
 
     if (entry)
     {
-        sprintf(buf, "%ld", (long)*(strings - 1));
+        if (XGET(list.showimage_check, MUIA_Selected))
+            sprintf(buf, "%ld \33O[%08lx]", (long)*(strings - 1),
+                (long)list.image);
+        else
+            sprintf(buf, "%ld", (long)*(strings - 1));
         strings[0] = buf;
         strings[1] = entry->column1;
         strings[2] = entry->column2;
@@ -1165,6 +1174,10 @@ int main(void)
             End,
         MUIA_Listview_Input, FALSE,
         MUIA_CycleChain, 1,
+        End;
+
+    list.colorfield = ColorfieldObject,
+        MUIA_Colorfield_RGB, default_color,
         End;
 
     app = ApplicationObject,
@@ -1999,6 +2012,10 @@ int main(void)
                                     MUI_MakeObject(MUIO_Checkmark, NULL),
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Show column headings", 0),
+                                Child, list.showimage_check =
+                                    MUI_MakeObject(MUIO_Checkmark, NULL),
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Show image", 0),
                                 End,
                             Child, HGroup,
                                 Child, MUI_MakeObject(MUIO_Label,
@@ -2578,6 +2595,9 @@ int main(void)
             DoMethod(list.showheadings_check, MUIM_Notify, MUIA_Selected,
                 MUIV_EveryTime, list.multi_lists[i], 3, MUIM_Set,
                 MUIA_List_Title, MUIV_TriggerValue);
+            DoMethod(list.showimage_check, MUIM_Notify, MUIA_Selected,
+                MUIV_EveryTime, list.multi_lists[i], 2, MUIM_List_Redraw,
+                MUIV_List_Redraw_All);
             DoMethod(list.def_column_string, MUIM_Notify,
                 MUIA_String_Integer,
                 MUIV_EveryTime, list.multi_lists[i], 3, MUIM_Set,
@@ -2650,6 +2670,9 @@ int main(void)
         set(wnd, MUIA_Window_Open, TRUE);
         set(wnd, MUIA_Window_ScreenTitle, "Zune Test application");
 
+        list.image = DoMethod(list.multi_lists[0], MUIM_List_CreateImage,
+            list.colorfield, 0);
+
         /* Set pen fields */
         set(colorfield_pen, MUIA_String_Integer,
             XGET(colorfield, MUIA_Colorfield_Pen));
@@ -2676,6 +2699,7 @@ int main(void)
             }
         }
 
+        DoMethod(list.multi_lists[0], MUIM_List_DeleteImage, list.image);
         MUI_DisposeObject(app);
     }
     if (context_menu)
