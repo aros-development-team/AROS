@@ -24,44 +24,22 @@
 
 /*** String Data ************************************************************/
 
-STATIC CONST_STRPTR const ui_Pages[] = {
-    "Driver",
-    "Settings",
-    NULL,
-};
+STATIC CONST_STRPTR ui_Pages[] = {NULL,NULL,NULL};
 
-STATIC CONST_STRPTR const ui_DeviceUnits[] = {
-    "Unit 0",
-    "Unit 1",
-    "Unit 2",
-    "Unit 3",
-    "Unit 4",
-    "Unit 5",
-    "Unit 6",
-    "Unit 7",
-    "Unit 8",
-    "Unit 9",
-    NULL,
-};
+
+STATIC CONST_STRPTR ui_DeviceUnits[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+
 
 #define UI_DEVICE_PARALLEL      0
 #define UI_DEVICE_SERIAL        1
 #define UI_DEVICE_PRINTTOFILE   2
 #define UI_DEVICE_USBPARALLEL   3
 
-STATIC CONST_STRPTR const ui_Port[] = {
-    "Parallel",
-    "Serial",
-    "Print to file",
-    "USB Printer",
-    NULL,
-};
+STATIC CONST_STRPTR ui_Port[] = {NULL,NULL,NULL,NULL,NULL};
 
-STATIC CONST_STRPTR const ui_PaperTypes[] = {
-    "Fanfold",
-    "Single",
-    NULL,
-};
+
+STATIC CONST_STRPTR ui_PaperTypes[] = {NULL,NULL,NULL};
+
 
 STATIC CONST_STRPTR const ui_PaperSize[] = {
     "US Letter",
@@ -105,51 +83,22 @@ STATIC CONST_STRPTR const ui_Spacing[] = {
     NULL,
 };
 
-STATIC CONST_STRPTR const ui_Quality[] = {
-    "Draft (72 dpi)",
-    "Letter (240 dpi)",
-    NULL,
-};
-
-STATIC CONST_STRPTR const ui_Aspect[] = {
-    "Portrait",
-    "Landscape",
-    NULL,
-};
+STATIC CONST_STRPTR ui_Quality[] = {NULL,NULL,NULL};
 
 
-STATIC CONST_STRPTR const ui_Shade[] = {
-    "Black & White",
-    "Greyscape",
-    "Color",
-    "Greyscape 2",
-    NULL,
-};
+STATIC CONST_STRPTR ui_Aspect[] = {NULL,NULL,NULL};
 
 
-STATIC CONST_STRPTR const ui_Image[] = {
-    "Positive",
-    "Negative",
-    NULL,
-};
+STATIC CONST_STRPTR ui_Shade[] = {NULL,NULL,NULL,NULL,NULL};
 
 
-STATIC CONST_STRPTR const ui_Dimensions[] = {
-    "Ignore",
-    "Bounded",
-    "Absolute",
-    "Pixel",
-    "Multiply",
-    NULL,
-};
+STATIC CONST_STRPTR ui_Image[] = {NULL,NULL,NULL};
 
 
-STATIC CONST_STRPTR const ui_Dithering[] = {
-    "Ordered",
-    "Halftone",
-    "Floyd-Steinberg",
-    NULL,
-};
+STATIC CONST_STRPTR ui_Dimensions[] = {NULL,NULL,NULL,NULL,NULL,NULL};
+
+
+STATIC CONST_STRPTR ui_Dithering[] = {NULL,NULL,NULL,NULL};
 
 
 /*** Instance Data **********************************************************/
@@ -209,6 +158,52 @@ STATIC VOID Gadgets2PrinterPrefs(Class *CLASS, Object *self);
 /*** Methods ****************************************************************/
 Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+	ui_Pages[0] = (STRPTR)__(MSG_PRINTER_DRIVER);
+	ui_Pages[1] = (STRPTR)__(MSG_PRINTER_SETTINGS);
+
+	ui_DeviceUnits[0] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT0);
+	ui_DeviceUnits[1] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT1);
+	ui_DeviceUnits[2] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT2);
+	ui_DeviceUnits[3] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT3);
+	ui_DeviceUnits[4] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT4);
+	ui_DeviceUnits[5] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT5);
+	ui_DeviceUnits[6] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT6);
+	ui_DeviceUnits[7] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT7);
+	ui_DeviceUnits[8] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT8);
+	ui_DeviceUnits[9] = (STRPTR)__(MSG_PRINTER_DEVICE_UNIT9);
+	
+	ui_Port[0] = (STRPTR)__(MSG_PRINTER_PARALLEL);
+	ui_Port[1] = (STRPTR)__(MSG_PRINTER_SERIAL);
+	ui_Port[2] = (STRPTR)__(MSG_PRINTER_TO_FILE);
+	ui_Port[3] = (STRPTR)__(MSG_PRINTER_USB);
+	
+	ui_PaperTypes[0] = (STRPTR)__(MSG_TISK_FANFOLD);
+	ui_PaperTypes[1] = (STRPTR)__(MSG_TISK_SINGLE);
+	
+	ui_Quality[0] = (STRPTR)__(MSG_TISK_DRAFT);
+	ui_Quality[1] = (STRPTR)__(MSG_TISK_LETTER);
+
+	ui_Aspect[0] = (STRPTR)__(MSG_TISK_PORTRAIT);
+	ui_Aspect[1] = (STRPTR)__(MSG_TISK_LANDSCAPE);
+
+	ui_Shade[0] = (STRPTR)__(MSG_TISK_BW);
+	ui_Shade[1] = (STRPTR)__(MSG_TISK_GRAY);
+	ui_Shade[2] = (STRPTR)__(MSG_TISK_COLOR);
+	ui_Shade[3] = (STRPTR)__(MSG_TISK_GRAY2);
+	
+	ui_Image[0] = (STRPTR)__(MSG_TISK_POSITIVE);
+	ui_Image[1] = (STRPTR)__(MSG_TISK_NEGATIVE);
+	
+	ui_Dimensions[0] = (STRPTR)__(MSG_TISK_IGNORE);
+	ui_Dimensions[1] = (STRPTR)__(MSG_TISK_BOUNDED);
+	ui_Dimensions[2] = (STRPTR)__(MSG_TISK_ABSOLUTE);
+	ui_Dimensions[3] = (STRPTR)__(MSG_TISK_PIXEL);
+	ui_Dimensions[4] = (STRPTR)__(MSG_TISK_MULTIPLY);
+	
+	ui_Dithering[0] = (STRPTR)__(MSG_TISK_ORDERED);
+	ui_Dithering[1] = (STRPTR)__(MSG_TISK_HALFTONE);
+	ui_Dithering[2] = (STRPTR)__(MSG_TISK_FLOYDSTEINBERG);
+	
     int i;
 #if SHOWICON
     Object *icon;
@@ -251,11 +246,11 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 #if SHOWPIC
                 Child, icon,
 #endif
-                Child, (IPTR) LLabel1("Printer Unit:"),
+                Child, (IPTR) LLabel1(__(MSG_PRINTER_UNIT)),
                 Child, (IPTR) (data->pd_UnitNum = CycleObject, 
                     MUIA_Cycle_Entries, (IPTR)data->UnitLabels,
                 End),
-                Child, (IPTR) LLabel1("Name:"),
+                Child, (IPTR) LLabel1(__(MSG_PRINTER_NAME)),
                 Child, (IPTR) (data->pd_UnitName = StringObject, 
                     StringFrame,
                     MUIA_String_MaxLen, UNITNAMESIZE,
@@ -266,7 +261,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 /* Driver and Device page */
                 Child, (IPTR) HGroup,
                     Child, (IPTR) VGroup,
-                        Child, (IPTR) CLabel("Select Driver:"),
+						Child, (IPTR) CLabel(__(MSG_PRINTER_SELECT_DRIVER)),
                         Child, (IPTR) HCenter((ListviewObject,
                             MUIA_Listview_List, (IPTR) (data->pt_DriverList = DirlistObject,                                
                                 InputListFrame,
@@ -290,7 +285,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Cycle_Entries, (IPTR) ui_Port,
                             End),
                             Child, (IPTR)HVSpace,
-                            Child, (IPTR) Label("Unit:"),
+                            Child, (IPTR) Label(__(MSG_PRINTER_PS_UNIT)),
                             Child, (IPTR) (data->pu_UnitNum = StringObject,
                                 StringFrame,
                                 MUIA_String_Format, MUIV_String_Format_Right,
@@ -300,7 +295,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         End),
                         Child, (IPTR) HGroup,
                             Child, (IPTR) (data->pu_DeviceNameCustom = CheckMark(FALSE)),
-                            Child, (IPTR) Label("Custom device:"),
+                            Child, (IPTR) Label(__(MSG_PRINTER_CUSTOM_DEVICE)),
                             Child, (IPTR) (data->pu_DeviceName = StringObject,
                                 StringFrame,
                                 MUIA_String_Format, MUIV_String_Format_Right,
@@ -314,11 +309,11 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, (IPTR) VGroup,
                     Child, (IPTR) HGroup,
                         Child, (IPTR) ColGroup(2),
-                            Child, (IPTR) LLabel("Paper Type:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_PAPER_TYPE)),
                             Child, (IPTR) (data->pt_PaperType = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_PaperTypes,
                             End),
-                            Child, (IPTR) LLabel("Paper Size:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_PAPER_SIZE)),
                             Child, (IPTR) (data->pt_PaperSize = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_PaperSize,
                             End),
@@ -342,40 +337,40 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                     MUIA_String_Contents, (IPTR)"0.0",
                                 End),
                             End,
-                            Child, (IPTR) LLabel("Quality:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_QUALITY)),
                             Child, (IPTR) (data->pt_Quality = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Quality,
                             End),
-                            Child, (IPTR) LLabel("Pitch:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_PITCH)),
                             Child, (IPTR) (data->pt_Pitch = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Pitch,
                             End),
-                            Child, (IPTR) LLabel("Spacing:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_SPACING)),
                             Child, (IPTR) (data->pt_Spacing = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Spacing,
                             End),
-                            Child, (IPTR) LLabel("Left Margin:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_LEFT_MARGIN)),
                             Child, (IPTR) (data->pt_LeftMargin = StringObject,
                                 StringFrame,
                                 MUIA_String_Format, MUIV_String_Format_Right,
                                 MUIA_String_Accept, (IPTR)"0123456879",
                                 MUIA_String_Integer, 0,
                             End),
-                            Child, (IPTR) LLabel("Right Margin:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_RIGHT_MARGIN)),
                             Child, (IPTR) (data->pt_RightMargin = StringObject,
                                 StringFrame,
                                 MUIA_String_Format, MUIV_String_Format_Right,
                                 MUIA_String_Accept, (IPTR)"0123456879",
                                 MUIA_String_Integer, 0,
                             End),
-                            Child, (IPTR) LLabel("Lines per Page:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_LINE_PER_PAGE)),
                             Child, (IPTR) (data->pt_PaperLength = StringObject,
                                 StringFrame,
                                 MUIA_String_Format, MUIV_String_Format_Right,
                                 MUIA_String_Accept, (IPTR)"0123456879",
                                 MUIA_String_Integer, 0,
                             End),
-                            Child, (IPTR) LLabel("Density:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_DENSITY)),
                             Child, (IPTR) (data->pg_PrintDensity = SliderObject,
                                 SliderFrame,
                                 MUIA_Slider_Horiz, TRUE,
@@ -385,34 +380,34 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             End),
                         End,
                         Child, (IPTR) ColGroup(2),
-                            Child, (IPTR) LLabel("Aspect:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_ASPECT)),
                             Child, (IPTR) (data->pg_Aspect = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Aspect,
                             End),
-                            Child, (IPTR) LLabel("Shade:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_SHADE)),
                             Child, (IPTR) (data->pg_Shade = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Shade,
                             End),
-                            Child, (IPTR) LLabel("Image:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_IMAGE)),
                             Child, (IPTR) (data->pg_Image = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Image,
                             End),
-                            Child, (IPTR) LLabel("Threshold:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_TRESHOLD)),
                             Child, (IPTR) (data->pg_Threshold = SliderObject,
                                 MUIA_Slider_Horiz, TRUE,
                                 MUIA_Numeric_Min, 1,
                                 MUIA_Numeric_Max, 15,
                             End),
-                            Child, (IPTR) LLabel("Dithering:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_DITHERING)),
                             Child, (IPTR) (data->pg_Dithering = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Dithering,
                             End),
-                            Child, (IPTR) LLabel("Dimensions:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_DIMENSION)),
                             Child, (IPTR) (data->pg_Dimensions = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Dimensions,
                             End),
                             Child, (IPTR) HGroup,
-                                Child, (IPTR) LLabel("Offset ("),
+                                Child, (IPTR) LLabel(__(MSG_TISK_PAPER_OFFSET)),
                                 Child, (IPTR) (data->pg_OffsetUnits = LLabel("mm")),
                                 Child, (IPTR) LLabel("): "),
                             End,
@@ -431,11 +426,11 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                     MUIA_String_Contents, (IPTR)"0.0",
                                 End),
                             End,
-                            Child, (IPTR) LLabel("Center Image:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_CENTER_IMAGE)),
                             Child, (IPTR) (data->pg_GraphicFlags_Center = CheckMark(FALSE)),
-                            Child, (IPTR) LLabel("AntiAlias:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_ANTIALIAS)),
                             Child, (IPTR) (data->pg_GraphicFlags_AntiAlias = CheckMark(FALSE)),
-                            Child, (IPTR) LLabel("Integer Scaling:"),
+                            Child, (IPTR) LLabel(__(MSG_TISK_INTEGER_SCALING)),
                             Child, (IPTR) (data->pg_GraphicFlags_IntScaling = CheckMark(FALSE)),
                         End,
                     End,
