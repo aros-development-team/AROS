@@ -2961,15 +2961,58 @@ IPTR List__MUIM_SelectChange(struct IClass *cl, Object *obj,
     return 1;
 }
 
-/**************************************************************************
- MUIM_List_CreateImage
-Called by a List subclass in its Setup method.
-Connects an Area subclass object to the list, much like an object gets
-connected to a window. List calls Setup and AskMinMax on that object,
-keeps a reference to it (that reference will be returned).
-Text engine will dereference that pointer and draw the object with its
-default size.
-**************************************************************************/
+/****** List.mui/MUIM_List_CreateImage ***************************************
+*
+*   NAME
+*       MUIM_List_CreateImage (V11)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_CreateImage, Object *area, ULONG flags);
+*
+*   FUNCTION
+*       Creates an image to be inserted within list entries. An instance of
+*       any Area subclass is passed in and a blackbox value is returned that 
+*       can be displayed by embedding its hexadecimal representation within 
+*       any of the list's display strings (provided either statically or by
+*       the list's display hook. The format string to be used is
+*       "\330[%08lx]".
+*
+*       It is recommended that lists that embed images are instances of a
+*       custom subclass so that this method can be called in the list's
+*       MUIM_Setup method, and MUIM_List_DeleteImage can be called in the
+*       list's MUIM_Cleanup method. However, this is not necessary as long as
+*       MUIM_List_CreateImage is called after the list has had its MUIM_Setup
+*       called, and MUIM_List_DeleteImage is called after the list has had its 
+*       MUIM_Cleanup method called.
+*
+*   INPUTS
+*       area - the area object that is used to generate the image.
+*       flags - must be zero.
+*
+*   RESULT
+*       A blackbox reference to the list image, or NULL on an error.
+*
+*   NOTES
+*       If this method returns NULL, no special action needs to be taken, as
+*       embedding this value in a list string will simply cause no image to
+*       appear.
+*
+*       The object passed in becomes a child of the list, so it cannot be used
+*       elsewhere simultaneously.
+*
+*   SEE ALSO
+*       MUIM_List_DeleteImage, MUIA_List_DisplayHook.
+*
+******************************************************************************
+*
+* Connects an Area subclass object to the list, much like an object gets
+* connected to a window. List calls Setup and AskMinMax on that object,
+* keeps a reference to it (that reference will be returned).
+* Text engine will dereference that pointer and draw the object with its
+* default size.
+*
+*/
+
 IPTR List__MUIM_CreateImage(struct IClass *cl, Object *obj,
     struct MUIP_List_CreateImage *msg)
 {
@@ -2995,9 +3038,27 @@ IPTR List__MUIM_CreateImage(struct IClass *cl, Object *obj,
     return (IPTR) li;
 }
 
-/**************************************************************************
- MUIM_List_DeleteImage
-**************************************************************************/
+/****** List.mui/MUIM_List_DeleteImage ***************************************
+*
+*   NAME
+*       MUIM_List_DeleteImage (V11)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_DeleteImage, APTR image);
+*
+*   FUNCTION
+*       Deletes an image created by MUIM_List_CreateImage.
+*
+*   INPUTS
+*       image - a blackbox reference to the list image, or NULL.
+*
+*   SEE ALSO
+*       MUIM_List_CreateImage, MUIA_List_DisplayHook.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_DeleteImage(struct IClass *cl, Object *obj,
     struct MUIP_List_DeleteImage *msg)
 {
