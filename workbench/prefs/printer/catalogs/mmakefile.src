@@ -3,7 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-CATALOGS:=french
+CATALOGS:=czech
+
+# The need to update french catalog
 
 %build_catalogs mmake=workbench-prefs-printer-catalogs \
     catalogs=$(CATALOGS) \
