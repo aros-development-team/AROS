@@ -1,4 +1,4 @@
-## version $VER: network.catalog 3.1 (9.1.2012)
+## version $VER: network.catalog 4.0 (15.9.2016)
 ## language czech
 ## codeset 5
 ;
@@ -54,9 +54,13 @@ MSG_HOST_NAME
 Název hostitele
 ; Host Name
 ;
+MSG_HOST_NAMES
+Název hostitele (pøezdívka)
+; Host Name and Aliases
+;
 MSG_DOMAIN_NAME
 Název domény
-; Domain Name
+; Domain/Workgroup
 ;
 MSG_SERIAL_DEVICE
 Sériové zaøízení
@@ -122,17 +126,21 @@ MSG_TAB_IP_CONFIGURATION
 Konfigurace TCP/IP
 ; IPv4 Configuration
 ;
-MSG_TAB_COMPUTER_NAME
-Název poèítaèe
-; Computer Name
+MSG_TAB_COMPUTER_NAMES
+Polo¾ka hostitele
+; Local Host Entries
 ;
 MSG_TAB_WIRELESS
 Bezdrátové pøipojení
-; Wireless
+; Wireless Networks
 ;
 MSG_TAB_MOBILE
 Mobilní pøipojení
 ; Mobile Broadband
+;
+MSG_TAB_SERVERS
+Pøipojené slo¾ky
+; Mounted Shares
 ;
 MSG_AUTOSTART_STACK
 Pøi startu pøipojit k síti
@@ -210,9 +218,17 @@ MSG_IFWINDOW_TITLE
 Rozhraní
 ; Interface
 ;
+MSG_HOSTWINDOW_TITLE
+Jméno hosta
+; Host Name(s)
+;
 MSG_NETWINDOW_TITLE
 Bezdrátová sí»
 ; Wireless Network
+;
+MSG_SERVERWINDOW_TITLE
+Pøipojená slo¾ka
+; Mount Share
 ;
 MSG_USERNAME
 Jméno
@@ -221,4 +237,23 @@ Jméno
 MSG_PASSWORD
 Heslo
 ; Password
+;
+MSG_WORKGROUP
+Doména/Pracovní skupina
+; Domain/Workgroup
+;
+MSG_SERVICE
+Sdílené jméno
+; Share Name
+;
+MSG_SERVICE_TYPES
+Service Type
+; Service Type
+;
+; ***NEW***
+;
+MSG_SERVICETYPE_CIFS
+CIFS/SMB
+; CIFS/SMB
+;
 ;
