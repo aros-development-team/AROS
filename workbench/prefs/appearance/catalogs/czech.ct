@@ -1,0 +1,126 @@
+## version $VER: appearance.catalog 1.1 (16.09.2016)
+## language czech
+## codeset 5
+;
+;
+MSG_WINTITLE
+Nastavení vzhledu (theme setting)
+; Appearance Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otevøít
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Ulo¾it jako...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Ukonèit
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Upravit
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Nastavit obecné hodnoty
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Poslední ulo¾ené
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Obnovit
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Nastavení
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Vytvoøit ikonu?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Otevøít nastavení vzhledu
+; Load Appearance Preferences
+;
+MSG_ASL_SAVE_TITLE
+Ulo¾it nastavení vzhledu
+; Save Appearance Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_GAD_SAVE
+Ulo¾it
+; Save
+;
+MSG_GAD_USE
+Pou¾ít
+; Use
+;
+MSG_GAD_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_ENABLETHEMES
+Zapnout pou¾ití témat
+; Enable Theme'ing?
+;
+MSG_PREVIEW
+Náhled
+; Preview
+;
+MSG_NOPREVIEW
+-Náhled je nedostupný-
+; -Preview Unavailable-
+;
+MSG_SELECTEDTHEME
+Pou¾ít téma
+; Theme
+;
+MSG_ENABLEZUNEPREFS
+Pøevzít Zune nastavení?
+; Inherit Zune Configuration?
+;
+MSG_ENABLEWANDPREFS
+Pøevzít Wanderer nastavení?
+; Inherit Wanderer Configuration?
+;
+MSG_TAB_THEMEING
+Témata
+; Theme'ing
+;
+MSG_TAB_COMPOSITING
+Kompozitní výstup
+; Compositing
+;
+MSG_ENABLE_SCREEN_COMPOSITION
+Zapnout kompozitní obraz
+; Enable Screen Composition
+;
+MSG_COMPOSITE_BELOW
+Skládat dole
+; Composite Below
+;
+MSG_COMPOSITE_LEFT
+Skládat vlevo
+; Composite Left
+;
+MSG_COMPOSITE_RIGHT
+Skládat vpravo
+; Composite Right
+;
+MSG_ENABLE_COMPOSITE_WITH_ALPHA
+Zapnout kompozici s prùhledností
+; Enable Compositing with Alpha
+;
+;
