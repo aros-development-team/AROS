@@ -171,8 +171,8 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
 
     NewList(&_ThemesAvailable);
 
-    tab_labels[0] = "Theme'ing";
-    tab_labels[1] = "Compositing";
+    tab_labels[0] = (STRPTR)__(MSG_TAB_THEMEING);
+    tab_labels[1] = (STRPTR)__(MSG_TAB_COMPOSITING);
     tab_labels[2] = NULL;
 
     // Find Available Themes ...
@@ -283,22 +283,22 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                         Child, (IPTR)HVSpace,
                         Child, (IPTR)ColGroup(2),
                             MUIA_Group_SameWidth, FALSE,
-                            Child, (IPTR)Label1("Enable Screen Composition"),
+                            Child, (IPTR)Label1(__(MSG_ENABLE_SCREEN_COMPOSITION)),
                             Child, (IPTR)HGroup,
                                 Child, (IPTR)(_CompEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
                                 Child, (IPTR)HVSpace,
                             End,
-                            Child, (IPTR)Label1("Composite Below"),
+                            Child, (IPTR)Label1(__(MSG_COMPOSITE_BELOW)),
                             Child, (IPTR)HGroup,
                                 Child, (IPTR)(_CompBelow = (Object *)AppearanceEditor__Checkmark(FALSE)),
                                 Child, (IPTR)HVSpace,
                             End,
-                            Child, (IPTR)Label1("Composite Left"),
+                            Child, (IPTR)Label1(__(MSG_COMPOSITE_LEFT)),
                             Child, (IPTR)HGroup,
                                 Child, (IPTR)(_CompLeft = (Object *)AppearanceEditor__Checkmark(FALSE)),
                                 Child, (IPTR)HVSpace,
                             End,
-                            Child, (IPTR)Label1("Composite Right"),
+                            Child, (IPTR)Label1(__(MSG_COMPOSITE_RIGHT)),
                             Child, (IPTR)HGroup,
                                 Child, (IPTR)(_CompRight = (Object *)AppearanceEditor__Checkmark(FALSE)),
                                 Child, (IPTR)HVSpace,
@@ -308,7 +308,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                                 MUIA_Background, MUII_FILL,
                                 MUIA_FixHeight, 2,
                             End,
-                            Child, (IPTR)Label1("Enable Compositing with Alpha"),
+                            Child, (IPTR)Label1(__(MSG_ENABLE_COMPOSITE_WITH_ALPHA)),
                             Child, (IPTR)HGroup,
                                 Child, (IPTR)(_CompAlpha = (Object *)AppearanceEditor__Checkmark(FALSE)),
                                 Child, (IPTR)HVSpace,
