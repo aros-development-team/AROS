@@ -67,3 +67,26 @@ Inherit Zune Configuration?
 ;
 MSG_ENABLEWANDPREFS (//)
 Inherit Wanderer Configuration?
+;
+MSG_TAB_THEMEING (//)
+Theme'ing
+;
+MSG_TAB_COMPOSITING (//)
+Compositing
+;
+MSG_ENABLE_SCREEN_COMPOSITION (//)
+Enable Screen Composition
+;
+MSG_COMPOSITE_BELOW (//)
+Composite Below
+;
+MSG_COMPOSITE_LEFT (//)
+Composite Left
+;
+MSG_COMPOSITE_RIGHT (//)
+Composite Right
+;
+MSG_ENABLE_COMPOSITE_WITH_ALPHA (//)
+Enable Compositing with Alpha
+;
+;
