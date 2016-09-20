@@ -20,7 +20,7 @@ Pøejmenování objektu
 ; Rename
 ;
 MSG_LINE
-Zadejte nový název
+Zadejte nový název: '%s'
 ; Enter a new name for: '%s'
 ;
 MSG_NAME
