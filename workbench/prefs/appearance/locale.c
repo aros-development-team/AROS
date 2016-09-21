@@ -9,7 +9,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "System/Prefs/Theme.catalog"
+#define CATALOG_NAME     "System/Prefs/Appearance.catalog"
 #define CATALOG_VERSION  1
 
 /*** Variables **************************************************************/
