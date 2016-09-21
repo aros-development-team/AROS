@@ -175,6 +175,7 @@ struct MUI_ListData
     IPTR scroller_pos;
     BOOL read_only;
     IPTR multiselect;
+    LONG drag_type;
 
     /* clicked column */
     LONG click_column;
@@ -1142,7 +1143,6 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_List_DragSortable:
             _handle_bool_tag(data->flags, tag->ti_Data, LIST_DRAGSORTABLE);
-            set(obj, MUIA_Draggable, tag->ti_Data);
             break;
 
         case MUIA_Listview_ScrollerPos:
@@ -1159,6 +1159,12 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_Listview_DefClickColumn:
             data->def_click_column = tag->ti_Data;
+            break;
+
+        case MUIA_Listview_DragType:
+            data->drag_type = tag->ti_Data;
+            if (data->drag_type != MUIV_Listview_DragType_None)
+                set(obj, MUIA_Draggable, TRUE);
             break;
         }
     }
@@ -1185,7 +1191,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return 0;
     }
 
-    /* This is neccessary for at least the title */
+    /* This is necessary for at least the title */
     if (!SetListSize(data, 0))
     {
         CoerceMethod(cl, obj, OM_DISPOSE);
@@ -1481,7 +1487,6 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_List_DragSortable:
             _handle_bool_tag(data->flags, tag->ti_Data, LIST_DRAGSORTABLE);
-            set(obj, MUIA_Draggable, tag->ti_Data);
             break;
 
         case MUIA_Selected:
@@ -1527,6 +1532,12 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_Listview_DefClickColumn:
             data->def_click_column = tag->ti_Data;
+            break;
+
+        case MUIA_Listview_DragType:
+            data->drag_type = tag->ti_Data;
+            set(obj, MUIA_Draggable,
+                tag->ti_Data != MUIV_Listview_DragType_None);
             break;
         }
     }
@@ -1596,6 +1607,9 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         return 1;
     case MUIA_Listview_DefClickColumn:
         STORE = data->def_click_column;
+        return 1;
+    case MUIA_Listview_DragType:
+        STORE = data->drag_type;
         return 1;
     }
 
@@ -3494,7 +3508,9 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
 IPTR List__MUIM_DragQuery(struct IClass *cl, Object *obj,
     struct MUIP_DragQuery *msg)
 {
-    if (msg->obj == obj)
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    if (msg->obj == obj && (data->flags & LIST_DRAGSORTABLE))
         return MUIV_DragQuery_Accept;
     else
         return MUIV_DragQuery_Refuse;
@@ -3537,6 +3553,9 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
     struct RastPort *rp = _rp(obj);
     LONG n, y;
     UWORD old_pattern;
+
+    if (!(data->flags & LIST_DRAGSORTABLE))
+        return FALSE;
 
     /* Choose new drop mark position */
 
@@ -3599,6 +3618,9 @@ IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
     struct MUI_List_TestPos_Result pos;
     LONG n;
 
+    if (!(data->flags & LIST_DRAGSORTABLE))
+        return FALSE;
+
     /* Find drop position */
 
     DoMethod(obj, MUIM_List_TestPos, msg->x, msg->y, (IPTR) &pos);
@@ -3648,6 +3670,10 @@ static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
     struct MUI_DragImage *img = NULL;
     const struct ZuneFrameGfx *zframe;
     LONG depth;
+
+    /* If entries aren't draggable, allow the list as a whole to be */
+    if (data->drag_type == MUIV_Listview_DragType_None)
+        return DoSuperMethodA(cl, obj, msg);
 
     /* Get info on dragged entry */
     DoMethod(obj, MUIM_List_TestPos, _left(data->area) - msg->touchx,
