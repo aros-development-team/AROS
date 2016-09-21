@@ -86,6 +86,8 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+            case MUIA_Listview_DefClickColumn:
+            case MUIA_Listview_DragType:
             case MUIA_Listview_Input:
             case MUIA_Listview_MultiSelect:
             case MUIA_Listview_ScrollerPos:
@@ -122,7 +124,9 @@ IPTR Listview__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_List_Entries:
     case MUIA_List_Quiet:
     case MUIA_Listview_ClickColumn:
+    case MUIA_Listview_DefClickColumn:
     case MUIA_Listview_DoubleClick:
+    case MUIA_Listview_DragType:
     case MUIA_Listview_SelectChange:
         return GetAttr(msg->opg_AttrID, data->list, msg->opg_Storage);
 
@@ -204,6 +208,9 @@ IPTR Listview__MUIM_KillNotifyObj(struct IClass *cl, Object *obj,
     return RedirectNotify(cl, obj, (Msg) msg, msg->TrigAttr);
 }
 
+/* Note that there is no OM_SET method here because this method will be
+   propagated to the list by the Group class (superclass of both List and
+   Listview) */
 BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
