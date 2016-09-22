@@ -53,6 +53,24 @@ struct MUI_ListviewData
 *
 */
 
+/****** Listview.mui/MUIA_Listview_DragType **********************************
+*
+*   NAME
+*       MUIA_Listview_DragType -- (V11) [ISG], LONG
+*
+*   FUNCTION
+*       Specifies whether list entries can be dragged as part of a
+*       drag-and-drop operation. Two values can be used:
+*           MUIV_Listview_DragType_None: entries cannot be dragged
+*           MUIV_Listview_DragType_Immediate: entries can be dragged
+*
+*   SEE ALSO
+*       MUIA_Listview_DragSortable, MUIA_Draggable
+*
+******************************************************************************
+*
+*/
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/
