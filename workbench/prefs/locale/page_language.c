@@ -1,5 +1,5 @@
 /*
-   Copyright © 2003-2015, The AROS Development Team. All rights reserved.
+   Copyright © 2003-2016, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -471,18 +471,18 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->available = ListviewObject, MUIA_Listview_List,
         avail_list = NewObject(Languagelist_CLASS->mcc_Class, 0,
             InputListFrame,
-            MUIA_Draggable, TRUE,
             MUIA_List_SourceArray, data->strings_available,
             TAG_DONE),
-        End;
+        MUIA_Listview_DragType, MUIV_Listview_DragType_Immediate,
+    End;
 
     data->preferred = ListviewObject, MUIA_Listview_List,
         pref_list = NewObject(Languagelist_CLASS->mcc_Class, 0,
             InputListFrame,
-            MUIA_Draggable, TRUE,
             MUIA_List_SourceArray, data->strings_preferred,
             TAG_DONE),
-        End;
+        MUIA_Listview_DragType, MUIV_Listview_DragType_Immediate,
+    End;
 
     set(pref_list, MUIA_UserData, avail_list);
     set(avail_list, MUIA_UserData, pref_list);
