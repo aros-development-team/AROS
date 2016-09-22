@@ -406,6 +406,24 @@ struct MUI_ListData
 *
 */
 
+/****** List.mui/MUIA_List_ShowDropMarks *************************************
+*
+*   NAME
+*       MUIA_List_ShowDropMarks -- (V11) [ISG], BOOL
+*
+*   FUNCTION
+*       Specifies whether a visual indication will be shown of where a list
+*       item will be inserted if dropped during a drag-and-drop operation.
+*       Defaults to TRUE. Only has an affect when the list is a drop target
+*       (e.g. when MUIA_List_DragSortable is TRUE).
+*
+*   SEE ALSO
+*       MUIA_List_DragSortable, MUIA_List_DropMark, MUIA_Listview_Draggable
+*
+******************************************************************************
+*
+*/
+
 /****** List.mui/MUIA_List_Title *********************************************
 *
 *   NAME
@@ -3553,9 +3571,6 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
     struct RastPort *rp = _rp(obj);
     LONG n, y;
     UWORD old_pattern;
-
-    if (!(data->flags & LIST_DRAGSORTABLE))
-        return FALSE;
 
     /* Choose new drop mark position */
 
