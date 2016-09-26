@@ -150,6 +150,7 @@ struct MUI_ListData
                  * update_pos) */
     int update_pos;
 
+    LONG drop_mark;
     LONG drop_mark_y;
 
     /* list images */
@@ -356,6 +357,24 @@ struct MUI_ListData
 *
 *   SEE ALSO
 *       MUIA_List_ConstructHook
+*
+******************************************************************************
+*
+*/
+
+/****** List.mui/MUIA_List_DropMark ******************************************
+*
+*   NAME
+*       MUIA_List_DropMark -- (V11) [..G], LONG
+*
+*   FUNCTION
+*       Provides the index of the last position where a list entry was
+*       successfully dropped. The initial value before any entry has been
+*       dropped is undefined.
+*
+*   SEE ALSO
+*       MUIA_List_DragSortable, MUIA_List_ShowDropMarks,
+*       MUIA_Listview_Draggable
 *
 ******************************************************************************
 *
@@ -1048,6 +1067,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->entries_visible = data->vertprop_visible = -1;
     data->last_active = -1;
+    data->drop_mark = 0;
 
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
@@ -1610,6 +1630,9 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         return 1;
     case MUIA_List_DragSortable:
         STORE = data->flags & LIST_DRAGSORTABLE;
+        return 1;
+    case MUIA_List_DropMark:
+        STORE = data->drop_mark;
         return 1;
     case MUIA_Listview_ClickColumn:
         STORE = data->click_column;
@@ -3633,9 +3656,6 @@ IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
     struct MUI_List_TestPos_Result pos;
     LONG n;
 
-    if (!(data->flags & LIST_DRAGSORTABLE))
-        return FALSE;
-
     /* Find drop position */
 
     DoMethod(obj, MUIM_List_TestPos, msg->x, msg->y, (IPTR) &pos);
@@ -3647,20 +3667,26 @@ IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
         n = pos.entry;
         if (pos.yoffset > 0)
             n++;
+    }
+    else if ((pos.flags & MUI_LPR_ABOVE) != 0)
+        n = 0;
+    else
+        n = data->entries_num;
 
+    data->drop_mark = n;
+
+    if (data->flags & LIST_DRAGSORTABLE)
+    {
         /* Ensure that dropped entry will be positioned between the two
          * entries that are above and below the drop mark, rather than
          * strictly at the numeric index shown */
 
         if (n > data->entries_active)
             n--;
-    }
-    else if ((pos.flags & MUI_LPR_ABOVE) != 0)
-        n = MUIV_List_Move_Top;
-    else
-        n = MUIV_List_Move_Bottom;
 
-    DoMethod(msg->obj, MUIM_List_Move, MUIV_List_Move_Active, n);
+        DoMethod(obj, MUIM_List_Move, MUIV_List_Move_Active, n);
+        SET(obj, MUIA_List_Active, n);
+    }
 
     return TRUE;
 }
