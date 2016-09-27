@@ -156,16 +156,18 @@ static struct
         *remove_button,
         *activate_button,
         *deactivate_button,
-        *dragsortable_check,
+        *draggable_check,
         *showdropmarks_check,
         *multitest_check,
         *quiet_check,
+        *dragsortable_check,
         *autovisible_check,
         *entries_text,
         *visible_text,
         *first_text,
         *insert_text,
         *active_text,
+        *drop_text,
         *multi_lists[MULTI_LIST_COUNT],
         *colorfield,
         *format_string,
@@ -399,7 +401,15 @@ static void UpdateListInfo(void)
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
 
-    GET(list.lists[i], MUIA_List_DragSortable, &value);
+    GET(list.lists[i], MUIA_Listview_DragType, &value);
+    NNSET(list.draggable_check, MUIA_Selected,
+        value != MUIV_Listview_DragType_None);
+    NNSET(list.dragsortable_check, MUIA_Disabled,
+        value == MUIV_Listview_DragType_None);
+    if (value == MUIV_Listview_DragType_None)
+        value = FALSE;
+    else
+        GET(list.lists[i], MUIA_List_DragSortable, &value);
     NNSET(list.dragsortable_check, MUIA_Selected, value);
     GET(list.lists[i], MUIA_List_ShowDropMarks, &value);
     NNSET(list.showdropmarks_check, MUIA_Selected, value);
@@ -431,6 +441,9 @@ static void UpdateListInfo(void)
     else
         DoMethod(list.active_text, MUIM_SetAsString, MUIA_Text_Contents,
             "%ld", value);
+    GET(list.lists[i], MUIA_List_DropMark, &value);
+    DoMethod(list.drop_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
 }
 
 static void ListGetVisible(void)
@@ -461,15 +474,16 @@ static void ListGetFirst(void)
         "%ld", value);
 }
 
-static void ListSetDragSortable(void)
+static void ListSetDraggable(void)
 {
     UWORD i;
     LONG value = 0;
 
     i = XGET(list.list_radios, MUIA_Radio_Active);
 
-    GET(list.dragsortable_check, MUIA_Selected, &value);
-    SET(list.lists[i], MUIA_List_DragSortable, value);
+    GET(list.draggable_check, MUIA_Selected, &value);
+    SET(list.lists[i], MUIA_Listview_DragType, value ?
+        MUIV_Listview_DragType_Immediate : MUIV_Listview_DragType_None);
 }
 
 static void ListSetShowDropMarks(void)
@@ -505,6 +519,17 @@ static void ListSetQuiet(void)
     GET(list.quiet_check, MUIA_Selected, &value);
     SET(list.lists[i], MUIA_List_Quiet, value);
     list.quiet[i] = value;
+}
+
+static void ListSetDragSortable(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    GET(list.dragsortable_check, MUIA_Selected, &value);
+    SET(list.lists[i], MUIA_List_DragSortable, value);
 }
 
 static void ListSetAutoVisible(void)
@@ -1112,6 +1137,7 @@ int main(void)
             End,
         MUIA_Listview_MultiSelect,
             MUIV_Listview_MultiSelect_None,
+        MUIA_Listview_DragType, MUIV_Listview_DragType_Immediate,
         MUIA_Listview_DoubleClick, TRUE,
         MUIA_CycleChain, 1,
         End;
@@ -1128,6 +1154,7 @@ int main(void)
             End,
         MUIA_Listview_ScrollerPos,
             MUIV_Listview_ScrollerPos_Left,
+        MUIA_Listview_DragType, MUIV_Listview_DragType_None,
         MUIA_CycleChain, 1,
         End;
     list.lists[2] = ListviewObject,
@@ -1792,10 +1819,10 @@ int main(void)
                                     MUIA_String_Integer, 0,
                                     End,
                                 Child, HGroup,
-                                    Child, list.dragsortable_check =
-                                        MUI_MakeObject(MUIO_Checkmark, NULL),
+                                    Child, list.draggable_check =
+                                        MUI_MakeObject(MUIO_Checkmark,NULL),
                                     Child, MUI_MakeObject(MUIO_Label,
-                                        "Drag sortable", 0),
+                                        "Draggable", 0),
                                     Child, HVSpace,
                                     End,
                                 Child, HGroup,
@@ -1812,7 +1839,13 @@ int main(void)
                                         "Filter multiselect", 0),
                                     Child, HVSpace,
                                     End,
-                                Child, HVSpace,
+                                Child, HGroup,
+                                    Child, list.quiet_check =
+                                        MUI_MakeObject(MUIO_Checkmark,NULL),
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Quiet", 0),
+                                    Child, HVSpace,
+                                    End,
 
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Affected index 2:", 0),
@@ -1823,10 +1856,10 @@ int main(void)
                                     MUIA_String_Integer, 0,
                                     End,
                                 Child, HGroup,
-                                    Child, list.quiet_check =
-                                        MUI_MakeObject(MUIO_Checkmark,NULL),
+                                    Child, list.dragsortable_check =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL),
                                     Child, MUI_MakeObject(MUIO_Label,
-                                        "Quiet", 0),
+                                        "Drag sortable", 0),
                                     Child, HVSpace,
                                     End,
                                 Child, HGroup,
@@ -1838,7 +1871,8 @@ int main(void)
                                     End,
                                 Child, list.reset_button =
                                     MUI_MakeObject(MUIO_Button, "Reset"),
-                                Child, HVSpace,
+                                Child, list.enable_button =
+                                    MUI_MakeObject(MUIO_Button, "Enable"),
 
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Move/exchange mode 1:", 0),
@@ -1850,9 +1884,12 @@ int main(void)
                                     MUI_MakeObject(MUIO_Button, "Move"),
                                 Child, list.sort_button =
                                     MUI_MakeObject(MUIO_Button, "Sort"),
-                                Child, list.enable_button =
-                                    MUI_MakeObject(MUIO_Button, "Enable"),
-                                Child, HVSpace,
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Last drop index:", 0),
+                                Child, list.drop_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
+                                    End,
 
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Move/exchange mode 2:", 0),
@@ -2522,9 +2559,15 @@ int main(void)
                 MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
                 UpdateListInfo);
         }
-        DoMethod(list.dragsortable_check, MUIM_Notify, MUIA_Selected,
+        DoMethod(list.draggable_check, MUIM_Notify, MUIA_Selected,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
-            ListSetDragSortable);
+            ListSetDraggable);
+        DoMethod(list.draggable_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, list.dragsortable_check, 3, MUIM_Set,
+            MUIA_Disabled, MUIV_NotTriggerValue);
+        DoMethod(list.draggable_check, MUIM_Notify, MUIA_Selected,
+            FALSE, list.dragsortable_check, 3, MUIM_Set,
+            MUIA_Selected, FALSE);
         DoMethod(list.showdropmarks_check, MUIM_Notify, MUIA_Selected,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             ListSetShowDropMarks);
@@ -2534,6 +2577,9 @@ int main(void)
         DoMethod(list.quiet_check, MUIM_Notify, MUIA_Selected,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             ListSetQuiet);
+        DoMethod(list.dragsortable_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            ListSetDragSortable);
         DoMethod(list.autovisible_check, MUIM_Notify, MUIA_Selected,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             ListSetAutoVisible);
@@ -2668,7 +2714,7 @@ int main(void)
                 " but it should be 0.\n", (long)value);
 
         set(wnd, MUIA_Window_Open, TRUE);
-        set(wnd, MUIA_Window_ScreenTitle, "Zune Test application");
+        set(wnd, MUIA_Window_ScreenTitle, "Zune Test Application");
 
         list.image = DoMethod(list.multi_lists[0], MUIM_List_CreateImage,
             list.colorfield, 0);
