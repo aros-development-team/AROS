@@ -1820,7 +1820,7 @@ int main(void)
                                     End,
                                 Child, HGroup,
                                     Child, list.draggable_check =
-                                        MUI_MakeObject(MUIO_Checkmark,NULL),
+                                        MUI_MakeObject(MUIO_Checkmark, NULL),
                                     Child, MUI_MakeObject(MUIO_Label,
                                         "Draggable", 0),
                                     Child, HVSpace,
@@ -1833,19 +1833,14 @@ int main(void)
                                     Child, HVSpace,
                                     End,
                                 Child, HGroup,
-                                    Child, list.multitest_check =
-                                        MUI_MakeObject(MUIO_Checkmark,NULL),
+                                    Child, list.autovisible_check =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL),
                                     Child, MUI_MakeObject(MUIO_Label,
-                                        "Filter multiselect", 0),
+                                        "Auto visible", 0),
                                     Child, HVSpace,
                                     End,
-                                Child, HGroup,
-                                    Child, list.quiet_check =
-                                        MUI_MakeObject(MUIO_Checkmark,NULL),
-                                    Child, MUI_MakeObject(MUIO_Label,
-                                        "Quiet", 0),
-                                    Child, HVSpace,
-                                    End,
+                                Child, list.reset_button =
+                                    MUI_MakeObject(MUIO_Button, "Reset"),
 
                                 Child, MUI_MakeObject(MUIO_Label,
                                     "Affected index 2:", 0),
@@ -1863,14 +1858,19 @@ int main(void)
                                     Child, HVSpace,
                                     End,
                                 Child, HGroup,
-                                    Child, list.autovisible_check =
-                                        MUI_MakeObject(MUIO_Checkmark,NULL),
+                                    Child, list.multitest_check =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL),
                                     Child, MUI_MakeObject(MUIO_Label,
-                                        "Auto visible", 0),
+                                        "Filter multiselect", 0),
                                     Child, HVSpace,
                                     End,
-                                Child, list.reset_button =
-                                    MUI_MakeObject(MUIO_Button, "Reset"),
+                                Child, HGroup,
+                                    Child, list.quiet_check =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL),
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Quiet", 0),
+                                    Child, HVSpace,
+                                    End,
                                 Child, list.enable_button =
                                     MUI_MakeObject(MUIO_Button, "Enable"),
 
@@ -1885,10 +1885,10 @@ int main(void)
                                 Child, list.sort_button =
                                     MUI_MakeObject(MUIO_Button, "Sort"),
                                 Child, MUI_MakeObject(MUIO_Label,
-                                    "Last drop index:", 0),
-                                Child, list.drop_text = TextObject,
-                                    TextFrame,
-                                    MUIA_Text_Contents, "N/A",
+                                    "Title:", 0),
+                                Child, list.title_string =
+                                    StringObject,
+                                    StringFrame,
                                     End,
 
                                 Child, MUI_MakeObject(MUIO_Label,
@@ -1902,10 +1902,10 @@ int main(void)
                                 Child, list.redraw_button =
                                     MUI_MakeObject(MUIO_Button, "Redraw"),
                                 Child, MUI_MakeObject(MUIO_Label,
-                                    "Title:", 0),
-                                Child, list.title_string =
-                                    StringObject,
-                                    StringFrame,
+                                    "Entries:", 0),
+                                Child, list.entries_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
                                     End,
 
                                 Child, MUI_MakeObject(MUIO_Label,
@@ -1919,8 +1919,8 @@ int main(void)
                                 Child, list.toggle_button =
                                     MUI_MakeObject(MUIO_Button, "Toggle"),
                                 Child, MUI_MakeObject(MUIO_Label,
-                                    "Entries:", 0),
-                                Child, list.entries_text = TextObject,
+                                    "Visible entries:", 0),
+                                Child, list.visible_text = TextObject,
                                     TextFrame,
                                     MUIA_Text_Contents, "N/A",
                                     End,
@@ -1936,8 +1936,8 @@ int main(void)
                                 Child, list.deselect_button =
                                     MUI_MakeObject(MUIO_Button, "Deselect"),
                                 Child, MUI_MakeObject(MUIO_Label,
-                                    "Visible entries:", 0),
-                                Child, list.visible_text = TextObject,
+                                    "First visible index:", 0),
+                                Child, list.first_text = TextObject,
                                     TextFrame,
                                     MUIA_Text_Contents, "N/A",
                                     End,
@@ -1949,12 +1949,14 @@ int main(void)
                                     MUIA_Cycle_Entries, list_insert_modes,
                                     End,
                                 Child, list.insert_single_button =
-                                    MUI_MakeObject(MUIO_Button, "Insert Single"),
+                                    MUI_MakeObject(MUIO_Button,
+                                        "Insert Single"),
                                 Child, list.insert_multiple_button =
-                                    MUI_MakeObject(MUIO_Button, "Insert Multiple"),
+                                    MUI_MakeObject(MUIO_Button,
+                                        "Insert Multiple"),
                                 Child, MUI_MakeObject(MUIO_Label,
-                                    "First visible index:", 0),
-                                Child, list.first_text = TextObject,
+                                    "Last insertion index:", 0),
+                                Child, list.insert_text = TextObject,
                                     TextFrame,
                                     MUIA_Text_Contents, "N/A",
                                     End,
@@ -1970,8 +1972,8 @@ int main(void)
                                 Child, list.clear_button =
                                     MUI_MakeObject(MUIO_Button, "Clear"),
                                 Child, MUI_MakeObject(MUIO_Label,
-                                    "Last insertion index:", 0),
-                                Child, list.insert_text = TextObject,
+                                    "Active index:", 0),
+                                Child, list.active_text = TextObject,
                                     TextFrame,
                                     MUIA_Text_Contents, "N/A",
                                     End,
@@ -1987,8 +1989,8 @@ int main(void)
                                 Child, list.deactivate_button =
                                     MUI_MakeObject(MUIO_Button, "Deactivate"),
                                 Child, MUI_MakeObject(MUIO_Label,
-                                    "Active index:", 0),
-                                Child, list.active_text = TextObject,
+                                    "Last drop index:", 0),
+                                Child, list.drop_text = TextObject,
                                     TextFrame,
                                     MUIA_Text_Contents, "N/A",
                                     End,
