@@ -47,6 +47,9 @@ Priority
 MSG_TASK_TYPE (//)
 Type
 ;
+MSG_TASK_READY_AND_WAIT (//)
+%ld ready, %ld waiting
+;
 MSG_TAB_SYSTEM (//)
 System
 ;
@@ -76,4 +79,7 @@ Video Memory
 ;
 MSG_GART_APER (//)
 GART Aperture
+;
+MSG_CANT_OPEN_TASK_RESOURCE (//)
+Can't open task.resource\n
 ;
