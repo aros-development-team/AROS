@@ -93,7 +93,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
 
     set(smdata->tasklist, MUIA_List_First, v);
 
-    __sprintf(smdata->tasklistinfobuf, (STRPTR)__(MSG_TASK_READY_AND_WAIT), smdata->sm_TasksReady, smdata->sm_TasksWaiting); //,"%ld ready, %ld waiting"
+    __sprintf(smdata->tasklistinfobuf, (STRPTR)__(MSG_TASK_READY_AND_WAIT), smdata->sm_TasksReady, smdata->sm_TasksWaiting);
     set(smdata->tasklistinfo, MUIA_Text_Contents, smdata->tasklistinfobuf);
     set(smdata->tasklist, MUIA_List_Quiet, FALSE);
 }
@@ -192,7 +192,7 @@ static BOOL InitTasks(struct SysMonData *smdata)
     TaskResBase = OpenResource("task.resource");
     if (TaskResBase == NULL)
     {
-        FPuts(Output(), (STRPTR)_(MSG_CANT_OPEN_TASK_RESOURCE)); //"Can't open task.resource\n");
+        FPuts(Output(), (STRPTR)_(MSG_CANT_OPEN_TASK_RESOURCE));
         return FALSE;
     }
 
