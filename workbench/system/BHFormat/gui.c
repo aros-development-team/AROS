@@ -224,7 +224,7 @@ void ComputeCapacity(struct DosList *pdlVolume, struct InfoData *pInfoData)
 			(ULONG)(((ULLONG)pInfoData->id_NumBlocksUsed*100ULL
 				 + pInfoData->id_NumBlocks/2) / pInfoData->id_NumBlocks) );
 	else
-	    RawDoFmtSz( szCapacityInfo, "%lu%lc capacity",
+	    RawDoFmtSz( szCapacityInfo, _(MSG_CAPACITY),
 			(ULONG)cUnits, (ULONG)*pchUnitSymbol );
 	D(Printf("Done: %s\n", szCapacityInfo));
 }
