@@ -1,6 +1,6 @@
-## version $VER: Format.catalog 1.0 (27.01.2010)
+## version $VER: Format.catalog 2.0 (29.09.2016)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 MSG_OK
 OK
@@ -16,16 +16,16 @@ Zru¹it
 MSG_INSERT_DISK
 Vlo¾te disk k formátování do zaøízení %s\n\
 Klávesou ENTER spustíte formátování (pomocí\n\
-CTRL-C formátování pøeru¹íte):
+CTRL-C formátování pøeru¹íte): 
 ; Insert disk to be formatted in device %s\n\
 ; Press RETURN to begin formatting or CTRL-C to abort: 
 ;
 MSG_FORMATTING
-\rFormátování cylindru %lu, zbývá %lu
+\rFormátování cylindru %lu, zbývá %lu 
 ; \rFormatting cylinder %lu, %lu to go 
 ;
 MSG_VERIFYING
-\rVerifikace
+\rVerifikace 
 ; \rVerifying 
 ;
 MSG_INITIALIZING
@@ -75,11 +75,11 @@ KMGTPE
 ; Kilo, Mega ...
 ;
 MSG_CAPACITY_USED
-Velikost: %lu %lcB, zaplnìno %lu %%
+velikost - %lu %lcB, zaplnìno - %lu %%
 ; %lu%lc capacity, %lu%% used
 ;
 MSG_CAPACITY
-Velikost: %lu %lcB
+velikost - %lu %lc
 ; %lu%lc capacity
 ;
 MSG_ERROR_WANDERER
@@ -91,11 +91,11 @@ Formátování - %s
 ; Format - %s
 ;
 MSG_DEVICE
-zaøízení %s
+zaøízení - %s
 ; Device '%s'
 ;
 MSG_VOLUME
-název %b
+název - %b
 ; Volume '%b'
 ;
 MSG_APPLICATION_TITLE
@@ -108,7 +108,7 @@ Formátování diskù
 ;
 MSG_COPYRIGHT
 Copyright (C) 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
-; Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+; Copyright \xa9 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
 ;
 MSG_AUTHOR
 Ben Hutchings, Pavel Fedin, The AROS Development Team
@@ -186,7 +186,7 @@ MSG_ERRORS_FAILURE
 ; Failure
 ;
 MSG_FORMAT
-Formátování
+Formátování 
 ; Format 
 ;
 MSG_ERROR_INVALID_DOSTYPE
