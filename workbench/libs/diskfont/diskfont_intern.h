@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -112,7 +112,7 @@ struct AADiskFontHeader
 /* Prototypes */
 /**************/
 
-struct DiskfontBase; /* prerefrence */
+struct DiskfontBase; /* prereference */
 
 /* memoryfontfunc.c */
 

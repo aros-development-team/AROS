@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -26,7 +26,7 @@ LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
 
     if (*s == '>')
     {
-	if (ss->newOut) /* multiple > not allowed */
+	if (ss->newOut) /* multiple > or >> not allowed */
 	    return ERROR_TOO_MANY_LEVELS;
 
 	if (*++s == '>')

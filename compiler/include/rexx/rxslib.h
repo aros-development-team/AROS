@@ -2,7 +2,7 @@
 #define REXX_RXSLIB_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ARexx data structures
@@ -87,7 +87,7 @@ struct RxsLib
 #define RXSSTACK    4096
 */
 
-/* I'm not sure about these ones but let's dissable them for now
+/* I'm not sure about these ones but let's disable them for now
 #define CTB_SPACE   0
 #define CTB_DIGIT   1
 #define CTB_ALPHA   2

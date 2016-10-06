@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -341,7 +341,7 @@
         struct Process *cliproc;
 
         /* Note: SystemTagList + CliInitNewcli/CliInitRun + AROS_CLI macro manage
-         * the creation and destruction of pr_CIS/pr_COS/pr_CES. CrateNewProc
+         * the creation and destruction of pr_CIS/pr_COS/pr_CES. CreateNewProc
          * logic is not used in such case.
          */
         struct TagItem proctags[] =

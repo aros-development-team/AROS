@@ -2,7 +2,7 @@
 #define REXX_STORAGE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ARexx data structures
@@ -95,8 +95,8 @@ struct RexxArg
 {
 	LONG  ra_Size;
 	UWORD ra_Length;
-	UBYTE ra_Depricated1; /* Was ra_Flags but not used anymore */
-	UBYTE ra_Depricated2; /* Was ra_Hash but not used anymore */
+	UBYTE ra_Deprecated1; /* Was ra_Flags but not used anymore */
+	UBYTE ra_Deprecated2; /* Was ra_Hash but not used anymore */
 	BYTE  ra_Buff[8];
 };
 
