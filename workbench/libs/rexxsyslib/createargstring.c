@@ -1,5 +1,5 @@
 /*
-        Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -31,8 +31,7 @@
         length - Length of the string to copy.
 
     RESULT
-        Will return a pointer the string part of the allocated RexxArg
-        structure.
+        A pointer to the string part of the allocated RexxArg structure.
 
     NOTES
         Pointer to the string returned by this function may be used as a
@@ -63,11 +62,11 @@
     ra->ra_Size = size;
     ra->ra_Length = length;
     /* FIXME: Maybe the next two fields only need to be intialized on m68k? */
-    /* Initialize the depricated fields to a sane value for compatibility under AmigaOS */
-    ra->ra_Depricated1 = 1<<1 | 1<<2 | 1<<6; /* Was ra_Flags = NSF_ALPHA | NSF_EXT */
+    /* Initialize the deprecated fields to a sane value for compatibility under AmigaOS */
+    ra->ra_Deprecated1 = 1<<1 | 1<<2 | 1<<6; /* Was ra_Flags = NSF_ALPHA | NSF_EXT */
     for (i=0; i<length; i++)
 	hash += string[i];
-    ra->ra_Depricated2 = (UBYTE)(hash & 255); /* Was ra_Hash */
+    ra->ra_Deprecated2 = (UBYTE)(hash & 255); /* Was ra_Hash */
     CopyMem(string, ra->ra_Buff, length);
     *(ra->ra_Buff + length) = '\0';
     

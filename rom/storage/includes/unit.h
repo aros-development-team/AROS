@@ -2,8 +2,13 @@
 #define _STORAGE_UNIT_H
 
 /*
-    Definitions relating to storage units (i.e drives)
-    */
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
+    Definitions relating to storage units (i.e. drives)
+*/
 
 struct StorageUnit
 {

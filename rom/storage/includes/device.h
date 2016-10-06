@@ -2,8 +2,13 @@
 #define _STORAGE_DEVICE_H
 
 /*
-    Definitions relating to storage devices (i.e controllers)
-    */
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
+    Definitions relating to storage devices (i.e. controllers)
+*/
 
 struct StorageDevice
 {
