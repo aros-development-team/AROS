@@ -19,17 +19,20 @@ int main(int argc, char **argv)
         if (cfg->options & OPTION_AUTOINIT)
         {
             writeautoinit(cfg, 0); /* normal */
-            writeautoinit(cfg, 1); /* relbase */
+            if (cfg->options & OPTION_RELLINKLIB)
+                writeautoinit(cfg, 1); /* relbase */
         }
         if (cfg->modtype == LIBRARY)
         {
             writegetlibbase(cfg, 0); /* normal */
-            writegetlibbase(cfg, 1); /* relbase */
+            if (cfg->options & OPTION_RELLINKLIB)
+                writegetlibbase(cfg, 1); /* relbase */
         }
         if (cfg->options & OPTION_STUBS)
         {
             writestubs(cfg, 0); /* normal */
-            writestubs(cfg, 1); /* relbase */
+            if (cfg->options & OPTION_RELLINKLIB)
+                writestubs(cfg, 1); /* relbase */
         }
         break;
 
