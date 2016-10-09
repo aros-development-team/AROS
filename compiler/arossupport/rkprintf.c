@@ -9,13 +9,10 @@
 #include <aros/config.h>
 #include <aros/arossupportbase.h>
 #include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
 #include <aros/system.h>
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 #undef rkprintf
-#include <unistd.h>
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugAROSBase))
 

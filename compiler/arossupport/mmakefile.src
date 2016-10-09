@@ -37,7 +37,6 @@ FILES	:= \
     rt_dos \
     rt_exec \
     rt_intuition \
-    strrncasecmp \
     writebyte \
     writedouble \
     writefloat \
