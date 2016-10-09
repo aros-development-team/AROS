@@ -22,7 +22,7 @@ export DEBUG         := yes
 
 # trick make.tmpl %build_with_configure compiler=host (what a hack)
 export TARGET_CFLAGS := $(CFLAGS1)	# grub target cflags
-export HOST_CC       := $(TARGET_CC)	# aros target cc
+export HOST_DEF_CC   := $(TARGET_CC)	# aros target cc
 export CFLAGS        := $(CFLAGS2)	# aros target cflags
 export KERNEL_CFLAGS :=			# undef
 export HOST_CFLAGS   :=			# undef
