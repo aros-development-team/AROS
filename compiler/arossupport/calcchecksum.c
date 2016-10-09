@@ -7,7 +7,6 @@
 */
 
 #include <aros/system.h>
-#include <assert.h>
 
 /*****************************************************************************
 
@@ -64,9 +63,6 @@
 {
     ULONG   sum;
     ULONG * lptr;
-
-    assert (memory);
-    assert ((size&(sizeof(ULONG)-1))==0);
 
     for (sum=0, lptr=(ULONG *)memory; size>0; size-=sizeof(ULONG))
 	sum += *lptr ++;

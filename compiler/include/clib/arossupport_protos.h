@@ -51,7 +51,6 @@ int     rkprintf     (const STRPTR, const STRPTR, int, const UBYTE * fmt, ...);
 void    NastyFreeMem (APTR mem, IPTR size);
 APTR    RemoveSList  (APTR * list, APTR node);
 void    hexdump      (const void * data, IPTR offset, ULONG count);
-int     strrncasecmp (const char *, const char *, int);
 void    RawPutChars  (const UBYTE * string, int len);
 BOOL    IsDosEntryA  (char *Name, ULONG Flags);
 
