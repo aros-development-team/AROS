@@ -51,7 +51,7 @@ makedirs:
 	else true ; fi
 
 # Create the tools that are used to build AROS.
-tools : makedirs mmake $(TOOLLIB) $(GENMF) $(ARCHTOOL) $(ELF2HUNK) \
+tools : makedirs mmake $(GENMF) $(ARCHTOOL) $(ELF2HUNK) \
 	$(FLEXCAT) $(CREATEDTDESC) \
 	$(ILBMTOC) $(ILBMTOICON) $(INFOINFO) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
@@ -75,10 +75,6 @@ $(TOP)/config/features.status : $(SRCDIR)/config/features $(CROSSTOOLS_BUILDFLAG
 
 features : crosstools $(TOP)/config/features.status
 	@$(NOP)
-
-$(TOOLLIB) : $(wildcard $(SRCDIR)/tools/toollib/*.[ch])
-	@$(ECHO) Building toollib...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/toollib SRCDIR=$(SRCDIR) TOP=$(TOP) CURDIR=toollib
 
 $(GENMF) : $(SRCDIR)/tools/genmf/genmf.py
 	@$(ECHO) Copying genmf...
@@ -168,7 +164,6 @@ clean:
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/flexcat/src -f Makefile.aros clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/archtools clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genmf clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/toollib clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/dtdesc -f Makefile.aros clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/collect-aros clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2inline clean SRCDIR=$(SRCDIR) TOP=$(TOP)
