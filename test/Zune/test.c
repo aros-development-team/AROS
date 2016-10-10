@@ -168,6 +168,7 @@ static struct
         *insert_text,
         *active_text,
         *drop_text,
+        *selected_text,
         *multi_lists[MULTI_LIST_COUNT],
         *colorfield,
         *format_string,
@@ -441,6 +442,10 @@ static void UpdateListInfo(void)
     else
         DoMethod(list.active_text, MUIM_SetAsString, MUIA_Text_Contents,
             "%ld", value);
+    DoMethod(list.lists[i], MUIM_List_Select, MUIV_List_Select_All,
+        MUIV_List_Select_Ask, (IPTR) &value);
+    DoMethod(list.selected_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
     GET(list.lists[i], MUIA_List_DropMark, &value);
     DoMethod(list.drop_text, MUIM_SetAsString, MUIA_Text_Contents,
         "%ld", value);
@@ -471,6 +476,19 @@ static void ListGetFirst(void)
     real_list = (Object *)XGET(list.lists[i], MUIA_Listview_List);
     GET(real_list, MUIA_List_First, &value);
     DoMethod(list.first_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", value);
+}
+
+static void ListGetSelected(void)
+{
+    UWORD i;
+    LONG value = 0;
+
+    i = XGET(list.list_radios, MUIA_Radio_Active);
+
+    DoMethod(list.lists[i], MUIM_List_Select, MUIV_List_Select_All,
+        MUIV_List_Select_Ask, (IPTR) &value);
+    DoMethod(list.selected_text, MUIM_SetAsString, MUIA_Text_Contents,
         "%ld", value);
 }
 
@@ -1989,6 +2007,17 @@ int main(void)
                                 Child, list.deactivate_button =
                                     MUI_MakeObject(MUIO_Button, "Deactivate"),
                                 Child, MUI_MakeObject(MUIO_Label,
+                                    "Selected entries:", 0),
+                                Child, list.selected_text = TextObject,
+                                    TextFrame,
+                                    MUIA_Text_Contents, "N/A",
+                                    End,
+
+                                Child, HVSpace,
+                                Child, HVSpace,
+                                Child, HVSpace,
+                                Child, HVSpace,
+                                Child, MUI_MakeObject(MUIO_Label,
                                     "Last drop index:", 0),
                                 Child, list.drop_text = TextObject,
                                     TextFrame,
@@ -1997,7 +2026,7 @@ int main(void)
                                 End,
                             End,
                         Child, VGroup,
-                            Child, ColGroup(LIST_COUNT / 2),
+                            Child, ColGroup(MULTI_LIST_COUNT),
                                 Child, VGroup, GroupFrameT("Standard Format"),
                                     Child, list.multi_lists[0] = ListviewObject,
                                         MUIA_Listview_List,
@@ -2560,6 +2589,9 @@ int main(void)
             DoMethod(list.lists[i], MUIM_Notify, MUIA_List_Active,
                 MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
                 UpdateListInfo);
+            DoMethod(list.lists[i], MUIM_Notify, MUIA_Listview_SelectChange,
+                MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+                ListGetSelected);
         }
         DoMethod(list.draggable_check, MUIM_Notify, MUIA_Selected,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
