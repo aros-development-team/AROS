@@ -9,8 +9,7 @@ include $(SRCDIR)/$(CURDIR)/../../mesa/sources.mak
 include $(SRCDIR)/$(CURDIR)/../../mapi/glapi/sources.mak
 include $(SRCDIR)/$(CURDIR)/../../mapi/mapi/sources.mak
 
-#MM- workbench-libs-complete : workbench-libs-mesa-$(AROS_TARGET_TOOLCHAIN)
-#MM- workbench-libs-mesa-yes : workbench-libs-mesa
+#MM- workbench-libs-complete : workbench-libs-mesa
 
 #MM workbench-libs-mesa : includes linklibs-galliumauxiliary workbench-libs-gallium-linklib
 
