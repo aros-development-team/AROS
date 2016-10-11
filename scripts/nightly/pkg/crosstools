@@ -8,14 +8,14 @@ setl   crosstools-$BUILDTARGET.log
 
 printi "Creating AROS/$BUILDTARGET crosstools packages..."
 
-delete  $BUILD_BASE/AROS
-copy    $SOURCE_AROS $BUILD_BASE/AROS
+delete  $BUILD_BASE/AROS-CROSSTOOLS
+copy    $SOURCE_AROS $BUILD_BASE/AROS-CROSSTOOLS
 
-cd      $BUILD_BASE/AROS
+cd      $BUILD_BASE/AROS-CROSSTOOLS
 execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT
 make    -j $MAKE_JOBS crosstools
 
 cd      $ROOT
-delete  $BUILD_BASE/AROS
+delete  $BUILD_BASE/AROS-CROSSTOOLS
 resetl
 
