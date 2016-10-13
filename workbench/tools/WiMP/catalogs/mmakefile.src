@@ -1,0 +1,10 @@
+# Copyright © 2008, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 52972 2016-09-29 17:44:39Z mmartinka $
+
+include $(SRCDIR)/config/aros.cfg
+
+CATALOGS:=
+
+%build_catalogs mmake=workbench-tools-WiMP-catalogs \
+    catalogs=$(CATALOGS) \
+    name=WiMP subdir=System/Tools
