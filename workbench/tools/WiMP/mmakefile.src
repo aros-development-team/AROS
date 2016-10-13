@@ -1,0 +1,17 @@
+# $Id: mmakefile.src 52302 2016-03-28 03:42:13Z NicJA $
+# Makefile to make WiMP tool.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := wimp locale
+
+EXEDIR := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-wimp
+#MM  workbench-tools-wimp : workbench-tools-wimp-catalogs
+
+%build_prog mmake=workbench-tools-wimp \
+    progname=WiMP targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common
