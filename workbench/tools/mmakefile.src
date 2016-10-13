@@ -4,7 +4,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := Calculator GraphicDump InitPrinter PrintFiles WiMP
+FILES := Calculator GraphicDump InitPrinter PrintFiles
 
 #MM- workbench : workbench-tools
 #MM workbench-tools : includes linklibs
