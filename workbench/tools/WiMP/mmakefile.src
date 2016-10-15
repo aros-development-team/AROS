@@ -1,9 +1,10 @@
-# $Id: mmakefile.src 52302 2016-03-28 03:42:13Z NicJA $
+# Copyright © 2016, The AROS Development Team. All rights reserved.
+# $Id$
 # Makefile to make WiMP tool.
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := wimp locale
+FILES := WiMP locale
 
 EXEDIR := $(AROS_TOOLS)
 
