@@ -5,8 +5,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-##MM- AROS-pc-$(CPU) : grub2-aros-quick
-#MM- arch-common-grub2 : grub2-aros-quick
+##MM- arch-common-grub2 : grub2-aros-quick
 
 EXCL_FLAGS := -Werror -Werror-implicit-function-declaration
 
