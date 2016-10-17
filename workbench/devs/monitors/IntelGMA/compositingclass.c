@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -437,7 +437,7 @@ OOP_Object *METHOD(Compositing, Root, New)
         if (compdata->gfx != NULL)
         {
             /* Create GC object that will be used for drawing operations */
-            compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, SD(cl)->basegc, NULL);
+            compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, SD(OOP_OCLASS(compdata->gfx))->basegc, NULL);
         }
         
         if ((compdata->gfx == NULL) || (compdata->gc == NULL))
