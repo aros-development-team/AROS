@@ -428,7 +428,6 @@ static int wpa_driver_sana2_associate(
 	}
 
 	/* Store current SSID and BSSID */
-
 	if (err == 0) {
 		strcpy(drv->ssid, ssid);
 	}
