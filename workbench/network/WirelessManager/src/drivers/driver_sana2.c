@@ -364,7 +364,7 @@ static int wpa_driver_sana2_set_key(const char *ifname, void *priv,
 	request->ios2_StatData = (u8 *) seq;
 
 	/* Work-around for a bug in MLME code */
-	if(wpa_driver_sana2_cipher(alg) == S2ENC_WEP)
+	if (wpa_driver_sana2_cipher(alg) == S2ENC_WEP)
 		using_wep = 1;
 
 	err = DoIO((APTR)request);
@@ -479,7 +479,7 @@ static int wpa_driver_sana2_get_capa(void *priv, struct wpa_driver_capa *capa)
 			WPA_DRIVER_CAPA_ENC_CCMP;
 	DeletePool(pool);
 
-	if(!drv->hard_mac)
+	if (!drv->hard_mac)
 		capa->flags = WPA_DRIVER_FLAGS_USER_SPACE_MLME;
 
 	return 0;
@@ -746,26 +746,26 @@ static void wpa_driver_sana2_event_handler(int sig, void *sig_ctx)
 	os_memset(&event_data, 0, sizeof(event_data));
 
 	/* Propagate events */
-	while((request = (APTR)GetMsg(drv->port)) != NULL)
+	while ((request = (APTR)GetMsg(drv->port)) != NULL)
 	{
-		switch(request->ios2_Req.io_Command)
+		switch (request->ios2_Req.io_Command)
 		{
 		case CMD_READ:
-			if(request->ios2_Req.io_Error == 0) {
+			if (request->ios2_Req.io_Error == 0) {
 				/* Deliver frame to supplicant */
 				drv_event_eapol_rx(drv->ctx,
 					request->ios2_SrcAddr,
 					request->ios2_Data,
 					request->ios2_DataLength);
 			}
-			if(request->ios2_Req.io_Error != S2ERR_OUTOFSERVICE) {
+			if (request->ios2_Req.io_Error != S2ERR_OUTOFSERVICE) {
 				/* Send request back for next frame */
 				SendIO((APTR)request);
 			}
 			break;
 
 		case S2_READMGMT:
-			if(request->ios2_Req.io_Error == 0) {
+			if (request->ios2_Req.io_Error == 0) {
 				/* Deliver frame to supplicant */
 				os_memset(&event_data, 0, sizeof(event_data));
 				event_data.mlme_rx.buf = request->ios2_Data;
@@ -775,7 +775,7 @@ static void wpa_driver_sana2_event_handler(int sig, void *sig_ctx)
 				wpa_supplicant_event(drv->ctx, EVENT_MLME_RX,
 					&event_data);
 			}
-			if(request->ios2_Req.io_Error != S2ERR_OUTOFSERVICE) {
+			if (request->ios2_Req.io_Error != S2ERR_OUTOFSERVICE) {
 				/* Send request back for next frame */
 				request->ios2_DataLength = ETH_MTU;
 				SendIO((APTR)request);
@@ -835,8 +835,8 @@ static void wpa_driver_sana2_event_handler(int sig, void *sig_ctx)
 
 				/* Send read requests back for next frame */
 				SendIO((APTR)drv->eapol_request);
-				if(!drv->hard_mac)
-					for(i = 0; i < MLME_REQ_COUNT; i++)
+				if (!drv->hard_mac)
+					for (i = 0; i < MLME_REQ_COUNT; i++)
 						SendIO((APTR)
 							drv->mlme_requests[i]);
 			}
@@ -867,27 +867,27 @@ static void wpa_driver_sana2_deinit(void *priv)
 	int i;
 
 	/* Abort outstanding I/O requests */
-	if(drv->eapol_request != NULL) {
+	if (drv->eapol_request != NULL) {
 		AbortIO((APTR)drv->eapol_request);
 		WaitIO((APTR)drv->eapol_request);
 		FreeVec(drv->eapol_request);
 	}
 
-	for(i = 0; i < MLME_REQ_COUNT; i++) {
-		if(drv->mlme_requests[i] != NULL) {
+	for (i = 0; i < MLME_REQ_COUNT; i++) {
+		if (drv->mlme_requests[i] != NULL) {
 			AbortIO((APTR)drv->mlme_requests[i]);
 			WaitIO((APTR)drv->mlme_requests[i]);
 			FreeVec(drv->mlme_requests[i]);
 		}
 	}
 
-	if(drv->event_request != NULL) {
+	if (drv->event_request != NULL) {
 		AbortIO((APTR)drv->event_request);
 		WaitIO((APTR)drv->event_request);
 	}
 
 	/* Close device */
-	if(drv->device_opened) {
+	if (drv->device_opened) {
 		AbortIO((APTR)drv->request);
 		WaitIO((APTR)drv->request);
 		CloseDevice((APTR)drv->request);
@@ -917,13 +917,13 @@ static void * wpa_driver_sana2_init(void *ctx, const char *ifname)
 	drv->ctx = ctx;
 	drv->device_name = AllocVec(strlen(device_dir) + strlen(ifname),
 		MEMF_PUBLIC);
-	if(drv->device_name == NULL)
+	if (drv->device_name == NULL)
 		err = 1;
 
 	/* Split fake interface name into device and unit */
-	if(err == 0) {
+	if (err == 0) {
 		end = strrchr(ifname, ':');
-		if(strchr(ifname, ':') == end && strchr(ifname, '/') == NULL) {
+		if (strchr(ifname, ':') == end && strchr(ifname, '/') == NULL) {
 			strcpy(drv->device_name, device_dir);
 			p = drv->device_name + strlen(device_dir);
 		} else
@@ -936,20 +936,20 @@ static void * wpa_driver_sana2_init(void *ctx, const char *ifname)
 		drv->port = CreateMsgPort();
 		drv->request = (APTR)CreateIORequest(drv->port,
 			sizeof(struct IOSana2Req));
-		if(drv->request == NULL)
+		if (drv->request == NULL)
 			err = 1;
 	}
 
-	if(err == 0) {
+	if (err == 0) {
 		/* Open device */
 		drv->request->ios2_BufferManagement = (APTR)buffer_tags;
-		if(OpenDevice((TEXT *)drv->device_name, unit_no,
+		if (OpenDevice((TEXT *)drv->device_name, unit_no,
 			(APTR)drv->request, 0) != 0)
 			err = 1;
 	}
 
 	/* Register a handler for the port's signal */
-	if(err == 0) {
+	if (err == 0) {
 		drv->device_opened = 1;
 
 		eloop_register_signal(drv->port->mp_SigBit,
@@ -957,36 +957,36 @@ static void * wpa_driver_sana2_init(void *ctx, const char *ifname)
 	}
 
 	/* Check if this is a hard-MAC device */
-	if(err == 0) {
+	if (err == 0) {
 		request = drv->request;
 		((struct IOStdReq *)request)->io_Command = NSCMD_DEVICEQUERY;
 		((struct IOStdReq *)request)->io_Data = &device_info;
-		if(DoIO((APTR)request) != 0)
+		if (DoIO((APTR)request) != 0)
 			err = 1;
 		else {
-			for(i = 0; device_info.SupportedCommands[i] != 0; i++)
-				if(device_info.SupportedCommands[i]
+			for (i = 0; device_info.SupportedCommands[i] != 0; i++)
+				if (device_info.SupportedCommands[i]
 					== S2_GETNETWORKS)
 					drv->hard_mac = 1;
 		}
 	}
 
 	/* Put device online */
-	if(err == 0) {
+	if (err == 0) {
 		request = drv->request;
 		request->ios2_Req.io_Command = S2_GETSTATIONADDRESS;
-		if(DoIO((APTR)request) != 0)
+		if (DoIO((APTR)request) != 0)
 			err = 1;
 	}
 
-	if(err == 0) {
+	if (err == 0) {
 		CopyMem(request->ios2_DstAddr, drv->addr, ETH_ALEN);
 
 		request->ios2_Req.io_Command = S2_CONFIGINTERFACE;
 		CopyMem(drv->addr, request->ios2_SrcAddr, ETH_ALEN);
 
-		if(DoIO((APTR)request) != 0) {
-			if(request->ios2_WireError == S2WERR_IS_CONFIGURED) {
+		if (DoIO((APTR)request) != 0) {
+			if (request->ios2_WireError == S2WERR_IS_CONFIGURED) {
 				request->ios2_Req.io_Command = S2_ONLINE;
 				DoIO((APTR)request);
 			} else
@@ -996,18 +996,18 @@ static void * wpa_driver_sana2_init(void *ctx, const char *ifname)
 	}
 
 	/* Create and queue up EAPOL frame read request */
-	if(err == 0) {
+	if (err == 0) {
 		request = drv->request;
 		request->ios2_Req.io_Command = CMD_READ;
 		request->ios2_PacketType = ETH_P_EAPOL;
 
 		eapol_request = AllocVec(sizeof(struct IOSana2Req) + ETH_MTU,
 			MEMF_PUBLIC | MEMF_CLEAR);
-		if(eapol_request == NULL)
+		if (eapol_request == NULL)
 			err = 1;
 	}
 
-	if(err == 0) {
+	if (err == 0) {
 		CopyMem(drv->request, eapol_request,
 			sizeof(struct IOSana2Req));
 		eapol_request->ios2_Data = eapol_request + 1;
@@ -1017,18 +1017,18 @@ static void * wpa_driver_sana2_init(void *ctx, const char *ifname)
 	}
 
 	/* Create and queue up management frame read requests */
-	if(err == 0 && !drv->hard_mac) {
+	if (err == 0 && !drv->hard_mac) {
 		request = drv->request;
 		request->ios2_Req.io_Command = S2_READMGMT;
 		request->ios2_DataLength = ETH_MTU;
-		for(i = 0; i < MLME_REQ_COUNT; i++) {
+		for (i = 0; i < MLME_REQ_COUNT; i++) {
 			mlme_request =
 				AllocVec(sizeof(struct IOSana2Req) + ETH_MTU,
 					MEMF_PUBLIC | MEMF_CLEAR);
-			if(mlme_request == NULL)
+			if (mlme_request == NULL)
 				err = 1;
 
-			if(err == 0) {
+			if (err == 0) {
 				CopyMem(drv->request, mlme_request,
 					sizeof(struct IOSana2Req));
 				mlme_request->ios2_Data = mlme_request + 1;
@@ -1039,11 +1039,11 @@ static void * wpa_driver_sana2_init(void *ctx, const char *ifname)
 		}
 	}
 
-	if(err == 0) {
+	if (err == 0) {
 		/* Create and send event-notification request */
 		request = drv->request;
 		request->ios2_Req.io_Command = S2_ONEVENT;
-		if(drv->hard_mac)
+		if (drv->hard_mac)
 			drv->event_mask = S2EVENT_CONNECT | S2EVENT_DISCONNECT
 				| S2EVENT_OFFLINE;
 		else
@@ -1052,18 +1052,18 @@ static void * wpa_driver_sana2_init(void *ctx, const char *ifname)
 
 		drv->event_request = AllocVec(sizeof(struct IOSana2Req),
 			MEMF_PUBLIC | MEMF_CLEAR);
-		if(drv->event_request == NULL)
+		if (drv->event_request == NULL)
 			err = 1;
 	}
 
-	if(err == 0) {
+	if (err == 0) {
 		CopyMem(drv->request, drv->event_request,
 			sizeof(struct IOSana2Req));
 
 		SendIO((APTR)drv->event_request);
 	}
 
-	if(err != 0) {
+	if (err != 0) {
 		wpa_driver_sana2_deinit(drv);
 		drv = NULL;
 	}
