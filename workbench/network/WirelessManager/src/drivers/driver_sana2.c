@@ -447,12 +447,7 @@ static int wpa_driver_sana2_get_capa(void *priv, struct wpa_driver_capa *capa)
 
 	os_memset(capa, 0, sizeof(*capa));
 
-	capa->key_mgmt = WPA_DRIVER_CAPA_KEY_MGMT_WPA |
-		WPA_DRIVER_CAPA_KEY_MGMT_WPA2 |
-		WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK |
-		WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK;
-
-	request->ios2_Req.io_Command = S2_GETENCRYPTIONINFO;
+	request->ios2_Req.io_Command = S2_GETCRYPTTYPES;
 	pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, PUDDLE_SIZE, PUDDLE_SIZE);
 	request->ios2_Data = pool;
 	if (pool != NULL && DoIO((APTR)request) == 0) {
@@ -478,6 +473,15 @@ static int wpa_driver_sana2_get_capa(void *priv, struct wpa_driver_capa *capa)
 			WPA_DRIVER_CAPA_ENC_TKIP |
 			WPA_DRIVER_CAPA_ENC_CCMP;
 	DeletePool(pool);
+
+	if (capa->enc & WPA_DRIVER_CAPA_ENC_TKIP) {
+		capa->key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_WPA |
+		WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK;
+	}
+	if (capa->enc & WPA_DRIVER_CAPA_ENC_CCMP) {
+		capa->key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_WPA2 |
+		WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK;
+	}
 
 	if (!drv->hard_mac)
 		capa->flags = WPA_DRIVER_FLAGS_USER_SPACE_MLME;
@@ -696,7 +700,6 @@ static int wpa_driver_sana2_set_capabilities(void *priv, u16 capab)
 		{{S2INFO_Capabilities, capab},
 		{TAG_END, 0}};
 
-wpa_printf(MSG_DEBUG, "sana2: setting negotiated capabilities");
 	request->ios2_Req.io_Command = S2_SETOPTIONS;
 	request->ios2_Data = tag_list;
 	return DoIO((APTR)request);
