@@ -803,12 +803,22 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	struct wpa_ie_data ie;
 	int sel, proto;
 	const u8 *bss_wpa, *bss_rsn;
+	struct wpa_driver_capa capa;
 
 	if (bss) {
 		bss_wpa = wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE);
 		bss_rsn = wpa_bss_get_ie(bss, WLAN_EID_RSN);
 	} else
 		bss_wpa = bss_rsn = NULL;
+
+	if (wpa_drv_get_capa(wpa_s, &capa) == 0) {
+		if (!(capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK)) {
+			bss_rsn = NULL;
+		}
+		if (!(capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK)) {
+			bss_wpa = NULL;
+		}
+	}
 
 	if (bss_rsn && (ssid->proto & WPA_PROTO_RSN) &&
 	    wpa_parse_wpa_ie(bss_rsn, 2 + bss_rsn[1], &ie) == 0 &&
@@ -889,6 +899,14 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	}
 
 	sel = ie.pairwise_cipher & ssid->pairwise_cipher;
+	if (wpa_drv_get_capa(wpa_s, &capa) == 0) {
+		if (!(capa.enc & WPA_DRIVER_CAPA_ENC_TKIP)) {
+			sel &= ~WPA_CIPHER_TKIP;
+		}
+		if (!(capa.enc & WPA_DRIVER_CAPA_ENC_CCMP)) {
+			sel &= ~WPA_CIPHER_CCMP;
+		}
+	}
 	if (sel & WPA_CIPHER_CCMP) {
 		wpa_s->pairwise_cipher = WPA_CIPHER_CCMP;
 		wpa_msg(wpa_s, MSG_DEBUG, "WPA: using PTK CCMP");
