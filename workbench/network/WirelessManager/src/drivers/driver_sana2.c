@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - AmigaOS/MorphOS/AROS SANA-II driver interface
- * Copyright (c) 2010-2011, Neil Cafferkey
+ * Copyright (c) 2010-2012, Neil Cafferkey
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -384,12 +384,10 @@ static int wpa_driver_sana2_associate(
 		{{S2INFO_SSID, (UPINT)ssid},
 		{(params->bssid != NULL) ? S2INFO_BSSID : TAG_IGNORE,
 			(UPINT)params->bssid},
-		{S2INFO_Encryption,
-			wpa_driver_sana2_cipher(params->group_suite)},
 		{S2INFO_PortType, (params->mode == IEEE80211_MODE_IBSS) ?
 			S2PORT_ADHOC : S2PORT_MANAGED},
 		{S2INFO_Channel, params->freq == 2484 ?
-			2484 : (params->freq - 2407) / 5},
+			14 : (params->freq - 2407) / 5},
 		{S2INFO_WPAInfo, (params->wpa_ie_len > 0) ?
 			(UPINT)params->wpa_ie : (UPINT)NULL},
 		{S2INFO_AuthTypes, params->auth_alg},
