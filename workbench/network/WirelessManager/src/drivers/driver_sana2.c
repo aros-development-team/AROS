@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - AmigaOS/MorphOS/AROS SANA-II driver interface
- * Copyright (c) 2010-2012, Neil Cafferkey
+ * Copyright (c) 2010-2013, Neil Cafferkey
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -150,6 +150,7 @@ static int wpa_driver_sana2_get_bssid(void *priv, u8 *bssid)
 		os_memcpy(bssid, cur_bssid, ETH_ALEN);
 		os_memcpy(drv->bssid, cur_bssid, ETH_ALEN);
 	}
+	DeletePool(pool);
 
 	return (cur_bssid != NULL) ? 0 : 1;
 }
@@ -439,6 +440,10 @@ static int wpa_driver_sana2_associate(
 static int wpa_driver_sana2_get_capa(void *priv, struct wpa_driver_capa *capa)
 {
 	struct wpa_driver_sana2_data *drv = priv;
+	u8 *enc_list = NULL;
+	int i;
+	struct IOSana2Req *request = drv->request;
+	APTR pool;
 
 	os_memset(capa, 0, sizeof(*capa));
 
@@ -446,8 +451,34 @@ static int wpa_driver_sana2_get_capa(void *priv, struct wpa_driver_capa *capa)
 		WPA_DRIVER_CAPA_KEY_MGMT_WPA2 |
 		WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK |
 		WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK;
-	capa->enc = WPA_DRIVER_CAPA_ENC_WEP40 | WPA_DRIVER_CAPA_ENC_WEP104 |
-		WPA_DRIVER_CAPA_ENC_TKIP | WPA_DRIVER_CAPA_ENC_CCMP;
+
+	request->ios2_Req.io_Command = S2_GETENCRYPTIONINFO;
+	pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, PUDDLE_SIZE, PUDDLE_SIZE);
+	request->ios2_Data = pool;
+	if (pool != NULL && DoIO((APTR)request) == 0) {
+		enc_list = request->ios2_StatData;
+		for (i = 0; i < request->ios2_DataLength; i++)
+		{
+			switch (enc_list[i]) {
+			case S2ENC_WEP:
+				capa->enc |= WPA_DRIVER_CAPA_ENC_WEP40
+					| WPA_DRIVER_CAPA_ENC_WEP104;
+				break;
+			case S2ENC_TKIP:
+				capa->enc |= WPA_DRIVER_CAPA_ENC_TKIP;
+				break;
+			case S2ENC_CCMP:
+				capa->enc |= WPA_DRIVER_CAPA_ENC_CCMP;
+				break;
+			}
+		}
+	} else
+		capa->enc = WPA_DRIVER_CAPA_ENC_WEP40 |
+			WPA_DRIVER_CAPA_ENC_WEP104 |
+			WPA_DRIVER_CAPA_ENC_TKIP |
+			WPA_DRIVER_CAPA_ENC_CCMP;
+	DeletePool(pool);
+
 	if(!drv->hard_mac)
 		capa->flags = WPA_DRIVER_FLAGS_USER_SPACE_MLME;
 
