@@ -2,7 +2,7 @@
 #define DEVICES_SANA2WIRELESS_H
 
 /*
-    Copyright (C) 2011 Neil Cafferkey
+    Copyright (C) 2011-2013 Neil Cafferkey
     $Id$
 
     Desc: Definitions for SANA-II wireless devices
@@ -44,6 +44,7 @@
 #define S2_READMGMT         0xc015
 #define S2_WRITEMGMT        0xc016
 #define S2_GETRADIOBANDS    0xc017
+#define S2_GETCRYPTTYPES    0xc018
 
 /* Encryption types */
 
