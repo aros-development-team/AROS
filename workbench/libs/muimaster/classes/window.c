@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2015, The AROS Development Team.
+    Copyright © 2002-2016, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -2572,6 +2572,14 @@ static void SetActiveObject(struct MUI_WindowData *data, Object *obj,
 
     D(bug("MUIC_Window:SetActiveObject(data, obj, %08lx) Active=%p\n",
             newval, data->wd_ActiveObject));
+
+    /* If the window is closed, we just store the object for later activation
+     * when the window is (re)opened */
+    if (!(data->wd_Flags & MUIWF_OPENED))
+    {
+        data->wd_OldActive = (Object *)newval;
+        return;
+    }
 
     if ((data->wd_ActiveObject != NULL)
         && (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
