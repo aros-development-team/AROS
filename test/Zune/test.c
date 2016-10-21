@@ -1122,6 +1122,7 @@ AROS_UFH3S(void, hook_func_standard,
 
 int main(void)
 {
+    LONG result = RETURN_OK;
     APTR pool;
     Object *second_wnd;
     Object *about_button;
@@ -1282,6 +1283,11 @@ int main(void)
         MUIA_Colorfield_RGB, default_color,
         End;
 
+    if (CL_DropText == NULL || test_window_class == NULL)
+        result = RETURN_FAIL;
+
+    if (result == RETURN_OK)
+    {
     app = ApplicationObject,
         MUIA_Application_Menustrip, MenustripObject,
             MUIA_Family_Child, MenuObject,
@@ -2435,8 +2441,11 @@ int main(void)
             End,
 
         End;
+        if (app == NULL)
+            result = RETURN_FAIL;
+    }
 
-    if (app)
+    if (result == RETURN_OK)
     {
         ULONG sigs = 0;
 
@@ -2855,5 +2864,5 @@ int main(void)
 
     DeletePool(pool);
 
-    return 0;
+    return result;
 }
