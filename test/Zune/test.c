@@ -22,6 +22,7 @@
 #include <proto/dos.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
+#include <proto/utility.h>
 #include <aros/debug.h>
 
 /* the following should go in a single include file which then only
@@ -107,6 +108,12 @@ struct list_entry
 };
 
 Object *app, *wnd;
+
+static struct
+{
+    Object *open_button;
+}
+general;
 
 static struct
 {
@@ -1048,6 +1055,55 @@ static struct MUI_CustomClass *CL_DropText;
 
 #define DropTextObject BOOPSIOBJMACRO_START(CL_DropText->mcc_Class)
 
+/* Custom Window subclass */
+
+struct TestWindowData
+{
+    ULONG x;
+};
+
+IPTR TestWindow__OM_SET(struct IClass *cl, Object *obj,
+    struct opSet *msg)
+{
+    struct TagItem *tags;
+    struct TagItem *tag;
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    {
+        switch (tag->ti_Tag)
+        {
+        case MUIA_Window_Open:
+            if (tag->ti_Data)
+                SET(obj, MUIA_Window_ActiveObject, general.open_button);
+            break;
+        }
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+AROS_UFH3S(IPTR, TestWindowDispatcher,
+    AROS_UFHA(Class *, cl, A0),
+    AROS_UFHA(Object *, obj, A2),
+    AROS_UFHA(Msg, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    switch (msg->MethodID)
+    {
+    case OM_SET:
+        return TestWindow__OM_SET(cl, obj, (struct opSet *)msg);
+    default:
+        return DoSuperMethodA(cl, obj, (Msg) msg);
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+static struct MUI_CustomClass *test_window_class;
+
+#define TestWindowObject BOOPSIOBJMACRO_START(test_window_class->mcc_Class)
+
 /* Main prog */
 
 AROS_UFH3S(void, hook_func_standard,
@@ -1068,7 +1124,6 @@ int main(void)
 {
     APTR pool;
     Object *second_wnd;
-    Object *open_button;
     Object *about_button;
     Object *quit_button;
     Object *repeat_button;
@@ -1135,6 +1190,8 @@ int main(void)
     /* should check the result in a real program! */
     CL_DropText = MUI_CreateCustomClass(NULL, MUIC_Text, NULL,
         sizeof(struct DropText_Data), dispatcher);
+    test_window_class = MUI_CreateCustomClass(NULL, MUIC_Window, NULL,
+        sizeof(struct TestWindowData), TestWindowDispatcher);
     ColorWheelBase = OpenLibrary("gadgets/colorwheel.gadget", 0);
 
     pendisplay = PendisplayObject, MUIA_Pendisplay_Spec, &default_penspec, End;
@@ -1243,7 +1300,7 @@ int main(void)
                 End,
             End,
 
-        SubWindow, wnd = WindowObject,
+        SubWindow, wnd = TestWindowObject,
             MUIA_Window_Title, "test",
             MUIA_Window_Activate, TRUE,
 
@@ -1274,7 +1331,7 @@ int main(void)
                                     MUIA_Draggable, TRUE,
                                     MUIA_InputMode, MUIV_InputMode_RelVerify,
                                     End,
-                                Child, open_button = TextObject,
+                                Child, general.open_button = TextObject,
                                     MUIA_CycleChain, 1,
                                     ButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
@@ -2387,8 +2444,8 @@ int main(void)
             MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
         DoMethod(second_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
             second_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-        DoMethod(open_button, MUIM_Notify, MUIA_Pressed, FALSE, second_wnd,
-            3, MUIM_Set, MUIA_Window_Open, TRUE);
+        DoMethod(general.open_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            second_wnd, 3, MUIM_Set, MUIA_Window_Open, TRUE);
         DoMethod(about_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2,
             MUIM_Application_AboutMUI, NULL);
         DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2,
@@ -2785,6 +2842,7 @@ int main(void)
     if (context_menu)
         MUI_DisposeObject(context_menu);
     CloseLibrary(ColorWheelBase);
+    MUI_DeleteCustomClass(test_window_class);
     MUI_DeleteCustomClass(CL_DropText);
 
     /* automatic tests */
