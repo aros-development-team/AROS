@@ -32,7 +32,6 @@
 #include    <proto/exec.h>
 #include    <proto/dos.h>
 #include    <proto/timer.h>
-#include    <proto/cpu.h>
 
 #include    <exec/types.h>
 #include    <exec/lists.h>
