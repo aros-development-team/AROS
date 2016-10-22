@@ -10,25 +10,25 @@
 
 struct ARMProcessorInformation
 {
-    ULONG   VendorID;
-    STRPTR  Vendor;
-    TEXT    BrandStringBuffer[48];
-    STRPTR  BrandString;
-    ULONG   Family;
-    STRPTR  FamilyString;
-    ULONG   Model;
-    ULONG   VectorUnit;
-    ULONG   Features1;
+    ULONG           VendorID;
+    CONST_STRPTR    Vendor;
+    TEXT            BrandStringBuffer[48];
+    STRPTR          BrandString;
+    ULONG           Family;
+    CONST_STRPTR    FamilyString;
+    ULONG           Model;
+    ULONG           VectorUnit;
+    ULONG           Features1;
 
     /* Processor cache */
-    ULONG   L1DataCacheSize;
-    ULONG   L1InstructionCacheSize;
-    ULONG   L2CacheSize;
-    ULONG   CacheLineSize;  /* Min. of L1, L2 */
+    ULONG           L1DataCacheSize;
+    ULONG           L1InstructionCacheSize;
+    ULONG           L2CacheSize;
+    ULONG           CacheLineSize;  /* Min. of L1, L2 */
 
     
     /* Frequency information */
-    UQUAD   MaxCPUFrequency;
+    UQUAD           MaxCPUFrequency;
 };
 
 VOID ReadProcessorInformation(struct ARMProcessorInformation * info);
