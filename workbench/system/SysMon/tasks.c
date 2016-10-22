@@ -46,18 +46,6 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     smdata->sm_TasksReady = 0;
     smdata->sm_TaskTotalRuntime = 0;
 
-#if 0
-    /* We are unlikely to disappear and this code still run... so don't disable yet */
-    if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, smdata->sm_Task, MUIV_List_Insert_Bottom)) == 0)
-    {
-        return;
-    }
-#endif
-    if (smdata->sm_Task == selected)
-    {
-        set(smdata->tasklist, MUIA_List_Active, entryid);
-    }
-
     systasklist = LockTaskList(0);
     while ((task = NextTaskEntry(systasklist, 0)) != NULL)
     {
