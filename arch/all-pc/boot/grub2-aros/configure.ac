@@ -1173,6 +1173,17 @@ else
 fi
 AC_SUBST([BOOT_TIME_STATS])
 
+AC_ARG_ENABLE([skip-platform],
+	      AS_HELP_STRING([--enable-skip-platform],
+                             [build only host tools]))
+
+if test x$enable_skip_platform = xyes; then
+  skipplatform=SKIP
+else
+  skipplatform=
+fi
+AC_SUBST([skipplatform])
+
 AC_ARG_ENABLE([grub-emu-usb],
 	      [AS_HELP_STRING([--enable-grub-emu-usb],
                              [build and install the `grub-emu' debugging utility with USB support (default=guessed)])])

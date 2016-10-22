@@ -1,30 +1,11 @@
-# Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2016, The AROS Development Team. All rights reserved.
 # $Id$
 # just for building the grub2 utils
 # in prevision to use grub-mkimage in InstallAROS
 
 include $(SRCDIR)/config/aros.cfg
 
-##MM- arch-common-grub2 : grub2-aros-quick
-
-EXCL_FLAGS := -Werror -Werror-implicit-function-declaration
-
-# remove the -s & --strip-all flags, just in case
-# ... to no strip grub_mod_init or something from modules
-CFLAGS1 := $(filter-out -mcmodel=large -s --strip-all $(EXCL_FLAGS),$(HOST_CFLAGS))
-CFLAGS2 := $(filter-out -mcmodel=large -s --strip-all $(EXCL_FLAGS),$(CFLAGS))
-
-# avoid the make.tmpl s_flag in order to disable stripping of binaries
-# WE SHOULD FIND A WORKAROUND AGAINST THIS HACK, I didn't check if extract
-# code is linked in grub modules & utils
-export DEBUG         := yes
-
-# trick make.tmpl %build_with_configure compiler=host (what a hack)
-export TARGET_CFLAGS := $(CFLAGS1)	# grub target cflags
-export HOST_DEF_CC   := $(TARGET_CC)	# aros target cc
-export CFLAGS        := $(CFLAGS2)	# aros target cflags
-export KERNEL_CFLAGS :=			# undef
-export HOST_CFLAGS   :=			# undef
+#MM- arch-common-grub2 : grub2-aros-quick
 
 ifeq ($(AROS_TARGET_VARIANT),efi)
     GRUB_ARCH := efi
@@ -32,20 +13,17 @@ else
     GRUB_ARCH := pc
 endif
 
-# override %(mmake)-install_opts in make.tmpl
-# because if compiler=host, nix_dir_layout can't be used
 DESTDIR     :=	$(AROS_CONTRIB)/GNU
-INSTALL_ENV := 	bindir=$(DESTDIR)/bin sbindir=$(DESTDIR)/sbin
-CONFIG_OPTS := 	--build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) 	\
-    		--host=$(AROS_TARGET_CPU)-aros			\
-		--with-platform=$(GRUB_ARCH)			\
-		--datarootdir=$(DESTDIR)/share			\
-		--sysconfdir=$(DESTDIR)/etc			\
-		--disable-grub-mkfont				\
-		--disable-werror				\
-		--program-prefix=
+CONFIG_OPTS := \
+		--with-platform=$(GRUB_ARCH) \
+		--datarootdir=$(DESTDIR)/share \
+		--sysconfdir=$(DESTDIR)/etc	\
+		--disable-grub-mkfont \
+		--disable-werror \
+		--program-prefix= \
+		--enable-skip-platform
 
-%build_with_configure mmake=grub2-aros compiler=host		\
-    	prefix="$(DESTDIR)" aros_prefix="/GNU" nix=yes		\
-	extraoptions="$(CONFIG_OPTS)"				\
-	install_env="$(INSTALL_ENV)"
+%build_with_configure mmake=grub2-aros \
+        prefix="$(DESTDIR)" aros_prefix="/GNU" nix=yes \
+        extraoptions="$(CONFIG_OPTS)"
+

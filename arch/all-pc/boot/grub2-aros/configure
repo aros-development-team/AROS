@@ -788,6 +788,7 @@ enable_grub_emu_sdl
 LIBPCIACCESS
 LIBSDL
 LIBUSB
+skipplatform
 BOOT_TIME_STATS
 DISK_CACHE_STATS
 TARGET_NMFLAGS_DEFINED_ONLY
@@ -1609,6 +1610,7 @@ enable_efiemu
 enable_mm_debug
 enable_cache_stats
 enable_boot_time
+enable_skip_platform
 enable_grub_emu_usb
 enable_grub_emu_sdl
 enable_grub_emu_pci
@@ -2269,6 +2271,7 @@ Optional Features:
   --enable-mm-debug       include memory manager debugging
   --enable-cache-stats    enable disk cache statistics collection
   --enable-boot-time      enable boot time statistics collection
+  --enable-skip-platform  build only host tools
   --enable-grub-emu-usb   build and install the `grub-emu' debugging utility
                           with USB support (default=guessed)
   --enable-grub-emu-sdl   build and install the `grub-emu' debugging utility
@@ -26473,6 +26476,19 @@ if test x$enable_boot_time = xyes; then
   BOOT_TIME_STATS=1
 else
   BOOT_TIME_STATS=0
+fi
+
+
+# Check whether --enable-skip-platform was given.
+if test "${enable_skip_platform+set}" = set; then :
+  enableval=$enable_skip_platform;
+fi
+
+
+if test x$enable_skip_platform = xyes; then
+  skipplatform=SKIP
+else
+  skipplatform=
 fi
 
 

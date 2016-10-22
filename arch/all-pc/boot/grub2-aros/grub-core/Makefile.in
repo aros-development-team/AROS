@@ -80,6 +80,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+SKIPPLATFORM = @skipplatform@
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
@@ -7611,7 +7612,7 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(platformdir)" \
 @COND_i386_pc_TRUE@am__EXEEXT_711 = lzma_decompress.image$(EXEEXT)
 @COND_mips_loongson_TRUE@am__EXEEXT_712 = fwstart.image$(EXEEXT) \
 @COND_mips_loongson_TRUE@	fwstart_fuloong2f.image$(EXEEXT)
-PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS) $(platform_PROGRAMS) \
+PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS) $(platform_PROGRAMS$(SKIPPLATFORM)) \
 	$(sbin_PROGRAMS)
 am__acpi_module_SOURCES_DIST = commands/efi/acpi.c commands/acpi.c \
 	commands/i386/pc/acpi.c
@@ -12262,8 +12263,8 @@ am__dist_noinst_DATA_DIST = kern/disk_common.c gentrigtables.c \
 	gensyminfo.sh.in genmod.sh.in modinfo.sh.in gmodule.pl.in \
 	gdb_grub.in boot/powerpc/grub.chrp.in \
 	boot/powerpc/bootinfo.txt.in
-DATA = $(dist_grubconf_DATA) $(dist_noinst_DATA) $(noinst_DATA) \
-	$(pkgdata_DATA) $(platform_DATA)
+DATA = $(dist_grubconf_DATA) $(dist_noinst_DATA) $(noinst_DATA$(SKIPPLATFORM)) \
+	$(pkgdata_DATA) $(platform_DATA$(SKIPPLATFORM))
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -37627,8 +37628,8 @@ info: info-am
 info-am:
 
 install-data-am: install-dist_grubconfDATA install-grubconfSCRIPTS \
-	install-man install-pkgdataDATA install-platformDATA \
-	install-platformPROGRAMS install-platformSCRIPTS
+	install-man install-pkgdataDATA install-platformDATA$(SKIPPLATFORM) \
+	install-platformPROGRAMS$(SKIPPLATFORM) install-platformSCRIPTS
 
 install-dvi: install-dvi-am
 
@@ -37696,7 +37697,7 @@ uninstall-man: uninstall-man1
 	install-grubconfSCRIPTS install-html install-html-am \
 	install-info install-info-am install-man install-man1 \
 	install-pdf install-pdf-am install-pkgdataDATA \
-	install-platformDATA install-platformPROGRAMS \
+	install-platformDATA install-platformDATASKIP install-platformPROGRAMS install-platformPROGRAMSSKIP\
 	install-platformSCRIPTS install-ps install-ps-am \
 	install-sbinPROGRAMS install-sbinSCRIPTS install-strip \
 	installcheck installcheck-am installdirs maintainer-clean \
