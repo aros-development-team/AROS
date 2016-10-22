@@ -57,7 +57,7 @@ AROS_LH3(IPTR, NewStackSwap,
     Disable();
 
     /* Change limits. The rest is done in asm below */
-    t->tc_SPReg = (IPTR)sp;
+    t->tc_SPReg = (APTR)sp;
     t->tc_SPLower = sss->stk_Lower;
     t->tc_SPUpper = sss->stk_Upper;
 
