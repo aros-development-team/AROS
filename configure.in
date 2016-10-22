@@ -708,7 +708,7 @@ case "$aros_toolchain" in
     *gnu*)
         toolchain_c_compiler="gcc"
         toolchain_cxx_compiler="g++"
-        toolchain_cpp_preprocessor="cpp"
+        toolchain_cpp_preprocessor="gcc -E"
         toolchain_ld="ld"
         toolchain_as="as"
         toolchain_ar="ar"
