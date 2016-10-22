@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- arch-common-grub2-host : grub2-host-quick grub2-efi-host-quick 
-#MM  grub2-iso-setup        : grub2-host-quick grub2-efi-host-quick
+#MM  grub2-iso-setup        : grub2-host-quick grub2-efi-host-quick grub2-aros-quick
 #MM- bootloader-grub2       : arch-common-grub2
 #MM- bootloader-grub2-isosetup : arch-common-grub2 grub2-iso-setup
 
