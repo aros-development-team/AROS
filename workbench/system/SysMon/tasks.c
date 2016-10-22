@@ -197,6 +197,7 @@ static BOOL InitTasks(struct SysMonData *smdata)
 
 static VOID DeInitTasks(struct SysMonData *smdata)
 {
+    FreeVec(smdata->tasklistinfobuf);
 }
 
 struct SysMonModule tasksmodule =
