@@ -1,5 +1,5 @@
 /*
-  Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+  Copyright © 2004-2016, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -725,7 +725,6 @@ D(bug("]\n"));
                                         End;
                             
     DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, _newIconWin__WindowLeft, _newIconWin__WindowTop, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
-    D(bug("[Wanderer:IconWindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__WindowFont));
     D(bug("[Wanderer:IconWindow] %s: TopPanelContainerObj 0x%p RootViewObj 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__TopPanelContainerObj, _newIconWin__RootViewObj));
 
     self = (Object *) DoSuperNew(CLASS, self, 
@@ -1655,8 +1654,6 @@ IPTR IconWindow__MUIM_IconWindow_Snapshot
 )
 {
     Object  *iconList = (Object *) XGET(self, MUIA_IconWindow_IconList);
-
-    D(bug("[Wanderer:IconWindow]: %s('%s')\n", __PRETTY_FUNCTION__, dir_name));
 
     if (message->snapshotall == TRUE)
     {
