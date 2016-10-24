@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2016, The AROS Development Team. All rights reserved.
 # $Id$
 
 
@@ -26,7 +26,7 @@ fetch_mirrored()
     $ret
 }
 
-gnu_mirrors="http://ftp.gnu.org/pub/gnu http://mirror.mcs.anl.gov/pub/gnu ftp://ftp.cise.ufl.edu/pub/mirrors/GNU/gnu"
+gnu_mirrors="http://mirror.netcologne.de/gnu http://ftp.gnu.org/pub/gnu ftp://ftp.heanet.ie/pub/gnu ftp://mirror.jre655.com/GNU"
 
 fetch_gnu()
 {
