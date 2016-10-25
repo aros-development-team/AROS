@@ -2330,9 +2330,6 @@ if test "$aros_kernel_includes" != "" ; then
             if test -d "/usr/include/${aros_target_cpu}-linux-gnu"; then
                 aros_kernel_cc_includes+=" -isystem /usr/include/${aros_target_cpu}-linux-gnu"
             fi
-            if test -d "/usr/${aros_target_cpu}-linux-gnueabihf/include"; then
-                aros_kernel_cc_includes+=" -isystem /usr/${aros_target_cpu}-linux-gnueabihf/include"
-            fi
         else
             # The directory doesn't exist, we need to do some more work.
             aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
