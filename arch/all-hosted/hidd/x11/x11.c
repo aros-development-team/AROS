@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -8,46 +8,15 @@
 
 #include "x11_debug.h"
 
-#include <proto/exec.h>
-#include <proto/oop.h>
-#include <proto/utility.h>
-
-#define size_t aros_size_t
-#include <hidd/hidd.h>
-
-#include <oop/ifmeta.h>
-
-#include <dos/dos.h>
-
-#include <exec/types.h>
-#include <exec/lists.h>
-#include <exec/memory.h>
-#include <exec/libraries.h>
-#include <exec/resident.h>
 #include <hardware/intbits.h>
-#include <utility/utility.h>
 
-#include <aros/asmcall.h>
-#undef size_t
-
-#define timeval sys_timevalinit_x11class
-#include <sys/types.h>
-#include <signal.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#undef timeval
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
 #include <X11/keysym.h>
+#include <signal.h>
 
+#include "x11_types.h"
 #include "x11.h"
+#include "x11_hostlib.h"
 #include "fullscreen.h"
-#include "x11gfx_intern.h"
 
 VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 

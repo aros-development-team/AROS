@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,14 +11,13 @@ conflicts between AROS includes and system includes */
   singlethreded by the LOCK_X11/UNLOCK_X11 macros form the outside
 */
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <stdlib.h>
-#include <string.h>
-#include "xshm.h"
-#include <aros/debug.h>
+#include "x11_debug.h"
 
+#include <aros/config.h>
 #include <aros/symbolsets.h>
+
+#include "x11_types.h"
+#include "xshm.h"
 
 /****************************************************************************************/
 
@@ -28,7 +27,6 @@ conflicts between AROS includes and system includes */
 /****************************************************************************************/
 
 #if NO_MALLOC
-#include <exec/memory.h>
 #include <proto/exec.h>
 #endif
 
@@ -38,13 +36,9 @@ conflicts between AROS includes and system includes */
 
 /****************************************************************************************/
 
-#include <sys/shm.h>
-#include <sys/ipc.h>
 #include <X11/extensions/XShm.h>
 
 #include "x11_hostlib.h"
-
-#include <proto/hostlib.h>
 
 static void *xext_handle = NULL;
 

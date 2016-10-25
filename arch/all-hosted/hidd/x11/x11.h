@@ -2,32 +2,55 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
     Lang: English.
 */
 
-#include <exec/libraries.h>
-#include <exec/semaphores.h>
+#include <aros/config.h>
+
 #include <oop/oop.h>
-
 #include <proto/exec.h>
-#include <proto/hostlib.h>
 
-#define timeval sys_timeval
-#ifndef _XLIB_H_
-#   include <X11/Xlib.h>
+#ifndef X11_TYPES_H
+/* Note: x11_types.h is not included intentionally to resolve compilation
+ * issues on linux-armhf where certain definitions collide between AROS
+ * and Linux.
+ * In every source file x11_types.h needs to be included before to x11.h
+ */
+#include <X11/X.h>                  // Simple types definitions
+typedef struct _XEvent XEvent;      // Used only as pointer
+typedef struct _Display Display;    // Used only as pointer
+typedef APTR GC;                    // GC is a pointer type
+
+typedef struct _Visual Visual;
+typedef struct {
+  Visual *visual;
+  VisualID visualid;
+  int screen;
+  int depth;
+#if defined(__cplusplus) || defined(c_plusplus)
+  int c_class;					/* C++ */
+#else
+  int class;
+#endif
+  unsigned long red_mask;
+  unsigned long green_mask;
+  unsigned long blue_mask;
+  int colormap_size;
+  int bits_per_rgb;
+} XVisualInfo;
 #endif
 
-#ifndef _XUTIL_H
-#   include <X11/Xutil.h>
-#endif
-#undef timeval
+/****************************************************************************************/
 
-#include "xshm.h"
-#include "x11_hostlib.h"
+#define USE_X11_DRAWFUNCS   1
+#define X11SOFTMOUSE        1   /* Use software mouse sprite */
+#define ADJUST_XWIN_SIZE    1   /* Resize the xwindow to the size of the actual visible screen */
+
+/****************************************************************************************/
 
 /***** X11Mouse HIDD *******************/
 
@@ -226,6 +249,15 @@ struct x11clbase
     
     struct x11_staticdata xsd;
 };
+
+/* Private Attrs and methods for the X11Gfx Hidd */
+
+#define CLID_Hidd_Gfx_X11   "hidd.gfx.x11"
+#define IID_Hidd_Gfx_X11    "hidd.gfx.x11"
+
+#define PEN_BITS    4
+#define NUM_COLORS  (1L << PEN_BITS)
+#define PEN_MASK    (NUM_COLORS - 1)
 
 /* Private instance data for Gfx hidd class */
 struct gfx_data

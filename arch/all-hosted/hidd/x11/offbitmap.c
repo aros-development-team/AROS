@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Offscreen bitmap class for X11 hidd.
@@ -10,27 +10,12 @@
 
 #include "x11_debug.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/cursorfont.h>
-#include <X11/keysym.h>
-
-#include <string.h>
-
-#include <proto/oop.h>
 #include <proto/utility.h>
-
-#include <exec/memory.h>
-#include <exec/lists.h>
-#include <graphics/rastport.h>
-#include <graphics/gfx.h>
-#include <oop/oop.h>
 #include <hidd/graphics.h>
 
-#include "x11gfx_intern.h"
+#include "x11_types.h"
 #include "x11.h"
+#include "x11_hostlib.h"
 #include "bitmap.h"
 
 /****************************************************************************************/

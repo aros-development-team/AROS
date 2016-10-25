@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,12 +7,11 @@
 #define X11_HOSTLIB_H
 
 #include <aros/config.h>
-
-#include <X11/Xlib.h>
+#include <proto/hostlib.h>
 
 #if USE_XSHM
-#include <sys/types.h>
 #include <sys/shm.h>
+#include <sys/ipc.h>
 #endif
 
 // Set to 1 if you want to disable the asynchronic nature of the X11 HIDD.
