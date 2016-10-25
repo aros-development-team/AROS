@@ -113,7 +113,7 @@ void PrintCPUSpecificInfo(char *buffer, LONG bufsize, ULONG i, APTR ProcessorBas
         }
     }
 
-    if (bufptr > 5)
+    if (bufsize > 5)
     {
         if (!found)
         {
