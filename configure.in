@@ -2592,7 +2592,14 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
 
         dnl find x11 stuff
         AC_PATH_X
-        AC_PATH_XTRA
+
+        if test -n "$x_includes"; then
+            X_CFLAGS="$X_CFLAGS -I$x_includes"
+        fi
+
+        if test -n "$x_libraries"; then
+            X_LIBS="$X_LIBS -L$x_libraries"
+        fi
 
         if test "x-$no_x" = "x-yes" ; then
 
