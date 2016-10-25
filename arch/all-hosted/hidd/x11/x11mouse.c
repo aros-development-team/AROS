@@ -1,30 +1,20 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd handling mouse events.
     Lang: English.
 */
 
+#include "x11_debug.h"
+
 #define __OOP_NOATTRBASES__
 
 #include <proto/utility.h>
-#include <proto/oop.h>
-#include <oop/oop.h>
-
-#include <X11/Xlib.h>
-
-#include <hidd/hidd.h>
 #include <hidd/mouse.h>
 
-#include <aros/symbolsets.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
-
+#include "x11_types.h"
 #include LC_LIBDEFS_FILE
-
-#include "x11.h"
 
 /****************************************************************************************/
 

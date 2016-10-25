@@ -1,20 +1,15 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include "x11_debug.h"
 
-#include <aros/config.h>
-
-#include "x11gfx_intern.h"
-#include "x11.h"
-
 #include <aros/symbolsets.h>
 
-#include <proto/hostlib.h>
-
+#include "x11_types.h"
 #include LC_LIBDEFS_FILE
+#include "x11_hostlib.h"
 
 void *x11_handle = NULL;
 void *libc_handle = NULL;

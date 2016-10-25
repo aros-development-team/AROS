@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -10,41 +10,17 @@
 
 #define __OOP_NOATTRBASES__
 
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include <X11/Xlib.h>
-#include <X11/cursorfont.h>
-#include <X11/Xutil.h>
-
-#include <signal.h>
-#include <string.h>
-
-#include <exec/libraries.h>
-#include <exec/types.h>
-#include <exec/resident.h>
-#include <exec/memory.h>
-#include <aros/libcall.h>
-#include <proto/exec.h>
-#include <proto/oop.h>
 #include <proto/utility.h>
-#include <oop/oop.h>
 
-#include <hidd/hidd.h>
-#include <hidd/graphics.h>
+#include <X11/cursorfont.h>
+#include <signal.h>
 
-#include <aros/symbolsets.h>
-
-#include "bitmap_class.h"
-#include "x11gfx_intern.h"
-#include "x11.h"
-
+#include "x11_types.h"
 #include LC_LIBDEFS_FILE
+#include "x11_hostlib.h"
+#include "xshm.h"
 
 #define XFLUSH(x) XCALL(XFlush, x)
-//#define XFLUSH(x)
 
 /****************************************************************************************/
 

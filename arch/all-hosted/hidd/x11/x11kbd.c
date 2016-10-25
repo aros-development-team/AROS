@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd handling keypresses.
@@ -7,36 +7,21 @@
 */
 #define DEBUG 0
 
+#include "x11_debug.h"
+
 #define __OOP_NOATTRBASES__
 
-#include <dos/dos.h>
-
-#include <proto/dos.h>
 #include <proto/utility.h>
-#include <proto/oop.h>
-#include <oop/oop.h>
-
-#define timeval sys_timeval
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
-#include <X11/Xutil.h>
-
-#include <stdio.h>
-#undef timeval
-
-#include <hidd/hidd.h>
 #include <hidd/keyboard.h>
-
 #include <devices/inputevent.h>
 
-#include <aros/symbolsets.h>
+#define timeval sys_timeval
+#include <X11/keysym.h>
+#undef timeval
 
-//#define DEBUG 1
-#include <aros/debug.h>
-
+#include "x11_types.h"
 #include LC_LIBDEFS_FILE
-
-#include "x11.h"
+#include "x11_hostlib.h"
 
 /****************************************************************************************/
 

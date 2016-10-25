@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,15 +20,12 @@
  * open etc.
  */
 
-#include <aros/debug.h>
-#include <aros/symbolsets.h>
-#include <hidd/hidd.h>
+#include "x11_debug.h"
+
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <graphics/gfxbase.h>
-#include <proto/exec.h>
 #include <proto/graphics.h>
-#include <proto/oop.h>
 
 #include LC_LIBDEFS_FILE
 

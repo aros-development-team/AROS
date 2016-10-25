@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Enable fullscreen mode.
@@ -7,18 +7,16 @@
 */
 
 #include <aros/config.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include "x11_types.h"
 
 #if USE_VIDMODE
-
-#include <X11/extensions/xf86vmode.h>
 
 #define __typedef_BYTE
 #define __typedef_BOOL
 typedef unsigned char UBYTE;
 
-#include <aros/symbolsets.h>
+#include <X11/extensions/xf86vmode.h>
+
 
 #define HAVE_XF86VMODE_H
 

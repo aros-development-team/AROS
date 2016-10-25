@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -10,27 +10,12 @@
 
 #define __OOP_NOATTRBASES__
 
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <exec/types.h>
-
 #include <aros/bootloader.h>
 #include <proto/bootloader.h>
-#include <proto/exec.h>
-#include <proto/oop.h>
 
-#include <utility/utility.h>
-#include <oop/oop.h>
-#include <hidd/graphics.h>
-
-#include <aros/symbolsets.h>
-
+#include "x11_types.h"
 #include LC_LIBDEFS_FILE
-
-#include "x11.h"
+#include "x11_hostlib.h"
 #include "fullscreen.h"
 
 /****************************************************************************************/
