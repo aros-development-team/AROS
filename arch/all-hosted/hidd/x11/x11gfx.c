@@ -274,7 +274,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             /* Got XF86VidMode data, use it */
             if ((resolution = AllocMem(modeNum * sizeof(struct TagItem) * 4, MEMF_PUBLIC)) == NULL)
             {
-                D(bug("[X11] failed to allocate memory for %d modes: %d !!!\n", modeNum, XSD(cl)->vi.class));
+                D(bug("[X11] failed to allocate memory for %d modes: %d !!!\n", modeNum, XSD(cl)->vi->class));
 
                 XCALL(XCloseDisplay, disp);
                 cleanupx11stuff(XSD(cl));
@@ -317,7 +317,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
             if((mode_tags = AllocMem(sizeof(struct TagItem) * (realmode + 2), MEMF_PUBLIC)) == NULL)
             {
-                D(bug("[X11] failed to allocate memory for mode tag's: %d !!!\n", XSD(cl)->vi.class));
+                D(bug("[X11] failed to allocate memory for mode tag's: %d !!!\n", XSD(cl)->vi->class));
 
                 FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
                 XCALL(XCloseDisplay, disp);
@@ -350,16 +350,16 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     pftags[2].ti_Data = XSD(cl)->blue_shift;
     pftags[3].ti_Data = 0;
         
-    pftags[4].ti_Data = XSD(cl)->vi.red_mask;
-    pftags[5].ti_Data = XSD(cl)->vi.green_mask;
-    pftags[6].ti_Data = XSD(cl)->vi.blue_mask;
+    pftags[4].ti_Data = XSD(cl)->vi->red_mask;
+    pftags[5].ti_Data = XSD(cl)->vi->green_mask;
+    pftags[6].ti_Data = XSD(cl)->vi->blue_mask;
     pftags[7].ti_Data = 0x00000000;
         
-    if (XSD(cl)->vi.class == TrueColor)
+    if (XSD(cl)->vi->class == TrueColor)
     {
         pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
     }    
-    else if (XSD(cl)->vi.class == PseudoColor)
+    else if (XSD(cl)->vi->class == PseudoColor)
     {
         pftags[8].ti_Data = vHidd_ColorModel_Palette;
         pftags[13].ti_Data = XSD(cl)->clut_shift;
@@ -367,7 +367,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     }
     else
     {
-        D(bug("[X11Gfx] unsupported color model: %d\n", XSD(cl)->vi.class));
+        D(bug("[X11Gfx] unsupported color model: %d\n", XSD(cl)->vi->class));
         if (resolution)
         {
             FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
@@ -515,7 +515,7 @@ OOP_Object *X11Cl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct p
         tags[1].ti_Data = data->screen;
         tags[2].ti_Data = (IPTR)data->cursor;
         tags[3].ti_Data = data->colmap;
-        tags[4].ti_Data = XSD(cl)->vi.class;
+        tags[4].ti_Data = XSD(cl)->vi->class;
         tags[6].ti_Data = (IPTR)msg->attrList;
 
         /* Displayable bitmap ? */
@@ -737,12 +737,12 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
     else
     {
         /* Store the visual info structure */
-
-        memcpy(&xsd->vi, visinfo, sizeof(XVisualInfo));
+        xsd->vi = AllocMem(sizeof(XVisualInfo), MEMF_ANY);
+        memcpy(xsd->vi, visinfo, sizeof(XVisualInfo));
 
         XCALL(XFree, visinfo);
 
-        visinfo = &xsd->vi;
+        visinfo = xsd->vi;
 
         /* We only support TrueColor for now */
 
@@ -750,19 +750,19 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
         {
         case TrueColor:
             /* Get the pixel masks */
-            xsd->red_shift = mask_to_shift(xsd->vi.red_mask);
-            xsd->green_shift = mask_to_shift(xsd->vi.green_mask);
-            xsd->blue_shift = mask_to_shift(xsd->vi.blue_mask);
+            xsd->red_shift = mask_to_shift(xsd->vi->red_mask);
+            xsd->green_shift = mask_to_shift(xsd->vi->green_mask);
+            xsd->blue_shift = mask_to_shift(xsd->vi->blue_mask);
             break;
 
         case PseudoColor:
             /* stegerg */
-            xsd->vi.red_mask = ((1 << xsd->vi.bits_per_rgb) - 1) << (xsd->vi.bits_per_rgb * 2);
-            xsd->vi.green_mask = ((1 << xsd->vi.bits_per_rgb) - 1) << (xsd->vi.bits_per_rgb * 1);
-            xsd->vi.blue_mask = ((1 << xsd->vi.bits_per_rgb) - 1);
-            xsd->red_shift = mask_to_shift(xsd->vi.red_mask);
-            xsd->green_shift = mask_to_shift(xsd->vi.green_mask);
-            xsd->blue_shift = mask_to_shift(xsd->vi.blue_mask);
+            xsd->vi->red_mask = ((1 << xsd->vi->bits_per_rgb) - 1) << (xsd->vi->bits_per_rgb * 2);
+            xsd->vi->green_mask = ((1 << xsd->vi->bits_per_rgb) - 1) << (xsd->vi->bits_per_rgb * 1);
+            xsd->vi->blue_mask = ((1 << xsd->vi->bits_per_rgb) - 1);
+            xsd->red_shift = mask_to_shift(xsd->vi->red_mask);
+            xsd->green_shift = mask_to_shift(xsd->vi->green_mask);
+            xsd->blue_shift = mask_to_shift(xsd->vi->blue_mask);
             /* end stegerg */
             break;
 
@@ -813,7 +813,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
             CCALL(raise, SIGSTOP);
         }
 
-        if (PseudoColor == xsd->vi.class)
+        if (PseudoColor == xsd->vi->class)
         {
             xsd->clut_mask = (1L << xsd->depth) - 1;
             xsd->clut_shift = 0;
@@ -885,7 +885,9 @@ static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 
 #if USE_XSHM
     cleanup_shared_mem(xsd->display, xsd->xshm_info);
-#endif 
+#endif
+    FreeMem(xsd->vi, sizeof(XVisualInfo));
+    xsd->vi = NULL;
 
     UNLOCK_X11
 }

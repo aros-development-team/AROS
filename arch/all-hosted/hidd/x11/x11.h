@@ -24,24 +24,7 @@
 typedef struct _XEvent XEvent;      // Used only as pointer
 typedef struct _Display Display;    // Used only as pointer
 typedef APTR GC;                    // GC is a pointer type
-
-typedef struct _Visual Visual;
-typedef struct {
-  Visual *visual;
-  VisualID visualid;
-  int screen;
-  int depth;
-#if defined(__cplusplus) || defined(c_plusplus)
-  int c_class;					/* C++ */
-#else
-  int class;
-#endif
-  unsigned long red_mask;
-  unsigned long green_mask;
-  unsigned long blue_mask;
-  int colormap_size;
-  int bits_per_rgb;
-} XVisualInfo;
+typedef struct _XVisualInfo XVisualInfo; // Used only as pointer
 #endif
 
 /****************************************************************************************/
@@ -195,7 +178,7 @@ struct x11_staticdata
     */
     Window  	    	     dummy_window_for_creating_pixmaps;
     
-    XVisualInfo     	     vi;
+    XVisualInfo     	     *vi;
     ULONG   	    	     red_shift;
     ULONG   	    	     green_shift;
     ULONG   	    	     blue_shift;
