@@ -55,7 +55,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
         HostLib_Lock();
         cm = XCALL(XCreateColormap, GetSysDisplay(), RootWindow(GetSysDisplay(), GetSysScreen()),
-                xsd->vi.visual, AllocAll);
+                xsd->vi->visual, AllocAll);
         HostLib_Unlock();
 
         if (cm)
@@ -563,16 +563,16 @@ static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth,
 
                     HEADER_PIXEL(data, rgb);
 
-                    if (xsd->vi.class == TrueColor)
+                    if (xsd->vi->class == TrueColor)
                     {
                         pixel = (SHIFT_PIX(rgb[0] & 0xFF, red_shift)
-                                & xsd->vi.red_mask)
+                                & xsd->vi->red_mask)
                                 | (SHIFT_PIX(rgb[1] & 0xFF, green_shift)
-                                        & xsd->vi.green_mask)
+                                        & xsd->vi->green_mask)
                                 | (SHIFT_PIX(rgb[2] & 0xFF, blue_shift)
-                                        & xsd->vi.blue_mask);
+                                        & xsd->vi->blue_mask);
                     }
-                    else if (xsd->vi.class == PseudoColor)
+                    else if (xsd->vi->class == PseudoColor)
                     {
                         XColor xcol;
 
