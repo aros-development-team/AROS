@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Exchange -- controls commodities.
@@ -46,10 +46,6 @@
 #define AROS_ALMOST_COMPATIBLE
 #define MUIMASTER_YES_INLINE_STDARG
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #ifndef __AROS__
 #include <cxintern.h>
 #endif
@@ -61,6 +57,7 @@
 #include <libraries/iffparse.h>
 #include <libraries/mui.h>
 #include <workbench/startup.h>
+
 #include <proto/muimaster.h>
 #include <proto/locale.h>
 #include <proto/intuition.h>
@@ -72,6 +69,10 @@
 #include <proto/utility.h>
 #include <proto/icon.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #define CATCOMP_ARRAY
 #include "strings.h"
 
@@ -82,7 +83,7 @@
 #endif
 #define CATALOG_VERSION  3
 
-TEXT version[] = "$VER: Exchange 1.2 (14.01.2012)";
+TEXT version[] = "$VER: Exchange 1.3 (1.11.2016)";
 
 #define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
 #define DEF_POPKEY "ctrl alt h"
@@ -102,6 +103,7 @@ static struct List brokerList;
 
 static struct Hook broker_hook;
 static struct Hook list_disp_hook;
+static struct Hook list_comp_hook;
 static struct Hook list_select_hook;
 static struct Hook inform_broker_hook;
 static struct Hook show_hook;
@@ -285,7 +287,16 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 
 static void update_list(void)
 {
-    struct BrokerCopy *node;
+    struct BrokerCopy *node, *active_node;
+    char active_name[CBD_NAMELEN];
+    IPTR new_pos = 0;
+
+    /* Copy name of active entry before its node is destroyed */
+    DoMethod(listgad, MUIM_List_GetEntry, MUIV_List_GetEntry_Active,
+        (IPTR)&active_node);
+    if (active_node != NULL)
+        CopyMem(active_node->bc_Name, active_name, CBD_NAMELEN);
+
     CopyBrokerList(&brokerList);
 
     nnset(textgad1, MUIA_Text_Contents, NULL);
@@ -295,8 +306,18 @@ static void update_list(void)
     DoMethod(listgad, MUIM_List_Clear);
     ForeachNode(&brokerList, node)
     {
-	D(bug("Exchange: Brokernode %s\n", node->bc_Name));
+	D(bug("Exchange: Brokernode '%s'\n", node->bc_Name));
 	DoMethod(listgad, MUIM_List_InsertSingle, node, MUIV_List_Insert_Bottom);
+
+	/* Reselect broker if its name matches what was previously selected */
+	if (active_node != NULL
+	    && Stricmp(active_name, node->bc_Name) == 0)
+	{
+	    get(listgad, MUIA_List_InsertPosition, &new_pos);
+	    set(listgad, MUIA_List_Active, new_pos);
+	    D(bug("Exchange: matched old active node '%s' (entry %d)\n",
+		node->bc_Name, new_pos));
+	}
     }
     set(listgad, MUIA_List_Quiet, FALSE);
 }
@@ -363,6 +384,20 @@ AROS_UFH3(void, list_display_func,
 
 /*********************************************************************************************/
 
+AROS_UFH3(IPTR, list_compare_func,
+    AROS_UFHA(struct Hook *      , h,     A0),
+    AROS_UFHA(struct BrokerCopy *, node1,  A2),
+    AROS_UFHA(struct BrokerCopy *, node2,  A1))
+{
+    AROS_USERFUNC_INIT
+
+    return Stricmp(node2->bc_Name, node1->bc_Name);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
 AROS_UFH3(void, list_select_func,
     AROS_UFHA(struct Hook *, h,      A0),
     AROS_UFHA(Object *     , object, A2),
@@ -420,6 +455,7 @@ static void MakeGUI(void)
 
     broker_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(broker_func);
     list_disp_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(list_display_func);
+    list_comp_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(list_compare_func);
     list_select_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(list_select_func);
     inform_broker_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(inform_broker_func);
     show_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(show_func);
@@ -448,6 +484,7 @@ static void MakeGUI(void)
 			MUIA_Listview_List, (IPTR)(listgad = (Object *)ListObject,
 			    InputListFrame,
 			    MUIA_List_DisplayHook, (IPTR)&list_disp_hook,
+			    MUIA_List_CompareHook, (IPTR)&list_comp_hook,
 			    MUIA_CycleChain, 1,
 			End),
 		    End),
