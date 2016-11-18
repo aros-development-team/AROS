@@ -194,7 +194,6 @@ struct MUI_ListData
     /* user prefs */
     ListviewMulti prefs_multi;
 
-    BOOL select_change;
     BOOL doubleclick;
     LONG seltype;
 
@@ -1551,10 +1550,6 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             data->doubleclick = tag->ti_Data != 0;
             break;
 
-        case MUIA_Listview_SelectChange: /* private set */
-            data->select_change = tag->ti_Data != 0;
-            break;
-
         case MUIA_Listview_ScrollerPos: /* private set */
             data->scroller_pos = tag->ti_Data;
             List_HandleScrollerPos(cl, obj);
@@ -1641,7 +1636,7 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         STORE = data->doubleclick;
         return 1;
     case MUIA_Listview_SelectChange:
-        STORE = data->select_change;
+        STORE = FALSE;
         return 1;
     case MUIA_Listview_List:
         STORE = (IPTR)obj;
@@ -4070,9 +4065,6 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     changing = clear || muikey == MUIKEY_TOGGLE || select;
 
     /* Change selected and active entries */
-    if (changing)
-        set(obj, MUIA_Listview_SelectChange, TRUE);
-
     if (clear)
     {
         DoMethod(obj, MUIM_List_Select, MUIV_List_Select_All,
@@ -4110,7 +4102,7 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     }
 
     if (changing)
-        set(obj, MUIA_Listview_SelectChange, FALSE);
+        superset(cl, obj, MUIA_Listview_SelectChange, TRUE);
 
     return result;
 }
