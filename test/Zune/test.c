@@ -2846,7 +2846,7 @@ int main(void)
             drawer_doubleclicked);
 #endif
 
-        /* automatic tests */
+        /* pre-display automatic tests */
         get(list.lists[0], MUIA_List_Visible, &value);
         if (value != -1)
             printf("MUIA_List_Visible equals %ld before display,"
@@ -2862,6 +2862,13 @@ int main(void)
 
         set(wnd, MUIA_Window_Open, TRUE);
         set(wnd, MUIA_Window_ScreenTitle, "Zune Test Application");
+
+        /* post-display automatic tests */
+        set(list.lists[0], MUIA_Listview_SelectChange, TRUE);
+        get(list.lists[0], MUIA_Listview_SelectChange, &value);
+        if (value)
+            printf("MUIA_Listview_SelectChange is settable,"
+                " although it should not be.\n");
 
         list.image = DoMethod(list.multi_lists[0], MUIM_List_CreateImage,
             list.colorfield, 0);
@@ -2901,7 +2908,7 @@ int main(void)
     MUI_DeleteCustomClass(test_window_class);
     MUI_DeleteCustomClass(CL_DropText);
 
-    /* automatic tests */
+    /* shutdown-related automatic tests */
     if (list.destruct_count != 18)
         printf("The hook installed through MUIA_List_DestructHook has been"
             " called %ld times, but should have been called 18 times.\n",
