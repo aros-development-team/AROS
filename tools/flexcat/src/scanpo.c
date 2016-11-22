@@ -558,7 +558,7 @@ int ScanPOFile(char *pofile)
           memmove(p, p+1, strlen(p));
 
         // unquote the string
-        if(line[strlen(line)-1] == '"')
+        if(*line != '\0' && line[strlen(line)-1] == '"')
           line[strlen(line)-1] = '\0';
 
         if(Strnicmp(line, "msgid \"", 7) == 0)
