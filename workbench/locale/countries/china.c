@@ -64,9 +64,9 @@ struct IntCountryPrefs chinaPrefs =
         "-", SS_NOSPACE, SP_PREC_ALL, CSP_PRECEDES,
 
         /* Calendar type */
-        CT_7SUN
+        CT_7MON
     },
-    "$VER: china.country 44.1 (06.06.2015)",
+    "$VER: china.country 44.0 (22.11.2016)",
     "Zhonghua",
     "Countries/China"
 };
