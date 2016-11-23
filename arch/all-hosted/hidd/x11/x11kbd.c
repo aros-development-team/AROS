@@ -5,7 +5,6 @@
     Desc: X11 hidd handling keypresses.
     Lang: English.
 */
-#define DEBUG 0
 
 #include "x11_debug.h"
 
