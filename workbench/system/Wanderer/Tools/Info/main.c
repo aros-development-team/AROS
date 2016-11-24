@@ -924,7 +924,19 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 		{
 		sprintf(pathname, "%s",lname);
 		} else {
-		sprintf(pathname, "%s/%s",lname,name);
+		int path_x;
+		int path_y = 58;
+		char *ch;
+		
+		sprintf(pathname, "%s",lname);
+		ch = strrchr (pathname, path_y);
+		path_x = strlen (ch);
+
+		if (path_x > 1)
+			sprintf(pathname, "%s/%s", lname, name);
+		else
+			sprintf(pathname, "%s%s", lname, name);
+
 		}
  
     application = (Object *)ApplicationObject,
@@ -1333,7 +1345,6 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         file_altered = TRUE;
                         break;
                     case RETURNID_OPENPATH:
-//			  			Execute(pathname_ex,NULL, Output());
 						OpenWorkbenchObject(pathname, TAG_DONE);
              		break;
                     case RETURNID_QUERYVERSION:
