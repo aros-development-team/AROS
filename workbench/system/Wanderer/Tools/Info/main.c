@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,6 +50,7 @@
 #define RETURNID_QUERYVERSION    12
 #define RETURNID_PROTECT    13
 #define RETURNID_SCANSIZE   14
+#define RETURNID_OPENPATH	15
 
 #define  MAX_PATH_LEN  1024
 #define  MAX_TOOLTYPE_LINE 256
@@ -63,7 +64,6 @@
 static Object *window, *commentspace, *filename_string, *stackspace, *savebutton;
 static Object *readobject, *writeobject, *executeobject, *deleteobject;
 static Object *scriptobject, *pureobject, *archiveobject, *sizespace = NULL;
-
 struct DirScanProcess
 {
     struct Process    *scanProcess;
@@ -91,8 +91,8 @@ void getReadableSize(UBYTE *buf, UQUAD size, BOOL accurate)
     char *ch;
     struct
     {
-        ULONG val;
-        ULONG dec;
+        IPTR val;
+        IPTR dec;
     } array =
     {
         size,
@@ -168,7 +168,7 @@ void getReadableSize(UBYTE *buf, UQUAD size, BOOL accurate)
         buf++;
     }
 
-    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", (RAWARG)&array, NULL, buf);
+    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
 
     while (*buf)
         buf++;
@@ -701,6 +701,7 @@ int main(int argc, char **argv)
     Object *datespace = NULL, *typespace = NULL, *quit = NULL, *aboutmenu = NULL;
     Object *sizegrp = NULL, *versiongrp = NULL, *versionspace = NULL;
     Object *cancelbutton = NULL;
+    Object *pathspace = NULL, *btnopenpath;
 #if !USE_TEXTEDITOR
     Object *newkey = NULL, *delkey = NULL;
 #endif
@@ -738,6 +739,8 @@ int main(int argc, char **argv)
         _(MSG_KICK),    /* 7 */
         _(MSG_APPICON)  /* 8 */
     };
+
+	char pathname[1024];
 
     int retval = RETURN_OK;
     
@@ -917,9 +920,16 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         End;
     }
 
+	if (icon->do_Type!=WBDRAWER)
+		{
+		sprintf(pathname, "%s",lname);
+		} else {
+		sprintf(pathname, "%s/%s",lname,name);
+		}
+ 
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.8 ("ADATE") © 2003-2011 The AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.8 ("ADATE") © 2003-2016 The AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenustripObject,
@@ -988,8 +998,20 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                     Child, (IPTR) (sizegrp = (Object *)HGroup,
                     Child, (IPTR) sizespace,
                     End),
+									Child, (IPTR) Label2(__(MSG_PATH)),
+									Child, (IPTR) HGroup,
+									Child, (IPTR) (pathspace = (Object *)StringObject,
+       									StringFrame,
+       									MUIA_String_Contents, (IPTR)pathname,
+										MUIA_Weight, 150,
+        								End),
+									Child, (IPTR) (btnopenpath = SimpleButton(__(MSG_BTNPATH))),
+                                	End,
+
                                  End,
                             End,
+
+								
                             Child, (IPTR) HVSpace,
                             Child, (IPTR) (grouptool = (Object *)HGroup,
                             End),
@@ -1159,6 +1181,10 @@ D(bug("[WBInfo] icon type is: %s\n", type));
             (IPTR) application, 2,
             MUIM_Application_ReturnID, RETURNID_PROTECT);
 
+        DoMethod(btnopenpath, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR) application, 2,
+            MUIM_Application_ReturnID, RETURNID_OPENPATH);
+            
     #if USE_TEXTEDITOR
         set(editor, MUIA_TextEditor_Slider, slider);
 
@@ -1306,6 +1332,10 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         set(window, MUIA_Window_ActiveObject, (IPTR)savebutton);
                         file_altered = TRUE;
                         break;
+                    case RETURNID_OPENPATH:
+//			  			Execute(pathname_ex,NULL, Output());
+						OpenWorkbenchObject(pathname, TAG_DONE);
+             		break;
                     case RETURNID_QUERYVERSION:
             {
                 Object * oldversionspace = versionspace;
@@ -1325,7 +1355,7 @@ D(bug("[WBInfo: RETURNID_QUERYVERSION\n"));
                 DoMethod(versiongrp, OM_ADDMEMBER, versionspace);
                 DoMethod(versiongrp, MUIM_Group_ExitChange);
             }
-                        break;
+                 break;
             case RETURNID_SCANSIZE:
             {
                 Object * oldsizespace = sizespace;
