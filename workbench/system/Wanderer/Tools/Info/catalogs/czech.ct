@@ -179,3 +179,11 @@ MSG_OK
 OK
 ; Ok
 ;
+MSG_PATH
+Cesta
+; Path
+;
+MSG_BTNPATH
+Otevøít...
+; Open path...
+;
