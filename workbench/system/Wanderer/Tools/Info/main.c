@@ -168,7 +168,7 @@ void getReadableSize(UBYTE *buf, UQUAD size, BOOL accurate)
         buf++;
     }
 
-    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", (RAWARG)&array, NULL, buf);
 
     while (*buf)
         buf++;
