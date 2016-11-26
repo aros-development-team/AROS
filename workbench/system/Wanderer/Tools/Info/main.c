@@ -91,8 +91,8 @@ void getReadableSize(UBYTE *buf, UQUAD size, BOOL accurate)
     char *ch;
     struct
     {
-        IPTR val;
-        IPTR dec;
+        ULONG val;
+        ULONG dec;
     } array =
     {
         size,
