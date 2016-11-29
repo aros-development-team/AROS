@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,8 +26,8 @@ OOP_Object * SelectGalliumDriver(ULONG requestedinterfaceversion, struct Library
 {
     OOP_Object * driver = NULL;
 
-    /* 1. Let see if we can create hidd.gallium.nouveau object. This will
-        only work if the nouveau.hidd is actually loaded and used */    
+    /* 1. Let's see if we can create hidd.gallium.nouveau object. This will
+        only work if the nouveau.hidd is actually loaded and used */
     driver = OOP_NewObject(NULL, "hidd.gallium.nouveau", NULL);
     if (driver)
     {
@@ -41,8 +41,8 @@ OOP_Object * SelectGalliumDriver(ULONG requestedinterfaceversion, struct Library
         }
     }
 
-    /* 2. Nouveau fails,try the next best...*/ 
-    driver = OOP_NewObject(NULL, "hidd.gallium.i915", NULL);
+    /* 2. Nouveau fails, try the next best... */
+    driver = OOP_NewObject(NULL, "hidd.gallium.intelgma", NULL);
     if (driver)
     {
         if (IsVersionMatching(requestedinterfaceversion, driver, GalliumBase)){
