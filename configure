@@ -7549,7 +7549,7 @@ case "$aros_toolchain" in
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
         toolchain_cpp_preprocessor="clang -E"
-        toolchain_ld="lld"
+        toolchain_ld="ld.lld"
         toolchain_as="llvm-as"
         toolchain_ar="llvm-ar"
         toolchain_ranlib="llvm-ranlib"
