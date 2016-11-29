@@ -1,0 +1,197 @@
+## version $VER: diskimagegui.catalog 52.26 (29.11.2016)
+## language czech
+## codeset 5
+;
+MSG_UNIT_LBL
+Jednotka
+; Unit
+;
+MSG_DEVICE_LBL
+Zaøízení
+; Device
+;
+MSG_FILENAME_LBL
+název obrazu (souboru)
+; Disk Image
+;
+MSG_WRITEPROTECT_LBL
+WP
+; WP
+;
+MSG_NO_DISK
+Disk není dostupný
+; No disk present
+;
+MSG_APPDESCRIPTION
+Ovládací panel pro diskimage.device
+; Control GUI for diskimage.device
+;
+MSG_PRIORITY_LBL
+Pri
+; Pri
+;
+MSG_PLUGIN_LBL
+Moduly
+; Plugin
+;
+MSG_PLUGIN_GAD
+Pou¾ité
+; Use plugin
+;
+MSG_AUTO_LBL
+(Auto)
+; (Auto)
+;
+MSG_WRITESUPPORT_LBL
+W
+; W
+;
+MSG_PROJECT_ABOUT
+O...
+; About...
+;
+MSG_PROJECT_HIDE
+Skrýt
+; Hide
+;
+MSG_PROJECT_ICONIFY
+Ikonifikovat
+; Iconify
+;
+MSG_PROJECT_SNAPSHOT
+Snapshot
+; Snapshot
+;
+MSG_PROJECT_QUIT
+Ukonèit
+; Quit
+;
+MSG_SETTINGS_MENU
+Nastavení
+; Settings
+;
+MSG_SETTINGS_CHANGETEMPDIR
+Zmìnit temp. cestu...
+; Change temp directory...
+;
+MSG_SETTINGS_SAVE
+Ulo¾it nastavení
+; Save settings
+;
+MSG_SETTINGS_PLUGINS
+Moduly...
+; Plugins...
+;
+MSG_PROJECT_CLOSE
+Zavøít
+; Close
+;
+MSG_OK_GAD
+OK
+; Ok
+;
+MSG_ABOUT_REQ
+%s verze %ld. %ld\n\
+%s verze %ld. %ld\n\n\
+Copyright (C) 2007-2010 Fredrik Wikstrom\n\
+Website: http://a500.org\n\
+E-mail: fredrik@a500.org
+; %s version %ld.%ld\n\
+; %s version %ld.%ld\n\n\
+; Copyright (C) 2007-2010 Fredrik Wikstrom\n\
+; Website: http://a500.org\n\
+; E-mail: fredrik@a500.org
+;
+MSG_ERROR
+Chyba
+; Error
+;
+MSG_NOAISS_REQ
+Nemáte nainstalován AISS.\n\
+nebo není dostupná cesta AISS:\n\n\
+Stahnìte a nainstalujte poslední verzi\n\
+z : http://masonicons.de
+; AISS assign not found.\n\n\
+; Download and install the latest version\n\
+; from here: http://masonicons.de
+;
+MSG_OLDAISS_REQ
+Podpora pro AISS v%ld.%ld nebo novìj¹í.\n\n\
+Stahnìte a nainstalujte poslední verzi\n\
+z: http://masonicons.de
+; AISS v%ld.%ld or newer required.\n\n\
+; Download and install the latest version\n\
+; from here: http://masonicons.de
+;
+MSG_IMAGENOTFOUND_REQ
+Obraz souboru '%s' není dostupný.
+; Image file '%s' not found.
+;
+MSG_CANCEL_GAD
+_Zpìt
+; _Cancel
+;
+MSG_SAVE_GAD
+_Ulo¾it
+; _Save
+;
+MSG_USE_GAD
+_pou¾ít
+; _Use
+;
+MSG_INSERT_GAD
+Vlo¾it
+; Insert
+;
+MSG_EJECT_GAD
+Vysunout
+; Eject
+;
+MSG_WRITEPROTECT_GAD
+Chránìno proti zápisu
+; Write Protect
+;
+MSG_REFRESH_GAD
+Obnovit
+; Refresh
+;
+MSG_PLUGINS_WND
+Moduly
+; Plugins
+;
+MSG_MAIN_WND
+%s: zk. klávesa = <%s>
+; %s: Hot Key = <%s>
+;
+MSG_ABOUT_WND
+O - %s
+; About - %s
+;
+MSG_ERROR_WND
+Chyba - %s
+; Error - %s
+;
+MSG_SETDEVICETYPE_GAD
+Nastavit typ zaøízení
+; Set Device Type
+;
+MSG_SETDEVICETYPE_WND
+Jednotka: %ld - typ zaøízení
+; Unit: %ld - Device Type
+;
+MSG_DEVICETYPE_GAD
+Typ zaøízení
+; Device Type
+;
+MSG_DEVICETYPE_DIRECT_ACCESS
+Pøímý pøístup (základní nast.)
+; Direct Access (Default setting)
+;
+MSG_DEVICETYPE_CDROM
+CD-ROM
+; CD-ROM
+;
+MSG_DEVICETYPE_OPTICAL_DISK
+Optický disk
+; Optical Disk
+;
