@@ -1372,6 +1372,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_List_Format:
+            FreeVec(data->format);
             data->format = StrDup((STRPTR) tag->ti_Data);
             ParseListFormat(data, data->format);
             // FIXME: should we check for errors?
