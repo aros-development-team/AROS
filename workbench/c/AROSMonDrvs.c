@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code that loads and initializes necessary HIDDs.
@@ -159,7 +159,8 @@ static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, 
     return retvalue;
 }
 
-static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase)
+static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase,
+    struct ExecBase *SysBase)
 {
     struct MonitorNode *node;
 
@@ -194,7 +195,7 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
 
 	if (!SHArg(NOCOMPOSITION))
 	{
-	    /* Software composition driver is ran first */
+	    /* Software composition driver is run first */
 	    D(bug("[LoadMonDrvs] Loading composition driver...\n"));
 	    Execute(COMPOSITING_NAME, BNULL, BNULL);
 	}
@@ -212,7 +213,7 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
 	    	if (IconBase)
 	    	{
                     findMonitors(&MonitorsList, DOSBase, IconBase, SysBase, pool);
-                    loadMonitors(&MonitorsList, DOSBase);
+                    loadMonitors(&MonitorsList, DOSBase, SysBase);
 		    CloseLibrary(IconBase);
             	}
 	    	DeletePool(pool);
