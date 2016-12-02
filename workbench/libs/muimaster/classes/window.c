@@ -649,7 +649,8 @@ static void ChangeEvents(struct MUI_WindowData *data, ULONG new_events)
 static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data);
 static void CreateWindowScrollbars(Object *obj,
     struct MUI_WindowData *data);
-static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data);
+static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
+    struct IBox *altdims);
 static void UndisplayWindow(Object *obj, struct MUI_WindowData *data);
 static struct ObjNode *FindObjNode(struct MinList *list, Object *obj);
 
@@ -707,8 +708,8 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     }
 
     CreateWindowScrollbars(obj, data);
-    CalcAltDimensions(obj, data);
     altdims = data->wd_AltDim;
+    CalcAltDimensions(obj, data, &altdims);
 
     /* hack to account for border size, as we only know the innersize and
      * must give the total size.
@@ -1075,82 +1076,83 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
     }
 }
 
-/* Initialize data->wd_AltDim for DisplayWindow */
-static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data)
+/* Initialize alternative dimensions for DisplayWindow */
+static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
+    struct IBox *altdims)
 {
 /* Calculate alternate (zoomed) dimensions.
  */
-    if (data->wd_AltDim.Top == MUIV_Window_AltTopEdge_NoChange)
-        data->wd_AltDim.Top = ~0;
-    else if (data->wd_AltDim.Top == MUIV_Window_AltTopEdge_Centered)
-        data->wd_AltDim.Top =
+    if (altdims->Top == MUIV_Window_AltTopEdge_NoChange)
+        altdims->Top = ~0;
+    else if (altdims->Top == MUIV_Window_AltTopEdge_Centered)
+        altdims->Top =
             (data->wd_RenderInfo.mri_Screen->Height - data->wd_Height) / 2;
-    else if (data->wd_AltDim.Top == MUIV_Window_AltTopEdge_Moused)
-        /* ? */ data->wd_AltDim.Top = ~0;
+    else if (altdims->Top == MUIV_Window_AltTopEdge_Moused)
+        /* ? */ altdims->Top = ~0;
 
-    if (data->wd_AltDim.Left == MUIV_Window_AltLeftEdge_NoChange)
-        data->wd_AltDim.Left = ~0;
-    else if (data->wd_AltDim.Left == MUIV_Window_AltLeftEdge_Centered)
-        data->wd_AltDim.Left =
+    if (altdims->Left == MUIV_Window_AltLeftEdge_NoChange)
+        altdims->Left = ~0;
+    else if (altdims->Left == MUIV_Window_AltLeftEdge_Centered)
+        altdims->Left =
             (data->wd_RenderInfo.mri_Screen->Width - data->wd_Width) / 2;
-    else if (data->wd_AltDim.Left == MUIV_Window_AltLeftEdge_Moused)
-        /* ? */ data->wd_AltDim.Left = ~0;
+    else if (altdims->Left == MUIV_Window_AltLeftEdge_Moused)
+        /* ? */ altdims->Left = ~0;
 
     if (_between
         (MUIV_Window_AltWidth_MinMax(100),
-            data->wd_AltDim.Width, MUIV_Window_AltWidth_MinMax(0)))
+            altdims->Width, MUIV_Window_AltWidth_MinMax(0)))
     {
-        data->wd_AltDim.Width = data->wd_MinMax.MinWidth
-            - data->wd_AltDim.Width
+        altdims->Width = data->wd_MinMax.MinWidth
+            - altdims->Width
             * (data->wd_MinMax.MaxWidth - data->wd_MinMax.MinWidth);
     }
     else if
         (_between
         (MUIV_Window_AltWidth_Screen(100),
-            data->wd_AltDim.Width, MUIV_Window_AltWidth_Screen(0)))
+            altdims->Width, MUIV_Window_AltWidth_Screen(0)))
     {
-        data->wd_AltDim.Width = data->wd_RenderInfo.mri_ScreenWidth
-            * (-(data->wd_AltDim.Width + 200)) / 100;
+        altdims->Width = data->wd_RenderInfo.mri_ScreenWidth
+            * (-(altdims->Width + 200)) / 100;
     }
     else if
         (_between
         (MUIV_Window_AltWidth_Visible(100),
-            data->wd_AltDim.Width, MUIV_Window_AltWidth_Visible(0)))
+            altdims->Width, MUIV_Window_AltWidth_Visible(0)))
     {
-        data->wd_AltDim.Width = data->wd_RenderInfo.mri_ScreenWidth
-            * (-(data->wd_AltDim.Width + 100)) / 100;
+        altdims->Width = data->wd_RenderInfo.mri_ScreenWidth
+            * (-(altdims->Width + 100)) / 100;
     }
 
     if (_between
         (MUIV_Window_AltHeight_MinMax(100),
-            data->wd_AltDim.Height, MUIV_Window_AltHeight_MinMax(0)))
+            altdims->Height, MUIV_Window_AltHeight_MinMax(0)))
     {
-        data->wd_AltDim.Height = data->wd_MinMax.MinHeight
-            - data->wd_AltDim.Height
+        altdims->Height = data->wd_MinMax.MinHeight
+            - altdims->Height
             * (data->wd_MinMax.MaxHeight - data->wd_MinMax.MinHeight);
     }
     else if
         (_between
         (MUIV_Window_AltHeight_Screen(100),
-            data->wd_AltDim.Height, MUIV_Window_AltHeight_Screen(0)))
+            altdims->Height, MUIV_Window_AltHeight_Screen(0)))
     {
-        data->wd_AltDim.Height = data->wd_RenderInfo.mri_ScreenHeight
-            * (-(data->wd_AltDim.Height + 200)) / 100;
+        altdims->Height = data->wd_RenderInfo.mri_ScreenHeight
+            * (-(altdims->Height + 200)) / 100;
     }
     else if
         (_between
         (MUIV_Window_AltHeight_Visible(100),
-            data->wd_AltDim.Height, MUIV_Window_AltHeight_Visible(0)))
+            altdims->Height, MUIV_Window_AltHeight_Visible(0)))
     {
-        data->wd_AltDim.Height = data->wd_RenderInfo.mri_ScreenHeight
-            * (-(data->wd_AltDim.Height + 100)) / 100;
+        altdims->Height = data->wd_RenderInfo.mri_ScreenHeight
+            * (-(altdims->Height + 100)) / 100;
     }
 
-    data->wd_AltDim.Width = CLAMP
-        (data->wd_AltDim.Width, data->wd_MinMax.MinWidth,
+    altdims->Width = CLAMP
+        (altdims->Width, data->wd_MinMax.MinWidth,
         data->wd_MinMax.MaxWidth);
-    data->wd_AltDim.Height = CLAMP
-        (data->wd_AltDim.Height, data->wd_MinMax.MinHeight,
+    altdims->Height = CLAMP
+        (altdims->Height, data->wd_MinMax.MinHeight,
         data->wd_MinMax.MaxHeight);
 }
 
@@ -3353,6 +3355,22 @@ IPTR Window__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     case MUIA_Revision:
         STORE = __revision;
+        return TRUE;
+
+    case MUIA_Window_AltLeftEdge:
+        STORE = (IPTR) data->wd_AltDim.Left;
+        return TRUE;
+
+    case MUIA_Window_AltTopEdge:
+        STORE = (IPTR) data->wd_AltDim.Top;
+        return TRUE;
+
+    case MUIA_Window_AltWidth:
+        STORE = (IPTR) data->wd_AltDim.Width;
+        return TRUE;
+
+    case MUIA_Window_AltHeight:
+        STORE = (IPTR) data->wd_AltDim.Height;
         return TRUE;
     }
 
