@@ -66,8 +66,9 @@ Slave( struct ExecBase* SysBase )
 //    outb(0x1e, ac97Base->dmabase + PO_CR);
 //    outl(ac97Base->PCM_out, ac97Base->dmabase + PO_BDBAR);
 
-D(bug("SR=%04x CR=%04x CIV=%02x LVI=%02x\n", inw(ac97Base->dmabase + ac97Base->off_po_sr), 
-    inw(ac97Base->dmabase + PO_CR),
+D(bug("SR=%04x CR=%02x CIV=%02x LVI=%02x\n",
+    inw(ac97Base->dmabase + ac97Base->off_po_sr),
+    inb(ac97Base->dmabase + PO_CR),
     inb(ac97Base->dmabase + PO_CIV),
     inb(ac97Base->dmabase + PO_LVI)));
 
