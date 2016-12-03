@@ -34,7 +34,7 @@ AROS_UFP3S(APTR, EmulBoot,
 	   AROS_UFPA(BPTR, segList, A0),
 	   AROS_UFPA(struct ExecBase *, SysBase, A6));
 
-const struct Resident EmulBoot_resident =
+__section(".text.romtag") const struct Resident EmulBoot_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&EmulBoot_resident,
@@ -48,7 +48,7 @@ const struct Resident EmulBoot_resident =
     EmulBoot
 };
 
-static const UBYTE version[] = "$VER: emul-handler emergency console v2.0";
+__section(".text.romtag") static const UBYTE version[] = "$VER: emul-handler emergency console v2.0";
 
 AROS_UFH3(APTR, EmulBoot,
 	   AROS_UFPA(ULONG, dummy, D0),
