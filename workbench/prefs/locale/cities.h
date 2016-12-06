@@ -67,6 +67,7 @@ static const struct CityType CityArray[] =
  {"Newfoundland", -330},
  {"New Zealand", +1200},
  {"Paris", +100},
+ {"Prague", +100},
  {"Rome (CET)", +100},
  {"Samoa (NZST)", +1200},
  {"Seoul", +900},
