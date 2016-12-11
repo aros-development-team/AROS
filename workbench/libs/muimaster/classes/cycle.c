@@ -304,7 +304,7 @@ static void UpdateEntries(Object *obj, struct MUI_CycleData *data)
     }
 
     /* Count the number of entries */
-    for (i = 0; data->entries[i]; i++)
+    for (i = 0; data->entries && data->entries[i]; i++)
     {
         page = TextObject,
             MUIA_Text_Contents, (IPTR) data->entries[i],
