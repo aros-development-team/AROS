@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -67,7 +67,12 @@ static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
     while (segList)
     {
         if (mod == NULL) /* Search for new module */
+        {
+            D(bug("[Debug] Looking for module matching seglist %p\n", segList));
             mod = FindModule(segList, DebugBase);
+            D(if (mod) bug("[Debug] Found module '%s'\n", mod->m_name);
+            else bug("[Debug] No module found!\n"));
+        }
 
         if (mod)
         {
@@ -139,6 +144,8 @@ static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count)
     struct segment * seg;
     LONG i;
 
+    D(bug("[Debug] RemoveSegmentRange('%s', %ld, %ld)\n", mod->m_name,
+        firstidx, count));
     for (i = 0 ; i < count ; i++)
     {
         seg = mod->m_segments[i + firstidx];
