@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Disk-resident part of X11 display driver
@@ -25,6 +25,8 @@
 #define X11_VERSION 42
 /* Default host keymap file */
 #define DEF_KEYMAP "DEVS:Keymaps/X11/keycode2rawkey.table"
+
+#define STACK_SIZE 100000
 
 /************************************************************************/
 
@@ -158,6 +160,13 @@ int main(void)
 	1,
 	DEF_KEYMAP
     };
+    struct StackSwapStruct sss;
+    struct StackSwapArgs ssa;
+    UBYTE *stack;
+
+    stack = AllocMem(STACK_SIZE, MEMF_ANY);
+    if (stack == NULL)
+        return RETURN_FAIL;
 
     if (WBenchMsg)
     {
@@ -201,7 +210,15 @@ int main(void)
 
     D(bug("[X11] Keymap: %s\n", args.keymap));
 
-    old_displays = LoadKeyCode2RawKeyTable(args.keymap);
+    /* Call LoadKeyCode2RawKeyTable() with a new stack: it initialises
+       x11gfx.hidd, and some X servers need a larger than normal stack */
+    sss.stk_Lower = stack;
+    sss.stk_Upper = stack + STACK_SIZE;
+    sss.stk_Pointer = sss.stk_Upper;
+
+    ssa.Args[0] = (IPTR)args.keymap;
+
+    old_displays = NewStackSwap(&sss, LoadKeyCode2RawKeyTable, &ssa);
 
 /*
  * TODO: In order for this to work X11 driver needs to be fixed
@@ -228,6 +245,7 @@ int main(void)
         FreeDiskObject(icon);
     if (olddir)
         CurrentDir(olddir);
+    FreeMem(stack, STACK_SIZE);
 
     return res;
 }
