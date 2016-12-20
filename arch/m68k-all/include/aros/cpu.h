@@ -2,12 +2,12 @@
 #define AROS_M68K_CPU_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
 
-    Desc:CPU-specific definitions for Motorola m68k processors
+    Desc: CPU-specific definitions for Motorola m68k processors
     Lang: english
 */
 
@@ -24,6 +24,8 @@
 #define AROS_IPTRALIGN             2 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN           2 /* Alignment for double */
 #define AROS_WORSTALIGN            4 /* Worst case alignment */
+
+#define AROS_SLOWSTACKFORMAT 1
 
 #define AROS_NOFPU 1
 
