@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -477,6 +477,7 @@ static void MakeGUI(void)
         MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2011, The AROS Development Team",
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, (IPTR)MSG(MSG_WINTITLE),
+        MUIA_Application_SingleTask, TRUE,
         MUIA_Application_Base, (IPTR)"Time",
         menu ? MUIA_Application_Menustrip : TAG_IGNORE, menu,
         

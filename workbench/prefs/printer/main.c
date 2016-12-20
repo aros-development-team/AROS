@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,7 +23,7 @@
 
 #include <aros/debug.h>
 
-#define VERSION "$VER: Printer 0.1 (01.31.2011) AROS Dev Team"
+#define VERSION "$VER: Printer 0.1 (31.1.2011) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)
@@ -52,6 +52,7 @@ int main(int argc, char **argv)
                 MUIA_Application_Title, __(MSG_WINTITLE),
                 MUIA_Application_Version, (IPTR) VERSION,
                 MUIA_Application_Description, __(MSG_WINTITLE),
+                MUIA_Application_SingleTask, TRUE,
                 MUIA_Application_Base, (IPTR) "PRINTERPREF",
                 SubWindow, (IPTR)(window =
                     SystemPrefsWindowObject,
