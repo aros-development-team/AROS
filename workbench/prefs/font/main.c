@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,6 +37,7 @@ int main(int argc, char **argv)
                 MUIA_Application_Title,  __(MSG_NAME),
                 MUIA_Application_Version, (IPTR) VERSION,
                 MUIA_Application_Description,  __(MSG_DESCRIPTION),
+                MUIA_Application_SingleTask, TRUE,
                 MUIA_Application_Base, (IPTR) "FONTPREF",
                 SubWindow, (IPTR) (window = (Object *)SystemPrefsWindowObject,
                     MUIA_Window_ID, MAKE_ID('F','W','I','N'),

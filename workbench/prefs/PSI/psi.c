@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2011, The AROS Development Team.
+    Copyright © 2009-2016, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -425,6 +425,7 @@ int main(int argc, char *argv[])
             MUIA_Application_Copyright  , "©1995-97, Stefan Stuntz",
             MUIA_Application_Author     , "Stefan Stuntz",
             MUIA_Application_Description, "Public Screen Inspector",
+            MUIA_Application_SingleTask , TRUE,
             MUIA_Application_Base       , "PSI",
             MUIA_Application_Window     , win = NewObject(CL_MainWindow->mcc_Class, NULL, TAG_DONE),
         End;
@@ -486,6 +487,8 @@ int main(int argc, char *argv[])
         char *c = strchr(str,'(');
         Write(Output(),str,strlen(str));
         res = c ? atol(c+1) : RETURN_OK;
+        if (argc == 0)
+            Delay(100);
     }
     else
         res = RETURN_OK;

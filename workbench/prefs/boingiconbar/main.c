@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -67,6 +67,7 @@ int main(int argc, char **argv)
                 MUIA_Application_Title, __(MSG_TITLE),
                 MUIA_Application_Version, (IPTR) VERSION,
                 MUIA_Application_Description, __(MSG_TITLE),
+                MUIA_Application_SingleTask, TRUE,
                 MUIA_Application_Base, (IPTR) "BIBPREF",
                 MUIA_Application_DiskObject, (IPTR)disko,
                 SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,

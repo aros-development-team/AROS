@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2014, The AROS Development Team.
+    Copyright  2002-2016, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -444,6 +444,7 @@ int init_gui(void)
         MUIA_Application_Version, (IPTR) ZUNEVERSION,
         MUIA_Application_Copyright, (IPTR) " 2006, The AROS Development Team",
         MUIA_Application_Description, wintitle,
+        MUIA_Application_SingleTask, TRUE,
         MUIA_Application_Base, "ZUNEPREF",
         MUIA_Application_Menustrip, MenustripObject,
             MUIA_Family_Child, MenuObject,
