@@ -211,7 +211,7 @@ struct MUI_ListData
 #define LIST_SHOWDROPMARKS (1<<4)
 #define LIST_QUIET         (1<<5)
 
-static int IncreaseColumns(struct MUI_ListData *data, int new_columns);
+static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns);
 
 /****** List.mui/MUIA_List_Active ********************************************
 *
@@ -498,7 +498,7 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 
     le = (struct ListEntry *) AllocVecPooled(data->pool, size);
     D(bug("List AllocListEntry %p, %ld bytes\n", le, size));
-    if(le)
+    if (le)
     {
         /* possible, that we have an external pool, which does not have 
            MEMF_CLEAR set.. */
@@ -605,10 +605,11 @@ static void FreeListFormat(struct MUI_ListData *data)
 
 /**************************************************************************
  Parses the given format string (also frees a previously parsed format).
- Use initial=0 for format changes outside NEW.
- Return 0 on failure.
+ Use initial=FALSE for format changes outside OM_NEW.
+ Return FALSE on failure.
 **************************************************************************/
-static int ParseListFormat(struct MUI_ListData *data, STRPTR format, int initial)
+static BOOL ParseListFormat(struct MUI_ListData *data, STRPTR format,
+    BOOL initial)
 {
     int new_columns, i;
     STRPTR ptr;
@@ -634,18 +635,18 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format, int initial
 
     if (!(data->preparses =
             AllocVec((new_columns + 10) * sizeof(STRPTR), MEMF_CLEAR)))
-        return 0;
+        return FALSE;
 
     if (!(data->strings_mem = AllocVec((new_columns + 1 + 10)
         * sizeof(STRPTR), MEMF_CLEAR)))    
                                   /* hold enough space also for the entry pos,
                                    * used by orginal MUI and also some
                                    * security space */
-        return 0;
+        return FALSE;
     data->strings=data->strings_mem;
 
     if (!(data->ci = AllocVec(new_columns * sizeof(struct ColumnInfo), MEMF_CLEAR)))
-        return 0;
+        return FALSE;
 
     // set defaults
     for (i = 0; i < new_columns; i++)
@@ -721,26 +722,26 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format, int initial
                 data->ci[i].preparse));
     }
 
-    if(initial)
+    if (initial)
     {
-        /* called from NEW. */
+        /* called from OM_NEW */
         data->columns_allocated = new_columns;
     }
-    else if(data->columns_allocated < new_columns) 
+    else if (data->columns_allocated < new_columns) 
     {
         /* called by MUIA_List_Format */
-        if(!IncreaseColumns(data, new_columns))
+        if (!IncreaseColumns(data, new_columns))
         {
             bug("[List] not enough memory for new columns!!\n");
             /* FIXME: proper handling? */
-            return 0;
+            return FALSE;
         }
         data->columns_allocated = new_columns;
     }
     data->columns = new_columns;
     data->strings++;            /* Skip entry pos */
 
-    return 1;
+    return TRUE;
 }
 
 /**************************************************************************
@@ -909,7 +910,7 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
  Space can only grow, not shrink.
  Return FALSE on error (no memory).
 **************************************************************************/
-static int IncreaseColumns(struct MUI_ListData *data, int new_columns) 
+static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns) 
 {
     int i = 0;
     IPTR newsize, oldsize;
@@ -920,27 +921,28 @@ static int IncreaseColumns(struct MUI_ListData *data, int new_columns)
     newsize = sizeof(struct ListEntry) + sizeof(LONG) * (new_columns             + 1);
     oldsize = sizeof(struct ListEntry) + sizeof(LONG) * (data->columns_allocated + 1);
 
-    if(data->title)
+    if (data->title)
     {
-        i=-1;
+        i = -1;
     }
 
     for (; i < data->entries_num; i++)
     {
         D(bug("IncreaseColumns: i: %d, size: %d => %d\n", i, oldsize, newsize));
         le = (struct ListEntry *) AllocVecPooled(data->pool, newsize);
-        if(!le)
+        if (!le)
         {
-            return 0;
+            return FALSE;
         }
         memset(le, 0, newsize);
-        D(bug("IncreaseColumns: memcpy(%p, %p, %d)\n", le, data->entries[i], oldsize));
-        memcpy(le, data->entries[i], oldsize);
+        D(bug("IncreaseColumns: CopyMem(%p, %p, %d)\n", data->entries[i],
+            le, oldsize));
+        CopyMem(data->entries[i], le, oldsize);
         FreeVecPooled(data->pool, data->entries[i]);
         data->entries[i]=le;
     }
 
-    return 1;
+    return TRUE;
 }
 
 /**************************************************************************
@@ -1283,7 +1285,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* parse the list format */
-    if (!(ParseListFormat(data, data->format, 1)))
+    if (!ParseListFormat(data, data->format, TRUE))
     {
         CoerceMethod(cl, obj, OM_DISPOSE);
         return 0;
@@ -1434,7 +1436,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_List_Format:
             FreeVec(data->format);
             data->format = StrDup((STRPTR) tag->ti_Data);
-            ParseListFormat(data, data->format, 0);
+            ParseListFormat(data, data->format, FALSE);
             // FIXME: should we check for errors?
             DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
             break;
