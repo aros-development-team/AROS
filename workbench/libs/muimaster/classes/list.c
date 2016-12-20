@@ -1214,7 +1214,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_List_Format:
-            data->format = StrDup((STRPTR) tag->ti_Data);
+            data->format = (STRPTR) tag->ti_Data;
             break;
 
         case MUIA_List_Title:
@@ -1371,7 +1371,6 @@ IPTR List__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
             /* title is currently before all other elements */
 
     FreeListFormat(data);
-    FreeVec(data->format);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -1434,8 +1433,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_List_Format:
-            FreeVec(data->format);
-            data->format = StrDup((STRPTR) tag->ti_Data);
+            data->format = (STRPTR) tag->ti_Data;
             ParseListFormat(data, data->format, FALSE);
             // FIXME: should we check for errors?
             DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
