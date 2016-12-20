@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2013, The AROS Development Team. All rights reserved.
+    Copyright  1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -627,7 +627,6 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
 
     for (line = 0; line < height; line++)
     {
-	int x;
         /* Get single line of image */
         if (!DoSuperMethod(cl, o,
                 PDTM_READPIXELARRAY,
@@ -645,15 +644,6 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
             return FALSE;
         }
 	
-	/*
-	    In PNG files, Alpha=0 means fully transparent, and Alpha=255 means fully opaque.
-	    In case of AROS it seems to be the other way round (at least ReadPixelArray on
-	    images without alpha channel results in A=0...
-	*/
-	if (png.png_depth > 24)
-	    for (x=0; x < width; x++)
-		linebuf[x << 2] = 0xff - linebuf[x << 2];
-
         /* png_write_line */
         png_write_row(png.png_ptr, linebuf);
     }
