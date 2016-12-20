@@ -128,6 +128,7 @@ struct MUI_ListData
      * by CleanListFormat() */
     STRPTR format;
     LONG columns;               /* Number of columns the list has */
+    LONG columns_allocated;     /* List has space for columns_allocated columns */
     struct ColumnInfo *ci;
     STRPTR *preparses;
     STRPTR *strings_mem;        /* safe pointer to allocated memory for strings[] */
@@ -210,6 +211,7 @@ struct MUI_ListData
 #define LIST_SHOWDROPMARKS (1<<4)
 #define LIST_QUIET         (1<<5)
 
+static int IncreaseColumns(struct MUI_ListData *data, int new_columns);
 
 /****** List.mui/MUIA_List_Active ********************************************
 *
@@ -491,7 +493,7 @@ struct MUI_ListData
 static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 {
     struct ListEntry *le;
-    /* what happens, if data->columns is later increased by MUIA_List_Format? */
+    /* use IncreaseColumns() to enlarge column entry array */
     IPTR size = sizeof(struct ListEntry) + sizeof(LONG) * (data->columns + 1);
 
     le = (struct ListEntry *) AllocVecPooled(data->pool, size);
@@ -603,9 +605,10 @@ static void FreeListFormat(struct MUI_ListData *data)
 
 /**************************************************************************
  Parses the given format string (also frees a previously parsed format).
+ Use initial=0 for format changes outside NEW.
  Return 0 on failure.
 **************************************************************************/
-static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
+static int ParseListFormat(struct MUI_ListData *data, STRPTR format, int initial)
 {
     int new_columns, i;
     STRPTR ptr;
@@ -718,6 +721,22 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
                 data->ci[i].preparse));
     }
 
+    if(initial)
+    {
+        /* called from NEW. */
+        data->columns_allocated = new_columns;
+    }
+    else if(data->columns_allocated < new_columns) 
+    {
+        /* called by MUIA_List_Format */
+        if(!IncreaseColumns(data, new_columns))
+        {
+            bug("[List] not enough memory for new columns!!\n");
+            /* FIXME: proper handling? */
+            return 0;
+        }
+        data->columns_allocated = new_columns;
+    }
     data->columns = new_columns;
     data->strings++;            /* Skip entry pos */
 
@@ -881,6 +900,47 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
 
     return (old_entries_visible != data->entries_visible)
         || (old_entries_top_pixel != data->entries_top_pixel);
+}
+
+/**************************************************************************
+ Resize arrays, so that there is enough space for new columns.
+ The widths[] array must grow with increasing columns.
+ columns_allocated must be checked, before calling this function.
+ Space can only grow, not shrink.
+ Return FALSE on error (no memory).
+**************************************************************************/
+static int IncreaseColumns(struct MUI_ListData *data, int new_columns) 
+{
+    int i = 0;
+    IPTR newsize, oldsize;
+    struct ListEntry *le;
+
+    D(bug("IncreaseColumns: %d => %d columns\n", data->columns_allocated, new_columns));
+
+    newsize = sizeof(struct ListEntry) + sizeof(LONG) * (new_columns             + 1);
+    oldsize = sizeof(struct ListEntry) + sizeof(LONG) * (data->columns_allocated + 1);
+
+    if(data->title)
+    {
+        i=-1;
+    }
+
+    for (; i < data->entries_num; i++)
+    {
+        D(bug("IncreaseColumns: i: %d, size: %d => %d\n", i, oldsize, newsize));
+        le = (struct ListEntry *) AllocVecPooled(data->pool, newsize);
+        if(!le)
+        {
+            return 0;
+        }
+        memset(le, 0, newsize);
+        D(bug("IncreaseColumns: memcpy(%p, %p, %d)\n", le, data->entries[i], oldsize));
+        memcpy(le, data->entries[i], oldsize);
+        FreeVecPooled(data->pool, data->entries[i]);
+        data->entries[i]=le;
+    }
+
+    return 1;
 }
 
 /**************************************************************************
@@ -1223,7 +1283,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* parse the list format */
-    if (!(ParseListFormat(data, data->format)))
+    if (!(ParseListFormat(data, data->format, 1)))
     {
         CoerceMethod(cl, obj, OM_DISPOSE);
         return 0;
@@ -1374,7 +1434,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_List_Format:
             FreeVec(data->format);
             data->format = StrDup((STRPTR) tag->ti_Data);
-            ParseListFormat(data, data->format);
+            ParseListFormat(data, data->format, 0);
             // FIXME: should we check for errors?
             DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
             break;
