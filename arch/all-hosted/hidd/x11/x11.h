@@ -30,7 +30,7 @@ typedef struct _XVisualInfo XVisualInfo; // Used only as pointer
 /****************************************************************************************/
 
 #define USE_X11_DRAWFUNCS   1
-#define X11SOFTMOUSE        1   /* Use software mouse sprite */
+#define X11SOFTMOUSE        0   /* Use software mouse sprite */
 #define ADJUST_XWIN_SIZE    1   /* Resize the xwindow to the size of the actual visible screen */
 
 /****************************************************************************************/
