@@ -244,7 +244,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
         /*
          * Now we need to get some message from the X11 task about when
-         * the window has been mapped (ie. MapWindow event).
+         * the window has been mapped (i.e. MapWindow event).
          * This is because we cannot render into the window until
          * it has been mapped.
          */
@@ -272,7 +272,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
             if (!(XSD(cl)->options & OPTION_DELAYXWINMAPPING))
             {
-                D(bug("[X11OnBm] %s: notifying x11 task to map window..\n", __PRETTY_FUNCTION__));
+                D(bug("[X11OnBm] %s: notifying x11 task to map window...\n", __PRETTY_FUNCTION__));
                 /*
                  * Send a message to the X11 task to ask when the window has been mapped.
                  * We change only notify_type, other fields are already set.
@@ -429,7 +429,8 @@ VOID X11BM_ClearFB(struct bitmap_data *data, HIDDT_Pixel bg)
 
 VOID X11BM_ExposeFB(struct bitmap_data *data, WORD x, WORD y, WORD width, WORD height)
 {
-    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11OnBm] %s(%d, %d, %d, %d)\n", __PRETTY_FUNCTION__,
+        x, y, width, height));
 
     if (!(data->flags & BMDF_BACKINGSTORE))
     {
