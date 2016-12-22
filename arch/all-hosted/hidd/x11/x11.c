@@ -40,7 +40,7 @@ VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 
 #define XTASK_PRIORITY  50
 
-#define XTASK_STACKSIZE (AROS_STACKSIZE)
+#define XTASK_STACKSIZE 100000
 
 #undef XSD
 #define XSD(cl) xsd
@@ -268,6 +268,26 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                             }
                         }
                         ReplyMsg((struct Message *) nmsg);
+                        break;
+                    }
+                case NOTY_NEWCURSOR:
+                    {
+                        struct xwinnode *node;
+
+                        D(bug("[X11] %s: NOTY_NEWCURSOR\n",
+                            __PRETTY_FUNCTION__));
+
+                        LOCK_X11
+                        ForeachNode(&xwindowlist, node)
+                        {
+                            XCALL(XDefineCursor, nmsg->xdisplay, node->xwindow,
+                                (Cursor) nmsg->xwindow);
+                        }
+                        XCALL(XFlush, nmsg->xdisplay);
+                        UNLOCK_X11
+
+                        ReplyMsg((struct Message *) nmsg);
+
                         break;
                     }
                 } /* switch() */

@@ -8,6 +8,7 @@
 
 #define timeval sys_timeval
 #include <X11/Xutil.h>
+#include <X11/Xcursor/Xcursor.h>
 #undef timeval
 
 #endif
