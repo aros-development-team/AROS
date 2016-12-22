@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DeleteVar() - Deletes a local or environmental variable.
@@ -18,7 +18,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(CONST_STRPTR, name, D1),
-        AROS_LHA(ULONG , flags, D2),
+        AROS_LHA(ULONG, flags, D2),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 152, Dos)
@@ -43,6 +43,7 @@
 
                 GVF_LOCAL_ONLY  - delete a local variable.
                 GVF_GLOBAL_ONLY - delete a global environment variable.
+                GVF_SAVE_VAR    - delete a global variable permanently.
 
     RESULT
         If non-zero, the variable was deleted successfully,
@@ -60,7 +61,6 @@
     SEE ALSO
 
     INTERNALS
-        XXX: Find out whether GVF_SAVE_VAR does actually affect this function.
 
 *****************************************************************************/
 {
