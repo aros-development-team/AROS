@@ -41,7 +41,7 @@ OOP_AttrBase HiddAttrBase;
 static const struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap       , &HiddBitMapAttrBase   },
-    { IID_Hidd_BitMap_X11    , &HiddX11BitMapAB      },
+    { IID_Hidd_BitMap_X11   , &HiddX11BitMapAB      },
     { IID_Hidd_Sync         , &HiddSyncAttrBase     },
     { IID_Hidd_PixFmt       , &HiddPixFmtAttrBase   },
     { IID_Hidd_Gfx          , &HiddGfxAttrBase      },
@@ -561,6 +561,10 @@ VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             *msg->storage = 0;
 #else
             *msg->storage = vHidd_SpriteType_DirectColor;
+            return;
+
+        case aoHidd_Gfx_SupportsHWCursor:
+            *msg->storage = TRUE;
 #endif
             return;
 
@@ -642,31 +646,88 @@ VOID X11Cl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
 /****************************************************************************************/
 
-BOOL X11Cl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+BOOL X11Cl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Gfx_SetCursorShape *msg)
 {
     D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
 
+#if X11SOFTMOUSE
     /* Dummy implementation */
     return TRUE;
+#else
+    BOOL success = TRUE;
+    IPTR width, height;
+    XcursorImage *image;
+    struct MsgPort *port;
+    struct notify_msg nmsg;
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+
+    /* Create an X11 cursor from the passed bitmap */
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+    image = XCCALL(XcursorImageCreate, width, height);
+
+    HIDD_BM_GetImage(msg->shape, (UBYTE *)image->pixels, width * 4, 0, 0,
+        width, height, vHidd_StdPixFmt_BGRA32);
+
+    image->xhot = -msg->xoffset;
+    image->yhot = -msg->yoffset;
+
+    data->cursor = XCCALL(XcursorImageLoadCursor, data->display, image);
+    XCCALL(XcursorImageDestroy, image);
+
+    /* Tell the X11 task to change the pointer on all X windows */
+    port = CreateMsgPort();
+    if (port == NULL)
+        success = FALSE;
+
+    if (success)
+    {
+        nmsg.notify_type = NOTY_NEWCURSOR;
+        nmsg.xdisplay = data->display;
+        nmsg.xwindow = (Window)data->cursor;
+        nmsg.execmsg.mn_ReplyPort = port;
+
+        X11DoNotify(XSD(cl), &nmsg);
+        DeleteMsgPort(port);
+    }
+
+    return success;
+#endif
 }
 
 /****************************************************************************************/
 
-BOOL X11Cl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID X11Cl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Gfx_SetCursorVisible *msg)
 {
     D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
 
+#if X11SOFTMOUSE
     /* Dummy implementation */
-    return TRUE;
-}
+#else
+    BOOL success = TRUE;
+    struct MsgPort *port;
+    struct notify_msg nmsg;
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
 
-/****************************************************************************************/
+    /* Tell the X11 task to change the pointer on all X windows */
+    port = CreateMsgPort();
+    if (port == NULL)
+        success = FALSE;
 
-VOID X11Cl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    if (success)
+    {
+        nmsg.notify_type = NOTY_NEWCURSOR;
+        nmsg.xdisplay = data->display;
+        nmsg.xwindow = (Window) (msg->visible ? data->cursor : None);
+        nmsg.execmsg.mn_ReplyPort = port;
 
-    /* Dummy implementation */
+        X11DoNotify(XSD(cl), &nmsg);
+        DeleteMsgPort(port);
+    }
+#endif
+
     return;
 }
 

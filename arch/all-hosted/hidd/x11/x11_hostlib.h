@@ -146,8 +146,17 @@ struct libc_func {
     int (*raise) (int);
 };
 
+struct xcursor_func {
+    XcursorImage * (*XcursorImageCreate) ( int , int );
+    void (*XcursorImageDestroy) ( XcursorImage * );
+    Cursor (*XcursorImageLoadCursor) ( Display * , const XcursorImage * );
+};
+
 extern void *xf86vm_handle;
 extern struct xf86vm_func xf86vm_func;
+
+extern void *xcursor_handle;
+extern struct xcursor_func xcursor_func;
 
 extern void *x11_handle;
 extern struct x11_func x11_func;
@@ -159,21 +168,25 @@ extern struct libc_func libc_func;
 #define X11_SOFILE    "libX11.so.6"
 #define LIBC_SOFILE   "libc.so.6"
 #define XF86VM_SOFILE "libXxf86vm.so.1"
+#define XCURSOR_SOFILE "libXcursor.so.1"
 #endif
 
 #ifdef HOST_OS_darwin
 #define X11_SOFILE    "/usr/X11/lib/libX11.6.dylib"
 #define LIBC_SOFILE   "libSystem.dylib"
 #define XF86VM_SOFILE "/usr/X11/lib/libXxf86vm.1.dylib"
+#define XCURSOR_SOFILE "/usr/X11/lib/libXcursor.1.dylib"
 #endif
 
 #ifndef X11_SOFILE
 #define X11_SOFILE    "libX11.so"
 #define LIBC_SOFILE   "libc.so"
 #define XF86VM_SOFILE "libXxf86vm.so"
+#define XCURSOR_SOFILE "libXcursor.so"
 #endif
 
 #define XVMCALL(func,...) (xf86vm_func.func(__VA_ARGS__))
+#define XCCALL(func,...) (xcursor_func.func(__VA_ARGS__))
 #define XCALL(func,...) (x11_func.func(__VA_ARGS__))
 #define CCALL(func,...) (libc_func.func(__VA_ARGS__))
 

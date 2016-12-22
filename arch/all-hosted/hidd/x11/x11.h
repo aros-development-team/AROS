@@ -18,7 +18,7 @@
 /* Note: x11_types.h is not included intentionally to resolve compilation
  * issues on linux-armhf where certain definitions collide between AROS
  * and Linux.
- * In every source file x11_types.h needs to be included before to x11.h
+ * In every source file x11_types.h needs to be included before x11.h
  */
 #include <X11/X.h>                  // Simple types definitions
 typedef struct _XEvent XEvent;      // Used only as pointer
@@ -113,14 +113,15 @@ struct xwinnode
 };
 
 
-/* Message used for getting info on when a window has been mapped */
+/* Messages used for sending info to the HIDD's task */
 
 enum
 {
 	NOTY_MAPWINDOW,
 	NOTY_WINCREATE,
 	NOTY_WINDISPOSE,
-	NOTY_RESIZEWINDOW
+	NOTY_RESIZEWINDOW,
+	NOTY_NEWCURSOR
 };
 
 
@@ -147,7 +148,7 @@ struct x11_staticdata
     BOOL	   	     havetable;
     OOP_Class 	    	    *gfxclass;
 
-    OOP_Class 	    	    *bmclass;;
+    OOP_Class 	    	    *bmclass;
     OOP_Class 	    	    *mouseclass;
     OOP_Class 	    	    *kbdclass;
 
@@ -169,7 +170,7 @@ struct x11_staticdata
 
 #if USE_XSHM
     struct SignalSemaphore   shm_sema;	/* singlethread access to shared mem */
-    BOOL    	    	     use_xshm;	/* May we use Xshm ?	*/
+    BOOL    	    	     use_xshm;	/* May we use Xshm? */
     void    	    	    *xshm_info;
 #endif    
     

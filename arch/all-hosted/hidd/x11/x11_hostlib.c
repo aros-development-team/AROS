@@ -14,10 +14,16 @@
 void *x11_handle = NULL;
 void *libc_handle = NULL;
 void *xf86vm_handle = NULL;
+#if !X11SOFTMOUSE
+void *xcursor_handle = NULL;
+#endif
 
 struct x11_func x11_func;
 struct libc_func libc_func;
 struct xf86vm_func xf86vm_func;
+#if !X11SOFTMOUSE
+struct xcursor_func xcursor_func;
+#endif
 
 static const char *xf86vm_func_names[] = {
     "XF86VidModeGetAllModeLines",
@@ -141,6 +147,16 @@ static const char *libc_func_names[] = {
 #define LIBC_NUM_FUNCS (1)
 #endif
 
+#if !X11SOFTMOUSE
+static const char *xcursor_func_names[] = {
+    "XcursorImageCreate",
+    "XcursorImageDestroy",
+    "XcursorImageLoadCursor"
+};
+
+#define XCURSOR_NUM_FUNCS (3)
+#endif
+
 void *HostLibBase;
 
 void *x11_hostlib_load_so(const char *sofile, const char **names, int nfuncs, void **funcptr)
@@ -179,6 +195,14 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE)
         bug("[X11host] %s: failed to open hostlib.resource!\n", __PRETTY_FUNCTION__);
         return FALSE;
     }
+
+#if !X11SOFTMOUSE
+    if ((xcursor_handle = x11_hostlib_load_so(XCURSOR_SOFILE,
+        xcursor_func_names, XCURSOR_NUM_FUNCS, (void **) &xcursor_func))
+        == NULL)
+        return FALSE;
+#endif
+
     if ((xf86vm_handle = x11_hostlib_load_so(XF86VM_SOFILE, xf86vm_func_names, XF86VM_NUM_FUNCS, (void **) &xf86vm_func)) == NULL)
         return FALSE;
 
@@ -196,6 +220,11 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE)
 static int x11_hostlib_expunge(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[X11host] %s()\n", __PRETTY_FUNCTION__));
+
+#if !X11SOFTMOUSE
+    if (xcursor_handle != NULL)
+        HostLib_Close(xcursor_handle, NULL);
+#endif
 
     if (xf86vm_handle != NULL)
         HostLib_Close(xf86vm_handle, NULL);
