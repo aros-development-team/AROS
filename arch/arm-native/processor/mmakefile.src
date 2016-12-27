@@ -11,9 +11,9 @@ FILES := \
     processor_util \
     processor_frequency
 
-#MM- kernel-processor-arm : includes
+#MM- kernel-processor-raspi-arm : includes
 
 %build_archspecific mainmmake=kernel-processor maindir=rom/processor \
-    arch=arm files=$(FILES)
+    arch=raspi-arm files=$(FILES)
 
 %common
