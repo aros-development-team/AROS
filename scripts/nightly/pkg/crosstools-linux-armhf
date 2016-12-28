@@ -1,0 +1,6 @@
+#!/bin/zsh
+# Creates AROS/linux-armhf crosstools packages.
+
+BUILDTARGET=linux-armhf
+
+source $SP/pkg/crosstools
