@@ -1,4 +1,4 @@
-## version $VER: appearance.catalog 1.1 (16.09.2016)
+## version $VER: appearance.catalog 1.2 (28.12.2016)
 ## language czech
 ## codeset 5
 ;
@@ -84,7 +84,7 @@ MSG_NOPREVIEW
 ; -Preview Unavailable-
 ;
 MSG_SELECTEDTHEME
-Pou¾ít téma
+Pou¾ít téma:
 ; Theme
 ;
 MSG_ENABLEZUNEPREFS
