@@ -80,7 +80,7 @@ struct  InputEvent *InvertStringForwd(STRPTR str, struct KeyMap *km);
 
 /* Graphics */
 #ifndef ObtainBestPen
-LONG ObtainBestPen( struct ColorMap * cm, ULONG R, ULONG G, ULONG B, Tag tag1, ...) __stackparm;
+LONG ObtainBestPen( struct ColorMap * cm, ULONG r, ULONG g, ULONG b, Tag tag1, ...) __stackparm;
 #endif
 
 #ifndef GetRPAttrs
