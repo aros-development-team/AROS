@@ -95,11 +95,11 @@ MSG_ENABLEWANDPREFS
 Pøevzít Wanderer nastavení?
 ; Inherit Wanderer Configuration?
 ;
-MSG_TAB_THEMEING
+MSG_SEC_THEMING
 Témata
-; Theme'ing
+; Theming
 ;
-MSG_TAB_COMPOSITING
+MSG_SEC_COMPOSITING
 Kompozitní výstup
 ; Compositing
 ;
