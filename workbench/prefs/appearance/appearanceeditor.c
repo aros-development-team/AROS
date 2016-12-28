@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -236,6 +236,8 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         MUIA_PrefsEditor_Name, (IPTR)_(MSG_WINTITLE),
         MUIA_PrefsEditor_Path, (IPTR) THEMES_ENVPATH,
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Theme",
+        MUIA_PrefsEditor_CanTest, FALSE,
+        MUIA_PrefsEditor_CanUse, FALSE,
 
         Child, (IPTR)VGroup,
 	    Child, (IPTR)(_ThemePreviewObj = ThemePreviewObject,
@@ -547,7 +549,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Export
     }
     else
     {
-        DeleteVar(THEMES_ENVPATH, GVF_GLOBAL_ONLY);
+        DeleteVar(THEMES_ENVPATH, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
         success = DoMethod(self, MUIM_PrefsEditor_ExportFH, NULL);
     }
 
@@ -561,7 +563,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
 )
 {
     SETUP_INST_DATA;
-    BOOL success = TRUE;
+    BOOL success = TRUE, backup;
     char *exportBuffer;
     IPTR  active = 0;
 
@@ -569,6 +571,10 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
 
     if ((exportBuffer = AllocVec(1024, MEMF_CLEAR)) != NULL)
     {
+        /* Check if the generic prefs editor class is just making a backup */
+        NameFromFH(message->fh, exportBuffer, 1024);
+        backup = strstr(exportBuffer, "theme.var") == NULL;
+
         if (message->fh)
         {
             GET(data->ae_ThemeChoice, MUIA_Cycle_Active, &active);
@@ -579,18 +585,23 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
             if (FPuts(message->fh, exportBuffer))
                 success = FALSE;
 
-            if (XGET(data->ae_OptionZune, MUIA_Selected))
+            if (!backup)
             {
-                sprintf(exportBuffer, "True");
-                SetVar(THEMES_OPTZUNEPATH, exportBuffer, 4,GVF_GLOBAL_ONLY);
+                if (XGET(data->ae_OptionZune, MUIA_Selected))
+                {
+                    sprintf(exportBuffer, "True");
+                    SetVar(THEMES_OPTZUNEPATH, exportBuffer, 4,
+                        GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
+                }
+                else
+                {
+                    DeleteVar(THEMES_OPTZUNEPATH,
+                        GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
+                }
             }
-            else
-            {
-                DeleteVar(THEMES_OPTZUNEPATH, GVF_GLOBAL_ONLY);
-            }
-            // TODO: Signal Decoration to relaod the theme
+            // TODO: Signal Decoration to reload the theme
         }
-        if (XGET(data->ae_CompEnable, MUIA_Selected))
+        if (XGET(data->ae_CompEnable, MUIA_Selected) && !backup)
         {
             int ebPos;
 
@@ -616,11 +627,12 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
                 sprintf(exportBuffer + ebPos, " ALPHA");
                 ebPos = strlen(exportBuffer);
             }
-            SetVar(COMPOSITE_ENVPATH, exportBuffer, ebPos,GVF_GLOBAL_ONLY);
+            SetVar(COMPOSITE_ENVPATH, exportBuffer, ebPos,
+                GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
         }
         else
         {
-            DeleteVar(COMPOSITE_ENVPATH, GVF_GLOBAL_ONLY);
+            DeleteVar(COMPOSITE_ENVPATH, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
         }
     }
     FreeVec(exportBuffer);
