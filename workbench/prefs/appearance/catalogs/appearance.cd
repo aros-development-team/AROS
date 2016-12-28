@@ -51,7 +51,7 @@ MSG_GAD_CANCEL (//)
 Cancel
 ;
 MSG_ENABLETHEMES (//)
-Enable Theme'ing?
+Enable theming
 ;
 MSG_PREVIEW (//)
 Preview
@@ -60,33 +60,33 @@ MSG_NOPREVIEW (//)
 -Preview Unavailable-
 ;
 MSG_SELECTEDTHEME (//)
-Theme
+Theme:
 ;
 MSG_ENABLEZUNEPREFS (//)
-Inherit Zune Configuration?
+Override Zune configuration
 ;
 MSG_ENABLEWANDPREFS (//)
 Inherit Wanderer Configuration?
 ;
-MSG_TAB_THEMEING (//)
-Theme'ing
+MSG_SEC_THEMING (//)
+Theming
 ;
-MSG_TAB_COMPOSITING (//)
+MSG_SEC_COMPOSITING (//)
 Compositing
 ;
 MSG_ENABLE_SCREEN_COMPOSITION (//)
-Enable Screen Composition
+Enable screen composition
 ;
 MSG_COMPOSITE_BELOW (//)
-Composite Below
+Composite below
 ;
 MSG_COMPOSITE_LEFT (//)
-Composite Left
+Composite left
 ;
 MSG_COMPOSITE_RIGHT (//)
-Composite Right
+Composite right
 ;
 MSG_ENABLE_COMPOSITE_WITH_ALPHA (//)
-Enable Compositing with Alpha
+Enable compositing with alpha
 ;
 ;
