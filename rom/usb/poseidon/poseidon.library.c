@@ -1450,7 +1450,7 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
          LIBBASETYPEPTR, ps, 39, psd)
 {
     AROS_LIBFUNC_INIT
-#define SUBTASKSTACKSIZE 8192
+#define SUBTASKSTACKSIZE AROS_STACKSIZE
     struct
     {
         struct MemList mrm_ml;
