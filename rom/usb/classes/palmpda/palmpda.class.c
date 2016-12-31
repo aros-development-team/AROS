@@ -456,7 +456,7 @@ BOOL nLoadClassConfig(struct NepSerialBase *nh)
     /* Create default config */
     nh->nh_CurrentCGC.cgc_ChunkID = AROS_LONG2BE(MAKE_ID('P','A','L','M'));
     nh->nh_CurrentCGC.cgc_Length = AROS_LONG2BE(sizeof(struct ClsGlobalCfg)-8);
-    nh->nh_CurrentCGC.cgc_ShellStack = 8192;
+    nh->nh_CurrentCGC.cgc_ShellStack = AROS_STACKSIZE;
     strcpy(nh->nh_CurrentCGC.cgc_ShellCon, "CON:///130/Palm HotSync Launcher/CLOSE/AUTO/WAIT");
     strcpy(nh->nh_CurrentCGC.cgc_InhibitTask, "SpitfireHSM");
     nh->nh_UsingDefaultCfg = TRUE;
