@@ -497,7 +497,7 @@ BOOL GM_UNIQUENAME(nLoadClassConfig)(struct NepHidBase *nh)
     cdc->cdc_EnableKBReset = TRUE;
     cdc->cdc_EnableRH = TRUE;
     cdc->cdc_ResetDelay = 10;
-    cdc->cdc_ShellStack = 8192;
+    cdc->cdc_ShellStack = AROS_STACKSIZE;
     strcpy(cdc->cdc_ShellCon, "CON:///130/HID Rocket Bay/CLOSE/AUTO/WAIT");
     cdc->cdc_PollingMode = FALSE;
     cdc->cdc_LLPortMode[1] = 2;

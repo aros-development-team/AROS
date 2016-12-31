@@ -5577,7 +5577,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
 
             patch.fse_PatchFlags = 0x0080|0x0010;
             patch.fse_SegList = segList;
-            patch.fse_StackSize = 16384;
+            patch.fse_StackSize = (AROS_STACKSIZE << 1);
             //if(((patch.fse_DosType & 0xffffff00) == 0x46415400) || (patch.fse_DosType == 0x4d534800))
             {
                 KPRINTF(10, ("setting up certain fs values for MS-DOS fs\n"));
@@ -5618,7 +5618,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
             {
                 BOOL installboot;
                 KPRINTF(10, ("MakeDosNode() succeeded, patchflags %04lx\n", patch.fse_PatchFlags));
-                node->dn_StackSize = 16384;
+                node->dn_StackSize = (AROS_STACKSIZE << 1);
 
                 /*node->dn_Priority = 5;*/
                 if(patch.fse_PatchFlags & 0x0001) node->dn_Type = patch.fse_Type;
