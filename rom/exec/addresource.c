@@ -89,7 +89,6 @@
 
 	/* If there's no MMU support, PageSize will stay zero */
 	KrnStatMemory(0, KMS_PageSize, &PrivExecBase(SysBase)->PageSize, TAG_DONE);
-	DINIT("Memory page size: %lu", PrivExecBase(SysBase)->PageSize);
 
 	/*
 	 * On MMU-less hardware kernel.resource will report zero page size.
@@ -100,6 +99,8 @@
 	 */
 	if (!PrivExecBase(SysBase)->PageSize)
 	    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
+
+	DINIT("Memory page size: %lu", PrivExecBase(SysBase)->PageSize);
 
 	/* We print the notice here because kprintf() works only after KernelBase is set up */
 	if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
