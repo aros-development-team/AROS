@@ -1,9 +1,9 @@
 Name=MP3
-Version=$VER: MP3 41.0 (1.5.2005)
+Version=$VER: MP3 41.1 (4.1.2017)
 BaseName=mp3
 Pattern=#?
 Mask=0xff 0xfb
-GroupID=musi
+GroupID=soun
 ID=_mp3
 Flags=DTF_BINARY,DTF_CASE
 Priority=1
