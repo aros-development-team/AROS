@@ -1,9 +1,9 @@
 # DataType Description for WMA
 Name=WMA
-Version=$VER: WMA 1.0 (23.02.2009)
+Version=$VER: WMA 1.1 (4.1.2017)
 BaseName=wma
 Pattern=#?.wma
-GroupID=musi
+GroupID=soun
 ID=wma
 Flags=DTF_BINARY,DTF_CASE
 Priority=0
