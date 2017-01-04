@@ -1,9 +1,9 @@
 Name=PFS
-Version=$VER PFS 1.0 (21.12.2011)
+Version=$VER PFS 1.1 (4.1.2017)
 BaseName=binary
 Pattern=#?
 Mask=0x50 0x46 0x53 0x01
 GroupID=syst
-ID=SFS
+ID=PFS
 Flags=DTF_BINARY,DTF_CASE
 Priority=2
