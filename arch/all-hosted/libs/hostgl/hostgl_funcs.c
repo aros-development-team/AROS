@@ -1,5 +1,5 @@
 /*
-    Copyright 2011-2015, The AROS Development Team. All rights reserved.
+    Copyright 2011-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,13 +10,13 @@
 #include <proto/graphics.h>
 #include <proto/oop.h>
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include "hostgl_ctx_manager.h"
 #include "hostgl_funcs.h"
 #include "hostgl_support.h"
 
-#include <bitmap_class.h>
+#include <x11gfx_bitmapclass.h>
 
 #define SETFBATTR(attribute, value)     \
     {                                   \
@@ -155,7 +155,7 @@ VOID HostGL_AllocatePixmap(struct hostgl_context *ctx)
     {
         if ((hiddbm = HIDD_BM_OBJ(ctx->glXPixmapBM)))
         {
-            OOP_GetAttr(hiddbm, aHidd_X11BitMap_Drawable, (IPTR *) &pixmap);
+            OOP_GetAttr(hiddbm, aHidd_BitMap_X11_Drawable, (IPTR *) &pixmap);
 
             ctx->glXPixmap = GLXCALL(glXCreateGLXPixmap, dsp, ctx->visinfo, pixmap);
         }

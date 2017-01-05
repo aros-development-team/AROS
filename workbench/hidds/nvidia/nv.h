@@ -1,7 +1,7 @@
 #ifndef _NV_H
 #define _NV_H
 /*
-    Copyright © 2004-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: private header file
@@ -20,7 +20,7 @@
 #include <oop/oop.h>
 
 #include <hidd/pci.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include "nv_local.h"
 #include "riva_hw.h"

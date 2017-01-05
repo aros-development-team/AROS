@@ -1,0 +1,19 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR      := $(AROS_TESTS)/hidds/gfx
+
+FILES := \
+ convertpixels \
+ hiddmodeid \
+ modeid
+
+#MM- test : test-hidd-graphics
+#MM test-hidd-graphics : includes linklibs
+
+%build_progs mmake=test-hidd-graphics \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="hiddstubs"
+	
+%common

@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM kernel-hidd-graphics-amiga-m68k: kernel-hidd-includes
+#MM kernel-hidd-gfx-amiga-m68k: kernel-hidd-includes
 
 FILES  := rgbconv
 AFILES := 
@@ -10,7 +10,7 @@ AFILES :=
 USER_CFLAGS := -I$(SRCDIR)/rom/hidds/graphics
 
 %build_archspecific \
-  mainmmake=kernel-hidd-graphics maindir=rom/hidds/graphics \
+  mainmmake=kernel-hidd-gfx maindir=rom/hidds/graphics \
   asmfiles=$(AFILES) files=$(FILES) \
   arch=amiga-m68k
 

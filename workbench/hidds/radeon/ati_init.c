@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,7 +24,7 @@
 
 #include <hidd/i2c.h>
 #include <hidd/pci.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include "ati.h"
 #include "ids.h"
@@ -339,4 +339,4 @@ static int ATI_Expunge(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(ATI_Init, 0)
 ADD2EXPUNGELIB(ATI_Expunge, 0)
-ADD2LIBS((STRPTR)"graphics.hidd", 0, static struct Library *, __gfxbase);
+ADD2LIBS((STRPTR)"gfx.hidd", 0, static struct Library *, __gfxbase);

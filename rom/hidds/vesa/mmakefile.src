@@ -2,12 +2,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM kernel-hidd-vesagfx : kernel-hidd-gfx-includes
+
 FILES	:=	\
 	vesagfx_init \
-	vesagfxclass \
-	hardware \
-	bitmap
+	vesagfx_hiddclass \
+	vesagfx_support \
+	vesagfx_bitmapclass
 
-%build_module mmake=kernel-hidd-vesa \
+%build_module mmake=kernel-hidd-vesagfx \
   modname=vesagfx modtype=hidd \
   files=$(FILES)

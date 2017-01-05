@@ -23,7 +23,7 @@
 #include <aros/symbolsets.h>
 #include <graphics/driver.h>
 #include <graphics/gfxbase.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>

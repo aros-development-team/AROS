@@ -2,7 +2,7 @@
 #define HIDD_GDI_H
 
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the gdi HIDD.
@@ -47,7 +47,7 @@ struct GDI_Control
 #include <exec/semaphores.h>
 
 #include "winapi.h"
-#include "gdi_class.h"
+#include "wingdi_hidd.h"
 #include "gdi_hostlib.h"
 
 /***** GDIMouse HIDD *******************/
@@ -63,8 +63,8 @@ struct gdimouse_data
 };
 
 /* IDs */
-#define IID_Hidd_GDIMouse       "hidd.mouse.gdi"
-#define CLID_Hidd_GDIMouse      "hidd.mouse.gdi"
+#define IID_Hidd_Mouse_WinGDI       "hidd.mouse.wingdi"
+#define CLID_Hidd_Mouse_WinGDI      "hidd.mouse.wingdi"
 
 /***** GDIKbd HIDD *******************/
 
@@ -77,8 +77,8 @@ struct gdikbd_data
 };
 
 /* IDs */
-#define IID_Hidd_GDIKbd         "hidd.kbd.gdi"
-#define CLID_Hidd_GDIKbd        "hidd.kbd.gdi"
+#define IID_Hidd_Kbd_WinGDI         "hidd.kbd.wingdi"
+#define CLID_Hidd_Kbd_WinGDI        "hidd.kbd.wingdi"
 
 
 /***** GDIGfx HIDD *******************/

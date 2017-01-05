@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -44,7 +44,7 @@
 #include <proto/cybergraphics.h>
 #include <cybergraphx/cybergraphics.h>
 #else
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #endif
 #include "intuition_intern.h"
 #include "intuition_customize.h"

@@ -1,17 +1,17 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef _VIDEOCOREGFX_BITMAP_H
 #define _VIDEOCOREGFX_BITMAP_H
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 /* This attribute interface is common for both onscreen and offscreen bitmap
    classes, although they don't share a common superclass */
 
-#define IID_Hidd_VideoCoreGfxBitMap             "hidd.bitmap.videocore"
+#define IID_Hidd_BitMap_VideoCore             "hidd.bitmap.videocore"
 
 
 enum {

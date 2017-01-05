@@ -1,18 +1,18 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
 #include <proto/oop.h>
 #include <hidd/hidd.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
 #include <oop/oop.h>
 
-#include "uaegfx.h"
-#include "uaegfxbitmap.h"
+#include "uaegfx_intern.h"
+#include "uaegfx_bitmap.h"
 #include "uaertg.h"
 #include "p96call.h"
 

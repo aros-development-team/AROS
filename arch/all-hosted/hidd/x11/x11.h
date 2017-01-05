@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -46,22 +46,22 @@ struct x11mouse_data
 };
 
 /* IDs */
-#define IID_Hidd_X11Mouse	"hidd.mouse.x11"
+#define IID_Hidd_Mouse_X11	"hidd.mouse.x11"
 
 
 /* Methods */
 enum
 {
-    moHidd_X11Mouse_HandleEvent
+    moHidd_Mouse_X11_HandleEvent
 };
 
-struct pHidd_X11Mouse_HandleEvent
+struct pHidd_Mouse_X11_HandleEvent
 {
     OOP_MethodID mID;
     XEvent *event;
 };
 
-VOID Hidd_X11Mouse_HandleEvent(OOP_Object *o, XEvent *event);
+VOID Hidd_Mouse_X11_HandleEvent(OOP_Object *o, XEvent *event);
 
 /***** X11Kbd HIDD *******************/
 
@@ -74,21 +74,21 @@ struct x11kbd_data
 };
 
 /* IDs */
-#define IID_Hidd_X11Kbd		"hidd.kbd.x11"
+#define IID_Hidd_Kbd_X11		"hidd.kbd.x11"
 
 /* Methods */
 enum
 {
-    moHidd_X11Kbd_HandleEvent
+    moHidd_Kbd_X11_HandleEvent
 };
 
-struct pHidd_X11Kbd_HandleEvent
+struct pHidd_Kbd_X11_HandleEvent
 {
     OOP_MethodID     mID;
     XEvent  	    *event;
 };
 
-VOID Hidd_X11Kbd_HandleEvent(OOP_Object *o, XEvent *event);
+VOID Hidd_Kbd_X11_HandleEvent(OOP_Object *o, XEvent *event);
 /* misc */
 
 

@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-hidd-uikit-kobj: kernel-hidd-uikit-native
 #MM kernel-hidd-uikit-kobj-quick: kernel-hidd-uikit-native
 
-FILES := gfxclass bitmapclass eventtask startup
+FILES := uikit_hiddclass uikit_bitmapclass eventtask startup
 
 %build_module mmake=kernel-hidd-uikit \
   modname=uikit modtype=hidd \

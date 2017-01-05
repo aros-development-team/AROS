@@ -271,7 +271,7 @@
      */
     if (ret == DD_OK)
     {
-    	OOP_Object *gfxhidd = OOP_NewObject(gfxclass, NULL, attrs);
+    	OOP_Object *gfxhidd = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, gfxclass, attrs);
 
 	if (gfxhidd)
 	{

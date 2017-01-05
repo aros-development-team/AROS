@@ -2,7 +2,7 @@
 #ifndef _AMIGACHIPSETBITMAP_H
 #define _AMIGACHIPSETBITMAP_H
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 void resetmode(struct amigavideo_staticdata *data);
 BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data*);

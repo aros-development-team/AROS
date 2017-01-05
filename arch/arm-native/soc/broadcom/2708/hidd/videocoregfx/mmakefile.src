@@ -6,7 +6,7 @@ USER_LDFLAGS := -static
 
 FILES	:=	\
 	videocoregfx_init \
-	videocoregfx_class \
+	videocoregfx_hiddclass \
 	videocoregfx_memory \
 	videocoregfx_sdtv \
 	videocoregfx_hdmi \

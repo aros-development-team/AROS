@@ -1,10 +1,10 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <exec/types.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include "colorconv/rgbconv_macros.h"
 #include "colorconv/rgbconv_rgbswap.h"

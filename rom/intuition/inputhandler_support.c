@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -25,7 +25,7 @@
 #include <intuition/cghooks.h>
 #include <intuition/sghooks.h>
 #include <devices/inputevent.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <string.h>
 
 #include "inputhandler.h"

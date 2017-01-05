@@ -1,5 +1,5 @@
 /*
-    Copyright 2011-2015, The AROS Development Team. All rights reserved.
+    Copyright 2011-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,7 +12,7 @@
 #include "hostgl_funcs.h"
 #include "hostgl_support.h"
 
-#include <bitmap_class.h>
+#include <x11gfx_bitmapclass.h>
 
 /*****************************************************************************
 

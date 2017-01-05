@@ -7,9 +7,19 @@ COLORCONVFILES := \
                 rgbconv_arch \
                 colorconv_init \
 
-FILES       := graphics_init GraphicsClass BM_Class CM_Class GC_Class  \
-               planarbm chunkybm convertpixels memblit	\
-               pixfmt sync
+FILES       := \
+                gfx_init \
+                gfx_hwclass \
+                gfx_hiddclass \
+                gfx_bitmapclass \
+                gfx_colormapclass \
+                gfx_gcclass \
+                gfx_planarbitmapclass \
+                gfx_chunkybitmapclass \
+                gfx_bitmapconvertpixels \
+                gfx_bitmapmemblit \
+                gfx_pixfmtclass \
+                gfx_syncclass
 
 NOWARN_FLAGS := $(NOWARN_PARENTHESES)
 USER_CFLAGS      := $(NOWARN_FLAGS) -DAROS_USE_OOP \
@@ -18,11 +28,11 @@ USER_CFLAGS      := $(NOWARN_FLAGS) -DAROS_USE_OOP \
                     -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
 
-%build_module mmake=kernel-hidd-graphics \
-  modname=graphics modtype=hidd \
+%build_module mmake=kernel-hidd-gfx \
+  modname=gfx modtype=hidd \
   files="$(FILES) $(COLORCONVFILES)"
 
-LIBNAME     := graphics
+LIBNAME     := gfx
 
 INCLUDE_FILES    := $(call WILDCARD, include/*.h)
 

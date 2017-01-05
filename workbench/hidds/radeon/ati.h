@@ -2,7 +2,7 @@
 #define _ATI_H
 
 /*
-    Copyright ï¿½ 2004-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,7 +21,7 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include <oop/oop.h>
 

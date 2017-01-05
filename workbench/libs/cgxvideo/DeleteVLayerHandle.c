@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <aros/debug.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include "cgxvideo_intern.h"
 

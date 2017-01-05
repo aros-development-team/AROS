@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,13 +9,13 @@
 #include <aros/symbolsets.h>
 #include <graphics/driver.h>
 #include <graphics/gfxbase.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
 
-#include "amigavideogfx.h"
-#include "amigavideobitmap.h"
+#include "amigavideo_hidd.h"
+#include "amigavideo_bitmap.h"
 #include "chipset.h"
 
 #include LC_LIBDEFS_FILE

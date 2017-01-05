@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef _VMWARESVGA_BITMAP_H
 #define _VMWARESVGA_BITMAP_H
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include "vmwaresvgamouse.h"
 
 /* This attribute interface is common for both vga onscreen and offscreen bitmap

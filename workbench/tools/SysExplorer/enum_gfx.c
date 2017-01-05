@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015, The AROS Development Team.
+    Copyright (C) 2015-2017, The AROS Development Team.
     $Id$
 */
 
@@ -19,7 +19,7 @@
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include "locale.h"
 #include "classes.h"

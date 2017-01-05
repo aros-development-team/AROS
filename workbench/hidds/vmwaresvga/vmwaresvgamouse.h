@@ -1,7 +1,7 @@
 #ifndef _VMWARESVGA_MOUSE_H
 #define _VMWARESVGA_MOUSE_H
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 struct MouseData {
 	APTR shape;

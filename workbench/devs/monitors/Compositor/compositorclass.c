@@ -33,7 +33,7 @@
 #include <proto/utility.h>
 
 #include <graphics/view.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include "compositor_intern.h"
 

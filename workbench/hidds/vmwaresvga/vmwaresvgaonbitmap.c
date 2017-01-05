@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for VMWareSVGA hidd.
@@ -19,7 +19,7 @@
 #include <aros/symbolsets.h>
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <oop/oop.h>
 
 #include "vmwaresvgabitmap.h"

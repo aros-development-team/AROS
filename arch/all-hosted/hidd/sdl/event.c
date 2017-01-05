@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright (c) 2010 The AROS Development Team. All rights reserved.
+ * Copyright (c) 2010-2017 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -92,7 +92,7 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
                             D(bug("[sdl] got mouse event, sending to mouse hidd\n"));
 
                             if (LIBBASE->mousehidd)
-				Hidd_SDLMouse_HandleEvent(LIBBASE->mousehidd, &e[i]);
+				Hidd_Mouse_SDL_HandleEvent(LIBBASE->mousehidd, &e[i]);
                         }
                         break;
 
@@ -101,7 +101,7 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
                         D(bug("[sdl] got keyboard event, sending to keyboard hidd\n"));
 
                         if (LIBBASE->kbdhidd)
-                            Hidd_SDLKbd_HandleEvent(LIBBASE->kbdhidd, &e[i]);
+                            Hidd_Kbd_SDL_HandleEvent(LIBBASE->kbdhidd, &e[i]);
 
                         break;
                 }

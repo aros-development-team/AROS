@@ -1,11 +1,11 @@
 #ifndef _NOUVEAU_INTERN_H
 #define _NOUVEAU_INTERN_H
 /*
-    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <hidd/i2c.h>
 #include <hidd/gallium.h>
 

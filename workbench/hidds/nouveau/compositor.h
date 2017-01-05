@@ -1,7 +1,7 @@
 #ifndef HIDD_COMPOSITOR_H
 #define HIDD_COMPOSITOR_H
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,7 +18,7 @@
 #endif
 
 #ifndef HIDD_GRAPHICS
-#   include <hidd/graphics.h>
+#   include <hidd/gfx.h>
 #endif
 
 /* Compositor interface */

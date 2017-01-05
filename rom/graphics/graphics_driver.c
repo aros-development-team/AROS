@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -35,7 +35,7 @@
 #include <intuition/intuition.h>
 
 #include <hidd/compositor.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include <cybergraphx/cybergraphics.h>
 
@@ -50,7 +50,7 @@
 #include "gfxfuncsupport.h"
 #include "fontsupport.h"
 
-#define DEBUG_INIT(x)
+#define DEBUG_INIT(x) x
 #define DEBUG_LOADVIEW(x)
 
 /* Define this if you wish to enforce using software mouse sprite
@@ -90,7 +90,7 @@ int driver_init(struct GfxBase * GfxBase)
     EnterFunc(bug("driver_init()\n"));
 
     /* Our underlying RTG subsystem core must be already up and running */
-    if (!OpenLibrary("graphics.hidd", 0))
+    if (!OpenLibrary("gfx.hidd", 0))
         return FALSE;
 
     /* Initialize the semaphores */

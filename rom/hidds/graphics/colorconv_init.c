@@ -9,7 +9,7 @@
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
 
-#include "graphics_intern.h"
+#include "gfx_intern.h"
 
 #include LC_LIBDEFS_FILE
 

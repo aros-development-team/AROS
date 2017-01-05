@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team.
+    Copyright (C) 2013-2017, The AROS Development Team.
     $Id$
 */
 
@@ -10,7 +10,7 @@
 #include <exec/memory.h>
 #include <hidd/hidd.h>
 #include <hidd/system.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <hidd/storage.h>
 #include <libraries/asl.h>
 #include <mui/NListtree_mcc.h>

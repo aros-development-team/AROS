@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: nvidia.hidd initialization
@@ -69,7 +69,7 @@
 
 #include <hidd/pci.h>
 #include <hidd/hidd.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include <aros/symbolsets.h>
 
