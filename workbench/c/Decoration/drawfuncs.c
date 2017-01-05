@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2016, The AROS Development Team.
+    Copyright © 2011-2017, The AROS Development Team.
     $Id$
 */
 
@@ -14,7 +14,7 @@
 #include <proto/layers.h>
 #include <proto/exec.h>
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include <math.h>
 

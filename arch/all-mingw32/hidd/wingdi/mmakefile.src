@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
+FILES := startup gdi_hostlib wingdi_hiddclass wingdi_bitmapclass wingdi_kbdclass wingdi_mouseclass
 
 #MM kernel-hidd-wingdi-kobj  : kernel-hidd-wingdi-native devs-monitors-gdi
 #MM kernel-hidd-wingdi       : kernel-hidd-wingdi-native

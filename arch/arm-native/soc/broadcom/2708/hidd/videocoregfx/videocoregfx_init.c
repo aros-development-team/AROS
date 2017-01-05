@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VideoCore Hidd initialisation code
@@ -22,12 +22,12 @@
 #include <exec/lists.h>
 #include <graphics/driver.h>
 #include <graphics/gfxbase.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
 
-#include "videocoregfx_class.h"
+#include "videocoregfx_hidd.h"
 #include "videocoregfx_hardware.h"
 
 #include LC_LIBDEFS_FILE
@@ -74,8 +74,8 @@ static BOOL FNAME_SUPPORT(GetAttrBases)(const STRPTR *iftable, OOP_AttrBase *bas
 
 static const STRPTR interfaces[] =
 {
-    IID_Hidd_VideoCoreGfx,
-    IID_Hidd_VideoCoreGfxBitMap,
+    IID_Hidd_Gfx_VideoCore,
+    IID_Hidd_BitMap_VideoCore,
     IID_Hidd_ChunkyBM,
     IID_Hidd_BitMap,
     IID_Hidd_PixFmt,

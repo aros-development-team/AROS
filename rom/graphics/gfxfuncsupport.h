@@ -4,7 +4,7 @@
 /****************************************************************************************/
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,7 +12,7 @@
 
 #include <graphics/clip.h>
 #include <graphics/gfxbase.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #define PEN_BITS    8
 #define NUM_COLORS  (1L << PEN_BITS)
@@ -55,7 +55,7 @@ do                                                                             \
 	(HIDD_BM_DRVDATA(bitmap)->id | HIDD_BM_HIDDMODE(bitmap))
 
 /* An idea for future Amiga(tm) chipset driver: it should be implemented in
-   architecture-specific part of graphics.hidd. In this case many things will
+   architecture-specific part of gfx.hidd. In this case many things will
    start working automatically */
 #define GET_VP_DRIVERDATA(vp) \
 	((vp->ColorMap && vp->ColorMap->NormalDisplayInfo) \

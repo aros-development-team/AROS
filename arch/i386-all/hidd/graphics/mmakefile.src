@@ -2,15 +2,15 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM kernel-hidd-graphics-i386 : kernel-hidd-includes
+#MM kernel-hidd-gfx-i386 : kernel-hidd-includes
 
 FILES  := rgbconv_arch
 AFILES := 
 
-USER_CFLAGS := -I$(SRCDIR)/rom/hidds/graphics
+USER_CFLAGS := -I$(SRCDIR)/rom/hidds/gfx
 
 %build_archspecific \
-  mainmmake=kernel-hidd-graphics maindir=rom/hidds/graphics \
+  mainmmake=kernel-hidd-graphics maindir=rom/hidds/gfx \
   asmfiles=$(AFILES) files=$(FILES) \
   arch=i386
 

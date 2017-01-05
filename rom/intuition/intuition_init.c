@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -12,7 +12,7 @@
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <exec/alerts.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <oop/oop.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -16,7 +16,7 @@
 #include "x11_types.h"
 #include LC_LIBDEFS_FILE
 #include "x11_hostlib.h"
-#include "fullscreen.h"
+#include "x11gfx_fullscreen.h"
 
 /****************************************************************************************/
 

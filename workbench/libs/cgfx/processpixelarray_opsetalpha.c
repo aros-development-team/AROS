@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,7 +7,7 @@
 
 #include <proto/cybergraphics.h>
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <cybergraphx/cybergraphics.h>
 #include <exec/types.h>
 

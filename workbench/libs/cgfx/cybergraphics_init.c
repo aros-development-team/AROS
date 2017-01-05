@@ -1,6 +1,11 @@
+/*
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <proto/oop.h>
 
 #include "cybergraphics_intern.h"

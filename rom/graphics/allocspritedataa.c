@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function AllocSpriteDataA()
@@ -14,7 +14,7 @@
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/sprite.h>
 #include <graphics/scale.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <utility/tagitem.h>
 #include <exec/exec.h>
 #include <proto/oop.h>

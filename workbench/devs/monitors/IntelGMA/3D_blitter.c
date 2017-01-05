@@ -1,10 +1,10 @@
 /*
-    Copyright Â© 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /*
- * Copyright Â© 2011 Intel Corporation
+ * Copyright © 2011 Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,14 +27,14 @@
  *
  * Authors:
  *    Chris Wilson (intel-gpu-tools)
- *    2012, The AROS Development Team.
+ *    2012-2017, The AROS Development Team.
  */
 
 #include <proto/exec.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <aros/debug.h>
 
-#include "intelG45_intern.h"
+#include "intelgma_hidd.h"
 #include "intelG45_regs.h"
 
 //#include "i915/i915_reg.h" // crashes !?

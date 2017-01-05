@@ -99,14 +99,14 @@ DRM_PATH = $(SRCDIR)/$(CURDIR)/drm/
 XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
 
 NOUVEAU_HIDD_SOURCES := \
-            nouveauclass \
+            nouveau_hiddclass \
             nouveau_init \
-            nouveaubitmapclass \
-            nouveaugalliumclass \
+            nouveau_bitmapclass \
+            nouveau_galliumclass \
             nouveau_accel \
-            nouveaui2c \
+            nouveau_i2cclass \
             arosc_emul \
-            compositorclass \
+            nouveau_compositorclass \
             $(addprefix $(DRM_PATH),$(AROS_DRM_CORE_SOURCES))           \
             $(addprefix $(DRM_PATH),$(AROS_DRM_NVIDIA_SOURCES))         \
             $(addprefix $(DRM_PATH),$(AROS_LIBDRM_CORE_SOURCES))        \

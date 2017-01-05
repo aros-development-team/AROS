@@ -59,7 +59,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-hidd-graphics \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
-#MM     kernel-hidd-sm502 \
+#MM     hidd-sm502gfx \
 #MM     kernel-usb-sam440-ppc \
 #MM     kernel-usb-usbromstartup \
 #MM     kernel-processor \

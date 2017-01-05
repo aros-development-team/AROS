@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2004-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -166,7 +166,7 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, CreateObject)
                 - aHidd_BitMap_ModeID:  a modeid. create a nondisplayable
                     bitmap with the size  and pixelformat of a gfxmode.
                 - aHidd_BitMap_StdPixFmt: a standard pixelformat as described in
-                    hidd/graphics.h
+                    hidd/gfx.h
                 - aHidd_BitMap_Friend: if this is supplied and none of the two above
                     are supplied, then the pixel format of the created bitmap
                     will be the same as the one of the friend bitmap.

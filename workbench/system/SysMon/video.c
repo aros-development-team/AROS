@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,7 +17,7 @@
 
 #include <proto/graphics.h>
 #include <proto/oop.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 struct BitMap * bm = NULL;
 #undef HiddGfxNouveauAttrBase
 #undef HiddBitMapAttrBase

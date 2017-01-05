@@ -1,10 +1,10 @@
 /*
-    Copyright 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <graphics/rastport.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <proto/alib.h>
 #include <proto/layers.h>
 #include <proto/graphics.h>

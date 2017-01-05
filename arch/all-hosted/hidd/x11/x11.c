@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -16,7 +16,7 @@
 #include "x11_types.h"
 #include "x11.h"
 #include "x11_hostlib.h"
-#include "fullscreen.h"
+#include "x11gfx_fullscreen.h"
 
 VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 
@@ -328,7 +328,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                     ObtainSemaphoreShared(&xsd->sema);
                     if (xsd->kbdhidd)
                     {
-                        Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &keyrelease_event);
+                        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &keyrelease_event);
                     }
                     ReleaseSemaphore(&xsd->sema);
                     keyrelease_pending = FALSE;
@@ -381,7 +381,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                 ObtainSemaphoreShared(&xsd->sema);
                 if (xsd->kbdhidd)
                 {
-                    Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &keyrelease_event);
+                    Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &keyrelease_event);
                 }
                 ReleaseSemaphore(&xsd->sema);
             }
@@ -490,7 +490,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
                     ObtainSemaphoreShared(&xsd->sema);
                     if (xsd->mousehidd)
-                        Hidd_X11Mouse_HandleEvent(xsd->mousehidd, &event);
+                        Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, &event);
                     ReleaseSemaphore(&xsd->sema);
                     break;
 
@@ -500,7 +500,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
                     ObtainSemaphoreShared(&xsd->sema);
                     if (xsd->mousehidd)
-                        Hidd_X11Mouse_HandleEvent(xsd->mousehidd, &event);
+                        Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, &event);
                     ReleaseSemaphore(&xsd->sema);
                     break;
 
@@ -510,7 +510,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
                     ObtainSemaphoreShared(&xsd->sema);
                     if (xsd->mousehidd)
-                        Hidd_X11Mouse_HandleEvent(xsd->mousehidd, &event);
+                        Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, &event);
                     ReleaseSemaphore(&xsd->sema);
                     break;
 
@@ -551,7 +551,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                     ObtainSemaphoreShared(&xsd->sema);
                     if (xsd->kbdhidd)
                     {
-                        Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
+                        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &event);
                     }
                     ReleaseSemaphore(&xsd->sema);
                     break;
@@ -574,7 +574,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                     ObtainSemaphoreShared( &xsd->sema );
                     if (xsd->kbdhidd)
                     {
-                        Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
+                        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &event);
                     }
                     ReleaseSemaphore( &xsd->sema );
 #endif

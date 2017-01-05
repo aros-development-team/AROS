@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <cybergraphx/cybergraphics.h>
 
 #include "cybergraphics_intern.h"

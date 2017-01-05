@@ -9,7 +9,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM	kernel-debug \
 #MM	kernel-fs-con \
 #MM     kernel-graphics \
-#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-gfx \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-utility \
@@ -41,6 +41,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM	kernel-efi-includes \
 #MM     kernel-hidd-includes \
 #MM	kernel-hostlib-includes \
+#MM     kernel-hidd-gfx-includes \
 #MM     kernel-graphics-includes \
 #MM     kernel-utility-includes \
 #MM     kernel-intuition-includes \
@@ -80,7 +81,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-dosboot \
 #MM	kernel-filesystem \
 #MM     kernel-graphics \
-#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-gfx \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-utility \
@@ -110,7 +111,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM	kernel-fs-ram \
 #MM     kernel-fs-con \
 #MM     kernel-graphics \
-#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-gfx \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-utility \
@@ -130,7 +131,7 @@ include $(SRCDIR)/config/aros.cfg
 
 BASE_DEVICES  := console input gameport keyboard
 BASE_HANDLERS := ram con
-BASE_HIDD     := hiddclass graphics keyboard mouse
+BASE_HIDD     := hiddclass gfx keyboard mouse
 BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 

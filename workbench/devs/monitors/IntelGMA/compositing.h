@@ -18,7 +18,7 @@
 #endif
 
 #ifndef HIDD_GRAPHICS
-#   include <hidd/graphics.h>
+#   include <hidd/gfx.h>
 #endif
 
 /* Compositing interface */

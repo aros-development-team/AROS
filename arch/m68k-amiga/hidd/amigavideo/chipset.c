@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,11 +11,11 @@
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
 #include <hardware/cia.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <graphics/modeid.h>
 
-#include "amigavideogfx.h"
-#include "amigavideobitmap.h"
+#include "amigavideo_hidd.h"
+#include "amigavideo_bitmap.h"
 #include "chipset.h"
 
 #define DEBUG 0

@@ -32,8 +32,21 @@ X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 X11KEYMAPTABLE_ALT_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey-alt.table
 X11KEYMAPTABLE_ALT_NB_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey-alt-nb.table
 
-FILES	   := startup x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap \
-              x11kbd x11mouse x11clipboard xshm fullscreen bitmap_common
+FILES :=  \
+    startup \
+    x11_hostlib \
+    x11_init \
+    x11 \
+    x11_support \
+    x11gfx_hiddclass \
+    x11gfx_onbitmap \
+    x11gfx_offbitmap \
+    x11_kbdclass \
+    x11_mouseclass \
+    x11_clipboard \
+    x11_xshm \
+    x11gfx_fullscreen \
+    x11gfx_bitmapclass
 
 #MM kernel-x11gfx : x11keymaptable devs-monitors-x11
 #MM kernel-x11gfx-kobj : x11keymaptable devs-monitors-x11

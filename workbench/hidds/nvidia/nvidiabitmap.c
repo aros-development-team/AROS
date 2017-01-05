@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NVidia bitmap class
@@ -10,7 +10,7 @@
 #include <exec/memory.h>
 
 #include <hidd/hidd.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include <proto/exec.h>
 #include <proto/oop.h>

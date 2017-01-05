@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,7 @@
 #include "radeon_macros.h"
 
 #include <oop/oop.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <hidd/hidd.h>
 
 #include <proto/oop.h>

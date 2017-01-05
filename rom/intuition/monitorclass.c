@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
 #include <cybergraphx/cybergraphics.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <hidd/hidd.h>
 #include <graphics/driver.h>
 #include <graphics/sprite.h>

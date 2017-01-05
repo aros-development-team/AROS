@@ -2,17 +2,18 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM hidd-sm502gfx : kernel-hidd-gfx-includes
+
 USER_LDFLAGS := -static
 
 FILES	:=	\
-	sm502_init \
-	sm502gfxclass \
-	hardware \
-	bitmap
+	sm502gfx_init \
+	sm502gfx_hiddclass \
+	sm502gfx_support \
+	sm502gfx_bitmapclass
 
-#MM- workbench-hidds: hidd-sm502
-#MM- hidd-sm502-includes: kernel-hidd-pci-includes
+#MM- hidd-sm502gfx-includes: kernel-hidd-pci-includes
 
-%build_module mmake=hidd-sm502 \
-  modname=sm502 modtype=hidd \
+%build_module mmake=hidd-sm502gfx \
+  modname=sm502gfx modtype=hidd \
   files=$(FILES)

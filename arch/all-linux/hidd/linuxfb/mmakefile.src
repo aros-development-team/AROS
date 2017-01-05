@@ -5,10 +5,15 @@ include $(SRCDIR)/config/aros.cfg
 USER_LDFLAGS		= -static
 USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
-FILES := startup linuxfb_init gfxclass bmclass
+FILES	:=	\
+	linuxfbgfx_startup \
+	linuxfbgfx_init \
+	linuxfbgfx_hiddclass \
+	linuxfbgfx_bitmapclass
+
 
 %build_module mmake=kernel-hidd-linuxfb \
-  modname=linuxfb modtype=hidd \
+  modname=linuxfbgfx modtype=hidd \
   files=$(FILES) archspecific=yes
 
 %common

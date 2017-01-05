@@ -24,7 +24,7 @@ title AROS on Sam4x0
     module L/fat-handler
     module Devs/FileSystem.resource
     module Devs/gameport.device
-    module Devs/Drivers/graphics.hidd
+    module Devs/Drivers/gfx.hidd
     module Libs/graphics.library
     module Devs/Drivers/hiddclass.hidd
     module Classes/USB/hid.class
@@ -52,7 +52,7 @@ title AROS on Sam4x0
     module L/sfs-handler
     module Devs/shell.resource
     module Devs/shellcommands.resource
-    module Devs/Drivers/sm502.hidd
+    module Devs/Drivers/sm502gfx.hidd
     module boot/sam440/Devs/timer.device
     module Devs/usbromstartup.resource
     module Libs/utility.library
@@ -79,7 +79,7 @@ title AROS on Sam4x0 Debug
     module L/fat-handler
     module Devs/FileSystem.resource
     module Devs/gameport.device
-    module Devs/Drivers/graphics.hidd
+    module Devs/Drivers/gfx.hidd
     module Libs/graphics.library
     module Devs/Drivers/hiddclass.hidd
     module Classes/USB/hid.class
@@ -107,7 +107,7 @@ title AROS on Sam4x0 Debug
     module L/sfs-handler
     module Devs/shell.resource
     module Devs/shellcommands.resource
-    module Devs/Drivers/sm502.hidd
+    module Devs/Drivers/sm502gfx.hidd
     module boot/sam440/Devs/timer.device
     module Devs/usbromstartup.resource
     module Libs/utility.library
@@ -132,7 +132,7 @@ title AROS on Sam4x0 Test Alternative Usb
     module L/fat-handler
     module Devs/FileSystem.resource
     module Devs/gameport.device
-    module Devs/Drivers/graphics.hidd
+    module Devs/Drivers/gfx.hidd
     module Libs/graphics.library
     module Devs/Drivers/hiddclass.hidd
     module Classes/USB/hid.hidd
@@ -155,7 +155,7 @@ title AROS on Sam4x0 Test Alternative Usb
     module Devs/Drivers/pci.hidd
     module boot/sam440/Devs/processor.resource
     module L/sfs-handler
-    module Devs/Drivers/sm502.hidd
+    module Devs/Drivers/sm502gfx.hidd
     module boot/sam440/Devs/timer.device
     module Devs/Drivers/usb.hidd
     module Libs/utility.library

@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
-FILES := startup agfx abitmap akbd amouse server
+FILES := startup androidgfx_hiddclass androidgfx_bitmap android_kbdclass android_mouseclass android_server
 
 %build_module mmake=kernel-hidd-androidgfx \
   modname=androidgfx modtype=hidd \

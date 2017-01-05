@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,10 +12,10 @@
 #include <proto/utility.h>
 #include <assert.h>
 #include <graphics/gfx.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <oop/oop.h>
 
-#include "videocoregfx_class.h"
+#include "videocoregfx_hidd.h"
 
 #define ARRAYSIZE_TRUECOLOR     13
 #define ARRAYSIZE_LUT           15

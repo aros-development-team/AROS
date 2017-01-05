@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: vesa gfx Hidd for standalone i386 AROS
+    Desc: VESA Gfx Hidd for standalone i386 AROS
     Lang: english
 */
 
@@ -15,13 +15,13 @@
 #include <exec/lists.h>
 #include <graphics/driver.h>
 #include <graphics/gfxbase.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
 
-#include "hardware.h"
-#include "vesagfxclass.h"
+#include "vesagfx_support.h"
+#include "vesagfx_hidd.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -70,9 +70,9 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd
 };
 
-static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
+static int VESAGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct VesaGfx_staticdata *xsd = &LIBBASE->vsd;
+    struct VESAGfx_staticdata *xsd = &LIBBASE->vsd;
     struct GfxBase *GfxBase;
     ULONG err;
     int res = FALSE;
@@ -90,12 +90,12 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
             if (GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
             {
                 xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
-                D(bug("[VESA] BitMap class @ 0x%p\n", xsd->basebm));
+                D(bug("[VESAGfx] BitMap class @ 0x%p\n", xsd->basebm));
 
                 InitSemaphore(&xsd->framebufferlock);
                 InitSemaphore(&xsd->HW_acc);
 
-                D(bug("[VESA] Init: Everything OK, installing driver\n"));
+                D(bug("[VESAGfx] Init: Everything OK, installing driver\n"));
                 
                 /* 
                  * It is unknown (and no way to know) what hardware part this driver uses.
@@ -106,7 +106,7 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
                  */
                 err = AddDisplayDriver(xsd->vesagfxclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
 
-                D(bug("[VESA] AddDisplayDriver() result: %u\n", err));
+                D(bug("[VESAGfx] AddDisplayDriver() result: %u\n", err));
                 if (!err)
                 {
                     /* expunge protection */
@@ -119,9 +119,9 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
     }
     else
     {
-	D(bug("[VESA] Failed to open graphics.library!\n"));
+	D(bug("[VESAGfx] Failed to open graphics.library!\n"));
     }
     return res;
 }
 
-ADD2INITLIB(PCVesa_Init, 0)
+ADD2INITLIB(VESAGfx_Init, 0)

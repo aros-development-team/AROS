@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetDisplayInfoData()
@@ -9,7 +9,7 @@
 #include <aros/debug.h>
 #include <proto/graphics.h>
 #include <graphics/displayinfo.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <proto/oop.h>
 #include <stdio.h>
 #include <string.h>

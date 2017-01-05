@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,7 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <oop/oop.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <aros/atomic.h>
 #include <proto/arossupport.h>
 

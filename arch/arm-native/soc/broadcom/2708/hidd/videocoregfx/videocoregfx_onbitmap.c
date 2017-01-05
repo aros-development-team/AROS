@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VideoCore Gfx Onscreen Bitmap Class.
@@ -20,11 +20,11 @@
 #include <aros/symbolsets.h>
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <oop/oop.h>
 
 #include "videocoregfx_bitmap.h"
-#include "videocoregfx_class.h"
+#include "videocoregfx_hidd.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -38,7 +38,7 @@
 #define MNAME_BM(x) VideoCoreGfxOnBM__Hidd_BitMap__ ## x
 
 #define OnBitmap 1
-#include "videocoregfx_bitmap_common.c"
+#include "videocoregfx_bitmapclass.c"
 
 /*********** BitMap::New() *************************************/
 

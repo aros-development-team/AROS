@@ -44,7 +44,7 @@ Q ?= @
 #MM     kernel-graphics-kobj \
 #MM     kernel-hidd-kobj \
 #MM     kernel-hidd-gayleata-kobj \
-#MM     kernel-hidd-graphics-kobj \
+#MM     kernel-hidd-gfx-kobj \
 #MM     kernel-hidd-kbd-kobj \
 #MM     kernel-hidd-mouse-kobj \
 #MM     kernel-hidd-amigakbd-kobj \
@@ -120,7 +120,7 @@ AFILES=rom_entry rom_init cpu_detect superstack_swap
 KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs ram
-KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
+KHIDDS  := hiddclass gfx keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
 KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
 KHOOKS  := diag romboot
 
@@ -306,7 +306,7 @@ KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
            keymap graphics layers intuition gadtools icon workbench setpatch
 KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
 KHNDLRS := cdfs con afs ram
-KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
+KHIDDS  := hiddclass gfx keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
 KRSRCS  := battclock processor lddemon dosboot cia potgo disk \
            misc shell shellcommands workbook wbtag card FileSystem
 KHOOKS  := alert romboot

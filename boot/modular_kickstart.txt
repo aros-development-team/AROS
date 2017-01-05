@@ -29,7 +29,7 @@ functional difference between ELF and PKG forms.
  ram-handler
  con-handler
  hiddclass.hidd
- graphics.hidd
+ gfx.hidd
  keyboard.hidd
  mouse.hidd
  aros.library

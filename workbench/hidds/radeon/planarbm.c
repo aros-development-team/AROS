@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics planar bitmap class implementation.
@@ -17,7 +17,7 @@
 #include <graphics/gfx.h>
 #include <oop/oop.h>
 
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 
 #include <string.h>
 

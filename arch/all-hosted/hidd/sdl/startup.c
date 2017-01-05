@@ -7,7 +7,7 @@
 
 #include <aros/debug.h>
 #include <dos/dosextens.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <hidd/hidd.h>
@@ -49,7 +49,7 @@ static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_ColorMap,  &HiddColorMapAttrBase  },
     { IID_Hidd_Sync,      &HiddSyncAttrBase      },
     { IID_Hidd_Gfx,       &HiddGfxAttrBase       },
-    { IID_Hidd_SDLBitMap, &HiddSDLBitMapAttrBase },
+    { IID_Hidd_BitMap_SDL, &HiddSDLBitMapAttrBase },
     { IID_Hidd_Mouse,     &HiddMouseAB           },
     { IID_Hidd_Kbd,       &HiddKbdAB             },
     { NULL,               NULL                   }
@@ -62,6 +62,20 @@ struct sdlhidd xsd = {NULL};
 
 static int sdl_Startup(struct sdlhidd *xsd)
 {
+    struct TagItem kbd_tags[] =
+    {
+        {aHidd_Name        , (IPTR)"SDLKbd"                 },
+        {aHidd_HardwareName, (IPTR)"SDL keyboard input"},
+        {aHidd_ProducerName, (IPTR)"libsdl.org"       },
+        {TAG_DONE          , 0                              }
+    };
+    struct TagItem mouse_tags[] =
+    {
+        {aHidd_Name        , (IPTR)"SDLMouse"              },
+        {aHidd_HardwareName, (IPTR)"SDL pointer input"},
+        {aHidd_ProducerName, (IPTR)"libsdl.org"      },
+        {TAG_DONE          , 0                             }
+    };
     struct GfxBase *GfxBase;
     OOP_Object *kbd, *ms = NULL;
     OOP_Object *kbdriver = NULL;
@@ -81,10 +95,10 @@ static int sdl_Startup(struct sdlhidd *xsd)
     if (kbd) {
         ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
 	if (ms) {
-            kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, xsd->kbdclass, NULL);
+            kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, xsd->kbdclass, kbd_tags);
             D(bug("[SDL] Keyboard driver object 0x%p\n", kbdriver));
 	    if (kbdriver) {
-		msdriver = HIDD_Mouse_AddHardwareDriver(ms, xsd->mouseclass, NULL);
+		msdriver = HIDD_Mouse_AddHardwareDriver(ms, xsd->mouseclass, mouse_tags);
 		D(bug("[SDL] Mouse driver object 0x%p\n", msdriver));
 	    }
 	    
@@ -143,7 +157,7 @@ int main(void)
 
     /* If SDLGfx class is already registered, the user attempts to run us twice.
        Just ignore this. */
-    if (OOP_FindClass(CLID_Hidd_SDLGfx)) {
+    if (OOP_FindClass(CLID_Hidd_Gfx_SDL)) {
         D(bug("[SDL] Driver already registered\n"));
 	CloseLibrary(OOPBase);
         return RETURN_OK;
@@ -201,7 +215,7 @@ int main(void)
 		{aMeta_SuperID       , (IPTR)CLID_Hidd_Gfx   },
 		{aMeta_InterfaceDescr, (IPTR)SDLGfx_ifdescr  },
 		{aMeta_InstSize      , sizeof(struct gfxdata)},
-		{aMeta_ID            , (IPTR)CLID_Hidd_SDLGfx},
+		{aMeta_ID            , (IPTR)CLID_Hidd_Gfx_SDL},
 		{TAG_DONE            , 0                     }
 	    };
 

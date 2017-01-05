@@ -15,13 +15,13 @@
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
 #include <oop/oop.h>
-#include <hidd/graphics.h>
+#include <hidd/gfx.h>
 #include <hidd/mouse.h>
 
 #include "sdl_hostlib.h"
 
-#define CLID_Hidd_SDLGfx    "hidd.gfx.sdl"
-#define IID_Hidd_SDLGFX     "hidd.gfx.sdl"
+#define CLID_Hidd_Gfx_SDL    "hidd.gfx.sdl"
+#define IID_Hidd_Gfx_SDL     "hidd.gfx.sdl"
 
 struct gfxdata
 {
@@ -29,7 +29,7 @@ struct gfxdata
     OOP_Object *framebuffer;	/* Framebuffer bitmap object */
 };
 
-#define IID_Hidd_SDLBitMap  "hidd.bitmap.sdl"
+#define IID_Hidd_BitMap_SDL  "hidd.bitmap.sdl"
 
 enum
 {
@@ -46,7 +46,7 @@ struct bmdata {
     BOOL            is_onscreen;
 };
 
-#define IID_Hidd_SDLMouse   "hidd.mouse.sdl"
+#define IID_Hidd_Mouse_SDL   "hidd.mouse.sdl"
 
 struct mousedata {
     VOID (*callback)(APTR, struct pHidd_Mouse_Event *);
@@ -54,17 +54,17 @@ struct mousedata {
 };
 
 enum {
-    moHidd_SDLMouse_HandleEvent
+    moHidd_Mouse_SDL_HandleEvent
 };
 
-struct pHidd_SDLMouse_HandleEvent {
+struct pHidd_Mouse_SDL_HandleEvent {
     OOP_MethodID mID;
     SDL_Event *e;
 };
 
-VOID Hidd_SDLMouse_HandleEvent(OOP_Object *o, SDL_Event *e);
+VOID Hidd_Mouse_SDL_HandleEvent(OOP_Object *o, SDL_Event *e);
 
-#define IID_Hidd_SDLKbd     "hidd.kbd.sdl"
+#define IID_Hidd_Kbd_SDL     "hidd.kbd.sdl"
 
 struct kbddata {
     VOID (*callback)(APTR, UWORD);
@@ -72,15 +72,15 @@ struct kbddata {
 };
 
 enum {
-    moHidd_SDLKbd_HandleEvent
+    moHidd_Kbd_SDL_HandleEvent
 };
 
-struct pHidd_SDLKbd_HandleEvent {
+struct pHidd_Kbd_SDL_HandleEvent {
     OOP_MethodID mID;
     SDL_Event *e;
 };
 
-VOID Hidd_SDLKbd_HandleEvent(OOP_Object *o, SDL_Event *e);
+VOID Hidd_Kbd_SDL_HandleEvent(OOP_Object *o, SDL_Event *e);
 
 struct sdlhidd
 {
