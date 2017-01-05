@@ -265,7 +265,14 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 {
 	struct amigavideo_staticdata *csd = CSD(cl);
 	struct Library *OOPBase = csd->cs_OOPBase;
-	struct TagItem mytags[2];
+        struct TagItem mytags[] =
+        {
+            { aHidd_Gfx_ModeTags    , (IPTR)NULL   },
+            { aHidd_Name            , (IPTR)"amigavideo.hidd"     },
+            { aHidd_HardwareName    , (IPTR)"Amiga Native Display Hardware"   },
+            { aHidd_ProducerName    , (IPTR)"Commodore International"  },
+            { TAG_MORE              , (IPTR)msg->attrList       }
+        };
 	struct pRoot_New mymsg;
 	ULONG allocsize = 3000, allocsizebuf = 1000;
 	WORD x, y, cnt, i, j;
@@ -542,11 +549,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
 		ADDTAG(TAG_DONE, 0);
 
-     		mytags[0].ti_Tag = aHidd_Gfx_ModeTags;
     		mytags[0].ti_Data = (IPTR)mode_tags_ecs;
-    		mytags[1].ti_Tag = TAG_MORE;
-    		mytags[1].ti_Data = (IPTR)msg->attrList;
-
 	}
 
     D(bug("alloc=%d alloced=%d\n", allocsize, (ULONG)tagptr - (ULONG)tags));
@@ -906,6 +909,7 @@ static void freeattrbases(struct amigavideo_staticdata *csd)
 {
     struct Library *OOPBase = csd->cs_OOPBase;
 
+    OOP_ReleaseAttrBase(IID_Hidd);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     OOP_ReleaseAttrBase(IID_Hidd_PlanarBM);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap_AmigaVideo);
@@ -922,6 +926,7 @@ int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE)
     struct Library *OOPBase = csd->cs_OOPBase;
     
     D(bug("Init_AmigaVideoClass\n"));
+    __IHidd             = OOP_ObtainAttrBase(IID_Hidd);
     __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);
     __IHidd_PlanarBM  	= OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
     __IHidd_BitMap_AmigaVideo  	= OOP_ObtainAttrBase(IID_Hidd_BitMap_AmigaVideo);
@@ -931,8 +936,8 @@ int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE)
     __IHidd_PixFmt		= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
     __IHidd_ColorMap 	= OOP_ObtainAttrBase(IID_Hidd_ColorMap);
     
-    if (!__IHidd_BitMap || !__IHidd_PlanarBM || !__IHidd_BitMap_AmigaVideo || !__IHidd_GC ||
-    	!__IHidd_Sync || !__IHidd_Gfx || !__IHidd_PixFmt || !__IHidd_ColorMap)
+    if (!__IHidd || !__IHidd_BitMap || !__IHidd_PlanarBM || !__IHidd_BitMap_AmigaVideo ||
+        !__IHidd_GC || !__IHidd_Sync || !__IHidd_Gfx || !__IHidd_PixFmt || !__IHidd_ColorMap)
     {
     	D(bug("Init_AmigaVideoClass fail\n"));
     	freeattrbases(csd);

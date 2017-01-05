@@ -91,8 +91,8 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct TagItem mytags[] =
     {
 	{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	 },
-	{ aHidd_Name		, (IPTR)"android.monitor"},
-	{ aHidd_HardwareName	, (IPTR)"Android OS"	 },
+	{ aHidd_Name		, (IPTR)"androidgfx"},
+	{ aHidd_HardwareName	, (IPTR)"Android OS Gfx Host"	 },
 	{ aHidd_ProducerName	, (IPTR)"Google inc."	 },
 	{ TAG_MORE  	    	, (IPTR)msg->attrList 	 }
     };

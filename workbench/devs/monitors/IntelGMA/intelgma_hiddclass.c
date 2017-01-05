@@ -550,6 +550,9 @@ OOP_Object *METHOD(INTELG45, Root, New)
 
     struct TagItem mytags[] = {
         { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
+        { aHidd_Name            , (IPTR)"IntelGMA"     },
+        { aHidd_HardwareName    , (IPTR)"Intel GMA Display Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"Intel Corporation"  },
         { TAG_MORE, (IPTR)msg->attrList }
     };
 

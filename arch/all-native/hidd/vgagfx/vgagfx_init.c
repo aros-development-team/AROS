@@ -34,6 +34,7 @@ extern struct vgaModeDesc vgaDefMode[];
 /* ACPICABase is optional */
 struct Library *ACPICABase = NULL;
 
+OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddChunkyBMAttrBase;
 OOP_AttrBase HiddPixFmtAttrBase;
@@ -43,6 +44,7 @@ OOP_AttrBase HiddVGABitMapAB;
 
 static struct OOP_ABDescr abd[] = 
 {
+    { IID_Hidd              , &HiddAttrBase         },
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
     { IID_Hidd_ChunkyBM,	&HiddChunkyBMAttrBase },
     { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },

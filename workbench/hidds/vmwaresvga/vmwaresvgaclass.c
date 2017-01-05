@@ -32,6 +32,7 @@
 
 #include LC_LIBDEFS_FILE
 
+static OOP_AttrBase HiddAttrBase; 
 static OOP_AttrBase HiddBitMapAttrBase;  
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
@@ -41,6 +42,7 @@ static OOP_AttrBase HiddVMWareSVGABitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
+    {IID_Hidd,           &HiddAttrBase             },
     {IID_Hidd_BitMap,           &HiddBitMapAttrBase             },
     {IID_Hidd_VMWareSVGABitMap, &HiddVMWareSVGABitMapAttrBase   },
     {IID_Hidd_VMWareSVGA,       &HiddVMWareSVGAAttrBase         },
@@ -173,6 +175,9 @@ D(bug("[VMWareSVGA] %s: Setting Sync Mode %d for Display %d\n", __PRETTY_FUNCTIO
     struct TagItem yourtags[] =
     {
         {aHidd_Gfx_ModeTags,    (IPTR)modetags  },
+        { aHidd_Name            , (IPTR)"VMWareSVGA"     },
+        { aHidd_HardwareName    , (IPTR)"VMWare SVGA Gfx Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"VMWare Inc"  },
         {TAG_MORE,              0UL             }
     };
     struct pRoot_New yourmsg;

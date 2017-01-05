@@ -16,6 +16,7 @@
 
 #include "arosdrmmode.h"
 
+#undef HiddAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddGfxAttrBase
 #undef HiddGfxNouveauAttrBase
@@ -24,6 +25,7 @@
 #undef HiddCompositorAttrBase
 #undef HiddBitMapNouveauAttrBase
 
+#define HiddAttrBase          (SD(cl)->hiddAttrBase)
 #define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
 #define HiddGfxAttrBase             (SD(cl)->gfxAttrBase)
 #define HiddGfxNouveauAttrBase      (SD(cl)->gfxNouveauAttrBase)
@@ -403,6 +405,9 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
         struct TagItem mytags[] = {
 	    { aHidd_Gfx_ModeTags,	(IPTR)modetags	},
+            { aHidd_Name            , (IPTR)"Nouveau"     },
+            { aHidd_HardwareName    , (IPTR)"Nvidia Gfx Adaptor"   },
+            { aHidd_ProducerName    , (IPTR)"Nvidia Corporation"  },
 	    { TAG_MORE, (IPTR)msg->attrList }
         };
 

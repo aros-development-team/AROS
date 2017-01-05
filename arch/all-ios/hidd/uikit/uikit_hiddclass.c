@@ -102,7 +102,7 @@ OOP_Object *UIKit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
 	{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	 },
 	{ aHidd_Name		, (IPTR)"UIKit"		 },
-	{ aHidd_HardwareName	, (IPTR)"iOS Cocoa Touch"},
+	{ aHidd_HardwareName	, (IPTR)"iOS Cocoa Touch Gfx Host"},
 	{ aHidd_ProducerName	, (IPTR)"Apple Corp."    },
 	{ TAG_MORE  	    	, (IPTR)msg->attrList 	 }
     };

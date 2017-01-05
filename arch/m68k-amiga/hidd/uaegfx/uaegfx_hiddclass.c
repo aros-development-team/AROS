@@ -242,7 +242,13 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     WORD rescnt, i, j, k, l;
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct pRoot_New mymsg;
-    struct TagItem mytags[2];
+    struct TagItem mytags[] = {
+	{ aHidd_Gfx_ModeTags,	(IPTR)NULL	},
+        { aHidd_Name            , (IPTR)"uaegfx.hidd"     },
+        { aHidd_HardwareName    , (IPTR)"UAE Native Display Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"UAE"  },
+	{ TAG_MORE, 0UL }
+    };
     UWORD supportedformats, gotmodes;
 
     if (csd->initialized)
@@ -396,10 +402,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     modetags[k].ti_Tag = TAG_MORE;
     modetags[k].ti_Data = (IPTR)restags;
  
-    mytags[0].ti_Tag = aHidd_Gfx_ModeTags;
     mytags[0].ti_Data = (IPTR)modetags;
-    mytags[1].ti_Tag = TAG_MORE;
-    mytags[1].ti_Data = (IPTR)msg->attrList;
  
     EnterFunc(bug("UAEGFX::New() tags=%x\n", mytags));
 
@@ -949,6 +952,7 @@ BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
 static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct uaegfx_staticdata *csd)
 {
+    OOP_ReleaseAttrBase(IID_Hidd);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap_UAE);
     OOP_ReleaseAttrBase(IID_Hidd_GC);
@@ -1244,7 +1248,8 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     mc->mc_Next = NULL;
     mc->mc_Bytes = csd->vmem->mh_Free;
 
-    __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);
+    __IHidd                    = OOP_ObtainAttrBase(IID_Hidd);
+    __IHidd_BitMap  	   = OOP_ObtainAttrBase(IID_Hidd_BitMap);
     __IHidd_BitMap_UAE = OOP_ObtainAttrBase(IID_Hidd_BitMap_UAE);
     __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
     __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
@@ -1256,7 +1261,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     HiddColorMapBase	= OOP_GetMethodID(IID_Hidd_ColorMap, 0);
     HiddGfxBase		= OOP_GetMethodID(IID_Hidd_Gfx, 0);
     
-    if (!__IHidd_BitMap || !__IHidd_BitMap_UAE || !__IHidd_GC ||
+    if (!__IHidd || !__IHidd_BitMap || !__IHidd_BitMap_UAE || !__IHidd_GC ||
     	!__IHidd_Sync || !__IHidd_Gfx || !__IHidd_PixFmt || !__IHidd_ColorMap)
     {
     	D(bug("Init_UAEGFXClass fail\n"));

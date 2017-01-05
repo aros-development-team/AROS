@@ -21,11 +21,13 @@
 
 #define sd ((struct ati_staticdata*)SD(cl))
 
+#undef HiddAttrBase
 #undef HiddPCIDeviceAttrBase
 #undef HiddGfxAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
+#define HiddAttrBase    (sd->hiddAttrBase)
 #define HiddPCIDeviceAttrBase   (sd->pciAttrBase)
 #define HiddATIBitMapAttrBase   (sd->atiBitMapAttrBase)
 #define HiddBitMapAttrBase  (sd->bitMapAttrBase)
@@ -614,6 +616,9 @@ OOP_Object *METHOD(ATI, Root, New)
 
     struct TagItem mytags[] = {
         { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
+        { aHidd_Name            , (IPTR)"ATI"     },
+        { aHidd_HardwareName    , (IPTR)"ATI/AMD Gfx Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"Advanced Micro Devices, Inc."  },
         { TAG_MORE, (IPTR)msg->attrList }
     };
 

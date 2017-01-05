@@ -168,7 +168,8 @@ struct staticdata
     OOP_Class       *i2cclass;
     OOP_Class       *galliumclass;
     OOP_Class       *compositorclass;
-    
+
+    OOP_AttrBase    hiddAttrBase;    
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
     OOP_AttrBase    gfxNouveauAttrBase;

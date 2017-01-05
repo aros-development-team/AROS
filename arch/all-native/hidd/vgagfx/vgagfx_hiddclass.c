@@ -6,6 +6,9 @@
     Lang: English.
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -31,8 +34,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 0
-#include <aros/debug.h>
+extern OOP_AttrBase HiddAttrBase;
 
 static AROS_INTH1(ResetHandler, struct VGAGfx_staticdata *, xsd)
 {
@@ -151,6 +153,9 @@ OOP_Object *VGAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     
     struct TagItem mytags[] = {
 	{ aHidd_Gfx_ModeTags,	(IPTR)modetags	},
+        { aHidd_Name            , (IPTR)"vgagfx.hidd"     },
+        { aHidd_HardwareName    , (IPTR)"VGA Compatible Controller"   },
+        { aHidd_ProducerName    , (IPTR)"IBM"  },
 	{ TAG_MORE, 0UL }
     };
     struct pRoot_New mymsg;

@@ -82,6 +82,9 @@ OOP_Object *VESAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     struct TagItem yourtags[] =
     {
 	{aHidd_Gfx_ModeTags, (IPTR)modetags},
+        { aHidd_Name            , (IPTR)"vesagfx.hidd"     },
+        { aHidd_HardwareName    , (IPTR)"VESA Compatible Controller"   },
+        { aHidd_ProducerName    , (IPTR)"vesa.org"  },
 	{TAG_MORE, 0UL}
     };
     struct pRoot_New yourmsg;

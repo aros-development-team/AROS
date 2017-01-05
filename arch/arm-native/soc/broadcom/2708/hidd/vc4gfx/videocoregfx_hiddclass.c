@@ -135,6 +135,14 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     OOP_Object                  *self = NULL;
 
+    struct TagItem gfxmsg_tags[] =
+    {
+        { aHidd_Gfx_ModeTags    , (IPTR)NULL   },
+        { aHidd_Name            , (IPTR)"vc4gfx.hidd"     },
+        { aHidd_HardwareName    , (IPTR)"VideoCore4 Display Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"X.Org Foundation"  },
+        { TAG_MORE              , (IPTR)msg->attrList       }
+    };
     struct TagItem              gfxmsg_tags[2];
     struct pRoot_New            gfxmsg_New;
 
@@ -153,10 +161,8 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
         D(bug("[VideoCoreGfx] VideoCoreGfx::New: Generated Mode Array @ 0x%p\n", vc_modearray));
 
-        gfxmsg_tags[0].ti_Tag = aHidd_Gfx_ModeTags;
         gfxmsg_tags[0].ti_Data = (IPTR)vc_modearray;
-        gfxmsg_tags[1].ti_Tag = TAG_MORE;
-        gfxmsg_tags[1].ti_Data = (IPTR)msg->attrList;
+
         gfxmsg_New.mID = msg->mID;
         gfxmsg_New.attrList = gfxmsg_tags;
         msg = &gfxmsg_New;
