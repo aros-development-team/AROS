@@ -270,8 +270,8 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     msgtags = TAGLIST(
         aHidd_Gfx_ModeTags, (IPTR)modetags,
-	aHidd_Name        , (IPTR)"sdl.monitor",
-	aHidd_HardwareName, (IPTR)"Simple DirectMedia Layer",
+	aHidd_Name        , (IPTR)"SDL",
+	aHidd_HardwareName, (IPTR)"Simple DirectMedia Layer Gfx Host",
 	aHidd_ProducerName, (IPTR)"SDL development team (http://libsdl.org/credits.php)",
         TAG_MORE          , (IPTR)msg->attrList
     );

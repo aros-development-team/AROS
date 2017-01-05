@@ -233,8 +233,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct TagItem mytags[] =
     {
         { aHidd_Gfx_ModeTags    , (IPTR)default_mode_tags   },
-        { aHidd_Name            , (IPTR)"x11_1.monitor"     },
-        { aHidd_HardwareName    , (IPTR)"X Window system"   },
+        { aHidd_Name            , (IPTR)"X11"     },
+        { aHidd_HardwareName    , (IPTR)"X Window Gfx Host"   },
         { aHidd_ProducerName    , (IPTR)"X.Org Foundation"  },
         { TAG_MORE              , (IPTR)msg->attrList       }
     };

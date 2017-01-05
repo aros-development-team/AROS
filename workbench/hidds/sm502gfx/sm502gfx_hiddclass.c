@@ -82,6 +82,9 @@ OOP_Object *SM502Gfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     struct TagItem yourtags[] =
     {
 	{aHidd_Gfx_ModeTags, (IPTR)modetags},
+        { aHidd_Name            , (IPTR)"sm502gfx"     },
+        { aHidd_HardwareName    , (IPTR)"Silicon Motion SM502 Gfx Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"Silicon Motion"  },
 	{TAG_MORE, 0UL}
     };
     struct pRoot_New yourmsg;

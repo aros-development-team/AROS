@@ -24,6 +24,7 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] = 
     {
+    { IID_Hidd,                 &LIBBASE->sd.hiddAttrBase },
     { IID_Hidd_BitMap,          &LIBBASE->sd.bitMapAttrBase },
     { IID_Hidd_PixFmt,	        &LIBBASE->sd.pixFmtAttrBase },
     { IID_Hidd_Sync,            &LIBBASE->sd.syncAttrBase },

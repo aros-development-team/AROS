@@ -30,9 +30,9 @@
 
 #include "radeon.h"
 
-#define IID_Hidd_Gfx_Ati    "IRadeonDriver"
-#define IID_Hidd_ATIBitMap  "IRadeonBitmap"
-#define CLID_Hidd_Gfx_Ati   "RadeonDriver"
+#define IID_Hidd_Gfx_Ati    "hidd.gfx.radeon"
+#define IID_Hidd_BitMap_ATI  "hidd.bitmap.radeon"
+#define CLID_Hidd_Gfx_Ati   "hidd.gfx.radeon"
 
 extern OOP_AttrBase HiddPCIDeviceAttrBase;
 extern OOP_AttrBase HiddBitMapAttrBase;
@@ -117,6 +117,7 @@ struct ati_staticdata {
     OOP_Class       *OffBMClass;
     OOP_Class       *PlanarBMClass;
 
+    OOP_AttrBase    hiddAttrBase;
     OOP_AttrBase    pciAttrBase;
     OOP_AttrBase    atiBitMapAttrBase;
     OOP_AttrBase    bitMapAttrBase;

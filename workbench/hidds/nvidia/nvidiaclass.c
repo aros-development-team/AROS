@@ -246,6 +246,9 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     struct TagItem mytags[] = {
 	{ aHidd_Gfx_ModeTags,	(IPTR)modetags	},
+        { aHidd_Name            , (IPTR)"Nvidia"     },
+        { aHidd_HardwareName    , (IPTR)"Nvidia Gfx Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"Nvidia Corporation"  },
 	{ TAG_MORE, (IPTR)msg->attrList }
     };
 
