@@ -12,7 +12,7 @@
 #include <aros/irq.h>
 
 #include "gdi.h"
-#include "bitmap.h"
+#include "wingdi_bitmap.h"
 
 #define D(x)
 #define DACT(x)

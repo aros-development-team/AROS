@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Disk-resident part of GDI display driver
@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#include "gdi_class.h"
+#include "wingdi_hidd.h"
 
 /* Minimum required library version */
 #define GDI_VERSION 42
