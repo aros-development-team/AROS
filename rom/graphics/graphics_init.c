@@ -45,7 +45,7 @@ BOOL InitROMFont(struct GfxBase *);
 
 static int GfxInit(struct GfxBase *LIBBASE)
 {
-    bug("[graphics.library] %s()\n", __func__);
+    D(bug("[graphics.library] %s()\n", __func__));
 
     HWBase = OOP_GetMethodID(IID_HW, 0);
     HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
@@ -54,7 +54,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
     HiddGCBase = OOP_GetMethodID(IID_Hidd_GC, 0);
     HiddPlanarBMBase = OOP_GetMethodID(IID_Hidd_PlanarBM, 0);
 
-    bug("[graphics.library] %s: obtained method bases\n", __func__);
+    D(bug("[graphics.library] %s: obtained method bases\n", __func__));
 
     NEWLIST(&LIBBASE->BlitWaitQ);
     NEWLIST(&LIBBASE->TextFonts);
@@ -68,7 +68,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
     GfxBase->MonitorListSemaphore = &PrivGBase(GfxBase)->monitors_sema;
     InitSemaphore(GfxBase->MonitorListSemaphore);
 
-    bug("[graphics.library] %s: semaphores initialized\n", __func__);
+    D(bug("[graphics.library] %s: semaphores initialized\n", __func__));
     
     LIBBASE->hash_table = AllocMem(GFXASSOCIATE_HASHSIZE * sizeof(APTR), MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
@@ -83,7 +83,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
     LIBBASE->MaxDisplayRow = AROS_NOMINAL_HEIGHT;
 
     PrivGBase(LIBBASE)->basebm = OOP_FindClass(CLID_Hidd_BitMap);
-    bug("[graphics.library] %s: BitMap class @ 0x%p\n", __func__, PrivGBase(LIBBASE)->basebm);
+    D(bug("[graphics.library] %s: BitMap class @ 0x%p\n", __func__, PrivGBase(LIBBASE)->basebm));
 
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );
@@ -97,17 +97,17 @@ static int GfxInit(struct GfxBase *LIBBASE)
     NEWLIST(&PrivGBase(GfxBase)->ChunkPoolList);
 #endif
 
-    bug("[graphics.library] %s: Initialise ROMFont...\n", __func__);
+    D(bug("[graphics.library] %s: Initialise ROMFont...\n", __func__));
 
     if (!InitROMFont(LIBBASE)) return FALSE;
 
-    bug("[graphics.library] %s: Obtaining Gfx HW Root..\n", __func__);
+    D(bug("[graphics.library] %s: Obtaining Gfx HW Root..\n", __func__));
 
     PrivGBase(GfxBase)->GfxRoot = OOP_NewObject(NULL, CLID_HW_Gfx, NULL);
 
-    bug("[graphics.library] %s: Gfx HW Root @ 0x%p\n", __func__, PrivGBase(GfxBase)->GfxRoot);
+    D(bug("[graphics.library] %s: Gfx HW Root @ 0x%p\n", __func__, PrivGBase(GfxBase)->GfxRoot));
 
-    bug("[graphics.library] %s: Initialise driver...\n", __func__);
+    D(bug("[graphics.library] %s: Initialise driver...\n", __func__));
 
     return driver_init (LIBBASE);
 }
