@@ -34,8 +34,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM			   kernel-hidd-i8042    	 \
 #MM			   kernel-pc-i386-serial    	 \
 #MM			   kernel-pc-i386-parallel    	 \
-#MM			   kernel-hidd-vga    		 \
-#MM			   kernel-hidd-vesa    		 \
+#MM			   kernel-hidd-vgagfx    		 \
+#MM			   kernel-hidd-vesagfx    		 \
 #MM			   kernel-hidd-pci    		 \
 #MM			   kernel-hidd-pci-pcipc    	 \
 #MM			   kernel-processor
