@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VGA Gfx Hidd for standalone AROS
@@ -19,10 +19,9 @@
 #include <proto/graphics.h>
 #include <proto/oop.h>
 
-#include "vgagfx_intern.h"
-#include "vgagfx_hidd.h"
-
 #include LC_LIBDEFS_FILE
+
+#undef csd
 
 extern struct vgaModeDesc vgaDefMode[];
 
@@ -34,34 +33,26 @@ extern struct vgaModeDesc vgaDefMode[];
 /* ACPICABase is optional */
 struct Library *ACPICABase = NULL;
 
-OOP_AttrBase HiddAttrBase;
-OOP_AttrBase HiddBitMapAttrBase;
-OOP_AttrBase HiddChunkyBMAttrBase;
-OOP_AttrBase HiddPixFmtAttrBase;
-OOP_AttrBase HiddGfxAttrBase;
-OOP_AttrBase HiddSyncAttrBase;
-OOP_AttrBase HiddVGABitMapAB;
-
-static struct OOP_ABDescr abd[] = 
-{
-    { IID_Hidd              , &HiddAttrBase         },
-    { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
-    { IID_Hidd_ChunkyBM,	&HiddChunkyBMAttrBase },
-    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
-    { IID_Hidd_Gfx,		&HiddGfxAttrBase },
-    { IID_Hidd_Sync,		&HiddSyncAttrBase },
-    /* Private bases */
-    { IID_Hidd_BitMap_VGA,	&HiddVGABitMapAB },
-    { NULL, NULL }
-};
-
 static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct GfxBase *GfxBase;
-    struct VGAGfx_staticdata *xsd = &LIBBASE->vsd;
+    struct VGAGfx_staticdata *csd = &LIBBASE->vsd;
     struct vgaModeEntry *entry;
     BOOL res = FALSE;
     int i;
+
+    struct OOP_ABDescr abd[] = 
+    {
+        { IID_Hidd              , &HiddAttrBase         },
+        { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
+        { IID_Hidd_ChunkyBM,	&HiddChunkyBMAttrBase },
+        { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
+        { IID_Hidd_Gfx,		&HiddGfxAttrBase },
+        { IID_Hidd_Sync,		&HiddSyncAttrBase },
+        /* Private bases */
+        { IID_Hidd_BitMap_VGA,	&HiddVGABitMapAB },
+        { NULL, NULL }
+    };
 
     /* We are not compatible with VESA driver */
     if (OOP_FindClass("hidd.gfx.vesa"))
@@ -86,9 +77,9 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
         ACPICABase = NULL;
     }
 
-    InitSemaphore(&xsd->sema);
-    InitSemaphore(&xsd->HW_acc);
-    NEWLIST(&xsd->modelist);
+    InitSemaphore(&csd->sema);
+    InitSemaphore(&csd->HW_acc);
+    NEWLIST(&csd->modelist);
 
     if (!OOP_ObtainAttrBases(abd))
 	return FALSE;
@@ -101,7 +92,7 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
 	if (entry)
 	{
 	    entry->Desc=&(vgaDefMode[i]);
-	    ADDHEAD(&xsd->modelist,entry);
+	    ADDHEAD(&csd->modelist,entry);
 	    D(bug("Added default mode: %s\n", entry->Desc->name));
 	}
     }
@@ -121,7 +112,7 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
 	return FALSE;
     }
 
-    xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+    csd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     /* 
      * It is unknown (and no way to know) what hardware part this driver uses.
@@ -130,7 +121,7 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
      * is installed.
      * This is done by graphics.library if DDRV_BootMode is set to TRUE.
      */
-    i = AddDisplayDriver(xsd->vgaclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
+    i = AddDisplayDriver(csd->vgaclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
 
     D(bug("[VGAGfx] AddDisplayDriver() result: %u\n", i));
     if (!i)

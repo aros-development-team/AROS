@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VGA and compatible cards.
@@ -8,6 +8,8 @@
 
 #define DEBUG 0
 #include <aros/debug.h>
+
+#define __OOP_NOATTRBASES__
 
 #include <aros/asmcall.h>
 #include <proto/exec.h>
@@ -28,13 +30,7 @@
 #include <devices/inputevent.h>
 #include <string.h>
 
-#include "vgagfx_intern.h"
-#include "vgagfx_hidd.h"
-#include "vgagfx_bitmap.h"
-
 #include LC_LIBDEFS_FILE
-
-extern OOP_AttrBase HiddAttrBase;
 
 static AROS_INTH1(ResetHandler, struct VGAGfx_staticdata *, xsd)
 {
@@ -94,7 +90,7 @@ struct vgaModeDesc
     taglist[idx].ti_Tag  = aHidd_Sync_ ## tag;	\
     taglist[idx].ti_Data = val
 
-VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md, STRPTR name)
+VOID synctags_init(OOP_Class *cl, struct TagItem *tags, struct vgaModeDesc *md, STRPTR name)
 {
     ULONG clock = (md->clock == 1) ? 28322000 : 25175000;
 
@@ -110,6 +106,8 @@ VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md, STRPTR name)
     SET_SYNC_TAG(tags, 9, Description,  (IPTR)name  	);
     tags[10].ti_Tag = TAG_DONE;
 }
+
+#define init_sync_tags(tags, md, name) synctags_init(cl, tags, md, name)
 
 OOP_Object *VGAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -156,7 +154,7 @@ OOP_Object *VGAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         { aHidd_Name            , (IPTR)"vgagfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"VGA Compatible Controller"   },
         { aHidd_ProducerName    , (IPTR)"IBM"  },
-	{ TAG_MORE, 0UL }
+	{ TAG_MORE, (IPTR)msg->attrList }
     };
     struct pRoot_New mymsg;
 
@@ -171,11 +169,6 @@ OOP_Object *VGAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     init_sync_tags(sync_800_600, &vgaDefMode[2], "VGA:800x600");
 #endif
     
-    /* init mytags. We use TAG_MORE to attach our own tags before we send them
-    to the superclass */
-    mytags[1].ti_Tag  = TAG_MORE;
-    mytags[1].ti_Data = (IPTR)msg->attrList;
-
     /* Init mymsg. We have to use our own message struct because
        one should not alter the one passed to this method.
        message structs passed to a method are always read-only.
