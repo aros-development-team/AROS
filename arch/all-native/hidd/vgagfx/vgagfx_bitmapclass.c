@@ -10,6 +10,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define __OOP_NOATTRBASES__
+
 #include <proto/oop.h>
 #include <proto/utility.h>
 
@@ -27,9 +29,6 @@
 #include <assert.h>
 
 #include "vgagfx_support.h"
-#include "vgagfx_intern.h"
-#include "vgagfx_hidd.h"
-#include "vgagfx_bitmap.h"
 
 #include LC_LIBDEFS_FILE
 
