@@ -86,12 +86,15 @@ struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct G
 
 int driver_init(struct GfxBase * GfxBase)
 {
+    OOP_Class *baseGfx;
 
     EnterFunc(bug("driver_init()\n"));
 
     /* Our underlying RTG subsystem core must be already up and running */
     if (!OpenLibrary("gfx.hidd", 0))
         return FALSE;
+
+    baseGfx = OOP_FindClass(CLID_Hidd_Gfx);
 
     /* Initialize the semaphores */
     InitSemaphore(&(PrivGBase(GfxBase)->blit_sema));
@@ -123,8 +126,8 @@ int driver_init(struct GfxBase * GfxBase)
 	CDD(GfxBase)->invalid_id = INVALID_ID;
 	CDD(GfxBase)->last_id = AROS_RTG_MONITOR_ID;
 
-	/* Init memory driver */
-	CDD(GfxBase)->memorygfx = OOP_NewObject(NULL, CLID_Hidd_Gfx, NULL);
+	/* Init software driver */
+	CDD(GfxBase)->memorygfx = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, baseGfx, NULL);
 	DEBUG_INIT(bug("[driver_init] Memory driver object 0x%p\n", CDD(GfxBase)->memorygfx));
 
 	if (CDD(GfxBase)->memorygfx)
