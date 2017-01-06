@@ -140,7 +140,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         { aHidd_Gfx_ModeTags    , (IPTR)NULL   },
         { aHidd_Name            , (IPTR)"vc4gfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"VideoCore4 Display Adaptor"   },
-        { aHidd_ProducerName    , (IPTR)"X.Org Foundation"  },
+        { aHidd_ProducerName    , (IPTR)"Broadcom Corporation"  },
         { TAG_MORE              , (IPTR)msg->attrList       }
     };
     struct TagItem              gfxmsg_tags[2];
