@@ -22,17 +22,13 @@
 #include <oop/oop.h>
 
 #include <hidd/hidd.h>
-#include <hidd/gfx.h>
 
 #include <aros/symbolsets.h>
 
-#include "amigavideo_hidd.h"
-#include "amigavideo_bitmap.h"
+#include LC_LIBDEFS_FILE
 
 #include "chipset.h"
 #include "blitter.h"
-
-#include LC_LIBDEFS_FILE
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -416,10 +412,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
 		ADDTAG(TAG_DONE, 0);
 
-    		mytags[0].ti_Tag = aHidd_Gfx_ModeTags;
     		mytags[0].ti_Data = (IPTR)mode_tags_aga;
-    		mytags[1].ti_Tag = TAG_MORE;
-    		mytags[1].ti_Data = (IPTR)msg->attrList;
     
 	} else {
 
