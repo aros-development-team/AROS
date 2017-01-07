@@ -131,7 +131,7 @@ struct ClassHandlerNode *FindClassHandler(CONST_STRPTR classid, struct List *_ha
     {
         if (!strncmp(classid, curHandler->ch_Node.ln_Name, strlen(classid)))
         {
-            bug("[SysExplorer] Returning class '%s'\n", curHandler->ch_Node.ln_Name);
+            D(bug("[SysExplorer] Returning class '%s'\n", curHandler->ch_Node.ln_Name));
             return curHandler;
         }
     }
@@ -145,14 +145,14 @@ struct ClassHandlerNode *FindObjectHandler(OOP_Object *obj, struct List *_handle
     ForeachNode(_handlers, curHandler)
     {
         OOP_Class *cl;
-        bug("[SysExplorer]    class '%s'\n", curHandler->ch_Node.ln_Name);
+        D(bug("[SysExplorer]    class '%s'\n", curHandler->ch_Node.ln_Name));
 
         for (cl = OOP_OCLASS(obj); cl ; cl = cl->superclass)
         {
-            bug("[SysExplorer]        obj '%s'\n", cl->ClassNode.ln_Name);
+            D(bug("[SysExplorer]        obj '%s'\n", cl->ClassNode.ln_Name));
             if (!strncmp(cl->ClassNode.ln_Name, curHandler->ch_Node.ln_Name, strlen(curHandler->ch_Node.ln_Name)))
             {
-                bug("[SysExplorer] Returning obj class '%s'\n", curHandler->ch_Node.ln_Name);
+                D(bug("[SysExplorer] Returning obj class '%s'\n", curHandler->ch_Node.ln_Name));
                 return curHandler;
             }
         }
@@ -422,13 +422,13 @@ BOOL RegisterClassHandler(CONST_STRPTR classid, BYTE pri, struct MUI_CustomClass
         if (newClass->enumFunc != hwEnum)
             return FALSE;
 
-        bug("[SysExplorer] Updating '%s'..\n", classid);
+        D(bug("[SysExplorer] Updating '%s'..\n", classid));
         add = FALSE;
     }
 
     if (add)
     {
-        bug("[SysExplorer] Registering '%s'..\n", classid);
+        D(bug("[SysExplorer] Registering '%s'..\n", classid));
         newClass = AllocMem(sizeof(struct ClassHandlerNode), MEMF_CLEAR);
     }
 
@@ -450,7 +450,7 @@ BOOL RegisterClassHandler(CONST_STRPTR classid, BYTE pri, struct MUI_CustomClass
 
 BOOL sysexplorer_init(void)
 {
-    bug("[SysExplorer] Initialising..\n");
+    D(bug("[SysExplorer] Initialising..\n"));
     NEWLIST(&seClassHandlers);
 
     RegisterClassHandler(CLID_Hidd_Storage, 90, NULL, hwEnum, NULL);
@@ -459,6 +459,8 @@ BOOL sysexplorer_init(void)
     RegisterClassHandler(CLID_HW_Root, 0, &ComputerWindow_CLASS,  hwEnum, NULL);
     RegisterClassHandler(CLID_HW, -30, NULL, hwEnum, NULL);
     RegisterClassHandler(CLID_Hidd, -60, &GenericWindow_CLASS, NULL, NULL);
+
+    D(bug("[SysExplorer] Init complete\n"));
 
     return TRUE;
 }
