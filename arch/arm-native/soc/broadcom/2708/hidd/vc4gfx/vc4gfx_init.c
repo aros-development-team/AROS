@@ -2,7 +2,7 @@
     Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: VideoCore Hidd initialisation code
+    Desc: BCM VideoCore4 Gfx Hidd initialisation code
     Lang: english
 */
 
@@ -74,8 +74,8 @@ static BOOL FNAME_SUPPORT(GetAttrBases)(const STRPTR *iftable, OOP_AttrBase *bas
 
 static const STRPTR interfaces[] =
 {
-    IID_Hidd_Gfx_VideoCore,
-    IID_Hidd_BitMap_VideoCore,
+    IID_Hidd_Gfx_VideoCore4,
+    IID_Hidd_BitMap_VideoCore4,
     IID_Hidd_ChunkyBM,
     IID_Hidd_BitMap,
     IID_Hidd_PixFmt,

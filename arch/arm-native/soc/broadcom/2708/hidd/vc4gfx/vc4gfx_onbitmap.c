@@ -2,7 +2,7 @@
     Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: VideoCore Gfx Onscreen Bitmap Class.
+    Desc: BCM VideoCore4 Gfx Hidd Onscreen Bitmap Class.
     Lang: English.
 */
 

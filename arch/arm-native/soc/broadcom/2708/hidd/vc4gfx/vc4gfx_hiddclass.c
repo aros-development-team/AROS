@@ -2,7 +2,7 @@
     Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: VideoCore Gfx Hidd Class.
+    Desc: BCM VideoCore4 Gfx Hidd Class.
     Lang: English.
 */
 
@@ -143,7 +143,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         { aHidd_ProducerName    , (IPTR)"Broadcom Corporation"  },
         { TAG_MORE              , (IPTR)msg->attrList       }
     };
-    struct TagItem              gfxmsg_tags[2];
     struct pRoot_New            gfxmsg_New;
 
     struct List                 vc_modelist;

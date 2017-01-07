@@ -11,7 +11,7 @@
 /* This attribute interface is common for both onscreen and offscreen bitmap
    classes, although they don't share a common superclass */
 
-#define IID_Hidd_BitMap_VideoCore             "hidd.bitmap.videocore"
+#define IID_Hidd_BitMap_VideoCore4             "hidd.bitmap.bcmvc4"
 
 
 enum {

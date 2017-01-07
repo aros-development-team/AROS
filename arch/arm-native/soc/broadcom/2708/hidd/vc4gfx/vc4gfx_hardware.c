@@ -2,7 +2,7 @@
     Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: VideoCore4 hardware functions
+    Desc: BCM VideoCore4 Gfx Hidd hardware functions
     Lang: English
 */
 
@@ -11,7 +11,7 @@
 
 #include <asm/io.h>
 
-#include "vc4gfx_class.h"
+#include "vc4gfx_hidd.h"
 #include "vc4gfx_hardware.h"
 
 BOOL FNAME_HW(InitGfxHW)(APTR param0)

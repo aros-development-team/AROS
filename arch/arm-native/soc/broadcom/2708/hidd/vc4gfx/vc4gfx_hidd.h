@@ -23,8 +23,8 @@
 //#define VC_FMT_15
 //#define VC_FMT_8
 
-#define IID_Hidd_Gfx_VideoCore  "hidd.gfx.videocore"
-#define CLID_Hidd_Gfx_VideoCore "hidd.gfx.videocore"
+#define IID_Hidd_Gfx_VideoCore4  "hidd.gfx.bcmvc4"
+#define CLID_Hidd_Gfx_VideoCore4 "hidd.gfx.bcmvc4"
 
 #define MAX_TAGS        256
 #define ATTRBASES_NUM   8

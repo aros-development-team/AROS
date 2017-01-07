@@ -6,7 +6,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-#include "vc4gfx_class.h"
+#include "vc4gfx_hidd.h"
 
 int FNAME_SUPPORT(SDTV_SyncGen)(struct List *modelist, OOP_Class *cl)
 {
