@@ -9,7 +9,7 @@
 #include <proto/mbox.h>
 #include <stdio.h> 
 
-#include "videocoregfx_class.h"
+#include "vc4gfx_class.h"
 
 #ifdef MBoxBase
 #undef MBoxBase

@@ -11,8 +11,8 @@
 
 #include <asm/io.h>
 
-#include "videocoregfx_class.h"
-#include "videocoregfx_hardware.h"
+#include "vc4gfx_class.h"
+#include "vc4gfx_hardware.h"
 
 BOOL FNAME_HW(InitGfxHW)(APTR param0)
 {

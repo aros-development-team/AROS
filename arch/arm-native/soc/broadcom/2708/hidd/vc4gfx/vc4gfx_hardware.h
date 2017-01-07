@@ -10,8 +10,8 @@ extern IPTR __arm_periiobase;
 #include <hardware/bcm2708.h>
 #include <hardware/videocore.h>
 
-#include "videocoregfx_class.h"
-#include "videocoregfx_bitmap.h"
+#include "vc4gfx_class.h"
+#include "vc4gfx_bitmap.h"
 
 #define VCMB_PROPCHAN     8
 

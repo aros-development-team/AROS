@@ -1,12 +1,12 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #define DEBUG 1
 #include <aros/debug.h>
 
-#include "videocoregfx_class.h"
+#include "vc4gfx_class.h"
 
 int FNAME_SUPPORT(SDTV_SyncGen)(struct List *modelist, OOP_Class *cl)
 {

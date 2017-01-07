@@ -11,7 +11,7 @@
 #include <exec/nodes.h>
 #include <exec/types.h>
 
-#include "videocoregfx_hardware.h"
+#include "vc4gfx_hardware.h"
 
 #define DEBUGMODEARRAY
 //#define DEBUGPIXFMT
@@ -82,7 +82,7 @@ struct DisplayMode
 #undef HiddGfxAttrBase
 #undef HiddAttrBase
 
-/* These must stay in the same order as interfaces[] array in videocoregfx_init.c */
+/* These must stay in the same order as interfaces[] array in vc4gfx_init.c */
 #define HiddVideoCoreGfxAttrBase         XSD(cl)->vcsd_attrBases[0]
 #define HiddVideoCoreGfxBitMapAttrBase   XSD(cl)->vcsd_attrBases[1]
 #define HiddChunkyBMAttrBase             XSD(cl)->vcsd_attrBases[2]

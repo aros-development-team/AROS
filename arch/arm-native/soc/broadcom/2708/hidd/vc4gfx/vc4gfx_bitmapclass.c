@@ -11,7 +11,7 @@
 #include <exec/alerts.h>
 #include <string.h>    // memset() prototype
 
-#include "videocoregfx_hardware.h"
+#include "vc4gfx_hardware.h"
 
 #ifdef OnBitmap
 /*********  BitMap::Clear()  *************************************/
