@@ -48,7 +48,7 @@
         /* Flush rendering cache before blitting */
         _ctx->st->flush(_ctx->st, ST_FLUSH_FRONT, NULL);
 
-        BltPipeResourceRastPort(_ctx->framebuffer->render_resource, 0, 0, 
+        BltPipeResourceRastPort(_ctx->driver, _ctx->framebuffer->render_resource, 0, 0, 
             _ctx->visible_rp, _ctx->left, _ctx->top, 
             _ctx->framebuffer->width, _ctx->framebuffer->height);
     }

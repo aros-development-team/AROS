@@ -61,7 +61,7 @@
 
             _ctx->st->destroy(_ctx->st);
             MESA3DGLFreeFrameBuffer(_ctx->framebuffer);
-            MESA3DGLFreeStManager(_ctx->stmanager);
+            MESA3DGLFreeStManager(_ctx->driver, _ctx->stmanager);
             glstapi->destroy(glstapi);
             MESA3DGLFreeContext(_ctx);
         }

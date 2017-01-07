@@ -1,11 +1,19 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "gallium_intern.h"
-#include <proto/utility.h>
+#define DEBUG 1
 #include <aros/debug.h>
+
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <hidd/gfx.h>
+
+#include <stdio.h>
+
+#include "gallium_intern.h"
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase GB(GalliumBase)->galliumAttrBase
@@ -17,25 +25,16 @@
       AROS_LH1(struct pipe_screen *, CreatePipeScreen,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(struct TagItem *, tags, A0),
+      AROS_LHA(PipeHandle_t, pipe, A0),
 
 /*  LOCATION */
-      struct Library *, GalliumBase, 5, Gallium)
+      struct Library *, GalliumBase, 7, Gallium)
 
 /*  FUNCTION
         Creates a gallium pipe screen.
 
     INPUTS
-        tags - a pointer to tags to be used during creation.
-
-    TAGS
-        CPS_GalliumInterfaceVersion - Indicates a version of gallium interface
-            that a client is expected to receive. The client expected version
-            must ideally match with the version that the driver provides,
-            because gallium interface is not backwards compatible. This tag is
-            required. Unless otherwise needed, the value
-            GALLIUM_INTERFACE_VERSION should be passed.
-            See also CreatePipeScreenV.
+        pipe - a pipe handle created using CreatePipe().
 
     RESULT
         A valid pipe screen instance or NULL if creation was not successful.
@@ -48,43 +47,23 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct pipe_screen * screen = NULL;
-    LONG requestedinterfaceversion = 
-        GetTagData(CPS_GalliumInterfaceVersion, -1, tags);
+    struct pHidd_Gallium_CreatePipeScreen cpsmsg;
+    struct pipe_screen                          *screen = NULL;
 
-    /* The tag is missing */
-    if (requestedinterfaceversion == -1)
-        return NULL;
-
-    ObtainSemaphore(&GB(GalliumBase)->driversemaphore);
-
-    if (!GB(GalliumBase)->driver)
-        GB(GalliumBase)->driver = SelectGalliumDriver(requestedinterfaceversion, GalliumBase);
-    
-    if(GB(GalliumBase)->driver)
+    if (pipe)
     {
-        /* Validate driver gallium interface version */
-        if (IsVersionMatching(requestedinterfaceversion, GB(GalliumBase)->driver, GalliumBase))
-        {
-            /* Create screen */
-            struct pHidd_Gallium_CreatePipeScreen cpsmsg;
-            
-            cpsmsg.mID = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_CreatePipeScreen);
-            screen = (struct pipe_screen *)OOP_DoMethod(GB(GalliumBase)->driver, (OOP_Msg)&cpsmsg);
-        }
-        else
-        {
-            bug("[gallium.library] Requested gallium interface version does not match selected driver\n");
-        }
+        D(bug("[gallium.library] %s: creating pipe_screen...\n", __PRETTY_FUNCTION__));
+
+        cpsmsg.mID = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_CreatePipeScreen);
+        screen = (struct pipe_screen *)OOP_DoMethod((OOP_Object *)pipe, (OOP_Msg)&cpsmsg);
     }
     else
     {
-        bug("[gallium.library] Failed to acquire a driver\n");
+        bug("[gallium.library] no pipe specified!\n");
     }
-    
-    ReleaseSemaphore(&GB(GalliumBase)->driversemaphore);
 
     return screen;
 
     AROS_LIBFUNC_EXIT
 }
+

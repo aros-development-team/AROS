@@ -123,7 +123,14 @@ BOOL InitGalliumClass()
 /* PUBLIC METHODS */
 OOP_Object *METHOD(i915Gallium, Root, New)
 {
+    IPTR interfaceVers;
+
     D(bug("[i915gallium] New\n"));
+
+    interfaceVers = GetTagData(aHidd_Gallium_InterfaceVersion, -1, msg->attrList);
+    if (interfaceVers != GALLIUM_INTERFACE_VERSION)
+        return NULL;
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if(o)
     {
@@ -143,7 +150,7 @@ VOID METHOD(i915Gallium, Root, Get)
         switch (idx)
         {
             /* Overload the property */
-            case aoHidd_Gallium_GalliumInterfaceVersion:
+            case aoHidd_Gallium_InterfaceVersion:
                 *msg->storage = GALLIUM_INTERFACE_VERSION;
                 return;
         }

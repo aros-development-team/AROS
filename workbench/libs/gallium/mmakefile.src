@@ -9,18 +9,19 @@ USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
 
 LIB_GALLIUM_SOURCES = \
+            gallium_init \
+            createpipe \
             createpipescreen \
             destroypipescreen \
-            bltpipesurfacerastport \
-            bltpiperesourcerastport \
-            gallium_init \
-            gallium_func
+            bltpiperesourcerastport
 
 #MM- core-linklibs : linklibs-gallium
 
 %build_module mmake=workbench-libs-gallium \
-    modname=gallium modtype=library linklibname=gallium \
-    files="$(LIB_GALLIUM_SOURCES)"
+   modname=gallium modtype=library \
+   linklibname=gallium \
+   files="$(LIB_GALLIUM_SOURCES)" \
+   uselibs="stdc"
 
 #MM includes-copy
 

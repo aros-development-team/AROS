@@ -43,7 +43,7 @@ GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
 # WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
 
 SOFTPIPE_HIDD_SOURCES := \
-            softpipegalliumclass \
+            softpipe_galliumclass \
             init \
             arosc_emul \
              $(addprefix $(GALLIUM_PATH),$(GALLIUM_SOFTPIPE_SOURCES))\

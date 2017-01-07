@@ -6,7 +6,9 @@
 #include "nouveau_intern.h"
 
 #include <aros/debug.h>
+
 #include <proto/oop.h>
+#include <proto/utility.h>
 
 #include "util/u_memory.h"
 #include "util/u_inlines.h"
@@ -120,8 +122,13 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
 /* METHODS */
 OOP_Object *METHOD(NouveauGallium, Root, New)
 {
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+    IPTR interfaceVers;
 
+    interfaceVers = GetTagData(aHidd_Gallium_InterfaceVersion, -1, msg->attrList);
+    if (interfaceVers != GALLIUM_INTERFACE_VERSION)
+        return NULL;
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if(o)
     {
         /* Check if chipset support hardware 3D via gallium */
@@ -146,7 +153,7 @@ VOID METHOD(NouveauGallium, Root, Get)
         switch (idx)
         {
             /* Overload the property */
-            case aoHidd_Gallium_GalliumInterfaceVersion:
+            case aoHidd_Gallium_InterfaceVersion:
                 *msg->storage = GALLIUM_INTERFACE_VERSION;
                 return;
         }

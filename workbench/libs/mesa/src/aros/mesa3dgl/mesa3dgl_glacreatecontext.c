@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2016, The AROS Development Team. All rights reserved.
+    Copyright 2009-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,7 +27,7 @@
 
 /*  FUNCTION
 
-        Crates a GL rendering context that can be later used in subsequent
+        Creates a GL rendering context that can be later used in subsequent
         calls.
  
     INPUTS
@@ -88,7 +88,7 @@
 
     RESULT
 
-        A valid GL context or NULL of creation was not successful.
+        A valid GL context or NULL of creation was not succesfull.
  
     BUGS
 
@@ -99,43 +99,70 @@
 *****************************************************************************/
 {
     struct mesa3dgl_context * ctx = NULL;
+    struct TagItem pscreen_tags[] = 
+    { 
+            { CPS_PipeFriendBitMap,     0       },
+            { CPS_PipeScreenDriver,     0       },
+            { TAG_DONE,                 0       }
+    };
     struct pipe_screen * pscreen = NULL;
     struct st_context_attribs attribs = {0};
+
+    D(bug("[MESA3DGL] %s()\n", __func__));
 
     /* Allocate MESA3DGL context */
     if (!(ctx = (struct mesa3dgl_context *)AllocVec(sizeof(struct mesa3dgl_context), MEMF_PUBLIC | MEMF_CLEAR)))
     {
-        bug("%s: ERROR - failed to allocate GLAContext\n", __PRETTY_FUNCTION__);
+        bug("%s: ERROR - failed to allocate GLAContext\n", __func__);
         return NULL;
     }
+    pscreen_tags[1].ti_Data = (IPTR)&ctx->driver;
+
+    D(bug("[MESA3DGL] %s: ctx @ 0x%p\n", __func__, ctx));
 
     MESA3DGLSelectRastPort(ctx, tagList);
     if (!ctx->visible_rp)
     {
-        bug("%s: ERROR - failed to select visible rastport\n", __PRETTY_FUNCTION__);
+        bug("%s: ERROR - failed to select visible rastport\n", __func__);
         goto error_out;
     }    
 
+    D(bug("[MESA3DGL] %s: visible_rp @ 0x%p\n", __func__, ctx->visible_rp));
+    pscreen_tags[0].ti_Data = (IPTR)ctx->visible_rp->BitMap;
+    D(bug("[MESA3DGL] %s:   _bmap @ 0x%p\n", __func__, pscreen_tags[0].ti_Data));
+
     MESA3DGLStandardInit(ctx, tagList);   
 
-    pscreen = CreatePipeScreenV(NULL);
-    if (!pscreen)
+    if (CreatePipeV(pscreen_tags))
     {
-        bug("%s: ERROR -  failed to create gallium pipe screen\n", __PRETTY_FUNCTION__);
+        pscreen = CreatePipeScreen(ctx->driver);
+        if (!pscreen)
+        {
+            bug("%s: ERROR -  failed to create gallium pipe screen\n", __func__);
+            goto error_out;
+        }
+    }
+    else
+    {
+        bug("%s: ERROR -  failed to create gallium pipe\n", __func__);
         goto error_out;
     }
+
+    D(bug("[MESA3DGL] %s: pipe screen @ 0x%p\n", __func__, pscreen));
+    D(bug("[MESA3DGL] %s: pipe driver @ 0x%p\n", __func__, ctx->driver));
 
     if (!(ctx->stmanager = MESA3DGLNewStManager(pscreen)))
     {
         bug("%s: ERROR - failed to create ST Manager\n");
-        DestroyPipeScreen(pscreen);
+        DestroyPipeScreen(ctx->driver, pscreen);
         goto error_out;
     }
 
-    D(bug("[MESA3DGL] %s: Filling ST Visual \n", __PRETTY_FUNCTION__));
+    D(bug("[MESA3DGL] %s: ST Manager @ 0x%p \n", __func__, ctx->stmanager));
+
     if (!MESA3DGLFillVisual(&ctx->stvis, ctx->stmanager->screen, ctx->BitsPerPixel, tagList))
     {
-        bug("%s: ERROR -  failed to fill ST Visual\n", __PRETTY_FUNCTION__);
+        bug("%s: ERROR -  failed to fill ST Visual\n", __func__);
         goto error_out;
     }
 
@@ -145,7 +172,7 @@
     ctx->st = glstapi->create_context(glstapi, ctx->stmanager, &attribs, NULL);
     if (!ctx->st)
     {
-        bug("%s: ERROR -  failed to create mesa state tracker context\n", __PRETTY_FUNCTION__);
+        bug("%s: ERROR -  failed to create mesa state tracker context\n", __func__);
         goto error_out;
     }
 
@@ -153,14 +180,14 @@
 
     if (!ctx->framebuffer)
     {
-        bug("%s: ERROR -  failed to create frame buffer\n", __PRETTY_FUNCTION__);
+        bug("%s: ERROR -  failed to create frame buffer\n", __func__);
         goto error_out;
     }
 
     return (GLAContext)ctx;
 
 error_out:
-    if (ctx->stmanager) MESA3DGLFreeStManager(ctx->stmanager);
+    if (ctx->stmanager) MESA3DGLFreeStManager(ctx->driver, ctx->stmanager);
     if (ctx) MESA3DGLFreeContext(ctx);
     return (GLAContext)NULL;
 }

@@ -17,20 +17,21 @@
 
     NAME */
 
-      AROS_LH8(void, BltPipeResourceRastPort,
+      AROS_LH9(void, BltPipeResourceRastPort,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(struct pipe_resource *, srcPipeResource, A0),
+      AROS_LHA(PipeHandle_t, pipe, A0),
+      AROS_LHA(struct pipe_resource *, srcPipeResource, A1),
       AROS_LHA(LONG                  , xSrc, D0),
       AROS_LHA(LONG                  , ySrc, D1),
-      AROS_LHA(struct RastPort *     , destRP, A1),
+      AROS_LHA(struct RastPort *     , destRP, A2),
       AROS_LHA(LONG                  , xDest, D2),
       AROS_LHA(LONG                  , yDest, D3),
       AROS_LHA(LONG                  , xSize, D4),
       AROS_LHA(LONG                  , ySize, D5),
 
 /*  LOCATION */
-      struct Library *, GalliumBase, 8, Gallium)
+      struct Library *, GalliumBase, 9, Gallium)
 
 /*  FUNCTION
         Copies part of pipe resource onto rast port. Clips output by using layers of
