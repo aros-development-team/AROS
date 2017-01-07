@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: VideoCore4 hardware functions
