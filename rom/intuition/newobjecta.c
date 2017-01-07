@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -31,9 +31,9 @@
 
 /*  FUNCTION
         Use this function to create BOOPSI objects (BOOPSI stands for
-        "Basic Object Oriented Programming System for Intuition).
+        "Basic Object Oriented Programming System for Intuition").
 
-        You may specify a class either by it's name (if it's a public class)
+        You may specify a class either by its name (if it's a public class)
         or by a pointer to its definition (if it's a private class). If
         classPtr is NULL, classID is used.
 
@@ -42,15 +42,15 @@
             happen to have a pointer to it)
         classID - Name of a public class
         tagList - Initial attributes. Read the documentation of the class
-            carefully to find out which attributes must be specified
-            here and which can.
+            carefully to find out which attributes must or can be specified
+            here.
 
     RESULT
         A BOOPSI object which can be manipulated with general functions and
-        which must be disposed with DisposeObject() later.
+        which must be disposed of with DisposeObject() later.
 
     NOTES
-        This functions send OM_NEW to the dispatcher of the class.
+        This function sends OM_NEW to the dispatcher of the class.
 
     EXAMPLE
 
@@ -68,28 +68,34 @@
     Object *object;
     struct  opSet method;
 
-    DEBUG_NEWOBJECT(dprintf("NewObject[%x]: Class 0x%lx <%s> TagList 0x%lx\n",
-                	    &method, /* some unique id to see matching debug info */
-                	    classPtr,
-                	    classID ? classID : (classPtr->cl_ID ? classPtr->cl_ID : "NULL"),
-                	    tagList));
+    DEBUG_NEWOBJECT
+    (
+        dprintf("NewObject[%x]: Class 0x%lx <%s> TagList 0x%lx\n",
+            &method, /* some unique id to see matching debug info */
+            classPtr,
+            classID ?
+                classID :
+                (classPtr->cl_ID ? classPtr->cl_ID : (ClassID)"NULL"),
+            tagList);
+    )
 
     EnterFunc(bug("intuition::NewObjectA()\n"));
 
-#if 1
-    if (tagList)
-    {
-        DEBUG_NEWOBJECT(
-            APTR    	    state = tagList;
+    DEBUG_NEWOBJECT
+    (
+        if (tagList)
+        {
+            struct Library *UtilityBase =
+                GetPrivIBase(IntuitionBase)->UtilityBase;
+            struct TagItem *state = tagList;
             struct TagItem *tag;
 
             while (tag = NextTagItem(&state))
             {
             	dprintf("\t%08lx %08lx\n", tag->ti_Tag, tag->ti_Data);
             }
-        )
-    }
-#endif
+        }
+    )
 
     ObtainSemaphoreShared (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
