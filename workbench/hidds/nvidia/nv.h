@@ -195,6 +195,7 @@ struct staticdata {
     OOP_Object		    *nvobject;
     OOP_Object		    *pcidriver;
 
+    OOP_AttrBase	    hiddAttrBase;
     OOP_AttrBase	    pciAttrBase;
     OOP_AttrBase	    bitMapAttrBase;
     OOP_AttrBase	    nvBitMapAttrBase;

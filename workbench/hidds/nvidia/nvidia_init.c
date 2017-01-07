@@ -83,11 +83,13 @@
 #include "nv.h"
 
 #undef HiddPCIDeviceAttrBase
+#undef HiddAttrBase
 #undef HiddGfxAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
 #define HiddPCIDeviceAttrBase	(sd->pciAttrBase)
+#define HiddAttrBase		(sd->hiddAttrBase)
 #define HiddBitMapAttrBase	(sd->bitMapAttrBase)
 #define HiddNVidiaBitMapAttrBase (sd->nvBitMapAttrBase)
 #define HiddPixFmtAttrBase	(sd->pixFmtAttrBase)
@@ -764,6 +766,7 @@ static int NV_Init(LIBBASETYPEPTR LIBBASE)
 	    struct OOP_ABDescr attrbases[] = 
 	    {
 		{ IID_Hidd_PCIDevice,   &HiddPCIDeviceAttrBase },
+		{ IID_Hidd,	    	    &HiddAttrBase },
 		{ IID_Hidd_BitMap,	    &HiddBitMapAttrBase },
 		{ IID_Hidd_PixFmt,	    &HiddPixFmtAttrBase },
 		{ IID_Hidd_Sync,	    &HiddSyncAttrBase },

@@ -25,11 +25,13 @@
 #define _sd (&((LIBBASETYPEPTR)cl->UserData)->sd)
 
 #undef HiddPCIDeviceAttrBase
+#undef HiddAttrBase
 #undef HiddGfxAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
 #define HiddPCIDeviceAttrBase	(_sd->pciAttrBase)
+#define HiddAttrBase		(_sd->hiddAttrBase)
 #define HiddNVidiaBitMapAttrBase (_sd->nvBitMapAttrBase)
 #define HiddBitMapAttrBase	(_sd->bitMapAttrBase)
 #define HiddPixFmtAttrBase	(_sd->pixFmtAttrBase)
