@@ -3,7 +3,7 @@
  * Version:  7.8
  *
  * Copyright (C) 2010 Chia-I Wu <olv@0xlab.org>
- * Copyright (C) 2010 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2017 The AROS Development Team. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -40,6 +40,7 @@
 struct aros_display 
 {
     struct native_display base;
+    PipeHandle_t pipehandle;
     const struct native_event_handler *event_handler;
     struct native_config *configs;
     int configs_count;
@@ -105,7 +106,7 @@ aros_surface_swap_buffers(struct native_surface *nsurf)
 
     resource_surface_get_resources(asurf->rsurf, pres, 1 << NATIVE_ATTACHMENT_BACK_LEFT);
 
-    BltPipeResourceRastPort(pres[NATIVE_ATTACHMENT_BACK_LEFT], 0, 0, 
+    BltPipeResourceRastPort(asurf->adpy->pipehandle, pres[NATIVE_ATTACHMENT_BACK_LEFT], 0, 0, 
         asurf->window->RPort, asurf->window->BorderLeft, asurf->window->BorderTop,
         w, h);
 
@@ -350,7 +351,7 @@ aros_display_destroy(struct native_display *ndpy)
         FREE(arosdpy->configs);
 
     if (arosdpy->base.screen)
-        DestroyPipeScreen(arosdpy->base.screen);
+        DestroyPipeScreen(arosdpy->pipehandle, arosdpy->base.screen);
 
     FREE(arosdpy);
 }
@@ -360,10 +361,16 @@ aros_display_init_screen(struct native_display *ndpy)
 {
     struct aros_display *arosdpy = aros_display(ndpy);
 
-    if (!(arosdpy->base.screen = CreatePipeScreenV(NULL))) 
-        return FALSE;
+    if (arosdpy->pipehandle = CreatePipeV(NULL))
+    {
+        arosdpy->base.screen = CreatePipeScreen(arosdpy->pipehandle);
+        if (arosdpy->base.screen)
+            return TRUE;
+    }
 
-   return TRUE;
+    bug("%s: ERROR -  failed to create gallium pipe/screen\n", __func__);
+
+    return FALSE;
 }
 
 static const struct native_event_handler *aros_event_handler;

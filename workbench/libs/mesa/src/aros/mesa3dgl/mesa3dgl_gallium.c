@@ -284,12 +284,12 @@ struct st_manager * MESA3DGLNewStManager(struct pipe_screen * pscreen)
     return stmanager;
 }
 
-VOID MESA3DGLFreeStManager(struct st_manager * stmanager)
+VOID MESA3DGLFreeStManager(APTR pipe, struct st_manager * stmanager)
 {
     if (stmanager)
     {
         if (stmanager->screen)
-            DestroyPipeScreen(stmanager->screen);
+            DestroyPipeScreen(pipe, stmanager->screen);
         FreeVec(stmanager);
     }
 }

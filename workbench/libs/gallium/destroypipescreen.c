@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,13 +9,14 @@
 
     NAME */
 
-      AROS_LH1(void, DestroyPipeScreen,
+      AROS_LH2(void, DestroyPipeScreen,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(struct pipe_screen *, screen, A0),
+      AROS_LHA(PipeHandle_t, pipe, A0),
+      AROS_LHA(struct pipe_screen *, pscreen, A1),
 
 /*  LOCATION */
-      struct Library *, GalliumBase, 6, Gallium)
+      struct Library *, GalliumBase, 8, Gallium)
 
 /*  FUNCTION
         Disposes the pipe screen
@@ -37,9 +38,9 @@
 {
     AROS_LIBFUNC_INIT
     
-    if (screen)
+    if (pscreen)
     {
-        screen->destroy(screen);
+        pscreen->destroy(pscreen);
     }
     
     AROS_LIBFUNC_EXIT

@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 USER_LDFLAGS := -static
 
-FILES := galliumclass init
+FILES := gallium_class gallium_init
 
 #MM includes-copy
 %copy_includes path=hidd dir=include

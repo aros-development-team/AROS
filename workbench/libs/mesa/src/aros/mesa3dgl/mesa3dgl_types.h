@@ -27,6 +27,7 @@ struct mesa3dgl_framebuffer
 /* mesa/gallium GL context */
 struct mesa3dgl_context
 {
+    APTR                                driver;
     struct st_context_iface     *st;
     struct st_visual            stvis;
     struct st_manager           *stmanager;

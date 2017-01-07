@@ -1,11 +1,19 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <hidd/gallium.h>
-#include <proto/oop.h>
 #include <aros/debug.h>
+
+#include <proto/oop.h>
+#include <proto/cybergraphics.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+
+#include <cybergraphx/cybergraphics.h>
+
+#include <hidd/gallium.h>
+#include <gallium/gallium.h>
 
 #include <gallium/pipe/p_screen.h>
 #include "softpipe/sp_texture.h"
@@ -17,9 +25,6 @@
 
 #include "softpipe_intern.h"
 
-#include <proto/cybergraphics.h>
-#include <proto/graphics.h>
-#include <cybergraphx/cybergraphics.h>
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT RECTFMT_RAW   /* Big Endian Archs. */
@@ -133,6 +138,14 @@ HiddSoftpipeCreateSoftpipeWinSys(void)
 
 OOP_Object *METHOD(SoftpipeGallium, Root, New)
 {
+    IPTR interfaceVers;
+
+    D(bug("[softpipe.hidd] %s()\n", __func__));
+
+    interfaceVers = GetTagData(aHidd_Gallium_InterfaceVersion, -1, msg->attrList);
+    if (interfaceVers != GALLIUM_INTERFACE_VERSION)
+        return NULL;
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 
     return o;
@@ -147,7 +160,7 @@ VOID METHOD(SoftpipeGallium, Root, Get)
         switch (idx)
         {
             /* Overload the property */
-            case aoHidd_Gallium_GalliumInterfaceVersion:
+            case aoHidd_Gallium_InterfaceVersion:
                 *msg->storage = GALLIUM_INTERFACE_VERSION;
                 return;
         }
