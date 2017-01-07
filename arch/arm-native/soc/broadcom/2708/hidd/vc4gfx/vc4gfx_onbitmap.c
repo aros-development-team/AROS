@@ -23,8 +23,8 @@
 #include <hidd/gfx.h>
 #include <oop/oop.h>
 
-#include "videocoregfx_bitmap.h"
-#include "videocoregfx_hidd.h"
+#include "vc4gfx_bitmap.h"
+#include "vc4gfx_hidd.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -38,7 +38,7 @@
 #define MNAME_BM(x) VideoCoreGfxOnBM__Hidd_BitMap__ ## x
 
 #define OnBitmap 1
-#include "videocoregfx_bitmapclass.c"
+#include "vc4gfx_bitmapclass.c"
 
 /*********** BitMap::New() *************************************/
 

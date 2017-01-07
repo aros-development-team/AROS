@@ -23,8 +23,8 @@
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
 
-#include "videocoregfx_hidd.h"
-#include "videocoregfx_hardware.h"
+#include "vc4gfx_hidd.h"
+#include "vc4gfx_hardware.h"
 
 #include LC_LIBDEFS_FILE
 

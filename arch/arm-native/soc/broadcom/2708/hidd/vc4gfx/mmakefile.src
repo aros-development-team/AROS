@@ -5,16 +5,16 @@ include $(SRCDIR)/config/aros.cfg
 USER_LDFLAGS := -static
 
 FILES	:=	\
-	videocoregfx_init \
-	videocoregfx_hiddclass \
-	videocoregfx_memory \
-	videocoregfx_sdtv \
-	videocoregfx_hdmi \
-	videocoregfx_hardware \
-	videocoregfx_pixfmts \
-	videocoregfx_onbitmap
+	vc4gfx_init \
+	vc4gfx_hiddclass \
+	vc4gfx_memory \
+	vc4gfx_sdtv \
+	vc4gfx_hdmi \
+	vc4gfx_hardware \
+	vc4gfx_pixfmts \
+	vc4gfx_onbitmap
 
-%build_module mmake=hidd-videocoregfx \
-  modname=videocoregfx modtype=hidd \
+%build_module mmake=hidd-vc4gfx \
+  modname=vc4gfx modtype=hidd \
   files=$(FILES) \
   uselibs="hiddstubs"

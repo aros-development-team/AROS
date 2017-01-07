@@ -28,9 +28,9 @@
 #include <clib/alib_protos.h>
 #include <string.h>
 
-#include "videocoregfx_hidd.h"
-#include "videocoregfx_hardware.h"
-#include "videocoregfx_bitmap.h"
+#include "vc4gfx_hidd.h"
+#include "vc4gfx_hardware.h"
+#include "vc4gfx_bitmap.h"
 
 #include LC_LIBDEFS_FILE
 
