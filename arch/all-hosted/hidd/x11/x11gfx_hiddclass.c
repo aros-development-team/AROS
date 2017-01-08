@@ -51,6 +51,7 @@ static const struct OOP_ABDescr attrbases[] =
 
 static VOID cleanupx11stuff(struct x11_staticdata *xsd);
 static BOOL initx11stuff(struct x11_staticdata *xsd);
+static ULONG mask_to_shift(ULONG mask);
 
 /****************************************************************************************/
 
@@ -354,7 +355,15 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     pftags[5].ti_Data = XSD(cl)->vi->green_mask;
     pftags[6].ti_Data = XSD(cl)->vi->blue_mask;
     pftags[7].ti_Data = 0x00000000;
-        
+
+    /* Support 32-bit modes (ie. odroid XU4 with 3D driver) */
+    if (XSD(cl)->depth > 24)
+    {
+        pftags[7].ti_Data = 0xFFFFFFFF ^ (XSD(cl)->vi->red_mask
+                | XSD(cl)->vi->green_mask | XSD(cl)->vi->blue_mask);
+        pftags[3].ti_Data = mask_to_shift(pftags[7].ti_Data);
+    }
+
     if (XSD(cl)->vi->class == TrueColor)
     {
         pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
