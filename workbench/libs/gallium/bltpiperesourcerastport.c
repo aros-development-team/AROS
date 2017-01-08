@@ -104,7 +104,7 @@
             {
                 /* This clip rect intersects renderable layer rect */
                 struct pHidd_Gallium_DisplayResource drmsg = {
-                mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplayResource),
+                mID : ((struct GalliumBase *)GalliumBase)->galliumMId_DisplayResource,
                 resource : srcPipeResource,
                 srcx : xSrc + result.MinX - L->bounds.MinX - xDest, /* x in the source buffer */
                 srcy : ySrc + result.MinY - L->bounds.MinY - yDest, /* y in the source buffer */
@@ -125,7 +125,7 @@
     if (copied)
     {
         struct pHidd_BitMap_UpdateRect urmsg = {
-            mID     :   OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect),
+            mID     :   ((struct GalliumBase *)GalliumBase)->galliumMId_UpdateRect,
             x       :   renderableLayerRect.MinX,
             y       :   renderableLayerRect.MinY,
             width   :   renderableLayerRect.MaxX - renderableLayerRect.MinX + 1,
