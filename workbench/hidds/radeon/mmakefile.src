@@ -2,6 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- workbench-hidds-radeon : hidd-radeon
+
 USER_INCLUDES := -I.
 
 CFLAGS := $(CFLAGS) -D__KERNEL__
