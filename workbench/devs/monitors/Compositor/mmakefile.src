@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-devs-monitors: devs-monitors-compositor
 
-FILES   := compositor_class startup displaymode
+FILES   := compositor_class compositor_startup displaymode
 EXEDIR  := $(AROSDIR)/Devs/Monitors
 EXENAME := Compositor
 
