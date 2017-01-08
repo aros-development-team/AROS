@@ -61,10 +61,6 @@
     struct Rectangle renderableLayerRect;
     BOOL copied = FALSE;
 
-    struct HIDDT_WinSys * ws = (struct HIDDT_WinSys *)srcPipeResource->screen->winsys;
-    if (!ws)
-        return;
-
     if (!IsLayerVisible(L))
         return;
 
@@ -114,7 +110,7 @@
                 width : result.MaxX - result.MinX + 1, /* width of the rect in source buffer */
                 height : result.MaxY - result.MinY + 1, /* height of the rect in source buffer */
                 };
-                OOP_DoMethod(ws->driver, (OOP_Msg)&drmsg);
+                OOP_DoMethod(pipe, (OOP_Msg)&drmsg);
                 
                 copied = TRUE;
             }
