@@ -2,6 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga
+
 USER_LDFLAGS := -static
 
 FILES	:=	\

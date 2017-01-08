@@ -2,13 +2,13 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- workbench-hidds-nvidia : hidd-nvidia
+
 USER_INCLUDES := -I.
 CFLAGS := $(CFLAGS) -D__KERNEL__
 USER_LDFLAGS := -static
 
 FILES	:= nvidia_init nvidiaclass nvhardware nvidiabitmap planarbm
-
-#unused MM- kernel-objs: kernel-hidd-pci-kobj
 
 %build_module mmake=hidd-nvidia \
     modname=nvidia modtype=hidd \
