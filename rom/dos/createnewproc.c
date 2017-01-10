@@ -144,8 +144,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
             }
         }
 
-        if (me->pr_WindowPtr == 0 || me->pr_WindowPtr == -1)
-            defaults[17].ti_Data = me->pr_WindowPtr;
+        if (me->pr_WindowPtr == -1)
+            defaults[17].ti_Data = -1;
     }
 
     ApplyTagChanges(defaults, (struct TagItem *)tags);
