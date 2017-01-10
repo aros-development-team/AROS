@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy CLI command
@@ -2106,7 +2106,10 @@ void DoWork(STRPTR name, struct CopyData *cd)
             }
         }
 
-        SetData(cd->DestName, cd);
+        if (cd->Mode != COPYMODE_DELETE)
+        {
+            SetData(cd->DestName, cd);
+        }
     }
 
     if (lock)
