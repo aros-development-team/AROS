@@ -83,23 +83,23 @@
         /* Don't forget to find out some extra defaults here */
         struct TagItem procTags[] =
         {
-            { NP_Seglist        , (IPTR)segList   },    /* 0 */
-            { NP_FreeSeglist    , FALSE           },    /* 1 */
-            { NP_StackSize      , stackSize       },    /* 2 */
-            { NP_Name           , (IPTR)name      },    /* 3 */
-            { NP_Priority       , pri             },    /* 4 */
+            { NP_Seglist        , (IPTR)segList   },
+            { NP_FreeSeglist    , FALSE           },
+            { NP_StackSize      , stackSize       },
+            { NP_Name           , (IPTR)name      },
+            { NP_Priority       , pri             },
             /* These arguments are necessary, for
              * AOS 3.x compatability. Specifically,
              * CreateProc() must *not* break Forbid()
              * locking.
              */
-            { NP_CurrentDir     , 0               },    /* 6 */
-            { NP_HomeDir        , 0               },    /* 7 */
-            { NP_Input          , 0               },    /* 8 */
-            { NP_Output         , 0               },    /* 9 */
-            { NP_CloseInput     , FALSE           },    /* 10 */
-            { NP_CloseOutput    , FALSE           },    /* 11 */
-            { TAG_DONE          , 0               }     /* 12 */
+            { NP_CurrentDir     , 0               },
+            { NP_HomeDir        , 0               },
+            { NP_Input          , 0               },
+            { NP_Output         , 0               },
+            { NP_CloseInput     , FALSE           },
+            { NP_CloseOutput    , FALSE           },
+            { TAG_DONE          , 0               }
         };
 
         if ((pr = CreateNewProc(procTags)))
