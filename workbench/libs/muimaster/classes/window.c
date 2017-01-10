@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2016, The AROS Development Team.
+    Copyright © 2002-2017, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -2385,6 +2385,27 @@ void _zune_window_message(struct IntuiMessage *imsg)
     oWin = (Object *) iWin->UserData;
     data = muiWindowData(oWin);
 
+    if (data->wd_SleepCount > 0)
+    {
+        BOOL refresh=FALSE;
+        /* Window is sleeping, so we just ignore (and reply) all messages.
+         * MUI 3.8/AmigaOS3 also receives all messages (IDCMP Flags 
+         * are not modified during sleeping). MUI refreshes the window 
+         * contents, so it seems to handle IDCMP_REFRESHWINDOW messages. 
+         * If any other messages are handled by MUI is unsure/not tested.
+         */
+        if (imsg->Class == IDCMP_REFRESHWINDOW) 
+        {
+            refresh=TRUE;
+        }
+        ReplyMsg((struct Message *)imsg);
+        if (refresh) 
+        {
+            RefreshWindow(oWin, data);
+        }
+        return;
+    }
+
     if (data->wd_DragObject)
     {
         if (!HandleDragging(oWin, data, imsg))
@@ -3223,7 +3244,7 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                         (data->wd_RenderInfo.mri_Window,
                         WA_BusyPointer, TRUE,
                         WA_PointerDelay, TRUE, TAG_DONE);
-                    // FIXME: how to disable event handling?
+                    /* event handling is disabled in _zune_window_message() */
                 }
             }
             else
