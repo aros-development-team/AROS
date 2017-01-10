@@ -3,3 +3,4 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- distfiles-pc-x86_64 : bootiso
+#MM- distfiles-quick-pc-x86_64 : bootiso-quick
