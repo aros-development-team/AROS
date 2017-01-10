@@ -138,6 +138,11 @@ struct MUI_WindowData
     LONG wd_YStore;
 
     WORD wd_SleepCount;         /* MUIA_Window_Sleep nests */
+    LONG wd_SleepMaxHeight;     /* Remember Min/Max values for wakeup */
+    LONG wd_SleepMaxWidth;
+    LONG wd_SleepMinHeight;
+    LONG wd_SleepMinWidth;
+
     struct IClass *wd_Class;
 };
 
@@ -3245,6 +3250,17 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                         WA_BusyPointer, TRUE,
                         WA_PointerDelay, TRUE, TAG_DONE);
                     /* event handling is disabled in _zune_window_message() */
+                    data->wd_SleepMaxHeight=data->wd_RenderInfo.mri_Window->MaxHeight;
+                    data->wd_SleepMinHeight=data->wd_RenderInfo.mri_Window->MinHeight;
+                    data->wd_SleepMaxWidth=data->wd_RenderInfo.mri_Window->MaxWidth;
+                    data->wd_SleepMinWidth=data->wd_RenderInfo.mri_Window->MaxWidth;
+                    /* According to MUI autodocs, sleeping windows can't be resized.
+                     * MUI 3.8/AmigaOS also changes min/max values for this. */
+                    WindowLimits(data->wd_RenderInfo.mri_Window, 
+                        data->wd_RenderInfo.mri_Window->Width,
+                        data->wd_RenderInfo.mri_Window->Height,
+                        data->wd_RenderInfo.mri_Window->Width,
+                        data->wd_RenderInfo.mri_Window->Height);
                 }
             }
             else
@@ -3254,6 +3270,11 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     && (data->wd_SleepCount == 0))
                 {
                     SetWindowPointerA(data->wd_RenderInfo.mri_Window, NULL);
+                    WindowLimits(data->wd_RenderInfo.mri_Window, 
+                        data->wd_SleepMinWidth,
+                        data->wd_SleepMinHeight,
+                        data->wd_SleepMaxWidth,
+                        data->wd_SleepMaxHeight);
                 }
             }
             break;
