@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new process
@@ -111,7 +111,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /*14 */    { NP_UserData      , (IPTR)NULL                  },
     /*15 */    { NP_ExitCode      , (IPTR)NULL                  },
     /*16 */    { NP_ExitData      , (IPTR)NULL                  },
-    /*17 */    { NP_WindowPtr     , (IPTR)NULL                  }, /* Default: default public screen */
+    /*17 */    { NP_WindowPtr     ,  0                          }, /* Default: default public screen */
     /*18 */    { NP_CopyVars      , (IPTR)TRUE                  },
     /*19 */    { NP_Synchronous   , (IPTR)FALSE                 },
     /*20 */    { NP_FreeSeglist   , (IPTR)TRUE                  },
@@ -143,6 +143,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
                 defaults[9].ti_Data = parentstack;
             }
         }
+
+        if (me->pr_WindowPtr == 0 || me->pr_WindowPtr == -1)
+            defaults[17].ti_Data = me->pr_WindowPtr;
     }
 
     ApplyTagChanges(defaults, (struct TagItem *)tags);
