@@ -1219,7 +1219,7 @@ AROS_UFH3(void, RectShadeFunc,
                 1, height,
                 RECTFMT_ARGB);
         }
-        FreeMem(outline, (width << 2));
+        FreeMem(outline, linesize);
     }
     else
 #endif
