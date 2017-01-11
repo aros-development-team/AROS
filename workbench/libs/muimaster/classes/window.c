@@ -3273,9 +3273,7 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 {
                     SetWindowPointerA(data->wd_RenderInfo.mri_Window, NULL);
 
-                    /* MUIA_Window_Sleep might have been set when
-                     * window was iconified (hidden). 
-                     * So only restore settings, if they have been saved 
+                    /* Only restore settings, if they have been saved 
                      * during (MUIA_Window_Sleep, TRUE) call */
                     if (data->wd_SleepMaxHeight > 0)
                     {
