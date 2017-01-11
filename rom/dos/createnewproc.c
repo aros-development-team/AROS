@@ -144,7 +144,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
             }
         }
 
-        if (me->pr_WindowPtr == -1)
+        if (me->pr_WindowPtr == (APTR)-1)
             defaults[17].ti_Data = -1;
     }
 
