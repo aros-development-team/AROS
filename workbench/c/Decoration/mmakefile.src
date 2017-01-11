@@ -15,7 +15,8 @@ FILES := \
 
 EXEDIR := $(AROS_C)
 
-#MM workbench-c-decoration : includes linklibs
+#MM workbench-c-decoration : includes linklibs kernel-hidd-gfx-includes
+
 #MM- workbench-c : workbench-c-decoration
 
 %build_prog mmake=workbench-c-decoration \

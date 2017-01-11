@@ -21,6 +21,8 @@
 #include "drawfuncs.h"
 
 #define DECOR_USELINEBUFF
+//#define DECOR_FAKESHADE
+//#define DECOR_NODIRECT
 
 #if AROS_BIG_ENDIAN
 #define GET_A(rgb) ((rgb >> 24) & 0xff)
@@ -1090,40 +1092,87 @@ AROS_UFH3(void, RectShadeFunc,
 {
     AROS_USERFUNC_INIT
 
-    struct ShadeData *data = h->h_Data;
 #if defined(DECOR_USELINEBUFF)
     ULONG       *outline = NULL;
     UWORD       width = 1 + msg->MaxX - msg->MinX;
+    UWORD       height = 1 + msg->MaxY - msg->MinY;
+    ULONG        linesize = 0;
 #endif
     ULONG       color;
 
     HIDDT_Color col;
-    APTR        bm_handle;
-    int         px, py, x, y;
+    APTR        bm_handle = NULL;
+    int         px, py;
+#if !defined(DECOR_FAKESHADE)
+    int x, y;
+    struct ShadeData *data = h->h_Data;
+#endif
 
 #if defined(DECOR_USELINEBUFF)
-    if (width > 1) {
-        outline = AllocMem((width << 2), MEMF_ANY);
-        bm_handle = NULL;
-    } else
+    if (width > 1)
+        linesize = width << 2;
+    else if (height > 1)
+    {
+#if !defined(DECOR_FAKESHADE)
+        x = (msg->MinX - msg->OffsetX - rp->Layer->bounds.MinX) % data->ni->h;
 #endif
+        linesize = height << 2;
+    }
+
+    if (linesize)
+        outline = AllocMem(linesize, MEMF_ANY);
+    else
+#endif
+    {
+#if !defined(DECOR_NODIRECT)
         bm_handle = LockBitMapTags(rp->BitMap,
                     TAG_END);
+#endif
+    }
 
     for (py = msg->MinY; py <= msg->MaxY; py++)
     {
-        y = (py - rp->Layer->bounds.MinY) % data->ni->h;
+#if !defined(DECOR_FAKESHADE)
+        y = (py - msg->OffsetY - rp->Layer->bounds.MinY) % data->ni->h;
+#endif
 
+#if defined(DECOR_USELINEBUFF)
+        if (width == 1 && outline)
+        {
+#if !defined(DECOR_FAKESHADE)
+            color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
+#else
+            color = SET_ARGB(00, 0xFF, 0x00, 0x70);
+#endif
+            outline[py - msg->MinY] = 
+#if AROS_BIG_ENDIAN
+                color;
+#else
+                SET_ARGB(GET_B(color), GET_G(color), GET_R(color), GET_A(color));
+#endif
+            continue;
+        }
+
+#endif
         for (px = msg->MinX; px <= msg->MaxX; px++)
         {
-            x = (px - rp->Layer->bounds.MinX) % data->ni->w;
+#if !defined(DECOR_FAKESHADE)
+            x = (px - msg->OffsetX - rp->Layer->bounds.MinX) % data->ni->w;
 
             color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
+#else
+            color = SET_ARGB(00, 0xFF, 0x00, 0x70);
+#endif
 
 #if defined(DECOR_USELINEBUFF)
             if (outline)
             {
-                outline[px - msg->MinX] = color;
+                outline[px - msg->MinX] = 
+#if AROS_BIG_ENDIAN
+                    color;
+#else
+                    SET_ARGB(GET_B(color), GET_G(color), GET_R(color), GET_A(color));
+#endif
             }
             else
 #endif
@@ -1134,22 +1183,44 @@ AROS_UFH3(void, RectShadeFunc,
                     col.green = (HIDDT_ColComp) GET_G(color) << 8;
                     col.blue = (HIDDT_ColComp) GET_B(color) << 8;
 
-                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
+                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->OffsetX + (px - msg->MinX), msg->OffsetY + (py - msg->MinY), HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
                 }
                 else
                 {
-                    WriteRGBPixel(rp, px + msg->OffsetX - msg->MinX, py + msg->OffsetY - msg->MinY, color);
+                    WriteRGBPixel(rp, msg->OffsetX + (px - msg->MinX), msg->OffsetY + (py - msg->MinY), color);
                 }
         }
 #if defined(DECOR_USELINEBUFF)
-        if (outline)
-            WritePixelArray(outline, 0, 0, width, rp, msg->OffsetX, py + msg->OffsetY - msg->MinY, width, 1, RECTFMT_ARGB);
+        if (outline && (width > 1))
+        {
+            WritePixelArray(outline,
+                0, 0,
+                linesize,
+                rp,
+                msg->OffsetX,
+                msg->OffsetY + (py - msg->MinY),
+                width, 1,
+                RECTFMT_ARGB);
+        }
 #endif
     }
 
 #if defined(DECOR_USELINEBUFF)
     if (outline)
-         FreeMem(outline, (width << 2));
+    {
+        if (width == 1)
+        {
+            WritePixelArray(outline,
+                0, 0,
+                sizeof(ULONG),
+                rp,
+                msg->OffsetX,
+                msg->OffsetY,
+                1, height,
+                RECTFMT_ARGB);
+        }
+        FreeMem(outline, (width << 2));
+    }
     else
 #endif
         if (bm_handle)
