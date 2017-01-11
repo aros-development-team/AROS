@@ -77,7 +77,6 @@
     AROS_LIBFUNC_INIT
 
     struct Process *pr;       /* The process to create */
-    struct Process *parent = (struct Process *)FindTask(NULL);
 
     {
         /* Don't forget to find out some extra defaults here */
