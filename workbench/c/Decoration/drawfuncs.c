@@ -1260,7 +1260,14 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
     if (usegradients)
     {
-        color = CalcShade(basecolor, fact);
+        color = CalcShade(
+#if AROS_BIG_ENDIAN
+            basecolor,
+#else
+            SET_ARGB(GET_B(basecolor), GET_G(basecolor), GET_R(basecolor), GET_A(basecolor)),
+#endif
+            fact);
+
         SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, color, TAG_DONE);
         Move(rp, x0, y0);
         Draw(rp, x1, y1);
