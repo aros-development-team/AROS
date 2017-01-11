@@ -1104,7 +1104,7 @@ AROS_UFH3(void, RectShadeFunc,
     APTR        bm_handle = NULL;
     int         px, py;
 #if !defined(DECOR_FAKESHADE)
-    int x, y;
+    int x = 0, y;
     struct ShadeData *data = h->h_Data;
 #endif
 
