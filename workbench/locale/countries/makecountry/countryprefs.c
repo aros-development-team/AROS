@@ -24,17 +24,17 @@ unsigned long getCountryPrefsSize()
 
 unsigned long getCountryPrefsVers(struct IntCountryPrefs *cp)
 {
-    return cp->country_Version;
+    return (unsigned long)cp->country_Version;
 }
 
 unsigned long getCountryPrefsFlag(struct IntCountryPrefs *cp)
 {
-    return cp->country_Flag;
+    return (unsigned long)cp->country_Flag;
 }
 
 unsigned long getCountryNames(struct IntCountryPrefs *cp)
 {
-    return cp->country_NativeNames;
+    return (unsigned long)cp->country_NativeNames;
 }
 
 void convertEndianness(struct CountryPrefs *cp)
