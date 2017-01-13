@@ -62,33 +62,8 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
                     rc = LIBUSBCALL(libusb_open, dev, &dev_handle);
                     if(dev_handle) {
-
-                        LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 0);
-
-                        if ( LIBUSBCALL(libusb_kernel_driver_active, dev_handle, 0) ) {
-                            mybug_unit(-1, ("Kernel driver active\n"));
-                            if ( (LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, 0) == 0) ) {
-                                mybug_unit(-1, ("Kernel driver detached\n"));
-                            } else {
-                                mybug_unit(-1, ("Kernel driver NOT detached\n"));
-                            }
-                        } else {
-                            mybug_unit(-1, ("Kernel driver doesn't appear to be active\n"));
-                        }
-
-                        /* Check again for debug purposes */
-                        if ( LIBUSBCALL(libusb_kernel_driver_active, dev_handle, 0) ) {
-                            mybug_unit(-1, ("Kernel driver active\n"));
-                            if ( (LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, 0) == 0) ) {
-                                mybug_unit(-1, ("Kernel driver detached\n"));
-                            } else {
-                                mybug_unit(-1, ("Kernel driver NOT detached\n"));
-                            }
-                        } else {
-                            mybug_unit(-1, ("Kernel driver doesn't appear to be active\n"));
-                        }
-
-                        LIBUSBCALL(libusb_set_configuration, dev_handle, 0);
+                        LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
+                        LIBUSBCALL(libusb_set_configuration, dev_handle, 1);
                         LIBUSBCALL(libusb_claim_interface, dev_handle, 0);
 
                         speed = LIBUSBCALL(libusb_get_device_speed, dev);
