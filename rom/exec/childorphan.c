@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Make any children of ThisTask task orphans.
+    Desc: Make any children of this task orphans.
     Lang: english
 */
 #include "exec_intern.h"
@@ -22,8 +22,8 @@
 	struct ExecBase *, SysBase, 124, Exec)
 
 /*  FUNCTION
-	ChildOrphan() will detach the specified task from the its parent
-	task child task tree. This is useful if the parent task will be
+	ChildOrphan() will detach the specified task from its parent
+	task's child task tree. This is useful if the parent task will be
 	exiting, and no longer needs to be told about child task events.
 
 	Note that the default Task finaliser will orphan any remaining
