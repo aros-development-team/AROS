@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Semaphore internal handling
@@ -91,7 +91,7 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
      * by this task (ss_Owner == ThisTask).
      * Exclusive or shared mode of this function is determined by 'owner' parameter.
      * Actually it's pointer to a task which is allowed to share the lock with us.
-     * If it's equal to 'ThisTask', we are locking the semaphore in exclusive more. If it's NULL,
+     * If it's equal to 'ThisTask', we are locking the semaphore in exclusive mode. If it's NULL,
      * we are locking in shared mode. This helps to optimize code against speed, and remove
      * extra comparisons.
      */
