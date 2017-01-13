@@ -32,8 +32,6 @@
 #include <utility/tagitem.h>
 #include <aros/asmcall.h>
 
-#include <intuition/intuition.h>
-
 #include <hidd/compositor.h>
 #include <hidd/gfx.h>
 
