@@ -18,6 +18,7 @@ POSIXC := \
     __upath \
     __vfork \
     access \
+    alphasort \
     basename \
     cfgetispeed \
     cfgetospeed \
@@ -138,6 +139,7 @@ POSIXC := \
     rewind \
     rewinddir \
     rmdir \
+    scandir \
     scanf \
     seed48 \
     seekdir \
