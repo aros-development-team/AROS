@@ -2,7 +2,7 @@
 #define _POSIXC_DIRENT_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file dirent.h
@@ -53,7 +53,7 @@ typedef struct __dirdesc DIR;
 
 __BEGIN_DECLS
 
-/* NOTIMPL int alphasort(const struct dirent **a, const struct dirent **b); */
+int alphasort(const struct dirent **a, const struct dirent **b);
 int closedir(DIR *dir);
 int dirfd(DIR *dir);
 /* NOTIMPL DIR *fdopendir(int); */
@@ -61,9 +61,9 @@ DIR *opendir(const char *filename);
 struct dirent *readdir(DIR *dir);
 /* NOTIMPL int readdir_r(DIR *restrict, struct dirent *restrict, struct dirent **restrict); */
 void rewinddir(DIR *dir);
-/* NOTIMPL int scandir (const char *dir, struct dirent ***namelist,
+int scandir (const char *dir, struct dirent ***namelist,
               int (*select)(const struct dirent *),
-              int (*compar)(const struct dirent **, const struct dirent **)); */
+              int (*compar)(const struct dirent **, const struct dirent **));
 void seekdir(DIR *dir, off_t loc);
 long telldir(DIR *dir);
 

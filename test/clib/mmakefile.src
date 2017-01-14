@@ -29,6 +29,7 @@ FILES := \
         raise \
         random \
         randtest \
+        scandir \
         setjmp \
         snprintf \
         sprintf \
