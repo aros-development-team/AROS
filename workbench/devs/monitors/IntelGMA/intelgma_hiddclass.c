@@ -567,14 +567,14 @@ OOP_Object *METHOD(INTELG45, Root, New)
     if (o)
     {
         sd->GMAObject = o;
-		/* Create compositing object */
+		/* Create compositor object */
 		{
 			struct TagItem comptags [] =
 			{
 				{ aHidd_Compositor_GfxHidd, (IPTR)o },
 				{ TAG_DONE, TAG_DONE }
 			};
-			sd->compositing = OOP_NewObject(sd->compositingclass, NULL, comptags);
+			sd->compositor = OOP_NewObject(sd->compositorclass, NULL, comptags);
 			/* TODO: Check if object was created, how to handle ? */
 		}
     }
@@ -684,7 +684,7 @@ OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
         {
             { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
             { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
-            { aHidd_BitMap_IntelG45_CompositorHidd, (IPTR)sd->compositing },
+            { aHidd_BitMap_IntelG45_CompositorHidd, (IPTR)sd->compositor },
             { TAG_MORE, (IPTR)msg->attrList }
         };
 
