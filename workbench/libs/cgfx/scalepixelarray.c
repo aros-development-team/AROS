@@ -126,7 +126,7 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
     if (SrcW == 0 || SrcH == 0 || DestW == 0 || DestH == 0)
     	return 0;
 
-    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    /* This is AROS Cybergraphx - We only work wih Gfx Hidd bitmaps */
 
     if (!IS_HIDD_BM(RastPort->BitMap))
     {
@@ -134,7 +134,7 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
     	return 0;
     }
 
-    /* Get graphics HIDD and a graphics context */
+    /* Query the bitmaps Gfx Hidd, and create a suitable GC Object (graphics context) */
 
     OOP_GetAttr(HIDD_BM_OBJ(RastPort->BitMap), aHidd_BitMap_GfxHidd,
         (IPTR *)&gfx_hidd);

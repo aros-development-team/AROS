@@ -1,8 +1,8 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Graphics hidd color conversion initialization code.
+    Desc: Gfx Hidd color conversion initialization code.
     Lang: English.
 */
 #include <exec/types.h>

@@ -571,7 +571,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
 		{
 			struct TagItem comptags [] =
 			{
-				{ aHidd_Compositing_GfxHidd, (IPTR)o },
+				{ aHidd_Compositor_GfxHidd, (IPTR)o },
 				{ TAG_DONE, TAG_DONE }
 			};
 			sd->compositing = OOP_NewObject(sd->compositingclass, NULL, comptags);
@@ -684,7 +684,7 @@ OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
         {
             { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
             { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
-            { aHidd_BitMap_IntelG45_CompositingHidd, (IPTR)sd->compositing },
+            { aHidd_BitMap_IntelG45_CompositorHidd, (IPTR)sd->compositing },
             { TAG_MORE, (IPTR)msg->attrList }
         };
 
@@ -900,13 +900,13 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
 
 ULONG METHOD(INTELG45, Hidd_Gfx, ShowViewPorts)
 {
-    struct pHidd_Compositing_BitMapStackChanged bscmsg =
+    struct pHidd_Compositor_BitMapStackChanged bscmsg =
     {
-        mID : OOP_GetMethodID(IID_Hidd_Compositing, moHidd_Compositing_BitMapStackChanged),
+        mID : OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
         data : msg->Data
     };
     D(bug("[IntelG45] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
-    OOP_DoMethod(sd->compositing, (OOP_Msg)&bscmsg);
+    OOP_DoMethod(sd->compositor, (OOP_Msg)&bscmsg);
     return TRUE; /* Indicate driver supports this method */
 }
 

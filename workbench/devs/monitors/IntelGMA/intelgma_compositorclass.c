@@ -44,7 +44,7 @@ static BOOL AndRectRect(struct _Rectangle * rect1, struct _Rectangle * rect2,
         return TRUE;
 }
 
-static struct StackBitMapNode * HIDDCompositingIsBitMapOnStack(struct HIDDCompositingData * compdata, OOP_Object * bm)
+static struct StackBitMapNode * HIDDCompositorIsBitMapOnStack(struct HIDDCompositorData * compdata, OOP_Object * bm)
 {
     struct StackBitMapNode * n = NULL;
     
@@ -57,7 +57,7 @@ static struct StackBitMapNode * HIDDCompositingIsBitMapOnStack(struct HIDDCompos
     return NULL;
 }
 
-static struct StackBitMapNode * HIDDCompositingCanUseFramebuffer(struct HIDDCompositingData * compdata)
+static struct StackBitMapNode * HIDDCompositorCanUseFramebuffer(struct HIDDCompositorData * compdata)
 {
     struct StackBitMapNode * n = NULL;
     struct StackBitMapNode * frn = NULL;
@@ -76,11 +76,11 @@ static struct StackBitMapNode * HIDDCompositingCanUseFramebuffer(struct HIDDComp
 			else return NULL;
 		}
     }
-	D(bug("[Compositing] HIDDCompositingCanUseFramebuffer bm %x\n",frn->bm));
+	D(bug("[Compositor] HIDDCompositorCanUseFramebuffer bm %x\n",frn->bm));
     return frn;
 }
 
-static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * compdata)
+static VOID HIDDCompositorRecalculateVisibleRects(struct HIDDCompositorData * compdata)
 {
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY + 1;
     struct StackBitMapNode * n = NULL;
@@ -107,7 +107,7 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
         else
             n->isscreenvisible = FALSE;
 
-        D(bug("[Compositing] Bitmap %x, visible %d, (%d, %d) , (%d, %d)\n", 
+        D(bug("[Compositor] Bitmap %x, visible %d, (%d, %d) , (%d, %d)\n", 
             n->bm, n->isscreenvisible, 
             n->screenvisiblerect.MinX, n->screenvisiblerect.MinY, 
             n->screenvisiblerect.MaxX, n->screenvisiblerect.MaxY));
@@ -116,7 +116,7 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
 	
 }
 
-static VOID HIDDCompositingRecalculateDisplayedWidthHeight(struct HIDDCompositingData * compdata)
+static VOID HIDDCompositorRecalculateDisplayedWidthHeight(struct HIDDCompositorData * compdata)
 {
     struct StackBitMapNode * n = NULL;
     IPTR displayedwidth, displayedheight;
@@ -131,7 +131,7 @@ static VOID HIDDCompositingRecalculateDisplayedWidthHeight(struct HIDDCompositin
     }
 }
 
-static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdata, OOP_Object * bm)
+static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata, OOP_Object * bm)
 {
     /* 
         Desctiption: 
@@ -151,8 +151,8 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
     /* Sanity check */
     if (compdata->gfx != (OOP_Object *)e)
     {
-        /* Provided top bitmap is not using the same driver as compositing. Fail. */
-        D(bug("[Compositing] GfxHidd different than one used by compositing\n"));
+        /* Provided top bitmap is not using the same driver as compositor. Fail. */
+        D(bug("[Compositor] GfxHidd different than one used by compositor\n"));
         return FALSE;
     }
 
@@ -160,7 +160,7 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
     OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
     if (modeid == vHidd_ModeID_Invalid)
     {
-        D(bug("[Compositing] Invalid ModeID\n"));
+        D(bug("[Compositor] Invalid ModeID\n"));
         return FALSE;
     }
 
@@ -234,7 +234,7 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
     return FALSE;
 }
 
-static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingData * compdata, OOP_Object * bm)
+static BOOL HIDDCompositorCanCompositeWithScreenBitMap(struct HIDDCompositorData * compdata, OOP_Object * bm)
 {
     OOP_Object * screenbm = compdata->screenbitmap;
     IPTR screenbmwidth, screenbmheight, screenbmstdpixfmt;
@@ -270,13 +270,13 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
     return TRUE;
 }
 
-static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
+static VOID HIDDCompositorRedrawBitmap(struct HIDDCompositorData * compdata,
     OOP_Object * bm, WORD x, WORD y, WORD width, WORD height, BOOL clean)
 {
     struct StackBitMapNode * n = NULL;
     
     /* Check if passed bitmap is in stack, ignore if not */
-    if ((n = HIDDCompositingIsBitMapOnStack(compdata, bm)) == NULL)
+    if ((n = HIDDCompositorIsBitMapOnStack(compdata, bm)) == NULL)
         return;
 
     if (!n->isscreenvisible)
@@ -323,7 +323,7 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
             if( clean && dstandvisrect.MaxX+1 <  n->screenvisiblerect.MaxX )
             {
                 /* Clean right side.*/
-                D(bug("[Compositing] clean right %d,%d-%d,%d\n",dstandvisrect.MaxX+1, dstandvisrect.MinY, 
+                D(bug("[Compositor] clean right %d,%d-%d,%d\n",dstandvisrect.MaxX+1, dstandvisrect.MinY, 
                     n->screenvisiblerect.MaxX, dstandvisrect.MaxY));
                 HIDD_BM_FillRect(compdata->screenbitmap, compdata->gc,
                     dstandvisrect.MaxX+1, dstandvisrect.MinY-1, 
@@ -333,7 +333,7 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
             if( clean && dstandvisrect.MaxY+1 <  n->screenvisiblerect.MaxY )
             {
                 /* Clean bottom.*/
-                D(bug("[Compositing] clean bottom %d,%d-%d,%d\n",
+                D(bug("[Compositor] clean bottom %d,%d-%d,%d\n",
                     dstandvisrect.MinX, dstandvisrect.MaxY+1, 
                     n->screenvisiblerect.MaxX, n->screenvisiblerect.MaxY));
                 HIDD_BM_FillRect(compdata->screenbitmap, compdata->gc,
@@ -345,20 +345,20 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
     }
 }
 
-static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * compdata)
+static VOID HIDDCompositorRedrawVisibleScreen(struct HIDDCompositorData * compdata)
 {
     struct StackBitMapNode * n = NULL;
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
     
     /* Recalculate visible rects per screen */
-    HIDDCompositingRecalculateVisibleRects(compdata);
+    HIDDCompositorRecalculateVisibleRects(compdata);
 
 	/* use direct framebuffer if it is possible */
 	struct StackBitMapNode  *fbn;
-	if( ( fbn =  HIDDCompositingCanUseFramebuffer(compdata) ) )
+	if( ( fbn =  HIDDCompositorCanUseFramebuffer(compdata) ) )
 	{
 		if( HIDD_INTELG45_SetFramebuffer( fbn->bm ) ){
-			D(bug("[Compositing] directbitmap used, bitmap %x\n",fbn->bm););
+			D(bug("[Compositor] directbitmap used, bitmap %x\n",fbn->bm););
 			compdata->directbitmap = fbn->bm;
 		}
 	}
@@ -366,7 +366,7 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
 	{
 		if( compdata->directbitmap ){
 			compdata->directbitmap = NULL;
-			D(bug("[Compositing] directbitmap not used, set screenbitmap %x\n",compdata->screenbitmap););
+			D(bug("[Compositor] directbitmap not used, set screenbitmap %x\n",compdata->screenbitmap););
 			HIDD_INTELG45_SetFramebuffer( compdata->screenbitmap );
 		}
 	}
@@ -381,7 +381,7 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
             OOP_GetAttr(n->bm, aHidd_BitMap_Width, &width);
             OOP_GetAttr(n->bm, aHidd_BitMap_Height, &height);
 
-            HIDDCompositingRedrawBitmap(compdata, n->bm, 0, 0, width, height, TRUE);
+            HIDDCompositorRedrawBitmap(compdata, n->bm, 0, 0, width, height, TRUE);
             if (lastscreenvisibleline > n->screenvisiblerect.MinY)
                 lastscreenvisibleline = n->screenvisiblerect.MinY;
         }
@@ -395,13 +395,13 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
         IPTR viswidth;
 
         OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Width, &viswidth); 
-        D(bug("[Compositing] Clean upper area %d,%d-%d,%d\n",0, 0, viswidth - 1, lastscreenvisibleline - 1));
+        D(bug("[Compositor] Clean upper area %d,%d-%d,%d\n",0, 0, viswidth - 1, lastscreenvisibleline - 1));
         HIDD_BM_FillRect(compdata->screenbitmap, 
             compdata->gc, 0, 0, viswidth - 1, lastscreenvisibleline - 1);
     }
 }
 
-static VOID HIDDCompositingPurgeBitMapStack(struct HIDDCompositingData * compdata)
+static VOID HIDDCompositorPurgeBitMapStack(struct HIDDCompositorData * compdata)
 {
     struct StackBitMapNode * curr, * next;
 
@@ -418,13 +418,13 @@ static VOID HIDDCompositingPurgeBitMapStack(struct HIDDCompositingData * compdat
 
 
 /* PUBLIC METHODS */
-OOP_Object *METHOD(Compositing, Root, New)
+OOP_Object *METHOD(Compositor, Root, New)
 {
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
-    D(bug("[Compositing] New\n"));
+    D(bug("[Compositor] New\n"));
     if(o)
     {
-        struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
+        struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
 
         NEWLIST(&compdata->bitmapstack);
         compdata->screenbitmap  = NULL;
@@ -432,7 +432,7 @@ OOP_Object *METHOD(Compositing, Root, New)
         compdata->screenmodeid  = vHidd_ModeID_Invalid;
         InitSemaphore(&compdata->semaphore);
 		
-        compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositing_GfxHidd, 0, msg->attrList);
+        compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositor_GfxHidd, 0, msg->attrList);
         
         if (compdata->gfx != NULL)
         {
@@ -453,17 +453,17 @@ OOP_Object *METHOD(Compositing, Root, New)
     return o;
 }
 
-VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
+VOID METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
 {
     struct HIDD_ViewPortData * vpdata;
-    struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
+    struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
 
-    D(bug("[Compositing] BitMapStackChanged\n"));
+    D(bug("[Compositor] BitMapStackChanged\n"));
 
     LOCK_COMPOSITING_WRITE
         
     /* Free all items which are already on the list */
-    HIDDCompositingPurgeBitMapStack(compdata);
+    HIDDCompositorPurgeBitMapStack(compdata);
     
     
     if (!msg->data)
@@ -473,10 +473,10 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     }
     
     /* Switch mode if needed */    
-    if (!HIDDCompositingTopBitMapChanged(compdata, msg->data->Bitmap))
+    if (!HIDDCompositorTopBitMapChanged(compdata, msg->data->Bitmap))
     {
         /* Something bad happened. Yes, bitmap stack is already erased - that's ok */
-        D(bug("[Compositing] Failed to change top bitmap\n"));
+        D(bug("[Compositor] Failed to change top bitmap\n"));
         UNLOCK_COMPOSITING
         return; 
     }
@@ -486,7 +486,7 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     {
         /* Check if the passed bitmap can be composited together with screen
            bitmap */
-        if (HIDDCompositingCanCompositeWithScreenBitMap(compdata, vpdata->Bitmap))
+        if (HIDDCompositorCanCompositeWithScreenBitMap(compdata, vpdata->Bitmap))
         {
             struct StackBitMapNode * n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
             n->bm               = vpdata->Bitmap;
@@ -498,52 +498,52 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     }
 
     /* Set displayedwidth/displayedheight on all screen bitmaps */
-    HIDDCompositingRecalculateDisplayedWidthHeight(compdata);
+    HIDDCompositorRecalculateDisplayedWidthHeight(compdata);
     
     /* Redraw bitmap stack */
-    HIDDCompositingRedrawVisibleScreen(compdata);
+    HIDDCompositorRedrawVisibleScreen(compdata);
     
     UNLOCK_COMPOSITING
 }
 
-VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
+VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
 {
-    struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
-    //D(bug("[Compositing] BitMapRectChanged\n"));
+    struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
+    //D(bug("[Compositor] BitMapRectChanged\n"));
 	if( ! compdata->directbitmap ){
 		LOCK_COMPOSITING_READ
-		HIDDCompositingRedrawBitmap(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height, FALSE);
+		HIDDCompositorRedrawBitmap(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height, FALSE);
 		UNLOCK_COMPOSITING
 	}
 }
 
-VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChanged)
+VOID METHOD(Compositor, Hidd_Compositor, BitMapPositionChanged)
 {
-    struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
-    D(bug("[Compositing] BitMapPositionChanged\n")); 
+    struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
+    D(bug("[Compositor] BitMapPositionChanged\n")); 
     LOCK_COMPOSITING_READ
 
     /* Check is passed bitmap is in stack, ignore if not */
-    if (HIDDCompositingIsBitMapOnStack(compdata, msg->bm) != NULL)
+    if (HIDDCompositorIsBitMapOnStack(compdata, msg->bm) != NULL)
     {        
         /* Redraw bitmap stack */
-        HIDDCompositingRedrawVisibleScreen(compdata);
+        HIDDCompositorRedrawVisibleScreen(compdata);
     }
     
     UNLOCK_COMPOSITING
 }
 
-VOID METHOD(Compositing, Hidd_Compositing, ValidateBitMapPositionChange)
+VOID METHOD(Compositor, Hidd_Compositor, ValidateBitMapPositionChange)
 {
-    struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
+    struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
     struct StackBitMapNode * n = NULL;
-      D(bug("[Compositing] ValidateBitMapPositionChange %d,%d\n",
+      D(bug("[Compositor] ValidateBitMapPositionChange %d,%d\n",
 	         *msg->newxoffset,*msg->newyoffset));
 
     LOCK_COMPOSITING_READ
     
     /* Check if passed bitmap is in stack, ignore if not */
-    if ((n = HIDDCompositingIsBitMapOnStack(compdata, msg->bm)) != NULL)
+    if ((n = HIDDCompositorIsBitMapOnStack(compdata, msg->bm)) != NULL)
     {
         IPTR width, height;
         LONG limit;
@@ -572,27 +572,27 @@ VOID METHOD(Compositing, Hidd_Compositing, ValidateBitMapPositionChange)
 }
 
 
-static const struct OOP_MethodDescr Compositing_Root_descr[] =
+static const struct OOP_MethodDescr Compositor_Root_descr[] =
 {
-    {(OOP_MethodFunc)Compositing__Root__New, moRoot_New},
+    {(OOP_MethodFunc)Compositor__Root__New, moRoot_New},
     {NULL, 0}
 };
-#define NUM_Compositing_Root_METHODS 1
+#define NUM_Compositor_Root_METHODS 1
 
-static const struct OOP_MethodDescr Compositing_Hidd_Compositing_descr[] =
+static const struct OOP_MethodDescr Compositor_Hidd_Compositor_descr[] =
 {
-    {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapStackChanged, moHidd_Compositing_BitMapStackChanged},
-    {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapRectChanged, moHidd_Compositing_BitMapRectChanged},
-    {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapPositionChanged, moHidd_Compositing_BitMapPositionChanged},
-    {(OOP_MethodFunc)Compositing__Hidd_Compositing__ValidateBitMapPositionChange, moHidd_Compositing_ValidateBitMapPositionChange},
+    {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapStackChanged, moHidd_Compositor_BitMapStackChanged},
+    {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapRectChanged, moHidd_Compositor_BitMapRectChanged},
+    {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapPositionChanged, moHidd_Compositor_BitMapPositionChanged},
+    {(OOP_MethodFunc)Compositor__Hidd_Compositor__ValidateBitMapPositionChange, moHidd_Compositor_ValidateBitMapPositionChange},
     {NULL, 0}
 };
-#define NUM_Compositing_Hidd_Compositing_METHODS 4
+#define NUM_Compositor_Hidd_Compositor_METHODS 4
 
-const struct OOP_InterfaceDescr Compositing_ifdescr[] =
+const struct OOP_InterfaceDescr Compositor_ifdescr[] =
 {
-    {Compositing_Root_descr, IID_Root, NUM_Compositing_Root_METHODS},
-    {Compositing_Hidd_Compositing_descr, IID_Hidd_Compositing, NUM_Compositing_Hidd_Compositing_METHODS},
+    {Compositor_Root_descr, IID_Root, NUM_Compositor_Root_METHODS},
+    {Compositor_Hidd_Compositor_descr, IID_Hidd_Compositor, NUM_Compositor_Hidd_Compositor_METHODS},
     {NULL, NULL}
 };
 

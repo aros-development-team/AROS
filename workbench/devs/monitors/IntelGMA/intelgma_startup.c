@@ -32,7 +32,7 @@ OOP_AttrBase HiddGMABitMapAttrBase;
 OOP_AttrBase HiddI2CAttrBase;
 OOP_AttrBase HiddI2CDeviceAttrBase;
 OOP_AttrBase HiddGCAttrBase;
-OOP_AttrBase HiddCompositingAttrBase;
+OOP_AttrBase HiddCompositorAttrBase;
 OOP_AttrBase MetaAttrBase;
 OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HiddPCIDeviceAttrBase;
@@ -65,7 +65,7 @@ static const struct OOP_ABDescr attrbases[] =
     {IID_Hidd_I2CDevice	    , &HiddI2CDeviceAttrBase  },
     {IID_Hidd_PlanarBM	    , &__IHidd_PlanarBM       },
     {IID_Hidd_GC	    , &HiddGCAttrBase         },
-    {IID_Hidd_Compositing   , &HiddCompositingAttrBase},
+    {IID_Hidd_Compositor   , &HiddCompositorAttrBase},
     {NULL, NULL }
 };
 
@@ -216,18 +216,18 @@ int main(void)
 		sd.IntelI2C = OOP_NewObject(NULL, CLID_HiddMeta, INTELI2C_tags);
 		if (sd.IntelI2C)
 		{
-		    struct TagItem Compositing_tags[] =
+		    struct TagItem Compositor_tags[] =
 		    {
 			{aMeta_SuperID       , (IPTR)CLID_Hidd},
-			{aMeta_InterfaceDescr, (IPTR)Compositing_ifdescr},
-			{aMeta_InstSize      , sizeof(struct HIDDCompositingData)},
+			{aMeta_InterfaceDescr, (IPTR)Compositor_ifdescr},
+			{aMeta_InstSize      , sizeof(struct HIDDCompositorData)},
 			{TAG_DONE, 0}
 		    };
 
 		    sd.IntelI2C->UserData = &sd;
 
-		    sd.compositingclass = OOP_NewObject(NULL, CLID_HiddMeta, Compositing_tags);
-		    if (sd.compositingclass)
+		    sd.compositorclass = OOP_NewObject(NULL, CLID_HiddMeta, Compositor_tags);
+		    if (sd.compositorclass)
 		    {
 
             #ifndef GALLIUM_SIMULATION
@@ -266,7 +266,7 @@ int main(void)
 			     */
 			    return RETURN_OK;
 			}
-			OOP_DisposeObject((OOP_Object *)sd.compositingclass);
+			OOP_DisposeObject((OOP_Object *)sd.compositorclass);
 		    }
 		    OOP_DisposeObject((OOP_Object *)sd.IntelI2C);
 		}
