@@ -22,8 +22,8 @@
 #endif
 
 /* Compositor interface */
-#define CLID_Hidd_Compositor   "hidd.graphics.compositor"
-#define IID_Hidd_Compositor    "hidd.graphics.compositor"
+#define CLID_Hidd_Compositor   "hidd.gfx.compositor"
+#define IID_Hidd_Compositor    "hidd.gfx.compositor"
 
 #define HiddCompositorAttrBase __IHidd_Compositor
 

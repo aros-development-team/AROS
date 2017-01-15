@@ -9,10 +9,10 @@ FILES := \
  hiddmodeid \
  modeid
 
-#MM- test : test-hidd-graphics
-#MM test-hidd-graphics : includes linklibs
+#MM- test : test-hidd-gfx
+#MM test-hidd-gfx : includes linklibs
 
-%build_progs mmake=test-hidd-graphics \
+%build_progs mmake=test-hidd-gfx \
     files=$(FILES) targetdir=$(EXEDIR) \
     uselibs="hiddstubs"
 	

@@ -2,10 +2,10 @@
 #define HIDD_GRAPHICS_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Definitions for the Graphics HIDD system.
+    Desc: Definitions for the Gfx Hidd system.
     Lang: english
 */
 

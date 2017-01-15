@@ -27,7 +27,7 @@ struct StackBitMapNode
     LONG                displayedheight;
 };
 
-struct HIDDCompositingData
+struct HIDDCompositorData
 {
     OOP_Object              *screenbitmap;
 	OOP_Object              *directbitmap; 
@@ -42,7 +42,7 @@ struct HIDDCompositingData
     OOP_Object              *gc;            /* GC object used for drawing operations */
 };
 
-extern const struct OOP_InterfaceDescr Compositing_ifdescr[];
+extern const struct OOP_InterfaceDescr Compositor_ifdescr[];
 
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)

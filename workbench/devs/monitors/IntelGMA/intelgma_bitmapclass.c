@@ -115,10 +115,10 @@ OOP_Object *METHOD(GMABM, Root, New)
         bm->fbid = 0; /* Default value */
 
 		if (displayable) bm->displayable = TRUE; else bm->displayable = FALSE;
-		//bm->compositing = sd->compositing;
-        bm->compositing = (OOP_Object *)
-            GetTagData(aHidd_BitMap_IntelG45_CompositingHidd, 0, msg->attrList);
-        /* FIXME: check if compositing hidd was passed */
+		//bm->compositor = sd->compositor;
+        bm->compositor = (OOP_Object *)
+            GetTagData(aHidd_BitMap_IntelG45_CompositorHidd, 0, msg->attrList);
+        /* FIXME: check if compositor hidd was passed */
 
         if (displayable)
         {
@@ -317,7 +317,7 @@ VOID METHOD(GMABM, Root, Set)
     }
 
     /* If there was a change requested, validate it */
-    struct pHidd_Compositing_ValidateBitMapPositionChange vbpcmsg =
+    struct pHidd_Compositor_ValidateBitMapPositionChange vbpcmsg =
     {
         mID : SD(cl)->mid_ValidateBitMapPositionChange,
         bm : o,
@@ -325,12 +325,12 @@ VOID METHOD(GMABM, Root, Set)
         newyoffset : &newyoffset
     };
     
-    OOP_DoMethod(bmdata->compositing, (OOP_Msg)&vbpcmsg);
+    OOP_DoMethod(bmdata->compositor, (OOP_Msg)&vbpcmsg);
     
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
         /* If change passed validation, execute it */
-        struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
+        struct pHidd_Compositor_BitMapPositionChanged bpcmsg =
         {
             mID : SD(cl)->mid_BitMapPositionChanged,
             bm : o
@@ -339,7 +339,7 @@ VOID METHOD(GMABM, Root, Set)
         bmdata->xoffset = newxoffset;
         bmdata->yoffset = newyoffset;
     
-        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
+        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&bpcmsg);
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -977,7 +977,7 @@ VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
 
 	if (bm->displayable)
     {
-        struct pHidd_Compositing_BitMapRectChanged brcmsg =
+        struct pHidd_Compositor_BitMapRectChanged brcmsg =
         {
             mID : SD(cl)->mid_BitMapRectChanged,
             bm : o,
@@ -986,7 +986,7 @@ VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
             width : bm->width,
             height : bm->height
         };
-        OOP_DoMethod(bm->compositing, (OOP_Msg)&brcmsg);    
+        OOP_DoMethod(bm->compositor, (OOP_Msg)&brcmsg);    
     }
 
 }
@@ -2168,7 +2168,7 @@ VOID METHOD(GMABM, Hidd_BitMap, UpdateRect)
     D(bug("[GMA]BitMap::UpdateRect %d,%d-%d,%d o=%p\n",msg->x,msg->y,msg->width,msg->height,o));
     if (bmdata->displayable)
     {
-        struct pHidd_Compositing_BitMapRectChanged brcmsg =
+        struct pHidd_Compositor_BitMapRectChanged brcmsg =
         {
             mID : SD(cl)->mid_BitMapRectChanged,
             bm : o,
@@ -2177,7 +2177,7 @@ VOID METHOD(GMABM, Hidd_BitMap, UpdateRect)
             width : msg->width,
             height : msg->height
         };
-        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&brcmsg);    
+        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&brcmsg);    
     }
 }
 

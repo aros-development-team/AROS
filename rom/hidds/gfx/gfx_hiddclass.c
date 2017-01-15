@@ -2,7 +2,7 @@
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Graphics hidd class implementation.
+    Desc: Gfx Hidd driver class implementation.
     Lang: english
 */
 

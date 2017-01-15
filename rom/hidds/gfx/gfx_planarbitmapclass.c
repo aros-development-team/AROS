@@ -38,7 +38,7 @@
 
         When you create an object of this class, an associated planar bitmap will be created.
         However, it's possible to use this class with pre-existing bitmaps, making them
-        available to the graphics HIDD subsystem.
+        available to the Gfx Hidd subsystem.
 
 *****************************************************************************************/
 

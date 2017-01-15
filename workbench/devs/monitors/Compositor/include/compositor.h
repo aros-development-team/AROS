@@ -32,8 +32,8 @@
  * Changing this breaks binary compatibility. graphics.library recognizes
  * this class by its name.
  */
-#define CLID_Hidd_Compositor   "hidd.graphics.compositor"
-#define IID_Hidd_Compositor    "hidd.graphics.compositor"
+#define CLID_Hidd_Compositor   "hidd.gfx.compositor"
+#define IID_Hidd_Compositor    "hidd.gfx.compositor"
 
 /* Compositor class methods */
 

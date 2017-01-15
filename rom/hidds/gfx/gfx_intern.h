@@ -3,8 +3,8 @@
     $Id$
 */
 
-#ifndef GRAPHICS_HIDD_INTERN_H
-#define GRAPHICS_HIDD_INTERN_H
+#ifndef GFX_HIDD_INTERN_H
+#define GFX_HIDD_INTERN_H
 
 /* Include files */
 
@@ -382,4 +382,4 @@ static inline void DRAWPIXEL(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, WORD 
 #define DRAWPIXEL(cl, obj, gc, x, y) HIDD_BM_PutPixel(obj, gc, x, y)
 #endif
 
-#endif /* GRAPHICS_HIDD_INTERN_H */
+#endif /* GFX_HIDD_INTERN_H */

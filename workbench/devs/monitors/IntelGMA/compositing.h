@@ -21,47 +21,47 @@
 #   include <hidd/gfx.h>
 #endif
 
-/* Compositing interface */
-#define CLID_Hidd_Compositing   "hidd.graphics.compositing"
-#define IID_Hidd_Compositing    "hidd.graphics.compositing"
+/* Compositor interface */
+#define CLID_Hidd_Compositor   "hidd.gfx.compositor"
+#define IID_Hidd_Compositor    "hidd.gfx.compositor"
 
-#define HiddCompositingAttrBase __IHidd_Compositing
+#define HiddCompositorAttrBase __IHidd_Compositor
 
 #ifndef __OOP_NOATTRBASES__
-extern OOP_AttrBase HiddCompositingAttrBase;
+extern OOP_AttrBase HiddCompositorAttrBase;
 #endif
 
-/* Compositing class methods */
+/* Compositor class methods */
 
 enum
 {
-    moHidd_Compositing_BitMapStackChanged = 0,
-    moHidd_Compositing_BitMapRectChanged,
-    moHidd_Compositing_BitMapPositionChanged,
-    moHidd_Compositing_ValidateBitMapPositionChange,
+    moHidd_Compositor_BitMapStackChanged = 0,
+    moHidd_Compositor_BitMapRectChanged,
+    moHidd_Compositor_BitMapPositionChanged,
+    moHidd_Compositor_ValidateBitMapPositionChange,
 
     NUM_COMPOSITING_METHODS
 };
 
 enum
 {
-    aoHidd_Compositing_GfxHidd = 0, /* [I..] Gfx driver object connected with this compositing object */
+    aoHidd_Compositor_GfxHidd = 0, /* [I..] Gfx driver object connected with this compositor object */
     
-    num_Hidd_Compositing_Attrs
+    num_Hidd_Compositor_Attrs
 };
 
-#define aHidd_Compositing_GfxHidd  (HiddCompositingAttrBase + aoHidd_Compositing_GfxHidd)
+#define aHidd_Compositor_GfxHidd  (HiddCompositorAttrBase + aoHidd_Compositor_GfxHidd)
 
 #define IS_COMPOSITING_ATTR(attr, idx) \
-    (((idx) = (attr) - HiddCompositingAttrBase) < num_Hidd_Compositing_Attrs)
+    (((idx) = (attr) - HiddCompositorAttrBase) < num_Hidd_Compositor_Attrs)
 
-struct pHidd_Compositing_BitMapStackChanged
+struct pHidd_Compositor_BitMapStackChanged
 {
     OOP_MethodID                mID;
     struct HIDD_ViewPortData    *data;
 };
 
-struct pHidd_Compositing_BitMapRectChanged
+struct pHidd_Compositor_BitMapRectChanged
 {
     OOP_MethodID    mID;
     OOP_Object      *bm;
@@ -71,13 +71,13 @@ struct pHidd_Compositing_BitMapRectChanged
     WORD            height;
 };
 
-struct pHidd_Compositing_BitMapPositionChanged
+struct pHidd_Compositor_BitMapPositionChanged
 {
     OOP_MethodID    mID;
     OOP_Object      *bm;
 };
 
-struct pHidd_Compositing_ValidateBitMapPositionChange
+struct pHidd_Compositor_ValidateBitMapPositionChange
 {
     OOP_MethodID    mID;
     OOP_Object      *bm;
