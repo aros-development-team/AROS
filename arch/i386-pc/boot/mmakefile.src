@@ -34,6 +34,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- kernel-bsp-pc-i386 :		\
 #MM	linklibs			\
+#MM	kernel-hidd-base    		\
 #MM	kernel-battclock    		\
 #MM	kernel-processor    		\
 #MM	kernel-timer    		\
@@ -58,7 +59,7 @@ KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ahci ata
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci i8042 vesagfx vgagfx pci pcipc serial parallel
+KHIDDS      := ata_pci i8042 vesagfx vgagfx pci pcipc serial parallel storage system
 
 %make_package mmake=kernel-bsp-pc-i386 file=$(AROSARCHDIR)/aros-bsp.pkg \
     devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
