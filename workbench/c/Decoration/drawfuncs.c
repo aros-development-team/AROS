@@ -23,6 +23,7 @@
 #define DECOR_USELINEBUFF
 //#define DECOR_FAKESHADE
 //#define DECOR_NODIRECT
+//#define DECOR_NOSHADE
 
 #if AROS_BIG_ENDIAN
 #define GET_ARGB_A(rgb) ((rgb >> 24) & 0xff)
@@ -30,17 +31,26 @@
 #define GET_ARGB_G(rgb) ((rgb >> 8) & 0xff)
 #define GET_ARGB_B(rgb) (rgb & 0xff)
 #define SET_ARGB(a, r, g, b) (a << 24 | r << 16 | g << 8 | b)
+#define GET_ARCH_A GET_ARGB_A
+#define GET_ARCH_R GET_ARGB_R
+#define GET_ARCH_G GET_ARGB_G
+#define GET_ARCH_B GET_ARGB_B
 #else
 #define GET_ARGB_A(rgb) (rgb & 0xff)
 #define GET_ARGB_R(rgb) ((rgb >> 8) & 0xff)
 #define GET_ARGB_G(rgb) ((rgb >> 16) & 0xff)
 #define GET_ARGB_B(rgb) ((rgb >> 24) & 0xff)
+#define GET_ARCH_A GET_ARGB_B
+#define GET_ARCH_R GET_ARGB_G
+#define GET_ARCH_G GET_ARGB_R
+#define GET_ARCH_B GET_ARGB_A
 #define SET_ARGB(a, r, g, b) (b << 24 | g << 16 | r << 8 | a)
 #endif
 
 struct ShadeData
 {
     struct NewImage     *ni;
+    UWORD               offy;
     UWORD               fact;
 };
 
@@ -1068,6 +1078,7 @@ ULONG CalcShade(ULONG base, UWORD fact)
     c1 = GET_ARGB_R(base);
     c2 = GET_ARGB_G(base);
     c3 = GET_ARGB_B(base);
+#if !defined(DECOR_NOSHADE)
     c0 *= fact;
     c1 *= fact;
     c2 *= fact;
@@ -1076,7 +1087,7 @@ ULONG CalcShade(ULONG base, UWORD fact)
     c1 = c1 >> 8;
     c2 = c2 >> 8;
     c3 = c3 >> 8;
-
+#endif
     if (c0 > 255) c0 = 255;
     if (c1 > 255) c1 = 255;
     if (c2 > 255) c2 = 255;
@@ -1121,7 +1132,8 @@ AROS_UFH3(void, RectShadeFunc,
 
     if (linesize)
         outline = AllocMem(linesize, MEMF_ANY);
-    else
+    
+    if (!outline)
 #endif
     {
 #if !defined(DECOR_NODIRECT)
@@ -1184,7 +1196,7 @@ AROS_UFH3(void, RectShadeFunc,
 #if AROS_BIG_ENDIAN
                         color);
 #else
-                        SET_ARGB(GET_ARGB_B(color), GET_ARGB_G(color), GET_ARGB_R(color), GET_ARGB_A(color)));
+                        SET_ARGB(GET_ARCH_A(color), GET_ARCH_R(color), GET_ARCH_G(color), GET_ARCH_B(color)));
 #endif
                 }
         }
@@ -1198,11 +1210,7 @@ AROS_UFH3(void, RectShadeFunc,
                 msg->OffsetX,
                 msg->OffsetY + (py - msg->MinY),
                 width, 1,
-#if AROS_BIG_ENDIAN
                 RECTFMT_ARGB);
-#else
-                RECTFMT_BGRA32);
-#endif
         }
 #endif
     }
@@ -1219,11 +1227,7 @@ AROS_UFH3(void, RectShadeFunc,
                 msg->OffsetX,
                 msg->OffsetY,
                 1, height,
-#if AROS_BIG_ENDIAN
                 RECTFMT_ARGB);
-#else
-                RECTFMT_BGRA32);
-#endif
         }
         FreeMem(outline, linesize);
     }
@@ -1270,7 +1274,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
 #if AROS_BIG_ENDIAN
             basecolor,
 #else
-            SET_ARGB(GET_ARGB_B(basecolor), GET_ARGB_G(basecolor), GET_ARGB_R(basecolor), GET_ARGB_A(basecolor)),
+            SET_ARGB(GET_ARCH_A(basecolor), GET_ARCH_R(basecolor), GET_ARCH_G(basecolor), GET_ARCH_B(basecolor)),
 #endif
             fact);
 
@@ -1290,6 +1294,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
         shadeRect.MaxY = y1;
 
         shadeParams.ni = ni;
+        shadeParams.offy = _offy;
         shadeParams.fact = fact;
 
         shadeHook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(RectShadeFunc);
