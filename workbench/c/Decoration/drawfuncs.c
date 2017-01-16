@@ -25,16 +25,16 @@
 //#define DECOR_NODIRECT
 
 #if AROS_BIG_ENDIAN
-#define GET_A(rgb) ((rgb >> 24) & 0xff)
-#define GET_R(rgb) ((rgb >> 16) & 0xff)
-#define GET_G(rgb) ((rgb >> 8) & 0xff)
-#define GET_B(rgb) (rgb & 0xff)
+#define GET_ARGB_A(rgb) ((rgb >> 24) & 0xff)
+#define GET_ARGB_R(rgb) ((rgb >> 16) & 0xff)
+#define GET_ARGB_G(rgb) ((rgb >> 8) & 0xff)
+#define GET_ARGB_B(rgb) (rgb & 0xff)
 #define SET_ARGB(a, r, g, b) (a << 24 | r << 16 | g << 8 | b)
 #else
-#define GET_A(rgb) (rgb & 0xff)
-#define GET_R(rgb) ((rgb >> 8) & 0xff)
-#define GET_G(rgb) ((rgb >> 16) & 0xff)
-#define GET_B(rgb) ((rgb >> 24) & 0xff)
+#define GET_ARGB_A(rgb) (rgb & 0xff)
+#define GET_ARGB_R(rgb) ((rgb >> 8) & 0xff)
+#define GET_ARGB_G(rgb) ((rgb >> 16) & 0xff)
+#define GET_ARGB_B(rgb) ((rgb >> 24) & 0xff)
 #define SET_ARGB(a, r, g, b) (b << 24 | g << 16 | r << 8 | a)
 #endif
 
@@ -273,15 +273,15 @@ static void  MixImage(struct NewImage *dst, struct NewImage *src, struct TileInf
         for (x = 0; x < w; x++)
         {
             rgba = s[x+y*src->w];
-            as = GET_A(rgba);
-            rs = GET_R(rgba);
-            gs = GET_G(rgba);
-            bs = GET_B(rgba);
+            as = GET_ARGB_A(rgba);
+            rs = GET_ARGB_R(rgba);
+            gs = GET_ARGB_G(rgba);
+            bs = GET_ARGB_B(rgba);
             rgb = d[x+dx + (y+dy) * dst->w];
 
-            rd = GET_R(rgb);
-            gd = GET_G(rgb);
-            bd = GET_B(rgb);
+            rd = GET_ARGB_R(rgb);
+            gd = GET_ARGB_G(rgb);
+            bd = GET_ARGB_B(rgb);
 
             r = ((rs * ratio) >> 8) + ((rd * (255 - ratio)) >> 8);
             g = ((gs * ratio) >> 8) + ((gd * (255 - ratio)) >> 8);
@@ -352,74 +352,74 @@ static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *textu
                 else if (x == (tw-2)) r2 = r1;
 
                 rgb = raw[x+ytw];
-                red = GET_R(rgb);
-                green = GET_G(rgb);
-                blue = GET_B(rgb);
+                red = GET_ARGB_R(rgb);
+                green = GET_ARGB_G(rgb);
+                blue = GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw-t2];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw-l1-t1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw-t1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw-t1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw-t1+r1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw-l2];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw-l1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw+r1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw+r2];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw+b1-l1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw+b1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw+b1+r1];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 rgb = raw[x+ytw+b2];
-                red += GET_R(rgb);
-                green += GET_G(rgb);
-                blue += GET_B(rgb);
+                red += GET_ARGB_R(rgb);
+                green += GET_ARGB_G(rgb);
+                blue += GET_ARGB_B(rgb);
 
                 red = red/14;
                 green = green/14;
@@ -429,10 +429,10 @@ static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *textu
                 if (tiled)
                 {
                     argb = raw[x+ytw];
-                    as = 255 - GET_A(texture->data[x + y * texture->w]);
-                    rs = GET_R(argb);
-                    gs = GET_G(argb);
-                    bs = GET_B(argb);
+                    as = 255 - GET_ARGB_A(texture->data[x + y * texture->w]);
+                    rs = GET_ARGB_R(argb);
+                    gs = GET_ARGB_G(argb);
+                    bs = GET_ARGB_B(argb);
 
                     red = ((rs * as) >> 8) + ((red * (255 - as)) >> 8);
                     green = ((gs * as) >> 8) + ((green * (255 - as)) >> 8);
@@ -608,7 +608,7 @@ void WriteAlphaPixelArray(struct NewImage *src, struct NewLUT8Image *dst, LONG s
         for (x = 0; x < w; x++)
         {
             argb = s[sx + x + (sy + y) * src->w];
-            d[dx + x + (dy + y) * dst->w] = GET_A(argb);
+            d[dx + x + (dy + y) * dst->w] = GET_ARGB_A(argb);
         }
     }
 }
@@ -638,9 +638,9 @@ void  SetImageTint(struct NewImage *dst, UWORD ratio, ULONG argb)
         for (x = 0; x < w; x++)
         {
             rgb = d[x + y * w];
-            rd = GET_R(rgb);
-            gd = GET_G(rgb);
-            bd = GET_B(rgb);
+            rd = GET_ARGB_R(rgb);
+            gd = GET_ARGB_G(rgb);
+            bd = GET_ARGB_B(rgb);
             r = ((rs * ratio) >> 8) + ((rd * (255 - ratio)) >> 8);
             g = ((gs * ratio) >> 8) + ((gd * (255 - ratio)) >> 8);
             b = ((bs * ratio) >> 8) + ((bd * (255 - ratio)) >> 8);
@@ -1064,10 +1064,10 @@ ULONG CalcShade(ULONG base, UWORD fact)
 {
     int     c0, c1, c2, c3;
 
-    c0 = GET_A(base);
-    c1 = GET_R(base);
-    c2 = GET_G(base);
-    c3 = GET_B(base);
+    c0 = GET_ARGB_A(base);
+    c1 = GET_ARGB_R(base);
+    c2 = GET_ARGB_G(base);
+    c3 = GET_ARGB_B(base);
     c0 *= fact;
     c1 *= fact;
     c2 *= fact;
@@ -1144,12 +1144,8 @@ AROS_UFH3(void, RectShadeFunc,
 #else
             color = SET_ARGB(00, 0xFF, 0x00, 0x70);
 #endif
-            outline[py - msg->MinY] = 
-#if AROS_BIG_ENDIAN
-                color;
-#else
-                SET_ARGB(GET_B(color), GET_G(color), GET_R(color), GET_A(color));
-#endif
+            outline[py - msg->MinY] = color;
+
             continue;
         }
 
@@ -1167,27 +1163,29 @@ AROS_UFH3(void, RectShadeFunc,
 #if defined(DECOR_USELINEBUFF)
             if (outline)
             {
-                outline[px - msg->MinX] = 
-#if AROS_BIG_ENDIAN
-                    color;
-#else
-                    SET_ARGB(GET_B(color), GET_G(color), GET_R(color), GET_A(color));
-#endif
+                outline[px - msg->MinX] = color;
             }
             else
 #endif
                 if (bm_handle)
                 {
-                    col.alpha = (HIDDT_ColComp) GET_A(color) << 8;
-                    col.red = (HIDDT_ColComp) GET_R(color) << 8;
-                    col.green = (HIDDT_ColComp) GET_G(color) << 8;
-                    col.blue = (HIDDT_ColComp) GET_B(color) << 8;
+                    col.alpha = (HIDDT_ColComp) GET_ARGB_A(color) << 8;
+                    col.red = (HIDDT_ColComp) GET_ARGB_R(color) << 8;
+                    col.green = (HIDDT_ColComp) GET_ARGB_G(color) << 8;
+                    col.blue = (HIDDT_ColComp) GET_ARGB_B(color) << 8;
 
-                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->OffsetX + (px - msg->MinX), msg->OffsetY + (py - msg->MinY), HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
+                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
                 }
                 else
                 {
-                    WriteRGBPixel(rp, msg->OffsetX + (px - msg->MinX), msg->OffsetY + (py - msg->MinY), color);
+                    WriteRGBPixel(rp,
+                        msg->OffsetX + (px - msg->MinX),
+                        msg->OffsetY + (py - msg->MinY),
+#if AROS_BIG_ENDIAN
+                        color);
+#else
+                        SET_ARGB(GET_ARGB_B(color), GET_ARGB_G(color), GET_ARGB_R(color), GET_ARGB_A(color)));
+#endif
                 }
         }
 #if defined(DECOR_USELINEBUFF)
@@ -1200,7 +1198,11 @@ AROS_UFH3(void, RectShadeFunc,
                 msg->OffsetX,
                 msg->OffsetY + (py - msg->MinY),
                 width, 1,
+#if AROS_BIG_ENDIAN
                 RECTFMT_ARGB);
+#else
+                RECTFMT_BGRA32);
+#endif
         }
 #endif
     }
@@ -1217,7 +1219,11 @@ AROS_UFH3(void, RectShadeFunc,
                 msg->OffsetX,
                 msg->OffsetY,
                 1, height,
+#if AROS_BIG_ENDIAN
                 RECTFMT_ARGB);
+#else
+                RECTFMT_BGRA32);
+#endif
         }
         FreeMem(outline, linesize);
     }
@@ -1264,7 +1270,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
 #if AROS_BIG_ENDIAN
             basecolor,
 #else
-            SET_ARGB(GET_B(basecolor), GET_G(basecolor), GET_R(basecolor), GET_A(basecolor)),
+            SET_ARGB(GET_ARGB_B(basecolor), GET_ARGB_G(basecolor), GET_ARGB_R(basecolor), GET_ARGB_A(basecolor)),
 #endif
             fact);
 
