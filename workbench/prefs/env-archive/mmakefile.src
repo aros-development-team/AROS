@@ -18,8 +18,10 @@ $(AROS_ENVARC)/% : %
             $(CP) $< $@ ;        \
         fi
 
-#MM
-workbench-prefs-envarc-theme:
+$(AROS_ENVARC)/SYS/theme.var : $(SRCDIR)/$(CURDIR)/mmakefile.src
 	@$(ECHO) "THEMES:$(AROS_GUI_THEME)" > $(AROS_ENVARC)/SYS/theme.var
 	@$(MKDIR) $(AROS_PREFS)/Presets
 	@$(ECHO) "THEMES:$(AROS_GUI_THEME)" > $(AROS_PREFS)/Presets/theme.default
+
+#MM
+workbench-prefs-envarc-theme: $(AROS_ENVARC)/SYS/theme.var
