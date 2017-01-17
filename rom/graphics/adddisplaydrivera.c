@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS-specific function for adding a display driver
@@ -29,8 +29,8 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR, gfxclass, A0),
-	AROS_LHA(struct TagItem *, attrs, A1),
-	AROS_LHA(struct TagItem *, tags, A2),
+	AROS_LHA(const struct TagItem *, attrs, A1),
+	AROS_LHA(const struct TagItem *, tags, A2),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 107, Graphics)
@@ -271,7 +271,7 @@
      */
     if (ret == DD_OK)
     {
-    	OOP_Object *gfxhidd = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, gfxclass, attrs);
+    	OOP_Object *gfxhidd = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, gfxclass, (struct TagItem *)attrs);
 
 	if (gfxhidd)
 	{

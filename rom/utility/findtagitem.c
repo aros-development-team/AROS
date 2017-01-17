@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -9,7 +9,6 @@
 #include <exec/types.h>
 #include <utility/utility.h>
 #include <utility/tagitem.h>
-#include <aros/libcall.h>
 #include <proto/arossupport.h>
 
 /*****************************************************************************
@@ -21,7 +20,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(Tag,                    tagValue, D0),
-	AROS_LHA(struct TagItem *, tagList,  A0),
+	AROS_LHA(const struct TagItem *, tagList,  A0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 5, Utility)
@@ -41,8 +40,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

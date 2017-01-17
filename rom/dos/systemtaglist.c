@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,8 +27,8 @@
         AROS_LH2(LONG, SystemTagList,
 
 /*  SYNOPSIS */
-        AROS_LHA(CONST_STRPTR    , command, D1),
-        AROS_LHA(struct TagItem *, tags,    D2),
+        AROS_LHA(CONST_STRPTR, command, D1),
+        AROS_LHA(const struct TagItem *, tags, D2),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 101, Dos)
@@ -124,7 +124,7 @@
     ULONG commandlen;
     LONG rc            = -1;
 
-    struct TagItem *tags2 = tags;
+    struct TagItem *tags2 = (struct TagItem *)tags;
     struct TagItem *newtags, *tag;
 
     ASSERT_VALID_PROCESS(me);
