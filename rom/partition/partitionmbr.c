@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -336,7 +336,7 @@ ULONG sector, count;
     PartitionMBRSetGeometry(root, entry, sector, count, 0);
 }
 
-static struct PartitionHandle *PartitionMBRAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
+static struct PartitionHandle *PartitionMBRAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, const struct TagItem *taglist)
 {
     struct TagItem *tag;
 
@@ -403,7 +403,8 @@ static void PartitionMBRDeletePartition(struct Library *PartitionBase, struct Pa
     PartitionMBRFreeHandle(PartitionBase, ph);
 }
 
-static LONG PartitionMBRGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *tag)
+static LONG PartitionMBRGetPartitionTableAttr(struct Library *PartitionBase,
+    struct PartitionHandle *root, const struct TagItem *tag)
 {
     switch (tag->ti_Tag)
     {
@@ -419,7 +420,8 @@ static LONG PartitionMBRGetPartitionTableAttr(struct Library *PartitionBase, str
     return 0;
 }
 
-static LONG PartitionMBRGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
+static LONG PartitionMBRGetPartitionAttr(struct Library *PartitionBase,
+    struct PartitionHandle *ph, const struct TagItem *tag)
 {
     struct MBRData *data = (struct MBRData *)ph->data;
 

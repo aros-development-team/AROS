@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -760,7 +760,8 @@ LONG PartitionRDBCreatePartitionTable(struct Library *PartitionBase, struct Part
     return 1;
 }
 
-static LONG PartitionRDBGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *tag)
+static LONG PartitionRDBGetPartitionTableAttr(struct Library *PartitionBase,
+    struct PartitionHandle *root, const struct TagItem *tag)
 {
     struct RDBData *data = root->table->data;
 
@@ -774,7 +775,8 @@ static LONG PartitionRDBGetPartitionTableAttr(struct Library *PartitionBase, str
     return 0;
 }
 
-static LONG PartitionRDBGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
+static LONG PartitionRDBGetPartitionAttr(struct Library *PartitionBase,
+    struct PartitionHandle *ph, const struct TagItem *tag)
 {
     struct PartitionBlock *data = (struct PartitionBlock *)ph->data;
 
@@ -852,7 +854,7 @@ static LONG PartitionRDBSetPartitionAttrs(struct Library *PartitionBase, struct 
     return 0;
 }
 
-struct PartitionHandle *PartitionRDBAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
+struct PartitionHandle *PartitionRDBAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, const struct TagItem *taglist)
 {
     if (FindTagItem(PT_DOSENVEC, taglist) != NULL)
     {
@@ -963,7 +965,7 @@ struct RigidDiskBlock *rdb;
     return 0;
 }
 
-struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tags)
+struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *tags)
 {
     struct RDBData *data = (struct RDBData *)ph->table->data;
     struct FileSysNode *fn;

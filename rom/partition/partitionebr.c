@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -279,7 +279,7 @@ static LONG PartitionEBRCreatePartitionTable
     return 0;
 }
 
-static struct PartitionHandle *PartitionEBRAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
+static struct PartitionHandle *PartitionEBRAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, const struct TagItem *taglist)
 {
     struct TagItem *tag;
     ULONG block_no = 0, new_block_no, new_block_count, ebr_track_no, ebr_block_no;
@@ -354,7 +354,8 @@ static void PartitionEBRDeletePartition
     PartitionEBRFreeHandle(PartitionBase, ph);
 }
 
-static LONG PartitionEBRGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *tag)
+static LONG PartitionEBRGetPartitionTableAttr(struct Library *PartitionBase,
+    struct PartitionHandle *root, const struct TagItem *tag)
 {
     switch (tag->ti_Tag)
     {
@@ -366,7 +367,8 @@ static LONG PartitionEBRGetPartitionTableAttr(struct Library *PartitionBase, str
     return 0;
 }
 
-static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
+static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase,
+    struct PartitionHandle *ph, const struct TagItem *tag)
 {
     struct EBRData *data = (struct EBRData *)ph->data;
 

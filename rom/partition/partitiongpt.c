@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: GPT partition table handler
@@ -551,7 +551,8 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     return ERROR_NO_FREE_STORE;
 }
 
-static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
+static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase,
+    struct PartitionHandle *ph, const struct TagItem *tag)
 {
     struct GPTPartition *part = (APTR)ph + sizeof(struct GPTPartitionHandle);
 

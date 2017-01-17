@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -20,7 +20,7 @@
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, ph,       A1),
-   AROS_LHA(struct TagItem *, taglist,    A2),
+   AROS_LHA(const struct TagItem *, taglist,    A2),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 15, Partition)
@@ -71,13 +71,12 @@
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    LONG (*getPartitionAttr)(struct Library *, struct PartitionHandle *, struct TagItem *) = NULL;
+    LONG (*getPartitionAttr)(struct Library *, struct PartitionHandle *,
+        const struct TagItem *) = NULL;
 
     struct TagItem *tag;
 

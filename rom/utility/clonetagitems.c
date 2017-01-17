@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CloneTagItems()
@@ -16,7 +16,7 @@
 	AROS_LH1(struct TagItem *, CloneTagItems,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, tagList, A0),
+	AROS_LHA(const struct TagItem *, tagList, A0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 12, Utility)

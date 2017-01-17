@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -19,7 +19,7 @@
 
 /*  SYNOPSIS */
    AROS_LHA(struct Node *, handle, A1),
-   AROS_LHA(struct TagItem *, taglist, A2),
+   AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 22, Partition)
@@ -57,8 +57,6 @@
     	FindFileSystemA()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

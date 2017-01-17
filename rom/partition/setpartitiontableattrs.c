@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -21,7 +21,7 @@
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, root,       A1),
-   AROS_LHA(struct TagItem *,    taglist,       A2),
+   AROS_LHA(const struct TagItem *,   taglist,    A2),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 14, Partition)
@@ -44,9 +44,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    21-02-02    first version
 
 *****************************************************************************/
 {
