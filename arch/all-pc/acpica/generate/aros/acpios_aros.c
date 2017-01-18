@@ -37,7 +37,7 @@ ACPI_STATUS AcpiOsInitialize (void)
 {
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
 
-    D(bug("[ACPI]AcpiOsInitialize(): ACPICABase=0x%x\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     if ((ACPICABase->ab_TimeMsgPort = CreateMsgPort())) {
         if ((ACPICABase->ab_TimeRequest = CreateIORequest(ACPICABase->ab_TimeMsgPort, sizeof(*ACPICABase->ab_TimeRequest)))) {
@@ -54,7 +54,7 @@ ACPI_STATUS AcpiOsTerminate (void)
 {
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
 
-    D(bug("[ACPI]AcpiOsTerminate(): ACPICABase=0x%x\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     DeleteIORequest(ACPICABase->ab_TimeRequest);
     DeleteMsgPort(ACPICABase->ab_TimeMsgPort);
@@ -66,7 +66,7 @@ ACPI_PHYSICAL_ADDRESS AcpiOsGetRootPointer(void)
 {
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
 
-    D(bug("[ACPI]AcpiOsGetRootPointer(): ACPICABase=0x%x\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     if (ACPICABase->ab_RootPointer == 0) {
         struct Library *EFIBase = OpenResource("efi.resource");
@@ -164,7 +164,8 @@ ACPI_THREAD_ID AcpiOsGetThreadId(void)
 ACPI_STATUS AcpiOsExecute(ACPI_EXECUTE_TYPE Type, ACPI_OSD_EXEC_CALLBACK Function, void *Context)
 {
     /* TODO: Create a thread */
-    bug("FIXME: %s\n", __func__);
+    bug("[ACPI] %s: FIXME!\n", __func__);
+
     return AE_NOT_IMPLEMENTED;
 }
 
@@ -172,7 +173,7 @@ void AcpiOsSleep(UINT64 Milliseconds)
 {
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
 
-    D(bug("[ACPI]AcpiOsSleep(): ACPICABase=0x%x\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     ACPICABase->ab_TimeRequest->tr_node.io_Command = TR_ADDREQUEST;
     ACPICABase->ab_TimeRequest->tr_time.tv_secs = Milliseconds / 1000;
@@ -184,7 +185,7 @@ void AcpiOsStall(UINT32 Microseconds)
 {
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
 
-    D(bug("[ACPI]AcpiOsStall(): ACPICABase=0x%x\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     ACPICABase->ab_TimeRequest->tr_node.io_Command = TR_ADDREQUEST;
     ACPICABase->ab_TimeRequest->tr_time.tv_secs = Microseconds / 1000000;
@@ -194,7 +195,7 @@ void AcpiOsStall(UINT32 Microseconds)
 
 void AcpiOsWaitEventsComplete(void)
 {
-    bug("FIXME: %s\n", __func__);
+    bug("[ACPI] %s: FIXME!\n", __func__);
 }
 
 ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits, ACPI_SEMAPHORE *OutHandle)
@@ -218,19 +219,15 @@ ACPI_STATUS AcpiOsDeleteSemaphore(ACPI_SEMAPHORE Handle)
 
 ACPI_STATUS AcpiOsWaitSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units, UINT16 Timeout)
 {
-    if (Timeout != 0xffff)
-        bug("FIXME: %s, Timeout=0x%04x\n", __func__, Timeout);
-
-    if (Timeout == 0) {
-        if (AttemptSemaphore(Handle)) {
-            return AE_OK;
-        } else {
+    if (Timeout == ACPI_DO_NOT_WAIT) {
+        if (!AttemptSemaphore(Handle))
             return AE_TIME;
-        }
     }
-
-    /* Forever.. */
-    ObtainSemaphore(Handle);
+    else
+    {
+        /* Forever.. */
+        ObtainSemaphore(Handle);
+    }
 
     return AE_OK;
 }
@@ -355,7 +352,8 @@ ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel, ACPI_OSD_HANDLE
 
 ACPI_STATUS AcpiOsRemoveInterruptHandler(UINT32 InterruptNumber, ACPI_OSD_HANDLER Handler)
 {
-    bug("FIXME: %s (InterruptLevel=%d)\n", __func__, InterruptNumber);
+    bug("[ACPI] %s: FIXME! (InterruptLevel=%d)\n", __func__, InterruptNumber);
+
     return AE_NOT_IMPLEMENTED;
 }
 
@@ -430,7 +428,7 @@ ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Register, UINT
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
     UINT8 *ecam;
 
-    D(bug("[ACPI]AcpiOsReadPciConfiguration(): ACPICABase=0x%x\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     if ((ecam = find_pci(ACPICABase, PciId))) {
         UINT32 offset = (PciId->Bus << 20) | (PciId->Device << 15) | (PciId->Function << 12) | Register;
@@ -453,7 +451,7 @@ ACPI_STATUS AcpiOsWritePciConfiguration(ACPI_PCI_ID *PciId, UINT32 Register, UIN
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
     UINT8 *ecam;
 
-    D(bug("[ACPI]AcpiOsWritePciConfiguration(): ACPICABase=0x%x\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     if ((ecam = find_pci(ACPICABase, PciId))) {
         UINT32 offset = (PciId->Bus << 20) | (PciId->Device << 15) | (PciId->Function << 12) | Register;
@@ -493,7 +491,7 @@ UINT64 AcpiOsGetTimer(void)
     struct Library *TimerBase;
     struct timeval tv;
 
-    D(bug("[ACPI]AcpiOsGetTimer(): ACPICABase=0x%x\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     TimerBase = ACPICABase->ab_TimerBase;
 
@@ -510,7 +508,8 @@ ACPI_STATUS AcpiOsSignal(UINT32 Function, void *Info)
 
 ACPI_STATUS AcpiOsGetLine(char *Buffer, UINT32 BufferLength, UINT32 *BytesRead)
 {
-    bug("FIXME: %s\n", __func__);
+    bug("[ACPI] %s: FIXME!\n", __func__);
+
     return AE_NOT_IMPLEMENTED;
 }
 
@@ -552,29 +551,29 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
 
     err = AcpiInitializeSubsystem();
     if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiInitializeSubsystem() = %d\n", __func__, err));
+        D(bug("[ACPI] %s: AcpiInitializeSubsystem returned error %d\n", __func__, err));
         return FALSE;
     }
 
     err = AcpiLoadTables();
     if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiLoadTables() = %d\n", __func__, err));
+        D(bug("[ACPI] %s: AcpiLoadTables returned error %d\n", __func__, err));
         return FALSE;
     }
 
     err = AcpiEnableSubsystem(initlevel);
     if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiEnableSubsystem(0x%02x) = %d\n", __func__, initlevel, err));
+        D(bug("[ACPI] %s: AcpiEnableSubsystem(0x%02x) returned error %d\n", __func__, initlevel, err));
         return FALSE;
     }
 
     err = AcpiInitializeObjects(initlevel);
     if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiInitializeObjects(0x%02x) = %d\n", __func__, initlevel, err));
+        D(bug("[ACPI] %s: AcpiInitializeObjects(0x%02x) returned error %d\n", __func__, initlevel, err));
         return FALSE;
     }
 
-    D(bug("[ACPI] Full initialization complete\n"));
+    D(bug("[ACPI] %s: Full initialization complete\n", __func__));
 
     return TRUE;
 }
@@ -585,13 +584,13 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
     ACPI_STATUS err;
     struct Library *KernelBase;
 
-    D(bug("[ACPI]ACPICA_init(ACPICABase=0x%x)\n", ACPICABase));
+    D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     if ((KernelBase = OpenResource("kernel.resource"))) {
         struct TagItem *cmdline = LibFindTagItem(KRN_CmdLine, KrnGetBootInfo());
 
         if (cmdline && strcasestr((char *)cmdline->ti_Data, "noacpi")) {
-            D(bug("[ACPI] Disabled from command line\n"));
+            D(bug("[ACPI] %s: Disabled from command line\n", __func__));
             return FALSE;
         }
     }
@@ -602,7 +601,7 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
 
     err = AcpiInitializeTables(NULL, ACPI_MAX_INIT_TABLES, TRUE);
     if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiInitializeTables() = %d\n", __func__, err));
+        D(bug("[ACPI] %s: AcpiInitializeTables returned error %d\n", __func__, err));
         return FALSE;
     }
 
