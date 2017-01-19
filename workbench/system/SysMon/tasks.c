@@ -46,8 +46,8 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     smdata->sm_TasksReady = 0;
     smdata->sm_TaskTotalRuntime = 0;
 
-    systasklist = LockTaskList(0);
-    while ((task = NextTaskEntry(systasklist, 0)) != NULL)
+    systasklist = LockTaskList(LTF_ALL);
+    while ((task = NextTaskEntry(systasklist, LTF_ALL)) != NULL)
     {
         D(bug("[SysMon] task %s state %d\n", task->tc_Node.ln_Name, task->tc_State));
         
@@ -66,7 +66,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
             set(smdata->tasklist, MUIA_List_Active, entryid);
         }
     }
-    UnLockTaskList(0);
+    UnLockTaskList(LTF_ALL);
 
     if (XGET(smdata->tasklist, MUIA_List_Active) == 0)
         smdata->sm_TaskSelected = NULL;
