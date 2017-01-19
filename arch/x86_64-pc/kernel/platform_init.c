@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,6 +17,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "acpi.h"
 #include "apic.h"
 #include "smp.h"
 #include "xtpic.h"
@@ -66,48 +67,14 @@ void PlatformPostInit(void)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
 
-#if (1)
     ACPICABase = OpenLibrary("acpica.library", 0);
 
     if (ACPICABase)
-        pdata->kb_APIC = acpi_APIC_Init();
-#else
-    acpi_Initialize();
-#endif
+        acpi_Init(pdata);
 
-#if (0)
-    if (!pdata->kb_APIC)
-    {
-	/* No APIC was discovered by ACPI/whatever else. Do the probe. */
-	pdata->kb_APIC = core_APIC_Probe();
-    }
-
-    if ((!pdata->kb_APIC) || (pdata->kb_APIC->flags & APF_8259))
-    {
-        /* Initialize our XT-PIC */
-	XTPIC_Init(&pdata->xtpic_mask);
-    }
-#else
     // Now initialize our interrupt controller (XT-PIC or APIC)
     ictl_Initialize();
-#endif
-    
-#if (0)
-    if (pdata->kb_APIC && (pdata->kb_APIC->count > 1))
-    {
-    	if (smp_Setup())
-    	{
-	    smp_Wake();
-	}
-	else
-	{
-    	    D(bug("[Kernel] Failed to prepare the environment!\n"));
 
-    	    pdata->kb_APIC->count = 1;	/* We have only one workinng CPU */
-    	}
-    }
-#else
     // The last thing to do is to start up secondary CPU cores (if any)
     smp_Initialize();
-#endif
 }

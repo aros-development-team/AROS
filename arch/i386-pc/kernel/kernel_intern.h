@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: kernel_intern.h
@@ -23,6 +23,7 @@ struct PlatformData
     struct tss	    *tss;
     uint16_t	     xtpic_mask;
     APTR	     kb_APIC_TrampolineBase;
+    struct ACPIData *kb_ACPI;
     struct APICData *kb_APIC;
 };
 

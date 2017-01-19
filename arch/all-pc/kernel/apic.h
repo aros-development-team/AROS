@@ -1,5 +1,7 @@
+#ifndef KERNEL_APIC_H
+#define KERNEL_APIC_H
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Generic AROS APIC definitions.
@@ -24,9 +26,7 @@ struct CPUData
 struct APICData
 {
     IPTR	   lapicBase; 	/* Local APIC base address			*/
-    IPTR	   ioapicBase;	/* IOAPIC base address				*/
-    CONST_APTR	   acpi_madt;	/* ACPI MADT pointer (cached)			*/
-    ULONG	   count;	/* Total number of APICs in the system		*/
+    ULONG	   apic_count;	/* Total number of APICs in the system		*/
     UWORD	   flags;	/* See below					*/
     struct CPUData cores[0];	/* Per-CPU data					*/
 };
@@ -50,6 +50,7 @@ static inline IPTR core_APIC_GetBase(void)
     return rdmsri(0x1B) & APIC_BASE_MASK;
 }
 
-struct APICData *acpi_APIC_Init(void);
 struct APICData *core_APIC_Probe(void);
-UBYTE core_APIC_GetNumber(struct APICData *data);
+UBYTE core_APIC_GetNumber(struct APICData *);
+
+#endif /* KERNEL_APIC_H */

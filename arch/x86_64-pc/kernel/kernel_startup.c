@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -445,7 +445,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     {
         mh2 = (struct MemHeader *)mh->mh_Node.ln_Succ;
 
-	D(bug("[Kernel] * 0x%p - 0x%p (%s)\n", mh->mh_Lower, mh->mh_Upper, mh->mh_Node.ln_Name));
+	D(bug("[Kernel] * 0x%p - 0x%p (%s pri %d)\n", mh->mh_Lower, mh->mh_Upper, mh->mh_Node.ln_Name, mh->mh_Node.ln_Pri));
 	Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
 

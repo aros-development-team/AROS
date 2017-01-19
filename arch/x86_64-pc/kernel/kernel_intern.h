@@ -13,6 +13,7 @@
 #define PAGE_SIZE	0x1000
 #define PAGE_MASK	0x0FFF
 
+struct ACPIData;
 struct APICData;
 
 /*
@@ -44,7 +45,8 @@ struct PlatformData
 {
     APTR     kb_APIC_TrampolineBase;	/* Starting address of secondary core bootstrap code	*/
     uint16_t kb_XTPIC_Mask;		/* Current XT-PIC interrupt mask			*/
-    struct   APICData *kb_APIC;		/* APIC global data					*/
+    struct ACPIData *kb_ACPI;
+    struct APICData *kb_APIC;
 };
 
 #define KBL_INTERNAL    0
@@ -62,7 +64,6 @@ void core_SetupMMU(struct KernBootPrivate *, IPTR memtop);
 void core_CPUSetup(UBYTE, IPTR);
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
-ULONG acpi_Initialize(void);
 void ictl_Initialize(void);
 
 struct ExceptionContext;

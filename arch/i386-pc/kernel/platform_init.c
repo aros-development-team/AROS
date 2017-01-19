@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "acpi.h"
 #include "apic.h"
 #include "traps.h"
 #include "utils.h"
@@ -23,15 +24,12 @@ static int PlatformInit(struct KernelBase *KernelBase)
     struct PlatformData *data;
     struct table_desc idtr;
 
-    data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC);
+    data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!data)
 	return FALSE;
 	
-    D(bug("[Kernel] Allocated platform data at 0x%p\n", data));
+    D(bug("[Kernel:i386] %s: Allocated platform data at 0x%p\n", __func__, data));
     KernelBase->kb_PlatformData = data;
-
-    /* By default we have no APIC data */
-    data->kb_APIC = NULL;
 
     /*
      * Now we have a complete memory list and working AllocMem().
@@ -77,7 +75,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
 	::"m"(idtr),"ax"(0x30)
     );
 
-    D(bug("[Kernel] System restored\n"));
+    D(bug("[Kernel:i386] %s: System restored\n", __func__));
 
     return TRUE;
 }
@@ -94,7 +92,7 @@ void PlatformPostInit(void)
     ACPICABase = OpenLibrary("acpica.library", 0);
 
     if (ACPICABase)
-        pdata->kb_APIC = acpi_APIC_Init();
+        acpi_Init(pdata);
 
     if (!pdata->kb_APIC)
     {
@@ -108,7 +106,7 @@ void PlatformPostInit(void)
 	XTPIC_Init(&pdata->xtpic_mask);
     }
     
-    if (pdata->kb_APIC && (pdata->kb_APIC->count > 1))
+    if (pdata->kb_APIC && (pdata->kb_APIC->apic_count > 1))
     {
     	if (smp_Setup())
     	{
@@ -116,9 +114,9 @@ void PlatformPostInit(void)
 	}
 	else
 	{
-    	    D(bug("[Kernel] Failed to prepare the environment!\n"));
+    	    D(bug("[Kernel:i386] %s: Failed to prepare the environment!\n", __func__));
 
-    	    pdata->kb_APIC->count = 1;	/* We have only one workinng CPU */
+    	    pdata->kb_APIC->apic_count = 1;	/* We have only one workinng CPU */
     	}
     }
 }

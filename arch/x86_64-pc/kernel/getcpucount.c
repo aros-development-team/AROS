@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,7 +15,7 @@ AROS_LH0(unsigned int, KrnGetCPUCount,
 {
     AROS_LIBFUNC_INIT
 
-    return KernelBase->kb_PlatformData->kb_APIC->count;
+    return KernelBase->kb_PlatformData->kb_APIC->apic_count;
 
     AROS_LIBFUNC_EXIT
 }

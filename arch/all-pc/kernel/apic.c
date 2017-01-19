@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,7 +36,7 @@ struct APICData *core_APIC_Probe(void)
 	return NULL;
 
     data->lapicBase	   = core_APIC_GetBase();
-    data->count		   = 1;
+    data->apic_count		   = 1;
     data->flags		   = APF_8259;
     data->cores[0].lapicID = core_APIC_GetID(data->lapicBase);
 
@@ -58,7 +58,7 @@ UBYTE core_APIC_GetNumber(struct APICData *data)
 
     __APICLogicalID = core_APIC_GetID(data->lapicBase);
 
-    for (__APICNo = 0; __APICNo < data->count; __APICNo++)
+    for (__APICNo = 0; __APICNo < data->apic_count; __APICNo++)
     {
         if (data->cores[__APICNo].lapicID == __APICLogicalID)
             return __APICNo;
