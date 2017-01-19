@@ -17,6 +17,7 @@
 //#define DEBUG 1
 #include <aros/debug.h>
 
+//#define TASKLIST_FLUSHUPDATE
 
 APTR TaskResBase = NULL;
 
@@ -27,21 +28,65 @@ struct TaskInfo
     struct Task *Task;
     ULONG       TimeCurrent;
     ULONG       TimeLast;
-    BOOL        Valid;
+    ULONG       Flags;
 };
 
-VOID UpdateTasksInformation(struct SysMonData * smdata)
+#define TIF_ENABLED             (1 << 0)
+#define TIF_VALID               (1 << 1)
+
+VOID RefreshTask(struct TaskInfo *ti)
 {
-    struct Task * task;
-    IPTR firstvis = 0, entryid = 0;
-    struct Task *selected = smdata->sm_TaskSelected;
+    /* Cache values we need incase something happens to the task .. */
+    ti->TINode.ln_Type = ti->Task->tc_Node.ln_Type;
+    ti->TINode.ln_Pri = (WORD)ti->Task->tc_Node.ln_Pri;
+    ti->Flags |= TIF_ENABLED;
+}
+
+#ifndef TASKLIST_FLUSHUPDATE
+VOID DeleteTaskEntry(struct SysMonData *smdata, struct TaskInfo *ti)
+{
+    int i;
+
+    for (i=0;;i++)
+    {
+        struct TaskInfo *le_ti;
+
+        DoMethod(smdata->tasklist, MUIM_List_GetEntry, i, &le_ti);
+        if (!le_ti) break;
+
+        if (ti == le_ti)
+        {
+            D(bug("[SysMon] deleting entry ...\n"));
+            DoMethod(smdata->tasklist, MUIM_List_Remove, i);
+            break;
+        }
+    }
+}
+#endif
+
+VOID UpdateTasksInformation(struct SysMonData *smdata)
+{
     struct TaskList *systasklist;
+    struct Task * task;
+#ifndef TASKLIST_FLUSHUPDATE
+    struct TaskInfo *ti = NULL, *titmp;
+#else
+    struct Task *selected = smdata->sm_TaskSelected;
+    IPTR firstvis = 0;
+    IPTR entryid = 0;
+#endif
 
     set(smdata->tasklist, MUIA_List_Quiet, TRUE);
 
+#ifdef TASKLIST_FLUSHUPDATE
     get(smdata->tasklist, MUIA_List_First, &firstvis);
-
     DoMethod(smdata->tasklist, MUIM_List_Clear);
+#else
+    ForeachNode(&smdata->sm_TaskList, ti)
+    {
+        ti->Flags &= ~TIF_ENABLED;
+    }
+#endif
 
     smdata->sm_TasksWaiting = 0;
     smdata->sm_TasksReady = 0;
@@ -60,15 +105,47 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         {
             smdata->sm_TasksWaiting++;
         }
-
-        entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom);
-        if (task == selected)
+       
+#ifndef TASKLIST_FLUSHUPDATE
+        ti = NULL;
+        ForeachNode(&smdata->sm_TaskList, ti)
         {
-            set(smdata->tasklist, MUIA_List_Active, entryid);
+            if (ti->Task == task)
+            {
+                D(bug("[SysMon] updating entry @ 0x%p\n", ti));
+                RefreshTask(ti);
+                task = NULL;
+                break;
+            }
+        }
+#endif
+        if (task)
+        {
+            D(bug("[SysMon] creating new entry ...\n"));
+#ifdef TASKLIST_FLUSHUPDATE
+            entryid =
+#endif
+                DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom);
+#ifdef TASKLIST_FLUSHUPDATE
+            if (task == selected)
+            {
+                set(smdata->tasklist, MUIA_List_Active, entryid);
+            }
+#endif
         }
     }
     UnLockTaskList(LTF_ALL);
 
+#ifndef TASKLIST_FLUSHUPDATE
+    ti = NULL;
+    ForeachNodeSafe(&smdata->sm_TaskList, ti, titmp)
+    {
+        if (!(ti->Flags & TIF_ENABLED))
+        {
+            DeleteTaskEntry(smdata, ti);
+        }
+    }
+#else
     if (XGET(smdata->tasklist, MUIA_List_Active) == 0)
         smdata->sm_TaskSelected = NULL;
 
@@ -81,6 +158,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     }
 
     set(smdata->tasklist, MUIA_List_First, v);
+#endif
 
     __sprintf(smdata->tasklistinfobuf, (STRPTR)__(MSG_TASK_READY_AND_WAIT), smdata->sm_TasksReady, smdata->sm_TasksWaiting);
     set(smdata->tasklistinfo, MUIA_Text_Contents, smdata->tasklistinfobuf);
@@ -99,11 +177,10 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
     if ((ti = AllocVecPooled(pool, sizeof(struct TaskInfo))) != NULL)
     {
         ti->Task = curTask;
+        ti->Flags = 0;
 
-        /* Cache values we need incase something happens to the task .. */
-        ti->TINode.ln_Type = curTask->tc_Node.ln_Type;
-        ti->TINode.ln_Pri = (WORD)curTask->tc_Node.ln_Pri;
-        ti->Valid = FALSE;
+        RefreshTask(ti);
+        ti->Flags &= ~TIF_VALID;
 
         switch (curTask->tc_State)
         {
@@ -114,7 +191,7 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
         case TS_READY:
         case TS_SPIN:
         case TS_WAIT:
-            ti->Valid = TRUE;
+            ti->Flags |= TIF_VALID;
             if (curTask->tc_Node.ln_Name)
             {
                 ti->TINode.ln_Name = StrDup(curTask->tc_Node.ln_Name);
@@ -183,7 +260,7 @@ AROS_UFH3(VOID, TasksListDisplayFunction,
     {
         type = ti->TINode.ln_Type == NT_TASK ? (STRPTR)_(MSG_TASK) : (STRPTR)_(MSG_PROCESS);
 
-        if (!ti->Valid)
+        if (!(ti->Flags & TIF_VALID))
         {
             __sprintf(smdata->bufname, MUIX_PH MUIX_B "%s", ti->TINode.ln_Name);
             __sprintf(smdata->bufprio, MUIX_PH MUIX_B "%d", (LONG)ti->TINode.ln_Pri);
