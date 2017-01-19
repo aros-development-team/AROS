@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write inline/modulename.h. Part of genmodule.
@@ -181,13 +181,12 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
             funclistit->type, cfg->basename, funclistit->name
     );
     for (arglistit = funclistit->arguments, count = 1;
-         arglistit!=NULL;
+         arglistit != NULL;
          arglistit = arglistit->next, count++
     )
     {
         type = getargtype(arglistit);
-        fprintf(out, "%s%s __arg%d, ",
-            ((isvararg) && (!arglistit->next)) ? "const " : "",
+        fprintf(out, "%s __arg%d, ",
             type, count);
         if (strchr(arglistit->reg, '/') != NULL) {
             nquad++;
@@ -221,8 +220,7 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
             type = getargtype(arglistit);
             assert(type != NULL);
             fprintf(out,
-                    "        AROS_LCA(%s%s,(__arg%d),%s),\n",
-                    ((isvararg) && (!arglistit->next)) ? "const " : "",
+                    "        AROS_LCA(%s,(__arg%d),%s),\n",
                     type, count, arglistit->reg
             );
             free(type);
@@ -260,15 +258,13 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
             if (quad2 != NULL) {
                 *quad2 = 0;
                 fprintf(out,
-                        "         AROS_LCAQUAD(%s%s, (__arg%d), %s, %s), \\\n",
-                        ((isvararg) && (!arglistit->next)) ? "const " : "",
+                        "         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \\\n",
                         type, count, arglistit->reg, quad2+1
                 );
                 *quad2 = '/';
             } else {
                 fprintf(out,
-                        "         AROS_LCA(%s%s, (__arg%d), %s), \\\n",
-                        ((isvararg) && (!arglistit->next)) ? "const " : "",
+                        "         AROS_LCA(%s, (__arg%d), %s), \\\n",
                         type, count, arglistit->reg
                 );
             }
@@ -357,7 +353,7 @@ writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
             {
                 type = getargtype(arglistit);
                 assert(type != NULL);
-                fprintf(out, "(const %s)(%s_args)", type, funclistit->name);
+                fprintf(out, "(%s)(%s_args)", type, funclistit->name);
                 free(type);
             }
             else

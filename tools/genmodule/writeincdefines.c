@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write defines/modulename.h. Part of genmodule.
@@ -217,8 +217,7 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
                 type = getargtype(arglistit);
                 assert(type != NULL);
                 fprintf(out,
-                        "                  AROS_LCA(%s%s,(__arg%d),%s), \\\n",
-                        ((isvararg) && (!arglistit->next)) ? "const " : "",
+                        "                  AROS_LCA(%s,(__arg%d),%s), \\\n",
                         type, count, arglistit->reg
                 );
                 free(type);
@@ -254,15 +253,13 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
             if (quad2 != NULL) {
                 *quad2 = 0;
                 fprintf(out,
-                        "         AROS_LCAQUAD(%s%s, (__arg%d), %s, %s), \\\n",
-                        ((isvararg) && (!arglistit->next)) ? "const " : "",
+                        "         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \\\n",
                         type, count, arglistit->reg, quad2+1
                 );
                 *quad2 = '/';
             } else {
                 fprintf(out,
-                        "         AROS_LCA(%s%s, (__arg%d), %s), \\\n",
-                        ((isvararg) && (!arglistit->next)) ? "const " : "",
+                        "         AROS_LCA(%s, (__arg%d), %s), \\\n",
                         type, count, arglistit->reg
                 );
             }
@@ -339,7 +336,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
             {
                 type = getargtype(arglistit);
                 assert(type != NULL);
-                fprintf(out, "(const %s)(const IPTR []){ AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }", type);
+                fprintf(out, "(%s)(const IPTR []){ AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }", type);
                 free(type);
             }
             else
