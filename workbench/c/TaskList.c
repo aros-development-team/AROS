@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -168,8 +168,8 @@ static int fillbuffer(struct task **buffer, IPTR size)
 #else
     struct TaskList *taskList;
 
-    taskList = LockTaskList(0);
-    while ((task = NextTaskEntry(taskList, 0)) != NULL)
+    taskList = LockTaskList(LTF_ALL);
+    while ((task = NextTaskEntry(taskList, LTF_ALL)) != NULL)
     {
         if (!addtask(task, buffer, &end))
         {
