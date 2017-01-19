@@ -25,8 +25,9 @@ struct TaskInfo
 {
     struct Node TINode;
     struct Task *Task;
-    ULONG TimeCurrent;
-    ULONG TimeLast;
+    ULONG       TimeCurrent;
+    ULONG       TimeLast;
+    BOOL        Valid;
 };
 
 VOID UpdateTasksInformation(struct SysMonData * smdata)
@@ -102,6 +103,8 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
         /* Cache values we need incase something happens to the task .. */
         ti->TINode.ln_Type = curTask->tc_Node.ln_Type;
         ti->TINode.ln_Pri = (WORD)curTask->tc_Node.ln_Pri;
+        ti->Valid = FALSE;
+
         switch (curTask->tc_State)
         {
         case TS_REMOVED:
@@ -111,6 +114,7 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
         case TS_READY:
         case TS_SPIN:
         case TS_WAIT:
+            ti->Valid = TRUE;
             if (curTask->tc_Node.ln_Name)
             {
                 ti->TINode.ln_Name = StrDup(curTask->tc_Node.ln_Name);
@@ -172,15 +176,29 @@ AROS_UFH3(VOID, TasksListDisplayFunction,
 {
     AROS_USERFUNC_INIT
 
-    static TEXT bufprio[8];
+    struct SysMonData *smdata = h->h_Data;
+    char *type;
 
     if (ti)
     {
-        __sprintf(bufprio, "%d", (LONG)ti->TINode.ln_Pri);
+        type = ti->TINode.ln_Type == NT_TASK ? (STRPTR)_(MSG_TASK) : (STRPTR)_(MSG_PROCESS);
 
-        strings[0] = ti->TINode.ln_Name;
-        strings[1] = bufprio;
-        strings[2] = ti->TINode.ln_Type == NT_TASK ? (STRPTR)_(MSG_TASK) : (STRPTR)_(MSG_PROCESS);
+        if (!ti->Valid)
+        {
+            __sprintf(smdata->bufname, MUIX_PH MUIX_B "%s", ti->TINode.ln_Name);
+            __sprintf(smdata->bufprio, MUIX_PH MUIX_B "%d", (LONG)ti->TINode.ln_Pri);
+            __sprintf(smdata->buftype, MUIX_PH MUIX_B "%s", type);
+            strings[0] = smdata->bufname;
+            strings[2] = smdata->buftype;
+        }
+        else
+        {
+            __sprintf(smdata->bufprio, "%d", (LONG)ti->TINode.ln_Pri);
+            strings[0] = ti->TINode.ln_Name;
+            strings[2] = type;
+        }
+
+        strings[1] = smdata->bufprio;
     }
     else
     {

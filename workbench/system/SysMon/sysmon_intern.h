@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -49,6 +49,10 @@ struct SysMonData
     ULONG sm_TaskTotalRuntime;
     
     STRPTR tasklistinfobuf;
+    
+    TEXT bufname[100];
+    TEXT buftype[20];
+    TEXT bufprio[8];
 };
 
 struct SysMonModule
