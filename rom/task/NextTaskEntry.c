@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -58,41 +58,30 @@
 
     struct TaskListPrivate *taskList = (struct TaskListPrivate *)tlist;
     struct Task *retVal = NULL;
+    ULONG matchFlags = taskList->tlp_Flags & ~LTF_WRITE;
+    ULONG matchState = 0;
+
+    if (flags)
+        matchFlags &= flags;
 
     D(bug("[TaskRes] NextTaskEntry: tlist @ 0x%p, flags = $%lx\n", tlist, flags));
 
     if (taskList)
     {
-        if ((taskList->tlp_Flags & ~LTF_WRITE) != 0)
+        if (matchFlags & LTF_RUNNING)
+            matchState |= TS_RUN;
+
+        if (matchFlags & LTF_READY)
+            matchState |= TS_READY;
+
+        if (matchFlags & LTF_WAITING)
+            matchState |= (TS_WAIT|TS_SPIN);
+
+        while ((taskList->tlp_Next) &&
+                   ((!taskList->tlp_Next->tle_Task) ||
+                    (!(taskList->tlp_Next->tle_Task->tc_State & matchState))))
         {
-            if (taskList->tlp_Flags & LTF_RUNNING)
-            {
-                while (taskList->tlp_Next &&
-                           ((!taskList->tlp_Next->tle_Task) ||
-                            (taskList->tlp_Next->tle_Task->tc_State != TS_RUN)))
-                {
-                     taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
-                }
-            }
-            else if (taskList->tlp_Flags & LTF_READY)
-            {
-                while (taskList->tlp_Next &&
-                           ((!taskList->tlp_Next->tle_Task) ||
-                            (taskList->tlp_Next->tle_Task->tc_State != TS_READY)))
-                {
-                     taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
-                }
-            }
-            else if (taskList->tlp_Flags & LTF_WAITING)
-            {
-                while (taskList->tlp_Next && 
-                          ((!taskList->tlp_Next->tle_Task) ||
-                          !((taskList->tlp_Next->tle_Task->tc_State == TS_WAIT) ||
-                            (taskList->tlp_Next->tle_Task->tc_State == TS_SPIN))))
-                {
-                     taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
-                }
-            }
+             taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
         }
 
         if (taskList->tlp_Next)
