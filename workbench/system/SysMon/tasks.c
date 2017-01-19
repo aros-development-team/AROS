@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2016, The AROS Development Team. All rights reserved.
+    Copyright 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,7 +55,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         {
             smdata->sm_TasksReady++;
         }
-        if (task->tc_State == TS_WAIT)
+        if ((task->tc_State == TS_WAIT) || (task->tc_State == TS_SPIN))
         {
             smdata->sm_TasksWaiting++;
         }
@@ -102,7 +102,24 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
         /* Cache values we need incase something happens to the task .. */
         ti->TINode.ln_Type = curTask->tc_Node.ln_Type;
         ti->TINode.ln_Pri = (WORD)curTask->tc_Node.ln_Pri;
-        ti->TINode.ln_Name = StrDup(curTask->tc_Node.ln_Name);
+        switch (curTask->tc_State)
+        {
+        case TS_REMOVED:
+            ti->TINode.ln_Name = StrDup("<tombstone>");
+            break;
+        case TS_RUN:
+        case TS_READY:
+        case TS_SPIN:
+        case TS_WAIT:
+            if (curTask->tc_Node.ln_Name)
+            {
+                ti->TINode.ln_Name = StrDup(curTask->tc_Node.ln_Name);
+                break;
+            }
+        default:
+            ti->TINode.ln_Name = StrDup("<unknown>");
+            break;
+        }
 
         AddTail(&((struct SysMonData *)h->h_Data)->sm_TaskList, &ti->TINode);
     }
