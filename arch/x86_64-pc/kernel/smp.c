@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,7 +17,7 @@
 #include "apic.h"
 #include "smp.h"
 
-#define D(x) x
+#define D(x)
 #define DWAKE(x)
 
 extern const void *_binary_smpbootstrap_start;
@@ -48,7 +48,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
     /* Set up GDT and LDT for our core */
     core_CPUSetup(_APICID, stackBase);
 
-    bug("[SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, KernelBase->kb_PlatformData->kb_APIC->count);
+    bug("[SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, KernelBase->kb_PlatformData->kb_APIC->apic_count);
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
@@ -63,22 +63,37 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
 static int smp_Setup(struct KernelBase *KernelBase)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
-    /* Low memory header is in the tail of memory list - see kernel_startup.c */
-    struct MemHeader *lowmem = (struct MemHeader *)SysBase->MemList.lh_TailPred;
-    APTR smpboot;
+    unsigned long bslen = (unsigned long)&_binary_smpbootstrap_size;
+    struct MemHeader *lowmem;
+    APTR smpboot = NULL;
     struct SMPBootstrap *bs;
 
-    D(bug("[SMP] Setup\n"));
+    D(bug("[SMP] %s()\n", __func__));
 
-    /*
-     * Allocate space for SMP bootstrap code in low memory. Its address must be page-aligned.
-     * Every CPU starts up in real mode (DAMN CRAP!!!)
-     */
-    smpboot = Allocate(lowmem, (unsigned long)&_binary_smpbootstrap_size + PAGE_SIZE - 1);
+    /* Find a suitable memheader to allocate the bootstrap from .. */
+    ForeachNode(&SysBase->MemList, lowmem)
+    {
+        /* Is it in lowmem? */
+        if ((IPTR)lowmem->mh_Lower < 0x000100000)
+        {
+            D(bug("[SMP] Trying memheader @ 0x%p\n", lowmem));
+            D(bug("[SMP] * 0x%p - 0x%p (%s pri %d)\n", lowmem->mh_Lower, lowmem->mh_Upper, lowmem->mh_Node.ln_Name, lowmem->mh_Node.ln_Pri));
+
+            /*
+             * Attempt to allocate space for the SMP bootstrap code.
+             * NB:  Its address must be page-aligned!.
+             * NB2: Every CPU starts up in real mode
+             */
+            smpboot = Allocate(lowmem, bslen + PAGE_SIZE - 1);
+            if (smpboot)
+                break;
+        }
+    }
+
     if (!smpboot)
     {
-    	D(bug("[SMP] Failed to allocate space for SMP bootstrap\n"));
-    	return 0;
+        bug("[SMP] Failed to allocate %dbytes for SMP bootstrap\n", bslen + PAGE_SIZE - 1);
+        return 0;
     }
 
     /* Install SMP bootstrap code */
@@ -118,7 +133,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
     D(bug("[SMP] Ready spinlock at 0x%p\n", &apicready));
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
-    for (i = 1; i < apic->count; i++)
+    for (i = 1; i < apic->apic_count; i++)
     {
     	UBYTE apic_id = apic->cores[i].lapicID;
 
@@ -171,13 +186,13 @@ int smp_Initialize(void)
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
 
-    if (pdata->kb_APIC && (pdata->kb_APIC->count > 1))
+    if (pdata->kb_APIC && (pdata->kb_APIC->apic_count > 1))
     {
     	if (!smp_Setup(KernelBase))
     	{
     	    D(bug("[SMP] Failed to prepare the environment!\n"));
 
-    	    pdata->kb_APIC->count = 1;	/* We have only one workinng CPU */
+    	    pdata->kb_APIC->apic_count = 1;	/* We have only one workinng CPU */
     	    return 0;
     	}
 

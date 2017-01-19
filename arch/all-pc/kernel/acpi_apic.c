@@ -7,75 +7,61 @@
 #include <proto/acpica.h>
 #include <proto/exec.h>
 
-#include <utility/hooks.h>
-
 #include <inttypes.h>
 #include <string.h>
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
+#include "kernel_intern.h"
 
+#include "acpi.h"
 #include "apic.h"
 #include "apic_ia32.h"
 
 #define D(x)
 
+#define ACPI_MODPRIO_APIC       100
+
 /************************************************************************************************
-                                    ACPI RELATED FUNCTIONS
+                                    ACPI APIC RELATED FUNCTIONS
  ************************************************************************************************/
+
+const char *ACPI_TABLE_MADT_STR __attribute__((weak)) = "APIC";
+
+void ACPI_AllocAPICPrivate(struct PlatformData *pdata)
+{
+    if (!pdata->kb_APIC)
+    {
+        pdata->kb_APIC = AllocMem(sizeof(struct APICData) + pdata->kb_ACPI->acpi_apicCnt * sizeof(struct CPUData), MEMF_CLEAR);
+        pdata->kb_APIC->apic_count	= 1;		/* Only one CPU is running right now */
+
+        D(bug("[Kernel:ACPI-APIC] Local APIC Private @ 0x%p\n", pdata->kb_APIC));
+    }
+}
 
 /* Process the 'Local APIC Address Overide' MADT Table */
 AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
 	  AROS_UFHA(struct Hook *, table_hook, A0),
 	  AROS_UFHA(ACPI_MADT_LOCAL_APIC_OVERRIDE *, lapic_addr_ovr, A2),
-	  AROS_UFHA(struct APICData *, data, A2))
+	  AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
 {
     AROS_USERFUNC_INIT
 
-    data->lapicBase = lapic_addr_ovr->Address;
-    D(bug("[APIC-ACPI] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Local APIC address Override to 0x%p\n", data->lapicBase));
+    struct PlatformData *pdata = tsdata->acpits_UserData;
 
-    return TRUE;
-
-    AROS_USERFUNC_EXIT
-}
-
-/*
- * Process the 'Local APIC' MADT Table.
- * This function collects APIC IDs into already allocated CPUData array.
- */
-AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_LOCAL_APIC *, processor, A2),
-	  AROS_UFHA(struct APICData *, data, A1))
-{
-    AROS_USERFUNC_INIT
-
-    if (processor->LapicFlags & ACPI_MADT_ENABLED)
+    if (!pdata->kb_APIC)
     {
-	if (data->cores[0].lapicID == processor->Id)
-	{
-	    /* This is the BSP, slot 0 is always reserved for it. */
-	    bug("[APIC-ACPI] Registering APIC [ID=0x%02X] for BSP\n", processor->Id);
+        ACPI_TABLE_MADT *madtTable = (ACPI_TABLE_MADT *)tsdata->acpits_Table;
 
-	    data->cores[0].sysID = processor->ProcessorId;
-	}
-	else
-	{
-	    /* Add one more AP */
-	    bug("[APIC-ACPI] Registering APIC [ID=0x%02X:0x%02X]\n", processor->Id, processor->ProcessorId);
-
-	    data->cores[data->count].lapicID = processor->Id;
-	    data->cores[data->count].sysID   = processor->ProcessorId;
-
-	    data->count++;
-	}
-
-
-	return TRUE;
+        ACPI_AllocAPICPrivate(pdata);
+        pdata->kb_ACPI->acpi_madt = madtTable;	/* Cache ACPI data for secondary cores */
+        pdata->kb_APIC->flags = ((madtTable->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
     }
 
-    return FALSE;
+    pdata->kb_APIC->lapicBase = lapic_addr_ovr->Address;
+    D(bug("[Kernel:ACPI-APIC] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Local APIC address Override to 0x%p\n", pdata->kb_APIC->lapicBase));
+
+    return TRUE;
 
     AROS_USERFUNC_EXIT
 }
@@ -84,18 +70,18 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 	  AROS_UFHA(struct Hook *, table_hook, A0),
 	  AROS_UFHA(ACPI_MADT_LOCAL_APIC_NMI *, lapic_nmi, A2),
-	  AROS_UFHA(struct APICData *, data, A1))
+	  AROS_UFHA(struct PlatformData *, pdata, A1))
 {
     AROS_USERFUNC_INIT
 
     IPTR cpu_num = (IPTR)table_hook->h_Data;
 
-    if ((lapic_nmi->ProcessorId == data->cores[cpu_num].sysID) || (lapic_nmi->ProcessorId == 0xff))
+    if ((lapic_nmi->ProcessorId == pdata->kb_APIC->cores[cpu_num].sysID) || (lapic_nmi->ProcessorId == 0xff))
     {
         UWORD reg;
         ULONG val = LVT_MT_NMI;	/* This is the default (edge-triggered, active low) */
 
-    	D(bug("[APIC-ACPI.%u] NMI LINT%u\n", cpu_num, lapic_nmi->Lint));
+    	D(bug("[Kernel:ACPI-APIC.%u] NMI LINT%u\n", cpu_num, lapic_nmi->Lint));
 
     	switch (lapic_nmi->Lint)
     	{
@@ -114,17 +100,17 @@ AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 
         if ((lapic_nmi->IntiFlags & ACPI_MADT_POLARITY_MASK) == ACPI_MADT_POLARITY_ACTIVE_LOW)
         {
-	    D(bug("[APIC-ACPI.%u] NMI active low\n", cpu_num));
+	    D(bug("[Kernel:ACPI-APIC.%u] NMI active low\n", cpu_num));
             val |= LVT_ACTIVE_LOW;
         } 
 
 	if ((lapic_nmi->IntiFlags & ACPI_MADT_TRIGGER_MASK) == ACPI_MADT_TRIGGER_LEVEL)
 	{
-	    D(bug("[APIC-ACPI.%u] NMI level-triggered\n", cpu_num));
+	    D(bug("[Kernel:ACPI-APIC.%u] NMI level-triggered\n", cpu_num));
 	    val |= LVT_TGM_LEVEL;
 	}
 
-	APIC_REG(data->lapicBase, reg) = val;
+	APIC_REG(pdata->kb_APIC->lapicBase, reg) = val;
 	return TRUE;
     }
 
@@ -133,201 +119,161 @@ AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
     AROS_USERFUNC_EXIT
 }
 
-/* Process the 'IO-APIC' MADT Table */
-AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_IO_APIC *, ioapic, A2),
-	  AROS_UFHA(struct APICData *, data, A1))
-{
-    AROS_USERFUNC_INIT
-
-    D(bug("[APIC-ACPI] (HOOK) ACPI_hook_Table_IOAPIC_Parse: IOAPIC %d @ %p [irq base = %d]\n", ioapic->Id, ioapic->Address, ioapic->GlobalIrqBase));
-
-    data->ioapicBase = ioapic->Address;
-    return TRUE;
-
-    AROS_USERFUNC_EXIT
-}
-
-/* Process the 'Interrupt Source Overide' MADT Table */
-AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_INTERRUPT_OVERRIDE *, intsrc, A2))
-{
-    AROS_USERFUNC_INIT
-
-    D(bug("[APIC-ACPI] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse: Bus %d, Source IRQ %d, Global IRQ %d, Flags 0x%x\n", intsrc->Bus, intsrc->SourceIrq,
-                intsrc->GlobalIrq, intsrc->IntiFlags));
-
-    return TRUE;
-
-    AROS_USERFUNC_EXIT
-}
-
-/* Process the 'Non-Maskable Interrupt Source' MADT Table */
-AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_NMI_SOURCE *, nmi_src, A2))
-{
-    AROS_USERFUNC_INIT
-
-    D(bug("[APIC-ACPI] (HOOK) ACPI_hook_Table_NMI_Src_Parse()\n"));
-
-    /* FIXME: Uh... shouldn't we do something with this? */
-
-    return TRUE;
-
-    AROS_USERFUNC_EXIT
-}
-
-static const struct Hook ACPI_TableParse_LAPIC_Addr_Ovr_hook =
-{
-    .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Addr_Ovr_Parse
-};
-
-static const struct Hook ACPI_TableParse_LAPIC_hook =
-{
-    .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Parse
-};
-
-static const struct Hook ACPI_TableParse_IOAPIC_hook =
-{
-    .h_Entry = (APTR)ACPI_hook_Table_IOAPIC_Parse
-};
-
-static const struct Hook ACPI_TableParse_Int_Src_Ovr_hook =
-{
-    .h_Entry = (APTR)ACPI_hook_Table_Int_Src_Ovr_Parse
-};
-
-static const struct Hook ACPI_TableParse_NMI_Src_hook =
-{
-    .h_Entry = (APTR)ACPI_hook_Table_NMI_Src_Parse
-};
-
-/************************************************************************************************/
-/************************************************************************************************
-                APIC Functions used by kernel.resource from outside this file ..
- ************************************************************************************************/
-/************************************************************************************************/
-
-static int MADT_ScanEntries(CONST ACPI_TABLE_MADT *madt, enum AcpiMadtType type, const struct Hook *hook, APTR userdata)
-{
-    UINT8 *madt_entry = (UINT8 *)&madt[1];
-    UINT8 *madt_end  = (UINT8 *)madt + madt->Header.Length;
-    int count;
-
-    for (count = 0; madt_entry < madt_end; madt_entry += ((ACPI_SUBTABLE_HEADER *)madt_entry)->Length) {
-        ACPI_SUBTABLE_HEADER *sh = (ACPI_SUBTABLE_HEADER *)madt_entry;
-        if (sh->Type == (UINT8)type) {
-            BOOL res;
-            if (hook == NULL)
-                res = TRUE;
-            else
-                res = CALLHOOKPKT((struct Hook *)hook, (APTR)sh, userdata);
-            if (res)
-                count++;
-        }
-    }
-
-    return count;
-}
-
-
 /*
  * Initialize APIC on a CPU core with specified number.
  * This routine is ran by all cores.
  */
-void acpi_APIC_InitCPU(struct APICData *data, IPTR cpuNum)
+void acpi_APIC_InitCPU(struct PlatformData *pdata, IPTR cpuNum)
 {
-    /* Initialize APIC to the default configuration */
-    core_APIC_Init(data, cpuNum);
+    D(bug("[Kernel:ACPI-APIC] %s(%d)\n", __func__, cpuNum));
 
-    if (data->acpi_madt)
+    /* Initialize APIC to the default configuration */
+    core_APIC_Init(pdata->kb_APIC, cpuNum);
+
+    if (pdata->kb_ACPI->acpi_madt)
     {
         struct Hook hook;
+
+        D(bug("[Kernel:ACPI-APIC] %s: Parsing NMI ..\n", __func__));
 
         /* Set up NMI for ourselves */
         hook.h_Entry = (APTR)ACPI_hook_Table_LAPIC_NMI_Parse;
         hook.h_Data  = (APTR)cpuNum;
-        MADT_ScanEntries(data->acpi_madt, ACPI_MADT_TYPE_LOCAL_APIC_NMI, &hook, data);
+        acpi_ScanTableEntries(pdata->kb_ACPI->acpi_madt, sizeof(ACPI_TABLE_MADT), ACPI_MADT_TYPE_LOCAL_APIC_NMI, &hook, pdata);
     }
 }
 
-/* Initialize APIC from ACPI data */
-struct APICData *acpi_APIC_Init(void)
+/*
+ * Process the 'Local APIC' MADT Table.
+ * This function collects APIC IDs.
+ */
+AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
+	  AROS_UFHA(struct Hook *, table_hook, A0),
+	  AROS_UFHA(ACPI_MADT_LOCAL_APIC *, processor, A2),
+	  AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
 {
-    ULONG result;
-    ACPI_STATUS err;
-    const ACPI_TABLE_MADT *madt;
-    struct APICData *data;
+    AROS_USERFUNC_INIT
 
-    /* 
-     * MADT : If it exists, parse the Multiple APIC Description Table "MADT", 
-     * This table provides platform SMP configuration information [the successor to MPS tables]
-     */
-    err = AcpiGetTable("MADT", 1, (ACPI_TABLE_HEADER **)&madt);
-    if (err != AE_OK) {
-        D(bug("[APCI-ACPI] No MADT table found, err = %d\n", err));
-        return NULL;
+    struct PlatformData *pdata = tsdata->acpits_UserData;
+
+    if (!pdata->kb_APIC)
+    {
+        ACPI_TABLE_MADT *madtTable = (ACPI_TABLE_MADT *)tsdata->acpits_Table;
+
+        ACPI_AllocAPICPrivate(pdata);
+        pdata->kb_APIC->lapicBase = madtTable->Address;
+        pdata->kb_ACPI->acpi_madt = madtTable;	/* Cache ACPI data for secondary cores */
+        pdata->kb_APIC->flags = ((madtTable->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
+
+        bug("[Kernel:ACPI-APIC] Local APIC address 0x%p; Flags 0x%04X\n", pdata->kb_APIC->lapicBase, pdata->kb_APIC->flags);
+        D(bug("[Kernel:ACPI-APIC] MADT @ 0x%p\n", pdata->kb_ACPI->acpi_madt));
     }
 
-    if (madt)
+    if ((pdata->kb_APIC) && (processor->LapicFlags & ACPI_MADT_ENABLED))
     {
-    	/*
-    	 * We have MADT from ACPI.
-    	 * The first thing to do now is to count APICs and allocate struct APICData.
-    	 */
-        result = MADT_ScanEntries(madt, ACPI_MADT_TYPE_LOCAL_APIC, NULL, NULL);
-        D(bug("[APIC-ACPI] Found %u enabled APICs\n", result));
+	if (pdata->kb_APIC->cores[0].lapicID == processor->Id)
+	{
+	    /* This is the BSP, slot 0 is always reserved for it. */
+	    bug("[Kernel:ACPI-APIC] Registering APIC #0 [ID=0x%02X] as BSP\n", processor->Id);
 
-	data = AllocMem(sizeof(struct APICData) + result * sizeof(struct CPUData), MEMF_CLEAR);
-	if (!data)
-	    return NULL;
+	    pdata->kb_APIC->cores[0].sysID = processor->ProcessorId;
 
-        data->lapicBase = madt->Address;
-        data->acpi_madt = madt;	/* Cache ACPI data for secondary cores */
-        data->count	= 1;		/* Only one CPU is running right now */
-        data->flags     = ((madt->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
+            /* Remember ID of the bootstrap APIC, this is CPU #0 */
+            pdata->kb_APIC->cores[0].lapicID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
+            D(bug("[Kernel:ACPI-APIC] BSP ID: 0x%02X\n", pdata->kb_APIC->cores[0].lapicID));
+            
+            /* Initialize LAPIC for ourselves (CPU #0) */
+            acpi_APIC_InitCPU(pdata, 0);
+	}
+	else
+	{
+	    /* Add one more AP */
+	    bug("[Kernel:ACPI-APIC] Registering APIC #%d [ID=0x%02X:0x%02X]\n", pdata->kb_APIC->apic_count, processor->Id, processor->ProcessorId);
 
-        bug("[APIC-ACPI] Local APIC address 0x%08x; Flags 0x%04X\n", data->lapicBase, data->flags);
+	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].lapicID = processor->Id;
+	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].sysID   = processor->ProcessorId;
 
+	    pdata->kb_APIC->apic_count++;
+	}
+
+	return TRUE;
+    }
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
+}
+
+/*
+ * Process the 'Local APIC' MADT Table.
+ * This function counts the available APICs.
+ */
+AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Count,
+	  AROS_UFHA(struct Hook *, table_hook, A0),
+	  AROS_UFHA(ACPI_MADT_LOCAL_APIC *, processor, A2),
+	  AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct PlatformData *pdata = tsdata->acpits_UserData;
+    struct ACPI_TABLE_HOOK *scanHook;
+
+    if (pdata->kb_ACPI->acpi_apicCnt == 0)
+    {
         /*
      	 * The local APIC base address is obtained from the MADT (32-bit value) and
      	 * (optionally) overriden by a LAPIC_ADDR_OVR entry (64-bit value).
      	 */
-	MADT_ScanEntries(madt, ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE, &ACPI_TableParse_LAPIC_Addr_Ovr_hook, data);
+        scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
+        if (scanHook)
+        {
+            scanHook->acpith_Node.ln_Name = (char *)ACPI_TABLE_MADT_STR;
+            scanHook->acpith_Node.ln_Pri = ACPI_MODPRIO_APIC - 10;                            /* Queue 10 priority levels after the module parser */
+            scanHook->acpith_Hook.h_Entry = (APTR)ACPI_hook_Table_LAPIC_Addr_Ovr_Parse;
+            scanHook->acpith_HeaderLen = sizeof(ACPI_TABLE_MADT);
+            scanHook->acpith_EntryType = ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE;
+            scanHook->acpith_UserData = pdata;
+            Enqueue(&pdata->kb_ACPI->acpi_tablehooks, &scanHook->acpith_Node);
+        }
 
-	/* Remember ID of the bootstrap APIC, this is CPU #0 */
-	data->cores[0].lapicID = core_APIC_GetID(data->lapicBase);
-	D(bug("[APIC-ACPI] BSP ID: 0x%02X\n", data->cores[0].lapicID));
-
-	/* Now fill in IDs (both HW and ACPI) of the rest APICs */
-	MADT_ScanEntries(madt, ACPI_MADT_TYPE_LOCAL_APIC, &ACPI_TableParse_LAPIC_hook, data);
-	bug("[APIC-ACPI] System Total APICs: %d\n", data->count);
-
-	/* Initialize LAPIC for ourselves (CPU #0) */
-	acpi_APIC_InitCPU(data, 0);
-
-	/* TODO: The following is actually not implemented yet. IOAPIC should be configured here. */
-
-	result = MADT_ScanEntries(madt, ACPI_MADT_TYPE_IO_APIC, &ACPI_TableParse_IOAPIC_hook, data);
-	D(bug("[APIC-ACPI] ACPI_ScanEntries(ACPI_MADT_IOAPIC) returned %p\n", result));
-
-	MADT_ScanEntries(madt, ACPI_MADT_TYPE_INTERRUPT_OVERRIDE, &ACPI_TableParse_Int_Src_Ovr_hook, data);
-
-	result = MADT_ScanEntries(madt, ACPI_MADT_TYPE_NMI_SOURCE, &ACPI_TableParse_NMI_Src_hook, data);
-	D(bug("[APIC-ACPI] ACPI_ScanEntries(ACPI_MADT_NMI_SRC) returned %p\n", result));
-
-	/* Build a default routing table for legacy (ISA) interrupts. */
-	/* TODO: implement legacy irq config.. */
-	D(bug("[APIC-ACPI] Configuring Legacy IRQs .. Skipped (UNIMPLEMENTED) ..\n"));
-
-	/* TODO: implement check for clustered apic's..
-            core_APICClusteredCheck();
-     	*/
-        return data;
+        scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
+        if (scanHook)
+        {
+            scanHook->acpith_Node.ln_Name = (char *)ACPI_TABLE_MADT_STR;
+            scanHook->acpith_Node.ln_Pri = ACPI_MODPRIO_APIC - 20;                            /* Queue 20 priority levels after the module parser */
+            scanHook->acpith_Hook.h_Entry = (APTR)ACPI_hook_Table_LAPIC_Parse;
+            scanHook->acpith_HeaderLen = sizeof(ACPI_TABLE_MADT);
+            scanHook->acpith_EntryType = ACPI_MADT_TYPE_LOCAL_APIC;
+            scanHook->acpith_UserData = pdata;
+            Enqueue(&pdata->kb_ACPI->acpi_tablehooks, &scanHook->acpith_Node);
+        }
     }
+    pdata->kb_ACPI->acpi_apicCnt++;
 
-    return NULL;
+    return TRUE;
+
+    AROS_USERFUNC_EXIT
 }
+
+void ACPI_APIC_SUPPORT(struct PlatformData *pdata)
+{
+    struct ACPI_TABLE_HOOK *scanHook;
+
+    scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
+    if (scanHook)
+    {
+        D(bug("[Kernel:ACPI-APIC] Registering APIC Table Parser...\n"));
+        D(bug("[Kernel:ACPI-APIC] %s: Table Hook @ 0x%p\n", __func__, scanHook));
+        scanHook->acpith_Node.ln_Name = (char *)ACPI_TABLE_MADT_STR;
+        scanHook->acpith_Node.ln_Pri = ACPI_MODPRIO_APIC;
+        scanHook->acpith_Hook.h_Entry = (APTR)ACPI_hook_Table_LAPIC_Count;
+        scanHook->acpith_HeaderLen = sizeof(ACPI_TABLE_MADT);
+        scanHook->acpith_EntryType = ACPI_MADT_TYPE_LOCAL_APIC;
+        scanHook->acpith_UserData = pdata;
+        Enqueue(&pdata->kb_ACPI->acpi_tablehooks, &scanHook->acpith_Node);
+    }
+    D(bug("[Kernel:ACPI-APIC] Registering done\n"));
+}
+
+DECLARESET(KERNEL__ACPISUPPORT)
+ADD2SET(ACPI_APIC_SUPPORT, KERNEL__ACPISUPPORT, 0)
