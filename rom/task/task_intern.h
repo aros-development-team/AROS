@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,6 +22,17 @@
 #include <utility/utility.h>
 #endif
 
+#include <exec_platform.h>
+
+//#define TASKRES_ENABLE
+
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#ifndef TASKRES_ENABLE
+#define TASKRES_ENABLE
+#endif
+#endif
+
 struct TaskResBase
 {
     struct Library              trb_LibNode;
@@ -29,6 +40,9 @@ struct TaskResBase
     APTR                        trb_NewAddTask;
     APTR                        trb_RemTask;
     struct SignalSemaphore      trb_Sem;
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t                  TaskListSpinLock;
+#endif
     struct List                 trb_TaskList;
     struct List                 trb_NewTasks;
     struct List                 trb_LockedLists;
@@ -41,7 +55,7 @@ struct TaskListEntry
     struct Task                 *tle_Task;
 };
 
-// The "Real" implementation of struct TaskList
+#ifdef TASKRES_ENABLE
 struct TaskListPrivate
 {
     struct Node                 tlp_Node;
@@ -49,11 +63,20 @@ struct TaskListPrivate
     struct List                 *tlp_Tasks;
     struct TaskListEntry        *tlp_Next;
 };
+#else
+struct TaskListPrivate
+{
+    struct List                 *tlp_TaskList;
+    struct Task                *tlp_Current;
+};
+#endif /* TASKRES_ENABLE */
 
 #ifdef KernelBase
 #undef KernelBase
 #endif
 
 #define KernelBase TaskResBase->trb_KernelBase
+
+void task_CleanList(struct Task * task, struct TaskResBase *TaskResBase);
 
 #endif /* TASKRES_INTERN_H */

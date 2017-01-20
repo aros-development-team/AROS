@@ -13,7 +13,7 @@
 
 #include <resources/task.h>
 
-#include "taskres_intern.h"
+#include "task_intern.h"
 
 /*****************************************************************************
 
@@ -23,7 +23,7 @@
         AROS_LH1(struct TaskList *, LockTaskList,
 
 /*  SYNOPSIS */
-        AROS_LHA(ULONG, flags, D1),
+        AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
 	struct TaskResBase *, TaskResBase, 1, Task)
@@ -64,6 +64,7 @@
 
     D(bug("[TaskRes] LockTaskList: flags = $%lx\n", flags));
 
+#ifdef TASKRES_ENABLE
     if (flags & LTF_WRITE)
         ObtainSemaphore(&TaskResBase->trb_Sem);
     else
@@ -78,6 +79,17 @@
         taskList->tlp_Next = (struct TaskListEntry *)GetHead(taskList->tlp_Tasks);
         AddTail(&TaskResBase->trb_LockedLists, &taskList->tlp_Node);
     }
+#else
+    Forbid();
+    if ((taskList = (struct TaskListPrivate *)AllocVec(sizeof(struct TaskListPrivate), MEMF_PUBLIC)) != NULL)
+    {
+        if (flags & LTF_READY)
+            taskList->tlp_TaskList = &SysBase->TaskReady;
+        else if (flags & LTF_WAITING)
+            taskList->tlp_TaskList = &SysBase->TaskWait;
+        taskList->tlp_Current = NULL;
+    }
+#endif /* TASKRES_ENABLE */
 
     return (struct TaskList *)taskList;
 

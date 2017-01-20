@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,18 +15,20 @@
 #include <exec_intern.h>
 #include "etask.h"
 
-#include "taskres_intern.h"
+#include "task_intern.h"
 
 extern APTR AROS_SLIB_ENTRY(NewAddTask, Task, 176)();
 extern void AROS_SLIB_ENTRY(RemTask, Task, 48)();
 
 static LONG taskres_Init(struct TaskResBase *TaskResBase)
 {
+#ifdef TASKRES_ENABLE
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *listLock;
 #endif
     struct TaskListEntry *taskEntry = NULL;
     struct Task *curTask = NULL;
+#endif /* TASKRES_ENABLE */
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
@@ -42,10 +44,11 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 
     SysBase->lb_TaskResBase = (struct Library *)TaskResBase;
 
+    InitSemaphore(&TaskResBase->trb_Sem);
+
+#ifdef TASKRES_ENABLE
     TaskResBase->trb_RemTask = SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, AROS_SLIB_ENTRY(RemTask, Task, 48));
     TaskResBase->trb_NewAddTask = SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewAddTask, Task, 176));
-
-    InitSemaphore(&TaskResBase->trb_Sem);
 
     /*
        Add existing tasks to our internal list ..
@@ -124,13 +127,17 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     Enable();
 #endif
 
+#endif /* TASKRES_ENABLE */
+
     return TRUE;
 }
 
 static LONG taskres_Exit(struct TaskResBase *TaskResBase)
 {
+#ifdef TASKRES_ENABLE
     SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, TaskResBase->trb_NewAddTask);
     SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, TaskResBase->trb_RemTask);
+#endif /* TASKRES_ENABLE */
 
     CloseLibrary(TaskResBase->trb_UtilityBase);
 

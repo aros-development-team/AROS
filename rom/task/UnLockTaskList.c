@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,17 +13,18 @@
 
 #include <resources/task.h>
 
-#include "taskres_intern.h"
+#include "task_intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <proto/task.h>
 
-        AROS_LH1(void, UnLockTaskList,
+        AROS_LH2(void, UnLockTaskList,
 
 /*  SYNOPSIS */
-        AROS_LHA(ULONG, flags, D1),
+        AROS_LHA(struct TaskList *, tlist, A0),
+        AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
 	struct TaskResBase *, TaskResBase, 2, Task)
@@ -51,11 +52,14 @@
 {
     AROS_LIBFUNC_INIT
 
+#ifdef TASKRES_ENABLE
     struct TaskListPrivate *taskList, *tltmp;
     struct Task *thisTask = FindTask(NULL);
+#endif /* TASKRES_ENABLE */
 
     D(bug("[TaskRes] UnLockTaskList: flags = $%lx\n", flags));
 
+#ifdef TASKRES_ENABLE
     ReleaseSemaphore(&TaskResBase->trb_Sem);
 
     ForeachNodeSafe(&TaskResBase->trb_LockedLists, taskList, tltmp)
@@ -70,25 +74,12 @@
         }
     }
 
-    /* If we are the last lock holder, do housecleaning */
-    if (IsListEmpty(&TaskResBase->trb_LockedLists))
-    {
-        struct TaskListEntry *taskEntry, *tetmp;
+    /* Purge expired entries from the list... */
+    task_CleanList(NULL, TaskResBase);
+#else
+    Permit();
+    FreeVec(tlist);
+#endif /* TASKRES_ENABLE */
 
-        ForeachNodeSafe(&TaskResBase->trb_TaskList, taskEntry, tetmp)
-        {
-            if (taskEntry->tle_Task == NULL)
-            {
-                D(bug("[TaskRes] RemTask: destroying old taskentry @ 0x%p\n", taskEntry));
-                Remove(&taskEntry->tle_Node);
-                FreeMem(taskEntry, sizeof(struct TaskListEntry));
-            }
-        }
-        ForeachNodeSafe(&TaskResBase->trb_NewTasks, taskEntry, tetmp)
-        {
-            Remove(&taskEntry->tle_Node);
-            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
-        }
-    }
     AROS_LIBFUNC_EXIT
 } /* UnLockTaskList */

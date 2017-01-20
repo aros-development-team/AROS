@@ -13,7 +13,7 @@
 
 #include <resources/task.h>
 
-#include "taskres_intern.h"
+#include "task_intern.h"
 
 /*****************************************************************************
 
@@ -23,8 +23,8 @@
         AROS_LH2(struct Task *, NextTaskEntry,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct TaskList *, tlist, D1),
-        AROS_LHA(ULONG           , flags, D2),
+        AROS_LHA(struct TaskList *, tlist, A0),
+        AROS_LHA(ULONG           , flags, D0),
 
 /*  LOCATION */
 	struct TaskResBase *, TaskResBase, 3, Task)
@@ -58,14 +58,17 @@
 
     struct TaskListPrivate *taskList = (struct TaskListPrivate *)tlist;
     struct Task *retVal = NULL;
+#ifdef TASKRES_ENABLE
     ULONG matchFlags = taskList->tlp_Flags & ~LTF_WRITE;
     ULONG matchState = 0;
 
     if (flags)
         matchFlags &= flags;
+#endif /* TASKRES_ENABLE */
 
     D(bug("[TaskRes] NextTaskEntry: tlist @ 0x%p, flags = $%lx\n", tlist, flags));
 
+#ifdef TASKRES_ENABLE
     if (taskList)
     {
         if (matchFlags & LTF_RUNNING)
@@ -90,6 +93,35 @@
             taskList->tlp_Next = (struct TaskListEntry *)GetSucc(taskList->tlp_Next);
         }
     }
+#else
+    if (taskList)
+    {
+        if (!taskList->tlp_Current)
+        {
+            D(bug("[TaskRes] NextTaskEntry: returning first list entry...\n", tlist, flags));
+            if (((taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList)) == NULL) &&
+                ((flags & LTF_WAITING) && (taskList->tlp_TaskList == &SysBase->TaskReady)))
+            {
+                taskList->tlp_TaskList = &SysBase->TaskWait;
+                taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList);
+            }
+        }
+
+        if (taskList->tlp_Current)
+        {
+            if ((retVal = (struct Task *)GetSucc(taskList->tlp_Current)) != NULL)
+                taskList->tlp_Current = (struct Task *)retVal;
+            else if ((flags & LTF_WAITING) && (taskList->tlp_TaskList == &SysBase->TaskReady))
+            {
+                taskList->tlp_TaskList = &SysBase->TaskWait;
+                taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList);
+            }
+            else
+                taskList->tlp_Current = NULL;
+        }
+        retVal = taskList->tlp_Current;
+    }        
+#endif /* TASKRES_ENABLE */
 
     return retVal;
 

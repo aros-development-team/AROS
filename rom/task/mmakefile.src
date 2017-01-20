@@ -11,9 +11,19 @@ INCLUDE_FILES := task.h
 USER_LDFLAGS := -static
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
 
-TASKRES_FILES := LockTaskList UnLockTaskList NextTaskEntry QueryTaskTagList
+TASKRES_FUNCS :=		\
+	    LockTaskList	\
+	    UnLockTaskList	\
+	    NextTaskEntry	\
+	    QueryTaskTagList
+
+TASKRES_FILES :=		\
+	    task_init		\
+	    task_execfuncs	\
+            task_support	\
+	    $(TASKRES_FUNCS)
 
 %build_module mmake=kernel-task modname=task modtype=resource \
-    files="init execfuncs $(TASKRES_FILES)"
+    files="$(TASKRES_FILES)"
 
 %copy_includes path=resources

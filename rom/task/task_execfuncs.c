@@ -11,7 +11,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-#include "taskres_intern.h"
+#include "task_intern.h"
 
 void TaskResAddTask(struct TaskResBase *TaskResBase, struct Task *task)
 {
@@ -82,7 +82,7 @@ AROS_LH1(void, RemTask,
         if (findTask != task)
             bug("[TaskRes] Real task @ 0x%p\n", findTask);
     )
-    
+
     ForeachNodeSafe(&TaskResBase->trb_NewTasks, taskEntry, tmpEntry)
     {
         if (taskEntry->tle_Task == findTask)
@@ -97,6 +97,12 @@ AROS_LH1(void, RemTask,
 
     if (!removed)
     {
+#if !defined(__AROSEXEC_SMP__)
+        /* Don't let any other task interfere with us at the moment */
+        Forbid();
+#else
+        EXEC_SPINLOCK_LOCK(&TaskResBase->TaskListSpinLock, SPINLOCK_MODE_WRITE);
+#endif
         ForeachNodeSafe(&TaskResBase->trb_TaskList, taskEntry, tmpEntry)
         {
             if (taskEntry->tle_Task == findTask)
@@ -116,7 +122,14 @@ AROS_LH1(void, RemTask,
                 break;
             }
         }
+#if !defined(__AROSEXEC_SMP__)
+        Permit();
+#else
+        EXEC_SPINLOCK_UNLOCK(&TaskResBase->TaskListSpinLock);
+#endif
     }
+
+    D(bug("[TaskRes] RemTask: Calling original Exec->RemTask()\n"));
 
     if (TaskResBase->trb_RemTask)
     {
