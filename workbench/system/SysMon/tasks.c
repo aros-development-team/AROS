@@ -3,6 +3,9 @@
     $Id$
 */
 
+//#define DEBUG 1
+#include <aros/debug.h>
+
 #include <exec/execbase.h>
 #include <resources/task.h>
 #include <clib/alib_protos.h>
@@ -13,9 +16,6 @@
 #include "locale.h"
 
 #include "sysmon_intern.h"
-
-//#define DEBUG 1
-#include <aros/debug.h>
 
 //#define TASKLIST_FLUSHUPDATE
 
