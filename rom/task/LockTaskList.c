@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,6 +32,14 @@
 
     INPUTS
         flags - 
+              LTF_WRITE     Lock The TaskList for writing
+                            NB: In general software SHOULDNT
+                                need to use this!
+
+              LTF_RUNNING   Lock The TaskList to show running tasks.
+              LTF_READY     Lock The TaskList to show ready tasks.
+              LTF_WAITING   Lock The TaskList to show waiting/spinning tasks.
+              LTF_ALL       Lock The TaskList to show all of the above tasks.
 
     RESULT
         Handle to the task list. This is not a direct pointer
