@@ -15,19 +15,23 @@
 #define MEMORY_VRAM 3
 #define MEMORY_GART 4
 
+#define SYSMON_TABCOUNT         3
+
 struct SysMonData
 {
     struct Task *sm_Task;
     Object * application;
     Object * mainwindow;
+    Object * pages;
 
-    CONST_STRPTR tabs [4];
+    CONST_STRPTR tabs[SYSMON_TABCOUNT + 1];
 
     struct Hook tasklistconstructhook;
     struct Hook tasklistdestructhook;
     struct Hook tasklistdisplayhook;
     struct Hook taskselectedhook;
-    struct Hook tasklistrefreshbuttonhook;
+
+    struct Hook pageactivehook;
 
     Object * tasklist;
     Object * tasklistinfo;
@@ -38,21 +42,23 @@ struct SysMonData
 
     Object * memorysize[5];
     Object * memoryfree[5];
-    
+
     IPTR tasklistautorefresh;
-    
+
     struct List sm_TaskList;
     struct Task *sm_TaskSelected;
-    
+
     ULONG sm_TasksWaiting;
     ULONG sm_TasksReady;
     ULONG sm_TaskTotalRuntime;
-    
+
     STRPTR tasklistinfobuf;
-    
+
     TEXT bufname[100];
     TEXT buftype[20];
     TEXT bufprio[8];
+
+    ULONG updateSpeed;
 };
 
 struct SysMonModule
