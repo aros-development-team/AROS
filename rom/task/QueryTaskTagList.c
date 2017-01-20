@@ -13,7 +13,7 @@
 
 #include "etask.h"
 
-#include "taskres_intern.h"
+#include "task_intern.h"
 
 /*****************************************************************************
 
