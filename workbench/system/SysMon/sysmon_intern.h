@@ -43,8 +43,6 @@ struct SysMonData
     Object * memorysize[5];
     Object * memoryfree[5];
 
-    IPTR tasklistautorefresh;
-
     struct List sm_TaskList;
     struct Task *sm_TaskSelected;
 
