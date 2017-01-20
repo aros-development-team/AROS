@@ -16,7 +16,9 @@
 
 #define VERSION "$VER: SysMon 1.3 (19.01.2017) ©2011-2017 The AROS Development Team"
 
+//#define NOTYET_USED
 
+#ifdef NOTYET_USED
 AROS_UFH3(VOID, pageactivefunction,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, object, A2),
@@ -37,7 +39,7 @@ AROS_UFH3(VOID, pageactivefunction,
 
     AROS_USERFUNC_EXIT
 }
-
+#endif
 
 BOOL CreateApplication(struct SysMonData * smdata)
 {
@@ -63,8 +65,10 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->taskselectedhook.h_Entry = (APTR)TaskSelectedFunction;
     smdata->taskselectedhook.h_Data = (APTR)smdata;
 
+#ifdef NOTYET_USED
     smdata->pageactivehook.h_Entry = (APTR)pageactivefunction;
     smdata->pageactivehook.h_Data = (APTR)smdata;
+#endif
 
     smdata->application = ApplicationObject,
         MUIA_Application_Title, __(MSG_APP_NAME),
@@ -84,9 +88,9 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                 MUIA_Menu_Title, (IPTR)"Project", 
                                 MUIA_Family_Child, (MenuitemObject, 
                                     MUIA_Menuitem_Title, (IPTR)"Refresh Speed", 
-                                    MUIA_Family_Child, (menuitemfast = MenuitemObject, MUIA_Menuitem_Title, "Fast", MUIA_Menuitem_Shortcut, "F",End), 
-                                    MUIA_Family_Child, (menuitemnormal = MenuitemObject, MUIA_Menuitem_Title, "Normal", MUIA_Menuitem_Shortcut, "N",End), 
-                                    MUIA_Family_Child, (menuitemslow = MenuitemObject, MUIA_Menuitem_Title, "Slow", MUIA_Menuitem_Shortcut, "S",End), 
+                                    MUIA_Family_Child, (menuitemfast = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Fast", MUIA_Menuitem_Shortcut, (IPTR)"F",End), 
+                                    MUIA_Family_Child, (menuitemnormal = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Normal", MUIA_Menuitem_Shortcut, (IPTR)"N",End), 
+                                    MUIA_Family_Child, (menuitemslow = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Slow", MUIA_Menuitem_Shortcut, (IPTR)"S",End), 
                                 End), 
                             End),
                         End),
@@ -108,7 +112,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                     NoFrame,
                                     MUIA_Font, MUIV_Font_Tiny,
                                     MUIA_Text_PreParse, (IPTR)"\33r",
-                                    MUIA_Text_Contents, (IPTR)"0 ready, 0 waiting",
+                                    MUIA_Text_Contents, (IPTR)"- ready, - waiting",
                                 End,
                             End,
                         End,
@@ -126,7 +130,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                         Child, ColGroup(2), 
                                         Child, Label(_(MSG_TOTAL_RAM)),
                                         Child, smdata->memorysize[MEMORY_RAM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
-                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"2097152 Kb", 
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"---- Kb", 
                                         End,
                                         Child, Label(_(MSG_CHIP_RAM)),
                                         Child, smdata->memorysize[MEMORY_CHIP] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
@@ -142,7 +146,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                     Child, ColGroup(2), 
                                         Child, Label(_(MSG_TOTAL_RAM)),
                                         Child, smdata->memoryfree[MEMORY_RAM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
-                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"2097152 Kb", 
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"---- Kb", 
                                         End,
                                         Child, Label(_(MSG_CHIP_RAM)),
                                         Child, smdata->memoryfree[MEMORY_CHIP] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
@@ -203,8 +207,10 @@ BOOL CreateApplication(struct SysMonData * smdata)
     DoMethod(menuitemslow, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
         smdata->application, 3, MUIM_WriteLong, 2000, &smdata->updateSpeed);
 
+#ifdef NOTYET_USED
     DoMethod(smdata->pages, MUIM_Notify, MUIA_Group_ActivePage, MUIV_EveryTime,
         smdata->pages, 2, MUIM_CallHook, (IPTR)&smdata->pageactivehook);
+#endif
 
     /* Adding cpu usage gauges */
     cpucolgroup = ColGroup(processorcount + 1), End;
@@ -213,7 +219,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
 
     for (i = 0; i < processorcount; i++)
     {
-        smdata->cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) " CPU XX : XXX% ",
+        smdata->cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) " CPU -- : ---% ",
                         MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
                         MUIA_Gauge_Max, 100, End;
 
