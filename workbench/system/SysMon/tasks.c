@@ -134,7 +134,7 @@ VOID UpdateTasksInformation(struct SysMonData *smdata)
 #endif
         }
     }
-    UnLockTaskList(LTF_ALL);
+    UnLockTaskList(systasklist, LTF_ALL);
 
 #ifndef TASKLIST_FLUSHUPDATE
     ti = NULL;
