@@ -176,7 +176,7 @@ static int fillbuffer(struct task **buffer, IPTR size)
             break;
         }
     }
-    UnLockTaskList(0);
+    UnLockTaskList(taskList, LTF_ALL);
 #endif
 
     return 1;
