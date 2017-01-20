@@ -120,7 +120,7 @@ AROS_LH1(void, RemTask,
 
     if (TaskResBase->trb_RemTask)
     {
-        AROS_CALL1(APTR, TaskResBase->trb_RemTask,
+        AROS_CALL1(void, TaskResBase->trb_RemTask,
                     AROS_LCA(struct Task *,     task,      A1),
                     struct ExecBase *, SysBase);
     }
