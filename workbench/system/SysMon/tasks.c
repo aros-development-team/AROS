@@ -49,7 +49,7 @@ VOID DeleteTaskEntry(struct SysMonData *smdata, struct TaskInfo *ti)
 
     for (i=0;;i++)
     {
-        struct TaskInfo *le_ti;
+        struct TaskInfo *le_ti = NULL;
 
         DoMethod(smdata->tasklist, MUIM_List_GetEntry, i, &le_ti);
         if (!le_ti) break;
