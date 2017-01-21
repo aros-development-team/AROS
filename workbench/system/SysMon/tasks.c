@@ -125,7 +125,7 @@ VOID UpdateTasksInformation(struct SysMonData *smdata)
 #ifdef TASKLIST_FLUSHUPDATE
             entryid =
 #endif
-                DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom);
+                DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Sorted);
 #ifdef TASKLIST_FLUSHUPDATE
             if (task == selected)
             {
@@ -215,7 +215,7 @@ AROS_UFH3(VOID, TasksListDestructFunction,
     AROS_UFHA(struct TaskInfo *, ti, A1))
 {
     AROS_USERFUNC_INIT
-    
+
     Remove(&ti->TINode);
     FreeVec(ti->TINode.ln_Name);
     FreeVecPooled(pool, ti);
@@ -245,8 +245,37 @@ AROS_UFH3(VOID, TaskSelectedFunction,
     AROS_USERFUNC_EXIT
 }
 
+ 
+AROS_UFH3(LONG, TaskCompareFunction,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct TaskInfo *, ti2, A2),
+    AROS_UFHA(struct TaskInfo *, ti1, A1))
+{
+    AROS_USERFUNC_INIT
 
-AROS_UFH3(VOID, TasksListDisplayFunction,
+    struct SysMonData *smdata = h->h_Data;
+    LONG retval;
+
+    switch (smdata->tasklistSortColumn)
+    {
+        case 1:
+            retval = (LONG)(ti1->TINode.ln_Pri - ti2->TINode.ln_Pri);
+            break;
+        case 2:
+            retval = (LONG)(ti1->TINode.ln_Type - ti2->TINode.ln_Type);
+            break;
+        default:
+            retval = (LONG)(stricmp(ti1->TINode.ln_Name, ti2->TINode.ln_Name));
+            break;
+    }
+
+    return retval;
+
+    AROS_USERFUNC_EXIT
+}
+
+
+AROS_UFH3(APTR, TasksListDisplayFunction,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(STRPTR *, strings, A2),
     AROS_UFHA(struct TaskInfo *, ti, A1))
@@ -283,6 +312,8 @@ AROS_UFH3(VOID, TasksListDisplayFunction,
         strings[1] = (STRPTR)_(MSG_TASK_PRIORITY);
         strings[2] = (STRPTR)_(MSG_TASK_TYPE);
     }
+
+    return NULL;
 
     AROS_USERFUNC_EXIT
 }
