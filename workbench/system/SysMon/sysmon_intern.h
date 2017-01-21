@@ -54,7 +54,7 @@ struct SysMonData
 
     TEXT bufname[100];
     TEXT buftype[20];
-    TEXT bufprio[8];
+    TEXT bufprio[20];
 
     ULONG updateSpeed;
 };
