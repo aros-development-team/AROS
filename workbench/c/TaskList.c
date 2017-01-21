@@ -77,15 +77,17 @@ static int addtask(struct List *tasks, struct Task *task)
 {
     struct task *t;
     STRPTR s1,s2, e = NULL;
+#if defined(__AROS__)
     struct TagItem QueryTaskTags[] =
     {
         {TaskTag_CPUTime        , 0  },
         {TAG_DONE               , 0                     }
     };
+#endif
 
     if (task->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)task)->pr_CLI)
     {
-        struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+        struct CommandLineInterface *cli = BADDR(((struct Process *)task)->pr_CLI);
 
         if (cli->cli_CommandName)
            s1 = AROS_BSTR_ADDR(cli->cli_CommandName);
@@ -106,8 +108,10 @@ static int addtask(struct List *tasks, struct Task *task)
     if (!t)
         return 0;
 
+#if defined(__AROS__)
     QueryTaskTags[0].ti_Data = (IPTR)&t->cputime;
     QueryTaskTagList(task, QueryTaskTags);
+#endif
 
     t->address = task;
     if (task->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)task)->pr_CLI)
