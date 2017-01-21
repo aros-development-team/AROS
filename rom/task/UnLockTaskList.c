@@ -77,7 +77,7 @@
     /* Purge expired entries from the list... */
     task_CleanList(NULL, TaskResBase);
 #else
-    Permit();
+    Enable();
     FreeVec(tlist);
 #endif /* TASKRES_ENABLE */
 
