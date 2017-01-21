@@ -58,56 +58,77 @@ int __nocommandline;
 
 #include <resources/task.h>
 
-const TEXT version[] = "$VER: TaskList 42.1 (5.4.2016)\n";
+const TEXT version[] = "$VER: TaskList 42.2 (21.01.2017)\n";
 
 APTR TaskResBase = NULL;
 ULONG eclock;
 
 struct task
 {
-    CONST_STRPTR name;
+    struct Node node;
     APTR address;
-    WORD type;
     WORD state;
     IPTR stacksize;
     IPTR stackused;
-    WORD pri;
     struct timeval cputime;
 };
 
-static int addtask(struct Task *task, struct task **t, STRPTR *e)
+static int addtask(struct List *tasks, struct Task *task)
 {
-    STRPTR s1,s2;
+    struct task *t;
+    STRPTR s1,s2, e = NULL;
     struct TagItem QueryTaskTags[] =
     {
-        {TaskTag_CPUTime        , (IPTR)&(*t)->cputime  },
+        {TaskTag_CPUTime        , 0  },
         {TAG_DONE               , 0                     }
     };
 
+    if (task->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)task)->pr_CLI)
+    {
+        struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+
+        if (cli->cli_CommandName)
+           s1 = AROS_BSTR_ADDR(cli->cli_CommandName);
+        else
+           s1 = task->tc_Node.ln_Name;
+    }
+    else
+        s1 = task->tc_Node.ln_Name;
+
+    if ((s1 = task->tc_Node.ln_Name) == NULL)
+        t = AllocVec(sizeof(struct task), MEMF_CLEAR|MEMF_PUBLIC);
+    else
+    {
+        t = AllocVec(sizeof(struct task) + strlen(s1) + 1, MEMF_CLEAR|MEMF_PUBLIC);
+        e = (STRPTR)&t[1] + strlen(s1);
+    }
+
+    if (!t)
+        return 0;
+
+    QueryTaskTags[0].ti_Data = (IPTR)&t->cputime;
     QueryTaskTagList(task, QueryTaskTags);
 
-    (*t)->address = task;
-    (*t)->type = task->tc_Node.ln_Type;
-    (*t)->pri = (WORD)task->tc_Node.ln_Pri;
-    (*t)->state = task->tc_State;
-    (*t)->stacksize = (STRPTR)task->tc_SPUpper - (STRPTR)task->tc_SPLower;
+    t->address = task;
+    if (task->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)task)->pr_CLI)
+        t->node.ln_Type = -1;
+    else
+        t->node.ln_Type = task->tc_Node.ln_Type;
+    t->node.ln_Pri = task->tc_Node.ln_Pri;
+    t->state = task->tc_State;
+    t->stacksize = (STRPTR)task->tc_SPUpper - (STRPTR)task->tc_SPLower;
 #if AROS_STACK_GROWS_DOWNWARDS
-    (*t)->stackused = (STRPTR)task->tc_SPUpper - SP_OFFSET - (STRPTR)task->tc_SPReg;
+    t->stackused = (STRPTR)task->tc_SPUpper - SP_OFFSET - (STRPTR)task->tc_SPReg;
 #else
-    (*t)->stackused = (STRPTR)task->tc_SPReg - SP_OFFSET - (STRPTR)task->tc_SPLower;
+    t->stackused = (STRPTR)task->tc_SPReg - SP_OFFSET - (STRPTR)task->tc_SPLower;
 #endif
     if (task->tc_State == TS_RUN)
     {
         /* The tc_SPReg for the actual process is invalid
            if it had no context switch yet */
-        (*t)->stackused = 0;
+        t->stackused = 0;
     }
-    s1 = task->tc_Node.ln_Name;
-    if (task->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)task)->pr_CLI)
-    {
-	/* TODO: Use cli_CommandName field for the name */
-        (*t)->type = -1;
-    }
+
     if (s1 != NULL)
     {
         s2 = s1;
@@ -116,52 +137,46 @@ static int addtask(struct Task *task, struct task **t, STRPTR *e)
             ;
 
         while (s2 > s1)
-        {
-            if (*e<=(STRPTR)*t)
-                return 0;
-            *--(*e)=*--s2;
-        }
-    }
-    if ((STRPTR)(*t + 1) > *e)
-        return 0;
+            *--e=*--s2;
 
-    (*t)->name = *e;
-    ++*t;
+        t->node.ln_Name = e;
+    }
+
+    AddTail(tasks, &t->node);
 
     return 1;
 }
 
-static int fillbuffer(struct task **buffer, IPTR size)
+static int fillbuffer(struct List *tasks)
 {
-    STRPTR end = (STRPTR)*buffer + size;
     struct Task *task;
 
 #if !defined(__AROS__)
     Disable();
 
-    if (!addtask(FindTask(NULL), buffer, &end))
+    if (!addtask(task, FindTask(NULL)))
     {
         Enable();
-        return 0;
+        return RETURN_FAIL;
     }
     for (task = (struct Task *)SysBase->TaskReady.lh_Head;
         task->tc_Node.ln_Succ != NULL;
         task = (struct Task *)task->tc_Node.ln_Succ)
     {
-        if (!addtask(task, buffer, &end))
+        if (!addtask(tasks, task))
         {
             Enable();
-            return 0;
+            return RETURN_FAIL;
         }
     }
     for (task = (struct Task *)SysBase->TaskWait.lh_Head;
         task->tc_Node.ln_Succ != NULL;
         task = (struct Task *)task->tc_Node.ln_Succ)
     {
-        if (!addtask(task, buffer, &end))
+        if (!addtask(tasks, task))
         {
             Enable();
-            return 0;
+            return RETURN_FAIL;
         }
     }
     Enable();
@@ -171,61 +186,60 @@ static int fillbuffer(struct task **buffer, IPTR size)
     taskList = LockTaskList(LTF_ALL);
     while ((task = NextTaskEntry(taskList, LTF_ALL)) != NULL)
     {
-        if (!addtask(task, buffer, &end))
+        bug("[TaskList] trying to add task @ 0x%p", task);
+        if (!addtask(tasks, task))
         {
+            bug("[TaskList] Failed!");
             break;
         }
     }
     UnLockTaskList(taskList, LTF_ALL);
 #endif
 
-    return 1;
+    return RETURN_OK;
 }
 
 int main(void)
 {
-    IPTR size;
-    struct task *buffer,*tasks,*tasks2;
+    struct task *currentTask, *tmpTask;
+    struct List tasks;
+    int retval;
 
+#if defined(__AROS__)
     TaskResBase = OpenResource("task.resource");
     if (!TaskResBase) {
         PutStr("Can't open task.resource\n");
         return RETURN_FAIL;
     }
+#endif
 
-    for(size = 2048; ; size += 2048)
+    NEWLIST(&tasks);
+
+    retval = fillbuffer(&tasks);
+
+    if (!IsListEmpty(&tasks))
     {
-        buffer = AllocVec(size, MEMF_ANY);
-        if (buffer == NULL)
+        PutStr("Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
+        ForeachNodeSafe(&tasks, currentTask, tmpTask)
         {
-            PutStr("Not enough memory for task buffer\n");
-            return RETURN_FAIL;
-        }
-        tasks = buffer;
-        if (fillbuffer(&tasks, size))
-        {
-            PutStr("Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
-            for (tasks2 = buffer; tasks2 < tasks; tasks2++)
-            {
-            	ULONG time;
+            ULONG time;
 
-                time = tasks2->cputime.tv_secs;
-                Printf("0x%08.ix\t%s\t%ld\t%s\t%02ld:%02ld:%02ld\t%id\t%id\t%s\n",
-                        tasks2->address,
-                        (tasks2->type == NT_TASK) ? "task" :
-                        (tasks2->type == NT_PROCESS) ? "process" : "CLI",
-                        (ULONG)tasks2->pri,
-                        (tasks2->state == TS_RUN) ? "running" :
-                        (tasks2->state == TS_READY) ? "ready" : "waiting",
-                        time % 60, (time / 60) % 60, (time / 60 / 60) % 60,
-                        tasks2->stacksize, tasks2->stackused,
-                        (tasks2->name != NULL) ? tasks2->name : (CONST_STRPTR)"(null)");
+            Remove((struct Node *)currentTask);
 
-            }
-            FreeVec(buffer);
-            return RETURN_OK;
+            time = currentTask->cputime.tv_secs;
+            Printf("0x%08.ix\t%s\t%ld\t%s\t%02ld:%02ld:%02ld\t%id\t%id\t%s\n",
+                    currentTask->address,
+                    (currentTask->node.ln_Type == NT_TASK) ? "task" :
+                    (currentTask->node.ln_Type == NT_PROCESS) ? "process" : "CLI",
+                    (ULONG)currentTask->node.ln_Pri,
+                    (currentTask->state == TS_RUN) ? "running" :
+                    (currentTask->state == TS_READY) ? "ready" : "waiting",
+                    time % 60, (time / 60) % 60, (time / 60 / 60) % 60,
+                    currentTask->stacksize, currentTask->stackused,
+                    (currentTask->node.ln_Name != NULL) ? currentTask->node.ln_Name : "(null)");
+
+            FreeVec(currentTask);
         }
-        FreeVec(buffer);
     }
-    return RETURN_OK;
+    return retval;
 }
