@@ -20,9 +20,9 @@
 struct SysMonData
 {
     struct Task *sm_Task;
-    Object * application;
-    Object * mainwindow;
-    Object * pages;
+    Object      *application;
+    Object      *mainwindow;
+    Object      *pages;
 
     CONST_STRPTR tabs[SYSMON_TABCOUNT + 1];
 
@@ -30,33 +30,35 @@ struct SysMonData
     struct Hook tasklistdestructhook;
     struct Hook tasklistdisplayhook;
     struct Hook taskselectedhook;
+    struct Hook taskcomparehook;
 
     struct Hook pageactivehook;
 
-    Object * tasklist;
-    Object * tasklistinfo;
+    Object      *tasklist;
+    Object      *tasklistinfo;
 
-    Object ** cpuusagegauges;
-    Object ** cpufreqlabels;
-    Object ** cpufreqvalues;
+    Object      **cpuusagegauges;
+    Object      **cpufreqlabels;
+    Object      **cpufreqvalues;
 
-    Object * memorysize[5];
-    Object * memoryfree[5];
+    Object      *memorysize[5];
+    Object      *memoryfree[5];
 
     struct List sm_TaskList;
     struct Task *sm_TaskSelected;
 
-    ULONG sm_TasksWaiting;
-    ULONG sm_TasksReady;
-    ULONG sm_TaskTotalRuntime;
+    ULONG       sm_TasksWaiting;
+    ULONG       sm_TasksReady;
+    ULONG       sm_TaskTotalRuntime;
 
-    STRPTR tasklistinfobuf;
+    STRPTR      tasklistinfobuf;
 
-    TEXT bufname[100];
-    TEXT buftype[20];
-    TEXT bufprio[20];
+    TEXT        bufname[100];
+    TEXT        buftype[20];
+    TEXT        bufprio[20];
 
-    ULONG updateSpeed;
+    ULONG       tasklistSortColumn;
+    ULONG       updateSpeed;
 };
 
 struct SysMonModule
@@ -96,7 +98,7 @@ AROS_UFP3(VOID, TasksListDestructFunction,
     AROS_UFHA(APTR, pool, A2),
     AROS_UFHA(struct TaskInfo *, obj, A1));
 
-AROS_UFP3(VOID, TasksListDisplayFunction,
+AROS_UFP3(APTR, TasksListDisplayFunction,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(STRPTR *, strings, A2),
     AROS_UFHA(struct TaskInfo *, obj, A1));
@@ -105,6 +107,11 @@ AROS_UFP3(VOID, TaskSelectedFunction,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, object, A2),
     AROS_UFHA(APTR, msg, A1));
+
+AROS_UFP3(LONG, TaskCompareFunction,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct TaskInfo *, ti2, A2),
+    AROS_UFHA(struct TaskInfo *, ti1, A1));
 
 ULONG GetSIG_TIMER();
 VOID SignalMeAfter(ULONG msecs);

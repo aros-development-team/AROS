@@ -64,6 +64,8 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->tasklistdisplayhook.h_Entry = (APTR)TasksListDisplayFunction;
     smdata->taskselectedhook.h_Entry = (APTR)TaskSelectedFunction;
     smdata->taskselectedhook.h_Data = (APTR)smdata;
+    smdata->taskcomparehook.h_Entry = (APTR)TaskCompareFunction;
+    smdata->taskcomparehook.h_Data = (APTR)smdata;
 
 #ifdef NOTYET_USED
     smdata->pageactivehook.h_Entry = (APTR)pageactivefunction;
@@ -104,6 +106,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                     MUIA_List_ConstructHook, &smdata->tasklistconstructhook,
                                     MUIA_List_DestructHook, &smdata->tasklistdestructhook,
                                     MUIA_List_DisplayHook, &smdata->tasklistdisplayhook,
+                                    MUIA_List_CompareHook, &smdata->taskcomparehook,
                                     MUIA_List_Title, (IPTR)TRUE,
                                 End,
                             End,
