@@ -190,10 +190,8 @@ static int fillbuffer(struct List *tasks)
     taskList = LockTaskList(LTF_ALL);
     while ((task = NextTaskEntry(taskList, LTF_ALL)) != NULL)
     {
-        bug("[TaskList] trying to add task @ 0x%p", task);
         if (!addtask(tasks, task))
         {
-            bug("[TaskList] Failed!");
             break;
         }
     }
