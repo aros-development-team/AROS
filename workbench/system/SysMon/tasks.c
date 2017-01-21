@@ -38,7 +38,7 @@ VOID RefreshTask(struct TaskInfo *ti)
 {
     /* Cache values we need incase something happens to the task .. */
     ti->TINode.ln_Type = ti->Task->tc_Node.ln_Type;
-    ti->TINode.ln_Pri = (WORD)ti->Task->tc_Node.ln_Pri;
+    ti->TINode.ln_Pri = ti->Task->tc_Node.ln_Pri;
     ti->Flags |= TIF_ENABLED;
 }
 
