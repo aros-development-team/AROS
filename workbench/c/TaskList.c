@@ -95,7 +95,7 @@ static int addtask(struct List *tasks, struct Task *task)
     else
         s1 = task->tc_Node.ln_Name;
 
-    if ((s1 = task->tc_Node.ln_Name) == NULL)
+    if (s1 == NULL)
         t = AllocVec(sizeof(struct task), MEMF_CLEAR|MEMF_PUBLIC);
     else
     {
