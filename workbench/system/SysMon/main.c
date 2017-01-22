@@ -62,6 +62,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->tasklistdestructhook.h_Entry = (APTR)TasksListDestructFunction;
     smdata->tasklistdestructhook.h_Data = (APTR)smdata;
     smdata->tasklistdisplayhook.h_Entry = (APTR)TasksListDisplayFunction;
+    smdata->tasklistdisplayhook.h_Data = (APTR)smdata;
     smdata->taskselectedhook.h_Entry = (APTR)TaskSelectedFunction;
     smdata->taskselectedhook.h_Data = (APTR)smdata;
     smdata->taskcomparehook.h_Entry = (APTR)TaskCompareFunction;
@@ -71,6 +72,20 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->pageactivehook.h_Entry = (APTR)pageactivefunction;
     smdata->pageactivehook.h_Data = (APTR)smdata;
 #endif
+
+    smdata->msg_task = (STRPTR)_(MSG_TASK);
+    smdata->msg_process = (STRPTR)_(MSG_PROCESS);
+    smdata->msg_task_name = (STRPTR)_(MSG_TASK_NAME);
+    smdata->msg_task_priority = (STRPTR)_(MSG_TASK_PRIORITY);
+    smdata->msg_task_type = (STRPTR)_(MSG_TASK_TYPE);
+    smdata->msg_task_tombstoned = (STRPTR)"<tombstone>";
+    smdata->msg_task_unknown = (STRPTR)"<unknown>";
+    smdata->msg_task_readywait = (STRPTR)_(MSG_TASK_READY_AND_WAIT);
+    smdata->msg_project = (STRPTR)"Project";
+    smdata->msg_refresh_speed = (STRPTR)"Refresh Speed";
+    smdata->msg_fast = (STRPTR)"Fast";
+    smdata->msg_normal = (STRPTR)"Normal";
+    smdata->msg_slow  = (STRPTR)"Slow";
 
     smdata->application = ApplicationObject,
         MUIA_Application_Title, __(MSG_APP_NAME),
@@ -87,12 +102,12 @@ BOOL CreateApplication(struct SysMonData * smdata)
                 MUIA_Window_Width, MUIV_Window_Width_Visible(35),
                 MUIA_Window_Menustrip, (MenustripObject,
                             MUIA_Family_Child, (MenuObject, 
-                                MUIA_Menu_Title, (IPTR)"Project", 
+                                MUIA_Menu_Title, (IPTR)smdata->msg_project, 
                                 MUIA_Family_Child, (MenuitemObject, 
-                                    MUIA_Menuitem_Title, (IPTR)"Refresh Speed", 
-                                    MUIA_Family_Child, (menuitemfast = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Fast", MUIA_Menuitem_Shortcut, (IPTR)"F",End), 
-                                    MUIA_Family_Child, (menuitemnormal = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Normal", MUIA_Menuitem_Shortcut, (IPTR)"N",End), 
-                                    MUIA_Family_Child, (menuitemslow = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Slow", MUIA_Menuitem_Shortcut, (IPTR)"S",End), 
+                                    MUIA_Menuitem_Title, (IPTR)smdata->msg_refresh_speed, 
+                                    MUIA_Family_Child, (menuitemfast = MenuitemObject, MUIA_Menuitem_Title, (IPTR)smdata->msg_fast, MUIA_Menuitem_Shortcut, (IPTR)"F",End), 
+                                    MUIA_Family_Child, (menuitemnormal = MenuitemObject, MUIA_Menuitem_Title, (IPTR)smdata->msg_normal, MUIA_Menuitem_Shortcut, (IPTR)"N",End), 
+                                    MUIA_Family_Child, (menuitemslow = MenuitemObject, MUIA_Menuitem_Title, (IPTR)smdata->msg_slow, MUIA_Menuitem_Shortcut, (IPTR)"S",End), 
                                 End), 
                             End),
                         End),
