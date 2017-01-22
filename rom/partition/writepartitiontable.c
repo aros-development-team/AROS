@@ -1,7 +1,6 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
 
 #include "partition_intern.h"
@@ -13,23 +12,23 @@
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH1(LONG, WritePartitionTable,
+        AROS_LH1(LONG, WritePartitionTable,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, root,       A1),
+        AROS_LHA(struct PartitionHandle *, root,       A1),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 9, Partition)
+        struct Library *, PartitionBase, 9, Partition)
 
 /*  FUNCTION
-    Write a partition table; writing this partition table doesn't affect
-    subpartition tables
+        Write a partition table; writing this partition table doesn't affect
+        subpartition tables.
 
     INPUTS
-    root - partition table to write
+        root - partition table to write
 
     RESULT
-    0 for success; an error code otherwise
+        0 for success; an error code otherwise
 
     NOTES
 
@@ -40,9 +39,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    21-02-02    first version
 
 *****************************************************************************/
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -16,29 +16,29 @@
     NAME */
 #include <libraries/partition.h>
 
-    AROS_LH1(LONG, AddBootFileSystem,
+        AROS_LH1(LONG, AddBootFileSystem,
 
 /*  SYNOPSIS */
-    AROS_LHA(struct Node *, handle, A1),
+        AROS_LHA(struct Node *, handle, A1),
 
 /*  LOCATION */
-    struct Library *, PartitionBase, 23, Partition)
+        struct Library *, PartitionBase, 23, Partition)
 
 /*  FUNCTION
-    Adds the specified filesystem to the system list of bootable filesystems
-    (actually FileSystem.resource).
+        Adds the specified filesystem to the system list of bootable
+        filesystems (actually FileSystem.resource).
 
     INPUTS
-    handle - Filesystem handle obtained by FindFileSystemA()
+        handle - Filesystem handle obtained by FindFileSystemA()
 
     RESULT
-    Zero if everything went okay or common dos.library-compliant error code.
+        Zero if everything went okay or common dos.library-compliant error code.
 
     NOTES
-    This function can be called during system startup before dos.library is
-    available. In this case filesystem loading will be delayed until dos.library
-    started up. Delayed loading will be handled automatically without any caller's
-    intervention.
+        This function can be called during system startup before dos.library
+        is available. In this case filesystem loading will be delayed until
+        dos.library started up. Delayed loading will be handled automatically
+        without any caller's intervention.
 
     EXAMPLE
 
@@ -47,8 +47,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

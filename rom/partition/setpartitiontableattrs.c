@@ -1,8 +1,8 @@
 /*
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
+
 #include "partition_support.h"
 #include "platform.h"
 
@@ -17,21 +17,21 @@
 #include <utility/tagitem.h>
 #include <libraries/partition.h>
 
-   AROS_LH2(LONG, SetPartitionTableAttrs,
+        AROS_LH2(LONG, SetPartitionTableAttrs,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, root,       A1),
-   AROS_LHA(const struct TagItem *,   taglist,    A2),
+        AROS_LHA(struct PartitionHandle *, root, A1),
+        AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 14, Partition)
+        struct Library *, PartitionBase, 14, Partition)
 
 /*  FUNCTION
-    set attributes of a partition table
+        Set attributes of a partition table.
 
     INPUTS
-    ph      - PartitionHandle of the partition table
-    taglist - list of attributes; unknown tags are ignored
+        ph      - PartitionHandle of the partition table
+        taglist - list of attributes; unknown tags are ignored
 
     RESULT
 

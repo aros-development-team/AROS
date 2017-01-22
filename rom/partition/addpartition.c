@@ -13,34 +13,33 @@
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH2(struct PartitionHandle *, AddPartition,
+        AROS_LH2(struct PartitionHandle *, AddPartition,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, root,       A1),
-   AROS_LHA(const struct TagItem *  , taglist,    A2),
+        AROS_LHA(struct PartitionHandle *, root,       A1),
+        AROS_LHA(const struct TagItem *  , taglist,    A2),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 11, Partition)
+        struct Library *, PartitionBase, 11, Partition)
 
 /*  FUNCTION
-    Add a new partition.
+        Add a new partition.
 
     INPUTS
-    root - PartitionHandle, where to add the new partition
-    taglist - tags that specify more information about the partition
-              unknown tags are ignored
-        PT_DOSENVEC - ptr to a DosEnvec
-            de_LowCyl and de_HighCyl specify start and end of cylinder
-            de_Reserved, de_Bootblocks, ...
-            de_Surfaces, de_BlocksPerTrack, ... are inherited from "root"
-        PT_TYPE     - partition type (depends on PartitionTable type)
-        PT_POSITION - position number within the partition table (MBR->PC)
-        PT_ACTIVE   - set this partition active (MBR->PC)
-        PT_NAME     - set partition name (HD0, HD1, ...)
-        
+        root - PartitionHandle, where to add the new partition
+        taglist - tags that specify more information about the partition
+                  unknown tags are ignored
+            PT_DOSENVEC - ptr to a DosEnvec
+                de_LowCyl and de_HighCyl specify start and end of cylinder
+                de_Reserved, de_Bootblocks, ...
+                de_Surfaces, de_BlocksPerTrack, ... are inherited from "root"
+            PT_TYPE     - partition type (depends on PartitionTable type)
+            PT_POSITION - position number within the partition table (MBR->PC)
+            PT_ACTIVE   - set this partition active (MBR->PC)
+            PT_NAME     - set partition name (HD0, HD1, ...)
 
     RESULT
-    PartitionHandle of the new partition; 0 for an error
+        PartitionHandle of the new partition; 0 for an error
 
     NOTES
 

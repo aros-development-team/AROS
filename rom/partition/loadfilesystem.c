@@ -1,8 +1,8 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
+
 #include "partition_support.h"
 #include "platform.h"
 
@@ -11,22 +11,22 @@
     NAME */
 #include <libraries/partition.h>
 
-    AROS_LH1(BPTR, LoadFileSystem,
+        AROS_LH1(BPTR, LoadFileSystem,
 
 /*  SYNOPSIS */
-    AROS_LHA(struct Node *, handle, A1),
+        AROS_LHA(struct Node *, handle, A1),
 
 /*  LOCATION */
-    struct Library *, PartitionBase, 21, Partition)
+        struct Library *, PartitionBase, 21, Partition)
 
 /*  FUNCTION
-    Load the specified filesystem as DOS segment list.
+        Load the specified filesystem as a DOS segment list.
 
     INPUTS
-    handle - Filesystem handle obtained by FindFileSystemA()
+        handle - Filesystem handle obtained by FindFileSystemA()
 
     RESULT
-    DOS seglist or NULL in case of failure.
+        DOS seglist or NULL in case of failure.
 
     NOTES
 
@@ -37,8 +37,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
