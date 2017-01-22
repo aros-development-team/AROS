@@ -83,7 +83,9 @@
     Disable();
     if ((taskList = (struct TaskListPrivate *)AllocVec(sizeof(struct TaskListPrivate), MEMF_PUBLIC)) != NULL)
     {
-        if (flags & LTF_READY)
+        if (flags & LTF_RUNNING)
+            taskList->tlp_TaskList = NULL;
+        else if (flags & LTF_READY)
             taskList->tlp_TaskList = &SysBase->TaskReady;
         else if (flags & LTF_WAITING)
             taskList->tlp_TaskList = &SysBase->TaskWait;

@@ -96,28 +96,40 @@
 #else
     if (taskList)
     {
-        if (!taskList->tlp_Current)
+        if (!taskList->tlp_TaskList)
         {
-            D(bug("[TaskRes] NextTaskEntry: returning first list entry...\n", tlist, flags));
-            if (((taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList)) == NULL) &&
-                ((flags & LTF_WAITING) && (taskList->tlp_TaskList == &SysBase->TaskReady)))
-            {
+            if (flags & LTF_READY)
+                taskList->tlp_TaskList = &SysBase->TaskReady;
+            else if (flags & LTF_WAITING)
                 taskList->tlp_TaskList = &SysBase->TaskWait;
-                taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList);
-            }
-        }
 
-        if (taskList->tlp_Current)
+            return FindTask(NULL);
+        }
+        else
         {
-            if ((retVal = (struct Task *)GetSucc(taskList->tlp_Current)) != NULL)
-                taskList->tlp_Current = (struct Task *)retVal;
-            else if ((flags & LTF_WAITING) && (taskList->tlp_TaskList == &SysBase->TaskReady))
+            if (!taskList->tlp_Current)
             {
-                taskList->tlp_TaskList = &SysBase->TaskWait;
-                taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList);
+                D(bug("[TaskRes] NextTaskEntry: returning first list entry...\n", tlist, flags));
+                if (((taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList)) == NULL) &&
+                    ((flags & LTF_WAITING) && (taskList->tlp_TaskList == &SysBase->TaskReady)))
+                {
+                    taskList->tlp_TaskList = &SysBase->TaskWait;
+                    taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList);
+                }
             }
-            else
-                taskList->tlp_Current = NULL;
+
+            if (taskList->tlp_Current)
+            {
+                if ((retVal = (struct Task *)GetSucc(taskList->tlp_Current)) != NULL)
+                    taskList->tlp_Current = (struct Task *)retVal;
+                else if ((flags & LTF_WAITING) && (taskList->tlp_TaskList == &SysBase->TaskReady))
+                {
+                    taskList->tlp_TaskList = &SysBase->TaskWait;
+                    taskList->tlp_Current = (struct Task *)GetHead(taskList->tlp_TaskList);
+                }
+                else
+                    taskList->tlp_Current = NULL;
+            }
         }
         retVal = taskList->tlp_Current;
     }        
