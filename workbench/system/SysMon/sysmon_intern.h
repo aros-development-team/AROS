@@ -51,6 +51,21 @@ struct SysMonData
     ULONG       sm_TasksReady;
     ULONG       sm_TaskTotalRuntime;
 
+    STRPTR      msg_project;
+    STRPTR      msg_refresh_speed;
+    STRPTR      msg_fast;
+    STRPTR      msg_normal;
+    STRPTR      msg_slow;
+
+    STRPTR      msg_task;
+    STRPTR      msg_process;
+    STRPTR      msg_task_name;
+    STRPTR      msg_task_priority;
+    STRPTR      msg_task_type;
+    STRPTR      msg_task_tombstoned;
+    STRPTR      msg_task_unknown;
+    STRPTR      msg_task_readywait;
+
     STRPTR      tasklistinfobuf;
 
     TEXT        bufname[100];

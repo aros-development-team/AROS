@@ -19,6 +19,9 @@
 
 //#define TASKLIST_FLUSHUPDATE
 
+CONST_STRPTR badstr_tmpl = MUIX_PH MUIX_B "%s";
+CONST_STRPTR badval_tmpl = MUIX_PH MUIX_B "%d";
+
 APTR TaskResBase = NULL;
 
 /* Task information handling*/
@@ -160,7 +163,7 @@ VOID UpdateTasksInformation(struct SysMonData *smdata)
     set(smdata->tasklist, MUIA_List_First, v);
 #endif
 
-    __sprintf(smdata->tasklistinfobuf, (STRPTR)__(MSG_TASK_READY_AND_WAIT), smdata->sm_TasksReady, smdata->sm_TasksWaiting);
+    __sprintf(smdata->tasklistinfobuf, smdata->msg_task_readywait, smdata->sm_TasksReady, smdata->sm_TasksWaiting);
     set(smdata->tasklistinfo, MUIA_Text_Contents, smdata->tasklistinfobuf);
     set(smdata->tasklist, MUIA_List_Quiet, FALSE);
 }
@@ -172,6 +175,7 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
 {
     AROS_USERFUNC_INIT
 
+    struct SysMonData *smdata = h->h_Data;
     struct TaskInfo *ti = NULL;
 
     if ((ti = AllocVecPooled(pool, sizeof(struct TaskInfo))) != NULL)
@@ -185,7 +189,7 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
         switch (curTask->tc_State)
         {
         case TS_REMOVED:
-            ti->TINode.ln_Name = StrDup("<tombstone>");
+            ti->TINode.ln_Name = StrDup(smdata->msg_task_tombstoned);
             break;
         case TS_RUN:
         case TS_READY:
@@ -198,11 +202,11 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
                 break;
             }
         default:
-            ti->TINode.ln_Name = StrDup("<unknown>");
+            ti->TINode.ln_Name = StrDup(smdata->msg_task_unknown);
             break;
         }
 
-        AddTail(&((struct SysMonData *)h->h_Data)->sm_TaskList, &ti->TINode);
+        AddTail(&smdata->sm_TaskList, &ti->TINode);
     }
     return ti;
 
@@ -287,19 +291,19 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
 
     if (ti)
     {
-        type = ti->TINode.ln_Type == NT_TASK ? (STRPTR)_(MSG_TASK) : (STRPTR)_(MSG_PROCESS);
+        type = (ti->TINode.ln_Type == NT_TASK) ? smdata->msg_task : smdata->msg_process;
 
         if (!(ti->Flags & TIF_VALID))
         {
-            __sprintf(smdata->bufname, MUIX_PH MUIX_B "%s", ti->TINode.ln_Name);
-            __sprintf(smdata->bufprio, MUIX_PH MUIX_B "%d", (LONG)ti->TINode.ln_Pri);
-            __sprintf(smdata->buftype, MUIX_PH MUIX_B "%s", type);
+            __sprintf(smdata->bufname, badstr_tmpl, ti->TINode.ln_Name);
+            __sprintf(smdata->bufprio, badval_tmpl, ti->TINode.ln_Pri);
+            __sprintf(smdata->buftype, badstr_tmpl, type);
             strings[0] = smdata->bufname;
             strings[2] = smdata->buftype;
         }
         else
         {
-            __sprintf(smdata->bufprio, "%d", (LONG)ti->TINode.ln_Pri);
+            __sprintf(smdata->bufprio, "%d", ti->TINode.ln_Pri);
             strings[0] = ti->TINode.ln_Name;
             strings[2] = type;
         }
@@ -308,9 +312,9 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
     }
     else
     {
-        strings[0] = (STRPTR)_(MSG_TASK_NAME);
-        strings[1] = (STRPTR)_(MSG_TASK_PRIORITY);
-        strings[2] = (STRPTR)_(MSG_TASK_TYPE);
+        strings[0] = smdata->msg_task_name;
+        strings[1] = smdata->msg_task_priority;
+        strings[2] = smdata->msg_task_type;
     }
 
     return NULL;
