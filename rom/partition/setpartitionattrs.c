@@ -1,8 +1,8 @@
 /*
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
+
 #include "partition_support.h"
 #include "platform.h"
 
@@ -12,21 +12,23 @@
 #include <utility/tagitem.h>
 #include <libraries/partition.h>
 
-   AROS_LH2(LONG, SetPartitionAttrs,
+       AROS_LH2(LONG, SetPartitionAttrs,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, ph,       A1),
-   AROS_LHA(const struct TagItem *,   taglist,  A2),
+       AROS_LHA(struct PartitionHandle *, ph,       A1),
+       AROS_LHA(const struct TagItem *,   taglist,  A2),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 16, Partition)
+       struct Library *, PartitionBase, 16, Partition)
 
 /*  FUNCTION
-    set attributes of a partition
+        Set attributes of a partition
 
     INPUTS
-    ph      - PartitionHandle
-    taglist - list of attributes; unknown tags are ignored
+        ph      - PartitionHandle
+        taglist - list of attributes; unknown tags are ignored
+
+    TAGS
         PT_DOSENVEC - set new DosEnvec values
         PT_TYPE     - change partition type (MBR-PC)
         PT_POSITION - move partition to another position (MBR-PC)

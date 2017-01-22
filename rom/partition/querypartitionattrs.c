@@ -1,7 +1,6 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
 
 #include "partition_support.h"
@@ -23,22 +22,22 @@ static const struct PartitionAttribute defaultPartitionAttrs[] =
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH1(const struct PartitionAttribute *, QueryPartitionAttrs,
+        AROS_LH1(const struct PartitionAttribute *, QueryPartitionAttrs,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, table,       A1),
+        AROS_LHA(struct PartitionHandle *, table, A1),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 18, Partition)
+        struct Library *, PartitionBase, 18, Partition)
 
 /*  FUNCTION
-    query partition attributes
+        Query partition attributes.
 
     INPUTS
-    ph      - PartitionHandle to the table
+        ph      - PartitionHandle to the table
 
     RESULT
-    list of NULL-terminated ULONGs with attributes
+        List of NULL-terminated ULONGs with attributes.
 
     NOTES
 
@@ -49,9 +48,6 @@ static const struct PartitionAttribute defaultPartitionAttrs[] =
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    21-02-02    first version
 
 *****************************************************************************/
 {

@@ -1,7 +1,6 @@
 /*
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
 
 #include <proto/utility.h>
@@ -16,58 +15,73 @@
 #include <utility/tagitem.h>
 #include <libraries/partition.h>
 
-   AROS_LH2(LONG, GetPartitionAttrs,
+        AROS_LH2(LONG, GetPartitionAttrs,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, ph,       A1),
-   AROS_LHA(const struct TagItem *, taglist,    A2),
+        AROS_LHA(struct PartitionHandle *, ph, A1),
+        AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 15, Partition)
+        struct Library *, PartitionBase, 15, Partition)
 
 /*  FUNCTION
-    get attributes of a partition
+        Get attributes of a partition.
 
     INPUTS
-    ph      - PartitionHandle
-    taglist - list of attributes, unknown tags are ignored:
+        ph      - PartitionHandle
+        taglist - list of attributes, unknown tags are ignored
 
-	PT_GEOMETRY   - struct DriveGeometry *	; Fill in DriveGeometry structure
-        PT_DOSENVEC   - struct DosEnvec *	; Fill in DosEnvec structure
-        PT_TYPE       - struct PartitionType *  ; Get partition type
-        PT_POSITION   - ULONG *           	; Get position (entry number) of partition within its table.
-        					; Returns -1 is there's no table (e. g. if used on disk root)
-        PT_ACTIVE     - LONG *           	; Get value of "active" flag (PC-MBR specific)
-        PT_BOOTABLE   - LONG *			; Get value of "bootable" flag
-        PT_AUTOMOUNT  - LONG *			; Get value of "automount" flag
-        PT_NAME       - STRPTR    		; Get name of partition (max 31 Bytes + NULL-byte)
-        PT_STARTBLOCK - UQUAD *			; Get number of starting block for the partition (V2)
-        PT_ENDBLOCK   - UQUAD *			; Get number of ending block for the partition (V2)
+    TAGS
+        PT_GEOMETRY (struct DriveGeometry *)
+            Fill in DriveGeometry structure
+        PT_DOSENVEC (struct DosEnvec *)
+            Fill in DosEnvec structure
+        PT_TYPE (struct PartitionType *)
+            Get partition type
+        PT_POSITION (ULONG *)
+            Get position (entry number) of partition within its table.
+            Returns -1 if there's no table (e.g. if used on disk root)
+        PT_ACTIVE (LONG *)
+            Get value of "active" flag (PC-MBR specific)
+        PT_BOOTABLE (LONG *)
+            Get value of "bootable" flag
+        PT_AUTOMOUNT (LONG *)
+            Get value of "automount" flag
+        PT_NAME (STRPTR)
+            Get name of partition (max 31 Bytes + NUL-byte)
+        PT_STARTBLOCK (UQUAD *)
+            Get number of starting block for the partition (V2)
+        PT_ENDBLOCK (UQUAD *)
+            Get number of ending block for the partition (V2)
 
     RESULT
-    	Currently reserved, always zero.
+        Currently reserved, always zero.
 
     NOTES
-	Nested partition tables (e. g. RDB subpartitions on PC MBR drive) are treated as virtual disks.
-	In this case start and end block numbers are relative to the beginning of the virtual disk
-	(which is represented by parent partition containing the RDB itself), not absolute numbers.
-	The same applies to DriveGeomerty and geometry-related fields in DosEnvec structure.
+        Nested partition tables (e.g. RDB subpartitions on PC MBR drive) are 
+        treated as virtual disks. In this case start and end block numbers are
+        relative to the beginning of the virtual disk (which is represented by
+        a parent partition containing the RDB itself), not absolute numbers.
+        The same applies to DriveGeomerty and geometry-related fields in the
+        DosEnvec structure.
 
-	Note that geometry data can be stored on disk in the partition table ifself (RDB for example), and
-	this way it can not match physical device's geometry (for example, if the disk was partitioned on
-	another operating system which used virtual geometry). In this case you might need to adjust these
-	data in order to mount the file system correctly (if absolute start/end blocks are not
-	cylinder-aligned).
+        Note that geometry data can be stored on disk in the partition table
+        ifself (RDB for example), and this way it may not match the physical
+        device's geometry (for example, if the disk was partitioned on
+        another operating system which used virtual geometry). In this case
+        you might need to adjust these data in order to mount the file system
+        correctly (if absolute start/end blocks are not cylinder-aligned).
 
-	Starting from V2, partition.library always provides default values for all attributes, even for those
-	not listed as readable in QueryPartitionAttrs() results.
+        Starting from V2, partition.library always provides default values 
+        for all attributes, even for those not listed as readable in 
+        QueryPartitionAttrs() results.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    	SetPartitionAttrs()
+        SetPartitionAttrs()
 
     INTERNALS
 

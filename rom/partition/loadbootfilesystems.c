@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,26 +15,26 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(LONG, LoadBootFileSystems,
+        AROS_LH0(LONG, LoadBootFileSystems,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct Library *, PartitionBase, 24, Partition)
+        struct Library *, PartitionBase, 24, Partition)
 
 /*  FUNCTION
-	Perform a deferred loading of boot filesystems.
+        Perform a deferred loading of boot filesystems.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-    	Zero if everything went okay or DOS error code in case of failure.
+        Zero if everything went okay or DOS error code in case of failure.
 
     NOTES
-    	This function is actually private, it's called by dos.library during
-    	initialization process. There's no sense to call it from within user
-    	software.
+        This function is actually private; it's called by dos.library during
+        the initialization process. There's no sense to call it from within
+        user software.
 
     EXAMPLE
 
@@ -43,8 +43,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

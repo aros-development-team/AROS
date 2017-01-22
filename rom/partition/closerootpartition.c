@@ -1,7 +1,6 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
 
 #include <proto/exec.h>
@@ -16,19 +15,19 @@
     NAME */
 #include <libraries/partition.h>
 
-    AROS_LH1(void, CloseRootPartition,
+        AROS_LH1(void, CloseRootPartition,
 
 /*  SYNOPSIS */
-    AROS_LHA(struct PartitionHandle *, ph,       A1),
+        AROS_LHA(struct PartitionHandle *, ph,       A1),
 
 /*  LOCATION */
-    struct Library *, PartitionBase, 6, Partition)
+        struct Library *, PartitionBase, 6, Partition)
 
 /*  FUNCTION
-    close root handle allocated by OpenRootPartition()
+        Close a root handle allocated by OpenRootPartition().
 
     INPUTS
-    ph - root handle created by OpenRootPartition()
+        ph - root handle created by OpenRootPartition()
 
     RESULT
 
@@ -41,9 +40,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    21-02-02    first version
 
 *****************************************************************************/
 {

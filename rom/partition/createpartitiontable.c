@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include "partition_support.h"
@@ -13,29 +13,30 @@
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH2(LONG, CreatePartitionTable,
+        AROS_LH2(LONG, CreatePartitionTable,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, root,       A1),
-   AROS_LHA(ULONG,                    type,       D1),
+        AROS_LHA(struct PartitionHandle *, root,       A1),
+        AROS_LHA(ULONG,                    type,       D1),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 10, Partition)
+        struct Library *, PartitionBase, 10, Partition)
 
 /*  FUNCTION
-    Create a new partition table. 
+        Create a new partition table. 
 
     INPUTS
-    root - partition to create table in
-    type - the type of the partition table to create
+        root - partition to create table in
+        type - the type of the partition table to create
 
     RESULT
-    0 on success; an error code otherwise
+        0 on success; an error code otherwise
 
     NOTES
-    After calling this function the state of the PartitionHandle will be the
-    same as when calling OpenPartitionTable(). Therefore before closing the
-    PartitionHandle you should call ClosePartitionTable().
+        After calling this function the state of the PartitionHandle will be
+        the same as when calling OpenPartitionTable(). Therefore before
+        closing the PartitionHandle you should call ClosePartitionTable().
+
     EXAMPLE
 
     BUGS
@@ -43,9 +44,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    21-02-02    first version
 
 *****************************************************************************/
 {

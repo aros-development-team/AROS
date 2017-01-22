@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
+
 #include "partition_support.h"
 #include "platform.h"
 
@@ -11,19 +11,19 @@
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH1(void, DeletePartition,
+        AROS_LH1(void, DeletePartition,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, ph,       A1),
+        AROS_LHA(struct PartitionHandle *, ph, A1),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 12, Partition)
+        struct Library *, PartitionBase, 12, Partition)
 
 /*  FUNCTION
-    Delete a partition with its subpartitions
+        Delete a partition along with its subpartitions.
 
     INPUTS
-    ph - PartitionHandle to delete
+        ph - PartitionHandle to delete
 
     RESULT
 
@@ -36,9 +36,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    21-02-02    first version
 
 *****************************************************************************/
 {

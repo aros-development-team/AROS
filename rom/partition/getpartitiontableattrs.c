@@ -1,7 +1,6 @@
 /*
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
-
 */
 
 #include <proto/utility.h>
@@ -16,24 +15,28 @@
 #include <utility/tagitem.h>
 #include <libraries/partition.h>
 
-   AROS_LH2(LONG, GetPartitionTableAttrs,
+        AROS_LH2(LONG, GetPartitionTableAttrs,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, root,       A1),
-   AROS_LHA(const struct TagItem *,   taglist,    A2),
+        AROS_LHA(struct PartitionHandle *, root, A1),
+        AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 13, Partition)
+        struct Library *, PartitionBase, 13, Partition)
 
 /*  FUNCTION
-    get attributes of a partition table
+        Get attributes of a partition table.
 
     INPUTS
-    ph      - PartitionHandle of the partition table
-    taglist - list of attributes; unknown tags are ignored
-        PTT_TYPE     - ULONG *           ; get partition table type
-        PTT_MAXLEADIN     - LONG *
-        PTT_RESERVED - ULONG *           ; get number of reserved blocks
+        ph      - PartitionHandle of the partition table
+        taglist - list of attributes; unknown tags are ignored
+
+    TAGS
+        PTT_TYPE (ULONG *)
+            Get partition table type
+        PTT_MAXLEADIN (LONG *)
+        PTT_RESERVED (ULONG *)
+            Get number of reserved blocks
 
     RESULT
 
