@@ -184,6 +184,8 @@ struct MUI_ListData
     LONG def_click_column;
 
     LONG mouse_click;            /* see below if mouse is held down */
+    LONG mouse_x;
+    LONG mouse_y;
 
     /* double click */
     ULONG last_secs;
@@ -1136,6 +1138,10 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Flags = 0;
     data->ehn.ehn_Object = obj;
     data->ehn.ehn_Class = cl;
+
+    data->mouse_click = 0;
+    data->mouse_x = MUI_MAXMAX;
+    data->mouse_y = MUI_MAXMAX;
 
     /* HACK:
      * List is a group where part of area is rendered and part is filled
@@ -3533,55 +3539,72 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
     struct MUI_List_TestPos_Result *result = msg->res;
     LONG col = -1, row = -1;
     UWORD flags = 0, i;
-    LONG mx = msg->x - _left(data->area);
+    LONG mx;
+    LONG ey;
     LONG entries_visible;
 
     if (data->entries_visible <= data->entries_num)
         entries_visible = data->entries_visible;
     else
         entries_visible = data->entries_num;
-    LONG ey = msg->y - data->entries_top_pixel;
-        /* y coordinates transformed to the entries */
 
-    /* Now check if it was clicked on a title or on entries */
-    if (ey < 0)
-        flags |= MUI_LPR_ABOVE;
-    else if (ey >= entries_visible * data->entry_maxheight)
-        flags |= MUI_LPR_BELOW;
+    if ((msg->x == MUI_MAXMAX) && (msg->y == MUI_MAXMAX))
+    {
+        mx = data->mouse_x;
+        ey = data->mouse_y;
+    }
     else
     {
-        /* Identify row */
-        row = ey / data->entry_maxheight + data->entries_first;
-        result->yoffset =
-            ey % data->entry_maxheight - data->entry_maxheight / 2;
+        mx = msg->x;
+        ey = msg->y;
     }
 
-    if (mx < 0)
-        flags |= MUI_LPR_LEFT;
-    else if (mx >= _width(data->area))
-        flags |= MUI_LPR_RIGHT;
-    else
+    if ((mx != MUI_MAXMAX) && (ey != MUI_MAXMAX))
     {
-        /* Identify column */
-        if (data->entries_num > 0 && data->columns > 0)
+        mx -= _left(data->area);
+        /* y coordinates transformed to the entries */
+        ey -= data->entries_top_pixel;
+
+        /* Now check if it was clicked on a title or on entries */
+        if (ey < 0)
+            flags |= MUI_LPR_ABOVE;
+        else if (ey >= entries_visible * data->entry_maxheight)
+            flags |= MUI_LPR_BELOW;
+        else
         {
-            LONG width_sum = 0;
-            col = data->columns - 1;
-            for (i = 0; i < data->columns; i++)
+            /* Identify row */
+            row = ey / data->entry_maxheight + data->entries_first;
+            result->yoffset =
+                ey % data->entry_maxheight - data->entry_maxheight / 2;
+        }
+
+        if (mx < 0)
+            flags |= MUI_LPR_LEFT;
+        else if (mx >= _width(data->area))
+            flags |= MUI_LPR_RIGHT;
+        else
+        {
+            /* Identify column */
+            if (data->entries_num > 0 && data->columns > 0)
             {
-                result->xoffset = mx - width_sum;
-                width_sum +=
-                    data->ci[i].entries_width +
-                    data->ci[i].delta +
-                    (data->ci[i].bar ? BAR_WIDTH : 0);
-                D(bug("[List/MUIM_TestPos] i %d "
-                    "width %d width_sum %d mx %d\n",
-                    i, data->ci[i].entries_width, width_sum, mx));
-                if (mx < width_sum)
+                LONG width_sum = 0;
+                col = data->columns - 1;
+                for (i = 0; i < data->columns; i++)
                 {
-                    col = i;
-                    D(bug("[List/MUIM_TestPos] Column hit %d\n", col));
-                    break;
+                    result->xoffset = mx - width_sum;
+                    width_sum +=
+                        data->ci[i].entries_width +
+                        data->ci[i].delta +
+                        (data->ci[i].bar ? BAR_WIDTH : 0);
+                    D(bug("[List/MUIM_TestPos] i %d "
+                        "width %d width_sum %d mx %d\n",
+                        i, data->ci[i].entries_width, width_sum, mx));
+                    if (mx < width_sum)
+                    {
+                        col = i;
+                        D(bug("[List/MUIM_TestPos] Column hit %d\n", col));
+                        break;
+                    }
                 }
             }
         }
@@ -4047,9 +4070,13 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             }
             else
             {
-                /* Activate object */
                 if (msg->imsg->Code == SELECTUP && data->mouse_click)
                 {
+                    /* cache click position ... */
+                    data->mouse_x = msg->imsg->MouseX;
+                    data->mouse_y = msg->imsg->MouseY;
+
+                    /* ... and activate the object */
                     set(_win(obj), MUIA_Window_ActiveObject, (IPTR)obj);
                     data->mouse_click = 0;
                 }
