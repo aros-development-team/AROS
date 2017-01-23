@@ -212,6 +212,7 @@ struct MUI_ListData
 #define LIST_DRAGSORTABLE  (1<<3)
 #define LIST_SHOWDROPMARKS (1<<4)
 #define LIST_QUIET         (1<<5)
+#define LIST_CHANGED    (1<<6)
 
 static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns);
 
@@ -1574,11 +1575,18 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             _handle_bool_tag(data->flags, tag->ti_Data, LIST_QUIET);
             if (!tag->ti_Data)
             {
-                DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
-                if (data->entries_num != XGET(obj, MUIA_List_VertProp_Entries))
-                    set(obj, MUIA_List_VertProp_Entries, data->entries_num);
-                if (data->entries_first != XGET(obj, MUIA_List_VertProp_First))
-                    set(obj, MUIA_List_VertProp_First, data->entries_first);
+                if (data->flags & LIST_CHANGED)
+                {
+                    DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
+                    if (data->entries_num != XGET(obj, MUIA_List_VertProp_Entries))
+                        set(obj, MUIA_List_VertProp_Entries, data->entries_num);
+                    if (data->entries_first != XGET(obj, MUIA_List_VertProp_First))
+                        set(obj, MUIA_List_VertProp_First, data->entries_first);
+                }
+            }
+            else
+            {
+                data->flags &= ~LIST_CHANGED;
             }
             break;
 
@@ -2211,6 +2219,8 @@ IPTR List__MUIM_Clear(struct IClass *cl, Object *obj,
         DoMethod(obj, MUIM_List_Destruct, (IPTR) lentry->data,
             (IPTR) data->pool);
         FreeListEntry(data, lentry);
+
+        data->flags |= LIST_CHANGED;
     }
     /* Should never fail when shrinking */
     SetListSize(data, 0);
@@ -2524,6 +2534,7 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
         active_tag, new_act,   /* Inform only if necessary (for notify) */
         TAG_DONE);
 
+    data->flags |= LIST_CHANGED;
     data->update = 1;
     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
@@ -2830,6 +2841,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
 
         data->entries[pos] = lentry;
         data->confirm_entries_num++;
+
+        data->flags |= LIST_CHANGED;
 
         if (_flags(obj) & MADF_SETUP)
         {
@@ -3329,6 +3342,7 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
         }
     }
 
+    data->flags |= LIST_CHANGED;
     data->update = 1;
     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
@@ -3446,6 +3460,7 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
 #endif
 
     /* Reflect list changes visually */
+    data->flags |= LIST_CHANGED;
     data->update = 1;
     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
