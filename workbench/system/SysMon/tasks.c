@@ -73,8 +73,9 @@ struct Tasklist_DATA
     TEXT                        tld_BufName[100];
     TEXT                        tld_BufType[20];
     TEXT                        tld_BufPrio[20];
-
+    TEXT                        tld_BufSortCol[20];
     ULONG                       tasklistSortColumn;
+    ULONG                       tasklistSortMode;
     ULONG                       updateSpeed;
 };
 
@@ -218,13 +219,46 @@ AROS_UFH3(LONG, TaskCompareFunction,
     switch (data->tasklistSortColumn)
     {
         case 1:
-            retval = (LONG)(ti1->ti_Node.ln_Pri - ti2->ti_Node.ln_Pri);
+            if (!data->tasklistSortMode)
+            {
+                retval = (LONG)(ti2->ti_Node.ln_Pri - ti1->ti_Node.ln_Pri);
+                if (retval == 0)
+                {
+                    retval = (LONG)(stricmp(ti1->ti_Node.ln_Name, ti2->ti_Node.ln_Name));
+                }
+            }
+            else
+            {
+                retval = (LONG)(ti1->ti_Node.ln_Pri - ti2->ti_Node.ln_Pri);
+                if (retval == 0)
+                {
+                    retval = (LONG)(stricmp(ti2->ti_Node.ln_Name, ti1->ti_Node.ln_Name));
+                }
+            }
             break;
         case 2:
-            retval = (LONG)(ti1->ti_Node.ln_Type - ti2->ti_Node.ln_Type);
+            if (!data->tasklistSortMode)
+            {
+                retval = (LONG)(ti1->ti_Node.ln_Type - ti2->ti_Node.ln_Type);
+                if (retval == 0)
+                {
+                    retval = (LONG)(stricmp(ti1->ti_Node.ln_Name, ti2->ti_Node.ln_Name));
+                }
+            }
+            else
+            {
+                retval = (LONG)(ti2->ti_Node.ln_Type - ti1->ti_Node.ln_Type);
+                if (retval == 0)
+                {
+                    retval = (LONG)(stricmp(ti2->ti_Node.ln_Name, ti1->ti_Node.ln_Name));
+                }
+            }
             break;
         default:
-            retval = (LONG)(stricmp(ti1->ti_Node.ln_Name, ti2->ti_Node.ln_Name));
+            if (!data->tasklistSortMode)
+                retval = (LONG)(stricmp(ti1->ti_Node.ln_Name, ti2->ti_Node.ln_Name));
+            else
+                retval = (LONG)(stricmp(ti2->ti_Node.ln_Name, ti1->ti_Node.ln_Name));
             break;
     }
 
@@ -268,9 +302,36 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
     }
     else
     {
-        strings[0] = data->msg_task_name;
-        strings[1] = data->msg_task_priority;
-        strings[2] = data->msg_task_type;
+        char *dir;
+
+        if (data->tasklistSortMode == 0)
+            dir = "+";
+        else
+            dir = "-";
+
+        if (data->tasklistSortColumn == 0)
+        {
+            __sprintf(data->tld_BufSortCol, MUIX_B "%s %s", data->msg_task_name, dir);
+            strings[0] = data->tld_BufSortCol;
+        }
+        else
+            strings[0] = data->msg_task_name;
+
+        if (data->tasklistSortColumn == 1)
+        {
+            __sprintf(data->tld_BufSortCol, MUIX_B "%s %s", data->msg_task_priority, dir);
+            strings[1] = data->tld_BufSortCol;
+        }
+        else
+            strings[1] = data->msg_task_priority;
+
+        if (data->tasklistSortColumn == 2)
+        {
+            __sprintf(data->tld_BufSortCol, MUIX_B "%s %s", data->msg_task_type, dir);
+            strings[2] = data->tld_BufSortCol;
+        }
+        else
+            strings[2] = data->msg_task_type;
     }
 
     return NULL;
@@ -467,6 +528,10 @@ IPTR Tasklist__MUIM_HandleEvent(Class *CLASS, Object *self, struct MUIP_HandleEv
             DoMethod(self, MUIM_List_TestPos, message->imsg->MouseX, message->imsg->MouseY, &selectres);
             if ((selectres.entry == -1) && (selectres.column != -1))
             {
+                if (data->tasklistSortColumn == selectres.column)
+                    data->tasklistSortMode = ~data->tasklistSortMode;
+                else
+                    data->tasklistSortMode = 0;
                 data->tasklistSortColumn = selectres.column;
                 DoMethod(self, MUIM_List_Sort);
             }
