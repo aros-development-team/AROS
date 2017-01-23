@@ -417,10 +417,8 @@ IPTR Tasklist__MUIM_Show(Class *CLASS, Object *self, struct MUIP_Show *message)
 
     retval = DoSuperMethodA(CLASS, self, (Msg) message);
 
-    /* This is only used for virtual groups */
-    data->tld_InputEvent.ehn_Events = IDCMP_MOUSEBUTTONS;  /* Will be filled on demand */
-    data->tld_InputEvent.ehn_Priority = 10;        /* Will hear the click before all
-                                         * other normal objects */
+    data->tld_InputEvent.ehn_Events = IDCMP_MOUSEBUTTONS;
+    data->tld_InputEvent.ehn_Priority = 10;
     data->tld_InputEvent.ehn_Flags = 0;
     data->tld_InputEvent.ehn_Object = self;
     data->tld_InputEvent.ehn_Class = CLASS;
