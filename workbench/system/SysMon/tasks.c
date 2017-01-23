@@ -22,7 +22,10 @@
 
 #include "tasks.h"
 
+/* uncomment the following line to force full-refresh */
 //#define TASKLIST_FLUSHUPDATE
+/* uncomment the following line to prevent updating */
+//#define TASKLIST_NOTIMER
 
 /* Task information handling*/
 struct TaskInfo
@@ -41,6 +44,7 @@ struct Tasklist_DATA
 {
     APTR                        tld_taskresBase;
 
+    struct MUI_EventHandlerNode tld_InputEvent;
     struct MUI_InputHandlerNode tld_TimerEvent;
 
     struct Hook                 tld_ConstructHook;
@@ -315,10 +319,10 @@ Object *Tasklist__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             data->tld_CompareHook.h_Entry = (APTR)TaskCompareFunction;
             data->tld_CompareHook.h_Data = (APTR)data;
 
-            set(self, MUIA_List_ConstructHook, &data->tld_ConstructHook);
-            set(self, MUIA_List_DestructHook, &data->tld_DestructHook);
-            set(self, MUIA_List_DisplayHook, &data->tld_DisplayHook);
-            set(self, MUIA_List_CompareHook, &data->tld_CompareHook);
+            SET(self, MUIA_List_ConstructHook, &data->tld_ConstructHook);
+            SET(self, MUIA_List_DestructHook, &data->tld_DestructHook);
+            SET(self, MUIA_List_DisplayHook, &data->tld_DisplayHook);
+            SET(self, MUIA_List_CompareHook, &data->tld_CompareHook);
 
 #ifdef TASKLIST_FLUSHUPDATE
             data->tld_TaskSelected = NULL;
@@ -361,12 +365,14 @@ IPTR Tasklist__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         {
         case MUIA_Tasklist_RefreshMSecs:
             data->updateSpeed = (ULONG)tag->ti_Data;
+#ifndef TASKLIST_NOTIMER
             if (data->tld_TimerEvent.ihn_Method != 0)
             {
                 DoMethod(_app(self), MUIM_Application_RemInputHandler, (IPTR) &data->tld_TimerEvent);
                 data->tld_TimerEvent.ihn_Millis = data->updateSpeed;
                 DoMethod(_app(self), MUIM_Application_AddInputHandler, (IPTR) &data->tld_TimerEvent);
             }
+#endif
             break;
         case MUIA_Tasklist_Refreshed:
             break;
@@ -411,12 +417,23 @@ IPTR Tasklist__MUIM_Show(Class *CLASS, Object *self, struct MUIP_Show *message)
 
     retval = DoSuperMethodA(CLASS, self, (Msg) message);
 
+    /* This is only used for virtual groups */
+    data->tld_InputEvent.ehn_Events = IDCMP_MOUSEBUTTONS;  /* Will be filled on demand */
+    data->tld_InputEvent.ehn_Priority = 10;        /* Will hear the click before all
+                                         * other normal objects */
+    data->tld_InputEvent.ehn_Flags = 0;
+    data->tld_InputEvent.ehn_Object = self;
+    data->tld_InputEvent.ehn_Class = CLASS;
+    DoMethod(_win(self), MUIM_Window_AddEventHandler, (IPTR)&data->tld_InputEvent);
+
+#ifndef TASKLIST_NOTIMER
     data->tld_TimerEvent.ihn_Flags  = MUIIHNF_TIMER;
     data->tld_TimerEvent.ihn_Millis = data->updateSpeed;
     data->tld_TimerEvent.ihn_Object = self;
     data->tld_TimerEvent.ihn_Method = MUIM_Tasklist_HandleTimer;
 
     DoMethod( _app(self), MUIM_Application_AddInputHandler, (IPTR) &data->tld_TimerEvent);
+#endif
 
     return retval;
 }
@@ -426,10 +443,14 @@ IPTR Tasklist__MUIM_Hide(Class *CLASS, Object *self, struct MUIP_Hide *message)
     SETUP_TASKLIST_INST_DATA;
 
     D(bug("[SysMon:TaskList] %s()\n", __func__));
-    
+
+#ifndef TASKLIST_NOTIMER
     DoMethod(_app(self), MUIM_Application_RemInputHandler, (IPTR) &data->tld_TimerEvent);
     data->tld_TimerEvent.ihn_Method = 0;
-    
+#endif
+
+    DoMethod(_win(self), MUIM_Window_RemEventHandler, (IPTR)&data->tld_InputEvent);
+
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
@@ -438,21 +459,19 @@ IPTR Tasklist__MUIM_HandleEvent(Class *CLASS, Object *self, struct MUIP_HandleEv
     SETUP_TASKLIST_INST_DATA;
     struct MUI_List_TestPos_Result selectres;
 
-    bug("[SysMon:TaskList] %s()\n", __func__);
+    D(bug("[SysMon:TaskList] %s()\n", __func__));
 
     if ((message->imsg) && (message->imsg->Class == IDCMP_MOUSEBUTTONS))
     {
         if (message->imsg->Code == SELECTUP)
         {
-            // TODO: check if we have been clicked on the column header and set
-            // sorting appropriately ...
-            bug("[SysMon:TaskList] %s: Click @ %d, %d\n", __func__, message->imsg->MouseX, message->imsg->MouseY);
+            D(bug("[SysMon:TaskList] %s: Click @ %d, %d\n", __func__, message->imsg->MouseX, message->imsg->MouseY));
             DoMethod(self, MUIM_List_TestPos, message->imsg->MouseX, message->imsg->MouseY, &selectres);
-            bug("[SysMon:TaskList] %s: pos entry #%d\n", __func__, selectres.entry);
-            bug("[SysMon:TaskList] %s: pos column #%d\n", __func__, selectres.column);
-            bug("[SysMon:TaskList] %s: pos x,y = %d,%d\n", __func__, selectres.xoffset, selectres.yoffset);
-
-            data->tasklistSortColumn = 0;
+            if ((selectres.entry == -1) && (selectres.column != -1))
+            {
+                data->tasklistSortColumn = selectres.column;
+                DoMethod(self, MUIM_List_Sort);
+            }
         }
     }
 
@@ -475,7 +494,7 @@ IPTR Tasklist__MUIM_Tasklist_Refresh(Class *CLASS, Object *self, Msg message)
     IPTR entryid = 0;
 #endif
 
-    set(self, MUIA_List_Quiet, TRUE);
+    SET(self, MUIA_List_Quiet, TRUE);
 
 #ifdef TASKLIST_FLUSHUPDATE
     get(self, MUIA_List_First, &firstvis);
@@ -528,7 +547,7 @@ IPTR Tasklist__MUIM_Tasklist_Refresh(Class *CLASS, Object *self, Msg message)
 #ifdef TASKLIST_FLUSHUPDATE
             if (task == selected)
             {
-                set(self, MUIA_List_Active, entryid);
+                SET(self, MUIA_List_Active, entryid);
             }
 #endif
         }
@@ -556,11 +575,11 @@ IPTR Tasklist__MUIM_Tasklist_Refresh(Class *CLASS, Object *self, Msg message)
         if (v < 0) v = 0;
     }
 
-    set(self, MUIA_List_First, v);
+    SET(self, MUIA_List_First, v);
 #endif
 
-    set(self, MUIA_List_Quiet, FALSE);
-    set(self, MUIA_Tasklist_Refreshed, TRUE);
+    SET(self, MUIA_List_Quiet, FALSE);
+    SET(self, MUIA_Tasklist_Refreshed, TRUE);
 
     return (IPTR)TRUE;
 }
