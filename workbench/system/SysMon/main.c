@@ -3,20 +3,43 @@
     $Id$
 */
 
-//#define DEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/alib.h>
 #include <proto/muimaster.h>
+
 #include <dos/dos.h>
 
 #include "sysmon_intern.h"
 
 #include "locale.h"
 
-#define VERSION "$VER: SysMon 1.3 (19.01.2017) ©2011-2017 The AROS Development Team"
+#define VERSION "$VER: SysMon 1.4 (23.01.2017) ©2011-2017 The AROS Development Team"
 
 //#define NOTYET_USED
+
+AROS_UFH3(VOID, tasklistrefreshfunction,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct SysMonData * smdata = h->h_Data;
+    IPTR taskReady = 0, taskWait = 0;
+
+    D(bug("[SysMon] %s(0x%p)\n", __func__, object));
+
+    GET(smdata->tasklist, MUIA_Tasklist_ReadyCount, &taskReady);
+    GET(smdata->tasklist, MUIA_Tasklist_WaitingCount, &taskWait);
+
+    __sprintf(smdata->tasklistinfobuf, smdata->msg_taskreadywait, taskReady, taskWait);
+
+    set(smdata->tasklistinfo, MUIA_Text_Contents, smdata->tasklistinfobuf);
+
+    AROS_USERFUNC_EXIT
+}
 
 #ifdef NOTYET_USED
 AROS_UFH3(VOID, pageactivefunction,
@@ -28,7 +51,7 @@ AROS_UFH3(VOID, pageactivefunction,
 
     IPTR thisPage = 0;
 
-    D(bug("[SysMon] pageactivefunction(0x%p)\n", object));
+    D(bug("[SysMon] %s(0x%p)\n", __func__, object));
 
     // get the selected page
     get(object, MUIA_Group_ActivePage, &thisPage);
@@ -43,12 +66,14 @@ AROS_UFH3(VOID, pageactivefunction,
 
 BOOL CreateApplication(struct SysMonData * smdata)
 {
-    Object * cpucolgroup;
     Object * menuitemfast;
     Object * menuitemnormal;
     Object * menuitemslow;
+
+    Object * cpucolgroup;
     Object * cpuusagegroup;
     Object * cpufreqgroup;
+
     ULONG i;
     LONG processorcount = GetProcessorCount();
 
@@ -57,35 +82,23 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->tabs[2] = _(MSG_TAB_SYSTEM);
     smdata->tabs[3] = NULL;
 
-    smdata->tasklistconstructhook.h_Entry = (APTR)TasksListConstructFunction;
-    smdata->tasklistconstructhook.h_Data = (APTR)smdata;
-    smdata->tasklistdestructhook.h_Entry = (APTR)TasksListDestructFunction;
-    smdata->tasklistdestructhook.h_Data = (APTR)smdata;
-    smdata->tasklistdisplayhook.h_Entry = (APTR)TasksListDisplayFunction;
-    smdata->tasklistdisplayhook.h_Data = (APTR)smdata;
-    smdata->taskselectedhook.h_Entry = (APTR)TaskSelectedFunction;
-    smdata->taskselectedhook.h_Data = (APTR)smdata;
-    smdata->taskcomparehook.h_Entry = (APTR)TaskCompareFunction;
-    smdata->taskcomparehook.h_Data = (APTR)smdata;
+    smdata->tasklistinfobuf = AllocVec(30, MEMF_PUBLIC);
+    smdata->tasklistrefreshhook.h_Entry = (APTR)tasklistrefreshfunction;
+    smdata->tasklistrefreshhook.h_Data = (APTR)smdata;
 
 #ifdef NOTYET_USED
     smdata->pageactivehook.h_Entry = (APTR)pageactivefunction;
     smdata->pageactivehook.h_Data = (APTR)smdata;
 #endif
 
-    smdata->msg_task = (STRPTR)_(MSG_TASK);
-    smdata->msg_process = (STRPTR)_(MSG_PROCESS);
-    smdata->msg_task_name = (STRPTR)_(MSG_TASK_NAME);
-    smdata->msg_task_priority = (STRPTR)_(MSG_TASK_PRIORITY);
-    smdata->msg_task_type = (STRPTR)_(MSG_TASK_TYPE);
-    smdata->msg_task_tombstoned = (STRPTR)"<tombstone>";
-    smdata->msg_task_unknown = (STRPTR)"<unknown>";
-    smdata->msg_task_readywait = (STRPTR)_(MSG_TASK_READY_AND_WAIT);
+    smdata->msg_taskreadywait = (STRPTR)_(MSG_TASK_READY_AND_WAIT);
     smdata->msg_project = (STRPTR)"Project";
     smdata->msg_refresh_speed = (STRPTR)"Refresh Speed";
     smdata->msg_fast = (STRPTR)"Fast";
     smdata->msg_normal = (STRPTR)"Normal";
     smdata->msg_slow  = (STRPTR)"Slow";
+
+    smdata->tasklist = (Object *)NewObject(Tasklist_CLASS->mcc_Class, NULL, MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Normal, TAG_DONE);
 
     smdata->application = ApplicationObject,
         MUIA_Application_Title, __(MSG_APP_NAME),
@@ -113,17 +126,9 @@ BOOL CreateApplication(struct SysMonData * smdata)
                         End),
                 WindowContents,
                     smdata->pages = RegisterGroup(smdata->tabs),
-                        Child, VGroup,
+                        Child, (VGroup,
                             Child, ListviewObject, 
-                                MUIA_Listview_List, smdata->tasklist = ListObject,
-                                    ReadListFrame,
-                                    MUIA_List_Format, "MIW=50 BAR,BAR P=\033r,",
-                                    MUIA_List_ConstructHook, &smdata->tasklistconstructhook,
-                                    MUIA_List_DestructHook, &smdata->tasklistdestructhook,
-                                    MUIA_List_DisplayHook, &smdata->tasklistdisplayhook,
-                                    MUIA_List_CompareHook, &smdata->taskcomparehook,
-                                    MUIA_List_Title, (IPTR)TRUE,
-                                End,
+                                MUIA_Listview_List, (IPTR)smdata->tasklist,
                             End,
                             Child, VGroup,
                                 Child, smdata->tasklistinfo = TextObject,
@@ -133,16 +138,16 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                     MUIA_Text_Contents, (IPTR)"- ready, - waiting",
                                 End,
                             End,
-                        End,
-                        Child, VGroup,
+                        End),
+                        Child, (VGroup,
                             Child, cpuusagegroup = HGroup, GroupFrameT(_(MSG_USAGE)), 
                             End,
                             Child, VGroup, GroupFrameT(_(MSG_FREQUENCY)),
                                 Child, cpufreqgroup = ColGroup(3), 
                                 End,
                             End,
-                        End,
-                        Child, VGroup,
+                        End),
+                        Child, (VGroup,
                             Child, ColGroup(2),
                                 Child, VGroup, GroupFrameT(_(MSG_MEMORY_SIZE)),
                                         Child, ColGroup(2), 
@@ -204,7 +209,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                 End,
                             End,
                             Child, HVSpace,
-                        End,
+                        End),
                     End,
             End,
     End;
@@ -215,15 +220,15 @@ BOOL CreateApplication(struct SysMonData * smdata)
     DoMethod(smdata->mainwindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
         smdata->application, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    DoMethod(smdata->tasklist, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-        smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->taskselectedhook);
-
     DoMethod(menuitemfast, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-        smdata->application, 3, MUIM_WriteLong, 500, &smdata->updateSpeed);
+        smdata->tasklist, 3, MUIM_Set, MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Fast);
     DoMethod(menuitemnormal, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-        smdata->application, 3, MUIM_WriteLong, 1000, &smdata->updateSpeed);
+        smdata->tasklist, 3, MUIM_Set, MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Normal);
     DoMethod(menuitemslow, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-        smdata->application, 3, MUIM_WriteLong, 2000, &smdata->updateSpeed);
+        smdata->tasklist, 3, MUIM_Set, MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Slow);
+
+    DoMethod(smdata->tasklist, MUIM_Notify, MUIA_Tasklist_Refreshed, TRUE,
+        smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->tasklistrefreshhook);
 
 #ifdef NOTYET_USED
     DoMethod(smdata->pages, MUIM_Notify, MUIA_Group_ActivePage, MUIV_EveryTime,
@@ -272,6 +277,8 @@ VOID DisposeApplication(struct SysMonData * smdata)
 {
     MUI_DisposeObject(smdata->application);
 
+    FreeVec(smdata->tasklistinfobuf);
+
     FreeVec(smdata->cpuusagegauges);
     FreeVec(smdata->cpufreqlabels);
     FreeVec(smdata->cpufreqvalues);
@@ -308,20 +315,18 @@ int main()
     ULONG signals = 0;
     ULONG itercounter = 0;
     struct SysMonData smdata;
-    struct SysMonModule * modules [] = {&memorymodule, &videomodule, &processormodule, &tasksmodule, &timermodule, NULL};
+    struct SysMonModule * modules [] = {&memorymodule, &videomodule, &processormodule, &timermodule, NULL};
     LONG lastinitedmodule = -1;
 
     if ((lastinitedmodule = InitModules(modules, &smdata)) == -1)
         return 1;
 
+    
     if (!CreateApplication(&smdata))
         return 1;
 
-    smdata.updateSpeed = 1000;
-
     UpdateProcessorStaticInformation(&smdata);
     UpdateProcessorInformation(&smdata);
-    UpdateTasksInformation(&smdata);
     UpdateMemoryStaticInformation(&smdata);
     UpdateMemoryInformation(&smdata);
     UpdateVideoStaticInformation(&smdata);
@@ -346,12 +351,6 @@ int main()
                 get(smdata.pages, MUIA_Group_ActivePage, &currentPage);
                 switch (currentPage)
                 {
-                    case 0:
-                        if ((itercounter % (smdata.updateSpeed/250)) == 0)
-                        {
-                            UpdateTasksInformation(&smdata);
-                        }
-                        break;
                     case 1:
                             UpdateProcessorInformation(&smdata);
                         break;
