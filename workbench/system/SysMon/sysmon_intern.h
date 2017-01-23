@@ -9,6 +9,9 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <libraries/mui.h>
+
+#include "tasks.h"
+
 #define MEMORY_RAM  0
 #define MEMORY_CHIP 1
 #define MEMORY_FAST 2
@@ -26,13 +29,9 @@ struct SysMonData
 
     CONST_STRPTR tabs[SYSMON_TABCOUNT + 1];
 
-    struct Hook tasklistconstructhook;
-    struct Hook tasklistdestructhook;
-    struct Hook tasklistdisplayhook;
-    struct Hook taskselectedhook;
-    struct Hook taskcomparehook;
-
     struct Hook pageactivehook;
+    struct Hook tasklistrefreshhook;
+    STRPTR      tasklistinfobuf;
 
     Object      *tasklist;
     Object      *tasklistinfo;
@@ -44,36 +43,12 @@ struct SysMonData
     Object      *memorysize[5];
     Object      *memoryfree[5];
 
-    struct List sm_TaskList;
-    struct Task *sm_TaskSelected;
-
-    ULONG       sm_TasksWaiting;
-    ULONG       sm_TasksReady;
-    ULONG       sm_TaskTotalRuntime;
-
     STRPTR      msg_project;
     STRPTR      msg_refresh_speed;
     STRPTR      msg_fast;
     STRPTR      msg_normal;
     STRPTR      msg_slow;
-
-    STRPTR      msg_task;
-    STRPTR      msg_process;
-    STRPTR      msg_task_name;
-    STRPTR      msg_task_priority;
-    STRPTR      msg_task_type;
-    STRPTR      msg_task_tombstoned;
-    STRPTR      msg_task_unknown;
-    STRPTR      msg_task_readywait;
-
-    STRPTR      tasklistinfobuf;
-
-    TEXT        bufname[100];
-    TEXT        buftype[20];
-    TEXT        bufprio[20];
-
-    ULONG       tasklistSortColumn;
-    ULONG       updateSpeed;
+    STRPTR      msg_taskreadywait;
 };
 
 struct SysMonModule
