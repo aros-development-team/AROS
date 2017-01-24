@@ -28,14 +28,14 @@
 
 const char *ACPI_TABLE_MADT_STR __attribute__((weak)) = "APIC";
 
-void ACPI_AllocAPICPrivate(struct PlatformData *pdata)
+void acpi_APIC_AllocPrivate(struct PlatformData *pdata)
 {
     if (!pdata->kb_APIC)
     {
         pdata->kb_APIC = AllocMem(sizeof(struct APICData) + pdata->kb_ACPI->acpi_apicCnt * sizeof(struct CPUData), MEMF_CLEAR);
         pdata->kb_APIC->apic_count	= 1;		/* Only one CPU is running right now */
 
-        D(bug("[Kernel:ACPI-APIC] Local APIC Private @ 0x%p\n", pdata->kb_APIC));
+        D(bug("[Kernel:ACPI-APIC] Local APIC Private @ 0x%p, for %d APIC's\n", pdata->kb_APIC, pdata->kb_ACPI->acpi_apicCnt));
     }
 }
 
@@ -49,17 +49,20 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
 
     struct PlatformData *pdata = tsdata->acpits_UserData;
 
+    D(bug("[Kernel:ACPI-APIC] ## %s()\n", __func__));
+
     if (!pdata->kb_APIC)
     {
         ACPI_TABLE_MADT *madtTable = (ACPI_TABLE_MADT *)tsdata->acpits_Table;
 
-        ACPI_AllocAPICPrivate(pdata);
+        acpi_APIC_AllocPrivate(pdata);
         pdata->kb_ACPI->acpi_madt = madtTable;	/* Cache ACPI data for secondary cores */
         pdata->kb_APIC->flags = ((madtTable->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
     }
 
     pdata->kb_APIC->lapicBase = lapic_addr_ovr->Address;
-    D(bug("[Kernel:ACPI-APIC] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Local APIC address Override to 0x%p\n", pdata->kb_APIC->lapicBase));
+
+    D(bug("[Kernel:ACPI-APIC]    %s: Local APIC address Override to 0x%p\n", __func__, pdata->kb_APIC->lapicBase));
 
     return TRUE;
 
@@ -76,12 +79,14 @@ AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 
     IPTR cpu_num = (IPTR)table_hook->h_Data;
 
+    D(bug("[Kernel:ACPI-APIC] ## %s()\n", __func__));
+
     if ((lapic_nmi->ProcessorId == pdata->kb_APIC->cores[cpu_num].sysID) || (lapic_nmi->ProcessorId == 0xff))
     {
         UWORD reg;
         ULONG val = LVT_MT_NMI;	/* This is the default (edge-triggered, active low) */
 
-    	D(bug("[Kernel:ACPI-APIC.%u] NMI LINT%u\n", cpu_num, lapic_nmi->Lint));
+        D(bug("[Kernel:ACPI-APIC.%u]    %s: NMI LINT%u\n", cpu_num, __func__, lapic_nmi->Lint));
 
     	switch (lapic_nmi->Lint)
     	{
@@ -100,13 +105,13 @@ AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 
         if ((lapic_nmi->IntiFlags & ACPI_MADT_POLARITY_MASK) == ACPI_MADT_POLARITY_ACTIVE_LOW)
         {
-	    D(bug("[Kernel:ACPI-APIC.%u] NMI active low\n", cpu_num));
+	    D(bug("[Kernel:ACPI-APIC.%u]    %s: NMI active low\n", cpu_num, __func__));
             val |= LVT_ACTIVE_LOW;
         } 
 
 	if ((lapic_nmi->IntiFlags & ACPI_MADT_TRIGGER_MASK) == ACPI_MADT_TRIGGER_LEVEL)
 	{
-	    D(bug("[Kernel:ACPI-APIC.%u] NMI level-triggered\n", cpu_num));
+	    D(bug("[Kernel:ACPI-APIC.%u]    %s: NMI level-triggered\n", cpu_num, __func__));
 	    val |= LVT_TGM_LEVEL;
 	}
 
@@ -156,11 +161,13 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 
     struct PlatformData *pdata = tsdata->acpits_UserData;
 
+    D(bug("[Kernel:ACPI-APIC] ## %s()\n", __func__));
+
     if (!pdata->kb_APIC)
     {
         ACPI_TABLE_MADT *madtTable = (ACPI_TABLE_MADT *)tsdata->acpits_Table;
 
-        ACPI_AllocAPICPrivate(pdata);
+        acpi_APIC_AllocPrivate(pdata);
         pdata->kb_APIC->lapicBase = madtTable->Address;
         pdata->kb_ACPI->acpi_madt = madtTable;	/* Cache ACPI data for secondary cores */
         pdata->kb_APIC->flags = ((madtTable->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
@@ -217,6 +224,8 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Count,
 
     struct PlatformData *pdata = tsdata->acpits_UserData;
     struct ACPI_TABLE_HOOK *scanHook;
+
+    D(bug("[Kernel:ACPI-APIC] ## %s()\n", __func__));
 
     if (pdata->kb_ACPI->acpi_apicCnt == 0)
     {

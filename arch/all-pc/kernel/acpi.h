@@ -16,7 +16,6 @@ struct ACPIData {
     struct List                 acpi_tablehooks;
     ULONG                       acpi_apicCnt;
     ULONG                       acpi_ioapicCnt;
-    IPTR                        acpi_ioapicBase;	/* IOAPIC base address				*/
 
     /* cached pointers to the ACPI Tables */
     CONST_APTR	                acpi_madt;	        /* MADT pointer			                */
