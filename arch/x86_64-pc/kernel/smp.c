@@ -23,15 +23,20 @@
 extern const void *_binary_smpbootstrap_start;
 extern const void *_binary_smpbootstrap_size;
 
+extern APTR PlatformAllocGDT(struct KernelBase *, apicid_t);
+extern APTR PlatformAllocTLS(struct KernelBase *, apicid_t);
+extern APTR PlatformAllocIDT(struct KernelBase *, apicid_t);
+
 static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBase *KernelBase)
 {
     /*
      * This is the entry point for secondary cores.
      * KernelBase is already set up by the primary CPU, so we can use it.
      */
+    APTR CORETLS, COREGDT, COREIDT;
     IPTR _APICBase;
-    UWORD _APICID;
-    UBYTE _APICNO;
+    apicid_t _APICID;
+    apicid_t _APICNO;
 
     /* Enable fxsave/fxrstor */
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
@@ -41,14 +46,23 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
     _APICID   = core_APIC_GetID(_APICBase);
     _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData->kb_APIC);
 
-    D(bug("[SMP] smp_Entry[0x%02X]: launching on AP APIC ID 0x%02X, base @ 0x%p\n", _APICID, _APICID, _APICBase));
-    D(bug("[SMP] smp_Entry[0x%02X]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
-    D(bug("[SMP] smp_Entry[0x%02X]: Stack base 0x%p, ready lock 0x%p\n", _APICID, stackBase, apicready));
+    D(bug("[Kernel:SMP] smp_Entry[0x%02X]: launching on AP APIC ID 0x%02X, base @ 0x%p\n", _APICID, _APICID, _APICBase));
+    D(bug("[Kernel:SMP] smp_Entry[0x%02X]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
+    D(bug("[Kernel:SMP] smp_Entry[0x%02X]: Stack base 0x%p, ready lock 0x%p\n", _APICID, stackBase, apicready));
 
     /* Set up GDT and LDT for our core */
-    core_CPUSetup(_APICID, stackBase);
+    CORETLS = PlatformAllocTLS(KernelBase, _APICID);
+    COREGDT = PlatformAllocGDT(KernelBase, _APICID);
+    COREIDT = PlatformAllocIDT(KernelBase, _APICID);
 
-    bug("[SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, KernelBase->kb_PlatformData->kb_APIC->apic_count);
+    D(bug("[Kernel:SMP] smp_Entry[0x%02X]: Core IDT @ 0x%p, GDT @ 0x%p, TLS @ 0x%p\n", _APICID, COREIDT, COREGDT, CORETLS));
+
+    core_SetupGDT(__KernBootPrivate, _APICID, COREGDT, CORETLS, __KernBootPrivate->TSS);
+
+    core_CPUSetup(_APICID, COREGDT, stackBase);
+    core_SetupIDT(__KernBootPrivate, _APICID, COREIDT);
+
+    bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, KernelBase->kb_PlatformData->kb_APIC->apic_count);
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
@@ -68,7 +82,7 @@ static int smp_Setup(struct KernelBase *KernelBase)
     APTR smpboot = NULL;
     struct SMPBootstrap *bs;
 
-    D(bug("[SMP] %s()\n", __func__));
+    D(bug("[Kernel:SMP] %s()\n", __func__));
 
     /* Find a suitable memheader to allocate the bootstrap from .. */
     ForeachNode(&SysBase->MemList, lowmem)
@@ -76,8 +90,8 @@ static int smp_Setup(struct KernelBase *KernelBase)
         /* Is it in lowmem? */
         if ((IPTR)lowmem->mh_Lower < 0x000100000)
         {
-            D(bug("[SMP] Trying memheader @ 0x%p\n", lowmem));
-            D(bug("[SMP] * 0x%p - 0x%p (%s pri %d)\n", lowmem->mh_Lower, lowmem->mh_Upper, lowmem->mh_Node.ln_Name, lowmem->mh_Node.ln_Pri));
+            D(bug("[Kernel:SMP] Trying memheader @ 0x%p\n", lowmem));
+            D(bug("[Kernel:SMP] * 0x%p - 0x%p (%s pri %d)\n", lowmem->mh_Lower, lowmem->mh_Upper, lowmem->mh_Node.ln_Name, lowmem->mh_Node.ln_Pri));
 
             /*
              * Attempt to allocate space for the SMP bootstrap code.
@@ -92,7 +106,7 @@ static int smp_Setup(struct KernelBase *KernelBase)
 
     if (!smpboot)
     {
-        bug("[SMP] Failed to allocate %dbytes for SMP bootstrap\n", bslen + PAGE_SIZE - 1);
+        bug("[Kernel:SMP] Failed to allocate %dbytes for SMP bootstrap\n", bslen + PAGE_SIZE - 1);
         return 0;
     }
 
@@ -101,7 +115,7 @@ static int smp_Setup(struct KernelBase *KernelBase)
     CopyMem(&_binary_smpbootstrap_start, bs, (unsigned long)&_binary_smpbootstrap_size);
     pdata->kb_APIC_TrampolineBase = bs;
 
-    D(bug("[SMP] Copied APIC bootstrap code to 0x%p\n", bs));
+    D(bug("[Kernel:SMP] Copied APIC bootstrap code to 0x%p\n", bs));
 
     /*
      * Store constant arguments in bootstrap's data area
@@ -127,24 +141,24 @@ static int smp_Wake(struct KernelBase *KernelBase)
     struct APICData *apic = pdata->kb_APIC;
     APTR _APICStackBase;
     IPTR wakeresult;
-    UBYTE i;
+    apicid_t i;
     volatile UBYTE apicready;
 
-    D(bug("[SMP] Ready spinlock at 0x%p\n", &apicready));
+    D(bug("[Kernel:SMP] Ready spinlock at 0x%p\n", &apicready));
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
     for (i = 1; i < apic->apic_count; i++)
     {
-    	UBYTE apic_id = apic->cores[i].lapicID;
+    	apicid_t apic_id = apic->cores[i].lapicID;
 
-    	D(bug("[SMP] Launching APIC #%u (ID 0x%02X)\n", i + 1, apic_id));
+    	D(bug("[Kernel:SMP] Launching APIC #%u (ID 0x%02X)\n", i + 1, apic_id));
  
 	/*
 	 * First we need to allocate a stack for our CPU.
 	 * We allocate the same three stacks as in core_CPUSetup().
 	 */
 	_APICStackBase = AllocMem(STACK_SIZE * 3, MEMF_CLEAR);
-	D(bug("[SMP] Allocated STACK for APIC ID 0x%02X @ 0x%p ..\n", apic_id, _APICStackBase));
+	D(bug("[Kernel:SMP] Allocated STACK for APIC ID 0x%02X @ 0x%p ..\n", apic_id, _APICStackBase));
 	if (!_APICStackBase)
 		return 0;
 
@@ -168,15 +182,15 @@ static int smp_Wake(struct KernelBase *KernelBase)
 	     * Previously we have set apicready to 0. When the core starts up,
 	     * it writes 1 there.
 	     */
-	    DWAKE(bug("[SMP] Waiting for APIC #%u to initialise .. ", i + 1));
+	    DWAKE(bug("[Kernel:SMP] Waiting for APIC #%u to initialise .. ", i + 1));
 	    while (!apicready);
 
-	    D(bug("[SMP] APIC #%u started up\n", i + 1));
+	    D(bug("[Kernel:SMP] APIC #%u started up\n", i + 1));
 	}
-	    D(else bug("[SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult));
+	    D(else bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult));
     }
 
-    D(bug("[SMP] Done\n"));
+    D(bug("[Kernel:SMP] Done\n"));
 
     return 1;
 }
@@ -190,7 +204,7 @@ int smp_Initialize(void)
     {
     	if (!smp_Setup(KernelBase))
     	{
-    	    D(bug("[SMP] Failed to prepare the environment!\n"));
+    	    D(bug("[Kernel:SMP] Failed to prepare the environment!\n"));
 
     	    pdata->kb_APIC->apic_count = 1;	/* We have only one workinng CPU */
     	    return 0;

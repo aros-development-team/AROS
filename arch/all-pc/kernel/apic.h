@@ -9,7 +9,8 @@
 */
 
 #include <asm/cpu.h>
-#include <proto/acpica.h>
+
+typedef  UBYTE apicid_t;
 
 /*
  * Per-CPU data
@@ -19,7 +20,7 @@
 struct CPUData
 {
     ULONG timerFreq;	/* Timer clock frequency			*/
-    UBYTE lapicID;	/* Local APIC ID				*/
+    apicid_t lapicID;	/* Local APIC ID				*/
     UBYTE sysID;	/* System (ACPI, whatever) ID, can differ	*/
 };
 
@@ -33,9 +34,9 @@ struct APICData
 
 #define APF_8259 0x0001	/* Legacy PIC present				*/
 
-ULONG core_APIC_Wake(APTR start_addr, UBYTE id, IPTR base);
+ULONG core_APIC_Wake(APTR start_addr, apicid_t id, IPTR base);
 UBYTE core_APIC_GetID(IPTR base);
-void  core_APIC_Init(struct APICData *data, ULONG cpuNum);
+void  core_APIC_Init(struct APICData *data, apicid_t cpuNum);
 void  core_APIC_AckIntr(void);
 
 #ifdef __x86_64__
@@ -51,6 +52,6 @@ static inline IPTR core_APIC_GetBase(void)
 }
 
 struct APICData *core_APIC_Probe(void);
-UBYTE core_APIC_GetNumber(struct APICData *);
+apicid_t core_APIC_GetNumber(struct APICData *);
 
 #endif /* KERNEL_APIC_H */

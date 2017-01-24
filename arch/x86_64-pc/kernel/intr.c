@@ -25,8 +25,9 @@
 #include "cpu_traps.h"
 #include "apic.h"
 #include "xtpic.h"
+#include "tls.h"
 
-#define D(x)
+#define D(x) x
 #define DSYSCALL(x)
 #define DTRAP(x)
 #define DUMP_CONTEXT
@@ -63,6 +64,7 @@ IRQPROTO(0x8, 0);
 IRQPROTO(0xf, e);
 extern void core_DefaultIRETQ(void);
 
+
 const void *interrupt[256] =
 {
     IRQLIST_16(0x0),
@@ -70,49 +72,59 @@ const void *interrupt[256] =
     IRQLIST_16(0x2)
 };
 
-void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
+BOOL core_SetIDTGate(int IRQ, uintptr_t gate)
+{
+    struct int_gate_64bit *IGATES;
+
+    if ((IGATES = IDT_GET()))
+    {
+        IGATES[IRQ].offset_low = gate & 0xffff;
+        IGATES[IRQ].offset_mid = (gate >> 16) & 0xffff;
+        IGATES[IRQ].offset_high = (gate >> 32) & 0xffffffff;
+        IGATES[IRQ].type = 0x0e;
+        IGATES[IRQ].dpl = 3;
+        IGATES[IRQ].p = 1;
+        IGATES[IRQ].selector = KERNEL_CS;
+        IGATES[IRQ].ist = 0;
+
+        return TRUE;
+    }
+    return FALSE;
+}
+
+void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, APTR idt_ptr)
 {
     int i;
     uintptr_t off;
     struct segment_selector IDT_sel;
-    struct int_gate_64bit *IGATES;
+    struct int_gate_64bit *IGATES = (struct int_gate_64bit *)idt_ptr;
 
-    if (!__KernBootPrivate->IDT)
+    // TODO: ASSERT IGATES is aligned
+    
+    if (IGATES)
     {
-    	__KernBootPrivate->IDT = krnAllocBootMemAligned(sizeof(struct int_gate_64bit) * 256, 256);
+        D(bug("[Kernel] %s[%d]: Setting all interrupt handlers to default value\n", __func__, _APICID));
 
-    	D(bug("[Kernel] Allocated IDT at 0x%p\n", __KernBootPrivate->IDT));
+        for (i=0; i < 256; i++)
+        {
+            if (interrupt[i])
+                off = (uintptr_t)interrupt[i];
+            else if (i == 0x80)
+                off = (uintptr_t)IRQ0x80_intr;
+            else if (i == 0xfe)
+                off = (uintptr_t)IRQ0xfe_intr;
+            else
+                off = (uintptr_t)core_DefaultIRETQ;
+
+            core_SetIDTGate(i, off);
+        }
+
+        D(bug("[Kernel] %s[%d]: Registering interrupt handlers ..\n", __func__, _APICID));
+
+        IDT_sel.size = sizeof(struct int_gate_64bit) * 256 - 1;
+        IDT_sel.base = (unsigned long)IGATES;    
+        asm volatile ("lidt %0"::"m"(IDT_sel));
     }
-
-    D(bug("[Kernel] core_SetupIDT: Setting all interrupt handlers to default value\n"));
-    IGATES = __KernBootPrivate->IDT;
-
-    for (i=0; i < 256; i++)
-    {
-        if (interrupt[i])
-            off = (uintptr_t)interrupt[i];
-        else if (i == 0x80)
-            off = (uintptr_t)IRQ0x80_intr;
-        else if (i == 0xfe)
-            off = (uintptr_t)IRQ0xfe_intr;
-        else
-            off = (uintptr_t)core_DefaultIRETQ;
-
-        IGATES[i].offset_low = off & 0xffff;
-        IGATES[i].offset_mid = (off >> 16) & 0xffff;
-        IGATES[i].offset_high = (off >> 32) & 0xffffffff;
-        IGATES[i].type = 0x0e;
-        IGATES[i].dpl = 3;
-        IGATES[i].p = 1;
-        IGATES[i].selector = KERNEL_CS;
-        IGATES[i].ist = 0;
-    }
-
-    D(bug("[Kernel] core_SetupIDT: Registering interrupt handlers ..\n"));
-
-    IDT_sel.size = sizeof(struct int_gate_64bit) * 256 - 1;
-    IDT_sel.base = (unsigned long)__KernBootPrivate->IDT;    
-    asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
 /* CPU exceptions are processed here */
@@ -392,14 +404,19 @@ void ictl_Initialize(void)
 	pdata->kb_APIC = core_APIC_Probe();
     }
 
-    if (!pdata)
+    if (!pdata->kb_APIC)
     {
     	/* We are x86-64 and we always have APIC. */
     	krnPanic(KernelBase, "Failed to allocate APIC descriptor\n.The system is low on memory.");
     }
 
+    /* Take over the APIC IRQ */
+    if (KernelBase->kb_Interrupts[0xde].lh_Type == KBL_INTERNAL)
+        KernelBase->kb_Interrupts[0xde].lh_Type = KBL_APIC;
+
     if (pdata->kb_APIC->flags & APF_8259)
     {
+        int i;
     	/*
     	 * Initialize legacy 8529A PIC.
     	 * TODO: We obey ACPI information about its presence, however currently we don't have
@@ -407,6 +424,11 @@ void ictl_Initialize(void)
     	 */
 
     	XTPIC_Init(&pdata->kb_XTPIC_Mask);
+        for (i = 0; i < IRQ_COUNT; i++)
+        {
+            if (KernelBase->kb_Interrupts[i].lh_Type == KBL_INTERNAL)
+                KernelBase->kb_Interrupts[i].lh_Type = KBL_XTPIC;
+        }
     }
 
     D(bug("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n"));

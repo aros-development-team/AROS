@@ -45,10 +45,10 @@ struct APICData *core_APIC_Probe(void)
     return data;
 }
 
-UBYTE core_APIC_GetNumber(struct APICData *data)
+apicid_t core_APIC_GetNumber(struct APICData *data)
 {
-    UBYTE __APICLogicalID;
-    UBYTE __APICNo;
+    apicid_t __APICLogicalID;
+    apicid_t __APICNo;
 
     if (!data)
     {

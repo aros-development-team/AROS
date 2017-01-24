@@ -14,6 +14,9 @@
 
 #include "exec_intern.h"
 #include "exec_util.h"
+#if defined(AROS_SMP)
+#include "etask.h"
+#endif
 
 extern void TaskExitStub(void);
 
@@ -39,7 +42,11 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     {
         switch(t->ti_Tag)
         {
-
+#if defined(AROS_SMP)
+            case NP_Affinity:
+                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
+                break;
+#endif
 #define REGARG(x, reg)                \
         case TASKTAG_ARG ## x:        \
             ctx->reg = t->ti_Data;    \

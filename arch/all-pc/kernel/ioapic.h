@@ -11,6 +11,8 @@
 #include <asm/cpu.h>
 #include <proto/acpica.h>
 
+#include "apic.h"
+
 #define IOAPICREG_ID            0
 #define IOAPICREG_VER           1
 #define IOAPICREG_ARB           2
@@ -19,7 +21,7 @@
 struct IOAPICCfgData
 {
     APTR ioapicBase;
-    UBYTE ioapicID;
+    apicid_t ioapicID;
     UBYTE ioapicVer;
     UBYTE ioapicIRQs;
     UBYTE ioapicGSI;

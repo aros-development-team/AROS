@@ -21,6 +21,7 @@
 #include "apic.h"
 #include "smp.h"
 #include "xtpic.h"
+#include "tls.h"
 
 #define D(x) x
 #define DAPIC(x)
@@ -32,25 +33,19 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     struct PlatformData *pdata;
     int i;
 
-    D(bug("[Kernel] Kernel_Init: Post-exec init. KernelBase @ %p\n", LIBBASE));
+    D(bug("[Kernel:x86_64] Kernel_Init: Post-exec init. KernelBase @ %p\n", LIBBASE));
 
-    for (i = 0; i < IRQ_COUNT; i++)
+    for (i = 0; i < HW_IRQ_COUNT; i++)
     {
         switch(i)
         {
-            case 0x00 ... 0x0f:
-                LIBBASE->kb_Interrupts[i].lh_Type = KBL_XTPIC;
-                break;
-            case 0xde:
-                LIBBASE->kb_Interrupts[i].lh_Type = KBL_APIC;
-                break;
             default:
                 LIBBASE->kb_Interrupts[i].lh_Type = KBL_INTERNAL;
                 break;
         }
     }
 
-    D(bug("[Kernel] Kernel_Init: Interupt List initialised\n"));
+    D(bug("[Kernel:x86_64] Kernel_Init: Interupt List initialised\n"));
 
     pdata = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!pdata)
@@ -77,4 +72,41 @@ void PlatformPostInit(void)
 
     // The last thing to do is to start up secondary CPU cores (if any)
     smp_Initialize();
+}
+
+APTR PlatformAllocGDT(struct KernelBase *LIBBASE, apicid_t _APICID)
+{
+    APTR GDTalloc;
+    
+    GDTalloc = (APTR)AllocMem(sizeof(struct gdt_64bit) + 128, MEMF_24BITDMA|MEMF_CLEAR);
+    GDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)GDTalloc, 128);
+    D(bug("[Kernel] %s[%d]: GDT @ 0x%p\n", __func__, _APICID, GDTalloc));
+
+    return GDTalloc;
+}
+
+APTR PlatformAllocTLS(struct KernelBase *LIBBASE, apicid_t _APICID)
+{
+    APTR TLSalloc;
+
+    TLSalloc = (APTR)AllocMem(sizeof(tls_t), MEMF_24BITDMA|MEMF_CLEAR);
+    TLSalloc = (APTR)AROS_ROUNDUP2((unsigned long)TLSalloc, sizeof(APTR));
+    D(bug("[Kernel] %s[%d]: TLS @ 0x%p\n", __func__, _APICID, TLSalloc));
+
+    return TLSalloc;
+}
+
+APTR PlatformAllocIDT(struct KernelBase *LIBBASE, apicid_t _APICID)
+{
+    APTR IDTalloc;
+
+    if (!(IDTalloc = IDT_GET()))
+    {
+        IDTalloc = (APTR)AllocMem(sizeof(struct int_gate_64bit) * 256, MEMF_24BITDMA|MEMF_CLEAR);
+        IDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)IDTalloc, 256);
+    	IDT_SET(IDTalloc)
+
+    	D(bug("[Kernel] %s[%d]: Allocated IDT at 0x%p\n", __func__, _APICID, IDTalloc));
+    }
+    return IDTalloc;
 }
