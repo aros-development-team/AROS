@@ -18,8 +18,8 @@
 #include "apic.h"
 #include "ioapic.h"
 
-#define D(x)
-#define DINTR(x)
+#define D(x) x
+#define DINTR(x) x
 
 #define ACPI_MODPRIO_IOAPIC       50
 

@@ -2,7 +2,7 @@
 #define ASM_X86_64_CPU_H
 
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: assembler-level specific definitions for x86-64 CPU
@@ -113,8 +113,8 @@ struct segment_desc
     uint16_t    limit_low;
     uint16_t    base_low;
     uint8_t     base_mid;
-    unsigned    type:5, dpl:2, p:1;
-    unsigned    limit_high:4, avl:1, l:1, d:1, g:1;
+    unsigned        type:5, dpl:2, p:1;
+    unsigned        limit_high:4, avl:1, l:1, d:1, g:1;
     uint8_t     base_high:8;
 } __attribute__((packed));
 
@@ -140,6 +140,23 @@ struct tss_64bit {
     uint16_t    __pad3;
     uint16_t    iopb;
     uint32_t    bmp[];
+} __attribute__((packed));
+
+struct gdt_64bit
+{
+    struct segment_desc seg0;           /* seg 0x00 */
+    struct segment_desc super_cs;       /* seg 0x08 */
+    struct segment_desc super_ds;       /* seg 0x10 */
+    struct segment_desc user_cs32;      /* seg 0x18 */
+    struct segment_desc user_ds;        /* seg 0x20 */
+    struct segment_desc user_cs;        /* seg 0x28 */
+    struct segment_desc gs;             /* seg 0x30 */
+    struct segment_desc ldt;            /* seg 0x38 */
+    struct
+    {
+        struct segment_desc tss_low;    /* seg 0x40... */
+        struct segment_ext  tss_high;
+    } tss[16];
 } __attribute__((packed));
 
 #define MMU_PAGEB_P     0

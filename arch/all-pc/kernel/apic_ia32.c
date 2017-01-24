@@ -70,7 +70,7 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
                         Driver functions
  **********************************************************/
 
-void core_APIC_Init(struct APICData *apic, ULONG cpuNum)
+void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 {
     IPTR __APICBase = apic->lapicBase;
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
@@ -158,9 +158,9 @@ void core_APIC_Init(struct APICData *apic, ULONG cpuNum)
     D(bug("[APIC.%u] LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, apic->cores[cpuNum].timerFreq, apic->cores[cpuNum].timerFreq / 1000000));
 }
 
-UBYTE core_APIC_GetID(IPTR _APICBase)
+apicid_t core_APIC_GetID(IPTR _APICBase)
 {
-    UBYTE _apic_id;
+    apicid_t _apic_id;
 
     /* The actual ID is in 8 most significant bits */
     _apic_id = APIC_REG(_APICBase, APIC_ID) >> APIC_ID_SHIFT;
@@ -177,7 +177,7 @@ void core_APIC_AckIntr(void)
     APIC_REG(apic_base, APIC_EOI) = 0;
 }
 
-ULONG core_APIC_Wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
+ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBase)
 {
     ULONG status_ipisend, status_ipirecv;
     ULONG start_count;
