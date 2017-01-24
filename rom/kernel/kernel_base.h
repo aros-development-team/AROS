@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,12 +27,14 @@ struct KernelBase;
 /* Platform-specific stuff. Black box here. */
 struct PlatformData;
 
+#define HW_IRQ_COUNT    (255 - INTB_KERNEL)
+
 /* kernel.resource base. Nothing spectacular, really. */
 struct KernelBase
 {
     struct Node            kb_Node;
     struct MinList         kb_Exceptions[EXCEPTIONS_COUNT];
-    struct List            kb_Interrupts[IRQ_COUNT];
+    struct List            kb_Interrupts[HW_IRQ_COUNT];
     ULONG		   kb_ContextFlags;	/* Hints for KrnCreateContext() */
     ULONG		   kb_ContextSize;	/* Total length of CPU context  */
     ULONG		   kb_PageSize;		/* Physical memory page size	*/
