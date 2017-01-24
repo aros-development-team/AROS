@@ -446,6 +446,7 @@ IPTR Tasklist__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
     SETUP_TASKLIST_INST_DATA;
     IPTR *store = message->opg_Storage;
+    IPTR retval = 0;
 
     D(bug("[SysMon:TaskList] %s()\n", __func__));
 
@@ -453,19 +454,26 @@ IPTR Tasklist__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     {
     case MUIA_Tasklist_Refreshed:
         *store = (IPTR)TRUE;
+        retval = 1;
         break;
     case MUIA_Tasklist_RefreshMSecs:
         *store = (IPTR)data->updateSpeed;
+        retval = 1;
         break;
     case MUIA_Tasklist_ReadyCount:
         *store = (IPTR)data->tld_TasksReady;
+        retval = 1;
         break;
     case MUIA_Tasklist_WaitingCount:
         *store = (IPTR)data->tld_TasksWaiting;
+        retval = 1;
         break;
     }
 
-    return DoSuperMethodA(CLASS, self, (Msg) message);
+    if (!retval)
+        retval = DoSuperMethodA(CLASS, self, (Msg) message);
+
+    return retval;
 }
 
 IPTR Tasklist__MUIM_Show(Class *CLASS, Object *self, struct MUIP_Show *message)
