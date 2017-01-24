@@ -14,6 +14,8 @@
 
 #include <inttypes.h>
 
+#include "apic.h"
+
 #define STACK_SIZE 8192
 #define PAGE_SIZE  0x1000
 
@@ -25,6 +27,7 @@ struct PlatformData
     APTR	     kb_APIC_TrampolineBase;
     struct ACPIData *kb_ACPI;
     struct APICData *kb_APIC;
+    struct IOAPICData   *kb_IOAPIC;
 };
 
 extern struct segment_desc *GDT;
