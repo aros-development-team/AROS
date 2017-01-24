@@ -1,0 +1,561 @@
+# Translation catalog description file (pot-style)
+# $Id czech.po 001 2017-23-01$
+# 
+# version 7
+# language english
+# 
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenURL\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/openurllib/\n"
+"POT-Creation-Date: 2014-02-23 12:01+0100\n"
+"PO-Revision-Date: 2014-02-23 11:06+0000\n"
+"Last-Translator: Miloslav Martinka \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-2\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: OpenURL\n"
+"Language: cs\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+msgctxt "MSG_ErrReqTitle (1//)"
+msgid "OpenURL Error"
+msgstr "Chyba v programu OpenURL"
+
+msgctxt "MSG_ErrReqGadget (//)"
+msgid "_Abort"
+msgstr "_Zru¹it"
+
+msgctxt "MSG_Err_NoMem (//)"
+msgid "Out of memory"
+msgstr "Nedostatek pamìti"
+
+msgctxt "MSG_Err_NoMUI (//)"
+msgid "Can't open muimaster.library %ld.%ld or higher"
+msgstr "Nelze otevøít muimaster.library %ld.%ld nebo vy¹¹í"
+
+msgctxt "MSG_Err_NoIntuition (//)"
+msgid "Can't open intuition.library %ld.%ld or higher"
+msgstr "Nelze otevøít intuition.library %ld.%ld nebo vy¹¹í"
+
+msgctxt "MSG_Err_NoUtility (//)"
+msgid "Can't open utility.library %ld.%ld or higher"
+msgstr "Nelze otevøít utility.library %ld.%ld nebo vy¹¹í"
+
+msgctxt "MSG_Err_NoGfx (//)"
+msgid "Can't open graphics.library %ld.%ld or higher"
+msgstr "Nelze otevøít graphics.library %ld.%ld nebo vy¹¹í"
+
+msgctxt "MSG_Err_NoIcon (//)"
+msgid "Can't open icon.library %ld.%ld or higher"
+msgstr "Nelze otevøít icon.library %ld.%ld nebo vy¹¹í"
+
+msgctxt "MSG_Err_NoOpenURL (//)"
+msgid "Can't open openurl.library %ld.%ld or higher"
+msgstr "Nelze otevøít openurl.library %ld.%ld nebo vy¹¹í"
+
+msgctxt "MSG_Err_NoAppClass (//)"
+msgid "Can't create AppClass"
+msgstr "Nelze vytvoøit AppClass"
+
+msgctxt "MSG_Err_NoWinClass (11//)"
+msgid "Can't create WinClass"
+msgstr "Nelze vytvoøit WinClass"
+
+msgctxt "MSG_Err_NoAppListClass (13//)"
+msgid "Can't create AppListClass"
+msgstr "Nelze vytvoøit AppListClass"
+
+msgctxt "MSG_Err_NoBrowserEditWinClass (//)"
+msgid "Can't create BrowserEditWinClass"
+msgstr "Nelze vytvoøit BrowserEditWinClass"
+
+msgctxt "MSG_Err_NoMailerEditWinClass (//)"
+msgid "Can't create MailerEditWinClass"
+msgstr "Nelze vytvoøit MailerEditWinClass"
+
+msgctxt "MSG_Err_NoFTPEditWinClass (//)"
+msgid "Can't create FTPEditWinClass"
+msgstr "Nelze vytvoøit FTPEditWinClass"
+
+msgctxt "MSG_Err_PopupPortClass (//)"
+msgid "Can't create PopupPortClass"
+msgstr "Nelze vytvoøit PopupPortClass"
+
+msgctxt "MSG_Err_PopphClass (//)"
+msgid "Can't create PopphClass"
+msgstr "Nelze vytvoøit PopphClass"
+
+msgctxt "MSG_Err_NoApp (//)"
+msgid "Can't create application object"
+msgstr "Nelze vytvoøit objekt aplikace"
+
+msgctxt "MSG_Err_NoPrefs (//)"
+msgid "Can't obtain prefs from openurl.library"
+msgstr "Nelze získat nastavení z openurl.library"
+
+msgctxt "MSG_Err_BadPrefs (//)"
+msgid ""
+"This version of this program doesn't know how\n"
+"to handle openurl.library prefs version %ld"
+msgstr ""
+"Tato verze programu neví jak\n"
+"spracovat nastavení openurl.library %ld"
+
+msgctxt "MSG_Err_FailedSave (//)"
+msgid "Can't save prefs"
+msgstr "Nelze ulo¾it nastavení"
+
+msgctxt "MSG_App_Description (100//)"
+msgid "OpenURL preferences application."
+msgstr "OpenURL nastavení."
+
+msgctxt "MSG_App_Copyright (//)"
+msgid "Public Domain Software"
+msgstr "Public Domain Software"
+
+msgctxt "MSG_App_ScreenTitle (//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Menu_Project (200//)"
+msgid "Project"
+msgstr "Projekt"
+
+msgctxt "MSG_Menu_About (//)"
+msgid "?\\0About..."
+msgstr "?\\0O programu..."
+
+msgctxt "MSG_Menu_AboutMUI (//)"
+msgid "!\\0About MUI..."
+msgstr "!\\0O MUI..."
+
+msgctxt "MSG_Menu_Hide (//)"
+msgid "H\\0Hide"
+msgstr "H\\0Skrýt"
+
+msgctxt "MSG_Menu_Quit (//)"
+msgid "Q\\0Quit"
+msgstr "Q\\0Ukonèit"
+
+msgctxt "MSG_Menu_Prefs (//)"
+msgid "Preferences"
+msgstr "Nastavení"
+
+msgctxt "MSG_Menu_Save (//)"
+msgid "S\\0Save"
+msgstr "S\\0Ulo¾it"
+
+msgctxt "MSG_Menu_Use (//)"
+msgid "U\\0Use"
+msgstr "U\\0Pou¾ít"
+
+msgctxt "MSG_Menu_LastSaved (//)"
+msgid "L\\0Last saved"
+msgstr "L\\0Naposledy ulo¾ené"
+
+msgctxt "MSG_Menu_Restore (//)"
+msgid "R\\0Restore"
+msgstr "R\\0Obnovit"
+
+msgctxt "MSG_Menu_Defaults (210//)"
+msgid "D\\0Default settings"
+msgstr "D\\0Základní nastavení"
+
+msgctxt "MSG_Menu_MUI (212//)"
+msgid "M\\0MUI Setting..."
+msgstr "M\\0Nastavení MUI..."
+
+msgctxt "MSG_Win_WinTitle (300//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Win_Labels_Browsers (//)"
+msgid "Browsers"
+msgstr "Prohlí¾eèe"
+
+msgctxt "MSG_Win_Labels_Mailers (//)"
+msgid "Mailers"
+msgstr "E-mail"
+
+msgctxt "MSG_Win_Labels_FTPs (//)"
+msgid "FTPs"
+msgstr "FTP"
+
+msgctxt "MSG_Win_Labels_Misc (//)"
+msgid "Misc"
+msgstr "Rùzné"
+
+msgctxt "MSG_Win_Save (//)"
+msgid "_Save"
+msgstr "_Ulo¾it"
+
+msgctxt "MSG_Win_Save_Help (//)"
+msgid "Save preferences."
+msgstr "Ulo¾it nastavení OpenURL"
+
+msgctxt "MSG_Win_Use (//)"
+msgid "_Use"
+msgstr "_Pou¾ít"
+
+msgctxt "MSG_Win_Use_Help (//)"
+msgid "Use preferences."
+msgstr "Pou¾ít nastavení OpenURL."
+
+msgctxt "MSG_Win_Apply (//)"
+msgid "_Apply"
+msgstr "_Aplikovat"
+
+msgctxt "MSG_Win_Apply_Help (//)"
+msgid "Use preferences without closing window."
+msgstr "Pou¾ít nastavení OpenURL bez zavøení okna."
+
+msgctxt "MSG_Win_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Zru¹it"
+
+msgctxt "MSG_Win_Cancel_Help (//)"
+msgid "Close window, without using preferences."
+msgstr "Zavøít okno OpenURL bez pou¾ití nastavení."
+
+msgctxt "MSG_AppList_Add (400//)"
+msgid "A_dd"
+msgstr "Pøi_dat"
+
+msgctxt "MSG_AppList_Add_Help (//)"
+msgid "Add a new entry."
+msgstr "Pøidat nový záznam."
+
+msgctxt "MSG_AppList_Edit (//)"
+msgid "_Edit"
+msgstr "Up_ravit"
+
+msgctxt "MSG_AppList_Edit_Help (//)"
+msgid "Edit active entry."
+msgstr "Upravit vybraný záznam."
+
+msgctxt "MSG_AppList_Clone (//)"
+msgid "C_lone"
+msgstr "K_opie"
+
+msgctxt "MSG_AppList_Clone_Help (//)"
+msgid "Clone active entry."
+msgstr "Vytvoøit kopii vybraného záznamu."
+
+msgctxt "MSG_AppList_Delete (//)"
+msgid "Dele_te"
+msgstr "_Smazat"
+
+msgctxt "MSG_AppList_Delete_Help (//)"
+msgid "Delete active entry."
+msgstr "Smazat vybraný záznam."
+
+msgctxt "MSG_AppList_Disable (//)"
+msgid "D_isable"
+msgstr "_Vypnout"
+
+msgctxt "MSG_AppList_Disable_Help (//)"
+msgid "Disable active entry."
+msgstr "Vypne vybraný záznam."
+
+msgctxt "MSG_AppList_MoveUp_Help (//)"
+msgid "Move active entry up."
+msgstr "Pøesune záznam o pozici vý¹."
+
+msgctxt "MSG_AppList_MoveDown_Help (//)"
+msgid "Move active entry down."
+msgstr "Pøesune záznam o pozici ní¾."
+
+msgctxt "MSG_Edit_Use (500//)"
+msgid "_Use"
+msgstr "_Pou¾ít"
+
+msgctxt "MSG_Edit_Use_Help (//)"
+msgid "Apply changes."
+msgstr "Pou¾ít zmìny."
+
+msgctxt "MSG_Edit_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Zru¹it"
+
+msgctxt "MSG_Edit_Cancel_Help (//)"
+msgid "Close window."
+msgstr "Zavøít okno."
+
+msgctxt "MSG_Edit_ListName (//)"
+msgid "Name"
+msgstr "Jméno"
+
+msgctxt "MSG_Edit_ListPath (//)"
+msgid "Path"
+msgstr "Cesta"
+
+msgctxt "MSG_Edit_Definitions (//)"
+msgid "Definitions"
+msgstr "Definice"
+
+msgctxt "MSG_Edit_ARexx (//)"
+msgid "ARexx commands"
+msgstr "Pøíkaz ARexx"
+
+msgctxt "MSG_Edit_PopURL (//)"
+msgid "URL"
+msgstr "URL adresa"
+
+msgctxt "MSG_Edit_PopScreen (//)"
+msgid "Public screen name"
+msgstr "Název veøejné obrazovky"
+
+msgctxt "MSG_Edit_Name (//)"
+msgid "_Name"
+msgstr "J_méno"
+
+msgctxt "MSG_Edit_Name_Help (//)"
+msgid "Name of entry."
+msgstr "Název záznamu."
+
+msgctxt "MSG_Edit_Path (//)"
+msgid "_Path"
+msgstr "_Cesta"
+
+msgctxt "MSG_Edit_Path_Help (//)"
+msgid "Complete path to the application."
+msgstr "Úplná cesta k programu."
+
+msgctxt "MSG_Edit_Port (//)"
+msgid "_ARexx port"
+msgstr "_ARexx port"
+
+msgctxt "MSG_Edit_Port_Help (//)"
+msgid ""
+"Name of the application ARexx port\n"
+"to send commands to."
+msgstr "Název portu ARexx z daného programu,\n"
+"k zasílání pøíkazù."
+
+msgctxt "MSG_Edit_Show (//)"
+msgid "_Show"
+msgstr "Zo_brazit"
+
+msgctxt "MSG_Edit_Show_Help (//)"
+msgid "ARexx command to uniconify the application."
+msgstr "Pøíkaz ARexx k unikonifikaci programu."
+
+msgctxt "MSG_Edit_Screen (//)"
+msgid "_To front"
+msgstr "_Do popøedí"
+
+msgctxt "MSG_Edit_Screen_Help (//)"
+msgid ""
+"ARexx command to move the application\n"
+"screen to front."
+msgstr "Pøíkaz ARexx pøenese okno programu\n"
+"do popøedí."
+
+msgctxt "MSG_Edit_OpenURL (//)"
+msgid "_Open URL"
+msgstr "_Open URL"
+
+msgctxt "MSG_Edit_OpenURL_Help (//)"
+msgid "ARexx command to reach an URL."
+msgstr "Pøíkaz ARexx k odeslání URL adresy."
+
+msgctxt "MSG_Edit_NewWin (//)"
+msgid "N_ew window"
+msgstr "_Nové okno"
+
+msgctxt "MSG_Edit_NewWin_Help (//)"
+msgid ""
+"ARexx command to reach an URL\n"
+"in a new window (or tab)."
+msgstr "Otevøít URL adresu v novém oknì (nebo zálo¾ce.)"
+
+msgctxt "MSG_Browser_List_Help (600//)"
+msgid "List of browsers."
+msgstr "Seznam prohlí¾eèù."
+
+msgctxt "MSG_Browser_WinTitle (//)"
+msgid "Edit Browser"
+msgstr "Úprava prohlí¾eèe"
+
+msgctxt "MSG_Browser_NewBrowser (//)"
+msgid "New browser"
+msgstr "Nový internetový prohlí¾eè"
+
+msgctxt "MSG_Mailer_List_Help (700//)"
+msgid "List of Mailers."
+msgstr "Seznam po¹tovních klientù."
+
+msgctxt "MSG_Mailer_WinTitle (//)"
+msgid "Edit Mailer"
+msgstr "Úprava po¹tovního klienta"
+
+msgctxt "MSG_Mailer_NewMailer (//)"
+msgid "New mailer"
+msgstr "Nový po¹tovní klient"
+
+msgctxt "MSG_Mailer_Write (//)"
+msgid "_Write mail"
+msgstr "_Pøednastavit"
+
+msgctxt "MSG_Mailer_Write_Help (//)"
+msgid ""
+"ARexx command to open a\n"
+"\"write a new EMail window\"."
+msgstr ""
+"Pøíkaz ARexx k otevøení nového okna\n"
+"\"k vytvoøení nové po¹ty v po¹tovním klientu\"."
+
+msgctxt "MSG_Mailer_PopAddress (//)"
+msgid "Address"
+msgstr "Adresa"
+
+msgctxt "MSG_Mailer_Popsubject (//)"
+msgid "Subject"
+msgstr "Subjekt"
+
+msgctxt "MSG_Mailer_PopBodyText (//)"
+msgid "Body text"
+msgstr "Text"
+
+msgctxt "MSG_Mailer_PopBodyFile (//)"
+msgid "Body file"
+msgstr "Soubor"
+
+msgctxt "MSG_FTP_List_Help (800//)"
+msgid "List of FTP clients."
+msgstr "Seznam FTP klientù."
+
+msgctxt "MSG_FTP_WinTitle (//)"
+msgid "Edit FTP client"
+msgstr "Úprava FTP klienta"
+
+msgctxt "MSG_FTP_NewFTP (//)"
+msgid "New FTP client"
+msgstr "Nový FTP klient"
+
+msgctxt "MSG_FTP_RemoveURLQualifier (//)"
+msgid "Re_move 'ftp://'"
+msgstr "Od_ebrat 'ftp://'"
+
+msgctxt "MSG_FTP_RemoveURLQualifier_Help (//)"
+msgid ""
+"If selected, \"ftp://\" is removed\n"
+"from the URL."
+msgstr ""
+"Je-li vybráno, \"ftp://\" je odebráno z URL adresy."
+
+msgctxt "MSG_Misc_Options (900//)"
+msgid "Options"
+msgstr "Mo¾nosti"
+
+msgctxt "MSG_Misc_Defaults (//)"
+msgid "Defaults"
+msgstr "Základní"
+
+msgctxt "MSG_Misc_Prepend (//)"
+msgid "_Prepend \"http://\" to URLs without a scheme"
+msgstr "Pøidat \"http://\" k adrese bez schématu."
+
+msgctxt "MSG_Misc_Prepend_Help (//)"
+msgid ""
+"If selected, \"http://\" is added to any URL\n"
+"without a scheme, so that it is opened in the\n"
+"browser."
+msgstr ""
+"Je-li vybráno, protokol \"http://\" je pøidán k URL adrese\n"
+"bez schématu, a ta je následnì otevøena v prohlí¾eèi."
+
+msgctxt "MSG_Misc_UseMailer (//)"
+msgid "S_end mailto: URLs to email application"
+msgstr "Odeslat protokol mailto: do po¹tovního klienta."
+
+msgctxt "MSG_Misc_UseMailer_Help (//)"
+msgid ""
+"If selected, \"mailto:\" URLs are sent to\n"
+"the mailer, otherwise they are sent to the\n"
+"browser."
+msgstr ""
+"Je-li vybráno, protokol \"mailto:\" je pøedán do\n"
+"po¹tovního klienta, jinak je odeslán do prohlí¾eèe."
+
+msgctxt "MSG_Misc_UseFTP (//)"
+msgid "Se_nd \"ftp://\" URLs to FTP application"
+msgstr "Odeslat protokol \"ftp://\" do FTP programu."
+
+msgctxt "MSG_Misc_UseFTP_Help (//)"
+msgid ""
+"If selected, \"ftp://\" URLs are sent to\n"
+"the FTP client, otherwise they are sent to\n"
+"the browser."
+msgstr ""
+"Je-li vybráno, protokol \"ftp://\" je pøedán do FTP klienta\n"
+"jinak je odeslán do prohlí¾eèe."
+
+msgctxt "MSG_Misc_Show (//)"
+msgid "Un_iconify application"
+msgstr "O_dikonifikovat program."
+
+msgctxt "MSG_Misc_Show_Help (//)"
+msgid ""
+"If selected, the application is uniconified,\n"
+"before sending the URL to it."
+msgstr ""
+"Je-li vybráno, program bude odikonifikován,\n"
+"pøed zasláním URL adresy."
+
+msgctxt "MSG_Misc_Bring (//)"
+msgid "_Bring browser screen to front"
+msgstr "_Pøenést obrazovku prohlí¾eèe do popøedí."
+
+msgctxt "MSG_Misc_Bring_Help (//)"
+msgid ""
+"If selected, the application screen is moved\n"
+"to front, before sending the URL."
+msgstr ""
+"Je-li vybráno, program bude pøenesen do popøedí,\n"
+"pøed zasláním URL adresy."
+
+msgctxt "MSG_Misc_Open (//)"
+msgid "_Open URL in new client window (or tab)"
+msgstr "_Otevøít adresu URL v novém oknì (nebo zálo¾ce)."
+
+msgctxt "MSG_Misc_Open_Help (//)"
+msgid ""
+"If selected, a new application window (or tab)\n"
+"is opened, before sending the URL."
+msgstr ""
+"Je-li vybráno, program otevøe nové okno (nebo zálo¾ku),\n"
+"pøed odesláním URL adresy."
+
+msgctxt "MSG_Misc_Launch (//)"
+msgid "_Launch browser if one isn't running"
+msgstr "_Spustit prohlí¾eè pokud není spu¹tìn."
+
+msgctxt "MSG_Misc_Launch_Help (//)"
+msgid "If selected, a new application is run, if none is found."
+msgstr "Je-li vybráno, program bude spu¹tìn, pokud ji¾ není."
+
+msgctxt "MSG_About_WinTitle (1100//)"
+msgid "About OpenURL"
+msgstr "O OpenURL"
+
+msgctxt "MSG_About_OK (1111//)"
+msgid "_OK"
+msgstr "_OK"
+
+msgctxt "MSG_About_Descr (1112//)"
+msgid ""
+"\\33bOpenURL\\33n is a shared library for easily sending\n"
+"URLs from applications to browsers, mailers\n"
+"and FTP clients.\n"
+"\n"
+"\\33cOpenURL is a Public Domain Software."
+msgstr ""
+"\\33bOpenURL\\33n je sdílená knihovna pro jednoduché zasílání\n"
+"URL adres z programu do prohlí¾eèe, po¹tovního klienta\n"
+"a FTP klienta.\n"
+"\n"
+"\\33cOpenURL je Public Domain Software."
