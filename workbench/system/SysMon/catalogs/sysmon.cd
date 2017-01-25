@@ -8,12 +8,6 @@ System Monitor
 MSG_WINDOW_TITLE (//)
 System Monitor
 ;
-MSG_LIST_REFRESH (//)
-Refresh
-;
-MSG_AUTO_REFRESH (//)
-Auto-Refresh (1s)
-;
 MSG_USAGE (//)
 Usage
 ;
@@ -47,7 +41,10 @@ Priority
 MSG_TASK_TYPE (//)
 Type
 ;
-MSG_TASK_READY_AND_WAIT (//)
+MSG_TASK_READY_WAIT_INIT (//)
+- ready, - waiting
+;
+MSG_TASK_READY_WAIT (//)
 %ld ready, %ld waiting
 ;
 MSG_TAB_SYSTEM (//)
@@ -82,4 +79,25 @@ GART Aperture
 ;
 MSG_CANT_OPEN_TASK_RESOURCE (//)
 Can't open task.resource\n
+;
+MSG_PROJECT (//)
+Project
+;
+MSG_REFRESH_SPEED (//)
+Refresh Speed
+;
+MSG_FAST (//)
+Fast
+;
+MSG_NORMAL (//)
+Normal
+;
+MSG_SLOW (//)
+Slow
+;
+MSG_TASK_TOMBSTONE (//)
+<tombstone>
+;
+MSG_TASK_UNKNOWN (//)
+<unknown>
 ;

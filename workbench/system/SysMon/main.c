@@ -91,12 +91,12 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->pageactivehook.h_Data = (APTR)smdata;
 #endif
 
-    smdata->msg_taskreadywait = (STRPTR)_(MSG_TASK_READY_AND_WAIT);
-    smdata->msg_project = (STRPTR)"Project";
-    smdata->msg_refresh_speed = (STRPTR)"Refresh Speed";
-    smdata->msg_fast = (STRPTR)"Fast";
-    smdata->msg_normal = (STRPTR)"Normal";
-    smdata->msg_slow  = (STRPTR)"Slow";
+    smdata->msg_taskreadywait = (STRPTR)_(MSG_TASK_READY_WAIT);
+    smdata->msg_project = (STRPTR)_(MSG_PROJECT);
+    smdata->msg_refresh_speed = (STRPTR)_(MSG_REFRESH_SPEED);
+    smdata->msg_fast = (STRPTR)_(MSG_FAST);
+    smdata->msg_normal = (STRPTR)_(MSG_NORMAL);
+    smdata->msg_slow  = (STRPTR)_(MSG_SLOW);
 
     smdata->tasklist = (Object *)NewObject(Tasklist_CLASS->mcc_Class, NULL, MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Normal, TAG_DONE);
 
@@ -135,7 +135,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                     NoFrame,
                                     MUIA_Font, MUIV_Font_Tiny,
                                     MUIA_Text_PreParse, (IPTR)"\33r",
-                                    MUIA_Text_Contents, (IPTR)"- ready, - waiting",
+                                    MUIA_Text_Contents, (IPTR)_(MSG_TASK_READY_WAIT_INIT),
                                 End,
                             End,
                         End),

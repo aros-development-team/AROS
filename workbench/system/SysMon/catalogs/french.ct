@@ -13,12 +13,6 @@ Moniteur Système
 MSG_WINDOW_TITLE
 Moniteur Système
 ;
-MSG_LIST_REFRESH
-Rafraîchissement
-;
-MSG_AUTO_REFRESH
-Rafraîchissement auto (1s)
-;
 MSG_USAGE
 Usage
 ;
@@ -52,6 +46,12 @@ Priorité
 MSG_TASK_TYPE
 Type
 ;
+MSG_TASK_READY_WAIT_INIT
+- prêt, - attendre
+;
+MSG_TASK_READY_WAIT
+%ld prêt, %ld attendre
+;
 MSG_TAB_SYSTEM
 Système
 ;
@@ -81,4 +81,28 @@ Mémoire Video
 ;
 MSG_GART_APER
 Ouverture GART
+;
+MSG_CANT_OPEN_TASK_RESOURCE
+Ne peut pas ouvrir task.resource\n
+;
+MSG_PROJECT
+Projet
+;
+MSG_REFRESH_SPEED
+Vitesse de rafraîchissement
+;
+MSG_FAST
+Vite
+;
+MSG_NORMAL
+Ordinaire
+;
+MSG_SLOW
+Lent
+;
+MSG_TASK_TOMBSTONE
+<mort>
+;
+MSG_TASK_UNKNOWN
+<inconnu>
 ;
