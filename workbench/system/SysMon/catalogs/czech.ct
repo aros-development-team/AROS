@@ -3,6 +3,7 @@
 ## codeset 5
 ;
 ;
+;
 MSG_APP_NAME
 SysMon
 ; SysMon
@@ -14,14 +15,6 @@ System Monitor
 MSG_WINDOW_TITLE
 Systémový monitor
 ; System Monitor
-;
-MSG_LIST_REFRESH
-Obèerstvení
-; Refresh
-;
-MSG_AUTO_REFRESH
-Auto. obèerstvení (1s)
-; Auto-Refresh (1s)
 ;
 MSG_USAGE
 Vyu¾ití
@@ -67,7 +60,11 @@ MSG_TASK_TYPE
 Typ
 ; Type
 ;
-MSG_TASK_READY_AND_WAIT
+MSG_TASK_READY_WAIT_INIT
+- pøipravených, - èekajících
+; - ready, - waiting
+;
+MSG_TASK_READY_WAIT
 %ld pøipravených, %ld èekajících
 ; %ld ready, %ld waiting
 ;
@@ -114,4 +111,32 @@ GART Aperture
 MSG_CANT_OPEN_TASK_RESOURCE
 Nelze otevøít soubor task.resource\n
 ; Can't open task.resource\n
+;
+MSG_PROJECT
+Projekt
+; Project
+;
+MSG_REFRESH_SPEED
+Obnovovací Rychlost
+; Refresh Speed
+;
+MSG_FAST
+Rychle
+; Fast
+;
+MSG_NORMAL
+Normální
+; Normal
+;
+MSG_SLOW
+Pomalý
+; Slow
+;
+MSG_TASK_TOMBSTONE
+<mrtví>
+; <tombstone>
+;
+MSG_TASK_UNKNOWN
+<neznámý>
+; <unknown>
 ;

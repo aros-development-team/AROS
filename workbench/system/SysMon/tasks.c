@@ -368,8 +368,8 @@ Object *Tasklist__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             data->msg_task_name = (STRPTR)_(MSG_TASK_NAME);
             data->msg_task_priority = (STRPTR)_(MSG_TASK_PRIORITY);
             data->msg_task_type = (STRPTR)_(MSG_TASK_TYPE);
-            data->msg_task_tombstoned = (STRPTR)"<tombstone>";
-            data->msg_task_unknown = (STRPTR)"<unknown>";
+            data->msg_task_tombstoned = (STRPTR)_(MSG_TASK_TOMBSTONE);
+            data->msg_task_unknown = (STRPTR)_(MSG_TASK_UNKNOWN);
 
             data->tld_ConstructHook.h_Entry = (APTR)TasksListConstructFunction;
             data->tld_ConstructHook.h_Data = (APTR)data;
