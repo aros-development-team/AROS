@@ -29,7 +29,7 @@
 #include "smp.h"
 #include "tls.h"
 
-#define D(x) x
+#define D(x)
 #define DSTACK(x)
 
 static APTR core_AllocBootTLS(struct KernBootPrivate *);

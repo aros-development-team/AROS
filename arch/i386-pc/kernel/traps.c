@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,7 +16,6 @@
 #include "kernel_syscall.h"
 #include "apic.h"
 #include "traps.h"
-#include "xtpic.h"
 
 #define D(x)
 #define DSYSCALL(x)
@@ -172,41 +171,6 @@ void handleException(struct ExceptionContext *regs, unsigned long error_code, un
 	/* These are CPU traps */
 	cpu_Trap(regs, error_code, irq_number);
     }
-    else if ((irq_number >= 0x20) && (irq_number < 0x30)) /* XT-PIC IRQ */
-    {
-	/* From CPU's point of view, IRQs are exceptions starting from 0x20. */
-    	irq_number -= 0x20;
-
-	if (irq_number == 13)
-	{
-	    /* FPU error IRQ */
-	    outb(0, 0xF0);
-	}
-
-	if (KernelBase)
-    	{
-            XTPIC_AckIntr(irq_number, &KernelBase->kb_PlatformData->xtpic_mask);
-	    krnRunIRQHandlers(KernelBase, irq_number);
-
-	    /*
-	     * Interrupt acknowledge on XT-PIC also disables this interrupt.
-	     * If we still need it, we need to re-enable it.
-	     */
-            if (!IsListEmpty(&KernelBase->kb_Interrupts[irq_number]))
-	    {
-		XTPIC_EnableIRQ(irq_number, &KernelBase->kb_PlatformData->xtpic_mask);
-	    }
-	}
-
-	/* Upon exit from the lowest-level hardware IRQ we run the task scheduler */
-	if (SysBase && (regs->ds != KERNEL_DS))
-	{
-	    /* Disable interrupts for a while */
-	    __asm__ __volatile__("cli; cld;");
-
-	    core_ExitInterrupt(regs);
-	}
-    }
     else if (irq_number == 0x80)  /* Syscall? */
     {
 	/* Syscall number is actually ULONG (we use only eax) */
@@ -246,10 +210,43 @@ void handleException(struct ExceptionContext *regs, unsigned long error_code, un
 
 	DSYSCALL(bug("[Kernel] Returning from syscall...\n"));
     }
-    else if (irq_number == 0xFE)
+    else if (irq_number >= 0x20)
     {
-	/* APIC error vector */
-        core_APIC_AckIntr();
+	/* From CPU's point of view, IRQs are exceptions starting from 0x20. */
+    	irq_number -= 0x20;
+
+	if (irq_number == 13)
+	{
+	    /* FPU error IRQ */
+	    outb(0, 0xF0);
+	}
+
+        if (KernelBase)
+        {
+            struct IntrController *irqIC;
+
+            if ((irqIC = krnGetInterruptController(KernelBase, KernelBase->kb_Interrupts[irq_number].lh_Type)) != NULL)
+            {
+                if (irqIC->ic_IntrAck)
+                    irqIC->ic_IntrAck(irqIC->ic_Private, KernelBase->kb_Interrupts[irq_number].l_pad, irq_number);
+
+                krnRunIRQHandlers(KernelBase, irq_number);
+
+                if ((irqIC->ic_Flags & ICF_ACKENABLE) &&
+                    (irqIC->ic_IntrEnable) &&
+                    (!IsListEmpty(&KernelBase->kb_Interrupts[irq_number])))
+                    irqIC->ic_IntrEnable(irqIC->ic_Private, KernelBase->kb_Interrupts[irq_number].l_pad, irq_number);
+            }
+        }
+
+	/* Upon exit from the lowest-level hardware IRQ we run the task scheduler */
+	if (SysBase && (regs->ds != KERNEL_DS))
+	{
+	    /* Disable interrupts for a while */
+	    __asm__ __volatile__("cli; cld;");
+
+	    core_ExitInterrupt(regs);
+	}
     }
     /* Return from this routine is equal to core_LeaveInterrupt(regs) */
 }

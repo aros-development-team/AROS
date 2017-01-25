@@ -9,7 +9,8 @@
 */
 
 #include <asm/cpu.h>
-#include <proto/acpica.h>
+
+#include "kernel_interrupts.h"
 
 #include "apic.h"
 
@@ -32,5 +33,7 @@ struct IOAPICData
     ULONG	                ioapic_count;
     struct IOAPICCfgData        ioapics[0];	/* Per-IOAPIC data					*/
 };
+
+extern struct IntrController IOAPICInt_IntrController;
 
 #endif /* KERNEL_IOAPIC_H */

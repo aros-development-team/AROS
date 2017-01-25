@@ -38,7 +38,7 @@ struct APICData *core_APIC_Probe(void)
     data->lapicBase	   = core_APIC_GetBase();
     data->apic_count		   = 1;
     data->flags		   = APF_8259;
-    data->cores[0].lapicID = core_APIC_GetID(data->lapicBase);
+    data->cores[0].cpu_LocalID = core_APIC_GetID(data->lapicBase);
 
     /* Just initialize to default state */
     core_APIC_Init(data, 0);
@@ -60,7 +60,7 @@ apicid_t core_APIC_GetNumber(struct APICData *data)
 
     for (__APICNo = 0; __APICNo < data->apic_count; __APICNo++)
     {
-        if (data->cores[__APICNo].lapicID == __APICLogicalID)
+        if (data->cores[__APICNo].cpu_LocalID == __APICLogicalID)
             return __APICNo;
     }
 

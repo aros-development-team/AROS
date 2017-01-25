@@ -13,9 +13,9 @@
 #include "kernel_intern.h"
 #include "acpi.h"
 #include "apic.h"
+#include "smp.h"
 #include "traps.h"
 #include "utils.h"
-#include "xtpic.h"
 
 #define D(x) x
 
@@ -23,6 +23,9 @@ static int PlatformInit(struct KernelBase *KernelBase)
 {
     struct PlatformData *data;
     struct table_desc idtr;
+
+    NEWLIST(&KernelBase->kb_ICList);
+    KernelBase->kb_ICTypeBase = KBL_INTERNAL + 1;
 
     data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!data)
@@ -81,42 +84,3 @@ static int PlatformInit(struct KernelBase *KernelBase)
 }
 
 ADD2INITLIB(PlatformInit, 10);
-
-/* acpica.library is optional */
-struct Library *ACPICABase = NULL;
-
-void PlatformPostInit(void)
-{
-    struct PlatformData *pdata = KernelBase->kb_PlatformData;
-
-    ACPICABase = OpenLibrary("acpica.library", 0);
-
-    if (ACPICABase)
-        acpi_Init(pdata);
-
-    if (!pdata->kb_APIC)
-    {
-	/* No APIC was discovered by ACPI/whatever else. Do the probe. */
-	pdata->kb_APIC = core_APIC_Probe();
-    }
-
-    if ((!pdata->kb_APIC) || (pdata->kb_APIC->flags & APF_8259))
-    {
-        /* Initialize our XT-PIC */
-	XTPIC_Init(&pdata->xtpic_mask);
-    }
-    
-    if (pdata->kb_APIC && (pdata->kb_APIC->apic_count > 1))
-    {
-    	if (smp_Setup())
-    	{
-	    smp_Wake();
-	}
-	else
-	{
-    	    D(bug("[Kernel:i386] %s: Failed to prepare the environment!\n", __func__));
-
-    	    pdata->kb_APIC->apic_count = 1;	/* We have only one workinng CPU */
-    	}
-    }
-}

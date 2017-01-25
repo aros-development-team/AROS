@@ -11,6 +11,8 @@
 arg1:	.long	0
 arg2:	.long	0
 arg3:	.long	0
+arg4:	.long	0
+pml4:	.long	0
 sp:	.long	0
 ip:	.long	0
 gdt:	.short	0
@@ -63,7 +65,9 @@ boot32:	movw	$0x10, %ax		# Setup the temporary 32-bit data selector
 	movw	$0x20, %ax		# Set stack to large 32-bit data segment
 	movw	%ax, %ss
 	movl	sp, %esp		# Load stack pointer
-	movl	arg3, %ebx		# Prepare arguments for the C entry point
+	movl	arg4, %ebx		# Prepare arguments for the C entry point
+	pushl	%ebx
+	movl	arg3, %ebx
 	pushl	%ebx
 	movl	arg2, %ebx
 	pushl	%ebx

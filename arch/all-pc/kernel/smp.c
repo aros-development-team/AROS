@@ -38,40 +38,49 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
     apicid_t _APICID;
     apicid_t _APICNO;
 
+#if (__WORDSIZE==64)
     /* Enable fxsave/fxrstor */
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
+#endif
 
     /* Find out ourselves */
     _APICBase = core_APIC_GetBase();
     _APICID   = core_APIC_GetID(_APICBase);
     _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData->kb_APIC);
 
-    D(bug("[Kernel:SMP] smp_Entry[0x%02X]: launching on AP APIC ID 0x%02X, base @ 0x%p\n", _APICID, _APICID, _APICBase));
-    D(bug("[Kernel:SMP] smp_Entry[0x%02X]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
-    D(bug("[Kernel:SMP] smp_Entry[0x%02X]: Stack base 0x%p, ready lock 0x%p\n", _APICID, stackBase, apicready));
+    D(
+        bug("[Kernel:SMP] %s[0x%02X]: CPU Core starting up...\n", __func__, _APICID);
+        bug("[Kernel:SMP] %s[0x%02X]:     APIC base @ 0x%p\n", __func__, _APICID, _APICBase);
+        bug("[Kernel:SMP] %s[0x%02X]:     KernelBootPrivate 0x%p\n", __func__, _APICID, __KernBootPrivate);
+        bug("[Kernel:SMP] %s[0x%02X]:     StackBase 0x%p\n", __func__, _APICID, stackBase);
+        bug("[Kernel:SMP] %s[0x%02X]:     Ready Lock 0x%p\n", __func__, _APICID, apicready);
+    )
 
     /* Set up GDT and LDT for our core */
     CORETLS = PlatformAllocTLS(KernelBase, _APICID);
     COREGDT = PlatformAllocGDT(KernelBase, _APICID);
     COREIDT = PlatformAllocIDT(KernelBase, _APICID);
 
-    D(bug("[Kernel:SMP] smp_Entry[0x%02X]: Core IDT @ 0x%p, GDT @ 0x%p, TLS @ 0x%p\n", _APICID, COREIDT, COREGDT, CORETLS));
+    bug("[Kernel:SMP] %s[0x%02X]: Core IDT @ 0x%p, GDT @ 0x%p, TLS @ 0x%p\n", __func__, _APICID, COREIDT, COREGDT, CORETLS);
 
+#if (__WORDSIZE==64)
     core_SetupGDT(__KernBootPrivate, _APICID, COREGDT, CORETLS, __KernBootPrivate->TSS);
 
     core_CPUSetup(_APICID, COREGDT, stackBase);
     core_SetupIDT(__KernBootPrivate, _APICID, COREIDT);
+
+    D(bug("[Kernel:SMP] %s[0x%02X]: Initialising APIC...\n", __func__, _APICID));
+    core_APIC_Init(KernelBase->kb_PlatformData->kb_APIC, _APICID);
+#endif
 
     bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, KernelBase->kb_PlatformData->kb_APIC->apic_count);
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
 
-    /*
-     * Unfortunately at the moment we have nothing more to do.
-     * The rest of AROS is not SMP-capable. :-(
-     */
+#if !defined(__AROSEXEC_SMP__)
     while (1) asm volatile("hlt");
+#endif
 }
 
 static int smp_Setup(struct KernelBase *KernelBase)
@@ -125,7 +134,9 @@ static int smp_Setup(struct KernelBase *KernelBase)
      * a special care about it.
      */
     bs->Arg3 = (IPTR)KernelBase;
+#if (__WORDSIZE==64)
     bs->PML4 = __KernBootPrivate->PML4;
+#endif
     bs->IP   = smp_Entry;
 
     return 1;
@@ -149,7 +160,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
     /* Core number 0 is our bootstrap core, so we start from No 1 */
     for (i = 1; i < apic->apic_count; i++)
     {
-    	apicid_t apic_id = apic->cores[i].lapicID;
+    	apicid_t apic_id = apic->cores[i].cpu_LocalID;
 
     	D(bug("[Kernel:SMP] Launching APIC #%u (ID 0x%02X)\n", i + 1, apic_id));
  

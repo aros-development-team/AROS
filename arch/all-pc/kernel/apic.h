@@ -10,6 +10,8 @@
 
 #include <asm/cpu.h>
 
+#include "kernel_interrupts.h"
+
 typedef  UBYTE apicid_t;
 
 /*
@@ -19,20 +21,21 @@ typedef  UBYTE apicid_t;
  */
 struct CPUData
 {
-    ULONG timerFreq;	/* Timer clock frequency			*/
-    apicid_t lapicID;	/* Local APIC ID				*/
-    UBYTE sysID;	/* System (ACPI, whatever) ID, can differ	*/
+    ULONG       cpu_TimerFreq;	/* Timer clock frequency			        */
+    apicid_t    cpu_LocalID;	/* Local APIC ID				        */
+    apicid_t    cpu_PrivateID;  /* Sub-system private (ACPI, whatever) ID -  can differ */
+    icintrid_t  cpu_ICID;       /* NB - this is icintrid_t not icid_t                   */
 };
 
 struct APICData
 {
-    IPTR	   lapicBase; 	/* Local APIC base address			*/
-    ULONG	   apic_count;	/* Total number of APICs in the system		*/
-    UWORD	   flags;	/* See below					*/
-    struct CPUData cores[0];	/* Per-CPU data					*/
+    IPTR	   lapicBase; 	/* Local APIC base address			        */
+    ULONG	   apic_count;	/* Total number of APICs in the system		        */
+    UWORD	   flags;	/* See below					        */
+    struct CPUData cores[0];	/* Per-CPU data					        */
 };
 
-#define APF_8259 0x0001	/* Legacy PIC present				*/
+#define APF_8259 0x0001	        /* Legacy PIC present				        */
 
 ULONG core_APIC_Wake(APTR start_addr, apicid_t id, IPTR base);
 UBYTE core_APIC_GetID(IPTR base);
@@ -53,5 +56,7 @@ static inline IPTR core_APIC_GetBase(void)
 
 struct APICData *core_APIC_Probe(void);
 apicid_t core_APIC_GetNumber(struct APICData *);
+
+extern struct IntrController APICInt_IntrController;
 
 #endif /* KERNEL_APIC_H */
