@@ -1,3 +1,6 @@
+#ifndef KERNEL_BASE_H
+#define KERNEL_BASE_H
+
 /*
     Copyright � 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
@@ -32,13 +35,15 @@ struct PlatformData;
 /* kernel.resource base. Nothing spectacular, really. */
 struct KernelBase
 {
-    struct Node            kb_Node;
-    struct MinList         kb_Exceptions[EXCEPTIONS_COUNT];
-    struct List            kb_Interrupts[HW_IRQ_COUNT];
-    ULONG		   kb_ContextFlags;	/* Hints for KrnCreateContext() */
-    ULONG		   kb_ContextSize;	/* Total length of CPU context  */
-    ULONG		   kb_PageSize;		/* Physical memory page size	*/
-    struct PlatformData	  *kb_PlatformData;
+    struct Node         kb_Node;
+    struct List         kb_ICList;              /* list of all controller types */
+    struct MinList      kb_Exceptions[EXCEPTIONS_COUNT];
+    struct List         kb_Interrupts[HW_IRQ_COUNT];
+    ULONG               kb_ContextFlags;	/* Hints for KrnCreateContext() */
+    ULONG               kb_ContextSize;	/* Total length of CPU context  */
+    ULONG               kb_PageSize;		/* Physical memory page size	*/
+    struct PlatformData *kb_PlatformData;
+    UBYTE               kb_ICTypeBase;          /* used to set IC controller ID's */
 };
 
 /*
@@ -61,3 +66,5 @@ struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end);
 /* Memhry header - TLSF support functions */
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 struct MemHeader * krnConvertMemHeaderToTLSF(struct MemHeader * source);
+
+#endif /* !KERNEL_BASE_H */
