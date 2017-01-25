@@ -17,23 +17,31 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
-#include "acpi.h"
-#include "apic.h"
-#include "smp.h"
-#include "xtpic.h"
-#include "tls.h"
 
-#define D(x) x
+#define D(x)
 #define DAPIC(x)
 
-/* Post exec init */
+/* 
+    This file contains code that is run once Exec has been brought up - and is launched
+    via the RomTag/Autoinit routines in Exec.
+    
+    Here we do the Platform configuration that requires a working "AROS" environment.
+*/
 
 static int Platform_Init(struct KernelBase *LIBBASE)
 {
     struct PlatformData *pdata;
     int i;
 
-    D(bug("[Kernel:x86_64] Kernel_Init: Post-exec init. KernelBase @ %p\n", LIBBASE));
+    D(
+        bug("[Kernel:x86_64] %s: Performing Post-Exec initialization\n", __func__);
+        bug("[Kernel:x86_64] %s: KernelBase @ %p\n", __func__, LIBBASE);
+    )
+
+    NEWLIST(&LIBBASE->kb_ICList);
+    LIBBASE->kb_ICTypeBase = KBL_INTERNAL + 1;
+
+    D(bug("[Kernel:x86_64] %s: Interrupt Controller Base ID = %d\n", __func__, LIBBASE->kb_ICTypeBase));
 
     for (i = 0; i < HW_IRQ_COUNT; i++)
     {
@@ -45,11 +53,13 @@ static int Platform_Init(struct KernelBase *LIBBASE)
         }
     }
 
-    D(bug("[Kernel:x86_64] Kernel_Init: Interupt List initialised\n"));
+    D(bug("[Kernel:x86_64] %s: Interrupt Lists initialised\n", __func__));
 
     pdata = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!pdata)
     	return FALSE;
+
+    D(bug("[Kernel:x86_64] %s: Platform Data allocated @ 0x%p\n", __func__, pdata));
 
     LIBBASE->kb_PlatformData = pdata;
 
@@ -57,56 +67,3 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 }
 
 ADD2INITLIB(Platform_Init, 10)
-
-void PlatformPostInit(void)
-{
-    struct PlatformData *pdata = KernelBase->kb_PlatformData;
-
-    ACPICABase = OpenLibrary("acpica.library", 0);
-
-    if (ACPICABase)
-        acpi_Init(pdata);
-
-    // Now initialize our interrupt controller (XT-PIC or APIC)
-    ictl_Initialize();
-
-    // The last thing to do is to start up secondary CPU cores (if any)
-    smp_Initialize();
-}
-
-APTR PlatformAllocGDT(struct KernelBase *LIBBASE, apicid_t _APICID)
-{
-    APTR GDTalloc;
-    
-    GDTalloc = (APTR)AllocMem(sizeof(struct gdt_64bit) + 128, MEMF_24BITDMA|MEMF_CLEAR);
-    GDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)GDTalloc, 128);
-    D(bug("[Kernel] %s[%d]: GDT @ 0x%p\n", __func__, _APICID, GDTalloc));
-
-    return GDTalloc;
-}
-
-APTR PlatformAllocTLS(struct KernelBase *LIBBASE, apicid_t _APICID)
-{
-    APTR TLSalloc;
-
-    TLSalloc = (APTR)AllocMem(sizeof(tls_t), MEMF_24BITDMA|MEMF_CLEAR);
-    TLSalloc = (APTR)AROS_ROUNDUP2((unsigned long)TLSalloc, sizeof(APTR));
-    D(bug("[Kernel] %s[%d]: TLS @ 0x%p\n", __func__, _APICID, TLSalloc));
-
-    return TLSalloc;
-}
-
-APTR PlatformAllocIDT(struct KernelBase *LIBBASE, apicid_t _APICID)
-{
-    APTR IDTalloc;
-
-    if (!(IDTalloc = IDT_GET()))
-    {
-        IDTalloc = (APTR)AllocMem(sizeof(struct int_gate_64bit) * 256, MEMF_24BITDMA|MEMF_CLEAR);
-        IDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)IDTalloc, 256);
-    	IDT_SET(IDTalloc)
-
-    	D(bug("[Kernel] %s[%d]: Allocated IDT at 0x%p\n", __func__, _APICID, IDTalloc));
-    }
-    return IDTalloc;
-}

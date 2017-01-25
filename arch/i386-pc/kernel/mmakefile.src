@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FUNCS   := getcpucount getcpunumber
-FILES   := kernel_startup kernel_debug platform_init ictl kernel_cpu traps utils smp
+FILES   := kernel_startup kernel_debug platform_init kernel_cpu traps utils
 AFILES  := core_interrupts reboot
 MAINDIR := rom/kernel
 
@@ -12,11 +12,11 @@ MAINDIR := rom/kernel
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
                  -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
-USER_AFLAGS   := -isystem $(GENINCDIR)
+USER_AFLAGS   := $(AFLAGS) -isystem $(GENINCDIR) -I$(SRCDIR)/arch/all-pc/kernel
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=pc-i386 files="$(FILES) $(FUNCS)" asmfiles=$(AFILES)
+  arch=pc-i386 files="$(FILES) $(FUNCS)" asmfiles=$(AFILES) aflags=$(USER_AFLAGS) 
 
 # Build smpboot.bin.o in $(GENDIR)/$(MAINDIR)/arch, where it will be picked up
 # by the linker automatically (make.tmpl macros link in everything that is found there)

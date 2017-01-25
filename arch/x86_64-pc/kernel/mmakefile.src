@@ -3,12 +3,12 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES    := kernel_startup platform_init kernel_cpu kernel_debug kernel_memory kernel_bootmem \
-	    intr mmu smp
+	    intr mmu
 FUNCS	 := getcpucount getcpunumber
 ASMFILES := core_interrupts
 
 MAINDIR	      := rom/kernel
-USER_AFLAGS   := -I$(GENINCDIR)
+USER_AFLAGS   := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-pc/kernel
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 

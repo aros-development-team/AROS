@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,10 +24,9 @@
 #include "kernel_syscall.h"
 #include "cpu_traps.h"
 #include "apic.h"
-#include "xtpic.h"
 #include "tls.h"
 
-#define D(x) x
+#define D(x)
 #define DSYSCALL(x)
 #define DTRAP(x)
 #define DUMP_CONTEXT
@@ -124,6 +123,10 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, 
         IDT_sel.size = sizeof(struct int_gate_64bit) * 256 - 1;
         IDT_sel.base = (unsigned long)IGATES;    
         asm volatile ("lidt %0"::"m"(IDT_sel));
+    }
+    else
+    {
+        // PANIC?
     }
 }
 
@@ -350,28 +353,23 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     {
 	if (KernelBase)
     	{
+            struct IntrController *irqIC;
+
 	    /* From CPU's point of view, IRQs are exceptions starting from 0x20. */
     	    irq_number -= 0x20;
 
-    	    switch (KernelBase->kb_Interrupts[irq_number].lh_Type)
-    	    {
-    	    case KBL_APIC:
-            	core_APIC_AckIntr();
-            	break;
+            if ((irqIC = krnGetInterruptController(KernelBase, KernelBase->kb_Interrupts[irq_number].lh_Type)) != NULL)
+            {
+                if (irqIC->ic_IntrAck)
+                    irqIC->ic_IntrAck(irqIC->ic_Private, KernelBase->kb_Interrupts[irq_number].l_pad, irq_number);
 
-            case KBL_XTPIC:
-            	XTPIC_AckIntr(irq_number, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
 	 	krnRunIRQHandlers(KernelBase, irq_number);
 
-		/*
-		 * Interrupt acknowledge on XT-PIC also disables this interrupt.
-		 * If we still need it, we need to re-enable it.
-		 */
-            	if (!IsListEmpty(&KernelBase->kb_Interrupts[irq_number]))
-                    XTPIC_EnableIRQ(irq_number, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
-
-                break;
-	    }
+                if ((irqIC->ic_Flags & ICF_ACKENABLE) &&
+                    (irqIC->ic_IntrEnable) &&
+                    (!IsListEmpty(&KernelBase->kb_Interrupts[irq_number])))
+                    irqIC->ic_IntrEnable(irqIC->ic_Private, KernelBase->kb_Interrupts[irq_number].l_pad, irq_number);
+            }
 	}
 
 	/* Upon exit from the lowest-level hardware IRQ we run the task scheduler */
@@ -385,51 +383,4 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     }
 
     core_LeaveInterrupt(regs);
-}
-
-void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
-{
-    if (KernelBase->kb_Interrupts[irq].lh_Type == KBL_XTPIC)
-        XTPIC_EnableIRQ(irq, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
-}
-
-void ictl_Initialize(void)
-{
-    struct KernelBase *KernelBase = getKernelBase();
-    struct PlatformData *pdata = KernelBase->kb_PlatformData;
-
-    if (!pdata->kb_APIC)
-    {
-	/* No APIC was discovered by ACPI/whatever else. Do the probe. */
-	pdata->kb_APIC = core_APIC_Probe();
-    }
-
-    if (!pdata->kb_APIC)
-    {
-    	/* We are x86-64 and we always have APIC. */
-    	krnPanic(KernelBase, "Failed to allocate APIC descriptor\n.The system is low on memory.");
-    }
-
-    /* Take over the APIC IRQ */
-    if (KernelBase->kb_Interrupts[0xde].lh_Type == KBL_INTERNAL)
-        KernelBase->kb_Interrupts[0xde].lh_Type = KBL_APIC;
-
-    if (pdata->kb_APIC->flags & APF_8259)
-    {
-        int i;
-    	/*
-    	 * Initialize legacy 8529A PIC.
-    	 * TODO: We obey ACPI information about its presence, however currently we don't have
-    	 * IOAPIC support. Switching to IOAPIC requires full ACPI support including AML.
-    	 */
-
-    	XTPIC_Init(&pdata->kb_XTPIC_Mask);
-        for (i = 0; i < IRQ_COUNT; i++)
-        {
-            if (KernelBase->kb_Interrupts[i].lh_Type == KBL_INTERNAL)
-                KernelBase->kb_Interrupts[i].lh_Type = KBL_XTPIC;
-        }
-    }
-
-    D(bug("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n"));
 }

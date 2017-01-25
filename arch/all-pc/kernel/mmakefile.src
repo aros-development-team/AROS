@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FUNCS	 := displayalert
-FILES    := apic  apic_ia32 apic_msi acpi acpi_apic acpi_ioapic  xtpic cpu_traps kernel_mmap kernel_timer _displayalert
+FILES    := apic  apic_ia32 apic_msi acpi acpi_apic acpi_ioapic pic_i8259a ictl smp cpu_traps kernel_mmap kernel_timer _displayalert platform_post
 ASMFILES := cli sti issuper
 
 MAINDIR	      := rom/kernel
