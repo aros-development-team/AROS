@@ -31,7 +31,7 @@ FUNCS :=     spininit spinislocked spintrylock spinlock spinunlock addexceptionh
 	     putchar maygetchar allocpages freepages getsystemattr formatstr		        \
 	     initmemory statmemory _bug _displayalert getcpucount getcpunumber getcpumask	\
 	     allockernelbase prepareexecbase
-FILES     := kernel_init cpu_init kernel_cpu kernel_debug kernel_panic kernel_intr \
+FILES     := kernel_init cpu_init kernel_cpu kernel_debug kernel_panic kernel_intr kernel_interruptcontroller \
 	     kernel_memory kernel_romtags kernel_scheduler kernel_globals tlsf
 MMU_FILES := kernel_mm
 # You can replace this with own algorithm
