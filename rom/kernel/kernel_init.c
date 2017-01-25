@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main kernel.resource initialization.
@@ -100,7 +100,7 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     for (i=0; i < EXCEPTIONS_COUNT; i++)
 	NEWLIST(&KernelBase->kb_Exceptions[i]);
 
-    for (i=0; i < IRQ_COUNT; i++)
+    for (i=0; i < HW_IRQ_COUNT; i++)
         NEWLIST(&KernelBase->kb_Interrupts[i]);
 
     /*
