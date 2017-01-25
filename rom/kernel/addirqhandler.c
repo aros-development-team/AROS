@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -77,7 +77,7 @@
 
     D(bug("[KRN] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
 
-    if (irq < IRQ_COUNT)
+    if (irq < HW_IRQ_COUNT)
     {
         /* Go to supervisor mode */
         (void)goSuper();
