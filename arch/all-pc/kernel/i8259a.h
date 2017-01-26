@@ -4,6 +4,8 @@
 #include <aros/macros.h>
 #include <inttypes.h>
 
+#define I8259A_IRQCOUNT         16
+
 #define MASTER8259_CMDREG       0x20
 #define MASTER8259_MASKREG      0x21
 #define SLAVE8259_CMDREG        0xA0
