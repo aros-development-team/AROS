@@ -64,10 +64,9 @@ APTR PlatformAllocTLS(struct KernelBase *LIBBASE, apicid_t _APICID)
 {
     APTR TLSalloc = NULL;
 
-#if (__WORDSIZE==64)
-    TLSalloc = (APTR)AllocMem(sizeof(tls_t), MEMF_24BITDMA|MEMF_CLEAR);
-    TLSalloc = (APTR)AROS_ROUNDUP2((unsigned long)TLSalloc, sizeof(APTR));
-#endif
+    TLSalloc = (APTR)AllocMem(TLS_SIZE, MEMF_24BITDMA|MEMF_CLEAR);
+    TLSalloc = (APTR)AROS_ROUNDUP2((unsigned long)TLSalloc, TLS_ALIGN);
+
     D(bug("[Kernel] %s[%d]: TLS @ 0x%p\n", __func__, _APICID, TLSalloc));
 
     return TLSalloc;
