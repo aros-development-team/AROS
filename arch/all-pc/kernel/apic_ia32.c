@@ -54,10 +54,9 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     D(bug("[Kernel:APIC] %s(%d)\n", __func__, instanceCount));
 
     /* Take over the APIC IRQ */
-    if (KernelBase->kb_Interrupts[0xde].lh_Type == KBL_INTERNAL)
+    if (!krnInitInterrupt(KernelBase, 0xde, APICInt_IntrController.ic_Node.ln_Type, 0))
     {
-        KernelBase->kb_Interrupts[0xde].lh_Type = APICInt_IntrController.ic_Node.ln_Type;
-        KernelBase->kb_Interrupts[0xde].l_pad = 0;      /* Initially set to first instance */
+        bug("[Kernel:APIC] %s: failed to acquire IRQ #0xde\n", __func__);
     }
 
     return TRUE;

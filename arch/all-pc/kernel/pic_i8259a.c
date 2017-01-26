@@ -53,10 +53,9 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         /* Take over the 8259a IRQ's */
         for (i = 0; i < IRQ_COUNT; i++)
         {
-            if (KernelBase->kb_Interrupts[i].lh_Type == KBL_INTERNAL)
+            if (!krnInitInterrupt(KernelBase, i, i8259a_IntrController.ic_Node.ln_Type, 0))
             {
-                KernelBase->kb_Interrupts[i].lh_Type = i8259a_IntrController.ic_Node.ln_Type;
-                KernelBase->kb_Interrupts[i].l_pad = 0;      /* Initially set to first instance */
+                bug("[Kernel:i8259a] %s: failed to acquire IRQ #%d\n", __func__, i);
             }
         }
 
@@ -81,7 +80,7 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(SLAVE8259_MASKREG)); /* 8259A-2 is slave, ID = 2 */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(MASTER8259_MASKREG)); /* 8086 mode, non-buffered, nonspecial fully nested mode for both */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(SLAVE8259_MASKREG));
-        
+
         /* Now initialize interrupt masks */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xfb),"i"(MASTER8259_MASKREG)); /* Enable cascade int */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(SLAVE8259_MASKREG)); /* Mask all interrupts */
