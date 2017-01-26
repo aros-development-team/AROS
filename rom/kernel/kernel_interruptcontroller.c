@@ -31,7 +31,6 @@ icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrC
 {
     struct IntrController *regContr;
     icid_t icid = 0;
-    icid_t icinstance = 0;
     
     ForeachNode(&KernelBase->kb_ICList, regContr)
     {
@@ -60,7 +59,7 @@ icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrC
 
     D(bug("[Kernel] %s: new controller id #%d = '%s'\n", __func__, intController->ic_Node.ln_Type, intController->ic_Node.ln_Name));
 
-    return (icintrid_t)((icid << 8) | icinstance);
+    return (icintrid_t)((icid << 8) | intController->ic_Node.ln_Pri);
 }
 
 /*****************************************************************************/
