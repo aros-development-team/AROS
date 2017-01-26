@@ -25,6 +25,8 @@ struct CPUData
     apicid_t    cpu_LocalID;	/* Local APIC ID				        */
     apicid_t    cpu_PrivateID;  /* Sub-system private (ACPI, whatever) ID -  can differ */
     icintrid_t  cpu_ICID;       /* NB - this is icintrid_t not icid_t                   */
+    void        *cpu_IDT;
+    void        *cpu_GDT;
 };
 
 struct APICData

@@ -1,6 +1,8 @@
 /*
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
+    
+    http://download.intel.com/design/chipsets/datashts/29056601.pdf
 */
 
 #include <aros/macros.h>
