@@ -22,8 +22,8 @@
 #include "apic_ia32.h"
 #include "ioapic.h"
 
-#define D(x)
-#define DINTR(x)
+#define D(x) x
+#define DINTR(x) x
 
 #define ACPI_MODPRIO_IOAPIC       50
 
@@ -81,6 +81,10 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     {
         ioapicData = &ioapicPrivate->ioapics[i];
         D(bug("[Kernel:IOAPIC] %s: Init IOAPIC #%d @ 0x%p\n", __func__, ioapicData->ioapicID, ioapicData->ioapicBase));
+
+        /* Build a default routing table for legacy (ISA) interrupts. */
+        /* TODO: implement legacy irq config.. */
+        D(bug("[Kernel:IOAPIC] %s: Configuring Legacy IRQs .. Skipped (UNIMPLEMENTED) ..\n", __func__));
     }
 
     return TRUE;
@@ -304,10 +308,6 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
                 }
                 D(bug("\n"));
             }
-
-            /* Build a default routing table for legacy (ISA) interrupts. */
-            /* TODO: implement legacy irq config.. */
-            D(bug("[Kernel:ACPI-IOAPIC]    %s: Configuring Legacy IRQs .. Skipped (UNIMPLEMENTED) ..\n", __func__));
 
             pdata->kb_IOAPIC->ioapic_count++;
         }
