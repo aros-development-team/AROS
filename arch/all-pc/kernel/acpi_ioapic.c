@@ -34,7 +34,7 @@
 const char *ACPI_TABLE_MADT_STR __attribute__((weak)) = "APIC";
 
 #define IOREGSEL        0
-#define IOREGWIN        10
+#define IOREGWIN        0x10
 
  ULONG acpi_IOAPIC_ReadReg(APTR apic_base, UBYTE offset)
  {
@@ -230,41 +230,43 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
 
         if ((ioapicICInstID = krnAddInterruptController(KernelBase, &IOAPICInt_IntrController)) != -1)
         {
+            struct IOAPICCfgData *ioapicData = (struct IOAPICCfgData *)&pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count];
+
             D(bug("[Kernel:ACPI-IOAPIC] IO-APIC IC ID #%d:%d\n", ICINTR_ICID(ioapicICInstID), ICINTR_INST(ioapicICInstID)));
 
-            pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicBase = (APTR)0 + ioapic->Address;
-            pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicGSI = ioapic->GlobalIrqBase;
+            ioapicData->ioapicBase = (APTR)((IPTR)ioapic->Address);
+            ioapicData->ioapicGSI = ioapic->GlobalIrqBase;
 
             ioapicval = acpi_IOAPIC_ReadReg(
-                pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicBase,
+                ioapicData->ioapicBase,
                 IOAPICREG_ID);
-            pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicID = ((ioapicval >> 24) & 0xF);
+            ioapicData->ioapicID = ((ioapicval >> 24) & 0xF);
 
             D(bug("[Kernel:ACPI-IOAPIC]    %s:       #%d,",
-                __func__, pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicID));
+                __func__, ioapicData->ioapicID));
             ioapicval = acpi_IOAPIC_ReadReg(
-                pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicBase,
+                ioapicData->ioapicBase,
                 IOAPICREG_VER);
-            pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicIRQs = ((ioapicval >> 16) & 0xF);
-            pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicVer = (ioapicval & 0xFF);
+            ioapicData->ioapicIRQs = ((ioapicval >> 16) & 0xFF) + 1;
+            ioapicData->ioapicVer = (ioapicval & 0xFF);
             D(bug(" ver %d, max irqs = %d,",
-                pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicVer, pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicIRQs));
+                ioapicData->ioapicVer, ioapicData->ioapicIRQs));
             ioapicval = acpi_IOAPIC_ReadReg(
-                pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicBase,
+                ioapicData->ioapicBase,
                 IOAPICREG_ARB);
             D(bug("arb %d\n", ((ioapicval >> 24) & 0xF)));
 
-            for (i = 0; i < pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicIRQs; i++)
+            for (i = 0; i < ioapicData->ioapicIRQs; i++)
             {
                 UQUAD tblentry;
 
                 ioapicval = acpi_IOAPIC_ReadReg(
-                    pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicBase,
+                    ioapicData->ioapicBase,
                     IOAPICREG_REDTBLBASE + i);
                 tblentry = ((UQUAD)ioapicval << 32);
                 D(bug("[Kernel:ACPI-IOAPIC]    %s:       %08x", __func__, ioapicval));
                 ioapicval = acpi_IOAPIC_ReadReg(
-                    pdata->kb_IOAPIC->ioapics[pdata->kb_IOAPIC->ioapic_count].ioapicBase,
+                    ioapicData->ioapicBase,
                     IOAPICREG_REDTBLBASE + i + 1);
                 tblentry |= ioapicval;
                 D(bug("%08x", ioapicval));
