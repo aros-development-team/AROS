@@ -48,7 +48,8 @@ typedef UWORD   icintrid_t;
 struct IntrController
 {
     struct Node ic_Node;
-    IPTR        ic_Flags;
+    ULONG        ic_Type;                                                     /* IC drivers private "type"                 */
+    ULONG        ic_Flags;
     APTR        ic_Private;
     icid_t      (*ic_Register)(struct KernelBase *);                          /* one time initialization called during Add */
     BOOL        (*ic_Init)(struct KernelBase *, icid_t);                      /*                                           */
@@ -62,6 +63,9 @@ struct IntrController
  * the interrupt after acknowledging/processing
  */
 #define ICF_ACKENABLE   (1 << 0)
+
+#define ICF_READY       (1 << 30)
+#define ICF_DISABLED    (1 << 31)
 
 static inline struct IntrController *krnGetInterruptController(struct KernelBase *KernelBase, icid_t icid)
 {
@@ -79,8 +83,8 @@ static inline struct IntrController *krnGetInterruptController(struct KernelBase
 /* Functions to be called by machine-specific code */
 int krnRunExceptionHandlers(struct KernelBase *, uint8_t, void *); /* Run user-supplied exception handlers */
 icintrid_t krnAddInterruptController(struct KernelBase *, struct IntrController *);
-struct IntrController *krnGetInterruptController(struct KernelBase *, icid_t);
+struct IntrController *krnFindInterruptController(struct KernelBase *, ULONG);
 int krnInitInterruptControllers(struct KernelBase *);
 void krnRunIRQHandlers(struct KernelBase *, uint8_t);		   /* Run user-supplied IRQ handlers       */
 
-#endif /* KERNEL_INTERRUPTS_H */
+#endif /* !KERNEL_INTERRUPTS_H */

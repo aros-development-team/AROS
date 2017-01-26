@@ -20,7 +20,12 @@
 /* We use own implementation of bug(), so we don't need aros/debug.h */
 #define D(x) 
 
-/*****************************************************************************/
+/*****************************************************************************
+
+            Register an Interrupt Controller in Kernelbase. Assign an ID (in ln_Type)
+            returns -1 on failure.
+            
+*****************************************************************************/
 
 icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrController *intController)
 {
@@ -42,17 +47,42 @@ icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrC
     }
     intController->ic_Node.ln_Pri = 1;                                                                                  /* first user */
     intController->ic_Node.ln_Type = KernelBase->kb_ICTypeBase++;
+
+    if (intController->ic_Register)
+        icid = intController->ic_Register(KernelBase);
+    else
+        icid = intController->ic_Node.ln_Type;
+
+    if (icid == -1)
+        return -1;
+
     AddTail(&KernelBase->kb_ICList, &intController->ic_Node);
 
     D(bug("[Kernel] %s: new controller id #%d = '%s'\n", __func__, intController->ic_Node.ln_Type, intController->ic_Node.ln_Name));
 
-    icid = intController->ic_Node.ln_Type;
-
-    if (intController->ic_Register)
-        icid = intController->ic_Register(KernelBase);
-
     return (icintrid_t)((icid << 8) | icinstance);
 }
+
+/*****************************************************************************/
+
+struct IntrController *krnFindInterruptController(struct KernelBase *KernelBase, ULONG ICType)
+{
+    struct IntrController *intContr;
+    ForeachNode(&KernelBase->kb_ICList, intContr)
+    {
+        if (intContr->ic_Type == ICType)
+        {
+            return intContr;
+        }
+    }
+    return NULL;
+}
+
+/*****************************************************************************
+
+            Initialize the registered Interrupt Controllers.
+            
+*****************************************************************************/
 
 int krnInitInterruptControllers(struct KernelBase *KernelBase)
 {
@@ -64,7 +94,10 @@ int krnInitInterruptControllers(struct KernelBase *KernelBase)
         if (regContr->ic_Init)
         {
             if (regContr->ic_Init(KernelBase, regContr->ic_Node.ln_Pri))
+            {
+                regContr->ic_Flags |= ICF_READY;
                 cnt += regContr->ic_Node.ln_Pri;
+            }
         }
     }
     return cnt;
