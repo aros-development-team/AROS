@@ -18,9 +18,15 @@
 
 #define D(x)
 
+struct i8259a_Instance
+{
+    ULONG       irq_mask;
+    UBYTE       irq_base;
+};
+
 struct i8259a_Private
 {
-    ULONG       irq_mask[0];
+    struct i8259a_Instance      irq_ic[0];
 };
 
 icid_t i8259a_Register(struct KernelBase *KernelBase)
@@ -38,7 +44,7 @@ icid_t i8259a_Register(struct KernelBase *KernelBase)
 
 BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
-    ULONG *maskarray;
+    struct i8259a_Private *xtpicPriv;
     int i;
 
     D(bug("[Kernel:i8259a] %s(%d)\n", __func__, instanceCount));
@@ -47,8 +53,8 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     if (i8259a_IntrController.ic_Flags & ICF_DISABLED)
         return FALSE;
 
-    maskarray = AllocMem(sizeof(ULONG) * instanceCount, MEMF_ANY);
-    if ((i8259a_IntrController.ic_Private = maskarray) != NULL)
+    xtpicPriv = AllocMem(sizeof(struct i8259a_Instance) * instanceCount, MEMF_ANY);
+    if ((i8259a_IntrController.ic_Private = xtpicPriv) != NULL)
     {
         /* Take over the 8259a IRQ's */
         for (i = 0; i < IRQ_COUNT; i++)
@@ -68,14 +74,15 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         /* Setup Masks */
         for (i = 0; i < instanceCount; i++)
         {
-            maskarray[i] = 0xFFFB;
+            xtpicPriv->irq_ic[i].irq_mask = 0xFFFB;
+            xtpicPriv->irq_ic[i].irq_base = 0x20;               /* route irqs after the cpu's exceptions */
         }
 
         /* Setup the 8259. Send four ICWs (see 8529 datasheet) */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(MASTER8259_CMDREG)); /* Initialization sequence for 8259A-1 (edge-triggered, cascaded, ICW4 needed) */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(SLAVE8259_CMDREG)); /* Initialization sequence for 8259A-2, the same as above */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(MASTER8259_MASKREG)); /* IRQs for master at 0x20 - 0x27 */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(SLAVE8259_MASKREG)); /* IRQs for slave at 0x28 - 0x2f */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"(xtpicPriv->irq_ic[i].irq_base),"i"(MASTER8259_MASKREG)); /* IRQs for master at 0x20 - 0x27 */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"(xtpicPriv->irq_ic[i].irq_base + 8),"i"(SLAVE8259_MASKREG)); /* IRQs for slave at 0x28 - 0x2f */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x04),"i"(MASTER8259_MASKREG)); /* 8259A-1 is master, slave at IRQ2 */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(SLAVE8259_MASKREG)); /* 8259A-2 is slave, ID = 2 */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(MASTER8259_MASKREG)); /* 8086 mode, non-buffered, nonspecial fully nested mode for both */
@@ -95,7 +102,7 @@ asm("\ndelay:\t.short   0x00eb\n\tret");
 
 BOOL i8259a_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
-    ULONG *maskarray = (ULONG *)icPrivate;
+    struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
 
     D(bug("[Kernel:i8259a] %s()\n", __func__));
 
@@ -107,29 +114,29 @@ BOOL i8259a_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     	return FALSE;
     }
 
-    maskarray[icInstance] |= 1 << intNum;
+    xtpicPriv->irq_ic[icInstance].irq_mask |= 1 << intNum;
 
     if (intNum >= 8)
-        outb((maskarray[icInstance] >> 8) & 0xff, SLAVE8259_MASKREG);
+        outb((xtpicPriv->irq_ic[icInstance].irq_mask >> 8) & 0xff, SLAVE8259_MASKREG);
     else
-        outb(maskarray[icInstance] & 0xff, MASTER8259_MASKREG);
+        outb(xtpicPriv->irq_ic[icInstance].irq_mask & 0xff, MASTER8259_MASKREG);
 
     return TRUE;
 }
 
 BOOL i8259a_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_t *irqmask)
 {
-    ULONG *maskarray = (ULONG *)icPrivate;
+    struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
 
     D(bug("[Kernel:i8259a] %s()\n", __func__));
 
     intNum &= 15;
-    maskarray[icInstance] &= ~(1 << intNum);    
+    xtpicPriv->irq_ic[icInstance].irq_mask &= ~(1 << intNum);    
 
     if (intNum >= 8)
-        outb((maskarray[icInstance] >> 8) & 0xff, SLAVE8259_MASKREG);
+        outb((xtpicPriv->irq_ic[icInstance].irq_mask >> 8) & 0xff, SLAVE8259_MASKREG);
     else
-        outb(maskarray[icInstance] & 0xff, MASTER8259_MASKREG);
+        outb(xtpicPriv->irq_ic[icInstance].irq_mask & 0xff, MASTER8259_MASKREG);
 
     return TRUE;
 }
@@ -140,22 +147,22 @@ BOOL i8259a_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint1
  */
 BOOL i8259a_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_t *irqmask)
 {
-    ULONG *maskarray = (ULONG *)icPrivate;
+    struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
 
     D(bug("[Kernel:i8259a] %s()\n", __func__));
 
     intNum &= 15;
-    maskarray[icInstance] |= 1 << intNum;
+    xtpicPriv->irq_ic[icInstance].irq_mask |= 1 << intNum;
 
     if (intNum >= 8)
     {
-        outb((maskarray[icInstance] >> 8) & 0xff, SLAVE8259_MASKREG);
+        outb((xtpicPriv->irq_ic[icInstance].irq_mask >> 8) & 0xff, SLAVE8259_MASKREG);
         outb(0x62, MASTER8259_CMDREG);
         outb(0x20, SLAVE8259_CMDREG);
     }
     else
     {
-        outb(maskarray[icInstance] & 0xff, MASTER8259_MASKREG);
+        outb(xtpicPriv->irq_ic[icInstance].irq_mask & 0xff, MASTER8259_MASKREG);
         outb(0x20, MASTER8259_CMDREG);
     }
 
