@@ -2,8 +2,16 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FUNCS	 := displayalert
-ASMFILES := cli sti issuper
+FUNCS	 := \
+             displayalert \
+             getcpucount \
+             getcpunumber
+
+ASMFILES := \
+             cli \
+             sti \
+             issuper
+
 FILES    := \
              apic \
              apic_ia32 \
@@ -11,8 +19,6 @@ FILES    := \
              acpi \
              acpi_apic \
              acpi_ioapic \
-             getcpucount \
-             getcpunumber \
              smp \
              cpu_traps \
              pic_i8259a \
