@@ -27,6 +27,7 @@
 #include "tls.h"
 
 #define D(x)
+#define DIDT(x)
 #define DSYSCALL(x)
 #define DTRAP(x)
 #define DUMP_CONTEXT
@@ -77,6 +78,10 @@ BOOL core_SetIDTGate(int IRQ, uintptr_t gate)
 
     if ((IGATES = IDT_GET()))
     {
+        DIDT(
+            bug("[Kernel] %s: Setting IRQ #%d gate for IDT @ 0x%p\n", __func__, IRQ, IGATES);
+            bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
+        )
         IGATES[IRQ].offset_low = gate & 0xffff;
         IGATES[IRQ].offset_mid = (gate >> 16) & 0xffff;
         IGATES[IRQ].offset_high = (gate >> 32) & 0xffffffff;
@@ -102,7 +107,10 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, 
     
     if (IGATES)
     {
-        D(bug("[Kernel] %s[%d]: Setting all interrupt handlers to default value\n", __func__, _APICID));
+        DIDT(
+            bug("[Kernel] %s[%d]: IDT @ 0x%p\n", __func__, _APICID, IGATES);
+            bug("[Kernel] %s[%d]: Setting default gates\n", __func__, _APICID);
+        )
 
         for (i=0; i < 256; i++)
         {
@@ -115,19 +123,25 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, 
             else
                 off = (uintptr_t)core_DefaultIRETQ;
 
-            core_SetIDTGate(i, off);
+            if (!core_SetIDTGate(i, off))
+            {
+                bug("[Kernel] %s[%d]: gate #%d failed\n", __func__, _APICID, i);
+            }
         }
 
-        D(bug("[Kernel] %s[%d]: Registering interrupt handlers ..\n", __func__, _APICID));
+        DIDT(bug("[Kernel] %s[%d]: Registering IDT ..\n", __func__, _APICID));
 
         IDT_sel.size = sizeof(struct int_gate_64bit) * 256 - 1;
-        IDT_sel.base = (unsigned long)IGATES;    
+        IDT_sel.base = (unsigned long)IGATES;
+        DIDT(bug("[Kernel] %s[%d]:    base 0x%p, size %d\n", __func__, _APICID, IDT_sel.base, IDT_sel.size));
+
         asm volatile ("lidt %0"::"m"(IDT_sel));
     }
     else
     {
-        // PANIC?
+        krnPanic(NULL, "Invalid IDT\n");
     }
+    DIDT(bug("[Kernel] %s[%d]: IDT configured\n", __func__, _APICID));
 }
 
 /* CPU exceptions are processed here */
@@ -289,7 +303,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     }
 #endif
 
-    /* These exceptions are CPU traps */
+    /* The first 32 exceptions are CPU traps */
     if (irq_number < 0x20)
     {
     	cpu_Trap(regs, error_code, irq_number);

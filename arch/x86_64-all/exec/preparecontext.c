@@ -42,7 +42,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     {
         switch(t->ti_Tag)
         {
-#if defined(AROS_SMP)
+#if defined(__AROSEXEC_SMP__)
             case NP_Affinity:
                 IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
                 break;
