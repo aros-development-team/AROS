@@ -55,6 +55,8 @@ struct PlatformData
 
 #define IDT_SIZE                sizeof(struct int_gate_64bit) * 256
 #define GDT_SIZE                sizeof(struct gdt_64bit) + 128
+#define TLS_SIZE                sizeof(tls_t)
+#define TLS_ALIGN               sizeof(APTR)
 
 #define IDT_GET()               TLS_GET(IDT)
 #define IDT_SET(val)            TLS_SET(IDT, val);

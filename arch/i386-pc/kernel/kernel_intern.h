@@ -32,6 +32,8 @@ struct PlatformData
 
 #define IDT_SIZE                sizeof(long long) * 256
 #define GDT_SIZE                sizeof(long long) * 8
+#define TLS_SIZE                sizeof(struct tss)
+#define TLS_ALIGN               64
 
 #define IDT_GET()                LIBBASE->kb_PlatformData->idt
 #define IDT_SET(val) \
