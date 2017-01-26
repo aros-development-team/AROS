@@ -182,6 +182,8 @@ BOOL i8259a_Probe()
 {
     UBYTE maskres;
 
+    D(bug("[Kernel:i8259a] %s()\n", __func__));
+
     /* mask all of the interrupts except the cascade pin */
     outb(0xff, SLAVE8259_MASKREG);      
     outb(~(1 << 2), MASTER8259_MASKREG);
