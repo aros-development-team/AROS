@@ -1,7 +1,6 @@
-## version $VER: Trident.catalog 1.4 (9.3.2012)
+## version $VER: Trident.catalog 2.0 (24.1.2017)
 ## language czech
 ## codeset 5
-;
 ;
 MSG_APP_TITLE
 Trident
@@ -205,7 +204,7 @@ MSG_PANEL_GENERAL_LABEL2
 ;
 MSG_PANEL_GENERAL_LABEL3
 \33cCopyright (c) 2002-2009 Chris Hodges
-; \33cCopyright ©2002-2009 Chris Hodges
+; \33cCopyright \xa92002-2009 Chris Hodges
 ;
 MSG_PANEL_GENERAL_LABEL4
 \33cV¹echna práva vyhrazena
@@ -260,7 +259,7 @@ Zobrazí název ovladaèe zaøízení. Tyto soubory\nnajdete obvykle v DEVS:USBHardwar
 ; Give the name of the controller device\ndriver in this field. These devices are\nnormally stored in DEVS:USBHardware.
 ;
 MSG_PANEL_HARDWARE_SELECT
-Vyberte øadiè USB
+Vyberte øadiè USB...
 ; Select USBHardware device...
 ;
 MSG_PANEL_HARDWARE_UNIT
@@ -377,7 +376,7 @@ MSG_PANEL_DEVICES_SETTINGS
 ;
 MSG_PANEL_DEVICES_SETTINGS_HELP
 Pokud vybrané zaøízení nabízí mo¾nost konfigurace,\nkliknutím na toto tlaèítko otevøete okno s pøehledem\nmo¾ností nastavení.\n\nPozn.: Mo¾nosti týkající se konfigurace propojení\nnajdete v oknì s informacemi o zaøízení.
-; If there is a device binding and the class\nsupports a configuration GUI. Clicking on this\nbutton will open the preferences window.\n\nNote well, that the corrsponding button for the\ninterface binding settings can be found inside\nthe information window.
+; If there is a device binding and the class\nsupports a configuration GUI, clicking on this\nbutton will open the preferences window.\n\nNote well, that the corresponding button for the\ninterface binding settings can be found inside\nthe information window.
 ;
 MSG_PANEL_DEVICES_SUSPEND
 \33cUspat
@@ -408,7 +407,7 @@ MSG_PANEL_DEVICES_DISABLE
 ; \33c Disable
 ;
 MSG_PANEL_DEVICES_DISABLE_HELP
-Odpojí napájení portu rozboèovaèe, ve kterém je\nvybrané zaøízení. Toto zaøízení pak ji¾ nelze znovu\naktivovat prostým vyta¾ením a zasunutím zpìt do portu. 
+Odpojí napájení portu rozboèovaèe, ve kterém je\nvybrané zaøízení. Toto zaøízení pak ji¾ nelze znovu\naktivovat prostým vyta¾ením a zasunutím zpìt do portu.
 ; Permanently powers off the port. It cannot be\nreactivated by unplugging/replugging the device.\n
 ;
 MSG_POSEIDON_SHORTHELP
@@ -444,7 +443,7 @@ Chcete-li pøidat ovladaè pro kategorii (skupinu)\nzaøízení ruènì, zadejte do toh
 ; To manually add an usb class driver,\nenter its name here and click on 'Add'.
 ;
 MSG_PANEL_CLASSES_SELECT
-Vyberte kategorii zaøízení
+Vyberte kategorii zaøízení...
 ; Select USB class library...
 ;
 MSG_PANEL_CLASSES_ADD
@@ -668,7 +667,7 @@ Pøehraje definovaný zvuk pøi pøipojení nového zaøízení.
 ; This sound will be replayed everytime\na device is connected to the bus.
 ;
 MSG_PANEL_POPO_CONSOUND_SELECT
-Vyberte po¾adovaný zvuk
+Vyberte po¾adovaný zvuk...
 ; Select a sound file to be replayed...
 ;
 MSG_PANEL_POPO_DISCONSOUND
@@ -680,7 +679,7 @@ Pøehraje definovaný zvuk po odpojení zaøízení.
 ; This sound will be replayed everytime\na device is removed from the bus.
 ;
 MSG_PANEL_POPO_DISCONSOUND_SELECT
-Vyberte po¾adovaný zvuk
+Vyberte po¾adovaný zvuk...
 ; Select a sound file to be replayed...
 ;
 MSG_PANEL_CONFIG
@@ -832,7 +831,7 @@ Zaøízení:\nJednotka:\nVerze:\nProdukt:\nVýrobce:\nPopis:\nCopyright:
 ; Device:\nUnit:\nVersion:\nProduct:\nManufacturer:\nDescription:\nCopyright:
 ;
 MSG_ACTION_SAVE_ERR
-Vyberte soubor pro výpis hlá¹ení
+Vyberte soubor pro výpis hlá¹ení...
 ; Select file to save errors to...
 ;
 MSG_ACTION_SAVE_ERR_FILE
@@ -848,7 +847,7 @@ Chyba pøi zápisu do souboru %s.
 ; Error opening file %s for writing.
 ;
 MSG_ACTION_SAVE_DEV
-Vyberte soubor pro seznam zaøízení
+Vyberte soubor pro seznam zaøízení...
 ; Select file to save device list to...
 ;
 MSG_ACTION_SAVE_DEV_FILE
@@ -864,7 +863,7 @@ Seznam zaøízení ulo¾en do souboru %s.
 ; DevLister saved to %s.
 ;
 MSG_ACTION_PREFS_LOAD
-Vyberte konfiguraèní soubor
+Vyberte konfiguraèní soubor...
 ; Select a Poseidon Prefs file...
 ;
 MSG_ACTION_PREFS_LOADED
@@ -872,7 +871,7 @@ Konfigurace naètena ze souboru %s.
 ; Config loaded from %s.
 ;
 MSG_ACTION_PREFS_SAVEAS
-Vyberte konfiguraèní soubor
+Vyberte konfiguraèní soubor...
 ; Select file to save prefs to...
 ;
 MSG_ACTION_PREFS_SAVED
@@ -952,7 +951,7 @@ MSG_ACTION_MEMPOOL_FORMAT
 ; %ld KB
 ;
 MSG_ACTION_CFG_EXPORT
-Vyberte soubor pro export
+Vyberte soubor pro export...
 ; Select file to export prefs to...
 ;
 MSG_ACTION_CFG_PREFS_FILE
@@ -984,7 +983,7 @@ Chyba pøi otevírání souboru %s.
 ; Failed to open file %s.
 ;
 MSG_ACTION_CFG_IMPORT
-Vyberte konfiguraèní soubor
+Vyberte konfiguraèní soubor...
 ; Select file to import prefs from...
 ;
 MSG_ACTION_CFGDATA_OOPS
@@ -1126,4 +1125,10 @@ Bì¾ná chyba
 MSG_LOGLEVEL_FAILURE
 Záv. chyba
 ; Failure
+;
+MSG_LOGLEVEL_OTHER
+???
+; ???
+;
+; ***NEW***
 ;
