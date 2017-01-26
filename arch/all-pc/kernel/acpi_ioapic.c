@@ -256,7 +256,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
                 IOAPICREG_ARB);
             D(bug("arb %d\n", ((ioapicval >> 24) & 0xF)));
 
-            for (i = 0; i < ioapicData->ioapicIRQs; i++)
+            for (i = 0; i < (ioapicData->ioapicIRQs << 1); i += 2)
             {
                 UQUAD tblentry;
 
