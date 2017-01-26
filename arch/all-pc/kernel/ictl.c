@@ -39,11 +39,11 @@ void ictl_Initialize(struct KernelBase *KernelBase)
 	pdata->kb_APIC = core_APIC_Probe();
     }
 
-#if (1)
+#if (__WORDSIZE==64)
     if (!pdata->kb_APIC)
     {
-    	/* We are x86-64 and we always have APIC. */
-    	krnPanic(KernelBase, "Failed to allocate APIC descriptor\n.The system is low on memory.");
+    	/* We are x86-64, so we should always have APIC. */
+    	krnPanic(KernelBase, "Failed to allocate APIC descriptor.");
     }
 #endif
 
@@ -63,6 +63,6 @@ void ictl_Initialize(struct KernelBase *KernelBase)
         D(bug("[Kernel] %s: %d Interrupt Controllers Initialized\n", __func__, cnt));
         return;
     }
-    
-    // TODO: Panic? No interrupt controlers available...
+
+    krnPanic(KernelBase, "Failed to detect any Interrupt Controllers.");
 }
