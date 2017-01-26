@@ -38,4 +38,4 @@ typedef void(acpi_supportinit_t)(struct PlatformData *);
 void acpi_Init(struct PlatformData *pdata);
 int acpi_ScanTableEntries(CONST ACPI_TABLE_HEADER *, ULONG, UINT8, const struct Hook *, APTR);
 
-#endif /* KERNEL_ACPI_H */
+#endif /* !KERNEL_ACPI_H */

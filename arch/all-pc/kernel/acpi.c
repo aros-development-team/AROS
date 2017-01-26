@@ -19,6 +19,7 @@
 #include "acpi.h"
 #include "apic.h"
 #include "apic_ia32.h"
+#include "i8259a.h"
 
 #define D(x)
 
@@ -70,6 +71,8 @@ void acpi_Init(struct PlatformData *pdata)
     {
         if ((pdata->kb_ACPI = (struct ACPIData *)AllocMem(sizeof(struct ACPIData), MEMF_CLEAR)) != NULL)
         {
+            D(icintrid_t xtpicICInstID;)
+
             NEWLIST(&pdata->kb_ACPI->acpi_tablehooks);
 
             D(bug("[Kernel:ACPI] %s: Preparing ACPI support modules...\n", __func__));
@@ -120,6 +123,13 @@ void acpi_Init(struct PlatformData *pdata)
                 bug(", %d usable", pdata->kb_APIC->apic_count);
             }
             bug("\n");
+            
+            /* Initialize legacy 8529A PIC if present. */
+            if (pdata->kb_APIC->flags & APF_8259)
+            {
+                D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
+                D(bug("[Kernel:APIC.%u] _APIC_IA32_init: i8259a IC ID #%d:%d\n", cpuNum, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
+            }
         }
     }
 }

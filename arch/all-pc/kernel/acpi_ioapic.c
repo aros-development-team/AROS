@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/macros.h>
 #include <aros/asmcall.h>
 #include <proto/acpica.h>
 #include <proto/exec.h>
@@ -91,8 +92,9 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 struct IntrController IOAPICInt_IntrController =
 {
     {
-        .ln_Name = "IO-APIC Interrupt Controller"
+        .ln_Name = "82093AA IO-APIC"
     },
+    AROS_MAKE_ID('I','O','9','3'),
     0,
     NULL,
     IOAPICInt_Register,
@@ -202,7 +204,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
         bug("[Kernel:ACPI-IOAPIC] Registering IO-APIC #%d [ID=0x%d] @ %p [GSI = %d]\n",
             pdata->kb_IOAPIC->ioapic_count, ioapic->Id, ioapic->Address, ioapic->GlobalIrqBase);
 
-        if ((ioapicICInstID = krnAddInterruptController(KernelBase, &IOAPICInt_IntrController)) > 0)
+        if ((ioapicICInstID = krnAddInterruptController(KernelBase, &IOAPICInt_IntrController)) != -1)
         {
             D(bug("[Kernel:ACPI-IOAPIC] IO-APIC IC ID #%d:%d\n", ICINTR_ICID(ioapicICInstID), ICINTR_INST(ioapicICInstID)));
 

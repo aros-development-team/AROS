@@ -9,6 +9,7 @@
 #include "kernel_debug.h"
 
 #include "apic.h"
+#include "i8259a.h"
 
 #define D(x)
 
@@ -45,6 +46,17 @@ void ictl_Initialize(struct KernelBase *KernelBase)
     	krnPanic(KernelBase, "Failed to allocate APIC descriptor\n.The system is low on memory.");
     }
 #endif
+
+    /* Check if the 8259a has already been registered, if not probe for it ... */
+    if (!krnFindInterruptController(KernelBase, ICTYPE_I8259A))
+    {
+        D(icintrid_t xtpicICInstID;)
+
+        if (i8259a_Probe())
+        {
+            D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
+        }
+    }
 
     if ((cnt = krnInitInterruptControllers(KernelBase)) > 0)
     {

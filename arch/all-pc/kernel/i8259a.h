@@ -1,15 +1,18 @@
 #ifndef KERNEL_I8259A_H
 #define KERNEL_I8259A_H
 
+#include <aros/macros.h>
 #include <inttypes.h>
 
-extern struct IntrController i8259a_IntrController;
+#define MASTER8259_CMDREG       0x20
+#define MASTER8259_MASKREG      0x21
+#define SLAVE8259_CMDREG        0xA0
+#define SLAVE8259_MASKREG       0xA1
 
-#if (0)
-void XTPIC_Init(uint16_t *irqmask);
-void XTPIC_DisableIRQ(uint8_t irqnum, uint16_t *irqmask);
-void XTPIC_EnableIRQ(uint8_t irqnum, uint16_t *irqmask);
-void XTPIC_AckIntr(uint8_t intnum, uint16_t *irqmask);
-#endif
+#define ICTYPE_I8259A           AROS_MAKE_ID('8','2','5','9')
+
+BOOL i8259a_Probe();
+
+extern struct IntrController i8259a_IntrController;
 
 #endif /* !KERNEL_I8259A_H */
