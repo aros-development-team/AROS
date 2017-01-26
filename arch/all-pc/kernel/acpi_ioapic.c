@@ -60,18 +60,36 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
 {
     D(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
+    /* if we have been disabled, fail to register */
+    if (IOAPICInt_IntrController.ic_Flags & ICF_DISABLED)
+        return -1;
+
     return (icid_t)IOAPICInt_IntrController.ic_Node.ln_Type;
 }
 
 BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
+    struct IOAPICCfgData *ioapicData;
+    struct IOAPICData *ioapicPrivate = ((struct PlatformData *)KernelBase->kb_PlatformData)->kb_IOAPIC;
+    int i;
+
     D(bug("[Kernel:IOAPIC] %s(%d)\n", __func__, instanceCount));
+
+    IOAPICInt_IntrController.ic_Private = ioapicPrivate;
+
+    for (i = 0; i < instanceCount; i++)
+    {
+        ioapicData = &ioapicPrivate->ioapics[i];
+        D(bug("[Kernel:IOAPIC] %s: Init IOAPIC #%d @ 0x%p\n", __func__, ioapicData->ioapicID, ioapicData->ioapicBase));
+    }
 
     return TRUE;
 }
 
 BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
+//    struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
+
     D(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
     return TRUE;
@@ -79,6 +97,8 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
 BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
+//    struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
+
     D(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
     return TRUE;
@@ -86,6 +106,8 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
 BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
+//    struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
+
     D(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
     return TRUE;
