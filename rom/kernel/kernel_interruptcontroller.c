@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id: addexceptionhandler.c 47708 2013-07-17 12:22:32Z verhaegs $
+    Copyright © 2017, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc:
 */
