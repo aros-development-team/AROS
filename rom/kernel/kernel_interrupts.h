@@ -85,6 +85,7 @@ int krnRunExceptionHandlers(struct KernelBase *, uint8_t, void *); /* Run user-s
 icintrid_t krnAddInterruptController(struct KernelBase *, struct IntrController *);
 struct IntrController *krnFindInterruptController(struct KernelBase *, ULONG);
 int krnInitInterruptControllers(struct KernelBase *);
+BOOL krnInitInterrupt(struct KernelBase *, icid_t, icid_t, icid_t);
 void krnRunIRQHandlers(struct KernelBase *, uint8_t);		   /* Run user-supplied IRQ handlers       */
 
 #endif /* !KERNEL_INTERRUPTS_H */
