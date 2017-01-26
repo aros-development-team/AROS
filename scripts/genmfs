@@ -9,8 +9,10 @@ if (!$ARGV[0]) {
     exit;
 }
 open(OUT,">mmakefile.src");
-print OUT "#   \$Id\$\n#\n#   Makefile to make $tg.\n\n";
-print OUT "include \$(TOP)/config/make.cfg\n\n";
+print OUT "# Copyright \© 2017 The AROS Development Team. All rights reserved.\n";
+print OUT "# \$Id\$\n\n";
+print OUT "# Makefile to make $tg.\n\n";
+print OUT "include \$(SRCDIR)/config/aros.cfg\n\n";
 print OUT "EXEDIR := \$(AROSDIR)\n\n";
 print OUT "FILES := ";
 
@@ -23,13 +25,14 @@ foreach $ln (`ls`) {
         print OUT "\\\n    $ln ";
     }
 }
-print OUT "\n\nUSER_CFLAGS :=";
+print OUT "\n\nNOWARN_FLAGS  :=";
+print OUT "\nUSER_CFLAGS   := \$(NOWARN_FLAGS)";
 print OUT "\nUSER_INCLUDES :=";
-print OUT "\nUSER_LDFLAGS := ";
+print OUT "\nUSER_LDFLAGS  := ";
 print OUT "\n\n#MM $tg : includes linklibs\n\n";
 print OUT "%build_prog mmake=$tg \\\n";
-print OUT "     progname=$tg targetdir=\$(EXEDIR) \\\n";
-print OUT "     files=\$(FILES) uselibs=\"\"\n\n";
+print OUT "    progname=$tg targetdir=\$(EXEDIR) \\\n";
+print OUT "    files=\$(FILES) uselibs=\"\"\n\n";
 print OUT "%common\n";
 close(OUT);
 
