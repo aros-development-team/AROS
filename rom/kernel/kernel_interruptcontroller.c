@@ -77,6 +77,20 @@ struct IntrController *krnFindInterruptController(struct KernelBase *KernelBase,
     return NULL;
 }
 
+/*****************************************************************************/
+
+BOOL krnInitInterrupt(struct KernelBase *KernelBase, icid_t irq, icid_t icid, icid_t icinstance)
+{
+    if (KernelBase->kb_Interrupts[irq].lh_Type == KBL_INTERNAL)
+    {
+        KernelBase->kb_Interrupts[irq].lh_Type = icid;
+        KernelBase->kb_Interrupts[irq].l_pad = icinstance;
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
 /*****************************************************************************
 
             Initialize the registered Interrupt Controllers.
