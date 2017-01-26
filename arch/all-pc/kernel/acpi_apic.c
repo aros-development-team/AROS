@@ -22,6 +22,10 @@
 
 #define ACPI_MODPRIO_APIC       100
 
+#if (__WORDSIZE==64)
+extern struct KernBootPrivate *__KernBootPrivate;
+#endif
+
 /************************************************************************************************
                                     ACPI APIC RELATED FUNCTIONS
  ************************************************************************************************/
@@ -188,7 +192,12 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
             /* Remember ID of the bootstrap APIC, this is CPU #0 */
             pdata->kb_APIC->cores[0].cpu_LocalID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
             D(bug("[Kernel:ACPI-APIC] BSP ID: 0x%02X\n", pdata->kb_APIC->cores[0].cpu_LocalID));
-            
+
+#if (__WORDSIZE==64)
+            pdata->kb_APIC->cores[0].cpu_GDT = __KernBootPrivate->BOOTGDT;
+            pdata->kb_APIC->cores[0].cpu_IDT = __KernBootPrivate->BOOTIDT;
+#endif
+
             /* Initialize LAPIC for ourselves (CPU #0) */
             acpi_APIC_InitCPU(pdata, 0);
 	}
@@ -198,7 +207,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 	    bug("[Kernel:ACPI-APIC] Registering APIC #%d [ID=0x%02X:0x%02X]\n", pdata->kb_APIC->apic_count, processor->Id, processor->ProcessorId);
 
 	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_LocalID = processor->Id;
-	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_PrivateID   = processor->ProcessorId;
+	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_PrivateID = processor->ProcessorId;
 
 	    pdata->kb_APIC->apic_count++;
 	}
