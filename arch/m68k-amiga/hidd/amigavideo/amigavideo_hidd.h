@@ -1,5 +1,5 @@
-#ifndef HIDD_AMIGAVIDEO_H
-#define HIDD_AMIGAVIDEO_H
+#ifndef AMIGAVIDEO_HIDD_H
+#define AMIGAVIDEO_HIDD_H
 
 #include <exec/libraries.h>
 #include <oop/oop.h>
@@ -134,4 +134,4 @@ struct amigagfx_data
     struct MinList bitmaps;		/* Currently shown bitmap objects       */
 };
 
-#endif /* HIDD_AMIGAVIDEO_H */
+#endif /* AMIGAVIDEO_HIDD_H */
