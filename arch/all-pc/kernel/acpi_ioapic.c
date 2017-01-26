@@ -80,7 +80,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     for (i = 0; i < instanceCount; i++)
     {
         ioapicData = &ioapicPrivate->ioapics[i];
-        D(bug("[Kernel:IOAPIC] %s: Init IOAPIC #%d @ 0x%p\n", __func__, ioapicData->ioapicID, ioapicData->ioapicBase));
+        D(bug("[Kernel:IOAPIC] %s: Init IOAPIC with ID #%d @ 0x%p\n", __func__, ioapicData->ioapicID, ioapicData->ioapicBase));
 
         /* Build a default routing table for legacy (ISA) interrupts. */
         /* TODO: implement legacy irq config.. */
@@ -229,7 +229,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
         ULONG ioapicval;
         int i;
 
-        bug("[Kernel:ACPI-IOAPIC] Registering IO-APIC #%d [ID=0x%d] @ %p [GSI = %d]\n",
+        bug("[Kernel:ACPI-IOAPIC] Registering IO-APIC #%d [ID=%d] @ %p [GSI = %d]\n",
             pdata->kb_IOAPIC->ioapic_count, ioapic->Id, ioapic->Address, ioapic->GlobalIrqBase);
 
         if ((ioapicICInstID = krnAddInterruptController(KernelBase, &IOAPICInt_IntrController)) != -1)
