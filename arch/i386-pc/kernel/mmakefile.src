@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FUNCS   := getcpucount getcpunumber
+FUNCS   := 
 FILES   := kernel_startup kernel_debug platform_init kernel_cpu traps utils
 AFILES  := core_interrupts reboot
 MAINDIR := rom/kernel
