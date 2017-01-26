@@ -1,5 +1,7 @@
+#ifndef APIC_IA32_H
+#define APIC_IA32_H
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IA-32 APIC hardware definitions.
@@ -105,3 +107,5 @@
 
 /* Register access macro to make the code more readable */
 #define APIC_REG(base, reg) *((volatile ULONG *)(base + reg))
+
+#endif /* !APIC_IA32_H */

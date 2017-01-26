@@ -59,4 +59,4 @@ apicid_t core_APIC_GetNumber(struct APICData *);
 
 extern struct IntrController APICInt_IntrController;
 
-#endif /* KERNEL_APIC_H */
+#endif /* !KERNEL_APIC_H */

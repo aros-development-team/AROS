@@ -27,6 +27,10 @@ icid_t i8259a_Register(struct KernelBase *KernelBase)
 {
     D(bug("[Kernel:i8259a] %s()\n", __func__));
 
+    /* if we have been disabled, fail to register */
+    if (i8259a_IntrController.ic_Flags & ICF_DISABLED)
+        return -1;
+
     i8259a_IntrController.ic_Flags |= ICF_ACKENABLE;
 
     return (icid_t)i8259a_IntrController.ic_Node.ln_Type;
@@ -38,6 +42,10 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     int i;
 
     D(bug("[Kernel:i8259a] %s(%d)\n", __func__, instanceCount));
+
+    /* sanity check .. */
+    if (i8259a_IntrController.ic_Flags & ICF_DISABLED)
+        return FALSE;
 
     maskarray = AllocMem(sizeof(ULONG) * instanceCount, MEMF_ANY);
     if ((i8259a_IntrController.ic_Private = maskarray) != NULL)
@@ -65,18 +73,18 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         }
 
         /* Setup the 8259. Send four ICWs (see 8529 datasheet) */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 (edge-triggered, cascaded, ICW4 needed) */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2, the same as above */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(0x21)); /* IRQs for master at 0x20 - 0x27 */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(0xa1)); /* IRQs for slave at 0x28 - 0x2f */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x04),"i"(0x21)); /* 8259A-1 is master, slave at IRQ2 */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(0xa1)); /* 8259A-2 is slave, ID = 2 */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0x21)); /* 8086 mode, non-buffered, nonspecial fully nested mode for both */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0xa1));
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(MASTER8259_CMDREG)); /* Initialization sequence for 8259A-1 (edge-triggered, cascaded, ICW4 needed) */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(SLAVE8259_CMDREG)); /* Initialization sequence for 8259A-2, the same as above */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(MASTER8259_MASKREG)); /* IRQs for master at 0x20 - 0x27 */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(SLAVE8259_MASKREG)); /* IRQs for slave at 0x28 - 0x2f */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x04),"i"(MASTER8259_MASKREG)); /* 8259A-1 is master, slave at IRQ2 */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(SLAVE8259_MASKREG)); /* 8259A-2 is slave, ID = 2 */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(MASTER8259_MASKREG)); /* 8086 mode, non-buffered, nonspecial fully nested mode for both */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(SLAVE8259_MASKREG));
         
         /* Now initialize interrupt masks */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xfb),"i"(0x21)); /* Enable cascade int */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0xa1)); /* Mask all interrupts */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xfb),"i"(MASTER8259_MASKREG)); /* Enable cascade int */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(SLAVE8259_MASKREG)); /* Mask all interrupts */
 
         return TRUE;
     }
@@ -103,9 +111,9 @@ BOOL i8259a_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     maskarray[icInstance] |= 1 << intNum;
 
     if (intNum >= 8)
-        outb((maskarray[icInstance] >> 8) & 0xff, 0xA1);
+        outb((maskarray[icInstance] >> 8) & 0xff, SLAVE8259_MASKREG);
     else
-        outb(maskarray[icInstance] & 0xff, 0x21);
+        outb(maskarray[icInstance] & 0xff, MASTER8259_MASKREG);
 
     return TRUE;
 }
@@ -120,9 +128,9 @@ BOOL i8259a_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint1
     maskarray[icInstance] &= ~(1 << intNum);    
 
     if (intNum >= 8)
-        outb((maskarray[icInstance] >> 8) & 0xff, 0xA1);
+        outb((maskarray[icInstance] >> 8) & 0xff, SLAVE8259_MASKREG);
     else
-        outb(maskarray[icInstance] & 0xff, 0x21);
+        outb(maskarray[icInstance] & 0xff, MASTER8259_MASKREG);
 
     return TRUE;
 }
@@ -142,14 +150,14 @@ BOOL i8259a_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_
 
     if (intNum >= 8)
     {
-        outb((maskarray[icInstance] >> 8) & 0xff, 0xA1);
-        outb(0x62, 0x20);
-        outb(0x20, 0xa0);
+        outb((maskarray[icInstance] >> 8) & 0xff, SLAVE8259_MASKREG);
+        outb(0x62, MASTER8259_CMDREG);
+        outb(0x20, SLAVE8259_CMDREG);
     }
     else
     {
-        outb(maskarray[icInstance] & 0xff, 0x21);
-        outb(0x20, 0x20);
+        outb(maskarray[icInstance] & 0xff, MASTER8259_MASKREG);
+        outb(0x20, MASTER8259_CMDREG);
     }
 
     return TRUE;
@@ -158,8 +166,9 @@ BOOL i8259a_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_
 struct IntrController i8259a_IntrController =
 {
     {
-        .ln_Name = "Intel 8259A Interrupt Controller"
+        .ln_Name = "8259A PIC"
     },
+    ICTYPE_I8259A,
     0,
     NULL,
     i8259a_Register,
@@ -168,3 +177,16 @@ struct IntrController i8259a_IntrController =
     i8259a_DisableIRQ,
     i8259a_AckIntr,
 };
+
+BOOL i8259a_Probe()
+{
+    UBYTE maskres;
+
+    /* mask all of the interrupts except the cascade pin */
+    outb(0xff, SLAVE8259_MASKREG);      
+    outb(~(1 << 2), MASTER8259_MASKREG);
+    maskres = inb(MASTER8259_MASKREG);
+    if (maskres == ~(1 << 2))
+        return TRUE;
+    return FALSE;
+}

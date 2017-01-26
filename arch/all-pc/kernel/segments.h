@@ -1,5 +1,7 @@
+#ifndef KERNEL_SEGMENTS_H
+#define KERNEL_SEGMENTS_H
 /*
- * Standard values for segment registers.
+ * Standard values for x86 segment registers.
  * This file can be included from both C and assembler sources.
  */
 
@@ -16,3 +18,5 @@
 #define USER_GS   0x30
 #define SEG_LDT   0x38
 #define TASK_SEG  0x40
+
+#endif /* !KERNEL_SEGMENTS_H */

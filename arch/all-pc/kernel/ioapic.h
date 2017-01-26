@@ -36,4 +36,4 @@ struct IOAPICData
 
 extern struct IntrController IOAPICInt_IntrController;
 
-#endif /* KERNEL_IOAPIC_H */
+#endif /* !KERNEL_IOAPIC_H */

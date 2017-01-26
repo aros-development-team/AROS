@@ -5,6 +5,7 @@
     Desc: Intel IA-32 APIC driver.
 */
 
+#include <aros/macros.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
 #include <exec/types.h>
@@ -20,7 +21,6 @@
 
 #include "apic.h"
 #include "apic_ia32.h"
-#include "i8259a.h"
 
 #define D(x)
 #define DWAKE(x) /* Badly interferes with AP startup */
@@ -94,8 +94,9 @@ BOOL APICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 struct IntrController APICInt_IntrController =
 {
     {
-        .ln_Name = "Intel APIC Interrupt Controller"
+        .ln_Name = "x86 Local APIC"
     },
+    AROS_MAKE_ID('A','P','I','C'),
     0,
     NULL,
     APICInt_Register,
@@ -162,14 +163,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
     	maxlvt = 2;
 #endif
 
-    /* Initialize legacy 8529A PIC if present. */
-    if (apic->flags & APF_8259)
-    {
-        coreICInstID = krnAddInterruptController(KernelBase, &i8259a_IntrController);
-        D(bug("[Kernel:APIC.%u] _APIC_IA32_init: i8259a IC ID #%d:%d\n", cpuNum, ICINTR_ICID(coreICInstID), ICINTR_INST(coreICInstID)));
-    }
-
-    if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) > 0)
+    if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != -1)
     {
         D(bug("[Kernel:APIC.%u] _APIC_IA32_init: APIC IC ID #%d:%d\n", cpuNum, ICINTR_ICID(coreICInstID), ICINTR_INST(coreICInstID)));
 
@@ -257,14 +251,6 @@ apicid_t core_APIC_GetID(IPTR _APICBase)
     D(bug("[Kernel:APIC] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
 
     return _apic_id;
-}
-
-void core_APIC_AckIntr(void)
-{
-    /* Write zero to EOI of current APIC */
-    IPTR apic_base = core_APIC_GetBase();
-
-    APIC_REG(apic_base, APIC_EOI) = 0;
 }
 
 ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBase)
