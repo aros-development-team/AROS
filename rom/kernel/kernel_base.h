@@ -31,6 +31,9 @@ struct KernelBase;
 struct PlatformData;
 
 #define HW_IRQ_COUNT    (255 - INTB_KERNEL)
+#ifndef KBL_INTERNAL
+#define KBL_INTERNAL    0
+#endif /* !KBL_INTERNAL */
 
 /* kernel.resource base. Nothing spectacular, really. */
 struct KernelBase
