@@ -53,7 +53,7 @@ APTR PlatformAllocGDT(struct KernelBase *LIBBASE, apicid_t _APICID)
 {
     APTR GDTalloc;
     
-    GDTalloc = (APTR)AllocMem(GDT_SIZE, MEMF_24BITDMA|MEMF_CLEAR);
+    GDTalloc = (APTR)AllocMem(GDT_SIZE + 128, MEMF_24BITDMA|MEMF_CLEAR);
     GDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)GDTalloc, 128);
     D(bug("[Kernel] %s[%d]: GDT @ 0x%p\n", __func__, _APICID, GDTalloc));
 
@@ -64,7 +64,7 @@ APTR PlatformAllocTLS(struct KernelBase *LIBBASE, apicid_t _APICID)
 {
     APTR TLSalloc = NULL;
 
-    TLSalloc = (APTR)AllocMem(TLS_SIZE, MEMF_24BITDMA|MEMF_CLEAR);
+    TLSalloc = (APTR)AllocMem(TLS_SIZE + TLS_ALIGN, MEMF_24BITDMA|MEMF_CLEAR);
     TLSalloc = (APTR)AROS_ROUNDUP2((unsigned long)TLSalloc, TLS_ALIGN);
 
     D(bug("[Kernel] %s[%d]: TLS @ 0x%p\n", __func__, _APICID, TLSalloc));
@@ -78,7 +78,7 @@ APTR PlatformAllocIDT(struct KernelBase *LIBBASE, apicid_t _APICID)
 
     if (!(IDTalloc = IDT_GET()))
     {
-        IDTalloc = (APTR)AllocMem(IDT_SIZE, MEMF_24BITDMA|MEMF_CLEAR);
+        IDTalloc = (APTR)AllocMem(IDT_SIZE + 256, MEMF_24BITDMA|MEMF_CLEAR);
         IDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)IDTalloc, 256);
     	IDT_SET(IDTalloc)
 
