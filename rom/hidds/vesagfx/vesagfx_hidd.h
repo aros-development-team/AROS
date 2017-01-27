@@ -3,7 +3,7 @@
 
 /*
     Copyright © 2017, The AROS Development Team. All rights reserved.
-    $Id: vesagfxclass.h 51032 2015-08-29 22:49:55Z NicJA $
+    $Id$
 
     Desc: VESA Gfx Hidd data.
     Lang: English.

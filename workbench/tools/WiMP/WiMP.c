@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: WiMP.c 41520 2011-09-21 13:56:22Z mmartinka $
+    $Id$
 
     WiMP -- Window manipulation program.
  */

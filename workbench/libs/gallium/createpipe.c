@@ -1,6 +1,6 @@
 /*
     Copyright © 2015-2017, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 */
 
 #define DEBUG 1
