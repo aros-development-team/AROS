@@ -36,18 +36,27 @@ const char *ACPI_TABLE_MADT_STR __attribute__((weak)) = "APIC";
 #define IOREGSEL        0
 #define IOREGWIN        0x10
 
- ULONG acpi_IOAPIC_ReadReg(APTR apic_base, UBYTE offset)
- {
-     *(volatile ULONG *)(apic_base + IOREGSEL) = offset;
-     return *(volatile ULONG *)(apic_base + IOREGWIN);
- }
+/* descriptor for an ioapic routing table entry */
+struct acpi_ioapic_route
+{
+    uint32_t    vect:8, dm:3, dstm:1, ds:1, pol:1, rirr:1, trig:1, mask:1, rsvd1:15;
+    uint32_t    rsvd2:24, dst:8;
+} __attribute__((packed));
 
-void acpi_IOAPIC_WriteReg(APTR apic_base, UBYTE offset, ULONG val)
- {
-     *(volatile ULONG *)(apic_base + IOREGSEL) = offset;
-     *(volatile ULONG *)(apic_base + IOREGWIN) = val;
- }
+static ULONG acpi_IOAPIC_ReadReg(APTR apic_base, UBYTE offset)
+{
+    *(volatile ULONG *)(apic_base + IOREGSEL) = offset;
+    return *(volatile ULONG *)(apic_base + IOREGWIN);
+}
 
+#if (0)
+//currently unused ..
+static void acpi_IOAPIC_WriteReg(APTR apic_base, UBYTE offset, ULONG val)
+{
+    *(volatile ULONG *)(apic_base + IOREGSEL) = offset;
+    *(volatile ULONG *)(apic_base + IOREGWIN) = val;
+}
+#endif
 
 /* IO-APIC Interrupt Functions ... ***************************/
 
@@ -69,7 +78,7 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
 
 BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
-    struct IOAPICCfgData *ioapicData;
+    D(struct IOAPICCfgData *ioapicData;)
     struct IOAPICData *ioapicPrivate = ((struct PlatformData *)KernelBase->kb_PlatformData)->kb_IOAPIC;
     int i;
 
@@ -79,8 +88,10 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
     for (i = 0; i < instanceCount; i++)
     {
-        ioapicData = &ioapicPrivate->ioapics[i];
-        D(bug("[Kernel:IOAPIC] %s: Init IOAPIC with ID #%d @ 0x%p\n", __func__, ioapicData->ioapicID, ioapicData->ioapicBase));
+        D(
+            ioapicData = &ioapicPrivate->ioapics[i];
+            bug("[Kernel:IOAPIC] %s: Init IOAPIC with ID #%d @ 0x%p\n", __func__, ioapicData->ioapicID, ioapicData->ioapicBase);
+        )
 
         /* Build a default routing table for legacy (ISA) interrupts. */
         /* TODO: implement legacy irq config.. */
@@ -166,7 +177,6 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
         {
             bug("[Kernel:ACPI-IOAPIC]    %s: corrected\n", __func__);
         }
-
     )
     return TRUE;
 
@@ -262,51 +272,50 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
 
             for (i = 0; i < (ioapicData->ioapicIRQs << 1); i += 2)
             {
-                UQUAD tblentry;
+                UQUAD tblraw = 0;
+                D(struct acpi_ioapic_route *tblentry = (struct acpi_ioapic_route *)&tblraw;)
 
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapicBase,
                     IOAPICREG_REDTBLBASE + i);
-                tblentry = ((UQUAD)ioapicval << 32);
+                tblraw = ((UQUAD)ioapicval << 32);
                 D(bug("[Kernel:ACPI-IOAPIC]    %s:       %08x", __func__, ioapicval));
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapicBase,
                     IOAPICREG_REDTBLBASE + i + 1);
-                tblentry |= ioapicval;
-                D(bug("%08x", ioapicval));
-                if (tblentry)
-                {
-                    D(bug(" :"));
-                    if (tblentry & (1 << 13))
+                tblraw |= (UQUAD)ioapicval;
+                D(
+                    bug("%08x :", ioapicval);
+                    if (tblentry->pol)
                     {
-                        D(bug(" Active LOW,"));
+                        bug(" Active LOW,");
                     }
                     else
                     {
-                        D(bug(" Active HIGH,"));
+                        bug(" Active HIGH,");
                     }
                     
-                    if (tblentry & (1 << 15))
+                    if (tblentry->trig)
                     {
-                        D(bug(" LEVEL"));
+                        bug(" LEVEL");
                     }
                     else
                     {
-                        D(bug(" EDGE"));
+                        bug(" EDGE");
                     }
 
-                    D(bug(" ->"));
+                    bug(" ->");
 
-                    if (tblentry & (1 << 11))
+                    if (tblentry->dstm)
                     {
-                        D(bug(" Logical %d:%d", ((tblentry >> 60) & 0xF), ((tblentry >> 56) & 0xF)));
+                        bug(" Logical %d:%d", ((tblentry->dst >> 4) & 0xF), (tblentry->dst & 0xF));
                     }
                     else
                     {
-                        D(bug(" Physical %d", ((tblentry >> 56) & 0xF)));
+                        bug(" Physical %d", (tblentry->dst & 0xF));
                     }
-                }
-                D(bug("\n"));
+                    bug("\n");
+                )
             }
 
             pdata->kb_IOAPIC->ioapic_count++;
@@ -362,7 +371,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_IOAPIC_Count,
             scanHook->acpith_UserData = pdata;
             Enqueue(&pdata->kb_ACPI->acpi_tablehooks, &scanHook->acpith_Node);
         }
-        
+
         scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
         if (scanHook)
         {

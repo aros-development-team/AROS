@@ -34,6 +34,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
      * KernelBase is already set up by the primary CPU, so we can use it.
      */
     struct APICData *apicData  = KernelBase->kb_PlatformData->kb_APIC;
+    struct CPUData *apicCPU;
     APTR CORETLS;
     IPTR _APICBase;
     apicid_t _APICID;
@@ -57,19 +58,23 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
         bug("[Kernel:SMP] %s[0x%02X]:     Ready Lock 0x%p\n", __func__, _APICID, apicready);
     )
 
+    apicCPU = &apicData->cores[_APICID];
+
+    D(bug("[Kernel:SMP] %s[0x%02X]: APIC CPU Data @ 0x%p\n", __func__, _APICID, apicCPU));
+
     /* Set up GDT and LDT for our core */
     CORETLS = PlatformAllocTLS(KernelBase, _APICID);
-    apicData->cores[_APICID].cpu_GDT = PlatformAllocGDT(KernelBase, _APICID);
+    apicCPU->cpu_GDT = PlatformAllocGDT(KernelBase, _APICID);
 
-    bug("[Kernel:SMP] %s[0x%02X]: GDT @ 0x%p, TLS @ 0x%p\n", __func__, _APICID, apicData->cores[_APICID].cpu_GDT, CORETLS);
+    D(bug("[Kernel:SMP] %s[0x%02X]: GDT @ 0x%p, TLS @ 0x%p\n", __func__, _APICID, apicCPU->cpu_GDT, CORETLS));
 #if (__WORDSIZE==64)
-    core_SetupGDT(__KernBootPrivate, _APICID, apicData->cores[_APICID].cpu_GDT, CORETLS, __KernBootPrivate->TSS);
+    core_SetupGDT(__KernBootPrivate, _APICID, apicCPU->cpu_GDT, CORETLS, __KernBootPrivate->TSS);
 
-    core_CPUSetup(_APICID, apicData->cores[_APICID].cpu_GDT, stackBase);
+    core_CPUSetup(_APICID, apicCPU->cpu_GDT, stackBase);
 
-    apicData->cores[_APICID].cpu_IDT = PlatformAllocIDT(KernelBase, _APICID);
-    bug("[Kernel:SMP] %s[0x%02X]: Core IDT @ 0x%p\n", __func__, _APICID, apicData->cores[_APICID].cpu_IDT);
-    core_SetupIDT(__KernBootPrivate, _APICID, apicData->cores[_APICID].cpu_IDT);
+    apicCPU->cpu_IDT = PlatformAllocIDT(KernelBase, _APICID);
+    D(bug("[Kernel:SMP] %s[0x%02X]: Core IDT @ 0x%p\n", __func__, _APICID, apicCPU->cpu_IDT));
+    core_SetupIDT(__KernBootPrivate, _APICID, apicCPU->cpu_IDT);
 
     D(bug("[Kernel:SMP] %s[0x%02X]: Initialising APIC...\n", __func__, _APICID));
     core_APIC_Init(apicData, _APICID);
