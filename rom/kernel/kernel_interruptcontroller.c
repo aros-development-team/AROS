@@ -52,8 +52,8 @@ icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrC
     else
         icid = intController->ic_Node.ln_Type;
 
-    if (icid == -1)
-        return -1;
+    if (icid == (icid_t)-1)
+        return (icintrid_t)-1;
 
     AddTail(&KernelBase->kb_ICList, &intController->ic_Node);
 
