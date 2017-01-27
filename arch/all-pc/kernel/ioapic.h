@@ -21,12 +21,15 @@
 
 struct IOAPICCfgData
 {
-    APTR ioapicBase;
-    apicid_t ioapicID;
-    UBYTE ioapicVer;
-    UBYTE ioapicIRQs;
-    UBYTE ioapicGSI;
+    APTR        ioapic_Base;
+    ULONG       ioapic_Flags;
+    apicid_t    ioapic_ID;
+    UBYTE       ioapic_Ver;
+    UBYTE       ioapic_IRQCount;
+    UBYTE       ioapic_GSI;
 };
+
+#define IOAPICF_ENABLED         (1 << 1)
 
 struct IOAPICData
 {

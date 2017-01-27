@@ -35,7 +35,7 @@ icid_t i8259a_Register(struct KernelBase *KernelBase)
 
     /* if we have been disabled, fail to register */
     if (i8259a_IntrController.ic_Flags & ICF_DISABLED)
-        return -1;
+        return (icid_t)-1;
 
     i8259a_IntrController.ic_Flags |= ICF_ACKENABLE;
 
@@ -77,7 +77,7 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         {
             xtPic = (struct i8259a_Instance *)&xtpicPriv->irq_ic[i];
             xtPic->irq_mask = 0xFFFB;
-            xtPic->irq_base = 0x20;               /* route irqs after the cpu's exceptions */
+            xtPic->irq_base = HW_IRQ_BASE;               /* route irqs after the cpu's exceptions */
         }
 
         /* Setup the first registered 8259. Send four ICWs (see 8529 datasheet) */
