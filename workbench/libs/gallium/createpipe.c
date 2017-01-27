@@ -66,6 +66,7 @@
     OOP_Object                                  *_driver = NULL;
     OOP_Object                                  **driver;
     struct BitMap                               *friendbm;
+    struct Screen                               *pubscreen = NULL;
 
     galliumTags[0].ti_Data = GetTagData(CPS_GalliumInterfaceVersion, -1, tags);
     friendbm = (struct BitMap *)GetTagData(CPS_PipeFriendBitMap, 0, tags);
@@ -77,7 +78,6 @@
 
     if (!friendbm)
     {
-        struct Screen * pubscreen;
         if ((pubscreen = LockPubScreen(NULL)) != NULL)
             friendbm = pubscreen->RastPort.BitMap;
     }
@@ -98,6 +98,9 @@
             }
         }
     }
+
+    if (pubscreen)
+        UnlockPubScreen(NULL, pubscreen);
 
     if (!*driver)
     {
