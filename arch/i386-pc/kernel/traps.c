@@ -166,7 +166,7 @@ void handleException(struct ExceptionContext *regs, unsigned long error_code, un
 {
     struct KernelBase *KernelBase = getKernelBase();
 
-    if (irq_number < 0x20)
+    if (irq_number < HW_IRQ_BASE)
     {
 	/* These are CPU traps */
 	cpu_Trap(regs, error_code, irq_number);
@@ -210,10 +210,10 @@ void handleException(struct ExceptionContext *regs, unsigned long error_code, un
 
 	DSYSCALL(bug("[Kernel] Returning from syscall...\n"));
     }
-    else if (irq_number >= 0x20)
+    else if (irq_number >= HW_IRQ_BASE)
     {
 	/* From CPU's point of view, IRQs are exceptions starting from 0x20. */
-    	irq_number -= 0x20;
+    	irq_number -= HW_IRQ_BASE;
 
 	if (irq_number == 13)
 	{

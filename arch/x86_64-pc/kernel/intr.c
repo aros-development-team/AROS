@@ -303,8 +303,8 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     }
 #endif
 
-    /* The first 32 exceptions are CPU traps */
-    if (irq_number < 0x20)
+    /* The first 32 "hardware IRQs" are CPU exceptions */
+    if (irq_number < HW_IRQ_BASE)
     {
     	cpu_Trap(regs, error_code, irq_number);
     }
@@ -363,14 +363,14 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 
 	DSYSCALL(bug("[Kernel] Returning from syscall...\n"));
     }
-    else if (irq_number >= 0x20) /* Hardware IRQ */
+    else if (irq_number >= HW_IRQ_BASE) /* Hardware IRQ */
     {
 	if (KernelBase)
     	{
             struct IntrController *irqIC;
 
 	    /* From CPU's point of view, IRQs are exceptions starting from 0x20. */
-    	    irq_number -= 0x20;
+    	    irq_number -= HW_IRQ_BASE;
 
             if ((irqIC = krnGetInterruptController(KernelBase, KernelBase->kb_Interrupts[irq_number].lh_Type)) != NULL)
             {
