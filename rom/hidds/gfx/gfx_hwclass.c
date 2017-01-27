@@ -38,5 +38,5 @@ OOP_Object *GFXHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 VOID GFXHW__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    /* We are singletone. Cannot dispose. */
+    /* We are singleton. Cannot dispose. */
 }
