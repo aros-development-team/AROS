@@ -105,7 +105,7 @@ const struct Resident kernelpost_romtag =
    RTF_COLDSTART,
    1,
    NT_UNKNOWN,
-   121,
+   119,
    (STRPTR)kernelpost_namestring,
    (STRPTR)kernelpost_versionstring,
    (APTR)KernelPost
@@ -133,11 +133,11 @@ static AROS_UFH3 (APTR, KernelPost,
 
     ACPICABase = OpenLibrary("acpica.library", 0);
 
-    Disable();
-
     // Probe for ACPI configuration ...
     if (ACPICABase)
         acpi_Init(pdata);
+
+    Disable();
 
     // Add the default reboot/shutdown handlers if ACPI ones havent been registered...
     krnAddSysCallHandler(pdata, &x86_SCRebootHandler, FALSE);
