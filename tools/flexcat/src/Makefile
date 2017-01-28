@@ -3,7 +3,7 @@
 # $Id$
 #
 # Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
-# Copyright (C) 2002-2010 by the FlexCat Open Source Team
+# Copyright (C) 2002-2015 FlexCat Open Source Team
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -124,6 +124,7 @@ CC      = gcc
 STRIP   = strip
 OBJDUMP = objdump
 MAKEINFO= makeinfo
+TX      = tx
 
 # path definitions
 CDUP  = /
@@ -276,7 +277,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer
+  OPTFLAGS = -O3 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
   LDLIBS += -lamiga -larossupport -larosc
 
@@ -300,7 +301,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer
+  OPTFLAGS = -O3 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
   LDLIBS += -lamiga -larossupport -larosc
 
@@ -324,7 +325,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer
+  OPTFLAGS = -O3 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
   LDLIBS += -lamiga -larossupport -larosc
 
@@ -348,7 +349,7 @@ ifeq ($(OS), aros-arm)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer
+  OPTFLAGS = -O3 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
   LDLIBS += -lamiga -larossupport -larosc
 
@@ -366,15 +367,17 @@ ifeq ($(OS), mingw32)
   # Windows (mingw32)
 
   ifneq ($(HOST), Windows)
-    CC      = i586-mingw32msvc-gcc
-    STRIP   = i586-mingw32msvc-strip
-    OBJDUMP = i586-mingw32msvc-objdump
+    CC      = i686-w64-mingw32-gcc
+    STRIP   = i686-w64-mingw32-strip
+    OBJDUMP = i686-w64-mingw32-objdump
   endif
 
   # Compiler/Linker flags
   EXE = .exe
-  OPTFLAGS = -O2 -fomit-frame-pointer
+  OPTFLAGS = -O3 -fomit-frame-pointer
+  CFLAGS += -I./include/mingw32
   LDFLAGS =
+  LDLIBS += -liconv
 
   SYSDEPOBJS = locale_other.o \
                asprintf.o \
@@ -394,9 +397,9 @@ ifeq ($(OS), unix)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer
-  CFLAGS += -m32 -D_GNU_SOURCE
-  LDFLAGS = -m32
+  OPTFLAGS = -O3 -fomit-frame-pointer
+  CFLAGS += -D_GNU_SOURCE
+  LDFLAGS = 
 
   SYSDEPOBJS = locale_other.o
 
@@ -517,10 +520,19 @@ FlexCat_cat_other.h: locale/FlexCat.pot sd/Hardcode_h.sd
 
 locale/%.catalog: locale/%.po
 	@echo "  MK $@"
-	@$(FLEXCAT) POFILE $< CATALOG $@
+	@$(FLEXCAT) REVISION $(shell git rev-list --all --count $<) POFILE $< CATALOG $@
+
+## TRANSIFEX ##########################
+
+.PHONY: txpull
+txpull:
+	@$(TX) pull -a -f
+
+.PHONY: txpush
+txpush:
+	@$(TX) push -t
 
 .IGNORE: $(CATALOGS)
-
 catalogs: $(CATALOGS)
 
 .PHONY: clean

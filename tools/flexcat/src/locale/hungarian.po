@@ -1,16 +1,15 @@
 # Translation catalog description file (pot-style)
-# $Id: hungarian.po 290 2014-04-04 07:25:33Z thboeckel $
 # 
 # version 3
 # Translators:
 msgid ""
 msgstr ""
 "Project-Id-Version: FlexCat\n"
-"Report-Msgid-Bugs-To: http://sf.net/p/flexcat\n"
+"Report-Msgid-Bugs-To: https://github.com/adtools/flexcat\n"
 "POT-Creation-Date: 2014-02-18 11:52+0100\n"
-"PO-Revision-Date: 2014-04-04 07:24+0000\n"
-"Last-Translator: tboeckel <tboeckel@gmx.de>\n"
-"Language-Team: Hungarian (http://www.transifex.com/projects/p/flexcat/language/hu/)\n"
+"PO-Revision-Date: 2016-04-27 14:50+0000\n"
+"Last-Translator: Jens Maus <mail@jens-maus.de>\n"
+"Language-Team: Hungarian (http://www.transifex.com/ato/flexcat/language/hu/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -44,6 +43,8 @@ msgid ""
 "  COPYMSGNEW     Copy ***NEW*** markers over from old translation\n"
 "  OLDMSGNEW      Custom marker in old translation\n"
 "  CODESET        Codeset to force in output file (e.g. 'UTF-8')\n"
+"  VERSION        Force a certain version to be used during catalog generation\n"
+"  REVISION       Force a certain revision to be used during catalog generation\n"
 "  NOAUTODATE     no operation - kept for compatibility\n"
 "  NOSPACES       no operation - kept for compatibility"
 msgstr ""
@@ -312,4 +313,32 @@ msgstr ""
 
 msgctxt "MSG_ERR_NO_CAT_REVISION (177//)"
 msgid "no catalog revision information found, using revision 0"
+msgstr ""
+
+msgctxt "MSG_ERR_CONVERSION_FAILED (178//)"
+msgid "UTF8 conversion failed for identifier '%s'"
+msgstr ""
+
+msgctxt "MSG_ERR_UNKNOWN_SOURCE_CHARSET (179//)"
+msgid "ERROR in CodesetsFind(): unknown source charset '%s'"
+msgstr ""
+
+msgctxt "MSG_ERR_UNKNOWN_DESTINATION_CHARSET (180//)"
+msgid "ERROR in CodesetsFind(): unknown destination charset '%s'"
+msgstr ""
+
+msgctxt "MSG_ERR_INVALID_CHARS_FOUND (181//)"
+msgid "ERROR in CodesetsConvertStr(): %d invalid characters found"
+msgstr ""
+
+msgctxt "MSG_ERR_ICONV_FAILED (182//)"
+msgid "ERROR in iconv(): %s"
+msgstr ""
+
+msgctxt "MSG_ERR_ICONV_OPEN_FAILED (183//)"
+msgid "ERROR in iconv_open(): %s"
+msgstr ""
+
+msgctxt "MSG_ERR_NO_CAT_VERSION (184//)"
+msgid "no catalog version information found, using version 0"
 msgstr ""

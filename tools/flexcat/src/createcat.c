@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2010 by the FlexCat Open Source Team
+ * Copyright (C) 2002-2015 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -260,7 +260,7 @@ void CreateCat(char *CatFile)
       name = (char *)"";
     }
 
-    if(asprintf(&verStr, "%cVER: %s %d.%d(%d.%d.%d)", '$', name, version, revision, day, month, year) != -1)
+    if(asprintf(&verStr, "%cVER: %s %d.%d (%d.%d.%d)", '$', name, version, revision, day, month, year) != -1)
     {
       verChunk.ID = MAKE_ID('F', 'V', 'E', 'R');
       verChunk.ID = SwapLong(verChunk.ID);

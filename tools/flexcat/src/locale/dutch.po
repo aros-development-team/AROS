@@ -1,16 +1,17 @@
 # Translation catalog description file (pot-style)
-# $Id: dutch.po 290 2014-04-04 07:25:33Z thboeckel $
 # 
 # version 3
 # Translators:
+# Johan Banis <j.banis@banis.info>, 2014
+# Thore Böckelmann <tboeckel@gmx.de>, 2015
 msgid ""
 msgstr ""
 "Project-Id-Version: FlexCat\n"
-"Report-Msgid-Bugs-To: http://sf.net/p/flexcat\n"
+"Report-Msgid-Bugs-To: https://github.com/adtools/flexcat\n"
 "POT-Creation-Date: 2014-02-18 11:52+0100\n"
-"PO-Revision-Date: 2014-04-04 07:24+0000\n"
-"Last-Translator: tboeckel <tboeckel@gmx.de>\n"
-"Language-Team: Dutch (http://www.transifex.com/projects/p/flexcat/language/nl/)\n"
+"PO-Revision-Date: 2016-04-27 14:50+0000\n"
+"Last-Translator: Jens Maus <mail@jens-maus.de>\n"
+"Language-Team: Dutch (http://www.transifex.com/ato/flexcat/language/nl/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -20,7 +21,7 @@ msgstr ""
 
 msgctxt "MSG_USAGE_HEAD (0//)"
 msgid "Usage:"
-msgstr "Gebruik"
+msgstr "Gebruik:"
 
 msgctxt "MSG_USAGE (1//)"
 msgid ""
@@ -44,173 +45,175 @@ msgid ""
 "  COPYMSGNEW     Copy ***NEW*** markers over from old translation\n"
 "  OLDMSGNEW      Custom marker in old translation\n"
 "  CODESET        Codeset to force in output file (e.g. 'UTF-8')\n"
+"  VERSION        Force a certain version to be used during catalog generation\n"
+"  REVISION       Force a certain revision to be used during catalog generation\n"
 "  NOAUTODATE     no operation - kept for compatibility\n"
 "  NOSPACES       no operation - kept for compatibility"
 msgstr ""
 
 msgctxt "MSG_FILEUPTODATE (2//)"
 msgid "File '%s' is up to date"
-msgstr "Bestand %s is up-to-date"
+msgstr "Bestand '%s' is up-to-date"
 
 msgctxt "MSG_ERR_WARNING (100//)"
 msgid "%s, line %d - warning:"
-msgstr "%s, regel %d; waarschuwing:"
+msgstr "%s, regel %d - Waarschuwing:"
 
 msgctxt "MSG_ERR_ERROR (101//)"
 msgid "%s, line %d - ERROR:"
-msgstr ""
+msgstr "%s, regel %d - Fout:"
 
 msgctxt "MSG_ERR_EXPECTEDHEX (102//)"
 msgid "expected hex character (one of [0-9a-fA-F])"
-msgstr "Verwachtte hex karakter (één uit [0-9a-fA-F])."
+msgstr "Verwachtte hex karakter (één uit [0-9a-fA-F])"
 
 msgctxt "MSG_ERR_EXPECTEDOCTAL (103//)"
 msgid "expected octal character (one of [0-7])"
-msgstr "Verwachtte octaal karakter (één uit [0-7])."
+msgstr "Verwachtte octaal karakter (één uit [0-7])"
 
 msgctxt "MSG_ERR_NOLENGTHBYTES (104//)"
 msgid "lengthbytes cannot be larger than %d (sizeof long)"
-msgstr "Aantal Bytes > %d (sizeof long) is onmogelijk."
+msgstr "Lengte in bytes mag niet hoger zijn dan %d (sizeof long)"
 
 msgctxt "MSG_ERR_UNKNOWNCDCOMMAND (105//)"
 msgid "unknown catalog description command"
-msgstr "Onbekend catalogusbeschrijvingscommando"
+msgstr "Onbekende opdracht in .cd"
 
 msgctxt "MSG_ERR_UNEXPECTEDBLANKS (106//)"
 msgid "unexpected blanks"
-msgstr "Onverwachte spaties."
+msgstr "Onverwachte spaties"
 
 msgctxt "MSG_ERR_NOIDENTIFIER (107//)"
 msgid "missing identifier"
-msgstr "Identifier ontbreekt."
+msgstr "Identifier ontbreekt"
 
 msgctxt "MSG_ERR_MISSINGSTRING (115//)"
 msgid "unexpected end of file (missing catalog strings)"
-msgstr "Onverwacht eind van het bestand (ontbrekende catalogusregel)."
+msgstr "Onverwacht eind van het bestand (ontbrekende catalogstring)"
 
 msgctxt "MSG_ERR_UNKNOWNCTCOMMAND (118//)"
 msgid "unknown command in translation"
-msgstr "Onbekend catalogusvertalingscommando."
+msgstr "Onbekende opdracht in .ct"
 
 msgctxt "MSG_ERR_UNKNOWNIDENTIFIER (119//)"
 msgid "'%s' missing in catalog description"
-msgstr "%s ontbreekt in catalogusbeschrijving."
+msgstr "'%s' ontbreekt in .cd"
 
 msgctxt "MSG_ERR_UNKNOWNSTRINGTYPE (120//)"
 msgid "unknown string type"
-msgstr "Onbekend regeltype."
+msgstr "Onbekend soort string"
 
 msgctxt "MSG_ERR_NOTERMINATEBRACKET (121//)"
 msgid "unexpected end of line (missing ')')"
-msgstr "Onverwacht einde van regel. (')' ontbreekt)"
+msgstr "Onverwacht einde van regel: ontbrekend eindhaakje ')'"
 
 msgctxt "MSG_ERR_NOBINCHARS (122//)"
 msgid "binary characters in string type None"
-msgstr "Binaire karakters in regel van onbekend type."
+msgstr "Binaire karakters in regel van onbekend type"
 
 msgctxt "MSG_ERR_CTGAP (123//)"
 msgid "'%s' missing in catalog translation"
-msgstr "ID %s ontbreekt in CT bestand."
+msgstr "'%s' ontbreekt in .ct"
 
 msgctxt "MSG_ERR_DOUBLECTLANGUAGE (124//)"
 msgid "catalog language declared twice"
-msgstr "Catalogustaal dubbel gedeclareerd."
+msgstr "Taal van de catalog dubbel genoemd"
 
 msgctxt "MSG_ERR_DOUBLECTVERSION (125//)"
 msgid "catalog version declared twice"
-msgstr "Catalogusversie dubbel gedeclareerd."
+msgstr "Versie van de catalog dubbel genoemd"
 
 msgctxt "MSG_ERR_WRONGRCSID (126//)"
 msgid "incorrect RCS Id"
-msgstr "Incorrecte rcs ID"
+msgstr "Incorrecte RCS ID"
 
 msgctxt "MSG_ERR_NOMEMORY (127//)"
 msgid "out of memory!"
-msgstr "Onvoldoende geheugen!"
+msgstr "Onvoldoende geheugen"
 
 msgctxt "MSG_ERR_NOCATALOGDESCRIPTION (128//)"
 msgid "cannot open catalog description '%s'"
-msgstr "Kan de catalogusbeschrijving %s niet openen."
+msgstr "Kan .cd '%s' niet openen"
 
 msgctxt "MSG_ERR_NOCATALOGTRANSLATION (129//)"
 msgid "cannot open catalog translation '%s'"
-msgstr "Vertalingsbestand %s kan niet geopend worden."
+msgstr "Kan .ct '%s' niet openen"
 
 msgctxt "MSG_ERR_NOCTVERSION (130//)"
 msgid ""
 "missing catalog translation version\n"
 "Use either '## version' or '## rcsid' and '## name'"
-msgstr "Catalogusvertalingsversie ontbreekt; gebruik ofwel ##version\nof ##rcsid en ##name."
+msgstr "Versienummer van .ct ontbreekt. Gebruik '##version', of '##rcsid' en '##name'"
 
 msgctxt "MSG_ERR_NOCATALOG (131//)"
 msgid "cannot open catalog file '%s'"
-msgstr "Kan catalogusbestand %s niet openen."
+msgstr "Kan .catalog '%s' niet openen"
 
 msgctxt "MSG_ERR_NONEWCTFILE (132//)"
 msgid "cannot create catalog translation '%s'"
-msgstr "Kan catalogusvertalingsbestand %s niet creëren."
+msgstr "Kan geen .ct '%s' maken"
 
 msgctxt "MSG_ERR_NOCTLANGUAGE (133//)"
 msgid "missing catalog translation language"
-msgstr "Taal catalogusvertaling ontbreekt."
+msgstr "Geen taal opgegeven in .ct"
 
 msgctxt "MSG_ERR_NOSOURCE (134//)"
 msgid "cannot open source file '%s'"
-msgstr "Kan bronbestand %s niet openen."
+msgstr "Kan bronbestand '%s' niet openen"
 
 msgctxt "MSG_ERR_NOSOURCEDESCRIPTION (135//)"
 msgid "cannot open source description file '%s'"
-msgstr "Kan bronbeschrijvingsbestand %s niet openen."
+msgstr "Kan bronbeschrijvingsbestand '%s' niet openen"
 
 msgctxt "MSG_ERR_NOCTARGUMENT (136//)"
 msgid "creating a catalog requires a translation file"
-msgstr "Het creëren van een catalogus benodigt een catalogusvertalingsbestand als argument."
+msgstr "Om een .catalog te maken heb je een .ct nodig"
 
 msgctxt "MSG_ERR_CANTCHECKDATE (137//)"
 msgid "cannot get datestamp of '%s'"
-msgstr "Kan het datumstempel van %s niet verkrijgen"
+msgstr "Kan datumstempel van '%s' niet vinden"
 
 msgctxt "MSG_ERR_NOCTFILENAME (140//)"
 msgid ""
 "Catalog translation file name not specified at command line or as basename "
 "in description"
-msgstr ""
+msgstr "Naam van .ct niet opgegeven in opdrachtregel of als basisnaam in beschrijving"
 
 msgctxt "MSG_ERR_NOCATFILENAME (141//)"
 msgid ""
 "catalog file name not specified at command line or as basename in "
 "description"
-msgstr ""
+msgstr "Naam van .catalog niet opgegeven in opdrachtregel of als basisnaam in beschrijving"
 
 msgctxt "MSG_ERR_BADPREFS (142//)"
 msgid ""
 "error processing 'FlexCat.prefs' variable, falling back to defaults\n"
 "Template:"
-msgstr "Fout bij verwerking FlexCat.prefs variabele, val terug naar standaardwaarden.\nInstellingenstramien:"
+msgstr "Fout bij FlexCat.prefs. Gebruik daarom de standaardwaarden.\nSjabloon:"
 
 msgctxt "MSG_ERR_BADCTLANGUAGE (144//)"
 msgid ""
 "invalid language in catalog translation file\n"
 "Language MUST be a string with alphabetical characters and no inlined or trailing spaces"
-msgstr ""
+msgstr "Ongeldige taal in .ct. Taal moet een string zijn met alfabetische karakters zonder spaties erin of erachter"
 
 msgctxt "MSG_ERR_DOUBLECTCODESET (146//)"
 msgid "catalog codeset declared twice"
-msgstr ""
+msgstr "Codeset van .catalog dubbel genoemd"
 
 msgctxt "MSG_ERR_BADCTCODESET (147//)"
 msgid ""
 "invalid codeset in catalog translation file\n"
 "Codeset MUST be a decimal number without any trailing spaces"
-msgstr ""
+msgstr "Ongeldige codeset in .ct. Codeset moet een decimaal getal zijn zonder spaties erin of erachter"
 
 msgctxt "MSG_ERR_NOCTCODESET (148//)"
 msgid "missing catalog translation codeset"
-msgstr ""
+msgstr "Ontbrekende codeset in .ct"
 
 msgctxt "MSG_ERR_ERROR_QUICK (149//)"
 msgid "%s - ERROR:"
-msgstr ""
+msgstr "%s - Fout:"
 
 msgctxt "MSG_ERR_BADCTVERSION (150//)"
 msgid ""
@@ -218,98 +221,126 @@ msgid ""
 "Version should be something like\n"
 "## version $VER: name version.revision (date)\n"
 "without any spaces in the name"
-msgstr ""
+msgstr "Ongeldige versiestring in .ct. Versie moet zoiets zijn als\\n## version $VER: name version.revision (datum)\\nzonder spaties in de naam"
 
 msgctxt "MSG_ERR_WARNING_QUICK (154//)"
 msgid "%s - Warning:"
-msgstr ""
+msgstr "%s - Waarschuwing:"
 
 msgctxt "MSG_ERR_MISSINGTRANSLATION (155//)"
 msgid "missing translation for identifier '%s'"
-msgstr ""
+msgstr "Ontbrekende vertaling voor identifier '%s'"
 
 msgctxt "MSG_ERR_EMPTYTRANSLATION (156//)"
 msgid "empty translation for identifier '%s'"
-msgstr ""
+msgstr "Lege vertaling voor identifier '%s'"
 
 msgctxt "MSG_ERR_MISMATCHINGCONTROLCHARACTERS (157//)"
 msgid "mismatching trailing control characters"
-msgstr ""
+msgstr "Niet-overeenkomend aantal controletekens aan het eind"
 
 msgctxt "MSG_ERR_DOUBLE_IDENTIFIER (159//)"
 msgid "identifier '%s' declared twice"
-msgstr ""
+msgstr "Identifier '%s' dubbel genoemd"
 
 msgctxt "MSG_ERR_STRING_TOO_SHORT (160//)"
 msgid "string too short for identifier '%s'"
-msgstr ""
+msgstr "String is te kort voor identifier '%s'"
 
 msgctxt "MSG_ERR_STRING_TOO_LONG (161//)"
 msgid "string too long for identifier '%s'"
-msgstr ""
+msgstr "String is te lang voor identifier '%s'"
 
 msgctxt "MSG_ERR_TRAILING_ELLIPSIS (162//)"
 msgid "original string has a trailing ellipsis ('...') for identifier '%s'"
-msgstr ""
+msgstr "Originele string heeft volgpuntjes ('...') voor identifier '%s'"
 
 msgctxt "MSG_ERR_NO_TRAILING_ELLIPSIS (163//)"
 msgid ""
 "original string doesn't have a trailing ellipsis ('...') for identifier '%s'"
-msgstr ""
+msgstr "Originele string heeft geen volgpuntjes ('...') voor identifier '%s'"
 
 msgctxt "MSG_ERR_TRAILING_BLANKS (164//)"
 msgid "original string has trailing blanks for identifier '%s'"
-msgstr ""
+msgstr "Originele string heeft volgspaties voor identifier '%s'"
 
 msgctxt "MSG_ERR_NO_TRAILING_BLANKS (165//)"
 msgid "original string doesn't have trailing blanks for identifier '%s'"
-msgstr ""
+msgstr "Originele string heeft geen volgspaties voor identifier '%s'"
 
 msgctxt "MSG_ERR_MISMATCHING_PLACEHOLDERS (166//)"
 msgid "mismatching placeholders for identifier '%s'"
-msgstr ""
+msgstr "Niet-overeenkomend aantal placeholders voor identifier '%s'"
 
 msgctxt "MSG_ERR_MISSING_PLACEHOLDERS (167//)"
 msgid "missing placeholders for identifier '%s'"
-msgstr ""
+msgstr "Ontbrekende placeholder voor identifier '%s'"
 
 msgctxt "MSG_ERR_EXCESSIVE_PLACEHOLDERS (168//)"
 msgid "excessive placeholders for identifier '%s'"
-msgstr ""
+msgstr "Te veel placeholders voor identifier '%s'"
 
 msgctxt "MSG_ERR_NO_LEADING_BRACKET (169//)"
 msgid "missing '(' for identifier '%s'"
-msgstr ""
+msgstr "Ontbrekend beginhaakje '(' voor identifier '%s'"
 
 msgctxt "MSG_ERR_NO_TRAILING_BRACKET (170//)"
 msgid "missing ')' for identifier '%s'"
-msgstr ""
+msgstr "Ontbrekend eindhaakje ')' voor identifier '%s'"
 
 msgctxt "MSG_ERR_DOUBLE_ID (171//)"
 msgid "ID number used twice for identifier '%s'"
-msgstr ""
+msgstr "ID-nummer dubbel genoemd voor identifier '%s'"
 
 msgctxt "MSG_ERR_NO_MIN_LEN (172//)"
 msgid "expected MinLen (character '/') for identifier '%s'"
-msgstr ""
+msgstr "Verwachtte MinLen (karakter '/') voor identifier '%s'"
 
 msgctxt "MSG_ERR_NO_MAX_LEN (173//)"
 msgid "expected MaxLen (character '/') for identifier '%s'"
-msgstr ""
+msgstr "Verwachtte MaxLen (karakter '/') voor identifier '%s'"
 
 msgctxt "MSG_ERR_EXTRA_CHARACTERS (174//)"
 msgid "extra characters at the end of the line"
-msgstr ""
+msgstr "Extra karakters aan het eind van de regel"
 
 msgctxt "MSG_ERR_EXTRA_CHARACTERS_ID (175//)"
 msgid "extra characters at the end of the line for identifier '%s'"
-msgstr ""
+msgstr "Extra karakters aan het eind van de regel voor identifier '%s'"
 
 msgctxt "MSG_ERR_NON_ASCII_CHARACTER (176//)"
 msgid ""
 "non-ASCII character 0x%02x found in original string for identifier '%s'"
-msgstr ""
+msgstr "Niet-ASCII-karakter 0x%02x in originele string voor identifier '%s'"
 
 msgctxt "MSG_ERR_NO_CAT_REVISION (177//)"
 msgid "no catalog revision information found, using revision 0"
+msgstr "Kan geen revisie-info voor .catalog vinden, gebruik daarom revisie 0"
+
+msgctxt "MSG_ERR_CONVERSION_FAILED (178//)"
+msgid "UTF8 conversion failed for identifier '%s'"
+msgstr "UTF8-conversie mislukt voor identifier '%s'"
+
+msgctxt "MSG_ERR_UNKNOWN_SOURCE_CHARSET (179//)"
+msgid "ERROR in CodesetsFind(): unknown source charset '%s'"
+msgstr "Fout in CodesetsFind(): onbekende broncharset '%s'"
+
+msgctxt "MSG_ERR_UNKNOWN_DESTINATION_CHARSET (180//)"
+msgid "ERROR in CodesetsFind(): unknown destination charset '%s'"
+msgstr "Fout in CodesetFind(): onbekende bestemmingscharset '%s'"
+
+msgctxt "MSG_ERR_INVALID_CHARS_FOUND (181//)"
+msgid "ERROR in CodesetsConvertStr(): %d invalid characters found"
+msgstr "Fout in CodesetsConvertStr(): %d ongeldige karakters gevonden"
+
+msgctxt "MSG_ERR_ICONV_FAILED (182//)"
+msgid "ERROR in iconv(): %s"
+msgstr "Fout in iconv(): %s"
+
+msgctxt "MSG_ERR_ICONV_OPEN_FAILED (183//)"
+msgid "ERROR in iconv_open(): %s"
+msgstr "Fout in iconv_open(): %s"
+
+msgctxt "MSG_ERR_NO_CAT_VERSION (184//)"
+msgid "no catalog version information found, using version 0"
 msgstr ""

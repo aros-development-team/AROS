@@ -2,7 +2,8 @@
 # 
 # version 3
 # Translators:
-# Samir Hawamdeh <s.hawamdeh@teletu.it>, 2014
+# Michael Malyshev, 2014
+# Michael Malyshev, 2014
 msgid ""
 msgstr ""
 "Project-Id-Version: FlexCat\n"
@@ -10,17 +11,17 @@ msgstr ""
 "POT-Creation-Date: 2014-02-18 11:52+0100\n"
 "PO-Revision-Date: 2016-04-27 14:50+0000\n"
 "Last-Translator: Jens Maus <mail@jens-maus.de>\n"
-"Language-Team: Italian (http://www.transifex.com/ato/flexcat/language/it/)\n"
+"Language-Team: Russian (http://www.transifex.com/ato/flexcat/language/ru/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Catalog-Name: FlexCat\n"
-"Language: it\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
 
 msgctxt "MSG_USAGE_HEAD (0//)"
 msgid "Usage:"
-msgstr "Utilizzo:"
+msgstr "Использование:"
 
 msgctxt "MSG_USAGE (1//)"
 msgid ""
@@ -52,167 +53,167 @@ msgstr ""
 
 msgctxt "MSG_FILEUPTODATE (2//)"
 msgid "File '%s' is up to date"
-msgstr "Il file '%s' è stato aggiornato"
+msgstr "Файл '%s' является текущим"
 
 msgctxt "MSG_ERR_WARNING (100//)"
 msgid "%s, line %d - warning:"
-msgstr "%s, linea %d - Avviso:"
+msgstr "%s, строка %d - внимание:"
 
 msgctxt "MSG_ERR_ERROR (101//)"
 msgid "%s, line %d - ERROR:"
-msgstr "%s, linea %d - ERRORE:"
+msgstr "%s, строка %d - ОШИБКА:"
 
 msgctxt "MSG_ERR_EXPECTEDHEX (102//)"
 msgid "expected hex character (one of [0-9a-fA-F])"
-msgstr "atteso carattere esadecimale (compreso tra [0-9a-fA-F])"
+msgstr "ожидается шестнадцатеричный символ (один из [0-9a-fA-F])"
 
 msgctxt "MSG_ERR_EXPECTEDOCTAL (103//)"
 msgid "expected octal character (one of [0-7])"
-msgstr "atteso carattere ottale (compreso tra [0-7])"
+msgstr "ожидается восьмеричный символ (один из [0-7])"
 
 msgctxt "MSG_ERR_NOLENGTHBYTES (104//)"
 msgid "lengthbytes cannot be larger than %d (sizeof long)"
-msgstr "LengthBytes non può essere più largo di %d (sizeof long)"
+msgstr "байты длины не могут быть больше чем %d (размер long)"
 
 msgctxt "MSG_ERR_UNKNOWNCDCOMMAND (105//)"
 msgid "unknown catalog description command"
-msgstr "comando sconosciuto nel file descrizione"
+msgstr "неизвестная команда описания каталога"
 
 msgctxt "MSG_ERR_UNEXPECTEDBLANKS (106//)"
 msgid "unexpected blanks"
-msgstr "spazi inattesi"
+msgstr "неожиданные пробелы"
 
 msgctxt "MSG_ERR_NOIDENTIFIER (107//)"
 msgid "missing identifier"
-msgstr "identificatore mancante"
+msgstr "отсутствует идентификатор"
 
 msgctxt "MSG_ERR_MISSINGSTRING (115//)"
 msgid "unexpected end of file (missing catalog strings)"
-msgstr "inattesa fine del file (stringhe catalog mancanti)"
+msgstr "неожиданный конец файла (отсутствуют строки каталога)"
 
 msgctxt "MSG_ERR_UNKNOWNCTCOMMAND (118//)"
 msgid "unknown command in translation"
-msgstr "comando sconosciuto nel file traduzione"
+msgstr "неизвестная команда в переводе"
 
 msgctxt "MSG_ERR_UNKNOWNIDENTIFIER (119//)"
 msgid "'%s' missing in catalog description"
-msgstr "'%s' mancante nel file descrizione .CD"
+msgstr "'%s' отсутствует в описание каталога"
 
 msgctxt "MSG_ERR_UNKNOWNSTRINGTYPE (120//)"
 msgid "unknown string type"
-msgstr "tipo di stringa sconosciuta"
+msgstr "неизвестный тип строки"
 
 msgctxt "MSG_ERR_NOTERMINATEBRACKET (121//)"
 msgid "unexpected end of line (missing ')')"
-msgstr "fine linea inattesa. ( ')' mancante)"
+msgstr "неожиданный конец строки (отсутствует ')')"
 
 msgctxt "MSG_ERR_NOBINCHARS (122//)"
 msgid "binary characters in string type None"
-msgstr "non ci sono caratteri binari in stringtype"
+msgstr "бинарные символы в строке типа None"
 
 msgctxt "MSG_ERR_CTGAP (123//)"
 msgid "'%s' missing in catalog translation"
-msgstr "'%s' mancante nel file traduzione .CT"
+msgstr "'%s' отсутствует в переводе каталока"
 
 msgctxt "MSG_ERR_DOUBLECTLANGUAGE (124//)"
 msgid "catalog language declared twice"
-msgstr "lingua del catalog dichiarata due volte"
+msgstr "язык каталога определён дважды"
 
 msgctxt "MSG_ERR_DOUBLECTVERSION (125//)"
 msgid "catalog version declared twice"
-msgstr "versione del catalog dichiarata due volte"
+msgstr "версия каталога определена дважды"
 
 msgctxt "MSG_ERR_WRONGRCSID (126//)"
 msgid "incorrect RCS Id"
-msgstr "Id RCS non corretto"
+msgstr "недопустимый идентификатор RCS"
 
 msgctxt "MSG_ERR_NOMEMORY (127//)"
 msgid "out of memory!"
-msgstr "Memoria insufficiente!"
+msgstr "мало памяти!"
 
 msgctxt "MSG_ERR_NOCATALOGDESCRIPTION (128//)"
 msgid "cannot open catalog description '%s'"
-msgstr "Impossibile aprire il file descrizione '%s'"
+msgstr "невозможно открыть описание каталога '%s'"
 
 msgctxt "MSG_ERR_NOCATALOGTRANSLATION (129//)"
 msgid "cannot open catalog translation '%s'"
-msgstr "Impossibile aprire il file traduzione '%s'"
+msgstr "невозможно открыть перевод каталога '%s'"
 
 msgctxt "MSG_ERR_NOCTVERSION (130//)"
 msgid ""
 "missing catalog translation version\n"
 "Use either '## version' or '## rcsid' and '## name'"
-msgstr "numero di versione mancante nel file traduzione.\nUsa '## version' o '## rcsid' e '## name'"
+msgstr "отсутствует версия перевода каталога\nИспользуйте '## version' или '## rcsid' и '## name'"
 
 msgctxt "MSG_ERR_NOCATALOG (131//)"
 msgid "cannot open catalog file '%s'"
-msgstr "Impossibile aprire il file catalog '%s'"
+msgstr "невозможно открыть каталог '%s'"
 
 msgctxt "MSG_ERR_NONEWCTFILE (132//)"
 msgid "cannot create catalog translation '%s'"
-msgstr "Impossibile creare il file traduzione '%s'"
+msgstr "невозможно создать перевод каталога '%s'"
 
 msgctxt "MSG_ERR_NOCTLANGUAGE (133//)"
 msgid "missing catalog translation language"
-msgstr "Indicazione della lingua mancante nel file della traduzione"
+msgstr "отсутствует язык перевода каталога"
 
 msgctxt "MSG_ERR_NOSOURCE (134//)"
 msgid "cannot open source file '%s'"
-msgstr "Impossibile aprire il file sorgente '%s'"
+msgstr "невозможно открыть исходный файл '%s'"
 
 msgctxt "MSG_ERR_NOSOURCEDESCRIPTION (135//)"
 msgid "cannot open source description file '%s'"
-msgstr "Impossibile aprire il file sorgente della descrizione '%s'"
+msgstr "невозможно открыть исходный файл описания '%s'"
 
 msgctxt "MSG_ERR_NOCTARGUMENT (136//)"
 msgid "creating a catalog requires a translation file"
-msgstr "La creazione di un catalog richiede un file traduzione come argomento"
+msgstr "создание каталога требует наличие файла перевода"
 
 msgctxt "MSG_ERR_CANTCHECKDATE (137//)"
 msgid "cannot get datestamp of '%s'"
-msgstr "Impossibile ottenere il datestamp di '%s'"
+msgstr "невозможно определить дату '%s'"
 
 msgctxt "MSG_ERR_NOCTFILENAME (140//)"
 msgid ""
 "Catalog translation file name not specified at command line or as basename "
 "in description"
-msgstr "Nome file catalog della traduzione non specificato nella riga di comando o come basename nella descrizione"
+msgstr "В командной строке не указано имя файла перевода каталога или как базовое имя в описание"
 
 msgctxt "MSG_ERR_NOCATFILENAME (141//)"
 msgid ""
 "catalog file name not specified at command line or as basename in "
 "description"
-msgstr "nome file catalog non specificato nella riga di comando o come basename nella descrizione"
+msgstr "в командной строке не указано имя файла каталога или как базовое имя в описание"
 
 msgctxt "MSG_ERR_BADPREFS (142//)"
 msgid ""
 "error processing 'FlexCat.prefs' variable, falling back to defaults\n"
 "Template:"
-msgstr "Errore nel trattamento della variabile FlexCat.prefs.\nRitorno ai parametri predefiniti.\nModello:"
+msgstr "ошибка обработки переменной 'FlexCat.prefs', использую стандартные параметры\nШаблон:"
 
 msgctxt "MSG_ERR_BADCTLANGUAGE (144//)"
 msgid ""
 "invalid language in catalog translation file\n"
 "Language MUST be a string with alphabetical characters and no inlined or trailing spaces"
-msgstr "Lingua non valida nel file della traduzione\nLa lingua DEVE essere una stringa contenente caratteri dell'alfabeto e non deve contenere spazi extra o puntini di sospensione"
+msgstr "недопустимый язык в файле переводе каталога\nЯзык ДОЛЖЕН быть строкой из букв без пробелов внутри или в конце"
 
 msgctxt "MSG_ERR_DOUBLECTCODESET (146//)"
 msgid "catalog codeset declared twice"
-msgstr "codeset del catalog dichiarato due volte"
+msgstr "кодировка каталога определена дважды"
 
 msgctxt "MSG_ERR_BADCTCODESET (147//)"
 msgid ""
 "invalid codeset in catalog translation file\n"
 "Codeset MUST be a decimal number without any trailing spaces"
-msgstr "Codeset non valido nel file della traduzione\nIl codeset DEVE essere un numero decimale senza spazi extra o puntini di sospensione"
+msgstr "недопустимая кодировка в файле переводе каталога\nКодировка ДОЛЖНА быть десятеричным числом без пробелов в конце"
 
 msgctxt "MSG_ERR_NOCTCODESET (148//)"
 msgid "missing catalog translation codeset"
-msgstr "Indicazione del codeset mancante nel file della traduzione"
+msgstr "отсутствует код кодировки перевода каталога"
 
 msgctxt "MSG_ERR_ERROR_QUICK (149//)"
 msgid "%s - ERROR:"
-msgstr "%s - ERRORE:"
+msgstr "%s - ОШИБКА:"
 
 msgctxt "MSG_ERR_BADCTVERSION (150//)"
 msgid ""
@@ -220,125 +221,125 @@ msgid ""
 "Version should be something like\n"
 "## version $VER: name version.revision (date)\n"
 "without any spaces in the name"
-msgstr "Stringa di versione non valida nel file della traduzione\nIl Version deve essere impostato in questo modo\n## version $VER: name version.revision (date)\nsenza nessuno spazio all'interno del nome"
+msgstr "недопустимая строка версии в файле перевода каталога\nВерсия должна быть типа\n## version $VER: имя версия.ревизия (дата)\nбез пробелов в имени"
 
 msgctxt "MSG_ERR_WARNING_QUICK (154//)"
 msgid "%s - Warning:"
-msgstr "%s - Avviso:"
+msgstr "%s - Внимание:"
 
 msgctxt "MSG_ERR_MISSINGTRANSLATION (155//)"
 msgid "missing translation for identifier '%s'"
-msgstr "Traduzione mancante per l'indentificatore '%s'"
+msgstr "отсутствует перевод для идентификатора '%s'"
 
 msgctxt "MSG_ERR_EMPTYTRANSLATION (156//)"
 msgid "empty translation for identifier '%s'"
-msgstr "Traduzione vuota per l'indentificatore '%s'"
+msgstr "пустой перевод для идентификатора '%s'"
 
 msgctxt "MSG_ERR_MISMATCHINGCONTROLCHARACTERS (157//)"
 msgid "mismatching trailing control characters"
-msgstr "caratteri di controllo non corrispondenti"
+msgstr "несоответствующие замыкающие контрольные символы"
 
 msgctxt "MSG_ERR_DOUBLE_IDENTIFIER (159//)"
 msgid "identifier '%s' declared twice"
-msgstr "identificatore '%s' dichiarato due volte"
+msgstr "идентификатор '%s' определён дважды"
 
 msgctxt "MSG_ERR_STRING_TOO_SHORT (160//)"
 msgid "string too short for identifier '%s'"
-msgstr "stringa troppo corta per l'identificatore '%s'"
+msgstr "строка слишком короткая для идентификатора '%s'"
 
 msgctxt "MSG_ERR_STRING_TOO_LONG (161//)"
 msgid "string too long for identifier '%s'"
-msgstr "stringa troppo lunga per l'identificatore '%s'"
+msgstr "строка слишком длинная для идентификатора '%s'"
 
 msgctxt "MSG_ERR_TRAILING_ELLIPSIS (162//)"
 msgid "original string has a trailing ellipsis ('...') for identifier '%s'"
-msgstr "la stringa originale contiene dei puntini di sospensione ('...') per l'identificatore '%s'"
+msgstr "оригинальная строка заканчивается многоточием ('...') для идентификатора '%s'"
 
 msgctxt "MSG_ERR_NO_TRAILING_ELLIPSIS (163//)"
 msgid ""
 "original string doesn't have a trailing ellipsis ('...') for identifier '%s'"
-msgstr "la stringa originale non contiene puntini di sospensione ('...') per l'identificatore '%s'"
+msgstr "оригинальная строка не заканчивается многоточием ('...') для идентификатора '%s'"
 
 msgctxt "MSG_ERR_TRAILING_BLANKS (164//)"
 msgid "original string has trailing blanks for identifier '%s'"
-msgstr "la stringa originale contiene degli spazi finali per l'identificatore '%s'"
+msgstr "оригинальная строка заканчивается пробелами для идентификатора '%s'"
 
 msgctxt "MSG_ERR_NO_TRAILING_BLANKS (165//)"
 msgid "original string doesn't have trailing blanks for identifier '%s'"
-msgstr "la stringa originale non contiene spazi finali per l'identificatore '%s'"
+msgstr "оригинальная строка не заканчивается пробелами для идентификатора '%s'"
 
 msgctxt "MSG_ERR_MISMATCHING_PLACEHOLDERS (166//)"
 msgid "mismatching placeholders for identifier '%s'"
-msgstr "placeholder non corrispondente per l'identificatore '%s'"
+msgstr "неправильные определители для идентификатора '%s'"
 
 msgctxt "MSG_ERR_MISSING_PLACEHOLDERS (167//)"
 msgid "missing placeholders for identifier '%s'"
-msgstr "placeholder mancanti per l'identificatore '%s'"
+msgstr "отсутствуют определители для идентификатора '%s'"
 
 msgctxt "MSG_ERR_EXCESSIVE_PLACEHOLDERS (168//)"
 msgid "excessive placeholders for identifier '%s'"
-msgstr "placeholder in eccesso per l'identificatore '%s'"
+msgstr "лишние определители для идентификатора '%s'"
 
 msgctxt "MSG_ERR_NO_LEADING_BRACKET (169//)"
 msgid "missing '(' for identifier '%s'"
-msgstr "attenzione: '(' mancante per l'identificatore '%s'"
+msgstr "отсутствует '(' для идентификатора '%s'"
 
 msgctxt "MSG_ERR_NO_TRAILING_BRACKET (170//)"
 msgid "missing ')' for identifier '%s'"
-msgstr "attenzione: ')' mancante per l'identificatore '%s'"
+msgstr "отсутствует ')' для идентификатора '%s'"
 
 msgctxt "MSG_ERR_DOUBLE_ID (171//)"
 msgid "ID number used twice for identifier '%s'"
-msgstr "Numero ID usato due volte per l'identificatore '%s'"
+msgstr "ID номер задан дважды для идентификатора '%s'"
 
 msgctxt "MSG_ERR_NO_MIN_LEN (172//)"
 msgid "expected MinLen (character '/') for identifier '%s'"
-msgstr "atteso MinLen (carattere '/') per l'identificatore '%s'"
+msgstr "ожидается МинДлина (символ '/') для идентификатора '%s'"
 
 msgctxt "MSG_ERR_NO_MAX_LEN (173//)"
 msgid "expected MaxLen (character '/') for identifier '%s'"
-msgstr "atteso MaxLen (carattere '/') per l'identificatore '%s'"
+msgstr "ожидается МаксДлина (символ '/') для идентификатора '%s'"
 
 msgctxt "MSG_ERR_EXTRA_CHARACTERS (174//)"
 msgid "extra characters at the end of the line"
-msgstr "caratteri extra alla fine della linea"
+msgstr "лишние символы в конце строки"
 
 msgctxt "MSG_ERR_EXTRA_CHARACTERS_ID (175//)"
 msgid "extra characters at the end of the line for identifier '%s'"
-msgstr "caratteri extra alla fine della linea per l'identificatore '%s'"
+msgstr "строка заканчивается лишними символами для идентификатора '%s'"
 
 msgctxt "MSG_ERR_NON_ASCII_CHARACTER (176//)"
 msgid ""
 "non-ASCII character 0x%02x found in original string for identifier '%s'"
-msgstr "trovato carattere non-ASCII 0x%02x nella stringa originale per l'identificatore '%s'"
+msgstr "не-ASCII символ 0x%02x найден в оригинальной строке для идентификатора '%s'"
 
 msgctxt "MSG_ERR_NO_CAT_REVISION (177//)"
 msgid "no catalog revision information found, using revision 0"
-msgstr "informazioni sulla revision del catalog non trovate, usa revision 0"
+msgstr "нет информации о ревизии каталога, используется ревизия 0"
 
 msgctxt "MSG_ERR_CONVERSION_FAILED (178//)"
 msgid "UTF8 conversion failed for identifier '%s'"
-msgstr "conversione UTF8 fallita per l'identificatore '%s'"
+msgstr "Ошибка UTF8 преобразования для '%s'"
 
 msgctxt "MSG_ERR_UNKNOWN_SOURCE_CHARSET (179//)"
 msgid "ERROR in CodesetsFind(): unknown source charset '%s'"
-msgstr "ERRORE in CodesetsFind(): sorgente charset sconosciuto '%s'"
+msgstr "ОШИБКА в CodesetsFind(): неизвестная кодировка исходника '%s'"
 
 msgctxt "MSG_ERR_UNKNOWN_DESTINATION_CHARSET (180//)"
 msgid "ERROR in CodesetsFind(): unknown destination charset '%s'"
-msgstr "ERRORE in CodesetsFind(): destinazione charset sconosciuta '%s'"
+msgstr "ОШИБКА в CodesetsFind(): неизвестная кодировка назначения '%s'"
 
 msgctxt "MSG_ERR_INVALID_CHARS_FOUND (181//)"
 msgid "ERROR in CodesetsConvertStr(): %d invalid characters found"
-msgstr "ERRORE in CodesetsConvertStr(): %d trovati caratteri non validi"
+msgstr "ОШИБКА в CodesetsConvertStr(): %d найдены недопустимые символы"
 
 msgctxt "MSG_ERR_ICONV_FAILED (182//)"
 msgid "ERROR in iconv(): %s"
-msgstr "ERRORE in iconv(): %s"
+msgstr "ОШИБКА в iconv(): %s"
 
 msgctxt "MSG_ERR_ICONV_OPEN_FAILED (183//)"
 msgid "ERROR in iconv_open(): %s"
-msgstr "ERRORE in iconv_open(): %s"
+msgstr "ОШИБКА в iconv_open(): %s"
 
 msgctxt "MSG_ERR_NO_CAT_VERSION (184//)"
 msgid "no catalog version information found, using version 0"

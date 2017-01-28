@@ -1,7 +1,7 @@
 
 /****************************************************************
 
-   This file was created automatically by `FlexCat 2.15'
+   This file was created automatically by `FlexCat 2.18'
    from "locale/FlexCat.pot".
 
    Do NOT edit by hand!
@@ -156,5 +156,19 @@ extern struct FC_String FlexCat_Strings[];
 #define _MSG_ERR_NON_ASCII_CHARACTER 62
 #define MSG_ERR_NO_CAT_REVISION (FlexCat_Strings[63].Str)
 #define _MSG_ERR_NO_CAT_REVISION 63
+#define MSG_ERR_CONVERSION_FAILED (FlexCat_Strings[64].Str)
+#define _MSG_ERR_CONVERSION_FAILED 64
+#define MSG_ERR_UNKNOWN_SOURCE_CHARSET (FlexCat_Strings[65].Str)
+#define _MSG_ERR_UNKNOWN_SOURCE_CHARSET 65
+#define MSG_ERR_UNKNOWN_DESTINATION_CHARSET (FlexCat_Strings[66].Str)
+#define _MSG_ERR_UNKNOWN_DESTINATION_CHARSET 66
+#define MSG_ERR_INVALID_CHARS_FOUND (FlexCat_Strings[67].Str)
+#define _MSG_ERR_INVALID_CHARS_FOUND 67
+#define MSG_ERR_ICONV_FAILED (FlexCat_Strings[68].Str)
+#define _MSG_ERR_ICONV_FAILED 68
+#define MSG_ERR_ICONV_OPEN_FAILED (FlexCat_Strings[69].Str)
+#define _MSG_ERR_ICONV_OPEN_FAILED 69
+#define MSG_ERR_NO_CAT_VERSION (FlexCat_Strings[70].Str)
+#define _MSG_ERR_NO_CAT_VERSION 70
 
 #endif

@@ -1,9 +1,9 @@
 Short:        FlexCat - Flexible catalogs (C, Asm, Oberon, E, ARexx, Modula...)
-Author:       FlexCat Open Source Team (http://sf.net/p/flexcat/)
+Author:       FlexCat Open Source Team (https://github.com/adtools/flexcat)
 Uploader:     Jens Maus <mail@jens-maus.de>
 Type:         dev/misc
-Version:      2.15
-Replaces:     dev/misc/FlexCat*
+Version:      2.18
+Replaces:     dev/misc/FlexCat-2.*
 Requires:     AmigaOS 2.0+, MorphOS, AROS, Linux ; 68020+/PPC604e+ or x86
 Architecture: ppc-amigaos >= 4.0.5; m68k-amigaos >= 2.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
 
@@ -44,6 +44,6 @@ REQUIREMENTS
 
 AVAILABILITY
 
-    FlexCat is available on SourceForge project page:
+    FlexCat is available at Github:
 
-    http://sf.net/p/flexcat
+    https://github.com/adtools/flexcat

@@ -1,14 +1,13 @@
 # Translation catalog description file (pot-style)
-# $Id: FlexCat.pot 290 2014-04-04 07:25:33Z thboeckel $
 #
 # version 3
 msgid ""
 msgstr ""
 "Project-Id-Version: FlexCat\n"
-"Report-Msgid-Bugs-To: http://sf.net/p/flexcat\n"
+"Report-Msgid-Bugs-To: https://github.com/adtools/flexcat\n"
 "POT-Creation-Date: 2014-02-18 11:52+0100\n"
 "PO-Revision-Date: 2014-02-21 09:32+0000\n"
-"Last-Translator: damato <mail@jens-maus.de>\n"
+"Last-Translator: Jens Maus <mail@jens-maus.de>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -43,9 +42,11 @@ msgid ""
 "  COPYMSGNEW     Copy ***NEW*** markers over from old translation\n"
 "  OLDMSGNEW      Custom marker in old translation\n"
 "  CODESET        Codeset to force in output file (e.g. 'UTF-8')\n"
+"  VERSION        Force a certain version to be used during catalog generation\n"
+"  REVISION       Force a certain revision to be used during catalog generation\n"
 "  NOAUTODATE     no operation - kept for compatibility\n"
 "  NOSPACES       no operation - kept for compatibility"
-msgstr "  CDFILE         Catalog description file to scan\n  CTFILE         Catalog translation file to scan\n  POFILE         Catalog translation in PO-style format\n  CATALOG        Catalog file to create\n  NEWCTFILE      Catalog translation file to create\n  SOURCES        Sources to create; must be something like SFILE=SDFILE,\n                 where SFILE is a source file and SDFILE is a source\n                 description file\n  WARNCTGAPS     Warn about identifiers missing in translation\n  NOOPTIM        Do not skip unchanged strings in translation/description\n  FILL           Fill missing identifiers with original text\n  FLUSH          Flush memory after the catalog is created\n  NOBEEP         No DisplayBeep() on errors and warnings\n  QUIET          No warnings\n  NOLANGTOLOWER  Prevent #language name from being lowercased\n  NOBUFFEREDIO   Disable I/O buffers\n  MODIFIED       Create catalog only if description/translation have changed\n  COPYMSGNEW     Copy ***NEW*** markers over from old translation\n  OLDMSGNEW      Custom marker in old translation\n  CODESET        Codeset to force in output file (e.g. 'UTF-8')\n  NOAUTODATE     no operation - kept for compatibility\n  NOSPACES       no operation - kept for compatibility"
+msgstr "  CDFILE         Catalog description file to scan\n  CTFILE         Catalog translation file to scan\n  POFILE         Catalog translation in PO-style format\n  CATALOG        Catalog file to create\n  NEWCTFILE      Catalog translation file to create\n  SOURCES        Sources to create; must be something like SFILE=SDFILE,\n                 where SFILE is a source file and SDFILE is a source\n                 description file\n  WARNCTGAPS     Warn about identifiers missing in translation\n  NOOPTIM        Do not skip unchanged strings in translation/description\n  FILL           Fill missing identifiers with original text\n  FLUSH          Flush memory after the catalog is created\n  NOBEEP         No DisplayBeep() on errors and warnings\n  QUIET          No warnings\n  NOLANGTOLOWER  Prevent #language name from being lowercased\n  NOBUFFEREDIO   Disable I/O buffers\n  MODIFIED       Create catalog only if description/translation have changed\n  COPYMSGNEW     Copy ***NEW*** markers over from old translation\n  OLDMSGNEW      Custom marker in old translation\n  CODESET        Codeset to force in output file (e.g. 'UTF-8')\n  VERSION        Force a certain version to be used during catalog generation\n  REVISION       Force a certain revision to be used during catalog generation\n  NOAUTODATE     no operation - kept for compatibility\n  NOSPACES       no operation - kept for compatibility"
 
 msgctxt "MSG_FILEUPTODATE (2//)"
 msgid "File '%s' is up to date"
@@ -305,10 +306,37 @@ msgid "extra characters at the end of the line for identifier '%s'"
 msgstr "extra characters at the end of the line for identifier '%s'"
 
 msgctxt "MSG_ERR_NON_ASCII_CHARACTER (176//)"
-msgid ""
-"non-ASCII character 0x%02x found in original string for identifier '%s'"
+msgid "non-ASCII character 0x%02x found in original string for identifier '%s'"
 msgstr "non-ASCII character 0x%02x found in original string for identifier '%s'"
 
 msgctxt "MSG_ERR_NO_CAT_REVISION (177//)"
 msgid "no catalog revision information found, using revision 0"
 msgstr "no catalog revision information found, using revision 0"
+
+msgctxt "MSG_ERR_CONVERSION_FAILED (178//)"
+msgid "UTF8 conversion failed for identifier '%s'"
+msgstr "UTF8 conversion failed for identifier '%s'"
+
+msgctxt "MSG_ERR_UNKNOWN_SOURCE_CHARSET (179//)"
+msgid "ERROR in CodesetsFind(): unknown source charset '%s'"
+msgstr "ERROR in CodesetsFind(): unknown source charset '%s'"
+
+msgctxt "MSG_ERR_UNKNOWN_DESTINATION_CHARSET (180//)"
+msgid "ERROR in CodesetsFind(): unknown destination charset '%s'"
+msgstr "ERROR in CodesetsFind(): unknown destination charset '%s'"
+
+msgctxt "MSG_ERR_INVALID_CHARS_FOUND (181//)"
+msgid "ERROR in CodesetsConvertStr(): %d invalid characters found"
+msgstr "ERROR in CodesetsConvertStr(): %d invalid characters found"
+
+msgctxt "MSG_ERR_ICONV_FAILED (182//)"
+msgid "ERROR in iconv(): %s"
+msgstr "ERROR in iconv(): %s"
+
+msgctxt "MSG_ERR_ICONV_OPEN_FAILED (183//)"
+msgid "ERROR in iconv_open(): %s"
+msgstr "ERROR in iconv_open(): %s"
+
+msgctxt "MSG_ERR_NO_CAT_VERSION (184//)"
+msgid "no catalog version information found, using version 0"
+msgstr "no catalog version information found, using version 0"

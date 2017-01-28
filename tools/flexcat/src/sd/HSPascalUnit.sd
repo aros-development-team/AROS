@@ -1,4 +1,4 @@
-##rem $Id: HSPascalUnit.sd 253 2014-02-18 11:15:58Z damato $
+##rem $Id$
 ##shortstrings
 ##stringtype E
 UNIT %bLocale;

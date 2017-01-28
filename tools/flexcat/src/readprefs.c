@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright(C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright(C) 2002-2010 by the FlexCat Open Source Team
+ * Copyright (C) 2002-2015 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
  */
 
 #include "flexcat.h"
+#include "globals.h"
 
 int   WarnCTGaps = FALSE;                           /* Warn for missing symbols in CT file. */
 int   NoOptim = FALSE;                              /* Put string into catalog even
@@ -52,7 +53,6 @@ char DestCodeset[MAX_NEW_STR_LEN] = "";             /* To which codeset should w
                                                        If empty then this signals that FlexCat
                                                        should automatically find out which codeset
                                                        to be used */
-
 
 char prefs_sddir[MAXPATHLEN] = "\0";
 
@@ -87,10 +87,12 @@ char ReadPrefs(void)
     OLDMSGNEW,
     NOAUTODATE,
     NOSPACES,
+    VERSION,
+    REVISION,
     ARGS_COUNT
   };
 
-  const char template[] = "SDDIR/K,MSG_NEW/K,CODESET/K,WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,QUIET/S,NOLANGTOLOWER/S,NOBUFFEREDIO/S,MODIFIED/S,COPYMSGNEW/S,OLDMSGNEW/K,NOAUTODATE/S,NOSPACES/S";
+  const char template[] = "SDDIR/K,MSG_NEW/K,CODESET/K,WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,QUIET/S,NOLANGTOLOWER/S,NOBUFFEREDIO/S,MODIFIED/S,COPYMSGNEW/S,OLDMSGNEW/K,NOAUTODATE/S,NOSPACES/S,VERSION/N,REVISION/N";
   SIPTR Results[ARGS_COUNT] = { 0 };
   char *prefs;
   struct RDArgs *rda;
@@ -133,6 +135,12 @@ char ReadPrefs(void)
           CopyNEWs = Results[COPYMSGNEW];
           if(Results[OLDMSGNEW])
             snprintf(Old_Msg_New, sizeof(Old_Msg_New), "; %s", (char *)Results[OLDMSGNEW]);
+
+          if(Results[VERSION])
+            CatVersion = Results[VERSION];
+          
+          if(Results[REVISION])
+            CatRevision = Results[REVISION];
 
           FreeArgs(rdargs);
 

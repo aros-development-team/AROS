@@ -5,7 +5,7 @@
 # $Id$
 #
 # Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
-# Copyright (C) 2002-2007 by the FlexCat Open Source Team
+# Copyright (C) 2002-2015 FlexCat Open Source Team
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2010 by the FlexCat Open Source Team
+ * Copyright (C) 2002-2015 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,14 @@ int isParam(char *input_string)
   if(Stricmp(input_string, "codeset") == 0)
     return TRUE;
   if(Strnicmp(input_string, "codeset=", 8) == 0)
+    return TRUE;
+  if(Stricmp(input_string, "version") == 0)
+    return TRUE;
+  if(Strnicmp(input_string, "version=", 8) == 0)
+    return TRUE;
+  if(Stricmp(input_string, "revision") == 0)
+    return TRUE;
+  if(Strnicmp(input_string, "revision=", 8) == 0)
     return TRUE;
   if(Stricmp(input_string, "nooptim") == 0)
     return TRUE;
@@ -210,6 +218,44 @@ int main(int argc, char *argv[])
           DestCodeset[0] = '\0';
       }
     }
+    else if(Strnicmp(argv[i], "version=", 8) == 0)
+    {
+      CatVersion = strtol(argv[i]+8, NULL, 10);
+    }
+    else if(Stricmp(argv[i], "version") == 0)
+    {
+      if(i == argc - 1)
+        CatVersion = -1;
+      else if(i < argc - 1)
+      {
+        if(isParam(argv[i + 1]) != TRUE)
+        {
+          CatVersion = strtol(argv[i + 1], NULL, 10);
+          i++;
+        }
+        else
+          CatVersion = -1;
+      }
+    }
+    else if(Strnicmp(argv[i], "revision=", 9) == 0)
+    {
+      CatRevision = strtol(argv[i]+9, NULL, 10);
+    }
+    else if(Stricmp(argv[i], "revision") == 0)
+    {
+      if(i == argc - 1)
+        CatRevision = -1;
+      else if(i < argc - 1)
+      {
+        if(isParam(argv[i + 1]) != TRUE)
+        {
+          CatRevision = strtol(argv[i + 1], NULL, 10);
+          i++;
+        }
+        else
+          CatRevision = -1;
+      }
+    }
     else if(Stricmp(argv[i], "nooptim") == 0)
     {
       NoOptim = TRUE;
@@ -302,7 +348,7 @@ int main(int argc, char *argv[])
       // we eiterh scan a CD file or the supplied pot file
       if(strstr(cdfile, ".pot") != NULL)
       {
-        if(!ScanPOFile(cdfile))
+        if(!ScanPOFile(cdfile, FALSE))
           MyExit(10);
       }
       else
@@ -403,7 +449,7 @@ int main(int argc, char *argv[])
 
   if(pofile != NULL)
   {
-    if(!ScanPOFile(pofile))
+    if(!ScanPOFile(pofile, makecatalog))
       MyExit(10);
   }
 
