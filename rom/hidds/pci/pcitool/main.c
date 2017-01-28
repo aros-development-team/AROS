@@ -537,7 +537,7 @@ BOOL GUIinit()
                         End, // List
                         MUIA_CycleChain, 1,
                     End, // ListView
-                    Child, VGroup,
+                    Child, VirtgroupObject,
                         Child, VGroup, GroupFrameT(_(MSG_DRIVER_INFO)),
                             Child, ColGroup(2),
                                 Child, Label(_(MSG_DRIVER_NAME)),
