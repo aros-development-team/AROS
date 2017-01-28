@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2012, The AROS Development Team
+ * Copyright (C) 2012-2017, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 #define __ACPICA_NOLIBBASE__
-#define DEBUG 1
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "acpica_intern.h"
