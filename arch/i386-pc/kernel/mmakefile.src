@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FUNCS   := 
 FILES   := kernel_startup kernel_debug platform_init kernel_cpu traps utils
-AFILES  := core_interrupts reboot
+AFILES  := core_interrupts
 MAINDIR := rom/kernel
 
 #MM kernel-kernel-pc-i386 : kernel-pc-acpica-includes includes-asm_h-i386 linklibs-bootconsole
