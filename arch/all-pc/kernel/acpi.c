@@ -85,6 +85,11 @@ void acpi_Init(struct PlatformData *pdata)
                 D(bug("[Kernel:ACPI] %s:     returned!\n", __func__));
             }
 
+            while (NULL != FindTask("ACPICA_InitTask"))
+            {
+                D(bug("[Kernel:ACPI] %s: Waiting for ACPI to finish Initializing...\n", __func__));
+            }
+
             if (!IsListEmpty(&pdata->kb_ACPI->acpi_tablehooks))
             {
                 D(bug("[Kernel:ACPI] %s: Processing Table Handler Hooks...\n", __func__));
@@ -103,7 +108,7 @@ void acpi_Init(struct PlatformData *pdata)
                             }
                             else
                             {
-                                D(bug("[Kernel:ACPI] %s: Failed! stats %08x\n", __func__, Status));
+                                D(bug("[Kernel:ACPI] %s: Failed! status %08x\n", __func__, Status));
                                 tableLast = NULL;
                             }
                         }
@@ -126,12 +131,12 @@ void acpi_Init(struct PlatformData *pdata)
                     bug(", %d usable", pdata->kb_APIC->apic_count);
                 }
                 bug("\n");
-                
+
                 /* Initialize legacy 8529A PIC if present. */
                 if (pdata->kb_APIC->flags & APF_8259)
                 {
                     D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
-                    D(bug("[Kernel:APIC.%u] _APIC_IA32_init: i8259a IC ID #%d:%d\n", cpuNum, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
+                    D(bug("[Kernel:ACPI] %s: Registered i8259a IC ID #%d:%d\n", __func__, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
                 }
             }
         }
