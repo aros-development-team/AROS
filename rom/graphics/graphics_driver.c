@@ -48,7 +48,7 @@
 #include "gfxfuncsupport.h"
 #include "fontsupport.h"
 
-#define DEBUG_INIT(x) x
+#define DEBUG_INIT(x)
 #define DEBUG_LOADVIEW(x)
 
 /* Define this if you wish to enforce using software mouse sprite
