@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2015 FlexCat Open Source Team
+ * Copyright (C) 2002-2017 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include "createcat.h"
 #include "globals.h"
 #include "utils.h"
+#include <inttypes.h>
 
 enum StringTypes
 {
@@ -478,6 +479,9 @@ void CreateSourceFile(char *SourceFile, char *TemplateFile, char *CDFile)
   if(!NoBufferedIO)
     setvbuf(fpout, NULL, _IOFBF, buffer_size);
 
+  // initialize "line" ahead of the loop
+  // the loop will bail out early for empty files
+  line = NULL;
   while(!feof(fpin) && (line = ReadLine(fpin, FALSE)) != NULL)
   {
     struct CatString *cs;
@@ -571,24 +575,6 @@ void CreateSourceFile(char *SourceFile, char *TemplateFile, char *CDFile)
                 fputs(BaseName, fpout);
                 break;
 
-              case 'B':
-                {
-                    char *basenamestr = BaseName;
-                    int i;
-                    for (i = 0; i < strlen(BaseName); i++)
-                    {
-                        c = *basenamestr++;
-                        if (c >= '0' && c <= '9')
-                            putc(c, fpout);
-                        else if ((c >= 'A' && c <= 'Z') ||
-                            (c >= 'a' && c <= 'z'))
-                            putc(c & 0x5F, fpout);
-                        else
-                            putc('_', fpout);
-                    }
-                    break;
-                }
-
               case 'n':
                 fprintf(fpout, "%d", NumStrings);
                 break;
@@ -666,7 +652,7 @@ void CreateSourceFile(char *SourceFile, char *TemplateFile, char *CDFile)
                     char *start;
                     char _StrLen[20 + 1];
 
-                    snprintf(_StrLen, sizeof(_StrLen), "%020lx", (long unsigned)cs->ID);
+                    snprintf(_StrLen, sizeof(_StrLen), "%020" PRIx32, (uint32)cs->ID);
                     start = &_StrLen[20 - _len * 2];
                     while(_len > 0)
                     {
@@ -681,7 +667,7 @@ void CreateSourceFile(char *SourceFile, char *TemplateFile, char *CDFile)
                     char *start;
                     char _StrLen[20 + 1];
 
-                    snprintf(_StrLen, sizeof(_StrLen), "%020lx", (long unsigned)((CalcRealLength(cs->CD_Str) + 1) & 0xfffffe));
+                    snprintf(_StrLen, sizeof(_StrLen), "%020" PRIx32, (uint32)((CalcRealLength(cs->CD_Str) + 1) & 0xfffffe));
                     start = &_StrLen[20 - _len * 2];
                     while(_len > 0)
                     {
