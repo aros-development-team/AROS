@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES := reset_init supervisor
 
 # From kernel.resource we need only kernel_syscalls.h
-USER_INCLUDES := $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/kernel
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/arch/all-pc/kernel
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc \
