@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -86,6 +86,52 @@ static LONG test_allocabs(APTR block0, BOOL trash, BOOL leak, BOOL notlsf)
     return result;
 }
 
+static LONG test_allocpooled()
+{
+    LONG result = RETURN_OK;
+    APTR pool, allocation;
+    int allocstep;
+
+    for (allocstep = 1; allocstep < 10; allocstep++)
+    {
+        output("\nTesting CreatePool(MEMF_CLEAR, %d, %d) ...\n", (allocstep << 10), (allocstep << 9));
+        if ((pool = CreatePool(MEMF_CLEAR, (allocstep << 10), (allocstep << 9))) != NULL)
+        {
+            output("Allocated at 0x%p\n", pool);
+
+            /* one that fits .. */
+            output("\nTesting AllocPooled(0x%p, %d) ...\n", pool, (allocstep << 8));
+            allocation = AllocPooled(pool, (allocstep << 8));
+            if(allocation) {
+                output("Allocated at 0x%p\n", pool);
+            } else {
+                output("Allocation failed!\n");
+                result = RETURN_ERROR;
+            }
+
+            /* and one that doesnt .. */
+            output("\nTesting AllocPooled(0x%p, %d) ...\n", pool, (allocstep << 11));
+            allocation = AllocPooled(pool, (allocstep << 11));
+            if(allocation) {
+                output("Allocated at 0x%p\n", pool);
+            } else {
+                output("Allocation failed!\n");
+                result = RETURN_ERROR;
+            }
+
+            output("Freeing the pool\n");
+            DeletePool(pool);
+            output("Done\n\n");
+        }
+        else
+        {
+             output("Allocation failed!\n\n");
+        }
+    }
+    return result;
+}
+
+
 int main(int argc, char **argv)
 {
     LONG result = RETURN_OK;
@@ -167,6 +213,8 @@ int main(int argc, char **argv)
         output("Allocation failed!\n");
         result = RETURN_ERROR;
     }
+
+    result = test_allocpooled();
 
     output("\nFinal available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
