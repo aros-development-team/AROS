@@ -48,8 +48,7 @@ struct syscallx86_Handler
         void (*sc_SysCall)();
 };
 
-#define SC_X86SHUTDOWN          0xFF
-#define SC_X86CPUWAKE             0xFE
+#include "x86_syscalls.h"
 
 BOOL krnAddSysCallHandler(struct PlatformData *, struct syscallx86_Handler *, BOOL);
 
