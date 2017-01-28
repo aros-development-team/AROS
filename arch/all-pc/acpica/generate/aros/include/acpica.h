@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team
+ * Copyright (C) 2012-2017, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -11,12 +11,10 @@
 
 #include <proto/exec.h>
 
-#if defined(__x86_64__)
-#define ACPI_MACHINE_WIDTH	64
-#elif defined(__i386__)
-#define ACPI_MACHINE_WIDTH	32
+#if (__WORDSIZE==64)
+# define ACPI_MACHINE_WIDTH	64
 #else
-#error Unsupported hardware architecture!
+# define ACPI_MACHINE_WIDTH	32
 #endif
 
 #define COMPILER_DEPENDENT_INT64  QUAD
