@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2015 FlexCat Open Source Team
+ * Copyright (C) 2002-2017 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,6 +57,10 @@ int ScanCDFile(char *cdfile)
   if(!NoBufferedIO)
     setvbuf(fp, NULL, _IOFBF, buffer_size);
 
+  // initialize "line" ahead of the loop
+  // the loop will bail out early for empty files
+  line = NULL;
+  newline = NULL;
   while(!feof(fp) && (line = newline = ReadLine(fp, TRUE)) != NULL)
   {
     if((cdline = malloc(sizeof(*cdline))) == NULL)

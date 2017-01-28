@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2015 FlexCat Open Source Team
+ * Copyright (C) 2002-2017 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ extern int   CT_Scanned;
                                 ((c) >= 'a' && (c) <= 'z') || \
                                 ((c) >= 'A' && (c) <= 'Z'))
 
-#if defined(__amigaos3__) || defined(__MORPHOS__) || defined(WIN32) || defined(unix)
+#if defined(__amigaos3__) || defined(__MORPHOS__) || defined(WIN32)
 char *strptime(const char *string, const char *fmt, struct tm *res);
 #endif
 
@@ -60,7 +60,7 @@ char *strptime(const char *string, const char *fmt, struct tm *res);
 int ScanPOFile(char *pofile, int verwarning)
 {
   FILE *fp;
-  char *newline, *line;
+  char *readLineBuffer;
   int Result = TRUE;
   int CodeSet_checked = FALSE;
   int inHeader = TRUE;
@@ -82,11 +82,18 @@ int ScanPOFile(char *pofile, int verwarning)
   if(!NoBufferedIO)
     setvbuf(fp, NULL, _IOFBF, buffer_size);
 
-  while(!feof(fp) && (line = newline = ReadLine(fp, TRUE)) != NULL)
+  // initialize "readLineBuffer" ahead of the loop
+  // the loop will bail out early for empty files
+  readLineBuffer = NULL;
+  while(!feof(fp) && (readLineBuffer = ReadLine(fp, TRUE)) != NULL)
   {
+    // the buffer pointer will be modified all the way down, so better work with a copy,
+    // otherwise the free() call after the loop will free the wrong pointer
+    char *line = readLineBuffer;
+
     if(inHeader == TRUE)
     {
-      if(*line == '\0')
+      if(line[0] == '\0')
       {
         inHeader = FALSE;
 
@@ -335,7 +342,7 @@ int ScanPOFile(char *pofile, int verwarning)
           {
             char *p;
 
-            line += 16;
+            line += 15;
             p = strstr(line, "charset=");
             if(p != NULL)
             {
@@ -576,7 +583,7 @@ int ScanPOFile(char *pofile, int verwarning)
           memmove(p, p+1, strlen(p));
 
         // unquote the string
-        if(*line != '\0' && line[strlen(line)-1] == '"')
+        if(line[0] != '\0' && line[strlen(line)-1] == '"')
           line[strlen(line)-1] = '\0';
 
         if(Strnicmp(line, "msgid \"", 7) == 0)
@@ -586,7 +593,7 @@ int ScanPOFile(char *pofile, int verwarning)
           // if the string starts with <EMPTY> we out to remove
           // the rest of the string!
           if(strncmp(line, "<EMPTY>", 7) == 0)
-            *line = '\0';
+            line[0] = '\0';
 
           if(strlen(line) > 0)
           {
@@ -664,6 +671,9 @@ int ScanPOFile(char *pofile, int verwarning)
       }
     }
   }
+
+  free(readLineBuffer);
+  fclose(fp);
 
   /*
   printf("CatVersion: %d.%d\n", CatVersion, CatRevision);
@@ -861,11 +871,6 @@ int ScanPOFile(char *pofile, int verwarning)
       }
     }
   }
-
-  if(line != NULL)
-    free(line);
-
-  fclose(fp);
 
   if(WarnCTGaps)
   {
