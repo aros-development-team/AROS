@@ -12,7 +12,7 @@
 
 OOP_Object *GFXHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    bug("[HWGfx] csd @ 0x%p\n", CSD(cl));
+    D(bug("[HWGfx] csd @ 0x%p\n", CSD(cl));)
 
     if (!CSD(cl)->gfxhwinstance)
     {
@@ -27,11 +27,11 @@ OOP_Object *GFXHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             .attrList = new_tags
         };
 
-        bug("[HWGfx] Instantiating...\n");
+        D(bug("[HWGfx] Instantiating...\n");)
         CSD(cl)->gfxhwinstance =  (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
     }
 
-    bug("[HWGfx] returning 0x%p\n", CSD(cl)->gfxhwinstance);
+    D(bug("[HWGfx] returning 0x%p\n", CSD(cl)->gfxhwinstance);)
 
     return CSD(cl)->gfxhwinstance;
 }
