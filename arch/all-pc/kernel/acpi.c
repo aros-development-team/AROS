@@ -16,6 +16,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_syscall.h"
 
 #include "acpi.h"
 #include "apic.h"
@@ -54,6 +55,38 @@ int acpi_ScanTableEntries(CONST ACPI_TABLE_HEADER *table, ULONG thl, UINT8 type,
 
     return count;
 }
+
+/* Deafult ACPI Syscall Handlers */
+
+void ACPI_HandleShutdownSC()
+{
+    D(bug("[Kernel:ACPI] %s()\n", __func__));
+}
+
+struct syscallx86_Handler ACPI_SCShutdownHandler =
+{
+    {
+        .ln_Name = (APTR)SC_X86SHUTDOWN
+    },
+    (APTR)ACPI_HandleShutdownSC
+};
+
+void ACPI_HandleRebootSC()
+{
+    D(bug("[Kernel:ACPI] %s: Warm restart, stack 0x%p\n", __func__, AROS_GET_SP));
+
+#if (0)
+    AcpiHwWrite (FADT_ResetValue, FADT_ResetRegister);
+#endif
+}
+
+struct syscallx86_Handler ACPI_SCRebootHandler =
+{
+    {
+        .ln_Name = (APTR)SC_REBOOT
+    },
+    (APTR)ACPI_HandleRebootSC
+};
 
 /* Initialize ACPI */
 void acpi_Init(struct PlatformData *pdata)
@@ -131,14 +164,20 @@ void acpi_Init(struct PlatformData *pdata)
                     bug(", %d usable", pdata->kb_APIC->apic_count);
                 }
                 bug("\n");
-
-                /* Initialize legacy 8529A PIC if present. */
-                if (pdata->kb_APIC->flags & APF_8259)
-                {
-                    D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
-                    D(bug("[Kernel:ACPI] %s: Registered i8259a IC ID #%d:%d\n", __func__, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
-                }
             }
+
+            /* Initialize legacy 8529A PIC if present. */
+            if (pdata->kb_APIC->flags & APF_8259)
+            {
+                D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
+                D(bug("[Kernel:ACPI] %s: Registered i8259a IC ID #%d:%d\n", __func__, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
+            }
+
+#if (0)
+            /* register the ACPI Shutdown/Reboot SysCall Handlers .. */
+            krnAddSysCallHandler(pdata, &ACPI_SCShutdownHandler, FALSE);
+            krnAddSysCallHandler(pdata, &ACPI_SCRebootHandler, FALSE);
+#endif
         }
     }
 }

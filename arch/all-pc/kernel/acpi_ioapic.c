@@ -45,14 +45,14 @@ struct acpi_ioapic_route
 
 static ULONG acpi_IOAPIC_ReadReg(APTR apic_base, UBYTE offset)
 {
-    *(volatile ULONG *)(apic_base + IOREGSEL) = offset;
-    return *(volatile ULONG *)(apic_base + IOREGWIN);
+    *(ULONG volatile *)(apic_base + IOREGSEL) = offset;
+    return *(ULONG volatile *)(apic_base + IOREGWIN);
 }
 
 static void acpi_IOAPIC_WriteReg(APTR apic_base, UBYTE offset, ULONG val)
 {
-    *(volatile ULONG *)(apic_base + IOREGSEL) = offset;
-    *(volatile ULONG *)(apic_base + IOREGWIN) = val;
+    *(ULONG volatile *)(apic_base + IOREGSEL) = offset;
+    *(ULONG volatile *)(apic_base + IOREGWIN) = val;
 }
 
 /* IO-APIC Interrupt Functions ... ***************************/
@@ -132,7 +132,7 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
         return (icid_t)-1;
     }
 
-    bug("[Kernel:IOAPIC] %s: IOAPIC Enabled (status=%08x)\n", __func__, status);
+    D(bug("[Kernel:IOAPIC] %s: IOAPIC Enabled (status=%08x)\n", __func__, status));
 
     return (icid_t)IOAPICInt_IntrController.ic_Node.ln_Type;
 }
@@ -153,8 +153,6 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             instance++
         )
     {
-        volatile UQUAD routeTableArray[ioapicData->ioapic_IRQCount];
-
         D(
             bug("[Kernel:IOAPIC] %s: Init IOAPIC #%d [ID=%d] @ 0x%p\n", __func__, instance, ioapicData->ioapic_ID, ioapicData->ioapic_Base);
         )
@@ -163,40 +161,56 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
         D(bug("[Kernel:IOAPIC] %s: Configuring IRQs & Routing\n", __func__));
 
-        for (irq = ioapic_irqbase; (irq - ioapic_irqbase) < ioapicData->ioapic_IRQCount; irq++)
+        if ((ioapicData->ioapic_RouteTable = AllocMem(ioapicData->ioapic_IRQCount * sizeof(UQUAD), MEMF_ANY)) != NULL)
         {
-            UBYTE ioapic_irq = irq - ioapic_irqbase;
-            volatile struct acpi_ioapic_route *irqRoute = (volatile struct acpi_ioapic_route *)&routeTableArray[ioapic_irq];
-
-            D(bug("[Kernel:IOAPIC] %s: route entry @ 0x%p\n", __func__, irqRoute));
-
-            /* mark the interrupts as active high, edge triggered
-             * and disabled by default */
-            irqRoute->ds = 0;
-            irqRoute->pol = 0;
-            irqRoute->rirr = 0;
-            irqRoute->trig = 0;
-            /* setup delivery to apic #0 */
-            irqRoute->vect = irq + HW_IRQ_BASE;
-            irqRoute->dm = 0; // fixed
-            irqRoute->dstm = 0; // physical
-            irqRoute->mask = 0;
-            irqRoute->dst = 0; // apic #0
-            if (!krnInitInterrupt(KernelBase, irq, IOAPICInt_IntrController.ic_Node.ln_Type, instance))
+            D(bug("[Kernel:IOAPIC] %s: Routing Data @ 0x%p\n", __func__, ioapicData->ioapic_RouteTable));
+            for (irq = ioapic_irqbase; (irq - ioapic_irqbase) < ioapicData->ioapic_IRQCount; irq++)
             {
-                bug("[Kernel:IOAPIC] %s: failed to acquire IRQ #%d\n", __func__, irq);
+                UBYTE ioapic_irq = irq - ioapic_irqbase;
+                struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
+                ULONG ioapicval;
+
+                D(bug("[Kernel:IOAPIC] %s: route entry %d @ 0x%p\n", __func__, ioapic_irq, irqRoute));
+
+                ioapicval = acpi_IOAPIC_ReadReg(
+                    ioapicData->ioapic_Base,
+                    IOAPICREG_REDTBLBASE + (ioapic_irq << 1));
+                ioapicData->ioapic_RouteTable[ioapic_irq] = ((UQUAD)ioapicval << 32);
+               
+                ioapicval = acpi_IOAPIC_ReadReg(
+                    ioapicData->ioapic_Base,
+                    IOAPICREG_REDTBLBASE + (ioapic_irq << 1) + 1);
+                ioapicData->ioapic_RouteTable[ioapic_irq] |= (UQUAD)ioapicval;
+
+                /* mark the interrupts as active high, edge triggered
+                 * and disabled by default */
+                irqRoute->ds = 0;
+                irqRoute->pol = 0;
+                irqRoute->rirr = 0;
+                irqRoute->trig = 0;
+                /* setup delivery to apic #0 */
+                irqRoute->vect = irq + HW_IRQ_BASE;
+                irqRoute->dm = 0; // fixed
+                irqRoute->dstm = 0; // physical
+                irqRoute->mask = 0;
+                irqRoute->dst = 0; // apic #0
+
+                if (!krnInitInterrupt(KernelBase, irq, IOAPICInt_IntrController.ic_Node.ln_Type, instance))
+                {
+                    bug("[Kernel:IOAPIC] %s: failed to acquire IRQ #%d\n", __func__, irq);
+                }
+                D(
+                    bug("[Kernel:IOAPIC]    %s:       ", __func__);
+                    ioapic_ParseTableEntry((UQUAD *)&ioapicData->ioapic_RouteTable[ioapic_irq]);
+                    bug("\n");
+                );
+                acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                    IOAPICREG_REDTBLBASE + (ioapic_irq << 1),
+                    ((ioapicData->ioapic_RouteTable[ioapic_irq] >> 32) & 0xFFFFFFFF));
+                acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                    IOAPICREG_REDTBLBASE + (ioapic_irq << 1 ) + 1,
+                    (ioapicData->ioapic_RouteTable[ioapic_irq] & 0xFFFFFFFF));
             }
-            D(
-                bug("[Kernel:IOAPIC]    %s:       ", __func__);
-                ioapic_ParseTableEntry((UQUAD *)&routeTableArray[ioapic_irq]);
-                bug("\n");
-            );
-            acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-                IOAPICREG_REDTBLBASE + (ioapic_irq << 1),
-                ((routeTableArray[ioapic_irq] >> 32) & 0xFFFFFFFF));
-            acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-                IOAPICREG_REDTBLBASE + (ioapic_irq << 1 ) + 1,
-                (routeTableArray[ioapic_irq] & 0xFFFFFFFF));
         }
     }
 
@@ -208,30 +222,18 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
     UBYTE ioapic_irq = intNum - ioapicData->ioapic_GSI;
-    volatile UQUAD reRaw = 0;
-    volatile struct acpi_ioapic_route *irqRoute = (volatile struct acpi_ioapic_route *)&reRaw;
-    ULONG ioapicval;
+    struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
 
     D(bug("[Kernel:IOAPIC] %s()\n", __func__));
-
-    ioapicval = acpi_IOAPIC_ReadReg(
-        ioapicData->ioapic_Base,
-        IOAPICREG_REDTBLBASE + (ioapic_irq << 1));
-    reRaw = ((UQUAD)ioapicval << 32);
-   
-    ioapicval = acpi_IOAPIC_ReadReg(
-        ioapicData->ioapic_Base,
-        IOAPICREG_REDTBLBASE + (ioapic_irq << 1) + 1);
-    reRaw |= (UQUAD)ioapicval;
 
     irqRoute->mask = 0;
 
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
         IOAPICREG_REDTBLBASE + (ioapic_irq << 1),
-        ((reRaw >> 32) & 0xFFFFFFFF));
+        ((ioapicData->ioapic_RouteTable[ioapic_irq] >> 32) & 0xFFFFFFFF));
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
         IOAPICREG_REDTBLBASE + (ioapic_irq << 1 ) + 1,
-        (reRaw & 0xFFFFFFFF));
+        (ioapicData->ioapic_RouteTable[ioapic_irq] & 0xFFFFFFFF));
 
     return TRUE;
 }
@@ -241,15 +243,14 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
     UBYTE ioapic_irq = intNum - ioapicData->ioapic_GSI;
-    volatile UQUAD reRaw = 0;
-    volatile struct acpi_ioapic_route *irqRoute = (volatile struct acpi_ioapic_route *)&reRaw;
+    struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
     IPTR _APICBase;
     apicid_t _APICID;
 
+    D(bug("[Kernel:IOAPIC] %s()\n", __func__));
+
     _APICBase = core_APIC_GetBase();
     _APICID = core_APIC_GetID(_APICBase);
-
-    D(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
     irqRoute->ds = 0;
     irqRoute->pol = 0;
@@ -264,10 +265,10 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
         IOAPICREG_REDTBLBASE + (ioapic_irq << 1),
-        ((reRaw >> 32) & 0xFFFFFFFF));
+        ((ioapicData->ioapic_RouteTable[ioapic_irq] >> 32) & 0xFFFFFFFF));
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
         IOAPICREG_REDTBLBASE + (ioapic_irq << 1 ) + 1,
-        (reRaw & 0xFFFFFFFF));
+        (ioapicData->ioapic_RouteTable[ioapic_irq] & 0xFFFFFFFF));
 
     return TRUE;
 }
