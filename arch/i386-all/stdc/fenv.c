@@ -42,48 +42,6 @@ const fenv_t __fe_dfl_env = {
 	  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff }
 };
 
-enum __sse_support __has_sse =
-#ifdef __SSE__
-	__SSE_YES;
-#else
-	__SSE_UNK;
-#endif
-
-#define	getfl(x)	__asm __volatile("pushfl\n\tpopl %0" : "=mr" (*(x)))
-#define	setfl(x)	__asm __volatile("pushl %0\n\tpopfl" : : "g" (x))
-#define	cpuid_dx(x)	__asm __volatile("pushl %%ebx\n\tmovl $1, %%eax\n\t"  \
-					 "cpuid\n\tpopl %%ebx"		      \
-					: "=d" (*(x)) : : "eax", "ecx")
-
-/*
- * Test for SSE support on this processor.  We need to do this because
- * we need to use ldmxcsr/stmxcsr to get correct results if any part
- * of the program was compiled to use SSE floating-point, but we can't
- * use SSE on older processors.
- */
-int
-__test_sse(void)
-{
-	int flag, nflag;
-	int dx_features;
-
-	/* Am I a 486? */
-	getfl(&flag);
-	nflag = flag ^ 0x200000;
-	setfl(nflag);
-	getfl(&nflag);
-	if (flag != nflag) {
-		/* Not a 486, so CPUID should work. */
-		cpuid_dx(&dx_features);
-		if (dx_features & 0x2000000) {
-			__has_sse = __SSE_YES;
-			return (1);
-		}
-	}
-	__has_sse = __SSE_NO;
-	return (0);
-}
-
 int
 fesetexceptflag(const fexcept_t *flagp, int excepts)
 {
