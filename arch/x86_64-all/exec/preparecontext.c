@@ -14,7 +14,7 @@
 
 #include "exec_intern.h"
 #include "exec_util.h"
-#if defined(AROS_SMP)
+#if defined(__AROSEXEC_SMP__)
 #include "etask.h"
 #endif
 
