@@ -4,6 +4,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES := \
+    allocbitmap \
     areatest2 \
     blttemplatealpha \
     CGXTest \
