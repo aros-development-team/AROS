@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2010 by the FlexCat Open Source Team
+ * Copyright (C) 2002-2015 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
   #include <proto/codesets.h>
 #else
   #include <iconv.h>
+  #include <errno.h>
 #endif
 
 #include "flexcat.h"
@@ -39,7 +40,7 @@
 #include "SDI_compiler.h"
 
 const char VString[] = VERS " [" SYSTEMSHORT "/" CPU "] (" EXE_DATE ")\n" EXE_COPYRIGHT;
-const char EString[] = "Contact: http://sf.net/p/flexcat/";
+const char EString[] = "Contact: https://github.com/adtools/flexcat";
 
 /// MyExit
 
@@ -146,6 +147,32 @@ int Strnicmp(const char *str1, const char *str2, int len)
 }
 #endif
 ///
+/// utf8_strlen
+
+size_t utf8_strlen(const char *str)
+{
+  size_t ix = strlen(str);
+  size_t i, q;
+
+  for(q=0, i=0; i < ix; i++, q++)
+  {
+    int c = (unsigned char)str[i];
+
+    if(c >= 0 && c <= 127)
+      i += 0;
+    else if((c & 0xe0) == 0xc0)
+      i += 1;
+    else if((c & 0xf0) == 0xe0)
+      i += 2;
+    else if((c & 0xf8) == 0xf0)
+      i += 3;
+    else
+      return 0; // invalid utf8
+  }
+
+  return q;
+}
+///
 /// AllocString
 
 /* This allocates a string */
@@ -207,12 +234,14 @@ char *ConvertString(char *str, const char *from_charset, const char *to_charset)
     {
       ULONG dstLen = 0;
       char *dstText = NULL;
+      int errPtr = 0;
 
       if(fromIsUTF8 == TRUE)
       {
         dstText = CodesetsUTF8ToStr(CSA_Source,      str,
                                     CSA_DestCodeset, dstCodeset,
                                     CSA_DestLenPtr,  &dstLen,
+                                    CSA_ErrPtr,      &errPtr,
                                     TAG_DONE);
       }
       else
@@ -229,15 +258,18 @@ char *ConvertString(char *str, const char *from_charset, const char *to_charset)
                                        CSA_SourceCodeset, srcCodeset,
                                        CSA_DestCodeset,   dstCodeset,
                                        CSA_DestLenPtr,    &dstLen,
+                                       CSA_ErrPtr,        &errPtr,
                                        TAG_DONE);
         }
+        else
+          ShowWarn(MSG_ERR_UNKNOWN_SOURCE_CHARSET, from_charset);
       }
 
-      if(dstText != NULL && dstLen != 0)
+      if(dstText != NULL && dstLen != 0 && errPtr == 0)
       {
         char *buf;
 
-        // copy the converted string into a separate allocated string
+        // copy the converted string into a separately allocated string
         if((buf = malloc(dstLen+1)) != NULL)
         {
           memcpy(buf, dstText, dstLen);
@@ -246,8 +278,21 @@ char *ConvertString(char *str, const char *from_charset, const char *to_charset)
         }
 
         CodesetsFreeA(dstText, NULL);
+
+        if(buf == NULL)
+          MemError();
+      }
+      else
+      {
+        if(errPtr != 0)
+          ShowWarn(MSG_ERR_INVALID_CHARS_FOUND, errPtr);
+
+        if(dstText == NULL)
+          MemError();
       }
     }
+    else
+      ShowWarn(MSG_ERR_UNKNOWN_DESTINATION_CHARSET, to_charset);
   }
 
   return result;
@@ -263,7 +308,7 @@ char *ConvertString(char *str, const char *from_charset, const char *to_charset)
     size_t inleft = strlen(str);
     char *buf;
 
-    if((buf = malloc((inleft+1)*sizeof(char))) != NULL)
+    if((buf = malloc(inleft+1)) != NULL)
     {
       size_t outleft = inleft;
       char *outbuf = buf;
@@ -275,7 +320,7 @@ char *ConvertString(char *str, const char *from_charset, const char *to_charset)
       }
       else
       {
-        printf("ERROR: iconv()\n");
+        ShowWarn(MSG_ERR_ICONV_FAILED, strerror(errno));
         free(buf);
       }
     }
@@ -285,7 +330,7 @@ char *ConvertString(char *str, const char *from_charset, const char *to_charset)
     iconv_close(ict);
   }
   else
-    printf("ERROR: iconv_open()\n");
+    ShowWarn(MSG_ERR_ICONV_OPEN_FAILED, strerror(errno));
 
   return result;
 }
@@ -714,7 +759,7 @@ void Usage(void)
       "     FlexCat CDFILE/A,CTFILE,POFILE,CATALOG/K,NEWCTFILE/K,SOURCES/M,\n" \
       "             WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,\n" \
       "             QUIET/S,NOLANGTOLOWER/S,NOBUFFEREDIO/S,MODIFIED/S,\n" \
-      "             CODESET/K,COPYMSGNEW/S,OLDMSGNEW/K\n" \
+      "             CODESET/K,VERSION/N,REVISION/N,COPYMSGNEW/S,OLDMSGNEW/K\n" \
       "\n", MSG_USAGE_HEAD);
   fprintf(stderr, "%s\n", MSG_USAGE);
   MyExit(5);

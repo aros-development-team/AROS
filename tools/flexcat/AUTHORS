@@ -1,7 +1,7 @@
-/* $Id: AUTHORS 222 2012-09-16 17:46:41Z damato $
+/* $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2012 by the FlexCat Open Source Team
+ * Copyright (C) 2002-2015 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,4 +35,4 @@ Czech:     Vit Sindlar <sindlarv at centrum dot cz>
 German:    Thore Böckelmann <tboeckel@gmx.de>
 Polish:    Mariusz Danilewicz <mandi@interia.pl>
 
-The development of FlexCat is hosted by SourceForge http://www.sf.net/
+The development of FlexCat is hosted by Github (https://github.com/adtools/flexcat)

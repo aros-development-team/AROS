@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2010 by the FlexCat Open Source Team
+ * Copyright (C) 2002-2015 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,8 @@ void            Usage ( void );
 int             Stricmp ( const char *str1, const char *str2 );
 int             Strnicmp ( const char *str1, const char *str2, int len );
 #endif // AMIGA
+
+size_t          utf8_strlen(const char *str);
 
 #if defined(__amigaos3__) || defined(__MORPHOS__)
 char *strptime(const char *string, const char *fmt, struct tm *res);

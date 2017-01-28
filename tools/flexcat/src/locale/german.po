@@ -1,18 +1,17 @@
 # Translation catalog description file (pot-style)
-# $Id: german.po 290 2014-04-04 07:25:33Z thboeckel $
-#
+# 
 # version 3
 # Translators:
-# tboeckel <tboeckel@gmx.de>, 2014
-# tboeckel <tboeckel@gmx.de>, 2014
+# Thore Böckelmann <tboeckel@gmx.de>, 2014
+# Thore Böckelmann <tboeckel@gmx.de>, 2014
 msgid ""
 msgstr ""
 "Project-Id-Version: FlexCat\n"
-"Report-Msgid-Bugs-To: http://sf.net/p/flexcat\n"
+"Report-Msgid-Bugs-To: https://github.com/adtools/flexcat\n"
 "POT-Creation-Date: 2014-02-18 11:52+0100\n"
-"PO-Revision-Date: 2014-04-04 07:24+0000\n"
-"Last-Translator: tboeckel <tboeckel@gmx.de>\n"
-"Language-Team: German (http://www.transifex.com/projects/p/flexcat/language/de/)\n"
+"PO-Revision-Date: 2016-04-27 14:50+0000\n"
+"Last-Translator: Jens Maus <mail@jens-maus.de>\n"
+"Language-Team: German (http://www.transifex.com/ato/flexcat/language/de/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -46,9 +45,11 @@ msgid ""
 "  COPYMSGNEW     Copy ***NEW*** markers over from old translation\n"
 "  OLDMSGNEW      Custom marker in old translation\n"
 "  CODESET        Codeset to force in output file (e.g. 'UTF-8')\n"
+"  VERSION        Force a certain version to be used during catalog generation\n"
+"  REVISION       Force a certain revision to be used during catalog generation\n"
 "  NOAUTODATE     no operation - kept for compatibility\n"
 "  NOSPACES       no operation - kept for compatibility"
-msgstr "  CDFILE         Einzulesende Katalogbeschreibung\n  CTFILE         Einzulesende Katalogübersetzung\n  POFILE         Einzulesende Katalogübersetzung im PO-Format\n  CATALOG        Zu erzeugender Katalog\n  NEWCTFILE      Zu erzeugende Katalogübersetzung\n  SOURCES        Zu erzeugende Quelltexte; in der Form SFILE=SDFILE,\n                 wobei SFILE die zu erzeugende Quelltextdatei und SDFILE\n                 die zu verwendende Quelltextbeschreibung ist.\n  WARNCTGAPS     Bei fehlenden Bezeichnern in der Katalogübersetzung warnen\n  NOOPTIM        Unveränderte Texte in Übersetzung/Beschreibung nicht überspringen\n  FILL           Text aus #?.cd verwenden falls die Übersetzung fehlt\n  FLUSH          Katalog aus dem Speicher entfernen\n  NOBEEP         DisplayBeep() bei Warnungen und Fehlern unterdrücken\n  QUIET          Warnungen unterdrücken\n  NOLANGTOLOWER  Parameter bei #language nicht in Kleinschrift wandeln\n  NOBUFFEREDIO   IO Puffer nicht verwenden\n  MODIFIED       Katalog nur erzeugen wenn Übersetzung/Beschreibung geändert wurden\n  COPYMSGNEW     ***NEW*** Markierung beim Erneuern von #?.ct Dateien kopieren\n  OLDMSGNEW      Wenn die #?.ct Datei einen anderen Marker benutzt, diesen hier angeben\n  CODESET        Zeichenkodierung in der Ausgabedatei erzwingen (z.B. 'UTF-8')\n  NOAUTODATE     keine Funktion - nur zur Kompatibilität\n  NOSPACES       keine Funktion - nur zur Kompatibilität"
+msgstr ""
 
 msgctxt "MSG_FILEUPTODATE (2//)"
 msgid "File '%s' is up to date"
@@ -315,3 +316,31 @@ msgstr "nicht-ASCII-Zeichen 0x%02x im Originalstring für Bezeichner '%s' gefund
 msgctxt "MSG_ERR_NO_CAT_REVISION (177//)"
 msgid "no catalog revision information found, using revision 0"
 msgstr "keine Revisionsinformation gefunden, benutze Revision 0"
+
+msgctxt "MSG_ERR_CONVERSION_FAILED (178//)"
+msgid "UTF8 conversion failed for identifier '%s'"
+msgstr "UTF8-Konvertierung für Bezeichner '%s' fehlgeschlagen"
+
+msgctxt "MSG_ERR_UNKNOWN_SOURCE_CHARSET (179//)"
+msgid "ERROR in CodesetsFind(): unknown source charset '%s'"
+msgstr "FEHLER in CodesetsFind(): unbekannter Ursprungszeichensatz '%s'"
+
+msgctxt "MSG_ERR_UNKNOWN_DESTINATION_CHARSET (180//)"
+msgid "ERROR in CodesetsFind(): unknown destination charset '%s'"
+msgstr "FEHLER in CodesetsFind(): unbekannter Zielzeichensatz '%s'"
+
+msgctxt "MSG_ERR_INVALID_CHARS_FOUND (181//)"
+msgid "ERROR in CodesetsConvertStr(): %d invalid characters found"
+msgstr "FEHLER in CodesetsConvertStr(): %d ungültige Zeichen gefunden"
+
+msgctxt "MSG_ERR_ICONV_FAILED (182//)"
+msgid "ERROR in iconv(): %s"
+msgstr "FEHLER in iconv(): %s"
+
+msgctxt "MSG_ERR_ICONV_OPEN_FAILED (183//)"
+msgid "ERROR in iconv_open(): %s"
+msgstr "FEHLER in iconv_open(): %s"
+
+msgctxt "MSG_ERR_NO_CAT_VERSION (184//)"
+msgid "no catalog version information found, using version 0"
+msgstr ""

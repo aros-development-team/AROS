@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2010 by the FlexCat Open Source Team
+ * Copyright (C) 2002-2015 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -118,19 +118,39 @@ void CreateCTFile(char *NewCTFile)
         t = localtime(&tim);
         strftime(dateStr, 12, "%d.%m.%Y", t);
 
-        if(CatVersion != 0L)
+        if(CatVersion != -1)
         {
-          if(BaseName != NULL)
-            fprintf(fp, "## version %cVER: %s.catalog %d.<rev> (%s)\n", '$', BaseName, CatVersion, dateStr);
+          if(CatRevision != -1)
+          {
+            if(BaseName != NULL)
+              fprintf(fp, "## version %cVER: %s.catalog %d.%d (%s)\n", '$', BaseName, CatVersion, CatRevision, dateStr);
+            else
+              fprintf(fp, "## version %cVER: <name>.catalog %d.%d (%s)\n", '$', CatVersion, CatRevision, dateStr);
+          }
           else
-            fprintf(fp, "## version %cVER: <name>.catalog %d.<rev> (%s)\n", '$', CatVersion, dateStr);
+          {
+            if(BaseName != NULL)
+              fprintf(fp, "## version %cVER: %s.catalog %d.<rev> (%s)\n", '$', BaseName, CatVersion, dateStr);
+            else
+              fprintf(fp, "## version %cVER: <name>.catalog %d.<rev> (%s)\n", '$', CatVersion, dateStr);
+          }
         }
         else
         {
-          if(BaseName != NULL)
-            fprintf(fp, "## version %cVER: %s.catalog <ver>.0 (%s)\n", '$', BaseName, dateStr);
+          if(CatRevision != -1)
+          {
+            if(BaseName != NULL)
+              fprintf(fp, "## version %cVER: %s.catalog <ver>.%d (%s)\n", '$', BaseName, CatRevision, dateStr);
+            else
+              fprintf(fp, "## version %cVER: <name>.catalog <ver>.%d (%s)\n", '$', CatRevision, dateStr);
+          }
           else
-            fprintf(fp, "## version %cVER: <name>.catalog <ver>.0 (%s)\n", '$', dateStr);
+          {
+            if(BaseName != NULL)
+              fprintf(fp, "## version %cVER: %s.catalog <ver>.<rev> (%s)\n", '$', BaseName, dateStr);
+            else
+              fprintf(fp, "## version %cVER: <name>.catalog <ver>.<rev> (%s)\n", '$', dateStr);
+          }
         }
 
         free(dateStr);

@@ -1,4 +1,4 @@
-##rem $Id: Oberon-A.sd 253 2014-02-18 11:15:58Z damato $
+##rem $Id$
 ##stringtype Oberon
 ##shortstrings
 MODULE %o3;

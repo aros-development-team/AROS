@@ -1,7 +1,7 @@
 
 /****************************************************************
 
-   This file was created automatically by `FlexCat 2.15'
+   This file was created automatically by `FlexCat 2.18'
    from "locale/FlexCat.pot".
 
    Do NOT edit by hand!
@@ -91,5 +91,12 @@ void CloseFlexCatCatalog( void );
 #define MSG_ERR_EXTRA_CHARACTERS_ID FlexCat_Strings[61]
 #define MSG_ERR_NON_ASCII_CHARACTER FlexCat_Strings[62]
 #define MSG_ERR_NO_CAT_REVISION FlexCat_Strings[63]
+#define MSG_ERR_CONVERSION_FAILED FlexCat_Strings[64]
+#define MSG_ERR_UNKNOWN_SOURCE_CHARSET FlexCat_Strings[65]
+#define MSG_ERR_UNKNOWN_DESTINATION_CHARSET FlexCat_Strings[66]
+#define MSG_ERR_INVALID_CHARS_FOUND FlexCat_Strings[67]
+#define MSG_ERR_ICONV_FAILED FlexCat_Strings[68]
+#define MSG_ERR_ICONV_OPEN_FAILED FlexCat_Strings[69]
+#define MSG_ERR_NO_CAT_VERSION FlexCat_Strings[70]
 
 #endif

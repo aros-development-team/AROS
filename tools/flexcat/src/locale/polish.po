@@ -1,16 +1,17 @@
 # Translation catalog description file (pot-style)
-# $Id: polish.po 290 2014-04-04 07:25:33Z thboeckel $
 # 
 # version 3
 # Translators:
+# Mariusz Danilewicz <mandi@interia.pl>, 2014
+# Mariusz Danilewicz <mandi@interia.pl>, 2014
 msgid ""
 msgstr ""
 "Project-Id-Version: FlexCat\n"
-"Report-Msgid-Bugs-To: http://sf.net/p/flexcat\n"
+"Report-Msgid-Bugs-To: https://github.com/adtools/flexcat\n"
 "POT-Creation-Date: 2014-02-18 11:52+0100\n"
-"PO-Revision-Date: 2014-04-04 07:24+0000\n"
-"Last-Translator: tboeckel <tboeckel@gmx.de>\n"
-"Language-Team: Polish (http://www.transifex.com/projects/p/flexcat/language/pl/)\n"
+"PO-Revision-Date: 2016-04-27 14:50+0000\n"
+"Last-Translator: Jens Maus <mail@jens-maus.de>\n"
+"Language-Team: Polish (http://www.transifex.com/ato/flexcat/language/pl/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -44,6 +45,8 @@ msgid ""
 "  COPYMSGNEW     Copy ***NEW*** markers over from old translation\n"
 "  OLDMSGNEW      Custom marker in old translation\n"
 "  CODESET        Codeset to force in output file (e.g. 'UTF-8')\n"
+"  VERSION        Force a certain version to be used during catalog generation\n"
+"  REVISION       Force a certain revision to be used during catalog generation\n"
 "  NOAUTODATE     no operation - kept for compatibility\n"
 "  NOSPACES       no operation - kept for compatibility"
 msgstr ""
@@ -54,15 +57,15 @@ msgstr "Plik \"%s\" jest aktualny"
 
 msgctxt "MSG_ERR_WARNING (100//)"
 msgid "%s, line %d - warning:"
-msgstr "\"%s\", linia %d - ostrzeżenie:"
+msgstr "%s, linia %d - ostrzeżenie:"
 
 msgctxt "MSG_ERR_ERROR (101//)"
 msgid "%s, line %d - ERROR:"
-msgstr "\"%s\", linia %d - bł±d:"
+msgstr "%s, linia %d - błąd:"
 
 msgctxt "MSG_ERR_EXPECTEDHEX (102//)"
 msgid "expected hex character (one of [0-9a-fA-F])"
-msgstr "oczekiwana liczba w systemie szesnastowym (jedna z zakresu [0-9a-fA-F])"
+msgstr "oczekiwana liczba w systemie szesnastkowym (jedna z zakresu [0-9a-fA-F])"
 
 msgctxt "MSG_ERR_EXPECTEDOCTAL (103//)"
 msgid "expected octal character (one of [0-7])"
@@ -70,7 +73,7 @@ msgstr "oczekiwana liczba w systemie ósemkowym (jedna z zakresu [0-7])"
 
 msgctxt "MSG_ERR_NOLENGTHBYTES (104//)"
 msgid "lengthbytes cannot be larger than %d (sizeof long)"
-msgstr "argument LengthBytes nie może byæ wiêkszy niż %d (wielko¶æ długiego słowa)."
+msgstr "argument LengthBytes nie może być większy niż %d (wielkość długiego słowa)."
 
 msgctxt "MSG_ERR_UNKNOWNCDCOMMAND (105//)"
 msgid "unknown catalog description command"
@@ -82,11 +85,11 @@ msgstr "nieoczekiwane puste linie"
 
 msgctxt "MSG_ERR_NOIDENTIFIER (107//)"
 msgid "missing identifier"
-msgstr "brakuj±cy indentyfikator"
+msgstr "brakujący indentyfikator"
 
 msgctxt "MSG_ERR_MISSINGSTRING (115//)"
 msgid "unexpected end of file (missing catalog strings)"
-msgstr "nieoczekiwany koniec pliku (brakuj±ce ci±gi katalogu)"
+msgstr "nieoczekiwany koniec pliku (brakujące ciągi katalogu)"
 
 msgctxt "MSG_ERR_UNKNOWNCTCOMMAND (118//)"
 msgid "unknown command in translation"
@@ -94,11 +97,11 @@ msgstr "nieznane polecenie w pliku tłumaczenia katalogu"
 
 msgctxt "MSG_ERR_UNKNOWNIDENTIFIER (119//)"
 msgid "'%s' missing in catalog description"
-msgstr "brakuj±ca etykieta \"%s\" w pliku opisu katalogu"
+msgstr "brakująca etykieta \"%s\" w pliku opisu katalogu"
 
 msgctxt "MSG_ERR_UNKNOWNSTRINGTYPE (120//)"
 msgid "unknown string type"
-msgstr "nie znany rodziaj ci±gu znaków"
+msgstr "nie znany rodzaj ciągu znaków"
 
 msgctxt "MSG_ERR_NOTERMINATEBRACKET (121//)"
 msgid "unexpected end of line (missing ')')"
@@ -110,11 +113,11 @@ msgstr "dane binarne w łańcuchu typu None"
 
 msgctxt "MSG_ERR_CTGAP (123//)"
 msgid "'%s' missing in catalog translation"
-msgstr "brakuj±cy identyfikator \"%s\" w pliku tłumaczenia"
+msgstr "brakujący identyfikator \"%s\" w pliku tłumaczenia"
 
 msgctxt "MSG_ERR_DOUBLECTLANGUAGE (124//)"
 msgid "catalog language declared twice"
-msgstr "jêzyk katalogu zadeklarowany dwukrotnie"
+msgstr "język katalogu zadeklarowany dwukrotnie"
 
 msgctxt "MSG_ERR_DOUBLECTVERSION (125//)"
 msgid "catalog version declared twice"
@@ -122,19 +125,19 @@ msgstr "wersja katalogu zadeklarowana dwukrotnie"
 
 msgctxt "MSG_ERR_WRONGRCSID (126//)"
 msgid "incorrect RCS Id"
-msgstr "niewła¶ciwy identyfikator RCS"
+msgstr "niewłaściwy identyfikator RCS"
 
 msgctxt "MSG_ERR_NOMEMORY (127//)"
 msgid "out of memory!"
-msgstr "brak pamiêci!"
+msgstr "brak pamięci!"
 
 msgctxt "MSG_ERR_NOCATALOGDESCRIPTION (128//)"
 msgid "cannot open catalog description '%s'"
-msgstr "nie można otworzyæ pliku opisu katalogu \"%s\""
+msgstr "nie można otworzyć pliku opisu katalogu \"%s\""
 
 msgctxt "MSG_ERR_NOCATALOGTRANSLATION (129//)"
 msgid "cannot open catalog translation '%s'"
-msgstr "nie można otworzyæ pliku tłumaczenia katalogu \"%s\""
+msgstr "nie można otworzyć pliku tłumaczenia katalogu \"%s\""
 
 msgctxt "MSG_ERR_NOCTVERSION (130//)"
 msgid ""
@@ -144,23 +147,23 @@ msgstr "brak numeru wersji katalogu\nUżyj polecenia \"## version\" albo polece�
 
 msgctxt "MSG_ERR_NOCATALOG (131//)"
 msgid "cannot open catalog file '%s'"
-msgstr "nie można otworzyæ pliku katalogu \"%s\""
+msgstr "nie można otworzyć pliku katalogu \"%s\""
 
 msgctxt "MSG_ERR_NONEWCTFILE (132//)"
 msgid "cannot create catalog translation '%s'"
-msgstr "nie można utworzyæ pliku tłumaczenia \"%s\""
+msgstr "nie można utworzyć pliku tłumaczenia \"%s\""
 
 msgctxt "MSG_ERR_NOCTLANGUAGE (133//)"
 msgid "missing catalog translation language"
-msgstr "brak okre¶lenia jêzyka tłumaczenia katalogu"
+msgstr "brak określenia języka tłumaczenia katalogu"
 
 msgctxt "MSG_ERR_NOSOURCE (134//)"
 msgid "cannot open source file '%s'"
-msgstr "nie można otworzyæ pliku Œródłowego \"%s\""
+msgstr "nie można otworzyć pliku źródłowego \"%s\""
 
 msgctxt "MSG_ERR_NOSOURCEDESCRIPTION (135//)"
 msgid "cannot open source description file '%s'"
-msgstr "nie można otworzyæ pliku Œródłowego opisu katalogu \"%s\""
+msgstr "nie można otworzyć pliku źródłowego opisu katalogu \"%s\""
 
 msgctxt "MSG_ERR_NOCTARGUMENT (136//)"
 msgid "creating a catalog requires a translation file"
@@ -168,31 +171,31 @@ msgstr "tworzenie pliku katalogu wymaga pliku z tłumaczeniem"
 
 msgctxt "MSG_ERR_CANTCHECKDATE (137//)"
 msgid "cannot get datestamp of '%s'"
-msgstr "nie można pobraæ oznaczenia czasowego pliku \"%s\""
+msgstr "nie można pobrać oznaczenia czasowego pliku \"%s\""
 
 msgctxt "MSG_ERR_NOCTFILENAME (140//)"
 msgid ""
 "Catalog translation file name not specified at command line or as basename "
 "in description"
-msgstr "nie okre¶lono nazwy pliku tłumaczenia jako argument w linii polecenia, lub jako nazwa bazowa w pliku opisu"
+msgstr "nie określono nazwy pliku tłumaczenia jako argument w linii polecenia, lub jako nazwa bazowa w pliku opisu"
 
 msgctxt "MSG_ERR_NOCATFILENAME (141//)"
 msgid ""
 "catalog file name not specified at command line or as basename in "
 "description"
-msgstr "nie okre¶lono nazwy pliku katalogu jako argument w linii polecenia, lub jako nazwa bazowa w pliku opisu"
+msgstr "nie określono nazwy pliku katalogu jako argument w linii polecenia, lub jako nazwa bazowa w pliku opisu"
 
 msgctxt "MSG_ERR_BADPREFS (142//)"
 msgid ""
 "error processing 'FlexCat.prefs' variable, falling back to defaults\n"
 "Template:"
-msgstr "bł±d podczas przetwarzania zmiennych w pliku \"FlexCat.orefs\", zostan± użyte warto¶ci domy¶lne\nSzablon:"
+msgstr "błąd podczas przetwarzania zmiennych w pliku \"FlexCat.prefs\", zostaną użyte wartości domyślne\nSzablon:"
 
 msgctxt "MSG_ERR_BADCTLANGUAGE (144//)"
 msgid ""
 "invalid language in catalog translation file\n"
 "Language MUST be a string with alphabetical characters and no inlined or trailing spaces"
-msgstr "niewła¶ciwy jêzyk w pliku tłumaczenia katalogu\nNazwa jêzyka MUSI byæ ci±giem liter bez odstepów\nani spacji na końcu linii."
+msgstr "niewłaściwy język w pliku tłumaczenia katalogu\nNazwa języka MUSI być ciągiem liter bez odstępów\nani spacji na końcu linii."
 
 msgctxt "MSG_ERR_DOUBLECTCODESET (146//)"
 msgid "catalog codeset declared twice"
@@ -202,15 +205,15 @@ msgctxt "MSG_ERR_BADCTCODESET (147//)"
 msgid ""
 "invalid codeset in catalog translation file\n"
 "Codeset MUST be a decimal number without any trailing spaces"
-msgstr "niewła¶ciwa strona kodowa w pliku tłumaczenia katalogu\nStrona kodowa MUSI byæ liczb± bez odstepów ani spacji na końcu linii."
+msgstr "niewłaściwa strona kodowa w pliku tłumaczenia katalogu\nStrona kodowa MUSI być liczbą bez odstępów ani spacji na końcu linii."
 
 msgctxt "MSG_ERR_NOCTCODESET (148//)"
 msgid "missing catalog translation codeset"
-msgstr "brakuj±ca deklaracja strony kodowej w pliku opisu katalogu"
+msgstr "brakująca deklaracja strony kodowej w pliku opisu katalogu"
 
 msgctxt "MSG_ERR_ERROR_QUICK (149//)"
 msgid "%s - ERROR:"
-msgstr "%s - bł±d:"
+msgstr "%s - błąd:"
 
 msgctxt "MSG_ERR_BADCTVERSION (150//)"
 msgid ""
@@ -218,7 +221,7 @@ msgid ""
 "Version should be something like\n"
 "## version $VER: name version.revision (date)\n"
 "without any spaces in the name"
-msgstr "niewła¶ciwa deklaracja wersji w pliku tłumaczenia katalogu\nWersja powinna byæ wpisana w postaci\n## version $VER: nazwa wersja.rewizja (data)\nbez spacji w nazwie"
+msgstr "niewłaściwa deklaracja wersji w pliku tłumaczenia katalogu\nWersja powinna być wpisana w postaci\n## version $VER: nazwa wersja.rewizja (data)\nbez spacji w nazwie"
 
 msgctxt "MSG_ERR_WARNING_QUICK (154//)"
 msgid "%s - Warning:"
@@ -226,7 +229,7 @@ msgstr "%s - ostrzeżenie:"
 
 msgctxt "MSG_ERR_MISSINGTRANSLATION (155//)"
 msgid "missing translation for identifier '%s'"
-msgstr "brakuj±ce tłumaczenie dla identyfikatora \"%s\""
+msgstr "brakujące tłumaczenie dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_EMPTYTRANSLATION (156//)"
 msgid "empty translation for identifier '%s'"
@@ -234,82 +237,110 @@ msgstr "puste tłumaczenie dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_MISMATCHINGCONTROLCHARACTERS (157//)"
 msgid "mismatching trailing control characters"
-msgstr "niepasuj±ce kończ±ce znaki kontrolne"
+msgstr "niepasujące kończące znaki kontrolne"
 
 msgctxt "MSG_ERR_DOUBLE_IDENTIFIER (159//)"
 msgid "identifier '%s' declared twice"
-msgstr ""
+msgstr "identyfikator \"%s\" zadeklarowany dwukrotnie"
 
 msgctxt "MSG_ERR_STRING_TOO_SHORT (160//)"
 msgid "string too short for identifier '%s'"
-msgstr ""
+msgstr "zbyt krótki ciąg dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_STRING_TOO_LONG (161//)"
 msgid "string too long for identifier '%s'"
-msgstr ""
+msgstr "zbyt długi ciąg dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_TRAILING_ELLIPSIS (162//)"
 msgid "original string has a trailing ellipsis ('...') for identifier '%s'"
-msgstr ""
+msgstr "oryginalny ciąg identyfikatora \"%s\" kończył się wielokropkiem (...)"
 
 msgctxt "MSG_ERR_NO_TRAILING_ELLIPSIS (163//)"
 msgid ""
 "original string doesn't have a trailing ellipsis ('...') for identifier '%s'"
-msgstr ""
+msgstr "oryginalny ciąg identyfikatora \"%s\" nie kończył się wielokropkiem (...)"
 
 msgctxt "MSG_ERR_TRAILING_BLANKS (164//)"
 msgid "original string has trailing blanks for identifier '%s'"
-msgstr ""
+msgstr "oryginalny ciąg identyfikatora \"%s\" kończył się spacją"
 
 msgctxt "MSG_ERR_NO_TRAILING_BLANKS (165//)"
 msgid "original string doesn't have trailing blanks for identifier '%s'"
-msgstr ""
+msgstr "oryginalny ciąg identyfikatora \"%s\" nie kończył się spacją"
 
 msgctxt "MSG_ERR_MISMATCHING_PLACEHOLDERS (166//)"
 msgid "mismatching placeholders for identifier '%s'"
-msgstr ""
+msgstr "niedopasowane znaczniki dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_MISSING_PLACEHOLDERS (167//)"
 msgid "missing placeholders for identifier '%s'"
-msgstr ""
+msgstr "brakujące znaczniki dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_EXCESSIVE_PLACEHOLDERS (168//)"
 msgid "excessive placeholders for identifier '%s'"
-msgstr ""
+msgstr "zbyt wiele znaczników dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_NO_LEADING_BRACKET (169//)"
 msgid "missing '(' for identifier '%s'"
-msgstr ""
+msgstr "brakujący \"(\" dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_NO_TRAILING_BRACKET (170//)"
 msgid "missing ')' for identifier '%s'"
-msgstr ""
+msgstr "brakujący \")\" dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_DOUBLE_ID (171//)"
 msgid "ID number used twice for identifier '%s'"
-msgstr ""
+msgstr "numer identyfikatora użyty dwukrotnie dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_NO_MIN_LEN (172//)"
 msgid "expected MinLen (character '/') for identifier '%s'"
-msgstr ""
+msgstr "oczekiwana minimalna długość (znak \"/\") dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_NO_MAX_LEN (173//)"
 msgid "expected MaxLen (character '/') for identifier '%s'"
-msgstr ""
+msgstr "oczekiwana maksymalna długość (znak \"/\") dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_EXTRA_CHARACTERS (174//)"
 msgid "extra characters at the end of the line"
-msgstr ""
+msgstr "dodatkowe znaki na końcu linii"
 
 msgctxt "MSG_ERR_EXTRA_CHARACTERS_ID (175//)"
 msgid "extra characters at the end of the line for identifier '%s'"
-msgstr ""
+msgstr "dodatkowe znaki na końcu linii identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_NON_ASCII_CHARACTER (176//)"
 msgid ""
 "non-ASCII character 0x%02x found in original string for identifier '%s'"
-msgstr ""
+msgstr "znak spoza tabeli ASCII 0x%02x znaleziony w oryginalnym ciągu dla identyfikatora \"%s\""
 
 msgctxt "MSG_ERR_NO_CAT_REVISION (177//)"
 msgid "no catalog revision information found, using revision 0"
+msgstr "nie znaleziono rewizji katalogu, użyto wartości domyślnej 0"
+
+msgctxt "MSG_ERR_CONVERSION_FAILED (178//)"
+msgid "UTF8 conversion failed for identifier '%s'"
+msgstr "Konwersja z UTF8 dla identyfikatora \"%s\" zakończona niepowodzeniem"
+
+msgctxt "MSG_ERR_UNKNOWN_SOURCE_CHARSET (179//)"
+msgid "ERROR in CodesetsFind(): unknown source charset '%s'"
+msgstr "Błąd w funkcji CodesetFind(): nieznany źródłowy zestaw znaków \"%s\""
+
+msgctxt "MSG_ERR_UNKNOWN_DESTINATION_CHARSET (180//)"
+msgid "ERROR in CodesetsFind(): unknown destination charset '%s'"
+msgstr "Błąd w funkcji CodesetFind(): nieznany docelowy zestaw znaków \"%s\""
+
+msgctxt "MSG_ERR_INVALID_CHARS_FOUND (181//)"
+msgid "ERROR in CodesetsConvertStr(): %d invalid characters found"
+msgstr "Błąd w funkcji CodesetConvertStr(): znaleziono %d nieprawidłowych znaków"
+
+msgctxt "MSG_ERR_ICONV_FAILED (182//)"
+msgid "ERROR in iconv(): %s"
+msgstr "Błąd w funkcji iconv(): %s"
+
+msgctxt "MSG_ERR_ICONV_OPEN_FAILED (183//)"
+msgid "ERROR in iconv_open(): %s"
+msgstr "Błąd w funkcji iconv_open(): %s"
+
+msgctxt "MSG_ERR_NO_CAT_VERSION (184//)"
+msgid "no catalog version information found, using version 0"
 msgstr ""

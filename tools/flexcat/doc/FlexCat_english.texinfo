@@ -2,7 +2,7 @@
 \input texinfo
 
 @c
-@c $Id: FlexCat_english.texinfo 73 2007-01-01 02:48:17Z tactica $
+@c $Id$
 @c
 
 @c **** TODO ****

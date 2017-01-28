@@ -2,15 +2,89 @@
 FlexCat Open Source - Changelog
 -------------------------------
 
-$Id: ChangeLog 291 2014-04-04 19:32:25Z damato $
-$URL: svn://svn.code.sf.net/p/flexcat/code/releases/2.15/ChangeLog $
+#### FlexCat 2.18 RELEASE ################################################
+
+2016-04-27  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 2.18 release preparations.
+  * scanpo.c, main.c, misc: implemented a VERSION/N and REVISION/N option to
+    allow to override the catalog version and revision numbers. This is e.g.
+    the case if the ct/po files don't contain parseable $Id$ specifiers in case
+    git is used as revision control. For these cases the revision can now be
+    specified on the command-line as well.
+
+2015-07-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * scanpo.c, utils.c: respect UTF8 encoded strings when doing the minimum and
+    maximum length checks. A single UTF8 character might be encoded in up to
+    three ASCII characters.
+
+#### FlexCat 2.17 RELEASE ################################################
+
+2015-04-03  Jens Maus <mail@jens-maus.de>
+
+  * misc: bumped revision for final 2.17 release.
+  * Makefile, include: added mingw32 libiconv static library and includes
+    to our project so that we can compile windows binaries of flexcat again.
+
+2015-04-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * scanpo.c: do the check for intenionally empty translations regardless of the
+    length of the original string. This fixes the visible "<EMPTY>" tag with YAM
+    when invoking the online help while using the british english catalog.
+
+#### FlexCat 2.16 RELEASE ################################################
+
+2015-03-21  Jens Maus <mail@jens-maus.de>
+
+  * misc: bumped revision for final 2.16 release.
+
+2014-11-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * scanpo.c: added support for slovakian translations.
+
+2014-10-08 Thore Böckelmann <tboeckel@gmx.de>
+
+  * scanpo.c: a failed UTF8 conversion will just cause a warning to be printed
+    instead of an error. This makes it possible to see all failed conversions
+    in one go instead of just single failures.
+
+2014-10-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * scanpo.c: use ISO-8859-2 instead of ISO-8859-16 for polish translations.
+
+2014-09-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * scanpo.c: added missing comparison against zero. Otherwise the russian
+    catalogs gets the default codeset of 0 instead of 2104.
+
+2014-08-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/russian.po: added russian translation.
+  * utils.c: output a sensible error message in case the UTF8 conversion fails.
+
+2014-08-16  Jens Maus <mail@jens-maus.de>
+
+  * src/flexcat.h, Makefile: applied patch to get flexcat correctly compiled on
+    64bit Linux systems. Thanks to Matthias Rustler for the nice patch. In
+    addition the makefile was tuned to not use -m32 anymore to workaround the
+    problem.
+
+2014-07-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * scanpo.c: Output an error message in case the UTF8 conversion fails.
+
+2014-07-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * scanpo.c: fixed the wrong date string scanning by rejecting spaces in the
+    day of month handling. This closes #25.
 
 #### FlexCat 2.15 RELEASE ################################################
 
 2014-04-04  Jens Maus <mail@jens-maus.de>
 
   * misc: bumped revision for final 2.15 release.
-  
+
 2014-04-04 Thore Böckelmann <tboeckel@gmx.de>
 
   * scanpo.c: output a warning in case the catalog revision information is

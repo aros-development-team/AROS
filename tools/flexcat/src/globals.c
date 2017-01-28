@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
- * Copyright (C) 2002-2010 by the FlexCat Open Source Team
+ * Copyright (C) 2002-2015 FlexCat Open Source Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@
 /// Globals
 char           *BaseName = NULL;        /* Basename of catalog description */
 const char     *Language = "english";   /* Language of catalog description */
-int             CatVersion = 0;         /* Version of catalog to be opened */
-int             CatRevision = 0;        /* Revision of catalog to be opened */
+int             CatVersion = -1;        /* Version of catalog to be opened */
+int             CatRevision = -1;       /* Revision of catalog to be opened */
 int             NumStrings = 0;         /* Number of catalog strings */
 char           *ScanFile;               /* File currently scanned */
 int             ScanLine;               /* Line currently scanned */
