@@ -103,7 +103,7 @@
             nd->nd_ScreenMenuObjOffset = ((IPTR) ( (char *)&((struct IntScreen *)0)->MenuDecorObj - (char *)0 ));
             nd->nd_ScreenWindowObjOffset = ((IPTR) ( (char *)&((struct IntScreen *)0)->WinDecorObj - (char *)0 ));
 
-            bug("intuition.decor: offsets titleobj = %d, menuobj = %d, winobj = %d\n", nd->nd_ScreenObjOffset, nd->nd_ScreenMenuObjOffset, nd->nd_ScreenWindowObjOffset);
+            D(bug("intuition.decor: offsets titleobj = %d, menuobj = %d, winobj = %d\n", nd->nd_ScreenObjOffset, nd->nd_ScreenMenuObjOffset, nd->nd_ScreenWindowObjOffset);)
             Enqueue(&((struct IntIntuitionBase *)(IntuitionBase))->Decorations, (struct Node *)nd);
 
             if (global)
