@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386-pc kernel startup code
@@ -24,7 +24,7 @@
 #include "kernel_mmap.h"
 #include "kernel_romtags.h"
 
-#define D(x) x
+#define D(x)
 
 static char boot_stack[];
 

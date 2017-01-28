@@ -22,8 +22,7 @@
 
 struct PlatformData
 {
-    long long	    *idt;
-    struct tss	    *tss;
+    struct List         kb_SysCallHandlers;
     APTR	     kb_APIC_TrampolineBase;
     struct ACPIData *kb_ACPI;
     struct APICData *kb_APIC;
@@ -35,11 +34,12 @@ struct PlatformData
 #define TLS_SIZE                sizeof(struct tss)
 #define TLS_ALIGN               64
 
-#define IDT_GET()                LIBBASE->kb_PlatformData->idt
-#define IDT_SET(val) \
-    do { \
-        LIBBASE->kb_PlatformData->idt = val; \
-    } while(0);
+#define krnSysCallCPUWake(data) 				        \
+({								        \
+    int __value;						        \
+    __asm__ __volatile__ ("int $0x80":"=a"(__value):"a"(SC_X86CPUWAKE),"b"(data):"memory");	\
+    __value;						                \
+})
 
 extern struct segment_desc *GDT;
 

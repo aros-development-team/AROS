@@ -148,18 +148,14 @@ do { \
 	 "3" ((char *) (addr)),"2" (KERNEL_CS << 16)); \
 } while (0)
 
-void set_intr_gate(unsigned int n, void *addr)
+void set_intr_gate(long long *idt, unsigned int n, void *addr)
 {
-    struct PlatformData *data = KernelBase->kb_PlatformData;
- 
-    _set_gate(&data->idt[n], 14, 0, addr);
+    _set_gate(&idt[n], 14, 0, addr);
 }
 
-void set_system_gate(unsigned int n, void *addr)
+void set_system_gate(long long *idt, unsigned int n, void *addr)
 {
-    struct PlatformData *data = KernelBase->kb_PlatformData;
-
-    _set_gate(&data->idt[n], 14, 3, addr);
+    _set_gate(&idt[n], 14, 3, addr);
 }
 
 void handleException(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
@@ -173,22 +169,20 @@ void handleException(struct ExceptionContext *regs, unsigned long error_code, un
     }
     else if (irq_number == 0x80)  /* Syscall? */
     {
-	/* Syscall number is actually ULONG (we use only eax) */
+        struct PlatformData *pdata = KernelBase->kb_PlatformData;
+        struct syscallx86_Handler *scHandler;
     	ULONG sc = regs->eax;
 
-        DSYSCALL(bug("[Kernel] Syscall %u\n", sc));
+	/* Syscall number is actually ULONG (we use only eax) */
+        DSYSCALL(bug("[Kernel] Syscall %08x\n", sc));
 
-	/* The following syscalls can be run in both supervisor and user mode */
-	switch (sc)
-	{
-	case SC_REBOOT:
-	    D(bug("[Kernel] Warm restart\n"));
-	    core_Reboot();
-
-	case SC_SUPERVISOR:
-	    /* This doesn't return */
-	    core_Supervisor(regs);
-	}
+        ForeachNode(&pdata->kb_SysCallHandlers, scHandler)
+        {
+            if ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == sc)
+            {
+                scHandler->sc_SysCall(regs);
+            }
+        }
 
 	/*
 	 * Scheduler can be called only from within user mode.
@@ -251,22 +245,22 @@ void handleException(struct ExceptionContext *regs, unsigned long error_code, un
     /* Return from this routine is equal to core_LeaveInterrupt(regs) */
 }
 
-void Init_Traps(struct PlatformData *data)
+void Init_Traps(struct PlatformData *data, long long *idt)
 {
     int i;
 
     for (i = 0; i < 0x30; i++)
     {
-	_set_gate(&data->idt[i], 14, 0, traps[i]);
+	_set_gate(&idt[i], 14, 0, traps[i]);
     }
     /* Set all unused vectors to dummy interrupt */
     for (i = 0x30; i < 256; i++)
     {
-	_set_gate(&data->idt[i], 14, 0, core_Unused_Int);
+	_set_gate(&idt[i], 14, 0, core_Unused_Int);
     }
 
     /* Create user interrupt used to enter supervisor mode */
-    _set_gate(&data->idt[0x80], 14, 3, TRAP0x80_trap);
+    _set_gate(&idt[0x80], 14, 3, TRAP0x80_trap);
     /* Create APIC error vector */
-    _set_gate(&data->idt[0xFE], 14, 0, TRAP0xFE_trap);
+    _set_gate(&idt[0xFE], 14, 0, TRAP0xFE_trap);
 }

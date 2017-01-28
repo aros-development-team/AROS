@@ -8,9 +8,9 @@
 
 #define BUILD_TRAP(nr) void TRAP_NAME(nr);
 
-void set_intr_gate(unsigned int n, void *addr);
-void set_system_gate(unsigned int n, void *addr);
+void set_intr_gate(long long *, unsigned int, void *);
+void set_system_gate(long long *, unsigned int, void *);
 
-void Init_Traps(struct PlatformData *data);
+void Init_Traps(struct PlatformData *, long long *);
 
 #endif /* _TRAPS_H */

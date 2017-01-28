@@ -11,18 +11,20 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
-#include "acpi.h"
-#include "apic.h"
-#include "smp.h"
+
 #include "traps.h"
 #include "utils.h"
 
-#define D(x) x
+#define D(x)
+
+extern struct syscallx86_Handler x86_SCSupervisorHandler;
 
 static int PlatformInit(struct KernelBase *KernelBase)
 {
     struct PlatformData *data;
     struct table_desc idtr;
+    struct tss	    *tss;
+    long long *idt;
 
     NEWLIST(&KernelBase->kb_ICList);
     KernelBase->kb_ICTypeBase = KBL_INTERNAL + 1;
@@ -34,43 +36,47 @@ static int PlatformInit(struct KernelBase *KernelBase)
     D(bug("[Kernel:i386] %s: Allocated platform data at 0x%p\n", __func__, data));
     KernelBase->kb_PlatformData = data;
 
+    // Setup the base syscall handler(s) ...
+    NEWLIST(&data->kb_SysCallHandlers);
+    krnAddSysCallHandler(data, &x86_SCSupervisorHandler, TRUE);
+
     /*
      * Now we have a complete memory list and working AllocMem().
      * We can allocate space for IDT and TSS now and build them to make
      * interrupts working.
      */
-    data->tss            = krnAllocMemAligned(sizeof(struct tss), 64);
-    data->idt            = krnAllocMemAligned(sizeof(long long) * 256, 256);
+    tss            = krnAllocMemAligned(sizeof(struct tss), 64);
+    idt            = krnAllocMemAligned(sizeof(long long) * 256, 256);
     SysBase->SysStkLower = AllocMem(0x10000, MEMF_PUBLIC);  /* 64KB of system stack */
 
-    if ((!data->tss) || (!data->idt) || (!SysBase->SysStkLower))
+    if ((!tss) || (!idt) || (!SysBase->SysStkLower))
 	return FALSE;
 
-    data->tss->ssp_seg = KERNEL_DS; /* SSP segment descriptor */
-    data->tss->cs      = USER_CS;
-    data->tss->ds      = USER_DS;
-    data->tss->es      = USER_DS;
-    data->tss->ss      = USER_DS;
-    data->tss->iomap   = 104;
+    tss->ssp_seg = KERNEL_DS; /* SSP segment descriptor */
+    tss->cs      = USER_CS;
+    tss->ds      = USER_DS;
+    tss->es      = USER_DS;
+    tss->ss      = USER_DS;
+    tss->iomap   = 104;
 
     /* Set up system stack */
     SysBase->SysStkUpper = SysBase->SysStkLower + 0x10000;
-    data->tss->ssp       = (IPTR)SysBase->SysStkUpper;
+    tss->ssp       = (IPTR)SysBase->SysStkUpper;
 
     /* Restore IDT structure */
-    Init_Traps(data);
+    Init_Traps(data, idt);
 
     /* Set correct TSS address in the GDT */
-    GDT[6].base_low  = ((unsigned long)data->tss) & 0xffff;
-    GDT[6].base_mid  = (((unsigned long)data->tss) >> 16) & 0xff;
-    GDT[6].base_high = (((unsigned long)data->tss) >> 24) & 0xff;
+    GDT[6].base_low  = ((unsigned long)tss) & 0xffff;
+    GDT[6].base_mid  = (((unsigned long)tss) >> 16) & 0xff;
+    GDT[6].base_high = (((unsigned long)tss) >> 24) & 0xff;
 
     /*
      * As we prepared all necessary stuff, we can hopefully load IDT
      * into CPU. We may also play a bit with TSS
      */
     idtr.size = 0x07FF;
-    idtr.base = (unsigned long)data->idt;
+    idtr.base = (unsigned long)idt;
     asm
     (
 	"lidt %0\n\t"

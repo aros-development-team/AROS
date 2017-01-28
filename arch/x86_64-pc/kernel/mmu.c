@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,8 +11,8 @@
 #include "kernel_intern.h"
 #include "apic.h"
 
-#define D(x) x
-#define DMMU(x) x
+#define D(x)
+#define DMMU(x)
 
 void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate, IPTR memtop)
 {

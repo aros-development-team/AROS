@@ -1,6 +1,8 @@
 #ifndef _KERNEL_ARCH_H_
 #define _KERNEL_ARCH_H_
 
+struct PlatformData;
+
 /* Machine-specific definitions for IBM PC hardware */
 
 /* XT-PIC only has 16 IRQs */
@@ -38,5 +40,17 @@ void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase);
 
 /* Originally we didn't have disable function. Perhaps there was some reason. */
 #define ictl_disable_irq(irq, base)
+
+/* x86 specific syscalls */
+struct syscallx86_Handler
+{
+        struct Node sc_Node;
+        void (*sc_SysCall)();
+};
+
+#define SC_X86SHUTDOWN          0xFF
+#define SC_X86CPUWAKE             0xFE
+
+BOOL krnAddSysCallHandler(struct PlatformData *, struct syscallx86_Handler *, BOOL);
 
 #endif /* !_KERNEL_ARCH_H_ */

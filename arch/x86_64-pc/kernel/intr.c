@@ -72,28 +72,22 @@ const void *interrupt[256] =
     IRQLIST_16(0x2)
 };
 
-BOOL core_SetIDTGate(int IRQ, uintptr_t gate)
+BOOL core_SetIDTGate(struct int_gate_64bit *IGATES, int IRQ, uintptr_t gate)
 {
-    struct int_gate_64bit *IGATES;
+    DIDT(
+        bug("[Kernel] %s: Setting IRQ #%d gate for IDT @ 0x%p\n", __func__, IRQ, IGATES);
+        bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
+    )
+    IGATES[IRQ].offset_low = gate & 0xffff;
+    IGATES[IRQ].offset_mid = (gate >> 16) & 0xffff;
+    IGATES[IRQ].offset_high = (gate >> 32) & 0xffffffff;
+    IGATES[IRQ].type = 0x0e;
+    IGATES[IRQ].dpl = 3;
+    IGATES[IRQ].p = 1;
+    IGATES[IRQ].selector = KERNEL_CS;
+    IGATES[IRQ].ist = 0;
 
-    if ((IGATES = IDT_GET()))
-    {
-        DIDT(
-            bug("[Kernel] %s: Setting IRQ #%d gate for IDT @ 0x%p\n", __func__, IRQ, IGATES);
-            bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
-        )
-        IGATES[IRQ].offset_low = gate & 0xffff;
-        IGATES[IRQ].offset_mid = (gate >> 16) & 0xffff;
-        IGATES[IRQ].offset_high = (gate >> 32) & 0xffffffff;
-        IGATES[IRQ].type = 0x0e;
-        IGATES[IRQ].dpl = 3;
-        IGATES[IRQ].p = 1;
-        IGATES[IRQ].selector = KERNEL_CS;
-        IGATES[IRQ].ist = 0;
-
-        return TRUE;
-    }
-    return FALSE;
+    return TRUE;
 }
 
 void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, APTR idt_ptr)
@@ -123,7 +117,7 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, 
             else
                 off = (uintptr_t)core_DefaultIRETQ;
 
-            if (!core_SetIDTGate(i, off))
+            if (!core_SetIDTGate(IGATES, i, off))
             {
                 bug("[Kernel] %s[%d]: gate #%d failed\n", __func__, _APICID, i);
             }
@@ -310,39 +304,20 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     }
     else if (irq_number == 0x80)  /* Syscall? */
     {
-	/* Syscall number is actually ULONG (we use only eax) */
+        struct PlatformData *pdata = KernelBase->kb_PlatformData;
+        struct syscallx86_Handler *scHandler;
     	ULONG sc = regs->rax;
 
-        DSYSCALL(bug("[Kernel] Syscall %u\n", sc));
+	/* Syscall number is actually ULONG (we use only eax) */
+        DSYSCALL(bug("[Kernel] Syscall %08x\n", sc));
 
-	/* The following syscalls can be run in both supervisor and user mode */
-	switch (sc)
-	{
-	case SC_REBOOT:
-	    D(bug("[Kernel] Warm restart, stack 0x%p\n", AROS_GET_SP));
-
-	    /*
-	     * Restart the kernel with a double stack swap. This doesn't return.
-	     * Double swap guarantees that core_Kick() is called when SP is set to a
-	     * dynamically allocated emergency stack and not to boot stack.
-	     * Such situation is rare but can occur in the following situation:
-	     * 1. Boot task calls SuperState(). Privilege changed, but stack is manually reset
-	     *    back into our .bss space.
-	     * 2. Boot task crashes. Privilege doesn't change this time, RSP is not changed.
-	     * 3. If we call core_Kick() right now, we are dead (core_Kick() clears .bss).
-	     */
-	    __asm__ __volatile__(
-	    	"cli\n\t"
-	    	"cld\n\t"
-	    	"movq %0, %%rsp\n\t"
-	    	"jmp *%1\n"
-	    	::"r"(__KernBootPrivate->SystemStack + STACK_SIZE), "r"(core_Kick), "D"(BootMsg), "S"(kernel_cstart));
-
-	case SC_SUPERVISOR:
-	    /* This doesn't return */
-	    core_Supervisor(regs);
-	}
-
+        ForeachNode(&pdata->kb_SysCallHandlers, scHandler)
+        {
+            if ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == sc)
+            {
+                scHandler->sc_SysCall(regs);
+            }
+        }
 	/*
 	 * Scheduler can be called only from within user mode.
 	 * Every task has ss register initialized to a valid segment descriptor.

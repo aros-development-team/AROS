@@ -28,6 +28,8 @@
     Here we do the Platform configuration that requires a working "AROS" environment.
 */
 
+extern struct syscallx86_Handler x86_SCSupervisorHandler;
+
 static int Platform_Init(struct KernelBase *LIBBASE)
 {
     struct PlatformData *pdata;
@@ -38,6 +40,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
         bug("[Kernel:x86_64] %s: KernelBase @ %p\n", __func__, LIBBASE);
     )
 
+    // Setup the Interrupt Controller Environment ...
     NEWLIST(&LIBBASE->kb_ICList);
     LIBBASE->kb_ICTypeBase = KBL_INTERNAL + 1;
 
@@ -55,6 +58,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     D(bug("[Kernel:x86_64] %s: Interrupt Lists initialised\n", __func__));
 
+    // Setup our Platform Data ...
     pdata = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!pdata)
     	return FALSE;
@@ -62,6 +66,10 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     D(bug("[Kernel:x86_64] %s: Platform Data allocated @ 0x%p\n", __func__, pdata));
 
     LIBBASE->kb_PlatformData = pdata;
+
+    // Setup the base syscall handler(s) ...
+    NEWLIST(&pdata->kb_SysCallHandlers);
+    krnAddSysCallHandler(pdata, &x86_SCSupervisorHandler, TRUE);
 
     return TRUE;
 }

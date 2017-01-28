@@ -46,6 +46,7 @@ extern struct KernBootPrivate *__KernBootPrivate;
 /* Platform-specific part of KernelBase */
 struct PlatformData
 {
+    struct List         kb_SysCallHandlers;
     APTR                kb_APIC_TrampolineBase;	/* Starting address of secondary core bootstrap code	*/
     struct ACPIData     *kb_ACPI;
     struct APICData     *kb_APIC;
@@ -58,10 +59,25 @@ struct PlatformData
 #define TLS_SIZE                sizeof(tls_t)
 #define TLS_ALIGN               sizeof(APTR)
 
-#define IDT_GET()               TLS_GET(IDT)
-#define IDT_SET(val)            TLS_SET(IDT, val);
-#define GDT_GET()               TLS_GET(GDT)
-#define GDT_SET(val)            TLS_SET(GDT, val);
+#define krnSysCallCPUWake(data) 				        \
+({								        \
+    int __value;						        \
+    __asm__ __volatile__ ("int $0x80":"=a"(__value):"a"(SC_X86CPUWAKE),"b"(data):"memory");	\
+    __value;						                \
+})
+
+#define krnLeaveSupervisorRing()                                \
+    asm volatile (                                              \
+            "mov %[user_ds],%%ds\n\t"                           \
+            "mov %[user_ds],%%es\n\t"                           \
+            "mov %%rsp,%%r12\n\t"                               \
+            "pushq %[ds]\n\t"      	                        \
+            "pushq %%r12\n\t"                                   \
+            "pushq $0x3002\n\t"                                 \
+            "pushq %[cs]\n\t"		                        \
+            "pushq $1f\n\t"                                     \
+            "iretq\n 1:"                                        \
+            ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12")
 
 /* Main boot code */
 void core_Kick(struct TagItem *msg, void *target);
