@@ -1,7 +1,11 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <stddef.h>
 #include <exec/types.h>
 
@@ -14,10 +18,6 @@
 #include "system_intern.h"
 
 #include LC_LIBDEFS_FILE
-
-#define DEBUG 1
-#include <aros/debug.h>
-
 
 static int Systsem_Init(LIBBASETYPEPTR LIBBASE)
 {
@@ -41,7 +41,7 @@ static int Systsem_Init(LIBBASETYPEPTR LIBBASE)
 
 static int Systsem_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    struct class_static_data *csd = &LIBBASE->hsi_csd;
+    D(struct class_static_data *csd = &LIBBASE->hsi_csd;)
 #if (0)
     struct Library *OOPBase = csd->cs_OOPBase;
 #endif

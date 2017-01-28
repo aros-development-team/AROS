@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
