@@ -27,6 +27,7 @@ struct IOAPICCfgData
     UBYTE       ioapic_Ver;
     UBYTE       ioapic_IRQCount;
     UBYTE       ioapic_GSI;
+    UQUAD       *ioapic_RouteTable;
 };
 
 #define IOAPICF_ENABLED         (1 << 1)
