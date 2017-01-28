@@ -488,10 +488,8 @@ void kernel_cstart(const struct TagItem *start_msg)
 
     /*
      * After InitCode(RTF_SINGLETASK) we may have acpica.library
-     * Now we can use ACPI information in order to set up advanced things (SMP, APIC, etc).
-     * Interrupts are still disabled and we are still supervisor.
+     * To perform some basic initialization.
      */
-
     PlatformPostInit();
 
     /* Drop privileges down to user mode before calling RTF_COLDSTART */
