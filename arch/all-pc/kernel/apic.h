@@ -25,8 +25,9 @@ struct CPUData
     apicid_t    cpu_LocalID;	/* Local APIC ID				        */
     apicid_t    cpu_PrivateID;  /* Sub-system private (ACPI, whatever) ID -  can differ */
     icintrid_t  cpu_ICID;       /* NB - this is icintrid_t not icid_t                   */
-    void        *cpu_IDT;
+    void        *cpu_TLS;
     void        *cpu_GDT;
+    void        *cpu_IDT;
 };
 
 struct APICData
@@ -39,16 +40,24 @@ struct APICData
 
 #define APF_8259 0x0001	        /* Legacy PIC present				        */
 
-ULONG core_APIC_Wake(APTR start_addr, apicid_t id, IPTR base);
-UBYTE core_APIC_GetID(IPTR base);
-void  core_APIC_Init(struct APICData *data, apicid_t cpuNum);
-void  core_APIC_AckIntr(void);
-
 #ifdef __x86_64__
 #define APIC_BASE_MASK 0x000FFFFFFFFFF000
 #else
 #define APIC_BASE_MASK 0xFFFFF000
 #endif
+
+struct APICCPUWake_Data
+{
+    APTR        cpuw_apicstartrip;
+    IPTR        cpuw_apicbase;
+    apicid_t    cpuw_apicid;
+};
+
+
+ULONG core_APIC_Wake(APTR start_addr, apicid_t id, IPTR base);
+UBYTE core_APIC_GetID(IPTR base);
+void  core_APIC_Init(struct APICData *data, apicid_t cpuNum);
+void  core_APIC_AckIntr(void);
 
 /* This is callable in supervisor only */
 static inline IPTR core_APIC_GetBase(void)

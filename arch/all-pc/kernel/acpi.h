@@ -8,9 +8,8 @@
     Lang: english
 */
 
-#include <proto/acpica.h>
-
 #include <utility/hooks.h>
+#include <acpica/actbl.h>
 
 struct ACPIData {
     struct List                 acpi_tablehooks;

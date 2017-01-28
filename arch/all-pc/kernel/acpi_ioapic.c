@@ -22,8 +22,8 @@
 #include "apic_ia32.h"
 #include "ioapic.h"
 
-#define D(x) x
-#define DINTR(x) x
+#define D(x)
+#define DINTR(x)
 
 #define ACPI_MODPRIO_IOAPIC       50
 
@@ -113,8 +113,10 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
 
     D(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
+#if (0)
     /* if we have been disabled, fail to register */
     if (IOAPICInt_IntrController.ic_Flags & ICF_DISABLED)
+#endif
         return (icid_t)-1;
 
     /* Inform ACPI that we want to use IOAPIC mode... */
@@ -130,7 +132,7 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
         return (icid_t)-1;
     }
 
-    bug("[Kernel:IOAPIC] %s: IOAPIC Enabled (status=%08x)", __func__, status);
+    bug("[Kernel:IOAPIC] %s: IOAPIC Enabled (status=%08x)\n", __func__, status);
 
     return (icid_t)IOAPICInt_IntrController.ic_Node.ln_Type;
 }

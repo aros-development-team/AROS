@@ -496,17 +496,7 @@ void kernel_cstart(const struct TagItem *start_msg)
 
     /* Drop privileges down to user mode before calling RTF_COLDSTART */
     D(bug("[Kernel] Leaving supervisor mode\n"));
-    asm volatile (
-            "mov %[user_ds],%%ds\n\t"   // Load DS and ES
-            "mov %[user_ds],%%es\n\t"
-            "mov %%rsp,%%r12\n\t"
-            "pushq %[ds]\n\t"      	// SS
-            "pushq %%r12\n\t"           // rSP
-            "pushq $0x3002\n\t"         // rFLAGS
-            "pushq %[cs]\n\t"		// CS
-            "pushq $1f\n\t"
-            "iretq\n 1:"
-            ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
+    krnLeaveSupervisorRing();
 
     /*
      * We are fully done. Run exec.library and the rest.
@@ -658,22 +648,19 @@ static APTR core_AllocBootTLS(struct KernBootPrivate *__KernBootPrivate)
 
 static APTR core_AllocBootTSS(struct KernBootPrivate *__KernBootPrivate)
 {
-    if (!__KernBootPrivate->TSS)
-        __KernBootPrivate->TSS = krnAllocBootMemAligned(sizeof(struct tss_64bit) * 16, 128);
+    struct tss_64bit *tssPtr;
 
-    return (APTR)__KernBootPrivate->TSS;
+    tssPtr = krnAllocBootMemAligned(sizeof(struct tss_64bit) * 16, 128);
+
+    return (APTR)tssPtr;
 }
 
 static APTR core_AllocBootIDT(struct KernBootPrivate *__KernBootPrivate)
 {
-    struct int_gate_64bit *IGATES;
+    if (!__KernBootPrivate->BOOTIDT)
+        __KernBootPrivate->BOOTIDT = krnAllocBootMemAligned(sizeof(struct int_gate_64bit) * 256, 256);
 
-    if (!(IGATES = IDT_GET()))
-    {
-        IGATES = krnAllocBootMemAligned(sizeof(struct int_gate_64bit) * 256, 256);
-    	IDT_SET(IGATES)
-    }
-    return (APTR)IGATES;
+    return (APTR)__KernBootPrivate->BOOTIDT;
 }
 
 static APTR core_AllocBootGDT(struct KernBootPrivate *__KernBootPrivate)

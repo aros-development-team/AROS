@@ -5,12 +5,15 @@
 
 #define __KERNEL_NOLIBBASE__
 
+#include <proto/exec.h>
+#include <proto/acpica.h>
+
 #include <aros/multiboot.h>
 #include <aros/symbolsets.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
 #include <exec/lists.h>
-#include <proto/exec.h>
+#include <exec/resident.h>
 
 #include <inttypes.h>
 
@@ -24,30 +27,20 @@
 #define D(x)
 
 /* 
-    This file contains code that is run once Exec has been brought up - and is launched
-    via the RomTag/Autoinit routines in Exec.
-    
-    Here we do the Platform configuration that requires a working "AROS" environment.
-*/
+ * This file contains code that is run once Exec has been brought up - and is launched
+ * via the RomTag/Autoinit routines in Exec.
+ *
+ * PlatformPostInit is run during RTF_SINGLETASK.
+ */
 
 void PlatformPostInit(void)
 {
-    struct PlatformData *pdata = KernelBase->kb_PlatformData;
-
-    ACPICABase = OpenLibrary("acpica.library", 0);
-
-    // Probe for ACPI configuration ...
-    if (ACPICABase)
-        acpi_Init(pdata);
-
-    D(bug("[Kernel] %s: Attempting to bring up aditional cores ...\n", __func__));
-    smp_Initialize();
-
-    D(bug("[Kernel] %s: Initializing Interrupt Controllers ...\n", __func__));
-    ictl_Initialize(KernelBase);
-
-    D(bug("[Kernel] %s: Platform Initialization complete\n", __func__));
+    D(bug("[Kernel] %s()\n", __func__));
 }
+
+/*
+    Here we do the Platform configuration that requires a working "AROS" environment.
+*/
 
 APTR PlatformAllocGDT(struct KernelBase *LIBBASE, apicid_t _APICID)
 {
@@ -76,13 +69,93 @@ APTR PlatformAllocIDT(struct KernelBase *LIBBASE, apicid_t _APICID)
 {
     APTR IDTalloc;
 
-    if (!(IDTalloc = IDT_GET()))
-    {
-        IDTalloc = (APTR)AllocMem(IDT_SIZE + 256, MEMF_24BITDMA|MEMF_CLEAR);
-        IDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)IDTalloc, 256);
-    	IDT_SET(IDTalloc)
+    IDTalloc = (APTR)AllocMem(IDT_SIZE + 256, MEMF_24BITDMA|MEMF_CLEAR);
+    IDTalloc = (APTR)AROS_ROUNDUP2((unsigned long)IDTalloc, 256);
 
-    	D(bug("[Kernel] %s[%d]: Allocated IDT at 0x%p\n", __func__, _APICID, IDTalloc));
-    }
+    D(bug("[Kernel] %s[%d]: Allocated IDT at 0x%p\n", __func__, _APICID, IDTalloc));
+
     return IDTalloc;
 }
+
+/*
+ * kernel.post is run during RTF_COLDSTART
+ * directly after exec.library.
+ *
+ * At this point exec is fully configured, and
+ * and multitasking is enabled. It also means
+ * acpica's "full initialization" task will have
+ * been run.
+ */
+
+extern void kernelpost_end(void);
+
+static AROS_UFP3 (APTR, KernelPost,
+		  AROS_UFPA(struct Library *, lh, D0),
+		  AROS_UFPA(BPTR, segList, A0),
+		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+
+static const TEXT kernelpost_namestring[] = "kernel.post";
+static const TEXT kernelpost_versionstring[] = "kernel.post 1.1\n";
+
+const struct Resident kernelpost_romtag =
+{
+   RTC_MATCHWORD,
+   (struct Resident *)&kernelpost_romtag,
+   (APTR)&kernelpost_end,
+   RTF_COLDSTART,
+   1,
+   NT_UNKNOWN,
+   121,
+   (STRPTR)kernelpost_namestring,
+   (STRPTR)kernelpost_versionstring,
+   (APTR)KernelPost
+};
+
+extern struct syscallx86_Handler x86_SCRebootHandler;
+extern struct syscallx86_Handler x86_SCShutdownHandler;
+
+static AROS_UFH3 (APTR, KernelPost,
+		  AROS_UFHA(struct Library *, lh, D0),
+		  AROS_UFHA(BPTR, segList, A0),
+		  AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    struct KernelBase *KernelBase;
+    struct PlatformData *pdata;
+
+    KernelBase = (struct KernelBase *)OpenResource("kernel.resource");
+    if (!KernelBase)
+            return NULL;
+
+    pdata = KernelBase->kb_PlatformData;
+
+    ACPICABase = OpenLibrary("acpica.library", 0);
+
+    Disable();
+
+    // Probe for ACPI configuration ...
+    if (ACPICABase)
+        acpi_Init(pdata);
+
+    // Add the default reboot/shutdown handlers if ACPI ones havent been registered...
+    krnAddSysCallHandler(pdata, &x86_SCRebootHandler, FALSE);
+    krnAddSysCallHandler(pdata, &x86_SCShutdownHandler, FALSE);
+
+    D(bug("[Kernel] %s: Attempting to bring up aditional cores ...\n", __func__));
+    smp_Initialize();
+
+    D(bug("[Kernel] %s: Initializing Interrupt Controllers ...\n", __func__));
+    ictl_Initialize(KernelBase);
+
+    Enable();
+
+    D(bug("[Kernel] %s: Platform Initialization complete\n", __func__));
+
+    AROS_USERFUNC_EXIT
+
+    return NULL;
+}
+
+void kernelpost_end(void) { };

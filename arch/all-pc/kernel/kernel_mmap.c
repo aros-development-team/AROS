@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,7 +24,7 @@
 
 #include "memory.h"
 
-#define D(x) x
+#define D(x)
 
 /*
  * Append a single chunk to a MemHeader.

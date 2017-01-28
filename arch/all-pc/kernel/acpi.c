@@ -6,6 +6,7 @@
 
 #include <aros/asmcall.h>
 #include <proto/exec.h>
+#include <proto/acpica.h>
 
 #include <aros/symbolsets.h>
 
@@ -84,51 +85,54 @@ void acpi_Init(struct PlatformData *pdata)
                 D(bug("[Kernel:ACPI] %s:     returned!\n", __func__));
             }
 
-            D(bug("[Kernel:ACPI] %s: Processing Table Handler Hooks...\n", __func__));
-            ForeachNode(&pdata->kb_ACPI->acpi_tablehooks, acpiTableHook)
+            if (!IsListEmpty(&pdata->kb_ACPI->acpi_tablehooks))
             {
-                if (acpiTableHook->acpith_Node.ln_Name)
+                D(bug("[Kernel:ACPI] %s: Processing Table Handler Hooks...\n", __func__));
+                ForeachNode(&pdata->kb_ACPI->acpi_tablehooks, acpiTableHook)
                 {
-                    D(bug("[Kernel:ACPI] %s: Table Hooks @ 0x%p for '%s'\n", __func__, acpiTableHook, acpiTableHook->acpith_Node.ln_Name));
-                    if ((!tableLast) || (tableLast != acpiTableHook->acpith_Node.ln_Name))
+                    if (acpiTableHook->acpith_Node.ln_Name)
                     {
-                        D(bug("[Kernel:ACPI] %s: Trying to obtain Table ...\n", __func__));
-                        acpiTSData.acpits_Table = NULL;
-                        if (AE_OK == (Status = AcpiGetTable(acpiTableHook->acpith_Node.ln_Name, 1, (ACPI_TABLE_HEADER **)&acpiTSData.acpits_Table)))
+                        D(bug("[Kernel:ACPI] %s: Table Hooks @ 0x%p for '%s'\n", __func__, acpiTableHook, acpiTableHook->acpith_Node.ln_Name));
+                        if ((!tableLast) || (tableLast != acpiTableHook->acpith_Node.ln_Name))
                         {
-                            tableLast = acpiTableHook->acpith_Node.ln_Name;
+                            D(bug("[Kernel:ACPI] %s: Trying to obtain Table ...\n", __func__));
+                            acpiTSData.acpits_Table = NULL;
+                            if (AE_OK == (Status = AcpiGetTable(acpiTableHook->acpith_Node.ln_Name, 1, (ACPI_TABLE_HEADER **)&acpiTSData.acpits_Table)))
+                            {
+                                tableLast = acpiTableHook->acpith_Node.ln_Name;
+                            }
+                            else
+                            {
+                                D(bug("[Kernel:ACPI] %s: Failed! stats %08x\n", __func__, Status));
+                                tableLast = NULL;
+                            }
                         }
-                        else
-                        {
-                            D(bug("[Kernel:ACPI] %s: Failed! stats %08x\n", __func__, Status));
-                            tableLast = NULL;
-                        }
-                    }
 
-                    D(bug("[Kernel:ACPI] %s: Table @ 0x%p\n", __func__, acpiTSData.acpits_Table));
-                    if (acpiTSData.acpits_Table)
+                        D(bug("[Kernel:ACPI] %s: Table @ 0x%p\n", __func__, acpiTSData.acpits_Table));
+                        if (acpiTSData.acpits_Table)
+                        {
+                            acpiTSData.acpits_UserData = acpiTableHook->acpith_UserData;
+                            acpi_ScanTableEntries(acpiTSData.acpits_Table, acpiTableHook->acpith_HeaderLen, acpiTableHook->acpith_EntryType, &acpiTableHook->acpith_Hook, &acpiTSData);
+                        }
+                    }
+                    else
                     {
-                        acpiTSData.acpits_UserData = acpiTableHook->acpith_UserData;
-                        acpi_ScanTableEntries(acpiTSData.acpits_Table, acpiTableHook->acpith_HeaderLen, acpiTableHook->acpith_EntryType, &acpiTableHook->acpith_Hook, &acpiTSData);
+                        bug("[Kernel:ACPI] BUG: missing Table name @ 0x%p", acpiTableHook);
                     }
                 }
-                else
+                bug("[Kernel:ACPI] System Total APICs: %d", pdata->kb_ACPI->acpi_apicCnt);
+                if (pdata->kb_APIC)
                 {
-                    bug("[Kernel:ACPI] BUG: missing Table name @ 0x%p", acpiTableHook);
+                    bug(", %d usable", pdata->kb_APIC->apic_count);
                 }
-            }
-            bug("[Kernel:ACPI] System Total APICs: %d", pdata->kb_ACPI->acpi_apicCnt);
-            if (pdata->kb_APIC)
-            {
-                bug(", %d usable", pdata->kb_APIC->apic_count);
-            }
-            bug("\n");
-            
-            /* Initialize legacy 8529A PIC if present. */
-            if (pdata->kb_APIC->flags & APF_8259)
-            {
-                D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
-                D(bug("[Kernel:APIC.%u] _APIC_IA32_init: i8259a IC ID #%d:%d\n", cpuNum, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
+                bug("\n");
+                
+                /* Initialize legacy 8529A PIC if present. */
+                if (pdata->kb_APIC->flags & APF_8259)
+                {
+                    D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
+                    D(bug("[Kernel:APIC.%u] _APIC_IA32_init: i8259a IC ID #%d:%d\n", cpuNum, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
+                }
             }
         }
     }

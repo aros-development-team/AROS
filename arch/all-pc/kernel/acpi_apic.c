@@ -43,6 +43,37 @@ void acpi_APIC_AllocPrivate(struct PlatformData *pdata)
     }
 }
 
+void acpi_APIC_HandleCPUWakeSC(struct ExceptionContext *regs)
+{
+    struct APICCPUWake_Data *apicWake =
+#if (__WORDSIZE==64)
+        (struct APICCPUWake_Data *)regs->rbx;
+#else
+        (struct APICCPUWake_Data *)regs->ebx;
+#endif
+
+    D(bug("[Kernel:ACPI-APIC] %s: Handle Wake CPU SysCall\n", __func__));
+    D(bug("[Kernel:ACPI-APIC] %s: Wake data @ 0x%p\n", __func__, apicWake));
+    D(bug("[Kernel:ACPI-APIC] %s: Attempting to wake APIC %d (base @ 0x%p)\n", __func__, apicWake->cpuw_apicid, apicWake->cpuw_apicbase));
+
+#if (__WORDSIZE==64)
+    regs->rax =
+#else
+    regs->eax =
+#endif
+        core_APIC_Wake(apicWake->cpuw_apicstartrip, apicWake->cpuw_apicid, apicWake->cpuw_apicbase);
+
+    core_LeaveInterrupt(regs);
+}
+
+struct syscallx86_Handler acpi_APIC_SCCPUWakeHandler =
+{
+    {
+        .ln_Name = (APTR)SC_X86CPUWAKE
+    },
+    (APTR)acpi_APIC_HandleCPUWakeSC
+};
+
 /* Process the 'Local APIC Address Overide' MADT Table */
 AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
 	  AROS_UFHA(struct Hook *, table_hook, A0),
@@ -208,6 +239,9 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 
 	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_LocalID = processor->Id;
 	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_PrivateID = processor->ProcessorId;
+
+            /* register the SysCall Handler for our Wake requests .. */
+            krnAddSysCallHandler(pdata, &acpi_APIC_SCCPUWakeHandler, FALSE);
 
 	    pdata->kb_APIC->apic_count++;
 	}
