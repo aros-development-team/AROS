@@ -19,23 +19,35 @@ typedef  UBYTE apicid_t;
  * Even old IntelMP spec say that we should be prepared to handle different CPUs.
  * This is why we have timer frequency here, not globally.
  */
+ 
+struct CPUMMUConfig
+{
+    void                        *mmu_PML4;
+    void                        *mmu_PTE;
+    void                        *mmu_PDP;
+    void                        *mmu_PDE;
+    int                         mmu_PDEPageCount;
+    int                         mmu_PDEPageUsed;
+};
+
 struct CPUData
 {
-    ULONG       cpu_TimerFreq;	/* Timer clock frequency			        */
-    apicid_t    cpu_LocalID;	/* Local APIC ID				        */
-    apicid_t    cpu_PrivateID;  /* Sub-system private (ACPI, whatever) ID -  can differ */
-    icintrid_t  cpu_ICID;       /* NB - this is icintrid_t not icid_t                   */
-    void        *cpu_TLS;
-    void        *cpu_GDT;
-    void        *cpu_IDT;
+    ULONG                       cpu_TimerFreq;	/* Timer clock frequency			        */
+    apicid_t                    cpu_LocalID;	/* Local APIC ID				        */
+    apicid_t                    cpu_PrivateID;  /* Sub-system private (ACPI, whatever) ID -  can differ */
+    icintrid_t                  cpu_ICID;       /* NB - this is icintrid_t not icid_t                   */
+    void                        *cpu_TLS;
+    void                        *cpu_GDT;
+    void                        *cpu_IDT;
+    struct CPUMMUConfig         *cpu_MMU;
 };
 
 struct APICData
 {
-    IPTR	   lapicBase; 	/* Local APIC base address			        */
-    ULONG	   apic_count;	/* Total number of APICs in the system		        */
-    UWORD	   flags;	/* See below					        */
-    struct CPUData cores[0];	/* Per-CPU data					        */
+    IPTR	                lapicBase; 	/* Local APIC base address			        */
+    ULONG	                apic_count;	/* Total number of APICs in the system		        */
+    UWORD	                flags;	        /* See below					        */
+    struct CPUData              cores[0];	/* Per-CPU data					        */
 };
 
 #define APF_8259 0x0001	        /* Legacy PIC present				        */
