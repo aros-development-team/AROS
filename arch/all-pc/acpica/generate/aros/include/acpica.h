@@ -43,5 +43,6 @@
 #include <acpica/acrestyp.h>
 #include <acpica/acpixf.h>
 #include <acpica/acexcep.h>
+#include <acpica/aclocal.h>
 
 #endif /* LIBRARIES_ACPICA_H */
