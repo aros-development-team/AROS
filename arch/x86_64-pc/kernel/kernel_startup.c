@@ -494,7 +494,7 @@ void kernel_cstart(const struct TagItem *start_msg)
 
     /* Drop privileges down to user mode before calling RTF_COLDSTART */
     D(bug("[Kernel] Leaving supervisor mode\n"));
-    krnLeaveSupervisorRing();
+    krnLeaveSupervisorRing(FLAGS_INTENABLED);
 
     /*
      * We are fully done. Run exec.library and the rest.

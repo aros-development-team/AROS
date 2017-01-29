@@ -387,20 +387,7 @@ void kernel_cstart(const struct TagItem *msg)
      */
     PlatformPostInit();
 
-#    define _stringify(x) #x
-#    define stringify(x) _stringify(x)
-
-    asm("movl $" stringify(USER_DS) ",%%eax\n\t"
-        "mov %%eax,%%ds\n\t"                         /* User DS */
-	"mov %%eax,%%es\n\t"                         /* User ES */
-	"movl %%esp,%%ebx\n\t"			/* Hold the esp value before pushing! */
-	"pushl %%eax\n\t"                           /* User SS */
-	"pushl %%ebx\n\t"                           /* Stack frame */
-	"pushl $0x3002\n\t"                        /* IOPL:3 */
-	"pushl $" stringify(USER_CS) "\n\t"        /* User CS */
-	"pushl $1f\n\t"                            /* Entry address */
-	"iret\n"                                   /* Go down to the user mode */
-	"1:":::"eax","ebx");
+    krnLeaveSupervisorRing(FLAGS_INTENABLED);
 
     InitCode(RTF_COLDSTART, 0);
 	

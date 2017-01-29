@@ -1,13 +1,12 @@
+#ifndef KERNEL_INTERN_H_
+#define KERNEL_INTERN_H_
 /*
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: kernel_intern.h
+    Desc: 32bit x86 kernel_intern.h
     Lang: english
 */
-
-#ifndef KERNEL_INTERN_H_
-#define KERNEL_INTERN_H_
 
 #include <asm/cpu.h>
 #include <hardware/vbe.h>
@@ -33,6 +32,24 @@ struct PlatformData
 #define GDT_SIZE                sizeof(long long) * 8
 #define TLS_SIZE                sizeof(struct tss)
 #define TLS_ALIGN               64
+
+#define krnLeaveSupervisorRing(_flags)                          \
+    asm("movl %[user_ds],%%eax\n\t"                             \
+        "mov %%eax,%%ds\n\t"                                    \
+	"mov %%eax,%%es\n\t"                                    \
+	"movl %%esp,%%ebx\n\t"                                  \
+	"pushl %%eax\n\t"                                       \
+	"pushl %%ebx\n\t"                                       \
+	"pushl %[iflags]\n\t"                                   \
+	"pushl %[cs]\n\t"                                       \
+	"pushl $1f\n\t"                                         \
+	"iret\n"                                                \
+	"1:"                                                    \
+        : : [user_ds] "r" (USER_DS), [cs] "i" (USER_CS),        \
+            [iflags] "i" (_flags)                               \
+        :"eax","ebx")
+
+#define FLAGS_INTENABLED        0x3002
 
 extern struct segment_desc *GDT;
 
