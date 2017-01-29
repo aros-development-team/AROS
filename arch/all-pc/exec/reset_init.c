@@ -26,12 +26,7 @@ AROS_INTH1(static ColdResetHandler, struct Interrupt *, handler)
 
     if (action == SD_ACTION_COLDREBOOT)
     {
-        outb(0xFE, 0x64);
-
-        /*
-         * On some machines (new PCs without a PS/2 controller), this might
-         * not work. So we need to be able to return cleanly.
-         */
+        krnSysCallChangePMState(0xFF);
     }
 
     return FALSE;
@@ -74,7 +69,7 @@ AROS_INTH1(static ShutdownHandler, struct Interrupt *, handler)
          * syscall shutdown handler, or call an appropriate one =)
          */
 
-        __asm__ __volatile__ ("int $0x80"::"a"(SC_X86SHUTDOWN));
+        krnSysCallChangePMState(0);
     };
 
     /* We really should not return from that */

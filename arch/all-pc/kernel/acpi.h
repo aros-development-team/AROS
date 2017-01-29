@@ -17,6 +17,7 @@ struct ACPIData {
     ULONG                       acpi_ioapicCnt;
 
     /* cached pointers to the ACPI Tables */
+    CONST_APTR	                acpi_fadt;	        /* FADT pointer			                */
     CONST_APTR	                acpi_madt;	        /* MADT pointer			                */
 };
 

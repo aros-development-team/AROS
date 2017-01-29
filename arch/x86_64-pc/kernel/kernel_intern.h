@@ -59,13 +59,6 @@ struct PlatformData
 #define TLS_SIZE                sizeof(tls_t)
 #define TLS_ALIGN               sizeof(APTR)
 
-#define krnSysCallCPUWake(data) 				        \
-({								        \
-    int __value;						        \
-    __asm__ __volatile__ ("int $0x80":"=a"(__value):"a"(SC_X86CPUWAKE),"b"(data):"memory");	\
-    __value;						                \
-})
-
 #define krnLeaveSupervisorRing()                                \
     asm volatile (                                              \
             "mov %[user_ds],%%ds\n\t"                           \
