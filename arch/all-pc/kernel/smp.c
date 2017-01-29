@@ -77,7 +77,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
 
 #if (0)
     D(bug("[Kernel:SMP] %s[0x%02X]: Preparing MMU...\n", __func__, _APICID));
-    core_LoadMMU(__KernBootPrivate);
+    core_LoadMMU(&__KernBootPrivate->MMU);
 #endif
 
     D(bug("[Kernel:SMP] %s[0x%02X]: Initialising APIC...\n", __func__, _APICID));
@@ -151,6 +151,7 @@ static int smp_Setup(struct KernelBase *KernelBase)
      */
     bs->Arg3 = (IPTR)KernelBase;
 #if (__WORDSIZE==64)
+    //TODO: Allocate the cores own MMU structures and copy necessary data to it
     bs->PML4 = __KernBootPrivate->MMU.mmu_PML4;
 #endif
     bs->IP   = smp_Entry;

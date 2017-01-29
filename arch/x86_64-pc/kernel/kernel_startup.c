@@ -333,7 +333,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     /* Set-up MMU */
     memtop = mmap_LargestAddress(mmap, mmap_len);
     D(bug("[Kernel] %s: memtop @ 0x%p\n", __func__, memtop));
-    core_SetupMMU(__KernBootPrivate, memtop);
+    core_SetupMMU(&__KernBootPrivate->MMU, memtop);
 
     /*
      * Here we ended all boot-time allocations.
