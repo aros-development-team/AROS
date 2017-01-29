@@ -1,5 +1,12 @@
 #ifndef KERNEL_INTERN_H_
 #define KERNEL_INTERN_H_
+/*
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: 64bit x86 kernel_intern.h
+    Lang: english
+*/
 
 #include <inttypes.h>
 
@@ -59,18 +66,22 @@ struct PlatformData
 #define TLS_SIZE                sizeof(tls_t)
 #define TLS_ALIGN               sizeof(APTR)
 
-#define krnLeaveSupervisorRing()                                \
+#define krnLeaveSupervisorRing(_flags)                          \
     asm volatile (                                              \
             "mov %[user_ds],%%ds\n\t"                           \
             "mov %[user_ds],%%es\n\t"                           \
             "mov %%rsp,%%r12\n\t"                               \
             "pushq %[ds]\n\t"      	                        \
             "pushq %%r12\n\t"                                   \
-            "pushq $0x3002\n\t"                                 \
+            "pushq %[iflags]\n\t"                               \
             "pushq %[cs]\n\t"		                        \
             "pushq $1f\n\t"                                     \
             "iretq\n 1:"                                        \
-            ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12")
+            : : [user_ds] "r" (USER_DS), [ds] "i" (USER_DS),    \
+                [cs] "i" (USER_CS), [iflags] "i" (_flags)       \
+            : "r12")
+
+#define FLAGS_INTENABLED        0x3002
 
 /* Main boot code */
 void core_Kick(struct TagItem *msg, void *target);

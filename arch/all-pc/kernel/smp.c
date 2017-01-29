@@ -81,7 +81,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
 
 #if defined(__AROSEXEC_SMP__)
     D(bug("[Kernel:SMP] %s[0x%02X]: Leaving supervisor mode\n", __func__, _APICID));
-    krnLeaveSupervisorRing();
+    krnLeaveSupervisorRing(FLAGS_INTENABLED);
 #endif
 
     bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, apicData->apic_count);
