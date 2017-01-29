@@ -42,12 +42,30 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
 
     if (pmState == 0xFF)
     {
+        ACPI_GENERIC_ADDRESS tmpReg;
         ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
 
         D(bug("[Kernel:ACPI-PM] %s: STATE 0xFF - Cold Rebooting...\n", __func__));
-        D(bug("[Kernel:ACPI-PM] %s: FADT Reset Register @ 0x%p, value = 0x%2x\n", __func__, (IPTR)fadt->ResetRegister.Address, fadt->ResetValue));
+        D(bug("[Kernel:ACPI-PM] %s: FADT Reset Register @ 0x%p, Width %d, Offset %d, MemSpace %d\n", __func__, (IPTR)fadt->ResetRegister.Address, fadt->ResetRegister.BitWidth, fadt->ResetRegister.BitOffset, fadt->ResetRegister.SpaceId));
+        D(bug("[Kernel:ACPI-PM] %s: FADT Reset Value = 0x%2x\n", __func__, fadt->ResetValue));
 
         AcpiWrite (fadt->ResetValue, &fadt->ResetRegister);
+        
+        // If we got here the reset didnt happen,
+        // check if we are the known "faulty" implementation.
+        
+        if ((fadt->Header.Revision >= 2) &&
+            (fadt->ResetRegister.Address == 0xCF9))
+        {
+            D(bug("[Kernel:ACPI-PM] %s: Failed Reset? Using workaround...\n", __func__));
+            tmpReg.Address = 0x64;
+            tmpReg.BitWidth = fadt->ResetRegister.BitWidth;
+            tmpReg.BitOffset = fadt->ResetRegister.BitOffset;
+            tmpReg.SpaceId = fadt->ResetRegister.SpaceId;
+
+            AcpiWrite (0xFE, &tmpReg);
+        }
+        D(bug("[Kernel:ACPI-PM] %s: Reset Failed.\n", __func__));
     }
     else if (pmState == 0)
     {
