@@ -75,6 +75,11 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
 #if (__WORDSIZE==64)
     core_SetupIDT(__KernBootPrivate, _APICID, apicCPU->cpu_IDT);
 
+#if (0)
+    D(bug("[Kernel:SMP] %s[0x%02X]: Preparing MMU...\n", __func__, _APICID));
+    core_LoadMMU(__KernBootPrivate);
+#endif
+
     D(bug("[Kernel:SMP] %s[0x%02X]: Initialising APIC...\n", __func__, _APICID));
     core_APIC_Init(apicData, _APICID);
 #endif
@@ -146,7 +151,7 @@ static int smp_Setup(struct KernelBase *KernelBase)
      */
     bs->Arg3 = (IPTR)KernelBase;
 #if (__WORDSIZE==64)
-    bs->PML4 = __KernBootPrivate->PML4;
+    bs->PML4 = __KernBootPrivate->MMU.mmu_PML4;
 #endif
     bs->IP   = smp_Entry;
 

@@ -39,6 +39,11 @@ struct APICData *core_APIC_Probe(void)
     data->apic_count		   = 1;
     data->flags		   = APF_8259;
     data->cores[0].cpu_LocalID = core_APIC_GetID(data->lapicBase);
+#if (__WORDSIZE==64)
+    data->cores[0].cpu_GDT = __KernBootPrivate->BOOTGDT;
+    data->cores[0].cpu_IDT = __KernBootPrivate->BOOTIDT;
+    data->cores[0].cpu_MMU = &__KernBootPrivate->MMU;
+#endif
 
     /* Just initialize to default state */
     core_APIC_Init(data, 0);

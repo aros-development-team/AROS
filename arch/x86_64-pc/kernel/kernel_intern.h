@@ -32,20 +32,16 @@ struct IOAPICData;
  */
 struct KernBootPrivate
 {
-    IPTR		_APICBase;		/* Bootstrap APIC base address				*/
-    UWORD               kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/
-    unsigned short	debug_y_resolution;	/* Parameters of screen's lower half ('vesahack' mode)	*/
-    void	       *debug_framebuffer;
-    IPTR	        SystemStack;		/* System stack base address	       			*/
-    APTR                BOOTTLS,
-                        BOOTGDT,
-                        BOOTIDT;
-    void	       *TSS;
-    void	       *PML4;
-    void	       *PDP;
-    void	       *PDE;
-    void	       *PTE;
-    int		        used_page;
+    IPTR		        _APICBase;		/* Bootstrap APIC base address				*/
+    UWORD                       kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/
+    unsigned short	        debug_y_resolution;	/* Parameters of screen's lower half ('vesahack' mode)	*/
+    void	                *debug_framebuffer;
+    IPTR	                SystemStack;		/* System stack base address	       			*/
+    APTR                        BOOTTLS,
+                                BOOTGDT,
+                                BOOTIDT;
+    void	                *TSS;
+    struct CPUMMUConfig         MMU;
 };
 
 extern struct KernBootPrivate *__KernBootPrivate;
@@ -90,7 +86,10 @@ void kernel_cstart(const struct TagItem *msg);
 /** CPU Functions **/
 void core_SetupIDT(struct KernBootPrivate *, apicid_t, APTR);
 void core_SetupGDT(struct KernBootPrivate *, apicid_t, APTR, APTR, APTR);
+
 void core_SetupMMU(struct KernBootPrivate *, IPTR memtop);
+void core_InitMMU(struct KernBootPrivate *);
+void core_LoadMMU(struct KernBootPrivate *);
 
 void core_CPUSetup(apicid_t, APTR, IPTR);
 
