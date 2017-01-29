@@ -14,16 +14,16 @@
 #define D(x)
 #define DMMU(x)
 
-void core_InitMMU(struct KernBootPrivate *__KernBootPrivate)
+void core_InitMMU(struct CPUMMUConfig *MMU)
 {
     struct PML4E *PML4;
     struct PDPE  *PDP;
     struct PDE2M *PDE;
     unsigned int i;
 
-    PML4 = __KernBootPrivate->MMU.mmu_PML4;
-    PDP  = __KernBootPrivate->MMU.mmu_PDP;
-    PDE  = __KernBootPrivate->MMU.mmu_PDE;
+    PML4 = MMU->mmu_PML4;
+    PDP  = MMU->mmu_PDP;
+    PDE  = MMU->mmu_PDE;
 
     /* PML4 Entry - we need only the first out of 16 entries */
     PML4[0].p  = 1; /* present */
@@ -39,7 +39,7 @@ void core_InitMMU(struct KernBootPrivate *__KernBootPrivate)
     PML4[0].avail = 0;
     PML4[0].base_high = ((unsigned long)PDP >> 32) & 0x000FFFFF;
 
-    for (i = 0; i < __KernBootPrivate->MMU.mmu_PDEPageCount; i++)
+    for (i = 0; i < MMU->mmu_PDEPageCount; i++)
     {
         /* For every 512th page create the directory entry */
         if ((i % 512) == 0)
@@ -127,65 +127,72 @@ void core_InitMMU(struct KernBootPrivate *__KernBootPrivate)
     }
 #endif
 
-    __KernBootPrivate->MMU.mmu_PDEPageUsed = 0;
+    MMU->mmu_PDEPageUsed = 0;
 }
 
-void core_LoadMMU(struct KernBootPrivate *__KernBootPrivate)
+void core_LoadMMU(struct CPUMMUConfig *MMU)
 {
-    D(bug("[Kernel] %s: Registering PML4 @ 0x%p\n", __func__, __KernBootPrivate->mmu_PML4));
-    wrcr(cr3, __KernBootPrivate->MMU.mmu_PML4);
+    D(bug("[Kernel] %s: Registering PML4 @ 0x%p\n", __func__, MMU->mmu_PML4));
+    wrcr(cr3, MMU->mmu_PML4);
 }
 
-void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate, IPTR memtop)
+void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop)
 {
     /*
      * how many PDE entries shall be created? Detault is 2048 (4GB), unless more RAM
      * is available...
      */
-    __KernBootPrivate->MMU.mmu_PDEPageCount = 2048;
+    MMU->mmu_PDEPageCount = 2048;
 
     /* Does RAM exceed 4GB? adjust amount of PDE pages */
-    if (((memtop + (1 << 21) - 1) >> 21) > __KernBootPrivate->MMU.mmu_PDEPageCount)
-        __KernBootPrivate->MMU.mmu_PDEPageCount = (memtop + (1 << 21) - 1) >> 21;
+    if (((memtop + (1 << 21) - 1) >> 21) > MMU->mmu_PDEPageCount)
+        MMU->mmu_PDEPageCount = (memtop + (1 << 21) - 1) >> 21;
 
-    D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first %dMB area\n", __KernBootPrivate->MMU.mmu_PDEPageCount << 1));
+    D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first %dMB area\n", MMU->mmu_PDEPageCount << 1));
 
-    if (!__KernBootPrivate->MMU.mmu_PML4)
+    if (!MMU->mmu_PML4)
     {
 	/*
 	 * Allocate MMU pages and directories. Four PDE directories (PDE2M structures)
 	 * are enough to map whole 4GB address space.
 	 */
-    	__KernBootPrivate->MMU.mmu_PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
-    	__KernBootPrivate->MMU.mmu_PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
-    	__KernBootPrivate->MMU.mmu_PDE  = krnAllocBootMemAligned(sizeof(struct PDE2M) * __KernBootPrivate->MMU.mmu_PDEPageCount, PAGE_SIZE);
-    	__KernBootPrivate->MMU.mmu_PTE  = krnAllocBootMemAligned(sizeof(struct PTE)   * 512 * 32, PAGE_SIZE);
+    	MMU->mmu_PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
+    	MMU->mmu_PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
+    	MMU->mmu_PDE  = krnAllocBootMemAligned(sizeof(struct PDE2M) * MMU->mmu_PDEPageCount, PAGE_SIZE);
+    	MMU->mmu_PTE  = krnAllocBootMemAligned(sizeof(struct PTE)   * 512 * 32, PAGE_SIZE);
 
-    	D(bug("[Kernel] Allocated PML4 0x%p, PDP 0x%p, PDE 0x%p PTE 0x%p\n", __KernBootPrivate->MMU.mmu_PML4, __KernBootPrivate->MMU.mmu_PDP, __KernBootPrivate->MMU.mmu_PDE, __KernBootPrivate->MMU.mmu_PTE));
+    	D(bug("[Kernel] Allocated PML4 0x%p, PDP 0x%p, PDE 0x%p PTE 0x%p\n", MMU->mmu_PML4, MMU->mmu_PDP, MMU->mmu_PDE, MMU->mmu_PTE));
     }
 
-    core_InitMMU(__KernBootPrivate);
+    core_InitMMU(MMU);
 
-    core_LoadMMU(__KernBootPrivate);
+    core_LoadMMU(MMU);
 
     D(bug("[Kernel] core_SetupMMU: Done\n"));
 }
 
 void core_ProtPage(intptr_t addr, char p, char rw, char us)
 {
+    struct CPUMMUConfig *MMU;
+    struct PML4E *pml4;
+    struct PDPE  *pdpe;
+    struct PDE4K *pde;
+    struct PTE   *Pages4K;
+    struct PTE   *pte;
+
     unsigned long pml4_off = (addr >> 39) & 0x1ff;
     unsigned long pdpe_off = (addr >> 30) & 0x1ff;
     unsigned long pde_off  = (addr >> 21) & 0x1ff;
     unsigned long pte_off  = (addr >> 12) & 0x1ff;
 
-    struct PML4E *pml4 = __KernBootPrivate->MMU.mmu_PML4;
-    struct PDPE  *pdpe = (struct PDPE *)((pml4[pml4_off].base_low << 12) | ((unsigned long)pml4[pml4_off].base_high << 32));
-    struct PDE4K *pde  = (struct PDE4K *)((pdpe[pdpe_off].base_low << 12) | ((unsigned long)pdpe[pdpe_off].base_high << 32));
-    struct PTE   *Pages4K = __KernBootPrivate->MMU.mmu_PTE;
-    struct PTE   *pte;
-
     DMMU(bug("[Kernel] Marking page 0x%p as read-only\n", addr));
 
+    MMU = &__KernBootPrivate->MMU;
+    pml4 = MMU->mmu_PML4;
+    pdpe = (struct PDPE *)((pml4[pml4_off].base_low << 12) | ((unsigned long)pml4[pml4_off].base_high << 32));
+    pde  = (struct PDE4K *)((pdpe[pdpe_off].base_low << 12) | ((unsigned long)pdpe[pdpe_off].base_high << 32));
+    Pages4K = MMU->mmu_PTE;
+    
     if (pde[pde_off].ps)
     {
         /* work on local copy of the affected PDE */
@@ -194,7 +201,7 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
         intptr_t base = (pde2[pde_off].base_low << 13) | ((unsigned long)pde2[pde_off].base_high << 32);
         int i;
 
-        pte = &Pages4K[512 * __KernBootPrivate->MMU.mmu_PDEPageUsed++];
+        pte = &Pages4K[512 * MMU->mmu_PDEPageUsed++];
 
         D(bug("[Kernel] The page for address 0x%p was a big one. Splitting it into 4K pages\n", addr));
         D(bug("[Kernel] Base=0x%p, pte=0x%p\n", base, pte));

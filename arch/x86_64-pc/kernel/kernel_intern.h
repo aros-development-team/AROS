@@ -87,9 +87,9 @@ void kernel_cstart(const struct TagItem *msg);
 void core_SetupIDT(struct KernBootPrivate *, apicid_t, APTR);
 void core_SetupGDT(struct KernBootPrivate *, apicid_t, APTR, APTR, APTR);
 
-void core_SetupMMU(struct KernBootPrivate *, IPTR memtop);
-void core_InitMMU(struct KernBootPrivate *);
-void core_LoadMMU(struct KernBootPrivate *);
+void core_SetupMMU(struct CPUMMUConfig *, IPTR memtop);
+void core_InitMMU(struct CPUMMUConfig *);
+void core_LoadMMU(struct CPUMMUConfig *);
 
 void core_CPUSetup(apicid_t, APTR, IPTR);
 
