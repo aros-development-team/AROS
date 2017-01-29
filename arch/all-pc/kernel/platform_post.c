@@ -112,7 +112,7 @@ const struct Resident kernelpost_romtag =
 };
 
 extern struct syscallx86_Handler x86_SCRebootHandler;
-extern struct syscallx86_Handler x86_SCShutdownHandler;
+extern struct syscallx86_Handler x86_SCChangePMStateHandler;
 
 static AROS_UFH3 (APTR, KernelPost,
 		  AROS_UFHA(struct Library *, lh, D0),
@@ -141,7 +141,7 @@ static AROS_UFH3 (APTR, KernelPost,
 
     // Add the default reboot/shutdown handlers if ACPI ones havent been registered...
     krnAddSysCallHandler(pdata, &x86_SCRebootHandler, FALSE);
-    krnAddSysCallHandler(pdata, &x86_SCShutdownHandler, FALSE);
+    krnAddSysCallHandler(pdata, &x86_SCChangePMStateHandler, FALSE);
 
     D(bug("[Kernel] %s: Attempting to bring up aditional cores ...\n", __func__));
     smp_Initialize();

@@ -238,7 +238,7 @@ int smp_Initialize(void)
     	{
     	    D(bug("[Kernel:SMP] Failed to prepare the environment!\n"));
 
-    	    pdata->kb_APIC->apic_count = 1;	/* We have only one workinng CPU */
+    	    pdata->kb_APIC->apic_count = 1;	/* We have only one working CPU */
     	    return 0;
     	}
 

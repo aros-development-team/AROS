@@ -51,22 +51,54 @@ BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler 
 
 /* Deafult x86 Syscall Handlers */
 
-void X86_HandleShutdownSC()
+void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 {
-    D(bug("[Kernel] %s()\n", __func__));
-    /*
-            there is no way to power off by default,
-            so just halt the cpu.. */
-    while (1) asm volatile("hlt");
+    UBYTE pmState =
+#if (__WORDSIZE==64)
+        (UBYTE)regs->rbx;
+#else
+        (UBYTE)regs->ebx;
+#endif
+
+    D(bug("[Kernel] %s(0x%02x)\n", __func__, pmState));
+    
+    if (pmState == 0xFF)
+    {
+        D(bug("[Kernel] %s: STATE 0xFF - Attempting Cold Reboot...\n", __func__));
+
+        /*
+         * On some machines (new PCs without a PS/2 controller), this might
+         * not work.
+         */
+
+        outb(0xFE, 0x64);
+    }
+    else if (pmState == 0)
+    {
+        D(bug("[Kernel] %s: STATE 0x00 - Halting...\n", __func__));
+
+        /*
+                there is no way to power off by default,
+                so just halt the cpu.. */
+
+        while (1) asm volatile("hlt");
+    }
+    else
+    {
+        // We cant handle any other states atm =/
+        D(bug("[Kernel] %s: UNHANDLED STATE 0x%02x\n", __func__, pmState));
+    }
 }
 
-struct syscallx86_Handler x86_SCShutdownHandler =
+struct syscallx86_Handler x86_SCChangePMStateHandler =
 {
     {
-        .ln_Name = (APTR)SC_X86SHUTDOWN
+        .ln_Name = (APTR)SC_X86CHANGEPMSTATE
     },
-    (APTR)X86_HandleShutdownSC
+    (APTR)X86_HandleChangePMStateSC
 };
+
+/* Generic warm-reset handler */
 
 void X86_HandleRebootSC()
 {

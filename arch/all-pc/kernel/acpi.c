@@ -56,38 +56,6 @@ int acpi_ScanTableEntries(CONST ACPI_TABLE_HEADER *table, ULONG thl, UINT8 type,
     return count;
 }
 
-/* Deafult ACPI Syscall Handlers */
-
-void ACPI_HandleShutdownSC()
-{
-    D(bug("[Kernel:ACPI] %s()\n", __func__));
-}
-
-struct syscallx86_Handler ACPI_SCShutdownHandler =
-{
-    {
-        .ln_Name = (APTR)SC_X86SHUTDOWN
-    },
-    (APTR)ACPI_HandleShutdownSC
-};
-
-void ACPI_HandleRebootSC()
-{
-    D(bug("[Kernel:ACPI] %s: Warm restart, stack 0x%p\n", __func__, AROS_GET_SP));
-
-#if (0)
-    AcpiHwWrite (FADT_ResetValue, FADT_ResetRegister);
-#endif
-}
-
-struct syscallx86_Handler ACPI_SCRebootHandler =
-{
-    {
-        .ln_Name = (APTR)SC_REBOOT
-    },
-    (APTR)ACPI_HandleRebootSC
-};
-
 /* Initialize ACPI */
 void acpi_Init(struct PlatformData *pdata)
 {
@@ -150,7 +118,12 @@ void acpi_Init(struct PlatformData *pdata)
                         if (acpiTSData.acpits_Table)
                         {
                             acpiTSData.acpits_UserData = acpiTableHook->acpith_UserData;
-                            acpi_ScanTableEntries(acpiTSData.acpits_Table, acpiTableHook->acpith_HeaderLen, acpiTableHook->acpith_EntryType, &acpiTableHook->acpith_Hook, &acpiTSData);
+                            if (acpiTableHook->acpith_HeaderLen)
+                                acpi_ScanTableEntries(acpiTSData.acpits_Table, acpiTableHook->acpith_HeaderLen, acpiTableHook->acpith_EntryType, &acpiTableHook->acpith_Hook, &acpiTSData);
+                            else
+                            {
+                                CALLHOOKPKT((struct Hook *)&acpiTableHook->acpith_Hook, (APTR)acpiTSData.acpits_Table, &acpiTSData);
+                            }
                         }
                     }
                     else
@@ -172,12 +145,6 @@ void acpi_Init(struct PlatformData *pdata)
                 D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
                 D(bug("[Kernel:ACPI] %s: Registered i8259a IC ID #%d:%d\n", __func__, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
             }
-
-#if (0)
-            /* register the ACPI Shutdown/Reboot SysCall Handlers .. */
-            krnAddSysCallHandler(pdata, &ACPI_SCShutdownHandler, FALSE);
-            krnAddSysCallHandler(pdata, &ACPI_SCRebootHandler, FALSE);
-#endif
         }
     }
 }
