@@ -6,9 +6,9 @@
  * United States.
  *
  * Extract any icc profiles found in the given PNG files.  This is a simple
- * example of a program which extracts information from the header of a PNG file
+ * example of a program that extracts information from the header of a PNG file
  * without processing the image.  Notice that some header information may occur
- * after the image data, textual data and comments are an example; the approach
+ * after the image data. Textual data and comments are an example; the approach
  * in this file won't work reliably for such data because it only looks for the
  * information in the section of the file that preceeds the image data.
  *
@@ -25,6 +25,10 @@
 #include <stdio.h>
 
 #include <png.h>
+
+#if defined(PNG_READ_SUPPORTED) && defined(PNG_STDIO_SUPPORTED) && \
+    defined (PNG_iCCP_SUPPORTED)
+
 
 static int verbose = 1;
 static png_byte no_profile[] = "no profile";
@@ -178,3 +182,4 @@ main(int argc, char **argv)
    /* Exit code is true if any extract succeeds */
    return extracted == 0;
 }
+#endif /* READ && STDIO && iCCP */
