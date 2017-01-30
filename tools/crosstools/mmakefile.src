@@ -25,6 +25,9 @@ BINUTILS_EXTRA_OPTS += -bindir=$(CROSSTOOLSDIR)
 BINUTILS_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 BINUTILS_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
 BINUTILS_EXTRA_OPTS += --disable-werror
+ifeq (yes, $(TARGET_LTO))
+BINUTILS_EXTRA_OPTS += --enable-plugins
+endif
 
 GCC_VERSION     = $(TARGET_GCC_VER)
 $(eval UNUSEDREMAINDER := $$$(GCC_VERSION))
@@ -73,7 +76,9 @@ GCC_EXTRA_OPTS += --disable-isl-version-check
 GCC_EXTRA_OPTS += --disable-bootstrap 
 GCC_EXTRA_OPTS += --disable-sjlj-exceptions
 GCC_EXTRA_OPTS += --disable-tls
+ifneq (yes, $(TARGET_LTO))
 GCC_EXTRA_OPTS += --disable-plugins
+endif
 GCC_EXTRA_OPTS += --disable-libssp
 GCC_EXTRA_OPTS += --disable-libstdcxx-pch
 GCC_EXTRA_OPTS += --disable-build-with-cxx
