@@ -642,10 +642,14 @@ aros_cflags_unknown_warning_option
 aros_cflags_unused_command_line_argument
 aros_cflags_iquote_end
 aros_cflags_iquote
+aros_cflags_peel_loops
 aros_cflags_loop_strip_mine
 aros_cflags_loop_interchange
 aros_cflags_loop_block
+aros_cflags_whole_program
+aros_cflags_nolto
 aros_cflags_lto
+aros_cflags_fast_math
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -2642,15 +2646,44 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some features:
+#  -ffast-math
 #  -flto
+#  -fwhole-program
 #  -floop-block
 #  -floop-interchange
 #  -floop-strip-mine
+#  -fpeel-loops
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffast-math" >&5
+$as_echo_n "checking whether ${CC} accepts -ffast-math... " >&6; }
+CFLAGS=-ffast-math
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_fast_math="yes"
+else
+  aros_fast_math="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_fast_math" >&5
+$as_echo "$aros_fast_math" >&6; }
+if test "x-$aros_fast_math" = "x-yes" ; then
+    aros_cflags_fast_math=-ffast-math
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -flto" >&5
 $as_echo_n "checking whether ${CC} accepts -flto... " >&6; }
 CFLAGS=-flto
-
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -2672,12 +2705,38 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_lto" >&6; }
 if test "x-$aros_lto" = "x-yes" ; then
     aros_cflags_lto=-flto
-fi
+    aros_cflags_nolto=-fno-lto
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -floop-block" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fwhole-program" >&5
+$as_echo_n "checking whether ${CC} accepts -fwhole-program... " >&6; }
+    CFLAGS=-fwhole-program
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_whole_program="yes"
+else
+  aros_whole_program="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_whole_program" >&5
+$as_echo "$aros_whole_program" >&6; }
+    if test "x-$aros_whole_program" = "x-yes" ; then
+        aros_cflags_whole_program=-fwhole-program
+    fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -floop-block" >&5
 $as_echo_n "checking whether ${CC} accepts -floop-block... " >&6; }
-CFLAGS=-floop-block
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    CFLAGS=-floop-block
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
@@ -2694,16 +2753,16 @@ else
   aros_loop_block="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_loop_block" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_loop_block" >&5
 $as_echo "$aros_loop_block" >&6; }
-if test "x-$aros_loop_block" = "x-yes" ; then
-    aros_cflags_loop_block=-floop-block
-fi
+    if test "x-$aros_loop_block" = "x-yes" ; then
+        aros_cflags_loop_block=-floop-block
+    fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -floop-interchange" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -floop-interchange" >&5
 $as_echo_n "checking whether ${CC} accepts -floop-interchange... " >&6; }
-CFLAGS=-floop-interchange
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    CFLAGS=-floop-interchange
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
@@ -2720,16 +2779,16 @@ else
   aros_loop_interchange="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_loop_interchange" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_loop_interchange" >&5
 $as_echo "$aros_loop_interchange" >&6; }
-if test "x-$aros_loop_interchange" = "x-yes" ; then
-    aros_cflags_loop_interchange=-floop-interchange
-fi
+    if test "x-$aros_loop_interchange" = "x-yes" ; then
+        aros_cflags_loop_interchange=-floop-interchange
+    fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -floop-strip-mine" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -floop-strip-mine" >&5
 $as_echo_n "checking whether ${CC} accepts -floop-strip-mine... " >&6; }
-CFLAGS=-floop-strip-mine
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    CFLAGS=-floop-strip-mine
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
@@ -2746,10 +2805,37 @@ else
   aros_loop_strip_mine="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_loop_strip_mine" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_loop_strip_mine" >&5
 $as_echo "$aros_loop_strip_mine" >&6; }
-if test "x-$aros_loop_strip_mine" = "x-yes" ; then
-    aros_cflags_loop_strip_mine=-floop-strip-mine
+    if test "x-$aros_loop_strip_mine" = "x-yes" ; then
+        aros_cflags_loop_strip_mine=-floop-strip-mine
+    fi
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fpeel-loops" >&5
+$as_echo_n "checking whether ${CC} accepts -fpeel-loops... " >&6; }
+CFLAGS=-fpeel-loops
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_peel_loops="yes"
+else
+  aros_peel_loops="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_peel_loops" >&5
+$as_echo "$aros_peel_loops" >&6; }
+if test "x-$aros_peel_loops" = "x-yes" ; then
+    aros_cflags_peel_loops=-fpeel-loops
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
@@ -4300,6 +4386,9 @@ if test "x-$aros_format_zero_length" = "x-yes" ; then
     aros_cflags_format_zero_length=-Wno-format-zero-length
 fi
 
+#
+# export the feature flags...
+#
 
 
 
@@ -4308,6 +4397,13 @@ fi
 
 
 
+
+
+
+
+#
+# ...and warning flags...
+#
 
 
 

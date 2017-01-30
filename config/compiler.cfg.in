@@ -1,9 +1,21 @@
+#
+# This file is autogenenrated and contains the supported
+# features and warnings for target compilers.
+
+#
+CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@
+
 # LTO/Graphite optimization flags
 
 CFLAGS_LTO                              := @aros_cflags_lto@
+CFLAGS_NO_LTO                           := @aros_cflags_lto@
+CFLAGS_WHOLE_PROGRAM                    := @aros_cflags_whole_program@
 CFLAGS_LOOP_BLOCK                       := @aros_cflags_loop_block@
 CFLAGS_LOOP_INTERCHANGE                 := @aros_cflags_loop_interchange@
 CFLAGS_LOOP_STRIP_MINE                  := @aros_cflags_loop_strip_mine@
+
+#
+CFLAGS_PEEL_LOOPS                       := @aros_cflags_peel_loops@
 
 # -iquote support
 CFLAGS_IQUOTE                           := @aros_cflags_iquote@
