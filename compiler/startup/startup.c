@@ -66,7 +66,7 @@ __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
         No one program will be able to do anything useful without the dos.library,
         so we open it here instead of using the automatic opening system
     */
-    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 0);
+    DOSBase = (struct DosLibrary *)OpenLibrary((CONST_STRPTR)DOSNAME, 0);
     if (!DOSBase) return RETURN_FAIL;
     if (((struct Library *)DOSBase)->lib_Version < __aros_libreq_DOSBase)
         return RETURN_FAIL;
