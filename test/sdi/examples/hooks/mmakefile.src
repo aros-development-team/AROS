@@ -7,7 +7,7 @@ EXEDIR          := $(AROS_TESTS)/sdi
 USER_INCLUDES   := -I$(SRCDIR)/$(CURDIR)/../..
 USER_CFLAGS     := -D__UTILITY_STDLIBBASE__
 
-# #MM- test : test-sdi-hooks
+#MM- test : test-sdi-hooks
 #MM- test-quick : test-sdi-hooks-quick
 
 #MM test-sdi-hooks : includes linklibs
