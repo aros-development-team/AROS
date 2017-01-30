@@ -31,6 +31,9 @@
 
 #define  CATCOMP_NUMBERS
 #include "strings.h"
+#ifdef _STRINGS_H
+#undef _STRINGS_H
+#endif
 #define	LocaleInfo				LocaleInfoTmp		/* Avoid redefinition :-( */
 #include "../../tools/Edit/strings.h"
 

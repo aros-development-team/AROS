@@ -11,6 +11,9 @@
 #define  CATCOMP_NUMBERS		/* We will need the string id */
 #define  CATCOMP_STRINGS		/* and the english string corresponding to the id */
 #include "strings.h"
+#ifdef _STRINGS_H
+#undef _STRINGS_H
+#endif
 #define	LocaleInfo				LocaleInfoTmp
 #include "../../tools/Edit/strings.h"
 
