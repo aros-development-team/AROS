@@ -202,8 +202,12 @@ AFLAGS	    = $(USER_AFLAGS) $(CONFIG_AFLAGS)
 LDFLAGS     = $(USER_LDFLAGS) $(CONFIG_LDFLAGS)
 
 # if LTO is desired use these flags ...
+# NB: make.tmpl builds the objects individualy
+#     so we dont include -fwhole-program for
+#     binaries by default.
 LTO_CFLAGS  = $(CFLAGS_LTO)
-LTO_BINARY_CFLAGS = $(LTO_CFLAGS) $(CFLAGS_WHOLE_PROGRAM)
+LTO_BINARY_CFLAGS = $(LTO_CFLAGS)
+LTO_BINARYWHOLE_CFLAGS = $(LTO_BINARY_CFLAGS) $(CFLAGS_WHOLE_PROGRAM)
 
 # Apple iOS stuff for gcc
 IOS_LDFLAGS  := -F$(IOS_SDK_PATH)/System/Library/Frameworks
