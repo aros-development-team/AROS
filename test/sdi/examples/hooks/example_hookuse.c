@@ -74,7 +74,7 @@ int main(void)
 
       ret = CallHook(&HelloHook, "portable Hook");
 
-      printf("%ld\n", (long int)ret);
+      printf("%ld\n", ret);
 
       DROPINTERFACE(IUtility);
     }

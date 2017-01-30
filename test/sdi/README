@@ -2,7 +2,7 @@ Short:        SDI headers - A set of C macro/defines to make amiga development e
 Kurz:         SDI Headers - Ein Bündel von C Makros/Defines um Amiga Entwicklungen einfacher zu machen
 Author:       mail@jens-maus.de (Jens Maus), soft@dstoecker.de (Dirk Stöcker)
 Uploader:     mail@jens-maus.de (Jens Maus)
-Version:      1.6 (14.07.2005)
+Version:      1.7 (04.08.2015)
 Type:         dev/c
 Replaces:     dev/c/SDI_headers.lha
 Architecture: ppc-morphos >= 1.4.2; m68k-amigaos >= 2.1.0; ppc-amigaos >= 4.0.0
@@ -111,7 +111,7 @@ UPDATES
 The latest brand of these headers can be viewed and downloaded from the
 following URL:
 
-  http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
+  https://github.com/adtools/SDI
 
 COPYRIGHT
 ---------

@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- test : test-sdi-libraries
+# #MM- test : test-sdi-libraries
 
 #MM- test-sdi-libraries : test-sdi-libraries-test
 

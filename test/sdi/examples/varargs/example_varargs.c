@@ -42,7 +42,7 @@ static int STDARGS VARARGS68K MySPrintf(char *buf, char *fmt, ...)
 	VA_LIST args;
 
 	VA_START(args, fmt);
-	vsprintf(buf, fmt, args);
+	RawDoFmt(fmt, VA_ARG(args, void *), NULL, buf);
 	VA_END(args);
 
 	return(strlen(buf));
@@ -60,7 +60,7 @@ int main(void)
 
   ret = MySPrintf(buf, "This is a '%s' function", type);
 
-  printf("%s returning %d\n", buf, (int)ret);
+  printf("%s returning %d\n", buf, ret);
 
   return 0;
 }
