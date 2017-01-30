@@ -1915,8 +1915,8 @@ BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(
 BD_CXXFLAGS := %(cxxflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CXXFLAGS)
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-BD_CFLAGS    := $(LTO_BINARY_CFLAGS) $(BD_CFLAGS)
-BD_CXXFLAGS := $(LTO_BINARY_CFLAGS) $(BD_CXXFLAGS)
+BD_CFLAGS    := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(BD_CFLAGS)
+BD_CXXFLAGS := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(BD_CXXFLAGS)
 endif
 endif
 ifneq (%(includedir),)
