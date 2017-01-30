@@ -584,64 +584,66 @@ PACKAGE_URL=
 ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-aros_cflags_format_zero_length
-aros_cflags_return_type
-aros_cflags_sizeof_pointer_memaccess
-aros_cflags_volatile_register_var
-aros_cflags_narrowing
-aros_cflags_conversion_null
-aros_cflags_missing_braces
-aros_cflags_unused_local_typedefs
-aros_cflags_overflow
-aros_cflags_attributes
-aros_cflags_sign_compare
-aros_cflags_deprecated_declarations
-aros_cflags_frame_address
-aros_cflags_shift_overflow
-aros_cflags_pointer_sign
-aros_cflags_logical_not_parentheses
-aros_cflags_bool_compare
-aros_cflags_incompatible_pointer_types
-aros_cflags_comment
-aros_cflags_write_strings
-aros_cflags_unused_const_variable
-aros_cflags_pointer_to_int_cast
-aros_cflags_int_to_pointer_cast
-aros_cflags_int_conversion
-aros_cflags_discarded_array_qualifiers
-aros_cflags_unknown_pragmas
-aros_cflags_sequence_point
-aros_cflags_discarded_qualifiers
-aros_cflags_switch
-aros_cflags_cpp
-aros_cflags_aggressive_loop_optimizations
-aros_cflags_implicit_int
-aros_cflags_format_contains_nul
-aros_cflags_endif_labels
-aros_cflags_char_subscripts
-aros_cflags_parentheses
-aros_cflags_format
-aros_cflags_implicit_function_declaration
-aros_cflags_maybe_uninitialized
-aros_cflags_uninitialized
-aros_cflags_unused_parameter
-aros_cflags_unused_function
-aros_cflags_unused_variable
-aros_cflags_unused_value
-aros_cflags_unused
-aros_cflags_nonnull_compare
-aros_cflags_misleading_indentation
-aros_cflags_format_security
-aros_cflags_strict_overflow
-aros_cflags_strict_prototypes
-aros_cflags_enum_compare
-aros_cflags_array_bounds
-aros_cflags_strict_aliasing
-aros_cflags_unused_but_set_variable
-aros_cflags_unknown_warning_option
-aros_cflags_unused_command_line_argument
+aros_nowarnflags_format_zero_length
+aros_nowarnflags_return_type
+aros_nowarnflags_sizeof_pointer_memaccess
+aros_nowarnflags_volatile_register_var
+aros_nowarnflags_narrowing
+aros_nowarnflags_conversion_null
+aros_nowarnflags_missing_braces
+aros_nowarnflags_unused_local_typedefs
+aros_nowarnflags_overflow
+aros_nowarnflags_attributes
+aros_nowarnflags_sign_compare
+aros_nowarnflags_deprecated_declarations
+aros_nowarnflags_frame_address
+aros_nowarnflags_shift_overflow
+aros_nowarnflags_pointer_sign
+aros_nowarnflags_logical_not_parentheses
+aros_nowarnflags_bool_compare
+aros_nowarnflags_incompatible_pointer_types
+aros_nowarnflags_comment
+aros_nowarnflags_write_strings
+aros_nowarnflags_unused_const_variable
+aros_nowarnflags_pointer_to_int_cast
+aros_nowarnflags_int_to_pointer_cast
+aros_nowarnflags_int_conversion
+aros_nowarnflags_discarded_array_qualifiers
+aros_nowarnflags_unknown_pragmas
+aros_nowarnflags_sequence_point
+aros_nowarnflags_discarded_qualifiers
+aros_nowarnflags_switch
+aros_nowarnflags_cpp
+aros_nowarnflags_aggressive_loop_optimizations
+aros_nowarnflags_implicit_int
+aros_nowarnflags_format_contains_nul
+aros_nowarnflags_endif_labels
+aros_nowarnflags_char_subscripts
+aros_nowarnflags_parentheses
+aros_nowarnflags_format
+aros_nowarnflags_implicit_function_declaration
+aros_nowarnflags_maybe_uninitialized
+aros_nowarnflags_uninitialized
+aros_nowarnflags_unused_parameter
+aros_nowarnflags_unused_function
+aros_nowarnflags_unused_variable
+aros_nowarnflags_unused_value
+aros_nowarnflags_unused
+aros_nowarnflags_nonnull_compare
+aros_nowarnflags_misleading_indentation
+aros_nowarnflags_format_security
+aros_nowarnflags_strict_overflow
+aros_nowarnflags_strict_prototypes
+aros_nowarnflags_enum_compare
+aros_nowarnflags_array_bounds
+aros_nowarnflags_strict_aliasing
+aros_nowarnflags_unused_but_set_variable
+aros_nowarnflags_unknown_warning_option
+aros_nowarnflags_unused_command_line_argument
 aros_cflags_iquote_end
 aros_cflags_iquote
+aros_cflags_nostrictaliasing
+aros_cflags_strictaliasing
 aros_cflags_peel_loops
 aros_cflags_loop_strip_mine
 aros_cflags_loop_interchange
@@ -2653,6 +2655,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -floop-interchange
 #  -floop-strip-mine
 #  -fpeel-loops
+#  -fstrict-aliasing
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffast-math" >&5
 $as_echo_n "checking whether ${CC} accepts -ffast-math... " >&6; }
@@ -2838,6 +2841,33 @@ if test "x-$aros_peel_loops" = "x-yes" ; then
     aros_cflags_peel_loops=-fpeel-loops
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fstrict-aliasing" >&5
+$as_echo_n "checking whether ${CC} accepts -fstrict-aliasing... " >&6; }
+CFLAGS=-fstrict-aliasing
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_strict_aliasing="yes"
+else
+  aros_strict_aliasing="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_strict_aliasing" >&5
+$as_echo "$aros_strict_aliasing" >&6; }
+if test "x-$aros_strict_aliasing" = "x-yes" ; then
+    aros_cflags_strictaliasing=-fstrict-aliasing
+    aros_cflags_nostrictaliasing=-fno-strict-aliasing
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
 $as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
 CFLAGS="-iquote."
@@ -2951,7 +2981,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_command_line_argument" >&5
 $as_echo "$aros_unused_command_line_argument" >&6; }
 if test "x-$aros_unused_command_line_argument" = "x-yes" ; then
-    aros_cflags_unused_command_line_argument=-Wno-unused-command-line-argument
+    aros_nowarnflags_unused_command_line_argument=-Wno-unused-command-line-argument
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunknown-warning-option" >&5
@@ -2977,7 +3007,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unknown_warning_option" >&5
 $as_echo "$aros_unknown_warning_option" >&6; }
 if test "x-$aros_unknown_warning_option" = "x-yes" ; then
-    aros_cflags_unknown_warning_option=-Wno-unknown-warning-option
+    aros_nowarnflags_unknown_warning_option=-Wno-unknown-warning-option
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-but-set-variable" >&5
@@ -3003,7 +3033,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_but_set_variable" >&5
 $as_echo "$aros_unused_but_set_variable" >&6; }
 if test "x-$aros_unused_but_set_variable" = "x-yes" ; then
-    aros_cflags_unused_but_set_variable=-Wno-unused-but-set-variable
+    aros_nowarnflags_unused_but_set_variable=-Wno-unused-but-set-variable
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstrict-aliasing" >&5
@@ -3029,7 +3059,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_strict_aliasing" >&5
 $as_echo "$aros_strict_aliasing" >&6; }
 if test "x-$aros_strict_aliasing" = "x-yes" ; then
-    aros_cflags_strict_aliasing=-Wno-strict-aliasing
+    aros_nowarnflags_strict_aliasing=-Wno-strict-aliasing
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Warray-bounds" >&5
@@ -3055,7 +3085,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_array_bounds" >&5
 $as_echo "$aros_array_bounds" >&6; }
 if test "x-$aros_array_bounds" = "x-yes" ; then
-    aros_cflags_array_bounds=-Wno-array-bounds
+    aros_nowarnflags_array_bounds=-Wno-array-bounds
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wenum-compare" >&5
@@ -3081,7 +3111,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_enum_compare" >&5
 $as_echo "$aros_enum_compare" >&6; }
 if test "x-$aros_enum_compare" = "x-yes" ; then
-    aros_cflags_enum_compare=-Wno-enum-compare
+    aros_nowarnflags_enum_compare=-Wno-enum-compare
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstrict-prototypes" >&5
@@ -3107,7 +3137,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_strict_prototypes" >&5
 $as_echo "$aros_strict_prototypes" >&6; }
 if test "x-$aros_strict_prototypes" = "x-yes" ; then
-    aros_cflags_strict_prototypes=-Wno-strict-prototypes
+    aros_nowarnflags_strict_prototypes=-Wno-strict-prototypes
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstrict-overflow" >&5
@@ -3133,7 +3163,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_strict_overflow" >&5
 $as_echo "$aros_strict_overflow" >&6; }
 if test "x-$aros_strict_overflow" = "x-yes" ; then
-    aros_cflags_strict_overflow=-Wno-strict-overflow
+    aros_nowarnflags_strict_overflow=-Wno-strict-overflow
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wformat-security" >&5
@@ -3159,7 +3189,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_format_security" >&5
 $as_echo "$aros_format_security" >&6; }
 if test "x-$aros_format_security" = "x-yes" ; then
-    aros_cflags_format_security=-Wno-format-security
+    aros_nowarnflags_format_security=-Wno-format-security
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wmisleading-indentation" >&5
@@ -3185,7 +3215,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_misleading_indentation" >&5
 $as_echo "$aros_misleading_indentation" >&6; }
 if test "x-$aros_misleading_indentation" = "x-yes" ; then
-    aros_cflags_misleading_indentation=-Wno-misleading-indentation
+    aros_nowarnflags_misleading_indentation=-Wno-misleading-indentation
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wnonnull-compare" >&5
@@ -3211,7 +3241,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_nonnull_compare" >&5
 $as_echo "$aros_nonnull_compare" >&6; }
 if test "x-$aros_nonnull_compare" = "x-yes" ; then
-    aros_cflags_nonnull_compare=-Wno-nonnull-compare
+    aros_nowarnflags_nonnull_compare=-Wno-nonnull-compare
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused" >&5
@@ -3237,7 +3267,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused" >&5
 $as_echo "$aros_unused" >&6; }
 if test "x-$aros_unused" = "x-yes" ; then
-    aros_cflags_unused=-Wno-unused
+    aros_nowarnflags_unused=-Wno-unused
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-value" >&5
@@ -3263,7 +3293,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_value" >&5
 $as_echo "$aros_unused_value" >&6; }
 if test "x-$aros_unused_value" = "x-yes" ; then
-    aros_cflags_unused_value=-Wno-unused-value
+    aros_nowarnflags_unused_value=-Wno-unused-value
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-variable" >&5
@@ -3289,7 +3319,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_variable" >&5
 $as_echo "$aros_unused_variable" >&6; }
 if test "x-$aros_unused_variable" = "x-yes" ; then
-    aros_cflags_unused_variable=-Wno-unused-variable
+    aros_nowarnflags_unused_variable=-Wno-unused-variable
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-function" >&5
@@ -3315,7 +3345,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_function" >&5
 $as_echo "$aros_unused_function" >&6; }
 if test "x-$aros_unused_function" = "x-yes" ; then
-    aros_cflags_unused_function=-Wno-unused-function
+    aros_nowarnflags_unused_function=-Wno-unused-function
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-parameter" >&5
@@ -3341,7 +3371,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_parameter" >&5
 $as_echo "$aros_unused_parameter" >&6; }
 if test "x-$aros_unused_parameter" = "x-yes" ; then
-    aros_cflags_unused_parameter=-Wno-unused-parameter
+    aros_nowarnflags_unused_parameter=-Wno-unused-parameter
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wuninitialized" >&5
@@ -3367,7 +3397,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_uninitialized" >&5
 $as_echo "$aros_uninitialized" >&6; }
 if test "x-$aros_uninitialized" = "x-yes" ; then
-    aros_cflags_uninitialized=-Wno-uninitialized
+    aros_nowarnflags_uninitialized=-Wno-uninitialized
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wmaybe-uninitialized" >&5
@@ -3393,9 +3423,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_maybe_uninitialized" >&5
 $as_echo "$aros_maybe_uninitialized" >&6; }
 if test "x-$aros_maybe_uninitialized" = "x-yes" ; then
-    aros_cflags_maybe_uninitialized=-Wno-maybe-uninitialized
+    aros_nowarnflags_maybe_uninitialized=-Wno-maybe-uninitialized
 else
-    aros_cflags_maybe_uninitialized=$aros_cflags_uninitialized
+    aros_nowarnflags_maybe_uninitialized=$aros_nowarnflags_uninitialized
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wimplicit-function-declaration" >&5
@@ -3421,7 +3451,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_implicit_function_declaration" >&5
 $as_echo "$aros_implicit_function_declaration" >&6; }
 if test "x-$aros_implicit_function_declaration" = "x-yes" ; then
-    aros_cflags_implicit_function_declaration=-Wno-implicit-function-declaration
+    aros_nowarnflags_implicit_function_declaration=-Wno-implicit-function-declaration
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wformat" >&5
@@ -3447,7 +3477,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_format" >&5
 $as_echo "$aros_format" >&6; }
 if test "x-$aros_format" = "x-yes" ; then
-    aros_cflags_format=-Wno-format
+    aros_nowarnflags_format=-Wno-format
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wparentheses" >&5
@@ -3473,7 +3503,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_parentheses" >&5
 $as_echo "$aros_parentheses" >&6; }
 if test "x-$aros_parentheses" = "x-yes" ; then
-    aros_cflags_parentheses=-Wno-parentheses
+    aros_nowarnflags_parentheses=-Wno-parentheses
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wchar-subscripts" >&5
@@ -3499,7 +3529,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_char_subscripts" >&5
 $as_echo "$aros_char_subscripts" >&6; }
 if test "x-$aros_char_subscripts" = "x-yes" ; then
-    aros_cflags_char_subscripts=-Wno-char-subscripts
+    aros_nowarnflags_char_subscripts=-Wno-char-subscripts
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wendif-labels" >&5
@@ -3525,7 +3555,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_endif_labels" >&5
 $as_echo "$aros_endif_labels" >&6; }
 if test "x-$aros_endif_labels" = "x-yes" ; then
-    aros_cflags_endif_labels=-Wno-endif-labels
+    aros_nowarnflags_endif_labels=-Wno-endif-labels
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wformat-contains-nul" >&5
@@ -3551,7 +3581,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_format_contains_nul" >&5
 $as_echo "$aros_format_contains_nul" >&6; }
 if test "x-$aros_format_contains_nul" = "x-yes" ; then
-    aros_cflags_format_contains_nul=-Wno-format-contains-nul
+    aros_nowarnflags_format_contains_nul=-Wno-format-contains-nul
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wimplicit-int" >&5
@@ -3577,7 +3607,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_implicit_int" >&5
 $as_echo "$aros_implicit_int" >&6; }
 if test "x-$aros_implicit_int" = "x-yes" ; then
-    aros_cflags_implicit_int=-Wno-implicit-int
+    aros_nowarnflags_implicit_int=-Wno-implicit-int
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Waggressive-loop-optimizations" >&5
@@ -3603,7 +3633,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_aggressive_loop_optimizations" >&5
 $as_echo "$aros_aggressive_loop_optimizations" >&6; }
 if test "x-$aros_aggressive_loop_optimizations" = "x-yes" ; then
-    aros_cflags_aggressive_loop_optimizations=-Wno-aggressive-loop-optimizations
+    aros_nowarnflags_aggressive_loop_optimizations=-Wno-aggressive-loop-optimizations
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wcpp" >&5
@@ -3629,7 +3659,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_cpp" >&5
 $as_echo "$aros_cpp" >&6; }
 if test "x-$aros_cpp" = "x-yes" ; then
-    aros_cflags_cpp=-Wno-cpp
+    aros_nowarnflags_cpp=-Wno-cpp
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wswitch" >&5
@@ -3655,7 +3685,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_switch" >&5
 $as_echo "$aros_switch" >&6; }
 if test "x-$aros_switch" = "x-yes" ; then
-    aros_cflags_switch=-Wno-switch
+    aros_nowarnflags_switch=-Wno-switch
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wdiscarded-qualifiers" >&5
@@ -3681,7 +3711,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_discarded_qualifiers" >&5
 $as_echo "$aros_discarded_qualifiers" >&6; }
 if test "x-$aros_discarded_qualifiers" = "x-yes" ; then
-    aros_cflags_discarded_qualifiers=-Wno-discarded-qualifiers
+    aros_nowarnflags_discarded_qualifiers=-Wno-discarded-qualifiers
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wsequence-point" >&5
@@ -3707,7 +3737,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_sequence_point" >&5
 $as_echo "$aros_sequence_point" >&6; }
 if test "x-$aros_sequence_point" = "x-yes" ; then
-    aros_cflags_sequence_point=-Wno-sequence-point
+    aros_nowarnflags_sequence_point=-Wno-sequence-point
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunknown-pragmas" >&5
@@ -3733,7 +3763,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unknown_pragmas" >&5
 $as_echo "$aros_unknown_pragmas" >&6; }
 if test "x-$aros_unknown_pragmas" = "x-yes" ; then
-    aros_cflags_unknown_pragmas=-Wno-unknown-pragmas
+    aros_nowarnflags_unknown_pragmas=-Wno-unknown-pragmas
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wdiscarded-array-qualifiers" >&5
@@ -3759,7 +3789,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_discarded_array_qualifiers" >&5
 $as_echo "$aros_discarded_array_qualifiers" >&6; }
 if test "x-$aros_discarded_array_qualifiers" = "x-yes" ; then
-    aros_cflags_discarded_array_qualifiers=-Wno-discarded-array-qualifiers
+    aros_nowarnflags_discarded_array_qualifiers=-Wno-discarded-array-qualifiers
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wint-conversion" >&5
@@ -3785,7 +3815,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_int_conversion" >&5
 $as_echo "$aros_int_conversion" >&6; }
 if test "x-$aros_int_conversion" = "x-yes" ; then
-    aros_cflags_int_conversion=-Wno-int-conversion
+    aros_nowarnflags_int_conversion=-Wno-int-conversion
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wint-to-pointer-cast" >&5
@@ -3811,7 +3841,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_int_to_pointer_cast" >&5
 $as_echo "$aros_int_to_pointer_cast" >&6; }
 if test "x-$aros_int_to_pointer_cast" = "x-yes" ; then
-    aros_cflags_int_to_pointer_cast=-Wno-int-to-pointer-cast
+    aros_nowarnflags_int_to_pointer_cast=-Wno-int-to-pointer-cast
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wpointer-to-int-cast" >&5
@@ -3837,7 +3867,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_pointer_to_int_cast" >&5
 $as_echo "$aros_pointer_to_int_cast" >&6; }
 if test "x-$aros_pointer_to_int_cast" = "x-yes" ; then
-    aros_cflags_pointer_to_int_cast=-Wno-pointer-to-int-cast
+    aros_nowarnflags_pointer_to_int_cast=-Wno-pointer-to-int-cast
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-const-variable" >&5
@@ -3863,7 +3893,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_const_variable" >&5
 $as_echo "$aros_unused_const_variable" >&6; }
 if test "x-$aros_unused_const_variable" = "x-yes" ; then
-    aros_cflags_unused_const_variable=-Wno-unused-const-variable
+    aros_nowarnflags_unused_const_variable=-Wno-unused-const-variable
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wwrite-strings" >&5
@@ -3889,7 +3919,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_write_strings" >&5
 $as_echo "$aros_write_strings" >&6; }
 if test "x-$aros_write_strings" = "x-yes" ; then
-    aros_cflags_write_strings=-Wno-write-strings
+    aros_nowarnflags_write_strings=-Wno-write-strings
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wcomment" >&5
@@ -3915,7 +3945,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_comment" >&5
 $as_echo "$aros_comment" >&6; }
 if test "x-$aros_comment" = "x-yes" ; then
-    aros_cflags_comment=-Wno-comment
+    aros_nowarnflags_comment=-Wno-comment
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wincompatible-pointer-types" >&5
@@ -3941,7 +3971,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_incompatible_pointer_types" >&5
 $as_echo "$aros_incompatible_pointer_types" >&6; }
 if test "x-$aros_incompatible_pointer_types" = "x-yes" ; then
-    aros_cflags_incompatible_pointer_types=-Wno-incompatible-pointer-types
+    aros_nowarnflags_incompatible_pointer_types=-Wno-incompatible-pointer-types
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wbool-compare" >&5
@@ -3967,7 +3997,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_bool_compare" >&5
 $as_echo "$aros_bool_compare" >&6; }
 if test "x-$aros_bool_compare" = "x-yes" ; then
-    aros_cflags_bool_compare=-Wno-bool-compare
+    aros_nowarnflags_bool_compare=-Wno-bool-compare
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wlogical-not-parentheses" >&5
@@ -3993,7 +4023,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_logical_not_parentheses" >&5
 $as_echo "$aros_logical_not_parentheses" >&6; }
 if test "x-$aros_logical_not_parentheses" = "x-yes" ; then
-    aros_cflags_logical_not_parentheses=-Wno-logical-not-parentheses
+    aros_nowarnflags_logical_not_parentheses=-Wno-logical-not-parentheses
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wpointer-sign" >&5
@@ -4019,7 +4049,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_pointer_sign" >&5
 $as_echo "$aros_pointer_sign" >&6; }
 if test "x-$aros_pointer_sign" = "x-yes" ; then
-    aros_cflags_pointer_sign=-Wno-pointer-sign
+    aros_nowarnflags_pointer_sign=-Wno-pointer-sign
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wshift-overflow" >&5
@@ -4045,7 +4075,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_shift_overflow" >&5
 $as_echo "$aros_shift_overflow" >&6; }
 if test "x-$aros_shift_overflow" = "x-yes" ; then
-    aros_cflags_shift_overflow=-Wno-shift-overflow
+    aros_nowarnflags_shift_overflow=-Wno-shift-overflow
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wframe-address" >&5
@@ -4071,7 +4101,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_frame_address" >&5
 $as_echo "$aros_frame_address" >&6; }
 if test "x-$aros_frame_address" = "x-yes" ; then
-    aros_cflags_frame_address=-Wno-frame-address
+    aros_nowarnflags_frame_address=-Wno-frame-address
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wdeprecated-declarations" >&5
@@ -4097,7 +4127,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_deprecated_declarations" >&5
 $as_echo "$aros_deprecated_declarations" >&6; }
 if test "x-$aros_deprecated_declarations" = "x-yes" ; then
-    aros_cflags_deprecated_declarations=-Wno-deprecated-declarations
+    aros_nowarnflags_deprecated_declarations=-Wno-deprecated-declarations
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wsign-compare" >&5
@@ -4123,7 +4153,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_sign_compare" >&5
 $as_echo "$aros_sign_compare" >&6; }
 if test "x-$aros_sign_compare" = "x-yes" ; then
-    aros_cflags_sign_compare=-Wno-sign-compare
+    aros_nowarnflags_sign_compare=-Wno-sign-compare
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wattributes" >&5
@@ -4149,7 +4179,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_attributes" >&5
 $as_echo "$aros_attributes" >&6; }
 if test "x-$aros_attributes" = "x-yes" ; then
-    aros_cflags_attributes=-Wno-attributes
+    aros_nowarnflags_attributes=-Wno-attributes
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Woverflow" >&5
@@ -4175,7 +4205,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_overflow" >&5
 $as_echo "$aros_overflow" >&6; }
 if test "x-$aros_overflow" = "x-yes" ; then
-    aros_cflags_overflow=-Wno-overflow
+    aros_nowarnflags_overflow=-Wno-overflow
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-local-typedefs" >&5
@@ -4201,7 +4231,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_local_typedefs" >&5
 $as_echo "$aros_unused_local_typedefs" >&6; }
 if test "x-$aros_unused_local_typedefs" = "x-yes" ; then
-    aros_cflags_unused_local_typedefs=-Wno-unused-local-typedefs
+    aros_nowarnflags_unused_local_typedefs=-Wno-unused-local-typedefs
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wmissing-braces" >&5
@@ -4227,7 +4257,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_missing_braces" >&5
 $as_echo "$aros_missing_braces" >&6; }
 if test "x-$aros_missing_braces" = "x-yes" ; then
-    aros_cflags_missing_braces=-Wno-missing-braces
+    aros_nowarnflags_missing_braces=-Wno-missing-braces
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wconversion-null" >&5
@@ -4253,7 +4283,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_conversion_null" >&5
 $as_echo "$aros_conversion_null" >&6; }
 if test "x-$aros_conversion_null" = "x-yes" ; then
-    aros_cflags_conversion_null=-Wno-conversion-null
+    aros_nowarnflags_conversion_null=-Wno-conversion-null
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wnarrowing" >&5
@@ -4279,7 +4309,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_narrowing" >&5
 $as_echo "$aros_narrowing" >&6; }
 if test "x-$aros_narrowing" = "x-yes" ; then
-    aros_cflags_narrowing=-Wno-narrowing
+    aros_nowarnflags_narrowing=-Wno-narrowing
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wvolatile-register-var" >&5
@@ -4305,7 +4335,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_volatile_register_var" >&5
 $as_echo "$aros_volatile_register_var" >&6; }
 if test "x-$aros_volatile_register_var" = "x-yes" ; then
-    aros_cflags_volatile_register_var=-Wno-volatile-register-var
+    aros_nowarnflags_volatile_register_var=-Wno-volatile-register-var
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wsizeof-pointer-memaccess" >&5
@@ -4331,7 +4361,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_sizeof_pointer_memaccess" >&5
 $as_echo "$aros_sizeof_pointer_memaccess" >&6; }
 if test "x-$aros_sizeof_pointer_memaccess" = "x-yes" ; then
-    aros_cflags_sizeof_pointer_memaccess=-Wno-sizeof-pointer-memaccess
+    aros_nowarnflags_sizeof_pointer_memaccess=-Wno-sizeof-pointer-memaccess
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wreturn-type" >&5
@@ -4357,7 +4387,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_return_type" >&5
 $as_echo "$aros_return_type" >&6; }
 if test "x-$aros_return_type" = "x-yes" ; then
-    aros_cflags_return_type=-Wno-return-type
+    aros_nowarnflags_return_type=-Wno-return-type
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wformat-zero-length" >&5
@@ -4383,12 +4413,15 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_format_zero_length" >&5
 $as_echo "$aros_format_zero_length" >&6; }
 if test "x-$aros_format_zero_length" = "x-yes" ; then
-    aros_cflags_format_zero_length=-Wno-format-zero-length
+    aros_nowarnflags_format_zero_length=-Wno-format-zero-length
 fi
 
 #
 # export the feature flags...
 #
+
+
+
 
 
 

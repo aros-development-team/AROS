@@ -41,6 +41,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -floop-interchange
 #  -floop-strip-mine
 #  -fpeel-loops
+#  -fstrict-aliasing
 
 AC_MSG_CHECKING([whether ${CC} accepts -ffast-math])
 CFLAGS=-ffast-math
@@ -97,6 +98,15 @@ AC_TRY_COMPILE(,, aros_peel_loops="yes", aros_peel_loops="no")
 AC_MSG_RESULT($aros_peel_loops)
 if test "x-$aros_peel_loops" = "x-yes" ; then
     aros_cflags_peel_loops=-fpeel-loops
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fstrict-aliasing])
+CFLAGS=-fstrict-aliasing
+AC_TRY_COMPILE(,, aros_strict_aliasing="yes", aros_strict_aliasing="no")
+AC_MSG_RESULT($aros_strict_aliasing)
+if test "x-$aros_strict_aliasing" = "x-yes" ; then
+    aros_cflags_strictaliasing=-fstrict-aliasing
+    aros_cflags_nostrictaliasing=-fno-strict-aliasing
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
@@ -176,7 +186,7 @@ CFLAGS=-Wunused-command-line-argument
 AC_TRY_COMPILE(,, aros_unused_command_line_argument="yes", aros_unused_command_line_argument="no")
 AC_MSG_RESULT($aros_unused_command_line_argument)
 if test "x-$aros_unused_command_line_argument" = "x-yes" ; then
-    aros_cflags_unused_command_line_argument=-Wno-unused-command-line-argument
+    aros_nowarnflags_unused_command_line_argument=-Wno-unused-command-line-argument
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunknown-warning-option])
@@ -184,7 +194,7 @@ CFLAGS=-Wunknown-warning-option
 AC_TRY_COMPILE(,, aros_unknown_warning_option="yes", aros_unknown_warning_option="no")
 AC_MSG_RESULT($aros_unknown_warning_option)
 if test "x-$aros_unknown_warning_option" = "x-yes" ; then
-    aros_cflags_unknown_warning_option=-Wno-unknown-warning-option
+    aros_nowarnflags_unknown_warning_option=-Wno-unknown-warning-option
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
@@ -192,7 +202,7 @@ CFLAGS=-Wunused-but-set-variable
 AC_TRY_COMPILE(,, aros_unused_but_set_variable="yes", aros_unused_but_set_variable="no")
 AC_MSG_RESULT($aros_unused_but_set_variable)
 if test "x-$aros_unused_but_set_variable" = "x-yes" ; then
-    aros_cflags_unused_but_set_variable=-Wno-unused-but-set-variable
+    aros_nowarnflags_unused_but_set_variable=-Wno-unused-but-set-variable
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-aliasing])
@@ -200,7 +210,7 @@ CFLAGS=-Wstrict-aliasing
 AC_TRY_COMPILE(,, aros_strict_aliasing="yes", aros_strict_aliasing="no")
 AC_MSG_RESULT($aros_strict_aliasing)
 if test "x-$aros_strict_aliasing" = "x-yes" ; then
-    aros_cflags_strict_aliasing=-Wno-strict-aliasing
+    aros_nowarnflags_strict_aliasing=-Wno-strict-aliasing
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Warray-bounds])
@@ -208,7 +218,7 @@ CFLAGS=-Warray-bounds
 AC_TRY_COMPILE(,, aros_array_bounds="yes", aros_array_bounds="no")
 AC_MSG_RESULT($aros_array_bounds)
 if test "x-$aros_array_bounds" = "x-yes" ; then
-    aros_cflags_array_bounds=-Wno-array-bounds
+    aros_nowarnflags_array_bounds=-Wno-array-bounds
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wenum-compare])
@@ -216,7 +226,7 @@ CFLAGS=-Wenum-compare
 AC_TRY_COMPILE(,, aros_enum_compare="yes", aros_enum_compare="no")
 AC_MSG_RESULT($aros_enum_compare)
 if test "x-$aros_enum_compare" = "x-yes" ; then
-    aros_cflags_enum_compare=-Wno-enum-compare
+    aros_nowarnflags_enum_compare=-Wno-enum-compare
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-prototypes])
@@ -224,7 +234,7 @@ CFLAGS=-Wstrict-prototypes
 AC_TRY_COMPILE(,, aros_strict_prototypes="yes", aros_strict_prototypes="no")
 AC_MSG_RESULT($aros_strict_prototypes)
 if test "x-$aros_strict_prototypes" = "x-yes" ; then
-    aros_cflags_strict_prototypes=-Wno-strict-prototypes
+    aros_nowarnflags_strict_prototypes=-Wno-strict-prototypes
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-overflow])
@@ -232,7 +242,7 @@ CFLAGS=-Wstrict-overflow
 AC_TRY_COMPILE(,, aros_strict_overflow="yes", aros_strict_overflow="no")
 AC_MSG_RESULT($aros_strict_overflow)
 if test "x-$aros_strict_overflow" = "x-yes" ; then
-    aros_cflags_strict_overflow=-Wno-strict-overflow
+    aros_nowarnflags_strict_overflow=-Wno-strict-overflow
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wformat-security])
@@ -240,7 +250,7 @@ CFLAGS=-Wformat-security
 AC_TRY_COMPILE(,, aros_format_security="yes", aros_format_security="no")
 AC_MSG_RESULT($aros_format_security)
 if test "x-$aros_format_security" = "x-yes" ; then
-    aros_cflags_format_security=-Wno-format-security
+    aros_nowarnflags_format_security=-Wno-format-security
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wmisleading-indentation])
@@ -248,7 +258,7 @@ CFLAGS=-Wmisleading-indentation
 AC_TRY_COMPILE(,, aros_misleading_indentation="yes", aros_misleading_indentation="no")
 AC_MSG_RESULT($aros_misleading_indentation)
 if test "x-$aros_misleading_indentation" = "x-yes" ; then
-    aros_cflags_misleading_indentation=-Wno-misleading-indentation
+    aros_nowarnflags_misleading_indentation=-Wno-misleading-indentation
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wnonnull-compare])
@@ -256,7 +266,7 @@ CFLAGS=-Wnonnull-compare
 AC_TRY_COMPILE(,, aros_nonnull_compare="yes", aros_nonnull_compare="no")
 AC_MSG_RESULT($aros_nonnull_compare)
 if test "x-$aros_nonnull_compare" = "x-yes" ; then
-    aros_cflags_nonnull_compare=-Wno-nonnull-compare
+    aros_nowarnflags_nonnull_compare=-Wno-nonnull-compare
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused])
@@ -264,7 +274,7 @@ CFLAGS=-Wunused
 AC_TRY_COMPILE(,, aros_unused="yes", aros_unused="no")
 AC_MSG_RESULT($aros_unused)
 if test "x-$aros_unused" = "x-yes" ; then
-    aros_cflags_unused=-Wno-unused
+    aros_nowarnflags_unused=-Wno-unused
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-value])
@@ -272,7 +282,7 @@ CFLAGS=-Wunused-value
 AC_TRY_COMPILE(,, aros_unused_value="yes", aros_unused_value="no")
 AC_MSG_RESULT($aros_unused_value)
 if test "x-$aros_unused_value" = "x-yes" ; then
-    aros_cflags_unused_value=-Wno-unused-value
+    aros_nowarnflags_unused_value=-Wno-unused-value
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-variable])
@@ -280,7 +290,7 @@ CFLAGS=-Wunused-variable
 AC_TRY_COMPILE(,, aros_unused_variable="yes", aros_unused_variable="no")
 AC_MSG_RESULT($aros_unused_variable)
 if test "x-$aros_unused_variable" = "x-yes" ; then
-    aros_cflags_unused_variable=-Wno-unused-variable
+    aros_nowarnflags_unused_variable=-Wno-unused-variable
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-function])
@@ -288,7 +298,7 @@ CFLAGS=-Wunused-function
 AC_TRY_COMPILE(,, aros_unused_function="yes", aros_unused_function="no")
 AC_MSG_RESULT($aros_unused_function)
 if test "x-$aros_unused_function" = "x-yes" ; then
-    aros_cflags_unused_function=-Wno-unused-function
+    aros_nowarnflags_unused_function=-Wno-unused-function
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-parameter])
@@ -296,7 +306,7 @@ CFLAGS=-Wunused-parameter
 AC_TRY_COMPILE(,, aros_unused_parameter="yes", aros_unused_parameter="no")
 AC_MSG_RESULT($aros_unused_parameter)
 if test "x-$aros_unused_parameter" = "x-yes" ; then
-    aros_cflags_unused_parameter=-Wno-unused-parameter
+    aros_nowarnflags_unused_parameter=-Wno-unused-parameter
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wuninitialized])
@@ -304,7 +314,7 @@ CFLAGS=-Wuninitialized
 AC_TRY_COMPILE(,, aros_uninitialized="yes", aros_uninitialized="no")
 AC_MSG_RESULT($aros_uninitialized)
 if test "x-$aros_uninitialized" = "x-yes" ; then
-    aros_cflags_uninitialized=-Wno-uninitialized
+    aros_nowarnflags_uninitialized=-Wno-uninitialized
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wmaybe-uninitialized])
@@ -312,9 +322,9 @@ CFLAGS=-Wmaybe-uninitialized
 AC_TRY_COMPILE(,, aros_maybe_uninitialized="yes", aros_maybe_uninitialized="no")
 AC_MSG_RESULT($aros_maybe_uninitialized)
 if test "x-$aros_maybe_uninitialized" = "x-yes" ; then
-    aros_cflags_maybe_uninitialized=-Wno-maybe-uninitialized
+    aros_nowarnflags_maybe_uninitialized=-Wno-maybe-uninitialized
 else
-    aros_cflags_maybe_uninitialized=$aros_cflags_uninitialized
+    aros_nowarnflags_maybe_uninitialized=$aros_nowarnflags_uninitialized
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-function-declaration])
@@ -322,7 +332,7 @@ CFLAGS=-Wimplicit-function-declaration
 AC_TRY_COMPILE(,, aros_implicit_function_declaration="yes", aros_implicit_function_declaration="no")
 AC_MSG_RESULT($aros_implicit_function_declaration)
 if test "x-$aros_implicit_function_declaration" = "x-yes" ; then
-    aros_cflags_implicit_function_declaration=-Wno-implicit-function-declaration
+    aros_nowarnflags_implicit_function_declaration=-Wno-implicit-function-declaration
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wformat])
@@ -330,7 +340,7 @@ CFLAGS=-Wformat
 AC_TRY_COMPILE(,, aros_format="yes", aros_format="no")
 AC_MSG_RESULT($aros_format)
 if test "x-$aros_format" = "x-yes" ; then
-    aros_cflags_format=-Wno-format
+    aros_nowarnflags_format=-Wno-format
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wparentheses])
@@ -338,7 +348,7 @@ CFLAGS=-Wparentheses
 AC_TRY_COMPILE(,, aros_parentheses="yes", aros_parentheses="no")
 AC_MSG_RESULT($aros_parentheses)
 if test "x-$aros_parentheses" = "x-yes" ; then
-    aros_cflags_parentheses=-Wno-parentheses
+    aros_nowarnflags_parentheses=-Wno-parentheses
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wchar-subscripts])
@@ -346,7 +356,7 @@ CFLAGS=-Wchar-subscripts
 AC_TRY_COMPILE(,, aros_char_subscripts="yes", aros_char_subscripts="no")
 AC_MSG_RESULT($aros_char_subscripts)
 if test "x-$aros_char_subscripts" = "x-yes" ; then
-    aros_cflags_char_subscripts=-Wno-char-subscripts
+    aros_nowarnflags_char_subscripts=-Wno-char-subscripts
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wendif-labels])
@@ -354,7 +364,7 @@ CFLAGS=-Wendif-labels
 AC_TRY_COMPILE(,, aros_endif_labels="yes", aros_endif_labels="no")
 AC_MSG_RESULT($aros_endif_labels)
 if test "x-$aros_endif_labels" = "x-yes" ; then
-    aros_cflags_endif_labels=-Wno-endif-labels
+    aros_nowarnflags_endif_labels=-Wno-endif-labels
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wformat-contains-nul])
@@ -362,7 +372,7 @@ CFLAGS=-Wformat-contains-nul
 AC_TRY_COMPILE(,, aros_format_contains_nul="yes", aros_format_contains_nul="no")
 AC_MSG_RESULT($aros_format_contains_nul)
 if test "x-$aros_format_contains_nul" = "x-yes" ; then
-    aros_cflags_format_contains_nul=-Wno-format-contains-nul
+    aros_nowarnflags_format_contains_nul=-Wno-format-contains-nul
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-int])
@@ -370,7 +380,7 @@ CFLAGS=-Wimplicit-int
 AC_TRY_COMPILE(,, aros_implicit_int="yes", aros_implicit_int="no")
 AC_MSG_RESULT($aros_implicit_int)
 if test "x-$aros_implicit_int" = "x-yes" ; then
-    aros_cflags_implicit_int=-Wno-implicit-int
+    aros_nowarnflags_implicit_int=-Wno-implicit-int
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Waggressive-loop-optimizations])
@@ -378,7 +388,7 @@ CFLAGS=-Waggressive-loop-optimizations
 AC_TRY_COMPILE(,, aros_aggressive_loop_optimizations="yes", aros_aggressive_loop_optimizations="no")
 AC_MSG_RESULT($aros_aggressive_loop_optimizations)
 if test "x-$aros_aggressive_loop_optimizations" = "x-yes" ; then
-    aros_cflags_aggressive_loop_optimizations=-Wno-aggressive-loop-optimizations
+    aros_nowarnflags_aggressive_loop_optimizations=-Wno-aggressive-loop-optimizations
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wcpp])
@@ -386,7 +396,7 @@ CFLAGS=-Wcpp
 AC_TRY_COMPILE(,, aros_cpp="yes", aros_cpp="no")
 AC_MSG_RESULT($aros_cpp)
 if test "x-$aros_cpp" = "x-yes" ; then
-    aros_cflags_cpp=-Wno-cpp
+    aros_nowarnflags_cpp=-Wno-cpp
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wswitch])
@@ -394,7 +404,7 @@ CFLAGS=-Wswitch
 AC_TRY_COMPILE(,, aros_switch="yes", aros_switch="no")
 AC_MSG_RESULT($aros_switch)
 if test "x-$aros_switch" = "x-yes" ; then
-    aros_cflags_switch=-Wno-switch
+    aros_nowarnflags_switch=-Wno-switch
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wdiscarded-qualifiers])
@@ -402,7 +412,7 @@ CFLAGS=-Wdiscarded-qualifiers
 AC_TRY_COMPILE(,, aros_discarded_qualifiers="yes", aros_discarded_qualifiers="no")
 AC_MSG_RESULT($aros_discarded_qualifiers)
 if test "x-$aros_discarded_qualifiers" = "x-yes" ; then
-    aros_cflags_discarded_qualifiers=-Wno-discarded-qualifiers
+    aros_nowarnflags_discarded_qualifiers=-Wno-discarded-qualifiers
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wsequence-point])
@@ -410,7 +420,7 @@ CFLAGS=-Wsequence-point
 AC_TRY_COMPILE(,, aros_sequence_point="yes", aros_sequence_point="no")
 AC_MSG_RESULT($aros_sequence_point)
 if test "x-$aros_sequence_point" = "x-yes" ; then
-    aros_cflags_sequence_point=-Wno-sequence-point
+    aros_nowarnflags_sequence_point=-Wno-sequence-point
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunknown-pragmas])
@@ -418,7 +428,7 @@ CFLAGS=-Wunknown-pragmas
 AC_TRY_COMPILE(,, aros_unknown_pragmas="yes", aros_unknown_pragmas="no")
 AC_MSG_RESULT($aros_unknown_pragmas)
 if test "x-$aros_unknown_pragmas" = "x-yes" ; then
-    aros_cflags_unknown_pragmas=-Wno-unknown-pragmas
+    aros_nowarnflags_unknown_pragmas=-Wno-unknown-pragmas
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wdiscarded-array-qualifiers])
@@ -426,7 +436,7 @@ CFLAGS=-Wdiscarded-array-qualifiers
 AC_TRY_COMPILE(,, aros_discarded_array_qualifiers="yes", aros_discarded_array_qualifiers="no")
 AC_MSG_RESULT($aros_discarded_array_qualifiers)
 if test "x-$aros_discarded_array_qualifiers" = "x-yes" ; then
-    aros_cflags_discarded_array_qualifiers=-Wno-discarded-array-qualifiers
+    aros_nowarnflags_discarded_array_qualifiers=-Wno-discarded-array-qualifiers
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wint-conversion])
@@ -434,7 +444,7 @@ CFLAGS=-Wint-conversion
 AC_TRY_COMPILE(,, aros_int_conversion="yes", aros_int_conversion="no")
 AC_MSG_RESULT($aros_int_conversion)
 if test "x-$aros_int_conversion" = "x-yes" ; then
-    aros_cflags_int_conversion=-Wno-int-conversion
+    aros_nowarnflags_int_conversion=-Wno-int-conversion
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wint-to-pointer-cast])
@@ -442,7 +452,7 @@ CFLAGS=-Wint-to-pointer-cast
 AC_TRY_COMPILE(,, aros_int_to_pointer_cast="yes", aros_int_to_pointer_cast="no")
 AC_MSG_RESULT($aros_int_to_pointer_cast)
 if test "x-$aros_int_to_pointer_cast" = "x-yes" ; then
-    aros_cflags_int_to_pointer_cast=-Wno-int-to-pointer-cast
+    aros_nowarnflags_int_to_pointer_cast=-Wno-int-to-pointer-cast
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wpointer-to-int-cast])
@@ -450,7 +460,7 @@ CFLAGS=-Wpointer-to-int-cast
 AC_TRY_COMPILE(,, aros_pointer_to_int_cast="yes", aros_pointer_to_int_cast="no")
 AC_MSG_RESULT($aros_pointer_to_int_cast)
 if test "x-$aros_pointer_to_int_cast" = "x-yes" ; then
-    aros_cflags_pointer_to_int_cast=-Wno-pointer-to-int-cast
+    aros_nowarnflags_pointer_to_int_cast=-Wno-pointer-to-int-cast
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-const-variable])
@@ -458,7 +468,7 @@ CFLAGS=-Wunused-const-variable
 AC_TRY_COMPILE(,, aros_unused_const_variable="yes", aros_unused_const_variable="no")
 AC_MSG_RESULT($aros_unused_const_variable)
 if test "x-$aros_unused_const_variable" = "x-yes" ; then
-    aros_cflags_unused_const_variable=-Wno-unused-const-variable
+    aros_nowarnflags_unused_const_variable=-Wno-unused-const-variable
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wwrite-strings])
@@ -466,7 +476,7 @@ CFLAGS=-Wwrite-strings
 AC_TRY_COMPILE(,, aros_write_strings="yes", aros_write_strings="no")
 AC_MSG_RESULT($aros_write_strings)
 if test "x-$aros_write_strings" = "x-yes" ; then
-    aros_cflags_write_strings=-Wno-write-strings
+    aros_nowarnflags_write_strings=-Wno-write-strings
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wcomment])
@@ -474,7 +484,7 @@ CFLAGS=-Wcomment
 AC_TRY_COMPILE(,, aros_comment="yes", aros_comment="no")
 AC_MSG_RESULT($aros_comment)
 if test "x-$aros_comment" = "x-yes" ; then
-    aros_cflags_comment=-Wno-comment
+    aros_nowarnflags_comment=-Wno-comment
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wincompatible-pointer-types])
@@ -482,7 +492,7 @@ CFLAGS=-Wincompatible-pointer-types
 AC_TRY_COMPILE(,, aros_incompatible_pointer_types="yes", aros_incompatible_pointer_types="no")
 AC_MSG_RESULT($aros_incompatible_pointer_types)
 if test "x-$aros_incompatible_pointer_types" = "x-yes" ; then
-    aros_cflags_incompatible_pointer_types=-Wno-incompatible-pointer-types
+    aros_nowarnflags_incompatible_pointer_types=-Wno-incompatible-pointer-types
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wbool-compare])
@@ -490,7 +500,7 @@ CFLAGS=-Wbool-compare
 AC_TRY_COMPILE(,, aros_bool_compare="yes", aros_bool_compare="no")
 AC_MSG_RESULT($aros_bool_compare)
 if test "x-$aros_bool_compare" = "x-yes" ; then
-    aros_cflags_bool_compare=-Wno-bool-compare
+    aros_nowarnflags_bool_compare=-Wno-bool-compare
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wlogical-not-parentheses])
@@ -498,7 +508,7 @@ CFLAGS=-Wlogical-not-parentheses
 AC_TRY_COMPILE(,, aros_logical_not_parentheses="yes", aros_logical_not_parentheses="no")
 AC_MSG_RESULT($aros_logical_not_parentheses)
 if test "x-$aros_logical_not_parentheses" = "x-yes" ; then
-    aros_cflags_logical_not_parentheses=-Wno-logical-not-parentheses
+    aros_nowarnflags_logical_not_parentheses=-Wno-logical-not-parentheses
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wpointer-sign])
@@ -506,7 +516,7 @@ CFLAGS=-Wpointer-sign
 AC_TRY_COMPILE(,, aros_pointer_sign="yes", aros_pointer_sign="no")
 AC_MSG_RESULT($aros_pointer_sign)
 if test "x-$aros_pointer_sign" = "x-yes" ; then
-    aros_cflags_pointer_sign=-Wno-pointer-sign
+    aros_nowarnflags_pointer_sign=-Wno-pointer-sign
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wshift-overflow])
@@ -514,7 +524,7 @@ CFLAGS=-Wshift-overflow
 AC_TRY_COMPILE(,, aros_shift_overflow="yes", aros_shift_overflow="no")
 AC_MSG_RESULT($aros_shift_overflow)
 if test "x-$aros_shift_overflow" = "x-yes" ; then
-    aros_cflags_shift_overflow=-Wno-shift-overflow
+    aros_nowarnflags_shift_overflow=-Wno-shift-overflow
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wframe-address])
@@ -522,7 +532,7 @@ CFLAGS=-Wframe-address
 AC_TRY_COMPILE(,, aros_frame_address="yes", aros_frame_address="no")
 AC_MSG_RESULT($aros_frame_address)
 if test "x-$aros_frame_address" = "x-yes" ; then
-    aros_cflags_frame_address=-Wno-frame-address
+    aros_nowarnflags_frame_address=-Wno-frame-address
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wdeprecated-declarations])
@@ -530,7 +540,7 @@ CFLAGS=-Wdeprecated-declarations
 AC_TRY_COMPILE(,, aros_deprecated_declarations="yes", aros_deprecated_declarations="no")
 AC_MSG_RESULT($aros_deprecated_declarations)
 if test "x-$aros_deprecated_declarations" = "x-yes" ; then
-    aros_cflags_deprecated_declarations=-Wno-deprecated-declarations
+    aros_nowarnflags_deprecated_declarations=-Wno-deprecated-declarations
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wsign-compare])
@@ -538,7 +548,7 @@ CFLAGS=-Wsign-compare
 AC_TRY_COMPILE(,, aros_sign_compare="yes", aros_sign_compare="no")
 AC_MSG_RESULT($aros_sign_compare)
 if test "x-$aros_sign_compare" = "x-yes" ; then
-    aros_cflags_sign_compare=-Wno-sign-compare
+    aros_nowarnflags_sign_compare=-Wno-sign-compare
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wattributes])
@@ -546,7 +556,7 @@ CFLAGS=-Wattributes
 AC_TRY_COMPILE(,, aros_attributes="yes", aros_attributes="no")
 AC_MSG_RESULT($aros_attributes)
 if test "x-$aros_attributes" = "x-yes" ; then
-    aros_cflags_attributes=-Wno-attributes
+    aros_nowarnflags_attributes=-Wno-attributes
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Woverflow])
@@ -554,7 +564,7 @@ CFLAGS=-Woverflow
 AC_TRY_COMPILE(,, aros_overflow="yes", aros_overflow="no")
 AC_MSG_RESULT($aros_overflow)
 if test "x-$aros_overflow" = "x-yes" ; then
-    aros_cflags_overflow=-Wno-overflow
+    aros_nowarnflags_overflow=-Wno-overflow
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-local-typedefs])
@@ -562,7 +572,7 @@ CFLAGS=-Wunused-local-typedefs
 AC_TRY_COMPILE(,, aros_unused_local_typedefs="yes", aros_unused_local_typedefs="no")
 AC_MSG_RESULT($aros_unused_local_typedefs)
 if test "x-$aros_unused_local_typedefs" = "x-yes" ; then
-    aros_cflags_unused_local_typedefs=-Wno-unused-local-typedefs
+    aros_nowarnflags_unused_local_typedefs=-Wno-unused-local-typedefs
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wmissing-braces])
@@ -570,7 +580,7 @@ CFLAGS=-Wmissing-braces
 AC_TRY_COMPILE(,, aros_missing_braces="yes", aros_missing_braces="no")
 AC_MSG_RESULT($aros_missing_braces)
 if test "x-$aros_missing_braces" = "x-yes" ; then
-    aros_cflags_missing_braces=-Wno-missing-braces
+    aros_nowarnflags_missing_braces=-Wno-missing-braces
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wconversion-null])
@@ -578,7 +588,7 @@ CFLAGS=-Wconversion-null
 AC_TRY_COMPILE(,, aros_conversion_null="yes", aros_conversion_null="no")
 AC_MSG_RESULT($aros_conversion_null)
 if test "x-$aros_conversion_null" = "x-yes" ; then
-    aros_cflags_conversion_null=-Wno-conversion-null
+    aros_nowarnflags_conversion_null=-Wno-conversion-null
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wnarrowing])
@@ -586,7 +596,7 @@ CFLAGS=-Wnarrowing
 AC_TRY_COMPILE(,, aros_narrowing="yes", aros_narrowing="no")
 AC_MSG_RESULT($aros_narrowing)
 if test "x-$aros_narrowing" = "x-yes" ; then
-    aros_cflags_narrowing=-Wno-narrowing
+    aros_nowarnflags_narrowing=-Wno-narrowing
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wvolatile-register-var])
@@ -594,7 +604,7 @@ CFLAGS=-Wvolatile-register-var
 AC_TRY_COMPILE(,, aros_volatile_register_var="yes", aros_volatile_register_var="no")
 AC_MSG_RESULT($aros_volatile_register_var)
 if test "x-$aros_volatile_register_var" = "x-yes" ; then
-    aros_cflags_volatile_register_var=-Wno-volatile-register-var
+    aros_nowarnflags_volatile_register_var=-Wno-volatile-register-var
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wsizeof-pointer-memaccess])
@@ -602,7 +612,7 @@ CFLAGS=-Wsizeof-pointer-memaccess
 AC_TRY_COMPILE(,, aros_sizeof_pointer_memaccess="yes", aros_sizeof_pointer_memaccess="no")
 AC_MSG_RESULT($aros_sizeof_pointer_memaccess)
 if test "x-$aros_sizeof_pointer_memaccess" = "x-yes" ; then
-    aros_cflags_sizeof_pointer_memaccess=-Wno-sizeof-pointer-memaccess
+    aros_nowarnflags_sizeof_pointer_memaccess=-Wno-sizeof-pointer-memaccess
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wreturn-type])
@@ -610,7 +620,7 @@ CFLAGS=-Wreturn-type
 AC_TRY_COMPILE(,, aros_return_type="yes", aros_return_type="no")
 AC_MSG_RESULT($aros_return_type)
 if test "x-$aros_return_type" = "x-yes" ; then
-    aros_cflags_return_type=-Wno-return-type
+    aros_nowarnflags_return_type=-Wno-return-type
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wformat-zero-length])
@@ -618,7 +628,7 @@ CFLAGS=-Wformat-zero-length
 AC_TRY_COMPILE(,, aros_format_zero_length="yes", aros_format_zero_length="no")
 AC_MSG_RESULT($aros_format_zero_length)
 if test "x-$aros_format_zero_length" = "x-yes" ; then
-    aros_cflags_format_zero_length=-Wno-format-zero-length
+    aros_nowarnflags_format_zero_length=-Wno-format-zero-length
 fi
 
 #
@@ -633,68 +643,71 @@ AC_SUBST(aros_cflags_loop_interchange)
 AC_SUBST(aros_cflags_loop_strip_mine)
 AC_SUBST(aros_cflags_peel_loops)
 
+AC_SUBST(aros_cflags_strictaliasing)
+AC_SUBST(aros_cflags_nostrictaliasing)
+
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 
 #
 # ...and warning flags...
 #
-AC_SUBST(aros_cflags_unused_command_line_argument)
-AC_SUBST(aros_cflags_unknown_warning_option)
-AC_SUBST(aros_cflags_unused_but_set_variable)
-AC_SUBST(aros_cflags_strict_aliasing)
-AC_SUBST(aros_cflags_array_bounds)
-AC_SUBST(aros_cflags_enum_compare)
-AC_SUBST(aros_cflags_strict_prototypes)
-AC_SUBST(aros_cflags_strict_overflow)
-AC_SUBST(aros_cflags_format_security)
-AC_SUBST(aros_cflags_misleading_indentation)
-AC_SUBST(aros_cflags_nonnull_compare)
-AC_SUBST(aros_cflags_unused)
-AC_SUBST(aros_cflags_unused_value)
-AC_SUBST(aros_cflags_unused_variable)
-AC_SUBST(aros_cflags_unused_function)
-AC_SUBST(aros_cflags_unused_parameter)
-AC_SUBST(aros_cflags_uninitialized)
-AC_SUBST(aros_cflags_maybe_uninitialized)
-AC_SUBST(aros_cflags_implicit_function_declaration)
-AC_SUBST(aros_cflags_format)
-AC_SUBST(aros_cflags_parentheses)
-AC_SUBST(aros_cflags_char_subscripts)
-AC_SUBST(aros_cflags_endif_labels)
-AC_SUBST(aros_cflags_format_contains_nul)
-AC_SUBST(aros_cflags_implicit_int)
-AC_SUBST(aros_cflags_aggressive_loop_optimizations)
-AC_SUBST(aros_cflags_cpp)
-AC_SUBST(aros_cflags_switch)
-AC_SUBST(aros_cflags_discarded_qualifiers)
-AC_SUBST(aros_cflags_sequence_point)
-AC_SUBST(aros_cflags_unknown_pragmas)
-AC_SUBST(aros_cflags_discarded_array_qualifiers)
-AC_SUBST(aros_cflags_int_conversion)
-AC_SUBST(aros_cflags_int_to_pointer_cast)
-AC_SUBST(aros_cflags_pointer_to_int_cast)
-AC_SUBST(aros_cflags_unused_const_variable)
-AC_SUBST(aros_cflags_write_strings)
-AC_SUBST(aros_cflags_comment)
-AC_SUBST(aros_cflags_incompatible_pointer_types)
-AC_SUBST(aros_cflags_bool_compare)
-AC_SUBST(aros_cflags_logical_not_parentheses)
-AC_SUBST(aros_cflags_pointer_sign)
-AC_SUBST(aros_cflags_shift_overflow)
-AC_SUBST(aros_cflags_frame_address)
-AC_SUBST(aros_cflags_deprecated_declarations)
-AC_SUBST(aros_cflags_sign_compare)
-AC_SUBST(aros_cflags_attributes)
-AC_SUBST(aros_cflags_overflow)
-AC_SUBST(aros_cflags_unused_local_typedefs)
-AC_SUBST(aros_cflags_missing_braces)
-AC_SUBST(aros_cflags_conversion_null)
-AC_SUBST(aros_cflags_narrowing)
-AC_SUBST(aros_cflags_volatile_register_var)
-AC_SUBST(aros_cflags_sizeof_pointer_memaccess)
-AC_SUBST(aros_cflags_return_type)
-AC_SUBST(aros_cflags_format_zero_length)
+AC_SUBST(aros_nowarnflags_unused_command_line_argument)
+AC_SUBST(aros_nowarnflags_unknown_warning_option)
+AC_SUBST(aros_nowarnflags_unused_but_set_variable)
+AC_SUBST(aros_nowarnflags_strict_aliasing)
+AC_SUBST(aros_nowarnflags_array_bounds)
+AC_SUBST(aros_nowarnflags_enum_compare)
+AC_SUBST(aros_nowarnflags_strict_prototypes)
+AC_SUBST(aros_nowarnflags_strict_overflow)
+AC_SUBST(aros_nowarnflags_format_security)
+AC_SUBST(aros_nowarnflags_misleading_indentation)
+AC_SUBST(aros_nowarnflags_nonnull_compare)
+AC_SUBST(aros_nowarnflags_unused)
+AC_SUBST(aros_nowarnflags_unused_value)
+AC_SUBST(aros_nowarnflags_unused_variable)
+AC_SUBST(aros_nowarnflags_unused_function)
+AC_SUBST(aros_nowarnflags_unused_parameter)
+AC_SUBST(aros_nowarnflags_uninitialized)
+AC_SUBST(aros_nowarnflags_maybe_uninitialized)
+AC_SUBST(aros_nowarnflags_implicit_function_declaration)
+AC_SUBST(aros_nowarnflags_format)
+AC_SUBST(aros_nowarnflags_parentheses)
+AC_SUBST(aros_nowarnflags_char_subscripts)
+AC_SUBST(aros_nowarnflags_endif_labels)
+AC_SUBST(aros_nowarnflags_format_contains_nul)
+AC_SUBST(aros_nowarnflags_implicit_int)
+AC_SUBST(aros_nowarnflags_aggressive_loop_optimizations)
+AC_SUBST(aros_nowarnflags_cpp)
+AC_SUBST(aros_nowarnflags_switch)
+AC_SUBST(aros_nowarnflags_discarded_qualifiers)
+AC_SUBST(aros_nowarnflags_sequence_point)
+AC_SUBST(aros_nowarnflags_unknown_pragmas)
+AC_SUBST(aros_nowarnflags_discarded_array_qualifiers)
+AC_SUBST(aros_nowarnflags_int_conversion)
+AC_SUBST(aros_nowarnflags_int_to_pointer_cast)
+AC_SUBST(aros_nowarnflags_pointer_to_int_cast)
+AC_SUBST(aros_nowarnflags_unused_const_variable)
+AC_SUBST(aros_nowarnflags_write_strings)
+AC_SUBST(aros_nowarnflags_comment)
+AC_SUBST(aros_nowarnflags_incompatible_pointer_types)
+AC_SUBST(aros_nowarnflags_bool_compare)
+AC_SUBST(aros_nowarnflags_logical_not_parentheses)
+AC_SUBST(aros_nowarnflags_pointer_sign)
+AC_SUBST(aros_nowarnflags_shift_overflow)
+AC_SUBST(aros_nowarnflags_frame_address)
+AC_SUBST(aros_nowarnflags_deprecated_declarations)
+AC_SUBST(aros_nowarnflags_sign_compare)
+AC_SUBST(aros_nowarnflags_attributes)
+AC_SUBST(aros_nowarnflags_overflow)
+AC_SUBST(aros_nowarnflags_unused_local_typedefs)
+AC_SUBST(aros_nowarnflags_missing_braces)
+AC_SUBST(aros_nowarnflags_conversion_null)
+AC_SUBST(aros_nowarnflags_narrowing)
+AC_SUBST(aros_nowarnflags_volatile_register_var)
+AC_SUBST(aros_nowarnflags_sizeof_pointer_memaccess)
+AC_SUBST(aros_nowarnflags_return_type)
+AC_SUBST(aros_nowarnflags_format_zero_length)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
