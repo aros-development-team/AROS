@@ -1546,7 +1546,7 @@ GLOB_MKDIRS += $(BD_TARGETDIR) $(BD_OBJDIR)
     files="$(basename $(call WILDCARD, *.c))" \
     cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
     objdir=$(OBJDIR) moduledir= \
-    uselibs= usehostlibs= compiler=target
+    uselibs= usehostlibs= compiler=target lto=$(TARGET_LTO)
 
 # Define metamake targets and their dependencies
 #MM %(mmake) : core-linklibs includes-generate-deps
@@ -1706,7 +1706,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_DEFDXXFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
-  compiler=target nostartup=yes archspecific=no \
+  compiler=target lto=$(TARGET_LTO) nostartup=yes archspecific=no \
   includedir= libdir= \
   build_abi= build_library=
 
@@ -1913,10 +1913,12 @@ BD_ARCHNLIBFILES := $(filter-out $(BD_LIBFILES),$(BD_LIBARCHFILES))
 
 BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CFLAGS)
 BD_CXXFLAGS := %(cxxflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CXXFLAGS)
-# ifeq (%(compiler),target)
-# BD_CFLAGS    := $(LTO_BINARY_CFLAGS) $(BD_CFLAGS)
-# BD_CXXFLAGS := $(LTO_BINARY_CFLAGS) $(BD_CXXFLAGS)
-# endif
+ifeq (%(lto),yes)
+ifeq (%(compiler),target)
+BD_CFLAGS    := $(LTO_BINARY_CFLAGS) $(BD_CFLAGS)
+BD_CXXFLAGS := $(LTO_BINARY_CFLAGS) $(BD_CXXFLAGS)
+endif
+endif
 ifneq (%(includedir),)
 BD_CFLAGS     += -I%(includedir)
 BD_CXXFLAGS += -I%(includedir)
@@ -2151,7 +2153,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_DEFDXXFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
-  compiler=target nostartup=yes archspecific=no \
+  compiler=target lto=$(TARGET_LTO) nostartup=yes archspecific=no \
   includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
@@ -2161,7 +2163,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
    linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
    cflags="%(cflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
-   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
+   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
    includedir="%(includedir)" libdir="%(libdir)" \
    build_abi=M build_library=M
@@ -2189,7 +2191,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
   cflags="%(cflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
   objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
-  uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
+  uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
   nostartup="%(nostartup)" archspecific="%(archspecific)" \
   includedir="%(includedir)" libdir="%(libdir)" \
   build_abi=M build_library=
@@ -2206,7 +2208,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) cxxflags="$(CXXFLAGS)" dxxflags="$(BD_DEFDXXFLAGS)" \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   uselibs= usehostlibs= \
-  compiler=target nostartup=yes archspecific=no \
+  compiler=target lto=$(TARGET_LTO) nostartup=yes archspecific=no \
   includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
@@ -2214,7 +2216,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
    files="%(files)" cxxfiles="%(cxxfiles)" \
    cflags="%(cflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
-   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
+   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
   includedir="%(includedir)" libdir="%(libdir)" \
    build_abi= build_library=M
@@ -2246,7 +2248,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
   includedir= \
   cflags=$(CFLAGS) dflags=$(BD_CFLAGS) cxxflags=$(CXXFLAGS) dxxflags=$(BD_CXXFLAGS) \
-  aflags=$(AFLAGS) compiler=target
+  aflags=$(AFLAGS) compiler=target lto=$(TARGET_LTO)
 
 # assign and generate the local variables used in this macro
 BD_LIBNAME    := %(libname)
@@ -2267,6 +2269,12 @@ BD_DEPS       := $(patsubst %.o,%.d,$(BD_OBJS))
 
 BD_CFLAGS    := %(cflags)
 BD_CXXFLAGS := %(cxxflags)
+ifeq (%(lto),yes)
+ifeq (%(compiler),target)
+BD_CFLAGS    := $(LTO_CFLAGS) $(BD_CFLAGS)
+BD_CXXFLAGS := $(LTO_CFLAGS) $(BD_CXXFLAGS)
+endif
+endif
 ifneq (%(includedir),)
 BD_CFLAGS    += -I%(includedir)
 BD_CXXFLAGS += -I%(includedir)
