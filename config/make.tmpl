@@ -1569,6 +1569,11 @@ endif
 # Default values for variables and arguments
 BD_DEFLINKLIBNAME := %(modname)
 BD_DEFDFLAGS := %(cflags)
+ifeq (%(lto),yes)
+ifeq (%(compiler),target)
+BD_DEFDFLAGS    := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(BD_DEFDFLAGS)
+endif
+endif
 BD_DEFDXXFLAGS := %(dxxflags)
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 BD_MODDIR := %(moduledir)
@@ -1623,7 +1628,7 @@ BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),%(files))
 
 %rule_compile_multi \
     basenames=$(BD_NARCHFILES) targetdir="%(objdir)" \
-    cflags="%(cflags)" dflags="%(dflags)" \
+    cflags="$(BD_DEFDFLAGS)" dflags="%(dflags)" \
     compiler="%(compiler)"
 
 # Handlers use dash instead of dot in their names
