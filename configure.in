@@ -719,13 +719,14 @@ case "$aros_toolchain" in
         toolchain_c_compiler="gcc"
         toolchain_cxx_compiler="g++"
         toolchain_cpp_preprocessor="gcc -E"
-        toolchain_ld="ld"
         toolchain_as="as"
         if test "$aros_config_lto" != "yes"; then
+            toolchain_ld="ld"
             toolchain_ar="ar"
             toolchain_ranlib="ranlib"
             toolchain_nm="nm"
         else
+            toolchain_ld="ld.bfd"
             toolchain_ar="gcc-ar"
             toolchain_ranlib="gcc-ranlib"
             toolchain_nm="gcc-nm"
