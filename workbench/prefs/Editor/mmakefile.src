@@ -11,7 +11,7 @@ EXEDIR := $(AROS_PREFS)
 USER_CFLAGS := -DJANOPREF
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../../tools/Edit -I$(TOP)/$(CURDIR)/
 
-#DISABLED #MM- workbench-prefs : workbench-prefs-editor
+#MM- workbench-prefs : workbench-prefs-editor
 #MM workbench-prefs-editor : includes linklibs workbench-prefs-editor-catalogs
 
 Prefs.c : ../../tools/Edit/Prefs.c
