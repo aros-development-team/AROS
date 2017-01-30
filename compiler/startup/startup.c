@@ -71,7 +71,7 @@ __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
     if (((struct Library *)DOSBase)->lib_Version < __aros_libreq_DOSBase)
         return RETURN_FAIL;
 
-    __argstr  = argstr;
+    __argstr  = (char *)argstr;
     __argsize = argsize;
     __startup_error = RETURN_FAIL;
 
