@@ -34,10 +34,21 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some features:
+#  -ffast-math 
 #  -flto
+#  -fwhole-program
 #  -floop-block
 #  -floop-interchange
 #  -floop-strip-mine
+#  -fpeel-loops
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffast-math])
+CFLAGS=-ffast-math
+AC_TRY_COMPILE(,, aros_fast_math="yes", aros_fast_math="no")
+AC_MSG_RESULT($aros_fast_math)
+if test "x-$aros_fast_math" = "x-yes" ; then
+    aros_cflags_fast_math=-ffast-math
+fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -flto])
 CFLAGS=-flto
@@ -45,30 +56,47 @@ AC_TRY_COMPILE(,, aros_lto="yes", aros_lto="no")
 AC_MSG_RESULT($aros_lto)
 if test "x-$aros_lto" = "x-yes" ; then
     aros_cflags_lto=-flto
+    aros_cflags_nolto=-fno-lto
+    
+    AC_MSG_CHECKING([whether ${CC} accepts -fwhole-program])
+    CFLAGS=-fwhole-program
+    AC_TRY_COMPILE(,, aros_whole_program="yes", aros_whole_program="no")
+    AC_MSG_RESULT($aros_whole_program)
+    if test "x-$aros_whole_program" = "x-yes" ; then
+        aros_cflags_whole_program=-fwhole-program
+    fi
+    
+    AC_MSG_CHECKING([whether ${CC} accepts -floop-block])
+    CFLAGS=-floop-block
+    AC_TRY_COMPILE(,, aros_loop_block="yes", aros_loop_block="no")
+    AC_MSG_RESULT($aros_loop_block)
+    if test "x-$aros_loop_block" = "x-yes" ; then
+        aros_cflags_loop_block=-floop-block
+    fi
+    
+    AC_MSG_CHECKING([whether ${CC} accepts -floop-interchange])
+    CFLAGS=-floop-interchange
+    AC_TRY_COMPILE(,, aros_loop_interchange="yes", aros_loop_interchange="no")
+    AC_MSG_RESULT($aros_loop_interchange)
+    if test "x-$aros_loop_interchange" = "x-yes" ; then
+        aros_cflags_loop_interchange=-floop-interchange
+    fi
+    
+    AC_MSG_CHECKING([whether ${CC} accepts -floop-strip-mine])
+    CFLAGS=-floop-strip-mine
+    AC_TRY_COMPILE(,, aros_loop_strip_mine="yes", aros_loop_strip_mine="no")
+    AC_MSG_RESULT($aros_loop_strip_mine)
+    if test "x-$aros_loop_strip_mine" = "x-yes" ; then
+        aros_cflags_loop_strip_mine=-floop-strip-mine
+    fi
 fi
 
-AC_MSG_CHECKING([whether ${CC} accepts -floop-block])
-CFLAGS=-floop-block
-AC_TRY_COMPILE(,, aros_loop_block="yes", aros_loop_block="no")
-AC_MSG_RESULT($aros_loop_block)
-if test "x-$aros_loop_block" = "x-yes" ; then
-    aros_cflags_loop_block=-floop-block
-fi
-
-AC_MSG_CHECKING([whether ${CC} accepts -floop-interchange])
-CFLAGS=-floop-interchange
-AC_TRY_COMPILE(,, aros_loop_interchange="yes", aros_loop_interchange="no")
-AC_MSG_RESULT($aros_loop_interchange)
-if test "x-$aros_loop_interchange" = "x-yes" ; then
-    aros_cflags_loop_interchange=-floop-interchange
-fi
-
-AC_MSG_CHECKING([whether ${CC} accepts -floop-strip-mine])
-CFLAGS=-floop-strip-mine
-AC_TRY_COMPILE(,, aros_loop_strip_mine="yes", aros_loop_strip_mine="no")
-AC_MSG_RESULT($aros_loop_strip_mine)
-if test "x-$aros_loop_strip_mine" = "x-yes" ; then
-    aros_cflags_loop_strip_mine=-floop-strip-mine
+AC_MSG_CHECKING([whether ${CC} accepts -fpeel-loops])
+CFLAGS=-fpeel-loops
+AC_TRY_COMPILE(,, aros_peel_loops="yes", aros_peel_loops="no")
+AC_MSG_RESULT($aros_peel_loops)
+if test "x-$aros_peel_loops" = "x-yes" ; then
+    aros_cflags_peel_loops=-fpeel-loops
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
@@ -593,14 +621,24 @@ if test "x-$aros_format_zero_length" = "x-yes" ; then
     aros_cflags_format_zero_length=-Wno-format-zero-length
 fi
 
+#
+# export the feature flags...
+#
+AC_SUBST(aros_cflags_fast_math)
 AC_SUBST(aros_cflags_lto)
+AC_SUBST(aros_cflags_nolto)
+AC_SUBST(aros_cflags_whole_program)
 AC_SUBST(aros_cflags_loop_block)
 AC_SUBST(aros_cflags_loop_interchange)
 AC_SUBST(aros_cflags_loop_strip_mine)
+AC_SUBST(aros_cflags_peel_loops)
 
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 
+#
+# ...and warning flags...
+#
 AC_SUBST(aros_cflags_unused_command_line_argument)
 AC_SUBST(aros_cflags_unknown_warning_option)
 AC_SUBST(aros_cflags_unused_but_set_variable)
