@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Print the library magic and init code in the file modname_start.c.
@@ -571,7 +571,7 @@ static void writeresident(FILE *out, struct config *cfg)
     else
     {
         rt_skip = "GM_UNIQUENAME(End)";
-        fprintf(out, "extern const int %s;\n", rt_skip);
+        fprintf(out, "extern int %s;\n", rt_skip);
     }
     fprintf(out,
             "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
