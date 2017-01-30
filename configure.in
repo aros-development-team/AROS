@@ -690,6 +690,16 @@ AC_MSG_CHECKING([Which toolchain family to use ...])
 AC_ARG_WITH(toolchain,AC_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="gnu")
 AC_MSG_RESULT($aros_toolchain)
 
+
+AC_MSG_CHECKING([if we should enable link time optimizations (LTO)])
+AC_ARG_ENABLE(lto,AC_HELP_STRING([--enable-lto=[yes|no]],[Enable link time optimizations if the target compiler supports them (default=yes)]),
+ aros_config_lto="$enableval",aros_config_lto="yes")
+if test "$aros_config_lto" != "yes"; then
+    aros_config_lto="no"
+fi
+AC_MSG_RESULT($aros_config_lto)
+
+
 case "$aros_toolchain" in
     *llvm*)
         # toolchain_needs_sysroot=yes
@@ -711,9 +721,15 @@ case "$aros_toolchain" in
         toolchain_cpp_preprocessor="gcc -E"
         toolchain_ld="ld"
         toolchain_as="as"
-        toolchain_ar="ar"
-        toolchain_ranlib="ranlib"
-        toolchain_nm="nm"
+        if test "$aros_config_lto" != "yes"; then
+            toolchain_ar="ar"
+            toolchain_ranlib="ranlib"
+            toolchain_nm="nm"
+        else
+            toolchain_ar="gcc-ar"
+            toolchain_ranlib="gcc-ranlib"
+            toolchain_nm="gcc-nm"
+        fi
         toolchain_strip="strip"
         toolchain_objcopy="objcopy"
         toolchain_objdump="objdump"
@@ -878,14 +894,6 @@ else
 fi
 AC_MSG_RESULT($msg_result)
 aros_config_cflags="$aros_config_cflags $paranoia_flags"
-
-AC_MSG_CHECKING([if we should enable link time optimizations (LTO)])
-AC_ARG_ENABLE(lto,AC_HELP_STRING([--enable-lto=[yes|no]],[Enable link time optimizations if the target compiler supports them (default=yes)]),
- aros_config_lto="$enableval",aros_config_lto="yes")
-if test "$aros_config_lto" != "yes"; then
-    aros_config_lto="no"
-fi
-AC_MSG_RESULT($aros_config_lto)
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what target variant to enable])
