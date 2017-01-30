@@ -98,13 +98,14 @@ BOOL InitGalliumClass()
                 {TAG_DONE, 0}
             };
 
-            sd->basegallium = OOP_FindClass(CLID_Hidd_Gallium);
-
             sd->galliumclass = OOP_NewObject(NULL, CLID_HiddMeta, Gallium_tags);
             if (sd->galliumclass)
             {
                 sd->galliumclass->UserData = sd;
                 OOP_AddClass(sd->galliumclass);
+
+                sd->basegallium = OOP_FindClass(CLID_Hidd_Gallium);
+
                 i915MemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);
 
                 init_aros_winsys();
