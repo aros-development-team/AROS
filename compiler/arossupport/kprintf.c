@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Formats a message and makes sure the user will see it.
@@ -114,7 +114,7 @@ int vkprintf (const char * fmt, va_list args)
 
     if (!fmt)
     {
-	RawPutChars ("(null)", 6);
+	RawPutChars ((const UBYTE *)"(null)", 6);
 	return 6;
     }
 
@@ -213,7 +213,7 @@ int vkprintf (const char * fmt, va_list args)
 		else
 		    len = my_strlen (str);
 
-		RawPutChars (str, len);
+		RawPutChars ((const UBYTE *)str, len);
 		ret += len;
 
 		if (*fmt == 'S')
@@ -237,7 +237,7 @@ int vkprintf (const char * fmt, va_list args)
 		    val >>= 4;
 		}
 
-		RawPutChars (puffer, sizeof (void *)*2);
+		RawPutChars ((const UBYTE *)puffer, sizeof (void *)*2);
 
 		break; }
 
@@ -250,7 +250,7 @@ int vkprintf (const char * fmt, va_list args)
 		    RawPutChar (c);
 		else
 		{
-		    RawPutChars ("'\\0x", 4);
+		    RawPutChars ((const UBYTE *)"'\\0x", 4);
 		    RawPutChar (lhex[c / 16]);
 		    RawPutChar (lhex[c & 15]);
 		    RawPutChar ('\'');
@@ -287,7 +287,7 @@ print_int:
 
 		    while (width > 0)
 		    {
-			RawPutChars (fill, (width < 8) ? width : 8);
+			RawPutChars ((const UBYTE *)fill, (width < 8) ? width : 8);
 			width -= 8;
 		    }
 
@@ -344,11 +344,11 @@ print_int:
 
 		while (width > 0)
 		{
-		    RawPutChars (fill, (width < 8) ? width : 8);
+		    RawPutChars ((const UBYTE *)fill, (width < 8) ? width : 8);
 		    width -= 8;
 		}
 
-		RawPutChars (&puffer[t], 32-t);
+		RawPutChars ((const UBYTE *)&puffer[t], 32-t);
 		ret += 32-t;
 
 		break; }
