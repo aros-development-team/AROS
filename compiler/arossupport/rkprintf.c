@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Formats a message and makes sure the user will see it.
@@ -88,7 +88,7 @@
     // Check SysBase->DebugAROSBase->DebugConfig
 
     va_start(ap, fmt);
-    ret = vkprintf(fmt, ap);
+    ret = vkprintf((const char *)fmt, ap);
     va_end(ap);
 
     return ret;
