@@ -84,3 +84,4 @@ NOWARN_VOLATILE_REGISTER_VAR            := @aros_nowarnflags_volatile_register_v
 NOWARN_SIZEOF_POINTER_MEMACCESS         := @aros_nowarnflags_sizeof_pointer_memaccess@
 NOWARN_RETURN_TYPE                      := @aros_nowarnflags_return_type@
 NOWARN_FORMAT_ZERO_LENGTH               := @aros_nowarnflags_format_zero_length@
+NOWARN_LTO_TYPE_MISMATCH                := @aros_nowarnflags_lto_type_mismatch@
