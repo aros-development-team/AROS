@@ -11,7 +11,7 @@
 
 #include "system_intern.h"
 
-OOP_Object *SystemHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+IPTR SystemHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     if (!CSD(cl)->instance)
     {
@@ -29,7 +29,7 @@ OOP_Object *SystemHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         CSD(cl)->instance =  (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
     }
 
-    return CSD(cl)->instance;
+    return (IPTR)CSD(cl)->instance;
 }
 
 VOID SystemHW__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
