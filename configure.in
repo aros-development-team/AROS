@@ -699,6 +699,7 @@ if test "$aros_config_lto" != "no"; then
 fi
 AC_MSG_RESULT($aros_config_lto)
 
+use_ld_wrapper=yes
 
 case "$aros_toolchain" in
     *llvm*)
@@ -707,6 +708,7 @@ case "$aros_toolchain" in
         toolchain_cxx_compiler="clang++"
         toolchain_cpp_preprocessor="clang -E"
         toolchain_ld="ld.lld"
+        aros_ld="ld"
         toolchain_as="llvm-as"
         toolchain_ar="llvm-ar"
         toolchain_ranlib="llvm-ranlib"
@@ -720,6 +722,7 @@ case "$aros_toolchain" in
         toolchain_cxx_compiler="g++"
         toolchain_cpp_preprocessor="gcc -E"
         toolchain_as="as"
+        aros_ld="ld"
         if test "$aros_config_lto" != "yes"; then
             toolchain_ld="ld"
             toolchain_ar="ar"
@@ -741,6 +744,7 @@ case "$aros_toolchain" in
         toolchain_cxx_compiler="c++"
         toolchain_cpp_preprocessor="cpp"
         toolchain_ld="ld"
+        aros_ld="ld"
         toolchain_as="as"
         toolchain_ar="ar"
         toolchain_ranlib="ranlib"
@@ -2302,7 +2306,13 @@ aros_target_cpp="${prefix}${toolchain_cpp_preprocessor}"
 aros_target_cc="${prefix}${toolchain_c_compiler}"
 aros_target_cxx="${prefix}${toolchain_cxx_compiler}"
 aros_target_as="${prefix}${toolchain_as}"
-aros_target_ld="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_ld}"
+if test "${use_ld_wrapper}" = "yes"; then
+    aros_target_ld="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}"
+else
+    aros_target_ld="${prefix}${toolchain_ld}"
+fi
+aros_toolchain_ld="${prefix}${toolchain_ld}"
+
 aros_target_ar="${prefix}${toolchain_ar} $aros_target_ar_flags"
 aros_target_objcopy="${prefix}${toolchain_objcopy}"
 aros_target_objdump="${prefix}${toolchain_objdump}"
@@ -2773,6 +2783,7 @@ AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
 AC_SUBST(aros_target_toolchain)
+AC_SUBST(aros_toolchain_ld)
 AC_SUBST(aros_build_host)
 AC_SUBST(AROS_BUILDDIR)
 AC_SUBST(AROS_BUILDDIR_UNIX)
@@ -3063,10 +3074,11 @@ AC_CONFIG_COMMANDS([binutils-support],
         aros_kernel_ld=${aros_kernel_ld}
     ]
 )
-AC_CONFIG_FILES(
-    ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in
-)
-
+if test "${use_ld_wrapper}" = "yes"; then
+    AC_CONFIG_FILES(
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}:scripts/aros-ld.in
+    )
+fi
 # Bare Elf support script and spec
 if test "${use_kernel_cc_wrapper}" = "yes"; then
     AC_CONFIG_COMMANDS([elf-compiler-support],
