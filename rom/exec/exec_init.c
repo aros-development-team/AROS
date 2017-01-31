@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: exec.library resident and initialization.
@@ -41,7 +41,7 @@ static const UBYTE name[];
 static const UBYTE version[];
 
 /* This comes from genmodule */
-extern const char LIBEND;
+extern int LIBEND(void);
 
 AROS_UFP3S(struct ExecBase *, GM_UNIQUENAME(init),
     AROS_UFPA(struct MemHeader *, mh, D0),
