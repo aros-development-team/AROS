@@ -1582,7 +1582,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
 --disable-libpng-config    disable libpng-config test and configuration
   --enable-lto=yes|no     Enable link time optimizations if the target
-                          compiler supports them (default=yes)
+                          compiler supports them (default=no)
   --enable-build-type=TYPE
                           Select the build type. Available types are:
                           personal, nightly, snapshot, milestone, release. Do
@@ -7550,11 +7550,11 @@ $as_echo_n "checking if we should enable link time optimizations (LTO)... " >&6;
 if test "${enable_lto+set}" = set; then :
   enableval=$enable_lto; aros_config_lto="$enableval"
 else
-  aros_config_lto="yes"
+  aros_config_lto="no"
 fi
 
-if test "$aros_config_lto" != "yes"; then
-    aros_config_lto="no"
+if test "$aros_config_lto" != "no"; then
+    aros_config_lto="yes"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_config_lto" >&5
 $as_echo "$aros_config_lto" >&6; }
