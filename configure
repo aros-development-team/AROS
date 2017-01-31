@@ -744,6 +744,7 @@ SRCDIR
 AROS_BUILDDIR_UNIX
 AROS_BUILDDIR
 aros_build_host
+aros_toolchain_ld
 aros_target_toolchain
 aros_flavour_uc
 aros_flavour
@@ -7559,6 +7560,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_config_lto" >&5
 $as_echo "$aros_config_lto" >&6; }
 
+use_ld_wrapper=yes
 
 case "$aros_toolchain" in
     *llvm*)
@@ -7567,6 +7569,7 @@ case "$aros_toolchain" in
         toolchain_cxx_compiler="clang++"
         toolchain_cpp_preprocessor="clang -E"
         toolchain_ld="ld.lld"
+        aros_ld="ld"
         toolchain_as="llvm-as"
         toolchain_ar="llvm-ar"
         toolchain_ranlib="llvm-ranlib"
@@ -7580,6 +7583,7 @@ case "$aros_toolchain" in
         toolchain_cxx_compiler="g++"
         toolchain_cpp_preprocessor="gcc -E"
         toolchain_as="as"
+        aros_ld="ld"
         if test "$aros_config_lto" != "yes"; then
             toolchain_ld="ld"
             toolchain_ar="ar"
@@ -7602,6 +7606,7 @@ $as_echo "$as_me: WARNING: \"Unknown toolchain family!\"" >&2;}
         toolchain_cxx_compiler="c++"
         toolchain_cpp_preprocessor="cpp"
         toolchain_ld="ld"
+        aros_ld="ld"
         toolchain_as="as"
         toolchain_ar="ar"
         toolchain_ranlib="ranlib"
@@ -13682,7 +13687,13 @@ aros_target_cpp="${prefix}${toolchain_cpp_preprocessor}"
 aros_target_cc="${prefix}${toolchain_c_compiler}"
 aros_target_cxx="${prefix}${toolchain_cxx_compiler}"
 aros_target_as="${prefix}${toolchain_as}"
-aros_target_ld="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_ld}"
+if test "${use_ld_wrapper}" = "yes"; then
+    aros_target_ld="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}"
+else
+    aros_target_ld="${prefix}${toolchain_ld}"
+fi
+aros_toolchain_ld="${prefix}${toolchain_ld}"
+
 aros_target_ar="${prefix}${toolchain_ar} $aros_target_ar_flags"
 aros_target_objcopy="${prefix}${toolchain_objcopy}"
 aros_target_objdump="${prefix}${toolchain_objdump}"
@@ -14840,6 +14851,7 @@ fi
 
 
 
+
 # Compatability with other Amiga-like operation systems
 
 
@@ -15080,9 +15092,10 @@ ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/confi
 # Binutils
 ac_config_commands="$ac_config_commands binutils-support"
 
-ac_config_files="$ac_config_files ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in"
+if test "${use_ld_wrapper}" = "yes"; then
+    ac_config_files="$ac_config_files ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}:scripts/aros-ld.in"
 
-
+fi
 # Bare Elf support script and spec
 if test "${use_kernel_cc_wrapper}" = "yes"; then
     ac_config_commands="$ac_config_commands elf-compiler-support"
@@ -15855,7 +15868,7 @@ do
     "${aros_tools_dir}/genmf.py") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
     "tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES tools/collect-aros/env.h" ;;
     "binutils-support") CONFIG_COMMANDS="$CONFIG_COMMANDS binutils-support" ;;
-    "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in" ;;
+    "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}:scripts/aros-ld.in" ;;
     "elf-compiler-support") CONFIG_COMMANDS="$CONFIG_COMMANDS elf-compiler-support" ;;
     "${aros_targetcfg_dir}/elf-specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/elf-specs:${elf_specs_in}" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in" ;;
