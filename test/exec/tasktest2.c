@@ -11,6 +11,8 @@
 #include "memory.h"
 #include <stdio.h>
 
+#include "exec_platform.h"
+
 int cnt;
 int sigbit1,sigbit2;
 struct Task *parent;
@@ -67,8 +69,11 @@ int main(int argc, char* argv[])
 		NEWLIST(&t->tc_MemEntry);
 		AddTask(t,&entry,NULL);
 		SetTaskPri(t,1);
-		printf("%p %p %p %p\n",t,FindTask("new task"),
-		       SysBase->ThisTask,FindTask(NULL));
+
+		printf("%p %p %p %p\n",
+                        t, GET_THIS_TASK,
+                        FindTask("new task"), FindTask(NULL));
+
 		Wait(1<<sigbit1);
 		if(sigbit2>=0)
 		{

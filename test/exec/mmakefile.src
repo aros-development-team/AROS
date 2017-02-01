@@ -4,7 +4,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES :=		\
+EXECPUBLICFILES :=		\
     alert		\
     allocmem		\
     allocxxx        \
@@ -31,7 +31,6 @@ FILES :=		\
     supertest		\
     taskstorage \
     tasktest		\
-    tasktest2		\
     timeport \
     traptest		\
     vblank
@@ -40,9 +39,18 @@ EXEDIR := $(AROS_TESTS)/exec
 
 USER_CFLAGS := -D__AROS_GIMME_DEPRECATED_STACKSWAP__
 
+#MM- test : test-exec-public test-exec-private
 #MM test-exec : includes includes-copy linklibs kernel
 
-%build_progs mmake=test-exec \
-    files=$(FILES) targetdir=$(EXEDIR)
+%build_progs mmake=test-exec-private \
+    files=$(EXECPUBLICFILES) targetdir=$(EXEDIR)
 
+EXECPRIVATEFILES :=		\
+    tasktest2
+
+USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+
+%build_progs mmake=test-exec-private \
+    files=$(EXECPRIVATEFILES) targetdir=$(EXEDIR)
+    
 %common
