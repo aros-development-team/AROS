@@ -4,7 +4,14 @@
 typedef struct tls
 {
     struct ExecBase     *SysBase;
-    void                *KernelBase;    /* Base of kernel.resource                      */
+    void                *KernelBase;    /* Base of kernel.resource              */
+#if defined(__AROSEXEC_SMP__)
+    struct Task         *ThisTask;      /* Currently running task on this core  */
+
+    ULONG               ScheduleFlags;
+    BYTE                IDNestCnt;
+    BYTE                TDNestCnt;
+#endif
 } tls_t;
 
 #define TLS_OFFSET(name) ((char *)&(((tls_t *)0)->name)-(char *)0)
