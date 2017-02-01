@@ -1,7 +1,9 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/config.h>
 
 #include <exec/alerts.h>
 #include <exec/types.h>
@@ -43,10 +45,19 @@ int main(void) {
     asm volatile("\n.asciz \"/* ExecBase */\"" ::);
     DEFINE(AttnResched   , offsetof (struct ExecBase, AttnResched));
     DEFINE(AttnFlags     , offsetof (struct ExecBase, AttnFlags));
+#if !defined(__AROSEXEC_SMP__)
     DEFINE(IDNestCnt     , offsetof (struct ExecBase, IDNestCnt));
     DEFINE(TDNestCnt     , offsetof (struct ExecBase, TDNestCnt));
+#else
+    DEFINE(SMPPrivate2   , offsetof (struct ExecBase, SMPPrivate2));
+    DEFINE(SMPPrivate3   , offsetof (struct ExecBase, SMPPrivate3));
+#endif
     DEFINE(TaskReady     , offsetof (struct ExecBase, TaskReady));
+#if !defined(__AROSEXEC_SMP__)
     DEFINE(ThisTask      , offsetof (struct ExecBase, ThisTask));
+#else
+    DEFINE(SMPPrivate1   , offsetof (struct ExecBase, SMPPrivate1));
+#endif
     DEFINE(SysFlags      , offsetof (struct ExecBase, SysFlags));
     DEFINE(IdleCount     , offsetof (struct ExecBase, IdleCount));
     DEFINE(DispCount     , offsetof (struct ExecBase, DispCount));
