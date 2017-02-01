@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PrepareContext() - Prepare a task context for dispatch, x86-64 version
@@ -43,7 +43,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         switch(t->ti_Tag)
         {
 #if defined(__AROSEXEC_SMP__)
-            case NP_Affinity:
+            case TASKTAG_AFFINITY:
                 IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
                 break;
 #endif
