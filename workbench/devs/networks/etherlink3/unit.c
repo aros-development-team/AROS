@@ -1,5 +1,6 @@
 /*
 
+Copyright (C) 2012-2017 The AROS Dev team
 Copyright (C) 2001-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
@@ -2414,7 +2415,7 @@ static VOID UnitTask(struct ExecBase *sys_base)
 
    /* Get parameters */
 
-   task = AbsExecBase->ThisTask;
+   task = FindTask(NULL);
    unit = task->tc_UserData;
    base = unit->device;
 
