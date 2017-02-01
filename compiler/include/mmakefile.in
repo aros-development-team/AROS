@@ -43,7 +43,8 @@ INCSUBDIRS :=	aros				\
 INCEMPTYDIRS := defines				\
 		inline
 
-INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)) $(wildcard *.h)
+INCLUDES_BASE    := $(foreach d,$(addprefix $(SRCDIR)/$(CURDIR)/,$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)) $(wildcard *.h)
+INCLUDES      := $(subst $(SRCDIR)/$(CURDIR)/,,$(INCLUDES_BASE))
 ARCHINCDIR    := $(SRCDIR)/arch/$(CPU)-$(ARCH)/include/
 ARCH_INCLUDES := $(subst $(ARCHINCDIR),,$(foreach d,$(addprefix $(ARCHINCDIR),$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)))
 INCLUDES      := $(filter-out $(ARCH_INCLUDES),$(INCLUDES))
@@ -64,21 +65,44 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS) $(INCEMPTYDIRS),$(AROS_INCLUDES)/$(
 #MM- includes-copy-$(ARCH)-$(CPU) :
 
 #MM
-compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
+compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES) includes-execbase_h
 
-$(AROS_INCLUDES)/%.h : %.h
+# execbase is copied seperately, since on SMP builds we need to
+# remove some fields
+
+EXECSMP="@ENABLE_EXECSMP@"
+
+$(GENINCDIR)/exec/execbase.h : $(SRCDIR)/$(CURDIR)/exec/execbase.inc
+	@$(ECHO) "Copying    C   includes to $(GENINCDIR)..."
+	@$(CP) $< $@
+ifneq ($(strip $(EXECSMP)),)
+	sed -i -e 's/ThisTask/SMPPrivate1/g' -e 's/IDNestCnt/SMPPrivate2/g' -e 's/TDNestCnt/SMPPrivate3/g' $@
+endif
+
+$(AROS_INCLUDES)/exec/execbase.h : $(GENINCDIR)/exec/execbase.h
 	@$(ECHO) "Copying    C   includes to $(AROS_INCLUDES)..."
 	@$(CP) $< $@
 
-$(GENINCDIR)/%.h : %.h
+#MM
+includes-execbase_h : $(AROS_INCLUDES)/exec/execbase.h
+
+.PHONY : includes-execbase_h
+
+# normal include copy routines
+
+$(AROS_INCLUDES)/%.h : $(SRCDIR)/$(CURDIR)/%.h
+	@$(ECHO) "Copying    C   includes to $(AROS_INCLUDES)..."
+	@$(CP) $< $@
+
+$(GENINCDIR)/%.h : $(SRCDIR)/$(CURDIR)/%.h
 	@$(ECHO) "Copying    C   includes to $(GENINCDIR)..."
 	@$(CP) $< $@
 
-$(AROS_INCLUDES)/%.hpp : %.hpp
+$(AROS_INCLUDES)/%.hpp : $(SRCDIR)/$(CURDIR)/%.hpp
 	@$(ECHO) "Copying    C++ includes to $(AROS_INCLUDES)..."
 	@$(CP) $< $@
 
-$(GENINCDIR)/%.hpp : %.hpp
+$(GENINCDIR)/%.hpp : $(SRCDIR)/$(CURDIR)/%.hpp
 	@$(ECHO) "Copying    C++ includes to $(GENINCDIR)..."
 	@$(CP) $< $@
 
@@ -93,7 +117,7 @@ includes-asm_h-$(CPU) : $(GENINCDIR)/aros/$(CPU)/asm.h
 
 .PHONY : includes-asm_h-$(CPU)
 
-$(OBJDIR)/asm.s : asm.c | $(OBJDIR)
+$(OBJDIR)/asm.s : $(SRCDIR)/$(CURDIR)/asm.c | $(OBJDIR)
 	@$(ECHO) "Compiling  $<..."
 	@$(TARGET_CC) $(TARGET_SYSROOT) $(CFLAGS) $(PRIV_EXEC_INCLUDES) $(PRIV_KERNEL_INCLUDES) -S $< -o $@
 
@@ -110,3 +134,4 @@ $(GENINCDIR)/aros/$(CPU) :
 #MM
 clean :
 	-$(RM) $(AROS_INCLUDES) $(GENINCDIR)
+

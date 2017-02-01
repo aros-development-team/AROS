@@ -3036,6 +3036,7 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in
     ${aros_targetcfg_dir}/build.cfg:config/build.cfg.in
     mmake.config
+    compiler/include/mmakefile:compiler/include/mmakefile.in
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
     tools/collect-aros/env.h
