@@ -1,11 +1,13 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
 */
 
 #include <proto/exec.h>
+
+#include "exec_platform.h"
 
 /* Main scheduler entry points */
 void core_ExitInterrupt(regs_t *regs);
@@ -40,7 +42,7 @@ static inline int core_Trap(ULONG code, void *regs)
     if (SysBase)
     {
 	void (*trapHandler)(ULONG, void *) = SysBase->TaskTrapCode;
-        struct Task *t = SysBase->ThisTask;
+        struct Task *t = GET_THIS_TASK;
 
         if (t)
 	{
