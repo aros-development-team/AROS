@@ -25,7 +25,7 @@
  */
 BOOL core_Schedule(void)
 {
-    struct Task *task = SysBase->ThisTask;
+    struct Task *task = GET_THIS_TASK;
 
     D(bug("[KRN] core_Schedule()\n"));
 
@@ -66,7 +66,7 @@ BOOL core_Schedule(void)
 /* Actually switch away from the task */
 void core_Switch(void)
 {
-    struct Task *task = SysBase->ThisTask;
+    struct Task *task = GET_THIS_TASK;
 
     D(bug("[KRN] core_Switch(): Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
@@ -123,7 +123,7 @@ struct Task *core_Dispatch(void)
 
     SysBase->DispCount++;
     IDNESTCOUNT_SET(task->tc_IDNestCnt);
-    SysBase->ThisTask  = task;
+    SET_THIS_TASK(task);
     SysBase->Elapsed   = SysBase->Quantum;
     FLAG_SCHEDQUANTUM_CLEAR;
     task->tc_State     = TS_RUN;
