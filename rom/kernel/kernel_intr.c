@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: High-level scheduler calling code
