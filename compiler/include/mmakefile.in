@@ -75,7 +75,7 @@ EXECSMP="@ENABLE_EXECSMP@"
 $(GENINCDIR)/exec/execbase.h : $(SRCDIR)/$(CURDIR)/exec/execbase.inc
 	@$(ECHO) "Copying    C   includes to $(GENINCDIR)..."
 	@$(CP) $< $@
-ifneq ($(strip $(EXECSMP)),)
+ifneq ($(strip $(EXECSMP)),"")
 	sed -i -e 's/ThisTask/SMPPrivate1/g' -e 's/IDNestCnt/SMPPrivate2/g' -e 's/TDNestCnt/SMPPrivate3/g' $@
 endif
 
