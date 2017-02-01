@@ -69,9 +69,11 @@ struct IntExecBase
     char                        AlertBuffer[ALERT_BUFFER_SIZE]; /* Buffer for alert text                                        */
 };
 
-#define PrivExecBase(base)      ((struct IntExecBase *)base)
+#define PrivExecBase(base)      ((struct IntExecBase *)(base))
 #define PD(base)                PrivExecBase(base)->PlatformData
+#ifndef __AROS_KERNEL__
 #define KernelBase              PrivExecBase(SysBase)->KernelBase
+#endif
 #define DebugBase               PrivExecBase(SysBase)->DebugBase
 
 /* IntFlags */
