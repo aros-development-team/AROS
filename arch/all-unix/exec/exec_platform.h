@@ -41,7 +41,9 @@ struct Exec_PlatformData
     struct LibCInterface *SysIFace;
 };
 
+#ifndef __AROS_KERNEL__
 #define HostLibBase PD(SysBase).HostLibBase
+#endif
 
 #ifdef AROS_NO_ATOMIC_OPERATIONS
 #define IDNESTCOUNT_INC                 SysBase->IDNestCnt++
