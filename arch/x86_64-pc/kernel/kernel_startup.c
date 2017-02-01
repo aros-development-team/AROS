@@ -294,8 +294,8 @@ void kernel_cstart(const struct TagItem *start_msg)
         __KernBootPrivate->BOOTTLS = core_AllocBootTLS(__KernBootPrivate);
     if (!__KernBootPrivate->BOOTGDT)
         __KernBootPrivate->BOOTGDT = core_AllocBootGDT(__KernBootPrivate);
-
-    core_AllocBootTSS(__KernBootPrivate);
+    if (!__KernBootPrivate->TSS)
+        __KernBootPrivate->TSS = core_AllocBootTSS(__KernBootPrivate);
 
     /* Setup GDT */
     core_SetupGDT(__KernBootPrivate, _APICID,
@@ -320,7 +320,13 @@ void kernel_cstart(const struct TagItem *start_msg)
                     __KernBootPrivate->SystemStack + STACK_SIZE * 3));
     }
 
-    D(bug("[Kernel] %s: launching on BSP APIC ID %d, base @ 0x%p\n", __func__, _APICID, __KernBootPrivate->_APICBase));
+    D(
+        bug("[Kernel] %s: launching on BSP APIC ID %d\n", __func__, _APICID);
+        bug("[Kernel] %s:                apicbase : 0x%p\n", __func__, __KernBootPrivate->_APICBase);
+        bug("[Kernel] %s:                GDT       : 0x%p\n", __func__, __KernBootPrivate->BOOTGDT);
+        bug("[Kernel] %s:                TLS        : 0x%p\n", __func__, __KernBootPrivate->BOOTTLS);
+        bug("[Kernel] %s:                TSS        : 0x%p\n", __func__, __KernBootPrivate->TSS);
+    )
 
     /* Load the TSS, and GDT */
     core_CPUSetup(_APICID, __KernBootPrivate->BOOTGDT, __KernBootPrivate->SystemStack);
@@ -328,12 +334,15 @@ void kernel_cstart(const struct TagItem *start_msg)
     D(bug("[Kernel] %s: preparing interrupt vectors\n", __func__));
     /* Set-up the IDT */
     __KernBootPrivate->BOOTIDT = core_AllocBootIDT(__KernBootPrivate);
+    D(bug("[Kernel] %s:                IDT        : 0x%p\n", __func__, __KernBootPrivate->_APICBase);)
     core_SetupIDT(__KernBootPrivate, _APICID, __KernBootPrivate->BOOTIDT);
 
     /* Set-up MMU */
     memtop = mmap_LargestAddress(mmap, mmap_len);
     D(bug("[Kernel] %s: memtop @ 0x%p\n", __func__, memtop));
     core_SetupMMU(&__KernBootPrivate->MMU, memtop);
+
+    D(bug("[Kernel] %s: TLS_PTR_GET = 0x%p\n", __func__, TLS_PTR_GET()));
 
     /*
      * Here we ended all boot-time allocations.
@@ -637,9 +646,10 @@ void core_CPUSetup(apicid_t _APICID, APTR cpuGDT, IPTR SystemStack)
 
 static APTR core_AllocBootTLS(struct KernBootPrivate *__KernBootPrivate)
 {
-    intptr_t tlsPtr;
+    tls_t *tlsPtr;
 
-    tlsPtr = (intptr_t)krnAllocBootMem(sizeof(tls_t));
+    tlsPtr = (tls_t *)krnAllocBootMem(sizeof(tls_t));
+    tlsPtr->_self = tlsPtr;
 
     return (APTR)tlsPtr;
 }
