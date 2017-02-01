@@ -15,8 +15,6 @@
 #include <kernel_scheduler.h>
 #include <kernel_syscall.h>
 
-#include "exec_platform.h"
-
 /*
  * Leave the interrupt. This function receives the interrupt register frame
  * and runs task scheduler if needed.
