@@ -2,10 +2,17 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES    := kernel_startup platform_init kernel_cpu kernel_debug kernel_memory kernel_bootmem \
-	    intr mmu
+FILES    := \
+             kernel_startup \
+             platform_init \
+             kernel_cpu \
+             kernel_debug \
+             kernel_memory \
+             kernel_bootmem \
+             intr mmu
 FUNCS	 :=
-ASMFILES := core_interrupts
+ASMFILES := \
+             core_interrupts
 
 MAINDIR	      := rom/kernel
 USER_AFLAGS   := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-pc/kernel
