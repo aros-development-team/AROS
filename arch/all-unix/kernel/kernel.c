@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize the interface to the "hardware".
@@ -16,6 +16,8 @@
 #include <proto/hostlib.h>
 
 #define timeval sys_timeval
+
+#define __AROS_KERNEL__
 
 #include "hostinterface.h"
 #include "kernel_base.h"
