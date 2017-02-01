@@ -76,7 +76,7 @@ $(GENINCDIR)/exec/execbase.h : $(SRCDIR)/$(CURDIR)/exec/execbase.inc
 	@$(ECHO) "Copying    C   includes to $(GENINCDIR)..."
 	@$(CP) $< $@
 ifneq ($(strip $(EXECSMP)),"")
-	sed -i -e 's/ThisTask/SMPPrivate1/g' -e 's/IDNestCnt/SMPPrivate2/g' -e 's/TDNestCnt/SMPPrivate3/g' $@
+	sed -i -e 's/.*ThisTask;.*/    IPTR         SMPPrivate1;/' -e 's/.*IDNestCnt;.*/    UBYTE        SMPPrivate2;/' -e 's/.*TDNestCnt;.*/    UBYTE        SMPPrivate3;/' $@
 endif
 
 $(AROS_INCLUDES)/exec/execbase.h : $(GENINCDIR)/exec/execbase.h
