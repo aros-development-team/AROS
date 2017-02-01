@@ -12,7 +12,7 @@ EXEDIR := $(AROS_TESTS)
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-#MM- test : test-common test-clib test-kernel test-exec test-intuition \
+#MM- test : test-common test-clib test-kernel test-intuition \
 #MM  test-layers test-zune workbench-libs-version test-$(AROS_TARGET_ARCH) test-miscfiles
 
 #MM  test-common : includes workbench-libs-version linklibs
