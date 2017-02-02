@@ -4,7 +4,16 @@
 #include <aros/cpu.h>
 
 typedef struct {
-    volatile unsigned long lock;
+    union
+    {
+        volatile struct {
+            unsigned int _pad1 : 4;
+            unsigned int write : 1;
+            unsigned int _pad2 : 3;
+            unsigned int readcount : 24;
+        } slock;
+        volatile unsigned long lock;
+    };
 } spinlock_t;
 
 #define SPINLOCK_INIT_UNLOCKED  { 0 }
