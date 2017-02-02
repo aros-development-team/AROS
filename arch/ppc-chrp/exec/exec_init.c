@@ -376,7 +376,7 @@ void exec_main(struct TagItem *msg, void *entry)
             }
 
             /* Initialise the ETask data. */
-            InitETask(t, t->tc_UnionETask.tc_ETask);
+            InitETask(t, NULL, t->tc_UnionETask.tc_ETask);
             t->tc_UnionETask.tc_ETask->et_RegFrame = KrnCreateContext();
 
             if (!t->tc_UnionETask.tc_ETask->et_RegFrame)
