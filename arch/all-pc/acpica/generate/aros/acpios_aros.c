@@ -22,7 +22,7 @@
 #include <proto/acpica.h>
 
 #include <asm/io.h>
-
+#include <exec/resident.h>
 #include <devices/timer.h>
 
 #define _COMPONENT          ACPI_OS_SERVICES
@@ -613,14 +613,6 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
         ACPICABase->ab_PCIs = 0;
     }
 
-    /* Everything else is in the late initialization thread,
-     * which will start at the highest priority once mulitasking begins
-     */
-    if (NewCreateTask(TASKTAG_PC, ACPICA_InitTask, TASKTAG_NAME, "ACPICA_InitTask", TASKTAG_PRI, 127, TASKTAG_ARG1, ACPICABase, TAG_DONE) == NULL) {
-        AcpiTerminate();
-        return FALSE;
-    }
-
     return TRUE;
 }
 ADD2INITLIB(ACPICA_init,0)
@@ -632,3 +624,58 @@ int ACPICA_expunge(struct ACPICABase *ACPICABase)
     return TRUE;
 }
 ADD2EXPUNGELIB(ACPICA_expunge, 0)
+
+extern void acpicapost_end(void);
+
+static AROS_UFP3 (APTR, ACPICAPost,
+		  AROS_UFPA(struct Library *, lh, D0),
+		  AROS_UFPA(BPTR, segList, A0),
+		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+
+static const TEXT acpicapost_namestring[] = "acpica.post";
+static const TEXT acpicapost_versionstring[] = "acpica.post 1.0\n";
+
+const struct Resident acpicapost_romtag =
+{
+   RTC_MATCHWORD,
+   (struct Resident *)&acpicapost_romtag,
+   (APTR)&acpicapost_end,
+   RTF_COLDSTART,
+   1,
+   NT_UNKNOWN,
+   119,
+   (STRPTR)acpicapost_namestring,
+   (STRPTR)acpicapost_versionstring,
+   (APTR)ACPICAPost
+};
+
+extern struct syscallx86_Handler x86_SCRebootHandler;
+extern struct syscallx86_Handler x86_SCChangePMStateHandler;
+
+static AROS_UFH3 (APTR, ACPICAPost,
+		  AROS_UFHA(struct Library *, lh, D0),
+		  AROS_UFHA(BPTR, segList, A0),
+		  AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    struct ACPICABase *ACPICABase;
+
+    /* If ACPICA isnt available, dont run */
+    ACPICABase = (struct ACPICABase *)OpenResource("kernel.resource");
+    if (!ACPICABase)
+            return NULL;
+
+    /* Start up the late initialization thread at the highest priority */
+    if (NewCreateTask(TASKTAG_PC, ACPICA_InitTask, TASKTAG_NAME, "ACPICA_InitTask", TASKTAG_PRI, 127, TASKTAG_ARG1, ACPICABase, TAG_DONE) == NULL) {
+        bug("[ACPI] %s: Failed to start ACPI init task\n", __func__);
+    }
+
+    AROS_USERFUNC_EXIT
+
+    return NULL;
+}
+
+void acpicapost_end(void) { };
+
