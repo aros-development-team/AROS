@@ -2,7 +2,7 @@
 #define _EXEC_UTIL_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility functions for exec.
@@ -89,7 +89,7 @@ struct TraceLocation
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
                     const struct TagItem *tagList, struct ExecBase *SysBase);
 
-BOOL Exec_InitETask(struct Task *task, struct ExecBase *SysBase);
+BOOL Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase);
 void Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase);
 void Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase);
 BOOL Exec_ExpandTS(struct Task *task, struct ExecBase *SysBase);
@@ -137,7 +137,7 @@ static inline void InitMsgPort(struct MsgPort *ret)
 /* Pseudo-functions, including SysBase for nicer calling */
 #define FindChild(i)	    Exec_FindChild(i,SysBase)
 #define FindETask(l,i)	    Exec_FindETask(l,i,SysBase)
-#define InitETask(t)	    Exec_InitETask(t,SysBase)
+#define InitETask(t,p)	    Exec_InitETask(t,p,SysBase)
 #define CleanupETask(t)     Exec_CleanupETask(t,SysBase)
 #define ExpungeETask(e)	    Exec_ExpungeETask(e,SysBase)
 

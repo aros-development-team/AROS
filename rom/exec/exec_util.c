@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Exec utility functions.
@@ -20,7 +20,11 @@
 #include "exec_util.h"
 #include "taskstorage.h"
 
-/*i***************************************************************************
+#if defined(__AROSEXEC_SMP__)
+#include <proto/kernel.h>
+#endif
+
+/****************************************************************************
 
     NAME */
 #include "exec_util.h"
@@ -78,18 +82,25 @@
 }
 
 BOOL
-Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
+Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 {
     /*
      *  We don't add this to the task memory, it isn't free'd by
      *  RemTask(), rather by somebody else calling ChildFree().
      *  Alternatively, an orphaned task will free its own ETask.
      */
+#if defined(__AROSEXEC_SMP__)
+    int cpunum;
+#endif
     struct ETask *et =
         AllocMem(sizeof(struct IntETask), MEMF_PUBLIC | MEMF_CLEAR);
 
-    D(bug("[EXEC:ETask] Init: Allocated ETask @ 0x%p, %d bytes for Task @ %p\n",
-        et, sizeof(struct IntETask), task);)
+    D(
+        bug("[EXEC:ETask] Init: Allocated ETask for Task '%s' @ %p\n",
+        task->tc_Node.ln_Name, task);
+        bug("[EXEC:ETask] Init:            ETask @ 0x%p, %d bytes\n",
+        et, sizeof(struct IntETask));
+    )
 
     task->tc_UnionETask.tc_ETask = et;
     if (!et)
@@ -97,12 +108,17 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
     task->tc_Flags |= TF_ETASK;
 
 #if defined(__AROSEXEC_SMP__)
+    cpunum = KrnGetCPUNumber();
     EXEC_SPINLOCK_INIT(&IntETask(et)->iet_TaskLock);
-    IntETask(et)->iet_CpuAffinity = (1 << 0);
+    IntETask(et)->iet_CpuAffinity = KrnGetCPUMask(cpunum);
+
+    D(bug("[EXEC:ETask] Init: CPU #%d, mask %08x\n", cpunum, IntETask(et)->iet_CpuAffinity);)
 #endif
 
-    et->et_Parent = GET_THIS_TASK;
+    et->et_Parent = parent;
     NEWLIST(&et->et_Children);
+
+    D(bug("[EXEC:ETask] Init: Parent @ 0x%p\n", et->et_Parent);)
 
     /* Initialise the message list */
     InitMsgPort(&et->et_TaskMsgPort);
@@ -122,10 +138,14 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
     }
 #endif
 
+    D(bug("[EXEC:ETask] Init: Generating Unique ID...\n");)
+
     /* Get a unique identifier for this task */
     Forbid();
-    while(et->et_UniqueID == 0)
+   while(et->et_UniqueID == 0)
     {
+        //TODO: Replace with UUID!
+
 	/*
 	 *	Add some fuzz on wrapping. It's likely that the early numbers
 	 *	where taken by somebody else.
@@ -140,9 +160,12 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
     }
     Permit();
     
+    D(bug("[EXEC:ETask] Init:     Task ID : %08x\n", et->et_UniqueID);)
+
     /* Finally if the parent task is an ETask, add myself as its child */
     if(et->et_Parent && ((struct Task*) et->et_Parent)->tc_Flags & TF_ETASK)
     {
+        D(bug("[EXEC:ETask] Init: Registering with Parent ETask\n");)
 	Forbid();
 	ADDHEAD(&GetETask(et->et_Parent)->et_Children, et);
 	Permit();
