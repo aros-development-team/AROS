@@ -1,7 +1,6 @@
 /*
     Copyright © 2017, The AROS Development Team. All rights reserved.
-    $Id: kernel_scheduler.c 52554 2016-04-07 14:31:13Z neil $
-
+    $Id$
 */
 
 #include <exec/alerts.h>
