@@ -105,7 +105,7 @@ const struct Resident kernelpost_romtag =
    RTF_COLDSTART,
    1,
    NT_UNKNOWN,
-   119,
+   115,
    (STRPTR)kernelpost_namestring,
    (STRPTR)kernelpost_versionstring,
    (APTR)KernelPost
