@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PrepareContext() - Prepare a task context for dispatch, i386 version
@@ -16,6 +16,9 @@
 
 #include "exec_intern.h"
 #include "exec_util.h"
+#if defined(__AROSEXEC_SMP__)
+#include "etask.h"
+#endif
 
 #define _PUSH(sp, val) *--sp = (IPTR)val
 
@@ -40,7 +43,12 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     {
     	switch(t->ti_Tag)
 	{
-		
+#if defined(__AROSEXEC_SMP__)
+            case TASKTAG_AFFINITY:
+                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
+                break;
+#endif
+
 #define HANDLEARG(x)                      \
 	case TASKTAG_ARG ## x:            \
 	    args[x - 1] = t->ti_Data;     \
