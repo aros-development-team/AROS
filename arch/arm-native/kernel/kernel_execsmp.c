@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,7 +16,7 @@
 #define D(x)
 
 #if defined(__AROSEXEC_SMP__)
-extern BOOL Exec_InitETask(struct Task *, struct ExecBase *);
+extern BOOL Exec_InitETask(struct Task *, struct Task *, struct ExecBase *);
 
 struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 {
@@ -82,7 +82,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     bstask->tc_SigAlloc     = 0xFFFF;
 
     /* Create a ETask structure and attach CPU context */
-    if (!Exec_InitETask(bstask, SysBase))
+    if (!Exec_InitETask(bstask, NULL, SysBase))
     {
         bug("[Kernel:%02d] FATAL : Failed to initialize bootstrap ETask\n", cpunum);
         FreeVec(bstask->tc_Node.ln_Name);
