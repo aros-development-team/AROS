@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a task.
@@ -12,6 +12,7 @@
 #include <aros/debug.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <exec/rawfmt.h>
 
 #include "etask.h"
 #include "exec_util.h"
@@ -77,15 +78,35 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *parent;
+
     ASSERT_VALID_PTR(task);
 
 #if defined(__AROSEXEC_SMP__)
     int cpunum = KrnGetCPUNumber();
 #endif
 
+    parent = GET_THIS_TASK;
+
     /* Sigh - you should provide a name for your task. */
     if (task->tc_Node.ln_Name == NULL)
-        task->tc_Node.ln_Name = "unknown task";
+    {
+#if (0)
+        // TODO: dont enable until it allocates storage for the task name in a better way ..
+        if (parent && parent->tc_Node.ln_Name)
+        {
+            IPTR fmtname[] =
+            {
+                (IPTR)parent->tc_Node.ln_Name
+            };
+
+            task->tc_Node.ln_Name = AllocVec(strlen(parent->tc_Node.ln_Name) + 10, MEMF_ANY);
+            RawDoFmt("%s.subtask", (RAWARG)&fmtname, RAWFMTFUNC_STRING, NULL);
+        }
+        else
+#endif
+            task->tc_Node.ln_Name = "bad task";
+    }
 
     DADDTASK("NewAddTask (0x%p (\"%s\"), 0x%p, 0x%p)", task, task->tc_Node.ln_Name, initialPC, finalPC);
 
@@ -130,7 +151,7 @@
         task->tc_Flags |= TF_STACKCHK;
 
     /* Initialize ETask */
-    if (!InitETask(task))
+    if (!InitETask(task, parent))
         return NULL;
 
     /* Get new stackpointer. */
@@ -204,7 +225,9 @@
 
     if (
 #if defined(__AROSEXEC_SMP__)
-        ((IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) == KrnGetCPUMask(cpunum)) &&
+        (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) == KrnGetCPUMask(cpunum))
+    {
+        if(
 #endif
         task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri &&
         GET_THIS_TASK->tc_State == TS_RUN)
@@ -215,9 +238,10 @@
         Reschedule();
     }
 #if defined(__AROSEXEC_SMP__)
+    }
     else
     {
-        bug("[Exec] AddTask:\n");
+        bug("[Exec] AddTask: CPU #%d not in mask [%08x:%08x]\n", cpunum, KrnGetCPUMask(cpunum), IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
     }
 #endif
 

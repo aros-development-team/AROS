@@ -195,8 +195,11 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
-    /* Create a ETask structure and attach CPU context */
-    if (!InitETask(t))
+    /* Set the bootstrapping task incase errors occur... */
+    SET_THIS_TASK(t);
+
+    /* Create the first ETask structure and attach CPU context */
+    if (!InitETask(t, NULL))
     {
         DINIT("FATAL: Failed to allocate any memory for first tasks extended data!");
         goto execfatal;
@@ -205,12 +208,6 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 
     DINIT("[exec] Boot Task 0x%p, ETask 0x%p, CPU context 0x%p\n", t, t->tc_UnionETask.tc_ETask, ctx);
 
-    /*
-     * Set the current task and elapsed time for it.
-     * Set ThisTask only AFTER InitETask() has been called. InitETask() sets et_Parent
-     * to FindTask(NULL). We must get NULL there, otherwise we'll get task looped on itself.
-     */
-    SET_THIS_TASK(t);
     SysBase->Elapsed  = SysBase->Quantum;
 
     /* Install the interrupt servers. Again, do it here because allocations are needed. */
