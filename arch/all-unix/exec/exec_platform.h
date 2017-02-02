@@ -7,8 +7,12 @@
 
 #else
 
-/* On Darwin this definition is required by ucontext.h (which is marked as deprecated) */
+#ifndef _XOPEN_SOURCE
+/* On Darwin this definition is required by ucontext.h (which is marked as deprecated) 
+ * At least on Debian 8, _XOPEN_SOURCE is already defined in /usr/include/features.h 
+ */
 #define _XOPEN_SOURCE
+#endif
 #include <ucontext.h>
 
 #endif
