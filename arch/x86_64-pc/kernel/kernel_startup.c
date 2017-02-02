@@ -108,7 +108,12 @@ static void boot_start(struct TagItem *msg)
     fb_Mirror = (void *)LibGetTagData(KRN_ProtAreaEnd, 0x101000, msg);
     con_InitTagList(msg);
 
-    bug("AROS64 - The AROS Research OS, 64-bit version. Compiled %s\n", __DATE__);
+    bug("AROS64 - The AROS Research OS\n");
+    bug("64-bit ");
+#if defined(__AROSEXEC_SMP__)
+    bug("SMP ");
+#endif
+    bug("build. Compiled %s\n", __DATE__);
     D(bug("[Kernel] boot_start: Jumped into kernel.resource @ %p [stub @ %p].\n", boot_start, start64));
 
     kernel_cstart(msg);
@@ -323,9 +328,9 @@ void kernel_cstart(const struct TagItem *start_msg)
     D(
         bug("[Kernel] %s: launching on BSP APIC ID %d\n", __func__, _APICID);
         bug("[Kernel] %s:                apicbase : 0x%p\n", __func__, __KernBootPrivate->_APICBase);
-        bug("[Kernel] %s:                GDT       : 0x%p\n", __func__, __KernBootPrivate->BOOTGDT);
-        bug("[Kernel] %s:                TLS        : 0x%p\n", __func__, __KernBootPrivate->BOOTTLS);
-        bug("[Kernel] %s:                TSS        : 0x%p\n", __func__, __KernBootPrivate->TSS);
+        bug("[Kernel] %s:                GDT      : 0x%p\n", __func__, __KernBootPrivate->BOOTGDT);
+        bug("[Kernel] %s:                TLS      : 0x%p\n", __func__, __KernBootPrivate->BOOTTLS);
+        bug("[Kernel] %s:                TSS      : 0x%p\n", __func__, __KernBootPrivate->TSS);
     )
 
     /* Load the TSS, and GDT */
@@ -334,7 +339,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     D(bug("[Kernel] %s: preparing interrupt vectors\n", __func__));
     /* Set-up the IDT */
     __KernBootPrivate->BOOTIDT = core_AllocBootIDT(__KernBootPrivate);
-    D(bug("[Kernel] %s:                IDT        : 0x%p\n", __func__, __KernBootPrivate->BOOTIDT);)
+    D(bug("[Kernel] %s:                IDT      : 0x%p\n", __func__, __KernBootPrivate->BOOTIDT);)
     core_SetupIDT(__KernBootPrivate, _APICID, __KernBootPrivate->BOOTIDT);
 
     /* Set-up MMU */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common trap handling routines for x86 CPU
@@ -25,7 +25,7 @@ static void PrintContext(struct ExceptionContext *regs, unsigned long error_code
 {
     int i;
     unsigned long *ptr;
-    struct Task *t = SysBase->ThisTask;
+    struct Task *t = GET_THIS_TASK;
 
     if (t)
     {

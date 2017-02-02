@@ -27,6 +27,11 @@ extern APTR PlatformAllocGDT(struct KernelBase *, apicid_t);
 extern APTR PlatformAllocTLS(struct KernelBase *, apicid_t);
 extern APTR PlatformAllocIDT(struct KernelBase *, apicid_t);
 
+#if defined(__AROSEXEC_SMP__)
+extern struct Task *cpu_InitBootStrap();
+extern void cpu_BootStrap(struct Task *);
+#endif
+
 static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBase *KernelBase)
 {
     /*
@@ -38,6 +43,9 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
     IPTR _APICBase;
     apicid_t _APICID;
     apicid_t _APICNO;
+#if defined(__AROSEXEC_SMP__)
+    struct Task *apicBSTask;
+#endif
 
 #if (__WORDSIZE==64)
     /* Enable fxsave/fxrstor */
@@ -85,18 +93,27 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
 #endif
 
 #if defined(__AROSEXEC_SMP__)
-    D(bug("[Kernel:SMP] %s[0x%02X]: Leaving supervisor mode\n", __func__, _APICID));
-    krnLeaveSupervisorRing(FLAGS_INTENABLED);
-#endif
+    D(bug("[Kernel:SMP] %s[0x%02X]: SysBase @ 0x%p\n", __func__, _APICID, SysBase));
 
+    TLS_SET(SysBase,SysBase);
+    TLS_SET(KernelBase,KernelBase);
+
+    if ((apicBSTask = cpu_InitBootStrap()) != NULL)
+    {
+        cpu_BootStrap(apicBSTask);
+#else
     bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, apicData->apic_count);
+#endif
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
 
-#if !defined(__AROSEXEC_SMP__)
-    while (1) asm volatile("hlt");
+#if defined(__AROSEXEC_SMP__)
+    }
+
+    bug("[Kernel:SMP] APIC #%u Failed to bootstrap (Halting)...\n", _APICNO + 1);
 #endif
+    while (1) asm volatile("hlt");
 }
 
 static int smp_Setup(struct KernelBase *KernelBase)

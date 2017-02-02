@@ -50,7 +50,7 @@ void ictl_Initialize(struct KernelBase *KernelBase)
     /* Check if the 8259a has already been registered, if not probe for it ... */
     if (!krnFindInterruptController(KernelBase, ICTYPE_I8259A))
     {
-        D(icintrid_t xtpicICInstID;)
+        D(__unused icintrid_t xtpicICInstID;)
 
         if (i8259a_Probe())
         {
