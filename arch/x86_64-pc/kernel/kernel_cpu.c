@@ -27,7 +27,7 @@
 #include <exec_platform.h>
 
 #define D(x)
-#define DSCHED(x) x
+#define DSCHED(x)
 #define DREGS(x)
 
 #define ADDTIME(dest, src)			\
