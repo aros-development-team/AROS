@@ -334,7 +334,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     D(bug("[Kernel] %s: preparing interrupt vectors\n", __func__));
     /* Set-up the IDT */
     __KernBootPrivate->BOOTIDT = core_AllocBootIDT(__KernBootPrivate);
-    D(bug("[Kernel] %s:                IDT        : 0x%p\n", __func__, __KernBootPrivate->_APICBase);)
+    D(bug("[Kernel] %s:                IDT        : 0x%p\n", __func__, __KernBootPrivate->BOOTIDT);)
     core_SetupIDT(__KernBootPrivate, _APICID, __KernBootPrivate->BOOTIDT);
 
     /* Set-up MMU */
