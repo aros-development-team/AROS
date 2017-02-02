@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sets up the ExecBase a bit. (Mostly clearing).
@@ -38,7 +38,7 @@ extern void *LIBFUNCTABLE[];
 
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 
-extern void Exec_TrapHandler(ULONG trapNum);
+extern void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx);
 AROS_LD3(ULONG, MakeFunctions,
 	 AROS_LDA(APTR, target, A0),
 	 AROS_LDA(CONST_APTR, functionArray, A1),
