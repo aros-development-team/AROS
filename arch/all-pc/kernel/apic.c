@@ -17,6 +17,8 @@
 struct APICData *core_APIC_Probe(void)
 {
     struct APICData *data;
+    APTR ssp;
+
 #ifdef __i386__
     /* Only i386 needs detection. On x86-64 APIC is always present. */
     ULONG arg = 1;
@@ -35,18 +37,36 @@ struct APICData *core_APIC_Probe(void)
     if (!data)
 	return NULL;
 
-    data->lapicBase	   = core_APIC_GetBase();
-    data->apic_count		   = 1;
-    data->flags		   = APF_8259;
-    data->cores[0].cpu_LocalID = core_APIC_GetID(data->lapicBase);
+    D(bug("[APIC] APIC Data @ 0x%p\n", data));
+
+    if ((ssp = SuperState()) != NULL)
+    {
+        data->lapicBase	   = core_APIC_GetBase();
+        
+        D(bug("[APIC] APIC Base = 0x%p\n", data->lapicBase));
+
+        data->apic_count		   = 1;
+        data->flags		   = APF_8259;
+        data->cores[0].cpu_LocalID = core_APIC_GetID(data->lapicBase);
+
+        UserState(ssp);
+
+        D(bug("[APIC] ID #%d\n", data->cores[0].cpu_LocalID));
+
 #if (__WORDSIZE==64)
-    data->cores[0].cpu_GDT = __KernBootPrivate->BOOTGDT;
-    data->cores[0].cpu_IDT = __KernBootPrivate->BOOTIDT;
-    data->cores[0].cpu_MMU = &__KernBootPrivate->MMU;
+        data->cores[0].cpu_GDT = __KernBootPrivate->BOOTGDT;
+        data->cores[0].cpu_IDT = __KernBootPrivate->BOOTIDT;
+        data->cores[0].cpu_MMU = &__KernBootPrivate->MMU;
 #endif
 
-    /* Just initialize to default state */
-    core_APIC_Init(data, 0);
+        /* Just initialize to default state */
+        core_APIC_Init(data, 0);
+    }
+    else
+    {
+        FreeMem(data, sizeof(struct APICData) + sizeof(struct CPUData));
+        data = NULL;
+    }
     return data;
 }
 
