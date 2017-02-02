@@ -5,7 +5,12 @@ include $(SRCDIR)/config/aros.cfg
 FUNCS	 := \
              displayalert \
              getcpucount \
-             getcpunumber
+             getcpunumber \
+             spininit \
+             spinislocked \
+             spintrylock \
+             spinlock \
+             spinunlock
 
 ASMFILES := \
              cli \
