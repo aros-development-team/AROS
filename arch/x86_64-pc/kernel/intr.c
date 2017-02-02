@@ -24,7 +24,6 @@
 #include "kernel_syscall.h"
 #include "cpu_traps.h"
 #include "apic.h"
-#include "tls.h"
 
 #define D(x)
 #define DIDT(x)

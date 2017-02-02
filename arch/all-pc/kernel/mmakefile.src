@@ -25,7 +25,9 @@ FILES    := \
              cpu_traps \
              pic_i8259a \
              ictl \
+             smp_exec \
              kernel_mmap \
+             kernel_scheduler \
              kernel_timer \
              _displayalert \
              platform_post
