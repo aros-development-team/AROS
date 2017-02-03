@@ -91,14 +91,14 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         Exception(); */
 
     /* Store the launch time */
-    IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_secs = 0;
-    IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_micro = 0;
     IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = RDTSC();
     if ((apicData) &&
         (apicData->cores[cpunum].cpu_TimerFreq) &&
         !(IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_secs) &&
         !(IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_micro))
     {
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_secs = 0;
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_micro = 0;
         IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_secs =
             IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 / apicData->cores[cpunum].cpu_TimerFreq;
         IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_micro =
