@@ -78,6 +78,8 @@ static inline IPTR core_APIC_GetBase(void)
 }
 
 struct APICData *core_APIC_Probe(void);
+
+apicid_t core_APIC_GetNumberFromLocal(struct APICData *, apicid_t);
 apicid_t core_APIC_GetNumber(struct APICData *);
 
 extern struct IntrController APICInt_IntrController;

@@ -70,10 +70,31 @@ struct APICData *core_APIC_Probe(void)
     return data;
 }
 
+apicid_t core_APIC_GetNumberFromLocal(struct APICData *data, apicid_t apicLocalID)
+{
+    apicid_t __APICNo;
+
+    if (!data)
+    {
+        /* No APIC data -> uniprocessor system */
+        if (apicLocalID > 0)
+            return -1;
+        else
+            return 0;
+    }
+
+    for (__APICNo = 0; __APICNo < data->apic_count; __APICNo++)
+    {
+        if (data->cores[__APICNo].cpu_LocalID == apicLocalID)
+            return __APICNo;
+    }
+
+    return -1;
+}
+
 apicid_t core_APIC_GetNumber(struct APICData *data)
 {
     apicid_t __APICLogicalID;
-    apicid_t __APICNo;
 
     if (!data)
     {
@@ -83,11 +104,5 @@ apicid_t core_APIC_GetNumber(struct APICData *data)
 
     __APICLogicalID = core_APIC_GetID(data->lapicBase);
 
-    for (__APICNo = 0; __APICNo < data->apic_count; __APICNo++)
-    {
-        if (data->cores[__APICNo].cpu_LocalID == __APICLogicalID)
-            return __APICNo;
-    }
-
-    return -1;
+    return core_APIC_GetNumberFromLocal(data, __APICLogicalID);
 }
