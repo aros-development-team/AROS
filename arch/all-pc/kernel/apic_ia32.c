@@ -154,7 +154,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
     ULONG maxlvt = APIC_LVT(apic_ver);
     ULONG lapic_initial, lapic_final, calibrated = 0;
-    __unused WORD pit_final;
+    WORD pit_final;
     icintrid_t coreICInstID;
 
 #ifdef CONFIG_LEGACY
@@ -232,7 +232,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
             pit_final   = pit_wait(11931);
             lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
-            calibrated += -(((lapic_initial - lapic_final) * 11931)/(11931 - pit_final)) ;
+            calibrated += (((lapic_initial - lapic_final) * 11931)/(11931 - pit_final)) ;
         }
         apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
         D(bug("[Kernel:APIC.%u] LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, apic->cores[cpuNum].cpu_TimerFreq, apic->cores[cpuNum].cpu_TimerFreq / 1000000));
