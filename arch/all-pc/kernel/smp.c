@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,7 +17,7 @@
 #include "apic.h"
 #include "smp.h"
 
-#define D(x)
+#define D(x) x
 #define DWAKE(x)
 
 extern const void *_binary_smpbootstrap_start;
@@ -67,21 +67,21 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
         bug("[Kernel:SMP] %s[0x%02X]:     Ready Lock 0x%p\n", __func__, _APICID, apicready);
     )
 
-    apicCPU = &apicData->cores[_APICID];
+    apicCPU = &apicData->cores[_APICNO];
 
     D(bug("[Kernel:SMP] %s[0x%02X]: APIC CPU Data @ 0x%p\n", __func__, _APICID, apicCPU));
 
     /* Set up GDT and LDT for our core */
     D(bug("[Kernel:SMP] %s[0x%02X]: GDT @ 0x%p, TLS @ 0x%p\n", __func__, _APICID, apicCPU->cpu_GDT, apicCPU->cpu_TLS));
 #if (__WORDSIZE==64)
-    core_SetupGDT(__KernBootPrivate, _APICID, apicCPU->cpu_GDT, apicCPU->cpu_TLS, __KernBootPrivate->TSS);
+    core_SetupGDT(__KernBootPrivate, _APICNO, apicCPU->cpu_GDT, apicCPU->cpu_TLS, __KernBootPrivate->TSS);
 
-    core_CPUSetup(_APICID, apicCPU->cpu_GDT, stackBase);
+    core_CPUSetup(_APICNO, apicCPU->cpu_GDT, stackBase);
 #endif
 
     D(bug("[Kernel:SMP] %s[0x%02X]: Core IDT @ 0x%p\n", __func__, _APICID, apicCPU->cpu_IDT));
 #if (__WORDSIZE==64)
-    core_SetupIDT(__KernBootPrivate, _APICID, apicCPU->cpu_IDT);
+    core_SetupIDT(__KernBootPrivate, _APICNO, apicCPU->cpu_IDT);
 
 #if (0)
     D(bug("[Kernel:SMP] %s[0x%02X]: Preparing MMU...\n", __func__, _APICID));
@@ -89,7 +89,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
 #endif
 
     D(bug("[Kernel:SMP] %s[0x%02X]: Initialising APIC...\n", __func__, _APICID));
-    core_APIC_Init(apicData, _APICID);
+    core_APIC_Init(apicData, _APICNO);
 #endif
 
 #if defined(__AROSEXEC_SMP__)
