@@ -219,6 +219,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
 	/* Give the stack to the CPU */
 	bs->Arg1 = (IPTR)_APICStackBase;
 	bs->Arg2 = (IPTR)&apicready;
+	bs->Arg3 = (IPTR)i;
 	bs->SP   = _APICStackBase + STACK_SIZE;
 
 	/* Initialize 'ready' flag to zero before launching the core */
