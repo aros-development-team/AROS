@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,7 +55,13 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	call	*Disable(%eax)
 
 	/* FindTask(NULL) in %edx */
-	movl	ThisTask(%eax), %edx
+	pushl	%eax		/* Arg1: Sysbase */
+	pushl	$0			/* Arg0: NULL */
+	call	*FindTask(%eax)
+	movl	%eax, %edx	/* ThisTask to %edx */
+	movl	4(%esp), %eax	/* Restore SysBase from stack */
+	addl	$8, %esp	/* Move stack pointer back */
+	/* movl	ThisTask(%eax), %edx */
 
 	/* Swap Lower boundaries, %ecx is used as temp register */
 	movl    tc_SPLower(%edx), %ecx

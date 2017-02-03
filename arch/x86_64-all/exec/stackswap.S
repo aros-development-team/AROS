@@ -17,11 +17,15 @@ AROS_SLIB_ENTRY(StackSwap, Exec, 122):
                 
                 /* Disable interrupts */
                 pushq   %rsi
-                movq	%rsi, %rdi	/* Put SysBase into rdi (first argument) */
+                movq    %rsi, %rdi	/* Put SysBase into rdi (first argument) */
                 call    *Disable(%rsi)
                 popq    %rsi
 
-                movq    ThisTask(%rsi), %rax
+                /* movq    ThisTask(%rsi), %rax */
+                xorq    %rdi, %rdi
+                pushq   %rsi
+                call    *FindTask(%rsi)
+                popq    %rsi
 
                 /* Exchange tc_SPLower */
                 movq    tc_SPLower(%rax), %rcx
@@ -33,31 +37,31 @@ AROS_SLIB_ENTRY(StackSwap, Exec, 122):
                 xchgq   %rcx, stk_Upper(%rbx)
                 movq    %rcx, tc_SPUpper(%rax)
 
-		movb	tc_Flags(%rax), %cl
-		test	$TF_STACKCHK, %cl
-		je	noStackSnoop
+                movb    tc_Flags(%rax), %cl
+                test    $TF_STACKCHK, %cl
+                je      noStackSnoop
 
-		/* Fill [stk_Lower .. stk_Pointer - 16] with 0xE1 */
+                /* Fill [stk_Lower .. stk_Pointer - 16] with 0xE1 */
 
-		/* Destination register = %rdi = NEW SPLower.
-		   Which was already swapped above, so to be found
-		   in task->tc_SPLower */
-		movq	tc_SPLower(%rax), %rdi
+                /* Destination register = %rdi = NEW SPLower.
+                   Which was already swapped above, so to be found
+                   in task->tc_SPLower */
+                movq    tc_SPLower(%rax), %rdi
 
-		/* %rcx = count register = NEW SP register - NEW SP_Lower - 16 */
-		movq	stk_Pointer(%rbx), %rcx
-		subq	$16, %rcx
-		subq	%rdi, %rcx
+                /* %rcx = count register = NEW SP register - NEW SP_Lower - 16 */
+                movq    stk_Pointer(%rbx), %rcx
+                subq    $16, %rcx
+                subq    %rdi, %rcx
 
-		/* byte value to store */
-		movb	$0xE1, %al
+                /* byte value to store */
+                movb    $0xE1, %al
 
-		/* direction to store: forward */
-		cld
+                /* direction to store: forward */
+                cld
 
-		/* do the store operation: put %rcx times %al into memory starting at %rdi. */
-		rep
-		stosb
+                /* do the store operation: put %rcx times %al into memory starting at %rdi. */
+                rep
+                stosb
 
 noStackSnoop:
                 /* StackSwap -> %rdi */
@@ -78,4 +82,3 @@ noStackSnoop:
                 popq	%rdi
                 
                 jmpq    *%rax
-                                
