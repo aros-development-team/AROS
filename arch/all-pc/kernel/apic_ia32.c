@@ -152,8 +152,8 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 {
     IPTR __APICBase = apic->lapicBase;
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
-    ULONG maxlvt = APIC_LVT(apic_ver);
-    ULONG lapic_initial, lapic_final, calibrated = 0;
+    ULONG maxlvt = APIC_LVT(apic_ver), calibrated = 0;
+    LONG lapic_initial, lapic_final;
     WORD pit_final;
     icintrid_t coreICInstID;
 
@@ -228,10 +228,10 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         for (i = 0; i < 5; i ++)
         {
             pit_start(11931);
-            lapic_initial = APIC_REG(__APICBase, APIC_TIMER_CCR);
+            lapic_initial = (LONG)APIC_REG(__APICBase, APIC_TIMER_CCR);
 
             pit_final   = pit_wait(11931);
-            lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
+            lapic_final = (LONG)APIC_REG(__APICBase, APIC_TIMER_CCR);
             calibrated += (((lapic_initial - lapic_final) * 11931)/(11931 - pit_final)) ;
         }
         apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
