@@ -23,7 +23,8 @@
 #include "apic_ia32.h"
 
 #define D(x)
-#define DWAKE(x) /* Badly interferes with AP startup */
+#define DWAKE(x)        /* Badly interferes with AP startup */
+#define DID(x)          /* Badly interferes with everything */
 /* #define DEBUG_WAIT */
 
 /*
@@ -152,8 +153,8 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
     IPTR __APICBase = apic->lapicBase;
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
     ULONG maxlvt = APIC_LVT(apic_ver);
-    ULONG lapic_initial, lapic_final;
-    WORD pit_final;
+    ULONG lapic_initial, lapic_final, calibrated = 0;
+    __unused WORD pit_final;
     icintrid_t coreICInstID;
 
 #ifdef CONFIG_LEGACY
@@ -164,6 +165,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
     if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != (icintrid_t)-1)
     {
+        int i;
         D(bug("[Kernel:APIC.%u] _APIC_IA32_init: APIC IC ID #%d:%d\n", cpuNum, ICINTR_ICID(coreICInstID), ICINTR_INST(coreICInstID)));
 
         /* Use flat interrupt model with logical destination ID = 1 */
@@ -221,22 +223,18 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
          * Now wait for 11931 PIT ticks, which is equal to 10 milliseconds.
          * We don't use pit_udelay() here, because for improved accuracy we need to sample LAPIC timer counter twice,
          * before and after our actual delay (PIT setup also takes up some time, so LAPIC will count away from its
-         * initial value).
+         * initial value).  We run it 5 times to make up for cache setup discrepancies.
          */
-        pit_start(11931);
-        lapic_initial = APIC_REG(__APICBase, APIC_TIMER_CCR);
+        for (i = 0; i < 5; i ++)
+        {
+            pit_start(11931);
+            lapic_initial = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
-        pit_final   = pit_wait(11931);
-        lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
-
-        /*
-         * TODO: Upon exit from pit_wait() pit_final contains negated number of excessive ticks after 10ms has passed.
-         * This can be used to improve calibration quality (currently we report 265 mHz instead of 266).
-         */
-        D(bug("[Kernel:APIC.%u] LAPIC counted from %u to %u in 10ms (%u ticks)\n", cpuNum, lapic_initial, lapic_final, 11931 - pit_final));
-        (void)pit_final; // Unused if not debugging - suppress compiler warning
-
-        apic->cores[cpuNum].cpu_TimerFreq = (lapic_initial - lapic_final) * 100;
+            pit_final   = pit_wait(11931);
+            lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
+            calibrated += -(((lapic_initial - lapic_final) * 11931)/(11931 - pit_final)) ;
+        }
+        apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
         D(bug("[Kernel:APIC.%u] LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, apic->cores[cpuNum].cpu_TimerFreq, apic->cores[cpuNum].cpu_TimerFreq / 1000000));
     }
 }
@@ -247,7 +245,7 @@ apicid_t core_APIC_GetID(IPTR _APICBase)
 
     /* The actual ID is in 8 most significant bits */
     _apic_id = APIC_REG(_APICBase, APIC_ID) >> APIC_ID_SHIFT;
-    D(bug("[Kernel:APIC] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
+    DID(bug("[Kernel:APIC] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
 
     return _apic_id;
 }
