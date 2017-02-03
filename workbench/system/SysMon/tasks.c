@@ -12,9 +12,9 @@
 #include <proto/task.h>
 #include <proto/dos.h>
 
-#include <clib/alib_protos.h>
-
 #include <exec/execbase.h>
+#include <exec/rawfmt.h>
+
 #include <libraries/mui.h>
 #include <resources/task.h>
 
@@ -82,8 +82,8 @@ struct Tasklist_DATA
 #define SETUP_TASKLIST_INST_DATA       struct Tasklist_DATA *data = INST_DATA(CLASS, self)
 #define TaskResBase data->tld_taskresBase
 
-CONST_STRPTR badstr_tmpl = MUIX_PH MUIX_B "%s";
-CONST_STRPTR badval_tmpl = MUIX_PH MUIX_B "%d";
+CONST_STRPTR badstr_tmpl = " " MUIX_PH MUIX_B "%s";
+CONST_STRPTR badval_tmpl = MUIX_PH MUIX_B "%d ";
 
 VOID RefreshTask(struct TaskInfo *ti)
 {
@@ -275,6 +275,11 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
     AROS_USERFUNC_INIT
 
     struct Tasklist_DATA *data = h->h_Data;
+    IPTR fmtdata[] =
+    {
+        0,
+        0
+    };
     char *type;
 
     D(bug("[SysMon:TaskList] %s()\n", __func__));
@@ -285,15 +290,19 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
 
         if (!(ti->ti_Flags & TIF_VALID))
         {
-            __sprintf(data->tld_BufName, badstr_tmpl, ti->ti_Node.ln_Name);
-            __sprintf(data->tld_BufPrio, badval_tmpl, ti->ti_Node.ln_Pri);
-            __sprintf(data->tld_BufType, badstr_tmpl, type);
+            fmtdata[0] = (IPTR)ti->ti_Node.ln_Name;
+            RawDoFmt(badstr_tmpl, (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufName);
+            fmtdata[0] = (IPTR)ti->ti_Node.ln_Pri;
+            RawDoFmt(badval_tmpl, (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufPrio);
+            fmtdata[0] = (IPTR)type;
+            RawDoFmt(badstr_tmpl, (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufType);
             strings[0] = data->tld_BufName;
             strings[2] = data->tld_BufType;
         }
         else
         {
-            __sprintf(data->tld_BufPrio, "%d", ti->ti_Node.ln_Pri);
+            fmtdata[0] = (IPTR)ti->ti_Node.ln_Pri;
+            RawDoFmt("%d ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufPrio);
             strings[0] = ti->ti_Node.ln_Name;
             strings[2] = type;
         }
@@ -309,9 +318,11 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
         else
             dir = "-";
 
+        fmtdata[1] = (IPTR)dir;
         if (data->tasklistSortColumn == 0)
         {
-            __sprintf(data->tld_BufSortCol, MUIX_B "%s %s", data->msg_task_name, dir);
+            fmtdata[0] = (IPTR)data->msg_task_name;
+            RawDoFmt(MUIX_B "%s %s", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufSortCol);
             strings[0] = data->tld_BufSortCol;
         }
         else
@@ -319,7 +330,8 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
 
         if (data->tasklistSortColumn == 1)
         {
-            __sprintf(data->tld_BufSortCol, MUIX_B "%s %s", data->msg_task_priority, dir);
+            fmtdata[0] = (IPTR)data->msg_task_priority;
+            RawDoFmt(MUIX_B "%s %s", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufSortCol);
             strings[1] = data->tld_BufSortCol;
         }
         else
@@ -327,7 +339,8 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
 
         if (data->tasklistSortColumn == 2)
         {
-            __sprintf(data->tld_BufSortCol, MUIX_B "%s %s", data->msg_task_type, dir);
+            fmtdata[0] = (IPTR)data->msg_task_type;
+            RawDoFmt(MUIX_B "%s %s", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufSortCol);
             strings[2] = data->tld_BufSortCol;
         }
         else
@@ -362,6 +375,7 @@ Object *Tasklist__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             data->updateSpeed = (ULONG)GetTagData(MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Normal, message->ops_AttrList);
 
             data->tld_TaskTotalRuntime = 0;
+            data->tasklistSortColumn = 1;
 
             data->msg_task = (STRPTR)_(MSG_TASK);
             data->msg_process = (STRPTR)_(MSG_PROCESS);
@@ -528,20 +542,26 @@ IPTR Tasklist__MUIM_HandleEvent(Class *CLASS, Object *self, struct MUIP_HandleEv
 
     D(bug("[SysMon:TaskList] %s()\n", __func__));
 
-    if ((message->imsg) && (message->imsg->Class == IDCMP_MOUSEBUTTONS))
+    if ((message->imsg->MouseX > _mleft(self)) &&
+         (message->imsg->MouseY > _mtop(self)) &&
+         (message->imsg->MouseX < _mright(self)) &&
+         (message->imsg->MouseY < _mbottom(self)))
     {
-        if (message->imsg->Code == SELECTUP)
+        if ((message->imsg) && (message->imsg->Class == IDCMP_MOUSEBUTTONS))
         {
-            D(bug("[SysMon:TaskList] %s: Click @ %d, %d\n", __func__, message->imsg->MouseX, message->imsg->MouseY));
-            DoMethod(self, MUIM_List_TestPos, message->imsg->MouseX, message->imsg->MouseY, &selectres);
-            if ((selectres.entry == -1) && (selectres.column != -1))
+            if (message->imsg->Code == SELECTUP)
             {
-                if (data->tasklistSortColumn == selectres.column)
-                    data->tasklistSortMode = ~data->tasklistSortMode;
-                else
-                    data->tasklistSortMode = 0;
-                data->tasklistSortColumn = selectres.column;
-                DoMethod(self, MUIM_List_Sort);
+                D(bug("[SysMon:TaskList] %s: Click @ %d, %d\n", __func__, message->imsg->MouseX, message->imsg->MouseY));
+                DoMethod(self, MUIM_List_TestPos, message->imsg->MouseX, message->imsg->MouseY, &selectres);
+                if ((selectres.entry == -1) && (selectres.column != -1))
+                {
+                    if (data->tasklistSortColumn == selectres.column)
+                        data->tasklistSortMode = ~data->tasklistSortMode;
+                    else
+                        data->tasklistSortMode = 0;
+                    data->tasklistSortColumn = selectres.column;
+                    DoMethod(self, MUIM_List_Sort);
+                }
             }
         }
     }
