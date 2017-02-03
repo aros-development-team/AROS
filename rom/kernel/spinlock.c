@@ -38,6 +38,13 @@
 	returns a pointer to the spinlock "handle".
 
     NOTES
+	The failhook is necessary, because it is not safe
+	for code running in user space to spin on a shared lock.
+	If a lower priority task holds the lock, it will never be released.
+           Because of  this, Exec uses a hook that puts the task on
+           a spinning list, to allow other code to run until the lock is
+           released.  At this point the "spinning" task will wake and
+           obtain the lock.
 
     EXAMPLE
 
