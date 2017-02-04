@@ -197,9 +197,11 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
-    DINIT("Preparing the Bootstrap task @ 0x%p", t);
+    DINIT("Preparing the Bootstrap task ...");
     /* Set the bootstrapping task incase errors occur... */
     SET_THIS_TASK(t);
+
+    DINIT("Bootstrap task @ 0x%p", t);
 
     /* Create the first ETask structure and attach CPU context */
     if (!InitETask(t, NULL))
