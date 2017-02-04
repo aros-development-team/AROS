@@ -15,6 +15,12 @@ AROS_LH0(unsigned int, KrnGetCPUCount,
 {
     AROS_LIBFUNC_INIT
 
+    if (!KernelBase->kb_PlatformData)
+        return 0;
+
+    if (!KernelBase->kb_PlatformData->kb_APIC)
+        return 1;
+
     return KernelBase->kb_PlatformData->kb_APIC->apic_count;
 
     AROS_LIBFUNC_EXIT
