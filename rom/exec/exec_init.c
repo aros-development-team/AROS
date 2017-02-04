@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
@@ -19,7 +21,6 @@
 #include <aros/system.h>
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
-#include <aros/config.h>
 
 #include <aros/debug.h>
 
@@ -205,11 +206,11 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
-    DINIT("Preparing the Bootstrap task ...");
+    DINIT("Preparing the Bootstrap task @ 0x%p", t);
     /* Set the bootstrapping task incase errors occur... */
     SET_THIS_TASK(t);
 
-    DINIT("Bootstrap task @ 0x%p", t);
+    DINIT("ThisTask is now 0x%p", GET_THIS_TASK);
 
     /* Create the first ETask structure and attach CPU context */
     if (!InitETask(t, NULL))
