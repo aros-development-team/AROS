@@ -116,8 +116,8 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
     ULONG ipisend_timeout, status_ipisend;
 
     D(
-        apicid_t cpuNo = KrnGetCPUNumber();
-        bug("[Kernel:APIC-IA32.%03u] %s: Command 0x%08X to target %u\n", cpuNum, __func__, cmd, target);
+        apicid_t cpuNum = KrnGetCPUNumber();
+        bug("[Kernel:APIC-IA32.%03u] %s: Command 0x%08X to target %03u\n", cpuNum, __func__, cmd, target);
     )
 
     /*
