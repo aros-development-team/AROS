@@ -22,14 +22,14 @@ AROS_LH1(void, KrnSpinUnLock,
 
     D(bug("[Kernel] %s(0x%p)\n", __func__, lock));
 
-    if (lock->slock.write)
-        lock->slock.write = 0;
-
 #if (1) // defined(AROS_NO_ATOMIC_OPERATIONS)
     lock->slock.readcount--;
 #else
     AROS_ATOMIC_DEC(lock->slock.readcount);
 #endif
+
+    if (lock->slock.write)
+        lock->slock.write = 0;
 
     return;
 
