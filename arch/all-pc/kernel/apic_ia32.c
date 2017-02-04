@@ -25,7 +25,7 @@
 #include "apic.h"
 #include "apic_ia32.h"
 
-#define D(x) x
+#define D(x)
 #define DWAKE(x)        /* Badly interferes with AP startup */
 #define DID(x)          /* Badly interferes with everything */
 /* #define DEBUG_WAIT */
