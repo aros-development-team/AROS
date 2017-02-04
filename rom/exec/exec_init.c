@@ -123,7 +123,11 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     if (!origSysBase)
         return PrepareExecBase(mh, tagList);
 
-    DINIT("exec.library init");
+#if defined(__AROSEXEC_SMP__)
+    DINIT("AROS SMP 'exec.library' Initialization");
+#else
+    DINIT("AROS 'exec.library' Initialization");
+#endif
 
     /*
      * Call platform-specific pre-init code (if any). Return values are not checked.
@@ -173,7 +177,11 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 
     NEWLIST(&t->tc_MemEntry);
 
-    t->tc_Node.ln_Name = "Boot Task";
+#if defined(__AROSEXEC_SMP__)
+    t->tc_Node.ln_Name = "Exec BSP Bootstrap Task";
+#else
+    t->tc_Node.ln_Name = "Exec Bootstrap Task";
+#endif
     t->tc_Node.ln_Type = NT_TASK;
     t->tc_Node.ln_Pri  = 0;
     t->tc_State        = TS_RUN;
