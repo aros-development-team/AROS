@@ -12,7 +12,7 @@
 
 #include <proto/kernel.h>
 
-#define D(x) x
+#define D(x)
 
 AROS_LH1(void, KrnSpinUnLock,
 	AROS_LHA(spinlock_t *, lock, A0),
