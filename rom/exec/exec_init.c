@@ -169,6 +169,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         goto execfatal;
     }
 
+    DINIT("[exec] Bootstrap CPU context @ 0x%p\n", ctx);
+
     NEWLIST(&t->tc_MemEntry);
 
     t->tc_Node.ln_Name = "Boot Task";
@@ -195,6 +197,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
+    DINIT("Preparing the Bootstrap task @ 0x%p", t);
     /* Set the bootstrapping task incase errors occur... */
     SET_THIS_TASK(t);
 
@@ -206,7 +209,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     }
     t->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
 
-    DINIT("[exec] Boot Task 0x%p, ETask 0x%p, CPU context 0x%p\n", t, t->tc_UnionETask.tc_ETask, ctx);
+    DINIT("[exec] ETask @ 0x%p\n", t->tc_UnionETask.tc_ETask);
 
     SysBase->Elapsed  = SysBase->Quantum;
 
