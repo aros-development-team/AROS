@@ -8,8 +8,11 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
+#include <kernel_debug.h>
 
 #include <proto/kernel.h>
+
+#define D(x)
 
 AROS_LH2(spinlock_t *, KrnSpinTryLock,
 	AROS_LHA(spinlock_t *, lock, A0),
@@ -18,14 +21,19 @@ AROS_LH2(spinlock_t *, KrnSpinTryLock,
 {
     AROS_LIBFUNC_INIT
 
-    if (mode == SPINLOCK_MODE_WRITE)
-    {
-    }
-    else
-    {
-    }
+    D(bug("[Kernel] %s(0x%p, %08x)\n", __func__, lock, mode));
 
-    return NULL;
+    if (((mode == SPINLOCK_MODE_WRITE) && (lock->lock != 0)) ||
+        (lock->slock.write))
+            return NULL;
+
+#if (1) // defined(AROS_NO_ATOMIC_OPERATIONS)
+    lock->slock.readcount++;
+#else
+    AROS_ATOMIC_INC(lock->slock.readcount);
+#endif
+
+    return lock;
 
     AROS_LIBFUNC_EXIT
 }

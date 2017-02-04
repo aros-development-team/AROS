@@ -3,7 +3,6 @@
     $Id$
 */
 
-
 #include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/acpica.h>
