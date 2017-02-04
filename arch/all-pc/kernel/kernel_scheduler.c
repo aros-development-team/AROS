@@ -40,15 +40,12 @@
 BOOL core_Schedule(void)
 {
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
-    IPTR _APICBase;
-    apicid_t _APICID;
-    _APICBase = core_APIC_GetBase();
-    _APICID   = core_APIC_GetID(_APICBase);
+    apicid_t cpuNo = KrnGetCPUNumber();
 #endif
     struct Task *task = GET_THIS_TASK;
     BOOL corereschedule = TRUE;
 
-    DSCHED(bug("[Kernel:%02d] core_Schedule()\n", _APICID));
+    DSCHED(bug("[Kernel:%03u] core_Schedule()\n", cpuNo));
 
     FLAG_SCHEDSWITCH_CLEAR;
 
@@ -66,7 +63,7 @@ BOOL core_Schedule(void)
         {
             struct Task *nexttask;
 #if defined(__AROSEXEC_SMP__)
-            uint32_t cpumask = (1 << _APICID);
+            uint32_t cpumask = (1 << cpuNo);
 #endif
             /*
                     If there are tasks ready for this cpu that have equal or lower priority,
@@ -98,7 +95,7 @@ BOOL core_Schedule(void)
     DSCHED
         (
             if (corereschedule)
-                bug("[Kernel:%02d] '%s' @ 0x%p needs rescheduled ..\n", _APICID, task->tc_Node.ln_Name, task);
+                bug("[Kernel:%03u] '%s' @ 0x%p needs rescheduled ..\n", cpuNo, task->tc_Node.ln_Name, task);
         )
 
     return corereschedule;
@@ -107,17 +104,14 @@ BOOL core_Schedule(void)
 /* Switch the currently running task on this cpu to ready state */
 void core_Switch(void)
 {
-    IPTR _APICBase;
-    apicid_t _APICID;
-    _APICBase = core_APIC_GetBase();
-    _APICID   = core_APIC_GetID(_APICBase);
+    apicid_t cpuNo = KrnGetCPUNumber();
     struct Task *task = GET_THIS_TASK;
 
-    DSCHED(bug("[Kernel:%02d] core_Switch(%08x)\n", _APICID, task->tc_State));
+    DSCHED(bug("[Kernel:%03u] core_Switch(%08x)\n", cpuNo, task->tc_State));
 
     if (task->tc_State == TS_RUN)
     {
-        DSCHED(bug("[Kernel:%02d] Switching away from '%s' @ 0x%p\n", _APICID, task->tc_Node.ln_Name, task));
+        DSCHED(bug("[Kernel:%03u] Switching away from '%s' @ 0x%p\n", cpuNo, task->tc_Node.ln_Name, task));
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
@@ -129,8 +123,8 @@ void core_Switch(void)
         /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
         if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
         {
-            bug("[Kernel:%02d] '%s' @ 0x%p went out of stack limits\n", _APICID, task->tc_Node.ln_Name, task);
-            bug("[Kernel:%02d]  - Lower 0x%p, upper 0x%p, SP 0x%p\n", _APICID, task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
+            bug("[Kernel:%03u] '%s' @ 0x%p went out of stack limits\n", cpuNo, task->tc_Node.ln_Name, task);
+            bug("[Kernel:%03u]  - Lower 0x%p, upper 0x%p, SP 0x%p\n", cpuNo, task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
 
             task->tc_SigWait    = 0;
             task->tc_State      = TS_WAIT;
@@ -153,7 +147,7 @@ void core_Switch(void)
 
         if (task->tc_State == TS_READY)
         {
-            DSCHED(bug("[Kernel:%02d] Setting '%s' @ 0x%p as ready\n", _APICID, task->tc_Node.ln_Name, task));
+            DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p as ready\n", cpuNo, task->tc_Node.ln_Name, task));
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
@@ -172,16 +166,13 @@ struct Task *core_Dispatch(void)
     struct Task *newtask;
     struct Task *task = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
-    IPTR _APICBase;
-    apicid_t _APICID;
-    _APICBase = core_APIC_GetBase();
-    _APICID   = core_APIC_GetID(_APICBase);
+    apicid_t cpuNo = KrnGetCPUNumber();
 #endif
 #if defined(__AROSEXEC_SMP__)
-    uint32_t cpumask = (1 << _APICID);
+    uint32_t cpumask = KrnGetCPUMask(cpuNo);
 #endif
 
-    DSCHED(bug("[Kernel:%02d] core_Dispatch()\n", _APICID));
+    DSCHED(bug("[Kernel:%03u] core_Dispatch()\n", cpuNo));
 
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
@@ -210,8 +201,8 @@ struct Task *core_Dispatch(void)
     {
         if (newtask->tc_State == TS_READY || newtask->tc_State == TS_RUN)
         {
-            DSCHED(bug("[Kernel:%02d] Preparing to run '%s' @ 0x%p\n",
-                _APICID, newtask->tc_Node.ln_Name, newtask));
+            DSCHED(bug("[Kernel:%03u] Preparing to run '%s' @ 0x%p\n",
+                cpuNo, newtask->tc_Node.ln_Name, newtask));
 
             SysBase->DispCount++;
             IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
@@ -255,20 +246,20 @@ struct Task *core_Dispatch(void)
         if (!launchtask)
         {
             /* if the new task shouldn't run - force a reschedule */
-            DSCHED(bug("[Kernel:%02d] Skipping '%s' @ 0x%p (state %08x)\n", _APICID, newtask->tc_Node.ln_Name, newtask, newtask->tc_State));
+            DSCHED(bug("[Kernel:%03u] Skipping '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State));
 
             core_Switch();
             newtask = core_Dispatch();
         }
         else
         {
-            DSCHED(bug("[Kernel:%02d] Launching '%s' @ 0x%p (state %08x)\n", _APICID, newtask->tc_Node.ln_Name, newtask, newtask->tc_State));
+            DSCHED(bug("[Kernel:%03u] Launching '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State));
         }
     }
     else
     {
         /* Go idle if there is nothing to do ... */
-        DSCHED(bug("[Kernel:%02d] No ready Task(s) - entering sleep mode\n", _APICID));
+        DSCHED(bug("[Kernel:%03u] No ready Task(s) - entering sleep mode\n", cpuNo));
 
         /*
          * Idle counter is incremented every time when we enter here,
