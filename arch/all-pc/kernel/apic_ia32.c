@@ -258,8 +258,8 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
 #endif
 
-    D(bug("[Kernel:APIC] _APIC_IA32_wake(0x%02X @ %p)\n", wake_apicid, wake_apicstartrip));
-    D(bug("[Kernel:APIC] _APIC_IA32_wake: APIC ID 0x%02X Base @ %p\n", core_APIC_GetID(__APICBase), __APICBase));
+    D(bug("[Kernel:APIC] _APIC_IA32_wake(%03u @ %p)\n", wake_apicid, wake_apicstartrip));
+    D(bug("[Kernel:APIC] _APIC_IA32_wake: APIC ID %03u Base @ %p\n", core_APIC_GetID(__APICBase), __APICBase));
 
 #ifdef CONFIG_LEGACY
     /*

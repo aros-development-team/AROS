@@ -53,7 +53,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     struct APICData *apicData;
 
     DSCHED(
-        bug("[Kernel:%02d] cpu_Dispatch()\n", cpunum);
+        bug("[Kernel:%03u] cpu_Dispatch()\n", cpunum);
     )
 
     apicData  = KernelBase->kb_PlatformData->kb_APIC;
@@ -121,7 +121,7 @@ void cpu_Switch(struct ExceptionContext *regs)
     apicid_t cpunum = KrnGetCPUNumber();
     struct APICData *apicData;
 
-    DSCHED(bug("[Kernel:%02d] cpu_Switch()\n", cpunum);)
+    DSCHED(bug("[Kernel:%03u] cpu_Switch()\n", cpunum);)
 
     timeCur = RDTSC();
 
