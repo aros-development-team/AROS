@@ -39,7 +39,7 @@ void acpi_APIC_AllocPrivate(struct PlatformData *pdata)
         pdata->kb_APIC = AllocMem(sizeof(struct APICData) + pdata->kb_ACPI->acpi_apicCnt * sizeof(struct CPUData), MEMF_CLEAR);
         pdata->kb_APIC->apic_count	= 1;		/* Only one CPU is running right now */
 
-        D(bug("[Kernel:ACPI-APIC] Local APIC Private @ 0x%p, for %d APIC's\n", pdata->kb_APIC, pdata->kb_ACPI->acpi_apicCnt));
+        D(bug("[Kernel:ACPI-APIC] Local APIC Private @ 0x%p, for %u APIC's\n", pdata->kb_APIC, pdata->kb_ACPI->acpi_apicCnt));
     }
 }
 
@@ -54,7 +54,7 @@ void acpi_APIC_HandleCPUWakeSC(struct ExceptionContext *regs)
 
     D(bug("[Kernel:ACPI-APIC] %s: Handle Wake CPU SysCall\n", __func__));
     D(bug("[Kernel:ACPI-APIC] %s: Wake data @ 0x%p\n", __func__, apicWake));
-    D(bug("[Kernel:ACPI-APIC] %s: Attempting to wake APIC %d (base @ 0x%p)\n", __func__, apicWake->cpuw_apicid, apicWake->cpuw_apicbase));
+    D(bug("[Kernel:ACPI-APIC] %s: Attempting to wake APIC ID %03u (base @ 0x%p)\n", __func__, apicWake->cpuw_apicid, apicWake->cpuw_apicbase));
 
 #if (__WORDSIZE==64)
     regs->rax =
@@ -121,7 +121,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
         UWORD reg;
         ULONG val = LVT_MT_NMI;	/* This is the default (edge-triggered, active low) */
 
-        D(bug("[Kernel:ACPI-APIC.%u]    %s: NMI LINT%u\n", cpu_num, __func__, lapic_nmi->Lint));
+        D(bug("[Kernel:ACPI-APIC.%03u]    %s: NMI LINT%u\n", cpu_num, __func__, lapic_nmi->Lint));
 
     	switch (lapic_nmi->Lint)
     	{
@@ -140,13 +140,13 @@ AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 
         if ((lapic_nmi->IntiFlags & ACPI_MADT_POLARITY_MASK) == ACPI_MADT_POLARITY_ACTIVE_LOW)
         {
-	    D(bug("[Kernel:ACPI-APIC.%u]    %s: NMI active low\n", cpu_num, __func__));
+	    D(bug("[Kernel:ACPI-APIC.%03u]    %s: NMI active low\n", cpu_num, __func__));
             val |= LVT_ACTIVE_LOW;
         } 
 
 	if ((lapic_nmi->IntiFlags & ACPI_MADT_TRIGGER_MASK) == ACPI_MADT_TRIGGER_LEVEL)
 	{
-	    D(bug("[Kernel:ACPI-APIC.%u]    %s: NMI level-triggered\n", cpu_num, __func__));
+	    D(bug("[Kernel:ACPI-APIC.%03u]    %s: NMI level-triggered\n", cpu_num, __func__));
 	    val |= LVT_TGM_LEVEL;
 	}
 
@@ -165,7 +165,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
  */
 void acpi_APIC_InitCPU(struct PlatformData *pdata, IPTR cpuNum)
 {
-    D(bug("[Kernel:ACPI-APIC] %s(%d)\n", __func__, cpuNum));
+    D(bug("[Kernel:ACPI-APIC] %s(%03u)\n", __func__, cpuNum));
 
     /* Initialize APIC to the default configuration */
     core_APIC_Init(pdata->kb_APIC, cpuNum);
@@ -216,11 +216,11 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 	if (pdata->kb_APIC->cores[0].cpu_LocalID == processor->Id)
 	{
 	    /* This is the BSP, slot 0 is always reserved for it. */
-	    bug("[Kernel:ACPI-APIC] Registering APIC #0 [ID=0x%02X] as BSP\n", processor->Id);
+	    bug("[Kernel:ACPI-APIC] Registering Core #1 [ID=%03u] as BSP\n", processor->Id);
 
 	    pdata->kb_APIC->cores[0].cpu_PrivateID = processor->ProcessorId;
 
-            /* Remember ID of the bootstrap APIC, this is CPU #0 */
+            /* Remember ID of the bootstrap APIC, this is CPU #1 */
             pdata->kb_APIC->cores[0].cpu_LocalID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
             D(bug("[Kernel:ACPI-APIC] BSP ID: 0x%02X\n", pdata->kb_APIC->cores[0].cpu_LocalID));
 
@@ -236,7 +236,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 	else
 	{
 	    /* Add one more AP */
-	    bug("[Kernel:ACPI-APIC] Registering APIC #%d [ID=0x%02X:0x%02X]\n", pdata->kb_APIC->apic_count, processor->Id, processor->ProcessorId);
+	    bug("[Kernel:ACPI-APIC] Registering Core #%u [ID=%03u:%03u]\n", pdata->kb_APIC->apic_count + 1, processor->Id, processor->ProcessorId);
 
 	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_LocalID = processor->Id;
 	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_PrivateID = processor->ProcessorId;
