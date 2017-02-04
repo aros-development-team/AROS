@@ -209,7 +209,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     }
     t->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
 
-    DINIT("[exec] ETask @ 0x%p\n", t->tc_UnionETask.tc_ETask);
+    DINIT("[exec] Bootstrap task ETask @ 0x%p\n", t->tc_UnionETask.tc_ETask);
 
     SysBase->Elapsed  = SysBase->Quantum;
 
@@ -258,6 +258,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
             SetIntVector(i,is);
         }
     }
+
+    DINIT("[exec] Enabling Exec Interrupts...\n");
 
     /* We now start up the interrupts */
     Permit();
