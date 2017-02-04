@@ -36,7 +36,7 @@ extern struct Task *cpu_InitBootStrap();
 extern void cpu_BootStrap(struct Task *);
 #endif
 
-static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBase *KernelBase)
+static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBase *KernelBase, apicid_t apicCPUNo)
 {
     /*
      * This is the entry point for secondary cores.
@@ -44,9 +44,10 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
      */
     struct APICData *apicData  = KernelBase->kb_PlatformData->kb_APIC;
     __unused struct CPUData *apicCPU;
-    IPTR _APICBase;
-    apicid_t _APICID;
-    apicid_t _APICNO;
+    D(
+        IPTR _APICBase;
+        apicid_t _APICID;
+    )
 #if defined(__AROSEXEC_SMP__)
     struct Task *apicBSTask;
 #endif
@@ -56,48 +57,55 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
 #endif
 
-    /* Find out ourselves */
-    _APICBase = core_APIC_GetBase();
-    _APICID   = core_APIC_GetID(_APICBase);
-    _APICNO   = core_APIC_GetNumber(apicData);
+    apicCPU = &apicData->cores[apicCPUNo];
 
     D(
-        bug("[Kernel:SMP] %s[0x%02X]: CPU Core starting up...\n", __func__, _APICID);
-        bug("[Kernel:SMP] %s[0x%02X]:     APIC base @ 0x%p\n", __func__, _APICID, _APICBase);
+        /* Find out ourselves */
+        _APICBase = core_APIC_GetBase();
+        _APICID   = core_APIC_GetID(_APICBase);
+
+        bug("[Kernel:SMP] %s[0x%02X]: APIC ID %02x starting up...\n", __func__, apicCPUNo, _APICID);
+        if (apicCPU->cpu_LocalID != _APICID)
+        {
+            bug("[Kernel:SMP] %s[0x%02X]:        Warning! expected ID %02x\n", __func__, apicCPUNo, apicCPU->cpu_LocalID);
+        }
+        bug("[Kernel:SMP] %s[0x%02X]:     APIC base @ 0x%p\n", __func__, apicCPUNo, _APICBase);
 #if (__WORDSIZE==64)
-        bug("[Kernel:SMP] %s[0x%02X]:     KernelBootPrivate 0x%p\n", __func__, _APICID, __KernBootPrivate);
+        bug("[Kernel:SMP] %s[0x%02X]:     KernelBootPrivate 0x%p\n", __func__, apicCPUNo, __KernBootPrivate);
 #endif
-        bug("[Kernel:SMP] %s[0x%02X]:     StackBase 0x%p\n", __func__, _APICID, stackBase);
-        bug("[Kernel:SMP] %s[0x%02X]:     Ready Lock 0x%p\n", __func__, _APICID, apicReadyLock);
+        bug("[Kernel:SMP] %s[0x%02X]:     StackBase 0x%p\n", __func__, apicCPUNo, stackBase);
+        bug("[Kernel:SMP] %s[0x%02X]:     Ready Lock 0x%p\n", __func__, apicCPUNo, apicReadyLock);
     )
 
-    apicCPU = &apicData->cores[_APICNO];
-
-    D(bug("[Kernel:SMP] %s[0x%02X]: APIC CPU Data @ 0x%p\n", __func__, _APICID, apicCPU));
-
-    /* Set up GDT and LDT for our core */
-    D(bug("[Kernel:SMP] %s[0x%02X]: GDT @ 0x%p, TLS @ 0x%p\n", __func__, _APICID, apicCPU->cpu_GDT, apicCPU->cpu_TLS));
-#if (__WORDSIZE==64)
-    core_SetupGDT(__KernBootPrivate, _APICNO, apicCPU->cpu_GDT, apicCPU->cpu_TLS, __KernBootPrivate->TSS);
-
-    core_CPUSetup(_APICNO, apicCPU->cpu_GDT, stackBase);
+#if (0)
+    apicCPUNo   = core_APIC_GetNumber(apicData);
 #endif
 
-    D(bug("[Kernel:SMP] %s[0x%02X]: Core IDT @ 0x%p\n", __func__, _APICID, apicCPU->cpu_IDT));
+    D(bug("[Kernel:SMP] %s[0x%02X]: APIC CPU Data @ 0x%p\n", __func__, apicCPUNo, apicCPU));
+
+    /* Set up GDT and LDT for our core */
+    D(bug("[Kernel:SMP] %s[0x%02X]: GDT @ 0x%p, TLS @ 0x%p\n", __func__, apicCPUNo, apicCPU->cpu_GDT, apicCPU->cpu_TLS));
 #if (__WORDSIZE==64)
-    core_SetupIDT(__KernBootPrivate, _APICNO, apicCPU->cpu_IDT);
+    core_SetupGDT(__KernBootPrivate, apicCPUNo, apicCPU->cpu_GDT, apicCPU->cpu_TLS, __KernBootPrivate->TSS);
+
+    core_CPUSetup(apicCPUNo, apicCPU->cpu_GDT, stackBase);
+#endif
+
+    D(bug("[Kernel:SMP] %s[0x%02X]: Core IDT @ 0x%p\n", __func__, apicCPUNo, apicCPU->cpu_IDT));
+#if (__WORDSIZE==64)
+    core_SetupIDT(__KernBootPrivate, apicCPUNo, apicCPU->cpu_IDT);
 
 #if (0)
-    D(bug("[Kernel:SMP] %s[0x%02X]: Preparing MMU...\n", __func__, _APICID));
+    D(bug("[Kernel:SMP] %s[0x%02X]: Preparing MMU...\n", __func__, apicCPUNo));
     core_LoadMMU(&__KernBootPrivate->MMU);
 #endif
 
-    D(bug("[Kernel:SMP] %s[0x%02X]: Initialising APIC...\n", __func__, _APICID));
-    core_APIC_Init(apicData, _APICNO);
+    D(bug("[Kernel:SMP] %s[0x%02X]: Initialising APIC...\n", __func__, apicCPUNo));
+    core_APIC_Init(apicData, apicCPUNo);
 #endif
 
 #if defined(__AROSEXEC_SMP__)
-    D(bug("[Kernel:SMP] %s[0x%02X]: SysBase @ 0x%p\n", __func__, _APICID, SysBase));
+    D(bug("[Kernel:SMP] %s[0x%02X]: SysBase @ 0x%p\n", __func__, apicCPUNo, SysBase));
 
     TLS_SET(SysBase,SysBase);
     TLS_SET(KernelBase,KernelBase);
@@ -106,7 +114,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     {
         cpu_BootStrap(apicBSTask);
 #else
-    bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, apicData->apic_count);
+    bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", apicCPUNo + 1, apicData->apic_count);
 #endif
 
     /* Signal the bootstrap core that we are running */
@@ -115,7 +123,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 #if defined(__AROSEXEC_SMP__)
     }
 
-    bug("[Kernel:SMP] APIC #%u Failed to bootstrap (Halting)...\n", _APICNO + 1);
+    bug("[Kernel:SMP] APIC #%u Failed to bootstrap (Halting)...\n", apicCPUNo + 1);
 #endif
     while (1) asm volatile("hlt");
 }
@@ -190,7 +198,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
     struct APICData *apicData = pdata->kb_APIC;
     APTR _APICStackBase;
     IPTR wakeresult = -1;
-    apicid_t i;
+    apicid_t cpuNo;
     spinlock_t apicReadyLock;
 
     D(bug("[Kernel:SMP] Ready spinlock at 0x%p\n", &apicReadyLock));
@@ -198,27 +206,27 @@ static int smp_Wake(struct KernelBase *KernelBase)
     KrnSpinInit(&apicReadyLock);
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
-    for (i = 1; i < apicData->apic_count; i++)
+    for (cpuNo = 1; cpuNo < apicData->apic_count; cpuNo++)
     {
         struct APICCPUWake_Data apicWake = 
         {
             bs,
             apicData->lapicBase,
-            apicData->cores[i].cpu_LocalID
+            apicData->cores[cpuNo].cpu_LocalID
         };
 
-        D(bug("[Kernel:SMP] Launching APIC #%u (ID 0x%02X)\n", i + 1, apicData->cores[i].cpu_LocalID));
+        D(bug("[Kernel:SMP] Launching APIC #%u (ID 0x%02X)\n", cpuNo + 1, apicData->cores[cpuNo].cpu_LocalID));
  
-        apicData->cores[i].cpu_GDT = PlatformAllocGDT(KernelBase, apicData->cores[i].cpu_LocalID);
-        apicData->cores[i].cpu_TLS = PlatformAllocTLS(KernelBase, apicData->cores[i].cpu_LocalID);
-        apicData->cores[i].cpu_IDT = PlatformAllocIDT(KernelBase, apicData->cores[i].cpu_LocalID);
+        apicData->cores[cpuNo].cpu_GDT = PlatformAllocGDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
+        apicData->cores[cpuNo].cpu_TLS = PlatformAllocTLS(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
+        apicData->cores[cpuNo].cpu_IDT = PlatformAllocIDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
 
         /*
          * First we need to allocate a stack for our CPU.
          * We allocate the same three stacks as in core_CPUSetup().
          */
         _APICStackBase = AllocMem(STACK_SIZE * 3, MEMF_CLEAR);
-        D(bug("[Kernel:SMP] Allocated STACK for APIC ID 0x%02X @ 0x%p ..\n", apicData->cores[i].cpu_LocalID, _APICStackBase));
+        D(bug("[Kernel:SMP] Allocated STACK for APIC ID 0x%02X @ 0x%p ..\n", apicData->cores[cpuNo].cpu_LocalID, _APICStackBase));
         if (!_APICStackBase)
                 return 0;
 
@@ -227,7 +235,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
         bs->Arg1 = (IPTR)_APICStackBase;
         bs->Arg2 = (IPTR)&apicReadyLock;
         // Arg3 = KernelBase - already set by smp_Setup()
-        bs->Arg4 = (IPTR)i;
+        bs->Arg4 = (IPTR)cpuNo;
         bs->SP   = _APICStackBase + STACK_SIZE;
 
         /* Lock the spinlock before launching the core */
@@ -243,10 +251,10 @@ static int smp_Wake(struct KernelBase *KernelBase)
              * Before we proceed we need to make sure that the core has picked up
              * its stack and we can reload bootstrap argument area with another one.
              */
-            DWAKE(bug("[Kernel:SMP] Waiting for APIC #%u to initialise .. ", i + 1));
+            DWAKE(bug("[Kernel:SMP] Waiting for APIC #%u to initialise .. ", cpuNo + 1));
             while (!KrnSpinTryLock(&apicReadyLock, SPINLOCK_MODE_READ)){};
             KrnSpinUnLock(&apicReadyLock);
-            D(bug("[Kernel:SMP] APIC #%u started up\n", i + 1));
+            D(bug("[Kernel:SMP] APIC #%u started up\n", cpuNo + 1));
         }
         D(else bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult));
     }
