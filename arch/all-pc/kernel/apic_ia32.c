@@ -10,6 +10,9 @@
 #include <asm/io.h>
 #include <exec/types.h>
 
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
+
 #include <inttypes.h>
 
 #include "kernel_base.h"
@@ -22,7 +25,7 @@
 #include "apic.h"
 #include "apic_ia32.h"
 
-#define D(x)
+#define D(x) x
 #define DWAKE(x)        /* Badly interferes with AP startup */
 #define DID(x)          /* Badly interferes with everything */
 /* #define DEBUG_WAIT */
@@ -45,19 +48,19 @@ struct APICInt_Private
 
 icid_t APICInt_Register(struct KernelBase *KernelBase)
 {
-    D(bug("[Kernel:APIC] %s()\n", __func__));
+    D(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
     return (icid_t)APICInt_IntrController.ic_Node.ln_Type;
 }
 
 BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
-    D(bug("[Kernel:APIC] %s(%d)\n", __func__, instanceCount));
+    D(bug("[Kernel:APIC-IA32] %s(%d)\n", __func__, instanceCount));
 
     /* Take over the APIC IRQ */
     if (!krnInitInterrupt(KernelBase, 0xde, APICInt_IntrController.ic_Node.ln_Type, 0))
     {
-        bug("[Kernel:APIC] %s: failed to acquire IRQ #0xde\n", __func__);
+        bug("[Kernel:APIC-IA32] %s: failed to acquire IRQ #0xde\n", __func__);
     }
 
     return TRUE;
@@ -65,14 +68,14 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
 BOOL APICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
-    D(bug("[Kernel:APIC] %s()\n", __func__));
+    D(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
     return TRUE;
 }
 
 BOOL APICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
-    D(bug("[Kernel:APIC] %s()\n", __func__));
+    D(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
     return TRUE;
 }
@@ -81,7 +84,7 @@ BOOL APICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
     IPTR apic_base;
 
-    D(bug("[Kernel:APIC] %s()\n", __func__));
+    D(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
     /* Write zero to EOI of APIC */
     apic_base = core_APIC_GetBase();
@@ -112,7 +115,10 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
 {
     ULONG ipisend_timeout, status_ipisend;
 
-    D(bug("[IPI] Command 0x%08X to target %u\n", cmd, target));
+    D(
+        apicid_t cpuNo = KrnGetCPUNumber();
+        bug("[Kernel:APIC-IA32.%03u] %s: Command 0x%08X to target %u\n", cpuNum, __func__, cmd, target);
+    )
 
     /*
      * Send the IPI.
@@ -122,7 +128,7 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
     APIC_REG(__APICBase, APIC_ICRH) = target << 24;
     APIC_REG(__APICBase, APIC_ICRL) = cmd;
 
-    D(bug("[IPI] Waiting for IPI to complete "));
+    D(bug("[Kernel:APIC-IA32.%03u] %s: Waiting for IPI to complete ", cpuNum, __func__));
 
     for (ipisend_timeout = 1000; ipisend_timeout > 0; ipisend_timeout--)
     {
@@ -139,7 +145,7 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
             break;
     }
     D(bug("\n"));
-    D(bug("[IPI] ... left wait loop (status = 0x%08X)\n", status_ipisend));
+    D(bug("[Kernel:APIC-IA32.%03u] %s: ... left wait loop (status = 0x%08X)\n", cpuNum, __func__, status_ipisend));
 
     return status_ipisend;
 }
@@ -166,7 +172,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
     if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != (icintrid_t)-1)
     {
         int i;
-        D(bug("[Kernel:APIC.%u] _APIC_IA32_init: APIC IC ID #%d:%d\n", cpuNum, ICINTR_ICID(coreICInstID), ICINTR_INST(coreICInstID)));
+        D(bug("[Kernel:APIC-IA32.%03u] %s: APIC IC ID #%d:%d\n", cpuNum, __func__, ICINTR_ICID(coreICInstID), ICINTR_INST(coreICInstID)));
 
         /* Use flat interrupt model with logical destination ID = 1 */
         APIC_REG(__APICBase, APIC_DFR) = DFR_FLAT;
@@ -191,7 +197,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
              APIC_REG(__APICBase, APIC_ESR) = 0;
 #endif
 
-        D(bug("[Kernel:APIC.%u] _APIC_IA32_init: APIC ESR before enabling vector: %08x\n", cpuNum, APIC_REG(__APICBase, APIC_ESR)));
+        D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR before enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
 
         /* Set APIC error interrupt to fixed vector 0xFE interrupt on APIC error */
         APIC_REG(__APICBase, APIC_ERROR_VEC) = 0xfe;
@@ -200,7 +206,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         if (maxlvt > 3)
              APIC_REG(__APICBase, APIC_ESR) = 0;
 
-        D(bug("[Kernel:APIC.%u] _APIC_IA32_init: APIC ESR after enabling vector: %08x\n", cpuNum, APIC_REG(__APICBase, APIC_ESR)));
+        D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR after enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
 
         /*
          * Now the tricky thing - calibrate LAPIC timer frequency.
@@ -235,7 +241,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             calibrated += (((lapic_initial - lapic_final) * 11931)/(11931 - pit_final)) ;
         }
         apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
-        D(bug("[Kernel:APIC.%u] LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, apic->cores[cpuNum].cpu_TimerFreq, apic->cores[cpuNum].cpu_TimerFreq / 1000000));
+        D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, apic->cores[cpuNum].cpu_TimerFreq / 1000000));
     }
 }
 
@@ -245,7 +251,7 @@ apicid_t core_APIC_GetID(IPTR _APICBase)
 
     /* The actual ID is in 8 most significant bits */
     _apic_id = APIC_REG(_APICBase, APIC_ID) >> APIC_ID_SHIFT;
-    DID(bug("[Kernel:APIC] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
+    DID(bug("[Kernel:APIC-IA32] %s: %03u\n", __func__, _apic_id));
 
     return _apic_id;
 }
@@ -257,10 +263,12 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
 #ifdef CONFIG_LEGACY
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
 #endif
+    D(
+        apicid_t cpuNo = KrnGetCPUNumber();
 
-    D(bug("[Kernel:APIC] _APIC_IA32_wake(%03u @ %p)\n", wake_apicid, wake_apicstartrip));
-    D(bug("[Kernel:APIC] _APIC_IA32_wake: APIC ID %03u Base @ %p\n", core_APIC_GetID(__APICBase), __APICBase));
-
+        bug("[Kernel:APIC-IA32.%03u] %s(%03u @ %p)\n", cpuNo, __func__, wake_apicid, wake_apicstartrip);
+        bug("[Kernel:APIC-IA32.%03u] %s: Base @ %p\n", cpuNo, __func__, __APICBase);
+    )
 #ifdef CONFIG_LEGACY
     /*
      * Check if we have old 82489DX discrete APIC (version & 0xF0 == 0).
@@ -277,7 +285,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     	 * This is standard feature of IBM PC AT BIOS. If a warm reset condition is detected,
     	 * the BIOS jumps to the given address.
      	 */
-	D(bug("[Kernel:APIC] Setting BIOS vector for trampoline @ %p ..\n", wake_apicstartrip));
+	D(bug("[Kernel:APIC-IA32.%03u] %s: Setting BIOS vector for trampoline @ %p ..\n", cpuNo, __func__, wake_apicstartrip));
 	*((volatile unsigned short *)0x469) = (IPTR)wake_apicstartrip >> 4;
 	*((volatile unsigned short *)0x467) = 0; /* Actually wake_apicstartrip & 0x0F, it's page-aligned. */
 
@@ -286,7 +294,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
 	 * This writes 0x0A into CMOS RAM, location 0x0F. This signals a warm reset condition to BIOS,
 	 * making part one work.
 	 */
-	D(bug("[Kernel:APIC] Setting warm reset code ..\n"));
+	D(bug("[Kernel:APIC-IA32.%03u] %s: Setting warm reset code ..\n", cpuNo, __func__));
 	outb(0xf, 0x70);
 	outb(0xa, 0x71);
     }
@@ -299,7 +307,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     status_ipisend = DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_INT_ASSERT | ICR_DM_INIT);    
     if (status_ipisend)
     {
-    	D(bug("[Kernel:APIC] Error asserting INIT\n"));
+    	D(bug("[Kernel:APIC-IA32.%03u] %s: Error asserting INIT\n", cpuNo, __func__));
     	return status_ipisend;
     }
 
@@ -310,7 +318,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     status_ipisend = DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_DM_INIT);
     if (status_ipisend)
     {
-    	D(bug("[Kernel:APIC] Error deasserting INIT\n"));
+    	D(bug("[Kernel:APIC-IA32.%03u] %s: Error deasserting INIT\n", cpuNo, __func__));
     	return status_ipisend;
     }
 
@@ -321,7 +329,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     /* If it's 82489DX, we are done. */
     if (!APIC_INTEGRATED(apic_ver))
     {
-	DWAKE(bug("[Kernel:APIC] _APIC_IA32_wake: 82489DX detected, wakeup done\n"));
+	DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: 82489DX detected, wakeup done\n", cpuNo, __func__));
     	return 0;
     }
 #endif
@@ -333,7 +341,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
      */
     for (start_count = 1; start_count <= 2; start_count++)
     {
-        D(bug("[Kernel:APIC] _APIC_IA32_wake: Attempting STARTUP .. %d\n", start_count));
+        D(bug("[Kernel:APIC-IA32.%03u] %s: Attempting STARTUP .. %u\n", cpuNo, __func__, start_count));
 
 	/* Clear any pending error condition */
         APIC_REG(__APICBase, APIC_ESR) = 0;
@@ -378,7 +386,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
 	    break;
     }
 
-    DWAKE(bug("[Kernel:APIC] _APIC_IA32_wake: STARTUP run status 0x%08X, error 0x%08X\n", status_ipisend, status_ipirecv));
+    DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: STARTUP run status 0x%08X, error 0x%08X\n", cpuNo, __func__, status_ipisend, status_ipirecv));
 
     /*
      * We return nonzero on error.
