@@ -24,6 +24,54 @@ extern AROS_INTP(Exec_X86ShutdownHandler);
 extern AROS_INTP(Exec_X86WarmResetHandler);
 extern AROS_INTP(Exec_X86ColdResetHandler);
 
+#if defined(__AROSEXEC_SMP__)
+struct Hook Exec_TaskSpinLockFailHook;
+
+AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(spinlock_t *, spinLock, A1),
+    AROS_UFHA(void *, unused, A2))
+{
+    AROS_USERFUNC_INIT
+
+    struct Task *spinTask = GET_THIS_TASK;
+
+    D(bug("[Exec:X86] %s()\n", __func__));
+    D(bug("[Exec:X86] %s: Setting task @ 0x%p to spinning...\n", __func__, spinTask));
+
+    /* tell the scheduler that the task is waiting on a spinlock */
+    spinTask->tc_State = TS_SPIN;
+    IntETask(spinTask->tc_UnionETask.tc_ETask)->iet_SpinLock = spinLock;
+
+    D(bug("[Exec:X86] %s: Forcing Reschedule...\n", __func__));
+
+    /* schedule us away for now .. */
+    Reschedule();
+
+    AROS_USERFUNC_EXIT
+}
+
+void Exec_TaskSpinUnlock(spinlock_t *spinLock)
+{
+    struct Task *curTask, *nxtTask;
+
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_WRITE);
+    ForeachNodeSafe(&PrivExecBase(SysBase)->TaskSpinning, curTask, nxtTask)
+    {
+        if (GetIntETask(curTask)->iet_SpinLock == spinLock)
+        {
+            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
+            Disable();
+            Remove(&curTask->tc_Node);
+            Enqueue(&SysBase->TaskReady, &curTask->tc_Node);
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+            Enable();
+        }
+    }
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
+}
+#endif
+
 int Exec_X86Init(struct ExecBase *SysBase)
 {
     struct IntExecBase *sysBase = (struct IntExecBase *)SysBase;
@@ -37,7 +85,7 @@ int Exec_X86Init(struct ExecBase *SysBase)
 #endif
     char *taskName;
 
-    D(bug("[Exec:X86] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Exec:X86] %s()\n", __func__));
 
     /* Install The default Power Management handlers */
     sysBase->ColdResetHandler.is_Node.ln_Pri = -64;
@@ -58,9 +106,13 @@ int Exec_X86Init(struct ExecBase *SysBase)
     sysBase->ShutdownHandler.is_Data = &sysBase->ShutdownHandler;
     AddResetCallback(&sysBase->ShutdownHandler);
 
-    D(bug("[Exec:X86] %s: Default Handlers Registered\n", __PRETTY_FUNCTION__));
+    D(bug("[Exec:X86] %s: Default Handlers Registered\n", __func__));
 
 #if defined(__AROSEXEC_SMP__)
+    /* set up the task spinning hook */
+    Exec_TaskSpinLockFailHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockFailFunc;
+    D(bug("[Exec:X86] %s: SpinLock Fail Hook @ 0x%p, Handler @ 0x%p\n", __func__, &Exec_TaskSpinLockFailHook, Exec_TaskSpinLockFailFunc));
+
     taskName = AllocVec(15, MEMF_CLEAR);
     RawDoFmt("CPU #%03u Idle", (RAWARG)idleNameArg, RAWFMTFUNC_STRING, taskName);
 #else
