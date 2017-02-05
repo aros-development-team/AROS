@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate a signal
@@ -123,7 +123,7 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
 #if defined(__AROSEXEC_SMP__)
     if (ThisTask->tc_UnionETask.tc_ETask)
     {
-        EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+        EXECTASK_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
     }
 #endif
     Disable();
@@ -133,7 +133,7 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
 #if defined(__AROSEXEC_SMP__)
     if (ThisTask->tc_UnionETask.tc_ETask)
     {
-        EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+        EXECTASK_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
     }
 #endif
     Enable();

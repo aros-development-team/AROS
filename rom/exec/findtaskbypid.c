@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,35 +55,35 @@
 
     /* First up, check running task(s) */
 #if defined(__AROSEXEC_SMP__)
-    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+    listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
     Forbid();
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
     {
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
         {
-            EXEC_SPINLOCK_UNLOCK(listLock);
+            EXECTASK_SPINLOCK_UNLOCK(listLock);
             Permit();
 	    return t;
         }
     }
-    EXEC_SPINLOCK_UNLOCK(listLock);
+    EXECTASK_SPINLOCK_UNLOCK(listLock);
     Permit();
-    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
+    listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
     Forbid();
     ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
     {
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
         {
-            EXEC_SPINLOCK_UNLOCK(listLock);
+            EXECTASK_SPINLOCK_UNLOCK(listLock);
             Permit();
 	    return t;
         }
     }
-    EXEC_SPINLOCK_UNLOCK(listLock);
+    EXECTASK_SPINLOCK_UNLOCK(listLock);
     Permit();
-    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
     Forbid();
 #else
     Disable();
@@ -104,7 +104,7 @@
 	if (et != NULL && et->et_UniqueID == id)
         {
 #if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(listLock);
+            EXECTASK_SPINLOCK_UNLOCK(listLock);
             Permit();
 #else
             Enable();
@@ -113,9 +113,9 @@
         }
     }
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(listLock);
+    EXECTASK_SPINLOCK_UNLOCK(listLock);
     Permit();
-    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+    listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
     Forbid();
 #endif
     /* Finally, go through the wait list */
@@ -125,7 +125,7 @@
 	if (et != NULL && et->et_UniqueID == id)
         {
 #if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(listLock);
+            EXECTASK_SPINLOCK_UNLOCK(listLock);
             Permit();
 #else
             Enable();
@@ -135,7 +135,7 @@
     }
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(listLock);
+    EXECTASK_SPINLOCK_UNLOCK(listLock);
     Permit();
 #else
     Enable();

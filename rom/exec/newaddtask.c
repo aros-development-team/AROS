@@ -205,7 +205,7 @@
      */
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
+    EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
 #endif
     Disable();
 
@@ -213,7 +213,7 @@
     task->tc_State = TS_READY;
     Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    EXECTASK_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
 
     /*

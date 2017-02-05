@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Change the priority of a task.
@@ -81,7 +81,7 @@
             task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
             break;
     }
-    EXEC_SPINLOCK_LOCK(task_listlock, (task->tc_State == TS_READY) ? SPINLOCK_MODE_WRITE : SPINLOCK_MODE_READ);
+    EXECTASK_SPINLOCK_LOCK(task_listlock, (task->tc_State == TS_READY) ? SPINLOCK_MODE_WRITE : SPINLOCK_MODE_READ);
 #endif
     Disable();
 
@@ -109,7 +109,7 @@
         )
         {
 #if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(task_listlock);
+            EXECTASK_SPINLOCK_UNLOCK(task_listlock);
             task_listlock = NULL;
 #endif
             Reschedule();
@@ -126,7 +126,7 @@
 #if defined(__AROSEXEC_SMP__)
     if (task_listlock)
     {
-        EXEC_SPINLOCK_UNLOCK(task_listlock);
+        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
     }
 #endif
     Enable();

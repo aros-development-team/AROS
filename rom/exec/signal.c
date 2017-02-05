@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Send some signal to a given task
@@ -73,13 +73,13 @@
     )
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+    EXECTASK_SPINLOCK_LOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
 #endif
     Disable();
     /* Set the signals in the task structure. */
     task->tc_SigRecvd |= signalSet;
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    EXECTASK_SPINLOCK_UNLOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock);
     Enable();
 #endif
 
@@ -131,20 +131,20 @@
         /* Yes. Move it to the ready list. */
 #if defined(__AROSEXEC_SMP__)
         task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
-        EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
+        EXECTASK_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
         Forbid();
 #endif
         Remove(&task->tc_Node);
         task->tc_State = TS_READY;
 #if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_UNLOCK(task_listlock);
+        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
         Permit();
-        task_listlock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
+        task_listlock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
         Forbid();
 #endif
         Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_UNLOCK(task_listlock);
+        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
         Permit();
         task_listlock = NULL;
 #endif
