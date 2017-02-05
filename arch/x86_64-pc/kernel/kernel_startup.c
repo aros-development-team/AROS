@@ -157,6 +157,9 @@ void kernel_cstart(const struct TagItem *start_msg)
     IPTR mmap_len = 0, addr = 0, klo  = 0, memtop = 0;
     struct TagItem *tag;
     apicid_t _APICID;
+#if defined(__AROSEXEC_SMP__)
+    struct X86SchedulerPrivate  *scheduleData;
+#endif
     UWORD *ranges[] = 
     {
         NULL, 
@@ -447,6 +450,15 @@ void kernel_cstart(const struct TagItem *start_msg)
 
     krnCreateROMHeader("Kickstart ROM", (APTR)klo, (APTR)kick_highest);
 
+#if defined(__AROSEXEC_SMP__)
+    D(bug("[Kernel] Allocating CPU #0 Scheduling Data\n"));
+    scheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC);
+    if (!scheduleData)
+        krnPanic(KernelBase, "Failed to Allocate Boot Processor Scheduling Data!");
+
+    TLS_SET(ScheduleData, scheduleData);
+    D(bug("[Kernel] Scheduling Data @ 0x%p\n", TLS_GET(ScheduleData)));
+#endif
     /*
      * Now we have working exec.library memory allocator.
      * Move console mirror buffer away from unused memory.

@@ -38,152 +38,197 @@ struct Exec_PlatformData
 #if defined(AROS_NO_ATOMIC_OPERATIONS)
 #define IDNESTCOUNT_INC \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->IDNestCnt++; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->IDNestCnt++; \
     } while(0)
 #define IDNESTCOUNT_DEC \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->IDNestCnt--; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->IDNestCnt--; \
     } while(0)
 #define TDNESTCOUNT_INC \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->TDNestCnt++; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->TDNestCnt++; \
     } while(0)
 #define TDNESTCOUNT_DEC \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->TDNestCnt--; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->TDNestCnt--; \
     } while(0)
 #define FLAG_SCHEDQUANTUM_CLEAR \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->ScheduleFlags &= ~TLSSF_Quantum; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->ScheduleFlags &= ~TLSSF_Quantum; \
     } while(0)
 #define FLAG_SCHEDQUANTUM_SET \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->ScheduleFlags |= TLSSF_Quantum; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->ScheduleFlags |= TLSSF_Quantum; \
     } while(0)
 #define FLAG_SCHEDSWITCH_CLEAR \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->ScheduleFlags &= ~TLSSF_Switch; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->ScheduleFlags &= ~TLSSF_Switch; \
     } while(0)
 #define FLAG_SCHEDSWITCH_SET \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->ScheduleFlags |= TLSSF_Switch; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->ScheduleFlags |= TLSSF_Switch; \
     } while(0)
 #define FLAG_SCHEDDISPATCH_CLEAR \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->ScheduleFlags &= ~TLSSF_Dispatch; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->ScheduleFlags &= ~TLSSF_Dispatch; \
     } while(0)
 #define FLAG_SCHEDDISPATCH_SET \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->ScheduleFlags |= TLSSF_Dispatch; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->ScheduleFlags |= TLSSF_Dispatch; \
     } while(0)
 #else /* !AROS_NO_ATOMIC_OPERATIONS */
 #define IDNESTCOUNT_INC \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_INC(__tls->IDNestCnt); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_INC(__schd->IDNestCnt); \
     } while(0)
 #define IDNESTCOUNT_DEC \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_DEC(__tls->IDNestCnt); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_DEC(__schd->IDNestCnt); \
     } while(0)
 #define TDNESTCOUNT_INC \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_INC(__tls->TDNestCnt); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_INC(__schd->TDNestCnt); \
     } while(0)
 #define TDNESTCOUNT_DEC \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_DEC(__tls->TDNestCnt); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_DEC(__schd->TDNestCnt); \
     } while(0)
 #define FLAG_SCHEDQUANTUM_CLEAR \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_AND(__tls->ScheduleFlags, ~TLSSF_Quantum); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_AND(__schd->ScheduleFlags, ~TLSSF_Quantum); \
     } while(0)
 #define FLAG_SCHEDQUANTUM_SET \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_OR(__tls->ScheduleFlags, TLSSF_Quantum); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_OR(__schd->ScheduleFlags, TLSSF_Quantum); \
     } while(0)
 #define FLAG_SCHEDSWITCH_CLEAR \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_AND(__tls->ScheduleFlags, ~TLSSF_Switch); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_AND(__schd->ScheduleFlags, ~TLSSF_Switch); \
     } while(0)
 #define FLAG_SCHEDSWITCH_SET \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_OR(__tls->ScheduleFlags, TLSSF_Switch); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_OR(__schd->ScheduleFlags, TLSSF_Switch); \
     } while(0)
 #define FLAG_SCHEDDISPATCH_CLEAR \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_AND(__tls->ScheduleFlags, ~TLSSF_Dispatch); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_AND(__schd->ScheduleFlags, ~TLSSF_Dispatch); \
     } while(0)
 #define FLAG_SCHEDDISPATCH_SET \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        AROS_ATOMIC_OR(__tls->ScheduleFlags, TLSSF_Dispatch); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            AROS_ATOMIC_OR(__schd->ScheduleFlags, TLSSF_Dispatch); \
     } while(0)
 #endif /* !AROS_NO_ATOMIC_OPERATIONS */
 #define IDNESTCOUNT_GET \
     ({ \
-        tls_t *__tls = TLS_PTR_GET(); \
-        LONG __ret = (__tls->IDNestCnt); \
-        __ret;  \
-    })
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        LONG __ret = 0; \
+        if (__schd) \
+            __ret = (__schd->IDNestCnt); \
+         __ret;  \
+   })
 #define IDNESTCOUNT_SET(val) \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->IDNestCnt = val; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->IDNestCnt = val; \
     } while(0)
 #define TDNESTCOUNT_GET \
     ({ \
-        tls_t *__tls = TLS_PTR_GET(); \
-        LONG __ret = (__tls->TDNestCnt); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        LONG __ret = 0; \
+        if (__schd) \
+            __ret = (__schd->TDNestCnt); \
         __ret;  \
     })
 #define TDNESTCOUNT_SET(val) \
     do { \
-        tls_t *__tls = TLS_PTR_GET(); \
-        __tls->TDNestCnt = val; \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->TDNestCnt = val; \
     } while(0)
 #define FLAG_SCHEDQUANTUM_ISSET \
     ({ \
-        tls_t *__tls = TLS_PTR_GET(); \
-        BOOL __ret = (__tls->ScheduleFlags & TLSSF_Quantum); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        BOOL __ret = FALSE; \
+        if (__schd) \
+            __ret = (__schd->ScheduleFlags & TLSSF_Quantum); \
         __ret;  \
     })
 #define FLAG_SCHEDSWITCH_ISSET \
     ({ \
-        tls_t *__tls = TLS_PTR_GET(); \
-        BOOL __ret = (__tls->ScheduleFlags & TLSSF_Switch); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        BOOL __ret = FALSE; \
+        if (__schd) \
+            __ret = (__schd->ScheduleFlags & TLSSF_Switch); \
         __ret;  \
     })
 #define FLAG_SCHEDDISPATCH_ISSET \
     ({ \
         tls_t *__tls = TLS_PTR_GET(); \
-        BOOL __ret = (__tls->ScheduleFlags & TLSSF_Dispatch); \
+        BOOL __ret = FALSE; \
+        if (__schd) \
+            __ret = (__schd->ScheduleFlags & TLSSF_Dispatch); \
         __ret;  \
     })
-#define GET_THIS_TASK           TLS_GET(ThisTask)
-
-#define SET_THIS_TASK(x)        TLS_SET(ThisTask,(x)); \
-    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE); \
-    AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
-    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock)
+#define GET_THIS_TASK \
+    ({ \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        struct Task *__ret = NULL; \
+        if (__schd) \
+            __ret = __schd->RunningTask; \
+        __ret;  \
+    })
+#define SET_THIS_TASK(x)         \
+    ({ \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+        { \
+            __schd->RunningTask = (x); \
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE); \
+            AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);  \
+        } \
+    })
 
 #define __AROSEXEC_SUPERSCHEDFLAGS__
 
