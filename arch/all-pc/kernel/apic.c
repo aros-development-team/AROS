@@ -106,3 +106,14 @@ apicid_t core_APIC_GetNumber(struct APICData *data)
 
     return core_APIC_GetNumberFromLocal(data, __APICLogicalID);
 }
+
+uint32_t core_APIC_GetMask(struct APICData *data, apicid_t cpuNo)
+{
+    if (!data)
+    {
+        /* No APIC data -> uniprocessor system */
+    	return (1 << 0);
+    }
+
+    return (1 << data->cores[cpuNo].cpu_LocalID);
+}

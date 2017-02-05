@@ -6,6 +6,7 @@ FUNCS	 := \
              displayalert \
              getcpucount \
              getcpunumber \
+             getcpumask \
              spininit \
              spinislocked \
              spintrylock \

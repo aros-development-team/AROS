@@ -63,7 +63,7 @@ BOOL core_Schedule(void)
         {
             struct Task *nexttask;
 #if defined(__AROSEXEC_SMP__)
-            uint32_t cpumask = (1 << cpuNo);
+            uint32_t cpumask = KrnGetCPUMask(cpuNo);
 #endif
             /*
                     If there are tasks ready for this cpu that have equal or lower priority,
