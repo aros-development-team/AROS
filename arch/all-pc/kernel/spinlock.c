@@ -31,9 +31,10 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
         {
             if (failhook)
             {
-                D(bug("[Kernel] %s: lock-held ... calling fail hook...\n", __func__));
-//                CALLHOOKPKT(failhook, (APTR)lock, 0);
+               D(bug("[Kernel] %s: lock-held ... calling fail hook @ 0x%p ...\n", __func__, failhook);)
+                CALLHOOKPKT(failhook, (APTR)lock, 0);
             }
+            D(bug("[Kernel] %s: spinning on held lock ...\n", __func__);)
         };
         lock->slock.write = 1;
     }
@@ -43,9 +44,10 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
         {
             if (failhook)
             {
-                D(bug("[Kernel] %s: write-locked .. calling fail hook...\n", __func__));
-//                CALLHOOKPKT(failhook, (APTR)lock, 0);
+                D(bug("[Kernel] %s: write-locked .. calling fail hook @ 0x%p ...\n", __func__, failhook);)
+                CALLHOOKPKT(failhook, (APTR)lock, 0);
             }
+            D(bug("[Kernel] %s: spinning on write lock ...\n", __func__);)
         };
     }
 
