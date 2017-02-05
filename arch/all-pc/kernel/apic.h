@@ -81,6 +81,7 @@ struct APICData *core_APIC_Probe(void);
 
 apicid_t core_APIC_GetNumberFromLocal(struct APICData *, apicid_t);
 apicid_t core_APIC_GetNumber(struct APICData *);
+uint32_t core_APIC_GetMask(struct APICData *, apicid_t);
 
 extern struct IntrController APICInt_IntrController;
 

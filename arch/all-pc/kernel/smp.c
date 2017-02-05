@@ -32,7 +32,7 @@ extern APTR PlatformAllocTLS(struct KernelBase *, apicid_t);
 extern APTR PlatformAllocIDT(struct KernelBase *, apicid_t);
 
 #if defined(__AROSEXEC_SMP__)
-extern struct Task *cpu_InitBootStrap();
+extern struct Task *cpu_InitBootStrap(apicid_t);
 extern void cpu_BootStrap(struct Task *);
 #endif
 
@@ -110,7 +110,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     TLS_SET(SysBase,SysBase);
     TLS_SET(KernelBase,KernelBase);
 
-    if ((apicBSTask = cpu_InitBootStrap()) != NULL)
+    if ((apicBSTask = cpu_InitBootStrap(apicCPUNo)) != NULL)
     {
         cpu_BootStrap(apicBSTask);
 #else
@@ -121,6 +121,8 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     KrnSpinUnLock((spinlock_t *)apicReadyLock);
 
 #if defined(__AROSEXEC_SMP__)
+        D(bug("[Kernel:SMP] %s[%03u]: Starting up Scheduler...\n", __func__, apicCPUNo));
+        while (1) {};
     }
 
     bug("[Kernel:SMP] APIC #%u Failed to bootstrap (Halting)...\n", apicCPUNo + 1);

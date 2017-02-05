@@ -25,7 +25,8 @@
     This file contains code that is run once Exec has been brought up - and is launched
     via the RomTag/Autoinit routines in Exec.
     
-    Here we do the Platform configuration that requires a working "AROS" environment.
+    Here we do the platform setup that requires Exec to have minimal configuration
+    but still running inthe SINGLETASK environment.
 */
 
 extern struct syscallx86_Handler x86_SCSupervisorHandler;

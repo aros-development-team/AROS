@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define DEBUG 0
+
 #include <aros/config.h>
 
 #if defined(__AROSEXEC_SMP__)
@@ -10,7 +12,7 @@
 #define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
 
-#include <stdio.h>
+#include <exec/rawfmt.h>
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
@@ -25,21 +27,17 @@
 
 extern BOOL Exec_InitETask(struct Task *, struct Task *, struct ExecBase *);
 
-struct Task *cpu_InitBootStrap()
+struct Task *cpu_InitBootStrap(apicid_t cpuNo)
 {
     struct ExceptionContext *bsctx;
     struct MemList *ml;
 #define bstask          ((struct Task *)(ml->ml_ME[0].me_Addr))
 #define bstaskmlsize    (sizeof(struct MemList) + sizeof(struct MemEntry))
-    IPTR _APICBase;
-    apicid_t _APICID;
-    _APICBase = core_APIC_GetBase();
-    _APICID   = core_APIC_GetID(_APICBase);
 
     /* Build bootstraps memory list */
     if ((ml = AllocMem(bstaskmlsize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
-        bug("[Kernel:%02d] FATAL : Failed to allocate memory for bootstrap task", _APICID);
+        bug("[Kernel:%03u] FATAL : Failed to allocate memory for bootstrap task", cpuNo);
         return NULL;
     }
 
@@ -48,7 +46,7 @@ struct Task *cpu_InitBootStrap()
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     if ((ml->ml_ME[0].me_Addr = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
-        bug("[Kernel:%02d] FATAL : Failed to allocate task for bootstrap", _APICID);
+        bug("[Kernel:%03u] FATAL : Failed to allocate task for bootstrap", cpuNo);
         FreeMem(ml, bstaskmlsize);
         return NULL;
     }
@@ -57,7 +55,7 @@ struct Task *cpu_InitBootStrap()
     ml->ml_ME[1].me_Length = 15 + (sizeof(IPTR) * 128);
     if ((ml->ml_ME[1].me_Addr = AllocMem(ml->ml_ME[1].me_Length, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
-        bug("[Kernel:%02d] FATAL : Failed to allocate stack for bootstrap task", _APICID);
+        bug("[Kernel:%03u] FATAL : Failed to allocate stack for bootstrap task", cpuNo);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
         FreeMem(ml, bstaskmlsize);
         return NULL;
@@ -67,24 +65,28 @@ struct Task *cpu_InitBootStrap()
 
     AddHead(&bstask->tc_MemEntry, &ml->ml_Node);
 
-    D(bug("[Kernel:%02d] Bootstrap task @ 0x%p\n", _APICID, bstask));
+    D(bug("[Kernel:%03u] Bootstrap task @ 0x%p\n", cpuNo, bstask));
 
     if ((bsctx = KrnCreateContext()) == NULL)
     {
-        bug("[Kernel:%02d] FATAL : Failed to create the bootstrap Task context\n", _APICID);
+        bug("[Kernel:%03u] FATAL : Failed to create the bootstrap Task context\n", cpuNo);
         FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
         FreeMem(ml, bstaskmlsize);
         return NULL;
     }
 
-    D(bug("[Kernel:%02d] CPU Ctx @ 0x%p\n", _APICID, bsctx));
+    D(bug("[Kernel:%03u] CPU Ctx @ 0x%p\n", cpuNo, bsctx));
 
     NEWLIST(&bstask->tc_MemEntry);
 
     if ((bstask->tc_Node.ln_Name = AllocVec(20, MEMF_CLEAR)) != NULL)
     {
-        sprintf(bstask->tc_Node.ln_Name, "CPU #%02d Bootstrap", _APICID);
+        IPTR bstNameArg[] = 
+        {
+            cpuNo
+        };
+        RawDoFmt("CPU #%03u Bootstrap", (RAWARG)bstNameArg, RAWFMTFUNC_STRING, bstask->tc_Node.ln_Name);
     }
     bstask->tc_Node.ln_Type = NT_TASK;
     bstask->tc_Node.ln_Pri  = 0;
@@ -94,7 +96,7 @@ struct Task *cpu_InitBootStrap()
     /* Create a ETask structure and attach CPU context */
     if (!Exec_InitETask(bstask, NULL, SysBase))
     {
-        bug("[Kernel:%02d] FATAL : Failed to initialize bootstrap ETask\n", _APICID);
+        bug("[Kernel:%03u] FATAL : Failed to initialize bootstrap ETask\n", cpuNo);
         FreeVec(bstask->tc_Node.ln_Name);
         FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
@@ -104,8 +106,8 @@ struct Task *cpu_InitBootStrap()
     bstask->tc_UnionETask.tc_ETask->et_RegFrame = bsctx;
 
     /* the bootstrap can only run on this CPU */
-    IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = _APICID;
-    IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = (1 << _APICID);
+    IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpuNo;
+    IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnGetCPUMask(cpuNo);
 
 #if (0)
     //TODO: set tasks SysBase->TaskExitCode
@@ -119,18 +121,21 @@ struct Task *cpu_InitBootStrap()
 void cpu_BootStrap(struct Task *bstask)
 {
     D(
-        IPTR _APICBase;
-        apicid_t _APICID;
-        _APICBase = core_APIC_GetBase();
-        _APICID   = core_APIC_GetID(_APICBase);
+        apicid_t cpuNo = KrnGetCPUNumber();
     
-        bug("[Kernel:SMP] %s[0x%02X]()\n", __func__, _APICID);
+        bug("[Kernel:SMP] %s[%03u]()\n", __func__, cpuNo);
+        
+        if (IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpuNo)
+            bug("[Kernel:SMP] %s[%03u]: bstask running on wrong CPU? (task cpu = %03u)\n", __func__, cpuNo, IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber);
     )
 
     bstask->tc_State = TS_RUN;
     SET_THIS_TASK(bstask);
 
-    D(bug("[Kernel:SMP] %s[0x%02X]: Leaving supervisor mode\n", __func__, _APICID));
+    D(bug("[Kernel:SMP] %s[%03u]: Leaving supervisor mode\n", __func__, cpuNo));
+
     krnLeaveSupervisorRing(FLAGS_INTENABLED);
+
+    D(bug("[Kernel:SMP] %s[%03u]: Done\n", __func__, cpuNo));
 }
 #endif

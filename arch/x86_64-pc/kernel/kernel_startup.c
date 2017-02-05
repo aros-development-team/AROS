@@ -156,7 +156,6 @@ void kernel_cstart(const struct TagItem *start_msg)
     struct mb_mmap *mmap = NULL;
     IPTR mmap_len = 0, addr = 0, klo  = 0, memtop = 0;
     struct TagItem *tag;
-    apicid_t _APICID;
 #if defined(__AROSEXEC_SMP__)
     struct X86SchedulerPrivate  *scheduleData;
 #endif
@@ -295,7 +294,6 @@ void kernel_cstart(const struct TagItem *start_msg)
 
     /* We are x86-64, and we know we always have APIC. */
     __KernBootPrivate->_APICBase = core_APIC_GetBase();
-    _APICID = core_APIC_GetID(__KernBootPrivate->_APICBase);
 
     /* Pre-Allocare TLS & GDT */
     if (!__KernBootPrivate->BOOTTLS)
@@ -306,7 +304,7 @@ void kernel_cstart(const struct TagItem *start_msg)
         __KernBootPrivate->TSS = core_AllocBootTSS(__KernBootPrivate);
 
     /* Setup GDT */
-    core_SetupGDT(__KernBootPrivate, _APICID,
+    core_SetupGDT(__KernBootPrivate, 0,
         __KernBootPrivate->BOOTGDT,
         __KernBootPrivate->BOOTTLS,
         __KernBootPrivate->TSS);
@@ -329,7 +327,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     }
 
     D(
-        bug("[Kernel] %s: launching on BSP APIC ID %03u\n", __func__, _APICID);
+        bug("[Kernel] %s: launching on BSP APIC ID %03u\n", __func__, core_APIC_GetID(__KernBootPrivate->_APICBase));
         bug("[Kernel] %s:                apicbase : 0x%p\n", __func__, __KernBootPrivate->_APICBase);
         bug("[Kernel] %s:                GDT      : 0x%p\n", __func__, __KernBootPrivate->BOOTGDT);
         bug("[Kernel] %s:                TLS      : 0x%p\n", __func__, __KernBootPrivate->BOOTTLS);
@@ -337,20 +335,18 @@ void kernel_cstart(const struct TagItem *start_msg)
     )
 
     /* Load the TSS, and GDT */
-    core_CPUSetup(_APICID, __KernBootPrivate->BOOTGDT, __KernBootPrivate->SystemStack);
+    core_CPUSetup(0, __KernBootPrivate->BOOTGDT, __KernBootPrivate->SystemStack);
 
     D(bug("[Kernel] %s: preparing interrupt vectors\n", __func__));
     /* Set-up the IDT */
     __KernBootPrivate->BOOTIDT = core_AllocBootIDT(__KernBootPrivate);
     D(bug("[Kernel] %s:                IDT      : 0x%p\n", __func__, __KernBootPrivate->BOOTIDT);)
-    core_SetupIDT(__KernBootPrivate, _APICID, __KernBootPrivate->BOOTIDT);
+    core_SetupIDT(__KernBootPrivate, 0, __KernBootPrivate->BOOTIDT);
 
     /* Set-up MMU */
     memtop = mmap_LargestAddress(mmap, mmap_len);
     D(bug("[Kernel] %s: memtop @ 0x%p\n", __func__, memtop));
     core_SetupMMU(&__KernBootPrivate->MMU, memtop);
-
-    D(bug("[Kernel] %s: TLS_PTR_GET = 0x%p\n", __func__, TLS_PTR_GET()));
 
     /*
      * Here we ended all boot-time allocations.
@@ -541,7 +537,7 @@ static char boot_stack[STACK_SIZE] __attribute__((aligned(16)));
 void core_SetupGDT
 (
     struct KernBootPrivate *__KernBootPrivate,
-    apicid_t _APICID,
+    apicid_t cpuNo,
     APTR gdtBase,
     APTR gdtTLS,
     APTR gdtTSS
@@ -551,7 +547,7 @@ void core_SetupGDT
     struct tss_64bit *tssPtr = (struct tss_64bit *)gdtTSS;
     int i;
 
-    D(bug("[Kernel] %s(%03u, 0x%p, 0x%p, 0x%p)\n", __func__, _APICID, gdtBase, gdtTLS, gdtTSS));
+    D(bug("[Kernel] %s(%03u, 0x%p, 0x%p, 0x%p)\n", __func__, cpuNo, gdtBase, gdtTLS, gdtTSS));
 
     // TODO: ASSERT GDT is aligned
     
@@ -631,12 +627,13 @@ void core_SetupGDT
     gdtPtr->gs.g                        = 1;
 }
  
-void core_CPUSetup(apicid_t _APICID, APTR cpuGDT, IPTR SystemStack)
+void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
 {
     struct segment_selector cpuGDTsel;
     struct tss_64bit *tssBase = __KernBootPrivate->TSS;
+    apicid_t _APICID = 0;
 
-    D(bug("[Kernel] %s(%03u, 0x%p, 0x%p)\n", __func__, _APICID, cpuGDT, SystemStack));
+    D(bug("[Kernel] %s(%03u, 0x%p, 0x%p)\n", __func__, cpuNo, cpuGDT, SystemStack));
 
     /*
      * At the moment two of three stacks are reserved. IST is not used (indexes == 0 in interrupt gates)
@@ -644,13 +641,28 @@ void core_CPUSetup(apicid_t _APICID, APTR cpuGDT, IPTR SystemStack)
      * for warm restart routine.
      */
 
-    tssBase[_APICID].ist1 = SystemStack + STACK_SIZE     - 16;	/* Interrupt stack entry 1 (failsafe)	 */
-    tssBase[_APICID].rsp0 = SystemStack + STACK_SIZE * 2 - 16;	/* Ring 0 (Supervisor)		 	*/
-    tssBase[_APICID].rsp1 = SystemStack + STACK_SIZE * 3 - 16;	/* Ring 1 (reserved)		 	*/
+    if ((KernelBase->kb_PlatformData) && (KernelBase->kb_PlatformData->kb_APIC))
+    {
+        struct APICData *apicData  = KernelBase->kb_PlatformData->kb_APIC;
+        _APICID = apicData->cores[cpuNo].cpu_LocalID;
+    }
+    else
+    {
+        if (cpuNo == 0)
+            _APICID = core_APIC_GetID(__KernBootPrivate->_APICBase);
+        else
+            krnPanic(KernelBase, "Unable to access APIC data for CPU %03u!", cpuNo);
+    }
 
-    D(bug("[Kernel] %s[%03u]: Reloading -:\n", __func__, _APICID));
-    D(bug("[Kernel] %s[%03u]:     CPU GDT @ 0x%p\n", __func__, _APICID, cpuGDT));
-    D(bug("[Kernel] %s[%03u]:     CPU TSS @ 0x%p\n", __func__, _APICID, &tssBase[_APICID]));
+    D(bug("[Kernel] %s[%03u]: APIC ID %03u\n", __func__, cpuNo, _APICID));
+
+    tssBase[cpuNo].ist1 = SystemStack + STACK_SIZE     - 16;	/* Interrupt stack entry 1 (failsafe)	 */
+    tssBase[cpuNo].rsp0 = SystemStack + STACK_SIZE * 2 - 16;	/* Ring 0 (Supervisor)		 	*/
+    tssBase[cpuNo].rsp1 = SystemStack + STACK_SIZE * 3 - 16;	/* Ring 1 (reserved)		 	*/
+
+    D(bug("[Kernel] %s[%03u]: Reloading -:\n", __func__, cpuNo));
+    D(bug("[Kernel] %s[%03u]:     CPU GDT @ 0x%p\n", __func__, cpuNo, cpuGDT));
+    D(bug("[Kernel] %s[%03u]:     CPU TSS @ 0x%p\n", __func__, cpuNo, &tssBase[cpuNo]));
 
     cpuGDTsel.size = sizeof(struct gdt_64bit) - 1;
     cpuGDTsel.base = (unsigned long)cpuGDT;

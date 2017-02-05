@@ -20,9 +20,9 @@
 #endif
 
 extern void IdleTask(struct ExecBase *);
-AROS_INTP(Exec_X86ShutdownHandler);
-AROS_INTP(Exec_X86WarmResetHandler);
-AROS_INTP(Exec_X86ColdResetHandler);
+extern AROS_INTP(Exec_X86ShutdownHandler);
+extern AROS_INTP(Exec_X86WarmResetHandler);
+extern AROS_INTP(Exec_X86ColdResetHandler);
 
 int Exec_X86Init(struct ExecBase *SysBase)
 {
