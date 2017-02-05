@@ -26,6 +26,7 @@
 
 #include <proto/arossupport.h>
 #include <proto/exec.h>
+#define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
 
 #include "exec_debug.h"
@@ -206,10 +207,9 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
-    DINIT("Preparing the Bootstrap task @ 0x%p", t);
     /* Set the bootstrapping task incase errors occur... */
+    DINIT("Preparing the Bootstrap task @ 0x%p", t);
     SET_THIS_TASK(t);
-
     DINIT("ThisTask is now 0x%p", GET_THIS_TASK);
 
     /* Create the first ETask structure and attach CPU context */
