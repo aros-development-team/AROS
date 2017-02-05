@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 1
+
 #include <aros/debug.h>
 #include <exec/lists.h>
 #include <exec/tasks.h>
@@ -21,6 +23,7 @@
 #include "taskstorage.h"
 
 #if defined(__AROSEXEC_SMP__)
+#define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
 #endif
 
@@ -142,7 +145,7 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 
     /* Get a unique identifier for this task */
     Forbid();
-   while(et->et_UniqueID == 0)
+    while(et->et_UniqueID == 0)
     {
         //TODO: Replace with UUID!
 

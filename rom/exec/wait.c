@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Wait for some signal.
@@ -97,12 +97,12 @@
                     task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
                     break;
             }
-            EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
+            EXECTASK_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
             Forbid();
             Remove(&ThisTask->tc_Node);
-            EXEC_SPINLOCK_UNLOCK(task_listlock);
+            EXECTASK_SPINLOCK_UNLOCK(task_listlock);
             Permit();
-            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
+            EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
             Forbid();
 #endif
         /*
@@ -116,7 +116,7 @@
         ThisTask->tc_State = TS_WAIT;
 	Enqueue(&SysBase->TaskWait, &ThisTask->tc_Node);
 #if defined(__AROSEXEC_SMP__)
-            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+            EXECTASK_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
         }
         else
         {
@@ -146,12 +146,12 @@
 
     /* And clear them. */
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+    EXECTASK_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
     Disable();
 #endif
     ThisTask->tc_SigRecvd &= ~signalSet;
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    EXECTASK_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
 #endif
     Enable();
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
@@ -103,12 +103,12 @@
                 task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
                 break;
         }
-        EXEC_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
+        EXECTASK_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
         Forbid();
 #endif
         Remove(&task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_UNLOCK(task_listlock);
+        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
 #endif
     }
 

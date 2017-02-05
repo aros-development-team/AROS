@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Search a task by name.
@@ -61,7 +61,7 @@
 
     /* Always protect task lists */
 #if defined(__AROSEXEC_SMP__)
-    listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
     Forbid();
 #else
     Disable();
@@ -72,9 +72,9 @@
     if (ret == NULL)
     {
 #if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_UNLOCK(listLock);
+        EXECTASK_SPINLOCK_UNLOCK(listLock);
         Permit();
-        listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+        listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
         Forbid();
 #endif
 	/* Then into the waiting list. */
@@ -85,14 +85,14 @@
 		Finally test the running task(s). This is mainly of importance on smp systems.
 	    */
 #if defined(__AROSEXEC_SMP__)
-            listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+            listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
             Forbid();
             ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskRunning, name);
             if (ret == NULL)
             {
-                EXEC_SPINLOCK_UNLOCK(listLock);
+                EXECTASK_SPINLOCK_UNLOCK(listLock);
                 Permit();
-                listLock = EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
+                listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
                 Forbid();
                 ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskSpinning, name);
             }
@@ -115,7 +115,7 @@
     }
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(listLock);
+    EXECTASK_SPINLOCK_UNLOCK(listLock);
     Permit();
 #else
     Enable();
