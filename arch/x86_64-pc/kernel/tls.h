@@ -3,17 +3,17 @@
 
 #include <aros/config.h>
 
+#if defined(__AROSEXEC_SMP__)
+#include <kernel_scheduler.h>
+#endif
+
 typedef struct tls
 {
-    struct tls                *_self;
-    struct ExecBase     *SysBase;
-    void                *KernelBase;    /* Base of kernel.resource              */
+    struct tls                  *_self;
+    struct ExecBase             *SysBase;
+    void                        *KernelBase;    /* Base of kernel.resource              */
 #if defined(__AROSEXEC_SMP__)
-    struct Task         *ThisTask;      /* Currently running task on this core  */
-
-    ULONG               ScheduleFlags;
-    BYTE                IDNestCnt;
-    BYTE                TDNestCnt;
+    struct X86SchedulerPrivate  *ScheduleData;
 #endif
 } tls_t;
 

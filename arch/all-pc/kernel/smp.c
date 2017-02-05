@@ -199,6 +199,9 @@ static int smp_Wake(struct KernelBase *KernelBase)
     APTR _APICStackBase;
     IPTR wakeresult = -1;
     apicid_t cpuNo;
+#if defined(__AROSEXEC_SMP__)
+    tls_t *apicTLS;
+#endif
     spinlock_t apicReadyLock;
 
     D(bug("[Kernel:SMP] Ready spinlock at 0x%p\n", &apicReadyLock));
@@ -219,6 +222,10 @@ static int smp_Wake(struct KernelBase *KernelBase)
  
         apicData->cores[cpuNo].cpu_GDT = PlatformAllocGDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
         apicData->cores[cpuNo].cpu_TLS = PlatformAllocTLS(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
+#if defined(__AROSEXEC_SMP__)
+        apicTLS = apicData->cores[cpuNo].cpu_TLS;
+        apicTLS->ScheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC);
+#endif
         apicData->cores[cpuNo].cpu_IDT = PlatformAllocIDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
 
         /*
