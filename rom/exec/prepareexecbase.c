@@ -247,7 +247,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     SysBase->TaskWait.lh_Type = NT_TASK;
 
     NEWLIST(&SysBase->SemaphoreList);
-    SysBase->TaskWait.lh_Type = NT_SEMAPHORE;
+    SysBase->SemaphoreList.lh_Type = NT_SEMAPHORE;
 
     NEWLIST(&SysBase->ex_MemHandlers);
 
