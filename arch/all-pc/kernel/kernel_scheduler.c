@@ -17,7 +17,6 @@
 
 #include "kernel_cpu.h"
 
-#define AROS_NO_ATOMIC_OPERATIONS
 #include <exec_platform.h>
 
 #include <aros/types/spinlock_s.h>
@@ -30,11 +29,7 @@
 
 #include "apic.h"
 
-#if (DEBUG > 0)
-#define DSCHED(x) x
-#else
 #define DSCHED(x)
-#endif
 
 /* Check if the currently running task on this cpu should be rescheduled.. */
 BOOL core_Schedule(void)
@@ -45,7 +40,7 @@ BOOL core_Schedule(void)
     struct Task *task = GET_THIS_TASK;
     BOOL corereschedule = TRUE;
 
-    DSCHED(bug("[Kernel:%03u] core_Schedule()\n", cpuNo));
+    DSCHED(bug("[Kernel:%03u] core_Schedule(0x%p)\n", cpuNo, task));
 
     FLAG_SCHEDSWITCH_CLEAR;
 
@@ -101,7 +96,12 @@ BOOL core_Schedule(void)
     return corereschedule;
 }
 
-/* Switch the currently running task on this cpu to ready state */
+/*
+    Switch the currently running task on this cpu
+    if it is running , switch it to the ready state
+    on SMP builds, if exec has set TS_SPIN,
+    switch it to the spinning list.
+*/
 void core_Switch(void)
 {
     apicid_t cpuNo = KrnGetCPUNumber();
@@ -109,7 +109,10 @@ void core_Switch(void)
 
     DSCHED(bug("[Kernel:%03u] core_Switch(%08x)\n", cpuNo, task->tc_State));
 
-    if (task->tc_State == TS_RUN)
+    if ((task->tc_State == TS_RUN)
+#if defined(__AROSEXEC_SMP__)    
+        || (task->tc_State == TS_SPIN))
+#endif
     {
         DSCHED(bug("[Kernel:%03u] Switching away from '%s' @ 0x%p\n", cpuNo, task->tc_Node.ln_Name, task));
 #if defined(__AROSEXEC_SMP__)
@@ -117,8 +120,9 @@ void core_Switch(void)
                     SPINLOCK_MODE_WRITE);
         Remove(&task->tc_Node);
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+        if (task->tc_State != TS_SPIN)
 #endif
-        task->tc_State = TS_READY;
+            task->tc_State = TS_READY;
 
         /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
         if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
@@ -142,11 +146,11 @@ void core_Switch(void)
 
         task->tc_IDNestCnt = IDNESTCOUNT_GET;
 
-        if (task->tc_Flags & TF_SWITCH)
-            AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
-
         if (task->tc_State == TS_READY)
         {
+            if (task->tc_Flags & TF_SWITCH)
+                AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
+
             DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p as ready\n", cpuNo, task->tc_Node.ln_Name, task));
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
@@ -157,7 +161,17 @@ void core_Switch(void)
             KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
         }
+#if defined(__AROSEXEC_SMP__)
+        else if (task->tc_State == TS_SPIN)
+        {
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
+                        SPINLOCK_MODE_WRITE);
+            Enqueue(&PrivExecBase(SysBase)->TaskSpinning, &task->tc_Node);
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
+        }
+#endif
     }
+
 }
 
 /* Dispatch a "new" ready task on this cpu */

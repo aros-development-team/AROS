@@ -26,24 +26,7 @@
 #define AROS_NO_ATOMIC_OPERATIONS
 #include <exec_platform.h>
 
-#define D(x)
 #define DSCHED(x)
-#define DREGS(x)
-
-#define ADDTIME(dest, src)			\
-    (dest)->tv_micro += (src)->tv_micro;	\
-    (dest)->tv_secs  += (src)->tv_secs;		\
-    while((dest)->tv_micro > 999999)		\
-    {						\
-	(dest)->tv_secs++;			\
-	(dest)->tv_micro -= 1000000;		\
-    }
-
-static inline unsigned long long RDTSC() {
-   unsigned long long _tsc;
-   asm volatile (".byte 0x0f, 0x31" : "=A" (_tsc));
-   return _tsc;
-} 
 
 void cpu_Dispatch(struct ExceptionContext *regs)
 {
@@ -60,12 +43,10 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 
     /* 
      * Is the list of ready tasks empty? Well, increment the idle switch count and halt CPU.
-     * It should be extended by some plugin mechanism which would put CPU and whole machine
-     * into some more sophisticated sleep states (ACPI?)
      */
     while (!(task = core_Dispatch()))
     {
-        /* Sleep almost forever ;) */
+        /* Sleep until we receive an interupt....*/
         __asm__ __volatile__("sti; hlt; cli");
 
         if (SysBase->SysFlags & SFF_SoftInt)
