@@ -22,7 +22,7 @@ AROS_LH1(void, KrnSpinInit,
 
     D(bug("[Kernel] %s(0x%p)\n", __func__, lock));
 
-    lock->lock = 0;
+    lock->lock = SPINLOCK_UNLOCKED;
 
     return;
 

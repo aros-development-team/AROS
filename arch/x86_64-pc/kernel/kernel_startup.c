@@ -448,7 +448,7 @@ void kernel_cstart(const struct TagItem *start_msg)
 
 #if defined(__AROSEXEC_SMP__)
     D(bug("[Kernel] Allocating CPU #0 Scheduling Data\n"));
-    scheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC);
+    scheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC|MEMF_CLEAR);
     if (!scheduleData)
         krnPanic(KernelBase, "Failed to Allocate Boot Processor Scheduling Data!");
 

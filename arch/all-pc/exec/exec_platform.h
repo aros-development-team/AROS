@@ -9,31 +9,59 @@
 #include <aros/config.h>
 
 #if defined(__AROSEXEC_SMP__)
+#include <aros/atomic.h>
 #include <aros/types/spinlock_s.h>
 #include <utility/hooks.h>
 
+#include "x86_syscalls.h"
+#include "tls.h"
+
 extern struct Hook Exec_TaskSpinLockFailHook;
+extern struct Hook Exec_TaskSpinLockForbidHook;
 extern void Exec_TaskSpinUnlock(spinlock_t *);
 
-extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
-#define EXEC_SPINLOCK_INIT(a) Kernel_40_KrnSpinInit((a), NULL)
-extern spinlock_t *Kernel_43_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
-#define EXEC_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), NULL, (b), NULL)
-#define EXECTASK_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), &Exec_TaskSpinLockFailHook, (b), NULL)
-extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
-#define EXEC_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL)
-#define EXECTASK_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL); \
-            Exec_TaskSpinUnlock((a))
-
-#endif
+struct ExecSpinSCData
+{
+    spinlock_t *lock_ptr;
+    struct Hook *lock_obtainhook;
+    struct Hook *lock_failhook;
+    ULONG lock_mode;
+};
 
 struct Exec_PlatformData
 {
-    /* No platform-specific data on x86 */
+    spinlock_t *(*SpinLockCall)(spinlock_t *, struct Hook *, struct Hook *, ULONG);
 };
 
-#if defined(__AROSEXEC_SMP__)
-#include "tls.h"
+extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
+extern spinlock_t *Kernel_43_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
+extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
+
+#define EXEC_SPINLOCK_INIT(a) Kernel_40_KrnSpinInit((a), NULL)
+#define EXEC_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), NULL, (b), NULL)
+#define EXEC_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL)
+#define EXECTASK_SPINLOCK_LOCK(a,b) \
+    ({ \
+        spinlock_t *__ret = a; \
+        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
+            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  NULL,  &Exec_TaskSpinLockFailHook,  b); \
+        __ret;  \
+   })
+#define EXECTASK_SPINLOCK_LOCKFORBID(a,b) \
+    ({ \
+        spinlock_t *__ret = a; \
+        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
+            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  &Exec_TaskSpinLockForbidHook,  &Exec_TaskSpinLockFailHook,  b); \
+        __ret;  \
+   })
+#define EXECTASK_SPINLOCK_UNLOCK(a) \
+    do { \
+            if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
+            { \
+                Kernel_44_KrnSpinUnLock((a), NULL); \
+                Exec_TaskSpinUnlock((a)); \
+            } \
+        } while(0)
 
 #if defined(AROS_NO_ATOMIC_OPERATIONS)
 #define IDNESTCOUNT_INC \
@@ -101,61 +129,61 @@ struct Exec_PlatformData
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_INC(__schd->IDNestCnt); \
+            __AROS_ATOMIC_INC_B(__schd->IDNestCnt); \
     } while(0)
 #define IDNESTCOUNT_DEC \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_DEC(__schd->IDNestCnt); \
+            __AROS_ATOMIC_DEC_B(__schd->IDNestCnt); \
     } while(0)
 #define TDNESTCOUNT_INC \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_INC(__schd->TDNestCnt); \
+            __AROS_ATOMIC_INC_B(__schd->TDNestCnt); \
     } while(0)
 #define TDNESTCOUNT_DEC \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_DEC(__schd->TDNestCnt); \
+            __AROS_ATOMIC_DEC_B(__schd->TDNestCnt); \
     } while(0)
 #define FLAG_SCHEDQUANTUM_CLEAR \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_AND(__schd->ScheduleFlags, ~TLSSF_Quantum); \
+            __AROS_ATOMIC_AND_L(__schd->ScheduleFlags, ~TLSSF_Quantum); \
     } while(0)
 #define FLAG_SCHEDQUANTUM_SET \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_OR(__schd->ScheduleFlags, TLSSF_Quantum); \
+            __AROS_ATOMIC_OR_L(__schd->ScheduleFlags, TLSSF_Quantum); \
     } while(0)
 #define FLAG_SCHEDSWITCH_CLEAR \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_AND(__schd->ScheduleFlags, ~TLSSF_Switch); \
+            __AROS_ATOMIC_AND_L(__schd->ScheduleFlags, ~TLSSF_Switch); \
     } while(0)
 #define FLAG_SCHEDSWITCH_SET \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_OR(__schd->ScheduleFlags, TLSSF_Switch); \
+            __AROS_ATOMIC_OR_L(__schd->ScheduleFlags, TLSSF_Switch); \
     } while(0)
 #define FLAG_SCHEDDISPATCH_CLEAR \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_AND(__schd->ScheduleFlags, ~TLSSF_Dispatch); \
+            __AROS_ATOMIC_AND_L(__schd->ScheduleFlags, ~TLSSF_Dispatch); \
     } while(0)
 #define FLAG_SCHEDDISPATCH_SET \
     do { \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
-            AROS_ATOMIC_OR(__schd->ScheduleFlags, TLSSF_Dispatch); \
+            __AROS_ATOMIC_OR_L(__schd->ScheduleFlags, TLSSF_Dispatch); \
     } while(0)
 #endif /* !AROS_NO_ATOMIC_OPERATIONS */
 #define IDNESTCOUNT_GET \
@@ -224,15 +252,20 @@ struct Exec_PlatformData
         if (__schd) \
         { \
             __schd->RunningTask = (x); \
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE); \
+            Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE, NULL); \
             AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);  \
+            Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL);  \
         } \
     })
 
 #define __AROSEXEC_SUPERSCHEDFLAGS__
 
 #else /* !__AROSEXEC_SMP__ */
+
+struct Exec_PlatformData
+{
+    /* No platform-specific data on plain x86 builds */
+};
 
 #ifdef AROS_NO_ATOMIC_OPERATIONS
 #define IDNESTCOUNT_INC                 SysBase->IDNestCnt++

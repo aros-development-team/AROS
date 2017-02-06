@@ -8,8 +8,11 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
+#include <kernel_debug.h>
 
 #include <proto/kernel.h>
+
+#define D(x)
 
 AROS_LH1(int, KrnSpinIsLocked,
 	AROS_LHA(spinlock_t *, lock, A0),
@@ -17,10 +20,12 @@ AROS_LH1(int, KrnSpinIsLocked,
 {
     AROS_LIBFUNC_INIT
 
-    if (lock->lock == 0)
-        return 0;
+    D(bug("[Kernel] %s(0x%p)\n", __func__, lock));
+
+    if (lock->lock == SPINLOCK_UNLOCKED)
+        return (int)FALSE;
     else
-        return 1;
+        return (int)TRUE;
 
     AROS_LIBFUNC_EXIT
 }

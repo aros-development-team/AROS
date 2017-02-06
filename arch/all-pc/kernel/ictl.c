@@ -21,8 +21,25 @@ void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
 
     if ((irqIC = krnGetInterruptController(KernelBase, KernelBase->kb_Interrupts[irq].lh_Type)) != NULL)
     {
-        if (irqIC->ic_IntrEnable)
-            irqIC->ic_IntrEnable(irqIC->ic_Private, KernelBase->kb_Interrupts[irq].l_pad, irq);
+        if ((irqIC->ic_IntrEnable) && (irqIC->ic_IntrEnable(irqIC->ic_Private, KernelBase->kb_Interrupts[irq].l_pad, irq)))
+        {
+            D(bug("[Kernel] %s: enabled\n", __func__));
+        }
+    }
+}
+
+void ictl_disable_irq(unsigned char irq, struct KernelBase *KernelBase)
+{
+    struct IntrController *irqIC;
+
+    D(bug("[Kernel] %s(%d)\n", __func__, irq));
+
+    if ((irqIC = krnGetInterruptController(KernelBase, KernelBase->kb_Interrupts[irq].lh_Type)) != NULL)
+    {
+        if ((irqIC->ic_IntrDisable) && (irqIC->ic_IntrDisable(irqIC->ic_Private, KernelBase->kb_Interrupts[irq].l_pad, irq)))
+        {
+            D(bug("[Kernel] %s: disabled\n", __func__));
+        }
     }
 }
 

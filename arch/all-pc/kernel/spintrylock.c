@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/atomic.h>
 #include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
@@ -23,15 +24,17 @@ AROS_LH2(spinlock_t *, KrnSpinTryLock,
 
     D(bug("[Kernel] %s(0x%p, %08x)\n", __func__, lock, mode));
 
-    if (((mode == SPINLOCK_MODE_WRITE) && (lock->lock != 0)) ||
-        (lock->slock.write))
+    if (((mode == SPINLOCK_MODE_WRITE) && (lock->lock != SPINLOCK_UNLOCKED)) ||
+        (lock->lock &SPINLOCKF_WRITE))
             return NULL;
 
-#if (1) // defined(AROS_NO_ATOMIC_OPERATIONS)
+#if defined(AROS_NO_ATOMIC_OPERATIONS)
     lock->slock.readcount++;
 #else
-    AROS_ATOMIC_INC(lock->slock.readcount);
+    __AROS_ATOMIC_INC_L(lock->lock);
 #endif
+
+    D(bug("[Kernel] %s: lock = %08x\n", __func__, lock->lock));
 
     return lock;
 

@@ -256,16 +256,28 @@ static int smp_Wake(struct KernelBase *KernelBase)
         /* wakeresult != 0 means error */
         if (!wakeresult)
         {
+            ULONG current, start = RDTSC();
             /*
              * Before we proceed we need to make sure that the core has picked up
              * its stack and we can reload bootstrap argument area with another one.
              */
             DWAKE(bug("[Kernel:SMP] Waiting for APIC #%u to initialise .. ", cpuNo + 1));
-            while (!KrnSpinTryLock(&apicReadyLock, SPINLOCK_MODE_READ)){};
-            KrnSpinUnLock(&apicReadyLock);
-            D(bug("[Kernel:SMP] APIC #%u started up\n", cpuNo + 1));
+            while (!KrnSpinTryLock(&apicReadyLock, SPINLOCK_MODE_READ))
+            {
+                current = RDTSC();
+                if (((current - start)/apicData->cores[0].cpu_TimerFreq) > 5)
+                {
+                    wakeresult = -1;
+                    break;
+                }
+            };
+            if (wakeresult != -1)
+            {
+                KrnSpinUnLock(&apicReadyLock);
+                D(bug("[Kernel:SMP] APIC #%u started up\n", cpuNo + 1));
+            }
         }
-        D(else bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult));
+        D(if (wakeresult) { bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult); } )
     }
 
     D(bug("[Kernel:SMP] Done\n"));

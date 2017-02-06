@@ -5,6 +5,8 @@ struct PlatformData;
 
 /* Machine-specific definitions for IBM PC hardware */
 
+/* Hardware IRQ's ********************************************************************************/
+
 /* XT-PIC only has 16 IRQs */
 #define IRQ_COUNT       16
 
@@ -37,11 +39,27 @@ struct PlatformData;
 
 /* Interrupt controller functions */
 void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase);
+void ictl_disable_irq(unsigned char irq, struct KernelBase *KernelBase);
 
-/* Originally we didn't have disable function. Perhaps there was some reason. */
-#define ictl_disable_irq(irq, base)
+/* CPU TImer *************************************************************************************/
 
-/* x86 specific syscalls */
+#define ADDTIME(dest, src)			\
+    (dest)->tv_micro += (src)->tv_micro;	\
+    (dest)->tv_secs  += (src)->tv_secs;		\
+    while((dest)->tv_micro > 999999)		\
+    {						\
+	(dest)->tv_secs++;			\
+	(dest)->tv_micro -= 1000000;		\
+    }
+
+static inline unsigned long long RDTSC() {
+   unsigned long long _tsc;
+   asm volatile (".byte 0x0f, 0x31" : "=A" (_tsc));
+   return _tsc;
+} 
+
+/* x86 specific SysCalls *************************************************************************/
+
 struct syscallx86_Handler
 {
         struct Node sc_Node;

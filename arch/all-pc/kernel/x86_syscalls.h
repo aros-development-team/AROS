@@ -8,6 +8,14 @@
 
 #define SC_X86CHANGEPMSTATE     0xFF
 #define SC_X86CPUWAKE           0xFE
+#define SC_X86CPUSPINLOCK       0xFD
+
+#define krnSysCallSpinLock(spindata) 				        \
+({								        \
+    spinlock_t *__value;						        \
+    __asm__ __volatile__ ("int $0x80":"=a"(__value):"a"(SC_X86CPUSPINLOCK),"b"(spindata):"memory");	\
+    __value;						                \
+})
 
 #define krnSysCallCPUWake(wakedata) 				        \
 ({								        \
