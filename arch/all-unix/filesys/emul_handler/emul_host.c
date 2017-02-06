@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -850,42 +850,38 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
 
     switch (mode) {
     case OFFSET_BEGINNING:
-        absolute = 0;
         break;
 
     case OFFSET_CURRENT:
        	absolute = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
        	AROS_HOST_BARRIER
-
-        if (absolute == -1)
-            error = err_u2a(emulbase);
-	else
-            absolute += offset;
         break;
 
     case OFFSET_END:
         absolute = LSeek((IPTR)fh->fd, 0, SEEK_END); 
         AROS_HOST_BARRIER
-
-        if (absolute == -1)
-            error = err_u2a(emulbase);
-	else
-            absolute -= offset;
         break;
 
     default:
     	error = ERROR_UNKNOWN;
     }
 
+    if (absolute == -1)
+        error = err_u2a(emulbase);
+
     if (!error)
     {
+        absolute += offset;
 	error = FTruncate((IPTR)fh->fd, absolute);
 	AROS_HOST_BARRIER
 	if (error)
 	    error = err_u2a(emulbase);
     }
-       
+
     HostLib_Unlock();
+
+    if (error)
+        absolute = -1;
 
     *err = error;
     return absolute;
