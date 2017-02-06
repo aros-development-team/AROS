@@ -7,6 +7,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
@@ -69,8 +71,7 @@ void ServiceTask(struct ExecBase *SysBase)
                 /* The task is ready to run again. Move it back to TaskReady list. */
                 task->tc_State = TS_READY;
 #if defined(__AROSEXEC_SMP__)
-                EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
-                Forbid();
+                EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
 #endif
                 Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)

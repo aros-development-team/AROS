@@ -63,6 +63,9 @@
 
     /* Arbitrate for the resource list */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    //TODO: protect the resource list...
+#endif
 
     /* And add the resource */
     Enqueue(&SysBase->ResourceList,(struct Node *)resource);

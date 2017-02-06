@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
@@ -103,8 +105,7 @@
                 task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
                 break;
         }
-        EXECTASK_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
-        Forbid();
+        EXECTASK_SPINLOCK_LOCKFORBID(task_listlock, SPINLOCK_MODE_WRITE);
 #endif
         Remove(&task->tc_Node);
 #if defined(__AROSEXEC_SMP__)

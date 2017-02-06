@@ -5,6 +5,9 @@
     Desc: Examine and/or modify the signals of a task.
     Lang: english
 */
+
+#define DEBUG 0
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>

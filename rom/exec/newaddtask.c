@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
@@ -204,10 +206,10 @@
         lists.
      */
 
+    Disable();
 #if defined(__AROSEXEC_SMP__)
     EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
 #endif
-    Disable();
 
     /* Add the new task to the ready list. */
     task->tc_State = TS_READY;

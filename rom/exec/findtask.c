@@ -5,6 +5,9 @@
     Desc: Search a task by name.
     Lang: english
 */
+
+#define DEBUG 0
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
@@ -61,8 +64,7 @@
 
     /* Always protect task lists */
 #if defined(__AROSEXEC_SMP__)
-    listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
-    Forbid();
+    listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
 #else
     Disable();
 #endif
@@ -74,8 +76,7 @@
 #if defined(__AROSEXEC_SMP__)
         EXECTASK_SPINLOCK_UNLOCK(listLock);
         Permit();
-        listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
-        Forbid();
+        listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
 #endif
 	/* Then into the waiting list. */
 	ret = (struct Task *)FindName(&SysBase->TaskWait, name);
@@ -85,15 +86,15 @@
 		Finally test the running task(s). This is mainly of importance on smp systems.
 	    */
 #if defined(__AROSEXEC_SMP__)
-            listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
-            Forbid();
+            EXECTASK_SPINLOCK_UNLOCK(listLock);
+            Permit();
+            listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
             ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskRunning, name);
             if (ret == NULL)
             {
                 EXECTASK_SPINLOCK_UNLOCK(listLock);
                 Permit();
-                listLock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
-                Forbid();
+                listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
                 ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskSpinning, name);
             }
 #else

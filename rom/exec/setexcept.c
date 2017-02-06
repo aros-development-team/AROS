@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>

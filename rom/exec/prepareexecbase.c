@@ -6,6 +6,8 @@
     Lang:
 */
 
+#define DEBUG 0
+
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
@@ -161,6 +163,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     APTR mem;
     ULONG i;
     char *args;
+
+    D(bug("[Exec] %s()\n", __func__));
 
     /*
      * Copy reset proof pointers if old SysBase is valid.
@@ -330,6 +334,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     SysBase->KickCheckSum = KickCheckSum;
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
+
+    D(bug("[Exec] %s: Preperation complete.\n"));
 
     return SysBase;
 }

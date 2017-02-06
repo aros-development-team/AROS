@@ -97,13 +97,11 @@
                     task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
                     break;
             }
-            EXECTASK_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
-            Forbid();
+            EXECTASK_SPINLOCK_LOCKFORBID(task_listlock, SPINLOCK_MODE_WRITE);
             Remove(&ThisTask->tc_Node);
             EXECTASK_SPINLOCK_UNLOCK(task_listlock);
             Permit();
-            EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
-            Forbid();
+            EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
 #endif
         /*
 	    Clear TDNestCnt (because Switch() will not care about it),
