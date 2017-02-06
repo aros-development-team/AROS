@@ -6,9 +6,9 @@
     Lang: english
 */
 
-#define DEBUG 1
-
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <exec/lists.h>
 #include <exec/tasks.h>
 #include <exec/memory.h>
@@ -16,16 +16,13 @@
 #include <dos/dosextens.h>
 
 #include <proto/exec.h>
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
 
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "taskstorage.h"
-
-#if defined(__AROSEXEC_SMP__)
-#define __KERNEL_NOLIBBASE__
-#include <proto/kernel.h>
-#endif
 
 /****************************************************************************
 

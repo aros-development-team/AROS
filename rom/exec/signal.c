@@ -5,9 +5,10 @@
     Desc: Send some signal to a given task
     Lang: english
 */
-#define DEBUG 0
 
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
@@ -130,17 +131,14 @@
 
         /* Yes. Move it to the ready list. */
 #if defined(__AROSEXEC_SMP__)
-        task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
-        EXECTASK_SPINLOCK_LOCK(task_listlock, SPINLOCK_MODE_WRITE);
-        Forbid();
+        task_listlock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
 #endif
         Remove(&task->tc_Node);
         task->tc_State = TS_READY;
 #if defined(__AROSEXEC_SMP__)
         EXECTASK_SPINLOCK_UNLOCK(task_listlock);
         Permit();
-        task_listlock = EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
-        Forbid();
+        task_listlock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
 #endif
         Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)

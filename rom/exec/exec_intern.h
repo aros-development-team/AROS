@@ -73,6 +73,8 @@ struct IntExecBase
 #define PD(base)                PrivExecBase(base)->PlatformData
 #ifndef __AROS_KERNEL__
 #define KernelBase              PrivExecBase(SysBase)->KernelBase
+#else
+#define __kernelBase              PrivExecBase(SysBase)->KernelBase
 #endif
 #define DebugBase               PrivExecBase(SysBase)->DebugBase
 

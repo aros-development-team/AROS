@@ -71,6 +71,8 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
     ULONG mask;
     ULONG mask1;
 
+    D(bug("[Exec] %s()\n", __func__));
+
     mask = ThisTask->tc_SigAlloc;
 
     /* Will any signal do? */
@@ -125,6 +127,7 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
     {
         EXECTASK_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
     }
+    else 
 #endif
     Disable();
 
@@ -135,6 +138,7 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
     {
         EXECTASK_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
     }
+    else
 #endif
     Enable();
 

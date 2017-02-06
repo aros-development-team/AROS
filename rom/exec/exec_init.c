@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <aros/config.h>
 
 #include <exec/lists.h>

@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <aros/atomic.h>
 #include <aros/debug.h>
 #include <proto/exec.h>
