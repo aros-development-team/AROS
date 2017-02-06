@@ -82,9 +82,10 @@ AROS_UFH3(void, Exec_TaskSpinLockForbidFunc,
 {
     AROS_USERFUNC_INIT
 
-    struct Task *spinTask = GET_THIS_TASK;
-
-    D(bug("[Exec:X86] %s(0x%p)\n", __func__, spinTask));
+    D(
+        struct Task *spinTask = GET_THIS_TASK;
+        bug("[Exec:X86] %s(0x%p)\n", __func__, spinTask);
+    )
  
     Forbid();
 
