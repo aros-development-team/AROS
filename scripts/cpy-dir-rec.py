@@ -1,5 +1,5 @@
 # -*- coding: iso-8859-1 -*-
-# Copyright © 2013, The AROS Development Team. All rights reserved.
+# Copyright © 2013-2017, The AROS Development Team. All rights reserved.
 
 # Copy directory 'src' recursively to 'dst' while ignoring
 # all files given by 'ignore' parameter. Only files younger
@@ -46,7 +46,7 @@ def copy_tree(src, dst, ignore):
                 # print "Copying dir %s to %s" % (srcname, dstname)
                 copy_tree(srcname, dstname, ignore)
         else:
-            if (name not in (".cvsignore", "mmakefile.src")) and not in_ignore_list(srcname, ignore):
+            if (name not in (".cvsignore", "mmakefile.src", "mmakefile")) and not in_ignore_list(srcname, ignore):
                 if not os.path.exists(dstname) or (os.path.getctime(srcname) > os.path.getctime(dstname)):
                     # print "Copying file %s to %s" % (srcname, dstname)
                     shutil.copy(srcname, dstname)
