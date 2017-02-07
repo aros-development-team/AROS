@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CLI Command
@@ -91,80 +91,120 @@
 
 #include <proto/dos.h>
 #include <proto/icon.h>
+#include <workbench/startup.h>
 
 //#define DEBUG 1
 #include <aros/debug.h>
 
-const TEXT ver[] = "$VER:CLI 1.1 (30.11.2013) © AROS Dev Team";
+const TEXT ver[] = "$VER:CLI 1.2 (07.02.2017) © AROS Dev Team";
+static BPTR olddir = (BPTR)-1;
 
-int main(void)
+int main(int argc, char **argv)
 {
-    struct DiskObject *dobj;
-    LONG rc = RETURN_FAIL;
+    struct DiskObject *dobj = NULL;
+    LONG rc = RETURN_OK;
 
-    dobj = GetDiskObject("PROGDIR:Shell");
-    if (dobj)
+    STRPTR winspec = NULL;
+    STRPTR fromspec = NULL;
+    ULONG stack = 0;
+
+    BPTR win, from;
+    BPTR iconlock = NULL;
+    STRPTR iconname = NULL;
+
+    // CLI is a special case, because it is
+    // a default tool of an icon with a different name,
+    // usually SYS:System/Shell.info.
+
+    // check the wbmessage for the icon name
+    // from which we were called
+    if (argc == 0)
     {
-        ULONG stack;
-        BPTR win, from;
-        STRPTR result, winspec, fromspec;
+        struct WBStartup *wbmsg = (struct WBStartup *)argv;
+        if (wbmsg->sm_NumArgs == 2)
+        {
+            iconlock = wbmsg->sm_ArgList[1].wa_Lock;
+            iconname = wbmsg->sm_ArgList[1].wa_Name;
+            olddir = CurrentDir(iconlock);
+        }
+    }
+
+    // if we don't have a valid name we try the standard name
+    if ((iconname == NULL) || (*iconname == '\0'))
+    {
+        iconname = "SYS:System/Shell";
+    }
+
+    // read the diskobject for the tooltypes
+    if ((dobj = GetDiskObject(iconname)) != NULL)
+    {
+        STRPTR result;
         STRPTR *toolarray = dobj->do_ToolTypes;
 
         result = FindToolType(toolarray, "STACK");
         if (result)
             StrToLong(result, &stack);
-        else
-            stack = AROS_STACKSIZE;
 
         result = FindToolType(toolarray, "FROM");
         if (result)
             fromspec = result;
-        else
-            fromspec = "S:Shell-Startup";
 
         result = FindToolType(toolarray, "WINDOW");
         if (result)
             winspec = result;
-        else
-            winspec = "CON:0/50//130/AROS-Shell/CLOSE";
+    }
+    D(bug("[CLI] iconname %s diskobject %p\n", iconname, dobj));
 
-        from  = Open(fromspec, MODE_OLDFILE);
-        win   = Open(winspec, MODE_NEWFILE);
+    // sanity checks; set default values
+    if (stack < AROS_STACKSIZE)
+        stack = AROS_STACKSIZE;
 
-        if (stack < AROS_STACKSIZE)
-            stack = AROS_STACKSIZE;
+    if (fromspec == NULL)
+        fromspec = "S:Shell-Startup";
 
-        D(bug("[CLI] stack %d from %s window %s\n", stack, fromspec, winspec));
+    if (winspec == NULL)
+        winspec = "CON:0/50//130/AROS-Shell/CLOSE";
 
-        if (win)
+    D(bug("[CLI] stack %d from %s window %s\n", stack, fromspec, winspec));
+
+    // open the streams for SystemTagList
+    from  = Open(fromspec, MODE_OLDFILE);
+    win   = Open(winspec, MODE_NEWFILE);
+
+    // launch the Shell
+    if (win)
+    {
+        struct TagItem tags[] =
         {
-            struct TagItem tags[] =
-            {
-                { SYS_Asynch,      TRUE       },
-                { SYS_Background,  FALSE      },
-                { SYS_Input,       (IPTR)win  },
-                { SYS_Output,      (IPTR)NULL },
-                { SYS_Error,       (IPTR)NULL },
-                { SYS_ScriptInput, (IPTR)from },
-                { SYS_UserShell,   TRUE       },
-                { NP_StackSize,    stack      },
-                { TAG_DONE,        0          }
-            };
-
-            rc = SystemTagList("", tags);
-            if (rc != -1)
-            {
-                win  = BNULL;
-                from = BNULL;
-            }
-            else
-                rc = RETURN_FAIL;
+            { SYS_Asynch,      TRUE       },
+            { SYS_Background,  FALSE      },
+            { SYS_Input,       (IPTR)win  },
+            { SYS_Output,      (IPTR)NULL },
+            { SYS_Error,       (IPTR)NULL },
+            { SYS_ScriptInput, (IPTR)from },
+            { SYS_UserShell,   TRUE       },
+            { NP_StackSize,    stack      },
+            { TAG_DONE,        0          }
+        };
+        rc = SystemTagList("", tags);
+        if (rc != -1)
+        {
+            // SystemTagList closes the streams for us
+            // when run successfully asynch
+            win  = BNULL;
+            from = BNULL;
         }
+        else
+            rc = RETURN_FAIL;
+    }
+    Close(win);
+    Close(from);
+    FreeDiskObject(dobj);
 
-        Close(win);
-        Close(from);
-
-        FreeDiskObject(dobj);
+    if (olddir != (BPTR)-1)
+    {
+        CurrentDir(olddir);
+        olddir = (BPTR)-1;
     }
 
     return rc;
