@@ -15,8 +15,8 @@
 #include <exec/rawfmt.h>
 
 #include "kernel_base.h"
-#include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_debug.h"
 #include "apic.h"
 
 #define __AROS_KERNEL__
@@ -95,9 +95,6 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpuNo;
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnGetCPUMask(cpuNo);
 
-#if (0)
-    //TODO: set tasks SysBase->TaskExitCode
-#endif
     bsctx->Flags = 0;
 
     return bstask;
@@ -122,16 +119,22 @@ void cpu_BootStrap(struct Task *bstask)
 
     krnLeaveSupervisorRing(FLAGS_INTENABLED);
 
-    D(bug("[Kernel:SMP] %s[%03u]: Enabling Exec Interrupts...\n", __func__, cpuNo));
+    D(
+        bug("[Kernel:SMP] %s[%03u]: Starting up Scheduler...\n", __func__, cpuNo);
+        bug("[Kernel:SMP] %s[%03u]:        Enabling Exec Interrupts...\n", __func__, cpuNo);
+    )
 
     /* We now start up the interrupts */
     Permit();
     Enable();
 
-    D(bug("[Kernel:SMP] %s[%03u]: Creating Idle Task ...\n", __func__, cpuNo));
+    D(bug("[Kernel:SMP] %s[%03u]:        Creating Idle Task ...\n", __func__, cpuNo));
 
     Exec_X86CreateIdleTask(SysBase);
 
     D(bug("[Kernel:SMP] %s[%03u]: Done\n", __func__, cpuNo));
+
+    /* clean up now we are done */
+    RemTask(bstask);
 }
 #endif

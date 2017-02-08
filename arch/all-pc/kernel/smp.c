@@ -124,7 +124,6 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     KrnSpinUnLock((spinlock_t *)apicReadyLock);
 
 #if defined(__AROSEXEC_SMP__)
-        D(bug("[Kernel:SMP] %s[%03u]: Starting up Scheduler...\n", __func__, apicCPUNo));
         while (1) {};
     }
 

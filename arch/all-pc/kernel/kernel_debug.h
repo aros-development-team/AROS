@@ -27,8 +27,7 @@ int krnBug(const char *format, va_list args, APTR kernelBase);
 void krnDisplayAlert(const char *text, struct KernelBase *KernelBase);
 void krnPanic(struct KernelBase *KernelBase, const char *fmt, ...);
 
-#define __save_flags(x)		__asm__ __volatile__("pushfq ; popq %0":"=g" (x): /* no input */)
-#define __restore_flags(x) 	__asm__ __volatile__("pushq %0 ; popfq": /* no output */ :"g" (x):"memory", "cc")
+
 #define __cli() 		__asm__ __volatile__("cli": : :"memory")
 #define __sti()			__asm__ __volatile__("sti": : :"memory")
 

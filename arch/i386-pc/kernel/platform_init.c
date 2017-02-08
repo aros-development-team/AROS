@@ -38,7 +38,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     // Setup the base syscall handler(s) ...
     NEWLIST(&data->kb_SysCallHandlers);
-    krnAddSysCallHandler(data, &x86_SCSupervisorHandler, TRUE);
+    krnAddSysCallHandler(data, &x86_SCSupervisorHandler, FALSE, TRUE);
 
     /*
      * Now we have a complete memory list and working AllocMem().

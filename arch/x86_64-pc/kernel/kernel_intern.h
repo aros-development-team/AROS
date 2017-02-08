@@ -62,6 +62,9 @@ struct PlatformData
 #define TLS_SIZE                sizeof(tls_t)
 #define TLS_ALIGN               sizeof(APTR)
 
+#define __save_flags(x)		__asm__ __volatile__("pushfq ; popq %0":"=g" (x): /* no input */)
+#define __restore_flags(x) 	__asm__ __volatile__("pushq %0 ; popfq": /* no output */ :"g" (x):"memory", "cc")
+
 #define krnLeaveSupervisorRing(_flags)                          \
     asm volatile (                                              \
             "mov %[user_ds],%%ds\n\t"                           \
