@@ -40,7 +40,7 @@ static inline void _bug(APTR kernelBase, const char *format, ...)
 {
     va_list args;
 #if defined(__AROSEXEC_SMP__)
-    unsigned long flags;
+    unsigned long flags = 0;
     if (safedebug & 1)
     {
         __save_flags(flags);
