@@ -7,17 +7,20 @@
 
 // needed to determine if this is an smp build
 #include <aros/config.h>
+#include <aros/atomic.h>
+#include "x86_syscalls.h"
+
+#define EXEC_REMTASK_NEEDSSWITCH
 
 #if defined(__AROSEXEC_SMP__)
-#include <aros/atomic.h>
 #include <aros/types/spinlock_s.h>
 #include <utility/hooks.h>
 
-#include "x86_syscalls.h"
 #include "tls.h"
 
 extern struct Hook Exec_TaskSpinLockFailHook;
 extern struct Hook Exec_TaskSpinLockForbidHook;
+extern struct Hook Exec_TaskSpinLockDisableHook;
 extern void Exec_TaskSpinUnlock(spinlock_t *);
 
 struct ExecSpinSCData
@@ -40,6 +43,13 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
 #define EXEC_SPINLOCK_INIT(a) Kernel_40_KrnSpinInit((a), NULL)
 #define EXEC_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), NULL, (b), NULL)
 #define EXEC_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL)
+#define EXECTASK_SPINLOCK_TRYLOCK(a,b) \
+    ({ \
+        spinlock_t *__ret = a; \
+        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
+            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  NULL,  NULL,  b); \
+        __ret;  \
+   })
 #define EXECTASK_SPINLOCK_LOCK(a,b) \
     ({ \
         spinlock_t *__ret = a; \
@@ -52,6 +62,13 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
         spinlock_t *__ret = a; \
         if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
             __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  &Exec_TaskSpinLockForbidHook,  &Exec_TaskSpinLockFailHook,  b); \
+        __ret;  \
+   })
+#define EXECTASK_SPINLOCK_LOCKDISABLE(a,b) \
+    ({ \
+        spinlock_t *__ret = a; \
+        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
+            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  &Exec_TaskSpinLockDisableHook,  &Exec_TaskSpinLockFailHook,  b); \
         __ret;  \
    })
 #define EXECTASK_SPINLOCK_UNLOCK(a) \
@@ -258,8 +275,6 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
         } \
     })
 
-#define __AROSEXEC_SUPERSCHEDFLAGS__
-
 #else /* !__AROSEXEC_SMP__ */
 
 struct Exec_PlatformData
@@ -302,5 +317,7 @@ struct Exec_PlatformData
 #define SET_THIS_TASK(x)                (SysBase->ThisTask=(x))
 
 #endif /* !__AROSEXEC_SMP__ */
+
+struct Task *Exec_X86CreateIdleTask(APTR);
 
 #endif /* __EXEC_PLATFORM_H */

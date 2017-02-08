@@ -70,7 +70,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     // Setup the base syscall handler(s) ...
     NEWLIST(&pdata->kb_SysCallHandlers);
-    krnAddSysCallHandler(pdata, &x86_SCSupervisorHandler, TRUE);
+    krnAddSysCallHandler(pdata, &x86_SCSupervisorHandler, FALSE, TRUE);
 
     return TRUE;
 }

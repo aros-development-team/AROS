@@ -68,6 +68,6 @@ struct syscallx86_Handler
 
 #include "x86_syscalls.h"
 
-BOOL krnAddSysCallHandler(struct PlatformData *, struct syscallx86_Handler *, BOOL);
+BOOL krnAddSysCallHandler(struct PlatformData *, struct syscallx86_Handler *, BOOL, BOOL);
 
 #endif /* !_KERNEL_ARCH_H_ */

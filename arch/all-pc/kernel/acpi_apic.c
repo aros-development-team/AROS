@@ -242,7 +242,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 	    pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_PrivateID = processor->ProcessorId;
 
             /* register the SysCall Handler for our Wake requests .. */
-            krnAddSysCallHandler(pdata, &acpi_APIC_SCCPUWakeHandler, FALSE);
+            krnAddSysCallHandler(pdata, &acpi_APIC_SCCPUWakeHandler, TRUE, FALSE);
 
 	    pdata->kb_APIC->apic_count++;
 	}

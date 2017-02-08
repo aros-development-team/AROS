@@ -30,7 +30,7 @@ extern void core_Kick(struct TagItem *msg, void *target);
 extern void kernel_cstart(const struct TagItem *msg);
 #endif
 
-BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler *newscHandler, BOOL force)
+BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler *newscHandler, BOOL custom, BOOL force)
 {
     struct syscallx86_Handler *scHandler;
 
@@ -42,6 +42,11 @@ BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler 
             ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == (ULONG)((IPTR)newscHandler->sc_Node.ln_Name)))
             return FALSE;
     }
+
+    if (custom)
+        newscHandler->sc_Node.ln_Type = 1;
+    else
+        newscHandler->sc_Node.ln_Type = 0;
 
     D(bug("[Kernel] %s: Registering handler...\n", __func__));
     AddTail(&pdata->kb_SysCallHandlers, &newscHandler->sc_Node);

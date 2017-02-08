@@ -306,6 +306,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         struct PlatformData *pdata = KernelBase->kb_PlatformData;
         struct syscallx86_Handler *scHandler;
     	ULONG sc = regs->rax;
+        BOOL systemSysCall = TRUE;
 
 	/* Syscall number is actually ULONG (we use only eax) */
         DSYSCALL(bug("[Kernel] Syscall %08x\n", sc));
@@ -315,6 +316,8 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             if ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == sc)
             {
                 scHandler->sc_SysCall(regs);
+                if (scHandler->sc_Node.ln_Type == 1)
+                    systemSysCall = FALSE;
             }
         }
 	/*
@@ -325,7 +328,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	 * is always pushed to stack as part of interrupt context.
 	 * We rely on this in order to determine which CPL we are returning to.
 	 */
-        if (regs->ss != 0)
+        if ((systemSysCall) && (regs->ss != 0))
         {
             DSYSCALL(bug("[Kernel] User-mode syscall\n"));
 
