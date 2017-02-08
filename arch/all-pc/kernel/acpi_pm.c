@@ -242,7 +242,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_PM_Probe,
     if (fadt->Flags & ACPI_FADT_RESET_REGISTER)
     {
         // register the ACPI ChangePMState SysCall Handler ..
-        krnAddSysCallHandler(pdata, &ACPI_SCChangePMStateHandler, FALSE);
+        krnAddSysCallHandler(pdata, &ACPI_SCChangePMStateHandler, TRUE, FALSE);
     }
 
     return TRUE;

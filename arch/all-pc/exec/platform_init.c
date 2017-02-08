@@ -15,16 +15,16 @@
 #include <exec/interrupts.h>
 #include <exec/rawfmt.h>
 
-#if defined(__AROSEXEC_SMP__)
 #define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
 
 #include "kernel_base.h"
 #include "kernel_arch.h"
+#include "kernel_intr.h"
+
 #include "etask.h"
 
 #define __AROS_KERNEL__
-#endif
 
 #include "exec_intern.h"
 
@@ -33,10 +33,6 @@ extern AROS_INTP(Exec_X86ShutdownHandler);
 extern AROS_INTP(Exec_X86WarmResetHandler);
 extern AROS_INTP(Exec_X86ColdResetHandler);
 
-#if defined(__AROSEXEC_SMP__)
-struct Hook Exec_TaskSpinLockFailHook;
-struct Hook Exec_TaskSpinLockForbidHook;
-
 #if (__WORDSIZE==64)
 #define EXCX_REGA    regs->rax
 #define EXCX_REGB    regs->rbx
@@ -44,6 +40,11 @@ struct Hook Exec_TaskSpinLockForbidHook;
 #define EXCX_REGA    regs->eax
 #define EXCX_REGB    regs->ebx
 #endif
+
+#if defined(__AROSEXEC_SMP__)
+struct Hook Exec_TaskSpinLockFailHook;
+struct Hook Exec_TaskSpinLockForbidHook;
+struct Hook Exec_TaskSpinLockDisableHook;
 
 AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
     AROS_UFHA(struct Hook *, h, A0),
@@ -88,6 +89,25 @@ AROS_UFH3(void, Exec_TaskSpinLockForbidFunc,
     )
  
     Forbid();
+
+    D(bug("[Exec:X86] %s: done\n", __func__));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(void, Exec_TaskSpinLockDisableFunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(spinlock_t *, spinLock, A1),
+    AROS_UFHA(void *, unused, A2))
+{
+    AROS_USERFUNC_INIT
+
+    D(
+        struct Task *spinTask = GET_THIS_TASK;
+        bug("[Exec:X86] %s(0x%p)\n", __func__, spinTask);
+    )
+ 
+    Disable();
 
     D(bug("[Exec:X86] %s: done\n", __func__));
 
@@ -169,10 +189,74 @@ spinlock_t *ExecSpinLockCall(spinlock_t *spinLock, struct Hook *hookObtained, st
 }
 #endif
 
-int Exec_X86Init(struct ExecBase *SysBase)
+void X86_HandleSwitch(struct ExceptionContext *regs)
 {
-    struct IntExecBase *sysBase = (struct IntExecBase *)SysBase;
+    D(bug("[Exec:X86] %s()\n", __func__));
+
+    cpu_Switch(regs);
+
+    return;
+}
+
+struct syscallx86_Handler x86_SCSwitchHandler =
+{
+    {
+        .ln_Name = (APTR)SC_X86SWITCH
+    },
+    (APTR)X86_HandleSwitch
+};
+
+void X86_HandleReschedTask(struct ExceptionContext *regs)
+{
+#if defined(__AROSEXEC_SMP__)
+    struct Task *reschTask = (struct Task *)EXCX_REGB;
+    spinlock_t *task_listlock = NULL;
+#endif
+    
+    D(bug("[Exec:X86] %s()\n", __func__));
+
+    /* Move to the ready list... */
+#if defined(__AROSEXEC_SMP__)
+    switch (reschTask->tc_State)
+    {
+        case TS_WAIT:
+            task_listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
+            break;
+        case TS_SPIN:
+            task_listlock = &PrivExecBase(SysBase)->TaskSpinningLock;
+            break;
+        default:
+            break;
+    }
+    if (task_listlock)
+    {
+        Kernel_43_KrnSpinLock(task_listlock, &Exec_TaskSpinLockFailHook, SPINLOCK_MODE_WRITE, NULL);
+        Remove(&reschTask->tc_Node);
+        Kernel_44_KrnSpinUnLock(task_listlock, NULL);
+    }
+    reschTask->tc_State = TS_READY;
+    Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, &Exec_TaskSpinLockFailHook, SPINLOCK_MODE_WRITE, NULL);
+    Enqueue(&SysBase->TaskReady, &reschTask->tc_Node);
+    Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL);
+#endif
+
+    return;
+}
+
+struct syscallx86_Handler x86_SCReschedTaskHandler =
+{
+    {
+        .ln_Name = (APTR)SC_X86RESCHEDTASK
+    },
+    (APTR)X86_HandleReschedTask
+};
+
+
+struct Task *Exec_X86CreateIdleTask(APTR sysBase)
+{
+    struct ExecBase *SysBase = (struct ExecBase *)sysBase;
     struct Task *CPUIdleTask;
+    char *taskName;
 #if defined(__AROSEXEC_SMP__)
     struct KernelBase *KernelBase = __kernelBase;
     int cpuNo = KrnGetCPUNumber();
@@ -180,8 +264,60 @@ int Exec_X86Init(struct ExecBase *SysBase)
     {
         cpuNo
     };
+    struct MemList *ml;
+
+    if ((ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
+    {
+        bug("[Exec:X86.%03u] FATAL : Failed to allocate memory for idle task name info", cpuNo);
+        return NULL;
+    }
+
+    ml->ml_NumEntries      = 1;
+
+    ml->ml_ME[0].me_Length = 15;
+    if ((ml->ml_ME[0].me_Addr = AllocMem(15, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
+    {
+        bug("[Exec:X86.%03u] FATAL : Failed to allocate memory for task idle name", cpuNo);
+        FreeMem(ml, sizeof(struct MemList));
+        return NULL;
+    }
+    taskName = ml->ml_ME[0].me_Addr;
+    RawDoFmt("CPU #%03u Idle", (RAWARG)idleNameArg, RAWFMTFUNC_STRING, taskName);
+#else
+    taskName = "CPU Idle";
 #endif
-    char *taskName;
+    CPUIdleTask = NewCreateTask(TASKTAG_NAME   , taskName,
+#if defined(__AROSEXEC_SMP__)
+                                TASKTAG_AFFINITY   , KrnGetCPUMask(cpuNo),
+#endif
+                                TASKTAG_PRI        , -127,
+                                TASKTAG_PC         , IdleTask,
+                                TASKTAG_ARG1       , SysBase,
+                                TAG_DONE);
+
+    if (CPUIdleTask)
+    {
+        D(
+            bug("[Exec:X86] %s: '%s' Task created @ 0x%p\n", __func__, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask);
+#if defined(__AROSEXEC_SMP__)
+            bug("[Exec:X86] %s:      CPU Affinity : %08x\n", __func__, IntETask(CPUIdleTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+#endif
+        )
+    }
+#if defined(__AROSEXEC_SMP__)
+    else
+    {
+        FreeMem(ml->ml_ME[0].me_Addr, 15);
+        FreeMem(ml, sizeof(struct MemList));
+    }
+#endif
+    return CPUIdleTask;
+}
+
+int Exec_X86Init(struct ExecBase *SysBase)
+{
+    struct IntExecBase *sysBase = (struct IntExecBase *)SysBase;
+    struct KernelBase *KernelBase = __kernelBase;
 
     D(bug("[Exec:X86] %s()\n", __func__));
     D(bug("[Exec:X86] %s: PlatformData @ 0x%p\n", __func__, &sysBase->PlatformData));
@@ -207,40 +343,23 @@ int Exec_X86Init(struct ExecBase *SysBase)
 
     D(bug("[Exec:X86] %s: Default Handlers Registered\n", __func__));
 
+    krnAddSysCallHandler(KernelBase->kb_PlatformData, &x86_SCSwitchHandler, TRUE, TRUE);
+    krnAddSysCallHandler(KernelBase->kb_PlatformData, &x86_SCReschedTaskHandler, TRUE, TRUE);
+
 #if defined(__AROSEXEC_SMP__)
     /* register the task spinlock syscall */
-    krnAddSysCallHandler(KernelBase->kb_PlatformData, &x86_SCSpinLockHandler, TRUE);
+    krnAddSysCallHandler(KernelBase->kb_PlatformData, &x86_SCSpinLockHandler, TRUE, TRUE);
     sysBase->PlatformData.SpinLockCall = ExecSpinLockCall;
 
     /* set up the task spinning hooks */
     Exec_TaskSpinLockForbidHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockForbidFunc;
+    Exec_TaskSpinLockDisableHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockDisableFunc;
     Exec_TaskSpinLockFailHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockFailFunc;
     D(bug("[Exec:X86] %s: SpinLock Fail Hook @ 0x%p, Handler @ 0x%p\n", __func__, &Exec_TaskSpinLockFailHook, Exec_TaskSpinLockFailFunc));
     D(bug("[Exec:X86] %s: SpinLock Forbid Hook @ 0x%p, Handler @ 0x%p\n", __func__, &Exec_TaskSpinLockForbidHook, Exec_TaskSpinLockForbidFunc));
+#endif
 
-    taskName = AllocVec(15, MEMF_CLEAR);
-    RawDoFmt("CPU #%03u Idle", (RAWARG)idleNameArg, RAWFMTFUNC_STRING, taskName);
-#else
-    taskName = "CPU Idle";
-#endif
-    CPUIdleTask = NewCreateTask(TASKTAG_NAME   , taskName,
-#if defined(__AROSEXEC_SMP__)
-                                TASKTAG_AFFINITY   , KrnGetCPUMask(cpuNo),
-#endif
-                                TASKTAG_PRI        , -127,
-                                TASKTAG_PC         , IdleTask,
-                                TASKTAG_ARG1       , SysBase,
-                                TAG_DONE);
-
-    if (CPUIdleTask)
-    {
-        D(
-            bug("[Exec:X86] %s: '%s' Task created @ 0x%p\n", __func__, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask);
-#if defined(__AROSEXEC_SMP__)
-            bug("[Exec:X86] %s:      CPU Affinity : %08x\n", __func__, IntETask(CPUIdleTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
-#endif
-        )
-    }
+    Exec_X86CreateIdleTask(SysBase);
 
     return TRUE;
 }

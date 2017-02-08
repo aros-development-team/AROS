@@ -29,7 +29,17 @@
 
 #include "apic.h"
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+
+#define DEBUG 0
+
+#if (DEBUG > 0)
+#define DSCHED(x) x
+#else
 #define DSCHED(x)
+#endif
 
 /* Check if the currently running task on this cpu should be rescheduled.. */
 BOOL core_Schedule(void)
@@ -44,8 +54,15 @@ BOOL core_Schedule(void)
 
     FLAG_SCHEDSWITCH_CLEAR;
 
-    /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
-    if (!(task->tc_Flags & TF_EXCEPT))
+    if (task->tc_State == TS_REMOVED)
+    {
+        /* always let finalising tasks finish... */
+        corereschedule = FALSE;
+#if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
+        bug("[Kernel:%03u] core_Schedule: letting finalising task run..\n", cpuNo);
+#endif
+    }
+    else if (!(task->tc_Flags & TF_EXCEPT))
     {
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
@@ -70,7 +87,12 @@ BOOL core_Schedule(void)
                 if ((GetIntETask(nexttask)->iet_CpuAffinity  & cpumask) == cpumask)
                 {
 #endif
-                    if (nexttask->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
+                    if (
+#if defined(__AROSEXEC_SMP__)
+                        (task->tc_State != TS_SPIN) &&
+
+#endif
+                        (nexttask->tc_Node.ln_Pri <= task->tc_Node.ln_Pri))
                     {
                         /* If the running task did not used it's whole quantum yet, let it work */
                         if (!FLAG_SCHEDQUANTUM_ISSET)
@@ -86,6 +108,11 @@ BOOL core_Schedule(void)
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
     }
+
+#if defined(__AROSEXEC_SMP__)
+    if ((!corereschedule) && (task->tc_State == TS_SPIN))
+        task->tc_State = TS_RUN;
+#endif
 
     DSCHED
         (
@@ -106,72 +133,82 @@ void core_Switch(void)
 {
     apicid_t cpuNo = KrnGetCPUNumber();
     struct Task *task = GET_THIS_TASK;
+    ULONG showAlert = 0;
 
-    DSCHED(bug("[Kernel:%03u] core_Switch(%08x)\n", cpuNo, task->tc_State));
+    DSCHED(bug("[Kernel:%03u] core_Switch(0x%p:%08x)\n", cpuNo, task, task->tc_State));
 
-    if ((task->tc_State == TS_RUN)
-#if defined(__AROSEXEC_SMP__)    
-        || (task->tc_State == TS_SPIN))
+    DSCHED(bug("[Kernel:%03u] Switching away from '%s' @ 0x%p\n", cpuNo, task->tc_Node.ln_Name, task));
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
+                SPINLOCK_MODE_WRITE);
+#else
+    if (task->tc_State != TS_RUN)
 #endif
+    Remove(&task->tc_Node);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+#endif
+
+    if ((task->tc_State != TS_WAIT) &&
+#if defined(__AROSEXEC_SMP__)
+        (task->tc_State != TS_SPIN) &&
+#endif
+        (task->tc_State != TS_REMOVED))
+        task->tc_State = TS_READY;
+
+    /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
+    if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
-        DSCHED(bug("[Kernel:%03u] Switching away from '%s' @ 0x%p\n", cpuNo, task->tc_Node.ln_Name, task));
-#if defined(__AROSEXEC_SMP__)
-        KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
-                    SPINLOCK_MODE_WRITE);
-        Remove(&task->tc_Node);
-        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-        if (task->tc_State != TS_SPIN)
-#endif
-            task->tc_State = TS_READY;
+        bug("[Kernel:%03u] '%s' @ 0x%p went out of stack limits\n", cpuNo, task->tc_Node.ln_Name, task);
+        bug("[Kernel:%03u]  - Lower 0x%p, upper 0x%p, SP 0x%p\n", cpuNo, task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
 
-        /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
-        if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
-        {
-            bug("[Kernel:%03u] '%s' @ 0x%p went out of stack limits\n", cpuNo, task->tc_Node.ln_Name, task);
-            bug("[Kernel:%03u]  - Lower 0x%p, upper 0x%p, SP 0x%p\n", cpuNo, task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
+        task->tc_SigWait    = 0;
+        task->tc_State      = TS_WAIT;
 
-            task->tc_SigWait    = 0;
-            task->tc_State      = TS_WAIT;
-#if defined(__AROSEXEC_SMP__)
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
-                        SPINLOCK_MODE_WRITE);
-#endif
-            Enqueue(&SysBase->TaskWait, &task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
-#endif
-
-            Alert(AN_StackProbe);
-        }
-
-        task->tc_IDNestCnt = IDNESTCOUNT_GET;
-
-        if (task->tc_State == TS_READY)
-        {
-            if (task->tc_Flags & TF_SWITCH)
-                AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
-
-            DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p as ready\n", cpuNo, task->tc_Node.ln_Name, task));
-#if defined(__AROSEXEC_SMP__)
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
-                    SPINLOCK_MODE_WRITE);
-#endif
-            Enqueue(&SysBase->TaskReady, &task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
-#endif
-        }
-#if defined(__AROSEXEC_SMP__)
-        else if (task->tc_State == TS_SPIN)
-        {
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
-                        SPINLOCK_MODE_WRITE);
-            Enqueue(&PrivExecBase(SysBase)->TaskSpinning, &task->tc_Node);
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
-        }
-#endif
+        showAlert = AN_StackProbe;
     }
 
+    task->tc_IDNestCnt = IDNESTCOUNT_GET;
+
+    if (task->tc_State == TS_READY)
+    {
+        if (task->tc_Flags & TF_SWITCH)
+            AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p as ready\n", cpuNo, task->tc_Node.ln_Name, task));
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
+                SPINLOCK_MODE_WRITE);
+#endif
+        Enqueue(&SysBase->TaskReady, &task->tc_Node);
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+#endif
+    }
+#if defined(__AROSEXEC_SMP__)
+    else if (task->tc_State == TS_SPIN)
+    {
+        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to spin\n", cpuNo, task->tc_Node.ln_Name, task));
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
+                    SPINLOCK_MODE_WRITE);
+        Enqueue(&PrivExecBase(SysBase)->TaskSpinning, &task->tc_Node);
+        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
+    }
+#endif
+    else if (task->tc_State != TS_REMOVED)
+    {
+        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to wait\n", cpuNo, task->tc_Node.ln_Name, task));
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
+                    SPINLOCK_MODE_WRITE);
+#endif
+        Enqueue(&SysBase->TaskWait, &task->tc_Node);
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+#endif
+    }
+    if (showAlert)
+        Alert(showAlert);
 }
 
 /* Dispatch a "new" ready task on this cpu */
@@ -209,10 +246,18 @@ struct Task *core_Dispatch(void)
 #endif
 
     if ((!newtask) && (task) && (task->tc_State != TS_WAIT))
+    {
+#if defined(__AROSEXEC_SMP__)
+        if (task->tc_State == TS_SPIN)
+            task->tc_State = TS_READY;
+#endif
         newtask = task;
+    }
 
     if (newtask != NULL)
     {
+        BOOL launchtask = TRUE;
+
         if (newtask->tc_State == TS_READY || newtask->tc_State == TS_RUN)
         {
             DSCHED(bug("[Kernel:%03u] Preparing to run '%s' @ 0x%p\n",
@@ -231,19 +276,12 @@ struct Task *core_Dispatch(void)
             else
                 newtask->tc_State     = TS_RUN;
         }
-
-        BOOL launchtask = TRUE;
-#if defined(__AROSEXEC_SMP__)
-        if (newtask->tc_State == TS_SPIN)
+        else if (task->tc_State = TS_REMOVED)
         {
-            /* move it to the spinning list */
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
-                SPINLOCK_MODE_WRITE);
-            AddHead(&PrivExecBase(SysBase)->TaskSpinning, &newtask->tc_Node);
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
-            launchtask = FALSE;
+            // The task is on its way out ...
+            launchtask = TRUE;
         }
-#endif
+
         if (newtask->tc_State == TS_WAIT)
         {
 #if defined(__AROSEXEC_SMP__)

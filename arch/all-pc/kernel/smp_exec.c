@@ -32,7 +32,7 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
     struct ExceptionContext *bsctx;
     struct MemList *ml;
 #define bstask          ((struct Task *)(ml->ml_ME[0].me_Addr))
-#define bstaskmlsize    (sizeof(struct MemList) + sizeof(struct MemEntry))
+#define bstaskmlsize    (sizeof(struct MemList))
 
     /* Build bootstraps memory list */
     if ((ml = AllocMem(bstaskmlsize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
@@ -41,7 +41,7 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
         return NULL;
     }
 
-    ml->ml_NumEntries      = 2;
+    ml->ml_NumEntries      = 1;
 
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     if ((ml->ml_ME[0].me_Addr = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
@@ -51,18 +51,6 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
         return NULL;
     }
 
-    /* allocate some stack space for user mode .. */
-    ml->ml_ME[1].me_Length = 15 + (sizeof(IPTR) * 128);
-    if ((ml->ml_ME[1].me_Addr = AllocMem(ml->ml_ME[1].me_Length, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
-    {
-        bug("[Kernel:%03u] FATAL : Failed to allocate stack for bootstrap task", cpuNo);
-        FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
-        FreeMem(ml, bstaskmlsize);
-        return NULL;
-    }
-    bstask->tc_SPLower = (APTR)(((IPTR)ml->ml_ME[1].me_Addr + 15) & ~0xF);
-    bstask->tc_SPUpper = bstask->tc_SPLower + (sizeof(IPTR) * 128);
-
     AddHead(&bstask->tc_MemEntry, &ml->ml_Node);
 
     D(bug("[Kernel:%03u] Bootstrap task @ 0x%p\n", cpuNo, bstask));
@@ -70,7 +58,6 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
     if ((bsctx = KrnCreateContext()) == NULL)
     {
         bug("[Kernel:%03u] FATAL : Failed to create the bootstrap Task context\n", cpuNo);
-        FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
         FreeMem(ml, bstaskmlsize);
         return NULL;
@@ -98,7 +85,6 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
     {
         bug("[Kernel:%03u] FATAL : Failed to initialize bootstrap ETask\n", cpuNo);
         FreeVec(bstask->tc_Node.ln_Name);
-        FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
         FreeMem(ml, bstaskmlsize);
         return NULL;
@@ -135,6 +121,16 @@ void cpu_BootStrap(struct Task *bstask)
     D(bug("[Kernel:SMP] %s[%03u]: Leaving supervisor mode\n", __func__, cpuNo));
 
     krnLeaveSupervisorRing(FLAGS_INTENABLED);
+
+    D(bug("[Kernel:SMP] %s[%03u]: Enabling Exec Interrupts...\n", __func__, cpuNo));
+
+    /* We now start up the interrupts */
+    Permit();
+    Enable();
+
+    D(bug("[Kernel:SMP] %s[%03u]: Creating Idle Task ...\n", __func__, cpuNo));
+
+    Exec_X86CreateIdleTask(SysBase);
 
     D(bug("[Kernel:SMP] %s[%03u]: Done\n", __func__, cpuNo));
 }

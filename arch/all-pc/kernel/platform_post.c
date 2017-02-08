@@ -140,8 +140,8 @@ static AROS_UFH3 (APTR, KernelPost,
     Disable();
 
     // Add the default reboot/shutdown handlers if ACPI ones havent been registered...
-    krnAddSysCallHandler(pdata, &x86_SCRebootHandler, FALSE);
-    krnAddSysCallHandler(pdata, &x86_SCChangePMStateHandler, FALSE);
+    krnAddSysCallHandler(pdata, &x86_SCRebootHandler, TRUE, FALSE);
+    krnAddSysCallHandler(pdata, &x86_SCChangePMStateHandler, TRUE, FALSE);
 
     D(bug("[Kernel] %s: Attempting to bring up aditional cores ...\n", __func__));
     smp_Initialize();

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,10 +9,9 @@
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 
-#define __save_flags(x)		__asm__ __volatile__("pushfq ; popq %0":"=g" (x): /* no input */)
-#define __restore_flags(x) 	__asm__ __volatile__("pushq %0 ; popfq": /* no output */ :"g" (x):"memory", "cc")
-#define __cli() 		__asm__ __volatile__("cli": : :"memory")
-#define __sti()			__asm__ __volatile__("sti": : :"memory")
+#if defined(__AROSEXEC_SMP__)
+ULONG   safedebug = 1;
+#endif
 
 int krnPutC(int c, struct KernelBase *KernelBase)
 {

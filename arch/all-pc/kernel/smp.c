@@ -112,6 +112,9 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 
     if ((apicBSTask = cpu_InitBootStrap(apicCPUNo)) != NULL)
     {
+        apicBSTask->tc_SPLower = NULL;
+        apicBSTask->tc_SPUpper = (APTR)~0;
+
         cpu_BootStrap(apicBSTask);
 #else
     bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", apicCPUNo + 1, apicData->apic_count);
@@ -227,6 +230,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
 #if defined(__AROSEXEC_SMP__)
         apicTLS = apicData->cores[cpuNo].cpu_TLS;
         apicTLS->ScheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC);
+        D(bug("[Kernel:SMP] Scheduling Data @ 0x%p\n", apicTLS->ScheduleData));
 #endif
         apicData->cores[cpuNo].cpu_IDT = PlatformAllocIDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
 
