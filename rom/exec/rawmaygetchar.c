@@ -1,12 +1,10 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Check if there is a character on the raw console
     Lang: english
 */
-
-#include <proto/kernel.h>
 
 #include "exec_intern.h"
 

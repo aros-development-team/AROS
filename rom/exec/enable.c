@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Enable() - Allow interrupts to occur after Disable().
@@ -11,7 +11,6 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
-#include <proto/kernel.h>
 
 #include "exec_intern.h"
 

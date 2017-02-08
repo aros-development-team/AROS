@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Cause() - Cause a software interrupt.
@@ -9,7 +9,6 @@
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
-#include <proto/kernel.h>
 
 #include "chipset.h"
 #include "exec_intern.h"

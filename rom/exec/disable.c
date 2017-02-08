@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Disable() - Stop interrupts from occurring.
@@ -12,7 +12,6 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
-#include <proto/kernel.h>
 
 #include "exec_intern.h"
 

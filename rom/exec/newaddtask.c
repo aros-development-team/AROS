@@ -22,6 +22,7 @@
 #include "taskstorage.h"
 
 #if defined(__AROSEXEC_SMP__)
+#define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
 #endif
 
@@ -206,16 +207,16 @@
         lists.
      */
 
+#if !defined(__AROSEXEC_SMP__)
     Disable();
-#if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
 #endif
 
     /* Add the new task to the ready list. */
     task->tc_State = TS_READY;
+#if !defined(__AROSEXEC_SMP__)
     Enqueue(&SysBase->TaskReady, &task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
+#else
+    krnSysCallReschedTask(task);
 #endif
 
     /*
@@ -229,10 +230,11 @@
 #if defined(__AROSEXEC_SMP__)
         (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) == KrnGetCPUMask(cpunum))
     {
+        parent = GET_THIS_TASK;
         if(
 #endif
-        task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri &&
-        GET_THIS_TASK->tc_State == TS_RUN)
+        task->tc_Node.ln_Pri > parent->tc_Node.ln_Pri &&
+        parent->tc_State == TS_RUN)
     {
         D(bug("[AddTask] Rescheduling...\n");)
 
@@ -245,9 +247,9 @@
     {
         bug("[Exec] AddTask: CPU #%d not in mask [%08x:%08x]\n", cpunum, KrnGetCPUMask(cpunum), IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
     }
-#endif
-
+#else
     Enable();
+#endif
 
     DADDTASK("Added task 0x%p", task);
     return task;

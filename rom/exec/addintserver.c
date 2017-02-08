@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add interrupt client to chain of interrupt servers
@@ -12,7 +12,6 @@
 #include <exec/interrupts.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include "exec_debug.h"
 #include "exec_intern.h"

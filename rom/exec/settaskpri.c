@@ -15,7 +15,6 @@
 
 #include "exec_intern.h"
 #if defined(__AROSEXEC_SMP__)
-#include <proto/kernel.h>
 #include "etask.h"
 #endif
 

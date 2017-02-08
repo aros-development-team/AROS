@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
@@ -110,12 +112,11 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
     }
 
     /*
-     *	I shouldn't need to disable around changing the signal masks
+     *	Exec shouldn't need to protect the changing of the task signal masks
      *	because the only thing allowed to change the mask of allocated,
-     *	excepting and waiting signals is the task itself. On the other
-     *	hand, I need to use Disable around the received signals because it
-     *	can be modified by interrupts, and I cannot rely upon the below
-     *	being atomic.
+     *	excepting and waiting signals is the task itself. 
+     *  Received signals do need protected because they can be modified
+     *  by interrupts, so atomicity cannot be relied upon.
      */
 
     ThisTask->tc_SigAlloc  |=  mask1;

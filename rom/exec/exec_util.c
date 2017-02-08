@@ -16,8 +16,6 @@
 #include <dos/dosextens.h>
 
 #include <proto/exec.h>
-#define __KERNEL_NOLIBBASE__
-#include <proto/kernel.h>
 
 #include "etask.h"
 #include "exec_intern.h"
@@ -154,22 +152,22 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 	    SysBase->ex_TaskID = 1024;
 
 	Disable();
+        D(bug("[EXEC:ETask] Init: Checking for existing ID...\n");)
 	if (FindTaskByPID(SysBase->ex_TaskID) == NULL)
 	    et->et_UniqueID = SysBase->ex_TaskID;
+        D(bug("[EXEC:ETask] Init: done\n");)
 	Enable();
     }
-    Permit();
-    
+   
     D(bug("[EXEC:ETask] Init:     Task ID : %08x\n", et->et_UniqueID);)
 
     /* Finally if the parent task is an ETask, add myself as its child */
     if(et->et_Parent && ((struct Task*) et->et_Parent)->tc_Flags & TF_ETASK)
     {
         D(bug("[EXEC:ETask] Init: Registering with Parent ETask\n");)
-	Forbid();
 	ADDHEAD(&GetETask(et->et_Parent)->et_Children, et);
-	Permit();
     }
+    Permit();
 
     return TRUE;
 }
