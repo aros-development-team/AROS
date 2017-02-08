@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Page-based memory allocator, low-level routines.
@@ -15,6 +15,7 @@
 #include <inttypes.h>
 
 #include <kernel_base.h>
+#include <kernel_intern.h>
 #include <kernel_debug.h>
 #include <kernel_mm.h>
 
