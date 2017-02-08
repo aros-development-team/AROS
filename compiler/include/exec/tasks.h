@@ -2,7 +2,7 @@
 #define EXEC_TASKS_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Task structure and constants
@@ -219,6 +219,8 @@ struct ETask
 #define TASKTAG_FLAGS           (TASKTAG_Dummy + 26)
 #define TASKTAG_TCBEXTRASIZE    (TASKTAG_Dummy + 28)
 #define TASKTAG_AFFINITY        (TASKTAG_Dummy + 29)
+#define TASKAFFINITY_BOOT        0
+#define TASKAFFINITY_ANY          ((IPTR)-1)
 
 #define TASKERROR_OK       0
 #define TASKERROR_NOMEMORY 1
