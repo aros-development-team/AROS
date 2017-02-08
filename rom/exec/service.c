@@ -14,7 +14,6 @@
 #include <exec/tasks.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"

@@ -28,8 +28,6 @@
 
 #include <proto/arossupport.h>
 #include <proto/exec.h>
-#define __KERNEL_NOLIBBASE__
-#include <proto/kernel.h>
 
 #include "exec_debug.h"
 #include "exec_intern.h"

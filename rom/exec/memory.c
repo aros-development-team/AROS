@@ -1,12 +1,11 @@
 /*
-    Copyright � 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
 #include <exec/rawfmt.h>
 #include <exec/memheaderext.h>
-#include <proto/kernel.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"

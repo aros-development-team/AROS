@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +14,6 @@
 #include <exec/tasks.h>
 #include <libraries/debug.h>
 #include <proto/debug.h>
-#include <proto/kernel.h>
 
 #include "etask.h"
 #include "exec_intern.h"

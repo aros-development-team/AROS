@@ -10,7 +10,6 @@
 #include <exec/execbase.h>
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include <string.h>
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove an interrupt handler.
@@ -10,7 +10,6 @@
 #include <exec/interrupts.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 #include <aros/libcall.h>
 
 #include "exec_debug.h"

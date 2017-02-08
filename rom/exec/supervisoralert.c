@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display an alert passed from supervisor mode.
@@ -12,7 +12,6 @@
 #include <intuition/intuition.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#include <proto/kernel.h>
 
 #include "etask.h"
 #include "exec_intern.h"

@@ -13,7 +13,6 @@
 #include <exec/tasks.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 #include <aros/symbolsets.h>
 
 #include "etask.h"
@@ -65,6 +64,7 @@
     struct ETask *et;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *task_listlock = NULL;
+    ULONG task_state;
 #endif
     struct Task *suicide = GET_THIS_TASK;
 
@@ -77,11 +77,24 @@
 #if !defined(__AROSEXEC_SMP__)
     /* Don't let any other task interfere with us at the moment */
     Forbid();
+#else
+    task_state = task->tc_State;
 #endif
+
+    /*
+     * The task is being removed.
+     * This is an important signal for Alert() which will not attempt to use
+     * the context which is being deleted, for example.
+     */
+    task->tc_State = TS_REMOVED;
 
     if (suicide == task)
     {
         DREMTASK("Removing itself");
+#if defined(EXEC_REMTASK_NEEDSSWITCH)
+        // make the scheduler detach us...
+        krnSysCallSwitch();
+#endif
     }
     else
     {
@@ -90,7 +103,7 @@
          * the MemEntry list might contain the task struct itself!
         */
 #if defined(__AROSEXEC_SMP__)
-        switch (task->tc_State)
+        switch (task_state)
         {
             case TS_SPIN:
                 task_listlock =&PrivExecBase(SysBase)->TaskSpinningLock;
@@ -112,13 +125,6 @@
         EXECTASK_SPINLOCK_UNLOCK(task_listlock);
 #endif
     }
-
-    /*
-     * The task is being removed.
-     * This is an important signal for Alert() which will not attempt to use
-     * the context which is being deleted, for example.
-     */
-    task->tc_State = TS_REMOVED;
 
     /* Delete context */
     et = GetETask(task);

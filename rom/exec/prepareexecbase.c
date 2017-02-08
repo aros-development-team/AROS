@@ -25,7 +25,6 @@
 
 #include <proto/alib.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include LC_LIBDEFS_FILE
 #include "etask.h"

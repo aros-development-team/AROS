@@ -55,11 +55,14 @@
     struct Task *t;
     struct ETask *et;
 
+    D(bug("[EXEC] %s()\n", __func__);)
+
     /* First up, check running task(s) */
 #if defined(__AROSEXEC_SMP__)
     listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
     {
+        D(bug("[EXEC] %s: trying Running Task @ 0x%p\n", __func__, t);)
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
         {
@@ -73,6 +76,7 @@
     listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
     ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
     {
+        D(bug("[EXEC] %s: trying Spinning Task @ 0x%p\n", __func__, t);)
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
         {
@@ -88,6 +92,7 @@
     Disable();
     if ((t = GET_THIS_TASK) != NULL)
     {
+        D(bug("[EXEC] %s: trying ThisTask @ 0x%p\n", __func__, t);)
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
         {
@@ -99,6 +104,7 @@
     /*	Next, go through the ready list */
     ForeachNode(&SysBase->TaskReady, t)
     {
+        D(bug("[EXEC] %s: trying Ready Task @ 0x%p\n", __func__, t);)
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
         {
@@ -119,6 +125,8 @@
     /* Finally, go through the wait list */
     ForeachNode(&SysBase->TaskWait, t)
     {
+        D(bug("[EXEC] %s: trying Waiting Task @ 0x%p\n", __func__, t);)
+
 	et = GetETask(t);
 	if (et != NULL && et->et_UniqueID == id)
         {
@@ -138,6 +146,8 @@
 #else
     Enable();
 #endif
+
+    D(bug("[EXEC] %s: Not Found\n", __func__);)
 
     return NULL;
 

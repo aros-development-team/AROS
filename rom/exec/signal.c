@@ -15,7 +15,6 @@
 
 #include "exec_intern.h"
 #if defined(__AROSEXEC_SMP__)
-#include <proto/kernel.h>
 #include "etask.h"
 #endif
 
@@ -63,7 +62,6 @@
 
     struct Task *ThisTask = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__)
-    spinlock_t *task_listlock = NULL;
     int cpunum = KrnGetCPUNumber();
 #endif
 
@@ -74,15 +72,12 @@
     )
 
 #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
-#endif
+    EXECTASK_SPINLOCK_LOCKDISABLE(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+#else
     Disable();
+#endif
     /* Set the signals in the task structure. */
     task->tc_SigRecvd |= signalSet;
-#if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_UNLOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock);
-    Enable();
-#endif
 
     /* Do those bits raise exceptions? */
     if (task->tc_SigRecvd & task->tc_SigExcept)
@@ -91,33 +86,38 @@
         task->tc_Flags |= TF_EXCEPT;
 
         D(bug("[Exec] Signal: TF_EXCEPT set\n");)
+    }
+ #if defined(__AROSEXEC_SMP__)
+    EXECTASK_SPINLOCK_UNLOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    Enable();
+#endif
 
-        /* 
-                if the target task is running (called from within interrupt handler),
-                raise the exception or defer it for later.
-            */
-        if (task->tc_State == TS_RUN)
+    /* 
+            if the target task is running (called from within interrupt handler),
+            raise the exception or defer it for later.
+        */
+    if ((task->tc_SigRecvd & task->tc_SigExcept) &&
+        (task->tc_State == TS_RUN))
+    {
+#if defined(__AROSEXEC_SMP__)
+        if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum)
         {
-            D(bug("[Exec] Signal: signaling running task\n");)
-#if defined(__AROSEXEC_SMP__)
-            if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum)
-            {
 #endif
-            /* Order a reschedule */
-            Reschedule();
+        D(bug("[Exec] Signal: signaling running task\n");)
+        /* Order a reschedule */
+        Reschedule();
 #if defined(__AROSEXEC_SMP__)
-            }
-            else
-            {
-                D(bug("[Exec] Signal:\n");)
-            }
+        }
+        else
+        {
+            D(bug("[Exec] Signal:\n");)
+        }
 #else
-            Enable();
+        Enable();
 #endif
 
-            /* All done. */
-            return;
-        }
+        /* All done. */
+        return;
     }
 
     /*
@@ -131,20 +131,11 @@
 
         /* Yes. Move it to the ready list. */
 #if defined(__AROSEXEC_SMP__)
-        task_listlock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_WRITE);
-#endif
+        krnSysCallReschedTask(task);
+#else
         Remove(&task->tc_Node);
         task->tc_State = TS_READY;
-#if defined(__AROSEXEC_SMP__)
-        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
-        Permit();
-        task_listlock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
-#endif
         Enqueue(&SysBase->TaskReady, &task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
-        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
-        Permit();
-        task_listlock = NULL;
 #endif
         /* Has it a higher priority as the current one? */
         if (
