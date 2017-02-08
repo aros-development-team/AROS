@@ -134,7 +134,9 @@ void cpu_BootStrap(struct Task *bstask)
 
     D(bug("[Kernel:SMP] %s[%03u]: Done\n", __func__, cpuNo));
 
+#if (0)
     /* clean up now we are done */
     RemTask(bstask);
+#endif
 }
 #endif
