@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := platform_init powerstate_handlers supervisor exec_idle
+FILES := platform_init powerstate_handlers supervisor exec_idle intserver_vblank
 
 # From kernel.resource we need only kernel_syscalls.h
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/arch/all-pc/kernel
