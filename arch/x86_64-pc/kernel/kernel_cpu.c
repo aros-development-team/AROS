@@ -47,11 +47,19 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     while (!(task = core_Dispatch()))
     {
         /* Sleep until we receive an interupt....*/
+        DSCHED(
+            bug("[Kernel:%03u] cpu_Dispatch: Nothing to do .. sleeping...\n", cpunum);
+        )
+
         __asm__ __volatile__("sti; hlt; cli");
 
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT, 1l << INTB_SOFTINT);
     }
+
+    DSCHED(
+        bug("[Kernel:%03u] cpu_Dispatch: Task to Run @ 0x%p\n", cpunum, task);
+    )
 
     /* Get task's context */
     ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
@@ -85,6 +93,10 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_micro =
             IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 % apicData->cores[cpunum].cpu_TimerFreq;
     }
+
+    DSCHED(
+        bug("[Kernel:%03u] cpu_Dispatch: Leaving...\n", cpunum);
+    )
     /*
      * Leave interrupt and jump to the new task.
      * We will restore CPU state right from this buffer,
