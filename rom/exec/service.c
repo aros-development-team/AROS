@@ -40,8 +40,12 @@ void ServiceTask(struct ExecBase *SysBase)
 
 	    switch (task->tc_State)
 	    {
+            case TS_INVALID:
             case TS_REMOVED:
                 DREMTASK("Removal request for task 0x%p <%s>", task, task->tc_Node.ln_Name);
+
+                // TODO: Make sure the task has terminated..
+                task->tc_State = TS_INVALID;
 
                 /*
                  * Note tc_MemEntry list is part of the task structure which
@@ -66,7 +70,7 @@ void ServiceTask(struct ExecBase *SysBase)
 
             default:
                 /* FIXME: Add fault handling here. Perhaps kernel-level GURU. */
-
+                DREMTASK("task 0x%p <%s> not in tombstoned state!", task, task->tc_Node.ln_Name);
                 /* The task is ready to run again. Move it back to TaskReady list. */
                 task->tc_State = TS_READY;
 #if defined(__AROSEXEC_SMP__)
