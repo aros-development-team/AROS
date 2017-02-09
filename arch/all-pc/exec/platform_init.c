@@ -303,6 +303,9 @@ struct Task *Exec_X86CreateIdleTask(APTR sysBase)
             bug("[Exec:X86] %s:      CPU Affinity : %08x\n", __func__, IntETask(CPUIdleTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
 #endif
         )
+#if defined(__AROSEXEC_SMP__)
+        AddTail(&CPUIdleTask->tc_MemEntry, &ml->ml_Node);
+#endif
     }
 #if defined(__AROSEXEC_SMP__)
     else
