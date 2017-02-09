@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
@@ -33,7 +33,7 @@ AROS_LH1(void, GetCPUInfo,
     struct X86ProcessorInformation **sysprocs = ProcessorBase->Private1;
     ULONG selectedprocessor = 0;
 
-    D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+    D(bug("[processor.x86] :%s()\n", __func__));
 
     /* If processor was not selected, fall back to legacy mode and report on
     first available processor */
@@ -117,7 +117,7 @@ AROS_LH1(void, GetCPUInfo,
 
 static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct TagItem * tag)
 {
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     switch(tag->ti_Tag)
     {
