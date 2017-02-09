@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 /****************************************************************************************/
 
@@ -15,7 +18,6 @@
 #include <proto/kernel.h>
 #include <aros/symbolsets.h>
 #include <asm/io.h>
-#include <aros/debug.h>
 
 #include "ticks.h"
 
