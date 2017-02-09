@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,7 +39,7 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
 {
     APTR ssp;
 
-    D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+    D(bug("[processor.x86] :%s()\n", __func__));
 
     ssp = SuperState();
 
@@ -182,7 +182,7 @@ static VOID ReadAMDMaxFrequencyInformation(struct X86ProcessorInformation * info
 {
     APTR ssp;
 
-    D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+    D(bug("[processor.x86] :%s()\n", __func__));
 
     ssp = SuperState();
 
@@ -247,7 +247,7 @@ static VOID ReadAMDMaxFrequencyInformation(struct X86ProcessorInformation * info
 
 VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info)
 {
-    D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+    D(bug("[processor.x86] :%s()\n", __func__));
 
     info->MaxCPUFrequency = 0;
     info->MaxFSBFrequency = 0;
@@ -277,7 +277,7 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
 {
     UQUAD retFreq = info->MaxCPUFrequency;
 
-    D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+    D(bug("[processor.x86] :%s()\n", __func__));
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 
@@ -316,7 +316,7 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
 
 	UserState(ssp);
 
-	D(bug("[processor.x86] %s: max: %x, diffa: %x, diffm %x\n", __PRETTY_FUNCTION__, info->MaxCPUFrequency, diffaperf, diffmperf));
+	D(bug("[processor.x86] %s: max: %x, diffa: %x, diffm %x\n", __func__, info->MaxCPUFrequency, diffaperf, diffmperf));
 
         /* Use ratio between MPERF and APERF */
 	if (diffmperf)

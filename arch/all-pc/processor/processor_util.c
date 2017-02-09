@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,7 +35,7 @@ static void ReadVendorID(struct X86ProcessorInformation * info)
     info->CPUIDHighestStandardFunction = 0x0;
     info->CPUIDHighestExtendedFunction = 0x0;
     
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
     
     /* Reading CPU Vendor ID */
     ulongptr = (ULONG *)info->VendorID;
@@ -68,7 +68,7 @@ static void ReadBrandString(struct X86ProcessorInformation * info)
     ULONG * ulongptr = NULL;
     ULONG index = 0;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
     
     /* Reading CPU Brand String */
     ulongptr = (ULONG *)info->BrandStringBuffer;
@@ -95,7 +95,7 @@ static ULONG AMDDeriveFamily(UBYTE basefamily, UBYTE extendedfamily)
     ULONG family = 0;
     ULONG ret;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     if (basefamily == 0x0f) 
         family = basefamily + extendedfamily;
@@ -121,7 +121,7 @@ static ULONG IntelDeriveFamily(UBYTE basefamily, UBYTE extendedfamily)
     ULONG family = extendedfamily + basefamily;
     ULONG ret;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     switch(family)
     {
@@ -140,7 +140,7 @@ static void ReadFamilyModelStepping(struct X86ProcessorInformation * info)
     ULONG eax, ebx, ecx, edx;
     UBYTE stepping, basefamily, extendedfamily, basemodel, extendedmodel;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     /* Reading Family/Model/Stepping */
     cpuid(0x00000001);
@@ -172,7 +172,7 @@ static void ReadFeaturesFlags(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     /* Reading standard feature flags */
     cpuid(0x00000001);
@@ -231,7 +231,7 @@ static void AMDDeriveCacheInformation(struct X86ProcessorInformation * info)
     ULONG eax, ebx, ecx, edx;
     info->CacheLineSize = 0xff;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     /* Reading L1 information */
     cpuid(0x80000005);
@@ -255,7 +255,7 @@ D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
 static void IntelDecodeCacheKeyValue(struct X86ProcessorInformation * info, UBYTE key)
 {
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     switch(key)
     {
@@ -331,7 +331,7 @@ static void IntelDeriveCacheInformation(struct X86ProcessorInformation * info)
     ULONG eax, ebx, ecx, edx;
     info->CacheLineSize = 0xff;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     /* Reading Cache Information */
     cpuid(0x00000002);
@@ -395,7 +395,7 @@ D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
 static void ReadCacheInformation(struct X86ProcessorInformation * info)
 {
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     info->L1DataCacheSize = 0;
     info->L1InstructionCacheSize = 0;
@@ -414,7 +414,7 @@ static void ReadMSRSupportInformation(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     info->APERFMPERF = FALSE;
 
@@ -433,7 +433,7 @@ D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
 
 VOID ReadProcessorInformation(struct X86ProcessorInformation * info)
 {
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+D(bug("[processor.x86] :%s()\n", __func__));
 
     ReadVendorID(info);
     ReadBrandString(info);
