@@ -24,7 +24,7 @@
 
 #include <exec_platform.h>
 
-//#define TASKRES_ENABLE
+#define TASKRES_ENABLE
 
 #if defined(__AROSEXEC_SMP__)
 #include <aros/types/spinlock_s.h>
