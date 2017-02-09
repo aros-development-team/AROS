@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __EXEC_PLATFORM_H
@@ -7,6 +7,8 @@
 
 // needed to determine if this is an smp build
 #include <aros/config.h>
+
+#define SCHEDQUANTUM_VALUE      4
 
 #if defined(__AROSEXEC_SMP__)
 #include <aros/types/spinlock_s.h>
@@ -205,6 +207,10 @@ struct Exec_PlatformData
         __ret;  \
     })
 #define GET_THIS_TASK           TLS_GET(ThisTask)
+#define SCHEDQUANTUM_SET(val)           (SysBase->Quantum=(val))
+#define SCHEDQUANTUM_GET                (SysBase->Quantum)
+#define SCHEDELAPSED_SET(val)           (SysBase->Elapsed=(val))
+#define SCHEDELAPSED_GET                (SysBase->Elapsed)
 #if !defined(__AROSEXEC_SMP__)
 #define SET_THIS_TASK(x)        TLS_SET(ThisTask,(x))
 #else
