@@ -27,5 +27,7 @@ struct X86SchedulerPrivate
 BOOL core_Schedule(void);			/* Reschedule the current task if needed */
 void core_Switch(void);				/* Switch away from the current task     */
 struct Task *core_Dispatch(void);		/* Select the new task for execution     */
-
+#if defined(__AROSEXEC_SMP__)
+void core_InitScheduleData(struct X86SchedulerPrivate *);
+#endif
 #endif /* !KERNEL_SCHEDULER_H */
