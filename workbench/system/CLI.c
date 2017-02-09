@@ -109,7 +109,7 @@ int main(int argc, char **argv)
     ULONG stack = 0;
 
     BPTR win, from;
-    BPTR iconlock = NULL;
+    BPTR iconlock = BNULL;
     STRPTR iconname = NULL;
 
     // CLI is a special case, because it is
