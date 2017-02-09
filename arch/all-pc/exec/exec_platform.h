@@ -11,6 +11,7 @@
 #include "x86_syscalls.h"
 
 #define EXEC_REMTASK_NEEDSSWITCH
+#define SCHEDQUANTUM_VALUE      4
 
 #if defined(__AROSEXEC_SMP__)
 #include <aros/types/spinlock_s.h>
