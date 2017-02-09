@@ -203,6 +203,34 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
             __AROS_ATOMIC_OR_L(__schd->ScheduleFlags, TLSSF_Dispatch); \
     } while(0)
 #endif /* !AROS_NO_ATOMIC_OPERATIONS */
+#define SCHEDQUANTUM_SET(val) \
+    do { \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->Quantum = val; \
+    } while(0)
+#define SCHEDQUANTUM_GET \
+    ({ \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        UWORD __ret = 0; \
+        if (__schd) \
+            __ret = (__schd->Quantum); \
+         __ret;  \
+   })
+#define SCHEDELAPSED_SET(val) \
+    do { \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        if (__schd) \
+            __schd->Elapsed = val; \
+    } while(0)
+#define SCHEDELAPSED_GET \
+    ({ \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        UWORD __ret = 0; \
+        if (__schd) \
+            __ret = (__schd->Elapsed); \
+         __ret;  \
+   })
 #define IDNESTCOUNT_GET \
     ({ \
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
@@ -305,6 +333,10 @@ struct Exec_PlatformData
 #define FLAG_SCHEDDISPATCH_CLEAR        AROS_ATOMIC_AND(SysBase->AttnResched, ~ARF_AttnDispatch)
 #define FLAG_SCHEDDISPATCH_SET          AROS_ATOMIC_OR(SysBase->AttnResched, ARF_AttnDispatch)
 #endif
+#define SCHEDQUANTUM_SET(val)           (SysBase->Quantum=(val))
+#define SCHEDQUANTUM_GET                (SysBase->Quantum)
+#define SCHEDELAPSED_SET(val)           (SysBase->Elapsed=(val))
+#define SCHEDELAPSED_GET                (SysBase->Elapsed)
 #define IDNESTCOUNT_GET                 (SysBase->IDNestCnt)
 #define IDNESTCOUNT_SET(val)            (SysBase->IDNestCnt=(val))
 #define TDNESTCOUNT_GET                 (SysBase->TDNestCnt)
