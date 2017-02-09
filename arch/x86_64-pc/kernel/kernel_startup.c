@@ -452,6 +452,8 @@ void kernel_cstart(const struct TagItem *start_msg)
     if (!scheduleData)
         krnPanic(KernelBase, "Failed to Allocate Boot Processor Scheduling Data!");
 
+    core_InitScheduleData(scheduleData);
+
     TLS_SET(ScheduleData, scheduleData);
     D(bug("[Kernel] Scheduling Data @ 0x%p\n", TLS_GET(ScheduleData)));
 #endif
