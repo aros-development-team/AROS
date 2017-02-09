@@ -40,7 +40,7 @@ ALL_FUNCTIONS := \
         getparenttaskstorageslot
 
 INIT_FILES := exec_init prepareexecbase
-FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
+FILES	   := alertextra alert_cpu systemalert initkicktags intservers intserver_vblank \
 	      memory memory_nommu mungwall semaphores service traphandler \
 	      exec_debug exec_util supervisoralert
 

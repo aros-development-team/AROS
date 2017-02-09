@@ -1,7 +1,10 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
@@ -41,24 +44,6 @@ AROS_INTH3(IntServer, struct List *, intList, intMask, custom)
     }
 
     return ret;
-
-    AROS_INTFUNC_EXIT
-}
-
-/* VBlankServer. The same as general purpose IntServer but also counts task's quantum */
-AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
-{
-    AROS_INTFUNC_INIT
-
-    /* First decrease Elapsed time for current task */
-    if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
-    {
-        FLAG_SCHEDQUANTUM_SET;
-        FLAG_SCHEDSWITCH_SET;
-    }
-
-    /* Chain to the generic routine */
-    return AROS_INTC3(IntServer, intList, intMask, custom);
 
     AROS_INTFUNC_EXIT
 }
