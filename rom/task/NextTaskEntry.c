@@ -75,7 +75,7 @@
             matchState |= TS_RUN;
 
         if (matchFlags & LTF_READY)
-            matchState |= TS_READY;
+            matchState |= (TS_READY|TS_RUN);
 
         if (matchFlags & LTF_WAITING)
             matchState |= (TS_WAIT|TS_SPIN);
