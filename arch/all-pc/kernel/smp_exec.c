@@ -53,7 +53,7 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
 
     AddHead(&bstask->tc_MemEntry, &ml->ml_Node);
 
-    D(bug("[Kernel:%03u] Bootstrap task @ 0x%p\n", cpuNo, bstask));
+    D(bug("[Kernel:%03u] %s: Bootstrap task @ 0x%p\n", cpuNo, __func__, bstask));
 
     if ((bsctx = KrnCreateContext()) == NULL)
     {
@@ -63,7 +63,7 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
         return NULL;
     }
 
-    D(bug("[Kernel:%03u] CPU Ctx @ 0x%p\n", cpuNo, bsctx));
+    D(bug("[Kernel:%03u] %s: CPU Ctx @ 0x%p\n", cpuNo, __func__, bsctx));
 
     NEWLIST(&bstask->tc_MemEntry);
 
@@ -106,37 +106,32 @@ void cpu_BootStrap(struct Task *bstask)
     D(
         apicid_t cpuNo = KrnGetCPUNumber();
     
-        bug("[Kernel:SMP] %s[%03u]()\n", __func__, cpuNo);
+        bug("[Kernel:%03u] %s()\n", cpuNo, __func__);
         
         if (IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpuNo)
-            bug("[Kernel:SMP] %s[%03u]: bstask running on wrong CPU? (task cpu = %03u)\n", __func__, cpuNo, IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber);
+            bug("[Kernel:%03u] %s: bstask running on wrong CPU? (task cpu = %03u)\n", cpuNo, __func__, IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber);
     )
 
     bstask->tc_State = TS_RUN;
     SET_THIS_TASK(bstask);
 
-    D(bug("[Kernel:SMP] %s[%03u]: Leaving supervisor mode\n", __func__, cpuNo));
+    D(bug("[Kernel:%03u] %s: Leaving supervisor mode\n", cpuNo, __func__));
 
     krnLeaveSupervisorRing(FLAGS_INTENABLED);
 
     D(
-        bug("[Kernel:SMP] %s[%03u]: Starting up Scheduler...\n", __func__, cpuNo);
-        bug("[Kernel:SMP] %s[%03u]:        Enabling Exec Interrupts...\n", __func__, cpuNo);
+        bug("[Kernel:%03u] %s: Initialising Scheduler...\n", cpuNo, __func__);
+        bug("[Kernel:%03u] %s:        Enabling Exec Interrupts...\n", cpuNo, __func__);
     )
 
     /* We now start up the interrupts */
     Permit();
     Enable();
 
-    D(bug("[Kernel:SMP] %s[%03u]:        Creating Idle Task ...\n", __func__, cpuNo));
+    D(bug("[Kernel:%03u] %s:        Creating Idle Task ...\n", cpuNo, __func__));
 
     Exec_X86CreateIdleTask(SysBase);
 
-    D(bug("[Kernel:SMP] %s[%03u]: Done\n", __func__, cpuNo));
-
-#if (0)
-    /* clean up now we are done */
-    RemTask(bstask);
-#endif
+    D(bug("[Kernel:%03u] %s: Done\n", cpuNo, __func__));
 }
 #endif
