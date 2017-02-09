@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -66,6 +66,11 @@
     struct TagItem * Tag = NULL;
     struct Library *UtilityBase = TaskResBase->trb_UtilityBase;
     struct IntETask *task_et = GetIntETask(task);
+
+    D(
+        bug("[TaskRes] %s: task @ 0x%p\n", __func__, task);
+        bug("[TaskRes] %s: taglist @ 0x%p\n", __func__, tagList);
+    )
 
     /* This is the default implementation */
         
