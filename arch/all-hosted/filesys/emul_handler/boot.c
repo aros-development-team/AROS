@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Emergency console launcher for hosted AROS
@@ -67,20 +67,27 @@ AROS_UFH3(APTR, EmulBoot,
     LONG rc;
 
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+    D(bug("[EmulBoot] DOSbase @ 0x%p\n", DOSBase);)
 
     ExpansionBase = OpenLibrary("expansion.library", 0);
     if (ExpansionBase)
     {
         ULONG BootFlags = IntExpBase(ExpansionBase)->BootFlags;
+        D(bug("[EmulBoot] Expansionbase @ 0x%p\n", ExpansionBase);)
+
         if (!(BootFlags & BF_NO_DISPLAY_DRIVERS))
         {
             if (DOSBase)
             {
                 BPTR seg = LoadSeg("C:AROSMonDrvs");
+                D(bug("[EmulBoot] AROSMonDrvs Seglist @ 0x%p\n", seg);)
+
                 if (seg != BNULL)
                 {
                     STRPTR args = "NOCOMPOSITION";
                     BPTR oldin, oldout;
+
+                    D(bug("[EmulBoot] loading display drivers...\n");)
 
                     oldin = SelectInput(Open("NIL:", MODE_OLDFILE));
                     oldout= SelectOutput(Open("NIL:", MODE_NEWFILE));
