@@ -61,9 +61,10 @@
 
     /* Protect the signal mask against access by other tasks. */
 #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
-#endif
+    EXECTASK_SPINLOCK_LOCKDISABLE(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+#else
     Disable();
+#endif
 
     /* Get address */
     sig = &ThisTask->tc_SigRecvd;
