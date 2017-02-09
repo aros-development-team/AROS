@@ -222,7 +222,9 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 
     DINIT("[exec] Bootstrap task ETask @ 0x%p\n", t->tc_UnionETask.tc_ETask);
 
-    SysBase->Elapsed  = SysBase->Quantum;
+    SCHEDELAPSED_SET(SCHEDQUANTUM_GET);
+
+    DINIT("[exec] Inital Quantum = %d, Elapsed = %d\n", SCHEDQUANTUM_GET, SCHEDELAPSED_GET);
 
     /* Install the interrupt servers. Again, do it here because allocations are needed. */
     for (i=0; i < 16; i++)
@@ -310,11 +312,14 @@ int Exec_InitServices(struct ExecBase *SysBase)
 
     /* Our housekeeper must have the largest possible priority */
     t = NewCreateTask(TASKTAG_NAME       , "Exec housekeeper",
-                      TASKTAG_PRI        , 127,
-                      TASKTAG_PC         , ServiceTask,
-                      TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->ServicePort,
-                      TASKTAG_ARG1       , SysBase,
-                      TAG_DONE);
+                        TASKTAG_PRI        , 127,
+#if defined(__AROSEXEC_SMP__)
+                        TASKTAG_AFFINITY, TASKAFFINITY_ANY,
+#endif
+                        TASKTAG_PC         , ServiceTask,
+                        TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->ServicePort,
+                        TASKTAG_ARG1       , SysBase,
+                        TAG_DONE);
 
     if (!t)
     {
