@@ -4,6 +4,9 @@
 #ifndef __EXEC_PLATFORM_H
 #define __EXEC_PLATFORM_H
 
+/* the default Quantum value to use .. */
+#define SCHEDQUANTUM_VALUE      4
+
 struct Exec_PlatformData
 {
     /* No platform-specific data by default */
