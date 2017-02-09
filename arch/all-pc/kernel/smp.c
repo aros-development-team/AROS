@@ -124,7 +124,10 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     KrnSpinUnLock((spinlock_t *)apicReadyLock);
 
 #if defined(__AROSEXEC_SMP__)
-        while (1) {};
+
+        D(bug("[Kernel:SMP] %s[%03u]: Starting up Scheduler...\n", __func__, apicCPUNo);)
+        /* clean up now we are done */
+        RemTask(apicBSTask);
     }
 
     bug("[Kernel:SMP] APIC #%u Failed to bootstrap (Halting)...\n", apicCPUNo + 1);
@@ -229,6 +232,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
 #if defined(__AROSEXEC_SMP__)
         apicTLS = apicData->cores[cpuNo].cpu_TLS;
         apicTLS->ScheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC);
+        core_InitScheduleData(apicTLS->ScheduleData);
         D(bug("[Kernel:SMP] Scheduling Data @ 0x%p\n", apicTLS->ScheduleData));
 #endif
         apicData->cores[cpuNo].cpu_IDT = PlatformAllocIDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
