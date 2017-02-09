@@ -58,11 +58,22 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     Forbid();
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, curTask)
     {
-        if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+        if (curTask->tc_State & TS_RUN)
         {
-            D(bug("[TaskRes] 0x%p [R  ] %02d %s\n", curTask, GetIntETask(curTask)->iet_CpuNumber, curTask->tc_Node.ln_Name));
-            taskEntry->tle_Task = curTask;
-            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+            {
+                D(bug("[TaskRes] 0x%p [R  ] %02d %s\n", curTask, GetIntETask(curTask)->iet_CpuNumber, curTask->tc_Node.ln_Name));
+                taskEntry->tle_Task = curTask;
+                AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            }
+            else
+            {
+                bug("[TaskRes] Failed to allocate storage for task @  0x%p!!\n", curTask);
+            }
+        }
+        else
+        {
+            bug("[TaskRes] Invalid Task State %08x for task @ 0x%p\n", curTask->tc_State, curTask);
         }
     }
     KrnSpinUnLock(listLock);
@@ -71,11 +82,22 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     Forbid();
     ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, curTask)
     {
-        if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+        if (curTask->tc_State & TS_SPIN)
         {
-            D(bug("[TaskRes] 0x%p [  S] %02d %s\n", curTask, GetIntETask(curTask)->iet_CpuNumber, curTask->tc_Node.ln_Name));
-            taskEntry->tle_Task = curTask;
-            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+            {
+                D(bug("[TaskRes] 0x%p [  S] %02d %s\n", curTask, GetIntETask(curTask)->iet_CpuNumber, curTask->tc_Node.ln_Name));
+                taskEntry->tle_Task = curTask;
+                AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            }
+            else
+            {
+                bug("[TaskRes] Failed to allocate storage for task @  0x%p!!\n", curTask);
+            }
+        }
+        else
+        {
+            bug("[TaskRes] Invalid Task State %08x for task @ 0x%p\n", curTask->tc_State, curTask);
         }
     }
     KrnSpinUnLock(listLock);
@@ -87,21 +109,43 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     Disable();
     if (SysBase->ThisTask)
     {
-        if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+        if (SysBase->ThisTask->tc_State & TS_RUN)
         {
-            D(bug("[TaskRes] 0x%p [R--] 00 %s\n", SysBase->ThisTask, SysBase->ThisTask->tc_Node.ln_Name));
-            taskEntry->tle_Task = SysBase->ThisTask;
-            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+            {
+                D(bug("[TaskRes] 0x%p [R--] 00 %s\n", SysBase->ThisTask, SysBase->ThisTask->tc_Node.ln_Name));
+                taskEntry->tle_Task = SysBase->ThisTask;
+                AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            }
+            else
+            {
+                bug("[TaskRes] Failed to allocate storage for task @  0x%p!!\n", SysBase->ThisTask);
+            }
+        }
+        else
+        {
+            bug("[TaskRes] Invalid Task State %08x for task @ 0x%p\n", SysBase->ThisTask->tc_State, curTask);
         }
     }
 #endif
     ForeachNode(&SysBase->TaskReady, curTask)
     {
-        if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+        if (curTask->tc_State & (TS_READY|TS_RUN))
         {
-            D(bug("[TaskRes] 0x%p [-R-] -- %s\n", curTask, curTask->tc_Node.ln_Name));
-            taskEntry->tle_Task = curTask;
-            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+            {
+                D(bug("[TaskRes] 0x%p [-R-] -- %s\n", curTask, curTask->tc_Node.ln_Name));
+                taskEntry->tle_Task = curTask;
+                AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            }
+            else
+            {
+                bug("[TaskRes] Failed to allocate storage for task @  0x%p!!\n", curTask);
+            }
+        }
+        else
+        {
+            bug("[TaskRes] Invalid Task State %08x for task @ 0x%p\n", curTask->tc_State, curTask);
         }
     }
 #if defined(__AROSEXEC_SMP__)
@@ -112,11 +156,22 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 #endif
     ForeachNode(&SysBase->TaskWait, curTask)
     {
-        if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+        if (curTask->tc_State & TS_WAIT)
         {
-            D(bug("[TaskRes] 0x%p [--W] -- %s\n", curTask, curTask->tc_Node.ln_Name));
-            taskEntry->tle_Task = curTask;
-            AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
+            {
+                D(bug("[TaskRes] 0x%p [--W] -- %s\n", curTask, curTask->tc_Node.ln_Name));
+                taskEntry->tle_Task = curTask;
+                AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
+            }
+            else
+            {
+                bug("[TaskRes] Failed to allocate storage for task @  0x%p!!\n", curTask);
+            }
+        }
+        else
+        {
+            bug("[TaskRes] Invalid Task State %08x for task @ 0x%p\n", curTask->tc_State, curTask);
         }
     }
 
