@@ -16,21 +16,29 @@ void IdleTask(struct ExecBase *SysBase)
 {
     D(
         struct Task *thisTask = FindTask(NULL);
+        struct IntETask *taskIntEtask;
         int cpunum = KrnGetCPUNumber();
         ULONG lastcount = 0, current;
 
-        bug("[IDLE:%03d] %s started up\n", cpunum, thisTask->tc_Node.ln_Name);
+        bug("[IDLE:%03d] %s task started\n", cpunum, thisTask->tc_Node.ln_Name);
     )
 
     do
     {
         /* forever */
         D(
-            current = GetIntETask(thisTask)->iet_CpuTime.tv_secs;
-            if (current != lastcount)
+            if ((taskIntEtask = GetIntETask(thisTask)) != NULL)
             {
-                lastcount = current;
-                bug("[IDLE:%03d] CPU has idled for %d seconds..\n", cpunum, lastcount);
+                current = taskIntEtask->iet_CpuTime.tv_secs;
+                if (current != lastcount)
+                {
+                    lastcount = current;
+                    bug("[IDLE:%03d] CPU has idled for %d seconds..\n", cpunum, lastcount);
+                }
+            }
+            else
+            {
+                bug("[IDLE:%03d] Failed to get IntETask\n", cpunum);
             }
         )
     } while(1);
