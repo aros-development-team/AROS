@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,6 +9,7 @@
 #include <proto/exec.h>
  
 #include <kernel_base.h>
+#include <kernel_debug.h>
 #include <kernel_interrupts.h>
 #include <kernel_intr.h>
 #include <kernel_globals.h>
@@ -16,6 +17,8 @@
 #include <kernel_syscall.h>
 #include "kernel_intern.h"
 #include "kernel_unix.h"
+
+#define D(x)
 
 /*
  * Leave the interrupt. This function receives the interrupt register frame
@@ -71,6 +74,8 @@ void core_SysCall(int sig, regs_t *regs)
     struct KernelBase *KernelBase = getKernelBase();
     struct Task *task = SysBase->ThisTask;
 
+    D(bug("[KRN] %s()\n", __func__));
+
     SUPERVISOR_ENTER;
 
     krnRunIRQHandlers(KernelBase, sig);
@@ -83,12 +88,13 @@ void core_SysCall(int sig, regs_t *regs)
 	    break;
 
     /* If the task is already in some list with appropriate state, it's SC_SWITCH */
+    case TS_REMOVED:
     case TS_READY:
     case TS_WAIT:
 	cpu_Switch(regs);
 
     /* If the task is removed, it's simply SC_DISPATCH */
-    case TS_REMOVED:
+    case TS_INVALID:
 	cpu_Dispatch(regs);
 	break;
 
