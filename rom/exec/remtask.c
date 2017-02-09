@@ -6,9 +6,9 @@
     Lang: english
 */
 
-#define DEBUG 0
-
+#define DEBUG 1
 #include <aros/debug.h>
+
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
@@ -62,10 +62,6 @@
 
     struct MemList *mb;
     struct ETask *et;
-#if defined(__AROSEXEC_SMP__)
-    spinlock_t *task_listlock = NULL;
-    ULONG task_state;
-#endif
     struct Task *suicide = GET_THIS_TASK;
 
     /* A value of NULL means current task */
@@ -77,104 +73,94 @@
 #if !defined(__AROSEXEC_SMP__)
     /* Don't let any other task interfere with us at the moment */
     Forbid();
-#else
-    task_state = task->tc_State;
 #endif
 
-    /*
-     * The task is being removed.
-     * This is an important signal for Alert() which will not attempt to use
-     * the context which is being deleted, for example.
-     */
-    task->tc_State = TS_REMOVED;
-
-    if (suicide == task)
-    {
-        DREMTASK("Removing itself");
-#if defined(EXEC_REMTASK_NEEDSSWITCH)
-        // make the scheduler detach us...
-        krnSysCallSwitch();
-#endif
-    }
-    else
+    /* Dont try to kill a dying task .. */
+    if ((task->tc_State != TS_INVALID) && (task->tc_State != TS_REMOVED))
     {
         /*
-         * Remove() here, before freeing the MemEntry list. Because
-         * the MemEntry list might contain the task struct itself!
-        */
-#if defined(__AROSEXEC_SMP__)
-        switch (task_state)
+         * The task is being removed.
+         * This is an important signal for Alert() which will not attempt to use
+         * the context which is being deleted, for example.
+         */
+        task->tc_State = TS_REMOVED;
+
+        if (suicide == task)
         {
-            case TS_SPIN:
-                task_listlock =&PrivExecBase(SysBase)->TaskSpinningLock;
-                break;
-            case TS_RUN:
-                task_listlock =&PrivExecBase(SysBase)->TaskRunningSpinLock;
-                break;
-            case TS_WAIT:
-                task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
-                break;
-            default:
-                task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
-                break;
+            DREMTASK("Removing itself");
+#if defined(EXEC_REMTASK_NEEDSSWITCH)
+            // make the scheduler detach us...
+            krnSysCallSwitch();
+#endif
         }
-        EXECTASK_SPINLOCK_LOCKFORBID(task_listlock, SPINLOCK_MODE_WRITE);
+        else
+        {
+            /*
+             * Remove() here, before freeing the MemEntry list. Because
+             * the MemEntry list might contain the task struct itself!
+            */
+#if !defined(EXEC_REMTASK_NEEDSSWITCH)
+            Remove(&task->tc_Node);
+#else
+            krnSysCallReschedTask(task);
 #endif
-        Remove(&task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
-        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
-#endif
-    }
+        }
 
-    /* Delete context */
-    et = GetETask(task);
-    if (et != NULL)
-        KrnDeleteContext(et->et_RegFrame);
+        /* Delete context */
+        et = GetETask(task);
+        if (et != NULL)
+            KrnDeleteContext(et->et_RegFrame);
 
-    /* Uninitialize ETask structure */
-    DREMTASK("Cleaning up ETask et=%p", et);
-    CleanupETask(task);
+        /* Uninitialize ETask structure */
+        DREMTASK("Cleaning up ETask et=%p", et);
+        CleanupETask(task);
 
-    /* Freeing itself? */
-    if (suicide == task)
-    {
-        /*
-         * Send task to task cleaner to clean up memory. This avoids ripping
-         * memory from underneath a running Task. Message is basically a
-         * Node, so we use our task's tc_Node as a message. We use
-         * InternalPutMsg() because it won't change ln_Type. Just in case...
-         */
-        DREMTASK("Sending to garbage man");
-        InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort,
-            (struct Message *)task, SysBase);
+        /* Freeing itself? */
+        if (suicide == task)
+        {
+            /*
+             * Send task to task cleaner to clean up memory. This avoids ripping
+             * memory from underneath a running Task. Message is basically a
+             * Node, so we use our task's tc_Node as a message. We use
+             * InternalPutMsg() because it won't change ln_Type. Just in case...
+             */
+            DREMTASK("Sending to garbage man");
+            InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort,
+                (struct Message *)task, SysBase);
 
-        /* Changing the task lists always needs a Disable(). */
-        Disable();
+            DREMTASK("Disabling interrupts");
+            /* Changing the task lists always needs a Disable(). */
+            Disable();
 
-        /*
-         * We don't know how many levels of Forbid()
-         * are already pending, so use a default value.
-        */
-        TDNESTCOUNT_SET(-1);
+            DREMTASK("And multitasking..");
+            /*
+             * We don't know how many levels of Forbid()
+             * are already pending, so use a default value.
+            */
+            TDNESTCOUNT_SET(-1);
 
-        /*
-         * Force rescheduling.
-         * Note #1: We dont want to preseve the task context so use Dispatch, not Switch.
-         * Note #2: We will never return from the dispatch to "ThisTask"
-        */
+            /*
+             * Force rescheduling.
+             * Note #1: We dont want to preseve the task context so use Dispatch, not Switch.
+             * Note #2: We will never return from the dispatch to "ThisTask"
+            */
 
-        KrnDispatch();
-    }
-    else
-    {
-        /*
-         * Free all memory in the tc_MemEntry list.
-         * We do this here because it's unsafe to send it to the service task:
-         * by the time the service task processes it, the task structure may
-         * have been freed following the return of this function.
-         */
-        while((mb = (struct MemList *) RemHead(&task->tc_MemEntry)) != NULL)
-            FreeEntry(mb);
+            DREMTASK("Switching away..");
+            /* It is  no longer a valid task.. */
+            task->tc_State = TS_INVALID;
+            KrnDispatch();
+        }
+        else
+        {
+            /*
+             * Free all memory in the tc_MemEntry list.
+             * We do this here because it's unsafe to send it to the service task:
+             * by the time the service task processes it, the task structure may
+             * have been freed following the return of this function.
+             */
+            while((mb = (struct MemList *) RemHead(&task->tc_MemEntry)) != NULL)
+                FreeEntry(mb);
+        }
     }
 
     /* All done. */
