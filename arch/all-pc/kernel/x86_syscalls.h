@@ -17,9 +17,9 @@
     __asm__ __volatile__ ("int $0x80"::"a"(SC_X86SWITCH):"memory");	                                \
 })
 
-#define krnSysCallReschedTask(task) 				                                        \
+#define krnSysCallReschedTask(task, state) 				                                        \
 ({								                                        \
-    __asm__ __volatile__ ("int $0x80"::"a"(SC_X86RESCHEDTASK),"b"(task):"memory");                       \
+    __asm__ __volatile__ ("int $0x80"::"a"(SC_X86RESCHEDTASK),"b"(task),"c"(state):"memory");                       \
 })
 
 #define krnSysCallSpinLock(spindata) 				                                        \

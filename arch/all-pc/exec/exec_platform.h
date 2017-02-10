@@ -10,7 +10,9 @@
 #include <aros/atomic.h>
 #include "x86_syscalls.h"
 
+#if (__WORDSIZE==64)
 #define EXEC_REMTASK_NEEDSSWITCH
+#endif
 #define SCHEDQUANTUM_VALUE      4
 
 #if defined(__AROSEXEC_SMP__)
@@ -18,6 +20,10 @@
 #include <utility/hooks.h>
 
 #include "tls.h"
+#include "etask.h"
+
+/* special flag to get the scheduling code to unspin tasks */
+#define TS_UNSPIN 0x10
 
 extern struct Hook Exec_TaskSpinLockFailHook;
 extern struct Hook Exec_TaskSpinLockForbidHook;
