@@ -44,7 +44,7 @@
 #if defined(__AROSEXEC_SMP__)
 void core_InitScheduleData(struct X86SchedulerPrivate *schedData)
 {
-    DSCHED(bug("[Kernel:%03u] %s(0x%p)\n", cpuNo, __func__, schedData));
+    DSCHED(bug("[Kernel] %s(0x%p)\n", __func__, schedData));
     schedData->Quantum = SCHEDQUANTUM_VALUE;
 }
 #endif
