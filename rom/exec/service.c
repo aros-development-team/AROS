@@ -21,12 +21,14 @@
 
 void ServiceTask(struct ExecBase *SysBase)
 {
+    struct Task *task;
+    struct MemList *mb, *mbnext;
+
     DINIT("Service task started up");
 
     do
     { /* forever */
-        struct Task *task;
-        struct MemList *mb, *mbnext;
+
 
         while ((task = (struct Task *)GetMsg(PrivExecBase(SysBase)->ServicePort)))
         {

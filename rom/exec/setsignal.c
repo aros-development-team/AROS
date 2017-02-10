@@ -55,27 +55,20 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *ThisTask = GET_THIS_TASK;
+    struct Task *thisTask = GET_THIS_TASK;
     ULONG *sig;
     ULONG old;
 
     /* Protect the signal mask against access by other tasks. */
-#if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCKDISABLE(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
-#else
     Disable();
-#endif
 
     /* Get address */
-    sig = &ThisTask->tc_SigRecvd;
+    sig = &thisTask->tc_SigRecvd;
 
     /* Change only the bits in 'mask' */
     old = *sig;
     *sig = (old & ~signalSet) | (newSignals & signalSet);
 
-#if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
-#endif
     Enable();
 
     return old;

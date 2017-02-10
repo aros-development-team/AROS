@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/execbase.h>
@@ -83,11 +83,11 @@
          * This is an important signal for Alert() which will not attempt to use
          * the context which is being deleted, for example.
          */
-        task->tc_State = TS_REMOVED;
 
         if (suicide == task)
         {
             DREMTASK("Removing itself");
+            task->tc_State = TS_REMOVED;
 #if defined(EXEC_REMTASK_NEEDSSWITCH)
             // make the scheduler detach us...
             krnSysCallSwitch();
@@ -100,9 +100,10 @@
              * the MemEntry list might contain the task struct itself!
             */
 #if !defined(EXEC_REMTASK_NEEDSSWITCH)
+            task->tc_State = TS_REMOVED;
             Remove(&task->tc_Node);
 #else
-            krnSysCallReschedTask(task);
+            krnSysCallReschedTask(task, TS_REMOVED);
 #endif
         }
 

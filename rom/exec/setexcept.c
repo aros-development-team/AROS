@@ -58,32 +58,32 @@
     AROS_LIBFUNC_INIT
 
     /* Get pointer to current task */
-    struct Task *ThisTask = GET_THIS_TASK;
+    struct Task *thisTask = GET_THIS_TASK;
     ULONG old;
 
     /* Protect mask of sent signals and task lists */
 #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+    EXECTASK_SPINLOCK_LOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
 #endif
     Disable();
 
     /* Get returncode */
-    old = ThisTask->tc_SigExcept;
+    old = thisTask->tc_SigExcept;
 
     /* Change exception mask */
-    ThisTask->tc_SigExcept = (old & ~signalSet) | (newSignals & signalSet);
+    thisTask->tc_SigExcept = (old & ~signalSet) | (newSignals & signalSet);
 
     /* Does this change include an exception? */
-    if (ThisTask->tc_SigExcept & ThisTask->tc_SigRecvd)
+    if (thisTask->tc_SigExcept & thisTask->tc_SigRecvd)
     {
         /* Yes. Set the exception flag. */
-        ThisTask->tc_Flags |= TF_EXCEPT;
+        thisTask->tc_Flags |= TF_EXCEPT;
 
         /* And order rescheduling */
         Reschedule();
     }
 #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    EXECTASK_SPINLOCK_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
 #endif
     Enable();
 
