@@ -62,7 +62,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *ThisTask = GET_THIS_TASK;
+    struct Task *thisTask = GET_THIS_TASK;
     ULONG rcvd;
 
     D(bug("[Exec] Wait(%08lX)\n", signalSet);)
@@ -71,26 +71,26 @@
 #endif
 
     /* If at least one of the signals is already set do not wait. */
-    while (!(ThisTask->tc_SigRecvd & signalSet))
+    while (!(thisTask->tc_SigRecvd & signalSet))
     {
 	/* Set the wait signal mask */
-	ThisTask->tc_SigWait = signalSet;
+	thisTask->tc_SigWait = signalSet;
 
-        D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", ThisTask->tc_Node.ln_Name, ThisTask);)
-        D(bug("[Exec] Task state = %08x\n", ThisTask->tc_State);)
+        D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", thisTask->tc_Node.ln_Name, thisTask);)
+        D(bug("[Exec] Task state = %08x\n", thisTask->tc_State);)
 
         /*
             Clear TDNestCnt (because Switch() will not care about it),
             but memorize it first. IDNestCnt is handled by Switch().
             */
-        ThisTask->tc_TDNestCnt = TDNESTCOUNT_GET;
+        thisTask->tc_TDNestCnt = TDNESTCOUNT_GET;
         TDNESTCOUNT_SET(-1);
 
-        ThisTask->tc_State = TS_WAIT;
+        thisTask->tc_State = TS_WAIT;
         // nb: on smp builds switch will move us.
 #if !defined(__AROSEXEC_SMP__)
         /* Move current task to the waiting list. */
-        Enqueue(&SysBase->TaskWait, &ThisTask->tc_Node);
+        Enqueue(&SysBase->TaskWait, &thisTask->tc_Node);
 #endif
 
 	/* And switch to the next ready task. */
@@ -103,18 +103,16 @@
 	*/
 
 	/* Restore TDNestCnt. */
-	TDNESTCOUNT_SET(ThisTask->tc_TDNestCnt);
+	TDNESTCOUNT_SET(thisTask->tc_TDNestCnt);
     }
     /* Get active signals. */
-    rcvd = (ThisTask->tc_SigRecvd & signalSet);
+    rcvd = (thisTask->tc_SigRecvd & signalSet);
 
     /* And clear them. */
 #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCKDISABLE(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
-#endif
-    ThisTask->tc_SigRecvd &= ~signalSet;
-#if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    __AROS_ATOMIC_AND_L(thisTask->tc_SigRecvd, ~signalSet);
+#else
+    thisTask->tc_SigRecvd &= ~signalSet;
 #endif
     Enable();
 

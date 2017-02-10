@@ -212,11 +212,12 @@
 #endif
 
     /* Add the new task to the ready list. */
-    task->tc_State = TS_READY;
 #if !defined(__AROSEXEC_SMP__)
+    task->tc_State = TS_READY;
     Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #else
-    krnSysCallReschedTask(task);
+    task->tc_State = TS_INVALID;
+    krnSysCallReschedTask(task, TS_READY);
 #endif
 
     /*

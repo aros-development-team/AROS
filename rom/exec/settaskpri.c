@@ -59,6 +59,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *thisTask = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *task_listlock = NULL;
     int cpunum = KrnGetCPUNumber();
@@ -105,7 +106,7 @@
 #if defined(__AROSEXEC_SMP__)
              (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum) && 
 #endif
-            ((task->tc_State == TS_RUN) || ( task->tc_Node.ln_Pri > GET_THIS_TASK->tc_Node.ln_Pri))
+            ((task->tc_State == TS_RUN) || ( task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri))
         )
         {
 #if defined(__AROSEXEC_SMP__)

@@ -68,14 +68,14 @@
     AROS_LIBFUNC_EXIT
 } /* AllocSignal() */
 
-LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *SysBase)
+LONG AllocTaskSignal(struct Task *thisTask, LONG signalNum, struct ExecBase *SysBase)
 {
     ULONG mask;
     ULONG mask1;
 
     D(bug("[Exec] %s()\n", __func__));
 
-    mask = ThisTask->tc_SigAlloc;
+    mask = thisTask->tc_SigAlloc;
 
     /* Will any signal do? */
     if(signalNum < 0)
@@ -107,7 +107,7 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
 	mask1 = 1L << signalNum;
 
 	/* If signal bit is already allocated, return. */
-	if(ThisTask->tc_SigAlloc & mask1)
+	if(thisTask->tc_SigAlloc & mask1)
 	    return -1;
     }
 
@@ -119,25 +119,25 @@ LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *Sys
      *  by interrupts, so atomicity cannot be relied upon.
      */
 
-    ThisTask->tc_SigAlloc  |=  mask1;
-    ThisTask->tc_SigExcept &= ~mask1;
-    ThisTask->tc_SigWait   &= ~mask1;
+    thisTask->tc_SigAlloc  |=  mask1;
+    thisTask->tc_SigExcept &= ~mask1;
+    thisTask->tc_SigWait   &= ~mask1;
 
 #if defined(__AROSEXEC_SMP__)
-    if (ThisTask->tc_UnionETask.tc_ETask)
+    if (thisTask->tc_UnionETask.tc_ETask)
     {
-        EXECTASK_SPINLOCK_LOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+        EXECTASK_SPINLOCK_LOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
     }
     else 
 #endif
     Disable();
 
-    ThisTask->tc_SigRecvd  &= ~mask1;
+    thisTask->tc_SigRecvd  &= ~mask1;
 
 #if defined(__AROSEXEC_SMP__)
-    if (ThisTask->tc_UnionETask.tc_ETask)
+    if (thisTask->tc_UnionETask.tc_ETask)
     {
-        EXECTASK_SPINLOCK_UNLOCK(&IntETask(ThisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+        EXECTASK_SPINLOCK_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
     }
     else
 #endif

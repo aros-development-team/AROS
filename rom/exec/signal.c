@@ -14,9 +14,6 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
-#if defined(__AROSEXEC_SMP__)
-#include "etask.h"
-#endif
 
 /*****************************************************************************
 
@@ -60,7 +57,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *ThisTask = GET_THIS_TASK;
+    struct Task *thisTask = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__)
     int cpunum = KrnGetCPUNumber();
 #endif
@@ -68,29 +65,29 @@
     D(
         bug("[Exec] Signal(0x%p, %08lX)\n", task, signalSet);
         bug("[Exec] Signal: signaling '%s' (state %08x)\n", task->tc_Node.ln_Name, task->tc_State);
-        bug("[Exec] Signal: from '%s'\n", ThisTask->tc_Node.ln_Name);
+        bug("[Exec] Signal: from '%s'\n", thisTask->tc_Node.ln_Name);
     )
 
-#if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCKDISABLE(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
-#else
     Disable();
-#endif
     /* Set the signals in the task structure. */
+#if defined(__AROSEXEC_SMP__)
+    __AROS_ATOMIC_OR_L(task->tc_SigRecvd, signalSet);
+#else
     task->tc_SigRecvd |= signalSet;
+#endif
 
     /* Do those bits raise exceptions? */
     if (task->tc_SigRecvd & task->tc_SigExcept)
     {
         /* Yes. Set the exception flag. */
+#if defined(__AROSEXEC_SMP__)
+        __AROS_ATOMIC_OR_B(task->tc_Flags, TF_EXCEPT);
+#else
         task->tc_Flags |= TF_EXCEPT;
+#endif
 
         D(bug("[Exec] Signal: TF_EXCEPT set\n");)
     }
- #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_UNLOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock);
-    Enable();
-#endif
 
     /* 
             if the target task is running (called from within interrupt handler),
@@ -110,11 +107,10 @@
         }
         else
         {
-            D(bug("[Exec] Signal:\n");)
+            D(bug("[Exec] Signal: signaling task on another cpu (%03u)\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber);)
         }
-#else
-        Enable();
 #endif
+        Enable();
 
         /* All done. */
         return;
@@ -131,7 +127,7 @@
 
         /* Yes. Move it to the ready list. */
 #if defined(__AROSEXEC_SMP__)
-        krnSysCallReschedTask(task);
+        krnSysCallReschedTask(task, TS_READY);
 #else
         Remove(&task->tc_Node);
         task->tc_State = TS_READY;
@@ -142,22 +138,20 @@
 #if defined(__AROSEXEC_SMP__)
             (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) &&
 #endif
-            (task->tc_Node.ln_Pri > ThisTask->tc_Node.ln_Pri))
+            (task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri))
         {
             /*
                 Yes. A taskswitch is necessary. Prepare one if possible.
                 (If the current task is not running it is already moved)
             */
-            if (ThisTask->tc_State == TS_RUN)
+            if (thisTask->tc_State == TS_RUN)
             {
                 Reschedule();
             }
         }
     }
 
-#if !defined(__AROSEXEC_SMP__)
     Enable();
-#endif
 
     D(bug("[Exec] Signal: 0x%p finished signal processing\n", task);)
 

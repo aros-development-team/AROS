@@ -51,6 +51,8 @@
 
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *listLock;
+#else
+    struct Task *thisTask = GET_THIS_TASK;
 #endif
     struct Task *t;
     struct ETask *et;
@@ -90,7 +92,7 @@
     listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
 #else
     Disable();
-    if ((t = GET_THIS_TASK) != NULL)
+    if ((t = thisTask) != NULL)
     {
         D(bug("[EXEC] %s: trying ThisTask @ 0x%p\n", __func__, t);)
 	et = GetETask(t);

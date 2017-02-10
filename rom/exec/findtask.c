@@ -56,11 +56,11 @@
 #if defined(__AROSEXEC_SMP__)
     spinlock_t *listLock;
 #endif
-    struct Task *ret;
+    struct Task *ret, *thisTask = GET_THIS_TASK;
 
     /* Quick return for a quick argument */
     if (name == NULL)
-	return GET_THIS_TASK;
+	return thisTask;
 
     /* Always protect task lists */
 #if defined(__AROSEXEC_SMP__)
@@ -101,14 +101,14 @@
 
 	    char *s1;
 	    const char *s2 = name;
-            s1 = GET_THIS_TASK->tc_Node.ln_Name;
+            s1 = thisTask->tc_Node.ln_Name;
 	    /* Check as long as the names are identical. */
 	    while (*s1++ == *s2)
 		/* Terminator found? */
 		if (!*s2++)
 		{
 		    /* Got it. */
-		    ret = GET_THIS_TASK;
+		    ret = thisTask;
 		    break;
 		}
 #endif

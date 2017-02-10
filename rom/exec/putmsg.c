@@ -6,7 +6,9 @@
     Lang: english
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <exec/ports.h>
 #include <proto/exec.h>
