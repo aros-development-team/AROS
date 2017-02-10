@@ -30,7 +30,13 @@ struct KernelBase;
 /* Platform-specific stuff. Black box here. */
 struct PlatformData;
 
+#ifndef HW_IRQ_COUNT
+#ifdef HW_IRQ_BASE
+#define HW_IRQ_COUNT    (255 - INTB_KERNEL - HW_IRQ_BASE)
+#else
 #define HW_IRQ_COUNT    (255 - INTB_KERNEL)
+#endif
+#endif /* !HW_IRQ_COUNT */
 #ifndef KBL_INTERNAL
 #define KBL_INTERNAL    0
 #endif /* !KBL_INTERNAL */
