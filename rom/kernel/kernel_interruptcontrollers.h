@@ -31,14 +31,20 @@ struct IntrController
 {
     struct Node ic_Node;
     ULONG        ic_Count;
-    ULONG        ic_Type;                                                     /* IC drivers private "type"                 */
+    ULONG        ic_Type;                                                     /* IC drivers private "type"                      */
     ULONG        ic_Flags;
     APTR        ic_Private;
-    icid_t      (*ic_Register)(struct KernelBase *);                          /* one time initialization called during Add */
-    BOOL        (*ic_Init)(struct KernelBase *, icid_t);                      /*                                           */
+    icid_t      (*ic_Register)(struct KernelBase *);                          /* one time initialization called during Add      */
+    BOOL        (*ic_Init)(struct KernelBase *, icid_t);                      /*                                                */
     BOOL        (*ic_IntrEnable)(APTR, icid_t, icid_t);
     BOOL        (*ic_IntrDisable)(APTR, icid_t, icid_t);
     BOOL        (*ic_IntrAck)(APTR, icid_t, icid_t);
+};
+
+struct IntrMapping
+{
+    struct Node im_Node;                                                        /* NB - ln_Pri == source IRQ                    */
+    UBYTE       im_IRQ;                                                         /* actual IRQ to use                            */
 };
 
 /*
@@ -68,5 +74,7 @@ icintrid_t krnAddInterruptController(struct KernelBase *, struct IntrController 
 struct IntrController *krnFindInterruptController(struct KernelBase *, ULONG);
 int krnInitInterruptControllers(struct KernelBase *);
 BOOL krnInitInterrupt(struct KernelBase *, icid_t, icid_t, icid_t);
+struct IntrMapping *krnInterruptMapping(struct KernelBase *, icid_t);
+
 #endif /* KERNELIRQ_NEEDSCONTROLLERS */
 #endif /* !KERNEL_INTERRUPTCONTROLLERS_H */
