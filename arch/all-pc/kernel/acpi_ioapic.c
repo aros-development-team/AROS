@@ -143,7 +143,7 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
         return (icid_t)-1;
     }
 
-    DINT(bug("[Kernel:IOAPIC] %s: IOAPIC Enabled (status=%08X)\n", __func__, status));
+    DINT(bug("[Kernel:IOAPIC] %s: IOAPIC Mode Enabled (status=%08X)\n", __func__, status));
 
     return (icid_t)IOAPICInt_IntrController.ic_Node.ln_Type;
 }
@@ -160,8 +160,6 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
     IOAPICInt_IntrController.ic_Private = ioapicPrivate;
 
-    ioapic_irqbase = 0;
-
     for (
             instance = 0;
             ((instance < instanceCount) && (ioapicData = &ioapicPrivate->ioapics[instance]));
@@ -169,6 +167,8 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         )
     {
         ULONG ioapicval;
+    
+        ioapic_irqbase = ioapicData->ioapic_GSI;
 
         DINT(
             bug("[Kernel:IOAPIC] %s: Init IOAPIC #%u [ID=%03u] @ 0x%p\n", __func__, instance + 1, ioapicData->ioapic_ID, ioapicData->ioapic_Base);
@@ -297,8 +297,8 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     if (intrMap)
     {
-        intNum = intrMap->im_IRQ;
-         DINT(bug("[Kernel:IOAPIC] %s: IOAPIC IRQ %02X\n", __func__, intNum));
+        intNum = (intrMap->im_IRQ - ioapicData->ioapic_GSI);
+        DINT(bug("[Kernel:IOAPIC] %s: IOAPIC IRQ %02X\n", __func__, intNum));
     }
 
     irqRoute->mask = 1;
@@ -327,8 +327,8 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     if (intrMap)
     {
-        intNum = intrMap->im_IRQ;
-         DINT(bug("[Kernel:IOAPIC] %s: IOAPIC IRQ %02X\n", __func__, intNum));
+        intNum = (intrMap->im_IRQ - ioapicData->ioapic_GSI);
+        DINT(bug("[Kernel:IOAPIC] %s: IOAPIC IRQ %02X\n", __func__, intNum));
     }
 
     /*
