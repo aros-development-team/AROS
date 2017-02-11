@@ -43,6 +43,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     // Setup the Interrupt Controller Environment ...
     NEWLIST(&LIBBASE->kb_ICList);
+    NEWLIST(&LIBBASE->kb_InterruptMappings);
     LIBBASE->kb_ICTypeBase = KBL_INTERNAL + 1;
 
     D(bug("[Kernel:x86_64] %s: Interrupt Controller Base ID = %d\n", __func__, LIBBASE->kb_ICTypeBase));
