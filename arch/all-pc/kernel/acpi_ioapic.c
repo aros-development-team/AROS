@@ -7,8 +7,9 @@
 
 #include <aros/macros.h>
 #include <aros/asmcall.h>
-#include <proto/acpica.h>
 #include <proto/exec.h>
+#include <proto/arossupport.h>
+#include <proto/acpica.h>
 
 #define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
@@ -259,7 +260,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     enabled = TRUE;
                 }
                 DINT(
-                    bug("[Kernel:IOAPIC]    %s:       ", __func__);
+                    bug("[Kernel:IOAPIC] %s:       ", __func__);
                     ioapic_ParseTableEntry((UQUAD *)&ioapicData->ioapic_RouteTable[ioapic_irq]);
                     bug("\n");
                 );
@@ -290,8 +291,15 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
     UBYTE ioapic_irq = intNum - ioapicData->ioapic_GSI;
     struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
+    struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
 
-    DINT(bug("[Kernel:IOAPIC] %s()\n", __func__));
+    DINT(bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum));
+
+    if (intrMap)
+    {
+        intNum = intrMap->im_IRQ;
+         DINT(bug("[Kernel:IOAPIC] %s: IOAPIC IRQ %02X\n", __func__, intNum));
+    }
 
     irqRoute->mask = 1;
 
@@ -313,8 +321,15 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     UBYTE ioapic_irq = intNum - ioapicData->ioapic_GSI;
     struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
+    struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
 
-    DINT(bug("[Kernel:IOAPIC] %s()\n", __func__));
+    DINT(bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum));
+
+    if (intrMap)
+    {
+        intNum = intrMap->im_IRQ;
+         DINT(bug("[Kernel:IOAPIC] %s: IOAPIC IRQ %02X\n", __func__, intNum));
+    }
 
     /*
      * if we have APIC's get the ID from there
@@ -411,9 +426,17 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
 {
     AROS_USERFUNC_INIT
 
+    struct IntrMapping *intrMap;
+
     DPARSE(bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__));
     DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: Bus %u, Source IRQ %u, GSI %u, Flags 0x%x\n", __func__, intsrc->Bus, intsrc->SourceIrq,
                 intsrc->GlobalIrq, intsrc->IntiFlags));
+
+    intrMap = AllocMem(sizeof(struct IntrMapping), MEMF_CLEAR);
+    intrMap->im_Node.ln_Pri = intsrc->SourceIrq;
+    //intrMap->im_Node.ln_Type = IOAPICInt_IntrController->;
+    intrMap->im_IRQ = intsrc->GlobalIrq;
+    Enqueue(&KernelBase->kb_InterruptMappings, &intrMap->im_Node);
 
     return TRUE;
 
@@ -606,9 +629,13 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_IOAPIC_Count,
 void ACPI_IOAPIC_SUPPORT(struct PlatformData *pdata)
 {
     struct ACPI_TABLE_HOOK *scanHook;
+    struct TagItem *cmdTags = LibFindTagItem(KRN_CmdLine, BootMsg);
 
-//    if (cmdline && strstr(cmdline, "noioapic"))
-//        return;
+    if (cmdTags && strstr((const char *)cmdTags->ti_Data, "noioapic"))
+    {
+        D(bug("[Kernel:ACPI-IOAPIC] %s: IOAPIC Support Disabled\n", __func__));
+        return;
+    }
 
     scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
     if (scanHook)
