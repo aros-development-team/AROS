@@ -22,7 +22,7 @@
 #include <utility/utility.h>
 #endif
 
-#include <exec_platform.h>
+#include <exec_intern.h>
 
 #define TASKRES_ENABLE
 

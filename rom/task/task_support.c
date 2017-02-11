@@ -8,7 +8,6 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include "task_intern.h"
 
