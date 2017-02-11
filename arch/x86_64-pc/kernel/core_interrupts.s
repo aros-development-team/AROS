@@ -38,12 +38,12 @@ BUILD_IRQ(0x06)         // Invalid-Opcode Exception
 BUILD_IRQ(0x07)         // Device-Not-Available Exception
 BUILD_IRQ_ERR(0x08)     // Double-Fault Exception
 BUILD_IRQ(0x09)         // Unused (used to be Coprocesor-Segment-Overrun)
-BUILD_IRQ_ERR(0x0a)     // Invalid-TSS Exception
-BUILD_IRQ_ERR(0x0b)     // Segment-Not-Present Exception
-BUILD_IRQ_ERR(0x0c)     // Stack Exception
-BUILD_IRQ_ERR(0x0d)     // General-Protection Exception
-BUILD_IRQ_ERR(0x0e)     // Page-Fault Exception
-BUILD_IRQ(0x0f)         // Reserved
+BUILD_IRQ_ERR(0x0A)     // Invalid-TSS Exception
+BUILD_IRQ_ERR(0x0B)     // Segment-Not-Present Exception
+BUILD_IRQ_ERR(0x0C)     // Stack Exception
+BUILD_IRQ_ERR(0x0D)     // General-Protection Exception
+BUILD_IRQ_ERR(0x0E)     // Page-Fault Exception
+BUILD_IRQ(0x0F)         // Reserved
 BUILD_IRQ(0x10)         // Floating-Point Exception
 BUILD_IRQ_ERR(0x11)     // Alignment-Check Exception
 BUILD_IRQ(0x12)         // Machine-Check Exception
@@ -54,15 +54,42 @@ BUILD_IRQ(0x16)
 BUILD_IRQ(0x17) 
 BUILD_IRQ(0x18)
 BUILD_IRQ(0x19)
-BUILD_IRQ(0x1a)
-BUILD_IRQ(0x1b)
-BUILD_IRQ(0x1c)
-BUILD_IRQ(0x1d)
-BUILD_IRQ(0x1e)
-BUILD_IRQ(0x1f)
-BUILD_16(0x2)
-BUILD_IRQ(0x80)
-BUILD_IRQ(0xfe)		// APIC timer
+BUILD_IRQ(0x1A)
+BUILD_IRQ(0x1B)
+BUILD_IRQ(0x1C)
+BUILD_IRQ(0x1D)
+BUILD_IRQ(0x1E)
+BUILD_IRQ(0x1F)
+
+BUILD_16(0x2)           // Hardware IRQs...
+BUILD_16(0x3)
+BUILD_16(0x4)
+BUILD_16(0x5)
+BUILD_16(0x6)
+BUILD_16(0x7)
+BUILD_16(0x8)
+BUILD_16(0x9)
+BUILD_16(0xA)
+BUILD_16(0xB)
+BUILD_16(0xC)
+BUILD_16(0xD)
+BUILD_16(0xE)
+BUILD_IRQ(0xF0)
+BUILD_IRQ(0xF1)
+BUILD_IRQ(0xF2)
+BUILD_IRQ(0xF3)
+BUILD_IRQ(0xF4)
+BUILD_IRQ(0xF5)
+BUILD_IRQ(0xF6)
+BUILD_IRQ(0xF7) 
+BUILD_IRQ(0xF8)
+BUILD_IRQ(0xF9)
+BUILD_IRQ(0xFA)
+BUILD_IRQ(0xFB)
+BUILD_IRQ(0xFC)
+BUILD_IRQ(0xFD)
+BUILD_IRQ(0xFE)
+BUILD_IRQ(0xFF)
 
 	.balign 32, 0x90
 	.globl core_EnterInterrupt
