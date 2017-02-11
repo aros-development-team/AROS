@@ -94,6 +94,20 @@ BOOL krnInitInterrupt(struct KernelBase *KernelBase, icid_t irq, icid_t icid, ic
     return FALSE;
 }
 
+struct IntrMapping *krnInterruptMapping(struct KernelBase *KernelBase, icid_t irq)
+{
+    struct IntrMapping *intrMap;
+
+    ForeachNode(&KernelBase->kb_InterruptMappings, intrMap)
+    {
+        if (intrMap->im_Node.ln_Pri == irq)
+        {
+            return intrMap;
+        }
+    }
+    return NULL;
+}
+
 
 /*****************************************************************************
 

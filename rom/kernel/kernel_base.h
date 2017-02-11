@@ -57,7 +57,10 @@ struct KernelInt
 struct KernelBase
 {
     struct Node         kb_Node;
+#ifdef KERNELIRQ_NEEDSCONTROLLERS
     struct List         kb_ICList;              /* list of all controller types */
+    struct List         kb_InterruptMappings;
+#endif
     struct MinList      kb_Exceptions[EXCEPTIONS_COUNT];
     struct KernelInt    kb_Interrupts[HW_IRQ_COUNT];
     ULONG               kb_ContextFlags;	/* Hints for KrnCreateContext() */
