@@ -1,22 +1,19 @@
-/*
+#ifndef KERNEL_CPU_H_
+#define KERNEL_CPU_H_
+ /*
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
+    Desc: CPU-specific definitions.
 */
 
 /*
- * CPU-specific definitions.
- *
  * Architectures with the same CPU will likely share single kernel_cpu.h
  * in arch/$(CPU)-all/kernel/kernel_cpu.h
  *
  * As you can see, this file is just a sample.
  */
 
-#ifndef KERNEL_CPU_H_
-#define KERNEL_CPU_H_
- 
 /* Number of exceptions supported by the CPU. Needed by kernel_base.h */
 #define EXCEPTIONS_COUNT 1
 

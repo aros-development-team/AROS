@@ -1,3 +1,5 @@
+#ifndef KERNEL_INTR_H
+#define KERNEL_INTR_H
 /*
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
@@ -58,3 +60,4 @@ static inline int core_Trap(ULONG code, void *regs)
     }
     return 0;
 }
+#endif /* !KERNEL_INTR_H */

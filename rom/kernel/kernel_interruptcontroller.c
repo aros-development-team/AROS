@@ -5,13 +5,17 @@
     Desc:
 */
 
+#include <kernel_base.h>
+
+#ifdef KERNELIRQ_NEEDSCONTROLLERS
+
 #include <aros/kernel.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
 #include <string.h>
 
-#include <kernel_base.h>
+
 #include <kernel_cpu.h>
 #include <kernel_debug.h>
 #include <kernel_interrupts.h>
@@ -115,3 +119,5 @@ int krnInitInterruptControllers(struct KernelBase *KernelBase)
     }
     return cnt;
 }
+
+#endif
