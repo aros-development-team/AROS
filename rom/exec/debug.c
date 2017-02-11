@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal debugger.
@@ -10,7 +10,6 @@
 #include <exec/interrupts.h>
 #include <libraries/debug.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 #include <proto/debug.h>
 
 #include <ctype.h>
