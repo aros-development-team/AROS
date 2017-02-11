@@ -105,6 +105,7 @@ struct IntrController APICInt_IntrController =
         .ln_Name = "x86 Local APIC",
         .ln_Pri = -50
     },
+    0,
     AROS_MAKE_ID('A','P','I','C'),
     0,
     NULL,

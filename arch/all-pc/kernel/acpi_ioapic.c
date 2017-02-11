@@ -353,6 +353,7 @@ struct IntrController IOAPICInt_IntrController =
         .ln_Name = "82093AA IO-APIC",
         .ln_Pri = 50
     },
+    0,
     AROS_MAKE_ID('I','O','9','3'),
     0,
     NULL,
