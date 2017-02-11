@@ -25,9 +25,16 @@ static int PlatformInit(struct KernelBase *KernelBase)
     struct table_desc idtr;
     struct tss	    *tss;
     long long *idt;
+    int i;
 
     NEWLIST(&KernelBase->kb_ICList);
     KernelBase->kb_ICTypeBase = KBL_INTERNAL + 1;
+
+    for (i = 0; i < HW_IRQ_COUNT; i++)
+    {
+        KernelBase->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
+        KernelBase->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
+    }
 
     data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!data)

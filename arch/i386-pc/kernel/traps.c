@@ -218,18 +218,22 @@ void handleException(struct ExceptionContext *regs, unsigned long error_code, un
         if (KernelBase)
         {
             struct IntrController *irqIC;
+            struct KernelInt *irqInt;
 
-            if ((irqIC = krnGetInterruptController(KernelBase, KernelBase->kb_Interrupts[irq_number].lh_Type)) != NULL)
+            irqInt = &KernelBase->kb_Interrupts[irq_number];
+
+            if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_List.lh_Type)) != NULL)
             {
                 if (irqIC->ic_IntrAck)
-                    irqIC->ic_IntrAck(irqIC->ic_Private, KernelBase->kb_Interrupts[irq_number].l_pad, irq_number);
+                    irqIC->ic_IntrAck(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
 
-                krnRunIRQHandlers(KernelBase, irq_number);
+                if (irqInt->ki_Priv & IRQINTF_ENABLED)
+                    krnRunIRQHandlers(KernelBase, irq_number);
 
                 if ((irqIC->ic_Flags & ICF_ACKENABLE) &&
                     (irqIC->ic_IntrEnable) &&
-                    (!IsListEmpty(&KernelBase->kb_Interrupts[irq_number])))
-                    irqIC->ic_IntrEnable(irqIC->ic_Private, KernelBase->kb_Interrupts[irq_number].l_pad, irq_number);
+                    (!IsListEmpty(&irqInt->ki_List)))
+                    irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
             }
         }
 
