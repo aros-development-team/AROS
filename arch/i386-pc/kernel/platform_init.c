@@ -28,6 +28,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
     int i;
 
     NEWLIST(&KernelBase->kb_ICList);
+    NEWLIST(&KernelBase->kb_InterruptMappings);
     KernelBase->kb_ICTypeBase = KBL_INTERNAL + 1;
 
     for (i = 0; i < HW_IRQ_COUNT; i++)
