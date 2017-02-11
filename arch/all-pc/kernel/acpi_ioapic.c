@@ -45,9 +45,9 @@ const char *ACPI_TABLE_MADT_STR __attribute__((weak)) = "APIC";
 /* descriptor for an ioapic routing table entry */
 struct acpi_ioapic_route
 {
-    uint32_t    vect:8, dm:3, dstm:1, ds:1, pol:1, rirr:1, trig:1, mask:1, rsvd1:15;
-    uint32_t    rsvd2:24, dst:8;
-} __attribute__((packed));
+    uint32_t    dst:8, rsvd2:24;
+    uint32_t    rsvd1:15, mask:1, trig:1, rirr:1, pol:1, ds:1, dstm:1, dm:3, vect:8;
+};
 
 static ULONG acpi_IOAPIC_ReadReg(APTR apic_base, UBYTE offset)
 {
@@ -74,7 +74,7 @@ void ioapic_ParseTableEntry(UQUAD *tblData)
 
     bug("%08X%08X", ((*tblData >> 32) & 0xFFFFFFFF), (*tblData & 0xFFFFFFFF));
 
-    if (!tblEntry->mask)
+    if (tblEntry->mask)
     {
         bug(" Disabled.");
     }
@@ -219,12 +219,12 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapic_Base,
                     IOAPICREG_REDTBLBASE + (ioapic_pin << 1));
-                ioapicData->ioapic_RouteTable[ioapic_pin] = ((UQUAD)ioapicval << 32);
+                ioapicData->ioapic_RouteTable[ioapic_pin] = (UQUAD)ioapicval;
                
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapic_Base,
                     IOAPICREG_REDTBLBASE + (ioapic_pin << 1) + 1);
-                ioapicData->ioapic_RouteTable[ioapic_pin] |= (UQUAD)ioapicval;
+                ioapicData->ioapic_RouteTable[ioapic_pin] |= ((UQUAD)ioapicval << 32);
 
                 irqRoute->ds = 0;
                 irqRoute->rirr = 0;
@@ -261,16 +261,16 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                         enabled = TRUE;
                     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
                         IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
-                        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
+                        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
                     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
                         IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
-                        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
+                        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
                     if (enabled)
                     {
                         irqRoute->mask = 0;
                         acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
                             IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
-                            ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
+                            (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
                     }
                     DINT(
                         bug("[Kernel:IOAPIC] %s:       ", __func__);
@@ -310,10 +310,10 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
         IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
-        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
+        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
         IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
-        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
+        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
 
     return TRUE;
 }
@@ -354,10 +354,10 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
         IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
-        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
+        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
         IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
-        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
+        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
 
     return TRUE;
 }
