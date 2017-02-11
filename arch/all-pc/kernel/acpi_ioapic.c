@@ -210,25 +210,25 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             DINT(bug("[Kernel:IOAPIC] %s: Routing Data @ 0x%p\n", __func__, ioapicData->ioapic_RouteTable));
             for (irq = ioapic_irqbase; irq < (ioapic_irqbase + ioapicData->ioapic_IRQCount); irq++)
             {
-                UBYTE ioapic_irq = irq - ioapic_irqbase;
-                struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
+                UBYTE ioapic_pin = irq - ioapic_irqbase;
+                struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
                 BOOL enabled = FALSE;
 
-                DINT(bug("[Kernel:IOAPIC] %s: Route Entry %u @ 0x%p\n", __func__, ioapic_irq, irqRoute));
+                DINT(bug("[Kernel:IOAPIC] %s: Route Entry %u @ 0x%p\n", __func__, ioapic_pin, irqRoute));
 
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapic_Base,
-                    IOAPICREG_REDTBLBASE + (ioapic_irq << 1));
-                ioapicData->ioapic_RouteTable[ioapic_irq] = ((UQUAD)ioapicval << 32);
+                    IOAPICREG_REDTBLBASE + (ioapic_pin << 1));
+                ioapicData->ioapic_RouteTable[ioapic_pin] = ((UQUAD)ioapicval << 32);
                
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapic_Base,
-                    IOAPICREG_REDTBLBASE + (ioapic_irq << 1) + 1);
-                ioapicData->ioapic_RouteTable[ioapic_irq] |= (UQUAD)ioapicval;
+                    IOAPICREG_REDTBLBASE + (ioapic_pin << 1) + 1);
+                ioapicData->ioapic_RouteTable[ioapic_pin] |= (UQUAD)ioapicval;
 
                 irqRoute->ds = 0;
                 irqRoute->rirr = 0;
-                if (ioapic_irq < I8259A_IRQCOUNT)
+                if (ioapic_pin < I8259A_IRQCOUNT)
                 {
                     /* mark the ISA interrupts as active high, edge triggered... */
                     irqRoute->pol = 0;
@@ -261,21 +261,21 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 }
                 DINT(
                     bug("[Kernel:IOAPIC] %s:       ", __func__);
-                    ioapic_ParseTableEntry((UQUAD *)&ioapicData->ioapic_RouteTable[ioapic_irq]);
+                    ioapic_ParseTableEntry((UQUAD *)&ioapicData->ioapic_RouteTable[ioapic_pin]);
                     bug("\n");
                 );
                 acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-                    IOAPICREG_REDTBLBASE + (ioapic_irq << 1 ) + 1,
-                    (ioapicData->ioapic_RouteTable[ioapic_irq] & 0xFFFFFFFF));
+                    IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
+                    (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
                 acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-                    IOAPICREG_REDTBLBASE + (ioapic_irq << 1),
-                    ((ioapicData->ioapic_RouteTable[ioapic_irq] >> 32) & 0xFFFFFFFF));
+                    IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+                    ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
                 if (enabled)
                 {
                     irqRoute->mask = 0;
                     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-                        IOAPICREG_REDTBLBASE + (ioapic_irq << 1),
-                        ((ioapicData->ioapic_RouteTable[ioapic_irq] >> 32) & 0xFFFFFFFF));
+                        IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+                        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
                 }
             }
         }
@@ -289,8 +289,8 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
-    UBYTE ioapic_irq = intNum - ioapicData->ioapic_GSI;
-    struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
+    UBYTE ioapic_pin = intNum - ioapicData->ioapic_GSI;
+    struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
     struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
 
     DINT(bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum));
@@ -304,11 +304,11 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     irqRoute->mask = 1;
 
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-        IOAPICREG_REDTBLBASE + (ioapic_irq << 1),
-        ((ioapicData->ioapic_RouteTable[ioapic_irq] >> 32) & 0xFFFFFFFF));
+        IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-        IOAPICREG_REDTBLBASE + (ioapic_irq << 1 ) + 1,
-        (ioapicData->ioapic_RouteTable[ioapic_irq] & 0xFFFFFFFF));
+        IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
+        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
 
     return TRUE;
 }
@@ -318,8 +318,8 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
-    UBYTE ioapic_irq = intNum - ioapicData->ioapic_GSI;
-    struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
+    UBYTE ioapic_pin = intNum - ioapicData->ioapic_GSI;
+    struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
 
@@ -344,11 +344,11 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     irqRoute->mask = 0; // enable!!
 
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-        IOAPICREG_REDTBLBASE + (ioapic_irq << 1),
-        ((ioapicData->ioapic_RouteTable[ioapic_irq] >> 32) & 0xFFFFFFFF));
+        IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+        ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-        IOAPICREG_REDTBLBASE + (ioapic_irq << 1 ) + 1,
-        (ioapicData->ioapic_RouteTable[ioapic_irq] & 0xFFFFFFFF));
+        IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
+        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
 
     return TRUE;
 }
