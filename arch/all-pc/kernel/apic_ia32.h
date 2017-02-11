@@ -8,6 +8,14 @@
     Lang: english
 */
 
+#include "i8259a.h"
+
+// put the APIC IRQs after the cpu exceptions & pic IRQ's
+#define APIC_CPU_EXCEPT_COUNT  32
+#define APIC_IRQ_BASE          (APIC_CPU_EXCEPT_COUNT + I8259A_IRQCOUNT)
+#define APIC_LOCALIRQ_COUNT    10
+#define APIC_IRQ_COUNT         (255 - (INTB_KERNEL + APIC_IRQ_BASE + APIC_LOCALIRQ_COUNT))
+
 /* Local APIC base address register (MSR #27) */
 #define MSR_LAPIC_BASE 0x1B
 
