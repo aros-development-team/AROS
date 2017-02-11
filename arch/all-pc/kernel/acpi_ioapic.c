@@ -225,13 +225,22 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     IOAPICREG_REDTBLBASE + (ioapic_irq << 1) + 1);
                 ioapicData->ioapic_RouteTable[ioapic_irq] |= (UQUAD)ioapicval;
 
-                /* mark the interrupts as active high, edge triggered
-                 * and disabled by default */
                 irqRoute->ds = 0;
-                irqRoute->pol = 0;
                 irqRoute->rirr = 0;
-                irqRoute->trig = 0;
-                /* setup delivery to apic #0 */
+                if (ioapic_irq < I8259A_IRQCOUNT)
+                {
+                    /* mark the ISA interrupts as active high, edge triggered... */
+                    irqRoute->pol = 0;
+                    irqRoute->trig = 0;
+                }
+                else
+                {
+                    /* ...and PCI interrupts as active low, level triggered */
+                    irqRoute->pol = 1;
+                    irqRoute->trig = 1;
+                }
+
+                /* setup delivery to the boot processor */
                 irqRoute->vect = irq + HW_IRQ_BASE;
                 irqRoute->dm = 0; // fixed
                 irqRoute->dstm = 0; // physical
@@ -239,7 +248,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 if (apicPrivate)
                      irqRoute->dst = apicPrivate->cores[0].cpu_LocalID;
                 else
-                    irqRoute->dst = 0; // apic #0
+                    irqRoute->dst = 0;
 
                 if (!krnInitInterrupt(KernelBase, irq, IOAPICInt_IntrController.ic_Node.ln_Type, instance))
                 {
