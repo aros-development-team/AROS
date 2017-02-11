@@ -11,7 +11,6 @@
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <proto/alib.h>
-#include <proto/kernel.h>
 #include <aros/i386/cpucontext.h>
 
 #include "exec_intern.h"

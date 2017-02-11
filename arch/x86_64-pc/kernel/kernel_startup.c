@@ -680,7 +680,6 @@ static APTR core_AllocBootTLS(struct KernBootPrivate *__KernBootPrivate)
     tls_t *tlsPtr;
 
     tlsPtr = (tls_t *)krnAllocBootMem(sizeof(tls_t));
-    tlsPtr->_self = tlsPtr;
 
     return (APTR)tlsPtr;
 }

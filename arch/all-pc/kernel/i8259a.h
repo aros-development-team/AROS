@@ -1,5 +1,12 @@
 #ifndef KERNEL_I8259A_H
 #define KERNEL_I8259A_H
+/*
+    Copyright © 2017, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Intel 8259a "XT-PIC" definitions.
+    Lang: english
+*/
 
 #include <aros/macros.h>
 #include <inttypes.h>

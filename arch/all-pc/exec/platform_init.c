@@ -15,13 +15,6 @@
 #include <exec/interrupts.h>
 #include <exec/rawfmt.h>
 
-#define __KERNEL_NOLIBBASE__
-#include <proto/kernel.h>
-
-#include "kernel_base.h"
-#include "kernel_arch.h"
-#include "kernel_intr.h"
-
 #define __AROS_KERNEL__
 
 #include "exec_intern.h"
@@ -189,6 +182,7 @@ spinlock_t *ExecSpinLockCall(spinlock_t *spinLock, struct Hook *hookObtained, st
 }
 #endif
 
+#if defined(EXEC_REMTASK_NEEDSSWITCH)
 void X86_HandleSwitch(struct ExceptionContext *regs)
 {
     D(bug("[Exec:X86] %s()\n", __func__));
@@ -206,7 +200,6 @@ struct syscallx86_Handler x86_SCSwitchHandler =
     (APTR)X86_HandleSwitch
 };
 
-#if (__WORDSIZE==64)
 void X86_SetTaskState(struct Task *changeTask, ULONG newState, BOOL dolock)
 {
 #if defined(__AROSEXEC_SMP__)
@@ -261,7 +254,6 @@ void X86_SetTaskState(struct Task *changeTask, ULONG newState, BOOL dolock)
 #endif
     }
 }
-#endif
 
 /* change a specified task's state */
 void X86_HandleReschedTask(struct ExceptionContext *regs)
@@ -352,7 +344,7 @@ struct syscallx86_Handler x86_SCReschedTaskHandler =
     },
     (APTR)X86_HandleReschedTask
 };
-
+#endif
 
 struct Task *Exec_X86CreateIdleTask(APTR sysBase)
 {
@@ -422,7 +414,9 @@ struct Task *Exec_X86CreateIdleTask(APTR sysBase)
 int Exec_X86Init(struct ExecBase *SysBase)
 {
     struct IntExecBase *sysBase = (struct IntExecBase *)SysBase;
+#if defined(__AROSEXEC_SMP__) || defined(EXEC_REMTASK_NEEDSSWITCH)
     struct KernelBase *KernelBase = __kernelBase;
+#endif
 
     D(bug("[Exec:X86] %s()\n", __func__));
     D(bug("[Exec:X86] %s: PlatformData @ 0x%p\n", __func__, &sysBase->PlatformData));
@@ -448,9 +442,10 @@ int Exec_X86Init(struct ExecBase *SysBase)
 
     D(bug("[Exec:X86] %s: Default Handlers Registered\n", __func__));
 
+#if defined(EXEC_REMTASK_NEEDSSWITCH)
     krnAddSysCallHandler(KernelBase->kb_PlatformData, &x86_SCSwitchHandler, TRUE, TRUE);
     krnAddSysCallHandler(KernelBase->kb_PlatformData, &x86_SCReschedTaskHandler, TRUE, TRUE);
-
+#endif
 #if defined(__AROSEXEC_SMP__)
     /* register the task spinlock syscall */
     krnAddSysCallHandler(KernelBase->kb_PlatformData, &x86_SCSpinLockHandler, TRUE, TRUE);

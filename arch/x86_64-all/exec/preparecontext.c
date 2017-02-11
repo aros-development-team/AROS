@@ -9,7 +9,6 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
-#include <proto/kernel.h>
 #include <aros/x86_64/cpucontext.h>
 
 #include "exec_intern.h"

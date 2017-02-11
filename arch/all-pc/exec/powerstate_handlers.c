@@ -11,9 +11,9 @@
 
 #include <proto/exec.h>
 
-#include "exec_intern.h"
+#define __AROS_KERNEL__
 
-#include "x86_syscalls.h"
+#include "exec_intern.h"
 
 /* Call the kernel to perform a Cold Reset */
 AROS_INTH1(Exec_X86ColdResetHandler, struct Interrupt *, handler)

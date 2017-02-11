@@ -1,9 +1,17 @@
 #ifndef _KERNEL_ARCH_H_
 #define _KERNEL_ARCH_H_
+/*
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Machine-specific definitions for IBM PC hardware
+    Lang: english
+*/
+
+#define KERNELIRQ_NEEDSPRIVATE
+#define KERNELIRQ_NEEDSCONTROLLERS
 
 struct PlatformData;
-
-/* Machine-specific definitions for IBM PC hardware */
 
 /* Hardware IRQ's ********************************************************************************/
 
@@ -43,9 +51,6 @@ struct PlatformData;
 void ictl_enable_irq(unsigned char, struct KernelBase *);
 void ictl_disable_irq(unsigned char, struct KernelBase *);
 BOOL ictl_is_irq_enabled(unsigned char, struct KernelBase *);
-
-#define KERNELIRQ_NEEDSPRIVATE
-#define KERNELIRQ_NEEDSCONTROLLERS
 
 #define IRQINTB_ENABLED 1
 #define IRQINTF_ENABLED (1 << IRQINTB_ENABLED)

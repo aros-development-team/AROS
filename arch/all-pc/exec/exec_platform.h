@@ -8,12 +8,16 @@
 // needed to determine if this is an smp build
 #include <aros/config.h>
 #include <aros/atomic.h>
-#include "x86_syscalls.h"
+
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
 
 #if (__WORDSIZE==64)
 #define EXEC_REMTASK_NEEDSSWITCH
 #endif
 #define SCHEDQUANTUM_VALUE      4
+
+#include "kernel_base.h"
 
 #if defined(__AROSEXEC_SMP__)
 #include <aros/types/spinlock_s.h>
@@ -358,5 +362,9 @@ struct Exec_PlatformData
 #endif /* !__AROSEXEC_SMP__ */
 
 struct Task *Exec_X86CreateIdleTask(APTR);
+
+#include "kernel_intr.h"
+
+#include "x86_syscalls.h"
 
 #endif /* __EXEC_PLATFORM_H */
