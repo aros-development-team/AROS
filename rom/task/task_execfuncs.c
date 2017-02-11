@@ -9,7 +9,6 @@
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include "task_intern.h"
 

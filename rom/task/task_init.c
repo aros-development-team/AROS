@@ -9,10 +9,8 @@
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
-#include <proto/kernel.h>
 #include <resources/task.h>
 
-#include <exec_intern.h>
 #include "etask.h"
 
 #include "task_intern.h"
