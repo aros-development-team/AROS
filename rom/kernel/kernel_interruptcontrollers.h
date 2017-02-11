@@ -30,6 +30,7 @@ typedef UWORD   icintrid_t;
 struct IntrController
 {
     struct Node ic_Node;
+    ULONG        ic_Count;
     ULONG        ic_Type;                                                     /* IC drivers private "type"                 */
     ULONG        ic_Flags;
     APTR        ic_Private;
