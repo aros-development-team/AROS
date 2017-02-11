@@ -16,31 +16,48 @@
 void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
 {
     struct IntrController *irqIC;
+    struct KernelInt *irqInt = &KernelBase->kb_Interrupts[irq];
 
     D(bug("[Kernel] %s(%d)\n", __func__, irq));
 
-    if ((irqIC = krnGetInterruptController(KernelBase, KernelBase->kb_Interrupts[irq].lh_Type)) != NULL)
+    if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_List.lh_Type)) != NULL)
     {
-        if ((irqIC->ic_IntrEnable) && (irqIC->ic_IntrEnable(irqIC->ic_Private, KernelBase->kb_Interrupts[irq].l_pad, irq)))
+        if ((irqIC->ic_IntrEnable) && (irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq)))
         {
             D(bug("[Kernel] %s: enabled\n", __func__));
+            irqInt->ki_Priv |= IRQINTF_ENABLED;
         }
     }
+    else
+        irqInt->ki_Priv |= IRQINTF_ENABLED;
 }
 
 void ictl_disable_irq(unsigned char irq, struct KernelBase *KernelBase)
 {
     struct IntrController *irqIC;
+    struct KernelInt *irqInt = &KernelBase->kb_Interrupts[irq];
 
     D(bug("[Kernel] %s(%d)\n", __func__, irq));
 
-    if ((irqIC = krnGetInterruptController(KernelBase, KernelBase->kb_Interrupts[irq].lh_Type)) != NULL)
+    if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_List.lh_Type)) != NULL)
     {
-        if ((irqIC->ic_IntrDisable) && (irqIC->ic_IntrDisable(irqIC->ic_Private, KernelBase->kb_Interrupts[irq].l_pad, irq)))
+        if ((irqIC->ic_IntrDisable) && (irqIC->ic_IntrDisable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq)))
         {
             D(bug("[Kernel] %s: disabled\n", __func__));
+            irqInt->ki_Priv &= ~IRQINTF_ENABLED;
         }
     }
+    else
+        irqInt->ki_Priv &= ~IRQINTF_ENABLED;
+}
+
+BOOL ictl_is_irq_enabled(unsigned char irq, struct KernelBase *KernelBase)
+{
+    struct KernelInt *irqInt = &KernelBase->kb_Interrupts[irq];
+
+    D(bug("[Kernel] %s(%d)\n", __func__, irq));
+
+    return (BOOL)(irqInt->ki_Priv & IRQINTF_ENABLED);
 }
 
 void ictl_Initialize(struct KernelBase *KernelBase)
