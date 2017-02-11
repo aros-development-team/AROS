@@ -41,14 +41,14 @@ icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrC
         if (!strcmp(intController->ic_Node.ln_Name, regContr->ic_Node.ln_Name))
         {
             /* Already registered, return its ID */
-            regContr->ic_Node.ln_Pri++;
+            regContr->ic_Count++;
             
-            D(bug("[Kernel] %s: controller id #%d, use count %d\n", __func__, regContr->ic_Node.ln_Type, regContr->ic_Node.ln_Pri));
+            D(bug("[Kernel] %s: controller id #%d, use count %d\n", __func__, regContr->ic_Node.ln_Type, regContr->ic_Count));
 
-            return (icintrid_t)((regContr->ic_Node.ln_Type << 8) | regContr->ic_Node.ln_Pri);
+            return (icintrid_t)((regContr->ic_Node.ln_Type << 8) | regContr->ic_Count);
         }
     }
-    intController->ic_Node.ln_Pri = 1;                                                                                  /* first user */
+    intController->ic_Count = 1;                                                                                  /* first user */
     intController->ic_Node.ln_Type = KernelBase->kb_ICTypeBase++;
 
     if (intController->ic_Register)
@@ -63,7 +63,7 @@ icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrC
 
     D(bug("[Kernel] %s: new controller id #%d = '%s'\n", __func__, intController->ic_Node.ln_Type, intController->ic_Node.ln_Name));
 
-    return (icintrid_t)((icid << 8) | intController->ic_Node.ln_Pri);
+    return (icintrid_t)((icid << 8) | intController->ic_Count);
 }
 
 /*****************************************************************************/
@@ -110,10 +110,10 @@ int krnInitInterruptControllers(struct KernelBase *KernelBase)
     {
         if (regContr->ic_Init)
         {
-            if (regContr->ic_Init(KernelBase, regContr->ic_Node.ln_Pri))
+            if (regContr->ic_Init(KernelBase, regContr->ic_Count))
             {
                 regContr->ic_Flags |= ICF_READY;
-                cnt += regContr->ic_Node.ln_Pri;
+                cnt += regContr->ic_Count;
             }
         }
     }
