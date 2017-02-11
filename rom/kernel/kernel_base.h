@@ -88,4 +88,8 @@ struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end);
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 struct MemHeader * krnConvertMemHeaderToTLSF(struct MemHeader * source);
 
+#ifdef KERNELIRQ_NEEDSCONTROLLERS
+#include <kernel_interruptcontrollers.h>
+#endif
+
 #endif /* !KERNEL_BASE_H */

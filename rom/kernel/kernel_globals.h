@@ -1,10 +1,5 @@
-/*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
-
-    Desc:
-*/
-
+#ifndef KERNEL_GLOBALS_H
+#define KERNEL_GLOBALS_H
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
     $Id$
@@ -12,9 +7,6 @@
     Desc: Global KernelBase access
     Lang: english
 */
-
-#ifndef KERNEL_GLOBALS_H
-#define KERNEL_GLOBALS_H
 
 struct KernelBase;
 extern struct KernelBase *KernelBase;
