@@ -7,14 +7,16 @@ struct PlatformData;
 
 /* Hardware IRQ's ********************************************************************************/
 
-/* XT-PIC only has 16 IRQs */
-#define IRQ_COUNT       16
+#include "apic_ia32.h"
+
+/* by default we only know about the xtpic's irq's */
+#define IRQ_COUNT       I8259A_IRQCOUNT
 
 /*
  *  The first Hardware IRQ starts at 32
  *  (0 - 31 are cpu exceptions, see below..)
  */
-#define HW_IRQ_BASE     32
+#define HW_IRQ_BASE     APIC_CPU_EXCEPT_COUNT
 /*
     0 - Divide Error
     1 - Debug
@@ -38,8 +40,14 @@ struct PlatformData;
 */
 
 /* Interrupt controller functions */
-void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase);
-void ictl_disable_irq(unsigned char irq, struct KernelBase *KernelBase);
+void ictl_enable_irq(unsigned char, struct KernelBase *);
+void ictl_disable_irq(unsigned char, struct KernelBase *);
+BOOL ictl_is_irq_enabled(unsigned char, struct KernelBase *);
+
+#define KERNELIRQ_NEEDSPRIVATE
+
+#define IRQINTB_ENABLED 1
+#define IRQINTF_ENABLED (1 << IRQINTB_ENABLED)
 
 /* CPU TImer *************************************************************************************/
 
