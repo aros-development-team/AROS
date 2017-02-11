@@ -26,7 +26,7 @@ IRQ##nr##_intr:						\
 #define B(x,y) BUILD_IRQ(x##y)
 #define BUILD_16(x) \
     B(x,0) B(x,1) B(x,2) B(x,3) B(x,4) B(x,5) B(x,6) B(x,7) \
-    B(x,8) B(x,9) B(x,a) B(x,b) B(x,c) B(x,d) B(x,e) B(x,f)
+    B(x,8) B(x,9) B(x,A) B(x,B) B(x,C) B(x,D) B(x,E) B(x,F)
 
 BUILD_IRQ(0x00)         // Divide-By-Zero Exception
 BUILD_IRQ(0x01)         // Debug Exception
