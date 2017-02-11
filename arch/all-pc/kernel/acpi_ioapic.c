@@ -255,27 +255,28 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 {
                     bug("[Kernel:IOAPIC] %s: Failed to acquire IRQ #%u\n", __func__, irq);
                 }
-                else if (ictl_is_irq_enabled(irq, KernelBase))
+                else
                 {
-                    enabled = TRUE;
-                }
-                DINT(
-                    bug("[Kernel:IOAPIC] %s:       ", __func__);
-                    ioapic_ParseTableEntry((UQUAD *)&ioapicData->ioapic_RouteTable[ioapic_pin]);
-                    bug("\n");
-                );
-                acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-                    IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
-                    (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
-                acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
-                    IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
-                    ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
-                if (enabled)
-                {
-                    irqRoute->mask = 0;
+                    if (ictl_is_irq_enabled(irq, KernelBase))
+                        enabled = TRUE;
+                    acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                        IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
+                        (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
                     acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
                         IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
                         ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
+                    if (enabled)
+                    {
+                        irqRoute->mask = 0;
+                        acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                            IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+                            ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
+                    }
+                    DINT(
+                        bug("[Kernel:IOAPIC] %s:       ", __func__);
+                        ioapic_ParseTableEntry((UQUAD *)&ioapicData->ioapic_RouteTable[ioapic_pin]);
+                        bug("\n");
+                    );
                 }
             }
         }
@@ -289,17 +290,21 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
-    UBYTE ioapic_pin = intNum - ioapicData->ioapic_GSI;
-    struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
     struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
+    struct acpi_ioapic_route *irqRoute;
+    UBYTE ioapic_pin;
 
     DINT(bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum));
 
     if (intrMap)
     {
-        intNum = (intrMap->im_IRQ - ioapicData->ioapic_GSI);
-        DINT(bug("[Kernel:IOAPIC] %s: IOAPIC IRQ %02X\n", __func__, intNum));
+        ioapic_pin = (intrMap->im_IRQ - ioapicData->ioapic_GSI);
     }
+    else
+        ioapic_pin = intNum - ioapicData->ioapic_GSI;
+
+    DINT(bug("[Kernel:IOAPIC] %s: IOAPIC Pin %02X\n", __func__, ioapic_pin));
+    irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
 
     irqRoute->mask = 1;
 
@@ -318,18 +323,22 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
-    UBYTE ioapic_pin = intNum - ioapicData->ioapic_GSI;
-    struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
-    struct APICData *apicPrivate = kernPlatD->kb_APIC;
     struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
+    struct APICData *apicPrivate = kernPlatD->kb_APIC;
+    struct acpi_ioapic_route *irqRoute;
+    UBYTE ioapic_pin;
 
     DINT(bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum));
 
     if (intrMap)
     {
-        intNum = (intrMap->im_IRQ - ioapicData->ioapic_GSI);
-        DINT(bug("[Kernel:IOAPIC] %s: IOAPIC IRQ %02X\n", __func__, intNum));
+        ioapic_pin = (intrMap->im_IRQ - ioapicData->ioapic_GSI);
     }
+    else
+         ioapic_pin = intNum - ioapicData->ioapic_GSI;
+
+    DINT(bug("[Kernel:IOAPIC] %s: IOAPIC Pin %02X\n", __func__, ioapic_pin));
+    irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
 
     /*
      * if we have APIC's get the ID from there
