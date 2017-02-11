@@ -11,6 +11,9 @@
     Lang: english
 */
 
+typedef  unsigned char cpuid_t;
+typedef  unsigned char apicid_t;
+
 /* Information about size and alignment,
  * the defines have to be numeric constants */
 #define AROS_STACK_GROWS_DOWNWARDS 1 /* Stack direction */

@@ -10,10 +10,6 @@
 
 #include <asm/cpu.h>
 
-#include "kernel_interrupts.h"
-
-typedef  UBYTE apicid_t;
-
 /*
  * Per-CPU data
  * Even old IntelMP spec say that we should be prepared to handle different CPUs.

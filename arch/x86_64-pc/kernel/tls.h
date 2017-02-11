@@ -7,14 +7,16 @@
 #include <kernel_scheduler.h>
 #endif
 
+#include "apic.h"
+
 typedef struct tls
 {
-    struct tls                  *_self;
     struct ExecBase             *SysBase;
     void                        *KernelBase;    /* Base of kernel.resource              */
 #if defined(__AROSEXEC_SMP__)
     struct X86SchedulerPrivate  *ScheduleData;
 #endif
+    apicid_t                    CPUNumber;
 } tls_t;
 
 #define TLSSF_Quantum   (1 << 0)
@@ -22,13 +24,6 @@ typedef struct tls
 #define TLSSF_Dispatch  (1 << 2)
 
 #define TLS_OFFSET(name) ((char *)&(((tls_t *)0)->name)-(char *)0)
-
-#define TLS_PTR_GET() \
-    ({ \
-        tls_t *__tls; \
-        asm volatile("movq %%gs:0,%0":"=r"(__tls)::"memory"); \
-        __tls;  \
-    })
 
 #define TLS_GET(name) \
     ({ \

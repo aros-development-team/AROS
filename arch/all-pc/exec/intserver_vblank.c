@@ -10,12 +10,11 @@
 #include <exec/execbase.h>
 #include <exec/lists.h>
 
-#include "kernel_base.h"
-#include "kernel_intern.h"
-
 #define __AROS_KERNEL__
 
 #include "exec_intern.h"
+
+#include "kernel_intern.h"
 
 #include "intservers.h"
 

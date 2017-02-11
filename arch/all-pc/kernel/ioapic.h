@@ -4,13 +4,11 @@
     Copyright © 2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Generic AROS APIC definitions.
+    Desc: Generic AROS IOAPIC definitions.
     Lang: english
 */
 
 #include <asm/cpu.h>
-
-#include "kernel_interrupts.h"
 
 #include "apic.h"
 

@@ -6,7 +6,8 @@
 #define DEBUG 0
 
 #include <proto/exec.h>
-#include <proto/kernel.h>
+
+#define __AROS_KERNEL__
 
 #include "exec_intern.h"
 

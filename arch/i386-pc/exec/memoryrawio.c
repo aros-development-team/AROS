@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: functions for memory-stored RawIOInit/RawPutChar
@@ -7,7 +7,6 @@
 */
 
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include <string.h>
 
