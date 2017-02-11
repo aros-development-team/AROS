@@ -14,10 +14,10 @@
 
 #include "apic.h"
 
-#define IOAPICREG_ID            0
-#define IOAPICREG_VER           1
-#define IOAPICREG_ARB           2
-#define IOAPICREG_REDTBLBASE    10
+#define IOAPICREG_ID            0x0
+#define IOAPICREG_VER           0x1
+#define IOAPICREG_ARB           0x2
+#define IOAPICREG_REDTBLBASE    0x10
 
 struct IOAPICCfgData
 {
