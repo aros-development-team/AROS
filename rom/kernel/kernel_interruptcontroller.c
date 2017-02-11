@@ -55,7 +55,7 @@ icintrid_t krnAddInterruptController(struct KernelBase *KernelBase, struct IntrC
     if (icid == (icid_t)-1)
         return (icintrid_t)-1;
 
-    AddTail(&KernelBase->kb_ICList, &intController->ic_Node);
+    Enqueue(&KernelBase->kb_ICList, &intController->ic_Node);
 
     D(bug("[Kernel] %s: new controller id #%d = '%s'\n", __func__, intController->ic_Node.ln_Type, intController->ic_Node.ln_Name));
 
