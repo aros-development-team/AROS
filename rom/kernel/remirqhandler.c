@@ -59,7 +59,7 @@
 
         Disable();
         REMOVE(h);
-        if (IsListEmpty(&KernelBase->kb_Interrupts[irq]))
+        if (IsListEmpty(&KERNELIRQ_LIST(irq)))
         {
         	ictl_disable_irq(irq, KernelBase);
         }

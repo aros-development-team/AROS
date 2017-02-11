@@ -41,13 +41,25 @@ struct PlatformData;
 #define KBL_INTERNAL    0
 #endif /* !KBL_INTERNAL */
 
+#ifdef KERNELIRQ_NEEDSPRIVATE
+struct KernelInt
+{
+    IPTR        ki_Priv;                        /* arch specific per-irq data */
+    struct List ki_List;
+};
+#define KERNELIRQ_LIST(x)       KernelBase->kb_Interrupts[x].ki_List
+#else
+#define KernelInt List
+#define KERNELIRQ_LIST(x)       KernelBase->kb_Interrupts[x]
+#endif
+
 /* kernel.resource base. Nothing spectacular, really. */
 struct KernelBase
 {
     struct Node         kb_Node;
     struct List         kb_ICList;              /* list of all controller types */
     struct MinList      kb_Exceptions[EXCEPTIONS_COUNT];
-    struct List         kb_Interrupts[HW_IRQ_COUNT];
+    struct KernelInt    kb_Interrupts[HW_IRQ_COUNT];
     ULONG               kb_ContextFlags;	/* Hints for KrnCreateContext() */
     ULONG               kb_ContextSize;	/* Total length of CPU context  */
     ULONG               kb_PageSize;		/* Physical memory page size	*/

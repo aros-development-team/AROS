@@ -101,7 +101,7 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
 	NEWLIST(&KernelBase->kb_Exceptions[i]);
 
     for (i=0; i < HW_IRQ_COUNT; i++)
-        NEWLIST(&KernelBase->kb_Interrupts[i]);
+        NEWLIST(&KERNELIRQ_LIST(i));
 
     /*
      * Everything is ok, add our resource.
