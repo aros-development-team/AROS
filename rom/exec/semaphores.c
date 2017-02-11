@@ -11,7 +11,6 @@
 #include <aros/atomic.h>
 #include <aros/debug.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include "exec_util.h"
 #include "semaphores.h"
