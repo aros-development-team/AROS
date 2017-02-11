@@ -95,7 +95,7 @@
 
             Disable();
 
-            ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
+            ADDHEAD(&KERNELIRQ_LIST(irq), &handle->in_Node);
 
             ictl_enable_irq(irq, KernelBase);
 
@@ -115,7 +115,7 @@ void krnRunIRQHandlers(struct KernelBase *KernelBase, uint8_t irq)
 {
     struct IntrNode *in, *in2;
 
-    ForeachNodeSafe(&KernelBase->kb_Interrupts[irq], in, in2)
+    ForeachNodeSafe(&KERNELIRQ_LIST(irq), in, in2)
     {
 	irqhandler_t h = in->in_Handler;
 
