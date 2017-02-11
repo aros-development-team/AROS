@@ -52,7 +52,8 @@ static int Platform_Init(struct KernelBase *LIBBASE)
         switch(i)
         {
             default:
-                LIBBASE->kb_Interrupts[i].lh_Type = KBL_INTERNAL;
+                LIBBASE->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
+                LIBBASE->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
                 break;
         }
     }
