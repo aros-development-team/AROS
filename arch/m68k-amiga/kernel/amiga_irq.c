@@ -1,5 +1,5 @@
 /*
-    copyright © 1995-2010, the aros development team. all rights reserved.
+    copyright © 1995-2017, the aros development team. all rights reserved.
     $id$
 
     desc: m68k-amiga IRQ handling
@@ -11,7 +11,6 @@
 
 #include <exec/resident.h>
 #include <exec/execbase.h>
-#include <defines/kernel.h>
 
 #include <hardware/intbits.h>
 
