@@ -23,7 +23,8 @@
 #include "ioapic.h"
 
 #define D(x)
-#define DINTR(x)
+#define DINT(x)
+#define DPARSE(x)
 
 #define ACPI_MODPRIO_IOAPIC       50
 
@@ -111,10 +112,10 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
     ACPI_OBJECT         arg = { ACPI_TYPE_INTEGER };
     ACPI_OBJECT_LIST    arg_list = { 1, &arg };
 
-    D(bug("[Kernel:IOAPIC] %s()\n", __func__));
+    DINT(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
-#if (0)
     /* if we have been disabled, fail to register */
+#if (0)
     if (IOAPICInt_IntrController.ic_Flags & ICF_DISABLED)
 #endif
         return (icid_t)-1;
@@ -132,20 +133,24 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
         return (icid_t)-1;
     }
 
-    D(bug("[Kernel:IOAPIC] %s: IOAPIC Enabled (status=%08x)\n", __func__, status));
+    DINT(bug("[Kernel:IOAPIC] %s: IOAPIC Enabled (status=%08x)\n", __func__, status));
 
     return (icid_t)IOAPICInt_IntrController.ic_Node.ln_Type;
 }
 
 BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICCfgData *ioapicData;
-    struct IOAPICData *ioapicPrivate = ((struct PlatformData *)KernelBase->kb_PlatformData)->kb_IOAPIC;
+    struct IOAPICData *ioapicPrivate = kernPlatD->kb_IOAPIC;
+    struct APICData *apicPrivate = kernPlatD->kb_APIC;
     int instance, irq = 0, ioapic_irqbase;
 
-    D(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, instanceCount));
+    DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, instanceCount));
 
     IOAPICInt_IntrController.ic_Private = ioapicPrivate;
+
+    ioapic_irqbase = 0;
 
     for (
             instance = 0;
@@ -153,24 +158,22 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             instance++
         )
     {
-        D(
+        DINT(
             bug("[Kernel:IOAPIC] %s: Init IOAPIC #%u [ID=%03u] @ 0x%p\n", __func__, instance + 1, ioapicData->ioapic_ID, ioapicData->ioapic_Base);
         )
 
-        ioapic_irqbase = ioapicData->ioapic_GSI;
-
-        D(bug("[Kernel:IOAPIC] %s: Configuring IRQs & Routing\n", __func__));
+        DINT(bug("[Kernel:IOAPIC] %s: Configuring IRQs & Routing\n", __func__));
 
         if ((ioapicData->ioapic_RouteTable = AllocMem(ioapicData->ioapic_IRQCount * sizeof(UQUAD), MEMF_ANY)) != NULL)
         {
-            D(bug("[Kernel:IOAPIC] %s: Routing Data @ 0x%p\n", __func__, ioapicData->ioapic_RouteTable));
-            for (irq = ioapic_irqbase; (irq - ioapic_irqbase) < ioapicData->ioapic_IRQCount; irq++)
+            DINT(bug("[Kernel:IOAPIC] %s: Routing Data @ 0x%p\n", __func__, ioapicData->ioapic_RouteTable));
+            for (irq = ioapic_irqbase; irq < (ioapic_irqbase + ioapicData->ioapic_IRQCount); irq++)
             {
                 UBYTE ioapic_irq = irq - ioapic_irqbase;
                 struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
                 ULONG ioapicval;
 
-                D(bug("[Kernel:IOAPIC] %s: route entry %u @ 0x%p\n", __func__, ioapic_irq, irqRoute));
+                DINT(bug("[Kernel:IOAPIC] %s: route entry %u @ 0x%p\n", __func__, ioapic_irq, irqRoute));
 
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapic_Base,
@@ -193,13 +196,20 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 irqRoute->dm = 0; // fixed
                 irqRoute->dstm = 0; // physical
                 irqRoute->mask = 0;
-                irqRoute->dst = 0; // apic #0
+                if (apicPrivate)
+                     irqRoute->dst = apicPrivate->cores[0].cpu_LocalID;
+                else
+                    irqRoute->dst = 0; // apic #0
 
                 if (!krnInitInterrupt(KernelBase, irq, IOAPICInt_IntrController.ic_Node.ln_Type, instance))
                 {
                     bug("[Kernel:IOAPIC] %s: failed to acquire IRQ #%u\n", __func__, irq);
                 }
-                D(
+                else if (ictl_is_irq_enabled(irq, KernelBase))
+                {
+                    irqRoute->mask = 1;
+                }
+                DINT(
                     bug("[Kernel:IOAPIC]    %s:       ", __func__);
                     ioapic_ParseTableEntry((UQUAD *)&ioapicData->ioapic_RouteTable[ioapic_irq]);
                     bug("\n");
@@ -212,6 +222,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     (ioapicData->ioapic_RouteTable[ioapic_irq] & 0xFFFFFFFF));
             }
         }
+        ioapic_irqbase += ioapicData->ioapic_IRQCount;
     }
 
     return TRUE;
@@ -224,7 +235,7 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     UBYTE ioapic_irq = intNum - ioapicData->ioapic_GSI;
     struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_irq];
 
-    D(bug("[Kernel:IOAPIC] %s()\n", __func__));
+    DINT(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
     irqRoute->mask = 0;
 
@@ -247,7 +258,7 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     IPTR _APICBase;
     apicid_t _APICID;
 
-    D(bug("[Kernel:IOAPIC] %s()\n", __func__));
+    DINT(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
     _APICBase = core_APIC_GetBase();
     _APICID = core_APIC_GetID(_APICBase);
@@ -277,7 +288,7 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
 //    struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
 
-    D(bug("[Kernel:IOAPIC] %s()\n", __func__));
+    DINT(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
     return TRUE;
 }
@@ -285,7 +296,8 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 struct IntrController IOAPICInt_IntrController =
 {
     {
-        .ln_Name = "82093AA IO-APIC"
+        .ln_Name = "82093AA IO-APIC",
+        .ln_Pri = 50
     },
     AROS_MAKE_ID('I','O','9','3'),
     0,
@@ -315,10 +327,10 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
 {
     AROS_USERFUNC_INIT
 
-    DINTR(bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__));
-    DINTR(bug("[Kernel:ACPI-IOAPIC]    %s: %u:%u, GSI %u, Flags 0x%x\n", __func__, intsrc->Id, intsrc->Eid,
+    DPARSE(bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__));
+    DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: %u:%u, GSI %u, Flags 0x%x\n", __func__, intsrc->Id, intsrc->Eid,
                 intsrc->GlobalIrq, intsrc->IntiFlags));
-    DINTR(
+    DPARSE(
         if (intsrc->Type == 1)
         {
             bug("[Kernel:ACPI-IOAPIC]    %s: PMI, vector %d\n", __func__, intsrc->IoSapicVector);
@@ -344,8 +356,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
 {
     AROS_USERFUNC_INIT
 
-    DINTR(bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__));
-    DINTR(bug("[Kernel:ACPI-IOAPIC]    %s: Bus %u, Source IRQ %u, GSI %u, Flags 0x%x\n", __func__, intsrc->Bus, intsrc->SourceIrq,
+    DPARSE(bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__));
+    DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: Bus %u, Source IRQ %u, GSI %u, Flags 0x%x\n", __func__, intsrc->Bus, intsrc->SourceIrq,
                 intsrc->GlobalIrq, intsrc->IntiFlags));
 
     return TRUE;
@@ -360,8 +372,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
 {
     AROS_USERFUNC_INIT
 
-    DINTR(bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__));
-    DINTR(bug("[Kernel:ACPI-IOAPIC]    %s: GSI %u, Flags 0x%x\n", __func__, nmi_src->GlobalIrq, nmi_src->IntiFlags));
+    DPARSE(bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__));
+    DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: GSI %u, Flags 0x%x\n", __func__, nmi_src->GlobalIrq, nmi_src->IntiFlags));
 
     /* FIXME: Uh... shouldn't we do something with this? */
 
@@ -488,7 +500,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_IOAPIC_Count,
         scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
         if (scanHook)
         {
-            DINTR(bug("[Kernel:ACPI-IOAPIC]    %s: Registering Interrupt Source Table Parser...\n", __func__));
+            DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: Registering Interrupt Source Table Parser...\n", __func__));
 
             scanHook->acpith_Node.ln_Name = (char *)ACPI_TABLE_MADT_STR;
             scanHook->acpith_Node.ln_Pri = ACPI_MODPRIO_IOAPIC - 20;                            /* Queue 20 priority levels after the module parser */
@@ -502,7 +514,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_IOAPIC_Count,
         scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
         if (scanHook)
         {
-            DINTR(bug("[Kernel:ACPI-IOAPIC]    %s: Registering Interrupt Override Table Parser...\n", __func__));
+            DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: Registering Interrupt Override Table Parser...\n", __func__));
 
             scanHook->acpith_Node.ln_Name = (char *)ACPI_TABLE_MADT_STR;
             scanHook->acpith_Node.ln_Pri = ACPI_MODPRIO_IOAPIC - 30;                            /* Queue 30 priority levels after the module parser */
@@ -516,7 +528,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_IOAPIC_Count,
         scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
         if (scanHook)
         {
-            DINTR(bug("[Kernel:ACPI-IOAPIC]    %s: Registering NMI Source Table Parser...\n", __func__));
+            DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: Registering NMI Source Table Parser...\n", __func__));
 
             scanHook->acpith_Node.ln_Name = (char *)ACPI_TABLE_MADT_STR;
             scanHook->acpith_Node.ln_Pri = ACPI_MODPRIO_IOAPIC - 40;                            /* Queue 40 priority levels after the module parser */
