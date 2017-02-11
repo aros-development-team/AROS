@@ -206,6 +206,7 @@ struct IntrController i8259a_IntrController =
         .ln_Name = "8259A PIC",
         .ln_Pri = 0
     },
+    0,
     ICTYPE_I8259A,
     0,
     NULL,
