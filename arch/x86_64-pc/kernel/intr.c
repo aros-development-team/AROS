@@ -27,6 +27,7 @@
 
 #define D(x)
 #define DIDT(x)
+#define DIRQ(x)
 #define DSYSCALL(x)
 #define DTRAP(x)
 #define DUMP_CONTEXT
@@ -161,7 +162,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 {
     struct KernelBase *KernelBase = getKernelBase();
 
-    bug("[Kernel] %s(%d)\n", __func__, irq_number);
+    DIRQ(bug("[Kernel] %s(%02X)\n", __func__, irq_number);)
 
 #ifdef EMULATE_SYSBASE
     if (irq_number == 0x0e)
