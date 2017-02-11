@@ -26,6 +26,7 @@
 #include "apic_ia32.h"
 
 #define D(x)
+#define DINT(x)
 #define DWAKE(x)        /* Badly interferes with AP startup */
 #define DID(x)          /* Badly interferes with everything */
 /* #define DEBUG_WAIT */
@@ -48,34 +49,38 @@ struct APICInt_Private
 
 icid_t APICInt_Register(struct KernelBase *KernelBase)
 {
-    D(bug("[Kernel:APIC-IA32] %s()\n", __func__));
+    DINT(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
     return (icid_t)APICInt_IntrController.ic_Node.ln_Type;
 }
 
 BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
-    D(bug("[Kernel:APIC-IA32] %s(%d)\n", __func__, instanceCount));
+    int irq;
 
-    /* Take over the APIC IRQ */
-    if (!krnInitInterrupt(KernelBase, 0xde, APICInt_IntrController.ic_Node.ln_Type, 0))
+    DINT(bug("[Kernel:APIC-IA32] %s(%d)\n", __func__, instanceCount));
+
+    /* Setup the APIC IRQs for CPU #0*/
+    for (irq = (APIC_IRQ_BASE - APIC_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - APIC_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
     {
-        bug("[Kernel:APIC-IA32] %s: failed to acquire IRQ #0xde\n", __func__);
+        if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
+        {
+            bug("[Kernel:APIC-IA32] %s: failed to acquire IRQ %d\n", __func__, irq);
+        }
     }
-
     return TRUE;
 }
 
 BOOL APICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
-    D(bug("[Kernel:APIC-IA32] %s()\n", __func__));
+    DINT(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
     return TRUE;
 }
 
 BOOL APICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
-    D(bug("[Kernel:APIC-IA32] %s()\n", __func__));
+    DINT(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
     return TRUE;
 }
@@ -84,7 +89,7 @@ BOOL APICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
     IPTR apic_base;
 
-    D(bug("[Kernel:APIC-IA32] %s()\n", __func__));
+    DINT(bug("[Kernel:APIC-IA32] %s()\n", __func__));
 
     /* Write zero to EOI of APIC */
     apic_base = core_APIC_GetBase();
@@ -97,7 +102,8 @@ BOOL APICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 struct IntrController APICInt_IntrController =
 {
     {
-        .ln_Name = "x86 Local APIC"
+        .ln_Name = "x86 Local APIC",
+        .ln_Pri = -50
     },
     AROS_MAKE_ID('A','P','I','C'),
     0,
