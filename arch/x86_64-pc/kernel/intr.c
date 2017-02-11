@@ -46,29 +46,52 @@
 #define IRQPROTO_16(x) \
     IRQPROTO(x,0); IRQPROTO(x,1); IRQPROTO(x,2); IRQPROTO(x,3); \
     IRQPROTO(x,4); IRQPROTO(x,5); IRQPROTO(x,6); IRQPROTO(x,7); \
-    IRQPROTO(x,8); IRQPROTO(x,9); IRQPROTO(x,a); IRQPROTO(x,b); \
-    IRQPROTO(x,c); IRQPROTO(x,d); IRQPROTO(x,e); IRQPROTO(x,f)
+    IRQPROTO(x,8); IRQPROTO(x,9); IRQPROTO(x,A); IRQPROTO(x,B); \
+    IRQPROTO(x,C); IRQPROTO(x,D); IRQPROTO(x,E); IRQPROTO(x,F)
 
 #define IRQLIST_16(x) \
     IRQ(x,0), IRQ(x,1), IRQ(x,2), IRQ(x,3), \
     IRQ(x,4), IRQ(x,5), IRQ(x,6), IRQ(x,7), \
-    IRQ(x,8), IRQ(x,9), IRQ(x,a), IRQ(x,b), \
-    IRQ(x,c), IRQ(x,d), IRQ(x,e), IRQ(x,f)
+    IRQ(x,8), IRQ(x,9), IRQ(x,A), IRQ(x,B), \
+    IRQ(x,C), IRQ(x,D), IRQ(x,E), IRQ(x,F)
 
 /* This generates prototypes for entry points */
 IRQPROTO_16(0x0);
 IRQPROTO_16(0x1);
 IRQPROTO_16(0x2);
-IRQPROTO(0x8, 0);
-IRQPROTO(0xf, e);
+IRQPROTO_16(0x3);
+IRQPROTO_16(0x4);
+IRQPROTO_16(0x5);
+IRQPROTO_16(0x6);
+IRQPROTO_16(0x7);
+IRQPROTO_16(0x8);
+IRQPROTO_16(0x9);
+IRQPROTO_16(0xA);
+IRQPROTO_16(0xB);
+IRQPROTO_16(0xC);
+IRQPROTO_16(0xD);
+IRQPROTO_16(0xE);
+IRQPROTO_16(0xF);
 extern void core_DefaultIRETQ(void);
-
 
 const void *interrupt[256] =
 {
     IRQLIST_16(0x0),
     IRQLIST_16(0x1),
-    IRQLIST_16(0x2)
+    IRQLIST_16(0x2),
+    IRQLIST_16(0x3),
+    IRQLIST_16(0x4),
+    IRQLIST_16(0x5),
+    IRQLIST_16(0x6),
+    IRQLIST_16(0x7),
+    IRQLIST_16(0x8),
+    IRQLIST_16(0x9),
+    IRQLIST_16(0xA),
+    IRQLIST_16(0xB),
+    IRQLIST_16(0xC),
+    IRQLIST_16(0xD),
+    IRQLIST_16(0xE),
+    IRQLIST_16(0xF)
 };
 
 BOOL core_SetIDTGate(struct int_gate_64bit *IGATES, int IRQ, uintptr_t gate)
@@ -109,10 +132,6 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, 
         {
             if (interrupt[i])
                 off = (uintptr_t)interrupt[i];
-            else if (i == 0x80)
-                off = (uintptr_t)IRQ0x80_intr;
-            else if (i == 0xfe)
-                off = (uintptr_t)IRQ0xfe_intr;
             else
                 off = (uintptr_t)core_DefaultIRETQ;
 
@@ -141,6 +160,8 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, 
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
+
+    bug("[Kernel] %s(%d)\n", __func__, irq_number);
 
 #ifdef EMULATE_SYSBASE
     if (irq_number == 0x0e)
