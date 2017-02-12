@@ -75,6 +75,7 @@ struct IntrController *krnFindInterruptController(struct KernelBase *, ULONG);
 int krnInitInterruptControllers(struct KernelBase *);
 BOOL krnInitInterrupt(struct KernelBase *, icid_t, icid_t, icid_t);
 struct IntrMapping *krnInterruptMapping(struct KernelBase *, icid_t);
+struct IntrMapping *krnInterruptMapped(struct KernelBase *, icid_t);
 
 #endif /* KERNELIRQ_NEEDSCONTROLLERS */
 #endif /* !KERNEL_INTERRUPTCONTROLLERS_H */
