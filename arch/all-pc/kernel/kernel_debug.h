@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2013, The AROS Development Team. All rights reserved.
     $Id: kernel_debug.h 49922 2015-01-21 01:34:41Z NicJA $
 
     Desc:
@@ -45,7 +45,7 @@ static inline void _bug(APTR kernelBase, const char *format, ...)
     {
         __save_flags(flags);
         __cli();
-        while ((safedebug & ~1) != 0) {};
+        while ((safedebug & ~2) != 0) {};
         __AROS_ATOMIC_OR_L(safedebug, (1 << 1));
     }
 #endif
