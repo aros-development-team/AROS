@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
     
     http://download.intel.com/design/chipsets/datashts/29056601.pdf
@@ -45,8 +45,8 @@ const char *ACPI_TABLE_MADT_STR __attribute__((weak)) = "APIC";
 /* descriptor for an ioapic routing table entry */
 struct acpi_ioapic_route
 {
-    uint32_t    dst:8, rsvd2:24;
     uint32_t    rsvd1:15, mask:1, trig:1, rirr:1, pol:1, ds:1, dstm:1, dm:3, vect:8;
+    uint32_t    dst:8, rsvd2:24;
 };
 
 static ULONG acpi_IOAPIC_ReadReg(APTR apic_base, UBYTE offset)
