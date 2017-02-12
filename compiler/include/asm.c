@@ -49,8 +49,8 @@ int main(void) {
     DEFINE(IDNestCnt     , offsetof (struct ExecBase, IDNestCnt));
     DEFINE(TDNestCnt     , offsetof (struct ExecBase, TDNestCnt));
 #else
-    DEFINE(SMPPrivate2   , offsetof (struct ExecBase, SMPPrivate2));
-    DEFINE(SMPPrivate3   , offsetof (struct ExecBase, SMPPrivate3));
+    DEFINE(SMPPrivate4   , offsetof (struct ExecBase, SMPPrivate4));
+    DEFINE(SMPPrivate5   , offsetof (struct ExecBase, SMPPrivate5));
 #endif
     DEFINE(TaskReady     , offsetof (struct ExecBase, TaskReady));
 #if !defined(__AROSEXEC_SMP__)
@@ -61,8 +61,13 @@ int main(void) {
     DEFINE(SysFlags      , offsetof (struct ExecBase, SysFlags));
     DEFINE(IdleCount     , offsetof (struct ExecBase, IdleCount));
     DEFINE(DispCount     , offsetof (struct ExecBase, DispCount));
+#if !defined(__AROSEXEC_SMP__)
     DEFINE(Quantum       , offsetof (struct ExecBase, Quantum));
     DEFINE(Elapsed       , offsetof (struct ExecBase, Elapsed));
+#else
+    DEFINE(SMPPrivate2   , offsetof (struct ExecBase, SMPPrivate2));
+    DEFINE(SMPPrivate3   , offsetof (struct ExecBase, SMPPrivate3));
+#endif
     DEFINE(SysStkUpper   , offsetof (struct ExecBase, SysStkUpper));
 
     asm volatile("\n.asciz \"/* struct Task */\"" ::);
