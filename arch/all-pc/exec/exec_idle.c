@@ -15,7 +15,7 @@
 
 void sleep_function()
 {
-    asm volatile ("cli; hlt;");
+    asm volatile ("sti; hlt;");
 }
 
 void IdleTask(struct ExecBase *SysBase)
