@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel IA-32 APIC driver.
@@ -245,10 +245,10 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
             pit_final   = pit_wait(11931);
             lapic_final = (LONG)APIC_REG(__APICBase, APIC_TIMER_CCR);
-            calibrated += (((lapic_initial - lapic_final) * 11931)/(11931 - pit_final)) ;
+            calibrated += (((QUAD)(lapic_initial - lapic_final) * 11931LL)/(11931LL - (QUAD)pit_final)) ;
         }
         apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
-        D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, apic->cores[cpuNum].cpu_TimerFreq / 1000000));
+        D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000));
     }
 }
 
