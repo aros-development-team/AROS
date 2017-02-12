@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,6 +12,11 @@
 #include "exec_intern.h"
 
 #include "etask.h"
+
+void sleep_function()
+{
+    asm volatile ("cli; hlt;");
+}
 
 void IdleTask(struct ExecBase *SysBase)
 {
@@ -27,6 +32,9 @@ void IdleTask(struct ExecBase *SysBase)
     do
     {
         /* forever */
+
+        Supervisor(sleep_function);
+
         D(
             if ((taskIntEtask = GetIntETask(thisTask)) != NULL)
             {
