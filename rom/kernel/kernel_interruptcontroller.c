@@ -108,6 +108,19 @@ struct IntrMapping *krnInterruptMapping(struct KernelBase *KernelBase, icid_t ir
     return NULL;
 }
 
+struct IntrMapping *krnInterruptMapped(struct KernelBase *KernelBase, icid_t irq)
+{
+    struct IntrMapping *intrMap;
+
+    ForeachNode(&KernelBase->kb_InterruptMappings, intrMap)
+    {
+        if (intrMap->im_IRQ == irq)
+        {
+            return intrMap;
+        }
+    }
+    return NULL;
+}
 
 /*****************************************************************************
 
