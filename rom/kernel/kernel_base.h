@@ -32,9 +32,9 @@ struct PlatformData;
 
 #ifndef HW_IRQ_COUNT
 #ifdef HW_IRQ_BASE
-#define HW_IRQ_COUNT    (255 - INTB_KERNEL - HW_IRQ_BASE)
+#define HW_IRQ_COUNT    (256 - INTB_KERNEL - HW_IRQ_BASE)
 #else
-#define HW_IRQ_COUNT    (255 - INTB_KERNEL)
+#define HW_IRQ_COUNT    (256 - INTB_KERNEL)
 #endif
 #endif /* !HW_IRQ_COUNT */
 #ifndef KBL_INTERNAL
