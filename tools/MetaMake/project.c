@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+   Copyright ï¿½ 1995-2012, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -267,6 +267,9 @@ callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
     setvar (&prj->vars, "TARGET", tname);
 
     buffer[0] = '\0';
+
+    if (quiet)
+        strcat (buffer, "-s ");
 
     for (t=0; t<mflagc; t++)
     {
