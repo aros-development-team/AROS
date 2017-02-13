@@ -36,28 +36,30 @@
 /* Private structure for use in ObtainSemaphore */
 struct SemaphoreRequest
 {
-    struct MinNode sr_Link;
-    struct Task  * sr_Waiter;
+    struct MinNode              sr_Link;
+    struct Task                 *sr_Waiter;
 #if defined(__AROSEXEC_SMP__)
-    spinlock_t          sr_SpinLock;
+    spinlock_t                  sr_SpinLock;
+#else
+    ULONG                       sr_Pad;
 #endif
 };
 
 struct SignalSemaphore
 {
-    struct Node             ss_Link;
-    WORD                    ss_NestCount;
-    struct MinList          ss_WaitQueue;
-    struct SemaphoreRequest ss_MultipleLink;
-    struct Task           * ss_Owner;
-    WORD                    ss_QueueCount;
+    struct Node                 ss_Link;
+    WORD                        ss_NestCount;
+    struct MinList              ss_WaitQueue;
+    struct SemaphoreRequest     ss_MultipleLink;
+    struct Task                 *ss_Owner;
+    WORD                        ss_QueueCount;
 };
 
 /* For use in Procure()/Vacate() */
 struct SemaphoreMessage
 {
-    struct Message           ssm_Message;
-    struct SignalSemaphore * ssm_Semaphore;
+    struct Message              ssm_Message;
+    struct SignalSemaphore      *ssm_Semaphore;
 };
 
 #define SM_EXCLUSIVE (0L)
