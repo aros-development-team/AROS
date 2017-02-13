@@ -65,6 +65,10 @@
     /* Semaphore has no queue */
     sigSem->ss_QueueCount = -1;
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&sigSem->ss_MultipleLink.sr_SpinLock);
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* InitSemaphore */
 
