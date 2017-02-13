@@ -6,6 +6,8 @@
 #ifndef _DRM_COMPAT_TYPES_
 #define _DRM_COMPAT_TYPES_
 
+#include <aros/config.h>
+
 #include <exec/types.h>
 #include <exec/semaphores.h>
 #include <sys/types.h>
@@ -48,10 +50,12 @@ typedef struct
     LONG count;
 } atomic_t;
 
+#if !defined(__AROSEXEC_SMP__)
 typedef struct
 {
     LONG dummy;
 } spinlock_t;
+#endif
 
 typedef struct
 {
