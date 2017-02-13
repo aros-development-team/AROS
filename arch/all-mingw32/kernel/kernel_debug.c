@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,8 +9,8 @@
 
 #include "hostinterface.h"
 #include "kernel_base.h"
+#include "kernel_intern.h"
 #include "kernel_cpu.h"
-#include "kernel_mingw32.h"
 
 /*
  * KernelBase is an optional parameter here. During

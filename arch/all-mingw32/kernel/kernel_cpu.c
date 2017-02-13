@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2008-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU-specific add-ons for Windows-hosted scheduler.
@@ -11,8 +11,8 @@
 #include <proto/exec.h>
 
 #include "kernel_base.h"
+#include "kernel_intern.h"
 #include "kernel_debug.h"
-#include "kernel_mingw32.h"
 #include "kernel_scheduler.h"
 
 #define D(x)
