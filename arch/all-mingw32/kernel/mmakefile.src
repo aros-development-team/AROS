@@ -20,6 +20,7 @@ NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 NATIVE_FILES  := host_debug host_intr host_mmu
 NATIVE_AFILES := leaveinterrupt_$(CPU)
 
+NATIVE_CFLAGS := $(KERNEL_CLFAGS) -Winline
 NATIVE_LDFLAGS := -shared -Wl,--out-implib,$(NATIVE_LIBDIR)/libaroskernel.a
 
 USER_INCLUDES :=
@@ -33,6 +34,6 @@ $(NATIVE_LIBDIR):
 %build_prog mmake=kernel-kernel-mingw32-native \
     progname=kernel.dll targetdir=$(NATIVE_BINDIR) \
     files=$(NATIVE_FILES) asmfiles=$(NATIVE_AFILES) compiler=kernel \
-    ldflags=$(NATIVE_LDFLAGS)
+    cflags=$(NATIVE_FLAGS) ldflags=$(NATIVE_LDFLAGS)
 
 %common

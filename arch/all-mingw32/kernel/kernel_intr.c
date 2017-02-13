@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,10 +16,10 @@
 #include <inttypes.h>
 
 #include "kernel_base.h"
+#include "kernel_intern.h"
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
-#include "kernel_mingw32.h"
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
 #include "kernel_traps.h"

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,7 @@
 #include <inttypes.h>
 
 #include "kernel_base.h"
-#include "kernel_mingw32.h"
+#include "kernel_intern.h"
 
 static unsigned int access_map[] =
 {

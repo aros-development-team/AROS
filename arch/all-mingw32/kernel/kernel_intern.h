@@ -1,3 +1,13 @@
+#ifndef KERNEL_INTERN_H_
+#define KERNEL_INTERN_H_
+/*
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: MingW32 kernel_intern.h
+    Lang: english
+*/
+
 #include <stdarg.h>
 
 /* WinAPI Memory protection constants */
@@ -17,3 +27,5 @@ extern struct HostInterface *HostIFace;
 
 int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs);
 int core_IRQHandler(unsigned char *irqs, CONTEXT *regs);
+
+#endif /*KERNEL_INTERN_H_*/
