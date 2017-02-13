@@ -14,7 +14,7 @@ typedef struct {
         } slock;
         volatile unsigned long  lock;
     };
-} spinlock_t;
+} __attribute__((__aligned__(128))) spinlock_t;
 
 #define SPINLOCK_UNLOCKED               0
 #define SPINLOCKB_WRITE                 27
