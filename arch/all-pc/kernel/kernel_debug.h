@@ -17,6 +17,7 @@
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
 #include <stdarg.h>
+#include "kernel_intern.h"
 
 #ifdef bug
 #undef bug
