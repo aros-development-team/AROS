@@ -40,6 +40,25 @@ void __spinlock_release(spinlock_t *lock)
     lock->lock = 0;
 }
 
+static inline int lock_btsl(spinlock_t *lock)
+{
+    char retval = 0;
+    asm volatile("lock btsl %2, %0; setc %1":"+m"(lock->lock),"=r"(retval):"Ir"(SPINLOCKB_WRITE):"memory");
+    return retval;
+}
+
+static inline int lock_cmpxchg(spinlock_t *lock, ULONG *err)
+{
+    uint8_t retval;
+    uint32_t ret;
+    asm volatile("lock cmpxchg %4, %0; setz %1"
+        :"+m"(lock->lock),"=r"(retval),"=a"(ret)
+        :"2"(SPINLOCK_UNLOCKED),"r"(SPINLOCKF_WRITE)
+        :"memory"
+    );
+    *err = ret;
+    return retval;
+}
 AROS_LH3(spinlock_t *, KrnSpinLock,
 	AROS_LHA(spinlock_t *, lock, A1),
 	AROS_LHA(struct Hook *, failhook, A0),
@@ -52,8 +71,18 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
 
     if (mode == SPINLOCK_MODE_WRITE)
     {
-        while (lock->lock != SPINLOCK_UNLOCKED) 
+        ULONG tmp;
+        
+        /*
+        Check if lock->lock equals to SPINLOCK_UNLOCKED. If yes, it will be atomicaly replaced by SPINLOCKF_WRITE and function
+        returns 1. Otherwise it copies value of lock->lock into tmp and returns 0.
+        */
+        while (!lock_cmpxchg(lock->lock, &tmp)) 
         {
+            // Tell CPU we are spinning
+            asm volatile("pause");
+
+            // Call failhook if there is any
             if (failhook)
             {
                D(bug("[Kernel] %s: lock-held ... calling fail hook @ 0x%p ...\n", __func__, failhook);)
@@ -61,15 +90,10 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
             }
             D(bug("[Kernel] %s: spinning on held lock ...\n", __func__);)
         };
-#if defined(AROS_NO_ATOMIC_OPERATIONS)
-        lock->lock |= SPINLOCKF_WRITE;
-#else
-        __AROS_ATOMIC_OR_L(lock->lock, SPINLOCKF_WRITE);
-#endif
     }
     else
     {
-        while (lock->lock &SPINLOCKF_WRITE)
+        while (lock->lock & SSPINLOCKF_WRITE)
         {
             if (failhook)
             {
