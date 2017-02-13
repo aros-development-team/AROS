@@ -77,7 +77,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
         Check if lock->lock equals to SPINLOCK_UNLOCKED. If yes, it will be atomicaly replaced by SPINLOCKF_WRITE and function
         returns 1. Otherwise it copies value of lock->lock into tmp and returns 0.
         */
-        while (!lock_cmpxchg(lock->lock, &tmp)) 
+        while (!lock_cmpxchg(lock, &tmp)) 
         {
             // Tell CPU we are spinning
             asm volatile("pause");
@@ -93,7 +93,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
     }
     else
     {
-        while (lock->lock & SSPINLOCKF_WRITE)
+        while (lock->lock & SPINLOCKF_WRITE)
         {
             if (failhook)
             {
