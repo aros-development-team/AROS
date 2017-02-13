@@ -419,6 +419,7 @@ int Exec_X86Init(struct ExecBase *SysBase)
 #endif
 
     D(bug("[Exec:X86] %s()\n", __func__));
+    D(bug("[Exec:X86] %s: KernelBase @ 0x%p\n", __func__, __kernelBase));
     D(bug("[Exec:X86] %s: PlatformData @ 0x%p\n", __func__, &sysBase->PlatformData));
 
     /* Install The default Power Management handlers */
@@ -464,4 +465,4 @@ int Exec_X86Init(struct ExecBase *SysBase)
     return TRUE;
 }
 
-ADD2INITLIB(Exec_X86Init, 0)
+ADD2INITLIB(Exec_X86Init, -127)
