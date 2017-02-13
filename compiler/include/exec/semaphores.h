@@ -9,6 +9,8 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
 #ifndef EXEC_LISTS_H
 #    include <exec/lists.h>
 #endif
@@ -25,6 +27,9 @@
 #    include <exec/tasks.h>
 #endif
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#endif
 
                            /* Signal Semaphores */
 
@@ -33,6 +38,9 @@ struct SemaphoreRequest
 {
     struct MinNode sr_Link;
     struct Task  * sr_Waiter;
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t          sr_SpinLock;
+#endif
 };
 
 struct SignalSemaphore
