@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,6 +15,30 @@
 #include <proto/kernel.h>
 
 #define D(x)
+
+void __spinlock_acquire(spinlock_t *lock)
+{
+    asm volatile ("lock btsl %1, %0\n\t"
+        "jnc 1f\n\t"
+        "\n2: pause\n\t"
+        "testl %2, %0\n\t"
+        "je 2b\n\t"
+        "lock btsl %1, %0\n\t"
+        "jc 2b\n\t"
+        "\n1:"
+        :"+m"(lock->lock):"Ir"(SPINLOCKB_WRITE),"r"(SPINLOCKF_WRITE):"memory"
+    );
+}
+
+int __spinlock_is_locked(spinlock_t *lock)
+{
+    return (lock->lock & SPINLOCKF_WRITE) != 0;
+}
+
+void __spinlock_release(spinlock_t *lock)
+{
+    lock->lock = 0;
+}
 
 AROS_LH3(spinlock_t *, KrnSpinLock,
 	AROS_LHA(spinlock_t *, lock, A1),
