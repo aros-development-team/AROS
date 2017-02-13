@@ -10,15 +10,19 @@ typedef struct {
             unsigned int        readcount : 24;
             unsigned int        _pad2 : 3;
             unsigned int        write : 1;
-            unsigned int        _pad1 : 4;
+            unsigned int        _pad1 : 3;
+            unsigned int        updating : 1;
         } slock;
+        volatile unsigned char  block[4];
         volatile unsigned long  lock;
     };
 } __attribute__((__aligned__(128))) spinlock_t;
 
 #define SPINLOCK_UNLOCKED               0
 #define SPINLOCKB_WRITE                 27
+#define SPINLOCKB_UPDATING              31
 #define SPINLOCKF_WRITE                 (1 << SPINLOCKB_WRITE)
+#define SPINLOCKF_UPDATING              (1 << SPINLOCKB_UPDATING)
 
 #define SPINLOCK_INIT_UNLOCKED          { SPINLOCK_UNLOCKED }
 #define SPINLOCK_INIT_WRITE_LOCKED      { SPINLOCKF_WRITE }
