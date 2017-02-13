@@ -7,10 +7,10 @@ typedef struct {
     union
     {
         volatile struct {
-            unsigned int        _pad1 : 4;
-            unsigned int        write : 1;
-            unsigned int        _pad2 : 3;
             unsigned int        readcount : 24;
+            unsigned int        _pad2 : 3;
+            unsigned int        write : 1;
+            unsigned int        _pad1 : 4;
         } slock;
         volatile unsigned long  lock;
     };
