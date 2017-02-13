@@ -73,6 +73,7 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
         spinlock_t *__ret = a; \
         if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
             __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  &Exec_TaskSpinLockForbidHook,  &Exec_TaskSpinLockFailHook,  b); \
+        else Forbid(); \
         __ret;  \
    })
 #define EXECTASK_SPINLOCK_LOCKDISABLE(a,b) \
@@ -80,6 +81,7 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
         spinlock_t *__ret = a; \
         if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
             __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  &Exec_TaskSpinLockDisableHook,  &Exec_TaskSpinLockFailHook,  b); \
+        else Disable(); \
         __ret;  \
    })
 #define EXECTASK_SPINLOCK_UNLOCK(a) \
