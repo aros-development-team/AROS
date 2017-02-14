@@ -13,13 +13,12 @@
 
 #include "etask.h"
 
-void sleep_function()
-{
-    asm volatile ("sti; hlt;");
-}
-
 void IdleTask(struct ExecBase *SysBase)
 {
+    #if 0
+    APTR superstack;
+    #endif
+    
     D(
         struct Task *thisTask = FindTask(NULL);
         struct IntETask *taskIntEtask;
@@ -32,8 +31,13 @@ void IdleTask(struct ExecBase *SysBase)
     do
     {
         /* forever */
-
-        Supervisor(sleep_function);
+        #if 0
+        if ((superstack = SuperState()))
+        {
+            asm volatile ("sti; hlt;");
+            UserState(superstack);
+        }
+        #endif
 
         D(
             if ((taskIntEtask = GetIntETask(thisTask)) != NULL)
