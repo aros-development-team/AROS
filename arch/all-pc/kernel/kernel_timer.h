@@ -26,7 +26,7 @@ static inline unsigned short pit_wait(unsigned short start)
     {
         outb(CH0|ACCESS_LATCH, PIT_CONTROL);
         tick = ch_read(PIT_CH0);
-    } while ((tick > 0) && (tick < start));
+    } while ((tick > 0) && (tick <= start));
 
     return tick;
 }
