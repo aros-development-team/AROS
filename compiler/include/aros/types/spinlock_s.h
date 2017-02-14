@@ -14,7 +14,7 @@ typedef struct {
             unsigned int        updating : 1;
         } slock;
         volatile unsigned char  block[4];
-        volatile unsigned long  lock;
+        volatile unsigned int   lock;
     };
 } __attribute__((__aligned__(128))) spinlock_t;
 
