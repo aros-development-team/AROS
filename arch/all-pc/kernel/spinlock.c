@@ -131,7 +131,11 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
         spinlock is for our exclusive use here), and then release it just by setting updating flag to 0
         */
         lock->slock.readcount++;
+#if defined(AROS_NO_ATOMIC_OPERATIONS)
         lock->slock.updating = 0;
+#else
+        __AROS_ATOMIC_AND_L(lock->lock, ~SPINLOCKF_UPDATING);
+#endif
     }
 
     D(bug("[Kernel] %s: lock = %08x\n", __func__, lock->lock));
