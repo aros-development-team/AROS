@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,7 +20,11 @@
  *
  * Many m68k programs assume forbid state won't get broken.
  */
-#ifndef __mc68000
+#if defined(__AROSEXEC_SMP__)
+#define MEM_LOCK        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->MemListSpinLock, SPINLOCK_MODE_WRITE)
+#define MEM_LOCK_SHARED EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->MemListSpinLock, SPINLOCK_MODE_READ)
+#define MEM_UNLOCK      EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->MemListSpinLock)
+#elif !defined(__mc68000)
 #define MEM_LOCK        ObtainSemaphore(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_LOCK_SHARED ObtainSemaphoreShared(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_UNLOCK      ReleaseSemaphore(&PrivExecBase(SysBase)->MemListSem)
