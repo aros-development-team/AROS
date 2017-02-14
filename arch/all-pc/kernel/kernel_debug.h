@@ -34,8 +34,15 @@ void krnPanic(struct KernelBase *KernelBase, const char *fmt, ...);
 
 #if defined(__AROSEXEC_SMP__)
 #include <aros/atomic.h>
-extern ULONG   safedebug;
+extern volatile ULONG   safedebug;
 #endif
+
+static inline int __btsl(volatile ULONG *lock)
+{
+    char retval = 0;
+    asm volatile("lock btsl %2, %0; setc %1":"+m"(*lock),"=r"(retval):"Ir"(1):"memory");
+    return retval;
+}
 
 static inline void _bug(APTR kernelBase, const char *format, ...)
 {
@@ -46,8 +53,7 @@ static inline void _bug(APTR kernelBase, const char *format, ...)
     {
         __save_flags(flags);
         __cli();
-        while ((safedebug & ~2) != 0) {};
-        __AROS_ATOMIC_OR_L(safedebug, (1 << 1));
+        while (__btsl(&safedebug)) { asm volatile("pause"); };
     }
 #endif
     va_start(args, format);
