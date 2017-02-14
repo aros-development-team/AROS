@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <asm/cpu.h>
 #include <aros/atomic.h>
 #include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
@@ -15,19 +16,6 @@
 
 #define D(x)
 
-static inline int lock_cmpxchg_b(spinlock_t *lock, UBYTE *err)
-{
-    UBYTE retval;
-    UBYTE ret;
-    asm volatile("lock cmpxchgb %b4, %0; setz %1"
-        :"+m"(lock->block[3]),"=r"(retval),"=a"(ret)
-        :"2"(0),"d"(SPINLOCKF_UPDATING >> 24)
-        :"memory"
-    );
-    *err = ret;
-    return retval;
-}
-
 AROS_LH1(void, KrnSpinUnLock,
 	AROS_LHA(spinlock_t *, lock, A0),
 	struct KernelBase *, KernelBase, 44, Kernel)
@@ -36,23 +24,17 @@ AROS_LH1(void, KrnSpinUnLock,
 
     D(bug("[Kernel] %s(0x%p)\n", __func__, lock));
 
-    // Warning: replace this if of WRITE mode spinlock with proper cmpxchg...
-    if (lock->lock & SPINLOCKF_WRITE)
+    /* 
+    use cmpxchg - expect SPINLOCKF_WRITE and replace it with 0 (unlocking the spinlock), if that succeeded, the lock
+    was in WRITE mode and is now free. If that was not the case, continue with unlocking READ mode spinlock
+    */
+    if (!compare_and_exchange_long((ULONG*)&lock->lock, SPINLOCKF_WRITE, 0, NULL))
     {
-#if defined(AROS_NO_ATOMIC_OPERATIONS)
-        lock->lock &= ~SPINLOCKF_WRITE;
-#else
-        __AROS_ATOMIC_AND_L(lock->lock, ~SPINLOCKF_WRITE);
-#endif
-    }
-    else
-    {
-        UBYTE tmp;
         /*
         Unlocking READ mode spinlock means we need to put it into UDPATING state, decrement counter and unlock from
         UPDATING state.
         */
-        while (!lock_cmpxchg_b(lock, &tmp))
+        while (!compare_and_exchange_byte((UBYTE*)&lock->block[3], 0, SPINLOCKF_UPDATING >> 24, NULL))
         {
             // Tell CPU we are spinning
             asm volatile("pause");
