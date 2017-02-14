@@ -2,7 +2,7 @@
 #define ASM_I386_CPU_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: assembler-level specific definitions for x86 CPU
@@ -75,6 +75,104 @@ static inline uint32_t __attribute__((always_inline)) rdmsri(uint32_t msr_no)
 
     asm volatile("rdmsr":"=a"(ret):"c"(msr_no));
     return ret;
+}
+
+/*
+Compare value stored at "addr" with "expected". If they are equal, function returns 1 and stores "xchg" value
+at "addr". If *addr != expected, function returns 0. Either "expected" or current value at *addr are stored back
+at *found. The operation is atomic
+*/
+static inline int compare_and_exchange_long(uint32_t *addr, uint32_t expected, uint32_t xchg, uint32_t *found)
+{
+    char flag;
+    uint32_t ret;
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*addr),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    if (found)
+        *found = ret;
+    return flag;
+}
+
+static inline int compare_and_exchange_short(uint16_t *lock, uint16_t expected, uint16_t xchg, uint16_t *found)
+{
+    char flag;
+    uint16_t ret;
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*lock),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    if (found)
+        *found = ret;
+    return flag;
+}
+
+static inline int compare_and_exchange_byte(uint8_t *lock, uint8_t expected, uint8_t xchg, uint8_t *found)
+{
+    char flag;
+    uint16_t ret;
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*lock),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    if (found)
+        *found = ret;
+    return flag;
+}
+
+static inline int bit_test_and_set_long(uint32_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btsl %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_set_short(uint16_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btsw %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_set_byte(uint8_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btsb %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_clear_long(uint32_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btrl %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_clear_short(uint16_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btrw %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_clear_byte(uint8_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btrb %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_complement_long(uint32_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btcl %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_complement_short(uint16_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btcw %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_complement_byte(uint8_t *addr, uint8_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btcb %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    return retval;
 }
 
 #endif
