@@ -260,7 +260,11 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
     NEWLIST(&PrivExecBase(SysBase)->AllocatorCtxList);
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->MemListSpinLock);
+#else
     InitSemaphore(&PrivExecBase(SysBase)->MemListSem);
+#endif
     InitSemaphore(&PrivExecBase(SysBase)->LowMemSem);
 
     SysBase->SoftVer        = VERSION_NUMBER;
