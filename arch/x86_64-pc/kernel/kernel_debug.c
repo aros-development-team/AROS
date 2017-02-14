@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,7 @@
 #include "kernel_intern.h"
 
 #if defined(__AROSEXEC_SMP__)
-ULONG   safedebug = 1;
+volatile ULONG   safedebug = 1;
 #endif
 
 int krnPutC(int c, struct KernelBase *KernelBase)
