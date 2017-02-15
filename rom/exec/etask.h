@@ -2,12 +2,14 @@
 #define _ETASK_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal description of the ETask structure
     Lang: english
 */
+
+#include <aros/config.h>
 
 #include <exec/interrupts.h>
 #include <exec/tasks.h>
@@ -16,6 +18,10 @@
 #include <exec_platform.h>
 
 #include "alertextra.h"
+
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#endif
 
 /* Known alert context types */
 #define AT_NONE     0x00
