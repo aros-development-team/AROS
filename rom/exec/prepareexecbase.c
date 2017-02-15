@@ -262,7 +262,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_INIT(&PrivExecBase(SysBase)->MemListSpinLock);
-#else
+#elif defined(__AROSEXEC_BROKENMEMLOCK__)
     InitSemaphore(&PrivExecBase(SysBase)->MemListSem);
 #endif
     InitSemaphore(&PrivExecBase(SysBase)->LowMemSem);
