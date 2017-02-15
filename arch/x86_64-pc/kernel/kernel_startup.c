@@ -20,9 +20,9 @@
 
 #include "boot_utils.h"
 #include "kernel_base.h"
+#include "kernel_intern.h"
 #include "kernel_bootmem.h"
 #include "kernel_debug.h"
-#include "kernel_intern.h"
 #include "kernel_mmap.h"
 #include "kernel_romtags.h"
 #include "apic.h"

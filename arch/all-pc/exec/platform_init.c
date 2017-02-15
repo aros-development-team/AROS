@@ -34,6 +34,8 @@ extern AROS_INTP(Exec_X86ColdResetHandler);
 #define EXCX_REGC    regs->ecx
 #endif
 
+#define DSPIN(x)
+
 #if defined(__AROSEXEC_SMP__)
 struct Hook Exec_TaskSpinLockFailHook;
 struct Hook Exec_TaskSpinLockForbidHook;
@@ -49,11 +51,11 @@ AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
     struct Task *spinTask = GET_THIS_TASK;
     struct IntETask *thisET;
 
-    D(bug("[Exec:X86] %s()\n", __func__));
+    DSPIN(bug("[Exec:X86] %s()\n", __func__));
     thisET = GetIntETask(spinTask);
     if (thisET)
     {
-        D(bug("[Exec:X86] %s: Setting task @ 0x%p to spinning...\n", __func__, spinTask));
+        DSPIN(bug("[Exec:X86] %s: Setting task @ 0x%p to spinning...\n", __func__, spinTask));
 
         /* tell the scheduler that the task is waiting on a spinlock */
         spinTask->tc_State = TS_SPIN;
@@ -61,7 +63,7 @@ AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
         thisET->iet_SpinLock = spinLock;
 
     }
-    D(bug("[Exec:X86] %s: Forcing Reschedule...\n", __func__));
+    DSPIN(bug("[Exec:X86] %s: Forcing Reschedule...\n", __func__));
 
     /* schedule us away for now .. */
     Reschedule();
@@ -76,14 +78,14 @@ AROS_UFH3(void, Exec_TaskSpinLockForbidFunc,
 {
     AROS_USERFUNC_INIT
 
-    D(
+    DSPIN(
         struct Task *spinTask = GET_THIS_TASK;
         bug("[Exec:X86] %s(0x%p)\n", __func__, spinTask);
     )
  
     Forbid();
 
-    D(bug("[Exec:X86] %s: done\n", __func__));
+    DSPIN(bug("[Exec:X86] %s: done\n", __func__));
 
     AROS_USERFUNC_EXIT
 }
@@ -95,14 +97,14 @@ AROS_UFH3(void, Exec_TaskSpinLockDisableFunc,
 {
     AROS_USERFUNC_INIT
 
-    D(
+    DSPIN(
         struct Task *spinTask = GET_THIS_TASK;
         bug("[Exec:X86] %s(0x%p)\n", __func__, spinTask);
     )
  
     Disable();
 
-    D(bug("[Exec:X86] %s: done\n", __func__));
+    DSPIN(bug("[Exec:X86] %s: done\n", __func__));
 
     AROS_USERFUNC_EXIT
 }
@@ -113,7 +115,7 @@ void Exec_TaskSpinUnlock(spinlock_t *spinLock)
     struct Task *spinTask, *nxtTask;
     struct IntETask *thisET;
 #endif
-    D(bug("\n[Exec:X86] %s(0x%p)\n", __func__, spinLock));
+    DSPIN(bug("\n[Exec:X86] %s(0x%p)\n", __func__, spinLock));
 
 #if (0)
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_WRITE);
@@ -133,26 +135,26 @@ void Exec_TaskSpinUnlock(spinlock_t *spinLock)
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
 #endif
 
-    D(bug("[Exec:X86] %s: done\n\n", __func__));
+    DSPIN(bug("[Exec:X86] %s: done\n\n", __func__));
 }
 
 void X86_HandleSpinLock(struct ExceptionContext *regs)
 {
     struct ExecSpinSCData *spinData = (struct ExecSpinSCData *)EXCX_REGB;
 
-    D(bug("[Exec:X86] %s(0x%p, 0x%p, %08x)\n", __func__, spinData->lock_ptr, spinData->lock_failhook, spinData->lock_mode));
+    DSPIN(bug("[Exec:X86] %s(0x%p, 0x%p, %08x)\n", __func__, spinData->lock_ptr, spinData->lock_failhook, spinData->lock_mode));
 
     Kernel_43_KrnSpinLock(spinData->lock_ptr, spinData->lock_failhook, spinData->lock_mode, NULL);
 
     if (spinData->lock_obtainhook)
     {
-        D(bug("[Exec:X86] %s: calling lock-obtained hook @ 0x%p ...\n", __func__, spinData->lock_obtainhook);)
+        DSPIN(bug("[Exec:X86] %s: calling lock-obtained hook @ 0x%p ...\n", __func__, spinData->lock_obtainhook);)
         CALLHOOKPKT(spinData->lock_obtainhook, (APTR)spinData->lock_ptr, 0);
     }
 
     EXCX_REGA = (IPTR)spinData->lock_ptr;
 
-    D(bug("[Exec:X86] %s: done\n", __func__));
+    DSPIN(bug("[Exec:X86] %s: done\n", __func__));
 
     return;
 }
@@ -175,9 +177,9 @@ spinlock_t *ExecSpinLockCall(spinlock_t *spinLock, struct Hook *hookObtained, st
         spinMode
     };
     spinlock_t *__retval;
-    D(bug("\n[Exec:X86] %s: attempting to lock 0x%p\n", __func__, spinLock));
+    DSPIN(bug("\n[Exec:X86] %s: attempting to lock 0x%p\n", __func__, spinLock));
     __retval = krnSysCallSpinLock(&__spinData);
-    D(bug("[Exec:X86] %s: returning 0x%p\n\n", __func__, __retval));
+    DSPIN(bug("[Exec:X86] %s: returning 0x%p\n\n", __func__, __retval));
     return __retval;
 }
 #endif

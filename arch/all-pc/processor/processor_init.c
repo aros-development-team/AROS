@@ -29,7 +29,10 @@ void Processor_QueryTask(struct ExecBase *SysBase)
     thisTask = FindTask(NULL);
     procInfo = thisTask->tc_UserData;
 
-    ReadProcessorInformation(procInfo);
+    if (procInfo)
+        ReadProcessorInformation(procInfo);
+    else
+        bug("[processor.x86] %s: ERROR: procinfo missing!\n", __func__)
 
     D(bug("[processor.x86] %s: Finished!\n", __func__));
 }

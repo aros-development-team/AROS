@@ -14,11 +14,11 @@
 #include <inttypes.h>
 
 #include "kernel_base.h"
+#include "kernel_intern.h"
 #include "kernel_bootmem.h"
 #include "kernel_debug.h"
 #include "kernel_globals.h"
 #include "kernel_interrupts.h"
-#include "kernel_intern.h"
 #include "kernel_intr.h"
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
@@ -75,7 +75,7 @@ IRQPROTO_16(0xE);
 IRQPROTO_16(0xF);
 extern void core_DefaultIRETQ(void);
 
-const void *interrupt[256] =
+const void *IntrDefaultGates[256] =
 {
     IRQLIST_16(0x0),
     IRQLIST_16(0x1),
@@ -95,22 +95,65 @@ const void *interrupt[256] =
     IRQLIST_16(0xF)
 };
 
-BOOL core_SetIDTGate(struct int_gate_64bit *IGATES, int IRQ, uintptr_t gate)
+/* Set the raw CPU vectors gate in the IDT */
+BOOL core_SetIDTGate(struct int_gate_64bit *IGATES, int vect, uintptr_t gate, BOOL enable)
 {
     DIDT(
-        bug("[Kernel] %s: Setting IRQ #%d gate for IDT @ 0x%p\n", __func__, IRQ, IGATES);
+        APTR gateOld;
+
+        bug("[Kernel] %s: Setting IDTGate #%d IDT @ 0x%p\n", __func__, vect, IGATES);
+        bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
+    
+        gateOld = (APTR)((((IPTR)IGATES[vect].offset_high & 0xFFFFFFFF) << 32) | (((IPTR)IGATES[vect].offset_mid & 0xFFFF) << 16) | ((IPTR)IGATES[vect].offset_low & 0xFFFF));
+        if (gateOld) bug("[Kernel] %s: existing gate @ 0x%p\n", __func__, gateOld);
+    )
+
+    /* If the gate isnt already enabled, set it..*/
+    if (!IGATES[vect].p)
+    {
+        IGATES[vect].offset_low = gate & 0xFFFF;
+        IGATES[vect].offset_mid = (gate >> 16) & 0xFFFF;
+        IGATES[vect].offset_high = (gate >> 32) & 0xFFFFFFFF;
+        IGATES[vect].type = 0x0E;
+        IGATES[vect].dpl = 3;
+        if (enable)
+            IGATES[vect].p = 1;
+        IGATES[vect].selector = KERNEL_CS;
+        IGATES[vect].ist = 0;
+
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* Set a hardware IRQs gate in the IDT */
+BOOL core_SetIRQGate(void *idt, int IRQ, uintptr_t gate)
+{
+    struct int_gate_64bit *IGATES = (struct int_gate_64bit *)idt;
+    DIDT(
+        bug("[Kernel] %s: Setting IRQGate #%d\n", __func__, IRQ);
         bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
     )
-    IGATES[IRQ].offset_low = gate & 0xffff;
-    IGATES[IRQ].offset_mid = (gate >> 16) & 0xffff;
-    IGATES[IRQ].offset_high = (gate >> 32) & 0xffffffff;
-    IGATES[IRQ].type = 0x0e;
-    IGATES[IRQ].dpl = 3;
-    IGATES[IRQ].p = 1;
-    IGATES[IRQ].selector = KERNEL_CS;
-    IGATES[IRQ].ist = 0;
 
-    return TRUE;
+    return core_SetIDTGate(IGATES, HW_IRQ_BASE + IRQ, gate, TRUE);
+}
+
+void core_ReloadIDT(struct KernBootPrivate *__KernBootPrivate)
+{
+    struct KernelBase *KernelBase = getKernelBase();
+    struct APICData *apicData  = KernelBase->kb_PlatformData->kb_APIC;
+    apicid_t cpuNo = KrnGetCPUNumber();
+    struct segment_selector IDT_sel;
+
+    struct int_gate_64bit *IGATES = (struct int_gate_64bit *)apicData->cores[cpuNo].cpu_IDT;
+
+    DIRQ(bug("[Kernel] %s()\n", __func__);)
+
+    IDT_sel.size = sizeof(struct int_gate_64bit) * 256 - 1;
+    IDT_sel.base = (unsigned long)IGATES;
+    DIDT(bug("[Kernel] %s[%d]:    base 0x%p, size %d\n", __func__, cpuNo, IDT_sel.base, IDT_sel.size));
+
+    asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
 void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, APTR idt_ptr)
@@ -129,14 +172,12 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, 
             bug("[Kernel] %s[%d]: Setting default gates\n", __func__, _APICID);
         )
 
+        // Disable ALL the default gates until something takes ownership
         for (i=0; i < 256; i++)
         {
-            if (interrupt[i])
-                off = (uintptr_t)interrupt[i];
-            else
-                off = (uintptr_t)core_DefaultIRETQ;
+            off = (uintptr_t)core_DefaultIRETQ;
 
-            if (!core_SetIDTGate(IGATES, i, off))
+            if (!core_SetIDTGate(IGATES, i, off, FALSE))
             {
                 bug("[Kernel] %s[%d]: gate #%d failed\n", __func__, _APICID, i);
             }
@@ -161,8 +202,6 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate, apicid_t _APICID, 
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
-
-    DIRQ(bug("[Kernel] %s(%02X)\n", __func__, irq_number);)
 
 #ifdef EMULATE_SYSBASE
     if (irq_number == 0x0e)
@@ -318,12 +357,13 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     }
 #endif
 
-    /* The first 32 "hardware IRQs" are CPU exceptions */
+    /* The Device IRQ's come after the first 32 CPU exception vectors */
     if (irq_number < HW_IRQ_BASE)
     {
+        DTRAP(bug("[Kernel] %s: CPU Exception %08x\n", __func__, irq_number);)
     	cpu_Trap(regs, error_code, irq_number);
     }
-    else if (irq_number == 0x80)  /* Syscall? */
+    else if (irq_number == APIC_IRQ_SYSCALL)  /* Was it a Syscall? */
     {
         struct PlatformData *pdata = KernelBase->kb_PlatformData;
         struct syscallx86_Handler *scHandler;
@@ -331,12 +371,13 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         BOOL systemSysCall = TRUE;
 
 	/* Syscall number is actually ULONG (we use only eax) */
-        DSYSCALL(bug("[Kernel] Syscall %08x\n", sc));
+        DSYSCALL(bug("[Kernel] %s: Syscall %08x\n", __func__, sc));
 
         ForeachNode(&pdata->kb_SysCallHandlers, scHandler)
         {
             if ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == sc)
             {
+                DSYSCALL(bug("[Kernel] %s: calling handler @ 0x%p\n", __func__, scHandler));
                 scHandler->sc_SysCall(regs);
                 if (scHandler->sc_Node.ln_Type == 1)
                     systemSysCall = FALSE;
@@ -352,7 +393,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	 */
         if ((systemSysCall) && (regs->ss != 0))
         {
-            DSYSCALL(bug("[Kernel] User-mode syscall\n"));
+            DSYSCALL(bug("[Kernel] %s: User-mode syscall\n", __func__));
 
 	    /* Disable interrupts for a while */
 	    __asm__ __volatile__("cli; cld;");
@@ -360,17 +401,18 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	    core_SysCall(sc, regs);
         }
 
-	DSYSCALL(bug("[Kernel] Returning from syscall...\n"));
+	DSYSCALL(bug("[Kernel] %s: Returning from syscall...\n", __func__));
     }
-    else if (irq_number >= HW_IRQ_BASE) /* Hardware IRQ */
+    else if (irq_number >= HW_IRQ_BASE)  
     {
+        irq_number -= HW_IRQ_BASE;
+        DIRQ(bug("[Kernel] %s: Device IRQ #$%02X\n", __func__, irq_number);)
+
 	if (KernelBase)
     	{
             struct IntrController *irqIC;
             struct KernelInt *irqInt;
 
-	    /* From CPU's point of view, IRQs are exceptions starting from 0x20. */
-    	    irq_number -= HW_IRQ_BASE;
             irqInt = &KernelBase->kb_Interrupts[irq_number];
 
             if ((irqIC = krnGetInterruptController(KernelBase, irqInt->ki_List.lh_Type)) != NULL)
@@ -378,12 +420,12 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
                 if (irqIC->ic_IntrAck)
                     irqIC->ic_IntrAck(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
 
-                if (irqInt->ki_Priv & IRQINTF_ENABLED)
+                if ((irqInt->ki_Priv & IRQINTF_ENABLED)&&
+                    (!IsListEmpty(&irqInt->ki_List)))
                     krnRunIRQHandlers(KernelBase, irq_number);
 
                 if ((irqIC->ic_Flags & ICF_ACKENABLE) &&
-                    (irqIC->ic_IntrEnable) &&
-                    (!IsListEmpty(&irqInt->ki_List)))
+                    (irqIC->ic_IntrEnable))
                     irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
             }
 	}

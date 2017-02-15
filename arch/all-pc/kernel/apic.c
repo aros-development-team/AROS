@@ -74,6 +74,8 @@ apicid_t core_APIC_GetNumberFromLocal(struct APICData *data, apicid_t apicLocalI
 {
     apicid_t __APICNo;
 
+    D(bug("[APIC] %s()\n", __func__));
+
     if (!data)
     {
         /* No APIC data -> uniprocessor system */
@@ -96,19 +98,26 @@ apicid_t core_APIC_GetNumber(struct APICData *data)
 {
     apicid_t __APICLogicalID;
 
+    D(bug("[APIC] %s()\n", __func__));
+   
     if (!data)
     {
+        D(bug("[APIC] %s: BSP or uniprocessor\n", __func__));
         /* No APIC data -> uniprocessor system */
     	return 0;
     }
 
     __APICLogicalID = core_APIC_GetID(data->lapicBase);
 
+    D(bug("[APIC] %s: APIC ID %03u\n", __func__, __APICLogicalID));
+
     return core_APIC_GetNumberFromLocal(data, __APICLogicalID);
 }
 
 uint32_t core_APIC_GetMask(struct APICData *data, apicid_t cpuNo)
 {
+    D(bug("[APIC] %s()\n", __func__));
+
     if (!data)
     {
         /* No APIC data -> uniprocessor system */

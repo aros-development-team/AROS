@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel IA-32 APIC driver.
@@ -13,9 +13,12 @@
 #define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
 
+#include <proto/exec.h>
+
 #include <inttypes.h>
 
 #include "kernel_base.h"
+#include "kernel_intern.h"
 #include "kernel_debug.h"
 #include "kernel_syscall.h"
 #include "kernel_timer.h"
@@ -56,18 +59,36 @@ icid_t APICInt_Register(struct KernelBase *KernelBase)
 
 BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
+#if (__WORDSIZE==64)
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct APICData *apicPrivate = kernPlatD->kb_APIC;
+#endif
+    APTR ssp;
     int irq;
 
     DINT(bug("[Kernel:APIC-IA32] %s(%d)\n", __func__, instanceCount));
 
-    /* Setup the APIC IRQs for CPU #0*/
-    for (irq = (APIC_IRQ_BASE - APIC_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - APIC_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
+    /* its not fatal to fail on these irqs... */
+    if ((ssp = SuperState()) != NULL)
     {
-        if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
+        /* Setup the APIC IRQs for CPU #0*/
+        for (irq = (APIC_IRQ_BASE - APIC_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - APIC_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
         {
-            bug("[Kernel:APIC-IA32] %s: failed to acquire IRQ %d\n", __func__, irq);
+            if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
+            {
+                bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);
+            }
+            else
+            {
+                if (!core_SetIRQGate((struct int_gate_64bit *)apicPrivate->cores[0].cpu_IDT, irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq]))
+                {
+                    bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's gate\n", __func__, irq);
+                }
+            }
         }
+        UserState(ssp);
     }
+        
     return TRUE;
 }
 
@@ -178,8 +199,68 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
     if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != (icintrid_t)-1)
     {
+        APTR ssp = NULL;
         int i;
+
         D(bug("[Kernel:APIC-IA32.%03u] %s: APIC IC ID #%d:%d\n", cpuNum, __func__, ICINTR_ICID(coreICInstID), ICINTR_INST(coreICInstID)));
+
+        /*
+         * NB: - BSP calls us in user mode, but AP's call us from supervisor
+         */
+        if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
+        {
+            /* Obtain/set the critical IRQs and Vectors */
+            for (i = 0; i < APIC_CPU_EXCEPT_COUNT; i++)
+            {
+                if ((HW_IRQ_BASE < i) && (cpuNum == 0))
+                {
+                    if (!krnInitInterrupt(KernelBase, (i - HW_IRQ_BASE), APICInt_IntrController.ic_Node.ln_Type, 0))
+                    {
+                        krnPanic(NULL, "Failed to obtain APIC Exception IRQ\n"
+                                       "IRQ #$%02X\n", (i - HW_IRQ_BASE));
+                    }
+                    if (!core_SetIRQGate(apic->cores[cpuNum].cpu_IDT, (i - HW_IRQ_BASE), (uintptr_t)IntrDefaultGates[i]))
+                    {
+                        krnPanic(NULL, "Failed to set APIC Exception IRQ Vector\n"
+                                       "IRQ #$%02X, Vector #$02X\n", (i - HW_IRQ_BASE), i);
+                    }
+                }
+                else if (!core_SetIDTGate((struct int_gate_64bit *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
+                {
+                    krnPanic(NULL, "Failed to set APIC Exception Vector\n"
+                                   "Vector #$%02X\n", i);
+                }
+            }
+            D(bug("[Kernel:APIC-IA32.%03u] %s: APIC Exception Vectors configured\n", cpuNum, __func__));
+
+            if ((APIC_IRQ_ERROR < HW_IRQ_COUNT) && (cpuNum == 0))
+            {
+                if (!krnInitInterrupt(KernelBase, (APIC_IRQ_ERROR - HW_IRQ_BASE), APICInt_IntrController.ic_Node.ln_Type, 0))
+                {
+                    krnPanic(NULL, "Failed to obtain APIC Error IRQ\n"
+                                   "IRQ #$%02X\n", (APIC_IRQ_ERROR - HW_IRQ_BASE));
+                }
+                if (!core_SetIRQGate(apic->cores[cpuNum].cpu_IDT, (APIC_IRQ_ERROR - HW_IRQ_BASE), (uintptr_t)IntrDefaultGates[APIC_IRQ_ERROR]))
+                {
+                    krnPanic(NULL, "Failed to set APIC Error IRQ Vector\n"
+                                   "IRQ #$%02X, Vector #$02X\n", (APIC_IRQ_ERROR - HW_IRQ_BASE), APIC_IRQ_ERROR);
+                }
+            }
+            else if (!core_SetIDTGate((struct int_gate_64bit *)apic->cores[cpuNum].cpu_IDT, APIC_IRQ_ERROR, (uintptr_t)IntrDefaultGates[APIC_IRQ_ERROR], TRUE))
+            {
+                krnPanic(NULL, "Failed to set APIC Error Vector\n"
+                               "Vector #$%02X\n", APIC_IRQ_ERROR);
+            }
+            D(bug("[Kernel:APIC-IA32.%03u] %s: APIC Error Vector #$%02X configured\n", cpuNum, __func__, APIC_IRQ_ERROR));
+
+            if (ssp)
+                UserState(ssp);
+        }
+        else
+        {
+            krnPanic(NULL, "Failed to configure APIC\n"
+                               "APIC #%03e ID %03u\n", cpuNum, apic->cores[cpuNum].cpu_LocalID);
+        }
 
         /* Use flat interrupt model with logical destination ID = 1 */
         APIC_REG(__APICBase, APIC_DFR) = DFR_FLAT;
@@ -206,8 +287,8 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
         D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR before enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
 
-        /* Set APIC error interrupt to fixed vector 0xFE interrupt on APIC error */
-        APIC_REG(__APICBase, APIC_ERROR_VEC) = 0xfe;
+        /* Set APIC error interrupt to fixed vector interrupt "APIC_IRQ_ERROR",  on APIC error */
+        APIC_REG(__APICBase, APIC_ERROR_VEC) = APIC_IRQ_ERROR;
 
         /* spec says clear errors after enabling vector. */
         if (maxlvt > 3)

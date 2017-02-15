@@ -95,6 +95,13 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 #if (__WORDSIZE==64)
     core_SetupIDT(__KernBootPrivate, apicCPUNo, apicCPU->cpu_IDT);
 
+    if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+    {
+        krnPanic(NULL, "Failed to set APIC Syscall Vector\n"
+                       "IRQ #$%02X\n", APIC_IRQ_SYSCALL);
+    }
+    D(bug("[Kernel:SMP] %s[%03u]: APIC Syscall Vector configured\n", __func__, apicCPUNo));
+
 #if (0)
     D(bug("[Kernel:SMP] %s[%03u]: Preparing MMU...\n", __func__, apicCPUNo));
     core_LoadMMU(&__KernBootPrivate->MMU);
@@ -225,7 +232,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
             apicData->cores[cpuNo].cpu_LocalID
         };
 
-        D(bug("[Kernel:SMP] Launching APIC #%u (ID %03u)\n", cpuNo + 1, apicData->cores[cpuNo].cpu_LocalID));
+        D(bug("[Kernel:SMP] Launching CPU #%u (ID %03u)\n", cpuNo + 1, apicData->cores[cpuNo].cpu_LocalID));
  
         apicData->cores[cpuNo].cpu_GDT = PlatformAllocGDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
         apicData->cores[cpuNo].cpu_TLS = PlatformAllocTLS(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
@@ -268,11 +275,17 @@ static int smp_Wake(struct KernelBase *KernelBase)
              * Before we proceed we need to make sure that the core has picked up
              * its stack and we can reload bootstrap argument area with another one.
              */
-            DWAKE(bug("[Kernel:SMP] Waiting for APIC #%u to initialise .. ", cpuNo + 1));
+            DWAKE(bug("[Kernel:SMP] Waiting for CPU #%u to initialise .. ", cpuNo + 1));
             while (!KrnSpinTryLock(&apicReadyLock, SPINLOCK_MODE_READ))
             {
                 current = RDTSC();
-                if (((current - start)/apicData->cores[0].cpu_TimerFreq) > 5)
+                if (((current - start)/apicData->cores[0].cpu_TimerFreq) >
+#if (DEBUG > 0)
+                    5000
+#else
+                    50
+#endif
+                )
                 {
                     wakeresult = -1;
                     break;
@@ -281,7 +294,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
             if (wakeresult != -1)
             {
                 KrnSpinUnLock(&apicReadyLock);
-                D(bug("[Kernel:SMP] APIC #%u started up\n", cpuNo + 1));
+                D(bug("[Kernel:SMP] CPU #%u started up\n", cpuNo + 1));
             }
         }
         D(if (wakeresult) { bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult); } )
