@@ -64,7 +64,7 @@
 
     /* Always protect task lists */
 #if defined(__AROSEXEC_SMP__)
-    listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    listLock = EXECTASK_SPINLOCK_LOCKDISABLE(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
 #else
     Disable();
 #endif
@@ -75,8 +75,8 @@
     {
 #if defined(__AROSEXEC_SMP__)
         EXECTASK_SPINLOCK_UNLOCK(listLock);
-        Permit();
-        listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+        Enable();
+        listLock = EXECTASK_SPINLOCK_LOCKDISABLE(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
 #endif
 	/* Then into the waiting list. */
 	ret = (struct Task *)FindName(&SysBase->TaskWait, name);
@@ -87,14 +87,14 @@
 	    */
 #if defined(__AROSEXEC_SMP__)
             EXECTASK_SPINLOCK_UNLOCK(listLock);
-            Permit();
-            listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+            Enable();
+            listLock = EXECTASK_SPINLOCK_LOCKDISABLE(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
             ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskRunning, name);
             if (ret == NULL)
             {
                 EXECTASK_SPINLOCK_UNLOCK(listLock);
-                Permit();
-                listLock = EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
+                Enable();
+                listLock = EXECTASK_SPINLOCK_LOCKDISABLE(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
                 ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskSpinning, name);
             }
 #else
