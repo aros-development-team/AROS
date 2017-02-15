@@ -7,9 +7,6 @@
     Lang: english
 */
 
-#define DEBUG 0
-
-#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
@@ -24,7 +21,7 @@ void ServiceTask(struct ExecBase *SysBase)
     struct Task *task;
     struct MemList *mb, *mbnext;
 
-    DINIT("Service task started up");
+    DINIT("ServiceTask: Started up");
 
     do
     { /* forever */
@@ -32,7 +29,7 @@ void ServiceTask(struct ExecBase *SysBase)
 
         while ((task = (struct Task *)GetMsg(PrivExecBase(SysBase)->ServicePort)))
         {
-            D(bug("[exec] Service request for task 0x%p, state %d\n", task, task->tc_State);)
+            DREMTASK("ServiceTask: Request for task 0x%p, state %08X\n", task, task->tc_State);
 
             /*
              * If we ever need to use TSS here, we'll need to explicitly check its size here.
@@ -44,7 +41,7 @@ void ServiceTask(struct ExecBase *SysBase)
 	    {
             case TS_INVALID:
             case TS_REMOVED:
-                DREMTASK("Removal request for task 0x%p <%s>", task, task->tc_Node.ln_Name);
+                DREMTASK("ServiceTask: Removal request for task 0x%p <%s>", task, task->tc_Node.ln_Name);
 
                 // TODO: Make sure the task has terminated..
                 task->tc_State = TS_INVALID;
@@ -65,23 +62,21 @@ void ServiceTask(struct ExecBase *SysBase)
                     /* Free one MemList node */
                     mbnext = (struct MemList *)mb->ml_Node.ln_Succ;
 
-                    DREMTASK("Freeing MemList 0x%p", mb);
+                    DREMTASK("ServiceTask: Freeing MemList 0x%p", mb);
                     FreeEntry(mb);
                 }
                 break;
 
             default:
                 /* FIXME: Add fault handling here. Perhaps kernel-level GURU. */
-                DREMTASK("task 0x%p <%s> not in tombstoned state!", task, task->tc_Node.ln_Name);
+                DREMTASK("ServiceTask: task 0x%p <%s> not in tombstoned state!\n", task, task->tc_Node.ln_Name);
+                DREMTASK("ServiceTask: state = %08X\n", task->tc_State);
                 /* The task is ready to run again. Move it back to TaskReady list. */
+#if !defined(EXEC_REMTASK_NEEDSSWITCH)
                 task->tc_State = TS_READY;
-#if defined(__AROSEXEC_SMP__)
-                EXECTASK_SPINLOCK_LOCKFORBID(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
-#endif
                 Enqueue(&SysBase->TaskReady, &task->tc_Node);
-#if defined(__AROSEXEC_SMP__)
-                EXECTASK_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
-                Permit();
+#else
+                krnSysCallReschedTask(task, TS_READY);
 #endif
                 break;
             }
