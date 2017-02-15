@@ -169,6 +169,8 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
     }
     Permit();
 
+    D(bug("[EXEC:ETask] Init: Initialized\n");)
+
     return TRUE;
 }
 
