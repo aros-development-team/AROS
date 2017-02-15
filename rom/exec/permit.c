@@ -32,7 +32,7 @@
         struct ExecBase *, SysBase, 23, Exec)
 
 /*  FUNCTION
-        This function will reactivate the task dispatcher after a call
+        This function will reactivate the task dispatcher (*) after a call
         to Forbid(). Note that calls to Forbid() nest, and for every
         call to Forbid() you need a matching call to Permit().
 
@@ -48,8 +48,15 @@
         To prevent deadlocks calling Wait() in forbidden state breaks
         the forbid - thus taskswitches may happen again.
 
+        (*) On EXECSMP builds, Forbid() only aplies to the processor
+            it is called from. Data which needs to be protected from
+            parallel access will also require a spinlock.  
+
     EXAMPLE
-        No you really don't want to use this function.
+        On uniprocessor builds of AROS, it is generally not necessary/
+        desirable to use Forbid()/Permit() in most userspace code - however for
+        EXECSMP builds, you will need to protect spinlocks against
+        task switches on the local processor..
 
     BUGS
         The only architecture that you can rely on the registers being
