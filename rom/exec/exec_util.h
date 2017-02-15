@@ -9,6 +9,8 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
 #include <aros/asmcall.h>
 #include <exec/types.h>
 #include <utility/tagitem.h>
@@ -130,6 +132,9 @@ static inline void InitMsgPort(struct MsgPort *ret)
     ret->mp_Flags = PA_SIGNAL;
     /* Set port to type MsgPort */
     ret->mp_Node.ln_Type = NT_MSGPORT;
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&ret->mp_SpinLock);
+#endif
     /* Clear the list of messages */
     NEWLIST(&ret->mp_MsgList);
 }
