@@ -6,9 +6,6 @@
     Lang: english
 */
 
-#define DEBUG 0
-#include <aros/debug.h>
-
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
