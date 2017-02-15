@@ -13,18 +13,12 @@
 #include <exec/memory.h>
 #include <stddef.h>
 
-/*
- * EXPERIMENTAL: use semaphore protection instead of Forbid()/Permit() for
- * system memory allocation routines.
- * In case of problems use definitions below.
- *
- * Many m68k programs assume forbid state won't get broken.
- */
 #if defined(__AROSEXEC_SMP__)
 #define MEM_LOCK        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->MemListSpinLock, SPINLOCK_MODE_WRITE)
 #define MEM_LOCK_SHARED EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->MemListSpinLock, SPINLOCK_MODE_READ)
 #define MEM_UNLOCK      EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->MemListSpinLock)
-#elif !defined(__mc68000)
+#else
+#if defined(__AROSEXEC_BROKENMEMLOCK__)
 #define MEM_LOCK        ObtainSemaphore(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_LOCK_SHARED ObtainSemaphoreShared(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_UNLOCK      ReleaseSemaphore(&PrivExecBase(SysBase)->MemListSem)
@@ -32,6 +26,7 @@
 #define MEM_LOCK        Forbid()
 #define MEM_LOCK_SHARED Forbid()
 #define MEM_UNLOCK      Permit()
+#endif
 #endif
 
 #define POOL_MAGIC AROS_MAKE_ID('P','o','O','l')
