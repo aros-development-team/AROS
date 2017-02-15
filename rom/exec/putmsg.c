@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Send a message to a port.
@@ -72,11 +72,22 @@
 
 void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
 {
-    /* Add it to the message list. Messages may be sent from interrupts.
-       Therefore the message list of the message port must be protected with
-       Disable() */
+    /*
+     * Add a message to the ports list.
+     * NB : Messages may be sent from interrupts, therefore
+     * the message list of the message port must be protected
+     * with Disable() for the local core, and also a spinlock
+     * on smp systems.
+     */
+
     Disable();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&port->mp_SpinLock, SPINLOCK_MODE_WRITE);
+#endif
     AddTail(&port->mp_MsgList, &message->mn_Node);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&port->mp_SpinLock);
+#endif
     Enable();
 
     if (port->mp_SigTask)
@@ -107,6 +118,9 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
             case PA_CALL:
                 D(bug("[EXEC] PutMsg: PA_CALL, task 0x%p, port 0x%p\n", port->mp_SigTask, port);)
 
+#if defined(__AROSEXEC_SMP__)
+                //TODO! - the called function must be SMP safe.
+#endif
                 /* Call the function in mp_SigTask. */
                 AROS_UFC2NR(void, port->mp_SigTask,
                     AROS_UFCA(struct MsgPort *,  port,    D0),
