@@ -32,7 +32,8 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
     struct ExceptionContext *bsctx;
     struct MemList *ml;
 #define bstask          ((struct Task *)(ml->ml_ME[0].me_Addr))
-#define bstaskmlsize    (sizeof(struct MemList))
+#define bstaskmlsize    (sizeof(struct MemList) + sizeof(struct MemEntry))
+    IPTR bstNameArg[1];
 
     /* Build bootstraps memory list */
     if ((ml = AllocMem(bstaskmlsize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
@@ -41,7 +42,7 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
         return NULL;
     }
 
-    ml->ml_NumEntries      = 1;
+    ml->ml_NumEntries      = 2;
 
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     if ((ml->ml_ME[0].me_Addr = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
@@ -51,9 +52,10 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
         return NULL;
     }
 
-    AddHead(&bstask->tc_MemEntry, &ml->ml_Node);
-
     D(bug("[Kernel:%03u] %s: Bootstrap task @ 0x%p\n", cpuNo, __func__, bstask));
+
+    NEWLIST(&bstask->tc_MemEntry);
+    AddHead(&bstask->tc_MemEntry, &ml->ml_Node);
 
     if ((bsctx = KrnCreateContext()) == NULL)
     {
@@ -65,16 +67,20 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
 
     D(bug("[Kernel:%03u] %s: CPU Ctx @ 0x%p\n", cpuNo, __func__, bsctx));
 
-    NEWLIST(&bstask->tc_MemEntry);
 
-    if ((bstask->tc_Node.ln_Name = AllocVec(20, MEMF_CLEAR)) != NULL)
+    ml->ml_ME[1].me_Length = 20;
+    if ((ml->ml_ME[1].me_Addr = AllocMem(20, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
-        IPTR bstNameArg[] = 
-        {
-            cpuNo
-        };
-        RawDoFmt("CPU #%03u Bootstrap", (RAWARG)bstNameArg, RAWFMTFUNC_STRING, bstask->tc_Node.ln_Name);
+        bug("[Kernel:%03u] FATAL : Failed to allocate the bootstrap Task name\n", cpuNo);
+        FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
+        FreeMem(ml, bstaskmlsize);
+        return NULL;
     }
+
+    bstask->tc_Node.ln_Name = ml->ml_ME[1].me_Addr;
+    bstNameArg[0] = cpuNo;
+    RawDoFmt("CPU #%03u Bootstrap", (RAWARG)bstNameArg, RAWFMTFUNC_STRING, bstask->tc_Node.ln_Name);
+
     bstask->tc_Node.ln_Type = NT_TASK;
     bstask->tc_Node.ln_Pri  = 0;
     bstask->tc_State        = TS_READY;
@@ -84,7 +90,7 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
     if (!Exec_InitETask(bstask, NULL, SysBase))
     {
         bug("[Kernel:%03u] FATAL : Failed to initialize bootstrap ETask\n", cpuNo);
-        FreeVec(bstask->tc_Node.ln_Name);
+        FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
         FreeMem(ml, bstaskmlsize);
         return NULL;
