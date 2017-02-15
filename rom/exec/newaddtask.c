@@ -82,6 +82,7 @@
     AROS_LIBFUNC_INIT
 
     struct Task *parent;
+    struct MemList *mlExtra;
 
     ASSERT_VALID_PTR(task);
 
@@ -92,30 +93,41 @@
     parent = GET_THIS_TASK;
 
     /* Sigh - you should provide a name for your task. */
-    if (task->tc_Node.ln_Name == NULL)
+    if ((task->tc_Node.ln_Name == NULL) && (parent) && (parent->tc_Node.ln_Name))
     {
-#if (0)
-        // TODO: dont enable until it allocates storage for the task name in a better way ..
-        if (parent && parent->tc_Node.ln_Name)
+        IPTR fmtname[] =
         {
-            IPTR fmtname[] =
-            {
-                (IPTR)parent->tc_Node.ln_Name
-            };
+            (IPTR)parent->tc_Node.ln_Name
+        };
 
-            task->tc_Node.ln_Name = AllocVec(strlen(parent->tc_Node.ln_Name) + 10, MEMF_ANY);
-            RawDoFmt("%s.subtask", (RAWARG)&fmtname, RAWFMTFUNC_STRING, NULL);
+        if ((mlExtra = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+        {
+            mlExtra->ml_NumEntries = 1;
+            mlExtra->ml_ME[0].me_Length = strlen(parent->tc_Node.ln_Name) + 10;
+            if ((mlExtra->ml_ME[0].me_Addr = AllocMem(mlExtra->ml_ME[0].me_Length, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+            {
+                task->tc_Node.ln_Name = mlExtra->ml_ME[0].me_Addr;
+                RawDoFmt("%s.subtask", (RAWARG)&fmtname, RAWFMTFUNC_STRING, task->tc_Node.ln_Name);
+            }
+            else
+            {
+                FreeMem(mlExtra, sizeof(struct MemList));
+                mlExtra = NULL;
+            }
         }
-        else
-#endif
-            task->tc_Node.ln_Name = "bad task";
     }
+
+    if (task->tc_Node.ln_Name == NULL)
+            task->tc_Node.ln_Name = "bad task";
 
     DADDTASK("NewAddTask (0x%p (\"%s\"), 0x%p, 0x%p)", task, task->tc_Node.ln_Name, initialPC, finalPC);
 
     /* Initialize the memory entry list if the caller forgot */
     if (!task->tc_MemEntry.lh_Head)
         NEWLIST(&task->tc_MemEntry);
+
+    if (mlExtra)
+        AddTail(&task->tc_MemEntry, &mlExtra->ml_Node);
 
     DADDTASK("NewAddTask MemEntry head: 0x%p", GetHead(&task->tc_MemEntry.lh_Head));
 
