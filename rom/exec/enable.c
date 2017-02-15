@@ -29,7 +29,7 @@
         struct ExecBase *, SysBase, 21, Exec)
 
 /*  FUNCTION
-        This function will allow interrupts to occur after they have
+        This function will allow interrupts to occur (*) after they have
         been disabled by Disable().
 
         Note that calls to Disable() nest, and for every call to
@@ -37,15 +37,12 @@
 
         ***** WARNING *****
 
-        Using this function is considered very harmful, and it is
-        not recommended to use this function for ** ANY ** reason.
+
+        Using this function is considered very harmful, and it should only
+        ever be used to protect data that could also be accessed in interrupts.
 
         It is quite possible to either crash the system, or to prevent
         normal activities (disk/port i/o) from occuring.
-
-        Note: As taskswitching is driven by the interrupts subsystem,
-              this function has the side effect of disabling
-              multitasking.
 
     INPUTS
         None.
@@ -59,8 +56,16 @@
         To prevent deadlocks calling Wait() in disabled state breaks
         the disable - thus interrupts may happen again.
 
+        As the schedulers pre-emption is interrupt driven,
+        this function has the side effect of disabling
+        multitasking.
+
+        (*) On EXECSMP builds, Enable() only aplies to the processor
+            it is called from. Data which needs to be protected from
+            parallel access will also require a spinlock.            
+
     EXAMPLE
-        No you DEFINITATELY don't want to use this function.
+        In most userspace code, you will not want to use this function.
 
     BUGS
         The only architecture that you can rely on the registers being
