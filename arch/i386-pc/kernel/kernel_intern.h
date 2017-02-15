@@ -66,6 +66,14 @@ void core_SetupGDT(struct KernBootPrivate *, apicid_t, APTR, APTR, APTR);
 void core_SetupMMU(struct KernBootPrivate *, IPTR memtop);
 #endif
 
+#if (1)
+#define core_SetIDTGate(a, b, c, d)             (TRUE)
+#define core_SetIRQGate(a, b, c)                (TRUE)
+#else
+BOOL core_SetIDTGate(struct int_gate_64bit *, int, uintptr_t, BOOL);
+BOOL core_SetIRQGate(void *, int, uintptr_t);
+#endif
+
 void core_CPUSetup(apicid_t, APTR, IPTR);
 
 void ictl_Initialize(struct KernelBase *KernelBase);

@@ -6,9 +6,9 @@
 #include <asm/cpu.h>
 #include <exec/types.h>
 #include "kernel_base.h"
+#include "kernel_intern.h"
 #include "kernel_bootmem.h"
 #include "kernel_debug.h"
-#include "kernel_intern.h"
 #include "apic.h"
 
 #define D(x)

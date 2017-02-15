@@ -11,10 +11,15 @@
 #include "i8259a.h"
 
 // put the APIC IRQs after the cpu exceptions & pic IRQ's
-#define APIC_CPU_EXCEPT_COUNT  32
-#define APIC_IRQ_BASE          (APIC_CPU_EXCEPT_COUNT + I8259A_IRQCOUNT)
-#define APIC_LOCALIRQ_COUNT    10
-#define APIC_IRQ_COUNT         (255 - (INTB_KERNEL + APIC_IRQ_BASE + APIC_LOCALIRQ_COUNT))
+#define APIC_IRQ_MAX            256
+#define APIC_CPU_EXCEPT_COUNT   32
+#define APIC_IRQ_BASE           (APIC_CPU_EXCEPT_COUNT + I8259A_IRQCOUNT)
+#define APIC_LOCALIRQ_COUNT     10
+#define APIC_IRQ_COUNT          (APIC_IRQ_MAX - (INTB_KERNEL + APIC_IRQ_BASE + APIC_LOCALIRQ_COUNT))
+
+// really vectors...
+#define APIC_IRQ_SYSCALL        0x80
+#define APIC_IRQ_ERROR          0xFE
 
 /* Local APIC base address register (MSR #27) */
 #define MSR_LAPIC_BASE 0x1B

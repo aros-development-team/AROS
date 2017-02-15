@@ -14,9 +14,11 @@
 #ifndef __KERNEL_DEBUG_H_
 #define __KERNEL_DEBUG_H_
 
+#include <aros/config.h>
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
 #include <stdarg.h>
+
 #include "kernel_intern.h"
 
 #ifdef bug

@@ -6,8 +6,8 @@
 #include <bootconsole.h>
 
 #include "kernel_base.h"
-#include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_debug.h"
 
 #if defined(__AROSEXEC_SMP__)
 volatile ULONG   safedebug = 1;

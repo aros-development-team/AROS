@@ -85,10 +85,14 @@ struct PlatformData
 /* Main boot code */
 void core_Kick(struct TagItem *msg, void *target);
 void kernel_cstart(const struct TagItem *msg);
+void PlatformPostInit(void);
 
-/** CPU Functions **/
-void core_SetupIDT(struct KernBootPrivate *, apicid_t, APTR);
+/** CPU Related Functions **/
 void core_SetupGDT(struct KernBootPrivate *, apicid_t, APTR, APTR, APTR);
+void core_SetupIDT(struct KernBootPrivate *, apicid_t, APTR);
+BOOL core_SetIDTGate(struct int_gate_64bit *, int, uintptr_t, BOOL);
+BOOL core_SetIRQGate(void *, int, uintptr_t);
+void core_DefaultIRETQ();
 
 void core_SetupMMU(struct CPUMMUConfig *, IPTR memtop);
 void core_InitMMU(struct CPUMMUConfig *);
@@ -96,16 +100,16 @@ void core_LoadMMU(struct CPUMMUConfig *);
 
 void core_CPUSetup(apicid_t, APTR, IPTR);
 
+/* */
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
-void core_DefaultIRETQ();
-void ictl_Initialize(struct KernelBase *KernelBase);
-
-struct ExceptionContext;
-
-/* Interrupt processing */
-void core_LeaveInterrupt(struct ExceptionContext *);
 void core_Supervisor(struct ExceptionContext *);
 
-void PlatformPostInit(void);
+/* HW IRQ Related Functions */
+struct ExceptionContext;
+extern const void *IntrDefaultGates[256];
+
+void ictl_Initialize(struct KernelBase *KernelBase);
+
+void core_LeaveInterrupt(struct ExceptionContext *);
 
 #endif /*KERNEL_INTERN_H_*/

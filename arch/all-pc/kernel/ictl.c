@@ -24,12 +24,15 @@ void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
     {
         if ((irqIC->ic_IntrEnable) && (irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq)))
         {
-            D(bug("[Kernel] %s: enabled\n", __func__));
+            D(bug("[Kernel] %s: controller enabled\n", __func__));
             irqInt->ki_Priv |= IRQINTF_ENABLED;
         }
     }
     else
+    {
+        D(bug("[Kernel] %s: enabled\n", __func__));
         irqInt->ki_Priv |= IRQINTF_ENABLED;
+    }
 }
 
 void ictl_disable_irq(unsigned char irq, struct KernelBase *KernelBase)
@@ -43,12 +46,15 @@ void ictl_disable_irq(unsigned char irq, struct KernelBase *KernelBase)
     {
         if ((irqIC->ic_IntrDisable) && (irqIC->ic_IntrDisable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq)))
         {
-            D(bug("[Kernel] %s: disabled\n", __func__));
+            D(bug("[Kernel] %s: controller disabled\n", __func__));
             irqInt->ki_Priv &= ~IRQINTF_ENABLED;
         }
     }
     else
+    {
+        D(bug("[Kernel] %s: disabled\n", __func__));
         irqInt->ki_Priv &= ~IRQINTF_ENABLED;
+    }
 }
 
 BOOL ictl_is_irq_enabled(unsigned char irq, struct KernelBase *KernelBase)

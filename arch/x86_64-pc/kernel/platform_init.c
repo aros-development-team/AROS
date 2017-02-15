@@ -15,8 +15,8 @@
 #include <inttypes.h>
 
 #include "kernel_base.h"
-#include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_debug.h"
 
 #define D(x)
 #define DAPIC(x)
@@ -41,7 +41,9 @@ static int Platform_Init(struct KernelBase *LIBBASE)
         bug("[Kernel:x86_64] %s: KernelBase @ %p\n", __func__, LIBBASE);
     )
 
-    // Setup the Interrupt Controller Environment ...
+    /*
+     * Setup the Interrupt Controller Environment ...
+     */
     NEWLIST(&LIBBASE->kb_ICList);
     NEWLIST(&LIBBASE->kb_InterruptMappings);
     LIBBASE->kb_ICTypeBase = KBL_INTERNAL + 1;
@@ -50,13 +52,23 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     for (i = 0; i < HW_IRQ_COUNT; i++)
     {
-        LIBBASE->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
-        LIBBASE->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
+        if (i == APIC_IRQ_SYSCALL)
+        {
+            LIBBASE->kb_Interrupts[i].ki_Priv |= IRQINTF_ENABLED;               // Reserve the Syscall Handler..
+            LIBBASE->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL - 1;
+        }
+        else
+        {
+            LIBBASE->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
+            LIBBASE->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
+        }
     }
 
     D(bug("[Kernel:x86_64] %s: Interrupt Lists initialised\n", __func__));
 
-    // Setup our Platform Data ...
+    /*
+     * Setup our Platform Data ...
+     */
     pdata = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!pdata)
     	return FALSE;
@@ -65,8 +77,17 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     LIBBASE->kb_PlatformData = pdata;
 
-    // Setup the base syscall handler(s) ...
+    /*
+     * Setup the base syscall handler(s) ...
+     */
     NEWLIST(&pdata->kb_SysCallHandlers);
+
+    // we need to setup the BSP's syscall gate early..
+    if (!core_SetIDTGate((struct int_gate_64bit *)__KernBootPrivate->BOOTIDT, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+    {
+        krnPanic(NULL, "Failed to set BSP Syscall Vector\n"
+                       "Vector #%02X\n", APIC_IRQ_SYSCALL);
+    }
     krnAddSysCallHandler(pdata, &x86_SCSupervisorHandler, FALSE, TRUE);
 
     return TRUE;

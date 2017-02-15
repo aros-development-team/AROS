@@ -7,14 +7,16 @@
 
 #include <proto/exec.h>
 
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
+
 #include <asm/io.h>
 #include <inttypes.h>
 
 #include "kernel_base.h"
-#include "kernel_debug.h"
+#include "kernel_intern.h"
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
-#include "i8259a.h"
 
 #define D(x)
 #define DINT(x)
@@ -123,6 +125,10 @@ BOOL i8259a_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_
 
 BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
+#if (__WORDSIZE==64)
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct APICData *apicPrivate = kernPlatD->kb_APIC;
+#endif
     struct i8259a_Private *xtpicPriv;
     struct i8259a_Instance *xtPic;
     int instance, irq;
@@ -154,27 +160,37 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             xtPic->irq_base = HW_IRQ_BASE + instIRQBase;               /* route irqs after the cpu's exceptions */
             if (instance == 0)
             {
-                /* Take over the first 8259a IRQ's */
-                for (irq = instIRQBase; irq < (instIRQBase + I8259A_IRQCOUNT); irq++)
+                APTR ssp = NULL;
+
+                if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
                 {
-                    if (!krnInitInterrupt(KernelBase, irq, i8259a_IntrController.ic_Node.ln_Type, instance))
+                    /* Take over the first 8259a IRQ's */
+                    for (irq = instIRQBase; irq < (instIRQBase + I8259A_IRQCOUNT); irq++)
                     {
-                        bug("[Kernel:i8259a] %s: failed to acquire IRQ #%d\n", __func__, irq);
-                    }
-                    else
-                    {
-                        if ((irq - instIRQBase) != 2)
+                        if (!krnInitInterrupt(KernelBase, irq, i8259a_IntrController.ic_Node.ln_Type, instance))
                         {
-                            if (ictl_is_irq_enabled(irq, KernelBase))
-                                xtPic->irq_mask &= ~(1 << (irq - instIRQBase));
-                            else
-                                xtPic->irq_mask |= (1 << (irq - instIRQBase));
+                            bug("[Kernel:i8259a] %s: failed to acquire IRQ #%d\n", __func__, irq);
                         }
                         else
-                            xtPic->irq_mask &= ~(1 << (irq - instIRQBase));
+                        {
+                            if ((irq - instIRQBase) != 2)
+                            {
+                                if (!core_SetIRQGate((struct int_gate_64bit *)apicPrivate->cores[0].cpu_IDT, irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq]))
+                                {
+                                    bug("[Kernel:i8259a] %s: failed to set IRQ %d's gate\n", __func__, irq);
+                                }
+                                if (ictl_is_irq_enabled(irq, KernelBase))
+                                    xtPic->irq_mask &= ~(1 << (irq - instIRQBase));
+                                else
+                                    xtPic->irq_mask |= (1 << (irq - instIRQBase));
+                            }
+                            else
+                                xtPic->irq_mask &= ~(1 << (irq - instIRQBase));
+                        }
                     }
+                    if (ssp)
+                        UserState(ssp);
                 }
-
                 /* Setup the first registered 8259. Send four ICWs (see 8529 datasheet) */
                 asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(MASTER8259_CMDREG)); /* Initialization sequence for 8259A-1 (edge-triggered, cascaded, ICW4 needed) */
                 asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(SLAVE8259_CMDREG)); /* Initialization sequence for 8259A-2, the same as above */

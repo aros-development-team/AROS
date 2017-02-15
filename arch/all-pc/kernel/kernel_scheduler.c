@@ -44,7 +44,7 @@
 #if defined(__AROSEXEC_SMP__)
 void core_InitScheduleData(struct X86SchedulerPrivate *schedData)
 {
-    DSCHED(bug("[Kernel] %s(0x%p)\n", __func__, schedData));
+    DSCHED(bug("[Kernel] %s(0x%p)\n", __func__, schedData);)
     schedData->Quantum = SCHEDQUANTUM_VALUE;
 }
 #endif
@@ -53,12 +53,22 @@ void core_InitScheduleData(struct X86SchedulerPrivate *schedData)
 BOOL core_Schedule(void)
 {
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
-    apicid_t cpuNo = KrnGetCPUNumber();
+    apicid_t cpuNo;
 #endif
-    struct Task *task = GET_THIS_TASK;
+    struct Task *task;
     BOOL corereschedule = TRUE;
 
-    DSCHED(bug("[Kernel:%03u] %s(0x%p)\n", cpuNo, __func__, task));
+    DSCHED(bug("[Kernel] %s()\n", __func__);)
+
+    task = GET_THIS_TASK;
+#if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
+    cpuNo = KrnGetCPUNumber();
+#endif
+
+    DSCHED(
+        bug("[Kernel:%03u] %s: running Task @ 0x%p\n", cpuNo, __func__, task);
+        bug("[Kernel:%03u] %s: '%s', state %08x\n", cpuNo, __func__, task->tc_Node.ln_Name, task->tc_State);
+    )
 
     FLAG_SCHEDSWITCH_CLEAR;
 
@@ -139,13 +149,19 @@ BOOL core_Schedule(void)
 */
 void core_Switch(void)
 {
-    apicid_t cpuNo = KrnGetCPUNumber();
-    struct Task *task = GET_THIS_TASK;
+    apicid_t cpuNo;
+    struct Task *task;
     ULONG showAlert = 0;
 
-    DSCHED(bug("[Kernel:%03u] %s(0x%p:%08x)\n", cpuNo, __func__, task, task->tc_State));
+    DSCHED(bug("[Kernel] %s()\n", __func__);)
 
-    DSCHED(bug("[Kernel:%03u] Switching away from '%s' @ 0x%p\n", cpuNo, task->tc_Node.ln_Name, task));
+    cpuNo = KrnGetCPUNumber();
+    task = GET_THIS_TASK;
+
+    DSCHED(
+        bug("[Kernel:%03u] %s: running Task @ 0x%p\n", cpuNo, __func__, task);
+        bug("[Kernel:%03u] %s: Switching away from '%s', state %08x\n", cpuNo, __func__, task->tc_Node.ln_Name, task->tc_State);
+    )
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
@@ -183,7 +199,7 @@ void core_Switch(void)
         if (task->tc_Flags & TF_SWITCH)
             AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
 
-        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p as ready\n", cpuNo, task->tc_Node.ln_Name, task));
+        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p as ready\n", cpuNo, task->tc_Node.ln_Name, task);)
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
@@ -196,7 +212,7 @@ void core_Switch(void)
 #if defined(__AROSEXEC_SMP__)
     else if (task->tc_State == TS_SPIN)
     {
-        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to spin\n", cpuNo, task->tc_Node.ln_Name, task));
+        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to spin\n", cpuNo, task->tc_Node.ln_Name, task);)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
                     SPINLOCK_MODE_WRITE);
         Enqueue(&PrivExecBase(SysBase)->TaskSpinning, &task->tc_Node);
@@ -205,7 +221,7 @@ void core_Switch(void)
 #endif
     else if (task->tc_State != TS_REMOVED)
     {
-        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to wait\n", cpuNo, task->tc_Node.ln_Name, task));
+        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to wait\n", cpuNo, task->tc_Node.ln_Name, task);)
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
@@ -231,7 +247,7 @@ struct Task *core_Dispatch(void)
     uint32_t cpumask = KrnGetCPUMask(cpuNo);
 #endif
 
-    DSCHED(bug("[Kernel:%03u] core_Dispatch()\n", cpuNo));
+    DSCHED(bug("[Kernel:%03u] core_Dispatch()\n", cpuNo);)
 
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
@@ -269,7 +285,7 @@ struct Task *core_Dispatch(void)
         if (newtask->tc_State == TS_READY)
         {
             DSCHED(bug("[Kernel:%03u] Preparing to run '%s' @ 0x%p\n",
-                cpuNo, newtask->tc_Node.ln_Name, newtask));
+                cpuNo, newtask->tc_Node.ln_Name, newtask);)
 
             IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
             SET_THIS_TASK(newtask);
@@ -295,7 +311,7 @@ struct Task *core_Dispatch(void)
 
         if (newtask->tc_State == TS_WAIT)
         {
-            DSCHED(bug("[Kernel:%03u] Moving '%s' @ 0x%p to wait queue\n", cpuNo, task->tc_Node.ln_Name, task));
+            DSCHED(bug("[Kernel:%03u] Moving '%s' @ 0x%p to wait queue\n", cpuNo, task->tc_Node.ln_Name, task);)
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
                         SPINLOCK_MODE_WRITE);
@@ -309,7 +325,7 @@ struct Task *core_Dispatch(void)
         if (!launchtask)
         {
             /* if the new task shouldn't run - force a reschedule */
-            DSCHED(bug("[Kernel:%03u] Skipping '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State));
+            DSCHED(bug("[Kernel:%03u] Skipping '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
 
             core_Switch();
             newtask = core_Dispatch();
@@ -317,13 +333,13 @@ struct Task *core_Dispatch(void)
         else
         {
             SysBase->DispCount++;
-            DSCHED(bug("[Kernel:%03u] Launching '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State));
+            DSCHED(bug("[Kernel:%03u] Launching '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
         }
     }
     else
     {
         /* Go idle if there is nothing to do ... */
-        DSCHED(bug("[Kernel:%03u] No ready Task(s) - entering sleep mode\n", cpuNo));
+        DSCHED(bug("[Kernel:%03u] No ready Task(s) - entering sleep mode\n", cpuNo);)
 
         /*
          * Idle counter is incremented every time when we enter here,
