@@ -6,12 +6,9 @@
     Lang: english
 */
 
-#define DEBUG 0
-
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
-#include <aros/debug.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
 #include <exec/rawfmt.h>
@@ -82,7 +79,7 @@
     AROS_LIBFUNC_INIT
 
     struct Task *parent;
-    struct MemList *mlExtra;
+    struct MemList *mlExtra = NULL;
 
     ASSERT_VALID_PTR(task);
 
@@ -249,7 +246,7 @@
         task->tc_Node.ln_Pri > parent->tc_Node.ln_Pri &&
         parent->tc_State == TS_RUN)
     {
-        D(bug("[AddTask] Rescheduling...\n");)
+        DADDTASK("[AddTask] Rescheduling...\n");
 
         /* Reschedule() will take care about disabled task switching automatically */
         Reschedule();
