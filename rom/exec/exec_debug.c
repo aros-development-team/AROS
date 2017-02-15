@@ -165,7 +165,7 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, 
 
     	if (flags & (1UL << i))
     	{
-	    RawDoFmt("[%s] ", (APTR)&FlagNames[i], (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+	    RawDoFmt("[EXEC] %s: ", (APTR)&FlagNames[i], (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
 	    break;
 	}
     }
