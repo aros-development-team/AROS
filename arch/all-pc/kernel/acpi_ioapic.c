@@ -120,9 +120,7 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
     DINT(bug("[Kernel:IOAPIC] %s()\n", __func__));
 
     /* if we have been disabled, fail to register */
-#if (0)
     if (IOAPICInt_IntrController.ic_Flags & ICF_DISABLED)
-#endif
         return (icid_t)-1;
 
     /*
