@@ -52,7 +52,7 @@ struct IntExecBase
     struct MinList              AllocMemList;                   /* Mungwall allocations list                                    */
 #if defined(__AROSEXEC_SMP__)
     spinlock_t                  MemListSpinLock;
-#else
+#elif defined(__AROSEXEC_BROKENMEMLOCK__)
     struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
 #endif
     struct SignalSemaphore      LowMemSem;                      /* Lock for single-threading low memory handlers                */

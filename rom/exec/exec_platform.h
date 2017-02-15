@@ -4,6 +4,16 @@
 #ifndef __EXEC_PLATFORM_H
 #define __EXEC_PLATFORM_H
 
+/*
+ * EXPERIMENTAL & Broken:
+ * undefine to use semaphore protection instead of
+ * Forbid()/Permit() for system memory allocation routines.
+ *
+ * Many AmigaOS programs assume forbid state won't get broken.
+ */
+
+//#define __AROSEXEC_BROKENMEMLOCK__
+
 /* the default Quantum value to use .. */
 #define SCHEDQUANTUM_VALUE      4
 
