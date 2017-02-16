@@ -21,6 +21,12 @@
 
 #ifdef DUMP_CONTEXT
 
+/*
+ * Simulate SysBase access at address 8.
+ * Disabled because global SysBase is moved away from zeropage.
+ *
+#define EMULATE_SYSBASE 8 */
+
 static void PrintContext(struct ExceptionContext *regs, unsigned long error_code)
 {
     int i;
