@@ -125,8 +125,8 @@ static const struct MemRegion PC_Memory[] =
  * We also have SysBase here, this way we move it away from zero page,
  * making it harder to trash it.
  */
+__attribute__((section(".data"))) struct KernBootPrivate *__KernBootPrivate = NULL;
 __attribute__((section(".data"))) IPTR kick_end = 0;
-__attribute__((section(".data"))) struct segment_desc *GDT = NULL;
 __attribute__((section(".data"))) struct ExecBase *SysBase = NULL;
 
 /*
@@ -167,11 +167,11 @@ void kernel_cstart(const struct TagItem *msg)
     D(bug("[Kernel] Transient kickstart end 0x%p, BootMsg 0x%p\n", kick_end, BootMsg));
     D(bug("[Kernel] Boot stack: 0x%p - 0x%p\n", boot_stack, boot_stack + STACK_SIZE));
 
-    if (!kick_end)
+    /* If __KernBootPrivate is not set, this is our first start. */
+    if (__KernBootPrivate == NULL)
     {
         struct vbe_mode *vmode = NULL;
 
-    	/* If kick_end is not set, this is our first start. */
 	tag = LibFindTagItem(KRN_KernelHighest, msg);
         if (!tag)
 	    krnPanic(KernelBase, "Incomplete information from the bootstrap\n"
@@ -222,18 +222,40 @@ void kernel_cstart(const struct TagItem *msg)
 	    }
 	}
 
-	/* Allocate space for GDT */
-	GDT = krnAllocBootMemAligned(sizeof(GDT_Table), 128);
+	/* Now allocate KernBootPrivate */
+	__KernBootPrivate = krnAllocBootMem(sizeof(struct KernBootPrivate));
 
 	vesahack_Init(cmdline, vmode);
+    }
 
+    if (!__KernBootPrivate->BOOTGDT)
+    {
+        /* Allocate space for GDT */
+	__KernBootPrivate->BOOTGDT = krnAllocBootMemAligned(sizeof(GDT_Table), 128);
+
+        /* Create global descriptor table */
+        krnCopyMem(GDT_Table, __KernBootPrivate->BOOTGDT, sizeof(GDT_Table));
+    }
+
+    if (!__KernBootPrivate->TSS)
+        __KernBootPrivate->TSS = krnAllocBootMemAligned(sizeof(struct tss), 64);
+
+    if (!__KernBootPrivate->BOOTIDT)
+        __KernBootPrivate->BOOTIDT = krnAllocBootMemAligned(sizeof(apicidt_t) * 256, 256);
+
+    D(bug("[Kernel] BOOT GDT @ 0x%p, LDT @ 0x%P, TSS @ 0x%p\n", __KernBootPrivate->BOOTGDT, __KernBootPrivate->BOOTIDT, __KernBootPrivate->TSS));
+
+    if (!kick_end)
+    {
 	/*
 	 * Set new kickstart end address.
 	 * Kickstart area now includes boot taglist with all its contents.
-	 */
-	kick_end = (IPTR)BootMemPtr;
-	D(bug("[Kernel] Boot-time setup complete, end of kickstart area 0x%p\n", kick_end));
+	 */        
+        D(bug("[Kernel] Boot-time setup complete\n"));
+    	kick_end = AROS_ROUNDUP2((IPTR)BootMemPtr, PAGE_SIZE);
     }
+
+    D(bug("[Kernel] End of kickstart area 0x%p\n", kick_end));
 
     /*
      * Obtain the needed data from the boot taglist.
@@ -275,17 +297,13 @@ void kernel_cstart(const struct TagItem *msg)
     if (cmdline && strstr(cmdline, "notlsf"))
         allocator = ALLOCATOR_STD;
 
-
-    /* Create global descriptor table */
-    krnCopyMem(GDT_Table, GDT, sizeof(GDT_Table));
-
     /*
      * Initial CPU setup. Load the GDT and segment registers.
      * AROS uses only CS SS DS and ES. FS and GS are set to 0
      * so we can generate GP if someone uses them.
      */
     gdtr.size = sizeof(GDT_Table) - 1;
-    gdtr.base = (unsigned long)GDT;
+    gdtr.base = (unsigned long)__KernBootPrivate->BOOTGDT;
     asm
     (
 	"	lgdt	%0\n"
@@ -299,7 +317,7 @@ void kernel_cstart(const struct TagItem *msg)
 	::"m"(gdtr),"r"(KERNEL_DS),"r"(0),"i"(KERNEL_CS)
     );
 
-    D(bug("[Kernel] GDT @ 0x%p reloaded\n", GDT));
+    D(bug("[Kernel] GDT reloaded\n"));
 
     /*
      * Explore memory map and create MemHeaders
