@@ -125,7 +125,7 @@ core_EnterInterrupt:				// At this point two ULONGs for segment registers are
 	mov	%ax, %ds
 	mov	%ax, %es
 
-	call	handleException		// Call C handler. EBX will be preserved.
+	call	core_IRQHandle		// Call C handler. EBX will be preserved.
 restoreRegs:
 	movl	Flags(%ebx), %eax	// Test if the context contains segment registers
 	test	$ECF_SEGMENTS, %eax
