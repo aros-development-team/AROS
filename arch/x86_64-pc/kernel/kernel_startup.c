@@ -25,7 +25,6 @@
 #include "kernel_debug.h"
 #include "kernel_mmap.h"
 #include "kernel_romtags.h"
-#include "apic.h"
 #include "smp.h"
 #include "tls.h"
 
@@ -341,7 +340,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     /* Set-up the IDT */
     __KernBootPrivate->BOOTIDT = core_AllocBootIDT(__KernBootPrivate);
     D(bug("[Kernel] %s:                IDT      : 0x%p\n", __func__, __KernBootPrivate->BOOTIDT);)
-    core_SetupIDT(__KernBootPrivate, 0, __KernBootPrivate->BOOTIDT);
+    core_SetupIDT(0, (apicidt_t *)__KernBootPrivate->BOOTIDT);
 
     /* Set-up MMU */
     memtop = mmap_LargestAddress(mmap, mmap_len);

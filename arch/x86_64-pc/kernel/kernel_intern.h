@@ -16,12 +16,15 @@
 #include <utility/tagitem.h>
 #include <asm/cpu.h>
 
+typedef struct int_gate_64bit apicidt_t;
+
 #include "apic.h"
 #include "tls.h"
 
 #define STACK_SIZE      65536
 #define PAGE_SIZE	0x1000
 #define PAGE_MASK	0x0FFF
+
 
 struct ACPIData;
 struct IOAPICData;
@@ -89,10 +92,6 @@ void PlatformPostInit(void);
 
 /** CPU Related Functions **/
 void core_SetupGDT(struct KernBootPrivate *, apicid_t, APTR, APTR, APTR);
-void core_SetupIDT(struct KernBootPrivate *, apicid_t, APTR);
-BOOL core_SetIDTGate(struct int_gate_64bit *, int, uintptr_t, BOOL);
-BOOL core_SetIRQGate(void *, int, uintptr_t);
-void core_DefaultIRETQ();
 
 void core_SetupMMU(struct CPUMMUConfig *, IPTR memtop);
 void core_InitMMU(struct CPUMMUConfig *);

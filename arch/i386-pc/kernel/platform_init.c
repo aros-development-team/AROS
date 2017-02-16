@@ -12,7 +12,6 @@
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 
-#include "traps.h"
 #include "utils.h"
 
 #define D(x)
@@ -22,9 +21,8 @@ extern struct syscallx86_Handler x86_SCSupervisorHandler;
 static int PlatformInit(struct KernelBase *KernelBase)
 {
     struct PlatformData *data;
-    struct table_desc idtr;
     struct tss	    *tss;
-    long long *idt;
+    apicidt_t *idt;
     int i;
 
     NEWLIST(&KernelBase->kb_ICList);
@@ -54,7 +52,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
      * interrupts working.
      */
     tss            = krnAllocMemAligned(sizeof(struct tss), 64);
-    idt            = krnAllocMemAligned(sizeof(long long) * 256, 256);
+    idt            = krnAllocMemAligned(sizeof(apicidt_t) * 256, 256);
     SysBase->SysStkLower = AllocMem(0x10000, MEMF_PUBLIC);  /* 64KB of system stack */
 
     if ((!tss) || (!idt) || (!SysBase->SysStkLower))
@@ -72,7 +70,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
     tss->ssp       = (IPTR)SysBase->SysStkUpper;
 
     /* Restore IDT structure */
-    Init_Traps(data, idt);
+    core_SetupIDT(0, idt);
 
     /* Set correct TSS address in the GDT */
     GDT[6].base_low  = ((unsigned long)tss) & 0xffff;
@@ -83,13 +81,10 @@ static int PlatformInit(struct KernelBase *KernelBase)
      * As we prepared all necessary stuff, we can hopefully load IDT
      * into CPU. We may also play a bit with TSS
      */
-    idtr.size = 0x07FF;
-    idtr.base = (unsigned long)idt;
     asm
     (
-	"lidt %0\n\t"
 	"ltr %%ax\n\t"
-	::"m"(idtr),"ax"(0x30)
+	::"ax"(0x30)
     );
 
     D(bug("[Kernel:i386] %s: System restored\n", __func__));

@@ -125,10 +125,8 @@ BOOL i8259a_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_
 
 BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
-#if (__WORDSIZE==64)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
-#endif
     struct i8259a_Private *xtpicPriv;
     struct i8259a_Instance *xtPic;
     int instance, irq;

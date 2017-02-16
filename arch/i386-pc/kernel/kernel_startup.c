@@ -156,7 +156,7 @@ void kernel_cstart(const struct TagItem *msg)
     struct mb_mmap *mmap = NULL;
     unsigned long mmap_len = 0;
     IPTR kick_start = 0;
-    struct table_desc gdtr;
+    struct segment_selector gdtr;
     struct MinList memList;
     struct MemHeader *mh, *mh2;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};

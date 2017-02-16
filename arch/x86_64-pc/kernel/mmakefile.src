@@ -9,7 +9,7 @@ FILES    := \
              kernel_debug \
              kernel_memory \
              kernel_bootmem \
-             intr mmu
+             mmu
 FUNCS	 :=
 ASMFILES := \
              core_interrupts

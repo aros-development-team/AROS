@@ -20,6 +20,7 @@
 #include "kernel_base.h"
 
 #if defined(__AROSEXEC_SMP__)
+#include "kernel_intern.h"
 #include <aros/types/spinlock_s.h>
 #include <utility/hooks.h>
 

@@ -13,6 +13,8 @@
 
 #include <inttypes.h>
 
+typedef struct int_gate_32bit apicidt_t;
+
 #include "apic.h"
 
 #define STACK_SIZE 8192
@@ -61,26 +63,19 @@ void core_Unused_Int(void);
 
 /** CPU Functions **/
 #if (0)
-void core_SetupIDT(struct KernBootPrivate *, apicid_t, APTR);
 void core_SetupGDT(struct KernBootPrivate *, apicid_t, APTR, APTR, APTR);
 void core_SetupMMU(struct KernBootPrivate *, IPTR memtop);
-#endif
-
-#if (1)
-#define core_SetIDTGate(a, b, c, d)             (TRUE)
-#define core_SetIRQGate(a, b, c)                (TRUE)
-#else
-BOOL core_SetIDTGate(struct int_gate_64bit *, int, uintptr_t, BOOL);
-BOOL core_SetIRQGate(void *, int, uintptr_t);
 #endif
 
 void core_CPUSetup(apicid_t, APTR, IPTR);
 
 void ictl_Initialize(struct KernelBase *KernelBase);
 
-struct ExceptionContext;
 
-/* Interrupt processing */
+/* HW IRQ Related Functions */
+struct ExceptionContext;
+extern const void *IntrDefaultGates[256];
+
 void core_LeaveInterrupt(struct ExceptionContext *);
 void core_Supervisor(struct ExceptionContext *);
 
