@@ -30,12 +30,6 @@
 #define DTRAP(x)
 #define DUMP_CONTEXT
 
-/*
- * Simulate SysBase access at address 8.
- * Disabled because global SysBase is moved away from zeropage.
- *
-#define EMULATE_SYSBASE 8 */
-
 #define IRQ(x,y) \
     IRQ##x##y##_intr
 
