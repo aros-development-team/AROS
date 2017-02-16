@@ -93,7 +93,7 @@ static inline int compare_and_exchange_long(uint32_t *addr, uint32_t expected, u
 {
     char flag;
     uint32_t ret;
-    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*addr),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*addr),"=q"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
     if (found)
         *found = ret;
     return flag;
@@ -103,7 +103,7 @@ static inline int compare_and_exchange_short(uint16_t *lock, uint16_t expected, 
 {
     char flag;
     uint16_t ret;
-    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*lock),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*lock),"=q"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
     if (found)
         *found = ret;
     return flag;
@@ -113,7 +113,7 @@ static inline int compare_and_exchange_byte(uint8_t *lock, uint8_t expected, uin
 {
     char flag;
     uint16_t ret;
-    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*lock),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*lock),"=q"(flag),"=a"(ret):"2"(expected),"q"(xchg):"memory","cc");
     if (found)
         *found = ret;
     return flag;
