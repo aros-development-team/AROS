@@ -31,8 +31,16 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     for (i = 0; i < HW_IRQ_COUNT; i++)
     {
-        KernelBase->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
-        KernelBase->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
+        if (i == APIC_IRQ_SYSCALL)
+        {
+            KernelBase->kb_Interrupts[i].ki_Priv |= IRQINTF_ENABLED;               // Reserve the Syscall Handler..
+            KernelBase->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL - 1;
+        }
+        else
+        {
+            KernelBase->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
+            KernelBase->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
+        }
     }
 
     data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
@@ -41,10 +49,6 @@ static int PlatformInit(struct KernelBase *KernelBase)
 	
     D(bug("[Kernel:i386] %s: Allocated platform data at 0x%p\n", __func__, data));
     KernelBase->kb_PlatformData = data;
-
-    // Setup the base syscall handler(s) ...
-    NEWLIST(&data->kb_SysCallHandlers);
-    krnAddSysCallHandler(data, &x86_SCSupervisorHandler, FALSE, TRUE);
 
     /*
      * Now we have a complete memory list and working AllocMem().
@@ -72,6 +76,15 @@ static int PlatformInit(struct KernelBase *KernelBase)
     /* Restore IDT structure */
     core_SetupIDT(0, idt);
 
+    // Setup the base syscall handler(s) ...
+    NEWLIST(&data->kb_SysCallHandlers);
+    if (!core_SetIDTGate(idt, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+    {
+        krnPanic(NULL, "Failed to set BSP Syscall Vector\n"
+                       "Vector #%02X\n", APIC_IRQ_SYSCALL);
+    }
+    krnAddSysCallHandler(data, &x86_SCSupervisorHandler, FALSE, TRUE);
+    
     /* Set correct TSS address in the GDT */
     GDT[6].base_low  = ((unsigned long)tss) & 0xffff;
     GDT[6].base_mid  = (((unsigned long)tss) >> 16) & 0xff;
