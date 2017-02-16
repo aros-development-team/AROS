@@ -83,7 +83,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     NEWLIST(&pdata->kb_SysCallHandlers);
 
     // we need to setup the BSP's syscall gate early..
-    if (!core_SetIDTGate((struct int_gate_64bit *)__KernBootPrivate->BOOTIDT, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+    if (!core_SetIDTGate((apicidt_t *)__KernBootPrivate->BOOTIDT, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
     {
         krnPanic(NULL, "Failed to set BSP Syscall Vector\n"
                        "Vector #%02X\n", APIC_IRQ_SYSCALL);
