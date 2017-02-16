@@ -97,7 +97,6 @@ struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
 	reloclist((struct List*)&PrivExecBase(newsb)->TaskStorageSlots);
 	reloclist((struct List*)&PrivExecBase(newsb)->AllocatorCtxList);
 
-	InitSemaphore(&PrivExecBase(newsb)->MemListSem);
 	InitSemaphore(&PrivExecBase(newsb)->LowMemSem);
 
 	SysBase = newsb;
