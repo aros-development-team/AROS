@@ -167,7 +167,7 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     {
                         if (!krnInitInterrupt(KernelBase, irq, i8259a_IntrController.ic_Node.ln_Type, instance))
                         {
-                            bug("[Kernel:i8259a] %s: failed to acquire IRQ #%d\n", __func__, irq);
+                            D(bug("[Kernel:i8259a] %s: failed to acquire IRQ #%d\n", __func__, irq);
                         }
                         else
                         {

@@ -73,7 +73,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         {
             if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
             {
-                bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);
+                D(bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);)
             }
             else
             {
