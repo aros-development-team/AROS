@@ -19,7 +19,7 @@ IRQ##nr##_intr:					\
 IRQ##nr##_intr:					\
 	pushl $##nr;					\
         jmp core_EnterInterrupt;				\
-	.size IRQ##nr##_trap, .-IRQ##nr##_trap;
+	.size IRQ##nr##_intr, .-IRQ##nr##_intr;
 
 #define B(x,y) BUILD_IRQ(x##y)
 #define BUILD_16(x) \
