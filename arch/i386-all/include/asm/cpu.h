@@ -15,8 +15,8 @@
 
 #define HALT asm volatile("hlt")
 
-/* Table descriptor used for lgdt and lidt commands */
-struct table_desc
+/* Selector used for lgdt and lidt commands */
+struct segment_selector
 {
     unsigned short size;
     unsigned long  base;

@@ -18,7 +18,6 @@
 #include "kernel_globals.h"
 #include "kernel_intern.h"
 #include "kernel_syscall.h"
-#include "apic.h"
 #include "smp.h"
 
 #define D(x)
@@ -93,7 +92,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 
     D(bug("[Kernel:SMP] %s[%03u]: Core IDT @ 0x%p\n", __func__, apicCPUNo, apicCPU->cpu_IDT));
 #if (__WORDSIZE==64)
-    core_SetupIDT(__KernBootPrivate, apicCPUNo, apicCPU->cpu_IDT);
+    core_SetupIDT(apicCPUNo, apicCPU->cpu_IDT);
 
     if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
     {

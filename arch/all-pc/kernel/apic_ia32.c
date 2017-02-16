@@ -25,7 +25,6 @@
 
 #include "kernel_interrupts.h"
 
-#include "apic.h"
 #include "apic_ia32.h"
 
 #define D(x)
@@ -43,7 +42,7 @@
 #endif
 
 
-/* APIC Interrupt Functions ... ***************************/
+/* APIC Interrupt Controller Functions ... ***************************/
 
 struct APICInt_Private
 {
@@ -59,10 +58,8 @@ icid_t APICInt_Register(struct KernelBase *KernelBase)
 
 BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
-#if (__WORDSIZE==64)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
-#endif
     APTR ssp;
     int irq;
 
@@ -80,9 +77,10 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             }
             else
             {
-                if (!core_SetIRQGate((struct int_gate_64bit *)apicPrivate->cores[0].cpu_IDT, irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq]))
+                /* dont enable the vector yet...*/
+                if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE))
                 {
-                    bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's gate\n", __func__, irq);
+                    bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
                 }
             }
         }
@@ -94,14 +92,40 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
 BOOL APICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
-    DINT(bug("[Kernel:APIC-IA32] %s()\n", __func__));
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct APICData *apicPrivate = kernPlatD->kb_APIC;
+    apicidt_t *IGATES;
+    APTR ssp;
+
+    DINT(bug("[Kernel:APIC-IA32] %s(%03u #$%02X)\n", __func__, icInstance, intNum));
+
+    IGATES = (apicidt_t *)apicPrivate->cores[icInstance].cpu_IDT;
+
+    if ((ssp = SuperState()) != NULL)
+    {
+        IGATES[HW_IRQ_BASE + intNum].p = 0;
+        UserState(ssp);
+    }
 
     return TRUE;
 }
 
 BOOL APICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
-    DINT(bug("[Kernel:APIC-IA32] %s()\n", __func__));
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct APICData *apicPrivate = kernPlatD->kb_APIC;
+    apicidt_t *IGATES;
+    APTR ssp;
+
+    DINT(bug("[Kernel:APIC-IA32] %s(%03u #$%02X)\n", __func__, icInstance, intNum));
+
+    IGATES = (apicidt_t *)apicPrivate->cores[icInstance].cpu_IDT;
+
+    if ((ssp = SuperState()) != NULL)
+    {
+        IGATES[HW_IRQ_BASE + intNum].p = 1;
+        UserState(ssp);
+    }
 
     return TRUE;
 }
@@ -110,7 +134,7 @@ BOOL APICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
     IPTR apic_base;
 
-    DINT(bug("[Kernel:APIC-IA32] %s()\n", __func__));
+    DINT(bug("[Kernel:APIC-IA32] %s(%03u #$%02X)\n", __func__, icInstance, intNum));
 
     /* Write zero to EOI of APIC */
     apic_base = core_APIC_GetBase();
@@ -225,7 +249,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                                        "IRQ #$%02X, Vector #$02X\n", (i - HW_IRQ_BASE), i);
                     }
                 }
-                else if (!core_SetIDTGate((struct int_gate_64bit *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
+                else if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
                 {
                     krnPanic(NULL, "Failed to set APIC Exception Vector\n"
                                    "Vector #$%02X\n", i);
@@ -246,7 +270,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                                    "IRQ #$%02X, Vector #$02X\n", (APIC_IRQ_ERROR - HW_IRQ_BASE), APIC_IRQ_ERROR);
                 }
             }
-            else if (!core_SetIDTGate((struct int_gate_64bit *)apic->cores[cpuNum].cpu_IDT, APIC_IRQ_ERROR, (uintptr_t)IntrDefaultGates[APIC_IRQ_ERROR], TRUE))
+            else if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, APIC_IRQ_ERROR, (uintptr_t)IntrDefaultGates[APIC_IRQ_ERROR], TRUE))
             {
                 krnPanic(NULL, "Failed to set APIC Error Vector\n"
                                "Vector #$%02X\n", APIC_IRQ_ERROR);

@@ -22,6 +22,7 @@ FILES    := \
              apic \
              apic_ia32 \
              apic_msi \
+             apic_intr \
              acpi \
              acpi_pm \
              acpi_apic \
