@@ -21,6 +21,23 @@ typedef struct int_gate_32bit apicidt_t;
 #define PAGE_SIZE	0x1000
 #define PAGE_MASK	0x0FFF
 
+/*
+ * Boot-time private data.
+ * This structure is write-protected in user mode and survives warm restarts.
+ */
+struct KernBootPrivate
+{
+    IPTR		        _APICBase;		/* Bootstrap APIC base address				*/
+    UWORD                       kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/
+    APTR                        BOOTGDT,
+                                BOOTIDT;
+    void	                *TSS;
+    struct CPUMMUConfig         MMU;
+};
+
+extern struct KernBootPrivate *__KernBootPrivate;
+
+/* Platform-specific part of KernelBase */
 struct PlatformData
 {
     struct List         kb_SysCallHandlers;
@@ -30,7 +47,7 @@ struct PlatformData
     struct IOAPICData   *kb_IOAPIC;
 };
 
-#define IDT_SIZE                sizeof(long long) * 256
+#define IDT_SIZE                sizeof(apicidt_t) * 256
 #define GDT_SIZE                sizeof(long long) * 8
 #define TLS_SIZE                sizeof(struct tss)
 #define TLS_ALIGN               64
@@ -55,8 +72,6 @@ struct PlatformData
         :"eax","ebx")
 
 #define FLAGS_INTENABLED        0x3002
-
-extern struct segment_desc *GDT;
 
 void vesahack_Init(char *cmdline, struct vbe_mode *vmode);
 void core_Unused_Int(void);

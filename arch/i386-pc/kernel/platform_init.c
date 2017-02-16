@@ -21,8 +21,9 @@ extern struct syscallx86_Handler x86_SCSupervisorHandler;
 static int PlatformInit(struct KernelBase *KernelBase)
 {
     struct PlatformData *data;
-    struct tss	    *tss;
-    apicidt_t *idt;
+    struct tss	    *tss = __KernBootPrivate->TSS;
+    apicidt_t *idt = __KernBootPrivate->BOOTIDT;
+    struct segment_desc *GDT = __KernBootPrivate->BOOTGDT;
     int i;
 
     NEWLIST(&KernelBase->kb_ICList);
@@ -52,14 +53,11 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     /*
      * Now we have a complete memory list and working AllocMem().
-     * We can allocate space for IDT and TSS now and build them to make
-     * interrupts working.
+     * We can build IDT and TSS nowt to make interrupts work.
      */
-    tss            = krnAllocMemAligned(sizeof(struct tss), 64);
-    idt            = krnAllocMemAligned(sizeof(apicidt_t) * 256, 256);
     SysBase->SysStkLower = AllocMem(0x10000, MEMF_PUBLIC);  /* 64KB of system stack */
 
-    if ((!tss) || (!idt) || (!SysBase->SysStkLower))
+    if (!SysBase->SysStkLower)
 	return FALSE;
 
     tss->ssp_seg = KERNEL_DS; /* SSP segment descriptor */
