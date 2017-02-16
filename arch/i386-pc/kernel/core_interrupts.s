@@ -4,22 +4,27 @@
 
 #define BUILD_IRQ(nr)					\
 	.align 16, 0x90;				\
-	.globl TRAP##nr##_trap;				\
-	.type TRAP##nr##_trap, @function;		\
-TRAP##nr##_trap:					\
+	.globl IRQ##nr##_intr;				\
+	.type IRQ##nr##_intr, @function;		\
+IRQ##nr##_intr:					\
 	pushl $0;					\
 	pushl $##nr;					\
-	jmp core_Interrupt;				\
-	.size TRAP##nr##_trap, .-TRAP##nr##_trap;
+	jmp core_EnterInterrupt;				\
+	.size IRQ##nr##_intr, .-IRQ##nr##_intr;
 
 #define BUILD_IRQ_ERR(nr)				\
 	.align 16, 0x90;				\
-	.globl TRAP##nr##_trap;				\
-	.type TRAP##nr##_trap, @function;		\
-TRAP##nr##_trap:					\
+	.globl IRQ##nr##_intr;				\
+	.type IRQ##nr##_intr, @function;		\
+IRQ##nr##_intr:					\
 	pushl $##nr;					\
-        jmp core_Interrupt;				\
-	.size TRAP##nr##_trap, .-TRAP##nr##_trap;
+        jmp core_EnterInterrupt;				\
+	.size IRQ##nr##_trap, .-IRQ##nr##_trap;
+
+#define B(x,y) BUILD_IRQ(x##y)
+#define BUILD_16(x) \
+    B(x,0) B(x,1) B(x,2) B(x,3) B(x,4) B(x,5) B(x,6) B(x,7) \
+    B(x,8) B(x,9) B(x,A) B(x,B) B(x,C) B(x,D) B(x,E) B(x,F)
 
 BUILD_IRQ(0x00)         // Divide-By-Zero Exception
 BUILD_IRQ(0x01)         // Debug Exception
@@ -53,31 +58,43 @@ BUILD_IRQ(0x1c)
 BUILD_IRQ(0x1d)
 BUILD_IRQ(0x1e)
 BUILD_IRQ(0x1f)
-BUILD_IRQ(0x20)
-BUILD_IRQ(0x21)
-BUILD_IRQ(0x22)
-BUILD_IRQ(0x23)
-BUILD_IRQ(0x24)
-BUILD_IRQ(0x25)
-BUILD_IRQ(0x26)
-BUILD_IRQ(0x27)
-BUILD_IRQ(0x28)
-BUILD_IRQ(0x29)
-BUILD_IRQ(0x2a)
-BUILD_IRQ(0x2b)
-BUILD_IRQ(0x2c)
-BUILD_IRQ(0x2d)
-BUILD_IRQ(0x2e)
-BUILD_IRQ(0x2f)
 
-BUILD_IRQ(0x80)		// SysCall exception
-BUILD_IRQ(0xFE)         // APIC Error Exception
+
+BUILD_16(0x2)           // Hardware IRQs...
+BUILD_16(0x3)
+BUILD_16(0x4)
+BUILD_16(0x5)
+BUILD_16(0x6)
+BUILD_16(0x7)
+BUILD_16(0x8)
+BUILD_16(0x9)
+BUILD_16(0xA)
+BUILD_16(0xB)
+BUILD_16(0xC)
+BUILD_16(0xD)
+BUILD_16(0xE)
+BUILD_IRQ(0xF0)
+BUILD_IRQ(0xF1)
+BUILD_IRQ(0xF2)
+BUILD_IRQ(0xF3)
+BUILD_IRQ(0xF4)
+BUILD_IRQ(0xF5)
+BUILD_IRQ(0xF6)
+BUILD_IRQ(0xF7) 
+BUILD_IRQ(0xF8)
+BUILD_IRQ(0xF9)
+BUILD_IRQ(0xFA)
+BUILD_IRQ(0xFB)
+BUILD_IRQ(0xFC)
+BUILD_IRQ(0xFD)
+BUILD_IRQ(0xFE)
+BUILD_IRQ(0xFF)
 
 	.align 16, 0x90
-	.globl core_Interrupt
-	.type core_Interrupt,@function
+	.globl core_EnterInterrupt
+	.type core_EnterInterrupt,@function
 
-core_Interrupt:				// At this point two ULONGs for segment registers are
+core_EnterInterrupt:				// At this point two ULONGs for segment registers are
 					// already reserved. They are occupied by error code and IRQ number
 	pushl	$0			// Reserve two more ULONGs (for ES and DS)
 	pushl	$0
@@ -133,11 +150,11 @@ noSegments:
 	popl	%ebp
         addl	$16, %esp		// Remove segments
 
-	.globl	core_Unused_Int
-	.type	core_Unused_Int, @function
-core_Unused_Int:
+	.globl	core_DefaultIRETQ
+	.type	core_DefaultIRETQ, @function
+core_DefaultIRETQ:
 	iret
-	.size core_Interrupt, .-core_Interrupt
+	.size core_EnterInterrupt, .-core_EnterInterrupt
 
 	.globl core_LeaveInterrupt
 	.type core_LeaveInterrupt, @function
