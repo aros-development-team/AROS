@@ -22,6 +22,13 @@ struct table_desc
     unsigned long  base;
 } __attribute__((packed));
 
+struct int_gate_32bit {
+    uint16_t    offset_low;
+    uint16_t    selector;
+    unsigned    ist:3, __pad0:5, type:5, dpl:2, p:1;
+    uint16_t    offset_high;
+} __attribute__((packed));
+
 /* Segment descriptor in the GDT */
 struct segment_desc
 {
