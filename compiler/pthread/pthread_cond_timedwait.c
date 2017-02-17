@@ -49,9 +49,8 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
     if (abstime)
     {
         // prepare MsgPort
+        memset( &timermp, 0, sizeof( timermp ) );
         timermp.mp_Node.ln_Type = NT_MSGPORT;
-        timermp.mp_Node.ln_Pri = 0;
-        timermp.mp_Node.ln_Name = NULL;
         timermp.mp_Flags = PA_SIGNAL;
         timermp.mp_SigTask = task;
         signal = AllocSignal(-1);
