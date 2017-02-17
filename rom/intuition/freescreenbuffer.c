@@ -76,6 +76,7 @@
                 struct MsgPort safereply;
                 struct ScreenBuffer scb;
 
+                memset( &safereply, 0, sizeof( safereply ) );
                 safereply.mp_Node.ln_Type = NT_MSGPORT;
                 safereply.mp_Flags = PA_SIGNAL;
                 safereply.mp_SigTask = FindTask(NULL);
