@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,6 +23,7 @@ AROS_LH1(void, KrnSpinInit,
     D(bug("[Kernel] %s(0x%p)\n", __func__, lock));
 
     lock->lock = SPINLOCK_UNLOCKED;
+    lock->s_Owner = NULL;
 
     return;
 
