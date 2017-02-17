@@ -258,8 +258,7 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
                 {
                     struct MsgPort *port;
                     port =
-                        AllocMem(sizeof(struct MsgPort),
-                        MEMF_PUBLIC | MEMF_CLEAR);
+                        CreateMsgPort();
                     if (port)
                     {
                         /* Initialize port */
@@ -270,9 +269,6 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
                            time used, because the CDInputHandler might be
                            called by an app
                          */
-
-                        NEWLIST(&(port->mp_MsgList));
-
                         cdihdata->cdihReplyPort = port;
 
                         /* Initialize Message struct */
