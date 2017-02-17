@@ -12,10 +12,11 @@
 
 // put the APIC IRQs after the cpu exceptions & pic IRQ's
 #define APIC_IRQ_MAX            256
-#define APIC_CPU_EXCEPT_COUNT   32
-#define APIC_IRQ_BASE           (APIC_CPU_EXCEPT_COUNT + I8259A_IRQCOUNT)
+#define X86_CPU_EXCEPT_COUNT   32
+#define APIC_IRQ_BASE           (X86_CPU_EXCEPT_COUNT + I8259A_IRQCOUNT)
 #define APIC_LOCALIRQ_COUNT     10
 #define APIC_IRQ_COUNT          (APIC_IRQ_MAX - (INTB_KERNEL + APIC_IRQ_BASE + APIC_LOCALIRQ_COUNT))
+#define APIC_CPU_EXCEPT_COUNT   (APIC_IRQ_MAX - APIC_IRQ_COUNT)
 
 // really vectors...
 #define APIC_IRQ_SYSCALL        0x80
