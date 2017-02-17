@@ -41,6 +41,7 @@
 #define CONFIG_LEGACY
 #endif
 
+extern void core_APICErrorHandle(struct ExceptionContext *, void *, void *);
 
 /* APIC Interrupt Controller Functions ... ***************************/
 
@@ -275,6 +276,9 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                 krnPanic(NULL, "Failed to set APIC Error Vector\n"
                                "Vector #$%02X\n", APIC_IRQ_ERROR);
             }
+            else if (cpuNum == 0)
+                KrnAddExceptionHandler((APIC_IRQ_ERROR - APIC_IRQ_COUNT), core_APICErrorHandle, NULL, NULL);
+
             D(bug("[Kernel:APIC-IA32.%03u] %s: APIC Error Vector #$%02X configured\n", cpuNum, __func__, APIC_IRQ_ERROR));
 
             if (ssp)
