@@ -760,9 +760,8 @@ static void do_paste(struct filehandle * fh)
 
     D(bug("PASTE REQUEST!\n"));
 
+    memset( &replyport, 0, sizeof( replyport ) );
     replyport.mp_Node.ln_Type = NT_MSGPORT;
-    replyport.mp_Node.ln_Name = NULL;
-    replyport.mp_Node.ln_Pri = 0;
     replyport.mp_Flags = PA_SIGNAL;
     replyport.mp_SigBit = SIGB_SINGLE;
     replyport.mp_SigTask = FindTask(NULL);
