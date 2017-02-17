@@ -1335,6 +1335,7 @@ void WindowNeedsRefresh(struct Window * w,
             /* Can use Forbid() for this */
             Forbid();
 
+            //TODO: __AROSEXEC_SMP_  should spinlock protect access...
             IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
 
             ForeachNode(&w->UserPort->mp_MsgList, IM)

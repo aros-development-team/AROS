@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -1753,6 +1753,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         {
             struct IntuiMessage *im;
 
+            //TODO: __AROSEXEC_SMP_  should spinlock protect access...
             for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
             im->ExecMessage.mn_Node.ln_Pred;
             im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)
