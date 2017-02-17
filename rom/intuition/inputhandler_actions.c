@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2017, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -595,39 +595,42 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
     else
     {
         struct IOStdReq   req;
-        struct MsgPort    port;
+        struct MsgPort    *port = CreateMsgPort();
         struct InputEvent ie;
 
-        msg->handler = func;
-        msg->task    = me;
-        msg->done    = FALSE;
-    
-        ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
-        AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiActionQueue, (struct Node *)msg);
-        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
-
-        port.mp_Flags 	= PA_SIGNAL;
-        port.mp_SigTask = me;
-        port.mp_SigBit  = SIGB_INTUITION;
-        NEWLIST(&port.mp_MsgList);
-
-        req.io_Message.mn_ReplyPort = &port;
-        req.io_Device 	    	    = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
-        req.io_Unit 	    	    = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
-        req.io_Command      	    = IND_WRITEEVENT;
-        req.io_Length 	    	    = sizeof(ie);
-        req.io_Data 	    	    = &ie;
-
-        ie.ie_Class = IECLASS_NULL;
-    
-        if (!msg->done)
+        if (port)
         {
-            DoIO((APTR)&req);
-            while (!msg->done)
+            msg->handler = func;
+            msg->task    = me;
+            msg->done    = FALSE;
+        
+            ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
+            AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiActionQueue, (struct Node *)msg);
+            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
+
+            port->mp_Flags 	= PA_SIGNAL;
+            port->mp_SigTask = me;
+            port->mp_SigBit  = SIGB_INTUITION;
+
+            req.io_Message.mn_ReplyPort = port;
+            req.io_Device 	    	    = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
+            req.io_Unit 	    	    = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
+            req.io_Command      	    = IND_WRITEEVENT;
+            req.io_Length 	    	    = sizeof(ie);
+            req.io_Data 	    	    = &ie;
+
+            ie.ie_Class = IECLASS_NULL;
+        
+            if (!msg->done)
             {
-                Wait(SIGF_INTUITION);
+                DoIO((APTR)&req);
+                while (!msg->done)
+                {
+                    Wait(SIGF_INTUITION);
+                }
             }
-        }
+            DeleteMsgPort(port);
+        }        
     }
 }
 
