@@ -70,7 +70,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     if ((ssp = SuperState()) != NULL)
     {
         /* Setup the APIC IRQs for CPU #0*/
-        for (irq = (APIC_IRQ_BASE - APIC_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - APIC_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
+        for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
         {
             if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
             {
