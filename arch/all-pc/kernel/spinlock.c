@@ -10,12 +10,19 @@
 #include <aros/libcall.h>
 #include <utility/hooks.h>
 
+#include <exec/tasks.h>
+
+#define __KERNEL_NO_SPINLOCK_PROTOS__
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
+#include <exec_platform.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
 
-#include <proto/kernel.h>
-
 #define D(x)
+
+int Kernel_13_KrnIsSuper();
 
 AROS_LH3(spinlock_t *, KrnSpinLock,
 	AROS_LHA(spinlock_t *, lock, A1),
@@ -29,12 +36,19 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
 
     if (mode == SPINLOCK_MODE_WRITE)
     {
+        D((ULONG tmp;))
+        struct Task *me = NULL;
+        UBYTE old_pri = 0;
+        UBYTE priority_changed = 0;
+        if (!Kernel_13_KrnIsSuper())
+            me = GET_THIS_TASK;
         /*
         Check if lock->lock equals to SPINLOCK_UNLOCKED. If yes, it will be atomicaly replaced by SPINLOCKF_WRITE and function
         returns 1. Otherwise it copies value of lock->lock into tmp and returns 0.
         */
-        while (!compare_and_exchange_long((ULONG*)&lock->lock, SPINLOCK_UNLOCKED, SPINLOCKF_WRITE, NULL)) 
+        while (!compare_and_exchange_long((ULONG*)&lock->lock, SPINLOCK_UNLOCKED, SPINLOCKF_WRITE, &tmp)) 
         {
+            struct Task *t = lock->s_Owner;
             // Tell CPU we are spinning
             asm volatile("pause");
 
@@ -44,8 +58,26 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
                D(bug("[Kernel] %s: lock-held ... calling fail hook @ 0x%p ...\n", __func__, failhook);)
                 CALLHOOKPKT(failhook, (APTR)lock, 0);
             }
-            D(bug("[Kernel] %s: spinning on held lock ...\n", __func__);)
+            D(bug("[Kernel] %s: my name is %s\n", __func__, Kernel_13_KrnIsSuper() ? "--supervisor code--" : me->tc_Node.ln_Name));
+            D(bug("[Kernel] %s: spinning on held lock (val=%08x, s_Owner=%p)...\n", __func__, tmp, t));
+            if (me && (me->tc_Node.ln_Pri > t->tc_Node.ln_Pri)) 
+            {
+                // If lock is spinning and the owner of lock has lower priority than ours, we need to reduce
+                // tasks priority too, otherwise it might happen that waiting task spins forever
+                priority_changed = 1;
+                old_pri = SetTaskPri(me, t->tc_Node.ln_Pri);
+            }
         };
+        if (Kernel_13_KrnIsSuper())
+        {
+            lock->s_Owner = NULL;
+        }
+        else
+        {
+            lock->s_Owner = me;
+            if (priority_changed)
+                SetTaskPri(me, old_pri);
+        }
     }
     else
     {
@@ -67,6 +99,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
             }
             D(bug("[Kernel] %s: spinning on write lock ...\n", __func__);)
         };
+
         /*
         At this point we have the spinlock in UPDATING state. So, update readcount field (no worry with atomic add,
         spinlock is for our exclusive use here), and then release it just by setting updating flag to 0

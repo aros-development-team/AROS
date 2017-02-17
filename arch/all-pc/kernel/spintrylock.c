@@ -9,12 +9,17 @@
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
+#define __KERNEL_NO_SPINLOCK_PROTOS__
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
+#include <exec_platform.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
 
-#include <proto/kernel.h>
-
 #define D(x)
+
+int Kernel_13_KrnIsSuper();
 
 AROS_LH2(spinlock_t *, KrnSpinTryLock,
 	AROS_LHA(spinlock_t *, lock, A0),
@@ -33,8 +38,16 @@ AROS_LH2(spinlock_t *, KrnSpinTryLock,
         */
         if (!compare_and_exchange_long((ULONG*)&lock->lock, SPINLOCK_UNLOCKED, SPINLOCKF_WRITE, NULL))
         {
-            D(bug("[Kernel] %s: lock is held (value %08x). Failing to obtain it in WRITE mode...\n", __func__, tmp));
+            D(bug("[Kernel] %s: lock is held (value %08x). Failing to obtain it in WRITE mode...\n", __func__, lock->lock));
             return NULL;
+        }
+        if (Kernel_13_KrnIsSuper())
+        {
+            lock->s_Owner = NULL;
+        }
+        else
+        {
+            lock->s_Owner = GET_THIS_TASK;
         }
     }
     else
@@ -54,7 +67,7 @@ AROS_LH2(spinlock_t *, KrnSpinTryLock,
             */
             if (tmp & (SPINLOCKF_WRITE >> 24))
             {
-                D(bug("[Kernel] %s: lock is held in WRITE mode. Failing to obtain it in READ mode...\n", __func__));
+                D(bug("[Kernel] %s: lock is held in WRITE mode (value %08x). Failing to obtain it in READ mode...\n", __func__, lock->lock));
                 return NULL;
             }
             else
