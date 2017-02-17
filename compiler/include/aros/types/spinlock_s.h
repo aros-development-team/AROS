@@ -2,6 +2,7 @@
 #define _AROS_TYPES_SPINLOCK_S_H_
 
 #include <aros/cpu.h>
+#include <exec/types.h>
 
 typedef struct {
     union
@@ -16,6 +17,9 @@ typedef struct {
         volatile unsigned char  block[4];
         volatile unsigned int   lock;
     };
+    // The field s_Owner is set either to task owning the lock,
+    // or NULL if the lock is free/read mode or was acquired in interrupt/supervisor mode
+    void * s_Owner;
 } __attribute__((__aligned__(128))) spinlock_t;
 
 #define SPINLOCK_UNLOCKED               0
