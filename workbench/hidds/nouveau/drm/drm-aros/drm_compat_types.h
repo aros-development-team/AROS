@@ -50,10 +50,10 @@ typedef struct
     LONG count;
 } atomic_t;
 
-#if !defined(__AROSEXEC_SMP__)
+#ifndef _AROS_TYPES_SPINLOCK_S_H_
 typedef struct
 {
-    LONG dummy;
+    ULONG dummy;
 } spinlock_t;
 #endif
 
