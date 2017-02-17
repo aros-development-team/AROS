@@ -110,25 +110,18 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
     struct IntuitionBase    *IntuitionBase = taskparams->intuitionBase;
     struct GfxBase          *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct MenuHandlerData  *mhd = NULL;
-    UBYTE                   *mem;
     struct MsgPort          *port = NULL;
     BOOL                     success = FALSE;
 
-    if ((mem = AllocMem(sizeof(struct MsgPort) +
-                        sizeof(struct MenuHandlerData), MEMF_PUBLIC | MEMF_CLEAR)))
+    if ((mhd = (struct MenuHandlerData *)AllocMem(sizeof(struct MenuHandlerData), MEMF_PUBLIC | MEMF_CLEAR)))
     {
-        port = (struct MsgPort *)mem;
+        port = CreateMsgPort();
 
-        port->mp_Node.ln_Type   = NT_MSGPORT;
         port->mp_Flags          = PA_SIGNAL;
         port->mp_SigBit         = AllocSignal(-1);
-        port->mp_SigTask        = FindTask(0);
-        NEWLIST(&port->mp_MsgList);
-
-        mhd = (struct MenuHandlerData *)(mem + sizeof(struct MsgPort));
+        port->mp_SigTask        = FindTask(NULL);
 
         success = TRUE;
-
     } /* if ((mem = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR))) */
 
     if (success)
@@ -212,6 +205,10 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
         } /* while((msg = (struct MenuMessage *)GetMsg(port))) */
 
     } /* for(;;) */
+
+    /* should never reach here but just incase.. */
+    if (port)
+        DeleteMsgPort(port);
 }
 
 /**************************************************************************************************/
