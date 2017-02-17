@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,6 +22,7 @@
 #include "kernel_intr.h"
 
 #include "apic.h"
+#include "apic_ia32.h"
 
 #define AROS_NO_ATOMIC_OPERATIONS
 #include <exec_platform.h>
@@ -33,14 +34,12 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     struct Task *task;
     struct ExceptionContext *ctx;
     apicid_t cpunum = KrnGetCPUNumber();
-    struct APICData *apicData;
+    IPTR __APICBase = core_APIC_GetBase();
 
     DSCHED(
         bug("[Kernel:%03u] cpu_Dispatch()\n", cpunum);
     )
-
-    apicData  = KernelBase->kb_PlatformData->kb_APIC;
-
+    
     /* 
      * Is the list of ready tasks empty? Well, increment the idle switch count and halt CPU.
      */
@@ -80,7 +79,8 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         Exception(); */
 
     /* Store the launch time */
-    IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = RDTSC();
+    IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = APIC_REG(__APICBase, APIC_TIMER_CCR);
+/*
     if ((apicData) &&
         (apicData->cores[cpunum].cpu_TimerFreq) &&
         !(IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_secs) &&
@@ -93,7 +93,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_micro =
             IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 % apicData->cores[cpunum].cpu_TimerFreq;
     }
-
+*/
     DSCHED(
         bug("[Kernel:%03u] cpu_Dispatch: Leaving...\n", cpunum);
     )
@@ -113,15 +113,14 @@ void cpu_Switch(struct ExceptionContext *regs)
     struct timeval timeVal;
     apicid_t cpunum = KrnGetCPUNumber();
     struct APICData *apicData;
+    IPTR __APICBase = core_APIC_GetBase();
 
     DSCHED(bug("[Kernel:%03u] cpu_Switch()\n", cpunum);)
 
-    timeCur = RDTSC();
+    timeCur = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
     task = GET_THIS_TASK;
     ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
-
-    timeCur -= IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
 
     KernelBase = getKernelBase();
     apicData  = KernelBase->kb_PlatformData->kb_APIC;
@@ -144,11 +143,19 @@ void cpu_Switch(struct ExceptionContext *regs)
     /* Set task's tc_SPReg */
     task->tc_SPReg = (APTR)regs->rsp;
 
-    if ((apicData) && (apicData->cores[cpunum].cpu_TimerFreq))
+    if (apicData && apicData->cores[cpunum].cpu_TimerFreq)
     {
+        if (timeCur < IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
+            timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 - timeCur;
+        else
+            timeCur = timeCur - IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq;
+        
+        // Convert LAPIC bus cycles into microseconds
+        timeCur = (timeCur * 1000000) / apicData->cores[cpunum].cpu_TimerFreq;
+        
         /* Update the task's CPU time */
-        timeVal.tv_secs = timeCur / apicData->cores[cpunum].cpu_TimerFreq;
-        timeVal.tv_micro = timeCur % apicData->cores[cpunum].cpu_TimerFreq;
+        timeVal.tv_secs = timeCur / 1000000;
+        timeVal.tv_micro = timeCur % 1000000;
 
         ADDTIME(&IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime, &timeVal);
     }
