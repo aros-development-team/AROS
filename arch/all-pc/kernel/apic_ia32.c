@@ -235,7 +235,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
         {
             /* Obtain/set the critical IRQs and Vectors */
-            for (i = 0; i < APIC_CPU_EXCEPT_COUNT; i++)
+            for (i = 0; i < X86_CPU_EXCEPT_COUNT; i++)
             {
                 if ((HW_IRQ_BASE < i) && (cpuNum == 0))
                 {
