@@ -603,12 +603,14 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
             msg->handler = func;
             msg->task    = me;
             msg->done    = FALSE;
+
+            // Free MsgPort's signal - we will be using SIGB_INTUITION
+            FreeSignal(port->mp_SigBit);
         
             ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
             AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiActionQueue, (struct Node *)msg);
             ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
 
-            port->mp_Flags 	= PA_SIGNAL;
             port->mp_SigTask = me;
             port->mp_SigBit  = SIGB_INTUITION;
 
@@ -629,6 +631,8 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
                     Wait(SIGF_INTUITION);
                 }
             }
+            // Set mp_SigBit to -1 so that exec does not free SIGB_INTUITION
+            port->mp_SigBit = -1;
             DeleteMsgPort(port);
         }        
     }
