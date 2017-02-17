@@ -36,7 +36,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
 
     if (mode == SPINLOCK_MODE_WRITE)
     {
-        D((ULONG tmp;))
+        ULONG tmp;
         struct Task *me = NULL;
         UBYTE old_pri = 0;
         UBYTE priority_changed = 0;
