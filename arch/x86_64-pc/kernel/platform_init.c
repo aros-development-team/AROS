@@ -33,7 +33,7 @@ extern struct syscallx86_Handler x86_SCSupervisorHandler;
 
 #if defined(EMULATE_SYSBASE)
 /* CPU exceptions are processed here */
-void core_IRQ0EHandle(struct ExceptionContext *regs, void *HandlerData, ivoid *HandlerData2)
+void core_IRQ0EHandle(struct ExceptionContext *regs, void *HandlerData, void *HandlerData2)
 {
     uint64_t ptr = rdcr(cr2);
     unsigned char *ip = (unsigned char *)regs->rip;
