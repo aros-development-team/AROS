@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __EXEC_PLATFORM_H
@@ -48,9 +48,11 @@ struct Exec_PlatformData
     spinlock_t *(*SpinLockCall)(spinlock_t *, struct Hook *, struct Hook *, ULONG);
 };
 
+#ifndef __KERNEL_NO_SPINLOCK_PROTOS__
 extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
 extern spinlock_t *Kernel_43_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
 extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
+#endif
 
 #define EXEC_SPINLOCK_INIT(a) Kernel_40_KrnSpinInit((a), NULL)
 #define EXEC_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), NULL, (b), NULL)
