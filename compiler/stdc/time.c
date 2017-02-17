@@ -89,12 +89,10 @@ static int __init_timerbase(struct StdCIntBase *StdCBase)
 {
     D(bug("__init_timerbase\n"));
 
+    memset( &StdCBase->timeport, 0, sizeof( StdCBase->timeport ) );
     StdCBase->timeport.mp_Node.ln_Type   = NT_MSGPORT;
-    StdCBase->timeport.mp_Node.ln_Pri    = 0;
-    StdCBase->timeport.mp_Node.ln_Name   = NULL;
     StdCBase->timeport.mp_Flags          = PA_IGNORE;
     StdCBase->timeport.mp_SigTask        = FindTask(NULL);
-    StdCBase->timeport.mp_SigBit         = 0;
     NEWLIST(&StdCBase->timeport.mp_MsgList);
 
     StdCBase->timereq.tr_node.io_Message.mn_Node.ln_Type    = NT_MESSAGE;
