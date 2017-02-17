@@ -372,6 +372,7 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
     {
 	/* Try to load from disk if not found */
 	struct LDDMsg ldd;
+	bzero(&ldd, sizeof(ldd));
 
 	ldd.ldd_ReplyPort.mp_SigBit       = SIGB_SINGLE;
 	ldd.ldd_ReplyPort.mp_SigTask      = FindTask(NULL);
