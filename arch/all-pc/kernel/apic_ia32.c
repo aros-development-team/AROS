@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel IA-32 APIC driver.
@@ -358,6 +358,15 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         }
         apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
         D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000));
+
+        /*
+            Once APIC timer has been calibrated, set it to run at it's full speed and reload every second. Mask interrupts
+        */
+        APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD;
+        APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
+        APIC_REG(__APICBase, APIC_TIMER_CCR) = apic->cores[cpuNum].cpu_TimerFreq;
+        APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
+
     }
 }
 
