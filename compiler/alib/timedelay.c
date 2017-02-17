@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: TimeDelay() - wait a specified time.
@@ -63,10 +63,8 @@
     /* Create a message port */
     if ((mp = CreateMsgPort()) != NULL)
     {
-        mp->mp_Flags = PA_SIGNAL;
+        FreeSignal(mp->mp_SigBit);
         mp->mp_SigBit = SIGB_SINGLE;
-        mp->mp_SigTask = FindTask(NULL);
-        NEWLIST(&mp->mp_MsgList);
 
         tr.tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
         tr.tr_node.io_Message.mn_Node.ln_Pri = 0;
@@ -88,6 +86,7 @@
             CloseDevice((struct IORequest *)&tr);
             error = 1;
         }
+        mp->mp_SigBit = -1;
         DeleteMsgPort(mp);
     }
     return error;

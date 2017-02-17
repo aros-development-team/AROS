@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -118,6 +118,8 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
                            We are anyway woken up about 10 times a second by
                            timer events
                            */
+                        FreeSignal(port->mp_SigBit);
+                        port->mp_SigBit  = -1;
                         port->mp_Flags   = PA_IGNORE;
 
                         iihdata->IntuiReplyPort = port;
