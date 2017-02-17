@@ -60,8 +60,9 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
             }
             D(bug("[Kernel] %s: my name is %s\n", __func__, Kernel_13_KrnIsSuper() ? "--supervisor code--" : me->tc_Node.ln_Name));
             D(bug("[Kernel] %s: spinning on held lock (val=%08x, s_Owner=%p)...\n", __func__, tmp, t));
-            if (me && (me->tc_Node.ln_Pri > t->tc_Node.ln_Pri)) 
+            if (me && t && (me->tc_Node.ln_Pri > t->tc_Node.ln_Pri)) 
             {
+                D(bug("[Kernel] %s: spinlock owner (%s) has pri %d, lowering ours...\n", __func__, t ? (t->tc_Node.ln_Name) : "--supervisor--", t ? t->tc_Node.ln_Pri : 999));
                 // If lock is spinning and the owner of lock has lower priority than ours, we need to reduce
                 // tasks priority too, otherwise it might happen that waiting task spins forever
                 priority_changed = 1;
