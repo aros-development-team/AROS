@@ -41,6 +41,7 @@
 #define ENABLE_DBUS                     @ENABLE_DBUS@
 #define ENABLE_X11                      @ENABLE_X11@
 
+@PLATFORM_EXECSMP@
 @ENABLE_EXECSMP@
 
 #endif /* AROS_CONFIG_H */

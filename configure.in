@@ -918,6 +918,7 @@ AC_MSG_RESULT($enableval)
 #
 # Bootloader name. Currently used by PC target.
 target_bootloader="none"
+PLATFORM_EXECSMP=
 ENABLE_EXECSMP=
 
 #-----------------------------------------------------------------------------
@@ -1158,6 +1159,7 @@ case "$target_os" in
                 gcc_target_cpu="i386"
                 ;;
             *x86_64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="x86_64"
                 aros_serial_debug=1
                 if test "$aros_object_format" = "" ; then
@@ -1471,6 +1473,7 @@ case "$target_os" in
         ;;
 
     r*pi)
+        PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
         aros_flavour="standalone"
         aros_target_arch="raspi"
 
@@ -2916,6 +2919,7 @@ AC_SUBST(aros_host_sdl_libs)
 
 # Native version related
 AC_SUBST(aros_serial_debug)
+AC_SUBST(PLATFORM_EXECSMP)
 AC_SUBST(ENABLE_EXECSMP)
 
 # Palm native version related
