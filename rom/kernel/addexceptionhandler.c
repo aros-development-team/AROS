@@ -121,7 +121,7 @@ int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, vo
     int ret = 0;
 
     /* We can be called really early. Protect against this. */
-    if (!KernelBase)
+    if (!KernelBase || (EXCEPTIONS_COUNT < exception))
     	return 0;
 
     ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
