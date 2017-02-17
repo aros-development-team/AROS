@@ -150,9 +150,9 @@ noSegments:
 	popl	%ebp
         addl	$16, %esp		// Remove segments
 
-	.globl	core_DefaultIRETQ
-	.type	core_DefaultIRETQ, @function
-core_DefaultIRETQ:
+	.globl	core_DefaultIRET
+	.type	core_DefaultIRET, @function
+core_DefaultIRET:
 	iret
 	.size core_EnterInterrupt, .-core_EnterInterrupt
 

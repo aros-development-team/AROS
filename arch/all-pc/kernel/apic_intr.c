@@ -65,7 +65,7 @@ IRQPROTO_16(0xC);
 IRQPROTO_16(0xD);
 IRQPROTO_16(0xE);
 IRQPROTO_16(0xF);
-extern void core_DefaultIRETQ(void);
+extern void DEF_IRQRETFUNC(void);
 
 const void *IntrDefaultGates[256] =
 {
@@ -175,7 +175,7 @@ void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
         // Disable ALL the default gates until something takes ownership
         for (i=0; i < 256; i++)
         {
-            off = (uintptr_t)core_DefaultIRETQ;
+            off = (uintptr_t)DEF_IRQRETFUNC;
 
             if (!core_SetIDTGate(IGATES, i, off, FALSE))
             {

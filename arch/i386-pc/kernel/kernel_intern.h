@@ -21,6 +21,8 @@ typedef struct int_gate_32bit apicidt_t;
 #define PAGE_SIZE	0x1000
 #define PAGE_MASK	0x0FFF
 
+#define DEF_IRQRETFUNC   core_DefaultIRET
+
 /*
  * Boot-time private data.
  * This structure is write-protected in user mode and survives warm restarts.
