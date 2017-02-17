@@ -144,6 +144,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
      */
     set_call_libfuncs(SETNAME(PREINITLIB), 1, 0, origSysBase);
 
+    DINIT("Preparing Bootstrap Task...");
+
     /*
      * kernel.resource is up and running and memory list is complete.
      * Global SysBase is set to its final value. We've got KernelBase and AllocMem() works.
@@ -168,6 +170,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         goto execfatal;
     }
 
+    DINIT("Allocated Task structure and MemList");
+
     ctx = KrnCreateContext();
     if (!ctx)
     {
@@ -175,7 +179,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         goto execfatal;
     }
 
-    DINIT("[exec] Bootstrap CPU context @ 0x%p\n", ctx);
+    DINIT("Bootstrap CPU context @ 0x%p\n", ctx);
 
     NEWLIST(&t->tc_MemEntry);
 
@@ -220,11 +224,11 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     }
     t->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
 
-    DINIT("[exec] Bootstrap task ETask @ 0x%p\n", t->tc_UnionETask.tc_ETask);
+    DINIT("Bootstrap task ETask @ 0x%p\n", t->tc_UnionETask.tc_ETask);
 
     SCHEDELAPSED_SET(SCHEDQUANTUM_GET);
 
-    DINIT("[exec] Inital Quantum = %d, Elapsed = %d\n", SCHEDQUANTUM_GET, SCHEDELAPSED_GET);
+    DINIT("Inital Quantum = %d, Elapsed = %d\n", SCHEDQUANTUM_GET, SCHEDELAPSED_GET);
 
     /* Install the interrupt servers. Again, do it here because allocations are needed. */
     for (i=0; i < 16; i++)
@@ -272,7 +276,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         }
     }
 
-    DINIT("[exec] Enabling Exec Interrupts...\n");
+    DINIT("Enabling Exec Interrupts...\n");
 
     /* We now start up the interrupts */
     Permit();
