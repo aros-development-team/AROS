@@ -79,7 +79,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
         {
             struct MsgPort *port;
 
-            port = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
+            port = CreateMsgPort();
             if (port)
             {
                 if ((iihdata->InputEventMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
@@ -120,7 +120,6 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
                            */
                         port->mp_Flags   = PA_IGNORE;
 
-                        NEWLIST( &(port->mp_MsgList) );
                         iihdata->IntuiReplyPort = port;
 
                         NEWLIST((struct List*) &iihdata->IntuiActionQueue);
@@ -159,7 +158,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
                     DeletePool(iihdata->InputEventMemPool);
 
                 } /* if (iihdata->InputEventMemPool = ... */
-                FreeMem(port, sizeof(struct MsgPort));
+                DeleteMsgPort(port);
 
             } /* if (port) */
             FreeMem(iihdata, sizeof (struct IIHData));
