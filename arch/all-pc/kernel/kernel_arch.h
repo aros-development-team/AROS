@@ -10,6 +10,11 @@
 
 #define KERNELIRQ_NEEDSPRIVATE
 #define KERNELIRQ_NEEDSCONTROLLERS
+/*
+ * Simulate SysBase access
+ * Disabled because global SysBase is moved away from zeropage.
+ *
+#define EMULATE_SYSBASE*/
 
 struct PlatformData;
 
@@ -24,7 +29,13 @@ struct PlatformData;
  *  The first Hardware IRQ starts at 32
  *  (0 - 31 are cpu exceptions, see below..)
  */
-#define HW_IRQ_BASE     APIC_CPU_EXCEPT_COUNT
+#define HW_IRQ_BASE     X86_CPU_EXCEPT_COUNT
+/*
+ * We handle all 255 exception vectors. However vectors starting from 0x20
+ * are hardware IRQs which are handled separately. So - 32 raw exceptions.
+ */
+#define EXCEPTIONS_COUNT (X86_CPU_EXCEPT_COUNT + APIC_CPU_EXCEPT_COUNT)
+
 /*
     0 - Divide Error
     1 - Debug
