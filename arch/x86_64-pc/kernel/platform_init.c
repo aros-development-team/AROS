@@ -31,6 +31,161 @@
 
 extern struct syscallx86_Handler x86_SCSupervisorHandler;
 
+#if defined(EMULATE_SYSBASE)
+/* CPU exceptions are processed here */
+void core_IRQ0EHandle(struct ExceptionContext *regs, void *HandlerData, ivoid *HandlerData2)
+{
+    uint64_t ptr = rdcr(cr2);
+    unsigned char *ip = (unsigned char *)regs->rip;
+
+    D(bug("[Kernel] Page fault exception\n"));
+
+    if (ptr == EMULATE_SYSBASE)
+    {
+        D(bug("[Kernel] ** Code at 0x%p is trying to access the SysBase at 0x%p.\n", ip, ptr));
+
+        if ((ip[0] & 0xfb) == 0x48 &&
+             ip[1]         == 0x8b && 
+            (ip[2] & 0xc7) == 0x04 &&
+             ip[3]         == 0x25)
+        {
+            int reg = ((ip[2] >> 3) & 0x07) | ((ip[0] & 0x04) << 1);
+
+            switch(reg)
+            {
+                case 0:
+                    regs->rax = (UQUAD)SysBase;
+                    break;
+                case 1:
+                    regs->rcx = (UQUAD)SysBase;
+                    break;
+                case 2:
+                    regs->rdx = (UQUAD)SysBase;
+                    break;
+                case 3:
+                    regs->rbx = (UQUAD)SysBase;
+                    break;
+//                    case 4:   /* Cannot put SysBase into rSP register */
+//                        regs->rsp = (UQUAD)SysBase;
+//                        break;
+                case 5:
+                    regs->rbp = (UQUAD)SysBase;
+                    break;
+                case 6:
+                    regs->rsi = (UQUAD)SysBase;
+                    break;
+                case 7:
+                    regs->rdi = (UQUAD)SysBase;
+                    break;
+                case 8:
+                    regs->r8 = (UQUAD)SysBase;
+                    break;
+                case 9:
+                    regs->r9 = (UQUAD)SysBase;
+                    break;
+                case 10:
+                    regs->r10 = (UQUAD)SysBase;
+                    break;
+                case 11:
+                    regs->r11 = (UQUAD)SysBase;
+                    break;
+                case 12:
+                    regs->r12 = (UQUAD)SysBase;
+                    break;
+                case 13:
+                    regs->r13 = (UQUAD)SysBase;
+                    break;
+                case 14:
+                    regs->r14 = (UQUAD)SysBase;
+                    break;
+                case 15:
+                    regs->r15 = (UQUAD)SysBase;
+                    break;
+            }
+
+            regs->rip += 8;
+            
+            core_LeaveInterrupt(regs);
+        }
+        else if ((ip[0] & 0xfb) == 0x48 &&
+                  ip[1]         == 0x8b && 
+                 (ip[2] & 0xc7) == 0x05)
+        {
+            int reg = ((ip[2] >> 3) & 0x07) | ((ip[0] & 0x04) << 1);
+
+            switch(reg)
+            {
+                case 0:
+                    regs->rax = (UQUAD)SysBase;
+                    break;
+                case 1:
+                    regs->rcx = (UQUAD)SysBase;
+                    break;
+                case 2:
+                    regs->rdx = (UQUAD)SysBase;
+                    break;
+                case 3:
+                    regs->rbx = (UQUAD)SysBase;
+                    break;
+//                    case 4:   /* Cannot put SysBase into rSP register */
+//                        regs->rsp = (UQUAD)SysBase;
+//                        break;
+                case 5:
+                    regs->rbp = (UQUAD)SysBase;
+                    break;
+                case 6:
+                    regs->rsi = (UQUAD)SysBase;
+                    break;
+                case 7:
+                    regs->rdi = (UQUAD)SysBase;
+                    break;
+                case 8:
+                    regs->r8 = (UQUAD)SysBase;
+                    break;
+                case 9:
+                    regs->r9 = (UQUAD)SysBase;
+                    break;
+                case 10:
+                    regs->r10 = (UQUAD)SysBase;
+                    break;
+                case 11:
+                    regs->r11 = (UQUAD)SysBase;
+                    break;
+                case 12:
+                    regs->r12 = (UQUAD)SysBase;
+                    break;
+                case 13:
+                    regs->r13 = (UQUAD)SysBase;
+                    break;
+                case 14:
+                    regs->r14 = (UQUAD)SysBase;
+                    break;
+                case 15:
+                    regs->r15 = (UQUAD)SysBase;
+                    break;
+            }
+            
+            regs->rip += 7;
+            
+            core_LeaveInterrupt(regs);
+        }
+            D(else bug("[Kernel] Instruction not recognized\n"));
+    }
+
+#ifdef DUMP_CONTEXT
+    unsigned int i;
+
+    bug("[Kernel] PAGE FAULT accessing 0x%p\n", ptr);
+    bug("[Kernel] Insn: ");
+    for (i = 0; i < 16; i++)
+        bug("%02x ", ip[i]);
+    bug("\n");
+#endif
+
+    return FALSE;
+}
+#endif
+
 static int Platform_Init(struct KernelBase *LIBBASE)
 {
     struct PlatformData *pdata;
@@ -89,6 +244,10 @@ static int Platform_Init(struct KernelBase *LIBBASE)
                        "Vector #%02X\n", APIC_IRQ_SYSCALL);
     }
     krnAddSysCallHandler(pdata, &x86_SCSupervisorHandler, FALSE, TRUE);
+
+#if defined(EMULATE_SYSBASE)
+//    KrnAddExceptionHandler(0x0E, core_IRQ0EHandle, void *handlerData, void *handlerData2);
+#endif
 
     return TRUE;
 }
