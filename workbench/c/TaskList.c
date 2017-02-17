@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -229,14 +229,14 @@ int main(void)
             Remove((struct Node *)currentTask);
 
             time = currentTask->cputime.tv_secs;
-            Printf("0x%08.ix\t%s\t%ld\t%s\t%02ld:%02ld:%02ld\t%id\t%id\t%s\n",
+            Printf("0x%08.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld\t%id\t%id\t%s\n",
                     currentTask->address,
                     (currentTask->node.ln_Type == NT_TASK) ? "task" :
                     (currentTask->node.ln_Type == NT_PROCESS) ? "process" : "CLI",
                     (ULONG)currentTask->node.ln_Pri,
                     (currentTask->state == TS_RUN) ? "running" :
                     (currentTask->state == TS_READY) ? "ready" : "waiting",
-                    time % 60, (time / 60) % 60, (time / 60 / 60) % 60,
+                    (time / 60 / 60), (time / 60) % 60, time % 60,
                     currentTask->stacksize, currentTask->stackused,
                     (currentTask->node.ln_Name != NULL) ? currentTask->node.ln_Name : "(null)");
 
