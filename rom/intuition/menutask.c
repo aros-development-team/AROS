@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright ï¿½ 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -116,10 +116,6 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
     if ((mhd = (struct MenuHandlerData *)AllocMem(sizeof(struct MenuHandlerData), MEMF_PUBLIC | MEMF_CLEAR)))
     {
         port = CreateMsgPort();
-
-        port->mp_Flags          = PA_SIGNAL;
-        port->mp_SigBit         = AllocSignal(-1);
-        port->mp_SigTask        = FindTask(NULL);
 
         success = TRUE;
     } /* if ((mem = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR))) */

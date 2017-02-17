@@ -33,12 +33,7 @@ void DefaultScreennotifyHandler(struct ScreennotifyTaskParams *taskparams)
 
     if ((port  = CreateMsgPort()))
     {
-        port->mp_Flags      	= PA_SIGNAL;
-        port->mp_SigBit     	= AllocSignal(-1);
-        port->mp_SigTask    	= FindTask(NULL);
-
         success = TRUE;
-
     } /* if ((mem = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR))) */
 
     if (success)
