@@ -24,6 +24,7 @@ AROS_LH1(void, KrnSpinUnLock,
 
     D(bug("[Kernel] %s(0x%p)\n", __func__, lock));
 
+    lock->s_Owner = NULL;
     /* 
     use cmpxchg - expect SPINLOCKF_WRITE and replace it with 0 (unlocking the spinlock), if that succeeded, the lock
     was in WRITE mode and is now free. If that was not the case, continue with unlocking READ mode spinlock
