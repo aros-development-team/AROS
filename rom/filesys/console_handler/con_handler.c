@@ -293,7 +293,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     fh->conreadmp = AllocVec(sizeof(struct MsgPort) * 2, MEMF_PUBLIC | MEMF_CLEAR);
     if (fh->conreadmp)
     {
-        memset( fh->conreadmp, 0, sizeof( fh->conreadmp ) );
+        memset( fh->conreadmp, 0, sizeof( *fh->conreadmp ) );
         fh->conreadmp->mp_Node.ln_Type = NT_MSGPORT;
         fh->conreadmp->mp_Flags = PA_SIGNAL;
         fh->conreadmp->mp_SigBit = AllocSignal(-1);
@@ -302,7 +302,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 
         fh->conwritemp = fh->conreadmp + 1;
 
-        memset( fh->conwritemp, 0, sizeof( fh->conwritemp ) );
+        memset( fh->conwritemp, 0, sizeof( *fh->conwritemp ) );
         fh->conwritemp->mp_Node.ln_Type = NT_MSGPORT;
         fh->conwritemp->mp_Flags = PA_SIGNAL;
         fh->conwritemp->mp_SigBit = AllocSignal(-1);
