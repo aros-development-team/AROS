@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2017, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -80,6 +80,7 @@ static BOOL initMsgPort(struct MsgPort *port)
     if (sb < 0)
         return FALSE;
 
+    memset( port, 0, sizeof( *port ) );
     port->mp_SigBit = sb;
     port->mp_SigTask = FindTask(NULL);
     port->mp_Flags = PA_SIGNAL;
