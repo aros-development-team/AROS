@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -64,9 +64,8 @@
             sig = AllocSignal(-1);
             if (sig == -1) sig = SIGB_SINGLE;
 
+            memset( &mp, 0, sizeof( mp ) );
             mp.mp_Node.ln_Type = NT_MSGPORT;
-            mp.mp_Node.ln_Pri  = 0;
-            mp.mp_Node.ln_Name = NULL;
             mp.mp_Flags        = PA_SIGNAL;
             mp.mp_SigTask      = FindTask(NULL);
             mp.mp_SigBit       = sig;
