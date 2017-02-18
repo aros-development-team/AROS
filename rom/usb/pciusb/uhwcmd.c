@@ -174,11 +174,12 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
             unit->hu_NakTimeoutInt.is_Code = (VOID_FUNC)uhwNakTimeoutInt;
 
             CopyMem(unit->hu_TimerReq, &unit->hu_NakTimeoutReq, sizeof(struct timerequest));
-            unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = &unit->hu_NakTimeoutMsgPort;
+            memset( &unit->hu_NakTimeoutMsgPort, 0, sizeof( unit->hu_NakTimeoutMsgPort ) );
             unit->hu_NakTimeoutMsgPort.mp_Node.ln_Type = NT_MSGPORT;
             unit->hu_NakTimeoutMsgPort.mp_Flags = PA_SOFTINT;
             unit->hu_NakTimeoutMsgPort.mp_SigTask = &unit->hu_NakTimeoutInt;
             NewList(&unit->hu_NakTimeoutMsgPort.mp_MsgList);
+            unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = &unit->hu_NakTimeoutMsgPort;
             Cause(&unit->hu_NakTimeoutInt);
             return(&unit->hu_Unit);
         } else {
