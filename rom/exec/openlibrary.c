@@ -13,7 +13,9 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
 #include "exec_debug.h"
+
 
 /*****************************************************************************
 

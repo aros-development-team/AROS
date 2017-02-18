@@ -1,13 +1,17 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Search a semaphore by name
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -46,8 +50,18 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct SignalSemaphore *retVal;
+
     /* Nothing spectacular - just look into the list */
-    return (struct SignalSemaphore *)FindName(&SysBase->SemaphoreList,name);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->SemListSpinLock, SPINLOCK_MODE_READ);
+#endif
+    retVal = (struct SignalSemaphore *)FindName(&SysBase->SemaphoreList,name);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->SemListSpinLock);
+#endif
+    return retVal;
+
     AROS_LIBFUNC_EXIT
 } /* FindSemaphore */
 
