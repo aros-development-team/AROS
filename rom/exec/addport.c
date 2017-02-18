@@ -6,9 +6,11 @@
     Lang: english
 */
 
-#include "exec_intern.h"
 #include <exec/ports.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -59,9 +61,14 @@
     EXEC_SPINLOCK_INIT(&port->mp_SpinLock);
 #endif
     NEWLIST(&port->mp_MsgList);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->PortListSpinLock, SPINLOCK_MODE_WRITE);
+#endif
     /* And add the actual port */
     Enqueue(&SysBase->PortList,&port->mp_Node);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->PortListSpinLock);
+#endif
 
     /* All done */
     Permit();

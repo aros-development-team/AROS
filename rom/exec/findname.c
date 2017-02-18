@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Search for a node by name.
@@ -7,6 +7,9 @@
 */
 #include <string.h>
 #include <aros/debug.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -62,7 +65,12 @@
 	Changed in lists.c as well....
 */
     if( !list )
+    {
+#if defined(__AROSEXEC_SMP__)
+        bug("[EXEC] %s: called with NULL list!\n", __func__);
+#endif
         list = &SysBase->PortList;
+    }
 
 /*    ASSERT(list != NULL); */
     ASSERT(name);
