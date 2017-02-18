@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Serial device
@@ -158,9 +158,11 @@ static int GM_UNIQUENAME(Open)
           /*
           ** Initialize the message ports
           */
+          memset( &SU->su_QReadCommandPort, 0, sizeof( SU->su_QReadCommandPort ) );
           NEWLIST(&SU->su_QReadCommandPort.mp_MsgList);
           SU->su_QReadCommandPort.mp_Node.ln_Type = NT_MSGPORT;
           
+          memset( &SU->su_QWriteCommandPort, 0, sizeof( SU->su_QWriteCommandPort ) );
           NEWLIST(&SU->su_QWriteCommandPort.mp_MsgList);
           SU->su_QWriteCommandPort.mp_Node.ln_Type= NT_MSGPORT;
    
