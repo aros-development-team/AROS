@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Helpfuncs needed when iffparse is used for clipboard handling.
@@ -26,6 +26,7 @@ BOOL InitPort (struct MsgPort *mp, struct Task *t,
 
     if ((sigbit = AllocSignal(-1L)) == -1) return (FALSE);
 
+    memset( mp, 0, sizeof( *mp ) );
     mp->mp_Node.ln_Type = NT_MSGPORT;
     mp->mp_Flags	=  PA_SIGNAL;
     mp->mp_SigBit	 =  sigbit;
