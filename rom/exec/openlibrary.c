@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a library.
@@ -62,9 +62,14 @@
 
     /* Arbitrate for the library list */
     Forbid();
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->LibListSpinLock, SPINLOCK_MODE_READ);
+#endif
     /* Look for the library in our list */
     library = (struct Library *) FindName (&SysBase->LibList, libName);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->LibListSpinLock);
+#endif
 
     /* Something found ? */
     if(library!=NULL)
