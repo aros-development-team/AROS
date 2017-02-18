@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Find out the status of a child task.
@@ -70,6 +70,9 @@
 	}
     }
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&et->et_TaskMsgPort.mp_SpinLock, SPINLOCK_MODE_READ);
+#endif
     ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
     {
 	if (child->et_UniqueID == tid)
@@ -78,7 +81,9 @@
 	    break;
 	}
     }
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&et->et_TaskMsgPort.mp_SpinLock);
+#endif
     Permit();
     return status;
 
