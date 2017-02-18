@@ -1,14 +1,13 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a port to the public list of ports.
     Lang: english
 */
-#include <aros/debug.h>
+
+#include "exec_intern.h"
 #include <exec/ports.h>
-#include <exec/execbase.h>
-#include <aros/libcall.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -49,14 +48,17 @@
     AROS_LIBFUNC_INIT
     ASSERT_VALID_PTR(port);
 
+    /* Arbitrate for the list of messageports. */
+    Forbid();
+
     /* Yes, this is a messageport */
     port->mp_Node.ln_Type=NT_MSGPORT;
 
     /* Clear the list of messages */
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&port->mp_SpinLock);
+#endif
     NEWLIST(&port->mp_MsgList);
-
-    /* Arbitrate for the list of messageports. */
-    Forbid();
 
     /* And add the actual port */
     Enqueue(&SysBase->PortList,&port->mp_Node);
