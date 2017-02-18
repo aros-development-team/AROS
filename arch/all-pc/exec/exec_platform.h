@@ -321,8 +321,8 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
         { \
-            __schd->RunningTask = (x); \
             Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE, NULL); \
+            __schd->RunningTask = (x); \
             AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
             Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL);  \
         } \
