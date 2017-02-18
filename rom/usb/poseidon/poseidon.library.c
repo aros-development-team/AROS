@@ -59,7 +59,9 @@ extern const struct PsdWStringMap usbhwioerrstr[];
 extern const struct PsdUWStringMap usblangids[];
 extern const struct PsdUWStringMap usbvendorids[];
 
+#if !defined(__AROS__)
 extern struct ExecBase *SysBase;
+#endif
 
 /* Static data */
 const char GM_UNIQUENAME(libname)[]     = MOD_NAME_STRING;
@@ -108,6 +110,7 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
         NewList(&ps->ps_Classes);
         NewList(&ps->ps_ErrorMsgs);
         NewList(&ps->ps_EventHooks);
+        memset(&ps->ps_EventReplyPort, 0, sizeof(ps->ps_EventReplyPort));
         ps->ps_EventReplyPort.mp_Flags = PA_IGNORE;
         NewList(&ps->ps_EventReplyPort.mp_MsgList);
         NewList(&ps->ps_ConfigRoot);
@@ -1519,7 +1522,9 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     nt->tc_UserData = userdata;
     NewList(&nt->tc_MemEntry);
     AddTail(&nt->tc_MemEntry, (struct Node *) newmemlist);
+#if !defined(__AROSEXEC_SMP__)
     KPRINTF(1, ("TDNestCnt=%ld\n", SysBase->TDNestCnt));
+#endif
     if((nt = AddTask(nt, initpc, NULL)))
     {
         XPRINTF(10, ("Started task %p (%s)\n", nt, name));
@@ -8839,6 +8844,7 @@ AROS_UFH0(void, pDeviceTask)
 #define PA_CALLBACK 3
 #endif
 
+    memset(&phw->phw_TaskMsgPort, 0, sizeof(phw->phw_TaskMsgPort));
     phw->phw_TaskMsgPort.mp_Node.ln_Type = NT_MSGPORT;
     phw->phw_TaskMsgPort.mp_Node.ln_Name = (APTR) phw;
     phw->phw_TaskMsgPort.mp_Flags = PA_SIGNAL;
@@ -8846,6 +8852,7 @@ AROS_UFH0(void, pDeviceTask)
     phw->phw_TaskMsgPort.mp_SigBit = AllocSignal(-1L);
     NewList(&phw->phw_TaskMsgPort.mp_MsgList);
 
+    memset(&phw->phw_DevMsgPort, 0, sizeof(phw->phw_DevMsgPort));
     phw->phw_DevMsgPort.mp_Node.ln_Type = NT_MSGPORT;
     phw->phw_DevMsgPort.mp_Node.ln_Name = (APTR) phw;
     phw->phw_DevMsgPort.mp_Flags = PA_SIGNAL;
