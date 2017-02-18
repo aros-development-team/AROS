@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Conclip CLI command
@@ -192,12 +192,12 @@ AROS_UFH3(ULONG, conclipeditfunc,
     struct MyEditHookMsg msg;
     BOOL                 calloldhook = TRUE;
     ULONG                retcode = 0;
-        
+
     switch (*command)
     {
         case SGH_KEY:
             D(bug("ConClip/conclipeditfunc: is SGH_KEY\n"));
-            
+
             if (sgw->IEvent->ie_Qualifier & IEQUALIFIER_RCOMMAND)
             {
                 D(bug("ConClip/conclipeditfunc: qualifier RCOMMAND okay\n"));
@@ -215,28 +215,27 @@ AROS_UFH3(ULONG, conclipeditfunc,
                         {
                             calloldhook = FALSE;
 
+                            memset( &replyport, 0, sizeof( replyport ) );
                             replyport.mp_Node.ln_Type   = NT_MSGPORT;
-                            replyport.mp_Node.ln_Name   = NULL;
-                            replyport.mp_Node.ln_Pri    = 0;
                             replyport.mp_Flags          = PA_SIGNAL;
                             replyport.mp_SigBit         = SIGB_SINGLE;
                             replyport.mp_SigTask        = FindTask(NULL);
                             NewList(&replyport.mp_MsgList);
-                            
+
                             msg.msg.mn_Node.ln_Type     = NT_MESSAGE;
                             msg.msg.mn_ReplyPort        = &replyport;
                             msg.msg.mn_Length           = sizeof(msg);
-                            
+
                             msg.code = ToUpper(sgw->Code);
                             msg.sgw  = sgw;                         
-                            
+
                             if ((msg.code == CODE_COPY) || (sgw->NumChars < sgw->StringInfo->MaxChars - 1))
                             {
                                 SetSignal(0, SIGF_SINGLE);
                                 PutMsg(port, &msg.msg);
                                 WaitPort(&replyport);
                             }
-                            
+
                             if (msg.code == CODE_PASTE)
                             {
                                 WORD len = strlen(sgw->WorkBuffer);
@@ -249,18 +248,18 @@ AROS_UFH3(ULONG, conclipeditfunc,
                                     
                                     retcode = 1;
                                 }
-                                
+
                             } /* if (msg.code == CODE_COPY) */
-                            
+
                         } /* if ((port = FindPort(CONCLIP_PORTNAME))) */
-                
+
                         break;
-                    
+
                 } /* switch(ToUpper(sgw->Code)) */
-                
+
             } /* if (sgw->IEvent->ie_Qualifier & IEQUALIFIER_RCOMMAND) */
             break;    
-            
+
     } /* switch (*command) */
 
     if (calloldhook) retcode = CallHookPkt(oldedithook, sgw, command);
