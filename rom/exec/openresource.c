@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a resource.
@@ -10,6 +10,9 @@
 #include <aros/libcall.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -52,10 +55,14 @@
 
     /* Arbitrate for the resource list */
     Forbid();
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->ResourceListSpinLock, SPINLOCK_MODE_READ);
+#endif
     /* Look for the resource in our list */
     resource = (APTR) FindName (&SysBase->ResourceList, resName);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->ResourceListSpinLock);
+#endif
     /* All done. */
     Permit();
     return resource;
