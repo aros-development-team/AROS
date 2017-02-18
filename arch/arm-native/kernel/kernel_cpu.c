@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/types/timespec_s.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>
@@ -249,7 +250,7 @@ void cpu_Switch(regs_t *regs)
 {
     struct Task *task;
     UQUAD timeCur;
-    struct timeval timeVal;
+    struct timespec timeSpec;
     DSCHED(
         cpuid_t cpunum = GetCPUNumber();
         bug("[Kernel:%02d] cpu_Switch()\n", cpunum);
@@ -264,10 +265,16 @@ void cpu_Switch(regs_t *regs)
     {
         /* Update the task's CPU time */
         timeCur = __arm_arosintern.ARMI_GetTime() - IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
-        timeVal.tv_secs = timeCur / 1000000;
-        timeVal.tv_micro = timeCur % 1000000;
+        timeSpec.tv_sec = timeCur / 1000000000;
+        timeSpec.tv_nsec = timeCur % 1000000000;
 
-        ADDTIME(&IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime, &timeVal);
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec += timeSpec.tv_nsec;
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec  += timeSpec.tv_sec;
+        while(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec >= 1000000000)
+        {
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec -= 1000000000;
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec++;
+        }
     }
 
     core_Switch();

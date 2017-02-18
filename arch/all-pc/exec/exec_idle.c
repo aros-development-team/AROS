@@ -44,7 +44,7 @@ void IdleTask(struct ExecBase *SysBase)
         D(
             if ((taskIntEtask = GetIntETask(thisTask)) != NULL)
             {
-                current = taskIntEtask->iet_CpuTime.tv_secs;
+                current = taskIntEtask->iet_CpuTime.tv_sec;
                 if (current != lastcount)
                 {
                     lastcount = current;

@@ -1,10 +1,11 @@
 /*
-    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #define __KERNEL_NOLIBBASE__
 
+#include <aros/types/timespec_s.h>
 #include <exec/lists.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
@@ -110,7 +111,7 @@ void cpu_Switch(struct ExceptionContext *regs)
     struct Task *task;
     struct ExceptionContext *ctx;
     UQUAD timeCur;
-    struct timeval timeVal;
+    struct timespec timeSpec;
     apicid_t cpunum = KrnGetCPUNumber();
     struct APICData *apicData;
     IPTR __APICBase = core_APIC_GetBase();
@@ -151,13 +152,19 @@ void cpu_Switch(struct ExceptionContext *regs)
             timeCur = timeCur - IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq;
         
         // Convert LAPIC bus cycles into microseconds
-        timeCur = (timeCur * 1000000) / apicData->cores[cpunum].cpu_TimerFreq;
+        timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TimerFreq;
         
         /* Update the task's CPU time */
-        timeVal.tv_secs = timeCur / 1000000;
-        timeVal.tv_micro = timeCur % 1000000;
+        timeSpec.tv_sec = timeCur / 1000000000;
+        timeSpec.tv_nsec = timeCur % 1000000000;
 
-        ADDTIME(&IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime, &timeVal);
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec += timeSpec.tv_nsec;
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec  += timeSpec.tv_sec;
+        while(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec >= 1000000000)
+        {
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec -= 1000000000;
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec++;
+        }
     }
     core_Switch();
 }
