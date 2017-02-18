@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -92,11 +92,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ramdrivebase)
 
     InitSemaphore(&ramdrivebase->sigsem);
     NEWLIST((struct List *)&ramdrivebase->units);
+    memset( &ramdrivebase->port, 0, sizeof( ramdrivebase->port ) );
     ramdrivebase->port.mp_Node.ln_Type = NT_MSGPORT;
     ramdrivebase->port.mp_Flags = PA_SIGNAL;
     ramdrivebase->port.mp_SigBit = SIGB_SINGLE;
     NEWLIST((struct List *)&ramdrivebase->port.mp_MsgList);
-    
+
     D(bug("ramdrive_device: in libinit func. Returning %x (success) :-)\n", ramdrivebase));
     return TRUE;
 }
