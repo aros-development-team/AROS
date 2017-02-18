@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Search for a port by name.
@@ -8,6 +8,9 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -46,8 +49,19 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct MsgPort *retVal;
+
     /* Nothing spectacular - just look for that name. */
-    return (struct MsgPort *)FindName(&SysBase->PortList,name);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->PortListSpinLock, SPINLOCK_MODE_READ);
+#endif
+    retVal = (struct MsgPort *)FindName(&SysBase->PortList,name);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->PortListSpinLock);
+#endif
+
+    return retVal;
+
     AROS_LIBFUNC_EXIT
 } /* FindPort */
 
