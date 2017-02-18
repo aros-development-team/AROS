@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Parallel device
@@ -76,10 +76,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ParallelDevice)
   {
     ParallelDevice->ParallelHidd = OpenLibrary("DRIVERS:parallel.hidd",0);
     D(bug("parallel.hidd base: 0x%x\n",ParallelDevice->ParallelHidd));
-    
+
     if (NULL == ParallelDevice->ParallelHidd)
     	return FALSE;
-	
+
     if (NULL == ParallelDevice->oopBase)
       ParallelDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);    
     if (NULL == ParallelDevice->oopBase)
@@ -88,9 +88,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ParallelDevice)
 	ParallelDevice->ParallelHidd = NULL;
     	return FALSE;
     }
-	
+
     ParallelDevice->ParallelObject = OOP_NewObject(NULL, CLID_Hidd_Parallel, NULL);
-	
+
     if (NULL == ParallelDevice->ParallelObject)
     {
     	CloseLibrary(ParallelDevice->oopBase);
@@ -100,7 +100,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ParallelDevice)
       	return FALSE;
     }
   }
-    
+
   NEWLIST(&ParallelDevice->UnitList);
   return TRUE;
 }
@@ -146,16 +146,18 @@ static int GM_UNIQUENAME(Open)
         PU->pu_OpenerCount	= 1;
         PU->pu_UnitNum		= unitnum;
         PU->pu_Flags		= iopar->io_ParFlags;
-        
+
         /*
         ** Initialize the message ports
         */
+        memset( &PU->pu_QReadCommandPort, 0, sizeof( PU->pu_QReadCommandPort ) );
         NEWLIST(&PU->pu_QReadCommandPort.mp_MsgList);
         PU->pu_QReadCommandPort.mp_Node.ln_Type = NT_MSGPORT;
-          
+
+        memset( &PU->pu_QWriteCommandPort, 0, sizeof( PU->pu_QWriteCommandPort ) );
         NEWLIST(&PU->pu_QWriteCommandPort.mp_MsgList);
         PU->pu_QWriteCommandPort.mp_Node.ln_Type= NT_MSGPORT;
-   
+
         InitSemaphore(&PU->pu_Lock);
         /* do further initilization here. Like getting the ParallelUnit Object etc. */
 
