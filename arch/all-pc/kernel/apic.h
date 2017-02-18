@@ -46,7 +46,8 @@ struct APICData
     struct CPUData              cores[0];	/* Per-CPU data					        */
 };
 
-#define APF_8259 0x0001	        /* Legacy PIC present				        */
+#define APF_8259                (1 << 0)	/* Legacy PIC present				        */
+#define APF_TIMER               (1 << 1)	/* APIC uses its own heartbeat timer	                */
 
 #ifdef __x86_64__
 #define APIC_BASE_MASK 0x000FFFFFFFFFF000
