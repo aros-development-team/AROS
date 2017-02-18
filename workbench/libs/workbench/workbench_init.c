@@ -34,7 +34,6 @@ static int WBInit(LIBBASETYPEPTR LIBBASE)
     /* Initialize handler message port -------------------------------------*/
     memset( &WorkbenchBase->wb_HandlerPort, 0, sizeof( WorkbenchBase->wb_HandlerPort ) );
     WorkbenchBase->wb_HandlerPort.mp_SigBit  = SIGBREAKB_CTRL_F;
-    WorkbenchBase->wb_HandlerPort.mp_SigTask = NULL;      
     WorkbenchBase->wb_HandlerPort.mp_Flags   = PA_IGNORE;
     NEWLIST(&(WorkbenchBase->wb_HandlerPort.mp_MsgList));
 
