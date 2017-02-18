@@ -23,30 +23,40 @@ AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
 {
     AROS_INTFUNC_INIT
 
-#if defined(__AROSEXEC_SMP__)
     struct KernelBase *KernelBase = __kernelBase;
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct APICData *apicData = pdata->kb_APIC;
+#if defined(__AROSEXEC_SMP__)
     struct X86SchedulerPrivate  *apicScheduleData;
     tls_t *apicTLS;
-    apicid_t cpuNo;
 #endif
-
     D(bug("[Exec:X86] %s()\n", __func__));
 
-    /* First decrease Elapsed time for current task */
-#if !defined(__AROSEXEC_SMP__)
-    if (SCHEDELAPSED_GET && (--SysBase->Elapsed == 0))
+    /*
+     * If the APIC's dont have their own heartbeat timer, 
+     * First decrease Elapsed time for current task
+     */
+    if ((!apicData) || (!(apicData->flags & APF_TIMER)))
     {
-        FLAG_SCHEDQUANTUM_SET;
-        FLAG_SCHEDSWITCH_SET;
-    }
-#else
-    if (apicData)
-    {
-        for (cpuNo = 0; cpuNo < apicData->apic_count; cpuNo++)
+#if defined(__AROSEXEC_SMP__)
+        if (!apicData)
         {
-            apicTLS = apicData->cores[cpuNo].cpu_TLS;
+#endif
+            UWORD current = SCHEDELAPSED_GET;
+            if (current)
+                SCHEDELAPSED_SET(--current);
+
+            if (current == 0)
+            {
+                FLAG_SCHEDQUANTUM_SET;
+                FLAG_SCHEDSWITCH_SET;
+            }
+#if defined(__AROSEXEC_SMP__)
+        }
+        else
+        {
+            /* we can only update cpu #0 */
+            apicTLS = apicData->cores[0].cpu_TLS;
             if ((apicTLS) && ((apicScheduleData = apicTLS->ScheduleData) != NULL))
             {
                 if ((apicScheduleData->Elapsed) && (--apicScheduleData->Elapsed == 0))
@@ -56,8 +66,8 @@ AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
                 }
             }
         }
-    }
 #endif
+    }
 
     /* Chain to the generic routine */
     return AROS_INTC3(IntServer, intList, intMask, custom);
