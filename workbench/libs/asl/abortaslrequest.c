@@ -10,6 +10,8 @@
 #include <proto/exec.h>
 #include "asl_intern.h"
 
+#include <string.h>
+
 /*****************************************************************************
 
     NAME */
