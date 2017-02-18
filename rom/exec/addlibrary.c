@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a library to the public list of libraries.
@@ -67,10 +67,14 @@
 
     /* Arbitrate for the library list */
     Forbid();
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->LibListSpinLock, SPINLOCK_MODE_WRITE);
+#endif
     /* And add the library */
     Enqueue(&SysBase->LibList,&library->lib_Node);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->LibListSpinLock);
+#endif
     /* All done. */
     Permit();
 
