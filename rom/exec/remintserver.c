@@ -12,8 +12,8 @@
 #include <proto/exec.h>
 #include <aros/libcall.h>
 
-#include "exec_debug.h"
 #include "exec_intern.h"
+#include "exec_debug.h"
 #include "chipset.h"
 
 /*****************************************************************************
@@ -57,10 +57,14 @@
     }
 
     Disable();
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, SPINLOCK_MODE_WRITE);
+#endif
     Remove((struct Node *)interrupt);
     CUSTOM_DISABLE(intNumber, SysBase->IntVects[intNumber].iv_Data);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->IntrListSpinLock);
+#endif
     Enable();
 
     AROS_LIBFUNC_EXIT
