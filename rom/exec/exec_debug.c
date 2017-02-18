@@ -23,6 +23,12 @@
 
 #include "exec_debug.h"
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/atomic.h>
+#include <asm/cpu.h>
+extern volatile ULONG   safedebug;
+#endif
+
 const char * const ExecFlagNames[] =
 {
     "InitResident",
@@ -157,6 +163,13 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, 
 {
     unsigned int i;
 
+#if defined(__AROSEXEC_SMP__)
+    if (safedebug & 1)
+    {
+        while (bit_test_and_set_long((ULONG*)&safedebug, 1)) { };
+    }
+#endif
+
     /* Prepend tag (if known) */
     for (i = 0; FlagNames[i]; i++)
     {
@@ -173,6 +186,12 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, 
     /* Output the message and append a newline (in order not to bother about it every time) */
     VNewRawDoFmt(format, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL, args);
     RawPutChar('\n');
+#if defined(__AROSEXEC_SMP__)
+    if (safedebug & 1)
+    {
+        __AROS_ATOMIC_AND_L(safedebug, ~(1 << 1));
+    }
+#endif
 }
 
 #endif
