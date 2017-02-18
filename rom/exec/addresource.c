@@ -13,8 +13,8 @@
 
 #include <string.h>
 
-#include "exec_debug.h"
 #include "exec_intern.h"
+#include "exec_debug.h"
 
 /* Kludge for old kernels */
 #ifndef KrnStatMemory
@@ -63,12 +63,13 @@
     /* Arbitrate for the resource list */
     Forbid();
 #if defined(__AROSEXEC_SMP__)
-    //TODO: protect the resource list...
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->ResourceListSpinLock, SPINLOCK_MODE_WRITE);
 #endif
-
     /* And add the resource */
     Enqueue(&SysBase->ResourceList,(struct Node *)resource);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->ResourceListSpinLock);
+#endif
     /* All done. */
     Permit();
 
