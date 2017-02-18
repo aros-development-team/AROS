@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Install an interrupt handler.
@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <aros/libcall.h>
 
+#include "exec_intern.h"
 #include "exec_debug.h"
 
 /*****************************************************************************
@@ -50,7 +51,9 @@
     ExecLog(SysBase, EXECDEBUGF_EXCEPTHANDLER, "SetIntVector: Int %d, Interrupt %p\n", intNumber, interrupt);
 
     Disable ();
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, SPINLOCK_MODE_WRITE);
+#endif
     oldint = (struct Interrupt *)SysBase->IntVects[intNumber].iv_Node;
     SysBase->IntVects[intNumber].iv_Node = ishandler ? (struct Node *)interrupt : NULL;
 
@@ -64,7 +67,9 @@
 	SysBase->IntVects[intNumber].iv_Data = (APTR)~0;
 	SysBase->IntVects[intNumber].iv_Code = (void *)~0;
     }
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->IntrListSpinLock);
+#endif
     Enable ();
 
     return oldint;

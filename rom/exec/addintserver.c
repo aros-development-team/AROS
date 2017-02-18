@@ -13,8 +13,8 @@
 #include <hardware/intbits.h>
 #include <proto/exec.h>
 
-#include "exec_debug.h"
 #include "exec_intern.h"
+#include "exec_debug.h"
 #include "chipset.h"
 
 static void krnIRQwrapper(void *data1, void *data2)
@@ -69,10 +69,14 @@ static void krnIRQwrapper(void *data1, void *data2)
     }
 
     Disable();
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, SPINLOCK_MODE_WRITE);
+#endif
     Enqueue((struct List *)SysBase->IntVects[intNumber].iv_Data, &interrupt->is_Node);
     CUSTOM_ENABLE(intNumber);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->IntrListSpinLock);
+#endif
     Enable();
 
     AROS_LIBFUNC_EXIT
