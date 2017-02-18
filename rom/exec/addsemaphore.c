@@ -1,13 +1,16 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a semaphore to the public list of semaphores.
     Lang: english
 */
-#include "exec_intern.h"
+
 #include <exec/semaphores.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -52,11 +55,17 @@
 
     /* Arbitrate for the semaphore list */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->SemListSpinLock, SPINLOCK_MODE_WRITE);
+#endif
     /* Add the semaphore */
     Enqueue(&SysBase->SemaphoreList,&sigSem->ss_Link);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->SemListSpinLock);
+#endif
     /* All done. */
     Permit();
+
     AROS_LIBFUNC_EXIT
 } /* AddSemaphore */
 
