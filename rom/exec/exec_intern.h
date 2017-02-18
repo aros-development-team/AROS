@@ -57,8 +57,17 @@ struct IntExecBase
 #endif
     struct SignalSemaphore      LowMemSem;                      /* Lock for single-threading low memory handlers                */
 #if defined(__AROSEXEC_SMP__)
+    /* First the locks for arbitration of public resources ... */
+    spinlock_t                  ResourceListSpinLock;
+    spinlock_t                  DeviceListSpinLock;
+    spinlock_t                  IntrListSpinLock;
+    spinlock_t                  LibListSpinLock;
+    spinlock_t                  PortListSpinLock;
+    spinlock_t                  SemListSpinLock;
+
+    /* .. and then scheduling related locks ... */
     spinlock_t                  TaskRunningSpinLock;
-    struct List                 TaskRunning;                    /* Tasks that are running on CPUs                               */
+    struct List                 TaskRunning;                    /* Tasks that are currently running on available CPUs           */
     spinlock_t                  TaskSpinningLock;
     struct List                 TaskSpinning;                   /* Tasks that are spinning waiting for a lock                   */
     spinlock_t                  TaskReadySpinLock;
