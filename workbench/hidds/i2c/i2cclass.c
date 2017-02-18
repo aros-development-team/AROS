@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -481,6 +481,7 @@ OOP_Object *METHOD(I2C, Root, New)
         D(bug("[I2C] Initializing MsgPort\n"));
 
         /* Initialize MsgPort */
+        memset( &drv->mp, 0, sizeof( drv->mp ) );
         drv->mp.mp_SigBit = SIGB_SINGLE;
         drv->mp.mp_Flags = PA_SIGNAL;
         drv->mp.mp_SigTask = FindTask(NULL);
