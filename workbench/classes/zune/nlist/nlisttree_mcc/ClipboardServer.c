@@ -4,6 +4,7 @@
  Registered MUI class, Serial Number: 1d51 0x9d510030 to 0x9d5100A0
                                            0x9d5100C0 to 0x9d5100FF
 
+ Copyright (C) 2017 The AROS Dev Team
  Copyright (C) 1996-2001 by Gilles Masson
  Copyright (C) 2001-2014 NList Open Source Team
 
@@ -294,10 +295,11 @@ BOOL StartClipboardServer(void)
     if(serverProcess !=  NULL)
     {
       // we use one global reply port with a static signal bit
+      memset( &replyPort, 0, sizeof( replyPort ) );
       replyPort.mp_Node.ln_Type = NT_MSGPORT;
-      NewList(&replyPort.mp_MsgList);
       replyPort.mp_SigBit = SIGB_SINGLE;
       replyPort.mp_SigTask = FindTask(NULL);
+      NewList(&replyPort.mp_MsgList);
 
       msg.mn_ReplyPort = &replyPort;
       msg.mn_Node.ln_Name = (STRPTR)NULL;
