@@ -21,6 +21,7 @@
 #include "kernel_intr.h"
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
+#include "kernel_ipi.h"
 #include "cpu_traps.h"
 
 #define D(x)
@@ -213,6 +214,10 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         DTRAP(bug("[Kernel] %s: --> CPU Trap #$%08x\n", __func__, irq_number);)
 
     	cpu_Trap(regs, error_code, irq_number);
+    }
+    else if (irq_number >= APIC_IRQ_IPI_START && irq_number <= APIC_IRQ_IPI_END)
+    {
+        core_IPIHandle(regs, irq_number - APIC_IRQ_IPI_START, KernelBase);
     }
     else if (irq_number == APIC_IRQ_SYSCALL)  /* Was it a Syscall? */
     {

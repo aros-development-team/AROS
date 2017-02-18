@@ -1,0 +1,76 @@
+/*
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    $Id:$
+*/
+
+#include "kernel_base.h"
+#include "kernel_ipi.h"
+#include "kernel_debug.h"
+#include <kernel_scheduler.h>
+#include <kernel_intr.h>
+
+#include <proto/kernel.h>
+#include "apic_ia32.h"
+
+#define D(x) x
+
+void core_DoIPI(uint8_t ipi_number, unsigned int cpu_mask, struct KernelBase *KernelBase)
+{
+    int cpunum = KrnGetCPUNumber();
+    ULONG cmd = APIC_IRQ_IPI_START + ipi_number;
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct APICData *apicPrivate = kernPlatD->kb_APIC;
+    IPTR __APICBase = apicPrivate->lapicBase;
+
+    D(bug("[Kernel:IPI] Sending IPI %02d form CPU.%03u to target mask %08x\n", ipi_number, cpunum, cpu_mask));
+    
+    if (cmd <= APIC_IRQ_IPI_END)
+    {
+        // special case - send IPI to all
+        if (cpu_mask == 0xffffffff)
+        {
+            // Shorthand - all including self
+            cmd |= 0x80000;
+
+            D(bug("[Kerel:IPI] waiting for DS bit to be clear\n"));
+            while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS) asm volatile("pause");
+            D(bug("[Kerel:IPI] sending IPI cmd %08x\n", cmd));
+            APIC_REG(__APICBase, APIC_ICRL) = cmd;
+        }
+        else
+        {
+            // No shortcut, send IPI to each CPU one after another
+            for (int i=0; i < 32; i++)
+            {
+                if (cpu_mask & (1 << i))
+                {
+                    D(bug("[Kerel:IPI] waiting for DS bit to be clear\n"));
+                    while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS) asm volatile("pause");
+                    D(bug("[Kerel:IPI] sending IPI cmd %08x to destination %08x\n", cmd, i << 24));
+                    APIC_REG(__APICBase, APIC_ICRH) = i << 24;
+                    APIC_REG(__APICBase, APIC_ICRL) = cmd;
+                }
+            }
+        }
+    }
+}
+
+void core_IPIHandle(struct ExceptionContext *regs, unsigned long ipi_number, struct KernelBase *KernelBase)
+{
+    int cpunum = KrnGetCPUNumber();
+    IPTR __APICBase = core_APIC_GetBase();
+    
+    D(bug("[Kernel:IPI] CPU.%03u IPI%02d\n", cpunum, ipi_number));
+
+    switch (ipi_number)
+    {
+        case IPI_RESCHEDULE:
+            APIC_REG(__APICBase, APIC_EOI) = 0;
+            if (core_Schedule())
+            {
+                cpu_Switch(regs);
+                cpu_Dispatch(regs);
+            }
+            break;
+    }
+}
