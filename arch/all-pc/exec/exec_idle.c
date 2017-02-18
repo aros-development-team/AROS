@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,12 +13,15 @@
 
 #include "etask.h"
 
+#if (__WORDSIZE==64)
+asm ("_SLEEP_FUNCTION: sti; hlt; iretq");
+#else
+asm ("_SLEEP_FUNCTION: sti; hlt; iret");
+#endif
+void _SLEEP_FUNCTION();
+
 void IdleTask(struct ExecBase *SysBase)
 {
-    #if 0
-    APTR superstack;
-    #endif
-    
     D(
         struct Task *thisTask = FindTask(NULL);
         struct IntETask *taskIntEtask;
@@ -31,13 +34,12 @@ void IdleTask(struct ExecBase *SysBase)
     do
     {
         /* forever */
-        #if 0
-        if ((superstack = SuperState()))
-        {
-            asm volatile ("sti; hlt;");
-            UserState(superstack);
-        }
-        #endif
+
+        // Call sleep function (which enables interrupts, sleeps CPU until interrupt comes and then returns)
+        Supervisor(_SLEEP_FUNCTION);
+
+        // After SLEEP_FUNCTION returned nothing was rescheduled. Reschedule now...
+        Reschedule();
 
         D(
             if ((taskIntEtask = GetIntETask(thisTask)) != NULL)
