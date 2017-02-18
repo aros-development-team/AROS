@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a device.
@@ -14,6 +14,9 @@
 #include <aros/libcall.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -92,7 +95,13 @@
 
     /* Look for the device in our list */
     iORequest->io_Unit   = NULL;
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->DeviceListSpinLock, SPINLOCK_MODE_READ);
+#endif
     iORequest->io_Device = (struct Device *)FindName(&SysBase->DeviceList, devName);
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->DeviceListSpinLock);
+#endif
     D(bug("[OpenDevice] Found resident 0x%p\n", iORequest->io_Device));
 
     /* Something found ? */

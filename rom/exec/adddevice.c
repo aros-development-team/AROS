@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a device to the public list of devices.
@@ -10,6 +10,9 @@
 #include <exec/devices.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -59,12 +62,17 @@
 
     /* Arbitrate for the device list */
     Forbid();
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->DeviceListSpinLock, SPINLOCK_MODE_WRITE);
+#endif
     /* And add the device */
     Enqueue(&SysBase->DeviceList,&device->dd_Library.lib_Node);
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->DeviceListSpinLock);
+#endif
     /* All done. */
     Permit();
+
     AROS_LIBFUNC_EXIT
 } /* AddDevice */
 
