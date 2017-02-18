@@ -11,7 +11,8 @@ FUNCS	 := \
              spinislocked \
              spintrylock \
              spinlock \
-             spinunlock
+             spinunlock \
+             schedulecpu
 
 ASMFILES := \
              cli \
@@ -38,7 +39,8 @@ FILES    := \
              kernel_scheduler \
              kernel_timer \
              _displayalert \
-             platform_post
+             platform_post \
+             kernel_ipi
 
 MAINDIR	      := rom/kernel
 USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
