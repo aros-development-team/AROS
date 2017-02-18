@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic helpfuncs for Asl.
@@ -665,6 +665,9 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 
     EnterFunc(bug("HandleEvents(ld=%p, reqinfo=%p)\n", ld, reqinfo));
     port = ld->ld_Window->UserPort;
+
+    if (!port)
+        port = ld->ld_Window->WindowPort;
 
     while (!terminated)
     {
