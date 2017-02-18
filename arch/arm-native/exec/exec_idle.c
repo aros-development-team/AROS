@@ -31,7 +31,7 @@ void IdleTask(struct ExecBase *SysBase)
     do
     {
         /* forever */
-        D(bug("[IDLE:%02d] CPU has idled for %d seconds..\n", cpunum, GetIntETask(thisTask)->iet_CpuTime.tv_secs));
+        D(bug("[IDLE:%02d] CPU has idled for %d seconds..\n", cpunum, GetIntETask(thisTask)->iet_CpuTime.tv_sec));
         asm volatile("mov r0, #0\n\t mcr p15, 0, r0, c7, c0, 4":::"r0");
     } while(1);
 }

@@ -10,6 +10,7 @@
 */
 
 #include <aros/config.h>
+#include <aros/types/timespec_s.h>
 
 #include <exec/interrupts.h>
 #include <exec/tasks.h>
@@ -50,8 +51,8 @@ struct IntETask
     IPTR                iet_CpuAffinity;        /* bitmap of cores this task can run on    */
     spinlock_t          *iet_SpinLock;          /* pointer to spinlock task is spinning on */
 #endif
-    struct timeval      iet_StartTime;          /* time the task was launched              */
-    struct timeval      iet_CpuTime;            /* time the task has spent running         */
+    struct timespec     iet_StartTime;          /* time the task was launched              */
+    struct timespec     iet_CpuTime;            /* time the task has spent running         */
     UQUAD               iet_private1;
     ULONG               iet_AlertCode;          /* Alert code for crash handler            */
     UBYTE               iet_AlertType;          /* Type of the alert context               */

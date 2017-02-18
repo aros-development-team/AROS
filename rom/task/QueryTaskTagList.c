@@ -97,8 +97,8 @@
                 struct timeval *storeval = (struct timeval *)Tag->ti_Data;
                 if (task_et)
                 {
-                    storeval->tv_micro = task_et->iet_CpuTime.tv_micro;
-                    storeval->tv_secs  = task_et->iet_CpuTime.tv_secs;
+                    storeval->tv_micro = (task_et->iet_CpuTime.tv_nsec + 500) / 1000;
+                    storeval->tv_secs  = task_et->iet_CpuTime.tv_sec;
                 }
             }
             break;
@@ -107,8 +107,8 @@
                 struct timeval *storeval = (struct timeval *)Tag->ti_Data;
                 if (task_et)
                 {
-                    storeval->tv_micro = task_et->iet_StartTime.tv_micro;
-                    storeval->tv_secs  = task_et->iet_StartTime.tv_secs;
+                    storeval->tv_micro = (task_et->iet_StartTime.tv_nsec + 500) / 1000;
+                    storeval->tv_secs  = task_et->iet_StartTime.tv_sec;
                 }
             }
             break;
