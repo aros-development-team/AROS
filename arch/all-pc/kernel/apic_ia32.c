@@ -403,6 +403,11 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         }
 #endif
 
+        APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD;
+        APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
+        APIC_REG(__APICBase, APIC_TIMER_CCR) = apic->cores[cpuNum].cpu_TimerFreq;
+        APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
+
         if ((apic->flags & APF_TIMER) &&
             ((KrnIsSuper()) || ((ssp = SuperState()) != NULL)))
         {
@@ -411,22 +416,11 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                 krnPanic(NULL, "Failed to set APIC HeartBeat IRQ Vector\n"
                                "IRQ #$%02X, Vector #$%02X\n", (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), APIC_IRQ_HEARTBEAT);
             }
-            APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_IRQ_HEARTBEAT | LVT_TMM_PERIOD;
-            APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
-            APIC_REG(__APICBase, APIC_TIMER_CCR) = apic->cores[cpuNum].cpu_TimerFreq;
-            APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
-
-            ictl_enable_irq((APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), KernelBase);
 
             if (ssp)
                 UserState(ssp);
-        }
-        else
-        {
-            APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD;
-            APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
-            APIC_REG(__APICBase, APIC_TIMER_CCR) = apic->cores[cpuNum].cpu_TimerFreq;
-            APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
+
+            APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_IRQ_HEARTBEAT | LVT_TMM_PERIOD;
         }
     }
 }
