@@ -28,6 +28,10 @@
 #define AROS_NO_ATOMIC_OPERATIONS
 #include <exec_platform.h>
 
+/*
+ * NB - Enabling DSCHED() with safedebug enabled CAN cause
+ * lockups!
+ */
 #define DSCHED(x)
 
 void cpu_Dispatch(struct ExceptionContext *regs)
