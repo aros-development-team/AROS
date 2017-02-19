@@ -104,7 +104,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 
     for (i = APIC_IRQ_IPI_START; i <= APIC_IRQ_IPI_END; i++)
     {
-        if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, i, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+        if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
         {
             krnPanic(NULL, "Failed to set APIC IPI Vector\n"
                         "IRQ #$%02X\n", i);
