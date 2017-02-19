@@ -361,6 +361,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
         D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000));
 
+#if (0)
         /*
          * Once APIC timer has been calibrated -:
          * # set it to run at it's full
@@ -400,6 +401,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                 D(bug("[Kernel:APIC-IA32.%03u] %s: failed to obtain HeartBeat IRQ %d\n", cpuNum, __func__, (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE));)
             }
         }
+#endif
 
         if ((apic->flags & APF_TIMER) &&
             ((KrnIsSuper()) || ((ssp = SuperState()) != NULL)))
@@ -418,6 +420,13 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
             if (ssp)
                 UserState(ssp);
+        }
+        else
+        {
+            APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD;
+            APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
+            APIC_REG(__APICBase, APIC_TIMER_CCR) = apic->cores[cpuNum].cpu_TimerFreq;
+            APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
         }
     }
 }
