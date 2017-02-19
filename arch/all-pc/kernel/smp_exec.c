@@ -109,6 +109,7 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
 
 void cpu_BootStrap(struct Task *bstask)
 {
+    struct APICData *apicData  = KernelBase->kb_PlatformData->kb_APIC;
     D(
         apicid_t cpuNo = KrnGetCPUNumber();
     
@@ -137,6 +138,9 @@ void cpu_BootStrap(struct Task *bstask)
     D(bug("[Kernel:%03u] %s:        Creating Idle Task ...\n", cpuNo, __func__));
 
     Exec_X86CreateIdleTask(SysBase);
+
+    if (apicData->flags & APF_TIMER)
+        ictl_enable_irq((APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), KernelBase);
 
     D(bug("[Kernel:%03u] %s: Done\n", cpuNo, __func__));
 }
