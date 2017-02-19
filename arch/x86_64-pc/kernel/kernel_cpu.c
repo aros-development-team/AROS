@@ -149,7 +149,7 @@ void cpu_Switch(struct ExceptionContext *regs)
         if (timeCur < IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
             timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 - timeCur;
         else
-            timeCur = timeCur - IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq;
+            timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq - timeCur;
         
         // Convert LAPIC bus cycles into microseconds
         timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TimerFreq;
