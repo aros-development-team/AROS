@@ -37,7 +37,6 @@ extern void cpu_BootStrap(struct Task *);
 
 static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBase *KernelBase, apicid_t apicCPUNo)
 {
-    int i;
     /*
      * This is the entry point for secondary cores.
      * KernelBase is already set up by the primary CPU, so we can use it.
@@ -51,8 +50,9 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 #if defined(__AROSEXEC_SMP__)
     struct Task *apicBSTask;
 #endif
-
 #if (__WORDSIZE==64)
+    int i;
+
     /* Enable fxsave/fxrstor */
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
 #endif
