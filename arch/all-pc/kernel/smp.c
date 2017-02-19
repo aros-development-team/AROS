@@ -98,7 +98,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
     {
         krnPanic(NULL, "Failed to set APIC Syscall Vector\n"
-                       "IRQ #$%02X\n", APIC_IRQ_SYSCALL);
+                       "Vector #$%02X\n", APIC_IRQ_SYSCALL);
     }
     D(bug("[Kernel:SMP] %s[%03u]: APIC Syscall Vector configured\n", __func__, apicCPUNo));
 
@@ -107,8 +107,8 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
         if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
         {
             krnPanic(NULL, "Failed to set APIC IPI Vector\n"
-                        "IRQ #$%02X\n", i);
-        }   
+                        "Vector #$%02X\n", i);
+        }
     }
     D(bug("[Kernel:SMP] %s[%03u]: APIC IPI Vectors configured\n", __func__, apicCPUNo));
 
@@ -226,11 +226,10 @@ static int smp_Wake(struct KernelBase *KernelBase)
 #if defined(__AROSEXEC_SMP__)
     tls_t *apicTLS;
 #endif
-    spinlock_t apicReadyLock;
+    spinlock_t *apicReadyLocks;
 
-    D(bug("[Kernel:SMP] Ready spinlock at 0x%p\n", &apicReadyLock));
-
-    KrnSpinInit(&apicReadyLock);
+    apicReadyLocks = AllocMem(sizeof(spinlock_t) * apicData->apic_count, MEMF_CLEAR|MEMF_ANY);
+    D(bug("[Kernel:SMP] %d Ready spinlocks starting at 0x%p\n", apicReadyLocks));
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
     for (cpuNo = 1; cpuNo < apicData->apic_count; cpuNo++)
@@ -243,7 +242,9 @@ static int smp_Wake(struct KernelBase *KernelBase)
         };
 
         D(bug("[Kernel:SMP] Launching CPU #%u (ID %03u)\n", cpuNo + 1, apicData->cores[cpuNo].cpu_LocalID));
- 
+
+        KrnSpinInit(&apicReadyLocks[cpuNo]);
+        
         apicData->cores[cpuNo].cpu_GDT = PlatformAllocGDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
         apicData->cores[cpuNo].cpu_TLS = PlatformAllocTLS(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
 #if defined(__AROSEXEC_SMP__)
@@ -266,13 +267,13 @@ static int smp_Wake(struct KernelBase *KernelBase)
         /* Pass some vital information to the
          * waking CPU */
         bs->Arg1 = (IPTR)_APICStackBase;
-        bs->Arg2 = (IPTR)&apicReadyLock;
+        bs->Arg2 = (IPTR)&apicReadyLocks[cpuNo];
         // Arg3 = KernelBase - already set by smp_Setup()
         bs->Arg4 = (IPTR)cpuNo;
         bs->SP   = _APICStackBase + STACK_SIZE;
 
         /* Lock the spinlock before launching the core */
-        KrnSpinLock(&apicReadyLock, NULL, SPINLOCK_MODE_WRITE);
+        KrnSpinLock(&apicReadyLocks[cpuNo], NULL, SPINLOCK_MODE_WRITE);
 
         /* Start IPI sequence */
         wakeresult = krnSysCallCPUWake(&apicWake);
@@ -286,12 +287,12 @@ static int smp_Wake(struct KernelBase *KernelBase)
              * its stack and we can reload bootstrap argument area with another one.
              */
             DWAKE(bug("[Kernel:SMP] Waiting for CPU #%u to initialise .. ", cpuNo + 1));
-            while (!KrnSpinTryLock(&apicReadyLock, SPINLOCK_MODE_READ))
+            while (!KrnSpinTryLock(&apicReadyLocks[cpuNo], SPINLOCK_MODE_READ))
             {
                 current = RDTSC();
                 if (((current - start)/apicData->cores[0].cpu_TimerFreq) >
 #if (DEBUG > 0)
-                    5000
+                    50000
 #else
                     50
 #endif
@@ -303,7 +304,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
             };
             if (wakeresult != -1)
             {
-                KrnSpinUnLock(&apicReadyLock);
+                KrnSpinUnLock(&apicReadyLocks[cpuNo]);
                 D(bug("[Kernel:SMP] CPU #%u started up\n", cpuNo + 1));
             }
         }
