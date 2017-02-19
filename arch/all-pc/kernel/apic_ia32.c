@@ -19,6 +19,7 @@
 
 #include "kernel_base.h"
 #include "kernel_intern.h"
+#include "kernel_objects.h"
 #include "kernel_debug.h"
 #include "kernel_syscall.h"
 #include "kernel_timer.h"
@@ -42,6 +43,7 @@
 #endif
 
 extern void core_APICErrorHandle(struct ExceptionContext *, void *, void *);
+AROS_INTP(APICHeartbeatServer);
 
 /* APIC Interrupt Controller Functions ... ***************************/
 
@@ -247,7 +249,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                     if (!core_SetIRQGate(apic->cores[cpuNum].cpu_IDT, (i - HW_IRQ_BASE), (uintptr_t)IntrDefaultGates[i]))
                     {
                         krnPanic(NULL, "Failed to set APIC Exception IRQ Vector\n"
-                                       "IRQ #$%02X, Vector #$02X\n", (i - HW_IRQ_BASE), i);
+                                       "IRQ #$%02X, Vector #$%02X\n", (i - HW_IRQ_BASE), i);
                     }
                 }
                 else if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
@@ -268,7 +270,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                 if (!core_SetIRQGate(apic->cores[cpuNum].cpu_IDT, (APIC_IRQ_ERROR - HW_IRQ_BASE), (uintptr_t)IntrDefaultGates[APIC_IRQ_ERROR]))
                 {
                     krnPanic(NULL, "Failed to set APIC Error IRQ Vector\n"
-                                   "IRQ #$%02X, Vector #$02X\n", (APIC_IRQ_ERROR - HW_IRQ_BASE), APIC_IRQ_ERROR);
+                                   "IRQ #$%02X, Vector #$%02X\n", (APIC_IRQ_ERROR - HW_IRQ_BASE), APIC_IRQ_ERROR);
                 }
             }
             else if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, APIC_IRQ_ERROR, (uintptr_t)IntrDefaultGates[APIC_IRQ_ERROR], TRUE))
@@ -360,13 +362,63 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000));
 
         /*
-            Once APIC timer has been calibrated, set it to run at it's full speed and reload every second. Mask interrupts
-        */
-        APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD;
-        APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
-        APIC_REG(__APICBase, APIC_TIMER_CCR) = apic->cores[cpuNum].cpu_TimerFreq;
-        APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
+         * Once APIC timer has been calibrated -:
+         * # set it to run at it's full
+         * # reload every second.
+         * # Enable the heartbeat vector
+         */
+        if (cpuNum == 0)
+        {
+            if (krnInitInterrupt(KernelBase, (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), APICInt_IntrController.ic_Node.ln_Type, 0))
+            {
+                struct IntrNode *hbHandle;
+                
+                hbHandle = krnAllocIntrNode();
+                D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat handler @ 0x%p\n", cpuNum, __func__, hbHandle));
 
+                if (hbHandle)
+                {
+                    hbHandle->in_Handler = APICHeartbeatServer;
+                    hbHandle->in_HandlerData = NULL;
+                    hbHandle->in_HandlerData2 = NULL;
+                    hbHandle->in_type = it_interrupt;
+                    hbHandle->in_nr = APIC_IRQ_HEARTBEAT - HW_IRQ_BASE;
+
+                    Disable();
+                    ADDHEAD(&KERNELIRQ_LIST(hbHandle->in_nr), &hbHandle->in_Node);
+                    Enable();
+
+                    apic->flags |= APF_TIMER;                
+                }
+                else
+                {
+                    D(bug("[Kernel:APIC-IA32.%03u] %s: failed to allocate HeartBeat handler\n", cpuNum, __func__);)
+                }
+            }
+            else
+            {
+                D(bug("[Kernel:APIC-IA32.%03u] %s: failed to obtain HeartBeat IRQ %d\n", cpuNum, __func__, (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE));)
+            }
+        }
+
+        if ((apic->flags & APF_TIMER) &&
+            ((KrnIsSuper()) || ((ssp = SuperState()) != NULL)))
+        {
+            if (!core_SetIDTGate(apic->cores[cpuNum].cpu_IDT, APIC_IRQ_HEARTBEAT, (uintptr_t)IntrDefaultGates[APIC_IRQ_HEARTBEAT], FALSE))
+            {
+                krnPanic(NULL, "Failed to set APIC HeartBeat IRQ Vector\n"
+                               "IRQ #$%02X, Vector #$%02X\n", (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), APIC_IRQ_HEARTBEAT);
+            }
+            APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_IRQ_HEARTBEAT | LVT_TMM_PERIOD;
+            APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
+            APIC_REG(__APICBase, APIC_TIMER_CCR) = apic->cores[cpuNum].cpu_TimerFreq;
+            APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
+
+            ictl_enable_irq((APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), KernelBase);
+
+            if (ssp)
+                UserState(ssp);
+        }
     }
 }
 
