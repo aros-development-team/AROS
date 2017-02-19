@@ -24,6 +24,7 @@ FILES    := \
              apic_ia32 \
              apic_msi \
              apic_intr \
+             apic_heartbeat \
              apic_error \
              acpi \
              acpi_pm \
