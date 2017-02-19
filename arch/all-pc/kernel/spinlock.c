@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -38,7 +38,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
     {
         ULONG tmp;
         struct Task *me = NULL;
-        UBYTE old_pri = 0;
+        BYTE old_pri = 0;
         UBYTE priority_changed = 0;
         if (!Kernel_13_KrnIsSuper())
             me = GET_THIS_TASK;
