@@ -19,10 +19,11 @@
 #define APIC_CPU_EXCEPT_COUNT   (APIC_IRQ_MAX - APIC_IRQ_COUNT)
 
 // really vectors...
+#define APIC_IRQ_SYSCALL        0x80
 #define APIC_IRQ_IPI_START      0xF0
 #define APIC_IRQ_IPI_END        0xF8
-#define APIC_IRQ_SYSCALL        0x80
 #define APIC_IRQ_ERROR          0xFE
+#define APIC_IRQ_HEARTBEAT      (APIC_IRQ_BASE + APIC_IRQ_COUNT - 1)
 
 /* Local APIC base address register (MSR #27) */
 #define MSR_LAPIC_BASE 0x1B
