@@ -81,12 +81,9 @@ static const struct CityType CityArray[] =
  {"Tehran", +330},
  {"Tijuana (PST)", -800},
  {"Tokyo (JST)", +900},
- {"USA Central Daylight (CDT)", -500},
  {"USA Central Standard", -600},
  {"USA Eastern Standard (EST)", -500},
- {"USA Mountain Daylight", -600},
  {"USA Mountain Standard (MST)", -700},
- {"USA Pacific Daylight (PDT)", -700},
  {"USA Pacific Standard", -800},
  { NULL, 0}
 };
