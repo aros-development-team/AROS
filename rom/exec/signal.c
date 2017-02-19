@@ -15,6 +15,11 @@
 
 #include "exec_intern.h"
 
+#if defined(__AROSEXEC_SMP__)
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -108,6 +113,7 @@
         else
         {
             D(bug("[Exec] Signal: signaling task on another cpu (%03u)\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber);)
+            KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
         }
 #endif
         Enable();
