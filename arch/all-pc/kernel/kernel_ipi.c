@@ -40,8 +40,10 @@ void core_DoIPI(uint8_t ipi_number, unsigned int cpu_mask, struct KernelBase *Ke
         }
         else
         {
+            int i;
+
             // No shortcut, send IPI to each CPU one after another
-            for (int i=0; i < 32; i++)
+            for (i=0; i < 32; i++)
             {
                 if (cpu_mask & (1 << i))
                 {
