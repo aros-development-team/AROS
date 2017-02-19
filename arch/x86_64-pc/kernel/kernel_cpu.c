@@ -32,13 +32,25 @@
  * NB - Enabling DSCHED() with safedebug enabled CAN cause
  * lockups!
  */
+#ifdef DEBUG
+#undef DEBUG
+#endif
+
+#define DEBUG 0
+
+ #if (DEBUG > 0)
+#define DSCHED(x) x
+#else
 #define DSCHED(x)
+#endif
 
 void cpu_Dispatch(struct ExceptionContext *regs)
 {
     struct Task *task;
     struct ExceptionContext *ctx;
+#if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
     apicid_t cpunum = KrnGetCPUNumber();
+#endif
     IPTR __APICBase = core_APIC_GetBase();
 
     DSCHED(
