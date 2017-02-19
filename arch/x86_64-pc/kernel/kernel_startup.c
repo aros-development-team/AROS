@@ -660,7 +660,7 @@ void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
     tssBase[cpuNo].ist1 = SystemStack + STACK_SIZE     - 16;	/* Interrupt stack entry 1 (failsafe)	 */
     tssBase[cpuNo].rsp0 = SystemStack + STACK_SIZE * 2 - 16;	/* Ring 0 (Supervisor)		 	*/
     tssBase[cpuNo].rsp1 = SystemStack + STACK_SIZE * 3 - 16;	/* Ring 1 (reserved)		 	*/
-
+    
     D(bug("[Kernel] %s[%03u]: Reloading -:\n", __func__, cpuNo));
     D(bug("[Kernel] %s[%03u]:     CPU GDT @ 0x%p\n", __func__, cpuNo, cpuGDT));
     D(bug("[Kernel] %s[%03u]:     CPU TSS @ 0x%p\n", __func__, cpuNo, &tssBase[cpuNo]));
