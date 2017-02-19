@@ -37,6 +37,7 @@ extern void cpu_BootStrap(struct Task *);
 
 static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBase *KernelBase, apicid_t apicCPUNo)
 {
+    int i;
     /*
      * This is the entry point for secondary cores.
      * KernelBase is already set up by the primary CPU, so we can use it.
@@ -100,6 +101,16 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
                        "IRQ #$%02X\n", APIC_IRQ_SYSCALL);
     }
     D(bug("[Kernel:SMP] %s[%03u]: APIC Syscall Vector configured\n", __func__, apicCPUNo));
+
+    for (i = APIC_IRQ_IPI_START; i <= APIC_IRQ_IPI_END; i++)
+    {
+        if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, i, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+        {
+            krnPanic(NULL, "Failed to set APIC IPI Vector\n"
+                        "IRQ #$%02X\n", i);
+        }   
+    }
+    D(bug("[Kernel:SMP] %s[%03u]: APIC IPI Vectors configured\n", __func__, apicCPUNo));
 
 #if (0)
     D(bug("[Kernel:SMP] %s[%03u]: Preparing MMU...\n", __func__, apicCPUNo));
