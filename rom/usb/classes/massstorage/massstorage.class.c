@@ -379,7 +379,6 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
                     return(NULL);
                 }
                 /* IORequests may be queued even if the task is gone. */
-                memset( &ncm->ncm_Unit.unit_MsgPort, 0, sizeof( ncm->ncm_Unit.unit_MsgPort ) );
                 NewList(&ncm->ncm_Unit.unit_MsgPort.mp_MsgList);
                 NewList(&ncm->ncm_XFerQueue);
                 NewList(&ncm->ncm_DCInts);
