@@ -203,10 +203,15 @@ void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
-
-    /* The Device IRQ's come after the first 32 CPU exception vectors */
-    if ((irq_number < HW_IRQ_BASE) || (irq_number > (HW_IRQ_BASE + APIC_IRQ_COUNT)))
+    
+    if (irq_number >= APIC_IRQ_IPI_START && irq_number <= APIC_IRQ_IPI_END)
     {
+        core_IPIHandle(regs, irq_number - APIC_IRQ_IPI_START, KernelBase);
+    }
+    else if ((irq_number < HW_IRQ_BASE) || (irq_number > (HW_IRQ_BASE + APIC_IRQ_COUNT)))
+    {
+        /* The Device IRQ's come after the first 32 CPU exception vectors */
+    
         DTRAP(bug("[Kernel] %s: CPU Exception %08x\n", __func__, irq_number);)
         if (irq_number > HW_IRQ_BASE)
             irq_number -= APIC_IRQ_COUNT;
@@ -214,10 +219,6 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         DTRAP(bug("[Kernel] %s: --> CPU Trap #$%08x\n", __func__, irq_number);)
 
     	cpu_Trap(regs, error_code, irq_number);
-    }
-    else if (irq_number >= APIC_IRQ_IPI_START && irq_number <= APIC_IRQ_IPI_END)
-    {
-        core_IPIHandle(regs, irq_number - APIC_IRQ_IPI_START, KernelBase);
     }
     else if (irq_number == APIC_IRQ_SYSCALL)  /* Was it a Syscall? */
     {
