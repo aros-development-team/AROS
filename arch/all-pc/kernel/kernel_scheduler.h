@@ -14,11 +14,12 @@
 
 struct X86SchedulerPrivate
 {
-    struct Task         *RunningTask;   /* Currently running task on this core  */
+    struct Task         *RunningTask;   /* Currently running task on this core                  */
 
     ULONG               ScheduleFlags;
-    UWORD               Quantum;        /* # of ticks, a task may run                   */
-    UWORD               Elapsed;        /* # of ticks, the current task has run         */
+    UWORD               Granularity;    /* length of one heartbear tick                         */
+    UWORD               Quantum;        /* # of heartbeat ticks, a task may run                 */
+    UWORD               Elapsed;        /* # of heartbeat ticks, the current task has run       */
     BYTE                IDNestCnt;
     BYTE                TDNestCnt;
 };
