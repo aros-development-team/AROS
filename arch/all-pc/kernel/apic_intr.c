@@ -125,6 +125,10 @@ BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable)
 
         return TRUE;
     }
+    else
+    {
+        bug("[Kernel] %s: Vector #%d gate already enabled!\n", __func__, vect);
+    }
     return FALSE;
 }
 
@@ -203,18 +207,21 @@ void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    
+
+    // TODO: make sure we have IPI interrupts ;)
     if (irq_number >= APIC_IRQ_IPI_START && irq_number <= APIC_IRQ_IPI_END)
     {
         core_IPIHandle(regs, irq_number - APIC_IRQ_IPI_START, KernelBase);
     }
-    else if ((irq_number < HW_IRQ_BASE) || (irq_number > (HW_IRQ_BASE + APIC_IRQ_COUNT)))
+    else if ((irq_number < HW_IRQ_BASE) || (irq_number > (APIC_IRQ_BASE + APIC_IRQ_COUNT)))
     {
-        /* The Device IRQ's come after the first 32 CPU exception vectors */
-    
+        /* 
+         * The Device IRQ's come after the first 32 CPU exception vectors
+         * Vectors above the highest APIC Device IRQ are also treated as exceptions.
+         */
         DTRAP(bug("[Kernel] %s: CPU Exception %08x\n", __func__, irq_number);)
         if (irq_number > HW_IRQ_BASE)
-            irq_number -= APIC_IRQ_COUNT;
+            irq_number =  (irq_number - (APIC_IRQ_BASE + APIC_IRQ_COUNT)) + HW_IRQ_BASE;
 
         DTRAP(bug("[Kernel] %s: --> CPU Trap #$%08x\n", __func__, irq_number);)
 
