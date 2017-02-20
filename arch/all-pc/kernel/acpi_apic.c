@@ -226,6 +226,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 
 #if (__WORDSIZE==64)
             pdata->kb_APIC->cores[0].cpu_GDT = __KernBootPrivate->BOOTGDT;
+            pdata->kb_APIC->cores[0].cpu_TLS = __KernBootPrivate->BOOTTLS;
             pdata->kb_APIC->cores[0].cpu_IDT = __KernBootPrivate->BOOTIDT;
             pdata->kb_APIC->cores[0].cpu_MMU = &__KernBootPrivate->MMU;
 #endif
