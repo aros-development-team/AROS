@@ -103,8 +103,8 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     {
         IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = APIC_REG(__APICBase, APIC_TIMER_CCR);
         IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = 
-            APIC_REG(__APICBase, APIC_TIMER_ICR) + apicData->cores[cpunum].cpu_LAPICTick -
-            IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
+                APIC_REG(__APICBase, APIC_TIMER_ICR) + apicData->cores[cpunum].cpu_LAPICTick -
+                IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
     }
 /*
     if ((apicData) &&
@@ -181,6 +181,8 @@ void cpu_Switch(struct ExceptionContext *regs)
             timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq - timeCur;
         */
         timeCur -= IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
+        if (timeCur & 0x8000000000000000ULL)
+            timeCur += APIC_REG(__APICBase, APIC_TIMER_ICR);
 
         // Convert LAPIC bus cycles into microseconds
         timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TimerFreq;
