@@ -31,7 +31,8 @@ struct KernBootPrivate
 {
     IPTR		        _APICBase;		/* Bootstrap APIC base address				*/
     UWORD                       kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/
-    APTR                        BOOTGDT,
+    APTR                        BOOTTLS,
+                                BOOTGDT,
                                 BOOTIDT;
     void	                *TSS;
     struct CPUMMUConfig         MMU;
