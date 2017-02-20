@@ -45,6 +45,7 @@
 void core_InitScheduleData(struct X86SchedulerPrivate *schedData)
 {
     DSCHED(bug("[Kernel] %s(0x%p)\n", __func__, schedData);)
+    schedData->Granularity = SCHEDGRAN_VALUE;
     schedData->Quantum = SCHEDQUANTUM_VALUE;
 }
 #endif
