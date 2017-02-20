@@ -290,7 +290,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
                 if (irqIC->ic_IntrAck)
                     irqIC->ic_IntrAck(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
 
-                if ((irqInt->ki_Priv & IRQINTF_ENABLED)&&
+                if ((irqInt->ki_Priv & IRQINTF_ENABLED) &&
                     (!IsListEmpty(&irqInt->ki_List)))
                     krnRunIRQHandlers(KernelBase, irq_number);
 

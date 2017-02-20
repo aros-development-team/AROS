@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel IA-32 APIC driver.
@@ -74,16 +74,24 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         /* Setup the APIC IRQs for CPU #0*/
         for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
         {
-            if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
+            if (((APIC_IRQ_HEARTBEAT - HW_IRQ_BASE) == irq) && (apicPrivate->flags & APF_TIMER))
             {
-                D(bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);)
+                /* if we have the heartbeat timer, its time to enable it for the boot processor... */
+                ictl_enable_irq((APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), KernelBase);
             }
             else
             {
-                /* dont enable the vector yet...*/
-                if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE))
+                if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
                 {
-                    bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
+                    D(bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);)
+                }
+                else
+                {
+                    /* dont enable the vector yet...*/
+                    if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE))
+                    {
+                        bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
+                    }
                 }
             }
         }
@@ -97,40 +105,50 @@ BOOL APICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
+    apicid_t cpuNum = KrnGetCPUNumber();
     apicidt_t *IGATES;
-    APTR ssp;
+    APTR ssp = NULL;
+    BOOL retVal = FALSE;
 
-    DINT(bug("[Kernel:APIC-IA32] %s(%03u #$%02X)\n", __func__, icInstance, intNum));
+    DINT(bug("[Kernel:APIC-IA32.%03u] %s(#$%02X)\n", cpuNum, __func__, intNum));
 
-    IGATES = (apicidt_t *)apicPrivate->cores[icInstance].cpu_IDT;
+    IGATES = (apicidt_t *)apicPrivate->cores[cpuNum].cpu_IDT;
 
-    if ((ssp = SuperState()) != NULL)
+    if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
     {
         IGATES[HW_IRQ_BASE + intNum].p = 0;
-        UserState(ssp);
+        retVal = TRUE;
+
+        if (ssp)
+            UserState(ssp);
     }
 
-    return TRUE;
+    return retVal;
 }
 
 BOOL APICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
+    apicid_t cpuNum = KrnGetCPUNumber();
     apicidt_t *IGATES;
-    APTR ssp;
+    APTR ssp = NULL;
+    BOOL retVal = FALSE;
 
-    DINT(bug("[Kernel:APIC-IA32] %s(%03u #$%02X)\n", __func__, icInstance, intNum));
+    DINT(bug("[Kernel:APIC-IA32.%03u] %s(#$%02X)\n", cpuNum, __func__, intNum));
 
-    IGATES = (apicidt_t *)apicPrivate->cores[icInstance].cpu_IDT;
+    IGATES = (apicidt_t *)apicPrivate->cores[cpuNum].cpu_IDT;
 
-    if ((ssp = SuperState()) != NULL)
+    if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
     {
         IGATES[HW_IRQ_BASE + intNum].p = 1;
-        UserState(ssp);
+        retVal = TRUE;
+
+        if (ssp)
+            UserState(ssp);
     }
 
-    return TRUE;
+    return retVal;
 }
 
 BOOL APICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
@@ -361,12 +379,11 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
         D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000));
 
-#if (0)
         /*
          * Once APIC timer has been calibrated -:
-         * # set it to run at it's full
-         * # reload every second.
-         * # Enable the heartbeat vector
+         * # Set it to run at it's full frequency.
+         * # Enable the heartbeat vector and use a suitable rate,
+         *   otherwise set to reload every second and disable it.
          */
         if (cpuNum == 0)
         {
@@ -375,12 +392,12 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                 struct IntrNode *hbHandle;
                 
                 hbHandle = krnAllocIntrNode();
-                D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat handler @ 0x%p\n", cpuNum, __func__, hbHandle));
+                D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat IRQ #$%02X (%d) handler @ 0x%p\n", cpuNum, __func__, (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), hbHandle);)
 
                 if (hbHandle)
                 {
                     hbHandle->in_Handler = APICHeartbeatServer;
-                    hbHandle->in_HandlerData = NULL;
+                    hbHandle->in_HandlerData = SysBase;
                     hbHandle->in_HandlerData2 = NULL;
                     hbHandle->in_type = it_interrupt;
                     hbHandle->in_nr = APIC_IRQ_HEARTBEAT - HW_IRQ_BASE;
@@ -401,7 +418,6 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                 D(bug("[Kernel:APIC-IA32.%03u] %s: failed to obtain HeartBeat IRQ %d\n", cpuNum, __func__, (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE));)
             }
         }
-#endif
 
         APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD;
         APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
@@ -411,16 +427,33 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         if ((apic->flags & APF_TIMER) &&
             ((KrnIsSuper()) || ((ssp = SuperState()) != NULL)))
         {
+#if defined(__AROSEXEC_SMP__)
+            tls_t *apicTLS = apic->cores[cpuNum].cpu_TLS;
+            struct X86SchedulerPrivate *schedData = apicTLS->ScheduleData;
+            D(bug("[Kernel:APIC-IA32.%03u] %s: tls @ 0x%p, scheduling data @ 0x%p\n", cpuNum, __func__, apicTLS, schedData);)
+#endif
+
             if (!core_SetIDTGate(apic->cores[cpuNum].cpu_IDT, APIC_IRQ_HEARTBEAT, (uintptr_t)IntrDefaultGates[APIC_IRQ_HEARTBEAT], FALSE))
             {
                 krnPanic(NULL, "Failed to set APIC HeartBeat IRQ Vector\n"
                                "IRQ #$%02X, Vector #$%02X\n", (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), APIC_IRQ_HEARTBEAT);
             }
 
+            D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat IRQ Vector #$%02X (%d) set\n", cpuNum, __func__, APIC_IRQ_HEARTBEAT, APIC_IRQ_HEARTBEAT);)
+
             if (ssp)
                 UserState(ssp);
 
+#if defined(__AROSEXEC_SMP__)
+            // TODO: Adjust based on the amount of work the APIC can do at its given frequency.
+            schedData->Granularity = 1;
+            schedData->Quantum = 5;
+            APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_128;
+#else
+            APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_64; // Close to the normal vblank frequency..
+#endif
             APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_IRQ_HEARTBEAT | LVT_TMM_PERIOD;
+            
         }
     }
 }
