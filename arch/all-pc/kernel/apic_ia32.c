@@ -446,10 +446,8 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             // TODO: Adjust based on the amount of work the APIC can do at its given frequency.
             schedData->Granularity = 1;
             schedData->Quantum = 5;
-            APIC_REG(__APICBase, APIC_TIMER_CCR) = (apic->cores[cpuNum].cpu_TimerFreq + 500) / 1000;
             APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq + 500) / 1000;
 #else
-            APIC_REG(__APICBase, APIC_TIMER_CCR) = (apic->cores[cpuNum].cpu_TimerFreq + 25) / 50;
             APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq + 25) / 50;
 #endif
             APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_IRQ_HEARTBEAT | LVT_TMM_PERIOD;
@@ -457,7 +455,6 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         }
         else
         {
-            APIC_REG(__APICBase, APIC_TIMER_CCR) = apic->cores[cpuNum].cpu_TimerFreq;
             APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;   
             APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD;
         }
