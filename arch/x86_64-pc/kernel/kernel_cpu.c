@@ -48,10 +48,13 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 {
     struct Task *task;
     struct ExceptionContext *ctx;
+    struct APICData *apicData;
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
     apicid_t cpunum = KrnGetCPUNumber();
 #endif
     IPTR __APICBase = core_APIC_GetBase();
+
+    apicData  = KernelBase->kb_PlatformData->kb_APIC;
 
     DSCHED(
         bug("[Kernel:%03u] cpu_Dispatch()\n", cpunum);
@@ -96,7 +99,13 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         Exception(); */
 
     /* Store the launch time */
-    IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = APIC_REG(__APICBase, APIC_TIMER_CCR);
+    if (apicData)
+    {
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = APIC_REG(__APICBase, APIC_TIMER_CCR);
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = 
+            APIC_REG(__APICBase, APIC_TIMER_ICR) + apicData->cores[cpunum].cpu_LAPICTick -
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
+    }
 /*
     if ((apicData) &&
         (apicData->cores[cpunum].cpu_TimerFreq) &&
@@ -126,21 +135,24 @@ void cpu_Switch(struct ExceptionContext *regs)
 {
     struct Task *task;
     struct ExceptionContext *ctx;
-    UQUAD timeCur;
+    UQUAD timeCur = 0;
     struct timespec timeSpec;
     apicid_t cpunum = KrnGetCPUNumber();
     struct APICData *apicData;
     IPTR __APICBase = core_APIC_GetBase();
+    apicData  = KernelBase->kb_PlatformData->kb_APIC;
 
     DSCHED(bug("[Kernel:%03u] cpu_Switch()\n", cpunum);)
 
-    timeCur = APIC_REG(__APICBase, APIC_TIMER_CCR);
-
     task = GET_THIS_TASK;
-    ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
-    KernelBase = getKernelBase();
-    apicData  = KernelBase->kb_PlatformData->kb_APIC;
+    if (apicData && IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
+    {
+        timeCur = APIC_REG(__APICBase, APIC_TIMER_CCR);
+        timeCur = APIC_REG(__APICBase, APIC_TIMER_ICR) + apicData->cores[cpunum].cpu_LAPICTick - timeCur;
+    }
+
+    ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
     /*
      * Copy current task's context into the ETask structure. Note that context on stack
@@ -160,16 +172,19 @@ void cpu_Switch(struct ExceptionContext *regs)
     /* Set task's tc_SPReg */
     task->tc_SPReg = (APTR)regs->rsp;
 
-    if (apicData && apicData->cores[cpunum].cpu_TimerFreq)
+    if (apicData && apicData->cores[cpunum].cpu_TimerFreq && timeCur)
     {
+        /*
         if (timeCur < IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
             timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 - timeCur;
         else
             timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq - timeCur;
-        
+        */
+        timeCur -= IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
+
         // Convert LAPIC bus cycles into microseconds
         timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TimerFreq;
-        
+
         /* Update the task's CPU time */
         timeSpec.tv_sec = timeCur / 1000000000;
         timeSpec.tv_nsec = timeCur % 1000000000;
