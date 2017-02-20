@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/config.h>
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -32,8 +34,11 @@ struct TaskInfo
 {
     struct Node                 ti_Node;
     struct Task                 *ti_Task;
-    ULONG                       ti_TimeCurrent;
-    ULONG                       ti_TimeLast;
+#if defined(__AROSEXEC_SMP__)
+    cpuid_t                     ti_CPU;
+#endif
+    struct timeval              ti_TimeCurrent;
+    struct timeval              ti_TimeLast;
     ULONG                       ti_Flags;
 };
 
@@ -70,6 +75,10 @@ struct Tasklist_DATA
     STRPTR                      msg_task_tombstoned;
     STRPTR                      msg_task_unknown;
 
+#if defined(__AROSEXEC_SMP__)
+    TEXT                        tld_BufTime[100];
+    TEXT                        tld_BufCPU[100];
+#endif
     TEXT                        tld_BufName[100];
     TEXT                        tld_BufType[20];
     TEXT                        tld_BufPrio[20];
@@ -85,12 +94,49 @@ struct Tasklist_DATA
 CONST_STRPTR badstr_tmpl = " " MUIX_PH MUIX_B "%s";
 CONST_STRPTR badval_tmpl = MUIX_PH MUIX_B "%d ";
 
-VOID RefreshTask(struct TaskInfo *ti)
+VOID RefreshTask(struct Tasklist_DATA *data, struct TaskInfo *ti)
 {
+    struct TagItem QueryTaskTags[] =
+    {
+        {TaskTag_CPUTime        , 0     },
+#if defined(__AROSEXEC_SMP__)
+        {TaskTag_CPUNumber      , 0     },
+#endif
+        {TAG_DONE               , 0     }
+    };
+#if defined(__AROSEXEC_SMP__)
+    IPTR cpuNum;
+#endif
+
     /* Cache values we need incase something happens to the task .. */
-    ti->ti_Node.ln_Type = ti->ti_Task->tc_Node.ln_Type;
-    ti->ti_Node.ln_Pri = ti->ti_Task->tc_Node.ln_Pri;
-    ti->ti_Flags |= TIF_ENABLED;
+    ti->ti_TimeLast = ti->ti_TimeCurrent;
+    QueryTaskTags[0].ti_Data = (IPTR)&ti->ti_TimeCurrent;
+#if defined(__AROSEXEC_SMP__)
+    QueryTaskTags[1].ti_Data = (IPTR)&cpuNum;
+#endif
+
+    if (ti->ti_Task)
+    {
+        switch (ti->ti_Task->tc_State)
+        {
+        case TS_RUN:
+        case TS_READY:
+        case TS_SPIN:
+        case TS_WAIT:
+            QueryTaskTagList(ti->ti_Task, QueryTaskTags);
+#if defined(__AROSEXEC_SMP__)
+            ti->ti_CPU = (cpuid_t)cpuNum;
+#endif
+
+            ti->ti_Node.ln_Type = ti->ti_Task->tc_Node.ln_Type;
+            ti->ti_Node.ln_Pri = ti->ti_Task->tc_Node.ln_Pri;
+            ti->ti_Flags |= TIF_ENABLED;
+            break;
+        default:
+            ti->ti_Flags &= ~TIF_ENABLED;
+            break;
+        }
+    }
 }
 
 #ifndef TASKLIST_FLUSHUPDATE
@@ -133,7 +179,7 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
         ti->ti_Task = curTask;
         ti->ti_Flags = 0;
 
-        RefreshTask(ti);
+        RefreshTask(data, ti);
         ti->ti_Flags &= ~TIF_VALID;
 
         switch (curTask->tc_State)
@@ -218,7 +264,48 @@ AROS_UFH3(LONG, TaskCompareFunction,
 
     switch (data->tasklistSortColumn)
     {
+#if defined(__AROSEXEC_SMP__)
+#define COLUMNOFFSET 2
         case 1:
+            if (!data->tasklistSortMode)
+            {
+                retval = (LONG)(ti2->ti_CPU - ti1->ti_CPU);
+                if (retval == 0)
+                {
+                    retval = (LONG)(stricmp(ti1->ti_Node.ln_Name, ti2->ti_Node.ln_Name));
+                }
+            }
+            else
+            {
+                retval = (LONG)(ti1->ti_CPU - ti2->ti_CPU);
+                if (retval == 0)
+                {
+                    retval = (LONG)(stricmp(ti2->ti_Node.ln_Name, ti1->ti_Node.ln_Name));
+                }
+            }
+            break;
+        case 2:
+            if (!data->tasklistSortMode)
+            {
+                retval = (LONG)(ti2->ti_TimeCurrent.tv_secs - ti1->ti_TimeCurrent.tv_secs);
+                if (retval == 0)
+                {
+                    retval = (LONG)(stricmp(ti1->ti_Node.ln_Name, ti2->ti_Node.ln_Name));
+                }
+            }
+            else
+            {
+                retval = (LONG)(ti1->ti_TimeCurrent.tv_secs - ti2->ti_TimeCurrent.tv_secs);
+                if (retval == 0)
+                {
+                    retval = (LONG)(stricmp(ti2->ti_Node.ln_Name, ti1->ti_Node.ln_Name));
+                }
+            }
+            break;
+#else
+#define COLUMNOFFSET 0
+#endif
+        case (COLUMNOFFSET + 1):
             if (!data->tasklistSortMode)
             {
                 retval = (LONG)(ti2->ti_Node.ln_Pri - ti1->ti_Node.ln_Pri);
@@ -236,7 +323,7 @@ AROS_UFH3(LONG, TaskCompareFunction,
                 }
             }
             break;
-        case 2:
+        case (COLUMNOFFSET + 2):
             if (!data->tasklistSortMode)
             {
                 retval = (LONG)(ti1->ti_Node.ln_Type - ti2->ti_Node.ln_Type);
@@ -278,9 +365,14 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
     IPTR fmtdata[] =
     {
         0,
+#if defined(__AROSEXEC_SMP__)
+        0,
+        0,
+#endif
         0
     };
     char *type;
+    int col= 0;
 
     D(bug("[SysMon:TaskList] %s()\n", __func__));
 
@@ -296,18 +388,32 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
             RawDoFmt(badval_tmpl, (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufPrio);
             fmtdata[0] = (IPTR)type;
             RawDoFmt(badstr_tmpl, (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufType);
-            strings[0] = data->tld_BufName;
-            strings[2] = data->tld_BufType;
+            strings[col++] = data->tld_BufName;
+#if defined(__AROSEXEC_SMP__)
+            strings[col++] = "---";
+            strings[col++] = "---.--.--";
+#endif
+            strings[col++] = data->tld_BufPrio;
+            strings[col++] = data->tld_BufType;
         }
         else
         {
             fmtdata[0] = (IPTR)ti->ti_Node.ln_Pri;
             RawDoFmt("%d ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufPrio);
-            strings[0] = ti->ti_Node.ln_Name;
-            strings[2] = type;
+            strings[col++] = ti->ti_Node.ln_Name;
+#if defined(__AROSEXEC_SMP__)
+            fmtdata[0] = (IPTR)ti->ti_CPU;
+            RawDoFmt("%03u ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufCPU);
+            fmtdata[0] = (IPTR)(ti->ti_TimeCurrent.tv_secs / 60 / 60);
+            fmtdata[1] = (IPTR)((ti->ti_TimeCurrent.tv_secs / 60) % 60);
+            fmtdata[2] = (IPTR)(ti->ti_TimeCurrent.tv_secs % 60);
+            RawDoFmt("%03ld:%02ld:%02ld ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufTime);
+            strings[col++] = data->tld_BufCPU;
+            strings[col++] = data->tld_BufTime;
+#endif
+            strings[col++] = data->tld_BufPrio;
+            strings[col++] = type;
         }
-
-        strings[1] = data->tld_BufPrio;
     }
     else
     {
@@ -319,32 +425,52 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
             dir = "-";
 
         fmtdata[1] = (IPTR)dir;
-        if (data->tasklistSortColumn == 0)
+        if (data->tasklistSortColumn == col)
         {
             fmtdata[0] = (IPTR)data->msg_task_name;
             RawDoFmt(MUIX_B "%s %s", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufSortCol);
-            strings[0] = data->tld_BufSortCol;
+            strings[col++] = data->tld_BufSortCol;
         }
         else
-            strings[0] = data->msg_task_name;
+            strings[col++] = data->msg_task_name;
 
-        if (data->tasklistSortColumn == 1)
+#if defined(__AROSEXEC_SMP__)
+        if (data->tasklistSortColumn == col)
+        {
+            fmtdata[0] = (IPTR)"CPU";
+            RawDoFmt(MUIX_B "%s %s", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufSortCol);
+            strings[col++] = data->tld_BufSortCol;
+        }
+        else
+            strings[col++] = "CPU";
+
+        if (data->tasklistSortColumn == col)
+        {
+            fmtdata[0] = (IPTR)"CPU Time";
+            RawDoFmt(MUIX_B "%s %s", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufSortCol);
+            strings[col++] = data->tld_BufSortCol;
+        }
+        else
+            strings[col++] = "CPU Time";
+#endif
+
+        if (data->tasklistSortColumn == col)
         {
             fmtdata[0] = (IPTR)data->msg_task_priority;
             RawDoFmt(MUIX_B "%s %s", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufSortCol);
-            strings[1] = data->tld_BufSortCol;
+            strings[col++] = data->tld_BufSortCol;
         }
         else
-            strings[1] = data->msg_task_priority;
+            strings[col++] = data->msg_task_priority;
 
-        if (data->tasklistSortColumn == 2)
+        if (data->tasklistSortColumn == col)
         {
             fmtdata[0] = (IPTR)data->msg_task_type;
             RawDoFmt(MUIX_B "%s %s", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufSortCol);
-            strings[2] = data->tld_BufSortCol;
+            strings[col++] = data->tld_BufSortCol;
         }
         else
-            strings[2] = data->msg_task_type;
+            strings[col++] = data->msg_task_type;
     }
 
     return NULL;
@@ -358,7 +484,12 @@ Object *Tasklist__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     self = (Object *) DoSuperNewTags(CLASS, self, NULL,
         ReadListFrame,
-        MUIA_List_Format, "MIW=50 BAR,BAR P=\033r,",
+        MUIA_List_Format,
+#if !defined(__AROSEXEC_SMP__)
+        "MIW=50 BAR,BAR P=\033r,",
+#else
+        "MIW=50 BAR,BAR,BAR,BAR P=\033r,",
+#endif
         MUIA_List_Title, (IPTR)TRUE,
         TAG_MORE, (IPTR) message->ops_AttrList
     );
@@ -622,7 +753,7 @@ IPTR Tasklist__MUIM_Tasklist_Refresh(Class *CLASS, Object *self, Msg message)
             if (ti->ti_Task == task)
             {
                 D(bug("[SysMon:TaskList] updating entry @ 0x%p\n", ti));
-                RefreshTask(ti);
+                RefreshTask(data, ti);
                 task = NULL;
                 break;
             }
