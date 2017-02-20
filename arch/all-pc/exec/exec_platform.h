@@ -16,6 +16,7 @@
 #define EXEC_REMTASK_NEEDSSWITCH
 #endif
 #define SCHEDQUANTUM_VALUE      4
+#define SCHEDGRAN_VALUE         1
 
 #include "kernel_base.h"
 
