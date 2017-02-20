@@ -54,6 +54,7 @@ struct APICData *core_APIC_Probe(void)
         D(bug("[APIC] ID #%d\n", data->cores[0].cpu_LocalID));
 
         data->cores[0].cpu_GDT = __KernBootPrivate->BOOTGDT;
+        data->cores[0].cpu_TLS = __KernBootPrivate->BOOTTLS;
         data->cores[0].cpu_IDT = __KernBootPrivate->BOOTIDT;
         data->cores[0].cpu_MMU = &__KernBootPrivate->MMU;
 
