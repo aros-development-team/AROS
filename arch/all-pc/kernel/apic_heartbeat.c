@@ -26,6 +26,7 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
     struct KernelBase *KernelBase = __kernelBase;
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct APICData *apicData = pdata->kb_APIC;
+    IPTR __LAPICBase = apicData->lapicBase;
 #if defined(__AROSEXEC_SMP__)
     struct X86SchedulerPrivate  *apicScheduleData;
     tls_t *apicTLS;
@@ -37,7 +38,11 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
 #if defined(__AROSEXEC_SMP__)
         apicid_t cpuNum = core_APIC_GetNumber(apicData);
 
-        D(bug("[Kernel:APIC.%03u] %s()\n", cpuNum, __func__));
+        // Update LAPIC tick
+        apicData->cores[cpuNum].cpu_LAPICTick += APIC_REG(__LAPICBase, APIC_TIMER_ICR);
+
+        D(bug("[Kernel:APIC.%03u] %s(), tick=%08x:%08x\n", cpuNum, __func__, (ULONG)(apicData->cores[cpuNum].cpu_LAPICTick >> 32),
+            (ULONG)(apicData->cores[cpuNum].cpu_LAPICTick & 0xffffffff)));
 
         apicTLS = apicData->cores[cpuNum].cpu_TLS;
         if ((apicTLS) && ((apicScheduleData = apicTLS->ScheduleData) != NULL))

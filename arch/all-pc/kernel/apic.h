@@ -36,6 +36,7 @@ struct CPUData
     void                        *cpu_GDT;
     void                        *cpu_IDT;
     struct CPUMMUConfig         *cpu_MMU;
+    UQUAD                       cpu_LAPICTick;
 };
 
 struct APICData
