@@ -632,7 +632,6 @@ void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
 {
     struct segment_selector cpuGDTsel;
     struct tss_64bit *tssBase = __KernBootPrivate->TSS;
-    apicid_t _APICID = 0;
 
     D(bug("[Kernel] %s(%03u, 0x%p, 0x%p)\n", __func__, cpuNo, cpuGDT, SystemStack));
 
@@ -641,19 +640,6 @@ void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
      * and ring 1 is not used either. However, the space pointed to by IST is used as a temporary stack
      * for warm restart routine.
      */
-
-    if ((KernelBase->kb_PlatformData) && (KernelBase->kb_PlatformData->kb_APIC))
-    {
-        struct APICData *apicData  = KernelBase->kb_PlatformData->kb_APIC;
-        _APICID = apicData->cores[cpuNo].cpu_LocalID;
-    }
-    else
-    {
-        if (cpuNo == 0)
-            _APICID = core_APIC_GetID(__KernBootPrivate->_APICBase);
-        else
-            krnPanic(KernelBase, "Unable to access APIC data for CPU %03u!", cpuNo);
-    }
 
     D(bug("[Kernel] %s[%03u]: APIC ID %03u\n", __func__, cpuNo, _APICID));
 
@@ -668,7 +654,7 @@ void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
     cpuGDTsel.size = sizeof(struct gdt_64bit) - 1;
     cpuGDTsel.base = (unsigned long)cpuGDT;
     asm volatile ("lgdt %0"::"m"(cpuGDTsel));
-    asm volatile ("ltr %w0"::"r"(TASK_SEG + (_APICID << 4)));
+    asm volatile ("ltr %w0"::"r"(TASK_SEG + (cpuNo << 4)));
     asm volatile ("mov %0,%%gs"::"a"(USER_GS));
 }
 
