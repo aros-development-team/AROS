@@ -281,7 +281,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
         /* wakeresult != 0 means error */
         if (!wakeresult)
         {
-            ULONG current, start = RDTSC();
+            UQUAD current, start = RDTSC();
             /*
              * Before we proceed we need to make sure that the core has picked up
              * its stack and we can reload bootstrap argument area with another one.
@@ -289,8 +289,9 @@ static int smp_Wake(struct KernelBase *KernelBase)
             DWAKE(bug("[Kernel:SMP] Waiting for CPU #%u to initialise .. ", cpuNo + 1));
             while (!KrnSpinTryLock(&apicReadyLocks[cpuNo], SPINLOCK_MODE_READ))
             {
+                asm volatile("pause");
                 current = RDTSC();
-                if (((current - start)/apicData->cores[0].cpu_TimerFreq) >
+                if (((current - start)/apicData->cores[0].cpu_TSCFreq) >
 #if (DEBUG > 0)
                     50000
 #else
