@@ -109,8 +109,8 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     D(bug("[Kernel:SMP] %s[%03u]: APIC Spurious Vector configured\n", __func__, apicCPUNo));
 
 
-#if (0)
-    D(bug("[Kernel:SMP] %s[%03u]: Preparing MMU...\n", __func__, apicCPUNo));
+#if (1)
+    (bug("[Kernel:SMP] %s[%03u]: Preparing MMU...\n", __func__, apicCPUNo));
     core_LoadMMU(&__KernBootPrivate->MMU);
 #endif
 
