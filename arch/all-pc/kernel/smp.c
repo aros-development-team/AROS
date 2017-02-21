@@ -237,7 +237,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
     spinlock_t *apicReadyLocks;
 
     apicReadyLocks = AllocMem(sizeof(spinlock_t) * apicData->apic_count, MEMF_CLEAR|MEMF_ANY);
-    D(bug("[Kernel:SMP] %d Ready spinlocks starting at 0x%p\n", apicReadyLocks));
+    D(bug("[Kernel:SMP] %d Ready spinlocks starting at 0x%p\n", apicData->apic_count, apicReadyLocks));
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
     for (cpuNo = 1; cpuNo < apicData->apic_count; cpuNo++)
@@ -317,7 +317,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
                 D(bug("[Kernel:SMP] CPU #%u started up\n", cpuNo + 1));
             }
         }
-        D(if (wakeresult) { bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult); } )
+        D(if (wakeresult) { bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult); } ) 
     }
 
     D(bug("[Kernel:SMP] Done\n"));
