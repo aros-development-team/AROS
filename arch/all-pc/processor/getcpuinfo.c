@@ -11,6 +11,8 @@
 
 #include <aros/libcall.h>
 #include <resources/processor.h>
+#include <aros/kernel.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
 
 #include "processor_intern.h"
@@ -99,7 +101,11 @@ AROS_LH1(void, GetCPUInfo,
             *((UQUAD *)passedTag->ti_Data) = GetCurrentProcessorFrequency(processor);
             break;
         case(GCIT_ProcessorLoad):
+#if defined(__AROSEXEC_SMP__)            
+            *((UBYTE *)passedTag->ti_Data) = KrnGetSystemAttr(KATTR_CPULoad + selectedprocessor);
+#else
             *((UBYTE *)passedTag->ti_Data) = 0; /* TODO: IMPLEMENT */
+#endif
             break;
         case(GCIT_FrontsideSpeed):
             *((UQUAD *)passedTag->ti_Data) = processor->MaxFSBFrequency;
