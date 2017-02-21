@@ -77,11 +77,19 @@ BOOL ictl_is_irq_enabled(unsigned char, struct KernelBase *);
 	(dest)->tv_micro -= 1000000;		\
     }
 
+#if (__WORDSIZE==64)
+static inline unsigned long long RDTSC() {
+   unsigned long _tsc_upper, _tsc_lower;
+   asm volatile (".byte 0x0f, 0x31" : "=a" (_tsc_lower), "=d"(_tsc_upper));
+   return _tsc_lower | ((unsigned long long)_tsc_upper << 32);
+} 
+#else
 static inline unsigned long long RDTSC() {
    unsigned long long _tsc;
    asm volatile (".byte 0x0f, 0x31" : "=A" (_tsc));
    return _tsc;
 } 
+#endif
 
 /* x86 specific SysCalls *************************************************************************/
 
