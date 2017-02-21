@@ -81,6 +81,9 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_Architecture	(TAG_USER + 0x03F00000) /* [.G] (char *)  - Name of architecture, like "i386-pc"                        */
 #define KATTR_PeripheralBase	(TAG_USER + 0x03F00001) /* [.G] (IPTR)    - SoC Peripheral IO base address (on relevant hardware)       */
 #define KATTR_AffinityMask	(TAG_USER + 0x03F00002) /* [.G] (IPTR)    - */
+#define KATTR_SystemLoad        (TAG_USER + 0x03F00003)
+#define KATTR_CPULoad           (TAG_USER + 0x03F00004)
+#define KATTR_CPULoad_END       (KATTR_CPULoad + 32)
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)
