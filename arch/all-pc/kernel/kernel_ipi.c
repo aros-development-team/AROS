@@ -43,15 +43,14 @@ void core_DoIPI(uint8_t ipi_number, unsigned int cpu_mask, struct KernelBase *Ke
             int i;
 
             // No shortcut, send IPI to each CPU one after another
-            for (i=0; i < apicPrivate->apic_count; i++)
+            for (i=0; i < 32; i++)
             {
                 if (cpu_mask & (1 << i))
                 {
-                    ULONG id = apicPrivate->cores[i].cpu_LocalID;
                     D(bug("[Kernel:IPI] waiting for DS bit to be clear\n"));
                     while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS) asm volatile("pause");
-                    D(bug("[Kernel:IPI] sending IPI cmd %08x to destination %08x\n", cmd, id << 24));
-                    APIC_REG(__APICBase, APIC_ICRH) = id << 24;
+                    D(bug("[Kernel:IPI] sending IPI cmd %08x to destination %08x\n", cmd, i << 24));
+                    APIC_REG(__APICBase, APIC_ICRH) = i << 24;
                     APIC_REG(__APICBase, APIC_ICRL) = cmd;
                 }
             }
