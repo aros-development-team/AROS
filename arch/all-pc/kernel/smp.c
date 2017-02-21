@@ -51,7 +51,6 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     struct Task *apicBSTask;
 #endif
 #if (__WORDSIZE==64)
-    int i;
 
     /* Enable fxsave/fxrstor */
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
@@ -101,16 +100,6 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
                        "Vector #$%02X\n", APIC_IRQ_SYSCALL);
     }
     D(bug("[Kernel:SMP] %s[%03u]: APIC Syscall Vector configured\n", __func__, apicCPUNo));
-
-    for (i = APIC_IRQ_IPI_START; i <= APIC_IRQ_IPI_END; i++)
-    {
-        if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
-        {
-            krnPanic(NULL, "Failed to set APIC IPI Vector\n"
-                        "Vector #$%02X\n", i);
-        }
-    }
-    D(bug("[Kernel:SMP] %s[%03u]: APIC IPI Vectors configured\n", __func__, apicCPUNo));
 
     if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, 0xff, (uintptr_t)IntrDefaultGates[0xff], TRUE))
     {
