@@ -49,7 +49,6 @@ static inline void _bug(APTR kernelBase, const char *format, ...)
     {
         __save_flags(flags);
         __cli();
-        while (bit_test_and_set_long((ULONG*)&safedebug, 1)) { asm volatile("pause"); };
     }
 #endif
     va_start(args, format);
@@ -65,7 +64,6 @@ static inline void _bug(APTR kernelBase, const char *format, ...)
 #if defined(__AROSEXEC_SMP__)
     if (safedebug & 1)
     {
-        __AROS_ATOMIC_AND_L(safedebug, ~(1 << 1));
         __restore_flags(flags);
     }
 #endif
