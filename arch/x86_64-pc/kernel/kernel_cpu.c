@@ -49,9 +49,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     struct Task *task;
     struct ExceptionContext *ctx;
     struct APICData *apicData;
-#if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
     apicid_t cpunum = KrnGetCPUNumber();
-#endif
     IPTR __APICBase = core_APIC_GetBase();
 
     apicData  = KernelBase->kb_PlatformData->kb_APIC;
