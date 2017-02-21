@@ -112,6 +112,14 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     }
     D(bug("[Kernel:SMP] %s[%03u]: APIC IPI Vectors configured\n", __func__, apicCPUNo));
 
+    if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, 0xff, (uintptr_t)IntrDefaultGates[0xff], TRUE))
+    {
+        krnPanic(NULL, "Failed to set APIC Spurious Vector\n"
+                       "Vector #$%02X\n", 0xff);
+    }
+    D(bug("[Kernel:SMP] %s[%03u]: APIC Spurious Vector configured\n", __func__, apicCPUNo));
+
+
 #if (0)
     D(bug("[Kernel:SMP] %s[%03u]: Preparing MMU...\n", __func__, apicCPUNo));
     core_LoadMMU(&__KernBootPrivate->MMU);

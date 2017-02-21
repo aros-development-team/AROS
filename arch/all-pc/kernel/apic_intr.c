@@ -208,8 +208,10 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 {
     struct KernelBase *KernelBase = getKernelBase();
 
+    if (irq_number == 0xff)
+        (bug("[Kernel] %s: APIC Spurious interrupt!\n", __func__, irq_number));
     // TODO: make sure we have IPI interrupts ;)
-    if (irq_number >= APIC_IRQ_IPI_START && irq_number <= APIC_IRQ_IPI_END)
+    else if (irq_number >= APIC_IRQ_IPI_START && irq_number <= APIC_IRQ_IPI_END)
     {
         core_IPIHandle(regs, irq_number - APIC_IRQ_IPI_START, KernelBase);
     }
