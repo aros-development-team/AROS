@@ -37,27 +37,24 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
     {
 #if defined(__AROSEXEC_SMP__)
         apicid_t cpuNum = core_APIC_GetNumber(apicData);
+        UQUAD now = RDTSC();
 
         // Update LAPIC tick
         apicData->cores[cpuNum].cpu_LAPICTick += APIC_REG(__LAPICBase, APIC_TIMER_ICR);
 
         // Relaunch LAPIC timer
-        APIC_REG(__LAPICBase, APIC_TIMER_ICR) = (apicData->cores[cpuNum].cpu_TimerFreq + 50) / 100;
-#if 0
-        // Every second update CPU usage statistics...
-        if (apicData->cores[cpuNum].cpu_LAPICTick - apicData->cores[cpuNum].cpu_LastCPULoadTime > apicData->cores[cpuNum].cpu_TimerFreq)
-        {
-            D(bug("[Kernel:APIC.%03u] %s() updating CPU load statistics...\n", cpuNum, __func__));
-            D(bug("[Kernel:APIC.%03u] %s() sleep time %d\n", cpuNum, __func__, (ULONG)apicData->cores[cpuNum].cpu_SleepTime));
-            
-            apicData->cores[cpuNum].cpu_Load = (UBYTE)((100 * (apicData->cores[cpuNum].cpu_TimerFreq - apicData->cores[cpuNum].cpu_SleepTime) / apicData->cores[cpuNum].cpu_TimerFreq));
+        APIC_REG(__LAPICBase, APIC_TIMER_ICR) = (apicData->cores[cpuNum].cpu_TimerFreq + 500) / 1000;
 
-            (bug("[Kernel:APIC.%03u] %s() cpu load %d\n", cpuNum, __func__, (ULONG)apicData->cores[cpuNum].cpu_Load));
+        if ((now - apicData->cores[cpuNum].cpu_LastCPULoadTime) > apicData->cores[cpuNum].cpu_TSCFreq)
+        {            
+            apicData->cores[cpuNum].cpu_Load = 
+                ((apicData->cores[cpuNum].cpu_TSCFreq - apicData->cores[cpuNum].cpu_SleepTime) << 32) / 
+                (now - apicData->cores[cpuNum].cpu_LastCPULoadTime);
 
-            apicData->cores[cpuNum].cpu_LastCPULoadTime = apicData->cores[cpuNum].cpu_LAPICTick;
+            (bug("[Kernel:APIC.%03u] %s() cpu load %08x\n", cpuNum, __func__, (ULONG)apicData->cores[cpuNum].cpu_Load));
             apicData->cores[cpuNum].cpu_SleepTime = 0;
+            apicData->cores[cpuNum].cpu_LastCPULoadTime = now;
         }
-#endif
 
         D(bug("[Kernel:APIC.%03u] %s(), tick=%08x:%08x\n", cpuNum, __func__, (ULONG)(apicData->cores[cpuNum].cpu_LAPICTick >> 32),
             (ULONG)(apicData->cores[cpuNum].cpu_LAPICTick & 0xffffffff)));
