@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -41,10 +41,10 @@ void ScreenModePrefs_Handler(STRPTR filename)
 	    if (smp) {
                 struct IScreenModePrefs i;
 	
-	        i.smp_DisplayID = GET_LONG(smp->smp_DisplayID);
-	        i.smp_Width     = GET_WORD(smp->smp_Width);
-	        i.smp_Height    = GET_WORD(smp->smp_Height);
-	        i.smp_Depth     = GET_WORD(smp->smp_Depth);
+	        i.smp_DisplayID = AROS_BE2LONG(smp->smp_DisplayID);
+	        i.smp_Width     = AROS_BE2WORD(smp->smp_Width);
+	        i.smp_Height    = AROS_BE2WORD(smp->smp_Height);
+	        i.smp_Depth     = AROS_BE2WORD(smp->smp_Depth);
 	        i.smp_Control   = AROS_BE2WORD(smp->smp_Control);
 	        D(bug("[ScreenModePrefs] ModeID: 0x%08lX, Size: %dx%d, Depth: %d, Control: 0x%08lX\n",
 	              i.smp_DisplayID, i.smp_Width, i.smp_Height, i.smp_Depth, i.smp_Control));
