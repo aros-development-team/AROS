@@ -209,34 +209,20 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
     }
     else if (pmState == 0x90)
     {
-#if 0
+#if defined(__AROSEXEC_SMP__)
+        UQUAD timeSleep = RDTSC();
+        UQUAD timeWake;
         struct APICData *apicData = KernelBase->kb_PlatformData->kb_APIC;
         apicid_t cpunum = core_APIC_GetNumber(apicData);
-        IPTR __LAPICBase = apicData->lapicBase;
-        QUAD timeCur = 0;
-        QUAD timeWake = 0;
-
-        timeCur = APIC_REG(__LAPICBase, APIC_TIMER_CCR);
-        timeCur = APIC_REG(__LAPICBase, APIC_TIMER_ICR) + apicData->cores[cpunum].cpu_LAPICTick - timeCur;
-        D(bug("[Kernel:ACPI-PM] %s: setting CPU idle PM STATE, timeCur=%d, LAPICTick=%d, cpu=%d\n", __func__, (ULONG)timeCur, (ULONG)apicData->cores[cpunum].cpu_LAPICTick, cpunum));
 #endif
 #if (__WORDSIZE==64)
         asm volatile ("pushfq; sti; hlt; popfq");
 #else
         asm volatile ("pushfd; sti; hlt; popfd");
 #endif
-#if 0
-        timeWake = APIC_REG(__LAPICBase, APIC_TIMER_CCR);
-        timeWake = APIC_REG(__LAPICBase, APIC_TIMER_ICR) + apicData->cores[cpunum].cpu_LAPICTick - timeWake;
-        D(bug("[Kernel:ACPI-PM] %s: back form sleep, timeWake=%d, LAPICTick=%d, cpu=%d\n", __func__, (ULONG)timeWake, (ULONG)apicData->cores[cpunum].cpu_LAPICTick, cpunum));
-        timeWake -= timeCur;
-        if (timeWake < 0)
-        {
-            //bug("Wake time < 0 (%08x)\n", (ULONG)timeWake);
-            timeWake += APIC_REG(__LAPICBase, APIC_TIMER_ICR);
-            //bug("Fixed to (%08x)\n", (ULONG)timeWake);
-        }
-        apicData->cores[cpunum].cpu_SleepTime += (UQUAD)timeWake;
+#if defined(__AROSEXEC_SMP__)
+        timeWake = RDTSC();
+        apicData->cores[cpunum].cpu_SleepTime += timeWake - timeSleep;
 #endif
     }
     else
