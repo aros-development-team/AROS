@@ -15,8 +15,13 @@
 #if (__WORDSIZE==64)
 #define EXEC_REMTASK_NEEDSSWITCH
 #endif
+#if defined (__AROSEXEC_SMP__)
+#define SCHEDQUANTUM_VALUE      10
+#define SCHEDGRAN_VALUE         1
+#else
 #define SCHEDQUANTUM_VALUE      4
 #define SCHEDGRAN_VALUE         1
+#endif
 
 #include "kernel_base.h"
 
