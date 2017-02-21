@@ -450,7 +450,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 #else
             APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq + 25) / 50;
 #endif
-            APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_IRQ_HEARTBEAT | LVT_TMM_PERIOD;
+            APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_IRQ_HEARTBEAT; // | LVT_TMM_PERIOD;
             
         }
         else
