@@ -51,7 +51,7 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
                 ((apicData->cores[cpuNum].cpu_TSCFreq - apicData->cores[cpuNum].cpu_SleepTime) << 32) / 
                 (now - apicData->cores[cpuNum].cpu_LastCPULoadTime);
 
-            (bug("[Kernel:APIC.%03u] %s() cpu load %08x\n", cpuNum, __func__, (ULONG)apicData->cores[cpuNum].cpu_Load));
+            D(bug("[Kernel:APIC.%03u] %s() cpu load %08x\n", cpuNum, __func__, (ULONG)apicData->cores[cpuNum].cpu_Load));
             apicData->cores[cpuNum].cpu_SleepTime = 0;
             apicData->cores[cpuNum].cpu_LastCPULoadTime = now;
         }
