@@ -2,7 +2,7 @@
 #define ASM_I386_CPU_H
 
 /*
-    Copyright ï¿½ 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: assembler-level specific definitions for x86 CPU
@@ -119,66 +119,45 @@ static inline int compare_and_exchange_byte(uint8_t *lock, uint8_t expected, uin
     return flag;
 }
 
-static inline int bit_test_and_set_long(uint32_t *addr, uint8_t bit)
+static inline int bit_test_and_set_long(uint32_t *addr, int32_t bit)
 {
     char retval = 0;
-    asm volatile("lock btsl %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    asm volatile("lock btsl %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
     return retval;
 }
 
-static inline int bit_test_and_set_short(uint16_t *addr, uint8_t bit)
+static inline int bit_test_and_set_short(uint16_t *addr, int32_t bit)
 {
     char retval = 0;
-    asm volatile("lock btsw %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    asm volatile("lock btsw %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
     return retval;
 }
 
-static inline int bit_test_and_set_byte(uint8_t *addr, uint8_t bit)
+static inline int bit_test_and_clear_long(uint32_t *addr, int32_t bit)
 {
     char retval = 0;
-    asm volatile("lock btsb %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    asm volatile("lock btrl %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
     return retval;
 }
 
-static inline int bit_test_and_clear_long(uint32_t *addr, uint8_t bit)
+static inline int bit_test_and_clear_short(uint16_t *addr, int32_t bit)
 {
     char retval = 0;
-    asm volatile("lock btrl %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    asm volatile("lock btrw %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
     return retval;
 }
 
-static inline int bit_test_and_clear_short(uint16_t *addr, uint8_t bit)
+static inline int bit_test_and_complement_long(uint32_t *addr, int32_t bit)
 {
     char retval = 0;
-    asm volatile("lock btrw %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    asm volatile("lock btcl %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
     return retval;
 }
 
-static inline int bit_test_and_clear_byte(uint8_t *addr, uint8_t bit)
+static inline int bit_test_and_complement_short(uint16_t *addr, int32_t bit)
 {
     char retval = 0;
-    asm volatile("lock btrb %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
-    return retval;
-}
-
-static inline int bit_test_and_complement_long(uint32_t *addr, uint8_t bit)
-{
-    char retval = 0;
-    asm volatile("lock btcl %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
-    return retval;
-}
-
-static inline int bit_test_and_complement_short(uint16_t *addr, uint8_t bit)
-{
-    char retval = 0;
-    asm volatile("lock btcw %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
-    return retval;
-}
-
-static inline int bit_test_and_complement_byte(uint8_t *addr, uint8_t bit)
-{
-    char retval = 0;
-    asm volatile("lock btcb %2, %0; setc %1":"+m"(*addr),"=r"(retval):"Ir"(bit):"memory");
+    asm volatile("lock btcw %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
     return retval;
 }
 
