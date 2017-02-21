@@ -18,6 +18,12 @@
 #undef vkprintf
 #include <exec/execbase.h>
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/atomic.h>
+#include <asm/cpu.h>
+extern volatile ULONG   safedebug;
+#endif
+
 /* Can't use ctype.h *sigh* */
 #define isdigit(x)      ((x) >= '0' && (x) <= '9')
 #define isprint(x)      (((x) >= ' ' && (x) <= 128) || (x) >= 160)
@@ -114,11 +120,29 @@ int vkprintf (const char * fmt, va_list args)
 
     if (!fmt)
     {
+#if defined(__AROSEXEC_SMP__)
+    if (safedebug & 1)
+    {
+        while (bit_test_and_set_long((ULONG*)&safedebug, 1)) { asm volatile("pause"); };
+    }
+#endif
 	RawPutChars ((const UBYTE *)"(null)", 6);
+#if defined(__AROSEXEC_SMP__)
+    if (safedebug & 1)
+    {
+        __AROS_ATOMIC_AND_L(safedebug, ~(1 << 1));
+    }
+#endif
 	return 6;
     }
 
     ret = 0;
+#if defined(__AROSEXEC_SMP__)
+    if (safedebug & 1)
+    {
+        while (bit_test_and_set_long((ULONG*)&safedebug, 1)) { asm volatile("pause"); };
+    }
+#endif
 
     while (*fmt)
     {
@@ -378,7 +402,12 @@ print_int:
 
 	fmt ++; /* Next char */
     } /* while (*fmt); */
-
+#if defined(__AROSEXEC_SMP__)
+    if (safedebug & 1)
+    {
+        __AROS_ATOMIC_AND_L(safedebug, ~(1 << 1));
+    }
+#endif
     return ret;
 } /* vkprintf */
 
