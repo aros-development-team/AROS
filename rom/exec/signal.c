@@ -155,6 +155,13 @@
                 Reschedule();
             }
         }
+#if defined(__AROSEXEC_SMP__)
+        else if (!(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)))
+        {
+            krnSysCallReschedTask(task, TS_READY);
+            KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+        }
+#endif
     }
 
     Enable();
