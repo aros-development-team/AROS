@@ -303,6 +303,16 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
             D(bug("[Kernel:APIC-IA32.%03u] %s: APIC Error Vector #$%02X configured\n", cpuNum, __func__, APIC_IRQ_ERROR));
 
+            for (i = APIC_IRQ_IPI_START; i <= APIC_IRQ_IPI_END; i++)
+            {
+                if (!core_SetIDTGate((struct int_gate_64bit *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
+                {
+                    krnPanic(NULL, "Failed to set APIC IPI Vector\n"
+                                "Vector #$%02X\n", i);
+                }
+            }
+            (bug("[Kernel::APIC-IA32.%03u] %s: APIC IPI Vectors configured\n", cpuNum, __func__));
+
             if (ssp)
                 UserState(ssp);
         }
