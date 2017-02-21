@@ -13,13 +13,6 @@
 
 #include "etask.h"
 
-#if (__WORDSIZE==64)
-asm ("_SLEEP_FUNCTION: sti; hlt; iretq");
-#else
-asm ("_SLEEP_FUNCTION: sti; hlt; iret");
-#endif
-void _SLEEP_FUNCTION();
-
 void IdleTask(struct ExecBase *SysBase)
 {
     D(
@@ -36,7 +29,7 @@ void IdleTask(struct ExecBase *SysBase)
         /* forever */
 
         // Call sleep function (which enables interrupts, sleeps CPU until interrupt comes and then returns)
-        Supervisor(_SLEEP_FUNCTION);
+        krnSysCallChangePMState(0x90);
 
         // After SLEEP_FUNCTION returned nothing was rescheduled. Reschedule now...
         Reschedule();

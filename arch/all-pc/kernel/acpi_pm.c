@@ -207,6 +207,16 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
             bug("[Kernel:ACPI-PM] %s: Error evaluating %s: %s\n", __func__, &pathName[1], AcpiFormatException(status));
         }
     }
+    else if (pmState == 0x90)
+    {
+        D(bug("[Kernel:ACPI-PM] %s: setting CPU idle PM STATE\n", __func__));
+#if (__WORDSIZE==64)
+        asm volatile ("pushfq; sti; hlt; popfq");
+#else
+        asm volatile ("pushfd; sti; hlt; popfd");
+#endif
+        D(bug("[Kernel:ACPI-PM] %s: back form sleep\n", __func__));
+    }
     else
     {
         // We cant handle any other states atm =/
