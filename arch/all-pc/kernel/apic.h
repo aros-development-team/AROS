@@ -28,8 +28,9 @@ struct CPUMMUConfig
 
 struct CPUData
 {
-    ULONG                       cpu_TimerFreq;	/* Timer clock frequency			        */
-    apicid_t                    cpu_LocalID;	/* Local APIC ID				        */
+    ULONG                       cpu_TimerFreq;	/* Timer clock frequency                                */
+    UQUAD                       cpu_TSCFreq;    /* Timestamp counter frequency                          */
+    apicid_t                    cpu_LocalID;	/* Local APIC ID                                        */
     apicid_t                    cpu_PrivateID;  /* Sub-system private (ACPI, whatever) ID -  can differ */
     icintrid_t                  cpu_ICID;       /* NB - this is icintrid_t not icid_t                   */
     void                        *cpu_TLS;
@@ -37,6 +38,9 @@ struct CPUData
     void                        *cpu_IDT;
     struct CPUMMUConfig         *cpu_MMU;
     UQUAD                       cpu_LAPICTick;
+    UQUAD                       cpu_LastCPULoadTime;
+    UQUAD                       cpu_SleepTime;
+    ULONG                       cpu_Load;
 };
 
 struct APICData
@@ -44,7 +48,7 @@ struct APICData
     IPTR	                lapicBase; 	/* Local APIC base address			        */
     ULONG	                apic_count;	/* Total number of APICs in the system		        */
     UWORD	                flags;	        /* See below					        */
-    struct CPUData              cores[0];	/* Per-CPU data					        */
+    struct CPUData          cores[0];	/* Per-CPU data					        */
 };
 
 #define APF_8259                (1 << 0)	/* Legacy PIC present				        */
