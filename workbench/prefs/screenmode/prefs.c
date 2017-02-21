@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,14 +21,6 @@
 
 #include "prefs.h"
 #include "misc.h"
-
-#ifdef BIGENDIAN_PREFS
-#define GET_WORD AROS_BE2WORD
-#define GET_LONG AROS_BE2LONG
-#else
-#define GET_WORD(x) x
-#define GET_LONG(x) x
-#endif
 
 /*********************************************************************************************/
 
@@ -89,11 +81,16 @@ BOOL Prefs_ImportFH(BPTR fh)
                 else
                 {
 		    CopyMem(loadprefs.smp_Reserved, screenmodeprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
-		    screenmodeprefs.smp_DisplayID = GET_LONG(loadprefs.smp_DisplayID);
-		    screenmodeprefs.smp_Width     = GET_WORD(loadprefs.smp_Width);
-		    screenmodeprefs.smp_Height    = GET_WORD(loadprefs.smp_Height);
-		    screenmodeprefs.smp_Depth     = GET_WORD(loadprefs.smp_Depth);
-		    screenmodeprefs.smp_Control   = AROS_BE2WORD(loadprefs.smp_Control);
+		    screenmodeprefs.smp_DisplayID =
+			AROS_BE2LONG(loadprefs.smp_DisplayID);
+		    screenmodeprefs.smp_Width =
+			AROS_BE2WORD(loadprefs.smp_Width);
+		    screenmodeprefs.smp_Height =
+			AROS_BE2WORD(loadprefs.smp_Height);
+		    screenmodeprefs.smp_Depth =
+			AROS_BE2WORD(loadprefs.smp_Depth);
+		    screenmodeprefs.smp_Control =
+			AROS_BE2WORD(loadprefs.smp_Control);
                 }
             }
             else
@@ -131,10 +128,10 @@ BOOL Prefs_ExportFH(BPTR fh)
     LONG                    error   = 0;
 
     CopyMem(screenmodeprefs.smp_Reserved, saveprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
-    saveprefs.smp_DisplayID = GET_LONG(screenmodeprefs.smp_DisplayID);
-    saveprefs.smp_Width     = GET_WORD(screenmodeprefs.smp_Width);
-    saveprefs.smp_Height    = GET_WORD(screenmodeprefs.smp_Height);
-    saveprefs.smp_Depth     = GET_WORD(screenmodeprefs.smp_Depth);
+    saveprefs.smp_DisplayID = AROS_LONG2BE(screenmodeprefs.smp_DisplayID);
+    saveprefs.smp_Width     = AROS_WORD2BE(screenmodeprefs.smp_Width);
+    saveprefs.smp_Height    = AROS_WORD2BE(screenmodeprefs.smp_Height);
+    saveprefs.smp_Depth     = AROS_WORD2BE(screenmodeprefs.smp_Depth);
     saveprefs.smp_Control   = AROS_WORD2BE(screenmodeprefs.smp_Control);
 
     if ((handle = AllocIFF()))
