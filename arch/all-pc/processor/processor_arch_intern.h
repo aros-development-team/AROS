@@ -44,7 +44,7 @@ struct X86ProcessorInformation
 #define cpuid(num) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
-static inline void __attribute__((always_inline)) rdmsr(LONG msr_no, LONG *ret_lo, LONG *ret_hi)
+static inline void __attribute__((always_inline)) rdmsr(ULONG msr_no, ULONG *ret_lo, ULONG *ret_hi)
 {
     LONG ret1,ret2;
     asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
