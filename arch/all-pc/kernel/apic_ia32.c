@@ -233,6 +233,8 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
     ULONG maxlvt = APIC_LVT(apic_ver), calibrated = 0;
     LONG lapic_initial, lapic_final;
+    UQUAD tsc_initial, tsc_final;
+    UQUAD calibrated_tsc = 0;
     WORD pit_final;
     icintrid_t coreICInstID;
 
@@ -365,20 +367,26 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
          * Now wait for 11931 PIT ticks, which is equal to 10 milliseconds.
          * We don't use pit_udelay() here, because for improved accuracy we need to sample LAPIC timer counter twice,
          * before and after our actual delay (PIT setup also takes up some time, so LAPIC will count away from its
-         * initial value).  We run it 5 times to make up for cache setup discrepancies.
+         * initial value).  We run it 10 times to make up for cache setup discrepancies.
          */
-        for (i = 0; i < 5; i ++)
+        for (i = 0; i < 10; i ++)
         {
             pit_start(11931);
             lapic_initial = (LONG)APIC_REG(__APICBase, APIC_TIMER_CCR);
+            tsc_initial = RDTSC();
 
             pit_final   = pit_wait(11931);
-            lapic_final = (LONG)APIC_REG(__APICBase, APIC_TIMER_CCR);
-            calibrated += (((QUAD)(lapic_initial - lapic_final) * 11931LL)/(11931LL - (QUAD)pit_final)) ;
-        }
-        apic->cores[cpuNum].cpu_TimerFreq = 20 * calibrated;
-        D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000));
 
+            tsc_final = RDTSC();
+            lapic_final = (LONG)APIC_REG(__APICBase, APIC_TIMER_CCR);
+
+            calibrated += (((QUAD)(lapic_initial - lapic_final) * 11931LL)/(11931LL - (QUAD)pit_final)) ;
+            calibrated_tsc += ((tsc_final - tsc_initial) * 11931LL) / (11931LL - (QUAD)pit_final);
+        }
+        apic->cores[cpuNum].cpu_TimerFreq = 10 * calibrated;
+        apic->cores[cpuNum].cpu_TSCFreq = 10 * calibrated_tsc;
+        D(bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000));
+        D(bug("[Kernel:APIC-IA32.%03u] %s: TSC frequency should be %u kHz (%u MHz)\n", cpuNum, __func__, (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500)/1000), (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500000) / 1000000)));
         /*
          * Once APIC timer has been calibrated -:
          * # Set it to run at it's full frequency.
