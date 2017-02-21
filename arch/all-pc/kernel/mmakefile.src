@@ -12,7 +12,8 @@ FUNCS	 := \
              spintrylock \
              spinlock \
              spinunlock \
-             schedulecpu
+             schedulecpu \
+             getsystemattr
 
 ASMFILES := \
              cli \
@@ -46,7 +47,7 @@ FILES    := \
 
 MAINDIR	      := rom/kernel
 USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-		  -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+		  -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
 #MM- kernel-kernel-pc : kernel-pc-acpica-linklib  linklibs-bootconsole kernel-kernel-native
 #MM- kernel-kernel-pc-kobj : kernel-pc-acpica-linklib linklibs-bootconsole kernel-kernel-native
