@@ -235,13 +235,12 @@
         is still active.) If the current task isn't of type TS_RUN it
         is already gone.
     */
-
     if (
 #if defined(__AROSEXEC_SMP__)
-        (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) == KrnGetCPUMask(cpunum))
+        (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))))
     {
         parent = GET_THIS_TASK;
-        if(
+        if (
 #endif
         task->tc_Node.ln_Pri > parent->tc_Node.ln_Pri &&
         parent->tc_State == TS_RUN)
@@ -253,10 +252,20 @@
     }
 #if defined(__AROSEXEC_SMP__)
     }
+    else if (PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity)
+    {
+        //bug("[Exec] AddTask: CPU #%d not in mask [%08x:%08x]\n", cpunum, KrnGetCPUMask(cpunum), IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+        bug("[Exec] AddTask: CPU #%d not in mask\n", cpunum);
+        KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+    }
     else
     {
-        bug("[Exec] AddTask: CPU #%d not in mask [%08x:%08x]\n", cpunum, KrnGetCPUMask(cpunum), IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
-        KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+       bug("[Exec] AddTask: Unable to Launch on the selected CPU\n");
+        // TODO: Free up all the task data ..
+        krnSysCallReschedTask(task, TS_REMOVED);
+        KrnDeleteContext(GetETask(task)->et_RegFrame);
+        CleanupETask(task);
+        task = NULL;
     }
 #else
     Enable();

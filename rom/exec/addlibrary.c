@@ -68,7 +68,7 @@
     /* Arbitrate for the library list */
     Forbid();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->LibListSpinLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->LibListSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     /* And add the library */
     Enqueue(&SysBase->LibList,&library->lib_Node);

@@ -62,7 +62,7 @@
 #endif
     NEWLIST(&port->mp_MsgList);
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->PortListSpinLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->PortListSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     /* And add the actual port */
     Enqueue(&SysBase->PortList,&port->mp_Node);

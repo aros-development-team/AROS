@@ -56,7 +56,7 @@
     /* Arbitrate for the resource list */
     Forbid();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->ResourceListSpinLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->ResourceListSpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
     /* Look for the resource in our list */
     resource = (APTR) FindName (&SysBase->ResourceList, resName);

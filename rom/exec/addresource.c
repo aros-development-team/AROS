@@ -63,7 +63,7 @@
     /* Arbitrate for the resource list */
     Forbid();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->ResourceListSpinLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->ResourceListSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     /* And add the resource */
     Enqueue(&SysBase->ResourceList,(struct Node *)resource);

@@ -82,7 +82,7 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 
     Disable();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&port->mp_SpinLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&port->mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     AddTail(&port->mp_MsgList, &message->mn_Node);
 #if defined(__AROSEXEC_SMP__)

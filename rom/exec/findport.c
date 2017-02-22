@@ -53,7 +53,7 @@
 
     /* Nothing spectacular - just look for that name. */
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->PortListSpinLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->PortListSpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
     retVal = (struct MsgPort *)FindName(&SysBase->PortList,name);
 #if defined(__AROSEXEC_SMP__)

@@ -65,7 +65,7 @@
     /* Arbitrate for the library list */
     Forbid();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->LibListSpinLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->LibListSpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
     /* Look for the library in our list */
     library = (struct Library *) FindName (&SysBase->LibList, libName);

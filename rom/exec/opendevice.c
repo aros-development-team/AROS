@@ -96,7 +96,7 @@
     /* Look for the device in our list */
     iORequest->io_Unit   = NULL;
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->DeviceListSpinLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->DeviceListSpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
     iORequest->io_Device = (struct Device *)FindName(&SysBase->DeviceList, devName);
 #if defined(__AROSEXEC_SMP__)

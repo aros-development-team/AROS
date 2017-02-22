@@ -108,9 +108,13 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 #if defined(__AROSEXEC_SMP__)
     cpunum = KrnGetCPUNumber();
     EXEC_SPINLOCK_INIT(&IntETask(et)->iet_TaskLock);
-    IntETask(et)->iet_CpuAffinity = KrnGetCPUMask(cpunum);
+    if (PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity)
+    {
+        IntETask(et)->iet_CpuAffinity =KrnAllocCPUMask();
+        KrnGetCPUMask(cpunum, IntETask(et)->iet_CpuAffinity);
 
-    D(bug("[EXEC:ETask] Init: CPU #%d, mask %08x\n", cpunum, IntETask(et)->iet_CpuAffinity);)
+        D(bug("[EXEC:ETask] Init: CPU #%d, mask %08x\n", cpunum, IntETask(et)->iet_CpuAffinity);)
+    }
 #endif
 
     et->et_Parent = parent;
@@ -190,6 +194,14 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
 
     Forbid();
 
+#if defined(__AROSEXEC_SMP__)
+    if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) && (IntETask(et)->iet_CpuAffinity))
+    {
+        if ((IPTR)IntETask(et)->iet_CpuAffinity != TASKAFFINITY_ANY)
+            KrnFreeCPUMask(IntETask(et)->iet_CpuAffinity);
+    }
+#endif
+
     /* Clean up after all the children that the task didn't do itself. */
     ForeachNodeSafe(&et->et_TaskMsgPort.mp_MsgList, child, tmpNode)
     {
@@ -266,7 +278,7 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 	return FALSE;
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
     Forbid();
 
@@ -282,7 +294,7 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     }
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
     Permit();
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
     Forbid();
     ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
     {
@@ -295,7 +307,7 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     }
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
     Permit();
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
     Forbid();
 #else
     if (task == GET_THIS_TASK)
@@ -319,7 +331,7 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
     Permit();
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
     Forbid();
 #endif
     ForeachNode(&SysBase->TaskWait, t)
