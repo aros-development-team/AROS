@@ -26,8 +26,8 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
     struct KernelBase *KernelBase = __kernelBase;
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct APICData *apicData = pdata->kb_APIC;
-    IPTR __LAPICBase = apicData->lapicBase;
 #if defined(__AROSEXEC_SMP__)
+    IPTR __LAPICBase = apicData->lapicBase;
     struct X86SchedulerPrivate  *apicScheduleData;
     tls_t *apicTLS;
 #endif
