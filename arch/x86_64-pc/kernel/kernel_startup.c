@@ -640,9 +640,6 @@ void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
      * and ring 1 is not used either. However, the space pointed to by IST is used as a temporary stack
      * for warm restart routine.
      */
-
-    D(bug("[Kernel] %s[%03u]: APIC ID %03u\n", __func__, cpuNo, _APICID));
-
     tssBase[cpuNo].ist1 = SystemStack + STACK_SIZE     - 16;	/* Interrupt stack entry 1 (failsafe)	 */
     tssBase[cpuNo].rsp0 = SystemStack + STACK_SIZE * 2 - 16;	/* Ring 0 (Supervisor)		 	*/
     tssBase[cpuNo].rsp1 = SystemStack + STACK_SIZE * 3 - 16;	/* Ring 1 (reserved)		 	*/
