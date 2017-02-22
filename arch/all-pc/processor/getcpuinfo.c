@@ -102,9 +102,9 @@ AROS_LH1(void, GetCPUInfo,
             break;
         case(GCIT_ProcessorLoad):
 #if defined(__AROSEXEC_SMP__)            
-            *((UBYTE *)passedTag->ti_Data) = KrnGetSystemAttr(KATTR_CPULoad + selectedprocessor);
+            *((ULONG *)passedTag->ti_Data) = KrnGetSystemAttr(KATTR_CPULoad + selectedprocessor);
 #else
-            *((UBYTE *)passedTag->ti_Data) = 0; /* TODO: IMPLEMENT */
+            *((ULONG *)passedTag->ti_Data) = 0; /* TODO: IMPLEMENT */
 #endif
             break;
         case(GCIT_FrontsideSpeed):

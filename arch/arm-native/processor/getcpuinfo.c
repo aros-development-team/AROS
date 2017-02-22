@@ -98,7 +98,7 @@ AROS_LH1(void, GetCPUInfo,
             *((UQUAD *)passedTag->ti_Data) = GetCurrentProcessorFrequency(processor);
             break;
         case(GCIT_ProcessorLoad):
-            *((UBYTE *)passedTag->ti_Data) = 0; /* TODO: IMPLEMENT */
+            *((ULONG *)passedTag->ti_Data) = 0; /* TODO: IMPLEMENT */
             break;
         case GCIT_Vendor:
             *((ULONG *)passedTag->ti_Data) = processor->Vendor;

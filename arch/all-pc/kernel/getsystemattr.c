@@ -63,7 +63,7 @@
     {
         id -= KATTR_CPULoad;
         if (id < apicData->apic_count)
-            retval = (100 * (apicData->cores[id].cpu_Load >> 16)) >> 16;
+            retval = apicData->cores[id].cpu_Load;
     }
     else if (id == KATTR_Architecture)
     {
