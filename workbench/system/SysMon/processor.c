@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +14,7 @@
 #include "locale.h"
 
 /* Processor information */
-static ULONG processorcount;
+static IPTR processorcount;
 APTR ProcessorBase;
 #define SIMULATE_USAGE_FREQ 0
 
