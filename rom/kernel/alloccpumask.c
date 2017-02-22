@@ -1,11 +1,10 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
 */
 
-#include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
@@ -16,19 +15,20 @@
     NAME */
 #include <proto/kernel.h>
 
-        AROS_LH1(void, KrnSpinInit,
+        AROS_LH0(void *, KrnAllocCPUMask,
 
 /*  SYNOPSIS */
-	AROS_LHA(spinlock_t *, lock, A0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 49, Kernel)
+	struct KernelBase *, KernelBase, 42, Kernel)
 
 /*  FUNCTION
+	Allocate storage for a CPU mask
 
     INPUTS
 
     RESULT
+	CPU affinity mask storage
 
     NOTES
 
@@ -37,6 +37,7 @@
     BUGS
 
     SEE ALSO
+	KrnGetCPUNumber(), KrnClearCPUMask(), KrnGetCPUMask(), KrnCPUInMask()
 
     INTERNALS
 
@@ -44,8 +45,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* The implementation of this function is architecture-specific */
-    return;
+    /* The actual implementation is entirely architecture-specific */
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 }

@@ -22,7 +22,7 @@
 	AROS_LHA(spinlock_t *, lock, A0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 44, Kernel)
+	struct KernelBase *, KernelBase, 53, Kernel)
 
 /*  FUNCTION
 

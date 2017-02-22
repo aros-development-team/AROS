@@ -20,7 +20,7 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 37, Kernel)
+	struct KernelBase *, KernelBase, 41, Kernel)
 
 /*  FUNCTION
 	Return number of the caller CPU
