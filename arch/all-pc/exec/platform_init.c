@@ -118,13 +118,13 @@ void Exec_TaskSpinUnlock(spinlock_t *spinLock)
     DSPIN(bug("\n[Exec:X86] %s(0x%p)\n", __func__, spinLock));
 
 #if (0)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_WRITE);
     ForeachNodeSafe(&PrivExecBase(SysBase)->TaskSpinning, spinTask, nxtTask)
     {
         thisET = GetIntETask(spinTask);
         if ((thisET) && (thisET->iet_SpinLock == spinLock))
         {
-            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_WRITE);
+            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_WRITE);
             Disable();
             Remove(&spinTask->tc_Node);
             Enqueue(&SysBase->TaskReady, &spinTask->tc_Node);
@@ -144,7 +144,7 @@ void X86_HandleSpinLock(struct ExceptionContext *regs)
 
     DSPIN(bug("[Exec:X86] %s(0x%p, 0x%p, %08x)\n", __func__, spinData->lock_ptr, spinData->lock_failhook, spinData->lock_mode));
 
-    Kernel_43_KrnSpinLock(spinData->lock_ptr, spinData->lock_failhook, spinData->lock_mode, NULL);
+    EXEC_SPINLOCK_LOCK(spinData->lock_ptr, spinData->lock_failhook, spinData->lock_mode);
 
     if (spinData->lock_obtainhook)
     {
@@ -248,11 +248,11 @@ void X86_SetTaskState(struct Task *changeTask, ULONG newState, BOOL dolock)
         )
     {
 #if defined(__AROSEXEC_SMP__)
-        if (dolock) Kernel_43_KrnSpinLock(task_listlock, NULL, SPINLOCK_MODE_WRITE, NULL);
+        if (dolock) EXEC_SPINLOCK_LOCK(task_listlock, NULL, SPINLOCK_MODE_WRITE);
 #endif
         Enqueue(task_list, &changeTask->tc_Node);
 #if defined(__AROSEXEC_SMP__)
-        if (dolock) Kernel_44_KrnSpinUnLock(task_listlock, NULL);
+        if (dolock) EXEC_SPINLOCK_UNLOCK(task_listlock);
 #endif
     }
 }
@@ -288,7 +288,7 @@ void X86_HandleReschedTask(struct ExceptionContext *regs)
             break;
     }
     if (task_listlock)
-        Kernel_43_KrnSpinLock(task_listlock, NULL, SPINLOCK_MODE_WRITE, NULL);
+        EXEC_SPINLOCK_LOCK(task_listlock, NULL, SPINLOCK_MODE_WRITE);
 
     if (reschTask->tc_State != TS_INVALID)
 #else
@@ -308,7 +308,7 @@ void X86_HandleReschedTask(struct ExceptionContext *regs)
 #if (0)
                 reschTaskIntET = GetIntETask(reschTask);
 
-                Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_WRITE, NULL);
+                EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_WRITE);
                 ForeachNodeSafe(&PrivExecBase(SysBase)->TaskSpinning, spinTask, tmpTask)
                 {
                     spinTaskIntET = GetIntETask(spinTask);
@@ -319,7 +319,7 @@ void X86_HandleReschedTask(struct ExceptionContext *regs)
                         X86_SetTaskState(spinTask, TS_READY, TRUE);
                     }
                 }
-                Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL);
+                EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
 #endif
             }
         case TS_READY:
@@ -333,7 +333,7 @@ void X86_HandleReschedTask(struct ExceptionContext *regs)
     }
 
     if (task_listlock)
-        Kernel_44_KrnSpinUnLock(task_listlock, NULL);
+        EXEC_SPINLOCK_UNLOCK(task_listlock);
 #endif
 
     return;
@@ -361,7 +361,10 @@ struct Task *Exec_X86CreateIdleTask(APTR sysBase)
         cpuNo
     };
     struct MemList *ml;
+    void *cpuMask;
 
+    cpuMask = KrnAllocCPUMask();
+    
     if ((ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
         bug("[Exec:X86.%03u] FATAL : Failed to allocate memory for idle task name info", cpuNo);
@@ -379,12 +382,15 @@ struct Task *Exec_X86CreateIdleTask(APTR sysBase)
     }
     taskName = ml->ml_ME[0].me_Addr;
     RawDoFmt("CPU #%03u Idle", (RAWARG)idleNameArg, RAWFMTFUNC_STRING, taskName);
+    
+    KrnGetCPUMask(cpuNo, cpuMask);
+
 #else
     taskName = "CPU Idle";
 #endif
     CPUIdleTask = NewCreateTask(TASKTAG_NAME   , taskName,
 #if defined(__AROSEXEC_SMP__)
-                                TASKTAG_AFFINITY   , KrnGetCPUMask(cpuNo),
+                                TASKTAG_AFFINITY   , cpuMask,
 #endif
                                 TASKTAG_PRI        , -127,
                                 TASKTAG_PC         , IdleTask,

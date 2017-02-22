@@ -113,15 +113,49 @@ apicid_t core_APIC_GetNumber(struct APICData *data)
     return core_APIC_GetNumberFromLocal(data, __APICLogicalID);
 }
 
-uint32_t core_APIC_GetMask(struct APICData *data, apicid_t cpuNo)
+void core_APIC_GetMask(struct APICData *data, apicid_t cpuNo, cpumask_t *mask)
 {
+    ULONG *apicMask;
+    int idlong, idbit;
+
     D(bug("[APIC] %s()\n", __func__));
 
-    if (!data)
+    if ((IPTR)mask != TASKAFFINITY_ANY)
     {
-        /* No APIC data -> uniprocessor system */
-    	return (1 << 0);
+        idlong = cpuNo / 32;
+        idbit = cpuNo - (idlong * 32); 
+
+        D(bug("[APIC] %s: %d -> %d:%d\n", __func__, cpuNo, idlong, idbit));
+        D(bug("[APIC] %s: mask @ 0x%p\n", __func__, mask));
+
+        if ((apicMask = (ULONG *)mask) != NULL)
+            apicMask[idlong] = (1 << idbit);
     }
 
-    return (1 << data->cores[cpuNo].cpu_LocalID);
+    return;
+}
+
+BOOL core_APIC_CPUInMask(apicid_t cpuNo, cpumask_t *mask)
+{
+    ULONG *apicMask;
+    int idlong, idbit;
+
+    D(bug("[APIC] %s()\n", __func__));
+
+    if ((IPTR)mask == TASKAFFINITY_ANY)
+    {
+        // TODO: make sure it is a valid cpu number in the range of available cpus.
+        return TRUE;
+    }
+
+    idlong = cpuNo / 32;
+    idbit = cpuNo - (idlong * 32); 
+
+    D(bug("[APIC] %s: %d -> %d:%d\n", __func__, cpuNo, idlong, idbit));
+    D(bug("[APIC] %s: mask @ 0x%p\n", __func__, mask));
+
+    if (((apicMask = (ULONG *)mask) != NULL) && (apicMask[idlong] & (1 << idbit)))
+        return TRUE;
+
+    return FALSE;
 }

@@ -46,6 +46,7 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     struct MemList *ml;
     unsigned int cpuNo;
     BOOL retval = TRUE;
+    void *taskAffinity;
 
     D(bug("[processor.x86] %s()\n", __func__));
     D(bug("[processor.x86] %s: SysBase @ 0x%p, ProcessorBase @ 0x%p\n", __func__, SysBase, ProcessorBase));
@@ -75,9 +76,12 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
                     processorQueryTaskName = (char *)ml->ml_ME[0].me_Addr;
 
                     RawDoFmt("Processor #%03u Query", (RAWARG)cpuNameArg, RAWFMTFUNC_STRING, processorQueryTaskName);
-                    
+
+                    taskAffinity = KrnAllocCPUMask();
+                    KrnGetCPUMask(cpuNo, taskAffinity);
+
                     processorQueryTask = NewCreateTask(TASKTAG_NAME   , processorQueryTaskName,
-                                            TASKTAG_AFFINITY   , KrnGetCPUMask(cpuNo),
+                                            TASKTAG_AFFINITY   , taskAffinity,
                                             TASKTAG_PRI        , 100,
                                             TASKTAG_PC         , Processor_QueryTask,
                                             TASKTAG_ARG1       , SysBase,

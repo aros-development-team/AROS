@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,7 +23,7 @@
         AROS_LHA(uint32_t, cpu_mask, D0),
 
 /*  LOCATION */
-        struct KernelBase *, KernelBase, 46, Kernel)
+        struct KernelBase *, KernelBase, 47, Kernel)
 
 /*  FUNCTION
         Run task scheduling sequence on all CPUs given in the cpu_mask
@@ -56,6 +56,6 @@
     AROS_LIBFUNC_INIT
 
     core_DoIPI(IPI_RESCHEDULE, cpu_mask, KernelBase);
-    
+
     AROS_LIBFUNC_EXIT
 }

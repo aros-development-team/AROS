@@ -31,6 +31,7 @@ extern APTR PlatformAllocTLS(struct KernelBase *, apicid_t);
 extern APTR PlatformAllocIDT(struct KernelBase *, apicid_t);
 
 #if defined(__AROSEXEC_SMP__)
+extern void cpu_PrepareExec(struct ExecBase *);
 extern struct Task *cpu_InitBootStrap(apicid_t);
 extern void cpu_BootStrap(struct Task *);
 #endif
@@ -130,6 +131,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
         apicBSTask->tc_SPUpper = (APTR)~0;
 
         cpu_BootStrap(apicBSTask);
+    }
 #else
     bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", apicCPUNo + 1, apicData->apic_count);
 #endif
@@ -138,15 +140,19 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     KrnSpinUnLock((spinlock_t *)apicReadyLock);
 
 #if defined(__AROSEXEC_SMP__)
-
+    if (apicBSTask)
+    {
         D(bug("[Kernel:SMP] %s[%03u]: Starting up Scheduler...\n", __func__, apicCPUNo);)
+
         /* clean up now we are done */
         RemTask(apicBSTask);
     }
 
     bug("[Kernel:SMP] APIC #%u Failed to bootstrap (Halting)...\n", apicCPUNo + 1);
-#endif
+    while (1) asm volatile("cli; hlt");
+#else
     while (1) asm volatile("hlt");
+#endif
 }
 
 static int smp_Setup(struct KernelBase *KernelBase)
@@ -321,6 +327,10 @@ int smp_Initialize(void)
 
     if (pdata->kb_APIC && (pdata->kb_APIC->apic_count > 1))
     {
+#if defined(__AROSEXEC_SMP__)
+        cpu_PrepareExec(SysBase);
+#endif
+
         if (!smp_Setup(KernelBase))
         {
             D(bug("[Kernel:SMP] Failed to prepare the environment!\n"));

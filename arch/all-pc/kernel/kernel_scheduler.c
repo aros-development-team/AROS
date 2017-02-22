@@ -54,7 +54,7 @@ void core_InitScheduleData(struct X86SchedulerPrivate *schedData)
 BOOL core_Schedule(void)
 {
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
-    apicid_t cpuNo;
+    cpuid_t cpuNo;
 #endif
     struct Task *task;
     BOOL corereschedule = TRUE;
@@ -93,9 +93,6 @@ BOOL core_Schedule(void)
         else
         {
             struct Task *nexttask;
-#if defined(__AROSEXEC_SMP__)
-            uint32_t cpumask = KrnGetCPUMask(cpuNo);
-#endif
             /*
                     If there are tasks ready for this cpu that have equal or lower priority,
                     and the current task has used its alloted time - reschedule so they can run
@@ -103,7 +100,7 @@ BOOL core_Schedule(void)
             for (nexttask = (struct Task *)GetHead(&SysBase->TaskReady); nexttask != NULL; nexttask = (struct Task *)GetSucc(nexttask))
             {
 #if defined(__AROSEXEC_SMP__)
-                if ((GetIntETask(nexttask)->iet_CpuAffinity  & cpumask) == cpumask)
+                if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (core_APIC_CPUInMask(cpuNo, GetIntETask(nexttask)->iet_CpuAffinity)))
                 {
 #endif
                     if (
@@ -150,7 +147,7 @@ BOOL core_Schedule(void)
 */
 void core_Switch(void)
 {
-    apicid_t cpuNo;
+    cpuid_t cpuNo;
     struct Task *task;
     ULONG showAlert = 0;
 
@@ -242,10 +239,7 @@ struct Task *core_Dispatch(void)
     struct Task *newtask;
     struct Task *task = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
-    apicid_t cpuNo = KrnGetCPUNumber();
-#endif
-#if defined(__AROSEXEC_SMP__)
-    uint32_t cpumask = KrnGetCPUMask(cpuNo);
+    cpuid_t cpuNo = KrnGetCPUNumber();
 #endif
 
     DSCHED(bug("[Kernel:%03u] core_Dispatch()\n", cpuNo);)
@@ -257,7 +251,7 @@ struct Task *core_Dispatch(void)
     for (newtask = (struct Task *)GetHead(&SysBase->TaskReady); newtask != NULL; newtask = (struct Task *)GetSucc(newtask))
     {
 #if defined(__AROSEXEC_SMP__)
-        if ((GetIntETask(newtask)->iet_CpuAffinity & cpumask) == cpumask)
+        if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (core_APIC_CPUInMask(cpuNo, GetIntETask(newtask)->iet_CpuAffinity)))
         {
 #endif
             Remove(&newtask->tc_Node);

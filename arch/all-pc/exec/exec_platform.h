@@ -55,14 +55,14 @@ struct Exec_PlatformData
 };
 
 #ifndef __KERNEL_NO_SPINLOCK_PROTOS__
-extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
-extern spinlock_t *Kernel_43_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
-extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
+extern void Kernel_49_KrnSpinInit(spinlock_t *, void *);
+extern spinlock_t *Kernel_52_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
+extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
 #endif
 
-#define EXEC_SPINLOCK_INIT(a) Kernel_40_KrnSpinInit((a), NULL)
-#define EXEC_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), NULL, (b), NULL)
-#define EXEC_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL)
+#define EXEC_SPINLOCK_INIT(a) Kernel_49_KrnSpinInit((a), NULL)
+#define EXEC_SPINLOCK_LOCK(a,b,c) Kernel_52_KrnSpinLock((a), (b), (c), NULL)
+#define EXEC_SPINLOCK_UNLOCK(a) Kernel_53_KrnSpinUnLock((a), NULL)
 #define EXEC_SPINLOCK_LOCKFORBID(a,b) \
     ({ \
         spinlock_t *__ret = a; \
@@ -106,7 +106,7 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
     do { \
             if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
             { \
-                Kernel_44_KrnSpinUnLock((a), NULL); \
+                EXEC_SPINLOCK_UNLOCK((a)); \
                 Exec_TaskSpinUnlock((a)); \
             } \
         } while(0)
@@ -327,10 +327,10 @@ extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
         struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         if (__schd) \
         { \
-            Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE, NULL); \
+            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE); \
             __schd->RunningTask = (x); \
             AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
-            Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL);  \
+            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);  \
         } \
     })
 

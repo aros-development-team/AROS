@@ -10,15 +10,17 @@
 
 #include "kernel_base.h"
 #include "kernel_intern.h"
-#include "apic.h"
 
-AROS_LH1(uint32_t, KrnGetCPUMask,
+AROS_LH2(void, KrnGetCPUMask,
 	AROS_LHA(uint32_t, id, D0),
-	struct KernelBase *, KernelBase, 38, Kernel)
+	AROS_LHA(void *, mask, A0),
+	struct KernelBase *, KernelBase, 45, Kernel)
 {
     AROS_LIBFUNC_INIT
 
-    return core_APIC_GetMask(KernelBase->kb_PlatformData->kb_APIC, id);
+    core_APIC_GetMask(KernelBase->kb_PlatformData->kb_APIC, id, (cpumask_t *)mask);
+
+    return;
 
     AROS_LIBFUNC_EXIT
 }

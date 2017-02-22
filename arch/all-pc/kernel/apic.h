@@ -83,7 +83,8 @@ struct APICData *core_APIC_Probe(void);
 
 apicid_t core_APIC_GetNumberFromLocal(struct APICData *, apicid_t);
 apicid_t core_APIC_GetNumber(struct APICData *);
-uint32_t core_APIC_GetMask(struct APICData *, apicid_t);
+void core_APIC_GetMask(struct APICData *, apicid_t, cpumask_t *);
+BOOL core_APIC_CPUInMask(apicid_t, cpumask_t *);
 
 void core_SetupIDT(apicid_t, apicidt_t *);
 BOOL core_SetIDTGate(apicidt_t *, int, uintptr_t, BOOL);
