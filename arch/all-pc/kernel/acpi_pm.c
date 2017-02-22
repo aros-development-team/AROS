@@ -218,7 +218,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
 #if (__WORDSIZE==64)
         asm volatile ("pushfq; sti; hlt; popfq");
 #else
-        asm volatile ("pushfd; sti; hlt; popfd");
+        asm volatile ("pushfl; sti; hlt; popfl");
 #endif
 #if defined(__AROSEXEC_SMP__)
         timeWake = RDTSC();
