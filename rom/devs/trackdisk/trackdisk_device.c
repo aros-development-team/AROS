@@ -265,7 +265,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 	/* We only want 3.5" 1.44MB drives */
 	if (((drives >> (4*i))&0x0f) == 4)
 	{
-	    kprintf("[Floppy] Unit %d is a 1.44MB drive\n",i);
+	    D(kprintf("[Floppy] Unit %d is a 1.44MB drive\n",i);)
 	    TD_InitUnit(i,TDBase);
 	}
     }
