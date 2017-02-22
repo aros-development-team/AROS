@@ -27,7 +27,43 @@
 
 extern BOOL Exec_InitETask(struct Task *, struct Task *, struct ExecBase *);
 
-struct Task *cpu_InitBootStrap(apicid_t cpuNo)
+
+void cpu_PrepareExec(struct ExecBase *SysBase)
+{
+    struct Task *currentTask;
+    void *SystemCPUMask;
+    
+    /*
+     * Setup the available CPU Mask in ExecBase,
+     * and mark the boot CPU as available
+    */
+    SystemCPUMask = KrnAllocCPUMask();
+    KrnGetCPUMask(0, SystemCPUMask);
+
+    PrivExecBase(SysBase)->CPUMask = SystemCPUMask;
+
+    /*
+     * make sure all current tasks have affinity masks
+     */
+    currentTask = FindTask(NULL);
+    IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnAllocCPUMask();
+    KrnGetCPUMask(0, IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+
+    ForeachNode(&SysBase->TaskReady, currentTask)
+    {
+        IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnAllocCPUMask();
+        KrnGetCPUMask(0, IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+    }
+    ForeachNode(&SysBase->TaskWait, currentTask)
+    {
+        IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnAllocCPUMask();
+        KrnGetCPUMask(0, IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+    }
+
+    PrivExecBase(SysBase)->IntFlags |= EXECF_CPUAffinity;
+}
+
+struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
 {
     struct ExceptionContext *bsctx;
     struct MemList *ml;
@@ -86,7 +122,7 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
     bstask->tc_State        = TS_READY;
     bstask->tc_SigAlloc     = 0xFFFF;
 
-    /* Create a ETask structure and attach CPU context */
+    /* Create an ETask structure and attach CPU context */
     if (!Exec_InitETask(bstask, NULL, SysBase))
     {
         bug("[Kernel:%03u] FATAL : Failed to initialize bootstrap ETask\n", cpuNo);
@@ -99,7 +135,16 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
 
     /* the bootstrap can only run on this CPU */
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpuNo;
-    IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnGetCPUMask(cpuNo);
+    IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnAllocCPUMask();
+    if (!IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity)
+    {
+        bug("[Kernel:%03u] FATAL : Failed to initialize bootstrap CPU Affinity\n", cpuNo);
+        FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
+        FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
+        FreeMem(ml, bstaskmlsize);
+        return NULL;
+    }
+    KrnGetCPUMask(cpuNo, IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
 
     bsctx->Flags = 0;
 
@@ -110,9 +155,9 @@ struct Task *cpu_InitBootStrap(apicid_t cpuNo)
 void cpu_BootStrap(struct Task *bstask)
 {
     struct APICData *apicData  = KernelBase->kb_PlatformData->kb_APIC;
+    cpuid_t cpuNo = KrnGetCPUNumber();
+
     D(
-        apicid_t cpuNo = KrnGetCPUNumber();
-    
         bug("[Kernel:%03u] %s()\n", cpuNo, __func__);
         
         if (IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpuNo)
@@ -130,6 +175,9 @@ void cpu_BootStrap(struct Task *bstask)
         bug("[Kernel:%03u] %s: Initialising Scheduler...\n", cpuNo, __func__);
         bug("[Kernel:%03u] %s:        Enabling Exec Interrupts...\n", cpuNo, __func__);
     )
+
+    /* Let the system know this CPU is available .. */
+    KrnGetCPUMask(cpuNo, PrivExecBase(SysBase)->CPUMask);
 
     /* We now start up the interrupts */
     Permit();
