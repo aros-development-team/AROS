@@ -1788,6 +1788,12 @@ endif
 BD_DEFLINKLIBNAME := %(modname)
 BD_DEFDFLAGS := %(cflags)
 BD_DEFDXXFLAGS := %(cxxflags)
+ifeq (%(lto),yes)
+ifeq (%(compiler),target)
+BD_DEFDFLAGS    := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(BD_DEFDFLAGS)
+BD_DEFDXXFLAGS := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(BD_DEFDXXFLAGS)
+endif
+endif
 ifneq (%(includedir),)
     BD_DEFDFLAGS += -I%(includedir)
     BD_DEFDXXFLAGS += -I%(includedir)
