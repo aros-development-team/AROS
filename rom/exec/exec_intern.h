@@ -50,13 +50,21 @@ struct IntExecBase
     struct Interrupt            WarmResetHandler;               /* Reset handler that causes warm reboot                        */
     struct Interrupt            ShutdownHandler;                /* Reset handler that halts CPU                                 */
     struct MinList              AllocMemList;                   /* Mungwall allocations list                                    */
-#if defined(__AROSEXEC_SMP__)
-    spinlock_t                  MemListSpinLock;
-#elif defined(__AROSEXEC_BROKENMEMLOCK__)
-    struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
-#endif
     struct SignalSemaphore      LowMemSem;                      /* Lock for single-threading low memory handlers                */
-#if defined(__AROSEXEC_SMP__)
+    APTR                        KernelBase;                     /* kernel.resource base                                         */
+    struct Library              *DebugBase;                     /* debug.library base                                           */
+    ULONG                       PageSize;                       /* Memory page size                                             */
+    ULONG                       IntFlags;                       /* Internal flags, see below                                    */
+    struct MsgPort              *ServicePort;                   /* Message port for service task                                */
+    struct MinList              TaskStorageSlots;               /* List of free slots, always one element with next slot        */
+    struct List                 AllocatorCtxList;               /* List of allocator contexts for system mem headers            */
+    struct Exec_PlatformData    PlatformData;                   /* Platform-specific stuff                                      */
+    struct SupervisorAlertTask  SAT;
+    char                        AlertBuffer[ALERT_BUFFER_SIZE]; /* Buffer for alert text                                        */
+#if defined(__AROSEXEC_BROKENMEMLOCK__)
+    struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
+#elif defined(__AROSEXEC_SMP__)
+    spinlock_t                  MemListSpinLock;
     /* First the locks for arbitration of public resources ... */
     spinlock_t                  ResourceListSpinLock;
     spinlock_t                  DeviceListSpinLock;
@@ -73,16 +81,6 @@ struct IntExecBase
     spinlock_t                  TaskReadySpinLock;
     spinlock_t                  TaskWaitSpinLock;
 #endif
-    APTR                        KernelBase;                     /* kernel.resource base                                         */
-    struct Library              *DebugBase;                     /* debug.library base                                           */
-    ULONG                       PageSize;                       /* Memory page size                                             */
-    ULONG                       IntFlags;                       /* Internal flags, see below                                    */
-    struct MsgPort              *ServicePort;                   /* Message port for service task                                */
-    struct MinList              TaskStorageSlots;               /* List of free slots, always one element with next slot        */
-    struct List                 AllocatorCtxList;               /* List of allocator contexts for system mem headers            */
-    struct Exec_PlatformData    PlatformData;                   /* Platform-specific stuff                                      */
-    struct SupervisorAlertTask  SAT;
-    char                        AlertBuffer[ALERT_BUFFER_SIZE]; /* Buffer for alert text                                        */
 };
 
 #define PrivExecBase(base)      ((struct IntExecBase *)(base))
