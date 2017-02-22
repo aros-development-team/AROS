@@ -55,9 +55,10 @@ struct IntETask
     APTR                iet_AlertStack;         /* Frame pointer for stack backtrace       */
     struct AlertContext iet_AlertData;          /* Extra data coming with the crash        */
 #if defined(__AROSEXEC_SMP__)
+    void                *iet_Session;
     spinlock_t          iet_TaskLock;
     IPTR                iet_CpuNumber;          /* core this task is currently running on  */
-    IPTR                iet_CpuAffinity;        /* bitmap of cores this task can run on    */
+    cpumask_t           *iet_CpuAffinity;        /* bitmap of cores this task can run on    */
     spinlock_t          *iet_SpinLock;          /* pointer to spinlock task is spinning on */
 #endif
 #ifdef DEBUG_ETASK

@@ -54,7 +54,7 @@
 
     /* Nothing spectacular - just look into the list */
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->SemListSpinLock, SPINLOCK_MODE_READ);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->SemListSpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
     retVal = (struct SignalSemaphore *)FindName(&SysBase->SemaphoreList,name);
 #if defined(__AROSEXEC_SMP__)

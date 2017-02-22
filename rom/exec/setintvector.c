@@ -52,7 +52,7 @@
 
     Disable ();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     oldint = (struct Interrupt *)SysBase->IntVects[intNumber].iv_Node;
     SysBase->IntVects[intNumber].iv_Node = ishandler ? (struct Node *)interrupt : NULL;

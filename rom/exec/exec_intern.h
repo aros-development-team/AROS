@@ -64,6 +64,7 @@ struct IntExecBase
 #if defined(__AROSEXEC_BROKENMEMLOCK__)
     struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
 #elif defined(__AROSEXEC_SMP__)
+    cpumask_t                   *CPUMask;                       /* bitmap of online core                                        */
     spinlock_t                  MemListSpinLock;
     /* First the locks for arbitration of public resources ... */
     spinlock_t                  ResourceListSpinLock;
@@ -95,6 +96,7 @@ struct IntExecBase
 /* IntFlags */
 #define EXECF_MungWall          0x0001                          /* This flag can't be changed at runtime                        */
 #define EXECF_StackSnoop        0x0002
+#define EXECF_CPUAffinity       0x0004                          /* Set once the CPU affinity masks should be used               */
 
 /* Additional private task states */
 #define TS_SERVICE              128

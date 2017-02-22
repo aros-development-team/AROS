@@ -91,7 +91,7 @@
     for (;;)
     {
 #if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_LOCK(&et->et_TaskMsgPort.mp_SpinLock, SPINLOCK_MODE_READ);
+        EXEC_SPINLOCK_LOCK(&et->et_TaskMsgPort.mp_SpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
 	/* Check if it has returned already. This will also take the first. */
 	ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)

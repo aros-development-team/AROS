@@ -63,7 +63,7 @@
     /* Arbitrate for the device list */
     Forbid();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->DeviceListSpinLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->DeviceListSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     /* And add the device */
     Enqueue(&SysBase->DeviceList,&device->dd_Library.lib_Node);

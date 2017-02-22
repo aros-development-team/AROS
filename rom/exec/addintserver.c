@@ -70,7 +70,7 @@ static void krnIRQwrapper(void *data1, void *data2)
 
     Disable();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     Enqueue((struct List *)SysBase->IntVects[intNumber].iv_Data, &interrupt->is_Node);
     CUSTOM_ENABLE(intNumber);

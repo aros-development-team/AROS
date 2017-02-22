@@ -142,7 +142,8 @@
         /* Has it a higher priority as the current one? */
         if (
 #if defined(__AROSEXEC_SMP__)
-            (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)) &&
+            (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
+            (KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))) &&
 #endif
             (task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri))
         {
@@ -156,7 +157,8 @@
             }
         }
 #if defined(__AROSEXEC_SMP__)
-        else if (!(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity & KrnGetCPUMask(cpunum)))
+        else if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) &&
+            !(KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)))
         {
             krnSysCallReschedTask(task, TS_READY);
             KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);

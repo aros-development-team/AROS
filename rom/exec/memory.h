@@ -14,8 +14,8 @@
 #include <stddef.h>
 
 #if defined(__AROSEXEC_SMP__)
-#define MEM_LOCK        do { Forbid(); EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->MemListSpinLock, SPINLOCK_MODE_WRITE); } while(0)
-#define MEM_LOCK_SHARED do { Forbid(); EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->MemListSpinLock, SPINLOCK_MODE_READ); } while(0)
+#define MEM_LOCK        do { Forbid(); EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->MemListSpinLock, NULL, SPINLOCK_MODE_WRITE); } while(0)
+#define MEM_LOCK_SHARED do { Forbid(); EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->MemListSpinLock, NULL, SPINLOCK_MODE_READ); } while(0)
 #define MEM_UNLOCK      do { EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->MemListSpinLock); Permit(); } while(0)
 #else
 #if defined(__AROSEXEC_BROKENMEMLOCK__)

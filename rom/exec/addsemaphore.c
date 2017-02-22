@@ -56,7 +56,7 @@
     /* Arbitrate for the semaphore list */
     Forbid();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->SemListSpinLock, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->SemListSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     /* Add the semaphore */
     Enqueue(&SysBase->SemaphoreList,&sigSem->ss_Link);
