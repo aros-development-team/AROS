@@ -63,7 +63,9 @@ int main()
 
         for (core = 0; core < coreCount; core++)
         {
-            ULONG coreAffinity = KrnGetCPUMask(core);
+            void *coreAffinity = KrnAllocCPUMask();
+            KrnGetCPUMask(core, coreAffinity);
+
             D(bug("[SMP-Test] %s: CPU #%03u affinity = %08X\n", __func__, core, coreAffinity);)
 
             if ((coreML = AllocMem(sizeof(struct MemList) + sizeof(struct MemEntry), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
@@ -120,6 +122,7 @@ int main()
          * lets get them to do some work ...
          */
         workMaster.smpm_Master = NewCreateTask(TASKTAG_NAME   , "SMP-Test Master",
+                                                    TASKTAG_AFFINITY, TASKAFFINITY_ANY,
                                                     TASKTAG_PRI        , 0,
                                                     TASKTAG_PC         , SMPTestMaster,
                                                     TASKTAG_ARG1       , SysBase,
