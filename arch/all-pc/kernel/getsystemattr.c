@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -53,14 +53,13 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#if defined(__AROSEXEC_SMP__)
+
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct APICData *apicData = pdata->kb_APIC;
-#endif
 
     intptr_t retval = -1;
 
-    if (id >= KATTR_CPULoad && id < KATTR_CPULoad_END)
+    if ((apicData) && (id >= KATTR_CPULoad && id < KATTR_CPULoad_END))
     {
         id -= KATTR_CPULoad;
         if (id < apicData->apic_count)
