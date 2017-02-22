@@ -100,7 +100,7 @@ AROS_LH1(void, RemTask,
         /* Don't let any other task interfere with us at the moment */
         Forbid();
 #else
-        EXEC_SPINLOCK_LOCK(&TaskResBase->TaskListSpinLock, SPINLOCK_MODE_WRITE);
+        EXEC_SPINLOCK_LOCK(&TaskResBase->TaskListSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
         ForeachNodeSafe(&TaskResBase->trb_TaskList, taskEntry, tmpEntry)
         {

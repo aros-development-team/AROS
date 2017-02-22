@@ -87,9 +87,14 @@
             break;
         case(TaskTag_CPUAffinity):
 #if defined(__AROSEXEC_SMP__)
-            *((IPTR *)Tag->ti_Data) = task_et->iet_CpuAffinity;
-#else
-            *((IPTR *)Tag->ti_Data) = (1 << 0);
+            {
+                int i, count = KrnGetCPUCount();
+                for (i = 0; i < count; i ++)
+                {
+                    if (KrnCPUInMask(i, task_et->iet_CpuAffinity))
+                        KrnGetCPUMask(i, (void *)Tag->ti_Data);
+                }
+            }
 #endif
             break;
         case(TaskTag_CPUTime):
