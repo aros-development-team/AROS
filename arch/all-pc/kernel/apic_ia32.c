@@ -305,7 +305,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
             for (i = APIC_IRQ_IPI_START; i <= APIC_IRQ_IPI_END; i++)
             {
-                if (!core_SetIDTGate((struct int_gate_64bit *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
+                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
                 {
                     krnPanic(NULL, "Failed to set APIC IPI Vector\n"
                                 "Vector #$%02X\n", i);
