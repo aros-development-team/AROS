@@ -11,6 +11,7 @@ EXEDIR := $(AROSDIR)/Prefs
 #MM workbench-prefs-boot-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 #MM- workbench-prefs-boot-pc-i386 : workbench-prefs-boot
+#MM- workbench-prefs-boot-pc-x86_64 : workbench-prefs-boot
 
 #MM workbench-prefs-boot : includes linklibs workbench-prefs-boot-catalogs
 
