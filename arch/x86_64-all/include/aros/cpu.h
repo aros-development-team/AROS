@@ -13,6 +13,7 @@
 
 typedef  unsigned char cpuid_t;
 typedef  unsigned char apicid_t;
+typedef  void *cpumask_t;
 
 /* Information about size and alignment,
  * the defines have to be numeric constants */
