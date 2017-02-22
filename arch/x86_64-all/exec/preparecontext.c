@@ -43,7 +43,9 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         {
 #if defined(__AROSEXEC_SMP__)
             case TASKTAG_AFFINITY:
-                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
+                if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)
+                    KrnFreeCPUMask(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = (void *)t->ti_Data;
                 break;
 #endif
 #define REGARG(x, reg)                \
