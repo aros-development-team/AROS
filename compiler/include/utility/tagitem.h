@@ -40,7 +40,7 @@ __END_DECLS
 #define TAG_SKIP   (3UL)   /* skip this and the next ti_Data items         */
 
 /* What separates user tags from system tags */
-#define TAG_USER    ((STACKULONG)(1UL<<31))
+#define TAG_USER    (1UL<<31)
 #define TAG_OS	    (16UL)   /* The first tag used by the OS */
 
 /* Tag-Offsets for the OS */
