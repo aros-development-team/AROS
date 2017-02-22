@@ -31,7 +31,7 @@
         AROS_LHA(void *, handlerData2, A2),
 
 /*  LOCATION */
-        struct KernelBase *, KernelBase, 39, Kernel)
+        struct KernelBase *, KernelBase, 37, Kernel)
 
 /*  FUNCTION
 	Modify the data passed to a raw hardware IRQ handler.

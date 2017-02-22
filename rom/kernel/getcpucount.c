@@ -20,7 +20,7 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 36, Kernel)
+	struct KernelBase *, KernelBase, 40, Kernel)
 
 /*  FUNCTION
 	Return total number of processors in the system

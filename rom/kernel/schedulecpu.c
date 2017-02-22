@@ -21,7 +21,7 @@
         AROS_LHA(uint32_t, cpu_mask, D0),
 
 /*  LOCATION */
-        struct KernelBase *, KernelBase, 46, Kernel)
+        struct KernelBase *, KernelBase, 47, Kernel)
 
 /*  FUNCTION
         Run task scheduling sequence on all CPUs given in the cpu_mask

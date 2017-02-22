@@ -23,7 +23,7 @@
 	AROS_LHA(ULONG, mode, D0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 42, Kernel)
+	struct KernelBase *, KernelBase, 51, Kernel)
 
 /*  FUNCTION
 
