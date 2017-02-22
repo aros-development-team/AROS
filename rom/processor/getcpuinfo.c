@@ -69,7 +69,7 @@
         
         GCIT_FrontsideSpeed - (UQUAD *) Provides the current FSB speed in Hz
 
-        GCIT_ProcessorLoad - (UBYTE *) Provides the current CPU load in % (0-100)
+        GCIT_ProcessorLoad - (ULONG *) Provides the current CPU load (0-0xffffffff)
 
         Cache sizes - (ULONG *) Following tags are used to retrieve size of 
                       specified caches.
@@ -195,7 +195,7 @@
             *((UQUAD *)passedTag->ti_Data) = 0;
             break;
         case(GCIT_ProcessorLoad):
-            *((UBYTE *)passedTag->ti_Data) = 0;
+            *((ULONG *)passedTag->ti_Data) = 0;
             break;
         case(GCIT_FrontsideSpeed):
             *((UQUAD *)passedTag->ti_Data) = 0;

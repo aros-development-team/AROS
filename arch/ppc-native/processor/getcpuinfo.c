@@ -85,7 +85,7 @@ AROS_LH1(void, GetCPUInfo,
             *((UQUAD *)passedTag->ti_Data) = 0;
             break;
         case(GCIT_ProcessorLoad):
-            *((UBYTE *)passedTag->ti_Data) = 0;
+            *((ULONG *)passedTag->ti_Data) = 0;
             break;
         case(GCIT_FrontsideSpeed):
             *((UQUAD *)passedTag->ti_Data) = 0;

@@ -61,7 +61,7 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
 
     for (i = 0; i < processorcount; i++)
     {
-        UBYTE usage = 0;
+        ULONG usage = 0;
         UQUAD frequency = 0;
 #if SIMULATE_USAGE_FREQ
         struct DateStamp ds;
@@ -78,6 +78,7 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
         };
         
         GetCPUInfo(tags);
+        usage = ((usage >> 16) * 100) >> 16;
         
         frequency /= 1000000;
 #endif
