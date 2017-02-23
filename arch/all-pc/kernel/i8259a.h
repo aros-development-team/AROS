@@ -21,6 +21,7 @@
 #define ICTYPE_I8259A           AROS_MAKE_ID('8','2','5','9')
 
 BOOL i8259a_Probe();
+void i8259a_Disable();
 
 extern struct IntrController i8259a_IntrController;
 

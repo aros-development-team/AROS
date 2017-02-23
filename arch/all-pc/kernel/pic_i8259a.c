@@ -231,6 +231,13 @@ struct IntrController i8259a_IntrController =
     i8259a_AckIntr,
 };
 
+void i8259a_Disable()
+{
+    /* Mask all pic interrupts */
+    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xFF),"i"(MASTER8259_MASKREG));
+    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xFF),"i"(SLAVE8259_MASKREG));
+}
+
 BOOL i8259a_Probe()
 {
     UBYTE maskres;

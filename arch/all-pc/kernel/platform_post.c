@@ -24,7 +24,7 @@
 #include "apic.h"
 #include "smp.h"
 
-#define D(x) x
+#define D(x)
 
 /* 
  * This file contains code that is run once Exec has been brought up - and is launched
