@@ -236,15 +236,17 @@ BOOL CreateApplication(struct SysMonData * smdata)
 #endif
 
     /* Adding cpu usage gauges */
-    cpucolgroup = ColGroup(processorcount + 1), End;
+    cpucolgroup = ColGroup(processorcount + 2), End;
 
     smdata->cpuusagegauges = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
 
+    DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
+    
     for (i = 0; i < processorcount; i++)
     {
-        smdata->cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) " CPU -- : ---% ",
+        smdata->cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) "CPU --\n--.- %",
                         MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
-                        MUIA_Gauge_Max, 100, End;
+                        MUIA_Gauge_Max, 1000, End;
 
         DoMethod(cpucolgroup, OM_ADDMEMBER, smdata->cpuusagegauges[i]);
     }
