@@ -2389,6 +2389,9 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
             }
         }
     }
+    else
+        data->flags |= LIST_CHANGED;
+
     return 0;
 }
 
