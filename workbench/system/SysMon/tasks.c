@@ -63,6 +63,8 @@ struct Tasklist_DATA
 #endif
     struct List                 tld_TaskList;
 
+    ULONG                       tld_TasksTotal;
+    
     ULONG                       tld_TasksWaiting;
     ULONG                       tld_TasksReady;
     ULONG                       tld_TaskTotalRuntime;
@@ -94,7 +96,7 @@ struct Tasklist_DATA
 CONST_STRPTR badstr_tmpl = " " MUIX_PH MUIX_B "%s";
 CONST_STRPTR badval_tmpl = MUIX_PH MUIX_B "%d ";
 
-VOID RefreshTask(struct Tasklist_DATA *data, struct TaskInfo *ti)
+BOOL RefreshTask(struct Tasklist_DATA *data, struct TaskInfo *ti)
 {
     struct TagItem QueryTaskTags[] =
     {
@@ -107,9 +109,10 @@ VOID RefreshTask(struct Tasklist_DATA *data, struct TaskInfo *ti)
 #if defined(__AROSEXEC_SMP__)
     IPTR cpuNum;
 #endif
+    BOOL taskUpdate = FALSE;
 
     /* Cache values we need incase something happens to the task .. */
-    ti->ti_TimeLast = ti->ti_TimeCurrent;
+    ti->ti_TimeLast.tv_secs = ti->ti_TimeCurrent.tv_secs;
     QueryTaskTags[0].ti_Data = (IPTR)&ti->ti_TimeCurrent;
 #if defined(__AROSEXEC_SMP__)
     QueryTaskTags[1].ti_Data = (IPTR)&cpuNum;
@@ -124,19 +127,37 @@ VOID RefreshTask(struct Tasklist_DATA *data, struct TaskInfo *ti)
         case TS_SPIN:
         case TS_WAIT:
             QueryTaskTagList(ti->ti_Task, QueryTaskTags);
+            if (ti->ti_TimeLast.tv_secs != ti->ti_TimeCurrent.tv_secs)
+                taskUpdate = TRUE;
+
 #if defined(__AROSEXEC_SMP__)
+            if (ti->ti_CPU != (cpuid_t)cpuNum)
+                taskUpdate = TRUE;
             ti->ti_CPU = (cpuid_t)cpuNum;
 #endif
 
+            if (ti->ti_Node.ln_Type != ti->ti_Task->tc_Node.ln_Type)
+                taskUpdate = TRUE;
             ti->ti_Node.ln_Type = ti->ti_Task->tc_Node.ln_Type;
+
+            if (ti->ti_Node.ln_Pri != ti->ti_Task->tc_Node.ln_Pri)
+                taskUpdate = TRUE;
             ti->ti_Node.ln_Pri = ti->ti_Task->tc_Node.ln_Pri;
+
+            if (!(ti->ti_Flags & TIF_ENABLED))
+                taskUpdate = TRUE;
             ti->ti_Flags |= TIF_ENABLED;
+
             break;
+
         default:
+            if (!(ti->ti_Flags & TIF_ENABLED))
+                taskUpdate = TRUE;
             ti->ti_Flags &= ~TIF_ENABLED;
             break;
         }
     }
+    return taskUpdate;
 }
 
 #ifndef TASKLIST_FLUSHUPDATE
@@ -180,7 +201,6 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
         ti->ti_Flags = 0;
 
         RefreshTask(data, ti);
-        ti->ti_Flags &= ~TIF_VALID;
 
         switch (curTask->tc_State)
         {
@@ -202,6 +222,7 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
             break;
         }
 
+        data->tld_TasksTotal++;
         AddTail(&data->tld_TaskList, &ti->ti_Node);
     }
     return ti;
@@ -216,9 +237,13 @@ AROS_UFH3(VOID, TasksListDestructFunction,
 {
     AROS_USERFUNC_INIT
 
+    struct Tasklist_DATA *data = h->h_Data;
+
     D(bug("[SysMon:TaskList] %s()\n", __func__));
 
     Remove(&ti->ti_Node);
+    data->tld_TasksTotal--;
+
     FreeVec(ti->ti_Node.ln_Name);
     FreeVecPooled(pool, ti);
     
@@ -753,7 +778,26 @@ IPTR Tasklist__MUIM_Tasklist_Refresh(Class *CLASS, Object *self, Msg message)
             if (ti->ti_Task == task)
             {
                 D(bug("[SysMon:TaskList] updating entry @ 0x%p\n", ti));
-                RefreshTask(data, ti);
+                if (RefreshTask(data, ti))
+                {
+                    int i = 0;
+                    BOOL found = FALSE;
+
+                    for (i = 0; ((i < data->tld_TasksTotal) && (!(found))); i++)
+                    {
+                        DoMethod(self, MUIM_List_GetEntry, i, &titmp);
+                        if (!titmp)
+                        {
+                            bug("[SysMon:TaskList] End of entries before end of tasks? #%d\n", i);
+                            found = TRUE;
+                        }
+                        else if (titmp == ti)
+                        {
+                            DoMethod(self, MUIM_List_Redraw, i);
+                            found = TRUE;
+                        }
+                    }
+                }
                 task = NULL;
                 break;
             }
