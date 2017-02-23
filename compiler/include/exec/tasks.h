@@ -221,6 +221,7 @@ struct ETask
 #define TASKTAG_AFFINITY        (TASKTAG_Dummy + 29)
 #define TASKAFFINITY_BOOT        0
 #define TASKAFFINITY_ANY          ((IPTR)-1)
+#define TASKAFFINITY_ALL_BUT_SELF ((IPTR)-2)
 
 #define TASKERROR_OK       0
 #define TASKERROR_NOMEMORY 1
