@@ -20,6 +20,20 @@ static IPTR processorcount;
 APTR ProcessorBase;
 #define SIMULATE_USAGE_FREQ 0
 
+#if !defined(PROCDISPLAY_USEGAUGE)
+AROS_UFH3(IPTR, GraphReadProcessorValueFunc,
+        AROS_UFHA(struct Hook *, procHook, A0),
+        AROS_UFHA(IPTR *, storage, A2),
+        AROS_UFHA(void *, unused, A1))
+{
+    AROS_USERFUNC_INIT
+
+    return TRUE;
+
+    AROS_USERFUNC_EXIT
+}
+#endif
+
 /* Processor functions */
 static BOOL InitProcessor(struct SysMonData *smdata)
 {
@@ -60,6 +74,9 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
 {
     ULONG i;
     TEXT buffer[128];
+#if defined(PROCDISPLAY_SINGLEGRAPH)
+    ULONG totaluse;
+#endif
 
     for (i = 0; i < processorcount; i++)
     {
@@ -84,12 +101,27 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
         
         frequency /= 1000000;
 #endif
+#if !defined(PROCDISPLAY_SINGLEGRAPH)
         __sprintf(buffer, "CPU %d\n%d.%d %% ", i, usage / 10, usage % 10);
+#endif
+#if (PROCDISPLAY_USEGAUGE)
         set(smdata->cpuusagegauges[i], MUIA_Gauge_Current, usage);
+        set(smdata->cpuusagegauges[i], MUIA_Gauge_InfoText, (IPTR)buffer);
+#else
+#if !defined(PROCDISPLAY_SINGLEGRAPH)
         set(smdata->cpuusagegauges[i], MUIA_Graph_InfoText, (IPTR)buffer);
+#else
+        totaluse += usage;
+#endif
+#endif
         __sprintf(buffer, "%d MHz", (ULONG)frequency);
         set(smdata->cpufreqvalues[i], MUIA_Text_Contents, (IPTR)buffer);
     }
+#if defined(PROCDISPLAY_SINGLEGRAPH)
+    totaluse /= processorcount;
+    __sprintf(buffer, "CPU %d\n%d.%d %% ", i, totaluse / 10, totaluse % 10);
+    set(smdata->cpuusagegauge, MUIA_Graph_InfoText, (IPTR)buffer);
+#endif
 }
 
 VOID UpdateProcessorStaticInformation(struct SysMonData * smdata)

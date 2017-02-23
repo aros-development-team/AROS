@@ -240,21 +240,46 @@ BOOL CreateApplication(struct SysMonData * smdata)
     /* Adding cpu usage gauges */
     cpucolgroup = ColGroup(processorcount + 2), End;
 
+#if !defined(PROCDISPLAY_USEGAUGE)
+    smdata->cpureadhooks = AllocVec(sizeof(struct Hook) * processorcount, MEMF_ANY | MEMF_CLEAR);
+#endif
+#if !defined(PROCDISPLAY_SINGLEGRAPH)
     smdata->cpuusagegauges = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
+#endif
 
     DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
     
+#if defined(PROCDISPLAY_SINGLEGRAPH)
+        smdata->cpuusagegauge = GraphObject, MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
+                        End;
+#endif
+
     for (i = 0; i < processorcount; i++)
     {
-#if (0)
+#if defined(PROCDISPLAY_USEGAUGE)
         smdata->cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) "CPU --\n--.- %",
                         MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
                         MUIA_Gauge_Max, 1000, End;
 #else
+        Object *procGuage;
+        APTR procDataSource;
+#if !defined(PROCDISPLAY_SINGLEGRAPH)
         smdata->cpuusagegauges[i] = GraphObject, MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
                         End;
+        procGuage = smdata->cpuusagegauges[i];
+        procDataSource = (APTR)DoMethod(procGuage, MUIM_Graph_GetSourceHandle, 0);
+#else
+        procGuage = smdata->cpuusagegauge;
+        procDataSource = (APTR)DoMethod(procGuage, MUIM_Graph_GetSourceHandle, i);
 #endif
+        smdata->cpureadhooks[i].h_Entry = (APTR)GraphReadProcessorValueFunc;
+        smdata->cpureadhooks[i].h_Data = 0;
+
+        DoMethod(procGuage, MUIM_Graph_SetSourceAttrib, procDataSource, MUIV_Graph_Source_ReadHook, &smdata->cpureadhooks[i]);
+#endif
+#if !defined(PROCDISPLAY_SINGLEGRAPH)
         DoMethod(cpucolgroup, OM_ADDMEMBER, smdata->cpuusagegauges[i]);
+#endif
     }
 
     DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
