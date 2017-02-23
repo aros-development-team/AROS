@@ -31,6 +31,8 @@ IPTR Graph__UpdateSourceArray(struct Graph_DATA *data, IPTR count)
 {
     struct Graph_SourceDATA *newSourceArray = data->graph_Sources;
 
+    bug("[Graph] %s()\n", __func__);
+
     if (data->graph_SourceCount != count)
     {
         IPTR copycnt;
@@ -65,6 +67,33 @@ IPTR Graph__UpdateSourceArray(struct Graph_DATA *data, IPTR count)
     }
 
     return (IPTR)newSourceArray;
+}
+
+IPTR Graph__UpdateSourceEntries(struct Graph_DATA *data, IPTR sourceNo, IPTR count)
+{
+    struct Graph_SourceDATA *dataSource = NULL;
+
+    bug("[Graph] %s()\n", __func__);
+
+    if (count > data->graph_EntryCount)
+    {
+        IPTR *newEntries;
+
+        dataSource = &data->graph_Sources[sourceNo];
+
+        newEntries =  AllocMem(sizeof(IPTR) * count, MEMF_ANY);
+        if (newEntries)
+        {
+            if (dataSource->gs_Entries)
+            {
+                CopyMem(dataSource->gs_Entries, newEntries, sizeof(IPTR) * data->graph_EntryCount);
+                FreeMem(dataSource->gs_Entries, sizeof(IPTR) * data->graph_EntryCount);
+            }
+            dataSource->gs_Entries = newEntries;
+        }
+    }
+
+    return (IPTR)dataSource;
 }
 
 /*** Methods ****************************************************************/
@@ -109,10 +138,24 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-
 IPTR Graph__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
+    struct Graph_DATA *data = INST_DATA(cl, obj);
+    int i;
+
     bug("[Graph] %s()\n", __func__);
+
+    if (data->graph_SourceCount > 0)
+    {
+        if (data->graph_EntryCount > 0)
+        {
+            for (i = 0; i < data->graph_SourceCount; i ++)
+            {
+                FreeMem(data->graph_Sources[i].gs_Entries, sizeof(IPTR) * data->graph_EntryCount);
+            }
+        }
+        FreeMem(data->graph_Sources, sizeof(struct Graph_SourceDATA) * data->graph_SourceCount);
+    }
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -326,16 +369,85 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     return 0;
 }
 
+IPTR Graph__MUIM_Graph_GetSourceHandle(Class *cl, Object *obj, struct MUIP_Graph_GetSourceHandle *msg)
+{
+    struct Graph_DATA *data;
+    IPTR retVal = 0;
+
+    bug("[Graph] %s()\n", __func__);
+
+    data = INST_DATA(cl, obj);
+    if (msg->SourceNo >= data->graph_SourceCount)
+        Graph__UpdateSourceArray(data, (msg->SourceNo + 1));
+
+    retVal = (IPTR)&data->graph_Sources[msg->SourceNo];
+
+    return retVal;
+}
+
+IPTR Graph__MUIM_Graph_SetSourceAttrib(Class *cl, Object *obj, struct MUIP_Graph_SetSourceAttrib *msg)
+{
+    struct Graph_SourceDATA *dataSource = (struct Graph_SourceDATA *)msg->SourceHandle;
+
+    bug("[Graph] %s()\n", __func__);
+
+    switch (msg->Attrib)
+    {
+        case MUIV_Graph_Source_ReadHook:
+            dataSource->gs_ReadHook = (struct Hook *)msg->AttribVal;
+            break;
+        case MUIV_Graph_Source_Pen:
+            dataSource->gs_PlotPen = (WORD)msg->AttribVal;
+            break;
+        case MUIV_Graph_Source_FillPen:
+            dataSource->gs_PlotFillPen = (WORD)msg->AttribVal;
+            break;
+    }
+
+    return 0;
+}
+
 IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
 {
     struct Graph_DATA *data;
+    int i;
 
     bug("[Graph] %s()\n", __func__);
 
     data = INST_DATA(cl, obj);
     
-    if (!data->graph_Flags & GRAPHF_PERIODIC)
+    if (data->graph_Flags & GRAPHF_PERIODIC)
     {
+        if (data->graph_SourceCount > 0)
+        {
+            BOOL updateEntries = FALSE;
+
+            if (data->graph_Flags & GRAPHF_FIXEDLEN) 
+            {
+                if (data->graph_EntryPtr >= data->graph_EntryCount)
+                    data->graph_EntryPtr = data->graph_EntryCount - 1;
+            }
+            else
+            {
+                if (!(data->graph_EntryCount) || (data->graph_EntryPtr >= data->graph_EntryCount))
+                    updateEntries = TRUE;
+            }
+
+            for (i = 0; i < data->graph_SourceCount; i ++)
+            {
+                if (data->graph_Sources[i].gs_ReadHook)
+                {
+                    if (updateEntries)
+                        Graph__UpdateSourceEntries(data, i, (data->graph_EntryPtr + 1));
+
+                    CALLHOOKPKT(data->graph_Sources[i].gs_ReadHook,
+                        (APTR)&data->graph_Sources[i].gs_Entries[data->graph_EntryPtr],
+                        data->graph_Sources[i].gs_ReadHook->h_Data);
+                }
+            }
+            data->graph_EntryCount++;
+        }
+
 	set(obj, MUIA_Graph_PeriodicTick, TRUE);
     }
     

@@ -25,6 +25,10 @@
 #define MUIM_Graph_SetSourceAttrib    	(MUIB_Graph | 0x00000002)
 #define MUIM_Graph_Timer    	        (MUIB_Graph | 0x000000FF)
 
+struct MUIP_Graph_GetSourceHandle {STACKED ULONG MethodID; STACKED ULONG SourceNo;};
+struct MUIP_Graph_SetSourceAttrib {STACKED ULONG MethodID; STACKED APTR SourceHandle; STACKED ULONG Attrib; STACKED IPTR AttribVal;};
+
+/*** Source Attributes ******************************************************/
 #define MUIV_Graph_Source_ReadHook      (0x00000001)
 #define MUIV_Graph_Source_Pen           (0x00000002)
 #define MUIV_Graph_Source_FillPen       (0x00000003)
