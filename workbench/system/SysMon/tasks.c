@@ -437,7 +437,7 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
             fmtdata[0] = (IPTR)(ti->ti_TimeCurrent.tv_secs / 60 / 60);
             fmtdata[1] = (IPTR)((ti->ti_TimeCurrent.tv_secs / 60) % 60);
             fmtdata[2] = (IPTR)(ti->ti_TimeCurrent.tv_secs % 60);
-            fmtdata[3] = (IPTR)(ti->ti_TimeCurrent.tv_usec / 10000);
+            fmtdata[3] = (IPTR)((ti->ti_TimeCurrent.tv_usec + 500) / 10000);
             RawDoFmt("%3id:%02id:%02id.%02id", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufTime);
             strings[col++] = data->tld_BufCPU;
             strings[col++] = data->tld_BufTime;
