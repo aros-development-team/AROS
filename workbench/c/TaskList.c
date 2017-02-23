@@ -229,7 +229,11 @@ int main(void)
             Remove((struct Node *)currentTask);
 
             time = currentTask->cputime.tv_secs;
+#if (__WORDSIZE == 64)
+            Printf("0x%012.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld\t%id\t%id\t%s\n",
+#else
             Printf("0x%08.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld\t%id\t%id\t%s\n",
+#endif
                     currentTask->address,
                     (currentTask->node.ln_Type == NT_TASK) ? "task" :
                     (currentTask->node.ln_Type == NT_PROCESS) ? "process" : "CLI",
