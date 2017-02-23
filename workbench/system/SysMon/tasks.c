@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright ©2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -424,15 +424,15 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
         else
         {
             fmtdata[0] = (IPTR)ti->ti_Node.ln_Pri;
-            RawDoFmt("%d ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufPrio);
+            RawDoFmt("%id ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufPrio);
             strings[col++] = ti->ti_Node.ln_Name;
 #if defined(__AROSEXEC_SMP__)
             fmtdata[0] = (IPTR)ti->ti_CPU;
-            RawDoFmt("%03u ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufCPU);
+            RawDoFmt("%03iu ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufCPU);
             fmtdata[0] = (IPTR)(ti->ti_TimeCurrent.tv_secs / 60 / 60);
             fmtdata[1] = (IPTR)((ti->ti_TimeCurrent.tv_secs / 60) % 60);
             fmtdata[2] = (IPTR)(ti->ti_TimeCurrent.tv_secs % 60);
-            RawDoFmt("%03ld:%02ld:%02ld ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufTime);
+            RawDoFmt("%03id:%02id:%02id ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufTime);
             strings[col++] = data->tld_BufCPU;
             strings[col++] = data->tld_BufTime;
 #endif
