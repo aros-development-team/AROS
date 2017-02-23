@@ -78,11 +78,11 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
         };
         
         GetCPUInfo(tags);
-        usage = ((usage >> 16) * 100) >> 16;
+        usage = ((usage >> 16) * 1000) >> 16;
         
         frequency /= 1000000;
 #endif
-        __sprintf(buffer, " CPU %d : %d %% ", i, usage);
+        __sprintf(buffer, "CPU %d\n%d.%d %% ", i, usage / 10, usage % 10);
         set(smdata->cpuusagegauges[i], MUIA_Gauge_Current, usage);
         set(smdata->cpuusagegauges[i], MUIA_Gauge_InfoText, (IPTR)buffer);
         __sprintf(buffer, "%d MHz", (ULONG)frequency);
