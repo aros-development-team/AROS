@@ -11,6 +11,8 @@
 
 #include <dos/dos.h>
 
+#include <zune/graph.h>
+
 #include "sysmon_intern.h"
 
 #include "locale.h"
@@ -244,10 +246,14 @@ BOOL CreateApplication(struct SysMonData * smdata)
     
     for (i = 0; i < processorcount; i++)
     {
+#if (0)
         smdata->cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) "CPU --\n--.- %",
                         MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
                         MUIA_Gauge_Max, 1000, End;
-
+#else
+        smdata->cpuusagegauges[i] = GraphObject, MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
+                        End;
+#endif
         DoMethod(cpucolgroup, OM_ADDMEMBER, smdata->cpuusagegauges[i]);
     }
 
