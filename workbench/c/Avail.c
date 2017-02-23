@@ -68,11 +68,11 @@
 const TEXT version[] = "$VER: Avail 42.2 (24.2.2016)\n";
 
 #if (__WORDSIZE == 64)
-#define AVAIL_ARCHSTR   "%9s"
-#define AVAIL_ARCHVAL   "%9iu"
-#else
 #define AVAIL_ARCHSTR   "%12s"
 #define AVAIL_ARCHVAL   "%12iu"
+#else
+#define AVAIL_ARCHSTR   "%9s"
+#define AVAIL_ARCHVAL   "%9iu"
 #endif
 
 #define  ARG_TEMPLATE  "CHIP/S,FAST/S,TOTAL/S,FLUSH/S,H=HUMAN/S"

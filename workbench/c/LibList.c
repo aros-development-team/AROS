@@ -139,7 +139,11 @@ int main(void)
                            "------------------------------------------------------------\n");
 	    for(libs2=buffer;libs2<libs;libs2++)
 	    {
+#if (__WORDSIZE == 64)
+        Printf("0x%012.ix\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
+#else
 		Printf("0x%08.ix\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
+#endif
 		        libs2->address, (ULONG)libs2->version,
 		        (ULONG)libs2->revision,
 		        (ULONG)libs2->opencnt,
