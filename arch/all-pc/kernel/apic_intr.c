@@ -31,6 +31,15 @@
 #define DTRAP(x)
 #define DUMP_CONTEXT
 
+/* use the correct registers depending on arch. */
+#if (__WORDSIZE != 64)
+#define INTR_REGA               regs->eax
+#define INTR_SUPERVSTACK        (regs->ds != KERNEL_DS)
+#else
+#define INTR_REGA               regs->rax
+#define INTR_SUPERVSTACK        (regs->ss != 0)
+#endif
+
 #define IRQ(x,y) \
     IRQ##x##y##_intr
 
@@ -233,12 +242,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     {
         struct PlatformData *pdata = KernelBase->kb_PlatformData;
         struct syscallx86_Handler *scHandler;
-    	ULONG sc = 
-#if (__WORDSIZE != 64)
-                            regs->eax;
-#else
-                            regs->rax;
-#endif
+    	ULONG sc = INTR_REGA;
         BOOL systemSysCall = TRUE;
 
 	/* Syscall number is actually ULONG (we use only eax) */
@@ -263,7 +267,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	 * is always pushed to stack as part of interrupt context.
 	 * We rely on this in order to determine which CPL we are returning to.
 	 */
-        if ((systemSysCall) && (regs->ss != 0))
+        if ((systemSysCall) && INTR_SUPERVSTACK)
         {
             DSYSCALL(bug("[Kernel] %s: User-mode syscall\n", __func__));
 
@@ -305,7 +309,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	}
 
 	/* Upon exit from the lowest-level hardware IRQ we run the task scheduler */
-	if (SysBase && (regs->ss != 0))
+        if ((SysBase) && INTR_SUPERVSTACK)
 	{
 	    /* Disable interrupts for a while */
 	    __asm__ __volatile__("cli; cld;");
