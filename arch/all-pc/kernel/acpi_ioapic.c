@@ -153,6 +153,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     struct IOAPICData *ioapicPrivate = kernPlatD->kb_IOAPIC;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     int instance, irq = 0, ioapic_irqbase;
+    struct IntrController *xtpicIC;
 
     DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, instanceCount));
 
@@ -199,6 +200,13 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 IOAPICREG_ID,
                 ioapicval);
             DINT(bug("[Kernel:IOAPIC] %s: IOAPIC LocalID configured\n", __func__);)
+        }
+
+        /* Check if the 8259a has been registered, and siable it ... */
+        if ((instance == 0) && ((xtpicIC = krnFindInterruptController(KernelBase, ICTYPE_I8259A)) != NULL))
+        {
+            DINT(bug("[Kernel:IOAPIC] %s: Disabling i8259a controller...\n", __func__);)
+            i8259a_Disable();
         }
 
         DINT(bug("[Kernel:IOAPIC] %s: Configuring IRQs & routing\n", __func__);)

@@ -311,7 +311,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                                 "Vector #$%02X\n", i);
                 }
             }
-            (bug("[Kernel::APIC-IA32.%03u] %s: APIC IPI Vectors configured\n", cpuNum, __func__));
+            D(bug("[Kernel::APIC-IA32.%03u] %s: APIC IPI Vectors configured\n", cpuNum, __func__));
 
             if (ssp)
                 UserState(ssp);

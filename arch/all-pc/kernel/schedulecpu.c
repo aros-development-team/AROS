@@ -20,7 +20,7 @@
         AROS_LH1(void, KrnScheduleCPU,
 
 /*  SYNOPSIS */
-        AROS_LHA(uint32_t, cpu_mask, D0),
+        AROS_LHA(void *, cpu_mask, A0),
 
 /*  LOCATION */
         struct KernelBase *, KernelBase, 47, Kernel)

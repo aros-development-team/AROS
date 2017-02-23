@@ -15,7 +15,7 @@
 
 #define D(x)
 
-void core_DoIPI(uint8_t ipi_number, unsigned int cpu_mask, struct KernelBase *KernelBase)
+void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase)
 {
     //int cpunum = KrnGetCPUNumber();
     ULONG cmd = (APIC_IRQ_IPI_START + ipi_number) | ICR_INT_ASSERT;
@@ -23,12 +23,12 @@ void core_DoIPI(uint8_t ipi_number, unsigned int cpu_mask, struct KernelBase *Ke
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     IPTR __APICBase = apicPrivate->lapicBase;
 
-    D(bug("[Kernel:IPI] Sending IPI %02d form CPU.%03u to target mask %08x\n", ipi_number, cpunum, cpu_mask));
+    D(bug("[Kernel:IPI] Sending IPI %02d form CPU.%03u to target mask @ 0x%p\n", ipi_number, cpunum, cpu_mask));
     
     if ((cmd & 0xff) <= APIC_IRQ_IPI_END)
     {
         // special case - send IPI to all
-        if (cpu_mask == 0xffffffff)
+        if ((IPTR)cpu_mask == TASKAFFINITY_ANY)
         {
             // Shorthand - all including self
             cmd |= 0x80000;
@@ -43,14 +43,14 @@ void core_DoIPI(uint8_t ipi_number, unsigned int cpu_mask, struct KernelBase *Ke
             int i;
 
             // No shortcut, send IPI to each CPU one after another
-            for (i=0; i < 32; i++)
+            for (i=0; i < apicPrivate->apic_count; i++)
             {
-                if (cpu_mask & (1 << i))
+                if (KrnCPUInMask(i, cpu_mask))
                 {
                     D(bug("[Kernel:IPI] waiting for DS bit to be clear\n"));
                     while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS) asm volatile("pause");
-                    D(bug("[Kernel:IPI] sending IPI cmd %08x to destination %08x\n", cmd, i << 24));
-                    APIC_REG(__APICBase, APIC_ICRH) = i << 24;
+                    D(bug("[Kernel:IPI] sending IPI cmd %08x to destination %08x\n", cmd, (apicPrivate->cores[i].cpu_LocalID << 24)));
+                    APIC_REG(__APICBase, APIC_ICRH) = (apicPrivate->cores[i].cpu_LocalID << 24);
                     APIC_REG(__APICBase, APIC_ICRL) = cmd;
                 }
             }

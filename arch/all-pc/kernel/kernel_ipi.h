@@ -18,6 +18,6 @@
 #define IPI_CAUSE       5
 
 void core_IPIHandle(struct ExceptionContext *regs, unsigned long ipi_number, struct KernelBase *KernelBase);
-void core_DoIPI(uint8_t ipi_number, unsigned int cpu_mask, struct KernelBase *KernelBase);
+void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase);
 
 #endif /* __KERNEL_IPI_H_ */
