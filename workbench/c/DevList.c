@@ -136,7 +136,11 @@ int main(void)
                            "------------------------------------------------------------\n");
 	    for(devs2=buffer;devs2<devs;devs2++)
 	    {
+#if (__WORDSIZE == 64)
+		Printf("0x%012.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
+#else
 		Printf("0x%08.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
+#endif
 		        devs2->address, devs2->version,
 		        devs2->revision, devs2->opencnt,
 		        devs2->flags, devs2->name);
