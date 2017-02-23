@@ -315,7 +315,9 @@ AROS_UFH3(LONG, TaskCompareFunction,
                 retval = (LONG)(ti2->ti_TimeCurrent.tv_secs - ti1->ti_TimeCurrent.tv_secs);
                 if (retval == 0)
                 {
-                    retval = (LONG)(stricmp(ti1->ti_Node.ln_Name, ti2->ti_Node.ln_Name));
+                    retval = (LONG)(ti2->ti_TimeCurrent.tv_usec - ti1->ti_TimeCurrent.tv_usec);
+                    if (retval == 0)
+                        retval = (LONG)(stricmp(ti1->ti_Node.ln_Name, ti2->ti_Node.ln_Name));
                 }
             }
             else
@@ -323,7 +325,9 @@ AROS_UFH3(LONG, TaskCompareFunction,
                 retval = (LONG)(ti1->ti_TimeCurrent.tv_secs - ti2->ti_TimeCurrent.tv_secs);
                 if (retval == 0)
                 {
-                    retval = (LONG)(stricmp(ti2->ti_Node.ln_Name, ti1->ti_Node.ln_Name));
+                    retval = (LONG)(ti1->ti_TimeCurrent.tv_usec - ti2->ti_TimeCurrent.tv_usec);
+                    if (retval == 0)
+                        retval = (LONG)(stricmp(ti2->ti_Node.ln_Name, ti1->ti_Node.ln_Name));
                 }
             }
             break;
@@ -393,6 +397,7 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
 #if defined(__AROSEXEC_SMP__)
         0,
         0,
+        0,
 #endif
         0
     };
@@ -432,7 +437,8 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
             fmtdata[0] = (IPTR)(ti->ti_TimeCurrent.tv_secs / 60 / 60);
             fmtdata[1] = (IPTR)((ti->ti_TimeCurrent.tv_secs / 60) % 60);
             fmtdata[2] = (IPTR)(ti->ti_TimeCurrent.tv_secs % 60);
-            RawDoFmt("%03id:%02id:%02id ", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufTime);
+            fmtdata[3] = (IPTR)(ti->ti_TimeCurrent.tv_usec / 10000);
+            RawDoFmt("%3id:%02id:%02id.%02id", (RAWARG)&fmtdata, RAWFMTFUNC_STRING, data->tld_BufTime);
             strings[col++] = data->tld_BufCPU;
             strings[col++] = data->tld_BufTime;
 #endif
