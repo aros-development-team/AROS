@@ -1,0 +1,18 @@
+# $Id$
+include $(SRCDIR)/config/aros.cfg
+
+FILES         := graph
+INCLUDE_FILES := graph.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-graph 
+
+%build_module \
+    mmake=workbench-classes-zune-graph \
+    modname=Graph modtype=mcc \
+    uselibs="amiga m" \
+    conffile=graph.conf
+
+%copy_includes path=zune
+    
+%common
+%include_deps
