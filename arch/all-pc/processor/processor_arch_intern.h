@@ -46,7 +46,7 @@ struct X86ProcessorInformation
 
 static inline void __attribute__((always_inline)) rdmsr(ULONG msr_no, ULONG *ret_lo, ULONG *ret_hi)
 {
-    LONG ret1,ret2;
+    ULONG ret1,ret2;
     asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
     *ret_lo=ret1;
     *ret_hi=ret2;
