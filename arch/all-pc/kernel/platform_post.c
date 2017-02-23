@@ -7,6 +7,7 @@
 
 #include <proto/exec.h>
 #include <proto/acpica.h>
+#include <proto/kernel.h>
 
 #include <aros/multiboot.h>
 #include <aros/symbolsets.h>
@@ -20,11 +21,12 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_ipi.h"
 #include "acpi.h"
 #include "apic.h"
 #include "smp.h"
 
-#define D(x)
+#define D(x) x
 
 /* 
  * This file contains code that is run once Exec has been brought up - and is launched
@@ -122,8 +124,11 @@ static AROS_UFH3 (APTR, KernelPost,
 {
     AROS_USERFUNC_INIT
 
+    int number_of_ipi_messages = 0;
     struct KernelBase *KernelBase;
     struct PlatformData *pdata;
+    struct IPIHook *hooks;
+    int i;
 
     KernelBase = (struct KernelBase *)OpenResource("kernel.resource");
     if (!KernelBase)
@@ -142,6 +147,30 @@ static AROS_UFH3 (APTR, KernelPost,
     // Add the default reboot/shutdown handlers if ACPI ones havent been registered...
     krnAddSysCallHandler(pdata, &x86_SCRebootHandler, TRUE, FALSE);
     krnAddSysCallHandler(pdata, &x86_SCChangePMStateHandler, TRUE, FALSE);
+
+    D(bug("[Kernel] %s: Initializing Lists for IPI messages ...\n", __func__));
+    NEWLIST(&pdata->kb_FreeIPIHooks);
+    NEWLIST(&pdata->kb_BusyIPIHooks);
+    KrnSpinInit(&pdata->kb_FreeIPIHooksLock);
+    KrnSpinInit(&pdata->kb_BusyIPIHooksLock);
+    
+    number_of_ipi_messages = pdata->kb_APIC->apic_count * 4;
+    D(bug("[Kernel] %s: Allocating %d IPI CALL_HOOK messages ...\n", __func__, number_of_ipi_messages));
+    hooks = AllocMem(sizeof(struct IPIHook) * number_of_ipi_messages, MEMF_PUBLIC | MEMF_CLEAR);
+    if (hooks)
+    {
+        for (i=0; i < number_of_ipi_messages; i++)
+        {
+            hooks[i].ih_CPUDone = KrnAllocCPUMask();
+            hooks[i].ih_CPURequested = KrnAllocCPUMask();
+
+            ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
+        }
+    }
+    else
+    {
+        bug("[Kernel] %s: Failed to get IPI slots!\n", __func__);
+    }
 
     D(bug("[Kernel] %s: Attempting to bring up aditional cores ...\n", __func__));
     smp_Initialize();

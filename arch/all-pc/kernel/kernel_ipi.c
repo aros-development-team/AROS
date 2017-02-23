@@ -8,8 +8,10 @@
 #include <kernel_scheduler.h>
 #include <kernel_intr.h>
 
+#include <strings.h>
 #include <proto/kernel.h>
 #include "apic_ia32.h"
+#include "apic.h"
 
 #include "kernel_debug.h"
 
@@ -55,6 +57,58 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
                 }
             }
         }
+    }
+}
+
+void core_DoCallIPI(struct Hook *hook, void *cpu_mask, struct KernelBase *KernelBase)
+{
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
+    struct IPIHook *ipi = NULL;
+    struct APICData *apicPrivate = pdata->kb_APIC;
+
+    if (hook && cpu_mask && cpu_mask != (void*)-1)
+    {
+        /*
+            Allocate IPIHook just by removing it form the Free list:
+            First Disable() so that we are not interrupted on this CPU core, then use SpinLock to protect us from
+            other cores accessing the list.
+
+            If the FreeIPIHooks list is empty, just do busyloop wait - other cores shall free the hook sooner or later
+        */
+        do 
+        {
+            Disable();
+            KrnSpinLock(&pdata->kb_FreeIPIHooksLock, NULL, SPINLOCKF_WRITE);
+            ipi = (struct IPIHook *)REMHEAD(&pdata->kb_FreeIPIHooks);
+            KrnSpinUnLock(&pdata->kb_FreeIPIHooksLock);
+            Enable();
+            if (ipi == NULL)
+            {
+                D(bug("[Kernel:IPI] %s: Failed to allocate IPIHook entry\n", __func__));
+            }
+        } while(ipi == NULL);
+
+        /*
+            Copy IPI data from struct Hook provided by caller into allocated ipi
+        */
+        ipi->ih_Hook.h_Entry = hook->h_Entry;
+        ipi->ih_Hook.h_SubEntry = hook->h_SubEntry;
+        ipi->ih_Hook.h_Data = hook->h_Data;
+
+        /* Copy CPU mask */
+        bcopy(cpu_mask, ipi->ih_CPURequested, sizeof(ULONG)*((31 + apicPrivate->apic_count) / 32));
+
+        /*
+            Put the IPIHook on the BusyIPIHooks list, so that it gets processed once IPIs are called
+        */
+        Disable();
+        KrnSpinLock(&pdata->kb_BusyIPIHooksLock, NULL, SPINLOCKF_WRITE);
+        ipi = (struct IPIHook *)REMHEAD(&pdata->kb_BusyIPIHooks);
+        KrnSpinUnLock(&pdata->kb_BusyIPIHooksLock);
+        Enable();
+
+        /* Issue IPI_CALL_HOOK to requested CPUs */
+        core_DoIPI(IPI_CALL_HOOK, cpu_mask, KernelBase);
     }
 }
 
