@@ -104,7 +104,7 @@ const IPTR SupportedMethods[] =
 //    DTM_CLEARSELECTED,
 //    DTM_COPY,
     DTM_PRINT,
-//    DTM_WRITE,
+    DTM_WRITE,
 
     PDTM_WRITEPIXELARRAY,
     PDTM_READPIXELARRAY,
@@ -1598,6 +1598,23 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
     }
 
     return RetVal;
+}
+
+/**************************************************************************************************/
+
+STATIC IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
+{
+    bug("picture.datatype/DTM_Write fh %d mode %d\n", msg->dtw_FileHandle, msg->dtw_Mode);
+    if (msg->dtw_FileHandle == BNULL)
+    {
+        // Multiview calls DTM_Write with NULL filehandle to check
+        // if RAW mode is supported.
+        return TRUE;
+    }
+    
+    bug("picture.datatype/DTM_Write not implemented\n");
+
+    return 0;
 }
 
 /**************************************************************************************************/
