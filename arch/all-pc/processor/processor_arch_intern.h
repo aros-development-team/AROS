@@ -52,6 +52,13 @@ static inline void __attribute__((always_inline)) rdmsr(ULONG msr_no, ULONG *ret
     *ret_hi=ret2;
 }
 
+static inline ULONG __attribute__((always_inline)) rdmsri(ULONG msr_no)
+{
+    ULONG ret;
+
+    asm volatile("rdmsr":"=a"(ret):"c"(msr_no));
+    return ret;
+}
 
 VOID ReadProcessorInformation(struct X86ProcessorInformation * info);
 VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info);

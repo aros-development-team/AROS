@@ -157,17 +157,16 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
         )
         )
     {
-        ULONG eax, edx;
         ULONG mult = 0;
 
         /* This procedure calculates the maximum frequency */
-        rdmsr(MSR_NAHALEM_PLATFORM_INFO, &eax, &edx);
+        mult = rdmsri(MSR_NAHALEM_PLATFORM_INFO);
 
         /*Intel 64 and IA-32 Architectures
           Software Developer's Manual
           Volume 3B:System Programming Guide, Part 2
           Table B-5 */
-        mult = (eax >> 8) & 0xFF;
+        mult = (mult >> 8) & 0xFF;
         
         info->MaxCPUFrequency = FSB_133 * mult;
         /* Note: FSB is not a valid concept with iX (Nahalem) processors */
@@ -188,20 +187,16 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
         )
         )
     {
-        ULONG eax, edx;
         ULONG mult = 0;
         
-        D(bug("[processor.x86] Pentium pro family, model=%02x\n", info->Model));
         /* This procedure calculates the maximum frequency */
-
-        rdmsr(MSR_NAHALEM_PLATFORM_INFO, &eax, &edx);
-        D(bug("[processor.x86] RDMSR returned %08x:%08x\n", edx, eax));
+        mult = rdmsri(MSR_NAHALEM_PLATFORM_INFO);
 
         /*Intel 64 and IA-32 Architectures
           Software Developer's Manual
           Volume 3B:System Programming Guide, Part 2
           Table B-5 */
-        mult = (eax >> 8) & 0xFF;
+        mult = (mult >> 8) & 0xFF;
         
         info->MaxCPUFrequency = FSB_100 * mult;
         /* Note: FSB is not a valid concept with iX (Nahalem) processors */
@@ -315,18 +310,18 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 
     /*
-	Check if APERF/MPERF is available
-	Notes: K10, K9 - rdmsr can be used to read current PState/cpufid/cpudid
+    Check if APERF/MPERF is available
+    Notes: K10, K9 - rdmsr can be used to read current PState/cpufid/cpudid
     */
     if (info->APERFMPERF)
     {
-	APTR ssp;
+        APTR ssp;
         ULONG eax, edx;
         UQUAD startaperf, endaperf, diffaperf = 0;
         UQUAD startmperf, endmperf, diffmperf = 0;
         LONG i;
 
-	ssp = SuperState();
+        ssp = SuperState();
 
         for(i = 0; i < 10; i++)
         {
@@ -347,19 +342,22 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
             diffaperf += endaperf - startaperf;
         }
 
-	UserState(ssp);
+        UserState(ssp);
 
-	D(bug("[processor.x86] %s: max: %x, diffa: %x, diffm %x\n", __func__, info->MaxCPUFrequency, diffaperf, diffmperf));
+        D(bug("[processor.x86] %s: max: %x, diffa: %x, diffm %x\n", __func__, info->MaxCPUFrequency, diffaperf, diffmperf));
+
+        if (info->MaxCPUFrequency == 0)
+            ReadMaxFrequencyInformation(info);
 
         /* Use ratio between MPERF and APERF */
-	if (diffmperf)
-	    retFreq = info->MaxCPUFrequency * diffaperf / diffmperf;
-	else
-	    retFreq = info->MaxCPUFrequency;
+        if (diffmperf)
+            retFreq = info->MaxCPUFrequency * diffaperf / diffmperf;
+        else
+            retFreq = info->MaxCPUFrequency;
     }
     else
     {
-	/* use PStates? */
+        /* use PStates? */
     }
 
 #endif
