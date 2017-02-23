@@ -23,7 +23,7 @@ struct Device      *TimerBase;
 struct timerequest *TimerIO;
 
 /*** Library startup and shutdown *******************************************/
-static int Clock_Startup(LIBBASETYPEPTR LIBBASE)
+static int Graph_StartTimer(LIBBASETYPEPTR LIBBASE)
 {
     TimerIO   = NULL;
     TimerBase = NULL;
@@ -57,12 +57,12 @@ error:
     return FALSE;
 }
 
-static int Clock_Shutdown(LIBBASETYPEPTR LIBBASE)
+static int Graph_StopTimer(LIBBASETYPEPTR LIBBASE)
 {
     if (TimerBase != NULL) CloseDevice((struct IORequest *) TimerIO);
     if (TimerIO != NULL) FreeMem(TimerIO, sizeof( struct timerequest ));
     return TRUE;
 }
 
-ADD2INITLIB(Clock_Startup, 1);
-ADD2EXPUNGELIB(Clock_Shutdown, 1);
+ADD2INITLIB(Graph_StartTimer, 1);
+ADD2EXPUNGELIB(Graph_StopTimer, 1);
