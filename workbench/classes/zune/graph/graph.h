@@ -21,7 +21,13 @@
 #define MUIA_Graph_PeriodicTick  	(MUIB_Graph | 0x000000FF) /* ---  BOOL                  */
 
 /*** Methods ****************************************************************/
+#define MUIM_Graph_GetSourceHandle    	(MUIB_Graph | 0x00000001)
+#define MUIM_Graph_SetSourceAttrib    	(MUIB_Graph | 0x00000002)
 #define MUIM_Graph_Timer    	        (MUIB_Graph | 0x000000FF)
+
+#define MUIV_Graph_Source_ReadHook      (0x00000001)
+#define MUIV_Graph_Source_Pen           (0x00000002)
+#define MUIV_Graph_Source_FillPen       (0x00000003)
 
 /*** Macros *****************************************************************/
 #define GraphObject MUIOBJMACRO_START(MUIC_Graph)
