@@ -12,6 +12,9 @@
 
 #include "tasks.h"
 
+//#define PROCDISPLAY_USEGAUGE
+//#define PROCDISPLAY_SINGLEGRAPH
+
 #define MEMORY_RAM  0
 #define MEMORY_CHIP 1
 #define MEMORY_FAST 2
@@ -19,6 +22,13 @@
 #define MEMORY_GART 4
 
 #define SYSMON_TABCOUNT         3
+
+#if !defined(PROCDISPLAY_USEGAUGE)
+AROS_UFP3(IPTR, GraphReadProcessorValueFunc,
+        AROS_UFPA(struct Hook *, procHook, A0),
+        AROS_UFPA(IPTR *, storage, A2),
+        AROS_UFPA(void *, unused, A1));
+#endif
 
 struct SysMonData
 {
@@ -36,7 +46,14 @@ struct SysMonData
     Object      *tasklist;
     Object      *tasklistinfo;
 
+#if defined (PROCDISPLAY_SINGLEGRAPH)
+    Object      *cpuusagegauge;
+#else
     Object      **cpuusagegauges;
+#endif
+#if !defined(PROCDISPLAY_USEGAUGE)
+    struct Hook *cpureadhooks;
+#endif
     Object      **cpufreqlabels;
     Object      **cpufreqvalues;
 
