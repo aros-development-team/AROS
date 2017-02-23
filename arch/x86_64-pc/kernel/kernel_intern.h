@@ -10,6 +10,7 @@
 
 #include <inttypes.h>
 
+#include <aros/types/spinlock_s.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>
 #include <aros/kernel.h>
@@ -58,8 +59,11 @@ struct PlatformData
     struct ACPIData     *kb_ACPI;
     struct APICData     *kb_APIC;
     struct IOAPICData   *kb_IOAPIC;
+    struct List         kb_FreeIPIHooks;
+    struct List         kb_BusyIPIHooks;
+    spinlock_t          kb_FreeIPIHooksLock;
+    spinlock_t          kb_BusyIPIHooksLock;
 };
-
 
 #define IDT_SIZE                sizeof(struct int_gate_64bit) * 256
 #define GDT_SIZE                sizeof(struct gdt_64bit) + 128
