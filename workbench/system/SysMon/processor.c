@@ -11,6 +11,8 @@
 
 #include <clib/alib_protos.h>
 
+#include <zune/graph.h>
+
 #include "locale.h"
 
 /* Processor information */
@@ -84,7 +86,7 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
 #endif
         __sprintf(buffer, "CPU %d\n%d.%d %% ", i, usage / 10, usage % 10);
         set(smdata->cpuusagegauges[i], MUIA_Gauge_Current, usage);
-        set(smdata->cpuusagegauges[i], MUIA_Gauge_InfoText, (IPTR)buffer);
+        set(smdata->cpuusagegauges[i], MUIA_Graph_InfoText, (IPTR)buffer);
         __sprintf(buffer, "%d MHz", (ULONG)frequency);
         set(smdata->cpufreqvalues[i], MUIA_Text_Contents, (IPTR)buffer);
     }
