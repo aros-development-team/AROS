@@ -153,7 +153,7 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
         (info->Model == 0x1A) || /* Core i7 */ 
         (info->Model == 0x1E) || /* ? */
         (info->Model == 0x1F) || /* ? */
-        (info->Model == 0x2E)   /* ? */
+        (info->Model == 0x2E)    /* ? */
         )
         )
     {
@@ -161,7 +161,6 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
         ULONG mult = 0;
 
         /* This procedure calculates the maximum frequency */
-
         rdmsr(MSR_NAHALEM_PLATFORM_INFO, &eax, &edx);
 
         /*Intel 64 and IA-32 Architectures
@@ -171,6 +170,40 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
         mult = (eax >> 8) & 0xFF;
         
         info->MaxCPUFrequency = FSB_133 * mult;
+        /* Note: FSB is not a valid concept with iX (Nahalem) processors */
+        info->MaxFSBFrequency = 0;
+    }
+
+    /* Procedure for SandyBridge and newer (part of Pentium Pro) family (i7, i5, i3) */
+    if ((info->Family == CPUFAMILY_INTEL_PENTIUM_PRO) &&
+        (
+            (info->Model == 0x2A) || /* SandyBridge */
+            (info->Model == 0x2D) || /* SandyBridge */
+            (info->Model == 0x3A) || /* IvyBridge */
+            (info->Model == 0x3C) || /* Haswell */
+            (info->Model == 0x45) || /* Haswell */
+            (info->Model == 0x46) || /* Haswell */
+            (info->Model == 0x3F)  /* Haswell-E */
+            /* More to come... */
+        )
+        )
+    {
+        ULONG eax, edx;
+        ULONG mult = 0;
+        
+        D(bug("[processor.x86] Pentium pro family, model=%02x\n", info->Model));
+        /* This procedure calculates the maximum frequency */
+
+        rdmsr(MSR_NAHALEM_PLATFORM_INFO, &eax, &edx);
+        D(bug("[processor.x86] RDMSR returned %08x:%08x\n", edx, eax));
+
+        /*Intel 64 and IA-32 Architectures
+          Software Developer's Manual
+          Volume 3B:System Programming Guide, Part 2
+          Table B-5 */
+        mult = (eax >> 8) & 0xFF;
+        
+        info->MaxCPUFrequency = FSB_100 * mult;
         /* Note: FSB is not a valid concept with iX (Nahalem) processors */
         info->MaxFSBFrequency = 0;
     }
