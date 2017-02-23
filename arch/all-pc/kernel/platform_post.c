@@ -116,6 +116,24 @@ const struct Resident kernelpost_romtag =
 extern struct syscallx86_Handler x86_SCRebootHandler;
 extern struct syscallx86_Handler x86_SCChangePMStateHandler;
 
+#if 0
+struct Hook test_ipi;
+
+AROS_UFH3(void, test_ipi_hook,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(APTR, object, A2),
+    AROS_UFHA(APTR, message, A1))
+{
+    AROS_USERFUNC_INIT
+
+    int cpunum = KrnGetCPUNumber();
+
+    bug("%s: called on CPU %d, hook=%p, object=%p, message=%p\n", __func__, cpunum, hook, object, message);
+
+    AROS_USERFUNC_EXIT
+}
+#endif
+
 static AROS_UFH3 (APTR, KernelPost,
 		  AROS_UFHA(struct Library *, lh, D0),
 		  AROS_UFHA(BPTR, segList, A0),
@@ -154,7 +172,7 @@ static AROS_UFH3 (APTR, KernelPost,
     KrnSpinInit(&pdata->kb_FreeIPIHooksLock);
     KrnSpinInit(&pdata->kb_BusyIPIHooksLock);
     
-    number_of_ipi_messages = pdata->kb_APIC->apic_count * 4;
+    number_of_ipi_messages = pdata->kb_APIC->apic_count * 10;
     D(bug("[Kernel] %s: Allocating %d IPI CALL_HOOK messages ...\n", __func__, number_of_ipi_messages));
     hooks = AllocMem(sizeof(struct IPIHook) * number_of_ipi_messages, MEMF_PUBLIC | MEMF_CLEAR);
     if (hooks)
@@ -163,6 +181,7 @@ static AROS_UFH3 (APTR, KernelPost,
         {
             hooks[i].ih_CPUDone = KrnAllocCPUMask();
             hooks[i].ih_CPURequested = KrnAllocCPUMask();
+            KrnSpinInit(&hooks[i].ih_Lock);
 
             ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
         }
@@ -181,6 +200,16 @@ static AROS_UFH3 (APTR, KernelPost,
     Enable();
 
     D(bug("[Kernel] %s: Platform Initialization complete\n", __func__));
+
+#if 0
+    bug("--- TESTING IPI CALL HOOK ---\n");
+    test_ipi.h_Entry = test_ipi_hook;
+    test_ipi.h_Data = KernelBase;
+    bug("--- SYNCHRONOUS IPI ---\n");
+    core_DoCallIPI(&test_ipi, (void*)TASKAFFINITY_ALL_BUT_SELF, 0, KernelBase);
+    bug("--- ASYNC IPI ---\n");
+    core_DoCallIPI(&test_ipi, (void*)TASKAFFINITY_ALL_BUT_SELF, 1, KernelBase);
+#endif
 
     AROS_USERFUNC_EXIT
 
