@@ -3,18 +3,23 @@
     $Id:$
 */
 
+#include <asm/cpu.h>
+#include <strings.h>
+
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
+
+
 #include "kernel_base.h"
+#include "kernel_intern.h"
+#include "kernel_debug.h"
+
 #include "kernel_ipi.h"
+
 #include <kernel_scheduler.h>
 #include <kernel_intr.h>
 
-#include <asm/cpu.h>
-#include <strings.h>
-#include <proto/kernel.h>
 #include "apic_ia32.h"
-#include "apic.h"
-
-#include "kernel_debug.h"
 
 #define D(x)
 
