@@ -19,11 +19,13 @@
 #define MUIA_Graph_EntryCount           (MUIB_Graph | 0x00000002) /* ---  IPTR                  */
 #define MUIA_Graph_UpdateInterval       (MUIB_Graph | 0x00000004) /* ---  IPTR                  */
 #define MUIA_Graph_Max                  (MUIB_Graph | 0x00000005) /* ---  IPTR                  */
+#define MUIA_Graph_Aggregate            (MUIB_Graph | 0x00000006) /* ---  BOOL                  */
 #define MUIA_Graph_PeriodicTick  	(MUIB_Graph | 0x000000FF) /* ---  BOOL                  */
 
 /*** Methods ****************************************************************/
 #define MUIM_Graph_GetSourceHandle    	(MUIB_Graph | 0x00000001)
 #define MUIM_Graph_SetSourceAttrib    	(MUIB_Graph | 0x00000002)
+#define MUIM_Graph_Reset    	        (MUIB_Graph | 0x0000000F)
 #define MUIM_Graph_Timer    	        (MUIB_Graph | 0x000000FF)
 
 struct MUIP_Graph_GetSourceHandle {STACKED ULONG MethodID; STACKED ULONG SourceNo;};

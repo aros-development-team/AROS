@@ -31,11 +31,13 @@ struct Graph_DATA
     IPTR                                graph_EntryPtr;         // "current" entry in the source's array
     struct Graph_SourceDATA             *graph_Sources;         // Data sources ...
 
-    char                                *graph_InfoText;        // Text displayed infront of graph
-
     IPTR                                graph_Max;              // Maximum value of an entry
     IPTR                                graph_Tick;             // tick counter used in periodic rendering
-    
+
+    /* InfoText displayed on the graph ... */
+    struct List                         graph_InfoText;        // Text displayed infront of graph
+    IPTR                                graph_ITHeight;
+
     /* used Pens ... */
     
     WORD    	    	    	        graph_BackPen;          // The backrgound pen
@@ -49,6 +51,7 @@ struct Graph_DATA
 #define GRAPHF_HANDLER  (1 << 1)
 #define GRAPHF_PERIODIC (1 << 2)
 #define GRAPHF_FIXEDLEN (1 << 3)
+#define GRAPHF_AGGR     (1 << 4)
 #define GRAPHF_CHANGED  (1 << 31)
 
 #endif /* _GRAPH_INTERN_H_ */
