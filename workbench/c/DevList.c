@@ -132,12 +132,16 @@ int main(void)
         devs=buffer;
         if(fillbuffer(&devs,size))
         {
+#if (__WORDSIZE == 64)
+        FPuts(Output(),"       Address  Version  Rev  OpenCnt  Flags  name\n");
+#else
 	    FPuts(Output(),"address\t\tversion\trev\topencnt\tflags\tname\n"
                            "------------------------------------------------------------\n");
+#endif
 	    for(devs2=buffer;devs2<devs;devs2++)
 	    {
 #if (__WORDSIZE == 64)
-		Printf("0x%012.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
+		Printf("0x%012.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
 #else
 		Printf("0x%08.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
 #endif

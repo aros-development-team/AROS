@@ -68,8 +68,8 @@
 const TEXT version[] = "$VER: Avail 42.2 (24.2.2016)\n";
 
 #if (__WORDSIZE == 64)
-#define AVAIL_ARCHSTR   "%12s"
-#define AVAIL_ARCHVAL   "%12iu"
+#define AVAIL_ARCHSTR   "%13s"
+#define AVAIL_ARCHVAL   "%13iu"
 #else
 #define AVAIL_ARCHSTR   "%9s"
 #define AVAIL_ARCHVAL   "%9iu"
@@ -205,7 +205,11 @@ int main(void)
 
 		Permit();
 
-		if (PutStr("Type   Available    In-Use   Maximum   Largest\n") < 0 ||
+#if (__WORDSIZE == 64)
+		if (PutStr("Type     Available        In-Use       Maximum       Largest\n") < 0 ||
+#else
+		if (PutStr("Type    Available    In-Use   Maximum   Largest\n") < 0 ||
+#endif
 		    printm("chip", chip, 4) < 0 ||
 		    printm("fast", fast, 4) < 0 ||
 		    printm("total", total, 4) < 0)
@@ -293,7 +297,7 @@ LONG printm(CONST_STRPTR head, IPTR *array, LONG num)
 
     if (head)
     {
-        ULONG len = 16 - strlen(head);
+        ULONG len = 18 - strlen(head);
         RawDoFmt(aHuman ? "%%%lds" : "%%%ldiu", (RAWARG)&len, NULL, buf);
         fmt = buf;
         PutStr(head);
