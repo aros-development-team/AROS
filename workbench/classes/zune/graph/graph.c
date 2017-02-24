@@ -136,7 +136,6 @@ IPTR Graph__ParseInfoText(Class *cl, Object *obj, char *infoTxt)
                 infoLine->ln_Name = (char *)&infoLine[1];
 
                 CopyMem(&infoTxt[start], infoLine->ln_Name, (i - start));
-                infoLine->ln_Name[(i - start)] = '\0';
 
                 D(bug("[Graph] %s: New infotext line @ 0x%p - '%s'\n", __func__, infoLine, infoLine->ln_Name);)
                 AddTail(&data->graph_InfoText, infoLine);
