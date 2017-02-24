@@ -59,45 +59,25 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                 /* FIXME: Use signals */
                 while(VUSBHCIBase->handler_task_run) {
                     //mybug(-1,("[handler_task] Ping...\n"));
-                    if(unit->allocated) {
-                        //mybug(-1,("%c\b", animate[(i++)%4]));
-                    }
 
                     call_libusb_event_handler();
-/*
-    ehciHandleFinishedTDs(hc);
 
-    if(hc->hc_CtrlXFerQueue.lh_Head->ln_Succ)
-    {
-        ehciScheduleCtrlTDs(hc);
-    }
-
-    if(hc->hc_IntXFerQueue.lh_Head->ln_Succ)
-    {
-        ehciScheduleIntTDs(hc);
-    }
-
-    if(hc->hc_BulkXFerQueue.lh_Head->ln_Succ)
-    {
-        ehciScheduleBulkTDs(hc);
-    }
-
-        Disable();
-        ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
-        while(((struct Node *) ioreq)->ln_Succ) {
-            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-
-            *((UBYTE *) ioreq->iouh_Data) = (1<<1);
-            ioreq->iouh_Actual = 1;
-
-            ReplyMsg(&ioreq->iouh_Req.io_Message);
-            ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
-        }
-        Enable();
-    AddTail(&unit->bulkxfer_queue, (struct Node *) ioreq);
-*/
                     /* FIXME: Use semaphores! */
-                    Disable();
+                    /* FIXME: Using Disable makes the intr transfer blocking... sort of... */
+                    //Disable();
+
+                    if(unit->intrxfer_queue.lh_Head->ln_Succ) {
+                        mybug(-1,("[handler_task] There's things to do in INTR transfer queue...\n"));
+
+                        struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->intrxfer_queue.lh_Head;
+
+                        /* Now the iorequest lives only on our pointer */
+                        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+
+                        /* FIXME: Check the result... */
+                        do_libusb_intr_transfer(ioreq);
+                        
+                    }
 
                     if(unit->bulkxfer_queue.lh_Head->ln_Succ) {
                         mybug(-1,("[handler_task] There's things to do in BULK transfer queue...\n"));
@@ -112,11 +92,11 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                         
                     }
 
-                    Enable();
+                    //Enable();
 
                     /* Wait */
                     tr->tr_time.tv_secs = 0;
-                    tr->tr_time.tv_micro = 5000;
+                    tr->tr_time.tv_micro = 1000;
                     DoIO((struct IORequest *)tr);
                 }
                 CloseDevice((struct IORequest *)tr);
