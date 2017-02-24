@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include "sysmon_intern.h"
 
 #include <proto/processor.h>
@@ -24,9 +27,26 @@ APTR ProcessorBase;
 AROS_UFH3(IPTR, GraphReadProcessorValueFunc,
         AROS_UFHA(struct Hook *, procHook, A0),
         AROS_UFHA(IPTR *, storage, A2),
-        AROS_UFHA(void *, unused, A1))
+        AROS_UFHA(IPTR, cpuNo, A1))
 {
     AROS_USERFUNC_INIT
+
+    struct TagItem tags [] = 
+    {
+        { GCIT_SelectedProcessor, cpuNo },
+        { GCIT_ProcessorLoad, (IPTR)storage },
+        { TAG_DONE, TAG_DONE }
+    };
+
+   bug("[SysMon] %s(%d)\n", __func__, cpuNo);
+
+    *storage = 0;
+
+    GetCPUInfo(tags);
+
+    *storage = ((*storage >> 16) * 1000) >> 16;
+
+    bug("[SysMon] %s: 0x%p = %d\n", __func__, storage, *storage);
 
     return TRUE;
 
