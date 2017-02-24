@@ -33,6 +33,9 @@ struct Graph_DATA
 
     char                                *graph_InfoText;        // Text displayed infront of graph
 
+    IPTR                                graph_Max;              // Maximum value of an entry
+    IPTR                                graph_Tick;             // tick counter used in periodic rendering
+    
     /* used Pens ... */
     
     WORD    	    	    	        graph_BackPen;          // The backrgound pen
@@ -42,8 +45,10 @@ struct Graph_DATA
     UWORD    	    	    	        graph_SegmentSize;      // size of a segment in pixels
 };
 
-#define GRAPHF_PERIODIC (1 << 0)
-#define GRAPHF_FIXEDLEN (1 << 1)
-#define GRAPHF_CHANGED (1 << 31)
+#define GRAPHF_SETUP    (1 << 0)
+#define GRAPHF_HANDLER  (1 << 1)
+#define GRAPHF_PERIODIC (1 << 2)
+#define GRAPHF_FIXEDLEN (1 << 3)
+#define GRAPHF_CHANGED  (1 << 31)
 
 #endif /* _GRAPH_INTERN_H_ */

@@ -16,8 +16,9 @@
 
 /*** Attributes *************************************************************/
 #define MUIA_Graph_InfoText	        (MUIB_Graph | 0x00000001) /* ---  CONST_STRPTR          */
-#define MUIA_Graph_Entries  	        (MUIB_Graph | 0x00000002) /* ---  IPTR *                */
-#define MUIA_Graph_UpdateInterval       (MUIB_Graph | 0x00000003) /* ---  IPTR                  */
+#define MUIA_Graph_EntryCount           (MUIB_Graph | 0x00000002) /* ---  IPTR                  */
+#define MUIA_Graph_UpdateInterval       (MUIB_Graph | 0x00000004) /* ---  IPTR                  */
+#define MUIA_Graph_Max                  (MUIB_Graph | 0x00000005) /* ---  IPTR                  */
 #define MUIA_Graph_PeriodicTick  	(MUIB_Graph | 0x000000FF) /* ---  BOOL                  */
 
 /*** Methods ****************************************************************/

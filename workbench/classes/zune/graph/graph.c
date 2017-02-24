@@ -31,7 +31,7 @@ IPTR Graph__UpdateSourceArray(struct Graph_DATA *data, IPTR count)
 {
     struct Graph_SourceDATA *newSourceArray = data->graph_Sources;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s(%d)\n", __func__, count);)
 
     if (data->graph_SourceCount != count)
     {
@@ -54,6 +54,7 @@ IPTR Graph__UpdateSourceArray(struct Graph_DATA *data, IPTR count)
 
             if (count > data->graph_SourceCount)
             {
+                D(bug("[Graph] %s: initializing new source\n", __func__);)
                 memset(&newSourceArray[count - 1], 0, sizeof(struct Graph_SourceDATA)); 
                 newSourceArray[count - 1].gs_PlotPen = -1;
                 newSourceArray[count - 1].gs_PlotFillPen = -1;
@@ -73,7 +74,7 @@ IPTR Graph__UpdateSourceEntries(struct Graph_DATA *data, IPTR sourceNo, IPTR cou
 {
     struct Graph_SourceDATA *dataSource = NULL;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s(%d:%d)\n", __func__, sourceNo, count);)
 
     if (count > data->graph_EntryCount)
     {
@@ -101,7 +102,7 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Graph_DATA *data;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
 
     obj = (Object *) DoSuperNewTags
     (
@@ -119,6 +120,7 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     {
         data = INST_DATA(cl, obj);
 
+        data->graph_Flags = 0;
         data->graph_BackPen = -1;
         data->graph_AxisPen = -1;
         data->graph_SegmentPen = -1;
@@ -133,6 +135,8 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         data->ihn.ihn_Method = MUIM_Graph_Timer;
         data->ihn.ihn_Object = obj;
         data->ihn.ihn_Millis = 1000;
+
+        SetAttrsA(obj, msg->ops_AttrList);
     }
 
     return (IPTR)obj;
@@ -143,7 +147,7 @@ IPTR Graph__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
     struct Graph_DATA *data = INST_DATA(cl, obj);
     int i;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
 
     if (data->graph_SourceCount > 0)
     {
@@ -168,17 +172,60 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
     struct TagItem   	 *tag;
     BOOL    	      	  redraw = FALSE;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
 
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-    	switch(tag->ti_Tag)
-	{
-    	    case MUIA_Graph_InfoText:
+        switch(tag->ti_Tag)
+        {
+            case MUIA_Graph_Max:
+                data->graph_Max = tag->ti_Data;
+                break;
+
+            case MUIA_Graph_InfoText:
                 FreeVec(data->graph_InfoText);
-		data->graph_InfoText = StrDup((char *)tag->ti_Data);
-		redraw = TRUE;
-		break;
+                data->graph_InfoText = StrDup((char *)tag->ti_Data);
+                redraw = TRUE;
+                break;
+
+            case MUIA_Graph_EntryCount:
+                if (tag->ti_Data)
+                {
+                    int i;
+                    for (i = 0; i < data->graph_SourceCount; i ++)
+                    {
+                        Graph__UpdateSourceEntries(data, i, tag->ti_Data);
+                    }
+                    data->graph_EntryCount = tag->ti_Data;
+                    data->graph_Flags |= GRAPHF_FIXEDLEN;
+                }
+                else
+                {
+                    data->graph_Flags &= ~GRAPHF_FIXEDLEN;
+                }
+                break;
+
+            case MUIA_Graph_UpdateInterval:
+                if (tag->ti_Data)
+                {
+                    data->graph_Flags |= GRAPHF_PERIODIC;
+                    data->ihn.ihn_Millis = tag->ti_Data;
+                    if ((data->graph_Flags & GRAPHF_SETUP) && !(data->graph_Flags & GRAPHF_HANDLER))
+                    {
+                        data->graph_Flags |= GRAPHF_HANDLER;
+                        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
+                    }
+                }
+                else
+                {
+                    data->graph_Flags &= ~GRAPHF_PERIODIC;
+                    if ((data->graph_Flags & GRAPHF_SETUP) && (data->graph_Flags & GRAPHF_HANDLER))
+                    {
+                        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
+                        data->graph_Flags &= ~GRAPHF_HANDLER;
+                    }
+                }
+                break;
 	}
     }
 
@@ -191,13 +238,25 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 
 IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
-//    struct Graph_DATA *data = INST_DATA(cl, obj);
+    struct Graph_DATA *data = INST_DATA(cl, obj);
     IPTR    	      retval = TRUE;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
 
     switch(msg->opg_AttrID)
     {
+        case MUIA_Graph_Max:
+            *(msg->opg_Storage) = data->graph_Max;
+            break;
+
+        case MUIA_Graph_EntryCount:
+            *(msg->opg_Storage) = data->graph_EntryCount;
+            break;
+
+        case MUIA_Graph_UpdateInterval:
+            *(msg->opg_Storage) = data->ihn.ihn_Millis;
+            break;
+
     	default:
 	    retval = DoSuperMethodA(cl, obj, (Msg)msg);
 	    break;
@@ -206,17 +265,20 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
     return retval;
 }
 
-
 IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
 
     if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
 
-    DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
-    
+    if ((data->graph_Flags & GRAPHF_PERIODIC) && !(data->graph_Flags & GRAPHF_HANDLER))
+    {
+        data->graph_Flags |= GRAPHF_HANDLER;
+        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
+    }
+
     data->graph_BackPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
 				  0xF2F2F2F2,
 				  0xF8F8F8F8,
@@ -241,6 +303,8 @@ IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 				  OBP_FailIfBad, FALSE,
 				  TAG_DONE);
 
+    data->graph_Flags |= GRAPHF_SETUP;
+
     return TRUE;
 }
 
@@ -249,7 +313,9 @@ IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
  
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
+
+    data->graph_Flags &= ~GRAPHF_SETUP;
 
     if (data->graph_SegmentPen != -1)
     {
@@ -269,7 +335,11 @@ IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
     	data->graph_BackPen = -1;
     }
 
-    DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
+    if ((data->graph_Flags & GRAPHF_PERIODIC) && (data->graph_Flags & GRAPHF_HANDLER))
+    {
+        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
+        data->graph_Flags &= ~GRAPHF_HANDLER;
+    }
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -296,22 +366,34 @@ IPTR Graph__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 
 IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct Graph_DATA *data = INST_DATA(cl, obj);
-    struct Region   	 *region;
-    struct Rectangle	 rect;
-    APTR    	    	 clip = NULL;
-    int                 offset;
+    struct Graph_DATA           *data = INST_DATA(cl, obj);
+    struct Graph_SourceDATA     *sourceData;
+    struct Region   	        *region;
+    struct Rectangle	        rect;
+    APTR    	    	        clip = NULL;
+    UWORD                       pos, offset = 0, src;
+    UWORD                       objHeight;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
 
+    if (data->graph_Flags & GRAPHF_FIXEDLEN)
+        data->graph_SegmentSize = (_right(obj) - _left(obj) )/ data->graph_EntryCount;
+
+    rect.MinX = _left(obj);
+    rect.MinY = _top(obj);
+    rect.MaxX = _right(obj);
+    rect.MaxY = _bottom(obj);
+
+    objHeight = rect.MaxY - rect.MinY;
+
+    D(
+        bug("[Graph] %s: height %d, segemnt size %d\n", __func__, objHeight, data->graph_SegmentSize);
+        bug("[Graph] %s: tick %d\n", __func__, data->graph_Tick);
+    )
+    
     region = NewRegion();
     if (region)
     {
-    	rect.MinX = _left(obj);
-	rect.MinY = _top(obj);
-	rect.MaxX = _right(obj);
-	rect.MaxY = _bottom(obj);
-	
 	OrRectRegion(region, &rect);
 
 	clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
@@ -322,21 +404,24 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     /* Render our graph.. */
     if ((msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
     {
+        if ((data->graph_Flags & GRAPHF_PERIODIC) && (data->graph_Flags & GRAPHF_FIXEDLEN))
+            offset = data->graph_Tick;
+
         // First fille the background ..
         SetAPen(_rp(obj), data->graph_BackPen);
         RectFill(_rp(obj), rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
         // Draw the segment divisions..
         SetAPen(_rp(obj), data->graph_SegmentPen);
-        for (offset = rect.MinX; offset <= rect.MaxX; offset += data->graph_SegmentSize)
+        for (pos = rect.MinX; pos <= (rect.MaxX + data->graph_SegmentSize); pos += data->graph_SegmentSize)
         {
-            Move(_rp(obj), offset, rect.MinY);
-            Draw(_rp(obj), offset, rect.MaxY);
+            Move(_rp(obj), pos - offset, rect.MinY);
+            Draw(_rp(obj), pos - offset, rect.MaxY);
         }
-        for (offset = rect.MaxY; offset >= rect.MinY; offset -= data->graph_SegmentSize)
+        for (pos = rect.MaxY; pos >= rect.MinY; pos -= data->graph_SegmentSize)
         {
-            Move(_rp(obj), rect.MinX, offset);
-            Draw(_rp(obj), rect.MaxX, offset);
+            Move(_rp(obj), rect.MinX, pos);
+            Draw(_rp(obj), rect.MaxX, pos);
         }
 
         // Draw the Axis..
@@ -347,24 +432,47 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         Draw(_rp(obj), rect.MinX, rect.MaxY);
         Draw(_rp(obj), rect.MinX, rect.MinY);
 
-#if (0)
+        // Plot the entries..
+        if (data->graph_Sources) 
+        {
+            for (src = 0; src < data->graph_SourceCount; src ++)
+            {
+                sourceData = &data->graph_Sources[src];
+
+                SetAPen(_rp(obj), data->graph_Sources[src].gs_PlotPen);
+                Move(_rp(obj), rect.MinX - offset, rect.MaxY);
+
+                for (pos = 1; pos < data->graph_EntryPtr; pos++)
+                {
+                    UWORD ypos = (objHeight / data->graph_Max) * sourceData->gs_Entries[pos];
+                    Draw(_rp(obj),
+                        rect.MinX + (pos * data->graph_SegmentSize) - offset,
+                        rect.MaxY - ypos);
+                }
+            }
+        }
+
         // Add the InfoText
         if (data->graph_InfoText)
         {
             UWORD text_wid = TextLength(_rp(obj), data->graph_InfoText, strlen(data->graph_InfoText));
+
+            D(bug("[Graph] %s: strlen = %d, wid = %d\n", __func__, strlen(data->graph_InfoText), text_wid);)
+
             if (text_wid > 0)
             {
                 SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
-                Move(_rp(obj), ((rect.MinX + rect.MaxX) /2) + (text_wid / 2), ((rect.MinY + rect.MaxY) /2) - (_font(obj)->tf_YSize / 2));
+                Move(_rp(obj), ((rect.MinX + rect.MaxX) /2) - (text_wid / 2), ((rect.MinY + rect.MaxY) /2) + (_font(obj)->tf_YSize / 2));
                 Text(_rp(obj), (CONST_STRPTR)data->graph_InfoText, text_wid);
             }
         }
-#endif
     }
     if (region)
     {
     	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     }
+
+    D(bug("[Graph] %s: done\n", __func__);)
 
     return 0;
 }
@@ -374,7 +482,7 @@ IPTR Graph__MUIM_Graph_GetSourceHandle(Class *cl, Object *obj, struct MUIP_Graph
     struct Graph_DATA *data;
     IPTR retVal = 0;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s(%d)\n", __func__, msg->SourceNo);)
 
     data = INST_DATA(cl, obj);
     if (msg->SourceNo >= data->graph_SourceCount)
@@ -389,7 +497,7 @@ IPTR Graph__MUIM_Graph_SetSourceAttrib(Class *cl, Object *obj, struct MUIP_Graph
 {
     struct Graph_SourceDATA *dataSource = (struct Graph_SourceDATA *)msg->SourceHandle;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
 
     switch (msg->Attrib)
     {
@@ -412,15 +520,18 @@ IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
     struct Graph_DATA *data;
     int i;
 
-    bug("[Graph] %s()\n", __func__);
+    D(bug("[Graph] %s()\n", __func__);)
 
     data = INST_DATA(cl, obj);
     
+    if (data->graph_Tick++ == data->graph_SegmentSize)
+        data->graph_Tick = 0;
+
     if (data->graph_Flags & GRAPHF_PERIODIC)
     {
         if (data->graph_SourceCount > 0)
         {
-            BOOL updateEntries = FALSE;
+            BOOL updateEntries = FALSE, updated = FALSE;
 
             if (data->graph_Flags & GRAPHF_FIXEDLEN) 
             {
@@ -433,22 +544,30 @@ IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
                     updateEntries = TRUE;
             }
 
+            D(bug("[Graph] %s: reading entry %d\n", __func__, data->graph_EntryPtr);)
+
             for (i = 0; i < data->graph_SourceCount; i ++)
             {
                 if (data->graph_Sources[i].gs_ReadHook)
                 {
                     if (updateEntries)
+                    {
                         Graph__UpdateSourceEntries(data, i, (data->graph_EntryPtr + 1));
+                        updated = TRUE;
+                    }
 
+                    D(bug("[Graph] %s: source %d entries @ 0x%p\n", __func__, i, data->graph_Sources[i].gs_Entries);)
                     CALLHOOKPKT(data->graph_Sources[i].gs_ReadHook,
                         (APTR)&data->graph_Sources[i].gs_Entries[data->graph_EntryPtr],
                         data->graph_Sources[i].gs_ReadHook->h_Data);
                 }
             }
-            data->graph_EntryCount++;
+            if (updated)
+                data->graph_EntryCount++;
+            data->graph_EntryPtr++;
         }
 
-	set(obj, MUIA_Graph_PeriodicTick, TRUE);
+	SET(obj, MUIA_Graph_PeriodicTick, TRUE);
     }
     
     return 0;
