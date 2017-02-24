@@ -221,26 +221,32 @@ int main(void)
 
     if (!IsListEmpty(&tasks))
     {
+#if (__WORDSIZE == 64)
+        PutStr("       Address     Type   Pri    State      CPU Time     Stack      Used  Name\n");
+#else
         PutStr("Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
+#endif
         ForeachNodeSafe(&tasks, currentTask, tmpTask)
         {
-            ULONG time;
-
+            IPTR time;
+            IPTR usec;
             Remove((struct Node *)currentTask);
 
             time = currentTask->cputime.tv_secs;
+            /* Dunno why I need the mask on tv_usec, but sometimes high bits leak from somewhere into this code. gcc issue? */
+            usec = (((currentTask->cputime.tv_usec & 0xfffff) + 5000) / 10000);
 #if (__WORDSIZE == 64)
-            Printf("0x%012.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld\t%id\t%id\t%s\n",
+            Printf("0x%012.ix %8s  %4id  %7s  %3id:%02id:%02id.%02id %9id %9id  %s\n",
 #else
-            Printf("0x%08.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld\t%id\t%id\t%s\n",
+            Printf("0x%08.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld.%02ld\t%id\t%id\t%s\n",
 #endif
                     currentTask->address,
                     (currentTask->node.ln_Type == NT_TASK) ? "task" :
                     (currentTask->node.ln_Type == NT_PROCESS) ? "process" : "CLI",
-                    (ULONG)currentTask->node.ln_Pri,
+                    (SIPTR)currentTask->node.ln_Pri,
                     (currentTask->state == TS_RUN) ? "running" :
                     (currentTask->state == TS_READY) ? "ready" : "waiting",
-                    (time / 60 / 60), (time / 60) % 60, time % 60,
+                    (IPTR)(time / 60 / 60), (IPTR)((time / 60) % 60), (IPTR)(time % 60), usec,
                     currentTask->stacksize, currentTask->stackused,
                     (currentTask->node.ln_Name != NULL) ? currentTask->node.ln_Name : "(null)");
 
