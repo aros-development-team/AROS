@@ -967,10 +967,10 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(0, ("Entering function\n"));
+    mybug_unit(-1, ("Entering function\n"));
 
-    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -988,8 +988,18 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
         return UHIOERR_USBOFFLINE;
     }
 
-    mybug_unit(0, ("Sending transfer request to libusb\n"));
-    return(do_libusb_bulk_transfer(ioreq));
+    mybug_unit(-1, ("Adding BULK transfer request to queue\n"));
+//    return(do_libusb_bulk_transfer(ioreq));
+
+    ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
+    ioreq->iouh_Actual = 0;
+
+    Disable();
+    AddTail(&unit->bulkxfer_queue, (struct Node *) ioreq);
+    Enable();
+
+    return(RC_DONTREPLY);
+
 }
 
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
