@@ -123,12 +123,15 @@ int main(void)
         ress=buffer;
         if(fillbuffer(&ress,size))
         {
-	    FPuts(Output(),"address\t\tname\n"
-                           "------------------------------------------------------------\n");
+#if (__WORDSIZE == 64)
+	    FPuts(Output(),"       Address  Name\n");
+#else
+	    FPuts(Output(),"Address\t\tName\n");
+#endif
 	    for(ress2=buffer;ress2<ress;ress2++)
 	    {
 #if (__WORDSIZE == 64)
-		Printf("0x%012.ix\t%s\n", ress2->address, ress2->name);
+		Printf("0x%012.ix  %s\n", ress2->address, ress2->name);
 #else
 		Printf("0x%08.ix\t%s\n", ress2->address, ress2->name);
 #endif
