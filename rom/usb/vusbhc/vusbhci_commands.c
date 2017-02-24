@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VUSBHCI USB host controller
@@ -1031,10 +1031,15 @@ WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
         return UHIOERR_USBOFFLINE;
     }
 
-    mybug_unit(-1, ("Sending transfer request to libusb\n"));
-    do_libusb_isoc_transfer(ioreq);
+    mybug_unit(-1, ("Adding ISOC transfer request to queue\n"));
+    ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
+    ioreq->iouh_Actual = 0;
 
-    return RC_DONTREPLY;
+    Disable();
+    AddTail(&unit->isocxfer_queue, (struct Node *) ioreq);
+    Enable();
+
+    return(RC_DONTREPLY);
 }
 
 void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {

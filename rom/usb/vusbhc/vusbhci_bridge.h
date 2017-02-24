@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Virtual USB host controller

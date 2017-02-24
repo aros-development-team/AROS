@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Virtual USB host controller
@@ -277,6 +277,9 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
 
     }
 
+    mybug_unit(-1, ("Releasing libusb transfer structure...\n"));
+    LIBUSBCALL(libusb_free_transfer, xfr);
+
     /* Set error codes */
     ioreq->iouh_Req.io_Error = err & 0xff;
 
@@ -538,16 +541,55 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    //UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
-    //UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
-    //UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
+    int rc = 0, transferred = 0;
+    UBYTE endpoint = ioreq->iouh_Endpoint;
 
-    //UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
-    //UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    //UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    //UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(-1, ("direction %d\n", (ioreq->iouh_Dir)));
 
-    mybug_unit(-1, ("Done!\n\n"));
-    return 0;    
+    struct libusb_transfer *xfr;
+
+    mybug_unit(-1, ("Allocating transfer...\n"));
+
+    xfr = LIBUSBCALL(libusb_alloc_transfer, 1);
+	if (xfr == NULL) {
+	    mybug_unit(-1, ("   Failed.\n"));
+	}
+
+    switch(ioreq->iouh_Dir) {
+        case UHDIR_IN:
+            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
+            libusb_fill_iso_transfer(xfr, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN),
+                          (UBYTE *)ioreq->iouh_Data,
+                          ioreq->iouh_Length,
+                          1,
+                          callbackUSBTransferComplete,
+                          ioreq,
+                          ioreq->iouh_NakTimeout
+                          );
+
+            LIBUSBCALL(libusb_submit_transfer, xfr);
+            mybug_unit(-1, ("Called libusb_submit_transfer\n"));
+            call_libusb_event_handler();
+        break;
+
+        case UHDIR_OUT:
+            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
+            libusb_fill_iso_transfer(xfr, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT),
+                          (UBYTE *)ioreq->iouh_Data,
+                          ioreq->iouh_Length,
+                          1,
+                          callbackUSBTransferComplete,
+                          ioreq,
+                          ioreq->iouh_NakTimeout
+                          );
+
+            LIBUSBCALL(libusb_submit_transfer, xfr);
+            mybug_unit(-1, ("Called libusb_submit_transfer\n"));
+            call_libusb_event_handler();
+        break;
+    }
+
+    return UHIOERR_NO_ERROR;    
 }
 
