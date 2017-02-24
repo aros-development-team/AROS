@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Virtual USB host controller
@@ -89,6 +89,19 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
 
                         /* FIXME: Check the result... */
                         do_libusb_bulk_transfer(ioreq);
+                        
+                    }
+
+                    if(unit->isocxfer_queue.lh_Head->ln_Succ) {
+                        mybug(-1,("[handler_task] There's things to do in ISOC transfer queue...\n"));
+
+                        struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->isocxfer_queue.lh_Head;
+
+                        /* Now the iorequest lives only on our pointer */
+                        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+
+                        /* FIXME: Check the result... */
+                        do_libusb_isoc_transfer(ioreq);
                         
                     }
 
