@@ -58,11 +58,61 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
 
                 /* FIXME: Use signals */
                 while(VUSBHCIBase->handler_task_run) {
+                    //mybug(-1,("[handler_task] Ping...\n"));
                     if(unit->allocated) {
                         //mybug(-1,("%c\b", animate[(i++)%4]));
                     }
 
                     call_libusb_event_handler();
+/*
+    ehciHandleFinishedTDs(hc);
+
+    if(hc->hc_CtrlXFerQueue.lh_Head->ln_Succ)
+    {
+        ehciScheduleCtrlTDs(hc);
+    }
+
+    if(hc->hc_IntXFerQueue.lh_Head->ln_Succ)
+    {
+        ehciScheduleIntTDs(hc);
+    }
+
+    if(hc->hc_BulkXFerQueue.lh_Head->ln_Succ)
+    {
+        ehciScheduleBulkTDs(hc);
+    }
+
+        Disable();
+        ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
+        while(((struct Node *) ioreq)->ln_Succ) {
+            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+
+            *((UBYTE *) ioreq->iouh_Data) = (1<<1);
+            ioreq->iouh_Actual = 1;
+
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
+            ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
+        }
+        Enable();
+    AddTail(&unit->bulkxfer_queue, (struct Node *) ioreq);
+*/
+                    /* FIXME: Use semaphores! */
+                    Disable();
+
+                    if(unit->bulkxfer_queue.lh_Head->ln_Succ) {
+                        mybug(-1,("[handler_task] There's things to do in BULK transfer queue...\n"));
+
+                        struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->bulkxfer_queue.lh_Head;
+
+                        /* Now the iorequest lives only on our pointer */
+                        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+
+                        /* FIXME: Check the result... */
+                        do_libusb_bulk_transfer(ioreq);
+                        
+                    }
+
+                    Enable();
 
                     /* Wait */
                     tr->tr_time.tv_secs = 0;
@@ -312,7 +362,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
     while((tag = LibNextTagItem(&taglist)) != NULL) {
         switch (tag->ti_Tag) {
             case UHA_Manufacturer:
-                *((STRPTR *) tag->ti_Data) = "The AROS Development Team";
+                *((CONST_STRPTR *) tag->ti_Data) = (CONST_STRPTR) "The AROS Development Team";
                 count++;
                 break;
             case UHA_Version:
@@ -324,15 +374,15 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_Copyright:
-                *((STRPTR *) tag->ti_Data) ="©2015-2016 The AROS Development Team";
+                *((CONST_STRPTR *) tag->ti_Data) = (CONST_STRPTR) "©2015-2017 The AROS Development Team";
                 count++;
                 break;
             case UHA_ProductName:
-                *((STRPTR *) tag->ti_Data) ="VUSBHCI Host Controller";
+                *((CONST_STRPTR *) tag->ti_Data) = (CONST_STRPTR) "VUSBHCI Host Controller";
                 count++;
                 break;
             case UHA_Description:
-                *((STRPTR *) tag->ti_Data) ="Hosted Host Controller Interface (libusb)";
+                *((CONST_STRPTR *) tag->ti_Data) = (CONST_STRPTR) "Hosted Host Controller Interface (libusb)";
                 count++;
                 break;
             case UHA_Capabilities:
