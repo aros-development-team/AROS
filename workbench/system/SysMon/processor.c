@@ -38,7 +38,7 @@ AROS_UFH3(IPTR, GraphReadProcessorValueFunc,
         { TAG_DONE, TAG_DONE }
     };
 
-   bug("[SysMon] %s(%d)\n", __func__, cpuNo);
+   D(bug("[SysMon] %s(%d)\n", __func__, cpuNo);)
 
     *storage = 0;
 
@@ -46,7 +46,7 @@ AROS_UFH3(IPTR, GraphReadProcessorValueFunc,
 
     *storage = ((*storage >> 16) * 1000) >> 16;
 
-    bug("[SysMon] %s: 0x%p = %d\n", __func__, storage, *storage);
+    D(bug("[SysMon] %s: 0x%p = %d\n", __func__, storage, *storage);)
 
     return TRUE;
 
