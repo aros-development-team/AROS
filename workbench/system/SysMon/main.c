@@ -76,7 +76,8 @@ BOOL CreateApplication(struct SysMonData * smdata)
     Object * cpuusagegroup;
     Object * cpufreqgroup;
 
-    ULONG i;
+    IPTR i;
+
     LONG processorcount = GetProcessorCount();
 
     smdata->tabs[0] = _(MSG_TAB_TASKS);
@@ -250,21 +251,32 @@ BOOL CreateApplication(struct SysMonData * smdata)
     DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
     
 #if defined(PROCDISPLAY_SINGLEGRAPH)
-        smdata->cpuusagegauge = GraphObject, MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
+        smdata->cpuusagegauge = GraphObject,
+                            MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
+                            MUIA_Graph_EntryCount, 10,
+                            MUIA_Graph_Max, 1000,
+                            MUIA_Graph_UpdateInterval, 1000,
                         End;
 #endif
 
     for (i = 0; i < processorcount; i++)
     {
 #if defined(PROCDISPLAY_USEGAUGE)
-        smdata->cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) "CPU --\n--.- %",
-                        MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
-                        MUIA_Gauge_Max, 1000, End;
+        smdata->cpuusagegauges[i] = GaugeObject,
+                            GaugeFrame,
+                            MUIA_Gauge_InfoText, (IPTR) "CPU --\n--.- %",
+                            MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
+                            MUIA_Gauge_Max, 1000,
+                        End;
 #else
         Object *procGuage;
         APTR procDataSource;
 #if !defined(PROCDISPLAY_SINGLEGRAPH)
-        smdata->cpuusagegauges[i] = GraphObject, MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
+        smdata->cpuusagegauges[i] = GraphObject,
+                            MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
+                            MUIA_Graph_EntryCount, 10,
+                            MUIA_Graph_Max, 1000,
+                            MUIA_Graph_UpdateInterval, 1000,
                         End;
         procGuage = smdata->cpuusagegauges[i];
         procDataSource = (APTR)DoMethod(procGuage, MUIM_Graph_GetSourceHandle, 0);
@@ -273,7 +285,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
         procDataSource = (APTR)DoMethod(procGuage, MUIM_Graph_GetSourceHandle, i);
 #endif
         smdata->cpureadhooks[i].h_Entry = (APTR)GraphReadProcessorValueFunc;
-        smdata->cpureadhooks[i].h_Data = 0;
+        smdata->cpureadhooks[i].h_Data = (APTR)i;
 
         DoMethod(procGuage, MUIM_Graph_SetSourceAttrib, procDataSource, MUIV_Graph_Source_ReadHook, &smdata->cpureadhooks[i]);
 #endif

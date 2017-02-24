@@ -27,7 +27,7 @@
 AROS_UFP3(IPTR, GraphReadProcessorValueFunc,
         AROS_UFPA(struct Hook *, procHook, A0),
         AROS_UFPA(IPTR *, storage, A2),
-        AROS_UFPA(void *, unused, A1));
+        AROS_UFPA(IPTR, cpuNo, A1));
 #endif
 
 struct SysMonData
