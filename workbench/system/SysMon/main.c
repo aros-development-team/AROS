@@ -19,6 +19,8 @@
 
 #define VERSION "$VER: SysMon 1.4 (23.01.2017) ©2011-2017 The AROS Development Team"
 
+#define CPU_DEFSTR  "CPU --\n--.- %"
+
 //#define NOTYET_USED
 
 AROS_UFH3(VOID, tasklistrefreshfunction,
@@ -66,19 +68,54 @@ AROS_UFH3(VOID, pageactivefunction,
 }
 #endif
 
+#if !defined(PROCDISPLAY_USEGAUGE)
+ULONG cpusperrow(ULONG x)
+{
+    register unsigned long op = x, res = 0, one;
+
+    one = 1 << 30;
+    while (one > op)
+        one >>= 2;
+
+    while (one != 0)
+    {
+        if (op >= res + one)
+        {
+            op -= res + one;
+            res += one << 1;
+        }
+        res >>= 1;
+        one >>= 2;
+    }
+    return res;
+}
+#endif
+
 BOOL CreateApplication(struct SysMonData * smdata)
 {
     Object * menuitemfast;
     Object * menuitemnormal;
     Object * menuitemslow;
 
+#if !defined(PROCDISPLAY_SINGLEGRAPH)
     Object * cpucolgroup;
+#endif
     Object * cpuusagegroup;
     Object * cpufreqgroup;
 
     IPTR i;
+    ULONG processorcount;
+#if !defined(PROCDISPLAY_USEGAUGE)
+    ULONG cpupr;
+#endif
 
-    LONG processorcount = GetProcessorCount();
+    processorcount = GetProcessorCount();
+#if !defined(PROCDISPLAY_USEGAUGE)
+    if (processorcount <= 4)
+        cpupr = processorcount;
+    else if ((cpupr = cpusperrow(processorcount)) < 4)
+        cpupr = 4;
+#endif
 
     smdata->tabs[0] = _(MSG_TAB_TASKS);
     smdata->tabs[1] = _(MSG_TAB_CPU);
@@ -143,9 +180,27 @@ BOOL CreateApplication(struct SysMonData * smdata)
                             End,
                         End),
                         Child, (VGroup,
-                            Child, cpuusagegroup = HGroup, GroupFrameT(_(MSG_USAGE)), 
+                            Child, cpuusagegroup = HGroup,
+                                GroupFrameT(_(MSG_USAGE)), 
+                                Child,
+#if defined(PROCDISPLAY_SINGLEGRAPH)
+                                        smdata->cpuusagegauge = GraphObject,
+                                            MUIA_Graph_InfoText, (IPTR) CPU_DEFSTR,
+                                            MUIA_Graph_EntryCount, 10,
+                                            MUIA_Graph_Max, 1000,
+                                            MUIA_Graph_UpdateInterval, 1000,
+#else
+                                        cpucolgroup = 
+#if defined(PROCDISPLAY_USEGAUGE)
+                                            ColGroup(processorcount + 2),
+#else
+                                            ColGroup(cpupr),
+#endif
+#endif
+                                End,
                             End,
-                            Child, VGroup, GroupFrameT(_(MSG_FREQUENCY)),
+                            Child, VGroup, 
+                                GroupFrameT(_(MSG_FREQUENCY)),
                                 Child, cpufreqgroup = ColGroup(3), 
                                 End,
                             End,
@@ -238,25 +293,13 @@ BOOL CreateApplication(struct SysMonData * smdata)
         smdata->pages, 2, MUIM_CallHook, (IPTR)&smdata->pageactivehook);
 #endif
 
-    /* Adding cpu usage gauges */
-    cpucolgroup = ColGroup(processorcount + 2), End;
-
 #if !defined(PROCDISPLAY_USEGAUGE)
     smdata->cpureadhooks = AllocVec(sizeof(struct Hook) * processorcount, MEMF_ANY | MEMF_CLEAR);
 #endif
 #if !defined(PROCDISPLAY_SINGLEGRAPH)
     smdata->cpuusagegauges = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
-#endif
-
+#elif defined(PROCDISPLAY_USEGAUGE)
     DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
-    
-#if defined(PROCDISPLAY_SINGLEGRAPH)
-        smdata->cpuusagegauge = GraphObject,
-                            MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
-                            MUIA_Graph_EntryCount, 10,
-                            MUIA_Graph_Max, 1000,
-                            MUIA_Graph_UpdateInterval, 1000,
-                        End;
 #endif
 
     for (i = 0; i < processorcount; i++)
@@ -264,7 +307,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
 #if defined(PROCDISPLAY_USEGAUGE)
         smdata->cpuusagegauges[i] = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_InfoText, (IPTR) "CPU --\n--.- %",
+                            MUIA_Gauge_InfoText, (IPTR) CPU_DEFSTR,
                             MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
                             MUIA_Gauge_Max, 1000,
                         End;
@@ -273,7 +316,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
         APTR procDataSource;
 #if !defined(PROCDISPLAY_SINGLEGRAPH)
         smdata->cpuusagegauges[i] = GraphObject,
-                            MUIA_Graph_InfoText, (IPTR) "CPU --\n--.- %",
+                            MUIA_Graph_InfoText, (IPTR) CPU_DEFSTR,
                             MUIA_Graph_EntryCount, 10,
                             MUIA_Graph_Max, 1000,
                             MUIA_Graph_UpdateInterval, 1000,
@@ -294,9 +337,14 @@ BOOL CreateApplication(struct SysMonData * smdata)
 #endif
     }
 
+#if defined(PROCDISPLAY_USEGAUGE)
     DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
-
-    DoMethod(cpuusagegroup, OM_ADDMEMBER, cpucolgroup);
+#elif !defined(PROCDISPLAY_SINGLEGRAPH)
+    for (; i < (cpupr * cpupr); i ++)
+    {
+        DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
+    }
+#endif
 
     /* Adding cpu frequency labels */
     smdata->cpufreqlabels = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
