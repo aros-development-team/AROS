@@ -186,11 +186,12 @@ BOOL CreateApplication(struct SysMonData * smdata)
 #if defined(PROCDISPLAY_SINGLEGRAPH)
                                         smdata->cpuusagegauge = GraphObject,
                                             MUIA_Graph_InfoText, (IPTR) CPU_DEFSTR,
-                                            MUIA_Graph_EntryCount, 10,
-                                            MUIA_Graph_ValueCeiling, 1000,
-                                            MUIA_Graph_ValueStep, 100,
-                                            MUIA_Graph_PeriodCeiling, 100000,
-                                            MUIA_Graph_PeriodInterval, 1000,
+                                            MUIA_Graph_EntryCount,      10,
+                                            MUIA_Graph_ValueCeiling,    1000,
+                                            MUIA_Graph_ValueStep,       100,
+                                            MUIA_Graph_PeriodCeiling,   100000,
+                                            MUIA_Graph_PeriodStep,      10000,
+                                            MUIA_Graph_PeriodInterval,  1000,
 #else
                                         cpucolgroup = 
 #if defined(PROCDISPLAY_USEGAUGE)
@@ -319,11 +320,12 @@ BOOL CreateApplication(struct SysMonData * smdata)
 #if !defined(PROCDISPLAY_SINGLEGRAPH)
         smdata->cpuusagegauges[i] = GraphObject,
                             MUIA_Graph_InfoText, (IPTR) CPU_DEFSTR,
-                            MUIA_Graph_EntryCount, 10,
-                            MUIA_Graph_ValueCeiling, 1000,
-                            MUIA_Graph_ValueStep, 100,
-                            MUIA_Graph_PeriodCeiling, 100000,
-                            MUIA_Graph_PeriodInterval, 1000,
+                            MUIA_Graph_EntryCount,      10,
+                            MUIA_Graph_ValueCeiling,    1000,
+                            MUIA_Graph_ValueStep,       100,
+                            MUIA_Graph_PeriodCeiling,   100000,
+                            MUIA_Graph_PeriodStep,      10000,
+                            MUIA_Graph_PeriodInterval,  1000,
                         End;
         procGuage = smdata->cpuusagegauges[i];
         procDataSource = (APTR)DoMethod(procGuage, MUIM_Graph_GetSourceHandle, 0);
