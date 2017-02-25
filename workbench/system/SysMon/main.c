@@ -141,9 +141,12 @@ BOOL CreateApplication(struct SysMonData * smdata)
 
     smdata->tasklist = (Object *)NewObject(Tasklist_CLASS->mcc_Class, NULL, MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Normal, TAG_DONE);
 
+    /* prepare the cpu frequency group */
     cpufreqgroup = ColGroup(3),
         End;
 
+    /* If we have more than 3 processors,
+        use a scrollgroup */
     if (processorcount <= 4)
     {
         cpufreqcntnr = GroupObject, 
@@ -156,7 +159,9 @@ BOOL CreateApplication(struct SysMonData * smdata)
         cpufreqcntnr = ScrollgroupObject, 
                         GroupFrameT(_(MSG_FREQUENCY)),
                         MUIA_Scrollgroup_FreeHoriz, FALSE,
-                        MUIA_Scrollgroup_Contents, cpufreqgroup, 
+                        MUIA_Scrollgroup_Contents, VirtgroupObject,
+                            Child, cpufreqgroup, 
+                        End,
                     End;
     }
 
