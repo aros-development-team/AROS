@@ -550,6 +550,9 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         // Add the InfoText
         pos = ((rect.MinY + rect.MaxY) /2) - ((_font(obj)->tf_YSize * data->graph_ITHeight) /2) + _font(obj)->tf_Baseline;
 
+        if (!IsListEmpty(&data->graph_InfoText))
+            SetFont(renderPort, _font(obj));
+
         ForeachNode(&data->graph_InfoText, infoLine)
         {
             UWORD txtLen = strlen(infoLine->ln_Name);
