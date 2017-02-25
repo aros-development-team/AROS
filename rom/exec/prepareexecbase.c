@@ -35,6 +35,10 @@
 
 #undef kprintf /* This can't be used in the code here */
 
+#if defined(__AROSEXEC_SMP__)
+extern struct Library *ExecLock__PrepareBase(struct MemHeader *);
+#endif
+
 extern void *LIBFUNCTABLE[];
 
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
@@ -361,6 +365,9 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     SysBase->KickCheckSum = KickCheckSum;
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
+#if defined(__AROSEXEC_SMP__)
+    PrivExecBase(SysBase)->ExecLockBase = PrepareExecLockBase(mh);
+#endif
 
     D(bug("[Exec] %s: Preperation complete.\n"));
 
