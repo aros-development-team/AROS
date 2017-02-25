@@ -244,37 +244,32 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                     data->graph_Flags |= GRAPHF_AGGR;
                 break;
 
-            /* Set the input value roof */
-            case MUIA_Graph_Max:
-                data->graph_Max = tag->ti_Data;
-                break;
-
             /* Set the info text to display */
             case MUIA_Graph_InfoText:
                 Graph__ParseInfoText(cl, obj, (char *)tag->ti_Data);
                 redraw = TRUE;
                 break;
 
-            /* Set or turn off Fixed entry count mode */
-            case MUIA_Graph_EntryCount:
-                if (tag->ti_Data)
-                {
-                    int i;
-                    for (i = 0; i < data->graph_SourceCount; i ++)
-                    {
-                        Graph__UpdateSourceEntries(data, i, tag->ti_Data);
-                    }
-                    data->graph_EntryCount = tag->ti_Data;
-                    data->graph_Flags |= GRAPHF_FIXEDLEN;
-                }
-                else
-                {
-                    data->graph_Flags &= ~GRAPHF_FIXEDLEN;
-                }
+            /* Set the input value ceiling and stepping */
+            case MUIA_Graph_ValueCeiling:
+                data->graph_ValCeiling = tag->ti_Data;
+                break;
+
+            case MUIA_Graph_ValueStep:
+                data->graph_ValStepping = tag->ti_Data;
+                break;
+
+            /* Set the period ceiling and stepping */
+            case MUIA_Graph_PeriodCeiling:
+                data->graph_PeriodCeiling = tag->ti_Data;
+                break;
+
+            case MUIA_Graph_PeriodStep:
+                data->graph_PeriodStepping = tag->ti_Data;
                 break;
 
             /* Set or turn off periodic update mode */
-            case MUIA_Graph_UpdateInterval:
+            case MUIA_Graph_PeriodInterval:
                 if (tag->ti_Data)
                 {
                     data->graph_Flags |= GRAPHF_PERIODIC;
@@ -293,6 +288,24 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                         DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
                         data->graph_Flags &= ~GRAPHF_HANDLER;
                     }
+                }
+                break;
+
+            /* Set or turn off Fixed entry count mode */
+            case MUIA_Graph_EntryCount:
+                if (tag->ti_Data)
+                {
+                    int i;
+                    for (i = 0; i < data->graph_SourceCount; i ++)
+                    {
+                        Graph__UpdateSourceEntries(data, i, tag->ti_Data);
+                    }
+                    data->graph_EntryCount = tag->ti_Data;
+                    data->graph_Flags |= GRAPHF_FIXEDLEN;
+                }
+                else
+                {
+                    data->graph_Flags &= ~GRAPHF_FIXEDLEN;
                 }
                 break;
 	}
@@ -314,15 +327,15 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-        case MUIA_Graph_Max:
-            *(msg->opg_Storage) = data->graph_Max;
+        case MUIA_Graph_ValueCeiling:
+            *(msg->opg_Storage) = data->graph_ValCeiling;
             break;
 
         case MUIA_Graph_EntryCount:
             *(msg->opg_Storage) = data->graph_EntryCount;
             break;
 
-        case MUIA_Graph_UpdateInterval:
+        case MUIA_Graph_PeriodInterval:
             *(msg->opg_Storage) = data->ihn.ihn_Millis;
             break;
 
@@ -525,7 +538,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
                 for (pos = 1; pos < data->graph_EntryPtr; pos++)
                 {
-                    UWORD ypos = (objHeight * sourceData->gs_Entries[pos])/ data->graph_Max;
+                    UWORD ypos = (objHeight * sourceData->gs_Entries[pos])/ data->graph_ValCeiling;
                     D(bug("[Graph] %s: YPos = %d\n", __func__, ypos);)
                     Draw(renderPort,
                         rect.MinX + (pos * data->graph_SegmentSize) - offset,
