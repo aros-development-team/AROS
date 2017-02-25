@@ -66,9 +66,7 @@
     ULONG rcvd;
 
     D(bug("[Exec] Wait(%08lX)\n", signalSet);)
-#if !defined(__AROSEXEC_SMP__)
     Disable();
-#endif
 
     /* If at least one of the signals is already set do not wait. */
     while (!(thisTask->tc_SigRecvd & signalSet))
