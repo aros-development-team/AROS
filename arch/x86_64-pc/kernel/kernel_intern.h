@@ -22,11 +22,11 @@ typedef struct int_gate_64bit apicidt_t;
 #include "apic.h"
 #include "tls.h"
 
-#define STACK_SIZE      65536
-#define PAGE_SIZE	0x1000
-#define PAGE_MASK	0x0FFF
+#define STACK_SIZE              65536
+#define PAGE_SIZE	        0x1000
+#define PAGE_MASK	        0x0FFF
 
-#define DEF_IRQRETFUNC   core_DefaultIRETQ
+#define DEF_IRQRETFUNC          core_DefaultIRETQ
 
 struct ACPIData;
 struct IOAPICData;
