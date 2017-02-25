@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Loader for shared libraries and devices.
 */
+
+#include <aros/config.h>
 
 #include <aros/asmcall.h>
 #include <aros/debug.h>
@@ -275,9 +277,9 @@ static struct LDObjectNode *LDNewObjectNode(STRPTR name, struct ExecBase *SysBas
             InitSemaphore(&ret->ldon_SigSem);
 	    ret->ldon_AccessCount = 0;
 
-	    #if CHECK_DEPENDENCY
+#if CHECK_DEPENDENCY
 	    ret->ldon_FirstLocker = FindTask(0);
-            #endif
+#endif
 
 	    return ret;
         }
@@ -475,7 +477,15 @@ AROS_LH2(struct Library *, OpenLibrary,
 
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
     struct Library *library;
-    struct LDObjectNode *object = LDRequestObject(libname, version, "libs", &SysBase->LibList, SysBase);
+    struct LDObjectNode *object;
+
+#if defined(__AROSEXEC_SMP__)
+    //ObtainSystemLock(&SysBase->LibList, MODE_READ);
+#endif
+    object = LDRequestObject(libname, version, "libs", &SysBase->LibList, SysBase);
+#if defined(__AROSEXEC_SMP__)
+    //ReleaseSystemLock(&SysBase->LibList);
+#endif
 
     if (!object)
     	return NULL;
@@ -502,7 +512,14 @@ AROS_LH4(LONG, OpenDevice,
     struct LDObjectNode *object;
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
 
+#if defined(__AROSEXEC_SMP__)
+    //ObtainSystemLock(&SysBase->DeviceList, MODE_READ);
+#endif
     object = LDRequestObject(devname, 0, "devs", &SysBase->DeviceList, SysBase);
+#if defined(__AROSEXEC_SMP__)
+    //ReleaseSystemLock(&SysBase->DeviceList);
+#endif
+    
     if (object)
     {
     	/* Call exec.library/OpenDevice(), it will do the job */
@@ -618,6 +635,9 @@ AROS_UFH3(LONG, LDFlush,
 
     /* Forbid() is already done, but I don't want to rely on it. */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    //ObtainSystemLock(&SysBase->LibList, MODE_WRITE);
+#endif
 
     /* Follow the linked list of shared libraries. */
     library = (struct Library *)SysBase->LibList.lh_Head;
@@ -633,6 +653,9 @@ AROS_UFH3(LONG, LDFlush,
 	    if( ldBase->dl_LDReturn != MEM_DID_NOTHING )
 	    {
 		/* Yes! Return it. */
+#if defined(__AROSEXEC_SMP__)
+                //ReleaseSystemLock(&SysBase->LibList);
+#endif
 		Permit();
 		return MEM_TRY_AGAIN;
 	    }
@@ -644,7 +667,11 @@ AROS_UFH3(LONG, LDFlush,
 	    library = (struct Library *)library->lib_Node.ln_Succ;
 	}
     }
+#if defined(__AROSEXEC_SMP__)
+    //ReleaseSystemLock(&SysBase->LibList);
 
+    //ObtainSystemLock(&SysBase->DeviceList, MODE_WRITE);
+#endif
     /* Do the same with the device list. */
     library = (struct Library *)SysBase->DeviceList.lh_Head;
     while(library->lib_Node.ln_Succ != NULL)
@@ -658,6 +685,9 @@ AROS_UFH3(LONG, LDFlush,
 	    if( ldBase->dl_LDReturn != MEM_DID_NOTHING )
 	    {
 		/* Yes! Return it. */
+#if defined(__AROSEXEC_SMP__)
+            //ReleaseSystemLock(&SysBase->DeviceList);
+#endif
 		Permit();
 		return MEM_TRY_AGAIN;
 	    }
@@ -669,7 +699,11 @@ AROS_UFH3(LONG, LDFlush,
 	    library = (struct Library *)library->lib_Node.ln_Succ;
 	}
     }
+#if defined(__AROSEXEC_SMP__)
+    //ReleaseSystemLock(&SysBase->DeviceList);
+#endif
     Permit();
+
     return MEM_DID_NOTHING;
 
     AROS_USERFUNC_EXIT
