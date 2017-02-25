@@ -31,27 +31,28 @@ struct Graph_DATA
     IPTR                                graph_EntryPtr;         // "current" entry in the source's array
     struct Graph_SourceDATA             *graph_Sources;         // Data sources ...
 
-    /* settings for input values .. */
+    /* Settings for Input values .. */
     IPTR                                graph_ValCeiling;
     IPTR                                graph_ValStepping;
 
-    /* settins for graph period .. */
+    /* Settings for the graph's Period .. */
     IPTR                                graph_PeriodCeiling;
     IPTR                                graph_PeriodStepping;
-
-    IPTR                                graph_Tick;             // tick counter used in periodic rendering
 
     /* InfoText displayed on the graph ... */
     struct List                         graph_InfoText;        // Text displayed infront of graph
     IPTR                                graph_ITHeight;
 
-    /* used Pens ... */
-    
+    /* Used Pens ... */
+
     WORD    	    	    	        graph_BackPen;          // The backrgound pen
     WORD    	    	    	        graph_AxisPen;          // The outer frame pan and larger divisions
     WORD    	    	    	        graph_SegmentPen;       // the secment pen
 
+    /* Private rendering values .. */
+    IPTR                                graph_Tick;             // tick counter used in periodic rendering
     UWORD    	    	    	        graph_SegmentSize;      // size of a segment in pixels
+    UWORD    	    	    	        graph_PeriodSize;      // size of a segment in pixels
 };
 
 #define GRAPHF_SETUP    (1 << 0)
