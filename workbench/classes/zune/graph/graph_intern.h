@@ -60,6 +60,10 @@ struct Graph_DATA
 #define GRAPHF_PERIODIC (1 << 2)
 #define GRAPHF_FIXEDLEN (1 << 3)
 #define GRAPHF_AGGR     (1 << 4)
+
+#define GRAPHF_DRAWAXIS (1 << 10)
+#define GRAPHF_DRAWSEGS (1 << 11)
+
 #define GRAPHF_CHANGED  (1 << 31)
 
 #endif /* _GRAPH_INTERN_H_ */

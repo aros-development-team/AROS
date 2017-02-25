@@ -177,7 +177,7 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
         data->graph_RastPort = NULL;
 
-        data->graph_Flags = 0;
+        data->graph_Flags =  (GRAPHF_DRAWAXIS|GRAPHF_DRAWSEGS);
         data->graph_BackPen = -1;
         data->graph_AxisPen = -1;
         data->graph_SegmentPen = -1;
@@ -458,7 +458,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     struct RastPort             *renderPort;
     struct Rectangle	        rect;
     APTR    	    	        clip = NULL;
-    UWORD                       pos, offset = 0, src, objHeight;
+    UWORD                       pos, offset = 0, src, objHeight, objWidth;
 
     D(bug("[Graph] %s()\n", __func__);)
 
@@ -491,9 +491,10 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         else
             renderPort = _rp(obj);
 
-        objHeight = rect.MaxY - rect.MinY;
+        objHeight = rect.MaxY - rect.MinY + 1;
+        objWidth = rect.MaxX - rect.MinX + 1;
 
-        data->graph_PeriodSize = ((rect.MaxX - rect.MinX + 1) * data->ihn.ihn_Millis) / data->graph_PeriodCeiling;
+        data->graph_PeriodSize = (objWidth * data->ihn.ihn_Millis) / data->graph_PeriodCeiling;
         if (data->graph_PeriodSize < 1)
             data->graph_PeriodSize = 1;
 
@@ -509,32 +510,38 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         SetAPen(renderPort, data->graph_BackPen);
         RectFill(renderPort, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
-        // Draw the segment divisions..
-        SetAPen(renderPort, data->graph_SegmentPen);
-        data->graph_SegmentSize = ((rect.MaxX - rect.MinX + 1) * data->graph_PeriodStepping) / data->graph_PeriodCeiling;
-        if (data->graph_SegmentSize < 2)
-            data->graph_SegmentSize = 2;
-        for (pos = rect.MinX; pos <= (rect.MaxX + data->graph_SegmentSize); pos += data->graph_SegmentSize)
+        if (data->graph_Flags &  & GRAPHF_DRAWSEGS)
         {
-            Move(renderPort, pos - offset, rect.MinY);
-            Draw(renderPort, pos - offset, rect.MaxY);
-        }
-        data->graph_SegmentSize = ((rect.MaxY - rect.MinY + 1) * data->graph_ValStepping) / data->graph_ValCeiling;
-        if (data->graph_SegmentSize < 2)
-            data->graph_SegmentSize = 2;
-        for (pos = rect.MaxY; pos >= rect.MinY; pos -= data->graph_SegmentSize)
-        {
-            Move(renderPort, rect.MinX, pos);
-            Draw(renderPort, rect.MaxX, pos);
+            // Draw the segment divisions..
+            SetAPen(renderPort, data->graph_SegmentPen);
+            data->graph_SegmentSize = (objWidth * data->graph_PeriodStepping) / data->graph_PeriodCeiling;
+            if (data->graph_SegmentSize < 2)
+                data->graph_SegmentSize = 2;
+            for (pos = rect.MinX; pos <= (rect.MaxX + data->graph_SegmentSize); pos += data->graph_SegmentSize)
+            {
+                Move(renderPort, pos - offset, rect.MinY);
+                Draw(renderPort, pos - offset, rect.MaxY);
+            }
+            data->graph_SegmentSize = (objHeight * data->graph_ValStepping) / data->graph_ValCeiling;
+            if (data->graph_SegmentSize < 2)
+                data->graph_SegmentSize = 2;
+            for (pos = rect.MaxY; pos >= rect.MinY; pos -= data->graph_SegmentSize)
+            {
+                Move(renderPort, rect.MinX, pos);
+                Draw(renderPort, rect.MaxX, pos);
+            }
         }
 
-        // Draw the Axis..
-        SetAPen(renderPort, data->graph_AxisPen);
-        Move(renderPort, rect.MinX, rect.MinY);
-        Draw(renderPort, rect.MaxX, rect.MinY);
-        Draw(renderPort, rect.MaxX, rect.MaxY);
-        Draw(renderPort, rect.MinX, rect.MaxY);
-        Draw(renderPort, rect.MinX, rect.MinY);
+        if (data->graph_Flags &  & GRAPHF_DRAWAXIS)
+        {
+            // Draw the Axis..
+            SetAPen(renderPort, data->graph_AxisPen);
+            Move(renderPort, rect.MinX, rect.MinY);
+            Draw(renderPort, rect.MaxX, rect.MinY);
+            Draw(renderPort, rect.MaxX, rect.MaxY);
+            Draw(renderPort, rect.MinX, rect.MaxY);
+            Draw(renderPort, rect.MinX, rect.MinY);
+        }
 
         // Plot the entries..
         if (data->graph_Sources) 
@@ -542,10 +549,16 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
             for (src = 0; src < data->graph_SourceCount; src ++)
             {
                 UWORD xpos, ypos;
+                LONG start;
 
                 sourceData = &data->graph_Sources[src];
 
-                ypos = (objHeight * sourceData->gs_Entries[0])/ data->graph_ValCeiling;
+                if ((start = data->graph_EntryPtr - (objWidth / data->graph_PeriodSize)) < 0)
+                    start = 0;
+
+                bug("[Graph] %s: start = %d, ptr = %d\n", __func__, start, data->graph_EntryPtr);
+
+                ypos = (objHeight * sourceData->gs_Entries[start++])/ data->graph_ValCeiling;
                 if (data->graph_Flags & GRAPHF_PERIODIC)
                     xpos = rect.MaxX - (data->graph_EntryPtr * data->graph_PeriodSize);
                 else
@@ -553,24 +566,18 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
                 SetAPen(renderPort, data->graph_Sources[src].gs_PlotPen);
 
-                if (data->graph_EntryPtr == 0)
-                {
+                if (start == 1)
                     WritePixel(renderPort, xpos - offset, rect.MaxY - ypos);
-                }
-                else
+
+               Move(renderPort, xpos - offset, rect.MaxY - ypos);
+
+                for (pos = start; pos < data->graph_EntryPtr; pos++)
                 {
-                    Move(renderPort, xpos - offset, rect.MaxY - ypos);
+                    ypos = (objHeight * sourceData->gs_Entries[pos])/ data->graph_ValCeiling;
 
-                    for (pos = 1; pos < data->graph_EntryPtr; pos++)
-                    {
-                        ypos = (objHeight * sourceData->gs_Entries[pos])/ data->graph_ValCeiling;
-
-                        D(bug("[Graph] %s: YPos = %d\n", __func__, ypos);)
-
-                        Draw(renderPort,
-                            xpos + (pos * data->graph_PeriodSize),
-                            rect.MaxY - ypos);
-                    }
+                    Draw(renderPort,
+                        xpos + (pos * data->graph_PeriodSize),
+                        rect.MaxY - ypos);
                 }
             }
         }
