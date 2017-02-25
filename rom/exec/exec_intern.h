@@ -64,6 +64,7 @@ struct IntExecBase
 #if defined(__AROSEXEC_BROKENMEMLOCK__)
     struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
 #elif defined(__AROSEXEC_SMP__)
+    void *                      ExecLockBase;
     cpumask_t                   *CPUMask;                       /* bitmap of online core                                        */
     spinlock_t                  MemListSpinLock;
     /* First the locks for arbitration of public resources ... */
