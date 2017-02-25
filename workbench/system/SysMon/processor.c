@@ -95,7 +95,7 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
     ULONG i;
     TEXT buffer[128];
 #if defined(PROCDISPLAY_SINGLEGRAPH)
-    ULONG totaluse;
+    ULONG totaluse = 0;
 #endif
 
     for (i = 0; i < processorcount; i++)
@@ -139,7 +139,7 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
     }
 #if defined(PROCDISPLAY_SINGLEGRAPH)
     totaluse /= processorcount;
-    __sprintf(buffer, "CPU %d\n%d.%d %% ", i, totaluse / 10, totaluse % 10);
+    __sprintf(buffer, "%d CPU's\n%d.%d %% ", processorcount, totaluse / 10, totaluse % 10);
     set(smdata->cpuusagegauge, MUIA_Graph_InfoText, (IPTR)buffer);
 #endif
 }

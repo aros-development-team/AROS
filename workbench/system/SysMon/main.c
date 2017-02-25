@@ -378,7 +378,9 @@ VOID DisposeApplication(struct SysMonData * smdata)
 
     FreeVec(smdata->tasklistinfobuf);
 
+#if !defined(PROCDISPLAY_SINGLEGRAPH)
     FreeVec(smdata->cpuusagegauges);
+#endif
     FreeVec(smdata->cpufreqlabels);
     FreeVec(smdata->cpufreqvalues);
 }
