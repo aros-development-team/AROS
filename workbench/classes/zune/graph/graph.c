@@ -182,9 +182,6 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         data->graph_AxisPen = -1;
         data->graph_SegmentPen = -1;
 
-        /* default segment size ... */
-         data->graph_SegmentSize = 10;
-
         /* We always have atleast one source .. */
         Graph__UpdateSourceArray(data, 1);
 
@@ -192,6 +189,12 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         data->ihn.ihn_Method = MUIM_Graph_Timer;
         data->ihn.ihn_Object = obj;
         data->ihn.ihn_Millis = 1000;
+
+        data->graph_PeriodCeiling = data->ihn.ihn_Millis * 10;
+        data->graph_PeriodStepping = data->ihn.ihn_Millis;
+
+        data->graph_ValCeiling = 100;
+        data->graph_ValStepping = 10;
 
         SetAttrsA(obj, msg->ops_AttrList);
     }
@@ -274,6 +277,7 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                 {
                     data->graph_Flags |= GRAPHF_PERIODIC;
                     data->ihn.ihn_Millis = tag->ti_Data;
+                    SET(obj, MUIA_Graph_EntryCount, (data->graph_PeriodCeiling/ data->ihn.ihn_Millis));
                     if ((data->graph_Flags & GRAPHF_SETUP) && !(data->graph_Flags & GRAPHF_HANDLER))
                     {
                         data->graph_Flags |= GRAPHF_HANDLER;
@@ -430,16 +434,15 @@ IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 IPTR Graph__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
-    UWORD nominalsize = (data->graph_SegmentSize * 10);
 
     bug("[Graph] %s()\n", __func__);
 
     DoSuperMethodA(cl, obj, (Msg)msg);
     
-    msg->MinMaxInfo->MinWidth  += nominalsize;
-    msg->MinMaxInfo->MinHeight += nominalsize;
-    msg->MinMaxInfo->DefWidth  += nominalsize;
-    msg->MinMaxInfo->DefHeight += nominalsize;
+    msg->MinMaxInfo->MinWidth  += (data->graph_PeriodCeiling / data->graph_PeriodStepping) * 2;
+    msg->MinMaxInfo->MinHeight += (data->graph_ValCeiling / data->graph_ValStepping) * 10;
+    msg->MinMaxInfo->DefWidth  += (data->graph_PeriodCeiling / data->graph_PeriodStepping) * 10;
+    msg->MinMaxInfo->DefHeight += (data->graph_ValCeiling / data->graph_ValStepping) * 10;
     msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
     msg->MinMaxInfo->MaxHeight  = MUI_MAXMAX;
 
@@ -458,9 +461,6 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     UWORD                       pos, offset = 0, src, objHeight;
 
     D(bug("[Graph] %s()\n", __func__);)
-
-    if (data->graph_Flags & GRAPHF_FIXEDLEN)
-        data->graph_SegmentSize = (_right(obj) - _left(obj) )/ data->graph_EntryCount;
 
     rect.MinX = _left(obj);
     rect.MinY = _top(obj);
@@ -493,12 +493,16 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
         objHeight = rect.MaxY - rect.MinY;
 
-        if ((data->graph_Flags & GRAPHF_PERIODIC) && (data->graph_Flags & GRAPHF_FIXEDLEN))
-            offset = data->graph_Tick;
+        data->graph_PeriodSize = ((rect.MaxX - rect.MinX + 1) * data->ihn.ihn_Millis) / data->graph_PeriodCeiling;
+        if (data->graph_PeriodSize < 1)
+            data->graph_PeriodSize = 1;
+
+        if (data->graph_Flags & GRAPHF_PERIODIC)
+            offset = (data->graph_Tick * data->graph_PeriodSize);
 
         D(
-            bug("[Graph] %s: height %d, segemnt size %d\n", __func__, objHeight, data->graph_SegmentSize);
-            bug("[Graph] %s: offset %d\n", __func__, offset);
+            bug("[Graph] %s: height %d\n", __func__, objHeight);
+            bug("[Graph] %s: periodsize %d, offset %d\n", __func__, data->graph_PeriodSize, offset);
         )
 
         // First fill the background ..
@@ -507,11 +511,17 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
         // Draw the segment divisions..
         SetAPen(renderPort, data->graph_SegmentPen);
+        data->graph_SegmentSize = ((rect.MaxX - rect.MinX + 1) * data->graph_PeriodStepping) / data->graph_PeriodCeiling;
+        if (data->graph_SegmentSize < 2)
+            data->graph_SegmentSize = 2;
         for (pos = rect.MinX; pos <= (rect.MaxX + data->graph_SegmentSize); pos += data->graph_SegmentSize)
         {
             Move(renderPort, pos - offset, rect.MinY);
             Draw(renderPort, pos - offset, rect.MaxY);
         }
+        data->graph_SegmentSize = ((rect.MaxY - rect.MinY + 1) * data->graph_ValStepping) / data->graph_ValCeiling;
+        if (data->graph_SegmentSize < 2)
+            data->graph_SegmentSize = 2;
         for (pos = rect.MaxY; pos >= rect.MinY; pos -= data->graph_SegmentSize)
         {
             Move(renderPort, rect.MinX, pos);
@@ -531,18 +541,36 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         {
             for (src = 0; src < data->graph_SourceCount; src ++)
             {
+                UWORD xpos, ypos;
+
                 sourceData = &data->graph_Sources[src];
 
-                SetAPen(renderPort, data->graph_Sources[src].gs_PlotPen);
-                Move(renderPort, rect.MinX - offset, rect.MaxY);
+                ypos = (objHeight * sourceData->gs_Entries[0])/ data->graph_ValCeiling;
+                if (data->graph_Flags & GRAPHF_PERIODIC)
+                    xpos = rect.MaxX - (data->graph_EntryPtr * data->graph_PeriodSize);
+                else
+                    xpos = rect.MinX - offset;
 
-                for (pos = 1; pos < data->graph_EntryPtr; pos++)
+                SetAPen(renderPort, data->graph_Sources[src].gs_PlotPen);
+
+                if (data->graph_EntryPtr == 0)
                 {
-                    UWORD ypos = (objHeight * sourceData->gs_Entries[pos])/ data->graph_ValCeiling;
-                    D(bug("[Graph] %s: YPos = %d\n", __func__, ypos);)
-                    Draw(renderPort,
-                        rect.MinX + (pos * data->graph_SegmentSize) - offset,
-                        rect.MaxY - ypos);
+                    WritePixel(renderPort, xpos - offset, rect.MaxY - ypos);
+                }
+                else
+                {
+                    Move(renderPort, xpos - offset, rect.MaxY - ypos);
+
+                    for (pos = 1; pos < data->graph_EntryPtr; pos++)
+                    {
+                        ypos = (objHeight * sourceData->gs_Entries[pos])/ data->graph_ValCeiling;
+
+                        D(bug("[Graph] %s: YPos = %d\n", __func__, ypos);)
+
+                        Draw(renderPort,
+                            xpos + (pos * data->graph_PeriodSize),
+                            rect.MaxY - ypos);
+                    }
                 }
             }
         }
@@ -645,8 +673,8 @@ IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
     D(bug("[Graph] %s()\n", __func__);)
 
     data = INST_DATA(cl, obj);
-    
-    if (data->graph_Tick++ == data->graph_SegmentSize)
+
+    if (data->graph_Tick++ == (data->graph_PeriodStepping / data->ihn.ihn_Millis))
         data->graph_Tick = 0;
 
     if (data->graph_Flags & GRAPHF_PERIODIC)
