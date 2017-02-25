@@ -93,15 +93,16 @@ ULONG cpusperrow(ULONG x)
 
 BOOL CreateApplication(struct SysMonData * smdata)
 {
-    Object * menuitemfast;
-    Object * menuitemnormal;
-    Object * menuitemslow;
+    Object      * menuitemfast,
+                * menuitemnormal,
+                * menuitemslow;
 
 #if !defined(PROCDISPLAY_SINGLEGRAPH)
-    Object * cpucolgroup;
+    Object      * cpucolgroup;
 #endif
-    Object * cpuusagegroup;
-    Object * cpufreqgroup;
+    Object      * cpuusagegroup,
+                * cpufreqgroup,
+                * cpufreqcntnr;
 
     IPTR i;
     ULONG processorcount;
@@ -139,6 +140,25 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->msg_slow  = (STRPTR)_(MSG_SLOW);
 
     smdata->tasklist = (Object *)NewObject(Tasklist_CLASS->mcc_Class, NULL, MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Normal, TAG_DONE);
+
+    cpufreqgroup = ColGroup(3),
+        End;
+
+    if (processorcount <= 4)
+    {
+        cpufreqcntnr = GroupObject, 
+                        GroupFrameT(_(MSG_FREQUENCY)),
+                        Child, cpufreqgroup, 
+                    End;
+    }
+    else
+    {
+        cpufreqcntnr = ScrollgroupObject, 
+                        GroupFrameT(_(MSG_FREQUENCY)),
+                        MUIA_Scrollgroup_FreeHoriz, FALSE,
+                        MUIA_Scrollgroup_Contents, cpufreqgroup, 
+                    End;
+    }
 
     smdata->application = ApplicationObject,
         MUIA_Application_Title, __(MSG_APP_NAME),
@@ -180,7 +200,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                             End,
                         End),
                         Child, (VGroup,
-                            Child, cpuusagegroup = HGroup,
+                            Child, (cpuusagegroup = HGroup,
                                 GroupFrameT(_(MSG_USAGE)), 
                                 Child,
 #if defined(PROCDISPLAY_SINGLEGRAPH)
@@ -201,12 +221,8 @@ BOOL CreateApplication(struct SysMonData * smdata)
 #endif
 #endif
                                 End,
-                            End,
-                            Child, VGroup, 
-                                GroupFrameT(_(MSG_FREQUENCY)),
-                                Child, cpufreqgroup = ColGroup(3), 
-                                End,
-                            End,
+                            End),
+                            Child, cpufreqcntnr,
                         End),
                         Child, (VGroup,
                             Child, ColGroup(2),
