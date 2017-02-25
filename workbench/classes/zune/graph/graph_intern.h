@@ -31,7 +31,14 @@ struct Graph_DATA
     IPTR                                graph_EntryPtr;         // "current" entry in the source's array
     struct Graph_SourceDATA             *graph_Sources;         // Data sources ...
 
-    IPTR                                graph_Max;              // Maximum value of an entry
+    /* settings for input values .. */
+    IPTR                                graph_ValCeiling;
+    IPTR                                graph_ValStepping;
+
+    /* settins for graph period .. */
+    IPTR                                graph_PeriodCeiling;
+    IPTR                                graph_PeriodStepping;
+
     IPTR                                graph_Tick;             // tick counter used in periodic rendering
 
     /* InfoText displayed on the graph ... */
