@@ -139,6 +139,8 @@ struct ata_Bus
 
    struct Interrupt        ab_ResetInt;
 
+   APTR                    ab_BounceBufferPool;
+
    /* functions go here */
    void                   (*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
 };

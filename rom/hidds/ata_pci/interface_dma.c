@@ -51,7 +51,7 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
             /*
              * politely say what sucks
              */
-            if (phy_mem > 0xffffffffull)
+            if (phy_mem > 0xffffffffull || (phy_mem + tmp) > 0xffffffffull)
             {
                 D(bug("[PCI-ATA] dma_Setup: ERROR: ATA DMA POINTERS BEYOND MAXIMUM ALLOWED ADDRESS!\n"));
                 return 0;
