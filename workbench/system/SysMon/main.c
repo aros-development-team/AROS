@@ -17,9 +17,9 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: SysMon 1.4 (23.01.2017) ©2011-2017 The AROS Development Team"
+#define VERSION "$VER: SysMon 1.9 (26.02.2017) ©2011-2017 The AROS Development Team"
 
-#define CPU_DEFSTR  "CPU --\n--.- %"
+CONST_STRPTR CPU_DEFSTR  = "CPU --\n--.- %";
 
 //#define NOTYET_USED
 
@@ -68,60 +68,23 @@ AROS_UFH3(VOID, pageactivefunction,
 }
 #endif
 
-#if !defined(PROCDISPLAY_USEGAUGE)
-ULONG cpusperrow(ULONG x)
-{
-    register unsigned long op = x, res = 0, one;
-
-    one = 1 << 30;
-    while (one > op)
-        one >>= 2;
-
-    while (one != 0)
-    {
-        if (op >= res + one)
-        {
-            op -= res + one;
-            res += one << 1;
-        }
-        res >>= 1;
-        one >>= 2;
-    }
-    return res;
-}
-#endif
-
 BOOL CreateApplication(struct SysMonData * smdata)
 {
     Object      * menuitemfast,
                 * menuitemnormal,
-                * menuitemslow;
+                * menuitemslow,
+                * cmenucpugauge,
+                * cmenucpugraph,
+                * cmenucpugraphpcpu = NULL;
 
-#if !defined(PROCDISPLAY_SINGLEGRAPH)
-    Object      * cpucolgroup;
-#endif
     Object      * cpuusagegroup,
                 * cpufreqgroup,
                 * cpufreqcntnr;
 
     IPTR i;
     ULONG processorcount;
-#if !defined(PROCDISPLAY_USEGAUGE)
-    ULONG cpupr;
-#endif
 
     processorcount = GetProcessorCount();
-#if !defined(PROCDISPLAY_USEGAUGE)
-    if (processorcount <= 4)
-        cpupr = processorcount;
-    else if ((cpupr = cpusperrow(processorcount)) < 4)
-    {
-        if (processorcount <= 4)
-            cpupr = processorcount;
-        else
-            cpupr = 4;
-    }
-#endif
 
     smdata->tabs[0] = _(MSG_TAB_TASKS);
     smdata->tabs[1] = _(MSG_TAB_CPU);
@@ -212,24 +175,19 @@ BOOL CreateApplication(struct SysMonData * smdata)
                         Child, (VGroup,
                             Child, (cpuusagegroup = HGroup,
                                 GroupFrameT(_(MSG_USAGE)), 
-                                Child,
-#if defined(PROCDISPLAY_SINGLEGRAPH)
-                                        smdata->cpuusagegauge = GraphObject,
-                                            MUIA_Graph_InfoText, (IPTR) CPU_DEFSTR,
-                                            MUIA_Graph_ValueCeiling,    1000,
-                                            MUIA_Graph_ValueStep,       100,
-                                            MUIA_Graph_PeriodCeiling,   100000,
-                                            MUIA_Graph_PeriodStep,      10000,
-                                            MUIA_Graph_PeriodInterval,  1000,
-#else
-                                        cpucolgroup = 
-#if defined(PROCDISPLAY_USEGAUGE)
-                                            ColGroup(processorcount + 2),
-#else
-                                            ColGroup(cpupr),
-#endif
-#endif
-                                End,
+                                MUIA_ContextMenu, (MenustripObject,
+                                    MUIA_Family_Child, (MenuObject, 
+                                        MUIA_Menu_Title, (IPTR)"Processor Load", 
+                                        MUIA_Family_Child, (MenuitemObject, 
+                                            MUIA_Menuitem_Title, (IPTR)"Display Mode", 
+                                            MUIA_Family_Child, (cmenucpugauge = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Gauge", MUIA_Menuitem_Shortcut, (IPTR)"G",End), 
+                                            MUIA_Family_Child, (cmenucpugraph = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Graph", MUIA_Menuitem_Shortcut, (IPTR)"S",End), 
+                                            (processorcount > 1) ? MUIA_Family_Child : TAG_IGNORE,
+                                                (cmenucpugraphpcpu = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Graph Per Processor", MUIA_Menuitem_Shortcut, (IPTR)"P",End), 
+                                        End), 
+                                    End),
+                                End),
+                                Child, (IPTR)(smdata->cpuusageobj = ProcessorGroupObject(smdata, processorcount)),
                             End),
                             Child, cpufreqcntnr,
                         End),
@@ -321,60 +279,26 @@ BOOL CreateApplication(struct SysMonData * smdata)
         smdata->pages, 2, MUIM_CallHook, (IPTR)&smdata->pageactivehook);
 #endif
 
-#if !defined(PROCDISPLAY_USEGAUGE)
-    smdata->cpureadhooks = AllocVec(sizeof(struct Hook) * processorcount, MEMF_ANY | MEMF_CLEAR);
-#endif
-#if !defined(PROCDISPLAY_SINGLEGRAPH)
-    smdata->cpuusagegauges = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
-#elif defined(PROCDISPLAY_USEGAUGE)
-    DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
-#endif
+    smdata->cpuusagecmhooks[0].h_Entry = (APTR)processorgaugehookfunc;
+    smdata->cpuusagecmhooks[0].h_Data = (APTR)smdata;
+    smdata->cpuusagecmhooks[1].h_Entry = (APTR)processorgraphhookfunc;
+    smdata->cpuusagecmhooks[1].h_Data = (APTR)smdata;
 
-    for (i = 0; i < processorcount; i++)
+    DoMethod(cmenucpugauge, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+        smdata->application, 5, MUIM_Application_PushMethod,
+                smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->cpuusagecmhooks[0]);
+    DoMethod(cmenucpugraph, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+        smdata->application, 5, MUIM_Application_PushMethod,
+                smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->cpuusagecmhooks[1]);
+    if (cmenucpugraphpcpu)
     {
-#if defined(PROCDISPLAY_USEGAUGE)
-        smdata->cpuusagegauges[i] = GaugeObject,
-                            GaugeFrame,
-                            MUIA_Gauge_InfoText, (IPTR) CPU_DEFSTR,
-                            MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
-                            MUIA_Gauge_Max, 1000,
-                        End;
-#else
-        Object *procGuage;
-        APTR procDataSource;
-#if !defined(PROCDISPLAY_SINGLEGRAPH)
-        smdata->cpuusagegauges[i] = GraphObject,
-                            MUIA_Graph_InfoText, (IPTR) CPU_DEFSTR,
-                            MUIA_Graph_ValueCeiling,    1000,
-                            MUIA_Graph_ValueStep,       100,
-                            MUIA_Graph_PeriodCeiling,   100000,
-                            MUIA_Graph_PeriodStep,      10000,
-                            MUIA_Graph_PeriodInterval,  1000,
-                        End;
-        procGuage = smdata->cpuusagegauges[i];
-        procDataSource = (APTR)DoMethod(procGuage, MUIM_Graph_GetSourceHandle, 0);
-#else
-        procGuage = smdata->cpuusagegauge;
-        procDataSource = (APTR)DoMethod(procGuage, MUIM_Graph_GetSourceHandle, i);
-#endif
-        smdata->cpureadhooks[i].h_Entry = (APTR)GraphReadProcessorValueFunc;
-        smdata->cpureadhooks[i].h_Data = (APTR)i;
+        smdata->cpuusagecmhooks[2].h_Entry = (APTR)processorgraphpercpuhookfunc;
+        smdata->cpuusagecmhooks[2].h_Data = (APTR)smdata;
 
-        DoMethod(procGuage, MUIM_Graph_SetSourceAttrib, procDataSource, MUIV_Graph_Source_ReadHook, &smdata->cpureadhooks[i]);
-#endif
-#if !defined(PROCDISPLAY_SINGLEGRAPH)
-        DoMethod(cpucolgroup, OM_ADDMEMBER, smdata->cpuusagegauges[i]);
-#endif
+        DoMethod(cmenucpugraphpcpu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            smdata->application, 5, MUIM_Application_PushMethod,
+                smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->cpuusagecmhooks[2]);
     }
-
-#if defined(PROCDISPLAY_USEGAUGE)
-    DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
-#elif !defined(PROCDISPLAY_SINGLEGRAPH)
-    for (i %= cpupr; (i > 0) && (i < cpupr); i ++)
-    {
-        DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
-    }
-#endif
 
     /* Adding cpu frequency labels */
     smdata->cpufreqlabels = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
@@ -406,10 +330,6 @@ VOID DisposeApplication(struct SysMonData * smdata)
     MUI_DisposeObject(smdata->application);
 
     FreeVec(smdata->tasklistinfobuf);
-
-#if !defined(PROCDISPLAY_SINGLEGRAPH)
-    FreeVec(smdata->cpuusagegauges);
-#endif
     FreeVec(smdata->cpufreqlabels);
     FreeVec(smdata->cpufreqvalues);
 }
@@ -425,6 +345,9 @@ VOID DeInitModules(struct SysMonModule ** modules, struct SysMonData *smdata, LO
 LONG InitModules(struct SysMonModule ** modules, struct SysMonData *smdata)
 {
     LONG lastinitedmodule = -1;
+
+    /* Make sure we initialize values ..*/
+    smdata->cpuusageclass = NULL;
 
     while(modules[lastinitedmodule + 1] != NULL)
     {
@@ -450,7 +373,6 @@ int main()
 
     if ((lastinitedmodule = InitModules(modules, &smdata)) == -1)
         return 1;
-
     
     if (!CreateApplication(&smdata))
         return 1;

@@ -12,6 +12,7 @@
 
 #include "tasks.h"
 
+/* uncomment to change the default processorgrp options */
 //#define PROCDISPLAY_USEGAUGE
 //#define PROCDISPLAY_SINGLEGRAPH
 
@@ -40,20 +41,18 @@ struct SysMonData
     CONST_STRPTR tabs[SYSMON_TABCOUNT + 1];
 
     struct Hook pageactivehook;
-    struct Hook tasklistrefreshhook;
-    STRPTR      tasklistinfobuf;
+    struct Hook                 tasklistrefreshhook;
+    STRPTR                      tasklistinfobuf;
 
-    Object      *tasklist;
-    Object      *tasklistinfo;
+    Object                      *tasklist;
+    Object                      *tasklistinfo;
 
-#if defined (PROCDISPLAY_SINGLEGRAPH)
-    Object      *cpuusagegauge;
-#else
-    Object      **cpuusagegauges;
-#endif
-#if !defined(PROCDISPLAY_USEGAUGE)
-    struct Hook *cpureadhooks;
-#endif
+    struct MUI_CustomClass      *cpuusageclass;
+    Object                      *cpuusagegroup,
+                                *cpuusageobj;
+    BOOL                        cpuusagesinglemode;
+    struct Hook                 cpuusagecmhooks[3];
+
     Object      **cpufreqlabels;
     Object      **cpufreqvalues;
 
@@ -80,45 +79,61 @@ extern struct SysMonModule processormodule;
 extern struct SysMonModule timermodule;
 extern struct SysMonModule tasksmodule;
 
-VOID UpdateMemoryInformation(struct SysMonData * smdata);
-VOID UpdateMemoryStaticInformation(struct SysMonData * smdata);
+VOID UpdateMemoryInformation(struct SysMonData *);
+VOID UpdateMemoryStaticInformation(struct SysMonData *);
 
-VOID UpdateVideoInformation(struct SysMonData * smdata);
-VOID UpdateVideoStaticInformation(struct SysMonData * smdata);
+VOID UpdateVideoInformation(struct SysMonData *);
+VOID UpdateVideoStaticInformation(struct SysMonData *);
 
 ULONG GetProcessorCount();
-VOID UpdateProcessorInformation(struct SysMonData * smdata);
-VOID UpdateProcessorStaticInformation(struct SysMonData * smdata);
+VOID UpdateProcessorInformation(struct SysMonData *);
+VOID UpdateProcessorStaticInformation(struct SysMonData *);
+Object *ProcessorGroupObject(struct SysMonData *, int);
 
-VOID UpdateTasksInformation(struct SysMonData * smdata);
-VOID UpdateTasksStaticInformation(struct SysMonData * smdata);
+VOID UpdateTasksInformation(struct SysMonData *);
+VOID UpdateTasksStaticInformation(struct SysMonData *);
 
 struct TaskInfo;
 
 AROS_UFP3(struct TaskInfo *, TasksListConstructFunction,
-    AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(APTR, pool, A2),
-    AROS_UFHA(struct Task *, curTask, A1));
+    AROS_UFPA(struct Hook *, h,  A0),
+    AROS_UFPA(APTR, pool, A2),
+    AROS_UFPA(struct Task *, curTask, A1));
 
 AROS_UFP3(VOID, TasksListDestructFunction,
-    AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(APTR, pool, A2),
-    AROS_UFHA(struct TaskInfo *, obj, A1));
+    AROS_UFPA(struct Hook *, h,  A0),
+    AROS_UFPA(APTR, pool, A2),
+    AROS_UFPA(struct TaskInfo *, obj, A1));
 
 AROS_UFP3(APTR, TasksListDisplayFunction,
-    AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(STRPTR *, strings, A2),
-    AROS_UFHA(struct TaskInfo *, obj, A1));
+    AROS_UFPA(struct Hook *, h,  A0),
+    AROS_UFPA(STRPTR *, strings, A2),
+    AROS_UFPA(struct TaskInfo *, obj, A1));
 
 AROS_UFP3(VOID, TaskSelectedFunction,
-    AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(Object *, object, A2),
-    AROS_UFHA(APTR, msg, A1));
+    AROS_UFPA(struct Hook *, h, A0),
+    AROS_UFPA(Object *, object, A2),
+    AROS_UFPA(APTR, msg, A1));
 
 AROS_UFP3(LONG, TaskCompareFunction,
-    AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(struct TaskInfo *, ti2, A2),
-    AROS_UFHA(struct TaskInfo *, ti1, A1));
+    AROS_UFPA(struct Hook *, h, A0),
+    AROS_UFPA(struct TaskInfo *, ti2, A2),
+    AROS_UFPA(struct TaskInfo *, ti1, A1));
+
+AROS_UFP3(VOID, processorgaugehookfunc,
+    AROS_UFPA(struct Hook *, h, A0),
+    AROS_UFPA(Object *, object, A2),
+    AROS_UFPA(APTR, msg, A1));
+
+AROS_UFP3(VOID, processorgraphhookfunc,
+    AROS_UFPA(struct Hook *, h, A0),
+    AROS_UFPA(Object *, object, A2),
+    AROS_UFPA(APTR, msg, A1));
+
+AROS_UFP3(VOID, processorgraphpercpuhookfunc,
+    AROS_UFPA(struct Hook *, h, A0),
+    AROS_UFPA(Object *, object, A2),
+    AROS_UFPA(APTR, msg, A1));
 
 ULONG GetSIG_TIMER();
 VOID SignalMeAfter(ULONG msecs);
