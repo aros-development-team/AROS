@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "sysmon_intern.h"
@@ -14,49 +14,36 @@
 
 #include <clib/alib_protos.h>
 
-#include <zune/graph.h>
-
+#include "processor.h"
 #include "locale.h"
+
+extern struct MUI_CustomClass                     *ProcessorGauge_CLASS;
+extern struct MUI_CustomClass                     *ProcessorGraph_CLASS;
 
 /* Processor information */
 static IPTR processorcount;
 APTR ProcessorBase;
 #define SIMULATE_USAGE_FREQ 0
 
-#if !defined(PROCDISPLAY_USEGAUGE)
-AROS_UFH3(IPTR, GraphReadProcessorValueFunc,
-        AROS_UFHA(struct Hook *, procHook, A0),
-        AROS_UFHA(IPTR *, storage, A2),
-        AROS_UFHA(IPTR, cpuNo, A1))
-{
-    AROS_USERFUNC_INIT
-
-    struct TagItem tags [] = 
-    {
-        { GCIT_SelectedProcessor, cpuNo },
-        { GCIT_ProcessorLoad, (IPTR)storage },
-        { TAG_DONE, TAG_DONE }
-    };
-
-   D(bug("[SysMon] %s(%d)\n", __func__, cpuNo);)
-
-    *storage = 0;
-
-    GetCPUInfo(tags);
-
-    *storage = ((*storage >> 16) * 1000) >> 16;
-
-    D(bug("[SysMon] %s: 0x%p = %d\n", __func__, storage, *storage);)
-
-    return TRUE;
-
-    AROS_USERFUNC_EXIT
-}
-#endif
-
 /* Processor functions */
 static BOOL InitProcessor(struct SysMonData *smdata)
 {
+    if (!smdata->cpuusageclass)
+    {
+        smdata->cpuusageclass =
+#if defined(PROCDISPLAY_USEGAUGE)
+            ProcessorGauge_CLASS;
+#else
+            ProcessorGraph_CLASS;
+#endif
+        smdata->cpuusagesinglemode =
+#if defined(PROCDISPLAY_SINGLEGRAPH)
+                    TRUE;
+#else
+                    FALSE;
+#endif        
+    }
+
 #if SIMULATE_USAGE_FREQ
     processorcount = 4;
     return TRUE;
@@ -76,13 +63,30 @@ static BOOL InitProcessor(struct SysMonData *smdata)
         return TRUE;
     }
 
-
     return FALSE;
 #endif
 }
 
 static VOID DeInitProcessor(struct SysMonData *smdata)
 {
+}
+
+Object *ProcessorGroupObject(struct SysMonData *smdata, int count)
+{
+    Object *newGroupObj;
+
+    if (smdata->cpuusageobj)
+    {
+        MUI_DisposeObject(smdata->cpuusageobj);
+        smdata->cpuusageobj = NULL;
+    }
+
+    newGroupObj = NewObject(smdata->cpuusageclass->mcc_Class, NULL,
+                    MUIA_ProcessorGrp_CPUCount, count,
+                    MUIA_ProcessorGrp_SingleMode, (IPTR)smdata->cpuusagesinglemode,
+                TAG_DONE);
+
+    return newGroupObj;
 }
 
 ULONG GetProcessorCount()
@@ -94,54 +98,31 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
 {
     ULONG i;
     TEXT buffer[128];
-#if defined(PROCDISPLAY_SINGLEGRAPH)
-    ULONG totaluse = 0;
-#endif
+
+    DoMethod(smdata->cpuusageobj, MUIM_ProcessorGrp_Update);
 
     for (i = 0; i < processorcount; i++)
     {
-        ULONG usage = 0;
         UQUAD frequency = 0;
 #if SIMULATE_USAGE_FREQ
         struct DateStamp ds;
         DateStamp(&ds);
-        usage = (ds.ds_Tick * (i + 1)) % 100;
-        frequency = usage * 10;
+        frequency = ((ds.ds_Tick * (i + 1)) % 100) * 10;
 #else
         struct TagItem tags [] = 
         {
             { GCIT_SelectedProcessor, (IPTR)i },
             { GCIT_ProcessorSpeed, (IPTR)&frequency },
-            { GCIT_ProcessorLoad, (IPTR)&usage },
             { TAG_DONE, TAG_DONE }
         };
         
         GetCPUInfo(tags);
-        usage = ((usage >> 16) * 1000) >> 16;
         
         frequency /= 1000000;
-#endif
-#if !defined(PROCDISPLAY_SINGLEGRAPH)
-        __sprintf(buffer, "CPU %d\n%d.%d %%", i, usage / 10, usage % 10);
-#endif
-#if (PROCDISPLAY_USEGAUGE)
-        set(smdata->cpuusagegauges[i], MUIA_Gauge_Current, usage);
-        set(smdata->cpuusagegauges[i], MUIA_Gauge_InfoText, (IPTR)buffer);
-#else
-#if !defined(PROCDISPLAY_SINGLEGRAPH)
-        set(smdata->cpuusagegauges[i], MUIA_Graph_InfoText, (IPTR)buffer);
-#else
-        totaluse += usage;
-#endif
 #endif
         __sprintf(buffer, "%d MHz", (ULONG)frequency);
         set(smdata->cpufreqvalues[i], MUIA_Text_Contents, (IPTR)buffer);
     }
-#if defined(PROCDISPLAY_SINGLEGRAPH)
-    totaluse /= processorcount;
-    __sprintf(buffer, "%d CPU's\n%d.%d %%", processorcount, totaluse / 10, totaluse % 10);
-    set(smdata->cpuusagegauge, MUIA_Graph_InfoText, (IPTR)buffer);
-#endif
 }
 
 VOID UpdateProcessorStaticInformation(struct SysMonData * smdata)
@@ -168,6 +149,99 @@ VOID UpdateProcessorStaticInformation(struct SysMonData * smdata)
         set(smdata->cpufreqlabels[i], MUIA_Text_Contents, buffer);
     }
 }
+
+AROS_UFH3(VOID, processorgaugehookfunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct SysMonData * smdata = h->h_Data;
+    IPTR cpuCount = 0;
+    Object *cpuGrp;
+
+    D(bug("[SysMon:Processor] %s(0x%p)\n", __func__, object));
+
+    if (smdata->cpuusageclass != ProcessorGauge_CLASS)
+    {
+        smdata->cpuusageclass = ProcessorGauge_CLASS;
+        GET(smdata->cpuusageobj, MUIA_ProcessorGrp_CPUCount, &cpuCount);
+        if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+        {
+            DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
+            cpuGrp = ProcessorGroupObject(smdata, cpuCount);
+            DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)cpuGrp);
+            DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange);
+        }
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(VOID, processorgraphhookfunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct SysMonData * smdata = h->h_Data;
+    IPTR cpuCount = 0, graphMode = 0;
+    Object *cpuGrp;
+
+    D(bug("[SysMon:Processor] %s(0x%p)\n", __func__, object));
+
+    GET(smdata->cpuusageobj, MUIA_ProcessorGrp_CPUCount, &cpuCount);
+    GET(smdata->cpuusageobj, MUIA_ProcessorGrp_SingleMode, &graphMode);
+
+    if ((smdata->cpuusageclass != ProcessorGraph_CLASS) || ((cpuCount > 1) && (!graphMode)))
+    {
+        smdata->cpuusageclass = ProcessorGraph_CLASS;
+        if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+        {
+            DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
+            cpuGrp = ProcessorGroupObject(smdata, cpuCount);
+            DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)cpuGrp);
+            DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange);
+        }
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(VOID, processorgraphpercpuhookfunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+    IPTR cpuCount = 0, graphMode = 0;
+    Object *cpuGrp;
+
+    struct SysMonData * smdata = h->h_Data;
+
+    D(bug("[SysMon:Processor] %s(0x%p)\n", __func__, object));
+
+    GET(smdata->cpuusageobj, MUIA_ProcessorGrp_CPUCount, &cpuCount);
+    GET(smdata->cpuusageobj, MUIA_ProcessorGrp_SingleMode, &graphMode);
+
+    if ((smdata->cpuusageclass != ProcessorGauge_CLASS) || (graphMode))
+    {
+        smdata->cpuusageclass = ProcessorGraph_CLASS;
+        if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+        {
+            DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
+            cpuGrp = ProcessorGroupObject(smdata, cpuCount);
+            DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)cpuGrp);
+            DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange);
+        }
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+
 
 struct SysMonModule processormodule =
 {
