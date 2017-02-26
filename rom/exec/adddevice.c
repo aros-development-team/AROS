@@ -13,6 +13,7 @@
 
 #include "exec_intern.h"
 #include "exec_debug.h"
+#include "exec_locks.h"
 
 /*****************************************************************************
 
@@ -61,17 +62,13 @@
     SumLibrary(&device->dd_Library);
 
     /* Arbitrate for the device list */
-    Forbid();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->DeviceListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
+    EXEC_LOCK_LIST_WRITE_AND_FORBID(&SysBase->DeviceList);
+
     /* And add the device */
     Enqueue(&SysBase->DeviceList,&device->dd_Library.lib_Node);
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->DeviceListSpinLock);
-#endif
+
     /* All done. */
-    Permit();
+    EXEC_UNLOCK_LIST_AND_PERMIT(&SysBase->DeviceList);
 
     AROS_LIBFUNC_EXIT
 } /* AddDevice */

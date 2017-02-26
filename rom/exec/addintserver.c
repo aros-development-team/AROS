@@ -16,6 +16,7 @@
 #include "exec_intern.h"
 #include "exec_debug.h"
 #include "chipset.h"
+#include "exec_locks.h"
 
 static void krnIRQwrapper(void *data1, void *data2)
 {
@@ -68,16 +69,12 @@ static void krnIRQwrapper(void *data1, void *data2)
         return;
     }
 
-    Disable();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
+    EXEC_LOCK_LIST_WRITE_AND_DISABLE(&SysBase->IntrList);
+
     Enqueue((struct List *)SysBase->IntVects[intNumber].iv_Data, &interrupt->is_Node);
     CUSTOM_ENABLE(intNumber);
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->IntrListSpinLock);
-#endif
-    Enable();
+    
+    EXEC_UNLOCK_LIST_AND_ENABLE(&SysBase->IntrList);
 
     AROS_LIBFUNC_EXIT
 } /* AddIntServer */

@@ -15,6 +15,7 @@
 #include "exec_intern.h"
 #include "exec_debug.h"
 #include "chipset.h"
+#include "exec_locks.h"
 
 /*****************************************************************************
 
@@ -56,16 +57,12 @@
         return;
     }
 
-    Disable();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
+    EXEC_LOCK_LIST_WRITE_AND_DISABLE(&SysBase->IntrList);
+    
     Remove((struct Node *)interrupt);
     CUSTOM_DISABLE(intNumber, SysBase->IntVects[intNumber].iv_Data);
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->IntrListSpinLock);
-#endif
-    Enable();
+    
+    EXEC_UNLOCK_LIST_AND_ENABLE(&SysBase->IntrList);
 
     AROS_LIBFUNC_EXIT
 } /* RemIntServer */

@@ -12,6 +12,7 @@
 
 #include "exec_intern.h"
 #include "exec_debug.h"
+#include "exec_locks.h"
 
 /*****************************************************************************
 
@@ -50,10 +51,8 @@
 
     ExecLog(SysBase, EXECDEBUGF_EXCEPTHANDLER, "SetIntVector: Int %d, Interrupt %p\n", intNumber, interrupt);
 
-    Disable ();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->IntrListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
+    EXEC_LOCK_LIST_WRITE_AND_DISABLE(&SysBase->IntrList);
+
     oldint = (struct Interrupt *)SysBase->IntVects[intNumber].iv_Node;
     SysBase->IntVects[intNumber].iv_Node = ishandler ? (struct Node *)interrupt : NULL;
 
@@ -67,10 +66,8 @@
 	SysBase->IntVects[intNumber].iv_Data = (APTR)~0;
 	SysBase->IntVects[intNumber].iv_Code = (void *)~0;
     }
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->IntrListSpinLock);
-#endif
-    Enable ();
+
+    EXEC_UNLOCK_LIST_AND_ENABLE(&SysBase->IntrList);
 
     return oldint;
 
