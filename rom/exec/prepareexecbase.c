@@ -366,6 +366,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
 #if defined(__AROSEXEC_SMP__)
+    PrivExecBase(SysBase)->ExecLockBase = NULL;
     PrivExecBase(SysBase)->ExecLockBase = ExecLock__PrepareBase(mh);
 #endif
 
