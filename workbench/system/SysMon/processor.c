@@ -172,7 +172,7 @@ AROS_UFH3(VOID, processorgaugehookfunc,
             DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
             cpuGrp = ProcessorGroupObject(smdata, cpuCount);
             DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)cpuGrp);
-            DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange);
+            DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
         }
     }
 
@@ -203,7 +203,7 @@ AROS_UFH3(VOID, processorgraphhookfunc,
             DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
             cpuGrp = ProcessorGroupObject(smdata, cpuCount);
             DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)cpuGrp);
-            DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange);
+            DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
         }
     }
 
@@ -234,7 +234,7 @@ AROS_UFH3(VOID, processorgraphpercpuhookfunc,
             DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
             cpuGrp = ProcessorGroupObject(smdata, cpuCount);
             DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)cpuGrp);
-            DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange);
+            DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
         }
     }
 
