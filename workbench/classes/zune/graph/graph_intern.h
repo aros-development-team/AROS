@@ -11,6 +11,8 @@
 struct Graph_SourceDATA
 {
     struct Hook                         *gs_ReadHook;
+    IPTR                                gs_PlotPenSrc;
+    IPTR                                gs_PlotFillPenSrc;
     WORD    	    	    	        gs_PlotPen;
     WORD    	    	    	        gs_PlotFillPen;
     IPTR                                *gs_Entries;

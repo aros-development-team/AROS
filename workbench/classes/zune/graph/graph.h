@@ -36,8 +36,10 @@ struct MUIP_Graph_SetSourceAttrib {STACKED ULONG MethodID; STACKED APTR SourceHa
 
 /*** Source Attributes ******************************************************/
 #define MUIV_Graph_Source_ReadHook      (0x00000001)
-#define MUIV_Graph_Source_Pen           (0x00000002)
-#define MUIV_Graph_Source_FillPen       (0x00000003)
+#define MUIV_Graph_Source_PenSrc        (0x00000002)
+#define MUIV_Graph_Source_Pen           (0x00000003)
+#define MUIV_Graph_Source_FillPenSrc    (0x00000004)
+#define MUIV_Graph_Source_FillPen       (0x00000005)
 
 /*** Macros *****************************************************************/
 #define GraphObject MUIOBJMACRO_START(MUIC_Graph)
