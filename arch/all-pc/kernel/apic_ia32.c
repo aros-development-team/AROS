@@ -448,7 +448,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             D(bug("[Kernel:APIC-IA32.%03u] %s: tls @ 0x%p, scheduling data @ 0x%p\n", cpuNum, __func__, apicTLS, schedData);)
 #endif
 
-            if (!core_SetIDTGate(apic->cores[cpuNum].cpu_IDT, APIC_IRQ_HEARTBEAT, (uintptr_t)IntrDefaultGates[APIC_IRQ_HEARTBEAT], FALSE))
+            if (!core_SetIDTGate(apic->cores[cpuNum].cpu_IDT, APIC_IRQ_HEARTBEAT, (uintptr_t)IntrDefaultGates[APIC_IRQ_HEARTBEAT], TRUE))
             {
                 krnPanic(NULL, "Failed to set APIC HeartBeat IRQ Vector\n"
                                "IRQ #$%02X, Vector #$%02X\n", (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), APIC_IRQ_HEARTBEAT);
