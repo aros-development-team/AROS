@@ -122,7 +122,7 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
         frequency /= 1000000;
 #endif
 #if !defined(PROCDISPLAY_SINGLEGRAPH)
-        __sprintf(buffer, "CPU %d\n%d.%d %% ", i, usage / 10, usage % 10);
+        __sprintf(buffer, "CPU %d\n%d.%d %%", i, usage / 10, usage % 10);
 #endif
 #if (PROCDISPLAY_USEGAUGE)
         set(smdata->cpuusagegauges[i], MUIA_Gauge_Current, usage);
@@ -139,7 +139,7 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
     }
 #if defined(PROCDISPLAY_SINGLEGRAPH)
     totaluse /= processorcount;
-    __sprintf(buffer, "%d CPU's\n%d.%d %% ", processorcount, totaluse / 10, totaluse % 10);
+    __sprintf(buffer, "%d CPU's\n%d.%d %%", processorcount, totaluse / 10, totaluse % 10);
     set(smdata->cpuusagegauge, MUIA_Graph_InfoText, (IPTR)buffer);
 #endif
 }
