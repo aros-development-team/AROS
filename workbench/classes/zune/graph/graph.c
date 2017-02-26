@@ -556,7 +556,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         SetAPen(renderPort, data->graph_BackPen);
         RectFill(renderPort, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
-        if (data->graph_Flags &  GRAPHF_DRAWSEGS)
+        if (data->graph_Flags & GRAPHF_DRAWSEGS)
         {
             // Draw the segment divisions..
             SetAPen(renderPort, data->graph_SegmentPen);
@@ -578,7 +578,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
             }
         }
 
-        if (data->graph_Flags &  GRAPHF_DRAWAXIS)
+        if (data->graph_Flags & GRAPHF_DRAWAXIS)
         {
             // Draw the Axis..
             SetAPen(renderPort, data->graph_AxisPen);
