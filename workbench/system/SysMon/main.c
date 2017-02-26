@@ -115,7 +115,12 @@ BOOL CreateApplication(struct SysMonData * smdata)
     if (processorcount <= 4)
         cpupr = processorcount;
     else if ((cpupr = cpusperrow(processorcount)) < 4)
-        cpupr = 4;
+    {
+        if (processorcount <= 4)
+            cpupr = processorcount;
+        else
+            cpupr = 4;
+    }
 #endif
 
     smdata->tabs[0] = _(MSG_TAB_TASKS);
@@ -142,7 +147,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->tasklist = (Object *)NewObject(Tasklist_CLASS->mcc_Class, NULL, MUIA_Tasklist_RefreshMSecs, MUIV_Tasklist_Refresh_Normal, TAG_DONE);
 
     /* prepare the cpu frequency group */
-    cpufreqgroup = ColGroup(3),
+    cpufreqgroup = ColGroup(4),
         End;
 
     /* If we have more than 3 processors,
@@ -365,7 +370,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
 #if defined(PROCDISPLAY_USEGAUGE)
     DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
 #elif !defined(PROCDISPLAY_SINGLEGRAPH)
-    for (; i < (cpupr * cpupr); i ++)
+    for (i %= cpupr; (i > 0) && (i < cpupr); i ++)
     {
         DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
     }
@@ -383,10 +388,15 @@ BOOL CreateApplication(struct SysMonData * smdata)
                         MUIA_Text_PreParse, (IPTR)"\33l",
                         MUIA_Text_Contents, (IPTR)"", End;
 
+        DoMethod(cpufreqgroup, OM_ADDMEMBER, (IPTR)HVSpace);
         DoMethod(cpufreqgroup, OM_ADDMEMBER, smdata->cpufreqlabels[i]);
         DoMethod(cpufreqgroup, OM_ADDMEMBER, smdata->cpufreqvalues[i]);
         DoMethod(cpufreqgroup, OM_ADDMEMBER, (IPTR)HVSpace);
     }
+    DoMethod(cpufreqgroup, OM_ADDMEMBER, (IPTR)HVSpace);
+    DoMethod(cpufreqgroup, OM_ADDMEMBER, (IPTR)HVSpace);
+    DoMethod(cpufreqgroup, OM_ADDMEMBER, (IPTR)HVSpace);
+    DoMethod(cpufreqgroup, OM_ADDMEMBER, (IPTR)HVSpace);
 
     return TRUE;
 }
