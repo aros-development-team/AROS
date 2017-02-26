@@ -881,9 +881,23 @@ static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
     ULONG part;
     ULONG max=256;
     ULONG count=blk->sectors;
+    APTR buffer = blk->buffer;
+    APTR bounce_buffer = NULL;
+    IPTR bounce_buffer_length;
 
     if (blk->type == CT_LBA48)
         max <<= 8;
+
+    if (((IPTR)blk->buffer > 0xffffffffULL || ((IPTR)blk->buffer + (count << unit->au_SectorShift)) > 0xffffffffULL) &&
+        (blk->method == CM_DMARead || blk->method == CM_DMAWrite))
+    {
+        DATA(bug("[ATA%02ld] ata_exec_blk: attempt to do DMA transfer outside 32bit address space\n", unit->au_UnitNum));
+        DATA(bug("[ATA%02ld] ata_exec_blk: ptr %p, length %d, %s\n", unit->au_UnitNum, blk->buffer, count << unit->au_SectorShift, blk->method == CM_DMARead ? "DMARead" : "DMAWrite"));
+
+        bounce_buffer_length = count << unit->au_SectorShift;
+        bounce_buffer = AllocPooled(unit->au_Bus->ab_BounceBufferPool, bounce_buffer_length);
+        blk->buffer = bounce_buffer;
+    }
 
     DATA(bug("[ATA%02ld] ata_exec_blk: Accessing %ld sectors starting from %x%08x\n", unit->au_UnitNum, count, (ULONG)(blk->blk >> 32), (ULONG)blk->blk));
     while ((count > 0) && (err == 0))
@@ -893,13 +907,35 @@ static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
         blk->length  = part << unit->au_SectorShift;
 
         DATA(bug("[ATA%02ld] Transfer of %ld sectors from %x%08x\n", unit->au_UnitNum, part, (ULONG)(blk->blk >> 32), (ULONG)blk->blk));
+        // If bounce buffer is active, 
+        if (bounce_buffer && blk->method == CM_DMAWrite)
+        {
+            DATA(bug("[ATA%02ld] Copy %d bytes from source %p to bounce buffer %p\n", unit->au_UnitNum, blk->length, buffer, bounce_buffer));
+            CopyMemQuick(buffer, bounce_buffer, blk->length);
+            buffer = (APTR)((IPTR)buffer + blk->length);
+        }
         err = ata_exec_cmd(unit, blk);
         DATA(bug("[ATA%02ld] ata_exec_blk: ata_exec_cmd returned %lx\n", unit->au_UnitNum, err));
-
+        if (bounce_buffer)
+        {
+            if (blk->method == CM_DMARead)
+            {
+                DATA(bug("[ATA%02ld] Copy %d bytes from bounce buffer %p to destination %p\n", unit->au_UnitNum, blk->length, bounce_buffer, buffer));
+                CopyMemQuick(bounce_buffer, buffer, part << unit->au_SectorShift);
+                buffer = (APTR)((IPTR)buffer + (part << unit->au_SectorShift));
+            }
+        }
+        else
+        {
+            blk->buffer  = (APTR)((IPTR)blk->buffer + (part << unit->au_SectorShift));
+        }
         blk->blk    += part;
-        blk->buffer  = &((char*)blk->buffer)[part << unit->au_SectorShift];
         count -= part;
     }
+
+    if (bounce_buffer)
+        FreePooled(unit->au_Bus->ab_BounceBufferPool, bounce_buffer, bounce_buffer_length);
+
     return err;
 }
 
