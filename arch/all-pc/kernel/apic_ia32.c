@@ -424,7 +424,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                     ADDHEAD(&KERNELIRQ_LIST(hbHandle->in_nr), &hbHandle->in_Node);
                     Enable();
 
-                    apic->flags |= APF_TIMER;                
+                    apic->flags |= APF_TIMER;
                 }
                 else
                 {
@@ -464,7 +464,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             // TODO: Adjust based on the amount of work the APIC can do at its given frequency.
             schedData->Granularity = 1;
             schedData->Quantum = 5;
-            APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq + 500) / 1000;
+            APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq);
 #else
             APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq + 25) / 50;
 #endif
