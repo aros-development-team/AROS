@@ -367,6 +367,7 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
+    int i;
 
     D(bug("[Graph] %s()\n", __func__);)
 
@@ -402,6 +403,29 @@ IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 				  OBP_FailIfBad, FALSE,
 				  TAG_DONE);
 
+    for (i = 0; i < data->graph_SourceCount; i ++)
+    {
+        ULONG *penSrc;
+        if (((penSrc = (ULONG *)data->graph_Sources[i].gs_PlotFillPenSrc) != NULL) &&
+            (data->graph_Sources[i].gs_PlotFillPenSrc != data->graph_Sources[i].gs_PlotPenSrc))
+            data->graph_Sources[i].gs_PlotFillPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
+    	    	    	    	  penSrc[0],
+				  penSrc[1],
+				  penSrc[2],
+				  OBP_Precision, PRECISION_GUI,
+				  OBP_FailIfBad, FALSE,
+				  TAG_DONE);
+
+        if ((penSrc = (ULONG *)data->graph_Sources[i].gs_PlotPenSrc) != NULL)
+            data->graph_Sources[i].gs_PlotPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
+    	    	    	    	  penSrc[0],
+				  penSrc[1],
+				  penSrc[2],
+				  OBP_Precision, PRECISION_GUI,
+				  OBP_FailIfBad, FALSE,
+				  TAG_DONE);
+    }
+
     data->graph_Flags |= GRAPHF_SETUP;
 
     return TRUE;
@@ -411,7 +435,8 @@ IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
- 
+    int i;
+
     D(bug("[Graph] %s()\n", __func__);)
 
     data->graph_Flags &= ~GRAPHF_SETUP;
@@ -432,6 +457,15 @@ IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
     {
     	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_BackPen);
     	data->graph_BackPen = -1;
+    }
+
+    for (i = 0; i < data->graph_SourceCount; i ++)
+    {
+        if ((data->graph_Sources[i].gs_PlotFillPen != -1) &&
+            (data->graph_Sources[i].gs_PlotFillPen != data->graph_Sources[i].gs_PlotPen))
+                ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_Sources[i].gs_PlotFillPen);
+        if (data->graph_Sources[i].gs_PlotPen != -1)
+                ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_Sources[i].gs_PlotPen);
     }
 
     if ((data->graph_Flags & GRAPHF_PERIODIC) && (data->graph_Flags & GRAPHF_HANDLER))
@@ -666,10 +700,20 @@ IPTR Graph__MUIM_Graph_SetSourceAttrib(Class *cl, Object *obj, struct MUIP_Graph
         case MUIV_Graph_Source_ReadHook:
             dataSource->gs_ReadHook = (struct Hook *)msg->AttribVal;
             break;
+        case MUIV_Graph_Source_PenSrc:
+            dataSource->gs_PlotPenSrc = msg->AttribVal;
+            break;
         case MUIV_Graph_Source_Pen:
+            if (dataSource->gs_PlotPen != -1)
+                ReleasePen(_screen(obj)->ViewPort.ColorMap, dataSource->gs_PlotPen);
             dataSource->gs_PlotPen = (WORD)msg->AttribVal;
             break;
+        case MUIV_Graph_Source_FillPenSrc:
+            dataSource->gs_PlotPen = msg->AttribVal;
+            break;
         case MUIV_Graph_Source_FillPen:
+            if (dataSource->gs_PlotFillPen != -1)
+                ReleasePen(_screen(obj)->ViewPort.ColorMap, dataSource->gs_PlotFillPen);
             dataSource->gs_PlotFillPen = (WORD)msg->AttribVal;
             break;
     }
