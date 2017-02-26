@@ -20,75 +20,106 @@
 
 #if defined(__AROSEXEC_SMP__)
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/debug.h>
 #include <proto/exec.h>
 
 #include "exec_debug.h"
 #include "exec_intern.h"
+#include "exec_locks.h"
 
-struct ExecLockBase
-{
-    struct Library el_Lib;
-};
-
-void *ExecLock__ObtainSystemLock(struct List *systemList, ULONG mode)
+int ExecLock__ObtainSystemLock(struct List *systemList, ULONG mode, ULONG flags)
 {
     spinlock_t *sysListLock = NULL;
-
-    D(bug("[Exec:Lock] %s()\n", __func__));
+    D(char *name = "??");
 
     if (systemList)
     {
-        if (&SysBase->ResourceList == systemList)
+        if (&SysBase->ResourceList == systemList) {
+            D(name="ResourceList");
             sysListLock = &PrivExecBase(SysBase)->ResourceListSpinLock;
-        else if (&SysBase->DeviceList == systemList)
+        }
+        else if (&SysBase->DeviceList == systemList) {
+            D(name="DeviceList");
             sysListLock = &PrivExecBase(SysBase)->DeviceListSpinLock;
-        else if (&SysBase->IntrList == systemList)
+        }
+        else if (&SysBase->IntrList == systemList) {
+            D(name="IntrList");
             sysListLock = &PrivExecBase(SysBase)->IntrListSpinLock;
-        else if (&SysBase->LibList == systemList)
+        }
+        else if (&SysBase->LibList == systemList) {
+            D(name="LibList");
             sysListLock = &PrivExecBase(SysBase)->LibListSpinLock;
-        else if (&SysBase->PortList == systemList)
+        }
+        else if (&SysBase->PortList == systemList) {
+            D(name="PortList");
             sysListLock = &PrivExecBase(SysBase)->PortListSpinLock;
-        else if (&SysBase->SemaphoreList == systemList)
+        }
+        else if (&SysBase->SemaphoreList == systemList) {
+            D(name="SemaphoreList");
             sysListLock = &PrivExecBase(SysBase)->SemListSpinLock;
+        }
     }
+    D(bug("[Exec:Lock] %s(), List='%s' (%p), mode=%s, flags=%d\n", __func__, name, systemList, mode == SPINLOCK_MODE_WRITE ? "write":"read", flags));
     if (sysListLock)
     {
+        if (flags && LOCKF_DISABLE)
+            Disable();
+        if (flags && LOCKF_FORBID)
+            Forbid();
+
         EXEC_SPINLOCK_LOCK(sysListLock, NULL, mode);
-        return (void *)TRUE;
+
+        return TRUE;
     }
-    return NULL;
+    return FALSE;
 }
 
-void ExecLock__ReleaseSystemLock(struct List *systemList)
+void ExecLock__ReleaseSystemLock(struct List *systemList, ULONG flags)
 {
     spinlock_t *sysListLock = NULL;
-
-    D(bug("[Exec:Lock] %s()\n", __func__));
+    D(char *name = "??");
 
     if (systemList)
     {
-        if (&SysBase->ResourceList == systemList)
+        if (&SysBase->ResourceList == systemList) {
+            D(name="ResourceList");
             sysListLock = &PrivExecBase(SysBase)->ResourceListSpinLock;
-        else if (&SysBase->DeviceList == systemList)
+        }
+        else if (&SysBase->DeviceList == systemList) {
+            D(name="DeviceList");
             sysListLock = &PrivExecBase(SysBase)->DeviceListSpinLock;
-        else if (&SysBase->IntrList == systemList)
+        }
+        else if (&SysBase->IntrList == systemList) {
+            D(name="IntrList");
             sysListLock = &PrivExecBase(SysBase)->IntrListSpinLock;
-        else if (&SysBase->LibList == systemList)
+        }
+        else if (&SysBase->LibList == systemList) {
+            D(name="LibList");
             sysListLock = &PrivExecBase(SysBase)->LibListSpinLock;
-        else if (&SysBase->PortList == systemList)
+        }
+        else if (&SysBase->PortList == systemList) {
+            D(name="PortList");
             sysListLock = &PrivExecBase(SysBase)->PortListSpinLock;
-        else if (&SysBase->SemaphoreList == systemList)
+        }
+        else if (&SysBase->SemaphoreList == systemList) {
+            D(name="SemaphoreList");
             sysListLock = &PrivExecBase(SysBase)->SemListSpinLock;
+        }
     }
+    D(bug("[Exec:Lock] %s(), list='%s' (%p), flags=%d\n", __func__, name, systemList, flags));
     if (sysListLock)
     {
         EXEC_SPINLOCK_UNLOCK(sysListLock);
+
+        if (flags & LOCKF_FORBID)
+            Permit();
+        if (flags & LOCKF_DISABLE)
+            Enable();
     }
 }
-
+#if 0
 /* Locking mechanism for userspace */
 void *ExecLock__AllocLock()
 {
@@ -134,8 +165,9 @@ void ExecLock__FreeLock(void *lock)
         FreeMem(lock, sizeof(spinlock_t));
     }
 }
+#endif
 
-struct Library *ExecLock__PrepareBase(struct MemHeader *mh)
+APTR ExecLock__PrepareBase(struct MemHeader *mh)
 {
     struct ExecLockBase *ExecLockBase;
 
@@ -143,9 +175,14 @@ struct Library *ExecLock__PrepareBase(struct MemHeader *mh)
 
     ExecLockBase = Allocate(mh, sizeof(struct ExecLockBase));
 
-    // TODO - Initialise the resource and add to the system.
+    ExecLockBase->el_Node.ln_Name = "execlock.resource";
+    ExecLockBase->el_Node.ln_Type = NT_RESOURCE;
+    ExecLockBase->ObtainSystemLock = ExecLock__ObtainSystemLock;
+    ExecLockBase->ReleaseSystemLock = ExecLock__ReleaseSystemLock;
 
-    return (struct Library *)ExecLockBase;
+    AddResource(ExecLockBase);
+
+    return ExecLockBase;
 }
 
 #endif
