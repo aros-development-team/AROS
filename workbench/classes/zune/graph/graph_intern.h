@@ -51,8 +51,8 @@ struct Graph_DATA
 
     /* Private rendering values .. */
     IPTR                                graph_Tick;             // tick counter used in periodic rendering
-    UWORD    	    	    	        graph_SegmentSize;      // size of a segment in pixels
-    UWORD    	    	    	        graph_PeriodSize;      // size of a segment in pixels
+    float    	    	    	        graph_SegmentSize;      // size of a segment in pixels
+    float    	    	    	        graph_PeriodSize;      // size of a segment in pixels
 };
 
 #define GRAPHF_SETUP    (1 << 0)
