@@ -13,6 +13,7 @@
 
 #include "exec_intern.h"
 #include "exec_debug.h"
+#include "exec_locks.h"
 
 /*****************************************************************************
 
@@ -54,17 +55,14 @@
     APTR resource;
 
     /* Arbitrate for the resource list */
-    Forbid();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->ResourceListSpinLock, NULL, SPINLOCK_MODE_READ);
-#endif
+    EXEC_LOCK_LIST_READ_AND_FORBID(&SysBase->ResourceList);
+
     /* Look for the resource in our list */
     resource = (APTR) FindName (&SysBase->ResourceList, resName);
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->ResourceListSpinLock);
-#endif
+
     /* All done. */
-    Permit();
+    EXEC_UNLOCK_LIST_AND_PERMIT(&SysBase->ResourceList);
+
     return resource;
     AROS_LIBFUNC_EXIT
 } /* OpenResource */

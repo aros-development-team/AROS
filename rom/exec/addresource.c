@@ -15,6 +15,7 @@
 
 #include "exec_intern.h"
 #include "exec_debug.h"
+#include "exec_locks.h"
 
 /* Kludge for old kernels */
 #ifndef KrnStatMemory
@@ -61,18 +62,14 @@
     ((struct Node *)resource)->ln_Type=NT_RESOURCE;
 
     /* Arbitrate for the resource list */
-    Forbid();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->ResourceListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
+    EXEC_LOCK_LIST_WRITE_AND_FORBID(&SysBase->ResourceList);
+
     /* And add the resource */
     Enqueue(&SysBase->ResourceList,(struct Node *)resource);
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->ResourceListSpinLock);
-#endif
-    /* All done. */
-    Permit();
 
+    /* All done. */
+    EXEC_UNLOCK_LIST_AND_PERMIT(&SysBase->ResourceList);
+    
     /*
      * A tricky part.
      * kernel.resource is the first one to get initialized. After that
