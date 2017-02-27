@@ -336,7 +336,11 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
          * Set LINT0 to external and LINT1 to NMI.
          * These are common defaults and they are going to be overriden by ACPI tables.
          */
-        APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MT_EXT;
+        if (cpuNum == 0)
+            APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MT_EXT;
+        else
+            APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MASK;
+
         APIC_REG(__APICBase, APIC_LINT1_VEC) = LVT_MT_NMI;
 
 #ifdef CONFIG_LEGACY
