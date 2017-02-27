@@ -20,7 +20,7 @@
 
 #if defined(__AROSEXEC_SMP__)
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/debug.h>
 #include <proto/exec.h>
@@ -29,7 +29,7 @@
 #include "exec_intern.h"
 #include "exec_locks.h"
 
-int ExecLock__ObtainSystemLock(struct List *systemList, ULONG mode, ULONG flags)
+int ExecLock__InternObtainSystemLock(struct List *systemList, ULONG mode, ULONG flags)
 {
     spinlock_t *sysListLock = NULL;
     D(char *name = "??");
@@ -76,7 +76,7 @@ int ExecLock__ObtainSystemLock(struct List *systemList, ULONG mode, ULONG flags)
     return FALSE;
 }
 
-void ExecLock__ReleaseSystemLock(struct List *systemList, ULONG flags)
+void ExecLock__InternReleaseSystemLock(struct List *systemList, ULONG flags)
 {
     spinlock_t *sysListLock = NULL;
     D(char *name = "??");
@@ -167,18 +167,84 @@ void ExecLock__FreeLock(void *lock)
 }
 #endif
 
+AROS_LH1 (struct ExecLockBase *, ResourceOpen,
+    AROS_LHA (ULONG, version, D0),
+    struct ExecLockBase *, ExecLockBase, 1, ExecLock
+)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[Exec:Lock] %s()\n", __func__));
+
+    ((struct Library *)ExecLockBase)->lib_OpenCnt++;
+    ((struct Library *)ExecLockBase)->lib_Flags &= ~LIBF_DELEXP;
+
+    return ExecLockBase;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3 (int, ObtainSystemLock,
+    AROS_LHA(struct List *, systemList, A0),
+    AROS_LHA(ULONG, mode, D0),
+    AROS_LHA(ULONG, flags, D1),
+    struct ExecLockBase *, ExecLockBase, 5, ExecLock
+)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[Exec:Lock] %s()\n", __func__));
+
+    return ExecLock__InternObtainSystemLock(systemList, mode, flags);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2 (void, ReleaseSystemLock,
+    AROS_LHA(struct List *, systemList, A0),
+    AROS_LHA(ULONG, flags, D1),
+    struct ExecLockBase *, ExecLockBase, 6, ExecLock
+)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[Exec:Lock] %s()\n", __func__));
+
+    ExecLock__InternReleaseSystemLock(systemList, flags);
+
+    AROS_LIBFUNC_EXIT
+}
+
+
+const APTR ExecLock__FuncTable[]=
+{
+    &AROS_SLIB_ENTRY(ResourceOpen,ExecLock,1),
+    NULL,
+    NULL,
+    NULL,
+    /* Version 36 */
+    &AROS_SLIB_ENTRY(ObtainSystemLock,ExecLock,5),
+    &AROS_SLIB_ENTRY(ReleaseSystemLock,ExecLock,6),
+    (void *)-1
+};
+
+
 APTR ExecLock__PrepareBase(struct MemHeader *mh)
 {
+    APTR ExecLockResBase;
     struct ExecLockBase *ExecLockBase;
 
     D(bug("[Exec:Lock] %s()\n", __func__));
 
-    ExecLockBase = Allocate(mh, sizeof(struct ExecLockBase));
+    ExecLockResBase = Allocate(mh, sizeof(struct ExecLockBase) + sizeof(*ExecLock__FuncTable));
+    ExecLockBase = (struct ExecLockBase *)((IPTR)ExecLockResBase + sizeof(*ExecLock__FuncTable));
+
+    MakeFunctions(ExecLockBase, ExecLock__FuncTable, NULL);
 
     ExecLockBase->el_Node.ln_Name = "execlock.resource";
     ExecLockBase->el_Node.ln_Type = NT_RESOURCE;
-    ExecLockBase->ObtainSystemLock = ExecLock__ObtainSystemLock;
-    ExecLockBase->ReleaseSystemLock = ExecLock__ReleaseSystemLock;
+    ExecLockBase->ObtainSystemLock = ExecLock__InternObtainSystemLock;
+    ExecLockBase->ReleaseSystemLock = ExecLock__InternReleaseSystemLock;
 
     AddResource(ExecLockBase);
 
