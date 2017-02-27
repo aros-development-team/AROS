@@ -22,6 +22,7 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <proto/exec.h>
+#include <proto/execlock.h>
 #include <proto/dos.h>
 
 #include <stddef.h>
@@ -795,6 +796,10 @@ static ULONG LDDemon_Init(struct LDDemonBase *ldBase)
     SysBase->ex_RamLibPrivate = ldBase;
 
     AddMemHandler(&ldBase->dl_LDHandler);
+
+#if defined(__AROSEXEC_SMP__)
+    ldBase->dl_ExecLockRes = OpenResource("execlock.resource");
+#endif
 
     /*
      *	Grab the semaphore ourself. The reason for this is that it will
