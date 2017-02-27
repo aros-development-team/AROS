@@ -150,9 +150,29 @@ UWORD SetConfiguration(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
         wValue Zero
         wIndex Zero
         wLength Two
-        Data None
+        Data Device Status (0x0000)
 */
 UWORD GetStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    ioreq->iouh_Actual = wLength;
+    /* Assume ioreq data structure is already cleared... we must return 0x0000 as data */
+
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    ClearFeature:
+        bmRequestType (URTF_IN|URTF_STANDARD|URTF_DEVICE) 00000000B
+        bRequest CLEAR_FEATURE
+        wValue Feature Selector
+        wIndex Zero
+        wLength Zero
+        Data None
+*/
+UWORD ClearFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -741,20 +761,41 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
 
 /* Standard Requests */
+        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_STATUS)):
+            return(GetStatus(ioreq, wValue, wIndex, wLength));
+
+        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_CLEAR_FEATURE)):
+            return(ClearFeature(ioreq, wValue, wIndex, wLength));
+
+
+
+
         case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
             return(SetAddress(ioreq, wValue, wIndex, wLength));
 
         case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
             return(SetConfiguration(ioreq, wValue, wIndex, wLength));
 
-        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_STATUS)):
-            return(GetStatus(ioreq, wValue, wIndex, wLength));
-
         case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_DESCRIPTOR)):
             return(GetDescriptor(ioreq, wValue, wIndex, wLength));
 
         case (((URTF_OUT|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_SET_DESCRIPTOR)):
             return(SetDescriptor(ioreq, wValue, wIndex, wLength));
+
+
+/*
+1000 0000b 	GET_STATUS (0x00) 	Zero 	Zero 	Two 	Device Status
+0000 0000b 	CLEAR_FEATURE (0x01) 	Feature Selector 	Zero 	Zero 	None
+0000 0000b 	SET_FEATURE (0x03) 	Feature Selector 	Zero 	Zero 	None
+0000 0000b 	SET_ADDRESS (0x05) 	Device Address 	Zero 	Zero 	None
+1000 0000b 	GET_DESCRIPTOR (0x06) 	Descriptor Type & Index 	Zero or Language ID 	Descriptor Length 	Descriptor
+0000 0000b 	SET_DESCRIPTOR (0x07) 	Descriptor Type & Index 	Zero or Language ID 	Descriptor Length 	Descriptor
+1000 0000b 	GET_CONFIGURATION (0x08) 	Zero 	Zero 	1 	Configuration Value
+0000 0000b 	SET_CONFIGURATION (0x09) 	Configuration Value 	Zero 	Zero 	None
+*/
+
+
+
 
 /* Hub Class Requests */
         case (((URTF_OUT|URTF_CLASS|URTF_DEVICE)<<16)|(USR_CLEAR_FEATURE)):
@@ -903,10 +944,10 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
 WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(-1, ("Entering function\n"));
+    mybug_unit(0, ("Entering function\n"));
 
-    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
