@@ -159,40 +159,50 @@ void ExecLock__InternReleaseSystemLock(struct List *systemList, ULONG flags)
             Enable();
     }
 }
-#if 0
+
 /* Locking mechanism for userspace */
-void *ExecLock__AllocLock()
+void * ExecLock__AllocLock()
 {
     spinlock_t *publicLock;
 
     D(bug("[Exec:Lock] %s()\n", __func__));
 
-    if ((publicLock = (spinlock_t *)AllocMem(sizeof(spinlock_t), MEMF_ANY)) != NULL)
+    if ((publicLock = (spinlock_t *)AllocMem(sizeof(spinlock_t), MEMF_ANY | MEMF_CLEAR)) != NULL)
     {
         EXEC_SPINLOCK_INIT(publicLock);
     }
     return publicLock;
 }
 
-void *ExecLock__ObtainLock(void *lock, ULONG mode)
+int ExecLock__ObtainLock(void * lock, ULONG mode, ULONG flags)
 {
     D(bug("[Exec:Lock] %s()\n", __func__));
 
     if (lock)
     {
+        if (flags && LOCKF_DISABLE)
+            Disable();
+        if (flags && LOCKF_FORBID)
+            Forbid();
+
         EXEC_SPINLOCK_LOCK(lock, NULL, mode);
-        return (void *)TRUE;
+        return TRUE;
     }
-    return NULL;
+    return FALSE;
 }
 
-void ExecLock__ReleaseLock(void *lock)
+void ExecLock__ReleaseLock(void *lock, ULONG flags)
 {
     D(bug("[Exec:Lock] %s()\n", __func__));
 
     if (lock)
     {
         EXEC_SPINLOCK_UNLOCK(lock);
+        
+        if (flags & LOCKF_FORBID)
+            Permit();
+        if (flags & LOCKF_DISABLE)
+            Enable();
     }
 }
 
@@ -205,7 +215,6 @@ void ExecLock__FreeLock(void *lock)
         FreeMem(lock, sizeof(spinlock_t));
     }
 }
-#endif
 
 AROS_LH3 (int, ObtainSystemLock,
     AROS_LHA(struct List *, systemList, A0),
@@ -238,10 +247,72 @@ AROS_LH2 (void, ReleaseSystemLock,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LH0 (APTR, AllocLock,
+    struct ExecLockBase *, ExecLockBase, 3, ExecLock
+)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[Exec:Lock] %s()\n", __func__));
+
+    return ExecLock__AllocLock();
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1 (void, FreeLock,
+    AROS_LHA(APTR, lock, A0),
+    struct ExecLockBase *, ExecLockBase, 4, ExecLock
+)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[Exec:Lock] %s()\n", __func__));
+
+    ExecLock__FreeLock(lock);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3 (int, ObtainLock,
+    AROS_LHA(APTR, lock, A0),
+    AROS_LHA(ULONG, mode, D0),
+    AROS_LHA(ULONG, flags, D1),
+    struct ExecLockBase *, ExecLockBase, 5, ExecLock
+)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[Exec:Lock] %s()\n", __func__));
+
+    return ExecLock__ObtainLock(lock, mode, flags);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2 (void, ReleaseLock,
+    AROS_LHA(APTR, lock, A0),
+    AROS_LHA(ULONG, flags, D1),
+    struct ExecLockBase *, ExecLockBase, 6, ExecLock
+)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[Exec:Lock] %s()\n", __func__));
+
+    ExecLock__ReleaseLock(lock, flags);
+
+    AROS_LIBFUNC_EXIT
+}
+
 const APTR ExecLock__FuncTable[]=
 {
     &AROS_SLIB_ENTRY(ObtainSystemLock,ExecLock,1),
     &AROS_SLIB_ENTRY(ReleaseSystemLock,ExecLock,2),
+    &AROS_SLIB_ENTRY(AllocLock,ExecLock,3),
+    &AROS_SLIB_ENTRY(FreeLock,ExecLock,4),
+    &AROS_SLIB_ENTRY(ObtainLock,ExecLock,5),
+    &AROS_SLIB_ENTRY(ReleaseLock,ExecLock,6),
     (void *)-1
 };
 
@@ -262,6 +333,10 @@ APTR ExecLock__PrepareBase(struct MemHeader *mh)
     ExecLockBase->el_Node.ln_Type = NT_RESOURCE;
     ExecLockBase->ObtainSystemLock = ExecLock__InternObtainSystemLock;
     ExecLockBase->ReleaseSystemLock = ExecLock__InternReleaseSystemLock;
+    ExecLockBase->AllocLock = ExecLock__AllocLock;
+    ExecLockBase->FreeLock = ExecLock__FreeLock;
+    ExecLockBase->ObtainLock = ExecLock__ObtainLock;
+    ExecLockBase->ReleaseLock = ExecLock__ReleaseLock;
 
     AddResource(ExecLockBase);
 

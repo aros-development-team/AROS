@@ -30,6 +30,40 @@ AROS_LP2(void, ReleaseSystemLock,
 
 #endif /* !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__) */
 
+#if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
+AROS_LP0(APTR, AllocLock,
+         LIBBASETYPEPTR, ExecLockBase, 3, ExecLock
+);
+
+#endif /* !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__) */
+
+#if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
+AROS_LP1(void, FreeLock,
+         AROS_LPA(APTR, lock, A0),
+         LIBBASETYPEPTR, ExecLockBase, 4, ExecLock
+);
+
+#endif /* !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__) */
+
+#if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
+AROS_LP3(int, ObtainLock,
+         AROS_LPA(APTR, lock, A0),
+         AROS_LPA(ULONG, mode, D0),
+         AROS_LPA(ULONG, flags, D1),
+         LIBBASETYPEPTR, ExecLockBase, 5, ExecLock
+);
+
+#endif /* !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__) */
+
+#if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
+AROS_LP2(void, ReleaseLock,
+         AROS_LPA(APTR, lock, A0),
+         AROS_LPA(ULONG, flags, D1),
+         LIBBASETYPEPTR, ExecLockBase, 6, ExecLock
+);
+
+#endif /* !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__) */
+
 __END_DECLS
 
 #endif /* CLIB_EXECLOCK_PROTOS_H */
