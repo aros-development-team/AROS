@@ -254,7 +254,7 @@ IPTR ProcessorGraph__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             break;
 
         case MUIA_ProcessorGrp_SingleMode:
-            *store = (IPTR)(data->pg_Flags & PROCGF_SINGLE);
+            *store = (IPTR)((BOOL)(data->pg_Flags & PROCGF_SINGLE));
             retval = TRUE;
             break;
     }

@@ -227,7 +227,7 @@ AROS_UFH3(VOID, processorgraphpercpuhookfunc,
 
     GET(smdata->cpuusageobj, MUIA_ProcessorGrp_CPUCount, &cpuCount);
     GET(smdata->cpuusageobj, MUIA_ProcessorGrp_SingleMode, &graphMode);
-    if ((smdata->cpuusageclass != ProcessorGauge_CLASS) || (graphMode))
+    if ((smdata->cpuusageclass != ProcessorGraph_CLASS) || (graphMode))
     {
         smdata->cpuusageclass = ProcessorGraph_CLASS;
         smdata->cpuusagesinglemode = FALSE;
