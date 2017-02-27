@@ -20,7 +20,7 @@
 
 #if defined(__AROSEXEC_SMP__)
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <proto/exec.h>
@@ -167,28 +167,11 @@ void ExecLock__FreeLock(void *lock)
 }
 #endif
 
-AROS_LH1 (struct ExecLockBase *, ResourceOpen,
-    AROS_LHA (ULONG, version, D0),
-    struct ExecLockBase *, ExecLockBase, 1, ExecLock
-)
-{
-    AROS_LIBFUNC_INIT
-
-    D(bug("[Exec:Lock] %s()\n", __func__));
-
-    ((struct Library *)ExecLockBase)->lib_OpenCnt++;
-    ((struct Library *)ExecLockBase)->lib_Flags &= ~LIBF_DELEXP;
-
-    return ExecLockBase;
-
-    AROS_LIBFUNC_EXIT
-}
-
 AROS_LH3 (int, ObtainSystemLock,
     AROS_LHA(struct List *, systemList, A0),
     AROS_LHA(ULONG, mode, D0),
     AROS_LHA(ULONG, flags, D1),
-    struct ExecLockBase *, ExecLockBase, 5, ExecLock
+    struct ExecLockBase *, ExecLockBase, 1, ExecLock
 )
 {
     AROS_LIBFUNC_INIT
@@ -203,7 +186,7 @@ AROS_LH3 (int, ObtainSystemLock,
 AROS_LH2 (void, ReleaseSystemLock,
     AROS_LHA(struct List *, systemList, A0),
     AROS_LHA(ULONG, flags, D1),
-    struct ExecLockBase *, ExecLockBase, 6, ExecLock
+    struct ExecLockBase *, ExecLockBase, 2, ExecLock
 )
 {
     AROS_LIBFUNC_INIT
@@ -215,16 +198,10 @@ AROS_LH2 (void, ReleaseSystemLock,
     AROS_LIBFUNC_EXIT
 }
 
-
 const APTR ExecLock__FuncTable[]=
 {
-    &AROS_SLIB_ENTRY(ResourceOpen,ExecLock,1),
-    NULL,
-    NULL,
-    NULL,
-    /* Version 36 */
-    &AROS_SLIB_ENTRY(ObtainSystemLock,ExecLock,5),
-    &AROS_SLIB_ENTRY(ReleaseSystemLock,ExecLock,6),
+    &AROS_SLIB_ENTRY(ObtainSystemLock,ExecLock,1),
+    &AROS_SLIB_ENTRY(ReleaseSystemLock,ExecLock,2),
     (void *)-1
 };
 
@@ -236,8 +213,8 @@ APTR ExecLock__PrepareBase(struct MemHeader *mh)
 
     D(bug("[Exec:Lock] %s()\n", __func__));
 
-    ExecLockResBase = Allocate(mh, sizeof(struct ExecLockBase) + sizeof(*ExecLock__FuncTable));
-    ExecLockBase = (struct ExecLockBase *)((IPTR)ExecLockResBase + sizeof(*ExecLock__FuncTable));
+    ExecLockResBase = Allocate(mh, sizeof(struct ExecLockBase) + sizeof(ExecLock__FuncTable));
+    ExecLockBase = (struct ExecLockBase *)((IPTR)ExecLockResBase + sizeof(ExecLock__FuncTable));
 
     MakeFunctions(ExecLockBase, ExecLock__FuncTable, NULL);
 

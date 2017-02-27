@@ -24,7 +24,7 @@ static inline int __inline_ExecLock_ObtainSystemLock(struct List * __arg1, ULONG
         AROS_LCA(struct List *,(__arg1),A0),
         AROS_LCA(ULONG,(__arg2),D0),
         AROS_LCA(ULONG,(__arg3),D1),
-        struct Library *, (__ExecLockBase), 5, ExecLock    );
+        struct Library *, (__ExecLockBase), 1, ExecLock    );
 }
 
 #define ObtainSystemLock(arg1, arg2, arg3) \
@@ -40,7 +40,7 @@ static inline void __inline_ExecLock_ReleaseSystemLock(struct List * __arg1, ULO
     AROS_LC2NR(void, ReleaseSystemLock,
         AROS_LCA(struct List *,(__arg1),A0),
         AROS_LCA(ULONG,(__arg2),D1),
-        struct Library *, (__ExecLockBase), 6, ExecLock    );
+        struct Library *, (__ExecLockBase), 2, ExecLock    );
 }
 
 #define ReleaseSystemLock(arg1, arg2) \
