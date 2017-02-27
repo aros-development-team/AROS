@@ -13,6 +13,7 @@ INCSUBDIRS :=	aros				\
 		c++/exec			\
 		clib				\
 		datatypes			\
+		defines			        \
 		devices				\
 		diskfont			\
 		dos				\
@@ -24,6 +25,7 @@ INCSUBDIRS :=	aros				\
 		hardware/efi			\
 		hardware/pic			\
 		hidd				\
+		inline			        \
 		intuition			\
 		irda				\
 		libcore				\
