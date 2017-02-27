@@ -8,13 +8,9 @@
 
 #include <aros/config.h>
 #include <exec/nodes.h>
+#include <resources/execlock.h>
 #include "exec_debug.h"
 #include "exec_intern.h"
-
-#define LOCKB_DISABLE   0
-#define LOCKB_FORBID    1
-#define LOCKF_DISABLE   (1 << LOCKB_DISABLE)
-#define LOCKF_FORBID    (1 << LOCKB_FORBID)
 
 /*
     LockBase is not even a resource, just something similar to AROSSupportBase, 
