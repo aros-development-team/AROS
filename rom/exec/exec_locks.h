@@ -23,6 +23,10 @@ struct ExecLockBase
 
     int         (*ObtainSystemLock)(struct List *list, ULONG mode, ULONG flags);
     void        (*ReleaseSystemLock)(struct List *list, ULONG flags);
+    void *      (*AllocLock)();
+    void        (*FreeLock)(void *lock);
+    int         (*ObtainLock)(void *lock, ULONG mode, ULONG flags);
+    void        (*ReleaseLock)(void *lock, ULONG flags);
 };
 
 #if defined (__AROSEXEC_SMP__)
