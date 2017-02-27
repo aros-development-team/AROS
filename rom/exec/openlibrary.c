@@ -15,6 +15,7 @@
 
 #include "exec_intern.h"
 #include "exec_debug.h"
+#include "exec_locks.h"
 
 
 /*****************************************************************************
@@ -63,15 +64,12 @@
     DRAMLIB("OpenLibrary(\"%s\", %ld)", libName, version);
 
     /* Arbitrate for the library list */
-    Forbid();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->LibListSpinLock, NULL, SPINLOCK_MODE_READ);
-#endif
+    EXEC_LOCK_LIST_READ_AND_FORBID(&SysBase->LibList);
+    
     /* Look for the library in our list */
     library = (struct Library *) FindName (&SysBase->LibList, libName);
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->LibListSpinLock);
-#endif
+
+    EXEC_UNLOCK_LIST(&SysBase->LibList);
 
     /* Something found ? */
     if(library!=NULL)

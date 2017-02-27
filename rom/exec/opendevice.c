@@ -99,6 +99,8 @@
 
     iORequest->io_Device = (struct Device *)FindName(&SysBase->DeviceList, devName);
 
+    EXEC_UNLOCK_LIST(&SysBase->DeviceList);
+
     D(bug("[OpenDevice] Found resident 0x%p\n", iORequest->io_Device));
 
     /* Something found ? */
@@ -128,7 +130,7 @@
      */
 
     /* All done. */
-    EXEC_UNLOCK_LIST_AND_PERMIT(&SysBase->DeviceList);
+    Permit();
 
     D(bug("[OpenDevice] Returning device 0x%p, unit 0x%p, error %d\n", iORequest->io_Device, iORequest->io_Unit, iORequest->io_Error));
 

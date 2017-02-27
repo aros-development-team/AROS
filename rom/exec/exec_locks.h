@@ -63,6 +63,24 @@ struct ExecLockBase
         b->ReleaseSystemLock(list, LOCKF_DISABLE); \
     } else Enable(); } while(0)
 
+#define EXEC_LOCK_LIST_WRITE(list)            do { \
+    struct ExecLockBase *b; \
+    if ((b = PrivExecBase(SysBase)->ExecLockBase)) { \
+        b->ObtainSystemLock(list, SPINLOCK_MODE_WRITE, 0); \
+    } else Disable(); } while(0)
+
+#define EXEC_LOCK_LIST_READ(list)             do { \
+    struct ExecLockBase *b; \
+    if ((b = PrivExecBase(SysBase)->ExecLockBase)) { \
+        b->ObtainSystemLock(list, SPINLOCK_MODE_READ, 0); \
+    } else Forbid(); } while(0)
+
+#define EXEC_UNLOCK_LIST(list)                do { \
+    struct ExecLockBase *b; \
+    if ((b = PrivExecBase(SysBase)->ExecLockBase)) { \
+        b->ReleaseSystemLock(list, 0); \
+    } else Permit(); } while(0)
+
 #else
 
 #define EXEC_LOCK_LIST_READ_AND_FORBID(list)     do { Forbid(); } while(0)
@@ -71,7 +89,9 @@ struct ExecLockBase
 #define EXEC_LOCK_LIST_WRITE_AND_DISABLE(list)    do { Disable(); } while(0)
 #define EXEC_UNLOCK_LIST_AND_PERMIT(list)   do { Permit(); } while(0)
 #define EXEC_UNLOCK_LIST_AND_ENABLE(list)   do { Enable(); } while(0)
-
+#define EXEC_LOCK_LIST_READ(list) /* eps */
+#define EXEC_LOCK_LIST_WRITE(list) /* eps */
+#define EXEC_UNLOCK_LIST(list) /* eps */
 #endif
 
 #endif /* _EXEC_LOCKS_H */

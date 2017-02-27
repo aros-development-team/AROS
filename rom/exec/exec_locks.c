@@ -60,6 +60,26 @@ int ExecLock__InternObtainSystemLock(struct List *systemList, ULONG mode, ULONG 
             D(name="SemaphoreList");
             sysListLock = &PrivExecBase(SysBase)->SemListSpinLock;
         }
+        else if (&SysBase->MemList == systemList) {
+            D(name="MemList");
+            sysListLock = &PrivExecBase(SysBase)->MemListSpinLock;
+        }
+        else if (&SysBase->TaskReady == systemList) {
+            D(name="TaskReady");
+            sysListLock = &PrivExecBase(SysBase)->TaskReadySpinLock;
+        }
+        else if (&SysBase->TaskWait == systemList) {
+            D(name="TaskWait");
+            sysListLock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
+        }
+        else if (&PrivExecBase(SysBase)->TaskRunning == systemList) {
+            D(name="TaskRunning");
+            sysListLock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
+        }
+        else if (&PrivExecBase(SysBase)->TaskSpinning == systemList) {
+            D(name="TaskSpinning");
+            sysListLock = &PrivExecBase(SysBase)->TaskSpinningLock;
+        }
     }
     D(bug("[Exec:Lock] %s(), List='%s' (%p), mode=%s, flags=%d\n", __func__, name, systemList, mode == SPINLOCK_MODE_WRITE ? "write":"read", flags));
     if (sysListLock)
@@ -106,6 +126,26 @@ void ExecLock__InternReleaseSystemLock(struct List *systemList, ULONG flags)
         else if (&SysBase->SemaphoreList == systemList) {
             D(name="SemaphoreList");
             sysListLock = &PrivExecBase(SysBase)->SemListSpinLock;
+        }
+        else if (&SysBase->MemList == systemList) {
+            D(name="MemList");
+            sysListLock = &PrivExecBase(SysBase)->MemListSpinLock;
+        }
+        else if (&SysBase->TaskReady == systemList) {
+            D(name="TaskReady");
+            sysListLock = &PrivExecBase(SysBase)->TaskReadySpinLock;
+        }
+        else if (&SysBase->TaskWait == systemList) {
+            D(name="TaskWait");
+            sysListLock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
+        }
+        else if (&PrivExecBase(SysBase)->TaskRunning == systemList) {
+            D(name="TaskRunning");
+            sysListLock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
+        }
+        else if (&PrivExecBase(SysBase)->TaskSpinning == systemList) {
+            D(name="TaskSpinning");
+            sysListLock = &PrivExecBase(SysBase)->TaskSpinningLock;
         }
     }
     D(bug("[Exec:Lock] %s(), list='%s' (%p), flags=%d\n", __func__, name, systemList, flags));
