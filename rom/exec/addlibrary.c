@@ -14,6 +14,7 @@
 
 #include "exec_intern.h"
 #include "exec_debug.h"
+#include "exec_locks.h"
 
 /*****************************************************************************
 
@@ -66,18 +67,11 @@
     SumLibrary(library);
 
     /* Arbitrate for the library list */
-    Forbid();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->LibListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
+    EXEC_LOCK_LIST_WRITE_AND_FORBID(&SysBase->LibList);
     /* And add the library */
     Enqueue(&SysBase->LibList,&library->lib_Node);
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->LibListSpinLock);
-#endif
-    /* All done. */
-    Permit();
-
+    /* We're done with midifying the LibList */
+    EXEC_UNLOCK_LIST_AND_PERMIT(&SysBase->LibList);
     /*
      * When debug.library is added, open it and cache its base instantly.
      * We do it because symbol lookup routines can be called in a system crash

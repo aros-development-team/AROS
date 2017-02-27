@@ -373,11 +373,11 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
 
     /* Try to find the resident in the list */
     #if defined(__AROSEXEC_SMP__)
-    ObtainSystemLock(list, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+    ObtainSystemLock(list, SPINLOCK_MODE_READ, LOCKF_FORBID);
     #endif
     tmplib = (struct Library *)FindName(list, stripped_libname);
     #if defined(__AROSEXEC_SMP__)
-    ReleaseSystemLock(list, LOCKF_DISABLE);
+    ReleaseSystemLock(list, LOCKF_FORBID);
     #endif
 
     if (!tmplib)
