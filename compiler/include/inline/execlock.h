@@ -17,10 +17,10 @@
 
 #if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
 
-static inline void __inline_ExecLock_ObtainSystemLock(struct List * __arg1, ULONG __arg2, ULONG __arg3, APTR __ExecLockBase)
+static inline int __inline_ExecLock_ObtainSystemLock(struct List * __arg1, ULONG __arg2, ULONG __arg3, APTR __ExecLockBase)
 {
     AROS_LIBREQ(ExecLockBase, 36)
-    AROS_LC3(void, ObtainSystemLock,
+    return AROS_LC3(int, ObtainSystemLock,
         AROS_LCA(struct List *,(__arg1),A0),
         AROS_LCA(ULONG,(__arg2),D0),
         AROS_LCA(ULONG,(__arg3),D1),
@@ -34,10 +34,10 @@ static inline void __inline_ExecLock_ObtainSystemLock(struct List * __arg1, ULON
 
 #if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
 
-static inline struct KeyMap * __inline_ExecLock_ReleaseSystemLock(struct List * __arg1, ULONG __arg2, APTR __ExecLockBase)
+static inline void __inline_ExecLock_ReleaseSystemLock(struct List * __arg1, ULONG __arg2, APTR __ExecLockBase)
 {
     AROS_LIBREQ(ExecLockBase, 36)
-    return AROS_LC2NR(void, ReleaseSystemLock,
+    AROS_LC2NR(void, ReleaseSystemLock,
         AROS_LCA(struct List *,(__arg1),A0),
         AROS_LCA(ULONG,(__arg2),D1),
         struct Library *, (__ExecLockBase), 6, ExecLock    );
