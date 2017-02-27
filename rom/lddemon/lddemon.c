@@ -24,6 +24,8 @@
 #include <proto/exec.h>
 #include <proto/execlock.h>
 #include <proto/dos.h>
+#include <resources/execlock.h>
+#include <aros/types/spinlock_s.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -299,6 +301,7 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
 	but the resident only contains foo.gadget
     */
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+    void *ExecLockBase = ldBase->dl_ExecLockRes;
     struct Library *DOSBase = ldBase->dl_DOSBase;
     STRPTR stripped_libname = FilePart(libname);
     struct Library *tmplib;
@@ -369,7 +372,13 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
     ObtainSemaphore(&object->ldon_SigSem);
 
     /* Try to find the resident in the list */
+    #if defined(__AROSEXEC_SMP__)
+    ObtainSystemLock(list, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+    #endif
     tmplib = (struct Library *)FindName(list, stripped_libname);
+    #if defined(__AROSEXEC_SMP__)
+    ReleaseSystemLock(list, LOCKF_DISABLE);
+    #endif
 
     if (!tmplib)
     {
@@ -480,13 +489,7 @@ AROS_LH2(struct Library *, OpenLibrary,
     struct Library *library;
     struct LDObjectNode *object;
 
-#if defined(__AROSEXEC_SMP__)
-    //ObtainSystemLock(&SysBase->LibList, MODE_READ);
-#endif
     object = LDRequestObject(libname, version, "libs", &SysBase->LibList, SysBase);
-#if defined(__AROSEXEC_SMP__)
-    //ReleaseSystemLock(&SysBase->LibList);
-#endif
 
     if (!object)
     	return NULL;
@@ -513,13 +516,7 @@ AROS_LH4(LONG, OpenDevice,
     struct LDObjectNode *object;
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
 
-#if defined(__AROSEXEC_SMP__)
-    //ObtainSystemLock(&SysBase->DeviceList, MODE_READ);
-#endif
     object = LDRequestObject(devname, 0, "devs", &SysBase->DeviceList, SysBase);
-#if defined(__AROSEXEC_SMP__)
-    //ReleaseSystemLock(&SysBase->DeviceList);
-#endif
     
     if (object)
     {
@@ -629,6 +626,7 @@ AROS_UFH3(LONG, LDFlush,
     AROS_USERFUNC_INIT
 
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+    void *ExecLockBase = ldBase->dl_ExecLockRes;
     struct Library *library;
 
     D(bug("[LDDemon] Flush called\n"));
@@ -637,7 +635,7 @@ AROS_UFH3(LONG, LDFlush,
     /* Forbid() is already done, but I don't want to rely on it. */
     Forbid();
 #if defined(__AROSEXEC_SMP__)
-    //ObtainSystemLock(&SysBase->LibList, MODE_WRITE);
+    ObtainSystemLock(&SysBase->LibList, SPINLOCK_MODE_WRITE, 0);
 #endif
 
     /* Follow the linked list of shared libraries. */
@@ -655,7 +653,7 @@ AROS_UFH3(LONG, LDFlush,
 	    {
 		/* Yes! Return it. */
 #if defined(__AROSEXEC_SMP__)
-                //ReleaseSystemLock(&SysBase->LibList);
+                ReleaseSystemLock(&SysBase->LibList, 0);
 #endif
 		Permit();
 		return MEM_TRY_AGAIN;
@@ -669,9 +667,9 @@ AROS_UFH3(LONG, LDFlush,
 	}
     }
 #if defined(__AROSEXEC_SMP__)
-    //ReleaseSystemLock(&SysBase->LibList);
+    ReleaseSystemLock(&SysBase->LibList, 0);
 
-    //ObtainSystemLock(&SysBase->DeviceList, MODE_WRITE);
+    ObtainSystemLock(&SysBase->DeviceList, SPINLOCK_MODE_WRITE, 0);
 #endif
     /* Do the same with the device list. */
     library = (struct Library *)SysBase->DeviceList.lh_Head;
@@ -687,7 +685,7 @@ AROS_UFH3(LONG, LDFlush,
 	    {
 		/* Yes! Return it. */
 #if defined(__AROSEXEC_SMP__)
-            //ReleaseSystemLock(&SysBase->DeviceList);
+            ReleaseSystemLock(&SysBase->DeviceList, 0);
 #endif
 		Permit();
 		return MEM_TRY_AGAIN;
@@ -701,7 +699,7 @@ AROS_UFH3(LONG, LDFlush,
 	}
     }
 #if defined(__AROSEXEC_SMP__)
-    //ReleaseSystemLock(&SysBase->DeviceList);
+    ReleaseSystemLock(&SysBase->DeviceList, 0);
 #endif
     Permit();
 
