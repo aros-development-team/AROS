@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "sysmon_intern.h"
@@ -71,15 +71,9 @@ static VOID DeInitProcessor(struct SysMonData *smdata)
 {
 }
 
-Object *ProcessorGroupObject(struct SysMonData *smdata, int count)
+Object *ProcessorGroupObject(struct SysMonData *smdata, IPTR count)
 {
     Object *newGroupObj;
-
-    if (smdata->cpuusageobj)
-    {
-        MUI_DisposeObject(smdata->cpuusageobj);
-        smdata->cpuusageobj = NULL;
-    }
 
     newGroupObj = NewObject(smdata->cpuusageclass->mcc_Class, NULL,
                     MUIA_ProcessorGrp_CPUCount, count,
@@ -159,6 +153,7 @@ AROS_UFH3(VOID, processorgaugehookfunc,
 
     struct SysMonData * smdata = h->h_Data;
     IPTR cpuCount = 0;
+    Object *newGrp;
 
     D(bug("[SysMon:Processor] %s(0x%p)\n", __func__, smdata));
 
@@ -166,12 +161,16 @@ AROS_UFH3(VOID, processorgaugehookfunc,
     {
         smdata->cpuusageclass = ProcessorGauge_CLASS;
         GET(smdata->cpuusageobj, MUIA_ProcessorGrp_CPUCount, &cpuCount);
-        if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+        if ((newGrp = ProcessorGroupObject(smdata, cpuCount)) != NULL)
         {
-            DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
-            smdata->cpuusageobj = ProcessorGroupObject(smdata, cpuCount);
-            DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)smdata->cpuusageobj);
-            DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
+            if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+            {
+                DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)newGrp);
+                DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
+                DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
+                MUI_DisposeObject(smdata->cpuusageobj);
+                smdata->cpuusageobj = newGrp;
+            }
         }
     }
 
@@ -187,22 +186,26 @@ AROS_UFH3(VOID, processorgraphhookfunc,
 
     struct SysMonData * smdata = h->h_Data;
     IPTR cpuCount = 0, graphMode = 0;
+    Object *newGrp;
 
     D(bug("[SysMon:Processor] %s(0x%p)\n", __func__, smdata));
 
     GET(smdata->cpuusageobj, MUIA_ProcessorGrp_CPUCount, &cpuCount);
     GET(smdata->cpuusageobj, MUIA_ProcessorGrp_SingleMode, &graphMode);
-
     if ((smdata->cpuusageclass != ProcessorGraph_CLASS) || ((cpuCount > 1) && (!graphMode)))
     {
         smdata->cpuusageclass = ProcessorGraph_CLASS;
         smdata->cpuusagesinglemode = TRUE;
-        if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+        if ((newGrp = ProcessorGroupObject(smdata, cpuCount)) != NULL)
         {
-            DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
-            smdata->cpuusageobj = ProcessorGroupObject(smdata, cpuCount);
-            DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)smdata->cpuusageobj);
-            DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
+            if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+            {
+                DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)newGrp);
+                DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
+                DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
+                MUI_DisposeObject(smdata->cpuusageobj);
+                smdata->cpuusageobj = newGrp;
+            }
         }
     }
 
@@ -216,6 +219,7 @@ AROS_UFH3(VOID, processorgraphpercpuhookfunc,
 {
     AROS_USERFUNC_INIT
     IPTR cpuCount = 0, graphMode = 0;
+    Object *newGrp;
 
     struct SysMonData * smdata = h->h_Data;
 
@@ -223,17 +227,20 @@ AROS_UFH3(VOID, processorgraphpercpuhookfunc,
 
     GET(smdata->cpuusageobj, MUIA_ProcessorGrp_CPUCount, &cpuCount);
     GET(smdata->cpuusageobj, MUIA_ProcessorGrp_SingleMode, &graphMode);
-
     if ((smdata->cpuusageclass != ProcessorGauge_CLASS) || (graphMode))
     {
         smdata->cpuusageclass = ProcessorGraph_CLASS;
         smdata->cpuusagesinglemode = FALSE;
-        if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+        if ((newGrp = ProcessorGroupObject(smdata, cpuCount)) != NULL)
         {
-            DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
-            smdata->cpuusageobj = ProcessorGroupObject(smdata, cpuCount);
-            DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)smdata->cpuusageobj);
-            DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
+            if (DoMethod(smdata->cpuusagegroup, MUIM_Group_InitChange))
+            {
+                DoMethod(smdata->cpuusagegroup, OM_ADDMEMBER, (IPTR)newGrp);
+                DoMethod(smdata->cpuusagegroup, OM_REMMEMBER, (IPTR)smdata->cpuusageobj);
+                DoMethod(smdata->cpuusagegroup, MUIM_Group_ExitChange);
+                MUI_DisposeObject(smdata->cpuusageobj);
+                smdata->cpuusageobj = newGrp;
+            }
         }
     }
 
