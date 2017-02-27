@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,6 +13,8 @@
 #define MUIA_ScreenModeProperties_Autoscroll    (TAG_USER | 5)
 #define MUIA_ScreenModeProperties_WidthString   (TAG_USER | 6)
 #define MUIA_ScreenModeProperties_HeightString  (TAG_USER | 7)
+#define MUIA_ScreenModeProperties_DefWidth      (TAG_USER | 8)
+#define MUIA_ScreenModeProperties_DefHeight     (TAG_USER | 9)
 
 extern struct MUI_CustomClass *ScreenModeProperties_CLASS;
 #define ScreenModePropertiesObject BOOPSIOBJMACRO_START(ScreenModeProperties_CLASS->mcc_Class)

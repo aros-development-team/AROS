@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,6 +48,8 @@ static BOOL Gadgets2ScreenmodePrefs
     struct SMEditor_DATA *data
 )
 {
+    UWORD width, height;
+
     if (XGET(data->selector, MUIA_List_Active) == MUIV_List_Active_Off)
     {
         // No active list entry? Reset to defaults
@@ -56,8 +58,17 @@ static BOOL Gadgets2ScreenmodePrefs
     else
     {
         screenmodeprefs.smp_DisplayID = XGET(data->properties, MUIA_ScreenModeProperties_DisplayID);
-        screenmodeprefs.smp_Width     = XGET(data->properties, MUIA_ScreenModeProperties_Width);
-        screenmodeprefs.smp_Height    = XGET(data->properties, MUIA_ScreenModeProperties_Height);
+
+        width = XGET(data->properties, MUIA_ScreenModeProperties_Width);
+        if (width == XGET(data->properties, MUIA_ScreenModeProperties_DefWidth))
+            width = ~0;
+        screenmodeprefs.smp_Width = width;
+
+        height = XGET(data->properties, MUIA_ScreenModeProperties_Height);
+        if (height == XGET(data->properties, MUIA_ScreenModeProperties_DefHeight))
+            height = ~0;
+        screenmodeprefs.smp_Height = height;
+
         screenmodeprefs.smp_Depth     = XGET(data->properties, MUIA_ScreenModeProperties_Depth);
         
         if (XGET(data->properties, MUIA_ScreenModeProperties_Autoscroll))
