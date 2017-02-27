@@ -13,9 +13,10 @@
 #include "exec_intern.h"
 
 /*
-    LockBase is not even a resource, just something similar to AROSSupportBase, 
-     however, it can be opened using OpenResource()
-*/
+ * NB : This file is only for internal Exec access to the ExecLock resource functions.
+ *      All other code should use the public execlock.resource interface(s).
+ */
+
 struct ExecLockBase
 {
     struct Node el_Node;
