@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -288,7 +288,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     data->VariableDepth = TRUE;
                     GetAttr(MUIA_Numeric_Value, data->depth, &val);
                     /* Original AmigaOS screenmode prefs do not allow to change depth for CyberGFX
-                     * screnmodes if it is high or true color screenmode. */
+                     * screenmodes if it is high or true color screenmode */
                     if (dim.MaxDepth > 8)
                     {
                         data->VariableDepth = FALSE;
@@ -426,6 +426,14 @@ IPTR ScreenModeProperties__OM_GET(Class *CLASS, Object *self, struct opGet *mess
         
         case MUIA_ScreenModeProperties_Autoscroll:
             *message->opg_Storage = XGET(data->autoscroll, MUIA_Selected);
+            break;
+        
+        case MUIA_ScreenModeProperties_DefWidth:
+            *message->opg_Storage = data->DefWidth;
+            break;
+        
+        case MUIA_ScreenModeProperties_DefHeight:
+            *message->opg_Storage = data->DefHeight;
             break;
         
         default:
