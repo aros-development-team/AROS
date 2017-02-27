@@ -18,6 +18,7 @@
 #include "kernel_globals.h"
 #include "kernel_intern.h"
 #include "kernel_syscall.h"
+#include "kernel_ipi.h"
 #include "smp.h"
 
 #define D(x)
@@ -327,9 +328,38 @@ int smp_Initialize(void)
 
     if (pdata->kb_APIC && (pdata->kb_APIC->apic_count > 1))
     {
+        int number_of_ipi_messages = 0;
+        struct IPIHook *hooks;
+        int i;
+
 #if defined(__AROSEXEC_SMP__)
         cpu_PrepareExec(SysBase);
 #endif
+
+        D(bug("[Kernel:SMP] %s: Initializing Lists for IPI messages ...\n", __func__));
+        NEWLIST(&pdata->kb_FreeIPIHooks);
+        NEWLIST(&pdata->kb_BusyIPIHooks);
+        KrnSpinInit(&pdata->kb_FreeIPIHooksLock);
+        KrnSpinInit(&pdata->kb_BusyIPIHooksLock);
+        
+        number_of_ipi_messages = pdata->kb_APIC->apic_count * 10;
+        D(bug("[Kernel:SMP] %s: Allocating %d IPI CALL_HOOK messages ...\n", __func__, number_of_ipi_messages));
+        hooks = AllocMem(sizeof(struct IPIHook) * number_of_ipi_messages, MEMF_PUBLIC | MEMF_CLEAR);
+        if (hooks)
+        {
+            for (i=0; i < number_of_ipi_messages; i++)
+            {
+                hooks[i].ih_CPUDone = KrnAllocCPUMask();
+                hooks[i].ih_CPURequested = KrnAllocCPUMask();
+                KrnSpinInit(&hooks[i].ih_Lock);
+
+                ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
+            }
+        }
+        else
+        {
+            bug("[Kernel:SMP] %s: Failed to get IPI slots!\n", __func__);
+        }
 
         if (!smp_Setup(KernelBase))
         {
