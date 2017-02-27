@@ -77,8 +77,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                 * cmenucpugraph,
                 * cmenucpugraphpcpu = NULL;
 
-    Object      * cpuusagegroup,
-                * cpufreqgroup,
+    Object      * cpufreqgroup,
                 * cpufreqcntnr;
 
     IPTR i;
@@ -173,7 +172,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                             End,
                         End),
                         Child, (VGroup,
-                            Child, (cpuusagegroup = HGroup,
+                            Child, (smdata->cpuusagegroup = HGroup,
                                 GroupFrameT(_(MSG_USAGE)), 
                                 MUIA_ContextMenu, (MenustripObject,
                                     MUIA_Family_Child, (MenuObject, 
