@@ -79,7 +79,7 @@ static inline void __inline_ExecLock_FreeLock(APTR __arg1, APTR __ExecLockBase)
 
 #if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
 
-static inline int __inline_ExecLock_ObtainSystemLock(APTR __arg1, ULONG __arg2, ULONG __arg3, APTR __ExecLockBase)
+static inline int __inline_ExecLock_ObtainLock(APTR __arg1, ULONG __arg2, ULONG __arg3, APTR __ExecLockBase)
 {
     AROS_LIBREQ(ExecLockBase, 36)
     return AROS_LC3(int, ObtainLock,
