@@ -24,13 +24,6 @@
 
 #define SYSMON_TABCOUNT         3
 
-#if !defined(PROCDISPLAY_USEGAUGE)
-AROS_UFP3(IPTR, GraphReadProcessorValueFunc,
-        AROS_UFPA(struct Hook *, procHook, A0),
-        AROS_UFPA(IPTR *, storage, A2),
-        AROS_UFPA(IPTR, cpuNo, A1));
-#endif
-
 struct SysMonData
 {
     struct Task *sm_Task;
@@ -88,7 +81,7 @@ VOID UpdateVideoStaticInformation(struct SysMonData *);
 ULONG GetProcessorCount();
 VOID UpdateProcessorInformation(struct SysMonData *);
 VOID UpdateProcessorStaticInformation(struct SysMonData *);
-Object *ProcessorGroupObject(struct SysMonData *, int);
+Object *ProcessorGroupObject(struct SysMonData *, IPTR);
 
 VOID UpdateTasksInformation(struct SysMonData *);
 VOID UpdateTasksStaticInformation(struct SysMonData *);
