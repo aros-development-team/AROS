@@ -16,7 +16,7 @@ AROS_LP3(int, ObtainSystemLock,
          AROS_LPA(struct List *, systemList, A0),
          AROS_LPA(ULONG, mode, D0),
          AROS_LPA(ULONG, flags, D1),
-         LIBBASETYPEPTR, ExecLockBase, 5, ExecLock
+         LIBBASETYPEPTR, ExecLockBase, 1, ExecLock
 );
 
 #endif /* !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__) */
@@ -25,7 +25,7 @@ AROS_LP3(int, ObtainSystemLock,
 AROS_LP2(void, ReleaseSystemLock,
          AROS_LPA(struct List *, systemList, A0),
          AROS_LPA(ULONG, flags, D1),
-         LIBBASETYPEPTR, ExecLockBase, 6, ExecLock
+         LIBBASETYPEPTR, ExecLockBase, 2, ExecLock
 );
 
 #endif /* !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__) */
