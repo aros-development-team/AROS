@@ -142,11 +142,8 @@ static AROS_UFH3 (APTR, KernelPost,
 {
     AROS_USERFUNC_INIT
 
-    int number_of_ipi_messages = 0;
     struct KernelBase *KernelBase;
     struct PlatformData *pdata;
-    struct IPIHook *hooks;
-    int i;
 
     KernelBase = (struct KernelBase *)OpenResource("kernel.resource");
     if (!KernelBase)
@@ -165,31 +162,6 @@ static AROS_UFH3 (APTR, KernelPost,
     // Add the default reboot/shutdown handlers if ACPI ones havent been registered...
     krnAddSysCallHandler(pdata, &x86_SCRebootHandler, TRUE, FALSE);
     krnAddSysCallHandler(pdata, &x86_SCChangePMStateHandler, TRUE, FALSE);
-
-    D(bug("[Kernel] %s: Initializing Lists for IPI messages ...\n", __func__));
-    NEWLIST(&pdata->kb_FreeIPIHooks);
-    NEWLIST(&pdata->kb_BusyIPIHooks);
-    KrnSpinInit(&pdata->kb_FreeIPIHooksLock);
-    KrnSpinInit(&pdata->kb_BusyIPIHooksLock);
-    
-    number_of_ipi_messages = pdata->kb_APIC->apic_count * 10;
-    D(bug("[Kernel] %s: Allocating %d IPI CALL_HOOK messages ...\n", __func__, number_of_ipi_messages));
-    hooks = AllocMem(sizeof(struct IPIHook) * number_of_ipi_messages, MEMF_PUBLIC | MEMF_CLEAR);
-    if (hooks)
-    {
-        for (i=0; i < number_of_ipi_messages; i++)
-        {
-            hooks[i].ih_CPUDone = KrnAllocCPUMask();
-            hooks[i].ih_CPURequested = KrnAllocCPUMask();
-            KrnSpinInit(&hooks[i].ih_Lock);
-
-            ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
-        }
-    }
-    else
-    {
-        bug("[Kernel] %s: Failed to get IPI slots!\n", __func__);
-    }
 
     D(bug("[Kernel] %s: Attempting to bring up aditional cores ...\n", __func__));
     smp_Initialize();
