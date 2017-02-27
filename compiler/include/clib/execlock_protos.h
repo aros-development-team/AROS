@@ -7,8 +7,7 @@
 
 #include <aros/libcall.h>
 
-#include <devices/execlock.h>
-#include <devices/inputevent.h>
+#include <resources/execlock.h>
 
 __BEGIN_DECLS
 
