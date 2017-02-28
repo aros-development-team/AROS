@@ -350,7 +350,14 @@ UWORD GetConfiguration(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
+    UWORD *configurationvalue;
+    configurationvalue = ioreq->iouh_Data;
+
+    *configurationvalue =  unit->roothub.config.cfgdesc.bConfigurationValue;
+
     ioreq->iouh_Actual = wLength;
+
+    mybug_unit(-1, ("GetConfiguration() %ld\n", configurationvalue));
 
     return UHIOERR_NO_ERROR;
 }
@@ -376,7 +383,7 @@ UWORD SetConfiguration(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
     mybug_unit(-1, ("SetConfiguration (configuration %d)\n", wValue));
 
     /* It is a Request Error if wValue, wIndex, or wLength are other than as specified above. */
-    if( (wValue) && (wValue<=unit->roothub.devdesc.bNumConfigurations) && (!(wIndex)) && (!(wLength)) ) {
+    if( (wValue == unit->roothub.config.cfgdesc.bConfigurationValue) && (!(wIndex)) && (!(wLength)) ) {
 
         ioreq->iouh_Actual = wLength;
 
