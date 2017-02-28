@@ -117,10 +117,8 @@
 
 #if defined(__AROSEXEC_SMP__)
     EXECTASK_SPINLOCK_UNLOCK(listLock);
-    Permit();
-#else
-    Enable();
 #endif
+    Enable();
 
     /* Return whatever was found. */
     return ret;
