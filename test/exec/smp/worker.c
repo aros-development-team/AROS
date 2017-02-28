@@ -14,7 +14,7 @@
 
 #include "work.h"
 
-#define MAXITERATIONS   100
+#define MAXITERATIONS   10000
 
 /*
  * define a complex number with
@@ -120,53 +120,62 @@ void SMPTestWorker(struct ExecBase *SysBase)
     
     if ((worker) && (worker->smpw_MasterPort))
     {
+        worker->smpw_Node.ln_Type = 0;
+
         D(bug("[SMP-Test:Worker.%03d] work Master MsgPort @ 0x%p\n", cpunum, worker->smpw_MasterPort);)
         worker->smpw_MsgPort = CreateMsgPort();
         D(bug("[SMP-Test:Worker.%03d] work MsgPort @ 0x%p\n", cpunum, worker->smpw_MsgPort);)
 
         workPrivate = AllocMem(sizeof(struct WorkersWork) + (MAXITERATIONS * sizeof(complexno_t)), MEMF_CLEAR|MEMF_ANY);
-        workPrivate->workMax = MAXITERATIONS;
+        
+        D(bug("[SMP-Test:Worker.%03d] worker private data @ 0x%p\n", cpunum, workPrivate);)
 
-        while (doWork)
+        if (workPrivate)
         {
-            IPTR workType;
+            workPrivate->workMax = MAXITERATIONS;
 
-            /* we are ready for work .. */
-            worker->smpw_Node.ln_Type = 1;
-            WaitPort(worker->smpw_MsgPort);
-
-            while((workMsg = (struct SMPWorkMessage *) GetMsg(worker->smpw_MsgPort)))
+            while (doWork)
             {
-                D(bug("[SMP-Test:Worker.%03d] work received (Msg @ 0x%p)\n", cpunum, workMsg);)
+                IPTR workType;
 
-                /* cache the requested work and free the message ... */
-                workType = workMsg->smpwm_Type;
-                FreeMem(workMsg, sizeof(struct SMPWorkMessage));
-                
-                /* now process it .. */
-                if (workType == SPMWORKTYPE_FINISHED)
+                /* we are ready for work .. */
+                worker->smpw_Node.ln_Type = 1;
+                WaitPort(worker->smpw_MsgPort);
+
+                while((workMsg = (struct SMPWorkMessage *) GetMsg(worker->smpw_MsgPort)))
                 {
-                    D(bug("[SMP-Test:Worker.%03d] Finished! exiting ...\n", cpunum);)
+                    D(bug("[SMP-Test:Worker.%03d] work received (Msg @ 0x%p)\n", cpunum, workMsg);)
 
-                    doWork = FALSE;
-                    break;
-                }
-                else if (workType == SPMWORKTYPE_PROCESS)
-                {
-                    /*
-                     * Lets do some work!
-                     */
-                    D(bug("[SMP-Test:Worker.%03d] Processing requested work!\n", cpunum);)
+                    /* cache the requested work and free the message ... */
+                    workType = workMsg->smpwm_Type;
+                    FreeMem(workMsg, sizeof(struct SMPWorkMessage));
+                    
+                    /* now process it .. */
+                    if (workType == SPMWORKTYPE_FINISHED)
+                    {
+                        D(bug("[SMP-Test:Worker.%03d] Finished! exiting ...\n", cpunum);)
 
-                    processWork(workPrivate, workMsg);
+                        doWork = FALSE;
+                        break;
+                    }
+                    else if (workType == SPMWORKTYPE_PROCESS)
+                    {
+                        /*
+                         * Lets do some work!
+                         */
+                        D(bug("[SMP-Test:Worker.%03d] Processing requested work!\n", cpunum);)
 
-                    /* let our "parent" know we are done .. */
-                    Signal(worker->smpw_MasterPort->mp_SigTask, SIGBREAKF_CTRL_D);
+                        processWork(workPrivate, workMsg);
+
+                        /* let our "parent" know we are done .. */
+                        Signal(worker->smpw_MasterPort->mp_SigTask, SIGBREAKF_CTRL_D);
+                    }
                 }
             }
+            FreeMem(workPrivate, sizeof(struct WorkersWork) + (workPrivate->workMax * sizeof(complexno_t)));
         }
-        DeleteMsgPort(worker->smpw_MsgPort);
         Remove(&worker->smpw_Node);
+        DeleteMsgPort(worker->smpw_MsgPort);
         Signal(worker->smpw_MasterPort->mp_SigTask, SIGBREAKF_CTRL_C);
     }
 }
