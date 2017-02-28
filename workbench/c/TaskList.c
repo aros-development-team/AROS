@@ -71,6 +71,7 @@ struct task
     IPTR stacksize;
     IPTR stackused;
     struct timeval cputime;
+    ULONG cpuusage;
 };
 
 static int addtask(struct List *tasks, struct Task *task)
@@ -81,6 +82,7 @@ static int addtask(struct List *tasks, struct Task *task)
     struct TagItem QueryTaskTags[] =
     {
         {TaskTag_CPUTime        , 0  },
+        {TaskTag_CPUUsage       , 0  },
         {TAG_DONE               , 0                     }
     };
 #endif
@@ -110,6 +112,7 @@ static int addtask(struct List *tasks, struct Task *task)
 
 #if defined(__AROS__)
     QueryTaskTags[0].ti_Data = (IPTR)&t->cputime;
+    QueryTaskTags[1].ti_Data = (IPTR)&t->cpuusage;
     QueryTaskTagList(task, QueryTaskTags);
 #endif
 
@@ -222,23 +225,25 @@ int main(void)
     if (!IsListEmpty(&tasks))
     {
 #if (__WORDSIZE == 64)
-        PutStr("       Address     Type   Pri    State      CPU Time     Stack      Used  Name\n");
+        PutStr("       Address     Type   Pri    State      CPU Time  CPU Usage     Stack      Used  Name\n");
 #else
-        PutStr("Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
+        PutStr("Address\t\tType\tPri\tState\tCPU Time\tCPU Usage\tStack\tUsed\tName\n");
 #endif
         ForeachNodeSafe(&tasks, currentTask, tmpTask)
         {
             IPTR time;
             IPTR usec;
+            ULONG usage = ((currentTask->cpuusage >> 16) * 1000) >> 16;
+
             Remove((struct Node *)currentTask);
 
             time = currentTask->cputime.tv_secs;
             /* Dunno why I need the mask on tv_usec, but sometimes high bits leak from somewhere into this code. gcc issue? */
             usec = (((currentTask->cputime.tv_usec & 0xfffff) + 5000) / 10000);
 #if (__WORDSIZE == 64)
-            Printf("0x%012.ix %8s  %4id  %7s  %3id:%02id:%02id.%02id %9id %9id  %s\n",
+            Printf("0x%012.ix %8s  %4id  %7s  %3id:%02id:%02id.%02id     %3id.%id%% %9id %9id  %s\n",
 #else
-            Printf("0x%08.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld.%02ld\t%id\t%id\t%s\n",
+            Printf("0x%08.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld.%02ld\t%3id.%id%%\t%id\t%id\t%s\n",
 #endif
                     currentTask->address,
                     (currentTask->node.ln_Type == NT_TASK) ? "task" :
@@ -247,6 +252,7 @@ int main(void)
                     (currentTask->state == TS_RUN) ? "running" :
                     (currentTask->state == TS_READY) ? "ready" : "waiting",
                     (IPTR)(time / 60 / 60), (IPTR)((time / 60) % 60), (IPTR)(time % 60), usec,
+                    (IPTR)usage / 10, (IPTR)usage % 10,
                     currentTask->stacksize, currentTask->stackused,
                     (currentTask->node.ln_Name != NULL) ? currentTask->node.ln_Name : "(null)");
 

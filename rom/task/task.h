@@ -24,6 +24,7 @@
 #define TaskTag_CPUAffinity     (TAG_USER + 0x00000002) // CPU Affinity mask
 #define TaskTag_CPUTime         (TAG_USER + 0x00000003) // Amount of CPU time spent running
 #define TaskTag_StartTime       (TAG_USER + 0x00000004) // Time the task was started
+#define TaskTag_CPUUsage        (TAG_USER + 0x00000005) // CPU Usage of this task
 
 // The contents of the tasklist are private to task.resource
 struct TaskList

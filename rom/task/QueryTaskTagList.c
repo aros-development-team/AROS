@@ -107,6 +107,14 @@
                 }
             }
             break;
+        case(TaskTag_CPUUsage):
+            {
+                if (task_et)
+                    *(ULONG *)(Tag->ti_Data) = task_et->iet_CpuUsage;
+                else
+                    *(ULONG *)(Tag->ti_Data) = 0;
+            }
+            break;
         case(TaskTag_StartTime):
             {
                 struct timeval *storeval = (struct timeval *)Tag->ti_Data;

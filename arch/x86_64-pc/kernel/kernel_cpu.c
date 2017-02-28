@@ -153,6 +153,9 @@ void cpu_Switch(struct ExceptionContext *regs)
             timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq - timeCur;
         */
         timeCur -= IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
+        
+        /* Increase CPU Usage cycles */
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_private2 += timeCur;
 
         // Convert TSC cycles into nanoseconds
         timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TSCFreq;
