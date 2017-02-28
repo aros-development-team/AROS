@@ -47,7 +47,7 @@ USER_CFLAGS := -D__AROS_GIMME_DEPRECATED_STACKSWAP__
 #MM test-exec-public : test-exec-deps
 #MM test-exec-private : test-exec-deps
 
-%build_progs mmake=test-exec-private \
+%build_progs mmake=test-exec-public \
     files=$(EXECPUBLICFILES) targetdir=$(EXEDIR)
 
 EXECPRIVATEFILES :=		\
