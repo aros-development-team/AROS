@@ -27,6 +27,12 @@
 
 #include <stdio.h>
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 /* Include private kernel.resource stuff, for DumpState() */
 struct KernelBase;
 #include "../../rom/kernel/mm_linear.h"
@@ -87,6 +93,9 @@ int main(void)
 {
 #if defined(KrnStatMemory)
 
+#if defined(__AROSPLATFORM_SMP__)
+    void *ExecLockBase = OpenResource("execlock.resource");
+#endif
     APTR KernelBase;
     struct Task *me;
     ULONG page;
@@ -156,9 +165,23 @@ int main(void)
      * Insert the area into system list.
      * We do it manually because in future AddMemList() will call KrnInitMemory() itself.
      */
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ObtainSystemLock(&SysBase->MemList, SPINLOCK_MODE_WRITE, LOCKF_FORBID);
+    else
+        Forbid();
+#else
     Forbid();
+#endif
     Enqueue(&SysBase->MemList, &TestArea->mh_Node);
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ReleaseSystemLock(&SysBase->MemList, LOCKF_FORBID);
+    else
+        Permit();
+#else
     Permit();
+#endif
 
     printf("Allocating region1 (two read-write pages)...\n");
     region1 = KrnAllocPages(NULL, 2 * page, MEMF_FAST);

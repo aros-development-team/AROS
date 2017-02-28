@@ -11,6 +11,12 @@
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 LONG bfffo(ULONG val, UBYTE bitoffset)
 {
     val &= (0xffffffff >> bitoffset);
@@ -395,6 +401,9 @@ IPTR mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 
 void BitmapInit(struct ati_staticdata *sd)
 {
+#if defined(__AROSPLATFORM_SMP__)
+    void *ExecLockBase = OpenResource("execlock.resource");
+#endif
     /*
      * If Radeon chip has some video memory, create a bitmap representing all allocations.
      * Divide whole memory into 1KB chunks
@@ -416,9 +425,23 @@ void BitmapInit(struct ati_staticdata *sd)
     	sd->managedMem.mhe_ReAlloc = mh_ReAlloc;
     	sd->managedMem.mhe_Avail = mh_Avail;
 
-    	Disable();
+#if defined(__AROSPLATFORM_SMP__)
+        if (ExecLockBase)
+            ObtainSystemLock(&SysBase->MemList, SPINLOCK_MODE_WRITE, LOCKF_DISABLE);
+        else
+            Disable();
+#else
+        Disable();
+#endif
     	AddTail(&SysBase->MemList, (struct Node *)&sd->managedMem);
-    	Enable();
+#if defined(__AROSPLATFORM_SMP__)
+        if (ExecLockBase)
+            ReleaseSystemLock(&SysBase->MemList, LOCKF_DISABLE);
+        else
+            Enable();
+#else
+        Enable();
+#endif
     }
 
     /* Number of ULONG's in bitmap */
