@@ -26,6 +26,12 @@
 #   define AROS_BSTR_ADDR(s) (((STRPTR)BADDR(s))+1)
 #endif
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlist.h>
+#include <resources/execlist.h>
+#endif
+
 LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     UBYTE argc = msg->rm_Action & RXARGMASK;
@@ -35,6 +41,10 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
     ULONG dosflags = 0L;
     UBYTE *string, *name = NULL;
     ULONG ssize;
+
+#if defined(__AROSEXEC_SMP__)
+	void *ExecLockBase = OpenResource("execlock.resource");
+#endif
 
     if (RXARG(msg, 1) == NULL || LengthArgstring(RXARG(msg, 1)) == 0)
     {
@@ -127,8 +137,12 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 	{
 	    struct Node *n;
 	    ULONG slen, totlen;
-	    
-	    Forbid();
+
+#if defined(__AROSEXEC_SMP__)
+		ObtainSystemList(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+#else
+	    Disable();
+#endif
 	    ForeachNode(execl, n)
 	    {
 		slen = strlen(string);
@@ -150,7 +164,11 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 		}
 		strcat(string, n->ln_Name);
 	    }
+#if defined(__AROSEXEC_SMP__)
+		ReleaseSystemList(execl, LOCKF_DISABLE);
+#else
 	    Enable();
+#endif
 	}
 	else
 	{
@@ -192,15 +210,23 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 	if (isexec)
 	{
 	    struct Node *n;
-	    
-	    Forbid();
+
+#if defined(__AROSEXEC_SMP__)
+		ObtainSystemList(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+#else
+	    Disable();
+#endif
 	    ForeachNode(execl, n)
 	    {
 		found = strcmp(name, n->ln_Name)==0;
 		if (found)
 		    break;
 	    }
+#if defined(__AROSEXEC_SMP__)
+		ReleaseSystemList(execl, LOCKF_DISABLE);
+#else
 	    Enable();
+#endif
 	}
 	else
 	{
