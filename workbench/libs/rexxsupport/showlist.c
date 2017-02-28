@@ -141,6 +141,8 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 #if defined(__AROSPLATFORM_SMP__)
 		if (ExecLockBase)
 			ObtainSystemLock(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+		else
+			Disable();
 #else
 	    Disable();
 #endif
@@ -168,6 +170,8 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 #if defined(__AROSPLATFORM_SMP__)
 		if (ExecLockBase)
 			ReleaseSystemLock(execl, LOCKF_DISABLE);
+		else
+			Enable();
 #else
 	    Enable();
 #endif
@@ -216,6 +220,8 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 #if defined(__AROSPLATFORM_SMP__)
 		if (ExecLockBase)
 			ObtainSystemLock(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+		else
+			Disable();
 #else
 	    Disable();
 #endif
@@ -228,6 +234,8 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 #if defined(__AROSPLATFORM_SMP__)
 		if (ExecLockBase)
 			ReleaseSystemLock(execl, LOCKF_DISABLE);
+		else
+			Enable();
 #else
 	    Enable();
 #endif
