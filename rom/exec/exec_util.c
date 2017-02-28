@@ -59,24 +59,45 @@
 ******************************************************************************/
 {
     struct Task *ThisTask = GET_THIS_TASK;
-    struct ETask *et;
+    struct ETask *et, *retVal = NULL;
     struct ETask *thisET;
 
     thisET = GetETask(ThisTask);
     if (thisET != NULL)
     {
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&IntETask(thisET)->iet_TaskLock, NULL, SPINLOCK_MODE_READ);
+#endif
 	ForeachNode (&thisET->et_Children, et)
 	{
 	    if (et->et_UniqueID == id)
-		return et;
+            {
+		retVal = et;
+                break;
+            }
 	}
-	ForeachNode(&thisET->et_TaskMsgPort.mp_MsgList, et)
-	{
-	    if (et->et_UniqueID == id)
-		return et;
-	}
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&IntETask(thisET)->iet_TaskLock);
+#endif
+        if (!retVal)
+        {
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_LOCK(&thisET->et_TaskMsgPort.mp_SpinLock, NULL, SPINLOCK_MODE_READ);
+#endif
+            ForeachNode(&thisET->et_TaskMsgPort.mp_MsgList, et)
+            {
+                if (et->et_UniqueID == id)
+                {
+                    retVal = et;
+                    break;
+                }
+            }
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(&thisET->et_TaskMsgPort.mp_SpinLock);
+#endif
+        }
     }
-    return NULL;
+    return retVal;
 }
 
 BOOL
@@ -168,8 +189,15 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
     /* Finally if the parent task is an ETask, add myself as its child */
     if(et->et_Parent && ((struct Task*) et->et_Parent)->tc_Flags & TF_ETASK)
     {
+        struct ETask * parentEtask = GetETask(et->et_Parent);
         D(bug("[EXEC:ETask] Init: Registering with Parent ETask\n");)
-	ADDHEAD(&GetETask(et->et_Parent)->et_Children, et);
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&IntETask(parentEtask)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+	ADDHEAD(&parentEtask->et_Children, et);
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&IntETask(parentEtask)->iet_TaskLock);
+#endif
     }
     Permit();
 
@@ -181,13 +209,12 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 void
 Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
 {
-    struct ETask *et = NULL, *child, *nextchild, *parent;
+    struct ETask *et, *child, *nextchild, *parent;
     struct Node *tmpNode;
     BOOL expunge = TRUE;
 
-    if(task->tc_Flags & TF_ETASK)
-        et = task->tc_UnionETask.tc_ETask;
-    if(!et)
+    if(!(task->tc_Flags & TF_ETASK) ||
+        ((et = task->tc_UnionETask.tc_ETask) == NULL))
 	return;
 
     D(bug("[EXEC:ETask] Cleanup: Task @ 0x%p, ETask @ 0x%p\n", task, et);)
@@ -202,33 +229,57 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
     }
 #endif
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&et->et_TaskMsgPort.mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
     /* Clean up after all the children that the task didn't do itself. */
     ForeachNodeSafe(&et->et_TaskMsgPort.mp_MsgList, child, tmpNode)
     {
         ExpungeETask(child);
     }
-
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&et->et_TaskMsgPort.mp_SpinLock);
+#endif
     /* If we have an ETask parent, tell it we have exited. */
     if(et->et_Parent != NULL)
     {
         parent = GetETask(et->et_Parent);
 
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&IntETask(et)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         /* Link children to our parent. */
         ForeachNodeSafe(&et->et_Children, child, nextchild)
         {
             child->et_Parent = et->et_Parent;
             //Forbid();
             if (parent)
+            {
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_LOCK(&IntETask(parent)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
+#endif                
                 ADDTAIL(&parent->et_Children, child);
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_UNLOCK(&IntETask(parent)->iet_TaskLock);
+#endif
+            }
             //Permit();
         }
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&IntETask(et)->iet_TaskLock);
+#endif
 
         /* Notify parent only if child was created with NP_NotifyOnDeath set 
            to TRUE */
         if(parent != NULL)
         {
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_LOCK(&IntETask(parent)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
+#endif   
             REMOVE(et);
-
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_UNLOCK(&IntETask(parent)->iet_TaskLock);
+#endif
             if(
                (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS) && 
                (((struct Process*) task)->pr_Flags & PRF_NOTIFYONDEATH)
@@ -241,9 +292,15 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
     }
     else
     {
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_LOCK(&IntETask(et)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         /* Orphan all our remaining children. */
         ForeachNode(&et->et_Children, child)
             child->et_Parent = NULL;
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&IntETask(et)->iet_TaskLock);
+#endif
     }
 
     if(expunge)
