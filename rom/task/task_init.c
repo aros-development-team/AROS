@@ -9,6 +9,8 @@
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
 #include <resources/task.h>
 
 #include "etask.h"
@@ -21,16 +23,19 @@ extern void AROS_SLIB_ENTRY(RemTask, Task, 48)();
 static LONG taskres_Init(struct TaskResBase *TaskResBase)
 {
 #ifdef TASKRES_ENABLE
-#if defined(__AROSEXEC_SMP__)
-    spinlock_t *listLock;
-#endif
     struct TaskListEntry *taskEntry = NULL;
     struct Task *curTask = NULL;
+    void *ExecLockBase = NULL;
 #endif /* TASKRES_ENABLE */
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
     	return FALSE;
+
+#if defined(__AROSEXEC_SMP__)
+    TaskResBase->trb_ExecLock = OpenResource("execlock.resource");
+    ExecLockBase = TaskResBase->trb_ExecLock;
+#endif
 
     TaskResBase->trb_UtilityBase = OpenLibrary("utility.library", 0);
     if (!TaskResBase->trb_UtilityBase)
@@ -52,8 +57,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
        Add existing tasks to our internal list ..
     */
 #if defined(__AROSEXEC_SMP__)
-    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
-    Forbid();
+    ObtainSystemLock(&PrivExecBase(SysBase)->TaskRunning, SPINLOCK_MODE_READ, LOCKF_DISABLE);
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, curTask)
     {
         if (curTask->tc_State & TS_RUN)
@@ -74,10 +78,9 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             bug("[TaskRes] Invalid Task State %08x for task @ 0x%p\n", curTask->tc_State, curTask);
         }
     }
-    KrnSpinUnLock(listLock);
-    Permit();
-    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
-    Forbid();
+    ReleaseSystemLock(&PrivExecBase(SysBase)->TaskRunning, LOCKF_DISABLE);
+
+    ObtainSystemLock(&PrivExecBase(SysBase)->TaskSpinning, SPINLOCK_MODE_READ, LOCKF_DISABLE);
     ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, curTask)
     {
         if (curTask->tc_State & TS_SPIN)
@@ -98,10 +101,9 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             bug("[TaskRes] Invalid Task State %08x for task @ 0x%p\n", curTask->tc_State, curTask);
         }
     }
-    KrnSpinUnLock(listLock);
-    Permit();
-    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
-    Forbid();
+    ReleaseSystemLock(&PrivExecBase(SysBase)->TaskSpinning, LOCKF_DISABLE);
+
+    ObtainSystemLock(&SysBase->TaskReady, SPINLOCK_MODE_READ, LOCKF_DISABLE);
     // TODO : list TaskSpinning tasks..
 #else
     Disable();
@@ -147,10 +149,9 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
         }
     }
 #if defined(__AROSEXEC_SMP__)
-    KrnSpinUnLock(listLock);
-    Permit();
-    listLock = KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
-    Forbid();
+    ReleaseSystemLock(&SysBase->TaskReady, LOCKF_DISABLE);
+
+    ObtainSystemLock(&SysBase->TaskWait, SPINLOCK_MODE_READ, LOCKF_DISABLE);
 #endif
     ForeachNode(&SysBase->TaskWait, curTask)
     {
@@ -172,10 +173,8 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             bug("[TaskRes] Invalid Task State %08x for task @ 0x%p\n", curTask->tc_State, curTask);
         }
     }
-
 #if defined(__AROSEXEC_SMP__)
-    KrnSpinUnLock(listLock);
-    Permit();
+    ReleaseSystemLock(&SysBase->TaskWait, LOCKF_DISABLE);
 #else
     Enable();
 #endif

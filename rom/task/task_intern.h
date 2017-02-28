@@ -28,6 +28,7 @@
 
 #if defined(__AROSEXEC_SMP__)
 #include <aros/types/spinlock_s.h>
+#include <resources/execlock.h>
 #ifndef TASKRES_ENABLE
 #define TASKRES_ENABLE
 #endif
@@ -42,6 +43,7 @@ struct TaskResBase
     struct SignalSemaphore      trb_Sem;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t                  TaskListSpinLock;
+    void *                      trb_ExecLock;
 #endif
     struct List                 trb_TaskList;
     struct List                 trb_NewTasks;
