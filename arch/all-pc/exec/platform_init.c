@@ -392,7 +392,7 @@ struct Task *Exec_X86CreateIdleTask(APTR sysBase)
 #if defined(__AROSEXEC_SMP__)
                                 TASKTAG_AFFINITY   , cpuMask,
 #endif
-                                TASKTAG_PRI        , -127,
+                                TASKTAG_PRI        , -128,
                                 TASKTAG_PC         , IdleTask,
                                 TASKTAG_ARG1       , SysBase,
                                 TAG_DONE);
