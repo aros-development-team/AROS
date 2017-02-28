@@ -19,7 +19,7 @@ __BEGIN_DECLS
 
 #if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
 
-#define __ObtainSystemLock_WB(__ExecLockBase, __arg1, __arg2, __arg2) ({\
+#define __ObtainSystemLock_WB(__ExecLockBase, __arg1, __arg2, __arg3) ({\
         AROS_LIBREQ(ExecLockBase,36)\
         AROS_LC3(int, ObtainSystemLock, \
                   AROS_LCA(struct List *,(__arg1),A0), \
@@ -77,7 +77,7 @@ __BEGIN_DECLS
 
 #if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
 
-#define __ObtainLock_WB(__ExecLockBase, __arg1, __arg2, __arg2) ({\
+#define __ObtainLock_WB(__ExecLockBase, __arg1, __arg2, __arg3) ({\
         AROS_LIBREQ(ExecLockBase,36)\
         AROS_LC3(int, ObtainLock, \
                   AROS_LCA(APTR,(__arg1),A0), \
