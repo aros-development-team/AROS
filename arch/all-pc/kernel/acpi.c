@@ -6,6 +6,8 @@
 #include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/acpica.h>
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
 
 #include <aros/symbolsets.h>
 
@@ -88,6 +90,12 @@ void acpi_Init(struct PlatformData *pdata)
             while (NULL != FindTask("ACPICA_InitTask"))
             {
                 D(bug("[Kernel:ACPI] %s: Waiting for ACPI to finish Initializing...\n", __func__));
+                /*
+                 * N.B: We do not have a scheduling heartbeat at this
+                 * point, so we must co-operatively yield CPU time to
+                 * let the ACPICA Init task run.
+                 */
+                KrnSchedule();
             }
 
             if (!IsListEmpty(&pdata->kb_ACPI->acpi_tablehooks))
