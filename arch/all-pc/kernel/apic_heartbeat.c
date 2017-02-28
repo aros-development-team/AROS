@@ -51,7 +51,12 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
             struct Task *t;
             UQUAD timeCur = now - apicData->cores[cpuNum].cpu_LastCPULoadTime;
             
+            /* Lock all lists to make sure we catch all the tasks */
             KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
+
             ForeachNode(&SysBase->TaskReady, t)
             {
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
@@ -61,9 +66,7 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
                     IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
                 }
             }
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
             ForeachNode(&SysBase->TaskWait, t)
             {
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
@@ -73,21 +76,27 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
                     IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
                 }
             }
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
             ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
             {
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
                 {
-                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 
-                        (IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 << 32) / timeCur;
-                    IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
+                    /* 
+                        TaskRunnign list is different than others. Here the iet_private2 field is not yet updated,
+                        so we have to update the CPU time in this place.
+                    */
+                    UQUAD time = IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 + 
+                                 now - IntETask(t->tc_UnionETask.tc_ETask)->iet_private1;
+
+                    if (time < timeCur)
+                        IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = (time << 32) / timeCur;
+                    else
+                        IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 0xffffffff;
+
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 -= time;
                 }
             }
-            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
 
-            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
             ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
             {
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
@@ -97,7 +106,11 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
                     IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
                 }
             }
+
             KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 
             apicData->cores[cpuNum].cpu_Load = 
                 ((apicData->cores[cpuNum].cpu_TSCFreq - apicData->cores[cpuNum].cpu_SleepTime) << 32) / timeCur;
