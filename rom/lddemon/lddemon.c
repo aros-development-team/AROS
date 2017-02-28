@@ -301,7 +301,9 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
 	but the resident only contains foo.gadget
     */
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+#if defined(__AROSEXEC_SMP__)
     void *ExecLockBase = ldBase->dl_ExecLockRes;
+#endif    
     struct Library *DOSBase = ldBase->dl_DOSBase;
     STRPTR stripped_libname = FilePart(libname);
     struct Library *tmplib;
@@ -372,13 +374,13 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
     ObtainSemaphore(&object->ldon_SigSem);
 
     /* Try to find the resident in the list */
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
     ObtainSystemLock(list, SPINLOCK_MODE_READ, LOCKF_FORBID);
-    #endif
+#endif
     tmplib = (struct Library *)FindName(list, stripped_libname);
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
     ReleaseSystemLock(list, LOCKF_FORBID);
-    #endif
+#endif
 
     if (!tmplib)
     {
@@ -626,7 +628,9 @@ AROS_UFH3(LONG, LDFlush,
     AROS_USERFUNC_INIT
 
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+#if defined(__AROSEXEC_SMP__)
     void *ExecLockBase = ldBase->dl_ExecLockRes;
+#endif
     struct Library *library;
 
     D(bug("[LDDemon] Flush called\n"));
