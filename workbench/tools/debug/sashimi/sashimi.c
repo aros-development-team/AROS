@@ -31,6 +31,12 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 /****************************************************************************/
 
 STRPTR Version = "$VER: Sashimi 1.6 (20.6.1999)\r\n";
@@ -643,11 +649,21 @@ Recover(const STRPTR fileName)
     IPTR * start;
     IPTR * end;
     BOOL success;
+#if defined(__AROSPLATFORM_SMP__)
+    void *ExecLockBase = OpenResource("execlock.resource");
+#endif
 
     Printf("Trying to recover old Sashimi buffer... ");
     Flush(Output());
 
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ObtainSystemLock(&SysBase->MemList, SPINLOCK_MODE_READ, LOCKF_FORBID);
+    else
+        Forbid();
+#else
     Forbid();
+#endif
 
     /* Scan the system memory list. */
     for(mh = (struct MemHeader *)SysBase->MemList.lh_Head ;
@@ -676,12 +692,18 @@ Recover(const STRPTR fileName)
         }
         while(++start != end);
     }
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ReleaseSystemLock(&SysBase->MemList, LOCKF_FORBID);
+    else
+        Permit();
+#else
+    Permit();
+#endif
 
     /* Try to allocate the memory the old buffer occupies. */
     if(sr != NULL)
         allocated = AllocAbs(sizeof(*sr) + sr->sr_FIFOTotalSize-1 + sizeof(struct MemChunk),(BYTE *)sr - sizeof(struct MemChunk));
-
-    Permit();
 
     if(sr != NULL)
     {
