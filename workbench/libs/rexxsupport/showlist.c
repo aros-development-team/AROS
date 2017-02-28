@@ -26,7 +26,7 @@
 #   define AROS_BSTR_ADDR(s) (((STRPTR)BADDR(s))+1)
 #endif
 
-#if defined(__AROSEXEC_SMP__)
+#if defined(__AROSPLATFORM_SMP__)
 #include <aros/types/spinlock_s.h>
 #include <proto/execlock.h>
 #include <resources/execlock.h>
@@ -42,7 +42,7 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
     UBYTE *string, *name = NULL;
     ULONG ssize;
 
-#if defined(__AROSEXEC_SMP__)
+#if defined(__AROSPLATFORM_SMP__)
 	void *ExecLockBase = OpenResource("execlock.resource");
 #endif
 
@@ -138,8 +138,9 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 	    struct Node *n;
 	    ULONG slen, totlen;
 
-#if defined(__AROSEXEC_SMP__)
-		ObtainSystemLock(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+#if defined(__AROSPLATFORM_SMP__)
+		if (ExecLockBase)
+			ObtainSystemLock(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
 #else
 	    Disable();
 #endif
@@ -164,8 +165,9 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 		}
 		strcat(string, n->ln_Name);
 	    }
-#if defined(__AROSEXEC_SMP__)
-		ReleaseSystemLock(execl, LOCKF_DISABLE);
+#if defined(__AROSPLATFORM_SMP__)
+		if (ExecLockBase)
+			ReleaseSystemLock(execl, LOCKF_DISABLE);
 #else
 	    Enable();
 #endif
@@ -211,8 +213,9 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 	{
 	    struct Node *n;
 
-#if defined(__AROSEXEC_SMP__)
-		ObtainSystemLock(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+#if defined(__AROSPLATFORM_SMP__)
+		if (ExecLockBase)
+			ObtainSystemLock(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
 #else
 	    Disable();
 #endif
@@ -222,8 +225,9 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 		if (found)
 		    break;
 	    }
-#if defined(__AROSEXEC_SMP__)
-		ReleaseSystemLock(execl, LOCKF_DISABLE);
+#if defined(__AROSPLATFORM_SMP__)
+		if (ExecLockBase)
+			ReleaseSystemLock(execl, LOCKF_DISABLE);
 #else
 	    Enable();
 #endif
