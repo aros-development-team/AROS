@@ -50,6 +50,12 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 const TEXT version[] = "$VER: LibList 41.3 (11.3.2015)\n";
 
 struct lib
@@ -99,18 +105,44 @@ static int fillbuffer(struct lib **buffer, IPTR size)
 {
     STRPTR end=(STRPTR)*buffer+size;
     struct Library *lib;
+#if defined(__AROSPLATFORM_SMP__)
+    void *ExecLockBase = OpenResource("execlock.resource");
+#endif
+
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ObtainSystemLock(&SysBase->LibList, SPINLOCK_MODE_READ, LOCKF_FORBID);
+    else
+        Forbid();
+#else
     Forbid();
+#endif
     for(lib=(struct Library *)SysBase->LibList.lh_Head;
         lib->lib_Node.ln_Succ!=NULL;
         lib=(struct Library *)lib->lib_Node.ln_Succ)
     {
         if(!addlib(lib,buffer,&end))
         {
+#if defined(__AROSPLATFORM_SMP__)
+            if (ExecLockBase)
+                ReleaseSystemLock(&SysBase->LibList, LOCKF_FORBID);
+            else
+                Permit();
+#else
             Permit();
+#endif
             return 0;
         }
     }
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ReleaseSystemLock(&SysBase->LibList, LOCKF_FORBID);
+    else
+        Permit();
+#else
     Permit();
+#endif
+
     return 1;
 }
 

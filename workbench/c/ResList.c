@@ -50,7 +50,7 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-#if defined(__AROSEXEC_SMP__)
+#if defined(__AROSPLATFORM_SMP__)
 #include <aros/types/spinlock_s.h>
 #include <proto/execlock.h>
 #include <resources/execlock.h>
@@ -95,13 +95,16 @@ static int addres(struct Node *r, struct res **l, STRPTR *e)
 
 static int fillbuffer(struct res **buffer, IPTR size)
 {
-#if defined(__AROSEXEC_SMP__)
+#if defined(__AROSPLATFORM_SMP__)
 	void *ExecLockBase = OpenResource("execlock.resource");
 #endif
     STRPTR end=(STRPTR)*buffer+size;
     struct Node *r;
-#if defined(__AROSEXEC_SMP__)
-    ObtainSystemLock(&SysBase->ResourceList, SPINLOCK_MODE_READ, LOCKF_FORBID);
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ObtainSystemLock(&SysBase->ResourceList, SPINLOCK_MODE_READ, LOCKF_FORBID);
+    else
+        Forbid();
 #else
     Forbid();
 #endif
@@ -111,16 +114,22 @@ static int fillbuffer(struct res **buffer, IPTR size)
     {
         if(!addres(r,buffer,&end))
         {
-#if defined(__AROSEXEC_SMP__)
-            ReleaseSystemLock(&SysBase->ResourceList, LOCKF_FORBID);
+#if defined(__AROSPLATFORM_SMP__)
+            if (ExecLockBase)
+                ReleaseSystemLock(&SysBase->ResourceList, LOCKF_FORBID);
+            else
+                Permit();
 #else
             Permit();
 #endif
             return 0;
         }
     }
-#if defined(__AROSEXEC_SMP__)
-    ReleaseSystemLock(&SysBase->ResourceList, LOCKF_FORBID);
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ReleaseSystemLock(&SysBase->ResourceList, LOCKF_FORBID);
+    else
+        Permit();
 #else
     Permit();
 #endif

@@ -51,6 +51,12 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 const TEXT version[] = "$VER: DevList 41.1 (14.3.1997)\n";
 
 struct dev
@@ -100,16 +106,41 @@ static int fillbuffer(struct dev **buffer, IPTR size)
 {
     STRPTR end=(STRPTR)*buffer+size;
     struct Device *dev;
+#if defined(__AROSPLATFORM_SMP__)
+    void *ExecLockBase = OpenResource("execlock.resource");
+#endif
+
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ObtainSystemLock(&SysBase->DeviceList, SPINLOCK_MODE_READ, LOCKF_FORBID);
+    else
+        Forbid();
+#else
     Forbid();
+#endif
     for(dev=(struct Device *)SysBase->DeviceList.lh_Head;
         dev->dd_Library.lib_Node.ln_Succ!=NULL;
         dev=(struct Device *)dev->dd_Library.lib_Node.ln_Succ)
         if(!adddev(dev,buffer,&end))
         {
+#if defined(__AROSPLATFORM_SMP__)
+            if (ExecLockBase)
+                ReleaseSystemLock(&SysBase->DeviceList, LOCKF_FORBID);
+            else
+                Permit();
+#else
             Permit();
+#endif
             return 0;
         }
-    Permit();
+#if defined(__AROSPLATFORM_SMP__)
+            if (ExecLockBase)
+                ReleaseSystemLock(&SysBase->DeviceList, LOCKF_FORBID);
+            else
+                Permit();
+#else
+            Permit();
+#endif
     return 1;
 }
 
