@@ -277,12 +277,9 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     if (!task)
 	return FALSE;
 
+    Forbid();
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
-#endif
-    Forbid();
-
-#if defined(__AROSEXEC_SMP__)
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
     {
         if (task == t)
@@ -294,8 +291,8 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     }
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);
     Permit();
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
     Forbid();
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
     ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
     {
         if (task == t)
@@ -307,8 +304,8 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     }
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskSpinningLock);
     Permit();
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
     Forbid();
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
 #else
     if (task == GET_THIS_TASK)
     {
@@ -331,8 +328,8 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
     Permit();
-    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
     Forbid();
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
     ForeachNode(&SysBase->TaskWait, t)
     {
