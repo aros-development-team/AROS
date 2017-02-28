@@ -6,6 +6,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <aros/types/timespec_s.h>
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <exec/lists.h>
@@ -38,7 +39,7 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
 #if defined(__AROSEXEC_SMP__)
         apicid_t cpuNum = core_APIC_GetNumber(apicData);
         UQUAD now = RDTSC();
-
+        
         // Update LAPIC tick
         apicData->cores[cpuNum].cpu_LAPICTick += APIC_REG(__LAPICBase, APIC_TIMER_ICR);
 
@@ -46,10 +47,60 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
         APIC_REG(__LAPICBase, APIC_TIMER_ICR) = (apicData->cores[cpuNum].cpu_TimerFreq + 500) / 1000;
 
         if ((now - apicData->cores[cpuNum].cpu_LastCPULoadTime) > apicData->cores[cpuNum].cpu_TSCFreq)
-        {            
+        {
+            struct Task *t;
+            UQUAD timeCur = now - apicData->cores[cpuNum].cpu_LastCPULoadTime;
+            
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ);
+            ForeachNode(&SysBase->TaskReady, t)
+            {
+                if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
+                {
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 
+                        (IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 << 32) / timeCur;
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
+                }
+            }
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ);
+            ForeachNode(&SysBase->TaskWait, t)
+            {
+                if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
+                {
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 
+                        (IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 << 32) / timeCur;
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
+                }
+            }
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);
+            ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
+            {
+                if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
+                {
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 
+                        (IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 << 32) / timeCur;
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
+                }
+            }
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL, SPINLOCK_MODE_READ);
+            ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
+            {
+                if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
+                {
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 
+                        (IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 << 32) / timeCur;
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
+                }
+            }
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
+
             apicData->cores[cpuNum].cpu_Load = 
-                ((apicData->cores[cpuNum].cpu_TSCFreq - apicData->cores[cpuNum].cpu_SleepTime) << 32) / 
-                (now - apicData->cores[cpuNum].cpu_LastCPULoadTime);
+                ((apicData->cores[cpuNum].cpu_TSCFreq - apicData->cores[cpuNum].cpu_SleepTime) << 32) / timeCur;
 
             D(bug("[Kernel:APIC.%03u] %s() cpu load %08x\n", cpuNum, __func__, (ULONG)apicData->cores[cpuNum].cpu_Load));
             apicData->cores[cpuNum].cpu_SleepTime = 0;

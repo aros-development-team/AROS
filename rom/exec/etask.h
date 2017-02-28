@@ -47,7 +47,9 @@ struct IntETask
     APTR                iet_RT;                 /* Structure for resource tracking         */
     struct timespec     iet_StartTime;          /* time the task was launched              */
     struct timespec     iet_CpuTime;            /* time the task has spent running         */
+    ULONG               iet_CpuUsage;           /* CPU Usage of this task                  */
     UQUAD               iet_private1;
+    UQUAD               iet_private2;
     ULONG               iet_AlertCode;          /* Alert code for crash handler            */
     UBYTE               iet_AlertType;          /* Type of the alert context               */
     UBYTE               iet_AlertFlags;         /* See below                               */
