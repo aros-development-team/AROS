@@ -80,7 +80,7 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                     }
 
                     if(unit->bulkxfer_queue.lh_Head->ln_Succ) {
-                        mybug(-1,("[handler_task] There's things to do in BULK transfer queue...\n"));
+                        mybug(0,("[handler_task] There's things to do in BULK transfer queue...\n"));
 
                         struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->bulkxfer_queue.lh_Head;
 

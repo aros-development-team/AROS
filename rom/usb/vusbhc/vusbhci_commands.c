@@ -80,7 +80,91 @@ D4..0 Recipient
 #define URTF_OTHER            0x03      // target: other
 */
 
-/* Standard Requests */ 
+/*
+1000 0000b 	GET_STATUS (0x00) 	Zero 	Zero 	Two 	Device Status
+0000 0000b 	CLEAR_FEATURE (0x01) 	Feature Selector 	Zero 	Zero 	None
+0000 0000b 	SET_FEATURE (0x03) 	Feature Selector 	Zero 	Zero 	None
+0000 0000b 	SET_ADDRESS (0x05) 	Device Address 	Zero 	Zero 	None
+1000 0000b 	GET_DESCRIPTOR (0x06) 	Descriptor Type & Index 	Zero or Language ID 	Descriptor Length 	Descriptor
+0000 0000b 	SET_DESCRIPTOR (0x07) 	Descriptor Type & Index 	Zero or Language ID 	Descriptor Length 	Descriptor
+1000 0000b 	GET_CONFIGURATION (0x08) 	Zero 	Zero 	1 	Configuration Value
+0000 0000b 	SET_CONFIGURATION (0x09) 	Configuration Value 	Zero 	Zero 	None
+*/
+
+/* Standard Requests */
+
+/*
+    GetStatus:
+        bmRequestType (URTF_IN|URTF_STANDARD|URTF_DEVICE) 10000000B
+        bRequest USR_GET_STATUS
+        wValue Zero
+        wIndex Zero
+        wLength Two
+        Data Device Status
+
+    CHECKME: U_GSB_SELF_POWERED=8 and U_GSB_REMOTE_WAKEUP=9, should they be 0 and 1?
+
+*/
+UWORD GetStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    UWORD *devicestatus;
+    devicestatus = ioreq->iouh_Data;
+
+    *devicestatus = (U_GSF_SELF_POWERED & (~U_GSF_REMOTE_WAKEUP));
+
+    ioreq->iouh_Actual = wLength;
+
+    mybug_unit(-1, ("GetStatus(%ld) %02x\n", wLength, *devicestatus));
+
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+        struct UsbHubStatus *usbhubstatus = (struct UsbHubStatus *) ioreq->iouh_Data;
+
+        usbhubstatus->wHubStatus = unit->roothub.hubstatus.wHubStatus;
+        usbhubstatus->wHubChange = unit->roothub.hubstatus.wHubChange;
+
+*/
+
+
+/*
+    ClearFeature:
+        bmRequestType (URTF_IN|URTF_STANDARD|URTF_DEVICE) 00000000B
+        bRequest CLEAR_FEATURE
+        wValue Feature Selector
+        wIndex Zero
+        wLength Zero
+        Data None
+*/
+UWORD ClearFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    SetFeature:
+        bmRequestType (URTF_IN|URTF_STANDARD|URTF_DEVICE) 00000000B
+        bRequest SET_FEATURE
+        wValue Feature Selector
+        wIndex Zero
+        wLength Zero
+        Data None
+*/
+UWORD SetFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+    return UHIOERR_NO_ERROR;
+}
+
 /*
     SetAddress:
         bmRequestType   (URTF_OUT|URTF_STANDARD|URTF_DEVICE) 00000000B
@@ -111,78 +195,14 @@ UWORD SetAddress(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLe
 }
 
 /*
-    SetConfiguration:
-        bmRequestType   (URTF_OUT|URTF_STANDARD|URTF_DEVICE) 00000000B
-        bRequest        USR_SET_CONFIGURATION
-        wValue          Configuration Value
-        wIndex          Zero
-        wLength         Zero
-        Data            None
-
-    Note:
-        We have only one configuration, but implement some sanity still
-        If more than one configuration is specified we ignore the rest in GetDescriptor(UDT_CONFIGURATION)
-
-*/
-UWORD SetConfiguration(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
-    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-    mybug_unit(-1, ("Entering function\n"));
-
-    mybug_unit(-1, ("SetConfiguration (configuration %d)\n", wValue));
-
-    /* It is a Request Error if wValue, wIndex, or wLength are other than as specified above. */
-    if( (wValue) && (wValue<=unit->roothub.devdesc.bNumConfigurations) && (!(wIndex)) && (!(wLength)) ) {
-
-        ioreq->iouh_Actual = wLength;
-
-        mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
-        return UHIOERR_NO_ERROR;
-    }
-
-    mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
-    return UHIOERR_BADPARAMS;
-}
-
-/*
-    GetStatus:
-        bmRequestType (URTF_IN|URTF_STANDARD|URTF_DEVICE) 10000000B
-        bRequest USR_GET_STATUS
-        wValue Zero
-        wIndex Zero
-        wLength Two
-        Data Device Status (0x0000)
-*/
-UWORD GetStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
-    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-    mybug_unit(-1, ("Entering function\n"));
-
-    ioreq->iouh_Actual = wLength;
-    /* Assume ioreq data structure is already cleared... we must return 0x0000 as data */
-
-    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
-    return UHIOERR_NO_ERROR;
-}
-
-/*
-    ClearFeature:
-        bmRequestType (URTF_IN|URTF_STANDARD|URTF_DEVICE) 00000000B
-        bRequest CLEAR_FEATURE
-        wValue Feature Selector
-        wIndex Zero
-        wLength Zero
-        Data None
-*/
-UWORD ClearFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
-    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-    mybug_unit(-1, ("Entering function\n"));
-
-    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
-    return UHIOERR_NO_ERROR;
-}
-
-/*
     GetDescriptor:
-*/
+        bmRequestType   (URTF_OUT|URTF_STANDARD|URTF_DEVICE) 10000000B
+        bRequest        GET_DESCRIPTOR
+        wValue          Descriptor Type & Index
+        wIndex          Zero or Language ID
+        wLength         Descriptor Length
+        Data            Descriptor
+*/ 	 	 	 	
 UWORD GetDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
@@ -302,16 +322,84 @@ UWORD GetDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD 
 
 /*
     SetDescriptor:
+        bmRequestType   (URTF_OUT|URTF_STANDARD|URTF_DEVICE) 00000000B
+        bRequest        SET_DESCRIPTOR
+        wValue          Descriptor Type & Index
+        wIndex          Zero or Language ID
+        wLength         Descriptor Length
+        Data            Descriptor
 */
 UWORD SetDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
-    //while(1);
-
     mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
     return UHIOERR_NO_ERROR;
 }
+
+/*
+    GetConfiguration:
+        bmRequestType   (URTF_IN|URTF_STANDARD|URTF_DEVICE) 10000000B
+        bRequest        USR_GET_CONFIGURATION
+        wValue          Zero
+        wIndex          Zero
+        wLength         1
+        Data            Configuration Value
+*/
+UWORD GetConfiguration(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    ioreq->iouh_Actual = wLength;
+
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    SetConfiguration:
+        bmRequestType   (URTF_OUT|URTF_STANDARD|URTF_DEVICE) 00000000B
+        bRequest        USR_SET_CONFIGURATION
+        wValue          Configuration Value
+        wIndex          Zero
+        wLength         Zero
+        Data            None
+
+    Note:
+        We have only one configuration, but implement some sanity still
+        If more than one configuration is specified we ignore the rest in GetDescriptor(UDT_CONFIGURATION)
+
+*/
+UWORD SetConfiguration(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    mybug_unit(-1, ("SetConfiguration (configuration %d)\n", wValue));
+
+    /* It is a Request Error if wValue, wIndex, or wLength are other than as specified above. */
+    if( (wValue) && (wValue<=unit->roothub.devdesc.bNumConfigurations) && (!(wIndex)) && (!(wLength)) ) {
+
+        ioreq->iouh_Actual = wLength;
+
+        mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+        return UHIOERR_NO_ERROR;
+    }
+
+    mybug_unit(-1, ("return UHIOERR_BADPARAMS\n\n"));
+    return UHIOERR_BADPARAMS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* Hub Class Requests */
@@ -375,6 +463,7 @@ UWORD ClearTTBuffer(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
     return UHIOERR_NO_ERROR;
 }
 
@@ -767,14 +856,11 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
         case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_CLEAR_FEATURE)):
             return(ClearFeature(ioreq, wValue, wIndex, wLength));
 
-
-
+        case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_SET_FEATURE)):
+            return(SetFeature(ioreq, wValue, wIndex, wLength));
 
         case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
             return(SetAddress(ioreq, wValue, wIndex, wLength));
-
-        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
-            return(SetConfiguration(ioreq, wValue, wIndex, wLength));
 
         case (((URTF_IN|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_GET_DESCRIPTOR)):
             return(GetDescriptor(ioreq, wValue, wIndex, wLength));
@@ -782,17 +868,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
         case (((URTF_OUT|URTF_STANDARD|URTF_DEVICE)<<16)|(USR_SET_DESCRIPTOR)):
             return(SetDescriptor(ioreq, wValue, wIndex, wLength));
 
+        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_GET_CONFIGURATION)):
+            return(GetConfiguration(ioreq, wValue, wIndex, wLength));
 
-/*
-1000 0000b 	GET_STATUS (0x00) 	Zero 	Zero 	Two 	Device Status
-0000 0000b 	CLEAR_FEATURE (0x01) 	Feature Selector 	Zero 	Zero 	None
-0000 0000b 	SET_FEATURE (0x03) 	Feature Selector 	Zero 	Zero 	None
-0000 0000b 	SET_ADDRESS (0x05) 	Device Address 	Zero 	Zero 	None
-1000 0000b 	GET_DESCRIPTOR (0x06) 	Descriptor Type & Index 	Zero or Language ID 	Descriptor Length 	Descriptor
-0000 0000b 	SET_DESCRIPTOR (0x07) 	Descriptor Type & Index 	Zero or Language ID 	Descriptor Length 	Descriptor
-1000 0000b 	GET_CONFIGURATION (0x08) 	Zero 	Zero 	1 	Configuration Value
-0000 0000b 	SET_CONFIGURATION (0x09) 	Configuration Value 	Zero 	Zero 	None
-*/
+        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
+            return(SetConfiguration(ioreq, wValue, wIndex, wLength));
+
+
 
 
 
@@ -1016,10 +1098,10 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(-1, ("Entering function\n"));
+    mybug_unit(0, ("Entering function\n"));
 
-    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -1037,7 +1119,7 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
         return UHIOERR_USBOFFLINE;
     }
 
-    mybug_unit(-1, ("Adding BULK transfer request to queue\n"));
+    mybug_unit(0, ("Adding BULK transfer request to queue\n"));
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
