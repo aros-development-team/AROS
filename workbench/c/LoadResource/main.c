@@ -18,6 +18,12 @@
 
 #include "locale.h"
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 enum
 {
     ARG_NAME,
@@ -96,23 +102,47 @@ BOOL process(CONST_STRPTR name)
 BOOL dev_process(CONST_STRPTR name)
 {
     struct IORequest req;
-
+    BOOL retval = FALSE;
     memset(&req, 0, sizeof(req));
     req.io_Message.mn_Length = sizeof(req);
-    
+#if defined(__AROSPLATFORM_SMP__)
+    void *ExecLockBase = OpenResource("execlock.resource");
+#endif
+
     if (!OpenDevice(name, 0, &req, 0))
     {
         CloseDevice(&req);
-        return TRUE;
+        retval = TRUE;
+    }
+    else
+    {
+#if defined(__AROSPLATFORM_SMP__)
+        if (ExecLockBase)
+            ObtainSystemLock(&SysBase->DeviceList, SPINLOCK_MODE_READ, LOCKF_FORBID);
+        else
+            Forbid();
+#else
+        Forbid();
+#endif
+        /* There can different errors, but if the device was loaded, it's OK */
+        if (FindName(&SysBase->DeviceList, name))
+            retval = TRUE;
+
+#if defined(__AROSPLATFORM_SMP__)
+        if (ExecLockBase)
+            ReleaseSystemLock(&SysBase->DeviceList, LOCKF_FORBID);
+        else
+            Permit();
+#else
+        Permit();
+#endif
+        if (retval == FALSE)
+        {
+            PutStr(ERROR_HEADER": ");
+            Printf(_(MSG_ERROR_OPEN_DEVICE), name);
+            PutStr("\n");
+        }
     }
 
-    /* There can different errors, but if the device was loaded, it's OK */
-    if (FindName(&SysBase->DeviceList, name))
-        return TRUE;
-
-    PutStr(ERROR_HEADER": ");
-    Printf(_(MSG_ERROR_OPEN_DEVICE), name);
-    PutStr("\n");
-
-    return FALSE;
+    return retval;
 }

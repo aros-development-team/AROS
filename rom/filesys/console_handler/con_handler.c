@@ -32,6 +32,12 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 static char *BSTR2C(BSTR srcs)
 {
     UBYTE *src = BADDR(srcs);
@@ -244,6 +250,9 @@ static void close_con(struct filehandle *fh)
 
 static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 {
+#if defined(__AROSPLATFORM_SMP__)
+    void *ExecLockBase = OpenResource("execlock.resource");
+#endif
     char *filename, *fn;
     struct filehandle *fh;
     struct DeviceNode *dn;
@@ -260,9 +269,26 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     fh->dosbase = (APTR) OpenLibrary("dos.library", 0);
     fh->utilbase = (APTR) OpenLibrary("utility.library", 0);
     fh->workbenchbase = (APTR) OpenLibrary("workbench.library", 0);
+
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ObtainSystemLock(&SysBase->DeviceList, SPINLOCK_MODE_READ, LOCKF_FORBID);
+    else
+        Forbid();
+#else
     Forbid();
+#endif
+
     fh->inputbase = (struct Device *) FindName(&SysBase->DeviceList, "input.device");
+
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ReleaseSystemLock(&SysBase->DeviceList, LOCKF_FORBID);
+    else
+        Permit();
+#else
     Permit();
+#endif
 
     if (!fh->intuibase || !fh->dosbase || !fh->utilbase || !fh->inputbase)
     {

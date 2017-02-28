@@ -81,6 +81,12 @@
 #include <dos/dosextens.h>
 #include <dos/elf.h>
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 /*===[md5.h]==============================================================*/
 
 /* Data structure for MD5 (Message-Digest) computation */
@@ -1360,9 +1366,16 @@ int makeexeclistver(struct List *list, CONST_STRPTR name)
 {
     struct Library *MyLibrary;
     int error = -1;
+#if defined(__AROSPLATFORM_SMP__)
+	void *ExecLockBase = OpenResource("execlock.resource");
 
+    if (ExecLockBase)
+        ObtainSystemLock(list, SPINLOCK_MODE_READ, LOCKF_FORBID);
+    else
+        Forbid();
+#else
     Forbid();
-
+#endif
     MyLibrary = (struct Library *) findname(list, name);
     if (MyLibrary)
     {
@@ -1396,7 +1409,14 @@ int makeexeclistver(struct List *list, CONST_STRPTR name)
         }
     }
 
+#if defined(__AROSPLATFORM_SMP__)
+    if (ExecLockBase)
+        ReleaseSystemLock(list, LOCKF_FORBID);
+    else
+        Permit();
+#else
     Permit();
+#endif
 
     return error;
 }

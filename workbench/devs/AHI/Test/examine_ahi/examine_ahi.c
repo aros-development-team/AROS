@@ -11,14 +11,37 @@ extern struct ExecBase *SysBase;
 
 void printlist(struct MinList *);
 
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
 int main(void)
 {
   struct AHIBase *AHIBase;
   struct AHIDevUnit *iounit;
 
+#if defined(__AROSPLATFORM_SMP__)
+  void *ExecLockBase = OpenResource("execlock.resource");
+
+  if (ExecLockBase)
+    ObtainSystemLock(&SysBase->DeviceList, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+  else
+    Disable();
+#else
   Disable();
+#endif
   AHIBase = (struct AHIBase *) FindName(& SysBase->DeviceList, AHINAME);
+#if defined(__AROSPLATFORM_SMP__)
+  if (ExecLockBase)
+    ReleaseSystemLock(&SysBase->DeviceList, LOCKF_DISABLE);
+  else
+    Enable();
+#else
   Enable();
+#endif
+
 
   printf("Base: 0x%08lx\n", AHIBase);
   if(AHIBase == NULL)
