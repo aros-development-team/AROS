@@ -28,8 +28,8 @@
 
 #if defined(__AROSEXEC_SMP__)
 #include <aros/types/spinlock_s.h>
-#include <proto/execlist.h>
-#include <resources/execlist.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
 #endif
 
 LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
@@ -139,7 +139,7 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 	    ULONG slen, totlen;
 
 #if defined(__AROSEXEC_SMP__)
-		ObtainSystemList(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+		ObtainSystemLock(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
 #else
 	    Disable();
 #endif
@@ -165,7 +165,7 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 		strcat(string, n->ln_Name);
 	    }
 #if defined(__AROSEXEC_SMP__)
-		ReleaseSystemList(execl, LOCKF_DISABLE);
+		ReleaseSystemLock(execl, LOCKF_DISABLE);
 #else
 	    Enable();
 #endif
@@ -212,7 +212,7 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 	    struct Node *n;
 
 #if defined(__AROSEXEC_SMP__)
-		ObtainSystemList(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+		ObtainSystemLock(execl, SPINLOCK_MODE_READ, LOCKF_DISABLE);
 #else
 	    Disable();
 #endif
@@ -223,7 +223,7 @@ LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 		    break;
 	    }
 #if defined(__AROSEXEC_SMP__)
-		ReleaseSystemList(execl, LOCKF_DISABLE);
+		ReleaseSystemLock(execl, LOCKF_DISABLE);
 #else
 	    Enable();
 #endif
