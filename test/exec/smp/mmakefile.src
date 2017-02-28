@@ -6,9 +6,11 @@ include $(SRCDIR)/config/aros.cfg
 FILES	:= main master worker
 EXEDIR := $(AROS_TESTS)/exec
 
-#MM- test : test-exec-smp
+#MM- test-exec : test-exec-smp
+#MM- test-exec-quick : test-exec-smp-quick
 
-USER_CFLAGS :=
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
 
 %build_prog mmake=test-exec-smp \
     files=$(FILES) targetdir=$(EXEDIR) \
