@@ -239,13 +239,13 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
     struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) xfr->user_data;;
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(-1, ("callbackUSBTransferComplete\n"));
+    mybug_unit(0, ("callbackUSBTransferComplete\n"));
 
     int err;
 
     switch(xfr->status) {
         case LIBUSB_TRANSFER_COMPLETED:
-            mybug_unit(-1, ("LIBUSB_TRANSFER_COMPLETED\n"));
+            mybug_unit(0, ("LIBUSB_TRANSFER_COMPLETED\n"));
             ioreq->iouh_Actual = xfr->actual_length;
             err = UHIOERR_NO_ERROR;
         break;
@@ -277,7 +277,7 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
 
     }
 
-    mybug_unit(-1, ("Releasing libusb transfer structure...\n"));
+    mybug_unit(0, ("Releasing libusb transfer structure...\n"));
     LIBUSBCALL(libusb_free_transfer, xfr);
 
     /* Set error codes */
@@ -491,12 +491,12 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
     int rc = 0, transferred = 0;
     UBYTE endpoint = ioreq->iouh_Endpoint;
 
-    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
-    mybug_unit(-1, ("direction %d\n", (ioreq->iouh_Dir)));
+    mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(0, ("direction %d\n", (ioreq->iouh_Dir)));
 
     struct libusb_transfer *xfr;
 
-    mybug_unit(-1, ("Allocating transfer...\n"));
+    mybug_unit(0, ("Allocating transfer...\n"));
 
     xfr = LIBUSBCALL(libusb_alloc_transfer, 0);
 	if (xfr == NULL) {
@@ -505,7 +505,7 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
-            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
+            mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
                 libusb_fill_bulk_transfer(xfr, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN),
                           (UBYTE *)ioreq->iouh_Data,
                           ioreq->iouh_Length,
@@ -515,12 +515,12 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
                           );
 
             LIBUSBCALL(libusb_submit_transfer, xfr);
-            mybug_unit(-1, ("Called libusb_submit_transfer\n"));
-            call_libusb_event_handler();
+            mybug_unit(0, ("Called libusb_submit_transfer\n"));
+            //call_libusb_event_handler();
         break;
 
         case UHDIR_OUT:
-            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
+            mybug_unit(0, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
                 libusb_fill_bulk_transfer(xfr, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT),
                           (UBYTE *)ioreq->iouh_Data,
                           ioreq->iouh_Length,
@@ -530,8 +530,8 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
                           );
 
             LIBUSBCALL(libusb_submit_transfer, xfr);
-            mybug_unit(-1, ("Called libusb_submit_transfer\n"));
-            call_libusb_event_handler();
+            mybug_unit(0, ("Called libusb_submit_transfer\n"));
+            //call_libusb_event_handler();
         break;
     }
 
