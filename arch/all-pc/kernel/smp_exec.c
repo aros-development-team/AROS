@@ -171,6 +171,9 @@ void cpu_BootStrap(struct Task *bstask)
 
     krnLeaveSupervisorRing(FLAGS_INTENABLED);
 
+    D(bug("[Kernel:%03u] %s: Initialising APIC...\n", cpuNo, __func__));
+    core_APIC_Init(apicData, cpuNo);
+
     D(
         bug("[Kernel:%03u] %s: Initialising Scheduler...\n", cpuNo, __func__);
         bug("[Kernel:%03u] %s:        Enabling Exec Interrupts...\n", cpuNo, __func__);
