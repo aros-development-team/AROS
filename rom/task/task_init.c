@@ -25,7 +25,10 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 #ifdef TASKRES_ENABLE
     struct TaskListEntry *taskEntry = NULL;
     struct Task *curTask = NULL;
+
+#if defined(__AROSEXEC_SMP__)
     void *ExecLockBase = NULL;
+#endif
 #endif /* TASKRES_ENABLE */
 
     KernelBase = OpenResource("kernel.resource");
