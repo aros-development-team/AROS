@@ -289,11 +289,7 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
 }
 
 /*
-    FIXME: libusb expects buffer to precede with enough space for setup data (8 bytes or LIBUSB_CONTROL_SETUP_SIZE)
-            - Copy buffer need to be used
-
-    IGNORE or CHECKME: LIBUSB_xxx_SETUP_SIZE is needed for asynchronous use of libusb
-
+    Control transfers are syncronous
 */
 int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
@@ -307,125 +303,63 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     UWORD wLength            = (ioreq->iouh_SetupData.wLength);
 
     switch(ioreq->iouh_SetupData.bmRequestType) {
+
         case (URTF_OUT|URTF_STANDARD|URTF_DEVICE):
             mybug_unit(-1, ("Filtering out (URTF_OUT|URTF_STANDARD|URTF_DEVICE)\n"));
             mybug_unit(-1, ("ioreq->iouh_SetupData.bmRequestType %x\n", ioreq->iouh_SetupData.bRequest));
 
             switch(ioreq->iouh_SetupData.bRequest) {
 
-                case (USR_SET_FEATURE):
-                    mybug_unit(-1, (" - SET_FEATURE\n"));
-                break;
-
                 case (USR_SET_ADDRESS):
                     mybug_unit(-1, (" - SET_ADDRESS\n"));
+                    mybug_unit(-1, ("Filtering out SET_ADDRESS\n\n"));
+                    ioreq->iouh_Actual = ioreq->iouh_Length;
                     return UHIOERR_NO_ERROR;
                 break;
-
-                case (USR_SET_DESCRIPTOR):
-                    mybug_unit(-1, (" - SET_DESCRIPTOR\n"));
-                break;
-
+/*
                 case (USR_SET_CONFIGURATION):
                     mybug_unit(-1, (" - SET_CONFIGURATION\n"));
+                    mybug_unit(-1, ("Filtering out SET_CONFIGURATION(%d)\n", wValue));
+                    ioreq->iouh_Actual = ioreq->iouh_Length;
+
+                    int bConfigurationValue;
+
+                    LIBUSBCALL(libusb_get_configuration, dev_handle, &bConfigurationValue);
+                    if(bConfigurationValue == wValue) {
+                        mybug_unit(-1, (" Configuration number already set to a correct value (%d)\n", bConfigurationValue));
+                    }
+
+                    rc = LIBUSBCALL(libusb_set_configuration, dev_handle, wValue);
+                    mybug_unit(-1, (" libusb_set_configuration(%d) = %d\n", wValue, rc));
+
+                    switch(rc) {
+	                    case LIBUSB_SUCCESS:
+	                        mybug_unit(-1, ("Success (no error)\n"));
+                        break;
+
+	                    case LIBUSB_ERROR_NOT_FOUND:
+	                        mybug_unit(-1, ("Requested configuration does not exist\n"));
+                        break;
+
+	                    case LIBUSB_ERROR_BUSY:
+	                        mybug_unit(-1, ("Interfaces are currently claimed\n"));
+                        break;
+
+	                    case LIBUSB_ERROR_NO_DEVICE:
+	                        mybug_unit(-1, ("No such device (it may have been disconnected)\n"));
+                        break;
+                    }
+
+                    return UHIOERR_NO_ERROR;
                 break;
-
-                case (USR_SET_INTERFACE):
-                    mybug_unit(-1, (" - SET_INTERFACE\n"));
-                break;
-
-            }
-
-        break;
-
-        case (URTF_IN|URTF_STANDARD|URTF_DEVICE):
-            mybug_unit(-1, ("Filtering out (URTF_IN|URTF_STANDARD|URTF_DEVICE)\n"));
-            mybug_unit(-1, ("ioreq->iouh_SetupData.bmRequestType %x\n", ioreq->iouh_SetupData.bRequest));
-        break;
-    }
-
-
-    switch(((ULONG)ioreq->iouh_SetupData.bmRequestType<<16)|((ULONG)ioreq->iouh_SetupData.bRequest)) {
-
-/*
-#define USR_GET_STATUS        0x00
-#define USR_CLEAR_FEATURE     0x01
-
-#define USR_SET_FEATURE       0x03
-#define USR_SET_ADDRESS       0x05
-#define USR_SET_DESCRIPTOR    0x07
-#define USR_SET_CONFIGURATION 0x09
-#define USR_SET_INTERFACE     0x0b
-
-#define USR_GET_DESCRIPTOR    0x06
-#define USR_GET_CONFIGURATION 0x08
-#define USR_GET_INTERFACE     0x0a
-
-#define USR_SYNCH_FRAME       0x0c
 */
-
-        /* FIXME: Keep track on device address (what poseidon thinks the address is and what Linux think it is) */
-
-        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_ADDRESS)):
-            mybug_unit(-1, ("Filtering out SET_ADDRESS\n\n"));
-            ioreq->iouh_Actual = ioreq->iouh_Length;
-            return UHIOERR_NO_ERROR;
-        break;
-
-        /* FIXME: Parse messages related to configurations and use related libusb calls directly */
-
-        case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
-            mybug_unit(-1, ("Filtering out SET_CONFIGURATION(%d)\n", wValue));
-            ioreq->iouh_Actual = ioreq->iouh_Length;
-
-            int config = -1;
-
-            rc = LIBUSBCALL(libusb_set_configuration, dev_handle, wValue);
-            mybug_unit(-1, (" rc => %d\n", rc));
-
-            LIBUSBCALL(libusb_get_configuration, dev_handle, &config);
-            mybug_unit(-1, (" config => %d\n", config));
-
-            /*
-                0 on success 
-                LIBUSB_ERROR_NOT_FOUND if the requested configuration does not exist 
-                LIBUSB_ERROR_BUSY if interfaces are currently claimed 
-                LIBUSB_ERROR_NO_DEVICE if the device has been disconnected 
-            */
-
-            switch(rc) {
-	            case LIBUSB_SUCCESS:
-	                mybug_unit(-1, ("Success (no error)\n"));
-                break;
-
-	            case LIBUSB_ERROR_NOT_FOUND:
-	                mybug_unit(-1, ("Requested configuration does not exist\n"));
-                break;
-
-	            case LIBUSB_ERROR_BUSY:
-	                mybug_unit(-1, ("Interfaces are currently claimed\n"));
-                break;
-
-	            case LIBUSB_ERROR_NO_DEVICE:
-	                mybug_unit(-1, ("No such device (it may have been disconnected)\n"));
-                break;
             }
-
-            return UHIOERR_NO_ERROR;
         break;
-
     }
 
-    mybug_unit(0, ("wLength %d\n", wLength));
     mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
 
-    rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_NakTimeout);
-
-    if(rc<0) {
-        rc = 0;
-    }
-
-    ioreq->iouh_Actual = rc;
+    LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_NakTimeout);
 
     mybug_unit(0, ("Done!\n\n"));
     return UHIOERR_NO_ERROR;   
@@ -437,8 +371,8 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
     int rc = 0, transferred = 0;
     UBYTE endpoint = ioreq->iouh_Endpoint;
 
-    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
-    mybug_unit(-1, ("direction %d\n", (ioreq->iouh_Dir)));
+    mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(0, ("direction %d\n", (ioreq->iouh_Dir)));
 
     struct libusb_transfer *xfr;
 
@@ -453,7 +387,7 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
 
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
-            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
+            mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
                 libusb_fill_interrupt_transfer(xfr, dev_handle, (endpoint|LIBUSB_ENDPOINT_IN),
                           (UBYTE *)ioreq->iouh_Data,
                           ioreq->iouh_Length,
@@ -462,12 +396,11 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
                           ioreq->iouh_NakTimeout
                           );
             LIBUSBCALL(libusb_submit_transfer, xfr);
-            mybug_unit(-1, ("Called libusb_submit_transfer\n"));
-            call_libusb_event_handler();
+            mybug_unit(0, ("Called libusb_submit_transfer\n"));
         break;
 
         case UHDIR_OUT:
-            mybug_unit(-1, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
+            mybug_unit(0, ("ioreq->iouh_Endpoint %d (OUT)\n", endpoint));
                 libusb_fill_interrupt_transfer(xfr, dev_handle, (endpoint|LIBUSB_ENDPOINT_OUT),
                           (UBYTE *)ioreq->iouh_Data,
                           ioreq->iouh_Length,
@@ -477,8 +410,7 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
                           );
 
             LIBUSBCALL(libusb_submit_transfer, xfr);
-            mybug_unit(-1, ("Called libusb_submit_transfer\n"));
-            call_libusb_event_handler();
+            mybug_unit(0, ("Called libusb_submit_transfer\n"));
         break;
     }
 
@@ -516,7 +448,6 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 
             LIBUSBCALL(libusb_submit_transfer, xfr);
             mybug_unit(0, ("Called libusb_submit_transfer\n"));
-            //call_libusb_event_handler();
         break;
 
         case UHDIR_OUT:
@@ -531,7 +462,6 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 
             LIBUSBCALL(libusb_submit_transfer, xfr);
             mybug_unit(0, ("Called libusb_submit_transfer\n"));
-            //call_libusb_event_handler();
         break;
     }
 
@@ -540,6 +470,8 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 
 int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    /*
 
     int rc = 0, transferred = 0;
     UBYTE endpoint = ioreq->iouh_Endpoint;
@@ -589,7 +521,7 @@ int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
             call_libusb_event_handler();
         break;
     }
-
+    */
     return UHIOERR_NO_ERROR;    
 }
 
