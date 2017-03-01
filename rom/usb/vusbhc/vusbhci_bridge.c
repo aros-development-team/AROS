@@ -376,9 +376,7 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
 
     struct libusb_transfer *xfr;
 
-    //ioreq->iouh_NakTimeout = 1000;
-
-    mybug_unit(-1, ("Allocating transfer...\n"));
+    mybug_unit(0, ("Allocating transfer...\n"));
 
     xfr = LIBUSBCALL(libusb_alloc_transfer, 0);
 	if (xfr == NULL) {
