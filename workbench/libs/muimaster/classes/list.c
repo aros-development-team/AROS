@@ -1974,7 +1974,7 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     IPTR ret = (IPTR)0;
 
     if (data->flags & LIST_QUIET)
-        return 0;
+        return ret;
 
     ret = DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -2356,10 +2356,10 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
     {
         if (msg->pos == MUIV_List_Redraw_All)
         {
-            data->update = 1;
             CalcWidths(cl, obj);
             if (!(data->flags & LIST_QUIET))
             {
+                data->update = 1;
                 MUI_Redraw(obj, MADF_DRAWUPDATE);
             }
             else
@@ -2386,19 +2386,23 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
             if (pos != -1)
             {
                 data->entries[pos]->flags |= ENTRY_RENDER;
-                if (CalcDimsOfEntry(cl, obj, pos))
-                    data->update = 1;
-                else
-                {
-                    data->update = 2;
-                    data->update_pos = pos;
-                }
                 if (!(data->flags & LIST_QUIET))
                 {
+                    if (CalcDimsOfEntry(cl, obj, pos))
+                        data->update = 1;
+                    else
+                    {
+                        data->update = 2;
+                        data->update_pos = pos;
+                    }
+
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
                 else
+                {
+                    CalcDimsOfEntry(cl, obj, pos);
                     data->flags |= LIST_CHANGED;
+                }
             }
         }
     }
