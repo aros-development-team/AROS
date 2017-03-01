@@ -2358,7 +2358,12 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
         {
             data->update = 1;
             CalcWidths(cl, obj);
-            MUI_Redraw(obj, MADF_DRAWUPDATE);
+            if (!(data->flags & LIST_QUIET))
+            {
+                MUI_Redraw(obj, MADF_DRAWUPDATE);
+            }
+            else
+                data->flags |= LIST_CHANGED;
         }
         else
         {
@@ -2380,6 +2385,7 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
 
             if (pos != -1)
             {
+                data->entries[pos]->flags |= ENTRY_RENDER;
                 if (CalcDimsOfEntry(cl, obj, pos))
                     data->update = 1;
                 else
@@ -2387,12 +2393,15 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
                     data->update = 2;
                     data->update_pos = pos;
                 }
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                if (!(data->flags & LIST_QUIET))
+                {
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                }
+                else
+                    data->flags |= LIST_CHANGED;
             }
         }
     }
-    else
-        data->flags |= LIST_CHANGED;
 
     return 0;
 }
@@ -2845,6 +2854,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
             return ~0;
         }
 
+        lentry->flags |= ENTRY_RENDER;
         data->entries[pos] = lentry;
         data->confirm_entries_num++;
 
