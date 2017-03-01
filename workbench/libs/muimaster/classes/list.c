@@ -1544,11 +1544,13 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             data->update = 3;
             data->entries_first = tag->ti_Data;
 
-            MUI_Redraw(obj, MADF_DRAWUPDATE);
-            if ((data->vertprop_first != tag->ti_Data)
-                && (!(data->flags & LIST_QUIET)))
+            if (!(data->flags & LIST_QUIET))
             {
-                set(obj, MUIA_List_VertProp_First, tag->ti_Data);
+                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                if (data->vertprop_first != tag->ti_Data)
+                {
+                    set(obj, MUIA_List_VertProp_First, tag->ti_Data);
+                }
             }
             break;
 
@@ -1578,15 +1580,12 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             {
                 if (data->flags & LIST_CHANGED)
                 {
-                    DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
                     if (data->entries_num != XGET(obj, MUIA_List_VertProp_Entries))
                         set(obj, MUIA_List_VertProp_Entries, data->entries_num);
                     if (data->entries_first != XGET(obj, MUIA_List_VertProp_First))
                         set(obj, MUIA_List_VertProp_First, data->entries_first);
                 }
-            }
-            else
-            {
                 data->flags &= ~LIST_CHANGED;
             }
             break;
@@ -2190,6 +2189,8 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
         x1 += data->ci[col].delta - halfdelta;
     }
+
+    data->flags &= ~LIST_CHANGED;
 
     return 0;
 }
