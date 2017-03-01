@@ -26,7 +26,7 @@
         AROS_LH4(void *, KrnAddIRQHandler,
 
 /*  SYNOPSIS */
-        AROS_LHA(uint8_t, irq, D0),
+        AROS_LHA(uint32_t, irq, D0),
         AROS_LHA(irqhandler_t *, handler, A0),
         AROS_LHA(void *, handlerData, A1),
         AROS_LHA(void *, handlerData2, A2),
