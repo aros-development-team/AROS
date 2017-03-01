@@ -188,6 +188,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                 End),
                                 Child, (IPTR)(smdata->cpuusageobj = ProcessorGroupObject(smdata, processorcount)),
                             End),
+                            Child, BalanceObject, End,
                             Child, cpufreqcntnr,
                         End),
                         Child, (VGroup,
