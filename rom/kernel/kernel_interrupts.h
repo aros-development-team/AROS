@@ -18,8 +18,8 @@ struct IntrNode
     void                *in_Handler;
     void                *in_HandlerData;
     void                *in_HandlerData2;
+    uint32_t             in_nr;
     uint8_t             in_type;
-    uint8_t             in_nr;
 };
 
 enum intr_types
