@@ -725,7 +725,7 @@ IPTR Tasklist__MUIM_HandleEvent(Class *CLASS, Object *self, struct MUIP_HandleEv
             {
                 D(bug("[SysMon:TaskList] %s: Click @ %d, %d\n", __func__, message->imsg->MouseX, message->imsg->MouseY));
                 DoMethod(self, MUIM_List_TestPos, message->imsg->MouseX, message->imsg->MouseY, &selectres);
-                if ((selectres.entry == -1) && (selectres.column != -1))
+                if ((selectres.entry == -1) && (selectres.column != -1) && (message->imsg->MouseY < (_mtop(self) + _font(self)->tf_YSize + 4)))
                 {
                     if (data->tasklistSortColumn == selectres.column)
                         data->tasklistSortMode = ~data->tasklistSortMode;
