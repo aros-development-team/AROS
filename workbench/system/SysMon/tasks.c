@@ -800,23 +800,7 @@ IPTR Tasklist__MUIM_Tasklist_Refresh(Class *CLASS, Object *self, Msg message)
 
                 if ((taskUpdate = Tasklist__Refresh(data, ti, data->tasklistSortColumn)) > 0)
                 {
-                    int i = 0;
-                    BOOL found = FALSE;
-
-                    for (i = 0; ((i < data->tld_TasksTotal) && (!(found))); i++)
-                    {
-                        DoMethod(self, MUIM_List_GetEntry, i, &titmp);
-                        if (!titmp)
-                        {
-                            bug("[SysMon:TaskList] End of entries before end of tasks? #%d\n", i);
-                            found = TRUE;
-                        }
-                        else if (titmp == ti)
-                        {
-                            DoMethod(self, MUIM_List_Redraw, i);
-                            found = TRUE;
-                        }
-                    }
+                    DoMethod(self, MUIM_List_Redraw, MUIV_List_Redraw_Entry, ti);
                 }
                 else if (taskUpdate < 0)
                     doSort = TRUE;
