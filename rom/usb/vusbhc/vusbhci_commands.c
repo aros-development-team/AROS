@@ -26,6 +26,9 @@
 
 #include "vusbhci_device.h"
 
+/*
+    FIXME: cmdAbortIO does not work for the request that is already passed to libusb
+*/
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
     ioreq->iouh_Req.io_Error = IOERR_ABORTED;
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
