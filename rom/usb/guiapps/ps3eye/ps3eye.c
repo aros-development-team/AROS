@@ -13,6 +13,9 @@
 
 #include <aros/debug.h>
 
+#include <exec/types.h>
+#include <stdlib.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -29,8 +32,6 @@
 
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/gfx.h>
-
-#include <stdlib.h>
 
 #define MYBUG_LEVEL 1
 #define mybug(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
@@ -94,18 +95,50 @@ ULONG bridge_read(struct InstData *data, UWORD reg, UWORD *val) {
 
 }
 
+void sensor_write(struct InstData *data, UWORD reg, UWORD *val) {
+
+    UWORD tmp = reg;
+
+	bridge_write(data, 0xf2, &tmp);
+
+    tmp = *val;
+	bridge_write(data, 0xf3, &tmp);
+
+    tmp = 0x37;
+	bridge_write(data, 0xf5, &tmp);
+
+}
+
+UWORD sensor_read(struct InstData *data, UWORD reg) {
+
+    UWORD tmp = reg;
+
+	bridge_write(data, 0xf2, &tmp);
+
+    tmp = 0x33;
+	bridge_write(data, 0xf5, &tmp);
+
+    tmp = 0xf9;
+	bridge_write(data, 0xf5, &tmp);
+
+	bridge_read(data, 0xf4, &tmp);
+
+    return(tmp);
+}
+
+
 void freedevice(struct InstData *data) {
 
     if(data->ps3eye_ep0pipe) {
         psdFreePipe(data->ps3eye_ep0pipe); // Allowed to be NULL
         data->ps3eye_ep0pipe = NULL;
-        mybug(-1, ("freedevice released endpoint 0 pipe\n"));
+        mybug(-1, ("releasehook freed endpoint 0 pipe\n"));
     }
 
     if(data->ps3eye_ep1pipe) {
         psdFreePipe(data->ps3eye_ep1pipe); // Allowed to be NULL
         data->ps3eye_ep1pipe = NULL;
-        mybug(-1, ("freedevice released endpoint 1 pipe\n"));
+        mybug(-1, ("releasehook freed endpoint 1 pipe\n"));
     }
 
     if(data->pab) {
@@ -162,14 +195,22 @@ void allocdevice(struct InstData *data) {
                             mybug(-1, ("allocdevice allocated endpoint 1 pipe (BULK)\n"));
 
                             /* Turn red led on */
-                            regval = 0x80;
-                            bridge_write(data, 0x21, &regval);
-                            bridge_write(data, 0x23, &regval);
+                            //regval = 0x80;
+                            //bridge_write(data, 0x21, &regval);
+                            //bridge_write(data, 0x23, &regval);
 
-                            UWORD i;
-                            for(i=0;i<0x100;i++) {
-                                bridge_read(data, i, &regval);
-                            }
+                            //UWORD i;
+                            //for(i=0xff;i>=0xf0;i--) {
+                            //    bridge_read(data, i, &regval);
+                            //}
+
+                            regval = 0x3a;
+                            bridge_write(data, 0xe7, &regval);
+                            regval = 0x42;
+                            bridge_write(data, 0xf1, &regval);
+
+                            /* probe the sensor */
+                        	mybug(-1, ("Sensor ID: %02x%02x\n", sensor_read(data, 0x0a), sensor_read(data, 0x0b)));
 
                             return;
 
@@ -200,7 +241,7 @@ IPTR mNew(Class *cl, Object *obj, struct opSet *msg) {
 
     if((obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg))) {
         struct InstData *data = INST_DATA(cl, obj);
-        mybug(-1, ("resolutionvga %d\n", data->resolutionvga));
+        //mybug(-1, ("resolutionvga %d\n", data->resolutionvga));
         data->resolutionvga = FALSE;
 
         data->pd = NULL;
@@ -217,7 +258,7 @@ IPTR mNew(Class *cl, Object *obj, struct opSet *msg) {
 //                data->psdeventihn.ihn_Method = MUIM_Action_HandlePsdEvents;
 
                 data->tmreventihn.ihn_Object = obj;
-                data->tmreventihn.ihn_Millis = 10;
+                data->tmreventihn.ihn_Millis = 40;
                 data->tmreventihn.ihn_Flags  = MUIIHNF_TIMER;
                 data->tmreventihn.ihn_Method = MUIM_Action_HandleTmrEvents;
 
@@ -235,7 +276,7 @@ IPTR mDispose(Class *cl, Object *obj, struct opGet *msg) {
 	mybug(-1, ("mDispose gets called\n"));
 
     struct InstData *data = INST_DATA(cl, obj);
-    mybug(-1, ("resolutionvga %d\n", data->resolutionvga));
+    //mybug(-1, ("resolutionvga %d\n", data->resolutionvga));
 
 //    if(data->psdeventhandler){
 //        psdRemEventHandler(data->psdeventhandler);
@@ -289,7 +330,7 @@ IPTR mSet(Class *cl, Object *obj, struct opSet *msg) {
         switch(tag->ti_Tag) {
             case MUIA_Resolution:
                 data->resolutionvga = tag->ti_Data;
-                mybug(-1, ("mSet MUIA_Resolution = %d\n", data->resolutionvga));
+                //mybug(-1, ("mSet MUIA_Resolution = %d\n", data->resolutionvga));
                 SetAttrs(_win(obj), MUIA_Window_Open, FALSE, MUIA_Window_Open, TRUE, TAG_DONE);
             break;
 
@@ -389,7 +430,7 @@ void DoEffect(UBYTE *src, UBYTE *dest, ULONG w, ULONG h) {
 
     l = w*h;
 
-    z += (w/320);
+    z += (w/320)*2;
     if(z>(LONG)h) {
         z = -(h/10);
     }
@@ -447,12 +488,14 @@ IPTR mDraw(Class *cl, Object *obj, struct MUIP_Draw *msg) {
 
     WORD    	      y;
     IPTR    	      retval;
+
+    static ULONG sec=0, mic=0, lastTick=0, currTick=0;
     
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
     
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
 
-    if(data->ps3eye_ep0pipe) {        
+    if(data->ps3eye_ep1pipe) {        
         for(y= 0; y < _mheight(obj); y++) {
             WORD col;
             col = ((y + data->pos) / 8) % 2;
@@ -472,6 +515,13 @@ IPTR mDraw(Class *cl, Object *obj, struct MUIP_Draw *msg) {
             WritePixelArray(kitty, 0, 0, 320*4, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), RECTFMT_RGB032);
         }
     }
+
+
+    //lastTick = currTick;
+    //CurrentTime(&sec, &mic);
+    //currTick = ((sec * 1000) + (mic / 1000));
+    //mybug(-1, ("Delta %d mS\n", currTick-lastTick));
+
     return retval;
 }
 
@@ -557,6 +607,8 @@ BOOPSI_DISPATCHER(IPTR, classdispatcher, cl, obj, msg) {
 BOOPSI_DISPATCHER_END
 
 int main(void) {
+
+    SetTaskPri(FindTask(NULL), 15);
 
     struct MUI_CustomClass *mcc;
 
