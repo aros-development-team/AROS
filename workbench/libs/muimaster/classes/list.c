@@ -61,6 +61,7 @@ struct ListEntry
 };
 
 #define ENTRY_SELECTED   (1<<0)
+#define ENTRY_RENDER     (1<<1)
 
 
 struct ColumnInfo
@@ -2106,6 +2107,7 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             }
 
             List_DrawEntry(cl, obj, entry_pos, y);
+            entry->flags &= ~ENTRY_RENDER;
         }
         y += data->entry_maxheight;
     }
@@ -2539,7 +2541,8 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
 
     data->flags |= LIST_CHANGED;
     data->update = 1;
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
+    if (!(data->flags & LIST_QUIET))
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
 
     return 0;
 }
@@ -3318,6 +3321,7 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
     int i, j, max;
     struct MUIP_List_Compare cmpmsg =
         { MUIM_List_Compare, NULL, NULL, 0, 0 };
+    BOOL changed = FALSE;
 
     if (data->entries_num > 1)
     {
@@ -3340,14 +3344,25 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
             {
                 APTR tmp = data->entries[i];
                 data->entries[i] = data->entries[max];
+                data->entries[i]->flags |= ENTRY_RENDER;
                 data->entries[max] = tmp;
+                data->entries[max]->flags |= ENTRY_RENDER;
+                if (data->entries_active == i)
+                    data->entries_active = max;
+                else if (data->entries_active == max)
+                    data->entries_active = i;
+                changed = TRUE;
             }
         }
     }
 
-    data->flags |= LIST_CHANGED;
-    data->update = 1;
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
+    if (changed)
+    {
+        data->flags |= LIST_CHANGED;
+        data->update = 1;
+        if (!(data->flags & LIST_QUIET))
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
 
     return 0;
 }
@@ -3465,7 +3480,8 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
     /* Reflect list changes visually */
     data->flags |= LIST_CHANGED;
     data->update = 1;
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
+    if (!(data->flags & LIST_QUIET))
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
 
     return TRUE;
 }
