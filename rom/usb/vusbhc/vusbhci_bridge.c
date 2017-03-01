@@ -29,14 +29,6 @@ static void *libusbhandle;
 
 static libusb_device_handle *dev_handle = NULL;
 
-void ctrl_callback_handler(struct libusb_transfer *transfer) {
-
-    struct IOUsbHWReq *ioreq = transfer->user_data;
-    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
-
-    mybug_unit(-1, ("ctrl_callback_handler!\n\n"));
-}
-
 int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event event, void *user_data) {
 
     struct VUSBHCIBase *VUSBHCIBase = (struct VUSBHCIBase *)user_data;
@@ -64,37 +56,23 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
                     rc = LIBUSBCALL(libusb_open, dev, &dev_handle);
                     if(dev_handle) {
                         LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
-                        //LIBUSBCALL(libusb_set_configuration, dev_handle, -1);
-                        //LIBUSBCALL(libusb_claim_interface, dev_handle, 0);
-                        //LIBUSBCALL(libusb_release_interface, dev_handle, 0);
 
                         struct libusb_config_descriptor *config = NULL;
                         unsigned int i;
 
                         rc = LIBUSBCALL(libusb_get_active_config_descriptor, dev, &config);
                         if(rc == LIBUSB_SUCCESS) {
-
 	                        for (i = 0; i < config->bNumInterfaces; i++) {
 		                        if (LIBUSBCALL(libusb_kernel_driver_active, dev_handle, i)) {
-
-                                    //bug("[LIBUSB]  - libusb_kernel_driver_active i = %d\n", i);
-                                    //rc = LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, i);
                                     bug("\nClaiming interface %d...\n", i);
-                                    //bug("[LIBUSB]  - libusb_detach_kernel_driver rc = %d\n", rc);
                                     rc = LIBUSBCALL(libusb_claim_interface, dev_handle, i);
 		                            if (rc != LIBUSB_SUCCESS) {
 			                            bug("   Failed.\n");
 		                            }
 		                        }
 	                        }
-
                             LIBUSBCALL(libusb_free_config_descriptor, config);
-
                         }
-
-
-//                        LIBUSBCALL(libusb_set_configuration, dev_handle, -1);
-//                        LIBUSBCALL(libusb_claim_interface, dev_handle, 0);
 
                         speed = LIBUSBCALL(libusb_get_device_speed, dev);
                         switch(speed) {
@@ -316,43 +294,6 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
                     ioreq->iouh_Actual = ioreq->iouh_Length;
                     return UHIOERR_NO_ERROR;
                 break;
-/*
-                case (USR_SET_CONFIGURATION):
-                    mybug_unit(-1, (" - SET_CONFIGURATION\n"));
-                    mybug_unit(-1, ("Filtering out SET_CONFIGURATION(%d)\n", wValue));
-                    ioreq->iouh_Actual = ioreq->iouh_Length;
-
-                    int bConfigurationValue;
-
-                    LIBUSBCALL(libusb_get_configuration, dev_handle, &bConfigurationValue);
-                    if(bConfigurationValue == wValue) {
-                        mybug_unit(-1, (" Configuration number already set to a correct value (%d)\n", bConfigurationValue));
-                    }
-
-                    rc = LIBUSBCALL(libusb_set_configuration, dev_handle, wValue);
-                    mybug_unit(-1, (" libusb_set_configuration(%d) = %d\n", wValue, rc));
-
-                    switch(rc) {
-	                    case LIBUSB_SUCCESS:
-	                        mybug_unit(-1, ("Success (no error)\n"));
-                        break;
-
-	                    case LIBUSB_ERROR_NOT_FOUND:
-	                        mybug_unit(-1, ("Requested configuration does not exist\n"));
-                        break;
-
-	                    case LIBUSB_ERROR_BUSY:
-	                        mybug_unit(-1, ("Interfaces are currently claimed\n"));
-                        break;
-
-	                    case LIBUSB_ERROR_NO_DEVICE:
-	                        mybug_unit(-1, ("No such device (it may have been disconnected)\n"));
-                        break;
-                    }
-
-                    return UHIOERR_NO_ERROR;
-                break;
-*/
             }
         break;
     }
