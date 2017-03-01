@@ -848,12 +848,12 @@ IPTR Tasklist__MUIM_Tasklist_Refresh(Class *CLASS, Object *self, Msg message)
 
                 D(bug("[SysMon:TaskList] updating entry @ 0x%p\n", ti));
 
-                if ((taskUpdate = Tasklist__Refresh(data, ti, data->tasklistSortColumn)) > 0)
+                if ((taskUpdate = Tasklist__Refresh(data, ti, data->tasklistSortColumn)) != 0)
                 {
                     DoMethod(self, MUIM_List_Redraw, MUIV_List_Redraw_Entry, ti);
+                    if (taskUpdate < 0)
+                        doSort = TRUE;
                 }
-                else if (taskUpdate < 0)
-                    doSort = TRUE;
 
                 task = NULL;
                 break;
