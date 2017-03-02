@@ -22,7 +22,7 @@
 
 void core_IPIHandle(struct ExceptionContext *regs, unsigned long ipi_number, struct KernelBase *KernelBase);
 void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase);
-void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, struct KernelBase *KernelBase);
+void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB);
 
 /*
     IPI Call hook

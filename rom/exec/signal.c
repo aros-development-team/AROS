@@ -17,6 +17,7 @@
 
 #if defined(__AROSEXEC_SMP__)
 #define __KERNEL_NOLIBBASE__
+#include <aros/types/spinlock_s.h>
 #include <proto/kernel.h>
 #include <utility/hooks.h>
 
@@ -36,11 +37,14 @@ AROS_UFH3(IPTR, signal_hook,
 {
     AROS_USERFUNC_INIT
 
-    struct signal_message *msg = ((struct Hook *)object)->h_Data;
+    struct signal_message *msg = hook->h_Data;
     struct ExecBase *SysBase = msg->SysBase;
 
-    D(bug("[Exec] CPU%03d: IPI signal_hook\n", cpunum));
-
+    D(
+        int cpunum = KrnGetCPUNumber();
+        bug("[Exec] CPU%03d: Using IPI to do Signal(%p, %08x), SysBase=%p\n", cpunum, msg->target, msg->sigset, SysBase);
+    );
+    
     Signal(msg->target, msg->sigset);
 
     return 0;
@@ -95,12 +99,40 @@ AROS_UFH3(IPTR, signal_hook,
 #if defined(__AROSEXEC_SMP__)
     int cpunum = KrnGetCPUNumber();
 
-    if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpunum)
+    //EXEC_SPINLOCK_LOCK(IntETask(task->tc_UnionETask.tc_ETask)->iet_SpinLock, NULL, SPINLOCK_MODE_READ);
+    /*
+        * If current CPU number is not the task's CPU and the task is running now, send signal to that task
+        from CPU which the task is running on
+        * If task is not running and the current CPU is not in the Affinitymask, send signal to CPU form Affinity mask
+        * If task is not running and the current CPU is in the Affinity mask, just proceed with regular signal
+    */
+    if ((IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpunum && task->tc_State == TS_RUN) ||
+        !KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))
     {
         struct Hook h;
         struct signal_message msg;
         void *cpu_mask = KrnAllocCPUMask();
-        KrnGetCPUMask(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber, cpu_mask);
+
+        /* Task is running *now* on another CPU, send signal there */
+        if (task->tc_State == TS_RUN)
+        {
+            KrnGetCPUMask(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber, cpu_mask);
+        }
+        else
+        {
+            int i;
+            int cpumax = KrnGetCPUCount();
+
+            /* Task is not running now, find first cpu suitable to run this task. Use CPU balancing some day... */
+            for (i=0; i < cpumax; i++)
+            {
+                if (KrnCPUInMask(i, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))
+                {
+                    KrnGetCPUMask(i, cpu_mask);
+                    break;
+                }
+            }
+        }
 
         msg.SysBase = SysBase;
         msg.target = task;
@@ -117,6 +149,7 @@ AROS_UFH3(IPTR, signal_hook,
         
         KrnFreeCPUMask(cpu_mask);
     }
+    //EXEC_SPINLOCK_UNLOCK(IntETask(task->tc_UnionETask.tc_ETask)->iet_SpinLock);
 
     if (cpunum != 0)
     {
