@@ -17,10 +17,12 @@
 #endif
 
 /* CPU-dependent struct ExceptionContext */
-#if defined __i386__
-#include <aros/i386/cpucontext.h>
-#elif defined __x86_64__
+#if defined __x86_64__
 #include <aros/x86_64/cpucontext.h>
+#include <aros/x86_64/irqtypes.h>
+#elif defined __i386__
+#include <aros/i386/cpucontext.h>
+#include <aros/i386/irqtypes.h>
 #elif defined __mc68000__
 #include <aros/m68k/cpucontext.h>
 #elif defined __powerpc__
