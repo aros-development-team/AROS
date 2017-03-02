@@ -104,7 +104,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
      * If we have atleast 10 APIC interrupts available,
      * then report that we can use MSI
      */
-    if ((count > 10) && (!(kernPlatD->kb_PDFlags & PLATFORMF_HAVEMSI))
+    if ((count > 10) && (!(kernPlatD->kb_PDFlags & PLATFORMF_HAVEMSI)))
         kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
 
     return TRUE;
