@@ -8,7 +8,7 @@ INCLUDE_FILES := $(call WILDCARD, aros/*.h)
 INCLUDE_FILES := $(call WILDCARD, asm/*.h)
 %copy_includes mmake=compiler-includes path=asm/i386 dir=asm
 
-#MM- compiler-includes: includes-generated-i386-libcall
+#MM- compiler-includes: includes-generated-i386-libcall compiler-includes-pc
 
 #MM includes-generated-i386-libcall
 includes-generated-i386-libcall: $(AROS_INCLUDES)/aros/i386/libcall.h $(GENINCDIR)/aros/i386/libcall.h

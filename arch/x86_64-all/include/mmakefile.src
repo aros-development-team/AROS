@@ -8,4 +8,6 @@ INCLUDE_FILES := $(call WILDCARD, aros/*.h)
 INCLUDE_FILES := $(call WILDCARD, asm/*.h)
 %copy_includes mmake=compiler-includes path=asm/x86_64 dir=asm
 
+#MM- compiler-includes: compiler-includes-pc
+
 %common
