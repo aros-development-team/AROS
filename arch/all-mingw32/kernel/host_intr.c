@@ -375,7 +375,7 @@ int __declspec(dllexport) __aros core_init(unsigned int TimerPeriod)
  *
  */
 
-int __declspec(dllexport) __aros KrnAllocIRQ(void)
+int __declspec(dllexport) __aros KrnAllocSystemIRQ(void)
 {
     int irq;
 
@@ -403,7 +403,7 @@ int __declspec(dllexport) __aros KrnAllocIRQ(void)
 }
 
 
-void __declspec(dllexport) __aros KrnFreeIRQ(unsigned char irq)
+void __declspec(dllexport) __aros KrnFreeSystemIRQ(unsigned char irq)
 {
     AllocatedInts[irq] = 0;
 
@@ -411,12 +411,12 @@ void __declspec(dllexport) __aros KrnFreeIRQ(unsigned char irq)
         Ints_Num--;
 }
 
-void *__declspec(dllexport) __aros KrnGetIRQObject(unsigned char irq)
+void *__declspec(dllexport) __aros KrnGetSystemIRQObject(unsigned char irq)
 {
     return IntObjects[irq];
 }
 
-unsigned long __declspec(dllexport) __aros KrnCauseIRQ(unsigned char irq)
+unsigned long __declspec(dllexport) __aros KrnCauseSystemIRQ(unsigned char irq)
 {
     unsigned long res;
 

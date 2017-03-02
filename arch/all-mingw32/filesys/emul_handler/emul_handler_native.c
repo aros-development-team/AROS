@@ -56,7 +56,7 @@ static DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
 	    emsg->actual = actual;
 	    emsg->error = res ? 0 : GetLastError();
 	    DASYNC(printf("[EmulHandler I/O] %lu bytes transferred, result %ld, error %lu\n", emsg->actual, res, emsg->error));
-	    KrnCauseIRQ(emsg->IrqNum);
+	    KrnCauseSystemIRQ(emsg->IrqNum);
 	}
     }
 }
@@ -69,7 +69,7 @@ struct AsyncReaderControl * __declspec(dllexport) __aros Emul_Init_Native(void)
     DWORD id;
     long irq;
 
-    irq = KrnAllocIRQ();
+    irq = KrnAllocSystemIRQ();
     if (irq != -1)
     {
         ControlStruct.IrqNum = irq;
