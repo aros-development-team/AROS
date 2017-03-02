@@ -84,8 +84,9 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
     }
 }
 
-void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, struct KernelBase *KernelBase)
+void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB)
 {
+    struct KernelBase *KernelBase = _KB;
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct IPIHook *ipi = NULL;
     struct APICData *apicPrivate = pdata->kb_APIC;
@@ -112,6 +113,8 @@ void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, struct KernelB
             if (ipi == NULL)
             {
                 D(bug("[Kernel:IPI] %s: Failed to allocate IPIHook entry\n", __func__));
+                // Tell CPU we are idling aroud a lock...
+                asm volatile("pause");
             }
         } while(ipi == NULL);
 
@@ -120,17 +123,16 @@ void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, struct KernelB
         /*
             Copy IPI data from struct Hook provided by caller into allocated ipi
         */
+        ipi->ih_Hook.h_Entry = hook->h_Entry;
+        ipi->ih_Hook.h_SubEntry = hook->h_SubEntry;
+        ipi->ih_Hook.h_Data = hook->h_Data;
+        
         if (async)
         {
-            ipi->ih_Hook.h_Entry = hook->h_Entry;
-            ipi->ih_Hook.h_SubEntry = hook->h_SubEntry;
-            ipi->ih_Hook.h_Data = hook->h_Data;
             ipi->ih_Async = 1;
         }
         else
         {
-            ipi->ih_Hook.h_Entry = hook->h_Entry;
-            ipi->ih_Hook.h_Data = hook;
             ipi->ih_Async = 0;
 
             KrnSpinInit(&ipi->ih_SyncLock);
@@ -157,7 +159,6 @@ void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, struct KernelB
                 bit_test_and_set_long(ipi->ih_CPURequested, i);
             }
         }
-
 
         /*
             Put the IPIHook on the BusyIPIHooks list, so that it gets processed once IPIs are called
@@ -211,14 +212,14 @@ static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelB
                 D(bug("[Kernel:IPI.CPU.%03u] %s: Calling HOOK Entry %p with Data %p\n", cpunum, __func__, 
                     ipi->ih_Hook.h_Entry, &ipi->ih_Hook));
 
-                CALLHOOKPKT(&ipi->ih_Hook, &ipi->ih_Hook, 0);
+                CALLHOOKPKT(&ipi->ih_Hook, NULL, 0);
             }
             else
             {
                 D(bug("[Kernel:IPI.CPU.%03u] %s: Calling HOOK Entry %p with Data %p\n", cpunum, __func__, 
                     ipi->ih_Hook.h_Entry, ipi->ih_Hook.h_Data));
 
-                CALLHOOKPKT(&ipi->ih_Hook, ipi->ih_Hook.h_Data, 0);
+                CALLHOOKPKT(&ipi->ih_Hook, NULL, 0);
             }
 
             /* This part operates on locked IPIHook */
