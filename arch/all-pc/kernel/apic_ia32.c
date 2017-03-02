@@ -12,8 +12,11 @@
 
 #define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
-
 #include <proto/exec.h>
+#include <proto/acpica.h>
+
+#include <acpica/acnames.h>
+#include <acpica/accommon.h>
 
 #include <inttypes.h>
 
@@ -26,6 +29,7 @@
 
 #include "kernel_interrupts.h"
 
+#include "acpi.h"
 #include "apic_ia32.h"
 
 #define D(x)
@@ -62,6 +66,7 @@ icid_t APICInt_Register(struct KernelBase *KernelBase)
 BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct ACPIData *acpiData  = kernPlatD->kb_ACPI;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     APTR ssp;
     int irq, count = 0;
@@ -101,12 +106,21 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     }
 
     /*
-     * If we have atleast 10 APIC interrupts available,
-     * then report that we can use MSI
+     * If we have atleast 32 APIC interrupts available (the
+     * most a single MSI device will request) then report that
+     * we can use MSI
      */
-    if ((count > 10) && (!(kernPlatD->kb_PDFlags & PLATFORMF_HAVEMSI)))
-        kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
+    if ((count > 32) && (acpiData->acpi_fadt))
+    {
+        ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
 
+        if ((!(fadt->BootFlags & ACPI_FADT_NO_MSI)) &&
+            (!(kernPlatD->kb_PDFlags & PLATFORMF_HAVEMSI)))
+        {
+            kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
+            bug("[Kernel:APIC-IA32] MSI Interrupts enabled\n");
+        }
+    }
     return TRUE;
 }
 
