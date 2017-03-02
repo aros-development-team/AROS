@@ -94,11 +94,11 @@
         {
             D(bug("[Exec] Enable: Enabling interrupts\n");)
 
-            KrnSti();
-
             /* The following stuff is not safe to call from within supervisor mode */
             if (!KrnIsSuper())
             {
+                KrnSti();
+                
                 /*
                  * There's no dff09c like thing in x86 native which would allow
                  * us to set delayed (mark it as pending but it gets triggered
