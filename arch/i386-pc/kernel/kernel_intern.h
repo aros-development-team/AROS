@@ -10,7 +10,8 @@
 
 #include <inttypes.h>
 
-#include <aros/types/spinlock_s.h>
+#include <aros/kernel.h>
+#include <utility/tagitem.h>
 #include <asm/cpu.h>
 #include <hardware/vbe.h>
 
@@ -19,8 +20,6 @@ typedef struct int_gate_32bit apicidt_t;
 #include "apic.h"
 
 #define STACK_SIZE              8192
-#define PAGE_SIZE	        0x1000
-#define PAGE_MASK	        0x0FFF
 
 #define DEF_IRQRETFUNC          core_DefaultIRET
 
@@ -40,20 +39,6 @@ struct KernBootPrivate
 };
 
 extern struct KernBootPrivate *__KernBootPrivate;
-
-/* Platform-specific part of KernelBase */
-struct PlatformData
-{
-    struct List         kb_SysCallHandlers;
-    APTR	     kb_APIC_TrampolineBase;
-    struct ACPIData *kb_ACPI;
-    struct APICData *kb_APIC;
-    struct IOAPICData   *kb_IOAPIC;
-    struct List         kb_FreeIPIHooks;
-    struct List         kb_BusyIPIHooks;
-    spinlock_t          kb_FreeIPIHooksLock;
-    spinlock_t          kb_BusyIPIHooksLock;
-};
 
 #define IDT_SIZE                sizeof(apicidt_t) * 256
 #define GDT_SIZE                sizeof(long long) * 8

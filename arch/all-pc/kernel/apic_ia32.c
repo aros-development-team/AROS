@@ -64,7 +64,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     APTR ssp;
-    int irq;
+    int irq, count = 0;
 
     DINT(bug("[Kernel:APIC-IA32] %s(%d)\n", __func__, instanceCount));
 
@@ -92,12 +92,21 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     {
                         bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
                     }
+                    else
+                        count++;
                 }
             }
         }
         UserState(ssp);
     }
-        
+
+    /*
+     * If we have atleast 10 APIC interrupts available,
+     * then report that we can use MSI
+     */
+    if ((count > 10) && (!(kernPlatD->kb_PDFlags & PLATFORMF_HAVEMSI))
+        kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
+
     return TRUE;
 }
 

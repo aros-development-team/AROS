@@ -6,21 +6,26 @@
     Lang: english
 */
 
-#include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <asm/cpu.h>
+#include <asm/io.h>
+#include <aros/symbolsets.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
 #include <exec/resident.h>
+#include <utility/tagitem.h>
 #include <proto/arossupport.h>
 #include <proto/exec.h>
 
 #include <bootconsole.h>
+#include <inttypes.h>
 #include <string.h>
 
 #include "boot_utils.h"
 #include "kernel_base.h"
+#include "kernel_intern.h"
 #include "kernel_bootmem.h"
 #include "kernel_debug.h"
-#include "kernel_intern.h"
 #include "kernel_mmap.h"
 #include "kernel_romtags.h"
 
@@ -31,6 +36,25 @@ static char boot_stack[];
 static void kernel_boot(const struct TagItem *msg);
 void core_Kick(struct TagItem *msg, void *target);
 void kernel_cstart(const struct TagItem *msg);
+
+/* Common IBM PC memory layout (32bit version) */
+static const struct MemRegion PC_Memory[] =
+{
+    /*
+     * Low memory has a bit lower priority -:
+     * - This helps the kernel/exec locate its MemHeader.
+     * - We explicitly need low memory for SMP bootstrap.
+     */
+    {0x00000000, 0x000a0000, "Low memory"    , -6, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
+    {0x00100000, 0x01000000, "ISA DMA memory", -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
+    /*
+     * 64-bit machines can expose RAM at addresses up to 0xD0000000 (giving 3.5 GB total).
+     * All MMIO sits beyond this border. AROS intentionally specifies a 4GB limit, in case some
+     * devices expose even more RAM in this space. This allows all the RAM to be usable.
+     */
+    {0x01000000, 0xFFFFFFFF, "High memory"   ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT	      },
+    {0         , 0         , NULL            ,  0, 0                                                                  }
+};
 
 /*
  * Here the history starts. We are already in flat, 32bit mode. All protections
@@ -99,25 +123,6 @@ void core_Kick(struct TagItem *msg, void *target)
 		 "outb  %%al,$0xa1    \n\t"
     		 "call *%2\n"::"r"(msg), "r"(boot_stack + STACK_SIZE), "r"(target));
 }
-
-/* Common IBM PC memory layout */
-static const struct MemRegion PC_Memory[] =
-{
-    /*
-     * Give low memory a bit lower priority. This will help us to locate its MemHeader (the last one in the list).
-     * We explicitly need low memory for SMP bootstrap.
-     */
-    {0x00000000, 0x000a0000, "Low memory"    , -6, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
-    {0x00100000, 0x01000000, "ISA DMA memory", -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
-    /*
-     * EXPERIMENTAL: Some (or all?) 64-bit machines expose RAM at addresses up to
-     * 0xD0000000 (giving 3.5 GB total). All MMIO sits beyond this border. We
-     * intentionally specify 4GB as limit, just in case if some machine exhibits
-     * even more RAM in this space. We want all the RAM to be usable.
-     */
-    {0x01000000, 0xFFFFFFFF, "High memory"   ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT	      },
-    {0         , 0         , NULL            ,  0, 0                                                                  }
-};
 
 /*
  * Our transient data.

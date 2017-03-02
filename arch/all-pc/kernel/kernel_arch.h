@@ -8,6 +8,15 @@
     Lang: english
 */
 
+#include <exec/nodes.h>
+#include <exec/lists.h>
+#include <aros/types/spinlock_s.h>
+
+#include "apic_ia32.h"
+
+#define PAGE_SIZE	        0x1000
+#define PAGE_MASK	        0x0FFF
+
 #define KERNELIRQ_NEEDSPRIVATE
 #define KERNELIRQ_NEEDSCONTROLLERS
 /*
@@ -16,11 +25,24 @@
  *
 #define EMULATE_SYSBASE*/
 
-struct PlatformData;
+/* Platform-specific part of KernelBase */
+struct PlatformData
+{
+    IPTR                kb_PDFlags;
+    APTR                kb_APIC_TrampolineBase;	/* Starting address of secondary core bootstrap code	*/
+    struct List         kb_SysCallHandlers;
+    struct ACPIData     *kb_ACPI;
+    struct APICData     *kb_APIC;
+    struct IOAPICData   *kb_IOAPIC;
+    struct List         kb_FreeIPIHooks;
+    struct List         kb_BusyIPIHooks;
+    spinlock_t          kb_FreeIPIHooksLock;
+    spinlock_t          kb_BusyIPIHooksLock;
+};
+
+#define PLATFORMF_HAVEMSI       (1 << 1)
 
 /* Hardware IRQ's ********************************************************************************/
-
-#include "apic_ia32.h"
 
 /* by default we only know about the xtpic's irq's */
 #define IRQ_COUNT       I8259A_IRQCOUNT

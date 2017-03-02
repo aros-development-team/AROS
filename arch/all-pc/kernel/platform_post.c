@@ -151,11 +151,14 @@ static AROS_UFH3 (APTR, KernelPost,
 
     pdata = KernelBase->kb_PlatformData;
 
+    D(bug("[Kernel] %s: Checking for ACPI ...\n", __func__));
+    
     ACPICABase = OpenLibrary("acpica.library", 0);
-
     // Probe for ACPI configuration ...
     if (ACPICABase)
         acpi_Init(pdata);
+
+    D(bug("[Kernel] %s: Performing late system configuration...\n", __func__));
 
     Disable();
 
