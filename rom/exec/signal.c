@@ -18,6 +18,35 @@
 #if defined(__AROSEXEC_SMP__)
 #define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
+#include <utility/hooks.h>
+
+void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR *_KernelBase);
+
+struct signal_message {
+    struct ExecBase *   SysBase;
+    struct Task *       target;
+    ULONG               sigset;
+};
+
+AROS_UFH3(IPTR, signal_hook,
+    AROS_UFHA(struct Hook *, hook, A0), 
+    AROS_UFHA(APTR, object, A2), 
+    AROS_UFHA(APTR, message, A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    struct signal_message *msg = ((struct Hook *)object)->h_Data;
+    struct ExecBase *SysBase = msg->SysBase;
+
+    D(bug("[Exec] CPU%03d: IPI signal_hook\n", cpunum));
+
+    Signal(msg->target, msg->sigset);
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
 #endif
 
 /*****************************************************************************
@@ -65,6 +94,35 @@
     struct Task *thisTask = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__)
     int cpunum = KrnGetCPUNumber();
+
+    if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpunum)
+    {
+        struct Hook h;
+        struct signal_message msg;
+        void *cpu_mask = KrnAllocCPUMask();
+        KrnGetCPUMask(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber, cpu_mask);
+
+        msg.SysBase = SysBase;
+        msg.target = task;
+        msg.sigset = signalSet;
+
+        D(bug("[Exec] Signal goes from CPU%03d to CPU%03d. calling Signal on that cpu with IPI...\n", cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
+
+        h.h_Entry = signal_hook;
+        h.h_Data = &msg;
+
+        D(bug("[Exec] Sending IPI...\n"));
+        core_DoCallIPI(&h, cpu_mask, 0, KernelBase);
+        D(bug("[Exec] IPI Sent\n"));
+        
+        KrnFreeCPUMask(cpu_mask);
+    }
+
+    if (cpunum != 0)
+    {
+        D(bug("[Exec] Signal(0x%p, %08lX) on CPU%03d\n", task, signalSet, cpunum));
+        D(bug("[Exec] Signal: signaling '%s' (state %08x)\n", task->tc_Node.ln_Name, task->tc_State));
+    }
 #endif
 
     D(
@@ -112,7 +170,7 @@
         }
         else
         {
-            D(bug("[Exec] Signal: signaling task on another cpu (%03u)\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber);)
+            D(bug("[Exec] Signal: raising exception in task on another cpu (%03u)\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
             KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
         }
 #endif
@@ -160,6 +218,7 @@
         else if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) &&
             !(KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)))
         {
+            D(bug("[Exec] Signal: signaling task on another CPU\n"));
             krnSysCallReschedTask(task, TS_READY);
             KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
         }
