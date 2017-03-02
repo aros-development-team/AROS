@@ -26,8 +26,8 @@ void core_APIC_RegisterMSI(void *handle)
     struct IntrNode *msihandle = (struct IntrNode *)handle;
 
     D(bug("[APIC:MSI] %s: MSI Handler @ 0x%p\n", msihandle));
-    if (msihandle->in_nr >= APIC_MSI_BASE)
+    if ((msihandle->in_nr >= APIC_MSI_BASE) && (msihandle->in_nr < (ULONG)-1))
     {
-        
+        D(bug("[APIC:MSI] %s: Registering MSI %d\n", (int)msihandle->in_nr));
     }
 }
