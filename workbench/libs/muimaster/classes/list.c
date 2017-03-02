@@ -2387,9 +2387,9 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
     if (msg->pos == MUIV_List_Redraw_All)
     {
         CalcWidths(cl, obj);
+        data->update = UPDATEMODE_ALL;
         if (!(data->flags & LIST_QUIET))
         {
-            data->update = UPDATEMODE_ALL;
             MUI_Redraw(obj, MADF_DRAWUPDATE);
         }
         else
