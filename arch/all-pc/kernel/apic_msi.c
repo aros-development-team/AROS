@@ -18,7 +18,7 @@
 
 #define D(x)
 
-ULONG core_APIC_AllocMSI()
+ULONG core_APIC_AllocMSI(ULONG count)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
