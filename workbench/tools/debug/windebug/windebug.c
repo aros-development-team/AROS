@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -30,9 +30,9 @@
 
 struct KernelInterface
 {
-    int  (*KrnAllocIRQ)(void);
-    void (*KrnFreeIRQ)(unsigned char irq);
-    void (*KrnCauseIRQ)(unsigned char irq);
+    int  (*KrnAllocSystemIRQ)(void);
+    void (*KrnFreeSystemIRQ)(unsigned char irq);
+    void (*KrnCauseSystemIRQ)(unsigned char irq);
     int   *NonMaskableIRQ;
     int   *Supervisor;
 };
@@ -53,9 +53,9 @@ static struct Kernel32Interface *winIf;
 
 static const char *symbols[] =
 {
-    "KrnAllocIRQ",
-    "KrnFreeIRQ",
-    "KrnCauseIRQ",
+    "KrnAllocSystemIRQ",
+    "KrnFreeSystemIRQ",
+    "KrnCauseSystemIRQ",
     "NonMaskableInt",
     "Supervisor",
     NULL
@@ -95,7 +95,7 @@ static ULONG __stdcall ConsoleHook(ULONG event)
     {
         ULONG status;
 
-        kernelIf->KrnCauseIRQ(debugIRQ);
+        kernelIf->KrnCauseSystemIRQ(debugIRQ);
         status = winIf->WaitForSingleObject(intAck, 3000);
 
         if (status != WAIT_TIMEOUT)
@@ -183,7 +183,7 @@ int main(void)
         return 10;
     }
 
-    debugIRQ = kernelIf->KrnAllocIRQ();
+    debugIRQ = kernelIf->KrnAllocSystemIRQ();
     if (debugIRQ == -1)
     {
         printf("Failed to create NMI interrupt!\n");
@@ -236,7 +236,7 @@ int main(void)
     Permit();
 
     KrnRemIRQHandler(intHandle);
-    kernelIf->KrnFreeIRQ(debugIRQ);
+    kernelIf->KrnFreeSystemIRQ(debugIRQ);
     HostLib_DropInterface((void **)kernelIf);
     HostLib_DropInterface((void **)winIf);
     HostLib_Close(kernel, NULL);
