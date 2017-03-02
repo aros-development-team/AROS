@@ -33,7 +33,7 @@ static DWORD WINAPI ResolverThread(struct SocketController *ctl)
 
 	}
 	ctl->Command = 0;
-	KrnCauseIRQ(ctl->ResolverIRQ);
+	KrnCauseSystemIRQ(ctl->ResolverIRQ);
     }
 }
 
@@ -50,12 +50,12 @@ struct SocketController * __declspec(dllexport) __aros sock_init(void)
     if (state)
 	return NULL;
 
-    irq = KrnAllocIRQ();
+    irq = KrnAllocSystemIRQ();
     if (irq != -1)
     {
 	ctl.SocketIRQ = irq;
 
-	irq = KrnAllocIRQ();
+	irq = KrnAllocSystemIRQ();
 	if (irq != -1)
 	{
 	    ctl.ResolverIRQ = irq;
@@ -70,13 +70,13 @@ struct SocketController * __declspec(dllexport) __aros sock_init(void)
 		{
 		    CloseHandle(thread);
 
-		    ctl.SocketEvent = KrnGetIRQObject(ctl.SocketIRQ);
+		    ctl.SocketEvent = KrnGetSystemIRQObject(ctl.SocketIRQ);
 		    return &ctl;
 		}
 		CloseHandle(ctl.ResolverEvent);
 	    }
 	}
-	KrnFreeIRQ(ctl.SocketIRQ);
+	KrnFreeSystemIRQ(ctl.SocketIRQ);
     }
 
     return NULL;
@@ -92,8 +92,8 @@ int __declspec(dllexport) __aros sock_shutdown(struct SocketController *ctl)
     ctl->Command = SOCK_CMD_SHUTDOWN;
     SetEvent(ctl->ResolverEvent);
 
-    KrnFreeIRQ(ctl->ResolverIRQ);
-    KrnFreeIRQ(ctl->SocketIRQ);
+    KrnFreeSystemIRQ(ctl->ResolverIRQ);
+    KrnFreeSystemIRQ(ctl->SocketIRQ);
 
     return 0;
 }

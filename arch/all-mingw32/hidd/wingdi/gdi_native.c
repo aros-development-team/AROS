@@ -92,7 +92,7 @@ static ULONG SendKbdIRQ(UINT msg, DWORD key)
     gdictl.KbdEvent = msg;
     gdictl.KeyCode  = key;
 
-    return KrnCauseIRQ(gdictl.KbdIrq);
+    return KrnCauseSystemIRQ(gdictl.KbdIrq);
 }
 
 /* We have to use this weird hook technique because there's no other way to prevent "Win" keys
@@ -164,7 +164,7 @@ LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
             gdictl.MouseY = GET_Y_LPARAM(lp);
             gdictl.Buttons = wp & 0x0000FFFF;
             gdictl.WheelDelta = wp >> 16;
-            KrnCauseIRQ(gdictl.MouseIrq);
+            KrnCauseSystemIRQ(gdictl.MouseIrq);
         }
         return 0;
 
@@ -196,7 +196,7 @@ LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
             {
                 window_active = win;
                 gdictl.Active = (void *)GetWindowLongPtr(win, GWLP_USERDATA);
-                KrnCauseIRQ(gdictl.GfxIrq);
+                KrnCauseSystemIRQ(gdictl.GfxIrq);
             }
         }
         else
@@ -355,7 +355,7 @@ DWORD WINAPI gdithread_entry(struct GDI_Control *ctl)
                 }
 
                 ctl->ShowDone = TRUE;
-                KrnCauseIRQ(ctl->GfxIrq);
+                KrnCauseSystemIRQ(ctl->GfxIrq);
                 break;
 
             default:
@@ -380,15 +380,15 @@ volatile struct GDI_Control *__declspec(dllexport) __aros GDI_Init(void)
     long irq;
     HANDLE th;
 
-    irq = KrnAllocIRQ();
+    irq = KrnAllocSystemIRQ();
     if (irq != -1)
     {
         gdictl.GfxIrq = irq;
-        irq = KrnAllocIRQ();
+        irq = KrnAllocSystemIRQ();
         if (irq != -1)
         {
             gdictl.KbdIrq = irq;
-            irq = KrnAllocIRQ();
+            irq = KrnAllocSystemIRQ();
             if (irq != -1)
             {
                 gdictl.MouseIrq = irq;
@@ -434,11 +434,11 @@ volatile struct GDI_Control *__declspec(dllexport) __aros GDI_Init(void)
                     }
                     UnregisterClass((LPCTSTR)display_class, display_class_desc.hInstance);
                 }
-                KrnFreeIRQ(gdictl.MouseIrq);
+                KrnFreeSystemIRQ(gdictl.MouseIrq);
             }
-            KrnFreeIRQ(gdictl.KbdIrq);
+            KrnFreeSystemIRQ(gdictl.KbdIrq);
         }
-        KrnFreeIRQ(gdictl.GfxIrq);
+        KrnFreeSystemIRQ(gdictl.GfxIrq);
     }
     return NULL;
 }
@@ -450,9 +450,9 @@ void __declspec(dllexport) __aros GDI_Shutdown(struct GDI_Control *ctl)
     UnregisterClass((LPCTSTR)display_class, display_class_desc.hInstance);
     CloseHandle(MouseAck);
     CloseHandle(KbdAck);
-    KrnFreeIRQ(ctl->MouseIrq);
-    KrnFreeIRQ(ctl->KbdIrq);
-    KrnFreeIRQ(ctl->GfxIrq);
+    KrnFreeSystemIRQ(ctl->MouseIrq);
+    KrnFreeSystemIRQ(ctl->KbdIrq);
+    KrnFreeSystemIRQ(ctl->GfxIrq);
 }
 
 /* I'm too lazy to import one more .dll (kernel32). I'd better write these stubs. */

@@ -56,7 +56,7 @@ thread that you create when you start up the driver (this is an equivalent of ha
 You can use anything in order to talk to this thread. The simplest and most efficient way to do it is having some
 structure in memory where you put the data and then signal to your VH thread to start working somehow (for example by
 triggering an event or posting a message to its queue). While your thread works, AROS works too. When your VH thread
-finishes its job, it should call KrnCauseIRQ() function from kernel_native.dll. This causes an IRQ on AROS side and
+finishes its job, it should call KrnCauseSystemIRQ() function from kernel_native.dll. This causes an IRQ on AROS side and
 AROS can read back the data from your structure.
  As you can see, this works exactly in the same way as real hardware.
  Note that thread switching in Windows seems to be rather slow, so avoid using VH threads if possible (for example you
@@ -85,11 +85,11 @@ AROS side. This is used by KrnSwitch(), KrnSchedule(), KrnDispatch() and KrnCaus
  All other objects which VCPU waits on are simple triggerable events. They are managed dynamically by drivers using a special
 Windows-side API:
 
- KrnAllocIRQ()     - Allocate an IRQ for the use with the driver.
- KrnFreeIRQ()      - Free an allocated IRQ (should be used when the driver releases resources and exits).
- KrnCauseIRQ()     - Cause an IRQ on AROS side.
- KrnGetIRQObject() - Obtain a HANDLE of the IRQ object. For an IRQ allocated by KrnAllocIRQ() it will be a simple triggerable
-                     event. You may use this handle for example for overlapped I/O operations.
+ KrnAllocSystemIRQ()     - Allocate an IRQ for the use with the driver.
+ KrnFreeSystemIRQ()      - Free an allocated IRQ (should be used when the driver releases resources and exits).
+ KrnCauseSystemIRQ()     - Cause an IRQ on AROS side.
+ KrnGetSystemIRQObject() - Obtain a HANDLE of the IRQ object. For an IRQ allocated by KrnAllocSystemIRQ() it will be a simple triggerable
+                           event. You may use this handle for example for overlapped I/O operations.
  
   These are not AROS functions! They are legal to call only from within hardware emulation threads.
   
