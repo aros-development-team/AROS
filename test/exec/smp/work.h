@@ -19,6 +19,7 @@ struct SMPWorker
     struct Task *smpw_Task;
     struct MsgPort *smpw_MasterPort;
     struct MsgPort *smpw_MsgPort;
+    struct Task *smpw_SyncTask;
 };
 
 struct SMPWorkMessage

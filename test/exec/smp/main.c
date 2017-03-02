@@ -94,9 +94,10 @@ int main()
 
                         coreWorker->smpw_MasterPort = workMaster.smpm_MasterPort;
                         coreWorker->smpw_Node.ln_Type = 0;
+                        coreWorker->smpw_SyncTask = FindTask(NULL);
                         coreWorker->smpw_Task = NewCreateTask(TASKTAG_NAME   , coreML->ml_ME[1].me_Addr,
                                                     TASKTAG_AFFINITY   , coreAffinity,
-                                                    TASKTAG_PRI        , 0,
+                                                    TASKTAG_PRI        , 10,
                                                     TASKTAG_PC         , SMPTestWorker,
                                                     TASKTAG_ARG1       , SysBase,
                                                     TASKTAG_USERDATA   , coreWorker,
@@ -105,6 +106,7 @@ int main()
                         if (coreWorker->smpw_Task)
                         {
                             count++;
+                            Wait(SIGBREAKF_CTRL_C);
                             AddTail(&workMaster.smpm_Workers, &coreWorker->smpw_Node);
                             AddHead(&coreWorker->smpw_Task->tc_MemEntry, &coreML->ml_Node);
                         }
