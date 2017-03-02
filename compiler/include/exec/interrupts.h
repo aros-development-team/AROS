@@ -2,7 +2,7 @@
 #define EXEC_INTERRUPTS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Interrupt structures
