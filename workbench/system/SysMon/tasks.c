@@ -440,11 +440,9 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
     IPTR fmtdata[] =
     {
         0,
-#if defined(__AROSPLATFORM_SMP__)
         0,
         0,
         0,
-#endif
         0
     };
     char *type;
