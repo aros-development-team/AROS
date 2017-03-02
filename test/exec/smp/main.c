@@ -124,12 +124,16 @@ int main()
 
         D(bug("[SMP-Test] %s: Waiting for workers to become ready ...\n", __func__);)
 
-        complete = TRUE;
         do {
+            complete = TRUE;
             ForeachNode(&workMaster.smpm_Workers, coreWorker)
             {
                 if (coreWorker->smpw_Node.ln_Type != 1)
+                {
                     complete = FALSE;
+                    Reschedule();
+                    break;
+                }
             }
         } while (!complete);
 
