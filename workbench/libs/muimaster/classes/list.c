@@ -1523,18 +1523,18 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
                     if (!data->read_only)
                     {
-                        data->update = UPDATEMODE_ENTRY;
-                        data->update_pos = old;
                         data->entries[old]->flags |= ENTRY_RENDER;
                         if (!(data->flags & LIST_QUIET))
                         {
+                            data->update = UPDATEMODE_ENTRY;
+                            data->update_pos = old;
                             MUI_Redraw(obj, MADF_DRAWUPDATE);
                         }
-                        data->update = UPDATEMODE_ENTRY;
-                        data->update_pos = data->entries_active;
                         data->entries[data->entries_active]->flags |= ENTRY_RENDER;
                         if (!(data->flags & LIST_QUIET))
                         {
+                            data->update = UPDATEMODE_ENTRY;
+                            data->update_pos = data->entries_active;
                             MUI_Redraw(obj, MADF_DRAWUPDATE);
                         }
                         else
@@ -1569,7 +1569,10 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 }
             }
             else
+            {
                 data->update = UPDATEMODE_ALL;
+                data->flags |= LIST_CHANGED;
+            }
             break;
 
         case MUIA_List_Visible:    /* Shouldn't be settable? */
