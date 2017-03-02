@@ -140,6 +140,7 @@ void SMPTestWorker(struct ExecBase *SysBase)
 
                 /* we are ready for work .. */
                 worker->smpw_Node.ln_Type = 1;
+                Signal(worker->smpw_SyncTask, SIGBREAKF_CTRL_C);
                 WaitPort(worker->smpw_MsgPort);
 
                 while((workMsg = (struct SMPWorkMessage *) GetMsg(worker->smpw_MsgPort)))
