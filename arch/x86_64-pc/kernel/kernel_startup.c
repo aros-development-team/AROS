@@ -36,24 +36,23 @@ static APTR core_AllocBootTSS(struct KernBootPrivate *);
 static APTR core_AllocBootGDT(struct KernBootPrivate *);
 static APTR core_AllocBootIDT(struct KernBootPrivate *);
 
-/* Common IBM PC memory layout */
+/* Common IBM PC memory layout (64bit version) */
 static const struct MemRegion PC_Memory[] =
 {
     /*
-     * Give low memory a bit lower priority. This will help us to locate its MemHeader (the last one in the list).
-     * We explicitly need low memory for SMP bootstrap.
+     * Low memory has a bit lower priority -:
+     * - This helps the kernel/exec locate its MemHeader.
+     * - We explicitly need low memory for SMP bootstrap.
      */
     {0x000000000, 0x000100000, "Low memory"    , -6, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
     {0x000100000, 0x001000000, "ISA DMA memory", -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
     /*
-     * EXPERIMENTAL:
-     * 1. Some (or all?) 64-bit machines expose RAM at addresses up to 0xD0000000 (giving 3.5 GB total). All MMIO
-     * sits beyond this border. We intentionally specify 4GB as limit, just in case if some machine exhibits
-     * even more RAM in this space. We want all the RAM to be usable.
-     * 2. We have MEMF_31BIT originating from MorphOS. But here we interpret it as "32-bit memory". I guess
-     * it originated from the assumption that MMIO starts at 0x80000000 (which is true at least for PegasosPPC).
-     * So, is it okay to assume actually 32-bit memory for MEMF_31BIT? Are there anything which really imposes
-     * 31-bit limit? AllocEntry() issue doesn't count...
+     * 1. 64-bit machines can expose RAM at addresses up to 0xD0000000 (giving 3.5 GB total).
+     *    All MMIO sits beyond this border. AROS intentionally specifies a 4GB limit, in case some
+     *    devices expose even more RAM in this space. This allows all the RAM to be usable.
+     * 2. AROS has MEMF_31BIT (compatable with MorphOS). This has likely originated from the assumption
+     *    that MMIO starts at 0x80000000 (which is true at least for PegasosPPC), though on AROS it
+     *    is used to ensure memory allocations lie within the low 32bit address space.
      */
     {0x001000000, 0x080000000, "31-bit memory" ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT		},
     {0x080000000, -1,          "High memory"   , 10, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST				},

@@ -10,6 +10,8 @@
 
 #include <asm/cpu.h>
 
+#define APIC_MSI_BASE   0x0FFFFFFF
+
 /*
  * Per-CPU data
  * Even old IntelMP spec say that we should be prepared to handle different CPUs.
@@ -90,6 +92,8 @@ void core_SetupIDT(apicid_t, apicidt_t *);
 BOOL core_SetIDTGate(apicidt_t *, int, uintptr_t, BOOL);
 BOOL core_SetIRQGate(void *, int, uintptr_t);
 void core_DefaultIRETQ();
+
+void core_APIC_RegisterMSI(void *);
 
 extern struct IntrController APICInt_IntrController;
 
