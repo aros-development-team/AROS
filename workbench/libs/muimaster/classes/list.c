@@ -2809,6 +2809,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     LONG pos, count, sort, active;
+    BOOL adjusted = FALSE;
 
     count = msg->count;
     sort = 0;
@@ -2904,7 +2905,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
             /* We have to calculate the width and height of the newly
              * inserted entry. This has to be done after inserting the
              * element into the list */
-            CalcDimsOfEntry(cl, obj, pos);
+            if (CalcDimsOfEntry(cl, obj, pos))
+                adjusted = TRUE;
         }
 
         toinsert++;
@@ -2932,14 +2934,17 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
      */
     if (sort)
     {
-        DoMethod(obj, MUIM_List_Sort);
         /* TODO: which pos to return here !?        */
-        /* MUIM_List_Sort already called MUI_Redraw */
+        DoMethod(obj, MUIM_List_Sort);
+
+        if ((adjusted) && (data->flags & LIST_QUIET))
+            data->update = UPDATEMODE_ALL;
     }
     else
     {
         data->update = UPDATEMODE_ALL;
-        MUI_Redraw(obj, MADF_DRAWUPDATE);
+        if (!(data->flags & LIST_QUIET))
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
     superset(cl, obj, MUIA_List_InsertPosition, data->insert_position);
 
