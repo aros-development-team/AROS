@@ -15,10 +15,11 @@
     NAME */
 #include <proto/kernel.h>
 
-        AROS_LH1(ULONG, KrnAllocIRQ,
+        AROS_LH2(ULONG, KrnAllocIRQ,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, irq_type, D0),
+	AROS_LHA(ULONG, count, D1),
 
 /*  LOCATION */
 	struct KernelBase *, KernelBase, 38, Kernel)
@@ -28,14 +29,15 @@
 
     INPUTS
 	irq_tpe - The Arch specific Type of IRQ to allocate.
+        count   - The number of sequential IRQ's to allocate.
 
     RESULT
-	-1 on failure, or the 32bit IRQ ID.
+	-1 on failure, or the first 32bit IRQ ID.
 
     NOTES
 
     EXAMPLE
-        ULONG msiIRQ = KrnAllocIRQ(IRQTYPE_MSI);
+        ULONG msiIRQBase = KrnAllocIRQ(IRQTYPE_MSI, 7);
 
     BUGS
 
