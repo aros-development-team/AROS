@@ -10,7 +10,7 @@
 
 #include <asm/cpu.h>
 
-#define APIC_MSI_BASE   0x0FFFFFFF
+#define APIC_MSI_BASE   0x7FFFFFFF
 
 /*
  * Per-CPU data
