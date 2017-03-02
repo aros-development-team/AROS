@@ -24,6 +24,8 @@
 
 #include "tasks.h"
 
+#define DLIST(x)
+
 /* uncomment the following line to force full-refresh */
 //#define TASKLIST_FLUSHUPDATE
 /* uncomment the following line to prevent updating */
@@ -214,7 +216,7 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
     struct Tasklist_DATA *data = h->h_Data;
     struct TaskInfo *ti = NULL;
 
-    D(bug("[SysMon:TaskList] %s()\n", __func__));
+    DLIST(bug("[SysMon:TaskList] %s()\n", __func__));
 
     if ((ti = AllocVecPooled(pool, sizeof(struct TaskInfo))) != NULL)
     {
@@ -260,7 +262,7 @@ AROS_UFH3(VOID, TasksListDestructFunction,
 
     struct Tasklist_DATA *data = h->h_Data;
 
-    D(bug("[SysMon:TaskList] %s()\n", __func__));
+    DLIST(bug("[SysMon:TaskList] %s()\n", __func__));
 
     Remove(&ti->ti_Node);
     data->tld_TasksTotal--;
@@ -283,7 +285,7 @@ AROS_UFH3(VOID, TaskSelectedFunction,
     struct TaskInfo *ti = NULL;
 
     DoMethod(obj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &ti);
-    bug("[SysMon:TaskList] ti @  0x%p\n", ti);
+    DLIST(bug("[SysMon:TaskList] ti @  0x%p\n", ti);)
 
     if (ti != NULL)
     {
@@ -306,7 +308,7 @@ AROS_UFH3(LONG, TaskCompareFunction,
     struct Tasklist_DATA *data = h->h_Data;
     LONG retval;
 
-    D(bug("[SysMon:TaskList] %s()\n", __func__));
+    DLIST(bug("[SysMon:TaskList] %s()\n", __func__));
 
     switch (data->tasklistSortColumn)
     {
@@ -448,7 +450,7 @@ AROS_UFH3(APTR, TasksListDisplayFunction,
     char *type;
     int col= 0;
 
-    D(bug("[SysMon:TaskList] %s()\n", __func__));
+    DLIST(bug("[SysMon:TaskList] %s()\n", __func__));
 
     if (ti)
     {
@@ -780,7 +782,10 @@ IPTR Tasklist__MUIM_HandleEvent(Class *CLASS, Object *self, struct MUIP_HandleEv
                     else
                         data->tasklistSortMode = 0;
                     data->tasklistSortColumn = selectres.column;
+                    SET(self, MUIA_List_Quiet, TRUE);
                     DoMethod(self, MUIM_List_Sort);
+                    DoMethod(self, MUIM_List_Redraw, MUIV_List_Redraw_All);
+                    SET(self, MUIA_List_Quiet, FALSE);
                 }
             }
         }
