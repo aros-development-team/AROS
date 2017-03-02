@@ -93,6 +93,7 @@ BOOL core_SetIDTGate(apicidt_t *, int, uintptr_t, BOOL);
 BOOL core_SetIRQGate(void *, int, uintptr_t);
 void core_DefaultIRETQ();
 
+ULONG core_APIC_AllocMSI();
 void core_APIC_RegisterMSI(void *);
 
 extern struct IntrController APICInt_IntrController;

@@ -15,6 +15,12 @@
 
 #define D(x)
 
+ULONG core_APIC_AllocMSI()
+{
+    D(bug("[APIC:MSI] %s()\n"));
+    return (ULONG)-1;
+}
+
 void core_APIC_RegisterMSI(void *handle)
 {
     struct IntrNode *msihandle = (struct IntrNode *)handle;

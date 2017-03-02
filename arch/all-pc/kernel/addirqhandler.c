@@ -103,7 +103,7 @@
             }
             else
             {
-                // TODO: register the MSI handler...
+                core_APIC_RegisterMSI(handle);
             }
             Enable();
         }
