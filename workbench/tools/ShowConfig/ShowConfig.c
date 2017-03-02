@@ -16,6 +16,7 @@
 #include "cpuspecific.h"
 
 APTR ProcessorBase = NULL;
+char execextra[100];
 
 ULONG ExtUDivMod32(ULONG a, ULONG b, ULONG *mod)
 {
@@ -173,9 +174,28 @@ int main()
     struct MemHeader *mh;
     APTR KernelBase;
     APTR HPETBase;
+    int offset = 0;
 
-    printf("VERS:\t\tAROS version %d.%d, Exec version %d.%d\n", ArosBase->lib_Version, ArosBase->lib_Revision,
-	   SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision);
+#if (__WORDSIZE==64)
+    sprintf(&execextra[1], "64bit/");
+    offset = 6;
+#endif
+    if (OpenResource("execlock.resource"))
+    {
+        sprintf(&execextra[1 + offset], "SMP Enabled ");
+        offset += 12;
+    }
+
+    if (offset == 0)
+        execextra[0]            = '\0';
+    else
+    {
+        execextra[0]            = '[';
+        execextra[offset]       = ']';
+    }
+
+    printf("VERS:\t\tAROS version %d.%d, Exec version %d.%d %s\n", ArosBase->lib_Version, ArosBase->lib_Revision,
+	   SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision, execextra);
 
     ProcessorBase = OpenResource(PROCESSORNAME);
     if (ProcessorBase)
