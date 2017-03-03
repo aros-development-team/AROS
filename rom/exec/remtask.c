@@ -161,8 +161,10 @@
         }
     }
 
+#if !defined(__AROSEXEC_SMP__)
     /* All done. */
     Permit();
+#endif
 
     DREMTASK("Success");
 
