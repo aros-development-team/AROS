@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/types/spinlock_s.h>
 #include <exec/tasks.h>
 #include <exec/ports.h>
 
@@ -15,6 +16,7 @@ struct SMPMaster
     ULONG                       *smpm_WorkBuffer;
     UWORD                       smpm_Width;
     UWORD                       smpm_Height;    
+    spinlock_t                  smpm_Lock;
 };
 
 struct SMPWorker
@@ -24,6 +26,7 @@ struct SMPWorker
     struct MsgPort              *smpw_MasterPort;
     struct MsgPort              *smpw_MsgPort;
     struct Task                 *smpw_SyncTask;
+    spinlock_t                  *smpw_Lock;
 };
 
 struct SMPWorkMessage
@@ -31,10 +34,11 @@ struct SMPWorkMessage
     struct Message              smpwm_Msg;
     IPTR                        smpwm_Type;
     ULONG                       *smpwm_Buffer;
-    UWORD                       smpwm_Width;
-    UWORD                       smpwm_Height;
-    UWORD                       smpwm_Start;
-    UWORD                       smpwm_End;
+    ULONG                       smpwm_Width;
+    ULONG                       smpwm_Height;
+    ULONG                       smpwm_Start;
+    ULONG                       smpwm_End;
+    spinlock_t                  *smpwm_Lock;
 };
 
 #define SPMWORKTYPE_FINISHED    (1 << 0)

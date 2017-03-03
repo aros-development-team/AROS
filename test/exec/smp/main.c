@@ -3,13 +3,14 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/processor.h>
 #include <proto/kernel.h>
 
+#include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/intuition.h>
@@ -29,9 +30,13 @@ CONST_STRPTR version = "$VER: SMP-Test 1.0 (03.03.2017) ©2017 The AROS Developme
 
 APTR KernelBase;
 
+#define ARG_TEMPLATE "MAXCPU/N"
+
 int main()
 {
     struct SMPMaster workMaster;
+    IPTR args[1] = { 0 };
+    int max_cpus = 0;
 
     APTR ProcessorBase;
     IPTR coreCount = 1, core;
@@ -64,6 +69,21 @@ int main()
         char buffer[100];
         BOOL complete = FALSE;
 
+        struct RDArgs *rda;
+
+        max_cpus = coreCount;
+
+        rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+        if (rda != NULL)
+        {
+            LONG *ptr = (LONG *)args[0];
+            if (ptr)
+                max_cpus = *ptr;
+
+            if (max_cpus > coreCount)
+                max_cpus = coreCount;
+        }
+
         /* Create a port that workers/masters will signal us using .. */
         if ((workMaster.smpm_MasterPort = CreateMsgPort()) == NULL)
             return 0;
@@ -74,8 +94,9 @@ int main()
         D(bug("[SMP-Test] %s: SigTask = 0x%p\n", __func__, workMaster.smpm_MasterPort->mp_SigTask);)
 
         workMaster.smpm_WorkerCount = 0;
+        KrnSpinInit(&workMaster.smpm_Lock);
 
-        for (core = 0; core < coreCount; core++)
+        for (core = 0; core < max_cpus; core++)
         {
             void *coreAffinity = KrnAllocCPUMask();
             KrnGetCPUMask(core, coreAffinity);
@@ -102,9 +123,10 @@ int main()
                         coreWorker->smpw_MasterPort = workMaster.smpm_MasterPort;
                         coreWorker->smpw_Node.ln_Type = 0;
                         coreWorker->smpw_SyncTask = FindTask(NULL);
+                        coreWorker->smpw_Lock = &workMaster.smpm_Lock;
                         coreWorker->smpw_Task = NewCreateTask(TASKTAG_NAME   , coreML->ml_ME[1].me_Addr,
                                                     TASKTAG_AFFINITY   , coreAffinity,
-                                                    TASKTAG_PRI        , 10,
+                                                    TASKTAG_PRI        , 0,
                                                     TASKTAG_PC         , SMPTestWorker,
                                                     TASKTAG_ARG1       , SysBase,
                                                     TASKTAG_USERDATA   , coreWorker,
@@ -163,7 +185,7 @@ int main()
                                      WA_PubScreen, (IPTR)pubScreen,
                                      WA_Left, 0,
                                      WA_Top, (pubScreen) ? pubScreen->BarHeight : 10,
-                                     WA_Width, (pubScreen) ? pubScreen->Width : 320,
+                                     WA_Width, (pubScreen) ? (pubScreen->Height - pubScreen->BarHeight ) : 320,
                                      WA_Height, (pubScreen) ? (pubScreen->Height - pubScreen->BarHeight ) : 200,
                                      WA_Title, (IPTR)buffer,
                                      WA_SimpleRefresh, TRUE,
@@ -185,8 +207,8 @@ int main()
             if (pubScreen)
                 UnlockPubScreen(0, pubScreen);
 
-            workMaster.smpm_Width  = (displayWin->Width - displayWin->BorderLeft - displayWin->BorderRight);
-            workMaster.smpm_Height = (displayWin->Height - displayWin->BorderTop - displayWin->BorderBottom);
+            width = workMaster.smpm_Width  = (displayWin->Width - displayWin->BorderLeft - displayWin->BorderRight);
+            height = workMaster.smpm_Height = (displayWin->Height - displayWin->BorderTop - displayWin->BorderBottom);
 
             outputBMap = AllocBitMap(
                                         workMaster.smpm_Width,
@@ -238,7 +260,7 @@ int main()
 
                     D(bug("[SMP-Test] %s: Updating work output ...\n", __func__);)
                     WritePixelArray(workMaster.smpm_WorkBuffer,
-                                            0, 0, workMaster.smpm_Width,
+                                            0, 0, workMaster.smpm_Width * sizeof(ULONG),
                                             outBMRastPort,
                                             0, 0,
                                             workMaster.smpm_Width, workMaster.smpm_Height,
