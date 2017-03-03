@@ -25,7 +25,7 @@ ULONG core_APIC_AllocMSI(ULONG count)
     apicid_t cpuNo = KrnGetCPUNumber();
     apicidt_t *IGATES = (apicidt_t *)apicPrivate->cores[cpuNo].cpu_IDT;
     ULONG msiID = APIC_MSI_BASE;
-    int cpuIRQ = 0, irq;
+    int startIRQ = -1, cpuIRQ = -1, irq;
 
     D(bug("[APIC:MSI] %s()\n"));
 
@@ -33,19 +33,25 @@ ULONG core_APIC_AllocMSI(ULONG count)
     {
         if (KERNELIRQ_LIST(irq).lh_Type == APICInt_IntrController.ic_Node.ln_Type)
         {
-            if (!IGATES[HW_IRQ_BASE + irq].p)
+            if (startIRQ == -1)
+                startIRQ = HW_IRQ_BASE + irq;
+            else if ((HW_IRQ_BASE + irq) == (startIRQ + count))
             {
-                IGATES[HW_IRQ_BASE + irq].p = 1;
-                cpuIRQ = HW_IRQ_BASE + irq;
+                cpuIRQ = startIRQ;
                 break;
             }
         }
+        else
+            cpuIRQ = -1;
     }
-    if (cpuIRQ != 0)
+    if (cpuIRQ != -1)
     {
         msiID += ((cpuNo << 8) | (cpuIRQ));
 
-        D(bug("[APIC:MSI] %s: New MSI IRQ ID = %d\n", __func__, (int)msiID));
+        for (irq = cpuIRQ; irq < (cpuIRQ + count); irq++)
+            IGATES[irq].p = 1;
+
+        D(bug("[APIC:MSI] %s: New MSI IRQ ID Base = %d, for %d IRQs\n", __func__, (int)msiID, count));
     }
     else
         msiID = (ULONG)-1;
