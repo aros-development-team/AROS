@@ -15,8 +15,20 @@
 
 #include "work.h"
 
+#define BUDDHA 0
+
+#if BUDDHA
+
 #define MAXITERATIONS   4000
 #define OVERSAMPLE  4
+
+#else
+
+#define MAXITERATIONS   1000
+#define OVERSAMPLE  1
+
+#endif
+
 #define OVER2   (OVERSAMPLE * OVERSAMPLE)
 
 #define DWORK(x)
@@ -102,7 +114,7 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
         /* Calculate the points trajectory ... */
         trajectoryLength = calculateTrajectory(workload, x, y);
 
-#if (1)
+#if BUDDHA
         /* Update the display if it escapes */
         if (trajectoryLength > 0)
         {
@@ -133,8 +145,15 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
             KrnSpinUnLock(workload->lock);
         }
 #else
-        val = (255 * trajectoryLength) / workload->workMax;
-        workBuffer[current] = (((val << 16) | (val << 8) | val) << 8) | 0xff;
+        (void)diff_sr;
+
+        val = ((workBuffer[current / OVER2] >> 8) & 0xff);
+
+                        val+= 10*trajectoryLength; //(255 * trajectoryLength) / workload->workMax;
+                    if (val > 255)
+                        val = 255;
+
+        workBuffer[current / OVER2] = (((val << 16) | (val << 8) | val) << 8) | 0xff;
 #endif
     }
 }
