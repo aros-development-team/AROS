@@ -23,7 +23,7 @@ void SMPTestMaster(struct ExecBase *SysBase)
     D(
         int cpunum = KrnGetCPUNumber();
 
-        bug("[SMP-Test:Master.%03d] %s task started\n", cpunum, thisTask->tc_Node.ln_Name);
+        bug("[SMP-Test:Master.%03d] %s: %s task started\n", cpunum, __func__, thisTask->tc_Node.ln_Name);
     )
     struct SMPMaster *workMaster = thisTask->tc_UserData;
     struct SMPWorkMessage *workMsg;
@@ -31,16 +31,25 @@ void SMPTestMaster(struct ExecBase *SysBase)
 
     if (workMaster)
     {
+        IPTR msgWork = (workMaster->smpm_Width * workMaster->smpm_Height) / (256 / workMaster->smpm_WorkerCount);
         IPTR msgNo;
 
-        D(bug("[SMP-Test:Master.%03d] worker list @ 0x%p\n", cpunum, &workMaster->smpm_Workers);)
+        D(
+            bug("[SMP-Test:Master.%03d] %s: worker list @ 0x%p (%d workers)\n", cpunum, __func__, &workMaster->smpm_Workers, workMaster->smpm_WorkerCount);
+            bug("[SMP-Test:Master.%03d] %s: worker workload = %d\n", cpunum, __func__, msgWork);
+        )
 
-        for (msgNo = 0; msgNo < 1000; msgNo++)
+        for (msgNo = 0; msgNo < ((workMaster->smpm_Width * workMaster->smpm_Height)/ msgWork); msgNo++)
         {
             if ((workMsg = (struct SMPWorkMessage *)AllocMem(sizeof(struct SMPWorkMessage), MEMF_CLEAR)) != NULL)
             {
                 /* prepare the work to be done ... */
                 workMsg->smpwm_Type = SPMWORKTYPE_PROCESS;
+                workMsg->smpwm_Buffer = workMaster->smpm_WorkBuffer;
+                workMsg->smpwm_Width = workMaster->smpm_Width;
+                workMsg->smpwm_Height = workMaster->smpm_Height;
+                workMsg->smpwm_Start = msgNo * msgWork;
+                workMsg->smpwm_End = workMsg->smpwm_Start + msgWork - 1;
 
                 /* send out the work to an available worker... */
                 do {
@@ -48,7 +57,7 @@ void SMPTestMaster(struct ExecBase *SysBase)
                     {
                         if ((workMsg) && (coreWorker->smpw_Node.ln_Type == 1) && (coreWorker->smpw_MsgPort))
                         {
-                            D(bug("[SMP-Test] %s: Sending work @ 0x%p to worker @ 0x%p\n", __func__, workMsg, coreWorker);)
+                            D(bug("[SMP-Test:Master.%03d] %s: Sending work @ 0x%p to worker @ 0x%p\n", cpunum, __func__, workMsg, coreWorker);)
                             coreWorker->smpw_Node.ln_Type = 0;
                             PutMsg(coreWorker->smpw_MsgPort, (struct Message *)workMsg);
                             workMsg = NULL;
@@ -62,5 +71,5 @@ void SMPTestMaster(struct ExecBase *SysBase)
     workMaster->smpm_Master = NULL;
     Signal(workMaster->smpm_MasterPort->mp_SigTask, SIGBREAKF_CTRL_D);
 
-    D(bug("[SMP-Test:Master.%03d] work complete\n", cpunum);)
+    D(bug("[SMP-Test:Master.%03d] %s: work complete\n", cpunum, __func__);)
 }
