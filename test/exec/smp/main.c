@@ -173,7 +173,7 @@ int main()
                         coreWorker->smpw_Oversample = workMaster.smpm_Oversample;
                         coreWorker->smpw_Task = NewCreateTask(TASKTAG_NAME   , coreML->ml_ME[1].me_Addr,
                                                     TASKTAG_AFFINITY   , coreAffinity,
-                                                    TASKTAG_PRI        , 5,
+                                                    TASKTAG_PRI        , 0,
                                                     TASKTAG_PC         , SMPTestWorker,
                                                     TASKTAG_ARG1       , SysBase,
                                                     TASKTAG_USERDATA   , coreWorker,
@@ -278,7 +278,7 @@ int main()
 
             workMaster.smpm_Master = NewCreateTask(TASKTAG_NAME   , "SMP-Test Master",
                                                         TASKTAG_AFFINITY, TASKAFFINITY_ANY,
-                                                        TASKTAG_PRI        , 0,
+                                                        TASKTAG_PRI        , -1,
                                                         TASKTAG_PC         , SMPTestMaster,
                                                         TASKTAG_ARG1       , SysBase,
                                                         TASKTAG_USERDATA   , &workMaster,
