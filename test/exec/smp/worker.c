@@ -15,7 +15,9 @@
 
 #include "work.h"
 
-#define MAXITERATIONS   100000
+#define MAXITERATIONS   4000
+#define OVERSAMPLE  4
+#define OVER2   (OVERSAMPLE * OVERSAMPLE)
 
 #define DWORK(x)
 
@@ -31,12 +33,13 @@ typedef struct {
 struct WorkersWork
 {
     ULONG         workMax;
+    spinlock_t      *lock;
     complexno_t workTrajectories[];  
 };
 
 ULONG calculateTrajectory(struct WorkersWork *workload, double r, double i)
 {
-    double realNo, imaginaryNo, realNo2, imaginaryNo2;
+    double realNo, imaginaryNo, realNo2, imaginaryNo2, tmp;
     ULONG trajectory;
 
     /* Calculate trajectory */
@@ -49,12 +52,13 @@ ULONG calculateTrajectory(struct WorkersWork *workload, double r, double i)
         realNo2 = realNo * realNo;
         imaginaryNo2 = imaginaryNo * imaginaryNo;
 
-        if (realNo2 + imaginaryNo2 > 2.0)
+        if (realNo2 + imaginaryNo2 > 4.0)
             return trajectory;
 
         /* Next */
-        realNo = realNo2 - imaginaryNo2 + r;
-        imaginaryNo = 2 * realNo * imaginaryNo + i;
+        tmp = realNo2 - imaginaryNo2 + r;
+        imaginaryNo = 2.0 * realNo * imaginaryNo + i;
+        realNo = tmp;
 
         /* Store */
         workload->workTrajectories[trajectory].r = realNo;
@@ -64,16 +68,22 @@ ULONG calculateTrajectory(struct WorkersWork *workload, double r, double i)
     return 0;
 }
 
-void processWork(struct WorkersWork *workload, ULONG *workBuffer, UWORD workWidth, UWORD workHeight, UWORD workStart, UWORD workEnd)
+void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidth, ULONG workHeight, ULONG workStart, ULONG workEnd)
 {
-
+    /*
     double xlo = -1.0349498063694267;
     double ylo = -0.36302123503184713;
     double xhi = -0.887179105732484;
     double yhi = -0.21779830509554143;
+    */
     ULONG trajectoryLength;
-    UWORD current;
-    UWORD x, y;
+    IPTR current;
+    double x, y;
+    double diff = 4.0 / ((double)(workWidth * OVERSAMPLE));
+    //double diff_y = 4.0 / ((double)OVERSAMPLE * (double)workHeight);
+    double y_base = 2.0 - (diff / 2.0);
+    double diff_sr = 4.0 / (double)workWidth;
+    
 
     DWORK(
         bug("[SMP-Test:Worker] %s: Buffer @ 0x%p\n", __func__, workBuffer);
@@ -81,37 +91,49 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, UWORD workWidt
         bug("[SMP-Test:Worker] %s: start : %d, end %d\n", __func__, workStart, workEnd);
     )
 
-    for (current = workStart; current < workEnd; current++)
+    for (current = workStart * OVER2; current < workEnd * OVER2; current++)
     {
         ULONG val;
 
         /* Locate the point on the complex plane */
-        x = (current % workWidth);
-        y = (current / workWidth);
+        x = ((double)(current % (workWidth * OVERSAMPLE))) * diff - 2.0;
+        y = ((double)(current / (workWidth * OVERSAMPLE))) * diff - y_base;
 
         /* Calculate the points trajectory ... */
-        trajectoryLength = calculateTrajectory(workload, (double)(xlo + (xhi - xlo) * x / workWidth), (double)(ylo + (yhi - ylo) * y / workHeight));
+        trajectoryLength = calculateTrajectory(workload, x, y);
 
-#if (0)
+#if (1)
         /* Update the display if it escapes */
         if (trajectoryLength > 0)
         {
-            UQUAD pos;
+            ULONG pos;
             int i;
 
             for(i = 0; i < trajectoryLength; i++)
             {
-                pos = (workload->workTrajectories[i].i  * workWidth) + workload->workTrajectories[i].r;
+                IPTR px = (workload->workTrajectories[i].r + 2.0) / diff_sr;
+                IPTR py = (workload->workTrajectories[i].i + y_base) / diff_sr;
+
+                /*if (px < 0 || px >= workWidth || py < 0 || py >= workHeight)
+                    continue;
+*/
+                pos = (ULONG)(workWidth * py + px);
+
                 if (pos > 0 && pos < (workWidth * workHeight))
                 {
-                    val = (trajectoryLength / (workload->workMax/ 255));
-                    workBuffer[pos] = workBuffer[pos] + ((val << 16) | (val << 8) | val);
+                    KrnSpinLock(workload->lock, NULL, SPINLOCK_MODE_WRITE);
+                    val = ((workBuffer[pos] >> 8) & 0xff);
+                    if (val != 0xff)
+                        val++;
+
+                    workBuffer[pos] = 0x000000ff | (((val << 16) | (val << 8) | val ) << 8);
+                    KrnSpinUnLock(workload->lock);
                 }
             }
         }
 #else
-        val = (trajectoryLength / (workload->workMax/ 255));
-        workBuffer[current] = ((val << 16) | (val << 8) | val);
+        val = (255 * trajectoryLength) / workload->workMax;
+        workBuffer[current] = (((val << 16) | (val << 8) | val) << 8) | 0xff;
 #endif
     }
 }
@@ -149,10 +171,11 @@ void SMPTestWorker(struct ExecBase *SysBase)
         if (workPrivate)
         {
             workPrivate->workMax = MAXITERATIONS;
+            workPrivate->lock = worker->smpw_Lock;
 
             while (doWork)
             {
-                UWORD workWidth, workHeight, workStart, workEnd;
+                ULONG workWidth, workHeight, workStart, workEnd;
                 ULONG *workBuffer;
                 IPTR workType;
 
