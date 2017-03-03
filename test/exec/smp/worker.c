@@ -120,11 +120,12 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
                     if (pos > 0 && pos < (workWidth * workHeight))
                     {
 
-                        val = ((workBuffer[pos] >> 8) & 0xff);
+                        val = ((workBuffer[pos] >> 24) & 0xff);
                         if (val != 0xff)
                             val++;
 
                         workBuffer[pos] = 0x000000ff | (((val << 16) | (val << 8) | val ) << 8);
+                        workBuffer[pos] &= 0xfff0f0ff;
 
                     }
                 }
