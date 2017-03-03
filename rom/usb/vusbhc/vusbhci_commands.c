@@ -769,7 +769,6 @@ UWORD StopTT(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength
     return UHIOERR_NO_ERROR;
 }
 
-
 WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
@@ -874,9 +873,10 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
     mybug_unit(0, ("ioreq added to roothub intrxfer_queue\n"));
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
-    Disable();
+    ObtainSemaphore(&unit->roothub.intrxfer_queue_lock);
     AddTail(&unit->roothub.intrxfer_queue, (struct Node *) ioreq);
-    Enable();
+    ReleaseSemaphore(&unit->roothub.intrxfer_queue_lock);
+
     return(RC_DONTREPLY);
 }
 
@@ -909,17 +909,17 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         return(cmdControlXFerRootHub(ioreq));
     }
 
-    mybug_unit(-1, ("Sending transfer request to libusb\n\n"));
+    mybug_unit(0, ("Sending transfer request to libusb\n\n"));
     return(do_libusb_ctrl_transfer(ioreq));
 }
 
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(-1, ("Entering function\n"));
+    mybug_unit(0, ("Entering function\n"));
 
-    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -941,16 +941,15 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
         return(cmdIntXFerRootHub(ioreq));
     }
 
-    mybug_unit(-1, ("Adding INTR transfer request to queue\n"));
+    mybug_unit(0, ("Adding INTR transfer request to queue\n"));
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
-    Disable();
+    ObtainSemaphore(&unit->intrxfer_queue_lock);
     AddTail(&unit->intrxfer_queue, (struct Node *) ioreq);
-    Enable();
+    ReleaseSemaphore(&unit->intrxfer_queue_lock);
 
     return(RC_DONTREPLY);
-
 }
 
 WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
@@ -981,9 +980,9 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
-    Disable();
+    ObtainSemaphore(&unit->bulkxfer_queue_lock);
     AddTail(&unit->bulkxfer_queue, (struct Node *) ioreq);
-    Enable();
+    ReleaseSemaphore(&unit->bulkxfer_queue_lock);
 
     return(RC_DONTREPLY);
 }
@@ -991,10 +990,10 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq) {
 WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(-1, ("Entering function\n"));
+    mybug_unit(0, ("Entering function\n"));
 
-    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -1012,13 +1011,13 @@ WORD cmdISOXFer(struct IOUsbHWReq *ioreq) {
         return UHIOERR_USBOFFLINE;
     }
 
-    mybug_unit(-1, ("Adding ISOC transfer request to queue\n"));
+    mybug_unit(0, ("Adding ISOC transfer request to queue\n"));
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
-    Disable();
+    ObtainSemaphore(&unit->isocxfer_queue_lock);
     AddTail(&unit->isocxfer_queue, (struct Node *) ioreq);
-    Enable();
+    ReleaseSemaphore(&unit->isocxfer_queue_lock);
 
     return(RC_DONTREPLY);
 }
@@ -1031,8 +1030,8 @@ void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
 
     struct IOUsbHWReq *ioreq;
 
+    ObtainSemaphore(&unit->roothub.intrxfer_queue_lock);
     if(unit->roothub.portstatus.wPortChange && unit->roothub.intrxfer_queue.lh_Head->ln_Succ) {
-        Disable();
         ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
         while(((struct Node *) ioreq)->ln_Succ) {
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -1043,7 +1042,8 @@ void uhwCheckRootHubChanges(struct VUSBHCIUnit *unit) {
             ReplyMsg(&ioreq->iouh_Req.io_Message);
             ioreq = (struct IOUsbHWReq *) unit->roothub.intrxfer_queue.lh_Head;
         }
-        Enable();
     }
+
+    ReleaseSemaphore(&unit->roothub.intrxfer_queue_lock);
 }
 
