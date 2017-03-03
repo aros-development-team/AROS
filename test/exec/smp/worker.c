@@ -88,7 +88,7 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
         bug("[SMP-Test:Worker] %s: start : %d, end %d\n", __func__, workStart, workEnd);
     )
 
-    for (current = workStart * workload->workOver2; current < workEnd * workload->workOver2; current++)
+    for (current = workStart * workload->workOver2; current <= workEnd * workload->workOver2; current++)
     {
         ULONG val;
 
@@ -121,14 +121,14 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
                     {
 
                         val = ((workBuffer[pos] >> 24) & 0xff);
-                        if (val != 0xff)
-                            val++;
+                            if (val != 0xff)
+                                val++;
 
                         workBuffer[pos] = 0x000000ff | (((val << 16) | (val << 8) | val ) << 8);
                         workBuffer[pos] &= 0xfff0f0ff;
 
-                    }
-                }
+                        }
+                        }
                 KrnSpinUnLock(workload->lock);
             }
         }
