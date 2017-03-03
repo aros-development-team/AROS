@@ -12,7 +12,7 @@ struct SMPMaster
     struct List                 smpm_Workers;
     struct Task                 *smpm_Master;
     struct MsgPort              *smpm_MasterPort;
-    UBYTE                       *smpm_WorkBuffer;
+    ULONG                       *smpm_WorkBuffer;
     UWORD                       smpm_Width;
     UWORD                       smpm_Height;    
 };
@@ -30,7 +30,7 @@ struct SMPWorkMessage
 {
     struct Message              smpwm_Msg;
     IPTR                        smpwm_Type;
-    UBYTE                       *smpwm_Buffer;
+    ULONG                       *smpwm_Buffer;
     UWORD                       smpwm_Width;
     UWORD                       smpwm_Height;
     UWORD                       smpwm_Start;

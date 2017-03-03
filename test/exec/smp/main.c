@@ -194,7 +194,7 @@ int main()
                                         GetBitMapAttr(displayWin->WScreen->RastPort.BitMap, BMA_DEPTH),
                                         BMF_DISPLAYABLE, displayWin->WScreen->RastPort.BitMap);
 
-            workMaster.smpm_WorkBuffer = AllocMem(workMaster.smpm_Width * workMaster.smpm_Height * 8, MEMF_ANY|MEMF_CLEAR);
+            workMaster.smpm_WorkBuffer = AllocMem(workMaster.smpm_Width * workMaster.smpm_Height * sizeof(ULONG), MEMF_ANY|MEMF_CLEAR);
 
             D(
                 bug("[SMP-Test] %s: Target BitMap @ 0x%p\n", __func__, outputBMap);
@@ -242,7 +242,7 @@ int main()
                                             outBMRastPort,
                                             0, 0,
                                             workMaster.smpm_Width, workMaster.smpm_Height,
-                                            RECTFMT_GREY8);
+                                            RECTFMT_ARGB);
 
                     if (complete)
                     {
@@ -270,9 +270,11 @@ int main()
 
                             case IDCMP_REFRESHWINDOW:
                                 D(bug("[SMP-Test] %s: Displaying output BitMap (REFRESHWINDOW)\n", __func__);)
+                                BeginRefresh(msg->IDCMPWindow);
                                 BltBitMapRastPort (outputBMap, 0, 0,
-                                    displayWin->RPort, displayWin->BorderLeft, displayWin->BorderTop,
-                                    width, height, 0xC0); 
+                                    msg->IDCMPWindow->RPort, msg->IDCMPWindow->BorderLeft, msg->IDCMPWindow->BorderTop,
+                                    width, height, 0xC0);
+                                EndRefresh(msg->IDCMPWindow, TRUE);
                                 break;
                         }
                         ReplyMsg((struct Message *)msg);
@@ -295,7 +297,7 @@ int main()
                     PutMsg(coreWorker->smpw_MsgPort, (struct Message *)workMsg);
                 }
             }
-            FreeMem(workMaster.smpm_WorkBuffer, workMaster.smpm_Width * workMaster.smpm_Height * 8);
+            FreeMem(workMaster.smpm_WorkBuffer, workMaster.smpm_Width * workMaster.smpm_Height * sizeof(ULONG));
             CloseWindow(displayWin);
             outBMRastPort->BitMap = NULL;
             FreeRastPort(outBMRastPort);
