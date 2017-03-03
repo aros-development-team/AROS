@@ -30,12 +30,15 @@ CONST_STRPTR version = "$VER: SMP-Test 1.0 (03.03.2017) ©2017 The AROS Developme
 
 APTR KernelBase;
 
-#define ARG_TEMPLATE "MAXCPU/N"
+#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N,BUDDHA/S"
+#define ARG_MAXCPU 0
+#define ARG_MAXITER 1
+#define ARG_BUDDHA 2
 
 int main()
 {
     struct SMPMaster workMaster;
-    IPTR args[1] = { 0 };
+    IPTR args[3] = { 0, 0, 0 };
     int max_cpus = 0;
 
     APTR ProcessorBase;
@@ -67,8 +70,8 @@ int main()
         struct SMPWorkMessage *workMsg;
         IPTR rawArgs[2];
         char buffer[100];
-        BOOL complete = FALSE;
-
+        BOOL complete = FALSE, buddha = FALSE;
+        ULONG maxWork = 0;
         struct RDArgs *rda;
 
         max_cpus = coreCount;
@@ -76,9 +79,16 @@ int main()
         rda = ReadArgs(ARG_TEMPLATE, args, NULL);
         if (rda != NULL)
         {
-            LONG *ptr = (LONG *)args[0];
+            LONG *ptr = (LONG *)args[ARG_MAXCPU];
             if (ptr)
                 max_cpus = *ptr;
+
+            ptr = (LONG *)args[ARG_MAXITER];
+            if (ptr)
+                maxWork = *ptr;
+
+            if (args[ARG_BUDDHA])
+                buddha = TRUE;
 
             if (max_cpus > coreCount)
                 max_cpus = coreCount;
@@ -94,6 +104,21 @@ int main()
         D(bug("[SMP-Test] %s: SigTask = 0x%p\n", __func__, workMaster.smpm_MasterPort->mp_SigTask);)
 
         workMaster.smpm_WorkerCount = 0;
+        if (buddha)
+        {
+            workMaster.smpm_MaxWork = 4000;
+            workMaster.smpm_Oversample = 4;
+            workMaster.smpm_Buddha = TRUE;
+        }
+        else
+        {
+            workMaster.smpm_MaxWork = 1000;
+            workMaster.smpm_Oversample = 1;
+            workMaster.smpm_Buddha = FALSE;
+        }
+        if (maxWork)
+            workMaster.smpm_MaxWork = maxWork;
+
         KrnSpinInit(&workMaster.smpm_Lock);
 
         for (core = 0; core < max_cpus; core++)
@@ -124,6 +149,8 @@ int main()
                         coreWorker->smpw_Node.ln_Type = 0;
                         coreWorker->smpw_SyncTask = FindTask(NULL);
                         coreWorker->smpw_Lock = &workMaster.smpm_Lock;
+                        coreWorker->smpw_MaxWork = workMaster.smpm_MaxWork;
+                        coreWorker->smpw_Oversample = workMaster.smpm_Oversample;
                         coreWorker->smpw_Task = NewCreateTask(TASKTAG_NAME   , coreML->ml_ME[1].me_Addr,
                                                     TASKTAG_AFFINITY   , coreAffinity,
                                                     TASKTAG_PRI        , 0,

@@ -44,7 +44,10 @@ void SMPTestMaster(struct ExecBase *SysBase)
             if ((workMsg = (struct SMPWorkMessage *)AllocMem(sizeof(struct SMPWorkMessage), MEMF_CLEAR)) != NULL)
             {
                 /* prepare the work to be done ... */
-                workMsg->smpwm_Type = SPMWORKTYPE_PROCESS;
+                if (workMaster->smpm_Buddha)
+                    workMsg->smpwm_Type = SPMWORKTYPE_BUDDHA;
+                else
+                    workMsg->smpwm_Type = SPMWORKTYPE_MANDLEBROT;
                 workMsg->smpwm_Buffer = workMaster->smpm_WorkBuffer;
                 workMsg->smpwm_Width = workMaster->smpm_Width;
                 workMsg->smpwm_Height = workMaster->smpm_Height;

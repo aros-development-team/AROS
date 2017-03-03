@@ -15,22 +15,6 @@
 
 #include "work.h"
 
-#define BUDDHA 0
-
-#if BUDDHA
-
-#define MAXITERATIONS   4000
-#define OVERSAMPLE  4
-
-#else
-
-#define MAXITERATIONS   1000
-#define OVERSAMPLE  1
-
-#endif
-
-#define OVER2   (OVERSAMPLE * OVERSAMPLE)
-
 #define DWORK(x)
 
 /*
@@ -45,6 +29,8 @@ typedef struct {
 struct WorkersWork
 {
     ULONG         workMax;
+    ULONG         workOversamp;
+    ULONG         workOver2;
     spinlock_t      *lock;
     complexno_t workTrajectories[];  
 };
@@ -80,7 +66,7 @@ ULONG calculateTrajectory(struct WorkersWork *workload, double r, double i)
     return 0;
 }
 
-void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidth, ULONG workHeight, ULONG workStart, ULONG workEnd)
+void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidth, ULONG workHeight, ULONG workStart, ULONG workEnd, BOOL buddha)
 {
     /*
     double xlo = -1.0349498063694267;
@@ -91,11 +77,10 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
     ULONG trajectoryLength;
     IPTR current;
     double x, y;
-    double diff = 4.0 / ((double)(workWidth * OVERSAMPLE));
-    //double diff_y = 4.0 / ((double)OVERSAMPLE * (double)workHeight);
+    double diff = 4.0 / ((double)(workWidth * workload->workOversamp));
+    //double diff_y = 4.0 / ((double)workload->workOversamp * (double)workHeight);
     double y_base = 2.0 - (diff / 2.0);
     double diff_sr = 4.0 / (double)workWidth;
-    
 
     DWORK(
         bug("[SMP-Test:Worker] %s: Buffer @ 0x%p\n", __func__, workBuffer);
@@ -103,58 +88,61 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
         bug("[SMP-Test:Worker] %s: start : %d, end %d\n", __func__, workStart, workEnd);
     )
 
-    for (current = workStart * OVER2; current < workEnd * OVER2; current++)
+    for (current = workStart * workload->workOver2; current < workEnd * workload->workOver2; current++)
     {
         ULONG val;
 
         /* Locate the point on the complex plane */
-        x = ((double)(current % (workWidth * OVERSAMPLE))) * diff - 2.0;
-        y = ((double)(current / (workWidth * OVERSAMPLE))) * diff - y_base;
+        x = ((double)(current % (workWidth * workload->workOversamp))) * diff - 2.0;
+        y = ((double)(current / (workWidth * workload->workOversamp))) * diff - y_base;
 
         /* Calculate the points trajectory ... */
         trajectoryLength = calculateTrajectory(workload, x, y);
 
-#if BUDDHA
-        /* Update the display if it escapes */
-        if (trajectoryLength > 0)
+        if (buddha)
         {
-            ULONG pos;
-            int i;
-            KrnSpinLock(workload->lock, NULL, SPINLOCK_MODE_WRITE);
-            for(i = 0; i < trajectoryLength; i++)
+            /* Update the display if it escapes */
+            if (trajectoryLength > 0)
             {
-                IPTR px = (workload->workTrajectories[i].r + 2.0) / diff_sr;
-                IPTR py = (workload->workTrajectories[i].i + y_base) / diff_sr;
-
-                /*if (px < 0 || px >= workWidth || py < 0 || py >= workHeight)
-                    continue;
-*/
-                pos = (ULONG)(workWidth * py + px);
-
-                if (pos > 0 && pos < (workWidth * workHeight))
+                ULONG pos;
+                int i;
+                KrnSpinLock(workload->lock, NULL, SPINLOCK_MODE_WRITE);
+                for(i = 0; i < trajectoryLength; i++)
                 {
+                    IPTR px = (workload->workTrajectories[i].r + 2.0) / diff_sr;
+                    IPTR py = (workload->workTrajectories[i].i + y_base) / diff_sr;
 
-                    val = ((workBuffer[pos] >> 8) & 0xff);
-                    if (val != 0xff)
-                        val++;
+                    /*if (px < 0 || px >= workWidth || py < 0 || py >= workHeight)
+                        continue;
+    */
+                    pos = (ULONG)(workWidth * py + px);
 
-                    workBuffer[pos] = 0x000000ff | (((val << 16) | (val << 8) | val ) << 8);
+                    if (pos > 0 && pos < (workWidth * workHeight))
+                    {
 
+                        val = ((workBuffer[pos] >> 8) & 0xff);
+                        if (val != 0xff)
+                            val++;
+
+                        workBuffer[pos] = 0x000000ff | (((val << 16) | (val << 8) | val ) << 8);
+
+                    }
                 }
+                KrnSpinUnLock(workload->lock);
             }
-            KrnSpinUnLock(workload->lock);
         }
-#else
-        (void)diff_sr;
+        else
+        {
+            (void)diff_sr;
 
-        val = ((workBuffer[current / OVER2] >> 8) & 0xff);
+            val = ((workBuffer[current / workload->workOver2] >> 8) & 0xff);
 
-                        val+= 10*trajectoryLength; //(255 * trajectoryLength) / workload->workMax;
-                    if (val > 255)
-                        val = 255;
+                            val+= 10*trajectoryLength; //(255 * trajectoryLength) / workload->workMax;
+                        if (val > 255)
+                            val = 255;
 
-        workBuffer[current / OVER2] = (((val << 16) | (val << 8) | val) << 8) | 0xff;
-#endif
+            workBuffer[current / workload->workOver2] = (((val << 16) | (val << 8) | val) << 8) | 0xff;
+        }
     }
 }
 
@@ -172,7 +160,7 @@ void SMPTestWorker(struct ExecBase *SysBase)
     struct SMPWorker *worker = thisTask->tc_UserData;
     struct SMPWorkMessage *workMsg;
     struct WorkersWork    *workPrivate;
-    BOOL doWork = TRUE;
+    BOOL doWork = TRUE, buddha = FALSE;
 
     D(bug("[SMP-Test:Worker.%03d] %s: worker data @ 0x%p\n", cpunum, __func__, worker);)
     
@@ -184,13 +172,15 @@ void SMPTestWorker(struct ExecBase *SysBase)
         worker->smpw_MsgPort = CreateMsgPort();
         D(bug("[SMP-Test:Worker.%03d] %s: work MsgPort @ 0x%p\n", cpunum, __func__, worker->smpw_MsgPort);)
 
-        workPrivate = AllocMem(sizeof(struct WorkersWork) + (MAXITERATIONS * sizeof(complexno_t)), MEMF_CLEAR|MEMF_ANY);
+        workPrivate = AllocMem(sizeof(struct WorkersWork) + (worker->smpw_MaxWork * sizeof(complexno_t)), MEMF_CLEAR|MEMF_ANY);
         
         D(bug("[SMP-Test:Worker.%03d] %s: worker private data @ 0x%p\n", cpunum, __func__, workPrivate);)
 
         if (workPrivate)
         {
-            workPrivate->workMax = MAXITERATIONS;
+            workPrivate->workMax = worker->smpw_MaxWork;
+            workPrivate->workOversamp = worker->smpw_Oversample;
+            workPrivate->workOver2 = workPrivate->workOversamp * workPrivate->workOversamp;
             workPrivate->lock = worker->smpw_Lock;
 
             while (doWork)
@@ -208,6 +198,8 @@ void SMPTestWorker(struct ExecBase *SysBase)
                 {
                     D(bug("[SMP-Test:Worker.%03d] %s: work received (Msg @ 0x%p)\n", cpunum, __func__, workMsg);)
 
+                    buddha = FALSE;
+
                     /* cache the requested work and free the message ... */
                     workType = workMsg->smpwm_Type;
                     workBuffer = workMsg->smpwm_Buffer;
@@ -219,24 +211,29 @@ void SMPTestWorker(struct ExecBase *SysBase)
                     FreeMem(workMsg, sizeof(struct SMPWorkMessage));
                     
                     /* now process it .. */
-                    if (workType == SPMWORKTYPE_FINISHED)
+                    switch (workType)
                     {
-                        D(bug("[SMP-Test:Worker.%03d] %s: Finished! exiting ...\n", cpunum, __func__);)
+                        case SPMWORKTYPE_FINISHED:
+                                {
+                                    D(bug("[SMP-Test:Worker.%03d] %s: Finished! exiting ...\n", cpunum, __func__);)
 
-                        doWork = FALSE;
-                        break;
-                    }
-                    else if (workType == SPMWORKTYPE_PROCESS)
-                    {
-                        /*
-                         * Lets do some work!
-                         */
-                        D(bug("[SMP-Test:Worker.%03d] %s: Processing requested work!\n", cpunum, __func__);)
+                                    doWork = FALSE;
+                                    break;
+                                }
+                        case SPMWORKTYPE_BUDDHA:
+                                buddha = TRUE;
+                        case SPMWORKTYPE_MANDLEBROT:
+                                {
+                                    /*
+                                     * Lets do some work!
+                                     */
+                                    D(bug("[SMP-Test:Worker.%03d] %s: Processing requested work!\n", cpunum, __func__);)
 
-                        processWork(workPrivate, workBuffer, workWidth, workHeight, workStart, workEnd);
+                                    processWork(workPrivate, workBuffer, workWidth, workHeight, workStart, workEnd, buddha);
 
-                        /* let our "parent" know we are done .. */
-                        Signal(worker->smpw_MasterPort->mp_SigTask, SIGBREAKF_CTRL_D);
+                                    /* let our "parent" know we are done .. */
+                                    Signal(worker->smpw_MasterPort->mp_SigTask, SIGBREAKF_CTRL_D);
+                                }
                     }
                 }
             }
