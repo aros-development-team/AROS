@@ -17,6 +17,9 @@ struct SMPMaster
     UWORD                       smpm_Width;
     UWORD                       smpm_Height;    
     spinlock_t                  smpm_Lock;
+    ULONG                       smpm_MaxWork;
+    ULONG                       smpm_Oversample;
+    BOOL                        smpm_Buddha;
 };
 
 struct SMPWorker
@@ -27,6 +30,8 @@ struct SMPWorker
     struct MsgPort              *smpw_MsgPort;
     struct Task                 *smpw_SyncTask;
     spinlock_t                  *smpw_Lock;
+    ULONG                       smpw_MaxWork;
+    ULONG                       smpw_Oversample;
 };
 
 struct SMPWorkMessage
@@ -42,7 +47,8 @@ struct SMPWorkMessage
 };
 
 #define SPMWORKTYPE_FINISHED    (1 << 0)
-#define SPMWORKTYPE_PROCESS     (1 << 1)
+#define SPMWORKTYPE_MANDLEBROT  (1 << 1)
+#define SPMWORKTYPE_BUDDHA      (1 << 2)
 
 void SMPTestMaster(struct ExecBase *);
 void SMPTestWorker(struct ExecBase *);
