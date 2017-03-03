@@ -62,50 +62,50 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
 
                     call_libusb_event_handler();
 
-                    /* FIXME: Use semaphores! */
-                    /* FIXME: Using Disable makes the intr transfer blocking... sort of... */
-                    //Disable();
+                    ObtainSemaphore(&unit->intrxfer_queue_lock); {
+                        if(unit->intrxfer_queue.lh_Head->ln_Succ) {
+                            mybug(-1,("[handler_task] There's things to do in INTR transfer queue...\n"));
 
-                    if(unit->intrxfer_queue.lh_Head->ln_Succ) {
-                        mybug(-1,("[handler_task] There's things to do in INTR transfer queue...\n"));
+                            struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->intrxfer_queue.lh_Head;
 
-                        struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->intrxfer_queue.lh_Head;
+                            /* Now the iorequest lives only on our pointer */
+                            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
 
-                        /* Now the iorequest lives only on our pointer */
-                        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-
-                        /* FIXME: Check the result... */
-                        do_libusb_intr_transfer(ioreq);
+                            /* FIXME: Check the result... */
+                            do_libusb_intr_transfer(ioreq);
                         
-                    }
+                        }
+                    } ReleaseSemaphore(&unit->intrxfer_queue_lock);
 
-                    if(unit->bulkxfer_queue.lh_Head->ln_Succ) {
-                        mybug(0,("[handler_task] There's things to do in BULK transfer queue...\n"));
+                    ObtainSemaphore(&unit->bulkxfer_queue_lock); {
+                        if(unit->bulkxfer_queue.lh_Head->ln_Succ) {
+                            mybug(0,("[handler_task] There's things to do in BULK transfer queue...\n"));
 
-                        struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->bulkxfer_queue.lh_Head;
+                            struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->bulkxfer_queue.lh_Head;
 
-                        /* Now the iorequest lives only on our pointer */
-                        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                            /* Now the iorequest lives only on our pointer */
+                            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
 
-                        /* FIXME: Check the result... */
-                        do_libusb_bulk_transfer(ioreq);
+                            /* FIXME: Check the result... */
+                            do_libusb_bulk_transfer(ioreq);
                         
-                    }
+                        }
+                    } ReleaseSemaphore(&unit->bulkxfer_queue_lock);
 
-                    if(unit->isocxfer_queue.lh_Head->ln_Succ) {
-                        mybug(-1,("[handler_task] There's things to do in ISOC transfer queue...\n"));
+                    ObtainSemaphore(&unit->isocxfer_queue_lock); {
+                        if(unit->isocxfer_queue.lh_Head->ln_Succ) {
+                            mybug(-1,("[handler_task] There's things to do in ISOC transfer queue...\n"));
 
-                        struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->isocxfer_queue.lh_Head;
+                            struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->isocxfer_queue.lh_Head;
 
-                        /* Now the iorequest lives only on our pointer */
-                        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                            /* Now the iorequest lives only on our pointer */
+                            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
 
-                        /* FIXME: Check the result... */
-                        do_libusb_isoc_transfer(ioreq);
+                            /* FIXME: Check the result... */
+                            do_libusb_isoc_transfer(ioreq);
                         
-                    }
-
-                    //Enable();
+                        }
+                    } ReleaseSemaphore(&unit->isocxfer_queue_lock);
 
                     /* Wait */
                     tr->tr_time.tv_secs = 0;
@@ -132,21 +132,22 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
         return FALSE;
     }
 
-    /* Create periodic handler task */
-    VUSBHCIBase->handler_task_run = TRUE;
-    VUSBHCIBase->handler_task = NewCreateTask(TASKTAG_NAME, "libusb handler task",
-                                              TASKTAG_PC, handler_task,
-                                              TASKTAG_ARG1, FindTask(NULL),
-                                              TASKTAG_ARG2, VUSBHCIBase,
-                                              TAG_END);
-    Wait(SIGF_CHILD);
-
     VUSBHCIBase->usbunit200 = VUSBHCI_AddNewUnit200();
 
     if(VUSBHCIBase->usbunit200 == NULL) {
         mybug(-1, ("[VUSBHCI] Init: Failed to create new USB unit!\n"));
         return FALSE;
     }
+
+    /* Create periodic handler task */
+    VUSBHCIBase->handler_task_run = TRUE;
+    VUSBHCIBase->handler_task = NewCreateTask(TASKTAG_NAME, "libusb handler task",
+                                              TASKTAG_PC, handler_task,
+                                              TASKTAG_ARG1, FindTask(NULL),
+                                              TASKTAG_ARG2, VUSBHCIBase,
+                                              TASKTAG_PRI, 25,
+                                              TAG_END);
+    Wait(SIGF_CHILD);
 
     return TRUE;
 }
@@ -246,7 +247,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
                 mybug_unit(-1, ("CMD_FLUSH\n"));
                 break;
             case UHCMD_QUERYDEVICE:
-                mybug_unit(0, ("UHCMD_QUERYDEVICE\n"));
+                mybug_unit(-1, ("UHCMD_QUERYDEVICE\n"));
                 ret = cmdQueryDevice(ioreq);
                 break;
             case UHCMD_USBRESET:
@@ -346,7 +347,7 @@ AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(0, ("Entering function\n"));
+    mybug_unit(-1, ("Entering function\n"));
 
     struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
     struct TagItem *tag;
@@ -387,7 +388,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
         }
     }
 
-    mybug_unit(0, ("Done\n\n"));
+    mybug_unit(-1, ("Done\n\n"));
 
     ioreq->iouh_Actual = count;
     return RC_OK;
@@ -476,6 +477,13 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         //unit->roothub.hubstatus->wHubChange = 0;
 
         unit->name = name;
+
+        InitSemaphore(&unit->ctrlxfer_queue_lock);
+        InitSemaphore(&unit->intrxfer_queue_lock);
+        InitSemaphore(&unit->bulkxfer_queue_lock);
+        InitSemaphore(&unit->isocxfer_queue_lock);
+
+        InitSemaphore(&unit->roothub.intrxfer_queue_lock);
 
         return unit;
     }

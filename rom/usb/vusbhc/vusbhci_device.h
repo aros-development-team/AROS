@@ -12,6 +12,8 @@
 #include <aros/debug.h>
 #include <aros/macros.h>
 
+#include <exec/semaphores.h>
+
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 
@@ -33,6 +35,11 @@ struct VUSBHCIUnit {
     ULONG                        state;
     BOOL                         allocated;
 
+    struct SignalSemaphore       ctrlxfer_queue_lock;
+    struct SignalSemaphore       intrxfer_queue_lock;
+    struct SignalSemaphore       bulkxfer_queue_lock;
+    struct SignalSemaphore       isocxfer_queue_lock;
+
     struct List                  ctrlxfer_queue;
     struct List                  intrxfer_queue;
     struct List                  bulkxfer_queue;
@@ -40,6 +47,7 @@ struct VUSBHCIUnit {
 
     struct VUSBHCIRootHub {
 
+        struct SignalSemaphore   intrxfer_queue_lock;
         struct List              intrxfer_queue; /* Status Change endpoint */
 
         UWORD                    addr;
