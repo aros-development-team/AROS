@@ -60,8 +60,6 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                 while(VUSBHCIBase->handler_task_run) {
                     //mybug(-1,("[handler_task] Ping...\n"));
 
-                    call_libusb_event_handler();
-
                     ObtainSemaphore(&unit->intrxfer_queue_lock); {
                         if(unit->intrxfer_queue.lh_Head->ln_Succ) {
                             mybug(-1,("[handler_task] There's things to do in INTR transfer queue...\n"));
@@ -106,6 +104,8 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                         
                         }
                     } ReleaseSemaphore(&unit->isocxfer_queue_lock);
+
+                    call_libusb_event_handler();
 
                     /* Wait */
                     tr->tr_time.tv_secs = 0;
@@ -356,7 +356,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
     while((tag = LibNextTagItem(&taglist)) != NULL) {
         switch (tag->ti_Tag) {
             case UHA_Manufacturer:
-                *((CONST_STRPTR *) tag->ti_Data) = (CONST_STRPTR) "The AROS Development Team";
+                *((STRPTR *) tag->ti_Data) = "The AROS Development Team";
                 count++;
                 break;
             case UHA_Version:
@@ -368,15 +368,15 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_Copyright:
-                *((CONST_STRPTR *) tag->ti_Data) = (CONST_STRPTR) "©2015-2017 The AROS Development Team";
+                *((STRPTR *) tag->ti_Data) = "©2015-2017 The AROS Development Team";
                 count++;
                 break;
             case UHA_ProductName:
-                *((CONST_STRPTR *) tag->ti_Data) = (CONST_STRPTR) "VUSBHCI Host Controller";
+                *((STRPTR *) tag->ti_Data) = "VUSBHCI Host Controller";
                 count++;
                 break;
             case UHA_Description:
-                *((CONST_STRPTR *) tag->ti_Data) = (CONST_STRPTR) "Hosted Host Controller Interface (libusb)";
+                *((STRPTR *) tag->ti_Data) = "Hosted Host Controller Interface (libusb)";
                 count++;
                 break;
             case UHA_Capabilities:
