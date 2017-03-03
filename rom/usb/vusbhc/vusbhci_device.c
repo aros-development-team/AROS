@@ -406,7 +406,7 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->roothub.devdesc.bDeviceClass                  = HUB_CLASSCODE;
         unit->roothub.devdesc.bDeviceSubClass               = 0;
         unit->roothub.devdesc.bDeviceProtocol               = 0;
-        unit->roothub.devdesc.bMaxPacketSize0               = 8; // Valid values are 8, 9(SuperSpeed), 16, 32, 64
+        unit->roothub.devdesc.bMaxPacketSize0               = 64; // Valid values are 8, 9(SuperSpeed), 16, 32, 64
         unit->roothub.devdesc.idVendor                      = AROS_WORD2LE(0x0000);
         unit->roothub.devdesc.idProduct                     = AROS_WORD2LE(0x0000);
         unit->roothub.devdesc.bcdDevice                     = AROS_WORD2LE(0x0200);
@@ -422,8 +422,8 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->roothub.config.cfgdesc.wTotalLength           = AROS_WORD2LE(sizeof(struct RHConfig));
         unit->roothub.config.cfgdesc.bNumInterfaces         = 1;
         unit->roothub.config.cfgdesc.bConfigurationValue    = 1;
-        unit->roothub.config.cfgdesc.iConfiguration         = 0; //3;
-        unit->roothub.config.cfgdesc.bmAttributes           = (USCAF_ONE|USCAF_SELF_POWERED|USCAF_REMOTE_WAKEUP);
+        unit->roothub.config.cfgdesc.iConfiguration         = 0;
+        unit->roothub.config.cfgdesc.bmAttributes           = (USCAF_SELF_POWERED);
         unit->roothub.config.cfgdesc.bMaxPower              = 0;
 
         unit->roothub.config.ifdesc.bLength                 = sizeof(struct UsbStdIfDesc);
@@ -434,13 +434,13 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
         unit->roothub.config.ifdesc.bInterfaceClass         = HUB_CLASSCODE;
         unit->roothub.config.ifdesc.bInterfaceSubClass      = 0;
         unit->roothub.config.ifdesc.bInterfaceProtocol      = 0;
-        unit->roothub.config.ifdesc.iInterface              = 0; //4;
+        unit->roothub.config.ifdesc.iInterface              = 0;
 
         unit->roothub.config.epdesc.bLength                 = sizeof(struct UsbStdEPDesc);
         unit->roothub.config.epdesc.bDescriptorType         = UDT_ENDPOINT;
         unit->roothub.config.epdesc.bEndpointAddress        = (URTF_IN|1);
         unit->roothub.config.epdesc.bmAttributes            = USEAF_INTERRUPT;
-        unit->roothub.config.epdesc.wMaxPacketSize          = AROS_WORD2LE(8);
+        unit->roothub.config.epdesc.wMaxPacketSize          = AROS_WORD2LE(4);
         unit->roothub.config.epdesc.bInterval               = 12;
 
         /* This is our root hub hub descriptor */
