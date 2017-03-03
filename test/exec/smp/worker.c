@@ -30,14 +30,14 @@ typedef struct {
 
 struct WorkersWork
 {
-    int         workMax;
+    ULONG         workMax;
     complexno_t workTrajectories[];  
 };
 
-UQUAD calculateTrajectory(struct WorkersWork *workload, double r, double i)
+ULONG calculateTrajectory(struct WorkersWork *workload, double r, double i)
 {
     double realNo, imaginaryNo, realNo2, imaginaryNo2;
-    int trajectory;
+    ULONG trajectory;
 
     /* Calculate trajectory */
     realNo = 0;
@@ -49,12 +49,12 @@ UQUAD calculateTrajectory(struct WorkersWork *workload, double r, double i)
         realNo2 = realNo * realNo;
         imaginaryNo2 = imaginaryNo * imaginaryNo;
 
-        if (realNo2 + imaginaryNo2 > 4.0L)
+        if (realNo2 + imaginaryNo2 > 2.0)
             return trajectory;
 
         /* Next */
-        imaginaryNo = 2 * realNo * imaginaryNo + i;
         realNo = realNo2 - imaginaryNo2 + r;
+        imaginaryNo = 2 * realNo * imaginaryNo + i;
 
         /* Store */
         workload->workTrajectories[trajectory].r = realNo;
@@ -64,15 +64,16 @@ UQUAD calculateTrajectory(struct WorkersWork *workload, double r, double i)
     return 0;
 }
 
-void processWork(struct WorkersWork *workload, UBYTE *workBuffer, UWORD workWidth, UWORD workHeight, UWORD workStart, UWORD workEnd)
+void processWork(struct WorkersWork *workload, ULONG *workBuffer, UWORD workWidth, UWORD workHeight, UWORD workStart, UWORD workEnd)
 {
-    UQUAD trajectoryLength, pos;
-    double diff, x, y, y_base, diff_sr;
-    UWORD current;
-    int i;
 
-    int full_width = (int)workWidth;
-//    workMsg->smpwm_Height;
+    double xlo = -1.0349498063694267;
+    double ylo = -0.36302123503184713;
+    double xhi = -0.887179105732484;
+    double yhi = -0.21779830509554143;
+    ULONG trajectoryLength;
+    UWORD current;
+    UWORD x, y;
 
     DWORK(
         bug("[SMP-Test:Worker] %s: Buffer @ 0x%p\n", __func__, workBuffer);
@@ -80,33 +81,38 @@ void processWork(struct WorkersWork *workload, UBYTE *workBuffer, UWORD workWidt
         bug("[SMP-Test:Worker] %s: start : %d, end %d\n", __func__, workStart, workEnd);
     )
 
-    diff = 4.0L / (double)workWidth;
-    diff_sr = 4.0L / (double)workWidth;
-
-    y_base = 2.0L - (diff / 2);
-
     for (current = workStart; current < workEnd; current++)
     {
+        ULONG val;
+
         /* Locate the point on the complex plane */
-        x = ((double)(current % full_width)) * diff - 2.0L;
-        y = ((double)(current / full_width)) * diff - y_base;
+        x = (current % workWidth);
+        y = (current / workWidth);
 
         /* Calculate the points trajectory ... */
-        trajectoryLength = calculateTrajectory(workload, x, y);
+        trajectoryLength = calculateTrajectory(workload, (double)(xlo + (xhi - xlo) * x / workWidth), (double)(ylo + (yhi - ylo) * y / workHeight));
 
+#if (0)
         /* Update the display if it escapes */
         if (trajectoryLength > 0)
         {
+            UQUAD pos;
+            int i;
+
             for(i = 0; i < trajectoryLength; i++)
             {
-                pos = ((UQUAD)((workload->workTrajectories[i].i + y_base) / diff_sr)) * workWidth +
-                        ((UQUAD)((workload->workTrajectories[i].r + 2.0L) / diff_sr));
+                pos = (workload->workTrajectories[i].i  * workWidth) + workload->workTrajectories[i].r;
                 if (pos > 0 && pos < (workWidth * workHeight))
                 {
-                    __AROS_ATOMIC_INC_B(workBuffer[pos]);
+                    val = (trajectoryLength / (workload->workMax/ 255));
+                    workBuffer[pos] = workBuffer[pos] + ((val << 16) | (val << 8) | val);
                 }
             }
         }
+#else
+        val = (trajectoryLength / (workload->workMax/ 255));
+        workBuffer[current] = ((val << 16) | (val << 8) | val);
+#endif
     }
 }
 
@@ -147,7 +153,7 @@ void SMPTestWorker(struct ExecBase *SysBase)
             while (doWork)
             {
                 UWORD workWidth, workHeight, workStart, workEnd;
-                UBYTE *workBuffer;
+                ULONG *workBuffer;
                 IPTR workType;
 
                 /* we are ready for work .. */
