@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <aros/atomic.h>
 
@@ -108,7 +108,7 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
         {
             ULONG pos;
             int i;
-
+            KrnSpinLock(workload->lock, NULL, SPINLOCK_MODE_WRITE);
             for(i = 0; i < trajectoryLength; i++)
             {
                 IPTR px = (workload->workTrajectories[i].r + 2.0) / diff_sr;
@@ -121,15 +121,16 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
 
                 if (pos > 0 && pos < (workWidth * workHeight))
                 {
-                    KrnSpinLock(workload->lock, NULL, SPINLOCK_MODE_WRITE);
+
                     val = ((workBuffer[pos] >> 8) & 0xff);
                     if (val != 0xff)
                         val++;
 
                     workBuffer[pos] = 0x000000ff | (((val << 16) | (val << 8) | val ) << 8);
-                    KrnSpinUnLock(workload->lock);
+
                 }
             }
+            KrnSpinUnLock(workload->lock);
         }
 #else
         val = (255 * trajectoryLength) / workload->workMax;
