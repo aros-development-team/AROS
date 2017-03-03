@@ -5,6 +5,7 @@
 
 #define DEBUG 1
 #include <aros/debug.h>
+#include <aros/atomic.h>
 
 #include <proto/exec.h>
 #include <proto/kernel.h>
@@ -14,7 +15,9 @@
 
 #include "work.h"
 
-#define MAXITERATIONS   10000
+#define MAXITERATIONS   100000
+
+#define DWORK(x)
 
 /*
  * define a complex number with
@@ -61,21 +64,28 @@ UQUAD calculateTrajectory(struct WorkersWork *workload, double r, double i)
     return 0;
 }
 
-void processWork(struct WorkersWork *workload, struct SMPWorkMessage *workMsg)
+void processWork(struct WorkersWork *workload, UBYTE *workBuffer, UWORD workWidth, UWORD workHeight, UWORD workStart, UWORD workEnd)
 {
-    UQUAD trajectoryLength, pos, maxpos;
+    UQUAD trajectoryLength, pos;
     double diff, x, y, y_base, diff_sr;
-    int i, current;
+    UWORD current;
+    int i;
 
-    int width = 640, full_width = width;
-//    int height = 640;
+    int full_width = (int)workWidth;
+//    workMsg->smpwm_Height;
 
-    diff = 4.0L / (double)width;
-    diff_sr = 4.0L / (double)width;
+    DWORK(
+        bug("[SMP-Test:Worker] %s: Buffer @ 0x%p\n", __func__, workBuffer);
+        bug("[SMP-Test:Worker] %s:           %dx%d\n", __func__, workWidth, workHeight);
+        bug("[SMP-Test:Worker] %s: start : %d, end %d\n", __func__, workStart, workEnd);
+    )
+
+    diff = 4.0L / (double)workWidth;
+    diff_sr = 4.0L / (double)workWidth;
 
     y_base = 2.0L - (diff / 2);
 
-    for (current = 0; current < 1000; current++)
+    for (current = workStart; current < workEnd; current++)
     {
         /* Locate the point on the complex plane */
         x = ((double)(current % full_width)) * diff - 2.0L;
@@ -89,11 +99,11 @@ void processWork(struct WorkersWork *workload, struct SMPWorkMessage *workMsg)
         {
             for(i = 0; i < trajectoryLength; i++)
             {
-                pos = ((UQUAD)((workload->workTrajectories[i].i + y_base) / diff_sr)) * width +
+                pos = ((UQUAD)((workload->workTrajectories[i].i + y_base) / diff_sr)) * workWidth +
                         ((UQUAD)((workload->workTrajectories[i].r + 2.0L) / diff_sr));
-                if (pos > 0 && pos < maxpos)
+                if (pos > 0 && pos < (workWidth * workHeight))
                 {
-                    // TODO: store result.
+                    __AROS_ATOMIC_INC_B(workBuffer[pos]);
                 }
             }
         }
@@ -109,26 +119,26 @@ void SMPTestWorker(struct ExecBase *SysBase)
     D(
         int cpunum = KrnGetCPUNumber();
 
-        bug("[SMP-Test:Worker.%03d] %s task started\n", cpunum, thisTask->tc_Node.ln_Name);
+        bug("[SMP-Test:Worker.%03d] %s: %s task started\n", cpunum, __func__, thisTask->tc_Node.ln_Name);
     )
     struct SMPWorker *worker = thisTask->tc_UserData;
     struct SMPWorkMessage *workMsg;
     struct WorkersWork    *workPrivate;
     BOOL doWork = TRUE;
 
-    D(bug("[SMP-Test:Worker.%03d] worker data @ 0x%p\n", cpunum, worker);)
+    D(bug("[SMP-Test:Worker.%03d] %s: worker data @ 0x%p\n", cpunum, __func__, worker);)
     
     if ((worker) && (worker->smpw_MasterPort))
     {
         worker->smpw_Node.ln_Type = 0;
 
-        D(bug("[SMP-Test:Worker.%03d] work Master MsgPort @ 0x%p\n", cpunum, worker->smpw_MasterPort);)
+        D(bug("[SMP-Test:Worker.%03d] %s: work Master MsgPort @ 0x%p\n", cpunum, __func__, worker->smpw_MasterPort);)
         worker->smpw_MsgPort = CreateMsgPort();
-        D(bug("[SMP-Test:Worker.%03d] work MsgPort @ 0x%p\n", cpunum, worker->smpw_MsgPort);)
+        D(bug("[SMP-Test:Worker.%03d] %s: work MsgPort @ 0x%p\n", cpunum, __func__, worker->smpw_MsgPort);)
 
         workPrivate = AllocMem(sizeof(struct WorkersWork) + (MAXITERATIONS * sizeof(complexno_t)), MEMF_CLEAR|MEMF_ANY);
         
-        D(bug("[SMP-Test:Worker.%03d] worker private data @ 0x%p\n", cpunum, workPrivate);)
+        D(bug("[SMP-Test:Worker.%03d] %s: worker private data @ 0x%p\n", cpunum, __func__, workPrivate);)
 
         if (workPrivate)
         {
@@ -136,6 +146,8 @@ void SMPTestWorker(struct ExecBase *SysBase)
 
             while (doWork)
             {
+                UWORD workWidth, workHeight, workStart, workEnd;
+                UBYTE *workBuffer;
                 IPTR workType;
 
                 /* we are ready for work .. */
@@ -145,16 +157,22 @@ void SMPTestWorker(struct ExecBase *SysBase)
 
                 while((workMsg = (struct SMPWorkMessage *) GetMsg(worker->smpw_MsgPort)))
                 {
-                    D(bug("[SMP-Test:Worker.%03d] work received (Msg @ 0x%p)\n", cpunum, workMsg);)
+                    D(bug("[SMP-Test:Worker.%03d] %s: work received (Msg @ 0x%p)\n", cpunum, __func__, workMsg);)
 
                     /* cache the requested work and free the message ... */
                     workType = workMsg->smpwm_Type;
+                    workBuffer = workMsg->smpwm_Buffer;
+                    workWidth = workMsg->smpwm_Width;
+                    workHeight = workMsg->smpwm_Height;
+                    workStart = workMsg->smpwm_Start;
+                    workEnd = workMsg->smpwm_End;
+
                     FreeMem(workMsg, sizeof(struct SMPWorkMessage));
                     
                     /* now process it .. */
                     if (workType == SPMWORKTYPE_FINISHED)
                     {
-                        D(bug("[SMP-Test:Worker.%03d] Finished! exiting ...\n", cpunum);)
+                        D(bug("[SMP-Test:Worker.%03d] %s: Finished! exiting ...\n", cpunum, __func__);)
 
                         doWork = FALSE;
                         break;
@@ -164,9 +182,9 @@ void SMPTestWorker(struct ExecBase *SysBase)
                         /*
                          * Lets do some work!
                          */
-                        D(bug("[SMP-Test:Worker.%03d] Processing requested work!\n", cpunum);)
+                        D(bug("[SMP-Test:Worker.%03d] %s: Processing requested work!\n", cpunum, __func__);)
 
-                        processWork(workPrivate, workMsg);
+                        processWork(workPrivate, workBuffer, workWidth, workHeight, workStart, workEnd);
 
                         /* let our "parent" know we are done .. */
                         Signal(worker->smpw_MasterPort->mp_SigTask, SIGBREAKF_CTRL_D);

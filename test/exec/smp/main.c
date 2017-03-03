@@ -11,6 +11,7 @@
 #include <proto/kernel.h>
 
 #include <proto/graphics.h>
+#include <proto/cybergraphics.h>
 #include <proto/intuition.h>
 
 #include <exec/tasks.h>
@@ -18,10 +19,13 @@
 #include <exec/lists.h>
 #include <exec/rawfmt.h>
 #include <resources/processor.h>
+#include <cybergraphx/cybergraphics.h>
 
 #include "work.h"
 
-CONST_STRPTR version = "$VER: SMP-Test 1.0 (20.02.2017) ©2017 The AROS Development Team";
+CONST_STRPTR version = "$VER: SMP-Test 1.0 (03.03.2017) ©2017 The AROS Development Team";
+
+//#define SMPTEST_DIEWHENFINISHED
 
 APTR KernelBase;
 
@@ -58,7 +62,6 @@ int main()
         struct SMPWorkMessage *workMsg;
         IPTR rawArgs[2];
         char buffer[100];
-        int count = 0;
         BOOL complete = FALSE;
 
         /* Create a port that workers/masters will signal us using .. */
@@ -69,6 +72,8 @@ int main()
 
         D(bug("[SMP-Test] %s: work Master MsgPort @ 0x%p\n", __func__, workMaster.smpm_MasterPort);)
         D(bug("[SMP-Test] %s: SigTask = 0x%p\n", __func__, workMaster.smpm_MasterPort->mp_SigTask);)
+
+        workMaster.smpm_WorkerCount = 0;
 
         for (core = 0; core < coreCount; core++)
         {
@@ -107,7 +112,7 @@ int main()
 
                         if (coreWorker->smpw_Task)
                         {
-                            count++;
+                            workMaster.smpm_WorkerCount++;
                             Wait(SIGBREAKF_CTRL_C);
                             AddTail(&workMaster.smpm_Workers, &coreWorker->smpw_Node);
                             AddHead(&coreWorker->smpw_Task->tc_MemEntry, &coreML->ml_Node);
@@ -148,7 +153,7 @@ int main()
          */
         D(bug("[SMP-Test] %s: Sending out work to do ...\n", __func__);)
 
-        rawArgs[0] = count;
+        rawArgs[0] = workMaster.smpm_WorkerCount;
         rawArgs[1] = coreCount;
         RawDoFmt("SMP Test Output (%id workers on %id cores)", (RAWARG)rawArgs, RAWFMTFUNC_STRING, buffer);
 
@@ -171,6 +176,7 @@ int main()
                                      WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW,
                                      TAG_DONE)) != NULL)
         {
+            struct RastPort *outBMRastPort;
             BOOL working = TRUE;
             UWORD width, height;
 
@@ -179,19 +185,27 @@ int main()
             if (pubScreen)
                 UnlockPubScreen(0, pubScreen);
 
-            width = (displayWin->Width - displayWin->BorderLeft - displayWin->BorderRight);
-            height = (displayWin->Height - displayWin->BorderTop - displayWin->BorderBottom);
+            workMaster.smpm_Width  = (displayWin->Width - displayWin->BorderLeft - displayWin->BorderRight);
+            workMaster.smpm_Height = (displayWin->Height - displayWin->BorderTop - displayWin->BorderBottom);
 
             outputBMap = AllocBitMap(
-                                        width,
-                                        height,
+                                        workMaster.smpm_Width,
+                                        workMaster.smpm_Height,
                                         GetBitMapAttr(displayWin->WScreen->RastPort.BitMap, BMA_DEPTH),
                                         BMF_DISPLAYABLE, displayWin->WScreen->RastPort.BitMap);
 
+            workMaster.smpm_WorkBuffer = AllocMem(workMaster.smpm_Width * workMaster.smpm_Height * 8, MEMF_ANY|MEMF_CLEAR);
+
             D(
                 bug("[SMP-Test] %s: Target BitMap @ 0x%p\n", __func__, outputBMap);
-                bug("[SMP-Test] %s:     %dx%dx%d\n", __func__, width, height, GetBitMapAttr(outputBMap, BMA_DEPTH));
+                bug("[SMP-Test] %s:     %dx%dx%d\n", __func__, workMaster.smpm_Width, workMaster.smpm_Height, GetBitMapAttr(outputBMap, BMA_DEPTH));
+                bug("[SMP-Test] %s: Buffer @ 0x%p\n", __func__, workMaster.smpm_WorkBuffer);
             )
+
+            outBMRastPort = CreateRastPort();
+            outBMRastPort->BitMap = outputBMap;
+
+            D(bug("[SMP-Test] %s: Target BitMap RastPort @ 0x%p\n", __func__, outBMRastPort);)
 
             workMaster.smpm_Master = NewCreateTask(TASKTAG_NAME   , "SMP-Test Master",
                                                         TASKTAG_AFFINITY, TASKAFFINITY_ANY,
@@ -222,6 +236,14 @@ int main()
                             complete = FALSE;
                     }
 
+                    D(bug("[SMP-Test] %s: Updating work output ...\n", __func__);)
+                    WritePixelArray(workMaster.smpm_WorkBuffer,
+                                            0, 0, workMaster.smpm_Width,
+                                            outBMRastPort,
+                                            0, 0,
+                                            workMaster.smpm_Width, workMaster.smpm_Height,
+                                            RECTFMT_GREY8);
+
                     if (complete)
                     {
                         SetWindowPointer( displayWin, WA_BusyPointer, FALSE, TAG_DONE );
@@ -229,7 +251,7 @@ int main()
                         rawArgs[0] = coreCount;
                         RawDoFmt("SMP Test Output (0 workers on %id cores) - Finished", (RAWARG)rawArgs, RAWFMTFUNC_STRING, buffer);
                         SetWindowTitles( displayWin, buffer, NULL);
-#if (0)
+#if defined(SMPTEST_DIEWHENFINISHED)
                         working = FALSE;
                         break;
 #endif
@@ -247,6 +269,7 @@ int main()
                                 break;
 
                             case IDCMP_REFRESHWINDOW:
+                                D(bug("[SMP-Test] %s: Displaying output BitMap (REFRESHWINDOW)\n", __func__);)
                                 BltBitMapRastPort (outputBMap, 0, 0,
                                     displayWin->RPort, displayWin->BorderLeft, displayWin->BorderTop,
                                     width, height, 0xC0); 
@@ -255,7 +278,7 @@ int main()
                         ReplyMsg((struct Message *)msg);
                     }
                 }
-
+                D(bug("[SMP-Test] %s: Displaying output BitMap...\n", __func__);)
                 BltBitMapRastPort (outputBMap, 0, 0,
                     displayWin->RPort, displayWin->BorderLeft, displayWin->BorderTop,
                     width, height, 0xC0); 
@@ -272,7 +295,10 @@ int main()
                     PutMsg(coreWorker->smpw_MsgPort, (struct Message *)workMsg);
                 }
             }
+            FreeMem(workMaster.smpm_WorkBuffer, workMaster.smpm_Width * workMaster.smpm_Height * 8);
             CloseWindow(displayWin);
+            outBMRastPort->BitMap = NULL;
+            FreeRastPort(outBMRastPort);
             FreeBitMap(outputBMap);
         }
         if (pubScreen) UnlockPubScreen(0, pubScreen);

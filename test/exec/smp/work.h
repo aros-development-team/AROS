@@ -8,24 +8,33 @@
 
 struct SMPMaster
 {
-    struct List smpm_Workers;
-    struct Task *smpm_Master;
-    struct MsgPort *smpm_MasterPort;
+    IPTR                        smpm_WorkerCount;
+    struct List                 smpm_Workers;
+    struct Task                 *smpm_Master;
+    struct MsgPort              *smpm_MasterPort;
+    UBYTE                       *smpm_WorkBuffer;
+    UWORD                       smpm_Width;
+    UWORD                       smpm_Height;    
 };
 
 struct SMPWorker
 {
-    struct Node smpw_Node;
-    struct Task *smpw_Task;
-    struct MsgPort *smpw_MasterPort;
-    struct MsgPort *smpw_MsgPort;
-    struct Task *smpw_SyncTask;
+    struct Node                 smpw_Node;
+    struct Task                 *smpw_Task;
+    struct MsgPort              *smpw_MasterPort;
+    struct MsgPort              *smpw_MsgPort;
+    struct Task                 *smpw_SyncTask;
 };
 
 struct SMPWorkMessage
 {
-    struct Message smpwm_Msg;
-    IPTR           smpwm_Type;
+    struct Message              smpwm_Msg;
+    IPTR                        smpwm_Type;
+    UBYTE                       *smpwm_Buffer;
+    UWORD                       smpwm_Width;
+    UWORD                       smpwm_Height;
+    UWORD                       smpwm_Start;
+    UWORD                       smpwm_End;
 };
 
 #define SPMWORKTYPE_FINISHED    (1 << 0)
