@@ -3426,7 +3426,7 @@ IPTR Action_HW_Info(struct IClass *cl, Object *obj, Msg msg)
                     HA_Copyright, &copyright,
                     TAG_END);
 
-        textbuf1 = psdCopyStrFmt("%s\n%ld\n%V%ld.%ld\n%s\n%s\n%s\n%s",
+        textbuf1 = psdCopyStrFmt("%s\n%ld\nV%ld.%ld\n%s\n%s\n%s\n%s",
                         devname, unitnr, version, revision, prodname,
                         manufacturer, description, copyright);
         hlnode->infowindow = WindowObject,
