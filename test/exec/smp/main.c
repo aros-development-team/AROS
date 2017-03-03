@@ -10,6 +10,7 @@
 #include <proto/processor.h>
 #include <proto/kernel.h>
 
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 
 #include <exec/tasks.h>
@@ -38,6 +39,7 @@ int main()
     ULONG signals;
     struct Screen *pubScreen;
     struct Window *displayWin;
+    struct BitMap *outputBMap = NULL;
 
     ProcessorBase = OpenResource(PROCESSORNAME);
     if (!ProcessorBase)
@@ -148,7 +150,7 @@ int main()
 
         rawArgs[0] = count;
         rawArgs[1] = coreCount;
-        RawDoFmt("SMP Test Output (%d workers on %d cores)", (RAWARG)rawArgs, RAWFMTFUNC_STRING, buffer);
+        RawDoFmt("SMP Test Output (%id workers on %id cores)", (RAWARG)rawArgs, RAWFMTFUNC_STRING, buffer);
 
         complete = FALSE;
         pubScreen = LockPubScreen(0);
@@ -170,9 +172,26 @@ int main()
                                      TAG_DONE)) != NULL)
         {
             BOOL working = TRUE;
+            UWORD width, height;
+
+            SetWindowPointer( displayWin, WA_BusyPointer, TRUE, TAG_DONE );
 
             if (pubScreen)
                 UnlockPubScreen(0, pubScreen);
+
+            width = (displayWin->Width - displayWin->BorderLeft - displayWin->BorderRight);
+            height = (displayWin->Height - displayWin->BorderTop - displayWin->BorderBottom);
+
+            outputBMap = AllocBitMap(
+                                        width,
+                                        height,
+                                        GetBitMapAttr(displayWin->WScreen->RastPort.BitMap, BMA_DEPTH),
+                                        BMF_DISPLAYABLE, displayWin->WScreen->RastPort.BitMap);
+
+            D(
+                bug("[SMP-Test] %s: Target BitMap @ 0x%p\n", __func__, outputBMap);
+                bug("[SMP-Test] %s:     %dx%dx%d\n", __func__, width, height, GetBitMapAttr(outputBMap, BMA_DEPTH));
+            )
 
             workMaster.smpm_Master = NewCreateTask(TASKTAG_NAME   , "SMP-Test Master",
                                                         TASKTAG_AFFINITY, TASKAFFINITY_ANY,
@@ -186,7 +205,7 @@ int main()
 
             /* Wait for the workers to finish processing the data ... */
             
-            while ((working) && ((signals = Wait(SIGBREAKF_CTRL_D | displayWin->UserPort->mp_SigBit)) != 0))
+            while ((working) && ((signals = Wait(SIGBREAKF_CTRL_D | (1 << displayWin->UserPort->mp_SigBit))) != 0))
             {
                 if ((signals & SIGBREAKF_CTRL_D) && (!complete))
                 {
@@ -205,11 +224,18 @@ int main()
 
                     if (complete)
                     {
+                        SetWindowPointer( displayWin, WA_BusyPointer, FALSE, TAG_DONE );
+
+                        rawArgs[0] = coreCount;
+                        RawDoFmt("SMP Test Output (0 workers on %id cores) - Finished", (RAWARG)rawArgs, RAWFMTFUNC_STRING, buffer);
+                        SetWindowTitles( displayWin, buffer, NULL);
+#if (0)
                         working = FALSE;
                         break;
+#endif
                     }
                 }
-                else if (signals & displayWin->UserPort->mp_SigBit)
+                else if (signals & (1 << displayWin->UserPort->mp_SigBit))
                 {
                     struct IntuiMessage *msg;
                     while ((msg = (struct IntuiMessage *)GetMsg(displayWin->UserPort)))
@@ -221,17 +247,18 @@ int main()
                                 break;
 
                             case IDCMP_REFRESHWINDOW:
-#if (0)
-                                BeginRefresh(win);
-                                EndRefresh(win,TRUE);
-#endif
+                                BltBitMapRastPort (outputBMap, 0, 0,
+                                    displayWin->RPort, displayWin->BorderLeft, displayWin->BorderTop,
+                                    width, height, 0xC0); 
                                 break;
                         }
                         ReplyMsg((struct Message *)msg);
                     }
                 }
 
-                /* update the output... */
+                BltBitMapRastPort (outputBMap, 0, 0,
+                    displayWin->RPort, displayWin->BorderLeft, displayWin->BorderTop,
+                    width, height, 0xC0); 
             }
 
             D(bug("[SMP-Test] %s: Letting workers know we are finished ...\n", __func__);)
@@ -246,6 +273,7 @@ int main()
                 }
             }
             CloseWindow(displayWin);
+            FreeBitMap(outputBMap);
         }
         if (pubScreen) UnlockPubScreen(0, pubScreen);
     }
