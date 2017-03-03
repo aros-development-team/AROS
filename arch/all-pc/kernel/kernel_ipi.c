@@ -33,6 +33,8 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
 
     D(bug("[Kernel:IPI] Sending IPI %02d form CPU.%03u to target mask @ 0x%p\n", ipi_number, cpunum, cpu_mask));
     
+    asm volatile("sfence");
+
     if ((cmd & 0xff) <= APIC_IRQ_IPI_END)
     {
         // special case - send IPI to all
