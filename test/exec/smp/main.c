@@ -30,15 +30,16 @@ CONST_STRPTR version = "$VER: SMP-Test 1.0 (03.03.2017) ©2017 The AROS Developme
 
 APTR KernelBase;
 
-#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N,BUDDHA/S"
+#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N,OVERSAMPLE/N,BUDDHA/S"
 #define ARG_MAXCPU 0
 #define ARG_MAXITER 1
-#define ARG_BUDDHA 2
+#define ARG_OVERSAMPLE 2
+#define ARG_BUDDHA 3
 
 int main()
 {
     struct SMPMaster workMaster;
-    IPTR args[3] = { 0, 0, 0 };
+    IPTR args[4] = { 0, 0, 0, 0 };
     int max_cpus = 0;
 
     APTR ProcessorBase;
@@ -72,6 +73,7 @@ int main()
         char buffer[100];
         BOOL complete = FALSE, buddha = FALSE;
         ULONG maxWork = 0;
+        ULONG oversample = 0;
         struct RDArgs *rda;
 
         max_cpus = coreCount;
@@ -85,7 +87,23 @@ int main()
 
             ptr = (LONG *)args[ARG_MAXITER];
             if (ptr)
+            {
                 maxWork = *ptr;
+                if (maxWork < 2)
+                    maxWork = 2;
+                else if (maxWork > 10000000)
+                    maxWork = 10000000;
+            }
+
+            ptr = (LONG *)args[ARG_OVERSAMPLE];
+            if (ptr)
+            {
+                oversample = *ptr;
+                if (oversample < 1)
+                    oversample = 1;
+                else if (oversample > 10)
+                    oversample = 10;
+            }
 
             if (args[ARG_BUDDHA])
                 buddha = TRUE;
@@ -118,6 +136,8 @@ int main()
         }
         if (maxWork)
             workMaster.smpm_MaxWork = maxWork;
+        if (oversample)
+            workMaster.smpm_Oversample = oversample;
 
         KrnSpinInit(&workMaster.smpm_Lock);
 
@@ -153,7 +173,7 @@ int main()
                         coreWorker->smpw_Oversample = workMaster.smpm_Oversample;
                         coreWorker->smpw_Task = NewCreateTask(TASKTAG_NAME   , coreML->ml_ME[1].me_Addr,
                                                     TASKTAG_AFFINITY   , coreAffinity,
-                                                    TASKTAG_PRI        , 0,
+                                                    TASKTAG_PRI        , 5,
                                                     TASKTAG_PC         , SMPTestWorker,
                                                     TASKTAG_ARG1       , SysBase,
                                                     TASKTAG_USERDATA   , coreWorker,
