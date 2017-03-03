@@ -377,6 +377,9 @@ int main()
     if (!CreateApplication(&smdata))
         return 1;
 
+    /* Increase our priority! */
+    SetTaskPri(FindTask(NULL), 19);
+
     UpdateProcessorStaticInformation(&smdata);
     UpdateProcessorInformation(&smdata);
     UpdateMemoryStaticInformation(&smdata);
