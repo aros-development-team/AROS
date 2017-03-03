@@ -160,6 +160,12 @@ void core_Switch(void)
         bug("[Kernel:%03u] %s: running Task @ 0x%p\n", cpuNo, __func__, task);
         bug("[Kernel:%03u] %s: Switching away from '%s', state %08x\n", cpuNo, __func__, task->tc_Node.ln_Name, task->tc_State);
     )
+    if ((!task) || (task->tc_State == TS_INVALID))
+    {
+        bug("[Kernel:%03u] %s: called on invalid task @ 0x%p\n", cpuNo, __func__, task);
+        return;
+    }
+
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
