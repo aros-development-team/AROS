@@ -44,6 +44,8 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
     struct timerequest *tr = NULL;
     struct MsgPort *mp = NULL;
 
+    struct IOUsbHWReq *ioreq;
+
     mp = CreateMsgPort();
     if (mp) {
         tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
@@ -61,51 +63,32 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                     //mybug(-1,("[handler_task] Ping...\n"));
 
                     ObtainSemaphore(&unit->intrxfer_queue_lock); {
-                        if(unit->intrxfer_queue.lh_Head->ln_Succ) {
-                            mybug(-1,("[handler_task] There's things to do in INTR transfer queue...\n"));
-
-                            struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->intrxfer_queue.lh_Head;
-
+                        ForeachNode(&unit->intrxfer_queue, ioreq) {
                             /* Now the iorequest lives only on our pointer */
                             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-
-                            /* FIXME: Check the result... */
-                            do_libusb_intr_transfer(ioreq);
-                        
+                            do_libusb_bulk_transfer(ioreq);
                         }
                     } ReleaseSemaphore(&unit->intrxfer_queue_lock);
 
                     ObtainSemaphore(&unit->bulkxfer_queue_lock); {
-                        if(unit->bulkxfer_queue.lh_Head->ln_Succ) {
-                            mybug(0,("[handler_task] There's things to do in BULK transfer queue...\n"));
-
-                            struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->bulkxfer_queue.lh_Head;
-
+                        ForeachNode(&unit->bulkxfer_queue, ioreq) {
                             /* Now the iorequest lives only on our pointer */
                             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-
-                            /* FIXME: Check the result... */
                             do_libusb_bulk_transfer(ioreq);
-                        
                         }
                     } ReleaseSemaphore(&unit->bulkxfer_queue_lock);
 
                     ObtainSemaphore(&unit->isocxfer_queue_lock); {
-                        if(unit->isocxfer_queue.lh_Head->ln_Succ) {
-                            mybug(-1,("[handler_task] There's things to do in ISOC transfer queue...\n"));
-
-                            struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) unit->isocxfer_queue.lh_Head;
-
+                        ForeachNode(&unit->isocxfer_queue, ioreq) {
                             /* Now the iorequest lives only on our pointer */
                             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-
-                            /* FIXME: Check the result... */
-                            do_libusb_isoc_transfer(ioreq);
-                        
+                            do_libusb_bulk_transfer(ioreq);
                         }
                     } ReleaseSemaphore(&unit->isocxfer_queue_lock);
 
+                    //Forbid();
                     call_libusb_event_handler();
+                    //Permit();
 
                     /* Wait */
                     tr->tr_time.tv_secs = 0;
