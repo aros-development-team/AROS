@@ -125,7 +125,6 @@ void processWork(struct WorkersWork *workload, ULONG *workBuffer, ULONG workWidt
                                 val++;
 
                         workBuffer[pos] = 0x000000ff | (((val << 16) | (val << 8) | val ) << 8);
-                        workBuffer[pos] &= 0xfff0f0ff;
 
                         }
                         }
