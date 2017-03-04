@@ -16,6 +16,7 @@
 #include "exec_util.h"
 #if defined(__AROSEXEC_SMP__)
 #include "etask.h"
+#include "exec_locks.h"
 #endif
 
 /*****************************************************************************
@@ -123,21 +124,21 @@ LONG AllocTaskSignal(struct Task *thisTask, LONG signalNum, struct ExecBase *Sys
     thisTask->tc_SigExcept &= ~mask1;
     thisTask->tc_SigWait   &= ~mask1;
 
+    Disable();
 #if defined(__AROSEXEC_SMP__)
     if (thisTask->tc_UnionETask.tc_ETask)
     {
-        EXECTASK_SPINLOCK_LOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
+        EXEC_LOCK_WRITE(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
     }
     else 
 #endif
-    Disable();
 
     thisTask->tc_SigRecvd  &= ~mask1;
 
 #if defined(__AROSEXEC_SMP__)
     if (thisTask->tc_UnionETask.tc_ETask)
     {
-        EXECTASK_SPINLOCK_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+        EXEC_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
     }
     else
 #endif
