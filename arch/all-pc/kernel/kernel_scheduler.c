@@ -333,7 +333,11 @@ struct Task *core_Dispatch(void)
         }
         else
         {
+#if defined(AROS_NO_ATOMIC_OPERATIONS)
             SysBase->DispCount++;
+#else
+            AROS_ATOMIC_INC(SysBase->DispCount);
+#endif
             DSCHED(bug("[Kernel:%03u] Launching '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
         }
     }
@@ -346,7 +350,11 @@ struct Task *core_Dispatch(void)
          * Idle counter is incremented every time when we enter here,
          * not only once. This is correct.
          */
+#if defined(AROS_NO_ATOMIC_OPERATIONS)
         SysBase->IdleCount++;
+#else
+        AROS_ATOMIC_INC(SysBase->IdleCount);
+#endif
         FLAG_SCHEDSWITCH_SET;
     }
 
