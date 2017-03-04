@@ -313,12 +313,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
          * if we are in user mode and not in forbid state,
          * we run the task scheduler.
          */
-        if (
-                (SysBase) && (INTR_USERMODESTACK)
-#if defined(IRQNOSCHED_FORBID)
-                && (TDNESTCOUNT_GET < 0)
-#endif
-            )
+        if ((SysBase) && (INTR_USERMODESTACK))
 	{
 	    /* Disable interrupts for a while */
 	    __asm__ __volatile__("cli; cld;");
