@@ -39,8 +39,12 @@ void ServiceTask(struct ExecBase *SysBase)
 
 	    switch (task->tc_State)
 	    {
-            case TS_INVALID:
             case TS_REMOVED:
+                DREMTASK("ServiceTask: Requeueing request for task 0x%p <%s>", task, task->tc_Node.ln_Name);
+                InternalPutMsg(PrivExecBase(SysBase)->ServicePort,
+                    (struct Message *)task, SysBase);
+                break;
+            case TS_INVALID:
                 DREMTASK("ServiceTask: Removal request for task 0x%p <%s>", task, task->tc_Node.ln_Name);
 
                 // TODO: Make sure the task has terminated..
