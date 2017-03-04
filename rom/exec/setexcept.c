@@ -15,6 +15,7 @@
 #include "exec_intern.h"
 #if defined(__AROSEXEC_SMP__)
 #include "etask.h"
+#include "exec_locks.h"
 #endif
 
 /*****************************************************************************
@@ -62,10 +63,10 @@
     ULONG old;
 
     /* Protect mask of sent signals and task lists */
-#if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock, SPINLOCK_MODE_WRITE);
-#endif
     Disable();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_LOCK_WRITE(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+#endif
 
     /* Get returncode */
     old = thisTask->tc_SigExcept;
@@ -83,7 +84,7 @@
         Reschedule();
     }
 #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    EXEC_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
 #endif
     Enable();
 

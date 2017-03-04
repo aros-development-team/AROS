@@ -16,6 +16,7 @@
 #include "exec_intern.h"
 #if defined(__AROSEXEC_SMP__)
 #include "etask.h"
+#include "exec_locks.h"
 #endif
 
 /*****************************************************************************
@@ -85,7 +86,10 @@
 #endif
     Disable();
 #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_LOCK(task_listlock, (task->tc_State == TS_READY) ? SPINLOCK_MODE_WRITE : SPINLOCK_MODE_READ);
+    if (task->tc_State == TS_READY) 
+        EXEC_LOCK_WRITE(task_listlock);
+    else
+        EXEC_LOCK_READ(task_listlock);
 #endif
 
     /* Get returncode */
@@ -105,7 +109,8 @@
         }
 
 #if defined(__AROSEXEC_SMP__)
-        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
+        EXEC_UNLOCK(task_listlock);
+
         task_listlock = NULL;
         if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum) {
 #endif
@@ -128,7 +133,7 @@
 #if defined(__AROSEXEC_SMP__)
     if (task_listlock)
     {
-        EXECTASK_SPINLOCK_UNLOCK(task_listlock);
+        EXEC_UNLOCK(task_listlock);
     }
 #endif
     Enable();

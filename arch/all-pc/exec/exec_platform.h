@@ -63,53 +63,6 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
 #define EXEC_SPINLOCK_INIT(a) Kernel_49_KrnSpinInit((a), NULL)
 #define EXEC_SPINLOCK_LOCK(a,b,c) Kernel_52_KrnSpinLock((a), (b), (c), NULL)
 #define EXEC_SPINLOCK_UNLOCK(a) Kernel_53_KrnSpinUnLock((a), NULL)
-#define EXEC_SPINLOCK_LOCKFORBID(a,b) \
-    ({ \
-        spinlock_t *__ret = a; \
-        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
-            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  &Exec_TaskSpinLockForbidHook,  NULL,  b); \
-        else Forbid(); \
-        __ret;  \
-   })
-
-#define EXECTASK_SPINLOCK_TRYLOCK(a,b) \
-    ({ \
-        spinlock_t *__ret = a; \
-        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
-            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  NULL,  NULL,  b); \
-        __ret;  \
-   })
-#define EXECTASK_SPINLOCK_LOCK(a,b) \
-    ({ \
-        spinlock_t *__ret = a; \
-        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
-            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  NULL,  &Exec_TaskSpinLockFailHook,  b); \
-        __ret;  \
-   })
-#define EXECTASK_SPINLOCK_LOCKFORBID(a,b) \
-    ({ \
-        spinlock_t *__ret = a; \
-        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
-            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  &Exec_TaskSpinLockForbidHook,  &Exec_TaskSpinLockFailHook,  b); \
-        else Forbid(); \
-        __ret;  \
-   })
-#define EXECTASK_SPINLOCK_LOCKDISABLE(a,b) \
-    ({ \
-        spinlock_t *__ret = a; \
-        if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
-            __ret = PrivExecBase(SysBase)->PlatformData.SpinLockCall(a,  &Exec_TaskSpinLockDisableHook,  &Exec_TaskSpinLockFailHook,  b); \
-        else Disable(); \
-        __ret;  \
-   })
-#define EXECTASK_SPINLOCK_UNLOCK(a) \
-    do { \
-            if ((SysBase) && (PrivExecBase(SysBase)->PlatformData.SpinLockCall)) \
-            { \
-                EXEC_SPINLOCK_UNLOCK((a)); \
-                Exec_TaskSpinUnlock((a)); \
-            } \
-        } while(0)
 
 #if defined(AROS_NO_ATOMIC_OPERATIONS)
 #define IDNESTCOUNT_INC \

@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "exec_locks.h"
 
 /*****************************************************************************
 
@@ -54,7 +55,7 @@
     AROS_LIBFUNC_INIT
 
 #if defined(__AROSEXEC_SMP__)
-    spinlock_t *listLock;
+    spinlock_t *listlock;
 #endif
     struct Task *ret, *thisTask = GET_THIS_TASK;
 
@@ -64,7 +65,8 @@
 
     /* Always protect task lists */
 #if defined(__AROSEXEC_SMP__)
-    listLock = EXECTASK_SPINLOCK_LOCKDISABLE(&PrivExecBase(SysBase)->TaskReadySpinLock, SPINLOCK_MODE_READ);
+    EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
 #else
     Disable();
 #endif
@@ -74,9 +76,9 @@
     if (ret == NULL)
     {
 #if defined(__AROSEXEC_SMP__)
-        EXECTASK_SPINLOCK_UNLOCK(listLock);
-        Enable();
-        listLock = EXECTASK_SPINLOCK_LOCKDISABLE(&PrivExecBase(SysBase)->TaskWaitSpinLock, SPINLOCK_MODE_READ);
+        EXEC_UNLOCK_AND_ENABLE(listlock);
+        EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+        listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
 #endif
 	/* Then into the waiting list. */
 	ret = (struct Task *)FindName(&SysBase->TaskWait, name);
@@ -86,15 +88,15 @@
 		Finally test the running task(s). This is mainly of importance on smp systems.
 	    */
 #if defined(__AROSEXEC_SMP__)
-            EXECTASK_SPINLOCK_UNLOCK(listLock);
-            Enable();
-            listLock = EXECTASK_SPINLOCK_LOCKDISABLE(&PrivExecBase(SysBase)->TaskRunningSpinLock, SPINLOCK_MODE_READ);
+            EXEC_UNLOCK_AND_ENABLE(listlock);
+            EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+            listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
             ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskRunning, name);
             if (ret == NULL)
             {
-                EXECTASK_SPINLOCK_UNLOCK(listLock);
-                Enable();
-                listLock = EXECTASK_SPINLOCK_LOCKDISABLE(&PrivExecBase(SysBase)->TaskSpinningLock, SPINLOCK_MODE_READ);
+                EXEC_UNLOCK_AND_ENABLE(listlock);
+                EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskSpinningLock);
+                listlock = &PrivExecBase(SysBase)->TaskSpinningLock;
                 ret = (struct Task *)FindName(&PrivExecBase(SysBase)->TaskSpinning, name);
             }
 #else
@@ -116,9 +118,10 @@
     }
 
 #if defined(__AROSEXEC_SMP__)
-    EXECTASK_SPINLOCK_UNLOCK(listLock);
-#endif
+    EXEC_UNLOCK_AND_ENABLE(listlock);
+#else
     Enable();
+#endif
 
     /* Return whatever was found. */
     return ret;
