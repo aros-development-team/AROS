@@ -43,7 +43,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         {
 #if defined(__AROSEXEC_SMP__)
             case TASKTAG_AFFINITY:
-                if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)
+                if ((IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity) && ((IPTR)IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity != TASKAFFINITY_ANY))
                     KrnFreeCPUMask(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
                 IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = (void *)t->ti_Data;
                 break;
