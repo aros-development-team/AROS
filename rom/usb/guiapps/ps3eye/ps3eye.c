@@ -33,12 +33,32 @@
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/gfx.h>
 
+//#include "ov534.h"
+//#include "ov772x.h"
+
+#define OV534_REG_CTRL              0xF5
+#define OV534_REG_DI                0xF4
+#define OV534_REG_DO                0xF3
+#define OV534_REG_MS_ADDRESS        0xF2
+#define OV534_REG_MS_ID             0xF1
+#define OV534_REG_SYS_CTRL          0xE7
+#define OV534_OP_WRITE_3            0x37
+#define OV534_OP_WRITE_2            0x33
+#define OV534_OP_READ_2             0xf9
+#define OV534_REG_GPIO_V0           0x23
+#define OV534_REG_GPIO_C0           0x21
+
+#define OV772X_SLAVE_ADDRESS_WRITE  0x42
+#define OV772X_REG_VER              0x0B
+#define OV772X_REG_PID              0x0A
+
 #define MYBUG_LEVEL 1
 #define mybug(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
 
 #define MUIA_Resolution             (TAG_USER | 0x80420000) + 0
 //#define MUIM_Action_HandlePsdEvents (TAG_USER | 0x80420000) + 1
 #define MUIM_Action_HandleTmrEvents (TAG_USER | 0x80420000) + 2
+
 
 extern char kitty640_pure[];
 //extern char kitty640_video[];
@@ -54,6 +74,8 @@ struct InstData {
     BOOL resolutionvga;
 
     UWORD pos;
+
+    Object *self;
 
     struct MsgPort *ps3eye_epmsgport;
 //    struct PsdEventHook *psdeventhandler;
@@ -74,58 +96,83 @@ struct InstData {
 
 };
 
-ULONG bridge_write(struct InstData *data, UWORD reg, UWORD *val) {
-    mybug(-1, ("bridge_write register %x with value %x\n", reg, *val));
+ULONG ov534_reg_write(struct InstData *data, UBYTE reg, UBYTE *val) {
+    mybug(-1, ("ov534_reg_write register %01x with value %01x\n", reg, *val));
 
     psdPipeSetup(data->ps3eye_ep0pipe, URTF_OUT|URTF_VENDOR|URTF_DEVICE, 0x01, 0x00, reg);
-    return(psdDoPipe(data->ps3eye_ep0pipe, val, 1));
 
+    return(psdDoPipe(data->ps3eye_ep0pipe, val, 1));
 }
 
-ULONG bridge_read(struct InstData *data, UWORD reg, UWORD *val) {
+ULONG ov534_reg_read(struct InstData *data, UBYTE reg, UBYTE *val) {
 
     ULONG ioerr;
 
     psdPipeSetup(data->ps3eye_ep0pipe, URTF_IN|URTF_VENDOR|URTF_DEVICE, 0x01, 0x00, reg);
     ioerr =psdDoPipe(data->ps3eye_ep0pipe, val, 1);
 
-    mybug(-1, ("bridge_read register %x returns value %x (ioerr %x)\n", reg, *val, ioerr));
+    mybug(-1, ("ov534_reg_read register %01x returns value %01x (ioerr %x)\n", reg, *val, ioerr));
 
     return(ioerr);
-
 }
 
-void sensor_write(struct InstData *data, UWORD reg, UWORD *val) {
+ULONG ov534_reg_bitset(struct InstData *data, UBYTE reg, UBYTE *bitset) {
 
-    UWORD tmp = reg;
+    UBYTE tmp;
+    ULONG ioerr;
 
-	bridge_write(data, 0xf2, &tmp);
+    ioerr = ov534_reg_read(data, reg, &tmp);
+    if(ioerr) {
+        return(ioerr);
+    }
+
+    tmp |= *bitset;
+    return(ov534_reg_write(data, reg, &tmp));
+}
+
+ULONG ov534_reg_bitclr(struct InstData *data, UBYTE reg, UBYTE *bitset) {
+
+    UBYTE tmp;
+    ULONG ioerr;
+
+    if(ioerr = ov534_reg_read(data, reg, &tmp)) {
+        return(ioerr);
+    }
+
+    tmp &= ~(*bitset);
+    return(ov534_reg_write(data, reg, &tmp));
+}
+
+void ov772x_reg_write(struct InstData *data, UBYTE reg, UBYTE *val) {
+
+    UBYTE tmp = reg;
+
+	ov534_reg_write(data, OV534_REG_MS_ADDRESS, &tmp);
 
     tmp = *val;
-	bridge_write(data, 0xf3, &tmp);
+	ov534_reg_write(data, OV534_REG_DO, &tmp);
 
-    tmp = 0x37;
-	bridge_write(data, 0xf5, &tmp);
+    tmp = OV534_OP_WRITE_3;
+	ov534_reg_write(data, OV534_REG_CTRL, &tmp);
 
 }
 
-UWORD sensor_read(struct InstData *data, UWORD reg) {
+UBYTE ov772x_reg_read(struct InstData *data, UBYTE reg) {
 
-    UWORD tmp = reg;
+    UBYTE tmp = reg;
 
-	bridge_write(data, 0xf2, &tmp);
+	ov534_reg_write(data, OV534_REG_MS_ADDRESS, &tmp);
 
-    tmp = 0x33;
-	bridge_write(data, 0xf5, &tmp);
+    tmp = OV534_OP_WRITE_2;
+	ov534_reg_write(data, OV534_REG_CTRL, &tmp);
 
-    tmp = 0xf9;
-	bridge_write(data, 0xf5, &tmp);
+    tmp = OV534_OP_READ_2;
+	ov534_reg_write(data, OV534_REG_CTRL, &tmp);
 
-	bridge_read(data, 0xf4, &tmp);
+	ov534_reg_read(data, OV534_REG_DI, &tmp);
 
     return(tmp);
 }
-
 
 void freedevice(struct InstData *data) {
 
@@ -162,7 +209,7 @@ AROS_UFH3(void, releasehook, AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(APTR,
 
 void allocdevice(struct InstData *data) {
 
-    UWORD regval;
+    UBYTE regval, tmp;
 
     /*
         Try to find FREE PS3Eye camera (DA_Binding = FALSE)
@@ -194,23 +241,21 @@ void allocdevice(struct InstData *data) {
                         if((data->ps3eye_ep1pipe = psdAllocPipe(data->pd, data->ps3eye_epmsgport, data->ps3eye_ep1in))) {
                             mybug(-1, ("allocdevice allocated endpoint 1 pipe (BULK)\n"));
 
-                            /* Turn red led on */
-                            //regval = 0x80;
-                            //bridge_write(data, 0x21, &regval);
-                            //bridge_write(data, 0x23, &regval);
+                            /*
+                                We need to call our set method in order for the led to luminate or not depending on the tick box (may have been pressed before usb connection)
+                                Well, it seems to work...
+                            */
+                            SetAttrs(data->self, MUIA_Resolution, data->resolutionvga, TAG_DONE);
 
-                            //UWORD i;
-                            //for(i=0xff;i>=0xf0;i--) {
-                            //    bridge_read(data, i, &regval);
-                            //}
-
+                            /* Turn the camera on */
                             regval = 0x3a;
-                            bridge_write(data, 0xe7, &regval);
-                            regval = 0x42;
-                            bridge_write(data, 0xf1, &regval);
+                            ov534_reg_write(data, OV534_REG_SYS_CTRL, &regval);
+
+                            regval = OV772X_SLAVE_ADDRESS_WRITE;
+                            ov534_reg_write(data, OV534_REG_MS_ID, &regval);
 
                             /* probe the sensor */
-                        	mybug(-1, ("Sensor ID: %02x%02x\n", sensor_read(data, 0x0a), sensor_read(data, 0x0b)));
+                        	mybug(-1, ("Sensor ID: %02x%02x\n", ov772x_reg_read(data, OV772X_REG_PID), ov772x_reg_read(data, OV772X_REG_VER)));
 
                             return;
 
@@ -261,6 +306,8 @@ IPTR mNew(Class *cl, Object *obj, struct opSet *msg) {
                 data->tmreventihn.ihn_Millis = 40;
                 data->tmreventihn.ihn_Flags  = MUIIHNF_TIMER;
                 data->tmreventihn.ihn_Method = MUIM_Action_HandleTmrEvents;
+
+                data->self = obj;
 
                 return (IPTR)obj;
 //            }
@@ -326,11 +373,27 @@ IPTR mSet(Class *cl, Object *obj, struct opSet *msg) {
     struct TagItem *tags  = msg->ops_AttrList;
     struct TagItem *tag;
 
+    UBYTE regval;
+
     while ((tag = NextTagItem(&tags)) != NULL) {
         switch(tag->ti_Tag) {
             case MUIA_Resolution:
                 data->resolutionvga = tag->ti_Data;
-                //mybug(-1, ("mSet MUIA_Resolution = %d\n", data->resolutionvga));
+
+                if(data->ps3eye_ep1pipe) {
+                    if(data->resolutionvga) {
+                        /* Turn red led on */
+                        regval = 0x80;
+                        ov534_reg_bitset(data, OV534_REG_GPIO_C0, &regval);
+                        ov534_reg_bitset(data, OV534_REG_GPIO_V0, &regval);
+                    } else {
+                        /* Turn red led off */
+                        regval = 0x80;
+                        ov534_reg_bitset(data, OV534_REG_GPIO_C0, &regval);
+                        ov534_reg_bitclr(data, OV534_REG_GPIO_V0, &regval);
+                    }
+                }
+
                 SetAttrs(_win(obj), MUIA_Window_Open, FALSE, MUIA_Window_Open, TRUE, TAG_DONE);
             break;
 
