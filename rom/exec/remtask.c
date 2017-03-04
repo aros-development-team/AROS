@@ -67,10 +67,8 @@
 
     DREMTASK("RemTask (0x%p (\"%s\"))", task, task->tc_Node.ln_Name);
 
-#if !defined(__AROSEXEC_SMP__)
     /* Don't let any other task interfere with us at the moment */
     Forbid();
-#endif
 
     /* Dont try to kill a dying task .. */
     if ((task->tc_State != TS_INVALID) && (task->tc_State != TS_REMOVED))
@@ -161,10 +159,8 @@
         }
     }
 
-#if !defined(__AROSEXEC_SMP__)
     /* All done. */
     Permit();
-#endif
 
     DREMTASK("Success");
 
