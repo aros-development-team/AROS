@@ -31,13 +31,13 @@
 #define DTRAP(x)
 #define DUMP_CONTEXT
 
+//#define IRQNOSCHED_FORBID
+
 /* use the correct registers depending on arch. */
 #if (__WORDSIZE != 64)
 #define INTR_REGA               regs->eax
-#define INTR_SUPERVSTACK        (regs->ds != KERNEL_DS)
 #else
 #define INTR_REGA               regs->rax
-#define INTR_SUPERVSTACK        (regs->ss != 0)
 #endif
 
 #define IRQ(x,y) \
@@ -267,7 +267,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	 * is always pushed to stack as part of interrupt context.
 	 * We rely on this in order to determine which CPL we are returning to.
 	 */
-        if ((systemSysCall) && INTR_SUPERVSTACK)
+        if ((systemSysCall) && INTR_USERMODESTACK)
         {
             DSYSCALL(bug("[Kernel] %s: User-mode syscall\n", __func__));
 
@@ -308,8 +308,17 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             }
 	}
 
-	/* Upon exit from the lowest-level hardware IRQ we run the task scheduler */
-        if ((SysBase) && INTR_SUPERVSTACK)
+	/*
+         * Upon exit from the lowest-level Device IRQ,
+         * if we are in user mode and not in forbid state,
+         * we run the task scheduler.
+         */
+        if (
+                (SysBase) && (INTR_USERMODESTACK)
+#if defined(IRQNOSCHED_FORBID)
+                && (TDNESTCOUNT_GET < 0)
+#endif
+            )
 	{
 	    /* Disable interrupts for a while */
 	    __asm__ __volatile__("cli; cld;");

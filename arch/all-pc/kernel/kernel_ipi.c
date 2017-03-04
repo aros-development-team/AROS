@@ -269,9 +269,9 @@ void core_IPIHandle(struct ExceptionContext *regs, unsigned long ipi_number, str
     {
         case IPI_RESCHEDULE:
             APIC_REG(__APICBase, APIC_EOI) = 0;
-            // If IPI was called when CPU was in user mode, perform task switch, otherwise
-            // set delayed schedule flag
-            if (regs->ss != 0)
+            // If IPI was called when CPU was in user mode, and not in forbid state,
+            // perform task switch - otherwise set delayed schedule flag.
+            if ((INTR_USERMODESTACK) && (TDNESTCOUNT_GET < 0))
             {
                 if (core_Schedule())
                 {
