@@ -120,8 +120,8 @@
              * Node, so we use our task's tc_Node as a message. We use
              * InternalPutMsg() because it won't change ln_Type. Just in case...
              */
-            DREMTASK("Sending to garbage man");
-            InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort,
+            DREMTASK("Sending to Exec service task");
+            InternalPutMsg(PrivExecBase(SysBase)->ServicePort,
                 (struct Message *)task, SysBase);
 
             DREMTASK("Disabling interrupts");
