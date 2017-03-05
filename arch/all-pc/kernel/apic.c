@@ -142,6 +142,13 @@ BOOL core_APIC_CPUInMask(apicid_t cpuNo, cpumask_t *mask)
 
     D(bug("[APIC] %s()\n", __func__));
 
+    if (mask == NULL)
+    {
+        if (cpuNo == 0)
+            return TRUE;
+        return FALSE;
+    }
+
     if ((IPTR)mask == TASKAFFINITY_ANY)
     {
         // TODO: make sure it is a valid cpu number in the range of available cpus.
