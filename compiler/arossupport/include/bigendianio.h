@@ -2,7 +2,7 @@
 #define AROS_STRUCTDESC_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read and write big endian structures from and to a file
