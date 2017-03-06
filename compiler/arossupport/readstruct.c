@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read a big endian structure from a streamhook
@@ -132,6 +132,20 @@ struct ReadLevel
 		goto error;
 
 	    break;
+
+	case SDT_COPY: {   /* Copy 'n' bytes */
+	    int    i, count, offset;
+
+            offset = IDESC;
+            count = IDESC;
+
+            for (i= 0; i < count; i++)
+            {
+            	    if (!ReadByte (hook, (UBYTE *)(curr->s + offset + i), stream))
+                        goto error;
+            }
+
+	    break; }
 
 	case SDT_STRING: {   /* Read a string */
 	    UBYTE    valid_ptr;
