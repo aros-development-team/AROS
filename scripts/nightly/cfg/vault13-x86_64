@@ -1,4 +1,4 @@
-CFG_PACKAGES=(sdk.svn.pc-x86_64 bootiso-grub2.svn.pc-x86_64 hosted.svn.linux-x86_64)
+CFG_PACKAGES=(sdk.svn.pc-x86_64 bootiso-grub2.svn.pc-x86_64  bootiso-grub2.svn.pc-x86_64-smp hosted.svn.linux-x86_64)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=aros@vps38387.ovh.net
