@@ -4,4 +4,4 @@
 BUILDTARGET=sam440-ppc
 BOOTLOADER=Parthenope
 
-source $SP/pkg/bootiso $BOOTLOADER
+source $SP/pkg/bootiso $BOOTLOADER yes

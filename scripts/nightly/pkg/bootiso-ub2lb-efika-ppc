@@ -5,4 +5,4 @@ BUILDTARGET=chrp-ppc
 VARIANT=efika
 BOOTLOADER=ub2lb
 
-source $SP/pkg/bootiso $BOOTLOADER
+source $SP/pkg/bootiso $BOOTLOADER yes
