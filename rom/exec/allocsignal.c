@@ -130,7 +130,6 @@ LONG AllocTaskSignal(struct Task *thisTask, LONG signalNum, struct ExecBase *Sys
     {
         EXEC_LOCK_WRITE(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
     }
-    else 
 #endif
 
     thisTask->tc_SigRecvd  &= ~mask1;
@@ -140,7 +139,6 @@ LONG AllocTaskSignal(struct Task *thisTask, LONG signalNum, struct ExecBase *Sys
     {
         EXEC_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
     }
-    else
 #endif
     Enable();
 
