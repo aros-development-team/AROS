@@ -5,4 +5,4 @@ BUILDTARGET=pc-x86_64
 VARIANT=smp
 BOOTLOADER=grub2
 
-source $SP/pkg/bootiso $BOOTLOADER
+source $SP/pkg/bootiso $BOOTLOADER no

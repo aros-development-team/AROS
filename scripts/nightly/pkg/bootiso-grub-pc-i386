@@ -4,4 +4,4 @@
 BUILDTARGET=pc-i386
 BOOTLOADER=grub
 
-source $SP/pkg/bootiso $BOOTLOADER
+source $SP/pkg/bootiso $BOOTLOADER yes

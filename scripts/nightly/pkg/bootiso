@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Generic bootiso binary package generator.
 
-BOOTLOADER=$1
+BOOTLOADER=$1 WITHCONTRIB=$2
 
 TARGET=$BUILDTARGET
 if [ "$VARIANT" != "" ]; then
@@ -19,12 +19,16 @@ printi "Creating AROS/$BUILDTARGET bootiso binary packages (with $BOOTLOADER)...
 
 delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
-copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
+if ["$WITHCONTRIB" != "no"]; then
+    copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
+fi
 
 cd      $BUILD_BASE/AROS
 execute ./configure --target=$TARGET --enable-target-variant=$VARIANT --enable-ccache --with-bootloader=$BOOTLOADER --enable-build-type=nightly $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT $AROSTOOLCHAINOPT
 make    -j $MAKE_JOBS
-make    -j $MAKE_JOBS contrib
+if ["$WITHCONTRIB" != "no"]; then
+    make    -j $MAKE_JOBS contrib
+fi
 
 ISOFILE=aros-$BUILDTARGET.iso
 PACKAGE=$BASENAME-$BUILDTARGET-boot-iso
