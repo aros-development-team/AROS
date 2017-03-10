@@ -217,7 +217,7 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
     struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) xfr->user_data;;
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(0, ("callbackUSBTransferComplete\n"));
+    mybug_unit(-1, ("callbackUSBTransferComplete\n"));
 
     int err;
 
@@ -324,6 +324,22 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
 	    mybug_unit(-1, ("   Failed.\n"));
 	}
 
+    UWORD timeout;
+
+    if( (ioreq->iouh_Flags & UHFF_NAKTIMEOUT)) {
+        timeout = ioreq->iouh_NakTimeout;
+    } else {
+        timeout = 0;
+    }
+
+    mybug(-1, ("timeout %d\n", timeout));
+
+    if( (ioreq->iouh_Flags & UHFF_NOSHORTPKT)) {
+        xfr->flags |= LIBUSB_TRANSFER_SHORT_NOT_OK;
+    }
+
+    //xfr->flags |= LIBUSB_TRANSFER_ADD_ZERO_PACKET;
+
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
             mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
@@ -332,7 +348,7 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
                           ioreq->iouh_Length,
                           callbackUSBTransferComplete,
                           ioreq,
-                          ioreq->iouh_NakTimeout
+                          timeout
                           );
             LIBUSBCALL(libusb_submit_transfer, xfr);
             mybug_unit(0, ("Called libusb_submit_transfer\n"));
@@ -345,7 +361,7 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
                           ioreq->iouh_Length,
                           callbackUSBTransferComplete,
                           ioreq,
-                          ioreq->iouh_NakTimeout
+                          timeout
                           );
 
             LIBUSBCALL(libusb_submit_transfer, xfr);
@@ -374,6 +390,22 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
 	    mybug_unit(-1, ("   Failed.\n"));
 	}
 
+    UWORD timeout;
+
+    if( (ioreq->iouh_Flags & UHFF_NAKTIMEOUT)) {
+        timeout = ioreq->iouh_NakTimeout;
+    } else {
+        timeout = 0;
+    }
+
+    mybug(-1, ("timeout %d\n", timeout));
+
+    if( (ioreq->iouh_Flags & UHFF_NOSHORTPKT)) {
+        xfr->flags |= LIBUSB_TRANSFER_SHORT_NOT_OK;
+    }
+
+    //xfr->flags |= LIBUSB_TRANSFER_ADD_ZERO_PACKET;
+
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
             mybug_unit(0, ("ioreq->iouh_Endpoint %d (IN)\n", endpoint));
@@ -382,7 +414,7 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
                           ioreq->iouh_Length,
                           callbackUSBTransferComplete,
                           ioreq,
-                          ioreq->iouh_NakTimeout
+                          timeout
                           );
 
             LIBUSBCALL(libusb_submit_transfer, xfr);
@@ -396,7 +428,7 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
                           ioreq->iouh_Length,
                           callbackUSBTransferComplete,
                           ioreq,
-                          ioreq->iouh_NakTimeout
+                          timeout
                           );
 
             LIBUSBCALL(libusb_submit_transfer, xfr);
