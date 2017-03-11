@@ -49,7 +49,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct KeyMapNode *kmn, *kmn2;
+    struct KeyMapNode *kmn = NULL, *kmn2 = NULL;
     ULONG buflen = 0;
     STRPTR km_name;
     BPTR km_seg;
@@ -58,16 +58,19 @@
     km_name  = FilePart(name);
     if (km_name == name)
     {
-	/*
-	 * A short name was given.
-	 * Check if the keymap is already resident.
-	 * Unfortunately we still have to use Forbid()/Permit() locking
-	 * because there can be lots of software which does the same.
-	 * AmigaOS(tm) never provided a centralized semaphore for this.
-	 */
-	Forbid();
-	kmn = (struct KeyMapNode *)FindName(&kmr->kr_List, name);
-	Permit();
+        if (kmr)
+        {
+            /*
+             * A short name was given.
+             * Check if the keymap is already resident.
+             * Unfortunately we still have to use Forbid()/Permit() locking
+             * because there can be lots of software which does the same.
+             * AmigaOS(tm) never provided a centralized semaphore for this.
+             */
+            Forbid();
+            kmn = (struct KeyMapNode *)FindName(&kmr->kr_List, name);
+            Permit();
+        }
 
 	/* If found, return it */
 	if (kmn)
@@ -98,22 +101,25 @@
 
     kmn = BADDR(km_seg) + sizeof(APTR);
 
-    Forbid();
+    if (kmr)
+    {
+        Forbid();
 
-    /*
-     * Check if this keymap is already loaded once more before installing it.
-     * Now use name contained in the KeyMapNode instead of user-supplied one.
-     * This is needed for two cases:
-     * 1. Several programs running concurrently tried to load and install
-     *    the same keymap (rare but theoretically possible case).
-     * 2. We are given full file path. We need to load the file and take
-     *    keymap name from it.
-     */
-    kmn2 = (struct KeyMapNode *)FindName(&kmr->kr_List, kmn->kn_Node.ln_Name);
-    if (!kmn2)
-	Enqueue(&kmr->kr_List, &kmn->kn_Node);
+        /*
+         * Check if this keymap is already loaded once more before installing it.
+         * Now use name contained in the KeyMapNode instead of user-supplied one.
+         * This is needed for two cases:
+         * 1. Several programs running concurrently tried to load and install
+         *    the same keymap (rare but theoretically possible case).
+         * 2. We are given full file path. We need to load the file and take
+         *    keymap name from it.
+         */
+        kmn2 = (struct KeyMapNode *)FindName(&kmr->kr_List, kmn->kn_Node.ln_Name);
+        if (!kmn2)
+            Enqueue(&kmr->kr_List, &kmn->kn_Node);
 
-    Permit();
+        Permit();
+    }
 
     /* If the keymap was already loaded, use the resident copy and drop our one */
     if (kmn2)
