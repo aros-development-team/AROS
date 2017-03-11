@@ -37,6 +37,12 @@ struct MyMessage {
             ULONG               height;
             ULONG               numberOfSamples;
         } RenderTile;
+
+        struct {
+            ULONG   tasksIn;
+            ULONG   tasksOut;
+            ULONG   tasksWork;
+        } Stats;
     } mm_Body;
 };
 
@@ -47,6 +53,7 @@ struct MyMessage {
 #define MSG_RENDERTILE  3
 #define MSG_HUNGRY      4
 #define MSG_RENDERREADY 5
+#define MSG_STATS       6
 
 void Renderer(struct ExecBase *SysBase, struct MsgPort *ParentMailbox);
 

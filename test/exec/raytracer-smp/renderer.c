@@ -37,6 +37,9 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
     ULONG numberOfCores = 0;
     ULONG maxIter = 0;
     int cores_alive = 0;
+    int tasks_in = 0;
+    int tasks_out = 0;
+    int tasks_work = 0;
 
     D(bug("[SMP-Smallpt-Renderer] Renderer started, ParentMailBox = %p\n", ParentMailbox));
 
@@ -97,6 +100,8 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
         D(bug("[SMP-Smallpt-Renderer] Bitmap size %dx%d, chunky buffer at %p\n", width, height, bitmap));
 
         ULONG tile_count = (width / TILE_SIZE) * (height / TILE_SIZE);
+
+        tasks_in = tile_count;
 
         workPackages = AllocMem(tile_count * sizeof(struct tileWork), MEMF_ANY);
 
@@ -188,6 +193,9 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                             struct tileWork *work = (struct tileWork *)REMHEAD(&workList);
                             struct MyMessage *m = (struct MyMessage *)REMHEAD(&msgPool);
 
+                            tasks_in--;
+                            tasks_work++;
+
                             m->mm_Type = MSG_RENDERTILE;
                             m->mm_Message.mn_Length = sizeof(m);
                             m->mm_Message.mn_ReplyPort = port;
@@ -206,6 +214,19 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                         struct tileWork *work = msg->mm_Body.RenderTile.tile;
                         ReplyMsg(&msg->mm_Message);
                         ADDHEAD(&doneList, work);
+                        tasks_out++;
+                        tasks_work--;
+                    }
+
+                    {
+                        struct MyMessage *m = (struct MyMessage *)REMHEAD(&msgPool);
+                        m->mm_Type = MSG_STATS;
+                        m->mm_Message.mn_Length = sizeof(struct MyMessage);
+                        m->mm_Message.mn_ReplyPort = port;
+                        m->mm_Body.Stats.tasksIn = tasks_in;
+                        m->mm_Body.Stats.tasksOut = tasks_out;
+                        m->mm_Body.Stats.tasksWork = tasks_work;
+                        PutMsg(guiPort, &m->mm_Message);
                     }
                 }
             }

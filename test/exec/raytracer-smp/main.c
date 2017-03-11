@@ -91,6 +91,7 @@ int main()
     struct RDArgs *rda;
     int max_cpus = 0;
     int max_iter = 0;
+    char tmpbuf[200];
 
     struct Window *displayWin;
     struct BitMap *outputBMap = NULL;
@@ -185,7 +186,7 @@ int main()
 
         renderer = NewCreateTask(TASKTAG_NAME,      "SMP-Smallpt Master",
                                 TASKTAG_AFFINITY,   TASKAFFINITY_ANY,
-                                TASKTAG_PRI,        0,
+                                TASKTAG_PRI,        -1,
                                 TASKTAG_PC,         Renderer,
                                 TASKTAG_ARG1,       SysBase,
                                 TASKTAG_ARG2,       mainPort,
@@ -285,6 +286,14 @@ int main()
                                             TILE_SIZE, TILE_SIZE, 0xC0); 
                                 break;
                             
+                            case MSG_STATS:
+                                NewRawDoFmt("SMP-Smallpt renderer (%d in work, %d waiting, %d done)", RAWFMTFUNC_STRING,
+                                    tmpbuf, msg->mm_Body.Stats.tasksWork,
+                                    msg->mm_Body.Stats.tasksIn,
+                                    msg->mm_Body.Stats.tasksOut);
+                                SetWindowTitles(displayWin, tmpbuf, NULL);
+                                break;
+
                             default:
                                 D(bug("[SMP-Smallpt] %s: unhandled message (%d) arrived\n", __func__, msg->mm_Type);)
                         }
