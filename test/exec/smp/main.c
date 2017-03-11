@@ -163,7 +163,10 @@ int main()
 
                         rawArgs[0] = core;
                         RawDoFmt("SMP-Test Worker.#%03u", (RAWARG)rawArgs, RAWFMTFUNC_STRING, coreML->ml_ME[1].me_Addr);
-                        D(bug("[SMP-Test] %s: Worker Task Name '%s'\n", __func__, coreML->ml_ME[1].me_Addr);)
+                        D(
+                            bug("[SMP-Test] %s: Worker Task Name '%s'\n", __func__, coreML->ml_ME[1].me_Addr);
+                            bug("[SMP-Test] %s: Worker Stack Size = %d bytes\n", __func__, ((workMaster.smpm_MaxWork / 50000) + 1) * AROS_STACKSIZE);
+                        )
 
                         coreWorker->smpw_MasterPort = workMaster.smpm_MasterPort;
                         coreWorker->smpw_Node.ln_Type = 0;
@@ -176,6 +179,7 @@ int main()
                                                     TASKTAG_PRI        , 0,
                                                     TASKTAG_PC         , SMPTestWorker,
                                                     TASKTAG_ARG1       , SysBase,
+                                                    TASKTAG_STACKSIZE,      ((workMaster.smpm_MaxWork / 50000) + 1) * AROS_STACKSIZE,
                                                     TASKTAG_USERDATA   , coreWorker,
                                                     TAG_DONE);
 
