@@ -121,6 +121,8 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
         D(bug("[SMP-Smallpt-Renderer] creating %d workers\n", numberOfCores));
         workers = AllocMem(sizeof(struct Worker) * numberOfCores, MEMF_PUBLIC | MEMF_CLEAR);
 
+        D(bug("[SMP-Smallpt-Renderer] worker stack size : %d bytes\n", ((maxIter / 5) + 1) * AROS_STACKSIZE));
+
         for (ULONG i=0; i < numberOfCores; i++)
         {
             void *coreAffinity = KrnAllocCPUMask();
@@ -136,7 +138,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                                     TASKTAG_ARG1,           SysBase,
                                     TASKTAG_ARG2,           port,
                                     TASKTAG_ARG3,           &workers[i].port,
-                                    TASKTAG_STACKSIZE,      10000000,
+                                    TASKTAG_STACKSIZE,      ((maxIter / 5) + 1) * AROS_STACKSIZE,
                                     TAG_DONE);
         }
         cores_alive = numberOfCores;
