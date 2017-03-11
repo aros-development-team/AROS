@@ -18,10 +18,18 @@
 
 void ServiceTask(struct ExecBase *SysBase)
 {
+#if defined(__AROSEXEC_SMP__)
+    struct Task *serviceTask;
+#endif
     struct Task *task;
     struct MemList *mb, *mbnext;
-
+    BOOL taskRequeque;
     DINIT("ServiceTask: Started up");
+
+#if defined(__AROSEXEC_SMP__)
+    serviceTask = FindTask(NULL);
+    DINIT("ServiceTask: task @ 0x%p", serviceTask);
+#endif
 
     do
     { /* forever */
@@ -29,7 +37,8 @@ void ServiceTask(struct ExecBase *SysBase)
 
         while ((task = (struct Task *)GetMsg(PrivExecBase(SysBase)->ServicePort)))
         {
-            DREMTASK("ServiceTask: Request for task 0x%p, state %08X\n", task, task->tc_State);
+            DREMTASK("ServiceTask: Request for Task 0x%p, State %08X\n", task, task->tc_State);
+            taskRequeque = TRUE;
 
             /*
              * If we ever need to use TSS here, we'll need to explicitly check its size here.
@@ -39,13 +48,24 @@ void ServiceTask(struct ExecBase *SysBase)
 
 	    switch (task->tc_State)
 	    {
+#if defined(__AROSEXEC_SMP__)
+            case TS_TOMBSTONED:
+                if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (GetIntETask(serviceTask)->iet_CpuNumber== (IPTR)task->tc_UserData))
+                {
+                    DREMTASK("ServiceTask: Task is running on this CPU (%03u)\n", task->tc_UserData);
+                    taskRequeque = FALSE;
+                }
+#endif
             case TS_REMOVED:
-                DREMTASK("ServiceTask: Requeueing request for task 0x%p <%s>", task, task->tc_Node.ln_Name);
-                InternalPutMsg(PrivExecBase(SysBase)->ServicePort,
-                    (struct Message *)task, SysBase);
-                break;
+                if (taskRequeque)
+                {
+                    DREMTASK("ServiceTask: Requeueing request for Task 0x%p <%s> (State:%08x)", task, task->tc_Node.ln_Name, task->tc_State);
+                    InternalPutMsg(PrivExecBase(SysBase)->ServicePort,
+                        (struct Message *)task, SysBase);
+                    break;
+                }
             case TS_INVALID:
-                DREMTASK("ServiceTask: Removal request for task 0x%p <%s>", task, task->tc_Node.ln_Name);
+                DREMTASK("ServiceTask: Removal request for Task 0x%p <%s> (State:%08x)", task, task->tc_Node.ln_Name, task->tc_State);
 
                 // TODO: Make sure the task has terminated..
                 task->tc_State = TS_INVALID;
@@ -72,16 +92,26 @@ void ServiceTask(struct ExecBase *SysBase)
                 break;
 
             default:
-                /* FIXME: Add fault handling here. Perhaps kernel-level GURU. */
-                DREMTASK("ServiceTask: task 0x%p <%s> not in tombstoned state!\n", task, task->tc_Node.ln_Name);
-                DREMTASK("ServiceTask: state = %08X\n", task->tc_State);
-                /* The task is ready to run again. Move it back to TaskReady list. */
+                if ((task->tc_Node.ln_Type == NT_TASK) || (task->tc_Node.ln_Type == NT_PROCESS))
+                {
+                    /* FIXME: Add fault handling here. Perhaps kernel-level GURU. */
+                    DREMTASK("ServiceTask: Task 0x%p <%s> not in servicable state!\n", task, task->tc_Node.ln_Name);
+                    DREMTASK("ServiceTask: State = %08X\n", task->tc_State);
+
+                    /*
+                     * Mark the task as ready to run again. Move it back to TaskReady list.
+                     */
 #if !defined(EXEC_REMTASK_NEEDSSWITCH)
-                task->tc_State = TS_READY;
-                Enqueue(&SysBase->TaskReady, &task->tc_Node);
+                    task->tc_State = TS_READY;
+                    Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #else
-                krnSysCallReschedTask(task, TS_READY);
+                    krnSysCallReschedTask(task, TS_READY);
 #endif
+                }
+                else
+                {
+                    DREMTASK("ServiceTask: Called with something that is not a task??\n");
+                }
                 break;
             }
         }
