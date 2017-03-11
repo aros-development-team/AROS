@@ -1,7 +1,8 @@
 #!/bin/zsh
 # Generic bootiso binary package generator.
 
-BOOTLOADER=$1 WITHCONTRIB=$2
+BOOTLOADER=$1
+WITHCONTRIB=$2
 
 TARGET=$BUILDTARGET
 if [[ "$VARIANT" != "" ]]; then
