@@ -290,7 +290,7 @@ void X86_HandleReschedTask(struct ExceptionContext *regs)
     if (task_listlock)
         EXEC_SPINLOCK_LOCK(task_listlock, NULL, SPINLOCK_MODE_WRITE);
 
-    if (reschTask->tc_State != TS_INVALID)
+    if ((reschTask->tc_State != TS_INVALID) && (reschTask->tc_State != TS_TOMBSTONED))
 #else
     if ((reschTask->tc_State != TS_INVALID) && (reschTask->tc_State != TS_RUN))
 #endif
