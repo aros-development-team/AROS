@@ -351,9 +351,11 @@ bug("----> such unspinning should not take place!\n");
 #endif
             (task->tc_State == TS_REMOVED))
         {
+#if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
             // The task is on its way out ...
             bug("[Kernel:%03u] --> Dispatching finalizing/tombstoned task?\n", cpuNo);
             bug("[Kernel:%03u] --> Task @ 0x%p '%s', state %08x\n", cpuNo, task, task->tc_Node.ln_Name, newtask->tc_State);
+#endif
         }
 
         if (newtask->tc_State == TS_WAIT)
