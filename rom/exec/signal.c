@@ -177,7 +177,7 @@ AROS_UFH3(IPTR, signal_hook,
 #else
     task->tc_SigRecvd |= signalSet;
 #endif
-    bug(" %08x\n", task->tc_SigRecvd);
+    D(bug(" %08x\n", task->tc_SigRecvd);)
 
     /* Do those bits raise exceptions? */
     if (task->tc_SigRecvd & task->tc_SigExcept)
