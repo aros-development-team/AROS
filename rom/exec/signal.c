@@ -13,12 +13,10 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#define __AROS_KERNEL__
 #include "exec_intern.h"
 
 #if defined(__AROSEXEC_SMP__)
-#define __KERNEL_NOLIBBASE__
-#include <aros/types/spinlock_s.h>
-#include <proto/kernel.h>
 #include <utility/hooks.h>
 
 void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR *_KernelBase);
@@ -41,6 +39,7 @@ AROS_UFH3(IPTR, signal_hook,
     struct ExecBase *SysBase = msg->SysBase;
 
     D(
+        struct KernelBase *KernelBase = __kernelBase;
         int cpunum = KrnGetCPUNumber();
         bug("[Exec] CPU%03d: Using IPI to do Signal(%p, %08x), SysBase=%p\n", cpunum, msg->target, msg->sigset, SysBase);
     );
@@ -96,18 +95,21 @@ AROS_UFH3(IPTR, signal_hook,
     AROS_LIBFUNC_INIT
 
     struct Task *thisTask = GET_THIS_TASK;
+
 #if defined(__AROSEXEC_SMP__)
+    struct KernelBase *KernelBase = __kernelBase;
     int cpunum = KrnGetCPUNumber();
 
     //EXEC_SPINLOCK_LOCK(IntETask(task->tc_UnionETask.tc_ETask)->iet_SpinLock, NULL, SPINLOCK_MODE_READ);
     /*
-        * If current CPU number is not the task's CPU and the task is running now, send signal to that task
-        from CPU which the task is running on
-        * If task is not running and the current CPU is not in the Affinitymask, send signal to CPU form Affinity mask
-        * If task is not running and the current CPU is in the Affinity mask, just proceed with regular signal
+        * # If current CPU number is not the task's CPU and the task is running now, send signal to that task
+        *   from CPU which the task is running on.
+        * # If task is not running and the current CPU is not in the Affinitymask, send signal to CPU form Affinity mask
+        * # If task is not running and the current CPU is in the Affinity mask, just proceed with regular signal
     */
-    if ((IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpunum && task->tc_State == TS_RUN) ||
-        !KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))
+    if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) &&
+        ((IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpunum && task->tc_State == TS_RUN) ||
+        !KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)))
     {
         struct Hook h;
         struct signal_message msg;
@@ -138,13 +140,13 @@ AROS_UFH3(IPTR, signal_hook,
         msg.target = task;
         msg.sigset = signalSet;
 
-        D(bug("[Exec] Signal goes from CPU%03d to CPU%03d. calling Signal on that cpu with IPI...\n", cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
+        D(bug("[Exec] Signal: Signaling from CPU%03d -> CPU%03d using IPI...\n", cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
 
         h.h_Entry = signal_hook;
         h.h_Data = &msg;
 
         D(bug("[Exec] Sending IPI...\n"));
-        core_DoCallIPI(&h, cpu_mask, 0, KernelBase);
+        core_DoCallIPI(&h, cpu_mask, 0, (void *)KernelBase);
         D(bug("[Exec] IPI Sent\n"));
         
         KrnFreeCPUMask(cpu_mask);
@@ -154,23 +156,28 @@ AROS_UFH3(IPTR, signal_hook,
     if (cpunum != 0)
     {
         D(bug("[Exec] Signal(0x%p, %08lX) on CPU%03d\n", task, signalSet, cpunum));
-        D(bug("[Exec] Signal: signaling '%s' (state %08x)\n", task->tc_Node.ln_Name, task->tc_State));
     }
+#else
+    D(bug("[Exec] Signal(0x%p, %08lX)\n", task, signalSet);)
 #endif
 
     D(
-        bug("[Exec] Signal(0x%p, %08lX)\n", task, signalSet);
-        bug("[Exec] Signal: signaling '%s' (state %08x)\n", task->tc_Node.ln_Name, task->tc_State);
-        bug("[Exec] Signal: from '%s'\n", thisTask->tc_Node.ln_Name);
+        bug("[Exec] Signal: Signaling '%s', state = %08x\n", task->tc_Node.ln_Name, task->tc_State);
+        if (((struct KernelBase *)KernelBase)->kb_ICFlags & KERNBASEF_IRQPROCESSING)
+            bug("[Exec] Signal: (Called from Interrupt)\n");
+        else
+            bug("[Exec] Signal: (Called from '%s')\n", thisTask->tc_Node.ln_Name);
     )
 
     Disable();
+    D(bug("[Exec] Signal: Target signal flags : %08x ->", task->tc_SigRecvd);)
     /* Set the signals in the task structure. */
 #if defined(__AROSEXEC_SMP__)
     __AROS_ATOMIC_OR_L(task->tc_SigRecvd, signalSet);
 #else
     task->tc_SigRecvd |= signalSet;
 #endif
+    bug(" %08x\n", task->tc_SigRecvd);
 
     /* Do those bits raise exceptions? */
     if (task->tc_SigRecvd & task->tc_SigExcept)
@@ -181,38 +188,36 @@ AROS_UFH3(IPTR, signal_hook,
 #else
         task->tc_Flags |= TF_EXCEPT;
 #endif
-
         D(bug("[Exec] Signal: TF_EXCEPT set\n");)
-    }
 
-    /* 
-            if the target task is running (called from within interrupt handler),
-            raise the exception or defer it for later.
-        */
-    if ((task->tc_SigRecvd & task->tc_SigExcept) &&
-        (task->tc_State == TS_RUN))
-    {
-#if defined(__AROSEXEC_SMP__)
-        if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum)
+        /* 
+                if the target task is running (called from within interrupt handler, or from another processor),
+                raise the exception or defer it for later.
+            */
+        if (task->tc_State == TS_RUN)
         {
-#endif
-        D(bug("[Exec] Signal: signaling running task\n");)
-        /* Order a reschedule */
-        Reschedule();
 #if defined(__AROSEXEC_SMP__)
-        }
-        else
-        {
-            D(bug("[Exec] Signal: raising exception in task on another cpu (%03u)\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
-            KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
-        }
+            if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
+                (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum))
+            {
 #endif
-        Enable();
+            D(bug("[Exec] Signal: Raising Exception for 'running' Task\n");)
+            /* Order a reschedule */
+            Reschedule();
+#if defined(__AROSEXEC_SMP__)
+            }
+            else
+            {
+                D(bug("[Exec] Signal: Raising Exception for 'running' Task on CPU %03u\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
+                KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+            }
+#endif
+            Enable();
 
-        /* All done. */
-        return;
+            /* All done. */
+            return;
+        }
     }
-
     /*
         Is the task receiving the signals waiting on them
         (or on a exception) ?
@@ -220,7 +225,7 @@ AROS_UFH3(IPTR, signal_hook,
     if ((task->tc_State == TS_WAIT) &&
        (task->tc_SigRecvd & (task->tc_SigWait | task->tc_SigExcept)))
     {
-        D(bug("[Exec] Signal: signaling waiting task\n");)
+        D(bug("[Exec] Signal: Signaling 'waiting' Task\n");)
 
         /* Yes. Move it to the ready list. */
 #if defined(__AROSEXEC_SMP__)
@@ -236,7 +241,7 @@ AROS_UFH3(IPTR, signal_hook,
             (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
             (KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))) &&
 #endif
-            (task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri))
+            (task->tc_Node.ln_Pri >= thisTask->tc_Node.ln_Pri))
         {
             /*
                 Yes. A taskswitch is necessary. Prepare one if possible.
@@ -244,6 +249,7 @@ AROS_UFH3(IPTR, signal_hook,
             */
             if (thisTask->tc_State == TS_RUN)
             {
+                D(bug("[Exec] Signal: Rescheduling 'running' Task to let it process the signal...\n"));
                 Reschedule();
             }
         }
@@ -251,11 +257,15 @@ AROS_UFH3(IPTR, signal_hook,
         else if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) &&
             !(KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)))
         {
-            D(bug("[Exec] Signal: signaling task on another CPU\n"));
+            D(bug("[Exec] Signal: Signaling task on another CPU\n"));
             krnSysCallReschedTask(task, TS_READY);
             KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
         }
 #endif
+        else
+        {
+            D(bug("[Exec] Signal: Letting Task process signal when next scheduled to run...\n"););
+        }
     }
 
     Enable();
