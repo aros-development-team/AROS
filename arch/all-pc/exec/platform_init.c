@@ -241,18 +241,14 @@ void X86_SetTaskState(struct Task *changeTask, ULONG newState, BOOL dolock)
         default:
             break;
     }
-    if (task_list
-#if defined(__AROSEXEC_SMP__)
-        && task_listlock
-#endif
-        )
+    if (task_list)
     {
 #if defined(__AROSEXEC_SMP__)
-        if (dolock) EXEC_SPINLOCK_LOCK(task_listlock, NULL, SPINLOCK_MODE_WRITE);
+        if (dolock && task_listlock) EXEC_SPINLOCK_LOCK(task_listlock, NULL, SPINLOCK_MODE_WRITE);
 #endif
         Enqueue(task_list, &changeTask->tc_Node);
 #if defined(__AROSEXEC_SMP__)
-        if (dolock) EXEC_SPINLOCK_UNLOCK(task_listlock);
+        if (dolock && task_listlock) EXEC_SPINLOCK_UNLOCK(task_listlock);
 #endif
     }
 }
@@ -329,6 +325,7 @@ void X86_HandleReschedTask(struct ExceptionContext *regs)
 #if defined(__AROSEXEC_SMP__)
             break;
         case TS_REMOVED:
+                reschTask->tc_State = TS_TOMBSTONED;
             break;
     }
 
