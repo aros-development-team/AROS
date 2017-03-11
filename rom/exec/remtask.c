@@ -71,7 +71,9 @@
     Forbid();
 
     /* Dont try to kill a dying task .. */
-    if ((task->tc_State != TS_INVALID) && (task->tc_State != TS_REMOVED))
+    if ((task->tc_State != TS_INVALID) &&
+        (task->tc_State != TS_TOMBSTONED) &&
+        (task->tc_State != TS_REMOVED))
     {
         /*
          * The task is being removed.
@@ -105,7 +107,13 @@
         /* Delete context */
         et = GetETask(task);
         if (et != NULL)
+        {
+#if defined(EXEC_REMTASK_NEEDSSWITCH)
+            // We must cache the CPU number here for the Exec Service Task...
+            task->tc_UserData = (APTR)IntETask(et)->iet_CpuNumber;
+#endif
             KrnDeleteContext(et->et_RegFrame);
+        }
 
         /* Uninitialize ETask structure */
         DREMTASK("Cleaning up ETask et=%p", et);
