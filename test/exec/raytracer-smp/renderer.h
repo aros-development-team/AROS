@@ -21,6 +21,7 @@ struct MyMessage {
             ULONG               Width;
             ULONG               Height;
             ULONG               coreCount;
+            ULONG               numberOfSamples;
         } Startup;
 
         struct {

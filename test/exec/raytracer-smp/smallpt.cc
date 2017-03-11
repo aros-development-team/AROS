@@ -180,7 +180,7 @@ static inline struct MyMessage *AllocMsg(struct MinList *msgPool)
     return (struct MyMessage *)REMHEAD(msgPool);
 }
 
-extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort)
+extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort, struct MsgPort **myPort)
 {
     Vec *c = new Vec[TILE_SIZE*TILE_SIZE];
     struct MyMessage *msg;
@@ -188,6 +188,8 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort)
     struct MsgPort *port = CreateMsgPort();
     struct MsgPort *syncPort = CreateMsgPort();
     struct MinList msgPool;
+
+    *myPort = port;
 
     FreeSignal(syncPort->mp_SigBit);
     syncPort->mp_SigBit = -1;
@@ -229,96 +231,103 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort)
                         ADDHEAD(&msgPool, m);
                         continue;
                     }
-
-                    if (m->mm_Type == MSG_RENDERTILE)
+                    else
                     {
-                        struct tileWork *tile = m->mm_Body.RenderTile.tile;
-                        int w = m->mm_Body.RenderTile.width;
-                        int h = m->mm_Body.RenderTile.height;
-                        int samps = m->mm_Body.RenderTile.numberOfSamples;
-                        ULONG *buffer = m->mm_Body.RenderTile.buffer;
-                        int tile_x = m->mm_Body.RenderTile.tile->x;
-                        int tile_y = m->mm_Body.RenderTile.tile->y;
-                        struct MsgPort *guiPort = m->mm_Body.RenderTile.guiPort;
-
-                        ReplyMsg(&m->mm_Message);
-
-                        Ray cam(Vec(50, 52, 295.6), Vec(0, -0.042612, -1).norm()); // cam pos, dir
-                        Vec cx = Vec(w * .5135 / h), cy = (cx % cam.d).norm() * .5135, r;
-
-                        for (int i=0; i < TILE_SIZE * TILE_SIZE; i++)
-                            c[i] = Vec();
-
-                        for (int _y=tile_y * 32; _y < (tile_y + 1) * 32; _y++)
+                        if (m->mm_Type == MSG_DIE)
                         {
-                            int y = h - _y - 1;
-                            for (unsigned short _x=tile_x * 32, Xi[3]={0,0,(UWORD)(y*y*y)}; _x < (tile_x + 1) * 32; _x++)   // Loop cols 
-                            {
-                                int x = _x; // w - _x - 1;
-                                for (int sy=0, i=(_y-tile_y*32)*32+_x-tile_x*32; sy<2; sy++)     // 2x2 subpixel rows 
-                                {
-                                    for (int sx=0; sx<2; sx++, r=Vec())
-                                    {        // 2x2 subpixel cols 
-                                        for (int s=0; s<samps; s++)
-                                        { 
-                                            double r1=2*erand48(Xi), dx=r1<1 ? sqrt(r1)-1: 1-sqrt(2-r1); 
-                                            double r2=2*erand48(Xi), dy=r2<1 ? sqrt(r2)-1: 1-sqrt(2-r2); 
-                                            Vec d = cx*( ( (sx+.5 + dx)/2 + x)/w - .5) + 
-                                                    cy*( ( (sy+.5 + dy)/2 + y)/h - .5) + cam.d; 
-                                            r = r + radiance(Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
-                                        } // Camera rays are pushed ^^^^^ forward to start in interior 
-                                        c[i] = c[i] + Vec(clamp(r.x),clamp(r.y),clamp(r.z))*.25; 
-                                    } 
-                                }
-                            }
-                            int start_ptr = tile_y*32*w + tile_x*32;
-                            for (int yy=0; yy < 32; yy++)
-                            {
-                                for (int xx=0; xx < 32; xx++)
-                                {
-                                    buffer[start_ptr+xx] = ((toInt(c[(xx+32*yy)].z) & 0xff) << 24) |
-                                        ((toInt(c[(xx+32*yy)].y) & 0xff) << 16) | ((toInt(c[(xx + 32*yy)].x) & 0xff) << 8) | 0xff;
-                                }
-                                start_ptr += w;
-                            }
-
-#if 1
-                            if (redraw)
-                            {
-                                m = AllocMsg(&msgPool);
-                                m->mm_Message.mn_Length = sizeof(struct MyMessage);
-                                m->mm_Message.mn_ReplyPort = syncPort;
-                                m->mm_Type = MSG_REDRAWTILE;
-                                m->mm_Body.RedrawTile.TileX = tile_x;
-                                m->mm_Body.RedrawTile.TileY = tile_y;
-                                PutMsg(guiPort, &m->mm_Message);
-                                redraw = FALSE;
-                            }
-                            else if ((m = (struct MyMessage *)GetMsg(syncPort)))
-                            {
-                                ADDHEAD(&msgPool, m);
-                                redraw = TRUE;
-                            }
-#else
-                            (void)syncPort;
-                            Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
-#endif
+                            doWork = FALSE;
+                            ReplyMsg(&m->mm_Message);
                         }
+                        else if (m->mm_Type == MSG_RENDERTILE)
+                        {
+                            struct tileWork *tile = m->mm_Body.RenderTile.tile;
+                            int w = m->mm_Body.RenderTile.width;
+                            int h = m->mm_Body.RenderTile.height;
+                            int samps = m->mm_Body.RenderTile.numberOfSamples;
+                            ULONG *buffer = m->mm_Body.RenderTile.buffer;
+                            int tile_x = m->mm_Body.RenderTile.tile->x;
+                            int tile_y = m->mm_Body.RenderTile.tile->y;
+                            struct MsgPort *guiPort = m->mm_Body.RenderTile.guiPort;
 
-                        Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
+                            ReplyMsg(&m->mm_Message);
 
-                        m = AllocMsg(&msgPool);
-                        m->mm_Message.mn_Length = sizeof(struct MyMessage);
-                        m->mm_Message.mn_ReplyPort = port;
-                        m->mm_Type = MSG_RENDERREADY;
-                        m->mm_Body.RenderTile.tile = tile;
-                        PutMsg(masterPort, &m->mm_Message);
+                            Ray cam(Vec(50, 52, 295.6), Vec(0, -0.042612, -1).norm()); // cam pos, dir
+                            Vec cx = Vec(w * .5135 / h), cy = (cx % cam.d).norm() * .5135, r;
 
-                        m = AllocMsg(&msgPool);
-                        m->mm_Message.mn_Length = sizeof(struct MyMessage);
-                        m->mm_Message.mn_ReplyPort = port;
-                        m->mm_Type = MSG_HUNGRY;
-                        PutMsg(masterPort, &m->mm_Message);
+                            for (int i=0; i < TILE_SIZE * TILE_SIZE; i++)
+                                c[i] = Vec();
+
+                            for (int _y=tile_y * 32; _y < (tile_y + 1) * 32; _y++)
+                            {
+                                int y = h - _y - 1;
+                                for (unsigned short _x=tile_x * 32, Xi[3]={0,0,(UWORD)(y*y*y)}; _x < (tile_x + 1) * 32; _x++)   // Loop cols 
+                                {
+                                    int x = _x; // w - _x - 1;
+                                    for (int sy=0, i=(_y-tile_y*32)*32+_x-tile_x*32; sy<2; sy++)     // 2x2 subpixel rows 
+                                    {
+                                        for (int sx=0; sx<2; sx++, r=Vec())
+                                        {        // 2x2 subpixel cols 
+                                            for (int s=0; s<samps; s++)
+                                            { 
+                                                double r1=2*erand48(Xi), dx=r1<1 ? sqrt(r1)-1: 1-sqrt(2-r1); 
+                                                double r2=2*erand48(Xi), dy=r2<1 ? sqrt(r2)-1: 1-sqrt(2-r2); 
+                                                Vec d = cx*( ( (sx+.5 + dx)/2 + x)/w - .5) + 
+                                                        cy*( ( (sy+.5 + dy)/2 + y)/h - .5) + cam.d; 
+                                                r = r + radiance(Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
+                                            } // Camera rays are pushed ^^^^^ forward to start in interior 
+                                            c[i] = c[i] + Vec(clamp(r.x),clamp(r.y),clamp(r.z))*.25; 
+                                        } 
+                                    }
+                                }
+                                int start_ptr = tile_y*32*w + tile_x*32;
+                                for (int yy=0; yy < 32; yy++)
+                                {
+                                    for (int xx=0; xx < 32; xx++)
+                                    {
+                                        buffer[start_ptr+xx] = ((toInt(c[(xx+32*yy)].z) & 0xff) << 24) |
+                                            ((toInt(c[(xx+32*yy)].y) & 0xff) << 16) | ((toInt(c[(xx + 32*yy)].x) & 0xff) << 8) | 0xff;
+                                    }
+                                    start_ptr += w;
+                                }
+
+    #if 1
+                                if (redraw)
+                                {
+                                    m = AllocMsg(&msgPool);
+                                    m->mm_Message.mn_Length = sizeof(struct MyMessage);
+                                    m->mm_Message.mn_ReplyPort = syncPort;
+                                    m->mm_Type = MSG_REDRAWTILE;
+                                    m->mm_Body.RedrawTile.TileX = tile_x;
+                                    m->mm_Body.RedrawTile.TileY = tile_y;
+                                    PutMsg(guiPort, &m->mm_Message);
+                                    redraw = FALSE;
+                                }
+                                else if ((m = (struct MyMessage *)GetMsg(syncPort)))
+                                {
+                                    ADDHEAD(&msgPool, m);
+                                    redraw = TRUE;
+                                }
+    #else
+                                (void)syncPort;
+                                Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
+    #endif
+                            }
+
+                            Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
+
+                            m = AllocMsg(&msgPool);
+                            m->mm_Message.mn_Length = sizeof(struct MyMessage);
+                            m->mm_Message.mn_ReplyPort = port;
+                            m->mm_Type = MSG_RENDERREADY;
+                            m->mm_Body.RenderTile.tile = tile;
+                            PutMsg(masterPort, &m->mm_Message);
+
+                            m = AllocMsg(&msgPool);
+                            m->mm_Message.mn_Length = sizeof(struct MyMessage);
+                            m->mm_Message.mn_ReplyPort = port;
+                            m->mm_Type = MSG_HUNGRY;
+                            PutMsg(masterPort, &m->mm_Message);
+                        }
                     }
                 }
             }
@@ -334,7 +343,4 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort)
     DeleteMsgPort(syncPort);
 
     delete[] c;
-
-    D(bug("[SMP-SmallPT-Task] sending signal to renderer task\n"));
-    Signal((struct Task *)masterPort->mp_SigTask, SIGBREAKF_CTRL_C);
 }

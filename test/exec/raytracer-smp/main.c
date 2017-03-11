@@ -7,6 +7,7 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/processor.h>
 #include <proto/kernel.h>
 
@@ -79,10 +80,17 @@ struct Window * createMainWindow()
     return displayWin;
 }
 
+#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N"
+#define ARG_MAXCPU 0
+#define ARG_MAXITER 1
+
 int main()
 {
     APTR ProcessorBase;
-    //char buffer[200];
+    IPTR args[4] = { 0, 0};
+    struct RDArgs *rda;
+    int max_cpus = 0;
+    int max_iter = 0;
 
     struct Window *displayWin;
     struct BitMap *outputBMap = NULL;
@@ -104,6 +112,30 @@ int main()
     GetCPUInfo(tags);
 
     D(bug("[SMP-Smallpt] %s: detected %d CPU cores\n", __func__, coreCount);)
+
+    rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+    if (rda != NULL)
+    {
+        LONG *ptr = (LONG *)args[ARG_MAXCPU];
+        if (ptr)
+            max_cpus = *ptr;
+
+        ptr = (LONG *)args[ARG_MAXITER];
+        if (ptr)
+        {
+            max_iter = *ptr;
+            if (max_iter < 2)
+                max_iter = 2;
+            else if (max_iter > 10000)
+                max_iter = 10000;
+        }
+
+        if (max_cpus > 0 && coreCount > max_cpus)
+            coreCount = max_cpus;
+        
+        if (max_iter == 0)
+            max_iter = 16;
+    }
 
 //    NewRawDoFmt("Hello %s", RAWFMTFUNC_STRING, buffer, "world!");
 
@@ -153,7 +185,7 @@ int main()
 
         renderer = NewCreateTask(TASKTAG_NAME,      "SMP-Smallpt Master",
                                 TASKTAG_AFFINITY,   TASKAFFINITY_ANY,
-                                TASKTAG_PRI,        -1,
+                                TASKTAG_PRI,        0,
                                 TASKTAG_PC,         Renderer,
                                 TASKTAG_ARG1,       SysBase,
                                 TASKTAG_ARG2,       mainPort,
@@ -175,6 +207,7 @@ int main()
         cmd.mm_Body.Startup.Width = width;
         cmd.mm_Body.Startup.Height = height;
         cmd.mm_Body.Startup.coreCount = coreCount;
+        cmd.mm_Body.Startup.numberOfSamples = max_iter;
 
         D(bug("[SMP-Smallpt] %s: renderer alive. sending startup message\n", __func__);)
         
@@ -269,9 +302,15 @@ int main()
         quitmsg.mm_Type = MSG_DIE;
 
         PutMsg(rendererPort, &quitmsg.mm_Message);
+        int can_quit = 0;
+        do {
+            WaitPort(mainPort);
+            struct MyMessage *msg;
+            while ((msg = (struct MyMessage *)GetMsg(mainPort)))
+                if (msg->mm_Type == MSG_DIE)
+                    can_quit = 1;
+        } while(!can_quit);
 
-        Wait(SIGBREAKF_CTRL_C);
-        
         DeleteMsgPort(mainPort);
 
         CloseWindow(displayWin);
