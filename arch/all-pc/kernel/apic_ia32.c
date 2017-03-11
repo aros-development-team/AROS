@@ -117,6 +117,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         if ((!(fadt->BootFlags & ACPI_FADT_NO_MSI)) &&
             (!(kernPlatD->kb_PDFlags & PLATFORMF_HAVEMSI)))
         {
+            // TODO: Register the MSI interrupt controller..
             kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
             bug("[Kernel:APIC-IA32] MSI Interrupts enabled\n");
         }
