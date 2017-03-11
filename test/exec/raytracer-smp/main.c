@@ -141,10 +141,10 @@ int main()
         if (ptr)
             req_width = *ptr;
 
-        if (req_width < 160)
+        if (req_width && req_width < 160)
             req_width = 160;
 
-        if (req_height < 128)
+        if (req_height && req_height < 128)
             req_height = 128;
 
         ptr = (LONG *)args[ARG_HEIGHT];
