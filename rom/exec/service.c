@@ -23,7 +23,7 @@ void ServiceTask(struct ExecBase *SysBase)
 #endif
     struct Task *task;
     struct MemList *mb, *mbnext;
-    BOOL taskRequeque;
+    BOOL taskRequeue;
     DINIT("ServiceTask: Started up");
 
 #if defined(__AROSEXEC_SMP__)
@@ -38,7 +38,7 @@ void ServiceTask(struct ExecBase *SysBase)
         while ((task = (struct Task *)GetMsg(PrivExecBase(SysBase)->ServicePort)))
         {
             DREMTASK("ServiceTask: Request for Task 0x%p, State %08X\n", task, task->tc_State);
-            taskRequeque = TRUE;
+            taskRequeue = TRUE;
 
             /*
              * If we ever need to use TSS here, we'll need to explicitly check its size here.
@@ -53,11 +53,11 @@ void ServiceTask(struct ExecBase *SysBase)
                 if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (GetIntETask(serviceTask)->iet_CpuNumber== (IPTR)task->tc_UserData))
                 {
                     DREMTASK("ServiceTask: Task is running on this CPU (%03u)\n", task->tc_UserData);
-                    taskRequeque = FALSE;
+                    taskRequeue = FALSE;
                 }
 #endif
             case TS_REMOVED:
-                if (taskRequeque)
+                if (taskRequeue)
                 {
                     DREMTASK("ServiceTask: Requeueing request for Task 0x%p <%s> (State:%08x)", task, task->tc_Node.ln_Name, task->tc_State);
                     InternalPutMsg(PrivExecBase(SysBase)->ServicePort,
