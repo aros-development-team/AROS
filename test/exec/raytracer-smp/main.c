@@ -29,7 +29,7 @@ CONST_STRPTR version = "$VER: SMP-Smallpt 1.0 (03.03.2017) ©2017 The AROS Develo
 
 APTR KernelBase;
 
-struct Window * createMainWindow()
+struct Window * createMainWindow(int req_width, int req_height)
 {
     struct Screen *pubScreen;
     struct Window *displayWin = NULL;
@@ -41,6 +41,11 @@ struct Window * createMainWindow()
     {
         width = ((pubScreen->Width * 4) / 5) & ~0x1f;
         height = (width * 3 / 4) & ~0x1f;
+
+        if (req_width && req_width < width)
+            width = req_width & ~0x1f;
+        if (req_height && req_height < height)
+            height = req_height & ~0x1f;
 
         if (height >= (pubScreen->Height * 4) / 5)
         {
@@ -78,17 +83,20 @@ struct Window * createMainWindow()
     return displayWin;
 }
 
-#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N"
+#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N,WIDTH/N,HEIGHT/N"
 #define ARG_MAXCPU 0
 #define ARG_MAXITER 1
+#define ARG_WIDTH 2
+#define ARG_HEIGHT 3
 
 int main()
 {
     APTR ProcessorBase;
-    IPTR args[4] = { 0, 0};
+    IPTR args[4] = { 0, 0, 0, 0 };
     struct RDArgs *rda;
     int max_cpus = 0;
     int max_iter = 0;
+    int req_width = 0, req_height = 0;
     char tmpbuf[200];
 
     struct Window *displayWin;
@@ -129,6 +137,20 @@ int main()
                 max_iter = 10000;
         }
 
+        ptr = (LONG *)args[ARG_WIDTH];
+        if (ptr)
+            req_width = *ptr;
+
+        if (req_width < 160)
+            req_width = 160;
+
+        if (req_height < 128)
+            req_height = 128;
+
+        ptr = (LONG *)args[ARG_HEIGHT];
+        if (ptr)
+            req_height = *ptr;
+
         if (max_cpus > 0 && coreCount > max_cpus)
             coreCount = max_cpus;
         
@@ -138,7 +160,7 @@ int main()
 
 //    NewRawDoFmt("Hello %s", RAWFMTFUNC_STRING, buffer, "world!");
 
-    displayWin = createMainWindow();
+    displayWin = createMainWindow(req_width, req_height);
     if (displayWin)
     {
         int width, height;
