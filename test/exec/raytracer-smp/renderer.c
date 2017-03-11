@@ -40,6 +40,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
     int tasks_in = 0;
     int tasks_out = 0;
     int tasks_work = 0;
+    ULONG workerStack = AROS_STACKSIZE * 24;
 
     D(bug("[SMP-Smallpt-Renderer] Renderer started, ParentMailBox = %p\n", ParentMailbox));
 
@@ -121,7 +122,9 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
         D(bug("[SMP-Smallpt-Renderer] creating %d workers\n", numberOfCores));
         workers = AllocMem(sizeof(struct Worker) * numberOfCores, MEMF_PUBLIC | MEMF_CLEAR);
 
-        D(bug("[SMP-Smallpt-Renderer] worker stack size : %d bytes\n", ((maxIter / 5) + 1) * AROS_STACKSIZE));
+        workerStack *= ((maxIter / 5) + 1);
+
+        D(bug("[SMP-Smallpt-Renderer] worker stack size : %d bytes\n", workerStack));
 
         for (ULONG i=0; i < numberOfCores; i++)
         {
@@ -138,7 +141,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                                     TASKTAG_ARG1,           SysBase,
                                     TASKTAG_ARG2,           port,
                                     TASKTAG_ARG3,           &workers[i].port,
-                                    TASKTAG_STACKSIZE,      ((maxIter / 5) + 1) * AROS_STACKSIZE,
+                                    TASKTAG_STACKSIZE,      workerStack,
                                     TAG_DONE);
         }
         cores_alive = numberOfCores;
