@@ -563,7 +563,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
             data->graph_SegmentSize = (objWidth * data->graph_PeriodStepping) / data->graph_PeriodCeiling;
             if (data->graph_SegmentSize < 2.0)
                 data->graph_SegmentSize = 2.0;
-            for (pos = 0; pos <= (data->graph_PeriodCeiling / data->graph_PeriodStepping); pos++)
+            for (pos = 0; pos <= ((data->graph_PeriodCeiling / data->graph_PeriodStepping) + 1); pos++)
             {
                 Move(renderPort, rect.MinX + (pos * data->graph_SegmentSize) - (offset * data->graph_PeriodSize), rect.MinY);
                 Draw(renderPort, rect.MinX + (pos * data->graph_SegmentSize) - (offset * data->graph_PeriodSize), rect.MaxY);
