@@ -73,8 +73,6 @@ struct Window * createMainWindow()
     {
         if (pubScreen)
             UnlockPubScreen(0, pubScreen);
-
-        SetWindowPointer(displayWin, WA_BusyPointer, TRUE, TAG_DONE);
     }
 
     return displayWin;
@@ -153,6 +151,7 @@ int main()
         struct Task *renderer;
         struct Message *msg;
         struct MyMessage cmd;
+        BOOL busyPointer = FALSE;
 
         width = (displayWin->Width - displayWin->BorderLeft - displayWin->BorderRight);
         height = (displayWin->Height - displayWin->BorderTop - displayWin->BorderBottom);
@@ -292,6 +291,16 @@ int main()
                                     msg->mm_Body.Stats.tasksIn,
                                     msg->mm_Body.Stats.tasksOut);
                                 SetWindowTitles(displayWin, tmpbuf, NULL);
+                                if ((busyPointer) && (msg->mm_Body.Stats.tasksWork == 0))
+                                {
+                                    SetWindowPointer(displayWin, WA_BusyPointer, FALSE, TAG_DONE);
+                                    busyPointer = FALSE;
+                                }
+                                else if ((!busyPointer) && (msg->mm_Body.Stats.tasksWork > 0))
+                                {
+                                    SetWindowPointer(displayWin, WA_BusyPointer, TRUE, TAG_DONE);
+                                    busyPointer = TRUE;
+                                }
                                 break;
 
                             default:
