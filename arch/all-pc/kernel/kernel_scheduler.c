@@ -73,7 +73,11 @@ BOOL core_Schedule(void)
 
     FLAG_SCHEDSWITCH_CLEAR;
 
-    if (task->tc_State == TS_REMOVED)
+    if (
+#if defined(__AROSEXEC_SMP__)
+        (task->tc_State == TS_TOMBSTONED) ||
+#endif
+        (task->tc_State == TS_REMOVED))
     {
         /* always let finalising tasks finish... */
         corereschedule = FALSE;
@@ -150,6 +154,7 @@ void core_Switch(void)
     cpuid_t cpuNo;
     struct Task *task;
     ULONG showAlert = 0;
+    BOOL doSwitch = TRUE;
 
     DSCHED(bug("[Kernel] %s()\n", __func__);)
 
@@ -157,29 +162,50 @@ void core_Switch(void)
     task = GET_THIS_TASK;
 
     DSCHED(
-        bug("[Kernel:%03u] %s: running Task @ 0x%p\n", cpuNo, __func__, task);
-        bug("[Kernel:%03u] %s: Switching away from '%s', state %08x\n", cpuNo, __func__, task->tc_Node.ln_Name, task->tc_State);
+        bug("[Kernel:%03u] %s: Current running Task @ 0x%p\n", cpuNo, __func__, task);
     )
     if ((!task) || (task->tc_State == TS_INVALID))
     {
-        bug("[Kernel:%03u] %s: called on invalid task @ 0x%p\n", cpuNo, __func__, task);
+        bug("[Kernel:%03u] %s: called on invalid task!\n", cpuNo, __func__);
+        doSwitch = FALSE;
+    }
+    DSCHED(
+        bug("[Kernel:%03u] %s: Task name '%s'\n", cpuNo, __func__, task->tc_Node.ln_Name);
+        bug("[Kernel:%03u] %s: Task state = %08x\n", cpuNo, __func__, task->tc_State);
+    )
+#if defined(__AROSEXEC_SMP__)
+    if (task->tc_State == TS_TOMBSTONED)
+        doSwitch = FALSE;
+#endif
+    if (!doSwitch)
+    {
+        bug("[Kernel:%03u] %s: Letting Task continue to run..\n", cpuNo, __func__);
         return;
     }
 
+    DSCHED(
+        bug("[Kernel:%03u] %s: Switching away from Task\n", cpuNo, __func__);
+    )
+    
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
 #else
     if (task->tc_State != TS_RUN)
 #endif
-    Remove(&task->tc_Node);
+    REMOVE(&task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+    if (task->tc_State == TS_REMOVED)
+        task->tc_State = TS_TOMBSTONED;
 #endif
+
+    DSCHED(bug("[Kernel:%03u] %s: Task removed from list, state = %08x\n", cpuNo, __func__, task->tc_State);)
 
     if ((task->tc_State != TS_WAIT) &&
 #if defined(__AROSEXEC_SMP__)
         (task->tc_State != TS_SPIN) &&
+        (task->tc_State != TS_TOMBSTONED) &&
 #endif
         (task->tc_State != TS_REMOVED))
         task->tc_State = TS_READY;
@@ -187,8 +213,9 @@ void core_Switch(void)
     /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
-        bug("[Kernel:%03u] '%s' @ 0x%p went out of stack limits\n", cpuNo, task->tc_Node.ln_Name, task);
-        bug("[Kernel:%03u]  - Lower 0x%p, upper 0x%p, SP 0x%p\n", cpuNo, task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
+        bug("[Kernel:%03u] EROR! Task went out of stack limits\n", cpuNo);
+        bug("[Kernel:%03u]  - Lower Bound = 0x%p, Upper Bound = 0x%p\n", cpuNo, task->tc_SPLower, task->tc_SPUpper);
+        bug("[Kernel:%03u]  - SP = 0x%p\n", cpuNo, task->tc_SPReg);
 
         task->tc_SigWait    = 0;
         task->tc_State      = TS_WAIT;
@@ -223,7 +250,11 @@ void core_Switch(void)
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
     }
 #endif
-    else if (task->tc_State != TS_REMOVED)
+    else if(
+#if defined(__AROSEXEC_SMP__)
+        (task->tc_State != TS_TOMBSTONED) &&
+#endif
+        (task->tc_State != TS_REMOVED))
     {
         DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to wait\n", cpuNo, task->tc_Node.ln_Name, task);)
 #if defined(__AROSEXEC_SMP__)
@@ -260,7 +291,7 @@ struct Task *core_Dispatch(void)
         if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (core_APIC_CPUInMask(cpuNo, GetIntETask(newtask)->iet_CpuAffinity)))
         {
 #endif
-            Remove(&newtask->tc_Node);
+            REMOVE(&newtask->tc_Node);
             break;
 #if defined(__AROSEXEC_SMP__)
         }
@@ -274,7 +305,16 @@ struct Task *core_Dispatch(void)
     {
 #if defined(__AROSEXEC_SMP__)
         if (task->tc_State == TS_SPIN)
+        {
+#if 0
+bug("----> such unspinning should not take place!\n");
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
+                    SPINLOCK_MODE_WRITE);
+            REMOVE(&task->tc_Node);
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
+#endif
             task->tc_State = TS_READY;
+        }
 #endif
         newtask = task;
     }
@@ -305,9 +345,15 @@ struct Task *core_Dispatch(void)
                 launchtask = TRUE;
             }
         }
-        else if (task->tc_State == TS_REMOVED)
+        else if (
+#if defined(__AROSEXEC_SMP__)
+            (task->tc_State == TS_TOMBSTONED ) ||
+#endif
+            (task->tc_State == TS_REMOVED))
         {
             // The task is on its way out ...
+            bug("[Kernel:%03u] --> Dispatching finalizing/tombstoned task?\n", cpuNo);
+            bug("[Kernel:%03u] --> Task @ 0x%p '%s', state %08x\n", cpuNo, task, task->tc_Node.ln_Name, newtask->tc_State);
         }
 
         if (newtask->tc_State == TS_WAIT)
