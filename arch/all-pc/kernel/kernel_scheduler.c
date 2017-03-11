@@ -305,7 +305,7 @@ struct Task *core_Dispatch(void)
                 launchtask = TRUE;
             }
         }
-        else if (task->tc_State = TS_REMOVED)
+        else if (task->tc_State == TS_REMOVED)
         {
             // The task is on its way out ...
         }
