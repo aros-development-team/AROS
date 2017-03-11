@@ -1,0 +1,20 @@
+#   $Id: mmakefile.src 53238 2017-01-19 01:46:57Z NicJA $
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES   := main renderer
+CXXFILES := smallpt
+EXEDIR  := $(AROS_TESTS)/exec
+
+#MM- test-exec : test-exec-smp-ray
+#MM- test-exec-quick : test-exec-smp-ray-quick
+
+#USER_CFLAGS := $(PARANOIA_CFLAGS)
+
+%build_prog mmake=test-exec-smp-ray \
+    files=$(FILES) cxxfiles=$(CXXFILES) targetdir=$(EXEDIR) \
+    uselibs="stdcio stdc stdc++ pthread" \
+    progname=SMP-Smallpt
+
+%common
