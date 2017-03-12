@@ -83,17 +83,18 @@ struct Window * createMainWindow(int req_width, int req_height)
     return displayWin;
 }
 
-#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N,WIDTH/N,HEIGHT/N,EXPLICIT/S"
+#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N,WIDTH/N,HEIGHT/N,RAYDEPTH/N,EXPLICIT/S"
 #define ARG_MAXCPU 0
 #define ARG_MAXITER 1
 #define ARG_WIDTH 2
 #define ARG_HEIGHT 3
-#define ARG_EXPLICIT 4
+#define ARG_RAYDEPTH 4
+#define ARG_EXPLICIT 5
 
 int main()
 {
     APTR ProcessorBase;
-    IPTR args[5] = { 0, 0, 0, 0, 0 };
+    IPTR args[6] = { 0, 0, 0, 0, 0, 0 };
     struct RDArgs *rda;
     int max_cpus = 0;
     int max_iter = 0;
@@ -128,6 +129,13 @@ int main()
         LONG *ptr = (LONG *)args[ARG_MAXCPU];
         if (ptr)
             max_cpus = *ptr;
+
+        ptr = (LONG *)args[ARG_RAYDEPTH];
+        if (ptr) {
+            maximal_ray_depth = *ptr;
+            if (maximal_ray_depth < 2)
+                maximal_ray_depth = 2;
+        }
 
         ptr = (LONG *)args[ARG_MAXITER];
         if (ptr)
