@@ -41,6 +41,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
     int tasks_out = 0;
     int tasks_work = 0;
     ULONG workerStack = AROS_STACKSIZE * 24;
+    int expl_mode = 0;
 
     D(bug("[SMP-Smallpt-Renderer] Renderer started, ParentMailBox = %p\n", ParentMailbox));
 
@@ -92,6 +93,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                         //mainTask = msg->mm_Message.mn_ReplyPort->mp_SigTask;
                         numberOfCores = msg->mm_Body.Startup.coreCount;
                         maxIter = msg->mm_Body.Startup.numberOfSamples;
+                        expl_mode = msg->mm_Body.Startup.explicitMode;
                     }
                     ReplyMsg(&msg->mm_Message);
                 }
@@ -210,6 +212,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                             m->mm_Body.RenderTile.width = width;
                             m->mm_Body.RenderTile.height = height;
                             m->mm_Body.RenderTile.numberOfSamples = maxIter;
+                            m->mm_Body.RenderTile.explicitMode = expl_mode;
 
                             PutMsg(workerPort, &m->mm_Message);
                         }

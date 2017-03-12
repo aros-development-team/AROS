@@ -83,21 +83,23 @@ struct Window * createMainWindow(int req_width, int req_height)
     return displayWin;
 }
 
-#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N,WIDTH/N,HEIGHT/N"
+#define ARG_TEMPLATE "MAXCPU/N,MAXITER/N,WIDTH/N,HEIGHT/N,EXPLICIT/S"
 #define ARG_MAXCPU 0
 #define ARG_MAXITER 1
 #define ARG_WIDTH 2
 #define ARG_HEIGHT 3
+#define ARG_EXPLICIT 4
 
 int main()
 {
     APTR ProcessorBase;
-    IPTR args[4] = { 0, 0, 0, 0 };
+    IPTR args[5] = { 0, 0, 0, 0, 0 };
     struct RDArgs *rda;
     int max_cpus = 0;
     int max_iter = 0;
     int req_width = 0, req_height = 0;
     char tmpbuf[200];
+    int explicit_mode;
 
     struct Window *displayWin;
     struct BitMap *outputBMap = NULL;
@@ -156,6 +158,8 @@ int main()
         
         if (max_iter == 0)
             max_iter = 16;
+
+        explicit_mode = args[ARG_EXPLICIT];
     }
 
 //    NewRawDoFmt("Hello %s", RAWFMTFUNC_STRING, buffer, "world!");
@@ -230,6 +234,7 @@ int main()
         cmd.mm_Body.Startup.Height = height;
         cmd.mm_Body.Startup.coreCount = coreCount;
         cmd.mm_Body.Startup.numberOfSamples = max_iter;
+        cmd.mm_Body.Startup.explicitMode = explicit_mode;
 
         D(bug("[SMP-Smallpt] %s: renderer alive. sending startup message\n", __func__);)
         
