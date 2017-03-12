@@ -12,6 +12,8 @@ EXEDIR  := $(AROS_TESTS)/exec
 
 #USER_CFLAGS := $(PARANOIA_CFLAGS)
 
+USER_CFLAGS := -mno-red-zone -Os -flto
+
 %build_prog mmake=test-exec-smp-ray \
     files=$(FILES) cxxfiles=$(CXXFILES) targetdir=$(EXEDIR) \
     uselibs="stdcio stdc stdc++ pthread" \
