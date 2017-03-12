@@ -8,8 +8,6 @@
 
 #include "renderer.h"
 
-#define EXPLICIT
-
 struct Vec {        // Usage: time ./smallpt 5000 && xv image.ppm
     double x;
     double y;
@@ -62,6 +60,7 @@ struct Sphere
 }; 
 
 Sphere spheres[] = {//Scene: radius, position, emission, color, material 
+   Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF), //Lite 
    Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),//Left 
    Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF),//Rght 
    Sphere(1e5, Vec(50,40.8, 1e5),     Vec(),Vec(.55,.55,.55),DIFF),//Back 
@@ -73,16 +72,9 @@ Sphere spheres[] = {//Scene: radius, position, emission, color, material
    Sphere(10.5,Vec(23,10.5,98),       Vec(),Vec(.6,1,0.7)*.999, REFR),//Glas 
    Sphere(8.,Vec(50,8.,108),       Vec(),Vec(1,0.6,0.7)*.999, REFR),//Glas 
    Sphere(6.5, Vec(53,6.5,48),       Vec(),Vec(0.3,.4,.4)*.999, SPEC),//Mirr
-#ifdef EXPLICIT
-   Sphere(5, Vec(50,81.6-16.5,81.6),Vec(4,4,4)*20,  Vec(), DIFF),//Lite
-#else
-   Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF), //Lite 
-#endif
  }; 
 
-#ifdef EXPLICIT
-int numSpheres = sizeof(spheres)/sizeof(Sphere);
-#endif
+const int numSpheres = sizeof(spheres)/sizeof(Sphere);
 
 inline double clamp(double x)
 {
@@ -96,13 +88,12 @@ inline int toInt(double x)
 
 inline bool intersect(const Ray &r, double &t, int &id)
 { 
-    double n=sizeof(spheres)/sizeof(Sphere), d, inf=t=1e20; 
+    double n=numSpheres, d, inf=t=1e20; 
     for(int i=int(n);i--;) if((d=spheres[i].intersect(r))&&d<t){t=d;id=i;} 
     return t<inf; 
 }
 
-#ifdef EXPLICIT
-Vec radiance(const Ray &r, int depth, unsigned short *Xi,int E=1){
+Vec radiance_expl(const Ray &r, int depth, unsigned short *Xi,int E=1){
   double t;                               // distance to intersection
   int id=0;                               // id of intersected object
   if (!intersect(r, t, id)) return Vec(); // if miss, return black
@@ -135,22 +126,22 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi,int E=1){
       }
     }
 
-    return obj.e*E+e+f.mult(radiance(Ray(x,d),depth,Xi,0));
+    return obj.e*E+e+f.mult(radiance_expl(Ray(x,d),depth,Xi,0));
   } else if (obj.refl == SPEC)              // Ideal SPECULAR reflection
-    return obj.e + f.mult(radiance(Ray(x,r.d-n*2*n.dot(r.d)),depth,Xi));
+    return obj.e + f.mult(radiance_expl(Ray(x,r.d-n*2*n.dot(r.d)),depth,Xi));
   Ray reflRay(x, r.d-n*2*n.dot(r.d));     // Ideal dielectric REFRACTION
   bool into = n.dot(nl)>0;                // Ray from outside going in?
   double nc=1, nt=1.5, nnt=into?nc/nt:nt/nc, ddn=r.d.dot(nl), cos2t;
   if ((cos2t=1-nnt*nnt*(1-ddn*ddn))<0)    // Total internal reflection
-    return obj.e + f.mult(radiance(reflRay,depth,Xi));
+    return obj.e + f.mult(radiance_expl(reflRay,depth,Xi));
   Vec tdir = (r.d*nnt - n*((into?1:-1)*(ddn*nnt+sqrt(cos2t)))).norm();
   double a=nt-nc, b=nt+nc, R0=a*a/(b*b), c = 1-(into?-ddn:tdir.dot(n));
   double Re=R0+(1-R0)*c*c*c*c*c,Tr=1-Re,P=.25+.5*Re,RP=Re/P,TP=Tr/(1-P);
   return obj.e + f.mult(depth>2 ? (erand48(Xi)<P ?   // Russian roulette
-    radiance(reflRay,depth,Xi)*RP:radiance(Ray(x,tdir),depth,Xi)*TP) :
-    radiance(reflRay,depth,Xi)*Re+radiance(Ray(x,tdir),depth,Xi)*Tr);
+    radiance_expl(reflRay,depth,Xi)*RP:radiance_expl(Ray(x,tdir),depth,Xi)*TP) :
+    radiance_expl(reflRay,depth,Xi)*Re+radiance_expl(Ray(x,tdir),depth,Xi)*Tr);
 }
-#else
+
 Vec radiance(const Ray &r, int depth, unsigned short *Xi)
 { 
     double t; // distance to intersection 
@@ -189,51 +180,6 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi)
     return obj.e + f.mult(depth>2 ? (erand48(Xi)<P ?   // Russian roulette 
         radiance(reflRay,depth,Xi)*RP:radiance(Ray(x,tdir),depth,Xi)*TP) : 
         radiance(reflRay,depth,Xi)*Re+radiance(Ray(x,tdir),depth,Xi)*Tr); 
-}
-#endif
-
-extern "C"
-void render_tile(int w, int h, int samps, int tile_x, int tile_y, ULONG *buffer, struct Task *gfxTask)
-{
-    Ray cam(Vec(50, 52, 295.6), Vec(0, -0.042612, -1).norm()); // cam pos, dir
-    Vec cx = Vec(w * .5135 / h), cy = (cx % cam.d).norm() * .5135, r, *c = new Vec[32*32];
-
-    for (int _y=tile_y * 32; _y < (tile_y + 1) * 32; _y++)
-    {
-        int y = h - _y - 1;
-        for (unsigned short _x=tile_x * 32, Xi[3]={0,0,(UWORD)(y*y*y)}; _x < (tile_x + 1) * 32; _x++)   // Loop cols 
-        {
-            int x = _x; // w - _x - 1;
-            for (int sy=0, i=(_y-tile_y*32)*32+_x-tile_x*32; sy<2; sy++)     // 2x2 subpixel rows 
-            {
-                for (int sx=0; sx<2; sx++, r=Vec())
-                {        // 2x2 subpixel cols 
-                    for (int s=0; s<samps; s++)
-                    { 
-                        double r1=2*erand48(Xi), dx=r1<1 ? sqrt(r1)-1: 1-sqrt(2-r1); 
-                        double r2=2*erand48(Xi), dy=r2<1 ? sqrt(r2)-1: 1-sqrt(2-r2); 
-                        Vec d = cx*( ( (sx+.5 + dx)/2 + x)/w - .5) + 
-                                cy*( ( (sy+.5 + dy)/2 + y)/h - .5) + cam.d; 
-                        r = r + radiance(Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
-                    } // Camera rays are pushed ^^^^^ forward to start in interior 
-                    c[i] = c[i] + Vec(clamp(r.x),clamp(r.y),clamp(r.z))*.25; 
-                } 
-            }
-        }
-        int start_ptr = tile_y*32*w + tile_x*32;
-        for (int yy=0; yy < 32; yy++)
-        {
-            for (int xx=0; xx < 32; xx++)
-            {
-                buffer[start_ptr+xx] = ((toInt(c[(xx+32*yy)].z) & 0xff) << 24) |
-                    ((toInt(c[(xx+32*yy)].y) & 0xff) << 16) | ((toInt(c[(xx + 32*yy)].x) & 0xff) << 8) | 0xff;
-            }
-            start_ptr += w;
-        }
-        Signal(gfxTask, SIGBREAKF_CTRL_D);
-    }
-
-    delete[] c;
 }
 
 static inline struct MyMessage *AllocMsg(struct MinList *msgPool)
@@ -312,6 +258,12 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                             int tile_x = m->mm_Body.RenderTile.tile->x;
                             int tile_y = m->mm_Body.RenderTile.tile->y;
                             struct MsgPort *guiPort = m->mm_Body.RenderTile.guiPort;
+                            int explicit_mode = m->mm_Body.RenderTile.explicitMode;
+
+                            if (explicit_mode)
+                                spheres[0] = Sphere(5, Vec(50,81.6-16.5,81.6),Vec(4,4,4)*20,  Vec(), DIFF);
+                            else
+                                spheres[0] = Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF);
 
                             ReplyMsg(&m->mm_Message);
 
@@ -337,7 +289,10 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                                                 double r2=2*erand48(Xi), dy=r2<1 ? sqrt(r2)-1: 1-sqrt(2-r2); 
                                                 Vec d = cx*( ( (sx+.5 + dx)/2 + x)/w - .5) + 
                                                         cy*( ( (sy+.5 + dy)/2 + y)/h - .5) + cam.d; 
-                                                r = r + radiance(Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
+                                                if (explicit_mode)
+                                                    r = r + radiance_expl(Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
+                                                else
+                                                    r = r + radiance(Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
                                             } // Camera rays are pushed ^^^^^ forward to start in interior 
                                             c[i] = c[i] + Vec(clamp(r.x),clamp(r.y),clamp(r.z))*.25; 
                                         } 

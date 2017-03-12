@@ -22,6 +22,7 @@ struct MyMessage {
             ULONG               Height;
             ULONG               coreCount;
             ULONG               numberOfSamples;
+            BYTE                explicitMode;
         } Startup;
 
         struct {
@@ -36,6 +37,7 @@ struct MyMessage {
             ULONG               width;
             ULONG               height;
             ULONG               numberOfSamples;
+            BYTE                explicitMode;
         } RenderTile;
 
         struct {
