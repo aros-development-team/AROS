@@ -302,7 +302,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
 
                             ReplyMsg(&m->mm_Message);
 
-//__prepare();
+__prepare();
 
                             Ray cam(Vec(50, 52, 295.6), Vec(0, -0.042612, -1).norm()); // cam pos, dir
                             Vec cx = Vec(w * .5135 / h), cy = (cx % cam.d).norm() * .5135, r;
@@ -368,7 +368,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                                 Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
     #endif
                             }
-//__test();
+__test();
                             Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
 
                             m = AllocMsg(&msgPool);

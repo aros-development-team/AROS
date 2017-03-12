@@ -40,7 +40,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
     int tasks_in = 0;
     int tasks_out = 0;
     int tasks_work = 0;
-    ULONG workerStack = maximal_ray_depth * 1000;
+    ULONG workerStack = AROS_STACKSIZE + maximal_ray_depth * 1000;
     int expl_mode = 0;
 
     D(bug("[SMP-Smallpt-Renderer] Renderer started, ParentMailBox = %p\n", ParentMailbox));
