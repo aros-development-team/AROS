@@ -227,12 +227,14 @@ void __test()
 
 extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort, struct MsgPort **myPort)
 {
-    Vec *c = new Vec[TILE_SIZE*TILE_SIZE];
+    Vec *c;
     struct MyMessage *msg;
     struct MyMessage *m;
     struct MsgPort *port = CreateMsgPort();
     struct MsgPort *syncPort = CreateMsgPort();
     struct MinList msgPool;
+
+    c = (Vec *)AllocMem(sizeof(Vec) * TILE_SIZE * TILE_SIZE, MEMF_ANY | MEMF_CLEAR);
 
     *myPort = port;
 
@@ -398,5 +400,5 @@ __test();
     DeleteMsgPort(port);
     DeleteMsgPort(syncPort);
 
-    delete[] c;
+    FreeMem(c, sizeof(Vec) * TILE_SIZE * TILE_SIZE);
 }
