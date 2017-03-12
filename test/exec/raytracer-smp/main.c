@@ -99,7 +99,7 @@ int main()
     int max_iter = 0;
     int req_width = 0, req_height = 0;
     char tmpbuf[200];
-    int explicit_mode;
+    int explicit_mode = 0;
 
     struct Window *displayWin;
     struct BitMap *outputBMap = NULL;
