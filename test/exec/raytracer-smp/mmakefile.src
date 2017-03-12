@@ -3,6 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+BD_LINK := $(TARGET_CC)
+
 FILES   := main renderer
 CXXFILES := smallpt
 EXEDIR  := $(AROS_TESTS)/exec
@@ -16,7 +18,6 @@ USER_CFLAGS := -mno-red-zone -Os -flto
 
 %build_prog mmake=test-exec-smp-ray \
     files=$(FILES) cxxfiles=$(CXXFILES) targetdir=$(EXEDIR) \
-    uselibs="stdcio stdc stdc++ pthread" \
     progname=SMP-Smallpt
 
 %common
