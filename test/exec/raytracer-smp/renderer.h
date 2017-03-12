@@ -48,6 +48,7 @@ struct MyMessage {
     } mm_Body;
 };
 
+extern int maximal_ray_depth;
 
 #define MSG_STARTUP     0
 #define MSG_DIE         1

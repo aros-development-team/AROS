@@ -67,7 +67,7 @@ Sphere spheres[] = {//Scene: radius, position, emission, color, material
    Sphere(1e5, Vec(50,40.8,-1e5+170), Vec(),Vec(),           DIFF),//Frnt 
    Sphere(1e5, Vec(50, 1e5, 81.6),    Vec(),Vec(.75,.75,.75),DIFF),//Botm 
    Sphere(1e5, Vec(50,-1e5+81.6,81.6),Vec(),Vec(.75,.75,.75),DIFF),//Top 
-   Sphere(16.5,Vec(27,16.5,47),       Vec(),Vec(.7,.7,.6)*.999, SPEC),//Mirr 
+   Sphere(16.5,Vec(27,16.5,47),       Vec(),Vec(.4,.4,.3)*.999, SPEC),//Mirr 
    Sphere(16.5,Vec(73,16.5,78),       Vec(),Vec(.8,.7,.95)*.999, REFR),//Glas 
    Sphere(10.5,Vec(23,10.5,98),       Vec(),Vec(.6,1,0.7)*.999, REFR),//Glas 
    Sphere(8.,Vec(50,8.,108),       Vec(),Vec(1,0.6,0.7)*.999, REFR),//Glas 
@@ -93,6 +93,10 @@ inline bool intersect(const Ray &r, double &t, int &id)
     return t<inf; 
 }
 
+int maximal_ray_depth = 1000;
+
+// ca. 650bytes per ray depth, 650KB stack required for max ray depth of 1000
+
 Vec radiance_expl(const Ray &r, int depth, unsigned short *Xi,int E=1){
   double t;                               // distance to intersection
   int id=0;                               // id of intersected object
@@ -100,7 +104,14 @@ Vec radiance_expl(const Ray &r, int depth, unsigned short *Xi,int E=1){
   const Sphere &obj = spheres[id];        // the hit object
   Vec x=r.o+r.d*t, n=(x-obj.p).norm(), nl=n.dot(r.d)<0?n:n*-1, f=obj.c;
   double p = f.x>f.y && f.x>f.z ? f.x : f.y>f.z ? f.y : f.z; // max refl
-  if (++depth>10||!p) { if (erand48(Xi)<p) f=f*(1/p); else return obj.e*E;}
+  depth++;
+  // If depth larger than maximal_ray_depth do not use Russian roulette, give up unconditionally
+  // because AROS does not have automatic stack expansion
+  if (depth > maximal_ray_depth)
+    return obj.e*E;
+  else if (depth>10||!p) { // From depth 10 start Russian roulette
+       if (erand48(Xi)<p) f=f*(1/p); else return obj.e*E;
+    }
   if (obj.refl == DIFF){                  // Ideal DIFFUSE reflection
     double r1=2*M_PI*erand48(Xi), r2=erand48(Xi), r2s=sqrt(r2);
     Vec w=nl, u=((fabs(w.x)>.1?Vec(0,1):Vec(1))%w).norm(), v=w%u;
@@ -154,10 +165,14 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi)
     
     Vec x=r.o+r.d*t, n=(x-obj.p).norm(), nl=n.dot(r.d)<0?n:n*-1, f=obj.c; 
     
-    double p = f.x>f.y && f.x>f.z ? f.x : f.y>f.z ? f.y : f.z; // max refl 
-    
-    if (++depth>5) // 5
+    depth++;
+    // Above maximal_ray_depth break recursive loop unconditionally
+    if (depth > maximal_ray_depth)
+        return obj.e;
+    else if (depth>5) // From depth of 5 start Russian roulette
     {
+        double p = f.x>f.y && f.x>f.z ? f.x : f.y>f.z ? f.y : f.z; // max refl 
+
         if (erand48(Xi)<p)
             f=f*(1/p);
         else return obj.e; //R.R. 
@@ -188,6 +203,26 @@ static inline struct MyMessage *AllocMsg(struct MinList *msgPool)
         bug("!!! smallpt.cc - run out of free messages!\n");
     
     return (struct MyMessage *)REMHEAD(msgPool);
+}
+void __prepare()
+{
+    ULONG *ptr = (ULONG *)FindTask(NULL)->tc_SPLower;
+    ULONG *rsp = 0;
+
+    asm volatile("mov %%rsp,%0":"=r"(rsp));
+
+    while (ptr < rsp-1)
+        *ptr++ = 0xdeadbeef;
+}
+
+void __test()
+{
+    ULONG *ptr = (ULONG *)FindTask(NULL)->tc_SPLower;
+    IPTR top = (IPTR)FindTask(NULL)->tc_SPUpper;
+    
+    while(*ptr++ == 0xdeadbeef);
+
+    bug("--> USED STACK: %d\n", top - (IPTR)ptr);
 }
 
 extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort, struct MsgPort **myPort)
@@ -267,6 +302,8 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
 
                             ReplyMsg(&m->mm_Message);
 
+//__prepare();
+
                             Ray cam(Vec(50, 52, 295.6), Vec(0, -0.042612, -1).norm()); // cam pos, dir
                             Vec cx = Vec(w * .5135 / h), cy = (cx % cam.d).norm() * .5135, r;
 
@@ -331,7 +368,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                                 Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
     #endif
                             }
-
+//__test();
                             Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
 
                             m = AllocMsg(&msgPool);

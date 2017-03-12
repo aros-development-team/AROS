@@ -40,7 +40,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
     int tasks_in = 0;
     int tasks_out = 0;
     int tasks_work = 0;
-    ULONG workerStack = AROS_STACKSIZE * 24;
+    ULONG workerStack = maximal_ray_depth * 1000;
     int expl_mode = 0;
 
     D(bug("[SMP-Smallpt-Renderer] Renderer started, ParentMailBox = %p\n", ParentMailbox));
@@ -123,8 +123,6 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
 
         D(bug("[SMP-Smallpt-Renderer] creating %d workers\n", numberOfCores));
         workers = AllocMem(sizeof(struct Worker) * numberOfCores, MEMF_PUBLIC | MEMF_CLEAR);
-
-        workerStack *= ((maxIter / 5) + 1);
 
         D(bug("[SMP-Smallpt-Renderer] worker stack size : %d bytes\n", workerStack));
 
