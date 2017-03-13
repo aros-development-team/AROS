@@ -91,7 +91,9 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     };
 
     DEBUG_INIT(dprintf("LIB_Init: base 0x%p\n", LIBBASE));
-
+#if defined(__AROSEXEC_SMP__)
+    GetPrivIBase(LIBBASE)->ExecLockBase = OpenResource("execlock.resource");
+#endif
     /* Open our dependencies */
     if (!(GetPrivIBase(LIBBASE)->UtilityBase = OpenLibrary("utility.library", 0))) {
         return FALSE;
