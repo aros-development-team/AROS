@@ -2,12 +2,14 @@
 #define _TIMER_INTERN_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information about the timer.device and HIDD's
     Lang: english
 */
+
+#include <aros/config.h>
 
 #include <exec/execbase.h>
 #include <exec/lists.h>
@@ -22,6 +24,10 @@
 
 /* Platform-specific portion */
 #include <timer_platform.h>
+
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#endif
 
 /*
  * First two of these correspond to UNIT_MICROHZ and UNIT_VBLANK.
@@ -61,6 +67,10 @@ struct TimerBase
 #endif
 
     struct PlatformTimer tb_Platform;		/* Platform-specific data				*/
+#if defined(__AROSEXEC_SMP__)
+    void                *tb_ExecLockBase;
+    void                *tb_ListLock;
+#endif
 };
 
 #define GetTimerBase(tb)	((struct TimerBase *)(tb))
