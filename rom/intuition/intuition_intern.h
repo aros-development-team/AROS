@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -634,6 +634,9 @@ struct IntIntuitionBase
     struct SignalSemaphore	 MonitorListSem;
 
     struct Interrupt             ShutdownHandler;
+#if defined(__AROSEXEC_SMP__)
+    void *                       ExecLockBase;
+#endif
 };
 
 struct SharedPointer

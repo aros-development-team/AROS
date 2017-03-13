@@ -1,12 +1,15 @@
 /*
-    Copyright � 1995-2017, The AROS Development Team. All rights reserved.
-    Copyright � 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
 /****************************************************************************************/
 
+#include <aros/config.h>
+
 #include <proto/exec.h>
+#include <proto/execlock.h>
 #include <proto/intuition.h>
 #include <proto/alib.h>
 #include <proto/layers.h>
@@ -47,7 +50,7 @@
 #endif
 
 #undef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define DEBUG_HANDLER(x)    ;
@@ -67,7 +70,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 {
     struct Interrupt *iihandler;
 
-    D(bug("InitIIH(IntuitionBase=%p)\n", IntuitionBase));
+    D(bug("[Intuition] %s(IntuitionBase=%p)\n", __func__, IntuitionBase));
 
     iihandler = AllocMem(sizeof (struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     if (iihandler)
@@ -180,6 +183,8 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
 {
     struct IIHData *iihdata = (struct IIHData *)iihandler->is_Data;
 
+    D(bug("[Intuition] %s()\n", __func__));
+
     DisposeObject((Object *)iihdata->MasterDragGadget);
     DisposeObject((Object *)iihdata->MasterSizeGadget);
 
@@ -205,6 +210,8 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
 {
     struct Library *TimerBase = GetPrivIBase(IntuitionBase)->TimerBase;
     struct IntuiMessage *im;
+
+    D(bug("[Intuition] %s()\n", __func__));
 
     while ((im = (struct IntuiMessage *)GetMsg(iihdata->IntuiReplyPort)))
     {
@@ -422,6 +429,8 @@ struct Window *GetToolBoxWindow(struct InputEvent *ie, struct Screen *scr, struc
     struct Layer    *l;
     struct Window   *new_w = NULL;
 
+    D(bug("[Intuition] %s()\n", __func__));
+
     if (scr)
     {
         D(bug("GetToolBoxWindow: Click at (%d,%d)\n",scr->MouseX,scr->MouseY));
@@ -484,6 +493,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 {
     struct Library *InputBase = GetPrivIBase(IntuitionBase)->InputBase;
     struct Requester *req = w ? w->FirstRequest : NULL;
+
+    D(bug("[Intuition] %s()\n", __func__));
 
     switch (ie->ie_Code) {
     case SELECTDOWN:
@@ -1754,33 +1765,38 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         if (w->UserPort)
         {
             struct IntuiMessage *im;
-
-            //TODO: __AROSEXEC_SMP_  should spinlock protect access...
+#if defined(__AROSEXEC_SMP__)
+            struct ExecLockBase *ExecLockBase = GetPrivIBase(IntuitionBase)->ExecLockBase;
+            if (ExecLockBase) ObtainLock(&w->UserPort->mp_SpinLock, SPINLOCK_MODE_READ, 0);
+#endif
             for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
             im->ExecMessage.mn_Node.ln_Pred;
             im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)
             {
-            if ((im->Class == IDCMP_MOUSEMOVE) &&
-                (im->IDCMPWindow == w))
-            {
-                im->Qualifier = iihdata->ActQualifier;
-
-                if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+                if ((im->Class == IDCMP_MOUSEMOVE) &&
+                    (im->IDCMPWindow == w))
                 {
-                im->MouseX = iihdata->DeltaMouseX;
-                im->MouseY = iihdata->DeltaMouseY;
-                }
-                else
-                {
-                im->MouseX = w->MouseX;
-                im->MouseY = w->MouseY;
-                }
-                CurrentTime(&im->Seconds, &im->Micros);
+                    im->Qualifier = iihdata->ActQualifier;
 
-                old_msg_found = TRUE;
-                break;
+                    if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+                    {
+                    im->MouseX = iihdata->DeltaMouseX;
+                    im->MouseY = iihdata->DeltaMouseY;
+                    }
+                    else
+                    {
+                    im->MouseX = w->MouseX;
+                    im->MouseY = w->MouseY;
+                    }
+                    CurrentTime(&im->Seconds, &im->Micros);
+
+                    old_msg_found = TRUE;
+                    break;
+                }
             }
-            }
+#if defined(__AROSEXEC_SMP__)
+            if (ExecLockBase) ReleaseLock(&w->UserPort->mp_SpinLock, 0);
+#endif
         } /* if (w->UserPort) */
         Permit();
 
