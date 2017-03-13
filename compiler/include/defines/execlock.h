@@ -52,7 +52,7 @@ __BEGIN_DECLS
 
 #define __AllocLock_WB(__ExecLockBase) ({\
         AROS_LIBREQ(ExecLockBase,36)\
-        AROS_LC0(int, AllocLock, \
+        AROS_LC0(APTR, AllocLock, \
         struct Library *, (__ExecLockBase), 3, ExecLock);\
 })
 
