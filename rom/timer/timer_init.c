@@ -65,8 +65,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     struct Interrupt *is;
 
 #if defined(__AROSEXEC_SMP__)
-    if ((LIBBASE->tb_ExecLockBase = OpenResource("execlock.resource")) != NULL)
+    struct ExecLockBase *ExecLockBase;
+    if ((ExecLockBase = OpenResource("execlock.resource")) != NULL)
+    {
+        LIBBASE->tb_ExecLockBase = ExecLockBase;
         LIBBASE->tb_ListLock = AllocLock();
+    }
 #endif
 
     /* If no frequency is set, assume 50Hz */
