@@ -77,8 +77,10 @@ struct TimerBase
 #define GetDevice(tb)		((struct Device *)(tb))
 
 BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase);
-void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
-void handleVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase);
+void TimerProcessMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase, BOOL locked);
+void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, BOOL locked);
+#define handleMicroHZ(x,y) TimerProcessMicroHZ(x,y,FALSE)
+#define handleVBlank(x,y) TimerProcessVBlank(x,y,FALSE)
 void EClockUpdate(struct TimerBase *TimerBase);
 void EClockSet(struct TimerBase *TimerBase);
 
