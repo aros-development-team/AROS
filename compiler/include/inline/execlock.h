@@ -50,7 +50,7 @@ static inline void __inline_ExecLock_ReleaseSystemLock(struct List * __arg1, ULO
 
 #if !defined(__EXECLOCK_LIBAPI__) || (36 <= __EXECLOCK_LIBAPI__)
 
-static inline int __inline_ExecLock_AllocLock(APTR __ExecLockBase)
+static inline APTR __inline_ExecLock_AllocLock(APTR __ExecLockBase)
 {
     AROS_LIBREQ(ExecLockBase, 36)
     return AROS_LC0(APTR, AllocLock,
