@@ -50,8 +50,8 @@ static AROS_INTH1(VBlankInt, struct TimerBase *, TimerBase)
      * Now go to handle requests.
      * We are called at rather low rate, so don't bother and process both units.
      */
-    handleMicroHZ(TimerBase, SysBase, FALSE);
-    handleVBlank(TimerBase, SysBase, FALSE);
+    handleMicroHZ(TimerBase, SysBase);
+    handleVBlank(TimerBase, SysBase);
 
     return 0;
 
