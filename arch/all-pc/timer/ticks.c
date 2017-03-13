@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hardware management routines for IBM PC-AT timer
@@ -8,6 +8,7 @@
 
 #include <asm/io.h>
 #include <proto/exec.h>
+#include <proto/execlock.h>
 
 #include "ticks.h"
 #include "timer_macros.h"
@@ -114,12 +115,18 @@ void EClockSet(struct TimerBase *TimerBase)
 
 void Timer0Setup(struct TimerBase *TimerBase)
 {
+#if defined(__AROSEXEC_SMP__)
+    struct ExecLockBase *ExecLockBase = TimerBase->tb_ExecLockBase;
+#endif
     struct timeval time;
     ULONG delay = 23864;
     ULONG old_tick;
-    struct timerequest *tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_MICROHZ]);
+    struct timerequest *tr;
 
-    if (tr)
+#if defined(__AROSEXEC_SMP__)
+    if (ExecLockBase) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_READ, 0);
+#endif
+    if ((tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_MICROHZ])) != NULL)
     {
         time.tv_micro = tr->tr_time.tv_micro;
         time.tv_secs  = tr->tr_time.tv_secs;
@@ -139,7 +146,9 @@ void Timer0Setup(struct TimerBase *TimerBase)
             }
         }
     }
-
+#if defined(__AROSEXEC_SMP__)
+    if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
+#endif
     if (delay < 2) delay = 2;
 
     /*
