@@ -257,7 +257,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
     return addedhead;
 }
 
-void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase)
+void TimerProcessMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase, BOOL locked)
 {
 #if defined(__AROSEXEC_SMP__)
     struct ExecLockBase *ExecLockBase = TimerBase->tb_ExecLockBase;
@@ -270,7 +270,7 @@ void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase)
      * A completed request is one whose time is less than that of the elapsed time.
     */
 #if defined(__AROSEXEC_SMP__)
-    if (ExecLockBase) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_WRITE, 0);
+    if (ExecLockBase && !locked) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_WRITE, 0);
 #endif
     ForeachNodeSafe(unit, tr, next)
     {
@@ -298,7 +298,7 @@ void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 		 * VBLANK queue is checked more rarely than MICROHZ, this helps to decrease
 		 * CPU usage.
 		 */
-		handleVBlank(TimerBase, SysBase);
+		TimerProcessVBlank(TimerBase, SysBase, TRUE);
 
 		/*
 		 * Automatically requeue/reactivate request.
@@ -332,11 +332,11 @@ void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 	}
     }
 #if defined(__AROSEXEC_SMP__)
-    if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
+    if (ExecLockBase && !locked) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
 }
 
-void handleVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase)
+void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, BOOL locked)
 {
 #if defined(__AROSEXEC_SMP__)
     struct ExecLockBase *ExecLockBase = TimerBase->tb_ExecLockBase;
@@ -356,7 +356,7 @@ void handleVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase)
      * is less than that of the elapsed time.
      */
 #if defined(__AROSEXEC_SMP__)
-    if (ExecLockBase) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_WRITE, 0);
+    if (ExecLockBase && !locked) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_WRITE, 0);
 #endif
     ForeachNodeSafe(&TimerBase->tb_Lists[TL_VBLANK], tr, next)
     {
@@ -393,7 +393,7 @@ void handleVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 	    break;
     }
 #if defined(__AROSEXEC_SMP__)
-    if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
+    if (ExecLockBase && !locked) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
 }
 

@@ -20,7 +20,7 @@ AROS_INTH1(VBlankInt, struct TimerBase *, TimerBase)
 
     /* UpdateEClock and process VBlank timer*/
     EClockUpdate(TimerBase);
-    handleVBlank(TimerBase, SysBase);
+    handleVBlank(TimerBase, SysBase, FALSE);
 
     /* exec should continue with other servers */
     return 0;
