@@ -207,15 +207,15 @@ static inline struct MyMessage *AllocMsg(struct MinList *msgPool)
 void __prepare()
 {
     ULONG *ptr = NULL;
-    IPTR sp = (IPTR)AROS_GET_SP;
+    ULONG *sp = (ULONG*)AROS_GET_SP;
 
-#if STACK_GROWS_DOWNWARDS
+#if AROS_STACK_GROWS_DOWNWARDS
     ptr = (ULONG *)FindTask(NULL)->tc_SPLower;
-    while ((IPTR)ptr < sp-SP_OFFSET)
+    while ((IPTR)ptr < (IPTR)sp-SP_OFFSET)
         *ptr++ = 0xdeadbeef;
 #else
     ptr = (ULONG *)FindTask(NULL)->tc_SPUpper;
-    while ((IPTR)ptr > sp+SP_OFFSET)
+    while ((IPTR)ptr > (IPTR)sp+SP_OFFSET)
         *--ptr = 0xdeadbeef;
 #endif
 }
@@ -223,7 +223,7 @@ void __prepare()
 void __test()
 {
     IPTR diff = 0;
-#if STACK_GROWS_DOWNWARDS
+#if AROS_STACK_GROWS_DOWNWARDS
     ULONG *ptr = (ULONG *)FindTask(NULL)->tc_SPLower;
     IPTR top = (IPTR)FindTask(NULL)->tc_SPUpper;
 
