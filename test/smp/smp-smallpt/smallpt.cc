@@ -207,11 +207,11 @@ static inline struct MyMessage *AllocMsg(struct MinList *msgPool)
 void __prepare()
 {
     ULONG *ptr = (ULONG *)FindTask(NULL)->tc_SPLower;
-    ULONG *rsp = 0;
+    IPTR sp = (IPTR)AROS_GET_SP;
 
-    asm volatile("mov %%rsp,%0":"=r"(rsp));
+    //asm volatile("mov %%rsp,%0":"=r"(rsp));
 
-    while (ptr < rsp-1)
+    while ((IPTR)ptr < sp-SP_OFFSET)
         *ptr++ = 0xdeadbeef;
 }
 
