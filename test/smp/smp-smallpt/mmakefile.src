@@ -12,10 +12,10 @@ EXEDIR  := $(AROS_TESTS)/smp
 
 #USER_CFLAGS := $(PARANOIA_CFLAGS)
 
-USER_CFLAGS := -std=gnu99 -mno-red-zone -Os -flto
+USER_CFLAGS := -std=gnu99 -mno-red-zone -Os -flto -static-stdc++
 
 %build_prog mmake=test-smp-smp-smallpt \
     files=$(FILES) cxxfiles=$(CXXFILES) targetdir=$(EXEDIR) \
-    uselibs="stdc++ pthread" progname=SMP-SmallPT
+    uselibs="" progname=SMP-SmallPT
 
 %common
