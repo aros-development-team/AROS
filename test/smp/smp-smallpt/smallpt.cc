@@ -206,23 +206,39 @@ static inline struct MyMessage *AllocMsg(struct MinList *msgPool)
 }
 void __prepare()
 {
-    ULONG *ptr = (ULONG *)FindTask(NULL)->tc_SPLower;
+    ULONG *ptr = NULL;
     IPTR sp = (IPTR)AROS_GET_SP;
 
-    //asm volatile("mov %%rsp,%0":"=r"(rsp));
-
+#if STACK_GROWS_DOWNWARDS
+    ptr = (ULONG *)FindTask(NULL)->tc_SPLower;
     while ((IPTR)ptr < sp-SP_OFFSET)
         *ptr++ = 0xdeadbeef;
+#else
+    ptr = (ULONG *)FindTask(NULL)->tc_SPUpper;
+    while ((IPTR)ptr > sp+SP_OFFSET)
+        *--ptr = 0xdeadbeef;
+#endif
 }
 
 void __test()
 {
+    IPTR diff = 0;
+#if STACK_GROWS_DOWNWARDS
     ULONG *ptr = (ULONG *)FindTask(NULL)->tc_SPLower;
     IPTR top = (IPTR)FindTask(NULL)->tc_SPUpper;
-    
+
     while(*ptr++ == 0xdeadbeef);
 
-    bug("--> USED STACK: %d\n", top - (IPTR)ptr);
+    diff = top - (IPTR)ptr;
+#else
+    ULONG *ptr = (ULONG *)FindTask(NULL)->tc_SPUpper;
+    IPTR bottom = (IPTR)FindTask(NULL)->tc_SPLower;
+
+    while(*--ptr == 0xdeadbeef);
+
+    diff = (IPTR)ptr - bottom;
+#endif
+    bug("--> USED STACK: %d\n", diff);
 }
 
 extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort, struct MsgPort **myPort)
