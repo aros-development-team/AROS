@@ -100,7 +100,6 @@ AROS_UFH3(IPTR, signal_hook,
     struct KernelBase *KernelBase = __kernelBase;
     int cpunum = KrnGetCPUNumber();
 
-    //EXEC_SPINLOCK_LOCK(IntETask(task->tc_UnionETask.tc_ETask)->iet_SpinLock, NULL, SPINLOCK_MODE_READ);
     /*
         * # If current CPU number is not the task's CPU and the task is running now, send signal to that task
         *   from CPU which the task is running on.
@@ -151,126 +150,130 @@ AROS_UFH3(IPTR, signal_hook,
         
         KrnFreeCPUMask(cpu_mask);
     }
-    //EXEC_SPINLOCK_UNLOCK(IntETask(task->tc_UnionETask.tc_ETask)->iet_SpinLock);
-
-    if (cpunum != 0)
+    else
     {
-        D(bug("[Exec] Signal(0x%p, %08lX) on CPU%03d\n", task, signalSet, cpunum));
-    }
-#else
-    D(bug("[Exec] Signal(0x%p, %08lX)\n", task, signalSet);)
-#endif
 
-    D(
-        bug("[Exec] Signal: Signaling '%s', state = %08x\n", task->tc_Node.ln_Name, task->tc_State);
-        if (((struct KernelBase *)KernelBase)->kb_ICFlags & KERNBASEF_IRQPROCESSING)
-            bug("[Exec] Signal: (Called from Interrupt)\n");
-        else
-            bug("[Exec] Signal: (Called from '%s')\n", thisTask->tc_Node.ln_Name);
-    )
-
-    Disable();
-    D(bug("[Exec] Signal: Target signal flags : %08x ->", task->tc_SigRecvd);)
-    /* Set the signals in the task structure. */
-#if defined(__AROSEXEC_SMP__)
-    __AROS_ATOMIC_OR_L(task->tc_SigRecvd, signalSet);
-#else
-    task->tc_SigRecvd |= signalSet;
-#endif
-    D(bug(" %08x\n", task->tc_SigRecvd);)
-
-    /* Do those bits raise exceptions? */
-    if (task->tc_SigRecvd & task->tc_SigExcept)
-    {
-        /* Yes. Set the exception flag. */
-#if defined(__AROSEXEC_SMP__)
-        __AROS_ATOMIC_OR_B(task->tc_Flags, TF_EXCEPT);
-#else
-        task->tc_Flags |= TF_EXCEPT;
-#endif
-        D(bug("[Exec] Signal: TF_EXCEPT set\n");)
-
-        /* 
-                if the target task is running (called from within interrupt handler, or from another processor),
-                raise the exception or defer it for later.
-            */
-        if (task->tc_State == TS_RUN)
+        if (cpunum != 0)
         {
-#if defined(__AROSEXEC_SMP__)
-            if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
-                (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum))
-            {
-#endif
-            D(bug("[Exec] Signal: Raising Exception for 'running' Task\n");)
-            /* Order a reschedule */
-            Reschedule();
-#if defined(__AROSEXEC_SMP__)
-            }
+            D(bug("[Exec] Signal(0x%p, %08lX) on CPU%03d\n", task, signalSet, cpunum));
+        }
+    #else
+        D(bug("[Exec] Signal(0x%p, %08lX)\n", task, signalSet);)
+    #endif
+
+        D(
+            bug("[Exec] Signal: Signaling '%s', state = %08x\n", task->tc_Node.ln_Name, task->tc_State);
+            if (((struct KernelBase *)KernelBase)->kb_ICFlags & KERNBASEF_IRQPROCESSING)
+                bug("[Exec] Signal: (Called from Interrupt)\n");
             else
+                bug("[Exec] Signal: (Called from '%s')\n", thisTask->tc_Node.ln_Name);
+        )
+
+        Disable();
+        D(bug("[Exec] Signal: Target signal flags : %08x ->", task->tc_SigRecvd);)
+        /* Set the signals in the task structure. */
+    #if defined(__AROSEXEC_SMP__)
+        __AROS_ATOMIC_OR_L(task->tc_SigRecvd, signalSet);
+    #else
+        task->tc_SigRecvd |= signalSet;
+    #endif
+        D(bug(" %08x\n", task->tc_SigRecvd);)
+
+        /* Do those bits raise exceptions? */
+        if (task->tc_SigRecvd & task->tc_SigExcept)
+        {
+            /* Yes. Set the exception flag. */
+    #if defined(__AROSEXEC_SMP__)
+            __AROS_ATOMIC_OR_B(task->tc_Flags, TF_EXCEPT);
+    #else
+            task->tc_Flags |= TF_EXCEPT;
+    #endif
+            D(bug("[Exec] Signal: TF_EXCEPT set\n");)
+
+            /* 
+                    if the target task is running (called from within interrupt handler, or from another processor),
+                    raise the exception or defer it for later.
+                */
+            if (task->tc_State == TS_RUN)
             {
-                D(bug("[Exec] Signal: Raising Exception for 'running' Task on CPU %03u\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
+    #if defined(__AROSEXEC_SMP__)
+                if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
+                    (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum))
+                {
+    #endif
+                D(bug("[Exec] Signal: Raising Exception for 'running' Task\n");)
+                /* Order a reschedule */
+                Reschedule();
+    #if defined(__AROSEXEC_SMP__)
+                }
+                else
+                {
+                    D(bug("[Exec] Signal: Raising Exception for 'running' Task on CPU %03u\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
+                    KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+                }
+    #endif
+                Enable();
+
+                /* All done. */
+                return;
+            }
+        }
+        /*
+            Is the task receiving the signals waiting on them
+            (or on a exception) ?
+        */
+        if ((task->tc_State == TS_WAIT) &&
+        (task->tc_SigRecvd & (task->tc_SigWait | task->tc_SigExcept)))
+        {
+            D(bug("[Exec] Signal: Signaling 'waiting' Task\n");)
+
+            /* Yes. Move it to the ready list. */
+    #if defined(__AROSEXEC_SMP__)
+            krnSysCallReschedTask(task, TS_READY);
+    #else
+            Remove(&task->tc_Node);
+            task->tc_State = TS_READY;
+            Enqueue(&SysBase->TaskReady, &task->tc_Node);
+    #endif
+            /* Has it a higher priority as the current one? */
+            if (
+    #if defined(__AROSEXEC_SMP__)
+                (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
+                (KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))) &&
+    #endif
+                (task->tc_Node.ln_Pri >= thisTask->tc_Node.ln_Pri))
+            {
+                /*
+                    Yes. A taskswitch is necessary. Prepare one if possible.
+                    (If the current task is not running it is already moved)
+                */
+                if (thisTask->tc_State == TS_RUN)
+                {
+                    D(bug("[Exec] Signal: Rescheduling 'running' Task to let it process the signal...\n"));
+                    Reschedule();
+                }
+            }
+    #if defined(__AROSEXEC_SMP__)
+            else if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) &&
+                !(KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)))
+            {
+                D(bug("[Exec] Signal: Signaling task on another CPU\n"));
+                krnSysCallReschedTask(task, TS_READY);
                 KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
             }
-#endif
-            Enable();
-
-            /* All done. */
-            return;
-        }
-    }
-    /*
-        Is the task receiving the signals waiting on them
-        (or on a exception) ?
-    */
-    if ((task->tc_State == TS_WAIT) &&
-       (task->tc_SigRecvd & (task->tc_SigWait | task->tc_SigExcept)))
-    {
-        D(bug("[Exec] Signal: Signaling 'waiting' Task\n");)
-
-        /* Yes. Move it to the ready list. */
-#if defined(__AROSEXEC_SMP__)
-        krnSysCallReschedTask(task, TS_READY);
-#else
-        Remove(&task->tc_Node);
-        task->tc_State = TS_READY;
-        Enqueue(&SysBase->TaskReady, &task->tc_Node);
-#endif
-        /* Has it a higher priority as the current one? */
-        if (
-#if defined(__AROSEXEC_SMP__)
-            (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
-            (KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))) &&
-#endif
-            (task->tc_Node.ln_Pri >= thisTask->tc_Node.ln_Pri))
-        {
-            /*
-                Yes. A taskswitch is necessary. Prepare one if possible.
-                (If the current task is not running it is already moved)
-            */
-            if (thisTask->tc_State == TS_RUN)
+    #endif
+            else
             {
-                D(bug("[Exec] Signal: Rescheduling 'running' Task to let it process the signal...\n"));
-                Reschedule();
+                D(bug("[Exec] Signal: Letting Task process signal when next scheduled to run...\n"););
             }
         }
-#if defined(__AROSEXEC_SMP__)
-        else if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) &&
-            !(KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)))
-        {
-            D(bug("[Exec] Signal: Signaling task on another CPU\n"));
-            krnSysCallReschedTask(task, TS_READY);
-            KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
-        }
-#endif
-        else
-        {
-            D(bug("[Exec] Signal: Letting Task process signal when next scheduled to run...\n"););
-        }
+
+        Enable();
+
+        D(bug("[Exec] Signal: 0x%p finished signal processing\n", task);)        
     }
 
-    Enable();
 
-    D(bug("[Exec] Signal: 0x%p finished signal processing\n", task);)
 
     AROS_LIBFUNC_EXIT
 }
