@@ -7,16 +7,16 @@ BD_LINK := $(TARGET_CC) $(TARGET_SYSROOT)
 
 FILES   := main renderer
 CXXFILES := smallpt
-EXEDIR  := $(AROS_TESTS)/exec
+EXEDIR  := $(AROS_TESTS)/smp
 
-#MM- test-exec : test-exec-smp-smallpt
-#MM- test-exec-quick : test-exec-smp-smallpt-quick
+#MM- test-smp : test-smp-smp-smallpt
+#MM- test-smp-quick : test-smp-smp-smallpt-quick
 
 #USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 USER_CFLAGS := -std=gnu99 -mno-red-zone -Os -flto
 
-%build_prog mmake=test-exec-smp-smallpt \
+%build_prog mmake=test-smp-smp-smallpt \
     files=$(FILES) cxxfiles=$(CXXFILES) targetdir=$(EXEDIR) \
     progname=SMP-SmallPT
 
