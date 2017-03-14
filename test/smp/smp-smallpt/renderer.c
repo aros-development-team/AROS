@@ -223,7 +223,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                         tasks_out++;
                         tasks_work--;
                     }
-
+                    if (deathMessage == NULL)
                     {
                         struct MyMessage *m = (struct MyMessage *)REMHEAD(&msgPool);
                         m->mm_Type = MSG_STATS;
