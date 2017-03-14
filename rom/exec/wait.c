@@ -5,9 +5,10 @@
     Desc: Wait for some signal.
     Lang: english
 */
-#define DEBUG 0
 
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
@@ -74,14 +75,15 @@
 	/* Set the wait signal mask */
 	thisTask->tc_SigWait = signalSet;
 
-        D(bug("[Exec] Moving '%s' @ 0x%p to Task Wait queue\n", thisTask->tc_Node.ln_Name, thisTask);)
-        D(bug("[Exec] Task state = %08x\n", thisTask->tc_State);)
+        D(bug("[Exec] Wait: Moving '%s' @ 0x%p to Task Wait queue\n", thisTask->tc_Node.ln_Name, thisTask);)
+        D(bug("[Exec] Wait: Task state = %08x\n", thisTask->tc_State);)
 
         /*
             Clear TDNestCnt (because Switch() will not care about it),
             but memorize it first. IDNestCnt is handled by Switch().
             */
         thisTask->tc_TDNestCnt = TDNESTCOUNT_GET;
+        D(bug("[Exec] Wait: Task TDNestCount = %d\n", thisTask->tc_TDNestCnt);)
         TDNESTCOUNT_SET(-1);
 
         thisTask->tc_State = TS_WAIT;
@@ -99,6 +101,7 @@
 	    signals are there or it's just a finished task exception.
 	    Test again to be sure (see above).
 	*/
+        D(bug("[Exec] Wait: Awoken...\n");)
 
 	/* Restore TDNestCnt. */
 	TDNESTCOUNT_SET(thisTask->tc_TDNestCnt);

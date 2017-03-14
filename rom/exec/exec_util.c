@@ -131,7 +131,7 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
     EXEC_SPINLOCK_INIT(&IntETask(et)->iet_TaskLock);
     if (PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity)
     {
-        IntETask(et)->iet_CpuAffinity =KrnAllocCPUMask();
+        IntETask(et)->iet_CpuAffinity = KrnAllocCPUMask();
         KrnGetCPUMask(cpunum, IntETask(et)->iet_CpuAffinity);
 
         D(bug("[EXEC:ETask] Init: CPU #%d, mask %08x\n", cpunum, IntETask(et)->iet_CpuAffinity);)
