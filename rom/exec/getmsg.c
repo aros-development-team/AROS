@@ -6,6 +6,9 @@
     Lang: english
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <exec/execbase.h>
 #include <exec/ports.h>
 #include <aros/libcall.h>
@@ -52,6 +55,8 @@
     AROS_LIBFUNC_INIT
 
     struct Message *msg;
+
+    D(bug("[Exec] GetMsg(0x%p)\n", port);)
 
     ASSERT_VALID_PTR(port);
 

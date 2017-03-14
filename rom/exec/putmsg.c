@@ -80,11 +80,14 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
      * on smp systems.
      */
 
+    D(bug("[EXEC] PutMsg: Port @ 0x%p, Msg @ 0x%p\n", port, message);)
+
     Disable();
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_LOCK(&port->mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     AddTail(&port->mp_MsgList, &message->mn_Node);
+    D(bug("[EXEC] PutMsg: Port MsgList->lh_TailPred =  0x%p\n", port->mp_MsgList.lh_TailPred);)
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&port->mp_SpinLock);
 #endif
@@ -98,14 +101,14 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 	switch(port->mp_Flags & PF_ACTION)
 	{
 	    case PA_SIGNAL:
-	    	D(bug("[EXEC] PutMsg: PA_SIGNAL, task 0x%p, signal %08x\n", port->mp_SigTask, (1 << port->mp_SigBit));)
+	    	D(bug("[EXEC] PutMsg: PA_SIGNAL -> Task 0x%p, Signal %08x\n", port->mp_SigTask, (1 << port->mp_SigBit));)
 
 		/* Send the signal */
 		Signal((struct Task *)port->mp_SigTask, (1 << port->mp_SigBit));
 		break;
 
 	    case PA_SOFTINT:
-	    	D(bug("[EXEC] PutMsg: PA_SOFTINT, port 0x%p, msg 0x%p, int %s\n", port, message, ((struct Interrupt *)port->mp_SoftInt)->is_Node.ln_Name);)
+	    	D(bug("[EXEC] PutMsg: PA_SOFTINT -> Int %s\n", ((struct Interrupt *)port->mp_SoftInt)->is_Node.ln_Name);)
 
 		/* Raise a software interrupt */
 		Cause((struct Interrupt *)port->mp_SoftInt);
@@ -116,7 +119,7 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 		break;
 
             case PA_CALL:
-                D(bug("[EXEC] PutMsg: PA_CALL, task 0x%p, port 0x%p\n", port->mp_SigTask, port);)
+                D(bug("[EXEC] PutMsg: PA_CALL -> Func @ 0x%p\n", port->mp_SigTask, port);)
 
 #if defined(__AROSEXEC_SMP__)
                 //TODO! - the called function must be SMP safe.
