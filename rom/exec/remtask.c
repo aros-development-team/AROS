@@ -108,7 +108,7 @@
         et = GetETask(task);
         if (et != NULL)
         {
-#if defined(EXEC_REMTASK_NEEDSSWITCH)
+#if defined(__AROSEXEC_SMP__)
             // We must cache the CPU number here for the Exec Service Task...
             task->tc_UserData = (APTR)IntETask(et)->iet_CpuNumber;
 #endif
