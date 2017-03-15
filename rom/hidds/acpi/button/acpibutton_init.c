@@ -16,6 +16,8 @@
 #include <hidd/hidd.h>
 #include <hidd/system.h>
 
+#include <limits.h>
+
 #include "acpibutton_intern.h"
 
 #include LC_LIBDEFS_FILE
@@ -117,8 +119,12 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
             { csd->hiddACPIButtonAB + aoHidd_ACPIButton_Hook,   0},
             { TAG_DONE,                                         0}
         };
+        ACPI_HANDLE sysBusHandle;
 
-        acpiStatus = AcpiGetDevices(NULL, ACPIButton_DeviceQuery, csd, NULL);
+        acpiStatus = AcpiGetHandle(ACPI_ROOT_OBJECT, "\\_SB_", &sysBusHandle);
+        if (acpiStatus == AE_OK)
+            acpiStatus = AcpiWalkNamespace(ACPI_TYPE_DEVICE, sysBusHandle, INT_MAX, ACPIButton_DeviceQuery, NULL, csd, NULL);
+
         if (acpiStatus == AE_OK)
         {
             if (csd->acpiPowerBHandle != NULL)
