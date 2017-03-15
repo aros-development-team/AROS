@@ -178,7 +178,7 @@ int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR
         */
         Disable();
         KrnSpinLock(&pdata->kb_BusyIPIHooksLock, NULL, SPINLOCK_MODE_WRITE);
-        ADDHEAD(&pdata->kb_BusyIPIHooks, ipi);
+        ADDTAIL(&pdata->kb_BusyIPIHooks, ipi);
         KrnSpinUnLock(&pdata->kb_BusyIPIHooksLock);
         Enable();
 
@@ -256,7 +256,7 @@ static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelB
 
                 /* Put it on FreeList */
                 KrnSpinLock(&pdata->kb_FreeIPIHooksLock, NULL, SPINLOCK_MODE_WRITE);
-                ADDHEAD(&pdata->kb_FreeIPIHooks, ipi);
+                ADDTAIL(&pdata->kb_FreeIPIHooks, ipi);
                 KrnSpinUnLock(&pdata->kb_FreeIPIHooksLock);
 
                 if (!async)
