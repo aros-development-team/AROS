@@ -74,8 +74,7 @@ OOP_Object *ACPIButton__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     ULONG               buttonType = (ULONG)GetTagData(aHidd_ACPIButton_Type, 0, msg->attrList);
     OOP_Object          **buttonO = NULL;
     BOOL                buttonFixed = FALSE;
-    ACPI_HANDLE         acpiHandle;
-    __unused ACPI_STATUS         acpiStatus;
+    ACPI_HANDLE         acpiHandle = (ACPI_HANDLE)GetTagData(aHidd_ACPIButton_Handle, 0, msg->attrList);
 
     D(bug("[ACPI:Button] %s()\n", __func__));
 
@@ -87,7 +86,6 @@ OOP_Object *ACPIButton__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         case vHidd_ACPIButton_Power:
             buttonO = &CSD(cl)->powerButtonObj;
             if (acpiButtonEvent != ACPI_EVENT_POWER_BUTTON) acpiButtonEvent = ACPI_DEVICE_NOTIFY;
-            acpiStatus = AcpiGetHandle(NULL, "\\_PNP0C0C", &acpiHandle);
             break;
 
         case vHidd_ACPIButton_SleepF:
@@ -96,13 +94,11 @@ OOP_Object *ACPIButton__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         case vHidd_ACPIButton_Sleep:
             buttonO = &CSD(cl)->sleepButtonObj;
             if (acpiButtonEvent != ACPI_EVENT_SLEEP_BUTTON) acpiButtonEvent = ACPI_DEVICE_NOTIFY;
-            acpiStatus = AcpiGetHandle(NULL, "\\_PNP0C0E", &acpiHandle);
             break;
 
         case vHidd_ACPIButton_Lid:
             buttonO = &CSD(cl)->lidButtonObj;
             acpiButtonEvent = ACPI_DEVICE_NOTIFY;
-            acpiStatus = AcpiGetHandle(NULL, "\\_PNP0C0D", &acpiHandle);
             break;
 
         default:

@@ -28,6 +28,12 @@ struct class_static_data
 
     OOP_Class                   *oopclass;
 
+    ACPI_HANDLE                 acpiPowerBHandle;
+    ULONG                       acpiPowerBType;
+    ACPI_HANDLE                 acpiSleepBHandle;
+    ULONG                       acpiSleepBType;
+    ACPI_HANDLE                 acpibLidBHandle;
+
     OOP_Object                  *powerButtonObj;
     OOP_Object                  *sleepButtonObj;
     OOP_Object                  *lidButtonObj;

@@ -15,12 +15,14 @@ extern OOP_AttrBase HiddACPIButtonAB;
 enum {
 
    aoHidd_ACPIButton_Type,
+   aoHidd_ACPIButton_Handle,
    aoHidd_ACPIButton_Hook,
 
    num_Hidd_ACPIButton_Attrs
 };
 
 #define aHidd_ACPIButton_Type          (aoHidd_ACPIButton_Type     + HiddACPIButtonAB)
+#define aHidd_ACPIButton_Handle       (aoHidd_ACPIButton_Handle     + HiddACPIButtonAB)
 #define aHidd_ACPIButton_Hook          (aoHidd_ACPIButton_Hook     + HiddACPIButtonAB)
 
 #define IS_HIDDACPIBUTTON_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddACPIButtonAB, num_Hidd_ACPIButton_Attrs)
