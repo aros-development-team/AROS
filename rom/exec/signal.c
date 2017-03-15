@@ -15,28 +15,22 @@
 
 #define __AROS_KERNEL__
 #include "exec_intern.h"
+#include "kernel_ipi.h"
 
 #if defined(__AROSEXEC_SMP__)
 #include <utility/hooks.h>
 
-void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR *_KernelBase);
-
-struct signal_message {
-    struct ExecBase *   SysBase;
-    struct Task *       target;
-    ULONG               sigset;
-};
-
 AROS_UFH3(IPTR, signal_hook,
-    AROS_UFHA(struct Hook *, hook, A0), 
+    AROS_UFHA(struct IPIHook *, hook, A0), 
     AROS_UFHA(APTR, object, A2), 
     AROS_UFHA(APTR, message, A1)
 )
 {
     AROS_USERFUNC_INIT
 
-    struct signal_message *msg = hook->h_Data;
-    struct ExecBase *SysBase = msg->SysBase;
+    struct ExecBase *SysBase = (struct ExecBase *)hook->ih_Args[0];
+    struct Task *target = (struct Task *)hook->ih_Args[1];
+    ULONG sigset = (ULONG)hook->ih_Args[2];
 
     D(
         struct KernelBase *KernelBase = __kernelBase;
@@ -44,7 +38,7 @@ AROS_UFH3(IPTR, signal_hook,
         bug("[Exec] CPU%03d: Using IPI to do Signal(%p, %08x), SysBase=%p\n", cpunum, msg->target, msg->sigset, SysBase);
     );
     
-    Signal(msg->target, msg->sigset);
+    Signal(target, sigset);
 
     return 0;
 
@@ -111,8 +105,12 @@ AROS_UFH3(IPTR, signal_hook,
         !KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)))
     {
         struct Hook h;
-        struct signal_message msg;
+        IPTR args[3];
         void *cpu_mask = KrnAllocCPUMask();
+
+        args[0] = (IPTR)SysBase;
+        args[1] = (IPTR)task;
+        args[2] = (IPTR)signalSet;
 
         /* Task is running *now* on another CPU, send signal there */
         if (task->tc_State == TS_RUN)
@@ -135,17 +133,12 @@ AROS_UFH3(IPTR, signal_hook,
             }
         }
 
-        msg.SysBase = SysBase;
-        msg.target = task;
-        msg.sigset = signalSet;
-
         D(bug("[Exec] Signal: Signaling from CPU%03d -> CPU%03d using IPI...\n", cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
 
         h.h_Entry = signal_hook;
-        h.h_Data = &msg;
 
         D(bug("[Exec] Sending IPI...\n"));
-        core_DoCallIPI(&h, cpu_mask, 0, (void *)KernelBase);
+        core_DoCallIPI(&h, cpu_mask, 1, 3, args, (void *)KernelBase);
         D(bug("[Exec] IPI Sent\n"));
         
         KrnFreeCPUMask(cpu_mask);
