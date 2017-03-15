@@ -119,11 +119,8 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
             { csd->hiddACPIButtonAB + aoHidd_ACPIButton_Hook,   0},
             { TAG_DONE,                                         0}
         };
-        ACPI_HANDLE sysBusHandle;
 
-        acpiStatus = AcpiGetHandle(ACPI_ROOT_OBJECT, "\\_SB_", &sysBusHandle);
-        if (acpiStatus == AE_OK)
-            acpiStatus = AcpiWalkNamespace(ACPI_TYPE_DEVICE, sysBusHandle, INT_MAX, ACPIButton_DeviceQuery, NULL, csd, NULL);
+        acpiStatus = AcpiWalkNamespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, INT_MAX, ACPIButton_DeviceQuery, NULL, csd, NULL);
 
         if (acpiStatus == AE_OK)
         {
