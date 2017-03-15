@@ -22,7 +22,9 @@
 
 void core_IPIHandle(struct ExceptionContext *regs, unsigned long ipi_number, struct KernelBase *KernelBase);
 void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase);
-void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB);
+int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR *args, APTR _KB);
+
+#define IPI_CALL_HOOK_MAX_ARGS  5
 
 /*
     IPI Call hook
@@ -30,6 +32,7 @@ void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB);
 struct IPIHook
 {
     struct Hook     ih_Hook;
+    IPTR            ih_Args[IPI_CALL_HOOK_MAX_ARGS];
     uint32_t *      ih_CPUDone;
     uint32_t *      ih_CPURequested;
     int             ih_Async;
