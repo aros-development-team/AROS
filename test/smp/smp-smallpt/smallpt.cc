@@ -387,7 +387,16 @@ __prepare();
     #endif
                             }
 __test();
-                            Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
+//                            Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
+
+                            m = AllocMsg(&msgPool);
+                            m->mm_Message.mn_Length = sizeof(struct MyMessage);
+                            m->mm_Message.mn_ReplyPort = port;
+                            m->mm_Type = MSG_REDRAWTILE;
+                            m->mm_Body.RedrawTile.TileX = tile_x;
+                            m->mm_Body.RedrawTile.TileY = tile_y;
+                            PutMsg(guiPort, &m->mm_Message);
+                            redraw = TRUE;
 
                             m = AllocMsg(&msgPool);
                             m->mm_Message.mn_Length = sizeof(struct MyMessage);
