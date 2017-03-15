@@ -14,6 +14,7 @@
     NAME */
 #include <devices/timer.h>
 #include <proto/exec.h>
+#include <proto/execlock.h>
 #include <proto/timer.h>
 
 	AROS_LH1(LONG, AbortIO,
@@ -57,7 +58,9 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
+#if defined(__AROSEXEC_SMP__)
+    struct ExecLockBase *ExecLockBase = TimerBase->tb_ExecLockBase;
+#endif
     LONG ret = -1;
 
     /*
@@ -66,38 +69,25 @@
     */
 
     Disable();
+#if defined(__AROSEXEC_SMP__)
+    if (ExecLockBase) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_WRITE, 0);
+#endif
     if(timereq->tr_node.io_Message.mn_Node.ln_Type != NT_REPLYMSG)
     {
-	timereq->tr_node.io_Error = IOERR_ABORTED;
-
-	/*  We have to fix up the following request if it exists.
- 	    What we do is add the time remaining for the first request
-	    to the second request.
-	*/
-	
-	#if 0 /* stegerg: ??? */
-	tr = (struct timerequest *)timereq->tr_node.io_Message.mn_Node.ln_Succ;
-	if( tr && tr->tr_node.io_Message.mn_Node.ln_Succ != 0 )
-	{
-		tr->tr_time.tv_secs += timereq->tr_time.tv_secs;
-		tr->tr_time.tv_micro += timereq->tr_time.tv_micro;
-	}
-	#endif
-	
-	/*
-	    XXX: If this is the first in the list, we have to resend
-	    XXX  the wait request. I can't do that from here yet.
-	    
-	*/
-	if( timereq->tr_node.io_Message.mn_Node.ln_Pred == NULL )	
-	{
-	}
 	Remove((struct Node *)timereq);
-	ReplyMsg((struct Message *)timereq);
+
+	timereq->tr_node.io_Error = IOERR_ABORTED;
+        timereq->tr_time.tv_secs = 0;
+        timereq->tr_time.tv_micro = 0;
+
+        if (!(timereq->tr_node.io_Flags & IOF_QUICK))
+            ReplyMsg((struct Message *)timereq);
 	ret = 0;
     }
+#if defined(__AROSEXEC_SMP__)
+    if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
+#endif
     Enable();
-
 
     return ret;
 

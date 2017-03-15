@@ -162,6 +162,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 #endif
 		/* Ok, we add this to the list */
 		addToWaitList(&TimerBase->tb_Lists[TL_WAITVBL], timereq, SysBase);
+		timereq->tr_node.io_Flags &= ~IOF_QUICK;
 
 		/*
 		 * If our request was added to the head of the list, we may need to
@@ -175,7 +176,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
                 if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
 		replyit = FALSE;
-		timereq->tr_node.io_Flags &= ~IOF_QUICK;
+
 	    }
 	    
 	    Enable();
@@ -205,6 +206,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 #endif
                 /* Slot it into the list. Use unit number as index. */
                 addToWaitList(&TimerBase->tb_Lists[unitNum], timereq, SysBase);
+                timereq->tr_node.io_Flags &= ~IOF_QUICK;
 
                 /* Indicate if HW need to be reprogrammed */
                 if (TimerBase->tb_Lists[unitNum].mlh_Head == (struct MinNode *)timereq)
@@ -214,7 +216,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
                 if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
                 Enable();
-                timereq->tr_node.io_Flags &= ~IOF_QUICK;
+
                 replyit = FALSE;
                 break;
             }
