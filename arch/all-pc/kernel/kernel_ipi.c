@@ -86,15 +86,20 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
     }
 }
 
-void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB)
+int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR *args, APTR _KB)
 {
     struct KernelBase *KernelBase = _KB;
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct IPIHook *ipi = NULL;
     struct APICData *apicPrivate = pdata->kb_APIC;
     int cpunum = KrnGetCPUNumber();
+    int ret = FALSE;
+    int i;
 
     D(bug("[Kernel:IPI] %s: Calling hook %p, async=%d\n", __func__, hook, async));
+
+    if (nargs > IPI_CALL_HOOK_MAX_ARGS)
+        return ret;
 
     if (hook)
     {
@@ -114,7 +119,7 @@ void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB)
             Enable();
             if (ipi == NULL)
             {
-                D(bug("[Kernel:IPI] %s: Failed to allocate IPIHook entry\n", __func__));
+                (bug("[Kernel:IPI] %s: Failed to allocate IPIHook entry\n", __func__));
                 // Tell CPU we are idling aroud a lock...
                 asm volatile("pause");
             }
@@ -129,6 +134,12 @@ void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB)
         ipi->ih_Hook.h_SubEntry = hook->h_SubEntry;
         ipi->ih_Hook.h_Data = hook->h_Data;
         
+        /*
+            Copy call hook arguments
+        */
+        for (i=0; i < nargs; i++)
+            ipi->ih_Args[i] = args[i];
+
         if (async)
         {
             ipi->ih_Async = 1;
@@ -173,6 +184,8 @@ void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB)
 
         D(bug("[Kernel:IPI] %s: Sending IPI message\n", __func__, ipi));
 
+        ret = TRUE;
+
         /* Issue IPI_CALL_HOOK to requested CPUs */
         core_DoIPI(IPI_CALL_HOOK, cpu_mask, KernelBase);
 
@@ -185,6 +198,8 @@ void core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, APTR _KB)
             D(bug("[Kernel:IPI] %s: Synchronous IPI completed\n", __func__));
         }
     }
+
+    return ret;
 }
 
 static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelBase *KernelBase)
