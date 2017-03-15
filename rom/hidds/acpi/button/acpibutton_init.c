@@ -20,13 +20,73 @@
 
 #include LC_LIBDEFS_FILE
 
+static ACPI_STATUS ACPIButton_DeviceQuery(ACPI_HANDLE handle,
+				UINT32 level,
+				void *context,
+				void **retval)
+{
+    struct class_static_data    *csd = (struct class_static_data *)context;
+    ACPI_DEVICE_INFO            *acpiDevInfo = NULL;
+    ACPI_STATUS                 acpiStatus;
+
+    D(bug("[HiddACPIButton] %s(0x%p)\n", __func__, handle));
+
+    acpiStatus = AcpiGetObjectInfo(handle, &acpiDevInfo);
+    if (acpiStatus != AE_OK) {
+        if (acpiDevInfo) {
+            FreeVec(acpiDevInfo);
+        }
+        return acpiStatus;
+    }
+
+    if (acpiDevInfo->Valid & ACPI_VALID_HID)
+    {
+        D(bug("[HiddACPIButton] %s: HardwareID = '%s'\n", __func__, acpiDevInfo->HardwareId.String));
+
+        if (!strcmp(acpiDevInfo->HardwareId.String, "PNP0C0C"))
+        {
+            D(bug("[HiddACPIButton] %s: Power Button Device Found\n", __func__));
+            csd->acpiPowerBHandle = handle;
+            csd->acpiPowerBType = vHidd_ACPIButton_Power;
+        }
+        else if (!strcmp(acpiDevInfo->HardwareId.String, "ACPI_FPB"))
+        {
+            D(bug("[HiddACPIButton] %s: Fixed Power Button Device Found\n", __func__));
+            csd->acpiPowerBHandle = handle;
+            csd->acpiPowerBType = vHidd_ACPIButton_PowerF;
+        }
+        else if (!strcmp(acpiDevInfo->HardwareId.String, "PNP0C0E"))
+        {
+            D(bug("[HiddACPIButton] %s: Sleep Button Device Found\n", __func__));
+            csd->acpiSleepBHandle = handle;
+            csd->acpiSleepBType = vHidd_ACPIButton_Sleep;
+        }
+        else if (!strcmp(acpiDevInfo->HardwareId.String, "ACPI_FSB"))
+        {
+            D(bug("[HiddACPIButton] %s: Fixed Sleep Button Device Found\n", __func__));
+            csd->acpiSleepBHandle = handle;
+            csd->acpiSleepBType = vHidd_ACPIButton_SleepF;
+        }
+        else if (!strcmp(acpiDevInfo->HardwareId.String, "PNP0C0D"))
+        {
+            D(bug("[HiddACPIButton] %s: Lid Button Device Found\n", __func__));
+            csd->acpibLidBHandle = handle;
+        }
+    }
+
+    FreeVec(acpiDevInfo);
+
+    return AE_OK;
+}
+
 static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct class_static_data *csd = &LIBBASE->hsi_csd;
-    struct Library *OOPBase = csd->cs_OOPBase;
-    OOP_Object *root;
-    int buttonCount = 0;
-    int retVal = FALSE;
+    struct class_static_data    *csd = &LIBBASE->hsi_csd;
+    struct Library              *OOPBase = csd->cs_OOPBase;
+    OOP_Object                  *root;
+    int                         buttonCount = 0;
+    int                         retVal = FALSE;
+    __unused ACPI_STATUS        acpiStatus;
 
     D(bug("[HiddACPIButton] %s()\n", __func__));
 
@@ -52,33 +112,53 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
     {
         struct TagItem instanceTags[] =
         {
-            { csd->hiddACPIButtonAB + aoHidd_ACPIButton_Type,  0},
-            { csd->hiddACPIButtonAB + aoHidd_ACPIButton_Hook,  0},
-            { TAG_DONE,               0}
+            { csd->hiddACPIButtonAB + aoHidd_ACPIButton_Type,   0},
+            { csd->hiddACPIButtonAB + aoHidd_ACPIButton_Handle, 0},
+            { csd->hiddACPIButtonAB + aoHidd_ACPIButton_Hook,   0},
+            { TAG_DONE,                                         0}
         };
 
-        instanceTags[0].ti_Data = vHidd_ACPIButton_PowerF;
-        instanceTags[1].ti_Data = 0;
-        if (HW_AddDriver(root, csd->oopclass, instanceTags))
+        acpiStatus = AcpiGetDevices(NULL, ACPIButton_DeviceQuery, csd, NULL);
+        if (acpiStatus == AE_OK)
         {
-            D(bug("[HiddACPIButton] %s: Power-Button initialised\n", __func__));
-            buttonCount++;
-        }
+            if (csd->acpiPowerBHandle != NULL)
+            {
+                instanceTags[0].ti_Data = (IPTR)csd->acpiPowerBType;
+                instanceTags[1].ti_Data = (IPTR)csd->acpiPowerBHandle;
+                instanceTags[2].ti_Data = 0;
 
-        instanceTags[0].ti_Data = vHidd_ACPIButton_SleepF;
-        instanceTags[1].ti_Data = 0;
-        if (HW_AddDriver(root, csd->oopclass, instanceTags))
-        {
-            D(bug("[HiddACPIButton] %s: Sleep-Button initialised\n", __func__));
-            buttonCount++;
-        }
+                if (HW_AddDriver(root, csd->oopclass, instanceTags))
+                {
+                    D(bug("[HiddACPIButton] %s: Power-Button initialised\n", __func__));
+                    buttonCount++;
+                }
+            }
 
-        instanceTags[0].ti_Data = vHidd_ACPIButton_Lid;
-        instanceTags[1].ti_Data = 0;
-        if (HW_AddDriver(root, csd->oopclass, instanceTags))
-        {
-            D(bug("[HiddACPIButton] %s: Lid-Button initialised\n", __func__));
-            buttonCount++;
+            if (csd->acpiSleepBHandle != NULL)
+            {
+                instanceTags[0].ti_Data = (IPTR)csd->acpiSleepBType;
+                instanceTags[1].ti_Data = (IPTR)csd->acpiSleepBHandle;
+                instanceTags[2].ti_Data = 0;
+
+                if (HW_AddDriver(root, csd->oopclass, instanceTags))
+                {
+                    D(bug("[HiddACPIButton] %s: Sleep-Button initialised\n", __func__));
+                    buttonCount++;
+                }
+            }
+
+            if (csd->acpibLidBHandle != NULL)
+            {
+                instanceTags[0].ti_Data = vHidd_ACPIButton_Lid;
+                instanceTags[1].ti_Data = (IPTR)csd->acpibLidBHandle;
+                instanceTags[2].ti_Data = 0;
+
+                if (HW_AddDriver(root, csd->oopclass, instanceTags))
+                {
+                    D(bug("[HiddACPIButton] %s: Lid-Button initialised\n", __func__));
+                    buttonCount++;
+                }
+            }
         }
     }
     D(bug("[HiddACPIButton] %s: Finished\n", __func__));
