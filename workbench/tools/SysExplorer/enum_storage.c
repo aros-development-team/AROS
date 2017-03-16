@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, The AROS Development Team.
+    Copyright (C) 2015-2017, The AROS Development Team.
     $Id$
 */
 
@@ -55,6 +55,8 @@ static void addATAUnit(OOP_Object *dev, ULONG attrID, struct MUI_NListtree_TreeN
         };
         CONST_STRPTR name;
 
+        sysExplGlobalCount++;
+
         OOP_GetAttr(unit, aHidd_ATAUnit_Model, (IPTR *)&name);
         DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
                  parent, MUIV_NListtree_Insert_PrevNode_Tail, 0);
@@ -102,10 +104,14 @@ AROS_UFH3S(BOOL, storageenumFunc,
 
     if (objValid)
     {
+        int objnum;
+
         /* This is either HW or HIDD subclass */
         OOP_GetAttr(obj, aHW_ClassName, (IPTR *)&name);
         if (!name)
             OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
+
+        objnum = ++sysExplGlobalCount;
 
         tn = (APTR)DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
                             parent, MUIV_NListtree_Insert_PrevNode_Sorted, flags);
@@ -114,6 +120,11 @@ AROS_UFH3S(BOOL, storageenumFunc,
         /* If we have enumerator for this class, call it now */
         if (clHandlers && clHandlers->enumFunc && (flags & TNF_LIST))
             clHandlers->enumFunc(obj, tn);
+        
+        if (objnum == sysExplGlobalCount)
+        {
+           tn->tn_Flags &= ~flags;
+        }
     }
     return FALSE; /* Continue enumeration */
 

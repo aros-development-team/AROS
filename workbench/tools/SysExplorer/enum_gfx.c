@@ -44,6 +44,7 @@ static void addGgfxDisplay(OOP_Object *obj, struct MUI_NListtree_TreeNode *paren
 
     OOP_GetAttr(obj, aHidd_Name, (IPTR *)&name);
 
+    sysExplGlobalCount++;
     DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
              parent, MUIV_NListtree_Insert_PrevNode_Tail, 0);
 }

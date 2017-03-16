@@ -1,4 +1,5 @@
 
+
 struct ObjectUserData
 {
     OOP_Object *obj;
@@ -24,6 +25,7 @@ struct ClassHandlerNode
 };
 
 extern Object *hidd_tree;
+extern int sysExplGlobalCount;
 
 extern BOOL RegisterClassHandler(CONST_STRPTR, BYTE pri, struct MUI_CustomClass **, CLASS_ENUMFUNC enumfunc, CLASS_VALIDFUNC validfunc);
 extern struct ClassHandlerNode *FindClassHandler(CONST_STRPTR, struct List *);
