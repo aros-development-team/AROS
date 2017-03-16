@@ -151,9 +151,9 @@ AROS_UFH3(IPTR, signal_hook,
         {
             D(bug("[Exec] Signal(0x%p, %08lX) on CPU%03d\n", task, signalSet, cpunum));
         }
-    #else
+#else
         D(bug("[Exec] Signal(0x%p, %08lX)\n", task, signalSet);)
-    #endif
+#endif
 
         D(
             bug("[Exec] Signal: Signaling '%s', state = %08x\n", task->tc_Node.ln_Name, task->tc_State);
@@ -166,22 +166,22 @@ AROS_UFH3(IPTR, signal_hook,
         Disable();
         D(bug("[Exec] Signal: Target signal flags : %08x ->", task->tc_SigRecvd);)
         /* Set the signals in the task structure. */
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
         __AROS_ATOMIC_OR_L(task->tc_SigRecvd, signalSet);
-    #else
+#else
         task->tc_SigRecvd |= signalSet;
-    #endif
+#endif
         D(bug(" %08x\n", task->tc_SigRecvd);)
 
         /* Do those bits raise exceptions? */
         if (task->tc_SigRecvd & task->tc_SigExcept)
         {
             /* Yes. Set the exception flag. */
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
             __AROS_ATOMIC_OR_B(task->tc_Flags, TF_EXCEPT);
-    #else
+#else
             task->tc_Flags |= TF_EXCEPT;
-    #endif
+#endif
             D(bug("[Exec] Signal: TF_EXCEPT set\n");)
 
             /* 
@@ -190,22 +190,22 @@ AROS_UFH3(IPTR, signal_hook,
                 */
             if (task->tc_State == TS_RUN)
             {
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
                 if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
                     (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum))
                 {
-    #endif
+#endif
                 D(bug("[Exec] Signal: Raising Exception for 'running' Task\n");)
                 /* Order a reschedule */
                 Reschedule();
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
                 }
                 else
                 {
                     D(bug("[Exec] Signal: Raising Exception for 'running' Task on CPU %03u\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
                     KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
                 }
-    #endif
+#endif
                 Enable();
 
                 /* All done. */
@@ -222,19 +222,19 @@ AROS_UFH3(IPTR, signal_hook,
             D(bug("[Exec] Signal: Signaling 'waiting' Task\n");)
 
             /* Yes. Move it to the ready list. */
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
             krnSysCallReschedTask(task, TS_READY);
-    #else
+#else
             Remove(&task->tc_Node);
             task->tc_State = TS_READY;
             Enqueue(&SysBase->TaskReady, &task->tc_Node);
-    #endif
+#endif
             /* Has it a higher priority as the current one? */
             if (
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
                 (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
                 (KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))) &&
-    #endif
+#endif
                 (task->tc_Node.ln_Pri >= thisTask->tc_Node.ln_Pri))
             {
                 /*
@@ -247,7 +247,7 @@ AROS_UFH3(IPTR, signal_hook,
                     Reschedule();
                 }
             }
-    #if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__)
             else if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) &&
                 !(KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity)))
             {
@@ -255,7 +255,7 @@ AROS_UFH3(IPTR, signal_hook,
                 krnSysCallReschedTask(task, TS_READY);
                 KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
             }
-    #endif
+#endif
             else
             {
                 D(bug("[Exec] Signal: Letting Task process signal when next scheduled to run...\n"););
@@ -264,11 +264,10 @@ AROS_UFH3(IPTR, signal_hook,
 
         Enable();
 
-        D(bug("[Exec] Signal: 0x%p finished signal processing\n", task);)        
+        D(bug("[Exec] Signal: 0x%p finished signal processing\n", task);)
+#if defined(__AROSEXEC_SMP__)
     }
-
-
+#endif
 
     AROS_LIBFUNC_EXIT
 }
-
