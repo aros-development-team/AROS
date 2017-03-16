@@ -338,7 +338,7 @@ int smp_Initialize(void)
         
         number_of_ipi_messages = pdata->kb_APIC->apic_count * 10;
         D(bug("[Kernel:SMP] %s: Allocating %d IPI CALL_HOOK messages ...\n", __func__, number_of_ipi_messages));
-        hooks = AllocMem((sizeof(struct IPIHook) * number_of_ipi_messages + 1), MEMF_PUBLIC | MEMF_CLEAR);
+        hooks = AllocMem((sizeof(struct IPIHook) * number_of_ipi_messages + 127), MEMF_PUBLIC | MEMF_CLEAR);
         hooks = (struct IPIHook *)(((IPTR)hooks + 127) & ~127);
         if (hooks)
         {
