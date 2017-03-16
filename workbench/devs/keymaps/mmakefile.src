@@ -24,7 +24,7 @@ $(AROS_DEVS)/Keymaps/% : $(OBJDIR)/%.o
 	%link_q opt="$(LDFLAGS) $(NOSTARTUP_LDFLAGS)"
 
 $(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c
-	%compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)"
+	%compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)" opt="$(USER_INCLUDES) $(CONFIG_BASE_CFLAGS) -O0 $(USER_CFLAGS)"
 
 #MM workbench-devs-keymaps-setup
 %rule_makedirs dirs="$(AROS_DEVS)/Keymaps $(OBJDIR)" setuptarget=workbench-devs-keymaps-setup
