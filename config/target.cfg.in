@@ -7,84 +7,85 @@
 # -------------------------------------------------------------------------- 
 # TARGET SECTION
 # -------------------------------------------------------------------------- 
-FAMILY		:= @aros_target_family@
-FLAVOUR		:= @aros_flavour@
-SHARED_MOD	:= @aros_shared_default@
+FAMILY		        := @aros_target_family@
+FLAVOUR		        := @aros_flavour@
+SHARED_MOD	        := @aros_shared_default@
 
-TARGET_BINUTILS_VER  := @target_binutils_version@
-TARGET_GCC_VER  := @target_gcc_version@
+TARGET_BINUTILS_VER     := @target_binutils_version@
+TARGET_GCC_VER          := @target_gcc_version@
 
-TARGET_CPP	:= @aros_target_cpp@
-KERNEL_CPP	:= @aros_kernel_cpp@
-TARGET_CC	:= @aros_cc_pre@ @aros_target_cc@
-KERNEL_CC	:= @aros_kernel_cc@
-TARGET_CXX	:= @aros_target_cxx@
-TARGET_AS	:= @aros_target_as@
-TARGET_LD	:= @aros_target_ld@
-SHARED_LD	:= @aros_shared_ld@
-KERNEL_LD	:= @aros_kernel_ld@
-GENMAP		:= @aros_target_genmap@
-TARGET_OBJCOPY	:= @aros_target_objcopy@
+TARGET_CPP	        := @aros_target_cpp@
+KERNEL_CPP	        := @aros_kernel_cpp@
+TARGET_CC	        := @aros_cc_pre@ @aros_target_cc@
+KERNEL_CC	        := @aros_kernel_cc@
+TARGET_CXX	        := @aros_target_cxx@
+TARGET_AS	        := @aros_target_as@
+TARGET_LD	        := @aros_target_ld@
+SHARED_LD	        := @aros_shared_ld@
+KERNEL_LD	        := @aros_kernel_ld@
+GENMAP		        := @aros_target_genmap@
+TARGET_OBJCOPY          := @aros_target_objcopy@
 
 TARGET_DEF_STRIP	:= @aros_target_strip@ @aros_target_strip_flags@
 
-TARGET_OBJDUMP	:= @aros_target_objdump@
-KERNEL_RESCOMP  := @aros_kernel_rescomp@
+TARGET_OBJDUMP          := @aros_target_objdump@
+KERNEL_RESCOMP          := @aros_kernel_rescomp@
 
-CONFIG_NOWARN_FLAGS = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
+CONFIG_NOWARN_FLAGS     = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
 
-TARGET_SYSROOT	:= @aros_config_sysroot@
-KERNEL_SYSROOT	:= @aros_kernel_sysroot@
-CONFIG_CFLAGS	= @aros_config_cflags@ $(CONFIG_NOWARN_FLAGS)
-CONFIG_AFLAGS	:= @aros_config_aflags@
-CONFIG_LDFLAGS	:= @aros_config_ldflags@
-SHARED_CFLAGS	:= @aros_shared_cflags@
-SHARED_AFLAGS	:= @aros_shared_aflags@
-SHARED_LDFLAGS	:= @aros_shared_ldflags@
-KERNEL_CFLAGS   := @aros_kernel_cflags@
-KERNEL_OBJCFLAGS := @aros_kernel_objcflags@
-KERNEL_INCLUDES := @aros_kernel_includes@
-KERNEL_LDFLAGS	:= @aros_kernel_ldflags@
-TARGET_CFLAGS   := @aros_target_cflags@
+TARGET_SYSROOT          := @aros_config_sysroot@
+KERNEL_SYSROOT          := @aros_kernel_sysroot@
+CONFIG_BASE_CFLAGS      = @aros_config_cflags@ $(CONFIG_NOWARN_FLAGS)
+CONFIG_CFLAGS	        = @aros_config_cflags@ $(CONFIG_NOWARN_FLAGS)
+CONFIG_AFLAGS	        := @aros_config_aflags@
+CONFIG_LDFLAGS	        := @aros_config_ldflags@
+SHARED_CFLAGS	        := @aros_shared_cflags@
+SHARED_AFLAGS	        := @aros_shared_aflags@
+SHARED_LDFLAGS	        := @aros_shared_ldflags@
+KERNEL_CFLAGS           := @aros_kernel_cflags@
+KERNEL_OBJCFLAGS        := @aros_kernel_objcflags@
+KERNEL_INCLUDES         := @aros_kernel_includes@
+KERNEL_LDFLAGS	        := @aros_kernel_ldflags@
+TARGET_CFLAGS           := @aros_target_cflags@
 
-DEBUG_CFLAGS	:= @aros_debug_cflags@
-DEBUG_AFLAGS	:= @aros_debug_aflags@
-DEBUG_LDFLAGS	:= @aros_debug_ldflags@
-OPTIMIZATION_CFLAGS := @aros_optimization_cflags@
-ISA_FLAGS       := @aros_isa_flags@
+DEBUG_CFLAGS	        := @aros_debug_cflags@
+DEBUG_AFLAGS            := @aros_debug_aflags@
+DEBUG_LDFLAGS           := @aros_debug_ldflags@
+OPTIMIZATION_CFLAGS     := @aros_optimization_cflags@
+ISA_FLAGS               := @aros_isa_flags@
 
-NOSTDINC_CFLAGS   := @aros_target_nostdinc_cflags@
-KERNEL_IQUOTE     := @kernel_cflags_iquote@
-KERNEL_IQUOTE_END := @kernel_cflags_iquote_end@
-NOSTARTUP_LDFLAGS := @aros_target_nostartup_ldflags@
-NIX_LDFLAGS       := @aros_target_nix_ldflags@
-DETACH_LDFLAGS    := @aros_target_detach_ldflags@
-NOSTDLIB_LDFLAGS  := @aros_target_nostdlib_ldflags@
+NOSTDINC_CFLAGS         := @aros_target_nostdinc_cflags@
+KERNEL_IQUOTE           := @kernel_cflags_iquote@
+KERNEL_IQUOTE_END       := @kernel_cflags_iquote_end@
+NOSTARTUP_LDFLAGS       := @aros_target_nostartup_ldflags@
+NIX_LDFLAGS             := @aros_target_nix_ldflags@
+DETACH_LDFLAGS          := @aros_target_detach_ldflags@
+NOSTDLIB_LDFLAGS        := @aros_target_nostdlib_ldflags@
 
-COMPILER_LIBS   := @aros_compiler_libs@
-ARCH_LIBS	:= @aros_arch_libs@
+COMPILER_LIBS           := @aros_compiler_libs@
+ARCH_LIBS               := @aros_arch_libs@
 
-AR		:= @aros_target_ar@
-AR_PLAIN        := @aros_plain_ar@
-KERNEL_AR	:= @aros_kernel_ar@
-RANLIB		:= @aros_target_ranlib@
-KERNEL_RANLIB   := @aros_kernel_ranlib@
-NM		:= @aros_target_nm@
-NM_PLAIN	:= @aros_plain_nm@
-OBJCOPY		:= @aros_target_objcopy@
-OBJDUMP		:= @aros_target_objdump@
-STRIP_PLAIN     := @aros_target_strip@
+AR                      := @aros_target_ar@
+AR_PLAIN                := @aros_plain_ar@
+KERNEL_AR               := @aros_kernel_ar@
+RANLIB                  := @aros_target_ranlib@
+KERNEL_RANLIB           := @aros_kernel_ranlib@
+NM                      := @aros_target_nm@
+NM_PLAIN                := @aros_plain_nm@
+OBJCOPY                 := @aros_target_objcopy@
+OBJDUMP                 := @aros_target_objdump@
+STRIP_PLAIN             := @aros_target_strip@
 
 # Apple iOS specific
-IOS_PLATFORM    := @aros_ios_platform@
-IOS_OS_VERSION  := @aros_ios_version@
-IOS_SDK_PATH    := @aros_ios_sdk@
+IOS_PLATFORM            := @aros_ios_platform@
+IOS_OS_VERSION          := @aros_ios_version@
+IOS_SDK_PATH            := @aros_ios_sdk@
 
 # ARM gcc default target
-GCC_DEFAULT_CPU := @gcc_default_cpu@
-GCC_DEFAULT_FPU := @gcc_default_fpu@
-GCC_DEFAULT_FLOAT_ABI := @gcc_default_float_abi@
-GCC_DEFAULT_MODE := @gcc_default_mode@
+GCC_DEFAULT_CPU         := @gcc_default_cpu@
+GCC_DEFAULT_FPU         := @gcc_default_fpu@
+GCC_DEFAULT_FLOAT_ABI   := @gcc_default_float_abi@
+GCC_DEFAULT_MODE        := @gcc_default_mode@
 
 # --------------------------------------------------------------------------
 # MAGIC: This is needed here for MetaMake to work. mmake will read the
