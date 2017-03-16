@@ -54,6 +54,8 @@ const struct OOP_ABDescr abd[] =
     {NULL            ,  NULL          }
 };
 
+int sysExplGlobalCount;
+
 /*
  * This lists contains handlers for known public classes.
  * It specifies information window class, as well as function
@@ -94,18 +96,27 @@ AROS_UFH3S(BOOL, enumFunc,
 
     if (objValid)
     {
+        int objnum;
+
         /* This is either HW or HIDD subclass */
         OOP_GetAttr(obj, aHW_ClassName, (IPTR *)&name);
         if (!name)
             OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
 
+        objnum = ++sysExplGlobalCount;
         tn = (APTR)DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
                             parent, MUIV_NListtree_Insert_PrevNode_Sorted, flags);
+
         D(bug("Inserted TreeNode 0x%p <%s> UserData 0x%p\n", tn, tn->tn_Name, tn->tn_User));
 
         /* If we have enumerator for this class, call it now */
         if (clHandlers && clHandlers->enumFunc && (flags & TNF_LIST))
             clHandlers->enumFunc(obj, tn);
+
+        if (objnum == sysExplGlobalCount)
+        {
+            tn->tn_Flags &= ~flags;
+        }
     }
     return FALSE; /* Continue enumeration */
 
@@ -240,7 +251,7 @@ AROS_UFH3S(void, propertyFunc,
 
     if (node == NULL)
     {
-        /* if we were called from menu we must 1st find the current entry */
+        /* if we were called from menu we must first find the current entry */
         node = (struct MUI_NListtree_TreeNode *)XGET(hidd_tree, MUIA_NListtree_Active);
     }
 
@@ -341,6 +352,8 @@ static BOOL GUIinit()
 
         if (hwRoot)
         {
+            sysExplGlobalCount = 0;
+
             /* This will kick our recursive enumeration into action */
             CALLHOOKPKT((struct Hook *)&enum_hook, hwRoot, MUIV_NListtree_Insert_ListNode_Root);
         }
