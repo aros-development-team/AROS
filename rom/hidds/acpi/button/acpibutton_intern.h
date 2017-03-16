@@ -1,5 +1,5 @@
-#ifndef HIDDACPIBUTTON_INTERN_H
-#define HIDDACPIBUTTON_INTERN_H
+#ifndef HWACPIBUTTON_INTERN_H
+#define HWACPIBUTTON_INTERN_H
 
 #include <proto/acpica.h>
 
@@ -13,13 +13,18 @@
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
 
-struct HIDDACPIButtonData
+struct HWACPIButtonData
 {
     ACPI_HANDLE                 acpib_Handle;
+    struct Task                 *acpib_ServiceTask;
+    struct Hook                 *acpib_Hook;
     ULONG                       acpib_Type;
+    BYTE                        acpib_ServiceShutdown;
+    BYTE                        acpib_ServiceSleep;
+    BYTE                        acpib_ServiceLid;
 };
 
-struct class_static_data
+struct acpibuttonclass_staticdata
 {
     struct Library	        *cs_OOPBase;
     struct Library              *cs_UtilityBase;
@@ -40,22 +45,25 @@ struct class_static_data
 
     OOP_AttrBase                hwAB;
     OOP_AttrBase                hiddAB;
-    OOP_AttrBase                hiddACPIButtonAB;
+    OOP_AttrBase                hwACPIButtonAB;
 };
 
 /* Library base */
 
-struct HiddACPIButtonIntBase
+struct HWACPIButtonIntBase
 {
     struct Library              hsi_LibNode;
 
-    struct class_static_data    hsi_csd;
+    struct acpibuttonclass_staticdata    hsi_csd;
 };
 
-#define CSD(x) (&((struct HiddACPIButtonIntBase *)x->UserData)->hsi_csd)
+#define CSD(x) (&((struct HWACPIButtonIntBase *)x->UserData)->hsi_csd)
+#define _csd    CSD(cl)
 
-#define __abHidd_ACPIButton     (CSD(cl)->hiddACPIButtonAB)
-#define __IHW 	                (CSD(cl)->hwAB)
-#define __IHidd	                (CSD(cl)->hiddAB)
+#define __IHW_ACPIButton        (_csd->hwACPIButtonAB)
+#define __IHW 	                (_csd->hwAB)
+#define __IHidd	                (_csd->hiddAB)
 
-#endif /* !HIDDACPIBUTTON_INTERN_H */
+#define OOPBase                 (_csd->cs_OOPBase)
+
+#endif /* !HWACPIBUTTON_INTERN_H */
