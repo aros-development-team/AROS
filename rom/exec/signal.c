@@ -15,10 +15,11 @@
 
 #define __AROS_KERNEL__
 #include "exec_intern.h"
-#include "kernel_ipi.h"
 
 #if defined(__AROSEXEC_SMP__)
 #include <utility/hooks.h>
+
+#include "kernel_ipi.h"
 
 AROS_UFH3(IPTR, signal_hook,
     AROS_UFHA(struct IPIHook *, hook, A0), 
