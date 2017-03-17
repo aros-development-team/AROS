@@ -25,6 +25,23 @@ struct Worker {
     char *          name;
 };
 
+struct MyMessage *AllocMyMessage(struct MinList *msgPool)
+{
+    struct MyMessage *msg = (struct MyMessage *)REMHEAD(msgPool);
+    if (msg)
+    {
+        msg->mm_Message.mn_Length = sizeof(struct MyMessage);
+    }
+    else bug("[SMP-Smallpt-Renderer] RUN OUT OF MESSAGES...\n");
+
+    return msg;
+}
+
+void FreeMyMessage(struct MinList *msgPool, struct MyMessage *msg)
+{
+    ADDHEAD(msgPool, &msg->mm_Message.mn_Node);
+}
+
 void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
 {
     ULONG width = 0;
@@ -117,9 +134,9 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
             ADDHEAD(&workList, &workPackages[i].node);
         }
 
-        messages = AllocMem(sizeof(struct MyMessage) * numberOfCores * 5, MEMF_PUBLIC | MEMF_CLEAR);
-        for (int i=0; i < numberOfCores * 5; i++)
-            ADDHEAD(&msgPool, &messages[i].mm_Message);
+        messages = AllocMem(sizeof(struct MyMessage) * numberOfCores * 10, MEMF_PUBLIC | MEMF_CLEAR);
+        for (int i=0; i < numberOfCores * 10; i++)
+            FreeMyMessage(&msgPool, &messages[i]);
 
         D(bug("[SMP-Smallpt-Renderer] creating %d workers\n", numberOfCores));
         workers = AllocMem(sizeof(struct Worker) * numberOfCores, MEMF_PUBLIC | MEMF_CLEAR);
@@ -168,7 +185,7 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                             ReplyMsg(&deathMessage->mm_Message);
                         }
                     }
-                    ADDHEAD(&msgPool, msg);
+                    FreeMyMessage(&msgPool, msg);
                 }
                 else
                 {
@@ -178,13 +195,15 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
 
                         for (ULONG i=0; i < numberOfCores; i++)
                         {
-                            struct MyMessage *m = (struct MyMessage *)REMHEAD(&msgPool);
-                            m->mm_Type = MSG_DIE;
-                            m->mm_Message.mn_ReplyPort = port;
-                            m->mm_Message.mn_Length = sizeof(struct MyMessage);
+                            struct MyMessage *m = AllocMyMessage(&msgPool);
+                            if (m)
+                            {
+                                m->mm_Type = MSG_DIE;
+                                m->mm_Message.mn_ReplyPort = port;
 
-                            D(bug("[SMP-Smallpt-Renderer] telling task %s to shut down\n", workers[i].task->tc_Node.ln_Name));
-                            PutMsg(workers[i].port, &m->mm_Message);
+                                D(bug("[SMP-Smallpt-Renderer] telling task %s to shut down\n", workers[i].task->tc_Node.ln_Name));
+                                PutMsg(workers[i].port, &m->mm_Message);
+                            }
                         }
                         deathMessage = msg;
                     }
@@ -195,24 +214,26 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
 
                         if (!IsMinListEmpty(&workList))
                         {
-                            struct tileWork *work = (struct tileWork *)REMHEAD(&workList);
-                            struct MyMessage *m = (struct MyMessage *)REMHEAD(&msgPool);
+                            struct MyMessage *m = AllocMyMessage(&msgPool);
 
-                            tasks_in--;
-                            tasks_work++;
+                            if (m)
+                            {
+                                struct tileWork *work = (struct tileWork *)REMHEAD(&workList);
+                                tasks_in--;
+                                tasks_work++;
 
-                            m->mm_Type = MSG_RENDERTILE;
-                            m->mm_Message.mn_Length = sizeof(m);
-                            m->mm_Message.mn_ReplyPort = port;
-                            m->mm_Body.RenderTile.tile = work;
-                            m->mm_Body.RenderTile.buffer = bitmap;
-                            m->mm_Body.RenderTile.guiPort = guiPort;
-                            m->mm_Body.RenderTile.width = width;
-                            m->mm_Body.RenderTile.height = height;
-                            m->mm_Body.RenderTile.numberOfSamples = maxIter;
-                            m->mm_Body.RenderTile.explicitMode = expl_mode;
+                                m->mm_Type = MSG_RENDERTILE;
+                                m->mm_Message.mn_ReplyPort = port;
+                                m->mm_Body.RenderTile.tile = work;
+                                m->mm_Body.RenderTile.buffer = bitmap;
+                                m->mm_Body.RenderTile.guiPort = guiPort;
+                                m->mm_Body.RenderTile.width = width;
+                                m->mm_Body.RenderTile.height = height;
+                                m->mm_Body.RenderTile.numberOfSamples = maxIter;
+                                m->mm_Body.RenderTile.explicitMode = expl_mode;
 
-                            PutMsg(workerPort, &m->mm_Message);
+                                PutMsg(workerPort, &m->mm_Message);
+                            }
                         }
                     }
                     else if (msg->mm_Type == MSG_RENDERREADY)
@@ -225,21 +246,23 @@ void Renderer(struct ExecBase *ExecBase, struct MsgPort *ParentMailbox)
                     }
                     if (deathMessage == NULL)
                     {
-                        struct MyMessage *m = (struct MyMessage *)REMHEAD(&msgPool);
-                        m->mm_Type = MSG_STATS;
-                        m->mm_Message.mn_Length = sizeof(struct MyMessage);
-                        m->mm_Message.mn_ReplyPort = port;
-                        m->mm_Body.Stats.tasksIn = tasks_in;
-                        m->mm_Body.Stats.tasksOut = tasks_out;
-                        m->mm_Body.Stats.tasksWork = tasks_work;
-                        PutMsg(guiPort, &m->mm_Message);
+                        struct MyMessage *m = AllocMyMessage(&msgPool);
+                        if (m)
+                        {
+                            m->mm_Type = MSG_STATS;
+                            m->mm_Message.mn_ReplyPort = port;
+                            m->mm_Body.Stats.tasksIn = tasks_in;
+                            m->mm_Body.Stats.tasksOut = tasks_out;
+                            m->mm_Body.Stats.tasksWork = tasks_work;
+                            PutMsg(guiPort, &m->mm_Message);
+                        }
                     }
                 }
             }
         }
 
         FreeMem(workPackages, tile_count * sizeof(struct tileWork));
-        FreeMem(messages, sizeof(struct MyMessage) * numberOfCores * 5);
+        FreeMem(messages, sizeof(struct MyMessage) * numberOfCores * 10);
         FreeMem(workers, sizeof(struct Worker) * numberOfCores);
         DeleteMsgPort(port);
     }

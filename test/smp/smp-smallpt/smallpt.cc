@@ -199,11 +199,23 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi)
 
 static inline struct MyMessage *AllocMsg(struct MinList *msgPool)
 {
-    if (IsMinListEmpty(msgPool))
+    struct MyMessage *msg = (struct MyMessage *)REMHEAD(msgPool);
+
+    if (msg)
+    {
+        msg->mm_Message.mn_Length = sizeof(struct MyMessage);
+    }
+    else
         bug("!!! smallpt.cc - run out of free messages!\n");
     
-    return (struct MyMessage *)REMHEAD(msgPool);
+    return msg;
 }
+
+static inline void FreeMsg(struct MinList *msgPool, struct MyMessage *msg)
+{
+    ADDHEAD(msgPool, &msg->mm_Message.mn_Node);
+}
+
 void __prepare()
 {
     ULONG *ptr = NULL;
@@ -264,7 +276,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
     
     msg = (struct MyMessage *)AllocMem(sizeof(struct MyMessage) * 20, MEMF_PUBLIC | MEMF_CLEAR);
     for (int i=0; i < 20; i++)
-        ADDHEAD(&msgPool, &msg[i]);
+        FreeMsg(&msgPool, &msg[i]);
 
     if (port)
     {
@@ -273,13 +285,14 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
         BOOL redraw = TRUE;
         
         m = AllocMsg(&msgPool);
-
-        /* Tell renderer that we are bored and want to do some work */
-        m->mm_Message.mn_Length = sizeof(msg);
-        m->mm_Message.mn_ReplyPort = port;
-        m->mm_Type = MSG_HUNGRY;
-        PutMsg(masterPort, &m->mm_Message);
-
+        if (m)
+        {
+            /* Tell renderer that we are bored and want to do some work */
+            m->mm_Message.mn_ReplyPort = port;
+            m->mm_Type = MSG_HUNGRY;
+            PutMsg(masterPort, &m->mm_Message);
+        }
+        
         D(bug("[SMP-SmallPT-Task] Just told renderer I'm hungry\n"));
 
         do {
@@ -287,11 +300,16 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
 
             if (signals & (1 << port->mp_SigBit))
             {
+                while ((m = (struct MyMessage *)GetMsg(syncPort)))
+                {
+                    FreeMsg(&msgPool, m);
+                    redraw = TRUE;
+                }
                 while ((m = (struct MyMessage *)GetMsg(port)))
                 {
                     if (m->mm_Message.mn_Node.ln_Type == NT_REPLYMSG)
                     {
-                        ADDHEAD(&msgPool, m);
+                        FreeMsg(&msgPool, m);
                         continue;
                     }
                     else
@@ -320,7 +338,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
 
                             ReplyMsg(&m->mm_Message);
 
-__prepare();
+//__prepare();
 
                             Ray cam(Vec(50, 52, 295.6), Vec(0, -0.042612, -1).norm()); // cam pos, dir
                             Vec cx = Vec(w * .5135 / h), cy = (cx % cam.d).norm() * .5135, r;
@@ -368,17 +386,19 @@ __prepare();
                                 if (redraw)
                                 {
                                     m = AllocMsg(&msgPool);
-                                    m->mm_Message.mn_Length = sizeof(struct MyMessage);
-                                    m->mm_Message.mn_ReplyPort = syncPort;
-                                    m->mm_Type = MSG_REDRAWTILE;
-                                    m->mm_Body.RedrawTile.TileX = tile_x;
-                                    m->mm_Body.RedrawTile.TileY = tile_y;
-                                    PutMsg(guiPort, &m->mm_Message);
-                                    redraw = FALSE;
+                                    if (m)
+                                    {
+                                        m->mm_Message.mn_ReplyPort = syncPort;
+                                        m->mm_Type = MSG_REDRAWTILE;
+                                        m->mm_Body.RedrawTile.TileX = tile_x;
+                                        m->mm_Body.RedrawTile.TileY = tile_y;
+                                        PutMsg(guiPort, &m->mm_Message);
+                                        redraw = FALSE;
+                                    }
                                 }
                                 else if ((m = (struct MyMessage *)GetMsg(syncPort)))
                                 {
-                                    ADDHEAD(&msgPool, m);
+                                    FreeMsg(&msgPool, m);
                                     redraw = TRUE;
                                 }
     #else
@@ -386,30 +406,37 @@ __prepare();
                                 Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
     #endif
                             }
-__test();
+//__test();
 //                            Signal((struct Task *)guiPort->mp_SigTask, SIGBREAKF_CTRL_D);
 
                             m = AllocMsg(&msgPool);
-                            m->mm_Message.mn_Length = sizeof(struct MyMessage);
-                            m->mm_Message.mn_ReplyPort = port;
-                            m->mm_Type = MSG_REDRAWTILE;
-                            m->mm_Body.RedrawTile.TileX = tile_x;
-                            m->mm_Body.RedrawTile.TileY = tile_y;
-                            PutMsg(guiPort, &m->mm_Message);
-                            redraw = TRUE;
+                            if (m)
+                            {
+                                m->mm_Message.mn_ReplyPort = port;
+                                m->mm_Type = MSG_REDRAWTILE;
+                                m->mm_Body.RedrawTile.TileX = tile_x;
+                                m->mm_Body.RedrawTile.TileY = tile_y;
+                                PutMsg(guiPort, &m->mm_Message);
+                                
+                                redraw = TRUE;
+                            }
 
                             m = AllocMsg(&msgPool);
-                            m->mm_Message.mn_Length = sizeof(struct MyMessage);
-                            m->mm_Message.mn_ReplyPort = port;
-                            m->mm_Type = MSG_RENDERREADY;
-                            m->mm_Body.RenderTile.tile = tile;
-                            PutMsg(masterPort, &m->mm_Message);
+                            if (m)
+                            {
+                                m->mm_Message.mn_ReplyPort = port;
+                                m->mm_Type = MSG_RENDERREADY;
+                                m->mm_Body.RenderTile.tile = tile;
+                                PutMsg(masterPort, &m->mm_Message);
+                            }
 
                             m = AllocMsg(&msgPool);
-                            m->mm_Message.mn_Length = sizeof(struct MyMessage);
-                            m->mm_Message.mn_ReplyPort = port;
-                            m->mm_Type = MSG_HUNGRY;
-                            PutMsg(masterPort, &m->mm_Message);
+                            if (m)
+                            {
+                                m->mm_Message.mn_ReplyPort = port;
+                                m->mm_Type = MSG_HUNGRY;
+                                PutMsg(masterPort, &m->mm_Message);
+                            }
                         }
                     }
                 }
