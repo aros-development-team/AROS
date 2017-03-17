@@ -1,5 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -166,15 +167,15 @@ struct AHIDevUnit
         struct Voice            *Voices;
 
         struct AHIAudioCtrl     *AudioCtrl;
-        ULONG                    AudioMode;
-        ULONG                    Frequency;
+        IPTR                    AudioMode;
+        IPTR                    Frequency;
         UWORD                    Channels;
         UWORD                    Pad;
         Fixed                    MonitorVolume;
         Fixed                    InputGain;
         Fixed                    OutputVolume;
-        ULONG                    Input;
-        ULONG                    Output;
+        IPTR                    Input;
+        IPTR                    Output;
 
         UBYTE                    Sounds[MAXSOUNDS];
 };

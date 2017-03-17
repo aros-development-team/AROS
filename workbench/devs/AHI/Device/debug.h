@@ -1,5 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -27,13 +28,17 @@
 
 void
 KPrintFArgs( UBYTE* fmt, 
-             ULONG* args );
+#if defined(__AROS__)
+             RAWARG args );
+#else
+             ULONG * args );
+#endif
 
 #ifndef __AMIGAOS4__
 #define KPrintF( fmt, ... )        \
 ({                                 \
-  ULONG _args[] = { __VA_ARGS__ }; \
-  KPrintFArgs( (fmt), _args );     \
+  IPTR _args[] = { __VA_ARGS__ }; \
+  KPrintFArgs( (fmt), (RAWARG)_args );     \
 })
 #else
 #define KPrintF DebugPrintF
@@ -62,7 +67,7 @@ void
 Debug_SetSound( UWORD chan, UWORD sound, ULONG offset, LONG length, struct AHIPrivAudioCtrl *audioctrl, ULONG flags);
 
 void
-Debug_SetEffect( ULONG *effect, struct AHIPrivAudioCtrl *audioctrl );
+Debug_SetEffect( IPTR *effect, struct AHIPrivAudioCtrl *audioctrl );
 
 void
 Debug_LoadSound( UWORD sound, ULONG type, APTR info, struct AHIPrivAudioCtrl *audioctrl );
@@ -71,10 +76,10 @@ void
 Debug_UnloadSound( UWORD sound, struct AHIPrivAudioCtrl *audioctrl );
 
 void
-Debug_NextAudioID( ULONG id);
+Debug_NextAudioID( IPTR id);
 
 void
-Debug_GetAudioAttrsA( ULONG id, struct AHIPrivAudioCtrl *audioctrl, struct TagItem *tags );
+Debug_GetAudioAttrsA( IPTR id, struct AHIPrivAudioCtrl *audioctrl, struct TagItem *tags );
 
 void
 Debug_BestAudioIDA( struct TagItem *tags );
@@ -98,7 +103,7 @@ void
 Debug_AddAudioMode(struct TagItem *tags );
 
 void
-Debug_RemoveAudioMode( ULONG id);
+Debug_RemoveAudioMode( IPTR id);
 
 void
 Debug_LoadModeFile( STRPTR name);

@@ -1,5 +1,6 @@
 /*
      AHI - The AHI preferences program
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -31,7 +32,7 @@ struct UnitNode {
 
 struct ModeNode {
   struct Node           node;
-  ULONG                 ID;
+  IPTR                 ID;
   char                  name[80];
 };
 
@@ -41,23 +42,23 @@ struct ModeNode {
 
 struct state 
 {
-  LONG UnitSelected;
-  LONG ModeSelected;
-  LONG FreqSelected;
-  LONG ChannelsSelected;
-  LONG InputSelected;
-  LONG OutputSelected;
-  LONG OutVolSelected;
-  LONG MonVolSelected;
-  LONG GainSelected;
+  IPTR UnitSelected;
+  IPTR ModeSelected;
+  IPTR FreqSelected;
+  IPTR ChannelsSelected;
+  IPTR InputSelected;
+  IPTR OutputSelected;
+  IPTR OutVolSelected;
+  IPTR MonVolSelected;
+  IPTR GainSelected;
 
-  LONG Frequencies;
-  LONG Channels;
-  LONG Inputs;
-  LONG Outputs;
-  LONG OutVols;
-  LONG MonVols;
-  LONG Gains;
+  IPTR Frequencies;
+  IPTR Channels;
+  IPTR Inputs;
+  IPTR Outputs;
+  IPTR OutVols;
+  IPTR MonVols;
+  IPTR Gains;
 
   BOOL ChannelsDisabled;
   BOOL OutVolMute;
@@ -72,9 +73,9 @@ struct state
 struct args
 {
   STRPTR  from;
-  ULONG   edit;
-  ULONG   use;
-  ULONG   save;
+  IPTR   edit;
+  IPTR   use;
+  IPTR   save;
   STRPTR  pubscreen;
 };
 
@@ -107,7 +108,7 @@ char *getMonVol(void);
 char *getGain(void);
 char *getInput(void);
 char *getOutput(void);
-ULONG getAudioMode(void);
+IPTR getAudioMode(void);
 char *getRecord(void);
 char *getAuthor(void);
 char *getCopyright(void);

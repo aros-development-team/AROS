@@ -1,5 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -25,17 +26,17 @@
 #include <utility/tagitem.h>
 
 ULONG
-_AHI_GetAudioAttrsA( ULONG                    id,
+_AHI_GetAudioAttrsA( IPTR                    id,
 		     struct AHIPrivAudioCtrl* actrl,
 		     struct TagItem*          tags,
 		     struct AHIBase*          AHIBase );
 
-ULONG
+IPTR
 _AHI_BestAudioIDA( struct TagItem* tags,
 		   struct AHIBase* AHIBase );
 
 BOOL
-TestAudioID( ULONG id,
+TestAudioID( IPTR id,
              struct TagItem *tags );
 
 #endif /* ahi_modeinfo_h */

@@ -1,5 +1,6 @@
 /*
      AHI - The AHI preferences program
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -213,7 +214,7 @@ BOOL Initialize(void) {
   GadToolsBase = OpenLibrary("gadtools.library", 37);
 
   if( GadToolsBase == NULL) {
-    Printf((char *) msgTextNoOpen, (ULONG) "gadtools.library", 37);
+    Printf((char *) msgTextNoOpen, (IPTR) "gadtools.library", 37);
     Printf("\n");
     return FALSE;
   }
@@ -242,7 +243,7 @@ BOOL Initialize(void) {
     }
   }
 
-  Printf((char *) msgTextNoOpen, (ULONG) "ahi.device", 4);
+  Printf((char *) msgTextNoOpen, (IPTR) "ahi.device", 4);
   Printf("\n");
   return FALSE;
 }
@@ -345,7 +346,7 @@ struct List *GetUnits(char *name) {
     NewList(list);
     
     if(name && (iff = AllocIFF())) {
-      iff->iff_Stream = (ULONG) Open(name, MODE_OLDFILE);
+      iff->iff_Stream = (IPTR) Open(name, MODE_OLDFILE);
       if(iff->iff_Stream) {
         InitIFFasDOS(iff);
         if(!OpenIFF(iff, IFFF_READ)) {
@@ -482,7 +483,7 @@ struct List *GetModes(struct AHIUnitPrefs *prefs) {
   list = AllocVec(sizeof(struct List), MEMF_CLEAR);
   
   if(list) {
-    ULONG id = AHI_NextAudioID(AHI_INVALID_ID);
+    IPTR id = AHI_NextAudioID(AHI_INVALID_ID);
 
     NewList(list);
 
@@ -502,8 +503,8 @@ struct List *GetModes(struct AHIUnitPrefs *prefs) {
         
         AHI_GetAudioAttrs(id, NULL,
             AHIDB_BufferLen,  80,
-            AHIDB_Name,       (ULONG) t->node.ln_Name,
-            AHIDB_Realtime,   (ULONG) &realtime,
+            AHIDB_Name,       (IPTR) t->node.ln_Name,
+            AHIDB_Realtime,   (IPTR) &realtime,
             TAG_DONE);
 
         if((prefs->ahiup_Unit == AHI_NO_UNIT) ||
@@ -556,13 +557,13 @@ char **List2Array(struct List *list) {
 **** Returns a char* array with inputs names **********************************
 ******************************************************************************/
 
-char **GetInputs(ULONG id) {
+char **GetInputs(IPTR id) {
   char **strings, **rstrings;
   LONG inputs = 0, i;
 
 
   AHI_GetAudioAttrs(id, NULL,
-      AHIDB_Inputs, (ULONG) &inputs,
+      AHIDB_Inputs, (IPTR) &inputs,
       TAG_DONE);
 
   strings = AllocVec(sizeof(char *) * (inputs + 1) + (32 * inputs), MEMF_CLEAR);
@@ -575,7 +576,7 @@ char **GetInputs(ULONG id) {
       if(AHI_GetAudioAttrs(id, NULL,
           AHIDB_BufferLen, 32,
           AHIDB_InputArg,  i,
-          AHIDB_Input,     (ULONG) string,
+          AHIDB_Input,     (IPTR) string,
           TAG_DONE)) {
         *strings++ = string;
         while(*string++);
@@ -590,13 +591,13 @@ char **GetInputs(ULONG id) {
 **** Returns a char* array with outputs names *********************************
 ******************************************************************************/
 
-char **GetOutputs(ULONG id) {
+char **GetOutputs(IPTR id) {
   char **strings, **rstrings;
   LONG outputs = 0, i;
 
 
   AHI_GetAudioAttrs(id, NULL,
-      AHIDB_Outputs, (ULONG) &outputs,
+      AHIDB_Outputs, (IPTR) &outputs,
       TAG_DONE);
 
   strings = AllocVec(sizeof(char *) * (outputs + 1) + (32 * outputs), MEMF_CLEAR);
@@ -609,7 +610,7 @@ char **GetOutputs(ULONG id) {
       if(AHI_GetAudioAttrs(id, NULL,
           AHIDB_BufferLen, 32,
           AHIDB_OutputArg,  i,
-          AHIDB_Output,     (ULONG) string,
+          AHIDB_Output,     (IPTR) string,
           TAG_DONE)) {
         *strings++ = string;
         while(*string++);
@@ -631,7 +632,7 @@ BOOL SaveSettings(char *name, struct List *list) {
   BOOL               success = FALSE;
 
   if(name && (iff = AllocIFF())) {
-    iff->iff_Stream = (ULONG) Open(name, MODE_NEWFILE);
+    iff->iff_Stream = (IPTR) Open(name, MODE_NEWFILE);
     if(iff->iff_Stream) {
       InitIFFasDOS(iff);
       if(!OpenIFF(iff, IFFF_WRITE)) {
@@ -859,7 +860,7 @@ BOOL PlaySound( struct AHIUnitPrefs* prefs )
                                      AHIC_Output,        prefs->ahiup_Output,
                                      TAG_DONE ) == AHIE_OK )
         {
-	  ULONG volume = 0x10000;
+	  IPTR volume = 0x10000;
 	  
 	  switch( globalprefs.ahigp_ScaleMode )
 	  {

@@ -1,5 +1,6 @@
 /*
      AHI - The AHI preferences program
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -226,7 +227,7 @@ void NewSettings(char *name) {
 
 void NewUnit(int selectedunit) {
   struct UnitNode *unit;
-  ULONG id, modeselected;
+  IPTR id, modeselected;
   struct ModeNode *mode;
 
   unit = (struct UnitNode *) GetNode(selectedunit, UnitList);
@@ -264,7 +265,7 @@ void NewUnit(int selectedunit) {
 void NewMode(int selectedmode) {
   struct UnitNode *unit = NULL;
   struct ModeNode *mode = NULL;
-  ULONG id = AHI_INVALID_ID;
+  IPTR id = AHI_INVALID_ID;
   Fixed MinOutVol = 0, MaxOutVol = 0, MinMonVol = 0, MaxMonVol = 0;
   Fixed MinGain = 0, MaxGain = 0;
   double Min, Max, Current;
@@ -285,24 +286,24 @@ void NewMode(int selectedmode) {
     
     AHI_GetAudioAttrs(id, NULL,
 		      AHIDB_IndexArg,         unit->prefs.ahiup_Frequency,
-		      AHIDB_Index,            (ULONG) &state.FreqSelected,
-		      AHIDB_Frequencies,      (ULONG) &state.Frequencies,
-		      AHIDB_MaxChannels,      (ULONG) &state.Channels,
-		      AHIDB_Inputs,           (ULONG) &state.Inputs,
-		      AHIDB_Outputs,          (ULONG) &state.Outputs,
-		      AHIDB_MinOutputVolume,  (ULONG) &MinOutVol,
-		      AHIDB_MaxOutputVolume,  (ULONG) &MaxOutVol,
-		      AHIDB_MinMonitorVolume, (ULONG) &MinMonVol,
-		      AHIDB_MaxMonitorVolume, (ULONG) &MaxMonVol,
-		      AHIDB_MinInputGain,     (ULONG) &MinGain,
-		      AHIDB_MaxInputGain,     (ULONG) &MaxGain,
+		      AHIDB_Index,            (IPTR) &state.FreqSelected,
+		      AHIDB_Frequencies,      (IPTR) &state.Frequencies,
+		      AHIDB_MaxChannels,      (IPTR) &state.Channels,
+		      AHIDB_Inputs,           (IPTR) &state.Inputs,
+		      AHIDB_Outputs,          (IPTR) &state.Outputs,
+		      AHIDB_MinOutputVolume,  (IPTR) &MinOutVol,
+		      AHIDB_MaxOutputVolume,  (IPTR) &MaxOutVol,
+		      AHIDB_MinMonitorVolume, (IPTR) &MinMonVol,
+		      AHIDB_MaxMonitorVolume, (IPTR) &MaxMonVol,
+		      AHIDB_MinInputGain,     (IPTR) &MinGain,
+		      AHIDB_MaxInputGain,     (IPTR) &MaxGain,
 
 		      AHIDB_BufferLen,        128,
-		      AHIDB_Author,           (ULONG) authorBuffer,
-		      AHIDB_Copyright,        (ULONG) copyrightBuffer,
-		      AHIDB_Driver,           (ULONG) driverBuffer,
-		      AHIDB_Version,          (ULONG) versionBuffer,
-		      AHIDB_Annotation,       (ULONG) annotationBuffer,
+		      AHIDB_Author,           (IPTR) authorBuffer,
+		      AHIDB_Copyright,        (IPTR) copyrightBuffer,
+		      AHIDB_Driver,           (IPTR) driverBuffer,
+		      AHIDB_Version,          (IPTR) versionBuffer,
+		      AHIDB_Annotation,       (IPTR) annotationBuffer,
 		      TAG_DONE);
   }
 
@@ -459,7 +460,7 @@ void FillUnit() {
 
     AHI_GetAudioAttrs(mode->ID, NULL,
 		      AHIDB_FrequencyArg, state.FreqSelected,
-		      AHIDB_Frequency,    (ULONG) &unit->prefs.ahiup_Frequency,
+		      AHIDB_Frequency,    (IPTR) &unit->prefs.ahiup_Frequency,
 		      TAG_DONE);
   }
 
@@ -504,7 +505,7 @@ char *getFreq(void) {
     AHI_GetAudioAttrs(
       mode->ID, NULL,
       AHIDB_FrequencyArg, state.FreqSelected,
-      AHIDB_Frequency,    (ULONG) &freq,
+      AHIDB_Frequency,    (IPTR) &freq,
       TAG_DONE);
   }
 
@@ -580,7 +581,7 @@ char *getOutput(void) {
   return (char *) msgOptNoOutputs;
 }
 
-ULONG getAudioMode(void) {
+IPTR getAudioMode(void) {
 
   struct ModeNode * mode = NULL;
   
@@ -600,7 +601,7 @@ ULONG getAudioMode(void) {
 }
 
 char *getRecord(void) {
-  ULONG record = FALSE, fullduplex = FALSE;
+  IPTR record = FALSE, fullduplex = FALSE;
   struct ModeNode *mode = NULL;
 
   if( state.ModeSelected != ~0 )
@@ -612,8 +613,8 @@ char *getRecord(void) {
   {
     AHI_GetAudioAttrs(
       mode->ID, NULL,
-      AHIDB_Record,     (ULONG) &record,
-      AHIDB_FullDuplex, (ULONG) &fullduplex,
+      AHIDB_Record,     (IPTR) &record,
+      AHIDB_FullDuplex, (IPTR) &fullduplex,
       TAG_DONE);
   }
   

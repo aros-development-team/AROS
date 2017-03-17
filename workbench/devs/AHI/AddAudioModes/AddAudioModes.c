@@ -1,5 +1,6 @@
 /*
      AddAudioModes - Manipulates AHI's audio mode database 
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -52,10 +53,10 @@ const char version[] = "$VER: AddAudioModes " VERS "\n\r";
 
 struct {
   STRPTR *files;
-  ULONG   quiet;
-  ULONG   refresh;
-  ULONG   remove;
-  ULONG   dblscan;
+  IPTR   quiet;
+  IPTR   refresh;
+  IPTR   remove;
+  IPTR   dblscan;
 } args = {NULL, FALSE, FALSE, FALSE, FALSE};
 
 #ifdef __MORPHOS__
@@ -156,7 +157,7 @@ main( void )
 
     if( args.refresh && !args.remove )
     {
-      ULONG id;
+      IPTR id;
 
       OpenAHI();
 
@@ -175,7 +176,7 @@ main( void )
       {
         if( IS_MORPHOS )
         {
-          ULONG res;
+          IPTR res;
 
           /* Be quiet here. - Piru */
           APTR *windowptr = &((struct Process *) FindTask(NULL))->pr_WindowPtr;
@@ -236,12 +237,12 @@ main( void )
       }
       else
       {
-        ULONG id;
+        IPTR id;
 
         OpenAHI();
 
         for( id = AHI_NextAudioID( AHI_INVALID_ID );
-             id != (ULONG) AHI_INVALID_ID;
+             id != (IPTR) AHI_INVALID_ID;
              id = AHI_NextAudioID( AHI_INVALID_ID ) )
         {
           AHI_RemoveAudioMode( id );
@@ -253,8 +254,8 @@ main( void )
 
     if( args.dblscan )
     {
-      ULONG          id;
-      ULONG          bestid = INVALID_ID;
+      IPTR          id;
+      IPTR          bestid = INVALID_ID;
       int            minper = INT_MAX;
       struct Screen *screen = NULL;
 
@@ -271,7 +272,7 @@ main( void )
       } buffer;
 
       for( id = NextDisplayInfo( INVALID_ID );
-           id != (ULONG) INVALID_ID;
+           id != (IPTR) INVALID_ID;
            id = NextDisplayInfo( id ) )
       {
         int period;
@@ -302,7 +303,7 @@ main( void )
 
       }
 
-      if( bestid != (ULONG) INVALID_ID && minper < 100 )
+      if( bestid != (IPTR) INVALID_ID && minper < 100 )
       {
         screen = OpenScreenTags( NULL,
                                  SA_DisplayID,  bestid,

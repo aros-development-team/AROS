@@ -1,5 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -51,7 +52,7 @@ _AHI_SetSound ( UWORD                    channel,
 
 
 ULONG
-_AHI_SetEffect( ULONG*                   effect,
+_AHI_SetEffect( IPTR*                   effect,
 		struct AHIPrivAudioCtrl* audioctrl,
 		struct AHIBase*          AHIBase );
 
