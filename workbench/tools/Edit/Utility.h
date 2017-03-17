@@ -15,7 +15,7 @@ extern const UBYTE chEOL[];
 extern const UBYTE szEOL[];
 
 /** Very simple SPrintf-like function **/
-STRPTR my_SPrintf(STRPTR fmt, APTR data);
+STRPTR my_SPrintf(STRPTR fmt, RAWARG data);
 
 typedef struct
 {

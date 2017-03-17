@@ -1,4 +1,4 @@
-## version $VER: JanoEditor.catalog 1.0 (27.09.2008).
+## version $VER: JanoEditor.catalog 1.1 (17.03.2017).
 ## codeset 0
 ## language português
 ;
@@ -351,8 +351,8 @@ Informação
 ;Information
 ;
 MSG_FORMATINFO
-%s\nProgramado por T.Pierron y C.Guillaume © 2000\n\nFicheiro editado: %s\nTamanho: %ld %s, %ld %s.
-;%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+%s\nProgramado por T.Pierron y C.Guillaume © 2000\n\nFicheiro editado: %s\nTamanho: %iu %s, %iu %s.
+;%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Continuar
@@ -430,8 +430,8 @@ _Cancelar
 ;_Cancel
 ;
 MSG_REPLACEALL
-%ld %s de '%s' substituídos
-;%ld %s of `%s' replaced
+%iu %s de '%s' substituídos
+;%iu %s of `%s' replaced
 ;
 MSG_OCCURENCY
 ocorrência

@@ -1,4 +1,4 @@
-## version $VER: Editor.catalog 1.4 (29.04.2010)
+## version $VER: Editor.catalog 1.5 (17.03.2017)
 ## language polski
 ## codeset 5
 ;
@@ -319,8 +319,8 @@ Informacja
 ; Information
 ;
 MSG_FORMATINFO
-%s\nAutorzy: T.Pierron i C.Guillaume\nCopyright (C) 2000\n\nEdytowany plik: %s\Wielko¶æ: %ld %s, %ld %s.
-; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+%s\nAutorzy: T.Pierron i C.Guillaume\nCopyright (C) 2000\n\nEdytowany plik: %s\Wielko¶æ: %iu %s, %iu %s.
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Kontynuuj
@@ -391,8 +391,8 @@ Ponie_chaj
 ; _Cancel
 ;
 MSG_REPLACEALL
-Zmieniono %ld %s tekstu \"%s\".
-; %ld %s of `%s' replaced
+Zmieniono %iu %s tekstu \"%s\".
+; %iu %s of `%s' replaced
 ;
 MSG_OCCURENCY
 wyst±pienie

@@ -1,4 +1,4 @@
-## version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+## version $VER: JanoEditor.catalog 1.1 (17.03.2017).
 ## codeset 0
 ## language italiano
 ;
@@ -267,7 +267,7 @@ MSG_ABOUT
 Informazioni
 ;
 MSG_FORMATINFO
-%s\nConçu di T.Pierron et C.Guillaume © 2000\n\nDocumento attuale: %s\nLunghezza: %ld %s, %ld %s.
+%s\nConçu di T.Pierron et C.Guillaume © 2000\n\nDocumento attuale: %s\nLunghezza: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Continua
@@ -326,7 +326,7 @@ MSG_CANCELSEARCH
 Annulla
 ;
 MSG_REPLACEALL
-Sostituzione di %ld %s con `%s'.
+Sostituzione di %iu %s con `%s'.
 ;
 MSG_OCCURENCY
 occorrenza

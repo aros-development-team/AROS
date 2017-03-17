@@ -1,4 +1,4 @@
-## version $VER: Editor.catalog 1.4 (27.12.2009)
+## version $VER: Editor.catalog 1.5 (17.03.2017)
 ## language hrvatski
 ## codeset 5
 ;
@@ -350,8 +350,8 @@ Informacije
 ; Information
 ;
 MSG_FORMATINFO
-%s\nDesigned by T.Pierron and C.Guillaume Œ 2000\n\nDatoteka ureðena: %s\nDu¾ina: %ld %s, %ld %s.
-; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+%s\nDesigned by T.Pierron and C.Guillaume Œ 2000\n\nDatoteka ureðena: %s\nDu¾ina: %iu %s, %iu %s.
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Nastavi
@@ -427,8 +427,8 @@ Odustani
 ; _Cancel
 ;
 MSG_REPLACEALL
-%ld %s of `%s' zamjenjeno
-; %ld %s of `%s' replaced
+%iu %s of `%s' zamjenjeno
+; %iu %s of `%s' replaced
 ;
 MSG_OCCURENCY
 occurency

@@ -1,4 +1,4 @@
-## version $VER: JanoEditor.catalog 1.1 (24.11.2008)
+## version $VER: JanoEditor.catalog 1.2 (17.03.2017)
 ## codeset 2104
 ## language russian
 ;
@@ -265,7 +265,7 @@ MSG_ABOUT
 Информация
 ;
 MSG_FORMATINFO
-%s\n Авторы: T.Pierron и C.Guillaume ? 2000\n\nРедактируемый файл:: %s\nДлина : %ld %s, %ld %s.\n
+%s\n Авторы: T.Pierron и C.Guillaume ? 2000\n\nРедактируемый файл:: %s\nДлина : %iu %s, %iu %s.\n
 ;
 MSG_CONTINUE
 Продолжить
@@ -324,7 +324,7 @@ MSG_CANCELSEARCH
 Отмена
 ;
 MSG_REPLACEALL
-%ld %s of `%s' заменено
+%iu %s of `%s' заменено
 ;
 MSG_OCCURENCY
 совпадение

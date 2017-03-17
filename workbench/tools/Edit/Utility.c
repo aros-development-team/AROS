@@ -64,10 +64,10 @@ void __asm PutChProc(register __d0 UBYTE data, register __a3 STRPTR out)
 }
 
 /** This is a very simplified routine, but takes only a few hundred bytes **/
-STRPTR my_SPrintf(STRPTR fmt, APTR data)
+STRPTR my_SPrintf(STRPTR fmt, RAWARG data)
 {
 	savea3 = SPrintfBuf;
-	RawDoFmt(fmt, data, (void *)PutChProc, 0);
+	RawDoFmt(fmt, (RAWARG)data, (void *)PutChProc, 0);
 	return SPrintfBuf;
 }
 
@@ -77,12 +77,12 @@ void draw_info(Project p)
 	UpdateTitle(Wnd, p);
 }
 
-CONST_STRPTR InfoTmpl = "%s%s    (%ld, %ld)";
+CONST_STRPTR InfoTmpl = "%s%s    (%iu, %iu)";
 
 /** Update window title **/
 void UpdateTitle(struct Window *W, Project p)
 {
-	struct { TEXT *name; TEXT *modified; ULONG x; ULONG y; } __packed info;
+	struct { TEXT *name; TEXT *modified; STACKED ULONG x; STACKED ULONG y; } __packed info;
 
 	info.name = p->path? p->path: p->name;
 	info.modified = (p->state & MODIFIED) ? STR_MODIF : "";
