@@ -129,17 +129,17 @@ ULONG _AHIsub_AllocAudio(
   {
     struct TagItem playtags[] =
     {
-      { ASLFR_InitialFile,  (ULONG) ext     },
+      { ASLFR_InitialFile,  (IPTR) ext     },
       { ASLFR_DoSaveMode,   TRUE            },
       { ASLFR_RejectIcons,  TRUE            },
-      { ASLFR_TitleText,    (ULONG) LibName },
+      { ASLFR_TitleText,    (IPTR) LibName },
       { TAG_DONE,           0               }
     };
   
     struct TagItem rectags[] =
     {
       { ASLFR_RejectIcons,  TRUE                            },
-      { ASLFR_TitleText,    (ULONG) "Select a sound sample" },
+      { ASLFR_TitleText,    (IPTR) "Select a sound sample" },
       { TAG_DONE,           0                               }
     };
     
@@ -342,8 +342,8 @@ ULONG _AHIsub_Start(
     {
       struct TagItem proctags[] =
       {
-	{ NP_Entry,     (ULONG) &recslaveentry },
-	{ NP_Name,      (ULONG) LibName        },
+	{ NP_Entry,     (IPTR) &recslaveentry },
+	{ NP_Name,      (IPTR) LibName        },
 	{ NP_Priority,  1                      },  // Make it steady...
 	{ TAG_DONE,     0                      }
       };

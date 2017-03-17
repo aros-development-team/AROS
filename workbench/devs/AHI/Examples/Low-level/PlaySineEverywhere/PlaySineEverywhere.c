@@ -135,7 +135,7 @@ PlaySineEverywhere( void ) {
       };
     
       AHI_GetAudioAttrs( mode, NULL,
-			 AHIDB_Name, (ULONG) &name,
+			 AHIDB_Name, (IPTR) &name,
 			 AHIDB_BufferLen, 64,
 			 TAG_DONE );
     
@@ -145,7 +145,7 @@ PlaySineEverywhere( void ) {
 			      AHIA_MixFreq,   44100,
 			      AHIA_Channels,  1,
 			      AHIA_Sounds,    6,
-			      AHIA_SoundFunc, (ULONG) &sound_hook,
+			      AHIA_SoundFunc, (IPTR) &sound_hook,
 			      AHIA_UserData,  0,
 			      TAG_DONE );
 
