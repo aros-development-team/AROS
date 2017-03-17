@@ -1,5 +1,6 @@
 /*
      AHI - The AHI preferences program
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
 
      This program is free software; you can redistribute it and/or
@@ -271,7 +272,7 @@ static Object *MUIFreq,*MUIChannels,*MUIOutvol,*MUIMonvol,*MUIGain,*MUIInput,*MU
 static Object *MUILFreq,*MUILChannels,*MUILOutvol,*MUILMonvol,*MUILGain,*MUILInput,*MUILOutput,*MUIPlay;
 static Object *MUIDebug,*MUIEcho,*MUISurround,*MUIClipvol,*MUICpu,*MUIACTime,*MUIScalemode;
 
-LONG xget(Object * obj, ULONG attribute)
+SIPTR xget(Object * obj, ULONG attribute)
 {
   LONG x = 0;
 
@@ -424,7 +425,7 @@ static void GUINewMode(void)
 static VOID
 SliderHookFunc( struct Hook *hook,
                 Object *obj,
-                ULONG** arg )
+                IPTR** arg )
 {
   if(obj == MUIFreq)
   {
@@ -458,7 +459,7 @@ SliderHookFunc( struct Hook *hook,
   }
   else if(obj == MUIOutput )
   {
-  state.OutputSelected = (ULONG) (*arg);
+  state.OutputSelected = (IPTR) (*arg);
   set(MUILOutput,MUIA_Text_Contents, (IPTR) getOutput());
   }
 }
@@ -546,7 +547,7 @@ BOOL BuildGUI(char *screenname)
   MUIMasterBase = (void *)OpenLibrary("muimaster.library", MUIMASTER_VLATEST);
   if(MUIMasterBase == NULL)
   {
-    Printf((char *) msgTextNoOpen, (ULONG) "muimaster.library", MUIMASTER_VLATEST);
+    Printf((char *) msgTextNoOpen, (IPTR) "muimaster.library", MUIMASTER_VLATEST);
     Printf("\n");
     return FALSE;
   }
@@ -555,7 +556,7 @@ BOOL BuildGUI(char *screenname)
   IMUIMaster = (struct MUIMasterIFace *) GetInterface(MUIMasterBase, "main", 1, NULL);
   if(IMUIMaster == NULL)
   {
-    Printf((char *) msgTextNoOpen, (ULONG) "MUIMaster main interface", 1);
+    Printf((char *) msgTextNoOpen, (IPTR) "MUIMaster main interface", 1);
     Printf("\n");
     CloseLibrary((struct Library*) MUIMasterBase);
     return FALSE;
@@ -796,7 +797,7 @@ void EventLoop(void)
 
   while (1)
   {
-    ULONG rc = DoMethod(MUIApp, MUIM_Application_NewInput, &sigs);
+    IPTR rc = DoMethod(MUIApp, MUIM_Application_NewInput, &sigs);
 
     switch(rc)
     {
@@ -991,8 +992,8 @@ void EventLoop(void)
       case ACTID_ACTIME:
       case ACTID_SCALEMODE:
       {
-        ULONG debug = AHI_DEBUG_NONE, surround = FALSE, echo = 0, cpu = 90;
-        ULONG clip = FALSE, actime = 0, scalemode = AHI_SCALE_FIXED_0_DB;
+        IPTR debug = AHI_DEBUG_NONE, surround = FALSE, echo = 0, cpu = 90;
+        IPTR clip = FALSE, actime = 0, scalemode = AHI_SCALE_FIXED_0_DB;
 
         get(MUIDebug, MUIA_Cycle_Active, &debug);
         get(MUISurround, MUIA_Cycle_Active, &surround);

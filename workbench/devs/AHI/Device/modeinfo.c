@@ -1,5 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -74,9 +75,9 @@ stccpy( char *to, const char *from, int n )
 
 // tags may be NULL
 
-Fixed DizzyTestAudioID(ULONG id, struct TagItem *tags )
+Fixed DizzyTestAudioID(IPTR id, struct TagItem *tags )
 {
-  ULONG volume=0,stereo=0,panning=0,hifi=0,pingpong=0,record=0,realtime=0,
+  IPTR volume=0,stereo=0,panning=0,hifi=0,pingpong=0,record=0,realtime=0,
         fullduplex=0,bits=0,channels=0,minmix=0,maxmix=0,multichannel=0;
   ULONG total=0,hits=0;
   struct TagItem *tstate, *tag;
@@ -205,7 +206,7 @@ Fixed DizzyTestAudioID(ULONG id, struct TagItem *tags )
 
 // tags may be NULL
 
-BOOL TestAudioID(ULONG id, struct TagItem *tags )
+BOOL TestAudioID(IPTR id, struct TagItem *tags )
 {
   if(DizzyTestAudioID(id, tags) != 0x10000)
     return FALSE;
@@ -228,12 +229,12 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 *       success = AHI_GetAudioAttrsA( ID, [audioctrl], tags );
 *       D0                            D0  A2           A1
 *
-*       BOOL AHI_GetAudioAttrsA( ULONG, struct AHIAudioCtrl *,
+*       BOOL AHI_GetAudioAttrsA( IPTR, struct AHIAudioCtrl *,
 *                                struct TagItem * );
 *
 *       success = AHI_GetAudioAttrs( ID, [audioctrl], attr1, &result1, ...);
 *
-*       BOOL AHI_GetAudioAttrs( ULONG, struct AHIAudioCtrl *, Tag, ... );
+*       BOOL AHI_GetAudioAttrs( IPTR, struct AHIAudioCtrl *, Tag, ... );
 *
 *   FUNCTION
 *       Retrieve information about an audio mode specified by ID or audioctrl
@@ -253,27 +254,27 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 *       tags - A pointer to a tag list.
 *
 *   TAGS
-*       AHIDB_Volume (ULONG *) - TRUE if this mode supports volume changes.
+*       AHIDB_Volume (IPTR *) - TRUE if this mode supports volume changes.
 *
-*       AHIDB_Stereo (ULONG *) - TRUE if output is in stereo. Unless
+*       AHIDB_Stereo (IPTR *) - TRUE if output is in stereo. Unless
 *           AHIDB_Panning (see below) is TRUE, all even channels are played
 *           to the left and all odd to the right.
 *
-*       AHIDB_MultiChannel (ULONG *) - TRUE if output is in 7.1 channels.
+*       AHIDB_MultiChannel (IPTR *) - TRUE if output is in 7.1 channels.
 *
-*       AHIDB_Panning (ULONG *) - TRUE if this mode supports stereo panning.
+*       AHIDB_Panning (IPTR *) - TRUE if this mode supports stereo panning.
 *
-*       AHIDB_HiFi (ULONG *) - TRUE if no shortcuts, like pre-division, is
+*       AHIDB_HiFi (IPTR *) - TRUE if no shortcuts, like pre-division, is
 *           used by the mixing routines.
 *
-*       AHIDB_PingPong (ULONG *) - TRUE if this mode can play samples backwards.
+*       AHIDB_PingPong (IPTR *) - TRUE if this mode can play samples backwards.
 *
-*       AHIDB_Record (ULONG *) - TRUE if this mode can record samples.
+*       AHIDB_Record (IPTR *) - TRUE if this mode can record samples.
 *
-*       AHIDB_FullDuplex (ULONG *) - TRUE if this mode can record and play at
+*       AHIDB_FullDuplex (IPTR *) - TRUE if this mode can record and play at
 *           the same time.
 *
-*       AHIDB_Realtime (ULONG *) - Modes which return TRUE for this fulfills
+*       AHIDB_Realtime (IPTR *) - Modes which return TRUE for this fulfills
 *           two criteria:
 *           1) Calls to AHI_SetVol(), AHI_SetFreq() or AHI_SetSound() will be
 *              performed within (about) 10 ms if called from a PlayFunc Hook.
@@ -282,42 +283,42 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 *           are not realtime. (Criterium 2 is not that obvious if you consider
 *           a mode that renders the output to disk as a sample.)
 *
-*       AHIDB_Bits (ULONG *) - The number of output bits (8, 12, 14, 16 etc).
+*       AHIDB_Bits (IPTR *) - The number of output bits (8, 12, 14, 16 etc).
 *
-*       AHIDB_MaxChannels (ULONG *) - The maximum number of channels this mode
+*       AHIDB_MaxChannels (IPTR *) - The maximum number of channels this mode
 *           can handle.
 *
-*       AHIDB_MinMixFreq (ULONG *) - The minimum mixing frequency supported.
+*       AHIDB_MinMixFreq (IPTR *) - The minimum mixing frequency supported.
 *
-*       AHIDB_MaxMixFreq (ULONG *) - The maximum mixing frequency supported.
+*       AHIDB_MaxMixFreq (IPTR *) - The maximum mixing frequency supported.
 *
-*       AHIDB_Frequencies (ULONG *) - The number of different sample rates
+*       AHIDB_Frequencies (IPTR *) - The number of different sample rates
 *           available.
 *
-*       AHIDB_FrequencyArg (ULONG) - Specifies which frequency
+*       AHIDB_FrequencyArg (IPTR) - Specifies which frequency
 *           AHIDB_Frequency should return (see below). Range is 0 to
 *           AHIDB_Frequencies-1 (including).
-*           NOTE: ti_Data is NOT a pointer, but an ULONG.
+*           NOTE: ti_Data is NOT a pointer, but an IPTR.
 *
-*       AHIDB_Frequency (ULONG *) - Return the frequency associated with the
+*       AHIDB_Frequency (IPTR *) - Return the frequency associated with the
 *           index number specified with AHIDB_FrequencyArg (see above).
 *
-*       AHIDB_IndexArg (ULONG) - AHIDB_Index will return the index which
+*       AHIDB_IndexArg (IPTR) - AHIDB_Index will return the index which
 *           gives the closest frequency to AHIDB_IndexArg
-*           NOTE: ti_Data is NOT a pointer, but an ULONG.
+*           NOTE: ti_Data is NOT a pointer, but an IPTR.
 *
-*       AHIDB_Index (ULONG *) - Return the index associated with the frequency
+*       AHIDB_Index (IPTR *) - Return the index associated with the frequency
 *           specified with AHIDB_IndexArg (see above).
 *
-*       AHIDB_MaxPlaySamples (ULONG *) - Return the lowest number of sample
+*       AHIDB_MaxPlaySamples (IPTR *) - Return the lowest number of sample
 *           frames that must be present in memory when AHIST_DYNAMICSAMPLE
 *           sounds are used. This number must then be scaled by Fs/Fm, where
 *           Fs is the frequency of the sound and Fm is the mixing frequency.
 *
-*       AHIDB_MaxRecordSamples (ULONG *) - Return the number of sample frames
+*       AHIDB_MaxRecordSamples (IPTR *) - Return the number of sample frames
 *           you will receive each time the RecordFunc is called.
 *
-*       AHIDB_BufferLen (ULONG) - Specifies how many characters will be
+*       AHIDB_BufferLen (IPTR) - Specifies how many characters will be
 *           copied when requesting text attributes. Default is 0, which
 *           means that AHIDB_Driver, AHIDB_Name, AHIDB_Author,
 *           AHIDB_Copyright, AHIDB_Version and AHIDB_Annotation,
@@ -365,12 +366,12 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 *           volume, see AHI_ControlAudioA(). If both are same, the sound
 *           card does not have volume control. (V2)
 *
-*       AHIDB_Inputs (ULONG *) - The number of inputs the sound card has.
+*       AHIDB_Inputs (IPTR *) - The number of inputs the sound card has.
 *           (V2)
 *
-*       AHIDB_InputArg (ULONG) - Specifies what AHIDB_Input should return
+*       AHIDB_InputArg (IPTR) - Specifies what AHIDB_Input should return
 *           (see below). Range is 0 to AHIDB_Inputs-1 (including).
-*           NOTE: ti_Data is NOT a pointer, but an ULONG. (V2)
+*           NOTE: ti_Data is NOT a pointer, but an IPTR. (V2)
 *
 *       AHIDB_Input (STRPTR) - Gives a human readable string describing the
 *           input associated with the index specified with AHIDB_InputArg
@@ -378,12 +379,12 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 *           NOTE: ti_Data is a pointer to an UBYTE array where the name
 *           will be stored. See AHIDB_BufferLen. (V2)
 *
-*       AHIDB_Outputs (ULONG *) - The number of outputs the sound card
+*       AHIDB_Outputs (IPTR *) - The number of outputs the sound card
 *           has. (V2)
 *
-*       AHIDB_OutputArg (ULONG) - Specifies what AHIDB_Output should return
+*       AHIDB_OutputArg (IPTR) - Specifies what AHIDB_Output should return
 *           (see below). Range is 0 to AHIDB_Outputs-1 (including)
-*           NOTE: ti_Data is NOT a pointer, but an ULONG. (V2)
+*           NOTE: ti_Data is NOT a pointer, but an IPTR. (V2)
 *
 *       AHIDB_Output (STRPTR) - Gives a human readable string describing the
 *           output associated with the index specified with AHIDB_OutputArg
@@ -391,7 +392,7 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 *           NOTE: ti_Data is a pointer to an UBYTE array where the name
 *           will be stored. See AHIDB_BufferLen. (V2)
 *
-*       AHIDB_AudioID (ULONG *) - The ID for this mode. (V4)
+*       AHIDB_AudioID (IPTR *) - The ID for this mode. (V4)
 *
 *       If the requested information cannot be found, the variable will be not
 *       be touched.
@@ -415,14 +416,14 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 */
 
 ULONG
-_AHI_GetAudioAttrsA( ULONG                    id,
+_AHI_GetAudioAttrsA( IPTR                    id,
 		     struct AHIPrivAudioCtrl* actrl,
 		     struct TagItem*          tags,
 		     struct AHIBase*          AHIBase )
 {
   struct AHI_AudioDatabase *audiodb;
   struct TagItem *dbtags,*tag1,*tag2,*tstate=tags;
-  ULONG *ptr;
+  IPTR *ptr;
   ULONG stringlen;
   struct Library *AHIsubBase=NULL;
   struct AHIAudioCtrlDrv *audioctrl=NULL;
@@ -464,7 +465,7 @@ _AHI_GetAudioAttrsA( ULONG                    id,
 
           while((tag1=NextTagItem(&tstate)))
           {
-            ptr=(ULONG *)tag1->ti_Data;
+            ptr=(IPTR *)tag1->ti_Data;
             switch(tag1->ti_Tag)
             {
             case AHIDB_Driver:
@@ -608,11 +609,11 @@ _AHI_GetAudioAttrsA( ULONG                    id,
 *       ID = AHI_BestAudioIDA( tags );
 *       D0                     A1
 *
-*       ULONG AHI_BestAudioIDA( struct TagItem * );
+*       IPTR AHI_BestAudioIDA( struct TagItem * );
 *
 *       ID = AHI_BestAudioID( tag1, ... );
 *
-*       ULONG AHI_BestAudioID( Tag, ... );
+*       IPTR AHI_BestAudioID( Tag, ... );
 *
 *   FUNCTION
 *       Determines the best AudioID to fit the parameters set in the tag
@@ -625,7 +626,7 @@ _AHI_GetAudioAttrsA( ULONG                    id,
 *       Many combinations are probably stupid to ask for, like not supporting
 *       panning or recording.
 *
-*       AHIDB_AudioID (ULONG) - The mode must use the same audio hardware
+*       AHIDB_AudioID (IPTR) - The mode must use the same audio hardware
 *           as this mode does.
 *
 *       AHIDB_Volume (BOOL) - If TRUE: mode must support volume changes.
@@ -695,11 +696,11 @@ _AHI_GetAudioAttrsA( ULONG                    id,
 *
 */
 
-ULONG
+IPTR
 _AHI_BestAudioIDA( struct TagItem* tags,
 		   struct AHIBase* AHIBase )
 {
-  ULONG id = AHI_INVALID_ID, bestid = 0;
+  IPTR id = AHI_INVALID_ID, bestid = 0;
   Fixed score, bestscore = 0;
   struct TagItem *dizzytags;
   static const struct TagItem const_defdizzy[] =

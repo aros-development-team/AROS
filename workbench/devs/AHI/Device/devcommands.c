@@ -1,5 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -1284,7 +1285,7 @@ NewWriter ( struct AHIRequest *ioreq,
               AHI_Play(iounit->AudioCtrl,
                   AHIP_BeginChannel,  channel,
                   AHIP_LoopFreq,      ioreq->ahir_Frequency,
-                  AHIP_LoopVol,       (ULONG) (((long long) ioreq->ahir_Volume *
+                  AHIP_LoopVol,       (IPTR) (((long long) ioreq->ahir_Volume *
 					GetExtras(ioreq)->VolumeScale ) >> 16),
                   AHIP_LoopPan,       ioreq->ahir_Position,
                   AHIP_LoopSound,     GetExtras(ioreq)->Sound,
@@ -1462,7 +1463,7 @@ PlayRequest ( int channel,
   AHI_Play(iounit->AudioCtrl,
       AHIP_BeginChannel,  channel,
       AHIP_Freq,          ioreq->ahir_Frequency,
-      AHIP_Vol,           (ULONG) (((long long) ioreq->ahir_Volume *
+      AHIP_Vol,           (IPTR) (((long long) ioreq->ahir_Volume *
 				    GetExtras(ioreq)->VolumeScale) >> 16),
       AHIP_Pan,           ioreq->ahir_Position,
       AHIP_Sound,         GetExtras(ioreq)->Sound,
@@ -1702,7 +1703,7 @@ static void UpdateMasterVolume( struct AHIDevUnit *iounit,
     if( GetExtras(ioreq1)->Channel != NOCHANNEL )
     {
       AHI_SetVol( GetExtras(ioreq1)->Channel,
-		  (ULONG) (((long long) ioreq1->ahir_Volume *
+		  (IPTR) (((long long) ioreq1->ahir_Volume *
 			    GetExtras(ioreq1)->VolumeScale) >> 16),
 		  ioreq1->ahir_Position,
 		  iounit->AudioCtrl,

@@ -1,5 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -247,7 +248,7 @@ _DevOpen ( struct AHIRequest* ioreq,
 
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
-    KPrintF("OpenDevice(%ld, 0x%08lx, %ld)", unit, (ULONG) ioreq, flags);
+    KPrintF("OpenDevice(%ld, 0x%p, %ld)", unit, ioreq, flags);
   }
 
 // Check if size includes the ahir_Version field
@@ -284,7 +285,7 @@ _DevOpen ( struct AHIRequest* ioreq,
   {
     // Load database if not already loaded
 
-    if(AHI_NextAudioID(AHI_INVALID_ID) == (ULONG) AHI_INVALID_ID)
+    if(AHI_NextAudioID(AHI_INVALID_ID) == (IPTR) AHI_INVALID_ID)
     {
       AHI_LoadModeFile("DEVS:AudioModes");
 
@@ -302,7 +303,7 @@ _DevOpen ( struct AHIRequest* ioreq,
 
       // Load Void driver if no real hardware was found
 
-      if(AHI_NextAudioID(AHI_INVALID_ID) == (ULONG) AHI_INVALID_ID)
+      if(AHI_NextAudioID(AHI_INVALID_ID) == (IPTR) AHI_INVALID_ID)
       {
         AHI_LoadModeFile("SYS:Storage/AudioModes/VOID");
       }
@@ -583,7 +584,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
   struct IFFHandle *iff;
   struct StoredProperty *ahig;
   struct CollectionItem *ci;
-  ULONG *mode;
+  IPTR *mode;
 
   if(iounit)
   {
@@ -765,7 +766,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
     mode = &iounit->AudioMode;
   else
     mode = &AHIBase->ahib_AudioMode;
-  if(mode[0] == (ULONG) AHI_INVALID_ID)
+  if(mode[0] == (IPTR) AHI_INVALID_ID)
   { static const Tag tags[] = { AHIDB_Realtime,TRUE,TAG_DONE };
     mode[0] = AHI_BestAudioIDA((struct TagItem *)tags);
   }

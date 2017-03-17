@@ -2,7 +2,7 @@
 #define DEVICES_AHI_H
 
 /*
-**	$VER: ahi.h 6.0 (02.02.2005)
+**	$VER: ahi.h 6.1 (17.03.2017)
 **
 **	ahi.device definitions
 **
@@ -188,16 +188,16 @@ struct AHIEffChannelInfo
 #define AHIC_Record		(AHI_TagBase+81)	/* Boolean */
 #define AHIC_MonitorVolume	(AHI_TagBase+82)
 #define AHIC_MonitorVolume_Query (AHI_TagBase+83)	/* ti_Data is pointer to Fixed (LONG) */
-#define AHIC_MixFreq_Query	(AHI_TagBase+84)	/* ti_Data is pointer to ULONG */
+#define AHIC_MixFreq_Query	(AHI_TagBase+84)	/* ti_Data is pointer to IPTR */
 /* --- New for V2, they will be ignored by V1 --- */
 #define AHIC_InputGain		(AHI_TagBase+85)
 #define AHIC_InputGain_Query	(AHI_TagBase+86)	/* ti_Data is pointer to Fixed (LONG) */
 #define AHIC_OutputVolume	(AHI_TagBase+87)
 #define AHIC_OutputVolume_Query	(AHI_TagBase+88)	/* ti_Data is pointer to Fixed (LONG) */
 #define AHIC_Input		(AHI_TagBase+89)
-#define AHIC_Input_Query	(AHI_TagBase+90)	/* ti_Data is pointer to ULONG */
+#define AHIC_Input_Query	(AHI_TagBase+90)	/* ti_Data is pointer to IPTR */
 #define AHIC_Output		(AHI_TagBase+91)
-#define AHIC_Output_Query	(AHI_TagBase+92)	/* ti_Data is pointer to ULONG */
+#define AHIC_Output_Query	(AHI_TagBase+92)	/* ti_Data is pointer to IPTR */
 
  /* AHI_GetAudioAttrsA tags */
 #define AHIDB_AudioID		(AHI_TagBase+100)
@@ -365,7 +365,7 @@ struct AHIUnitPrefs
 	UBYTE	ahiup_Unit;
 	UBYTE   ahiup_Obsolete;                         /* Was ahiup_ScaleMode */
         UWORD	ahiup_Channels;
-        ULONG	ahiup_AudioMode;
+        IPTR	ahiup_AudioMode;
         ULONG	ahiup_Frequency;
         Fixed	ahiup_MonitorVolume;
         Fixed	ahiup_InputGain;

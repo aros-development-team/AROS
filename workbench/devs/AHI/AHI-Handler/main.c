@@ -1,5 +1,6 @@
 /*
      AHI-Handler - The AUDIO: DOS device for AHI
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1997-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -100,14 +101,14 @@ static const UWORD rawputchar_m68k[] =
 
 void
 KPrintFArgs( UBYTE* fmt, 
-             ULONG* args )
+             IPTR* args )
 {
   RawDoFmt( fmt, args, (void(*)(void)) rawputchar_m68k, SysBase );
 }
 
 #define kprintf( fmt, ... )        \
 ({                                 \
-  ULONG _args[] = { __VA_ARGS__ }; \
+  IPTR _args[] = { __VA_ARGS__ }; \
   KPrintFArgs( (fmt), _args );     \
 })
 
@@ -288,7 +289,7 @@ int main(void)
         }
 
 
-        fh->fh_Arg1 = (ULONG) data;
+        fh->fh_Arg1 = (IPTR) data;
         fh->fh_Port = DOS_TRUE;
         break;
       }
@@ -962,7 +963,7 @@ long ParseArgs(struct HandlerData *data, char *initstring) {
 #define Sstereoflag    2
 
 long InitHData(struct HandlerData *data) {
-  ULONG bits = 8, channels = 1, freq = 8000;
+  IPTR bits = 8, channels = 1, freq = 8000;
   LONG  volume = 100, position = 0, priority = 0, 
         length = MAXINT, buffersize = 32768;
   long rc = 0;

@@ -1,5 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
+     Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -141,7 +142,7 @@ UnlockDatabase ( struct AHI_AudioDatabase *audiodb )
 
 struct TagItem *
 GetDBTagList ( struct AHI_AudioDatabase *audiodb,
-               ULONG id )
+               IPTR id )
 {
   struct AHI_AudioMode *node;
   struct TagItem       *rc = NULL;
@@ -177,7 +178,7 @@ GetDBTagList ( struct AHI_AudioDatabase *audiodb,
 *       next_ID = AHI_NextAudioID( last_ID );
 *       D0                         D0
 *
-*       ULONG AHI_NextAudioID( ULONG );
+*       IPTR AHI_NextAudioID( IPTR );
 *
 *   FUNCTION
 *       This function is used to iterate through all current AudioIDs in
@@ -202,13 +203,13 @@ GetDBTagList ( struct AHI_AudioDatabase *audiodb,
 *
 */
 
-ULONG
-_AHI_NextAudioID( ULONG           id,
+IPTR
+_AHI_NextAudioID( IPTR           id,
 		  struct AHIBase* AHIBase )
 {
   struct AHI_AudioDatabase *audiodb;
   struct AHI_AudioMode *node;
-  ULONG  nextid=AHI_INVALID_ID;
+  IPTR  nextid=AHI_INVALID_ID;
 
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH)
   {
@@ -225,7 +226,7 @@ _AHI_NextAudioID( ULONG           id,
     {
       while(node != NULL)
       {
-        ULONG thisid;
+        IPTR thisid;
         
         thisid = GetTagData(AHIDB_AudioID,AHI_INVALID_ID,node->ahidbn_Tags);
         node = (struct AHI_AudioMode *) node->ahidbn_MinNode.mln_Succ;
@@ -429,7 +430,7 @@ _AHI_AddAudioMode( struct TagItem* DBtags,
 *       success = AHI_RemoveAudioMode( ID );
 *       D0                             D0
 *
-*       ULONG AHI_RemoveAudioMode( ULONG );
+*       ULONG AHI_RemoveAudioMode( IPTR );
 *
 *   FUNCTION
 *       Removes the audio mode from the audio mode database.
@@ -453,7 +454,7 @@ _AHI_AddAudioMode( struct TagItem* DBtags,
 */
 
 ULONG
-_AHI_RemoveAudioMode( ULONG           id,
+_AHI_RemoveAudioMode( IPTR           id,
 		      struct AHIBase* AHIBase )
 {
   struct AHI_AudioMode *node;
