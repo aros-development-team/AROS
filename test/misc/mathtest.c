@@ -76,6 +76,8 @@ int main(int argc, char **argv)
     QUAD * double_resptr2 = (QUAD *)&double_res2;
     QUAD QArg1;
 
+    Printf("---- Testing Started ----\n");
+
     Darg1 = (double *)&QArg1;
 
     #define DEF_FFPOne		0x80000041UL
@@ -256,7 +258,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return RETURN_FAIL;
     }
 	
-    Printf("Very basic mathffp functionality test...\n");
+    Printf("\nValidating 'mathffp' functionality...\n");
 
     /* this should set the zero-bit*/
     wanted = DEF_FFPNull;	CHECK(SPAbs,(0),wanted);
@@ -293,7 +295,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return RETURN_FAIL;
     }
 
-    Printf("Very basic mathtrans functionality test...\n");
+    Printf("\nValidating 'mathtrans' functionality...\n");
 
     CHECK (SPLog,   (FFPTwo),     0xb1721840UL);
     CHECK (SPLog10, (FFPTwo),     0x9a209b3fUL);
@@ -315,6 +317,11 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return RETURN_FAIL;
     }
 
+    Printf("\nValidating 'mathieeesingbas' functionality...\n");
+#if (1)
+    Printf("      TODO!\n");
+#else
+#endif
 
     if (!(MathIeeeSingTransBase = OpenLibrary("mathieeesingtrans.library", 0L)))
     {
@@ -322,8 +329,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return RETURN_FAIL;
     }
 
-    Printf("Very basic mathieeesingtrans functionality test...\n");
-
+    Printf("\nValidating 'mathieeesingtrans' functionality...\n");
 
     CHECK (IEEESPLog,   (SPTwo),      0x3f317218UL);
     CHECK (IEEESPLog10, (SPTwo),      0x3e9a209aUL);
@@ -345,7 +351,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return RETURN_FAIL;
     }
     
-
+    Printf("\nValidating 'mathieeedoubbas' functionality...\n");
 
     CHECK_DOUBLE1A(IEEEDPFlt, ((LONG)1), DEF_DPOne);
     CHECK_DOUBLE1A(IEEEDPFlt, ((LONG)2), DEF_DPTwo);
@@ -368,6 +374,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 	Printf ("Couldn't open mathieeedoubtrans.library\n");
 	return RETURN_FAIL;
     }
+    
+    Printf("\nValidating 'mathieeedoubtrans' functionality...\n");
 
     CHECK_DOUBLE1A(IEEEDPSqrt, ((double)IEEEDPFlt(4)), DEF_DPTwo);
     CHECK_DOUBLE1A(IEEEDPSqrt, ((double)IEEEDPFlt(9)), DEF_DPThree);
@@ -387,6 +395,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     CloseLibrary(MathIeeeDoubTransBase);
     CloseLibrary(MathIeeeDoubBasBase);
+
+    Printf("---- Testing Completed ----\n");
 
     Printf("Passed %ld of %ld tests\n", passed, tested);
     return (tested == passed) ? RETURN_OK : RETURN_FAIL;
