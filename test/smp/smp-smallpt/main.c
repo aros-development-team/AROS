@@ -15,6 +15,7 @@
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/intuition.h>
+#include <proto/timer.h>
 
 #include <exec/tasks.h>
 #include <exec/ports.h>
@@ -101,6 +102,11 @@ int main()
     int req_width = 0, req_height = 0;
     char tmpbuf[200];
     int explicit_mode = 0;
+    struct MsgPort *timerPort = CreateMsgPort();
+    struct timerequest *tr = CreateIORequest(timerPort, sizeof(struct timerequest));
+    struct TimerBase *TimerBase = NULL;
+    struct timeval start_time;
+    struct timeval now;
 
     struct Window *displayWin;
     struct BitMap *outputBMap = NULL;
@@ -118,6 +124,21 @@ int main()
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
         return 0;
+
+    if (timerPort)
+    {
+        FreeSignal(timerPort->mp_SigBit);
+        timerPort->mp_SigBit = -1;
+        timerPort->mp_Flags = PA_IGNORE;
+    }
+
+    if (tr)
+    {
+        if (!OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0))
+        {
+            TimerBase = (struct TimerBase *)tr->tr_node.io_Device;
+        }
+    } else return 0;
 
     GetCPUInfo(tags);
 
@@ -186,6 +207,9 @@ int main()
         struct Message *msg;
         struct MyMessage cmd;
         BOOL busyPointer = FALSE;
+        int tasksWork = 0;
+        int tasksIn = 0;
+        int tasksOut = 0;
 
         width = (displayWin->Width - displayWin->BorderLeft - displayWin->BorderRight);
         height = (displayWin->Height - displayWin->BorderTop - displayWin->BorderBottom);
@@ -219,7 +243,7 @@ int main()
 
         renderer = NewCreateTask(TASKTAG_NAME,      "SMP-Smallpt Master",
                                 TASKTAG_AFFINITY,   TASKAFFINITY_ANY,
-                                TASKTAG_PRI,        -1,
+                                TASKTAG_PRI,        0,
                                 TASKTAG_PC,         Renderer,
                                 TASKTAG_ARG1,       SysBase,
                                 TASKTAG_ARG2,       mainPort,
@@ -251,6 +275,8 @@ int main()
         GetMsg(mainPort);
 
         D(bug("[SMP-Smallpt] %s: enter main loop\n", __func__);)
+
+        GetSysTime(&start_time);
 
         while ((!windowClosing) && ((signals = Wait(SIGBREAKF_CTRL_D | (1 << displayWin->UserPort->mp_SigBit) | (1 << mainPort->mp_SigBit))) != 0))
         {
@@ -321,10 +347,17 @@ int main()
                                 break;
                             
                             case MSG_STATS:
-                                NewRawDoFmt("SMP-Smallpt renderer (%d in work, %d waiting, %d done)", RAWFMTFUNC_STRING,
-                                    tmpbuf, msg->mm_Body.Stats.tasksWork,
-                                    msg->mm_Body.Stats.tasksIn,
-                                    msg->mm_Body.Stats.tasksOut);
+                                tasksWork = msg->mm_Body.Stats.tasksWork;
+                                tasksIn = msg->mm_Body.Stats.tasksIn;
+                                tasksOut = msg->mm_Body.Stats.tasksOut;
+                                
+                                GetSysTime(&now);
+                                SubTime(&now, &start_time);
+                                NewRawDoFmt("SMP-Smallpt renderer (%d in work, %d waiting, %d done): %d:%02d:%02d", RAWFMTFUNC_STRING,
+                                    tmpbuf, tasksWork, tasksIn, tasksOut,
+                                    now.tv_secs / 3600,
+                                    (now.tv_secs / 60) % 60,
+                                    now.tv_secs % 60);
                                 SetWindowTitles(displayWin, tmpbuf, NULL);
                                 if ((busyPointer) && (msg->mm_Body.Stats.tasksWork == 0))
                                 {
