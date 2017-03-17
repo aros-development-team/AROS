@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,7 @@
 
 /* Member of userel.library */
 
-LONG DummyPrint4(LONG a, LONG b, LONG c, LONG d)
+LONG DummyPrint4(STACKLONG a, STACKLONG b, STACKLONG c, STACKLONG d)
 {
     return printx(4, a, b, c, d);
 }

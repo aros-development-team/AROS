@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,13 +45,21 @@ LONG printx(LONG nargs, ...)
     struct DummyBase *DummyBase = __aros_getbase_DummyBase();
     struct Library *DOSBase = OpenLibrary("dos.library", 0);
     va_list args;
-    LONG i;
+    LONG i, baseval = 0;
+
+// Warning: The following line is disabled, because
+//    __aros_getbase_DummyBase() seems to return
+//   nonsense on x86_64
+
+#if (0)
+//baseval = DummyBase->lastval;
+#endif
 
     va_start(args, nargs); 
 
     if (DOSBase) {
         for (i = 0; i < nargs; i++) {
-            Printf("\t%ld: %ld\n", i, DummyBase->lastval + va_arg(args, LONG));
+            Printf("\t%ld: %ld\n", i, baseval + (LONG)va_arg(args, STACKED LONG));
         }
     }
 
