@@ -153,9 +153,19 @@ void InputPrefs_Handler(STRPTR filename)
 		kmsprefs = LoadChunk(iff, sizeof(struct KMSPrefs), MEMF_ANY);
 		if (kmsprefs)
 		{
+		    D(bug("KMS Chunk @ 0x%p\n", kmsprefs));
 		    if (kmsprefs->kms_Enabled)
 		    {
-			struct KeyMapNode *alt_km = OpenKeymap(kmsprefs->kms_AltKeymap);
+			struct KeyMapNode *alt_km;
+
+			D(bug("KMS Enabled\n"));
+
+			D(bug("Attempting to use AltKeymap name @ 0x%p\n", kmsprefs->kms_AltKeymap));
+			D(bug("AltKeymap name '%s'\n", kmsprefs->kms_AltKeymap));
+
+			alt_km = OpenKeymap(kmsprefs->kms_AltKeymap);
+
+			D(bug("Keymap @ 0x%p\n", alt_km));
 
 			if (alt_km)
 			{
