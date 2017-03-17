@@ -107,7 +107,10 @@ AROS_UFH3(IPTR, signal_hook,
     {
         struct Hook h;
         IPTR args[3];
-        void *cpu_mask = KrnAllocCPUMask();
+        // We cannot use KrnAllocCPUMask() since this function uses AllocMem
+        // And we cannot use AllocMem from interrupts (where Signal() is allowed)...
+        ULONG mask[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; // CPU mask large enough for 256 CPUs...
+        void *cpu_mask = &mask; 
 
         args[0] = (IPTR)SysBase;
         args[1] = (IPTR)task;
@@ -141,8 +144,6 @@ AROS_UFH3(IPTR, signal_hook,
         D(bug("[Exec] Sending IPI...\n"));
         core_DoCallIPI(&h, cpu_mask, 1, 3, args, (void *)KernelBase);
         D(bug("[Exec] IPI Sent\n"));
-        
-        KrnFreeCPUMask(cpu_mask);
     }
     else
     {
@@ -202,7 +203,7 @@ AROS_UFH3(IPTR, signal_hook,
                 }
                 else
                 {
-                    D(bug("[Exec] Signal: Raising Exception for 'running' Task on CPU %03u\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
+                    (bug("[Exec] Signal: Raising Exception for 'running' Task on CPU %03u\n", IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber));
                     KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
                 }
 #endif
