@@ -51,8 +51,8 @@ LONG printx(LONG nargs, ...)
 //    __aros_getbase_DummyBase() seems to return
 //   nonsense on x86_64
 
-#if (0)
-//baseval = DummyBase->lastval;
+#if (__WORDSIZE!=64)
+    baseval = DummyBase->lastval;
 #endif
 
     va_start(args, nargs); 
