@@ -1,4 +1,4 @@
-## version $VER: JanoEditor.catalog 1.0 (20.07.2010)
+## version $VER: JanoEditor.catalog 1.1 (17.03.2017)
 ## language dansk
 ## codeset 0
 ;
@@ -351,8 +351,8 @@ Information
 ; Information
 ;
 MSG_FORMATINFO
-%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
-; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Fortsæt
@@ -428,8 +428,8 @@ _Afbryd
 ; _Cancel
 ;
 MSG_REPLACEALL
-%ld %s af `%s' blev erstattet
-; %ld %s of `%s' replaced
+%iu %s af `%s' blev erstattet
+; %iu %s of `%s' replaced
 ;
 MSG_OCCURENCY
 Forekomst

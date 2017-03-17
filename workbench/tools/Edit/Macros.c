@@ -208,7 +208,7 @@ void new_slot( BYTE dir )
 	}
 	CurInd = m - MacTable + 1;
 
-	ThrowError(Wnd, my_SPrintf(*m ? ErrMsg(WARN_SLOT) : ErrMsg(WARN_EMPTYSLOT), &CurInd));
+	ThrowError(Wnd, my_SPrintf(*m ? ErrMsg(WARN_SLOT) : ErrMsg(WARN_EMPTYSLOT), (RAWARG)&CurInd));
 }
 #endif
 

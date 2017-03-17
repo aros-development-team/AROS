@@ -1,4 +1,4 @@
-## version $VER: Editor.catalog 1.5 (22.12.2010)
+## version $VER: Editor.catalog 1.6 (17.03.2017)
 ## language deutsch
 ## codeset 0
 ;
@@ -350,8 +350,8 @@ Information
 ; Information
 ;
 MSG_FORMATINFO
-%s\nProgramm von T.Pierron und C.Guillaume © 2000\n\nDatei: %s\nLänge: %ld %s, %ld %s.\n
-; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+%s\nProgramm von T.Pierron und C.Guillaume © 2000\n\nDatei: %s\nLänge: %iu %s, %iu %s.\n
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Weiter
@@ -427,8 +427,8 @@ Abbru_ch
 ; _Cancel
 ;
 MSG_REPLACEALL
-%ld %s von '%s' wurden ersetzt
-; %ld %s of `%s' replaced
+%iu %s von '%s' wurden ersetzt
+; %iu %s of `%s' replaced
 ;
 MSG_OCCURENCY
 Vorkommen

@@ -1,7 +1,7 @@
 ;
 ; JanoEditor.catalog
 ;
-## version $VER: JanoEditor.catalog 1.0 (27.01.2002).
+## version $VER: JanoEditor.catalog 1.1 (17.03.2017).
 ## codeset 0
 ## language suomi
 ;
@@ -252,7 +252,7 @@ MSG_ABOUT
 Tietoa
 ;
 MSG_FORMATINFO
-%s\nSuunnittelu: T.Pierron ja C.Guillaume © 2000\n\nTiedosto muokattavana: %s\nKoko: %ld %s, %ld %s.
+%s\nSuunnittelu: T.Pierron ja C.Guillaume © 2000\n\nTiedosto muokattavana: %s\nKoko: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Jatka
@@ -311,7 +311,7 @@ MSG_CANCELSEARCH
 _Peru
 ;
 MSG_REPLACEALL
-%ld %s '%s':sta/ä korvattu
+%iu %s '%s':sta/ä korvattu
 ;
 MSG_OCCURENCY
 esiintymä

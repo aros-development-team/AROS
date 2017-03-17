@@ -467,7 +467,7 @@ void ReplacePattern( Project p )
 void ReplaceAllPat( Project p )
 {
 	struct {				/* This vars must appear in this order for RawDoFmt */
-		ULONG  nbrep;
+		STACKED ULONG  nbrep;
 		STRPTR occur;
 		STRPTR _find_, _replace_;
 	}	args;
@@ -527,7 +527,7 @@ void ReplaceAllPat( Project p )
 
 			/* Show the number of pattern replaced */
 			args.occur = (args.nbrep > 1 ? SWinTxt[15] : SWinTxt[14]);
-			ThrowError(swin ? swin : Wnd, my_SPrintf(SWinTxt[13], &args));
+			ThrowError(swin ? swin : Wnd, my_SPrintf(SWinTxt[13], (RAWARG)&args));
 		}
 		/* Reset original cursor position */
 		p->edited = edited;
@@ -608,7 +608,7 @@ char HilitePattern(Project p, STRPTR pattern, BYTE direction, BYTE quiet)
 		}
 	}
 	if(quiet != FULLY_QUIET)
-		ThrowError(swin ? swin:Wnd, my_SPrintf(ErrMsg(ERR_NOT_FOUND), &pattern));
+		ThrowError(swin ? swin:Wnd, my_SPrintf(ErrMsg(ERR_NOT_FOUND), (RAWARG)&pattern));
 	return 0;
 
 	jump_cursor:
@@ -677,7 +677,9 @@ UBYTE Brackets[]="[{(<>)}] ";
 /*** Search for the corresponding bracket under cursor ***/
 void match_bracket( Project p )
 {
-	BYTE i; UBYTE ch;
+        STACKED UBYTE ch;
+	BYTE i;
+
 	/* Look if character under cursor is registered */
 	for(i=NbBrak,ch=p->edited->stream[p->nbc]; i && Brackets[i-1] != ch; i--);
 
@@ -711,7 +713,7 @@ void match_bracket( Project p )
 			if(i < 0) search += ln->size-1;
 		}
 		{	STRPTR Char = Brackets + NbBrak; *Char = cch;
-			ThrowError(Wnd, my_SPrintf(ErrMsg(ERR_NOT_FOUND), &Char));
+			ThrowError(Wnd, my_SPrintf(ErrMsg(ERR_NOT_FOUND), (RAWARG)&Char));
 		}	return;
 
 		jump_cursor:
