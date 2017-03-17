@@ -417,8 +417,8 @@ static const CONST_APTR DevManagerVectors[] =
 
 static const struct TagItem DevManagerTags[] = 
 {
-  { MIT_Name,             (ULONG) "__device"        },
-  { MIT_VectorTable,      (ULONG) DevManagerVectors },
+  { MIT_Name,             (IPTR) "__device"        },
+  { MIT_VectorTable,      (IPTR) DevManagerVectors },
   { MIT_Version,          1                         },
   { TAG_DONE,             0                         }
 };
@@ -464,8 +464,8 @@ static const CONST_APTR MainVectors[] = {
 
 static const struct TagItem MainTags[] =
 {
-  { MIT_Name,              (ULONG) "main"      },
-  { MIT_VectorTable,       (ULONG) MainVectors },
+  { MIT_Name,              (IPTR) "main"      },
+  { MIT_VectorTable,       (IPTR) MainVectors },
   { MIT_Version,           1                   },
   { TAG_DONE,              0                   }
 };

@@ -33,7 +33,7 @@ void Open%bCatalog(struct Locale *loc, STRPTR language)
   if(LocaleBase != NULL  &&  %b_Catalog == NULL)
   {
     %b_Catalog = OpenCatalog(loc, (STRPTR) "%b.catalog",
-        language ? OC_Language : TAG_IGNORE, (ULONG)language,
+        language ? OC_Language : TAG_IGNORE, (IPTR)language,
         TAG_MORE, %b_tags);
   }
 }
@@ -43,7 +43,7 @@ struct Catalog *ExtOpenCatalog(struct Locale *loc, STRPTR language)
   if(LocaleBase != NULL)
   {
     return OpenCatalog(loc, (STRPTR) "%b.catalog",
-        language ? OC_Language : TAG_IGNORE, (ULONG)language,
+        language ? OC_Language : TAG_IGNORE, (IPTR)language,
         TAG_MORE, %b_tags);
   }
   return NULL;

@@ -104,7 +104,7 @@ ULONG Win0GadgetTags[] =
 	(GT_TagBase+74), 0,  /* Justification in V39 */
 	(GT_TagBase+75), 0,  /* String Formatting */
 	(TAG_END),
-	(GTST_String), (ULONG)"NewSample.AIFC",
+	(GTST_String), (IPTR)"NewSample.AIFC",
 	(GTST_MaxChars), 1024,
 	(GT_Underscore), '_',
 	(TAG_END),
@@ -119,7 +119,7 @@ ULONG Win0GadgetTags[] =
 	(TAG_END),
 	(GT_Underscore), '_',
 	(GTCY_Active), 1,
-	(GTCY_Labels), (ULONG)&Win0_formatLabels[0],
+	(GTCY_Labels), (IPTR)&Win0_formatLabels[0],
 	(TAG_END),
 	};
 
@@ -216,7 +216,7 @@ offx = Win->BorderLeft;
 offy = Win->BorderTop;
 if (Win != NULL) 
 	{
-	BevelTags[3] = (ULONG)vi;
+	BevelTags[3] = (IPTR)vi;
 	DrawBevelBoxA( Win->RPort, 8*scalex/65535+offx,4*scaley/65535+offy,579*scalex/65535,85*scaley/65535, (struct TagItem *)(&BevelTags[0]));
 	DrawBevelBoxA( Win->RPort, 8*scalex/65535+offx,93*scaley/65535+offy,579*scalex/65535,72*scaley/65535, (struct TagItem *)(&BevelTags[0]));
 	DrawBevelBoxA( Win->RPort, 312*scalex/65535+offx,24*scaley/65535+offy,267*scalex/65535,28*scaley/65535, (struct TagItem *)(&BevelTags[0]));
@@ -256,9 +256,9 @@ if (Win0FirstRun == 0)
 	Win0FirstRun = 1;
 	for ( loop=0; loop<2; loop++)
 		Win0_formatLabels[loop] = GetString((LONG)Win0_formatLabels[loop]);
-	Win0GadgetTags[15] = (ULONG)GetString(Win0_volsliderLevelFormat);
-	Win0GadgetTags[47] = (ULONG)GetString(Win0_gainsliderLevelFormat);
-	Win0GadgetTags[69] = (ULONG)GetString(Win0_lengthStringFormat);
+	Win0GadgetTags[15] = (IPTR)GetString(Win0_volsliderLevelFormat);
+	Win0GadgetTags[47] = (IPTR)GetString(Win0_gainsliderLevelFormat);
+	Win0GadgetTags[69] = (IPTR)GetString(Win0_lengthStringFormat);
 	}
 if (Win0 == NULL)
 	{

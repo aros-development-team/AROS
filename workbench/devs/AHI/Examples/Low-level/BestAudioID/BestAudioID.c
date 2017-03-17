@@ -28,7 +28,7 @@ void printmode(ULONG id) {
     name[0] = '\0';
     AHI_GetAudioAttrs(id, NULL,
         AHIDB_BufferLen, 40,
-        AHIDB_Name, (ULONG) name,
+        AHIDB_Name, (IPTR) name,
         TAG_DONE);
   }
   else {
@@ -74,7 +74,7 @@ void main(void)
                        AHIDB_Volume,TRUE,
                        AHIDB_Bits,8,
                        AHIDB_MaxChannels,4,
-                       AHIB_Dizzy, (ULONG) &tags,
+                       AHIB_Dizzy, (IPTR) &tags,
                        TAG_DONE);
     printmode(id);
     Printf("Same as 0x%08lx but also, if possible, "
@@ -89,7 +89,7 @@ void main(void)
     };
 
     id = AHI_BestAudioID(AHIDB_AudioID,id,
-                       AHIB_Dizzy, (ULONG) &tags,
+                       AHIB_Dizzy, (IPTR) &tags,
                        TAG_DONE);
 
     printmode(id);
