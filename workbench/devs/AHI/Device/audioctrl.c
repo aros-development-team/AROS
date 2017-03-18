@@ -947,7 +947,8 @@ _AHI_ControlAudioA( struct AHIPrivAudioCtrl* audioctrl,
 		    struct TagItem*          tags,
 		    struct AHIBase*          AHIBase )
 {
-  ULONG *ptr, playflags=0, stopflags=0, rc=AHIE_OK;
+  IPTR *ptr;
+  ULONG playflags=0, stopflags=0, rc=AHIE_OK;
   UBYTE update=FALSE;
   struct TagItem *tag,*tstate=tags;
   struct Library *AHIsubBase=audioctrl->ahiac_SubLib;

@@ -578,13 +578,13 @@ void
 Debug_SetEffect( IPTR *effect, struct AHIPrivAudioCtrl *audioctrl )
 {
   KPrintF("AHI_SetEffect(0x%p (Effect 0x%p), 0x%p)\n",
-      effect, (APTR)*effect, (IPTR)audioctrl);
+      (IPTR)effect, *effect, (IPTR)audioctrl);
 }
 
 void
 Debug_LoadSound( UWORD sound, ULONG type, APTR info, struct AHIPrivAudioCtrl *audioctrl )
 {
-  KPrintF("AHI_LoadSound(%ld, %ld, 0x%p, 0x%p) ", sound, type, info, (IPTR)audioctrl);
+  KPrintF("AHI_LoadSound(%ld, %ld, 0x%p, 0x%p) ", sound, type, (IPTR)info, (IPTR)audioctrl);
 
   if(type == AHIST_SAMPLE || type == AHIST_DYNAMICSAMPLE)
   {
@@ -631,14 +631,14 @@ Debug_AllocAudioRequestA( struct TagItem *tags )
 void
 Debug_AudioRequestA( struct AHIAudioModeRequester *req, struct TagItem *tags )
 {
-  KPrintF("AHI_AudioRequestA(0x%p,", req);
+  KPrintF("AHI_AudioRequestA(0x%p,", (IPTR)req);
   PrintTagList(tags);
 }
 
 void
 Debug_FreeAudioRequest( struct AHIAudioModeRequester *req )
 {
-  KPrintF("AHI_FreeAudioRequest(0x%p)\n", req);
+  KPrintF("AHI_FreeAudioRequest(0x%p)\n", (IPTR)req);
 }
 
 void
@@ -671,5 +671,5 @@ Debug_RemoveAudioMode( IPTR id)
 void
 Debug_LoadModeFile( STRPTR name)
 {
-  KPrintF("AHI_LoadModeFile(%s)", name);
+  KPrintF("AHI_LoadModeFile(%s)", (IPTR)name);
 }

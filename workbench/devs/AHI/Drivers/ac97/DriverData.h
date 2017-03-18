@@ -18,8 +18,8 @@ struct ac97Base
     struct OOPBase*	oopbase;
     struct ExecBase*	sysbase;
     BOOL		cardfound;
-    ULONG		mixerbase;
-    ULONG		dmabase;
+    APTR		mixerbase;
+    APTR		dmabase;
     ULONG		irq_num;
 
     /* card specific data */

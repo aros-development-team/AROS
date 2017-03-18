@@ -1,5 +1,5 @@
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <devices/ahi.h>
@@ -472,8 +472,8 @@ static AROS_INTH1(play_int, struct AHIAudioCtrlDrv *, AudioCtrl)
     AHIsubBase = (struct DriverBase*) dd->ahisubbase;
     ac97Base   = (struct ac97Base*) AHIsubBase;
 
-    dd->old_SR = inw(ac97Base->dmabase + ac97Base->off_po_sr);
-    outw(dd->old_SR & 0x1c, ac97Base->dmabase + ac97Base->off_po_sr);
+    dd->old_SR = inw((IPTR)ac97Base->dmabase + ac97Base->off_po_sr);
+    outw(dd->old_SR & 0x1c, (IPTR)ac97Base->dmabase + ac97Base->off_po_sr);
     
     if ((dd->old_SR & 0x1c) && dd->slavetask)
     {

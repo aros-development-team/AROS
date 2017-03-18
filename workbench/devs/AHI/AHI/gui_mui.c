@@ -429,38 +429,38 @@ SliderHookFunc( struct Hook *hook,
 {
   if(obj == MUIFreq)
   {
-    state.FreqSelected = (LONG) (*arg);
-    set(MUILFreq,MUIA_Text_Contents, (IPTR) getFreq());
+    state.FreqSelected = (LONG)(IPTR)(*arg);
+    set(MUILFreq, MUIA_Text_Contents, (IPTR) getFreq());
   }
   else if(obj == MUIChannels )
   {
-    state.ChannelsSelected = (LONG) (*arg);
-    set(MUILChannels,MUIA_Text_Contents, (IPTR) getChannels());
+    state.ChannelsSelected = (LONG)(IPTR)(*arg);
+    set(MUILChannels, MUIA_Text_Contents, (IPTR) getChannels());
   }
   else if(obj == MUIOutvol )
   {
-    state.OutVolSelected = (LONG) (*arg);
-    set(MUILOutvol,MUIA_Text_Contents, (IPTR) getOutVol());
+    state.OutVolSelected = (LONG)(IPTR)(*arg);
+    set(MUILOutvol, MUIA_Text_Contents, (IPTR) getOutVol());
   }
   else if(obj == MUIMonvol )
   {
-    state.MonVolSelected = (LONG) (*arg);
-    set(MUILMonvol,MUIA_Text_Contents, (IPTR) getMonVol());
+    state.MonVolSelected = (LONG)(IPTR)(*arg);
+    set(MUILMonvol, MUIA_Text_Contents, (IPTR) getMonVol());
   }
   else if(obj == MUIGain )
   {
-    state.GainSelected = (LONG) (*arg);
-    set(MUILGain,MUIA_Text_Contents, (IPTR) getGain());
+    state.GainSelected = (LONG)(IPTR)(*arg);
+    set(MUILGain, MUIA_Text_Contents, (IPTR) getGain());
   }
   else if(obj == MUIInput )
   {
-    state.InputSelected = (LONG) (*arg);
-    set(MUILInput,MUIA_Text_Contents, (IPTR) getInput());
+    state.InputSelected = (LONG)(IPTR)(*arg);
+    set(MUILInput, MUIA_Text_Contents, (IPTR) getInput());
   }
   else if(obj == MUIOutput )
   {
-  state.OutputSelected = (IPTR) (*arg);
-  set(MUILOutput,MUIA_Text_Contents, (IPTR) getOutput());
+  state.OutputSelected = (LONG)(IPTR)(*arg);
+  set(MUILOutput, MUIA_Text_Contents, (IPTR) getOutput());
   }
 }
 

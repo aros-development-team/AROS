@@ -248,7 +248,7 @@ _DevOpen ( struct AHIRequest* ioreq,
 
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
-    KPrintF("OpenDevice(%ld, 0x%p, %ld)", unit, ioreq, flags);
+    KPrintF("OpenDevice(%ld, 0x%p, %ld)", unit, (IPTR)ioreq, flags);
   }
 
 // Check if size includes the ahir_Version field
