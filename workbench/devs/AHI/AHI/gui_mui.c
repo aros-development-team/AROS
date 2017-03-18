@@ -18,6 +18,9 @@
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <config.h>
 
 #include <exec/memory.h>
@@ -229,6 +232,8 @@ static void UpdateStrings(void) {
   struct NewMenu   *menuptr;
   char           ***stringptr;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   menuptr   = (struct NewMenu *) &Menus;
   stringptr = (char ***) &strings;
 
@@ -244,7 +249,6 @@ static void UpdateStrings(void) {
     }
     menuptr++;
   }
-
 
   PageNames[0] = (char *) msgPageMode;
   PageNames[1] = (char *) msgPageAdvanced;
@@ -266,7 +270,6 @@ static void UpdateStrings(void) {
   ScaleLabels[4] = (char *) msgSM6dB;
 }
 
-
 static Object *MUIWindow,*MUIList,*MUIInfos,*MUIUnit;
 static Object *MUIFreq,*MUIChannels,*MUIOutvol,*MUIMonvol,*MUIGain,*MUIInput,*MUIOutput;
 static Object *MUILFreq,*MUILChannels,*MUILOutvol,*MUILMonvol,*MUILGain,*MUILInput,*MUILOutput,*MUIPlay;
@@ -282,6 +285,8 @@ SIPTR xget(Object * obj, ULONG attribute)
 
 static void GUINewSettings(void)
 {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   set(MUIUnit,MUIA_Cycle_Entries,Units);
   set(MUIUnit,MUIA_Cycle_Active,state.UnitSelected);
   set(MUIDebug, MUIA_Cycle_Active, globalprefs.ahigp_DebugLevel);
@@ -297,6 +302,8 @@ static void GUINewSettings(void)
 
 static void GUINewUnit(void)
 {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   DoMethod(MUIList, MUIM_List_Clear);
   set(MUIList, MUIA_List_Quiet, TRUE);
   DoMethod(MUIList, MUIM_List_Insert, Modes, -1, MUIV_List_Insert_Bottom);
@@ -316,6 +323,8 @@ static void GUINewMode(void)
   char* arg5 = getVersion();
   char* arg6 = getAnnotation();
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   buffer = AllocVec( strlen( arg1 ) +
                      strlen( arg2 ) +
                      strlen( arg3 ) +
@@ -328,7 +337,7 @@ static void GUINewMode(void)
   if( buffer != NULL )
   {
     sprintf( buffer,"0x%08lx\n%s\n%s\n%s\nDevs:AHI/%s.audio\n%s\n%s",
-      (unsigned long)getAudioMode(),
+      (ULONG)getAudioMode(),
       arg1,
       arg2,
       arg3,
@@ -427,6 +436,8 @@ SliderHookFunc( struct Hook *hook,
                 Object *obj,
                 IPTR** arg )
 {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   if(obj == MUIFreq)
   {
     state.FreqSelected = (LONG)(IPTR)(*arg);
@@ -480,6 +491,8 @@ static Object *MUIApp,*MUIMenu;
 
 static Object* SpecialLabel(STRPTR label)
 {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   return(TextObject,
       MUIA_HorizWeight, 75,
       MUIA_Text_Contents, label,
@@ -491,6 +504,8 @@ static Object* SpecialButton(STRPTR label)
 {
   Object *button = NULL;
   STRPTR lab;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   lab = AllocVec(strlen(label)+1,0);
 
@@ -526,6 +541,8 @@ static Object* SpecialButton(STRPTR label)
 
 static Object* SpecialSlider(LONG min, LONG max, LONG value)
 {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   return(SliderObject,
 	 MUIA_CycleChain,     1,
 	 MUIA_Slider_Quiet,   TRUE,
@@ -541,6 +558,8 @@ BOOL BuildGUI(char *screenname)
   Object *MUISave, *MUIUse, *MUICancel;
   Object *page1,*page2;
   Object *MUITFreq,*MUITChannels,*MUITOutvol,*MUITMonvol,*MUITGain,*MUITInput,*MUITOutput,*MUITDebug,*MUITEcho,*MUITSurround,*MUITClipvol,*MUITCpu,*MUITACTime,*MUITScalemode;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   UpdateStrings();
 
@@ -562,7 +581,6 @@ BOOL BuildGUI(char *screenname)
     return FALSE;
   }
 #endif
-
 
   page1 = HGroup,
     Child, VGroup,
@@ -690,19 +708,19 @@ BOOL BuildGUI(char *screenname)
   End;
 
   MUIApp = ApplicationObject,
-    MUIA_Application_Title, (char *) msgTextProgramName,
+    MUIA_Application_Title, (IPTR) msgTextProgramName,
     MUIA_Application_Version, Version,
-    MUIA_Application_Copyright, "©1996-2005 Martin Blom",
-    MUIA_Application_Author, "Stéphane Barbaray/Martin Blom",
-    MUIA_Application_Description, (char *) msgTextProgramName,
-    MUIA_Application_Base, "AHI",
+    MUIA_Application_Copyright, (IPTR) "©1996-2005 Martin Blom",
+    MUIA_Application_Author, (IPTR) "Stéphane Barbaray/Martin Blom",
+    MUIA_Application_Description, (IPTR) msgTextProgramName,
+    MUIA_Application_Base, (IPTR) "AHI",
     MUIA_Application_HelpFile, HELPFILE,
     MUIA_Application_Menustrip, MUIMenu = MUI_MakeObject(MUIO_MenustripNM,Menus,0),
     MUIA_Application_SingleTask, TRUE,
     SubWindow, MUIWindow = WindowObject,
-      MUIA_Window_Title, (char *) msgTextProgramName,
+      MUIA_Window_Title, (IPTR) msgTextProgramName,
       MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-      MUIA_HelpNode, "AHI",
+      MUIA_HelpNode, (IPTR) "AHI",
       WindowContents, VGroup,
        Child, RegisterGroup(PageNames),
          MUIA_CycleChain, 1,
@@ -777,6 +795,8 @@ BOOL BuildGUI(char *screenname)
 
 void CloseGUI(void)
 {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   if (MUIApp)
     MUI_DisposeObject(MUIApp);
   if (MUIMasterBase)
@@ -795,6 +815,8 @@ void EventLoop(void)
 {
   ULONG sigs = 0UL;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   while (1)
   {
     IPTR rc = DoMethod(MUIApp, MUIM_Application_NewInput, &sigs);
@@ -812,8 +834,9 @@ void EventLoop(void)
             ASLFR_Window, xget(MUIWindow, MUIA_Window_Window),
             ASLFR_TitleText, msgTextProgramName,
             ASLFR_RejectIcons, TRUE,
-            ASLFR_InitialDrawer, "SYS:Prefs/Presets",
+            ASLFR_InitialDrawer, (IPTR)"SYS:Prefs/Presets",
             TAG_DONE );
+
         if( request != NULL )
         {
           DoMethod(MUIApp, MUIA_Application_Sleep, TRUE);
@@ -852,7 +875,7 @@ void EventLoop(void)
             ASLFR_TitleText, msgTextProgramName,
             ASLFR_RejectIcons, TRUE,
             ASLFR_DoSaveMode, TRUE,
-            ASLFR_InitialDrawer, "SYS:Prefs/Presets",
+            ASLFR_InitialDrawer, (IPTR)"SYS:Prefs/Presets",
             TAG_DONE);
 
         if(request != NULL )
