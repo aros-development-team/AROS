@@ -16,6 +16,7 @@ CFLAGS_LOOP_STRIP_MINE                  := @aros_cflags_loop_strip_mine@
 
 #
 CFLAGS_PEEL_LOOPS                       := @aros_cflags_peel_loops@
+CFLAGS_UNROLL_LOOPS                     := @aros_cflags_unroll_loops@
 
 #
 CFLAGS_STRICT_ALIASING                  := @aros_cflags_strictaliasing@
@@ -26,7 +27,7 @@ CFLAGS_IQUOTE                           := @aros_cflags_iquote@
 CFLAGS_IQUOTE_END                       := @aros_cflags_iquote_end@
 
 # -mno-red-zone support
-CFLAGS_NO_RED_ZONE                       := @aros_cflags_no_red_zone@
+CFLAGS_NO_RED_ZONE                      := @aros_cflags_no_red_zone@
 
 # Disable compiler warning flags
 

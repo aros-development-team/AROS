@@ -703,6 +703,7 @@ aros_cflags_iquote_end
 aros_cflags_iquote
 aros_cflags_nostrictaliasing
 aros_cflags_strictaliasing
+aros_cflags_unroll_loops
 aros_cflags_peel_loops
 aros_cflags_loop_strip_mine
 aros_cflags_loop_interchange
@@ -2715,6 +2716,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -floop-strip-mine
 #  -fpeel-loops
 #  -fstrict-aliasing
+#  -funroll-loops
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffast-math" >&5
 $as_echo_n "checking whether ${CC} accepts -ffast-math... " >&6; }
@@ -2900,6 +2902,32 @@ if test "x-$aros_peel_loops" = "x-yes" ; then
     aros_cflags_peel_loops=-fpeel-loops
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -funroll-loops" >&5
+$as_echo_n "checking whether ${CC} accepts -funroll-loops... " >&6; }
+CFLAGS=-funroll-loops
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unroll_loops="yes"
+else
+  aros_unroll_loops="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unroll_loops" >&5
+$as_echo "$aros_unroll_loops" >&6; }
+if test "x-$aros_unroll_loops" = "x-yes" ; then
+    aros_cflags_unroll_loops=-funroll-loops
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fstrict-aliasing" >&5
 $as_echo_n "checking whether ${CC} accepts -fstrict-aliasing... " >&6; }
 CFLAGS=-fstrict-aliasing
@@ -2956,7 +2984,6 @@ else
     aros_cflags_iquote=-I
     aros_cflags_iquote_end=-I-
 fi
-
 
 #-----------------------------------------------------------------------------
 
@@ -4595,6 +4622,7 @@ fi
 #
 # export the feature flags...
 #
+
 
 
 

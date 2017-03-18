@@ -42,6 +42,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -floop-strip-mine
 #  -fpeel-loops
 #  -fstrict-aliasing
+#  -funroll-loops
 
 AC_MSG_CHECKING([whether ${CC} accepts -ffast-math])
 CFLAGS=-ffast-math
@@ -100,6 +101,14 @@ if test "x-$aros_peel_loops" = "x-yes" ; then
     aros_cflags_peel_loops=-fpeel-loops
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -funroll-loops])
+CFLAGS=-funroll-loops
+AC_TRY_COMPILE(,, aros_unroll_loops="yes", aros_unroll_loops="no")
+AC_MSG_RESULT($aros_unroll_loops)
+if test "x-$aros_unroll_loops" = "x-yes" ; then
+    aros_cflags_unroll_loops=-funroll-loops
+fi
+
 AC_MSG_CHECKING([whether ${CC} accepts -fstrict-aliasing])
 CFLAGS=-fstrict-aliasing
 AC_TRY_COMPILE(,, aros_strict_aliasing="yes", aros_strict_aliasing="no")
@@ -120,7 +129,6 @@ else
     aros_cflags_iquote=-I
     aros_cflags_iquote_end=-I-
 fi
-
 
 #-----------------------------------------------------------------------------
 
@@ -723,6 +731,7 @@ AC_SUBST(aros_cflags_loop_block)
 AC_SUBST(aros_cflags_loop_interchange)
 AC_SUBST(aros_cflags_loop_strip_mine)
 AC_SUBST(aros_cflags_peel_loops)
+AC_SUBST(aros_cflags_unroll_loops)
 
 AC_SUBST(aros_cflags_strictaliasing)
 AC_SUBST(aros_cflags_nostrictaliasing)
