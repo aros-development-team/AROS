@@ -17,17 +17,17 @@ ReqA( const char*        text,
       struct DriverBase* AHIsubBase );
 
 #define Req(a0, args...) \
-        ({ULONG _args[] = { args }; ReqA((a0), (APTR)_args, AHIsubBase);})
+        ({IPTR _args[] = { args }; ReqA((a0), (APTR)_args, AHIsubBase);})
 
 void
 MyKPrintFArgs( UBYTE*           fmt, 
-	       ULONG*           args,
+	       IPTR*           args,
 	       struct DriverBase* AHIsubBase );
 
 #if !defined(__AMIGAOS4__)
 #define KPrintF( fmt, ... )        \
 ({                                 \
-  ULONG _args[] = { __VA_ARGS__ }; \
+  IPTR _args[] = { __VA_ARGS__ }; \
   MyKPrintFArgs( (fmt), _args, AHIsubBase ); \
 })
 #else

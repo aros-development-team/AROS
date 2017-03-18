@@ -68,15 +68,15 @@ struct AHIBase
   APTR                     ahib_AudioCtrl;
   struct AHIDevUnit       *ahib_DevUnits[AHI_UNITS];
   struct SignalSemaphore   ahib_Lock;
-  ULONG                    ahib_AudioMode;
-  ULONG                    ahib_Frequency;
-  Fixed                    ahib_MonitorVolume;
-  Fixed                    ahib_InputGain;
-  Fixed                    ahib_OutputVolume;
-  ULONG                    ahib_Input;
-  ULONG                    ahib_Output;
-  Fixed                    ahib_MaxCPU;
-  Fixed                    ahib_AntiClickTime;
+  IPTR                     ahib_AudioMode;
+  IPTR                     ahib_Frequency;
+  SIPTR                    ahib_MonitorVolume;          // Fixed
+  SIPTR                    ahib_InputGain;              // Fixed
+  SIPTR                    ahib_OutputVolume;           // Fixed
+  IPTR                     ahib_Input;
+  IPTR                     ahib_Output;
+  SIPTR                    ahib_MaxCPU;                 // Fixed
+  SIPTR                    ahib_AntiClickTime;          // Fixed
   UWORD                    ahib_ScaleMode;
 
 #ifdef __AMIGAOS4__

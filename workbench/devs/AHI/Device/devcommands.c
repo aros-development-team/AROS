@@ -280,7 +280,7 @@ TermIO ( struct AHIRequest *ioreq,
 
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
-    KPrintF("Terminating IO Request 0x%08lx", (ULONG) ioreq);
+    KPrintF("Terminating IO Request 0x%p", (IPTR)ioreq);
   }
 
   if( ioreq->ahir_Std.io_Command == CMD_WRITE )
