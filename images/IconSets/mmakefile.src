@@ -1,6 +1,6 @@
 # Copyright © 2004, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-complete : iconset-$(AROS_TARGET_ICONSET)-icons

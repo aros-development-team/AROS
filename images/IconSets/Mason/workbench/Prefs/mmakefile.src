@@ -2,7 +2,7 @@
 #
 # Makefile for Mason's workbench icons
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 ICONS     := Input Zune Time ReqTools Font Locale Serial
 ICONDIR   := $(AROSDIR)/Prefs

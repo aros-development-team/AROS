@@ -1,4 +1,4 @@
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 FILES := win_close win_depth win_size win_zoom \
         win_close_N win_depth_N win_size_N win_zoom_N

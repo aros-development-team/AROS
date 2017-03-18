@@ -1,7 +1,7 @@
 # Copyright © 2004-2012, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 ICONS := About FixFonts Format FTManager SysMon WorkBook Snoopy Shell Find
 IMGS  := DiskImageGUI-1.png DiskImageGUI-2.png
