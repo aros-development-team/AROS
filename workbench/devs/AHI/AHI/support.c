@@ -18,6 +18,9 @@
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <config.h>
 
 #include <devices/ahi.h>
@@ -206,6 +209,8 @@ EndianSwap( size_t size, void* data) {
 ******************************************************************************/
 
 BOOL Initialize(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   LocaleBase = OpenLibrary("locale.library", 38);
 
 #ifdef __AMIGAOS4__
@@ -253,6 +258,8 @@ BOOL Initialize(void) {
 ******************************************************************************/
 
 void CleanUp(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
 #ifdef __AMIGAOS4__
   DropInterface((struct Interface*) IAHI);
   DropInterface((struct Interface*) IGadTools);
@@ -277,6 +284,8 @@ void CleanUp(void) {
 
 static BOOL AddUnit(struct List *list, int unit) {
   struct UnitNode *u;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   u = AllocVec(sizeof(struct UnitNode), MEMF_CLEAR);
 
@@ -328,6 +337,8 @@ struct List *GetUnits(char *name) {
   BOOL devnodes[UNITNODES] = { FALSE, FALSE, FALSE, FALSE } ;
   BOOL lownode = FALSE;
   int i;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   // Reasonable defaults
   globalprefs.ahigp_DebugLevel       = AHI_DEBUG_NONE;
@@ -480,6 +491,8 @@ struct List *GetUnits(char *name) {
 struct List *GetModes(struct AHIUnitPrefs *prefs) {
   struct List *list;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   list = AllocVec(sizeof(struct List), MEMF_CLEAR);
   
   if(list) {
@@ -537,6 +550,8 @@ char **List2Array(struct List *list) {
   int i;
   struct Node *n;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   for(n = list->lh_Head, i = 0; n->ln_Succ; n = n->ln_Succ) {
     i++;
   }
@@ -561,6 +576,7 @@ char **GetInputs(IPTR id) {
   char **strings, **rstrings;
   LONG inputs = 0, i;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   AHI_GetAudioAttrs(id, NULL,
       AHIDB_Inputs, (IPTR) &inputs,
@@ -595,6 +611,7 @@ char **GetOutputs(IPTR id) {
   char **strings, **rstrings;
   LONG outputs = 0, i;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   AHI_GetAudioAttrs(id, NULL,
       AHIDB_Outputs, (IPTR) &outputs,
@@ -630,6 +647,8 @@ BOOL SaveSettings(char *name, struct List *list) {
   struct PrefHeader  header = { 0, 0, 0 };
   struct Node       *n;
   BOOL               success = FALSE;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   if(name && (iff = AllocIFF())) {
     iff->iff_Stream = (IPTR) Open(name, MODE_NEWFILE);
@@ -731,6 +750,8 @@ BOOL WriteIcon(char *name) {
   STRPTR* oldtooltypes;
   BOOL success = FALSE;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   /* Use the already present icon */
   
   dobj=GetDiskObject(name);
@@ -782,6 +803,8 @@ BOOL WriteIcon(char *name) {
 void FreeList(struct List *list) {
   struct Node *n;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   if(list == NULL)
     return;
 
@@ -801,6 +824,8 @@ void FreeList(struct List *list) {
 
 struct Node *GetNode(int index, struct List *list) {
   struct Node *n;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   if(list == NULL || list->lh_Head->ln_Succ == NULL)
     return NULL;
@@ -822,7 +847,9 @@ BOOL PlaySound( struct AHIUnitPrefs* prefs )
 {
   struct AHIAudioCtrl* actrl;
   BOOL                 rc = FALSE;
-  
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   actrl = AHI_AllocAudio( AHIA_AudioID,  prefs->ahiup_AudioMode,
                           AHIA_MixFreq,  prefs->ahiup_Frequency,
                           AHIA_Channels, 1,
