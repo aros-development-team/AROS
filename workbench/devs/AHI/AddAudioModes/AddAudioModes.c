@@ -18,6 +18,9 @@
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <config.h>
 
 #include <devices/ahi.h>
@@ -68,6 +71,8 @@ struct {
 void
 cleanup( void )
 {
+  D(bug("[AddAudioModes] %s()\n", __func__);)
+
 #ifdef __AMIGAOS4__
   DropInterface((struct Interface*) IAHI);
 #endif
@@ -88,9 +93,12 @@ cleanup( void )
 void
 OpenAHI( void )
 {
+  D(bug("[AddAudioModes] %s()\n", __func__);)
   if( AHIDevice != 0 )
   {
     AHImp = CreateMsgPort();
+
+    D(bug("[AddAudioModes] %s: MsgPort @ 0x%p\n", __func__, AHImp);)
 
     if( AHImp != NULL )
     {
@@ -99,6 +107,7 @@ OpenAHI( void )
 
       if( AHIio != NULL )
       {
+        D(bug("[AddAudioModes] %s: IORequest @ 0x%p\n", __func__, AHIio);)
         AHIio->ahir_Version = AHIVERSION;
 
         AHIDevice = OpenDevice( AHINAME, 
@@ -110,12 +119,13 @@ OpenAHI( void )
 
     if( AHIDevice != 0 )
     {
-      Printf( "Unable to open %s version %ld\n", AHINAME, AHIVERSION );
+      Printf( "Unable to open '%s' version %ld\n", AHINAME, AHIVERSION );
       cleanup();
       exit( RETURN_FAIL );
     }
 
     AHIBase = (struct Library *) AHIio->ahir_Std.io_Device;
+    D(bug("[AddAudioModes] %s: AHIBase @ 0x%p\n", __func__, AHIBase);)
 
 #ifdef __AMIGAOS4__
     IAHI = (struct AHIIFace *) GetInterface(AHIBase, "main", 1, NULL);
@@ -131,6 +141,8 @@ main( void )
 {
   struct RDArgs *rdargs;
   int            rc = RETURN_OK;
+
+  D(bug("[AddAudioModes] %s()\n", __func__);)
 
   GfxBase       = (struct GfxBase *) OpenLibrary( GRAPHICSNAME, 37 );
   IntuitionBase = (struct IntuitionBase *) OpenLibrary( "intuition.library", 37 );
@@ -149,6 +161,11 @@ main( void )
     return RETURN_FAIL;
   }
 
+  D(
+    bug("[AddAudioModes] %s: GfxBase @ 0x%p\n", __func__, GfxBase);
+    bug("[AddAudioModes] %s: IntuitionBase @ 0x%p\n", __func__, IntuitionBase);
+  )
+
   rdargs = ReadArgs( TEMPLATE , (SIPTR *) &args, NULL );
 
   if( rdargs != NULL )
@@ -164,9 +181,10 @@ main( void )
       /* First, empty the database */
       
       for( id = AHI_NextAudioID( AHI_INVALID_ID );
-           id != (ULONG) AHI_INVALID_ID;
+           id != (IPTR) AHI_INVALID_ID;
            id = AHI_NextAudioID( AHI_INVALID_ID ) )
       {
+        D(bug("[AddAudioModes] %s: Removing ID %08x\n", __func__, id);)
         AHI_RemoveAudioMode( id );
       }
 
@@ -217,8 +235,10 @@ main( void )
 
       while( args.files[i] )
       {
+        D(bug("[AddAudioModes] %s: Trying to load '%s' ... \n", __func__, args.files[i]);)
         if( !AHI_LoadModeFile( args.files[i] ) && !args.quiet )
         {
+          D(bug("[AddAudioModes] %s:    Failed!\n", __func__);)
           PrintFault( IoErr(), args.files[i] );
           rc = RETURN_ERROR;
         }
@@ -245,6 +265,7 @@ main( void )
              id != (IPTR) AHI_INVALID_ID;
              id = AHI_NextAudioID( AHI_INVALID_ID ) )
         {
+          D(bug("[AddAudioModes] %s: Removing ID %08x\n", __func__, id);)
           AHI_RemoveAudioMode( id );
         }
       }

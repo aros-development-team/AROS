@@ -18,6 +18,9 @@
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <config.h>
 
 #include <devices/ahi.h>
@@ -80,6 +83,8 @@ int main(int argc, char **argv) {
   struct RDArgs *rdargs = NULL;
   int i;
   char pubscreen[32];
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   if(argc) {
     rdargs=ReadArgs( TEMPLATE , (SIPTR *) &args, NULL);
@@ -203,6 +208,8 @@ int main(int argc, char **argv) {
 ******************************************************************************/
 
 void NewSettings(char *name) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   FreeVec(Units);
   FreeList(UnitList);
 
@@ -229,6 +236,8 @@ void NewUnit(int selectedunit) {
   struct UnitNode *unit;
   IPTR id, modeselected;
   struct ModeNode *mode;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   unit = (struct UnitNode *) GetNode(selectedunit, UnitList);
 
@@ -266,10 +275,12 @@ void NewMode(int selectedmode) {
   struct UnitNode *unit = NULL;
   struct ModeNode *mode = NULL;
   IPTR id = AHI_INVALID_ID;
-  Fixed MinOutVol = 0, MaxOutVol = 0, MinMonVol = 0, MaxMonVol = 0;
-  Fixed MinGain = 0, MaxGain = 0;
+  SIPTR MinOutVol = 0, MaxOutVol = 0, MinMonVol = 0, MaxMonVol = 0;
+  SIPTR MinGain = 0, MaxGain = 0;
   double Min, Max, Current;
   int offset;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   state.ModeSelected = selectedmode;
 
@@ -282,6 +293,8 @@ void NewMode(int selectedmode) {
 
   if( mode != NULL )
   {
+    D(bug("[AHIPrefs] %s: Mode %08x\n", __func__, mode);)
+
     id = mode->ID;
     
     AHI_GetAudioAttrs(id, NULL,
@@ -440,6 +453,8 @@ void FillUnit() {
   struct ModeNode *mode = NULL;
   double db;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   unit = (struct UnitNode *) GetNode(state.UnitSelected, UnitList);
 
   if(unit->prefs.ahiup_Unit != AHI_NO_UNIT) {
@@ -495,6 +510,8 @@ char *getFreq(void) {
   LONG freq = 0;
   struct ModeNode *mode = NULL;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   if( state.ModeSelected != ~0 )
   {
     mode = (struct ModeNode *) GetNode(state.ModeSelected, ModeList);
@@ -515,6 +532,8 @@ char *getFreq(void) {
 
 
 char *getChannels(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   if(state.ChannelsDisabled) {
     sprintf(chanBuffer, (char *) msgOptNoChannels);
   }
@@ -526,6 +545,8 @@ char *getChannels(void) {
 
 char *getOutVol(void) {
   int selected = state.OutVolSelected;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   if(state.OutVolMute) {
     if(selected == 0) {
@@ -544,6 +565,8 @@ char *getOutVol(void) {
 char *getMonVol(void) {
   int selected = state.MonVolSelected;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   if(state.MonVolMute) {
     if(selected == 0) {
       sprintf(monvolBuffer, (char *) msgOptMuted);
@@ -561,11 +584,14 @@ char *getMonVol(void) {
 char *getGain(void) {
   int selected = state.GainSelected;
 
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   sprintf(gainBuffer, msgVolFmt, state.GainOffset + (selected * DBSTEP));
   return gainBuffer;
 }
 
 char *getInput(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   if(Inputs[0]) {
     return Inputs[state.InputSelected];
@@ -574,6 +600,7 @@ char *getInput(void) {
 }
 
 char *getOutput(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   if(Outputs[0]) {
     return Outputs[state.OutputSelected];
@@ -582,9 +609,10 @@ char *getOutput(void) {
 }
 
 IPTR getAudioMode(void) {
-
   struct ModeNode * mode = NULL;
   
+  D(bug("[AHIPrefs] %s()\n", __func__);)
+
   if( state.ModeSelected == ~0 )
   {
     return AHI_INVALID_ID;
@@ -603,6 +631,8 @@ IPTR getAudioMode(void) {
 char *getRecord(void) {
   IPTR record = FALSE, fullduplex = FALSE;
   struct ModeNode *mode = NULL;
+
+  D(bug("[AHIPrefs] %s()\n", __func__);)
 
   if( state.ModeSelected != ~0 )
   {
@@ -623,22 +653,27 @@ char *getRecord(void) {
 }
 
 char *getAuthor(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
   return authorBuffer;
 }
 
 char *getCopyright(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
   return copyrightBuffer;
 }
 
 char *getDriver(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
   return driverBuffer;
 }
 
 char *getVersion(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
   return versionBuffer;
 }
 
 char *getAnnotation(void) {
+  D(bug("[AHIPrefs] %s()\n", __func__);)
   return annotationBuffer;
 }
 
