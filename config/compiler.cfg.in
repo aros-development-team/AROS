@@ -12,7 +12,7 @@ CFLAGS_NO_BUILTIN_FLOOR                 := @aros_cflags_no_builtin_floor@
 # LTO/Graphite optimization flags
 
 CFLAGS_LTO                              := @aros_cflags_lto@
-CFLAGS_NO_LTO                           := @aros_cflags_lto@
+CFLAGS_NO_LTO                           := @aros_cflags_nolto@
 CFLAGS_WHOLE_PROGRAM                    := @aros_cflags_whole_program@
 CFLAGS_LOOP_BLOCK                       := @aros_cflags_loop_block@
 CFLAGS_LOOP_INTERCHANGE                 := @aros_cflags_loop_interchange@
