@@ -25,6 +25,9 @@ CFLAGS_NO_STRICT_ALIASING               := @aros_cflags_nostrictaliasing@
 CFLAGS_IQUOTE                           := @aros_cflags_iquote@
 CFLAGS_IQUOTE_END                       := @aros_cflags_iquote_end@
 
+# -mno-red-zone support
+CFLAGS_NO_RED_ZONE                       := @aros_cflags_no_red_zone@
+
 # Disable compiler warning flags
 
 NOWARN_UNUSED_COMMAND_LINE_ARGUMENT     := @aros_nowarnflags_unused_command_line_argument@
