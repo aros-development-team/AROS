@@ -2,7 +2,7 @@
 #
 #   Makefile to make MultiUserFS security library.
 
-include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/config/aros-contrib.cfg
 
 TOPLEVEL=$(shell pwd)
 
