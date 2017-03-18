@@ -121,6 +121,20 @@ else
     aros_cflags_iquote_end=-I-
 fi
 
+
+#-----------------------------------------------------------------------------
+
+# Check if the target compiler supports some options:
+#  -mno-red-zone
+
+AC_MSG_CHECKING([whether ${CC} accepts -mno-red-zone])
+CFLAGS=-mno-red-zone
+AC_TRY_COMPILE(,, aros_no_red_zone="yes", aros_no_red_zone="no")
+AC_MSG_RESULT($aros_no_red_zone)
+if test "x-$aros_no_red_zone" = "x-yes" ; then
+    aros_cflags_no_red_zone=-mno-red-zone
+fi
+
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some options used for de-linting:
@@ -715,6 +729,11 @@ AC_SUBST(aros_cflags_nostrictaliasing)
 
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
+
+#
+# export the feature options...
+#
+AC_SUBST(aros_cflags_no_red_zone)
 
 #
 # ...and warning flags...
