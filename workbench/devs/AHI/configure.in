@@ -83,7 +83,7 @@ case $host in
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
   resident=""                                      dnl *** Not supported (yet?)
-  stripflag="--strip-unneeded"
+  stripflag=""
  ;;
  x86_64-*-aros)
  : ${CPU="x86_64"}
@@ -92,7 +92,7 @@ case $host in
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1 --defsym x86_64=1"
   resident=""
-  stripflag="--strip-unneeded"
+  stripflag=""
  ;;
  *)
   AC_MSG_WARN(Unknown architecture!)

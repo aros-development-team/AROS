@@ -2333,7 +2333,7 @@ $as_echo "#define USE_INLINE_STDARG 1" >>confdefs.h
   optflags="-m32 -march=${CPU} -O2"
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
-  resident=""                                        stripflag="--strip-unneeded"
+  resident=""                                        stripflag=""
  ;;
  x86_64-*-aros)
  : ${CPU="x86_64"}
@@ -2342,7 +2342,7 @@ $as_echo "#define USE_INLINE_STDARG 1" >>confdefs.h
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1 --defsym x86_64=1"
   resident=""
-  stripflag="--strip-unneeded"
+  stripflag=""
  ;;
  *)
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unknown architecture!" >&5
