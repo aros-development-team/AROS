@@ -35,7 +35,8 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 
 # Check if the target compiler supports some features:
 #  -fpermissive
-#  -ffast-math 
+#  -ffast-math
+#  -fno-builtin-floor
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -59,6 +60,14 @@ AC_TRY_COMPILE(,, aros_fast_math="yes", aros_fast_math="no")
 AC_MSG_RESULT($aros_fast_math)
 if test "x-$aros_fast_math" = "x-yes" ; then
     aros_cflags_fast_math=-ffast-math
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-floor])
+CFLAGS=-fno-builtin-floor
+AC_TRY_COMPILE(,, aros_no_builtin_floor="yes", aros_no_builtin_floor="no")
+AC_MSG_RESULT($aros_no_builtin_floor)
+if test "x-$aros_no_builtin_floor" = "x-yes" ; then
+    aros_cflags_no_builtin_floor=-fno-builtin-floor
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -flto])
@@ -734,6 +743,7 @@ fi
 #
 AC_SUBST(aros_cflags_permissive)
 AC_SUBST(aros_cflags_fast_math)
+AC_SUBST(aros_cflags_no_builtin_floor)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
 AC_SUBST(aros_cflags_whole_program)
