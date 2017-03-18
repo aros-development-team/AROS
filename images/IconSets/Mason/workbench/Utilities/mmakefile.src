@@ -2,7 +2,7 @@
 #
 # Makefile for Mason's workbench icons
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 ICONS     := Multiview Clock More Installer
 ICONDIR   := $(AROSDIR)/Utilities

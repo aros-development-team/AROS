@@ -2,7 +2,7 @@
 #
 # Makefile for Mason's workbench icons
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 ICONS     := def_Disk def_RAM def_Drawer def_Project def_Tool def_Text def_Document def_Harddisk def_CDROM
 ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS

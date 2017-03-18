@@ -1,7 +1,7 @@
 # Copyright © 2004, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 ICONS := C Demos Development Devs Extras Fonts \
          Libs Locale Prefs S Storage System \

@@ -1,7 +1,7 @@
 # Copyright © 2012, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 STORAGEICONS := ICD0 ICD1 IDF0 IDF1 ISO0 PC0
 DEVSICONS    := PAR PIPE PRT SER SER0 SER1
