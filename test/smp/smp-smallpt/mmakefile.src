@@ -12,10 +12,11 @@ EXEDIR  := $(AROS_TESTS)/smp
 
 #USER_CFLAGS := $(PARANOIA_CFLAGS)
 
-NOWARN_FLAGS :=  $(NOWARN_VOLATILE_REGISTER_VAR)
-USER_CXXFLAGS := $(NOWARN_FLAGS)
-USER_CFLAGS := -std=gnu99 $(CFLAGS_NO_RED_ZONE) -Os -flto
-USER_LDFLAGS := -static-libstdc++
+NOWARN_FLAGS  := $(NOWARN_VOLATILE_REGISTER_VAR)
+SMALLPT_FLAGS := $(CFLAGS_NO_RED_ZONE) -Os -flto
+USER_CXXFLAGS := $(NOWARN_FLAGS) $(SMALLPT_FLAGS)
+USER_CFLAGS   := -std=gnu99 $(SMALLPT_CFLAGS)
+USER_LDFLAGS  := -static-libstdc++
 
 %build_prog mmake=test-smp-smp-smallpt \
     files=$(FILES) cxxfiles=$(CXXFILES) targetdir=$(EXEDIR) \
