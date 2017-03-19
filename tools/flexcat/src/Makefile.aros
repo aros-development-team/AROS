@@ -10,7 +10,7 @@ USER_CFLAGS := -Wall -Werror -Wunused -O2
 FLEXCAT_CFLAGS := $(HOST_CFLAGS)
 
 ifeq ($(AROS_HOST_ARCH),linux)
-FLEXCAT_CFLAGS += -D_XOPEN_SOURCE
+FLEXCAT_CFLAGS += -D_XOPEN_SOURCE=500
 endif
 
 OBJS := main.o \
