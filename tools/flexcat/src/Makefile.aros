@@ -7,6 +7,11 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -Wall -Werror -Wunused -O2
+FLEXCAT_CFLAGS := $(HOST_CFLAGS)
+
+ifeq ($(AROS_HOST_ARCH),linux)
+FLEXCAT_CFLAGS += -D_XOPEN_SOURCE
+endif
 
 OBJS := main.o \
         asprintf.o \
@@ -39,8 +44,8 @@ $(FLEXCAT) : $(addprefix $(OBJDIR)/,$(OBJS))
 
 $(OBJDIR)/%.o : %.c
 	@$(ECHO) "Compiling flexcat/src/$(notdir $@)..."
-	@$(HOST_CC) -MM -MP -MT '$@' -MF $(OBJDIR)/$(subst .c,.d,$<) $(HOST_CFLAGS) $<
-	@$(HOST_CC) -DNOERRORONWARN $(HOST_CFLAGS) -o $@ -c $<
+	@$(HOST_CC) -MM -MP -MT '$@' -MF $(OBJDIR)/$(subst .c,.d,$<) $(FLEXCAT_CFLAGS) $<
+	@$(HOST_CC) -DNOERRORONWARN $(FLEXCAT_CFLAGS) -o $@ -c $<
 
 $(TOOLDIR)/%.sd : sd/%.sd
 	@$(CP) $< $@
