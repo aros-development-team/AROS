@@ -27,6 +27,13 @@
 #define LEGACY_SUPPORT
 #endif
 
+struct pcipc_IRQRoutingNode {
+    struct MinNode  node;
+    UWORD           device;
+    UBYTE           irq_pin;
+    UBYTE           irq_ioapic;
+};
+
 struct pcipc_staticdata
 {
     OOP_AttrBase        hiddPCIDriverAB;
@@ -43,7 +50,8 @@ struct pcipc_staticdata
     /* ACPI related */
     struct Library      *pcipc_acpiBase;
     ACPI_TABLE_MCFG     *pcipc_acpiMcfgTbl;
-
+    APTR                pcipc_irqRoutingTable;
+    struct MinList      pcipc_RoutingList;
 };
 
 struct pcibase

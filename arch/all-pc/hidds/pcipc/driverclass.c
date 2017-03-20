@@ -268,6 +268,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     _psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     _psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
     _psd->hidd_PCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    _psd->pcipc_irqRoutingTable = NULL;
     if (_psd->hiddPCIDriverAB == 0 || _psd->hiddAB == 0 || _psd->hidd_PCIDeviceAB == 0)
     {
 	D(bug("[PCI.PC] ObtainAttrBases failed\n"));
