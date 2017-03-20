@@ -164,7 +164,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
                 KPRINTF(1, ("UQH terminated %08lx\n", linkelem));
                 inspect = 2;
             } else {
-                utd = (struct UhciTD *) ((linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16); // struct UhciTD starts 16 bytes before physical TD
+                utd = (struct UhciTD *) ((linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - UHCI_STRUCTURE_OFFSET); // struct UhciTD starts 16/32 bytes before physical TD depending on architecture
                 ctrlstatus = READMEM32_LE(&utd->utd_CtrlStatus);
                 nextutd = (struct UhciTD *)utd->utd_Succ;
                 if(!(ctrlstatus & UTCF_ACTIVE) && nextutd)
@@ -341,7 +341,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
                 if (uqh->uqh_DataBuffer)
                     usbReleaseBuffer(uqh->uqh_DataBuffer, data, actual, ioreq->iouh_Dir);
                 if (uqh->uqh_SetupBuffer)
-                    usbReleaseBuffer(uqh->uqh_SetupBuffer, &ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData), (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+                    usbReleaseBuffer(uqh->uqh_SetupBuffer, &ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData), UHDIR_OUT);
                 uhciFreeQContext(hc, uqh);
                 if(ioreq->iouh_Req.io_Command == UHCMD_INTXFER)
                 {
@@ -479,7 +479,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc) {
             cont = FALSE;
             uqh->uqh_FirstTD = setuputd;
             uqh->uqh_Element = setuputd->utd_Self; // start of queue
-            uqh->uqh_SetupBuffer = usbGetBuffer(&ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData), (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+            uqh->uqh_SetupBuffer = usbGetBuffer(&ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData), UHDIR_OUT);
             WRITEMEM32_LE(&setuputd->utd_CtrlStatus, ctrlstatus);
             WRITEMEM32_LE(&setuputd->utd_Token, (PID_SETUP<<UTTS_PID)|token|(7<<UTTS_TRANSLENGTH)|UTTF_DATA0);
             WRITEMEM32_LE(&setuputd->utd_BufferPtr, (ULONG) (IPTR) pciGetPhysical(hc, uqh->uqh_SetupBuffer));
@@ -969,12 +969,12 @@ static AROS_INTH1(uhciIntCode, struct PCIController *, hc)
     struct PCIDevice *base = hc->hc_Device;
     UWORD intr;
 
-    //KPRINTF(10, ("pciUhciInt()\n"));
+    KPRINTF(10, ("pciUhciInt()\n"));
     intr = READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS);
     if(intr & (UHSF_USBINT|UHSF_USBERRORINT|UHSF_RESUMEDTX|UHSF_HCSYSERROR|UHSF_HCPROCERROR|UHSF_HCHALTED))
     {
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, intr);
-        //KPRINTF(1, ("INT=%04lx\n", intr));
+        KPRINTF(1, ("INT=%04lx\n", intr));
         if(intr & (UHSF_HCSYSERROR|UHSF_HCPROCERROR|UHSF_HCHALTED))
         {
             KPRINTF(200, ("Host ERROR!\n"));
@@ -1213,7 +1213,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
          */
         WRITEIO32_LE(hc->hc_RegBase, UHCI_FRAMELISTADDR, (ULONG)(IPTR)pciGetPhysical(hc, hc->hc_UhciFrameList));
 
-        WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
+        WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, UHSF_USBINT | UHSF_USBERRORINT | UHSF_RESUMEDTX | UHSF_HCSYSERROR | UHSF_HCPROCERROR | UHSF_HCHALTED);
 
         // install reset handler
         hc->hc_ResetInt.is_Code = (VOID_FUNC)UhciResetHandler;
