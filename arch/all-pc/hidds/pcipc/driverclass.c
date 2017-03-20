@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI direct driver for i386 native.

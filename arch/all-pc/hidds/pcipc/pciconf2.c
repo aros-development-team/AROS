@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI configuration mechanism 2 access functions
