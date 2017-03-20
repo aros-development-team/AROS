@@ -198,14 +198,15 @@ ACPI_STATUS callback(ACPI_HANDLE Object, ULONG nesting_level, void *Context, voi
 {
     ACPI_BUFFER RetVal;
     RetVal.Length = ACPI_ALLOCATE_BUFFER;
+    int status;
 
     bug("callback. Object = %p, nesting_level=%d, Context=%p\n", Object, nesting_level, Context);
 
-    int status = AcpiEvaluateObject(Object, "_PRT", NULL, &RetVal);
+    status = AcpiEvaluateObject(Object, "_PRT", NULL, &RetVal);
 
     bug("result of PRT evaluate=%d\n", status);
 
-    if (status == 0)
+    if (!ACPI_FAILURE(status))
     {
         bug("RetVal.Length=%d\n", RetVal.Length);
         bug("RetVal.Pointer=%p\n", RetVal.Pointer);
@@ -251,7 +252,8 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 	return FALSE;
     }
 
-    AcpiGetDevices("PNP0A03", callback, LIBBASE, NULL);
+    if (ACPICABase)
+        AcpiGetDevices("PNP0A03", callback, LIBBASE, NULL);
 
     /* Default to using config mechanism 1 */
     _psd->ReadConfigLong  = ReadConfig1Long;
