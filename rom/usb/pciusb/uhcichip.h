@@ -142,11 +142,20 @@ struct UHCIRegs
 #define UHCI_TD_INT_LIMIT        128   // limit for one batch of INT data TDs
 #define UHCI_TD_BULK_LIMIT       32768 // limit for one batch of BULK data TDs
 
+#if __WORDSIZE == 64
+#define UHCI_STRUCTURE_OFFSET    32
+#else
+#define UHCI_STRUCTURE_OFFSET    16
+#endif
+
 struct UhciXX
 {
     struct UhciXX  *uxx_Succ;
     struct UhciXX  *uxx_Pred;
     ULONG           uxx_Self;       /* LE PHYSICAL pointer to self + UHCI_TDSELECT */
+#if __WORDSIZE == 64
+    ULONG           uxx_Unused0;
+#endif
     APTR            uxx_Private;
     /* aligned to 16 bytes */
     ULONG           uxx_Link;       /* LE PHYSICAL link pointer */
@@ -155,11 +164,12 @@ struct UhciXX
 struct UhciTD
 {
     struct UhciXX  *utd_Succ;
-    ULONG           utd_Unused0;
-    //struct UhciXX  *utd_Pred;
+    IPTR            utd_Unused0;
     ULONG           utd_Self;       /* LE PHYSICAL pointer to self + UHCI_TDSELECT */
-    //struct UhciQH  *utd_QueueHead;  /* Pointer to queue head this thing belongs to (only for Ctrl/Bulk) */
-    ULONG           utd_Unused1;
+#if __WORDSIZE == 64
+    ULONG           utd_Unused2;
+#endif
+    IPTR            utd_Unused1;
     /* aligned to 16 bytes */
     ULONG           utd_Link;       /* LE PHYSICAL TD Link Pointer (+BFS/DFS+QH/TD+TERM) */
     ULONG           utd_CtrlStatus; /* LE Control and Status word */
@@ -172,6 +182,9 @@ struct UhciQH
     struct UhciXX  *uqh_Succ;
     struct UhciXX  *uqh_Pred;
     ULONG           uqh_Self;       /* LE PHYSICAL pointer to self + UHCI_QHSELECT */
+#if __WORDSIZE == 64
+    ULONG           utd_Unused3;
+#endif    
     struct IOUsbHWReq *uqh_IOReq;   /* IO Request this belongs to */
     /* aligned to 16 bytes */
     ULONG           uqh_Link;       /* LE PHYSICAL QH Link Pointer (QH/TD+TERM) */
