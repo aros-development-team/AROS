@@ -1129,7 +1129,7 @@ AROS_UFH3(void, RectShadeFunc,
     )
     if (rp->Layer)
     {
-        bug("[Decoration] %s: Layer @ 0x%p = %d,%d -> %d,%d\n", __func__, rp->Layer, rp->Layer->bounds.MinX, rp->Layer->bounds.MinY, rp->Layer->bounds.MaxX, rp->Layer->bounds.MaxY);
+        D(bug("[Decoration] %s: Layer @ 0x%p = %d,%d -> %d,%d\n", __func__, rp->Layer, rp->Layer->bounds.MinX, rp->Layer->bounds.MinY, rp->Layer->bounds.MaxX, rp->Layer->bounds.MaxY);)
         bounds.MinX = rp->Layer->bounds.MinX - msg->OffsetX;
         bounds.MinY = rp->Layer->bounds.MinY - msg->OffsetY;
     }
