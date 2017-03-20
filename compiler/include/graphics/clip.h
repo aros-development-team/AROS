@@ -119,7 +119,7 @@ struct ClipRect
 /* This one is used for determining optimal offset for blitting into
 cliprects */
 #define ALIGN_CLIPRECT  16
-#define ALIGN_OFFSET(x) ((x) & (ALIGN_CLIPRECT-1)
+#define ALIGN_OFFSET(x) ((x) & (ALIGN_CLIPRECT-1))
 
 
 /*
