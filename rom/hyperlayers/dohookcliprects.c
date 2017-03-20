@@ -5,7 +5,10 @@
     Desc:
     Lang: english
 */
+
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <exec/types.h>
 
@@ -61,18 +64,21 @@
 
     struct Layer     *L;
 
-    D(bug("DoHookClipRects(hook @ $%lx, rport @ $%lx, rect @ $%lx)\n", hook, rport, rect));
+    D(bug("[Layers] %s(hook @ 0x%p, rport @ $%p, rect @ $%p)\n", __func__, hook, rport, rect));
 
-    /* if the hook is LAYERS_NOBACKFILL then I am not doing anything here. */
+    /* if the hook is LAYERS_NOBACKFILL, there is nothing to do here. */
     if(hook == (struct Hook *)LAYERS_NOBACKFILL)
     {
-        return;
+	D(bug("[Layers] %s: NOBACKFILL\n", __func__));
+	return;
     }
 
     L = rport -> Layer;
     /* does this rastport have a layer?? */
     if( NULL == L )
     {
+	D(bug("[Layers] %s: No Layer\n", __func__));
+
 	/* non-layered rastport */
 
 	/* You MUST supply a rect to clip the hook's actions! */
@@ -84,17 +90,19 @@
 
 	/* layered rastport */
 
-	/* I assume that the given bounds rectangle is relative to the upper left corner of the
-	   layer's rastport. This makes more sense than if it was relative to the rastport of
-	   the screen where this layer is to be found in
-	*/
+	/* The input rectangle is relative to the upper left corner of the
+	 * layer's rastport. */
 
 	LockLayer(0, L);
+
+	D(bug("[Layers] %s: Layer > %d,%d -> %d,%d\n", __func__, L->bounds.MinX - L->Scroll_X, L->bounds.MinY - L->Scroll_Y, L->bounds.MaxX - L->Scroll_X, L->bounds.MaxY - L->Scroll_Y);)
 
 	boundrect.MinX = rect->MinX + L->bounds.MinX - L->Scroll_X;
 	boundrect.MinY = rect->MinY + L->bounds.MinY - L->Scroll_Y;
 	boundrect.MaxX = rect->MaxX + L->bounds.MinX - L->Scroll_X;
 	boundrect.MaxY = rect->MaxY + L->bounds.MinY - L->Scroll_Y;
+
+	D(bug("[Layers] %s:         %d,%d -> %d,%d\n", __func__, boundrect.MinX, boundrect.MinY, boundrect.MaxX, boundrect.MaxY);)
 
 	/* first check whether this layer is to be considered at all */
 	if (!(boundrect.MinX > L->bounds.MaxX ||
@@ -106,28 +114,17 @@
 	    /* I want nobody else to interrupt me while I call the hook for this layer */
 	    struct ClipRect * CR;
 
-    	    CR = L->ClipRect; /* must not read this before LockLayer!! */
-	    
-	#if 0 /* stegerg: seems to have been crap idea/test. Where the hell did I get this from??? */
-	    /*
-	    ** Set rport->Layer to NULL, so that the hook function does not
-	    ** need to clone the rport and set clonerp->Layer to NULL in
-	    ** order to used rastport based gfx functions
-	    **   
-	    ** stegerg: AFAIK this is done only since Kickstart 3.1
-	    */
-	    
-	    rport->Layer = NULL;
-	#endif
-	
+
+	    CR = L->ClipRect; /* must not read this before LockLayer!! */
+
 	    /* process all ClipRects of this layer */
 	    while (NULL != CR)
 	    {
-        	/* I am going to call the hook for all visible cliprects and
-        	   for invisible cliprects belonging to smart or superbitmap
+        	D(bug("[Layers] %s: CR @ 0x%p\n", __func__, CR));
+        	/* The hook will be called for all visible cliprects, and
+        	   for hidden cliprects belonging to smart or superbitmap
         	   layers =>
-        	   So I am not calling it for invisble cliprects belonging to
-        	   a simple layer.
+        	   Hidden cliprects belonging to simple layers are ignored.
         	*/
 
         	if (!(NULL != CR->lobs && 
@@ -139,6 +136,8 @@
         	       of the clipRect that is supposed to be changed. So it might get
         	       the coordinates of the ClipRect, but it can also be smaller. */
 
+        	    D(bug("[Layers] %s: CR > %d,%d -> %d,%d\n", __func__, CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY);)
+
         	    bounds.MinX = (boundrect.MinX > CR->bounds.MinX) ? boundrect.MinX 
                                                         	     : CR->bounds.MinX;
         	    bounds.MinY = (boundrect.MinY > CR->bounds.MinY) ? boundrect.MinY 
@@ -148,13 +147,15 @@
         	    bounds.MaxY = (boundrect.MaxY < CR->bounds.MaxY) ? boundrect.MaxY 
                                                         	     : CR->bounds.MaxY;
 
-        	    /* Is the cliprect inside the bounds... */
+        	    D(bug("[Layers] %s:      %d,%d -> %d,%d\n", __func__, bounds.MinX, bounds.MinY, bounds.MaxX, bounds.MaxY);)
+
+        	    /* Is the cliprect inside the bounds?... */
         	    if (bounds.MinX <= bounds.MaxX && bounds.MinY <= bounds.MaxY)
         	    {
         		struct BitMap * bm;
         		WORD offsetX = bounds.MinX - L->bounds.MinX + L->Scroll_X; /* + scrollx is correct! */
         		WORD offsetY = bounds.MinY - L->bounds.MinY + L->Scroll_Y; /* + scrolly is correct! */
-			
+
         		/* Call the hook for the rectangle given by bounds. */
 
         		/* If the ClipRect is hidden, then this might get special..., but
@@ -164,9 +165,13 @@
 			{
         		    bm = rport->BitMap;
 
+        		    /* it's a smart layer -: */
         		    if (0 != (L->Flags & LAYERSUPER))
 			    {
                 		/* it's a superbitmap layer */
+
+                		D(bug("[Layers] %s:   SuperBitMap\n", __func__));
+
                 		bounds.MinX -= ( L->bounds.MinX + L->Scroll_X );
                 		bounds.MinY -= ( L->bounds.MinY + L->Scroll_Y );
                 		bounds.MaxX -= ( L->bounds.MinX + L->Scroll_X );
@@ -175,52 +180,55 @@
 			    }
         		    else
 			    {
-                		/* it's a smart layer but not superbitmap */
-                		/* it's hidden, the hook has to blit into the hidden cliprect's bitmap now */
-                		/* adjust the bounds */
-                		bounds.MinX = bounds.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
-                		bounds.MinY = bounds.MinY - CR->bounds.MinY;
-                		bounds.MaxX = bounds.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
-                		bounds.MaxY = bounds.MaxY - CR->bounds.MinY;
-                		rport->BitMap = CR->BitMap;
-			    }
+                		/* It's not a superbitmap, so it must be a hidden layer.
+                		 * The hook has to blit into the hidden cliprect's bitmap
+                		 * which has different offsets to the layers, so -:
+                		 * # adjust the bounds/offsets so that the rendering is 
+                		 *   relative to the correct location.
+                		 * # clear the rastports layer pointer so the hook isnt confused */
 
-        		    _CallLayerHook(hook, rport, L, &bounds, offsetX, offsetY, LayersBase);
+                		D(bug("[Layers] %s:   Hidden\n", __func__));
+
+                		bounds.MinX -= CR->bounds.MinX;
+                                bounds.MinX += ALIGN_OFFSET(CR->bounds.MinX);
+                		bounds.MinY -= CR->bounds.MinY;
+                		bounds.MaxX -= CR->bounds.MinX;
+                                bounds.MaxX += ALIGN_OFFSET(CR->bounds.MinX);
+                		bounds.MaxY -= CR->bounds.MinY;
+
+                		offsetX += L->bounds.MinX;
+                		offsetX -= CR->bounds.MinX;
+                		offsetX += ALIGN_OFFSET(CR->bounds.MinX);
+                		offsetY += L->bounds.MinY;
+                		offsetY -= CR->bounds.MinY;
+
+                		rport->BitMap = CR->BitMap;
+                		rport->Layer = NULL;
+			    }
+        		    _CallLayerHook(hook, rport, rport->Layer, &bounds, offsetX, offsetY, LayersBase);
         		    rport->BitMap = bm;
-			    
+
 			} /* hidden cliprect */
         		else
 			{
-               	           _CallLayerHook(hook, rport, L, &bounds, offsetX, offsetY, LayersBase);
+               	           _CallLayerHook(hook, rport, rport->Layer, &bounds, offsetX, offsetY, LayersBase);
 			} /* visible cliprect */
-			
         	    } /* if (cliprect intersects rect in screen coords) */
-		    
         	} /* ignore hidden simple refresh cliprects */
 
+        	/* Restore the RastPort's Layer, incase it was cleared
+        	 * in a rendering operation, but not restored, or we have rendered
+        	 * a hidden layer */
+
+        	rport->Layer = L;
+
         	CR = CR->Next;
-	      
+
 	    } /* foreach cliprect */
-
-	#if 0 /* stegerg: seems to have been crap idea/test. Where the hell did I get this from??? */
-
-	    /* Restore RastPort->Layer which was set to NULL further above */
-	    
-	    rport->Layer = L;
-	#endif
-	
 	} /* if (rect in screen coords interesects layer coords) */
 
 	UnlockLayer(L);
-	
     } /* if (layered rastport) */
-    
+
     AROS_LIBFUNC_EXIT
 } /* DoHookClipRects */
-
-
-
-
-
-
-
