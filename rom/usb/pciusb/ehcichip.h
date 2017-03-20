@@ -187,13 +187,13 @@
 struct EhciTD
 {
     struct EhciTD  *etd_Succ;
-    ULONG           etd_Unused0;
+    IPTR            etd_Unused0;
     ULONG           etd_Self;       /* LE PHYSICAL pointer to self */
     ULONG           etd_Length;     /* Number of bytes to transfer within this */
-    ULONG           etd_Unused[3];
-#if __WORDSIZE != 64
-    ULONG	    etd_Unused1;
+#if __WORDSIZE == 64
+    IPTR            etd_Unused1;
 #endif
+    IPTR            etd_Unused[4];
 
     /* aligned to 32 bytes */
     ULONG           etd_NextTD;     /* LE PHYSICAL pointer to next qTD */
