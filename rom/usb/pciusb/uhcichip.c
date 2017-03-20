@@ -339,7 +339,15 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
                 unit->hu_DevBusyReq[devadrep] = NULL;
                 Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                 if (uqh->uqh_DataBuffer)
-                    usbReleaseBuffer(uqh->uqh_DataBuffer, data, actual, ioreq->iouh_Dir);
+                {
+                    UWORD dir;
+                    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+                        dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
+                    else
+                        dir = ioreq->iouh_Dir;
+
+                    usbReleaseBuffer(uqh->uqh_DataBuffer, data, actual, dir);
+                }
                 if (uqh->uqh_SetupBuffer)
                     usbReleaseBuffer(uqh->uqh_SetupBuffer, &ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData), UHDIR_OUT);
                 uhciFreeQContext(hc, uqh);
@@ -502,7 +510,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc) {
             } else {
                 ioreq->iouh_Actual=0;
             }
-            uqh->uqh_DataBuffer = usbGetBuffer(&(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]), ioreq->iouh_Length - actual, ioreq->iouh_Dir);
+            uqh->uqh_DataBuffer = usbGetBuffer(&(((UBYTE *)ioreq->iouh_Data)[ioreq->iouh_Actual]), ioreq->iouh_Length - actual, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
             phyaddr = (ULONG)(IPTR)pciGetPhysical(hc, uqh->uqh_DataBuffer);
             do
             {
