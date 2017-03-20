@@ -194,7 +194,18 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 
 /* Class initialization and destruction */
 
-ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, void *Context, void **RerturnValue)
+void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item)
+{
+    D(bug("[PCI.PC] %s:  %p Type=%d Count=%d \n        ", __func__, item, item->Type, item->Package.Count);)
+    for (unsigned int j=0; j < item->Package.Count; j++)
+    {
+        ACPI_OBJECT *jitem = &item->Package.Elements[j];
+        D(bug("%08x ", jitem->Integer.Value);)
+    }
+    D(bug("\n");)
+}
+
+ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, void *Context, void **ReturnValue)
 {
     ACPI_BUFFER RetVal;
     RetVal.Length = ACPI_ALLOCATE_BUFFER;
@@ -215,15 +226,7 @@ ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, vo
 
         for (unsigned int i=0; i < RObject->Package.Count; i++)
         {
-            ACPI_OBJECT *item = &RObject->Package.Elements[i];
-            D(bug("[PCI.PC] %s:  %03d: %p Type=%d Count=%d \n        ", __func__, i, item, item->Type, item->Package.Count);)
-            for (unsigned int j=0; j < item->Package.Count; j++)
-            {
-                ACPI_OBJECT *jitem = &item->Package.Elements[j];
-                D(bug("%08x ", jitem->Integer.Value);)
-            }
-            D(bug("\n");)
-
+            PCIPC_ACPIEnumPCIIRQ((ACPI_OBJECT *)&RObject->Package.Elements[i]);
         }
     }
 
