@@ -194,35 +194,35 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 
 /* Class initialization and destruction */
 
-ACPI_STATUS callback(ACPI_HANDLE Object, ULONG nesting_level, void *Context, void **RerturnValue)
+ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, void *Context, void **RerturnValue)
 {
     ACPI_BUFFER RetVal;
     RetVal.Length = ACPI_ALLOCATE_BUFFER;
     int status;
 
-    bug("callback. Object = %p, nesting_level=%d, Context=%p\n", Object, nesting_level, Context);
+    D(bug("[PCI.PC] %s: Object = %p, nesting_level=%d, Context=%p\n", __func__, Object, nesting_level, Context);)
 
     status = AcpiEvaluateObject(Object, "_PRT", NULL, &RetVal);
 
-    bug("result of PRT evaluate=%d\n", status);
+    D(bug("[PCI.PC] %s: result of PRT evaluate=%d\n", __func__, status);)
 
     if (!ACPI_FAILURE(status))
     {
-        bug("RetVal.Length=%d\n", RetVal.Length);
-        bug("RetVal.Pointer=%p\n", RetVal.Pointer);
         ACPI_OBJECT *RObject = RetVal.Pointer;
-        bug("Object->Type =%d\n", RObject->Type);
-        bug("Object->Package.Count=%d\n", RObject->Package.Count);
+
+        D(bug("[PCI.PC] %s: RetVal.Length=%d, RetVal.Pointer=%p\n", __func__, RetVal.Length, RetVal.Pointer);)
+        D(bug("[PCI.PC] %s: Object->Type =%d, Object->Package.Count=%d\n", __func__, RObject->Type, RObject->Package.Count);)
+
         for (unsigned int i=0; i < RObject->Package.Count; i++)
         {
             ACPI_OBJECT *item = &RObject->Package.Elements[i];
-            bug("%03d: %p Type=%d Count=%d \n        ", i, item, item->Type, item->Package.Count);
+            D(bug("[PCI.PC] %s:  %03d: %p Type=%d Count=%d \n        ", __func__, i, item, item->Type, item->Package.Count);)
             for (unsigned int j=0; j < item->Package.Count; j++)
             {
                 ACPI_OBJECT *jitem = &item->Package.Elements[j];
-                bug("%08x ", jitem->Integer.Value);
+                D(bug("%08x ", jitem->Integer.Value);)
             }
-            bug("\n");
+            D(bug("\n");)
 
         }
     }
@@ -253,7 +253,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     }
 
     if (ACPICABase)
-        AcpiGetDevices("PNP0A03", callback, LIBBASE, NULL);
+        AcpiGetDevices("PNP0A03", PCPCI_ACPIDeviceCallback, LIBBASE, NULL);
 
     /* Default to using config mechanism 1 */
     _psd->ReadConfigLong  = ReadConfig1Long;
