@@ -196,13 +196,33 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 
 void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item)
 {
-    D(bug("[PCI.PC] %s:  %p Type=%d Count=%d \n        ", __func__, item, item->Type, item->Package.Count);)
-    for (unsigned int j=0; j < item->Package.Count; j++)
+    if ((item->Type == 4) && (item->Package.Count == 4))
     {
-        ACPI_OBJECT *jitem = &item->Package.Elements[j];
-        D(bug("%08x ", jitem->Integer.Value);)
+        ACPI_OBJECT *jitem;
+        UBYTE bus, device;
+
+        jitem = &item->Package.Elements[0];
+        bus = (jitem->Integer.Value >> 24);
+        device = (jitem->Integer.Value >> 16) & 0xFF;
+
+        D(
+            bug("[PCI.PC] %s:  %02d.%02d", __func__, bus, device);
+            if ((jitem->Integer.Value & 0xFFFF) == 0xFFFF)
+                bug(".xx");
+            else
+                bug(".%02d", (jitem->Integer.Value & 0xFFFF));
+        )
+        jitem = &item->Package.Elements[2];
+        if (jitem->String.Length > 0)
+        {
+            bug(" '%s'\n", jitem->String.Pointer);
+        }
+        else
+        {
+            jitem = &item->Package.Elements[3];
+            bug(" using GSI %02x\n", jitem->Integer.Value);
+        }    
     }
-    D(bug("\n");)
 }
 
 ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, void *Context, void **ReturnValue)
@@ -214,21 +234,20 @@ ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, vo
     D(bug("[PCI.PC] %s: Object = %p, nesting_level=%d, Context=%p\n", __func__, Object, nesting_level, Context);)
 
     status = AcpiEvaluateObject(Object, "_PRT", NULL, &RetVal);
-
-    D(bug("[PCI.PC] %s: result of PRT evaluate=%d\n", __func__, status);)
-
     if (!ACPI_FAILURE(status))
     {
         ACPI_OBJECT *RObject = RetVal.Pointer;
 
-        D(bug("[PCI.PC] %s: RetVal.Length=%d, RetVal.Pointer=%p\n", __func__, RetVal.Length, RetVal.Pointer);)
-        D(bug("[PCI.PC] %s: Object->Type =%d, Object->Package.Count=%d\n", __func__, RObject->Type, RObject->Package.Count);)
+        D(bug("[PCI.PC] %s: _PRT @ %p\n", __func__, RetVal.Pointer);)
+        D(bug("[PCI.PC] %s:             %d PCI IRQ Entries\n", __func__, RObject->Package.Count);)
 
         for (unsigned int i=0; i < RObject->Package.Count; i++)
         {
             PCIPC_ACPIEnumPCIIRQ((ACPI_OBJECT *)&RObject->Package.Elements[i]);
         }
     }
+
+    D(bug("[PCI.PC] %s: Finished\n", __func__);)
 
     return 0;
 }
