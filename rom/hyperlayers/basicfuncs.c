@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic support functions for layers.library.
@@ -433,7 +433,7 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
       if (TRUE == invisible && IS_SMARTREFRESH(l))
       {
         cr->BitMap = AllocBitMap(
-                   cr->bounds.MaxX - cr->bounds.MinX + 1 + 16,
+                   cr->bounds.MaxX - cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
                    cr->bounds.MaxY - cr->bounds.MinY + 1,
                    display_bm->Depth,
                    BMF_CLEAR,
@@ -728,7 +728,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
                * Get a bitmap (if not there) and make a backup
                */
               _cr->BitMap = AllocBitMap(
-                 _cr->bounds.MaxX - _cr->bounds.MinX + 1 + 16 ,
+                 _cr->bounds.MaxX - _cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
                  _cr->bounds.MaxY - _cr->bounds.MinY + 1,
                  display_bm->Depth,
                  BMF_CLEAR,
@@ -933,7 +933,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
 
         if (IS_SMARTREFRESH(l) && TRUE == backupmode && NULL == _cr->BitMap && NULL != _cr->lobs)
         {
-           _cr->BitMap = AllocBitMap(_cr->bounds.MaxX - _cr->bounds.MinX + 1 + 16 ,
+           _cr->BitMap = AllocBitMap(_cr->bounds.MaxX - _cr->bounds.MinX + 1 + ALIGN_CLIPRECT ,
                                      _cr->bounds.MaxY - _cr->bounds.MinY + 1,
                                      display_bm->Depth,
                                      BMF_CLEAR,
@@ -1215,7 +1215,7 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
         if (IS_SMARTREFRESH(l))
         {
           cr->BitMap = AllocBitMap(
-             cr->bounds.MaxX - cr->bounds.MinX + 1 + 16,
+             cr->bounds.MaxX - cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
              cr->bounds.MaxY - cr->bounds.MinY + 1,
              bm->Depth,
              BMF_CLEAR,
