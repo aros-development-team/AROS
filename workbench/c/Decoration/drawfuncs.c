@@ -1103,12 +1103,14 @@ AROS_UFH3(void, RectShadeFunc,
 {
     AROS_USERFUNC_INIT
 
+    struct Rectangle bounds;
 #if defined(DECOR_USELINEBUFF)
     ULONG       *outline = NULL;
     UWORD       width = 1 + msg->MaxX - msg->MinX;
     UWORD       height = 1 + msg->MaxY - msg->MinY;
     ULONG        linesize = 0;
 #endif
+    UWORD       outX = msg->OffsetX, outY = msg->OffsetY;
     ULONG       color;
 
     HIDDT_Color col;
@@ -1118,6 +1120,24 @@ AROS_UFH3(void, RectShadeFunc,
     int x = 0, y;
     struct ShadeData *data = h->h_Data;
 #endif
+    D(
+       bug("[Decoration] %s: data @ 0x%p\n", __func__, data);
+       bug("[Decoration] %s: offy = %d, fact = %d, ni @ 0x%p\n", __func__, data->offy, data->fact, data->ni);
+   
+       bug("[Decoration] %s: Area = %d,%d -> %d,%d\n", __func__, msg->MinX, msg->MinY, msg->MaxX, msg->MaxY);
+       bug("[Decoration] %s: Offset = %d,%d\n", __func__, msg->OffsetX, msg->OffsetY);
+    )
+    if (rp->Layer)
+    {
+        bug("[Decoration] %s: Layer @ 0x%p = %d,%d -> %d,%d\n", __func__, rp->Layer, rp->Layer->bounds.MinX, rp->Layer->bounds.MinY, rp->Layer->bounds.MaxX, rp->Layer->bounds.MaxY);
+        bounds.MinX = rp->Layer->bounds.MinX - msg->OffsetX;
+        bounds.MinY = rp->Layer->bounds.MinY - msg->OffsetY;
+    }
+    else
+    {
+        bounds.MinX = 0;
+        bounds.MinY = 0;
+    }
 
 #if defined(DECOR_USELINEBUFF)
     if (width > 1)
@@ -1125,7 +1145,7 @@ AROS_UFH3(void, RectShadeFunc,
     else if (height > 1)
     {
 #if !defined(DECOR_FAKESHADE)
-        x = (msg->MinX - msg->OffsetX - rp->Layer->bounds.MinX) % data->ni->h;
+        x = (msg->MinX - bounds.MinX) % data->ni->h;
 #endif
         linesize = height << 2;
     }
@@ -1145,7 +1165,7 @@ AROS_UFH3(void, RectShadeFunc,
     for (py = msg->MinY; py <= msg->MaxY; py++)
     {
 #if !defined(DECOR_FAKESHADE)
-        y = (py - msg->OffsetY - rp->Layer->bounds.MinY) % data->ni->h;
+        y = (py - bounds.MinY) % data->ni->h;
 #endif
 
 #if defined(DECOR_USELINEBUFF)
@@ -1165,7 +1185,7 @@ AROS_UFH3(void, RectShadeFunc,
         for (px = msg->MinX; px <= msg->MaxX; px++)
         {
 #if !defined(DECOR_FAKESHADE)
-            x = (px - msg->OffsetX - rp->Layer->bounds.MinX) % data->ni->w;
+            x = (px - bounds.MinX) % data->ni->w;
 
             color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
 #else
@@ -1191,8 +1211,8 @@ AROS_UFH3(void, RectShadeFunc,
                 else
                 {
                     WriteRGBPixel(rp,
-                        msg->OffsetX + (px - msg->MinX),
-                        msg->OffsetY + (py - msg->MinY),
+                        outX + (px - msg->MinX),
+                        outY + (py - msg->MinY),
 #if AROS_BIG_ENDIAN
                         color);
 #else
@@ -1207,8 +1227,8 @@ AROS_UFH3(void, RectShadeFunc,
                 0, 0,
                 linesize,
                 rp,
-                msg->OffsetX,
-                msg->OffsetY + (py - msg->MinY),
+                outX,
+                outY + (py - msg->MinY),
                 width, 1,
                 RECTFMT_ARGB);
         }
@@ -1224,8 +1244,8 @@ AROS_UFH3(void, RectShadeFunc,
                 0, 0,
                 sizeof(ULONG),
                 rp,
-                msg->OffsetX,
-                msg->OffsetY,
+                outX,
+                outY,
                 1, height,
                 RECTFMT_ARGB);
         }
@@ -1270,6 +1290,8 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
     if (usegradients)
     {
+        D(bug("[Decoration] %s: GRADIENT > %d,%d -> %d,%d\n", __func__, x0, y0, x1, y1);)
+
         color = CalcShade(basecolor, fact);
 
         SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, color, TAG_DONE);
@@ -1287,6 +1309,8 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
         shadeRect.MinY = y0;
         shadeRect.MaxY = y1;
 
+        D(bug("[Decoration] %s: SHADE > %d,%d -> %d,%d\n", __func__, x0, y0, x1, y1);)
+
         shadeParams.ni = ni;
         shadeParams.offy = _offy;
         shadeParams.fact = fact;
@@ -1298,6 +1322,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
     else
     {
+        D(bug("[Decoration] %s: DRAW > %d,%d -> %d,%d\n", __func__, x0, y0, x1, y1);)
         Move(rp, x0, y0);
         Draw(rp, x1, y1);
     }
