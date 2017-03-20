@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -491,7 +491,7 @@ OOP_Object *PCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
         struct TagItem new_tags[] =
         {
-            {aHW_ClassName, (IPTR)"PCI"},
+            {aHW_ClassName, (IPTR)"PCI Local Bus"},
             {TAG_DONE     , 0                }
         };
         struct pRoot_New new_msg =
