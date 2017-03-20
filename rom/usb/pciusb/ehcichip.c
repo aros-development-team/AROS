@@ -572,7 +572,7 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         predetd = setupetd;
         if(ioreq->iouh_Length)
         {
-            eqh->eqh_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_OUT : UHDIR_IN);
+            eqh->eqh_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
             phyaddr = (IPTR)pciGetPhysical(hc, eqh->eqh_Buffer);
             do
             {
