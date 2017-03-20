@@ -55,7 +55,7 @@ static void ehciFinishRequest(struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
         dir = ioreq->iouh_Dir;
 
     usbReleaseBuffer(eqh->eqh_Buffer, ioreq->iouh_Data, ioreq->iouh_Actual, dir);
-    usbReleaseBuffer(eqh->eqh_SetupBuf, &ioreq->iouh_SetupData, 8, UHDIR_IN);
+    usbReleaseBuffer(eqh->eqh_SetupBuf, &ioreq->iouh_SetupData, 8, UHDIR_OUT);
     eqh->eqh_Buffer   = NULL;
     eqh->eqh_SetupBuf = NULL;
 }
@@ -572,7 +572,7 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         predetd = setupetd;
         if(ioreq->iouh_Length)
         {
-            eqh->eqh_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+            eqh->eqh_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_OUT : UHDIR_IN);
             phyaddr = (IPTR)pciGetPhysical(hc, eqh->eqh_Buffer);
             do
             {
