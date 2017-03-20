@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2012, The AROS Development Team.
+    Copyright © 2011-2017, The AROS Development Team.
     $Id$
 */
 
@@ -681,7 +681,7 @@ static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
 {
     struct windecor_data *data;
 
-    D(bug("windecor_new(tags @ 0x%p)\n", msg->ops_AttrList));
+    D(bug("[Decoration:Win] %s(tags @ 0x%p)\n", __func__, msg->ops_AttrList));
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
@@ -691,8 +691,8 @@ static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
          struct DecorImages * di = (struct DecorImages *) GetTagData(WDA_DecorImages, (IPTR)NULL, msg->ops_AttrList);
          struct DecorConfig * dc = (struct DecorConfig *) GetTagData(WDA_DecorConfig, (IPTR)NULL, msg->ops_AttrList);
 
-        D(bug("windecor_new: DecorImages @ 0x%p\n", di));
-        D(bug("windecor_new: DecorConfig @ 0x%p\n", dc));
+        D(bug("[Decoration:Win] %s: DecorImages @ 0x%p\n", __func__, di));
+        D(bug("[Decoration:Win] %s: DecorConfig @ 0x%p\n", __func__, dc));
 
          if (!InitWindowSkinning(data, di, dc))
          {
@@ -894,9 +894,14 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     UWORD                   bl, bt, br, bb, ww, wh;
     LONG    pen = -1;
 
-    if (wd->img_border_normal->ok) ni = wd->img_border_normal;
+    D(bug("[Decoration:Win] %s(0x%p)\n", __func__, obj);)
+    D(bug("[Decoration:Win] %s: window @ 0x%p\n", __func__, window);)
 
-    if (ni == NULL) data->dc->UseGradients = TRUE;
+    if (wd->img_border_normal->ok)
+        ni = wd->img_border_normal;
+
+    if (ni == NULL)
+        data->dc->UseGradients = TRUE;
 
     BOOL    tc = wd->truecolor;
 
@@ -915,12 +920,14 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
 
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
     {
+        D(bug("[Decoration:Win] %s: ACTIVE\n", __func__);)
         pen = wd->ActivePen;
         s_col = data->dc->ActivatedGradientColor_s;
         e_col = data->dc->ActivatedGradientColor_e;
         arc = data->dc->ActivatedGradientColor_a;
         bc = data->dc->BaseColors_a;
     } else {
+        D(bug("[Decoration:Win] %s: INACTIVE\n", __func__);)
         pen = wd->DeactivePen;
         s_col = data->dc->DeactivatedGradientColor_s;
         e_col = data->dc->DeactivatedGradientColor_e;
@@ -981,10 +988,10 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         }
 
         /* Shading borders */
-        int bbt = bt;
-
         if (data->dc->WinFrameStyle > 0)
         {
+            int bbt = bt;
+
             if (bl > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, 0, bbt, 0, wh - 1);
             if (bb > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - 1, 0, wh - 1, ww - 1, wh - 1);
             if (br > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - 1, bbt , ww - 1, wh - 1);
